@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934096AbaDIQOq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:14:46 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:33613 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933923AbaDIQLf (ORCPT
+	id S964896AbaDIQPg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:15:36 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:58601 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933812AbaDIQPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:11:35 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH 3/5] hung_task: Convert process iteration to use for_each_process_thread()
-Date: Wed,  9 Apr 2014 18:11:20 +0200
-Message-Id: <1397059882-23063-4-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
-References: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
+	Wed, 9 Apr 2014 12:15:32 -0400
+Date: Wed, 9 Apr 2014 12:15:22 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Matthew Whitehead <tedheadster@gmail.com>,
+        John Stultz <john.stultz@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        mwhitehe@redhat.com, Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: nohz problem with idle time on old hardware
+Message-ID: <20140409121522.50ccee9a@gandalf.local.home>
+In-Reply-To: <CAKohpok8e9MoWFeNquMreRR8dbBP-_9CDP7=xdOwAwWv87VZAQ@mail.gmail.com>
+References: <20131113113927.GA13875@mwhitehe.csb>
+	<alpine.DEB.2.02.1311131453500.30673@ionos.tec.linutronix.de>
+	<20131113102153.5f10e6b5@gandalf.local.home>
+	<20131113103134.5b8cf02f@gandalf.local.home>
+	<20131113105737.3f7a0b1b@gandalf.local.home>
+	<alpine.DEB.2.02.1311131706260.30673@ionos.tec.linutronix.de>
+	<20131113111257.482c2955@gandalf.local.home>
+	<20131113161829.GE4138@linux.vnet.ibm.com>
+	<20131113112338.7d303c0f@gandalf.local.home>
+	<20131113163552.GF4138@linux.vnet.ibm.com>
+	<alpine.DEB.2.02.1311132052240.30673@ionos.tec.linutronix.de>
+	<CAOh2x=koQ4tXdq5_Bi4Vbo_k1a=zosFA3e4zRJGjzysYmC-PEA@mail.gmail.com>
+	<20140409103138.29be16b9@gandalf.local.home>
+	<CAKohponY+4y8G875wy4GsO1hTqERc7-hYKY6uQvLn28+32VxVQ@mail.gmail.com>
+	<20140409112950.7be9f8ac@gandalf.local.home>
+	<20140409113143.6174143f@gandalf.local.home>
+	<20140409113923.7dcaf183@gandalf.local.home>
+	<CAKohpok8e9MoWFeNquMreRR8dbBP-_9CDP7=xdOwAwWv87VZAQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-do_each_thread/while_each_thread iterators are deprecated by
-for_each_thread/for_each_process_thread() APIs.
+On Wed, 9 Apr 2014 21:26:51 +0530
+Viresh Kumar <viresh.kumar@linaro.org> wrote:
 
-Lets convert the callers in the hung task detector code. The ultimate
-goal is to remove the struct task_struct::thread_group field and
-the corresponding do_each_thread/while_each_thread iterators that are
-RCU unsafe.
 
-It also makes the hung task threads iteration eventually RCU safe.
+> When HRES isn't enabled and NOHZ isn't enabled as well, in that
+> case we should stick to the periodic code from tick-common.c and
+> the oneshot options of tick_nohz_switch_to_nohz() or
+> hrtimer_switch_to_hres() shouldn't be used. And so, we still need
+> those checks, as per my understanding. :)
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- kernel/hung_task.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+The one thing we can agree on is that the current code is wrong :-)
 
-diff --git a/kernel/hung_task.c b/kernel/hung_task.c
-index 06bb141..d19744b 100644
---- a/kernel/hung_task.c
-+++ b/kernel/hung_task.c
-@@ -157,7 +157,7 @@ static void check_hung_uninterruptible_tasks(unsigned long timeout)
- {
- 	int max_count = sysctl_hung_task_check_count;
- 	int batch_count = HUNG_TASK_BATCHING;
--	struct task_struct *g, *t;
-+	struct task_struct *p, *t;
- 
- 	/*
- 	 * If the system crashed already then all bets are off,
-@@ -167,18 +167,18 @@ static void check_hung_uninterruptible_tasks(unsigned long timeout)
- 		return;
- 
- 	rcu_read_lock();
--	do_each_thread(g, t) {
-+	for_each_process_thread(p, t) {
- 		if (!max_count--)
- 			goto unlock;
- 		if (!--batch_count) {
- 			batch_count = HUNG_TASK_BATCHING;
--			if (!rcu_lock_break(g, t))
-+			if (!rcu_lock_break(p, t))
- 				goto unlock;
- 		}
- 		/* use "==" to skip the TASK_KILLABLE tasks waiting on NFS */
- 		if (t->state == TASK_UNINTERRUPTIBLE)
- 			check_hung_task(t, timeout);
--	} while_each_thread(g, t);
-+	}
-  unlock:
- 	rcu_read_unlock();
- }
--- 
-1.8.3.1
+> 
+> Lets see what others have for this discussion :)
 
+Yeah, those that actually wrote this code should have a say in this.
+
+-- Steve
