@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933726AbaDIPDP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 11:03:15 -0400
-Received: from relay.parallels.com ([195.214.232.42]:46510 "EHLO
+	id S933771AbaDIPDr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 11:03:47 -0400
+Received: from relay.parallels.com ([195.214.232.42]:46498 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933291AbaDIPCj (ORCPT
+	with ESMTP id S933204AbaDIPCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 11:02:39 -0400
+	Wed, 9 Apr 2014 11:02:38 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <mhocko@suse.cz>, <hannes@cmpxchg.org>, <glommer@gmail.com>,
         <cl@linux-foundation.org>, <penberg@kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         <devel@openvz.org>
-Subject: [PATCH -mm 4/4] memcg, slab: remove memcg_cache_params::destroy work
-Date: Wed, 9 Apr 2014 19:02:33 +0400
-Message-ID: <5b28bf333ac756de906b4f0c96eba04bcc2971e4.1397054470.git.vdavydov@parallels.com>
+Subject: [PATCH -mm 1/4] memcg, slab: do not schedule cache destruction when last page goes away
+Date: Wed, 9 Apr 2014 19:02:30 +0400
+Message-ID: <8ea8b57d5264f16ee33497a4317240648645704a.1397054470.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1397054470.git.vdavydov@parallels.com>
 References: <cover.1397054470.git.vdavydov@parallels.com>
@@ -26,149 +26,187 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to schedule a work for kmem_cache_shrink/destroy from
-mem_cgroup_destroy_all_caches any more, because we can now call them
-directly under memcg's slab_caches_mutex.
+After the memcg is offlined, we mark its kmem caches that cannot be
+deleted right now due to pending objects as dead by setting the
+memcg_cache_params::dead flag, so that memcg_release_pages will schedule
+cache destruction (memcg_cache_params::destroy) as soon as the last slab
+of the cache is freed (memcg_cache_params::nr_pages drops to zero).
+
+I guess the idea was to destroy the caches as soon as possible, i.e.
+immediately after freeing the last object. However, it just doesn't work
+that way, because kmem caches always preserve some pages for the sake of
+performance, so that nr_pages never gets to zero unless the cache is
+shrunk explicitly using kmem_cache_shrink. Of course, we could account
+the total number of objects on the cache or check if all the slabs
+allocated for the cache are empty on kmem_cache_free and schedule
+destruction if so, but that would be too costly.
+
+Thus we have a piece of code that works only when we explicitly call
+kmem_cache_shrink, but complicates the whole picture a lot. Moreover,
+it's racy in fact. For instance, kmem_cache_shrink may free the last
+slab and thus schedule cache destruction before it finishes checking
+that the cache is empty, which can lead to use-after-free.
+
+So I propose to remove this async cache destruction from
+memcg_release_pages, and check if the cache is empty explicitly after
+calling kmem_cache_shrink instead. This will simplify things a lot w/o
+introducing any functional changes.
+
+And regarding dead memcg caches (i.e. those that are left hanging around
+after memcg offline for they have objects), I suppose we should reap
+them either periodically or on vmpressure as Glauber suggested
+initially. I'm going to implement this later.
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- include/linux/slab.h |    3 ---
- mm/memcontrol.c      |   45 +++++++++++++++++----------------------------
- 2 files changed, 17 insertions(+), 31 deletions(-)
+ include/linux/memcontrol.h |    1 -
+ include/linux/slab.h       |    2 --
+ mm/memcontrol.c            |   63 ++------------------------------------------
+ mm/slab.h                  |    7 ++---
+ 4 files changed, 4 insertions(+), 69 deletions(-)
 
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 13acdb5259f5..41b381412367 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -515,7 +515,6 @@ __memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
+ int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size);
+ void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size);
+ 
+-void mem_cgroup_destroy_cache(struct kmem_cache *cachep);
+ int __kmem_cache_destroy_memcg_children(struct kmem_cache *s);
+ 
+ /**
 diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 22ebcf475814..5b48ef7c0cea 100644
+index eaaf2f69c54d..0217e05e1d83 100644
 --- a/include/linux/slab.h
 +++ b/include/linux/slab.h
-@@ -515,8 +515,6 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+@@ -513,7 +513,6 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+  * @memcg: pointer to the memcg this cache belongs to
   * @list: list_head for the list of all caches in this memcg
   * @root_cache: pointer to the global, root cache, this cache was derived from
+- * @dead: set to true after the memcg dies; the cache may still be around.
   * @nr_pages: number of pages that belongs to this cache.
-- * @destroy: worker to be called whenever we are ready, or believe we may be
-- *           ready, to destroy this cache.
-  */
- struct memcg_cache_params {
- 	bool is_root_cache;
-@@ -530,7 +528,6 @@ struct memcg_cache_params {
+  * @destroy: worker to be called whenever we are ready, or believe we may be
+  *           ready, to destroy this cache.
+@@ -529,7 +528,6 @@ struct memcg_cache_params {
+ 			struct mem_cgroup *memcg;
  			struct list_head list;
  			struct kmem_cache *root_cache;
+-			bool dead;
  			atomic_t nr_pages;
--			struct work_struct destroy;
+ 			struct work_struct destroy;
  		};
- 	};
- };
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 9621157f2e5b..443a5ff0d923 100644
+index ba30b26fc483..78431620d225 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -3040,8 +3040,6 @@ void memcg_update_array_size(int num)
- 		memcg_limited_groups_array_size = memcg_caches_array_size(num);
+@@ -3267,60 +3267,11 @@ static void kmem_cache_destroy_work_func(struct work_struct *w)
+ 
+ 	cachep = memcg_params_to_cache(p);
+ 
+-	/*
+-	 * If we get down to 0 after shrink, we could delete right away.
+-	 * However, memcg_release_pages() already puts us back in the workqueue
+-	 * in that case. If we proceed deleting, we'll get a dangling
+-	 * reference, and removing the object from the workqueue in that case
+-	 * is unnecessary complication. We are not a fast path.
+-	 *
+-	 * Note that this case is fundamentally different from racing with
+-	 * shrink_slab(): if memcg_cgroup_destroy_cache() is called in
+-	 * kmem_cache_shrink, not only we would be reinserting a dead cache
+-	 * into the queue, but doing so from inside the worker racing to
+-	 * destroy it.
+-	 *
+-	 * So if we aren't down to zero, we'll just schedule a worker and try
+-	 * again
+-	 */
+-	if (atomic_read(&cachep->memcg_params->nr_pages) != 0)
+-		kmem_cache_shrink(cachep);
+-	else
++	kmem_cache_shrink(cachep);
++	if (atomic_read(&cachep->memcg_params->nr_pages) == 0)
+ 		kmem_cache_destroy(cachep);
  }
  
--static void kmem_cache_destroy_work_func(struct work_struct *w);
--
- int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
- {
- 	struct memcg_cache_params *cur_params = s->memcg_params;
-@@ -3138,8 +3136,6 @@ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
- 	if (memcg) {
- 		s->memcg_params->memcg = memcg;
- 		s->memcg_params->root_cache = root_cache;
--		INIT_WORK(&s->memcg_params->destroy,
--				kmem_cache_destroy_work_func);
- 		css_get(&memcg->css);
- 	} else
- 		s->memcg_params->is_root_cache = true;
-@@ -3203,7 +3199,7 @@ out:
- 	mutex_unlock(&memcg->slab_caches_mutex);
- }
- 
--static void memcg_kmem_destroy_cache(struct kmem_cache *cachep)
-+static void __memcg_kmem_destroy_cache(struct kmem_cache *cachep)
- {
- 	struct kmem_cache *root_cache;
- 	struct mem_cgroup *memcg;
-@@ -3215,7 +3211,7 @@ static void memcg_kmem_destroy_cache(struct kmem_cache *cachep)
- 	memcg = cachep->memcg_params->memcg;
- 	id = memcg_cache_id(memcg);
- 
--	mutex_lock(&memcg->slab_caches_mutex);
-+	lockdep_assert_held(&memcg->slab_caches_mutex);
- 
- 	/*
- 	 * Holding the activate_kmem_mutex assures nobody will touch the
-@@ -3229,7 +3225,17 @@ static void memcg_kmem_destroy_cache(struct kmem_cache *cachep)
- 	list_del(&cachep->memcg_params->list);
- 
- 	kmem_cache_destroy(cachep);
-+}
-+
-+static void memcg_kmem_destroy_cache(struct kmem_cache *cachep)
-+{
-+	struct mem_cgroup *memcg;
-+
-+	BUG_ON(is_root_cache(cachep));
-+	memcg = cachep->memcg_params->memcg;
- 
-+	mutex_lock(&memcg->slab_caches_mutex);
-+	__memcg_kmem_destroy_cache(cachep);
- 	mutex_unlock(&memcg->slab_caches_mutex);
- }
- 
-@@ -3264,19 +3270,6 @@ static inline void memcg_resume_kmem_account(void)
- 	current->memcg_kmem_skip_account--;
- }
- 
--static void kmem_cache_destroy_work_func(struct work_struct *w)
+-void mem_cgroup_destroy_cache(struct kmem_cache *cachep)
 -{
--	struct kmem_cache *cachep;
--	struct memcg_cache_params *p;
+-	if (!cachep->memcg_params->dead)
+-		return;
 -
--	p = container_of(w, struct memcg_cache_params, destroy);
--	cachep = memcg_params_to_cache(p);
--
--	kmem_cache_shrink(cachep);
--	if (atomic_read(&cachep->memcg_params->nr_pages) == 0)
--		memcg_kmem_destroy_cache(cachep);
+-	/*
+-	 * There are many ways in which we can get here.
+-	 *
+-	 * We can get to a memory-pressure situation while the delayed work is
+-	 * still pending to run. The vmscan shrinkers can then release all
+-	 * cache memory and get us to destruction. If this is the case, we'll
+-	 * be executed twice, which is a bug (the second time will execute over
+-	 * bogus data). In this case, cancelling the work should be fine.
+-	 *
+-	 * But we can also get here from the worker itself, if
+-	 * kmem_cache_shrink is enough to shake all the remaining objects and
+-	 * get the page count to 0. In this case, we'll deadlock if we try to
+-	 * cancel the work (the worker runs with an internal lock held, which
+-	 * is the same lock we would hold for cancel_work_sync().)
+-	 *
+-	 * Since we can't possibly know who got us here, just refrain from
+-	 * running if there is already work pending
+-	 */
+-	if (work_pending(&cachep->memcg_params->destroy))
+-		return;
+-	/*
+-	 * We have to defer the actual destroying to a workqueue, because
+-	 * we might currently be in a context that cannot sleep.
+-	 */
+-	schedule_work(&cachep->memcg_params->destroy);
 -}
 -
  int __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
  {
  	struct kmem_cache *c;
-@@ -3298,12 +3291,6 @@ int __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
- 		if (!c)
- 			continue;
+@@ -3346,16 +3297,7 @@ int __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
+ 		 * We will now manually delete the caches, so to avoid races
+ 		 * we need to cancel all pending destruction workers and
+ 		 * proceed with destruction ourselves.
+-		 *
+-		 * kmem_cache_destroy() will call kmem_cache_shrink internally,
+-		 * and that could spawn the workers again: it is likely that
+-		 * the cache still have active pages until this very moment.
+-		 * This would lead us back to mem_cgroup_destroy_cache.
+-		 *
+-		 * But that will not execute at all if the "dead" flag is not
+-		 * set, so flip it down to guarantee we are in control.
+ 		 */
+-		c->memcg_params->dead = false;
+ 		cancel_work_sync(&c->memcg_params->destroy);
+ 		kmem_cache_destroy(c);
  
--		/*
--		 * We will now manually delete the caches, so to avoid races
--		 * we need to cancel all pending destruction workers and
--		 * proceed with destruction ourselves.
--		 */
--		cancel_work_sync(&c->memcg_params->destroy);
- 		memcg_kmem_destroy_cache(c);
- 
- 		if (cache_from_memcg_idx(s, i))
-@@ -3316,15 +3303,17 @@ int __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
- static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
- {
- 	struct kmem_cache *cachep;
--	struct memcg_cache_params *params;
-+	struct memcg_cache_params *params, *tmp;
- 
- 	if (!memcg_kmem_is_active(memcg))
- 		return;
- 
+@@ -3377,7 +3319,6 @@ static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
  	mutex_lock(&memcg->slab_caches_mutex);
--	list_for_each_entry(params, &memcg->memcg_slab_caches, list) {
-+	list_for_each_entry_safe(params, tmp, &memcg->memcg_slab_caches, list) {
+ 	list_for_each_entry(params, &memcg->memcg_slab_caches, list) {
  		cachep = memcg_params_to_cache(params);
--		schedule_work(&cachep->memcg_params->destroy);
-+		kmem_cache_shrink(cachep);
-+		if (atomic_read(&cachep->memcg_params->nr_pages) == 0)
-+			__memcg_kmem_destroy_cache(cachep);
+-		cachep->memcg_params->dead = true;
+ 		schedule_work(&cachep->memcg_params->destroy);
  	}
  	mutex_unlock(&memcg->slab_caches_mutex);
+diff --git a/mm/slab.h b/mm/slab.h
+index 3db3c52f80a2..efe14d420010 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -127,11 +127,8 @@ static inline void memcg_bind_pages(struct kmem_cache *s, int order)
+ 
+ static inline void memcg_release_pages(struct kmem_cache *s, int order)
+ {
+-	if (is_root_cache(s))
+-		return;
+-
+-	if (atomic_sub_and_test((1 << order), &s->memcg_params->nr_pages))
+-		mem_cgroup_destroy_cache(s);
++	if (!is_root_cache(s))
++		atomic_sub(1 << order, &s->memcg_params->nr_pages);
  }
+ 
+ static inline bool slab_equal_or_root(struct kmem_cache *s,
 -- 
 1.7.10.4
 
