@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932908AbaDILYz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 07:24:55 -0400
-Received: from transparentnimenzy.cz ([31.31.77.140]:52614 "EHLO
-	devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758279AbaDILYx convert rfc822-to-8bit (ORCPT
+	id S933079AbaDILZB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 07:25:01 -0400
+Received: from prifuk.cz ([31.31.77.140]:52617 "EHLO devoid-pointer.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758486AbaDILY6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 07:24:53 -0400
+	Wed, 9 Apr 2014 07:24:58 -0400
 From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
 To: dmitry.torokhov@gmail.com, jkosina@suse.cz
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         Elias Vanderstuyft <elias.vds@gmail.com>
-Subject: [PATCH 13/24] Port hid-lg3ff to ff-memless-next
-Date: Wed, 09 Apr 2014 13:24:49 +0200
-Message-ID: <1950497.jofl5Si0qz@sigyn>
+Subject: [PATCH 03/24] Port twl4030-vibra to ff-memless-next
+Date: Wed, 09 Apr 2014 13:15:10 +0200
+Message-ID: <6530276.pE3b2r1u1b@sigyn>
 User-Agent: KMail/4.13 rc (Linux/3.14.0-1-ARCHMOD; KDE/4.12.97; x86_64; ; )
 In-Reply-To: <1609685.QRL9N9sQvX@sigyn>
 References: <1609685.QRL9N9sQvX@sigyn>
@@ -24,136 +24,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port hid-lg3ff to ff-memless-next
+Port twl4030-vibra to ff-memless-next
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
- drivers/hid/Kconfig     |  2 +-
- drivers/hid/hid-lg3ff.c | 56 +++++++++++++++++++++++++++++++------------------
- 2 files changed, 37 insertions(+), 21 deletions(-)
+ drivers/input/misc/Kconfig         |  2 +-
+ drivers/input/misc/twl4030-vibra.c | 31 +++++++++++++++++++++++++------
+ 2 files changed, 26 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index c7794ae..6f2941a 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -382,7 +382,7 @@ config LOGIRUMBLEPAD2_FF
- config LOGIG940_FF
- 	bool "Logitech Flight System G940 force feedback support"
- 	depends on HID_LOGITECH
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 33e0f5d..1016a1b 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -407,7 +407,7 @@ config INPUT_TWL4030_VIBRA
+ 	tristate "Support for TWL4030 Vibrator"
+ 	depends on TWL4030_CORE
+ 	select MFD_TWL4030_AUDIO
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
  	help
- 	  Say Y here if you want to enable force feedback support for Logitech
- 	  Flight System G940 devices.
-diff --git a/drivers/hid/hid-lg3ff.c b/drivers/hid/hid-lg3ff.c
-index 8c2da18..a85f8e5 100644
---- a/drivers/hid/hid-lg3ff.c
-+++ b/drivers/hid/hid-lg3ff.c
-@@ -23,9 +23,12 @@
+ 	  This option enables support for TWL4030 Vibrator Driver.
  
+diff --git a/drivers/input/misc/twl4030-vibra.c b/drivers/input/misc/twl4030-vibra.c
+index 960ef2a..5274ad2 100644
+--- a/drivers/input/misc/twl4030-vibra.c
++++ b/drivers/input/misc/twl4030-vibra.c
+@@ -32,9 +32,11 @@
+ #include <linux/mfd/twl4030-audio.h>
  #include <linux/input.h>
- #include <linux/hid.h>
+ #include <linux/slab.h>
 +#include <linux/input/ff-memless-next.h>
  
- #include "hid-lg.h"
+ /* MODULE ID2 */
+ #define LEDEN		0x00
++#define FF_UPDATE_RATE	50
  
-+#define FF_UPDATE_RATE 50
-+
- /*
-  * G940 Theory of Operation (from experimentation)
-  *
-@@ -58,12 +61,11 @@ struct lg3ff_device {
- };
+ /* ForceFeedback */
+ #define EFFECT_DIR_180_DEG	0x8000 /* range is 0 - 0xFFFF */
+@@ -134,14 +136,31 @@ static void vibra_play_work(struct work_struct *work)
+ /*** Input/ForceFeedback ***/
  
- static int hid_lg3ff_play(struct input_dev *dev, void *data,
--			 struct ff_effect *effect)
-+			 const struct mlnx_effect_command *command)
+ static int vibra_play(struct input_dev *input, void *data,
+-		      struct ff_effect *effect)
++		      const struct mlnx_effect_command *command)
  {
- 	struct hid_device *hid = input_get_drvdata(dev);
- 	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct hid_report *report = list_entry(report_list->next, struct hid_report, list);
--	int x, y;
- 
- /*
-  * Available values in the field should always be 63, but we only use up to
-@@ -72,30 +74,37 @@ static int hid_lg3ff_play(struct input_dev *dev, void *data,
- 	memset(report->field[0]->value, 0,
- 	       sizeof(__s32) * report->field[0]->report_count);
- 
--	switch (effect->type) {
--	case FF_CONSTANT:
--/*
-- * Already clamped in ff_memless
-- * 0 is center (different then other logitech)
-- */
--		x = effect->u.ramp.start_level;
--		y = effect->u.ramp.end_level;
--
--		/* send command byte */
--		report->field[0]->value[0] = 0x51;
-+	/* send command byte */
-+	report->field[0]->value[0] = 0x51;
- 
--/*
-- * Sign backwards from other Force3d pro
-- * which get recast here in two's complement 8 bits
-- */
-+	switch (command->cmd) {
-+	case MLNX_START_COMBINED: {
-+		const struct mlnx_simple_force *simple_force = &command->u.simple_force;
-+		/* Scale down from MLNX range */
-+		const int x = 0x80 - (simple_force->x * 0xff / 0xffff);
-+		const int y = simple_force->y * 0xff / 0xffff;
+ 	struct vibra_info *info = input_get_drvdata(input);
++	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
 +
-+		/*
-+		 * Sign backwards from other Force3d pro
-+		 * which get recast here in two's complement 8 bits
-+		*/
- 		report->field[0]->value[1] = (unsigned char)(-x);
- 		report->field[0]->value[31] = (unsigned char)(-y);
--
--		hid_hw_request(hid, report, HID_REQ_SET_REPORT);
- 		break;
++	switch (command->cmd) {
++	case MLNX_START_RUMBLE:
++		if (command->u.rumble_force.strong) {
++			info->speed = rumble_force->strong >> 8;
++			info->direction = rumble_force->strong_dir < EFFECT_DIR_180_DEG ?
++					  0 : 1;
++		} else {
++			info->speed = rumble_force->weak >> 9;
++			info->direction = rumble_force->weak_dir < EFFECT_DIR_180_DEG ?
++					  0 : 1;
 +		}
-+	case MLNX_STOP_COMBINED:
-+		report->field[0]->value[1] = 0;
-+		report->field[0]->value[31] = 0;
++		break;
++	case MLNX_STOP_RUMBLE:
++		info->speed = 0;
++		info->direction = 0;
 +		break;
 +	default:
 +		return -EINVAL;
- 	}
-+
-+	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
-+
++	}
+ 
+-	info->speed = effect->u.rumble.strong_magnitude >> 8;
+-	if (!info->speed)
+-		info->speed = effect->u.rumble.weak_magnitude >> 9;
+-	info->direction = effect->direction < EFFECT_DIR_180_DEG ? 0 : 1;
+ 	schedule_work(&info->play_work);
  	return 0;
  }
-+
- static void hid_lg3ff_set_autocenter(struct input_dev *dev, u16 magnitude)
- {
- 	struct hid_device *hid = input_get_drvdata(dev);
-@@ -123,6 +132,13 @@ static void hid_lg3ff_set_autocenter(struct input_dev *dev, u16 magnitude)
+@@ -227,7 +246,7 @@ static int twl4030_vibra_probe(struct platform_device *pdev)
+ 	info->input_dev->close = twl4030_vibra_close;
+ 	__set_bit(FF_RUMBLE, info->input_dev->ffbit);
  
- static const signed short ff3_joystick_ac[] = {
- 	FF_CONSTANT,
-+	FF_RAMP,
-+	FF_PERIODIC,
-+	FF_SQUARE,
-+	FF_TRIANGLE,
-+	FF_SINE,
-+	FF_SAW_UP,
-+	FF_SAW_DOWN,
- 	FF_AUTOCENTER,
- 	-1
- };
-@@ -143,7 +159,7 @@ int lg3ff_init(struct hid_device *hid)
- 	for (i = 0; ff_bits[i] >= 0; i++)
- 		set_bit(ff_bits[i], dev->ffbit);
- 
--	error = input_ff_create_memless(dev, NULL, hid_lg3ff_play);
-+	error = input_ff_create_mlnx(dev, NULL, hid_lg3ff_play, FF_UPDATE_RATE);
- 	if (error)
- 		return error;
- 
+-	ret = input_ff_create_memless(info->input_dev, NULL, vibra_play);
++	ret = input_ff_create_mlnx(info->input_dev, NULL, vibra_play, FF_UPDATE_RATE);
+ 	if (ret < 0) {
+ 		dev_dbg(&pdev->dev, "couldn't register vibrator to FF\n");
+ 		return ret;
 -- 
 1.9.1
 
