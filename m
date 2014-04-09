@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758303AbaDIH46 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 03:56:58 -0400
-Received: from 1wt.eu ([62.212.114.60]:3706 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751460AbaDIH45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 03:56:57 -0400
-Date: Wed, 9 Apr 2014 09:56:24 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Neil Greatorex <neil@fatboyfat.co.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Matthew Minter <matthew_minter@xyratex.com>,
-        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>
-Subject: Re: [PATCH v2] bus: mvebu-mbus: Avoid setting an undefined window size
-Message-ID: <20140409075624.GA17071@1wt.eu>
-References: <1397000654-10849-1-git-send-email-jgunthorpe@obsidianresearch.com> <20140409061128.GC16465@1wt.eu> <20140409091234.20f2e547@skate> <20140409074752.GF16465@1wt.eu> <20140409095350.47029549@skate>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932597AbaDIH6z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 03:58:55 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:30726
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932187AbaDIH6w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 03:58:52 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(z579ehz98dI1432Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2dh87h2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh26d3h1151h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Wed, 9 Apr 2014 15:58:15 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Nicolin Chen <Guangyu.Chen@freescale.com>
+CC: <broonie@kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <alsa-devel@alsa-project.org>,
+        <timur@tabi.org>, <Li.Xiubo@freescale.com>,
+        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <rob@landley.net>, <galak@codeaurora.org>,
+        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
+        <pawel.moll@arm.com>, <robh+dt@kernel.org>
+Subject: Re: [PATCH v3 2/2] ARM: dts: Append clock bindings for sai2 on VF610
+ platform
+Message-ID: <20140409075812.GC28420@dragon>
+References: <cover.1396605772.git.Guangyu.Chen@freescale.com>
+ <08ba57a2fdce1a404a6bcb61e21e25509fcd6b30.1396605772.git.Guangyu.Chen@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20140409095350.47029549@skate>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <08ba57a2fdce1a404a6bcb61e21e25509fcd6b30.1396605772.git.Guangyu.Chen@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 09:53:50AM +0200, Thomas Petazzoni wrote:
-> Dear Willy Tarreau,
-> 
-> On Wed, 9 Apr 2014 09:47:52 +0200, Willy Tarreau wrote:
-> 
-> > > Yes, the panic is expected: Jason's patch is not *fixing* anything,
-> > > it's just telling you *why* it's going to panic.
-> > 
-> > I just thought that the EINVAL would prevent one from registering
-> > the device, which would be more useful (if at all possible).
-> 
-> Unfortunately, I don't think that's possible: the function that sets up
-> the MBus window is called by the emulated bridge code, i.e when the
-> Linux PCI core thinks it is doing a write to a bridge register. And I
-> don't think there is a way of "refusing" the write to let the Linux
-> PCI core know that it was not possible to set up the bridge BAR as it
-> was requested.
-> 
-> Maybe this is something that Jason can confirm/infirm. I remember
-> having a quick look at the core Linux PCI core to see if it was
-> somehow checking whether the bridge BAR has been properly configured,
-> but I think I concluded it was not the case, and it was just assuming
-> that write the memory base/limit in the bridge registers was
-> sufficient. 
+On Fri, Apr 04, 2014 at 06:08:13PM +0800, Nicolin Chen wrote:
+> Since we added fours clock to the DT binding, we should update the current
+> SAI dts/dtsi so as not to break their functions.
 
-OK thanks for the detailed explanation!
+If so, shouldn't the change be in the same patch as driver change?
 
-Willy
+Shawn
+
+> 
+> Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
+> Tested-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+>  arch/arm/boot/dts/vf610.dtsi | 6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
+> index d31ce1b..9fd0007 100644
+> --- a/arch/arm/boot/dts/vf610.dtsi
+> +++ b/arch/arm/boot/dts/vf610.dtsi
+> @@ -139,8 +139,10 @@
+>  				compatible = "fsl,vf610-sai";
+>  				reg = <0x40031000 0x1000>;
+>  				interrupts = <0 86 0x04>;
+> -				clocks = <&clks VF610_CLK_SAI2>;
+> -				clock-names = "sai";
+> +				clocks = <&clks VF610_CLK_SAI2>,
+> +				       <&clks VF610_CLK_SAI2>,
+> +				       <&clks 0>, <&clks 0>;
+> +				clock-names = "bus", "mclk1", "mclk2", "mclk3";
+>  				status = "disabled";
+>  			};
+>  
+> -- 
+> 1.8.4
+> 
+> 
 
