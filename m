@@ -1,157 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757880AbaDIAxS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 20:53:18 -0400
+	id S1757792AbaDIAxQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 20:53:16 -0400
 Received: from mga02.intel.com ([134.134.136.20]:55839 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757710AbaDIAxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 20:53:13 -0400
+	id S1756284AbaDIAxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Apr 2014 20:53:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,821,1389772800"; 
-   d="scan'208";a="489591598"
+   d="scan'208";a="489591593"
 From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 To: jic23@kernel.org
 Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
         Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Subject: [Patch v3 3/6] IIO: core: Modify scan element type
-Date: Tue,  8 Apr 2014 17:56:25 -0700
-Message-Id: <1397004988-31550-3-git-send-email-srinivas.pandruvada@linux.intel.com>
+Subject: [Patch v3 1/6] devres: introduce API "devm_kmemdup
+Date: Tue,  8 Apr 2014 17:56:23 -0700
+Message-Id: <1397004988-31550-1-git-send-email-srinivas.pandruvada@linux.intel.com>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1397004988-31550-1-git-send-email-srinivas.pandruvada@linux.intel.com>
-References: <1397004988-31550-1-git-send-email-srinivas.pandruvada@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current scan element type uses the following format:
-  [be|le]:[s|u]bits/storagebits[>>shift].
-To specify multiple elements in this type, added a repeat value.
-So new format is:
-  [be|le]:[s|u]bits/storagebits{X[repeat]}[>>shift].
-Here X is specifying how may times, real/storage bits are repeating.
-
-When X is value is 0 or 1, then repeat value is not used in the format,
-and it will be same as existing format.
+Introduce devm_kmemdup, which uses resource managed kmalloc.
+There are several request from maintainers to add this instead
+of using kmemdup.
 
 Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 ---
- drivers/iio/industrialio-buffer.c | 41 +++++++++++++++++++++++++++++++++------
- include/linux/iio/iio.h           |  9 +++++++++
- 2 files changed, 44 insertions(+), 6 deletions(-)
+ Documentation/driver-model/devres.txt |  1 +
+ drivers/base/devres.c                 | 21 +++++++++++++++++++++
+ include/linux/device.h                |  2 ++
+ 3 files changed, 24 insertions(+)
 
-diff --git a/drivers/iio/industrialio-buffer.c b/drivers/iio/industrialio-buffer.c
-index e108f2a..afc81b5 100644
---- a/drivers/iio/industrialio-buffer.c
-+++ b/drivers/iio/industrialio-buffer.c
-@@ -150,7 +150,16 @@ static ssize_t iio_show_fixed_type(struct device *dev,
- 		type = IIO_BE;
- #endif
- 	}
--	return sprintf(buf, "%s:%c%d/%d>>%u\n",
-+	if (this_attr->c->scan_type.repeat > 1)
-+		return sprintf(buf, "%s:%c%d/%d{%d[repeat]}>>%u\n",
-+		       iio_endian_prefix[type],
-+		       this_attr->c->scan_type.sign,
-+		       this_attr->c->scan_type.realbits,
-+		       this_attr->c->scan_type.storagebits,
-+		       this_attr->c->scan_type.repeat,
-+		       this_attr->c->scan_type.shift);
-+	else
-+		return sprintf(buf, "%s:%c%d/%d>>%u\n",
- 		       iio_endian_prefix[type],
- 		       this_attr->c->scan_type.sign,
- 		       this_attr->c->scan_type.realbits,
-@@ -474,14 +483,22 @@ static int iio_compute_scan_bytes(struct iio_dev *indio_dev,
- 	for_each_set_bit(i, mask,
- 			 indio_dev->masklength) {
- 		ch = iio_find_channel_from_si(indio_dev, i);
--		length = ch->scan_type.storagebits / 8;
-+		if (ch->scan_type.repeat > 1)
-+			length = ch->scan_type.storagebits / 8 *
-+				ch->scan_type.repeat;
-+		else
-+			length = ch->scan_type.storagebits / 8;
- 		bytes = ALIGN(bytes, length);
- 		bytes += length;
- 	}
- 	if (timestamp) {
- 		ch = iio_find_channel_from_si(indio_dev,
- 					      indio_dev->scan_index_timestamp);
--		length = ch->scan_type.storagebits / 8;
-+		if (ch->scan_type.repeat > 1)
-+			length = ch->scan_type.storagebits / 8 *
-+				ch->scan_type.repeat;
-+		else
-+			length = ch->scan_type.storagebits / 8;
- 		bytes = ALIGN(bytes, length);
- 		bytes += length;
- 	}
-@@ -957,7 +974,11 @@ static int iio_buffer_update_demux(struct iio_dev *indio_dev,
- 					       indio_dev->masklength,
- 					       in_ind + 1);
- 			ch = iio_find_channel_from_si(indio_dev, in_ind);
--			length = ch->scan_type.storagebits/8;
-+			if (ch->scan_type.repeat > 1)
-+				length = ch->scan_type.storagebits / 8 *
-+					ch->scan_type.repeat;
-+			else
-+				length = ch->scan_type.storagebits / 8;
- 			/* Make sure we are aligned */
- 			in_loc += length;
- 			if (in_loc % length)
-@@ -969,7 +990,11 @@ static int iio_buffer_update_demux(struct iio_dev *indio_dev,
- 			goto error_clear_mux_table;
- 		}
- 		ch = iio_find_channel_from_si(indio_dev, in_ind);
--		length = ch->scan_type.storagebits/8;
-+		if (ch->scan_type.repeat > 1)
-+			length = ch->scan_type.storagebits / 8 *
-+				ch->scan_type.repeat;
-+		else
-+			length = ch->scan_type.storagebits / 8;
- 		if (out_loc % length)
- 			out_loc += length - out_loc % length;
- 		if (in_loc % length)
-@@ -990,7 +1015,11 @@ static int iio_buffer_update_demux(struct iio_dev *indio_dev,
- 		}
- 		ch = iio_find_channel_from_si(indio_dev,
- 			indio_dev->scan_index_timestamp);
--		length = ch->scan_type.storagebits/8;
-+		if (ch->scan_type.repeat > 1)
-+			length = ch->scan_type.storagebits / 8 *
-+				ch->scan_type.repeat;
-+		else
-+			length = ch->scan_type.storagebits / 8;
- 		if (out_loc % length)
- 			out_loc += length - out_loc % length;
- 		if (in_loc % length)
-diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
-index 5629c92..324ae00 100644
---- a/include/linux/iio/iio.h
-+++ b/include/linux/iio/iio.h
-@@ -177,6 +177,14 @@ struct iio_event_spec {
-  *			shift:		Shift right by this before masking out
-  *					realbits.
-  *			endianness:	little or big endian
-+ *			repeat:		No. of times real/storage bits repeats.
-+ *					By default, when repeat is set to 0
-+ *					repeat value is treated as 1. When
-+ *					repeat value is 0 or 1, then there is
-+ *					no change in existing scan element
-+ *					type, in sysfs. When set to more than
-+ *					1, then the type element in sysfs will
-+ *					show repeat value.
-  * @info_mask_separate: What information is to be exported that is specific to
-  *			this channel.
-  * @info_mask_shared_by_type: What information is to be exported that is shared
-@@ -219,6 +227,7 @@ struct iio_chan_spec {
- 		u8	realbits;
- 		u8	storagebits;
- 		u8	shift;
-+		u8	repeat;
- 		enum iio_endian endianness;
- 	} scan_type;
- 	long			info_mask_separate;
+diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
+index 4f7897e..4999518 100644
+--- a/Documentation/driver-model/devres.txt
++++ b/Documentation/driver-model/devres.txt
+@@ -236,6 +236,7 @@ certainly invest a bit more effort into libata core layer).
+ MEM
+   devm_kzalloc()
+   devm_kfree()
++  devm_kmemdup()
+ 
+ IIO
+   devm_iio_device_alloc()
+diff --git a/drivers/base/devres.c b/drivers/base/devres.c
+index db4e264..d0914cb 100644
+--- a/drivers/base/devres.c
++++ b/drivers/base/devres.c
+@@ -831,3 +831,24 @@ void devm_kfree(struct device *dev, void *p)
+ 	WARN_ON(rc);
+ }
+ EXPORT_SYMBOL_GPL(devm_kfree);
++
++/**
++ * devm_kmemdup - Resource-managed kmemdup
++ * @dev: Device this memory belongs to
++ * @src: Memory region to duplicate
++ * @len: Memory region length
++ * @gfp: GFP mask to use
++ *
++ * Duplicate region of a memory using resource managed kmalloc
++ */
++void *devm_kmemdup(struct device *dev, const void *src, size_t len, gfp_t gfp)
++{
++	void *p;
++
++	p = devm_kmalloc(dev, len, gfp);
++	if (p)
++		memcpy(p, src, len);
++
++	return p;
++}
++EXPORT_SYMBOL_GPL(devm_kmemdup);
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 233bbbe..0b3117a 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -629,6 +629,8 @@ static inline void *devm_kcalloc(struct device *dev,
+ }
+ extern void devm_kfree(struct device *dev, void *p);
+ extern char *devm_kstrdup(struct device *dev, const char *s, gfp_t gfp);
++extern void *devm_kmemdup(struct device *dev, const void *src, size_t len,
++				gfp_t gfp);
+ 
+ void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res);
+ void __iomem *devm_request_and_ioremap(struct device *dev,
 -- 
 1.7.11.7
 
