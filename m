@@ -1,57 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932909AbaDIKCe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 06:02:34 -0400
-Received: from mga09.intel.com ([134.134.136.24]:28390 "EHLO mga09.intel.com"
+	id S932926AbaDIKCh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 06:02:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51309 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932187AbaDIKCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 06:02:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,825,1389772800"; 
-   d="scan'208";a="517505756"
-Date: Wed, 9 Apr 2014 13:01:47 +0300
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Johannes Berg <johannes@sipsolutions.net>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Cc: Chen-Yu Tsai <wens@csie.org>, Rhyland Klein <rklein@nvidia.com>,
-        Marc Dietrich <marvin24@gmx.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCHv3 0/5] net: rfkill: gpio: cleanup and a few new acpi ids
-Message-ID: <20140409100147.GB3083@xps8300>
-References: <1396360976-28657-1-git-send-email-heikki.krogerus@linux.intel.com>
- <1396946275.5936.2.camel@jlt4.sipsolutions.net>
+	id S932187AbaDIKCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 06:02:35 -0400
+Date: Wed, 9 Apr 2014 12:02:33 +0200
+From: Jan Kara <jack@suse.cz>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, willy@linux.intel.com
+Subject: Re: [PATCH v7 16/22] ext2: Remove ext2_aops_xip
+Message-ID: <20140409100233.GI32103@quack.suse.cz>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <0b6512aa46a504459f41d3c609fc20c93d4a911a.1395591795.git.matthew.r.wilcox@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1396946275.5936.2.camel@jlt4.sipsolutions.net>
+In-Reply-To: <0b6512aa46a504459f41d3c609fc20c93d4a911a.1395591795.git.matthew.r.wilcox@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, Apr 08, 2014 at 10:37:55AM +0200, Johannes Berg wrote:
-> On Tue, 2014-04-01 at 17:02 +0300, Heikki Krogerus wrote:
-> > I hope this one is OK with everyone.
+On Sun 23-03-14 15:08:42, Matthew Wilcox wrote:
+> We shouldn't need a special address_space_operations any more
 > 
-> It's fine with me. Are you expecting me to pick up any of these patches,
-> or do you want them to go through some other tree? Either way is fine
-> with me, but the first patch looks like something I probably shouldn't
-> be taking.
+> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+  Looks good. You can add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-The second patch depends on it.
-
-Stephen! Are you expecting any changes to board-paz00.c in this kernel
-cycle? If not, I think it would be easiest if Johannes, you take the
-whole set. What do you guys think?
-
-
-Thanks,
-
+								Honza
+> ---
+>  fs/ext2/ext2.h  | 1 -
+>  fs/ext2/inode.c | 7 +------
+>  fs/ext2/namei.c | 4 ++--
+>  3 files changed, 3 insertions(+), 9 deletions(-)
+> 
+> diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
+> index b30c3bd..b8b1c11 100644
+> --- a/fs/ext2/ext2.h
+> +++ b/fs/ext2/ext2.h
+> @@ -793,7 +793,6 @@ extern const struct file_operations ext2_xip_file_operations;
+>  
+>  /* inode.c */
+>  extern const struct address_space_operations ext2_aops;
+> -extern const struct address_space_operations ext2_aops_xip;
+>  extern const struct address_space_operations ext2_nobh_aops;
+>  
+>  /* namei.c */
+> diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
+> index 67124f0..7ca76da 100644
+> --- a/fs/ext2/inode.c
+> +++ b/fs/ext2/inode.c
+> @@ -890,11 +890,6 @@ const struct address_space_operations ext2_aops = {
+>  	.error_remove_page	= generic_error_remove_page,
+>  };
+>  
+> -const struct address_space_operations ext2_aops_xip = {
+> -	.bmap			= ext2_bmap,
+> -	.direct_IO		= ext2_direct_IO,
+> -};
+> -
+>  const struct address_space_operations ext2_nobh_aops = {
+>  	.readpage		= ext2_readpage,
+>  	.readpages		= ext2_readpages,
+> @@ -1393,7 +1388,7 @@ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
+>  	if (S_ISREG(inode->i_mode)) {
+>  		inode->i_op = &ext2_file_inode_operations;
+>  		if (test_opt(inode->i_sb, XIP)) {
+> -			inode->i_mapping->a_ops = &ext2_aops_xip;
+> +			inode->i_mapping->a_ops = &ext2_aops;
+>  			inode->i_fop = &ext2_xip_file_operations;
+>  		} else if (test_opt(inode->i_sb, NOBH)) {
+>  			inode->i_mapping->a_ops = &ext2_nobh_aops;
+> diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
+> index 7ca803f..0db888c 100644
+> --- a/fs/ext2/namei.c
+> +++ b/fs/ext2/namei.c
+> @@ -105,7 +105,7 @@ static int ext2_create (struct inode * dir, struct dentry * dentry, umode_t mode
+>  
+>  	inode->i_op = &ext2_file_inode_operations;
+>  	if (test_opt(inode->i_sb, XIP)) {
+> -		inode->i_mapping->a_ops = &ext2_aops_xip;
+> +		inode->i_mapping->a_ops = &ext2_aops;
+>  		inode->i_fop = &ext2_xip_file_operations;
+>  	} else if (test_opt(inode->i_sb, NOBH)) {
+>  		inode->i_mapping->a_ops = &ext2_nobh_aops;
+> @@ -126,7 +126,7 @@ static int ext2_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
+>  
+>  	inode->i_op = &ext2_file_inode_operations;
+>  	if (test_opt(inode->i_sb, XIP)) {
+> -		inode->i_mapping->a_ops = &ext2_aops_xip;
+> +		inode->i_mapping->a_ops = &ext2_aops;
+>  		inode->i_fop = &ext2_xip_file_operations;
+>  	} else if (test_opt(inode->i_sb, NOBH)) {
+>  		inode->i_mapping->a_ops = &ext2_nobh_aops;
+> -- 
+> 1.9.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 -- 
-heikki
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
