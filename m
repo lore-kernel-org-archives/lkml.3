@@ -1,127 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934133AbaDIQmQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:42:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19346 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933100AbaDIQmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:42:10 -0400
-Date: Wed, 9 Apr 2014 18:42:04 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2 5/6] uprobes/x86: Emulate rip-relative
-	conditional "short" jmp's
-Message-ID: <20140409164204.GD18486@redhat.com>
-References: <20140406201524.GA32694@redhat.com> <20140406201632.GA514@redhat.com> <20140407142723.GA8881@redhat.com> <1396997587.5056.61.camel@oc7886638347.ibm.com.usor.ibm.com>
+	id S934162AbaDIQnZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:43:25 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:5996 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933100AbaDIQnX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 12:43:23 -0400
+Date: Wed, 9 Apr 2014 12:42:49 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 2/5] tracepoint: Convert process iteration to use
+ for_each_process_thread()
+Message-ID: <20140409124249.4081e665@gandalf.local.home>
+In-Reply-To: <360091921.1294.1397060915052.JavaMail.zimbra@efficios.com>
+References: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
+	<1397059882-23063-3-git-send-email-fweisbec@gmail.com>
+	<360091921.1294.1397060915052.JavaMail.zimbra@efficios.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396997587.5056.61.camel@oc7886638347.ibm.com.usor.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/08, Jim Keniston wrote:
->
-> On Mon, 2014-04-07 at 16:27 +0200, Oleg Nesterov wrote:
-> >
-> > +#define CASE_COND					\
-> > +	COND(70, 71, XF(OF))				\
-> > +	COND(72, 73, XF(CF))				\
-> > +	COND(74, 75, XF(ZF))				\
-> > +	COND(78, 79, XF(SF))				\
-> > +	COND(7a, 7b, XF(PF))				\
-> > +	COND(76, 77, XF(CF) || XF(ZF))			\
-> > +	COND(7c, 7d, XF(SF) != XF(OF))			\
-> > +	COND(7e, 7f, XF(ZF) || XF(SF) != XF(OF))
-> > +
-> > +#define COND(op_y, op_n, expr)				\
-> > +	case 0x ## op_y: DO((expr) != 0)		\
-> > +	case 0x ## op_n: DO((expr) == 0)
-> > +
-> > +#define XF(xf)	(!!(flags & X86_EFLAGS_ ## xf))
->
-> All this macro magic seems way more clever than it is legible.
+On Wed, 9 Apr 2014 16:28:35 +0000 (UTC)
+Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
 
-No-no-no, please do not ask me to remove it ;) I understand that this
-is subjective, but to me it helps. Please see below.
-
-> Given that you're mapping 0f 8x to 7x (patch #6), is_cond_jmp_opcode()
-> could just be
-> 	return (0x70 <= opcode && opcode <= 0x7f);
-
-Heh. I blindly copied the opcodes from the manual, I didn't even realize
-that the range is continuous.
-
-But gcc is more clever than me, I removed "static" and
-
-	is_cond_jmp_opcode:
-		pushq   %rbp    #
-		movq    %rsp, %rbp      #,
-		call    mcount
-		leave
-		subl    $112, %edi      #, tmp62
-		cmpb    $15, %dil       #, tmp62
-		setbe   %al     #, tmp64
-		ret
-
-shows that at least this doesn't make the code worse.
-
-
-> I would keep the XF macro (although the !! operation to convert non-zero
-> to 1 isn't strictly needed)
-
-Well, "!!" is commonly used to make clear the fact we need a boolean,
-even if this is not strictly needed.
-
-Besides, in this case it is needed for "!=" above, or we would need to do
-
-	- XF(SF) != XF(OF)
-	+ !!XF(SF) != !!XF(OF)
-
-> and just do an explicit 16-case switch for
-> check_jmp_cond().
-
-I'd prefer to keep these macros. They are only used by is_cond_jmp_opcode()
-and check_jmp_cond(), and I really think they make the code more readable.
-
-And more editable. To remind, I am going to add the support for j*cxz/loop
-later. Just for completeness, we do not need this to fix the bug. In this
-case I will simply add
-
-	case 0xe3: DO(check_rcx(auprobe, regs))
-
-at the end of CASE_COND and that is all.
-
-> >  static bool ttt_emulate_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
+> ----- Original Message -----
+> > From: "Frederic Weisbecker" <fweisbec@gmail.com>
+> > To: "LKML" <linux-kernel@vger.kernel.org>
+> > Cc: "Frederic Weisbecker" <fweisbec@gmail.com>, "Andrew Morton" <akpm@linux-foundation.org>, "Ingo Molnar"
+> > <mingo@kernel.org>, "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>, "Oleg Nesterov" <oleg@redhat.com>, "Steven
+> > Rostedt" <rostedt@goodmis.org>
+> > Sent: Wednesday, April 9, 2014 12:11:19 PM
+> > Subject: [PATCH 2/5] tracepoint: Convert process iteration to use for_each_process_thread()
+> > 
+> > do_each_thread/while_each_thread iterators are deprecated by
+> > for_each_thread/for_each_process_thread() APIs.
+> > 
+> > Lets convert the callers in the tracepoint code. The ultimate
+> > goal is to remove the struct task_struct::thread_group field and
+> > the corresponding do_each_thread/while_each_thread iterators that are
+> > RCU unsafe.
+> > 
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > Cc: Oleg Nesterov <oleg@redhat.com>
+> > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > ---
+> >  kernel/tracepoint.c | 12 ++++++------
+> >  1 file changed, 6 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+> > index fb0a38a..00a7e8b 100644
+> > --- a/kernel/tracepoint.c
+> > +++ b/kernel/tracepoint.c
+> > @@ -561,15 +561,15 @@ static int sys_tracepoint_refcount;
+> >  void syscall_regfunc(void)
 > >  {
-> >  	unsigned long new_ip = regs->ip += auprobe->ttt.ilen;
-> > +	unsigned long disp = auprobe->ttt.disp;
->
-> Looks like a negative ttt.disp will get sign-extended like you want, but
-> still, making disp unsigned here doesn't seem quite right.
+> >  	unsigned long flags;
+> > -	struct task_struct *g, *t;
+> > +	struct task_struct *p, *t;
+> >  
+> >  	if (!sys_tracepoint_refcount) {
+> >  		read_lock_irqsave(&tasklist_lock, flags);
+> > -		do_each_thread(g, t) {
+> > +		for_each_process_thread(p, t) {
+> 
+> What are the locking rules for for_each_process_thread() ?
+> 
+> Is it required to hold RCU read-side lock ? (it's not the case here)
+> 
+> Is tasklist_lock read-side lock sufficient ?
 
-OK. I changed this line
+The tasklist_lock is all that is needed. Nothing about the list will
+change when that's held. Ideally we would like to start converting
+things to rcu, where it's OK if the list actually changes while you are
+iterating.
 
-	unsigned long disp = (long)auprobe->ttt.disp;
+But if you require the list to stay the same while you read all the
+tasks, then you need the bigger hammer (tasklist_lock).
 
-to make it clear that yes, disp can be negative. Or we could simply use s32,
-but then
+Also, this is just about iterating the tasklist list. If something
+within the loop requires rcu, then that's a different story.
 
-	regs->ip = new_ip + disp;
+-- Steve
 
-could look equally confusing.
-
-Thanks,
-
-Oleg.
-
+> 
+> A quick glance at those for_each iterator defines in sched.h was not
+> helpful in finding this information.
+> 
