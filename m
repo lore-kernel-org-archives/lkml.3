@@ -1,70 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933925AbaDIPjm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 11:39:42 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:50312 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933770AbaDIPj0 (ORCPT
+	id S933949AbaDIPkU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 11:40:20 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33550 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933477AbaDIPkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 11:39:26 -0400
-Date: Wed, 9 Apr 2014 11:39:23 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Matthew Whitehead <tedheadster@gmail.com>,
-        John Stultz <john.stultz@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mwhitehe@redhat.com, Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: nohz problem with idle time on old hardware
-Message-ID: <20140409113923.7dcaf183@gandalf.local.home>
-In-Reply-To: <20140409113143.6174143f@gandalf.local.home>
-References: <20131113113927.GA13875@mwhitehe.csb>
-	<alpine.DEB.2.02.1311131453500.30673@ionos.tec.linutronix.de>
-	<20131113102153.5f10e6b5@gandalf.local.home>
-	<20131113103134.5b8cf02f@gandalf.local.home>
-	<20131113105737.3f7a0b1b@gandalf.local.home>
-	<alpine.DEB.2.02.1311131706260.30673@ionos.tec.linutronix.de>
-	<20131113111257.482c2955@gandalf.local.home>
-	<20131113161829.GE4138@linux.vnet.ibm.com>
-	<20131113112338.7d303c0f@gandalf.local.home>
-	<20131113163552.GF4138@linux.vnet.ibm.com>
-	<alpine.DEB.2.02.1311132052240.30673@ionos.tec.linutronix.de>
-	<CAOh2x=koQ4tXdq5_Bi4Vbo_k1a=zosFA3e4zRJGjzysYmC-PEA@mail.gmail.com>
-	<20140409103138.29be16b9@gandalf.local.home>
-	<CAKohponY+4y8G875wy4GsO1hTqERc7-hYKY6uQvLn28+32VxVQ@mail.gmail.com>
-	<20140409112950.7be9f8ac@gandalf.local.home>
-	<20140409113143.6174143f@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Wed, 9 Apr 2014 11:40:16 -0400
+Date: Wed, 9 Apr 2014 17:38:49 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 14/15] pinctrl: sunxi: define A31 PL0/PL1 pins
+Message-ID: <20140409153849.GK28585@lukather>
+References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1397051478-4113-15-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="d6d1KVhp94hk3Jrm"
+Content-Disposition: inline
+In-Reply-To: <1397051478-4113-15-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Apr 2014 11:31:43 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
 
-> 
-> Hmm, looking at the code, I see it probably should still do the check.
-> 
-> OK, nevermind ;-)
+--d6d1KVhp94hk3Jrm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Reading even more of the code, now I'm totally confused :-)
+On Wed, Apr 09, 2014 at 03:51:17PM +0200, Boris BREZILLON wrote:
+> Define PL0/PL1 pins available on the A31 SoC.
+>=20
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> ---
+>  drivers/pinctrl/pinctrl-sunxi-pins.h | 8 ++++++++
+>  1 file changed, 8 insertions(+)
+>=20
+> diff --git a/drivers/pinctrl/pinctrl-sunxi-pins.h b/drivers/pinctrl/pinct=
+rl-sunxi-pins.h
+> index 3d60669..274cefa 100644
+> --- a/drivers/pinctrl/pinctrl-sunxi-pins.h
+> +++ b/drivers/pinctrl/pinctrl-sunxi-pins.h
+> @@ -2818,6 +2818,14 @@ static const struct sunxi_desc_pin sun6i_a31_pins[=
+] =3D {
+>  		  SUNXI_FUNCTION(0x0, "gpio_in"),
+>  		  SUNXI_FUNCTION(0x1, "gpio_out"),
+>  		  SUNXI_FUNCTION(0x2, "nand1")),	/* CE3 */
+> +	SUNXI_PIN(SUNXI_PINCTRL_PIN_PL0,
+> +		  SUNXI_FUNCTION(0x0, "gpio_in"),
+> +		  SUNXI_FUNCTION(0x1, "gpio_out"),
+> +		  SUNXI_FUNCTION(0x3, "p2wi")),		/* SCL */
+> +	SUNXI_PIN(SUNXI_PINCTRL_PIN_PL1,
+> +		  SUNXI_FUNCTION(0x0, "gpio_in"),
+> +		  SUNXI_FUNCTION(0x1, "gpio_out"),
+> +		  SUNXI_FUNCTION(0x3, "p2wi")),		/* SDA */
 
-When tick_setup_sched_timer() is called, if tick_nohz_enabled is set,
-then we set tick_nohz_active.
+If possible, I'd prefer to have this list as exhaustive as
+possible.
 
-This gets called by hrtimer_switch_to_hres(), and before that is
-called, the tick_check_oneshot_changed() will never get to the
-tick_nohz_switch_to_nohz() call.
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-Looks to me, the real answer is to nuke both the if statement *and* the
-setting of the tick_nohz_active in that function. Both looks a bit
-redundant to me.
+--d6d1KVhp94hk3Jrm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--- Steve
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTRWmJAAoJEBx+YmzsjxAggbYP/1M4fxdAcA9gWxq6EdoCVIpY
+ewlL0RvAIZNUp4iycQ8lhavEojGxJLVKRW8aiqXTdvCp5OO1YBooTeXtZyWRyx9e
+q9ExCwSkI1GyvYPBLekVtKyHCsqbolMuqwaGjeYinFU9J2wJPEmPv0nfF4KNWTSf
+YnqR0FyIHcaKJdZUshnVvOK5RFuE26vcwTLyCr0CPqrhQNfH0sZKyTQVSvgSDGD/
+SPMBpXc3nWAd2eAF46xahvSw/qtoT0U8gA2MSu0rpYSngCgzdcFM9W0i4ckuiHxQ
+v2szMzfmLA/tzS4pVvgD+V0reoC7q503jrm5qVkq60iQrHGrHlw2wQ2FLzf5YsSF
+wPIqtvuTJ5XGhIAhKBJOHn+NoYY8/geIIKbhl7+GWPPWin3EZgAseBOR5Hu3/O3e
+UQ3/k/gg+uHyMA0mTyQO+xU8a4fAOE3wmfhdbpBkBxaqf7FMUVxUBqqs3+V7okJX
+eqfZciL+RQ+ihTFWpuDoV5DZZ4SBHyeuzx5+PqrPP2ohMXb99CKzd1NqFr204E6x
+kdmagzvol93hv/MdyISF15CIAmhf7YX2OB+uDkAPExY2pn6/yzdM0ddNkXWVPawG
+8f7jopIBHIzmjRd4C0vrILMZAzDyRniM1Rdp8RlyNPJM1LwJChxwNYcTtSp4yEmW
+9g9aH6WLMrhexzvsdMQN
+=sumE
+-----END PGP SIGNATURE-----
+
+--d6d1KVhp94hk3Jrm--
