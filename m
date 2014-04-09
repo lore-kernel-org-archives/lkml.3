@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934307AbaDIUEI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 16:04:08 -0400
-Received: from www.sr71.net ([198.145.64.142]:48143 "EHLO blackbird.sr71.net"
+	id S934332AbaDIUHm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 16:07:42 -0400
+Received: from sam.nabble.com ([216.139.236.26]:38435 "EHLO sam.nabble.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933342AbaDIUEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 16:04:06 -0400
-Message-ID: <5345A7B3.7020005@sr71.net>
-Date: Wed, 09 Apr 2014 13:04:03 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S933342AbaDIUHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 16:07:41 -0400
+Date: Wed, 9 Apr 2014 13:07:40 -0700 (PDT)
+From: Arun S L <aruns@nvidia.com>
+To: linux-kernel@vger.kernel.org
+Message-ID: <1397074060904-837198.post@n7.nabble.com>
+In-Reply-To: <20140409155631.GP6518@sirena.org.uk>
+References: <1396656730-30145-1-git-send-email-aruns@nvidia.com> <20140409155631.GP6518@sirena.org.uk>
+Subject: Re: [PATCH] ASoC: dapm: Add support for multi register mux
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Dave Hansen <dave.hansen@intel.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: post 3.14 serial regression
-References: <5343416F.8010201@sr71.net>	<20140408122726.227f3da8@alan.etchedpixels.co.uk>	<5344642A.2020703@sr71.net>	<53446C57.5000504@intel.com>	<20140409003648.GB32273@kroah.com> <CAMuHMdXSa0Ku2f1CR3j5pGOp_joQomc2Cnz=apGRR1K0Eb2qOQ@mail.gmail.com>
-In-Reply-To: <CAMuHMdXSa0Ku2f1CR3j5pGOp_joQomc2Cnz=apGRR1K0Eb2qOQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2014 12:41 PM, Geert Uytterhoeven wrote:
-> Dave: If I understand it correctly, you use console=ttyS2, while the kernel
-> suddenly changed the order of the serial devices, so your port is no
-> longer ttyS2, but ttyS4. Hence the serial port is not found, and
-> uart_remove_one_port() is called on it, taking away your /dev/console for
-> userspace?
 
-Right.
+On Fri, Apr 04, 2014 at 05:12:10PM -0700, Arun Shamanna Lakshmi wrote:
+> 1. Modify soc_enum struct to handle pointers for reg and mask
+> 2. Add dapm get and put APIs for multi register one hot encoded mux
+> 3. Update snd_soc_dapm_update struct to support multiple reg update
 
-> Why does the serial port driver call uart_add_one_port() for ports that
-> don't exist?
-> Or if it does exist ("inaccessible and buried inside the system somewhere"),
-> how is it removed again?
+> If you've got several changes like this it's probably a sign that the
+> change ought to be split into a patch series.
 
-The ones buried inside the system are immaterial here.  I just wanted to
-explain why I was using a separate PCI card instead of the other serial
-ports.
+> I'm still not seeing any handling of the issues with having invalid
+> configurations written to the device during the process of carrying out
+> multi register updates; I did raise this with one of the earlier
+> versions but don't recall any response.
 
->>From the backtrace, it's the call below to uart_remove_one_port()
-> that removes the port?
-> 
-> /**
->  *      serial8250_register_8250_port - register a serial port
->  *      @up: serial port template
->  *
->  *      Configure the serial port specified by the request. If the
->  *      port exists and is in use, it is hung up and unregistered
->  *      first.
->  *
->  *      The port is then probed and if necessary the IRQ is autodetected
->  *      If this fails an error is returned.
->  *
->  *      On success the port is ready to use and the line number is returned.
->  */
-> int serial8250_register_8250_port(struct uart_8250_port *up)
-> {
->         ...
-> 
->         if (uart && uart->port.type != PORT_8250_CIR) {
->                 if (uart->port.dev)
->                         uart_remove_one_port(&serial8250_reg, &uart->port);
-> 
-> where was it added before?
+To handle the invalid configurations in case of a multi register update,
+the 'not selected registers' are cleared first and only then 'selected
+register'
+is set. This is ensured by initializing the snd_soc_dapm_update structure
+in the right order inside put_value_enum_onehot API.
 
-Remember, serial8250_find_match_or_unused() will also reuse *EXISTING*
-uart_ports if the port is of 'unknown' type.
+> I also think I agree with Takashi on this one - trying to implement this
+> without adding an abstraction for the control values is making the code
+> more complex than it needs to be, all the conditional paths for _ONEHOT
+> aren't pretty (and don't use switches which is the usual idiom for this
+> stuff if it's not indirected via functions).
 
-I believe that port got added during the addition of the
-serial8250_isa_devs, and now we're trying to reuse it since it is an
-unknown port type.
+To summarize, I need to add get and put function pointers inside kcontrol
+structure and use them during dapm_connect_mux and
+dapm_set_mixer_path_status. Then, a separate soc_enum_onehot structure
+can be used along with the above patch.
+
+I can probably first submit a patch for adding abstraction to control values
+and then submit the change for soc_enum_onehot.
+
+Please correct me if my understanding is wrong. 
+
+
+
+--
+View this message in context: http://linux-kernel.2935.n7.nabble.com/PATCH-ASoC-dapm-Add-support-for-multi-register-mux-tp835209p837198.html
+Sent from the Linux Kernel mailing list archive at Nabble.com.
