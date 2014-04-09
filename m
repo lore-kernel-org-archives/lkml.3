@@ -1,160 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934494AbaDIWLe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 18:11:34 -0400
-Received: from wsip-98-173-55-162.sd.sd.cox.net ([98.173.55.162]:41351 "EHLO
-	bilbo" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S934430AbaDIWLc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 18:11:32 -0400
-From: Allen Andrews <allen.andrews@emulex.com>
-Subject: [PATCH] nfs-rdma: Fix for FMR leaks
-To: trond.myklebust@primarydata.com
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 09 Apr 2014 14:48:56 -0700
-Message-ID: <20140409214855.16480.15853.stgit@bilbo>
-User-Agent: StGIT/0.14.3
+	id S934499AbaDIWPe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 18:15:34 -0400
+Received: from prod-mail-xrelay07.akamai.com ([72.246.2.115]:33728 "EHLO
+	prod-mail-xrelay07.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933705AbaDIWPd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 18:15:33 -0400
+Message-ID: <5345C683.2080307@akamai.com>
+Date: Wed, 09 Apr 2014 18:15:31 -0400
+From: Jason Baron <jbaron@akamai.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: "Luck, Tony" <tony.luck@intel.com>
+CC: Borislav Petkov <bp@alien8.de>, Aristeu Rozanski <aris@redhat.com>,
+        "hpa@zytor.com" <hpa@zytor.com>, "mingo@kernel.org" <mingo@kernel.org>,
+        "dougthompson@xmission.com" <dougthompson@xmission.com>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        "mitake@dcl.info.waseda.ac.jp" <mitake@dcl.info.waseda.ac.jp>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] ie31200_edac: Add driver
+References: <cover.1396645124.git.jbaron@akamai.com> <760765424abe31811027ff3efd078bc858b7d3ed.1396645124.git.jbaron@akamai.com> <20140409113552.GJ6529@pd.tnic> <20140409133433.GJ29214@redhat.com> <3908561D78D1C84285E8C5FCA982C28F31E22EAC@ORSMSX106.amr.corp.intel.com> <20140409173633.GN6529@pd.tnic> <5345980F.7070604@akamai.com> <20140409191454.GQ6529@pd.tnic> <5345A54D.2050808@akamai.com> <20140409201615.GS6529@pd.tnic> <3908561D78D1C84285E8C5FCA982C28F31E2358F@ORSMSX106.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31E2358F@ORSMSX106.amr.corp.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Two memory region leaks iwere found during testing:
+On 04/09/2014 05:33 PM, Luck, Tony wrote:
+>> Unfortunately, the box reporting the ue errors just went into transit (so
+>> that I can better examine this issue), so I will probably not be able to
+>> run this experiment on that specific box until next week.
+> 
+> Do you have any other logs from this machine.  Is there something
+> logged in one (or more) of the machine check banks when your EDAC
+> driver says that there are uncorrected errors?
+>
+> When the box is back  online again - I'd be interested to know if mcelog(8)
+> daemon reports any errors.   Grab the latest from mcelog.org, compile
+> and run as "mcelog --daemon".  Logs show up in /var/log/mcelog
+>
 
-1. rpcrdma_buffer_create: While allocating RPCRDMA_FRMR's
-ib_alloc_fast_reg_mr is called and then ib_alloc_fast_reg_page_list is
-called.  If ib_alloc_fast_reg_page_list returns an error it bails out of
-the routine dropping the last ib_alloc_fast_reg_mr frmr region creating a
-memory leak.  Added code to dereg the last frmr if
-ib_alloc_fast_reg_page_list fails.
 
-2. rpcrdma_buffer_destroy: While cleaning up, the routine will only free
-the MR's on the rb_mws list if there are rb_send_bufs present.  However, in
-rpcrdma_buffer_create while the rb_mws list is being built if one of the MR
-allocation requests fail after some MR's have been allocated on the rb_mws
-list the routine never gets to create any rb_send_bufs but instead jumps to
-the rpcrdma_buffer_destroy routine which will never free the MR's on rb_mws
-list because the rb_send_bufs were never created.   This leaks all the MR's
-on the rb_mws list that were created prior to one of the MR allocations
-failing.
+So when the driver sees uncorrected errors, I'm also seeing them in my
+memory scanning program - so they correspond nicely. I didn't see anything
+logged in /var/log/mcelog, but I will update to the latest when possible.
 
-Issue(2) was seen during testing. Our adapter had a finite number of MR's
-available and we created enough connections to where we saw an MR
-allocation failure on our Nth NFS connection request. After the kernel
-cleaned up the resources it had allocated for the Nth connection we noticed
-that FMR's had been leaked due to the coding error described above.
-
-Issue(1) was seen during a code review while debugging issue(2).
-
-Signed-off-by: Allen Andrews <allen.andrews@emulex.com>
----
-
- net/sunrpc/xprtrdma/verbs.c |   79 ++++++++++++++++++++++++-------------------
- 1 files changed, 44 insertions(+), 35 deletions(-)
-
-diff --git a/net/sunrpc/xprtrdma/verbs.c b/net/sunrpc/xprtrdma/verbs.c
-index 9372656..54f592d 100644
---- a/net/sunrpc/xprtrdma/verbs.c
-+++ b/net/sunrpc/xprtrdma/verbs.c
-@@ -1058,6 +1058,14 @@ rpcrdma_buffer_create(struct rpcrdma_buffer *buf, struct rpcrdma_ep *ep,
- 				dprintk("RPC:       %s: "
- 					"ib_alloc_fast_reg_page_list "
- 					"failed %i\n", __func__, rc);
-+
-+				rc = ib_dereg_mr(r->r.frmr.fr_mr);
-+				if (rc)
-+					dprintk("RPC:       %s:"
-+						" ib_dereg_mr"
-+						" failed %i\n",
-+						__func__, rc);
-+
- 				goto out;
- 			}
- 			list_add(&r->mw_list, &buf->rb_mws);
-@@ -1194,41 +1202,6 @@ rpcrdma_buffer_destroy(struct rpcrdma_buffer *buf)
- 			kfree(buf->rb_recv_bufs[i]);
- 		}
- 		if (buf->rb_send_bufs && buf->rb_send_bufs[i]) {
--			while (!list_empty(&buf->rb_mws)) {
--				r = list_entry(buf->rb_mws.next,
--					struct rpcrdma_mw, mw_list);
--				list_del(&r->mw_list);
--				switch (ia->ri_memreg_strategy) {
--				case RPCRDMA_FRMR:
--					rc = ib_dereg_mr(r->r.frmr.fr_mr);
--					if (rc)
--						dprintk("RPC:       %s:"
--							" ib_dereg_mr"
--							" failed %i\n",
--							__func__, rc);
--					ib_free_fast_reg_page_list(r->r.frmr.fr_pgl);
--					break;
--				case RPCRDMA_MTHCAFMR:
--					rc = ib_dealloc_fmr(r->r.fmr);
--					if (rc)
--						dprintk("RPC:       %s:"
--							" ib_dealloc_fmr"
--							" failed %i\n",
--							__func__, rc);
--					break;
--				case RPCRDMA_MEMWINDOWS_ASYNC:
--				case RPCRDMA_MEMWINDOWS:
--					rc = ib_dealloc_mw(r->r.mw);
--					if (rc)
--						dprintk("RPC:       %s:"
--							" ib_dealloc_mw"
--							" failed %i\n",
--							__func__, rc);
--					break;
--				default:
--					break;
--				}
--			}
- 			rpcrdma_deregister_internal(ia,
- 					buf->rb_send_bufs[i]->rl_handle,
- 					&buf->rb_send_bufs[i]->rl_iov);
-@@ -1236,6 +1209,42 @@ rpcrdma_buffer_destroy(struct rpcrdma_buffer *buf)
- 		}
- 	}
  
-+	while (!list_empty(&buf->rb_mws)) {
-+		r = list_entry(buf->rb_mws.next,
-+			struct rpcrdma_mw, mw_list);
-+		list_del(&r->mw_list);
-+		switch (ia->ri_memreg_strategy) {
-+		case RPCRDMA_FRMR:
-+			rc = ib_dereg_mr(r->r.frmr.fr_mr);
-+			if (rc)
-+				dprintk("RPC:       %s:"
-+					" ib_dereg_mr"
-+					" failed %i\n",
-+					__func__, rc);
-+			ib_free_fast_reg_page_list(r->r.frmr.fr_pgl);
-+			break;
-+		case RPCRDMA_MTHCAFMR:
-+			rc = ib_dealloc_fmr(r->r.fmr);
-+			if (rc)
-+				dprintk("RPC:       %s:"
-+					" ib_dealloc_fmr"
-+					" failed %i\n",
-+					__func__, rc);
-+			break;
-+		case RPCRDMA_MEMWINDOWS_ASYNC:
-+		case RPCRDMA_MEMWINDOWS:
-+			rc = ib_dealloc_mw(r->r.mw);
-+			if (rc)
-+				dprintk("RPC:       %s:"
-+					" ib_dealloc_mw"
-+					" failed %i\n",
-+					__func__, rc);
-+			break;
-+		default:
-+			break;
-+		}
-+	}
-+
- 	kfree(buf->rb_pool);
- }
+>> # ./rdmsr 0x179
+>> c09
+> 
+> So this processor does support CMCI - next question is whether each
+> bank support it (and got enabled by Linux) [can run on any system ... don't
+> need to wait for the one to finish transit)]
+> 
+> # for I in `seq 0 8`
+> do
+>        ./rdmsr 0x28$i
+> done
+> 
+> will print the MCi_CTL2 registers from each bank. Bit 30 (0x40000000)
+> shows CMCI enabled.
+>
+
+>From the similar system:
+
+# for i in `seq 0 8`; do ./rdmsr 0x28$i; done
+40000001
+40000001
+0
+40000001
+0
+40000001
+40000001
+40000001
+40000001
+
+So looks like cmci is eenabled on the banks. But like I said on the box with the ue errors I
+didn't see 'THR' or 'MCE' increment in /proc/interrupts.
+
  
+> On the name of the driver - can you throw in an underscore: ie3_12xx.c ?
+> 
+> Do you have systems from Sandy Bridge, Ivy Bridge and Haswell generations
+> (no suffix for Sandy Bridge, then v2 and v3) ... and does this driver work across all of
+> them?  If it is just for Haswell ... then "ie3_12xx_v3.c" might be a better name.
+> 
+
+I do have all the above systems. The one with the memory errors in a Sandy Bridge. On
+the other systems I can only say that the driver loads and reports the rank information
+correctly. IE I haven't hit the error paths on those.
+
+Thanks,
+
+-Jason
 
