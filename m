@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964870AbaDIRKK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 13:10:10 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:62647 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933100AbaDIRKI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 13:10:08 -0400
-From: Chris Cui <chris.wei.cui@gmail.com>
-To: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
-Cc: linux-kernel@vger.kernel.org, Chris Cui <chris.wei.cui@gmail.com>
-Subject: [PATCH V2] rtc: fix pcf8523 month definition
-Date: Thu, 10 Apr 2014 01:07:32 +0800
-Message-Id: <1397063252-26065-1-git-send-email-chris.wei.cui@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S934008AbaDIRNJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 13:13:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6135 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933686AbaDIRNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 13:13:07 -0400
+Date: Wed, 9 Apr 2014 19:12:51 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 1/5] sched: Convert thread_group_cputime() to use
+	for_each_thread()
+Message-ID: <20140409171251.GD27638@redhat.com>
+References: <1397059882-23063-1-git-send-email-fweisbec@gmail.com> <1397059882-23063-2-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397059882-23063-2-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the correct patch.
+On 04/09, Frederic Weisbecker wrote:
+>
+> @@ -295,16 +295,15 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
+>  
+>  	rcu_read_lock();
+>  	/* make sure we can trust tsk->thread_group list */
+> -	if (!likely(pid_alive(tsk)))
+> +	if (!likely(pid_alive(p)))
 
-PCF8523 uses 1-12 to represent month according to datasheet. 
-link: www.nxp.com/documents/data_sheet/PCF8523.pdf.
+You can simply remove this check now. for_each_thread() is always safe.
 
-Signed-off-by: Chris Cui <chris.wei.cui@gmail.com>
----
- drivers/rtc/rtc-pcf8523.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/rtc/rtc-pcf8523.c b/drivers/rtc/rtc-pcf8523.c
-index 5c8f822..4cdb64b 100644
---- a/drivers/rtc/rtc-pcf8523.c
-+++ b/drivers/rtc/rtc-pcf8523.c
-@@ -206,7 +206,7 @@ static int pcf8523_rtc_read_time(struct device *dev, struct rtc_time *tm)
- 	tm->tm_hour = bcd2bin(regs[2] & 0x3f);
- 	tm->tm_mday = bcd2bin(regs[3] & 0x3f);
- 	tm->tm_wday = regs[4] & 0x7;
--	tm->tm_mon = bcd2bin(regs[5] & 0x1f);
-+	tm->tm_mon = bcd2bin(regs[5] & 0x1f) - 1;
- 	tm->tm_year = bcd2bin(regs[6]) + 100;
- 
- 	return rtc_valid_tm(tm);
-@@ -229,7 +229,7 @@ static int pcf8523_rtc_set_time(struct device *dev, struct rtc_time *tm)
- 	regs[3] = bin2bcd(tm->tm_hour);
- 	regs[4] = bin2bcd(tm->tm_mday);
- 	regs[5] = tm->tm_wday;
--	regs[6] = bin2bcd(tm->tm_mon);
-+	regs[6] = bin2bcd(tm->tm_mon + 1);
- 	regs[7] = bin2bcd(tm->tm_year - 100);
- 
- 	msg.addr = client->addr;
--- 
-1.8.3.2
+Oleg.
 
