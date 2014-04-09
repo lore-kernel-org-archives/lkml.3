@@ -1,102 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934329AbaDIVZR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 17:25:17 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:36199 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933717AbaDIVZO (ORCPT
+	id S934398AbaDIVZm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 17:25:42 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:55776 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933717AbaDIVZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 17:25:14 -0400
-Message-ID: <5345BAB7.5090108@converseincode.com>
-Date: Wed, 09 Apr 2014 14:25:11 -0700
-From: Behan Webster <behanw@converseincode.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Compiling the Linux Kernel with Clang/LLVM 
-	<llvmlinux@lists.linuxfoundation.org>
-Subject: [GIT PULL] LLVMLinux patches for v3.15
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Wed, 9 Apr 2014 17:25:40 -0400
+Subject: Re: [RFC PATCH 4/6] uprobes/x86: Emulate rip-relative call's
+From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20140409154346.GB18486@redhat.com>
+References: <20140406201628.GA507@redhat.com>
+	 <1396995963.5056.46.camel@oc7886638347.ibm.com.usor.ibm.com>
+	 <20140409154346.GB18486@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 09 Apr 2014 14:25:35 -0700
+Message-ID: <1397078735.5261.20.camel@oc7886638347.ibm.com.usor.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14040921-8236-0000-0000-0000016ACBB5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Wed, 2014-04-09 at 17:43 +0200, Oleg Nesterov wrote:
+> On 04/08, Jim Keniston wrote:
+> >
+> > On Sun, 2014-04-06 at 22:16 +0200, Oleg Nesterov wrote:
+> > > 0xe8. Anything else?
 
-These are some initial updates to support compiling the kernel with clang.
-These patches have been through the proper reviews to the best of my 
-ability,
-and have been soaking in linux-next for a few weeks. These patches by
-themselves still do not completely allow clang to be used with the 
-kernel code,
-but lay the foundation for other patches which are still under review.
+Oleg, thanks for responding to (if not necessarily agreeing with) all my
+suggestions.  I think your code is solid, but I think we were wrong
+about one thing.  See below.
 
-Several other of the LLVMLinux patches have been already added via 
-Maintainer
-trees.
+> >
+> > No, I think e8 is the only call instruction uprobes will see.
+> 
+> Good.
+> 
+> > The following couple of paragraphs should be included in the code,
+> > perhaps merged with some of the related comments already there.  Without
+> > it, the code is pretty hard to follow.
+> 
+> OK, I'll try to improve the comments somehow...
+> 
+> > > Emulating of rip-relative call is trivial, we only need to additionally
+> > > push the ret-address. If this fails, we execute this instruction out of
+> > > line and this should trigger the trap, the probed application should die
+> > > or the same insn will be restarted if a signal handler expands the stack.
+> > > We do not even need ->post_xol() for this case.
+> > >
+> > > But there is a corner (and almost theoretical) case: another thread can
+> > > expand the stack right before we execute this insn out of line. In this
+> > > case it hit the same problem we are trying to solve. So we simply turn
+> > > the probed insn into "call 1f; 1:" and add ->post_xol() which restores
+> > > ->sp and restarts.
+> >
+> > Can you explain under what circumstances emulation of the call
+> > instruction would fail?  Will the copy_to_user() call that writes the
+> > return address to the stack grow the stack if necessary?
+> 
+> If necessary and if possible.
+> 
+> > Will
+> > single-stepping the mangled call instruction expand the stack?
+> 
+> In the likely case it won't. If copy_to_user() failes, then "call" should
+> fail too (again, ignoring the potential race with another thread which can
+> populate the memory ->sp - 8 points to).
 
-Thanks,
 
-Behan
+I've experimented with putting a uprobe on a call instruction (in a
+tight loop, with no ret) and a kprobe on expand_stack(), and my results
+seem to indicate that a single-stepped call instruction will
+successfully grow the stack vma where a call to copy_to_user() won't.
 
--- 
-Behan Webster
-behanw@converseincode.com
+So your trick of single-stepping the mangled call after the failed
+emulation, and then retrying the emulation should come into play in more
+than just theoretical situations.  We'd need it any time the probed call
+needs to grow the stack vma.
 
+I can send you the test kprobe/uprobe modules I used, if you like.
 
+Bottom line: no further code changes, but this would affect your
+comments.
 
-The following changes since commit 39de65aa2c3eee901db020a4f1396998e09602a3:
-
-   Merge branch 'i2c/for-next' of 
-git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux (2014-04-09 
-08:45:40 -0700)
-
-are available in the git repository at:
-
-
-   git://git.linuxfoundation.org/llvmlinux/kernel.git 
-tags/llvmlinux-for-v3.15
-
-for you to fetch changes up to c4586256f0c440bc2bdb29d2cbb915f0ca785d26:
-
-   x86: LLVMLinux: Fix "incomplete type const struct x86cpu_device_id" 
-(2014-04-09 13:44:35 -0700)
-
-----------------------------------------------------------------
-LLVMLinux Patches for v3.15
-
-----------------------------------------------------------------
-Behan Webster (4):
-       kbuild: LLVMLinux: Add Kbuild support for building kernel with Clang
-       LLVMLinux: Remove warning about returning an uninitialized variable
-       x86, acpi: LLVMLinux: Remove nested functions from Thinkpad ACPI
-       x86: LLVMLinux: Fix "incomplete type const struct x86cpu_device_id"
-
-Jan-Simon Möller (4):
-       kbuild: LLVMLinux: Adapt warnings for compilation with clang
-       Documentation: LLVMLinux: Update Documentation/dontdiff
-       kbuild: LLVMLinux: Fix LINUX_COMPILER definition script for 
-compilation with clang
-       x86 kbuild: LLVMLinux: More cc-options added for clang
-
-Mark Charlebois (1):
-       LLVMLinux: Add support for clang to compiler.h and new 
-compiler-clang.h
-
-  Documentation/dontdiff               |  3 ++
-  Makefile                             | 30 ++++++++++++-
-  arch/x86/Makefile                    |  2 +-
-  drivers/platform/x86/thinkpad_acpi.c | 86 
-+++++++++++++++++++-----------------
-  include/asm-generic/cmpxchg-local.h  |  3 +-
-  include/linux/compiler-clang.h       | 12 +++++
-  include/linux/compiler.h             |  7 +++
-  include/linux/mod_devicetable.h      |  5 +++
-  scripts/Makefile.build               | 12 ++++-
-  scripts/mkcompile_h                  |  2 +-
-  10 files changed, 116 insertions(+), 46 deletions(-)
-  create mode 100644 include/linux/compiler-clang.h
+Jim
 
