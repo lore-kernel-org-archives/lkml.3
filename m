@@ -1,122 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934058AbaDIQM2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:12:28 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:60841 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933811AbaDIQML (ORCPT
+	id S964807AbaDIQMw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:12:52 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:42346 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933811AbaDIQMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:12:11 -0400
+	Wed, 9 Apr 2014 12:12:47 -0400
+Message-ID: <53457234.4090203@oracle.com>
+Date: Wed, 09 Apr 2014 12:15:48 -0400
+From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130805 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <20140409090204.GA6583@linaro.org>
-References: <1396926910-11227-1-git-send-email-keescook@chromium.org>
-	<1396926910-11227-3-git-send-email-keescook@chromium.org>
-	<20140409090204.GA6583@linaro.org>
-Date: Wed, 9 Apr 2014 09:12:10 -0700
-X-Google-Sender-Auth: K1uDEaoPoPJRlOqGGQ_GK-VdhSU
-Message-ID: <CAGXu5jL0Exz0TSYE1EaPVwxik5+0y3QXTWLkU6Ti+9+ahHM=ow@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] ARM: mm: allow text and rodata sections to be read-only
-From: Kees Cook <keescook@chromium.org>
-To: Steve Capper <steve.capper@linaro.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Will Deacon <will.deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>, Alexander Holler <holler@ahsoftware.de>
-Content-Type: text/plain; charset=UTF-8
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: konrad.wilk@oracle.com, david.vrabel@citrix.com,
+        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86/xen: Fix 32-bit PV guests's usage of kernel_stack
+References: <1397052401-20220-1-git-send-email-boris.ostrovsky@oracle.com> <20140409112517.570b24e9@gandalf.local.home>
+In-Reply-To: <20140409112517.570b24e9@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 9, 2014 at 2:02 AM, Steve Capper <steve.capper@linaro.org> wrote:
-> Hi Kees,
+On 04/09/2014 11:25 AM, Steven Rostedt wrote:
+> On Wed, 09 Apr 2014 11:12:33 -0400
+> Boris Ostrovsky <boris.ostrovsky@oracle.com> wrote:
 >
-> On Mon, Apr 07, 2014 at 08:15:10PM -0700, Kees Cook wrote:
->> This introduces CONFIG_DEBUG_RODATA, making kernel text and rodata
->> read-only. Additionally, this splits rodata from text so that rodata can
->> also be NX, which may lead to wasted memory when aligning to SECTION_SIZE.
+>> Commit 198d208df4371734ac4728f69cb585c284d20a15 made 32-bit kernels use
+>> kernel_stack to point to thread_info. That change missed a couple of
+>> updates needed by Xen's PV guests:
 >>
->> The read-only areas are made writable during ftrace updates. Additional
->> work is needed for kprobes and kexec, so the feature is temporarily
->> marked as unavailable in Kconfig when those options are selected.
+>> 1. kernel_stack needs to be initialized for secondary CPUs
+>> 2. GET_THREAD_INFO() now uses %fs register which may not be the kernel's
+>> version when executing xen_iret()
 >>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
 >> ---
->>  arch/arm/include/asm/cacheflush.h |    9 ++++++++
->>  arch/arm/kernel/ftrace.c          |   17 ++++++++++++++
->>  arch/arm/kernel/vmlinux.lds.S     |    3 +++
->>  arch/arm/mm/Kconfig               |   12 ++++++++++
->>  arch/arm/mm/init.c                |   46 +++++++++++++++++++++++++++++++++++++
->>  5 files changed, 87 insertions(+)
+>>   arch/x86/xen/smp.c        |    3 ++-
+>>   arch/x86/xen/xen-asm_32.S |    4 ++++
+>>   2 files changed, 6 insertions(+), 1 deletion(-)
 >>
->> diff --git a/arch/arm/include/asm/cacheflush.h b/arch/arm/include/asm/cacheflush.h
->> index 8b8b61685a34..b6fea0a1a88b 100644
->> --- a/arch/arm/include/asm/cacheflush.h
->> +++ b/arch/arm/include/asm/cacheflush.h
->> @@ -487,4 +487,13 @@ int set_memory_rw(unsigned long addr, int numpages);
->>  int set_memory_x(unsigned long addr, int numpages);
->>  int set_memory_nx(unsigned long addr, int numpages);
->>
->> +#ifdef CONFIG_DEBUG_RODATA
->> +void mark_rodata_ro(void);
->> +void set_kernel_text_rw(void);
->> +void set_kernel_text_ro(void);
->> +#else
->> +static inline void set_kernel_text_rw(void) { }
->> +static inline void set_kernel_text_ro(void) { }
+>> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+>> index a18eadd..7005974 100644
+>> --- a/arch/x86/xen/smp.c
+>> +++ b/arch/x86/xen/smp.c
+>> @@ -441,10 +441,11 @@ static int xen_cpu_up(unsigned int cpu, struct task_struct *idle)
+>>   	irq_ctx_init(cpu);
+>>   #else
+>>   	clear_tsk_thread_flag(idle, TIF_FORK);
 >> +#endif
+>>   	per_cpu(kernel_stack, cpu) =
+>>   		(unsigned long)task_stack_page(idle) -
+>>   		KERNEL_STACK_OFFSET + THREAD_SIZE;
+>> -#endif
 >> +
->>  #endif
->> diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
->> index af9a8a927a4e..ea446ae09c89 100644
->> --- a/arch/arm/kernel/ftrace.c
->> +++ b/arch/arm/kernel/ftrace.c
->> @@ -15,6 +15,7 @@
->>  #include <linux/ftrace.h>
->>  #include <linux/uaccess.h>
->>  #include <linux/module.h>
->> +#include <linux/stop_machine.h>
->>
->>  #include <asm/cacheflush.h>
->>  #include <asm/opcodes.h>
->> @@ -35,6 +36,22 @@
->>
->>  #define      OLD_NOP         0xe1a00000      /* mov r0, r0 */
->>
->> +static int __ftrace_modify_code(void *data)
->> +{
->> +     int *command = data;
->> +
->> +     set_kernel_text_rw();
->> +     ftrace_modify_all_code(*command);
->> +     set_kernel_text_ro();
->> +
->> +     return 0;
->> +}
->
-> Would another approach be to keep all the kernel .text ro then override
-> probe_kernel_write (which has a weak reference), to create a separate
-> temporary rw mapping to the specific page that needs to be modified?
->
-> That way you only worry about TLB and cache maintenance for a smaller
-> area. Also, your kernel .text VAs never actually become writable, so
-> you don't need to worry as much about unauthorised changes whilst your
-> guard is temporarily down.
->
-> (Though lots of small changes could probably make this more
-> expensive, and you will need to double check aliasing in pre-ARMv7).
+>>   	xen_setup_runstate_info(cpu);
+>>   	xen_setup_timer(cpu);
+>>   	xen_init_lock_cpu(cpu);
+>> diff --git a/arch/x86/xen/xen-asm_32.S b/arch/x86/xen/xen-asm_32.S
+>> index 33ca6e4..d433637 100644
+>> --- a/arch/x86/xen/xen-asm_32.S
+>> +++ b/arch/x86/xen/xen-asm_32.S
+>> @@ -88,7 +88,11 @@ ENTRY(xen_iret)
+>>   	 * avoid having to reload %fs
+> Looks like this patch makes the above comment incorrect.
 
-As I understand it, early boot needs some of these areas RWX. Doing
-the protection during init-free means we can avoid all that and still
-allow the memory to get reclaimed. As to not doing section
-re-mappings, I share the same concern about it being very expensive to
-do lots of small changes. As such, I think this is the cleanest
-approach that is still portable.
 
--Kees
+I didn't notice this (it was full 3 lines above the change), it will 
+obviously have to be updated.
 
--- 
-Kees Cook
-Chrome OS Security
+
+>>   	 */
+>>   #ifdef CONFIG_SMP
+>> +	pushw %fs
+>> +	movl $(__KERNEL_PERCPU), %eax
+>> +	movl %eax, %fs
+>>   	GET_THREAD_INFO(%eax)
+>> +	popw %fs
+>>   	movl %ss:TI_cpu(%eax), %eax
+> Hmm, you're using GET_THREAD_INFO() to get the thread info to find the
+> current CPU for later use to avoid using %fs. ??
+>
+> Is it possible to just push the cpu on the kernel irq stack and be able
+> to retrieve it manually? Looks like the only reason to use the
+> thread_info here is to get to the CPU index for below.
+
+Or vcpu_info, which is what we are really after.
+
+However, it looks like using %fs/GET_THREAD_INFO() should be OK as well, 
+provided I deal with a potential faulting.
+
+-boris
+
+>
+>>   	movl %ss:__per_cpu_offset(,%eax,4), %eax
+>>   	mov %ss:xen_vcpu(%eax), %eax
+> -- Steve
+>
+
