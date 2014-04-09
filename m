@@ -1,53 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934001AbaDIQiG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 12:38:06 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:55013 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933100AbaDIQiD (ORCPT
+	id S933934AbaDIQkq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 12:40:46 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:51597 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933100AbaDIQkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 12:38:03 -0400
-From: Chris Cui <chris.wei.cui@gmail.com>
-To: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com
-Cc: linux-kernel@vger.kernel.org, Chris Cui <chris.wei.cui@gmail.com>
-Subject: [PATCH] rtc: fix pcf8523 bug in month definition.
-Date: Thu, 10 Apr 2014 00:34:49 +0800
-Message-Id: <1397061289-22334-1-git-send-email-chris.wei.cui@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Wed, 9 Apr 2014 12:40:45 -0400
+Date: Wed, 9 Apr 2014 18:40:41 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 2/5] tracepoint: Convert process iteration to use
+ for_each_process_thread()
+Message-ID: <20140409164037.GC17782@localhost.localdomain>
+References: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
+ <1397059882-23063-3-git-send-email-fweisbec@gmail.com>
+ <360091921.1294.1397060915052.JavaMail.zimbra@efficios.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <360091921.1294.1397060915052.JavaMail.zimbra@efficios.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PCF8523 uses 1-12 to represent month according to datasheet. 
-link: www.nxp.com/documents/data_sheet/PCF8523.pdf
+On Wed, Apr 09, 2014 at 04:28:35PM +0000, Mathieu Desnoyers wrote:
+> ----- Original Message -----
+> > From: "Frederic Weisbecker" <fweisbec@gmail.com>
+> > To: "LKML" <linux-kernel@vger.kernel.org>
+> > Cc: "Frederic Weisbecker" <fweisbec@gmail.com>, "Andrew Morton" <akpm@linux-foundation.org>, "Ingo Molnar"
+> > <mingo@kernel.org>, "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>, "Oleg Nesterov" <oleg@redhat.com>, "Steven
+> > Rostedt" <rostedt@goodmis.org>
+> > Sent: Wednesday, April 9, 2014 12:11:19 PM
+> > Subject: [PATCH 2/5] tracepoint: Convert process iteration to use for_each_process_thread()
+> > 
+> > do_each_thread/while_each_thread iterators are deprecated by
+> > for_each_thread/for_each_process_thread() APIs.
+> > 
+> > Lets convert the callers in the tracepoint code. The ultimate
+> > goal is to remove the struct task_struct::thread_group field and
+> > the corresponding do_each_thread/while_each_thread iterators that are
+> > RCU unsafe.
+> > 
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Cc: Ingo Molnar <mingo@kernel.org>
+> > Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > Cc: Oleg Nesterov <oleg@redhat.com>
+> > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > ---
+> >  kernel/tracepoint.c | 12 ++++++------
+> >  1 file changed, 6 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+> > index fb0a38a..00a7e8b 100644
+> > --- a/kernel/tracepoint.c
+> > +++ b/kernel/tracepoint.c
+> > @@ -561,15 +561,15 @@ static int sys_tracepoint_refcount;
+> >  void syscall_regfunc(void)
+> >  {
+> >  	unsigned long flags;
+> > -	struct task_struct *g, *t;
+> > +	struct task_struct *p, *t;
+> >  
+> >  	if (!sys_tracepoint_refcount) {
+> >  		read_lock_irqsave(&tasklist_lock, flags);
+> > -		do_each_thread(g, t) {
+> > +		for_each_process_thread(p, t) {
+> 
+> What are the locking rules for for_each_process_thread() ?
+> 
+> Is it required to hold RCU read-side lock ? (it's not the case here)
+> 
+> Is tasklist_lock read-side lock sufficient ?
 
-Signed-off-by: Chris Cui <chris.wei.cui@gmail.com>
----
- drivers/rtc/rtc-pcf8523.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+It's the same requirements than do_each_thread while_each_thread: tasklist_lock
+or RCU. Except that it's really RCU-safe. while_each_thread isn't really
+safe due to issues with concurrent exec/de_thread()
 
-diff --git a/drivers/rtc/rtc-pcf8523.c b/drivers/rtc/rtc-pcf8523.c
-index 5c8f822..56796a7 100644
---- a/drivers/rtc/rtc-pcf8523.c
-+++ b/drivers/rtc/rtc-pcf8523.c
-@@ -204,7 +204,7 @@ static int pcf8523_rtc_read_time(struct device *dev, struct rtc_time *tm)
- 	tm->tm_sec = bcd2bin(regs[0] & 0x7f);
- 	tm->tm_min = bcd2bin(regs[1] & 0x7f);
- 	tm->tm_hour = bcd2bin(regs[2] & 0x3f);
--	tm->tm_mday = bcd2bin(regs[3] & 0x3f);
-+	tm->tm_mday = bcd2bin(regs[3] & 0x3f) - 1;
- 	tm->tm_wday = regs[4] & 0x7;
- 	tm->tm_mon = bcd2bin(regs[5] & 0x1f);
- 	tm->tm_year = bcd2bin(regs[6]) + 100;
-@@ -229,7 +229,7 @@ static int pcf8523_rtc_set_time(struct device *dev, struct rtc_time *tm)
- 	regs[3] = bin2bcd(tm->tm_hour);
- 	regs[4] = bin2bcd(tm->tm_mday);
- 	regs[5] = tm->tm_wday;
--	regs[6] = bin2bcd(tm->tm_mon);
-+	regs[6] = bin2bcd(tm->tm_mon + 1);
- 	regs[7] = bin2bcd(tm->tm_year - 100);
- 
- 	msg.addr = client->addr;
--- 
-1.8.3.2
+Then it depends on your requirement, if you can tolerate concurrent
+adds and removals or not. Here tasklist_lock seems required or we may miss
+some tasks' syscall traces.
 
+> 
+> A quick glance at those for_each iterator defines in sched.h was not
+> helpful in finding this information.
+
+Agreed, I'm going to add comments to precise that.
