@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511AbaDIA6L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Apr 2014 20:58:11 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:32970 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756263AbaDIA6J (ORCPT
+	id S1757481AbaDIBDw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Apr 2014 21:03:52 -0400
+Received: from mail-bk0-f53.google.com ([209.85.214.53]:42479 "EHLO
+	mail-bk0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756416AbaDIBDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Apr 2014 20:58:09 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jolsa@redhat.com, jmario@redhat.com, fowles@inreach.com,
-        peterz@infradead.org, eranian@google.com, andi.kleen@intel.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Richard Fowles <rfowles@redhat.com>
-Subject: Re: [PATCH 03/15 V3] perf c2c: Shared data analyser
-References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
-	<1395689826-215033-4-git-send-email-dzickus@redhat.com>
-	<87a9bwxq64.fsf@sejong.aot.lge.com> <20140408142226.GV8488@redhat.com>
-Date: Wed, 09 Apr 2014 09:58:04 +0900
-In-Reply-To: <20140408142226.GV8488@redhat.com> (Don Zickus's message of "Tue,
-	8 Apr 2014 10:22:26 -0400")
-Message-ID: <87ioqjuxnn.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 8 Apr 2014 21:03:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Tue, 8 Apr 2014 18:03:27 -0700
+X-Google-Sender-Auth: FNtlRoq0oqTneWdt6iHukFrvu7o
+Message-ID: <CAB=NE6VvyBKzEg=ErZzQMktY8eLytQ21JCPrOQbxvZ9m-nqHkw@mail.gmail.com>
+Subject: Bumping required kernels to 3.0 for Linux backports ?
+To: "backports@vger.kernel.org" <backports@vger.kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Felix Fietkau <nbd@openwrt.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Apr 2014 10:22:26 -0400, Don Zickus wrote:
-> On Tue, Apr 08, 2014 at 03:59:15PM +0900, Namhyung Kim wrote:
->> Hi Don,
->> 
->> On Mon, 24 Mar 2014 15:36:54 -0400, Don Zickus wrote:
->> > From: Arnaldo Carvalho de Melo <acme@redhat.com>
->> >
->> > This is the start of a new perf tool that will collect information about
->> > memory accesses and analyse it to find things like hot cachelines, etc.
->> 
->> So why not integrating this into existing 'perf mem' command if it's all
->> about analyzing memory accesses?
->
-> Our expectations were different.  We expeted to do system-wide analysis
-> with loads and stores.  With 'perf mem' you didn't have the ability to
-> anlayze both load and stores at the same time.
+Folks,
 
-But it's very simple to change perf mem to work with the both IMHO.
+we have a age old dance of random parties, in particular the embedded
+folks, ending up with random ancient kernels on embedded devices. I've
+tried to carefully document a few ideas on why and how I believe we
+can make automatic kernel backporting scale [0] and part of this will
+be to try to bring consensus about a unified front to persuade users,
+partners, customers, whatever, to be at least on a kernel listed as
+supported on kernel.org. Today we backport down to the last 30
+kernels, from 2.6.24 up to 3.14 and while this is manageable right now
+I expect the number of supported drivers and features to keep
+increasing (I've stopped counting). I am very aware of the reasons to
+support a slew of old kernels, but its nothing but our own fault for
+not educating enough about the importance on upgrading. I realize this
+is an age old issue, but since I think we need scale backports and
+wish to remove older kernels from it fast, I wanted to see if any
+folks might have ideas on what can help here other than saying, 'if
+you use Linux backports, your drivers will be automatically backported
+and supported'.
 
->
-> In all my private conversations with Stephane, Arnalado and Jiri, it was
-> never brought up.  We had just assumed that is made more sense to keep it
-> separate.
+To start off -- what's the *last* kernel you realistically need for
+your users to use backports right now? Is it really 2.6.25? Would
+anyone kick and scream if for the backports-3.15 release try take
+things up to support only down to least 3.0 *right now* ?
 
-Well, I'm not sure ;-)  Yes, the c2c is a complex tool which might
-deserve an own command, but the functionality is very similar and I
-guess there's something to share between them.
+[0] http://www.do-not-panic.com/2014/04/automatic-linux-kernel-backporting-with-coccinelle.html
 
-Thanks,
-Namhyung
+  Luis
