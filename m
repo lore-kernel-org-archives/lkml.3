@@ -1,118 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933292AbaDINSc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 09:18:32 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:56967 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933002AbaDINS3 (ORCPT
+	id S933377AbaDINUj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 09:20:39 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:25720 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933121AbaDINU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 09:18:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140409113246.GA8778@pd.tnic>
-References: <1393770760-32550-1-git-send-email-punnaia@xilinx.com>
-	<a1a9e47a-069c-4285-9899-d5a58cf532c2@CO9EHSMHS003.ehs.local>
-	<20140409113246.GA8778@pd.tnic>
-Date: Wed, 9 Apr 2014 08:18:28 -0500
-Message-ID: <CAL_Jsq+gszc+R_BrLtHKEBGYd=3T+sE1d+-HoF9aYZt6C2k5-g@mail.gmail.com>
-Subject: Re: [RFC PATCH] edac: add support for ARM PL310 L2 cache parity
-From: Rob Herring <robherring2@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-edac@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        kpc528@gmail.com, kalluripunnaiahchoudary@gmail.com,
-        punnaia@xilinx.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 9 Apr 2014 09:20:27 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-9e-53454919b14a
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH 4/4] extcon: max8997: Use power efficient workqueue for delayed
+ cable detection
+Date: Wed, 09 Apr 2014 15:20:15 +0200
+Message-id: <1397049615-13130-4-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
+In-reply-to: <1397049615-13130-1-git-send-email-k.kozlowski@samsung.com>
+References: <1397049615-13130-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGJMWRmVeSWpSXmKPExsVy+t/xy7qSnq7BBvuvcFpc//Kc1eL1C0OL
+	y7vmsFncblzB5sDi0bdlFaPH501yAUxRXDYpqTmZZalF+nYJXBmX3zcwF2xjr5h8o5+tgXE1
+	WxcjJ4eEgInE6mVnmCFsMYkL99YDxbk4hASWMkrM2D0HLCEk0Mckcas/HsRmEzCW2Lx8CViz
+	iEChxJMNV8FsZgFDiZ/v/rCD2MICiRLLvk5kBbFZBFQlet/dB4vzCrhLPPj7FGqZgsSyL2vB
+	bE4BD4nJ/1ayQ+xyl2he0Mw0gZF3ASPDKkbR1NLkguKk9FxDveLE3OLSvHS95PzcTYyQsPiy
+	g3HxMatDjAIcjEo8vAqWLsFCrIllxZW5hxglOJiVRHjbDFyDhXhTEiurUovy44tKc1KLDzEy
+	cXBKNTAGC9T272U7teBW5jSmBWHi+u+vdRjzc0c5V92b+WpBsItESKb+KpFZRi7x87a8O3xn
+	ntIKB2cF952nxXvvie9Zu7Xc8OB8O+nAj92HvPf77vy7Lk1w35kg3hUnE0v33J7p3rL91rra
+	gtiSepm8NJ5dTxMv1UZ2VW/eqfXmg2zpp68OWUbJnQlKLMUZiYZazEXFiQD7uX156QEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 9, 2014 at 6:32 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Sun, Mar 02, 2014 at 08:02:40PM +0530, Punnaiah Choudary Kalluri wrote:
->> Add support for ARM Pl310 L2 cache controller parity error
->>
->> Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
->> ---
->>  .../devicetree/bindings/edac/pl310_edac_l2.txt     |   19 ++
->>  drivers/edac/Kconfig                               |    7 +
->>  drivers/edac/Makefile                              |    1 +
->>  drivers/edac/pl310_edac_l2.c                       |  236 ++++++++++++++++++++
->>  4 files changed, 263 insertions(+), 0 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/edac/pl310_edac_l2.txt
->>  create mode 100644 drivers/edac/pl310_edac_l2.c
->>
->> diff --git a/Documentation/devicetree/bindings/edac/pl310_edac_l2.txt b/Documentation/devicetree/bindings/edac/pl310_edac_l2.txt
->> new file mode 100644
->> index 0000000..94fbb8d
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/edac/pl310_edac_l2.txt
->> @@ -0,0 +1,19 @@
->> +Pl310 L2 Cache EDAC driver, it does reports the data and tag ram parity errors.
->> +
->> +Required properties:
->> +- compatible: Should be "arm,pl310-cache".
->> +- intterupts: Interrupt number to the cpu.
->> +- reg: Physical base address and size of cache controller's memory mapped
->> +  registers
->> +
->> +Example:
->> +++++++++
->> +
->> +     L2: cache-controller {
->> +             compatible = "arm,pl310-cache";
->> +             interrupts = <0 2 4>;
->> +             reg = <0xf8f02000 0x1000>;
->> +     };
->> +
->> +PL310 L2 Cache EDAC driver detects the Parity enable state by reading the
->> +appropriate control register.
->> diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
->> index 878f090..059ac31 100644
->> --- a/drivers/edac/Kconfig
->> +++ b/drivers/edac/Kconfig
->> @@ -326,6 +326,13 @@ config EDAC_TILE
->>         Support for error detection and correction on the
->>         Tilera memory controller.
->>
->> +config EDAC_PL310_L2
->> +     tristate "Pl310 L2 Cache Controller"
->> +     depends on EDAC_MM_EDAC && ARM
->> +     help
->> +       Support for parity error detection on L2 cache controller
->> +       data and tag ram memory
->> +
->
->
-> Ok, so I'm looking at this after having looked at the synopsys thing
-> and it looks very similar in functionality - it does the basic dance of
-> registering and setting up stuff, only using different devicetree nodes,
-> regs, etc.
->
-> However, it adds a new file under drivers/edac/ and I'm wondering if it
-> wouldn't be better to simply create a xilinx_edac.c and put all your
-> stuff in there, maybe even share code by abstracting it nicely. Having
-> a separate driver only for a single L2 cache controller seems kinda too
-> granulary for me.
+Schedule delayed cable detection work on power efficient workqueue
+so the scheduler won't wake up idle core for that work.
+This extends the idle time for CPU cores and conserves power.
 
-I don't think so, the PL310 is present on lots of ARM chips besides
-Xilinx. I don't know how many support parity as that is optional. In
-fact the highbank_l2_edac.c is for the PL310 as well, but the
-registers it uses is all custom logic added for ECC and there is no
-part of the PL310 h/w used by the driver.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+---
+ drivers/extcon/extcon-max8997.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-If there is lots duplication, then that's a sign the framework needs
-to handle more of the boilerplate pieces. There could be a "simple"
-driver/library for devices which are no more than some registers, an
-interrupt handler and static information about the type of EDAC
-device.
+diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
+index 5e1b88cecb76..223e6b068c98 100644
+--- a/drivers/extcon/extcon-max8997.c
++++ b/drivers/extcon/extcon-max8997.c
+@@ -770,7 +770,8 @@ static int max8997_muic_probe(struct platform_device *pdev)
+ 	 * driver should notify cable state to upper layer.
+ 	 */
+ 	INIT_DELAYED_WORK(&info->wq_detcable, max8997_muic_detect_cable_wq);
+-	schedule_delayed_work(&info->wq_detcable, delay_jiffies);
++	queue_delayed_work(system_power_efficient_wq, &info->wq_detcable,
++			delay_jiffies);
+ 
+ 	return 0;
+ 
+-- 
+1.8.3.2
 
-Rob
