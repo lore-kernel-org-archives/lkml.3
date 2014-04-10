@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965478AbaDJD5k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:57:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41182 "EHLO
+	id S965489AbaDJD6D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:58:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41175 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934646AbaDJDWh (ORCPT
+	with ESMTP id S934917AbaDJDWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:37 -0400
+	Wed, 9 Apr 2014 23:22:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Julius Werner <jwerner@chromium.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
         Ben Hutchings <ben@decadent.org.uk>,
         Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 097/134] xhci: quirk for extra long delay for S4
-Date: Wed,  9 Apr 2014 20:23:33 -0700
-Message-Id: <20140410032312.151903296@linuxfoundation.org>
+Subject: [PATCH 3.4 096/134] usb: hub: Clear Port Reset Change during init/resume
+Date: Wed,  9 Apr 2014 20:23:32 -0700
+Message-Id: <20140410032312.031855798@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -29,83 +29,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Julius Werner <jwerner@chromium.org>
 
-commit 455f58925247e8a1a1941e159f3636ad6ee4c90b upstream.
+commit e92aee330837e4911553761490a8fb843f2053a6 upstream.
 
-It has been reported that this chipset really cannot
-sleep without this extraordinary delay.
+This patch adds the Port Reset Change flag to the set of bits that are
+preemptively cleared on init/resume of a hub. In theory this bit should
+never be set unexpectedly... in practice it can still happen if BIOS,
+SMM or ACPI code plays around with USB devices without cleaning up
+correctly. This is especially dangerous for XHCI root hubs, which don't
+generate any more Port Status Change Events until all change bits are
+cleared, so this is a good precaution to have (similar to how it's
+already done for the Warm Port Reset Change flag).
 
-This patch should be backported, in order to ensure this host functions
-under stable kernels.  The last quirk for Fresco Logic hosts (commit
-bba18e33f25072ebf70fd8f7f0cdbf8cdb59a746 "xhci: Extend Fresco Logic MSI
-quirk.") was backported to stable kernels as old as 2.6.36.
-
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Julius Werner <jwerner@chromium.org>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 [bwh: Backported to 3.2:
  - Adjust context
- - Use xhci_dbg() instead of xhci_dbg_trace()]
+ - s/usb_clear_port_feature/clear_port_feature/]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 [yangyl: Backported to 3.4: Adjust context]
 Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/usb/host/xhci-pci.c |    8 ++++++++
- drivers/usb/host/xhci.c     |    7 ++++++-
- drivers/usb/host/xhci.h     |    1 +
- 3 files changed, 15 insertions(+), 1 deletion(-)
+ drivers/usb/core/hub.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -67,6 +67,14 @@ static void xhci_pci_quirks(struct devic
- 			xhci_dbg(xhci, "QUIRK: Fresco Logic xHC needs configure"
- 					" endpoint cmd after reset endpoint\n");
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -920,6 +920,11 @@ static void hub_activate(struct usb_hub
+ 			clear_port_feature(hub->hdev, port1,
+ 					USB_PORT_FEAT_C_ENABLE);
  		}
-+		if (pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK &&
-+				pdev->revision == 0x4) {
-+			xhci->quirks |= XHCI_SLOW_SUSPEND;
-+			xhci_dbg(xhci,
-+				"QUIRK: Fresco Logic xHC revision %u"
-+				"must be suspended extra slowly",
-+				pdev->revision);
++		if (portchange & USB_PORT_STAT_C_RESET) {
++			need_debounce_delay = true;
++			clear_port_feature(hub->hdev, port1,
++					USB_PORT_FEAT_C_RESET);
 +		}
- 		/* Fresco Logic confirms: all revisions of this chip do not
- 		 * support MSI, even though some of them claim to in their PCI
- 		 * capabilities.
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -886,6 +886,7 @@ static void xhci_clear_command_ring(stru
- int xhci_suspend(struct xhci_hcd *xhci)
- {
- 	int			rc = 0;
-+	unsigned int		delay = XHCI_MAX_HALT_USEC;
- 	struct usb_hcd		*hcd = xhci_to_hcd(xhci);
- 	u32			command;
- 
-@@ -904,8 +905,12 @@ int xhci_suspend(struct xhci_hcd *xhci)
- 	command = xhci_readl(xhci, &xhci->op_regs->command);
- 	command &= ~CMD_RUN;
- 	xhci_writel(xhci, command, &xhci->op_regs->command);
-+
-+	/* Some chips from Fresco Logic need an extraordinary delay */
-+	delay *= (xhci->quirks & XHCI_SLOW_SUSPEND) ? 10 : 1;
-+
- 	if (handshake(xhci, &xhci->op_regs->status,
--		      STS_HALT, STS_HALT, XHCI_MAX_HALT_USEC)) {
-+		      STS_HALT, STS_HALT, delay)) {
- 		xhci_warn(xhci, "WARN: xHC CMD_RUN timeout\n");
- 		spin_unlock_irq(&xhci->lock);
- 		return -ETIMEDOUT;
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1509,6 +1509,7 @@ struct xhci_hcd {
- #define XHCI_COMP_MODE_QUIRK	(1 << 14)
- #define XHCI_AVOID_BEI		(1 << 15)
- #define XHCI_PLAT		(1 << 16)
-+#define XHCI_SLOW_SUSPEND	(1 << 17)
- 	unsigned int		num_active_eps;
- 	unsigned int		limit_active_eps;
- 	/* There are two roothubs to keep track of bus suspend info for */
+ 		if ((portchange & USB_PORT_STAT_C_BH_RESET) &&
+ 				hub_is_superspeed(hub->hdev)) {
+ 			need_debounce_delay = true;
 
 
