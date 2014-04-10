@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965705AbaDJJhF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 05:37:05 -0400
-Received: from moutng.kundenserver.de ([212.227.17.13]:52396 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965656AbaDJJg7 (ORCPT
+	id S965669AbaDJJgT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 05:36:19 -0400
+Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.162]:58807 "EHLO
+	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934852AbaDJJgQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 05:36:59 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko.stuebner@bq.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Florian Vaussard <florian.vaussard@epfl.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Silvio F <silvio.fricke@gmail.com>, Kumar Gala <galak@codeaurora.org>,
-        Olof Johansson <olof@lixom.net>, Jonathan Cameron <jic23@kernel.org>
-Subject: Re: [PATCH 3/4] arm: add basic support for Mediatek MT6589 boards
-Date: Thu, 10 Apr 2014 11:36:53 +0200
-Message-ID: <8724412.Xp2CkgARik@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53465A4B.4040906@free-electrons.com>
-References: <1397072736-10793-1-git-send-email-matthias.bgg@gmail.com> <CABuKBeKnEw38sQYwrkheoWetZZcPTJhKRsBK4a62FS6-6dRFTA@mail.gmail.com> <53465A4B.4040906@free-electrons.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:7EjjxJ7RFUxFE0erCGR/MEzmSvjfi3UBdpJPyk1tVFF
- lV3w4yCGMBm0YBnt1HPqGCNqfLzxinK4KGpGvPWogiZ3TO/AyQ
- JtKbzcj6ruJYtCL6+5/3+evpZmANOqPkoB0uMNORSHHRwsEAyt
- 4bhp8U8mP6JCtrunZtp9baIN/IFDPro2hJNHfXuqDrycIkq6Ne
- okdd+0vrRx0F8Nvu+n4mXEaBR5j+Oi/50BogxKqK9u6jo/4/zz
- 4TmkpY6mWyDViw/i9QHBmotuRnOmjxc2XfzGbR5K/v17tHERpq
- 8g0hWU8HnFLueWGhdPYjVqh7lzHSSN31JNC+HNE/AWW9ScnAEb
- 1HOgXdrBEAbIRpxMpoiM=
+	Thu, 10 Apr 2014 05:36:16 -0400
+X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat4jNPvwo0=
+X-RZG-CLASS-ID: mo00
+From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Subject: [PATCH] bma150: extend chip detection for bma180
+Date: Thu, 10 Apr 2014 11:30:02 +0200
+Message-Id: <D682743C-E578-420D-A9DD-8B90673F8393@goldelico.com>
+Cc: Jingoo Han <jg1.han@samsung.com>, Fugang Duan <B38611@freescale.com>,
+        linux-input@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Marek Belisko <marek@goldelico.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Mime-Version: 1.0 (Apple Message framework v1085)
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 10 April 2014 08:46:03 Gregory CLEMENT wrote:
-> >>
-> >> Is it really a fixed clock without any parent, or do you
-> >> declare it as a fixed clock because you don't have any clock
-> >> common framework support yet?
-> > 
-> > I don't have any common clock framework support yet.
-> 
-> So maybe you should provide one (even a very simple one).
-> 
-> Pretending a clock is a fixed clock and ignoring its parents
-> will be problematic when you will add the common clock framework
-> support because the device tree is supposed to be stable and you won't
-> be able to change it then.
+This driver has been used  while on the OpenPhoenux GTA04 with
+a BMA180.
 
-But is this actually a problem here? The current device tree file
-will keep working even if the proper driver is there, you just need
-to update both the driver and the dts file in order to actually
-use the clocks at run-time.
+Signed-off-by: H. Nikolaus Schaller <hns@goldelico.com>
+---
+ drivers/input/misc/bma150.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-I guess it comes down to the question of whether we want to handle
-old kernels with new device trees again, which would be broken here.
+diff --git a/drivers/input/misc/bma150.c b/drivers/input/misc/bma150.c
+index 52d3a9b..b36831c 100644
+--- a/drivers/input/misc/bma150.c
++++ b/drivers/input/misc/bma150.c
+@@ -70,6 +70,7 @@
+ #define BMA150_CFG_5_REG	0x11
+ 
+ #define BMA150_CHIP_ID		2
++#define BMA180_CHIP_ID		3
+ #define BMA150_CHIP_ID_REG	BMA150_DATA_0_REG
+ 
+ #define BMA150_ACC_X_LSB_REG	BMA150_DATA_2_REG
+@@ -539,7 +540,7 @@ static int bma150_probe(struct i2c_client *client,
+ 	}
+ 
+ 	chip_id = i2c_smbus_read_byte_data(client, BMA150_CHIP_ID_REG);
+-	if (chip_id != BMA150_CHIP_ID) {
++	if (chip_id != BMA150_CHIP_ID && chip_id != BMA180_CHIP_ID) {
+ 		dev_err(&client->dev, "BMA150 chip id error: %d\n", chip_id);
+ 		return -EINVAL;
+ 	}
+@@ -643,6 +644,7 @@ static UNIVERSAL_DEV_PM_OPS(bma150_pm, bma150_suspend, bma150_resume, NULL);
+ 
+ static const struct i2c_device_id bma150_id[] = {
+ 	{ "bma150", 0 },
++	{ "bma180", 0 },
+ 	{ "smb380", 0 },
+ 	{ "bma023", 0 },
+ 	{ }
+-- 
+1.9.1
 
-	Arnd
+
