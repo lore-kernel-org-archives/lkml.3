@@ -1,64 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934718AbaDJHKo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 03:10:44 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:26115
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934241AbaDJHKm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 03:10:42 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch21a7h1fc6h208chzdchz1de098h8275dh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh26d3h1155h)
-From: <hongbo.zhang@freescale.com>
-To: <vkoul@infradead.org>, <dan.j.williams@intel.com>,
-        <dmaengine@vger.kernel.org>
-CC: <scottwood@freescale.com>, <leo.li@freescale.com>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Hongbo Zhang <hongbo.zhang@linaro.org>
-Subject: [PATCH v3 0/8] DMA: Freescale: driver cleanups and enhancements
-Date: Thu, 10 Apr 2014 15:09:57 +0800
-Message-ID: <1397113805-24171-1-git-send-email-hongbo.zhang@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S965467AbaDJHPo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 03:15:44 -0400
+Received: from 8bytes.org ([85.214.48.195]:52611 "EHLO mail.8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965100AbaDJHPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 03:15:40 -0400
+Date: Thu, 10 Apr 2014 09:15:35 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Baoquan He <bhe@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Subject: Re: hpsa driver bug crack kernel down!
+Message-ID: <20140410071535.GX13491@8bytes.org>
+References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
+ <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>
+ <1397084904.9519.62.camel@dabdike>
+ <1397085044.9519.63.camel@dabdike>
+ <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
+ <1397087425.9519.67.camel@dabdike>
+ <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>
+ <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
+ <1397111557.2608.29.camel@buesod1.americas.hpqcorp.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397111557.2608.29.camel@buesod1.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Thu Apr 10 09:15:38 2014
+X-DSPAM-Confidence: 0.9992
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 5346451a20861743018466
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hongbo Zhang <hongbo.zhang@linaro.org>
+[+ David, VT-d maintainer ]
 
-Hi Vinod Koul,
-Please have a look at the v3 patch set.
+Jiang, David, can you please have a look into this issue?
 
-v2 -> v3 change:
-Only add "chan->pm_state = RUNNING" for patch[8/8].
+Thanks,
 
-v1 -> v2 change:
-The only one change is introducing a new patch[1/7] to remove the unnecessary
-macro FSL_DMA_LD_DEBUG, thus the total patches number is 8 now (was 7)
+	Joerg
 
-Hongbo Zhang (8):
-  DMA: Freescale: remove the unnecessary FSL_DMA_LD_DEBUG
-  DMA: Freescale: unify register access methods
-  DMA: Freescale: remove attribute DMA_INTERRUPT of dmaengine
-  DMA: Freescale: add fsl_dma_free_descriptor() to reduce code
-    duplication
-  DMA: Freescale: move functions to avoid forward declarations
-  DMA: Freescale: change descriptor release process for supporting
-    async_tx
-  DMA: Freescale: use spin_lock_bh instead of spin_lock_irqsave
-  DMA: Freescale: add suspend resume functions for DMA driver
-
- drivers/dma/fsldma.c |  591 ++++++++++++++++++++++++++++++++------------------
- drivers/dma/fsldma.h |   33 ++-
- 2 files changed, 409 insertions(+), 215 deletions(-)
-
--- 
-1.7.9.5
-
-
+On Wed, Apr 09, 2014 at 11:32:37PM -0700, Davidlohr Bueso wrote:
+> On Wed, 2014-04-09 at 22:03 -0600, Bjorn Helgaas wrote:
+> > [+cc Joerg, iommu list]
+> > 
+> > On Wed, Apr 9, 2014 at 6:19 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> > > On Wed, 2014-04-09 at 16:50 -0700, James Bottomley wrote:
+> > >> On Wed, 2014-04-09 at 16:40 -0700, Davidlohr Bueso wrote:
+> > >> > On Wed, 2014-04-09 at 16:10 -0700, James Bottomley wrote:
+> > >> > > On Wed, 2014-04-09 at 16:08 -0700, James Bottomley wrote:
+> > >> > > > [+linux-scsi]
+> > >> > > > On Wed, 2014-04-09 at 15:49 -0700, Davidlohr Bueso wrote:
+> > >> > > > > On Wed, 2014-04-09 at 10:39 +0800, Baoquan He wrote:
+> > >> > > > > > Hi,
+> > >> > > > > >
+> > >> > > > > > The kernel is 3.14.0+ which is pulled just now.
+> > >> > > > >
+> > >> > > > > Cc'ing more people.
+> > >> > > > >
+> > >> > > > > While the hpsa driver appears to be involved in some way, I'm sure if
+> > >> > > > > this is a related issue, but as of today's pull I'm getting another
+> > >> > > > > problem that causes my DL980 not to come up.
+> > >> > > > >
+> > >> > > > > *Massive* amounts of:
+> > >> > > > >
+> > >> > > > > DMAR:[fault reason 02] Present bit in context entry is clear
+> > >> > > > > dmar: DRHD: handling fault status reg 602
+> > >> > > > > dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr 7f61e000
+> > >> > > > >
+> > >> > > > > Then:
+> > >> > > > >
+> > >> > > > > hpsa 0000:03:00.0: Controller lockup detected: 0xffff0000
+> > >> > > > > ...
+> > >> > > > > Workqueue: events hpsa_monitor_ctlr_worker [hpsa]
+> > >> > > > > ...
+> > >> > > > >
+> > >> > > > > Screenshot of the actual LOCKUP:
+> > >> > > > > http://stgolabs.net/hpsa-hard-lockup-3.14+.png
+> > >> > > > >
+> > >> > > > > While I haven't bisected, things worked fine until at least until commit
+> > >> > > > > 39de65aa2c3e (April 2nd).
+> > >> > > > >
+> > >> > > > > Any ideas?
+> > >> > > >
+> > >> > > > Well, it's either a DMA remapping issue or a hpsa one.  Your assertion
+> > >> > > > that everything worked fine until 39de65aa2c3e would tend to vindicate
+> > >> > > > hpsa,
+> > >> >
+> > >> > Hmm here you mean DMA, right?
+> > >>
+> > >> No, it vindicates the hpsa changes ... they don't seem to be causing
+> > >> problems until something goes wrong with dma remapping.
+> > >>
+> > >> > > because all the hpsa changes went in before that under
+> > >> > > Missing crucial info:
+> > >> > >
+> > >> > > commit 1a0b6abaea78f73d9bc0a2f6df2d9e4c917cade1
+> > >> > >
+> > >> > > > Merge: 3e75c6d b2bff6c
+> > >> > > > Author: Linus Torvalds <torvalds@linux-foundation.org>
+> > >> > > > Date:   Tue Apr 1 18:49:04 2014 -0700
+> > >> > > >
+> > >> > > >     Merge tag 'scsi-misc' of
+> > >> > > > git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi
+> > >> > > >
+> > >> > > > can you revalidate that this commit works OK just to make sure?
+> > >> >
+> > >> > Ok so I don't see those DMA messages and system starts just fine. I'm
+> > >> > thinking perhaps something broke after the IO mmu stuff in commit
+> > >> > 3f583bc21977a608908b83d03ee2250426a5695c... could this be indirectly
+> > >> > causing the CPU stalls and just blame hpsa in the path as a side effect?
+> > >> >
+> > >> > /me goes out to try the commit.
+> > >>
+> > >> That's my guess.  The DMAR messages are DMA remapping issues caused in
+> > >> the IOMMU.  If I had to guess, I'd say the DMAR fault message is
+> > >> indicating the IOMMU is calling for a mapping address before it can
+> > >> satisfy the driver read request, which is causing the hang apparently in
+> > >> the hpsa driver.
+> > >>
+> > >> I've added linux-pci to the cc; I think they deal with iommu issues on
+> > >> x86.
+> > >
+> > > So that merge commit appears to be the culprit, I see both the DMA
+> > > messages and the lockup blaming hpsa...
+> > 
+> > My understanding so far (please correct me if I'm wrong):
+> > 
+> > 39de65aa2c3e OK ("Merge branch 'i2c/for-next'")
+> > 1a0b6abaea78 OK ("Merge tag 'scsi-misc'")
+> > 3f583bc21977 BAD ("Merge tag 'iommu-updates-v3.15'")
+> 
+> Yes, specifically (finally done bisecting):
+> 
+> commit 2e45528930388658603ea24d49cf52867b928d3e
+> Author: Jiang Liu <jiang.liu@linux.intel.com>
+> Date:   Wed Feb 19 14:07:36 2014 +0800
+> 
+>     iommu/vt-d: Unify the way to process DMAR device scope array
+>     
+>     Now we have a PCI bus notification based mechanism to update DMAR
+>     device scope array, we could extend the mechanism to support boot
+>     time initialization too, which will help to unify and simplify
+>     the implementation.
+>     
+>     Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+>     Signed-off-by: Joerg Roedel <joro@8bytes.org>
+> 
 
