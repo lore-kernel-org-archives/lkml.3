@@ -1,95 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030640AbaDJM3q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 08:29:46 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:42776 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030452AbaDJM3o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 08:29:44 -0400
-X-AuditID: cbfee61a-b7fb26d00000724f-22-53468eb4c5ea
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Amit Kachhap <amit.kachhap@gmail.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH] thermal: offer Samsung thermal support only when
- ARCH_EXYNOS is defined
-Date: Thu, 10 Apr 2014 14:29:35 +0200
-Message-id: <12703899.ZIfn6gkXfr@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <5294A097.3070903@ti.com>
-References: <2958660.aJeCDrTTOe@amdc1032>
- <CADGdYn4YQL9-8WCDNWP8x9Gec9sMV09q3OsYPz3tTdMxDGnyvg@mail.gmail.com>
- <5294A097.3070903@ti.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t9jQd0tfW7BBlOuGFr8ejeT3WLN/p9M
-	Fmeb3rBbXN41h83ic+8RRosZ5/cxWTx52MfmwO6xc9Zddo/Fe14yefRtWcXocfzGdiaPz5vk
-	AlijuGxSUnMyy1KL9O0SuDLudB9iKujiqWg4u5GxgfEhZxcjJ4eEgInE43u3WSFsMYkL99az
-	dTFycQgJTGeU+Lf1GSuE08IksX7bHzaQKjYBK4mJ7asYQWwRAWWJRee2gtnMAg8ZJY4dUgGx
-	hQXiJHbMXgc2lUVAVeLQlm4wm1dAS+LKiz1MILaogKfEju0rwWZyCqhJrDu7BGpZD6PE8k8z
-	mCAaBCV+TL7HArFAXmLf/qmsELaOxP7WaWwTGAVmISmbhaRsFpKyBYzMqxhFUwuSC4qT0nMN
-	9YoTc4tL89L1kvNzNzGCA/2Z1A7GlQ0WhxgFOBiVeHgPLHMNFmJNLCuuzD3EKMHBrCTCu7bV
-	LViINyWxsiq1KD++qDQntfgQozQHi5I474FW60AhgfTEktTs1NSC1CKYLBMHp1QDY3NRyZKD
-	Os2a684/riqXzTR++23RhoTlF1U3apZ83Bq5/WTNvFNCRh80LvAuzS6TKBCp/vfNXmTvipYX
-	u1+5XGnV+vAjeI/hM7WeI9uN23N53h0vWqkv6b1vMUOq/y7m815vZn686GN6+X2R0+GSqTwd
-	agJbUznyDx+aKVyyUrzz3Vn/QNPg3UosxRmJhlrMRcWJADYRltJwAgAA
+	id S1030550AbaDJMdU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 08:33:20 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34938 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030371AbaDJMdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 08:33:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,834,1389772800"; 
+   d="scan'208";a="490729839"
+Date: Thu, 10 Apr 2014 15:40:45 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Subject: Re: Oops in acpi_gpiochip_add on MacBookPro with Linux
+ v3.14-12042-g69cd9eba3886
+Message-ID: <20140410124045.GX19349@intel.com>
+References: <CA+5PVA5VBns=hkOSViucrpT340uG0=hgrWqf=LYHTBFAe74tBg@mail.gmail.com>
+ <CACna6ry+FOYykZpzycEjDA+ncGNLk6eXkwadXy548h9dgU1Bgw@mail.gmail.com>
+ <CA+5PVA4ijLmwRKHD4RYE6qSqkN7p8v1GB9w9GAGAJKG45bBTnw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+5PVA4ijLmwRKHD4RYE6qSqkN7p8v1GB9w9GAGAJKG45bBTnw@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi,
-
-Zhang, could you please pick this patch up to your tree?
-
-[ Eduardos's tree hasn't been updated for over 4 months and
-  seems to be dead.. ]
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
-
-On Tuesday, November 26, 2013 09:22:31 AM Eduardo Valentin wrote:
-> On 26-11-2013 02:07, Amit Kachhap wrote:
-> > On 10/4/13, Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
-> >> Menu for Samsung thermal support is visible on all Samsung
-> >> platforms while thermal drivers are currently available only
-> >> for EXYNOS SoCs. Fix it by replacing PLAT_SAMSUNG dependency
-> >> with ARCH_EXYNOS one.
-> >>
-> >> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> > Looks good, so
-> > Acked-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+On Thu, Apr 10, 2014 at 08:22:12AM -0400, Josh Boyer wrote:
+> On Thu, Apr 10, 2014 at 2:50 AM, Rafał Miłecki <zajec5@gmail.com> wrote:
+> > 2014-04-09 23:09 GMT+02:00 Josh Boyer <jwboyer@fedoraproject.org>:
+> >> With Linux v3.14-12042-g69cd9eba3886 I get an oops from the bcma
+> >> module on the MacBookPro 10,2 I have here.  This works fine with Linux
+> >> v3.14-7333-g59ecc26004e7.  There have been no changes between those
+> >> two versions to bcma itself, but the GPIO merge did go in that window.
+> >>  I can attempt to do a bisect tomorrow, but looking over some of the
+> >> GPIO commits it seems pretty relevant to the ACPI GPIO changes.  I'm
+> >> hoping someone here has an idea on what the issue might be and has
+> >> some possible things for me to test for fixes.
+> >
+> > Bug report: https://lkml.org/lkml/2014/3/24/262
+> > Patch: https://lkml.org/lkml/2014/3/24/293
+> > Tested by Sabrina: https://lkml.org/lkml/2014/3/24/304
+> > (all links are for the same thread).
+> >
+> > Now you simply have to find above patch in some git tree :) Not sure
+> > if it's already in Linus's one.
 > 
-> I will be queuing this one in my tree.
+> Ah, wonderful.  I now wish I would have found those in my searching
+> before doing the bisect.  Oh well.  For what it's worth, my bisect
+> landed on the same commit.
 > 
-> Thanks Bartlomiej.
-> 
-> > 
-> >> ---
-> >>  drivers/thermal/Kconfig | 2 +-
-> >>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>
-> >> diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-> >> index a709c63..05cf95c 100644
-> >> --- a/drivers/thermal/Kconfig
-> >> +++ b/drivers/thermal/Kconfig
-> >> @@ -198,7 +198,7 @@ source "drivers/thermal/ti-soc-thermal/Kconfig"
-> >>  endmenu
-> >>
-> >>  menu "Samsung thermal drivers"
-> >> -depends on PLAT_SAMSUNG
-> >> +depends on ARCH_EXYNOS
-> >>  source "drivers/thermal/samsung/Kconfig"
-> >>  endmenu
-> >>
-> >> --
-> >> 1.8.2.3
+> The fix isn't in Linus' tree or linux-next.  I'm guessing Mika is
+> either still on vacation, or hasn't sent out the formal fix yet.
 
+No, not on vacation anymore (unfortunately). I did send the formal patch
+already:
+
+https://lkml.org/lkml/2014/3/31/135
+
+but it isn't merged to Linus' GPIO tree yet.
