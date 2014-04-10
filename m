@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965414AbaDJENZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 00:13:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41076 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934732AbaDJDWO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934731AbaDJDWO (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 9 Apr 2014 23:22:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40812 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934618AbaDJDVd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 23:21:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 057/134] USB: serial: add modem-status-change wait queue
-Date: Wed,  9 Apr 2014 20:22:53 -0700
-Message-Id: <20140410032307.437972877@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Jamie Liu <jamieliu@google.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Qiang Huang <h.huangqiang@huawei.com>, Li Zefan <lizefan@huawei.com>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 005/134] workqueue: cond_resched() after processing each work item
+Date: Wed,  9 Apr 2014 20:22:01 -0700
+Message-Id: <20140410032300.361536830@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -27,45 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit e5b33dc9d16053c2ae4c2c669cf008829530364b upstream.
+commit b22ce2785d97423846206cceec4efee0c4afd980 upstream.
 
-Add modem-status-change wait queue to struct usb_serial_port that
-subdrivers can use to implement TIOCMIWAIT.
+If !PREEMPT, a kworker running work items back to back can hog CPU.
+This becomes dangerous when a self-requeueing work item which is
+waiting for something to happen races against stop_machine.  Such
+self-requeueing work item would requeue itself indefinitely hogging
+the kworker and CPU it's running on while stop_machine would wait for
+that CPU to enter stop_machine while preventing anything else from
+happening on all other CPUs.  The two would deadlock.
 
-Currently subdrivers use a private wait queue which may have been
-released when waking up after device disconnected.
+Jamie Liu reports that this deadlock scenario exists around
+scsi_requeue_run_queue() and libata port multiplier support, where one
+port may exclude command processing from other ports.  With the right
+timing, scsi_requeue_run_queue() can end up requeueing itself trying
+to execute an IO which is asked to be retried while another device has
+an exclusive access, which in turn can't make forward progress due to
+stop_machine.
 
-Note that we're adding a new wait queue rather than reusing the tty-port
-one as we do not want to get woken up at hangup (yet).
+Fix it by invoking cond_resched() after executing each work item.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Jamie Liu <jamieliu@google.com>
+References: http://thread.gmane.org/gmane.linux.kernel/1552567
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Yang Yingliang <yangyingliang@huawei.com>
+Cc: Qiang Huang <h.huangqiang@huawei.com>
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/usb/serial.h |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/workqueue.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/include/linux/usb/serial.h
-+++ b/include/linux/usb/serial.h
-@@ -66,6 +66,7 @@
-  *	port.
-  * @flags: usb serial port flags
-  * @write_wait: a wait_queue_head_t used by the port.
-+ * @delta_msr_wait: modem-status-change wait queue
-  * @work: work queue entry for the line discipline waking up.
-  * @throttled: nonzero if the read urb is inactive to throttle the device
-  * @throttle_req: nonzero if the tty wants to throttle us
-@@ -112,6 +113,7 @@ struct usb_serial_port {
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1922,6 +1922,15 @@ __acquires(&gcwq->lock)
+ 		dump_stack();
+ 	}
  
- 	unsigned long		flags;
- 	wait_queue_head_t	write_wait;
-+	wait_queue_head_t	delta_msr_wait;
- 	struct work_struct	work;
- 	char			throttled;
- 	char			throttle_req;
++	/*
++	 * The following prevents a kworker from hogging CPU on !PREEMPT
++	 * kernels, where a requeueing work item waiting for something to
++	 * happen could deadlock with stop_machine as such work item could
++	 * indefinitely requeue itself while all other CPUs are trapped in
++	 * stop_machine.
++	 */
++	cond_resched();
++
+ 	spin_lock_irq(&gcwq->lock);
+ 
+ 	/* clear cpu intensive status */
 
 
