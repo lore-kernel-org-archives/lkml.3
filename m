@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935172AbaDJD7v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:59:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41164 "EHLO
+	id S1750880AbaDJEAb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 00:00:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41160 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934888AbaDJDWe (ORCPT
+	with ESMTP id S934642AbaDJDWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:34 -0400
+	Wed, 9 Apr 2014 23:22:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Adrian Thomasset <adrian.thomasset@st.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
+        Johan Hovold <jhovold@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
         Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 073/134] USB: ftdi_sio: enable two UART ports on ST Microconnect Lite
-Date: Wed,  9 Apr 2014 20:23:09 -0700
-Message-Id: <20140410032309.392318097@linuxfoundation.org>
+Subject: [PATCH 3.4 082/134] USB: keyspan: fix null-deref at disconnect and release
+Date: Wed,  9 Apr 2014 20:23:18 -0700
+Message-Id: <20140410032310.480963970@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -28,60 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adrian Thomasset <adrian.thomasset@st.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 71d9a2b95fc9c9474d46d764336efd7a5a805555 upstream.
+commit ff8a43c10f1440f07a5faca0c1556921259f7f76 upstream.
 
-The FT4232H used in the ST Micro Connect Lite has four hi-speed UART ports.
-The first two ports are reserved for the JTAG interface.
+Make sure to fail properly if the device is not accepted during attach
+in order to avoid null-pointer derefs (of missing interface private
+data) at disconnect or release.
 
-We enable by default ports 2 and 3 as UARTs (where port 2 is a
-conventional RS-232 UART)
-
-Signed-off-by: Adrian Thomasset <adrian.thomasset@st.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ftdi_sio.c |   18 +++++++++++-------
- 1 file changed, 11 insertions(+), 7 deletions(-)
+ drivers/usb/serial/keyspan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -1855,8 +1855,11 @@ static int ftdi_8u2232c_probe(struct usb
- }
- 
- /*
-- * First and second port on STMCLiteadaptors is reserved for JTAG interface
-- * and the forth port for pio
-+ * First two ports on JTAG adaptors using an FT4232 such as STMicroelectronics's
-+ * ST Micro Connect Lite are reserved for JTAG or other non-UART interfaces and
-+ * can be accessed from userspace.
-+ * The next two ports are enabled as UARTs by default, where port 2 is
-+ * a conventional RS-232 UART.
-  */
- static int ftdi_stmclite_probe(struct usb_serial *serial)
- {
-@@ -1865,12 +1868,13 @@ static int ftdi_stmclite_probe(struct us
- 
- 	dbg("%s", __func__);
- 
--	if (interface == udev->actconfig->interface[2])
--		return 0;
-+	if (interface == udev->actconfig->interface[0] ||
-+	    interface == udev->actconfig->interface[1]) {
-+		dev_info(&udev->dev, "Ignoring serial port reserved for JTAG\n");
+--- a/drivers/usb/serial/keyspan.c
++++ b/drivers/usb/serial/keyspan.c
+@@ -2486,7 +2486,7 @@ static int keyspan_startup(struct usb_se
+ 	if (d_details == NULL) {
+ 		dev_err(&serial->dev->dev, "%s - unknown product id %x\n",
+ 		    __func__, le16_to_cpu(serial->dev->descriptor.idProduct));
+-		return 1;
 +		return -ENODEV;
-+	}
+ 	}
  
--	dev_info(&udev->dev, "Ignoring serial port reserved for JTAG\n");
--
--	return -ENODEV;
-+	return 0;
- }
- 
- /*
+ 	/* Setup private data for serial driver */
 
 
