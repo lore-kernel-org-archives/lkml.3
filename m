@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030687AbaDJWwn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 18:52:43 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:22351 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030537AbaDJWwi (ORCPT
+	id S1759190AbaDJW5U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 18:57:20 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:62660 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753715AbaDJW5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 18:52:38 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkxaAOsfR1N5LEcvPGdsb2JhbABagwaIWbcNhV2BIxcDAQEBATg1giUBAQEEOhwjEAgDGAklDwUlAwcaE4d7zGgXFo5WB4MkgRQEmF2KZIshKw
-Date: Fri, 11 Apr 2014 08:52:34 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: xfs i_lock vs mmap_sem lockdep trace.
-Message-ID: <20140410225234.GF27519@dastard>
-References: <20140329223109.GA24098@redhat.com>
- <20140330234335.GB16336@dastard>
- <20140330235717.GO18016@ZenIV.linux.org.uk>
- <20140331004053.GA17603@dastard>
- <53445EC0.9060707@oracle.com>
+	Thu, 10 Apr 2014 18:57:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53445EC0.9060707@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CALCETrXVzLcVVSuPMFUgoRvpQgcQNy2_rW6=11CJAME0W2GyYQ@mail.gmail.com>
+References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
+	<20140320153250.GC20618@thunk.org>
+	<CANq1E4SUXrzAV8FS8HVYxnRVb1oOR6HSTyucJzyFs5PuS5Y88A@mail.gmail.com>
+	<20140320163806.GA10440@thunk.org>
+	<5346ED93.9040500@amacapital.net>
+	<20140410203246.GB31614@thunk.org>
+	<CALCETrVmaGNCxo-L4-dPbUev3VXXEPR7xBzo3Fux6ny7yh_Gzw@mail.gmail.com>
+	<CANq1E4RofJ7CUWWBPW1Qb4pX3rxYHCh1CPtbtX241KtJO+=Qhw@mail.gmail.com>
+	<CALCETrXVzLcVVSuPMFUgoRvpQgcQNy2_rW6=11CJAME0W2GyYQ@mail.gmail.com>
+Date: Fri, 11 Apr 2014 00:57:17 +0200
+Message-ID: <CANq1E4Qa8N0G8whyW5OWQS4x9=CVOF0PpcLhDi4j3wGTHX0==w@mail.gmail.com>
+Subject: Re: [PATCH 0/6] File Sealing & memfd_create()
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ryan Lortie <desrt@desrt.ca>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 04:40:32PM -0400, Sasha Levin wrote:
-> On 03/30/2014 08:40 PM, Dave Chinner wrote:
-> > On Mon, Mar 31, 2014 at 12:57:17AM +0100, Al Viro wrote:
-> >> > On Mon, Mar 31, 2014 at 10:43:35AM +1100, Dave Chinner wrote:
-> >>> > > filldir on a directory inode vs page fault on regular file. Known
-> >>> > > issue, definitely a false positive. We have to change locking
-> >>> > > algorithms to avoid such deficiencies of lockdep (a case of "lockdep
-> >>> > > considered harmful", perhaps?) so it's not something I'm about to
-> >>> > > rush...
-> >> > 
-> >> > Give i_lock on directories a separate class, as it's been done for i_mutex...
-> > Already done that. Commit:
-> > 
-> > 93a8614 xfs: fix directory inode iolock lockdep false positive
-> 
-> Hi Dave,
-> 
-> The commit above introduces a new lockdep issue for me:
+Hi
 
-Right, it's fixed one class of false positive which uncovers the
-next class of false positive. lockdep gives me the shits at times
-because every time we make some obviously correct locking change
-to the XFS inodes we then spend the next 3-4 kernel releases chasing
-down and annotating locks so that lockdep doesn't throw false
-positives everywhere.
+On Thu, Apr 10, 2014 at 11:16 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> Would it make sense for the initial mode on a memfd inode to be 000?
+> Anyone who finds this to be problematic could use fchmod to fix it.
 
-It's on my queue of things to fix but, quite frankly, lockdep false
-positives are low priority to fix right now.
+memfd_create() should be subject to umask() just like anything else.
+That should solve any possible race here, right?
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Thanks
+David
