@@ -1,67 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965862AbaDJJ4k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 05:56:40 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:49827 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965559AbaDJJ4g (ORCPT
+	id S965875AbaDJJ5K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 05:57:10 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:22629 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965804AbaDJJ5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 05:56:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140410081031.GM28585@lukather>
-References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
- <CAGb2v66XCN2ar1wj+a1+ZwdcdJ3gzJ+nDiO9bu52OwK+mBB_Hg@mail.gmail.com>
- <20140409151747.GH28585@lukather> <CAGb2v67+YNhw2MXSu9DTKSUfXH=v+uD7KEaxyiPezyf9CYtmPw@mail.gmail.com>
- <20140410081031.GM28585@lukather>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Thu, 10 Apr 2014 17:56:14 +0800
-X-Google-Sender-Auth: tQ1uHmm4X3J01AcGZnp_ypQR3X4
-Message-ID: <CAGb2v65xhEHS_qETZUWcjeaVQK1V84J4h1LzA7uTrtWS=7P8+Q@mail.gmail.com>
-Subject: Re: [PATCH 00/15] ARM: sunxi: add A31 PL pins support
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 10 Apr 2014 05:57:03 -0400
+X-AuditID: cbfee691-b7efc6d0000039d3-4e-53466aed8526
+From: Chanho Park <chanho61.park@samsung.com>
+To: "'Arnd Bergmann'" <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+Cc: kgene.kim@samsung.com, t.figa@samsung.com, hyunhee.kim@samsung.com,
+        sw0312.kim@samsung.com, linux-kernel@vger.kernel.org,
+        yj44.cho@samsung.com, inki.dae@samsung.com,
+        "'Chanwoo Choi'" <cw00.choi@samsung.com>, kyungmin.park@samsung.com,
+        linux-samsung-soc@vger.kernel.org
+References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
+ <1397122124-15690-3-git-send-email-cw00.choi@samsung.com>
+ <4172202.teSeEmypAU@wuerfel>
+In-reply-to: <4172202.teSeEmypAU@wuerfel>
+Subject: RE: [PATCH 02/27] ARM: EXYNOS: Add IO mapping for non-secure SYSRAM of
+ Exynos3250
+Date: Thu, 10 Apr 2014 18:57:02 +0900
+Message-id: <002501cf54a3$38f50d60$aadf2820$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQHswY/dwiExWmV8C5CYXcVGb5tK2AH5QtGuATUfGNeatk/HsA==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsWyRsSkWPdtlluwwZQNEhZ/Jx1jt7j+5Tmr
+	xecPLewWk+5PYLHoXXCVzeJs0xt2i02Pr7FaXN41h81ixvl9TBYzJr9ks1g/4zWLxd6dkxkd
+	eDx+/5rE6LF5Sb1H35ZVjB6fN8kFsERx2aSk5mSWpRbp2yVwZTy6PoW54CV3xeF7E9gbGP9y
+	djFyckgImEjMvP2JDcIWk7hwbz2QzcUhJLCUUeJIxwc2mKJnO7ayQiSmM0rMOLMYyvnHKHHl
+	1GNGkCo2AV2JLc9fgdkiAp4SZ04uYAEpYhaYwiTRcb2BGaJjAaNEe9trdpAqTgFNiXML7zN1
+	MXJwCAvESJy6GAISZhFQlViwfj8riM0rYClx5WIXI4QtKPFj8j0WEJtZQEti/c7jTBC2vMTm
+	NW+ZIU5VkNhx9jXUEU4Sl/duYoaoEZHY9+IdI8gNEgK9HBLTnu9lglgmIPFt8iEWkBskBGQl
+	Nh2AmiMpcXDFDZYJjBKzkKyehWT1LCSrZyFZsYCRZRWjaGpBckFxUnqRqV5xYm5xaV66XnJ+
+	7iZGYKSf/vds4g7G+wesDzEmA62fyCwlmpwPTBR5JfGGxmZGFqYmpsZG5pZmpAkrifOmP0oK
+	EhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cC4PvhkE//lGeKJa1RCDt5OWvNuQf56xejS6/Xc
+	XDf2tJvu3cTwcV/+ujuZ/C8PrZHaEl188/wr7fY0m11TzPiZci63eyvcVFRMeBuUKO3GtE1I
+	ezff2mduH38q2dernLxy/nv1KdXPgXtKefkO7466qnX6O3/VId3ERQ836JxveGB242rNDu8y
+	JZbijERDLeai4kQA7Cmr3QoDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCKsWRmVeSWpSXmKPExsVy+t9jQd23WW7BBvdf8Vv8nXSM3eL6l+es
+	Fp8/tLBbTLo/gcWid8FVNouzTW/YLTY9vsZqcXnXHDaLGef3MVnMmPySzWL9jNcsFnt3TmZ0
+	4PH4/WsSo8fmJfUefVtWMXp83iQXwBLVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhr
+	aGlhrqSQl5ibaqvk4hOg65aZA3SakkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMD
+	NJCwhjHj0fUpzAUvuSsO35vA3sD4l7OLkZNDQsBE4tmOrawQtpjEhXvr2boYuTiEBKYzSsw4
+	s5gVwvnHKHHl1GNGkCo2AV2JLc9fgdkiAp4SZ04uYAEpYhaYwiTRcb2BGaJjAaNEe9trdpAq
+	TgFNiXML7zN1MXJwCAvESJy6GAISZhFQlViwfj/Yal4BS4krF7sYIWxBiR+T77GA2MwCWhLr
+	dx5ngrDlJTavecsMcaqCxI6zr6GOcJK4vHcTM0SNiMS+F+8YJzAKzUIyahaSUbOQjJqFpGUB
+	I8sqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjOA08kx6B+OqBotDjAIcjEo8vAeWuQYLsSaW
+	FVfmHmKU4GBWEuHdnekWLMSbklhZlVqUH19UmpNafIgxGejTicxSosn5wBSXVxJvaGxiZmRp
+	ZG5oYWRsTpqwkjjvwVbrQCGB9MSS1OzU1ILUIpgtTBycUg2MqW9/Xc/LWhe1jOefQkn5rSDH
+	/9r6/2xY23orD5q3OK8UOnvVIvzK5eawM1ufPT6z6WpOxs6LGzWYubnDEt5v3MzfxpHlIhtj
+	8tvg5RODjim7lrz/VPDC9en08ql+G9Q7V7RZCzzdNbXoCoPinWrzL3zqJu5VoetZmjW28bSz
+	a92qqF96M/GuEktxRqKhFnNRcSIA2WKIdWcDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 4:10 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> On Thu, Apr 10, 2014 at 12:27:32AM +0800, Chen-Yu Tsai wrote:
->> >> > Let me know if these changes are too intrusive.
->> >>
->> >> I wonder if we should do a separate driver for the new PIO controller.
->> >> Clearly it's a separate IP block, with it's own clock and reset controls.
->> >
->> > It's been merged together in the A23, hence why we did it like that.
->>
->> I'm not sure I understand. The clock gate and reset control are still separate,
->> are they not?
->
-> On the A31 the "regular" port controler handles PA to PH banks, while
-> the R_PIO handles the PL and PM banks.
->
-> On the A23, the regular port controler handles PA to PL banks, and the
-> R_PIO and PM bank doesn't exist.
+Hi Arnd,
 
-On closer inspection of the user manual and the SDK code,
-there is no reset control for R_PIO in the A23, but there is
-still a APB0 gate. Also the register space is still at 0x01f02c00,
-the address space for R_PIO.
+> -----Original Message-----
+> From: linux-arm-kernel [mailto:linux-arm-kernel-
+> bounces@lists.infradead.org] On Behalf Of Arnd Bergmann
+> Sent: Thursday, April 10, 2014 6:45 PM
+> To: linux-arm-kernel@lists.infradead.org
+> Cc: kgene.kim@samsung.com; t.figa@samsung.com; hyunhee.kim@samsung.com;
+> sw0312.kim@samsung.com; linux-kernel@vger.kernel.org;
+> yj44.cho@samsung.com; inki.dae@samsung.com; Chanwoo Choi;
+> kyungmin.park@samsung.com; linux-samsung-soc@vger.kernel.org
+> Subject: Re: [PATCH 02/27] ARM: EXYNOS: Add IO mapping for non-secure
+> SYSRAM of Exynos3250
+> 
+> On Thursday 10 April 2014 18:28:19 Chanwoo Choi wrote:
+> >
+> > The non-secure SYSRAM is used for secondary CPU bring-up. This patch
+> add
+> > IO mapping for non-scure SYSRAM.
+> >
+> > Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> 
+> I really don't want to see any further static mappings here. We had the
+> same discussion for the previous Exynos chip that was submitted, so
+> please
+> describe the SYSRAM in DT, and start thinking about the other static
+> mappings
+> that can be removed.
 
-I know the user manual lists the PL pins under the PIO controller,
-however the section doesn't list registers for them. It would seem
-they are still separate blocks. Also the kernel code never bothers
-to enable the R_PIO clock, possibly because it was enabled by U-boot.
+Sachin already submitted the DT support[1] for SYSRAM area.
 
-> So we're not quite in the same situation. The A31 is troublesome,
-> while the A23 (except for the external interrupts), is pretty much
-> what we've seen so far with the A10/A20/...
+[1] : http://www.spinics.net/lists/linux-samsung-soc/msg27647.html
+
+> 
+> 	Arnd
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
