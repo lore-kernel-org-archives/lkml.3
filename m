@@ -1,54 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030218AbaDJKrD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 06:47:03 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:38617 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965939AbaDJKrB (ORCPT
+	id S1030231AbaDJKuZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 06:50:25 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:21636 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S965557AbaDJKuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 06:47:01 -0400
-Date: Thu, 10 Apr 2014 11:46:48 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Michael Welling <mwelling@ieee.org>
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org, jslaby@suse.cz
-Subject: Re: [PATCH 1/2] tty serial: xr17c15x driver
-Message-ID: <20140410114648.68bfbf61@alan.etchedpixels.co.uk>
-In-Reply-To: <20140410041035.GA26578@deathray>
-References: <1397102671-26536-1-git-send-email-mwelling@ieee.org>
-	<20140410041035.GA26578@deathray>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Apr 2014 06:50:22 -0400
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: armdev <armdev.ftm@gmail.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>,
+        "kgene.kim\@samsung.com" <kgene.kim@samsung.com>,
+        "t.figa\@samsung.com" <t.figa@samsung.com>,
+        "linux-samsung-soc\@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "hyunhee.kim\@samsung.com" <hyunhee.kim@samsung.com>,
+        "sw0312.kim\@samsung.com" <sw0312.kim@samsung.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yj44.cho\@samsung.com" <yj44.cho@samsung.com>,
+        "inki.dae\@samsung.com" <inki.dae@samsung.com>,
+        "kyungmin.park\@samsung.com" <kyungmin.park@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mark Rutland <Mark.Rutland@arm.com>
+Subject: Re: [PATCH 07/27] irqchip: Declare cortex-a7's irqchip to initialize gic from dt
+In-Reply-To: <907CEE7C-19F2-495C-BE8F-712AE4B0A0E1@gmail.com> (armdev's
+	message of "Thu, 10 Apr 2014 11:42:56 +0100")
+Organization: ARM Ltd
+References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
+	<1397122124-15690-8-git-send-email-cw00.choi@samsung.com>
+	<878urd33g4.fsf@approximate.cambridge.arm.com>
+	<C136A675-6D64-42EE-918E-351A266946C5@gmail.com>
+	<874n2132o8.fsf@approximate.cambridge.arm.com>
+	<254FD85F-0C8E-4D16-8207-5BA4E7FBDE65@gmail.com>
+	<87zjjt1n73.fsf@approximate.cambridge.arm.com>
+	<907CEE7C-19F2-495C-BE8F-712AE4B0A0E1@gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+Date: Thu, 10 Apr 2014 11:50:14 +0100
+Message-ID: <87r4551ms9.fsf@approximate.cambridge.arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Apr 2014 23:10:35 -0500
-Michael Welling <mwelling@ieee.org> wrote:
+On Thu, Apr 10 2014 at 11:42:56 am BST, armdev <armdev.ftm@gmail.com> wrote:
+> On 10-Apr-2014, at 4:11 pm, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>
+>> On Thu, Apr 10 2014 at 11:30:41 am BST, armdev <armdev.ftm@gmail.com> wrote:
+>>> On 10-Apr-2014, at 3:51 pm, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>>> 
+>>>> On Thu, Apr 10 2014 at 11:09:02 am BST, armdev <armdev.ftm@gmail.com> wrote:
+>>>>> On 10-Apr-2014, at 3:34 pm, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>>>>> 
+>>>>>> On Thu, Apr 10 2014 at 10:28:24 am BST, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+>>>>>>> This patch declare coretex-a7's irqchip to initialze gic from dt
+>>>>>>> with "arm,cortex-a7-gic" data.
+>>>>>>> 
+>>>>>>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>>>>>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>>>>>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>>>>>> ---
+>>>>>>> drivers/irqchip/irq-gic.c | 1 +
+>>>>>>> 1 file changed, 1 insertion(+)
+>>>>>>> 
+>>>>>>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+>>>>>>> index 4300b66..8e906e4 100644
+>>>>>>> --- a/drivers/irqchip/irq-gic.c
+>>>>>>> +++ b/drivers/irqchip/irq-gic.c
+>>>>>>> @@ -1069,6 +1069,7 @@ gic_of_init(struct device_node *node, struct device_node *parent)
+>>>>>>> }
+>>>>>>> IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
+>>>>>>> IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
+>>>>>>> +IRQCHIP_DECLARE(cortex_a7_gic, "arm,cortex-a7-gic", gic_of_init);
+>>>>>>> IRQCHIP_DECLARE(msm_8660_qgic, "qcom,msm-8660-qgic", gic_of_init);
+>>>>>>> IRQCHIP_DECLARE(msm_qgic2, "qcom,msm-qgic2", gic_of_init);
+>>>>>> 
+>>>>>> Frankly, this patch adds no value. Are we going to add
+>>>>>> "arm,cortex-a12-gic", "arm,cortex-a17-gic", "arm,cortex-a53-gic",
+>>>>>> "arm,cortex-a57-gic"? And that's just to mention the ARM Ltd cores...
+>>>>>> 
+>>>>>> Instead, how about defining a generic "arm,gic" property, and mandate
+>>>>>> that new DT files are using that? We can always use a more precise
+>>>>>> compatible for quirks.
+>>>>>> 
+>>>>> 
+>>>>> How about keeping it simple and tied to arm gic versions
+>>>>> arm,gicv1, arm,gicv2, arm,gicv2ve
+>>>> 
+>>>> That's a variation on the same theme. As for GICv2, we don't need to
+>>>> distinguish between having the Virtualization Extentions, the binding
+>>>> already allows you to tell one from the other.
+>>>> 
+>>> So if there be just 2 types of gic, it would be simple.
+>> 
+>> Not exactly. We just happen to support two revisions of the GIC
+>> architecture with the same binding. GICv3 has an entierely separate
+>> binding.
+>> 
+>>> gicv1 - 2 address sets (gicc and gicd)
+>> 
+>> Yes.
+>> 
+>>> gicv2 - 4 sets (gicc gicd gicv gich) and 1 maintenance interrupt. Right?
+>> 
+>> No.
+>> 
+>> The presence of the GICV, GICH and maintenance interrupt are indicative
+>> of the support for the Virtualization Extentions. GICv2 itself can
+>> perfectly be built without it.
+>
+> then does gicv2-ve makes sense ?
 
-> The 8250_core driver is supposed to support these devices but it has
-> soft lockups on some hardware. This driver was ported from the vendors
-> 2.6.37 driver and has been proven to work.
-> 
-> I do not expect it to be merged, I am looking for feedback and
-> possible fixes.
+Read what I just wrote. You find the GICV region, you have the VE
+extensions. You don't find them, they are not present. No need for an
+overloaded compatible string, they both conform to the same
+*Architecture Spec*.
 
-The thing to do is going to be to compare the various methods in the
-driver with the 8250.c driver.
-
-It appeas to be based upon an ancient 8250.c so if you want to pick up
-all the changes then you need to compare with 8250.c, and if you want to
-fix 8250.c instead you need to do exactly the same job so that seems a
-more productive way to go about it IMHO.
-
-There are bits of the driver you've pasted like the loop over ports for
-shared IRQs you can't fix however, because they assume there is one
-driver for all the ports. Not sure it matters though given your devices
-are all going to be PCI bus.
-
-Other thing to do would be to instrument serial_in/out and run the two
-drivers briefly and compare the sequence of accesses and settings used.
-
-Alan
+	M.
+-- 
+Jazz is not dead. It just smells funny.
