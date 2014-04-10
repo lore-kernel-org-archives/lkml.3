@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031008AbaDJN2q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 09:28:46 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:58755 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030713AbaDJN2o (ORCPT
+	id S1030960AbaDJNbW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 09:31:22 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:49803 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030688AbaDJNbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 09:28:44 -0400
-Date: Thu, 10 Apr 2014 09:28:42 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH RESEND 2/2] tracing: syscall_regfunc() should not skip
- kernel threads
-Message-ID: <20140410092842.1f9a8760@gandalf.local.home>
-In-Reply-To: <20140409170616.GC27638@redhat.com>
-References: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
-	<1397059882-23063-3-git-send-email-fweisbec@gmail.com>
-	<360091921.1294.1397060915052.JavaMail.zimbra@efficios.com>
-	<20140409124249.4081e665@gandalf.local.home>
-	<20140409170505.GA27638@redhat.com>
-	<20140409170616.GC27638@redhat.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 10 Apr 2014 09:31:20 -0400
+Date: Thu, 10 Apr 2014 09:31:16 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
+        rafael.j.wysocki@intel.com, toshi.kani@hp.com
+Subject: Re: [RFC PATCH] Suppress a device hot remove related lockdep warning
+Message-ID: <20140410133116.GB25308@htj.dyndns.org>
+References: <1397121514.25199.91.camel@ThinkPad-T5421.cn.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397121514.25199.91.camel@ThinkPad-T5421.cn.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Apr 2014 19:06:16 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
+Hello,
 
-> syscall_regfunc() ignores the kernel thread because "it has
-> no effect", see cc3b13c1 "Don't trace kernel thread syscalls".
+On Thu, Apr 10, 2014 at 05:18:34PM +0800, Li Zhong wrote:
+> I noticed following lockdep warning when trying acpi hot-remove cpus:
 > 
-> However, this means that a user-space task spawned by
-> call_usermodehelper() won't report the system calls if
-> kernel_execve() is called when sys_tracepoint_refcount != 0.
-
-What about doing the set there? That is, we could add a check in the
-call_userspacehelper() just before it does the do_execve, that if
-sys_tracepoint_refcount is set, we set the TIF flag.
-
-
--- Steve
-
+> [84154.204080] ======================================================
+> [84154.204080] [ INFO: possible circular locking dependency detected ]
+> [84154.204080] 3.14.0-next-20140408+ #24 Tainted: G        W    
+> [84154.204080] -------------------------------------------------------
+> [84154.204080] bash/777 is trying to acquire lock:
+> [84154.204080]  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff810664a7>] cpu_maps_update_begin+0x17/0x20
+> [84154.213203] 
+> [84154.213203] but task is already holding lock:
+> [84154.213203]  (s_active#79){++++.+}, at: [<ffffffff81256e14>] kernfs_fop_write+0xe4/0x190
+> [84154.213203] 
+> [84154.213203] which lock already depends on the new lock.
+> [84154.213203] 
+> [84154.213203] 
+> [84154.213203] the existing dependency chain (in reverse order) is:
+> [84154.213203] 
+...
+> [84154.213203]  Possible unsafe locking scenario:
+> [84154.213203] 
+> [84154.213203]        CPU0                    CPU1
+> [84154.213203]        ----                    ----
+> [84154.213203]   lock(s_active#79);
+> [84154.213203]                                lock(cpu_hotplug.lock#2);
+> [84154.213203]                                lock(s_active#79);
+> [84154.213203]   lock(cpu_add_remove_lock);
+> [84154.213203] 
+> [84154.213203]  *** DEADLOCK ***
+> .............
 > 
-> Remove this check. Hopefully the unnecessary report from
-> ret_from_fork path mentioned by cc3b13c1 is fine. In fact
-> "this is the only case" is not true. Say, kernel_execve()
-> itself does "int 80" on X86_32. Hopefully fine too.
+> The deadlock itself seems already fixed in commit 5e33bc41. 
 > 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/tracepoint.c |    4 +---
->  1 files changed, 1 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-> index a16754b..4e1e4ca 100644
-> --- a/kernel/tracepoint.c
-> +++ b/kernel/tracepoint.c
-> @@ -737,9 +737,7 @@ void syscall_regfunc(void)
->  	if (!sys_tracepoint_refcount) {
->  		read_lock(&tasklist_lock);
->  		do_each_thread(g, t) {
-> -			/* Skip kernel threads. */
-> -			if (!(t->flags & PF_KTHREAD))
-> -				set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
-> +			set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
->  		} while_each_thread(g, t);
->  		read_unlock(&tasklist_lock);
->  	}
+> This patch uses DEVICE_ATTR_IGNORE_LOCKDEP for "online" attr to suppress
+> this lockdep warning. But I'm a little afraid it might also hide
+> (future) potential real dead lock scenarios? 
 
+I suppose this is happening because offlining a cpu involves removing
+some sysfs files?  If the file isn't trying to remove itself, it
+should be okay but I think it could be better to use
+kernfs_break_active_protection() from online callback so that the
+operation is actually outside the dependency chain rather than just
+suppressing lockdep.
+
+Thanks.
+
+-- 
+tejun
