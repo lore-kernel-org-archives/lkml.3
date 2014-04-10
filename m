@@ -1,85 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030455AbaDJMO1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 08:14:27 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:65518 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030385AbaDJMOC (ORCPT
+	id S1030473AbaDJMWQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 08:22:16 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47703 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030399AbaDJMWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 08:14:02 -0400
-From: Harini Katakam <harinik@xilinx.com>
-To: broonie@kernel.org, grant.likely@linaro.org, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Cc: michals@xilinx.com, Harini Katakam <harinik@xilinx.com>
-Subject: [PATCH v3 2/2] devicetree: Add devicetree bindings documentation for Cadence SPI
-Date: Thu, 10 Apr 2014 17:43:50 +0530
-Message-Id: <1397132030-2440-2-git-send-email-harinik@xilinx.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1397132030-2440-1-git-send-email-harinik@xilinx.com>
+	Thu, 10 Apr 2014 08:22:13 -0400
+Date: Thu, 10 Apr 2014 13:21:46 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Harini Katakam <harinik@xilinx.com>
+Cc: grant.likely@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, michals@xilinx.com
+Message-ID: <20140410122146.GY6518@sirena.org.uk>
 References: <1397132030-2440-1-git-send-email-harinik@xilinx.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7tPHY7RFL01rOa8z"
+Content-Disposition: inline
+In-Reply-To: <1397132030-2440-1-git-send-email-harinik@xilinx.com>
+X-Cookie: This report is filled with omissions.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3 1/2] SPI: Add driver for Cadence SPI controller
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add spi-cadence bindings documentation.
 
-Signed-off-by: Harini Katakam <harinik@xilinx.com>
----
+--7tPHY7RFL01rOa8z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-v3 changes:
-- Remove /bits/ 16 from num-cs property in example.
-- Add is-decoded-cs optional property and add to description of num-cs.
+On Thu, Apr 10, 2014 at 05:43:49PM +0530, Harini Katakam wrote:
 
-v2 changes:
-- Separate patch for bindings.
-- Add xilinx compatible string; Make compatible string first in the node.
-- Use property name num-cs. Make this property optional.
+> Firstly, the timeout value obtained from this is a too low.
+> This timeout is typically used for an error conditions such as
+> hardware hang etc. and using a value >1*HZ would be better.
+> This driver used to use similar timeout and as I understand, other
+> drivers also use similar values.
 
----
- .../devicetree/bindings/spi/spi-cadence.txt        |   31 ++++++++++++++++++++
- 1 file changed, 31 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/spi/spi-cadence.txt
+Send patches...
 
-diff --git a/Documentation/devicetree/bindings/spi/spi-cadence.txt b/Documentation/devicetree/bindings/spi/spi-cadence.txt
-new file mode 100644
-index 0000000..94f0914
---- /dev/null
-+++ b/Documentation/devicetree/bindings/spi/spi-cadence.txt
-@@ -0,0 +1,31 @@
-+Cadence SPI controller Device Tree Bindings
-+-------------------------------------------
-+
-+Required properties:
-+- compatible		: Should be "cdns,spi-r1p6" or "xlnx,zynq-spi-r1p6".
-+- reg			: Physical base address and size of SPI registers map.
-+- interrupts		: Property with a value describing the interrupt
-+			  number.
-+- interrupt-parent	: Must be core interrupt controller
-+- clock-names		: List of input clock names - "ref_clk", "pclk"
-+			  (See clock bindings for details).
-+- clocks		: Clock phandles (see clock bindings for details).
-+
-+Optional properties:
-+- num-cs		: Number of chip selects used.
-+			  If a decoder is used, this will be the number of
-+			  chip selects after the decoder.
-+- is-decoded-cs		: Flag to indicate whether decoder is used or not.
-+
-+Example:
-+
-+	spi@e0007000 {
-+		compatible = "xlnx,zynq-spi-r1p6";
-+		clock-names = "ref_clk", "pclk";
-+		clocks = <&clkc 26>, <&clkc 35>;
-+		interrupt-parent = <&intc>;
-+		interrupts = <0 49 4>;
-+		num-cs = <4>;
-+		is-decoded-cs = <0>;
-+		reg = <0xe0007000 0x1000>;
-+	} ;
--- 
-1.7.9.5
+--7tPHY7RFL01rOa8z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTRozXAAoJELSic+t+oim9yQUP/RheMmc5lFwvXa2yuTAe3Lkv
+dgC8+WEke3iYWHQNJHJIYewKdZtVzucbMDX4JhnQfkdtkA7w34RHxU79YBADfYD3
+Q9Aig63VvE+1VvM+bh3qNPnERNlilH1TBRCGO9P2FOqEGLCt0yy6btka0HcsUnny
+xD8QFLEQHxxrJLi6WtwkfAEHOxCBqaey+IwDMfU/Mbr7ZpdL8yP/RIcXgKNlXj9V
+8m+L3TEhjyeaEWdjwvIIrHuhQUwOIABMCnWJsBMdX/6kjWOe6oIZK+Y7JJ5GAHZd
+mHwDCUv5cyo10OmJQvgVM4k61oHDZ0ZPrOPxy+U6MQcUNsrcvMBTRLVyQeDp4p36
+pAquchakenME1mcdjjKM4eXer5RYQs2gdny6VPG4lAG2ySGt2bb5gJMGlgPqDS3d
+iN80Kdbu+eWqRtN+uOaVbUEOlaK/qd+WvK0TxfsqeE+eJukBDv4e3viqY/YRI/Se
+DCIXYgfCbApjDbIMU2ylHXFvsGXD88dSN62dX5OiukqnE2Wfia+rrOkUU4XOwd2r
++NABGhbjsm1QOgbptKXzTYRgenO68qaQ6DWrwBZ9YZGn2sI0mHQk25IaaY6SKoa9
+wFMguYks2jLTwX0IPOAQ3E/L2ou4jd0I7u+kmR+R4wCIPSTofHBThp65ir+NgVfe
+rPeQWyiAUoAgu2azgYzD
+=EaHN
+-----END PGP SIGNATURE-----
+
+--7tPHY7RFL01rOa8z--
