@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935647AbaDJSnu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 14:43:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56426 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933885AbaDJSns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 14:43:48 -0400
-Date: Thu, 10 Apr 2014 20:43:46 +0200
-From: Jan Kara <jack@suse.cz>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Jan Kara <jack@suse.cz>, Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Ross Zwisler <ross.zwisler@linux.intel.com>
-Subject: Re: [PATCH v7 18/22] xip: Add xip_zero_page_range
-Message-ID: <20140410184346.GD8060@quack.suse.cz>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
- <5a87acda8c3e4d2b7ea5dd1249fcbf8be23b9645.1395591795.git.matthew.r.wilcox@intel.com>
- <20140409101512.GL32103@quack.suse.cz>
- <20140410142729.GL5727@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140410142729.GL5727@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S935676AbaDJSoI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 14:44:08 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:33932 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758617AbaDJSoE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 14:44:04 -0400
+From: Paul McQuade <paulmcquad@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: npajkovs@redhat.com, akpm@linux-foundation.org
+Subject: [PATCH 02/15] ipc:msg.c same indent for switch/case
+Date: Thu, 10 Apr 2014 19:43:59 +0100
+Message-Id: <1397155439-6361-1-git-send-email-paulmcquad@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 10-04-14 10:27:29, Matthew Wilcox wrote:
-> On Wed, Apr 09, 2014 at 12:15:12PM +0200, Jan Kara wrote:
-> > > +		/*
-> > > +		 * ext4 sometimes asks to zero past the end of a block.  It
-> > > +		 * really just wants to zero to the end of the block.
-> > > +		 */
-> >   Then we should really fix ext4 I believe...
-> 
-> Since I didn't want to do this ...
-> 
-> > > +/* Can't be a function because PAGE_CACHE_SIZE is defined in pagemap.h */
-> > > +#define dax_truncate_page(inode, from, get_block)	\
-> > > +	dax_zero_page_range(inode, from, PAGE_CACHE_SIZE, get_block)
-> >                                          ^^^^
-> > This should be (PAGE_CACHE_SIZE - (from & (PAGE_CACHE_SIZE - 1))), shouldn't it?
-> 
-> ... I could get away without doing that ;-)
-  I understand but ultimately the API is cleaner if it doesn't allow size
-past end of block. So IMHO we shouldn't introduce new places that call the
-function like this and we should fix places that do it now (make it
-WARN_ON_ONCE() and let ext4 guys do the work for you ;).
+ERROR: switch and case should be at the same indent
 
-								Honza
+Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+---
+ ipc/msg.c | 31 +++++++++++++++----------------
+ 1 file changed, 15 insertions(+), 16 deletions(-)
+
+diff --git a/ipc/msg.c b/ipc/msg.c
+index a385372..45c6360 100644
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -612,23 +612,22 @@ SYSCALL_DEFINE3(msgctl, int, msqid, int, cmd, struct msqid_ds __user *, buf)
+ 
+ static int testmsg(struct msg_msg *msg, long type, int mode)
+ {
+-	switch (mode)
+-	{
+-		case SEARCH_ANY:
+-		case SEARCH_NUMBER:
++	switch (mode) {
++	case SEARCH_ANY:
++	case SEARCH_NUMBER:
++		return 1;
++	case SEARCH_LESSEQUAL:
++		if (msg->m_type <= type)
+ 			return 1;
+-		case SEARCH_LESSEQUAL:
+-			if (msg->m_type <= type)
+-				return 1;
+-			break;
+-		case SEARCH_EQUAL:
+-			if (msg->m_type == type)
+-				return 1;
+-			break;
+-		case SEARCH_NOTEQUAL:
+-			if (msg->m_type != type)
+-				return 1;
+-			break;
++		break;
++	case SEARCH_EQUAL:
++		if (msg->m_type == type)
++			return 1;
++		break;
++	case SEARCH_NOTEQUAL:
++		if (msg->m_type != type)
++			return 1;
++		break;
+ 	}
+ 	return 0;
+ }
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.8.3.2
+
