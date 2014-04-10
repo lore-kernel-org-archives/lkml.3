@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935399AbaDJOQz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 10:16:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:44835 "EHLO mga02.intel.com"
+	id S935541AbaDJOSQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 10:18:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17113 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934295AbaDJOQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 10:16:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,834,1389772800"; 
-   d="scan'208";a="518521340"
-Date: Thu, 10 Apr 2014 10:16:30 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 11/22] Replace ext2_clear_xip_target with
- dax_clear_blocks
-Message-ID: <20140410141630.GH5727@linux.intel.com>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
- <b94af75d7123feced8ea8ba42d1d0e7c740d5009.1395591795.git.matthew.r.wilcox@intel.com>
- <20140409094644.GD32103@quack.suse.cz>
+	id S934295AbaDJOSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 10:18:13 -0400
+Date: Thu, 10 Apr 2014 16:18:06 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 4/6] uprobes/x86: Emulate rip-relative call's
+Message-ID: <20140410141806.GA23997@redhat.com>
+References: <20140406201628.GA507@redhat.com> <1396995963.5056.46.camel@oc7886638347.ibm.com.usor.ibm.com> <20140409154346.GB18486@redhat.com> <53469F95.1030709@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140409094644.GD32103@quack.suse.cz>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <53469F95.1030709@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 11:46:44AM +0200, Jan Kara wrote:
->   Another day, some more review ;) Comments below.
+On 04/10, Denys Vlasenko wrote:
+>
+> There is this monstrosity, "16-bit override for branches" in 64-mode:
+>
+> 66 e8 nn nn       callw   <offset16>
+>
+> Nobody sane uses it because it truncates instruction pointer.
+>
+> Or rather, *I think* it should truncate it (i.e. zero-extend to full width),
+> but conceivably some CPUs can be buggy wrt that:
+> they can decide to modify only lower 16 bits of IP,
+> or even they can decided to use signed <offset16> but apply it
+> to full-width RIP.
+>
+> AMD manuals are not clear on what exactly should happen.
+>
+> I am sure no one sane uses this form of branch instructions
+> in 32-bit and 64-bit code.
+>
+> I don't think we should be trying to support it "correctly"
+> (we can just let program crash with SIGILL or something),
+> we only need to make sure we don't overlook its existence
+> and thus are not tricked into touching or modifying unrelated data.
 
-I'm really grateful for all this review!  It's killing me, though ;-)
+And after the quick check it seems that lib/insn.c doesn't parse
+"66 e8 nn nn" correctly. It treats the next 2 bytes as the part
+of 32bit offset.
 
-> > +int dax_clear_blocks(struct inode *inode, sector_t block, long size)
-> > +{
-> > +	struct block_device *bdev = inode->i_sb->s_bdev;
-> > +	const struct block_device_operations *ops = bdev->bd_disk->fops;
-> > +	sector_t sector = block << (inode->i_blkbits - 9);
-> > +	unsigned long pfn;
-> > +
-> > +	might_sleep();
-> > +	do {
-> > +		void *addr;
-> > +		long count = ops->direct_access(bdev, sector, &addr, &pfn,
-> > +									size);
->   So do you assume blocksize == PAGE_SIZE here? If not, addr could be in
-> the middle of the page AFAICT.
+> Imagine that   66 e8 nn nn    bytes are exactly at the end of
+> a page,
 
-You're right.  Depending on how clear_page() is implemented, that
-might go badly wrong.  Of course, both ext2 & ext4 require block_size
-== PAGE_SIZE right now, so anything else is by definition untested.
-I've been trying to keep DAX free from that assumption, but obviously
-haven't caught all the places.
+this doesn't matter. We always read MAX_UINSN_BYTES bytes, so
 
-How does this look?
+> and we wrongly assume that offset is 32-bit, not 16-bit.
+> 66 e8 nn nn.
 
-typedef long (*direct_access_t)(struct block_device *, sector_t, void **,
-                                unsigned long *pfn, long size);
+see above this will always happen.
 
-int dax_clear_blocks(struct inode *inode, sector_t block, long size)
-{
-        struct block_device *bdev = inode->i_sb->s_bdev;
-        direct_access_t direct_access = bdev->bd_disk->fops->direct_access;
-        sector_t sector = block << (inode->i_blkbits - 9);
-        unsigned long pfn;
+So I think branch_setup_xol_ops() should simply return -ENOSYS in
+this case, and let the default_ code execute it out of line. Given
+that nobody should use this insn, this is probably not too bad.
 
-        might_sleep();
-        do {
-                void *addr;
-                long count = direct_access(bdev, sector, &addr, &pfn, size);
-                if (count < 0)
-                        return count;
-                while (count > 0) {
-                        unsigned pgsz = PAGE_SIZE - offset_in_page(addr);
-                        if (pgsz > count)
-                                pgsz = count;
-                        if (pgsz < PAGE_SIZE)
-                                memset(addr, 0, pgsz);
-                        else
-                                clear_page(addr);
-                        addr += pgsz;
-                        size -= pgsz;
-                        count -= pgsz;
-                        sector += pgsz / 512;
-                        cond_resched();
-                }
-        } while (size);
+We can teach branch_xol_ops to handle this insn correctly later.
 
-        return 0;
-}
-EXPORT_SYMBOL_GPL(dax_clear_blocks);
+Now the question is, how I can detect this insn correctly? I mean,
+using the "right" helpers from lib/insn.c ?
 
-> >  	if (IS_DAX(inode)) {
-> >  		/*
-> > -		 * we need to clear the block
-> > +		 * block must be initialised before we put it in the tree
-> > +		 * so that it's not found by another thread before it's
-> > +		 * initialised
-> >  		 */
-> > -		err = ext2_clear_xip_target (inode,
-> > -			le32_to_cpu(chain[depth-1].key));
-> > +		err = dax_clear_blocks(inode, le32_to_cpu(chain[depth-1].key),
-> > +						count << inode->i_blkbits);
->   Umm 'count' looks wrong here. You want to clear only one block, don't
-> you?
+Oleg.
 
-I think I got confused between ext2 and ext4 here.  I do want to clear
-only one block.
