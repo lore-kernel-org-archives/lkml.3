@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965571AbaDJSre (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 14:47:34 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:65098 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758954AbaDJSrX convert rfc822-to-8bit (ORCPT
+	id S965734AbaDJSsD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 14:48:03 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54609 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934686AbaDJSrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 14:47:23 -0400
+	Thu, 10 Apr 2014 14:47:32 -0400
+Date: Thu, 10 Apr 2014 17:36:17 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Clark Williams <williams@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [RFC PATCH RT] rwsem: The return of multi-reader PI rwsems
+Message-ID: <20140410153617.GN10526@twins.programming.kicks-ass.net>
+References: <20140409151922.5fa5d999@gandalf.local.home>
+ <20140410094430.56ca9ee1@sluggy.gateway.2wire.net>
+ <5346B2C8.6000207@linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <20140410124045.GX19349@intel.com>
-References: <CA+5PVA5VBns=hkOSViucrpT340uG0=hgrWqf=LYHTBFAe74tBg@mail.gmail.com>
-	<CACna6ry+FOYykZpzycEjDA+ncGNLk6eXkwadXy548h9dgU1Bgw@mail.gmail.com>
-	<CA+5PVA4ijLmwRKHD4RYE6qSqkN7p8v1GB9w9GAGAJKG45bBTnw@mail.gmail.com>
-	<20140410124045.GX19349@intel.com>
-Date: Thu, 10 Apr 2014 20:47:23 +0200
-Message-ID: <CACRpkdaBg5KjvksHRB3z2R6KehYcFC=4MEHedfcE6tP4GTh+Qw@mail.gmail.com>
-Subject: Re: Oops in acpi_gpiochip_add on MacBookPro with Linux v3.14-12042-g69cd9eba3886
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>,
-        =?ISO-8859-2?Q?Rafa=B3_Mi=B3ecki?= <zajec5@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5346B2C8.6000207@linutronix.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 2:40 PM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> On Thu, Apr 10, 2014 at 08:22:12AM -0400, Josh Boyer wrote:
->> On Thu, Apr 10, 2014 at 2:50 AM, Rafał Miłecki <zajec5@gmail.com> wrote:
->> > 2014-04-09 23:09 GMT+02:00 Josh Boyer <jwboyer@fedoraproject.org>:
->> >> With Linux v3.14-12042-g69cd9eba3886 I get an oops from the bcma
->> >> module on the MacBookPro 10,2 I have here.  This works fine with Linux
->> >> v3.14-7333-g59ecc26004e7.  There have been no changes between those
->> >> two versions to bcma itself, but the GPIO merge did go in that window.
->> >>  I can attempt to do a bisect tomorrow, but looking over some of the
->> >> GPIO commits it seems pretty relevant to the ACPI GPIO changes.  I'm
->> >> hoping someone here has an idea on what the issue might be and has
->> >> some possible things for me to test for fixes.
->> >
->> > Bug report: https://lkml.org/lkml/2014/3/24/262
->> > Patch: https://lkml.org/lkml/2014/3/24/293
->> > Tested by Sabrina: https://lkml.org/lkml/2014/3/24/304
->> > (all links are for the same thread).
->> >
->> > Now you simply have to find above patch in some git tree :) Not sure
->> > if it's already in Linus's one.
->>
->> Ah, wonderful.  I now wish I would have found those in my searching
->> before doing the bisect.  Oh well.  For what it's worth, my bisect
->> landed on the same commit.
->>
->> The fix isn't in Linus' tree or linux-next.  I'm guessing Mika is
->> either still on vacation, or hasn't sent out the formal fix yet.
->
-> No, not on vacation anymore (unfortunately). I did send the formal patch
-> already:
->
-> https://lkml.org/lkml/2014/3/31/135
->
-> but it isn't merged to Linus' GPIO tree yet.
+On Thu, Apr 10, 2014 at 05:03:36PM +0200, Sebastian Andrzej Siewior wrote:
+> On 04/10/2014 04:44 PM, Clark Williams wrote:
+> > The means of each group of five test runs are:
+> > 
+> > vanilla.log:  1210117 rt.log:  17210953 (14.2 x slower than
+> > vanilla) rt-fixes.log:  10062027 (8.3 x slower than vanilla) 
+> > rt-multi.log:  3179582  (2.x x slower than vanilla)
+> > 
+> > 
+> > As expected, vanilla kicked RT's butt when hammering on the 
+> > mmap_sem. But somewhat unexpectedly, your fixups helped quite a
+> > bit and the multi+fixups got RT back into being almost
+> > respectable.
+> > 
+> > Obviously these are just preliminary results on one piece of h/w
+> > but it looks promising.
+> 
+> Is it easy to look at the latency when you have multiple readers and
+> and a high prio writer which has to boost all those readers away
+> instead just one?
+> Or is this something that should not happen for a high prio RT task
+> because it has all memory already allocated?
 
-I've queued this for fixes!
+With care it should not happen; it should be relatively straight forward
+to avoid all system calls that take mmap_sem for writing.
 
-Will send upstream ASAP.
+But yes, the total latency is a concern, that said, that is the very
+reason there is a hard limit to the reader concurrency and why this
+limit is a tunable.
 
-Yours,
-Linus Walleij
+It defaults to the total number of CPUs in the system, given the default
+setup (all CPUs in a single balance domain), this should result in all
+CPUs working concurrently on the boosted read sides.
+
+So while there is always some overhead, the worst case should not be
+nr_readers * read-hold-time.
+
+Although, with more (unrelated) higher prio threads you can indeed wreck
+this. Similarly by partitioning the system and not adjusting the max
+reader you also get into trouble.
+
+But then, the above nr_readers * read-hold-time is still an upper bound,
+and the entire thing does stay deterministic.
