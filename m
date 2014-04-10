@@ -1,27 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934794AbaDJDWW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:22:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40838 "EHLO
+	id S965198AbaDJEJJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 00:09:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41108 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934636AbaDJDVg (ORCPT
+	with ESMTP id S934779AbaDJDWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:21:36 -0400
+	Wed, 9 Apr 2014 23:22:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Pax Team <pageexec@freemail.hu>, Davidlohr Bueso <davidlohr@hp.com>,
-        Brad Spengler <spender@grsecurity.net>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Qiang Huang <h.huangqiang@huawei.com>, Li Zefan <lizefan@huawei.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 008/134] ipc, msg: fix message length check for negative values
-Date: Wed,  9 Apr 2014 20:22:04 -0700
-Message-Id: <20140410032300.805336891@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Yang Yingliang <yangyingliang@huawei.com>
+Subject: [PATCH 3.4 067/134] USB: oti6858: fix use-after-free in TIOCMIWAIT
+Date: Wed,  9 Apr 2014 20:23:03 -0700
+Message-Id: <20140410032308.704241525@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -34,151 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 4e9b45a19241354daec281d7a785739829b52359 upstream.
+commit 8edfdab37157d2683e51b8be5d3d5697f66a9f7b upstream.
 
-On 64 bit systems the test for negative message sizes is bogus as the
-size, which may be positive when evaluated as a long, will get truncated
-to an int when passed to load_msg().  So a long might very well contain a
-positive value but when truncated to an int it would become negative.
+Use the port wait queue and make sure to check the serial disconnected
+flag before accessing private port data after waking up.
 
-That in combination with a small negative value of msg_ctlmax (which will
-be promoted to an unsigned type for the comparison against msgsz, making
-it a big positive value and therefore make it pass the check) will lead to
-two problems: 1/ The kmalloc() call in alloc_msg() will allocate a too
-small buffer as the addition of alen is effectively a subtraction.  2/ The
-copy_from_user() call in load_msg() will first overflow the buffer with
-userland data and then, when the userland access generates an access
-violation, the fixup handler copy_user_handle_tail() will try to fill the
-remainder with zeros -- roughly 4GB.  That almost instantly results in a
-system crash or reset.
+This is is needed as the private port data (including the wait queue
+itself) can be gone when waking up after a disconnect.
 
-  ,-[ Reproducer (needs to be run as root) ]--
-  | #include <sys/stat.h>
-  | #include <sys/msg.h>
-  | #include <unistd.h>
-  | #include <fcntl.h>
-  |
-  | int main(void) {
-  |     long msg = 1;
-  |     int fd;
-  |
-  |     fd = open("/proc/sys/kernel/msgmax", O_WRONLY);
-  |     write(fd, "-1", 2);
-  |     close(fd);
-  |
-  |     msgsnd(0, &msg, 0xfffffff0, IPC_NOWAIT);
-  |
-  |     return 0;
-  | }
-  '---
-
-Fix the issue by preventing msgsz from getting truncated by consistently
-using size_t for the message length.  This way the size checks in
-do_msgsnd() could still be passed with a negative value for msg_ctlmax but
-we would fail on the buffer allocation in that case and error out.
-
-Also change the type of m_ts from int to size_t to avoid similar nastiness
-in other code paths -- it is used in similar constructs, i.e.  signed vs.
-unsigned checks.  It should never become negative under normal
-circumstances, though.
-
-Setting msg_ctlmax to a negative value is an odd configuration and should
-be prevented.  As that might break existing userland, it will be handled
-in a separate commit so it could easily be reverted and reworked without
-reintroducing the above described bug.
-
-Hardening mechanisms for user copy operations would have catched that bug
-early -- e.g.  checking slab object sizes on user copy operations as the
-usercopy feature of the PaX patch does.  Or, for that matter, detect the
-long vs.  int sign change due to truncation, as the size overflow plugin
-of the very same patch does.
-
-[akpm@linux-foundation.org: fix i386 min() warnings]
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Pax Team <pageexec@freemail.hu>
-Cc: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Brad Spengler <spender@grsecurity.net>
-Cc: Manfred Spraul <manfred@colorfullife.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2:
- - Adjust context
- - Drop changes to alloc_msg() and copy_msg(), which don't exist]
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+[bwh: Backported to 3.2: adjust context, indentation]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Qiang Huang <h.huangqiang@huawei.com>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Jianguo Wu <wujianguo@huawei.com>
+Cc: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/msg.h |    6 +++---
- ipc/msgutil.c       |   12 ++++++------
- ipc/util.h          |    4 ++--
- 3 files changed, 11 insertions(+), 11 deletions(-)
+ drivers/usb/serial/oti6858.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/include/linux/msg.h
-+++ b/include/linux/msg.h
-@@ -76,9 +76,9 @@ struct msginfo {
+--- a/drivers/usb/serial/oti6858.c
++++ b/drivers/usb/serial/oti6858.c
+@@ -198,7 +198,6 @@ struct oti6858_private {
+ 	u8 setup_done;
+ 	struct delayed_work delayed_setup_work;
  
- /* one msg_msg structure for each message */
- struct msg_msg {
--	struct list_head m_list; 
--	long  m_type;          
--	int m_ts;           /* message text size */
-+	struct list_head m_list;
-+	long m_type;
-+	size_t m_ts;		/* message text size */
- 	struct msg_msgseg* next;
- 	void *security;
- 	/* the actual message follows immediately */
---- a/ipc/msgutil.c
-+++ b/ipc/msgutil.c
-@@ -39,15 +39,15 @@ struct msg_msgseg {
- 	/* the next part of the message follows immediately */
+-	wait_queue_head_t intr_wait;
+ 	struct usb_serial_port *port;   /* USB port with which associated */
  };
  
--#define DATALEN_MSG	(PAGE_SIZE-sizeof(struct msg_msg))
--#define DATALEN_SEG	(PAGE_SIZE-sizeof(struct msg_msgseg))
-+#define DATALEN_MSG	((size_t)PAGE_SIZE-sizeof(struct msg_msg))
-+#define DATALEN_SEG	((size_t)PAGE_SIZE-sizeof(struct msg_msgseg))
+@@ -356,7 +355,6 @@ static int oti6858_startup(struct usb_se
+ 			break;
  
--struct msg_msg *load_msg(const void __user *src, int len)
-+struct msg_msg *load_msg(const void __user *src, size_t len)
- {
- 	struct msg_msg *msg;
- 	struct msg_msgseg **pseg;
- 	int err;
--	int alen;
-+	size_t alen;
+ 		spin_lock_init(&priv->lock);
+-		init_waitqueue_head(&priv->intr_wait);
+ /*		INIT_WORK(&priv->setup_work, setup_line, serial->port[i]); */
+ /*		INIT_WORK(&priv->write_work, send_data, serial->port[i]); */
+ 		priv->port = port;
+@@ -703,11 +701,15 @@ static int wait_modem_info(struct usb_se
+ 	spin_unlock_irqrestore(&priv->lock, flags);
  
- 	alen = len;
- 	if (alen > DATALEN_MSG)
-@@ -101,9 +101,9 @@ out_err:
- 	return ERR_PTR(err);
- }
+ 	while (1) {
+-		wait_event_interruptible(priv->intr_wait,
++		wait_event_interruptible(port->delta_msr_wait,
++					port->serial->disconnected ||
+ 					priv->status.pin_state != prev);
+ 		if (signal_pending(current))
+ 			return -ERESTARTSYS;
  
--int store_msg(void __user *dest, struct msg_msg *msg, int len)
-+int store_msg(void __user *dest, struct msg_msg *msg, size_t len)
- {
--	int alen;
-+	size_t alen;
- 	struct msg_msgseg *seg;
++		if (port->serial->disconnected)
++			return -EIO;
++
+ 		spin_lock_irqsave(&priv->lock, flags);
+ 		status = priv->status.pin_state & PIN_MASK;
+ 		spin_unlock_irqrestore(&priv->lock, flags);
+@@ -819,7 +821,7 @@ static void oti6858_read_int_callback(st
  
- 	alen = len;
---- a/ipc/util.h
-+++ b/ipc/util.h
-@@ -138,8 +138,8 @@ int ipc_parse_version (int *cmd);
- #endif
- 
- extern void free_msg(struct msg_msg *msg);
--extern struct msg_msg *load_msg(const void __user *src, int len);
--extern int store_msg(void __user *dest, struct msg_msg *msg, int len);
-+extern struct msg_msg *load_msg(const void __user *src, size_t len);
-+extern int store_msg(void __user *dest, struct msg_msg *msg, size_t len);
- 
- extern void recompute_msgmni(struct ipc_namespace *);
+ 		if (!priv->transient) {
+ 			if (xs->pin_state != priv->status.pin_state)
+-				wake_up_interruptible(&priv->intr_wait);
++				wake_up_interruptible(&port->delta_msr_wait);
+ 			memcpy(&priv->status, xs, OTI6858_CTRL_PKT_SIZE);
+ 		}
  
 
 
