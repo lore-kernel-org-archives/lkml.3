@@ -1,54 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935127AbaDJOOk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 10:14:40 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:57697 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934712AbaDJOOh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 10:14:37 -0400
+	id S935399AbaDJOQz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 10:16:55 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44835 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934295AbaDJOQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 10:16:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,834,1389772800"; 
+   d="scan'208";a="518521340"
+Date: Thu, 10 Apr 2014 10:16:30 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 11/22] Replace ext2_clear_xip_target with
+ dax_clear_blocks
+Message-ID: <20140410141630.GH5727@linux.intel.com>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <b94af75d7123feced8ea8ba42d1d0e7c740d5009.1395591795.git.matthew.r.wilcox@intel.com>
+ <20140409094644.GD32103@quack.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <000701cf54a2$7c1379c0$743a6d40$%han@samsung.com>
-References: <1393480414-19473-1-git-send-email-acourbot@nvidia.com>
- <1393480414-19473-2-git-send-email-acourbot@nvidia.com> <CAAVeFu+XUzZ7ozMOcp6A-gZJ9o8DZFrdh1j4LvCQtoTcu=PP1g@mail.gmail.com>
- <000701cf54a2$7c1379c0$743a6d40$%han@samsung.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Thu, 10 Apr 2014 23:14:16 +0900
-Message-ID: <CAAVeFuKJnSk2XSsMZZKMfyabzJ5CYdqWdE91H5uHiYFC1r6HxA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ARM: SAMSUNG: remove gpio flags in dev-backlight
-To: Jingoo Han <jg1.han@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-Cc: Alexandre Courbot <acourbot@nvidia.com>, Bryan Wu <cooloney@gmail.com>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140409094644.GD32103@quack.suse.cz>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 6:51 PM, Jingoo Han <jg1.han@samsung.com> wrote:
-> On Thursday, April 10, 2014 1:17 PM, Alexandre Courbot wrote:
->>
->> Ping, can I have the Samsung folks review and ,aybe even merge this
->> patch? enable_gpio_flags is never used in any code, is replaced by
->> gpiod, and we would like to remove it altogether from pwm_bl. Thanks!
->
-> OK, I see. It looks good.
->
-> As far as I know, 'enable_gpio_flags' has not been being used
-> for Samsung platform. So, there will be no side effect,
-> if 'enable_gpio_flags' is removed from 'arch/arm/plat-samsung'
-> directory.
->
-> Reviewed-by: Jingoo Han <jg1.han@samsung.com>
+On Wed, Apr 09, 2014 at 11:46:44AM +0200, Jan Kara wrote:
+>   Another day, some more review ;) Comments below.
 
-Great, thanks. Ben, Kukjin, could we have your Acked-by?
+I'm really grateful for all this review!  It's killing me, though ;-)
 
-Thierry, if the Samsung maintainers are ok with it, and 2/2 of this
-series is also ok for you (you merged the same for simple-panel
-already), can you take both into your tree?
+> > +int dax_clear_blocks(struct inode *inode, sector_t block, long size)
+> > +{
+> > +	struct block_device *bdev = inode->i_sb->s_bdev;
+> > +	const struct block_device_operations *ops = bdev->bd_disk->fops;
+> > +	sector_t sector = block << (inode->i_blkbits - 9);
+> > +	unsigned long pfn;
+> > +
+> > +	might_sleep();
+> > +	do {
+> > +		void *addr;
+> > +		long count = ops->direct_access(bdev, sector, &addr, &pfn,
+> > +									size);
+>   So do you assume blocksize == PAGE_SIZE here? If not, addr could be in
+> the middle of the page AFAICT.
 
-Thanks,
-Alex.
+You're right.  Depending on how clear_page() is implemented, that
+might go badly wrong.  Of course, both ext2 & ext4 require block_size
+== PAGE_SIZE right now, so anything else is by definition untested.
+I've been trying to keep DAX free from that assumption, but obviously
+haven't caught all the places.
+
+How does this look?
+
+typedef long (*direct_access_t)(struct block_device *, sector_t, void **,
+                                unsigned long *pfn, long size);
+
+int dax_clear_blocks(struct inode *inode, sector_t block, long size)
+{
+        struct block_device *bdev = inode->i_sb->s_bdev;
+        direct_access_t direct_access = bdev->bd_disk->fops->direct_access;
+        sector_t sector = block << (inode->i_blkbits - 9);
+        unsigned long pfn;
+
+        might_sleep();
+        do {
+                void *addr;
+                long count = direct_access(bdev, sector, &addr, &pfn, size);
+                if (count < 0)
+                        return count;
+                while (count > 0) {
+                        unsigned pgsz = PAGE_SIZE - offset_in_page(addr);
+                        if (pgsz > count)
+                                pgsz = count;
+                        if (pgsz < PAGE_SIZE)
+                                memset(addr, 0, pgsz);
+                        else
+                                clear_page(addr);
+                        addr += pgsz;
+                        size -= pgsz;
+                        count -= pgsz;
+                        sector += pgsz / 512;
+                        cond_resched();
+                }
+        } while (size);
+
+        return 0;
+}
+EXPORT_SYMBOL_GPL(dax_clear_blocks);
+
+> >  	if (IS_DAX(inode)) {
+> >  		/*
+> > -		 * we need to clear the block
+> > +		 * block must be initialised before we put it in the tree
+> > +		 * so that it's not found by another thread before it's
+> > +		 * initialised
+> >  		 */
+> > -		err = ext2_clear_xip_target (inode,
+> > -			le32_to_cpu(chain[depth-1].key));
+> > +		err = dax_clear_blocks(inode, le32_to_cpu(chain[depth-1].key),
+> > +						count << inode->i_blkbits);
+>   Umm 'count' looks wrong here. You want to clear only one block, don't
+> you?
+
+I think I got confused between ext2 and ext4 here.  I do want to clear
+only one block.
