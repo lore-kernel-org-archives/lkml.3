@@ -1,135 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161173AbaDJS6v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 14:58:51 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55210 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446AbaDJS6s (ORCPT
+	id S1758955AbaDJTEt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 15:04:49 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:6007 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753435AbaDJTEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 14:58:48 -0400
-Date: Thu, 10 Apr 2014 16:29:18 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: "Michael L. Semon" <mlsemon35@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        jason.low2@hp.com, linux-kernel@vger.kernel.org, dhowells@redhat.com,
-        viro@ZenIV.linux.org.uk
-Subject: cred_guard_mutex vs seq_file::lock [was: Re: 3.14.0+/x86: lockdep
- and mutexes not getting along]
-Message-ID: <20140410142918.GU11096@twins.programming.kicks-ass.net>
+	Thu, 10 Apr 2014 15:04:46 -0400
+Message-ID: <1397156681.2053.4.camel@j-VirtualBox>
+Subject: Re: 3.14.0+/x86: lockdep and mutexes not getting along
+From: Jason Low <jason.low2@hp.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        "Michael L. Semon" <mlsemon35@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Date: Thu, 10 Apr 2014 12:04:41 -0700
+In-Reply-To: <20140410172851.GF26782@laptop.programming.kicks-ass.net>
 References: <alpine.LNX.2.11.1404060059020.8208@bpserver.ds>
- <20140409121940.GA12890@node.dhcp.inet.fi>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140409121940.GA12890@node.dhcp.inet.fi>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	 <20140409121940.GA12890@node.dhcp.inet.fi>
+	 <1397108579.2586.15.camel@j-VirtualBox>
+	 <20140410091824.GL10526@twins.programming.kicks-ass.net>
+	 <1397150084.3032.4.camel@j-VirtualBox>
+	 <20140410172851.GF26782@laptop.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 03:19:40PM +0300, Kirill A. Shutemov wrote:
-> [   26.747484] ======================================================
-> [   26.748725] [ INFO: possible circular locking dependency detected ]
-> [   26.748725] 3.13.0-11331-g6f008e72cd11 #1162 Not tainted
-> [   26.748725] -------------------------------------------------------
-> [   26.748725] trinity-c5/848 is trying to acquire lock:
-> [   26.748725]  (&p->lock){+.+.+.}, at: [<ffffffff811774a8>] seq_read+0x38/0x3c0
-> [   26.748725] 
-> [   26.748725] but task is already holding lock:
-> [   26.748725]  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff811579db>] prepare_bprm_creds+0x2b/0x80
-> [   26.748725] 
-> [   26.748725] which lock already depends on the new lock.
-> [   26.748725] 
-> [   26.748725] 
-> [   26.748725] the existing dependency chain (in reverse order) is:
-> [   26.748725] -> #1 (&sig->cred_guard_mutex){+.+.+.}:
-> [   26.748725]        [<ffffffff810998d8>] __lock_acquire+0x3a8/0xc20
-> [   26.748725]        [<ffffffff8109a1c6>] lock_acquire+0x76/0xc0
-> [   26.748725]        [<ffffffff8173634d>] mutex_lock_killable_nested+0x6d/0x460
-> [   26.748725]        [<ffffffff81049924>] mm_access+0x24/0xb0
-> [   26.748725]        [<ffffffff811b6307>] m_start+0x67/0x1e0
-> [   26.748725]        [<ffffffff811775a0>] seq_read+0x130/0x3c0
-> [   26.748725]        [<ffffffff8114ffaa>] do_loop_readv_writev+0x5a/0x80
-> [   26.748725]        [<ffffffff81150c4d>] compat_do_readv_writev+0x20d/0x220
-> [   26.748725]        [<ffffffff81150c92>] compat_readv+0x32/0x70
-> [   26.748725]        [<ffffffff81151c07>] compat_SyS_readv+0x47/0xa0
-> [   26.748725]        [<ffffffff81742179>] ia32_sysret+0x0/0x5
-> [   26.748725] -> #0 (&p->lock){+.+.+.}:
-> [   26.780481]        [<ffffffff81097a4a>] validate_chain.isra.37+0x105a/0x10d0
-> [   26.780481]        [<ffffffff810998d8>] __lock_acquire+0x3a8/0xc20
-> [   26.780481]        [<ffffffff8109a1c6>] lock_acquire+0x76/0xc0
-> [   26.780481]        [<ffffffff81735bad>] mutex_lock_nested+0x6d/0x3d0
-> [   26.780481]        [<ffffffff811774a8>] seq_read+0x38/0x3c0
-> [   26.780481]        [<ffffffff811b7af8>] proc_reg_read+0x38/0x70
-> [   26.780481]        [<ffffffff81150799>] vfs_read+0x99/0x160
-> [   26.780481]        [<ffffffff8115635c>] kernel_read+0x3c/0x50
-> [   26.780481]        [<ffffffff811565e7>] prepare_binprm+0x137/0x1d0
-> [   26.780481]        [<ffffffff81157f82>] do_execve_common.isra.34+0x4d2/0x730
-> [   26.780481]        [<ffffffff81158461>] SyS_execve+0x31/0x50
-> [   26.780481]        [<ffffffff81741099>] stub_execve+0x69/0xa0
-> [   26.780481] 
-> [   26.780481] other info that might help us debug this:
-> [   26.780481] 
-> [   26.780481]  Possible unsafe locking scenario:
-> [   26.780481] 
-> [   26.780481]        CPU0                    CPU1
-> [   26.780481]        ----                    ----
-> [   26.780481]   lock(&sig->cred_guard_mutex);
-> [   26.780481]                                lock(&p->lock);
-> [   26.780481]                                lock(&sig->cred_guard_mutex);
-> [   26.780481]   lock(&p->lock);
-> [   26.780481] 
-> [   26.780481]  *** DEADLOCK ***
-> [   26.780481] 
-> [   26.780481] 1 lock held by trinity-c5/848:
-> [   26.780481]  #0:  (&sig->cred_guard_mutex){+.+.+.}, at: [<ffffffff811579db>] prepare_bprm_creds+0x2b/0x80
-> [   26.780481] 
-> [   26.780481] stack backtrace:
-> [   26.780481] CPU: 5 PID: 848 Comm: trinity-c5 Not tainted 3.13.0-11331-g6f008e72cd11 #1162
-> [   26.780481] Hardware name: QEMU Standard PC (Q35 + ICH9, 2009), BIOS Bochs 01/01/2011
-> [   26.780481]  ffffffff824f1130 ffff8803b6973b58 ffffffff8172fc76 ffffffff824f1130
-> [   26.780481]  ffff8803b6973b98 ffffffff8172b6de ffff8803b6973bd0 ffff8803b72550e0
-> [   26.780481]  ffff8803b72550e0 0000000000000000 ffff8803b72549d0 0000000000000001
-> [   26.780481] Call Trace:
-> [   26.780481]  [<ffffffff8172fc76>] dump_stack+0x4d/0x66
-> [   26.780481]  [<ffffffff8172b6de>] print_circular_bug+0x201/0x20f
-> [   26.780481]  [<ffffffff81097a4a>] validate_chain.isra.37+0x105a/0x10d0
-> [   26.780481]  [<ffffffff810998d8>] __lock_acquire+0x3a8/0xc20
-> [   26.780481]  [<ffffffff8109a1c6>] lock_acquire+0x76/0xc0
-> [   26.780481]  [<ffffffff811774a8>] ? seq_read+0x38/0x3c0
-> [   26.780481]  [<ffffffff81735bad>] mutex_lock_nested+0x6d/0x3d0
-> [   26.780481]  [<ffffffff811774a8>] ? seq_read+0x38/0x3c0
-> [   26.780481]  [<ffffffff811774a8>] ? seq_read+0x38/0x3c0
-> [   26.780481]  [<ffffffff81082e18>] ? sched_clock_cpu+0xa8/0xd0
-> [   26.780481]  [<ffffffff811774a8>] seq_read+0x38/0x3c0
-> [   26.780481]  [<ffffffff811b7af8>] proc_reg_read+0x38/0x70
-> [   26.780481]  [<ffffffff81167b9e>] ? dput+0x1e/0x110
-> [   26.780481]  [<ffffffff81150799>] vfs_read+0x99/0x160
-> [   26.780481]  [<ffffffff8115635c>] kernel_read+0x3c/0x50
-> [   26.780481]  [<ffffffff811565e7>] prepare_binprm+0x137/0x1d0
-> [   26.780481]  [<ffffffff81157f82>] do_execve_common.isra.34+0x4d2/0x730
-> [   26.780481]  [<ffffffff81157ba9>] ? do_execve_common.isra.34+0xf9/0x730
-> [   26.780481]  [<ffffffff8115c100>] ? mountpoint_last+0x1a0/0x1b0
-> [   26.780481]  [<ffffffff81158461>] SyS_execve+0x31/0x50
-> [   26.780481]  [<ffffffff81741099>] stub_execve+0x69/0xa0
+On Thu, 2014-04-10 at 19:28 +0200, Peter Zijlstra wrote:
+> On Thu, Apr 10, 2014 at 10:14:44AM -0700, Jason Low wrote:
+> > So one thing I noticed that is different in the current code is that in
+> > debug_mutex_unlock(), there is is a possibility that it does not unlock
+> > the mutex (when !debug_locks). May be interesting to try out this
+> > patch too:
+> 
+> Yeah; look at a few mails down :-) I spotted it too when I woke up.
 
-So as far as I can tell the bug that led you here only wrecks the lock
-state after you hit a lockdep error, so all actual lockdep reports are
-still entirely valid.
-
-This means the above is 'interesting'. I talked with David Howells
-earlier today, it looks like trinity manages to exec() a /proc file and
-create the lock inversion that way.
-
-Now all /proc files that take cred_guard_mutex inside seq_read() aren't
-executable, and David also tried to use them as loaders and that didn't
-work either.
-
-However, any executable file that uses seq_read() is sufficient, the
-file doesn't need to actually take cred_guard_mutex too. We just need
-two tasks: one doing a seq_read() exec and the other reading a
-seq_read()->cred_guard_mutex file.
-
-Al, David, any bright ideas on how to best fix this?
-
+Ah, I've received those mails in my inbox just now. :)
 
