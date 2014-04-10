@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934731AbaDJDWO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:22:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40812 "EHLO
+	id S1751831AbaDJEOR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 00:14:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41070 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934618AbaDJDVd (ORCPT
+	with ESMTP id S934718AbaDJDWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:21:33 -0400
+	Wed, 9 Apr 2014 23:22:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Jamie Liu <jamieliu@google.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Qiang Huang <h.huangqiang@huawei.com>, Li Zefan <lizefan@huawei.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 005/134] workqueue: cond_resched() after processing each work item
-Date: Wed,  9 Apr 2014 20:22:01 -0700
-Message-Id: <20140410032300.361536830@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Ben Hutchings <ben@decadent.org.uk>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH 3.4 055/134] ALSA: hda - Always turn on pins for HDMI/DP
+Date: Wed,  9 Apr 2014 20:22:51 -0700
+Message-Id: <20140410032307.242971198@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -29,59 +27,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit b22ce2785d97423846206cceec4efee0c4afd980 upstream.
+commit 6169b673618bf0b2518ce413b54925782a603f06 upstream.
 
-If !PREEMPT, a kworker running work items back to back can hog CPU.
-This becomes dangerous when a self-requeueing work item which is
-waiting for something to happen races against stop_machine.  Such
-self-requeueing work item would requeue itself indefinitely hogging
-the kworker and CPU it's running on while stop_machine would wait for
-that CPU to enter stop_machine while preventing anything else from
-happening on all other CPUs.  The two would deadlock.
+We've seen the broken HDMI *video* output on some machines with GM965,
+and the debugging session pointed that the culprit is the disabled
+audio output pins.  Toggling these pins dynamically on demand caused
+flickering of HDMI TV.
 
-Jamie Liu reports that this deadlock scenario exists around
-scsi_requeue_run_queue() and libata port multiplier support, where one
-port may exclude command processing from other ports.  With the right
-timing, scsi_requeue_run_queue() can end up requeueing itself trying
-to execute an IO which is asked to be retried while another device has
-an exclusive access, which in turn can't make forward progress due to
-stop_machine.
+This patch changes the behavior to keep the pin ON constantly.
 
-Fix it by invoking cond_resched() after executing each work item.
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51421
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Jamie Liu <jamieliu@google.com>
-References: http://thread.gmane.org/gmane.linux.kernel/1552567
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Qiang Huang <h.huangqiang@huawei.com>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Jianguo Wu <wujianguo@huawei.com>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/workqueue.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ sound/pci/hda/patch_hdmi.c |   18 ++++--------------
+ 1 file changed, 4 insertions(+), 14 deletions(-)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1922,6 +1922,15 @@ __acquires(&gcwq->lock)
- 		dump_stack();
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -425,9 +425,11 @@ static void hdmi_init_pin(struct hda_cod
+ 	if (get_wcaps(codec, pin_nid) & AC_WCAP_OUT_AMP)
+ 		snd_hda_codec_write(codec, pin_nid, 0,
+ 				AC_VERB_SET_AMP_GAIN_MUTE, AMP_OUT_UNMUTE);
+-	/* Disable pin out until stream is active*/
++	/* Enable pin out: some machines with GM965 gets broken output when
++	 * the pin is disabled or changed while using with HDMI
++	 */
+ 	snd_hda_codec_write(codec, pin_nid, 0,
+-			    AC_VERB_SET_PIN_WIDGET_CONTROL, 0);
++			    AC_VERB_SET_PIN_WIDGET_CONTROL, PIN_OUT);
+ }
+ 
+ static int hdmi_get_channel_count(struct hda_codec *codec, hda_nid_t cvt_nid)
+@@ -1152,17 +1154,11 @@ static int generic_hdmi_playback_pcm_pre
+ 	struct hdmi_spec *spec = codec->spec;
+ 	int pin_idx = hinfo_to_pin_index(spec, hinfo);
+ 	hda_nid_t pin_nid = spec->pins[pin_idx].pin_nid;
+-	int pinctl;
+ 
+ 	hdmi_set_channel_count(codec, cvt_nid, substream->runtime->channels);
+ 
+ 	hdmi_setup_audio_infoframe(codec, pin_idx, substream);
+ 
+-	pinctl = snd_hda_codec_read(codec, pin_nid, 0,
+-				    AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
+-	snd_hda_codec_write(codec, pin_nid, 0,
+-			    AC_VERB_SET_PIN_WIDGET_CONTROL, pinctl | PIN_OUT);
+-
+ 	return hdmi_setup_stream(codec, cvt_nid, pin_nid, stream_tag, format);
+ }
+ 
+@@ -1174,7 +1170,6 @@ static int generic_hdmi_playback_pcm_cle
+ 	int cvt_idx, pin_idx;
+ 	struct hdmi_spec_per_cvt *per_cvt;
+ 	struct hdmi_spec_per_pin *per_pin;
+-	int pinctl;
+ 
+ 	snd_hda_codec_cleanup_stream(codec, hinfo->nid);
+ 
+@@ -1193,11 +1188,6 @@ static int generic_hdmi_playback_pcm_cle
+ 			return -EINVAL;
+ 		per_pin = &spec->pins[pin_idx];
+ 
+-		pinctl = snd_hda_codec_read(codec, per_pin->pin_nid, 0,
+-					    AC_VERB_GET_PIN_WIDGET_CONTROL, 0);
+-		snd_hda_codec_write(codec, per_pin->pin_nid, 0,
+-				    AC_VERB_SET_PIN_WIDGET_CONTROL,
+-				    pinctl & ~PIN_OUT);
+ 		snd_hda_spdif_ctls_unassign(codec, pin_idx);
  	}
  
-+	/*
-+	 * The following prevents a kworker from hogging CPU on !PREEMPT
-+	 * kernels, where a requeueing work item waiting for something to
-+	 * happen could deadlock with stop_machine as such work item could
-+	 * indefinitely requeue itself while all other CPUs are trapped in
-+	 * stop_machine.
-+	 */
-+	cond_resched();
-+
- 	spin_lock_irq(&gcwq->lock);
- 
- 	/* clear cpu intensive status */
 
 
