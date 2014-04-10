@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935541AbaDJOSQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 10:18:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17113 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934295AbaDJOSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 10:18:13 -0400
-Date: Thu, 10 Apr 2014 16:18:06 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 4/6] uprobes/x86: Emulate rip-relative call's
-Message-ID: <20140410141806.GA23997@redhat.com>
-References: <20140406201628.GA507@redhat.com> <1396995963.5056.46.camel@oc7886638347.ibm.com.usor.ibm.com> <20140409154346.GB18486@redhat.com> <53469F95.1030709@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53469F95.1030709@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S935586AbaDJOSg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 10:18:36 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:44770 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934295AbaDJOSe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 10:18:34 -0400
+Message-ID: <1397139510.5137.92.camel@marge.simpson.net>
+Subject: Re: [RFC PATCH RT] rwsem: The return of multi-reader PI rwsems
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <williams@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Date: Thu, 10 Apr 2014 16:18:30 +0200
+In-Reply-To: <20140409151922.5fa5d999@gandalf.local.home>
+References: <20140409151922.5fa5d999@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10, Denys Vlasenko wrote:
->
-> There is this monstrosity, "16-bit override for branches" in 64-mode:
->
-> 66 e8 nn nn       callw   <offset16>
->
-> Nobody sane uses it because it truncates instruction pointer.
->
-> Or rather, *I think* it should truncate it (i.e. zero-extend to full width),
-> but conceivably some CPUs can be buggy wrt that:
-> they can decide to modify only lower 16 bits of IP,
-> or even they can decided to use signed <offset16> but apply it
-> to full-width RIP.
->
-> AMD manuals are not clear on what exactly should happen.
->
-> I am sure no one sane uses this form of branch instructions
-> in 32-bit and 64-bit code.
->
-> I don't think we should be trying to support it "correctly"
-> (we can just let program crash with SIGILL or something),
-> we only need to make sure we don't overlook its existence
-> and thus are not tricked into touching or modifying unrelated data.
+On Wed, 2014-04-09 at 15:19 -0400, Steven Rostedt wrote:
 
-And after the quick check it seems that lib/insn.c doesn't parse
-"66 e8 nn nn" correctly. It treats the next 2 bytes as the part
-of 32bit offset.
+> If you have any benchmark on large machines I would be very happy if
+> you could test this patch against the unpatched version of -rt.
 
-> Imagine that   66 e8 nn nn    bytes are exactly at the end of
-> a page,
+Too bad I don't have (and know how to use) specjbb.
 
-this doesn't matter. We always read MAX_UINSN_BYTES bytes, so
+I dug up old vmark, thinking I'd be able to get some halfway useful
+relative numbers from it, but that was a waste of a day.  The thing
+performs so badly on 40 core box that rt _beats_ nopreempt, and after 2
+nodes, you're going backward.  40 Westmere EX cores does a whopping ~2.5
+* dinky old Q6600 box throughput.
 
-> and we wrongly assume that offset is 32-bit, not 16-bit.
-> 66 e8 nn nn.
-
-see above this will always happen.
-
-So I think branch_setup_xol_ops() should simply return -ENOSYS in
-this case, and let the default_ code execute it out of line. Given
-that nobody should use this insn, this is probably not too bad.
-
-We can teach branch_xol_ops to handle this insn correctly later.
-
-Now the question is, how I can detect this insn correctly? I mean,
-using the "right" helpers from lib/insn.c ?
-
-Oleg.
+-Mike
 
