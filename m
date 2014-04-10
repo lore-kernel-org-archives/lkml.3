@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030524AbaDJTfE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 15:35:04 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:51026 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446AbaDJTe6 (ORCPT
+	id S1759135AbaDJTgo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 15:36:44 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60584 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822AbaDJTgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 15:34:58 -0400
-Date: Thu, 10 Apr 2014 21:34:46 +0200
-From: Rabin Vincent <rabin@rab.in>
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        Laura Abbott <lauraa@codeaurora.org>
-Subject: Re: [PATCH 2/2] arm: use fixmap for text patching when text is RO
-Message-ID: <20140410193433.GA22746@debian>
-References: <1396646870-29695-1-git-send-email-rabin@rab.in>
- <1396646870-29695-2-git-send-email-rabin@rab.in>
- <1396879071.3654.43.camel@linaro1.home>
+	Thu, 10 Apr 2014 15:36:43 -0400
+Date: Thu, 10 Apr 2014 20:36:41 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Paul McQuade <paulmcquad@gmail.com>
+Cc: linux-kernel@vger.kernel.org, jack@suse.cz
+Subject: Re: [PATCH 11/15] kernel:acct:spaces required
+Message-ID: <20140410193641.GE18016@ZenIV.linux.org.uk>
+References: <1397156046-6837-1-git-send-email-paulmcquad@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1396879071.3654.43.camel@linaro1.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1397156046-6837-1-git-send-email-paulmcquad@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 07, 2014 at 02:57:51PM +0100, Jon Medhurst (Tixy) wrote:
-> How does fixmap cope with cache colouring? Looking at the implementation
-> it looks like it doesn't and so fixmap use on ARM is possibly buggy.
-> 
-> For the text patching case where we know there are no writeable mappings
-> [1] this should be OK if we used set_fixmap_nocache here, so long as we
-> also invalidated the dcache later for the proper virtual address.
+On Thu, Apr 10, 2014 at 07:54:06PM +0100, Paul McQuade wrote:
+> ERROR: spaces required around that '>' (ctx:VxV)
 
-OK.  The dcache invalidation for the proper virtual address is btw
-already there via the call to flush_icache_range().
+Egads, man...
 
-> [1] Can we know there are no writeable mappings though, the ftrace code
-> modifying patches from Kees Cook have there own way of modifying text
-> code permissions.
+a) ERROR (in ALL CAPS, no less) according to whom?  Sure, it's nicer to
+add those spaces, but do you really think that it deserves a separate
+patch, especially with such a commit message?
 
-The ftrace patches does the modifications and the cache cleaning in
-stop_machine(), so there should not be any dirty cache lines from those
-writable mappings when we set up and write to these fixmaps.  Do you
-still see a problem?
+b) AFAICS, you've posted at least 4 such one-liners to kernel/acct.c, with
+commit messages that sound like "Because The Most Holy sendpatch.pl (All Praise
+sendpatch.pl) Says So".  There might be some reason to split the
+asm/uaccess.h -> linux/uaccess.h replacement into a separate commit, but
+the rest of that?  Come on...
+
+Trivial whitespace, etc. changes like that should be clearly marked as such
+and not split beyond reasonable...
