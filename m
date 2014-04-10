@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161132AbaDJTu0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 15:50:26 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:48770 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030242AbaDJTuW (ORCPT
+	id S935704AbaDJTvI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 15:51:08 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:37206 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753679AbaDJTvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 15:50:22 -0400
+	Thu, 10 Apr 2014 15:51:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAOULuOaUke-W1W0o=1rhhk43Fy_RAYLdfhXQjdhy2xjHxP0oWA@mail.gmail.com>
-References: <CAOULuOY5eryuH1KgaqiuGXyYiQd2h=TZoPe2M2+juts9XuzW6Q@mail.gmail.com>
- <CAE9FiQXmO_sSCnd-0NvXKmyeLP0m4XGRRkAgqSiMkfeTcvXs+A@mail.gmail.com>
- <CAOULuOaeBPpuiYc_Aru+awBDf=Ahbok-UjgY9o7gfO4VMctoqg@mail.gmail.com>
- <CAE9FiQWpprkp_dzviD8wRpqosJq5Oe+8UTwhL87fbzFm3OknUw@mail.gmail.com>
- <CA+55aFx_zAO0iJVi==4X-bYFTopgaOCopCdUBbqUwKfOrXRYqw@mail.gmail.com>
- <20140329171903.GA10551@google.com> <CAOULuOaUke-W1W0o=1rhhk43Fy_RAYLdfhXQjdhy2xjHxP0oWA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 10 Apr 2014 13:50:01 -0600
-Message-ID: <CAErSpo6XjtrzSJE6n5aCMzketKv+rPt5eVvrzOQgUnviiRTWnA@mail.gmail.com>
-Subject: Re: BAR 14: can't assign mem (size 0x200000)
-To: Parag Warudkar <parag.lkml@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Yinghai Lu <yinghai@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20140407181331.GA15012@mail.hallyn.com>
+References: <5266BEA3.6020008@execulink.com> <20131022193718.GA18463@ac100>
+ <874n89rsoc.fsf@xmission.com> <20140402172049.GA13240@sergelap>
+ <20140402173248.GA22804@mail.hallyn.com> <533EF65E.6050508@mit.edu>
+ <20140404183022.GA6728@sergelap> <CALCETrUki+k+NsaAYTbvaUqFTwH_AUDtwLv0XRYx+zA=c3zACw@mail.gmail.com>
+ <20140404191000.GA13496@sergelap> <CALCETrW-M9QoqzkKyk9gRPLfx1fiTzs8_oAhdK6_kk=17PQc0Q@mail.gmail.com>
+ <20140407181331.GA15012@mail.hallyn.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 10 Apr 2014 12:50:43 -0700
+Message-ID: <CALCETrULqdffvHZMV_4hobs8=YX6hRSagkvR4opycBKsfTaTtg@mail.gmail.com>
+Subject: Re: [lxc-devel] Kernel bug? Setuid apps and user namespaces
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sean Pajot <sean.pajot@execulink.com>,
+        lxc-devel@lists.linuxcontainers.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 29, 2014 at 6:14 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
->> On Sat, Mar 29, 2014 at 09:41:20AM -0700, Linus Torvalds wrote:
+On Mon, Apr 7, 2014 at 11:13 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
+> Quoting Andy Lutomirski (luto@amacapital.net):
+>> I'm starting to think that we need to extend dumpable to something
+>> much more general like a list of struct creds that someone needs to be
+>> able to ptrace, *in addition to current creds* in order to access
+>> sensitive /proc files, coredumps, etc.  If you get started as setuid,
 >
->>> Parag, can you add a WARN_ON_ONCE() to that message, so that we see
->>> what the call chain is for it.
+> Hm, yeah, this sort of makes sense.
+>
+>> then you start with two struct creds in the list (or maybe just your
+>> euid and uid).  If you get started !setuid, then your initial creds
+>> are in the list.  It's possible that few or no things will need to
+>> change that list after execve.
+>>
+>> If all of the entries and current->cred are in the same user_ns, then
+>> we can dump as userns root.  If they're in different usernses, then we
+>> dump as global root or maybe the common ancestor root.
+>> setuid(getuid()) and other such nastiness may have to empty the list,
+>> or maybe we can just use a prctl for that.
+>
+> A few questions,
+>
+> 1. is there any other action which would trigger adding a new cred to
+> the ist?
 
-Parag, did you ever try this?
+I don't think so.  Anyone who can ptrace you from the start can
+corrupt you such that you leak rights even if some future action
+prevents new ptracers from attaching.
 
-> ...
-> Not sure if Ubuntu includes any patches on top of 3.11 mainline that
-> make a difference to this issue - but in case they don't this might be
-> a regression.
+OTOH, it might be nice for something like an HTTPS server to be able
+to fork and shove its private key into the child, while preventing
+anyone from ptracing the child.  But doing this securely without help
+from someone with a different uid might be impossible anyway.
 
-I doubt that Ubuntu includes any patches relevant to this issue.
+>
+> 2. would execve clear (and re-init) the list of creds?
 
-Even though it doesn't seem to cause any problems, we're going to get
-a lot of complaints about these scary-looking messages when resuming,
-so I think we should figure this out and fix it.
+Probably.  Thoughts?
 
-Bjorn
+We could have a way to ask execve not to reinit the list.  Such a
+mechanism would have to require no_new_privs to prevent a
+straightforward attack on any setuid binary.
+
+We's also want PR_SET_DUMPABLE or a new prctl to be able reset the
+list to contain just current-.cred, I think.
+
+--Andy
