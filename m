@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935771AbaDJXQD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 19:16:03 -0400
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:51909 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753896AbaDJXQB (ORCPT
+	id S935813AbaDJXRr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 19:17:47 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:58037 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935788AbaDJXRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 19:16:01 -0400
+	Thu, 10 Apr 2014 19:17:45 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALCETrXFJfoD9xrYpu6UjsHF74kYm3_o-xLNKjqh-OF2x-nyFQ@mail.gmail.com>
-References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
-	<20140320153250.GC20618@thunk.org>
-	<CANq1E4SUXrzAV8FS8HVYxnRVb1oOR6HSTyucJzyFs5PuS5Y88A@mail.gmail.com>
-	<20140320163806.GA10440@thunk.org>
-	<5346ED93.9040500@amacapital.net>
-	<20140410203246.GB31614@thunk.org>
-	<CALCETrVmaGNCxo-L4-dPbUev3VXXEPR7xBzo3Fux6ny7yh_Gzw@mail.gmail.com>
-	<CANq1E4RofJ7CUWWBPW1Qb4pX3rxYHCh1CPtbtX241KtJO+=Qhw@mail.gmail.com>
-	<CALCETrXVzLcVVSuPMFUgoRvpQgcQNy2_rW6=11CJAME0W2GyYQ@mail.gmail.com>
-	<CANq1E4Qa8N0G8whyW5OWQS4x9=CVOF0PpcLhDi4j3wGTHX0==w@mail.gmail.com>
-	<CALCETrXFJfoD9xrYpu6UjsHF74kYm3_o-xLNKjqh-OF2x-nyFQ@mail.gmail.com>
-Date: Fri, 11 Apr 2014 01:16:00 +0200
-Message-ID: <CANq1E4SsCFTpiKBPbOUD0M+Nfs2hsnLW44RfsgbQvbFCfeZuvA@mail.gmail.com>
-Subject: Re: [PATCH 0/6] File Sealing & memfd_create()
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        John Stultz <john.stultz@linaro.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ryan Lortie <desrt@desrt.ca>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+In-Reply-To: <20140410204525.GC21815@beardog.cce.hp.com>
+References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
+	<1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>
+	<1397084904.9519.62.camel@dabdike>
+	<1397085044.9519.63.camel@dabdike>
+	<1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
+	<1397087425.9519.67.camel@dabdike>
+	<1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>
+	<CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
+	<1397111557.2608.29.camel@buesod1.americas.hpqcorp.net>
+	<20140410204525.GC21815@beardog.cce.hp.com>
+Date: Thu, 10 Apr 2014 17:17:44 -0600
+Message-ID: <CAKocOONaqGAaiesf_MUFXEOMDtX8R8kYuPQYAxLBfth7nAx3Jg@mail.gmail.com>
+Subject: Re: hpsa driver bug crack kernel down!
+From: Shuah Khan <shuahkhan@gmail.com>
+To: scameron@beardog.cce.hp.com
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Baoquan He <bhe@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Joerg Roedel <joro@8bytes.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Thu, Apr 10, 2014 at 2:45 PM,  <scameron@beardog.cce.hp.com> wrote:
+>> > 3f583bc21977 BAD ("Merge tag 'iommu-updates-v3.15'")
+>>
+>> Yes, specifically (finally done bisecting):
+>>
+>> commit 2e45528930388658603ea24d49cf52867b928d3e
+>> Author: Jiang Liu <jiang.liu@linux.intel.com>
+>> Date:   Wed Feb 19 14:07:36 2014 +0800
+>>
+>>     iommu/vt-d: Unify the way to process DMAR device scope array
+>>
+>>     Now we have a PCI bus notification based mechanism to update DMAR
+>>     device scope array, we could extend the mechanism to support boot
+>>     time initialization too, which will help to unify and simplify
+>>     the implementation.
+>>
+>>     Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+>>     Signed-off-by: Joerg Roedel <joro@8bytes.org>
+>
+> My git bisect appears to be converging on something else, something
+> within the hpsa patches that I sent up recently, unfortunately for
+> me.  Will let you all know when it converges.
+>
 
-On Fri, Apr 11, 2014 at 1:05 AM, Andy Lutomirski <luto@amacapital.net> wrote:
-> /proc/pid/fd is a really weird corner case in which the mode of an
-> inode that doesn't have a name matters.  I suspect that almost no one
-> will ever want to open one of these things out of /proc/self/fd, and
-> those who do should be made to think about it.
+This smells very much like the problem that was solved couple of years
+ago for SI domain. It is likely that path is broken with the DMAR
+device scope array change. Please take a look to see if the following
+no longer occurs. Looks like BIOS could be expecting this RMRR to be
+still mapped.
 
-I'm arguing in the context of memfd, and there's no security leak if
-people get access to the underlying inode (at least I'm not aware of
-any). As I said, context information is attached to the inode, not
-file context, so I'm fine if people want to open multiple file
-contexts via /proc. If someone wants to forbid open(), I want to hear
-_why_. I assume the memfd object has uid==uid-of-creator and
-mode==(777 & ~umask) (which usually results in X00, so no access for
-non-owners). I cannot see how /proc is a security issue here.
+               /*
+                 * We want to prevent any device associated with an RMRR from
+                 * getting placed into the SI Domain. This is done because
+                 * problems exist when devices are moved in and out of domains
+                 * and their respective RMRR info is lost. We exempt USB devices
+                 * from this process due to their usage of RMRRs that are known
+                 * to not be needed after BIOS hand-off to OS.
+                 */
+                if (device_has_rmrr(dev) &&
+                    (pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
+                        return 0;
 
-Thanks
-David
+-- Shuah
