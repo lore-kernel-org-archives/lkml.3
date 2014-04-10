@@ -1,123 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030231AbaDJKuZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 06:50:25 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:21636 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965557AbaDJKuW (ORCPT
+	id S965865AbaDJK4h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 06:56:37 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:61355 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965541AbaDJK4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 06:50:22 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: armdev <armdev.ftm@gmail.com>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>,
-        "kgene.kim\@samsung.com" <kgene.kim@samsung.com>,
-        "t.figa\@samsung.com" <t.figa@samsung.com>,
-        "linux-samsung-soc\@vger.kernel.org" 
+	Thu, 10 Apr 2014 06:56:34 -0400
+X-AuditID: cbfee68f-b7f156d00000276c-fd-534678e019b3
+Message-id: <534678E1.2000005@samsung.com>
+Date: Thu, 10 Apr 2014 19:56:33 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        "t.figa@samsung.com" <t.figa@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
 	<linux-samsung-soc@vger.kernel.org>,
-        "hyunhee.kim\@samsung.com" <hyunhee.kim@samsung.com>,
-        "sw0312.kim\@samsung.com" <sw0312.kim@samsung.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yj44.cho\@samsung.com" <yj44.cho@samsung.com>,
-        "inki.dae\@samsung.com" <inki.dae@samsung.com>,
-        "kyungmin.park\@samsung.com" <kyungmin.park@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <Mark.Rutland@arm.com>
-Subject: Re: [PATCH 07/27] irqchip: Declare cortex-a7's irqchip to initialize gic from dt
-In-Reply-To: <907CEE7C-19F2-495C-BE8F-712AE4B0A0E1@gmail.com> (armdev's
-	message of "Thu, 10 Apr 2014 11:42:56 +0100")
-Organization: ARM Ltd
+        "hyunhee.kim@samsung.com" <hyunhee.kim@samsung.com>,
+        "sw0312.kim@samsung.com" <sw0312.kim@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yj44.cho@samsung.com" <yj44.cho@samsung.com>,
+        "inki.dae@samsung.com" <inki.dae@samsung.com>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 06/27] ARM: EXYNOS:: Enter a15 lowpower mode for Exynos3250
+ based on Cortex-a7
 References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
-	<1397122124-15690-8-git-send-email-cw00.choi@samsung.com>
-	<878urd33g4.fsf@approximate.cambridge.arm.com>
-	<C136A675-6D64-42EE-918E-351A266946C5@gmail.com>
-	<874n2132o8.fsf@approximate.cambridge.arm.com>
-	<254FD85F-0C8E-4D16-8207-5BA4E7FBDE65@gmail.com>
-	<87zjjt1n73.fsf@approximate.cambridge.arm.com>
-	<907CEE7C-19F2-495C-BE8F-712AE4B0A0E1@gmail.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Thu, 10 Apr 2014 11:50:14 +0100
-Message-ID: <87r4551ms9.fsf@approximate.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+ <1397122124-15690-7-git-send-email-cw00.choi@samsung.com>
+ <87d2gp3430.fsf@approximate.cambridge.arm.com>
+In-reply-to: <87d2gp3430.fsf@approximate.cambridge.arm.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsWyRsSkSPdBhVuwwYmL6hafP7SwW0y6P4HF
+	onfBVTaLs01v2C02Pb7GanF51xw2ixnn9zFZ/L3zD8ia/JLNYv2M1ywWe3dOZnTg9lgzbw2j
+	x+Yl9R59W1YxenzeJBfAEsVlk5Kak1mWWqRvl8CV0brqBVNBs2DFhAWPGBsY9/B2MXJySAiY
+	SHy6upEZwhaTuHBvPRuILSSwlFHi/+l0mJrLM34BxbmA4tMZJbauX8sC4bxmlHj7ej4rSBWv
+	gJbEvR2XWUBsFgFVicmLLoBNYgOK739xA8wWFQiTWDn9CgtEvaDEj8n3wGwRAXWJp/3P2EGG
+	MgscY5H4tHwGWEJYIEViQg9Eg5DAJkaJKz0ZIDangLVEW9M3RhCbWUBHYn/rNDYIW15i85q3
+	zCCDJATusUvc+n0N6iIBiW+TDwHZHEAJWYlNB6BelpQ4uOIGywRGsVlIbpqFZOwsJGMXMDKv
+	YhRNLUguKE5KLzLWK07MLS7NS9dLzs/dxAiMytP/nvXvYLx7wPoQYzLQyonMUqLJ+cCoziuJ
+	NzQ2M7IwNTE1NjK3NCNNWEmc9/7DpCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjLvunp/g
+	ovP7VZ+nlvSvov0abUsfC7R6V2w6Ui/37rvJh3Xh/jX/habWm9QV3GwsnCodxXac4/+Pqneh
+	z6b0qL2X+B0rdGbPWebvlzZLz01X3t8oOUFOwXvduSfLEvIvvup5uthb1KaocbrkZrera5+F
+	5ywK3zm1w+aj986Zu++7TfvLc+nCRnMlluKMREMt5qLiRAC6USUQ4AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNKsWRmVeSWpSXmKPExsVy+t9jQd0HFW7BBrOuy1l8/tDCbjHp/gQW
+	i94FV9kszja9YbfY9Pgaq8XlXXPYLGac38dk8ffOPyBr8ks2i/UzXrNY7N05mdGB22PNvDWM
+	HpuX1Hv0bVnF6PF5k1wAS1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJe
+	Ym6qrZKLT4CuW2YO0FVKCmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQQMIaxozW
+	VS+YCpoFKyYseMTYwLiHt4uRk0NCwETi8oxfbBC2mMSFe+uBbC4OIYHpjBJb169lgXBeM0q8
+	fT2fFaSKV0BL4t6OyywgNouAqsTkRRfAutmA4vtf3ACzRQXCJFZOv8ICUS8o8WPyPTBbREBd
+	4mn/M3aQocwCx1gkPi2fAZYQFkiRmNAD0SAksIlR4kpPBojNKWAt0db0jRHEZhbQkdjfOo0N
+	wpaX2LzmLfMERoFZSHbMQlI2C0nZAkbmVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxjBUf9M
+	agfjygaLQ4wCHIxKPLwHlrkGC7EmlhVX5h5ilOBgVhLh3Z3pFizEm5JYWZValB9fVJqTWnyI
+	MRkYBBOZpUST84EJKa8k3tDYxMzI0sjc0MLI2Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4
+	OKUaGBmPLNFX1IvbwHZi64c49p0HJLNEz7075v0pUdJt2s59DdN7p+45PPM8p+GbQPZaxRMv
+	xE9cElzbI8yzff9WyWBPXm2tw0xp24ucLsfcWPpCNINrP//NH+wsosWpOd7V9R4LVyfkOdnf
+	YU67Nfuw1T/Tp+2iG47aWrT5T754RcLCg0u5fa15qRJLcUaioRZzUXEiAMc000w+AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10 2014 at 11:42:56 am BST, armdev <armdev.ftm@gmail.com> wrote:
-> On 10-Apr-2014, at 4:11 pm, Marc Zyngier <marc.zyngier@arm.com> wrote:
->
->> On Thu, Apr 10 2014 at 11:30:41 am BST, armdev <armdev.ftm@gmail.com> wrote:
->>> On 10-Apr-2014, at 3:51 pm, Marc Zyngier <marc.zyngier@arm.com> wrote:
->>> 
->>>> On Thu, Apr 10 2014 at 11:09:02 am BST, armdev <armdev.ftm@gmail.com> wrote:
->>>>> On 10-Apr-2014, at 3:34 pm, Marc Zyngier <marc.zyngier@arm.com> wrote:
->>>>> 
->>>>>> On Thu, Apr 10 2014 at 10:28:24 am BST, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->>>>>>> This patch declare coretex-a7's irqchip to initialze gic from dt
->>>>>>> with "arm,cortex-a7-gic" data.
->>>>>>> 
->>>>>>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>>>>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->>>>>>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->>>>>>> ---
->>>>>>> drivers/irqchip/irq-gic.c | 1 +
->>>>>>> 1 file changed, 1 insertion(+)
->>>>>>> 
->>>>>>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
->>>>>>> index 4300b66..8e906e4 100644
->>>>>>> --- a/drivers/irqchip/irq-gic.c
->>>>>>> +++ b/drivers/irqchip/irq-gic.c
->>>>>>> @@ -1069,6 +1069,7 @@ gic_of_init(struct device_node *node, struct device_node *parent)
->>>>>>> }
->>>>>>> IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
->>>>>>> IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
->>>>>>> +IRQCHIP_DECLARE(cortex_a7_gic, "arm,cortex-a7-gic", gic_of_init);
->>>>>>> IRQCHIP_DECLARE(msm_8660_qgic, "qcom,msm-8660-qgic", gic_of_init);
->>>>>>> IRQCHIP_DECLARE(msm_qgic2, "qcom,msm-qgic2", gic_of_init);
->>>>>> 
->>>>>> Frankly, this patch adds no value. Are we going to add
->>>>>> "arm,cortex-a12-gic", "arm,cortex-a17-gic", "arm,cortex-a53-gic",
->>>>>> "arm,cortex-a57-gic"? And that's just to mention the ARM Ltd cores...
->>>>>> 
->>>>>> Instead, how about defining a generic "arm,gic" property, and mandate
->>>>>> that new DT files are using that? We can always use a more precise
->>>>>> compatible for quirks.
->>>>>> 
->>>>> 
->>>>> How about keeping it simple and tied to arm gic versions
->>>>> arm,gicv1, arm,gicv2, arm,gicv2ve
->>>> 
->>>> That's a variation on the same theme. As for GICv2, we don't need to
->>>> distinguish between having the Virtualization Extentions, the binding
->>>> already allows you to tell one from the other.
->>>> 
->>> So if there be just 2 types of gic, it would be simple.
->> 
->> Not exactly. We just happen to support two revisions of the GIC
->> architecture with the same binding. GICv3 has an entierely separate
->> binding.
->> 
->>> gicv1 - 2 address sets (gicc and gicd)
->> 
->> Yes.
->> 
->>> gicv2 - 4 sets (gicc gicd gicv gich) and 1 maintenance interrupt. Right?
->> 
->> No.
->> 
->> The presence of the GICV, GICH and maintenance interrupt are indicative
->> of the support for the Virtualization Extentions. GICv2 itself can
->> perfectly be built without it.
->
-> then does gicv2-ve makes sense ?
+On 04/10/2014 06:51 PM, Marc Zyngier wrote:
+> On Thu, Apr 10 2014 at 10:28:23 am BST, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+>> This patch decide proper lowpower mode of either a15 or a9 according to own ID
+>> from Main ID register.
+>>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>>  arch/arm/mach-exynos/hotplug.c | 13 ++++++++++---
+>>  1 file changed, 10 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
+>> index 5eead53..36d3db6 100644
+>> --- a/arch/arm/mach-exynos/hotplug.c
+>> +++ b/arch/arm/mach-exynos/hotplug.c
+>> @@ -135,13 +135,20 @@ void __ref exynos_cpu_die(unsigned int cpu)
+>>  	int primary_part = 0;
+>>  
+>>  	/*
+>> -	 * we're ready for shutdown now, so do it.
+>> -	 * Exynos4 is A9 based while Exynos5 is A15; check the CPU part
+>> +	 * we're ready for shutdown now, so do it. Exynos4 is A9 based
+>> +	 * while Exynos5 is A15/Exynos7 is A7; check the CPU part
+>>  	 * number by reading the Main ID register and then perform the
+>>  	 * appropriate sequence for entering low power.
+>>  	 */
+>>  	asm("mrc p15, 0, %0, c0, c0, 0" : "=r"(primary_part) : : "cc");
+> 
+> While you're touching that code, how about using:
+> 
+>       primary_part = read_cpuid(CPUID_ID);
 
-Read what I just wrote. You find the GICV region, you have the VE
-extensions. You don't find them, they are not present. No need for an
-overloaded compatible string, they both conform to the same
-*Architecture Spec*.
+Or, 
+I suggest read_cpuid_part_number() instead of assembler directly.
 
-	M.
--- 
-Jazz is not dead. It just smells funny.
+	primary_part = read_cpuid_part_number();
+
+> 
+>> -	if ((primary_part & 0xfff0) == 0xc0f0)
+>> +
+>> +	/*
+>> +	 * Main ID register of Cortex series
+>> +	 * - Cortex-a7  : 0x410F_C07x
+>> +	 * - Cortex-a15 : 0x410F_C0Fx
+>> +	 */
+>> +	primary_part = primary_part & 0xfff0;
+>> +	if (primary_part == 0xc0f0 || primary_part == 0xc070)
+> 
+> ARM_CPU_PART_CORTEX_A15, ARM_CPU_PART_CORTEX_A7
+
+OK I'll use this defined constant as following:
+
+	switch (primary_part)
+	case ARM_CPU_PART_CORTEX_A7:
+	case ARM_CPU_PART_CORTEX_A15:
+		cpu_enter_lowpower_a15();
+		break;
+	default:
+		cpu_enter_lowpower_a9();
+		break;
+	}
+
+> 
+>>  		cpu_enter_lowpower_a15();
+>>  	else
+>>  		cpu_enter_lowpower_a9();
+> 
+
+Best Regards,
+Chanwoo Choi
+
+
