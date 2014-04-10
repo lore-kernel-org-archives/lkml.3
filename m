@@ -1,88 +1,491 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965965AbaDJKOW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 06:14:22 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:53304 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965770AbaDJKG4 (ORCPT
+	id S1030276AbaDJKPK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 06:15:10 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:58231 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965771AbaDJKPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 06:06:56 -0400
-X-AuditID: cbfee690-b7f266d00000287c-d1-53466d26c8d6
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: kgene.kim@samsung.com, t.figa@samsung.com,
-        linux-samsung-soc@vger.kernel.org
-Cc: kyungmin.park@samsung.com, cw00.choi@samsung.com, inki.dae@samsung.com,
-        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 24/27] ARM: dts: exynos3250: Add pwm dt node to support PWM
- Timer
-Date: Thu, 10 Apr 2014 19:06:14 +0900
-Message-id: <1397124377-16969-16-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-In-reply-to: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
-References: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsWyRsSkQFct1y3Y4PJhdovrX56zWnz+0MJu
-	Men+BBaL3gVX2SzONr1ht9j0+BqrxeVdc9gsZpzfx2QxY/JLNov1M16zWOzdOZnRgdtj85J6
-	j74tqxg9Pm+SC2CO4rJJSc3JLEst0rdL4Mro2X2BreA+e8XRvbMZGxhnsnUxcnJICJhIPGp4
-	ygxhi0lcuLceLC4ksJRR4vRuSZiaF7e3ANVwAcUXMUpM6FwEVdTEJLH0pgqIzSagJbH/xQ2w
-	uIhAgMSP4+/AbGaBm4wSx96HgdjCAsESK04/YwexWQRUJdpnfmIBsXkF3CR2z5/BDrFMTuLD
-	nkdgNidQfOaik1C7XCV6Hl0EO0JCYBm7xK/D3YwQgwQkvk0+BDSIAyghK7HpANQzkhIHV9xg
-	mcAovICRYRWjaGpBckFxUnqRiV5xYm5xaV66XnJ+7iZGYNif/vdswg7GewesDzEmA42byCwl
-	mpwPjJu8knhDYzMjC1MTU2Mjc0sz0oSVxHnVHiUFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCU
-	amDM9Zy4cs2e801i2zRy9d9nMAW6Osb+d/o9tTQwjH9axF6zV8yhGjtT/64I8PRV2Fyacqf+
-	3LWgVVbVfWFPJv5Ly9u6yFAv556d06ZpkxdYROyI1baQ+HIt4I/pntenL+l6XJKcajHfUnp7
-	nPsztQ03WPvmpF2vivpwTqD3iGeymsSjFXeVMt4rsRRnJBpqMRcVJwIAmgFRcpECAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jAV3VXLdggxPPbSyuf3nOavH5Qwu7
-	xaT7E1gsehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PFjMkv2SzWz3jNYrF352RGB26PzUvq
-	Pfq2rGL0+LxJLoA5qoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VW
-	ycUnQNctMwfoICWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYQ1jRs/uC2wF
-	99krju6dzdjAOJOti5GTQ0LAROLF7S3MELaYxIV764HiXBxCAosYJSZ0LgIrEhJoYpJYelMF
-	xGYT0JLY/+IGWFxEIEDix/F3YDazwE1GiWPvw0BsYYFgiRWnn7GD2CwCqhLtMz+xgNi8Am4S
-	u+fPYIdYJifxYc8jMJsTKD5z0UmoXa4SPY8uMk9g5F3AyLCKUTS1ILmgOCk911CvODG3uDQv
-	XS85P3cTIziunkntYFzZYHGIUYCDUYmH98Ay12Ah1sSy4srcQ4wSHMxKIry7M92ChXhTEiur
-	Uovy44tKc1KLDzEmA101kVlKNDkfGPN5JfGGxiZmRpZG5oYWRsbmpAkrifMeaLUOFBJITyxJ
-	zU5NLUgtgtnCxMEp1cCY+UgkI48vx05wjutqiy3PPPdwmnZNeKBeLHZ5tvLhY+Y7PTZPj//n
-	xBm/S3Xufn72ba8mr/OSm3/hzgGTxbcu7Z0v1vVnR9XWSQ0ukYk2G1I+3L8Z5VS7sXqB6xxB
-	nvlWUlrLLi2d/7+Qu/hx+DXvYIUgu95Njt8SZ00o3viAJSPsDOuq6LRFSizFGYmGWsxFxYkA
-	Mb+Rru8CAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 10 Apr 2014 06:15:04 -0400
+X-Greylist: delayed 477 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Apr 2014 06:15:04 EDT
+MIME-Version: 1.0
+In-Reply-To: <1382271072-15664-2-git-send-email-zhiguohong@tencent.com>
+References: <20131018155532.GD2277@redhat.com>
+	<1382271072-15664-1-git-send-email-zhiguohong@tencent.com>
+	<1382271072-15664-2-git-send-email-zhiguohong@tencent.com>
+Date: Thu, 10 Apr 2014 18:07:05 +0800
+Message-ID: <CAA7+ByVJWjfs5HiMsnuum75egghrNQHt2KNNPTWeVa0-FWccaQ@mail.gmail.com>
+Subject: Re: [PATCH v4 1/2] blk-throttle: simplify logic by token bucket algorithm
+From: Hong zhi guo <honkiko@gmail.com>
+To: Tejun Heo <tj@kernel.org>, Vivek Goyal <vgoyal@redhat.com>
+Cc: cgroups@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
+        linux-kernel@vger.kernel.org, Hong Zhiguo <zhiguohong@tencent.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tomasz Figa <t.figa@samsung.com>
+Hi, Tejun, Vivek and Jens,
 
-This patch add pwm dt node to support PWM (Pulse Width Modulation) timer.
-Exynos uses same IP of Exynos4210 and has five 32-bit PWM timers.
+I did tests and you affirmed the idea, and Vivek said he'll review the
+last version of the patch. But it seems he left blkio area more than
+half year. What next should I do to make progress ?
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- arch/arm/boot/dts/exynos3250.dtsi | 9 +++++++++
- 1 file changed, 9 insertions(+)
+BRs
+Zhiguo
 
-diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
-index 03e7931..c8bd33cf 100644
---- a/arch/arm/boot/dts/exynos3250.dtsi
-+++ b/arch/arm/boot/dts/exynos3250.dtsi
-@@ -345,6 +345,15 @@
- 		status = "disabled";
- 	};
- 
-+	pwm: pwm@139D0000 {
-+		compatible = "samsung,exynos4210-pwm";
-+		reg = <0x139D0000 0x1000>;
-+		interrupts = <0 104 0>, <0 105 0>, <0 106 0>,
-+			     <0 107 0>, <0 108 0>;
-+		#pwm-cells = <3>;
-+		status = "disabled";
-+	};
-+
- 	pmu {
- 		compatible = "arm,cortex-a7-pmu";
- 		interrupts = <0 18 0>, <0 19 0>, <0 20 0>, <0 21 0>;
+On Sun, Oct 20, 2013 at 8:11 PM, Hong Zhiguo <honkiko@gmail.com> wrote:
+> Token bucket algorithm(http://en.wikipedia.org/wiki/Token_bucket)
+> is very simple and widely used for rate limiting and shaping.
+> It's well suitable for blk-throttle. And it naturally works for
+> hierarchical cgroups. So I took it to replace the original time
+> _slicing_|_trimming_|_extending_ logic.
+>
+> The advantage is simplicity, reliability and less fluctuation.
+>
+> About 300 lines of code for time-slicing is replaced with 60 lines
+> of code for token bucket in blk-throttle.c.
+>
+> I've tested this patch by fio with rw=randread, rw=randrw. It
+> behaves almost the same with original time-slicing implementation,
+> and with less fluctuation. It's also tested on hierarchical setup.
+>
+> Signed-off-by: Hong Zhiguo <zhiguohong@tencent.com>
+> Tested-by: Hong Zhiguo <zhiguohong@tencent.com>
+> ---
+>  block/blk-throttle.c | 285 +++++++++------------------------------------------
+>  1 file changed, 50 insertions(+), 235 deletions(-)
+>
+> diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+> index 8331aba..45d4d91 100644
+> --- a/block/blk-throttle.c
+> +++ b/block/blk-throttle.c
+> @@ -2,6 +2,8 @@
+>   * Interface for controlling IO bandwidth on a request queue
+>   *
+>   * Copyright (C) 2010 Vivek Goyal <vgoyal@redhat.com>
+> + *
+> + * Simplify the logic with token bucket, Hong Zhiguo <zhiguohong@tencent.com>
+>   */
+>
+>  #include <linux/module.h>
+> @@ -18,9 +20,6 @@ static int throtl_grp_quantum = 8;
+>  /* Total max dispatch from all groups in one round */
+>  static int throtl_quantum = 32;
+>
+> -/* Throttling is performed over 100ms slice and after that slice is renewed */
+> -static unsigned long throtl_slice = HZ/10;     /* 100 ms */
+> -
+>  static struct blkcg_policy blkcg_policy_throtl;
+>
+>  /* A workqueue to queue throttle related work */
+> @@ -91,6 +90,11 @@ struct tg_stats_cpu {
+>         struct blkg_rwstat              serviced;
+>  };
+>
+> +/* Depth of iops token bucket */
+> +#define THROTL_BURST_IO 8
+> +/* Depth of bps token bucket */
+> +#define THROTL_BURST_BYTES (4096 * 8)
+> +
+>  struct throtl_grp {
+>         /* must be the first member */
+>         struct blkg_policy_data pd;
+> @@ -133,14 +137,13 @@ struct throtl_grp {
+>         /* IOPS limits */
+>         unsigned int iops[2];
+>
+> -       /* Number of bytes disptached in current slice */
+> -       uint64_t bytes_disp[2];
+> -       /* Number of bio's dispatched in current slice */
+> -       unsigned int io_disp[2];
+> +       /* Token for throttling by bps */
+> +       uint64_t bytes_token[2];
+> +       /* Token for throttling by iops */
+> +       unsigned int io_token[2];
+>
+> -       /* When did we start a new slice */
+> -       unsigned long slice_start[2];
+> -       unsigned long slice_end[2];
+> +       /* Time check-point */
+> +       unsigned long t_c[2];
+>
+>         /* Per cpu stats pointer */
+>         struct tg_stats_cpu __percpu *stats_cpu;
+> @@ -680,171 +683,39 @@ static bool throtl_schedule_next_dispatch(struct throtl_service_queue *sq,
+>         return false;
+>  }
+>
+> -static inline void throtl_start_new_slice_with_credit(struct throtl_grp *tg,
+> -               bool rw, unsigned long start)
+> -{
+> -       tg->bytes_disp[rw] = 0;
+> -       tg->io_disp[rw] = 0;
+> -
+> -       /*
+> -        * Previous slice has expired. We must have trimmed it after last
+> -        * bio dispatch. That means since start of last slice, we never used
+> -        * that bandwidth. Do try to make use of that bandwidth while giving
+> -        * credit.
+> -        */
+> -       if (time_after_eq(start, tg->slice_start[rw]))
+> -               tg->slice_start[rw] = start;
+> -
+> -       tg->slice_end[rw] = jiffies + throtl_slice;
+> -       throtl_log(&tg->service_queue,
+> -                  "[%c] new slice with credit start=%lu end=%lu jiffies=%lu",
+> -                  rw == READ ? 'R' : 'W', tg->slice_start[rw],
+> -                  tg->slice_end[rw], jiffies);
+> -}
+> -
+> -static inline void throtl_start_new_slice(struct throtl_grp *tg, bool rw)
+> -{
+> -       tg->bytes_disp[rw] = 0;
+> -       tg->io_disp[rw] = 0;
+> -       tg->slice_start[rw] = jiffies;
+> -       tg->slice_end[rw] = jiffies + throtl_slice;
+> -       throtl_log(&tg->service_queue,
+> -                  "[%c] new slice start=%lu end=%lu jiffies=%lu",
+> -                  rw == READ ? 'R' : 'W', tg->slice_start[rw],
+> -                  tg->slice_end[rw], jiffies);
+> -}
+> -
+> -static inline void throtl_set_slice_end(struct throtl_grp *tg, bool rw,
+> -                                       unsigned long jiffy_end)
+> -{
+> -       tg->slice_end[rw] = roundup(jiffy_end, throtl_slice);
+> -}
+> -
+> -static inline void throtl_extend_slice(struct throtl_grp *tg, bool rw,
+> -                                      unsigned long jiffy_end)
+> -{
+> -       tg->slice_end[rw] = roundup(jiffy_end, throtl_slice);
+> -       throtl_log(&tg->service_queue,
+> -                  "[%c] extend slice start=%lu end=%lu jiffies=%lu",
+> -                  rw == READ ? 'R' : 'W', tg->slice_start[rw],
+> -                  tg->slice_end[rw], jiffies);
+> -}
+> -
+> -/* Determine if previously allocated or extended slice is complete or not */
+> -static bool throtl_slice_used(struct throtl_grp *tg, bool rw)
+> -{
+> -       if (time_in_range(jiffies, tg->slice_start[rw], tg->slice_end[rw]))
+> -               return 0;
+> -
+> -       return 1;
+> -}
+> -
+> -/* Trim the used slices and adjust slice start accordingly */
+> -static inline void throtl_trim_slice(struct throtl_grp *tg, bool rw)
+> +static void tg_update_token(struct throtl_grp *tg, bool rw)
+>  {
+> -       unsigned long nr_slices, time_elapsed, io_trim;
+> -       u64 bytes_trim, tmp;
+> +       unsigned long tdiff = jiffies - tg->t_c[rw];
+> +       u64 token;
+>
+> -       BUG_ON(time_before(tg->slice_end[rw], tg->slice_start[rw]));
+> -
+> -       /*
+> -        * If bps are unlimited (-1), then time slice don't get
+> -        * renewed. Don't try to trim the slice if slice is used. A new
+> -        * slice will start when appropriate.
+> -        */
+> -       if (throtl_slice_used(tg, rw))
+> +       if (!tdiff)
+>                 return;
+>
+> -       /*
+> -        * A bio has been dispatched. Also adjust slice_end. It might happen
+> -        * that initially cgroup limit was very low resulting in high
+> -        * slice_end, but later limit was bumped up and bio was dispached
+> -        * sooner, then we need to reduce slice_end. A high bogus slice_end
+> -        * is bad because it does not allow new slice to start.
+> -        */
+> +       token = (u64)tg->iops[rw] * tdiff;
+> +       do_div(token, HZ);
+> +       tg->io_token[rw] += token;
+>
+> -       throtl_set_slice_end(tg, rw, jiffies + throtl_slice);
+> +       token = (u64)tg->bps[rw] * tdiff;
+> +       do_div(token, HZ);
+> +       tg->bytes_token[rw] += token;
+>
+> -       time_elapsed = jiffies - tg->slice_start[rw];
+> -
+> -       nr_slices = time_elapsed / throtl_slice;
+> -
+> -       if (!nr_slices)
+> -               return;
+> -       tmp = tg->bps[rw] * throtl_slice * nr_slices;
+> -       do_div(tmp, HZ);
+> -       bytes_trim = tmp;
+> -
+> -       io_trim = (tg->iops[rw] * throtl_slice * nr_slices)/HZ;
+> -
+> -       if (!bytes_trim && !io_trim)
+> -               return;
+> -
+> -       if (tg->bytes_disp[rw] >= bytes_trim)
+> -               tg->bytes_disp[rw] -= bytes_trim;
+> -       else
+> -               tg->bytes_disp[rw] = 0;
+> -
+> -       if (tg->io_disp[rw] >= io_trim)
+> -               tg->io_disp[rw] -= io_trim;
+> -       else
+> -               tg->io_disp[rw] = 0;
+> -
+> -       tg->slice_start[rw] += nr_slices * throtl_slice;
+> -
+> -       throtl_log(&tg->service_queue,
+> -                  "[%c] trim slice nr=%lu bytes=%llu io=%lu start=%lu end=%lu jiffies=%lu",
+> -                  rw == READ ? 'R' : 'W', nr_slices, bytes_trim, io_trim,
+> -                  tg->slice_start[rw], tg->slice_end[rw], jiffies);
+> +       tg->t_c[rw] = jiffies;
+>  }
+>
+>  static bool tg_with_in_iops_limit(struct throtl_grp *tg, struct bio *bio,
+>                                   unsigned long *wait)
+>  {
+>         bool rw = bio_data_dir(bio);
+> -       unsigned int io_allowed;
+> -       unsigned long jiffy_elapsed, jiffy_wait, jiffy_elapsed_rnd;
+> -       u64 tmp;
+> -
+> -       jiffy_elapsed = jiffy_elapsed_rnd = jiffies - tg->slice_start[rw];
+> -
+> -       /* Slice has just started. Consider one slice interval */
+> -       if (!jiffy_elapsed)
+> -               jiffy_elapsed_rnd = throtl_slice;
+> -
+> -       jiffy_elapsed_rnd = roundup(jiffy_elapsed_rnd, throtl_slice);
+>
+> -       /*
+> -        * jiffy_elapsed_rnd should not be a big value as minimum iops can be
+> -        * 1 then at max jiffy elapsed should be equivalent of 1 second as we
+> -        * will allow dispatch after 1 second and after that slice should
+> -        * have been trimmed.
+> -        */
+> -
+> -       tmp = (u64)tg->iops[rw] * jiffy_elapsed_rnd;
+> -       do_div(tmp, HZ);
+> -
+> -       if (tmp > UINT_MAX)
+> -               io_allowed = UINT_MAX;
+> -       else
+> -               io_allowed = tmp;
+> -
+> -       if (tg->io_disp[rw] + 1 <= io_allowed) {
+> +       if (tg->io_token[rw]) {
+>                 if (wait)
+>                         *wait = 0;
+>                 return 1;
+>         }
+>
+>         /* Calc approx time to dispatch */
+> -       jiffy_wait = ((tg->io_disp[rw] + 1) * HZ)/tg->iops[rw] + 1;
+> -
+> -       if (jiffy_wait > jiffy_elapsed)
+> -               jiffy_wait = jiffy_wait - jiffy_elapsed;
+> -       else
+> -               jiffy_wait = 1;
+> -
+>         if (wait)
+> -               *wait = jiffy_wait;
+> +               *wait = HZ / tg->iops[rw] ?: 1;
+>         return 0;
+>  }
+>
+> @@ -852,41 +723,21 @@ static bool tg_with_in_bps_limit(struct throtl_grp *tg, struct bio *bio,
+>                                  unsigned long *wait)
+>  {
+>         bool rw = bio_data_dir(bio);
+> -       u64 bytes_allowed, extra_bytes, tmp;
+> -       unsigned long jiffy_elapsed, jiffy_wait, jiffy_elapsed_rnd;
+> -
+> -       jiffy_elapsed = jiffy_elapsed_rnd = jiffies - tg->slice_start[rw];
+> +       u64 extra_bytes;
+> +       unsigned long jiffy_wait;
+>
+> -       /* Slice has just started. Consider one slice interval */
+> -       if (!jiffy_elapsed)
+> -               jiffy_elapsed_rnd = throtl_slice;
+> -
+> -       jiffy_elapsed_rnd = roundup(jiffy_elapsed_rnd, throtl_slice);
+> -
+> -       tmp = tg->bps[rw] * jiffy_elapsed_rnd;
+> -       do_div(tmp, HZ);
+> -       bytes_allowed = tmp;
+> -
+> -       if (tg->bytes_disp[rw] + bio->bi_size <= bytes_allowed) {
+> +       if (bio->bi_size <= tg->bytes_token[rw]) {
+>                 if (wait)
+>                         *wait = 0;
+>                 return 1;
+>         }
+>
+>         /* Calc approx time to dispatch */
+> -       extra_bytes = tg->bytes_disp[rw] + bio->bi_size - bytes_allowed;
+> -       jiffy_wait = div64_u64(extra_bytes * HZ, tg->bps[rw]);
+> -
+> -       if (!jiffy_wait)
+> -               jiffy_wait = 1;
+> -
+> -       /*
+> -        * This wait time is without taking into consideration the rounding
+> -        * up we did. Add that time also.
+> -        */
+> -       jiffy_wait = jiffy_wait + (jiffy_elapsed_rnd - jiffy_elapsed);
+> -       if (wait)
+> -               *wait = jiffy_wait;
+> +       if (wait) {
+> +               extra_bytes = bio->bi_size - tg->bytes_token[rw];
+> +               jiffy_wait = div64_u64(extra_bytes * HZ, tg->bps[rw]);
+> +               *wait = jiffy_wait ?: 1;
+> +       }
+>         return 0;
+>  }
+>
+> @@ -916,18 +767,7 @@ static bool tg_may_dispatch(struct throtl_grp *tg, struct bio *bio,
+>                 return 1;
+>         }
+>
+> -       /*
+> -        * If previous slice expired, start a new one otherwise renew/extend
+> -        * existing slice to make sure it is at least throtl_slice interval
+> -        * long since now.
+> -        */
+> -       if (throtl_slice_used(tg, rw))
+> -               throtl_start_new_slice(tg, rw);
+> -       else {
+> -               if (time_before(tg->slice_end[rw], jiffies + throtl_slice))
+> -                       throtl_extend_slice(tg, rw, jiffies + throtl_slice);
+> -       }
+> -
+> +       tg_update_token(tg, rw);
+>         if (tg_with_in_bps_limit(tg, bio, &bps_wait) &&
+>             tg_with_in_iops_limit(tg, bio, &iops_wait)) {
+>                 if (wait)
+> @@ -940,9 +780,6 @@ static bool tg_may_dispatch(struct throtl_grp *tg, struct bio *bio,
+>         if (wait)
+>                 *wait = max_wait;
+>
+> -       if (time_before(tg->slice_end[rw], jiffies + max_wait))
+> -               throtl_extend_slice(tg, rw, jiffies + max_wait);
+> -
+>         return 0;
+>  }
+>
+> @@ -976,9 +813,16 @@ static void throtl_charge_bio(struct throtl_grp *tg, struct bio *bio)
+>  {
+>         bool rw = bio_data_dir(bio);
+>
+> -       /* Charge the bio to the group */
+> -       tg->bytes_disp[rw] += bio->bi_size;
+> -       tg->io_disp[rw]++;
+> +       tg_update_token(tg, rw);
+> +
+> +       /* Charge the bio to the group and trim the bucket */
+> +       tg->bytes_token[rw] -= bio->bi_size;
+> +       if (tg->bytes_token[rw] > THROTL_BURST_BYTES)
+> +               tg->bytes_token[rw] = THROTL_BURST_BYTES;
+> +
+> +       tg->io_token[rw]--;
+> +       if (tg->io_token[rw] > THROTL_BURST_IO)
+> +               tg->io_token[rw] = THROTL_BURST_IO;
+>
+>         /*
+>          * REQ_THROTTLED is used to prevent the same bio to be throttled
+> @@ -1055,16 +899,6 @@ static void tg_update_disptime(struct throtl_grp *tg)
+>         tg->flags &= ~THROTL_TG_WAS_EMPTY;
+>  }
+>
+> -static void start_parent_slice_with_credit(struct throtl_grp *child_tg,
+> -                                       struct throtl_grp *parent_tg, bool rw)
+> -{
+> -       if (throtl_slice_used(parent_tg, rw)) {
+> -               throtl_start_new_slice_with_credit(parent_tg, rw,
+> -                               child_tg->slice_start[rw]);
+> -       }
+> -
+> -}
+> -
+>  static void tg_dispatch_one_bio(struct throtl_grp *tg, bool rw)
+>  {
+>         struct throtl_service_queue *sq = &tg->service_queue;
+> @@ -1093,7 +927,6 @@ static void tg_dispatch_one_bio(struct throtl_grp *tg, bool rw)
+>          */
+>         if (parent_tg) {
+>                 throtl_add_bio_tg(bio, &tg->qnode_on_parent[rw], parent_tg);
+> -               start_parent_slice_with_credit(tg, parent_tg, rw);
+>         } else {
+>                 throtl_qnode_add_bio(bio, &tg->qnode_on_parent[rw],
+>                                      &parent_sq->queued[rw]);
+> @@ -1101,8 +934,6 @@ static void tg_dispatch_one_bio(struct throtl_grp *tg, bool rw)
+>                 tg->td->nr_queued[rw]--;
+>         }
+>
+> -       throtl_trim_slice(tg, rw);
+> -
+>         if (tg_to_put)
+>                 blkg_put(tg_to_blkg(tg_to_put));
+>  }
+> @@ -1386,12 +1217,8 @@ static int tg_set_conf(struct cgroup_subsys_state *css, struct cftype *cft,
+>          * We're already holding queue_lock and know @tg is valid.  Let's
+>          * apply the new config directly.
+>          *
+> -        * Restart the slices for both READ and WRITES. It might happen
+> -        * that a group's limit are dropped suddenly and we don't want to
+> -        * account recently dispatched IO with new low rate.
+> +        * Update dispatch time.
+>          */
+> -       throtl_start_new_slice(tg, 0);
+> -       throtl_start_new_slice(tg, 1);
+>
+>         if (tg->flags & THROTL_TG_PENDING) {
+>                 tg_update_disptime(tg);
+> @@ -1527,19 +1354,6 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
+>                 throtl_charge_bio(tg, bio);
+>
+>                 /*
+> -                * We need to trim slice even when bios are not being queued
+> -                * otherwise it might happen that a bio is not queued for
+> -                * a long time and slice keeps on extending and trim is not
+> -                * called for a long time. Now if limits are reduced suddenly
+> -                * we take into account all the IO dispatched so far at new
+> -                * low rate and * newly queued IO gets a really long dispatch
+> -                * time.
+> -                *
+> -                * So keep on trimming slice even if bio is not queued.
+> -                */
+> -               throtl_trim_slice(tg, rw);
+> -
+> -               /*
+>                  * @bio passed through this layer without being throttled.
+>                  * Climb up the ladder.  If we''re already at the top, it
+>                  * can be executed directly.
+> @@ -1552,10 +1366,11 @@ bool blk_throtl_bio(struct request_queue *q, struct bio *bio)
+>         }
+>
+>         /* out-of-limit, queue to @tg */
+> -       throtl_log(sq, "[%c] bio. bdisp=%llu sz=%u bps=%llu iodisp=%u iops=%u queued=%d/%d",
+> +       throtl_log(sq,
+> +                  "[%c] btk=%llu sz=%u bps=%llu iotk=%u iops=%u queued=%d/%d",
+>                    rw == READ ? 'R' : 'W',
+> -                  tg->bytes_disp[rw], bio->bi_size, tg->bps[rw],
+> -                  tg->io_disp[rw], tg->iops[rw],
+> +                  tg->bytes_token[rw], bio->bi_size, tg->bps[rw],
+> +                  tg->io_token[rw], tg->iops[rw],
+>                    sq->nr_queued[READ], sq->nr_queued[WRITE]);
+>
+>         bio_associate_current(bio);
+> --
+> 1.8.1.2
+>
+
+
+
 -- 
-1.8.0
-
+best regards
+Hong Zhiguo
