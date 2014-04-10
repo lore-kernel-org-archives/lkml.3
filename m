@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965728AbaDJJuQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 05:50:16 -0400
-Received: from infra.glanzmann.de ([88.198.249.254]:39240 "EHLO
-	infra.glanzmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965659AbaDJJuD (ORCPT
+	id S965817AbaDJJuy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 05:50:54 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:16034
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965773AbaDJJup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 05:50:03 -0400
-X-Greylist: delayed 522 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Apr 2014 05:50:03 EDT
-Date: Thu, 10 Apr 2014 11:41:18 +0200
-From: Thomas Glanzmann <thomas@glanzmann.de>
-To: andreas.noever@gmail.com
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        nouveau <nouveau@lists.freedesktop.org>,
-        dri-devel@lists.freedesktop.org, Ben Skeggs <bskeggs@redhat.com>
-Subject: REGRESSION Re: [PATCH] drm/nouveau/bios: fix bug introduced in
- 457e77b2
-Message-ID: <20140410094118.GA21392@glanzmann.de>
-Mail-Followup-To: andreas.noever@gmail.com,
-	LKML <linux-kernel@vger.kernel.org>,
-	nouveau <nouveau@lists.freedesktop.org>,
-	dri-devel@lists.freedesktop.org, Ben Skeggs <bskeggs@redhat.com>
+	Thu, 10 Apr 2014 05:50:45 -0400
+X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VPS3(z579eh551bizbb2dI98dI9371I1432I4015Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de097hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25f6h2605h268bh26d3h2673i19b6n1155h)
+Date: Thu, 10 Apr 2014 11:49:57 +0200
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397072012-9475-1-git-send-email-andreas.noever@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Borislav Petkov <bp@alien8.de>
+CC: Michal Simek <monstr@monstr.eu>,
+        Punnaiah Choudary Kalluri 
+	<punnaiah.choudary.kalluri@xilinx.com>,
+        <dougthompson@xmission.com>, <linux-edac@vger.kernel.org>,
+        <michal.simek@xilinx.com>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <galak@codeaurora.org>, <rob@landley.net>, <sorenb@xilinx.com>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <kpc528@gmail.com>, <kalluripunnaiahchoudary@gmail.com>,
+        <punnaia@xilinx.com>
+Subject: Re: [RFC PATCH v2] edac: synopsys: Added EDAC support for zynq ddr
+ ecc controller
+References: <1220b715-6fc2-42ed-8393-b9859fc0deb9@TX2EHSMHS021.ehs.local> <20140408204047.GQ30077@pd.tnic> <534633C0.9090905@monstr.eu> <20140410092144.GD29093@pd.tnic>
+In-Reply-To: <20140410092144.GD29093@pd.tnic>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+Message-ID: <5e0042b6-f169-4025-8fd7-9d70c2ed0cf6@AM1EHSMHS012.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andreas,
-after pulling and rebooting my machine this morning, nouveau was no
-longer working:
+On 04/10/2014 11:21 AM, Borislav Petkov wrote:
+> On Thu, Apr 10, 2014 at 08:01:36AM +0200, Michal Simek wrote:
+>> Just add it to Zynq maintainer fragment as we are doing for non
+>> zynq/xilinx drivers.
+> 
+> Yep, as a file pattern F:
 
-[    6.455247] nouveau  [  DEVICE][0000:02:00.0] BOOT0  : 0x0ac080b1
-[    6.455312] nouveau  [  DEVICE][0000:02:00.0] Chipset: MCP79/MCP7A (NVAC)
-[    6.455374] nouveau  [  DEVICE][0000:02:00.0] Family : NV50
-[    6.456730] nouveau  [   VBIOS][0000:02:00.0] checking PRAMIN for image...
-[    6.456796] nouveau  [   VBIOS][0000:02:00.0] ... signature not found
-[    6.456858] nouveau  [   VBIOS][0000:02:00.0] checking PROM for image...
-[    6.471198] nouveau  [   VBIOS][0000:02:00.0] ... signature not found
-[    6.471265] nouveau  [   VBIOS][0000:02:00.0] checking ACPI for image...
-[    6.471328] nouveau  [   VBIOS][0000:02:00.0] ... signature not found
-[    6.471390] nouveau  [   VBIOS][0000:02:00.0] checking PCIROM for image...
-[    6.477478] nouveau  [   VBIOS][0000:02:00.0] ... appears to be valid
-[    6.477549] nouveau  [   VBIOS][0000:02:00.0] using image from PCIROM
-[    6.477789] nouveau  [   VBIOS][0000:02:00.0] BIT signature found
-[    6.477852] nouveau  [   VBIOS][0000:02:00.0] version 62.79.4e.00.01
-[    6.486539] nouveau E[   VBIOS][0000:02:00.0] 0xd97c[ ]: unknown opcode 0x00
-[    6.486611] nouveau E[ DEVINIT][0000:02:00.0] init failed, -22
-[    6.486673] nouveau E[     DRM] failed to create 0x80000080, -22
-[    6.488470] nouveau: probe of 0000:02:00.0 failed with error -22
+yep.
 
-I bisected the problem:
+>> At least the is the first time when someone saying that only some
+>> functions should be documented.
+> 
+> I don't see the need to document simple functions which are *obvious*.
+> But if you want to do that, I'm not going to stop you so be my guest.
 
-# bad: [39de65aa2c3eee901db020a4f1396998e09602a3] Merge branch 'i2c/for-next' of git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux
-# good: [b003d7706abc5d75cb58de0c9de8f1fc77e57008] Merge branch 'kbuild' of git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild
-git bisect start 'HEAD' 'v3.14-11011-gb003d77' 'drivers/gpu/drm/'
-# good: [e19b9137142988bec5a76c5f8bdf12a77ea802b0] Merge remote-tracking branch 'airlied/drm-next' into drm-intel-next
-git bisect good e19b9137142988bec5a76c5f8bdf12a77ea802b0
-# bad: [60f2b4af1258c05e6b037af866be81abc24438f7] drm/i915: fix build warning on 32-bit (v2)
-git bisect bad 60f2b4af1258c05e6b037af866be81abc24438f7
-# good: [f3381dfc9745bcd8b6be676ec4f68c52e71d24f1] drm/radeon/dp: use i2c_get_adapdata rather than casting
-git bisect good f3381dfc9745bcd8b6be676ec4f68c52e71d24f1
-# good: [420b94697722512a2c0732970dc1530197a49adb] support for platform devices
-git bisect good 420b94697722512a2c0732970dc1530197a49adb
-# bad: [fc243d7f92d95d961186126efaad36197f133ab1] drm/nouveau/disp: limit dp capabilities as per dcb
-git bisect bad fc243d7f92d95d961186126efaad36197f133ab1
-# bad: [88e98d49a1b3e0f8103cdd4fd80d576ec33133ab] drm/gf100-/gr: split ppc state into its subunits
-git bisect bad 88e98d49a1b3e0f8103cdd4fd80d576ec33133ab
-# bad: [e21bfd171a192dfba4a8907f2fcc41acac0f685f] drm/gf110/gr: fixup gpc/tpc initvals lists
-git bisect bad e21bfd171a192dfba4a8907f2fcc41acac0f685f
-# bad: [eeb0558e074215656ae11a170059a5f2ce29963f] drm/gf104/gr: rename gf104 (nvc4), it came before gf106 (nvc3)
-git bisect bad eeb0558e074215656ae11a170059a5f2ce29963f
-# bad: [6acc09b99d5d8f276a4f9bffc32f0bb0f939c7ca] drm/nvc0-/graph: fix gpccs fuc stack setup
-git bisect bad 6acc09b99d5d8f276a4f9bffc32f0bb0f939c7ca
-# bad: [457e77b26428ab4a24998eecfb99f27fa4195397] drm/nouveau/bios: add more checks to PRAMIN image fetching
-git bisect bad 457e77b26428ab4a24998eecfb99f27fa4195397
+ok. thanks.
 
-Than I saw your posting on LKML and tried your fix and your fix resolves
-my problem on top of Linus tip.
 
-Tested-by: Thomas Glanzmann <thomas@glanzmann.de>
+>> I don't think this is good to do. When we remove this prefix entirely
+>> it is bigger chance that the same function name will be used by
+>> another driver. It is not a problem with linking but the same
+>> functions names will be listed in System.map which will complicate
+>> debugging.
+> 
+> Ok, fair enough. You probably still want to make them shorter, though,
+> so that your code doesn't have to be line-broken too much. For example,
+> since we only load a single edac driver per system, you can shorten the
+> prefix to "edac_" only.
 
-Cheers, 
-        Thomas
+I agree with you that we can use shorter name.
+I have checked this with Punnaiah and I can't see any problem to have
+more edac drivers in the system.
+For zynq there is primary ddr controller which is target by this driver.
+Then we are talking about L2 in another thread.
+Because zynq has programmable logic next to chip where you can add
+soft memory controller (we have these hw designs) on the same bus
+then there could be others edac drivers.
+I would say how many you like till pins on the package.
+
+Thanks,
+Michal
+
+
