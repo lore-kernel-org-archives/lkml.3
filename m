@@ -1,204 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935492AbaDJSCl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 14:02:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33047 "EHLO mx1.redhat.com"
+	id S1758753AbaDJSCr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 14:02:47 -0400
+Received: from mail.tpi.com ([74.45.170.26]:50323 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758656AbaDJR7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 13:59:20 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, mtosatti@redhat.com, aarcange@redhat.com,
-        mgorman@suse.de, akpm@linux-foundation.org, andi@firstfloor.org,
-        davidlohr@hp.com, rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        yinghai@kernel.org, riel@redhat.com, n-horiguchi@ah.jp.nec.com,
-        kirill@shutemov.name
-Subject: [PATCH 4/5] hugetlb: move helpers up in the file
-Date: Thu, 10 Apr 2014 13:58:44 -0400
-Message-Id: <1397152725-20990-5-git-send-email-lcapitulino@redhat.com>
-In-Reply-To: <1397152725-20990-1-git-send-email-lcapitulino@redhat.com>
-References: <1397152725-20990-1-git-send-email-lcapitulino@redhat.com>
+	id S935422AbaDJSCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 14:02:41 -0400
+From: Tim Gardner <tim.gardner@canonical.com>
+To: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@linaro.org>,
+        Lars-Peter Clausen <lars@metafoo.de>, JongHo Kim <furmuwon@gmail.com>
+Subject: [PATCH] ALSA: pcm: 'BUG:' message unnecessarily triggers kerneloops
+Date: Thu, 10 Apr 2014 10:45:08 -0600
+Message-Id: <1397148308-43791-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Next commit will add new code which will want to call
-for_each_node_mask_to_alloc() macro. Move it, its buddy
-for_each_node_mask_to_free() and their dependencies up in the file so
-the new code can use them. This is just code movement, no logic change.
+BugLink: http://bugs.launchpad.net/bugs/1305480
 
-Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
-Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+The kerneloops-daemon scans dmesg for common crash signatures, among
+which is 'BUG:'. The message emitted by the PCM library is really a
+warning, so the most expedient thing to do seems to be to change the
+string.
+
+Cc: Jaroslav Kysela <perex@perex.cz>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: Mark Brown <broonie@linaro.org>
+Cc: Lars-Peter Clausen <lars@metafoo.de>
+Cc: JongHo Kim <furmuwon@gmail.com>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 ---
- mm/hugetlb.c | 146 +++++++++++++++++++++++++++++------------------------------
- 1 file changed, 73 insertions(+), 73 deletions(-)
+ sound/core/pcm_lib.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 8cbaa97..6f1ca74 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -607,6 +607,79 @@ err:
- 	return NULL;
- }
- 
-+/*
-+ * common helper functions for hstate_next_node_to_{alloc|free}.
-+ * We may have allocated or freed a huge page based on a different
-+ * nodes_allowed previously, so h->next_node_to_{alloc|free} might
-+ * be outside of *nodes_allowed.  Ensure that we use an allowed
-+ * node for alloc or free.
-+ */
-+static int next_node_allowed(int nid, nodemask_t *nodes_allowed)
-+{
-+	nid = next_node(nid, *nodes_allowed);
-+	if (nid == MAX_NUMNODES)
-+		nid = first_node(*nodes_allowed);
-+	VM_BUG_ON(nid >= MAX_NUMNODES);
-+
-+	return nid;
-+}
-+
-+static int get_valid_node_allowed(int nid, nodemask_t *nodes_allowed)
-+{
-+	if (!node_isset(nid, *nodes_allowed))
-+		nid = next_node_allowed(nid, nodes_allowed);
-+	return nid;
-+}
-+
-+/*
-+ * returns the previously saved node ["this node"] from which to
-+ * allocate a persistent huge page for the pool and advance the
-+ * next node from which to allocate, handling wrap at end of node
-+ * mask.
-+ */
-+static int hstate_next_node_to_alloc(struct hstate *h,
-+					nodemask_t *nodes_allowed)
-+{
-+	int nid;
-+
-+	VM_BUG_ON(!nodes_allowed);
-+
-+	nid = get_valid_node_allowed(h->next_nid_to_alloc, nodes_allowed);
-+	h->next_nid_to_alloc = next_node_allowed(nid, nodes_allowed);
-+
-+	return nid;
-+}
-+
-+/*
-+ * helper for free_pool_huge_page() - return the previously saved
-+ * node ["this node"] from which to free a huge page.  Advance the
-+ * next node id whether or not we find a free huge page to free so
-+ * that the next attempt to free addresses the next node.
-+ */
-+static int hstate_next_node_to_free(struct hstate *h, nodemask_t *nodes_allowed)
-+{
-+	int nid;
-+
-+	VM_BUG_ON(!nodes_allowed);
-+
-+	nid = get_valid_node_allowed(h->next_nid_to_free, nodes_allowed);
-+	h->next_nid_to_free = next_node_allowed(nid, nodes_allowed);
-+
-+	return nid;
-+}
-+
-+#define for_each_node_mask_to_alloc(hs, nr_nodes, node, mask)		\
-+	for (nr_nodes = nodes_weight(*mask);				\
-+		nr_nodes > 0 &&						\
-+		((node = hstate_next_node_to_alloc(hs, mask)) || 1);	\
-+		nr_nodes--)
-+
-+#define for_each_node_mask_to_free(hs, nr_nodes, node, mask)		\
-+	for (nr_nodes = nodes_weight(*mask);				\
-+		nr_nodes > 0 &&						\
-+		((node = hstate_next_node_to_free(hs, mask)) || 1);	\
-+		nr_nodes--)
-+
- static void update_and_free_page(struct hstate *h, struct page *page)
- {
- 	int i;
-@@ -786,79 +859,6 @@ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
- 	return page;
- }
- 
--/*
-- * common helper functions for hstate_next_node_to_{alloc|free}.
-- * We may have allocated or freed a huge page based on a different
-- * nodes_allowed previously, so h->next_node_to_{alloc|free} might
-- * be outside of *nodes_allowed.  Ensure that we use an allowed
-- * node for alloc or free.
-- */
--static int next_node_allowed(int nid, nodemask_t *nodes_allowed)
--{
--	nid = next_node(nid, *nodes_allowed);
--	if (nid == MAX_NUMNODES)
--		nid = first_node(*nodes_allowed);
--	VM_BUG_ON(nid >= MAX_NUMNODES);
--
--	return nid;
--}
--
--static int get_valid_node_allowed(int nid, nodemask_t *nodes_allowed)
--{
--	if (!node_isset(nid, *nodes_allowed))
--		nid = next_node_allowed(nid, nodes_allowed);
--	return nid;
--}
--
--/*
-- * returns the previously saved node ["this node"] from which to
-- * allocate a persistent huge page for the pool and advance the
-- * next node from which to allocate, handling wrap at end of node
-- * mask.
-- */
--static int hstate_next_node_to_alloc(struct hstate *h,
--					nodemask_t *nodes_allowed)
--{
--	int nid;
--
--	VM_BUG_ON(!nodes_allowed);
--
--	nid = get_valid_node_allowed(h->next_nid_to_alloc, nodes_allowed);
--	h->next_nid_to_alloc = next_node_allowed(nid, nodes_allowed);
--
--	return nid;
--}
--
--/*
-- * helper for free_pool_huge_page() - return the previously saved
-- * node ["this node"] from which to free a huge page.  Advance the
-- * next node id whether or not we find a free huge page to free so
-- * that the next attempt to free addresses the next node.
-- */
--static int hstate_next_node_to_free(struct hstate *h, nodemask_t *nodes_allowed)
--{
--	int nid;
--
--	VM_BUG_ON(!nodes_allowed);
--
--	nid = get_valid_node_allowed(h->next_nid_to_free, nodes_allowed);
--	h->next_nid_to_free = next_node_allowed(nid, nodes_allowed);
--
--	return nid;
--}
--
--#define for_each_node_mask_to_alloc(hs, nr_nodes, node, mask)		\
--	for (nr_nodes = nodes_weight(*mask);				\
--		nr_nodes > 0 &&						\
--		((node = hstate_next_node_to_alloc(hs, mask)) || 1);	\
--		nr_nodes--)
--
--#define for_each_node_mask_to_free(hs, nr_nodes, node, mask)		\
--	for (nr_nodes = nodes_weight(*mask);				\
--		nr_nodes > 0 &&						\
--		((node = hstate_next_node_to_free(hs, mask)) || 1);	\
--		nr_nodes--)
--
- static int alloc_fresh_huge_page(struct hstate *h, nodemask_t *nodes_allowed)
- {
- 	struct page *page;
+diff --git a/sound/core/pcm_lib.c b/sound/core/pcm_lib.c
+index ce83def..2a0563d 100644
+--- a/sound/core/pcm_lib.c
++++ b/sound/core/pcm_lib.c
+@@ -345,7 +345,7 @@ static int snd_pcm_update_hw_ptr0(struct snd_pcm_substream *substream,
+ 			snd_pcm_debug_name(substream, name, sizeof(name));
+ 			xrun_log_show(substream);
+ 			pcm_err(substream->pcm,
+-				"BUG: %s, pos = %ld, buffer size = %ld, period size = %ld\n",
++				"OVER RUN: %s, pos = %ld, buffer size = %ld, period size = %ld\n",
+ 				name, pos, runtime->buffer_size,
+ 				runtime->period_size);
+ 		}
 -- 
-1.8.1.4
+1.7.9.5
 
