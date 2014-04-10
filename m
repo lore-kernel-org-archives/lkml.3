@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934940AbaDJDWi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:22:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40881 "EHLO
+	id S935126AbaDJD4m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:56:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41193 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934649AbaDJDVm (ORCPT
+	with ESMTP id S934649AbaDJDWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:21:42 -0400
+	Wed, 9 Apr 2014 23:22:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicholas Santos <nicholas.santos@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Ben Hutchings <ben@decadent.org.uk>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 3.4 016/134] HID: usbhid: quirk for Formosa IR receiver
-Date: Wed,  9 Apr 2014 20:22:12 -0700
-Message-Id: <20140410032301.919747310@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, dashing.meng@gmail.com,
+        Niklas Schnelle <niklas@komani.de>, Giorgos <ganastasiouGR@gmail.com>,
+        art1@vhex.net, Ben Hutchings <ben@decadent.org.uk>,
+        Yang Yingliang <yangyingliang@huawei.com>
+Subject: [PATCH 3.4 099/134] xhci: Limit the spurious wakeup fix only to HP machines
+Date: Wed,  9 Apr 2014 20:23:35 -0700
+Message-Id: <20140410032312.431302586@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -28,52 +30,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Santos <nicholas.santos@gmail.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 320cde19a4e8f122b19d2df7a5c00636e11ca3fb upstream.
+commit 6962d914f317b119e0db7189199b21ec77a4b3e0 upstream.
 
-Patch to add the Formosa Industrial Computing, Inc. Infrared Receiver
-[IR605A/Q] to hid-ids.h and hid-quirks.c.  This IR receiver causes about a 10
-second timeout when the usbhid driver attempts to initialze the device.  Adding
-this device to the quirks list with HID_QUIRK_NO_INIT_REPORTS removes the
-delay.
+We've got regression reports that my previous fix for spurious wakeups
+after S5 on HP Haswell machines leads to the automatic reboot at
+shutdown on some machines.  It turned out that the fix for one side
+triggers another BIOS bug in other side.  So, it's exclusive.
 
-Signed-off-by: Nicholas Santos <nicholas.santos@gmail.com>
-[jkosina@suse.cz: fix ordering]
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Nicholas Santos <nicholas.santos@gmail.com>
-[jkosina@suse.cz: fix ordering]
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Since the original S5 wakeups have been confirmed only on HP machines,
+it'd be safer to apply it only to limited machines.  As a wild guess,
+limiting to machines with HP PCI SSID should suffice.
+
+This patch should be backported to kernels as old as 3.12, that
+contain the commit 638298dc66ea36623dbc2757a24fc2c4ab41b016 "xhci: Fix
+spurious wakeups after S5 on Haswell".
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=66171
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Tested-by: <dashing.meng@gmail.com>
+Reported-by: Niklas Schnelle <niklas@komani.de>
+Reported-by: Giorgos <ganastasiouGR@gmail.com>
+Reported-by: <art1@vhex.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[yjw: Backported to 3.4: adjust context]
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Cc: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/hid/hid-ids.h           |    3 +++
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 2 files changed, 4 insertions(+)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -293,6 +293,9 @@
- #define USB_VENDOR_ID_FRUCTEL	0x25B6
- #define USB_DEVICE_ID_GAMETEL_MT_MODE	0x0002
- 
-+#define USB_VENDOR_ID_FORMOSA          0x147a
-+#define USB_DEVICE_ID_FORMOSA_IR_RECEIVER      0xe03e
-+
- #define USB_VENDOR_ID_FREESCALE		0x15A2
- #define USB_DEVICE_ID_FREESCALE_MX28	0x004F
- 
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -70,6 +70,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_AXIS_295, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
+---
+ drivers/usb/host/xhci-pci.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -121,7 +121,12 @@ static void xhci_pci_quirks(struct devic
+ 		 * any other sleep) on Haswell machines with LPT and LPT-LP
+ 		 * with the new Intel BIOS
+ 		 */
+-		xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
++		/* Limit the quirk to only known vendors, as this triggers
++		 * yet another BIOS bug on some other machines
++		 * https://bugzilla.kernel.org/show_bug.cgi?id=66171
++		 */
++		if (pdev->subsystem_vendor == PCI_VENDOR_ID_HP)
++			xhci->quirks |= XHCI_SPURIOUS_WAKEUP;
+ 	}
+ 	if (pdev->vendor == PCI_VENDOR_ID_ETRON &&
+ 			pdev->device == PCI_DEVICE_ID_ASROCK_P67) {
 
 
