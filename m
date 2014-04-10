@@ -1,92 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935471AbaDJKar (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 06:30:47 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:48453 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933885AbaDJKap convert rfc822-to-8bit (ORCPT
+	id S935483AbaDJKc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 06:32:58 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:47509 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934795AbaDJKcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 06:30:45 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH 07/27] irqchip: Declare cortex-a7's irqchip to initialize gic from dt
-From: armdev <armdev.ftm@gmail.com>
-In-Reply-To: <874n2132o8.fsf@approximate.cambridge.arm.com>
-Date: Thu, 10 Apr 2014 16:00:41 +0530
-Cc: Chanwoo Choi <cw00.choi@samsung.com>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "t.figa@samsung.com" <t.figa@samsung.com>,
+	Thu, 10 Apr 2014 06:32:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <53465FB9.7070002@ti.com>
+References: <1397044485-26483-1-git-send-email-gautam.vivek@samsung.com>
+	<53465FB9.7070002@ti.com>
+Date: Thu, 10 Apr 2014 16:02:52 +0530
+Message-ID: <CAFp+6iHKT6wFBimhzEGVJRiY_y-2rAur_e-TPFS9=RTLckf-rA@mail.gmail.com>
+Subject: Re: [PATCH] phy: exynos5-usbdrd: Add facility to toggle vbus gpio on/off
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
         "linux-samsung-soc@vger.kernel.org" 
 	<linux-samsung-soc@vger.kernel.org>,
-        "hyunhee.kim@samsung.com" <hyunhee.kim@samsung.com>,
-        "sw0312.kim@samsung.com" <sw0312.kim@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yj44.cho@samsung.com" <yj44.cho@samsung.com>,
-        "inki.dae@samsung.com" <inki.dae@samsung.com>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <Mark.Rutland@arm.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <254FD85F-0C8E-4D16-8207-5BA4E7FBDE65@gmail.com>
-References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com> <1397122124-15690-8-git-send-email-cw00.choi@samsung.com> <878urd33g4.fsf@approximate.cambridge.arm.com> <C136A675-6D64-42EE-918E-351A266946C5@gmail.com> <874n2132o8.fsf@approximate.cambridge.arm.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
-X-Mailer: Apple Mail (2.1874)
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Kishon,
 
-On 10-Apr-2014, at 3:51 pm, Marc Zyngier <marc.zyngier@arm.com> wrote:
 
-> On Thu, Apr 10 2014 at 11:09:02 am BST, armdev <armdev.ftm@gmail.com> wrote:
->> On 10-Apr-2014, at 3:34 pm, Marc Zyngier <marc.zyngier@arm.com> wrote:
->> 
->>> On Thu, Apr 10 2014 at 10:28:24 am BST, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->>>> This patch declare coretex-a7's irqchip to initialze gic from dt
->>>> with "arm,cortex-a7-gic" data.
->>>> 
->>>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->>>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->>>> ---
->>>> drivers/irqchip/irq-gic.c | 1 +
->>>> 1 file changed, 1 insertion(+)
->>>> 
->>>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
->>>> index 4300b66..8e906e4 100644
->>>> --- a/drivers/irqchip/irq-gic.c
->>>> +++ b/drivers/irqchip/irq-gic.c
->>>> @@ -1069,6 +1069,7 @@ gic_of_init(struct device_node *node, struct device_node *parent)
->>>> }
->>>> IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
->>>> IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
->>>> +IRQCHIP_DECLARE(cortex_a7_gic, "arm,cortex-a7-gic", gic_of_init);
->>>> IRQCHIP_DECLARE(msm_8660_qgic, "qcom,msm-8660-qgic", gic_of_init);
->>>> IRQCHIP_DECLARE(msm_qgic2, "qcom,msm-qgic2", gic_of_init);
->>> 
->>> Frankly, this patch adds no value. Are we going to add
->>> "arm,cortex-a12-gic", "arm,cortex-a17-gic", "arm,cortex-a53-gic",
->>> "arm,cortex-a57-gic"? And that's just to mention the ARM Ltd cores...
->>> 
->>> Instead, how about defining a generic "arm,gic" property, and mandate
->>> that new DT files are using that? We can always use a more precise
->>> compatible for quirks.
->>> 
->> 
->> How about keeping it simple and tied to arm gic versions
->> arm,gicv1, arm,gicv2, arm,gicv2ve
-> 
-> That's a variation on the same theme. As for GICv2, we don't need to
-> distinguish between having the Virtualization Extentions, the binding
-> already allows you to tell one from the other.
-> 
-So if there be just 2 types of gic, it would be simple.
-gicv1 - 2 address sets (gicc and gicd)
-gicv2 - 4 sets (gicc gicd gicv gich) and 1 maintenance interrupt. Right?
+On Thu, Apr 10, 2014 at 2:39 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+> Hi.
+>
+> On Wednesday 09 April 2014 05:24 PM, Vivek Gautam wrote:
+>> Adding support to enable/disable VBUS hooked to a gpio
+>> to enable vbus supply on the port.
+>>
+>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> ---
+>>
+>> Based on 'phy-exynos5-usbdrd' patches:
+>> [PATCH V4 0/5] Add Exynos5 USB 3.0 phy driver based on generic PHY framework
+>> http://www.spinics.net/lists/linux-usb/msg105507.html
+>>
+>>  drivers/phy/phy-exynos5-usbdrd.c |   18 ++++++++++++++++++
+>>  1 file changed, 18 insertions(+)
+>>
+>> diff --git a/drivers/phy/phy-exynos5-usbdrd.c b/drivers/phy/phy-exynos5-usbdrd.c
+>> index ff54a7c..5ca7485 100644
+>> --- a/drivers/phy/phy-exynos5-usbdrd.c
+>> +++ b/drivers/phy/phy-exynos5-usbdrd.c
+>> @@ -18,6 +18,7 @@
+>>  #include <linux/module.h>
+>>  #include <linux/of.h>
+>>  #include <linux/of_address.h>
+>> +#include <linux/of_gpio.h>
+>>  #include <linux/phy/phy.h>
+>>  #include <linux/platform_device.h>
+>>  #include <linux/mutex.h>
+>> @@ -176,6 +177,7 @@ struct exynos5_usbdrd_phy {
+>>       struct clk *ref_clk;
+>>       unsigned long ref_rate;
+>>       unsigned int refclk_reg;
+>> +     int gpio;
+>>  };
+>>
+>>  #define to_usbdrd_phy(inst) \
+>> @@ -460,6 +462,9 @@ static int exynos5_usbdrd_phy_power_on(struct phy *phy)
+>>       if (!IS_ERR(phy_drd->usb30_sclk))
+>>               clk_prepare_enable(phy_drd->usb30_sclk);
+>>
+>> +     /* Toggle VBUS gpio - on */
+>> +     gpio_set_value(phy_drd->gpio, 1);
+>> +
+>>       /* Power-on PHY*/
+>>       inst->phy_cfg->phy_isol(inst, 0);
+>>
+>> @@ -476,6 +481,9 @@ static int exynos5_usbdrd_phy_power_off(struct phy *phy)
+>>       /* Power-off the PHY */
+>>       inst->phy_cfg->phy_isol(inst, 1);
+>>
+>> +     /* Toggle VBUS gpio - off */
+>> +     gpio_set_value(phy_drd->gpio, 0);
+>> +
+>>       if (!IS_ERR(phy_drd->usb30_sclk))
+>>               clk_disable_unprepare(phy_drd->usb30_sclk);
+>>
+>> @@ -585,6 +593,16 @@ static int exynos5_usbdrd_phy_probe(struct platform_device *pdev)
+>>
+>>       phy_drd->drv_data = drv_data;
+>>
+>> +     /* Get required GPIO for vbus */
+>> +     phy_drd->gpio = of_get_named_gpio(dev->of_node,
+>> +                                       "samsung,vbus-gpio", 0);
+>
+> Is this dt property documented somewhere?
+>> +     if (!gpio_is_valid(phy_drd->gpio))
+>> +             dev_dbg(dev, "no usbdrd-phy vbus gpio defined\n");
+>
+> No return here? Can the PHY be functional even without the VBUS?
 
-> 	M.
-> -- 
-> Jazz is not dead. It just smells funny.
+On few boards, the switch IC's enable may no be controlled by a GPIO,
+rather enabled by default.
+So in those cases we may not want to stop PHY probe, when the VBUS
+GPIO is not present.
 
+
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
