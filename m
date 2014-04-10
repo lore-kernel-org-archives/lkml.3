@@ -1,203 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030419AbaDJWwP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 18:52:15 -0400
-Received: from omr-d01.mx.aol.com ([205.188.252.208]:33816 "EHLO
-	omr-d01.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759276AbaDJWwA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 18:52:00 -0400
-Message-ID: <5347206F.6020201@netscape.net>
-Date: Fri, 11 Apr 2014 00:51:27 +0200
-From: Manuel Krause <manuelkrause@netscape.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1030651AbaDJWwd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 18:52:33 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:43515 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030537AbaDJWw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 18:52:29 -0400
+Message-ID: <53472093.7040502@ti.com>
+Date: Thu, 10 Apr 2014 17:52:03 -0500
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, rui.zhang@intel.com,
-        Jean Delvare <jdelvare@suse.de>, lm-sensors@lm-sensors.org
-Subject: Re: 3.13.?: Strange / dangerous fan policy...
-References: <531A1EEE.9090101@netscape.net> <5340BF6E.5040400@roeck-us.net> <5341E09F.6050402@netscape.net> <1705965.XMmsPN5L3N@vostro.rjw.lan>
-In-Reply-To: <1705965.XMmsPN5L3N@vostro.rjw.lan>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <dan.j.williams@intel.com>,
+        <vinod.koul@intel.com>, <nsekhar@ti.com>
+CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <mporter@linaro.org>
+Subject: Re: [PATCH v2 00/14] dma: edma: Fixes for cyclic (audio) operation
+References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-x-aol-global-disposition: G
-x-aol-sid: 3039ac1afe6e5347208e10e9
-X-AOL-IP: 93.218.249.71
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-07 13:45, Rafael J. Wysocki wrote:
-> On Monday, April 07, 2014 01:17:51 AM Manuel Krause wrote:
->> On 2014-04-06 04:43, Guenter Roeck wrote:
->>> On 04/05/2014 07:37 PM, Manuel Krause wrote:
->>>> On 2014-04-01 01:47, Guenter Roeck wrote:
->>>>> On 03/31/2014 04:37 PM, Manuel Krause wrote:
->>>>>> On 2014-03-20 21:21, Manuel Krause wrote:
->>>>>>> On 2014-03-11 22:59, Manuel Krause wrote:
->>>>>>>> On 2014-03-10 02:49, Manuel Krause wrote:
->>>>>>>>> On 2014-03-09 18:58, Rafael J. Wysocki wrote:
->>>>>>>>>> On Sunday, March 09, 2014 01:10:25 AM Manuel Krause wrote:
->>>>>>>>>>> On 2014-03-08 16:59, Guenter Roeck wrote:
->>>>>>>>>>>> On 03/08/2014 03:08 AM, Jean Delvare wrote:
->>>>>>>>>>>>> On Fri, 7 Mar 2014 14:52:30 -0800, Guenter Roeck wrote:
->>>>>>>>>>>>>> On Fri, Mar 07, 2014 at 11:04:29PM +0100, Manuel Krause
->>>>>>>>>>>>>> wrote:
->>>>>>> [SNIP]
->>>>>>>
->>>>>>> Long time no reply from you... Have I overseen a unwritten
->>>>>>> convention? Or were my charts that unusable for your
->>>>>>> analysis/work?
->>>>>>>
->>>>>>> Two days ago, I tried the 3.14.0-rc7-vanilla. And the problem
->>>>>>> persists. "Strange / dangerous fan policy..."
->>>>>>>
->>>>>>> Since kernel 3.13.6 I've managed to 'fix' the potential
->>>>>>> overheating problem by manually issuing a:
->>>>>>> "echo 1 > /sys/class/thermal/cooling_device3/cur_state" *)
->>>>>>> _before_ obviously critical temperatures occur. Remind: This
->>>>>>> particular setting may only work for my system! ...and keeps
->>>>>>> working for 3.14-rc.
->>>>>>>
->>>>>>> In the following I'd like to present you a modified output
->>>>>>> of my
->>>>>>> /sys/class/thermal, that I've written a script for (for my
->>>>>>> system), that shows the results in the way of
->>>>>>> linux/Documentation/thermal/sysfs-api.txt, point 3:
->>>>>>> {I've uploded the files to pastebin, to not swamp you and the
->>>>>>> lists with so many lines of logs.}
->>>>>>>
->>>>>>> For the last good kernel -- 3.12.14 -- in-use:
->>>>>>>    http://pastebin.com/HL1PNcda
->>>>>>> For my first bad kernel revision 3.13 -- at critical temp:
->>>>>>>    http://pastebin.com/98hgf1a9
->>>>>>> For the last bad kernel -- 3.14.0-rc7 -- at critical temp:
->>>>>>>    http://pastebin.com/MuTwTnjD
->>>>>>> For the last bad kernel -- 3.14.0-rc7 -- after issuing the
->>>>>>>    *) command:
->>>>>>>    http://pastebin.com/2peda54z
->>>>>>>
->>>>>>> Please, have a look at them! And maybe, give me hints on how I
->>>>>>> can help you to further debug this issue, as my manual method
->>>>>>> works but it's annoying.
->>>>>>>
->>>>>>> And, PLEASE CC: ME, as I'm not on the lists. Or lead this
->>>>>>> Email-thread to someone in charge.
->>>>>>>
->>>>>>> Thank you for your work && best regards,
->>>>>>> Manuel Krause
->>>>>>>
->>>>>>
->>>>>> This is still BUG 71711
->>>>>> https://bugzilla.kernel.org/show_bug.cgi?id=71711
->>>>>>
->>>>>> 3.12.15 works very well
->>>>>> 3.13.7 fails
->>>>>> 3.14.0-rc8 fails
->>>>>>
->>>>>
->>>>> Best you can do would really be to bisect the problem.
->>>>> Unfortunately only you (or someone else with an affected system)
->>>>> can do that. Once the culprit is known it would be much easier
->>>>> to get it fixed.
->>>>>
->>>>> To answer your earlier question: I don't think you did anything
->>>>> wrong.
->>>>> I guess everyone else is just as clueless as I am (if not,
->>>>> speak up
->>>>> and help ;-).
->>>>>
->>>>> Guenter
->>>>>
->>>>
->>>> I've now bisected two times. From two different kernel origins,
->>>> just to be sure, as I'm new to this stupid-and-lengthy method,
->>>> and, to be sure, I haven't given a false positive inbetween due
->>>> to boredom.
->>>>
->>>
->>> Not really. Keep in mint that you were able to track down the bad
->>> commit
->>> among more than 10,000 commits in a reasonably short period of time.
->>>
->>>> In the end it says each time:
->>>> # git bisect bad | tee -a /var/log/bisect.log
->>>> cc8ef52707341e67a12067d6ead991d56ea017ca is the first bad commit
->>>> commit cc8ef52707341e67a12067d6ead991d56ea017ca
->>>> Author: Zhang Rui <rui.zhang@intel.com>
->>>> Date:   Wed Sep 25 20:39:45 2013 +0800
->>>>
->>>>       ACPI / AC: convert ACPI ac driver to platform bus
->>>>
->>>>       Signed-off-by: Zhang Rui <rui.zhang@intel.com>
->>>>       Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>>>
->>> Off to the two of you...
->>>
->>> Guenter
->>>
->>>> :040000 040000 5a0d397cfcbf53c03390f2805b83754cb7837d84
->>>> 4a2af1454f65d67f1d1a507c08e3b9ef3ffe57e7 M      drivers
->>>>
->>>>
->>>> Please help me, on how I can help debug this more, and please
->>>> also read the newest from
->>>> https://bugzilla.kernel.org/show_bug.cgi?id=71711
->>>>
->>>> Manuel Krause
->>>>
->>>>
->>>>
->>>
->>
->> Sorry, that I've forgotton to add the following last night: After
->> the first bisection round, I was so glad about a result that
->> time, that I reverted this mentioned patch from the 3.13.8
->> kernel, but this didn't fix it.
->
-> This means that the commit in question didn't introduce the problem
-> you're seeing.
->
-> Please check out commit 7f2dc5c4bcbf (Merge tag 'dm-3.13-changes' of git://git.kernel.org/pub/scm/linux/kernel/git/device-mapper/linux-dm),
-> build a kernel from that and see if you can reprocude the problem with it.
-> If so, it can be used as your new "first known bad" kernel for bisection.
-> Otherwise, you can use it as the "first good" one and commit cc8ef52707341
-> as "first known bad".
->
-> Thanks!
->
+Hi Peter,
 
-Sorry, for any inconvenience, but you should forget about what 
-I've written, that reverting the patch in question from 3.13.x 
-didn't fix it. Of course it didn't fix it, as the patch doesn't 
-cleanly revert from release-kernels at all. My mistake!
+Other than patches 8/14 and 10/14 which I responded to, you could add my
+Acked-by, or add it to the series itself once you make the changes and
+drop 10.
 
-I' ve been guided by Guenter Roeck through two more bisecting 
-sessions/ways on this, that always pointed to the commit in question.
+Acked-by: Joel Fernandes <joelf@ti.com>
 
-Some citation:
-Me:
->>> O.k. I've now followed your latest directions:
->>> git checkout -b testing cc8ef52707341e67a12067d6ead991d56ea017ca
->>> => result after rebuild was BAD =>
->>> git revert cc8ef52707341e67a12067d6ead991d56ea017ca
->>> => result after rebuild was GOOD
->>>
-[ ...]
->>> Reverting that commit in question from this very git tree makes the
->>> kernel work as expected.
-[ ... ]
-Guenter:
->> Report the results you have above. That should show without question
->> that cc8ef52707341e67a12067d6ead991d56ea017ca is the bad commit,
->> and it should be easy to reproduce.
+Thanks,
+-Joel
 
-That seems to be all I can do for you for now. Please let me know 
-of any preliminary patches to test!
-And I want to add special thanks to Guenter Roeck for his 
-always-just-in-time assistance over so many days,
-
-Manuel Krause
-
+On 04/01/2014 08:06 AM, Peter Ujfalusi wrote:
+> Hi,
+> 
+> This is basically a resend of the previous series:
+> https://lkml.org/lkml/2014/3/13/119
+> with removed ASoC patches (most of them are applied already).
+> 
+> Changes since v1:
+> - ASoC patches removed
+> - Comments from Andriy Shevchenko addressed
+> - patch added to fix cases when src/dst_maxburst is set to 0
+> 
+> Adding support for DMA pause/resume
+> Possibility to select non default event queue/TC for cyclic (audio) dma
+> channels: all devices using the eDMA via dmaengine was assigned to the default
+> EQ/TC (mmc, i2c, spi, etc, and audio). This is not optimal from system
+> performance point of view since sharing the same EQ/TC can cause latency spikes
+> for cyclic channels (long DMA transfers for MMC for example).
+> 
+> While debugging the edma to get things sorted out I noticed that the debug was
+> too verbose and the important information was hidden even when the we did not
+> asked for verbose dmaengine debug.
+> I have included some debug cleanups for the edma dmaengine driver also.
+> 
+> Regards,
+> Peter
+> ---
+> Peter Ujfalusi (14):
+>   platform_data: edma: Be precise with the paRAM struct
+>   dma: edma: Correct the handling of src/dst_maxburst == 0
+>   dma: edma: Add support for DMA_PAUSE/RESUME operation
+>   dma: edma: Set DMA_CYCLIC capability flag
+>   arm: common: edma: Select event queue 1 as default when booted with DT
+>   arm: common: edma: Save the number of event queues/TCs
+>   arm: common: edma: API to request non default queue for a channel
+>   DMA: edma: Use different eventq for cyclic channels
+>   dma: edma: Implement device_slave_caps callback
+>   dma: edma: Simplify direction configuration in edma_config_pset()
+>   dma: edma: Reduce debug print verbosity for non verbose debugging
+>   dma: edma: Prefix debug prints where the text were identical in prep
+>     callbacks
+>   dma: edma: Add channel number to debug prints
+>   dma: edma: Print the direction value as well when it is not supported
+> 
+>  arch/arm/common/edma.c             | 34 +++++++++++++-
+>  drivers/dma/edma.c                 | 96 +++++++++++++++++++++++++++++---------
+>  include/linux/platform_data/edma.h | 20 ++++----
+>  3 files changed, 119 insertions(+), 31 deletions(-)
+> 
 
