@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030835AbaDJMwb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 08:52:31 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:58494 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030515AbaDJMw3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 08:52:29 -0400
+	id S1030717AbaDJMyA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 08:54:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13120 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030515AbaDJMx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 08:53:58 -0400
+Message-ID: <5346944F.2040709@redhat.com>
+Date: Thu, 10 Apr 2014 14:53:35 +0200
+From: Denys Vlasenko <dvlasenk@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140410124045.GX19349@intel.com>
-References: <CA+5PVA5VBns=hkOSViucrpT340uG0=hgrWqf=LYHTBFAe74tBg@mail.gmail.com>
-	<CACna6ry+FOYykZpzycEjDA+ncGNLk6eXkwadXy548h9dgU1Bgw@mail.gmail.com>
-	<CA+5PVA4ijLmwRKHD4RYE6qSqkN7p8v1GB9w9GAGAJKG45bBTnw@mail.gmail.com>
-	<20140410124045.GX19349@intel.com>
-Date: Thu, 10 Apr 2014 08:52:28 -0400
-X-Google-Sender-Auth: nz8YUC5pUVgrKx-bg16lX94-kgY
-Message-ID: <CA+5PVA52wqaRezzhn2Oqb1FM-yuVsbD4eQq422sXRrpLbfzRbA@mail.gmail.com>
-Subject: Re: Oops in acpi_gpiochip_add on MacBookPro with Linux v3.14-12042-g69cd9eba3886
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: =?ISO-8859-2?Q?Rafa=B3_Mi=B3ecki?= <zajec5@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+CC: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2 4/6] uprobes/x86: Emulate rip-relative call's
+References: <20140409194434.GA6235@redhat.com>
+In-Reply-To: <20140409194434.GA6235@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 8:40 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> On Thu, Apr 10, 2014 at 08:22:12AM -0400, Josh Boyer wrote:
->> On Thu, Apr 10, 2014 at 2:50 AM, Rafał Miłecki <zajec5@gmail.com> wrote:
->> > 2014-04-09 23:09 GMT+02:00 Josh Boyer <jwboyer@fedoraproject.org>:
->> >> With Linux v3.14-12042-g69cd9eba3886 I get an oops from the bcma
->> >> module on the MacBookPro 10,2 I have here.  This works fine with Linux
->> >> v3.14-7333-g59ecc26004e7.  There have been no changes between those
->> >> two versions to bcma itself, but the GPIO merge did go in that window.
->> >>  I can attempt to do a bisect tomorrow, but looking over some of the
->> >> GPIO commits it seems pretty relevant to the ACPI GPIO changes.  I'm
->> >> hoping someone here has an idea on what the issue might be and has
->> >> some possible things for me to test for fixes.
->> >
->> > Bug report: https://lkml.org/lkml/2014/3/24/262
->> > Patch: https://lkml.org/lkml/2014/3/24/293
->> > Tested by Sabrina: https://lkml.org/lkml/2014/3/24/304
->> > (all links are for the same thread).
->> >
->> > Now you simply have to find above patch in some git tree :) Not sure
->> > if it's already in Linus's one.
->>
->> Ah, wonderful.  I now wish I would have found those in my searching
->> before doing the bisect.  Oh well.  For what it's worth, my bisect
->> landed on the same commit.
->>
->> The fix isn't in Linus' tree or linux-next.  I'm guessing Mika is
->> either still on vacation, or hasn't sent out the formal fix yet.
->
-> No, not on vacation anymore (unfortunately). I did send the formal patch
-> already:
->
-> https://lkml.org/lkml/2014/3/31/135
->
-> but it isn't merged to Linus' GPIO tree yet.
+On 04/09/2014 09:44 PM, Oleg Nesterov wrote:
+> +static void ttt_clear_displacement(struct arch_uprobe *auprobe, struct insn *insn)
 
-Ah, ok great.  I'll test that today.  Thanks.
+Branch instruction's offset isn't called "displacement"
+on x86.
 
-josh
+How about ttt_clear_branch_offset?
+
+> +{
+> +	/*
+> +	 * Turn this insn into "call 1f; 1:", this is what we will execute
+> +	 * out-of-line if ->emulate() fails.
+> +	 *
+> +	 * In the likely case this will lead to arch_uprobe_abort_xol(), but
+> +	 * see the comment in ->emulate(). So we need to ensure that the new
+> +	 * ->ip can't fall into non-canonical area and trigger #GP.
+> +	 *
+> +	 * We could turn it into (say) "pushf", but then we would need to
+> +	 * divorce ->insn[] and ->ixol[]. We need to preserve the 1st byte
+> +	 * of ->insn[] for set_orig_insn().
+> +	 */
+> +	memset(auprobe->insn + insn_offset_immediate(insn),
+> +		0, insn->immediate.nbytes);
+> +}
+
