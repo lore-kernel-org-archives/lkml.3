@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965348AbaDJDjg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:39:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41318 "EHLO
+	id S935118AbaDJDW7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:22:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40925 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934657AbaDJDXA (ORCPT
+	with ESMTP id S934657AbaDJDVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:23:00 -0400
+	Wed, 9 Apr 2014 23:21:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 118/134] tg3: Add New 5719 Read DMA workaround
-Date: Wed,  9 Apr 2014 20:23:54 -0700
-Message-Id: <20140410032314.437615476@linuxfoundation.org>
+        Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>,
+        Jiri Kosina <jkosina@suse.cz>, Ben Hutchings <ben@decadent.org.uk>,
+        Yijing Wang <wangyijing@huawei.com>, linux-input@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: [PATCH 3.4 025/134] HID: clean up quirk for Sony RF receivers
+Date: Wed,  9 Apr 2014 20:22:21 -0700
+Message-Id: <20140410032303.148203539@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -29,87 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Chan <mchan@broadcom.com>
+From: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
 
-commit 091f0ea30074bc43f9250961b3247af713024bc6 upstream.
+commit 99d249021abd4341771523ed8dd7946276103432 upstream.
 
-After Power-on-reset, the 5719's TX DMA length registers may contain
-uninitialized values and cause TX DMA to stall.  Check for invalid
-values and set a register bit to flush the TX channels.  The bit
-needs to be turned off after the DMA channels have been flushed.
+Document what the fix-up is does and make it more robust by ensuring
+that it is only applied to the USB interface that corresponds to the
+mouse (sony_report_fixup() is called once per interface during probing).
 
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: linux-input@vger.kernel.org
+Cc: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Qiang Huang <h.huangqiang@huawei.com>
+Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/broadcom/tg3.c |   23 +++++++++++++++++++++++
- drivers/net/ethernet/broadcom/tg3.h |    7 ++++++-
- 2 files changed, 29 insertions(+), 1 deletion(-)
+ drivers/hid/hid-sony.c |   14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -9161,6 +9161,19 @@ static int tg3_reset_hw(struct tg3 *tp,
- 	tw32_f(RDMAC_MODE, rdmac_mode);
- 	udelay(40);
+--- a/drivers/hid/hid-sony.c
++++ b/drivers/hid/hid-sony.c
+@@ -44,9 +44,19 @@ static __u8 *sony_report_fixup(struct hi
+ {
+ 	struct sony_sc *sc = hid_get_drvdata(hdev);
  
-+	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719) {
-+		for (i = 0; i < TG3_NUM_RDMA_CHANNELS; i++) {
-+			if (tr32(TG3_RDMA_LENGTH + (i << 2)) > TG3_MAX_MTU(tp))
-+				break;
-+		}
-+		if (i < TG3_NUM_RDMA_CHANNELS) {
-+			val = tr32(TG3_LSO_RD_DMA_CRPTEN_CTRL);
-+			val |= TG3_LSO_RD_DMA_TX_LENGTH_WA;
-+			tw32(TG3_LSO_RD_DMA_CRPTEN_CTRL, val);
-+			tg3_flag_set(tp, 5719_RDMA_BUG);
-+		}
-+	}
-+
- 	tw32(RCVDCC_MODE, RCVDCC_MODE_ENABLE | RCVDCC_MODE_ATTN_ENABLE);
- 	if (!tg3_flag(tp, 5705_PLUS))
- 		tw32(MBFREE_MODE, MBFREE_MODE_ENABLE);
-@@ -9416,6 +9429,16 @@ static void tg3_periodic_fetch_stats(str
- 	TG3_STAT_ADD32(&sp->tx_ucast_packets, MAC_TX_STATS_UCAST);
- 	TG3_STAT_ADD32(&sp->tx_mcast_packets, MAC_TX_STATS_MCAST);
- 	TG3_STAT_ADD32(&sp->tx_bcast_packets, MAC_TX_STATS_BCAST);
-+	if (unlikely(tg3_flag(tp, 5719_RDMA_BUG) &&
-+		     (sp->tx_ucast_packets.low + sp->tx_mcast_packets.low +
-+		      sp->tx_bcast_packets.low) > TG3_NUM_RDMA_CHANNELS)) {
-+		u32 val;
-+
-+		val = tr32(TG3_LSO_RD_DMA_CRPTEN_CTRL);
-+		val &= ~TG3_LSO_RD_DMA_TX_LENGTH_WA;
-+		tw32(TG3_LSO_RD_DMA_CRPTEN_CTRL, val);
-+		tg3_flag_clear(tp, 5719_RDMA_BUG);
-+	}
+-	if ((sc->quirks & VAIO_RDESC_CONSTANT) &&
+-			*rsize >= 56 && rdesc[54] == 0x81 && rdesc[55] == 0x07) {
++	/*
++	 * Some Sony RF receivers wrongly declare the mouse pointer as a
++	 * a constant non-data variable.
++	 */
++	if ((sc->quirks & VAIO_RDESC_CONSTANT) && *rsize >= 56 &&
++	    /* usage page: generic desktop controls */
++	    /* rdesc[0] == 0x05 && rdesc[1] == 0x01 && */
++	    /* usage: mouse */
++	    rdesc[2] == 0x09 && rdesc[3] == 0x02 &&
++	    /* input (usage page for x,y axes): constant, variable, relative */
++	    rdesc[54] == 0x81 && rdesc[55] == 0x07) {
+ 		hid_info(hdev, "Fixing up Sony RF Receiver report descriptor\n");
++		/* input: data, variable, relative */
+ 		rdesc[55] = 0x06;
+ 	}
  
- 	TG3_STAT_ADD32(&sp->rx_octets, MAC_RX_STATS_OCTETS);
- 	TG3_STAT_ADD32(&sp->rx_fragments, MAC_RX_STATS_FRAGMENTS);
---- a/drivers/net/ethernet/broadcom/tg3.h
-+++ b/drivers/net/ethernet/broadcom/tg3.h
-@@ -1376,7 +1376,11 @@
- #define TG3_LSO_RD_DMA_CRPTEN_CTRL	0x00004910
- #define TG3_LSO_RD_DMA_CRPTEN_CTRL_BLEN_BD_4K	 0x00030000
- #define TG3_LSO_RD_DMA_CRPTEN_CTRL_BLEN_LSO_4K	 0x000c0000
--/* 0x4914 --> 0x4c00 unused */
-+#define TG3_LSO_RD_DMA_TX_LENGTH_WA	 0x02000000
-+/* 0x4914 --> 0x4be0 unused */
-+
-+#define TG3_NUM_RDMA_CHANNELS		4
-+#define TG3_RDMA_LENGTH			0x00004be0
- 
- /* Write DMA control registers */
- #define WDMAC_MODE			0x00004c00
-@@ -2924,6 +2928,7 @@ enum TG3_FLAGS {
- 	TG3_FLAG_L1PLLPD_EN,
- 	TG3_FLAG_APE_HAS_NCSI,
- 	TG3_FLAG_4K_FIFO_LIMIT,
-+	TG3_FLAG_5719_RDMA_BUG,
- 	TG3_FLAG_RESET_TASK_PENDING,
- 	TG3_FLAG_5705_PLUS,
- 	TG3_FLAG_IS_5788,
 
 
