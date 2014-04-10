@@ -1,92 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935635AbaDJR5F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 13:57:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30217 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932804AbaDJR5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 13:57:03 -0400
-Date: Thu, 10 Apr 2014 19:57:05 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-Subject: Re: [PATCH RESEND 2/2] tracing: syscall_regfunc() should not skip
-	kernel threads
-Message-ID: <20140410175705.GB32332@redhat.com>
-References: <1397059882-23063-3-git-send-email-fweisbec@gmail.com> <360091921.1294.1397060915052.JavaMail.zimbra@efficios.com> <20140409124249.4081e665@gandalf.local.home> <20140409170505.GA27638@redhat.com> <20140409170616.GC27638@redhat.com> <20140410092842.1f9a8760@gandalf.local.home> <20140410133855.GC12228@redhat.com> <20140410102816.24337ffe@gandalf.local.home> <20140410144655.GA25316@redhat.com> <20140410110848.64c3f25e@gandalf.local.home>
+	id S935685AbaDJR5U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 13:57:20 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:36432 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935646AbaDJR5P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 13:57:15 -0400
+Date: Thu, 10 Apr 2014 13:57:10 -0400
+From: Matt Porter <matt.porter@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Sherman Yin <syin@broadcom.com>, Mark Brown <broonie@kernel.org>,
+        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 1/3] pinctrl: Rename Broadcom Capri pinctrl driver
+Message-ID: <20140410175710.GD23695@beef>
+References: <1390509887-19278-1-git-send-email-syin@broadcom.com>
+ <1396478439-16586-1-git-send-email-syin@broadcom.com>
+ <1396478439-16586-2-git-send-email-syin@broadcom.com>
+ <CACRpkdZ1Lt2JsMMWVMBgfS8ktkpeYzA3MiGmWB27Jwhw16UYYg@mail.gmail.com>
+ <CACRpkdbY58J7GcQnYcUVTkfVO3VNCyJa0zVTKV4ibF8khxD8EA@mail.gmail.com>
+ <20140410165626.GB23695@beef>
+ <CACRpkdZaMcSjy+-15y4kNsBgLZrThwxzJQr7SEy59AVm3yuM_A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140410110848.64c3f25e@gandalf.local.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CACRpkdZaMcSjy+-15y4kNsBgLZrThwxzJQr7SEy59AVm3yuM_A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10, Steven Rostedt wrote:
->
-> On Thu, 10 Apr 2014 16:46:55 +0200
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > > void tracepoint_check_syscalls(void)
-> > > {
-> > > 	if (!sys_tracepoint_refcount)
-> > > 		return;
-> > >
-> > > 	read_lock(&tasklist_lock);
-> > > 	/* Make sure it wasn't cleared since taking the lock */
-> > > 	if (sys_tracepoint_refcount)
-> > > 		set_tsk_thread_flag(current, TIF_SYSCALL_TRACEPOINT);
-> > > 	read_unlock(&tasklist_lock);
-> > > }
+On Thu, Apr 10, 2014 at 07:41:20PM +0200, Linus Walleij wrote:
+> On Thu, Apr 10, 2014 at 6:56 PM, Matt Porter <matt.porter@linaro.org> wrote:
+> > On Thu, Apr 10, 2014 at 06:51:12PM +0200, Linus Walleij wrote:
+> >> On Thu, Apr 10, 2014 at 6:49 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> >> > On Thu, Apr 3, 2014 at 12:40 AM, Sherman Yin <syin@broadcom.com> wrote:
+> >> >
+> >> >> To be consistent with other Broadcom drivers, the Broadcom Capri pinctrl
+> >> >> driver and its related CONFIG option are renamed to bcm281xx.
+> >> >>
+> >> >> Devicetree compatible string and binding documentation use
+> >> >> "brcm,bcm11351-pinctrl" to match the machine binding here:
+> >> >> Documentation/devicetree/bindings/arm/bcm/bcm11351.txt
+> >> >>
+> >> >> This driver supports pinctrl on BCM11130, BCM11140, BCM11351, BCM28145
+> >> >> and BCM28155 SoCs.
+> >> >>
+> >> >> Signed-off-by: Sherman Yin <syin@broadcom.com>
+> >> >> Reviewed-by: Matt Porter <mporter@linaro.org>
+> >> >> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> >> >> ---
+> >> >>  drivers/pinctrl/Kconfig                            |    8 +-
+> >> >>  drivers/pinctrl/Makefile                           |    2 +-
+> >> >>  .../{pinctrl-capri.c => pinctrl-bcm281xx.c}        | 1519 ++++++++++----------
+> >> >
+> >> > This last version from apr 7 does not change
+> >> > arch/arm/configs/bcm_defconfig:CONFIG_PINCTRL_CAPRI=y
+> >> >
+> >> > Doesn't this mean that you render this platform without a pin
+> >> > control driver and thus broken?
+> >>
+> >> Bah I see that it's a separate patch now, sorry...
+> >>
+> >> Looking closer.
 > >
-> > And how this can help to avoid the race? We need write_lock_irq().
->
-> But you chopped off the last part. Where I replaced tasklist_lock with
-> a tracepoint specific lock that would synchronize
-> sys_tracepoint_refcount with the setting of the flags.
+> > I can take that one through mach-bcm for 3.16 to keep these changes
+> > in one place.
+> 
+> Nah I might as well take all of it through the pin control tree.
+> Can I have your ACK on the defconfig change?
 
-Yes sure, if we add another lock everything is fine.
+Sounds fine to me, done.
 
-> > Perhaps I missed something... and I simply do not understand why do you
-> > want to do this.
->
-> Because I'm being an ass ;-)
-
-Nothing new, I always knew this ;)
-
-> The real reason I'm doing this debate is more to find out exactly what
-> the problems are. A learning exercise if you will. I just don't want to
-> add a regression, as Hendrik (which I just Cc'd) added the commit for a
-> reason. Perhaps you are correct that we should just go back to the way
-> things were.
-
-Sure, this should be verified. Besides, the changelog is very old. It says
-"kernel_execve() itself does "int 80" on X86_32.", this is no longer true.
-
-> Hendrik, we are debating about removing
-> cc3b13c11c567c69a6356be98d0c03ff11541d5c as it stops
-> call_usermodehelper tasks from tracing their syscalls.
->
-> If Hendrik has no problems with this, neither do I.
-
-OK.
-
-cc3b13c11c567 mentions ret_from_fork, today copy_thread(PF_KTHREAD) uses
-ret_from_kernel_thread on 32bit, and still ret_from_fork on 64 bit but
-in the last case it checks PF_KTHREAD... I am wondering why they both
-(ret_from_kernel_thread and "1: " label in ret_from_fork) can't simply
-call do_exit() at the end?
-
-And, since they do not, every kernel_thread's function (fn argument of
-kernel_thread) must call do_exit itself?
-
-Looks a bit strange, I guess I missed something obvious.
-
-Oleg.
-
+-Matt
