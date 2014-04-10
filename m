@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965310AbaDJEKX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 00:10:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41093 "EHLO
+	id S1751060AbaDJEKV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 00:10:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41099 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934603AbaDJDWS (ORCPT
+	with ESMTP id S934756AbaDJDWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:18 -0400
+	Wed, 9 Apr 2014 23:22:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ming Lei <tom.leiming@gmail.com>, Johan Hovold <jhovold@gmail.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
+        Johan Hovold <jhovold@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
         Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 072/134] USB: serial: fix hang when opening port
-Date: Wed,  9 Apr 2014 20:23:08 -0700
-Message-Id: <20140410032309.273033271@linuxfoundation.org>
+Subject: [PATCH 3.4 064/134] USB: mct_u232: fix use-after-free in TIOCMIWAIT
+Date: Wed,  9 Apr 2014 20:23:00 -0700
+Message-Id: <20140410032308.310847656@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -28,37 +27,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <tom.leiming@gmail.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit eba0e3c3a0ba7b96f01cbe997680f6a4401a0bfc upstream.
+commit cf1d24443677a0758cfa88ca40f24858b89261c0 upstream.
 
-Johan's 'fix use-after-free in TIOCMIWAIT' patchset[1] introduces
-one bug which can cause kernel hang when opening port.
+Use the port wait queue and make sure to check the serial disconnected
+flag before accessing private port data after waking up.
 
-This patch initialized the 'port->delta_msr_wait' waitqueue head
-to fix the bug which is introduced in 3.9-rc4.
+This is is needed as the private port data (including the wait queue
+itself) can be gone when waking up after a disconnect.
 
-[1], http://marc.info/?l=linux-usb&m=136368139627876&w=2
-
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-Acked-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/usb-serial.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/mct_u232.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -908,6 +908,7 @@ int usb_serial_probe(struct usb_interfac
- 		port->port.ops = &serial_port_ops;
- 		port->serial = serial;
- 		spin_lock_init(&port->lock);
-+		init_waitqueue_head(&port->delta_msr_wait);
- 		/* Keep this for private driver use for the moment but
- 		   should probably go away */
- 		INIT_WORK(&port->work, usb_serial_port_work);
+--- a/drivers/usb/serial/mct_u232.c
++++ b/drivers/usb/serial/mct_u232.c
+@@ -126,8 +126,6 @@ struct mct_u232_private {
+ 	unsigned char	     last_msr;      /* Modem Status Register */
+ 	unsigned int	     rx_flags;      /* Throttling flags */
+ 	struct async_icount  icount;
+-	wait_queue_head_t    msr_wait;	/* for handling sleeping while waiting
+-						for msr change to happen */
+ };
+ 
+ #define THROTTLED		0x01
+@@ -407,7 +405,6 @@ static int mct_u232_startup(struct usb_s
+ 	if (!priv)
+ 		return -ENOMEM;
+ 	spin_lock_init(&priv->lock);
+-	init_waitqueue_head(&priv->msr_wait);
+ 	usb_set_serial_port_data(serial->port[0], priv);
+ 
+ 	init_waitqueue_head(&serial->port[0]->write_wait);
+@@ -631,7 +628,7 @@ static void mct_u232_read_int_callback(s
+ 		tty_kref_put(tty);
+ 	}
+ #endif
+-	wake_up_interruptible(&priv->msr_wait);
++	wake_up_interruptible(&port->delta_msr_wait);
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+ exit:
+ 	retval = usb_submit_urb(urb, GFP_ATOMIC);
+@@ -852,13 +849,17 @@ static int  mct_u232_ioctl(struct tty_st
+ 		cprev = mct_u232_port->icount;
+ 		spin_unlock_irqrestore(&mct_u232_port->lock, flags);
+ 		for ( ; ; ) {
+-			prepare_to_wait(&mct_u232_port->msr_wait,
++			prepare_to_wait(&port->delta_msr_wait,
+ 					&wait, TASK_INTERRUPTIBLE);
+ 			schedule();
+-			finish_wait(&mct_u232_port->msr_wait, &wait);
++			finish_wait(&port->delta_msr_wait, &wait);
+ 			/* see if a signal did it */
+ 			if (signal_pending(current))
+ 				return -ERESTARTSYS;
++
++			if (port->serial->disconnected)
++				return -EIO;
++
+ 			spin_lock_irqsave(&mct_u232_port->lock, flags);
+ 			cnow = mct_u232_port->icount;
+ 			spin_unlock_irqrestore(&mct_u232_port->lock, flags);
 
 
