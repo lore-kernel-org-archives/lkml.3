@@ -1,113 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934819AbaDJOEh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 10:04:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:43820 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198AbaDJOEe (ORCPT
+	id S935132AbaDJOIM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 10:08:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.130]:50419 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934020AbaDJOIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 10:04:34 -0400
-Date: Thu, 10 Apr 2014 09:04:24 -0500
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>, gregkh@linuxfoundation.org,
-        rlove@rlove.org, containers@lists.linux-foundation.org, kay@vrfy.org,
-        linux-kernel@vger.kernel.org, lennart@poettering.net,
-        cgroups@vger.kernel.org, eparis@parisplace.org, john@johnmccutchan.com
-Subject: Re: [PATCH 3/3] cgroup: implement cgroup.subtree_populated for the
- default hierarchy
-Message-ID: <20140410140424.GA4481@sergelap>
-References: <1397056052-2829-1-git-send-email-tj@kernel.org>
- <1397056052-2829-4-git-send-email-tj@kernel.org>
- <20140410030855.GA29658@mail.hallyn.com>
- <20140410130831.GA25308@htj.dyndns.org>
+	Thu, 10 Apr 2014 10:08:04 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v7 4/6] pci: Introduce a domain number for pci_host_bridge.
+Date: Thu, 10 Apr 2014 16:07:44 +0200
+Message-ID: <6144916.rD76jOL8sv@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAErSpo6u7kr+QdnhAXBo20izg-DNHR4zHT+kRvq34whp68RJCQ@mail.gmail.com>
+References: <1394811272-1547-5-git-send-email-Liviu.Dudau@arm.com> <4506772.YFSM2m1eaP@wuerfel> <CAErSpo6u7kr+QdnhAXBo20izg-DNHR4zHT+kRvq34whp68RJCQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140410130831.GA25308@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:J9CzMV4hFNq5ccdDfhJWGpfNbnyyFeDVQggqoSq4soE
+ CgMfNC5xPxMSNHDcy7KdxAg6+c0NP14kNuzi0ENbYOBw2BL7Wk
+ i5wLdRVKUouf0wjSKfJlbG4tnDxH4rNP+iwusIMKvKvLmTqzts
+ jHsXuS0PwYUnnMgsb+UnJ50Ws8uTbu50NpgVLcXoxe7B1LwQ3k
+ GRQSaDIe1bv8g/7YAnhbPKetS8uRWDAEa9mcrdyloVDVlAWG0l
+ 3hUGcJng4lTJgzZSxRvkHkC3g6lZCQLD3CRtxkqukI0S9evvky
+ R6PWLe2rPhobLz0iSLsvlGWETeC1+h1qixxgotjtnhJqNeKJUx
+ DOeFX9L8xMVLGRwPGPJw=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Tejun Heo (tj@kernel.org):
-> Hey, Serge.
+On Thursday 10 April 2014 07:50:52 Bjorn Helgaas wrote:
+> On Thu, Apr 10, 2014 at 2:00 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Wednesday 09 April 2014 21:48:14 Bjorn Helgaas wrote:
+> >> On Wed, Apr 9, 2014 at 7:27 PM, Liviu Dudau <liviu@dudau.co.uk> wrote:
+> >> > On Wed, Apr 09, 2014 at 08:02:41AM -0600, Bjorn Helgaas wrote:
+> >> >> >>   struct pci_host_bridge {
+> >> >> >>     int domain;
+> >> >> >>     int node;
+> >> >> >>     struct device *dev;
+> >> >> >>     struct pci_ops *ops;
+> >> >> >>     struct list_head resources;
+> >> >> >>     void *sysdata;
+> >> >> >>     struct pci_bus *bus;  /* filled in by core, not by arch */
+> >> >> >>     ... /* other existing contents managed by core */
+> >> >> >>   };
+> >> >> >>
+> >> >> >>   struct pci_bus *pci_scan_host_bridge(struct pci_host_bridge *bridge);
+> >> >> >
 > 
-> On Thu, Apr 10, 2014 at 05:08:55AM +0200, Serge E. Hallyn wrote:
-> > Quoting Tejun Heo (tj@kernel.org):
-> > > * It delivers events by forking and execing a userland binary
-> > >   specified as the release_agent.  This is a long deprecated method of
-> > >   notification delivery.  It's extremely heavy, slow and cumbersome to
-> > >   integrate with larger infrastructure.
-> > 
-> > (Not seriously worried about this, but it's a point worth considering)
-> > It does have one advantage though:  if the userspace agent goes bad,
-> > cgroups can still be removed on empty.
-> > 
-> > Do you plan on keeping release-on-empty around?  I assume only for a
-> > while?
+> I'm not sure I'm following you; you mean the arch-specific sysdata
+> structure would contain a pointer to struct pci_host_bridge?
 > 
-> The new mechanism is only for the unified hierarchy.  The old one will
-> be kept around for other hierarchies.
-> 
-> > Do you think there is any value in having a simpler "remove-when-empty"
-> > file?  Doesn't call out to userspace, just drops the cgroup when there
-> > are no more tasks or sub-cgroups?
-> 
-> I don't think so.  Implementing such simplistic mechanism in userland
-> is trivial and even independent failover mechanisms can be easily
-> implemented from userland as multiple entities can set up watches.  I
-> don't think there's much value in providing another mechanism from
-> kernel side.  The only reason why release_agent thing got as complex
-> as it is is because the mechanism is fundamentally flawed - clumsy
-> delivery, no multiple watches, single watch point - so people tried to
-> work around it by adding event filtering from kernel side, which is
-> quite backwards IMHO.  With proper event mechanism, everything should
-> be easily achievable from userland side.
+> I have to admit that I'm not up on how other subsystems handle this
+> sort of abstraction.  Do you have any pointers to good examples that I
+> can study?
 
-Except for the keeping state.  If the userspace agent crashes when it
-was meant to drop 100 cgroups when they become empty, then when it
-restarts those 100 cgroups may never be freed.  Of course userspace
-can do things about this, but it just seems like it would be so
-trivial to handle this case in the kernel.  Like you say there is
-no need for all the fancy agent spawning - just notice that the
-cgroup became empty, that releaseonempty was true, and so unlink the
-thing.  It'll be freed when anyone who has it held open closes it.
+What I mean is like this:
 
-> > > * Events are filtered from the kernel side.  "notify_on_release" file
-> > >   is used to subscribe to or suppres release event and events are not
-> > >   generated if a cgroup becomes empty by moving the last task out of
-> > >   it; however, event is generated if it becomes empty because the last
-> > >   child cgroup is removed.  This is inconsistent, awkward and
-> > 
-> > Hm, maybe I'm misreading but this doesn't seem right.  If I move
-> > a task into x1 and kill the task, x1 goes away.  Likewise if I
-> > create x1/y1, and rmdir y1, x1 goes away.  I suspect I'm misunderstanding
-> > the case in which you say it doesn't happen?
-> 
-> The case where you move a task out of x1/y1 to another cgroup doesn't
-> generate an event.  One could say that that's unnecessary because the
+/* generic structure */
+struct pci_host_bridge {
+        int domain;
+        int node;
+        struct device *dev;
+        struct pci_ops *ops; 
+        struct list_head resources;
+        struct pci_bus *bus;  /* filled in by core, not by arch */
+        ... /* other existing contents managed by core */
+};
 
-Still confused.
+/* arm specific structure */
+struct pci_sys_data {
+        char            io_res_name[12];
+                                        /* Bridge swizzling                     */
+        u8              (*swizzle)(struct pci_dev *, u8 *);
+                                        /* IRQ mapping                          */
+        int             (*map_irq)(const struct pci_dev *, u8, u8);
+                                        /* Resource alignement requirements     */
+        void            (*add_bus)(struct pci_bus *bus);
+        void            (*remove_bus)(struct pci_bus *bus);
+        void            *private_data;  /* platform controller private data     */
 
-If I create x1/y1 and x3/y3, set notify_on_release on x1 and x1/y1,
-move a task into x1/y1, then move it to x3/y3, then x1/y1 and x1 both
-do get removed.
+	/* not a pointer: */
+	struct pci_host_bridge bridge;
+};
+static inline struct pci_sys_data *to_pci_sys_data(struct pci_host_bridge *bridge)
+{
+	return container_of(bridge, struct pci_sys_data, bridge);
+}
 
-> mover knows that the cgroup is becoming empty; however, it excludes
-> any cases where there are more than one actors and the same can be
-> said for cases when the actor is removing a child.
-> 
-> > > This patch implements interface file "cgroup.subtree_populated" which
-> > > can be used to monitor whether the cgroup's subhierarchy has tasks in
-> > > it or not.  Its value is 1 if there is no task in the cgroup and its
-> > 
-> > I think you meant this backward?  It's 1 if there is *any task in
-> > the cgroup and its descendants, else 0?
-> 
-> Oops, yeap.  Will update.
-> 
-> Thanks!
-> 
-> -- 
-> tejun
+/* arm specific, driver specific structure */
+struct tegra_pcie {
+        void __iomem *pads;
+        void __iomem *afi;
+
+        struct clk *pex_clk;
+        struct clk *afi_clk;
+        struct clk *pll_e;
+        struct clk *cml_clk;
+
+        struct tegra_msi msi;
+
+        struct list_head ports;
+        unsigned int num_ports;
+
+	struct pci_sys_data sysdata;
+};
+static inline struct tegra_pcie *to_tegra_pcie(struct pci_sys_data *sysdata)
+{
+	return container_of(sysdata, struct tegra_pcie, sysdata);
+}
+
+This mirrors how we treat devices: a pci_device has an embedded device,
+and so on, in other subsystems we can have multiple layers.
+
+In this example, the tegra pcie driver then allocates its own tegra_pcie
+structure, fills out the fields it needs, and registers it with the
+ARM architecture code, passing just the pci_sys_data pointer. That function
+in turn passes a pointer to the embedded pci_host_bridge down to the
+generic code. Ideally we should try to eliminate the architecture specific
+portion here, but that is a later step.
+
+	Arnd
