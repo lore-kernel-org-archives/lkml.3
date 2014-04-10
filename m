@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965232AbaDJDXw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:23:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41105 "EHLO
+	id S935324AbaDJDXu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:23:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41096 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934776AbaDJDWV (ORCPT
+	with ESMTP id S934755AbaDJDWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:21 -0400
+	Wed, 9 Apr 2014 23:22:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hovold <jhovold@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
         Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 066/134] USB: mos7840: fix use-after-free in TIOCMIWAIT
-Date: Wed,  9 Apr 2014 20:23:02 -0700
-Message-Id: <20140410032308.565369424@linuxfoundation.org>
+Subject: [PATCH 3.4 063/134] USB: io_ti: fix use-after-free in TIOCMIWAIT
+Date: Wed,  9 Apr 2014 20:22:59 -0700
+Message-Id: <20140410032308.183773945@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -29,7 +29,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit a14430db686b8e459e1cf070a6ecf391515c9ab9 upstream.
+commit 7b2459690584f239650a365f3411ba2ec1c6d1e0 upstream.
 
 Use the port wait queue and make sure to check the serial disconnected
 flag before accessing private port data after waking up.
@@ -43,47 +43,44 @@ Cc: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mos7840.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/usb/serial/io_ti.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -240,7 +240,6 @@ struct moschip_port {
- 	char open;
- 	char open_ports;
- 	wait_queue_head_t wait_chase;	/* for handling sleeping while waiting for chase to finish */
--	wait_queue_head_t delta_msr_wait;	/* for handling sleeping while waiting for msr change to happen */
- 	int delta_msr_cond;
- 	struct async_icount icount;
- 	struct usb_serial_port *port;	/* loop back to the owner of this object */
-@@ -455,7 +454,7 @@ static void mos7840_handle_new_msr(struc
- 		}
- 
- 		mos7840_port->delta_msr_cond = 1;
--		wake_up_interruptible(&mos7840_port->delta_msr_wait);
-+		wake_up_interruptible(&port->port->delta_msr_wait);
+--- a/drivers/usb/serial/io_ti.c
++++ b/drivers/usb/serial/io_ti.c
+@@ -91,9 +91,6 @@ struct edgeport_port {
+ 	int close_pending;
+ 	int lsr_event;
+ 	struct async_icount	icount;
+-	wait_queue_head_t	delta_msr_wait;	/* for handling sleeping while
+-						   waiting for msr change to
+-						   happen */
+ 	struct edgeport_serial	*edge_serial;
+ 	struct usb_serial_port	*port;
+ 	__u8 bUartMode;		/* Port type, 0: RS232, etc. */
+@@ -1549,7 +1546,7 @@ static void handle_new_msr(struct edgepo
+ 			icount->dcd++;
+ 		if (msr & EDGEPORT_MSR_DELTA_RI)
+ 			icount->rng++;
+-		wake_up_interruptible(&edge_port->delta_msr_wait);
++		wake_up_interruptible(&edge_port->port->delta_msr_wait);
  	}
- }
  
-@@ -1116,7 +1115,6 @@ static int mos7840_open(struct tty_struc
+ 	/* Save the new modem status */
+@@ -1867,7 +1864,6 @@ static int edge_open(struct tty_struct *
+ 	dev = port->serial->dev;
  
- 	/* initialize our wait queues */
- 	init_waitqueue_head(&mos7840_port->wait_chase);
--	init_waitqueue_head(&mos7840_port->delta_msr_wait);
+ 	memset(&(edge_port->icount), 0x00, sizeof(edge_port->icount));
+-	init_waitqueue_head(&edge_port->delta_msr_wait);
  
- 	/* initialize our icount structure */
- 	memset(&(mos7840_port->icount), 0x00, sizeof(mos7840_port->icount));
-@@ -2285,13 +2283,18 @@ static int mos7840_ioctl(struct tty_stru
+ 	/* turn off loopback */
+ 	status = ti_do_config(edge_port, UMPC_SET_CLR_LOOPBACK, 0);
+@@ -2553,10 +2549,14 @@ static int edge_ioctl(struct tty_struct
+ 		dbg("%s - (%d) TIOCMIWAIT", __func__, port->number);
+ 		cprev = edge_port->icount;
  		while (1) {
- 			/* interruptible_sleep_on(&mos7840_port->delta_msr_wait); */
- 			mos7840_port->delta_msr_cond = 0;
--			wait_event_interruptible(mos7840_port->delta_msr_wait,
--						 (mos7840_port->
-+			wait_event_interruptible(port->delta_msr_wait,
-+						 (port->serial->disconnected ||
-+						  mos7840_port->
- 						  delta_msr_cond == 1));
- 
+-			interruptible_sleep_on(&edge_port->delta_msr_wait);
++			interruptible_sleep_on(&port->delta_msr_wait);
  			/* see if a signal did it */
  			if (signal_pending(current))
  				return -ERESTARTSYS;
@@ -91,8 +88,8 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 +			if (port->serial->disconnected)
 +				return -EIO;
 +
- 			cnow = mos7840_port->icount;
- 			smp_rmb();
+ 			cnow = edge_port->icount;
  			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
+ 			    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
 
 
