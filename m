@@ -1,148 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934945AbaDJJSr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 05:18:47 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:49822 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933057AbaDJJSm (ORCPT
+	id S935073AbaDJJS5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 05:18:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38596 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933057AbaDJJSv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 05:18:42 -0400
-Message-ID: <1397121514.25199.91.camel@ThinkPad-T5421.cn.ibm.com>
-Subject: [RFC PATCH] Suppress a device hot remove related lockdep warning
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: gregkh@linuxfoundation.org, Tejun Heo <tj@kernel.org>,
-        rafael.j.wysocki@intel.com, toshi.kani@hp.com
-Date: Thu, 10 Apr 2014 17:18:34 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041009-3864-0000-0000-00000D8BDE87
+	Thu, 10 Apr 2014 05:18:51 -0400
+Date: Thu, 10 Apr 2014 11:18:24 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Low <jason.low2@hp.com>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        "Michael L. Semon" <mlsemon35@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: 3.14.0+/x86: lockdep and mutexes not getting along
+Message-ID: <20140410091824.GL10526@twins.programming.kicks-ass.net>
+References: <alpine.LNX.2.11.1404060059020.8208@bpserver.ds>
+ <20140409121940.GA12890@node.dhcp.inet.fi>
+ <1397108579.2586.15.camel@j-VirtualBox>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397108579.2586.15.camel@j-VirtualBox>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I noticed following lockdep warning when trying acpi hot-remove cpus:
+On Wed, Apr 09, 2014 at 10:42:59PM -0700, Jason Low wrote:
+> As a starting point, would either of you like to test the following
+> patch to see if it fixes the issue? This patch essentially generates the
+> same code as in older kernels in the debug case. This applies on top of
+> kernels with both commits 6f008e72cd11 and 1d8fe7dc8078.
 
-[84154.204080] ======================================================
-[84154.204080] [ INFO: possible circular locking dependency detected ]
-[84154.204080] 3.14.0-next-20140408+ #24 Tainted: G        W    
-[84154.204080] -------------------------------------------------------
-[84154.204080] bash/777 is trying to acquire lock:
-[84154.204080]  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff810664a7>] cpu_maps_update_begin+0x17/0x20
-[84154.213203] 
-[84154.213203] but task is already holding lock:
-[84154.213203]  (s_active#79){++++.+}, at: [<ffffffff81256e14>] kernfs_fop_write+0xe4/0x190
-[84154.213203] 
-[84154.213203] which lock already depends on the new lock.
-[84154.213203] 
-[84154.213203] 
-[84154.213203] the existing dependency chain (in reverse order) is:
-[84154.213203] 
--> #3 (s_active#79){++++.+}:
-[84154.213203]        [<ffffffff810c408b>] lock_acquire+0x9b/0x1d0
-[84154.213203]        [<ffffffff812552e0>] __kernfs_remove+0x250/0x310
-[84154.213203]        [<ffffffff81256470>] kernfs_remove_by_name_ns+0x50/0xc0
-[84154.213203]        [<ffffffff81257af5>] sysfs_remove_file_ns+0x15/0x20
-[84154.213203]        [<ffffffff813df339>] device_remove_file+0x19/0x20
-[84154.213203]        [<ffffffff813dff33>] device_remove_attrs+0x33/0x80
-[84154.213203]        [<ffffffff813e00a7>] device_del+0x127/0x1c0
-[84154.213203]        [<ffffffff813e0162>] device_unregister+0x22/0x60
-[84154.213203]        [<ffffffff813e66de>] unregister_cpu+0x1e/0x40
-[84154.213203]        [<ffffffff81009a33>] arch_unregister_cpu+0x23/0x30
-[84154.213203]        [<ffffffff8136f619>] acpi_processor_remove+0x8d/0xb2
-[84154.213203]        [<ffffffff8136cfff>] acpi_bus_trim+0x5a/0x8d
-[84154.213203]        [<ffffffff8136ec3b>] acpi_device_hotplug+0x1a8/0x3ec
-[84154.213203]        [<ffffffff81369002>] acpi_hotplug_work_fn+0x1f/0x2b
-[84154.213203]        [<ffffffff8108754b>] process_one_work+0x1eb/0x6b0
-[84154.213203]        [<ffffffff81087e9b>] worker_thread+0x11b/0x370
-[84154.213203]        [<ffffffff81090324>] kthread+0xe4/0x100
-[84154.213203]        [<ffffffff815d2f2c>] ret_from_fork+0x7c/0xb0
-[84154.213203] 
--> #2 (cpu_hotplug.lock#2){+.+.+.}:
-[84154.213203]        [<ffffffff810c408b>] lock_acquire+0x9b/0x1d0
-[84154.213203]        [<ffffffff815c7700>] mutex_lock_nested+0x50/0x3c0
-[84154.213203]        [<ffffffff810665bf>] cpu_hotplug_begin+0x4f/0x80
-[84154.213203]        [<ffffffff8106666f>] _cpu_up+0x3f/0x160
-[84154.213203]        [<ffffffff810667f9>] cpu_up+0x69/0x80
-[84154.213203]        [<ffffffff81b18f14>] smp_init+0x60/0x8c
-[84154.213203]        [<ffffffff81b00fd8>] kernel_init_freeable+0x126/0x23b
-[84154.213203]        [<ffffffff815b4a3e>] kernel_init+0xe/0xf0
-[84154.213203]        [<ffffffff815d2f2c>] ret_from_fork+0x7c/0xb0
-[84154.213203] 
--> #1 (cpu_hotplug.lock){++++++}:
-[84154.213203]        [<ffffffff810c408b>] lock_acquire+0x9b/0x1d0
-[84154.213203]        [<ffffffff810665b1>] cpu_hotplug_begin+0x41/0x80
-[84154.213203]        [<ffffffff8106666f>] _cpu_up+0x3f/0x160
-[84154.213203]        [<ffffffff810667f9>] cpu_up+0x69/0x80
-[84154.213203]        [<ffffffff81b18f14>] smp_init+0x60/0x8c
-[84154.213203]        [<ffffffff81b00fd8>] kernel_init_freeable+0x126/0x23b
-[84154.213203]        [<ffffffff815b4a3e>] kernel_init+0xe/0xf0
-[84154.213203]        [<ffffffff815d2f2c>] ret_from_fork+0x7c/0xb0
-[84154.213203] 
--> #0 (cpu_add_remove_lock){+.+.+.}:
-[84154.213203]        [<ffffffff810c397a>] __lock_acquire+0x1f2a/0x1f60
-[84154.213203]        [<ffffffff810c408b>] lock_acquire+0x9b/0x1d0
-[84154.213203]        [<ffffffff815c7700>] mutex_lock_nested+0x50/0x3c0
-[84154.213203]        [<ffffffff810664a7>] cpu_maps_update_begin+0x17/0x20
-[84154.213203]        [<ffffffff815b582d>] cpu_down+0x1d/0x50
-[84154.213203]        [<ffffffff813e63b4>] cpu_subsys_offline+0x14/0x20
-[84154.213203]        [<ffffffff813e145d>] device_offline+0xad/0xd0
-[84154.213203]        [<ffffffff813e1562>] online_store+0x42/0x80
-[84154.213203]        [<ffffffff813deab8>] dev_attr_store+0x18/0x30
-[84154.213203]        [<ffffffff81257bb9>] sysfs_kf_write+0x49/0x60
-[84154.213203]        [<ffffffff81256e39>] kernfs_fop_write+0x109/0x190
-[84154.213203]        [<ffffffff811d15be>] vfs_write+0xbe/0x1c0
-[84154.213203]        [<ffffffff811d1a52>] SyS_write+0x52/0xb0
-[84154.213203]        [<ffffffff815d3162>] tracesys+0xd0/0xd5
-[84154.213203] 
-[84154.213203] other info that might help us debug this:
-[84154.213203] 
-[84154.213203] Chain exists of:
-  cpu_add_remove_lock --> cpu_hotplug.lock#2 --> s_active#79
 
-[84154.213203]  Possible unsafe locking scenario:
-[84154.213203] 
-[84154.213203]        CPU0                    CPU1
-[84154.213203]        ----                    ----
-[84154.213203]   lock(s_active#79);
-[84154.213203]                                lock(cpu_hotplug.lock#2);
-[84154.213203]                                lock(s_active#79);
-[84154.213203]   lock(cpu_add_remove_lock);
-[84154.213203] 
-[84154.213203]  *** DEADLOCK ***
-.............
+So I managed to reproduce, and the below makes it go away. I just don't
+understand why though. will stare more.
 
-The deadlock itself seems already fixed in commit 5e33bc41. 
-
-This patch uses DEVICE_ATTR_IGNORE_LOCKDEP for "online" attr to suppress
-this lockdep warning. But I'm a little afraid it might also hide
-(future) potential real dead lock scenarios? 
-
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
 ---
- drivers/base/core.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 0dd6528..98e3e09 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -452,7 +452,9 @@ static ssize_t online_store(struct device *dev, struct device_attribute *attr,
- 	unlock_device_hotplug();
- 	return ret < 0 ? ret : count;
- }
--static DEVICE_ATTR_RW(online);
-+
-+static DEVICE_ATTR_IGNORE_LOCKDEP(online, (S_IWUSR | S_IRUGO),
-+				  online_show, online_store);
+--- a/kernel/locking/mutex-debug.c
++++ b/kernel/locking/mutex-debug.c
+@@ -83,12 +83,6 @@ void debug_mutex_unlock(struct mutex *lo
  
- int device_add_groups(struct device *dev, const struct attribute_group **groups)
- {
-
-
-
-
+ 	DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
+ 	mutex_clear_owner(lock);
+-
+-	/*
+-	 * __mutex_slowpath_needs_to_unlock() is explicitly 0 for debug
+-	 * mutexes so that we can do it here after we've verified state.
+-	 */
+-	atomic_set(&lock->count, 1);
+ }
+ 
+ void debug_mutex_init(struct mutex *lock, const char *name,
+--- a/kernel/locking/mutex.c
++++ b/kernel/locking/mutex.c
+@@ -34,13 +34,6 @@
+ #ifdef CONFIG_DEBUG_MUTEXES
+ # include "mutex-debug.h"
+ # include <asm-generic/mutex-null.h>
+-/*
+- * Must be 0 for the debug case so we do not do the unlock outside of the
+- * wait_lock region. debug_mutex_unlock() will do the actual unlock in this
+- * case.
+- */
+-# undef __mutex_slowpath_needs_to_unlock
+-# define  __mutex_slowpath_needs_to_unlock()	0
+ #else
+ # include "mutex.h"
+ # include <asm/mutex.h>
+@@ -688,6 +681,17 @@ __mutex_unlock_common_slowpath(atomic_t
+ 	unsigned long flags;
+ 
+ 	/*
++	 * In the debug cases, obtain the wait_lock first
++	 * before calling the following debugging functions.
++	 */
++#ifdef CONFIG_DEBUG_MUTEXES
++	spin_lock_mutex(&lock->wait_lock, flags);
++	mutex_release(&lock->dep_map, nested, _RET_IP_);
++	debug_mutex_unlock(lock);
++#endif
++
++
++	/*
+ 	 * some architectures leave the lock unlocked in the fastpath failure
+ 	 * case, others need to leave it locked. In the later case we have to
+ 	 * unlock it here
+@@ -695,9 +699,11 @@ __mutex_unlock_common_slowpath(atomic_t
+ 	if (__mutex_slowpath_needs_to_unlock())
+ 		atomic_set(&lock->count, 1);
+ 
++#ifndef CONFIG_DEBUG_MUTEXES
+ 	spin_lock_mutex(&lock->wait_lock, flags);
+ 	mutex_release(&lock->dep_map, nested, _RET_IP_);
+ 	debug_mutex_unlock(lock);
++#endif
+ 
+ 	if (!list_empty(&lock->wait_list)) {
+ 		/* get the first entry from the wait-list: */
