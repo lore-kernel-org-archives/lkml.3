@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965456AbaDJDy7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:54:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41210 "EHLO
+	id S934958AbaDJDWk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:22:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40870 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934647AbaDJDWl (ORCPT
+	with ESMTP id S934647AbaDJDVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:41 -0400
+	Wed, 9 Apr 2014 23:21:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Marek Vasut <marex@denx.de>, Chen Peter <B29397@freescale.com>,
+        Greg KH <greg@kroah.com>, Jiri Kosina <jkosina@suse.cz>,
         Ben Hutchings <ben@decadent.org.uk>,
-        Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 086/134] usb: Disable USB 2.0 Link PM before device reset.
-Date: Wed,  9 Apr 2014 20:23:22 -0700
-Message-Id: <20140410032310.999625356@linuxfoundation.org>
+        Yijing Wang <wangyijing@huawei.com>
+Subject: [PATCH 3.4 015/134] HID: add quirk for Freescale i.MX28 ROM recovery
+Date: Wed,  9 Apr 2014 20:22:11 -0700
+Message-Id: <20140410032301.771765256@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -28,51 +29,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Marek Vasut <marex@denx.de>
 
-commit dcc01c0864823f91c3bf3ffca6613e2351702b87 upstream.
+commit 2843b673d03421e0e73cf061820d1db328f7c8eb upstream.
 
-Before the USB core resets a device, we need to disable the L1 timeout
-for the roothub, if USB 2.0 Link PM is enabled.  Otherwise the port may
-transition into L1 in between descriptor fetches, before we know if the
-USB device descriptors changed.  LPM will be re-enabled after the
-full device descriptors are fetched, and we can confirm the device still
-supports USB 2.0 LPM after the reset.
+The USB recovery mode present in i.MX28 ROM emulates USB HID.
+It needs this quirk to behave properly.
 
-We don't need to wait for the USB device to exit L1 before resetting the
-device, since the xHCI roothub port diagrams show a transition to the
-Reset state from any of the Ux states (see Figure 34 in the 2012-08-14
-xHCI specification update).
-
-This patch should be backported to kernels as old as 3.2, that contain
-the commit 65580b4321eb36f16ae8b5987bfa1bb948fc5112 "xHCI: set USB2
-hardware LPM".  That was the first commit to enable USB 2.0
-hardware-driven Link Power Management.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Marek Vasut <marex@denx.de>
+Cc: Chen Peter <B29397@freescale.com>
+Cc: Greg KH <greg@kroah.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
+[jkosina@suse.cz: fix alphabetical ordering]
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Yang Yingliang <yangyingliang@huawei.com>
+[yjw: Backported to 3.4: adjust context]
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/usb/core/hub.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/hid/hid-ids.h           |    3 +++
+ drivers/hid/usbhid/hid-quirks.c |    1 +
+ 2 files changed, 4 insertions(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -4139,6 +4139,12 @@ static int usb_reset_and_verify_device(s
- 	}
- 	parent_hub = hdev_to_hub(parent_hdev);
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -293,6 +293,9 @@
+ #define USB_VENDOR_ID_FRUCTEL	0x25B6
+ #define USB_DEVICE_ID_GAMETEL_MT_MODE	0x0002
  
-+	/* Disable USB2 hardware LPM.
-+	 * It will be re-enabled by the enumeration process.
-+	 */
-+	if (udev->usb2_hw_lpm_enabled == 1)
-+		usb_set_usb2_hardware_lpm(udev, 0);
++#define USB_VENDOR_ID_FREESCALE		0x15A2
++#define USB_DEVICE_ID_FREESCALE_MX28	0x004F
 +
- 	set_bit(port1, parent_hub->busy_bits);
- 	for (i = 0; i < SET_CONFIG_TRIES; ++i) {
- 
+ #define USB_VENDOR_ID_GAMERON		0x0810
+ #define USB_DEVICE_ID_GAMERON_DUAL_PSX_ADAPTOR	0x0001
+ #define USB_DEVICE_ID_GAMERON_DUAL_PCS_ADAPTOR	0x0002
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -70,6 +70,7 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_AXIS_295, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
++	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1, HID_QUIRK_NO_INIT_REPORTS },
 
 
