@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935324AbaDJDXu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:23:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41096 "EHLO
+	id S1758510AbaDJDXs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:23:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41034 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934755AbaDJDWT (ORCPT
+	with ESMTP id S1758434AbaDJDWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:19 -0400
+	Wed, 9 Apr 2014 23:22:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 063/134] USB: io_ti: fix use-after-free in TIOCMIWAIT
-Date: Wed,  9 Apr 2014 20:22:59 -0700
-Message-Id: <20140410032308.183773945@linuxfoundation.org>
+        Paul Stewart <pstew@chromium.org>,
+        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 045/134] ath9k_hw: Enable hw PLL power save for AR9462
+Date: Wed,  9 Apr 2014 20:22:41 -0700
+Message-Id: <20140410032305.854366586@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -27,69 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
 
-commit 7b2459690584f239650a365f3411ba2ec1c6d1e0 upstream.
+commit 1680260226a8fd2aab590319da83ad8e610da9bd upstream.
 
-Use the port wait queue and make sure to check the serial disconnected
-flag before accessing private port data after waking up.
+This reduced the power consumption to half in full and network sleep.
 
-This is is needed as the private port data (including the wait queue
-itself) can be gone when waking up after a disconnect.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Cc: Paul Stewart <pstew@chromium.org>
+Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[bwh: Backported to 3.2:
+ - INIT_INI_ARRAY macro requires an explicit size argument
+ - Remove the now-redundant macro PCIE_PLL_ON_CREQ_DIS_L1_2P0]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Yang Yingliang <yangyingliang@huawei.com>
+Cc: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/io_ti.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_hw.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/serial/io_ti.c
-+++ b/drivers/usb/serial/io_ti.c
-@@ -91,9 +91,6 @@ struct edgeport_port {
- 	int close_pending;
- 	int lsr_event;
- 	struct async_icount	icount;
--	wait_queue_head_t	delta_msr_wait;	/* for handling sleeping while
--						   waiting for msr change to
--						   happen */
- 	struct edgeport_serial	*edge_serial;
- 	struct usb_serial_port	*port;
- 	__u8 bUartMode;		/* Port type, 0: RS232, etc. */
-@@ -1549,7 +1546,7 @@ static void handle_new_msr(struct edgepo
- 			icount->dcd++;
- 		if (msr & EDGEPORT_MSR_DELTA_RI)
- 			icount->rng++;
--		wake_up_interruptible(&edge_port->delta_msr_wait);
-+		wake_up_interruptible(&edge_port->port->delta_msr_wait);
- 	}
+--- a/drivers/net/wireless/ath/ath9k/ar9003_hw.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_hw.c
+@@ -33,9 +33,6 @@
+  */
+ static void ar9003_hw_init_mode_regs(struct ath_hw *ah)
+ {
+-#define PCIE_PLL_ON_CREQ_DIS_L1_2P0 \
+-		ar9462_pciephy_pll_on_clkreq_disable_L1_2p0
+-
+ #define AR9462_BB_CTX_COEFJ(x)	\
+ 		ar9462_##x##_baseband_core_txfir_coeff_japan_2484
  
- 	/* Save the new modem status */
-@@ -1867,7 +1864,6 @@ static int edge_open(struct tty_struct *
- 	dev = port->serial->dev;
+@@ -312,13 +309,13 @@ static void ar9003_hw_init_mode_regs(str
  
- 	memset(&(edge_port->icount), 0x00, sizeof(edge_port->icount));
--	init_waitqueue_head(&edge_port->delta_msr_wait);
+ 		/* Awake -> Sleep Setting */
+ 		INIT_INI_ARRAY(&ah->iniPcieSerdes,
+-				PCIE_PLL_ON_CREQ_DIS_L1_2P0,
+-				ARRAY_SIZE(PCIE_PLL_ON_CREQ_DIS_L1_2P0),
++				ar9462_pciephy_clkreq_disable_L1_2p0,
++				ARRAY_SIZE(ar9462_pciephy_clkreq_disable_L1_2p0),
+ 				2);
+ 		/* Sleep -> Awake Setting */
+ 		INIT_INI_ARRAY(&ah->iniPcieSerdesLowPower,
+-				PCIE_PLL_ON_CREQ_DIS_L1_2P0,
+-				ARRAY_SIZE(PCIE_PLL_ON_CREQ_DIS_L1_2P0),
++				ar9462_pciephy_clkreq_disable_L1_2p0,
++				ARRAY_SIZE(ar9462_pciephy_clkreq_disable_L1_2p0),
+ 				2);
  
- 	/* turn off loopback */
- 	status = ti_do_config(edge_port, UMPC_SET_CLR_LOOPBACK, 0);
-@@ -2553,10 +2549,14 @@ static int edge_ioctl(struct tty_struct
- 		dbg("%s - (%d) TIOCMIWAIT", __func__, port->number);
- 		cprev = edge_port->icount;
- 		while (1) {
--			interruptible_sleep_on(&edge_port->delta_msr_wait);
-+			interruptible_sleep_on(&port->delta_msr_wait);
- 			/* see if a signal did it */
- 			if (signal_pending(current))
- 				return -ERESTARTSYS;
-+
-+			if (port->serial->disconnected)
-+				return -EIO;
-+
- 			cnow = edge_port->icount;
- 			if (cnow.rng == cprev.rng && cnow.dsr == cprev.dsr &&
- 			    cnow.dcd == cprev.dcd && cnow.cts == cprev.cts)
+ 		/* Fast clock modal settings */
 
 
