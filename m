@@ -1,51 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030279AbaDJO2u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 10:28:50 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:62270 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935077AbaDJO2r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 10:28:47 -0400
-Message-ID: <1397140123.5137.99.camel@marge.simpson.net>
-Subject: Re: [RFC PATCH RT] rwsem: The return of multi-reader PI rwsems
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <williams@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Date: Thu, 10 Apr 2014 16:28:43 +0200
-In-Reply-To: <1397139510.5137.92.camel@marge.simpson.net>
-References: <20140409151922.5fa5d999@gandalf.local.home>
-	 <1397139510.5137.92.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	id S935661AbaDJObI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 10:31:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8726 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934798AbaDJObF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 10:31:05 -0400
+Message-ID: <5346AB07.4090909@redhat.com>
+Date: Thu, 10 Apr 2014 16:30:31 +0200
+From: Denys Vlasenko <dvlasenk@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Jim Keniston <jkenisto@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 4/6] uprobes/x86: Emulate rip-relative call's
+References: <20140406201628.GA507@redhat.com> <1396995963.5056.46.camel@oc7886638347.ibm.com.usor.ibm.com> <20140409154346.GB18486@redhat.com> <53469F95.1030709@redhat.com> <20140410141806.GA23997@redhat.com>
+In-Reply-To: <20140410141806.GA23997@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-10 at 16:18 +0200, Mike Galbraith wrote: 
-> On Wed, 2014-04-09 at 15:19 -0400, Steven Rostedt wrote:
+On 04/10/2014 04:18 PM, Oleg Nesterov wrote:
+> On 04/10, Denys Vlasenko wrote:
+>>
+>> There is this monstrosity, "16-bit override for branches" in 64-mode:
+>>
+>> 66 e8 nn nn       callw   <offset16>
+>>
+>> Nobody sane uses it because it truncates instruction pointer.
+>>
+>> Or rather, *I think* it should truncate it (i.e. zero-extend to full width),
+>> but conceivably some CPUs can be buggy wrt that:
+>> they can decide to modify only lower 16 bits of IP,
+>> or even they can decided to use signed <offset16> but apply it
+>> to full-width RIP.
+>>
+>> AMD manuals are not clear on what exactly should happen.
+>>
+>> I am sure no one sane uses this form of branch instructions
+>> in 32-bit and 64-bit code.
+>>
+>> I don't think we should be trying to support it "correctly"
+>> (we can just let program crash with SIGILL or something),
+>> we only need to make sure we don't overlook its existence
+>> and thus are not tricked into touching or modifying unrelated data.
 > 
-> > If you have any benchmark on large machines I would be very happy if
-> > you could test this patch against the unpatched version of -rt.
-> 
-> Too bad I don't have (and know how to use) specjbb.
-> 
-> I dug up old vmark, thinking I'd be able to get some halfway useful
-> relative numbers from it, but that was a waste of a day.  The thing
-> performs so badly on 40 core box that rt _beats_ nopreempt, and after 2
-> nodes, you're going backward.  40 Westmere EX cores does a whopping ~2.5
-> * dinky old Q6600 box throughput.
+> And after the quick check it seems that lib/insn.c doesn't parse
+> "66 e8 nn nn" correctly. It treats the next 2 bytes as the part
+> of 32bit offset.
 
-P.S.  What I didn't see was any sign of a delta patched/unpatched..
-which may mean nothing at all :-/
+I didn't run-test it yet. By code inspection, it seems to work...
+
+x86-opcode-map.txt:
+    e8: CALL Jz (f64)
+
+gen-insn-attr-x86.awk:
+    imm_flag["Jz"] = "INAT_MAKE_IMM(INAT_IMM_VWORD32)"
+
+
+insn.c:
+        case INAT_IMM_VWORD32:
+                if (!__get_immv32(insn))
+                        goto err_out;
+...
+static int __get_immv32(struct insn *insn)
+{
+        switch (insn->opnd_bytes) {
+        case 2:
+                insn->immediate.value = get_next(short, insn);
+                insn->immediate.nbytes = 2;
+                break;
+        case 4:
+        case 8:
+                insn->immediate.value = get_next(int, insn);
+                insn->immediate.nbytes = 4;
+                break;
+
+
+...until I notice this code:
+
+void insn_get_modrm(struct insn *insn)
+{
+...
+        if (insn->x86_64 && inat_is_force64(insn->attr))
+                insn->opnd_bytes = 8;
+
+
+The (f64) modifier in x86-opcode-map.txt means that inat_is_force64()
+is true for call opcode. So we won't reach "case 2:" in __get_immv32():
+insn_get_prefixes() did set insn->opnd_bytes to 2 when it saw 0x66 prefix,
+but it was before we reach this place, and here we overrode it.
+This is a bug in insn decoder.
 
