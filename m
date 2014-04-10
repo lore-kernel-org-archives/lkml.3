@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030473AbaDJMWQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 08:22:16 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47703 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030399AbaDJMWN (ORCPT
+	id S1030490AbaDJMWT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 08:22:19 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:50273 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030419AbaDJMWN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Apr 2014 08:22:13 -0400
-Date: Thu, 10 Apr 2014 13:21:46 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Harini Katakam <harinik@xilinx.com>
-Cc: grant.likely@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, michals@xilinx.com
-Message-ID: <20140410122146.GY6518@sirena.org.uk>
-References: <1397132030-2440-1-git-send-email-harinik@xilinx.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7tPHY7RFL01rOa8z"
-Content-Disposition: inline
-In-Reply-To: <1397132030-2440-1-git-send-email-harinik@xilinx.com>
-X-Cookie: This report is filled with omissions.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 1/2] SPI: Add driver for Cadence SPI controller
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CACna6ry+FOYykZpzycEjDA+ncGNLk6eXkwadXy548h9dgU1Bgw@mail.gmail.com>
+References: <CA+5PVA5VBns=hkOSViucrpT340uG0=hgrWqf=LYHTBFAe74tBg@mail.gmail.com>
+	<CACna6ry+FOYykZpzycEjDA+ncGNLk6eXkwadXy548h9dgU1Bgw@mail.gmail.com>
+Date: Thu, 10 Apr 2014 08:22:12 -0400
+X-Google-Sender-Auth: A7J584JPbUSK-qD-0kk931ITTZQ
+Message-ID: <CA+5PVA4ijLmwRKHD4RYE6qSqkN7p8v1GB9w9GAGAJKG45bBTnw@mail.gmail.com>
+Subject: Re: Oops in acpi_gpiochip_add on MacBookPro with Linux v3.14-12042-g69cd9eba3886
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: =?ISO-8859-2?Q?Rafa=B3_Mi=B3ecki?= <zajec5@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-gpio@vger.kernel.org,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 10, 2014 at 2:50 AM, Rafał Miłecki <zajec5@gmail.com> wrote:
+> 2014-04-09 23:09 GMT+02:00 Josh Boyer <jwboyer@fedoraproject.org>:
+>> With Linux v3.14-12042-g69cd9eba3886 I get an oops from the bcma
+>> module on the MacBookPro 10,2 I have here.  This works fine with Linux
+>> v3.14-7333-g59ecc26004e7.  There have been no changes between those
+>> two versions to bcma itself, but the GPIO merge did go in that window.
+>>  I can attempt to do a bisect tomorrow, but looking over some of the
+>> GPIO commits it seems pretty relevant to the ACPI GPIO changes.  I'm
+>> hoping someone here has an idea on what the issue might be and has
+>> some possible things for me to test for fixes.
+>
+> Bug report: https://lkml.org/lkml/2014/3/24/262
+> Patch: https://lkml.org/lkml/2014/3/24/293
+> Tested by Sabrina: https://lkml.org/lkml/2014/3/24/304
+> (all links are for the same thread).
+>
+> Now you simply have to find above patch in some git tree :) Not sure
+> if it's already in Linus's one.
 
---7tPHY7RFL01rOa8z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ah, wonderful.  I now wish I would have found those in my searching
+before doing the bisect.  Oh well.  For what it's worth, my bisect
+landed on the same commit.
 
-On Thu, Apr 10, 2014 at 05:43:49PM +0530, Harini Katakam wrote:
+The fix isn't in Linus' tree or linux-next.  I'm guessing Mika is
+either still on vacation, or hasn't sent out the formal fix yet.
 
-> Firstly, the timeout value obtained from this is a too low.
-> This timeout is typically used for an error conditions such as
-> hardware hang etc. and using a value >1*HZ would be better.
-> This driver used to use similar timeout and as I understand, other
-> drivers also use similar values.
-
-Send patches...
-
---7tPHY7RFL01rOa8z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTRozXAAoJELSic+t+oim9yQUP/RheMmc5lFwvXa2yuTAe3Lkv
-dgC8+WEke3iYWHQNJHJIYewKdZtVzucbMDX4JhnQfkdtkA7w34RHxU79YBADfYD3
-Q9Aig63VvE+1VvM+bh3qNPnERNlilH1TBRCGO9P2FOqEGLCt0yy6btka0HcsUnny
-xD8QFLEQHxxrJLi6WtwkfAEHOxCBqaey+IwDMfU/Mbr7ZpdL8yP/RIcXgKNlXj9V
-8m+L3TEhjyeaEWdjwvIIrHuhQUwOIABMCnWJsBMdX/6kjWOe6oIZK+Y7JJ5GAHZd
-mHwDCUv5cyo10OmJQvgVM4k61oHDZ0ZPrOPxy+U6MQcUNsrcvMBTRLVyQeDp4p36
-pAquchakenME1mcdjjKM4eXer5RYQs2gdny6VPG4lAG2ySGt2bb5gJMGlgPqDS3d
-iN80Kdbu+eWqRtN+uOaVbUEOlaK/qd+WvK0TxfsqeE+eJukBDv4e3viqY/YRI/Se
-DCIXYgfCbApjDbIMU2ylHXFvsGXD88dSN62dX5OiukqnE2Wfia+rrOkUU4XOwd2r
-+NABGhbjsm1QOgbptKXzTYRgenO68qaQ6DWrwBZ9YZGn2sI0mHQk25IaaY6SKoa9
-wFMguYks2jLTwX0IPOAQ3E/L2ou4jd0I7u+kmR+R4wCIPSTofHBThp65ir+NgVfe
-rPeQWyiAUoAgu2azgYzD
-=EaHN
------END PGP SIGNATURE-----
-
---7tPHY7RFL01rOa8z--
+josh
