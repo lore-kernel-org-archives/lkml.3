@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935104AbaDJD4Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:56:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41200 "EHLO
+	id S934940AbaDJDWi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:22:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40881 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934947AbaDJDWj (ORCPT
+	with ESMTP id S934649AbaDJDVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:39 -0400
+	Wed, 9 Apr 2014 23:21:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Ben Hutchings <ben@decadent.org.uk>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 100/134] ALSA: hda - Cache the MUX selection for generic HDMI
-Date: Wed,  9 Apr 2014 20:23:36 -0700
-Message-Id: <20140410032312.544553558@linuxfoundation.org>
+        Nicholas Santos <nicholas.santos@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Ben Hutchings <ben@decadent.org.uk>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: [PATCH 3.4 016/134] HID: usbhid: quirk for Formosa IR receiver
+Date: Wed,  9 Apr 2014 20:22:12 -0700
+Message-Id: <20140410032301.919747310@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -27,34 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Nicholas Santos <nicholas.santos@gmail.com>
 
-commit bddee96b5d0db869f47b195fe48c614ca824203c upstream.
+commit 320cde19a4e8f122b19d2df7a5c00636e11ca3fb upstream.
 
-When a selection to a converter MUX is changed in hdmi_pcm_open(), it
-should be cached so that the given connection can be restored properly
-at PM resume.  We need just to replace the corresponding
-snd_hda_codec_write() call with snd_hda_codec_write_cache().
+Patch to add the Formosa Industrial Computing, Inc. Infrared Receiver
+[IR605A/Q] to hid-ids.h and hid-quirks.c.  This IR receiver causes about a 10
+second timeout when the usbhid driver attempts to initialze the device.  Adding
+this device to the quirks list with HID_QUIRK_NO_INIT_REPORTS removes the
+delay.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Nicholas Santos <nicholas.santos@gmail.com>
+[jkosina@suse.cz: fix ordering]
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Nicholas Santos <nicholas.santos@gmail.com>
+[jkosina@suse.cz: fix ordering]
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
+[yjw: Backported to 3.4: adjust context]
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/pci/hda/patch_hdmi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hid/hid-ids.h           |    3 +++
+ drivers/hid/usbhid/hid-quirks.c |    1 +
+ 2 files changed, 4 insertions(+)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -910,7 +910,7 @@ static int hdmi_pcm_open(struct hda_pcm_
- 	per_cvt->assigned = 1;
- 	hinfo->nid = per_cvt->cvt_nid;
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -293,6 +293,9 @@
+ #define USB_VENDOR_ID_FRUCTEL	0x25B6
+ #define USB_DEVICE_ID_GAMETEL_MT_MODE	0x0002
  
--	snd_hda_codec_write(codec, per_pin->pin_nid, 0,
-+	snd_hda_codec_write_cache(codec, per_pin->pin_nid, 0,
- 			    AC_VERB_SET_CONNECT_SEL,
- 			    mux_idx);
- 	snd_hda_spdif_ctls_assign(codec, pin_idx, per_cvt->cvt_nid);
++#define USB_VENDOR_ID_FORMOSA          0x147a
++#define USB_DEVICE_ID_FORMOSA_IR_RECEIVER      0xe03e
++
+ #define USB_VENDOR_ID_FREESCALE		0x15A2
+ #define USB_DEVICE_ID_FREESCALE_MX28	0x004F
+ 
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -70,6 +70,7 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_AXIS_295, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
++	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
 
 
