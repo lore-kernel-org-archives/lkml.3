@@ -1,83 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422681AbaDJUNr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 16:13:47 -0400
-Received: from mout.gmx.net ([212.227.15.18]:55483 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758633AbaDJUNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 16:13:35 -0400
-Date: Thu, 10 Apr 2014 22:13:22 +0200
-From: Christian Engelmayer <cengelma@gmx.at>
-To: Andev <debiandev@gmail.com>
-Cc: Greg Kroah-Hartman <greg@kroah.com>, linville@tuxdriver.com,
-        fariyaf@gmail.com, dan.carpenter@oracle.com, joe@perches.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH resend] rsi: Fix a potential memory leak in
- rsi_set_channel()
-Message-ID: <20140410221322.547b9888@spike>
-In-Reply-To: <CAJUuVQ7xgRLDzwojDCdb3yhTm3HygypMLXyaRiErnVveNVz+sQ@mail.gmail.com>
-References: <20140410203146.767149e7@spike>
-	<CAJUuVQ5KW3v0DgwotDMow=rBvxoZKfYYD2misXbsMD6c1UaShw@mail.gmail.com>
-	<20140410195402.GA17308@kroah.com>
-	<CAJUuVQ7xgRLDzwojDCdb3yhTm3HygypMLXyaRiErnVveNVz+sQ@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/h+yLX4qGYraNGswgcq3+mcG"; protocol="application/pgp-signature"
-X-Provags-ID: V03:K0:sun5XLNkcV6G+WYNCSR8uaild0VqzfTKY/Yr1yh4d5FfuikEBeI
- DTmjx40Wt0HIi1l8cuU4sWVdHRvNalPHir3do8HT6Kf2/GKyQUEPZ7yF3jCLGuTeoGvAAWs
- 7ux0Fc7d/F4EafSZAJvwda3AMCNRmCM2/JicuIky4StXV6GINW030XYLalPimM2RG7bSJWT
- h6AvMX+lxtWfQeCtWHAqA==
+	id S1759201AbaDJUNk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 16:13:40 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37382 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759128AbaDJUNe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 16:13:34 -0400
+X-Sasl-enc: K7a4+Ov7vsT7lIx3HRfXeuaLFX8dIZeXL53h9Owwp9Mn 1397160813
+Date: Thu, 10 Apr 2014 13:16:06 -0700
+From: Greg KH <greg@kroah.com>
+To: Silvio Fricke <silvio.fricke@gmail.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [WIP] [PATCH v2 0/3] remove wrong cast of gfp_t flags
+Message-ID: <20140410201606.GA12335@kroah.com>
+References: <20140403094350.GH6991@mwanda>
+ <cover.1396627781.git.silvio.fricke@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1396627781.git.silvio.fricke@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/h+yLX4qGYraNGswgcq3+mcG
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Sat, Apr 05, 2014 at 12:32:07AM +0200, Silvio Fricke wrote:
+> Hi Dan,
+> 
+> thanks for your review.
+> Attached second version of this series.
 
-On Thu, 10 Apr 2014 16:01:35 -0400, Andev <debiandev@gmail.com> wrote:
-> On Thu, Apr 10, 2014 at 3:54 PM, Greg Kroah-Hartman <greg@kroah.com> wrot=
-e:
-> > On Thu, Apr 10, 2014 at 03:46:12PM -0400, Andev wrote:
-> >> Adding Greg KH,
-> >
-> > Why do I care about this?
-> >
->=20
-> I am not sure if this needs to be applied to stable too. Should I have
-> cc'ed stable@?
->=20
+I don't understand what the [WIP] marking is.  Please just resend these
+as "real" patches if you feel they are ready to be merged.  If we have
+issues with them, we will be sure to let you know :)
 
-Besides what Dan pointed out, this driver has just been pulled recently and=
- afaik
-is not included in v3.14. see http://www.spinics.net/lists/netdev/msg276519=
-.html
+thanks,
 
-Regards,
-Christian
-
---Sig_/h+yLX4qGYraNGswgcq3+mcG
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTRvtiAAoJEKssnEpaPQKEsxQQAIgoSlR290JYz5vhF4XbqdBP
-GG4cmE4ChZVoXjMtKOfUXUQhYHrk6JcieVsSFNEu96uZVORGVscO5b/v9h8ZnZFG
-+NTp9AE1A56nc51VxL5mWMDuF8OVTrCOF567H6anKszg7EO6XcexeJ7eaA9qoGzM
-pBID2hBCpNmNFtqUI7H9XhlFnocWU/c0AhJM7NzIqzutEctMp3/WK608nDurRRaO
-7jpEVnBZX2PJIyIuMRv9fCLMbpX6zzY8TR3l3EosHfjmoZL9dDKAbIC1M2z/YALv
-hsQarepssoNCB9uSpNYRrZfm9pesUlZBiBSjTAPwZlbMPoJsNbCZpT/A6jmharLR
-fZkPrdMeRJrxUza/wEZAGpb9kbYZfsZrGOmVCSQZDoBWRYlW1HQS0xLXeyE6TzVX
-DXlbsNHY0E8EixH/NeLvrQ5tzv1EHW47A9AKIGZwTE5aJlqveA3FSuWkwr/X1NfL
-nZdpLR8XDf5HxQzQvFcmJbu7z7VdvCIz7meXdjrURfgNS1Go7DyGYsbqVtz+eCZi
-61ejs3eDdiwRqOoM19I4Qjfa8vSmKTlMa2PSe9YLNtzm7Ko9A64A5K0sLQPkilJO
-Ah4p67UZ4rY94aaKpeG3L4xB2iC9d1tCbSvQgMfm+BcH55ETaMI2KNcIjqr6pwmC
-E1ctxUETdgQgNpPa5JRK
-=++yE
------END PGP SIGNATURE-----
-
---Sig_/h+yLX4qGYraNGswgcq3+mcG--
+greg k-h
