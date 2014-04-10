@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935060AbaDJJ2z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 05:28:55 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:35111 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933149AbaDJJ2u (ORCPT
+	id S965851AbaDJJxp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 05:53:45 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:45458 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933885AbaDJJ2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Apr 2014 05:28:50 -0400
-X-AuditID: cbfee68f-b7f156d00000276c-cf-53466450916f
+X-AuditID: cbfee691-b7efc6d0000039d3-c8-534664505ff9
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: kgene.kim@samsung.com, t.figa@samsung.com,
         linux-samsung-soc@vger.kernel.org
 Cc: kyungmin.park@samsung.com, cw00.choi@samsung.com, inki.dae@samsung.com,
         sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 02/27] ARM: EXYNOS: Add IO mapping for non-secure SYSRAM of
- Exynos3250
-Date: Thu, 10 Apr 2014 18:28:19 +0900
-Message-id: <1397122124-15690-3-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH 01/27] ARM: EXYNOS: Add Exynos3250 SoC ID
+Date: Thu, 10 Apr 2014 18:28:18 +0900
+Message-id: <1397122124-15690-2-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
 References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsWyRsSkQDcwxS3Y4PpvRovrX56zWnz+0MJu
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsWyRsSkUDcwxS3Y4O11RovrX56zWnz+0MJu
 	Men+BBaL3gVX2SzONr1ht9j0+BqrxeVdc9gsZpzfx2QxY/JLNov1M16zWOzdOZnRgdtj85J6
-	j74tqxg9Pm+SC2CO4rJJSc3JLEst0rdL4MpYsvAIc8FJvopnzYsZGxjX8HQxcnJICJhIbNxw
-	nxnCFpO4cG89WxcjF4eQwFJGie7JU9lgilpPf2UFsYUEpjNKzDsmBFHUxCTR/OswI0iCTUBL
-	Yv+LG2ANIgIBEj+OvwOzmQVuMkocex/WxcjBISwQIfHmfxFImEVAVWLLiQlgrbwCrhJH13Ww
-	Q+ySk/iw5xGYzSngJvHpeyvUXleJpg/7oO5ZxS7xb3UYxBwBiW+TD7GAjJcQkJXYdADqF0mJ
-	gytusExgFF7AyLCKUTS1ILmgOCm9yFivODG3uDQvXS85P3cTIzDoT/971r+D8e4B60OMyUDj
-	JjJLiSbnA6MmryTe0NjMyMLUxNTYyNzSjDRhJXHe+w+TgoQE0hNLUrNTUwtSi+KLSnNSiw8x
-	MnFwSjUw9ou8YlBkVpvNz52V6WXDlzfrOfuF7WF9nRP32F6WuSyzo17oRdjpH2d/MN8Tdt/r
-	ZWP78p36ouRF04xjPnq9F1J4r/C0QcfefMssmZXJRsrfP5qrGzJI7mmt2ar0ybDzRz2TzM8l
-	tsnSkRsieU+uDp/rUGXKwLisMLVVPPrGrtzajb4/mTcrsRRnJBpqMRcVJwIA5ZLfJpACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t9jQd2AFLdggwMzzSyuf3nOavH5Qwu7
+	j74tqxg9Pm+SC2CO4rJJSc3JLEst0rdL4Mq4tkavYJtUxdzLq1gaGDeIdTFyckgImEjcXnaP
+	HcIWk7hwbz0biC0ksJRR4vWrepianzNesXQxcgHFpzNK3Drxgx3CaWKSaP51mBGkik1AS2L/
+	ixtg3SICARI/jr8Ds5kFbjJKHHsfBmILC1hKnD7zGKyeRUBV4tbtdjCbV8BVYmfHfBaIbXIS
+	H/Y8AruIU8BN4tP3VlaIi1wlmj7sYwNZLCGwil1i95qdbBCDBCS+TT4E1MwBlJCV2HSAGWKO
+	pMTBFTdYJjAKL2BkWMUomlqQXFCclF5kqlecmFtcmpeul5yfu4kRGPan/z2buIPx/gHrQ4zJ
+	QOMmMkuJJucD4yavJN7Q2MzIwtTE1NjI3NKMNGElcd70R0lBQgLpiSWp2ampBalF8UWlOanF
+	hxiZODilGhhFjdIecSS6uWoH9px7rG56vITTvG7/5/qdFvuuvDEoWPvE0N2F1dt+k7/IU92g
+	6osvaydeE1nfwr7nfUv3QV19OU+B/njnTy89rdWkrH13bJibmb1rdyTXTsd5a/SfsGzvcd4S
+	IVVTvKH5pdKnp9b5itdfP1apexmc53TLQ/1xgaQu+xcWRSWW4oxEQy3mouJEABjOjpyRAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jQd2AFLdggx37TC2uf3nOavH5Qwu7
 	xaT7E1gsehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PFjMkv2SzWz3jNYrF352RGB26PzUvq
 	Pfq2rGL0+LxJLoA5qoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VW
-	ycUnQNctMwfoICWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYQ1jxpKFR5gL
-	TvJVPGtezNjAuIani5GTQ0LARKL19FdWCFtM4sK99WwgtpDAdEaJeceEuhi5gOwmJonmX4cZ
-	QRJsAloS+1/cACsSEQiQ+HH8HZjNLHCTUeLY+7AuRg4OYYEIiTf/i0DCLAKqEltOTABr5RVw
-	lTi6roMdYpecxIc9j8BsTgE3iU/fW1kh9rpKNH3YxzaBkXcBI8MqRtHUguSC4qT0XCO94sTc
-	4tK8dL3k/NxNjOCoeia9g3FVg8UhRgEORiUe3gPLXIOFWBPLiitzDzFKcDArifBeC3YLFuJN
-	SaysSi3Kjy8qzUktPsSYDHTVRGYp0eR8YMTnlcQbGpuYGVkamRtaGBmbkyasJM57sNU6UEgg
-	PbEkNTs1tSC1CGYLEwenVAPjFLkTPL8uBTo66sXLC4ROsxe2CHiuvnbSZN8kpxuZHkbWnO23
-	QgzPC816IrUhU/XhrLXVicZHV4ZmHpJjvXIueD/riuPqMikPO1TK87P4fXxm3Pp1bcrKA70P
-	5zzwu5G+5LW2X8fUA+8me4l4v3D/5J7QW66RmK1SxZPf5uby/U28XnHSvm9KLMUZiYZazEXF
-	iQDdP0lx7gIAAA==
+	ycUnQNctMwfoICWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYQ1jxrU1egXb
+	pCrmXl7F0sC4QayLkZNDQsBE4ueMVywQtpjEhXvr2boYuTiEBKYzStw68YMdwmlikmj+dZgR
+	pIpNQEti/4sbbCC2iECAxI/j78BsZoGbjBLH3oeB2MIClhKnzzwGq2cRUJW4dbsdzOYVcJXY
+	2TEfapucxIc9j9hBbE4BN4lP31tZQWwhoJqmD/vYJjDyLmBkWMUomlqQXFCclJ5rqFecmFtc
+	mpeul5yfu4kRHFfPpHYwrmywOMQowMGoxMN7YJlrsBBrYllxZe4hRgkOZiUR3mvBbsFCvCmJ
+	lVWpRfnxRaU5qcWHGJOBrprILCWanA+M+bySeENjEzMjSyNzQwsjY3PShJXEeQ+0WgcKCaQn
+	lqRmp6YWpBbBbGHi4JRqYIycc/+JwpeHDceezatflzlrv8WykpN/12+s9Cj8dXxjacEr5psJ
+	5eu0/8mlh5ioS3XfMCxbt3D9KSd/frkFOXf/3U1mPchkdzN3bdlJlb4l7So2rhPbDjm/nSQV
+	mMstHib1+3LQNKkdE/Xns+TxrphV9LWgY11YV9zLraunHk2eUp4/K73+kLQSS3FGoqEWc1Fx
+	IgA13vOT7wIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,58 +51,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The non-secure SYSRAM is used for secondary CPU bring-up. This patch add
-IO mapping for non-scure SYSRAM.
+This patch add Exynos3250's SoC ID. Exynos 3250 is System-On-Chip(SoC) that
+is based on the 32-bit RISC processor for Smartphone. Exynos3250 uses Cortex-A7
+dual cores and has a target speed of 1.0GHz.
 
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/arm/mach-exynos/exynos.c           | 12 ++++++++++++
- arch/arm/mach-exynos/include/mach/map.h |  1 +
- 2 files changed, 13 insertions(+)
+ arch/arm/mach-exynos/Kconfig             | 22 ++++++++++++++++++++++
+ arch/arm/mach-exynos/exynos.c            |  1 +
+ arch/arm/plat-samsung/include/plat/cpu.h | 10 ++++++++++
+ 3 files changed, 33 insertions(+)
 
+diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
+index fc8bf18..6da8a68 100644
+--- a/arch/arm/mach-exynos/Kconfig
++++ b/arch/arm/mach-exynos/Kconfig
+@@ -11,6 +11,17 @@ if ARCH_EXYNOS
+ 
+ menu "SAMSUNG EXYNOS SoCs Support"
+ 
++config ARCH_EXYNOS3
++	bool "SAMSUNG EXYNOS3"
++	select ARM_AMBA
++	select CLKSRC_OF
++	select HAVE_ARM_SCU if SMP
++	select HAVE_SMP
++	select PINCTRL
++	select PM_GENERIC_DOMAINS if PM_RUNTIME
++	help
++	  Samsung EXYNOS3 SoCs based systems
++
+ config ARCH_EXYNOS4
+ 	bool "SAMSUNG EXYNOS4"
+ 	default y
+@@ -41,6 +52,17 @@ config ARCH_EXYNOS5
+ 
+ comment "EXYNOS SoCs"
+ 
++config SOC_EXYNOS3250
++	bool "SAMSUNG EXYNOS3250"
++	default y
++	depends on ARCH_EXYNOS3
++	select ARCH_HAS_BANDGAP
++	select ARM_CPU_SUSPEND if PM
++	select PINCTRL_EXYNOS
++	select SAMSUNG_DMADEV
++	help
++	  Enable EXYNOS3250 CPU support
++
+ config CPU_EXYNOS4210
+ 	bool "SAMSUNG EXYNOS4210"
+ 	default y
 diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
-index b134868..cad3bfd 100644
+index b32a907..b134868 100644
 --- a/arch/arm/mach-exynos/exynos.c
 +++ b/arch/arm/mach-exynos/exynos.c
-@@ -35,6 +35,15 @@
- #define L2_AUX_VAL 0x7C470001
- #define L2_AUX_MASK 0xC200ffff
+@@ -370,6 +370,7 @@ static void __init exynos_dt_machine_init(void)
+ }
  
-+static struct map_desc exynos3250_iodesc[] __initdata = {
-+	{
-+		.virtual	= (unsigned long)S5P_VA_SYSRAM_NS,
-+		.pfn		= __phys_to_pfn(EXYNOS3_PA_SYSRAM_NS),
-+		.length		= SZ_4K,
-+		.type		= MT_DEVICE,
-+	},
-+};
-+
- static struct map_desc exynos4_iodesc[] __initdata = {
- 	{
- 		.virtual	= (unsigned long)S3C_VA_SYS,
-@@ -275,6 +284,9 @@ static int __init exynos_fdt_map_chipid(unsigned long node, const char *uname,
-  */
- static void __init exynos_map_io(void)
- {
-+	if (soc_is_exynos3250())
-+		iotable_init(exynos3250_iodesc, ARRAY_SIZE(exynos3250_iodesc));
-+
- 	if (soc_is_exynos4())
- 		iotable_init(exynos4_iodesc, ARRAY_SIZE(exynos4_iodesc));
+ static char const *exynos_dt_compat[] __initconst = {
++	"samsung,exynos3250",
+ 	"samsung,exynos4",
+ 	"samsung,exynos4210",
+ 	"samsung,exynos4212",
+diff --git a/arch/arm/plat-samsung/include/plat/cpu.h b/arch/arm/plat-samsung/include/plat/cpu.h
+index 5992b8d..3d808f6b 100644
+--- a/arch/arm/plat-samsung/include/plat/cpu.h
++++ b/arch/arm/plat-samsung/include/plat/cpu.h
+@@ -43,6 +43,9 @@ extern unsigned long samsung_cpu_id;
+ #define S5PV210_CPU_ID		0x43110000
+ #define S5PV210_CPU_MASK	0xFFFFF000
  
-diff --git a/arch/arm/mach-exynos/include/mach/map.h b/arch/arm/mach-exynos/include/mach/map.h
-index 7b046b5..a53981b 100644
---- a/arch/arm/mach-exynos/include/mach/map.h
-+++ b/arch/arm/mach-exynos/include/mach/map.h
-@@ -26,6 +26,7 @@
- #define EXYNOS4_PA_SYSRAM0		0x02025000
- #define EXYNOS4_PA_SYSRAM1		0x02020000
- #define EXYNOS5_PA_SYSRAM		0x02020000
-+#define EXYNOS3_PA_SYSRAM_NS		0x0205F000
- #define EXYNOS4210_PA_SYSRAM_NS		0x0203F000
- #define EXYNOS4x12_PA_SYSRAM_NS		0x0204F000
- #define EXYNOS5250_PA_SYSRAM_NS		0x0204F000
++#define EXYNOS3250_SOC_ID       0xE3472000
++#define EXYNOS3_SOC_MASK        0xFFFFF000
++
+ #define EXYNOS4210_CPU_ID	0x43210000
+ #define EXYNOS4212_CPU_ID	0x43220000
+ #define EXYNOS4412_CPU_ID	0xE4412200
+@@ -68,6 +71,7 @@ IS_SAMSUNG_CPU(s5p6440, S5P6440_CPU_ID, S5P64XX_CPU_MASK)
+ IS_SAMSUNG_CPU(s5p6450, S5P6450_CPU_ID, S5P64XX_CPU_MASK)
+ IS_SAMSUNG_CPU(s5pc100, S5PC100_CPU_ID, S5PC100_CPU_MASK)
+ IS_SAMSUNG_CPU(s5pv210, S5PV210_CPU_ID, S5PV210_CPU_MASK)
++IS_SAMSUNG_CPU(exynos3250, EXYNOS3250_SOC_ID, EXYNOS3_SOC_MASK)
+ IS_SAMSUNG_CPU(exynos4210, EXYNOS4210_CPU_ID, EXYNOS4_CPU_MASK)
+ IS_SAMSUNG_CPU(exynos4212, EXYNOS4212_CPU_ID, EXYNOS4_CPU_MASK)
+ IS_SAMSUNG_CPU(exynos4412, EXYNOS4412_CPU_ID, EXYNOS4_CPU_MASK)
+@@ -126,6 +130,12 @@ IS_SAMSUNG_CPU(exynos5440, EXYNOS5440_SOC_ID, EXYNOS5_SOC_MASK)
+ # define soc_is_s5pv210()	0
+ #endif
+ 
++#if defined(CONFIG_SOC_EXYNOS3250)
++# define soc_is_exynos3250()    is_samsung_exynos3250()
++#else
++# define soc_is_exynos3250()    0
++#endif
++
+ #if defined(CONFIG_CPU_EXYNOS4210)
+ # define soc_is_exynos4210()	is_samsung_exynos4210()
+ #else
 -- 
 1.8.0
 
