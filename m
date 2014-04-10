@@ -1,89 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758565AbaDJPPY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 11:15:24 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:39287 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758532AbaDJPPU convert rfc822-to-8bit (ORCPT
+	id S965235AbaDJPQr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 11:16:47 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:6645 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752992AbaDJPQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 11:15:20 -0400
+	Thu, 10 Apr 2014 11:16:43 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zz1458K154dIzz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh26d3h1155h)
+From: Nicolin Chen <Guangyu.Chen@freescale.com>
+To: <broonie@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <alsa-devel@alsa-project.org>, <timur@tabi.org>,
+        <Li.Xiubo@freescale.com>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <rob@landley.net>,
+        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
+        <shawn.guo@linaro.org>
+Subject: [PATCH v6] ASoC: fsl_sai: Add clock controls for SAI
+Date: Thu, 10 Apr 2014 23:18:11 +0800
+Message-ID: <1397143092-10388-1-git-send-email-Guangyu.Chen@freescale.com>
+X-Mailer: git-send-email 1.8.4
 MIME-Version: 1.0
-In-Reply-To: <1397119587.19944.14.camel@shinybook.infradead.org>
-References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
- <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net> <1397084904.9519.62.camel@dabdike>
- <1397085044.9519.63.camel@dabdike> <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
- <1397087425.9519.67.camel@dabdike> <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>
- <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
- <1397111557.2608.29.camel@buesod1.americas.hpqcorp.net> <20140410071535.GX13491@8bytes.org>
- <1397119587.19944.14.camel@shinybook.infradead.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 10 Apr 2014 09:14:59 -0600
-Message-ID: <CAErSpo6EORf02WS1UqP8EMWfHij7W2J5B3ZOoBT90txV85uZZw@mail.gmail.com>
-Subject: Re: hpsa driver bug crack kernel down!
-To: "Woodhouse, David" <david.woodhouse@intel.com>
-Cc: "joro@8bytes.org" <joro@8bytes.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bhe@redhat.com" <bhe@redhat.com>,
-        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "James.Bottomley@hansenpartnership.com" 
-	<James.Bottomley@hansenpartnership.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>,
-        "davidlohr@hp.com" <davidlohr@hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 2:46 AM, Woodhouse, David
-<david.woodhouse@intel.com> wrote:
+The SAI mainly has the following clocks:
+  bus clock
+    control and configure registers and to generate synchronous
+    interrupts and DMA requests.
 
->> > > >> > > > > DMAR:[fault reason 02] Present bit in context entry is clear
->> > > >> > > > > dmar: DRHD: handling fault status reg 602
->> > > >> > > > > dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr 7f61e000
->
-> That "Present bit in context entry is clear" fault means that we have
-> not set up *any* mappings for this PCI device… on this IOMMU.
->
->> > Yes, specifically (finally done bisecting):
->> >
->> > commit 2e45528930388658603ea24d49cf52867b928d3e
->> > Author: Jiang Liu <jiang.liu@linux.intel.com>
->> > Date:   Wed Feb 19 14:07:36 2014 +0800
->> >
->> >     iommu/vt-d: Unify the way to process DMAR device scope array
->
-> This commit is about how we decide which IOMMU a given PCI device is
-> attached to.
->
-> Thus, my first guess would be that we are quite happily setting up the
-> requested DMA maps on the *wrong* IOMMU, and then taking faults when the
-> device actually tries to do DMA.
->
-> However, I'm not 100% convinced of that. The fault address looks
-> suspiciously like a true physical address, not a virtual bus address of
-> the type that we'd normally allocate for a dma_map_* operation. Those
-> would start at 0xfffff000 and work downwards, typically.
+  mclk1, mclk2, mclk3
+    to generate the bit clock when the receiver or transmitter is
+    configured for an internally generated bit clock.
 
-I like the "wrong IOMMU (or no IOMMU at all)" theory.  If we didn't
-connect the device with an IOMMU at all, that would explain the device
-DMAing directly to a physical address, wouldn't it?
+So this patch adds these clocks and their clock controls to the driver.
 
-> Do you have 'iommu=pt' on the kernel command line? Can I see the full
-> dmesg as this system boots, and also a copy of the DMAR table?
->
-> We should also rate-limit DMA faults, which would avoid the lockup
-> failure mode. Bjorn, what should an IOMMU driver *do* when it detects
-> that a device is creating an endless stream of DMA faults and isn't
-> aborting the transaction?
+[ To concern the old DTB cases, I've added a bit of extra code to make
+  the driver compatible with them. And by marking clock NULL if failed
+  to get, the clk_prepare() or clk_get_rate() would easily return 0
+  so no further path should be broken. -- by Nicolin ]
 
-You mentioned that POWER with EEH does something intelligent in this
-case, but I'm not familiar with that code.  We have AER support, which
-can result in resetting a device, but I think DMA faults are reported
-differently, and I don't think there's any nice existing way for PCI
-to deal with them.  Maybe there should be, though.
+Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
+Acked-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
 
-Bjorn
+Changelog
+v6:
+ * Dropped the dtsi change since it's no more demanded with this patch.
+ * Removed Shawn's ACK since we no long change dtsi in this case.
+v5:
+ * Dropped mclk preparing and enabling since we are not using them currecntly.
+ * Made the change compatible to the old DTB.
+ * Added returned error value print.
+v4:
+ * Merged into single patch.
+ * Fixed bus clock ID on vf610.
+v3:
+ * Use int type for ret instead of u32.
+ * Added Acked-by and Tested-by from Xiubo Li.
+v2:
+ * Appended two extra mclks to the driver since SAI actually has three.
+ * Renamed clock name to 'bus' and 'mclk' according to the reference manual.
+
+ .../devicetree/bindings/sound/fsl-sai.txt          |  9 +++--
+ sound/soc/fsl/fsl_sai.c                            | 38 ++++++++++++++++++++--
+ sound/soc/fsl/fsl_sai.h                            |  4 +++
+ 3 files changed, 46 insertions(+), 5 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/sound/fsl-sai.txt b/Documentation/devicetree/bindings/sound/fsl-sai.txt
+index 35c09fe..0f4e238 100644
+--- a/Documentation/devicetree/bindings/sound/fsl-sai.txt
++++ b/Documentation/devicetree/bindings/sound/fsl-sai.txt
+@@ -10,7 +10,8 @@ Required properties:
+ - compatible: Compatible list, contains "fsl,vf610-sai" or "fsl,imx6sx-sai".
+ - reg: Offset and length of the register set for the device.
+ - clocks: Must contain an entry for each entry in clock-names.
+-- clock-names : Must include the "sai" entry.
++- clock-names : Must include the "bus" for register access and "mclk1" "mclk2"
++  "mclk3" for bit clock and frame clock providing.
+ - dmas : Generic dma devicetree binding as described in
+   Documentation/devicetree/bindings/dma/dma.txt.
+ - dma-names : Two dmas have to be defined, "tx" and "rx".
+@@ -30,8 +31,10 @@ sai2: sai@40031000 {
+ 	      reg = <0x40031000 0x1000>;
+ 	      pinctrl-names = "default";
+ 	      pinctrl-0 = <&pinctrl_sai2_1>;
+-	      clocks = <&clks VF610_CLK_SAI2>;
+-	      clock-names = "sai";
++	      clocks = <&clks VF610_CLK_PLATFORM_BUS>,
++		     <&clks VF610_CLK_SAI2>,
++		     <&clks 0>, <&clks 0>;
++	      clock-names = "bus", "mclk1", "mclk2", "mclk3";
+ 	      dma-names = "tx", "rx";
+ 	      dmas = <&edma0 0 VF610_EDMA_MUXID0_SAI2_TX>,
+ 		   <&edma0 0 VF610_EDMA_MUXID0_SAI2_RX>;
+diff --git a/sound/soc/fsl/fsl_sai.c b/sound/soc/fsl/fsl_sai.c
+index db9f75e..5fff2e1 100644
+--- a/sound/soc/fsl/fsl_sai.c
++++ b/sound/soc/fsl/fsl_sai.c
+@@ -401,7 +401,15 @@ static int fsl_sai_startup(struct snd_pcm_substream *substream,
+ 		struct snd_soc_dai *cpu_dai)
+ {
+ 	struct fsl_sai *sai = snd_soc_dai_get_drvdata(cpu_dai);
++	struct device *dev = &sai->pdev->dev;
+ 	u32 reg;
++	int ret;
++
++	ret = clk_prepare_enable(sai->bus_clk);
++	if (ret) {
++		dev_err(dev, "failed to enable bus clock: %d\n", ret);
++		return ret;
++	}
+ 
+ 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+ 		reg = FSL_SAI_TCR3;
+@@ -427,6 +435,8 @@ static void fsl_sai_shutdown(struct snd_pcm_substream *substream,
+ 
+ 	regmap_update_bits(sai->regmap, reg, FSL_SAI_CR3_TRCE,
+ 			   ~FSL_SAI_CR3_TRCE);
++
++	clk_disable_unprepare(sai->bus_clk);
+ }
+ 
+ static const struct snd_soc_dai_ops fsl_sai_pcm_dai_ops = {
+@@ -559,7 +569,8 @@ static int fsl_sai_probe(struct platform_device *pdev)
+ 	struct fsl_sai *sai;
+ 	struct resource *res;
+ 	void __iomem *base;
+-	int irq, ret;
++	char tmp[8];
++	int irq, ret, i;
+ 
+ 	sai = devm_kzalloc(&pdev->dev, sizeof(*sai), GFP_KERNEL);
+ 	if (!sai)
+@@ -582,12 +593,35 @@ static int fsl_sai_probe(struct platform_device *pdev)
+ 		return PTR_ERR(base);
+ 
+ 	sai->regmap = devm_regmap_init_mmio_clk(&pdev->dev,
+-			"sai", base, &fsl_sai_regmap_config);
++			"bus", base, &fsl_sai_regmap_config);
++
++	/* Compatible with old DTB cases */
++	if (IS_ERR(sai->regmap))
++		sai->regmap = devm_regmap_init_mmio_clk(&pdev->dev,
++				"sai", base, &fsl_sai_regmap_config);
+ 	if (IS_ERR(sai->regmap)) {
+ 		dev_err(&pdev->dev, "regmap init failed\n");
+ 		return PTR_ERR(sai->regmap);
+ 	}
+ 
++	/* No error out for old DTB cases but only mark the clock NULL */
++	sai->bus_clk = devm_clk_get(&pdev->dev, "bus");
++	if (IS_ERR(sai->bus_clk)) {
++		dev_err(&pdev->dev, "failed to get bus clock: %ld\n",
++				PTR_ERR(sai->bus_clk));
++		sai->bus_clk = NULL;
++	}
++
++	for (i = 0; i < FSL_SAI_MCLK_MAX; i++) {
++		sprintf(tmp, "mclk%d", i + 1);
++		sai->mclk_clk[i] = devm_clk_get(&pdev->dev, tmp);
++		if (IS_ERR(sai->mclk_clk[i])) {
++			dev_err(&pdev->dev, "failed to get mclk%d clock: %ld\n",
++					i + 1, PTR_ERR(sai->mclk_clk[i]));
++			sai->mclk_clk[i] = NULL;
++		}
++	}
++
+ 	irq = platform_get_irq(pdev, 0);
+ 	if (irq < 0) {
+ 		dev_err(&pdev->dev, "no irq for node %s\n", np->full_name);
+diff --git a/sound/soc/fsl/fsl_sai.h b/sound/soc/fsl/fsl_sai.h
+index 677670d..0e6c9f5 100644
+--- a/sound/soc/fsl/fsl_sai.h
++++ b/sound/soc/fsl/fsl_sai.h
+@@ -119,6 +119,8 @@
+ #define FSL_SAI_CLK_MAST2	2
+ #define FSL_SAI_CLK_MAST3	3
+ 
++#define FSL_SAI_MCLK_MAX	3
++
+ /* SAI data transfer numbers per DMA request */
+ #define FSL_SAI_MAXBURST_TX 6
+ #define FSL_SAI_MAXBURST_RX 6
+@@ -126,6 +128,8 @@
+ struct fsl_sai {
+ 	struct platform_device *pdev;
+ 	struct regmap *regmap;
++	struct clk *bus_clk;
++	struct clk *mclk_clk[FSL_SAI_MCLK_MAX];
+ 
+ 	bool big_endian_regs;
+ 	bool big_endian_data;
+-- 
+1.8.4
+
+
