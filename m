@@ -1,66 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759213AbaDJWLF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 18:11:05 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48137 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753706AbaDJWLD (ORCPT
+	id S1759234AbaDJWNU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 18:13:20 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:55201 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753800AbaDJWNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 18:11:03 -0400
-Date: Thu, 10 Apr 2014 23:10:47 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Tim Kryger <tim.kryger@linaro.org>
-Cc: Matt Porter <mporter@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-ID: <20140410221047.GE6518@sirena.org.uk>
-References: <1397160240-2833-1-git-send-email-tim.kryger@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="U1t7w//IUm8YcF8e"
+	Thu, 10 Apr 2014 18:13:17 -0400
+Date: Thu, 10 Apr 2014 17:12:13 -0500
+From: scameron@beardog.cce.hp.com
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Baoquan He <bhe@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Joerg Roedel <joro@8bytes.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>, scameron@beardog.cce.hp.com
+Subject: Re: hpsa NULL pointer in hpsa_enter_performant_mode()
+Message-ID: <20140410221213.GG21815@beardog.cce.hp.com>
+References: <CAErSpo725yFakFa4v7zJk5UQ4evQgobn=kOtn6zqcYg=j3S_JQ@mail.gmail.com> <20140410212046.GE21815@beardog.cce.hp.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397160240-2833-1-git-send-email-tim.kryger@linaro.org>
-X-Cookie: This report is filled with omissions.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: bcm590xx: Set n_voltages for linear reg
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140410212046.GE21815@beardog.cce.hp.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 10, 2014 at 04:20:46PM -0500, scameron@beardog.cce.hp.com wrote:
+> On Thu, Apr 10, 2014 at 02:53:30PM -0600, Bjorn Helgaas wrote:
+> > [subject changed]
+> > 
+> > On Thu, Apr 10, 2014 at 2:45 PM,  <scameron@beardog.cce.hp.com> wrote:
+> > > On Wed, Apr 09, 2014 at 11:32:37PM -0700, Davidlohr Bueso wrote:
+> > >> On Wed, 2014-04-09 at 22:03 -0600, Bjorn Helgaas wrote:
+> > >> > [+cc Joerg, iommu list]
+> > >> >
+> > >> > On Wed, Apr 9, 2014 at 6:19 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> > >> > > On Wed, 2014-04-09 at 16:50 -0700, James Bottomley wrote:
+> > >> > >> On Wed, 2014-04-09 at 16:40 -0700, Davidlohr Bueso wrote:
+> > >> > >> > On Wed, 2014-04-09 at 16:10 -0700, James Bottomley wrote:
+> > >> > >> > > On Wed, 2014-04-09 at 16:08 -0700, James Bottomley wrote:
+> > >> > >> > > > [+linux-scsi]
+> > >> > >> > > > On Wed, 2014-04-09 at 15:49 -0700, Davidlohr Bueso wrote:
+> > >> > >> > > > > On Wed, 2014-04-09 at 10:39 +0800, Baoquan He wrote:
+> > >> > >> > > > > > Hi,
+> > >> > >> > > > > >
+> > >> > >> > > > > > The kernel is 3.14.0+ which is pulled just now.
+> > >> > >> > > > >
+> > >> > >> > > > > Cc'ing more people.
+> > >> > >> > > > >
+> > >> > >> > > > > While the hpsa driver appears to be involved in some way, I'm sure if
+> > >> > >> > > > > this is a related issue, but as of today's pull I'm getting another
+> > >> > >> > > > > problem that causes my DL980 not to come up.
+> > >> > >> > > > >
+> > >> > >> > > > > *Massive* amounts of:
+> > >> > >> > > > >
+> > >> > >> > > > > DMAR:[fault reason 02] Present bit in context entry is clear
+> > >> > >> > > > > dmar: DRHD: handling fault status reg 602
+> > >> > >> > > > > dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr 7f61e000
+> > >> > >> > > > >
+> > >> > >> > > > > Then:
+> > >> > >> > > > >
+> > >> > >> > > > > hpsa 0000:03:00.0: Controller lockup detected: 0xffff0000
+> > >> > >> > > > > ...
+> > >> > >> > > > > Workqueue: events hpsa_monitor_ctlr_worker [hpsa]
+> > >> > >> > > > > ...
+> > >> > >> > > > >
+> > >> > >> > > > > Screenshot of the actual LOCKUP:
+> > >> > >> > > > > http://stgolabs.net/hpsa-hard-lockup-3.14+.png
+> > >> > >> > > > >
+> > >> > >> > > > > While I haven't bisected, things worked fine until at least until commit
+> > >> > >> > > > > 39de65aa2c3e (April 2nd).
+> > >> > >> > > > >
+> > >> > >> > > > > Any ideas?
+> > >> > >> > > >
+> > >> > >> > > > Well, it's either a DMA remapping issue or a hpsa one.  Your assertion
+> > >> > >> > > > that everything worked fine until 39de65aa2c3e would tend to vindicate
+> > >> > >> > > > hpsa,
+> > >> > >> >
+> > >> > >> > Hmm here you mean DMA, right?
+> > >> > >>
+> > >> > >> No, it vindicates the hpsa changes ... they don't seem to be causing
+> > >> > >> problems until something goes wrong with dma remapping.
+> > >> > >>
+> > >> > >> > > because all the hpsa changes went in before that under
+> > >> > >> > > Missing crucial info:
+> > >> > >> > >
+> > >> > >> > > commit 1a0b6abaea78f73d9bc0a2f6df2d9e4c917cade1
+> > >> > >> > >
+> > >> > >> > > > Merge: 3e75c6d b2bff6c
+> > >> > >> > > > Author: Linus Torvalds <torvalds@linux-foundation.org>
+> > >> > >> > > > Date:   Tue Apr 1 18:49:04 2014 -0700
+> > >> > >> > > >
+> > >> > >> > > >     Merge tag 'scsi-misc' of
+> > >> > >> > > > git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi
+> > >> > >> > > >
+> > >> > >> > > > can you revalidate that this commit works OK just to make sure?
+> > >> > >> >
+> > >> > >> > Ok so I don't see those DMA messages and system starts just fine. I'm
+> > >> > >> > thinking perhaps something broke after the IO mmu stuff in commit
+> > >> > >> > 3f583bc21977a608908b83d03ee2250426a5695c... could this be indirectly
+> > >> > >> > causing the CPU stalls and just blame hpsa in the path as a side effect?
+> > >> > >> >
+> > >> > >> > /me goes out to try the commit.
+> > >> > >>
+> > >> > >> That's my guess.  The DMAR messages are DMA remapping issues caused in
+> > >> > >> the IOMMU.  If I had to guess, I'd say the DMAR fault message is
+> > >> > >> indicating the IOMMU is calling for a mapping address before it can
+> > >> > >> satisfy the driver read request, which is causing the hang apparently in
+> > >> > >> the hpsa driver.
+> > >> > >>
+> > >> > >> I've added linux-pci to the cc; I think they deal with iommu issues on
+> > >> > >> x86.
+> > >> > >
+> > >> > > So that merge commit appears to be the culprit, I see both the DMA
+> > >> > > messages and the lockup blaming hpsa...
+> > >> >
+> > >> > My understanding so far (please correct me if I'm wrong):
+> > >> >
+> > >> > 39de65aa2c3e OK ("Merge branch 'i2c/for-next'")
+> > >> > 1a0b6abaea78 OK ("Merge tag 'scsi-misc'")
+> > >
+> > > ^^^ this one, 1a0b6abaea78, did not work for me, crashing in
+> > > hpsa_enter_performant mode() which was surprsing to me as I am
+> > > pretty sure I tried on this very same machine I'm using now
+> > > (DL360p with P420, P430 and P420i) with 3.14-rc-something plus
+> > > all the hpsa patches that I thought were merged in.
+> > 
+> > I think we have to completely different issues mixed together in this
+> > thread, so I changed the subject here.
+> 
+> Thanks.
+> 
+> > 
+> > The reports above for 39de65aa2c3e, 1a0b6abaea78, were for a DMA fault.
+> > 
+> > The original message from Baoquan He was for a NULL pointer
+> > dereference in hpsa_enter_performant_mode(), which is very likely the
+> > same problem you're seeing, Steve.
+> > 
+> > I changed the subject to "hpsa NULL pointer in
+> > hpsa_enter_performant_mode()", so hopefully we can chase the NULL
+> > pointer issue there and leave the original, already long thread, for
+> > the DMA fault issue.
+> > 
+> > > But now I am seeing:
+> > >
+> > >  [<ffffffffa0002bd0>] hpsa_enter_performant_mode+0x4c0/0x540 [hpsa]
+> > > RSP: 0018:ffff88042c515a78  EFLAGS: 00010297
+> > > RAX: 0000000000000000 RBX: ffff88042c650000 RCX: 0000000000000004
+> > > RDX: 0000000000000000 RSI: 0000000000000001 RDI: 0000000000000000
+> > > RBP: ffff88042c515b48 R08: 0000000000000000 R09: 000000008af03cc0
+> > > R10: 0000000000000000 R11: 0000000000000001 R12: ffff88042c515a98
+> > > R13: 0000000060000104 R14: ffff88042c515ad8 R15: ffffffffa0001630
+> > > FS:  00007f86f7a38700(0000) GS:ffff88043f560000(0000) knlGS:0000000000000000
+> > > CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> > > usb 1-1.6: new low-speed USB device number 3 using ehci-pci
+> > > CR2: 0000000000000000 CR3: 000000042c4c3000 CR4: 00000000000407e0
+> > > Stack:
+> > >  0000000000008024 ffffffffa00000c0 ffffffffa0000be0 0000000000000000
+> > >  0000000600000005 0000000800000007 0000000a00000009 0000000c0000000b
+> > >  0000000e0000000d 000000100000000f 0000001200000011 0000000400000013
+> > > Call Trace:
+> > >  [<ffffffffa00000c0>] ? SA5_fifo_full+0x20/0x20 [hpsa]
+> > >  [<ffffffffa0000be0>] ? SA5_ioaccel_mode1_completed+0xd0/0xd0 [hpsa]
+> > >  [<ffffffffa000aab6>] hpsa_put_ctlr_into_performant_mode+0x186/0x320 [hpsa]
+> > >  [<ffffffffa0005132>] ? hpsa_allocate_sg_chain_blocks+0xa2/0xd0 [hpsa]
+> > >  [<ffffffffa000b08b>] hpsa_init_one+0x43b/0x7d0 [hpsa]
+> > >  [<ffffffff812bc34c>] local_pci_probe+0x4c/0xb0
+> > >  [<ffffffff812bc439>] pci_call_probe+0x89/0xb0
+> > >  [<ffffffff812bb074>] ? pci_match_device+0xc4/0xd0
+> > >  [<ffffffff812bc719>] pci_device_probe+0x79/0xa0
+> > >  [<ffffffff8138edd2>] ? driver_sysfs_add+0x82/0xb0
+> > >  [<ffffffff8138f03c>] really_probe+0x6c/0x320
+> > > usb 1-1.6: New USB device found, idVendor=0624, idProduct=0341
+> > > usb 1-1.6: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+> > > usb 1-1.6: Product: HP 336047-B21
+> > > usb 1-1.6: Manufacturer: Avocent
+> > > input: Avocent HP 336047-B21 as
+> > > /devices/pci0000:00/0000:00:1a.0/usb1/1-1/1-1.64
+> > > hid-generic 0003:0624:0341.0001: input,hidraw0: USB HID v1.10 Keyboard
+> > > [Avocent0
+> > > input: Avocent HP 336047-B21 as
+> > > /devices/pci0000:00/0000:00:1a.0/usb1/1-1/1-1.65
+> > > hid-generic 0003:0624:0341.0002: input,hidraw1: USB HID v1.10 Mouse [Avocent
+> > > HP1
+> > >  [<ffffffff8138f337>] driver_probe_device+0x47/0xa0
+> > >  [<ffffffff8138f43b>] __driver_attach+0xab/0xb0
+> > >  [<ffffffff8138f390>] ? driver_probe_device+0xa0/0xa0
+> > >  [<ffffffff8138f390>] ? driver_probe_device+0xa0/0xa0
+> > >  [<ffffffff8138d1d4>] bus_for_each_dev+0x94/0xb0
+> > >  [<ffffffff8138ecfe>] driver_attach+0x1e/0x20
+> > >  [<ffffffff8138e6e0>] bus_add_driver+0x1b0/0x250
+> > > usb 2-1.3: new high-speed USB device number 3 using ehci-pci
+> > >  [<ffffffffa0016000>] ? 0xffffffffa0015fff
+> > >  [<ffffffff8138f9d4>] driver_register+0x64/0xf0
+> > >  [<ffffffffa0016000>] ? 0xffffffffa0015fff
+> > >  [<ffffffff812bc80c>] __pci_register_driver+0x4c/0x50
+> > >  [<ffffffffa001601e>] hpsa_init+0x1e/0x20 [hpsa]
+> > >  [<ffffffff810002a2>] do_one_initcall+0xd2/0x180
+> > >  [<ffffffff810771a5>] ? __blocking_notifier_call_chain+0x65/0x80
+> > >  [<ffffffff810c8154>] do_init_module+0x44/0x1b0
+> > >  [<ffffffff810ca7c8>] load_module+0x5a8/0x6f0
+> > >  [<ffffffff810c7a30>] ? __unlink_module+0x30/0x30
+> > >  [<ffffffff81164c35>] ? __vmalloc_node+0x35/0x40
+> > >  [<ffffffff810c7120>] ? module_sect_show+0x30/0x30
+> > >  [<ffffffff810caa96>] SyS_init_module+0x96/0xc0
+> > >  [<ffffffff81590d52>] system_call_fastpath+0x16/0x1b
+> > > Code: 89 45 8c 78 2c 31 f6 8d 4e 04 4c 89 e2 31 c0 0f 1f 40 00 39 0a 7d 0c usb
+> > > 0
+> > > usb 2-1.3: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+> > > hub 2-1.3:1.0: USB hub found
+> > > hub 2-1.3:1.0: 2 ports detected
+> > >
+> > > 83 c0 01 48 83 c2 04 83 f8 10 75 f0 48 63 d6 83 c6 01 39 f7 <41> 89 04 90 7d
+> > > d6
+> > > RIP  [<ffffffffa0002bd0>] hpsa_enter_performant_mode+0x4c0/0x540 [hpsa]
+> > >  RSP <ffff88042c515a78>
+> > > CR2: 0000000000000000
+> > > ---[ end trace ab56f106199a4971 ]---
+> > >
+> > >
+> > >> > 3f583bc21977 BAD ("Merge tag 'iommu-updates-v3.15'")
+> > >>
+> > >> Yes, specifically (finally done bisecting):
+> > >>
+> > >> commit 2e45528930388658603ea24d49cf52867b928d3e
+> > >> Author: Jiang Liu <jiang.liu@linux.intel.com>
+> > >> Date:   Wed Feb 19 14:07:36 2014 +0800
+> > >>
+> > >>     iommu/vt-d: Unify the way to process DMAR device scope array
+> > >>
+> > >>     Now we have a PCI bus notification based mechanism to update DMAR
+> > >>     device scope array, we could extend the mechanism to support boot
+> > >>     time initialization too, which will help to unify and simplify
+> > >>     the implementation.
+> > >>
+> > >>     Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> > >>     Signed-off-by: Joerg Roedel <joro@8bytes.org>
+> > >
+> > > My git bisect appears to be converging on something else, something
+> > > within the hpsa patches that I sent up recently, unfortunately for
+> > > me.  Will let you all know when it converges.
+> 
+> Converged to this:
+> 
+> [scameron@localhost linux]$ git bisect good
+> b9af4937e6f5b55b6ffb2a92ec580e79e1401825 is the first bad commit
+> commit b9af4937e6f5b55b6ffb2a92ec580e79e1401825
+> Author: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+> Date:   Tue Feb 18 13:56:29 2014 -0600
+> 
+>     [SCSI] hpsa: initialize controller to perform io accelerator mode 2
+>     
+>     Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+>     Signed-off-by: Scott Teel <scott.teel@hp.com>
+>     Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+> 
+> :040000 040000 4fe4dce566eaa27dd6851c592e2d3123fbd4f306 8db6e3648890745ad150341d00b586e0efcb322d M	drivers
+> 
+> Which doesn't make the issue immediately obvious to me, but I will continue looking into it.
 
---U1t7w//IUm8YcF8e
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ok, I think I've got it.  trans_support is uninitialized in
+hpsa_put_ctlr_into_performant_mode().  The compiler was warning about
+this during my git bisect, which I should have picked up on because
+I'm sure that the patches which I made were not giving me warnings
+in my code base.  I diffed from my code base and immediately I see
+the missing code.  Not sure what happenned to the code that
+initializes that, but in any case a patch to fix it will be
+following shortly.
 
-On Thu, Apr 10, 2014 at 01:04:00PM -0700, Tim Kryger wrote:
-> Fix the macro used to define linear range regulators to include the
-> number of voltages.
+-- steve
 
-Applied, thanks.
-
---U1t7w//IUm8YcF8e
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTRxbkAAoJELSic+t+oim9sT0QAIDogSLYC57QKaFe8iExu/zO
-qpSAw+wuzPtD12EYOTZzbpGN+/sOX/nPmKRB505pnObxYi7YkHpDVifX0gB9X8yz
-KvNQjWtw07dS1odxD5bTNGA6RZZiGK6jl/fV7OqhoBuwQ4K3yW9bqOzg1r6a2Fon
-WRFupu0MwL+683fSWKrL9EczjWjA8GE2NHc/FLpYYtQF9mkAO6K7l9PVBkd7kDDy
-5WWD/juiLBOmKOMXa34FBqSdOF1vHTdrwJqujL5DZoYJw3VI+7+ChGoZzrmZMH+p
-vDtJiNU+otIO1yAO0I/TLoqp8LBLhqB89IBvNYl36oG1J03CLH32bGCxs/Cwfu0l
-nkWA1v2M/h4YOhG7atyE3x6r1xKZJfZps9mDje/20wJ60Q3Ypb6a2LmS49LtQMYE
-071zB08LQKga9x3aZMzt1Vhp/AkoLd4ubML9EXn1BLg/bEGyGanBcfOkWUkUMgJ2
-rr2UtmagVWGIe/3hTGd4gjemM0YLfpsKDP6SqHXD0/H5K/lgNCD6xAhK9+ICKzxk
-u1hiGdkvBteYGg+9IU+yKjilIzS9J6k9r86PADHEzWXVjnLbj4HpM5tk+84n6vtL
-Qc89oVwT9U/PNopDva0B/0eSNjgCgYJ5ZnxAFfnKZqs9aiga4urA7tdjlC3KIHbR
-kb3pYiSOkvv8+hU2Yh08
-=FF0h
------END PGP SIGNATURE-----
-
---U1t7w//IUm8YcF8e--
