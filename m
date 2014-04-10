@@ -1,63 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935068AbaDJEFy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 00:05:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41128 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934824AbaDJDW0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:26 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 083/134] USB: OHCI: Allow runtime PM without system sleep
-Date: Wed,  9 Apr 2014 20:23:19 -0700
-Message-Id: <20140410032310.587020097@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
-References: <20140410032259.587501440@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S935441AbaDJEGE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 00:06:04 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:45796 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934824AbaDJEGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 00:06:00 -0400
+Subject: Re: [RFC PATCH 4/6] uprobes/x86: Emulate rip-relative call's
+From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1397078735.5261.20.camel@oc7886638347.ibm.com.usor.ibm.com>
+References: <20140406201628.GA507@redhat.com>
+	 <1396995963.5056.46.camel@oc7886638347.ibm.com.usor.ibm.com>
+	 <20140409154346.GB18486@redhat.com>
+	 <1397078735.5261.20.camel@oc7886638347.ibm.com.usor.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 09 Apr 2014 21:05:52 -0700
+Message-ID: <1397102752.8282.4.camel@oc7886638347.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041004-0320-0000-0000-000002F2F91C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 2014-04-09 at 14:25 -0700, Jim Keniston wrote:
+> On Wed, 2014-04-09 at 17:43 +0200, Oleg Nesterov wrote:
+> > On 04/08, Jim Keniston wrote:
+> > >
+> > > On Sun, 2014-04-06 at 22:16 +0200, Oleg Nesterov wrote:
+> > > > 0xe8. Anything else?
+> 
+> Oleg, thanks for responding to (if not necessarily agreeing with) all my
+> suggestions.  I think your code is solid, but I think we were wrong
+> about one thing.  See below.
 
-------------------
+Oops.  Nope.  You were right and I was wrong.  See below.
 
-From: Alan Stern <stern@rowland.harvard.edu>
+> 
+> > >
+> > > No, I think e8 is the only call instruction uprobes will see.
+> > 
+> > Good.
+> > 
+> > > The following couple of paragraphs should be included in the code,
+> > > perhaps merged with some of the related comments already there.  Without
+> > > it, the code is pretty hard to follow.
+> > 
+> > OK, I'll try to improve the comments somehow...
+> > 
+> > > > Emulating of rip-relative call is trivial, we only need to additionally
+> > > > push the ret-address. If this fails, we execute this instruction out of
+> > > > line and this should trigger the trap, the probed application should die
+> > > > or the same insn will be restarted if a signal handler expands the stack.
+> > > > We do not even need ->post_xol() for this case.
+> > > >
+> > > > But there is a corner (and almost theoretical) case: another thread can
+> > > > expand the stack right before we execute this insn out of line. In this
+> > > > case it hit the same problem we are trying to solve. So we simply turn
+> > > > the probed insn into "call 1f; 1:" and add ->post_xol() which restores
+> > > > ->sp and restarts.
+> > >
+> > > Can you explain under what circumstances emulation of the call
+> > > instruction would fail?  Will the copy_to_user() call that writes the
+> > > return address to the stack grow the stack if necessary?
+> > 
+> > If necessary and if possible.
+> > 
+> > > Will
+> > > single-stepping the mangled call instruction expand the stack?
+> > 
+> > In the likely case it won't. If copy_to_user() failes, then "call" should
+> > fail too (again, ignoring the potential race with another thread which can
+> > populate the memory ->sp - 8 points to).
+> 
+> 
+> I've experimented with putting a uprobe on a call instruction (in a
+> tight loop, with no ret) and a kprobe on expand_stack(), and my results
+> seem to indicate that a single-stepped call instruction will
+> successfully grow the stack vma where a call to copy_to_user() won't.
 
-commit 69820e01aa756b8d228143d997f71523c1e97984 upstream.
+Nope.  There was a bug in my test.  copy_to_user() can indeed grow the
+stack vma.  So never mind.
+> 
+> So your trick of single-stepping the mangled call after the failed
+> emulation, and then retrying the emulation should come into play in more
+> than just theoretical situations.  We'd need it any time the probed call
+> needs to grow the stack vma.
+> 
+> I can send you the test kprobe/uprobe modules I used, if you like.
+> 
+> Bottom line: no further code changes, but this would affect your
+> comments.
+> 
+> Jim
 
-Since ohci-hcd supports runtime PM, the .pm field in its pci_driver
-structure should be protected by CONFIG_PM rather than
-CONFIG_PM_SLEEP.
-
-Without this change, OHCI controllers won't do runtime suspend if
-system suspend or hibernation isn't enabled.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Yang Yingliang <yangyingliang@huawei.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/host/ohci-pci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/usb/host/ohci-pci.c
-+++ b/drivers/usb/host/ohci-pci.c
-@@ -414,7 +414,7 @@ static struct pci_driver ohci_pci_driver
- 	.remove =	usb_hcd_pci_remove,
- 	.shutdown =	usb_hcd_pci_shutdown,
- 
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_PM
- 	.driver =	{
- 		.pm =	&usb_hcd_pci_pm_ops
- 	},
-
+Jim
 
