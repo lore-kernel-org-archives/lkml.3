@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161176AbaDJNS4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 09:18:56 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:47372 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161132AbaDJNSP (ORCPT
+	id S1161193AbaDJNTK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 09:19:10 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:19506 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161024AbaDJNTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 09:18:15 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-36-53469a16d809
+	Thu, 10 Apr 2014 09:19:03 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-e3-53469a44440c
 From: Robert Baldyga <r.baldyga@samsung.com>
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
@@ -20,225 +20,176 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         patches@opensource.wolfsonmicro.com, linux-usb@vger.kernel.org,
         linux-omap@vger.kernel.org, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH 04/13] extcon: extcon-class: match extcon device by devicetree
- node
-Date: Thu, 10 Apr 2014 15:16:42 +0200
-Message-id: <1397135811-12866-5-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH 06/13] extcon: extcon-class: remove unused functions
+Date: Thu, 10 Apr 2014 15:16:44 +0200
+Message-id: <1397135811-12866-7-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1397135811-12866-1-git-send-email-r.baldyga@samsung.com>
 References: <1397135811-12866-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t9jAV2xWW7BBl+Oi1qseeFgcXCrpsXB
-	+/UW1788Z7WY9OQ9s8X8I+dYLSaunMxs0f9mIatF/xYXiwN/djBaNC9ez2Zx7tVKRovOs0+Y
-	LS487WGzWLpvNYvFwrYlLBaXd81hs5i9pJ/FYtGyVmaLJwvPMFksvX6RyeJ24wo2i+Vv/7NZ
-	TJi+lsXiweGd7BbrXk5nsWjde4TdYt+FP6wW+694Och6rJm3htHj29dJLB6X+3qZPHbtnMPq
-	MaH/E6PHzll32T1WLv/C5nH460IWj80rtDw2repk83i1eiarx51re9g89s9dw+7R2/yOzePl
-	xN9sHju/N7AHiERx2aSk5mSWpRbp2yVwZaz/d4OpoM26Ys2f+0wNjH8Nuxg5OSQETCQuTt7L
-	CGGLSVy4t56ti5GLQ0hgEaPEvGc32SGcdiaJR5d2MoNUsQnoSGz5PgGsQ0SAWWLB1POMIEXM
-	AidZJVYd3A9WJCwQKtF9sgnMZhFQldj8q5MVxOYVcJU4vfIoUAMH0DoFiTmTbEBMTgE3ib2X
-	lUFMIaCKqWuVJjDyLmBkWMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHJPPpHcwrmqwOMQo
-	wMGoxMN7YJlrsBBrYllxZe4hRgkOZiUR3o1T3YKFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8x5s
-	tQ4UEkhPLEnNTk0tSC2CyTJxcEo1MHLeYl0onK72QamyO/2X6o8P1yxlciTqrlzhd1mxRMU1
-	9GRSnM3CidbdU+svW3AxrLkn76B6pkk28XFgYcgf/+3Sqy8xac+T3/jOxV1rtaL6eoOG/7sq
-	s01WtylfmahRMeVLal7vk60Zx64d2r8jUeHt5K0v1066E+e7Y2PRWwm2esdVkz0L65RYijMS
-	DbWYi4oTAbbtOELFAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAAzXRa0hTYRgH8N6dy47W5HRadtKkXClotbIsXkhCQuXglxLpgn2wqYcpOpVN
+	JSVoIVZaujlbonmb9+nUMsVteHdUZtrC0kAto6UpWmTTga6Lx+jbj+f//Hk+PARCPUY9iITk
+	NFaeLEkS4a7oyO/P5NHQ0rDI45ZnKDR8DYYDnX5w4ONNOGmfx6DG9h2BlZYxDBbqixCoWtJh
+	UNURAvudRgCza9pwOLaoBzB31IZA65f7OKzrbUah7nYtCsfNZTh8VKtCYXV9DgJtulc8WDf5
+	hgenbjXisGH5Dw7VxS0onB0y8WHrQjEKc3osfNhrdWKw7214sBdjqDAAZm1VgzLjBfk8xmwq
+	wxi1agUwptIZPqNvsOPM0KoOZZ42+jPtTbk4s9hcgjHTE90401du4DP52d9wZqFwA2dMDiX/
+	gjDKNSiOTUrIYOXHzl5zjX/u2J7a5Hs9u2yGrwS9+/OAC0GTgfRwnhn9Z3fa+qENzwOuBEVW
+	A/qHpgDjAoq8w6ONDy9xxskjdIdDDTgLSYSu0r4GXAEhhzG6aaAP4YJdZAi94jRtlVHSh35g
+	H+VzFpCh9LtOx+ac2Lx2gC7TBHF0IcPonvGDHKnNDW2LSA0EVWBbE9jNpsamKmKksgCxQiJT
+	pCdLxbEpsnaw9cc5DyPQK+EgIAkg2iHorw+NpDBJhiJTNghoAhEJBU+0YZGUIE6SmcXKU6Ll
+	6UmsYhB4Eqhoj6A/50wERUolaWwiy6ay8v8pj3DxUAKZv7PGUBSl3rnh5nZvxNgtb53vcVsf
+	vtL407r6/upIjFY8a+m6UakUZ4WLPCOmHQXyUGm68FzwvruHsl56Ay8WI83DS/YU43lKcDg6
+	fv3ERW93n8SuubXZy7O2F3T3YgK9d0rmW1F+6lOXHkNXOk9OlOTqpapAv+XT4b90UIQq4iUB
+	/ohcIfkLwMrBLsMCAAA=
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies extcon_get_edev_by_phandle() function, to match
-extcon device by devicetree node. This modification needed to add
-field 'node' in extcon_dev structure, and fill it in probe function
-of each extcon provider driver.
-
-This patch replaces also extcon_get_extcon_dev() function with
-of_extcon_get_extcon_dev(), returning extcon device which contains
-given devicetree node.
+This patch removes two functions, extcon_find_cable_index() and
+extcon_get_edev_by_phandle(). They are not longer needed, since
+extcon client API has changed to be oriented on extcon_cable instead
+of extcon_dev.
 
 Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 ---
- drivers/extcon/extcon-adc-jack.c |    1 +
- drivers/extcon/extcon-arizona.c  |    1 +
- drivers/extcon/extcon-class.c    |   19 +++++++++----------
- drivers/extcon/extcon-gpio.c     |    1 +
- drivers/extcon/extcon-max14577.c |    2 ++
- drivers/extcon/extcon-max77693.c |    1 +
- drivers/extcon/extcon-max8997.c  |    1 +
- drivers/extcon/extcon-palmas.c   |    1 +
- include/linux/extcon.h           |    8 ++------
- 9 files changed, 19 insertions(+), 16 deletions(-)
+ drivers/extcon/extcon-class.c |   67 -----------------------------------------
+ include/linux/extcon.h        |   18 -----------
+ 2 files changed, 85 deletions(-)
 
-diff --git a/drivers/extcon/extcon-adc-jack.c b/drivers/extcon/extcon-adc-jack.c
-index e23f1c2..d65915e 100644
---- a/drivers/extcon/extcon-adc-jack.c
-+++ b/drivers/extcon/extcon-adc-jack.c
-@@ -111,6 +111,7 @@ static int adc_jack_probe(struct platform_device *pdev)
- 	}
- 
- 	data->edev.dev.parent = &pdev->dev;
-+	data->edev.node = pdev->dev.of_node;
- 	data->edev.supported_cable = pdata->cable_names;
- 
- 	/* Check the length of array and set num_cables */
-diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index 98a14f6..fc69cca 100644
---- a/drivers/extcon/extcon-arizona.c
-+++ b/drivers/extcon/extcon-arizona.c
-@@ -1153,6 +1153,7 @@ static int arizona_extcon_probe(struct platform_device *pdev)
- 
- 	info->edev.name = "Headset Jack";
- 	info->edev.dev.parent = arizona->dev;
-+	info->edev.node = pdev->dev.of_node;
- 	info->edev.supported_cable = arizona_cable;
- 
- 	ret = extcon_dev_register(&info->edev);
 diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
-index 1b98c4e..1075ce8 100644
+index 708b352..2be0ac9 100644
 --- a/drivers/extcon/extcon-class.c
 +++ b/drivers/extcon/extcon-class.c
-@@ -358,24 +358,23 @@ int extcon_set_cable_state_(struct extcon_dev *edev,
- EXPORT_SYMBOL_GPL(extcon_set_cable_state_);
+@@ -283,32 +283,6 @@ int extcon_set_state(struct extcon_dev *edev, u32 state)
+ EXPORT_SYMBOL_GPL(extcon_set_state);
  
  /**
-- * extcon_get_extcon_dev() - Get the extcon device instance from the name
-- * @extcon_name:	The extcon name provided with extcon_dev_register()
-+ * of_extcon_get_extcon_dev() - Get the extcon device instance from the name
-+ * @np: The node of extcon device
-  */
--struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name)
-+struct extcon_dev *of_extcon_get_extcon_dev(const struct device_node *np)
- {
--	struct extcon_dev *sd;
-+	struct extcon_dev *edev;
- 
- 	mutex_lock(&extcon_dev_list_lock);
--	list_for_each_entry(sd, &extcon_dev_list, entry) {
--		if (!strcmp(sd->name, extcon_name))
-+	list_for_each_entry(edev, &extcon_dev_list, entry) {
-+		if (edev->node == np)
- 			goto out;
- 	}
--	sd = NULL;
-+	edev = NULL;
- out:
- 	mutex_unlock(&extcon_dev_list_lock);
--	return sd;
-+	return edev;
+- * extcon_find_cable_index() - Get the cable index based on the cable name.
+- * @edev:	the extcon device that has the cable.
+- * @cable_name:	cable name to be searched.
+- *
+- * Note that accessing a cable state based on cable_index is faster than
+- * cable_name because using cable_name induces a loop with strncmp().
+- * Thus, when get/set_cable_state is repeatedly used, using cable_index
+- * is recommended.
+- */
+-int extcon_find_cable_index(struct extcon_dev *edev, const char *cable_name)
+-{
+-	int i;
+-
+-	if (edev->supported_cable) {
+-		for (i = 0; edev->supported_cable[i]; i++) {
+-			if (!strncmp(edev->supported_cable[i],
+-				cable_name, CABLE_NAME_MAX))
+-				return i;
+-		}
+-	}
+-
+-	return -EINVAL;
+-}
+-EXPORT_SYMBOL_GPL(extcon_find_cable_index);
+-
+-/**
+  * extcon_get_cable_state_() - Get the status of a specific cable.
+  * @edev:	the extcon device that has the cable.
+  * @index:	cable index that can be retrieved by extcon_find_cable_index().
+@@ -876,47 +850,6 @@ void extcon_dev_unregister(struct extcon_dev *edev)
  }
--EXPORT_SYMBOL_GPL(extcon_get_extcon_dev);
+ EXPORT_SYMBOL_GPL(extcon_dev_unregister);
  
- static int _call_per_cable(struct notifier_block *nb, unsigned long val,
- 			   void *ptr)
-@@ -827,7 +826,7 @@ struct extcon_dev *extcon_get_edev_by_phandle(struct device *dev, int index)
- 		return ERR_PTR(-ENODEV);
- 	}
- 
--	edev = extcon_get_extcon_dev(node->name);
-+	edev = of_extcon_get_extcon_dev(node);
- 	if (!edev) {
- 		dev_err(dev, "unable to get extcon device : %s\n", node->name);
- 		return ERR_PTR(-ENODEV);
-diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
-index 13d5222..fc90b7a 100644
---- a/drivers/extcon/extcon-gpio.c
-+++ b/drivers/extcon/extcon-gpio.c
-@@ -100,6 +100,7 @@ static int gpio_extcon_probe(struct platform_device *pdev)
- 
- 	extcon_data->edev.name = pdata->name;
- 	extcon_data->edev.dev.parent = &pdev->dev;
-+	extcon_data->edev.node = pdev->dev.of_node;
- 	extcon_data->gpio = pdata->gpio;
- 	extcon_data->gpio_active_low = pdata->gpio_active_low;
- 	extcon_data->state_on = pdata->state_on;
-diff --git a/drivers/extcon/extcon-max14577.c b/drivers/extcon/extcon-max14577.c
-index 7a947d3..b017a0d 100644
---- a/drivers/extcon/extcon-max14577.c
-+++ b/drivers/extcon/extcon-max14577.c
-@@ -676,6 +676,8 @@ static int max14577_muic_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
- 	info->edev->name = DEV_NAME;
-+	info->edev->dev.parent = &pdev->dev;
-+	info->edev->node = pdev->dev.of_node;
- 	info->edev->supported_cable = max14577_extcon_cable;
- 	ret = extcon_dev_register(info->edev);
- 	if (ret) {
-diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-index 7a014cd..2cd8892 100644
---- a/drivers/extcon/extcon-max77693.c
-+++ b/drivers/extcon/extcon-max77693.c
-@@ -1200,6 +1200,7 @@ static int max77693_muic_probe(struct platform_device *pdev)
- 	}
- 	info->edev->name = DEV_NAME;
- 	info->edev->dev.parent = &pdev->dev;
-+	info->edev->node = pdev->dev.of_node;
- 	info->edev->supported_cable = max77693_extcon_cable;
- 	ret = extcon_dev_register(info->edev);
- 	if (ret) {
-diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
-index a3df70d..c071588 100644
---- a/drivers/extcon/extcon-max8997.c
-+++ b/drivers/extcon/extcon-max8997.c
-@@ -718,6 +718,7 @@ static int max8997_muic_probe(struct platform_device *pdev)
- 	}
- 	info->edev->name = DEV_NAME;
- 	info->edev->dev.parent = &pdev->dev;
-+	info->edev->node = pdev->dev.of_node;
- 	info->edev->supported_cable = max8997_extcon_cable;
- 	ret = extcon_dev_register(info->edev);
- 	if (ret) {
-diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
-index 26c0619..153a40e 100644
---- a/drivers/extcon/extcon-palmas.c
-+++ b/drivers/extcon/extcon-palmas.c
-@@ -199,6 +199,7 @@ static int palmas_usb_probe(struct platform_device *pdev)
- 
- 	palmas_usb->edev.supported_cable = palmas_extcon_cable;
- 	palmas_usb->edev.dev.parent = palmas_usb->dev;
-+	palmas_usb->edev.node = pdev->dev.of_node;
- 	palmas_usb->edev.mutually_exclusive = mutually_exclusive;
- 
- 	status = extcon_dev_register(&palmas_usb->edev);
+-#ifdef CONFIG_OF
+-/*
+- * extcon_get_edev_by_phandle - Get the extcon device from devicetree
+- * @dev - instance to the given device
+- * @index - index into list of extcon_dev
+- *
+- * return the instance of extcon device
+- */
+-struct extcon_dev *extcon_get_edev_by_phandle(struct device *dev, int index)
+-{
+-	struct device_node *node;
+-	struct extcon_dev *edev;
+-
+-	if (!dev->of_node) {
+-		dev_err(dev, "device does not have a device node entry\n");
+-		return ERR_PTR(-EINVAL);
+-	}
+-
+-	node = of_parse_phandle(dev->of_node, "extcon", index);
+-	if (!node) {
+-		dev_err(dev, "failed to get phandle in %s node\n",
+-			dev->of_node->full_name);
+-		return ERR_PTR(-ENODEV);
+-	}
+-
+-	edev = of_extcon_get_extcon_dev(node);
+-	if (!edev) {
+-		dev_err(dev, "unable to get extcon device : %s\n", node->name);
+-		return ERR_PTR(-ENODEV);
+-	}
+-
+-	return edev;
+-}
+-#else
+-struct extcon_dev *extcon_get_edev_by_phandle(struct device *dev, int index)
+-{
+-	return ERR_PTR(-ENOSYS);
+-}
+-#endif /* CONFIG_OF */
+-EXPORT_SYMBOL_GPL(extcon_get_edev_by_phandle);
+-
+ static int __init extcon_class_init(void)
+ {
+ 	return create_extcon_class();
 diff --git a/include/linux/extcon.h b/include/linux/extcon.h
-index ed4a47b..d0fd810 100644
+index a571cad..939a7b0 100644
 --- a/include/linux/extcon.h
 +++ b/include/linux/extcon.h
-@@ -77,6 +77,7 @@ struct extcon_cable;
- /**
-  * struct extcon_dev - An extcon device represents one external connector.
-  * @name:		The name of this extcon device. Parent device name is
-+ * @node:		Devicetree node of parent device.
-  *			used if NULL.
-  * @supported_cable:	Array of supported cable names ending with NULL.
-  *			If supported_cable is NULL, cable name related APIs
-@@ -113,6 +114,7 @@ struct extcon_cable;
- struct extcon_dev {
- 	/* Optional user initializing data */
- 	const char *name;
-+	const struct device_node *node;
- 	const char **supported_cable;
- 	const u32 *mutually_exclusive;
- 
-@@ -185,7 +187,6 @@ struct extcon_specific_cable_nb {
+@@ -210,8 +210,6 @@ extern int extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state);
+  * They are used to access the status of each cable based on the cable_name
+ tt or cable_index, which is retrieved by extcon_find_cable_index
   */
- extern int extcon_dev_register(struct extcon_dev *edev);
- extern void extcon_dev_unregister(struct extcon_dev *edev);
--extern struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name);
+-extern int extcon_find_cable_index(struct extcon_dev *sdev,
+-				   const char *cable_name);
+ extern int extcon_get_cable_state_(struct extcon_dev *edev, int cable_index);
+ extern int extcon_set_cable_state_(struct extcon_dev *edev,
+ 				  int cable_index, bool cable_state);
+@@ -252,11 +250,6 @@ extern int extcon_register_notifier(struct extcon_dev *edev,
+ extern int extcon_unregister_notifier(struct extcon_dev *edev,
+ 				      struct notifier_block *nb);
  
- /*
-  * get/set/update_state access the 32b encoded state value, which represents
-@@ -292,11 +293,6 @@ static inline int extcon_set_cable_state(struct extcon_dev *edev,
+-/*
+- * Following API get the extcon device from devicetree.
+- * This function use phandle of devicetree to get extcon device directly.
+- */
+-extern struct extcon_dev *extcon_get_edev_by_phandle(struct device *dev, int index);
+ #else /* CONFIG_EXTCON */
+ static inline int extcon_dev_register(struct extcon_dev *edev)
+ {
+@@ -281,12 +274,6 @@ static inline int extcon_update_state(struct extcon_dev *edev, u32 mask,
  	return 0;
  }
  
--static inline struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name)
+-static inline int extcon_find_cable_index(struct extcon_dev *edev,
+-					  const char *cable_name)
 -{
--	return NULL;
+-	return 0;
 -}
 -
- static inline int extcon_register_notifier(struct extcon_dev *edev,
- 					   struct notifier_block *nb)
+ static inline int extcon_get_cable_state_(struct extcon_dev *edev,
+ 					  int cable_index)
  {
+@@ -341,10 +328,5 @@ static inline int extcon_unregister_interest(struct extcon_cable_nb
+ 	return 0;
+ }
+ 
+-static inline struct extcon_dev *extcon_get_edev_by_phandle(struct device *dev,
+-							    int index)
+-{
+-	return ERR_PTR(-ENODEV);
+-}
+ #endif /* CONFIG_EXTCON */
+ #endif /* __LINUX_EXTCON_H__ */
 -- 
 1.7.9.5
 
