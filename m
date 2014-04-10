@@ -1,44 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030287AbaDJKIq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 06:08:46 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:34314 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965147AbaDJKIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 06:08:44 -0400
-X-IronPort-AV: E=Sophos;i="4.97,833,1389744000"; 
-   d="scan'208";a="119824110"
-Message-ID: <53466DA9.5050906@citrix.com>
-Date: Thu, 10 Apr 2014 11:08:41 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
-MIME-Version: 1.0
-To: Steven Noonan <steven@uplinklabs.net>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH 3.13 08/22] Revert "xen: properly account for _PAGE_NUMA
- during xen pte translations"
-References: <20140401040703.045139933@linuxfoundation.org>	<20140401040705.152847420@linuxfoundation.org> <CAKbGBLj3Ep7DkJsMFfRt0Kv80DTL6FS4RbOZWgZuesSU58JJhg@mail.gmail.com>
-In-Reply-To: <CAKbGBLj3Ep7DkJsMFfRt0Kv80DTL6FS4RbOZWgZuesSU58JJhg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+	id S965943AbaDJKJL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 06:09:11 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:35682 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965147AbaDJKJF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 06:09:05 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [PATCH 07/27] irqchip: Declare cortex-a7's irqchip to initialize gic from dt
+From: armdev <armdev.ftm@gmail.com>
+In-Reply-To: <878urd33g4.fsf@approximate.cambridge.arm.com>
+Date: Thu, 10 Apr 2014 15:39:02 +0530
+Cc: Chanwoo Choi <cw00.choi@samsung.com>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        "t.figa@samsung.com" <t.figa@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "hyunhee.kim@samsung.com" <hyunhee.kim@samsung.com>,
+        "sw0312.kim@samsung.com" <sw0312.kim@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yj44.cho@samsung.com" <yj44.cho@samsung.com>,
+        "inki.dae@samsung.com" <inki.dae@samsung.com>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        mark.rutland@arm.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C136A675-6D64-42EE-918E-351A266946C5@gmail.com>
+References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com> <1397122124-15690-8-git-send-email-cw00.choi@samsung.com> <878urd33g4.fsf@approximate.cambridge.arm.com>
+To: Marc Zyngier <marc.zyngier@arm.com>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/14 11:05, Steven Noonan wrote:
-> I realize it's late to protest on this given that 3.13.9 is out, but
-> what is the path forward for those experiencing the original issue
-> that the reverted commit was intended to correct?
 
-Disable NUMA_REBALANCING.
+On 10-Apr-2014, at 3:34 pm, Marc Zyngier <marc.zyngier@arm.com> wrote:
 
-Or apply
+> On Thu, Apr 10 2014 at 10:28:24 am BST, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+>> This patch declare coretex-a7's irqchip to initialze gic from dt
+>> with "arm,cortex-a7-gic" data.
+>> 
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>> drivers/irqchip/irq-gic.c | 1 +
+>> 1 file changed, 1 insertion(+)
+>> 
+>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+>> index 4300b66..8e906e4 100644
+>> --- a/drivers/irqchip/irq-gic.c
+>> +++ b/drivers/irqchip/irq-gic.c
+>> @@ -1069,6 +1069,7 @@ gic_of_init(struct device_node *node, struct device_node *parent)
+>> }
+>> IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
+>> IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
+>> +IRQCHIP_DECLARE(cortex_a7_gic, "arm,cortex-a7-gic", gic_of_init);
+>> IRQCHIP_DECLARE(msm_8660_qgic, "qcom,msm-8660-qgic", gic_of_init);
+>> IRQCHIP_DECLARE(msm_qgic2, "qcom,msm-qgic2", gic_of_init);
+> 
+> Frankly, this patch adds no value. Are we going to add
+> "arm,cortex-a12-gic", "arm,cortex-a17-gic", "arm,cortex-a53-gic",
+> "arm,cortex-a57-gic"? And that's just to mention the ARM Ltd cores...
+> 
+> Instead, how about defining a generic "arm,gic" property, and mandate
+> that new DT files are using that? We can always use a more precise
+> compatible for quirks.
+> 
 
-https://lkml.org/lkml/2014/4/8/173
+How about keeping it simple and tied to arm gic versions
+arm,gicv1, arm,gicv2, arm,gicv2ve
 
-David
+> Mark, what do you think? I think this has been discussed in the past
+> already.
+> 
+> 	M.
+> -- 
+> Jazz is not dead. It just smells funny.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
