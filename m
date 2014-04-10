@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759206AbaDJV6O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 17:58:14 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41541 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753657AbaDJV6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 17:58:11 -0400
-Date: Thu, 10 Apr 2014 16:55:27 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: <r.sricharan@ti.com>, <tglx@linutronix.de>, <galak@codeaurora.org>,
-        <santosh.shilimkar@ti.com>, Darren Etheridge <detheridge@ti.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] irq: crossbar: improve allocate_free_irq() complexity
-Message-ID: <20140410215527.GF27668@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1396392259-27437-1-git-send-email-balbi@ti.com>
+	id S1759238AbaDJV70 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 17:59:26 -0400
+Received: from mail.cybernetics.com ([173.71.130.66]:53031 "EHLO
+	mail.cybernetics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076AbaDJV7Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 17:59:24 -0400
+X-Greylist: delayed 1709 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Apr 2014 17:59:24 EDT
+Message-ID: <53470E26.2030306@cybernetics.com>
+Date: Thu, 10 Apr 2014 17:33:26 -0400
+From: Tony Battersby <tonyb@cybernetics.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WlEyl6ow+jlIgNUh"
-Content-Disposition: inline
-In-Reply-To: <1396392259-27437-1-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: David Herrmann <dh.herrmann@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH 2/6] shm: add sealing API
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---WlEyl6ow+jlIgNUh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(reposted from my comments at http://lwn.net/Articles/593918/)
 
-On Tue, Apr 01, 2014 at 05:44:19PM -0500, Felipe Balbi wrote:
-> current algorithm in allocate_free_irq() is O(n),
-> by just keeping track of last allocated IRQ with a
-> simple unsigned integer, we can find a free IRQ
-> in O(1).
->=20
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
-> ---
->=20
-> compile-tested only as J6 DTS is currently missing crossbar
-> altogether :-(
->=20
-> There's a drawback with this patch which I'm not sure if we
-> should care a lot because I couldn't entirely grasp when is
-> domain->xlate() called and if we will map/unmap IRQs in runtime
-> or will this *always* be done only during boot.
->=20
-> If we're talking about runtime IRQ remapping, then this, clearly,
-> won't work. But if this will be done only during boot up, then we
-> avoid iterating over the irq_map array each time we try to translate
-> a new IRQ prior to mapping it.
->=20
-> Comments are highly welcome as I'll probably learn something new
-> about the IRQ subsystem ;-)
+I may have thought of a way to subvert SEAL_WRITE using O_DIRECT and
+asynchronous I/O.  I am not sure if this is a real problem or not, but
+better to ask, right?
 
-do not apply this one!!! It won't work in all cases.
+The exploit would go like this:
 
---=20
-balbi
+1) mmap() the shared memory
+2) open some *other* file with O_DIRECT
+3) prepare a read-type iocb for the *other* file pointing to the
+mmap()ed memory
+4) io_submit(), but don't wait for it to complete
+5) munmap() the shared memory
+6) SEAL_WRITE the shared memory
+7) the "sealed" memory is overwritten by DMA from the disk drive at some
+point in the future when the I/O completes
 
---WlEyl6ow+jlIgNUh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+So this exploit effectively changes the contents of the supposedly
+write-protected memory after SEAL_WRITE is granted.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+For O_DIRECT the kernel pins the submitted pages in memory for DMA by
+incrementing the page reference counts when the I/O is submitted,
+allowing the pages to be modified by DMA even if they are no longer
+mapped in the address space of the process.  This is different from a
+regular read(), which uses the CPU to copy the data and will fail if the
+pages are not mapped.
 
-iQIcBAEBAgAGBQJTRxNPAAoJEIaOsuA1yqRE2OgP/jtoS6uhlvNuiLnFVoPdhDAd
-rEEP8pk5S5Vp5z2SPn/RfnJEkPqeekUBZAep1z7tw7xV6Y0f7+jmQxqicYu6Rc55
-4YcW9cVHCiKvZp0TINaTDi++jupONgLS/Etdt0tmZF8gsAs2yCfaDnLjyq+YjGkM
-ZR8NEn6vOLzpNCPUIul8aiJ1pmupn3NtrFIa/sAEYaun/VdsVhLolXg/MkscO62h
-DIymYjhzLR8aYm4gnAozI6hiZAxRey4gi5JrEpUW10BXKrEql3fgVBmrkenmbCvU
-oyN5BwWDrDx/AKTQ+e6k28Twkfz1SJSAfh9XZrlSEUGTQmHHlu8HtC0P9d3q5J4D
-8iboU2iR8iIFYLQFiBOjE4Q7y89pwkyKcgZePXpjIZazwSDTWn+gHEL68FZlTvs8
-lrSw2sQrpRw5ac/TsgZTU3hyw8c89UP52YLdC4FDKCv7h38eDHJMugAk51p3VGjr
-nuiiYEZvQC0bXFH87vDvSxVxkQO58N3SDjJtQYEHgEw460KyKbSTUw2SZrzR7OIe
-3PAiWcyBqKORFFBwFPjPMpEN7lIzxTXG3wYKhtg/sUyrg7qk5quf9/pE1KgZTT9w
-zz5pvY8ULYhT0FbgcPppnMpkYpXAcrYhVjnNngZmmGN5Cq7qdNCh7UvsiDYGDxLZ
-tCOFAV/6t/XTo//Ndx58
-=Ada3
------END PGP SIGNATURE-----
+I am sure there are also other direct I/O mechanisms in the kernel that
+can be used to setup a DMA transfer to change the contents of unmapped
+memory; the SCSI generic driver comes to mind.
 
---WlEyl6ow+jlIgNUh--
+I suppose SEAL_WRITE could iterate over all the pages in the file and
+check to make sure no page refcount is greater than the "expected"
+value, and return an error instead of granting the seal if a page is
+found with an unexpected extra reference that might have been added by
+e.g. get_user_pages() for direct I/O. But looking over shmem_set_seals()
+in patch 2/6, it doesn't seem to do that.
+
+Tony Battersby
+Cybernetics
