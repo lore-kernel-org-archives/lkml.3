@@ -1,111 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933837AbaDJATo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 20:19:44 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:51265 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932804AbaDJATn (ORCPT
+	id S934452AbaDJAXw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 20:23:52 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:36545 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932804AbaDJAXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 20:19:43 -0400
-Message-ID: <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: hpsa driver bug crack kernel down!
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Baoquan He <bhe@redhat.com>, linux-kernel@vger.kernel.org,
-        scameron@beardog.cce.hp.com, linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-pci@vger.kernel.org
-Date: Wed, 09 Apr 2014 17:19:40 -0700
-In-Reply-To: <1397087425.9519.67.camel@dabdike>
-References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
-	 <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>
-	 <1397084904.9519.62.camel@dabdike> <1397085044.9519.63.camel@dabdike>
-	 <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
-	 <1397087425.9519.67.camel@dabdike>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Apr 2014 20:23:49 -0400
+X-AuditID: cbfee690-b7f266d00000287c-97-5345e4936406
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Alan Stern'" <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, kgene.kim@samsung.com,
+        "'Vivek Gautam'" <gautam.vivek@samsung.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1397016042-4451-1-git-send-email-gautam.vivek@samsung.com>
+ <Pine.LNX.4.44L0.1404091430240.28384-100000@netrider.rowland.org>
+In-reply-to: <Pine.LNX.4.44L0.1404091430240.28384-100000@netrider.rowland.org>
+Subject: Re: [PATCH 1/2] usb: ehci-exynos: Return immediately from suspend if
+ ehci_suspend fails
+Date: Thu, 10 Apr 2014 09:23:48 +0900
+Message-id: <001a01cf5453$243d9c70$6cb8d550$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac9UIgZlejja77FnSTy6cqH6C3G9JwAMEXmg
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsVy+t8zI93JT1yDDV4/0bRou3KQ3aJ58Xo2
+	i8sLL7Fa9C64ymax6fE1VovLu+awWcw4v4/JYtGyVmaLCb8vsDlweuyfu4bdY/OSeo/Zd38w
+	evRtWcXo8XmTXABrFJdNSmpOZllqkb5dAlfGykk/WQou8Fc0NcxmbmBczNPFyMkhIWAisfPq
+	X0YIW0ziwr31bCC2kMAyRok9Dythal60nmXvYuQCik9nlPg2/RsbhPObUeLDv1dgHWwCahJf
+	vhxmB7FFBHQk3uy6ANbBLNDDJPGu4xxUezejxJN1TWBVnAJ+Ei1XbrCA2MICSRLbJv1lBrFZ
+	BFQlWma/B5vKK2ArcWDdCyhbUOLH5Htg9cwCWhKbtzWxQtjyEpvXvAXq5QC6VV3i0V9diCOM
+	JP4+/M0OUSIise/FO0aQGyQEfrJLbDj5CGqXgMS3yYdYIHplJTYdYIZ4WVLi4IobLBMYJWYh
+	2TwLyeZZSDbPQrJiASPLKkbR1ILkguKk9CITveLE3OLSvHS95PzcTYyQmJ6wg/HeAetDjMlA
+	6ycyS4km5wNTQl5JvKGxmZGFqYmpsZG5pRlpwkrivGqPkoKEBNITS1KzU1MLUovii0pzUosP
+	MTJxcEo1MIrwObKFb+H+FdJy7/G6x5vvSTnUMX0oN7s5e4VRw9/XwvylbJuW3DudYqmeNNVB
+	6vjM3/YztdzunZef1b3JNC8k4eU8HgWxgzJvL90qnq11R/l7tazJyhPXD6aZLGZYfY3nePay
+	Td2/35k9bd23e+7Wd3LtUguUrB39Ig1OrQxRZI4L/VRpaaTEUpyRaKjFXFScCAA2E2sv/wIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFKsWRmVeSWpSXmKPExsVy+t9jQd3JT1yDDT6+V7Fou3KQ3aJ58Xo2
+	i8sLL7Fa9C64ymax6fE1VovLu+awWcw4v4/JYtGyVmaLCb8vsDlweuyfu4bdY/OSeo/Zd38w
+	evRtWcXo8XmTXABrVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqt
+	kotPgK5bZg7QQUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjJWTfrIU
+	XOCvaGqYzdzAuJini5GTQ0LAROJF61l2CFtM4sK99WxdjFwcQgLTGSW+Tf8G5fxmlPjw7xUb
+	SBWbgJrEly+HwTpEBHQk3uy6wA5SxCzQwyTxruMcO0RHN6PEk3VNYFWcAn4SLVdusIDYwgJJ
+	Etsm/WUGsVkEVCVaZr8Hm8orYCtxYN0LKFtQ4sfke2D1zAJaEpu3NbFC2PISm9e8BerlALpV
+	XeLRX12II4wk/j78zQ5RIiKx78U7xgmMQrOQTJqFZNIsJJNmIWlZwMiyilE0tSC5oDgpPddQ
+	rzgxt7g0L10vOT93EyM4ZTyT2sG4ssHiEKMAB6MSD++BZa7BQqyJZcWVuYcYJTiYlUR4p5wG
+	CvGmJFZWpRblxxeV5qQWH2JMBnp0IrOUaHI+MJ3llcQbGpuYGVkamVkYmZibkyasJM57oNU6
+	UEggPbEkNTs1tSC1CGYLEwenVAOjhmuOfZFmtjTzIq7H90r7Y1s2Svzrqp8X8+H/3Aj/VOs0
+	nStyiQt9ZmiafJnBuZb5EcfmMNGKn51C0db62R7SP2Y4uZ+4H7g9i+/Gq5w3EfPLPjPmmwja
+	i/hs+/Vgz3V9q7dRsxpZKgssTVd8Xfe9aq9jCeefJdu7rT+y+rfPM/pd/MsnWVuJpTgj0VCL
+	uag4EQB4nTqMXQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-09 at 16:50 -0700, James Bottomley wrote:
-> On Wed, 2014-04-09 at 16:40 -0700, Davidlohr Bueso wrote:
-> > On Wed, 2014-04-09 at 16:10 -0700, James Bottomley wrote:
-> > > On Wed, 2014-04-09 at 16:08 -0700, James Bottomley wrote:
-> > > > [+linux-scsi]
-> > > > On Wed, 2014-04-09 at 15:49 -0700, Davidlohr Bueso wrote:
-> > > > > On Wed, 2014-04-09 at 10:39 +0800, Baoquan He wrote:
-> > > > > > Hi,
-> > > > > > 
-> > > > > > The kernel is 3.14.0+ which is pulled just now. 
-> > > > > 
-> > > > > Cc'ing more people.
-> > > > > 
-> > > > > While the hpsa driver appears to be involved in some way, I'm sure if
-> > > > > this is a related issue, but as of today's pull I'm getting another
-> > > > > problem that causes my DL980 not to come up.
-> > > > > 
-> > > > > *Massive* amounts of:
-> > > > > 
-> > > > > DMAR:[fault reason 02] Present bit in context entry is clear
-> > > > > dmar: DRHD: handling fault status reg 602
-> > > > > dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr 7f61e000
-> > > > > 
-> > > > > Then:
-> > > > > 
-> > > > > hpsa 0000:03:00.0: Controller lockup detected: 0xffff0000
-> > > > > ...
-> > > > > Workqueue: events hpsa_monitor_ctlr_worker [hpsa]
-> > > > > ...
-> > > > > 
-> > > > > Screenshot of the actual LOCKUP: 
-> > > > > http://stgolabs.net/hpsa-hard-lockup-3.14+.png
-> > > > > 
-> > > > > While I haven't bisected, things worked fine until at least until commit
-> > > > > 39de65aa2c3e (April 2nd).
-> > > > > 
-> > > > > Any ideas?
-> > > > 
-> > > > Well, it's either a DMA remapping issue or a hpsa one.  Your assertion
-> > > > that everything worked fine until 39de65aa2c3e would tend to vindicate
-> > > > hpsa, 
-> > 
-> > Hmm here you mean DMA, right?
+On Thursday, April 10, 2014 3:32 AM, Alan Stern wrote:
+> On Wed, 9 Apr 2014, Vivek Gautam wrote:
 > 
-> No, it vindicates the hpsa changes ... they don't seem to be causing
-> problems until something goes wrong with dma remapping.
+> > Patch 'b8efdaf USB: EHCI: add check for wakeup/suspend race'
+> > adds a check for possible race between suspend and wakeup interrupt,
+> > and thereby it returns -EBUSY as error code if there's a wakeup
+> > interrupt.
+> > So the platform host controller should not proceed further with
+> > its suspend callback, rather should return immediately to avoid
+> > powering down the essential things, like phy.
+> >
+> > Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> > Cc: Alan Stern <stern@rowland.harvard.edu>
+> > Cc: Jingoo Han <jg1.han@samsung.com>
+> > ---
+> >
+> > Based on 'usb-next' branch of Greg's usb tree.
+> >
+> >  drivers/usb/host/ehci-exynos.c |    4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/usb/host/ehci-exynos.c b/drivers/usb/host/ehci-exynos.c
+> > index d1d8c47..a4550eb 100644
+> > --- a/drivers/usb/host/ehci-exynos.c
+> > +++ b/drivers/usb/host/ehci-exynos.c
+> > @@ -212,6 +212,8 @@ static int exynos_ehci_suspend(struct device *dev)
+> >  	int rc;
+> >
+> >  	rc = ehci_suspend(hcd, do_wakeup);
+> > +	if (rc)
+> > +		return rc;
+> >
+> >  	if (exynos_ehci->otg)
+> >  		exynos_ehci->otg->set_host(exynos_ehci->otg, &hcd->self);
+> > @@ -221,7 +223,7 @@ static int exynos_ehci_suspend(struct device *dev)
+> >
+> >  	clk_disable_unprepare(exynos_ehci->clk);
+> >
+> > -	return rc;
+> > +	return 0;
+> >  }
+> >
+> >  static int exynos_ehci_resume(struct device *dev)
 > 
-> > > because all the hpsa changes went in before that under
-> > > Missing crucial info:
-> > > 
-> > > commit 1a0b6abaea78f73d9bc0a2f6df2d9e4c917cade1
-> > > 
-> > > > Merge: 3e75c6d b2bff6c
-> > > > Author: Linus Torvalds <torvalds@linux-foundation.org>
-> > > > Date:   Tue Apr 1 18:49:04 2014 -0700
-> > > > 
-> > > >     Merge tag 'scsi-misc' of
-> > > > git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi
-> > > > 
-> > > > can you revalidate that this commit works OK just to make sure?
-> > 
-> > Ok so I don't see those DMA messages and system starts just fine. I'm
-> > thinking perhaps something broke after the IO mmu stuff in commit 
-> > 3f583bc21977a608908b83d03ee2250426a5695c... could this be indirectly
-> > causing the CPU stalls and just blame hpsa in the path as a side effect?
-> > 
-> > /me goes out to try the commit.
-> 
-> That's my guess.  The DMAR messages are DMA remapping issues caused in
-> the IOMMU.  If I had to guess, I'd say the DMAR fault message is
-> indicating the IOMMU is calling for a mapping address before it can
-> satisfy the driver read request, which is causing the hang apparently in
-> the hpsa driver.
-> 
-> I've added linux-pci to the cc; I think they deal with iommu issues on
-> x86.
+> The first hunk of this patch is correct, but the second hunk isn't
+> needed.  A similar remark is true for the ehci-platform patch.
 
-So that merge commit appears to be the culprit, I see both the DMA
-messages and the lockup blaming hpsa...
+Hi Alan,
+
+Do you mean the following?
+
+1st hunk
+ +	if (rc)
+ +		return rc;
+
+2nd hunk
+ -	return rc;
+ +	return 0;
+
+Currently, the 'rc' will be always 'zero'; however, I don't
+Have any objection, because the code might be  modified later.
+
+Best regards,
+Jingoo Han
+> 
+> Alan Stern
 
