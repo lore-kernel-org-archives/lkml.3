@@ -1,197 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965080AbaDJHIp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 03:08:45 -0400
-Received: from nm42.bullet.mail.ne1.yahoo.com ([98.138.120.49]:48400 "HELO
-	nm42.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S934241AbaDJHIn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 03:08:43 -0400
-X-Yahoo-Newman-Property: ymail-4
-X-Yahoo-Newman-Id: 487272.52603.bm@omp1046.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:Message-ID:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=hi42gMzT+b4CC87dg60EpBsl7TwUvo25KJAiumzIviGu9n+KZ+v/a2qdkg9q7jXznTcwJiTHR7DELu3jU6+WM0iXMrHzSGcajAMKzf4KFBwn1FafYagm1JMoPOXeygow7/lKbalJBIrXQ2OgB6PjYwfXGsAQDFSll3uWD0VT/mo=;
-X-YMail-OSG: 2v07odoVM1myTMVGlN73XXYFdo6Zui.c789MfF8K2aMZIt9
- frD2KIm_8Q4gAPQQxkqFsz.NtNRnzh1Ge7jWdIbeH1VaoR.iY8EenLF0TjcO
- ZEvDk3BE7TbEWfl039q8RVMXcTB6O4_BrJ0nrVf5glfR5rsf3wNXEAZgfPwE
- TvbtNOuBb7ToVNGtZ3jehb4fObnBMxzE_fpOFHCBNI7f9ArdSj_JCnIPIiug
- AJR6iPrdGyZHD7tSFRH7UM2JQqr0EKKieXnevqiAGgrJM_lLZ6kHbFGCb_ok
- 9_XVPrQ8xr4msvSCRx.M7ytwDhBAGeoQr_QpC4cuOD53gap7YkL3.USXKhgL
- IVwYoQpSyZuIQpW4Go.d4WOKJ6yw3oyQ7g7gS6v9fDJd2Qe34Qs9XbDt6S5D
- LjucUFyllGif3TW_jGXbecFlsspSigGDjXmhe6M7bagRDGDeHDQV2Hw1XSnE
- 2juCsmmhLpUPCl91CcBgkdpGbpANWpslJn7ywlXne0hSjaHDuwflRJmbLY4P
- bXcRH8fHrRN48GUFNDY4KC2jVnmT3igN7PVxyMPczp.BCkI8xJqNf2Hm7b8M
- -
-X-Rocket-MIMEInfo: 002.001,IEhpIEdyZWcvQWxsLCANCiAgwqAgDQogVGhpcyBpcyBOYXJhc2ltaGFyYW8gd29ya2luZyBmb3IgYSBzL3djb21wYW55IEhDTFQuLiANCiAgwqAgDQogSSBhbSB3b3JraW5nIGEgaXNzdWUgYW5kDQogdGhlIGRlc2NyaXB0aW9uIGlzIGJlbG93OiANCiAgwqAgDQogc3lzdGVtIHN0b3BzIGJvb3RpbmcgYW5kDQogbmVlZHMgYSBzZXJpZXMgb2YgY29uc29sZSBpbnB1dHMgKHNwYWNlIGJhciBvciByZXR1cm4pIHRvDQogY29udGludWUgYm9vdGluZy4gRWFjaCBpbnB1dCBhZHZhbmNlcyB0aGUgcHJvY2VzcyBhIGwBMAEBAQE-
-X-Mailer: YahooMailClassic/481 YahooMailWebService/0.8.182.648
-Message-ID: <1397113552.75117.YahooMailBasic@web160504.mail.bf1.yahoo.com>
-Date: Thu, 10 Apr 2014 00:05:52 -0700 (PDT)
-From: narasimharo bolisetti <nrbolisetti@yahoo.com>
-Subject: system hang
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernelnewbies@nl.linux.org" <kernelnewbies@nl.linux.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-hotplug@vger.kernel.org" <linux-hotplug@vger.kernel.org>,
-        "greg@kroah.com" <greg@kroah.com>,
-        Narasimharao Bolisetti <narasimharao.b@hcl.com>
-Cc: "nrbolisetti@gmail.com" <nrbolisetti@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-In-Reply-To: <62C418AB752FEF4D931AB8E89E46539F02878DFC@chn-hclt-mbs06.HCLT.CORP.HCL.IN>
+	id S934786AbaDJHKx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 03:10:53 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:36739
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934764AbaDJHKt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 03:10:49 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zze0eahzz1f42h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch21a7h1fc6h208chzdchz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh26d3h1155h)
+From: <hongbo.zhang@freescale.com>
+To: <vkoul@infradead.org>, <dan.j.williams@intel.com>,
+        <dmaengine@vger.kernel.org>
+CC: <scottwood@freescale.com>, <leo.li@freescale.com>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Hongbo Zhang <hongbo.zhang@freescale.com>
+Subject: [PATCH v3 2/8] DMA: Freescale: unify register access methods
+Date: Thu, 10 Apr 2014 15:09:59 +0800
+Message-ID: <1397113805-24171-3-git-send-email-hongbo.zhang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1397113805-24171-1-git-send-email-hongbo.zhang@freescale.com>
+References: <1397113805-24171-1-git-send-email-hongbo.zhang@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Hi Greg/All, 
-    
- This is Narasimharao working for a s/wcompany HCLT.. 
-    
- I am working a issue and
- the description is below: 
-    
- system stops booting and
- needs a series of console inputs (space bar or return) to
- continue booting. Each input advances the process a little
- bit. 
- Actually I am trying to
- upgrade the s/w from usb pendrive, part of this upgrade
- having multiple times we are disconnecting and connecting
- the usb pen drive. 
-    
- system stops booting and
- needs a series of console inputs (space bar or return) to
- continue booting. Each input advances the process a little
- bit. 
- I have tried to find the
- root cause for the issue but not get success, can you help
- me regarding to this what is the root cause and how i can
- fix this? 
-    
- One more thing i observed
- that the space allocated for tty by 'tty_write_room'
- is suddenly consumed by more than 2k at the time of issue
- occurs and gradually
-  
- consuming remaining memory
- and when reaches to zero upgrade completely hangs and when
- console inputs (space bar or return) to continue booting,
-  
- Each input advances the
- process a little bit. This console i/p's creating some
- space for the same . Is this problem in tty?
-  
- one more thing we observed
- that whenever we increase the logging then this problem
- happens regularly. 
-    
- [   66.233676]
- EXT3-fs (sda14): using internal journal 
- [   66.233691]
- EXT3-fs (sda14): mounted filesystem with ordered data
- mode                             
-  
- [   76.822878]
- par.que...par_queue_user_receive: Freeze check =0 
- [   76.828711]
- par.que...par_queue_user_receive: <*> returned
- -ERESTARTSYS <*> event =-512 
- [   76.837241]
- par_ldisc_open:record is found for ttyS4 
- [   76.842766]
- par.que...par_queue_user_receive: Freeze check =0 
- [   76.848594]
- par.que...par_queue_user_receive: <*> returned
- -ERESTARTSYS <*> event =-512 
- [  101.781654] usb
- 1-1.3: USB disconnect, address 3 
- [  104.029178] usb
- 1-1.3: new high speed USB device using fsl-ehci and address
- 4 
- [  104.159085] scsi2
- : usb-storage 1-1.3:1.0 
- [  105.163726] scsi
- 2:0:0:0: Direct-Access     Kingston
- DataTraveler 2.0 1.00 PQ: 0 ANSI: 2 
- [  105.173202] sd
- 2:0:0:0: Attached scsi generic sg1 type 0 
- [  105.173686] sd
- 2:0:0:0: [sdb] 4006912 512-byte logical blocks: (2.05
- GB/1.91 GiB) 
- [  105.174177] sd
- 2:0:0:0: [sdb] Write Protect is off 
- [  105.174188] sd
- 2:0:0:0: [sdb] Mode Sense: 23 00 00 00 
- [  105.174197] sd
- 2:0:0:0: [sdb] Assuming drive cache: write through 
- [  105.178804] sd
- 2:0:0:0: [sdb] Assuming drive cache: write through 
- [  105.178825] 
- sdb: sdb1 
- [  105.295052] sd
- 2:0:0:0: [sdb] Assuming drive cache: write through 
- [  105.301142] sd
- 2:0:0:0: [sdb] Attached SCSI removable
- disk                      
- - Hangs at this place and
- console i/p’s to continue booting. 
-    
- I have tried with
- different sizes and different vendors pen drives but problem
- is the same and occurs at the same place. 
-    
- Your valuable inputs and
- suggetions are helpful to fix this issue. 
-    
- My kernel version is:
- 2.6.35.6-45.fc14.i686 
-    
- Thanks in advance for
- helping and replying. 
-    
-    
- Regards, 
- Narasimharao B 
-    
-    
-    
-    
-    
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
+
+Methods of accessing DMA contorller registers are inconsistent, some registers
+are accessed by DMA_IN/OUT directly, while others are accessed by functions
+get/set_* which are wrappers of DMA_IN/OUT, and even for the BCR register, it
+is read by get_bcr but written by DMA_OUT.
+This patch unifies the inconsistent methods, all registers are accessed by
+get/set_* now.
+
+Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+---
+ drivers/dma/fsldma.c |   52 ++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 33 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+index ec50420..5f32cb8 100644
+--- a/drivers/dma/fsldma.c
++++ b/drivers/dma/fsldma.c
+@@ -61,6 +61,16 @@ static u32 get_sr(struct fsldma_chan *chan)
+ 	return DMA_IN(chan, &chan->regs->sr, 32);
+ }
  
++static void set_mr(struct fsldma_chan *chan, u32 val)
++{
++	DMA_OUT(chan, &chan->regs->mr, val, 32);
++}
++
++static u32 get_mr(struct fsldma_chan *chan)
++{
++	return DMA_IN(chan, &chan->regs->mr, 32);
++}
++
+ static void set_cdar(struct fsldma_chan *chan, dma_addr_t addr)
+ {
+ 	DMA_OUT(chan, &chan->regs->cdar, addr | FSL_DMA_SNEN, 64);
+@@ -71,6 +81,11 @@ static dma_addr_t get_cdar(struct fsldma_chan *chan)
+ 	return DMA_IN(chan, &chan->regs->cdar, 64) & ~FSL_DMA_SNEN;
+ }
  
++static void set_bcr(struct fsldma_chan *chan, u32 val)
++{
++	DMA_OUT(chan, &chan->regs->bcr, val, 32);
++}
++
+ static u32 get_bcr(struct fsldma_chan *chan)
+ {
+ 	return DMA_IN(chan, &chan->regs->bcr, 32);
+@@ -135,7 +150,7 @@ static void set_ld_eol(struct fsldma_chan *chan, struct fsl_desc_sw *desc)
+ static void dma_init(struct fsldma_chan *chan)
+ {
+ 	/* Reset the channel */
+-	DMA_OUT(chan, &chan->regs->mr, 0, 32);
++	set_mr(chan, 0);
  
+ 	switch (chan->feature & FSL_DMA_IP_MASK) {
+ 	case FSL_DMA_IP_85XX:
+@@ -144,16 +159,15 @@ static void dma_init(struct fsldma_chan *chan)
+ 		 * EOLNIE - End of links interrupt enable
+ 		 * BWC - Bandwidth sharing among channels
+ 		 */
+-		DMA_OUT(chan, &chan->regs->mr, FSL_DMA_MR_BWC
+-				| FSL_DMA_MR_EIE | FSL_DMA_MR_EOLNIE, 32);
++		set_mr(chan, FSL_DMA_MR_BWC | FSL_DMA_MR_EIE
++			| FSL_DMA_MR_EOLNIE);
+ 		break;
+ 	case FSL_DMA_IP_83XX:
+ 		/* Set the channel to below modes:
+ 		 * EOTIE - End-of-transfer interrupt enable
+ 		 * PRC_RM - PCI read multiple
+ 		 */
+-		DMA_OUT(chan, &chan->regs->mr, FSL_DMA_MR_EOTIE
+-				| FSL_DMA_MR_PRC_RM, 32);
++		set_mr(chan, FSL_DMA_MR_EOTIE | FSL_DMA_MR_PRC_RM);
+ 		break;
+ 	}
+ }
+@@ -175,10 +189,10 @@ static void dma_start(struct fsldma_chan *chan)
+ {
+ 	u32 mode;
  
- ::DISCLAIMER::
- ----------------------------------------------------------------------------------------------------------------------------------------------------
- The contents of
- this e-mail and any attachment(s) are confidential and
- intended for the named recipient(s) only.
- E-mail transmission is not guaranteed to be secure or
- error-free as information could be intercepted, corrupted, 
- lost, destroyed, arrive late or incomplete, or may contain
- viruses in transmission. The e mail and its contents 
- (with or without referred errors) shall therefore not attach
- any liability on the originator or HCL or its affiliates. 
- Views or opinions, if any, presented in this email are
- solely those of the author and may not necessarily reflect
- the 
- views or opinions of HCL or its affiliates. Any form of
- reproduction, dissemination, copying, disclosure,
- modification, 
- distribution and / or publication of this message without
- the prior written consent of authorized representative of 
- HCL is strictly prohibited. If you have received this email
- in error please delete it and notify the sender immediately.
+-	mode = DMA_IN(chan, &chan->regs->mr, 32);
++	mode = get_mr(chan);
  
- Before opening any email and/or attachments, please check
- them for viruses and other defects.
- ----------------------------------------------------------------------------------------------------------------------------------------------------
+ 	if (chan->feature & FSL_DMA_CHAN_PAUSE_EXT) {
+-		DMA_OUT(chan, &chan->regs->bcr, 0, 32);
++		set_bcr(chan, 0);
+ 		mode |= FSL_DMA_MR_EMP_EN;
+ 	} else {
+ 		mode &= ~FSL_DMA_MR_EMP_EN;
+@@ -191,7 +205,7 @@ static void dma_start(struct fsldma_chan *chan)
+ 		mode |= FSL_DMA_MR_CS;
+ 	}
  
+-	DMA_OUT(chan, &chan->regs->mr, mode, 32);
++	set_mr(chan, mode);
+ }
  
+ static void dma_halt(struct fsldma_chan *chan)
+@@ -200,7 +214,7 @@ static void dma_halt(struct fsldma_chan *chan)
+ 	int i;
+ 
+ 	/* read the mode register */
+-	mode = DMA_IN(chan, &chan->regs->mr, 32);
++	mode = get_mr(chan);
+ 
+ 	/*
+ 	 * The 85xx controller supports channel abort, which will stop
+@@ -209,14 +223,14 @@ static void dma_halt(struct fsldma_chan *chan)
+ 	 */
+ 	if ((chan->feature & FSL_DMA_IP_MASK) == FSL_DMA_IP_85XX) {
+ 		mode |= FSL_DMA_MR_CA;
+-		DMA_OUT(chan, &chan->regs->mr, mode, 32);
++		set_mr(chan, mode);
+ 
+ 		mode &= ~FSL_DMA_MR_CA;
+ 	}
+ 
+ 	/* stop the DMA controller */
+ 	mode &= ~(FSL_DMA_MR_CS | FSL_DMA_MR_EMS_EN);
+-	DMA_OUT(chan, &chan->regs->mr, mode, 32);
++	set_mr(chan, mode);
+ 
+ 	/* wait for the DMA controller to become idle */
+ 	for (i = 0; i < 100; i++) {
+@@ -245,7 +259,7 @@ static void fsl_chan_set_src_loop_size(struct fsldma_chan *chan, int size)
+ {
+ 	u32 mode;
+ 
+-	mode = DMA_IN(chan, &chan->regs->mr, 32);
++	mode = get_mr(chan);
+ 
+ 	switch (size) {
+ 	case 0:
+@@ -259,7 +273,7 @@ static void fsl_chan_set_src_loop_size(struct fsldma_chan *chan, int size)
+ 		break;
+ 	}
+ 
+-	DMA_OUT(chan, &chan->regs->mr, mode, 32);
++	set_mr(chan, mode);
+ }
+ 
+ /**
+@@ -277,7 +291,7 @@ static void fsl_chan_set_dst_loop_size(struct fsldma_chan *chan, int size)
+ {
+ 	u32 mode;
+ 
+-	mode = DMA_IN(chan, &chan->regs->mr, 32);
++	mode = get_mr(chan);
+ 
+ 	switch (size) {
+ 	case 0:
+@@ -291,7 +305,7 @@ static void fsl_chan_set_dst_loop_size(struct fsldma_chan *chan, int size)
+ 		break;
+ 	}
+ 
+-	DMA_OUT(chan, &chan->regs->mr, mode, 32);
++	set_mr(chan, mode);
+ }
+ 
+ /**
+@@ -312,10 +326,10 @@ static void fsl_chan_set_request_count(struct fsldma_chan *chan, int size)
+ 
+ 	BUG_ON(size > 1024);
+ 
+-	mode = DMA_IN(chan, &chan->regs->mr, 32);
++	mode = get_mr(chan);
+ 	mode |= (__ilog2(size) << 24) & 0x0f000000;
+ 
+-	DMA_OUT(chan, &chan->regs->mr, mode, 32);
++	set_mr(chan, mode);
+ }
+ 
+ /**
+@@ -889,9 +903,9 @@ static void fsl_chan_xfer_ld_queue(struct fsldma_chan *chan)
+ 	if ((chan->feature & FSL_DMA_IP_MASK) == FSL_DMA_IP_85XX) {
+ 		u32 mode;
+ 
+-		mode = DMA_IN(chan, &chan->regs->mr, 32);
++		mode = get_mr(chan);
+ 		mode &= ~FSL_DMA_MR_CS;
+-		DMA_OUT(chan, &chan->regs->mr, mode, 32);
++		set_mr(chan, mode);
+ 	}
+ 
+ 	/*
+-- 
+1.7.9.5
+
+
+
