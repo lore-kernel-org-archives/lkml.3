@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750880AbaDJEAb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 00:00:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41160 "EHLO
+	id S935182AbaDJEBF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 00:01:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41156 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934642AbaDJDWd (ORCPT
+	with ESMTP id S934876AbaDJDWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:33 -0400
+	Wed, 9 Apr 2014 23:22:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hovold <jhovold@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
         Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 082/134] USB: keyspan: fix null-deref at disconnect and release
-Date: Wed,  9 Apr 2014 20:23:18 -0700
-Message-Id: <20140410032310.480963970@linuxfoundation.org>
+Subject: [PATCH 3.4 081/134] USB: ti_usb_3410_5052: fix big-endian firmware handling
+Date: Wed,  9 Apr 2014 20:23:17 -0700
+Message-Id: <20140410032310.409085074@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -29,31 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit ff8a43c10f1440f07a5faca0c1556921259f7f76 upstream.
+commit e877dd2f2581628b7119df707d4cf03d940cff49 upstream.
 
-Make sure to fail properly if the device is not accepted during attach
-in order to avoid null-pointer derefs (of missing interface private
-data) at disconnect or release.
+Fix endianess bugs in firmware handling introduced by commits cb7a7c6a
+("ti_usb_3410_5052: add Multi-Tech modem support") and 05a3d905
+("ti_usb_3410_5052: support alternate firmware") which made the driver
+use the wrong firmware for certain devices on big-endian machines.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/keyspan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/ti_usb_3410_5052.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/serial/keyspan.c
-+++ b/drivers/usb/serial/keyspan.c
-@@ -2486,7 +2486,7 @@ static int keyspan_startup(struct usb_se
- 	if (d_details == NULL) {
- 		dev_err(&serial->dev->dev, "%s - unknown product id %x\n",
- 		    __func__, le16_to_cpu(serial->dev->descriptor.idProduct));
--		return 1;
-+		return -ENODEV;
- 	}
+--- a/drivers/usb/serial/ti_usb_3410_5052.c
++++ b/drivers/usb/serial/ti_usb_3410_5052.c
+@@ -1687,12 +1687,13 @@ static int ti_download_firmware(struct t
  
- 	/* Setup private data for serial driver */
+ 	dbg("%s\n", __func__);
+ 	/* try ID specific firmware first, then try generic firmware */
+-	sprintf(buf, "ti_usb-v%04x-p%04x.fw", dev->descriptor.idVendor,
+-	    dev->descriptor.idProduct);
++	sprintf(buf, "ti_usb-v%04x-p%04x.fw",
++			le16_to_cpu(dev->descriptor.idVendor),
++			le16_to_cpu(dev->descriptor.idProduct));
+ 	if ((status = request_firmware(&fw_p, buf, &dev->dev)) != 0) {
+ 		buf[0] = '\0';
+-		if (dev->descriptor.idVendor == MTS_VENDOR_ID) {
+-			switch (dev->descriptor.idProduct) {
++		if (le16_to_cpu(dev->descriptor.idVendor) == MTS_VENDOR_ID) {
++			switch (le16_to_cpu(dev->descriptor.idProduct)) {
+ 			case MTS_CDMA_PRODUCT_ID:
+ 				strcpy(buf, "mts_cdma.fw");
+ 				break;
 
 
