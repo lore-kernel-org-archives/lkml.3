@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935084AbaDJJV6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 05:21:58 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:45396 "EHLO mail.skyhub.de"
+	id S934943AbaDJJ1A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 05:27:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34865 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933057AbaDJJVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 05:21:52 -0400
-Date: Thu, 10 Apr 2014 11:21:44 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>,
-        dougthompson@xmission.com, linux-edac@vger.kernel.org,
-        michal.simek@xilinx.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rob@landley.net, sorenb@xilinx.com,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kpc528@gmail.com, kalluripunnaiahchoudary@gmail.com,
-        punnaia@xilinx.com
-Subject: Re: [RFC PATCH v2] edac: synopsys: Added EDAC support for zynq ddr
- ecc controller
-Message-ID: <20140410092144.GD29093@pd.tnic>
-References: <1220b715-6fc2-42ed-8393-b9859fc0deb9@TX2EHSMHS021.ehs.local>
- <20140408204047.GQ30077@pd.tnic>
- <534633C0.9090905@monstr.eu>
+	id S933149AbaDJJ05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 05:26:57 -0400
+Date: Thu, 10 Apr 2014 17:27:02 +0800
+From: Fam Zheng <famz@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: mst@redhat.com, kvm@vger.kernel.org, virtio-dev@lists.oasis-open.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC V2 4/4] tools: virtio: add a top-like utility for
+ displaying vhost satistics
+Message-ID: <20140410092702.GJ22890@T430.nay.redhat.com>
+References: <1395394913-19548-1-git-send-email-jasowang@redhat.com>
+ <1395394913-19548-5-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <534633C0.9090905@monstr.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1395394913-19548-5-git-send-email-jasowang@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 08:01:36AM +0200, Michal Simek wrote:
-> Just add it to Zynq maintainer fragment as we are doing for non
-> zynq/xilinx drivers.
+On Fri, 03/21 17:41, Jason Wang wrote:
+> This patch adds simple python to display vhost satistics of vhost, the codes
+> were based on kvm_stat script from qemu. As work function has been recored,
+> filters could be used to distinguish which kinds of work are being executed or
+> queued:
+> 
+> vhost statistics
+> 
+>  vhost_virtio_update_used_idx               1215215       0
+>  vhost_virtio_get_vq_desc                   1215215       0
+>  vhost_work_queue_wakeup                     986808       0
+>  vhost_virtio_signal                         811601       0
+>  vhost_net_tx                                611457       0
+>  vhost_net_rx                                603758       0
+>  vhost_net_tx(datacopy)                      601903       0
+>  vhost_work_queue_wakeup(rx_net)             565081       0
+>  vhost_virtio_signal(rx)                     461603       0
+>  vhost_work_queue_wakeup(tx_kick)            421718       0
+>  vhost_virtio_update_avail_event             417346       0
+>  vhost_virtio_signal(tx)                     349998       0
+>  vhost_work_queue_coalesce                    39384       0
+>  vhost_work_queue_coalesce(rx_net)            38677       0
+>  vhost_net_tx(zerocopy)                        9554       0
+>  vhost_work_queue_coalesce(tx_kick)             707       0
+>  vhost_work_queue_wakeup(rx_kick)                 9       0
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  tools/virtio/vhost_stat | 375 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 375 insertions(+)
+>  create mode 100755 tools/virtio/vhost_stat
+> 
+> diff --git a/tools/virtio/vhost_stat b/tools/virtio/vhost_stat
+> new file mode 100755
+> index 0000000..398fd4a
+> --- /dev/null
+> +++ b/tools/virtio/vhost_stat
+> @@ -0,0 +1,375 @@
+> +#!/usr/bin/python
+> +#
+> +# top-like utility for displaying vhost statistics
+> +#
+> +# Copyright 2012 Red Hat, Inc.
 
-Yep, as a file pattern F:
+Should it be 2014?
 
-> At least the is the first time when someone saying that only some
-> functions should be documented.
+Fam
 
-I don't see the need to document simple functions which are *obvious*.
-But if you want to do that, I'm not going to stop you so be my guest.
-
-
-> I don't think this is good to do. When we remove this prefix entirely
-> it is bigger chance that the same function name will be used by
-> another driver. It is not a problem with linking but the same
-> functions names will be listed in System.map which will complicate
-> debugging.
-
-Ok, fair enough. You probably still want to make them shorter, though,
-so that your code doesn't have to be line-broken too much. For example,
-since we only load a single edac driver per system, you can shorten the
-prefix to "edac_" only.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+<snip>
