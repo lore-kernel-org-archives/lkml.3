@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965655AbaDJQx2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 12:53:28 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:51012 "EHLO smtp.gentoo.org"
+	id S1030320AbaDJQxq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 12:53:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:42044 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753011AbaDJQx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 12:53:27 -0400
-From: Richard Yao <ryao@gentoo.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Richard Yao <ryao@gentoo.org>
-Subject: [PATCH] perf machine: Search for modules in %s/lib/modules/%s
-Date: Thu, 10 Apr 2014 12:52:59 -0400
-Message-Id: <1397148779-9169-1-git-send-email-ryao@gentoo.org>
-X-Mailer: git-send-email 1.8.3.2
+	id S1030212AbaDJQxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 12:53:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,835,1389772800"; 
+   d="scan'208";a="518622045"
+From: Andi Kleen <andi@firstfloor.org>
+To: Richard Yao <ryao@gentoo.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kernel@gentoo.org,
+        Matthew Thode <mthode@mthode.org>
+Subject: Re: [PATCH] mm/vmalloc: Introduce DEBUG_VMALLOCINFO to reduce spinlock contention
+References: <1397148058-8737-1-git-send-email-ryao@gentoo.org>
+Date: Thu, 10 Apr 2014 09:51:57 -0700
+In-Reply-To: <1397148058-8737-1-git-send-email-ryao@gentoo.org> (Richard Yao's
+	message of "Thu, 10 Apr 2014 12:40:58 -0400")
+Message-ID: <87txa1i0uq.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modules installed outside of the kernel's build system should go into
-"%s/lib/modules/%s/extra", but at present, perf will only look at them
-when they are in "%s/lib/modules/%s/kernel". Lets encourage good
-citizenship by relaxing this requirement to "%s/lib/modules/%s". This
-way open source modules that are out-of-tree have no incentive to start
-populating a directory reserved for in-kernle modules and I can stop hex
-editing my system's perf binary when profiling OSS out-of-tree modules.
+Richard Yao <ryao@gentoo.org> writes:
 
-Signed-off-by: Richard Yao <ryao@gentoo.org>
----
- tools/perf/util/machine.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Performance analysis of software compilation by Gentoo portage on an
+> Intel E5-2620 with 64GB of RAM revealed that a sizeable amount of time,
+> anywhere from 5% to 15%, was spent in get_vmalloc_info(), with at least
+> 40% of that time spent in the _raw_spin_lock() invoked by it.
 
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index a53cd0b..116842e 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -786,7 +786,7 @@ static int machine__set_modules_path(struct machine *machine)
- 	if (!version)
- 		return -1;
- 
--	snprintf(modules_path, sizeof(modules_path), "%s/lib/modules/%s/kernel",
-+	snprintf(modules_path, sizeof(modules_path), "%s/lib/modules/%s",
- 		 machine->root_dir, version);
- 	free(version);
- 
+I don't think that's the right fix. We want to be able 
+to debug kernels without having to recompile them.
+
+And switching locking around dynamically like this is very
+ugly and hard to maintain.
+
+Besides are you sure the spin lock is not needed elsewhere?
+
+How are writers to the list protected?
+
+-Andi
+
 -- 
-1.8.3.2
-
+ak@linux.intel.com -- Speaking for myself only
