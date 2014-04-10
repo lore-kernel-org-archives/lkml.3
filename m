@@ -1,87 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759078AbaDJTNo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 15:13:44 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:54153 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753367AbaDJTNn (ORCPT
+	id S1161156AbaDJTOe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 15:14:34 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:60936 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161035AbaDJTOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 15:13:43 -0400
-Date: Thu, 10 Apr 2014 15:13:40 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-Subject: Re: [PATCH RESEND 2/2] tracing: syscall_regfunc() should not skip
- kernel threads
-Message-ID: <20140410151340.7d24aafd@gandalf.local.home>
-In-Reply-To: <20140410181417.GA2104@redhat.com>
-References: <360091921.1294.1397060915052.JavaMail.zimbra@efficios.com>
-	<20140409124249.4081e665@gandalf.local.home>
-	<20140409170505.GA27638@redhat.com>
-	<20140409170616.GC27638@redhat.com>
-	<20140410092842.1f9a8760@gandalf.local.home>
-	<20140410133855.GC12228@redhat.com>
-	<20140410102816.24337ffe@gandalf.local.home>
-	<20140410144655.GA25316@redhat.com>
-	<20140410110848.64c3f25e@gandalf.local.home>
-	<20140410175705.GB32332@redhat.com>
-	<20140410181417.GA2104@redhat.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 10 Apr 2014 15:14:32 -0400
+Message-ID: <5346ED93.9040500@amacapital.net>
+Date: Thu, 10 Apr 2014 12:14:27 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: tytso@mit.edu, David Herrmann <dh.herrmann@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Karol Lewandowski <k.lewandowsk@samsung.com>,
+        Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Greg Kroah-Hartman <greg@kroah.com>, Tejun Heo <tj@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ryan Lortie <desrt@desrt.ca>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Subject: Re: [PATCH 0/6] File Sealing & memfd_create()
+References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com> <20140320153250.GC20618@thunk.org> <CANq1E4SUXrzAV8FS8HVYxnRVb1oOR6HSTyucJzyFs5PuS5Y88A@mail.gmail.com> <20140320163806.GA10440@thunk.org>
+In-Reply-To: <20140320163806.GA10440@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Apr 2014 20:14:17 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
-
-
-> And I forgot to mention, given that the kernel_thread() callback should
-> call do_exit() itself, then this part of cc3b13c11c567c69a63
+On 03/20/2014 09:38 AM, tytso@mit.edu wrote:
+> On Thu, Mar 20, 2014 at 04:48:30PM +0100, David Herrmann wrote:
+>> On Thu, Mar 20, 2014 at 4:32 PM,  <tytso@mit.edu> wrote:
+>>> Why not make sealing an attribute of the "struct file", and enforce it
+>>> at the VFS layer?  That way all file system objects would have access
+>>> to sealing interface, and for memfd_shmem, you can't get another
+>>> struct file pointing at the object, the security properties would be
+>>> identical.
+>>
+>> Sealing as introduced here is an inode-attribute, not "struct file".
+>> This is intentional. For instance, a gfx-client can get a read-only FD
+>> via /proc/self/fd/ and pass it to the compositor so it can never
+>> overwrite the contents (unless the compositor has write-access to the
+>> inode itself, in which case it can just re-open it read-write).
 > 
-> 	one case when a kernel thread can reach the
-> 	usual syscall exit tracing path: when we create a kernel thread, the
-> 	child comes to ret_from_fork
-> 
-> is no longer relevant? A PF_KTHREAD child should never return from the
-> callback and thus it should never do "jmp syscall_exit" ?
-> 
+> Hmm, good point.  I had forgotten about the /proc/self/fd hole.
+> Hmm... what if we have a SEAL_PROC which forces the permissions of
+> /proc/self/fd to be 000?
 
-Are you sure. On set up of the kthread, create_kthread() calls
-kernel_thread() with "kthread()" as its first parameter.
+This is the second time in a week that someone has asked for a way to
+have a struct file (or struct inode or whatever) that can't be reopened
+through /proc/pid/fd.  This should be quite easy to implement as a
+separate feature.
 
-kernel_thread() then calls do_fork() passing the "kthread" function as
-the stack_start parameter, which if you follow where that goes, it gets
-to copy_thread() in process_[63][42].c which assigns sp (the function)
-to the bx register for the PF_KTHREAD case. But more importantly, it
-sets up the stack to have ip pointing to ret_from_kernel_thread (32 bit
-version).
+Actually, that feature would solve a major pet peeve of mine, I think: I
+want something like memfd that allows me to keep the thing read-write
+but that whomever I pass the fd to can't change.  With this feature, I
+could do:
 
-The jmp syscall_exit when it goes to return to "userspace" will in
-actuality return to ret_from_kernel_thread (32 bit). Which this does:
+fd_rw = memfd_create (or O_TMPFILE or whatever)
+fd_ro = open(/proc/self/fd/fd_ro, O_RDONLY);
+fcntl(fd_ro, F_RESTRICT, F_RESTRICT_REOPEN);
 
-	call *PT_EBX(%esp)
+send fd_ro via SCM_RIGHTS.
 
-which calls your handler. But then again, this calls syscall_exit when
-done, which probably will never be hit as kthread() calls do_exit()
-itself. Perhaps if something goes wrong, syscall_exit can handle any
-faults that can happen?
+To really make this work well, I also want to SEAL_SHRINK the inode so
+that the receiver can verify that I'm not going to truncate the file out
+from under it.
 
-For 64 bit, the check for kernel thread is in ret_from_fork itself.
-which does the call *%rbx, but again, if it fails, it then calls
-int_ret_from_sys_call, which it may also handle faults.
+Bingo, fast and secure one-way IPC.
 
-Looks like kernel threads on 32bit call syscall exit at least once, to
-get to ret_from_kernel_thread. Not sure why it does that. Perhaps this
-could be another 32bit clean up to make it more like x86_64.
-
--- Steve
+--Andy
