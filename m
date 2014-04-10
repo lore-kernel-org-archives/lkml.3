@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934621AbaDJBib (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 21:38:31 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:29267 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933287AbaDJBia (ORCPT
+	id S934585AbaDJBwX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 21:52:23 -0400
+Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:38806 "EHLO
+	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934552AbaDJBwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 21:38:30 -0400
-Message-ID: <5345F604.6080207@fb.com>
-Date: Wed, 9 Apr 2014 19:38:12 -0600
-From: Jens Axboe <axboe@fb.com>
+	Wed, 9 Apr 2014 21:52:19 -0400
+Message-ID: <5345F951.8020603@akamai.com>
+Date: Wed, 09 Apr 2014 21:52:17 -0400
+From: Jason Baron <jbaron@akamai.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Jan Kara <jack@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Brian J King <bjking1@us.ibm.com>
-Subject: Re: [BUG] kernel BUG at /.../block/cfq-iosched.c:3145!
-References: <1397018647.3671.123.camel@pasglop> <53454CBC.9060905@fb.com>	 <1397087273.3671.150.camel@pasglop> <1397088144.3671.155.camel@pasglop>	 <5345F476.2000602@fb.com> <1397093815.3671.156.camel@pasglop>
-In-Reply-To: <1397093815.3671.156.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: "Luck, Tony" <tony.luck@intel.com>
+CC: Borislav Petkov <bp@alien8.de>, Aristeu Rozanski <aris@redhat.com>,
+        "hpa@zytor.com" <hpa@zytor.com>, "mingo@kernel.org" <mingo@kernel.org>,
+        "dougthompson@xmission.com" <dougthompson@xmission.com>,
+        "m.chehab@samsung.com" <m.chehab@samsung.com>,
+        "mitake@dcl.info.waseda.ac.jp" <mitake@dcl.info.waseda.ac.jp>,
+        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] ie31200_edac: Add driver
+References: <cover.1396645124.git.jbaron@akamai.com> <760765424abe31811027ff3efd078bc858b7d3ed.1396645124.git.jbaron@akamai.com> <20140409113552.GJ6529@pd.tnic> <20140409133433.GJ29214@redhat.com> <3908561D78D1C84285E8C5FCA982C28F31E22EAC@ORSMSX106.amr.corp.intel.com> <20140409173633.GN6529@pd.tnic> <5345980F.7070604@akamai.com> <20140409191454.GQ6529@pd.tnic> <5345A54D.2050808@akamai.com> <20140409201615.GS6529@pd.tnic> <3908561D78D1C84285E8C5FCA982C28F31E2358F@ORSMSX106.amr.corp.intel.com> <5345C683.2080307@akamai.com> <3908561D78D1C84285E8C5FCA982C28F31E237A2@ORSMSX106.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31E237A2@ORSMSX106.amr.corp.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-09_05:2014-04-09,2014-04-09,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=5.8201264735473
- compositescore=0.307752384302029 urlsuspect_oldscore=0.307752384302029
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=2524143
- rbsscore=0.307752384302029 spamscore=0
- recipient_to_sender_domain_totalscore=16 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1404100019
-X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-09 19:36, Benjamin Herrenschmidt wrote:
-> On Wed, 2014-04-09 at 19:31 -0600, Jens Axboe wrote:
->> OK, I think we're seeing different symptoms of the same bug. Stay
->> tuned, will have something for you to test shortly, I hope.
+On 04/09/2014 06:44 PM, Luck, Tony wrote:
+>> So when the driver sees uncorrected errors, I'm also seeing them in my
+>> memory scanning program - so they correspond nicely. I didn't see anything
+>> logged in /var/log/mcelog, but I will update to the latest when possible.
+> I wonder if there are some BIOS options to enable reporting via CMCI/MCE?
+> On the E5 systems the reference BIOS uses phrases like "poison forwarding"
+> in the option names.
 >
-> Ah thanks. I'll defer the bisection then (it's painful on that machine
-> for various reasons....)
+> The above behavior sounds less than useful.
+>
+> Scenario: Your mission critical app is running (controlling a giant laser cutter).
+> Oops there is a memory error, and the bad data arrives at the application causing
+> it to swing the laser beam through 180 degrees, destroying half of your lab.
+> A few seconds/minutes later - your EDAC driver prints a message saying that
+> the uncorrected error count just got incremented.
+>
+> -Tony
 
-Yeah, hunting it now, hopefully I can reproduce and a fix should be 
-forth coming.
+Agreed, and I don't like the polling either. But so far on this h/w I have not
+been able to find a better option.
 
-> This is a 64-way P7 btw, so a nice race-o-matic :-)
+I also seem to recall, that ce errors tend to proceed ue errors. So, I think
+alerting on ce errors can help avoid getting into ue errors.
 
-It's why we all love ppc :-)
+So IMO there is currently value in this driver, and I know others have
+requested support for this h/w in the past (on the edac mailing lists).
 
--- 
-Jens Axboe
+I'll see what else I can find once I get the problematic h/w in hand.
+
+Thanks,
+
+-Jason
 
