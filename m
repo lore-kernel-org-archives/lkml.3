@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161258AbaDJNVS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 09:21:18 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:9105 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161238AbaDJNVM (ORCPT
+	id S1161275AbaDJNVe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 09:21:34 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:38326 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030855AbaDJNVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 09:21:12 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-3e-53469ac7544d
+	Thu, 10 Apr 2014 09:21:30 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-5d-53469ad9d7a2
 From: Robert Baldyga <r.baldyga@samsung.com>
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
@@ -20,26 +20,26 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         patches@opensource.wolfsonmicro.com, linux-usb@vger.kernel.org,
         linux-omap@vger.kernel.org, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH 12/13] extcon: extcon-max8997: check if pdata exists
-Date: Thu, 10 Apr 2014 15:16:50 +0200
-Message-id: <1397135811-12866-13-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH 13/13] extcon: extcon-max77693: check if pdata exists
+Date: Thu, 10 Apr 2014 15:16:51 +0200
+Message-id: <1397135811-12866-14-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1397135811-12866-1-git-send-email-r.baldyga@samsung.com>
 References: <1397135811-12866-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAAzWRfyyUcRzH+97z4x509rjQE9PsqbayUmfWvhuZFueZvzTrH/1RTzydK7+6
-	w6itTkgs96uZSHGOwzlE2rD8uGMzqzgUq/wcKVYaIZvbyZ313+v9eb+29x8fAhG2oT6ENCWd
-	k6WwSTTuir6zL5BnBsvFsed2Gmlo+hEOzW9OQfPsAzi58R2D2sXfCKwcGMagpuEpAlU/dRhU
-	tUfAPlsHgLn6FhwOrzQAWPhhEYHWb09wWNvTiELdoxoUjndV4PB5jQqF1YZ8BC7q3vNg7eQo
-	D37Nqcdh3a9dHKpLm1A419/Jh83LpSjM7x7gwx6rDYO9H6PD/RjTSxNgtja1KDOuLOYxXZ0V
-	GKNWrQOms3yazzTUbeBM/6YOZV7XBzBtxkKcWWksw5ipibc40/vCxGeKc1dxZlmzgzOdfxX8
-	GM8419AELkmaycnOhl13TdyaUIG0V3hWrUmJK4ABKwIuBEUGUwN9n/B99qasMy177EoIyWpA
-	lc1bkf1QwKNG9VrgsHDyNNX+V+1kTxKhqkpGgENCyCGMMpp7EUdxiIyg9Du7TgklT1D6EZVz
-	TkCKqaGidrQIEHtz/lSFNtSBLnvn7vFjDhSSkVRJE60GgipwwAi8uLT4NPkNSXJQoJxNlmek
-	SALjU5PbgPOTS74dwKiAFkASgD4o6DNExgoxNlOenWwBFIHQnoLWEnGsUJDAZt/lZKnXZBlJ
-	nNwCfAmUPiww54dcFpISNp27zXFpnOx/yyNcfBTg/tA9+5qPe5TU4vHMy32ebJ2P4MQm6QA7
-	tRBW5PH5Tt6fWb7GZv/SfPKq/7Yk7lbo8YcXc5a6/NKPDIv6i91Wicd9kW7WMc3gFYt5ek15
-	cz3YZW7bFFcpWoMi+9JRjwIliEfoyo2xmPMBTZqpScNMSI4t2ivL/8KlqLwgb3calSeyogBE
-	Jmf/AfFhzPTFAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAAzWRa0hTYRjHe3euTgeHpXZQDFlJqWUZQS9oZZB2MBLNb5no0sOU3FybWuYH
+	l7bCkW1ehmiW07xtTi0vNEWdm5KIlxarTEwLNXOSCqJJNDKn9O33/P+/h+fDQyL8DtSHTJdk
+	sTKJMEOAc9GxvwvUyemqqPjT1V0B0LgcAS3dgdDyNR9Obf7AYOniOgJrhicxWKIvQ6D6Zy0G
+	1V2X4aDTBGDhy3YcTq7oASyaWESg7fsTHDYMtKCw9lE9Cu291Th8Vq9GYV2jEoGLteMc2DD1
+	ngNnHjTjsGl1B4eailYUfhvqIWCbowKFyv5hAg7YnBg0f4iO8GOML4yA+bVVijL2p8Ucpren
+	GmM06g3A9FTNEoy+aRNnhrZqUaazOYjpMBThzEpLJcZ8+dSHM+bnRoIpLlzDGUfJH5zp2VYQ
+	sZ43uOGpbEZ6Dis7dSGZm2ZeWAFSFXFPsVRGKMAWpgJuJE2dpd845vF99qZtc+27zCX5VB2g
+	55WznP3hMYf+aNQjLgunTtBd2xrgYk8KoXXad8AlIdQoRhss5j3pIBVJOypVexJKBdDOesde
+	zqOi6FeFvagKkLvn/Onq0nAXuu3G/fYjLuTvbmpbBRrA04EDBuDFSlOk8lsi8ZkQuVAsz5aI
+	QlIyxR1g75NLviZgUEAroEgg8OANNkbG8zFhjjxXbAU0iQg8ea+1UfF8Xqow9z4ry0ySZWew
+	civwJVHBIZ5FGRbHp0TCLPY2y0pZ2f+WQ7r5KEDiKnFpp8LP23ptIkTceTh5uaQsLtp0XB02
+	KkqyJ4pGPO+uj+Vd0Q53Dn4u8EiX5DwMtUnygf+Su26hbc3ZfxPUBV/fGUmIOSeN+W2KvXO+
+	YCZYdywpJyFwvC8I0eT5TKy5z5WXrzrGLnpdjVTnHqXtW146fUtN99vpjRhCTAhQeZowNAiR
+	yYX/AEJEfkrFAgAA
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -51,22 +51,22 @@ situation driver will be configured with default values.
 
 Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 ---
- drivers/extcon/extcon-max8997.c |    2 +-
+ drivers/extcon/extcon-max77693.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
-index c071588..d7d12e9 100644
---- a/drivers/extcon/extcon-max8997.c
-+++ b/drivers/extcon/extcon-max8997.c
-@@ -726,7 +726,7 @@ static int max8997_muic_probe(struct platform_device *pdev)
- 		goto err_irq;
- 	}
+diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+index 2cd8892..fa8534e 100644
+--- a/drivers/extcon/extcon-max77693.c
++++ b/drivers/extcon/extcon-max77693.c
+@@ -1210,7 +1210,7 @@ static int max77693_muic_probe(struct platform_device *pdev)
  
--	if (pdata->muic_pdata) {
-+	if (pdata && pdata->muic_pdata) {
- 		struct max8997_muic_platform_data *muic_pdata
- 			= pdata->muic_pdata;
  
+ 	/* Initialize MUIC register by using platform data or default data */
+-	if (pdata->muic_data) {
++	if (pdata && pdata->muic_data) {
+ 		init_data = pdata->muic_data->init_data;
+ 		num_init_data = pdata->muic_data->num_init_data;
+ 	} else {
 -- 
 1.7.9.5
 
