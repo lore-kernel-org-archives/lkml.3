@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935041AbaDJD6j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:58:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41170 "EHLO
+	id S935145AbaDJD7M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:59:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41168 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934908AbaDJDWf (ORCPT
+	with ESMTP id S934905AbaDJDWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Apr 2014 23:22:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>, Tejun Heo <tj@kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Ben Hutchings <ben@decadent.org.uk>,
         Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 095/134] ahci: Add Device IDs for Intel Wildcat Point-LP
-Date: Wed,  9 Apr 2014 20:23:31 -0700
-Message-Id: <20140410032311.946967402@linuxfoundation.org>
+Subject: [PATCH 3.4 094/134] xhci: Dont enable/disable RWE on bus suspend/resume.
+Date: Wed,  9 Apr 2014 20:23:30 -0700
+Message-Id: <20140410032311.812824539@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -28,34 +28,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Ralston <james.d.ralston@intel.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 9f961a5f6efc87a79571d7166257b36af28ffcfe upstream.
+commit f217c980ca980e3a645b7485ea5eae9a747f4945 upstream.
 
-This patch adds the AHCI-mode SATA Device IDs for the Intel Wildcat Point-LP PCH.
+The RWE bit of the USB 2.0 PORTPMSC register is supposed to enable
+remote wakeup for devices in the lower power link state L1.  It has
+nothing to do with the device suspend remote wakeup from L2.  The RWE
+bit is designed to be set once (when USB 2.0 LPM is enabled for the
+port) and cleared only when USB 2.0 LPM is disabled for the port.
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+The xHCI bus suspend method was setting the RWE bit erroneously, and the
+bus resume method was clearing it.  The xHCI 1.0 specification with
+errata up to Aug 12, 2012 says in section 4.23.5.1.1.1 "Hardware
+Controlled LPM":
+
+"While Hardware USB2 LPM is enabled, software shall not modify the
+HIRDBESL or RWE fields of the USB2 PORTPMSC register..."
+
+If we have previously enabled USB 2.0 LPM for a device, that means when
+the USB 2.0 bus is resumed, we violate the xHCI specification by
+clearing RWE.  It also means that after a bus resume, the host would
+think remote wakeup is disabled from L1 for ports with USB 2.0 Link PM
+enabled, which is not what we want.
+
+This patch should be backported to kernels as old as 3.2, that
+contain the commit 65580b4321eb36f16ae8b5987bfa1bb948fc5112 "xHCI: set
+USB2 hardware LPM".  That was the first kernel that supported USB 2.0
+Link PM.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+[bwh: Backported to 3.2: deleted code was cosmetically different]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/host/xhci-hub.c |   28 ----------------------------
+ 1 file changed, 28 deletions(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -301,6 +301,10 @@ static const struct pci_device_id ahci_p
- 	{ PCI_VDEVICE(INTEL, 0x8d66), board_ahci }, /* Wellsburg RAID */
- 	{ PCI_VDEVICE(INTEL, 0x8d6e), board_ahci }, /* Wellsburg RAID */
- 	{ PCI_VDEVICE(INTEL, 0x23a3), board_ahci }, /* Coleto Creek AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x9c83), board_ahci }, /* Wildcat Point-LP AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x9c85), board_ahci }, /* Wildcat Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x9c87), board_ahci }, /* Wildcat Point-LP RAID */
-+	{ PCI_VDEVICE(INTEL, 0x9c8f), board_ahci }, /* Wildcat Point-LP RAID */
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -1048,20 +1048,6 @@ int xhci_bus_suspend(struct usb_hcd *hcd
+ 		t1 = xhci_port_state_to_neutral(t1);
+ 		if (t1 != t2)
+ 			xhci_writel(xhci, t2, port_array[port_index]);
+-
+-		if (hcd->speed != HCD_USB3) {
+-			/* enable remote wake up for USB 2.0 */
+-			__le32 __iomem *addr;
+-			u32 tmp;
+-
+-			/* Add one to the port status register address to get
+-			 * the port power control register address.
+-			 */
+-			addr = port_array[port_index] + 1;
+-			tmp = xhci_readl(xhci, addr);
+-			tmp |= PORT_RWE;
+-			xhci_writel(xhci, tmp, addr);
+-		}
+ 	}
+ 	hcd->state = HC_STATE_SUSPENDED;
+ 	bus_state->next_statechange = jiffies + msecs_to_jiffies(10);
+@@ -1140,20 +1126,6 @@ int xhci_bus_resume(struct usb_hcd *hcd)
+ 				xhci_ring_device(xhci, slot_id);
+ 		} else
+ 			xhci_writel(xhci, temp, port_array[port_index]);
+-
+-		if (hcd->speed != HCD_USB3) {
+-			/* disable remote wake up for USB 2.0 */
+-			__le32 __iomem *addr;
+-			u32 tmp;
+-
+-			/* Add one to the port status register address to get
+-			 * the port power control register address.
+-			 */
+-			addr = port_array[port_index] + 1;
+-			tmp = xhci_readl(xhci, addr);
+-			tmp &= ~PORT_RWE;
+-			xhci_writel(xhci, tmp, addr);
+-		}
+ 	}
  
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+ 	(void) xhci_readl(xhci, &xhci->op_regs->command);
 
 
