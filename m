@@ -1,146 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965622AbaDJJfD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 05:35:03 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:40074 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935066AbaDJJet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S965589AbaDJJe6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 05:34:58 -0400
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:42733 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935410AbaDJJet (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Apr 2014 05:34:49 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko.stuebner@bq.com>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Matthias Brugger <matthias.bgg@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Florian Vaussard <florian.vaussard@epfl.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Rob Herring <robh+dt@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Silvio F <silvio.fricke@gmail.com>, Kumar Gala <galak@codeaurora.org>,
-        Olof Johansson <olof@lixom.net>, Jonathan Cameron <jic23@kernel.org>
-Subject: Re: [PATCH 3/4] arm: add basic support for Mediatek MT6589 boards
-Date: Thu, 10 Apr 2014 11:34:47 +0200
-Message-ID: <3428574.kpvz0qlT1a@diego>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
-In-Reply-To: <53465A4B.4040906@free-electrons.com>
-References: <1397072736-10793-1-git-send-email-matthias.bgg@gmail.com> <CABuKBeKnEw38sQYwrkheoWetZZcPTJhKRsBK4a62FS6-6dRFTA@mail.gmail.com> <53465A4B.4040906@free-electrons.com>
+Message-ID: <534665B1.9090207@collabora.co.uk>
+Date: Thu, 10 Apr 2014 11:34:41 +0200
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Alexandre Courbot <gnurou@gmail.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-omap@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 0/5] add gpio_chip_ops to hold GPIO operations
+References: <1396981215-24888-1-git-send-email-javier.martinez@collabora.co.uk> <CAAVeFu+XV_wy9JzewGs0bcSA-ivQg-kzygMh_kt434rsYRQwHQ@mail.gmail.com>
+In-Reply-To: <CAAVeFu+XV_wy9JzewGs0bcSA-ivQg-kzygMh_kt434rsYRQwHQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gregory,
+Hello Alexandre,
 
-Am Donnerstag, 10. April 2014, 08:46:03 schrieb Gregory CLEMENT:
-> On 10/04/2014 08:29, Matthias Brugger wrote:
-> > 2014-04-09 22:26 GMT+02:00 Gregory CLEMENT <gregory.clement@free-
-electrons.com>:
-> >> Hi Matthias,
-> >> 
-> >> On 09/04/2014 19:45, Matthias Brugger wrote:
-> >>> diff --git a/arch/arm/boot/dts/mtk6589.dtsi
-> >>> b/arch/arm/boot/dts/mtk6589.dtsi new file mode 100644
-> >>> index 0000000..6dbb74f
-> >>> --- /dev/null
-> >>> +++ b/arch/arm/boot/dts/mtk6589.dtsi
-> >>> @@ -0,0 +1,105 @@
-> >>> +/*
-> >>> + * Copyright (c) 2014 MundoReader S.L.
-> >>> + * Author: Matthias Brugger <matthias.bgg@gmail.com>
-> >>> + *
-> >>> + * This program is free software; you can redistribute it and/or modify
-> >>> + * it under the terms of the GNU General Public License as published by
-> >>> + * the Free Software Foundation; either version 2 of the License, or
-> >>> + * (at your option) any later version.
-> >>> + *
-> >>> + * This program is distributed in the hope that it will be useful,
-> >>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> >>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> >>> + * GNU General Public License for more details.
-> >>> + */
-> >>> +
-> >>> +#include <dt-bindings/interrupt-controller/irq.h>
-> >>> +#include <dt-bindings/interrupt-controller/arm-gic.h>
-> >>> +#include "skeleton.dtsi"
-> >>> +
-> >>> +/ {
-> >>> +     compatible = "mediatek,mt6589";
-> >>> +     interrupt-parent = <&gic>;
-> >>> +
-> >>> +     cpus {
-> >>> +             #address-cells = <1>;
-> >>> +             #size-cells = <0>;
-> >>> +
-> >>> +             cpu@0 {
-> >>> +                     device_type = "cpu";
-> >>> +                     compatible = "arm,cortex-a7";
-> >>> +                     next-level-cache = <&L2>;
-> >>> +                     reg = <0x0>;
-> >>> +             };
-> >>> +             cpu@1 {
-> >>> +                     device_type = "cpu";
-> >>> +                     compatible = "arm,cortex-a7";
-> >>> +                     next-level-cache = <&L2>;
-> >>> +                     reg = <0x1>;
-> >>> +             };
-> >>> +             cpu@2 {
-> >>> +                     device_type = "cpu";
-> >>> +                     compatible = "arm,cortex-a7";
-> >>> +                     next-level-cache = <&L2>;
-> >>> +                     reg = <0x2>;
-> >>> +             };
-> >>> +             cpu@3 {
-> >>> +                     device_type = "cpu";
-> >>> +                     compatible = "arm,cortex-a7";
-> >>> +                     next-level-cache = <&L2>;
-> >>> +                     reg = <0x3>;
-> >>> +             };
-> >>> +
-> >>> +     };
-> >>> +
-> >>> +     clocks {
-> >>> +             #address-cells = <1>;
-> >>> +             #size-cells = <1>;
-> >>> +             ranges;
-> >>> +
-> >>> +             system_clk: system_clk {
-> >>> +                     compatible = "fixed-clock";
-> >>> +                     clock-frequency = <13000000>;
-> >>> +                     #clock-cells = <0>;
-> >>> +                     clock-output-names = "system_clk";
-> >>> +             };
-> >> 
-> >> Is it really a fixed clock without any parent, or do you
-> >> declare it as a fixed clock because you don't have any clock
-> >> common framework support yet?
-> > 
-> > I don't have any common clock framework support yet.
+Thanks a lot for your feedback.
+
+On 04/10/2014 09:36 AM, Alexandre Courbot wrote:
+> On Wed, Apr 9, 2014 at 3:20 AM, Javier Martinez Canillas
+> <javier.martinez@collabora.co.uk> wrote:
+>> In the kernel there are basically two patterns to implement object
+>> oriented code in C. You can either embedded a set of function pointers
 > 
-> So maybe you should provide one (even a very simple one).
+> s/embedded/embed
 > 
-> Pretending a clock is a fixed clock and ignoring its parents
-> will be problematic when you will add the common clock framework
-> support because the device tree is supposed to be stable and you won't
-> be able to change it then.
+>> in a struct along with other members or have a separate virtual function
+>> table (vtable) structure that hold all the functions and only store a
+>> pointer to that vtable on our particular object.
+>>
+>> The struct gpio_chip uses the former approach, but I don't know if that
+>> is a design decision or is just that this code predates the fact that
+>> the separate structure pattern is now so popular. Since the having a
+>> the operations on a different structure has a number of benefits:
+> 
+> "Since having the operations" maybe?
+> 
 
-personally I think the danger of introducing unsuitable bindings/precedents 
-for a clock controller before it is fully understood is higher.
+Yes, since I'm not a native english speaker I sometimes miss some obvious
+grammatical errors. I'll fix those when posting the final version with all the
+drivers converted.
 
-I'd just rename the clock above to something like dummy130m like sunxi also 
-does for example, to reflect its unfinished state and when the clock controller 
-is present later on change the supplying clock of the timer.
+>>
+>> - A clean separation between state (fields) and operations (functions).
+>> - Size reduction of struct gpio_chip since will only hold one pointer.
+>> - These functions are not supposed to change at runtime so the const
+>>   qualifier can be used to prevent pointers modification during execution.
+>> - Similar drivers for a chip family can reuse their function vtable.
+>>
+>> There is a drawback though which is that now two memory accesses are
+>> needed to execute a GPIO operation since an additional level of
+>> indirection is introduced but that should be minimized due temporal and
+>> spatial memory locality.
+> 
+> I think I really do like this. Having ops in a separate structure is a
+> very common pattern in the kernel and makes things a lot cleaner. On
+> top of the advantages you listed, it also only requires a single
+> assignment in the driver's init function vs. a lot more today.
+> 
+> If no one complains about the additional memory access, I'd like to go
+> forward with this. I did much worse performance-hurting changes when
+> introducing gpiod, so I suppose it will be fine.
+> 
+>>
+>> So this is an RFC patch-set to add a virtual table to be used by
+>> GPIO chip controllers and consist of the following patches:
+>>
+>> Javier Martinez Canillas (5):
+>>   gpio: add a vtable to abstract GPIO controller operations
+>>   gpiolib: set gpio_chip operations on add using a gpio_chip_ops
+>>   gpio: omap: convert driver to use gpio_chip_ops
+>>   gpio: twl4030: convert driver to use gpio_chip_ops
+>>   gpio: switch to use struct struct gpio_chip_ops
+>>
+>>  drivers/gpio/gpio-omap.c    | 19 ++++++++-----
+>>  drivers/gpio/gpio-twl4030.c | 10 +++++--
+>>  drivers/gpio/gpiolib.c      | 64 ++++++++++++++++++++---------------------
+>>  include/linux/gpio/driver.h | 69 +++++++++++++++++++++++++++------------------
+>>  4 files changed, 93 insertions(+), 69 deletions(-)
+>>
+>> The patch-set is not a complete one though since only the GPIO OMAP
+>> and GPIO TWL4030 drivers have been converted so I could test it on
+>> my platform (DM3730 OMAP IGEPv2 board).
+>>
+>> But I preferred to send an early RFC than changing every single driver
+>> before discussing if doing the split is worth it or not.
+>>
+>> To not break git bisect-ability, I added some patches that are
+>> transitional changes. If you have a better suggestion on how to
+>> handle that please let me know.
+> 
+> We will probably need that transition phase. We will also need to
+> switch every single driver to your new scheme, so please wait until we
+> hear from Linus before proceeding. :)
+> 
 
-Or maybe I'm overlooking something here :-)
+I'm glad you agree with the idea, let's see what Linus thinks about it.
 
+> Thanks,
+> Alex.
+> 
 
-Heiko
+Best regards,
+Javier
