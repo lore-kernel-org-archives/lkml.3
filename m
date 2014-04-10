@@ -1,162 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965467AbaDJHPo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 03:15:44 -0400
-Received: from 8bytes.org ([85.214.48.195]:52611 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965100AbaDJHPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 03:15:40 -0400
-Date: Thu, 10 Apr 2014 09:15:35 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Baoquan He <bhe@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: Re: hpsa driver bug crack kernel down!
-Message-ID: <20140410071535.GX13491@8bytes.org>
-References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
- <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>
- <1397084904.9519.62.camel@dabdike>
- <1397085044.9519.63.camel@dabdike>
- <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
- <1397087425.9519.67.camel@dabdike>
- <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>
- <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
- <1397111557.2608.29.camel@buesod1.americas.hpqcorp.net>
+	id S965077AbaDJHUa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 03:20:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43590 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934688AbaDJHU1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 03:20:27 -0400
+Message-ID: <53464639.2040208@linutronix.de>
+Date: Thu, 10 Apr 2014 09:20:25 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397111557.2608.29.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Thu Apr 10 09:15:38 2014
-X-DSPAM-Confidence: 0.9992
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 5346451a20861743018466
+To: Scott Wood <scottwood@freescale.com>
+CC: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Claudiu Manoil <claudiu.manoil@freescale.com>
+Subject: Re: [PATCH RT 2/2] net: gianfar: do not try to cleanup TX packets
+ if they are not done
+References: <1396004220-5711-1-git-send-email-bigeasy@linutronix.de>	 <1396004220-5711-2-git-send-email-bigeasy@linutronix.de> <1397090916.20280.36.camel@snotra.buserror.net>
+In-Reply-To: <1397090916.20280.36.camel@snotra.buserror.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+ David, VT-d maintainer ]
+On 04/10/2014 02:48 AM, Scott Wood wrote:
+> Why is this only being sent to RT and not to netdev for mainline?
 
-Jiang, David, can you please have a look into this issue?
+I tried. And complained about how that problem was fixed by a duct tape
+solution (by dropping the outer loop) instead of understanding the
+problem and fixing it properly. Even Eric tied to point out that there
+might be something else going on. Look at netdev for "gianfar: Simplify
+MQ polling to avoid soft lockup".
+The threaded ended ended up with the fact that I took this for -RT only
+because netdev had already code for v3.15 and Claudiu managed to
+rewrite that part (again) and added napi for TX. So that Patch as-is
+does not apply anymore.
+With NAPI for TX I had may no longer persists so I will probably drop
+this patch in -RT >= 3.15
 
-Thanks,
-
-	Joerg
-
-On Wed, Apr 09, 2014 at 11:32:37PM -0700, Davidlohr Bueso wrote:
-> On Wed, 2014-04-09 at 22:03 -0600, Bjorn Helgaas wrote:
-> > [+cc Joerg, iommu list]
-> > 
-> > On Wed, Apr 9, 2014 at 6:19 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > > On Wed, 2014-04-09 at 16:50 -0700, James Bottomley wrote:
-> > >> On Wed, 2014-04-09 at 16:40 -0700, Davidlohr Bueso wrote:
-> > >> > On Wed, 2014-04-09 at 16:10 -0700, James Bottomley wrote:
-> > >> > > On Wed, 2014-04-09 at 16:08 -0700, James Bottomley wrote:
-> > >> > > > [+linux-scsi]
-> > >> > > > On Wed, 2014-04-09 at 15:49 -0700, Davidlohr Bueso wrote:
-> > >> > > > > On Wed, 2014-04-09 at 10:39 +0800, Baoquan He wrote:
-> > >> > > > > > Hi,
-> > >> > > > > >
-> > >> > > > > > The kernel is 3.14.0+ which is pulled just now.
-> > >> > > > >
-> > >> > > > > Cc'ing more people.
-> > >> > > > >
-> > >> > > > > While the hpsa driver appears to be involved in some way, I'm sure if
-> > >> > > > > this is a related issue, but as of today's pull I'm getting another
-> > >> > > > > problem that causes my DL980 not to come up.
-> > >> > > > >
-> > >> > > > > *Massive* amounts of:
-> > >> > > > >
-> > >> > > > > DMAR:[fault reason 02] Present bit in context entry is clear
-> > >> > > > > dmar: DRHD: handling fault status reg 602
-> > >> > > > > dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr 7f61e000
-> > >> > > > >
-> > >> > > > > Then:
-> > >> > > > >
-> > >> > > > > hpsa 0000:03:00.0: Controller lockup detected: 0xffff0000
-> > >> > > > > ...
-> > >> > > > > Workqueue: events hpsa_monitor_ctlr_worker [hpsa]
-> > >> > > > > ...
-> > >> > > > >
-> > >> > > > > Screenshot of the actual LOCKUP:
-> > >> > > > > http://stgolabs.net/hpsa-hard-lockup-3.14+.png
-> > >> > > > >
-> > >> > > > > While I haven't bisected, things worked fine until at least until commit
-> > >> > > > > 39de65aa2c3e (April 2nd).
-> > >> > > > >
-> > >> > > > > Any ideas?
-> > >> > > >
-> > >> > > > Well, it's either a DMA remapping issue or a hpsa one.  Your assertion
-> > >> > > > that everything worked fine until 39de65aa2c3e would tend to vindicate
-> > >> > > > hpsa,
-> > >> >
-> > >> > Hmm here you mean DMA, right?
-> > >>
-> > >> No, it vindicates the hpsa changes ... they don't seem to be causing
-> > >> problems until something goes wrong with dma remapping.
-> > >>
-> > >> > > because all the hpsa changes went in before that under
-> > >> > > Missing crucial info:
-> > >> > >
-> > >> > > commit 1a0b6abaea78f73d9bc0a2f6df2d9e4c917cade1
-> > >> > >
-> > >> > > > Merge: 3e75c6d b2bff6c
-> > >> > > > Author: Linus Torvalds <torvalds@linux-foundation.org>
-> > >> > > > Date:   Tue Apr 1 18:49:04 2014 -0700
-> > >> > > >
-> > >> > > >     Merge tag 'scsi-misc' of
-> > >> > > > git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi
-> > >> > > >
-> > >> > > > can you revalidate that this commit works OK just to make sure?
-> > >> >
-> > >> > Ok so I don't see those DMA messages and system starts just fine. I'm
-> > >> > thinking perhaps something broke after the IO mmu stuff in commit
-> > >> > 3f583bc21977a608908b83d03ee2250426a5695c... could this be indirectly
-> > >> > causing the CPU stalls and just blame hpsa in the path as a side effect?
-> > >> >
-> > >> > /me goes out to try the commit.
-> > >>
-> > >> That's my guess.  The DMAR messages are DMA remapping issues caused in
-> > >> the IOMMU.  If I had to guess, I'd say the DMAR fault message is
-> > >> indicating the IOMMU is calling for a mapping address before it can
-> > >> satisfy the driver read request, which is causing the hang apparently in
-> > >> the hpsa driver.
-> > >>
-> > >> I've added linux-pci to the cc; I think they deal with iommu issues on
-> > >> x86.
-> > >
-> > > So that merge commit appears to be the culprit, I see both the DMA
-> > > messages and the lockup blaming hpsa...
-> > 
-> > My understanding so far (please correct me if I'm wrong):
-> > 
-> > 39de65aa2c3e OK ("Merge branch 'i2c/for-next'")
-> > 1a0b6abaea78 OK ("Merge tag 'scsi-misc'")
-> > 3f583bc21977 BAD ("Merge tag 'iommu-updates-v3.15'")
+>> --- a/drivers/net/ethernet/freescale/gianfar.c
+>> +++ b/drivers/net/ethernet/freescale/gianfar.c
+>> @@ -2516,7 +2515,7 @@ static void gfar_align_skb(struct sk_buff *skb)
+>>  }
+>>  
+>>  /* Interrupt Handler for Transmit complete */
+>> -static void gfar_clean_tx_ring(struct gfar_priv_tx_q *tx_queue)
+>> +static int gfar_clean_tx_ring(struct gfar_priv_tx_q *tx_queue)
+>>  {
+>>  	struct net_device *dev = tx_queue->dev;
+>>  	struct netdev_queue *txq;
+>> @@ -2939,10 +2938,14 @@ static int gfar_poll(struct napi_struct *napi, int budget)
 > 
-> Yes, specifically (finally done bisecting):
+> You changed the return from void to int, but you never added any return
+> statement.  GCC should have warned you about this...
+
+Interesting. I remember that I added "howmany" as return value. I
+remember testing it. And yet there is evidence that I did not such a
+thing. I will add it. Thanks for pointing out.
+
 > 
-> commit 2e45528930388658603ea24d49cf52867b928d3e
-> Author: Jiang Liu <jiang.liu@linux.intel.com>
-> Date:   Wed Feb 19 14:07:36 2014 +0800
-> 
->     iommu/vt-d: Unify the way to process DMAR device scope array
->     
->     Now we have a PCI bus notification based mechanism to update DMAR
->     device scope array, we could extend the mechanism to support boot
->     time initialization too, which will help to unify and simplify
->     the implementation.
->     
->     Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
->     Signed-off-by: Joerg Roedel <joro@8bytes.org>
+> -Scott
 > 
 
+Sebastian
