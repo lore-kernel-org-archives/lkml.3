@@ -1,73 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935676AbaDJSoI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 14:44:08 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:33932 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758617AbaDJSoE (ORCPT
+	id S1759025AbaDJSpb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 14:45:31 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:35825 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753011AbaDJSp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 14:44:04 -0400
+	Thu, 10 Apr 2014 14:45:29 -0400
 From: Paul McQuade <paulmcquad@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: npajkovs@redhat.com, akpm@linux-foundation.org
-Subject: [PATCH 02/15] ipc:msg.c same indent for switch/case
-Date: Thu, 10 Apr 2014 19:43:59 +0100
-Message-Id: <1397155439-6361-1-git-send-email-paulmcquad@gmail.com>
+Cc: akpm@linux-foundation.org, davidlohr@hp.com
+Subject: [PATCH 03/15] ipc:sem.c #include <linux/uaccess.h>
+Date: Thu, 10 Apr 2014 19:45:25 +0100
+Message-Id: <1397155525-6420-1-git-send-email-paulmcquad@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ERROR: switch and case should be at the same indent
+WARNING: Use #include <linux/uaccess.h> instead of <asm/uaccess.h>
 
 Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
 ---
- ipc/msg.c | 31 +++++++++++++++----------------
- 1 file changed, 15 insertions(+), 16 deletions(-)
+ ipc/sem.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/ipc/msg.c b/ipc/msg.c
-index a385372..45c6360 100644
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -612,23 +612,22 @@ SYSCALL_DEFINE3(msgctl, int, msqid, int, cmd, struct msqid_ds __user *, buf)
+diff --git a/ipc/sem.c b/ipc/sem.c
+index bee5554..3bbfa6c 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -87,7 +87,7 @@
+ #include <linux/nsproxy.h>
+ #include <linux/ipc_namespace.h>
  
- static int testmsg(struct msg_msg *msg, long type, int mode)
- {
--	switch (mode)
--	{
--		case SEARCH_ANY:
--		case SEARCH_NUMBER:
-+	switch (mode) {
-+	case SEARCH_ANY:
-+	case SEARCH_NUMBER:
-+		return 1;
-+	case SEARCH_LESSEQUAL:
-+		if (msg->m_type <= type)
- 			return 1;
--		case SEARCH_LESSEQUAL:
--			if (msg->m_type <= type)
--				return 1;
--			break;
--		case SEARCH_EQUAL:
--			if (msg->m_type == type)
--				return 1;
--			break;
--		case SEARCH_NOTEQUAL:
--			if (msg->m_type != type)
--				return 1;
--			break;
-+		break;
-+	case SEARCH_EQUAL:
-+		if (msg->m_type == type)
-+			return 1;
-+		break;
-+	case SEARCH_NOTEQUAL:
-+		if (msg->m_type != type)
-+			return 1;
-+		break;
- 	}
- 	return 0;
- }
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
+ #include "util.h"
+ 
+ /* One semaphore structure for each semaphore in the system. */
 -- 
 1.8.3.2
 
