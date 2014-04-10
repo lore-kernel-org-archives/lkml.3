@@ -1,38 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759011AbaDJSnl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 14:43:41 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54415 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753276AbaDJSnk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 14:43:40 -0400
-Date: Thu, 10 Apr 2014 19:28:51 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        "Michael L. Semon" <mlsemon35@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: 3.14.0+/x86: lockdep and mutexes not getting along
-Message-ID: <20140410172851.GF26782@laptop.programming.kicks-ass.net>
-References: <alpine.LNX.2.11.1404060059020.8208@bpserver.ds>
- <20140409121940.GA12890@node.dhcp.inet.fi>
- <1397108579.2586.15.camel@j-VirtualBox>
- <20140410091824.GL10526@twins.programming.kicks-ass.net>
- <1397150084.3032.4.camel@j-VirtualBox>
+	id S935647AbaDJSnu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 14:43:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56426 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933885AbaDJSns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 14:43:48 -0400
+Date: Thu, 10 Apr 2014 20:43:46 +0200
+From: Jan Kara <jack@suse.cz>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Jan Kara <jack@suse.cz>, Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Ross Zwisler <ross.zwisler@linux.intel.com>
+Subject: Re: [PATCH v7 18/22] xip: Add xip_zero_page_range
+Message-ID: <20140410184346.GD8060@quack.suse.cz>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <5a87acda8c3e4d2b7ea5dd1249fcbf8be23b9645.1395591795.git.matthew.r.wilcox@intel.com>
+ <20140409101512.GL32103@quack.suse.cz>
+ <20140410142729.GL5727@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397150084.3032.4.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140410142729.GL5727@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 10:14:44AM -0700, Jason Low wrote:
-> So one thing I noticed that is different in the current code is that in
-> debug_mutex_unlock(), there is is a possibility that it does not unlock
-> the mutex (when !debug_locks). May be interesting to try out this
-> patch too:
+On Thu 10-04-14 10:27:29, Matthew Wilcox wrote:
+> On Wed, Apr 09, 2014 at 12:15:12PM +0200, Jan Kara wrote:
+> > > +		/*
+> > > +		 * ext4 sometimes asks to zero past the end of a block.  It
+> > > +		 * really just wants to zero to the end of the block.
+> > > +		 */
+> >   Then we should really fix ext4 I believe...
+> 
+> Since I didn't want to do this ...
+> 
+> > > +/* Can't be a function because PAGE_CACHE_SIZE is defined in pagemap.h */
+> > > +#define dax_truncate_page(inode, from, get_block)	\
+> > > +	dax_zero_page_range(inode, from, PAGE_CACHE_SIZE, get_block)
+> >                                          ^^^^
+> > This should be (PAGE_CACHE_SIZE - (from & (PAGE_CACHE_SIZE - 1))), shouldn't it?
+> 
+> ... I could get away without doing that ;-)
+  I understand but ultimately the API is cleaner if it doesn't allow size
+past end of block. So IMHO we shouldn't introduce new places that call the
+function like this and we should fix places that do it now (make it
+WARN_ON_ONCE() and let ext4 guys do the work for you ;).
 
-Yeah; look at a few mails down :-) I spotted it too when I woke up.
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
