@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934912AbaDJEMR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 00:12:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41084 "EHLO
+	id S934931AbaDJEMz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 00:12:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41079 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934736AbaDJDWQ (ORCPT
+	with ESMTP id S934735AbaDJDWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:16 -0400
+	Wed, 9 Apr 2014 23:22:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hovold <jhovold@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
         Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 059/134] USB: ch341: fix use-after-free in TIOCMIWAIT
-Date: Wed,  9 Apr 2014 20:22:55 -0700
-Message-Id: <20140410032307.631074605@linuxfoundation.org>
+Subject: [PATCH 3.4 058/134] USB: ark3116: fix use-after-free in TIOCMIWAIT
+Date: Wed,  9 Apr 2014 20:22:54 -0700
+Message-Id: <20140410032307.522780891@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -29,7 +29,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit fa1e11d5231c001c80a479160b5832933c5d35fb upstream.
+commit 5018860321dc7a9e50a75d5f319bc981298fb5b7 upstream.
 
 Use the port wait queue and make sure to check the serial disconnected
 flag before accessing private port data after waking up.
@@ -43,60 +43,51 @@ Cc: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/ch341.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/usb/serial/ark3116.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/serial/ch341.c
-+++ b/drivers/usb/serial/ch341.c
-@@ -82,7 +82,6 @@ MODULE_DEVICE_TABLE(usb, id_table);
- 
- struct ch341_private {
- 	spinlock_t lock; /* access lock */
--	wait_queue_head_t delta_msr_wait; /* wait queue for modem status */
- 	unsigned baud_rate; /* set baud rate */
- 	u8 line_control; /* set line control value RTS/DTR */
- 	u8 line_status; /* active status of modem control inputs */
-@@ -262,7 +261,6 @@ static int ch341_attach(struct usb_seria
- 		return -ENOMEM;
- 
- 	spin_lock_init(&priv->lock);
--	init_waitqueue_head(&priv->delta_msr_wait);
- 	priv->baud_rate = DEFAULT_BAUD_RATE;
- 	priv->line_control = CH341_BIT_RTS | CH341_BIT_DTR;
- 
-@@ -299,7 +297,7 @@ static void ch341_dtr_rts(struct usb_ser
- 		priv->line_control &= ~(CH341_BIT_RTS | CH341_BIT_DTR);
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 	ch341_set_handshake(port->serial->dev, priv->line_control);
--	wake_up_interruptible(&priv->delta_msr_wait);
-+	wake_up_interruptible(&port->delta_msr_wait);
+--- a/drivers/usb/serial/ark3116.c
++++ b/drivers/usb/serial/ark3116.c
+@@ -68,7 +68,6 @@ static int is_irda(struct usb_serial *se
  }
  
- static void ch341_close(struct usb_serial_port *port)
-@@ -502,7 +500,7 @@ static void ch341_read_int_callback(stru
- 			tty_kref_put(tty);
- 		}
+ struct ark3116_private {
+-	wait_queue_head_t       delta_msr_wait;
+ 	struct async_icount	icount;
+ 	int			irda;	/* 1 for irda device */
  
+@@ -148,7 +147,6 @@ static int ark3116_attach(struct usb_ser
+ 	if (!priv)
+ 		return -ENOMEM;
+ 
+-	init_waitqueue_head(&priv->delta_msr_wait);
+ 	mutex_init(&priv->hw_lock);
+ 	spin_lock_init(&priv->status_lock);
+ 
+@@ -460,10 +458,14 @@ static int ark3116_ioctl(struct tty_stru
+ 	case TIOCMIWAIT:
+ 		for (;;) {
+ 			struct async_icount prev = priv->icount;
+-			interruptible_sleep_on(&priv->delta_msr_wait);
++			interruptible_sleep_on(&port->delta_msr_wait);
+ 			/* see if a signal did it */
+ 			if (signal_pending(current))
+ 				return -ERESTARTSYS;
++
++			if (port->serial->disconnected)
++				return -EIO;
++
+ 			if ((prev.rng == priv->icount.rng) &&
+ 			    (prev.dsr == priv->icount.dsr) &&
+ 			    (prev.dcd == priv->icount.dcd) &&
+@@ -584,7 +586,7 @@ static void ark3116_update_msr(struct us
+ 			priv->icount.dcd++;
+ 		if (msr & UART_MSR_TERI)
+ 			priv->icount.rng++;
 -		wake_up_interruptible(&priv->delta_msr_wait);
 +		wake_up_interruptible(&port->delta_msr_wait);
  	}
+ }
  
- exit:
-@@ -528,11 +526,14 @@ static int wait_modem_info(struct usb_se
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 
- 	while (!multi_change) {
--		interruptible_sleep_on(&priv->delta_msr_wait);
-+		interruptible_sleep_on(&port->delta_msr_wait);
- 		/* see if a signal did it */
- 		if (signal_pending(current))
- 			return -ERESTARTSYS;
- 
-+		if (port->serial->disconnected)
-+			return -EIO;
-+
- 		spin_lock_irqsave(&priv->lock, flags);
- 		status = priv->line_status;
- 		multi_change = priv->multi_status_change;
 
 
