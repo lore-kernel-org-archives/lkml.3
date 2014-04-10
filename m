@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965342AbaDJDev (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:34:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41381 "EHLO
+	id S935200AbaDJDf3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:35:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41378 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935193AbaDJDXJ (ORCPT
+	with ESMTP id S935184AbaDJDXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:23:09 -0400
+	Wed, 9 Apr 2014 23:23:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Attila Kinali <attila@kinali.ch>,
-        Lauri Hintsala <lauri.hintsala@bluegiga.com>,
-        Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 121/134] mmc: mxs-mmc: fix deadlock caused by recursion loop
-Date: Wed,  9 Apr 2014 20:23:57 -0700
-Message-Id: <20140410032314.858947020@linuxfoundation.org>
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 129/134] media: hdpvr: register the video node at the end of probe
+Date: Wed,  9 Apr 2014 20:24:05 -0700
+Message-Id: <20140410032315.953791643@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -30,96 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lauri Hintsala <lauri.hintsala@bluegiga.com>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit fc108d24d3a6da63576a460e122fa1df0cbdea20 upstream.
+commit 280847b532433ffe7a22795f926327805a127162 upstream.
 
-Release the lock before mmc_signal_sdio_irq is called by
-mxs_mmc_enable_sdio_irq.
+Video nodes can be used at once after registration, so make sure the full
+initialization is done before registering them.
 
-Backtrace:
-[   65.470000] =============================================
-[   65.470000] [ INFO: possible recursive locking detected ]
-[   65.470000] 3.5.0-rc5 #2 Not tainted
-[   65.470000] ---------------------------------------------
-[   65.470000] ksdioirqd/mmc0/73 is trying to acquire lock:
-[   65.470000]  (&(&host->lock)->rlock#2){-.-...}, at: [<bf054120>] mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc]
-[   65.470000]
-[   65.470000] but task is already holding lock:
-[   65.470000]  (&(&host->lock)->rlock#2){-.-...}, at: [<bf054120>] mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc]
-[   65.470000]
-[   65.470000] other info that might help us debug this:
-[   65.470000]  Possible unsafe locking scenario:
-[   65.470000]
-[   65.470000]        CPU0
-[   65.470000]        ----
-[   65.470000]   lock(&(&host->lock)->rlock#2);
-[   65.470000]   lock(&(&host->lock)->rlock#2);
-[   65.470000]
-[   65.470000]  *** DEADLOCK ***
-[   65.470000]
-[   65.470000]  May be due to missing lock nesting notation
-[   65.470000]
-[   65.470000] 1 lock held by ksdioirqd/mmc0/73:
-[   65.470000]  #0:  (&(&host->lock)->rlock#2){-.-...}, at: [<bf054120>] mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc]
-[   65.470000]
-[   65.470000] stack backtrace:
-[   65.470000] [<c0014990>] (unwind_backtrace+0x0/0xf4) from [<c005ccb8>] (__lock_acquire+0x14f8/0x1b98)
-[   65.470000] [<c005ccb8>] (__lock_acquire+0x14f8/0x1b98) from [<c005d3f8>] (lock_acquire+0xa0/0x108)
-[   65.470000] [<c005d3f8>] (lock_acquire+0xa0/0x108) from [<c02f671c>] (_raw_spin_lock_irqsave+0x48/0x5c)
-[   65.470000] [<c02f671c>] (_raw_spin_lock_irqsave+0x48/0x5c) from [<bf054120>] (mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc])
-[   65.470000] [<bf054120>] (mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc]) from [<bf0541d0>] (mxs_mmc_enable_sdio_irq+0xc8/0xdc [mxs_mmc])
-[   65.470000] [<bf0541d0>] (mxs_mmc_enable_sdio_irq+0xc8/0xdc [mxs_mmc]) from [<c0219b38>] (sdio_irq_thread+0x1bc/0x274)
-[   65.470000] [<c0219b38>] (sdio_irq_thread+0x1bc/0x274) from [<c003c324>] (kthread+0x8c/0x98)
-[   65.470000] [<c003c324>] (kthread+0x8c/0x98) from [<c00101ac>] (kernel_thread_exit+0x0/0x8)
-[   65.470000] BUG: spinlock lockup suspected on CPU#0, ksdioirqd/mmc0/73
-[   65.470000]  lock: 0xc3358724, .magic: dead4ead, .owner: ksdioirqd/mmc0/73, .owner_cpu: 0
-[   65.470000] [<c0014990>] (unwind_backtrace+0x0/0xf4) from [<c01b46b0>] (do_raw_spin_lock+0x100/0x144)
-[   65.470000] [<c01b46b0>] (do_raw_spin_lock+0x100/0x144) from [<c02f6724>] (_raw_spin_lock_irqsave+0x50/0x5c)
-[   65.470000] [<c02f6724>] (_raw_spin_lock_irqsave+0x50/0x5c) from [<bf054120>] (mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc])
-[   65.470000] [<bf054120>] (mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc]) from [<bf0541d0>] (mxs_mmc_enable_sdio_irq+0xc8/0xdc [mxs_mmc])
-[   65.470000] [<bf0541d0>] (mxs_mmc_enable_sdio_irq+0xc8/0xdc [mxs_mmc]) from [<c0219b38>] (sdio_irq_thread+0x1bc/0x274)
-[   65.470000] [<c0219b38>] (sdio_irq_thread+0x1bc/0x274) from [<c003c324>] (kthread+0x8c/0x98)
-[   65.470000] [<c003c324>] (kthread+0x8c/0x98) from [<c00101ac>] (kernel_thread_exit+0x0/0x8)
-
-Reported-by: Attila Kinali <attila@kinali.ch>
-Signed-off-by: Lauri Hintsala <lauri.hintsala@bluegiga.com>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Signed-off-by: Chris Ball <cjb@laptop.org>
-[bwh: Backported to 3.2:
- - Adjust context
- - HW_SSP_STATUS is a simple rather than function-like macro]
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+[bwh: Backported to 3.2: adjust filename, context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Qiang Huang <h.huangqiang@huawei.com>
+Cc: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/mxs-mmc.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/media/video/hdpvr/hdpvr-core.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/drivers/mmc/host/mxs-mmc.c
-+++ b/drivers/mmc/host/mxs-mmc.c
-@@ -639,10 +639,6 @@ static void mxs_mmc_enable_sdio_irq(stru
- 		       host->base + HW_SSP_CTRL0 + MXS_SET_ADDR);
- 		writel(BM_SSP_CTRL1_SDIO_IRQ_EN,
- 		       host->base + HW_SSP_CTRL1 + MXS_SET_ADDR);
--
--		if (readl(host->base + HW_SSP_STATUS) & BM_SSP_STATUS_SDIO_IRQ)
--			mmc_signal_sdio_irq(host->mmc);
--
- 	} else {
- 		writel(BM_SSP_CTRL0_SDIO_IRQ_CHECK,
- 		       host->base + HW_SSP_CTRL0 + MXS_CLR_ADDR);
-@@ -651,6 +647,10 @@ static void mxs_mmc_enable_sdio_irq(stru
+--- a/drivers/media/video/hdpvr/hdpvr-core.c
++++ b/drivers/media/video/hdpvr/hdpvr-core.c
+@@ -385,12 +385,6 @@ static int hdpvr_probe(struct usb_interf
  	}
+ 	mutex_unlock(&dev->io_mutex);
  
- 	spin_unlock_irqrestore(&host->lock, flags);
-+
-+	if (enable && readl(host->base + HW_SSP_STATUS) & BM_SSP_STATUS_SDIO_IRQ)
-+		mmc_signal_sdio_irq(host->mmc);
-+
- }
+-	if (hdpvr_register_videodev(dev, &interface->dev,
+-				    video_nr[atomic_inc_return(&dev_nr)])) {
+-		v4l2_err(&dev->v4l2_dev, "registering videodev failed\n");
+-		goto error;
+-	}
+-
+ #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
+ 	retval = hdpvr_register_i2c_adapter(dev);
+ 	if (retval < 0) {
+@@ -411,6 +405,13 @@ static int hdpvr_probe(struct usb_interf
+ 	}
+ #endif
  
- static const struct mmc_host_ops mxs_mmc_ops = {
++	retval = hdpvr_register_videodev(dev, &interface->dev,
++				    video_nr[atomic_inc_return(&dev_nr)]);
++	if (retval < 0) {
++		v4l2_err(&dev->v4l2_dev, "registering videodev failed\n");
++		goto error;
++	}
++
+ 	/* let the user know what node this device is now attached to */
+ 	v4l2_info(&dev->v4l2_dev, "device now attached to %s\n",
+ 		  video_device_node_name(dev->video_dev));
 
 
