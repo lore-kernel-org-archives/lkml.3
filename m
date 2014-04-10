@@ -1,106 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934756AbaDJHAA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 03:00:00 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:58874 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933461AbaDJG75 (ORCPT
+	id S934725AbaDJHEZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 03:04:25 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:55979 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934241AbaDJHEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 02:59:57 -0400
-Message-ID: <53464164.5030701@linux.vnet.ibm.com>
-Date: Thu, 10 Apr 2014 14:59:48 +0800
-From: Michael wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 10 Apr 2014 03:04:23 -0400
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>, ktkhai@parallels.com
-CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: sched: hang in migrate_swap
-References: <5304F32A.4040907@oracle.com> <5305856F.3000109@linux.vnet.ibm.com> <53078241.3060201@oracle.com> <53080122.609@linux.vnet.ibm.com> <530ABB44.5000601@oracle.com> <530AD653.3000808@linux.vnet.ibm.com> <20140224071028.GW9987@twins.programming.kicks-ass.net> <530B1B80.4000307@linux.vnet.ibm.com> <20140224121218.GR15586@twins.programming.kicks-ass.net> <534610A4.5000302@oracle.com>
-In-Reply-To: <534610A4.5000302@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041006-5816-0000-0000-00000D68D8F5
+In-Reply-To: <1393876300-3061-4-git-send-email-swarren@wwwdotorg.org>
+References: <1393876300-3061-1-git-send-email-swarren@wwwdotorg.org> <1393876300-3061-4-git-send-email-swarren@wwwdotorg.org>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 10 Apr 2014 16:04:02 +0900
+Message-ID: <CAAVeFuJY67zdoHiZufxDbkaw=xt8YwxyDAwHW_T7UZeSOt35NA@mail.gmail.com>
+Subject: Re: [PATCH V3 4/5] mfd: palmas: support IRQ inversion at the board level
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2014 11:31 AM, Sasha Levin wrote:
-[snip]
-> 
-> I'd like to re-open this issue. It seems that something broke and I'm
-> now seeing the same issues that have gone away 2 months with this patch
-> again.
+Stephen, any news about this patch? I'm waiting for it to be merged in
+order to resend some Tegra DTs, but still cannot see it in -next.
 
-A new mechanism has been designed to move the priority checking inside
-idle_balance(), including Kirill who is the designer ;-)
+Thanks,
+Alex.
 
-Regards,
-Michael Wang
-
-> 
-> Stack trace is similar to before:
-> 
-> [ 6004.990292] CPU: 20 PID: 26054 Comm: trinity-c58 Not tainted 3.14.0-next-20140409-sasha-00022-g984f7c5-dirty #385
-> [ 6004.990292] task: ffff880375bb3000 ti: ffff88036058e000 task.ti: ffff88036058e000
-> [ 6004.990292] RIP: generic_exec_single (kernel/smp.c:91 kernel/smp.c:175)
-> [ 6004.990292] RSP: 0000:ffff88036058f978  EFLAGS: 00000202
-> [ 6004.990292] RAX: ffff8802b71dec00 RBX: ffff88036058f978 RCX: ffff8802b71decd8
-> [ 6004.990292] RDX: ffff8802b71d85c0 RSI: ffff88036058f978 RDI: ffff88036058f978
-> [ 6004.990292] RBP: ffff88036058f9c8 R08: 0000000000000001 R09: ffffffffa70bc580
-> [ 6004.990292] R10: ffff880375bb3000 R11: 0000000000000000 R12: 000000000000000c
-> [ 6004.990292] R13: 0000000000000001 R14: ffff88036058fa20 R15: ffffffffa121f560
-> [ 6004.990292] FS:  00007fe993fbd700(0000) GS:ffff880437000000(0000) knlGS:0000000000000000
-> [ 6004.990292] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [ 6004.990292] CR2: 00007fffb56b0a18 CR3: 00000003755df000 CR4: 00000000000006a0
-> [ 6004.990292] DR0: 0000000000695000 DR1: 0000000000695000 DR2: 0000000000000000
-> [ 6004.990292] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-> [ 6004.990292] Stack:
-> [ 6004.990292]  ffff88040513da18 ffffffffa121f560 ffff88036058fa20 0000000000000002
-> [ 6004.990292]  000000000000000c 000000000000000c ffffffffa121f560 ffff88036058fa20
-> [ 6004.990292]  0000000000000001 ffff880189fe3000 ffff88036058fa08 ffffffffa11ff7b2
-> [ 6004.990292] Call Trace:
-> [ 6004.990292] ? cpu_stop_queue_work (kernel/stop_machine.c:227)
-> [ 6004.990292] ? cpu_stop_queue_work (kernel/stop_machine.c:227)
-> [ 6004.990292] smp_call_function_single (kernel/smp.c:234 (discriminator 7))
-> [ 6004.990292] ? lg_local_lock (kernel/locking/lglock.c:25)
-> [ 6004.990292] stop_two_cpus (kernel/stop_machine.c:297)
-> [ 6004.990292] ? retint_restore_args (arch/x86/kernel/entry_64.S:1040)
-> [ 6004.990292] ? __stop_cpus (kernel/stop_machine.c:170)
-> [ 6004.990292] ? __stop_cpus (kernel/stop_machine.c:170)
-> [ 6004.990292] ? __migrate_swap_task (kernel/sched/core.c:1042)
-> [ 6004.990292] migrate_swap (kernel/sched/core.c:1110)
-> [ 6004.990292] task_numa_migrate (kernel/sched/fair.c:1321)
-> [ 6004.990292] ? task_numa_migrate (kernel/sched/fair.c:1227)
-> [ 6004.990292] ? sched_clock_cpu (kernel/sched/clock.c:311)
-> [ 6004.990292] numa_migrate_preferred (kernel/sched/fair.c:1342)
-> [ 6004.990292] task_numa_fault (kernel/sched/fair.c:1796)
-> [ 6004.990292] __handle_mm_fault (mm/memory.c:3812 mm/memory.c:3812 mm/memory.c:3925)
-> [ 6004.990292] ? __const_udelay (arch/x86/lib/delay.c:126)
-> [ 6004.990292] ? __rcu_read_unlock (kernel/rcu/update.c:97)
-> [ 6004.990292] handle_mm_fault (include/linux/memcontrol.h:147 mm/memory.c:3951)
-> [ 6004.990292] __do_page_fault (arch/x86/mm/fault.c:1220)
-> [ 6004.990292] ? vtime_account_user (kernel/sched/cputime.c:687)
-> [ 6004.990292] ? get_parent_ip (kernel/sched/core.c:2472)
-> [ 6004.990292] ? context_tracking_user_exit (include/linux/vtime.h:89 include/linux/jump_label.h:105 include/trace/events/context_tracking.h:47 kernel/context_tracking.c:178)
-> [ 6004.990292] ? preempt_count_sub (kernel/sched/core.c:2527)
-> [ 6004.990292] ? context_tracking_user_exit (kernel/context_tracking.c:182)
-> [ 6004.990292] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-> [ 6004.990292] ? trace_hardirqs_off_caller (kernel/locking/lockdep.c:2638 (discriminator 2))
-> [ 6004.990292] do_page_fault (arch/x86/mm/fault.c:1272 include/linux/jump_label.h:105 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:45 arch/x86/mm/fault.c:1273)
-> [ 6004.990292] do_async_page_fault (arch/x86/kernel/kvm.c:263)
-> [ 6004.990292] async_page_fault (arch/x86/kernel/entry_64.S:1496)
-> [ 6004.990292] Code: 44 89 e7 ff 15 70 2d c5 04 45 85 ed 75 0b 31 c0 eb 27 0f 1f 80 00 00 00 00 f6 43 18 01 74 ef 66 2e 0f 1f 84 00 00 00 00 00 f3 90 <f6> 43 18 01 75 f8 eb db 66 0f 1f 44 00 00 48 83 c4 28 5b 41 5c
-> 
-> 
-> Thanks,
-> Sasha
+On Tue, Mar 4, 2014 at 4:51 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> From: Stephen Warren <swarren@nvidia.com>
+>
+> Implement the new DT property ti,irq-externally-inverted, and add an
+> equivalent platform data field to match. This allows the driver to
+> correctly automatically configure the IRQ output polarity when the board
+> or SoC contains an inverter between the Palmas IRQ output and IRQ
+> controller input.
+>
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> v3:
+> * Use an IRQD flag to represent the data, rather than a custom DT property.
+> v2:
+> * Split V1's patch 1/2 into separate patches 1/3 and 2/3.
+> ---
+>  drivers/mfd/palmas.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
+> index d280d789e55a..3281d4103e9d 100644
+> --- a/drivers/mfd/palmas.c
+> +++ b/drivers/mfd/palmas.c
+> @@ -292,7 +292,8 @@ static int palmas_set_pdata_irq_flag(struct i2c_client *i2c,
+>                 return -EINVAL;
+>         }
+>
+> -       pdata->irq_flags = irqd_get_trigger_type(irq_data);
+> +       pdata->irq_flags = irqd_get_trigger_type(irq_data) |
+> +                          irqd_get_src_dst_inverted(irq_data);
+>         dev_info(&i2c->dev, "Irq flag is 0x%08x\n", pdata->irq_flags);
+>         return 0;
+>  }
+> @@ -447,6 +448,8 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+>                 reg = PALMAS_POLARITY_CTRL_INT_POLARITY;
+>         else
+>                 reg = 0;
+> +       if (pdata->irq_flags & IRQ_SRC_DST_INVERTED)
+> +               reg ^= PALMAS_POLARITY_CTRL_INT_POLARITY;
+>         ret = palmas_update_bits(palmas, PALMAS_PU_PD_OD_BASE,
+>                         PALMAS_POLARITY_CTRL, PALMAS_POLARITY_CTRL_INT_POLARITY,
+>                         reg);
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> 1.8.1.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
