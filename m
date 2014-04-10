@@ -1,26 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934773AbaDJDWU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:22:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40831 "EHLO
+	id S965257AbaDJEJq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 00:09:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41102 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934634AbaDJDVf (ORCPT
+	with ESMTP id S934766AbaDJDWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:21:35 -0400
+	Wed, 9 Apr 2014 23:22:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jakub Jelinek <jakub@redhat.com>, Richard Henderson <rth@twiddle.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Ben Hutchings <ben@decadent.org.uk>,
-        Qiang Huang <h.huangqiang@huawei.com>, Li Zefan <lizefan@huawei.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 007/134] compiler/gcc4: Add quirk for asm goto miscompilation bug
-Date: Wed,  9 Apr 2014 20:22:03 -0700
-Message-Id: <20140410032300.642959180@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Yang Yingliang <yangyingliang@huawei.com>
+Subject: [PATCH 3.4 065/134] USB: mos7840: fix broken TIOCMIWAIT
+Date: Wed,  9 Apr 2014 20:23:01 -0700
+Message-Id: <20140410032308.425414535@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -33,134 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ingo Molnar <mingo@kernel.org>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 3f0116c3238a96bc18ad4b4acefe4e7be32fa861 upstream.
+commit e670c6af12517d08a403487b1122eecf506021cf upstream.
 
-Fengguang Wu, Oleg Nesterov and Peter Zijlstra tracked down
-a kernel crash to a GCC bug: GCC miscompiles certain 'asm goto'
-constructs, as outlined here:
+Make sure waiting processes are woken on modem-status changes.
 
-  http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
+Currently processes are only woken on termios changes regardless of
+whether the modem status has changed.
 
-Implement a workaround suggested by Jakub Jelinek.
-
-Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
-Reported-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Suggested-by: Jakub Jelinek <jakub@redhat.com>
-Reviewed-by: Richard Henderson <rth@twiddle.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[hq: Backported to 3.4: Adjust context]
-Signed-off-by: Qiang Huang <h.huangqiang@huawei.com>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Jianguo Wu <wujianguo@huawei.com>
+Cc: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/mips/include/asm/jump_label.h    |    2 +-
- arch/powerpc/include/asm/jump_label.h |    2 +-
- arch/s390/include/asm/jump_label.h    |    2 +-
- arch/sparc/include/asm/jump_label.h   |    2 +-
- arch/x86/include/asm/cpufeature.h     |    2 +-
- arch/x86/include/asm/jump_label.h     |    2 +-
- include/linux/compiler-gcc4.h         |   16 ++++++++++++++++
- 7 files changed, 22 insertions(+), 6 deletions(-)
+ drivers/usb/serial/mos7840.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/mips/include/asm/jump_label.h
-+++ b/arch/mips/include/asm/jump_label.h
-@@ -22,7 +22,7 @@
- 
- static __always_inline bool arch_static_branch(struct static_key *key)
- {
--	asm goto("1:\tnop\n\t"
-+	asm_volatile_goto("1:\tnop\n\t"
- 		"nop\n\t"
- 		".pushsection __jump_table,  \"aw\"\n\t"
- 		WORD_INSN " 1b, %l[l_yes], %0\n\t"
---- a/arch/powerpc/include/asm/jump_label.h
-+++ b/arch/powerpc/include/asm/jump_label.h
-@@ -19,7 +19,7 @@
- 
- static __always_inline bool arch_static_branch(struct static_key *key)
- {
--	asm goto("1:\n\t"
-+	asm_volatile_goto("1:\n\t"
- 		 "nop\n\t"
- 		 ".pushsection __jump_table,  \"aw\"\n\t"
- 		 JUMP_ENTRY_TYPE "1b, %l[l_yes], %c0\n\t"
---- a/arch/s390/include/asm/jump_label.h
-+++ b/arch/s390/include/asm/jump_label.h
-@@ -15,7 +15,7 @@
- 
- static __always_inline bool arch_static_branch(struct static_key *key)
- {
--	asm goto("0:	brcl 0,0\n"
-+	asm_volatile_goto("0:	brcl 0,0\n"
- 		".pushsection __jump_table, \"aw\"\n"
- 		ASM_ALIGN "\n"
- 		ASM_PTR " 0b, %l[label], %0\n"
---- a/arch/sparc/include/asm/jump_label.h
-+++ b/arch/sparc/include/asm/jump_label.h
-@@ -9,7 +9,7 @@
- 
- static __always_inline bool arch_static_branch(struct static_key *key)
- {
--		asm goto("1:\n\t"
-+		asm_volatile_goto("1:\n\t"
- 			 "nop\n\t"
- 			 "nop\n\t"
- 			 ".pushsection __jump_table,  \"aw\"\n\t"
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -342,7 +342,7 @@ extern const char * const x86_power_flag
- static __always_inline __pure bool __static_cpu_has(u16 bit)
- {
- #if __GNUC__ > 4 || __GNUC_MINOR__ >= 5
--		asm goto("1: jmp %l[t_no]\n"
-+		asm_volatile_goto("1: jmp %l[t_no]\n"
- 			 "2:\n"
- 			 ".section .altinstructions,\"a\"\n"
- 			 " .long 1b - .\n"
---- a/arch/x86/include/asm/jump_label.h
-+++ b/arch/x86/include/asm/jump_label.h
-@@ -13,7 +13,7 @@
- 
- static __always_inline bool arch_static_branch(struct static_key *key)
- {
--	asm goto("1:"
-+	asm_volatile_goto("1:"
- 		STATIC_KEY_INITIAL_NOP
- 		".pushsection __jump_table,  \"aw\" \n\t"
- 		_ASM_ALIGN "\n\t"
---- a/include/linux/compiler-gcc4.h
-+++ b/include/linux/compiler-gcc4.h
-@@ -31,6 +31,22 @@
- 
- #define __linktime_error(message) __attribute__((__error__(message)))
- 
-+/*
-+ * GCC 'asm goto' miscompiles certain code sequences:
-+ *
-+ *   http://gcc.gnu.org/bugzilla/show_bug.cgi?id=58670
-+ *
-+ * Work it around via a compiler barrier quirk suggested by Jakub Jelinek.
-+ * Fixed in GCC 4.8.2 and later versions.
-+ *
-+ * (asm goto is automatically volatile - the naming reflects this.)
-+ */
-+#if GCC_VERSION <= 40801
-+# define asm_volatile_goto(x...)	do { asm goto(x); asm (""); } while (0)
-+#else
-+# define asm_volatile_goto(x...)	do { asm goto(x); } while (0)
-+#endif
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -453,6 +453,9 @@ static void mos7840_handle_new_msr(struc
+ 			icount->rng++;
+ 			smp_wmb();
+ 		}
 +
- #if __GNUC_MINOR__ >= 5
- /*
-  * Mark a position in code as unreachable.  This can be used to
++		mos7840_port->delta_msr_cond = 1;
++		wake_up_interruptible(&mos7840_port->delta_msr_wait);
+ 	}
+ }
+ 
+@@ -2074,8 +2077,6 @@ static void mos7840_change_port_settings
+ 			mos7840_port->read_urb_busy = false;
+ 		}
+ 	}
+-	wake_up(&mos7840_port->delta_msr_wait);
+-	mos7840_port->delta_msr_cond = 1;
+ 	dbg("mos7840_change_port_settings mos7840_port->shadowLCR is End %x",
+ 	    mos7840_port->shadowLCR);
+ }
 
 
