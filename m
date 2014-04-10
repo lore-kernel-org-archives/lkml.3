@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935455AbaDJSf3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 14:35:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56316 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934885AbaDJSf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 14:35:27 -0400
-Date: Thu, 10 Apr 2014 20:35:26 +0200
-From: Jan Kara <jack@suse.cz>
-To: Matthew Wilcox <willy@linux.intel.com>
-Cc: Jan Kara <jack@suse.cz>, Matthew Wilcox <matthew.r.wilcox@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 12/22] ext2: Remove ext2_xip_verify_sb()
-Message-ID: <20140410183526.GB8060@quack.suse.cz>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
- <5f91cb658e1ee1b593be9fd719e8f204b0069031.1395591795.git.matthew.r.wilcox@intel.com>
- <20140409095254.GE32103@quack.suse.cz>
- <20140410142254.GI5727@linux.intel.com>
+	id S1758995AbaDJSfh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 14:35:37 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53763 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934885AbaDJSfe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 14:35:34 -0400
+Date: Thu, 10 Apr 2014 19:42:03 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 1/5] sched: Convert thread_group_cputime() to use
+ for_each_thread()
+Message-ID: <20140410174203.GA1429@laptop.programming.kicks-ass.net>
+References: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
+ <1397059882-23063-2-git-send-email-fweisbec@gmail.com>
+ <20140409171607.GA13498@dyad.arnhem.chello.nl>
+ <20140409173233.GA28615@redhat.com>
+ <20140409183017.GF10526@twins.programming.kicks-ass.net>
+ <20140409194603.GB5854@redhat.com>
+ <20140409194957.GD26782@laptop.programming.kicks-ass.net>
+ <20140410161955.GG13658@twins.programming.kicks-ass.net>
+ <20140410172938.GA32332@redhat.com>
+ <20140410173610.GG26782@laptop.programming.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140410142254.GI5727@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140410173610.GG26782@laptop.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 10-04-14 10:22:54, Matthew Wilcox wrote:
-> On Wed, Apr 09, 2014 at 11:52:54AM +0200, Jan Kara wrote:
-> > > -	if ((sbi->s_mount_opt ^ old_mount_opt) & EXT2_MOUNT_XIP) {
-> > > +	if ((sbi->s_mount_opt ^ old_opts.s_mount_opt) & EXT2_MOUNT_XIP) {
-> > >  		ext2_msg(sb, KERN_WARNING, "warning: refusing change of "
-> > >  			 "xip flag with busy inodes while remounting");
-> > > -		sbi->s_mount_opt &= ~EXT2_MOUNT_XIP;
-> > > -		sbi->s_mount_opt |= old_mount_opt & EXT2_MOUNT_XIP;
-> > > +		sbi->s_mount_opt ^= EXT2_MOUNT_XIP;
-> >   Although this is correct, it was easier to see that the previous code is
-> > correct so I'd prefer if you kept it that way.
-> 
-> Depends how you think about it.  I think of foo ^= bar as 'toggle the
-> bar bit in foo'.  So I read the code as 'If the mount bit is incorrect,
-> print an error and toggle the bit'.  I think you're reading the old code
-> as 'If the new mount bit differs from the old mount bit, make sure the
-> new mount bit is the same as the old mount bit'.
-  Yeah, since it's pretty obvious what the code should do, one can figure
-out it is correct relatively quickly. But it's something that wasn't
-obvious to me at the first sight. If you really prefer your way, I can live
-with that...
+On Thu, Apr 10, 2014 at 07:36:10PM +0200, Peter Zijlstra wrote:
+> > > +static inline __deprecated
+> > > +struct task_struct *next_thread(const struct task_struct *p)
+> > >  {
+> > 
+> > Not sure... But probably fine too.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Also, since its used in while_each_thread() each usage of that will also
+generate an appropriate warn.
