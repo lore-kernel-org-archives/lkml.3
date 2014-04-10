@@ -1,74 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965211AbaDJNs3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 09:48:29 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:55253 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750963AbaDJNs1 (ORCPT
+	id S934583AbaDJNvR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 09:51:17 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:59252 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849AbaDJNvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 09:48:27 -0400
-Message-ID: <5346A10B.10003@fb.com>
-Date: Thu, 10 Apr 2014 07:47:55 -0600
-From: Jens Axboe <axboe@fb.com>
+	Thu, 10 Apr 2014 09:51:12 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <5346A1C7.609@roeck-us.net>
+Date: Thu, 10 Apr 2014 06:51:03 -0700
+From: Guenter Roeck <linux@roeck-us.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Jan Kara <jack@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Brian J King <bjking1@us.ibm.com>
-Subject: Re: [BUG] kernel BUG at /.../block/cfq-iosched.c:3145!
-References: <1397018647.3671.123.camel@pasglop> <53454CBC.9060905@fb.com>	 <1397087273.3671.150.camel@pasglop> <1397088144.3671.155.camel@pasglop>	 <5345F476.2000602@fb.com> <1397093815.3671.156.camel@pasglop>	 <5346012A.50901@fb.com> <1397100937.3671.160.camel@pasglop>	 <5346158B.90005@fb.com> <1397112333.3671.179.camel@pasglop>
-In-Reply-To: <1397112333.3671.179.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: David Cohen <david.a.cohen@linux.intel.com>,
+        Randy Dunlap <rdunlap@infradead.org>
+CC: wim@iguana.be, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, gnomes@lxorguk.ukuu.org.uk,
+        Eric Ernst <eric.ernst@intel.com>
+Subject: Re: [PATCH 1/2] watchdog: add Intel MID watchdog driver support
+References: <1396990744-10695-1-git-send-email-david.a.cohen@linux.intel.com> <1396990744-10695-2-git-send-email-david.a.cohen@linux.intel.com> <53448CB4.6050705@infradead.org> <20140409174854.GC23274@psi-dev26.jf.intel.com>
+In-Reply-To: <20140409174854.GC23274@psi-dev26.jf.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-10_03:2014-04-10,2014-04-10,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=1.99840144432528e-14 kscore.compositescore=0
- circleOfTrustscore=4.71997498428943 compositescore=0.511273121866876
- urlsuspect_oldscore=0.511273121866876 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=1996008
- rbsscore=0.511273121866876 spamscore=0
- recipient_to_sender_domain_totalscore=6 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1404100214
-X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-10 00:45, Benjamin Herrenschmidt wrote:
-> On Wed, 2014-04-09 at 21:52 -0600, Jens Axboe wrote:
->> On 2014-04-09 21:35, Benjamin Herrenschmidt wrote:
->>> On Wed, 2014-04-09 at 20:25 -0600, Jens Axboe wrote:
->>>> On 2014-04-09 19:36, Benjamin Herrenschmidt wrote:
->>>>> On Wed, 2014-04-09 at 19:31 -0600, Jens Axboe wrote:
->>>>>> OK, I think we're seeing different symptoms of the same bug. Stay
->>>>>> tuned, will have something for you to test shortly, I hope.
->>>>>
->>>>> Ah thanks. I'll defer the bisection then (it's painful on that machine
->>>>> for various reasons....)
->>>>
->>>> Can you try with these two patches applied?
+On 04/09/2014 10:48 AM, David Cohen wrote:
+> On Tue, Apr 08, 2014 at 04:56:36PM -0700, Randy Dunlap wrote:
+>> On 04/08/2014 01:59 PM, David Cohen wrote:
+>>> Add initial Intel MID watchdog driver support.
 >>>
->>> Booted to login prompt once ... and twice. Much better ! :-)
+>>> This driver is an initial implementation of generic Intel MID watchdog
+>>> driver. Currently it supports Intel Merrifield platform.
+>>>
+>>> Signed-off-by: Eric Ernst <eric.ernst@intel.com>
+>>> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+>>> ---
+>>>   drivers/watchdog/Kconfig         |  12 +++
+>>>   drivers/watchdog/Makefile        |   1 +
+>>>   drivers/watchdog/intel-mid_wdt.c | 209 +++++++++++++++++++++++++++++++++++++++
+>>>   3 files changed, 222 insertions(+)
+>>>   create mode 100644 drivers/watchdog/intel-mid_wdt.c
+>>>
+>>> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+>>> index 79d25894343a..4da09b8b2f11 100644
+>>> --- a/drivers/watchdog/Kconfig
+>>> +++ b/drivers/watchdog/Kconfig
+>>> @@ -643,6 +643,18 @@ config INTEL_SCU_WATCHDOG
+>>>
+>>>   	  To compile this driver as a module, choose M here.
+>>>
+>>> +config INTEL_MID_WATCHDOG
+>>> +	bool "Intel MID SCU Watchdog Mobile Platforms"
+>>> +	depends on X86_INTEL_MID && WATCHDOG_CORE
+>>> +	---help---
+>>> +	  Watchdog timer driver built into the Intel SCU for Intel MID
+>>> +	  Platforms.
+>>> +
+>>> +	  This driver currently supports only the watchdog evolution
+>>> +	  implementation in SCU, available for Merrifield generation.
+>>> +
+>>> +	  To compile this driver as a module, choose M here.
 >>
->> Excellent! I was hoping it was the same bug :-)
->> I'll amend the commit and add your tested-by.
+>> Does choosing M work when INTEL_MID_WATCHDOG is a bool?
+>> and why is INTEL_MID_WATCHDOG a bool?
 >
-> A colleague was complaining of yet another oddball block related crash
-> today on another machine when doing rsync's with upstream (this machine
-> booted fine but crashed later on, but then it has less CPUs... maybe
-> that's relevant) and these patches fixed it too.
+> The error here is the left over line from the template I used. There
+> should be no mention about choosing M.
+> It's bool because the watchdog is started by default on fw. We need this
+> driver probed during boot to pet/kick/ping asap. IMHO It makes not much
+> sense to compile it as module.
+>
 
-I'm sure it could manifest itself in a lot of weird ways. I'll send it 
-upstream this morning, so hopefully should be fixed in mainline shortly.
+Is that true for your firmware, but for all users of the supported set
+of devices ?
 
--- 
-Jens Axboe
+The reason for having modules is to be able to load the driver only
+when needed, while using the same distribution for multiple platforms.
+So either you are forcing the driver to be loaded on every hardware
+which has it enabled, or you are limiting the scope of a distribution
+to one specific CPU. Neither seems desirable.
+
+If _you_ want to build the driver into the kernel, you always can.
+But you have to have a better reason than that to enforce it on
+everyone else.
+
+Guenter
 
