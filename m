@@ -1,229 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935633AbaDJWB6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 18:01:58 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:43091 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753845AbaDJWB4 (ORCPT
+	id S1422695AbaDJWCI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 18:02:08 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:4093 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753845AbaDJWCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 18:01:56 -0400
-Message-ID: <534714D0.2010803@semaphore.gr>
-Date: Fri, 11 Apr 2014 01:01:52 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 10 Apr 2014 18:02:05 -0400
+Date: Thu, 10 Apr 2014 18:02:03 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <williams@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [RFC PATCH RT] rwsem: The return of multi-reader PI rwsems
+Message-ID: <20140410180203.79c08bfa@gandalf.local.home>
+In-Reply-To: <20140410213003.GA21760@linux.vnet.ibm.com>
+References: <20140409151922.5fa5d999@gandalf.local.home>
+	<20140410094430.56ca9ee1@sluggy.gateway.2wire.net>
+	<5346B2C8.6000207@linutronix.de>
+	<20140410153617.GN10526@twins.programming.kicks-ass.net>
+	<20140410151741.617f86d9@gandalf.local.home>
+	<20140410213003.GA21760@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-CC: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org >> LKML" <linux-kernel@vger.kernel.org>
-Subject: [RFC PATCH] cpufreq: Introduce macros for cpufreq_frequency_table
- iteration
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch intoduces 2 macros which can be used for iteration
-over cpufreq_frequency_table:
+On Thu, 10 Apr 2014 14:30:03 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 
-- cpufreq_for_each_entry: iterate over each entry of the table
-- cpufreq_for_each_valid_entry: iterate over each entry of the
-table that contains a valid frequency.
+> On Thu, Apr 10, 2014 at 03:17:41PM -0400, Steven Rostedt wrote:
+> > On Thu, 10 Apr 2014 17:36:17 +0200
+> > Peter Zijlstra <peterz@infradead.org> wrote:
+> > 
+> > 
+> > > It defaults to the total number of CPUs in the system, given the default
+> > > setup (all CPUs in a single balance domain), this should result in all
+> > > CPUs working concurrently on the boosted read sides.
+> > 
+> > Unfortunately, it currently defaults to the number of possible CPUs in
+> > the system. I should probably move the default assignment to after SMP
+> > is setup. Currently it happens in early boot before all the CPUs are
+> > running. On boot up, the limit is set to NR_CPUS which should be much
+> > higher than what the system has, but shouldn't matter during boot. But
+> > after all the CPUs are up and running, it can lower it to online CPUs.
+> 
+> Another approach is to use nr_cpu_ids, which is the maximum number of
+> CPUs that the particular booting system could ever have.  I use this in
+> RCU to resize the data structures down from their NR_CPUS compile-time
+> hugeness.
+> 
 
-It should have no functional changes.
+OK, also, in doing our benchmarks, there's a big difference with
+rt_rw_limit being num_online_cpus and 2 * num_online_cpus. It doesn't
+seem to get better adding more than that. This was shown on a case with
+12 cpus as well as 8 cpus. Same result.
 
-Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
----
+I really like to see a real use case benefit to find the best default.
+But as our mmap_sem stress test shows 2xCPUS as being the best, I'm
+going to go with that until someone comes up with a better test.
 
-I found about 20 occurrences in various drivers that these macros
-can be used. I will proceed with the necessary changes if you
-approve something like this.
-
-Thanks in advance for your time,
-Stratos Karafotis.
----
-
- drivers/cpufreq/freq_table.c | 54 ++++++++++++++++++++------------------------
- include/linux/cpufreq.h      | 29 ++++++++++++++++++++++++
- 2 files changed, 53 insertions(+), 30 deletions(-)
-
-diff --git a/drivers/cpufreq/freq_table.c b/drivers/cpufreq/freq_table.c
-index 08e7bbc..19bf0c4 100644
---- a/drivers/cpufreq/freq_table.c
-+++ b/drivers/cpufreq/freq_table.c
-@@ -21,22 +21,18 @@
- int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
- 				    struct cpufreq_frequency_table *table)
- {
-+	struct cpufreq_frequency_table *pos;
- 	unsigned int min_freq = ~0;
- 	unsigned int max_freq = 0;
--	unsigned int i;
- 
--	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
--		unsigned int freq = table[i].frequency;
--		if (freq == CPUFREQ_ENTRY_INVALID) {
--			pr_debug("table entry %u is invalid, skipping\n", i);
-+	cpufreq_for_each_valid_entry(pos, table) {
-+		unsigned int freq = pos->frequency;
- 
--			continue;
--		}
- 		if (!cpufreq_boost_enabled()
--		    && (table[i].flags & CPUFREQ_BOOST_FREQ))
-+		    && (pos->flags & CPUFREQ_BOOST_FREQ))
- 			continue;
- 
--		pr_debug("table entry %u: %u kHz\n", i, freq);
-+		pr_debug("table entry %lu: %u kHz\n", pos - table, freq);
- 		if (freq < min_freq)
- 			min_freq = freq;
- 		if (freq > max_freq)
-@@ -57,7 +53,8 @@ EXPORT_SYMBOL_GPL(cpufreq_frequency_table_cpuinfo);
- int cpufreq_frequency_table_verify(struct cpufreq_policy *policy,
- 				   struct cpufreq_frequency_table *table)
- {
--	unsigned int next_larger = ~0, freq, i = 0;
-+	struct cpufreq_frequency_table *pos;
-+	unsigned int next_larger = ~0, freq;
- 	bool found = false;
- 
- 	pr_debug("request for verification of policy (%u - %u kHz) for cpu %u\n",
-@@ -65,9 +62,9 @@ int cpufreq_frequency_table_verify(struct cpufreq_policy *policy,
- 
- 	cpufreq_verify_within_cpu_limits(policy);
- 
--	for (; freq = table[i].frequency, freq != CPUFREQ_TABLE_END; i++) {
--		if (freq == CPUFREQ_ENTRY_INVALID)
--			continue;
-+	cpufreq_for_each_valid_entry(pos, table) {
-+		freq = pos->frequency;
-+
- 		if ((freq >= policy->min) && (freq <= policy->max)) {
- 			found = true;
- 			break;
-@@ -118,7 +115,8 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
- 		.driver_data = ~0,
- 		.frequency = 0,
- 	};
--	unsigned int i;
-+	struct cpufreq_frequency_table *pos;
-+	unsigned int i = 0;
- 
- 	pr_debug("request for target %u kHz (relation: %u) for cpu %u\n",
- 					target_freq, relation, policy->cpu);
-@@ -132,10 +130,10 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
- 		break;
- 	}
- 
--	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
--		unsigned int freq = table[i].frequency;
--		if (freq == CPUFREQ_ENTRY_INVALID)
--			continue;
-+	cpufreq_for_each_valid_entry(pos, table) {
-+		unsigned int freq = pos->frequency;
-+
-+		i = pos - table;
- 		if ((freq < policy->min) || (freq > policy->max))
- 			continue;
- 		switch (relation) {
-@@ -184,8 +182,7 @@ EXPORT_SYMBOL_GPL(cpufreq_frequency_table_target);
- int cpufreq_frequency_table_get_index(struct cpufreq_policy *policy,
- 		unsigned int freq)
- {
--	struct cpufreq_frequency_table *table;
--	int i;
-+	struct cpufreq_frequency_table *pos, *table;
- 
- 	table = cpufreq_frequency_get_table(policy->cpu);
- 	if (unlikely(!table)) {
-@@ -193,9 +190,9 @@ int cpufreq_frequency_table_get_index(struct cpufreq_policy *policy,
- 		return -ENOENT;
- 	}
- 
--	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
--		if (table[i].frequency == freq)
--			return i;
-+	cpufreq_for_each_entry(pos, table) {
-+		if (pos->frequency == freq)
-+			return pos - table;
- 	}
- 
- 	return -EINVAL;
-@@ -208,16 +205,13 @@ EXPORT_SYMBOL_GPL(cpufreq_frequency_table_get_index);
- static ssize_t show_available_freqs(struct cpufreq_policy *policy, char *buf,
- 				    bool show_boost)
- {
--	unsigned int i = 0;
- 	ssize_t count = 0;
--	struct cpufreq_frequency_table *table = policy->freq_table;
-+	struct cpufreq_frequency_table *pos, *table = policy->freq_table;
- 
- 	if (!table)
- 		return -ENODEV;
- 
--	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
--		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
--			continue;
-+	cpufreq_for_each_valid_entry(pos, table) {
- 		/*
- 		 * show_boost = true and driver_data = BOOST freq
- 		 * display BOOST freqs
-@@ -229,10 +223,10 @@ static ssize_t show_available_freqs(struct cpufreq_policy *policy, char *buf,
- 		 * show_boost = false and driver_data != BOOST freq
- 		 * display NON BOOST freqs
- 		 */
--		if (show_boost ^ (table[i].flags & CPUFREQ_BOOST_FREQ))
-+		if (show_boost ^ (pos->flags & CPUFREQ_BOOST_FREQ))
- 			continue;
- 
--		count += sprintf(&buf[count], "%d ", table[i].frequency);
-+		count += sprintf(&buf[count], "%d ", pos->frequency);
- 	}
- 	count += sprintf(&buf[count], "\n");
- 
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 5ae5100..1c221c8 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -468,6 +468,35 @@ struct cpufreq_frequency_table {
- 				    * order */
- };
- 
-+static inline bool validate_entry(struct cpufreq_frequency_table *pos)
-+{
-+	while (pos->frequency != CPUFREQ_TABLE_END)
-+		if (pos->frequency == CPUFREQ_ENTRY_INVALID)
-+			pos++;
-+		else
-+			return true;
-+	return false;
-+}
-+
-+/*
-+ * cpufreq_for_each_entry -	iterate over a cpufreq_frequency_table
-+ * @pos:	the cpufreq_frequency_table * to use as a loop cursor.
-+ * @table:	the cpufreq_frequency_table * to iterate over.
-+ */
-+
-+#define cpufreq_for_each_entry(pos, table)	\
-+	for (pos = table; pos->frequency != CPUFREQ_TABLE_END; pos++)
-+
-+/*
-+ * cpufreq_for_each_valid_entry -     iterate over a cpufreq_frequency_table
-+ *	exluding CPUFREQ_ENTRY_INVALID frequencies.
-+ * @pos:        the cpufreq_frequency_table * to use as a loop cursor.
-+ * @table:      the cpufreq_frequency_table * to iterate over.
-+ */
-+
-+#define cpufreq_for_each_valid_entry(pos, table)	\
-+	for (pos = table; validate_entry(pos); pos++)
-+
- int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
- 				    struct cpufreq_frequency_table *table);
- 
--- 
-1.9.0
-
+-- Steve
