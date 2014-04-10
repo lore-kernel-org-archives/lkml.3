@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934829AbaDJNvn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 09:51:43 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:37216 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933057AbaDJNvj (ORCPT
+	id S935259AbaDJNyA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 09:54:00 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:39180 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934368AbaDJNxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 09:51:39 -0400
-Message-ID: <5346A1E7.4010000@atmel.com>
-Date: Thu, 10 Apr 2014 15:51:35 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: <linux-pwm@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] pwm: atmel: set pwm_chip can_sleep flag
-References: <1397067969-19905-1-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1397067969-19905-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+	Thu, 10 Apr 2014 09:53:53 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, Chen-Yu Tsai <wens@csie.org>,
+        Hans de Goede <hdegoede@redhat.com>
+Cc: Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dev@linux-sunxi.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v3 2/7] pinctrl: sunxi: disable clk when failing to probe pin controller
+Date: Thu, 10 Apr 2014 15:52:41 +0200
+Message-Id: <1397137966-30818-3-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1397137966-30818-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1397137966-30818-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/04/2014 20:26, Alexandre Belloni :
-> atmel_pwm_config() calls clk_get_rate() which might sleep, so we need to set
-> pwm_chip can_sleep flag.
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Disable the clk when failing to probe the pin controller device.
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
+ drivers/pinctrl/pinctrl-sunxi.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-> ---
->  drivers/pwm/pwm-atmel.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/pwm/pwm-atmel.c b/drivers/pwm/pwm-atmel.c
-> index 0e589594b1cb..180e34e46617 100644
-> --- a/drivers/pwm/pwm-atmel.c
-> +++ b/drivers/pwm/pwm-atmel.c
-> @@ -369,6 +369,7 @@ static int atmel_pwm_probe(struct platform_device *pdev)
->  
->  	atmel_pwm->chip.base = -1;
->  	atmel_pwm->chip.npwm = 4;
-> +	atmel_pwm->chip.can_sleep = true;
->  	atmel_pwm->config = data->config;
->  
->  	ret = pwmchip_add(&atmel_pwm->chip);
-> 
-
-
+diff --git a/drivers/pinctrl/pinctrl-sunxi.c b/drivers/pinctrl/pinctrl-sunxi.c
+index 2d9ca1c..73d11e2 100644
+--- a/drivers/pinctrl/pinctrl-sunxi.c
++++ b/drivers/pinctrl/pinctrl-sunxi.c
+@@ -891,7 +891,7 @@ static int sunxi_pinctrl_probe(struct platform_device *pdev)
+ 	pctl->irq = irq_of_parse_and_map(node, 0);
+ 	if (!pctl->irq) {
+ 		ret = -EINVAL;
+-		goto gpiochip_error;
++		goto clk_error;
+ 	}
+ 
+ 	pctl->domain = irq_domain_add_linear(node, SUNXI_IRQ_NUMBER,
+@@ -899,7 +899,7 @@ static int sunxi_pinctrl_probe(struct platform_device *pdev)
+ 	if (!pctl->domain) {
+ 		dev_err(&pdev->dev, "Couldn't register IRQ domain\n");
+ 		ret = -ENOMEM;
+-		goto gpiochip_error;
++		goto clk_error;
+ 	}
+ 
+ 	for (i = 0; i < SUNXI_IRQ_NUMBER; i++) {
+@@ -917,6 +917,8 @@ static int sunxi_pinctrl_probe(struct platform_device *pdev)
+ 
+ 	return 0;
+ 
++clk_error:
++	clk_disable_unprepare(clk);
+ gpiochip_error:
+ 	if (gpiochip_remove(pctl->chip))
+ 		dev_err(&pdev->dev, "failed to remove gpio chip\n");
 -- 
-Nicolas Ferre
+1.8.3.2
+
