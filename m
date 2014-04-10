@@ -1,50 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965597AbaDJQ1u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 12:27:50 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:44372 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965159AbaDJQ1r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 12:27:47 -0400
+	id S1030228AbaDJQ2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 12:28:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55091 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965600AbaDJQ2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 12:28:04 -0400
+Date: Thu, 10 Apr 2014 18:27:50 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Michel Lespinasse <walken@google.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Bob Liu <lliubbo@gmail.com>
+Subject: Re: mm: kernel BUG at mm/huge_memory.c:1829!
+Message-ID: <20140410162750.GD2749@redhat.com>
+References: <53440991.9090001@oracle.com>
+ <20140410102527.GA24111@node.dhcp.inet.fi>
+ <20140410134436.GA25933@node.dhcp.inet.fi>
 MIME-Version: 1.0
-In-Reply-To: <1396360976-28657-6-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1396360976-28657-1-git-send-email-heikki.krogerus@linux.intel.com>
-	<1396360976-28657-6-git-send-email-heikki.krogerus@linux.intel.com>
-Date: Thu, 10 Apr 2014 18:27:47 +0200
-Message-ID: <CACRpkdbuvyEQVFv07Bq3dAeGEZr-MuJKJ5mYqdzicROJLwvHDw@mail.gmail.com>
-Subject: Re: [PATCHv3 5/5] net: rfkill: gpio: hard-code the gpio names
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>, Chen-Yu Tsai <wens@csie.org>,
-        Rhyland Klein <rklein@nvidia.com>, Marc Dietrich <marvin24@gmx.de>,
-        Stephen Warren <swarren@wwwdotorg.org>, Arnd Bergmann <arnd@arndb.de>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140410134436.GA25933@node.dhcp.inet.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 1, 2014 at 4:02 PM, Heikki Krogerus
-<heikki.krogerus@linux.intel.com> wrote:
+Hi,
 
-> There is no need to dynamically generate the names. This
-> will fix a static checker warning..
->
-> net/rfkill/rfkill-gpio.c:144 rfkill_gpio_probe()
->     warn: variable dereferenced before check 'rfkill->name'
->
-> Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+On Thu, Apr 10, 2014 at 04:44:36PM +0300, Kirill A. Shutemov wrote:
+> Okay, below is my attempt to fix the bug. I'm not entirely sure it's
+> correct. Andrea, could you take a look?
 
-Excellent,
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+The possibility the interval tree implicitly broke the walk order of
+the anon_vma list didn't cross my mind, that's very good catch!
+Breakage of the rmap walk order definitely can explain that BUG_ON in
+split_huge_page that signals a pte was missed by the rmap walk.
 
-Yours,
-Linus Walleij
+Because this bug only fired on split_huge_page I guess you assumed I
+introduced this dependency on order with THP. But it's not actually
+the case, there was a place in the VM that already depended on perfect
+rmap walk. This is all about providing a perfect rmap walk. A perfect
+rmap walk is one where missing a pte is fatal. That other place that
+already existed before THP is migrate.c.
+
+The other thing that could break the perfect rmap_walk in additon to a
+wrong rmap_walk order, is the exec path where we do an mremap without
+a vma covering the destination range (no vma means, no possible
+perfect rmap_walk as we need the vma to reach the pte) but that was
+handled by other means (see the invalid_migration_vma in migrate.c and
+the other checks for is_vma_temporary_stack in huge_memory.c, THP
+didn't need to handle it but migrate.c had to). Places using
+is_vma_temporary_stack can tell you the cases where a perfect rmap
+walk is required and I'm not aware of other locations other than these
+two.
+
+split_huge_page might be more pedantic in making sure a pte wasn't
+missed (I haven't checked in detail to tell how migrate.c would behave
+in such case, split_huge_page just BUG_ON).
+
+So I doubt making a local fix to huge_memory.c is enough, at least
+migrate.c (i.e. rmap_walk_anon) should be handled too somehow.
+
+While I'm positive the breakge of rmap_walk order explains the BUG_ON
+with trinity (as your forking testcase also shows), I'm quite
+uncomfortable to depend on comparison on atomic mapcount that is an
+atomic for a reason, to know if the order went wrong and we shall
+repeat the loop because fork created a pte we missed.
+
+The commit message doesn't explain how do you guarantee mapcount
+cannot change from under us in a racey way. If we go with this fix,
+I'd suggest to explain that crucial point about the safety of the
+page->mapcount comparison in that code path, in the commit message. It
+may be safe by other means! I'm not saying it's definitely not safe,
+but it's at least not obviously safe as it looks like the atomic
+mapcount could change while it is being read, and there was no obvious
+explaination of how it is safe despite it is not stable.
+
+The other downside is that an infinite loop in kernel mode with no
+debug message printed, would make this less debuggable too if a real
+functional bug hits (not as result of race because of rmap walk
+ordering breakage).
+
+I assume the interval tree ordering cannot be fixed, but I'd recommend
+to look closer into that possibility too before ruling it out.
+
+Thanks!
+Andrea
