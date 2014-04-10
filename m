@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031024AbaDJNmG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 09:42:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8261 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030994AbaDJNmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 09:42:04 -0400
-Message-ID: <53469F95.1030709@redhat.com>
-Date: Thu, 10 Apr 2014 15:41:41 +0200
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>
-CC: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 4/6] uprobes/x86: Emulate rip-relative call's
-References: <20140406201628.GA507@redhat.com> <1396995963.5056.46.camel@oc7886638347.ibm.com.usor.ibm.com> <20140409154346.GB18486@redhat.com>
-In-Reply-To: <20140409154346.GB18486@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1031041AbaDJNmM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 09:42:12 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:43910 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030994AbaDJNmJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 09:42:09 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Rob Herring <robh@kernel.org>, Florian Vaussard <florian.vaussard@epfl.ch>,
+        Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v2] checkpatch: fix wildcard DT compatible string checking
+Date: Thu, 10 Apr 2014 08:41:54 -0500
+Message-Id: <1397137314-13523-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2014 05:43 PM, Oleg Nesterov wrote:
-> On 04/08, Jim Keniston wrote:
->>
->> On Sun, 2014-04-06 at 22:16 +0200, Oleg Nesterov wrote:
->>> 0xe8. Anything else?
->>
->> No, I think e8 is the only call instruction uprobes will see.
-> 
-> Good.
+From: Rob Herring <robh@kernel.org>
 
-There is this monstrosity, "16-bit override for branches" in 64-mode:
+We attempt to search for compatible strings which use a variable
+token in the documented name such as <chip> or <soc>. While this
+was attempted to be handled, it's utterly broken.
 
-66 e8 nn nn       callw   <offset16>
+The desired forms of matching are:
 
-Nobody sane uses it because it truncates instruction pointer.
+vendor,<chip>-*
+vendor,name<part#>-*
 
-Or rather, *I think* it should truncate it (i.e. zero-extend to full width),
-but conceivably some CPUs can be buggy wrt that:
-they can decide to modify only lower 16 bits of IP,
-or even they can decided to use signed <offset16> but apply it
-to full-width RIP.
+For <chip>, lower case characters and numbers are permitted. For
+<part#>, only numeric values are allowed.
 
-AMD manuals are not clear on what exactly should happen.
+With this change, the number of missing compatible strings reported in
+arch/arm/boot/dts is reduced from 1071 to 960.
 
-I am sure no one sane uses this form of branch instructions
-in 32-bit and 64-bit code.
+Reported-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Signed-off-by: Rob Herring <robh@kernel.org>
+Cc: Florian Vaussard <florian.vaussard@epfl.ch>
+Cc: Joe Perches <joe@perches.com>
+Cc: Andy Whitcroft <apw@canonical.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+v2:
+- drop debugging print
 
-I don't think we should be trying to support it "correctly"
-(we can just let program crash with SIGILL or something),
-we only need to make sure we don't overlook its existence
-and thus are not tricked into touching or modifying unrelated data.
+ scripts/checkpatch.pl | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-
-Imagine that   66 e8 nn nn    bytes are exactly at the end of
-a page, and we wrongly assume that offset is 32-bit, not 16-bit.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 34eb216..62d005e 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2093,8 +2093,10 @@ sub process {
+ 
+ 			foreach my $compat (@compats) {
+ 				my $compat2 = $compat;
+-				$compat2 =~ s/\,[a-z]*\-/\,<\.\*>\-/;
+-				`grep -Erq "$compat|$compat2" $dt_path`;
++				$compat2 =~ s/\,[a-zA-Z0-9]*\-/\,<\.\*>\-/;
++				my $compat3 = $compat;
++				$compat3 =~ s/\,([a-z]*)[0-9]*\-/\,$1<\.\*>\-/;
++				`grep -Erq "$compat|$compat2|$compat3" $dt_path`;
+ 				if ( $? >> 8 ) {
+ 					WARN("UNDOCUMENTED_DT_STRING",
+ 					     "DT compatible string \"$compat\" appears un-documented -- check $dt_path\n" . $herecurr);
+-- 
+1.9.1
 
