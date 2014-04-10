@@ -1,42 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934591AbaDJBhR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 21:37:17 -0400
-Received: from gate.crashing.org ([63.228.1.57]:40233 "EHLO gate.crashing.org"
+	id S934606AbaDJBiF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 21:38:05 -0400
+Received: from smtp.mei.co.jp ([133.183.100.20]:37926 "EHLO smtp.mei.co.jp"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933287AbaDJBhP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 21:37:15 -0400
-Message-ID: <1397093815.3671.156.camel@pasglop>
-Subject: Re: [BUG] kernel BUG at /.../block/cfq-iosched.c:3145!
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Jens Axboe <axboe@fb.com>
-Cc: Jan Kara <jack@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Brian J King <bjking1@us.ibm.com>
-Date: Thu, 10 Apr 2014 11:36:55 +1000
-In-Reply-To: <5345F476.2000602@fb.com>
-References: <1397018647.3671.123.camel@pasglop> <53454CBC.9060905@fb.com>
-	 <1397087273.3671.150.camel@pasglop> <1397088144.3671.155.camel@pasglop>
-	 <5345F476.2000602@fb.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933287AbaDJBiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 21:38:03 -0400
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-kbuild@vger.kernel.org, Masahiro Yamada <yamada.m@jp.panasonic.com>,
+        x86 <x86@kernel.org>
+Subject: [PATCH v2] x86: suppress "Nothing to be done for ..." messages
+Date: Thu, 10 Apr 2014 10:35:42 +0900
+Message-Id: <1397093742-11144-1-git-send-email-yamada.m@jp.panasonic.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-09 at 19:31 -0600, Jens Axboe wrote:
-> OK, I think we're seeing different symptoms of the same bug. Stay
-> tuned, will have something for you to test shortly, I hope.
+When we compiled again, arch/x86/syscalls/Makefile and
+arch/x86/tools/Makefile emitted "Nothing to be done for ..." messages.
 
-Ah thanks. I'll defer the bisection then (it's painful on that machine
-for various reasons....)
+Here is the command log:
 
-This is a 64-way P7 btw, so a nice race-o-matic :-)
+  $ make defconfig
+     [ snip ]
+  $ make
+     [ snip ]
+  $ make
+  make[1]: Nothing to be done for `all'.            <-----
+  make[1]: Nothing to be done for `relocs'.         <-----
+    CHK     include/config/kernel.release
+    CHK     include/generated/uapi/linux/version.h
 
-Cheers,
-Ben.
+Besides those fixes, "all" and "relocs" should be added to PHONY.
+
+Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+Acked-by: Peter Foley <pefoley2@pefoley.com>
+Acked-by: Michal Marek <mmarek@suse.cz>
+Cc: x86 <x86@kernel.org>
+---
+
+Changes in v2:
+  - Add "all" and "relocs" to PHONY.
+
+ arch/x86/syscalls/Makefile | 2 ++
+ arch/x86/tools/Makefile    | 2 ++
+ 2 files changed, 4 insertions(+)
+
+diff --git a/arch/x86/syscalls/Makefile b/arch/x86/syscalls/Makefile
+index f325af2..3323c27 100644
+--- a/arch/x86/syscalls/Makefile
++++ b/arch/x86/syscalls/Makefile
+@@ -54,5 +54,7 @@ syshdr-$(CONFIG_X86_64)		+= syscalls_64.h
+ 
+ targets	+= $(uapisyshdr-y) $(syshdr-y)
+ 
++PHONY += all
+ all: $(addprefix $(uapi)/,$(uapisyshdr-y))
+ all: $(addprefix $(out)/,$(syshdr-y))
++	@:
+diff --git a/arch/x86/tools/Makefile b/arch/x86/tools/Makefile
+index e812034..604a37e 100644
+--- a/arch/x86/tools/Makefile
++++ b/arch/x86/tools/Makefile
+@@ -40,4 +40,6 @@ $(obj)/insn_sanity.o: $(srctree)/arch/x86/lib/insn.c $(srctree)/arch/x86/lib/ina
+ HOST_EXTRACFLAGS += -I$(srctree)/tools/include
+ hostprogs-y	+= relocs
+ relocs-objs     := relocs_32.o relocs_64.o relocs_common.o
++PHONY += relocs
+ relocs: $(obj)/relocs
++	@:
+-- 
+1.8.3.2
 
