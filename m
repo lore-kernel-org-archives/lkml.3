@@ -1,192 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758653AbaDJQli (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 12:41:38 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:50500 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752484AbaDJQlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 12:41:37 -0400
-From: Richard Yao <ryao@gentoo.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, kernel@gentoo.org,
-        Matthew Thode <mthode@mthode.org>, Richard Yao <ryao@gentoo.org>
-Subject: [PATCH] mm/vmalloc: Introduce DEBUG_VMALLOCINFO to reduce spinlock contention
-Date: Thu, 10 Apr 2014 12:40:58 -0400
-Message-Id: <1397148058-8737-1-git-send-email-ryao@gentoo.org>
-X-Mailer: git-send-email 1.8.3.2
+	id S1758631AbaDJQuA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 12:50:00 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:46943 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235AbaDJQt4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 12:49:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <1396478439-16586-2-git-send-email-syin@broadcom.com>
+References: <1390509887-19278-1-git-send-email-syin@broadcom.com>
+	<1396478439-16586-1-git-send-email-syin@broadcom.com>
+	<1396478439-16586-2-git-send-email-syin@broadcom.com>
+Date: Thu, 10 Apr 2014 18:49:56 +0200
+Message-ID: <CACRpkdZ1Lt2JsMMWVMBgfS8ktkpeYzA3MiGmWB27Jwhw16UYYg@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] pinctrl: Rename Broadcom Capri pinctrl driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sherman Yin <syin@broadcom.com>
+Cc: Mark Brown <broonie@kernel.org>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Matt Porter <matt.porter@linaro.org>, Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Performance analysis of software compilation by Gentoo portage on an
-Intel E5-2620 with 64GB of RAM revealed that a sizeable amount of time,
-anywhere from 5% to 15%, was spent in get_vmalloc_info(), with at least
-40% of that time spent in the _raw_spin_lock() invoked by it.
+On Thu, Apr 3, 2014 at 12:40 AM, Sherman Yin <syin@broadcom.com> wrote:
 
-The spinlock call is done on vmap_area_lock to protect vmap_area_list,
-but changes to vmap_area_list are made under RCU. The only consumer that
-requires a spinlock on an RCU-ified list is /proc/vmallocinfo. That is
-only intended for use by kernel developers doing debugging, but even few
-kernel developers appear to use it. Introducing DEBUG_VMALLOCINFO allows
-us to fully RCU-ify the list, which eliminates this list as a source of
-contention.
+> To be consistent with other Broadcom drivers, the Broadcom Capri pinctrl
+> driver and its related CONFIG option are renamed to bcm281xx.
+>
+> Devicetree compatible string and binding documentation use
+> "brcm,bcm11351-pinctrl" to match the machine binding here:
+> Documentation/devicetree/bindings/arm/bcm/bcm11351.txt
+>
+> This driver supports pinctrl on BCM11130, BCM11140, BCM11351, BCM28145
+> and BCM28155 SoCs.
+>
+> Signed-off-by: Sherman Yin <syin@broadcom.com>
+> Reviewed-by: Matt Porter <mporter@linaro.org>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/pinctrl/Kconfig                            |    8 +-
+>  drivers/pinctrl/Makefile                           |    2 +-
+>  .../{pinctrl-capri.c => pinctrl-bcm281xx.c}        | 1519 ++++++++++----------
 
-This patch brings a substantial reduction in time spent in spinlocks on
-my system. Flame graphs from my early analysis are available on my
-developer space. They were created by profiling the system under
-concurrent package builds done by emerge at a sample rate of 99Hz for 10
-seconds and using Brendan Gregg's scripts to process the data:
+This last version from apr 7 does not change
+arch/arm/configs/bcm_defconfig:CONFIG_PINCTRL_CAPRI=y
 
-http://dev.gentoo.org/~ryao/emerge.svg
-http://dev.gentoo.org/~ryao/emerge-patched.svg
+Doesn't this mean that you render this platform without a pin
+control driver and thus broken?
 
-In this example, 6.64% of system time is spent in get_vmalloc_info()
-with 2.59% spent in the spinlock. The patched version sees only 0.50% of
-time spent in get_vmalloc_info() with neligible time spent in spin
-locks. The low utilization of get_vmalloc_info() in this is partly
-attributable to measurement error, but the reduction in time spent
-spinning is clear.
-
-Signed-off-by: Richard Yao <ryao@gentoo.org>
----
- lib/Kconfig.debug | 11 +++++++++++
- mm/vmalloc.c      | 32 ++++++++++++++++++++++++++++++++
- 2 files changed, 43 insertions(+)
-
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index dd7f885..a3e6967 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -492,6 +492,17 @@ config DEBUG_STACK_USAGE
- 
- 	  This option will slow down process creation somewhat.
- 
-+config DEBUG_VMALLOCINFO
-+	bool "Provide /proc/vmallocinfo"
-+	depends on PROC_FS
-+	help
-+	  Provides a userland interface to view kernel virtual memory mappings.
-+	  Enabling this places a RCU-ified list under spinlock protection. That
-+	  hurts performance in concurrent workloads.
-+
-+	  If unsure, say N.
-+
-+
- config DEBUG_VM
- 	bool "Debug VM"
- 	depends on DEBUG_KERNEL
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index bf233b2..12ab34b 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -1988,8 +1988,13 @@ long vread(char *buf, char *addr, unsigned long count)
- 	if ((unsigned long) addr + count < count)
- 		count = -(unsigned long) addr;
- 
-+#ifdef CONFIG_DEBUG_VMALLOCINFO
- 	spin_lock(&vmap_area_lock);
- 	list_for_each_entry(va, &vmap_area_list, list) {
-+#else
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(va, &vmap_area_list, list) {
-+#endif
- 		if (!count)
- 			break;
- 
-@@ -2020,7 +2025,11 @@ long vread(char *buf, char *addr, unsigned long count)
- 		count -= n;
- 	}
- finished:
-+#ifdef CONFIG_DEBUG_VMALLOCINFO
- 	spin_unlock(&vmap_area_lock);
-+#else
-+	rcu_read_unlock();
-+#endif
- 
- 	if (buf == buf_start)
- 		return 0;
-@@ -2070,8 +2079,13 @@ long vwrite(char *buf, char *addr, unsigned long count)
- 		count = -(unsigned long) addr;
- 	buflen = count;
- 
-+#ifdef CONFIG_DEBUG_VMALLOCINFO
- 	spin_lock(&vmap_area_lock);
- 	list_for_each_entry(va, &vmap_area_list, list) {
-+#else
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(va, &vmap_area_list, list) {
-+#endif
- 		if (!count)
- 			break;
- 
-@@ -2101,7 +2115,11 @@ long vwrite(char *buf, char *addr, unsigned long count)
- 		count -= n;
- 	}
- finished:
-+#ifdef CONFIG_DEBUG_VMALLOCINFO
- 	spin_unlock(&vmap_area_lock);
-+#else
-+	rcu_read_unlock();
-+#endif
- 	if (!copied)
- 		return 0;
- 	return buflen;
-@@ -2531,6 +2549,7 @@ void pcpu_free_vm_areas(struct vm_struct **vms, int nr_vms)
- #endif	/* CONFIG_SMP */
- 
- #ifdef CONFIG_PROC_FS
-+#ifdef CONFIG_DEBUG_VMALLOCINFO
- static void *s_start(struct seq_file *m, loff_t *pos)
- 	__acquires(&vmap_area_lock)
- {
-@@ -2677,6 +2696,7 @@ static int __init proc_vmalloc_init(void)
- 	return 0;
- }
- module_init(proc_vmalloc_init);
-+#endif
- 
- void get_vmalloc_info(struct vmalloc_info *vmi)
- {
-@@ -2689,14 +2709,22 @@ void get_vmalloc_info(struct vmalloc_info *vmi)
- 
- 	prev_end = VMALLOC_START;
- 
-+#ifdef CONFIG_DEBUG_VMALLOCINFO
- 	spin_lock(&vmap_area_lock);
-+#else
-+	rcu_read_lock();
-+#endif
- 
- 	if (list_empty(&vmap_area_list)) {
- 		vmi->largest_chunk = VMALLOC_TOTAL;
- 		goto out;
- 	}
- 
-+#ifdef CONFIG_DEBUG_VMALLOCINFO
- 	list_for_each_entry(va, &vmap_area_list, list) {
-+#else
-+	list_for_each_entry_rcu(va, &vmap_area_list, list) {
-+#endif
- 		unsigned long addr = va->va_start;
- 
- 		/*
-@@ -2723,7 +2751,11 @@ void get_vmalloc_info(struct vmalloc_info *vmi)
- 		vmi->largest_chunk = VMALLOC_END - prev_end;
- 
- out:
-+#ifdef CONFIG_DEBUG_VMALLOCINFO
- 	spin_unlock(&vmap_area_lock);
-+#else
-+	rcu_read_unlock();
-+#endif
- }
- #endif
- 
--- 
-1.8.3.2
-
+Yours,
+Linus Walleij
