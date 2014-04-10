@@ -1,66 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759238AbaDJV70 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 17:59:26 -0400
-Received: from mail.cybernetics.com ([173.71.130.66]:53031 "EHLO
-	mail.cybernetics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754076AbaDJV7Y (ORCPT
+	id S935633AbaDJWB6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 18:01:58 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:43091 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753845AbaDJWB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 17:59:24 -0400
-X-Greylist: delayed 1709 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Apr 2014 17:59:24 EDT
-Message-ID: <53470E26.2030306@cybernetics.com>
-Date: Thu, 10 Apr 2014 17:33:26 -0400
-From: Tony Battersby <tonyb@cybernetics.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
+	Thu, 10 Apr 2014 18:01:56 -0400
+Message-ID: <534714D0.2010803@semaphore.gr>
+Date: Fri, 11 Apr 2014 01:01:52 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: David Herrmann <dh.herrmann@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH 2/6] shm: add sealing API
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org >> LKML" <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH] cpufreq: Introduce macros for cpufreq_frequency_table
+ iteration
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(reposted from my comments at http://lwn.net/Articles/593918/)
+This patch intoduces 2 macros which can be used for iteration
+over cpufreq_frequency_table:
 
-I may have thought of a way to subvert SEAL_WRITE using O_DIRECT and
-asynchronous I/O.  I am not sure if this is a real problem or not, but
-better to ask, right?
+- cpufreq_for_each_entry: iterate over each entry of the table
+- cpufreq_for_each_valid_entry: iterate over each entry of the
+table that contains a valid frequency.
 
-The exploit would go like this:
+It should have no functional changes.
 
-1) mmap() the shared memory
-2) open some *other* file with O_DIRECT
-3) prepare a read-type iocb for the *other* file pointing to the
-mmap()ed memory
-4) io_submit(), but don't wait for it to complete
-5) munmap() the shared memory
-6) SEAL_WRITE the shared memory
-7) the "sealed" memory is overwritten by DMA from the disk drive at some
-point in the future when the I/O completes
+Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+---
 
-So this exploit effectively changes the contents of the supposedly
-write-protected memory after SEAL_WRITE is granted.
+I found about 20 occurrences in various drivers that these macros
+can be used. I will proceed with the necessary changes if you
+approve something like this.
 
-For O_DIRECT the kernel pins the submitted pages in memory for DMA by
-incrementing the page reference counts when the I/O is submitted,
-allowing the pages to be modified by DMA even if they are no longer
-mapped in the address space of the process.  This is different from a
-regular read(), which uses the CPU to copy the data and will fail if the
-pages are not mapped.
+Thanks in advance for your time,
+Stratos Karafotis.
+---
 
-I am sure there are also other direct I/O mechanisms in the kernel that
-can be used to setup a DMA transfer to change the contents of unmapped
-memory; the SCSI generic driver comes to mind.
+ drivers/cpufreq/freq_table.c | 54 ++++++++++++++++++++------------------------
+ include/linux/cpufreq.h      | 29 ++++++++++++++++++++++++
+ 2 files changed, 53 insertions(+), 30 deletions(-)
 
-I suppose SEAL_WRITE could iterate over all the pages in the file and
-check to make sure no page refcount is greater than the "expected"
-value, and return an error instead of granting the seal if a page is
-found with an unexpected extra reference that might have been added by
-e.g. get_user_pages() for direct I/O. But looking over shmem_set_seals()
-in patch 2/6, it doesn't seem to do that.
+diff --git a/drivers/cpufreq/freq_table.c b/drivers/cpufreq/freq_table.c
+index 08e7bbc..19bf0c4 100644
+--- a/drivers/cpufreq/freq_table.c
++++ b/drivers/cpufreq/freq_table.c
+@@ -21,22 +21,18 @@
+ int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
+ 				    struct cpufreq_frequency_table *table)
+ {
++	struct cpufreq_frequency_table *pos;
+ 	unsigned int min_freq = ~0;
+ 	unsigned int max_freq = 0;
+-	unsigned int i;
+ 
+-	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
+-		unsigned int freq = table[i].frequency;
+-		if (freq == CPUFREQ_ENTRY_INVALID) {
+-			pr_debug("table entry %u is invalid, skipping\n", i);
++	cpufreq_for_each_valid_entry(pos, table) {
++		unsigned int freq = pos->frequency;
+ 
+-			continue;
+-		}
+ 		if (!cpufreq_boost_enabled()
+-		    && (table[i].flags & CPUFREQ_BOOST_FREQ))
++		    && (pos->flags & CPUFREQ_BOOST_FREQ))
+ 			continue;
+ 
+-		pr_debug("table entry %u: %u kHz\n", i, freq);
++		pr_debug("table entry %lu: %u kHz\n", pos - table, freq);
+ 		if (freq < min_freq)
+ 			min_freq = freq;
+ 		if (freq > max_freq)
+@@ -57,7 +53,8 @@ EXPORT_SYMBOL_GPL(cpufreq_frequency_table_cpuinfo);
+ int cpufreq_frequency_table_verify(struct cpufreq_policy *policy,
+ 				   struct cpufreq_frequency_table *table)
+ {
+-	unsigned int next_larger = ~0, freq, i = 0;
++	struct cpufreq_frequency_table *pos;
++	unsigned int next_larger = ~0, freq;
+ 	bool found = false;
+ 
+ 	pr_debug("request for verification of policy (%u - %u kHz) for cpu %u\n",
+@@ -65,9 +62,9 @@ int cpufreq_frequency_table_verify(struct cpufreq_policy *policy,
+ 
+ 	cpufreq_verify_within_cpu_limits(policy);
+ 
+-	for (; freq = table[i].frequency, freq != CPUFREQ_TABLE_END; i++) {
+-		if (freq == CPUFREQ_ENTRY_INVALID)
+-			continue;
++	cpufreq_for_each_valid_entry(pos, table) {
++		freq = pos->frequency;
++
+ 		if ((freq >= policy->min) && (freq <= policy->max)) {
+ 			found = true;
+ 			break;
+@@ -118,7 +115,8 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
+ 		.driver_data = ~0,
+ 		.frequency = 0,
+ 	};
+-	unsigned int i;
++	struct cpufreq_frequency_table *pos;
++	unsigned int i = 0;
+ 
+ 	pr_debug("request for target %u kHz (relation: %u) for cpu %u\n",
+ 					target_freq, relation, policy->cpu);
+@@ -132,10 +130,10 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
+ 		break;
+ 	}
+ 
+-	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
+-		unsigned int freq = table[i].frequency;
+-		if (freq == CPUFREQ_ENTRY_INVALID)
+-			continue;
++	cpufreq_for_each_valid_entry(pos, table) {
++		unsigned int freq = pos->frequency;
++
++		i = pos - table;
+ 		if ((freq < policy->min) || (freq > policy->max))
+ 			continue;
+ 		switch (relation) {
+@@ -184,8 +182,7 @@ EXPORT_SYMBOL_GPL(cpufreq_frequency_table_target);
+ int cpufreq_frequency_table_get_index(struct cpufreq_policy *policy,
+ 		unsigned int freq)
+ {
+-	struct cpufreq_frequency_table *table;
+-	int i;
++	struct cpufreq_frequency_table *pos, *table;
+ 
+ 	table = cpufreq_frequency_get_table(policy->cpu);
+ 	if (unlikely(!table)) {
+@@ -193,9 +190,9 @@ int cpufreq_frequency_table_get_index(struct cpufreq_policy *policy,
+ 		return -ENOENT;
+ 	}
+ 
+-	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+-		if (table[i].frequency == freq)
+-			return i;
++	cpufreq_for_each_entry(pos, table) {
++		if (pos->frequency == freq)
++			return pos - table;
+ 	}
+ 
+ 	return -EINVAL;
+@@ -208,16 +205,13 @@ EXPORT_SYMBOL_GPL(cpufreq_frequency_table_get_index);
+ static ssize_t show_available_freqs(struct cpufreq_policy *policy, char *buf,
+ 				    bool show_boost)
+ {
+-	unsigned int i = 0;
+ 	ssize_t count = 0;
+-	struct cpufreq_frequency_table *table = policy->freq_table;
++	struct cpufreq_frequency_table *pos, *table = policy->freq_table;
+ 
+ 	if (!table)
+ 		return -ENODEV;
+ 
+-	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
+-		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+-			continue;
++	cpufreq_for_each_valid_entry(pos, table) {
+ 		/*
+ 		 * show_boost = true and driver_data = BOOST freq
+ 		 * display BOOST freqs
+@@ -229,10 +223,10 @@ static ssize_t show_available_freqs(struct cpufreq_policy *policy, char *buf,
+ 		 * show_boost = false and driver_data != BOOST freq
+ 		 * display NON BOOST freqs
+ 		 */
+-		if (show_boost ^ (table[i].flags & CPUFREQ_BOOST_FREQ))
++		if (show_boost ^ (pos->flags & CPUFREQ_BOOST_FREQ))
+ 			continue;
+ 
+-		count += sprintf(&buf[count], "%d ", table[i].frequency);
++		count += sprintf(&buf[count], "%d ", pos->frequency);
+ 	}
+ 	count += sprintf(&buf[count], "\n");
+ 
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 5ae5100..1c221c8 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -468,6 +468,35 @@ struct cpufreq_frequency_table {
+ 				    * order */
+ };
+ 
++static inline bool validate_entry(struct cpufreq_frequency_table *pos)
++{
++	while (pos->frequency != CPUFREQ_TABLE_END)
++		if (pos->frequency == CPUFREQ_ENTRY_INVALID)
++			pos++;
++		else
++			return true;
++	return false;
++}
++
++/*
++ * cpufreq_for_each_entry -	iterate over a cpufreq_frequency_table
++ * @pos:	the cpufreq_frequency_table * to use as a loop cursor.
++ * @table:	the cpufreq_frequency_table * to iterate over.
++ */
++
++#define cpufreq_for_each_entry(pos, table)	\
++	for (pos = table; pos->frequency != CPUFREQ_TABLE_END; pos++)
++
++/*
++ * cpufreq_for_each_valid_entry -     iterate over a cpufreq_frequency_table
++ *	exluding CPUFREQ_ENTRY_INVALID frequencies.
++ * @pos:        the cpufreq_frequency_table * to use as a loop cursor.
++ * @table:      the cpufreq_frequency_table * to iterate over.
++ */
++
++#define cpufreq_for_each_valid_entry(pos, table)	\
++	for (pos = table; validate_entry(pos); pos++)
++
+ int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
+ 				    struct cpufreq_frequency_table *table);
+ 
+-- 
+1.9.0
 
-Tony Battersby
-Cybernetics
