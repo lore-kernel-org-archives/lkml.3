@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935080AbaDJDWy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:22:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40797 "EHLO
+	id S935314AbaDJDmm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:42:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41282 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934582AbaDJDVc (ORCPT
+	with ESMTP id S935074AbaDJDWy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:21:32 -0400
+	Wed, 9 Apr 2014 23:22:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        ybu <ybu@qti.qualcomm.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Qiang Huang <h.huangqiang@huawei.com>, Li Zefan <lizefan@huawei.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 004/134] printk: Fix rq->lock vs logbuf_lock unlock lock inversion
-Date: Wed,  9 Apr 2014 20:22:00 -0700
-Message-Id: <20140410032300.218633795@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Ben Hutchings <ben@decadent.org.uk>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH 3.4 110/134] ALSA: pcsp: Fix the order of input device unregistration
+Date: Wed,  9 Apr 2014 20:23:46 -0700
+Message-Id: <20140410032313.769762281@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -30,45 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Bu, Yitian" <ybu@qti.qualcomm.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit dbda92d16f8655044e082930e4e9d244b87fde77 upstream.
+commit 6408eac2665955343cd0e4bcd7d6237ce39611ed upstream.
 
-commit 07354eb1a74d1 ("locking printk: Annotate logbuf_lock as raw")
-reintroduced a lock inversion problem which was fixed in commit
-0b5e1c5255 ("printk: Release console_sem after logbuf_lock"). This
-happened probably when fixing up patch rejects.
+The current code may access to the already freed object.  The input
+device must be accessed and unregistered before freeing the top level
+sound object.
 
-Restore the ordering and unlock logbuf_lock before releasing
-console_sem.
-
-Signed-off-by: ybu <ybu@qti.qualcomm.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/E807E903FE6CBE4D95E420FBFCC273B827413C@nasanexd01h.na.qualcomm.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Qiang Huang <h.huangqiang@huawei.com>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Jianguo Wu <wujianguo@huawei.com>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/printk.c |    2 +-
+ sound/drivers/pcsp/pcsp.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -822,9 +822,9 @@ static int console_trylock_for_printk(un
- 		}
- 	}
- 	printk_cpu = UINT_MAX;
-+	raw_spin_unlock(&logbuf_lock);
- 	if (wake)
- 		up(&console_sem);
--	raw_spin_unlock(&logbuf_lock);
- 	return retval;
+--- a/sound/drivers/pcsp/pcsp.c
++++ b/sound/drivers/pcsp/pcsp.c
+@@ -187,8 +187,8 @@ static int __devinit pcsp_probe(struct p
+ static int __devexit pcsp_remove(struct platform_device *dev)
+ {
+ 	struct snd_pcsp *chip = platform_get_drvdata(dev);
+-	alsa_card_pcsp_exit(chip);
+ 	pcspkr_input_remove(chip->input_dev);
++	alsa_card_pcsp_exit(chip);
+ 	platform_set_drvdata(dev, NULL);
+ 	return 0;
  }
- static const char recursion_bug_msg [] =
 
 
