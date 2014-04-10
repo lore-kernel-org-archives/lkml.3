@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758832AbaDJRfR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 13:35:17 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:53035 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758514AbaDJRfP (ORCPT
+	id S935189AbaDJRfj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 13:35:39 -0400
+Received: from s3.sipsolutions.net ([144.76.43.152]:48127 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758726AbaDJRfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 13:35:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <1396865589-9972-2-git-send-email-bigeasy@linutronix.de>
-References: <1396865589-9972-1-git-send-email-bigeasy@linutronix.de>
-	<1396865589-9972-2-git-send-email-bigeasy@linutronix.de>
-Date: Thu, 10 Apr 2014 19:35:14 +0200
-Message-ID: <CACRpkdZOJMQV8YLyJ7za08MnyyuSX3RwJ77P+J0bC7qFQPar3w@mail.gmail.com>
-Subject: Re: [PATCH 1/5] gpio: dwapb: drop irq_setup_generic_chip()
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Jamie Iles <jamie@jamieiles.com>, Alan Tull <atull@altera.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+	Thu, 10 Apr 2014 13:35:17 -0400
+Message-ID: <1397151302.4757.26.camel@jlt4.sipsolutions.net>
+Subject: Re: Bumping required kernels to 3.0 for Linux backports ?
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Felix Fietkau <nbd@openwrt.org>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "backports@vger.kernel.org" <backports@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Date: Thu, 10 Apr 2014 19:35:02 +0200
+In-Reply-To: <5346D456.3010504@openwrt.org>
+References: <CAB=NE6VvyBKzEg=ErZzQMktY8eLytQ21JCPrOQbxvZ9m-nqHkw@mail.gmail.com>
+		 <53451077.2030102@openwrt.org>
+	 (sfid-20140409_111854_192527_B5A21A7B) <1397150173.4757.25.camel@jlt4.sipsolutions.net>
+	 <5346D456.3010504@openwrt.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 7, 2014 at 12:13 PM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
+On Thu, 2014-04-10 at 19:26 +0200, Felix Fietkau wrote:
+> On 2014-04-10 19:16, Johannes Berg wrote:
+> > On Wed, 2014-04-09 at 11:18 +0200, Felix Fietkau wrote:
+> > 
+> >> I'm looking forward to getting rid of patches for older kernels that
+> >> often get in the way when using various wireless-testing versions ;)
+> > 
+> > What do you frequently get conflicts on? I haven't seen any for a long
+> > time.
+> I don't remember. It was in different areas every time I did an update.
 
-> The driver calls irq_alloc_domain_generic_chips() which creates a gc and
-> adds it to gc_list. The driver later then calls irq_setup_generic_chip()
-> which also initializes the gc and adds it to the gc_list() and this
-> corrupts the list. Enable LIST_DEBUG and you see the kernel complain.
-> This isn't required, irq_alloc_domain_generic_chips() did the init.
->
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+I had a lot of those, but we've converted so much to spatches now that
+it hasn't been a concern in a long time (the netlink nlpid/pid thing was
+the one that conflicted most for me, but it's long gone)
 
-Patch applied, adding Alan Tull's Tested-by.
+johannes
 
-Yours,
-Linus Walleij
