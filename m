@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934860AbaDJDWb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:22:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40853 "EHLO
+	id S935262AbaDJECe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 00:02:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41144 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934640AbaDJDVi (ORCPT
+	with ESMTP id S934851AbaDJDWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:21:38 -0400
+	Wed, 9 Apr 2014 23:22:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        George Spelvin <linux@horizon.com>,
-        Rodolfo Giometti <giometti@enneenne.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Qiang Huang <h.huangqiang@huawei.com>, Li Zefan <lizefan@huawei.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 011/134] pps: Use pps_lookup_dev to reduce ldisc coupling
-Date: Wed,  9 Apr 2014 20:22:07 -0700
-Message-Id: <20140410032301.215844488@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Yang Yingliang <yangyingliang@huawei.com>
+Subject: [PATCH 3.4 078/134] USB: mos7840: fix memory leak in open
+Date: Wed,  9 Apr 2014 20:23:14 -0700
+Message-Id: <20140410032309.989897056@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -30,74 +27,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: George Spelvin <linux@horizon.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 03a7ffe4e542310838bac70ef85acc17536b6d7c upstream.
+commit 5f8a2e68b679b41cc8e9b642f2f5aa45dd678641 upstream.
 
-Now that N_TTY uses tty->disc_data for its private data,
-'subclass' ldiscs cannot use ->disc_data for their own private data.
-(This is a regression is v3.8-rc1)
+Allocated urbs and buffers were never freed on errors in open.
 
-Use pps_lookup_dev to associate the tty with the pps source instead.
-
-This fixes a crashing regression in 3.8-rc1.
-
-Signed-off-by: George Spelvin <linux@horizon.com>
-Acked-by: Rodolfo Giometti <giometti@enneenne.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Qiang Huang <h.huangqiang@huawei.com>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Jianguo Wu <wujianguo@huawei.com>
+Cc: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pps/clients/pps-ldisc.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ drivers/usb/serial/mos7840.c |   26 +++++++++++++++++---------
+ 1 file changed, 17 insertions(+), 9 deletions(-)
 
---- a/drivers/pps/clients/pps-ldisc.c
-+++ b/drivers/pps/clients/pps-ldisc.c
-@@ -31,7 +31,7 @@
- static void pps_tty_dcd_change(struct tty_struct *tty, unsigned int status,
- 				struct pps_event_time *ts)
- {
--	struct pps_device *pps = (struct pps_device *)tty->disc_data;
-+	struct pps_device *pps = pps_lookup_dev(tty);
- 
- 	BUG_ON(pps == NULL);
- 
-@@ -67,9 +67,9 @@ static int pps_tty_open(struct tty_struc
- 		pr_err("cannot register PPS source \"%s\"\n", info.path);
- 		return -ENOMEM;
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -923,20 +923,20 @@ static int mos7840_open(struct tty_struc
+ 	status = mos7840_get_reg_sync(port, mos7840_port->SpRegOffset, &Data);
+ 	if (status < 0) {
+ 		dbg("Reading Spreg failed");
+-		return -1;
++		goto err;
  	}
--	tty->disc_data = pps;
-+	pps->lookup_cookie = tty;
+ 	Data |= 0x80;
+ 	status = mos7840_set_reg_sync(port, mos7840_port->SpRegOffset, Data);
+ 	if (status < 0) {
+ 		dbg("writing Spreg failed");
+-		return -1;
++		goto err;
+ 	}
  
--	/* Should open N_TTY ldisc too */
-+	/* Now open the base class N_TTY ldisc */
- 	ret = alias_n_tty_open(tty);
- 	if (ret < 0) {
- 		pr_err("cannot open tty ldisc \"%s\"\n", info.path);
-@@ -81,7 +81,6 @@ static int pps_tty_open(struct tty_struc
+ 	Data &= ~0x80;
+ 	status = mos7840_set_reg_sync(port, mos7840_port->SpRegOffset, Data);
+ 	if (status < 0) {
+ 		dbg("writing Spreg failed");
+-		return -1;
++		goto err;
+ 	}
+ 	/* End of block to be checked */
+ 
+@@ -945,7 +945,7 @@ static int mos7840_open(struct tty_struc
+ 									&Data);
+ 	if (status < 0) {
+ 		dbg("Reading Controlreg failed");
+-		return -1;
++		goto err;
+ 	}
+ 	Data |= 0x08;		/* Driver done bit */
+ 	Data |= 0x20;		/* rx_disable */
+@@ -953,7 +953,7 @@ static int mos7840_open(struct tty_struc
+ 				mos7840_port->ControlRegOffset, Data);
+ 	if (status < 0) {
+ 		dbg("writing Controlreg failed");
+-		return -1;
++		goto err;
+ 	}
+ 	/* do register settings here */
+ 	/* Set all regs to the device default values. */
+@@ -964,21 +964,21 @@ static int mos7840_open(struct tty_struc
+ 	status = mos7840_set_uart_reg(port, INTERRUPT_ENABLE_REGISTER, Data);
+ 	if (status < 0) {
+ 		dbg("disabling interrupts failed");
+-		return -1;
++		goto err;
+ 	}
+ 	/* Set FIFO_CONTROL_REGISTER to the default value */
+ 	Data = 0x00;
+ 	status = mos7840_set_uart_reg(port, FIFO_CONTROL_REGISTER, Data);
+ 	if (status < 0) {
+ 		dbg("Writing FIFO_CONTROL_REGISTER  failed");
+-		return -1;
++		goto err;
+ 	}
+ 
+ 	Data = 0xcf;
+ 	status = mos7840_set_uart_reg(port, FIFO_CONTROL_REGISTER, Data);
+ 	if (status < 0) {
+ 		dbg("Writing FIFO_CONTROL_REGISTER  failed");
+-		return -1;
++		goto err;
+ 	}
+ 
+ 	Data = 0x03;
+@@ -1134,7 +1134,15 @@ static int mos7840_open(struct tty_struc
+ 	dbg ("%s leave", __func__);
+ 
  	return 0;
- 
- err_unregister:
--	tty->disc_data = NULL;
- 	pps_unregister_source(pps);
- 	return ret;
+-
++err:
++	for (j = 0; j < NUM_URBS; ++j) {
++		urb = mos7840_port->write_urb_pool[j];
++		if (!urb)
++			continue;
++		kfree(urb->transfer_buffer);
++		usb_free_urb(urb);
++	}
++	return status;
  }
-@@ -90,11 +89,10 @@ static void (*alias_n_tty_close)(struct
  
- static void pps_tty_close(struct tty_struct *tty)
- {
--	struct pps_device *pps = (struct pps_device *)tty->disc_data;
-+	struct pps_device *pps = pps_lookup_dev(tty);
- 
- 	alias_n_tty_close(tty);
- 
--	tty->disc_data = NULL;
- 	dev_info(pps->dev, "removed\n");
- 	pps_unregister_source(pps);
- }
+ /*****************************************************************************
 
 
