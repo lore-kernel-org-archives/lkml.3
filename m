@@ -1,99 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965193AbaDJH0F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 03:26:05 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:43798 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965147AbaDJH0D (ORCPT
+	id S965120AbaDJHbd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 03:31:33 -0400
+Received: from s3.sipsolutions.net ([144.76.43.152]:46170 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933236AbaDJHbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 03:26:03 -0400
-Date: Thu, 10 Apr 2014 08:25:56 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Samuel Ortiz <sameo@linux.intel.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V3 4/5] mfd: palmas: support IRQ inversion at the board
- level
-Message-ID: <20140410072556.GB4214@lee--X1>
-References: <1393876300-3061-1-git-send-email-swarren@wwwdotorg.org>
- <1393876300-3061-4-git-send-email-swarren@wwwdotorg.org>
- <CAAVeFuJY67zdoHiZufxDbkaw=xt8YwxyDAwHW_T7UZeSOt35NA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAAVeFuJY67zdoHiZufxDbkaw=xt8YwxyDAwHW_T7UZeSOt35NA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 10 Apr 2014 03:31:31 -0400
+Message-ID: <1397115086.4757.2.camel@jlt4.sipsolutions.net>
+Subject: Re: Bumping required kernels to 3.0 for Linux backports ?
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        Felix Fietkau <nbd@openwrt.org>,
+        "backports@vger.kernel.org" <backports@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Date: Thu, 10 Apr 2014 09:31:26 +0200
+In-Reply-To: <20140409210613.GA14392@kroah.com> (sfid-20140409_230344_484222_1B571B0F)
+References: <CAB=NE6VvyBKzEg=ErZzQMktY8eLytQ21JCPrOQbxvZ9m-nqHkw@mail.gmail.com>
+	 <53451077.2030102@openwrt.org>
+	 <CAB=NE6UUN4vQd3SpsvO5tcgaYq3YXQeE0KtZGki7p7OnR=J4RA@mail.gmail.com>
+	 <20140409191225.GA10560@kroah.com>
+	 <CAB=NE6VqY8yXoYuE0o01vq86imY8EtqLdkPa4bGMvR3bTaj5KQ@mail.gmail.com>
+	 <20140409202224.GA12953@kroah.com>
+	 <CAB=NE6XY5++p7hJQpQdwrFNUcGbUsKpC+oJiZQciXNduo+8j8A@mail.gmail.com>
+	 <20140409210613.GA14392@kroah.com> (sfid-20140409_230344_484222_1B571B0F)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Stephen, any news about this patch? I'm waiting for it to be merged in
-> order to resend some Tegra DTs, but still cannot see it in -next.
+On Wed, 2014-04-09 at 14:06 -0700, Greg Kroah-Hartman wrote:
 
-I doubt it's been applied.
+> Why 3.0?  That's not supported by anyone anymore for "new hardware", I'd
+> move to 3.2 if you could, as that's the Debian stable release that will
+> be maintained for quite some time yet:
+> 	https://www.kernel.org/category/releases.html
 
-No one got back to me with reference to how to deal with the set [1],
-so I certainly didn't apply it.
+We still need 3.0 for an ongoing project.
 
-[1] http://www.spinics.net/lists/arm-kernel/msg312694.html
+johannes
 
-> On Tue, Mar 4, 2014 at 4:51 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> > From: Stephen Warren <swarren@nvidia.com>
-> >
-> > Implement the new DT property ti,irq-externally-inverted, and add an
-> > equivalent platform data field to match. This allows the driver to
-> > correctly automatically configure the IRQ output polarity when the board
-> > or SoC contains an inverter between the Palmas IRQ output and IRQ
-> > controller input.
-> >
-> > Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> > ---
-> > v3:
-> > * Use an IRQD flag to represent the data, rather than a custom DT property.
-> > v2:
-> > * Split V1's patch 1/2 into separate patches 1/3 and 2/3.
-> > ---
-> >  drivers/mfd/palmas.c | 5 ++++-
-> >  1 file changed, 4 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
-> > index d280d789e55a..3281d4103e9d 100644
-> > --- a/drivers/mfd/palmas.c
-> > +++ b/drivers/mfd/palmas.c
-> > @@ -292,7 +292,8 @@ static int palmas_set_pdata_irq_flag(struct i2c_client *i2c,
-> >                 return -EINVAL;
-> >         }
-> >
-> > -       pdata->irq_flags = irqd_get_trigger_type(irq_data);
-> > +       pdata->irq_flags = irqd_get_trigger_type(irq_data) |
-> > +                          irqd_get_src_dst_inverted(irq_data);
-> >         dev_info(&i2c->dev, "Irq flag is 0x%08x\n", pdata->irq_flags);
-> >         return 0;
-> >  }
-> > @@ -447,6 +448,8 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
-> >                 reg = PALMAS_POLARITY_CTRL_INT_POLARITY;
-> >         else
-> >                 reg = 0;
-> > +       if (pdata->irq_flags & IRQ_SRC_DST_INVERTED)
-> > +               reg ^= PALMAS_POLARITY_CTRL_INT_POLARITY;
-> >         ret = palmas_update_bits(palmas, PALMAS_PU_PD_OD_BASE,
-> >                         PALMAS_POLARITY_CTRL, PALMAS_POLARITY_CTRL_INT_POLARITY,
-> >                         reg);
-> >
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
