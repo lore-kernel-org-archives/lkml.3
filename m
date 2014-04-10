@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965186AbaDJDXi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:23:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41013 "EHLO
+	id S965172AbaDJDXg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:23:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41008 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934674AbaDJDWB (ORCPT
+	with ESMTP id S934673AbaDJDWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:01 -0400
+	Wed, 9 Apr 2014 23:22:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 041/134] ath9k_hw: Assign default xlna config for AR9485
-Date: Wed,  9 Apr 2014 20:22:37 -0700
-Message-Id: <20140410032305.305069073@linuxfoundation.org>
+        Calvin Owens <jcalvinowens@gmail.com>, Takashi Iwai <tiwai@suse.de>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH 3.4 050/134] ALSA: usb: Add quirk for 192KHz recording on E-Mu devices
+Date: Wed,  9 Apr 2014 20:22:46 -0700
+Message-Id: <20140410032306.528476708@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -28,59 +28,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Calvin Owens <jcalvinowens@gmail.com>
 
-commit 30d5b709da23f4ab9836c7f66d2d2e780a69cf12 upstream.
+commit 1539d4f82ad534431cc67935e8e442ccf107d17d upstream.
 
-For AR9485 boards with XLNA, the default gpio config
-is not set correctly, fix this.
+When recording at 176.2KHz or 192Khz, the device adds a 32-bit length
+header to the capture packets, which obviously needs to be ignored for
+recording to work properly.
 
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.2: adjust context]
+Userspace expected:  L0 L1 L2 R0 R1 R2
+...but actually got: R2 L0 L1 L2 R0 R1
+
+Also, the last byte of the length header being interpreted as L0 of
+the first sample caused spikes every 0.5ms, resulting in a loud 16KHz
+tone (about the highest 'B' on a piano) being present throughout
+captures.
+
+Tested at all sample rates on an E-Mu 0404USB, and tested for
+regressions on a generic USB headset.
+
+Signed-off-by: Calvin Owens <jcalvinowens@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[bwh: Backported to 3.2: adjust filenames, context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Jianguo Wu <wujianguo@huawei.com>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |    8 ++++++--
- drivers/net/wireless/ath/ath9k/ar9003_phy.h    |    2 ++
- 2 files changed, 8 insertions(+), 2 deletions(-)
+ sound/usb/card.h     |    1 +
+ sound/usb/endpoint.c |    3 ++-
+ sound/usb/quirks.c   |    1 +
+ 3 files changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-@@ -3592,7 +3592,7 @@ static u16 ar9003_hw_ant_ctrl_chain_get(
- static void ar9003_hw_ant_ctrl_apply(struct ath_hw *ah, bool is2ghz)
- {
- 	int chain;
--	u32 regval;
-+	u32 regval, value;
- 	u32 ant_div_ctl1;
- 	static const u32 switch_chain_reg[AR9300_MAX_CHAINS] = {
- 			AR_PHY_SWITCH_CHAIN_0,
-@@ -3600,7 +3600,11 @@ static void ar9003_hw_ant_ctrl_apply(str
- 			AR_PHY_SWITCH_CHAIN_2,
- 	};
+--- a/sound/usb/card.h
++++ b/sound/usb/card.h
+@@ -74,6 +74,7 @@ struct snd_usb_substream {
+ 	unsigned int fill_max: 1;	/* fill max packet size always */
+ 	unsigned int txfr_quirk:1;	/* allow sub-frame alignment */
+ 	unsigned int fmt_type;		/* USB audio format type (1-3) */
++	unsigned int pkt_offset_adj;	/* Bytes to drop from beginning of packets (for non-compliant devices) */
  
--	u32 value = ar9003_hw_ant_ctrl_common_get(ah, is2ghz);
-+	if (AR_SREV_9485(ah) && (ar9003_hw_get_rx_gain_idx(ah) == 0))
-+		ath9k_hw_cfg_output(ah, AR9300_EXT_LNA_CTL_GPIO_AR9485,
-+				    AR_GPIO_OUTPUT_MUX_AS_PCIE_ATTENTION_LED);
-+
-+	value = ar9003_hw_ant_ctrl_common_get(ah, is2ghz);
+ 	unsigned int running: 1;	/* running status */
  
- 	if (AR_SREV_9462(ah)) {
- 		REG_RMW_FIELD(ah, AR_PHY_SWITCH_COM,
---- a/drivers/net/wireless/ath/ath9k/ar9003_phy.h
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.h
-@@ -339,6 +339,8 @@
+--- a/sound/usb/endpoint.c
++++ b/sound/usb/endpoint.c
+@@ -458,7 +458,7 @@ static int retire_capture_urb(struct snd
+ 	stride = runtime->frame_bits >> 3;
  
- #define AR_PHY_CCA_NOM_VAL_9330_2GHZ          -118
+ 	for (i = 0; i < urb->number_of_packets; i++) {
+-		cp = (unsigned char *)urb->transfer_buffer + urb->iso_frame_desc[i].offset;
++		cp = (unsigned char *)urb->transfer_buffer + urb->iso_frame_desc[i].offset + subs->pkt_offset_adj;
+ 		if (urb->iso_frame_desc[i].status && printk_ratelimit()) {
+ 			snd_printdd("frame %d active: %d\n", i, urb->iso_frame_desc[i].status);
+ 			// continue;
+@@ -898,6 +898,7 @@ void snd_usb_init_substream(struct snd_u
+ 	subs->speed = snd_usb_get_speed(subs->dev);
+ 	if (subs->speed >= USB_SPEED_HIGH)
+ 		subs->ops.prepare_sync = prepare_capture_sync_urb_hs;
++	subs->pkt_offset_adj = 0;
  
-+#define AR9300_EXT_LNA_CTL_GPIO_AR9485 9
-+
- /*
-  * AGC Field Definitions
-  */
+ 	snd_usb_set_pcm_ops(as->pcm, stream);
+ 
+--- a/sound/usb/quirks.c
++++ b/sound/usb/quirks.c
+@@ -748,6 +748,7 @@ static void set_format_emu_quirk(struct
+ 		break;
+ 	}
+ 	snd_emuusb_set_samplerate(subs->stream->chip, emu_samplerate_id);
++	subs->pkt_offset_adj = (emu_samplerate_id >= EMU_QUIRK_SR_176400HZ) ? 4 : 0;
+ }
+ 
+ void snd_usb_set_format_quirk(struct snd_usb_substream *subs,
 
 
