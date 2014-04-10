@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758922AbaDJTW0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 15:22:26 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:39820 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327AbaDJTWY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 15:22:24 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Lubomir Rintel <lkundrak@v3.sk>
-Cc: Arnd Bergmann <arnd@arndb.de>, Herbert Xu <herbert@gondor.apana.org.au>,
-        Matt Mackall <mpm@selenic.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] hwrng: bcm2835: fix oops when rng h/w is accessed during registration
-Date: Thu, 10 Apr 2014 15:22:10 -0400
-Message-Id: <1397157730-31161-1-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
+	id S1759004AbaDJT2Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 15:28:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57001 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753327AbaDJT1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 15:27:54 -0400
+Date: Thu, 10 Apr 2014 21:27:51 +0200
+From: Jan Kara <jack@suse.cz>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, lkp@01.org
+Subject: Re: [writeback] 6903673566d: +2.5% fileio.requests_per_sec
+Message-ID: <20140410192751.GE8060@quack.suse.cz>
+References: <20140410124137.GA17720@localhost>
+ <20140410130552.GA17871@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140410130552.GA17871@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit "d9e7972 hwrng: add randomness to system from rng sources"
-exposed a bug in the bcm2835-rng driver resulting in boot failure
-on Raspberry Pi due to the following oops:
+On Thu 10-04-14 21:05:52, Wu Fengguang wrote:
+> On Thu, Apr 10, 2014 at 08:41:37PM +0800, Fengguang Wu wrote:
+> Here are the changed stats before/after the patchset:
+  Thanks for gathering the numbers!
 
-[   28.261523] BUG: soft lockup - CPU#0 stuck for 23s! [swapper:1]
-[   28.271058]
-[   28.275958] CPU: 0 PID: 1 Comm: swapper Not tainted 3.14.0+ #11
-[   28.285374] task: db480000 ti: db484000 task.ti: db484000
-[   28.294279] PC is at bcm2835_rng_read+0x28/0x48
-[   28.302276] LR is at hwrng_register+0x1a8/0x238
-.
-.
-.
+>       v3.14-rc8  ea87e2e7e0905325c58cf5643
+> ---------------  -------------------------
+>      58.98 ~102%     -73.2%      15.78       snb-drag/sysbench/fileio/600s-100%-1HDD-ext4-64G-1024-rndwr-sync
+>    2215.64 ~61%     -69.2%     682.57       snb-drag/sysbench/fileio/600s-100%-1HDD-ext4-64G-1024-seqrewr-sync
+>     185.22 ~132%     -93.6%      11.80       snb-drag/sysbench/fileio/600s-100%-1HDD-xfs-64G-1024-rndwr-sync
+>    2459.84 ~67%     -71.1%     710.15       TOTAL fileio.request_latency_max_ms
+> 
+>       v3.14-rc8  ea87e2e7e0905325c58cf5643
+> ---------------  -------------------------
+>       6251 ~ 0%      +4.0%       6503       snb-drag/sysbench/fileio/600s-100%-1HDD-ext4-64G-1024-seqrewr-sync
+>       6532 ~ 0%      +3.2%       6737 ~ 0%  snb-drag/sysbench/fileio/600s-100%-1HDD-xfs-64G-1024-seqrewr-sync
+>       6444 ~ 0%      +1.7%       6554 ~ 0%  snb-drag/sysbench/fileio/600s-100%-1HDD-xfs-64G-1024-seqwr-sync
+>      19227 ~ 0%      +3.0%      19795       TOTAL fileio.requests_per_sec
+> 
+  So fileio got better latency and higher requests per second. That's good.
+...
 
-The RNG h/w is not completely initialized and enabled before
-hwrng_register() is called and so the bcm2835_rng_read() fails.
-Fix this by making the warmup/enable writes before registering
-the RNG source with the hwrng core.
+>       v3.14-rc8  ea87e2e7e0905325c58cf5643
+> ---------------  -------------------------
+>     397285 ~ 0%      -6.9%     369872 ~ 0%  lkp-st02/micro/dd-write/11HDD-RAID5-cfq-xfs-10dd
+>     359312 ~ 0%      -5.5%     339685       lkp-ws02/micro/dd-write/11HDD-RAID5-cfq-xfs-100dd
+>     404981 ~ 0%      -4.5%     386775       lkp-ws02/micro/dd-write/11HDD-RAID5-cfq-xfs-10dd
+>    1161579 ~ 0%      -5.6%    1096334       TOTAL iostat.md0.wkB/s
+  So dd writing tests got lower throughput reported by iostat. I'll try to
+have a look whether I can reproduce that. BTW: Does that also correspond to
+longer time-to-completion of the dd test?
 
-Signed-off-by: Matt Porter <mporter@linaro.org>
----
- drivers/char/hw_random/bcm2835-rng.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+>       v3.14-rc8  ea87e2e7e0905325c58cf5643
+> ---------------  -------------------------
+>    1.2e+08 ~ 0%      +4.0%  1.249e+08       snb-drag/sysbench/fileio/600s-100%-1HDD-ext4-64G-1024-seqrewr-sync
+>  1.254e+08 ~ 0%      +3.1%  1.294e+08 ~ 0%  snb-drag/sysbench/fileio/600s-100%-1HDD-xfs-64G-1024-seqrewr-sync
+>  1.237e+08 ~ 0%      +1.7%  1.259e+08 ~ 0%  snb-drag/sysbench/fileio/600s-100%-1HDD-xfs-64G-1024-seqwr-sync
+>  3.692e+08 ~ 0%      +3.0%  3.801e+08       TOTAL time.file_system_outputs
+  What's this measuring?
 
-diff --git a/drivers/char/hw_random/bcm2835-rng.c b/drivers/char/hw_random/bcm2835-rng.c
-index 8c3b255..e900961 100644
---- a/drivers/char/hw_random/bcm2835-rng.c
-+++ b/drivers/char/hw_random/bcm2835-rng.c
-@@ -61,18 +61,18 @@ static int bcm2835_rng_probe(struct platform_device *pdev)
- 	}
- 	bcm2835_rng_ops.priv = (unsigned long)rng_base;
- 
-+	/* set warm-up count & enable */
-+	__raw_writel(RNG_WARMUP_COUNT, rng_base + RNG_STATUS);
-+	__raw_writel(RNG_RBGEN, rng_base + RNG_CTRL);
-+
- 	/* register driver */
- 	err = hwrng_register(&bcm2835_rng_ops);
- 	if (err) {
- 		dev_err(dev, "hwrng registration failed\n");
- 		iounmap(rng_base);
--	} else {
-+	} else
- 		dev_info(dev, "hwrng registered\n");
- 
--		/* set warm-up count & enable */
--		__raw_writel(RNG_WARMUP_COUNT, rng_base + RNG_STATUS);
--		__raw_writel(RNG_RBGEN, rng_base + RNG_CTRL);
--	}
- 	return err;
- }
- 
+								Honza
 -- 
-1.8.4
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
