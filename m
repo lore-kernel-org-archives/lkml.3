@@ -1,152 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030449AbaDJREG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 13:04:06 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:50035 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030428AbaDJREE (ORCPT
+	id S1030483AbaDJREq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 13:04:46 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:37171 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030400AbaDJREn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 13:04:04 -0400
-Date: Thu, 10 Apr 2014 13:03:59 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-cc: Russell King <linux@arm.linux.org.uk>,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        linaro-networking@linaro.org, Ben Dooks <ben.dooks@codethink.co.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: zImage: ensure header in LE format for BE8
- kernels
-In-Reply-To: <1397147232-28516-1-git-send-email-taras.kondratiuk@linaro.org>
-Message-ID: <alpine.LFD.2.11.1404101302380.980@knanqh.ubzr>
-References: <1397147232-28516-1-git-send-email-taras.kondratiuk@linaro.org>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Thu, 10 Apr 2014 13:04:43 -0400
+X-IronPort-AV: E=Sophos;i="4.97,835,1389772800"; 
+   d="scan'208";a="23669053"
+Message-ID: <5346CF27.3070406@broadcom.com>
+Date: Thu, 10 Apr 2014 19:04:39 +0200
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+CC: Takashi Iwai <tiwai@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felix Fietkau <nbd@openwrt.org>,
+        "backports@vger.kernel.org" <backports@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: Re: Bumping required kernels to 3.0 for Linux backports ?
+References: <CAB=NE6VvyBKzEg=ErZzQMktY8eLytQ21JCPrOQbxvZ9m-nqHkw@mail.gmail.com> <53451077.2030102@openwrt.org> <CAB=NE6UUN4vQd3SpsvO5tcgaYq3YXQeE0KtZGki7p7OnR=J4RA@mail.gmail.com> <20140409191225.GA10560@kroah.com> <CAB=NE6VqY8yXoYuE0o01vq86imY8EtqLdkPa4bGMvR3bTaj5KQ@mail.gmail.com> <20140409202224.GA12953@kroah.com> <CAB=NE6XY5++p7hJQpQdwrFNUcGbUsKpC+oJiZQciXNduo+8j8A@mail.gmail.com> <20140409210613.GA14392@kroah.com> <s5heh15pr18.wl%tiwai@suse.de> <CAB=NE6VeNTFeGxKXpYunkU-W=JPLMpOnrehttvsqB+yXkdz5fg@mail.gmail.com>
+In-Reply-To: <CAB=NE6VeNTFeGxKXpYunkU-W=JPLMpOnrehttvsqB+yXkdz5fg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Apr 2014, Taras Kondratiuk wrote:
+On 04/10/14 18:59, Luis R. Rodriguez wrote:
+> On Thu, Apr 10, 2014 at 12:44 AM, Takashi Iwai<tiwai@suse.de>  wrote:
+>> At Wed, 9 Apr 2014 14:06:13 -0700,
+>> Greg Kroah-Hartman wrote:
+>>>
+>>> On Wed, Apr 09, 2014 at 01:52:29PM -0700, Luis R. Rodriguez wrote:
+>>>> On Wed, Apr 9, 2014 at 1:22 PM, Greg Kroah-Hartman
+>>>> <gregkh@linuxfoundation.org>  wrote:
+>>>>> On Wed, Apr 09, 2014 at 01:01:23PM -0700, Luis R. Rodriguez wrote:
+>>>>>> On Wed, Apr 9, 2014 at 12:12 PM, Greg Kroah-Hartman
+>>>>>> <gregkh@linuxfoundation.org>  wrote:
+>>>>>>> On Wed, Apr 09, 2014 at 11:28:55AM -0700, Luis R. Rodriguez wrote:
+>>>>>>>> On Wed, Apr 9, 2014 at 2:18 AM, Felix Fietkau<nbd@openwrt.org>  wrote:
+>>>>>>>>> The oldest kernel in OpenWrt that we're still supporting with updates of
+>>>>>>>>> the backports tree is 3.3, so raising the minimum requirement to 3.0 is
+>>>>>>>>> completely fine with me.
+>>>>>>>>
+>>>>>>>> OK note that 3.3 is not listed on kernel.org as supported. I'm fine in
+>>>>>>>> carrying the stuff for those for now but ultimately it'd also be nice
+>>>>>>>> if we didn't even have to test the kernels in between which are not
+>>>>>>>> listed. This does however raise the question of how often a kernel in
+>>>>>>>> between a list of supported kernels gets picked up to be supported
+>>>>>>>> eventually. Greg, Jiri, do you happen to know what the likelyhood of
+>>>>>>>> that can be?
+>>>>>>>
+>>>>>>> I don't know of anything ever getting picked up after I have said it
+>>>>>>> would not be supported anymore.
+>>>>>>
+>>>>>> Great! How soon after a release do you mention whether or not it will
+>>>>>> be supported? Like say, 3.14, which was just released.
+>>>>>
+>>>>> I only mention it around the time that it would normally go end-of-life.
+>>>>>
+>>>>> For example, if 3.13 were to be a release that was going to be "long
+>>>>> term", I would only say something around the normal time I would be no
+>>>>> longer supporting it.  Like in 2-3 weeks from now.
+>>>>>
+>>>>> So for 3.14, I'll not say anything about that until 3.16-rc1 is out,
+>>>>> give or take a week or two.
+>>>>>
+>>>>>> Also, as of late are you aware any distribution picking an unsupported
+>>>>>> kernel for their next choice of kernel?
+>>>>>
+>>>>> Sure, lots do, as they don't line up with my release cycles (I only pick
+>>>>> 1 long term kernel to maintain each year).  Look at the Ubuntu releases
+>>>>> for examples of that.  Also openSUSE and Fedora (although Fedora does
+>>>>> rev their kernel pretty regularly) don't usually line up.  The
+>>>>> "enterprise" distros are different, but even then, they don't always
+>>>>> line up either (which is why Jiri is maintaining 3.12...)
+>>>>>
+>>>>> Hope this helps,
+>>>>
+>>>> It does! Unless I don't hear any complaints then given that some
+>>>> distributions might choose a kernel in between and given also your
+>>>> great documented story behind the gains on trying to steer folks
+>>>> together on the 'ol 2.6.32 [0] and this now being faded, I'll be
+>>>> bumping backports to only support>= 3.0 soon, but we'll include all
+>>>> the series from 3.0 up to the latest. That should shrink compile /
+>>>> test time / support time on backports to 1/2.
+>>>
+>>> Why 3.0?  That's not supported by anyone anymore for "new hardware", I'd
+>>> move to 3.2 if you could, as that's the Debian stable release that will
+>>> be maintained for quite some time yet:
+>>>        https://www.kernel.org/category/releases.html
+>>
+>> Well, the support for "new hardware" is what backports project itself
+>> does, isn't it?
+>>
+>> Besides, SLES11 is still supported, so yes, including 3.0.x would be
+>> helpful.
+>
+> That's two stakeholders for 3.0 -- but nothing is voiced for anything
+> older than that. Today I will rip the older kernels into oblivion.
+> Thanks for all the feedback!
 
-> From: Nico Pitre <nico@fluxnic.net>
+Ok, I guess my voice was cracking when I mentioned 2.6.38 as being used 
+over here. I am probably alone in that desert.
 
-Please use "Nicolas Pitre" as my full name.
+Regards,
+Arend
 
-> All known BE8-capable systems have LE bootloaders, so we need to ensure
-> that the magic number and image start/end values are in little endian
-> format.
-> 
-> [ben.dooks@codethink.co.uk: from nico's original email on this subject]
-> Signed-off-by: Ben Dooks <ben.dooks@codethink.co.uk>
-> [taras.kondratiuk@linaro.org: removed lds.S->lds rule, added target to extra-y]
-> Signed-off-by: Taras Kondratiuk <taras.kondratiuk@linaro.org>
-> ---
-> Nico, should I add your Signed-off-by?
-
-Sure.
-
-> 
-> Discussion about the patch:
-> http://www.spinics.net/lists/arm-kernel/msg320670.html
-> 
-> Based on v3.14+ master commit 39de65aa2c3eee901db020a4f1396998e09602a3
-> 
->  arch/arm/boot/compressed/.gitignore     |    1 +
->  arch/arm/boot/compressed/Makefile       |    4 ++--
->  arch/arm/boot/compressed/head.S         |    7 ++++---
->  arch/arm/boot/compressed/vmlinux.lds.in |   14 ++++++++++++++
->  4 files changed, 21 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/arm/boot/compressed/.gitignore b/arch/arm/boot/compressed/.gitignore
-> index 0714e03..6a26e7b 100644
-> --- a/arch/arm/boot/compressed/.gitignore
-> +++ b/arch/arm/boot/compressed/.gitignore
-> @@ -10,6 +10,7 @@ piggy.xzkern
->  piggy.lz4
->  vmlinux
->  vmlinux.lds
-> +vmlinux.lds.S
->  
->  # borrowed libfdt files
->  fdt.c
-> diff --git a/arch/arm/boot/compressed/Makefile b/arch/arm/boot/compressed/Makefile
-> index 68c9183..8a80906 100644
-> --- a/arch/arm/boot/compressed/Makefile
-> +++ b/arch/arm/boot/compressed/Makefile
-> @@ -114,7 +114,7 @@ targets       := vmlinux vmlinux.lds \
->  # Make sure files are removed during clean
->  extra-y       += piggy.gzip piggy.lzo piggy.lzma piggy.xzkern piggy.lz4 \
->  		 lib1funcs.S ashldi3.S bswapsdi2.S $(libfdt) $(libfdt_hdrs) \
-> -		 hyp-stub.S
-> +		 hyp-stub.S vmlinux.lds.S
->  
->  ifeq ($(CONFIG_FUNCTION_TRACER),y)
->  ORIG_CFLAGS := $(KBUILD_CFLAGS)
-> @@ -199,7 +199,7 @@ CFLAGS_font.o := -Dstatic=
->  $(obj)/font.c: $(FONTC)
->  	$(call cmd,shipped)
->  
-> -$(obj)/vmlinux.lds: $(obj)/vmlinux.lds.in arch/arm/boot/Makefile $(KCONFIG_CONFIG)
-> +$(obj)/vmlinux.lds.S: $(obj)/vmlinux.lds.in arch/arm/boot/Makefile $(KCONFIG_CONFIG)
->  	@sed "$(SEDFLAGS)" < $< > $@
->  
->  $(obj)/hyp-stub.S: $(srctree)/arch/$(SRCARCH)/kernel/hyp-stub.S
-> diff --git a/arch/arm/boot/compressed/head.S b/arch/arm/boot/compressed/head.S
-> index 066b034..8ea1773 100644
-> --- a/arch/arm/boot/compressed/head.S
-> +++ b/arch/arm/boot/compressed/head.S
-> @@ -130,9 +130,10 @@ start:
->   THUMB(		adr	r12, BSYM(1f)	)
->   THUMB(		bx	r12		)
->  
-> -		.word	0x016f2818		@ Magic numbers to help the loader
-> -		.word	start			@ absolute load/run zImage address
-> -		.word	_edata			@ zImage end address
-> +		.word	_magic_sig	@ Magic numbers to help the loader
-> +		.word	_magic_start	@ absolute load/run zImage address
-> +		.word	_magic_end	@ zImage end address
-> +
->   THUMB(		.thumb			)
->  1:
->   ARM_BE8(	setend	be )			@ go BE8 if compiled for BE8
-> diff --git a/arch/arm/boot/compressed/vmlinux.lds.in b/arch/arm/boot/compressed/vmlinux.lds.in
-> index 4919f2a..6016223 100644
-> --- a/arch/arm/boot/compressed/vmlinux.lds.in
-> +++ b/arch/arm/boot/compressed/vmlinux.lds.in
-> @@ -7,6 +7,16 @@
->   * it under the terms of the GNU General Public License version 2 as
->   * published by the Free Software Foundation.
->   */
-> +
-> +#ifdef CONFIG_CPU_ENDIAN_BE8
-> +#define ZIMAGE_MAGIC(x) ( (((x) >> 24) & 0x000000ff) | \
-> +			  (((x) >>  8) & 0x0000ff00) | \
-> +			  (((x) <<  8) & 0x00ff0000) | \
-> +			  (((x) << 24) & 0xff000000) )
-> +#else
-> +#define ZIMAGE_MAGIC(x) (x)
-> +#endif
-> +
->  OUTPUT_ARCH(arm)
->  ENTRY(_start)
->  SECTIONS
-> @@ -57,6 +67,10 @@ SECTIONS
->    .pad			: { BYTE(0); . = ALIGN(8); }
->    _edata = .;
->  
-> +  _magic_sig = ZIMAGE_MAGIC(0x016f2818);
-> +  _magic_start = ZIMAGE_MAGIC(_start);
-> +  _magic_end = ZIMAGE_MAGIC(_edata);
-> +
->    . = BSS_START;
->    __bss_start = .;
->    .bss			: { *(.bss) }
-> -- 
-> 1.7.9.5
-> 
+>   Luis
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> To unsubscribe from this list: send the line "unsubscribe backports" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+
