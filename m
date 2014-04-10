@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935145AbaDJD7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:59:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41168 "EHLO
+	id S935172AbaDJD7v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:59:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41164 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934905AbaDJDWf (ORCPT
+	with ESMTP id S934888AbaDJDWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:35 -0400
+	Wed, 9 Apr 2014 23:22:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Adrian Thomasset <adrian.thomasset@st.com>,
         Ben Hutchings <ben@decadent.org.uk>,
         Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 094/134] xhci: Dont enable/disable RWE on bus suspend/resume.
-Date: Wed,  9 Apr 2014 20:23:30 -0700
-Message-Id: <20140410032311.812824539@linuxfoundation.org>
+Subject: [PATCH 3.4 073/134] USB: ftdi_sio: enable two UART ports on ST Microconnect Lite
+Date: Wed,  9 Apr 2014 20:23:09 -0700
+Message-Id: <20140410032309.392318097@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -28,88 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Adrian Thomasset <adrian.thomasset@st.com>
 
-commit f217c980ca980e3a645b7485ea5eae9a747f4945 upstream.
+commit 71d9a2b95fc9c9474d46d764336efd7a5a805555 upstream.
 
-The RWE bit of the USB 2.0 PORTPMSC register is supposed to enable
-remote wakeup for devices in the lower power link state L1.  It has
-nothing to do with the device suspend remote wakeup from L2.  The RWE
-bit is designed to be set once (when USB 2.0 LPM is enabled for the
-port) and cleared only when USB 2.0 LPM is disabled for the port.
+The FT4232H used in the ST Micro Connect Lite has four hi-speed UART ports.
+The first two ports are reserved for the JTAG interface.
 
-The xHCI bus suspend method was setting the RWE bit erroneously, and the
-bus resume method was clearing it.  The xHCI 1.0 specification with
-errata up to Aug 12, 2012 says in section 4.23.5.1.1.1 "Hardware
-Controlled LPM":
+We enable by default ports 2 and 3 as UARTs (where port 2 is a
+conventional RS-232 UART)
 
-"While Hardware USB2 LPM is enabled, software shall not modify the
-HIRDBESL or RWE fields of the USB2 PORTPMSC register..."
-
-If we have previously enabled USB 2.0 LPM for a device, that means when
-the USB 2.0 bus is resumed, we violate the xHCI specification by
-clearing RWE.  It also means that after a bus resume, the host would
-think remote wakeup is disabled from L1 for ports with USB 2.0 Link PM
-enabled, which is not what we want.
-
-This patch should be backported to kernels as old as 3.2, that
-contain the commit 65580b4321eb36f16ae8b5987bfa1bb948fc5112 "xHCI: set
-USB2 hardware LPM".  That was the first kernel that supported USB 2.0
-Link PM.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-[bwh: Backported to 3.2: deleted code was cosmetically different]
+Signed-off-by: Adrian Thomasset <adrian.thomasset@st.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-hub.c |   28 ----------------------------
- 1 file changed, 28 deletions(-)
+ drivers/usb/serial/ftdi_sio.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
---- a/drivers/usb/host/xhci-hub.c
-+++ b/drivers/usb/host/xhci-hub.c
-@@ -1048,20 +1048,6 @@ int xhci_bus_suspend(struct usb_hcd *hcd
- 		t1 = xhci_port_state_to_neutral(t1);
- 		if (t1 != t2)
- 			xhci_writel(xhci, t2, port_array[port_index]);
--
--		if (hcd->speed != HCD_USB3) {
--			/* enable remote wake up for USB 2.0 */
--			__le32 __iomem *addr;
--			u32 tmp;
--
--			/* Add one to the port status register address to get
--			 * the port power control register address.
--			 */
--			addr = port_array[port_index] + 1;
--			tmp = xhci_readl(xhci, addr);
--			tmp |= PORT_RWE;
--			xhci_writel(xhci, tmp, addr);
--		}
- 	}
- 	hcd->state = HC_STATE_SUSPENDED;
- 	bus_state->next_statechange = jiffies + msecs_to_jiffies(10);
-@@ -1140,20 +1126,6 @@ int xhci_bus_resume(struct usb_hcd *hcd)
- 				xhci_ring_device(xhci, slot_id);
- 		} else
- 			xhci_writel(xhci, temp, port_array[port_index]);
--
--		if (hcd->speed != HCD_USB3) {
--			/* disable remote wake up for USB 2.0 */
--			__le32 __iomem *addr;
--			u32 tmp;
--
--			/* Add one to the port status register address to get
--			 * the port power control register address.
--			 */
--			addr = port_array[port_index] + 1;
--			tmp = xhci_readl(xhci, addr);
--			tmp &= ~PORT_RWE;
--			xhci_writel(xhci, tmp, addr);
--		}
- 	}
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -1855,8 +1855,11 @@ static int ftdi_8u2232c_probe(struct usb
+ }
  
- 	(void) xhci_readl(xhci, &xhci->op_regs->command);
+ /*
+- * First and second port on STMCLiteadaptors is reserved for JTAG interface
+- * and the forth port for pio
++ * First two ports on JTAG adaptors using an FT4232 such as STMicroelectronics's
++ * ST Micro Connect Lite are reserved for JTAG or other non-UART interfaces and
++ * can be accessed from userspace.
++ * The next two ports are enabled as UARTs by default, where port 2 is
++ * a conventional RS-232 UART.
+  */
+ static int ftdi_stmclite_probe(struct usb_serial *serial)
+ {
+@@ -1865,12 +1868,13 @@ static int ftdi_stmclite_probe(struct us
+ 
+ 	dbg("%s", __func__);
+ 
+-	if (interface == udev->actconfig->interface[2])
+-		return 0;
++	if (interface == udev->actconfig->interface[0] ||
++	    interface == udev->actconfig->interface[1]) {
++		dev_info(&udev->dev, "Ignoring serial port reserved for JTAG\n");
++		return -ENODEV;
++	}
+ 
+-	dev_info(&udev->dev, "Ignoring serial port reserved for JTAG\n");
+-
+-	return -ENODEV;
++	return 0;
+ }
+ 
+ /*
 
 
