@@ -1,90 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965820AbaDJJv1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 05:51:27 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:59026 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965642AbaDJJvX (ORCPT
+	id S965841AbaDJJv7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 05:51:59 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:40036 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965601AbaDJJvq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 05:51:23 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: "kgene.kim\@samsung.com" <kgene.kim@samsung.com>,
-        "t.figa\@samsung.com" <t.figa@samsung.com>,
-        "linux-samsung-soc\@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "hyunhee.kim\@samsung.com" <hyunhee.kim@samsung.com>,
-        "sw0312.kim\@samsung.com" <sw0312.kim@samsung.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yj44.cho\@samsung.com" <yj44.cho@samsung.com>,
-        "inki.dae\@samsung.com" <inki.dae@samsung.com>,
-        "kyungmin.park\@samsung.com" <kyungmin.park@samsung.com>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 06/27] ARM: EXYNOS:: Enter a15 lowpower mode for Exynos3250 based on Cortex-a7
-In-Reply-To: <1397122124-15690-7-git-send-email-cw00.choi@samsung.com>
-	(Chanwoo Choi's message of "Thu, 10 Apr 2014 10:28:23 +0100")
-Organization: ARM Ltd
-References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
-	<1397122124-15690-7-git-send-email-cw00.choi@samsung.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Thu, 10 Apr 2014 10:51:15 +0100
-Message-ID: <87d2gp3430.fsf@approximate.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 10 Apr 2014 05:51:46 -0400
+X-AuditID: cbfee691-b7efc6d0000039d3-9d-534669b18b3c
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Alexandre Courbot'" <gnurou@gmail.com>,
+        "'Alexandre Courbot'" <acourbot@nvidia.com>
+Cc: "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'Bryan Wu'" <cooloney@gmail.com>, "'Ben Dooks'" <ben-linux@fluff.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>, linux-pwm@vger.kernel.org,
+        linux-gpio@vger.kernel.org,
+        "'Linux Kernel Mailing List'" <linux-kernel@vger.kernel.org>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1393480414-19473-1-git-send-email-acourbot@nvidia.com>
+ <1393480414-19473-2-git-send-email-acourbot@nvidia.com>
+ <CAAVeFu+XUzZ7ozMOcp6A-gZJ9o8DZFrdh1j4LvCQtoTcu=PP1g@mail.gmail.com>
+In-reply-to: <CAAVeFu+XUzZ7ozMOcp6A-gZJ9o8DZFrdh1j4LvCQtoTcu=PP1g@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ARM: SAMSUNG: remove gpio flags in dev-backlight
+Date: Thu, 10 Apr 2014 18:51:45 +0900
+Message-id: <000701cf54a2$7c1379c0$743a6d40$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac9Uc9gRSh4xxKlJQ3G7k3jmM+VzoAALUegw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIIsWRmVeSWpSXmKPExsVy+t8zI92NmW7BBn82SFh8f3iK1WLSugNM
+	Fkd3TmSyOPfqEYvF5YWXWC16F1xls9g8/w+jxeVdc9gs7t5dxWjxc9c8Fgcuj7+rXjB77Jx1
+	l92jt/kdm0ffllWMHp83yQWwRnHZpKTmZJalFunbJXBltD2TK7gmWDFzuX0D4y/eLkZODgkB
+	E4kNHb9YIWwxiQv31rN1MXJxCAksY5RYs+UiI0zRrN4VzBCJRYwSradfQ1X9ZpT4seQ1E0gV
+	m4CaxJcvh9lBbBGBcIkPa16BFTEL7GKSuHlhBiNExxFGiZ7zc5lBqjgFgiW2dd0Fs4UFPCWW
+	T1wFto9FQFVi9+ImsKN4BWwlOt5dhLIFJX5MvscCYjMLqEtMmreIGcKWl9i85i2QzQF0q7rE
+	o7+6EEcYSTz+u4odokREYt+Ld2A3SAg0ckhMWPifBWKXgMS3yYdYIHplJTYdYIZ4WVLi4Iob
+	LBMYJWYh2TwLyeZZSDbPQrJiASPLKkbR1ILkguKk9CJTveLE3OLSvHS95PzcTYyQ6J64g/H+
+	AetDjMlA6ycyS4km5wOTQ15JvKGxmZGFqYmpsZG5pRlpwkrivOmPkoKEBNITS1KzU1MLUovi
+	i0pzUosPMTJxcEo1MObd4Je/7lXdHh7reubXtOmfEo+EiPPeWbBiJbPexATr/DPn+DK1y9VC
+	Qh6vCU/zF0nLPGhcpKoeHi3H/zDh9xdxS8WZz82nS0orFCXP+1XGHB138Jez2Ln1bOYtHXO+
+	2f3/8ePK5a2H3ObmsSh8un+Sbf619kOnDOOlOe++s3K/s1f7WOv8K0osxRmJhlrMRcWJAIO1
+	nnQEAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHKsWRmVeSWpSXmKPExsVy+t9jAd2NmW7BBlc3Clt8f3iK1WLSugNM
+	Fkd3TmSyOPfqEYvF5YWXWC16F1xls9g8/w+jxeVdc9gs7t5dxWjxc9c8Fgcuj7+rXjB77Jx1
+	l92jt/kdm0ffllWMHp83yQWwRjUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgr
+	KeQl5qbaKrn4BOi6ZeYAnaWkUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxj
+	zGh7JldwTbBi5nL7BsZfvF2MnBwSAiYSs3pXMEPYYhIX7q1n62Lk4hASWMQo0Xr6NZTzm1Hi
+	x5LXTCBVbAJqEl++HGYHsUUEwiU+rHkFVsQssItJ4uaFGYwQHUcYJXrOzwWbyykQLLGt6y6Y
+	LSzgKbF84ipGEJtFQFVi9+ImVhCbV8BWouPdRShbUOLH5HssIDazgLrEpHmLmCFseYnNa94C
+	2RxAt6pLPPqrC3GEkcTjv6vYIUpEJPa9eMc4gVFoFpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcU
+	J6XnGukVJ+YWl+al6yXn525iBKeOZ9I7GFc1WBxiFOBgVOLhPbDMNViINbGsuDL3EKMEB7OS
+	CO+1YLdgId6UxMqq1KL8+KLSnNTiQ4zJQI9OZJYSTc4HprW8knhDYxMzI0sjMwsjE3Nz0oSV
+	xHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamBs8LqT5n7/ZLBnmf0xm0USuhcZIh/uCGcXnfar
+	PvHM1efbl1hGXV65Si6SWTB1tvBMVbY437JX9YtPcTn4O21Tqdxx5eiUxzkbBB6lL/ydK+My
+	g2nd5cbjxn95FSa+i/tvxDK5J3WxUlXCFofP/V9vCKX86pjh7RhvKXDKuZ35rqqG096XtvFK
+	LMUZiYZazEXFiQDgGZQ5YQMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10 2014 at 10:28:23 am BST, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> This patch decide proper lowpower mode of either a15 or a9 according to own ID
-> from Main ID register.
->
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  arch/arm/mach-exynos/hotplug.c | 13 ++++++++++---
->  1 file changed, 10 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
-> index 5eead53..36d3db6 100644
-> --- a/arch/arm/mach-exynos/hotplug.c
-> +++ b/arch/arm/mach-exynos/hotplug.c
-> @@ -135,13 +135,20 @@ void __ref exynos_cpu_die(unsigned int cpu)
->  	int primary_part = 0;
->  
->  	/*
-> -	 * we're ready for shutdown now, so do it.
-> -	 * Exynos4 is A9 based while Exynos5 is A15; check the CPU part
-> +	 * we're ready for shutdown now, so do it. Exynos4 is A9 based
-> +	 * while Exynos5 is A15/Exynos7 is A7; check the CPU part
->  	 * number by reading the Main ID register and then perform the
->  	 * appropriate sequence for entering low power.
->  	 */
->  	asm("mrc p15, 0, %0, c0, c0, 0" : "=r"(primary_part) : : "cc");
+On Thursday, April 10, 2014 1:17 PM, Alexandre Courbot wrote:
+> 
+> Ping, can I have the Samsung folks review and ,aybe even merge this
+> patch? enable_gpio_flags is never used in any code, is replaced by
+> gpiod, and we would like to remove it altogether from pwm_bl. Thanks!
 
-While you're touching that code, how about using:
+OK, I see. It looks good.
 
-      primary_part = read_cpuid(CPUID_ID);
+As far as I know, 'enable_gpio_flags' has not been being used
+for Samsung platform. So, there will be no side effect,
+if 'enable_gpio_flags' is removed from 'arch/arm/plat-samsung'
+directory.
 
-> -	if ((primary_part & 0xfff0) == 0xc0f0)
-> +
-> +	/*
-> +	 * Main ID register of Cortex series
-> +	 * - Cortex-a7  : 0x410F_C07x
-> +	 * - Cortex-a15 : 0x410F_C0Fx
-> +	 */
-> +	primary_part = primary_part & 0xfff0;
-> +	if (primary_part == 0xc0f0 || primary_part == 0xc070)
+Reviewed-by: Jingoo Han <jg1.han@samsung.com>
 
-ARM_CPU_PART_CORTEX_A15, ARM_CPU_PART_CORTEX_A7
+Best regards,
+Jingoo Han
 
->  		cpu_enter_lowpower_a15();
->  	else
->  		cpu_enter_lowpower_a9();
+> 
+> Alex.
+> 
+> On Thu, Feb 27, 2014 at 2:53 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+> > The pwm-backlight driver is moving to use the gpiod interface,
+> > which has its own mapping mechanism for platform data GPIOs.
+> > These mappings carry GPIO properties like active low so they don't have
+> > to be explicitly handled by GPIO consumers.
+> >
+> > Because of this change, the enable_gpio_flags member of
+> > platform_pwm_backlight_data is going away. dev-backlight was passing
+> > this member, but had no user making use of it, so it can safely be
+> > removed. Further GPIOs used by pwm-backlight are expected to be
+> > defined using the mechanisms provided by the gpiod API.
+> >
+> > Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> > ---
+> >  arch/arm/plat-samsung/dev-backlight.c | 2 --
+> >  1 file changed, 2 deletions(-)
+> >
+> > diff --git a/arch/arm/plat-samsung/dev-backlight.c b/arch/arm/plat-samsung/dev-backlight.c
+> > index be4ad0b21c08..2157c5b539e6 100644
+> > --- a/arch/arm/plat-samsung/dev-backlight.c
+> > +++ b/arch/arm/plat-samsung/dev-backlight.c
+> > @@ -124,8 +124,6 @@ void __init samsung_bl_set(struct samsung_bl_gpio_info *gpio_info,
+> >                 samsung_bl_data->pwm_period_ns = bl_data->pwm_period_ns;
+> >         if (bl_data->enable_gpio >= 0)
+> >                 samsung_bl_data->enable_gpio = bl_data->enable_gpio;
+> > -       if (bl_data->enable_gpio_flags)
+> > -               samsung_bl_data->enable_gpio_flags = bl_data->enable_gpio_flags;
+> >         if (bl_data->init)
+> >                 samsung_bl_data->init = bl_data->init;
+> >         if (bl_data->notify)
+> > --
+> > 1.9.0
 
-Thanks,
-
-	M.
--- 
-Jazz is not dead. It just smells funny.
