@@ -1,106 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934484AbaDJAIv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 20:08:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45904 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934092AbaDJAIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 20:08:50 -0400
-From: Steve Grubb <sgrubb@redhat.com>
-To: linux-audit@redhat.com
-Cc: Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>, rgb@redhat.com,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH for v3.14] AUDIT: Allow login in non-init namespaces
-Date: Wed, 09 Apr 2014 20:08:40 -0400
-Message-ID: <19406418.LIeRWhPu7h@x2>
-Organization: Red Hat
-User-Agent: KMail/4.12.3 (Linux/3.13.9-200.fc20.x86_64; KDE/4.12.3; x86_64; ; )
-In-Reply-To: <1396220874.6974.5.camel@localhost>
-References: <1396220874.6974.5.camel@localhost>
+	id S934517AbaDJAM0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 20:12:26 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:49537 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933317AbaDJAMY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 20:12:24 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <5345D912.7000606@zytor.com>
+References: <1396962570-18762-1-git-send-email-mgorman@suse.de>
+	<53440A5D.6050301@zytor.com>
+	<CA+55aFwc6Jdf+As9RJ3wJWuOGEGmiaYWNa-jp2aCb9=ZiiqV+A@mail.gmail.com>
+	<20140408164652.GL7292@suse.de>
+	<20140408173031.GS10526@twins.programming.kicks-ass.net>
+	<20140409062103.GA7294@gmail.com>
+	<5345D912.7000606@zytor.com>
+Date: Wed, 9 Apr 2014 17:12:24 -0700
+X-Google-Sender-Auth: YUaXQXzbgunuaw0ui2mLHzK9H5o
+Message-ID: <CA+55aFwMVjsYpT+c0GukgU18_YEKKWtXVpOk0ePRAtCDU71jqA@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/5] Use an alternative to _PAGE_PROTNONE for
+ _PAGE_NUMA v2
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Mel Gorman <mgorman@suse.de>, Linux-X86 <x86@kernel.org>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Steven Noonan <steven@uplinklabs.net>, Rik van Riel <riel@redhat.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, March 30, 2014 07:07:54 PM Eric Paris wrote:
-> It its possible to configure your PAM stack to refuse login if
-> audit messages (about the login) were unable to be sent.  This is common
-> in many distros and thus normal configuration of many containers. The
-> PAM modules determine if audit is enabled/disabled in the kernel based
-> on the return value from sending an audit message on the netlink socket.
-> If userspace gets back ECONNREFUSED it believes audit is disabled in the
-> kernel.  If it gets any other error else it refuses to let the login
-> proceed.
+On Wed, Apr 9, 2014 at 4:34 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> How painful would it be to get rid of _PAGE_NUMA entirely?  Page bits
+> are a highly precious commodity and saving one would be valuable.
 
-This is a requirement. I do not advocate "tricking" user space. If you do, I 
-might have to fix the bug you created. What should be done is have some 
-discussion about the problem so that everyone involved has some chance to 
-discuss the problem.
+I don't think _PAGE_NUMA is a problem. It's only set when the page is
+not present, so we have tons of bits then.
 
--Steve
+Now, that's still inconvenient for the 32-bit pte case, because we do
+*not* have tons of bits for non-present cases since we need them for
+the swap indexes.
 
-> Just about ever since the introduction of namespaces the kernel audit
-> subsystem has returned EPERM if the task sending a message was not in
-> the init user or pid namespace.  So many forms of containers have never
-> worked if audit was enabled in the kernel.
-> 
-> BUT if the container was not in net_init then the kernel network code
-> would send ECONNREFUSED (instead of the audit code sending EPERM).  Thus
-> by pure accident/dumb luck/bug if an admin configured the PAM stack to
-> reject all logins that didn't talk to audit, but then ran the login
-> untility in the non-init_net namespace, it would work!!  Clearly this
-> was a bug, but it is a bug some people expected.
-> 
-> With the introduction of network namespace support in 3.14-rc1 the two
-> bugs stopped cancelling each other out.  Now, containers in the
-> non-init_net namespace refused to let users log in (just like PAM was
-> configfured!)  Obviously some people were not happy that what used to
-> let users log in, now didn't!
-> 
-> This fix is kinda hacky.  We return ECONNREFUSED for all non-init
-> relevant namespaces.  That means that not only will the old broken
-> non-init_net setups continue to work, now the broken non-init_pid or
-> non-init_user setups will 'work'.  They don't really work, since audit
-> isn't logging things.  But it's what most users want.
-> 
-> In 3.15 we should have patches to support not only the non-init_net
-> (3.14) namespace but also the non-init_pid and non-init_user namespace.
-> So all will be right in the world.  This just opens the doors wide open
-> on 3.14 and hopefully makes users happy, if not the audit system...
-> 
-> Reported-by: Andre Tomt <andre@tomt.net>
-> Reported-by: Adam Richter <adam_richter2004@yahoo.com>
-> Signed-off-by: Eric Paris <eparis@redhat.com>
-> ---
->  kernel/audit.c | 12 +++++++++++-
->  1 file changed, 11 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/audit.c b/kernel/audit.c
-> index 3392d3e..95a20f3 100644
-> --- a/kernel/audit.c
-> +++ b/kernel/audit.c
-> @@ -608,9 +608,19 @@ static int audit_netlink_ok(struct sk_buff *skb, u16
-> msg_type) int err = 0;
-> 
->  	/* Only support the initial namespaces for now. */
-> +	/*
-> +	 * We return ECONNREFUSED because it tricks userspace into thinking
-> +	 * that audit was not configured into the kernel.  Lots of users
-> +	 * configure their PAM stack (because that's what the distro does)
-> +	 * to reject login if unable to send messages to audit.  If we return
-> +	 * ECONNREFUSED the PAM stack thinks the kernel does not have audit
-> +	 * configured in and will let login proceed.  If we return EPERM
-> +	 * userspace will reject all logins.  This should be removed when we
-> +	 * support non init namespaces!!
-> +	 */
->  	if ((current_user_ns() != &init_user_ns) ||
->  	    (task_active_pid_ns(current) != &init_pid_ns))
-> -		return -EPERM;
-> +		return -ECONNREFUSED;
-> 
->  	switch (msg_type) {
->  	case AUDIT_LIST:
+This is different from _PAGE_SOFT_DIRTY, which we do need for both
+present and swapped-out entries.
 
+Or am I missing something?
+
+            Linus
