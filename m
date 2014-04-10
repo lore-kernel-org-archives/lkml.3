@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934370AbaDJCqt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 22:46:49 -0400
-Received: from mga11.intel.com ([192.55.52.93]:12923 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932996AbaDJCqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 22:46:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,831,1389772800"; 
-   d="scan'208";a="510601329"
-From: Chen Tingjie <tingjie.chen@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
-Cc: Chen Tingjie <tingjie.chen@intel.com>, Zhang Jun <jun.zhang@intel.com>
-Subject: [PATCH] tty: fix memleak in alloc_pid
-Date: Thu, 10 Apr 2014 10:41:56 +0800
-Message-Id: <1397097716-3535-1-git-send-email-tingjie.chen@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S934571AbaDJDCD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:02:03 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59105 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932996AbaDJDB6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 23:01:58 -0400
+Date: Thu, 10 Apr 2014 04:01:50 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Mark Brown <broonie@kernel.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: core: Fix Sparse incompatible types warning
+Message-ID: <20140410030150.GC18016@ZenIV.linux.org.uk>
+References: <1397028108-10976-1-git-send-email-k.kozlowski@samsung.com>
+ <5345279F.6070005@metafoo.de>
+ <1397041934.11424.2.camel@AMDC1943>
+ <53452F67.3060400@metafoo.de>
+ <20140409202520.GQ6518@sirena.org.uk>
+ <5345AD8B.5050306@metafoo.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5345AD8B.5050306@metafoo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is memleak in alloc_pid:
------------------------------
-unreferenced object 0xd3453a80 (size 64):
-  comm "adbd", pid 1730, jiffies 66363 (age 6586.950s)
-  hex dump (first 32 bytes):
-    01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-    00 00 00 00 40 c2 f6 d5 00 d3 25 c1 59 28 00 00  ....@.....%.Y(..
-  backtrace:
-    [<c1a6f15c>] kmemleak_alloc+0x3c/0xa0
-    [<c1320546>] kmem_cache_alloc+0xc6/0x190
-    [<c125d51e>] alloc_pid+0x1e/0x400
-    [<c123d344>] copy_process.part.39+0xad4/0x1120
-    [<c123da59>] do_fork+0x99/0x330
-    [<c123dd58>] sys_fork+0x28/0x30
-    [<c1a89a08>] syscall_call+0x7/0xb
-    [<ffffffff>] 0xffffffff
+On Wed, Apr 09, 2014 at 10:28:59PM +0200, Lars-Peter Clausen wrote:
 
-the leak is due to unreleased pid->count, which execute in function:
-get_pid()(pid->count++) and put_pid()(pid->count--).
+> I had a look at the sparse code and the problem is that it sets the
+> default return type of sizeof according to the type of the host it
+> was compiled on (either unsigned int or unsigned long). It can be
+> overwritten by switches like -m32, but of course wont work when
+> cross compiling. So if your host system is 64bit, but your target
+> system is 32bit you'll get that warning.
 
-Tracking it, in disassociate_ctty(), when both
-current->signal->tty_old_pgrp and current->signal->tty are NULL,
-it will lack one put_pid() and cause pid leak.
+Not that simple.  First of all, you *need* to tell sparse what target
+to expect; size_t is the least of your troubles - sizeof(long) has
+far more widespread impact.  If you don't get -m64 or -m32 in CFLAGS
+(and on quite a few cross-builds you get it, simply because the target
+is biarch and gcc itself needs to know what to generate), you need
+to set it in CHECKFLAGS, along with other target-specific things.
+Example:
+arch/ia64/Makefile:21:CHECKFLAGS        += -m64 -D__ia64=1 -D__ia64__=1 -D_LP64 -D__LP64__
 
-In theory, set p->signal->tty to NULL and p->signal->tty_old_pgrp
-should be atomic operation, can be seen in function:
-tty_signal_session_leader(), but in disassociate_ctty(), it is not.
-This lack of protection will sometimes cause the leak case.
+With the defaults being what they are (since commit 7aa79f "Adding default for
+m64/m32 handle"), we probably need explicit -m32 in CHECKFLAGS for a bunch
+of 32bit targets.  Defaults are iffy, BTW - it's not even "do as host does",
+it's "64bit if the host is amd64, 32bit otherwise" ;-/
 
-Make sure the atomic for the two operations can fix this leak.
-
-Signed-off-by: Zhang Jun <jun.zhang@intel.com>
-Signed-off-by: Chen Tingjie <tingjie.chen@intel.com>
----
- drivers/tty/tty_io.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index d3448a9..3411071 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -878,9 +878,8 @@ void disassociate_ctty(int on_exit)
- 	spin_lock_irq(&current->sighand->siglock);
- 	put_pid(current->signal->tty_old_pgrp);
- 	current->signal->tty_old_pgrp = NULL;
--	spin_unlock_irq(&current->sighand->siglock);
- 
--	tty = get_current_tty();
-+	tty = tty_kref_get(current->signal->tty);
- 	if (tty) {
- 		unsigned long flags;
- 		spin_lock_irqsave(&tty->ctrl_lock, flags);
-@@ -897,6 +896,7 @@ void disassociate_ctty(int on_exit)
- #endif
- 	}
- 
-+	spin_unlock_irq(&current->sighand->siglock);
- 	/* Now clear signal->tty under the lock */
- 	read_lock(&tasklist_lock);
- 	session_clear_tty(task_session(current));
--- 
-1.7.9.5
+Again, CHECKFLAGS need to be set; that's normally done in arch/*/Makefile.
 
