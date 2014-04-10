@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030320AbaDJQxq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 12:53:46 -0400
-Received: from mga09.intel.com ([134.134.136.24]:42044 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030212AbaDJQxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 12:53:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,835,1389772800"; 
-   d="scan'208";a="518622045"
-From: Andi Kleen <andi@firstfloor.org>
-To: Richard Yao <ryao@gentoo.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, kernel@gentoo.org,
-        Matthew Thode <mthode@mthode.org>
-Subject: Re: [PATCH] mm/vmalloc: Introduce DEBUG_VMALLOCINFO to reduce spinlock contention
-References: <1397148058-8737-1-git-send-email-ryao@gentoo.org>
-Date: Thu, 10 Apr 2014 09:51:57 -0700
-In-Reply-To: <1397148058-8737-1-git-send-email-ryao@gentoo.org> (Richard Yao's
-	message of "Thu, 10 Apr 2014 12:40:58 -0400")
-Message-ID: <87txa1i0uq.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1758685AbaDJQzL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 12:55:11 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:46024 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752308AbaDJQzI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 12:55:08 -0400
+Date: Thu, 10 Apr 2014 12:55:03 -0400
+From: Matt Porter <matt.porter@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Sherman Yin <syin@broadcom.com>, Mark Brown <broonie@kernel.org>,
+        Heiko =?iso-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 1/3] pinctrl: Rename Broadcom Capri pinctrl driver
+Message-ID: <20140410165503.GA23695@beef>
+References: <1390509887-19278-1-git-send-email-syin@broadcom.com>
+ <1396478439-16586-1-git-send-email-syin@broadcom.com>
+ <1396478439-16586-2-git-send-email-syin@broadcom.com>
+ <CACRpkdZ1Lt2JsMMWVMBgfS8ktkpeYzA3MiGmWB27Jwhw16UYYg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZ1Lt2JsMMWVMBgfS8ktkpeYzA3MiGmWB27Jwhw16UYYg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Yao <ryao@gentoo.org> writes:
+On Thu, Apr 10, 2014 at 06:49:56PM +0200, Linus Walleij wrote:
+> On Thu, Apr 3, 2014 at 12:40 AM, Sherman Yin <syin@broadcom.com> wrote:
+> 
+> > To be consistent with other Broadcom drivers, the Broadcom Capri pinctrl
+> > driver and its related CONFIG option are renamed to bcm281xx.
+> >
+> > Devicetree compatible string and binding documentation use
+> > "brcm,bcm11351-pinctrl" to match the machine binding here:
+> > Documentation/devicetree/bindings/arm/bcm/bcm11351.txt
+> >
+> > This driver supports pinctrl on BCM11130, BCM11140, BCM11351, BCM28145
+> > and BCM28155 SoCs.
+> >
+> > Signed-off-by: Sherman Yin <syin@broadcom.com>
+> > Reviewed-by: Matt Porter <mporter@linaro.org>
+> > Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> > ---
+> >  drivers/pinctrl/Kconfig                            |    8 +-
+> >  drivers/pinctrl/Makefile                           |    2 +-
+> >  .../{pinctrl-capri.c => pinctrl-bcm281xx.c}        | 1519 ++++++++++----------
+> 
+> This last version from apr 7 does not change
+> arch/arm/configs/bcm_defconfig:CONFIG_PINCTRL_CAPRI=y
+> 
+> Doesn't this mean that you render this platform without a pin
+> control driver and thus broken?
 
-> Performance analysis of software compilation by Gentoo portage on an
-> Intel E5-2620 with 64GB of RAM revealed that a sizeable amount of time,
-> anywhere from 5% to 15%, was spent in get_vmalloc_info(), with at least
-> 40% of that time spent in the _raw_spin_lock() invoked by it.
+The pinctrl device is not used in DT so having the driver
+disabled does not matter.
 
-I don't think that's the right fix. We want to be able 
-to debug kernels without having to recompile them.
-
-And switching locking around dynamically like this is very
-ugly and hard to maintain.
-
-Besides are you sure the spin lock is not needed elsewhere?
-
-How are writers to the list protected?
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+-Matt
