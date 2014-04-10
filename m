@@ -1,802 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935465AbaDJPyZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 11:54:25 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:24091 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934908AbaDJPyU (ORCPT
+	id S935619AbaDJPyq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 11:54:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:46571 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933287AbaDJPym convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 11:54:20 -0400
-Message-ID: <1397145253.2608.36.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: hpsa driver bug crack kernel down!
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Baoquan He <bhe@redhat.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>
-Date: Thu, 10 Apr 2014 08:54:13 -0700
-In-Reply-To: <53465781.4010904@linux.intel.com>
-References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
-	 <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>
-	 <1397084904.9519.62.camel@dabdike> <1397085044.9519.63.camel@dabdike>
-	 <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
-	 <1397087425.9519.67.camel@dabdike>
-	 <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>
-	 <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
-	 <53465781.4010904@linux.intel.com>
-Content-Type: multipart/mixed; boundary="=-FcSj8lL0ysHsrzRDIZE4"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Thu, 10 Apr 2014 11:54:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,834,1389772800"; 
+   d="scan'208";a="490851190"
+From: "Ronciak, John" <john.ronciak@intel.com>
+To: Borislav Petkov <bp@alien8.de>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: RE: [E1000-devel] e1000e 0000:00:19.0 eth0: Hardware Error
+Thread-Topic: [E1000-devel] e1000e 0000:00:19.0 eth0: Hardware Error
+Thread-Index: AQHPVLdrAxdjG/5jeE69GhOZ+4cbcpsLABfw
+Date: Thu, 10 Apr 2014 15:54:40 +0000
+Message-ID: <D38E8E86660E514AB505863C19C9287C73F9532B@ORSMSX102.amr.corp.intel.com>
+References: <20140410115941.GI29093@pd.tnic>
+In-Reply-To: <20140410115941.GI29093@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-FcSj8lL0ysHsrzRDIZE4
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-On Thu, 2014-04-10 at 16:34 +0800, Jiang Liu wrote:
-> Hi Baoquan,
-> 	Could you please help to give output of "lspci -vvvv"?
-
-Attached.
-
-> Is device "hpsa 0000:03:00.0" a legacy PCI device(non-PCIe)?
-> It may have relationship with IOMMU driver.
-
-I honestly don't know. PCI is way out of my area of knowledge.
-
---=-FcSj8lL0ysHsrzRDIZE4
-Content-Disposition: attachment; filename="lspci.txt"
-Content-Type: text/plain; name="lspci.txt"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-00:00.0 Host bridge: Intel Corporation 5520/5500/X58 I/O Hub to ESI Port (rev 22)
-	Subsystem: Hewlett-Packard Company Device 330b
-	Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Capabilities: <access denied>
-
-00:01.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port 1 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=00, secondary=0e, subordinate=10, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-00:02.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port 2 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=00, secondary=14, subordinate=14, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-00:03.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port 3 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=00, secondary=04, subordinate=04, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: 90000000-99ffffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort+ <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-00:04.0 PCI bridge: Intel Corporation 5520/X58 I/O Hub PCI Express Root Port 4 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=00, secondary=15, subordinate=15, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-00:05.0 PCI bridge: Intel Corporation 5520/X58 I/O Hub PCI Express Root Port 5 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=00, secondary=11, subordinate=13, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-00:06.0 PCI bridge: Intel Corporation 5520/X58 I/O Hub PCI Express Root Port 6 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=00, secondary=16, subordinate=16, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-00:07.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port 7 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=00, secondary=0b, subordinate=0d, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-00:08.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port 8 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=00, secondary=17, subordinate=17, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-00:09.0 PCI bridge: Intel Corporation 7500/5520/5500/X58 I/O Hub PCI Express Root Port 9 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=00, secondary=08, subordinate=0a, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-00:0a.0 PCI bridge: Intel Corporation 7500/5520/5500/X58 I/O Hub PCI Express Root Port 10 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=00, secondary=05, subordinate=07, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-00:14.0 PIC: Intel Corporation 7500/5520/5500/X58 I/O Hub System Management Registers (rev 22) (prog-if 00 [8259])
-	Subsystem: Device 003c:000b
-	Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Capabilities: <access denied>
-	Kernel modules: i7core_edac
-
-00:1c.0 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI Express Root Port 1 (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=00, secondary=03, subordinate=03, sec-latency=0
-	I/O behind bridge: 00004000-00004fff
-	Memory behind bridge: 9a000000-9a2fffff
-	Prefetchable memory behind bridge: 000000009a700000-000000009a7fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-00:1c.4 PCI bridge: Intel Corporation 82801JI (ICH10 Family) PCI Express Root Port 5 (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=00, secondary=02, subordinate=02, sec-latency=0
-	I/O behind bridge: 00003000-00003fff
-	Memory behind bridge: 9a300000-9a4fffff
-	Prefetchable memory behind bridge: 000000009a800000-000000009a8fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort+ <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-00:1d.0 USB controller: Intel Corporation 82801JI (ICH10 Family) USB UHCI Controller #1 (prog-if 00 [UHCI])
-	Subsystem: Hewlett-Packard Company Device 330d
-	Control: I/O+ Mem- BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0
-	Interrupt: pin A routed to IRQ 20
-	Region 4: I/O ports at 1000 [size=32]
-	Capabilities: <access denied>
-	Kernel driver in use: uhci_hcd
-
-00:1d.1 USB controller: Intel Corporation 82801JI (ICH10 Family) USB UHCI Controller #2 (prog-if 00 [UHCI])
-	Subsystem: Hewlett-Packard Company Device 330d
-	Control: I/O+ Mem- BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0
-	Interrupt: pin B routed to IRQ 23
-	Region 4: I/O ports at 1020 [size=32]
-	Capabilities: <access denied>
-	Kernel driver in use: uhci_hcd
-
-00:1d.2 USB controller: Intel Corporation 82801JI (ICH10 Family) USB UHCI Controller #3 (prog-if 00 [UHCI])
-	Subsystem: Hewlett-Packard Company Device 330d
-	Control: I/O+ Mem- BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0
-	Interrupt: pin C routed to IRQ 22
-	Region 4: I/O ports at 1040 [size=32]
-	Capabilities: <access denied>
-	Kernel driver in use: uhci_hcd
-
-00:1d.3 USB controller: Intel Corporation 82801JI (ICH10 Family) USB UHCI Controller #6 (prog-if 00 [UHCI])
-	Subsystem: Hewlett-Packard Company Device 330d
-	Control: I/O+ Mem- BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0
-	Interrupt: pin D routed to IRQ 23
-	Region 4: I/O ports at 1060 [size=32]
-	Capabilities: <access denied>
-	Kernel driver in use: uhci_hcd
-
-00:1d.7 USB controller: Intel Corporation 82801JI (ICH10 Family) USB2 EHCI Controller #1 (prog-if 20 [EHCI])
-	Subsystem: Hewlett-Packard Company Device 330d
-	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0
-	Interrupt: pin A routed to IRQ 20
-	Region 0: Memory at 9a600000 (32-bit, non-prefetchable) [size=1K]
-	Capabilities: <access denied>
-	Kernel driver in use: ehci-pci
-
-00:1e.0 PCI bridge: Intel Corporation 82801 PCI Bridge (rev 90) (prog-if 01 [Subtractive decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0
-	Bus: primary=00, secondary=01, subordinate=01, sec-latency=32
-	I/O behind bridge: 00002000-00002fff
-	Memory behind bridge: 9a500000-9a5fffff
-	Prefetchable memory behind bridge: 00000000a0000000-00000000a7ffffff
-	Secondary status: 66MHz- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort+ <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA+ MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-
-00:1f.0 ISA bridge: Intel Corporation 82801JIB (ICH10) LPC Interface Controller
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0
-	Capabilities: <access denied>
-	Kernel driver in use: lpc_ich
-	Kernel modules: lpc_ich
-
-01:03.0 VGA compatible controller: Advanced Micro Devices [AMD] nee ATI ES1000 (rev 02) (prog-if 00 [VGA controller])
-	Subsystem: Hewlett-Packard Company Device 31fb
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping+ SERR+ FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 64 (2000ns min), Cache Line Size: 64 bytes
-	Interrupt: pin A routed to IRQ 23
-	Region 0: Memory at a0000000 (32-bit, prefetchable) [size=128M]
-	Region 1: I/O ports at 2000 [size=256]
-	Region 2: Memory at 9a500000 (32-bit, non-prefetchable) [size=64K]
-	[virtual] Expansion ROM at 9a520000 [disabled] [size=128K]
-	Capabilities: <access denied>
-	Kernel driver in use: radeon
-	Kernel modules: radeon, radeonfb
-
-02:00.0 System peripheral: Hewlett-Packard Company Integrated Lights-Out Standard Slave Instrumentation & System Support (rev 04)
-	Subsystem: Hewlett-Packard Company Device 3309
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Interrupt: pin A routed to IRQ 16
-	Region 0: I/O ports at 3000 [size=256]
-	Region 1: Memory at 9a300000 (32-bit, non-prefetchable) [size=512]
-	Region 2: I/O ports at 3400 [size=256]
-	Capabilities: <access denied>
-	Kernel driver in use: hpwdt
-	Kernel modules: hpwdt
-
-02:00.2 System peripheral: Hewlett-Packard Company Integrated Lights-Out Standard Management Processor Support and Messaging (rev 04)
-	Subsystem: Hewlett-Packard Company Device 3309
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Interrupt: pin B routed to IRQ 17
-	Region 0: I/O ports at 3800 [size=256]
-	Region 1: Memory at 9a300800 (32-bit, non-prefetchable) [size=256]
-	Region 2: Memory at 9a400000 (32-bit, non-prefetchable) [size=1M]
-	Region 3: Memory at 9a380000 (32-bit, non-prefetchable) [size=512K]
-	Region 4: Memory at 9a308000 (32-bit, non-prefetchable) [size=32K]
-	Region 5: Memory at 9a310000 (32-bit, non-prefetchable) [size=32K]
-	[virtual] Expansion ROM at 9a800000 [disabled] [size=64K]
-	Capabilities: <access denied>
-	Kernel driver in use: hpilo
-	Kernel modules: hpilo
-
-02:00.4 USB controller: Hewlett-Packard Company Integrated Lights-Out Standard Virtual USB Controller (rev 01) (prog-if 00 [UHCI])
-	Subsystem: Hewlett-Packard Company iLO2 GXL/iLO3 GXE
-	Control: I/O+ Mem- BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Interrupt: pin B routed to IRQ 17
-	Region 4: I/O ports at 3c00 [size=32]
-	Capabilities: <access denied>
-	Kernel driver in use: uhci_hcd
-
-03:00.0 RAID bus controller: Hewlett-Packard Company Smart Array G6 controllers (rev 01)
-	Subsystem: Hewlett-Packard Company Smart Array P410i
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR- FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Interrupt: pin A routed to IRQ 16
-	Region 0: Memory at 9a000000 (64-bit, non-prefetchable) [size=2M]
-	Region 2: Memory at 9a200000 (64-bit, non-prefetchable) [size=4K]
-	Region 4: I/O ports at 4000 [size=256]
-	[virtual] Expansion ROM at 9a700000 [disabled] [size=512K]
-	Capabilities: <access denied>
-	Kernel driver in use: hpsa
-	Kernel modules: hpsa
-
-04:00.0 Ethernet controller: NetXen Incorporated NX3031 Multifunction 1/10-Gigabit Server Adapter (rev 42)
-	Subsystem: Hewlett-Packard Company NC375i Integrated Quad Port Multifunction Gigabit Server Adapter
-	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR- FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Interrupt: pin A routed to IRQ 24
-	Region 0: Memory at 90000000 (64-bit, non-prefetchable) [size=2M]
-	Region 4: Memory at 92000000 (64-bit, non-prefetchable) [size=32M]
-	Capabilities: <access denied>
-	Kernel driver in use: netxen_nic
-	Kernel modules: netxen_nic
-
-04:00.1 Ethernet controller: NetXen Incorporated NX3031 Multifunction 1/10-Gigabit Server Adapter (rev 42)
-	Subsystem: Hewlett-Packard Company NC375i Integrated Quad Port Multifunction Gigabit Server Adapter
-	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR- FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Interrupt: pin A routed to IRQ 24
-	Region 0: Memory at 90200000 (64-bit, non-prefetchable) [size=2M]
-	Region 4: Memory at 94000000 (64-bit, non-prefetchable) [size=32M]
-	Capabilities: <access denied>
-	Kernel driver in use: netxen_nic
-	Kernel modules: netxen_nic
-
-04:00.2 Ethernet controller: NetXen Incorporated NX3031 Multifunction 1/10-Gigabit Server Adapter (rev 42)
-	Subsystem: Hewlett-Packard Company NC375i Integrated Quad Port Multifunction Gigabit Server Adapter
-	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR- FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Interrupt: pin A routed to IRQ 24
-	Region 0: Memory at 90400000 (64-bit, non-prefetchable) [size=2M]
-	Region 4: Memory at 96000000 (64-bit, non-prefetchable) [size=32M]
-	Capabilities: <access denied>
-	Kernel driver in use: netxen_nic
-	Kernel modules: netxen_nic
-
-04:00.3 Ethernet controller: NetXen Incorporated NX3031 Multifunction 1/10-Gigabit Server Adapter (rev 42)
-	Subsystem: Hewlett-Packard Company NC375i Integrated Quad Port Multifunction Gigabit Server Adapter
-	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR- FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Interrupt: pin A routed to IRQ 24
-	Region 0: Memory at 90600000 (64-bit, non-prefetchable) [size=2M]
-	Region 4: Memory at 98000000 (64-bit, non-prefetchable) [size=32M]
-	Capabilities: <access denied>
-	Kernel driver in use: netxen_nic
-	Kernel modules: netxen_nic
-
-50:00.0 PCI bridge: Intel Corporation 7500/5520/5500/X58 I/O Hub PCI Express Root Port 0 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=50, secondary=51, subordinate=53, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-50:01.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port 1 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=50, secondary=5a, subordinate=5c, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-50:02.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port 2 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=50, secondary=63, subordinate=63, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-50:03.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port 3 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=50, secondary=60, subordinate=62, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-50:04.0 PCI bridge: Intel Corporation 5520/X58 I/O Hub PCI Express Root Port 4 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=50, secondary=64, subordinate=64, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-50:05.0 PCI bridge: Intel Corporation 5520/X58 I/O Hub PCI Express Root Port 5 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=50, secondary=5d, subordinate=5f, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-50:06.0 PCI bridge: Intel Corporation 5520/X58 I/O Hub PCI Express Root Port 6 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=50, secondary=65, subordinate=65, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-50:07.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port 7 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=50, secondary=57, subordinate=59, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-50:08.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port 8 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=50, secondary=66, subordinate=66, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-50:09.0 PCI bridge: Intel Corporation 7500/5520/5500/X58 I/O Hub PCI Express Root Port 9 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=50, secondary=54, subordinate=56, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-50:0a.0 PCI bridge: Intel Corporation 7500/5520/5500/X58 I/O Hub PCI Express Root Port 10 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=50, secondary=67, subordinate=67, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-50:14.0 PIC: Intel Corporation 7500/5520/5500/X58 I/O Hub System Management Registers (rev 22) (prog-if 00 [8259])
-	Subsystem: Device 003c:000b
-	Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Capabilities: <access denied>
-	Kernel modules: i7core_edac
-
-7c:00.0 Unassigned class [ff00]: Hewlett-Packard Company Device 403c (rev 20)
-	Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-
-7c:08.0 Unassigned class [ff00]: Hewlett-Packard Company Device 403c (rev 20)
-	Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-
-82:00.0 Unassigned class [ff00]: Hewlett-Packard Company Device 403c (rev 20)
-	Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-
-82:08.0 Unassigned class [ff00]: Hewlett-Packard Company Device 403c (rev 20)
-	Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-
-a0:00.0 PCI bridge: Intel Corporation 7500/5520/5500/X58 I/O Hub PCI Express Root Port 0 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=a0, secondary=b0, subordinate=b2, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-a0:01.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port 1 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=a0, secondary=a7, subordinate=a9, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-a0:02.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port 2 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=a0, secondary=b3, subordinate=b5, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-a0:03.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port 3 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=a0, secondary=ad, subordinate=af, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-a0:04.0 PCI bridge: Intel Corporation 5520/X58 I/O Hub PCI Express Root Port 4 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=a0, secondary=b6, subordinate=b8, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-a0:05.0 PCI bridge: Intel Corporation 5520/X58 I/O Hub PCI Express Root Port 5 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=a0, secondary=aa, subordinate=ac, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-a0:06.0 PCI bridge: Intel Corporation 5520/X58 I/O Hub PCI Express Root Port 6 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=a0, secondary=b9, subordinate=bb, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-a0:07.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port 7 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=a0, secondary=a4, subordinate=a6, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-a0:08.0 PCI bridge: Intel Corporation 5520/5500/X58 I/O Hub PCI Express Root Port 8 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=a0, secondary=bc, subordinate=be, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-a0:09.0 PCI bridge: Intel Corporation 7500/5520/5500/X58 I/O Hub PCI Express Root Port 9 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=a0, secondary=a1, subordinate=a3, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-a0:0a.0 PCI bridge: Intel Corporation 7500/5520/5500/X58 I/O Hub PCI Express Root Port 10 (rev 22) (prog-if 00 [Normal decode])
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR+ FastB2B- DisINTx+
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 64 bytes
-	Bus: primary=a0, secondary=bf, subordinate=c1, sec-latency=0
-	I/O behind bridge: 0000f000-00000fff
-	Memory behind bridge: fff00000-000fffff
-	Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
-	BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- FastB2B-
-		PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-	Capabilities: <access denied>
-	Kernel driver in use: pcieport
-	Kernel modules: shpchp
-
-a0:14.0 PIC: Intel Corporation 7500/5520/5500/X58 I/O Hub System Management Registers (rev 22) (prog-if 00 [8259])
-	Subsystem: Device 003c:000b
-	Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Capabilities: <access denied>
-	Kernel modules: i7core_edac
-
-
---=-FcSj8lL0ysHsrzRDIZE4--
-
+Boris,
+
+What kind of system (platform) is this happening on?  It's a LOM correct?  Can you run 'lspci -vvv' and output the results?
+
+Thanks.
+
+Cheers,
+John
+
+
+> -----Original Message-----
+> From: Borislav Petkov [mailto:bp@alien8.de]
+> Sent: Thursday, April 10, 2014 5:00 AM
+> To: e1000-devel@lists.sourceforge.net
+> Cc: netdev@vger.kernel.org; lkml
+> Subject: [E1000-devel] e1000e 0000:00:19.0 eth0: Hardware Error
+> 
+> Hi guys,
+> 
+> I started getting those sporadic
+> 
+> [133178.640890] e1000e 0000:00:19.0 eth0: Hardware Error
+> [133179.293148] e1000e 0000:00:19.0: irq 45 for MSI/MSI-X
+> [133179.394226] e1000e 0000:00:19.0: irq 45 for MSI/MSI-X
+> [133179.397200] IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
+> [133181.338258] e1000e 0000:00:19.0 eth0: Hardware Error
+> [133182.077209] pci_pm_runtime_suspend():
+> e1000_runtime_suspend+0x0/0x40 [e1000e] returns -2
+> 
+> messages with 3.14 and I haven't had them before. After this, I do
+> 
+> rmmod e1000e && modprobe e1000e
+> 
+> and I get:
+> 
+> [133221.891555] e1000e 0000:00:19.0 eth0: removed PHC [133228.181552]
+> e1000e: Intel(R) PRO/1000 Network Driver - 2.3.2-k [133228.181562]
+> e1000e: Copyright(c) 1999 - 2013 Intel Corporation.
+> [133228.182241] e1000e 0000:00:19.0: Interrupt Throttling Rate
+> (ints/sec) set to dynamic conservative mode [133228.182332] e1000e
+> 0000:00:19.0: irq 45 for MSI/MSI-X [133229.009837] e1000e: probe of
+> 0000:00:19.0 failed with error -2
+> 			^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 
+> [133307.107217] e1000e: Intel(R) PRO/1000 Network Driver - 2.3.2-k
+> [133307.107228] e1000e: Copyright(c) 1999 - 2013 Intel Corporation.
+> [133307.107814] e1000e 0000:00:19.0: Interrupt Throttling Rate
+> (ints/sec) set to dynamic conservative mode [133307.107959] e1000e
+> 0000:00:19.0: irq 45 for MSI/MSI-X [133307.935921] e1000e: probe of
+> 0000:00:19.0 failed with error -2
+> 
+> ...
+> 
+> [133841.361905] e1000e: Intel(R) PRO/1000 Network Driver - 2.3.2-k
+> [133841.361914] e1000e: Copyright(c) 1999 - 2013 Intel Corporation.
+> [133841.362451] e1000e 0000:00:19.0: Interrupt Throttling Rate
+> (ints/sec) set to dynamic conservative mode [133841.362520] e1000e
+> 0000:00:19.0: irq 45 for MSI/MSI-X [133842.192710] e1000e: probe of
+> 0000:00:19.0 failed with error -2
+> 
+> each time I try and eth0 is dead. Only a reboot helps, I've come to
+> find out so far.
+> 
+> Any ideas?
+> 
+> --
+> Regards/Gruss,
+>     Boris.
+> 
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
+> 
+> -----------------------------------------------------------------------
+> -------
+> Put Bad Developers to Shame
+> Dominate Development with Jenkins Continuous Integration Continuously
+> Automate Build, Test & Deployment Start a new project now. Try Jenkins
+> in the cloud.
+> http://p.sf.net/sfu/13600_Cloudbees
+> _______________________________________________
+> E1000-devel mailing list
+> E1000-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/e1000-devel
+> To learn more about Intel&#174; Ethernet, visit
+> http://communities.intel.com/community/wired
