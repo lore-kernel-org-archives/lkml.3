@@ -1,107 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758597AbaDJQOQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 12:14:16 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:36761 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752484AbaDJQOP (ORCPT
+	id S934836AbaDJQOf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 12:14:35 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:55719 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758621AbaDJQOc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 12:14:15 -0400
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-To: konrad.wilk@oracle.com, david.vrabel@citrix.com
-Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        srostedt@redhat.com, andrew.cooper3@citrix.com, JBeulich@suse.com,
-        boris.ostrovsky@oracle.com
-Subject: [PATCH v2] x86/xen: Fix 32-bit PV guests's usage of kernel_stack
-Date: Thu, 10 Apr 2014 12:17:09 -0400
-Message-Id: <1397146629-7159-1-git-send-email-boris.ostrovsky@oracle.com>
-X-Mailer: git-send-email 1.8.1.4
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Thu, 10 Apr 2014 12:14:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <1396302597-31801-4-git-send-email-bjorn.andersson@sonymobile.com>
+References: <1396302597-31801-4-git-send-email-bjorn.andersson@sonymobile.com>
+Date: Thu, 10 Apr 2014 18:14:31 +0200
+Message-ID: <CACRpkdZpUB=73xM8Fr4MyEzEgF4Z6eXHUdWCLHHMh38nWmoCqg@mail.gmail.com>
+Subject: Re: [PATCH 4/4] pinctrl: msm: Add definitions for the APQ8064 platform
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 198d208df4371734ac4728f69cb585c284d20a15 ("x86: Keep thread_info
-on thread stack in x86_32") made 32-bit kernels use kernel_stack to point to
-thread_info. That change missed a couple of updates needed by Xen's
-32-bit PV guests:
+On Mon, Mar 31, 2014 at 11:49 PM, Bjorn Andersson
+<bjorn.andersson@sonymobile.com> wrote:
 
-1. kernel_stack needs to be initialized for secondary CPUs
-2. GET_THREAD_INFO() now uses %fs register which may not be the kernel's
-version when executing xen_iret().
+> This adds pinctrl definitions for the GPIO pins of the TLMM v2 block in the
+> Qualcomm APQ8064 platform.
+>
+> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 
-With respect to the second issue, we don't need GET_THREAD_INFO()
-anymore: we used it as an intermediate step to get to per_cpu xen_vcpu and avoid
-referencing %fs. Now that we are going to use %fs anyway we may as well go
-directly to xen_vcpu.
+Patch applied for next.
 
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
----
- arch/x86/xen/smp.c        |    3 ++-
- arch/x86/xen/xen-asm_32.S |   25 +++++++++++++++++--------
- 2 files changed, 19 insertions(+), 9 deletions(-)
-
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index a18eadd..7005974 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -441,10 +441,11 @@ static int xen_cpu_up(unsigned int cpu, struct task_struct *idle)
- 	irq_ctx_init(cpu);
- #else
- 	clear_tsk_thread_flag(idle, TIF_FORK);
-+#endif
- 	per_cpu(kernel_stack, cpu) =
- 		(unsigned long)task_stack_page(idle) -
- 		KERNEL_STACK_OFFSET + THREAD_SIZE;
--#endif
-+
- 	xen_setup_runstate_info(cpu);
- 	xen_setup_timer(cpu);
- 	xen_init_lock_cpu(cpu);
-diff --git a/arch/x86/xen/xen-asm_32.S b/arch/x86/xen/xen-asm_32.S
-index 33ca6e4..fd92a64 100644
---- a/arch/x86/xen/xen-asm_32.S
-+++ b/arch/x86/xen/xen-asm_32.S
-@@ -75,6 +75,17 @@ ENDPROC(xen_sysexit)
-  * stack state in whatever form its in, we keep things simple by only
-  * using a single register which is pushed/popped on the stack.
-  */
-+
-+.macro POP_FS
-+1:
-+	popw %fs
-+.pushsection .fixup, "ax"
-+2:	movw $0, (%esp)
-+	jmp 1b
-+.popsection
-+	_ASM_EXTABLE(1b,2b)
-+.endm
-+
- ENTRY(xen_iret)
- 	/* test eflags for special cases */
- 	testl $(X86_EFLAGS_VM | XEN_EFLAGS_NMI), 8(%esp)
-@@ -83,15 +94,13 @@ ENTRY(xen_iret)
- 	push %eax
- 	ESP_OFFSET=4	# bytes pushed onto stack
- 
--	/*
--	 * Store vcpu_info pointer for easy access.  Do it this way to
--	 * avoid having to reload %fs
--	 */
-+	/* Store vcpu_info pointer for easy access */
- #ifdef CONFIG_SMP
--	GET_THREAD_INFO(%eax)
--	movl %ss:TI_cpu(%eax), %eax
--	movl %ss:__per_cpu_offset(,%eax,4), %eax
--	mov %ss:xen_vcpu(%eax), %eax
-+	pushw %fs
-+	movl $(__KERNEL_PERCPU), %eax
-+	movl %eax, %fs
-+	movl %fs:xen_vcpu, %eax
-+	POP_FS
- #else
- 	movl %ss:xen_vcpu, %eax
- #endif
--- 
-1.7.10.4
-
+Yours,
+Linus Walleij
