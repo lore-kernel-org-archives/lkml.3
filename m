@@ -1,81 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935427AbaDJJet (ORCPT <rfc822;w@1wt.eu>);
+	id S965622AbaDJJfD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 05:35:03 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:40074 "EHLO gloria.sntech.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935066AbaDJJet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Apr 2014 05:34:49 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:45458 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933149AbaDJJ24 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 05:28:56 -0400
-X-AuditID: cbfee690-b7f266d00000287c-f5-534664519c7d
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: kgene.kim@samsung.com, t.figa@samsung.com,
-        linux-samsung-soc@vger.kernel.org
-Cc: kyungmin.park@samsung.com, cw00.choi@samsung.com, inki.dae@samsung.com,
-        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 07/27] irqchip: Declare cortex-a7's irqchip to initialize gic
- from dt
-Date: Thu, 10 Apr 2014 18:28:24 +0900
-Message-id: <1397122124-15690-8-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-In-reply-to: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
-References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmkeLIzCtJLcpLzFFi42JZI2JSqBuY4hZssHWzmMX1L89ZLT5/aGG3
-	mHR/AotF74KrbBZnm96wW2x6fI3V4vKuOWwWM87vY7KYMfklm8X6Ga9ZLDZvmspssXfnZEYH
-	Ho93586xe2xeUu/Rt2UVo8fnTXIBLFFcNimpOZllqUX6dglcGXcfTWMuWMVe8XtdK0sD4y62
-	LkZODgkBE4mLZw+xQNhiEhfurQeKc3EICSxllNjwqRWu6E3nPKjEdEaJy92tLBBOE5NE86/D
-	jCBVbAJaEvtf3ADrEBEIkPhx/B1YB7NAI5NE791P7CAJYYFwiXMr3oMVsQioSnQ+3sEKYvMK
-	uEpMeHYYap2cxIc9j8DqOQXcJD59bwWrEQKqafqwD2yohMAmdokTG9rYIQYJSHybDPIEB1BC
-	VmLTAWaIOZISB1fcYJnAKLyAkWEVo2hqQXJBcVJ6kYlecWJucWleul5yfu4mRmBEnP73bMIO
-	xnsHrA8xJgONm8gsJZqcD4yovJJ4Q2MzIwtTE1NjI3NLM9KElcR51R4lBQkJpCeWpGanphak
-	FsUXleakFh9iZOLglGpg9JhRNUnN975hhcKbuB02gTfVjrprndmXXPPmvWbAtHP756rcCjit
-	nLUqtuTWyxVpBxUvaSoc33OA8c2vGsa9qxO3SHUUFhvPOhb87eCdwh3eeqlFh6M9Loa2r44W
-	XNje+6JU+bzHtK381p7JWQYPmVYeFjqwWGThnS5+cTWz6Trn7nsJdGTeVGIpzkg01GIuKk4E
-	AKUEtPyeAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsVy+t9jQd3AFLdgg55J/BbXvzxntfj8oYXd
-	YtL9CSwWvQuuslmcbXrDbrHp8TVWi8u75rBZzDi/j8lixuSXbBbrZ7xmsdi8aSqzxd6dkxkd
-	eDzenTvH7rF5Sb1H35ZVjB6fN8kFsEQ1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoa
-	WlqYKynkJeam2iq5+AToumXmAJ2mpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3JAiux8gA
-	DSSsYcy4+2gac8Eq9orf61pZGhh3sXUxcnJICJhIvOmcB2WLSVy4tx7I5uIQEpjOKHG5u5UF
-	wmlikmj+dZgRpIpNQEti/4sbYB0iAgESP46/A+tgFmhkkui9+4kdJCEsEC5xbsV7sCIWAVWJ
-	zsc7WEFsXgFXiQnPDkOtk5P4sOcRWD2ngJvEp++tYDVCQDVNH/axTWDkXcDIsIpRNLUguaA4
-	KT3XSK84Mbe4NC9dLzk/dxMjON6eSe9gXNVgcYhRgINRiYf3wDLXYCHWxLLiytxDjBIczEoi
-	vNeC3YKFeFMSK6tSi/Lji0pzUosPMSYDXTWRWUo0OR+YCvJK4g2NTcyMLI3MDS2MjM1JE1YS
-	5z3Yah0oJJCeWJKanZpakFoEs4WJg1OqgbFaR2nhzndd66acyXPa9ChLK8JBNIiP85a394vA
-	9C0SkSUbr8meXeqSuf1VZ5tt0ekclui4P+oLJOW3mWr6ycp8eTE5Qudw4eOAD5b2Gw9O+vHV
-	Ir1B7nC4j3HdJcfcUs/IjG0JNb+OzzQWKa8/ulj08d1HHgku3AGKhju4vm3e2GKnOv3eIiWW
-	4oxEQy3mouJEACNmFHL7AgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko.stuebner@bq.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Matthias Brugger <matthias.bgg@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Silvio F <silvio.fricke@gmail.com>, Kumar Gala <galak@codeaurora.org>,
+        Olof Johansson <olof@lixom.net>, Jonathan Cameron <jic23@kernel.org>
+Subject: Re: [PATCH 3/4] arm: add basic support for Mediatek MT6589 boards
+Date: Thu, 10 Apr 2014 11:34:47 +0200
+Message-ID: <3428574.kpvz0qlT1a@diego>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+In-Reply-To: <53465A4B.4040906@free-electrons.com>
+References: <1397072736-10793-1-git-send-email-matthias.bgg@gmail.com> <CABuKBeKnEw38sQYwrkheoWetZZcPTJhKRsBK4a62FS6-6dRFTA@mail.gmail.com> <53465A4B.4040906@free-electrons.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch declare coretex-a7's irqchip to initialze gic from dt
-with "arm,cortex-a7-gic" data.
+Hi Gregory,
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/irqchip/irq-gic.c | 1 +
- 1 file changed, 1 insertion(+)
+Am Donnerstag, 10. April 2014, 08:46:03 schrieb Gregory CLEMENT:
+> On 10/04/2014 08:29, Matthias Brugger wrote:
+> > 2014-04-09 22:26 GMT+02:00 Gregory CLEMENT <gregory.clement@free-
+electrons.com>:
+> >> Hi Matthias,
+> >> 
+> >> On 09/04/2014 19:45, Matthias Brugger wrote:
+> >>> diff --git a/arch/arm/boot/dts/mtk6589.dtsi
+> >>> b/arch/arm/boot/dts/mtk6589.dtsi new file mode 100644
+> >>> index 0000000..6dbb74f
+> >>> --- /dev/null
+> >>> +++ b/arch/arm/boot/dts/mtk6589.dtsi
+> >>> @@ -0,0 +1,105 @@
+> >>> +/*
+> >>> + * Copyright (c) 2014 MundoReader S.L.
+> >>> + * Author: Matthias Brugger <matthias.bgg@gmail.com>
+> >>> + *
+> >>> + * This program is free software; you can redistribute it and/or modify
+> >>> + * it under the terms of the GNU General Public License as published by
+> >>> + * the Free Software Foundation; either version 2 of the License, or
+> >>> + * (at your option) any later version.
+> >>> + *
+> >>> + * This program is distributed in the hope that it will be useful,
+> >>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> >>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> >>> + * GNU General Public License for more details.
+> >>> + */
+> >>> +
+> >>> +#include <dt-bindings/interrupt-controller/irq.h>
+> >>> +#include <dt-bindings/interrupt-controller/arm-gic.h>
+> >>> +#include "skeleton.dtsi"
+> >>> +
+> >>> +/ {
+> >>> +     compatible = "mediatek,mt6589";
+> >>> +     interrupt-parent = <&gic>;
+> >>> +
+> >>> +     cpus {
+> >>> +             #address-cells = <1>;
+> >>> +             #size-cells = <0>;
+> >>> +
+> >>> +             cpu@0 {
+> >>> +                     device_type = "cpu";
+> >>> +                     compatible = "arm,cortex-a7";
+> >>> +                     next-level-cache = <&L2>;
+> >>> +                     reg = <0x0>;
+> >>> +             };
+> >>> +             cpu@1 {
+> >>> +                     device_type = "cpu";
+> >>> +                     compatible = "arm,cortex-a7";
+> >>> +                     next-level-cache = <&L2>;
+> >>> +                     reg = <0x1>;
+> >>> +             };
+> >>> +             cpu@2 {
+> >>> +                     device_type = "cpu";
+> >>> +                     compatible = "arm,cortex-a7";
+> >>> +                     next-level-cache = <&L2>;
+> >>> +                     reg = <0x2>;
+> >>> +             };
+> >>> +             cpu@3 {
+> >>> +                     device_type = "cpu";
+> >>> +                     compatible = "arm,cortex-a7";
+> >>> +                     next-level-cache = <&L2>;
+> >>> +                     reg = <0x3>;
+> >>> +             };
+> >>> +
+> >>> +     };
+> >>> +
+> >>> +     clocks {
+> >>> +             #address-cells = <1>;
+> >>> +             #size-cells = <1>;
+> >>> +             ranges;
+> >>> +
+> >>> +             system_clk: system_clk {
+> >>> +                     compatible = "fixed-clock";
+> >>> +                     clock-frequency = <13000000>;
+> >>> +                     #clock-cells = <0>;
+> >>> +                     clock-output-names = "system_clk";
+> >>> +             };
+> >> 
+> >> Is it really a fixed clock without any parent, or do you
+> >> declare it as a fixed clock because you don't have any clock
+> >> common framework support yet?
+> > 
+> > I don't have any common clock framework support yet.
+> 
+> So maybe you should provide one (even a very simple one).
+> 
+> Pretending a clock is a fixed clock and ignoring its parents
+> will be problematic when you will add the common clock framework
+> support because the device tree is supposed to be stable and you won't
+> be able to change it then.
 
-diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 4300b66..8e906e4 100644
---- a/drivers/irqchip/irq-gic.c
-+++ b/drivers/irqchip/irq-gic.c
-@@ -1069,6 +1069,7 @@ gic_of_init(struct device_node *node, struct device_node *parent)
- }
- IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
- IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
-+IRQCHIP_DECLARE(cortex_a7_gic, "arm,cortex-a7-gic", gic_of_init);
- IRQCHIP_DECLARE(msm_8660_qgic, "qcom,msm-8660-qgic", gic_of_init);
- IRQCHIP_DECLARE(msm_qgic2, "qcom,msm-qgic2", gic_of_init);
- 
--- 
-1.8.0
+personally I think the danger of introducing unsuitable bindings/precedents 
+for a clock controller before it is fully understood is higher.
 
+I'd just rename the clock above to something like dummy130m like sunxi also 
+does for example, to reflect its unfinished state and when the clock controller 
+is present later on change the supplying clock of the timer.
+
+Or maybe I'm overlooking something here :-)
+
+
+Heiko
