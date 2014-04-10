@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934606AbaDJBiF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 21:38:05 -0400
-Received: from smtp.mei.co.jp ([133.183.100.20]:37926 "EHLO smtp.mei.co.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933287AbaDJBiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 21:38:03 -0400
-From: Masahiro Yamada <yamada.m@jp.panasonic.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-kbuild@vger.kernel.org, Masahiro Yamada <yamada.m@jp.panasonic.com>,
-        x86 <x86@kernel.org>
-Subject: [PATCH v2] x86: suppress "Nothing to be done for ..." messages
-Date: Thu, 10 Apr 2014 10:35:42 +0900
-Message-Id: <1397093742-11144-1-git-send-email-yamada.m@jp.panasonic.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S934621AbaDJBib (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 21:38:31 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:29267 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933287AbaDJBia (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 21:38:30 -0400
+Message-ID: <5345F604.6080207@fb.com>
+Date: Wed, 9 Apr 2014 19:38:12 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Jan Kara <jack@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Brian J King <bjking1@us.ibm.com>
+Subject: Re: [BUG] kernel BUG at /.../block/cfq-iosched.c:3145!
+References: <1397018647.3671.123.camel@pasglop> <53454CBC.9060905@fb.com>	 <1397087273.3671.150.camel@pasglop> <1397088144.3671.155.camel@pasglop>	 <5345F476.2000602@fb.com> <1397093815.3671.156.camel@pasglop>
+In-Reply-To: <1397093815.3671.156.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-04-09_05:2014-04-09,2014-04-09,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=5.8201264735473
+ compositescore=0.307752384302029 urlsuspect_oldscore=0.307752384302029
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.307752384302029 spamscore=0
+ recipient_to_sender_domain_totalscore=16 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1404100019
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we compiled again, arch/x86/syscalls/Makefile and
-arch/x86/tools/Makefile emitted "Nothing to be done for ..." messages.
+On 2014-04-09 19:36, Benjamin Herrenschmidt wrote:
+> On Wed, 2014-04-09 at 19:31 -0600, Jens Axboe wrote:
+>> OK, I think we're seeing different symptoms of the same bug. Stay
+>> tuned, will have something for you to test shortly, I hope.
+>
+> Ah thanks. I'll defer the bisection then (it's painful on that machine
+> for various reasons....)
 
-Here is the command log:
+Yeah, hunting it now, hopefully I can reproduce and a fix should be 
+forth coming.
 
-  $ make defconfig
-     [ snip ]
-  $ make
-     [ snip ]
-  $ make
-  make[1]: Nothing to be done for `all'.            <-----
-  make[1]: Nothing to be done for `relocs'.         <-----
-    CHK     include/config/kernel.release
-    CHK     include/generated/uapi/linux/version.h
+> This is a 64-way P7 btw, so a nice race-o-matic :-)
 
-Besides those fixes, "all" and "relocs" should be added to PHONY.
+It's why we all love ppc :-)
 
-Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
-Acked-by: Peter Foley <pefoley2@pefoley.com>
-Acked-by: Michal Marek <mmarek@suse.cz>
-Cc: x86 <x86@kernel.org>
----
-
-Changes in v2:
-  - Add "all" and "relocs" to PHONY.
-
- arch/x86/syscalls/Makefile | 2 ++
- arch/x86/tools/Makefile    | 2 ++
- 2 files changed, 4 insertions(+)
-
-diff --git a/arch/x86/syscalls/Makefile b/arch/x86/syscalls/Makefile
-index f325af2..3323c27 100644
---- a/arch/x86/syscalls/Makefile
-+++ b/arch/x86/syscalls/Makefile
-@@ -54,5 +54,7 @@ syshdr-$(CONFIG_X86_64)		+= syscalls_64.h
- 
- targets	+= $(uapisyshdr-y) $(syshdr-y)
- 
-+PHONY += all
- all: $(addprefix $(uapi)/,$(uapisyshdr-y))
- all: $(addprefix $(out)/,$(syshdr-y))
-+	@:
-diff --git a/arch/x86/tools/Makefile b/arch/x86/tools/Makefile
-index e812034..604a37e 100644
---- a/arch/x86/tools/Makefile
-+++ b/arch/x86/tools/Makefile
-@@ -40,4 +40,6 @@ $(obj)/insn_sanity.o: $(srctree)/arch/x86/lib/insn.c $(srctree)/arch/x86/lib/ina
- HOST_EXTRACFLAGS += -I$(srctree)/tools/include
- hostprogs-y	+= relocs
- relocs-objs     := relocs_32.o relocs_64.o relocs_common.o
-+PHONY += relocs
- relocs: $(obj)/relocs
-+	@:
 -- 
-1.8.3.2
+Jens Axboe
 
