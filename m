@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935188AbaDJDok (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:44:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41261 "EHLO
+	id S935376AbaDJDpO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:45:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41256 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934654AbaDJDWv (ORCPT
+	with ESMTP id S935037AbaDJDWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:51 -0400
+	Wed, 9 Apr 2014 23:22:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jussi Kivilinna <jussi.kivilinna@iki.fi>,
-        Torsten Schenk <torsten.schenk@zoho.com>, Takashi Iwai <tiwai@suse.de>,
+        Dan Carpenter <dan.carpenter@oracle.com>, Takashi Iwai <tiwai@suse.de>,
         Ben Hutchings <ben@decadent.org.uk>,
         Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 106/134] ALSA: 6fire: fix DMA issues with URB transfer_buffer usage
-Date: Wed,  9 Apr 2014 20:23:42 -0700
-Message-Id: <20140410032313.411059306@linuxfoundation.org>
+Subject: [PATCH 3.4 105/134] ALSA: ak4xx-adda: info leak in ak4xxx_capture_source_info()
+Date: Wed,  9 Apr 2014 20:23:41 -0700
+Message-Id: <20140410032313.271024144@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -29,114 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jussi Kivilinna <jussi.kivilinna@iki.fi>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit ddb6b5a964371e8e52e696b2b258bda144c8bd3f upstream.
+commit bd5fe738e388ceaa32e5171481e0d3ec59f0ccfe upstream.
 
-Patch fixes 6fire not to use stack as URB transfer_buffer. URB buffers need to
-be DMA-able, which stack is not. Furthermore, transfer_buffer should not be
-allocated as part of larger device structure because DMA coherency issues and
-patch fixes this issue too.
+"idx" is controled by the user and can be a negative offset into the
+input_names[] array.
 
-Signed-off-by: Jussi Kivilinna <jussi.kivilinna@iki.fi>
-Tested-by: Torsten Schenk <torsten.schenk@zoho.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/6fire/comm.c |   38 +++++++++++++++++++++++++++++++++-----
- sound/usb/6fire/comm.h |    2 +-
- 2 files changed, 34 insertions(+), 6 deletions(-)
+ sound/i2c/other/ak4xxx-adda.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/usb/6fire/comm.c
-+++ b/sound/usb/6fire/comm.c
-@@ -110,19 +110,37 @@ static int usb6fire_comm_send_buffer(u8
- static int usb6fire_comm_write8(struct comm_runtime *rt, u8 request,
- 		u8 reg, u8 value)
- {
--	u8 buffer[13]; /* 13: maximum length of message */
-+	u8 *buffer;
-+	int ret;
-+
-+	/* 13: maximum length of message */
-+	buffer = kmalloc(13, GFP_KERNEL);
-+	if (!buffer)
-+		return -ENOMEM;
+--- a/sound/i2c/other/ak4xxx-adda.c
++++ b/sound/i2c/other/ak4xxx-adda.c
+@@ -571,7 +571,7 @@ static int ak4xxx_capture_source_info(st
+ 	struct snd_akm4xxx *ak = snd_kcontrol_chip(kcontrol);
+ 	int mixer_ch = AK_GET_SHIFT(kcontrol->private_value);
+ 	const char **input_names;
+-	int  num_names, idx;
++	unsigned int num_names, idx;
  
- 	usb6fire_comm_init_buffer(buffer, 0x00, request, reg, value, 0x00);
--	return usb6fire_comm_send_buffer(buffer, rt->chip->dev);
-+	ret = usb6fire_comm_send_buffer(buffer, rt->chip->dev);
-+
-+	kfree(buffer);
-+	return ret;
- }
- 
- static int usb6fire_comm_write16(struct comm_runtime *rt, u8 request,
- 		u8 reg, u8 vl, u8 vh)
- {
--	u8 buffer[13]; /* 13: maximum length of message */
-+	u8 *buffer;
-+	int ret;
-+
-+	/* 13: maximum length of message */
-+	buffer = kmalloc(13, GFP_KERNEL);
-+	if (!buffer)
-+		return -ENOMEM;
- 
- 	usb6fire_comm_init_buffer(buffer, 0x00, request, reg, vl, vh);
--	return usb6fire_comm_send_buffer(buffer, rt->chip->dev);
-+	ret = usb6fire_comm_send_buffer(buffer, rt->chip->dev);
-+
-+	kfree(buffer);
-+	return ret;
- }
- 
- int __devinit usb6fire_comm_init(struct sfire_chip *chip)
-@@ -135,6 +153,12 @@ int __devinit usb6fire_comm_init(struct
- 	if (!rt)
- 		return -ENOMEM;
- 
-+	rt->receiver_buffer = kzalloc(COMM_RECEIVER_BUFSIZE, GFP_KERNEL);
-+	if (!rt->receiver_buffer) {
-+		kfree(rt);
-+		return -ENOMEM;
-+	}
-+
- 	rt->serial = 1;
- 	rt->chip = chip;
- 	usb_init_urb(urb);
-@@ -152,6 +176,7 @@ int __devinit usb6fire_comm_init(struct
- 	urb->interval = 1;
- 	ret = usb_submit_urb(urb, GFP_KERNEL);
- 	if (ret < 0) {
-+		kfree(rt->receiver_buffer);
- 		kfree(rt);
- 		snd_printk(KERN_ERR PREFIX "cannot create comm data receiver.");
- 		return ret;
-@@ -170,6 +195,9 @@ void usb6fire_comm_abort(struct sfire_ch
- 
- void usb6fire_comm_destroy(struct sfire_chip *chip)
- {
--	kfree(chip->comm);
-+	struct comm_runtime *rt = chip->comm;
-+
-+	kfree(rt->receiver_buffer);
-+	kfree(rt);
- 	chip->comm = NULL;
- }
---- a/sound/usb/6fire/comm.h
-+++ b/sound/usb/6fire/comm.h
-@@ -24,7 +24,7 @@ struct comm_runtime {
- 	struct sfire_chip *chip;
- 
- 	struct urb receiver;
--	u8 receiver_buffer[COMM_RECEIVER_BUFSIZE];
-+	u8 *receiver_buffer;
- 
- 	u8 serial; /* urb serial */
- 
+ 	num_names = ak4xxx_capture_num_inputs(ak, mixer_ch);
+ 	if (!num_names)
 
 
