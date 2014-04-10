@@ -1,53 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965625AbaDJKFy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 06:05:54 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:44563 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935022AbaDJKFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 06:05:49 -0400
-Date: Thu, 10 Apr 2014 12:05:42 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: Michal Simek <monstr@monstr.eu>,
-        Punnaiah Choudary Kalluri 
-	<punnaiah.choudary.kalluri@xilinx.com>,
-        dougthompson@xmission.com, linux-edac@vger.kernel.org,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        sorenb@xilinx.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kpc528@gmail.com,
-        kalluripunnaiahchoudary@gmail.com, punnaia@xilinx.com
-Subject: Re: [RFC PATCH v2] edac: synopsys: Added EDAC support for zynq ddr
- ecc controller
-Message-ID: <20140410100542.GH29093@pd.tnic>
-References: <1220b715-6fc2-42ed-8393-b9859fc0deb9@TX2EHSMHS021.ehs.local>
- <20140408204047.GQ30077@pd.tnic>
- <534633C0.9090905@monstr.eu>
- <20140410092144.GD29093@pd.tnic>
- <5e0042b6-f169-4025-8fd7-9d70c2ed0cf6@AM1EHSMHS012.ehs.local>
- <20140410100047.GG29093@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140410100047.GG29093@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S935329AbaDJKGZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 06:06:25 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:24362 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935022AbaDJKGV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 06:06:21 -0400
+X-AuditID: cbfee690-b7f266d00000287c-4f-53466d1b41e5
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: kgene.kim@samsung.com, t.figa@samsung.com,
+        linux-samsung-soc@vger.kernel.org
+Cc: kyungmin.park@samsung.com, cw00.choi@samsung.com, inki.dae@samsung.com,
+        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 10/27] ARM: dts: exynos3250: Add new exynos3250.dtsi file
+Date: Thu, 10 Apr 2014 19:06:00 +0900
+Message-id: <1397124377-16969-2-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+In-reply-to: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
+References: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsWyRsSkSFc61y3Y4NM9YYvrX56zWnz+0MJu
+	Men+BBaL3gVX2SzONr1ht9j0+BqrxeVdc9gsZpzfx2QxY/JLNov1M16zWOzdOZnRgdtj85J6
+	j74tqxg9Pm+SC2CO4rJJSc3JLEst0rdL4MpY0f2LteA4b8X6r6+ZGhgncncxcnJICJhITDl3
+	kx3CFpO4cG89G4gtJLCUUWL3d3mYmuevz7B0MXIBxRcxSmx9toIRwmlikjj0byZYB5uAlsT+
+	FzfAbBGBAIkfx9+B2cwCNxkljr0PA7GFBTwlbjy9zARiswioSmw/2gFm8wq4SizZ2M0EsU1O
+	4sOeR2AXcQq4ScxcdBLqIleJnkcXmUEWSwisYpd4f2UPO8QgAYlvkw8BnccBlJCV2HSAGWKO
+	pMTBFTdYJjAKL2BkWMUomlqQXFCclF5kolecmFtcmpeul5yfu4kRGPin/z2bsIPx3gHrQ4zJ
+	QOMmMkuJJucDIyevJN7Q2MzIwtTE1NjI3NKMNGElcV61R0lBQgLpiSWp2ampBalF8UWlOanF
+	hxiZODilGhgt5PLf66usuRGcc+hhy7I8nsX81lxzZnCF7op3CJ3qKmy7+s6ankBe655Vvixi
+	53x5P5TYd+zYzSgRHlV+2eGL/DOxSVMiP3Ntb38Sa5IQI+essqLzxqfKrIZO38ofkkHclnZ3
+	8zk8BW2+ePnX/ktdZJpyOnxjYkec0492u4OFUTO+CHJrKLEUZyQaajEXFScCAH1fr5ySAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLIsWRmVeSWpSXmKPExsVy+t9jAV3pXLdgg0NPuSyuf3nOavH5Qwu7
+	xaT7E1gsehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PFjMkv2SzWz3jNYrF352RGB26PzUvq
+	Pfq2rGL0+LxJLoA5qoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VW
+	ycUnQNctMwfoICWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYQ1jxoruX6wF
+	x3kr1n99zdTAOJG7i5GTQ0LAROL56zMsELaYxIV769m6GLk4hAQWMUpsfbaCEcJpYpI49G8m
+	G0gVm4CWxP4XN8BsEYEAiR/H34HZzAI3GSWOvQ8DsYUFPCVuPL3MBGKzCKhKbD/aAWbzCrhK
+	LNnYzQSxTU7iw55H7CA2p4CbxMxFJ8HmCAHV9Dy6yDyBkXcBI8MqRtHUguSC4qT0XEO94sTc
+	4tK8dL3k/NxNjODIeia1g3Flg8UhRgEORiUe3gPLXIOFWBPLiitzDzFKcDArifDuznQLFuJN
+	SaysSi3Kjy8qzUktPsSYDHTVRGYp0eR8YNTnlcQbGpuYGVkamRtaGBmbkyasJM57oNU6UEgg
+	PbEkNTs1tSC1CGYLEwenVAPjcUON1/O+bP7X9/A5y7MtO099M7r1X2trgvezq7ELaxo3fQp3
+	T/rZ7KUkcdHFYP30FY5ScrIcfx4dYqi5Vh64QfbpvPT1ahkWW/kZfdZtkpEP2/T1b9gmxlNL
+	xFY8nVfWsODSP/HLLQLy0pNvHJ/w4vET5jfNve9tAmM4C0x7d2dKHXm+44vIFCWW4oxEQy3m
+	ouJEACroCAfwAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 12:00:47PM +0200, Borislav Petkov wrote:
-> Then you'll have to check whether edac can even stomach more than one
-> drivers in parallel. TTBOMK, no one has ever done this so far... Yadda
-> yadda.
+From: Tomasz Figa <t.figa@samsung.com>
 
-Alternatively, you could put together a single edac driver which
-contains both zynq and L2 functionality.
+This patch add new exynos3250.dtsi to support Exynos3250 SoC and includes
+chipid/sys_reg dt node.
 
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ arch/arm/boot/dts/exynos3250.dtsi | 34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
+ create mode 100644 arch/arm/boot/dts/exynos3250.dtsi
+
+diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
+new file mode 100644
+index 0000000..3c8cee6
+--- /dev/null
++++ b/arch/arm/boot/dts/exynos3250.dtsi
+@@ -0,0 +1,34 @@
++/*
++ * Samsung's Exynos3250 SoC device tree source
++ *
++ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
++ *		http://www.samsung.com
++ *
++ * Samsung's Exynos3250 SoC device nodes are listed in this file. Exynos3250
++ * based board files can include this file and provide values for board specfic
++ * bindings.
++ *
++ * Note: This file does not include device nodes for all the controllers in
++ * Exynos3250 SoC. As device tree coverage for Exynos3250 increases, additional
++ * nodes can be added to this file.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include "skeleton.dtsi"
++
++/ {
++	compatible = "samsung,exynos3250";
++
++	chipid@10000000 {
++		compatible = "samsung,exynos4210-chipid";
++		reg = <0x10000000 0x100>;
++	};
++
++	sys_reg: syscon@10010000 {
++		compatible = "samsung,exynos3-sysreg", "syscon";
++		reg = <0x10010000 0x400>;
++	};
++};
 -- 
-Regards/Gruss,
-    Boris.
+1.8.0
 
-Sent from a fat crate under my desk. Formatting is fine.
---
