@@ -1,85 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965290AbaDJDbc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:31:32 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:53204 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934239AbaDJDb2 (ORCPT
+	id S935219AbaDJDXO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:23:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40797 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933287AbaDJDVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:31:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <d0106d723f7455208f83e50522007fee7887e67e.1392419479.git.siva.krishna.kumar.reddy.yerramreddy@intel.com>
-References: <d0106d723f7455208f83e50522007fee7887e67e.1392419479.git.siva.krishna.kumar.reddy.yerramreddy@intel.com>
-Date: Wed, 9 Apr 2014 20:31:27 -0700
-X-Google-Sender-Auth: IIGisEJBiEk02BmqE4pTGvlpo8I
-Message-ID: <CAA9_cmfD_tgDK+mpZx0WNqHyVZ01yFtuUe33WpD0=8TXpC2jfQ@mail.gmail.com>
-Subject: Re: [PATCH dmaengine-fixes 1/1] dmaengine: read completed cookie
- before used cookie
-From: Dan Williams <dan.j.williams@intel.com>
-To: Siva Yerramreddy <siva.krishna.kumar.reddy.yerramreddy@intel.com>
-Cc: Vinod Koul <vinod.koul@intel.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        Sudeep Dutt <sudeep.dutt@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 9 Apr 2014 23:21:31 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Qiang Huang <h.huangqiang@huawei.com>, Li Zefan <lizefan@huawei.com>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 002/134] idr: fix top layer handling
+Date: Wed,  9 Apr 2014 20:21:58 -0700
+Message-Id: <20140410032259.944970012@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
+References: <20140410032259.587501440@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 3:32 PM, Siva Yerramreddy
-<siva.krishna.kumar.reddy.yerramreddy@intel.com> wrote:
-> When running dmatest with my yet-to-be submitted driver for the Intel MIC DMA
-> engine, dmatest detected "dma0chan3-copy5: result #8096161:completion busy
-> status with src_off=0x0 dst_off=0x0 len=0x40 (0)". This is caused by reading
-> the used cookie before the completed cookie in dma_cookie_status(),  if a DMA
-> request is submitted in between the two reads, and completes,  the completed
-> cookie will be newer than the used cookie value read previously.  Reversing
-> the order of reads ensures that the completed cookie is for a DMA request
-> older than the used cookie.
->
-> Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
-> Reviewed-by: Sudeep Dutt <sudeep.dutt@intel.com>
-> Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
-> Signed-off-by: Siva Yerramreddy <siva.krishna.kumar.reddy.yerramreddy@intel.com>
-> ---
->  drivers/dma/dmaengine.h | 8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/dma/dmaengine.h b/drivers/dma/dmaengine.h
-> index 17f983a..4c96892 100644
-> --- a/drivers/dma/dmaengine.h
-> +++ b/drivers/dma/dmaengine.h
-> @@ -7,6 +7,7 @@
->
->  #include <linux/bug.h>
->  #include <linux/dmaengine.h>
-> +#include <asm/barrier.h>
->
->  /**
->   * dma_cookie_init - initialize the cookies for a DMA channel
-> @@ -69,8 +70,13 @@ static inline enum dma_status dma_cookie_status(struct dma_chan *chan,
->  {
->         dma_cookie_t used, complete;
->
-> -       used = chan->cookie;
->         complete = chan->completed_cookie;
-> +       /*
-> +        * If this order is not maintained, used can end up being older than
-> +        * complete
-> +        */
-> +       smp_rmb();
-> +       used = chan->cookie;
->         barrier();
->         if (state) {
->                 state->last = complete;
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Hmm, this patch by itself is problematic because the rmb() needs to be
-paired with a wmb() otherwise it really has no effect.  Is there a
-wmb() in your driver?
+------------------
 
-I think this does need to be fixed, but we need to provide generic
-helpers for other drivers.  I also think smb_rmb() and smb_wmb() are
-overkill we should just be able to use smp_store_release() and
-smp_load_acquire() for this.
+From: Tejun Heo <tj@kernel.org>
+
+commit 326cf0f0f308933c10236280a322031f0097205d upstream.
+
+Most functions in idr fail to deal with the high bits when the idr
+tree grows to the maximum height.
+
+* idr_get_empty_slot() stops growing idr tree once the depth reaches
+  MAX_IDR_LEVEL - 1, which is one depth shallower than necessary to
+  cover the whole range.  The function doesn't even notice that it
+  didn't grow the tree enough and ends up allocating the wrong ID
+  given sufficiently high @starting_id.
+
+  For example, on 64 bit, if the starting id is 0x7fffff01,
+  idr_get_empty_slot() will grow the tree 5 layer deep, which only
+  covers the 30 bits and then proceed to allocate as if the bit 30
+  wasn't specified.  It ends up allocating 0x3fffff01 without the bit
+  30 but still returns 0x7fffff01.
+
+* __idr_remove_all() will not remove anything if the tree is fully
+  grown.
+
+* idr_find() can't find anything if the tree is fully grown.
+
+* idr_for_each() and idr_get_next() can't iterate anything if the tree
+  is fully grown.
+
+Fix it by introducing idr_max() which returns the maximum possible ID
+given the depth of tree and replacing the id limit checks in all
+affected places.
+
+As the idr_layer pointer array pa[] needs to be 1 larger than the
+maximum depth, enlarge pa[] arrays by one.
+
+While this plugs the discovered issues, the whole code base is
+horrible and in desparate need of rewrite.  It's fragile like hell,
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - s/MAX_IDR_LEVEL/MAX_LEVEL/; s/MAX_IDR_SHIFT/MAX_ID_SHIFT/
+ - Drop change to idr_alloc()]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Qiang Huang <h.huangqiang@huawei.com>
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Jianguo Wu <wujianguo@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+
+---
+ lib/idr.c |   36 ++++++++++++++++++++++--------------
+ 1 file changed, 22 insertions(+), 14 deletions(-)
+
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -39,6 +39,14 @@
+ static struct kmem_cache *idr_layer_cache;
+ static DEFINE_SPINLOCK(simple_ida_lock);
+ 
++/* the maximum ID which can be allocated given idr->layers */
++static int idr_max(int layers)
++{
++	int bits = min_t(int, layers * IDR_BITS, MAX_ID_SHIFT);
++
++	return (1 << bits) - 1;
++}
++
+ static struct idr_layer *get_from_free_list(struct idr *idp)
+ {
+ 	struct idr_layer *p;
+@@ -223,7 +231,7 @@ build_up:
+ 	 * Add a new layer to the top of the tree if the requested
+ 	 * id is larger than the currently allocated space.
+ 	 */
+-	while ((layers < (MAX_LEVEL - 1)) && (id >= (1 << (layers*IDR_BITS)))) {
++	while (id > idr_max(layers)) {
+ 		layers++;
+ 		if (!p->count) {
+ 			/* special case: if the tree is currently empty,
+@@ -265,7 +273,7 @@ build_up:
+ 
+ static int idr_get_new_above_int(struct idr *idp, void *ptr, int starting_id)
+ {
+-	struct idr_layer *pa[MAX_LEVEL];
++	struct idr_layer *pa[MAX_LEVEL + 1];
+ 	int id;
+ 
+ 	id = idr_get_empty_slot(idp, starting_id, pa);
+@@ -357,7 +365,7 @@ static void idr_remove_warning(int id)
+ static void sub_remove(struct idr *idp, int shift, int id)
+ {
+ 	struct idr_layer *p = idp->top;
+-	struct idr_layer **pa[MAX_LEVEL];
++	struct idr_layer **pa[MAX_LEVEL + 1];
+ 	struct idr_layer ***paa = &pa[0];
+ 	struct idr_layer *to_free;
+ 	int n;
+@@ -451,16 +459,16 @@ void idr_remove_all(struct idr *idp)
+ 	int n, id, max;
+ 	int bt_mask;
+ 	struct idr_layer *p;
+-	struct idr_layer *pa[MAX_LEVEL];
++	struct idr_layer *pa[MAX_LEVEL + 1];
+ 	struct idr_layer **paa = &pa[0];
+ 
+ 	n = idp->layers * IDR_BITS;
+ 	p = idp->top;
+ 	rcu_assign_pointer(idp->top, NULL);
+-	max = 1 << n;
++	max = idr_max(idp->layers);
+ 
+ 	id = 0;
+-	while (id < max) {
++	while (id >= 0 && id <= max) {
+ 		while (n > IDR_BITS && p) {
+ 			n -= IDR_BITS;
+ 			*paa++ = p;
+@@ -519,7 +527,7 @@ void *idr_find(struct idr *idp, int id)
+ 	/* Mask off upper bits we don't use for the search. */
+ 	id &= MAX_ID_MASK;
+ 
+-	if (id >= (1 << n))
++	if (id > idr_max(p->layer + 1))
+ 		return NULL;
+ 	BUG_ON(n == 0);
+ 
+@@ -555,15 +563,15 @@ int idr_for_each(struct idr *idp,
+ {
+ 	int n, id, max, error = 0;
+ 	struct idr_layer *p;
+-	struct idr_layer *pa[MAX_LEVEL];
++	struct idr_layer *pa[MAX_LEVEL + 1];
+ 	struct idr_layer **paa = &pa[0];
+ 
+ 	n = idp->layers * IDR_BITS;
+ 	p = rcu_dereference_raw(idp->top);
+-	max = 1 << n;
++	max = idr_max(idp->layers);
+ 
+ 	id = 0;
+-	while (id < max) {
++	while (id >= 0 && id <= max) {
+ 		while (n > 0 && p) {
+ 			n -= IDR_BITS;
+ 			*paa++ = p;
+@@ -601,7 +609,7 @@ EXPORT_SYMBOL(idr_for_each);
+  */
+ void *idr_get_next(struct idr *idp, int *nextidp)
+ {
+-	struct idr_layer *p, *pa[MAX_LEVEL];
++	struct idr_layer *p, *pa[MAX_LEVEL + 1];
+ 	struct idr_layer **paa = &pa[0];
+ 	int id = *nextidp;
+ 	int n, max;
+@@ -611,9 +619,9 @@ void *idr_get_next(struct idr *idp, int
+ 	if (!p)
+ 		return NULL;
+ 	n = (p->layer + 1) * IDR_BITS;
+-	max = 1 << n;
++	max = idr_max(p->layer + 1);
+ 
+-	while (id < max) {
++	while (id >= 0 && id <= max) {
+ 		while (n > 0 && p) {
+ 			n -= IDR_BITS;
+ 			*paa++ = p;
+@@ -787,7 +795,7 @@ EXPORT_SYMBOL(ida_pre_get);
+  */
+ int ida_get_new_above(struct ida *ida, int starting_id, int *p_id)
+ {
+-	struct idr_layer *pa[MAX_LEVEL];
++	struct idr_layer *pa[MAX_LEVEL + 1];
+ 	struct ida_bitmap *bitmap;
+ 	unsigned long flags;
+ 	int idr_id = starting_id / IDA_BITMAP_BITS;
+
+
