@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161170AbaDJTz7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 15:55:59 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:18143 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753679AbaDJTz5 (ORCPT
+	id S1422669AbaDJT4h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 15:56:37 -0400
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:63797 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694AbaDJT4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 15:55:57 -0400
-Date: Thu, 10 Apr 2014 15:55:54 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-Subject: Re: [PATCH RESEND 2/2] tracing: syscall_regfunc() should not skip
- kernel threads
-Message-ID: <20140410155554.44f88536@gandalf.local.home>
-In-Reply-To: <20140410193820.GA15624@redhat.com>
-References: <20140409170505.GA27638@redhat.com>
-	<20140409170616.GC27638@redhat.com>
-	<20140410092842.1f9a8760@gandalf.local.home>
-	<20140410133855.GC12228@redhat.com>
-	<20140410102816.24337ffe@gandalf.local.home>
-	<20140410144655.GA25316@redhat.com>
-	<20140410110848.64c3f25e@gandalf.local.home>
-	<20140410175705.GB32332@redhat.com>
-	<20140410181417.GA2104@redhat.com>
-	<20140410151340.7d24aafd@gandalf.local.home>
-	<20140410193820.GA15624@redhat.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Thu, 10 Apr 2014 15:56:34 -0400
+X-AuditID: cbfec37a-b7fc06d00000555a-f9-5346f771292b
+Message-id: <5346F76D.8030704@samsung.com>
+Date: Thu, 10 Apr 2014 13:56:29 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 3.4 000/134] 3.4.87-stable review
+References: <20140410032259.587501440@linuxfoundation.org>
+In-reply-to: <20140410032259.587501440@linuxfoundation.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.134.250]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsVy+t9hX93C727BBhcXsVvMWb+GzaJ58Xo2
+	i8u75rBZPFl4hsli6qkJLBYLNj5itHjU95bdgd1j56y77B4nZvxm8dg/dw2Q+72B3ePzJrkA
+	1igum5TUnMyy1CJ9uwSujJ/TWxgLVrNVzL+0iLWBsYO1i5GTQ0LARGJbxzoWCFtM4sK99Wxd
+	jFwcQgLLGCUmddxlA0kICfQySbz/6A+R2MYosWTvarBuXgEtiQUzZ4HZLAKqEjPPbQFrYBNQ
+	l/j8egc7RLOcRNOS1cwgtqhAhMSrsxNZIHoFJX5MvgdmiwgES6z9upARZAGzwCpGieuXl4MN
+	EhYwlbh34y8rxCAriVUn/4DFOQWsJa52NDGC2MxA9spJ26BseYnNa94yQ9QrS/y5fIoJ4jVl
+	iY2H3rFMYBSZhWT3LCTts5C0L2BkXsUoVlqcXFCclJ5aYahXnJhbXJqXrpecn7uJERJLVTsY
+	73y1OcQowMGoxMN74JJbsBBrYllxZe4hRgkOZiURXtn3QCHelMTKqtSi/Pii0pzU4kOMTByc
+	Ug2MWlsc3B12r/vZ13lkb3/5hC/fo4wL41LPuq9wvsdwpfCY5YvbXfunXT/2zyqgdi5DUWvy
+	3fl9c840NJrLy1TVNhcWVdoHBKxvi62UttnZdO2S5Zek73KuUsEn3J8bqVsq6uiXK/7mc5z1
+	rPLt/Qj+2JcnCr6td/g5JbqJvaZtJeOuw9bqv+8osRRnJBpqMRcVJwIA4Xy6GIMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Apr 2014 21:38:20 +0200
-Oleg Nesterov <oleg@redhat.com> wrote:
+On 04/09/2014 09:21 PM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.4.87 release.
+> There are 134 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sat Apr 12 03:22:28 UTC 2014.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.87-rc1.gz
+> and the diffstat can be found below.
+>
 
-> I _think_ that the kernel thread can only return from "call *%rbx" if
-> it is no longer a kernel thread, iow, do_execve() was called.
+Compiled and booted on my test systems. No dmesg regressions.
 
-Ah right. But only in special cases.
+-- Shuah
 
-Actually, it only returns if the function in kernel_thread() returns,
-and in the case of ____call_usermodehelper, it does an exec and
-returns on success. But if it fails, it needs to call do_exit().
 
-Thus, it's not sufficient to just say "only if do_execve is called" but
-to say, if the handler that is called is only allowed to return iff it
-did a execve first and succeeded.
-
--- Steve
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
