@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965202AbaDJDXk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:23:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41017 "EHLO
+	id S965186AbaDJDXi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:23:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41013 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934675AbaDJDWC (ORCPT
+	with ESMTP id S934674AbaDJDWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:02 -0400
+	Wed, 9 Apr 2014 23:22:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
         "John W. Linville" <linville@tuxdriver.com>,
         Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 042/134] ath9k_htc: fix signal strength handling issues
-Date: Wed,  9 Apr 2014 20:22:38 -0700
-Message-Id: <20140410032305.445430757@linuxfoundation.org>
+Subject: [PATCH 3.4 041/134] ath9k_hw: Assign default xlna config for AR9485
+Date: Wed,  9 Apr 2014 20:22:37 -0700
+Message-Id: <20140410032305.305069073@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -28,70 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit 838f427955dcfd16858b0108ce29029da0d56a4e upstream.
+commit 30d5b709da23f4ab9836c7f66d2d2e780a69cf12 upstream.
 
-The ath9k commit 2ef167557c0a26c88162ecffb017bfcc51eb7b29
-(ath9k: fix signal strength reporting issues) fixed an issue where the
-reported per-frame signal strength reported to mac80211 was being
-overwritten with an internal average. The same issue is also present
-in ath9k_htc.
-In addition to preventing the driver from overwriting the value, this
-commit also ensures that the internal average (which is used for ANI)
-only tracks beacons of the AP that we're connected to.
+For AR9485 boards with XLNA, the default gpio config
+is not set correctly, fix this.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.2: use compare_ether_addr() instead of
- ether_addr_equal(), with opposite sense]
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/htc.h          |    1 +
- drivers/net/wireless/ath/ath9k/htc_drv_txrx.c |   18 +++++++++++-------
- 2 files changed, 12 insertions(+), 7 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |    8 ++++++--
+ drivers/net/wireless/ath/ath9k/ar9003_phy.h    |    2 ++
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/htc.h
-+++ b/drivers/net/wireless/ath/ath9k/htc.h
-@@ -22,6 +22,7 @@
- #include <linux/firmware.h>
- #include <linux/skbuff.h>
- #include <linux/netdevice.h>
-+#include <linux/etherdevice.h>
- #include <linux/leds.h>
- #include <linux/slab.h>
- #include <net/mac80211.h>
---- a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-@@ -1077,15 +1077,19 @@ static bool ath9k_rx_prepare(struct ath9
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+@@ -3592,7 +3592,7 @@ static u16 ar9003_hw_ant_ctrl_chain_get(
+ static void ar9003_hw_ant_ctrl_apply(struct ath_hw *ah, bool is2ghz)
+ {
+ 	int chain;
+-	u32 regval;
++	u32 regval, value;
+ 	u32 ant_div_ctl1;
+ 	static const u32 switch_chain_reg[AR9300_MAX_CHAINS] = {
+ 			AR_PHY_SWITCH_CHAIN_0,
+@@ -3600,7 +3600,11 @@ static void ar9003_hw_ant_ctrl_apply(str
+ 			AR_PHY_SWITCH_CHAIN_2,
+ 	};
  
- 	last_rssi = priv->rx.last_rssi;
- 
--	if (likely(last_rssi != ATH_RSSI_DUMMY_MARKER))
--		rxbuf->rxstatus.rs_rssi = ATH_EP_RND(last_rssi,
--						     ATH_RSSI_EP_MULTIPLIER);
-+	if (ieee80211_is_beacon(hdr->frame_control) &&
-+	    !is_zero_ether_addr(common->curbssid) &&
-+	    compare_ether_addr(hdr->addr3, common->curbssid) == 0) {
-+		s8 rssi = rxbuf->rxstatus.rs_rssi;
- 
--	if (rxbuf->rxstatus.rs_rssi < 0)
--		rxbuf->rxstatus.rs_rssi = 0;
-+		if (likely(last_rssi != ATH_RSSI_DUMMY_MARKER))
-+			rssi = ATH_EP_RND(last_rssi, ATH_RSSI_EP_MULTIPLIER);
- 
--	if (ieee80211_is_beacon(fc))
--		priv->ah->stats.avgbrssi = rxbuf->rxstatus.rs_rssi;
-+		if (rssi < 0)
-+			rssi = 0;
+-	u32 value = ar9003_hw_ant_ctrl_common_get(ah, is2ghz);
++	if (AR_SREV_9485(ah) && (ar9003_hw_get_rx_gain_idx(ah) == 0))
++		ath9k_hw_cfg_output(ah, AR9300_EXT_LNA_CTL_GPIO_AR9485,
++				    AR_GPIO_OUTPUT_MUX_AS_PCIE_ATTENTION_LED);
 +
-+		priv->ah->stats.avgbrssi = rssi;
-+	}
++	value = ar9003_hw_ant_ctrl_common_get(ah, is2ghz);
  
- 	rx_status->mactime = be64_to_cpu(rxbuf->rxstatus.rs_tstamp);
- 	rx_status->band = hw->conf.channel->band;
+ 	if (AR_SREV_9462(ah)) {
+ 		REG_RMW_FIELD(ah, AR_PHY_SWITCH_COM,
+--- a/drivers/net/wireless/ath/ath9k/ar9003_phy.h
++++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.h
+@@ -339,6 +339,8 @@
+ 
+ #define AR_PHY_CCA_NOM_VAL_9330_2GHZ          -118
+ 
++#define AR9300_EXT_LNA_CTL_GPIO_AR9485 9
++
+ /*
+  * AGC Field Definitions
+  */
 
 
