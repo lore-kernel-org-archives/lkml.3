@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030354AbaDJLZd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 07:25:33 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:51415 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030292AbaDJLZb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 07:25:31 -0400
-Message-ID: <53467FA3.5040805@vmware.com>
-Date: Thu, 10 Apr 2014 13:25:23 +0200
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S935513AbaDJL0D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 07:26:03 -0400
+Received: from mta-out.inet.fi ([195.156.147.13]:39674 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935480AbaDJL0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 07:26:00 -0400
+Date: Thu, 10 Apr 2014 14:25:47 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Vlastimil Babka <vbabka@suse.cz>
+Subject: Re: mm: kernel BUG at mm/huge_memory.c:1829!
+Message-ID: <20140410112547.GA24788@node.dhcp.inet.fi>
+References: <53440991.9090001@oracle.com>
 MIME-Version: 1.0
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        ccross@google.com, linux-media@vger.kernel.org
-Subject: Re: [PATCH 2/2] [RFC] reservation: add suppport for read-only access
- using rcu
-References: <20140409144239.26648.57918.stgit@patser> <20140409144831.26648.79163.stgit@patser> <53465A53.1090500@vmware.com> <53466D63.8080808@canonical.com> <53467B93.3000402@vmware.com>
-In-Reply-To: <53467B93.3000402@vmware.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53440991.9090001@oracle.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2014 01:08 PM, Thomas Hellstrom wrote:
-> On 04/10/2014 12:07 PM, Maarten Lankhorst wrote:
->> Hey,
->>
->> op 10-04-14 10:46, Thomas Hellstrom schreef:
->>> Hi!
->>>
->>> Ugh. This became more complicated than I thought, but I'm OK with moving
->>> TTM over to fence while we sort out
->>> how / if we're going to use this.
->>>
->>> While reviewing, it struck me that this is kind of error-prone, and hard
->>> to follow since we're operating on a structure that may be
->>> continually updated under us, needing a lot of RCU-specific macros and
->>> barriers.
->> Yeah, but with the exception of dma_buf_poll I don't think there is
->> anything else
->> outside drivers/base/reservation.c has to deal with rcu.
->>
->>> Also the rcu wait appears to not complete until there are no busy fences
->>> left (new ones can be added while we wait) rather than
->>> waiting on a snapshot of busy fences.
->> This has been by design, because 'wait for bo idle' type of functions
->> only care
->> if the bo is completely idle or not.
-> No, not when using RCU, because the bo may be busy again before the
-> function returns :)
-> Complete idleness can only be guaranteed if holding the reservation, or
-> otherwise making sure
-> that no new rendering is submitted to the buffer, so it's an overkill to
-> wait for complete idleness here.
->
-Although, if we fail to get a refcount for a fence, and it's still busy
-we need to do  a seq retry,
-because the fence might have been replaced by another fence from the
-same context, without being idle. That check is not present in the
-snapshot code I sent.
+On Tue, Apr 08, 2014 at 10:37:05AM -0400, Sasha Levin wrote:
+> Hi all,
+> 
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel, I've stumbled on the following:
+> 
+> [ 1275.253114] kernel BUG at mm/huge_memory.c:1829!
+> [ 1275.253642] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [ 1275.254775] Dumping ftrace buffer:
+> [ 1275.255631]    (ftrace buffer empty)
+> [ 1275.256440] Modules linked in:
+> [ 1275.257347] CPU: 20 PID: 22807 Comm: trinity-c299 Not tainted 3.14.0-next-20140407-sasha-00023-gd35b0d6 #382
+> [ 1275.258686] task: ffff8803e7873000 ti: ffff8803e7896000 task.ti: ffff8803e7896000
+> [ 1275.259416] RIP: __split_huge_page (mm/huge_memory.c:1829 (discriminator 1))
+> [ 1275.260527] RSP: 0018:ffff8803e7897bb8  EFLAGS: 00010297
+> [ 1275.261323] RAX: 000000000000012c RBX: ffff8803e789d600 RCX: 0000000000000006
+> [ 1275.261323] RDX: 0000000000005b80 RSI: ffff8803e7873d00 RDI: 0000000000000282
+> [ 1275.261323] RBP: ffff8803e7897c68 R08: 0000000000000000 R09: 0000000000000000
+> [ 1275.261323] R10: 0000000000000001 R11: 30303320746e756f R12: 0000000000000000
+> [ 1275.261323] R13: 0000000000a00000 R14: ffff8803ede73000 R15: ffffea0010030000
+> [ 1275.261323] FS:  00007f899d23f700(0000) GS:ffff880437000000(0000) knlGS:0000000000000000
+> [ 1275.261323] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [ 1275.261323] CR2: 00000000024cf048 CR3: 00000003e787f000 CR4: 00000000000006a0
+> [ 1275.261323] DR0: 0000000000696000 DR1: 0000000000696000 DR2: 0000000000000000
+> [ 1275.261323] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+> [ 1275.261323] Stack:
+> [ 1275.261323]  ffff8803e7897bd8 ffff880024dab898 ffff8803e7897bd8 ffffffffac1bea0e
+> [ 1275.261323]  ffff8803e7897c28 0000000000000282 00000014b06cc072 0000000000000000
+> [ 1275.261323]  0000012be7897c28 0000000000000a00 ffff880024dab8d0 ffff880024dab898
+> [ 1275.261323] Call Trace:
+> [ 1275.261323] ? put_lock_stats.isra.12 (arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+> [ 1275.261323] ? down_write (kernel/locking/rwsem.c:51 (discriminator 2))
+> [ 1275.261323] ? split_huge_page_to_list (mm/huge_memory.c:1874)
+> [ 1275.261323] split_huge_page_to_list (include/linux/vmstat.h:37 mm/huge_memory.c:1879)
+> [ 1275.261323] __split_huge_page_pmd (mm/huge_memory.c:2811)
+> [ 1275.261323] ? mutex_unlock (kernel/locking/mutex.c:220)
+> [ 1275.261323] ? __mutex_unlock_slowpath (arch/x86/include/asm/paravirt.h:809 kernel/locking/mutex.c:713 kernel/locking/mutex.c:722)
+> [ 1275.261323] ? get_parent_ip (kernel/sched/core.c:2471)
+> [ 1275.261323] ? preempt_count_sub (kernel/sched/core.c:2526)
+> [ 1275.261323] follow_page_mask (mm/memory.c:1518 (discriminator 1))
+> [ 1275.261323] SYSC_move_pages (mm/migrate.c:1227 mm/migrate.c:1353 mm/migrate.c:1508)
+> [ 1275.261323] ? SYSC_move_pages (include/linux/rcupdate.h:800 mm/migrate.c:1472)
+> [ 1275.261323] ? sched_clock_local (kernel/sched/clock.c:213)
+> [ 1275.261323] SyS_move_pages (mm/migrate.c:1456)
+> [ 1275.261323] tracesys (arch/x86/kernel/entry_64.S:749)
+> [ 1275.261323] Code: c0 01 39 45 94 74 18 41 8b 57 18 48 c7 c7 90 5e 6d b0 31 c0 8b 75 94 83 c2 01 e8 3d 6a 23 03 41 8b 47 18 83 c0 01 39 45 94 74 02 <0f> 0b 49 8b 07 48 89 c2 48 c1 e8 34 83 e0 03 48 c1 ea 36 4c 8d
+> [ 1275.261323] RIP __split_huge_page (mm/huge_memory.c:1829 (discriminator 1))
+> [ 1275.261323]  RSP <ffff8803e7897bb8>
+> 
+> Looking at the code, there was supposed to be a printk printing both
+> mapcounts if they're different. However, there was no matching entry
+> in the log for that.
 
-/Thomas
+And I was able to trigger it other way around:
+
+[  156.918770] mapcount 2 page_mapcount 3
+
+But no BUG_ON().
+
+-- 
+ Kirill A. Shutemov
