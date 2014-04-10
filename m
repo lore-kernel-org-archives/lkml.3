@@ -1,58 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965869AbaDJTR6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 15:17:58 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:56869 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965784AbaDJTRy (ORCPT
+	id S1758922AbaDJTW0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 15:22:26 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:39820 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753327AbaDJTWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 15:17:54 -0400
-Message-ID: <5346EE5A.3070408@gmail.com>
-Date: Thu, 10 Apr 2014 21:17:46 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-CC: Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>, inki.dae@samsung.com,
-        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 08/27] pinctrl: exynos: Add driver data for Exynos3250
-References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>	<1397122124-15690-9-git-send-email-cw00.choi@samsung.com> <CACRpkdYiFCHFifkpRwDhdAGqBrGTU5E4mfdGE8u1c=zrim17aA@mail.gmail.com>
-In-Reply-To: <CACRpkdYiFCHFifkpRwDhdAGqBrGTU5E4mfdGE8u1c=zrim17aA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Apr 2014 15:22:24 -0400
+From: Matt Porter <mporter@linaro.org>
+To: Lubomir Rintel <lkundrak@v3.sk>
+Cc: Arnd Bergmann <arnd@arndb.de>, Herbert Xu <herbert@gondor.apana.org.au>,
+        Matt Mackall <mpm@selenic.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] hwrng: bcm2835: fix oops when rng h/w is accessed during registration
+Date: Thu, 10 Apr 2014 15:22:10 -0400
+Message-Id: <1397157730-31161-1-git-send-email-mporter@linaro.org>
+X-Mailer: git-send-email 1.8.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Commit "d9e7972 hwrng: add randomness to system from rng sources"
+exposed a bug in the bcm2835-rng driver resulting in boot failure
+on Raspberry Pi due to the following oops:
 
-On 10.04.2014 20:42, Linus Walleij wrote:
-> On Thu, Apr 10, 2014 at 11:28 AM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->
->> From: Tomasz Figa <t.figa@samsung.com>
->>
->> This patch adds driver data (bank list and EINT layout) for Exynos3250
->> to pinctrl-exynos driver. Exynos3250 includes 158 multi-functional input/output
->> ports. There are 23 general port groups.
->>
->> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->
-> Ugh can Tomasz send out his patches himself, I get confused...
-> It was also sent two times, the second time with CC:s added.
-> Tomasz, shall I merge this?
+[   28.261523] BUG: soft lockup - CPU#0 stuck for 23s! [swapper:1]
+[   28.271058]
+[   28.275958] CPU: 0 PID: 1 Comm: swapper Not tainted 3.14.0+ #11
+[   28.285374] task: db480000 ti: db484000 task.ti: db484000
+[   28.294279] PC is at bcm2835_rng_read+0x28/0x48
+[   28.302276] LR is at hwrng_register+0x1a8/0x238
+.
+.
+.
 
-I'm fine with this patch being sent by Chanwoo, although he should have 
-probably added his sign-off to the list, as the person sending it.
+The RNG h/w is not completely initialized and enabled before
+hwrng_register() is called and so the bcm2835_rng_read() fails.
+Fix this by making the warmup/enable writes before registering
+the RNG source with the hwrng core.
 
-Chanwoo, can you make sure that there is your sign-off on all the 
-patches from this series?
+Signed-off-by: Matt Porter <mporter@linaro.org>
+---
+ drivers/char/hw_random/bcm2835-rng.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-Best regards,
-Tomasz
+diff --git a/drivers/char/hw_random/bcm2835-rng.c b/drivers/char/hw_random/bcm2835-rng.c
+index 8c3b255..e900961 100644
+--- a/drivers/char/hw_random/bcm2835-rng.c
++++ b/drivers/char/hw_random/bcm2835-rng.c
+@@ -61,18 +61,18 @@ static int bcm2835_rng_probe(struct platform_device *pdev)
+ 	}
+ 	bcm2835_rng_ops.priv = (unsigned long)rng_base;
+ 
++	/* set warm-up count & enable */
++	__raw_writel(RNG_WARMUP_COUNT, rng_base + RNG_STATUS);
++	__raw_writel(RNG_RBGEN, rng_base + RNG_CTRL);
++
+ 	/* register driver */
+ 	err = hwrng_register(&bcm2835_rng_ops);
+ 	if (err) {
+ 		dev_err(dev, "hwrng registration failed\n");
+ 		iounmap(rng_base);
+-	} else {
++	} else
+ 		dev_info(dev, "hwrng registered\n");
+ 
+-		/* set warm-up count & enable */
+-		__raw_writel(RNG_WARMUP_COUNT, rng_base + RNG_STATUS);
+-		__raw_writel(RNG_RBGEN, rng_base + RNG_CTRL);
+-	}
+ 	return err;
+ }
+ 
+-- 
+1.8.4
+
