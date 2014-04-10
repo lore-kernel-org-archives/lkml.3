@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758870AbaDJRRf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 13:17:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33772 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751235AbaDJRPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1030458AbaDJRPF (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 10 Apr 2014 13:15:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22957 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751235AbaDJRPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 13:15:01 -0400
 From: Igor Mammedov <imammedo@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
@@ -14,77 +14,262 @@ Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
         toshi.kani@hp.com, riel@redhat.com, gong.chen@linux.intel.com,
         andi@firstfloor.org, lenb@kernel.org, rjw@rjwysocki.net,
         linux-acpi@vger.kernel.org
-Subject: [PATCH v3 3/5] x86: fix list corruption on CPU hotplug
-Date: Thu, 10 Apr 2014 19:14:19 +0200
-Message-Id: <1397150061-29735-4-git-send-email-imammedo@redhat.com>
+Subject: [PATCH v3 1/5] x86: initialize secondary CPU only if master CPU will wait for it
+Date: Thu, 10 Apr 2014 19:14:17 +0200
+Message-Id: <1397150061-29735-2-git-send-email-imammedo@redhat.com>
 In-Reply-To: <1397150061-29735-1-git-send-email-imammedo@redhat.com>
 References: <1397150061-29735-1-git-send-email-imammedo@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-currently if AP wake up is failed, master CPU marks AP as not present
-in do_boot_cpu() by calling set_cpu_present(cpu, false).
-That leads to following list corruption on the next physical CPU
-hotplug:
+Hang is observed on virtual machines during CPU hotplug,
+especially in big guests with many CPUs. (It reproducible
+more often if host is over-committed).
 
-[  418.107336] WARNING: CPU: 1 PID: 45 at lib/list_debug.c:33 __list_add+0xbe/0xd0()
-[  418.115268] list_add corruption. prev->next should be next (ffff88003dc57600), but was ffff88003e20c3a0. (prev=ffff88003e20c3a0).
-[  418.123693] Modules linked in: nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6t_REJECT ipt_REJECT cfg80211 xt_conntrack rfkill ee
-[  418.138979] CPU: 1 PID: 45 Comm: kworker/u10:1 Not tainted 3.14.0-rc6+ #387
-[  418.149989] Hardware name: Red Hat KVM, BIOS 0.5.1 01/01/2007
-[  418.165750] Workqueue: kacpi_hotplug acpi_hotplug_work_fn
-[  418.166433]  0000000000000021 ffff880038ca7988 ffffffff8159b22d 0000000000000021
-[  418.176460]  ffff880038ca79d8 ffff880038ca79c8 ffffffff8106942c ffff880038ca79e8
-[  418.177453]  ffff88003e20c3a0 ffff88003dc57600 ffff88003e20c3a0 00000000ffffffea
-[  418.178445] Call Trace:
-[  418.185811]  [<ffffffff8159b22d>] dump_stack+0x49/0x5c
-[  418.186440]  [<ffffffff8106942c>] warn_slowpath_common+0x8c/0xc0
-[  418.187192]  [<ffffffff81069516>] warn_slowpath_fmt+0x46/0x50
-[  418.191231]  [<ffffffff8136ef51>] ? acpi_ns_get_node+0xb7/0xc7
-[  418.193889]  [<ffffffff812f796e>] __list_add+0xbe/0xd0
-[  418.196649]  [<ffffffff812e2aa9>] kobject_add_internal+0x79/0x200
-[  418.208610]  [<ffffffff812e2e18>] kobject_add_varg+0x38/0x60
-[  418.213831]  [<ffffffff812e2ef4>] kobject_add+0x44/0x70
-[  418.229961]  [<ffffffff813e2c60>] device_add+0xd0/0x550
-[  418.234991]  [<ffffffff813f0e95>] ? pm_runtime_init+0xe5/0xf0
-[  418.250226]  [<ffffffff813e32be>] device_register+0x1e/0x30
-[  418.255296]  [<ffffffff813e82a3>] register_cpu+0xe3/0x130
-[  418.266539]  [<ffffffff81592be5>] arch_register_cpu+0x65/0x150
-[  418.285845]  [<ffffffff81355c0d>] acpi_processor_hotadd_init+0x5a/0x9b
-...
-Which is caused by the fact that generic_processor_info() allocates
-logical CPU id by calling:
+It happens because master CPU gives up waiting on
+secondary CPU and allows it to run wild. As result
+AP causes locking or crashing system. For example
+as described here: https://lkml.org/lkml/2014/3/6/257
 
- cpu = cpumask_next_zero(-1, cpu_present_mask);
-
-which returns id of previously failed to wake up CPU, since its bit
-is cleared by do_boot_cpu() and as result register_cpu() tries to
-register another CPU with the same id as already present but failed
-to be onlined CPU.
-
-Taking in account that AP will not do anything if master CPU failed to
-wake it up, there is no reason to mark that AP as not present and
-break next cpu hotplug attempts. As a side effect of not marking AP
-as not present, user would be allowed to online it again later.
+If master CPU have sent STARTUP IPI successfully,
+and AP signalled to master CPU that it's ready
+to start initialization, make master CPU wait
+indefinitely till AP is onlined.
+To ensure that AP won't ever run wild, make it
+wait at early startup till master CPU confirms its
+intention to wait for AP.
 
 Signed-off-by: Igor Mammedov <imammedo@redhat.com>
 ---
- arch/x86/kernel/smpboot.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+v2:
+ - ammend comment in cpu_init()
+v3:
+ - leave timeouts in do_boot_cpu(), so that master CPU
+   won't hang if AP doesn't respond, use cpu_initialized_mask
+   as a way for AP to signal to master CPU that it's ready
+   to start initialzation.
+---
+ arch/x86/kernel/cpu/common.c |   28 +++++++-----
+ arch/x86/kernel/smpboot.c    |  100 +++++++++++++-----------------------------
+ 2 files changed, 48 insertions(+), 80 deletions(-)
 
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index a135239..6650110 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1236,16 +1236,23 @@ void cpu_init(void)
+ 	struct task_struct *me;
+ 	struct tss_struct *t;
+ 	unsigned long v;
+-	int cpu;
++	int cpu = stack_smp_processor_id();
+ 	int i;
+ 
+ 	/*
++	 * wait for ACK from master CPU before continuing
++	 * with AP initialization
++	 */
++	cpumask_set_cpu(cpu, cpu_initialized_mask);
++	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
++		cpu_relax();
++
++	/*
+ 	 * Load microcode on this cpu if a valid microcode is available.
+ 	 * This is early microcode loading procedure.
+ 	 */
+ 	load_ucode_ap();
+ 
+-	cpu = stack_smp_processor_id();
+ 	t = &per_cpu(init_tss, cpu);
+ 	oist = &per_cpu(orig_ist, cpu);
+ 
+@@ -1257,9 +1264,6 @@ void cpu_init(void)
+ 
+ 	me = current;
+ 
+-	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask))
+-		panic("CPU#%d already initialized!\n", cpu);
+-
+ 	pr_debug("Initializing CPU#%d\n", cpu);
+ 
+ 	clear_in_cr4(X86_CR4_VME|X86_CR4_PVI|X86_CR4_TSD|X86_CR4_DE);
+@@ -1336,13 +1340,15 @@ void cpu_init(void)
+ 	struct tss_struct *t = &per_cpu(init_tss, cpu);
+ 	struct thread_struct *thread = &curr->thread;
+ 
+-	show_ucode_info_early();
++	/*
++	 * wait for ACK from master CPU before continuing
++	 * with AP initialization
++	 */
++	cpumask_set_cpu(cpu, cpu_initialized_mask);
++	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
++		cpu_relax();
+ 
+-	if (cpumask_test_and_set_cpu(cpu, cpu_initialized_mask)) {
+-		printk(KERN_WARNING "CPU#%d already initialized!\n", cpu);
+-		for (;;)
+-			local_irq_enable();
+-	}
++	show_ucode_info_early();
+ 
+ 	printk(KERN_INFO "Initializing CPU#%d\n", cpu);
+ 
 diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 853473d..e7c15d7 100644
+index 3482693..5e57a0a 100644
 --- a/arch/x86/kernel/smpboot.c
 +++ b/arch/x86/kernel/smpboot.c
-@@ -822,7 +822,6 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
- 			schedule();
- 		}
- 	} else {
--		set_cpu_present(cpu, false);
- 		per_cpu(x86_cpu_to_apicid, cpu) = BAD_APICID;
+@@ -111,7 +111,6 @@ atomic_t init_deasserted;
+ static void smp_callin(void)
+ {
+ 	int cpuid, phys_id;
+-	unsigned long timeout;
+ 
+ 	/*
+ 	 * If waken up by an INIT in an 82489DX configuration
+@@ -130,37 +129,6 @@ static void smp_callin(void)
+ 	 * (This works even if the APIC is not enabled.)
+ 	 */
+ 	phys_id = read_apic_id();
+-	if (cpumask_test_cpu(cpuid, cpu_callin_mask)) {
+-		panic("%s: phys CPU#%d, CPU#%d already present??\n", __func__,
+-					phys_id, cpuid);
+-	}
+-	pr_debug("CPU#%d (phys ID: %d) waiting for CALLOUT\n", cpuid, phys_id);
+-
+-	/*
+-	 * STARTUP IPIs are fragile beasts as they might sometimes
+-	 * trigger some glue motherboard logic. Complete APIC bus
+-	 * silence for 1 second, this overestimates the time the
+-	 * boot CPU is spending to send the up to 2 STARTUP IPIs
+-	 * by a factor of two. This should be enough.
+-	 */
+-
+-	/*
+-	 * Waiting 2s total for startup (udelay is not yet working)
+-	 */
+-	timeout = jiffies + 2*HZ;
+-	while (time_before(jiffies, timeout)) {
+-		/*
+-		 * Has the boot CPU finished it's STARTUP sequence?
+-		 */
+-		if (cpumask_test_cpu(cpuid, cpu_callout_mask))
+-			break;
+-		cpu_relax();
+-	}
+-
+-	if (!time_before(jiffies, timeout)) {
+-		panic("%s: CPU%d started up but did not get a callout!\n",
+-		      __func__, cpuid);
+-	}
+ 
+ 	/*
+ 	 * the boot CPU has finished the init stage and is spinning
+@@ -750,8 +718,8 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 	unsigned long start_ip = real_mode_header->trampoline_start;
+ 
+ 	unsigned long boot_error = 0;
+-	int timeout;
+ 	int cpu0_nmi_registered = 0;
++	unsigned long timeout;
+ 
+ 	/* Just in case we booted with a single CPU. */
+ 	alternatives_enable_smp();
+@@ -799,6 +767,14 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
  	}
  
+ 	/*
++	 * AP might wait on cpu_callout_mask in cpu_init() with
++	 * cpu_initialized_mask set if previous attempt to online
++	 * it timed-out. Clear cpu_initialized_mask so that after
++	 * INIT/SIPI it could start with a clean state.
++	 */
++	cpumask_clear_cpu(cpu, cpu_initialized_mask);
++
++	/*
+ 	 * Wake up a CPU in difference cases:
+ 	 * - Use the method in the APIC driver if it's defined
+ 	 * Otherwise,
+@@ -810,56 +786,42 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 		boot_error = wakeup_cpu_via_init_nmi(cpu, start_ip, apicid,
+ 						     &cpu0_nmi_registered);
+ 
++
+ 	if (!boot_error) {
+ 		/*
+-		 * allow APs to start initializing.
++		 * Wait 10s total for a response from AP
+ 		 */
+-		pr_debug("Before Callout %d\n", cpu);
+-		cpumask_set_cpu(cpu, cpu_callout_mask);
+-		pr_debug("After Callout %d\n", cpu);
++		boot_error = -1;
++		timeout = jiffies + 10*HZ;
++		while (time_before(jiffies, timeout)) {
++			if (cpumask_test_cpu(cpu, cpu_initialized_mask)) {
++				/*
++				 * Tell AP to proceed with initialization
++				 */
++				cpumask_set_cpu(cpu, cpu_callout_mask);
++				boot_error = 0;
++				break;
++			}
++			udelay(100);
++			schedule();
++		}
++	}
+ 
++	if (!boot_error) {
+ 		/*
+-		 * Wait 5s total for a response
++		 * Wait till AP completes initial initialization
+ 		 */
+-		for (timeout = 0; timeout < 50000; timeout++) {
+-			if (cpumask_test_cpu(cpu, cpu_callin_mask))
+-				break;	/* It has booted */
+-			udelay(100);
++		while (!cpumask_test_cpu(cpu, cpu_callin_mask)) {
+ 			/*
+ 			 * Allow other tasks to run while we wait for the
+ 			 * AP to come online. This also gives a chance
+ 			 * for the MTRR work(triggered by the AP coming online)
+ 			 * to be completed in the stop machine context.
+ 			 */
++			udelay(100);
+ 			schedule();
+ 		}
+-
+-		if (cpumask_test_cpu(cpu, cpu_callin_mask)) {
+-			print_cpu_msr(&cpu_data(cpu));
+-			pr_debug("CPU%d: has booted.\n", cpu);
+-		} else {
+-			boot_error = 1;
+-			if (*trampoline_status == 0xA5A5A5A5)
+-				/* trampoline started but...? */
+-				pr_err("CPU%d: Stuck ??\n", cpu);
+-			else
+-				/* trampoline code not run */
+-				pr_err("CPU%d: Not responding\n", cpu);
+-			if (apic->inquire_remote_apic)
+-				apic->inquire_remote_apic(apicid);
+-		}
+-	}
+-
+-	if (boot_error) {
+-		/* Try to put things back the way they were before ... */
+-		numa_remove_cpu(cpu); /* was set by numa_add_cpu */
+-
+-		/* was set by do_boot_cpu() */
+-		cpumask_clear_cpu(cpu, cpu_callout_mask);
+-
+-		/* was set by cpu_init() */
+-		cpumask_clear_cpu(cpu, cpu_initialized_mask);
+-
++	} else {
+ 		set_cpu_present(cpu, false);
+ 		per_cpu(x86_cpu_to_apicid, cpu) = BAD_APICID;
+ 	}
 -- 
 1.7.1
 
