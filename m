@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030619AbaDJM1s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 08:27:48 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:38605 "EHLO
+	id S1030541AbaDJMZz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 08:25:55 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38576 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1030544AbaDJMZ4 (ORCPT
+	with ESMTP id S1030282AbaDJMZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 08:25:56 -0400
+	Thu, 10 Apr 2014 08:25:53 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 To: Randy Dunlap <rdunlap@infradead.org>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
@@ -19,60 +19,57 @@ Cc: Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         dev@linux-sunxi.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v2 4/5] pinctrl: sunxi: add reset control support
-Date: Thu, 10 Apr 2014 14:25:46 +0200
-Message-Id: <1397132747-13917-5-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 0/5] ARM: sunxi: add multi pin controller support
+Date: Thu, 10 Apr 2014 14:25:42 +0200
+Message-Id: <1397132747-13917-1-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1397132747-13917-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1397132747-13917-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The A31 SoC define a reset line for the R_PIO block which needs to be
-deasserted for the pin controller to be usable.
+Hello,
 
-Try to retrieve a reset line and deassert if one was found.
+This series rework the sunxi pinctrl driver to support the PL and PM
+pins available on the A31 SoC, which are controlled using the R_PIO
+block.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- drivers/pinctrl/pinctrl-sunxi.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+This series add support for multi pin controller which was previously
+impossible for several reasons:
+1) the pinctrl instance was registering a static instance of the gpio
+   chip, which means, in case you were probing 2 devices, the gpio chip
+   was added twice to the gpiochip list
+2) the base pin of the gpio chip was always set to 0, and thus the 2
+   gpiochip pin numbers were overlapping
 
-diff --git a/drivers/pinctrl/pinctrl-sunxi.c b/drivers/pinctrl/pinctrl-sunxi.c
-index ee62027..b752495 100644
---- a/drivers/pinctrl/pinctrl-sunxi.c
-+++ b/drivers/pinctrl/pinctrl-sunxi.c
-@@ -26,6 +26,7 @@
- #include <linux/pinctrl/pinconf-generic.h>
- #include <linux/pinctrl/pinmux.h>
- #include <linux/platform_device.h>
-+#include <linux/reset.h>
- #include <linux/slab.h>
- 
- #include "core.h"
-@@ -792,6 +793,7 @@ static int sunxi_pinctrl_probe(struct platform_device *pdev)
- 	const struct of_device_id *device;
- 	struct pinctrl_pin_desc *pins;
- 	struct sunxi_pinctrl *pctl;
-+	struct reset_control *rstc;
- 	int i, ret, last_pin;
- 	struct clk *clk;
- 
-@@ -885,6 +887,13 @@ static int sunxi_pinctrl_probe(struct platform_device *pdev)
- 
- 	clk_prepare_enable(clk);
- 
-+	rstc = devm_reset_control_get(&pdev->dev, NULL);
-+	if (!IS_ERR(rstc)) {
-+		ret = reset_control_deassert(rstc);
-+		if (ret)
-+			goto gpiochip_error;
-+	}
-+
- 	pctl->irq = irq_of_parse_and_map(node, 0);
- 	if (!pctl->irq) {
- 		ret = -EINVAL;
+I still haven't reworked the interrupt part (to handle the "per bank
+interrupt" instead of the "one interrupt for the whole gpio" chip
+approach), but this will be part of another series.
+
+Best Regards,
+
+Boris
+
+Changes since v1:
+ - rework the pinctrl driver to support multiple pin controller instances
+ - removed reset and clock gate patches from the series
+ - removed A31 DT modifications from the series (we need to get the PRCM
+ reset and clk drivers before being able to declare the r_pio node, and
+ we're still discussing how this should be implemented)
+
+Boris BREZILLON (5):
+  pinctrl: sunxi: add PL and PM pin definitions
+  pinctrl: sunxi: support multiple pin controller
+  pinctrl: sunxi: define A31 R_PIO pin functions
+  pinctrl: sunxi: add reset control support
+  ARM: sunxi: update the default ARCH_NR_GPIO for sunxi arch
+
+ .../bindings/pinctrl/allwinner,sunxi-pinctrl.txt   |  1 +
+ arch/arm/Kconfig                                   |  2 +-
+ drivers/pinctrl/pinctrl-sunxi-pins.h               | 74 ++++++++++++++++++++++
+ drivers/pinctrl/pinctrl-sunxi.c                    | 40 +++++++-----
+ drivers/pinctrl/pinctrl-sunxi.h                    | 69 ++++++++++++++++++++
+ 5 files changed, 169 insertions(+), 17 deletions(-)
+
 -- 
 1.8.3.2
 
