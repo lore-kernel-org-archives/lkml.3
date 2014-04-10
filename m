@@ -1,120 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758891AbaDJR7Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 13:59:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10316 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753322AbaDJR7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 13:59:20 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, mtosatti@redhat.com, aarcange@redhat.com,
-        mgorman@suse.de, akpm@linux-foundation.org, andi@firstfloor.org,
-        davidlohr@hp.com, rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        yinghai@kernel.org, riel@redhat.com, n-horiguchi@ah.jp.nec.com,
-        kirill@shutemov.name
-Subject: [PATCH v3 0/5] hugetlb: add support gigantic page allocation at runtime
-Date: Thu, 10 Apr 2014 13:58:40 -0400
-Message-Id: <1397152725-20990-1-git-send-email-lcapitulino@redhat.com>
+	id S934980AbaDJSB1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 14:01:27 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:50378 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933478AbaDJSBZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 14:01:25 -0400
+Message-ID: <5346DC74.8080701@lwfinger.net>
+Date: Thu, 10 Apr 2014 13:01:24 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>
+Subject: Re: [PATCH] staging: r8723au: Add missing initialization of change_inx
+ in sort algorithm
+References: <1397152016-31005-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1397152016-31005-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Full introduction right after the changelog]
+On 04/10/2014 12:46 PM, Geert Uytterhoeven wrote:
+> drivers/staging/rtl8723au/core/rtw_wlan_util.c: In function ‘WMMOnAssocRsp23a’:
+> drivers/staging/rtl8723au/core/rtw_wlan_util.c:684: warning: ‘change_inx’ may be used uninitialized in this function
+>
+> Depending on the uninitialized data on the stack, the array may not be
+> sorted correctly.
+>
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
 
-Changelog
----------
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
 
-v3
+Geert,
 
-- Dropped unnecessary WARN_ON() call [Kirill]
-- Always check if the pfn range lies within a zone [Yasuaki]
-- Renamed some function arguments for consistency
+Thanks for this. I wonder why my gcc on x86_64 did not flag this problem.
 
-v2
+Larry
 
-- Rewrote allocation loop to avoid scanning unless PFNs [Yasuaki]
-- Dropped incomplete multi-arch support [Naoya]
-- Added patch to drop __init from prep_compound_gigantic_page()
-- Restricted the feature to x86_64 (more details in patch 5/5)
-- Added review-bys plus minor changelog changes
+>   drivers/staging/rtl8723au/core/rtw_wlan_util.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/staging/rtl8723au/core/rtw_wlan_util.c b/drivers/staging/rtl8723au/core/rtw_wlan_util.c
+> index 0dfcfbce3b52..a4361bb93865 100644
+> --- a/drivers/staging/rtl8723au/core/rtw_wlan_util.c
+> +++ b/drivers/staging/rtl8723au/core/rtw_wlan_util.c
+> @@ -681,7 +681,7 @@ void WMMOnAssocRsp23a(struct rtw_adapter *padapter)
+>   	inx[0] = 0; inx[1] = 1; inx[2] = 2; inx[3] = 3;
+>
+>   	if (pregpriv->wifi_spec == 1) {
+> -		u32	j, tmp, change_inx;
+> +		u32	j, tmp, change_inx = false;
+>
+>   		/* entry indx: 0->vo, 1->vi, 2->be, 3->bk. */
+>   		for (i = 0; i < 4; i++) {
+>
 
-Introduction
-------------
-
-The HugeTLB subsystem uses the buddy allocator to allocate hugepages during
-runtime. This means that hugepages allocation during runtime is limited to
-MAX_ORDER order. For archs supporting gigantic pages (that is, page sizes
-greater than MAX_ORDER), this in turn means that those pages can't be
-allocated at runtime.
-
-HugeTLB supports gigantic page allocation during boottime, via the boot
-allocator. To this end the kernel provides the command-line options
-hugepagesz= and hugepages=, which can be used to instruct the kernel to
-allocate N gigantic pages during boot.
-
-For example, x86_64 supports 2M and 1G hugepages, but only 2M hugepages can
-be allocated and freed at runtime. If one wants to allocate 1G gigantic pages,
-this has to be done at boot via the hugepagesz= and hugepages= command-line
-options.
-
-Now, gigantic page allocation at boottime has two serious problems:
-
- 1. Boottime allocation is not NUMA aware. On a NUMA machine the kernel
-    evenly distributes boottime allocated hugepages among nodes.
-
-    For example, suppose you have a four-node NUMA machine and want
-    to allocate four 1G gigantic pages at boottime. The kernel will
-    allocate one gigantic page per node.
-
-    On the other hand, we do have users who want to be able to specify
-    which NUMA node gigantic pages should allocated from. So that they
-    can place virtual machines on a specific NUMA node.
-
- 2. Gigantic pages allocated at boottime can't be freed
-
-At this point it's important to observe that regular hugepages allocated
-at runtime don't have those problems. This is so because HugeTLB interface
-for runtime allocation in sysfs supports NUMA and runtime allocated pages
-can be freed just fine via the buddy allocator.
-
-This series adds support for allocating gigantic pages at runtime. It does
-so by allocating gigantic pages via CMA instead of the buddy allocator.
-Releasing gigantic pages is also supported via CMA. As this series builds
-on top of the existing HugeTLB interface, it makes gigantic page allocation
-and releasing just like regular sized hugepages. This also means that NUMA
-support just works.
-
-For example, to allocate two 1G gigantic pages on node 1, one can do:
-
- # echo 2 > \
-   /sys/devices/system/node/node1/hugepages/hugepages-1048576kB/nr_hugepages
-
-And, to release all gigantic pages on the same node:
-
- # echo 0 > \
-   /sys/devices/system/node/node1/hugepages/hugepages-1048576kB/nr_hugepages
-
-Please, refer to patch 5/5 for full technical details.
-
-Finally, please note that this series is a follow up for a previous series
-that tried to extend the command-line options set to be NUMA aware:
-
- http://marc.info/?l=linux-mm&m=139593335312191&w=2
-
-During the discussion of that series it was agreed that having runtime
-allocation support for gigantic pages was a better solution.
-
-Luiz Capitulino (5):
-  hugetlb: prep_compound_gigantic_page(): drop __init marker
-  hugetlb: add hstate_is_gigantic()
-  hugetlb: update_and_free_page(): don't clear PG_reserved bit
-  hugetlb: move helpers up in the file
-  hugetlb: add support for gigantic page allocation at runtime
-
- include/linux/hugetlb.h |   5 +
- mm/hugetlb.c            | 336 ++++++++++++++++++++++++++++++++++--------------
- 2 files changed, 245 insertions(+), 96 deletions(-)
-
--- 
-1.8.1.4
