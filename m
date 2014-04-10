@@ -1,152 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965409AbaDJDwF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:52:05 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:25685 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965152AbaDJDvu (ORCPT
+	id S965421AbaDJDwg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:52:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41225 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934991AbaDJDWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:51:50 -0400
-X-AuditID: cbfee68d-b7fcd6d00000315b-03-53461554b5fe
-Message-id: <53461555.4040204@samsung.com>
-Date: Thu, 10 Apr 2014 12:51:49 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 1/4] extcon: max77693: Fix two NULL pointer exceptions on
- missing pdata
-References: <1397049615-13130-1-git-send-email-k.kozlowski@samsung.com>
-In-reply-to: <1397049615-13130-1-git-send-email-k.kozlowski@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLIsWRmVeSWpSXmKPExsWyRsSkSDdE1C3YoKtdw+L1C0OLy7vmsFnc
-	blzBZrFg4yNGBxaPvi2rGD0+b5ILYIrisklJzcksSy3St0vgyrg2eQpLwQHVirW33RoY++W7
-	GDk4JARMJKZ3JXcxcgKZYhIX7q1nA7GFBJYySnx/5Q0RN5E4eHYfUJwLKL6IUaJz6zoo5zWj
-	RNvXP2AdvAJaEtv+TGQHsVkEVCUurfjKBGKzAcX3v7gBViMqECaxcvoVFoh6QYkfk++B2SIC
-	hhIHd28Hq2cWSJa4vLURrF5YIFZiwskj7BAXuUs0L2gGq+EU8JCY/G8lO0S9jsT+1mlsELa8
-	xOY1b5lBjpMQmM4u8fzeF6iDBCS+TT7EAvGxrMSmA8wQn0lKHFxxg2UCo9gsJCfNQjJ2FpKx
-	CxiZVzGKphYkFxQnpRcZ6hUn5haX5qXrJefnbmIERs3pf896dzDePmB9iDEZaOVEZinR5Hxg
-	1OWVxBsamxlZmJqYGhuZW5qRJqwkzpv0MClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6Or
-	tlPktlOV6Wb3j9xRXLKszyPl1Il1t9K5X7xSnXmDaaN39Fe39Lf5y3Y4Z70Pm5VRFaTPbbxz
-	iYH/0Wh9EYH7MRc/n7w6vWSqyeVwd/FFxlKuW/PrRE3d/53MyH7t0yink/LOInL6OX31jKR2
-	PfGlW/M52+VY/XkEMx7Ms/7HeDnDc4dImBJLcUaioRZzUXEiADbS9kOwAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDIsWRmVeSWpSXmKPExsVy+t9jAd0QUbdgg45OBYvXLwwtLu+aw2Zx
-	u3EFm8WCjY8YHVg8+rasYvT4vEkugCmqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX
-	0NLCXEkhLzE31VbJxSdA1y0zB2iRkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMD
-	NJCwhjHj2uQpLAUHVCvW3nZrYOyX72Lk5JAQMJE4eHYfG4QtJnHh3nogm4tDSGARo0Tn1nVQ
-	zmtGibavf8CqeAW0JLb9mcgOYrMIqEpcWvGVCcRmA4rvf3EDrEZUIExi5fQrLBD1ghI/Jt8D
-	s0UEDCUO7t4OVs8skCxxeWsjWL2wQKzEhJNHwGYKCbhLNC9oBqvhFPCQmPxvJTtEvY7E/tZp
-	bBC2vMTmNW+ZJzAKzEKyYhaSsllIyhYwMq9iFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECI7L
-	Z1I7GFc2WBxiFOBgVOLhPbDMNViINbGsuDL3EKMEB7OSCK+CkFuwEG9KYmVValF+fFFpTmrx
-	IcZkYAhMZJYSTc4Hpoy8knhDYxMzI0sjc0MLI2Nz0oSVxHkPtFoHCgmkJ5akZqemFqQWwWxh
-	4uCUamDc8vNUrCvTVG0W20Vdgb+5gvf4xrx8M1d6xv43lmW/qr7u2LY5yOG69PXIjPd+M+vz
-	eXX0JKdynnH0TJ38lFc+eLLbLcE1GatMa3t33Z98z/D8kUhWJwGd4t1mxbNaGZUTcoTfnKuU
-	09fue8R9nGHhovayY4F/J/iq7W/QDdbr5raae8ru8lolluKMREMt5qLiRAA9j0E6DwMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 9 Apr 2014 23:22:44 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Thomas Pugliese <thomas.pugliese@gmail.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Yang Yingliang <yangyingliang@huawei.com>
+Subject: [PATCH 3.4 090/134] usb: wusbcore: change WA_SEGS_MAX to a legal value
+Date: Wed,  9 Apr 2014 20:23:26 -0700
+Message-Id: <20140410032311.307664585@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
+References: <20140410032259.587501440@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Krzysztof,
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Applied following patchset.
+------------------
 
-[PATCH 1/4] extcon: max77693: Fix two NULL pointer exceptions on missing pdata
-[PATCH 2/4] extcon: max77693: Use power efficient workqueue for delayed cable detection
-[PATCH 3/4] extcon: max8997: Fix NULL pointer exception on missing pdata
-[PATCH 4/4] extcon: max8997: Use power efficient workqueue for delayed cable detection
+From: Thomas Pugliese <thomas.pugliese@gmail.com>
 
-but, you could check this patch on extcon-next branch
-after few days. becuase I have firewall issue of kerner.org.
+commit f74b75e7f920c700636cccca669c7d16d12e9202 upstream.
 
-Thanks,
-Chanwoo Choi
+change WA_SEGS_MAX to a number that is legal according to the WUSB
+spec.
 
+Signed-off-by: Thomas Pugliese <thomas.pugliese@gmail.com>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Yang Yingliang <yangyingliang@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-On 04/09/2014 10:20 PM, Krzysztof Kozlowski wrote:
-> Fix NULL pointer exceptions when platform data is not supplied.
-> 
-> Trace of one exception:
-> Unable to handle kernel NULL pointer dereference at virtual address 00000008
-> pgd = c0004000
-> [00000008] *pgd=00000000
-> Internal error: Oops: 5 [#1] PREEMPT SMP ARM
-> Modules linked in:
-> CPU: 2 PID: 1 Comm: swapper/0 Not tainted 3.14.0-12045-gead5dd4687a6-dirty #1628
-> task: eea80000 ti: eea88000 task.ti: eea88000
-> PC is at max77693_muic_probe+0x27c/0x528
-> LR is at regmap_write+0x50/0x60
-> pc : [<c041d1c8>]    lr : [<c02eba60>]    psr: 20000113
-> sp : eea89e38  ip : 00000000  fp : c098a834
-> r10: ee1a5a10  r9 : 00000005  r8 : c098a83c
-> r7 : 0000000a  r6 : c098a774  r5 : 00000005  r4 : eeb006d0
-> r3 : c0697bd8  r2 : 00000000  r1 : 00000001  r0 : 00000000
-> Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-> Control: 10c5387d  Table: 4000404a  DAC: 00000015
-> Process swapper/0 (pid: 1, stack limit = 0xeea88240)
-> Stack: (0xeea89e38 to 0xeea8a000)
-> 9e20:                                                       c08499fc eeb006d0
-> 9e40: 00000000 00000000 c0915f98 00000001 00000000 ee1a5a10 c098a730 c09a88b8
-> 9e60: 00000000 c098a730 c0915f98 00000000 00000000 c02d6aa0 c02d6a88 ee1a5a10
-> 9e80: c0a712c8 c02d54e4 00001204 c0628b00 ee1a5a10 c098a730 ee1a5a44 00000000
-> 9ea0: eea88000 c02d57b4 00000000 c098a730 c02d5728 c02d3a24 ee813e5c eeb9d534
-> 9ec0: c098a730 ee22f700 c097c720 c02d4b14 c08174ec c098a730 00000006 c098a730
-> 9ee0: 00000006 c092fd30 c09b8500 c02d5df8 00000000 c093cbb8 00000006 c0008928
-> 9f00: 000000c3 ef7fc785 00000000 ef7fc794 00000000 c08af968 00000072 eea89f30
-> 9f20: ef7fc85e c065f198 000000c3 c003e87c 00000003 00000000 c092fd3c 00000000
-> 9f40: c08af618 c0826d58 00000006 00000006 c0956f58 c093cbb8 00000006 c092fd30
-> 9f60: c09b8500 000000c3 c092fd3c c08e8510 00000000 c08e8bb0 00000006 00000006
-> 9f80: c08e8510 c0c0c0c0 00000000 c0628fac 00000000 00000000 00000000 00000000
-> 9fa0: 00000000 c0628fb4 00000000 c000f038 00000000 00000000 00000000 00000000
-> 9fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> 9fe0: 00000000 00000000 00000000 00000000 00000013 00000000 c0c0c0c0 c0c0c0c0
-> [<c041d1c8>] (max77693_muic_probe) from [<c02d6aa0>] (platform_drv_probe+0x18/0x48)
-> [<c02d6aa0>] (platform_drv_probe) from [<c02d54e4>] (driver_probe_device+0x140/0x384)
-> [<c02d54e4>] (driver_probe_device) from [<c02d57b4>] (__driver_attach+0x8c/0x90)
-> [<c02d57b4>] (__driver_attach) from [<c02d3a24>] (bus_for_each_dev+0x54/0x88)
-> [<c02d3a24>] (bus_for_each_dev) from [<c02d4b14>] (bus_add_driver+0xe8/0x204)
-> [<c02d4b14>] (bus_add_driver) from [<c02d5df8>] (driver_register+0x78/0xf4)
-> [<c02d5df8>] (driver_register) from [<c0008928>] (do_one_initcall+0xc4/0x174)
-> [<c0008928>] (do_one_initcall) from [<c08e8bb0>] (kernel_init_freeable+0xfc/0x1c8)
-> [<c08e8bb0>] (kernel_init_freeable) from [<c0628fb4>] (kernel_init+0x8/0xec)
-> [<c0628fb4>] (kernel_init) from [<c000f038>] (ret_from_fork+0x14/0x3c)
-> Code: caffffe7 e59d200c e3550001 b3a05001 (e5923008)
-> ---[ end trace 85db969ce011bde7 ]---
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: <stable@vger.kernel.org>
-> Fixes: 190d7cfc8632
-> ---
->  drivers/extcon/extcon-max77693.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-> index da268fbc901b..4657a91acf56 100644
-> --- a/drivers/extcon/extcon-max77693.c
-> +++ b/drivers/extcon/extcon-max77693.c
-> @@ -1193,7 +1193,7 @@ static int max77693_muic_probe(struct platform_device *pdev)
->  
->  
->  	/* Initialize MUIC register by using platform data or default data */
-> -	if (pdata->muic_data) {
-> +	if (pdata && pdata->muic_data) {
->  		init_data = pdata->muic_data->init_data;
->  		num_init_data = pdata->muic_data->num_init_data;
->  	} else {
-> @@ -1226,7 +1226,7 @@ static int max77693_muic_probe(struct platform_device *pdev)
->  				= init_data[i].data;
->  	}
->  
-> -	if (pdata->muic_data) {
-> +	if (pdata && pdata->muic_data) {
->  		struct max77693_muic_platform_data *muic_pdata
->  						   = pdata->muic_data;
->  
-> 
+---
+ drivers/usb/wusbcore/wa-xfer.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+--- a/drivers/usb/wusbcore/wa-xfer.c
++++ b/drivers/usb/wusbcore/wa-xfer.c
+@@ -90,7 +90,8 @@
+ #include "wusbhc.h"
+ 
+ enum {
+-	WA_SEGS_MAX = 255,
++	/* [WUSB] section 8.3.3 allocates 7 bits for the segment index. */
++	WA_SEGS_MAX = 128,
+ };
+ 
+ enum wa_seg_status {
+@@ -444,7 +445,7 @@ static ssize_t __wa_xfer_setup_sizes(str
+ 	xfer->seg_size = (xfer->seg_size / maxpktsize) * maxpktsize;
+ 	xfer->segs = (urb->transfer_buffer_length + xfer->seg_size - 1)
+ 		/ xfer->seg_size;
+-	if (xfer->segs >= WA_SEGS_MAX) {
++	if (xfer->segs > WA_SEGS_MAX) {
+ 		dev_err(dev, "BUG? ops, number of segments %d bigger than %d\n",
+ 			(int)(urb->transfer_buffer_length / xfer->seg_size),
+ 			WA_SEGS_MAX);
+
 
