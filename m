@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758877AbaDJRvz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 13:51:55 -0400
-Received: from s3.sipsolutions.net ([144.76.43.152]:48193 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753322AbaDJRvx (ORCPT
+	id S1758925AbaDJRw0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 13:52:26 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52803 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758895AbaDJRwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 13:51:53 -0400
-Message-ID: <1397152289.4757.28.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH] coccinelle: add pycocci wrapper for multithreaded
- support
-From: Johannes Berg <johannes@sipsolutions.net>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: cocci@systeme.lip6.fr, "Luis R. Rodriguez" <mcgrof@suse.com>,
-        backports@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 10 Apr 2014 19:51:29 +0200
-In-Reply-To: <1397152097-315-1-git-send-email-mcgrof@do-not-panic.com> (sfid-20140410_194829_100293_32EF0060)
-References: <1397152097-315-1-git-send-email-mcgrof@do-not-panic.com>
-	 (sfid-20140410_194829_100293_32EF0060)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Apr 2014 13:52:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <533BA67B.6070905@monstr.eu>
+References: <1395933906-2268-1-git-send-email-harinik@xilinx.com>
+	<CACRpkdbU35xG1QtagB+9e9vxvehf1UQFaF4PikJhsPNAMw=D1Q@mail.gmail.com>
+	<CAFcVECJsEp_s2V5=oK_UJahGRUpWYWMCxTMxqdpX+O0qebP41A@mail.gmail.com>
+	<CACRpkdZEFsJubRVwCp6nTie7s7+DZOym6SWsA2ZynN_devi-2Q@mail.gmail.com>
+	<533BA67B.6070905@monstr.eu>
+Date: Thu, 10 Apr 2014 19:52:18 +0200
+Message-ID: <CACRpkdbk0Ru=txcF3DGBDD=CitqHYFR8w-1fUDR9wSinQBQyvw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] GPIO: Add driver for Zynq GPIO controller
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Harini Katakam <harinikatakamlinux@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        michals@xilinx.com, Ulf Hansson <ulf.hansson@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-10 at 10:48 -0700, Luis R. Rodriguez wrote:
+On Wed, Apr 2, 2014 at 7:56 AM, Michal Simek <monstr@monstr.eu> wrote:
+> On 03/31/2014 10:22 AM, Linus Walleij wrote:
+>> On Sat, Mar 29, 2014 at 5:44 AM, Harini Katakam
+>> <harinikatakamlinux@gmail.com> wrote:
+>>> On Sat, Mar 29, 2014 at 3:20 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>>> On Thu, Mar 27, 2014 at 4:25 PM, Harini Katakam <harinik@xilinx.com> wrote:
+>>
+>>>>> +/* Read/Write access to the GPIO PS registers */
+>>>>> +static inline u32 zynq_gpio_readreg(void __iomem *offset)
+>>>>> +{
+>>>>> +       return readl_relaxed(offset);
+>>>>> +}
+>>>>> +
+>>>>> +static inline void zynq_gpio_writereg(void __iomem *offset, u32 val)
+>>>>> +{
+>>>>> +       writel_relaxed(val, offset);
+>>>>> +}
+>>>>
+>>>> I think this is unnecessary and confusing indirection.
+>>>> Just use the readl_relaxed/writel_relaxed functions directly in
+>>>> the code.
+>>>>
+>>>
+>>> This is just to be flexible.
+>>
+>> Define exactly what you mean with "flexible" in this context. I
+>> only see unnecessary overhead and hard-to-read code.
+>
+> We have just passed this discussion for watchdog driver
+> here: https://lkml.org/lkml/2014/4/1/843
+>
+> Are you ok with doing it in this way?
 
-> You just pass it a cocci file, a target dir, and in git environments
-> you always want --in-place enabled. Experiments and profiling random
-> cocci files with the Linux kernel show that using just using number of
-> CPUs doesn't scale well given that lots of buckets of files don't require
-> work, as such this uses 10 * number of CPUs for its number of threads.
-> For work that define more general ruler 3 * number of CPUs works better,
-> but for smaller cocci files 3 * number of CPUs performs best right now.
-> To experiment more with what's going on with the multithreading one can enable
-> htop while kicking off a cocci task on the kernel, we want to keep
-> these CPUs busy as much as possible. 
+No :-)
 
-That's not really a good benchmark, you want to actually check how
-quickly it finishes ... If you have some IO issues then just keeping the
-CPUs busy trying to do IO won't help at all.
+Subsystem maintainers do not necessarily agree on such issues.
 
-
-> Since its just a helper I toss it into the python directory but don't
-> install it. Hope is that we can evolve it there instead of carrying this
-> helper within backports.
-
-If there's a plan to make coccinelle itself multi-threaded, what's the
-point?
-
-johannes
-
+Yours,
+Linus Walleij
