@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965218AbaDJDXn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:23:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41023 "EHLO
+	id S965202AbaDJDXk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:23:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41017 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934676AbaDJDWC (ORCPT
+	with ESMTP id S934675AbaDJDWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Apr 2014 23:22:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -13,9 +13,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Felix Fietkau <nbd@openwrt.org>,
         "John W. Linville" <linville@tuxdriver.com>,
         Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 043/134] ath9k_hw: fix chain swap setting when setting rx chainmask to 5
-Date: Wed,  9 Apr 2014 20:22:39 -0700
-Message-Id: <20140410032305.585914642@linuxfoundation.org>
+Subject: [PATCH 3.4 042/134] ath9k_htc: fix signal strength handling issues
+Date: Wed,  9 Apr 2014 20:22:38 -0700
+Message-Id: <20140410032305.445430757@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -30,66 +30,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Felix Fietkau <nbd@openwrt.org>
 
-commit 959f049dfb62b517cbb3dd48ed2fb7d9c713ce16 upstream.
+commit 838f427955dcfd16858b0108ce29029da0d56a4e upstream.
 
-commit 24171dd92096fc370b195f3f6bdc0798855dc3f9 upstream.
-
-Chain swapping should only be enabled when the EEPROM chainmask is set to 5,
-regardless of what the runtime chainmask is.
+The ath9k commit 2ef167557c0a26c88162ecffb017bfcc51eb7b29
+(ath9k: fix signal strength reporting issues) fixed an issue where the
+reported per-frame signal strength reported to mac80211 was being
+overwritten with an internal average. The same issue is also present
+in ath9k_htc.
+In addition to preventing the driver from overwriting the value, this
+commit also ensures that the internal average (which is used for ANI)
+only tracks beacons of the AP that we're connected to.
 
 Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.2: keep the special case for AR_SREV_9462 here]
+[bwh: Backported to 3.2: use compare_ether_addr() instead of
+ ether_addr_equal(), with opposite sense]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_phy.c |   27 +++++++--------------------
- 1 file changed, 7 insertions(+), 20 deletions(-)
+ drivers/net/wireless/ath/ath9k/htc.h          |    1 +
+ drivers/net/wireless/ath/ath9k/htc_drv_txrx.c |   18 +++++++++++-------
+ 2 files changed, 12 insertions(+), 7 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_phy.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.c
-@@ -545,33 +545,20 @@ static void ar9003_hw_init_bb(struct ath
+--- a/drivers/net/wireless/ath/ath9k/htc.h
++++ b/drivers/net/wireless/ath/ath9k/htc.h
+@@ -22,6 +22,7 @@
+ #include <linux/firmware.h>
+ #include <linux/skbuff.h>
+ #include <linux/netdevice.h>
++#include <linux/etherdevice.h>
+ #include <linux/leds.h>
+ #include <linux/slab.h>
+ #include <net/mac80211.h>
+--- a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
++++ b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
+@@ -1077,15 +1077,19 @@ static bool ath9k_rx_prepare(struct ath9
  
- void ar9003_hw_set_chain_masks(struct ath_hw *ah, u8 rx, u8 tx)
- {
--	switch (rx) {
--	case 0x5:
-+	if (ah->caps.tx_chainmask == 5 || ah->caps.rx_chainmask == 5)
- 		REG_SET_BIT(ah, AR_PHY_ANALOG_SWAP,
- 			    AR_PHY_SWAP_ALT_CHAIN);
--	case 0x3:
--	case 0x1:
--	case 0x2:
--	case 0x7:
--		REG_WRITE(ah, AR_PHY_RX_CHAINMASK, rx);
--		REG_WRITE(ah, AR_PHY_CAL_CHAINMASK, rx);
--		break;
--	default:
--		break;
--	}
+ 	last_rssi = priv->rx.last_rssi;
+ 
+-	if (likely(last_rssi != ATH_RSSI_DUMMY_MARKER))
+-		rxbuf->rxstatus.rs_rssi = ATH_EP_RND(last_rssi,
+-						     ATH_RSSI_EP_MULTIPLIER);
++	if (ieee80211_is_beacon(hdr->frame_control) &&
++	    !is_zero_ether_addr(common->curbssid) &&
++	    compare_ether_addr(hdr->addr3, common->curbssid) == 0) {
++		s8 rssi = rxbuf->rxstatus.rs_rssi;
+ 
+-	if (rxbuf->rxstatus.rs_rssi < 0)
+-		rxbuf->rxstatus.rs_rssi = 0;
++		if (likely(last_rssi != ATH_RSSI_DUMMY_MARKER))
++			rssi = ATH_EP_RND(last_rssi, ATH_RSSI_EP_MULTIPLIER);
+ 
+-	if (ieee80211_is_beacon(fc))
+-		priv->ah->stats.avgbrssi = rxbuf->rxstatus.rs_rssi;
++		if (rssi < 0)
++			rssi = 0;
 +
-+	REG_WRITE(ah, AR_PHY_RX_CHAINMASK, rx);
-+	REG_WRITE(ah, AR_PHY_CAL_CHAINMASK, rx);
++		priv->ah->stats.avgbrssi = rssi;
++	}
  
- 	if ((ah->caps.hw_caps & ATH9K_HW_CAP_APM) && (tx == 0x7))
--		REG_WRITE(ah, AR_SELFGEN_MASK, 0x3);
-+		tx = 3;
- 	else if (AR_SREV_9462(ah))
- 		/* xxx only when MCI support is enabled */
--		REG_WRITE(ah, AR_SELFGEN_MASK, 0x3);
--	else
--		REG_WRITE(ah, AR_SELFGEN_MASK, tx);
-+		tx = 3;
- 
--	if (tx == 0x5) {
--		REG_SET_BIT(ah, AR_PHY_ANALOG_SWAP,
--			    AR_PHY_SWAP_ALT_CHAIN);
--	}
-+	REG_WRITE(ah, AR_SELFGEN_MASK, tx);
- }
- 
- /*
+ 	rx_status->mactime = be64_to_cpu(rxbuf->rxstatus.rs_tstamp);
+ 	rx_status->band = hw->conf.channel->band;
 
 
