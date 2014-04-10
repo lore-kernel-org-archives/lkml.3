@@ -1,51 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965645AbaDJIbi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 04:31:38 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:50975 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964832AbaDJIbf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 04:31:35 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <534656E3.8060106@roeck-us.net>
-Date: Thu, 10 Apr 2014 01:31:31 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S965648AbaDJIeT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 04:34:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18146 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964832AbaDJIeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 04:34:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,833,1389772800"; 
+   d="scan'208";a="518188944"
+Message-ID: <53465781.4010904@linux.intel.com>
+Date: Thu, 10 Apr 2014 16:34:09 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.4 000/134] 3.4.87-stable review
-References: <20140410032259.587501440@linuxfoundation.org>
-In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Bjorn Helgaas <bhelgaas@google.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        Baoquan He <bhe@redhat.com>
+CC: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Joerg Roedel <joro@8bytes.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>
+Subject: Re: hpsa driver bug crack kernel down!
+References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com> <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net> <1397084904.9519.62.camel@dabdike> <1397085044.9519.63.camel@dabdike> <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net> <1397087425.9519.67.camel@dabdike> <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net> <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
+In-Reply-To: <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2014 08:21 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.4.87 release.
-> There are 134 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Sat Apr 12 03:22:28 UTC 2014.
-> Anything received after that time might be too late.
->
+Hi Baoquan,
+	Could you please help to give output of "lspci -vvvv"?
+Is device "hpsa 0000:03:00.0" a legacy PCI device(non-PCIe)?
+It may have relationship with IOMMU driver.
+Thanks!
+Gerry
 
-Build results:
-	total: 119 pass: 97 skipped: 18 fail: 4
-
-Qemu tests all passed.
-
-Results are as expected.
-
-Details are available at http://server.roeck-us.net:8010/builders.
-Test scripts are at https://github.com/groeck/linux-build-test.
-
-Guenter
-
+On 2014/4/10 12:03, Bjorn Helgaas wrote:
+> [+cc Joerg, iommu list]
+> 
+> On Wed, Apr 9, 2014 at 6:19 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+>> On Wed, 2014-04-09 at 16:50 -0700, James Bottomley wrote:
+>>> On Wed, 2014-04-09 at 16:40 -0700, Davidlohr Bueso wrote:
+>>>> On Wed, 2014-04-09 at 16:10 -0700, James Bottomley wrote:
+>>>>> On Wed, 2014-04-09 at 16:08 -0700, James Bottomley wrote:
+>>>>>> [+linux-scsi]
+>>>>>> On Wed, 2014-04-09 at 15:49 -0700, Davidlohr Bueso wrote:
+>>>>>>> On Wed, 2014-04-09 at 10:39 +0800, Baoquan He wrote:
+>>>>>>>> Hi,
+>>>>>>>>
+>>>>>>>> The kernel is 3.14.0+ which is pulled just now.
+>>>>>>>
+>>>>>>> Cc'ing more people.
+>>>>>>>
+>>>>>>> While the hpsa driver appears to be involved in some way, I'm sure if
+>>>>>>> this is a related issue, but as of today's pull I'm getting another
+>>>>>>> problem that causes my DL980 not to come up.
+>>>>>>>
+>>>>>>> *Massive* amounts of:
+>>>>>>>
+>>>>>>> DMAR:[fault reason 02] Present bit in context entry is clear
+>>>>>>> dmar: DRHD: handling fault status reg 602
+>>>>>>> dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr 7f61e000
+>>>>>>>
+>>>>>>> Then:
+>>>>>>>
+>>>>>>> hpsa 0000:03:00.0: Controller lockup detected: 0xffff0000
+>>>>>>> ...
+>>>>>>> Workqueue: events hpsa_monitor_ctlr_worker [hpsa]
+>>>>>>> ...
+>>>>>>>
+>>>>>>> Screenshot of the actual LOCKUP:
+>>>>>>> http://stgolabs.net/hpsa-hard-lockup-3.14+.png
+>>>>>>>
+>>>>>>> While I haven't bisected, things worked fine until at least until commit
+>>>>>>> 39de65aa2c3e (April 2nd).
+>>>>>>>
+>>>>>>> Any ideas?
+>>>>>>
+>>>>>> Well, it's either a DMA remapping issue or a hpsa one.  Your assertion
+>>>>>> that everything worked fine until 39de65aa2c3e would tend to vindicate
+>>>>>> hpsa,
+>>>>
+>>>> Hmm here you mean DMA, right?
+>>>
+>>> No, it vindicates the hpsa changes ... they don't seem to be causing
+>>> problems until something goes wrong with dma remapping.
+>>>
+>>>>> because all the hpsa changes went in before that under
+>>>>> Missing crucial info:
+>>>>>
+>>>>> commit 1a0b6abaea78f73d9bc0a2f6df2d9e4c917cade1
+>>>>>
+>>>>>> Merge: 3e75c6d b2bff6c
+>>>>>> Author: Linus Torvalds <torvalds@linux-foundation.org>
+>>>>>> Date:   Tue Apr 1 18:49:04 2014 -0700
+>>>>>>
+>>>>>>     Merge tag 'scsi-misc' of
+>>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi
+>>>>>>
+>>>>>> can you revalidate that this commit works OK just to make sure?
+>>>>
+>>>> Ok so I don't see those DMA messages and system starts just fine. I'm
+>>>> thinking perhaps something broke after the IO mmu stuff in commit
+>>>> 3f583bc21977a608908b83d03ee2250426a5695c... could this be indirectly
+>>>> causing the CPU stalls and just blame hpsa in the path as a side effect?
+>>>>
+>>>> /me goes out to try the commit.
+>>>
+>>> That's my guess.  The DMAR messages are DMA remapping issues caused in
+>>> the IOMMU.  If I had to guess, I'd say the DMAR fault message is
+>>> indicating the IOMMU is calling for a mapping address before it can
+>>> satisfy the driver read request, which is causing the hang apparently in
+>>> the hpsa driver.
+>>>
+>>> I've added linux-pci to the cc; I think they deal with iommu issues on
+>>> x86.
+>>
+>> So that merge commit appears to be the culprit, I see both the DMA
+>> messages and the lockup blaming hpsa...
+> 
+> My understanding so far (please correct me if I'm wrong):
+> 
+> 39de65aa2c3e OK ("Merge branch 'i2c/for-next'")
+> 1a0b6abaea78 OK ("Merge tag 'scsi-misc'")
+> 3f583bc21977 BAD ("Merge tag 'iommu-updates-v3.15'")
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
