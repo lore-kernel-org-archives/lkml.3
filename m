@@ -1,182 +1,344 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934811AbaDJIq5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 04:46:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:40028 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965573AbaDJIqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 04:46:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,833,1389772800"; 
-   d="p7s'?scan'208";a="518352772"
-From: "Woodhouse, David" <david.woodhouse@intel.com>
-To: "joro@8bytes.org" <joro@8bytes.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bhe@redhat.com" <bhe@redhat.com>,
-        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "James.Bottomley@hansenpartnership.com" 
-	<James.Bottomley@hansenpartnership.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>,
-        "davidlohr@hp.com" <davidlohr@hp.com>
-Subject: Re: hpsa driver bug crack kernel down!
-Thread-Topic: hpsa driver bug crack kernel down!
-Thread-Index: AQHPVI0Vc4dwKY4180e5mx3ldqxwrpsKeNqA
-Date: Thu, 10 Apr 2014 08:46:28 +0000
-Message-ID: <1397119587.19944.14.camel@shinybook.infradead.org>
-References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
-	 <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>
-	 <1397084904.9519.62.camel@dabdike> <1397085044.9519.63.camel@dabdike>
-	 <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
-	 <1397087425.9519.67.camel@dabdike>
-	 <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>
-	 <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
-	 <1397111557.2608.29.camel@buesod1.americas.hpqcorp.net>
-	 <20140410071535.GX13491@8bytes.org>
-In-Reply-To: <20140410071535.GX13491@8bytes.org>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.252.120.251]
-Content-Type: multipart/signed; micalg=sha-1;
-	protocol="application/x-pkcs7-signature"; boundary="=-Ht/Tf9zBi/x/pm1AbxZe"
+	id S934848AbaDJIr0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 04:47:26 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37142 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934827AbaDJIrS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 04:47:18 -0400
+Message-ID: <53465A4B.4040906@free-electrons.com>
+Date: Thu, 10 Apr 2014 08:46:03 +0000
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
+To: Matthias Brugger <matthias.bgg@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>, Andrew Lunn <andrew@lunn.ch>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        =?UTF-8?B?SGVpa28gU3TDvGJuZXI=?= <heiko.stuebner@bq.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Silvio F <silvio.fricke@gmail.com>, Kumar Gala <galak@codeaurora.org>,
+        Olof Johansson <olof@lixom.net>, Jonathan Cameron <jic23@kernel.org>
+Subject: Re: [PATCH 3/4] arm: add basic support for Mediatek MT6589 boards
+References: <1397072736-10793-1-git-send-email-matthias.bgg@gmail.com>	<1397072736-10793-4-git-send-email-matthias.bgg@gmail.com>	<5345AD00.9020508@free-electrons.com> <CABuKBeKnEw38sQYwrkheoWetZZcPTJhKRsBK4a62FS6-6dRFTA@mail.gmail.com>
+In-Reply-To: <CABuKBeKnEw38sQYwrkheoWetZZcPTJhKRsBK4a62FS6-6dRFTA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-Ht/Tf9zBi/x/pm1AbxZe
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On 10/04/2014 08:29, Matthias Brugger wrote:
+> 2014-04-09 22:26 GMT+02:00 Gregory CLEMENT <gregory.clement@free-electrons.com>:
+>> Hi Matthias,
+>>
+>> On 09/04/2014 19:45, Matthias Brugger wrote:
+>>> This adds a generic devicetree board file and a dtsi for boards
+>>> based on the MT6589 SoCs from Mediatek.
+>>>
+>>> Apart from the generic parts (gic, clocks) the only component
+>>> currently supported are the timers.
+>>>
+>>> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+>>> ---
+>>>  .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+>>>  arch/arm/Kconfig                                   |    2 +
+>>>  arch/arm/Makefile                                  |    1 +
+>>>  arch/arm/boot/dts/mtk6589.dtsi                     |  105 ++++++++++++++++++++
+>>>  arch/arm/mach-mediatek/Kconfig                     |   14 +++
+>>>  arch/arm/mach-mediatek/Makefile                    |    1 +
+>>>  arch/arm/mach-mediatek/mediatek.c                  |   40 ++++++++
+>>>  7 files changed, 164 insertions(+)
+>>>  create mode 100644 arch/arm/boot/dts/mtk6589.dtsi
+>>>  create mode 100644 arch/arm/mach-mediatek/Kconfig
+>>>  create mode 100644 arch/arm/mach-mediatek/Makefile
+>>>  create mode 100644 arch/arm/mach-mediatek/mediatek.c
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+>>> index 0f01c9b..af48801 100644
+>>> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+>>> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+>>> @@ -67,6 +67,7 @@ linux       Linux-specific binding
+>>>  lsi  LSI Corp. (LSI Logic)
+>>>  marvell      Marvell Technology Group Ltd.
+>>>  maxim        Maxim Integrated Products
+>>> +mediatek     MediaTek Inc.
+>>>  microchip    Microchip Technology Inc.
+>>>  mosaixtech   Mosaix Technologies, Inc.
+>>>  moxa Moxa
+>>> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+>>> index 5db05f6a..04d46ec 100644
+>>> --- a/arch/arm/Kconfig
+>>> +++ b/arch/arm/Kconfig
+>>> @@ -995,6 +995,8 @@ source "arch/arm/mach-mv78xx0/Kconfig"
+>>>
+>>>  source "arch/arm/mach-imx/Kconfig"
+>>>
+>>> +source "arch/arm/mach-mediatek/Kconfig"
+>>> +
+>>>  source "arch/arm/mach-mxs/Kconfig"
+>>>
+>>>  source "arch/arm/mach-netx/Kconfig"
+>>> diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+>>> index 41c1931..8ce9774 100644
+>>> --- a/arch/arm/Makefile
+>>> +++ b/arch/arm/Makefile
+>>> @@ -170,6 +170,7 @@ machine-$(CONFIG_ARCH_MSM)                += msm
+>>>  machine-$(CONFIG_ARCH_MV78XX0)               += mv78xx0
+>>>  machine-$(CONFIG_ARCH_MVEBU)         += mvebu
+>>>  machine-$(CONFIG_ARCH_MXC)           += imx
+>>> +machine-$(CONFIG_ARCH_MEDIATEK)              += mediatek
+>>>  machine-$(CONFIG_ARCH_MXS)           += mxs
+>>>  machine-$(CONFIG_ARCH_NETX)          += netx
+>>>  machine-$(CONFIG_ARCH_NOMADIK)               += nomadik
+>>> diff --git a/arch/arm/boot/dts/mtk6589.dtsi b/arch/arm/boot/dts/mtk6589.dtsi
+>>> new file mode 100644
+>>> index 0000000..6dbb74f
+>>> --- /dev/null
+>>> +++ b/arch/arm/boot/dts/mtk6589.dtsi
+>>> @@ -0,0 +1,105 @@
+>>> +/*
+>>> + * Copyright (c) 2014 MundoReader S.L.
+>>> + * Author: Matthias Brugger <matthias.bgg@gmail.com>
+>>> + *
+>>> + * This program is free software; you can redistribute it and/or modify
+>>> + * it under the terms of the GNU General Public License as published by
+>>> + * the Free Software Foundation; either version 2 of the License, or
+>>> + * (at your option) any later version.
+>>> + *
+>>> + * This program is distributed in the hope that it will be useful,
+>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>>> + * GNU General Public License for more details.
+>>> + */
+>>> +
+>>> +#include <dt-bindings/interrupt-controller/irq.h>
+>>> +#include <dt-bindings/interrupt-controller/arm-gic.h>
+>>> +#include "skeleton.dtsi"
+>>> +
+>>> +/ {
+>>> +     compatible = "mediatek,mt6589";
+>>> +     interrupt-parent = <&gic>;
+>>> +
+>>> +     cpus {
+>>> +             #address-cells = <1>;
+>>> +             #size-cells = <0>;
+>>> +
+>>> +             cpu@0 {
+>>> +                     device_type = "cpu";
+>>> +                     compatible = "arm,cortex-a7";
+>>> +                     next-level-cache = <&L2>;
+>>> +                     reg = <0x0>;
+>>> +             };
+>>> +             cpu@1 {
+>>> +                     device_type = "cpu";
+>>> +                     compatible = "arm,cortex-a7";
+>>> +                     next-level-cache = <&L2>;
+>>> +                     reg = <0x1>;
+>>> +             };
+>>> +             cpu@2 {
+>>> +                     device_type = "cpu";
+>>> +                     compatible = "arm,cortex-a7";
+>>> +                     next-level-cache = <&L2>;
+>>> +                     reg = <0x2>;
+>>> +             };
+>>> +             cpu@3 {
+>>> +                     device_type = "cpu";
+>>> +                     compatible = "arm,cortex-a7";
+>>> +                     next-level-cache = <&L2>;
+>>> +                     reg = <0x3>;
+>>> +             };
+>>> +
+>>> +     };
+>>> +
+>>> +     clocks {
+>>> +             #address-cells = <1>;
+>>> +             #size-cells = <1>;
+>>> +             ranges;
+>>> +
+>>> +             system_clk: system_clk {
+>>> +                     compatible = "fixed-clock";
+>>> +                     clock-frequency = <13000000>;
+>>> +                     #clock-cells = <0>;
+>>> +                     clock-output-names = "system_clk";
+>>> +             };
+>>
+>> Is it really a fixed clock without any parent, or do you
+>> declare it as a fixed clock because you don't have any clock
+>> common framework support yet?
+> 
+> I don't have any common clock framework support yet.
 
-On Thu, 2014-04-10 at 09:15 +0200, Joerg Roedel wrote:
-> [+ David, VT-d maintainer ]
->=20
-> Jiang, David, can you please have a look into this issue?
->=20
+So maybe you should provide one (even a very simple one).
 
-> > > >> > > > > DMAR:[fault reason 02] Present bit in context entry is cle=
-ar
-> > > >> > > > > dmar: DRHD: handling fault status reg 602
-> > > >> > > > > dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr =
-7f61e000
+Pretending a clock is a fixed clock and ignoring its parents
+will be problematic when you will add the common clock framework
+support because the device tree is supposed to be stable and you won't
+be able to change it then.
 
-That "Present bit in context entry is clear" fault means that we have
-not set up *any* mappings for this PCI device=E2=80=A6 on this IOMMU.
+Thanks,
 
-> > Yes, specifically (finally done bisecting):
-> >=20
-> > commit 2e45528930388658603ea24d49cf52867b928d3e
-> > Author: Jiang Liu <jiang.liu@linux.intel.com>
-> > Date:   Wed Feb 19 14:07:36 2014 +0800
-> >=20
-> >     iommu/vt-d: Unify the way to process DMAR device scope array
+Gregory
 
-This commit is about how we decide which IOMMU a given PCI device is
-attached to.
+> 
+>>
+>>> +
+>>> +             rtc_clk: rtc_clk {
+>>> +                     compatible = "fixed-clock";
+>>> +                     clock-frequency = <32000>;
+>>> +                     #clock-cells = <0>;
+>>> +                     clock-output-names = "rtc_clk";
+>>> +             };
+>>> +     };
+>>> +
+>>> +     soc {
+>>> +             #address-cells = <1>;
+>>> +             #size-cells = <1>;
+>>> +             compatible = "simple-bus";
+>>> +             clock-ranges;
+>>> +             ranges;
+>>> +
+>>> +             gic: interrupt-controller@10212000 {
+>>> +                     compatible = "arm,cortex-a9-gic";
+>>> +                     interrupt-controller;
+>>> +                     #interrupt-cells = <3>;
+>>> +                     reg = <0x10211000 0x1000>,
+>>> +                           <0x10212000 0x1000>;
+>>> +             };
+>>> +
+>>> +             L2: l2-cache-controller@1020e000 {
+>>> +                     compatible = "arm,pl310-cache";
+>>> +                     reg = <0x1020e000 0x1000>;
+>>> +                     cache-unified;
+>>> +                     cache-level = <2>;
+>>> +             };
+>>> +
+>>> +             timer: timer@10008000 {
+>>> +                     compatible = "mediatek,mtk6589-timer";
+>>> +                     reg = <0x10008000 0x80>;
+>>> +                     interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_LOW>;
+>>> +                     clocks = <&system_clk>, <&rtc_clk>;
+>>> +                     clock-names = "sys_clk", "rtc_clk";
+>>> +             };
+>>> +     };
+>>> +};
+>>> diff --git a/arch/arm/mach-mediatek/Kconfig b/arch/arm/mach-mediatek/Kconfig
+>>> new file mode 100644
+>>> index 0000000..c0139ca
+>>> --- /dev/null
+>>> +++ b/arch/arm/mach-mediatek/Kconfig
+>>> @@ -0,0 +1,14 @@
+>>> +config ARCH_MEDIATEK
+>>> +     bool "Mediatek MT6589 SoC" if ARCH_MULTI_V7
+>>> +     select ARCH_REQUIRE_GPIOLIB
+>>> +     select ARM_GIC
+>>> +     select CACHE_L2X0
+>>> +     select HAVE_ARM_TWD if LOCAL_TIMERS
+>>
+>> LOCAL_TIMERS no longer exist
+>>
+>>> +     select HAVE_SMP
+>>> +     select LOCAL_TIMERS if SMP
+>> ditto
+>>
+>> so what about this instead:
+>>
+>>         select HAVE_ARM_TWD if SMP
+>>
+>>
+>> The rest of this patch looks good.
+>>
+>> Thanks,
+>>
+>> Gregory
+>>
+>>> +     select COMMON_CLK
+>>> +     select GENERIC_CLOCKEVENTS
+>>> +     select MTK_TIMER
+>>> +     select CLKSRC_MMIO
+>>> +     help
+>>> +       Support for Mediatek Cortex-A7 Quad-Core-SoC MT6589.
+>>> diff --git a/arch/arm/mach-mediatek/Makefile b/arch/arm/mach-mediatek/Makefile
+>>> new file mode 100644
+>>> index 0000000..43e619f
+>>> --- /dev/null
+>>> +++ b/arch/arm/mach-mediatek/Makefile
+>>> @@ -0,0 +1 @@
+>>> +obj-$(CONFIG_ARCH_MEDIATEK) += mediatek.o
+>>> diff --git a/arch/arm/mach-mediatek/mediatek.c b/arch/arm/mach-mediatek/mediatek.c
+>>> new file mode 100644
+>>> index 0000000..f630403
+>>> --- /dev/null
+>>> +++ b/arch/arm/mach-mediatek/mediatek.c
+>>> @@ -0,0 +1,40 @@
+>>> +/*
+>>> + * Device Tree support for Mediatek SoCs
+>>> + *
+>>> + * Copyright (c) 2014 MundoReader S.L.
+>>> + * Author: Matthias Brugger <matthias.bgg@gmail.com>
+>>> + *
+>>> + * This program is free software; you can redistribute it and/or modify
+>>> + * it under the terms of the GNU General Public License as published by
+>>> + * the Free Software Foundation; either version 2 of the License, or
+>>> + * (at your option) any later version.
+>>> + *
+>>> + * This program is distributed in the hope that it will be useful,
+>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>>> + * GNU General Public License for more details.
+>>> + */
+>>> +
+>>> +#include <linux/kernel.h>
+>>> +#include <linux/init.h>
+>>> +#include <linux/of_platform.h>
+>>> +#include <linux/irqchip.h>
+>>> +#include <asm/mach/arch.h>
+>>> +#include <asm/mach/map.h>
+>>> +#include <asm/hardware/cache-l2x0.h>
+>>> +
+>>> +static void __init mediatek_dt_init(void)
+>>> +{
+>>> +     l2x0_of_init(0, ~0);
+>>> +     of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+>>> +}
+>>> +
+>>> +static const char * const mediatek_board_dt_compat[] = {
+>>> +     "mediatek,mt6589",
+>>> +     NULL,
+>>> +};
+>>> +
+>>> +DT_MACHINE_START(MEDIATEK_DT, "Mediatek Cortex-A7 (Device Tree)")
+>>> +     .init_machine   = mediatek_dt_init,
+>>> +     .dt_compat      = mediatek_board_dt_compat,
+>>> +MACHINE_END
+>>>
+>>
+>>
+>> --
+>> Gregory Clement, Free Electrons
+>> Kernel, drivers, real-time and embedded Linux
+>> development, consulting, training and support.
+>> http://free-electrons.com
+> 
+> 
+> 
 
-Thus, my first guess would be that we are quite happily setting up the
-requested DMA maps on the *wrong* IOMMU, and then taking faults when the
-device actually tries to do DMA.
 
-However, I'm not 100% convinced of that. The fault address looks
-suspiciously like a true physical address, not a virtual bus address of
-the type that we'd normally allocate for a dma_map_* operation. Those
-would start at 0xfffff000 and work downwards, typically.
-
-Do you have 'iommu=3Dpt' on the kernel command line? Can I see the full
-dmesg as this system boots, and also a copy of the DMAR table?
-
-
-We should also rate-limit DMA faults, which would avoid the lockup
-failure mode. Bjorn, what should an IOMMU driver *do* when it detects
-that a device is creating an endless stream of DMA faults and isn't
-aborting the transaction?
-
-I can set it to silent so that it just stops *reporting* the DMA faults
-for that device... and I suppose I can re-enable them when I next see a
-DMA mapping for it (although actually it'd be better to have a hook to
-do that on FLR or something like that). But there must be a better
-answer than that, surely? And I don't want to hack it up locally in
-*one* specific IOMMU driver, any more than I have to.
-
-On a POWER system with EEH, the kernel would end up isolating the
-offending device completely, and subsequently resetting it...
-
---=20
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
-
---=-Ht/Tf9zBi/x/pm1AbxZe
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
-
-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
-kiW8/Nj6KITQvHqz7x/Es0IRJCc9/zBES7yMeD+fgJKHAEv/uTcFfGM9HIWxPQIDAQABo4IC6jCC
-AuYwHQYDVR0OBBYEFGK1Mey+kPYGHowHJ0YXtQU4NmbSMB8GA1UdIwQYMBaAFB5pKrTcKP5HGE4h
-Cz+8rBEv8Jj1MIHJBgNVHR8EgcEwgb4wgbuggbiggbWGVGh0dHA6Ly93d3cuaW50ZWwuY29tL3Jl
-cG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3VpbmclMjBDQSUyMDRB
-LmNybIZdaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9DUkwvSW50ZWwl
-MjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIwNEEuY3JsMIHvBggrBgEFBQcBAQSB
-4jCB3zBpBggrBgEFBQcwAoZdaHR0cDovL3d3dy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZp
-Y2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIwNEEuY3J0MHIG
-CCsGAQUFBzAChmZodHRwOi8vY2VydGlmaWNhdGVzLmludGVsLmNvbS9yZXBvc2l0b3J5L2NlcnRp
-ZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0ElMjA0QS5jcnQw
-CwYDVR0PBAQDAgeAMDwGCSsGAQQBgjcVBwQvMC0GJSsGAQQBgjcVCIbDjHWEmeVRg/2BKIWOn1OC
-kcAJZ4HevTmV8EMCAWQCAQgwHwYDVR0lBBgwFgYIKwYBBQUHAwQGCisGAQQBgjcKAwwwKQYJKwYB
-BAGCNxUKBBwwGjAKBggrBgEFBQcDBDAMBgorBgEEAYI3CgMMME8GA1UdEQRIMEagKQYKKwYBBAGC
-NxQCA6AbDBlkYXZpZC53b29kaG91c2VAaW50ZWwuY29tgRlkYXZpZC53b29kaG91c2VAaW50ZWwu
-Y29tMA0GCSqGSIb3DQEBBQUAA4IBAQBCQ4UH3yybC+PzPo7W4PQJQwIDkKfD2i20i/DosQ7+Yeof
-KF7qDASe9eoJGXbINBx1u648uOnaMBsxgUUamJo7pdt1ZnsetRtCQrJIsrsJA3Q2MOsrv7xHkzqn
-DF99KHEbO2yKvyjJVDznHUWh8M1OFmdoziyWE/VPdqTwXwS/UKO81XaTtWUDGO716HHVlfT9yPle
-Ukg2MTcIhhNWmlS8gDUayhteIAlPci71f/oXzXxBiGiO6FVZUEx+rZBQB84Ey0S0Tfm7hiGzoegg
-ra0hfiiMOKMio+n0r4NUn03Z+VRUTbdjHIA6Lkozwpadvs9/uK8dIGqfcgxYgk9qdjFPMYICDjCC
-AgoCAQEwgYcweTELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAkNBMRQwEgYDVQQHEwtTYW50YSBDbGFy
-YTEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJh
-c2ljIElzc3VpbmcgQ0EgNEECCmJiMmoAAAAATKAwCQYFKw4DAhoFAKBdMBgGCSqGSIb3DQEJAzEL
-BgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTE0MDQxMDA4NDYyN1owIwYJKoZIhvcNAQkEMRYE
-FHk/+SMjSSfDm+Iw5SfE0gK5+wxBMA0GCSqGSIb3DQEBAQUABIIBAL65Uvxl4fEsse8q1cshNFe/
-t+oRfnFoEWRBDOxJ4SKcJQ7fU910qBmQSR3NP5r6bUUR16ZjgbrDvR+GtwNWBbjcCeZJSzaW5Rou
-u2ESTisQLs2Plft+cjwQmcB97d3TlqDxbrqeVazrkUkdKyay1NBMERBFP6JdAkc6okiHfc99jHLd
-sZUboJvuVmN/4Rfxe2pVvpzrnoJX6hMUDxNKqH91bTcyGpWHAzuIuG6Hdx3XT37je9l07wDoLGVF
-UIfKOKExdhX6ovtpyMPLcaWXsYiKRezTGjWoiyRa4IIKzTMdPiI6RC33vD4LKukKO/f8oLChwTJt
-n7lQ84T452enVEYAAAAAAAA=
-
-
---=-Ht/Tf9zBi/x/pm1AbxZe--
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
