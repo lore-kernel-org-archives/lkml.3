@@ -1,103 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935661AbaDJObI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 10:31:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8726 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934798AbaDJObF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 10:31:05 -0400
-Message-ID: <5346AB07.4090909@redhat.com>
-Date: Thu, 10 Apr 2014 16:30:31 +0200
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Jim Keniston <jkenisto@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 4/6] uprobes/x86: Emulate rip-relative call's
-References: <20140406201628.GA507@redhat.com> <1396995963.5056.46.camel@oc7886638347.ibm.com.usor.ibm.com> <20140409154346.GB18486@redhat.com> <53469F95.1030709@redhat.com> <20140410141806.GA23997@redhat.com>
-In-Reply-To: <20140410141806.GA23997@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S935666AbaDJOca (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 10:32:30 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:17774 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758501AbaDJOc2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 10:32:28 -0400
+X-AuditID: cbfec37c-b7f536d0000059f2-1a-5346ab79e431
+Message-id: <5346AB76.1020800@samsung.com>
+Date: Thu, 10 Apr 2014 08:32:22 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Greg KH <gregkh@linuxfoundation.org>, tj@kernel.org,
+        rafael.j.wysocki@intel.com, linux@roeck-us.net, toshi.kani@hp.com,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        shuahkhan@gmail.com, Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [RFC PATCH 0/2] managed token devres interfaces
+References: <cover.1397050852.git.shuah.kh@samsung.com>
+ <20140409191740.GA10748@kroah.com> <5345CD32.8010305@samsung.com>
+ <20140410120435.4c439a8b@alan.etchedpixels.co.uk>
+ <20140410083841.488f9c43@samsung.com>
+In-reply-to: <20140410083841.488f9c43@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.134.250]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42I5/e+wr27lardgg91fJCwmTfnLZtG8eD2b
+	xeVdc9gsejZsZbV4svAMk8XjFW/ZLb7+dLD4tfwoo8W2WwtZHDg9ds66y+6xa9tOJo/Fe14y
+	eWxa1cnmsX/uGnaP1pObWD12fm9g9/i8SS6AI4rLJiU1J7MstUjfLoErY9mbM4wFFzgq5vZv
+	ZGlgPMvWxcjJISFgIrH91UQWCFtM4sK99UBxLg4hgWWMEiu+X2aBcHqZJFZOv8sEUiUksI1R
+	YuVSIRCbV0BLor/pODOIzSKgKvG9fwojiM0moC7x+fUOdoh6OYmmJavBakQFIiRenYXYxisg
+	KPFj8j0gm4NDRCBF4vrfcJBdzAKfGSW2zdsFVi8sYCOx/9oVFog51xklWo8Ug9icAkYSN5p+
+	g93DLGAtsXLSNkYIW15i85q3zBD1yhJ/Lp9igvhMWWLjoXcsExhFZiFZPQtJ+ywk7QsYmVcx
+	ipUWJxcUJ6WnVhjrFSfmFpfmpesl5+duYoREXs0OxntfbQ4xCnAwKvHwHljmGizEmlhWXJl7
+	iFGCg1lJhHfjVLdgId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYzTznU4cIf5PF5kHrtr6VLZQpE9
+	Zxoey/kVPd0b7en18K7YtnXPHQ19rl2J7ljdlPY83U58hvP9xzZcD/+F11W56Qh67lDa1FU1
+	M+jL/nl7n3NPf6H+6+OOh0xhh8tnbDoqkvuDc/bJv6Js1WfrGN81ZLZEHj5k4O0YbxfMeXJO
+	oIh7Tm7tfWclluKMREMt5qLiRAC1u/6XmgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2014 04:18 PM, Oleg Nesterov wrote:
-> On 04/10, Denys Vlasenko wrote:
+On 04/10/2014 05:38 AM, Mauro Carvalho Chehab wrote:
+> Hi Alan,
+>
+> Em Thu, 10 Apr 2014 12:04:35 +0100
+> One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> escreveu:
+>
+>>>>>    - Construct string with (dev is struct em28xx *dev)
+>>>>> 		format: "tuner:%s-%s-%d"
+>>>>> 		with the following:
+>>>>>      	            dev_name(&dev->udev->dev)
+>>>>>                   dev->udev->bus->bus_name
+>>>>>                   dev->tuner_addr
 >>
->> There is this monstrosity, "16-bit override for branches" in 64-mode:
->>
->> 66 e8 nn nn       callw   <offset16>
->>
->> Nobody sane uses it because it truncates instruction pointer.
->>
->> Or rather, *I think* it should truncate it (i.e. zero-extend to full width),
->> but conceivably some CPUs can be buggy wrt that:
->> they can decide to modify only lower 16 bits of IP,
->> or even they can decided to use signed <offset16> but apply it
->> to full-width RIP.
->>
->> AMD manuals are not clear on what exactly should happen.
->>
->> I am sure no one sane uses this form of branch instructions
->> in 32-bit and 64-bit code.
->>
->> I don't think we should be trying to support it "correctly"
->> (we can just let program crash with SIGILL or something),
->> we only need to make sure we don't overlook its existence
->> and thus are not tricked into touching or modifying unrelated data.
-> 
-> And after the quick check it seems that lib/insn.c doesn't parse
-> "66 e8 nn nn" correctly. It treats the next 2 bytes as the part
-> of 32bit offset.
+>> What guarantees this won't get confused by hot plugging and re-use of the
+>> bus slot ?
+>
+> Good point. Yes, this should be addressed.
+>
 
-I didn't run-test it yet. By code inspection, it seems to work...
+This resource should be destroyed when em28xx_ handles unplug from its 
+em28xx_usb_disconnect() or in generic words, in its "uninit". It is a 
+matter of making sure this resource is handled in the "uninit" for this 
+media device/driver(s) like any other shared resource.
 
-x86-opcode-map.txt:
-    e8: CALL Jz (f64)
+Would that cover the hot plugging and re-use of the bus slot scenario?
 
-gen-insn-attr-x86.awk:
-    imm_flag["Jz"] = "INAT_MAKE_IMM(INAT_IMM_VWORD32)"
+-- Shuah
 
 
-insn.c:
-        case INAT_IMM_VWORD32:
-                if (!__get_immv32(insn))
-                        goto err_out;
-...
-static int __get_immv32(struct insn *insn)
-{
-        switch (insn->opnd_bytes) {
-        case 2:
-                insn->immediate.value = get_next(short, insn);
-                insn->immediate.nbytes = 2;
-                break;
-        case 4:
-        case 8:
-                insn->immediate.value = get_next(int, insn);
-                insn->immediate.nbytes = 4;
-                break;
-
-
-...until I notice this code:
-
-void insn_get_modrm(struct insn *insn)
-{
-...
-        if (insn->x86_64 && inat_is_force64(insn->attr))
-                insn->opnd_bytes = 8;
-
-
-The (f64) modifier in x86-opcode-map.txt means that inat_is_force64()
-is true for call opcode. So we won't reach "case 2:" in __get_immv32():
-insn_get_prefixes() did set insn->opnd_bytes to 2 when it saw 0x66 prefix,
-but it was before we reach this place, and here we overrode it.
-This is a bug in insn decoder.
-
+-- 
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
