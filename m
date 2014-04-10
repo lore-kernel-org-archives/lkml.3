@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935309AbaDJDX3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:23:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40987 "EHLO
+	id S935294AbaDJDX1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:23:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40979 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934669AbaDJDV5 (ORCPT
+	with ESMTP id S934667AbaDJDVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:21:57 -0400
+	Wed, 9 Apr 2014 23:21:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Jason Cooper <jason@lakedaemon.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Ben Hutchings <ben@decadent.org.uk>,
         Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 036/134] ARM: Orion: Set eth packet size csum offload limit
-Date: Wed,  9 Apr 2014 20:22:32 -0700
-Message-Id: <20140410032304.602808983@linuxfoundation.org>
+Subject: [PATCH 3.4 034/134] ARM: footbridge: fix VGA initialisation
+Date: Wed,  9 Apr 2014 20:22:30 -0700
+Message-Id: <20140410032304.351665148@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -29,161 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Arnaud Patard (Rtp)" <arnaud.patard@rtp-net.org>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 58569aee5a1a5dcc25c34a0a2ed9a377874e6b05 upstream.
+commit 43659222e7a0113912ed02f6b2231550b3e471ac upstream.
 
-The mv643xx ethernet controller limits the packet size for the TX
-checksum offloading. This patch sets this limits for Kirkwood and
-Dove which have smaller limits that the default.
+It's no good setting vga_base after the VGA console has been
+initialised, because if we do that we get this:
 
-As a side note, this patch is an updated version of a patch sent some years
-ago: http://lists.infradead.org/pipermail/linux-arm-kernel/2010-June/017320.html
-which seems to have been lost.
+Unable to handle kernel paging request at virtual address 000b8000
+pgd = c0004000
+[000b8000] *pgd=07ffc831, *pte=00000000, *ppte=00000000
+0Internal error: Oops: 5017 [#1] ARM
+Modules linked in:
+CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.0+ #49
+task: c03e2974 ti: c03d8000 task.ti: c03d8000
+PC is at vgacon_startup+0x258/0x39c
+LR is at request_resource+0x10/0x1c
+pc : [<c01725d0>]    lr : [<c0022b50>]    psr: 60000053
+sp : c03d9f68  ip : 000b8000  fp : c03d9f8c
+r10: 000055aa  r9 : 4401a103  r8 : ffffaa55
+r7 : c03e357c  r6 : c051b460  r5 : 000000ff  r4 : 000c0000
+r3 : 000b8000  r2 : c03e0514  r1 : 00000000  r0 : c0304971
+Flags: nZCv  IRQs on  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
 
-Signed-off-by: Arnaud Patard <arnaud.patard@rtp-net.org>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
-[bwh: Backported to 3.2: adjust for the extra two parameters of
- orion_ge0{0,1}_init()]
+which is an access to the 0xb8000 without the PCI offset required to
+make it work.
+
+Fixes: cc22b4c18540 ("ARM: set vga memory base at run-time")
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[yangyl: Backported to 3.4: Adjust context]
-Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
+Cc: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/arm/mach-dove/common.c               |    2 +-
- arch/arm/mach-kirkwood/common.c           |    4 ++--
- arch/arm/mach-mv78xx0/common.c            |    6 ++++--
- arch/arm/mach-orion5x/common.c            |    3 ++-
- arch/arm/plat-orion/common.c              |    8 ++++++--
- arch/arm/plat-orion/include/plat/common.h |    6 ++++--
- include/linux/mv643xx_eth.h               |    2 ++
- 7 files changed, 21 insertions(+), 10 deletions(-)
 
---- a/arch/arm/mach-dove/common.c
-+++ b/arch/arm/mach-dove/common.c
-@@ -90,7 +90,7 @@ void __init dove_ge00_init(struct mv643x
- {
- 	orion_ge00_init(eth_data,
- 			DOVE_GE00_PHYS_BASE, IRQ_DOVE_GE00_SUM,
--			0, get_tclk());
-+			0, get_tclk(), 1600);
- }
- 
- /*****************************************************************************
---- a/arch/arm/mach-kirkwood/common.c
-+++ b/arch/arm/mach-kirkwood/common.c
-@@ -87,7 +87,7 @@ void __init kirkwood_ge00_init(struct mv
- 
- 	orion_ge00_init(eth_data,
- 			GE00_PHYS_BASE, IRQ_KIRKWOOD_GE00_SUM,
--			IRQ_KIRKWOOD_GE00_ERR, kirkwood_tclk);
-+			IRQ_KIRKWOOD_GE00_ERR, kirkwood_tclk, 1600);
- }
- 
- 
-@@ -101,7 +101,7 @@ void __init kirkwood_ge01_init(struct mv
- 
- 	orion_ge01_init(eth_data,
- 			GE01_PHYS_BASE, IRQ_KIRKWOOD_GE01_SUM,
--			IRQ_KIRKWOOD_GE01_ERR, kirkwood_tclk);
-+			IRQ_KIRKWOOD_GE01_ERR, kirkwood_tclk, 1600);
- }
- 
- 
---- a/arch/arm/mach-mv78xx0/common.c
-+++ b/arch/arm/mach-mv78xx0/common.c
-@@ -199,7 +199,8 @@ void __init mv78xx0_ge00_init(struct mv6
- {
- 	orion_ge00_init(eth_data,
- 			GE00_PHYS_BASE, IRQ_MV78XX0_GE00_SUM,
--			IRQ_MV78XX0_GE_ERR, get_tclk());
-+			IRQ_MV78XX0_GE_ERR, get_tclk(),
-+			MV643XX_TX_CSUM_DEFAULT_LIMIT);
- }
- 
- 
-@@ -210,7 +211,8 @@ void __init mv78xx0_ge01_init(struct mv6
- {
- 	orion_ge01_init(eth_data,
- 			GE01_PHYS_BASE, IRQ_MV78XX0_GE01_SUM,
--			NO_IRQ, get_tclk());
-+			NO_IRQ, get_tclk(),
-+			MV643XX_TX_CSUM_DEFAULT_LIMIT);
- }
- 
- 
---- a/arch/arm/mach-orion5x/common.c
-+++ b/arch/arm/mach-orion5x/common.c
-@@ -95,7 +95,8 @@ void __init orion5x_eth_init(struct mv64
- {
- 	orion_ge00_init(eth_data,
- 			ORION5X_ETH_PHYS_BASE, IRQ_ORION5X_ETH_SUM,
--			IRQ_ORION5X_ETH_ERR, orion5x_tclk);
-+			IRQ_ORION5X_ETH_ERR, orion5x_tclk,
-+			MV643XX_TX_CSUM_DEFAULT_LIMIT);
- }
- 
- 
---- a/arch/arm/plat-orion/common.c
-+++ b/arch/arm/plat-orion/common.c
-@@ -261,10 +261,12 @@ void __init orion_ge00_init(struct mv643
- 			    unsigned long mapbase,
- 			    unsigned long irq,
- 			    unsigned long irq_err,
--			    int tclk)
-+			    int tclk,
-+			    unsigned int tx_csum_limit)
- {
- 	fill_resources(&orion_ge00_shared, orion_ge00_shared_resources,
- 		       mapbase + 0x2000, SZ_16K - 1, irq_err);
-+	orion_ge00_shared_data.tx_csum_limit = tx_csum_limit;
- 	ge_complete(&orion_ge00_shared_data, tclk,
- 		    orion_ge00_resources, irq, &orion_ge00_shared,
- 		    eth_data, &orion_ge00);
-@@ -314,10 +316,12 @@ void __init orion_ge01_init(struct mv643
- 			    unsigned long mapbase,
- 			    unsigned long irq,
- 			    unsigned long irq_err,
--			    int tclk)
-+			    int tclk,
-+			    unsigned int tx_csum_limit)
- {
- 	fill_resources(&orion_ge01_shared, orion_ge01_shared_resources,
- 		       mapbase + 0x2000, SZ_16K - 1, irq_err);
-+	orion_ge01_shared_data.tx_csum_limit = tx_csum_limit;
- 	ge_complete(&orion_ge01_shared_data, tclk,
- 		    orion_ge01_resources, irq, &orion_ge01_shared,
- 		    eth_data, &orion_ge01);
---- a/arch/arm/plat-orion/include/plat/common.h
-+++ b/arch/arm/plat-orion/include/plat/common.h
-@@ -40,13 +40,15 @@ void __init orion_ge00_init(struct mv643
- 			    unsigned long mapbase,
- 			    unsigned long irq,
- 			    unsigned long irq_err,
--			    int tclk);
-+			    int tclk,
-+			    unsigned int tx_csum_limit);
- 
- void __init orion_ge01_init(struct mv643xx_eth_platform_data *eth_data,
- 			    unsigned long mapbase,
- 			    unsigned long irq,
- 			    unsigned long irq_err,
--			    int tclk);
-+			    int tclk,
-+			    unsigned int tx_csum_limit);
- 
- void __init orion_ge10_init(struct mv643xx_eth_platform_data *eth_data,
- 			    unsigned long mapbase,
---- a/include/linux/mv643xx_eth.h
-+++ b/include/linux/mv643xx_eth.h
-@@ -15,6 +15,8 @@
- #define MV643XX_ETH_SIZE_REG_4		0x2224
- #define MV643XX_ETH_BASE_ADDR_ENABLE_REG	0x2290
- 
-+#define MV643XX_TX_CSUM_DEFAULT_LIMIT	0
+---
+ arch/arm/mach-footbridge/common.c  |    3 +++
+ arch/arm/mach-footbridge/dc21285.c |    2 --
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+--- a/arch/arm/mach-footbridge/common.c
++++ b/arch/arm/mach-footbridge/common.c
+@@ -15,6 +15,7 @@
+ #include <linux/init.h>
+ #include <linux/io.h>
+ #include <linux/spinlock.h>
++#include <video/vga.h>
+  
+ #include <asm/pgtable.h>
+ #include <asm/page.h>
+@@ -198,6 +199,8 @@ void __init footbridge_map_io(void)
+ 	 */
+ 	if (footbridge_cfn_mode())
+ 		iotable_init(ebsa285_host_io_desc, ARRAY_SIZE(ebsa285_host_io_desc));
 +
- struct mv643xx_eth_shared_platform_data {
- 	struct mbus_dram_target_info	*dram;
- 	struct platform_device	*shared_smi;
++	vga_base = PCIMEM_BASE;
+ }
+ 
+ void footbridge_restart(char mode, const char *cmd)
+--- a/arch/arm/mach-footbridge/dc21285.c
++++ b/arch/arm/mach-footbridge/dc21285.c
+@@ -18,7 +18,6 @@
+ #include <linux/irq.h>
+ #include <linux/io.h>
+ #include <linux/spinlock.h>
+-#include <video/vga.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach/pci.h>
+@@ -298,7 +297,6 @@ void __init dc21285_preinit(void)
+ 	int cfn_mode;
+ 
+ 	pcibios_min_mem = 0x81000000;
+-	vga_base = PCIMEM_BASE;
+ 
+ 	mem_size = (unsigned int)high_memory - PAGE_OFFSET;
+ 	for (mem_mask = 0x00100000; mem_mask < 0x10000000; mem_mask <<= 1)
 
 
