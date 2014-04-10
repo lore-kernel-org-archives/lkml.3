@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935523AbaDJNyf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 09:54:35 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:39219 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934985AbaDJNx6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 09:53:58 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Randy Dunlap <rdunlap@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, Chen-Yu Tsai <wens@csie.org>,
-        Hans de Goede <hdegoede@redhat.com>
-Cc: Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        dev@linux-sunxi.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v3 7/7] ARM: sunxi: update the default ARCH_NR_GPIO for sunxi arch
-Date: Thu, 10 Apr 2014 15:52:46 +0200
-Message-Id: <1397137966-30818-8-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1397137966-30818-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1397137966-30818-1-git-send-email-boris.brezillon@free-electrons.com>
+	id S935554AbaDJNyn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 09:54:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1667 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934985AbaDJNyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 09:54:37 -0400
+Date: Thu, 10 Apr 2014 09:54:33 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        namhyung@gmail.com
+Subject: Re: [PATCH 1/4 v2] perf: Allow ability to map cpus to nodes easily
+Message-ID: <20140410135433.GH8488@redhat.com>
+References: <1396896924-129847-1-git-send-email-dzickus@redhat.com>
+ <1396896924-129847-2-git-send-email-dzickus@redhat.com>
+ <20140410093146.GE1141@krava.brq.redhat.com>
+ <20140410131515.GF8488@redhat.com>
+ <20140410132458.GB13001@krava.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140410132458.GB13001@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The A31 SoC has PL and PM banks and thus increase the default ARCH_NR_GPIO.
+On Thu, Apr 10, 2014 at 03:24:58PM +0200, Jiri Olsa wrote:
+> On Thu, Apr 10, 2014 at 09:15:15AM -0400, Don Zickus wrote:
+> > On Thu, Apr 10, 2014 at 11:31:46AM +0200, Jiri Olsa wrote:
+> > > On Mon, Apr 07, 2014 at 02:55:21PM -0400, Don Zickus wrote:
+> > > 
+> > > SNIP
+> > > 
+> > > > +static int init_cpunode_map(void)
+> > > > +{
+> > > > +	int i;
+> > > > +
+> > > > +	set_max_cpu_num();
+> > > > +	set_max_node_num();
+> > > > +
+> > > > +	cpunode_map = calloc(max_cpu_num, sizeof(int));
+> > > > +	if (!cpunode_map) {
+> > > > +		pr_err("%s: calloc failed\n", __func__);
+> > > > +		goto out;
+> > > shuld probably be ^^^:
+> > > 
+> > > 		return -1;
+> > > 
+> > > > +	}
+> > > > +
+> > > > +	for (i = 0; i < max_cpu_num; i++)
+> > > > +		cpunode_map[i] = -1;
+> > > > +
+> > > > +	return 0;
+> > > > +out:
+> > > > +	return -1;
+> > > 
+> > > and remove 'out' label code
+> > 
+> > Sorry, probably leftover code that after snipping and changing didn't get
+> > noticed.  Thanks.
+> > 
+> > > 
+> > > other than that, it seems ok.. I'll queue it
+> > 
+> > I assume you are making the changes locally or should I resubmit?
+> 
+> yes, I'll do that localy
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks!
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 5db05f6a..ee096bf 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1644,9 +1644,9 @@ config ARCH_NR_GPIO
- 	int
- 	default 1024 if ARCH_SHMOBILE || ARCH_TEGRA
- 	default 512 if ARCH_EXYNOS || ARCH_KEYSTONE || SOC_OMAP5 || SOC_DRA7XX || ARCH_S3C24XX || ARCH_S3C64XX
-+	default 416 if ARCH_SUNXI
- 	default 392 if ARCH_U8500
- 	default 352 if ARCH_VT8500
--	default 288 if ARCH_SUNXI
- 	default 264 if MACH_H4700
- 	default 0
- 	help
--- 
-1.8.3.2
-
+Cheers,
+Don
