@@ -1,61 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934732AbaDJSQd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 14:16:33 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:41708 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752918AbaDJSQb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 14:16:31 -0400
+	id S1030376AbaDJSU0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 14:20:26 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:48932 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030210AbaDJSUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 14:20:24 -0400
+X-IronPort-AV: E=Sophos;i="4.97,835,1389744000"; 
+   d="scan'208";a="119991015"
+Message-ID: <5346E0E5.606@citrix.com>
+Date: Thu, 10 Apr 2014 19:20:21 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdYW6b_37V40TRxs=7ecaWuV0X7_YJ4=-Psr9CG-cTb79w@mail.gmail.com>
-References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1397051478-4113-5-git-send-email-boris.brezillon@free-electrons.com>
-	<CACRpkdYW6b_37V40TRxs=7ecaWuV0X7_YJ4=-Psr9CG-cTb79w@mail.gmail.com>
-Date: Thu, 10 Apr 2014 20:16:30 +0200
-Message-ID: <CACRpkdbG-D5RXrrJs9LBEGs-1dydmfPKvCgNb4S2=BbBq3SxQw@mail.gmail.com>
-Subject: Re: [PATCH 04/15] pinctrl: sunxi: specify clk name when retrieving
- pinctrl pio clk
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+CC: <konrad.wilk@oracle.com>, <xen-devel@lists.xenproject.org>,
+        <linux-kernel@vger.kernel.org>, <srostedt@redhat.com>,
+        <andrew.cooper3@citrix.com>, <JBeulich@suse.com>
+Subject: Re: [PATCH v2] x86/xen: Fix 32-bit PV guests's usage of kernel_stack
+References: <1397146629-7159-1-git-send-email-boris.ostrovsky@oracle.com>
+In-Reply-To: <1397146629-7159-1-git-send-email-boris.ostrovsky@oracle.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 8:14 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Wed, Apr 9, 2014 at 3:51 PM, Boris BREZILLON
-> <boris.brezillon@free-electrons.com> wrote:
->
->> Specify base pio clk name when retrieving it using the CCF.
->> This way we will avoid conflicts when introducing a second clk for the A31
->> SoC.
->>
->> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
->
-> Are you merging all these through ARM SoC?
->
-> In that case
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
->
-> If it's OK to merge stand-alone tell me and I'll apply it to
-> the pinctrl tree.
+On 10/04/14 17:17, Boris Ostrovsky wrote:
+> Commit 198d208df4371734ac4728f69cb585c284d20a15 ("x86: Keep thread_info
+> on thread stack in x86_32") made 32-bit kernels use kernel_stack to point to
+> thread_info. That change missed a couple of updates needed by Xen's
+> 32-bit PV guests:
+> 
+> 1. kernel_stack needs to be initialized for secondary CPUs
+> 2. GET_THREAD_INFO() now uses %fs register which may not be the kernel's
+> version when executing xen_iret().
+> 
+> With respect to the second issue, we don't need GET_THREAD_INFO()
+> anymore: we used it as an intermediate step to get to per_cpu xen_vcpu and avoid
+> referencing %fs. Now that we are going to use %fs anyway we may as well go
+> directly to xen_vcpu.
+> 
+> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
+> ---
+>  arch/x86/xen/smp.c        |    3 ++-
+>  arch/x86/xen/xen-asm_32.S |   25 +++++++++++++++++--------
+>  2 files changed, 19 insertions(+), 9 deletions(-)
+> 
+> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
+> index a18eadd..7005974 100644
+> --- a/arch/x86/xen/smp.c
+> +++ b/arch/x86/xen/smp.c
+> @@ -441,10 +441,11 @@ static int xen_cpu_up(unsigned int cpu, struct task_struct *idle)
+>  	irq_ctx_init(cpu);
+>  #else
+>  	clear_tsk_thread_flag(idle, TIF_FORK);
+> +#endif
+>  	per_cpu(kernel_stack, cpu) =
+>  		(unsigned long)task_stack_page(idle) -
+>  		KERNEL_STACK_OFFSET + THREAD_SIZE;
+> -#endif
+> +
+>  	xen_setup_runstate_info(cpu);
+>  	xen_setup_timer(cpu);
+>  	xen_init_lock_cpu(cpu);
+> diff --git a/arch/x86/xen/xen-asm_32.S b/arch/x86/xen/xen-asm_32.S
+> index 33ca6e4..fd92a64 100644
+> --- a/arch/x86/xen/xen-asm_32.S
+> +++ b/arch/x86/xen/xen-asm_32.S
+> @@ -75,6 +75,17 @@ ENDPROC(xen_sysexit)
+>   * stack state in whatever form its in, we keep things simple by only
+>   * using a single register which is pushed/popped on the stack.
+>   */
+> +
+> +.macro POP_FS
+> +1:
+> +	popw %fs
+> +.pushsection .fixup, "ax"
+> +2:	movw $0, (%esp)
+> +	jmp 1b
+> +.popsection
+> +	_ASM_EXTABLE(1b,2b)
+> +.endm
+> +
+>  ENTRY(xen_iret)
+>  	/* test eflags for special cases */
+>  	testl $(X86_EFLAGS_VM | XEN_EFLAGS_NMI), 8(%esp)
+> @@ -83,15 +94,13 @@ ENTRY(xen_iret)
+>  	push %eax
+>  	ESP_OFFSET=4	# bytes pushed onto stack
+>  
+> -	/*
+> -	 * Store vcpu_info pointer for easy access.  Do it this way to
+> -	 * avoid having to reload %fs
+> -	 */
+> +	/* Store vcpu_info pointer for easy access */
+>  #ifdef CONFIG_SMP
+> -	GET_THREAD_INFO(%eax)
+> -	movl %ss:TI_cpu(%eax), %eax
+> -	movl %ss:__per_cpu_offset(,%eax,4), %eax
+> -	mov %ss:xen_vcpu(%eax), %eax
+> +	pushw %fs
+> +	movl $(__KERNEL_PERCPU), %eax
+> +	movl %eax, %fs
+> +	movl %fs:xen_vcpu, %eax
 
-Hm there seems to be quite a few patches to pinctrl here...
+How can this get the correct per-cpu xen_vcpu pointer if it doesn't ever
+get the current cpu number?  Doesn't this always get VCPU#0's xen_vcpu?
 
-May I apply this and the others to the pinctrl tree simply?
-
-As DTS files should be maintained separately I don't think
-it's important to keep driver and DTS file changes together.
-
-Yours,
-Linus Walleij
+David
