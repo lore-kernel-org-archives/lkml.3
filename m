@@ -1,102 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935705AbaDJP7A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 11:59:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51390 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934732AbaDJP6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 11:58:20 -0400
-Date: Thu, 10 Apr 2014 11:57:06 -0400
-From: Rik van Riel <riel@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, Jiri Benc <jbenc@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Miller <davem@davemloft.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH] softirq: punt to ksoftirqd if __do_softirq recently looped
-Message-ID: <20140410115706.662fb5e7@annuminas.surriel.com>
-Organization: Red Hat, Inc.
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S935606AbaDJQCX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 12:02:23 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50097 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934782AbaDJQCR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 12:02:17 -0400
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <ak@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/7] perf top: Add --percentage option
+Date: Fri, 11 Apr 2014 01:01:56 +0900
+Message-Id: <1397145720-8063-4-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1397145720-8063-1-git-send-email-namhyung@kernel.org>
+References: <1397145720-8063-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri noticed that netperf throughput had gotten worse in recent years,
-for smaller message sizes. In the past, ksoftirqd would take around 80%
-of a CPU, and netserver would take around 100% of another CPU.
+The --percentage option is for controlling overhead percentage
+displayed.  It can only receive either of "relative" or "absolute".
+Move the parser callback function into a common location since it's
+used by multiple commands now.
 
-On current kernels, sometimes all the softirq processing is done in the
-context of the netperf process, which can result in as much as a 50%
-performance drop, due to netserver spending all its CPU time "delivering"
-packets to a socket it rarely empties, and dropping the packets on the
-floor as a result.
+For more information, please see previous commit same thing done to
+"perf report".
 
-This seems silly in an age where even cell phones are multi-core, and
-we could simply let the ksoftirqd thread handle the softirq load, so
-the scheduler can migrate the userspace task to another CPU.
-
-This patch accomplishes that in a very simplistic way. The code
-remembers when __do_softirq last looped, and will punt softirq
-handling to ksoftirqd if another softirq happens in the same jiffie.
-
-Netperf results:
-
-			without patch		with patch
-UDP_STREAM      1472    957.17 / 954.18         957.15 / 951.73
-UDP_STREAM      978     936.85 / 930.06         936.84 / 927.63
-UDP_STREAM      466     875.98 / 865.62         875.98 / 868.65
-UDP_STREAM      210     760.88 / 748.70         760.88 / 748.61
-UDP_STREAM      82      554.06 / 329.96         554.06 / 505.95
-                        unstable ^^^^^^
-UDP_STREAM      18      158.99 / 108.95         160.73 / 112.68
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: David Miller <davem@davemloft.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Tested-by: Jiri Benc <jbenc@redhat.com>
-Reported-by: Jiri Benc <jbenc@redhat.com>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- kernel/softirq.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ tools/perf/Documentation/perf-top.txt |   18 +++++++++++++++---
+ tools/perf/builtin-report.c           |   16 +---------------
+ tools/perf/builtin-top.c              |    5 +++--
+ tools/perf/util/hist.c                |   13 +++++++++++++
+ tools/perf/util/hist.h                |    5 +++++
+ 5 files changed, 37 insertions(+), 20 deletions(-)
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 787b3a0..020be2f 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -56,6 +56,7 @@ EXPORT_SYMBOL(irq_stat);
- static struct softirq_action softirq_vec[NR_SOFTIRQS] __cacheline_aligned_in_smp;
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 976b00c6cdb1..64ed79c43639 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -123,13 +123,16 @@ Default is to monitor all CPUS.
+ 	Show a column with the sum of periods.
  
- DEFINE_PER_CPU(struct task_struct *, ksoftirqd);
-+DEFINE_PER_CPU(unsigned long, softirq_looped);
+ --dsos::
+-	Only consider symbols in these dsos.
++	Only consider symbols in these dsos.  This option will affect the
++	percentage of the overhead column.  See --percentage for more info.
  
- char *softirq_to_name[NR_SOFTIRQS] = {
- 	"HI", "TIMER", "NET_TX", "NET_RX", "BLOCK", "BLOCK_IOPOLL",
-@@ -271,6 +272,9 @@ asmlinkage void __do_softirq(void)
+ --comms::
+-	Only consider symbols in these comms.
++	Only consider symbols in these comms.  This option will affect the
++	percentage of the overhead column.  See --percentage for more info.
  
- 	pending = local_softirq_pending();
- 	if (pending) {
-+		/* Still busy? Remember this for invoke_softirq() below... */
-+		this_cpu_write(softirq_looped, jiffies);
+ --symbols::
+-	Only consider these symbols.
++	Only consider these symbols.  This option will affect the
++	percentage of the overhead column.  See --percentage for more info.
+ 
+ -M::
+ --disassembler-style=:: Set disassembler style for objdump.
+@@ -165,6 +168,15 @@ Default is to monitor all CPUS.
+ 	Do not show entries which have an overhead under that percent.
+ 	(Default: 0).
+ 
++--percentage::
++	Determine how to display the overhead percentage of filtered entries.
++	Filters can be applied by --comms, --dsos and/or --symbols options and
++	Zoom operations on the TUI (thread, dso, etc).
 +
- 		if (time_before(jiffies, end) && !need_resched() &&
- 		    --max_restart)
- 			goto restart;
-@@ -330,7 +334,11 @@ void irq_enter(void)
++	"relative" means it's relative to filtered entries only so that the
++	sum of shown entries will be always 100%. "absolute" means it retains
++	the original value before and after the filter is applied.
++
+ INTERACTIVE PROMPTING KEYS
+ --------------------------
  
- static inline void invoke_softirq(void)
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 7ec351bda833..af8cb7a2c9b6 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -717,20 +717,6 @@ parse_percent_limit(const struct option *opt, const char *str,
+ 	return 0;
+ }
+ 
+-static int
+-parse_percentage(const struct option *opt __maybe_unused, const char *str,
+-		 int unset __maybe_unused)
+-{
+-	if (!strcmp(str, "relative"))
+-		symbol_conf.filter_relative = true;
+-	else if (!strcmp(str, "absolute"))
+-		symbol_conf.filter_relative = false;
+-	else
+-		return -1;
+-
+-	return 0;
+-}
+-
+ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
  {
--	if (!force_irqthreads) {
-+	/*
-+	 * If force_irqthreads is set, or if we looped in __do_softirq this
-+	 * jiffie, punt to ksoftirqd to prevent userland starvation.
-+	 */
-+	if (!force_irqthreads && this_cpu_read(softirq_looped) != jiffies) {
- 		/*
- 		 * We can safely execute softirq on the current stack if
- 		 * it is the irq stack, because it should be near empty
+ 	struct perf_session *session;
+@@ -854,7 +840,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_CALLBACK(0, "percent-limit", &report, "percent",
+ 		     "Don't show entries under that percent", parse_percent_limit),
+ 	OPT_CALLBACK(0, "percentage", NULL, "relative|absolute",
+-		     "how to display percentage of filtered entries", parse_percentage),
++		     "how to display percentage of filtered entries", parse_filter_percentage),
+ 	OPT_END()
+ 	};
+ 	struct perf_data_file file = {
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 25269014164a..37d30460bada 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -697,8 +697,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
+ 	if (event->header.misc & PERF_RECORD_MISC_EXACT_IP)
+ 		top->exact_samples++;
+ 
+-	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0 ||
+-	    al.filtered)
++	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0)
+ 		return;
+ 
+ 	if (!top->kptr_restrict_warned &&
+@@ -1119,6 +1118,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_STRING('u', "uid", &target->uid_str, "user", "user to profile"),
+ 	OPT_CALLBACK(0, "percent-limit", &top, "percent",
+ 		     "Don't show entries under that percent", parse_percent_limit),
++	OPT_CALLBACK(0, "percentage", NULL, "relative|absolute",
++		     "How to display percentage of filtered entries", parse_filter_percentage),
+ 	OPT_END()
+ 	};
+ 	const char * const top_usage[] = {
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 3ebd89a28257..3c2dd233b98e 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -943,3 +943,16 @@ u64 hists__total_period(struct hists *hists)
+ 	return symbol_conf.filter_relative ? hists->stats.total_non_filtered_period :
+ 		hists->stats.total_period;
+ }
++
++int parse_filter_percentage(const struct option *opt __maybe_unused,
++			    const char *arg, int unset __maybe_unused)
++{
++	if (!strcmp(arg, "relative"))
++		symbol_conf.filter_relative = true;
++	else if (!strcmp(arg, "absolute"))
++		symbol_conf.filter_relative = false;
++	else
++		return -1;
++
++	return 0;
++}
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 3191496bd3b7..a4ec336ae3fe 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -254,4 +254,9 @@ static inline int script_browse(const char *script_opt __maybe_unused)
+ #endif
+ 
+ unsigned int hists__sort_list_width(struct hists *hists);
++
++struct option;
++int parse_filter_percentage(const struct option *opt __maybe_unused,
++			    const char *arg, int unset __maybe_unused);
++
+ #endif	/* __PERF_HIST_H */
+-- 
+1.7.9.2
 
