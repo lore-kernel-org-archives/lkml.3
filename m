@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935086AbaDJDzi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:55:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41206 "EHLO
+	id S935104AbaDJD4Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:56:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41200 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934956AbaDJDWk (ORCPT
+	with ESMTP id S934947AbaDJDWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:40 -0400
+	Wed, 9 Apr 2014 23:22:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 085/134] USB: fix PM config symbol in uhci-hcd, ehci-hcd, and xhci-hcd
-Date: Wed,  9 Apr 2014 20:23:21 -0700
-Message-Id: <20140410032310.871788725@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>, Ben Hutchings <ben@decadent.org.uk>,
+        Weng Meiling <wengmeiling.weng@huawei.com>
+Subject: [PATCH 3.4 100/134] ALSA: hda - Cache the MUX selection for generic HDMI
+Date: Wed,  9 Apr 2014 20:23:36 -0700
+Message-Id: <20140410032312.544553558@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -29,62 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit f875fdbf344b9fde207f66b392c40845dd7e5aa6 upstream.
+commit bddee96b5d0db869f47b195fe48c614ca824203c upstream.
 
-Since uhci-hcd, ehci-hcd, and xhci-hcd support runtime PM, the .pm
-field in their pci_driver structures should be protected by CONFIG_PM
-rather than CONFIG_PM_SLEEP.  The corresponding change has already
-been made for ohci-hcd.
+When a selection to a converter MUX is changed in hdmi_pcm_open(), it
+should be cached so that the given connection can be restored properly
+at PM resume.  We need just to replace the corresponding
+snd_hda_codec_write() call with snd_hda_codec_write_cache().
 
-Without this change, controllers won't do runtime suspend if system
-suspend or hibernation isn't enabled.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Yang Yingliang <yangyingliang@huawei.com>
+Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/ehci-pci.c |    2 +-
- drivers/usb/host/uhci-pci.c |    2 +-
- drivers/usb/host/xhci-pci.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
+ sound/pci/hda/patch_hdmi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -549,7 +549,7 @@ static struct pci_driver ehci_pci_driver
- 	.remove =	usb_hcd_pci_remove,
- 	.shutdown = 	usb_hcd_pci_shutdown,
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -910,7 +910,7 @@ static int hdmi_pcm_open(struct hda_pcm_
+ 	per_cvt->assigned = 1;
+ 	hinfo->nid = per_cvt->cvt_nid;
  
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_PM
- 	.driver =	{
- 		.pm =	&usb_hcd_pci_pm_ops
- 	},
---- a/drivers/usb/host/uhci-pci.c
-+++ b/drivers/usb/host/uhci-pci.c
-@@ -293,7 +293,7 @@ static struct pci_driver uhci_pci_driver
- 	.remove =	usb_hcd_pci_remove,
- 	.shutdown =	uhci_shutdown,
- 
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_PM
- 	.driver =	{
- 		.pm =	&usb_hcd_pci_pm_ops
- 	},
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -335,7 +335,7 @@ static struct pci_driver xhci_pci_driver
- 	/* suspend and resume implemented later */
- 
- 	.shutdown = 	usb_hcd_pci_shutdown,
--#ifdef CONFIG_PM_SLEEP
-+#ifdef CONFIG_PM
- 	.driver = {
- 		.pm = &usb_hcd_pci_pm_ops
- 	},
+-	snd_hda_codec_write(codec, per_pin->pin_nid, 0,
++	snd_hda_codec_write_cache(codec, per_pin->pin_nid, 0,
+ 			    AC_VERB_SET_CONNECT_SEL,
+ 			    mux_idx);
+ 	snd_hda_spdif_ctls_assign(codec, pin_idx, per_cvt->cvt_nid);
 
 
