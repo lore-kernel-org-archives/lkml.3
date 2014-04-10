@@ -1,101 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935073AbaDJJS5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 05:18:57 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:38596 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933057AbaDJJSv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 05:18:51 -0400
-Date: Thu, 10 Apr 2014 11:18:24 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        "Michael L. Semon" <mlsemon35@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: 3.14.0+/x86: lockdep and mutexes not getting along
-Message-ID: <20140410091824.GL10526@twins.programming.kicks-ass.net>
-References: <alpine.LNX.2.11.1404060059020.8208@bpserver.ds>
- <20140409121940.GA12890@node.dhcp.inet.fi>
- <1397108579.2586.15.camel@j-VirtualBox>
+	id S935084AbaDJJV6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 05:21:58 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45396 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933057AbaDJJVw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 05:21:52 -0400
+Date: Thu, 10 Apr 2014 11:21:44 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>,
+        dougthompson@xmission.com, linux-edac@vger.kernel.org,
+        michal.simek@xilinx.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rob@landley.net, sorenb@xilinx.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kpc528@gmail.com, kalluripunnaiahchoudary@gmail.com,
+        punnaia@xilinx.com
+Subject: Re: [RFC PATCH v2] edac: synopsys: Added EDAC support for zynq ddr
+ ecc controller
+Message-ID: <20140410092144.GD29093@pd.tnic>
+References: <1220b715-6fc2-42ed-8393-b9859fc0deb9@TX2EHSMHS021.ehs.local>
+ <20140408204047.GQ30077@pd.tnic>
+ <534633C0.9090905@monstr.eu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1397108579.2586.15.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <534633C0.9090905@monstr.eu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 10:42:59PM -0700, Jason Low wrote:
-> As a starting point, would either of you like to test the following
-> patch to see if it fixes the issue? This patch essentially generates the
-> same code as in older kernels in the debug case. This applies on top of
-> kernels with both commits 6f008e72cd11 and 1d8fe7dc8078.
+On Thu, Apr 10, 2014 at 08:01:36AM +0200, Michal Simek wrote:
+> Just add it to Zynq maintainer fragment as we are doing for non
+> zynq/xilinx drivers.
+
+Yep, as a file pattern F:
+
+> At least the is the first time when someone saying that only some
+> functions should be documented.
+
+I don't see the need to document simple functions which are *obvious*.
+But if you want to do that, I'm not going to stop you so be my guest.
 
 
-So I managed to reproduce, and the below makes it go away. I just don't
-understand why though. will stare more.
+> I don't think this is good to do. When we remove this prefix entirely
+> it is bigger chance that the same function name will be used by
+> another driver. It is not a problem with linking but the same
+> functions names will be listed in System.map which will complicate
+> debugging.
 
----
---- a/kernel/locking/mutex-debug.c
-+++ b/kernel/locking/mutex-debug.c
-@@ -83,12 +83,6 @@ void debug_mutex_unlock(struct mutex *lo
- 
- 	DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
- 	mutex_clear_owner(lock);
--
--	/*
--	 * __mutex_slowpath_needs_to_unlock() is explicitly 0 for debug
--	 * mutexes so that we can do it here after we've verified state.
--	 */
--	atomic_set(&lock->count, 1);
- }
- 
- void debug_mutex_init(struct mutex *lock, const char *name,
---- a/kernel/locking/mutex.c
-+++ b/kernel/locking/mutex.c
-@@ -34,13 +34,6 @@
- #ifdef CONFIG_DEBUG_MUTEXES
- # include "mutex-debug.h"
- # include <asm-generic/mutex-null.h>
--/*
-- * Must be 0 for the debug case so we do not do the unlock outside of the
-- * wait_lock region. debug_mutex_unlock() will do the actual unlock in this
-- * case.
-- */
--# undef __mutex_slowpath_needs_to_unlock
--# define  __mutex_slowpath_needs_to_unlock()	0
- #else
- # include "mutex.h"
- # include <asm/mutex.h>
-@@ -688,6 +681,17 @@ __mutex_unlock_common_slowpath(atomic_t
- 	unsigned long flags;
- 
- 	/*
-+	 * In the debug cases, obtain the wait_lock first
-+	 * before calling the following debugging functions.
-+	 */
-+#ifdef CONFIG_DEBUG_MUTEXES
-+	spin_lock_mutex(&lock->wait_lock, flags);
-+	mutex_release(&lock->dep_map, nested, _RET_IP_);
-+	debug_mutex_unlock(lock);
-+#endif
-+
-+
-+	/*
- 	 * some architectures leave the lock unlocked in the fastpath failure
- 	 * case, others need to leave it locked. In the later case we have to
- 	 * unlock it here
-@@ -695,9 +699,11 @@ __mutex_unlock_common_slowpath(atomic_t
- 	if (__mutex_slowpath_needs_to_unlock())
- 		atomic_set(&lock->count, 1);
- 
-+#ifndef CONFIG_DEBUG_MUTEXES
- 	spin_lock_mutex(&lock->wait_lock, flags);
- 	mutex_release(&lock->dep_map, nested, _RET_IP_);
- 	debug_mutex_unlock(lock);
-+#endif
- 
- 	if (!list_empty(&lock->wait_list)) {
- 		/* get the first entry from the wait-list: */
+Ok, fair enough. You probably still want to make them shorter, though,
+so that your code doesn't have to be line-broken too much. For example,
+since we only load a single edac driver per system, you can shorten the
+prefix to "edac_" only.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
