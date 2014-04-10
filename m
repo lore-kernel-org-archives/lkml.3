@@ -1,90 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935513AbaDJL0D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 07:26:03 -0400
-Received: from mta-out.inet.fi ([195.156.147.13]:39674 "EHLO jenni2.inet.fi"
+	id S935518AbaDJL31 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 07:29:27 -0400
+Received: from mga03.intel.com ([143.182.124.21]:59014 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935480AbaDJL0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 07:26:00 -0400
-Date: Thu, 10 Apr 2014 14:25:47 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Dave Jones <davej@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Vlastimil Babka <vbabka@suse.cz>
-Subject: Re: mm: kernel BUG at mm/huge_memory.c:1829!
-Message-ID: <20140410112547.GA24788@node.dhcp.inet.fi>
-References: <53440991.9090001@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53440991.9090001@oracle.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+	id S935102AbaDJL3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 07:29:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,833,1389772800"; 
+   d="scan'208";a="417327009"
+Message-ID: <1397129361.11914.96.camel@smile.fi.intel.com>
+Subject: Re: [PATCH v3 4/8] DMA: Freescale: add fsl_dma_free_descriptor() to
+ reduce code duplication
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: hongbo.zhang@freescale.com
+Cc: vkoul@infradead.org, dan.j.williams@intel.com, dmaengine@vger.kernel.org,
+        scottwood@freescale.com, leo.li@freescale.com,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Date: Thu, 10 Apr 2014 14:29:21 +0300
+In-Reply-To: <1397113805-24171-5-git-send-email-hongbo.zhang@freescale.com>
+References: <1397113805-24171-1-git-send-email-hongbo.zhang@freescale.com>
+	 <1397113805-24171-5-git-send-email-hongbo.zhang@freescale.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 10:37:05AM -0400, Sasha Levin wrote:
-> Hi all,
+On Thu, 2014-04-10 at 15:10 +0800, hongbo.zhang@freescale.com wrote:
+> From: Hongbo Zhang <hongbo.zhang@freescale.com>
 > 
-> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> kernel, I've stumbled on the following:
+> There are several places where descriptors are freed using identical code.
+> This patch puts this code into a function to reduce code duplication.
 > 
-> [ 1275.253114] kernel BUG at mm/huge_memory.c:1829!
-> [ 1275.253642] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> [ 1275.254775] Dumping ftrace buffer:
-> [ 1275.255631]    (ftrace buffer empty)
-> [ 1275.256440] Modules linked in:
-> [ 1275.257347] CPU: 20 PID: 22807 Comm: trinity-c299 Not tainted 3.14.0-next-20140407-sasha-00023-gd35b0d6 #382
-> [ 1275.258686] task: ffff8803e7873000 ti: ffff8803e7896000 task.ti: ffff8803e7896000
-> [ 1275.259416] RIP: __split_huge_page (mm/huge_memory.c:1829 (discriminator 1))
-> [ 1275.260527] RSP: 0018:ffff8803e7897bb8  EFLAGS: 00010297
-> [ 1275.261323] RAX: 000000000000012c RBX: ffff8803e789d600 RCX: 0000000000000006
-> [ 1275.261323] RDX: 0000000000005b80 RSI: ffff8803e7873d00 RDI: 0000000000000282
-> [ 1275.261323] RBP: ffff8803e7897c68 R08: 0000000000000000 R09: 0000000000000000
-> [ 1275.261323] R10: 0000000000000001 R11: 30303320746e756f R12: 0000000000000000
-> [ 1275.261323] R13: 0000000000a00000 R14: ffff8803ede73000 R15: ffffea0010030000
-> [ 1275.261323] FS:  00007f899d23f700(0000) GS:ffff880437000000(0000) knlGS:0000000000000000
-> [ 1275.261323] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [ 1275.261323] CR2: 00000000024cf048 CR3: 00000003e787f000 CR4: 00000000000006a0
-> [ 1275.261323] DR0: 0000000000696000 DR1: 0000000000696000 DR2: 0000000000000000
-> [ 1275.261323] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-> [ 1275.261323] Stack:
-> [ 1275.261323]  ffff8803e7897bd8 ffff880024dab898 ffff8803e7897bd8 ffffffffac1bea0e
-> [ 1275.261323]  ffff8803e7897c28 0000000000000282 00000014b06cc072 0000000000000000
-> [ 1275.261323]  0000012be7897c28 0000000000000a00 ffff880024dab8d0 ffff880024dab898
-> [ 1275.261323] Call Trace:
-> [ 1275.261323] ? put_lock_stats.isra.12 (arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
-> [ 1275.261323] ? down_write (kernel/locking/rwsem.c:51 (discriminator 2))
-> [ 1275.261323] ? split_huge_page_to_list (mm/huge_memory.c:1874)
-> [ 1275.261323] split_huge_page_to_list (include/linux/vmstat.h:37 mm/huge_memory.c:1879)
-> [ 1275.261323] __split_huge_page_pmd (mm/huge_memory.c:2811)
-> [ 1275.261323] ? mutex_unlock (kernel/locking/mutex.c:220)
-> [ 1275.261323] ? __mutex_unlock_slowpath (arch/x86/include/asm/paravirt.h:809 kernel/locking/mutex.c:713 kernel/locking/mutex.c:722)
-> [ 1275.261323] ? get_parent_ip (kernel/sched/core.c:2471)
-> [ 1275.261323] ? preempt_count_sub (kernel/sched/core.c:2526)
-> [ 1275.261323] follow_page_mask (mm/memory.c:1518 (discriminator 1))
-> [ 1275.261323] SYSC_move_pages (mm/migrate.c:1227 mm/migrate.c:1353 mm/migrate.c:1508)
-> [ 1275.261323] ? SYSC_move_pages (include/linux/rcupdate.h:800 mm/migrate.c:1472)
-> [ 1275.261323] ? sched_clock_local (kernel/sched/clock.c:213)
-> [ 1275.261323] SyS_move_pages (mm/migrate.c:1456)
-> [ 1275.261323] tracesys (arch/x86/kernel/entry_64.S:749)
-> [ 1275.261323] Code: c0 01 39 45 94 74 18 41 8b 57 18 48 c7 c7 90 5e 6d b0 31 c0 8b 75 94 83 c2 01 e8 3d 6a 23 03 41 8b 47 18 83 c0 01 39 45 94 74 02 <0f> 0b 49 8b 07 48 89 c2 48 c1 e8 34 83 e0 03 48 c1 ea 36 4c 8d
-> [ 1275.261323] RIP __split_huge_page (mm/huge_memory.c:1829 (discriminator 1))
-> [ 1275.261323]  RSP <ffff8803e7897bb8>
+> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+> Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
+> ---
+>  drivers/dma/fsldma.c |   30 ++++++++++++++++++------------
+>  1 file changed, 18 insertions(+), 12 deletions(-)
 > 
-> Looking at the code, there was supposed to be a printk printing both
-> mapcounts if they're different. However, there was no matching entry
-> in the log for that.
+> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+> index b71cc04..b5a0ffa 100644
+> --- a/drivers/dma/fsldma.c
+> +++ b/drivers/dma/fsldma.c
+> @@ -418,6 +418,19 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
+>  }
+>  
+>  /**
+> + * fsl_dma_free_descriptor - Free descriptor from channel's DMA pool.
+> + * @chan : Freescale DMA channel
+> + * @desc: descriptor to be freed
+> + */
+> +static void fsl_dma_free_descriptor(struct fsldma_chan *chan,
+> +		struct fsl_desc_sw *desc)
+> +{
+> +	list_del(&desc->node);
+> +	chan_dbg(chan, "LD %p free\n", desc);
+> +	dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
+> +}
+> +
+> +/**
+>   * fsl_dma_alloc_descriptor - Allocate descriptor from channel's DMA pool.
+>   * @chan : Freescale DMA channel
+>   *
+> @@ -489,11 +502,8 @@ static void fsldma_free_desc_list(struct fsldma_chan *chan,
+>  {
+>  	struct fsl_desc_sw *desc, *_desc;
+>  
+> -	list_for_each_entry_safe(desc, _desc, list, node) {
+> -		list_del(&desc->node);
+> -		chan_dbg(chan, "LD %p free\n", desc);
+> -		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
+> -	}
+> +	list_for_each_entry_safe(desc, _desc, list, node)
+> +		fsl_dma_free_descriptor(chan, desc);
+>  }
+>  
+>  static void fsldma_free_desc_list_reverse(struct fsldma_chan *chan,
+> @@ -501,11 +511,8 @@ static void fsldma_free_desc_list_reverse(struct fsldma_chan *chan,
+>  {
+>  	struct fsl_desc_sw *desc, *_desc;
+>  
+> -	list_for_each_entry_safe_reverse(desc, _desc, list, node) {
+> -		list_del(&desc->node);
+> -		chan_dbg(chan, "LD %p free\n", desc);
+> -		dma_pool_free(chan->desc_pool, desc, desc->async_tx.phys);
+> -	}
+> +	list_for_each_entry_safe_reverse(desc, _desc, list, node)
+> +		fsl_dma_free_descriptor(chan, desc);
+>  }
+>  
+>  /**
+> @@ -819,8 +826,7 @@ static void fsldma_cleanup_descriptor(struct fsldma_chan *chan,
+>  	dma_run_dependencies(txd);
+>  
+>  	dma_descriptor_unmap(txd);
+> -	chan_dbg(chan, "LD %p free\n", desc);
+> -	dma_pool_free(chan->desc_pool, desc, txd->phys);
+> +	fsl_dma_free_descriptor(chan, desc);
 
-And I was able to trigger it other way around:
+Here is no list_del() call since it's been called in dma_do_tasklet().
+What will be the result of double list_del() against the same node?
 
-[  156.918770] mapcount 2 page_mapcount 3
+>  }
+>  
+>  /**
 
-But no BUG_ON().
 
 -- 
- Kirill A. Shutemov
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
+
