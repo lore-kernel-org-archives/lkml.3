@@ -1,236 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934985AbaDJOIJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 10:08:09 -0400
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:55577
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933057AbaDJOID (ORCPT
+	id S935127AbaDJOOk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 10:14:40 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:57697 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934712AbaDJOOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 10:08:03 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -6
-X-BigFish: VS-6(zz98dI1458K154dI1432Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh8275dh1de097hz2dh87h2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh26d3h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 10 Apr 2014 22:07:47 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Nicolin Chen <Guangyu.Chen@freescale.com>
-CC: <broonie@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <alsa-devel@alsa-project.org>,
-        <timur@tabi.org>, <Li.Xiubo@freescale.com>,
-        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <rob@landley.net>, <galak@codeaurora.org>,
-        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
-        <pawel.moll@arm.com>, <robh+dt@kernel.org>
-Subject: Re: [PATCH v5] ASoC: fsl_sai: Add clock controls for SAI
-Message-ID: <20140410140745.GE28420@dragon>
-References: <1397128992-3609-1-git-send-email-Guangyu.Chen@freescale.com>
+	Thu, 10 Apr 2014 10:14:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1397128992-3609-1-git-send-email-Guangyu.Chen@freescale.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <000701cf54a2$7c1379c0$743a6d40$%han@samsung.com>
+References: <1393480414-19473-1-git-send-email-acourbot@nvidia.com>
+ <1393480414-19473-2-git-send-email-acourbot@nvidia.com> <CAAVeFu+XUzZ7ozMOcp6A-gZJ9o8DZFrdh1j4LvCQtoTcu=PP1g@mail.gmail.com>
+ <000701cf54a2$7c1379c0$743a6d40$%han@samsung.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 10 Apr 2014 23:14:16 +0900
+Message-ID: <CAAVeFuKJnSk2XSsMZZKMfyabzJ5CYdqWdE91H5uHiYFC1r6HxA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ARM: SAMSUNG: remove gpio flags in dev-backlight
+To: Jingoo Han <jg1.han@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Thierry Reding <thierry.reding@gmail.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>, Bryan Wu <cooloney@gmail.com>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 07:23:12PM +0800, Nicolin Chen wrote:
-> The SAI mainly has the following clocks:
->   bus clock
->     control and configure registers and to generate synchronous
->     interrupts and DMA requests.
-> 
->   mclk1, mclk2, mclk3
->     to generate the bit clock when the receiver or transmitter is
->     configured for an internally generated bit clock.
-> 
-> So this patch adds these clocks and their clock controls to the driver,
-> meanwhile, corrects the existing DTS accordingly so those platforms can
-> benifit from the further feature with different clock sources.
-> 
-> [ To concern the old DTB cases, I've added a bit of extra code to make
->   the driver compatible with them. And by marking clock NULL if failed
->   to get, the clk_prepare() or clk_get_rate() would easily return 0
->   so no further path should be broken. -- by Nicolin ]
+On Thu, Apr 10, 2014 at 6:51 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+> On Thursday, April 10, 2014 1:17 PM, Alexandre Courbot wrote:
+>>
+>> Ping, can I have the Samsung folks review and ,aybe even merge this
+>> patch? enable_gpio_flags is never used in any code, is replaced by
+>> gpiod, and we would like to remove it altogether from pwm_bl. Thanks!
+>
+> OK, I see. It looks good.
+>
+> As far as I know, 'enable_gpio_flags' has not been being used
+> for Samsung platform. So, there will be no side effect,
+> if 'enable_gpio_flags' is removed from 'arch/arm/plat-samsung'
+> directory.
+>
+> Reviewed-by: Jingoo Han <jg1.han@samsung.com>
 
-In this case, the arch/arm/boot/dts/vf610.dtsi can just go via IMX tree,
-since nothing should be broken on sound tree even without dts change?
+Great, thanks. Ben, Kukjin, could we have your Acked-by?
 
-Shawn
+Thierry, if the Samsung maintainers are ok with it, and 2/2 of this
+series is also ok for you (you merged the same for simple-panel
+already), can you take both into your tree?
 
-> 
-> Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
-> Acked-by: Xiubo Li <Li.Xiubo@freescale.com>
-> Acked-by: Shawn Guo <shawn.guo@linaro.org>
-> ---
-> 
-> Changelog
-> v5:
->  * Dropped mclk preparing and enabling since we are not using them currecntly.
->  * Made the change compatible to the old DTB.
->  * Added returned error value print.
-> v4:
->  * Merged into single patch.
->  * Fixed bus clock ID on vf610.
-> v3:
->  * Use int type for ret instead of u32.
->  * Added Acked-by and Tested-by from Xiubo Li.
-> v2:
->  * Appended two extra mclks to the driver since SAI actually has three.
->  * Renamed clock name to 'bus' and 'mclk' according to the reference manual.
-> 
->  .../devicetree/bindings/sound/fsl-sai.txt          |  9 +++--
->  arch/arm/boot/dts/vf610.dtsi                       |  6 ++--
->  sound/soc/fsl/fsl_sai.c                            | 38 ++++++++++++++++++++--
->  sound/soc/fsl/fsl_sai.h                            |  4 +++
->  4 files changed, 50 insertions(+), 7 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/sound/fsl-sai.txt b/Documentation/devicetree/bindings/sound/fsl-sai.txt
-> index 35c09fe..0f4e238 100644
-> --- a/Documentation/devicetree/bindings/sound/fsl-sai.txt
-> +++ b/Documentation/devicetree/bindings/sound/fsl-sai.txt
-> @@ -10,7 +10,8 @@ Required properties:
->  - compatible: Compatible list, contains "fsl,vf610-sai" or "fsl,imx6sx-sai".
->  - reg: Offset and length of the register set for the device.
->  - clocks: Must contain an entry for each entry in clock-names.
-> -- clock-names : Must include the "sai" entry.
-> +- clock-names : Must include the "bus" for register access and "mclk1" "mclk2"
-> +  "mclk3" for bit clock and frame clock providing.
->  - dmas : Generic dma devicetree binding as described in
->    Documentation/devicetree/bindings/dma/dma.txt.
->  - dma-names : Two dmas have to be defined, "tx" and "rx".
-> @@ -30,8 +31,10 @@ sai2: sai@40031000 {
->  	      reg = <0x40031000 0x1000>;
->  	      pinctrl-names = "default";
->  	      pinctrl-0 = <&pinctrl_sai2_1>;
-> -	      clocks = <&clks VF610_CLK_SAI2>;
-> -	      clock-names = "sai";
-> +	      clocks = <&clks VF610_CLK_PLATFORM_BUS>,
-> +		     <&clks VF610_CLK_SAI2>,
-> +		     <&clks 0>, <&clks 0>;
-> +	      clock-names = "bus", "mclk1", "mclk2", "mclk3";
->  	      dma-names = "tx", "rx";
->  	      dmas = <&edma0 0 VF610_EDMA_MUXID0_SAI2_TX>,
->  		   <&edma0 0 VF610_EDMA_MUXID0_SAI2_RX>;
-> diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-> index d31ce1b..4c3cd59 100644
-> --- a/arch/arm/boot/dts/vf610.dtsi
-> +++ b/arch/arm/boot/dts/vf610.dtsi
-> @@ -139,8 +139,10 @@
->  				compatible = "fsl,vf610-sai";
->  				reg = <0x40031000 0x1000>;
->  				interrupts = <0 86 0x04>;
-> -				clocks = <&clks VF610_CLK_SAI2>;
-> -				clock-names = "sai";
-> +				clocks = <&clks VF610_CLK_PLATFORM_BUS>,
-> +				       <&clks VF610_CLK_SAI2>,
-> +				       <&clks 0>, <&clks 0>;
-> +				clock-names = "bus", "mclk1", "mclk2", "mclk3";
->  				status = "disabled";
->  			};
->  
-> diff --git a/sound/soc/fsl/fsl_sai.c b/sound/soc/fsl/fsl_sai.c
-> index db9f75e..5fff2e1 100644
-> --- a/sound/soc/fsl/fsl_sai.c
-> +++ b/sound/soc/fsl/fsl_sai.c
-> @@ -401,7 +401,15 @@ static int fsl_sai_startup(struct snd_pcm_substream *substream,
->  		struct snd_soc_dai *cpu_dai)
->  {
->  	struct fsl_sai *sai = snd_soc_dai_get_drvdata(cpu_dai);
-> +	struct device *dev = &sai->pdev->dev;
->  	u32 reg;
-> +	int ret;
-> +
-> +	ret = clk_prepare_enable(sai->bus_clk);
-> +	if (ret) {
-> +		dev_err(dev, "failed to enable bus clock: %d\n", ret);
-> +		return ret;
-> +	}
->  
->  	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
->  		reg = FSL_SAI_TCR3;
-> @@ -427,6 +435,8 @@ static void fsl_sai_shutdown(struct snd_pcm_substream *substream,
->  
->  	regmap_update_bits(sai->regmap, reg, FSL_SAI_CR3_TRCE,
->  			   ~FSL_SAI_CR3_TRCE);
-> +
-> +	clk_disable_unprepare(sai->bus_clk);
->  }
->  
->  static const struct snd_soc_dai_ops fsl_sai_pcm_dai_ops = {
-> @@ -559,7 +569,8 @@ static int fsl_sai_probe(struct platform_device *pdev)
->  	struct fsl_sai *sai;
->  	struct resource *res;
->  	void __iomem *base;
-> -	int irq, ret;
-> +	char tmp[8];
-> +	int irq, ret, i;
->  
->  	sai = devm_kzalloc(&pdev->dev, sizeof(*sai), GFP_KERNEL);
->  	if (!sai)
-> @@ -582,12 +593,35 @@ static int fsl_sai_probe(struct platform_device *pdev)
->  		return PTR_ERR(base);
->  
->  	sai->regmap = devm_regmap_init_mmio_clk(&pdev->dev,
-> -			"sai", base, &fsl_sai_regmap_config);
-> +			"bus", base, &fsl_sai_regmap_config);
-> +
-> +	/* Compatible with old DTB cases */
-> +	if (IS_ERR(sai->regmap))
-> +		sai->regmap = devm_regmap_init_mmio_clk(&pdev->dev,
-> +				"sai", base, &fsl_sai_regmap_config);
->  	if (IS_ERR(sai->regmap)) {
->  		dev_err(&pdev->dev, "regmap init failed\n");
->  		return PTR_ERR(sai->regmap);
->  	}
->  
-> +	/* No error out for old DTB cases but only mark the clock NULL */
-> +	sai->bus_clk = devm_clk_get(&pdev->dev, "bus");
-> +	if (IS_ERR(sai->bus_clk)) {
-> +		dev_err(&pdev->dev, "failed to get bus clock: %ld\n",
-> +				PTR_ERR(sai->bus_clk));
-> +		sai->bus_clk = NULL;
-> +	}
-> +
-> +	for (i = 0; i < FSL_SAI_MCLK_MAX; i++) {
-> +		sprintf(tmp, "mclk%d", i + 1);
-> +		sai->mclk_clk[i] = devm_clk_get(&pdev->dev, tmp);
-> +		if (IS_ERR(sai->mclk_clk[i])) {
-> +			dev_err(&pdev->dev, "failed to get mclk%d clock: %ld\n",
-> +					i + 1, PTR_ERR(sai->mclk_clk[i]));
-> +			sai->mclk_clk[i] = NULL;
-> +		}
-> +	}
-> +
->  	irq = platform_get_irq(pdev, 0);
->  	if (irq < 0) {
->  		dev_err(&pdev->dev, "no irq for node %s\n", np->full_name);
-> diff --git a/sound/soc/fsl/fsl_sai.h b/sound/soc/fsl/fsl_sai.h
-> index 677670d..0e6c9f5 100644
-> --- a/sound/soc/fsl/fsl_sai.h
-> +++ b/sound/soc/fsl/fsl_sai.h
-> @@ -119,6 +119,8 @@
->  #define FSL_SAI_CLK_MAST2	2
->  #define FSL_SAI_CLK_MAST3	3
->  
-> +#define FSL_SAI_MCLK_MAX	3
-> +
->  /* SAI data transfer numbers per DMA request */
->  #define FSL_SAI_MAXBURST_TX 6
->  #define FSL_SAI_MAXBURST_RX 6
-> @@ -126,6 +128,8 @@
->  struct fsl_sai {
->  	struct platform_device *pdev;
->  	struct regmap *regmap;
-> +	struct clk *bus_clk;
-> +	struct clk *mclk_clk[FSL_SAI_MCLK_MAX];
->  
->  	bool big_endian_regs;
->  	bool big_endian_data;
-> -- 
-> 1.8.4
-> 
-> 
-
+Thanks,
+Alex.
