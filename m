@@ -1,65 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934673AbaDJGFy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 02:05:54 -0400
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:46423
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933287AbaDJGFw convert rfc822-to-8bit (ORCPT
+	id S934677AbaDJGMZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 02:12:25 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:34995 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942AbaDJGMX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 02:05:52 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/3] FTM PWM adds regmap and endianness support.
-Thread-Topic: [PATCH 0/3] FTM PWM adds regmap and endianness support.
-Thread-Index: AQHPRMe0k0rd8jXWS0KRu9iApNrcapsKfAGg
-Date: Thu, 10 Apr 2014 06:05:31 +0000
-Message-ID: <1e190701f1b54403b94057472c7cbc56@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1395377590-23537-1-git-send-email-Li.Xiubo@freescale.com>
-In-Reply-To: <1395377590-23537-1-git-send-email-Li.Xiubo@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 0177904E6B
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(979002)(6009001)(428001)(377454003)(51704005)(189002)(199002)(13464003)(92566001)(79102001)(85852003)(76576001)(74316001)(81342001)(2201001)(77982001)(20776003)(81542001)(99286001)(87936001)(4396001)(19580405001)(46102001)(86362001)(33646001)(74502001)(83322001)(76482001)(99396002)(66066001)(2656002)(80976001)(83072002)(19580395003)(80022001)(74662001)(31966008)(54356999)(50986999)(76176999)(77096999)(24736002)(217873001)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB506;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:685F47B2.1C839F2E.39653BAC.D4E6F9CA.20124;MLV:ovrnspm;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 10 Apr 2014 02:12:23 -0400
+Message-ID: <53463641.1030800@monstr.eu>
+Date: Thu, 10 Apr 2014 08:12:17 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Borislav Petkov <bp@alien8.de>
+CC: Punnaiah Choudary <kpc528@gmail.com>, Rob Herring <robherring2@gmail.com>,
+        Punnaiah Choudary Kalluri 
+	<punnaiah.choudary.kalluri@xilinx.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-edac@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        punnaiah choudary kalluri <kalluripunnaiahchoudary@gmail.com>,
+        punnaiah choudary kalluri <punnaia@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [RFC PATCH] edac: add support for ARM PL310 L2 cache parity
+References: <1393770760-32550-1-git-send-email-punnaia@xilinx.com> <a1a9e47a-069c-4285-9899-d5a58cf532c2@CO9EHSMHS003.ehs.local> <20140409113246.GA8778@pd.tnic> <CAL_Jsq+gszc+R_BrLtHKEBGYd=3T+sE1d+-HoF9aYZt6C2k5-g@mail.gmail.com> <20140409151932.GK6529@pd.tnic> <CAHLkNHJTA5bGD1zAfzE2JrDFAWvmgYyYjir+4vR-d9Fe2-E48g@mail.gmail.com> <20140409174701.GO6529@pd.tnic>
+In-Reply-To: <20140409174701.GO6529@pd.tnic>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="ME3xMGXB0ilkieRoxEIfFGdTbD860ewG6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Therry,
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--ME3xMGXB0ilkieRoxEIfFGdTbD860ewG6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Ping :)
+On 04/09/2014 07:47 PM, Borislav Petkov wrote:
+> On Wed, Apr 09, 2014 at 10:59:49PM +0530, Punnaiah Choudary wrote:
+>> There is a driver file cache-l2x0.c under arch/arm/mm for pl310 cache
+>> configuration and management. Russel king had suggested to use
+>> single driver file for both pl310 edac implementation and cache-l2x0.c=
+
+>> Here is the thread
+>> http://www.spinics.net/lists/arm-kernel/msg320407.html
+>>
+>> please provide your inputs
+>=20
+> Well, it is very simple - you don't really need an EDAC compilation uni=
+t
+> just so that you can report errors - you can very well do that in your
+> cache-l2x0.c and boom, problem solved.
+>=20
+> Simply move the irq handler and the parity error checker to that file.
+
+I am just curious about this recommendation. Does it mean that we shouldn=
+'t
+use edac interface just for reporting problems?
+
+I didn't play with it but I guess that there is a record about edac drive=
+r
+via sysfs, etc. You could read some useful information that you know
+what it is protected and I hope that edac interface bring any value
+to reporting errors comparing to just printk message from IRQ handler.
+
+My question is if using printk in IRQ handler and report problem is equal=
+ to
+reporting this via edac interface. Or it is just easy way to do but
+using edac interface is right solution and how to do it properly
+is different question.
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
 
 
-> -----Original Message-----
-> From: Xiubo Li [mailto:Li.Xiubo@freescale.com]
-> Sent: Friday, March 21, 2014 12:53 PM
-> To: thierry.reding@gmail.com; linux-pwm@vger.kernel.org
-> Cc: broonie@kernel.org; swarren@nvidia.com; linux-kernel@vger.kernel.org;
-> Xiubo Li-B47053
-> Subject: [PATCH 0/3] FTM PWM adds regmap and endianness support.
-> 
-> 
-> Xiubo Li (3):
->   pwm: ftm-pwm: Clean up the code.
->   pwm: ftm-pwm: Convert to direct regmap API usage.
->   pwm: ftm-pwm: Add big-endian support
-> 
->  drivers/pwm/pwm-fsl-ftm.c | 96 ++++++++++++++++++++++++++--------------------
-> -
->  1 file changed, 53 insertions(+), 43 deletions(-)
-> 
-> --
-> 1.8.4
-> 
+--ME3xMGXB0ilkieRoxEIfFGdTbD860ewG6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlNGNkEACgkQykllyylKDCFcdwCfWd+zLKLdg7fKhj2az7pGDH2u
+6eEAn14us5SrSATJ2vm0EKz1wf7BtV8B
+=Jujl
+-----END PGP SIGNATURE-----
+
+--ME3xMGXB0ilkieRoxEIfFGdTbD860ewG6--
