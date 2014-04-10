@@ -1,92 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965927AbaDJKHk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 06:07:40 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42663 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965757AbaDJKHd (ORCPT
+	id S965907AbaDJKHZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 06:07:25 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:53305 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965761AbaDJKGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 06:07:33 -0400
-Message-ID: <53466D63.8080808@canonical.com>
-Date: Thu, 10 Apr 2014 12:07:31 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Thomas Hellstrom <thellstrom@vmware.com>
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        ccross@google.com, linux-media@vger.kernel.org
-Subject: Re: [PATCH 2/2] [RFC] reservation: add suppport for read-only access
- using rcu
-References: <20140409144239.26648.57918.stgit@patser> <20140409144831.26648.79163.stgit@patser> <53465A53.1090500@vmware.com>
-In-Reply-To: <53465A53.1090500@vmware.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Apr 2014 06:06:55 -0400
+X-AuditID: cbfee68f-b7f156d00000276c-98-53466d25738d
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: kgene.kim@samsung.com, t.figa@samsung.com,
+        linux-samsung-soc@vger.kernel.org
+Cc: kyungmin.park@samsung.com, cw00.choi@samsung.com, inki.dae@samsung.com,
+        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 23/27] ARM: dts: exynos3250: Add spi dt node to support spi bus
+Date: Thu, 10 Apr 2014 19:06:13 +0900
+Message-id: <1397124377-16969-15-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+In-reply-to: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
+References: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDLMWRmVeSWpSXmKPExsWyRsSkRFc11y3Y4O4/MYvrX56zWnz+0MJu
+	Men+BBaL3gVX2SzONr1ht9j0+BqrxeVdc9gsZpzfx2QxY/JLNov1M16zWOzdOZnRgdtj85J6
+	j74tqxg9Pm+SC2CO4rJJSc3JLEst0rdL4Mp4eOsOe0E/f8XE71dYGhibeboYOTkkBEwkll1t
+	ZIOwxSQu3FsPZHNxCAksZZR48u41UxcjB1jR7fm6EPFFjBK7n00BaxASaGKSWHpTBcRmE9CS
+	2P/iBlhcRCBA4sfxd2A2s8BNRolj78NA5ggL+Eu8nlwJEmYRUJW4uWEfO4jNK+Am8XDLZXaI
+	G+QkPux5BGZzAsVnLjoJtcpVoufRRWaImlXsEge3akDMEZD4NvkQC8SZshKbDkCVSEocXHGD
+	ZQKj8AJGhlWMoqkFyQXFSelFxnrFibnFpXnpesn5uZsYgSF/+t+z/h2Mdw9YH2JMBho3kVlK
+	NDkfGDN5JfGGxmZGFqYmpsZG5pZmpAkrifPef5gUJCSQnliSmp2aWpBaFF9UmpNafIiRiYNT
+	qoFxH/cKCX39fxK87zZ+zjsd4izZatOo0qffJWmQecrcYOrlRysFn7vf2f7gxVzDqvrk7W+Y
+	L3CKL7nUzLJf4tUu12dv5nX47fG9wORSV2Hcfd7seJKY8slznWJJOfYxNvkLpkdWdEn2l01f
+	8C5j7g1hrQOnHCNrJ2hUf1ZY8E/VY//fFdOFg7OUWIozEg21mIuKEwF7SH24jwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t9jAV3VXLdggw2H+Syuf3nOavH5Qwu7
+	xaT7E1gsehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PFjMkv2SzWz3jNYrF352RGB26PzUvq
+	Pfq2rGL0+LxJLoA5qoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VW
+	ycUnQNctMwfoICWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYQ1jxsNbd9gL
+	+vkrJn6/wtLA2MzTxcjBISFgInF7vm4XIyeQKSZx4d56ti5GLg4hgUWMErufTWEDSQgJNDFJ
+	LL2pAmKzCWhJ7H9xAywuIhAg8eP4OzCbWeAmo8Sx92EgM4UF/CVeT64ECbMIqErc3LCPHcTm
+	FXCTeLjlMjvELjmJD3segdmcQPGZi05CrXKV6Hl0kXkCI+8CRoZVjKKpBckFxUnpuUZ6xYm5
+	xaV56XrJ+bmbGMEx9Ux6B+OqBotDjAIcjEo8vAeWuQYLsSaWFVfmHmKU4GBWEuHdnekWLMSb
+	klhZlVqUH19UmpNafIgxGeiqicxSosn5wHjPK4k3NDYxM7I0Mje0MDI2J01YSZz3YKt1oJBA
+	emJJanZqakFqEcwWJg5OqQbGVT1fSx50vLpyYc2u425BOctcDAQfrs2tF5hnKcPhyp/nv/no
+	Kxee39fSKn02fhNeV9rdsYGv5hLbF/t1wvLbX3Ok//qUk1XprPKeIz5q9+FC372r3r95seTe
+	FzG3GRUdl7cwbfjh/Jl7qrW7TnXL7PV3Nvef5XgyZdHsz2d9uA4v9rkRF19xUYmlOCPRUIu5
+	qDgRAOjqJu/tAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+From: Tomasz Figa <t.figa@samsung.com>
 
-op 10-04-14 10:46, Thomas Hellstrom schreef:
-> Hi!
->
-> Ugh. This became more complicated than I thought, but I'm OK with moving
-> TTM over to fence while we sort out
-> how / if we're going to use this.
->
-> While reviewing, it struck me that this is kind of error-prone, and hard
-> to follow since we're operating on a structure that may be
-> continually updated under us, needing a lot of RCU-specific macros and
-> barriers.
-Yeah, but with the exception of dma_buf_poll I don't think there is anything else
-outside drivers/base/reservation.c has to deal with rcu.
+This patch add spi dt node to support SPI (Serial Peripheral Interface) bus.
+SPI in Exynos3250 transfers serial data by using various peripherals. Exynos3250
+has two independent interface (spi0/1).
 
-> Also the rcu wait appears to not complete until there are no busy fences
-> left (new ones can be added while we wait) rather than
-> waiting on a snapshot of busy fences.
-This has been by design, because 'wait for bo idle' type of functions only care
-if the bo is completely idle or not.
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ arch/arm/boot/dts/exynos3250.dtsi | 34 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
 
-It would be easy to make a snapshot even without seqlocks, just copy
-reservation_object_test_signaled_rcu to return a shared list if test_all is set, or return pointer to exclusive otherwise.
-
-> I wonder if these issues can be addressed by having a function that
-> provides a snapshot of all busy fences: This can be accomplished
-> either by including the exclusive fence in the fence_list structure and
-> allocate a new such structure each time it is updated. The RCU reader
-> could then just make a copy of the current fence_list structure pointed
-> to by &obj->fence, but I'm not sure we want to reallocate *each* time we
-> update the fence pointer.
-No, the most common operation is updating fence pointers, which is why
-the current design makes that cheap. It's also why doing rcu reads is more expensive.
-> The other approach uses a seqlock to obtain a consistent snapshot, and
-> I've attached an incomplete outline, and I'm not 100% whether it's OK to
-> combine RCU and seqlocks in this way...
->
-> Both these approaches have the benefit of hiding the RCU snapshotting in
-> a single function, that can then be used by any waiting
-> or polling function.
->
-
-I think the middle way with using seqlocks to protect the fence_excl pointer and shared list combination,
-and using RCU to protect the refcounts for fences and the availability of the list could work for our usecase
-and might remove a bunch of memory barriers. But yeah that depends on layering rcu and seqlocks.
-No idea if that is allowed. But I suppose it is.
-
-Also, you're being overly paranoid with seqlock reading, we would only need something like this:
-
-rcu_read_lock()
-     preempt_disable()
-     seq = read_seqcount_begin();
-     read fence_excl, shared_count = ACCESS_ONCE(fence->shared_count)
-     copy shared to a struct.
-     if (read_seqcount_retry()) { unlock and retry }
-   preempt_enable();
-   use fence_get_rcu() to bump refcount on everything, if that fails unlock, put, and retry
-rcu_read_unlock()
-
-But the shared list would still need to be RCU'd, to make sure we're not reading freed garbage.
-
-~Maarten
+diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
+index b8e5ae13..03e7931 100644
+--- a/arch/arm/boot/dts/exynos3250.dtsi
++++ b/arch/arm/boot/dts/exynos3250.dtsi
+@@ -30,6 +30,8 @@
+ 		pinctrl1 = &pinctrl_1;
+ 		mshc0 = &mshc_0;
+ 		mshc1 = &mshc_1;
++		spi0 = &spi_0;
++		spi1 = &spi_1;
+ 		i2c0 = &i2c_0;
+ 		i2c1 = &i2c_1;
+ 		i2c2 = &i2c_2;
+@@ -311,6 +313,38 @@
+ 		status = "disabled";
+ 	};
+ 
++	spi_0: spi@13920000 {
++		compatible = "samsung,exynos4210-spi";
++		reg = <0x13920000 0x100>;
++		interrupts = <0 121 0>;
++		dmas = <&pdma0 7>, <&pdma0 6>;
++		dma-names = "tx", "rx";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		clocks = <&cmu CLK_SPI0>, <&cmu CLK_SCLK_SPI0>;
++		clock-names = "spi", "spi_busclk0";
++		samsung,spi-src-clk = <0>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&spi0_bus>;
++		status = "disabled";
++	};
++
++	spi_1: spi@13930000 {
++		compatible = "samsung,exynos4210-spi";
++		reg = <0x13930000 0x100>;
++		interrupts = <0 122 0>;
++		dmas = <&pdma1 7>, <&pdma1 6>;
++		dma-names = "tx", "rx";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		clocks = <&cmu CLK_SPI1>, <&cmu CLK_SCLK_SPI1>;
++		clock-names = "spi", "spi_busclk0";
++		samsung,spi-src-clk = <0>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&spi1_bus>;
++		status = "disabled";
++	};
++
+ 	pmu {
+ 		compatible = "arm,cortex-a7-pmu";
+ 		interrupts = <0 18 0>, <0 19 0>, <0 20 0>, <0 21 0>;
+-- 
+1.8.0
 
