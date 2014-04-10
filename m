@@ -1,36 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935751AbaDJTve (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 15:51:34 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:57250 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935718AbaDJTva (ORCPT
+	id S1030604AbaDJTx3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 15:53:29 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:44248 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758478AbaDJTx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 15:51:30 -0400
-X-Sasl-enc: pU3RxqROq2pDleibHo/QZk7cs7G8IfsbZ3LZR4fZb8NQ 1397159489
-Date: Thu, 10 Apr 2014 12:54:02 -0700
-From: Greg Kroah-Hartman <greg@kroah.com>
-To: Andev <debiandev@gmail.com>
-Cc: Christian Engelmayer <cengelma@gmx.at>, linville@tuxdriver.com,
-        fariyaf@gmail.com, dan.carpenter@oracle.com, joe@perches.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH resend] rsi: Fix a potential memory leak in
- rsi_set_channel()
-Message-ID: <20140410195402.GA17308@kroah.com>
-References: <20140410203146.767149e7@spike>
- <CAJUuVQ5KW3v0DgwotDMow=rBvxoZKfYYD2misXbsMD6c1UaShw@mail.gmail.com>
+	Thu, 10 Apr 2014 15:53:26 -0400
+Message-ID: <5346F6AD.9060401@linux.vnet.ibm.com>
+Date: Thu, 10 Apr 2014 14:53:17 -0500
+From: Brian King <brking@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJUuVQ5KW3v0DgwotDMow=rBvxoZKfYYD2misXbsMD6c1UaShw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Linux-scsi <linux-scsi@vger.kernel.org>,
+        Robert Jennings <rob@pochix.net>
+Subject: Re: [PATCH] Update Maintainers for IBM Power 842, vscsi, and vfc
+ drivers
+References: <53459226.2070002@linux.vnet.ibm.com>
+In-Reply-To: <53459226.2070002@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041019-0928-0000-0000-000001131012
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 03:46:12PM -0400, Andev wrote:
-> Adding Greg KH,
+On 04/09/2014 01:32 PM, Nathan Fontenot wrote:
+> Update the MAINTAINERS file to indicate the current maintainers
+> for the IBM Power 842 Compression driver, IBM Power Virtual SCSI
+> driver and the IBM Power Virtual FC Driver.
+> 
+> Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+> ---
 
-Why do I care about this?
+Acked-by: Brian King <brking@linux.vnet.ibm.com>
+
+-- 
+Brian King
+Power Linux I/O
+IBM Linux Technology Center
+
 
