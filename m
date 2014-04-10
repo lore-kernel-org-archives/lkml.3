@@ -1,82 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030671AbaDJMpM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 08:45:12 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:38773 "EHLO
+	id S1030703AbaDJMrw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 08:47:52 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38805 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1030651AbaDJMpH (ORCPT
+	with ESMTP id S1030523AbaDJMrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 08:45:07 -0400
-Date: Thu, 10 Apr 2014 14:43:42 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, Chen-Yu Tsai <wens@csie.org>,
-        Hans de Goede <hdegoede@redhat.com>, Shuge <shuge@allwinnertech.com>,
-        kevin@allwinnertech.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Subject: Re: [PATCH v2 3/5] pinctrl: sunxi: define A31 R_PIO pin functions
-Message-ID: <20140410124342.GR28585@lukather>
-References: <1397132747-13917-1-git-send-email-boris.brezillon@free-electrons.com>
- <1397132747-13917-4-git-send-email-boris.brezillon@free-electrons.com>
+	Thu, 10 Apr 2014 08:47:48 -0400
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com, linus.walleij@linaro.org
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@list.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] pinctrl: allows not to define the get_group_pins operation
+Date: Thu, 10 Apr 2014 14:47:39 +0200
+Message-Id: <1397134063-10503-2-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1397134063-10503-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1397134063-10503-1-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wc6dtGz1CZgs+5WP"
-Content-Disposition: inline
-In-Reply-To: <1397132747-13917-4-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When using a group only pinctrl driver, which does not have any
+information on the pins it is useless to define a get_group_pins
+always returning an empty list of pins.
 
---wc6dtGz1CZgs+5WP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+When not using get_group_pin[1], a driver must implement it so
+pins = NULL and num_pins = 0. This patch makes it the default
+behaviour if not defined in the pinctrl driver when used in
+pinmux enable and disable funtions and in pinctrl_groups_show.
 
-On Thu, Apr 10, 2014 at 02:25:45PM +0200, Boris BREZILLON wrote:
-> The A31 SoC provides both PL and PM pio bank through the R_PIO block.
->=20
-> These pins all support gpio function and can bbe assigned to system
-> peripherals (like TWI, P2WI, JTAG, ...)
->=20
-> Add new compatible string to the DT bindings doc.
->=20
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+It also adds a check in pinctrl_get_group_pins and return -EINVAL if
+not defined. This function is called in the gpiolib when adding when
+pingroup range. It cannot be used if no group is defined, so this seams
+reasonable.
 
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+[1] get_group_pin(struct pinctrl_dev *pctldev,
+		  unsigned selector,
+		  const unsigned **pins,
+		  unsigned *num_pins);
 
-Thanks!
+Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+---
+ drivers/pinctrl/core.c   | 17 ++++++++++-------
+ drivers/pinctrl/pinmux.c | 23 +++++++++++++----------
+ 2 files changed, 23 insertions(+), 17 deletions(-)
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
+index c0fe6091566a..e09474ecde23 100644
+--- a/drivers/pinctrl/core.c
++++ b/drivers/pinctrl/core.c
+@@ -468,6 +468,9 @@ int pinctrl_get_group_pins(struct pinctrl_dev *pctldev, const char *pin_group,
+ 	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
+ 	int gs;
+ 
++	if (!pctlops->get_group_pins)
++		return -EINVAL;
++
+ 	gs = pinctrl_get_group_selector(pctldev, pin_group);
+ 	if (gs < 0)
+ 		return gs;
+@@ -1362,15 +1365,16 @@ static int pinctrl_groups_show(struct seq_file *s, void *what)
+ 
+ 	seq_puts(s, "registered pin groups:\n");
+ 	while (selector < ngroups) {
+-		const unsigned *pins;
+-		unsigned num_pins;
++		const unsigned *pins = NULL;
++		unsigned num_pins = 0;
+ 		const char *gname = ops->get_group_name(pctldev, selector);
+ 		const char *pname;
+-		int ret;
++		int ret = 0;
+ 		int i;
+ 
+-		ret = ops->get_group_pins(pctldev, selector,
+-					  &pins, &num_pins);
++		if (ops->get_group_pins)
++			ret = ops->get_group_pins(pctldev, selector,
++						  &pins, &num_pins);
+ 		if (ret)
+ 			seq_printf(s, "%s [ERROR GETTING PINS]\n",
+ 				   gname);
+@@ -1694,8 +1698,7 @@ static int pinctrl_check_ops(struct pinctrl_dev *pctldev)
+ 
+ 	if (!ops ||
+ 	    !ops->get_groups_count ||
+-	    !ops->get_group_name ||
+-	    !ops->get_group_pins)
++	    !ops->get_group_name)
+ 		return -EINVAL;
+ 
+ 	if (ops->dt_node_to_map && !ops->dt_free_map)
+diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
+index 9248ce4efed4..051e8592990e 100644
+--- a/drivers/pinctrl/pinmux.c
++++ b/drivers/pinctrl/pinmux.c
+@@ -391,14 +391,16 @@ int pinmux_enable_setting(struct pinctrl_setting const *setting)
+ 	struct pinctrl_dev *pctldev = setting->pctldev;
+ 	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
+ 	const struct pinmux_ops *ops = pctldev->desc->pmxops;
+-	int ret;
+-	const unsigned *pins;
+-	unsigned num_pins;
++	int ret = 0;
++	const unsigned *pins = NULL;
++	unsigned num_pins = 0;
+ 	int i;
+ 	struct pin_desc *desc;
+ 
+-	ret = pctlops->get_group_pins(pctldev, setting->data.mux.group,
+-				      &pins, &num_pins);
++	if (pctlops->get_group_pins)
++		ret = pctlops->get_group_pins(pctldev, setting->data.mux.group,
++					      &pins, &num_pins);
++
+ 	if (ret) {
+ 		const char *gname;
+ 
+@@ -470,14 +472,15 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
+ 	struct pinctrl_dev *pctldev = setting->pctldev;
+ 	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
+ 	const struct pinmux_ops *ops = pctldev->desc->pmxops;
+-	int ret;
+-	const unsigned *pins;
+-	unsigned num_pins;
++	int ret = 0;
++	const unsigned *pins = NULL;
++	unsigned num_pins = 0;
+ 	int i;
+ 	struct pin_desc *desc;
+ 
+-	ret = pctlops->get_group_pins(pctldev, setting->data.mux.group,
+-				      &pins, &num_pins);
++	if (pctlops->get_group_pins)
++		ret = pctlops->get_group_pins(pctldev, setting->data.mux.group,
++					      &pins, &num_pins);
+ 	if (ret) {
+ 		const char *gname;
+ 
+-- 
+1.8.3.2
 
---wc6dtGz1CZgs+5WP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTRpH+AAoJEBx+YmzsjxAgCukP/RZcU9ThheeXn/GkqneCMQTf
-j2XHiCHeE+ysDjzHPAhOTKjB2k99/feWtpM0kvQD8P16e1Lods6e7EY2anleOX9B
-2Tlke1E6IeZoTkGJuaYDnge2zJkhNNgEfJovzbmAerxidsbMJdXUEQUI3CmeYlyu
-BY7V77DoZrD76GQYFX98ZZG3dbLpMmcbt12DpbZdFnR03B7obw3sVlZBI0cVz3CO
-KOjOcWKdlSf/BOaRL02XQ3E3PUYWhNeQgx/aZlelCuolUcy90YCpB8yHLZe7G9tn
-b0h/gXrBpeS/ik7qMRSLS8Ha+pNwmuLDxmpYbUFB+elwDzBSs978XMEePJ7+eiGK
-QhioEpPuVAWDFSCjKqBgFO5SflJJXcruVv1QQbGppYoMOzOifzpsfxJRLz8WzHDm
-gkZkik9pUkDx5UUTJON688olx6AbEnbs1hebfVSPHD7zm0zHCofKGQxPyCNtREzO
-xsSOjtD2kDV6KBkD/jdjpkUgHg5dko9/K8jL7LFjMJF0oPCzAi2mnQpa2y0cdVWy
-eydq6+NUKpvETmpGrnF4njmaFyjTHOSMrlkujOFt/bWVs2Zi25r0V9Nnsy28njX4
-a70DqFtbQN1KQwEnQPYLRcucGePEo6UEl3jio3KNgXFcIKb1hJUox+wAT487rGyz
-5fXS6JxGhDr3D2MGHvfr
-=5zeC
------END PGP SIGNATURE-----
-
---wc6dtGz1CZgs+5WP--
