@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965301AbaDJDtx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:49:53 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:11360 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965117AbaDJDts (ORCPT
+	id S965390AbaDJDum (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:50:42 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:50177 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965326AbaDJDui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:49:48 -0400
-X-AuditID: cbfee68f-b7f156d00000276c-b7-534614da732a
-Message-id: <534614DB.9000805@samsung.com>
-Date: Thu, 10 Apr 2014 12:49:47 +0900
+	Wed, 9 Apr 2014 23:50:38 -0400
+X-AuditID: cbfee68f-b7f156d00000276c-78-5346150cb540
+Message-id: <5346150D.5050307@samsung.com>
+Date: Thu, 10 Apr 2014 12:50:37 +0900
 From: Chanwoo Choi <cw00.choi@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
  Thunderbird/17.0.2
 MIME-version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: myungjoo.ham@samsung.com, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, balbi@ti.com
-Subject: Re: [PATCH] extcon: palmas: explicitly set edev name as node name
-References: <1395989462-14613-1-git-send-email-kishon@ti.com>
-In-reply-to: <1395989462-14613-1-git-send-email-kishon@ti.com>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] extcon: max14577: Fix probe failure on successful work
+ queue
+References: <1397037369-24995-1-git-send-email-k.kozlowski@samsung.com>
+In-reply-to: <1397037369-24995-1-git-send-email-k.kozlowski@samsung.com>
 Content-type: text/plain; charset=ISO-8859-1
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsWyRsSkUPeWiFuwwbZXQhYH79dbNC9ez2Zx
-	4WkPm8XlXXPYLG43rmBzYPXYP3cNu0ffllWMHsdvbGfy+LxJLoAlissmJTUnsyy1SN8ugStj
-	3wHZgpWsFc+urWBrYJzD0sXIySEhYCKx9f8FdghbTOLCvfVsXYxcHEICSxklPn94xQhTtH1V
-	MyNEYjqjxJ4bB5ghnNeMEkc3rWQFqeIV0JI4+aSXGcRmEVCVuNU0EyzOBhTf/+IGG4gtKhAm
-	sXL6FRaIekGJH5PvgdkiQDWnd/4A62UWSJM4PPMlmC0s4CXxZ/dWsBohAVuJty0PweKcAnYS
-	r1asY4So15HY3zqNDcKWl9i85i3YcRIC69gl1ry7wgRxkIDEt8mHgAZxACVkJTYdYIb4TFLi
-	4IobLBMYxWYhOWkWkrGzkIxdwMi8ilE0tSC5oDgpvchYrzgxt7g0L10vOT93EyMwrk7/e9a/
-	g/HuAetDjMlAKycyS4km5wPjMq8k3tDYzMjC1MTU2Mjc0ow0YSVx3vsPk4KEBNITS1KzU1ML
-	Uovii0pzUosPMTJxcEo1MArs7BC8ePWIbl+3+6SaP8bixoqv/MorRX+XPP3NfrUxoy+oe5P8
-	pPNFM1L10m87GXqfYtGQkTO/8orh6v5FWwUknjAyRYlrqqrd2CN39rirg8TrucZf3z+sPbg2
-	SXVPWvis6UtlH+dJnjwaX9bwL3b9kVNT9KZps6af3/Ne9MfP7lmPzC/5f1JiKc5INNRiLipO
-	BADs1g2RwQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmleLIzCtJLcpLzFFi42I5/e+xoO4tEbdgg7stPBYH79dbNC9ez2Zx
-	4WkPm8XlXXPYLG43rmBzYPXYP3cNu0ffllWMHsdvbGfy+LxJLoAlqoHRJiM1MSW1SCE1Lzk/
-	JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdor5JCWWJOKVAoILG4WEnfDtOE
-	0BA3XQuYxghd35AguB4jAzSQsIYxY98B2YKVrBXPrq1ga2Ccw9LFyMkhIWAisX1VMyOELSZx
-	4d56ti5GLg4hgemMEntuHGCGcF4zShzdtJIVpIpXQEvi5JNeZhCbRUBV4lbTTLA4G1B8/4sb
-	bCC2qECYxMrpV1gg6gUlfky+B2aLANWc3vkDrJdZIE3i8MyXYLawgJfEn91bwWqEBGwl3rY8
-	BItzCthJvFqxjhGiXkdif+s0NghbXmLzmrfMExgFZiFZMQtJ2SwkZQsYmVcxiqYWJBcUJ6Xn
-	GuoVJ+YWl+al6yXn525iBEftM6kdjCsbLA4xCnAwKvHwHljmGizEmlhWXJl7iFGCg1lJhFdB
-	yC1YiDclsbIqtSg/vqg0J7X4EGMyMAQmMkuJJucDE0peSbyhsYmZkaWRuaGFkbE5acJK4rwH
-	Wq0DhQTSE0tSs1NTC1KLYLYwcXBKNTBqm8r68x9f1Cr17VqBXbaH/OtwwVcRv1cpxCzO99C2
-	PvrbXn3nSVXDkznN6YczVHM9lPS7q3R/MmjfPnza2Tb2s1bvXEnr2GOZ2x22TrSdIr1Y6lYV
-	8+SQ5tmtfF86bfqX19bGmcmLa0U+Fs/4LZ11PzursPD+r5mNV7flszwwFXC6K9AnpsRSnJFo
-	qMVcVJwIAG0h3PAeAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrAIsWRmVeSWpSXmKPExsWyRsSkWJdH1C3YYON+MYvXLwwtLu+aw2Zx
+	u3EFm8WCjY8YHVg8+rasYvT4vEkugCmKyyYlNSezLLVI3y6BK2NdzxrGghnsFb0Pl7M0MH5h
+	7WLk5JAQMJE4uP00E4QtJnHh3nq2LkYuDiGBpYwSM7+uYYIpalu7nhEiMZ1RYsuF6VDOa0aJ
+	xas7wUbxCmhJrHjaBdbBIqAqsfv/O3YQmw0ovv/FDTYQW1QgTGLl9CssEPWCEj8m3wOzRQQM
+	JQ7u3g7WyyyQLHF5ayNYvbBAsMTKWa+YQWwhAXeJtlsvwGZyCnhIfFuwD6peR2J/6zQ2CFte
+	YvOat8wgx0kIzGOXePL2BivEQQIS3yYfAlrGAZSQldh0gBniM0mJgytusExgFJuF5KRZSMbO
+	QjJ2ASPzKkbR1ILkguKk9CJjveLE3OLSvHS95PzcTYzA2Dn971n/Dsa7B6wPMSYDrZzILCWa
+	nA+MvbySeENjMyMLUxNTYyNzSzPShJXEee8/TAoSEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnV
+	wDhbtcwhw65Hr+6a6NaG/bnub92zd5efOLj9VyL3ywpxU+NVgvLGahyuG5PW3Oi+8vpkerXM
+	TMmG2aqmM0yunDOPWcfwgbXTYUleuHpclubj0Gtffa81cnuysMgt7f5te6mucoLeSVfn/1f/
+	bYybJLpX2mJn/Uq3VfqbihSLj1jP+V7vpP74sBJLcUaioRZzUXEiAJXCJgGzAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLIsWRmVeSWpSXmKPExsVy+t9jQV0eUbdgg7cT+C1evzC0uLxrDpvF
+	7cYVbBYLNj5idGDx6NuyitHj8ya5AKaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0Nd
+	Q0sLcyWFvMTcVFslF58AXbfMHKBFSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM
+	0EDCGsaMdT1rGAtmsFf0PlzO0sD4hbWLkZNDQsBEom3tekYIW0ziwr31bF2MXBxCAtMZJbZc
+	mM4I4bxmlFi8uhOsg1dAS2LF0y4mEJtFQFVi9/937CA2G1B8/4sbbCC2qECYxMrpV1gg6gUl
+	fky+B2aLCBhKHNy9HayXWSBZ4vLWRrB6YYFgiZWzXjGD2EIC7hJtt16AzeQU8JD4tmAfVL2O
+	xP7WaWwQtrzE5jVvmScwCsxCsmIWkrJZSMoWMDKvYhRNLUguKE5KzzXSK07MLS7NS9dLzs/d
+	xAiOzGfSOxhXNVgcYhTgYFTi4T2wzDVYiDWxrLgy9xCjBAezkgivgpBbsBBvSmJlVWpRfnxR
+	aU5q8SHGZGAITGSWEk3OByaNvJJ4Q2MTMyNLI3NDCyNjc9KElcR5D7ZaBwoJpCeWpGanphak
+	FsFsYeLglGpglPQRX7XsOmf4Lps2j0UdMbsMTUqsndi5M6dpnwqOzT5XOMvWL0m86p/qjDfd
+	dg3lXzzEORkPynz6ebzh2uOuvktVDmdYMuZ89rUrnacWzr30Y83JPbfOOCT2F39TdFA9+adV
+	f/blmoLV7pO2nvpQNX3rFsUVsfOjRFSv8FYX7zE7HPn7VME2JZbijERDLeai4kQAP64xxxAD	AAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,25 +53,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kishon,
+Hi Krzysztof,
 
-On 03/28/2014 03:51 PM, Kishon Vijay Abraham I wrote:
-> commit ca488 (extcon: of: Remove unnecessary function call by using the
-> name of device_node) started using node name instead of device name
-> to get the extcon device. This breaks dwc3-omap since it's not able to
-> get the extcon device anymore. Fixed it by setting edev name of
-> palmas to be the same as its node name.
+On 04/09/2014 06:56 PM, Krzysztof Kozlowski wrote:
+> In probe the driver queued delayed work for cable detection and
+> returned the result of queue_delayed_work() call. However the return
+> value of queue_delayed_work() does not indicate an error and in normal
+> condition it returns true which means successful work queue.
+> This effectively resulted in probe failure:
+> [    2.088204] max14577-muic: probe of max77836-muic failed with error 1
 > 
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> Reported-by: Felipe Balbi <balbi@ti.com>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: <stable@vger.kernel.org>
+> Fixes: 962e56bfcf0b ("extcon: max14577: Add extcon-max14577 driver...")
 > ---
+>  drivers/extcon/extcon-max14577.c | 7 +------
+>  1 file changed, 1 insertion(+), 6 deletions(-)
 
-Applied this patch
+Applied this patch.
 but, you could check this patch on extcon-next branch
 after few days. becuase I have firewall issue of kerner.org.
 
 Thanks,
 Chanwoo Choi
-
 
 
