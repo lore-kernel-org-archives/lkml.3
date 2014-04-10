@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934998AbaDJDdi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:33:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41397 "EHLO
+	id S935197AbaDJDXK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:23:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40936 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935201AbaDJDXL (ORCPT
+	with ESMTP id S934660AbaDJDVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:23:11 -0400
+	Wed, 9 Apr 2014 23:21:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.4 133/134] powernow-k6: correctly initialize default parameters
-Date: Wed,  9 Apr 2014 20:24:09 -0700
-Message-Id: <20140410032316.501715794@linuxfoundation.org>
+        Manoj Chourasia <mchourasia@nvidia.com>,
+        Peter Wu <lekensteyn@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: [PATCH 3.4 028/134] HID: hidraw: correctly deallocate memory on device disconnect
+Date: Wed,  9 Apr 2014 20:22:24 -0700
+Message-Id: <20140410032303.525427527@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -27,153 +29,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Manoj Chourasia <mchourasia@nvidia.com>
 
-commit d82b922a4acc1781d368aceac2f9da43b038cab2 upstream.
+commit 212a871a3934beccf43431608c27ed2e05a476ec upstream.
 
-The powernow-k6 driver used to read the initial multiplier from the
-powernow register. However, there is a problem with this:
+This changes puts the commit 4fe9f8e203f back in place
+with the fixes for slab corruption because of the commit.
 
-* If there was a frequency transition before, the multiplier read from the
-  register corresponds to the current multiplier.
-* If there was no frequency transition since reset, the field in the
-  register always reads as zero, regardless of the current multiplier that
-  is set using switches on the mainboard and that the CPU is running at.
+When a device is unplugged, wait for all processes that
+have opened the device to close before deallocating the device.
 
-The zero value corresponds to multiplier 4.5, so as a consequence, the
-powernow-k6 driver always assumes multiplier 4.5.
+This commit was solving kernel crash because of the corruption in
+rb tree of vmalloc. The rootcause was the device data pointer was
+geting excessed after the memory associated with hidraw was freed.
 
-For example, if we have 550MHz CPU with bus frequency 100MHz and
-multiplier 5.5, the powernow-k6 driver thinks that the multiplier is 4.5
-and bus frequency is 122MHz. The powernow-k6 driver then sets the
-multiplier to 4.5, underclocking the CPU to 450MHz, but reports the
-current frequency as 550MHz.
+The commit 4fe9f8e203f was buggy as it was also freeing the hidraw
+first and then calling delete operation on the list associated with
+that hidraw leading to slab corruption.
 
-There is no reliable way how to read the initial multiplier. I modified
-the driver so that it contains a table of known frequencies (based on
-parameters of existing CPUs and some common overclocking schemes) and sets
-the multiplier according to the frequency. If the frequency is unknown
-(because of unusual overclocking or underclocking), the user must supply
-the bus speed and maximum multiplier as module parameters.
-
-This patch should be backported to all stable kernels. If it doesn't
-apply cleanly, change it, or ask me to change it.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Manoj Chourasia <mchourasia@nvidia.com>
+Tested-by: Peter Wu <lekensteyn@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/cpufreq/powernow-k6.c |   76 +++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 72 insertions(+), 4 deletions(-)
+ drivers/hid/hidraw.c |   60 +++++++++++++++++++++------------------------------
+ 1 file changed, 25 insertions(+), 35 deletions(-)
 
---- a/drivers/cpufreq/powernow-k6.c
-+++ b/drivers/cpufreq/powernow-k6.c
-@@ -26,6 +26,14 @@
- static unsigned int                     busfreq;   /* FSB, in 10 kHz */
- static unsigned int                     max_multiplier;
+--- a/drivers/hid/hidraw.c
++++ b/drivers/hid/hidraw.c
+@@ -113,7 +113,7 @@ static ssize_t hidraw_send_report(struct
+ 	__u8 *buf;
+ 	int ret = 0;
  
-+static unsigned int			param_busfreq = 0;
-+static unsigned int			param_max_multiplier = 0;
-+
-+module_param_named(max_multiplier, param_max_multiplier, uint, S_IRUGO);
-+MODULE_PARM_DESC(max_multiplier, "Maximum multiplier (allowed values: 20 30 35 40 45 50 55 60)");
-+
-+module_param_named(bus_frequency, param_busfreq, uint, S_IRUGO);
-+MODULE_PARM_DESC(bus_frequency, "Bus frequency in kHz");
+-	if (!hidraw_table[minor]) {
++	if (!hidraw_table[minor] || !hidraw_table[minor]->exist) {
+ 		ret = -ENODEV;
+ 		goto out;
+ 	}
+@@ -261,7 +261,7 @@ static int hidraw_open(struct inode *ino
+ 	}
  
- /* Clock ratio multiplied by 10 - see table 27 in AMD#23446 */
- static struct cpufreq_frequency_table clock_ratio[] = {
-@@ -40,6 +48,27 @@ static struct cpufreq_frequency_table cl
- 	{0, CPUFREQ_TABLE_END}
- };
+ 	mutex_lock(&minors_lock);
+-	if (!hidraw_table[minor]) {
++	if (!hidraw_table[minor] || !hidraw_table[minor]->exist) {
+ 		err = -ENODEV;
+ 		goto out_unlock;
+ 	}
+@@ -295,39 +295,38 @@ out:
  
-+static const struct {
-+	unsigned freq;
-+	unsigned mult;
-+} usual_frequency_table[] = {
-+	{ 400000, 40 },	// 100   * 4
-+	{ 450000, 45 }, // 100   * 4.5
-+	{ 475000, 50 }, //  95   * 5
-+	{ 500000, 50 }, // 100   * 5
-+	{ 506250, 45 }, // 112.5 * 4.5
-+	{ 533500, 55 }, //  97   * 5.5
-+	{ 550000, 55 }, // 100   * 5.5
-+	{ 562500, 50 }, // 112.5 * 5
-+	{ 570000, 60 }, //  95   * 6
-+	{ 600000, 60 }, // 100   * 6
-+	{ 618750, 55 }, // 112.5 * 5.5
-+	{ 660000, 55 }, // 120   * 5.5
-+	{ 675000, 60 }, // 112.5 * 6
-+	{ 720000, 60 }, // 120   * 6
-+};
-+
-+#define FREQ_RANGE		3000
- 
- /**
-  * powernow_k6_get_cpu_multiplier - returns the current FSB multiplier
-@@ -163,18 +192,57 @@ static int powernow_k6_target(struct cpu
- 	return 0;
  }
  
--
- static int powernow_k6_cpu_init(struct cpufreq_policy *policy)
++static void drop_ref(struct hidraw *hidraw, int exists_bit)
++{
++	if (exists_bit) {
++		hid_hw_close(hidraw->hid);
++		hidraw->exist = 0;
++		if (hidraw->open)
++			wake_up_interruptible(&hidraw->wait);
++	} else {
++		--hidraw->open;
++	}
++
++	if (!hidraw->open && !hidraw->exist) {
++		device_destroy(hidraw_class, MKDEV(hidraw_major, hidraw->minor));
++		hidraw_table[hidraw->minor] = NULL;
++		kfree(hidraw);
++	}
++}
++
+ static int hidraw_release(struct inode * inode, struct file * file)
  {
- 	unsigned int i, f;
- 	int result;
-+	unsigned khz;
+ 	unsigned int minor = iminor(inode);
+-	struct hidraw *dev;
+ 	struct hidraw_list *list = file->private_data;
+-	int ret;
+-	int i;
  
- 	if (policy->cpu != 0)
- 		return -ENODEV;
+ 	mutex_lock(&minors_lock);
+-	if (!hidraw_table[minor]) {
+-		ret = -ENODEV;
+-		goto unlock;
+-	}
  
--	/* get frequencies */
--	max_multiplier = powernow_k6_get_cpu_multiplier();
--	busfreq = cpu_khz / max_multiplier;
-+	max_multiplier = 0;
-+	khz = cpu_khz;
-+	for (i = 0; i < ARRAY_SIZE(usual_frequency_table); i++) {
-+		if (khz >= usual_frequency_table[i].freq - FREQ_RANGE &&
-+		    khz <= usual_frequency_table[i].freq + FREQ_RANGE) {
-+			khz = usual_frequency_table[i].freq;
-+			max_multiplier = usual_frequency_table[i].mult;
-+			break;
-+		}
-+	}
-+	if (param_max_multiplier) {
-+		for (i = 0; (clock_ratio[i].frequency != CPUFREQ_TABLE_END); i++) {
-+			if (clock_ratio[i].index == param_max_multiplier) {
-+				max_multiplier = param_max_multiplier;
-+				goto have_max_multiplier;
-+			}
-+		}
-+		printk(KERN_ERR "powernow-k6: invalid max_multiplier parameter, valid parameters 20, 30, 35, 40, 45, 50, 55, 60\n");
-+		return -EINVAL;
-+	}
-+
-+	if (!max_multiplier) {
-+		printk(KERN_WARNING "powernow-k6: unknown frequency %u, cannot determine current multiplier\n", khz);
-+		printk(KERN_WARNING "powernow-k6: use module parameters max_multiplier and bus_frequency\n");
-+		return -EOPNOTSUPP;
-+	}
-+
-+have_max_multiplier:
-+	param_max_multiplier = max_multiplier;
-+
-+	if (param_busfreq) {
-+		if (param_busfreq >= 50000 && param_busfreq <= 150000) {
-+			busfreq = param_busfreq / 10;
-+			goto have_busfreq;
-+		}
-+		printk(KERN_ERR "powernow-k6: invalid bus_frequency parameter, allowed range 50000 - 150000 kHz\n");
-+		return -EINVAL;
-+	}
-+
-+	busfreq = khz / max_multiplier;
-+have_busfreq:
-+	param_busfreq = busfreq * 10;
+ 	list_del(&list->node);
+-	dev = hidraw_table[minor];
+-	if (!--dev->open) {
+-		if (list->hidraw->exist) {
+-			hid_hw_power(dev->hid, PM_HINT_NORMAL);
+-			hid_hw_close(dev->hid);
+-		} else {
+-			kfree(list->hidraw);
+-		}
+-	}
+-
+-	for (i = 0; i < HIDRAW_BUFFER_SIZE; ++i)
+-		kfree(list->buffer[i].value);
+ 	kfree(list);
+-	ret = 0;
+-unlock:
+-	mutex_unlock(&minors_lock);
  
- 	/* table init */
- 	for (i = 0; (clock_ratio[i].frequency != CPUFREQ_TABLE_END); i++) {
+-	return ret;
++	drop_ref(hidraw_table[minor], 0);
++
++	mutex_unlock(&minors_lock);
++	return 0;
+ }
+ 
+ static long hidraw_ioctl(struct file *file, unsigned int cmd,
+@@ -531,18 +530,9 @@ void hidraw_disconnect(struct hid_device
+ 	struct hidraw *hidraw = hid->hidraw;
+ 
+ 	mutex_lock(&minors_lock);
+-	hidraw->exist = 0;
+-
+-	device_destroy(hidraw_class, MKDEV(hidraw_major, hidraw->minor));
+ 
+-	hidraw_table[hidraw->minor] = NULL;
++	drop_ref(hidraw, 1);
+ 
+-	if (hidraw->open) {
+-		hid_hw_close(hid);
+-		wake_up_interruptible(&hidraw->wait);
+-	} else {
+-		kfree(hidraw);
+-	}
+ 	mutex_unlock(&minors_lock);
+ }
+ EXPORT_SYMBOL_GPL(hidraw_disconnect);
 
 
