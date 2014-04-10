@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031041AbaDJNmM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 09:42:12 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:43910 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030994AbaDJNmJ (ORCPT
+	id S1161056AbaDJNoJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 09:44:09 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:47910 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030816AbaDJNoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 09:42:09 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Rob Herring <robh@kernel.org>, Florian Vaussard <florian.vaussard@epfl.ch>,
-        Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH v2] checkpatch: fix wildcard DT compatible string checking
-Date: Thu, 10 Apr 2014 08:41:54 -0500
-Message-Id: <1397137314-13523-1-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 10 Apr 2014 09:44:07 -0400
+From: Chander Kashyap <chander.kashyap@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: rafael.j.wysocki@intel.com, tuukka.tikkanen@linaro.org,
+        daniel.lezcano@linaro.org,
+        Chander Kashyap <chander.kashyap@linaro.org>
+Subject: [PATCH] cpuidle: governor: menu: move repeated correction factor check to init
+Date: Thu, 10 Apr 2014 19:13:53 +0530
+Message-Id: <1397137433-19106-1-git-send-email-chander.kashyap@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <robh@kernel.org>
+In menu_select function we check for correction factor every time.
+If it is zero we are initializing to unity. Hence move it to init function
+and initialise by unity, hence avoid repeated comparisons.
 
-We attempt to search for compatible strings which use a variable
-token in the documented name such as <chip> or <soc>. While this
-was attempted to be handled, it's utterly broken.
-
-The desired forms of matching are:
-
-vendor,<chip>-*
-vendor,name<part#>-*
-
-For <chip>, lower case characters and numbers are permitted. For
-<part#>, only numeric values are allowed.
-
-With this change, the number of missing compatible strings reported in
-arch/arm/boot/dts is reduced from 1071 to 960.
-
-Reported-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Signed-off-by: Rob Herring <robh@kernel.org>
-Cc: Florian Vaussard <florian.vaussard@epfl.ch>
-Cc: Joe Perches <joe@perches.com>
-Cc: Andy Whitcroft <apw@canonical.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
 ---
-v2:
-- drop debugging print
+ drivers/cpuidle/governors/menu.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
- scripts/checkpatch.pl | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 34eb216..62d005e 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2093,8 +2093,10 @@ sub process {
+diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+index cf7f2f0..048f6d9 100644
+--- a/drivers/cpuidle/governors/menu.c
++++ b/drivers/cpuidle/governors/menu.c
+@@ -315,13 +315,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+ 	multiplier = performance_multiplier();
  
- 			foreach my $compat (@compats) {
- 				my $compat2 = $compat;
--				$compat2 =~ s/\,[a-z]*\-/\,<\.\*>\-/;
--				`grep -Erq "$compat|$compat2" $dt_path`;
-+				$compat2 =~ s/\,[a-zA-Z0-9]*\-/\,<\.\*>\-/;
-+				my $compat3 = $compat;
-+				$compat3 =~ s/\,([a-z]*)[0-9]*\-/\,$1<\.\*>\-/;
-+				`grep -Erq "$compat|$compat2|$compat3" $dt_path`;
- 				if ( $? >> 8 ) {
- 					WARN("UNDOCUMENTED_DT_STRING",
- 					     "DT compatible string \"$compat\" appears un-documented -- check $dt_path\n" . $herecurr);
+ 	/*
+-	 * if the correction factor is 0 (eg first time init or cpu hotplug
+-	 * etc), we actually want to start out with a unity factor.
+-	 */
+-	if (data->correction_factor[data->bucket] == 0)
+-		data->correction_factor[data->bucket] = RESOLUTION * DECAY;
+-
+-	/*
+ 	 * Force the result of multiplication to be 64 bits even if both
+ 	 * operands are 32 bits.
+ 	 * Make sure to round up for half microseconds.
+@@ -453,9 +446,17 @@ static int menu_enable_device(struct cpuidle_driver *drv,
+ 				struct cpuidle_device *dev)
+ {
+ 	struct menu_device *data = &per_cpu(menu_devices, dev->cpu);
++	int i;
+ 
+ 	memset(data, 0, sizeof(struct menu_device));
+ 
++	/*
++	 * if the correction factor is 0 (eg first time init or cpu hotplug
++	 * etc), we actually want to start out with a unity factor.
++	 */
++	for(i = 0; i < BUCKETS; i++)
++		data->correction_factor[i] = RESOLUTION * DECAY;
++
+ 	return 0;
+ }
+ 
 -- 
-1.9.1
+1.7.9.5
 
