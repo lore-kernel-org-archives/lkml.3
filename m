@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935262AbaDJECe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 00:02:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41144 "EHLO
+	id S935301AbaDJEDB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 00:03:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41140 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934851AbaDJDWa (ORCPT
+	with ESMTP id S933353AbaDJDW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:30 -0400
+	Wed, 9 Apr 2014 23:22:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johan Hovold <jhovold@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
         Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 078/134] USB: mos7840: fix memory leak in open
-Date: Wed,  9 Apr 2014 20:23:14 -0700
-Message-Id: <20140410032309.989897056@linuxfoundation.org>
+Subject: [PATCH 3.4 077/134] USB: pl2303: fix device initialisation at open
+Date: Wed,  9 Apr 2014 20:23:13 -0700
+Message-Id: <20140410032309.849950262@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -29,105 +29,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 5f8a2e68b679b41cc8e9b642f2f5aa45dd678641 upstream.
+commit 2d8f4447b58bba5f8cb895c07690434c02307eaf upstream.
 
-Allocated urbs and buffers were never freed on errors in open.
+Do not use uninitialised termios data to determine when to configure the
+device at open.
+
+This also prevents stack data from leaking to userspace in the OOM error
+path.
 
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
-[bwh: Backported to 3.2: adjust context]
+[bwh: Backported to 3.2: tty_struct::termios is a pointer, not a struct]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mos7840.c |   26 +++++++++++++++++---------
- 1 file changed, 17 insertions(+), 9 deletions(-)
+ drivers/usb/serial/pl2303.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -923,20 +923,20 @@ static int mos7840_open(struct tty_struc
- 	status = mos7840_get_reg_sync(port, mos7840_port->SpRegOffset, &Data);
- 	if (status < 0) {
- 		dbg("Reading Spreg failed");
--		return -1;
-+		goto err;
- 	}
- 	Data |= 0x80;
- 	status = mos7840_set_reg_sync(port, mos7840_port->SpRegOffset, Data);
- 	if (status < 0) {
- 		dbg("writing Spreg failed");
--		return -1;
-+		goto err;
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -269,7 +269,7 @@ static void pl2303_set_termios(struct tt
+ 	   serial settings even to the same values as before. Thus
+ 	   we actually need to filter in this specific case */
+ 
+-	if (!tty_termios_hw_change(tty->termios, old_termios))
++	if (old_termios && !tty_termios_hw_change(tty->termios, old_termios))
+ 		return;
+ 
+ 	cflag = tty->termios->c_cflag;
+@@ -278,7 +278,8 @@ static void pl2303_set_termios(struct tt
+ 	if (!buf) {
+ 		dev_err(&port->dev, "%s - out of memory.\n", __func__);
+ 		/* Report back no change occurred */
+-		*tty->termios = *old_termios;
++		if (old_termios)
++			*tty->termios = *old_termios;
+ 		return;
  	}
  
- 	Data &= ~0x80;
- 	status = mos7840_set_reg_sync(port, mos7840_port->SpRegOffset, Data);
- 	if (status < 0) {
- 		dbg("writing Spreg failed");
--		return -1;
-+		goto err;
- 	}
- 	/* End of block to be checked */
+@@ -416,7 +417,7 @@ static void pl2303_set_termios(struct tt
+ 	control = priv->line_control;
+ 	if ((cflag & CBAUD) == B0)
+ 		priv->line_control &= ~(CONTROL_DTR | CONTROL_RTS);
+-	else if ((old_termios->c_cflag & CBAUD) == B0)
++	else if (old_termios && (old_termios->c_cflag & CBAUD) == B0)
+ 		priv->line_control |= (CONTROL_DTR | CONTROL_RTS);
+ 	if (control != priv->line_control) {
+ 		control = priv->line_control;
+@@ -477,7 +478,6 @@ static void pl2303_close(struct usb_seri
  
-@@ -945,7 +945,7 @@ static int mos7840_open(struct tty_struc
- 									&Data);
- 	if (status < 0) {
- 		dbg("Reading Controlreg failed");
--		return -1;
-+		goto err;
- 	}
- 	Data |= 0x08;		/* Driver done bit */
- 	Data |= 0x20;		/* rx_disable */
-@@ -953,7 +953,7 @@ static int mos7840_open(struct tty_struc
- 				mos7840_port->ControlRegOffset, Data);
- 	if (status < 0) {
- 		dbg("writing Controlreg failed");
--		return -1;
-+		goto err;
- 	}
- 	/* do register settings here */
- 	/* Set all regs to the device default values. */
-@@ -964,21 +964,21 @@ static int mos7840_open(struct tty_struc
- 	status = mos7840_set_uart_reg(port, INTERRUPT_ENABLE_REGISTER, Data);
- 	if (status < 0) {
- 		dbg("disabling interrupts failed");
--		return -1;
-+		goto err;
- 	}
- 	/* Set FIFO_CONTROL_REGISTER to the default value */
- 	Data = 0x00;
- 	status = mos7840_set_uart_reg(port, FIFO_CONTROL_REGISTER, Data);
- 	if (status < 0) {
- 		dbg("Writing FIFO_CONTROL_REGISTER  failed");
--		return -1;
-+		goto err;
- 	}
+ static int pl2303_open(struct tty_struct *tty, struct usb_serial_port *port)
+ {
+-	struct ktermios tmp_termios;
+ 	struct usb_serial *serial = port->serial;
+ 	struct pl2303_private *priv = usb_get_serial_port_data(port);
+ 	int result;
+@@ -495,7 +495,7 @@ static int pl2303_open(struct tty_struct
  
- 	Data = 0xcf;
- 	status = mos7840_set_uart_reg(port, FIFO_CONTROL_REGISTER, Data);
- 	if (status < 0) {
- 		dbg("Writing FIFO_CONTROL_REGISTER  failed");
--		return -1;
-+		goto err;
- 	}
+ 	/* Setup termios */
+ 	if (tty)
+-		pl2303_set_termios(tty, port, &tmp_termios);
++		pl2303_set_termios(tty, port, NULL);
  
- 	Data = 0x03;
-@@ -1134,7 +1134,15 @@ static int mos7840_open(struct tty_struc
- 	dbg ("%s leave", __func__);
- 
- 	return 0;
--
-+err:
-+	for (j = 0; j < NUM_URBS; ++j) {
-+		urb = mos7840_port->write_urb_pool[j];
-+		if (!urb)
-+			continue;
-+		kfree(urb->transfer_buffer);
-+		usb_free_urb(urb);
-+	}
-+	return status;
- }
- 
- /*****************************************************************************
+ 	dbg("%s - submitting interrupt urb", __func__);
+ 	result = usb_submit_urb(port->interrupt_in_urb, GFP_KERNEL);
 
 
