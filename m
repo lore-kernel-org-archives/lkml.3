@@ -1,73 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030520AbaDJMYo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 08:24:44 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:45385 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030282AbaDJMYl convert rfc822-to-8bit (ORCPT
+	id S1030592AbaDJM0D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 08:26:03 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38595 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1030532AbaDJMZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 08:24:41 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: "54b52d87268034859191d671505bb1cfce6bd74d - x86/efi: Build our own EFI services pointer table" breaks boot on thinkpad t440s
-From: Koen Kooi <koen@dominion.thruhere.net>
-In-Reply-To: <20140410121146.GA17021@console-pimps.org>
-Date: Thu, 10 Apr 2014 14:24:38 +0200
-Cc: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Kees Cook <keescook@chromium.org>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>, linux-efi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <88A266AC-FAC5-445D-B9BE-CFD289B23E6C@dominion.thruhere.net>
-References: <AF4406ED-6B0B-4E15-A329-04162E0ADC8A@dominion.thruhere.net> <20140410121146.GA17021@console-pimps.org>
-To: Matt Fleming <matt@console-pimps.org>
-X-Mailer: Apple Mail (2.1874)
+	Thu, 10 Apr 2014 08:25:55 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, Chen-Yu Tsai <wens@csie.org>,
+        Hans de Goede <hdegoede@redhat.com>
+Cc: Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        dev@linux-sunxi.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH v2 3/5] pinctrl: sunxi: define A31 R_PIO pin functions
+Date: Thu, 10 Apr 2014 14:25:45 +0200
+Message-Id: <1397132747-13917-4-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1397132747-13917-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1397132747-13917-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The A31 SoC provides both PL and PM pio bank through the R_PIO block.
 
-Op 10 apr. 2014, om 14:11 heeft Matt Fleming <matt@console-pimps.org> het volgende geschreven:
+These pins all support gpio function and can bbe assigned to system
+peripherals (like TWI, P2WI, JTAG, ...)
 
-> On Thu, 10 Apr, at 12:43:43PM, Koen Kooi wrote:
->> Hi,
->> 
->> After updating from 3.14-rc7 to a recent git the kernel fails to boot on my thinkpad t440s and displays:
->> 
->> 	Failed to get file info size
->> 	Failed to alloc highmem for files
->> 
->> After a morning of running git bisect and rebooting, the bad commit seems to be:
->> 
->> 	54b52d87268034859191d671505bb1cfce6bd74d - x86/efi: Build our own EFI services pointer table
-> 
-> Thanks for the report. Can you try this patch against Linus' tree?
+Add new compatible string to the DT bindings doc.
 
-That indeed fixes it, so:
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+---
+ .../bindings/pinctrl/allwinner,sunxi-pinctrl.txt   |  1 +
+ drivers/pinctrl/pinctrl-sunxi-pins.h               | 74 ++++++++++++++++++++++
+ drivers/pinctrl/pinctrl-sunxi.c                    |  1 +
+ 3 files changed, 76 insertions(+)
 
-Tested-by: Koen Kooi <koen@dominion.thruhere.net>
-
-regards,
-
-Koen
-
-> 
-> 
-> diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-> index 1e6146137f8e..280165524ee4 100644
-> --- a/arch/x86/boot/compressed/eboot.c
-> +++ b/arch/x86/boot/compressed/eboot.c
-> @@ -112,7 +112,7 @@ __file_size64(void *__fh, efi_char16_t *filename_16,
-> 	efi_file_info_t *info;
-> 	efi_status_t status;
-> 	efi_guid_t info_guid = EFI_FILE_INFO_ID;
-> -	u32 info_sz;
-> +	u64 info_sz;
-> 
-> 	status = efi_early->call((unsigned long)fh->open, fh, &h, filename_16,
-> 				 EFI_FILE_MODE_READ, (u64)0);
-> -- 
-> Matt Fleming, Intel Open Source Technology Center
-> 
+diff --git a/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt
+index f5da7e3..d8d0656 100644
+--- a/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt
++++ b/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt
+@@ -11,6 +11,7 @@ Required properties:
+   "allwinner,sun5i-a10s-pinctrl"
+   "allwinner,sun5i-a13-pinctrl"
+   "allwinner,sun6i-a31-pinctrl"
++  "allwinner,sun6i-a31-r-pinctrl"
+   "allwinner,sun7i-a20-pinctrl"
+ - reg: Should contain the register physical address and length for the
+   pin controller.
+diff --git a/drivers/pinctrl/pinctrl-sunxi-pins.h b/drivers/pinctrl/pinctrl-sunxi-pins.h
+index 3d60669..51100ca 100644
+--- a/drivers/pinctrl/pinctrl-sunxi-pins.h
++++ b/drivers/pinctrl/pinctrl-sunxi-pins.h
+@@ -2820,6 +2820,74 @@ static const struct sunxi_desc_pin sun6i_a31_pins[] = {
+ 		  SUNXI_FUNCTION(0x2, "nand1")),	/* CE3 */
+ };
+ 
++static const struct sunxi_desc_pin sun6i_a31_r_pins[] = {
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PL0,
++		  SUNXI_FUNCTION(0x0, "gpio_in"),
++		  SUNXI_FUNCTION(0x1, "gpio_out"),
++		  SUNXI_FUNCTION(0x2, "s_twi"),		/* SCK */
++		  SUNXI_FUNCTION(0x3, "s_p2wi")),	/* SCK */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PL1,
++		  SUNXI_FUNCTION(0x0, "gpio_in"),
++		  SUNXI_FUNCTION(0x1, "gpio_out"),
++		  SUNXI_FUNCTION(0x2, "s_twi"),		/* SDA */
++		  SUNXI_FUNCTION(0x3, "s_p2wi")),	/* SDA */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PL2,
++		  SUNXI_FUNCTION(0x0, "gpio_in"),
++		  SUNXI_FUNCTION(0x1, "gpio_out"),
++		  SUNXI_FUNCTION(0x2, "s_uart")),	/* TX */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PL3,
++		  SUNXI_FUNCTION(0x0, "gpio_in"),
++		  SUNXI_FUNCTION(0x1, "gpio_out"),
++		  SUNXI_FUNCTION(0x2, "s_uart")),	/* RX */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PL4,
++		  SUNXI_FUNCTION(0x0, "gpio_in"),
++		  SUNXI_FUNCTION(0x1, "gpio_out"),
++		  SUNXI_FUNCTION(0x2, "s_ir")),		/* RX */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PL5,
++		  SUNXI_FUNCTION(0x0, "gpio_in"),
++		  SUNXI_FUNCTION(0x1, "gpio_out"),
++		  SUNXI_FUNCTION(0x3, "s_jtag")),	/* MS */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PL6,
++		  SUNXI_FUNCTION(0x0, "gpio_in"),
++		  SUNXI_FUNCTION(0x1, "gpio_out"),
++		  SUNXI_FUNCTION(0x3, "s_jtag")),	/* CK */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PL7,
++		  SUNXI_FUNCTION(0x0, "gpio_in"),
++		  SUNXI_FUNCTION(0x1, "gpio_out"),
++		  SUNXI_FUNCTION(0x3, "s_jtag")),	/* DO */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PL8,
++		  SUNXI_FUNCTION(0x0, "gpio_in"),
++		  SUNXI_FUNCTION(0x1, "gpio_out"),
++		  SUNXI_FUNCTION(0x3, "s_jtag")),	/* DI */
++	/* Hole */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PM0,
++		  SUNXI_FUNCTION(0x0, "gpio_in"),
++		  SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PM1,
++		  SUNXI_FUNCTION(0x0, "gpio_in"),
++		  SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PM2,
++		  SUNXI_FUNCTION(0x0, "gpio_in"),
++		  SUNXI_FUNCTION(0x1, "gpio_out"),
++		  SUNXI_FUNCTION(0x3, "1wire")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PM3,
++		  SUNXI_FUNCTION(0x0, "gpio_in"),
++		  SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PM4,
++		  SUNXI_FUNCTION(0x0, "gpio_in"),
++		  SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PM5,
++		  SUNXI_FUNCTION(0x0, "gpio_in"),
++		  SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PM6,
++		  SUNXI_FUNCTION(0x0, "gpio_in"),
++		  SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PM7,
++		  SUNXI_FUNCTION(0x0, "gpio_in"),
++		  SUNXI_FUNCTION(0x1, "gpio_out"),
++		  SUNXI_FUNCTION(0x3, "rtc")),		/* CLKO */
++};
++
+ static const struct sunxi_desc_pin sun7i_a20_pins[] = {
+ 	SUNXI_PIN(SUNXI_PINCTRL_PIN_PA0,
+ 		  SUNXI_FUNCTION(0x0, "gpio_in"),
+@@ -3855,6 +3923,12 @@ static const struct sunxi_pinctrl_desc sun6i_a31_pinctrl_data = {
+ 	.npins = ARRAY_SIZE(sun6i_a31_pins),
+ };
+ 
++static const struct sunxi_pinctrl_desc sun6i_a31_r_pinctrl_data = {
++	.pins = sun6i_a31_r_pins,
++	.npins = ARRAY_SIZE(sun6i_a31_r_pins),
++	.pin_base = PL_BASE,
++};
++
+ static const struct sunxi_pinctrl_desc sun7i_a20_pinctrl_data = {
+ 	.pins = sun7i_a20_pins,
+ 	.npins = ARRAY_SIZE(sun7i_a20_pins),
+diff --git a/drivers/pinctrl/pinctrl-sunxi.c b/drivers/pinctrl/pinctrl-sunxi.c
+index 64bcc68..ee62027 100644
+--- a/drivers/pinctrl/pinctrl-sunxi.c
++++ b/drivers/pinctrl/pinctrl-sunxi.c
+@@ -677,6 +677,7 @@ static struct of_device_id sunxi_pinctrl_match[] = {
+ 	{ .compatible = "allwinner,sun5i-a10s-pinctrl", .data = (void *)&sun5i_a10s_pinctrl_data },
+ 	{ .compatible = "allwinner,sun5i-a13-pinctrl", .data = (void *)&sun5i_a13_pinctrl_data },
+ 	{ .compatible = "allwinner,sun6i-a31-pinctrl", .data = (void *)&sun6i_a31_pinctrl_data },
++	{ .compatible = "allwinner,sun6i-a31-r-pinctrl", .data = (void *)&sun6i_a31_r_pinctrl_data },
+ 	{ .compatible = "allwinner,sun7i-a20-pinctrl", .data = (void *)&sun7i_a20_pinctrl_data },
+ 	{}
+ };
+-- 
+1.8.3.2
 
