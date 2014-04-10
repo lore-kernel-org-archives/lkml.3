@@ -1,407 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934680AbaDJGRh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 02:17:37 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57884 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934020AbaDJGRg (ORCPT
+	id S934633AbaDJGcl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 02:32:41 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:49678 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933287AbaDJGck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 02:17:36 -0400
-Message-ID: <5346377C.1030606@monstr.eu>
-Date: Thu, 10 Apr 2014 08:17:32 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>
-CC: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        monstr@monstr.eu, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v3] mfd: syscon: Support early initialization
-References: <3eb785d83c406f4a57508dc03610b05492e12bfd.1396969250.git.michal.simek@xilinx.com> <53463824.3040606@samsung.com>
-In-Reply-To: <53463824.3040606@samsung.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="LdOlNsauxw8jvrso9oQke9SuR9IUIfR4J"
+	Thu, 10 Apr 2014 02:32:40 -0400
+Message-ID: <1397111557.2608.29.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: hpsa driver bug crack kernel down!
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Baoquan He <bhe@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Joerg Roedel <joro@8bytes.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Date: Wed, 09 Apr 2014 23:32:37 -0700
+In-Reply-To: <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
+References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
+	 <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>
+	 <1397084904.9519.62.camel@dabdike> <1397085044.9519.63.camel@dabdike>
+	 <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
+	 <1397087425.9519.67.camel@dabdike>
+	 <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>
+	 <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---LdOlNsauxw8jvrso9oQke9SuR9IUIfR4J
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2014-04-09 at 22:03 -0600, Bjorn Helgaas wrote:
+> [+cc Joerg, iommu list]
+> 
+> On Wed, Apr 9, 2014 at 6:19 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> > On Wed, 2014-04-09 at 16:50 -0700, James Bottomley wrote:
+> >> On Wed, 2014-04-09 at 16:40 -0700, Davidlohr Bueso wrote:
+> >> > On Wed, 2014-04-09 at 16:10 -0700, James Bottomley wrote:
+> >> > > On Wed, 2014-04-09 at 16:08 -0700, James Bottomley wrote:
+> >> > > > [+linux-scsi]
+> >> > > > On Wed, 2014-04-09 at 15:49 -0700, Davidlohr Bueso wrote:
+> >> > > > > On Wed, 2014-04-09 at 10:39 +0800, Baoquan He wrote:
+> >> > > > > > Hi,
+> >> > > > > >
+> >> > > > > > The kernel is 3.14.0+ which is pulled just now.
+> >> > > > >
+> >> > > > > Cc'ing more people.
+> >> > > > >
+> >> > > > > While the hpsa driver appears to be involved in some way, I'm sure if
+> >> > > > > this is a related issue, but as of today's pull I'm getting another
+> >> > > > > problem that causes my DL980 not to come up.
+> >> > > > >
+> >> > > > > *Massive* amounts of:
+> >> > > > >
+> >> > > > > DMAR:[fault reason 02] Present bit in context entry is clear
+> >> > > > > dmar: DRHD: handling fault status reg 602
+> >> > > > > dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr 7f61e000
+> >> > > > >
+> >> > > > > Then:
+> >> > > > >
+> >> > > > > hpsa 0000:03:00.0: Controller lockup detected: 0xffff0000
+> >> > > > > ...
+> >> > > > > Workqueue: events hpsa_monitor_ctlr_worker [hpsa]
+> >> > > > > ...
+> >> > > > >
+> >> > > > > Screenshot of the actual LOCKUP:
+> >> > > > > http://stgolabs.net/hpsa-hard-lockup-3.14+.png
+> >> > > > >
+> >> > > > > While I haven't bisected, things worked fine until at least until commit
+> >> > > > > 39de65aa2c3e (April 2nd).
+> >> > > > >
+> >> > > > > Any ideas?
+> >> > > >
+> >> > > > Well, it's either a DMA remapping issue or a hpsa one.  Your assertion
+> >> > > > that everything worked fine until 39de65aa2c3e would tend to vindicate
+> >> > > > hpsa,
+> >> >
+> >> > Hmm here you mean DMA, right?
+> >>
+> >> No, it vindicates the hpsa changes ... they don't seem to be causing
+> >> problems until something goes wrong with dma remapping.
+> >>
+> >> > > because all the hpsa changes went in before that under
+> >> > > Missing crucial info:
+> >> > >
+> >> > > commit 1a0b6abaea78f73d9bc0a2f6df2d9e4c917cade1
+> >> > >
+> >> > > > Merge: 3e75c6d b2bff6c
+> >> > > > Author: Linus Torvalds <torvalds@linux-foundation.org>
+> >> > > > Date:   Tue Apr 1 18:49:04 2014 -0700
+> >> > > >
+> >> > > >     Merge tag 'scsi-misc' of
+> >> > > > git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi
+> >> > > >
+> >> > > > can you revalidate that this commit works OK just to make sure?
+> >> >
+> >> > Ok so I don't see those DMA messages and system starts just fine. I'm
+> >> > thinking perhaps something broke after the IO mmu stuff in commit
+> >> > 3f583bc21977a608908b83d03ee2250426a5695c... could this be indirectly
+> >> > causing the CPU stalls and just blame hpsa in the path as a side effect?
+> >> >
+> >> > /me goes out to try the commit.
+> >>
+> >> That's my guess.  The DMAR messages are DMA remapping issues caused in
+> >> the IOMMU.  If I had to guess, I'd say the DMAR fault message is
+> >> indicating the IOMMU is calling for a mapping address before it can
+> >> satisfy the driver read request, which is causing the hang apparently in
+> >> the hpsa driver.
+> >>
+> >> I've added linux-pci to the cc; I think they deal with iommu issues on
+> >> x86.
+> >
+> > So that merge commit appears to be the culprit, I see both the DMA
+> > messages and the lockup blaming hpsa...
+> 
+> My understanding so far (please correct me if I'm wrong):
+> 
+> 39de65aa2c3e OK ("Merge branch 'i2c/for-next'")
+> 1a0b6abaea78 OK ("Merge tag 'scsi-misc'")
+> 3f583bc21977 BAD ("Merge tag 'iommu-updates-v3.15'")
 
-On 04/10/2014 08:20 AM, Pankaj Dubey wrote:
-> Hi Michal,
->=20
-> On 04/09/2014 12:00 AM, Michal Simek wrote:
->> Some platforms need to get system controller
->> ready as soon as possible.
->> The patch provides early_syscon_initialization
->> which create early mapping for all syscon compatible
->> devices in early_syscon_probe.
->> Regmap is get via syscon_early_regmap_lookup_by_phandle()
->>
->> Regular device probes attach device to regmap
->> via regmap_attach_dev().
->>
->> For early syscon initialization is necessary to extend
->> struct syscon and provide remove function
->> which unmap all early init structures.
->>
->> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
->> ---
->>
->> Changes in v3:
->> - Keep backward compatibility for platform drivers and test it
->> - Use only one probe method which is early_syscon_probe
->>    suggested by Lee Jones. Do not force anybody to call early_syscon_i=
-nit
->> - Add kernel-doc description
->>
->> Changes in v2:
->> - Fix bad logic in early_syscon_probe
->> - Fix compilation failure for x86_64 reported by zero day testing syst=
-em
->> - Regmap change available here
->>    git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git ta=
-gs/nodev
->>
->>   drivers/mfd/syscon.c       | 159 +++++++++++++++++++++++++++++++++++=
-+++++-----
->>   include/linux/mfd/syscon.h |  11 ++++
->>   2 files changed, 153 insertions(+), 17 deletions(-)
->>
->> diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
->> index 71841f9..8e2ff88 100644
->> --- a/drivers/mfd/syscon.c
->> +++ b/drivers/mfd/syscon.c
->> @@ -20,12 +20,15 @@
->>   #include <linux/of_platform.h>
->>   #include <linux/platform_device.h>
->>   #include <linux/regmap.h>
->> +#include <linux/slab.h>
->>   #include <linux/mfd/syscon.h>
->>
->>   static struct platform_driver syscon_driver;
->>
->>   struct syscon {
->> +    void __iomem *base;
->>       struct regmap *regmap;
->> +    struct resource res;
->>   };
->>
->>   static int syscon_match_node(struct device *dev, void *data)
->> @@ -95,6 +98,30 @@ struct regmap *syscon_regmap_lookup_by_pdevname(con=
-st char *s)
->>   }
->>   EXPORT_SYMBOL_GPL(syscon_regmap_lookup_by_pdevname);
->>
->> +/**
->> + * syscon_early_regmap_lookup_by_phandle - Early phandle lookup funct=
-ion
->> + * @np:        device_node pointer
->> + * @property:    property name which handle system controller phandle=
+Yes, specifically (finally done bisecting):
 
->> + * Return:    regmap pointer, an error pointer otherwise
->> + */
->> +struct regmap *syscon_early_regmap_lookup_by_phandle(struct device_no=
-de *np,
->> +                             const char *property)
->> +{
->> +    struct device_node *syscon_np;
->> +    struct syscon *syscon;
->> +
->> +    syscon_np =3D of_parse_phandle(np, property, 0);
->> +    if (!syscon_np)
->> +        return ERR_PTR(-ENODEV);
->> +
->> +    syscon =3D syscon_np->data;
->> +
->> +    of_node_put(syscon_np);
->> +
->> +    return syscon->regmap;
->> +}
->> +EXPORT_SYMBOL_GPL(syscon_early_regmap_lookup_by_phandle);
->> +
->>   struct regmap *syscon_regmap_lookup_by_phandle(struct device_node *n=
-p,
->>                       const char *property)
->>   {
->> @@ -123,36 +150,118 @@ static struct regmap_config syscon_regmap_confi=
-g =3D {
->>       .reg_stride =3D 4,
->>   };
->>
->> -static int syscon_probe(struct platform_device *pdev)
->> +/**
->> + * early_syscon_probe - Early system controller probe method
->> + * @np:        device_node pointer
->> + * @syscon_p:    syscon pointer
->> + * @res:    device IO resource
->> + * Return:    0 if successful, a negative error code otherwise
->> + */
->> +static int early_syscon_probe(struct device_node *np, struct syscon *=
-*syscon_p,
->> +                  struct resource *res)
->>   {
->> -    struct device *dev =3D &pdev->dev;
->>       struct syscon *syscon;
->> -    struct resource *res;
->> -    void __iomem *base;
->> +    int ret;
->> +
->> +    if (np && np->data) {
->> +        pr_debug("Early syscon was called\n");
->> +        *syscon_p =3D (struct syscon *)&np->data;
->> +        return 0;
->> +    }
->>
->> -    syscon =3D devm_kzalloc(dev, sizeof(*syscon), GFP_KERNEL);
->> +    syscon =3D kzalloc(sizeof(*syscon), GFP_KERNEL);
->>       if (!syscon)
->>           return -ENOMEM;
->>
->> -    res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> -    if (!res)
->> -        return -ENOENT;
->> +    *syscon_p =3D (struct syscon *)&syscon;
->>
->> -    base =3D devm_ioremap(dev, res->start, resource_size(res));
->> -    if (!base)
->> -        return -ENOMEM;
->> +    if (!res && np) {
->> +        if (of_address_to_resource(np, 0, &syscon->res)) {
->> +            ret =3D -EINVAL;
->> +            goto alloc;
->> +        }
->> +
->> +        np->data =3D syscon;
->> +        of_node_put(np);
->> +    } else {
->> +        syscon->res =3D *res;
->> +    }
->>
->> -    syscon_regmap_config.max_register =3D res->end - res->start - 3;
->> -    syscon->regmap =3D devm_regmap_init_mmio(dev, base,
->> -                    &syscon_regmap_config);
->> +    syscon->base =3D ioremap(syscon->res.start, resource_size(&syscon=
-->res));
->> +    if (!syscon->base) {
->> +        pr_err("%s: Unable to map I/O memory\n", __func__);
->> +        ret =3D PTR_ERR(syscon->base);
->> +        goto alloc;
->> +    }
->> +
->> +    syscon_regmap_config.max_register =3D syscon->res.end -
->> +                        syscon->res.start - 3;
->> +    syscon->regmap =3D regmap_init_mmio(NULL, syscon->base,
->> +                      &syscon_regmap_config);
->>       if (IS_ERR(syscon->regmap)) {
->> -        dev_err(dev, "regmap init failed\n");
->> -        return PTR_ERR(syscon->regmap);
->> +        pr_err("regmap init failed\n");
->> +        ret =3D PTR_ERR(syscon->regmap);
->> +        goto iomap;
->>       }
->> +    if (np)
->> +        pr_info("syscon: %s regmap %pR registered\n", np->name,
->> +            &syscon->res);
->> +
->> +    return 0;
->> +
->> +iomap:
->> +    iounmap(syscon->base);
->> +alloc:
->> +    kfree(syscon);
->> +
->> +    return ret;
->> +}
->> +
->> +/**
->> + * early_syscon_init - Early system controller initialization
->> + */
->> +void __init early_syscon_init(void)
->> +{
->> +    struct device_node *np;
->> +    struct syscon *syscon =3D NULL;
->> +
->> +    for_each_matching_node_and_match(np, of_syscon_match, NULL) {
->> +        if (early_syscon_probe(np, &syscon, NULL))
->> +            BUG();
->> +    }
->> +}
->> +
->> +/**
->> + * syscon_probe - System controller probe method
->> + * @pdev:    Platform device
->> + * Return:    0 if successful, a negative error code otherwise
->> + */
->> +static int syscon_probe(struct platform_device *pdev)
->> +{
->> +    struct syscon *syscon, *syscon_p;
->> +    struct resource *res =3D NULL;
->> +    struct device *dev =3D &pdev->dev;
->> +    struct device_node *np =3D pdev->dev.of_node;
->> +    int ret;
->> +
->> +    if (!np) {
->> +        res =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +        if (!res)
->> +            return -ENOENT;
->> +    }
->> +    ret =3D early_syscon_probe(np, &syscon_p, res);
->> +    if (ret) {
->> +        dev_err(dev, "Syscon probe failed\n");
->> +        return ret;
->> +    }
->> +
->> +    syscon =3D *(struct syscon **)syscon_p;
->> +
->> +    regmap_attach_dev(dev, syscon->regmap, &syscon_regmap_config);
->>
->>       platform_set_drvdata(pdev, syscon);
->>
->> -    dev_info(dev, "regmap %pR registered\n", res);
->> +    dev_info(dev, "regmap attach device to %pR\n", &syscon->res);
->>
->>       return 0;
->>   }
->> @@ -162,6 +271,21 @@ static const struct platform_device_id syscon_ids=
-[] =3D {
->>       { }
->>   };
->>
->> +/**
->> + * syscon_remove - System controller cleanup function
->> + * @pdev:    Platform device
->> + * Return:    0 always
->> + */
->> +static int syscon_remove(struct platform_device *pdev)
->> +{
->> +    struct syscon *syscon =3D platform_get_drvdata(pdev);
->> +
->> +    iounmap(syscon->base);
->> +    kfree(syscon);
->> +
->> +    return 0;
->> +}
->> +
->>   static struct platform_driver syscon_driver =3D {
->>       .driver =3D {
->>           .name =3D "syscon",
->> @@ -169,6 +293,7 @@ static struct platform_driver syscon_driver =3D {
->>           .of_match_table =3D of_syscon_match,
->>       },
->>       .probe        =3D syscon_probe,
->> +    .remove        =3D syscon_remove,
->>       .id_table    =3D syscon_ids,
->>   };
->>
->> diff --git a/include/linux/mfd/syscon.h b/include/linux/mfd/syscon.h
->> index 8789fa3..465c092 100644
->> --- a/include/linux/mfd/syscon.h
->> +++ b/include/linux/mfd/syscon.h
->> @@ -24,6 +24,10 @@ extern struct regmap *syscon_regmap_lookup_by_pdevn=
-ame(const char *s);
->>   extern struct regmap *syscon_regmap_lookup_by_phandle(
->>                       struct device_node *np,
->>                       const char *property);
->> +extern struct regmap *syscon_early_regmap_lookup_by_phandle(
->> +                    struct device_node *np,
->> +                    const char *property);
->> +extern void early_syscon_init(void);
->>   #else
->>   static inline struct regmap *syscon_node_to_regmap(struct device_nod=
-e *np)
->>   {
->> @@ -46,6 +50,13 @@ static inline struct regmap *syscon_regmap_lookup_b=
-y_phandle(
->>   {
->>       return ERR_PTR(-ENOSYS);
->>   }
->> +
->> +static struct regmap *syscon_early_regmap_lookup_by_phandle(
->> +                    struct device_node *np,
->> +                    const char *property)
->> +{
->> +    return ERR_PTR(-ENOSYS);
->> +}
->>   #endif
->>
->>   #endif /* __LINUX_MFD_SYSCON_H__ */
->> --=20
->> 1.8.2.3
->>
-> Thanks for CC'ing me.
+commit 2e45528930388658603ea24d49cf52867b928d3e
+Author: Jiang Liu <jiang.liu@linux.intel.com>
+Date:   Wed Feb 19 14:07:36 2014 +0800
 
-no problem.
+    iommu/vt-d: Unify the way to process DMAR device scope array
+    
+    Now we have a PCI bus notification based mechanism to update DMAR
+    device scope array, we could extend the mechanism to support boot
+    time initialization too, which will help to unify and simplify
+    the implementation.
+    
+    Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+    Signed-off-by: Joerg Roedel <joro@8bytes.org>
 
->=20
-> I have tested this patch along with Exynos PMU related changes posted h=
-ere
-> https://lkml.org/lkml/2014/4/2/53 and modified it for using Syscon, and=
- it's working for me.
-
-great.
-
-
-> I have observed one issue during this testing:
->=20
-> Even though we are saying early initialization I could not use "early_s=
-yscon_init" from machine's
-> "map_io" or "init_early". I observed that "early_syscon_init" failed to=
- called "early_syscon_probe",
-> because it can not get any matching node, when I debug further I found =
-that as "early_syscon_init"
-> is calling "for_each_matching_node_and_match" and it can't work before =
-unflatten'ing device tree,
-> which happens in "setup_arch" a bit late, after "map_io" and "init_earl=
-y" calls of machine.
->=20
-> So if I have to use "early_syscon_init" I MUST call it after device tre=
-e is unflattened. It worked for me
-> when I called it from "init_machine" (from exynos_dt_machine_init), But=
- if someone needs it at very
-> early stage then it might not work. So how about using "of_scan_flat_dt=
-" in "early_syscon_init"?, so that
-> we can use this functionality at very early stage if required.
-
-Yes you are right. I have discussed this with Arnd and for Zynq there is =
-no need to call it so early
-that's why using this function is fine. Arnd wasn't sure if there is any =
-need to call it before unflattening
-that's why I didn't try to solve this case.
-
-Can you send me that patch? I will test it on Zynq and if it is working, =
-let's include it to v4.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---LdOlNsauxw8jvrso9oQke9SuR9IUIfR4J
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlNGN3wACgkQykllyylKDCG+PgCghctLmbe+GWrHJqj9VbWREC21
-ezwAnjWRU0kgKvOTy8y5bQmjawI6xQNv
-=lpYE
------END PGP SIGNATURE-----
-
---LdOlNsauxw8jvrso9oQke9SuR9IUIfR4J--
