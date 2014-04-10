@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965077AbaDJHUa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 03:20:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43590 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934688AbaDJHU1 (ORCPT
+	id S934750AbaDJHU3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 03:20:29 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:38372
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934241AbaDJHU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Apr 2014 03:20:27 -0400
-Message-ID: <53464639.2040208@linutronix.de>
-Date: Thu, 10 Apr 2014 09:20:25 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzdchz1de098h8275bh1de097hz2dh2a8h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh26b9h26d3h1155h)
+Message-ID: <5346462B.1080902@freescale.com>
+Date: Thu, 10 Apr 2014 15:20:11 +0800
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-To: Scott Wood <scottwood@freescale.com>
-CC: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Claudiu Manoil <claudiu.manoil@freescale.com>
-Subject: Re: [PATCH RT 2/2] net: gianfar: do not try to cleanup TX packets
- if they are not done
-References: <1396004220-5711-1-git-send-email-bigeasy@linutronix.de>	 <1396004220-5711-2-git-send-email-bigeasy@linutronix.de> <1397090916.20280.36.camel@snotra.buserror.net>
-In-Reply-To: <1397090916.20280.36.camel@snotra.buserror.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+To: <vkoul@infradead.org>, <dan.j.williams@intel.com>,
+        <dmaengine@vger.kernel.org>
+CC: <scottwood@freescale.com>, <leo.li@freescale.com>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 0/8] DMA: Freescale: driver cleanups and enhancements
+References: <1397113805-24171-1-git-send-email-hongbo.zhang@freescale.com> <1397113805-24171-2-git-send-email-hongbo.zhang@freescale.com>
+In-Reply-To: <1397113805-24171-2-git-send-email-hongbo.zhang@freescale.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2014 02:48 AM, Scott Wood wrote:
-> Why is this only being sent to RT and not to netdev for mainline?
+Sorry, forgot the cover letter, plus it here.
 
-I tried. And complained about how that problem was fixed by a duct tape
-solution (by dropping the outer loop) instead of understanding the
-problem and fixing it properly. Even Eric tied to point out that there
-might be something else going on. Look at netdev for "gianfar: Simplify
-MQ polling to avoid soft lockup".
-The threaded ended ended up with the fact that I took this for -RT only
-because netdev had already code for v3.15 and Claudiu managed to
-rewrite that part (again) and added napi for TX. So that Patch as-is
-does not apply anymore.
-With NAPI for TX I had may no longer persists so I will probably drop
-this patch in -RT >= 3.15
 
->> --- a/drivers/net/ethernet/freescale/gianfar.c
->> +++ b/drivers/net/ethernet/freescale/gianfar.c
->> @@ -2516,7 +2515,7 @@ static void gfar_align_skb(struct sk_buff *skb)
->>  }
->>  
->>  /* Interrupt Handler for Transmit complete */
->> -static void gfar_clean_tx_ring(struct gfar_priv_tx_q *tx_queue)
->> +static int gfar_clean_tx_ring(struct gfar_priv_tx_q *tx_queue)
->>  {
->>  	struct net_device *dev = tx_queue->dev;
->>  	struct netdev_queue *txq;
->> @@ -2939,10 +2938,14 @@ static int gfar_poll(struct napi_struct *napi, int budget)
-> 
-> You changed the return from void to int, but you never added any return
-> statement.  GCC should have warned you about this...
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
+Date: Thu, 10 Apr 2014 15:16:31 +0800
+Subject: [PATCH v3 0/8] DMA: Freescale: driver cleanups and enhancements
 
-Interesting. I remember that I added "howmany" as return value. I
-remember testing it. And yet there is evidence that I did not such a
-thing. I will add it. Thanks for pointing out.
+Hi Vinod Koul,
+Please have a look at the v3 patch set.
 
-> 
-> -Scott
-> 
+v2 -> v3 change:
+Only add "chan->pm_state = RUNNING" for patch[8/8].
 
-Sebastian
+v1 -> v2 change:
+The only one change is introducing a new patch[1/7] to remove the 
+unnecessary
+macro FSL_DMA_LD_DEBUG, thus the total patches number is 8 now (was 7)
+
+Hongbo Zhang (8):
+   DMA: Freescale: remove the unnecessary FSL_DMA_LD_DEBUG
+   DMA: Freescale: unify register access methods
+   DMA: Freescale: remove attribute DMA_INTERRUPT of dmaengine
+   DMA: Freescale: add fsl_dma_free_descriptor() to reduce code
+     duplication
+   DMA: Freescale: move functions to avoid forward declarations
+   DMA: Freescale: change descriptor release process for supporting
+     async_tx
+   DMA: Freescale: use spin_lock_bh instead of spin_lock_irqsave
+   DMA: Freescale: add suspend resume functions for DMA driver
+
+  drivers/dma/fsldma.c |  591 
+++++++++++++++++++++++++++++++++------------------
+  drivers/dma/fsldma.h |   33 ++-
+  2 files changed, 409 insertions(+), 215 deletions(-)
+
+
+
+
