@@ -1,199 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934515AbaDJB0z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 21:26:55 -0400
-Received: from dliviu.plus.com ([80.229.23.120]:43878 "EHLO smtp.dudau.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933251AbaDJB0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 21:26:53 -0400
-From: "Liviu Dudau" <liviu@dudau.co.uk>
-Date: Thu, 10 Apr 2014 02:27:16 +0100
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v7 4/6] pci: Introduce a domain number for
- pci_host_bridge.
-Message-ID: <20140410012715.GA1328@bart>
-Mail-Followup-To: Bjorn Helgaas <bhelgaas@google.com>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Catalin Marinas <Catalin.Marinas@arm.com>,
-	Will Deacon <Will.Deacon@arm.com>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>,
-	Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	LAKML <linux-arm-kernel@lists.infradead.org>,
-	Tanmay Inamdar <tinamdar@apm.com>,
-	Grant Likely <grant.likely@secretlab.ca>
-References: <1394811272-1547-5-git-send-email-Liviu.Dudau@arm.com>
- <20140405000007.GD15806@google.com>
- <20140407084623.GG17163@e106497-lin.cambridge.arm.com>
- <1396862058.3671.40.camel@pasglop>
- <20140407100715.GI17163@e106497-lin.cambridge.arm.com>
- <CAErSpo7h+Yew2hBztzkOzcHU5r4OQebxFbcZGkNUwJwfTFsbfg@mail.gmail.com>
- <20140408102043.GV17163@e106497-lin.cambridge.arm.com>
- <CAErSpo4anYBmaRbJEFE9kAXSmnvfqud=w1QA=mSSsTUamM4kSw@mail.gmail.com>
- <20140409120750.GN985@e106497-lin.cambridge.arm.com>
- <CAErSpo4BmoYzf6GxOPRni=q563zhON57s7=5Hz=2Cf-X2ft-1A@mail.gmail.com>
+	id S934532AbaDJBbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 21:31:53 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:7472 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932996AbaDJBbu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 21:31:50 -0400
+Message-ID: <5345F476.2000602@fb.com>
+Date: Wed, 9 Apr 2014 19:31:34 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAErSpo4BmoYzf6GxOPRni=q563zhON57s7=5Hz=2Cf-X2ft-1A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Thu Apr 10 02:26:51 2014
-X-DSPAM-Confidence: 1.0000
-X-DSPAM-Probability: 0.0023
-X-DSPAM-Signature: 13,5345f35b215641226716310
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Jan Kara <jack@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Brian J King <bjking1@us.ibm.com>
+Subject: Re: [BUG] kernel BUG at /.../block/cfq-iosched.c:3145!
+References: <1397018647.3671.123.camel@pasglop> <53454CBC.9060905@fb.com>	 <1397087273.3671.150.camel@pasglop> <1397088144.3671.155.camel@pasglop>
+In-Reply-To: <1397088144.3671.155.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-04-09_05:2014-04-09,2014-04-09,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=5.8201264735473
+ compositescore=0.307752384302029 urlsuspect_oldscore=0.307752384302029
+ suspectscore=2 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.307752384302029 spamscore=0
+ recipient_to_sender_domain_totalscore=16 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1404100017
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 08:02:41AM -0600, Bjorn Helgaas wrote:
-> On Wed, Apr 9, 2014 at 6:07 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> > On Tue, Apr 08, 2014 at 05:28:39PM +0100, Bjorn Helgaas wrote:
-> >> On Tue, Apr 8, 2014 at 4:20 AM, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
-> >> > On Mon, Apr 07, 2014 at 11:44:51PM +0100, Bjorn Helgaas wrote:
-> >>
-> >> >> Let me try to explain my concern about the
-> >> >> pci_create_root_bus_in_domain() interface.  We currently have these
-> >> >> interfaces:
-> >> >>
-> >> >>   pci_scan_root_bus()
-> >> >>   pci_scan_bus()
-> >> >>   pci_scan_bus_parented()
-> >> >>   pci_create_root_bus()
-> >> >> ...
-> >>
-> >> >> One alternative is to add an _in_domain() variant of each of these
-> >> >> interfaces, but that doesn't seem very convenient either.  My idea of
-> >> >> passing in a structure would also require adding variants, so there's
-> >> >> not really an advantage there, but I am thinking of the next
-> >> >> unification effort, e.g., for NUMA node info.  I don't really want to
-> >> >> have to change all the _in_domain() interfaces to also take yet
-> >> >> another parameter for the node number.
-> >> >
-> >> > OK, what about this: all the functions that you have mentioned take a
-> >> > void *sysdata parameter. Should we convert this opaque pointer into a
-> >> > specific structure that holds the domain_nr and (in future) the NUMA
-> >> > node info?
-> >>
-> >> I doubt if we can make sysdata itself generic because I suspect we
-> >> need a way to have *some* arch-specific data.  But maybe the arch
-> >> could supply a structure containing a struct device *, domain, struct
-> >> pci_ops *, list of resources, aperture info, etc.  I wonder if struct
-> >> pci_host_bridge would be a reasonable place to put this stuff, e.g.,
-> >> something like this:
-> >>
-> >>   struct pci_host_bridge {
-> >>     int domain;
-> >>     int node;
-> >>     struct device *dev;
-> >>     struct pci_ops *ops;
-> >>     struct list_head resources;
-> >>     void *sysdata;
-> >>     struct pci_bus *bus;  /* filled in by core, not by arch */
-> >>     ... /* other existing contents managed by core */
-> >>   };
-> >>
-> >>   struct pci_bus *pci_scan_host_bridge(struct pci_host_bridge *bridge);
-> >
-> > I'm really reluctant to give the arches more rope to hang themselves.
-> 
-> If you mean the sysdata pointer is rope to hang themselves, I think it
-> would be great it we didn't need sysdata at all.  But I think it would
-> be a huge amount of work to get rid of it completely, and keeping it
-> would let us work at that incrementally.
+On 2014-04-09 18:02, Benjamin Herrenschmidt wrote:
+> On Thu, 2014-04-10 at 09:47 +1000, Benjamin Herrenschmidt wrote:
+>
+>>> Nope, that's not a known issue. This must be related to the FIFO
+>>> changes... How reproducible is this?
+>>
+>> Dunno yet, haven't had a chance to dig. I'll try to grab that machine
+>> later today and reproduce &| bisect.
+>
+> Second boot leads to a slightly different symptom (see below). I'll
+> try bisecting a bit later today if I get a chance.
+>
+> =============================================================================
+> BUG blkdev_requests (Not tainted): Poison overwritten
+> -----------------------------------------------------------------------------
+>
+> Disabling lock debugging due to kernel taint
+> INFO: 0xc000003ca627f790-0xc000003ca627f797. First byte 0xc0 instead of 0x6b
+> INFO: Allocated in .mempool_alloc_slab+0x1c/0x30 age=17 cpu=36 pid=3579
+> 	.kmem_cache_alloc+0xc0/0x1ac
+> 	.mempool_alloc_slab+0x1c/0x30
+> 	.mempool_alloc+0x98/0x18c
+> 	.get_request+0x248/0x490
+> 	.blk_queue_bio+0x174/0x25c
+> 	.generic_make_request+0xa8/0xec
+> 	.submit_bio+0x134/0x14c
+> 	.mpage_readpages+0x108/0x118
+> 	.ext4_readpages+0x48/0x5c
+> 	.__do_page_cache_readahead+0x1b0/0x298
+> 	.ra_submit+0x28/0x38
+> 	.filemap_fault+0x158/0x3e4
+> 	.__do_fault+0x48/0xbc
+> 	.do_read_fault.isra.65+0x2c/0xe4
+> 	.handle_mm_fault+0x460/0xbb8
+> 	.do_page_fault+0x498/0x7e0
+> INFO: Freed in .mempool_free_slab+0x1c/0x30 age=17 cpu=36 pid=0
+> 	.kmem_cache_free+0x1d4/0x1fc
+> 	.mempool_free_slab+0x1c/0x30
+> 	.mempool_free+0xb0/0xbc
+> 	.__blk_put_request+0xd0/0x104
+> 	.blk_end_bidi_request+0x40/0x64
+> 	.scsi_io_completion+0x198/0x5a4
+> 	.scsi_finish_command+0xd0/0xdc
+> 	.scsi_softirq_done+0x128/0x134
+> 	.blk_done_softirq+0xa0/0xb8
+> 	.__do_softirq+0x1b8/0x370
+> 	.irq_exit+0x74/0xa4
+> 	.__do_irq+0x90/0xa4
+> 	.call_do_irq+0x14/0x24
+> 	.do_IRQ+0x80/0xc0
+> 	hardware_interrupt_common+0x138/0x180
+> 	0xc000000001e46640
+> INFO: Slab 0xf00000000d445888 objects=92 used=92 fp=0x          (null) flags=0x13fff8000000080
+> INFO: Object 0xc000003ca627f788 @offset=63368 fp=0xc000003ca6270de8
+>
+> Bytes b4 c000003ca627f778: 00 00 00 00 ff fe ef be 5a 5a 5a 5a 5a 5a 5a 5a  ........ZZZZZZZZ
+> Object c000003ca627f788: 6b 6b 6b 6b 6b 6b 6b 6b c0 00 00 3c a6 27 fa 50  kkkkkkkk...<.'.P
+> Object c000003ca627f798: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f7a8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f7b8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f7c8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f7d8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f7e8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f7f8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f808: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f818: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f828: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f838: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f848: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f858: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f868: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f878: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f888: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f898: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f8a8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f8b8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f8c8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f8d8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f8e8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> Object c000003ca627f8f8: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5  kkkkkkkkkkkkkkk.
+> Redzone c000003ca627f908: bb bb bb bb bb bb bb bb                          ........
+> Padding c000003ca627fa48: 5a 5a 5a 5a 5a 5a 5a 5a                          ZZZZZZZZ
+> CPU: 60 PID: 3579 Comm: X Tainted: G    B        3.14.0-test #1
+> Call Trace:
+> [c000003ca331aaf0] [c00000000001405c] .show_stack+0x50/0x14c (unreliable)
+> [c000003ca331abc0] [c0000000008a3a94] .dump_stack+0x90/0xc0
+> [c000003ca331ac40] [c00000000014bbec] .print_trailer+0x17c/0x188
+> [c000003ca331acd0] [c00000000014bd08] .check_bytes_and_report+0xc0/0x114
+> [c000003ca331ad80] [c00000000014be44] .check_object+0xe8/0x240
+> [c000003ca331ae20] [c0000000008a2488] .alloc_debug_processing+0x184/0x19c
+> [c000003ca331aeb0] [c0000000008a2958] .__slab_alloc+0x4b8/0x540
+> [c000003ca331b020] [c00000000014de68] .kmem_cache_alloc+0xc0/0x1ac
+> [c000003ca331b0d0] [c000000000107f3c] .mempool_alloc_slab+0x1c/0x30
+> [c000003ca331b140] [c0000000001080d4] .mempool_alloc+0x98/0x18c
+> [c000003ca331b220] [c0000000003227c4] .get_request+0x248/0x490
+> [c000003ca331b340] [c000000000324a68] .blk_queue_bio+0x174/0x25c
+> [c000003ca331b3e0] [c000000000322280] .generic_make_request+0xa8/0xec
+> [c000003ca331b470] [c0000000003223f8] .submit_bio+0x134/0x14c
+> [c000003ca331b530] [c000000000186030] ._submit_bh+0x244/0x278
+> [c000003ca331b5c0] [c000000000186b14] .ll_rw_block+0xd4/0x100
+> [c000003ca331b670] [c000000000188d80] .__breadahead+0x2c/0x4c
+> [c000003ca331b6f0] [c00000000021d18c] .__ext4_get_inode_loc+0x390/0x444
+> [c000003ca331b7c0] [c00000000021f7cc] .ext4_iget+0x4c/0x97c
+> [c000003ca331b8c0] [c000000000229558] .ext4_lookup+0xc4/0x15c
+> [c000003ca331b960] [c00000000016007c] .lookup_real+0x4c/0x74
+> [c000003ca331b9e0] [c000000000165bdc] .do_last+0x58c/0xc54
+> [c000003ca331bb10] [c00000000016650c] .path_openat+0x268/0x6a0
+> [c000003ca331bc30] [c000000000166cc0] .do_filp_open+0x34/0x80
+> [c000003ca331bd70] [c000000000155a10] .do_sys_open+0x1a4/0x250
+> [c000003ca331be30] [c00000000000a024] syscall_exit+0x0/0x98
+> FIX blkdev_requests: Restoring 0xc000003ca627f790-0xc000003ca627f797=0x6b
+>
+> FIX blkdev_requests: Marking all objects used
+> ------------[ cut here ]------------
+> kernel BUG at /home/benh/linux-powerpc-test/block/elevator.c:262!
+> cpu 0x34: Vector: 700 (Program Check) at [c000001febbd32c0]
+>      pc: c00000000031ee40: .elv_rqhash_add+0x10/0x8c
+>      lr: c0000000003202c8: .__elv_add_request+0x264/0x27c
+>      sp: c000001febbd3540
+>     msr: 9000000000029032
+>    current = 0xc000003ca620c320
+>    paca    = 0xc00000000ffed000	 softe: 0	 irq_happened: 0x01
+>      pid   = 3565, comm = in:imjournal
+> kernel BUG at /home/benh/linux-powerpc-test/block/elevator.c:262!
+> enter ? for help
+> [link register   ] c0000000003202c8 .__elv_add_request+0x264/0x27c
+> [c000001febbd3540] c0000000003201a0 .__elv_add_request+0x13c/0x27c (unreliable)
+> [c000001febbd35e0] c000000000324858 .blk_flush_plug_list+0x1f4/0x254
+> [c000001febbd36a0] c0000000003248d0 .blk_finish_plug+0x18/0x3c
+> [c000001febbd3720] c000000000111a84 .__do_page_cache_readahead+0x268/0x298
+> [c000001febbd3870] c000000000111d24 .ra_submit+0x28/0x38
+> [c000001febbd38e0] c000000000106f54 .filemap_fault+0x158/0x3e4
+> [c000001febbd39b0] c000000000126cfc .__do_fault+0x48/0xbc
+> [c000001febbd3a60] c0000000001272b0 .do_read_fault.isra.65+0x2c/0xe4
+> [c000001febbd3b20] c00000000012a718 .handle_mm_fault+0x460/0xbb8
+> [c000001febbd3c00] c00000000002ff54 .do_page_fault+0x498/0x7e0
+> [c000001febbd3e30] c0000000000094e8 handle_page_fault+0x10/0x30
+> --- Exception: 301 (Data Access) at 00003fff9a40d2d4
+> SP (3fff9585df30) is in userspace
+> 34:mon>
 
-Agree. But then your suggestion was to wrap sysdata inside another structure,
-which to me constitutes additional rope.
-
-> 
-> > I
-> > really dislike the use of xxxx_initcall() to do PCI initialisation ordering
-> > that is currently in widespread use through the arch code.
-> 
-> I certainly agree that initcall ordering is fragile and to be avoided
-> when possible.
-> 
-> > As I hope to
-> > have proven with my arm64 code, you can have PCI support for an architecture
-> > without having to provide any arch specific code. We have enough correct
-> > code in the PCI framework, what would the architectures provide to the generic
-> > code that we cannot get by following the standard?
-> 
-> PCI host bridges are not architected, i.e., the PCI/PCIe specs do not
-> say anything about how to discover them or how to program them.  So
-> the arch or a driver for another bus (ACPI, OF, etc.) must enumerate
-> them and discover the bridge apertures (those are in the resource
-> list).  And obviously the arch has to provide the root bus number and
-> PCI config accessors.
-
-The "what" for PCI host bridges is defined in the spec. The "how" is implementation
-defined. What I'm trying to get with the cleanup is the ordering of pci_host_bridge
-creation: core creates the structure first ("what"), arch then has the chance
-of adding specific data to it (ops, resources, etc) ("how").
-
-At the moment arm and powerpc do some horrible dances in trying to create their
-local idea of a host bridge before passing it to the core code.
-
-As for the root bus number, maybe we can offer some sensible default strategy
-for numbering them and the arches that don't care too much can use that.
-
-> 
-> > Of course, there are always arch specific corners and they need their data
-> > structures to make sense of those, but rather than having architectures
-> > fill in a structure *before* we can setup host bridges I think we need
-> > to reverse the order. Using your example structure, I don't think is
-> > the arch's job to provide the list of resources or the domain number
-> > before we can scan the host bridge. We should be able to get those from
-> > somewhere else (like adding by default the ioport_resource and
-> > iomem_resource and managing domain numbers inside the core framework).
-> 
-> It's possible we could manage domain numbers in the core.  On ACPI
-> systems, we currently we use the ACPI _SEG value as the domain.  In
-> some cases, e.g., on ia64, config space access is done via firmware
-> interfaces, and those interfaces expect the _SEG values.  We could
-> conceivably maintain a mapping between _SEG and domain, but I'm not
-> sure there's an advantage there.
-> 
-> I probably don't understand what you intend by reversing the order.
-> Are you suggesting something like new pcibios_*() interfaces the arch
-> can use to get the host bridge apertures and domain number?
-
-Yes. Lets stop having the architectures do early inits so that they can
-prepare their host bridge structures to be ready for when the PCI framework
-calls them. Lets create the host bridge in the PCI core and use pcibios_*()
-to add to it where necessary without having to race for position.
-
-Best regards,
-Liviu
-
-> 
-> Bjorn
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+OK, I think we're seeing different symptoms of the same bug. Stay tuned, 
+will have something for you to test shortly, I hope.
 
 -- 
--------------------
-   .oooO
-   (   )
-    \ (  Oooo.
-     \_) (   )
-          ) /
-         (_/
-
- One small step
-   for me ...
+Jens Axboe
 
