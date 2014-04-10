@@ -1,177 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935606AbaDJQCX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 12:02:23 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50097 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934782AbaDJQCR (ORCPT
+	id S935728AbaDJQCk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 12:02:40 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:39649 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935712AbaDJQCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 12:02:17 -0400
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <ak@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/7] perf top: Add --percentage option
-Date: Fri, 11 Apr 2014 01:01:56 +0900
-Message-Id: <1397145720-8063-4-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1397145720-8063-1-git-send-email-namhyung@kernel.org>
-References: <1397145720-8063-1-git-send-email-namhyung@kernel.org>
+	Thu, 10 Apr 2014 12:02:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo4fUW24ShdyMHq_4CUk_EeK=uJiOTB+5fN1Ztr3cFW3hA@mail.gmail.com>
+References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com> <CAErSpo4fUW24ShdyMHq_4CUk_EeK=uJiOTB+5fN1Ztr3cFW3hA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 10 Apr 2014 10:02:16 -0600
+Message-ID: <CAErSpo5zE3XZYhewEgvUhU-08D35NmRtyr2SUvDVVoP_V7-hHQ@mail.gmail.com>
+Subject: Re: hpsa driver bug crack kernel down!
+To: Baoquan He <bhe@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        iss_storagedev@hp.com,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The --percentage option is for controlling overhead percentage
-displayed.  It can only receive either of "relative" or "absolute".
-Move the parser callback function into a common location since it's
-used by multiple commands now.
+[+cc Steve and iss_storagedev, remove "storagedev" which bounced
+(apparent typo)]
 
-For more information, please see previous commit same thing done to
-"perf report".
-
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/Documentation/perf-top.txt |   18 +++++++++++++++---
- tools/perf/builtin-report.c           |   16 +---------------
- tools/perf/builtin-top.c              |    5 +++--
- tools/perf/util/hist.c                |   13 +++++++++++++
- tools/perf/util/hist.h                |    5 +++++
- 5 files changed, 37 insertions(+), 20 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
-index 976b00c6cdb1..64ed79c43639 100644
---- a/tools/perf/Documentation/perf-top.txt
-+++ b/tools/perf/Documentation/perf-top.txt
-@@ -123,13 +123,16 @@ Default is to monitor all CPUS.
- 	Show a column with the sum of periods.
- 
- --dsos::
--	Only consider symbols in these dsos.
-+	Only consider symbols in these dsos.  This option will affect the
-+	percentage of the overhead column.  See --percentage for more info.
- 
- --comms::
--	Only consider symbols in these comms.
-+	Only consider symbols in these comms.  This option will affect the
-+	percentage of the overhead column.  See --percentage for more info.
- 
- --symbols::
--	Only consider these symbols.
-+	Only consider these symbols.  This option will affect the
-+	percentage of the overhead column.  See --percentage for more info.
- 
- -M::
- --disassembler-style=:: Set disassembler style for objdump.
-@@ -165,6 +168,15 @@ Default is to monitor all CPUS.
- 	Do not show entries which have an overhead under that percent.
- 	(Default: 0).
- 
-+--percentage::
-+	Determine how to display the overhead percentage of filtered entries.
-+	Filters can be applied by --comms, --dsos and/or --symbols options and
-+	Zoom operations on the TUI (thread, dso, etc).
-+
-+	"relative" means it's relative to filtered entries only so that the
-+	sum of shown entries will be always 100%. "absolute" means it retains
-+	the original value before and after the filter is applied.
-+
- INTERACTIVE PROMPTING KEYS
- --------------------------
- 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 7ec351bda833..af8cb7a2c9b6 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -717,20 +717,6 @@ parse_percent_limit(const struct option *opt, const char *str,
- 	return 0;
- }
- 
--static int
--parse_percentage(const struct option *opt __maybe_unused, const char *str,
--		 int unset __maybe_unused)
--{
--	if (!strcmp(str, "relative"))
--		symbol_conf.filter_relative = true;
--	else if (!strcmp(str, "absolute"))
--		symbol_conf.filter_relative = false;
--	else
--		return -1;
--
--	return 0;
--}
--
- int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- {
- 	struct perf_session *session;
-@@ -854,7 +840,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_CALLBACK(0, "percent-limit", &report, "percent",
- 		     "Don't show entries under that percent", parse_percent_limit),
- 	OPT_CALLBACK(0, "percentage", NULL, "relative|absolute",
--		     "how to display percentage of filtered entries", parse_percentage),
-+		     "how to display percentage of filtered entries", parse_filter_percentage),
- 	OPT_END()
- 	};
- 	struct perf_data_file file = {
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 25269014164a..37d30460bada 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -697,8 +697,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
- 	if (event->header.misc & PERF_RECORD_MISC_EXACT_IP)
- 		top->exact_samples++;
- 
--	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0 ||
--	    al.filtered)
-+	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0)
- 		return;
- 
- 	if (!top->kptr_restrict_warned &&
-@@ -1119,6 +1118,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_STRING('u', "uid", &target->uid_str, "user", "user to profile"),
- 	OPT_CALLBACK(0, "percent-limit", &top, "percent",
- 		     "Don't show entries under that percent", parse_percent_limit),
-+	OPT_CALLBACK(0, "percentage", NULL, "relative|absolute",
-+		     "How to display percentage of filtered entries", parse_filter_percentage),
- 	OPT_END()
- 	};
- 	const char * const top_usage[] = {
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 3ebd89a28257..3c2dd233b98e 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -943,3 +943,16 @@ u64 hists__total_period(struct hists *hists)
- 	return symbol_conf.filter_relative ? hists->stats.total_non_filtered_period :
- 		hists->stats.total_period;
- }
-+
-+int parse_filter_percentage(const struct option *opt __maybe_unused,
-+			    const char *arg, int unset __maybe_unused)
-+{
-+	if (!strcmp(arg, "relative"))
-+		symbol_conf.filter_relative = true;
-+	else if (!strcmp(arg, "absolute"))
-+		symbol_conf.filter_relative = false;
-+	else
-+		return -1;
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 3191496bd3b7..a4ec336ae3fe 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -254,4 +254,9 @@ static inline int script_browse(const char *script_opt __maybe_unused)
- #endif
- 
- unsigned int hists__sort_list_width(struct hists *hists);
-+
-+struct option;
-+int parse_filter_percentage(const struct option *opt __maybe_unused,
-+			    const char *arg, int unset __maybe_unused);
-+
- #endif	/* __PERF_HIST_H */
--- 
-1.7.9.2
-
+On Thu, Apr 10, 2014 at 9:43 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Tue, Apr 8, 2014 at 8:39 PM, Baoquan He <bhe@redhat.com> wrote:
+>> Hi,
+>>
+>> The kernel is 3.14.0+ which is pulled just now.
+>>
+>>
+>> [   18.402695] systemd[1]: Set hostname to
+>> <hp-sl4545g7-01.rhts.eng.bos.redhat.com>.
+>> [   18.408456] random: systemd urandom read with 70 bits of entropy
+>> available
+>> [   18md[1]: Expecting device
+>> dev-mapper-rhel_hp\x2d\x2dsl4545g7\x2d\x2d01\x2droot.device...
+>>          Expecting device
+>> dev-mapper-rhel_hp\x2d\x2dsl4545g7\...droot.device...
+>> [   18.860704] systemd[1]: Starting -.slice.
+>> [  OK  ] Created slice -.slice.
+>> [   18.866030] systemd[1]: Created slice -.slice.
+>> [   18.869466] systemd[1]: Starting System Slice.
+>> [  OK  ] Created slice System Sl       18.939116] systemd[1]: Created
+>> slice System Slice.
+>> [   18.976213] systemd[1]: Starting Slices.
+>> [  OK  ] Reached target Slices.
+>> [   18.981154] systemd[1]: Reached target Slices.
+>> [   18.984183] systemd[1]: Starting Timers.
+>> [  OK  ] Reached target Timers.
+>> [   18.989161] systemd[1]: Reached target Timers.
+>> [   18.992004] systemd[1]: Starting Journal Socket.
+>> [  OK  ] Listening on Journal Socket.
+>> [   18.997174] systemd[1]: Listening on Journal Socket.
+>> [   19.000702] systemd[1]: Starting dracut cmdline hook...
+>>          Starting dracut cmdline hook...
+>> [   19.006697] systemd[1]: Started Load KernModules.
+>> [   19.110408] systemd[1]: Starting Setup Virtual Console...
+>>          Starting Setup Virtual Console...
+>> [   19.116652] systemd[1]: Starting Journal Service...
+>>          Starting Journal Service...
+>> [  OK  ] Started Journal Service.
+>> [   19.127172] systemd[1]: Started Journal Service.
+>> [  OK  ] Listening on udev Kernel Socket.
+>> [   19.141504] systemd-journald[281]: Vac[  OK  ] Listening on udev
+>> Control Socket.
+>> [  OK  ] Reached target Sockets.
+>>          Starting Create list of required static device nodes...rrent
+>> kernel...
+>>          Starting Apply Kernel Variables...
+>> [  OK  ] Reached target Swap.
+>> [  OK  ] Reached target Local File Systems.
+>> [  OK  ] Started dracut cmdline hook.
+>> [  OK  ] Started Setup Virtual Console.
+>> [  OK  ] Started Apply Kernel Variables.
+>> [  OK  ] Started Create list of required static device nodes ...current
+>> kernel.
+>>          Starting Create static device nodes in /dev...
+>>          Starting dracut pre-udev hook...
+>> [  OK  ] Started Create static device nodes in /dev.
+>> [   20.247819] device-mapper: uevent: version 1.0.3
+>> [   20.251101] device-mapper: ioctl: 4.27.0-ioctl (2013-10-30)
+>> initialised: dm-devel@redhat.com
+>> [  OK  ] Started dracut pre-udev hook.
+>>          Starting udev Kernel Device Manager...
+>> [   20.322923] systemd-udevd[335]: starting version 208
+>> [  OK  ] Started udev Kernel Device Manager.
+>>          Starting udev Coldplug all Devices...
+>>          Mounting Configuration File System...
+>> [  OK  ] Mounted Configuration File System.
+>> [  OK  ] Started udev Coldplug all Devices.
+>>          Starting dracut initqueue hook...
+>> [  OK  ][1] HP HPSA Driver (v 3.4.4-1)
+>> [   20.832850] hpsa 0000:05:00.0: can't disable ASPM; OS doesn't have
+>> ASPM control
+>>  Reached target System Initialization.
+>> [   20.875178] ACPI: PCI Interrupt Link [I0C0] enabled at IRQ 36
+>> [   20.909000] hpsa 0000:05:00.0: MSIX
+>> [   20.911586] hpsa 0000:05:00.0: Logical aborts not supported
+>>          [   20.916004] [drm] Initialized drm 1.1.0 20060810
+>> [   20.936139] hpsa 0000:05:00.0: hpsa0: <0x323b> at IRQ 73 using DAC
+>> [   20.956967] BUG: unable to handle kernel NULL pointer dereference at
+>> (null)
+>> [   20.956997] IP: [<ffffffffa004b97f>]
+>> hpsa_enter_performant_mode+0x4ff/0x580 [hpsa]
+>> [   20.957003] PGD 0
+>> [   20.957012] Oops: 0002 [#1] SMP
+>> [   20.957035] Modules linked in: drm(+) libata hpsa(+) i2c_core
+>> dm_mirror dm_region_hash dm_log dm_mod
+>> [   20.957046] CPU: 10 PID: 341 Comm: systemd-udevd Not tainted 3.14.0+
+>> #28
+>> [   20.957049] Hardware name: HP ProLiant SL4545 G7/, BIOS A31
+>> 12/08/2012
+>> [   20.957055] task: ffff880824191b40 ti: ffff88082309c000 task.ti:
+>> ffff88082309c000
+>> [   20.957078] RIP: 0010:[<ffffffffa004b97f>]  [<ffffffffa004b97f>]
+>> hpsa_enter_performant_mode+0x4ff/0x580 [hpsa]
+>> [   20.957083] RSP: 0018:ffff88082309da18  EFLAGS: 00010297
+>> [   20.957088] RAX: 0000000000000000 RBX: 000000007c000167 RCX:
+>> 0000000000000004
+>> [   20.957091] RDX: 000000000000
+>
+> What happened with this original report?  This looks like a different
+> problem than the DMA fault reported by Davidlohr.  I'd start by
+> disassembling the hpsa module and matching the IP to a line.
+> Documentation/oops-tracing.txt might have useful tips on how to do
+> that.
