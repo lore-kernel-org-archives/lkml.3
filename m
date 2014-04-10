@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965172AbaDJDXg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:23:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41008 "EHLO
+	id S965156AbaDJDXe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:23:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41002 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934673AbaDJDWA (ORCPT
+	with ESMTP id S934671AbaDJDV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:00 -0400
+	Wed, 9 Apr 2014 23:21:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Calvin Owens <jcalvinowens@gmail.com>, Takashi Iwai <tiwai@suse.de>,
+        Ashish Sangwan <ashishsangwan2@gmail.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
         Ben Hutchings <ben@decadent.org.uk>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 050/134] ALSA: usb: Add quirk for 192KHz recording on E-Mu devices
-Date: Wed,  9 Apr 2014 20:22:46 -0700
-Message-Id: <20140410032306.528476708@linuxfoundation.org>
+        Yang Yingliang <yangyingliang@huawei.com>
+Subject: [PATCH 3.4 038/134] ARM: 7791/1: a.out: remove partial a.out support
+Date: Wed,  9 Apr 2014 20:22:34 -0700
+Message-Id: <20140410032304.894915619@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -28,76 +30,173 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Calvin Owens <jcalvinowens@gmail.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 1539d4f82ad534431cc67935e8e442ccf107d17d upstream.
+commit acfdd4b1f7590d02e9bae3b73bdbbc4a31b05d38 upstream.
 
-When recording at 176.2KHz or 192Khz, the device adds a 32-bit length
-header to the capture packets, which obviously needs to be ignored for
-recording to work properly.
+a.out support on ARM requires that argc, argv and envp are passed in
+r0-r2 respectively, which requires hacking load_aout_binary to
+prevent argc being clobbered by the return code. Whilst mainline kernels
+do set the registers up in start_thread, the aout loader has never
+carried the hack in mainline.
 
-Userspace expected:  L0 L1 L2 R0 R1 R2
-...but actually got: R2 L0 L1 L2 R0 R1
+Initialising the registers in this way actually goes against the libc
+expectations for ELF binaries, where argc, argv and envp are passed on
+the stack, with r0 being used to hold a pointer to an exit function for
+cleaning up after the dynamic linker if required. If the pointer is
+NULL, then it is ignored. When execing an ELF binary, Linux currently
+zeroes r0, then sets it to argc and then finally clobbers it with the
+return value of the execve syscall, so we actually end up with:
 
-Also, the last byte of the length header being interpreted as L0 of
-the first sample caused spikes every 0.5ms, resulting in a loud 16KHz
-tone (about the highest 'B' on a piano) being present throughout
-captures.
+	r0 = 0
+	stack[0] = argc
+	r1 = stack[1] = argv
+	r2 = stack[2] = envp
 
-Tested at all sample rates on an E-Mu 0404USB, and tested for
-regressions on a generic USB headset.
+libc treats r1 and r2 as undefined. The clobbering of r0 by sys_execve
+works for user-spawned threads, but when executing an ELF binary from a
+kernel thread (via call_usermodehelper), the execve is performed on the
+ret_from_fork path, which restores r0 from the saved pt_regs, resulting
+in argc being presented to the C library. This has horrible consequences
+when the application exits, since we have an exit function registered
+using argc, resulting in a jump to hyperspace.
 
-Signed-off-by: Calvin Owens <jcalvinowens@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[bwh: Backported to 3.2: adjust filenames, context]
+This patch solves the problem by removing the partial a.out support from
+arch/arm/ altogether.
+
+Cc: Ashish Sangwan <ashishsangwan2@gmail.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Adjust uapi filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
+[yangyl: Backported to 3.4: Adjust context]
+Signed-off-by: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/usb/card.h     |    1 +
- sound/usb/endpoint.c |    3 ++-
- sound/usb/quirks.c   |    1 +
- 3 files changed, 4 insertions(+), 1 deletion(-)
+ arch/arm/Kconfig                  |    1 
+ arch/arm/include/asm/a.out-core.h |   45 --------------------------------------
+ arch/arm/include/asm/a.out.h      |   34 ----------------------------
+ arch/arm/include/asm/processor.h  |    4 ---
+ 4 files changed, 84 deletions(-)
+ delete mode 100644 arch/arm/include/asm/a.out-core.h
+ delete mode 100644 arch/arm/include/asm/a.out.h
 
---- a/sound/usb/card.h
-+++ b/sound/usb/card.h
-@@ -74,6 +74,7 @@ struct snd_usb_substream {
- 	unsigned int fill_max: 1;	/* fill max packet size always */
- 	unsigned int txfr_quirk:1;	/* allow sub-frame alignment */
- 	unsigned int fmt_type;		/* USB audio format type (1-3) */
-+	unsigned int pkt_offset_adj;	/* Bytes to drop from beginning of packets (for non-compliant devices) */
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1,7 +1,6 @@
+ config ARM
+ 	bool
+ 	default y
+-	select HAVE_AOUT
+ 	select HAVE_DMA_API_DEBUG
+ 	select HAVE_IDE if PCI || ISA || PCMCIA
+ 	select HAVE_MEMBLOCK
+--- a/arch/arm/include/asm/a.out-core.h
++++ /dev/null
+@@ -1,45 +0,0 @@
+-/* a.out coredump register dumper
+- *
+- * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.
+- * Written by David Howells (dhowells@redhat.com)
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public Licence
+- * as published by the Free Software Foundation; either version
+- * 2 of the Licence, or (at your option) any later version.
+- */
+-
+-#ifndef _ASM_A_OUT_CORE_H
+-#define _ASM_A_OUT_CORE_H
+-
+-#ifdef __KERNEL__
+-
+-#include <linux/user.h>
+-#include <linux/elfcore.h>
+-
+-/*
+- * fill in the user structure for an a.out core dump
+- */
+-static inline void aout_dump_thread(struct pt_regs *regs, struct user *dump)
+-{
+-	struct task_struct *tsk = current;
+-
+-	dump->magic = CMAGIC;
+-	dump->start_code = tsk->mm->start_code;
+-	dump->start_stack = regs->ARM_sp & ~(PAGE_SIZE - 1);
+-
+-	dump->u_tsize = (tsk->mm->end_code - tsk->mm->start_code) >> PAGE_SHIFT;
+-	dump->u_dsize = (tsk->mm->brk - tsk->mm->start_data + PAGE_SIZE - 1) >> PAGE_SHIFT;
+-	dump->u_ssize = 0;
+-
+-	memset(dump->u_debugreg, 0, sizeof(dump->u_debugreg));
+-
+-	if (dump->start_stack < 0x04000000)
+-		dump->u_ssize = (0x04000000 - dump->start_stack) >> PAGE_SHIFT;
+-
+-	dump->regs = *regs;
+-	dump->u_fpvalid = dump_fpu (regs, &dump->u_fp);
+-}
+-
+-#endif /* __KERNEL__ */
+-#endif /* _ASM_A_OUT_CORE_H */
+--- a/arch/arm/include/asm/a.out.h
++++ /dev/null
+@@ -1,34 +0,0 @@
+-#ifndef __ARM_A_OUT_H__
+-#define __ARM_A_OUT_H__
+-
+-#include <linux/personality.h>
+-#include <linux/types.h>
+-
+-struct exec
+-{
+-  __u32 a_info;		/* Use macros N_MAGIC, etc for access */
+-  __u32 a_text;		/* length of text, in bytes */
+-  __u32 a_data;		/* length of data, in bytes */
+-  __u32 a_bss;		/* length of uninitialized data area for file, in bytes */
+-  __u32 a_syms;		/* length of symbol table data in file, in bytes */
+-  __u32 a_entry;	/* start address */
+-  __u32 a_trsize;	/* length of relocation info for text, in bytes */
+-  __u32 a_drsize;	/* length of relocation info for data, in bytes */
+-};
+-
+-/*
+- * This is always the same
+- */
+-#define N_TXTADDR(a)	(0x00008000)
+-
+-#define N_TRSIZE(a)	((a).a_trsize)
+-#define N_DRSIZE(a)	((a).a_drsize)
+-#define N_SYMSIZE(a)	((a).a_syms)
+-
+-#define M_ARM 103
+-
+-#ifndef LIBRARY_START_TEXT
+-#define LIBRARY_START_TEXT	(0x00c00000)
+-#endif
+-
+-#endif /* __A_OUT_GNU_H__ */
+--- a/arch/arm/include/asm/processor.h
++++ b/arch/arm/include/asm/processor.h
+@@ -54,7 +54,6 @@ struct thread_struct {
  
- 	unsigned int running: 1;	/* running status */
+ #define start_thread(regs,pc,sp)					\
+ ({									\
+-	unsigned long *stack = (unsigned long *)sp;			\
+ 	memset(regs->uregs, 0, sizeof(regs->uregs));			\
+ 	if (current->personality & ADDR_LIMIT_32BIT)			\
+ 		regs->ARM_cpsr = USR_MODE;				\
+@@ -65,9 +64,6 @@ struct thread_struct {
+ 	regs->ARM_cpsr |= PSR_ENDSTATE;					\
+ 	regs->ARM_pc = pc & ~1;		/* pc */			\
+ 	regs->ARM_sp = sp;		/* sp */			\
+-	regs->ARM_r2 = stack[2];	/* r2 (envp) */			\
+-	regs->ARM_r1 = stack[1];	/* r1 (argv) */			\
+-	regs->ARM_r0 = stack[0];	/* r0 (argc) */			\
+ 	nommu_start_thread(regs);					\
+ })
  
---- a/sound/usb/endpoint.c
-+++ b/sound/usb/endpoint.c
-@@ -458,7 +458,7 @@ static int retire_capture_urb(struct snd
- 	stride = runtime->frame_bits >> 3;
- 
- 	for (i = 0; i < urb->number_of_packets; i++) {
--		cp = (unsigned char *)urb->transfer_buffer + urb->iso_frame_desc[i].offset;
-+		cp = (unsigned char *)urb->transfer_buffer + urb->iso_frame_desc[i].offset + subs->pkt_offset_adj;
- 		if (urb->iso_frame_desc[i].status && printk_ratelimit()) {
- 			snd_printdd("frame %d active: %d\n", i, urb->iso_frame_desc[i].status);
- 			// continue;
-@@ -898,6 +898,7 @@ void snd_usb_init_substream(struct snd_u
- 	subs->speed = snd_usb_get_speed(subs->dev);
- 	if (subs->speed >= USB_SPEED_HIGH)
- 		subs->ops.prepare_sync = prepare_capture_sync_urb_hs;
-+	subs->pkt_offset_adj = 0;
- 
- 	snd_usb_set_pcm_ops(as->pcm, stream);
- 
---- a/sound/usb/quirks.c
-+++ b/sound/usb/quirks.c
-@@ -748,6 +748,7 @@ static void set_format_emu_quirk(struct
- 		break;
- 	}
- 	snd_emuusb_set_samplerate(subs->stream->chip, emu_samplerate_id);
-+	subs->pkt_offset_adj = (emu_samplerate_id >= EMU_QUIRK_SR_176400HZ) ? 4 : 0;
- }
- 
- void snd_usb_set_format_quirk(struct snd_usb_substream *subs,
 
 
