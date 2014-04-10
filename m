@@ -1,161 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758910AbaDJRiS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 13:38:18 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:55471 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935232AbaDJRiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 13:38:14 -0400
-Date: Thu, 10 Apr 2014 19:38:05 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] tools: Unify export.h
-Message-ID: <20140410173805.GA28613@pd.tnic>
-References: <1393153753-2369-1-git-send-email-bp@alien8.de>
- <87eh2s55tg.fsf@rustcorp.com.au>
- <20140225070020.GA19504@pd.tnic>
- <87eh2r4c2d.fsf@rustcorp.com.au>
- <20140225140511.GD5982@ghostprotocols.net>
+	id S1758915AbaDJRlX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 13:41:23 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:33167 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753333AbaDJRlV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 13:41:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140225140511.GD5982@ghostprotocols.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140410165626.GB23695@beef>
+References: <1390509887-19278-1-git-send-email-syin@broadcom.com>
+	<1396478439-16586-1-git-send-email-syin@broadcom.com>
+	<1396478439-16586-2-git-send-email-syin@broadcom.com>
+	<CACRpkdZ1Lt2JsMMWVMBgfS8ktkpeYzA3MiGmWB27Jwhw16UYYg@mail.gmail.com>
+	<CACRpkdbY58J7GcQnYcUVTkfVO3VNCyJa0zVTKV4ibF8khxD8EA@mail.gmail.com>
+	<20140410165626.GB23695@beef>
+Date: Thu, 10 Apr 2014 19:41:20 +0200
+Message-ID: <CACRpkdZaMcSjy+-15y4kNsBgLZrThwxzJQr7SEy59AVm3yuM_A@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] pinctrl: Rename Broadcom Capri pinctrl driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Matt Porter <matt.porter@linaro.org>
+Cc: Sherman Yin <syin@broadcom.com>, Mark Brown <broonie@kernel.org>,
+        =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Rob Landley <rob@landley.net>, Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rebased onto current acme/perf/core:
+On Thu, Apr 10, 2014 at 6:56 PM, Matt Porter <matt.porter@linaro.org> wrote:
+> On Thu, Apr 10, 2014 at 06:51:12PM +0200, Linus Walleij wrote:
+>> On Thu, Apr 10, 2014 at 6:49 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> > On Thu, Apr 3, 2014 at 12:40 AM, Sherman Yin <syin@broadcom.com> wrote:
+>> >
+>> >> To be consistent with other Broadcom drivers, the Broadcom Capri pinctrl
+>> >> driver and its related CONFIG option are renamed to bcm281xx.
+>> >>
+>> >> Devicetree compatible string and binding documentation use
+>> >> "brcm,bcm11351-pinctrl" to match the machine binding here:
+>> >> Documentation/devicetree/bindings/arm/bcm/bcm11351.txt
+>> >>
+>> >> This driver supports pinctrl on BCM11130, BCM11140, BCM11351, BCM28145
+>> >> and BCM28155 SoCs.
+>> >>
+>> >> Signed-off-by: Sherman Yin <syin@broadcom.com>
+>> >> Reviewed-by: Matt Porter <mporter@linaro.org>
+>> >> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>> >> ---
+>> >>  drivers/pinctrl/Kconfig                            |    8 +-
+>> >>  drivers/pinctrl/Makefile                           |    2 +-
+>> >>  .../{pinctrl-capri.c => pinctrl-bcm281xx.c}        | 1519 ++++++++++----------
+>> >
+>> > This last version from apr 7 does not change
+>> > arch/arm/configs/bcm_defconfig:CONFIG_PINCTRL_CAPRI=y
+>> >
+>> > Doesn't this mean that you render this platform without a pin
+>> > control driver and thus broken?
+>>
+>> Bah I see that it's a separate patch now, sorry...
+>>
+>> Looking closer.
+>
+> I can take that one through mach-bcm for 3.16 to keep these changes
+> in one place.
 
---
-From: Borislav Petkov <bp@suse.de>
-Date: Sun, 23 Feb 2014 12:04:53 +0100
-Subject: [PATCH] tools: Unify export.h
+Nah I might as well take all of it through the pin control tree.
+Can I have your ACK on the defconfig change?
 
-So tools/ has been growing three, at a different stage of their
-development export.h headers and so we should unite into one. Add
-tools/include/ to the include path of virtio and liblockdep to pick the
-shared header now.
-
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Cc: virtio-dev@lists.oasis-open.org
-Cc: virtualization@lists.linux-foundation.org
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- tools/{virtio => include}/linux/export.h  | 5 +++++
- tools/lib/lockdep/Makefile                | 2 +-
- tools/lib/lockdep/uinclude/linux/export.h | 7 -------
- tools/perf/Makefile.perf                  | 2 +-
- tools/perf/util/include/linux/export.h    | 6 ------
- tools/virtio/Makefile                     | 2 +-
- 6 files changed, 8 insertions(+), 16 deletions(-)
- rename tools/{virtio => include}/linux/export.h (70%)
- delete mode 100644 tools/lib/lockdep/uinclude/linux/export.h
- delete mode 100644 tools/perf/util/include/linux/export.h
-
-diff --git a/tools/virtio/linux/export.h b/tools/include/linux/export.h
-similarity index 70%
-rename from tools/virtio/linux/export.h
-rename to tools/include/linux/export.h
-index 7311d326894a..d07e586b9ba0 100644
---- a/tools/virtio/linux/export.h
-+++ b/tools/include/linux/export.h
-@@ -1,5 +1,10 @@
-+#ifndef _TOOLS_LINUX_EXPORT_H_
-+#define _TOOLS_LINUX_EXPORT_H_
-+
- #define EXPORT_SYMBOL(sym)
- #define EXPORT_SYMBOL_GPL(sym)
- #define EXPORT_SYMBOL_GPL_FUTURE(sym)
- #define EXPORT_UNUSED_SYMBOL(sym)
- #define EXPORT_UNUSED_SYMBOL_GPL(sym)
-+
-+#endif
-diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
-index 07b0b7542511..41d4a99ce46e 100644
---- a/tools/lib/lockdep/Makefile
-+++ b/tools/lib/lockdep/Makefile
-@@ -112,7 +112,7 @@ export Q VERBOSE
- 
- LIBLOCKDEP_VERSION = $(LL_VERSION).$(LL_PATCHLEVEL).$(LL_EXTRAVERSION)
- 
--INCLUDES = -I. -I/usr/local/include -I./uinclude -I./include $(CONFIG_INCLUDES)
-+INCLUDES = -I. -I/usr/local/include -I./uinclude -I./include -I../../include $(CONFIG_INCLUDES)
- 
- # Set compile option CFLAGS if not set elsewhere
- CFLAGS ?= -g -DCONFIG_LOCKDEP -DCONFIG_STACKTRACE -DCONFIG_PROVE_LOCKING -DBITS_PER_LONG=__WORDSIZE -DLIBLOCKDEP_VERSION='"$(LIBLOCKDEP_VERSION)"' -rdynamic -O0 -g
-diff --git a/tools/lib/lockdep/uinclude/linux/export.h b/tools/lib/lockdep/uinclude/linux/export.h
-deleted file mode 100644
-index 6bdf3492c535..000000000000
---- a/tools/lib/lockdep/uinclude/linux/export.h
-+++ /dev/null
-@@ -1,7 +0,0 @@
--#ifndef _LIBLOCKDEP_LINUX_EXPORT_H_
--#define _LIBLOCKDEP_LINUX_EXPORT_H_
--
--#define EXPORT_SYMBOL(sym)
--#define EXPORT_SYMBOL_GPL(sym)
--
--#endif
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 667e85a1f949..791ad6d1994e 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -222,7 +222,7 @@ LIB_H += util/include/linux/const.h
- LIB_H += util/include/linux/ctype.h
- LIB_H += util/include/linux/kernel.h
- LIB_H += util/include/linux/list.h
--LIB_H += util/include/linux/export.h
-+LIB_H += ../include/linux/export.h
- LIB_H += util/include/linux/poison.h
- LIB_H += util/include/linux/rbtree.h
- LIB_H += util/include/linux/rbtree_augmented.h
-diff --git a/tools/perf/util/include/linux/export.h b/tools/perf/util/include/linux/export.h
-deleted file mode 100644
-index b43e2dc21e04..000000000000
---- a/tools/perf/util/include/linux/export.h
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#ifndef PERF_LINUX_MODULE_H
--#define PERF_LINUX_MODULE_H
--
--#define EXPORT_SYMBOL(name)
--
--#endif
-diff --git a/tools/virtio/Makefile b/tools/virtio/Makefile
-index 3187c62d9814..9325f4693821 100644
---- a/tools/virtio/Makefile
-+++ b/tools/virtio/Makefile
-@@ -3,7 +3,7 @@ test: virtio_test vringh_test
- virtio_test: virtio_ring.o virtio_test.o
- vringh_test: vringh_test.o vringh.o virtio_ring.o
- 
--CFLAGS += -g -O2 -Wall -I. -I ../../usr/include/ -Wno-pointer-sign -fno-strict-overflow -fno-strict-aliasing -fno-common -MMD -U_FORTIFY_SOURCE
-+CFLAGS += -g -O2 -Wall -I. -I../include/ -I ../../usr/include/ -Wno-pointer-sign -fno-strict-overflow -fno-strict-aliasing -fno-common -MMD -U_FORTIFY_SOURCE
- vpath %.c ../../drivers/virtio ../../drivers/vhost
- mod:
- 	${MAKE} -C `pwd`/../.. M=`pwd`/vhost_test
--- 
-1.9.0
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Yours,
+Linus Walleij
