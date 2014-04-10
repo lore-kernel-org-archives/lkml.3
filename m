@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935294AbaDJDX1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:23:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40979 "EHLO
+	id S935279AbaDJDXZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:23:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40982 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934667AbaDJDVz (ORCPT
+	with ESMTP id S934668AbaDJDV4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:21:55 -0400
+	Wed, 9 Apr 2014 23:21:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Ben Hutchings <ben@decadent.org.uk>,
+        Sergei Ianovich <ynvich@gmail.com>, Marek Vasut <marex@denx.de>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Olof Johansson <olof@lixom.net>, Ben Hutchings <ben@decadent.org.uk>,
         Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 034/134] ARM: footbridge: fix VGA initialisation
-Date: Wed,  9 Apr 2014 20:22:30 -0700
-Message-Id: <20140410032304.351665148@linuxfoundation.org>
+Subject: [PATCH 3.4 035/134] ARM: pxa: prevent PXA270 occasional reboot freezes
+Date: Wed,  9 Apr 2014 20:22:31 -0700
+Message-Id: <20140410032304.480910775@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -28,80 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Sergei Ianovich <ynvich@gmail.com>
 
-commit 43659222e7a0113912ed02f6b2231550b3e471ac upstream.
+commit ff88b4724fde18056a4c539f7327389aec0f4c2d upstream.
 
-It's no good setting vga_base after the VGA console has been
-initialised, because if we do that we get this:
+Erratum 71 of PXA270M Processor Family Specification Update
+(April 19, 2010) explains that watchdog reset time is just
+8us insead of 10ms in EMTS.
 
-Unable to handle kernel paging request at virtual address 000b8000
-pgd = c0004000
-[000b8000] *pgd=07ffc831, *pte=00000000, *ppte=00000000
-0Internal error: Oops: 5017 [#1] ARM
-Modules linked in:
-CPU: 0 PID: 0 Comm: swapper Not tainted 3.12.0+ #49
-task: c03e2974 ti: c03d8000 task.ti: c03d8000
-PC is at vgacon_startup+0x258/0x39c
-LR is at request_resource+0x10/0x1c
-pc : [<c01725d0>]    lr : [<c0022b50>]    psr: 60000053
-sp : c03d9f68  ip : 000b8000  fp : c03d9f8c
-r10: 000055aa  r9 : 4401a103  r8 : ffffaa55
-r7 : c03e357c  r6 : c051b460  r5 : 000000ff  r4 : 000c0000
-r3 : 000b8000  r2 : c03e0514  r1 : 00000000  r0 : c0304971
-Flags: nZCv  IRQs on  FIQs off  Mode SVC_32  ISA ARM  Segment kernel
+If SDRAM is not reset, it causes memory bus congestion and
+the device hangs. We put SDRAM in selfresh mode before watchdog
+reset, removing potential freezes.
 
-which is an access to the 0xb8000 without the PCI offset required to
-make it work.
+Without this patch PXA270-based ICP DAS LP-8x4x hangs after up to 40
+reboots. With this patch it has successfully rebooted 500 times.
 
-Fixes: cc22b4c18540 ("ARM: set vga memory base at run-time")
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
+Tested-by: Marek Vasut <marex@denx.de>
+Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
+Signed-off-by: Olof Johansson <olof@lixom.net>
 [bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-footbridge/common.c  |    3 +++
- arch/arm/mach-footbridge/dc21285.c |    2 --
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ arch/arm/mach-pxa/reset.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/arch/arm/mach-footbridge/common.c
-+++ b/arch/arm/mach-footbridge/common.c
-@@ -15,6 +15,7 @@
- #include <linux/init.h>
- #include <linux/io.h>
- #include <linux/spinlock.h>
-+#include <video/vga.h>
-  
- #include <asm/pgtable.h>
- #include <asm/page.h>
-@@ -198,6 +199,8 @@ void __init footbridge_map_io(void)
- 	 */
- 	if (footbridge_cfn_mode())
- 		iotable_init(ebsa285_host_io_desc, ARRAY_SIZE(ebsa285_host_io_desc));
-+
-+	vga_base = PCIMEM_BASE;
+--- a/arch/arm/mach-pxa/reset.c
++++ b/arch/arm/mach-pxa/reset.c
+@@ -13,6 +13,7 @@
+ 
+ #include <mach/regs-ost.h>
+ #include <mach/reset.h>
++#include <mach/smemc.h>
+ 
+ unsigned int reset_status;
+ EXPORT_SYMBOL(reset_status);
+@@ -80,6 +81,12 @@ static void do_hw_reset(void)
+ 	OWER = OWER_WME;
+ 	OSSR = OSSR_M3;
+ 	OSMR3 = OSCR + 368640;	/* ... in 100 ms */
++	/*
++	 * SDRAM hangs on watchdog reset on Marvell PXA270 (erratum 71)
++	 * we put SDRAM into self-refresh to prevent that
++	 */
++	while (1)
++		writel_relaxed(MDREFR_SLFRSH, MDREFR);
  }
  
- void footbridge_restart(char mode, const char *cmd)
---- a/arch/arm/mach-footbridge/dc21285.c
-+++ b/arch/arm/mach-footbridge/dc21285.c
-@@ -18,7 +18,6 @@
- #include <linux/irq.h>
- #include <linux/io.h>
- #include <linux/spinlock.h>
--#include <video/vga.h>
- 
- #include <asm/irq.h>
- #include <asm/mach/pci.h>
-@@ -298,7 +297,6 @@ void __init dc21285_preinit(void)
- 	int cfn_mode;
- 
- 	pcibios_min_mem = 0x81000000;
--	vga_base = PCIMEM_BASE;
- 
- 	mem_size = (unsigned int)high_memory - PAGE_OFFSET;
- 	for (mem_mask = 0x00100000; mem_mask < 0x10000000; mem_mask <<= 1)
+ void pxa_restart(char mode, const char *cmd)
+@@ -103,4 +110,3 @@ void pxa_restart(char mode, const char *
+ 		break;
+ 	}
+ }
+-
 
 
