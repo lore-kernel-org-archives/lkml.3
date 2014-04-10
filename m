@@ -1,121 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935383AbaDJEED (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 00:04:03 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:36024 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934635AbaDJED6 (ORCPT
+	id S935396AbaDJEEj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 00:04:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41131 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934830AbaDJDW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 00:03:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>
-References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
- <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net> <1397084904.9519.62.camel@dabdike>
- <1397085044.9519.63.camel@dabdike> <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
- <1397087425.9519.67.camel@dabdike> <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 9 Apr 2014 22:03:38 -0600
-Message-ID: <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
-Subject: Re: hpsa driver bug crack kernel down!
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Baoquan He <bhe@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 9 Apr 2014 23:22:27 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        George Cherian <george.cherian@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Yang Yingliang <yangyingliang@huawei.com>
+Subject: [PATCH 3.4 074/134] usb: dwc3: gadget: free trb pool only from epnum 2
+Date: Wed,  9 Apr 2014 20:23:10 -0700
+Message-Id: <20140410032309.512312159@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
+References: <20140410032259.587501440@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Joerg, iommu list]
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-On Wed, Apr 9, 2014 at 6:19 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> On Wed, 2014-04-09 at 16:50 -0700, James Bottomley wrote:
->> On Wed, 2014-04-09 at 16:40 -0700, Davidlohr Bueso wrote:
->> > On Wed, 2014-04-09 at 16:10 -0700, James Bottomley wrote:
->> > > On Wed, 2014-04-09 at 16:08 -0700, James Bottomley wrote:
->> > > > [+linux-scsi]
->> > > > On Wed, 2014-04-09 at 15:49 -0700, Davidlohr Bueso wrote:
->> > > > > On Wed, 2014-04-09 at 10:39 +0800, Baoquan He wrote:
->> > > > > > Hi,
->> > > > > >
->> > > > > > The kernel is 3.14.0+ which is pulled just now.
->> > > > >
->> > > > > Cc'ing more people.
->> > > > >
->> > > > > While the hpsa driver appears to be involved in some way, I'm sure if
->> > > > > this is a related issue, but as of today's pull I'm getting another
->> > > > > problem that causes my DL980 not to come up.
->> > > > >
->> > > > > *Massive* amounts of:
->> > > > >
->> > > > > DMAR:[fault reason 02] Present bit in context entry is clear
->> > > > > dmar: DRHD: handling fault status reg 602
->> > > > > dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr 7f61e000
->> > > > >
->> > > > > Then:
->> > > > >
->> > > > > hpsa 0000:03:00.0: Controller lockup detected: 0xffff0000
->> > > > > ...
->> > > > > Workqueue: events hpsa_monitor_ctlr_worker [hpsa]
->> > > > > ...
->> > > > >
->> > > > > Screenshot of the actual LOCKUP:
->> > > > > http://stgolabs.net/hpsa-hard-lockup-3.14+.png
->> > > > >
->> > > > > While I haven't bisected, things worked fine until at least until commit
->> > > > > 39de65aa2c3e (April 2nd).
->> > > > >
->> > > > > Any ideas?
->> > > >
->> > > > Well, it's either a DMA remapping issue or a hpsa one.  Your assertion
->> > > > that everything worked fine until 39de65aa2c3e would tend to vindicate
->> > > > hpsa,
->> >
->> > Hmm here you mean DMA, right?
->>
->> No, it vindicates the hpsa changes ... they don't seem to be causing
->> problems until something goes wrong with dma remapping.
->>
->> > > because all the hpsa changes went in before that under
->> > > Missing crucial info:
->> > >
->> > > commit 1a0b6abaea78f73d9bc0a2f6df2d9e4c917cade1
->> > >
->> > > > Merge: 3e75c6d b2bff6c
->> > > > Author: Linus Torvalds <torvalds@linux-foundation.org>
->> > > > Date:   Tue Apr 1 18:49:04 2014 -0700
->> > > >
->> > > >     Merge tag 'scsi-misc' of
->> > > > git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi
->> > > >
->> > > > can you revalidate that this commit works OK just to make sure?
->> >
->> > Ok so I don't see those DMA messages and system starts just fine. I'm
->> > thinking perhaps something broke after the IO mmu stuff in commit
->> > 3f583bc21977a608908b83d03ee2250426a5695c... could this be indirectly
->> > causing the CPU stalls and just blame hpsa in the path as a side effect?
->> >
->> > /me goes out to try the commit.
->>
->> That's my guess.  The DMAR messages are DMA remapping issues caused in
->> the IOMMU.  If I had to guess, I'd say the DMAR fault message is
->> indicating the IOMMU is calling for a mapping address before it can
->> satisfy the driver read request, which is causing the hang apparently in
->> the hpsa driver.
->>
->> I've added linux-pci to the cc; I think they deal with iommu issues on
->> x86.
->
-> So that merge commit appears to be the culprit, I see both the DMA
-> messages and the lockup blaming hpsa...
+------------------
 
-My understanding so far (please correct me if I'm wrong):
+From: George Cherian <george.cherian@ti.com>
 
-39de65aa2c3e OK ("Merge branch 'i2c/for-next'")
-1a0b6abaea78 OK ("Merge tag 'scsi-misc'")
-3f583bc21977 BAD ("Merge tag 'iommu-updates-v3.15'")
+commit 5bf8fae33d14cc5c3c53a926f9079f92c8b082b0 upstream.
+
+we never allocate a TRB pool for physical endpoints
+0 and 1 so trying to free it (a invalid TRB pool pointer)
+will lead us in a warning while removing dwc3.ko module.
+
+In order to fix the situation, all we have to do is skip
+dwc3_free_trb_pool() for physical endpoints 0 and 1 just
+as we while deleting endpoints from the endpoints list.
+
+Signed-off-by: George Cherian <george.cherian@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Yang Yingliang <yangyingliang@huawei.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/dwc3/gadget.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+--- a/drivers/usb/dwc3/gadget.c
++++ b/drivers/usb/dwc3/gadget.c
+@@ -1483,10 +1483,19 @@ static void dwc3_gadget_free_endpoints(s
+ 
+ 	for (epnum = 0; epnum < DWC3_ENDPOINTS_NUM; epnum++) {
+ 		dep = dwc->eps[epnum];
+-		dwc3_free_trb_pool(dep);
+-
+-		if (epnum != 0 && epnum != 1)
++		/*
++		 * Physical endpoints 0 and 1 are special; they form the
++		 * bi-directional USB endpoint 0.
++		 *
++		 * For those two physical endpoints, we don't allocate a TRB
++		 * pool nor do we add them the endpoints list. Due to that, we
++		 * shouldn't do these two operations otherwise we would end up
++		 * with all sorts of bugs when removing dwc3.ko.
++		 */
++		if (epnum != 0 && epnum != 1) {
++			dwc3_free_trb_pool(dep);
+ 			list_del(&dep->endpoint.ep_list);
++		}
+ 
+ 		kfree(dep);
+ 	}
+
+
