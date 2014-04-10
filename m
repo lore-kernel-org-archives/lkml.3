@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965378AbaDJHNk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 03:13:40 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:49683 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965107AbaDJHNg (ORCPT
+	id S934718AbaDJHKo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 03:10:44 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:26115
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934241AbaDJHKm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 03:13:36 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-18-5346449d1cde
-Message-id: <1397114014.6717.4.camel@AMDC1943>
-Subject: Re: [PATCH] ASoC: core: Fix Sparse incompatible types warning
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 10 Apr 2014 09:13:34 +0200
-In-reply-to: <20140410030150.GC18016@ZenIV.linux.org.uk>
-References: <1397028108-10976-1-git-send-email-k.kozlowski@samsung.com>
- <5345279F.6070005@metafoo.de> <1397041934.11424.2.camel@AMDC1943>
- <53452F67.3060400@metafoo.de> <20140409202520.GQ6518@sirena.org.uk>
- <5345AD8B.5050306@metafoo.de> <20140410030150.GC18016@ZenIV.linux.org.uk>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.8.4-0ubuntu1
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t/xK7pzXdyCDS7vNbK4cvEQk8XUh0/Y
-	LJZMns9q8e1KB5PF5V1z2Cw6d/WzWrzc/IbJ4vzf46wOHB4bPjexeeycdZfdY9OqTjaPJW8O
-	sXrse7uMzWPz6WqPz5vkPDY9ecsUwBHFZZOSmpNZllqkb5fAlfHkkEDBDp6KdUsXMzcwvuTs
-	YuTkkBAwkdi+ehMzhC0mceHeerYuRi4OIYGljBLHGuZDOZ8ZJVq/rQOr4hXQk5i97SMTiC0s
-	4CYxvXk2WJxNwFhi8/IlbCC2iICqxJ1TZ5hAmpkF3jNKbDq+hhUkwQKU6Pu4hBHE5hSwkHj5
-	pJcVYsNcJolzzfPBupkF1CUmzVsEdZOSxLl1axghNgtK/Jh8jwWiRl5i85q3zBMYBWYhaZmF
-	pGwWkrIFjMyrGEVTS5MLipPScw31ihNzi0vz0vWS83M3MULi4csOxsXHrA4xCnAwKvHwHlzm
-	GizEmlhWXJl7iFGCg1lJhFdByC1YiDclsbIqtSg/vqg0J7X4ECMTB6dUA6M/o+qFwB7m/6K3
-	326yYDyUbjfbT/aNYL7P/cN9IjO/Fp9IWmvG6BB9qvXWjMbIz/aTpP8cy5z1SVx9Dudqv6kp
-	1q81dM/+mGmUuXNedrFW967lTYtvlN8pY7MsSJjMOavigpLk6oaKF387uNK2S2oqLmu49L3T
-	3zvDxfTOWqke67dMq2t2MSixFGckGmoxFxUnAgAAgvy0ZQIAAA==
+	Thu, 10 Apr 2014 03:10:42 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch21a7h1fc6h208chzdchz1de098h8275dh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh26d3h1155h)
+From: <hongbo.zhang@freescale.com>
+To: <vkoul@infradead.org>, <dan.j.williams@intel.com>,
+        <dmaengine@vger.kernel.org>
+CC: <scottwood@freescale.com>, <leo.li@freescale.com>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        Hongbo Zhang <hongbo.zhang@linaro.org>
+Subject: [PATCH v3 0/8] DMA: Freescale: driver cleanups and enhancements
+Date: Thu, 10 Apr 2014 15:09:57 +0800
+Message-ID: <1397113805-24171-1-git-send-email-hongbo.zhang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czw, 2014-04-10 at 04:01 +0100, Al Viro wrote:
-> On Wed, Apr 09, 2014 at 10:28:59PM +0200, Lars-Peter Clausen wrote:
-> 
-> > I had a look at the sparse code and the problem is that it sets the
-> > default return type of sizeof according to the type of the host it
-> > was compiled on (either unsigned int or unsigned long). It can be
-> > overwritten by switches like -m32, but of course wont work when
-> > cross compiling. So if your host system is 64bit, but your target
-> > system is 32bit you'll get that warning.
-> 
-> Not that simple.  First of all, you *need* to tell sparse what target
-> to expect; size_t is the least of your troubles - sizeof(long) has
-> far more widespread impact.  If you don't get -m64 or -m32 in CFLAGS
-> (and on quite a few cross-builds you get it, simply because the target
-> is biarch and gcc itself needs to know what to generate), you need
-> to set it in CHECKFLAGS, along with other target-specific things.
-> Example:
-> arch/ia64/Makefile:21:CHECKFLAGS        += -m64 -D__ia64=1 -D__ia64__=1 -D_LP64 -D__LP64__
-> 
-> With the defaults being what they are (since commit 7aa79f "Adding default for
-> m64/m32 handle"), we probably need explicit -m32 in CHECKFLAGS for a bunch
-> of 32bit targets.  Defaults are iffy, BTW - it's not even "do as host does",
-> it's "64bit if the host is amd64, 32bit otherwise" ;-/
-> 
-> Again, CHECKFLAGS need to be set; that's normally done in arch/*/Makefile.
+From: Hongbo Zhang <hongbo.zhang@linaro.org>
 
-In my case it was cross compile on x86_64 for ARM so adding -m32 to
-CHECKFLAGS in arch/arm/Makefile helped.
+Hi Vinod Koul,
+Please have a look at the v3 patch set.
 
-Best regards,
-Krzysztof
+v2 -> v3 change:
+Only add "chan->pm_state = RUNNING" for patch[8/8].
+
+v1 -> v2 change:
+The only one change is introducing a new patch[1/7] to remove the unnecessary
+macro FSL_DMA_LD_DEBUG, thus the total patches number is 8 now (was 7)
+
+Hongbo Zhang (8):
+  DMA: Freescale: remove the unnecessary FSL_DMA_LD_DEBUG
+  DMA: Freescale: unify register access methods
+  DMA: Freescale: remove attribute DMA_INTERRUPT of dmaengine
+  DMA: Freescale: add fsl_dma_free_descriptor() to reduce code
+    duplication
+  DMA: Freescale: move functions to avoid forward declarations
+  DMA: Freescale: change descriptor release process for supporting
+    async_tx
+  DMA: Freescale: use spin_lock_bh instead of spin_lock_irqsave
+  DMA: Freescale: add suspend resume functions for DMA driver
+
+ drivers/dma/fsldma.c |  591 ++++++++++++++++++++++++++++++++------------------
+ drivers/dma/fsldma.h |   33 ++-
+ 2 files changed, 409 insertions(+), 215 deletions(-)
+
+-- 
+1.7.9.5
+
+
 
