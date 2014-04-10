@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935534AbaDJPip (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 11:38:45 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:33524 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934689AbaDJPim (ORCPT
+	id S1758599AbaDJPmc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 11:42:32 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53683 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758569AbaDJPm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 11:38:42 -0400
-Date: Thu, 10 Apr 2014 11:38:40 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Clark Williams <williams@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC PATCH RT] rwsem: The return of multi-reader PI rwsems
-Message-ID: <20140410113840.6ad8abfe@gandalf.local.home>
-In-Reply-To: <5346B2C8.6000207@linutronix.de>
-References: <20140409151922.5fa5d999@gandalf.local.home>
-	<20140410094430.56ca9ee1@sluggy.gateway.2wire.net>
-	<5346B2C8.6000207@linutronix.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 10 Apr 2014 11:42:29 -0400
+Message-ID: <5346BBDF.4050901@wwwdotorg.org>
+Date: Thu, 10 Apr 2014 09:42:23 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Alexandre Courbot <gnurou@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH V3 4/5] mfd: palmas: support IRQ inversion at the board
+ level
+References: <1393876300-3061-1-git-send-email-swarren@wwwdotorg.org> <1393876300-3061-4-git-send-email-swarren@wwwdotorg.org> <CAAVeFuJY67zdoHiZufxDbkaw=xt8YwxyDAwHW_T7UZeSOt35NA@mail.gmail.com>
+In-Reply-To: <CAAVeFuJY67zdoHiZufxDbkaw=xt8YwxyDAwHW_T7UZeSOt35NA@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Apr 2014 17:03:36 +0200
-Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
+On 04/10/2014 01:04 AM, Alexandre Courbot wrote:
+> Stephen, any news about this patch? I'm waiting for it to be merged in
+> order to resend some Tegra DTs, but still cannot see it in -next.
 
-> On 04/10/2014 04:44 PM, Clark Williams wrote:
-> > The means of each group of five test runs are:
-> > 
-> > vanilla.log:  1210117 rt.log:  17210953 (14.2 x slower than
-> > vanilla) rt-fixes.log:  10062027 (8.3 x slower than vanilla) 
-> > rt-multi.log:  3179582  (2.x x slower than vanilla)
-> > 
-> > 
-> > As expected, vanilla kicked RT's butt when hammering on the 
-> > mmap_sem. But somewhat unexpectedly, your fixups helped quite a
-> > bit and the multi+fixups got RT back into being almost
-> > respectable.
-> > 
-> > Obviously these are just preliminary results on one piece of h/w
-> > but it looks promising.
+To be honest, this became too painful to work on just to fix a warning
+at boot which has no practical side-effect in our case. The best thing
+to do is just merge your DTs for 3.16, and keep ignoring the warning
+just like we always have on Dalmore. Hopefully at some point I (or
+someone) will run out of higher priority work items and get back to this.
+
+> Thanks,
+> Alex.
 > 
-> Is it easy to look at the latency when you have multiple readers and
-> and a high prio writer which has to boost all those readers away
-> instead just one?
-> Or is this something that should not happen for a high prio RT task
-> because it has all memory already allocated?
+> On Tue, Mar 4, 2014 at 4:51 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> From: Stephen Warren <swarren@nvidia.com>
+>>
+>> Implement the new DT property ti,irq-externally-inverted, and add an
+>> equivalent platform data field to match. This allows the driver to
+>> correctly automatically configure the IRQ output polarity when the board
+>> or SoC contains an inverter between the Palmas IRQ output and IRQ
+>> controller input.
+>>
+>> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+>> ---
+>> v3:
+>> * Use an IRQD flag to represent the data, rather than a custom DT property.
+>> v2:
+>> * Split V1's patch 1/2 into separate patches 1/3 and 2/3.
+>> ---
+>>  drivers/mfd/palmas.c | 5 ++++-
+>>  1 file changed, 4 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/mfd/palmas.c b/drivers/mfd/palmas.c
+>> index d280d789e55a..3281d4103e9d 100644
+>> --- a/drivers/mfd/palmas.c
+>> +++ b/drivers/mfd/palmas.c
+>> @@ -292,7 +292,8 @@ static int palmas_set_pdata_irq_flag(struct i2c_client *i2c,
+>>                 return -EINVAL;
+>>         }
+>>
+>> -       pdata->irq_flags = irqd_get_trigger_type(irq_data);
+>> +       pdata->irq_flags = irqd_get_trigger_type(irq_data) |
+>> +                          irqd_get_src_dst_inverted(irq_data);
+>>         dev_info(&i2c->dev, "Irq flag is 0x%08x\n", pdata->irq_flags);
+>>         return 0;
+>>  }
+>> @@ -447,6 +448,8 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
+>>                 reg = PALMAS_POLARITY_CTRL_INT_POLARITY;
+>>         else
+>>                 reg = 0;
+>> +       if (pdata->irq_flags & IRQ_SRC_DST_INVERTED)
+>> +               reg ^= PALMAS_POLARITY_CTRL_INT_POLARITY;
+>>         ret = palmas_update_bits(palmas, PALMAS_PU_PD_OD_BASE,
+>>                         PALMAS_POLARITY_CTRL, PALMAS_POLARITY_CTRL_INT_POLARITY,
+>>                         reg);
+>> --
+>> 1.8.1.5
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Note, the patch includes a /proc/sys/kernel/rwsem_reader_limit that is
-default value set at possible_cpus. The user can change it to any
-number. A number of zero means unlimited, and a number of 1 makes it
-work like it did without the patch.
-
-This means that a writer will only have to wait for rwsem_reader_limit
-readers, which may give a longer latency, but it is still bounded. Also
-note that the rwsem is not fair respect to first come first served, but
-priority driven. Same priority tasks may be first in first out, but if
-there's a writer waiting and a higher priority reader comes along, it
-can still get the lock, making the writer wait longer. But as the
-reader is higher priority than the writer, that is expected. The same
-priority reader will block if there's a writer waiting.
-
-Clark, it would be interesting if you run the test again with my
-patches but set rwsem_reader_limit to 1, and see what the impact of
-that is.
-
--- Steve
