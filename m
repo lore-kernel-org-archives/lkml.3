@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759106AbaDJTbc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 15:31:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14469 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758726AbaDJTba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 15:31:30 -0400
-Date: Thu, 10 Apr 2014 21:00:25 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-Subject: Re: [PATCH RESEND 2/2] tracing: syscall_regfunc() should not skip
-	kernel threads
-Message-ID: <20140410190025.GA13925@redhat.com>
-References: <20140409124249.4081e665@gandalf.local.home> <20140409170505.GA27638@redhat.com> <20140409170616.GC27638@redhat.com> <20140410092842.1f9a8760@gandalf.local.home> <20140410133855.GC12228@redhat.com> <20140410102816.24337ffe@gandalf.local.home> <20140410144655.GA25316@redhat.com> <20140410110848.64c3f25e@gandalf.local.home> <20140410175705.GB32332@redhat.com> <20140410181417.GA2104@redhat.com>
+	id S935563AbaDJTcl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 15:32:41 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:52699
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753854AbaDJTcj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 15:32:39 -0400
+X-IronPort-AV: E=Sophos;i="4.97,835,1389740400"; 
+   d="scan'208";a="56535985"
+Date: Thu, 10 Apr 2014 21:32:34 +0200 (CEST)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: "Luis R. Rodriguez" <mcgrof@suse.com>
+cc: Johannes Berg <johannes@sipsolutions.net>, linux-kernel@vger.kernel.org,
+        backports@vger.kernel.org, cocci@systeme.lip6.fr
+Subject: Re: [Cocci] [PATCH] coccinelle: add pycocci wrapper for	multithreaded
+ support
+In-Reply-To: <20140410175748.GK14815@wotan.suse.de>
+Message-ID: <alpine.DEB.2.02.1404102131390.2201@localhost6.localdomain6>
+References: <1397152097-315-1-git-send-email-mcgrof@do-not-panic.com> <1397152289.4757.28.camel@jlt4.sipsolutions.net> <20140410175748.GK14815@wotan.suse.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140410181417.GA2104@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10, Oleg Nesterov wrote:
->
-> On 04/10, Oleg Nesterov wrote:
-> >
-> > On 04/10, Steven Rostedt wrote:
-> > >
-> > > Hendrik, we are debating about removing
-> > > cc3b13c11c567c69a6356be98d0c03ff11541d5c as it stops
-> > > call_usermodehelper tasks from tracing their syscalls.
-> > >
-> > > If Hendrik has no problems with this, neither do I.
-> >
-> > OK.
-> >
-> > cc3b13c11c567 mentions ret_from_fork, today copy_thread(PF_KTHREAD) uses
-> > ret_from_kernel_thread on 32bit, and still ret_from_fork on 64 bit but
-> > in the last case it checks PF_KTHREAD... I am wondering why they both
-> > (ret_from_kernel_thread and "1: " label in ret_from_fork) can't simply
-> > call do_exit() at the end?
->
-> probably because we need to change all architectures...
 
-Heh. And because "call *%rbx" can actually return if this kernel thread
-execs ;)
 
-But in this case we want TIF_SYSCALL_TRACING, so
+On Thu, 10 Apr 2014, Luis R. Rodriguez wrote:
 
-> > And, since they do not, every kernel_thread's function (fn argument of
-> > kernel_thread) must call do_exit itself?
->
-> Hmm yes. See fb45550d76bb5 "make sure that kernel_thread() callbacks call
-> do_exit() themselves".
->
-> > Looks a bit strange, I guess I missed something obvious.
->
-> And I forgot to mention, given that the kernel_thread() callback should
-> call do_exit() itself, then this part of cc3b13c11c567c69a63
->
-> 	one case when a kernel thread can reach the
-> 	usual syscall exit tracing path: when we create a kernel thread, the
-> 	child comes to ret_from_fork
->
-> is no longer relevant? A PF_KTHREAD child should never return from the
-> callback and thus it should never do "jmp syscall_exit" ?
+> On Thu, Apr 10, 2014 at 07:51:29PM +0200, Johannes Berg wrote:
+> > On Thu, 2014-04-10 at 10:48 -0700, Luis R. Rodriguez wrote:
+> > 
+> > > You just pass it a cocci file, a target dir, and in git environments
+> > > you always want --in-place enabled. Experiments and profiling random
+> > > cocci files with the Linux kernel show that using just using number of
+> > > CPUs doesn't scale well given that lots of buckets of files don't require
+> > > work, as such this uses 10 * number of CPUs for its number of threads.
+> > > For work that define more general ruler 3 * number of CPUs works better,
+> > > but for smaller cocci files 3 * number of CPUs performs best right now.
+> > > To experiment more with what's going on with the multithreading one can enable
+> > > htop while kicking off a cocci task on the kernel, we want to keep
+> > > these CPUs busy as much as possible. 
+> > 
+> > That's not really a good benchmark, you want to actually check how
+> > quickly it finishes ... If you have some IO issues then just keeping the
+> > CPUs busy trying to do IO won't help at all.
+> 
+> I checked the profile results, the reason the jobs finish is some threads
+> had no work or little work. Hence why I increased the number of threads,
+> depending on the context (long or short cocci expected, in backports
+> at least, the long being all cocci files in one, the short being --test-cocci
+> flag to gentree.py). This wrapper uses the short assumption with 10 * num_cpus
+> 
+> > > Since its just a helper I toss it into the python directory but don't
+> > > install it. Hope is that we can evolve it there instead of carrying this
+> > > helper within backports.
+> > 
+> > If there's a plan to make coccinelle itself multi-threaded, what's the
+> > point?
+> 
+> To be clear, Coccinelle *has* a form of multithreaded support but requires manual
+> spawning of jobs with references to the max count and also the number thread
+> that this new process you are spawning belongs to. There's plans to consider
+> reworking things to handle all this internally but as I discussed with Julia
+> the changes required would require some structural changes, and as such we
+> need to live with this for a bit longer. I need to use Coccinelle daily now,
+> so figured I'd punt this out there in case others might make use of it.
 
-this is still true, I guess.
+I agree with Luis.  Multithreading inside Coccinelle is currently a 
+priority task, but not a highest priority one.
 
-Oleg.
-
+julia
