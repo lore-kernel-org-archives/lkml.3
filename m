@@ -1,253 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806AbaDJRL0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 13:11:26 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:63581 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758712AbaDJRLX (ORCPT
+	id S1758827AbaDJRLj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 13:11:39 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:65183 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758712AbaDJRLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 13:11:23 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: hannes@cmpxchg.org, mhocko@suse.cz, bsingharora@gmail.com,
-        kamezawa.hiroyu@jp.fujitsu.com, akpm@linux-foundation.org
-Cc: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        nasa4836@gmail.com
-Subject: [PATCH] mm/memcontrol.c: make mem_cgroup_read_stat() read all interested stat item in one go
-Date: Fri, 11 Apr 2014 01:11:08 +0800
-Message-Id: <1397149868-30401-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 1.9.0.GIT
+	Thu, 10 Apr 2014 13:11:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <5346CF27.3070406@broadcom.com>
+References: <CAB=NE6VvyBKzEg=ErZzQMktY8eLytQ21JCPrOQbxvZ9m-nqHkw@mail.gmail.com>
+ <53451077.2030102@openwrt.org> <CAB=NE6UUN4vQd3SpsvO5tcgaYq3YXQeE0KtZGki7p7OnR=J4RA@mail.gmail.com>
+ <20140409191225.GA10560@kroah.com> <CAB=NE6VqY8yXoYuE0o01vq86imY8EtqLdkPa4bGMvR3bTaj5KQ@mail.gmail.com>
+ <20140409202224.GA12953@kroah.com> <CAB=NE6XY5++p7hJQpQdwrFNUcGbUsKpC+oJiZQciXNduo+8j8A@mail.gmail.com>
+ <20140409210613.GA14392@kroah.com> <s5heh15pr18.wl%tiwai@suse.de>
+ <CAB=NE6VeNTFeGxKXpYunkU-W=JPLMpOnrehttvsqB+yXkdz5fg@mail.gmail.com> <5346CF27.3070406@broadcom.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Thu, 10 Apr 2014 10:11:09 -0700
+X-Google-Sender-Auth: 9mNMGXhb5VodiKk7ZNTIiPs4r_o
+Message-ID: <CAB=NE6VibNJC6OW1sw+rdhrBke3PqYYmRM+29tp7y6kSbDMowQ@mail.gmail.com>
+Subject: Re: Bumping required kernels to 3.0 for Linux backports ?
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Takashi Iwai <tiwai@suse.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felix Fietkau <nbd@openwrt.org>,
+        "backports@vger.kernel.org" <backports@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, mem_cgroup_read_stat() is used for user interface. The
-user accounts memory usage by memory cgroup and he _always_ requires
-exact value because he accounts memory. So we don't use quick-and-fuzzy
--read-and-do-periodic-synchronization way. Thus, we iterate all cpus
-for one read.
+On Thu, Apr 10, 2014 at 10:04 AM, Arend van Spriel <arend@broadcom.com> wrote:
+> On 04/10/14 18:59, Luis R. Rodriguez wrote:
+>>
+>> On Thu, Apr 10, 2014 at 12:44 AM, Takashi Iwai<tiwai@suse.de>  wrote:
+>>>
+>>> At Wed, 9 Apr 2014 14:06:13 -0700,
+>>> Greg Kroah-Hartman wrote:
+>>>>
+>>>>
+>>>> On Wed, Apr 09, 2014 at 01:52:29PM -0700, Luis R. Rodriguez wrote:
+>>>>>
+>>>>> On Wed, Apr 9, 2014 at 1:22 PM, Greg Kroah-Hartman
+>>>>> <gregkh@linuxfoundation.org>  wrote:
+>>>>>>
+>>>>>> On Wed, Apr 09, 2014 at 01:01:23PM -0700, Luis R. Rodriguez wrote:
+>>>>>>>
+>>>>>>> On Wed, Apr 9, 2014 at 12:12 PM, Greg Kroah-Hartman
+>>>>>>> <gregkh@linuxfoundation.org>  wrote:
+>>>>>>>>
+>>>>>>>> On Wed, Apr 09, 2014 at 11:28:55AM -0700, Luis R. Rodriguez wrote:
+>>>>>>>>>
+>>>>>>>>> On Wed, Apr 9, 2014 at 2:18 AM, Felix Fietkau<nbd@openwrt.org>
+>>>>>>>>> wrote:
+>>>>>>>>>>
+>>>>>>>>>> The oldest kernel in OpenWrt that we're still supporting with
+>>>>>>>>>> updates of
+>>>>>>>>>> the backports tree is 3.3, so raising the minimum requirement to
+>>>>>>>>>> 3.0 is
+>>>>>>>>>> completely fine with me.
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>> OK note that 3.3 is not listed on kernel.org as supported. I'm fine
+>>>>>>>>> in
+>>>>>>>>> carrying the stuff for those for now but ultimately it'd also be
+>>>>>>>>> nice
+>>>>>>>>> if we didn't even have to test the kernels in between which are not
+>>>>>>>>> listed. This does however raise the question of how often a kernel
+>>>>>>>>> in
+>>>>>>>>> between a list of supported kernels gets picked up to be supported
+>>>>>>>>> eventually. Greg, Jiri, do you happen to know what the likelyhood
+>>>>>>>>> of
+>>>>>>>>> that can be?
+>>>>>>>>
+>>>>>>>>
+>>>>>>>> I don't know of anything ever getting picked up after I have said it
+>>>>>>>> would not be supported anymore.
+>>>>>>>
+>>>>>>>
+>>>>>>> Great! How soon after a release do you mention whether or not it will
+>>>>>>> be supported? Like say, 3.14, which was just released.
+>>>>>>
+>>>>>>
+>>>>>> I only mention it around the time that it would normally go
+>>>>>> end-of-life.
+>>>>>>
+>>>>>> For example, if 3.13 were to be a release that was going to be "long
+>>>>>> term", I would only say something around the normal time I would be no
+>>>>>> longer supporting it.  Like in 2-3 weeks from now.
+>>>>>>
+>>>>>> So for 3.14, I'll not say anything about that until 3.16-rc1 is out,
+>>>>>> give or take a week or two.
+>>>>>>
+>>>>>>> Also, as of late are you aware any distribution picking an
+>>>>>>> unsupported
+>>>>>>> kernel for their next choice of kernel?
+>>>>>>
+>>>>>>
+>>>>>> Sure, lots do, as they don't line up with my release cycles (I only
+>>>>>> pick
+>>>>>> 1 long term kernel to maintain each year).  Look at the Ubuntu
+>>>>>> releases
+>>>>>> for examples of that.  Also openSUSE and Fedora (although Fedora does
+>>>>>> rev their kernel pretty regularly) don't usually line up.  The
+>>>>>> "enterprise" distros are different, but even then, they don't always
+>>>>>> line up either (which is why Jiri is maintaining 3.12...)
+>>>>>>
+>>>>>> Hope this helps,
+>>>>>
+>>>>>
+>>>>> It does! Unless I don't hear any complaints then given that some
+>>>>> distributions might choose a kernel in between and given also your
+>>>>> great documented story behind the gains on trying to steer folks
+>>>>> together on the 'ol 2.6.32 [0] and this now being faded, I'll be
+>>>>> bumping backports to only support>= 3.0 soon, but we'll include all
+>>>>> the series from 3.0 up to the latest. That should shrink compile /
+>>>>> test time / support time on backports to 1/2.
+>>>>
+>>>>
+>>>> Why 3.0?  That's not supported by anyone anymore for "new hardware", I'd
+>>>> move to 3.2 if you could, as that's the Debian stable release that will
+>>>> be maintained for quite some time yet:
+>>>>        https://www.kernel.org/category/releases.html
+>>>
+>>>
+>>> Well, the support for "new hardware" is what backports project itself
+>>> does, isn't it?
+>>>
+>>> Besides, SLES11 is still supported, so yes, including 3.0.x would be
+>>> helpful.
+>>
+>>
+>> That's two stakeholders for 3.0 -- but nothing is voiced for anything
+>> older than that. Today I will rip the older kernels into oblivion.
+>> Thanks for all the feedback!
+>
+>
+> Ok, I guess my voice was cracking when I mentioned 2.6.38 as being used over
+> here. I am probably alone in that desert.
 
-And we mem_cgroup_usage() and mem_cgroup_recursive_stat() both finally
-call into mem_cgroup_read_stat().
+That's better than 2.6.25 :) what drivers do you need?
 
-However, these *stat snapshot* operations are implemented in a quite
-coarse way: it takes M*N iteration for each stat item(M=nr_memcgs,
-N=nr_possible_cpus). There are two deficiencies:
-
-1. for every stat item, we have to iterate over all percpu value, which
-   is not so cache friendly.
-2. for every stat item, we call mem_cgroup_read_stat() once, which
-   increase the probablity of contending on pcp_counter_lock.
-
-So, this patch improve this a bit. Concretely, for all interested stat
-items, mark them in a bitmap, and then make mem_cgroup_read_stat() read
-them all in one go.
-
-This is more efficient, and to some degree make it more like *stat snapshot*.
-
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- mm/memcontrol.c | 91 +++++++++++++++++++++++++++++++++++++++------------------
- 1 file changed, 62 insertions(+), 29 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 29501f0..009357e 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -347,7 +347,7 @@ struct mem_cgroup {
- 	struct mem_cgroup_stat_cpu __percpu *stat;
- 	/*
- 	 * used when a cpu is offlined or other synchronizations
--	 * See mem_cgroup_read_stat().
-+	 * See mem_cgroup_read_stat_vec().
- 	 */
- 	struct mem_cgroup_stat_cpu nocpu_base;
- 	spinlock_t pcp_counter_lock;
-@@ -855,7 +855,13 @@ mem_cgroup_largest_soft_limit_node(struct mem_cgroup_tree_per_zone *mctz)
- 	return mz;
- }
- 
--/*
-+/**
-+ * @memcg: the mem_cgroup to account for.
-+ * @stat_bitmask: a bitmap record which stat items to read,
-+ *		each mem_cgroup_stat_index has its corresponding bit.
-+ * @stat_vec: a stat vector to hold the stat value for returing, caller
-+ *		shall take care of initializing it.
-+ *
-  * Implementation Note: reading percpu statistics for memcg.
-  *
-  * Both of vmstat[] and percpu_counter has threshold and do periodic
-@@ -874,22 +880,25 @@ mem_cgroup_largest_soft_limit_node(struct mem_cgroup_tree_per_zone *mctz)
-  * common workload, threashold and synchonization as vmstat[] should be
-  * implemented.
-  */
--static long mem_cgroup_read_stat(struct mem_cgroup *memcg,
--				 enum mem_cgroup_stat_index idx)
-+static void mem_cgroup_read_stat_vec(struct mem_cgroup *memcg,
-+				 unsigned long *stat_bitmask,
-+				 long long *stat_vec)
- {
--	long val = 0;
- 	int cpu;
-+	int i;
- 
- 	get_online_cpus();
- 	for_each_online_cpu(cpu)
--		val += per_cpu(memcg->stat->count[idx], cpu);
-+		for_each_set_bit(i, stat_bitmask, MEM_CGROUP_STAT_NSTATS)
-+			stat_vec[i] += per_cpu(memcg->stat->count[i], cpu);
-+
- #ifdef CONFIG_HOTPLUG_CPU
- 	spin_lock(&memcg->pcp_counter_lock);
--	val += memcg->nocpu_base.count[idx];
-+	for_each_set_bit(i, stat_bitmask, MEM_CGROUP_STAT_NSTATS)
-+		stat_vec[i] += memcg->nocpu_base.count[i];
- 	spin_unlock(&memcg->pcp_counter_lock);
- #endif
- 	put_online_cpus();
--	return val;
- }
- 
- static void mem_cgroup_swap_statistics(struct mem_cgroup *memcg,
-@@ -1674,6 +1683,7 @@ void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
- 	static DEFINE_MUTEX(oom_info_lock);
- 	struct mem_cgroup *iter;
- 	unsigned int i;
-+	DECLARE_BITMAP(stat_bitmask, MEM_CGROUP_STAT_NSTATS);
- 
- 	if (!p)
- 		return;
-@@ -1702,16 +1712,22 @@ void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
- 		res_counter_read_u64(&memcg->kmem, RES_LIMIT) >> 10,
- 		res_counter_read_u64(&memcg->kmem, RES_FAILCNT));
- 
-+	bitmap_fill(stat_bitmask, MEM_CGROUP_STAT_NSTATS);
-+	if (!do_swap_account)
-+		clear_bit(MEM_CGROUP_STAT_SWAP, stat_bitmask);
- 	for_each_mem_cgroup_tree(iter, memcg) {
-+		long long stat_vec[MEM_CGROUP_STAT_NSTATS] = {0};
-+
- 		pr_info("Memory cgroup stats for ");
- 		pr_cont_cgroup_path(iter->css.cgroup);
- 		pr_cont(":");
- 
-+		mem_cgroup_read_stat_vec(iter, stat_bitmask, stat_vec);
- 		for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
- 			if (i == MEM_CGROUP_STAT_SWAP && !do_swap_account)
- 				continue;
--			pr_cont(" %s:%ldKB", mem_cgroup_stat_names[i],
--				K(mem_cgroup_read_stat(iter, i)));
-+			pr_cont(" %s:%lldKB", mem_cgroup_stat_names[i],
-+				K(stat_vec[i]));
- 		}
- 
- 		for (i = 0; i < NR_LRU_LISTS; i++)
-@@ -4940,25 +4956,28 @@ out:
- 	return retval;
- }
- 
--
--static unsigned long mem_cgroup_recursive_stat(struct mem_cgroup *memcg,
--					       enum mem_cgroup_stat_index idx)
-+/* Callers should take care of initialize stat_vec array */
-+static void mem_cgroup_recursive_stat(struct mem_cgroup *memcg,
-+					unsigned long *stat_bitmask,
-+					long long *stat_vec)
- {
- 	struct mem_cgroup *iter;
--	long val = 0;
-+	int idx;
- 
- 	/* Per-cpu values can be negative, use a signed accumulator */
- 	for_each_mem_cgroup_tree(iter, memcg)
--		val += mem_cgroup_read_stat(iter, idx);
-+		mem_cgroup_read_stat_vec(iter, stat_bitmask, stat_vec);
- 
--	if (val < 0) /* race ? */
--		val = 0;
--	return val;
-+	for_each_set_bit(idx, stat_bitmask, MEM_CGROUP_STAT_NSTATS)
-+		if (stat_vec[idx] < 0) /* race ? */
-+			stat_vec[idx] = 0;
- }
- 
- static inline u64 mem_cgroup_usage(struct mem_cgroup *memcg, bool swap)
- {
- 	u64 val;
-+	DECLARE_BITMAP(stat_bitmask, MEM_CGROUP_STAT_NSTATS);
-+	long long stat_vec[MEM_CGROUP_STAT_NSTATS] = {0};
- 
- 	if (!mem_cgroup_is_root(memcg)) {
- 		if (!swap)
-@@ -4967,15 +4986,21 @@ static inline u64 mem_cgroup_usage(struct mem_cgroup *memcg, bool swap)
- 			return res_counter_read_u64(&memcg->memsw, RES_USAGE);
- 	}
- 
-+
- 	/*
- 	 * Transparent hugepages are still accounted for in MEM_CGROUP_STAT_RSS
- 	 * as well as in MEM_CGROUP_STAT_RSS_HUGE.
- 	 */
--	val = mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_CACHE);
--	val += mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_RSS);
--
-+	bitmap_zero(stat_bitmask, MEM_CGROUP_STAT_NSTATS);
-+	set_bit(MEM_CGROUP_STAT_CACHE, stat_bitmask);
-+	set_bit(MEM_CGROUP_STAT_RSS, stat_bitmask);
- 	if (swap)
--		val += mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_SWAP);
-+		set_bit(MEM_CGROUP_STAT_SWAP, stat_bitmask);
-+
-+	mem_cgroup_recursive_stat(memcg, stat_bitmask, stat_vec);
-+
-+	val = stat_vec[MEM_CGROUP_STAT_CACHE] + stat_vec[MEM_CGROUP_STAT_RSS] +
-+	      (swap ? stat_vec[MEM_CGROUP_STAT_SWAP] : 0);
- 
- 	return val << PAGE_SHIFT;
- }
-@@ -5349,12 +5374,19 @@ static int memcg_stat_show(struct seq_file *m, void *v)
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(seq_css(m));
- 	struct mem_cgroup *mi;
- 	unsigned int i;
-+	DECLARE_BITMAP(stat_bitmask, MEM_CGROUP_STAT_NSTATS);
-+	long long stat_vec[MEM_CGROUP_STAT_NSTATS] = {0};
-+
-+	bitmap_fill(stat_bitmask, MEM_CGROUP_STAT_NSTATS);
-+	if (!do_swap_account)
-+		clear_bit(MEM_CGROUP_STAT_SWAP, stat_bitmask);
-+	mem_cgroup_read_stat_vec(memcg, stat_bitmask, stat_vec);
- 
- 	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
- 		if (i == MEM_CGROUP_STAT_SWAP && !do_swap_account)
- 			continue;
--		seq_printf(m, "%s %ld\n", mem_cgroup_stat_names[i],
--			   mem_cgroup_read_stat(memcg, i) * PAGE_SIZE);
-+		seq_printf(m, "%s %lld\n", mem_cgroup_stat_names[i],
-+			   stat_vec[i] * PAGE_SIZE);
- 	}
- 
- 	for (i = 0; i < MEM_CGROUP_EVENTS_NSTATS; i++)
-@@ -5375,14 +5407,15 @@ static int memcg_stat_show(struct seq_file *m, void *v)
- 				   memsw_limit);
- 	}
- 
-+	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++)
-+		stat_vec[i] = 0;
-+	mem_cgroup_recursive_stat(memcg, stat_bitmask, stat_vec);
- 	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
--		long long val = 0;
--
- 		if (i == MEM_CGROUP_STAT_SWAP && !do_swap_account)
- 			continue;
--		for_each_mem_cgroup_tree(mi, memcg)
--			val += mem_cgroup_read_stat(mi, i) * PAGE_SIZE;
--		seq_printf(m, "total_%s %lld\n", mem_cgroup_stat_names[i], val);
-+
-+		seq_printf(m, "total_%s %lld\n", mem_cgroup_stat_names[i],
-+				stat_vec[i] * PAGE_SIZE);
- 	}
- 
- 	for (i = 0; i < MEM_CGROUP_EVENTS_NSTATS; i++) {
--- 
-1.9.0.GIT
-
+ Luis
