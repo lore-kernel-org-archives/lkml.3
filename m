@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935739AbaDJSxW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 14:53:22 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:50934 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934889AbaDJSxV (ORCPT
+	id S965771AbaDJSyL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 14:54:11 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:54905 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964944AbaDJSyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 14:53:21 -0400
+	Thu, 10 Apr 2014 14:54:09 -0400
 From: Paul McQuade <paulmcquad@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: viro@zeniv.linux.org.uk, jack@suse.cz
-Subject: [PATCH 10/15] kernel:acct:<linux/uaccess.h
-Date: Thu, 10 Apr 2014 19:53:18 +0100
-Message-Id: <1397155998-6789-1-git-send-email-paulmcquad@gmail.com>
+Subject: [PATCH 11/15] kernel:acct:spaces required
+Date: Thu, 10 Apr 2014 19:54:06 +0100
+Message-Id: <1397156046-6837-1-git-send-email-paulmcquad@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WARNING: Use #include <linux/uaccess.h> instead of <asm/uaccess.h>
+ERROR: spaces required around that '>' (ctx:VxV)
 
 Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
 ---
@@ -26,18 +26,18 @@ Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/acct.c b/kernel/acct.c
-index 8d6e145..df28519 100644
+index df28519..3fdafa9 100644
 --- a/kernel/acct.c
 +++ b/kernel/acct.c
-@@ -55,7 +55,7 @@
- #include <linux/times.h>
- #include <linux/syscalls.h>
- #include <linux/mount.h>
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- #include <asm/div64.h>
- #include <linux/blkdev.h> /* sector_div */
- #include <linux/pid_namespace.h>
+@@ -134,7 +134,7 @@ static int check_free_space(struct bsd_acct_struct *acct, struct file *file)
+ 	spin_lock(&acct_lock);
+ 	if (file != acct->file) {
+ 		if (act)
+-			res = act>0;
++			res = act > 0;
+ 		goto out;
+ 	}
+ 
 -- 
 1.8.3.2
 
