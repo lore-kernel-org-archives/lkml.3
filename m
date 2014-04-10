@@ -1,126 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758614AbaDJPnb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 11:43:31 -0400
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:58191 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758454AbaDJPn1 (ORCPT
+	id S934876AbaDJPxQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 11:53:16 -0400
+Received: from mga01.intel.com ([192.55.52.88]:53749 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758560AbaDJPxN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 11:43:27 -0400
+	Thu, 10 Apr 2014 11:53:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,834,1389772800"; 
+   d="scan'208";a="518414453"
+From: "Ertman, DavidX M" <davidx.m.ertman@intel.com>
+To: "Fujinaka, Todd" <todd.fujinaka@intel.com>, Borislav Petkov <bp@alien8.de>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: RE: [E1000-devel] e1000e 0000:00:19.0 eth0: Hardware Error
+Thread-Topic: [E1000-devel] e1000e 0000:00:19.0 eth0: Hardware Error
+Thread-Index: AQHPVLdrx85Qbtii1EiIAs8yzRn4gpsLZscA//+OPoA=
+Date: Thu, 10 Apr 2014 15:45:41 +0000
+Message-ID: <2B0E3F215D1AB84DA946C8BEE234CCC9370D484B@ORSMSX101.amr.corp.intel.com>
+References: <20140410115941.GI29093@pd.tnic>
+ <9B4A1B1917080E46B64F07F2989DADD65297BCAC@ORSMSX102.amr.corp.intel.com>
+In-Reply-To: <9B4A1B1917080E46B64F07F2989DADD65297BCAC@ORSMSX102.amr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
-References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 10 Apr 2014 09:43:07 -0600
-Message-ID: <CAErSpo4fUW24ShdyMHq_4CUk_EeK=uJiOTB+5fN1Ztr3cFW3hA@mail.gmail.com>
-Subject: Re: hpsa driver bug crack kernel down!
-To: Baoquan He <bhe@redhat.com>
-Cc: storagedev@hp.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 8, 2014 at 8:39 PM, Baoquan He <bhe@redhat.com> wrote:
-> Hi,
->
-> The kernel is 3.14.0+ which is pulled just now.
->
->
-> [   18.402695] systemd[1]: Set hostname to
-> <hp-sl4545g7-01.rhts.eng.bos.redhat.com>.
-> [   18.408456] random: systemd urandom read with 70 bits of entropy
-> available
-> [   18md[1]: Expecting device
-> dev-mapper-rhel_hp\x2d\x2dsl4545g7\x2d\x2d01\x2droot.device...
->          Expecting device
-> dev-mapper-rhel_hp\x2d\x2dsl4545g7\...droot.device...
-> [   18.860704] systemd[1]: Starting -.slice.
-> [  OK  ] Created slice -.slice.
-> [   18.866030] systemd[1]: Created slice -.slice.
-> [   18.869466] systemd[1]: Starting System Slice.
-> [  OK  ] Created slice System Sl       18.939116] systemd[1]: Created
-> slice System Slice.
-> [   18.976213] systemd[1]: Starting Slices.
-> [  OK  ] Reached target Slices.
-> [   18.981154] systemd[1]: Reached target Slices.
-> [   18.984183] systemd[1]: Starting Timers.
-> [  OK  ] Reached target Timers.
-> [   18.989161] systemd[1]: Reached target Timers.
-> [   18.992004] systemd[1]: Starting Journal Socket.
-> [  OK  ] Listening on Journal Socket.
-> [   18.997174] systemd[1]: Listening on Journal Socket.
-> [   19.000702] systemd[1]: Starting dracut cmdline hook...
->          Starting dracut cmdline hook...
-> [   19.006697] systemd[1]: Started Load KernModules.
-> [   19.110408] systemd[1]: Starting Setup Virtual Console...
->          Starting Setup Virtual Console...
-> [   19.116652] systemd[1]: Starting Journal Service...
->          Starting Journal Service...
-> [  OK  ] Started Journal Service.
-> [   19.127172] systemd[1]: Started Journal Service.
-> [  OK  ] Listening on udev Kernel Socket.
-> [   19.141504] systemd-journald[281]: Vac[  OK  ] Listening on udev
-> Control Socket.
-> [  OK  ] Reached target Sockets.
->          Starting Create list of required static device nodes...rrent
-> kernel...
->          Starting Apply Kernel Variables...
-> [  OK  ] Reached target Swap.
-> [  OK  ] Reached target Local File Systems.
-> [  OK  ] Started dracut cmdline hook.
-> [  OK  ] Started Setup Virtual Console.
-> [  OK  ] Started Apply Kernel Variables.
-> [  OK  ] Started Create list of required static device nodes ...current
-> kernel.
->          Starting Create static device nodes in /dev...
->          Starting dracut pre-udev hook...
-> [  OK  ] Started Create static device nodes in /dev.
-> [   20.247819] device-mapper: uevent: version 1.0.3
-> [   20.251101] device-mapper: ioctl: 4.27.0-ioctl (2013-10-30)
-> initialised: dm-devel@redhat.com
-> [  OK  ] Started dracut pre-udev hook.
->          Starting udev Kernel Device Manager...
-> [   20.322923] systemd-udevd[335]: starting version 208
-> [  OK  ] Started udev Kernel Device Manager.
->          Starting udev Coldplug all Devices...
->          Mounting Configuration File System...
-> [  OK  ] Mounted Configuration File System.
-> [  OK  ] Started udev Coldplug all Devices.
->          Starting dracut initqueue hook...
-> [  OK  ][1] HP HPSA Driver (v 3.4.4-1)
-> [   20.832850] hpsa 0000:05:00.0: can't disable ASPM; OS doesn't have
-> ASPM control
->  Reached target System Initialization.
-> [   20.875178] ACPI: PCI Interrupt Link [I0C0] enabled at IRQ 36
-> [   20.909000] hpsa 0000:05:00.0: MSIX
-> [   20.911586] hpsa 0000:05:00.0: Logical aborts not supported
->          [   20.916004] [drm] Initialized drm 1.1.0 20060810
-> [   20.936139] hpsa 0000:05:00.0: hpsa0: <0x323b> at IRQ 73 using DAC
-> [   20.956967] BUG: unable to handle kernel NULL pointer dereference at
-> (null)
-> [   20.956997] IP: [<ffffffffa004b97f>]
-> hpsa_enter_performant_mode+0x4ff/0x580 [hpsa]
-> [   20.957003] PGD 0
-> [   20.957012] Oops: 0002 [#1] SMP
-> [   20.957035] Modules linked in: drm(+) libata hpsa(+) i2c_core
-> dm_mirror dm_region_hash dm_log dm_mod
-> [   20.957046] CPU: 10 PID: 341 Comm: systemd-udevd Not tainted 3.14.0+
-> #28
-> [   20.957049] Hardware name: HP ProLiant SL4545 G7/, BIOS A31
-> 12/08/2012
-> [   20.957055] task: ffff880824191b40 ti: ffff88082309c000 task.ti:
-> ffff88082309c000
-> [   20.957078] RIP: 0010:[<ffffffffa004b97f>]  [<ffffffffa004b97f>]
-> hpsa_enter_performant_mode+0x4ff/0x580 [hpsa]
-> [   20.957083] RSP: 0018:ffff88082309da18  EFLAGS: 00010297
-> [   20.957088] RAX: 0000000000000000 RBX: 000000007c000167 RCX:
-> 0000000000000004
-> [   20.957091] RDX: 000000000000
+> -----Original Message-----
+> From: Fujinaka, Todd [mailto:todd.fujinaka@intel.com]
+> Sent: Thursday, April 10, 2014 7:59 AM
+> To: Borislav Petkov; e1000-devel@lists.sourceforge.net
+> Cc: netdev@vger.kernel.org; lkml
+> Subject: Re: [E1000-devel] e1000e 0000:00:19.0 eth0: Hardware Error
+> 
+> We also need to know what part you're using. "lspci | grep Ethernet" should
+> narrow that down.
+> 
+> Thanks.
+> 
+> Todd Fujinaka
+> Software Application Engineer
+> Networking Division (ND)
+> Intel Corporation
+> todd.fujinaka@intel.com
+> (503) 712-4565
+> 
+> -----Original Message-----
+> From: Borislav Petkov [mailto:bp@alien8.de]
+> Sent: Thursday, April 10, 2014 5:00 AM
+> To: e1000-devel@lists.sourceforge.net
+> Cc: netdev@vger.kernel.org; lkml
+> Subject: [E1000-devel] e1000e 0000:00:19.0 eth0: Hardware Error
+> 
+> Hi guys,
+> 
+> I started getting those sporadic
+> 
+> [133178.640890] e1000e 0000:00:19.0 eth0: Hardware Error [133179.293148]
+> e1000e 0000:00:19.0: irq 45 for MSI/MSI-X [133179.394226] e1000e
+> 0000:00:19.0: irq 45 for MSI/MSI-X [133179.397200] IPv6:
+> ADDRCONF(NETDEV_UP): eth0: link is not ready [133181.338258] e1000e
+> 0000:00:19.0 eth0: Hardware Error [133182.077209]
+> pci_pm_runtime_suspend(): e1000_runtime_suspend+0x0/0x40 [e1000e]
+> returns -2
+> 
+> messages with 3.14 and I haven't had them before. After this, I do
+> 
+> rmmod e1000e && modprobe e1000e
+> 
+> and I get:
+> 
+> [133221.891555] e1000e 0000:00:19.0 eth0: removed PHC [133228.181552]
+> e1000e: Intel(R) PRO/1000 Network Driver - 2.3.2-k [133228.181562] e1000e:
+> Copyright(c) 1999 - 2013 Intel Corporation.
+> [133228.182241] e1000e 0000:00:19.0: Interrupt Throttling Rate (ints/sec) set
+> to dynamic conservative mode [133228.182332] e1000e 0000:00:19.0: irq 45
+> for MSI/MSI-X [133229.009837] e1000e: probe of 0000:00:19.0 failed with
+> error -2
+> 
+> 	^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 
+> [133307.107217] e1000e: Intel(R) PRO/1000 Network Driver - 2.3.2-k
+> [133307.107228] e1000e: Copyright(c) 1999 - 2013 Intel Corporation.
+> [133307.107814] e1000e 0000:00:19.0: Interrupt Throttling Rate (ints/sec) set
+> to dynamic conservative mode [133307.107959] e1000e 0000:00:19.0: irq 45
+> for MSI/MSI-X [133307.935921] e1000e: probe of 0000:00:19.0 failed with
+> error -2
+> 
+> ...
+> 
+> [133841.361905] e1000e: Intel(R) PRO/1000 Network Driver - 2.3.2-k
+> [133841.361914] e1000e: Copyright(c) 1999 - 2013 Intel Corporation.
+> [133841.362451] e1000e 0000:00:19.0: Interrupt Throttling Rate (ints/sec) set
+> to dynamic conservative mode [133841.362520] e1000e 0000:00:19.0: irq 45
+> for MSI/MSI-X [133842.192710] e1000e: probe of 0000:00:19.0 failed with
+> error -2
+> 
+> each time I try and eth0 is dead. Only a reboot helps, I've come to find out so
+> far.
+> 
+> Any ideas?
+> 
+> --
+> Regards/Gruss,
+>     Boris.
+> 
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
+> 
+> ------------------------------------------------------------------------------
+> Put Bad Developers to Shame
+> Dominate Development with Jenkins Continuous Integration Continuously
+> Automate Build, Test & Deployment Start a new project now. Try Jenkins in
+> the cloud.
+> http://p.sf.net/sfu/13600_Cloudbees
+> _______________________________________________
+> E1000-devel mailing list
+> E1000-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/e1000-devel
+> To learn more about Intel&#174; Ethernet, visit
+> http://communities.intel.com/community/wired
+> 
+> ------------------------------------------------------------------------------
+> Put Bad Developers to Shame
+> Dominate Development with Jenkins Continuous Integration
+> Continuously Automate Build, Test & Deployment
+> Start a new project now. Try Jenkins in the cloud.
+> http://p.sf.net/sfu/13600_Cloudbees
+> _______________________________________________
+> E1000-devel mailing list
+> E1000-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/e1000-devel
+> To learn more about Intel&#174; Ethernet, visit
+> http://communities.intel.com/community/wired
 
-What happened with this original report?  This looks like a different
-problem than the DMA fault reported by Davidlohr.  I'd start by
-disassembling the hpsa module and matching the IP to a line.
-Documentation/oops-tracing.txt might have useful tips on how to do
-that.
+Could you also provide some information about the configuration of the system when this happens?  
+Do you have Runtime Power Management configured in the kernel and enabled? (echo auto > /sys/devices/pci0000\:00/0000\:00\:19.0/power/control)
+Is the network cable in and link is up?  Is anything happening to the link partner (going up and down, connecting and disconnecting)?  
+
+Thanks,
+
+Dave Ertman
