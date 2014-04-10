@@ -1,111 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759286AbaDJXYR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 19:24:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58780 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753823AbaDJXYO (ORCPT
+	id S1759313AbaDJXZg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 19:25:36 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:54725 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754205AbaDJXZe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 19:24:14 -0400
-Message-ID: <5347280B.3000303@infradead.org>
-Date: Thu, 10 Apr 2014 16:23:55 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>, hannes@cmpxchg.org, mhocko@suse.cz,
-        bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com
-CC: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, guz.fnst@cn.fujitsu.com,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/1] doc, mempolicy: Fix wrong document in numa_memory_policy.txt
-References: <1396410782-26208-1-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1396410782-26208-1-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 10 Apr 2014 19:25:34 -0400
+X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Possible issue with commit 6f008e72cd - locking/mutex: Fix debug checks.
+From: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1397172208_2039P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Thu, 10 Apr 2014 19:23:28 -0400
+Message-ID: <3817.1397172208@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/01/2014 08:53 PM, Tang Chen wrote:
-> In document numa_memory_policy.txt, the following examples for flag
-> MPOL_F_RELATIVE_NODES are incorrect.
-> 
-> 	For example, consider a task that is attached to a cpuset with
-> 	mems 2-5 that sets an Interleave policy over the same set with
-> 	MPOL_F_RELATIVE_NODES.  If the cpuset's mems change to 3-7, the
-> 	interleave now occurs over nodes 3,5-6.  If the cpuset's mems
-> 	then change to 0,2-3,5, then the interleave occurs over nodes
-> 	0,3,5.
-> 
-> According to the comment of the patch adding flag MPOL_F_RELATIVE_NODES,
-> the nodemasks the user specifies should be considered relative to the
-> current task's mems_allowed.
-> (https://lkml.org/lkml/2008/2/29/428)
-> 
-> And according to numa_memory_policy.txt, if the user's nodemask includes
-> nodes that are outside the range of the new set of allowed nodes, then
-> the remap wraps around to the beginning of the nodemask and, if not already
-> set, sets the node in the mempolicy nodemask.
-> 
-> So in the example, if the user specifies 2-5, for a task whose mems_allowed
-> is 3-7, the nodemasks should be remapped the third, fourth, fifth, sixth
-> node in mems_allowed.  like the following:
-> 
-> 	mems_allowed:       3  4  5  6  7
-> 
-> 	relative index:     0  1  2  3  4
-> 	                    5
-> 
-> So the nodemasks should be remapped to 3,5-7, but not 3,5-6.
-> 
-> And for a task whose mems_allowed is 0,2-3,5, the nodemasks should be
-> remapped to 0,2-3,5, but not 0,3,5.
-> 
-> 	mems_allowed:       0  2  3  5
-> 
->         relative index:     0  1  2  3
->                             4  5
-> 
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+--==_Exmh_1397172208_2039P
+Content-Type: text/plain; charset=us-ascii
 
-Wow.  This was not an April fools joke, right?
+So recent linux-next lock up on my laptop due to a third-party module.
+Bisection finds this as the source of the issue:
 
-Have there been any acks of this?  I haven't seen any responses to it.
+6f008e72cd111a119b5d8de8c5438d892aae99eb is the first bad commit
+commit 6f008e72cd111a119b5d8de8c5438d892aae99eb
+Author: Peter Zijlstra <peterz@infradead.org>
+Date:   Wed Mar 12 13:24:42 2014 +0100
 
-Andrew, do you want to merge it?
+    locking/mutex: Fix debug checks
+
+    OK, so commit:
+
+      1d8fe7dc8078 ("locking/mutexes: Unlock the mutex without the wait_lock")
+
+    generates this boot warning when CONFIG_DEBUG_MUTEXES=y:
+
+      WARNING: CPU: 0 PID: 139 at /usr/src/linux-2.6/kernel/locking/mutex-debug.
+
+    And that makes sense, because as soon as we release the lock a
+    new owner can come in...
+
+    One would think that !__mutex_slowpath_needs_to_unlock()
+    implementations suffer the same, but for DEBUG we fall back to
+    mutex-null.h which has an unconditional 1 for that.
+
+    The mutex debug code requires the mutex to be unlocked after
+    doing the debug checks, otherwise it can find inconsistent
+    state.
+
+I was finally able to get netconsole to cough up what happened:
+
+Apr 10 18:52:23 turing-police [  768.277732] INFO: trying to register non-static key.
+Apr 10 18:52:23 turing-police [  768.277781] the code is fine but needs lockdep annotation.
+Apr 10 18:52:23 turing-police [  768.277794] turning off the locking correctness validator.
+Apr 10 18:52:23 turing-police [  768.277819] CPU: 0 PID: 1237 Comm: Xorg Tainted: G           O  3.14.0-next-20140409-dirty #202
+Apr 10 18:52:23 turing-police [  768.277925] Hardware name: Dell Inc. Latitude E6530/07Y85M, BIOS A11 03/12/2013
+Apr 10 18:52:23 turing-police [  768.277938]  0000000000000000
+Apr 10 18:52:23 turing-police  ffff8800c65c7c60
+Apr 10 18:52:23 turing-police  ffffffff81668e5f
+Apr 10 18:52:23 turing-police  0000000000000000
+Apr 10 18:52:23 turing-police
+Apr 10 18:52:23 turing-police [  768.277989]  ffff8800c65c7cd0
+Apr 10 18:52:23 turing-police  ffffffff8107b9c0
+Apr 10 18:52:23 turing-police  ffffffff822098d0
+Apr 10 18:52:23 turing-police  ffff8800c74cd8f8
+Apr 10 18:52:23 turing-police
+Apr 10 18:52:23 turing-police [  768.278091]  ffff8800c74cd0d0
+Apr 10 18:52:23 turing-police  0000000000000019
+Apr 10 18:52:23 turing-police  0000000000000000
+Apr 10 18:52:23 turing-police  ffffffff81c2d980
+Apr 10 18:52:23 turing-police
+Apr 10 18:52:23 turing-police [  768.278119] Call Trace:
+Apr 10 18:52:23 turing-police [  768.278137]  [<ffffffff81668e5f>] dump_stack+0x4f/0xa2
+Apr 10 18:52:23 turing-police [  768.278153]  [<ffffffff8107b9c0>] register_lock_class+0x10d/0x2bf
+Apr 10 18:52:23 turing-police [  768.278166]  [<ffffffff8107d26b>] __lock_acquire+0x127/0xdd7
+Apr 10 18:52:23 turing-police [  768.278182]  [<ffffffff816732aa>] ? _raw_spin_unlock+0x5b/0x67
+Apr 10 18:52:23 turing-police [  768.278196]  [<ffffffff8107e25e>] lock_acquire+0xc9/0x156
+Apr 10 18:52:23 turing-police [  768.278208]  [<ffffffff81079e4e>] ? down+0x11/0x55
+Apr 10 18:52:23 turing-police [  768.278305]  [<ffffffff8167319e>] _raw_spin_lock_irqsave+0x44/0x55
+Apr 10 18:52:23 turing-police [  768.278317]  [<ffffffff81079e4e>] ? down+0x11/0x55
+Apr 10 18:52:23 turing-police [  768.278328]  [<ffffffff81079e4e>] down+0x11/0x55
+
+A down() of an un-annotated lock (which I'll have to annotate, I guess).
+
+But then the kernel goes off into the weeds with complaints like:
+
+Apr 10 18:53:28 turing-police [  833.465272] INFO: rcu_preempt detected stalls on CPUs/tasks:
+Apr 10 18:53:28 turing-police  {
+Apr 10 18:53:28 turing-police }
+Apr 10 18:53:28 turing-police (detected by 3, t=65004 jiffies, g=4552, c=4551, q=287)
+Apr 10 18:53:28 turing-police [  833.465354] INFO: Stall ended before state dump start
+Apr 10 18:55:34 turing-police [  958.896736] INFO: task systemd:1 blocked for more than 120 seconds.
+
+from all *over* the place - systemd in a poll() syscall, ext4, snd_hda, and
+a few other places.  All the symptoms of busted locking leaving something
+with an unintended held lock. After a bit, the box doesn't even answer
+ping anymore....
+
+I can't be sure that it's the down() call - but nothing else actually gets
+*logged*.  But the commit obviously changes the actual semantics of
+*something*.  Was this intentional?
 
 
-> ---
->  Documentation/vm/numa_memory_policy.txt | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/Documentation/vm/numa_memory_policy.txt b/Documentation/vm/numa_memory_policy.txt
-> index 4e7da65..badb050 100644
-> --- a/Documentation/vm/numa_memory_policy.txt
-> +++ b/Documentation/vm/numa_memory_policy.txt
-> @@ -174,7 +174,6 @@ Components of Memory Policies
->  	allocation fails, the kernel will search other nodes, in order of
->  	increasing distance from the preferred node based on information
->  	provided by the platform firmware.
-> -	containing the cpu where the allocation takes place.
->  
->  	    Internally, the Preferred policy uses a single node--the
->  	    preferred_node member of struct mempolicy.  When the internal
-> @@ -275,9 +274,9 @@ Components of Memory Policies
->  	    For example, consider a task that is attached to a cpuset with
->  	    mems 2-5 that sets an Interleave policy over the same set with
->  	    MPOL_F_RELATIVE_NODES.  If the cpuset's mems change to 3-7, the
-> -	    interleave now occurs over nodes 3,5-6.  If the cpuset's mems
-> +	    interleave now occurs over nodes 3,5-7.  If the cpuset's mems
->  	    then change to 0,2-3,5, then the interleave occurs over nodes
-> -	    0,3,5.
-> +	    0,2-3,5.
->  
->  	    Thanks to the consistent remapping, applications preparing
->  	    nodemasks to specify memory policies using this flag should
-> 
 
 
--- 
-~Randy
+--==_Exmh_1397172208_2039P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Exmh version 2.5 07/13/2001
+
+iQIVAwUBU0cn8AdmEQWDXROgAQLwKQ//fzCSWiiaZzADsFtCxkzufIN6g1pzODHp
+Zt3fZEagP8tca/LOOUDAGbXfyzHfsYNokquwFUVQxGmjaBMID2eqXFSO0X05CRDn
+ulmYyNTHK1FNb5lC20zKGcDvYQIxj5GUv8mnlTPXel+8eWVihiEykseZwilrAS6x
+xncEzfYld7Cq4R+v0OBNXFjEPnRhECOWfzphWZb9ZHRJcBpZCijhRNbN1/0qcTzq
+uptXcgsP3GVWdXSnPFIh0Nd0iZ0yUnWAve51GcqBqt/4FA4TleSULLLMfs0J4gsi
+GA7qToow36hlP7Nt5DkI8XvShNYOkGASxjwy5TJGROGLVodvbEZxoHuJQo/WyBe6
+INMRSjWRtSiiw3TuSZN4Wg6XAelEEUsYMM+n6z1BR7po7X+nGgeLrseOfQv6/5gl
+D0hfkkwKAECc2NyfbbreTja/enYEsNvJ6ZJcHSeSivLYh/Z1a1gdsMFJeqEwloKA
+YnOqkLNA+7PDTNybuM9e2aZUibVrQnrj7LSOiSHQsM3Gq9hcrX3hJl4tWdHX2dNl
+FZ5Wkrla8Zy8eQM+1nM6JfcNPqRxVIegNPQpB3NsVIkuqN5SRRW7//hTOLwl4Yie
+qj9MZFU9zLu0YKf9z47Br15mjPUJQNbXTPOKf4d8oKCCAbGIjBRMAdyiPiHmG9BY
+NinvrbBCSis=
+=KSj4
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1397172208_2039P--
