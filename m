@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934571AbaDJDCD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:02:03 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59105 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932996AbaDJDB6 (ORCPT
+	id S934609AbaDJDGv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:06:51 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:25558 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934185AbaDJDGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:01:58 -0400
-Date: Thu, 10 Apr 2014 04:01:50 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@kernel.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: core: Fix Sparse incompatible types warning
-Message-ID: <20140410030150.GC18016@ZenIV.linux.org.uk>
-References: <1397028108-10976-1-git-send-email-k.kozlowski@samsung.com>
- <5345279F.6070005@metafoo.de>
- <1397041934.11424.2.camel@AMDC1943>
- <53452F67.3060400@metafoo.de>
- <20140409202520.GQ6518@sirena.org.uk>
- <5345AD8B.5050306@metafoo.de>
+	Wed, 9 Apr 2014 23:06:48 -0400
+Message-ID: <53460AA9.7030801@huawei.com>
+Date: Thu, 10 Apr 2014 11:06:17 +0800
+From: Kefeng Wang <wangkefeng.wang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5345AD8B.5050306@metafoo.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <guohanjun@huawei.com>
+Subject: Re: [PATCH] cpufreq: highbank: fix ARM_HIGHBANK_CPUFREQ dependency
+ warning
+References: <1397010873-11020-1-git-send-email-wangkefeng.wang@huawei.com> <CAKohponpGAm4J2shQRV8doMZGT22eJ2MnU0+GzF-GkZirGPW5g@mail.gmail.com> <1453884.JQRzhD9Q31@vostro.rjw.lan>
+In-Reply-To: <1453884.JQRzhD9Q31@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.177.21.224]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 10:28:59PM +0200, Lars-Peter Clausen wrote:
+Hi Rafael,
 
-> I had a look at the sparse code and the problem is that it sets the
-> default return type of sizeof according to the type of the host it
-> was compiled on (either unsigned int or unsigned long). It can be
-> overwritten by switches like -m32, but of course wont work when
-> cross compiling. So if your host system is 64bit, but your target
-> system is 32bit you'll get that warning.
+On 04/10 10:18, Rafael J. Wysocki wrote:
+> On Wednesday, April 09, 2014 09:58:26 AM Viresh Kumar wrote:
+>> On 9 April 2014 08:04, Kefeng Wang <wangkefeng.wang@huawei.com> wrote:
+>>> When make ARCH=arm multi_v7_defconfig, we get the following warnings:
+>>>
+>>> warning: (ARM_HIGHBANK_CPUFREQ) selects GENERIC_CPUFREQ_CPU0 which has
+>>> unmet direct dependencies (ARCH_HAS_CPUFREQ && CPU_FREQ && HAVE_CLK
+>>> && REGULATOR && OF && THERMAL && CPU_THERMAL)
+>>>
+>>> To fix this, make ARM_HIGHBANK_CPUFREQ depend on ARCH_HAS_CPUFREQ and
+>>> REGULATOR instead of selecting them, PM_OPP will be selected by ARCH_HAS_CPUFREQ.
+>>>
+>>> Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
+> 
+> Well, it doesn't work as intended, I'm afraid:
+> 
+> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git bleeding-edge
+> head:   588bc73d890c5dea35b7982a368c0e95089d5389
+> commit: 51be80edc69390521622df71855d86da4e358488 [67/68] cpufreq: highbank: fix ARM_HIGHBANK_CPUFREQ dependency warning
+> config: make ARCH=i386 allyesconfig
+> 
+> All warnings:
+> 
+> warning: (GENERIC_CPUFREQ_CPU0 && ARM_BIG_LITTLE_CPUFREQ && ARM_EXYNOS5440_CPUFREQ) selects PM_OPP which has unmet direct dependencies (ARCH_HAS_OPP)
 
-Not that simple.  First of all, you *need* to tell sparse what target
-to expect; size_t is the least of your troubles - sizeof(long) has
-far more widespread impact.  If you don't get -m64 or -m32 in CFLAGS
-(and on quite a few cross-builds you get it, simply because the target
-is biarch and gcc itself needs to know what to generate), you need
-to set it in CHECKFLAGS, along with other target-specific things.
-Example:
-arch/ia64/Makefile:21:CHECKFLAGS        += -m64 -D__ia64=1 -D__ia64__=1 -D_LP64 -D__LP64__
+I don't think this is my issue, without this patch，the warning is still there.
 
-With the defaults being what they are (since commit 7aa79f "Adding default for
-m64/m32 handle"), we probably need explicit -m32 in CHECKFLAGS for a bunch
-of 32bit targets.  Defaults are iffy, BTW - it's not even "do as host does",
-it's "64bit if the host is amd64, 32bit otherwise" ;-/
+warning: (GENERIC_CPUFREQ_CPU0 && ARM_BIG_LITTLE_CPUFREQ && ARM_EXYNOS5440_CPUFREQ && ARM_HIGHBANK_CPUFREQ) selects PM_OPP which has unmet direct dependencies (ARCH_HAS_OPP)
 
-Again, CHECKFLAGS need to be set; that's normally done in arch/*/Makefile.
+this warning is caused by commit 109df086e(cpufreq: Select PM_OPP rather than depending on it),
+so could you merge this patch? I will send a revert patch to solve this issue, what is your opinion?
+
+Regards,
+Kefeng
+
+> 
+>>> ---
+>>>  drivers/cpufreq/Kconfig.arm | 6 +-----
+>>>  1 file changed, 1 insertion(+), 5 deletions(-)
+>>
+>> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe cpufreq" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
 
