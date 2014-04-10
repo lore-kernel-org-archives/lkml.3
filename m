@@ -1,90 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965550AbaDJIUL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 04:20:11 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:36886 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965065AbaDJIUH (ORCPT
+	id S965576AbaDJIWi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 04:22:38 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:34536 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965070AbaDJIWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 04:20:07 -0400
-Date: Thu, 10 Apr 2014 10:16:11 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Emilio =?iso-8859-1?Q?L=F3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH 00/15] ARM: sunxi: add A31 PL pins support
-Message-ID: <20140410081611.GN28585@lukather>
-References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
- <CAGb2v66XCN2ar1wj+a1+ZwdcdJ3gzJ+nDiO9bu52OwK+mBB_Hg@mail.gmail.com>
- <534571F0.10706@free-electrons.com>
- <CAGb2v651R-sG3OB4aD4UXWiyQVcHz7zXub1wO6B4xp-toUcC7Q@mail.gmail.com>
+	Thu, 10 Apr 2014 04:22:35 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="QGBKWVSgmlsIyJ+t"
-Content-Disposition: inline
-In-Reply-To: <CAGb2v651R-sG3OB4aD4UXWiyQVcHz7zXub1wO6B4xp-toUcC7Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAL_JsqKq+D+c-qznP5aE3uyXf_YXyYzvoKRONAY7eXBkWcvqsw@mail.gmail.com>
+References: <1397072736-10793-1-git-send-email-matthias.bgg@gmail.com>
+	<1397072736-10793-5-git-send-email-matthias.bgg@gmail.com>
+	<CAL_JsqKq+D+c-qznP5aE3uyXf_YXyYzvoKRONAY7eXBkWcvqsw@mail.gmail.com>
+Date: Thu, 10 Apr 2014 10:22:34 +0200
+Message-ID: <CABuKBeK9QE8ZGx1AKa9Cr9GLdHDKW-+NBirWs=uekqKxMP65EQ@mail.gmail.com>
+Subject: Re: [PATCH 4/4] arm: mediatek: Add earlyprintk support for MT6589
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Silvio F <silvio.fricke@gmail.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko.stuebner@bq.com>,
+        Olof Johansson <olof@lixom.net>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2014-04-09 23:39 GMT+02:00 Rob Herring <robherring2@gmail.com>:
+> On Wed, Apr 9, 2014 at 2:45 PM, Matthias Brugger <matthias.bgg@gmail.com> wrote:
+>> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
+>> ---
+>>  arch/arm/Kconfig.debug            |   49 +++++++++++++++++++++++++++++++++++--
+>>  arch/arm/include/debug/mediatek.S |   38 ++++++++++++++++++++++++++++
+>>  2 files changed, 85 insertions(+), 2 deletions(-)
+>>  create mode 100644 arch/arm/include/debug/mediatek.S
+>>
+>> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+>> index 4a2fc0b..dc51495 100644
+>> --- a/arch/arm/Kconfig.debug
+>> +++ b/arch/arm/Kconfig.debug
+>> @@ -797,6 +797,38 @@ choice
+>>                   Say Y here if you want kernel low-level debugging support
+>>                   on Ux500 based platforms.
+>>
+>> +       config DEBUG_MTK6589_UART0
+>> +               depends on ARCH_MEDIATEK
+>> +               bool "Mediatek mt6589 UART0"
+>> +               select DEBUG_UART_MEDIATEK
+>> +               help
+>> +                 Say Y here if you want kernel low-level debugging support
+>> +                 on Mediatek mt6589 based platforms.
+>> +
+>> +       config DEBUG_MTK6589_UART1
+>> +               depends on ARCH_MEDIATEK
+>> +               bool "Mediatek mt6589 UART1"
+>> +               select DEBUG_UART_MEDIATEK
+>> +               help
+>> +                 Say Y here if you want kernel low-level debugging support
+>> +                 on Mediatek mt6589 based platforms.
+>> +
+>> +       config DEBUG_MTK6589_UART2
+>> +               depends on ARCH_MEDIATEK
+>> +               bool "Mediatek mt6589 UART2"
+>> +               select DEBUG_UART_MEDIATEK
+>> +               help
+>> +                 Say Y here if you want kernel low-level debugging support
+>> +                 on Mediatek mt6589 based platforms.
+>> +
+>> +       config DEBUG_MTK6589_UART3
+>> +               depends on ARCH_MEDIATEK
+>> +               bool "Mediatek mt6589 UART3"
+>> +               select DEBUG_UART_MEDIATEK
+>> +               help
+>> +                 Say Y here if you want kernel low-level debugging support
+>> +                 on Mediatek mt6589 based platforms.
+>> +
+>
+> Do you really need all uarts defined? Only define what you have boards using.
+>
+> Also, you have no uarts defined in your dts. Please add them there
+> (and any necessary serial driver) before adding debug functionality.
+> Otherwise, you can't actually boot a multi-platform kernel with this
+> series.
 
---QGBKWVSgmlsIyJ+t
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Up to now, there no serial driver exists. Should I skip this patch and
+re-submit it when the serial driver is integrated?
 
-On Thu, Apr 10, 2014 at 01:14:26AM +0800, Chen-Yu Tsai wrote:
-> >  3) other things I haven't noticed yet :-)
->=20
-> Reworking EINT to use one interrupt per bank will yield some more surpris=
-es.
->=20
-> There's also new gpiolib irqchip helpers, but that will require reworking
-> each pin bank into separate gpio chips. May be more work than just adding
-> different irq domains for different banks.
->=20
-> See: https://lkml.org/lkml/2014/3/25/175
 
-I'm not sure it's worth it actually. Using these helpers will probably
-simplify the A31/A23 case, where you have one interrupt controller per
-bank, but it will be much more complicated to handle the A10/A20 case
-where you have a single interrupt controller for all the banks.
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---QGBKWVSgmlsIyJ+t
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTRlNLAAoJEBx+YmzsjxAgaS4P/A2N1vwJCW7mo+wHOjdgZzry
-oZOvn5I7asACoB4aHAVCAfkCcK4v0ThQC3PSfuxlE05CcIjnrxr2OfT+Y/j5bpRT
-+MGsAyHuQRnslTbXyu28FSO0A5LfeGiyLw0SecOKIKdieZBMTD3wIsbI14ophc0k
-2POnK/jFAGcuv4yksUCVNtMPJy1V1FDDzQl9MyDBsNXNi+0XHWOWFRLdbjillNrX
-L4o9V9FQ6q/WpJQ8zLmIO9EJMN4OwCUsSL+f3mSq/hKjUPFDvnWIn2CVb5Ksp26d
-A2L0JQC5KRPTQl/GYYZx4/D7m8gE5lWkP1NnEscMpUpNKw9ZEwPeLudPNXLnC8Bg
-XWjFfnIEVd0uHfhayKzQogi2l1juw1cgrHl4B4zQACUK8ruC2SwMAkOtb4wU2aI8
-eLBycv2F6FXSpOe6/T6EZsQJlY/FcOjhOuvi7LL95YLlAuizgiII8c2Po4Dkhd0f
-Kd+k5EGtDMaSqpXFpAoAUSfD9elyDiY9s8f8367is4oGjA1FKJ9ODOdJoaf+XXcF
-k2rejUqqRdvUbLwkn/QP7hO3HfE1j9WyePHJvT3AeIybN3wq1NzsTZ07+MY1N69x
-pDEUp1f83bVxRaExUSTUNNcG0PnijYL52Xo4dlaUYTr1m2DWcF3WV6sLnS3Yogt9
-JuRYpanaPypveA39L7In
-=KGOJ
------END PGP SIGNATURE-----
-
---QGBKWVSgmlsIyJ+t--
+-- 
+motzblog.wordpress.com
