@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422716AbaDJXc1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 19:32:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2542 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030615AbaDJXcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 19:32:23 -0400
-Date: Thu, 10 Apr 2014 19:30:01 -0400
-From: Dave Jones <davej@redhat.com>
-To: Jason Low <jason.low2@hp.com>, Peter Zijlstra <peterz@infradead.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        "Michael L. Semon" <mlsemon35@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        paulmck@linux.vnet.ibm.com
-Subject: Re: 3.14.0+/x86: lockdep and mutexes not getting along
-Message-ID: <20140410233001.GA24777@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Jason Low <jason.low2@hp.com>,
-	Peter Zijlstra <peterz@infradead.org>,
-	"Kirill A. Shutemov" <kirill@shutemov.name>,
-	"Michael L. Semon" <mlsemon35@gmail.com>,
-	Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-	paulmck@linux.vnet.ibm.com
-References: <alpine.LNX.2.11.1404060059020.8208@bpserver.ds>
- <20140409121940.GA12890@node.dhcp.inet.fi>
- <1397108579.2586.15.camel@j-VirtualBox>
- <20140410091824.GL10526@twins.programming.kicks-ass.net>
- <1397150084.3032.4.camel@j-VirtualBox>
- <20140410232652.GA24658@redhat.com>
+	id S1759349AbaDJXdA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 19:33:00 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:35793 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759269AbaDJXc5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 19:32:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140410232652.GA24658@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANq1E4SsCFTpiKBPbOUD0M+Nfs2hsnLW44RfsgbQvbFCfeZuvA@mail.gmail.com>
+References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
+ <20140320153250.GC20618@thunk.org> <CANq1E4SUXrzAV8FS8HVYxnRVb1oOR6HSTyucJzyFs5PuS5Y88A@mail.gmail.com>
+ <20140320163806.GA10440@thunk.org> <5346ED93.9040500@amacapital.net>
+ <20140410203246.GB31614@thunk.org> <CALCETrVmaGNCxo-L4-dPbUev3VXXEPR7xBzo3Fux6ny7yh_Gzw@mail.gmail.com>
+ <CANq1E4RofJ7CUWWBPW1Qb4pX3rxYHCh1CPtbtX241KtJO+=Qhw@mail.gmail.com>
+ <CALCETrXVzLcVVSuPMFUgoRvpQgcQNy2_rW6=11CJAME0W2GyYQ@mail.gmail.com>
+ <CANq1E4Qa8N0G8whyW5OWQS4x9=CVOF0PpcLhDi4j3wGTHX0==w@mail.gmail.com>
+ <CALCETrXFJfoD9xrYpu6UjsHF74kYm3_o-xLNKjqh-OF2x-nyFQ@mail.gmail.com> <CANq1E4SsCFTpiKBPbOUD0M+Nfs2hsnLW44RfsgbQvbFCfeZuvA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 10 Apr 2014 16:32:36 -0700
+Message-ID: <CALCETrUyWKtnX_fxn0WYn=Q_mVcxy3KQrRMkuJRGPjnhzMor9w@mail.gmail.com>
+Subject: Re: [PATCH 0/6] File Sealing & memfd_create()
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ryan Lortie <desrt@desrt.ca>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 07:26:52PM -0400, Dave Jones wrote:
- > On Thu, Apr 10, 2014 at 10:14:44AM -0700, Jason Low wrote:
- >  > On Thu, 2014-04-10 at 11:18 +0200, Peter Zijlstra wrote:
- >  > > On Wed, Apr 09, 2014 at 10:42:59PM -0700, Jason Low wrote:
- >  > > > As a starting point, would either of you like to test the following
- >  > > > patch to see if it fixes the issue? This patch essentially generates the
- >  > > > same code as in older kernels in the debug case. This applies on top of
- >  > > > kernels with both commits 6f008e72cd11 and 1d8fe7dc8078.
- >  > > 
- >  > > 
- >  > > So I managed to reproduce, and the below makes it go away. I just don't
- >  > > understand why though. will stare more.
- >  > 
- >  > So one thing I noticed that is different in the current code is that in
- >  > debug_mutex_unlock(), there is is a possibility that it does not unlock
- >  > the mutex (when !debug_locks). May be interesting to try out this
- >  > patch too:
- >  
- > I've been seeing lockups this last week or two too, that manifested by
- > RCU spewing stall messages, and the box being totally unresponsive.
- > This patch seems to cure that for me, which I'm sure will make Paul
- > happy to hear.
- 
-duh, replied to the wrong mail. I tested peterz's last patch, not Jason's.
+On Thu, Apr 10, 2014 at 4:16 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
+>
+> On Fri, Apr 11, 2014 at 1:05 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> /proc/pid/fd is a really weird corner case in which the mode of an
+>> inode that doesn't have a name matters.  I suspect that almost no one
+>> will ever want to open one of these things out of /proc/self/fd, and
+>> those who do should be made to think about it.
+>
+> I'm arguing in the context of memfd, and there's no security leak if
+> people get access to the underlying inode (at least I'm not aware of
+> any).
 
-	Dave
+I'm not sure what you mean.
 
+> As I said, context information is attached to the inode, not
+> file context, so I'm fine if people want to open multiple file
+> contexts via /proc. If someone wants to forbid open(), I want to hear
+> _why_. I assume the memfd object has uid==uid-of-creator and
+> mode==(777 & ~umask) (which usually results in X00, so no access for
+> non-owners). I cannot see how /proc is a security issue here.
+
+On further reflection, my argument for 000 is crap.  As far as I can
+see, the only time that the mode matters at all when playing with
+/proc/pid/fd, and they only way to get a non-O_RDWR memfd is using
+/proc/pid/fd, so I'll argue for 0600 instead.
+
+Argument why 0600 is better than 0600 & ~umask: either callers don't
+care because the inode mode simply doesn't matter or they're using
+/proc/pid/fd to *reduce* permissions, in which case they'd probably
+like to avoid having to play with umask or call fchmod.
+
+Argument why 0600 is better than 0777 & ~umask: People /prod/pid/fd
+are the only ones who care, in which case they probably prefer for the
+permissions not be increased by other users if they give them a
+reduced-permission fd.
+
+Anyway, this is all mostly unimportant.  Some text in the man page is
+probably sufficient, but I still think that 0600 is trivial to
+implement and a little bit more friendly.
+
+--Andy
+
+>
+> Thanks
+> David
+
+
+
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
