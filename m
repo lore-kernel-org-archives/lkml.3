@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934845AbaDJJQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 05:16:27 -0400
-Received: from mail-db3lp0083.outbound.protection.outlook.com ([213.199.154.83]:39302
-	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933057AbaDJJQX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 05:16:23 -0400
-From: "Nekludov, Max" <Max.Nekludov@elster.com>
-To: David Miller <davem@davemloft.net>
-CC: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
-        "mjr@cs.wisc.edu" <mjr@cs.wisc.edu>,
-        "jiri@resnulli.us" <jiri@resnulli.us>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "trivial@rustcorp.com.au" <trivial@rustcorp.com.au>
-Subject: RE: ks8851: reset on RX failure and TX timeout
-Thread-Topic: ks8851: reset on RX failure and TX timeout
-Thread-Index: AQHPTj0g4r3kb9B8SEScXkvKt8zPXZsAKMaAgApu+k8=
-Date: Thu, 10 Apr 2014 09:16:20 +0000
-Message-ID: <28499d90be6a410f9a24d64b76a5c262@DB3PR02MB202.eurprd02.prod.outlook.com>
-References: <b703c70840da4780bc93beed79a8503b@DB3PR02MB202.eurprd02.prod.outlook.com>
-	<20140401.181355.1375673242692769955.davem@davemloft.net>
-	<e095559e0b69441eb44fecc7e8639a71@DB3PR02MB202.eurprd02.prod.outlook.com>,<20140403.133203.1056561986987869608.davem@davemloft.net>
-In-Reply-To: <20140403.133203.1056561986987869608.davem@davemloft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [78.24.157.30]
-x-forefront-prvs: 0177904E6B
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(377454003)(189002)(199002)(51704005)(19580395003)(74662001)(74502001)(31966008)(19580405001)(83322001)(83072002)(85852003)(80976001)(92566001)(2656002)(80022001)(81542001)(66066001)(81342001)(20776003)(76576001)(79102001)(86362001)(74316001)(76482001)(33646001)(77982001)(4396001)(99396002)(46102001)(87936001)(54356999)(50986999)(76176999)(77096999)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DB3PR02MB204;H:DB3PR02MB202.eurprd02.prod.outlook.com;FPR:E530F113.34DE68A9.70FC57B0.C0922848.2024E;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S934989AbaDJJQd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 05:16:33 -0400
+Received: from mta-out.inet.fi ([195.156.147.13]:54636 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933057AbaDJJQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 05:16:28 -0400
+Date: Thu, 10 Apr 2014 12:15:44 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Jason Low <jason.low2@hp.com>
+Cc: "Michael L. Semon" <mlsemon35@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: 3.14.0+/x86: lockdep and mutexes not getting along
+Message-ID: <20140410091544.GA23433@node.dhcp.inet.fi>
+References: <alpine.LNX.2.11.1404060059020.8208@bpserver.ds>
+ <20140409121940.GA12890@node.dhcp.inet.fi>
+ <1397108579.2586.15.camel@j-VirtualBox>
 MIME-Version: 1.0
-X-OriginatorOrg: elster.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397108579.2586.15.camel@j-VirtualBox>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've tried to use ndo_tx_timeout. Actually it works. But it takes too long time after TX failure and before watchdog fires.
+On Wed, Apr 09, 2014 at 10:42:59PM -0700, Jason Low wrote:
+> On Wed, 2014-04-09 at 15:19 +0300, Kirill A. Shutemov wrote:
+> > On Sun, Apr 06, 2014 at 01:12:14AM -0400, Michael L. Semon wrote:
+> > > Hi!  Starting early in this merge window for 3.15, lockdep has been
+> > > giving me trouble.  Normally, a splat will happen, lockdep will shut
+> > > itself off, and my i686 Pentium 4 PC will continue.  Now, after the
+> > > splat, it will allow one key of input at either a VGA console or over
+> > > serial.  After that, only the magic SysRq keys and KDB still work.
+> > > File activity stops, and many processes are stuck in the D state.
+> > > 
+> > > Bisect brought me here:
+> > > 
+> > > root@plbearer:/usr/src/kernel-git/linux# git bisect good
+> > > 6f008e72cd111a119b5d8de8c5438d892aae99eb is the first bad commit
+> > > commit 6f008e72cd111a119b5d8de8c5438d892aae99eb
+> > > Author: Peter Zijlstra <peterz@infradead.org>
+> > > Date:   Wed Mar 12 13:24:42 2014 +0100
+> > > 
+> > >     locking/mutex: Fix debug checks
+> > > 
+> > >     OK, so commit:
+> > > 
+> > >       1d8fe7dc8078 ("locking/mutexes: Unlock the mutex without the wait_lock")
+> > > 
+> > >     generates this boot warning when CONFIG_DEBUG_MUTEXES=y:
+> > > 
+> > >       WARNING: CPU: 0 PID: 139 at /usr/src/linux-2.6/kernel/locking/mutex-debug.c:82 debug_mutex_unlock+0x155/0x180() DEBUG_LOCKS_WARN_ON(lock->owner != current)
+> > > 
+> > >     And that makes sense, because as soon as we release the lock a
+> > >     new owner can come in...
+> > > 
+> > >     One would think that !__mutex_slowpath_needs_to_unlock()
+> > >     implementations suffer the same, but for DEBUG we fall back to
+> > >     mutex-null.h which has an unconditional 1 for that.
+> > > 
+> > >     The mutex debug code requires the mutex to be unlocked after
+> > >     doing the debug checks, otherwise it can find inconsistent
+> > >     state.
+> > > 
+> > >     Reported-by: Ingo Molnar <mingo@kernel.org>
+> > >     Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> > >     Cc: jason.low2@hp.com
+> 
+> Hello,
+> 
+> As a starting point, would either of you like to test the following
+> patch to see if it fixes the issue? This patch essentially generates the
+> same code as in older kernels in the debug case. This applies on top of
+> kernels with both commits 6f008e72cd11 and 1d8fe7dc8078.
 
-As I understand ndo_tx_timeout will be called only if tx queue is stopped. But ks8851 driver stops queue only after it's full.
-So one have to  send a lot of data to reset device (~6KiB).
+I'm not able to trigger the lockdep report with the patch applied so far.
 
-But I need to recover as fast as possible. Could you suggest how to achieve that?
-________________________________________
-From: David Miller <davem@davemloft.net>
-Sent: Thursday, April 3, 2014 9:32 PM
-To: Nekludov, Max
-Cc: torvalds@linux-foundation.org; netdev@vger.kernel.org; sboyd@codeaurora.org; mjr@cs.wisc.edu; jiri@resnulli.us; linux-kernel@vger.kernel.org; trivial@rustcorp.com.au
-Subject: Re: ks8851: reset on RX failure and TX timeout
-
-From: "Nekludov, Max" <Max.Nekludov@elster.com>
-Date: Wed, 2 Apr 2014 06:31:23 +0000
-
-> Electromagnetic noise can make device to not send TX interrupts.
-> As result outgoing queue will be suspended forever.
-> Also EMI can raise RX interrupt with zero value in KS_RXFC register.
->
-> Signed-off-by: Max Nekludov <Max.Nekludov@elster.com>
-
-We have a watchdog facility for TX timeouts, don't reinvent the wheel.
-
-Implement ->ndo_tx_timeout() and set dev->watchdog_timeo appropriately.
+-- 
+ Kirill A. Shutemov
