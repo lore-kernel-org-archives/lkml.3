@@ -1,114 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965295AbaDJHga (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 03:36:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32058 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751225AbaDJHg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 03:36:28 -0400
-Date: Thu, 10 Apr 2014 09:36:00 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [GIT PULL v2] perf/core improvements and fixes
-Message-ID: <20140410073600.GA1141@krava.brq.redhat.com>
-References: <1396980068-27124-1-git-send-email-jolsa@redhat.com>
+	id S965353AbaDJHg5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 03:36:57 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:56648 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230AbaDJHgw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 03:36:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396980068-27124-1-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1396981215-24888-1-git-send-email-javier.martinez@collabora.co.uk>
+References: <1396981215-24888-1-git-send-email-javier.martinez@collabora.co.uk>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 10 Apr 2014 16:36:31 +0900
+Message-ID: <CAAVeFu+XV_wy9JzewGs0bcSA-ivQg-kzygMh_kt434rsYRQwHQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/5] add gpio_chip_ops to hold GPIO operations
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-omap@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Ingo,
-please consider pulling.
+On Wed, Apr 9, 2014 at 3:20 AM, Javier Martinez Canillas
+<javier.martinez@collabora.co.uk> wrote:
+> In the kernel there are basically two patterns to implement object
+> oriented code in C. You can either embedded a set of function pointers
 
-v2 has fixed SOB chain for following patch:
-  Jiri Olsa (1):
-      perf tests: Add thread maps lookup automated tests
+s/embedded/embed
 
-no functional change, so not including all patches
+> in a struct along with other members or have a separate virtual function
+> table (vtable) structure that hold all the functions and only store a
+> pointer to that vtable on our particular object.
+>
+> The struct gpio_chip uses the former approach, but I don't know if that
+> is a design decision or is just that this code predates the fact that
+> the separate structure pattern is now so popular. Since the having a
+> the operations on a different structure has a number of benefits:
 
-thanks,
-jirka
+"Since having the operations" maybe?
 
+>
+> - A clean separation between state (fields) and operations (functions).
+> - Size reduction of struct gpio_chip since will only hold one pointer.
+> - These functions are not supposed to change at runtime so the const
+>   qualifier can be used to prevent pointers modification during execution.
+> - Similar drivers for a chip family can reuse their function vtable.
+>
+> There is a drawback though which is that now two memory accesses are
+> needed to execute a GPIO operation since an additional level of
+> indirection is introduced but that should be minimized due temporal and
+> spatial memory locality.
 
-The following changes since commit 538592ff0b008237ae88f5ce5fb1247127dc3ce5:
+I think I really do like this. Having ops in a separate structure is a
+very common pattern in the kernel and makes things a lot cleaner. On
+top of the advantages you listed, it also only requires a single
+assignment in the driver's init function vs. a lot more today.
 
-  Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2014-03-19 08:05:47 +0100)
+If no one complains about the additional memory access, I'd like to go
+forward with this. I did much worse performance-hurting changes when
+introducing gpiod, so I suppose it will be fine.
 
-are available in the git repository at:
+>
+> So this is an RFC patch-set to add a virtual table to be used by
+> GPIO chip controllers and consist of the following patches:
+>
+> Javier Martinez Canillas (5):
+>   gpio: add a vtable to abstract GPIO controller operations
+>   gpiolib: set gpio_chip operations on add using a gpio_chip_ops
+>   gpio: omap: convert driver to use gpio_chip_ops
+>   gpio: twl4030: convert driver to use gpio_chip_ops
+>   gpio: switch to use struct struct gpio_chip_ops
+>
+>  drivers/gpio/gpio-omap.c    | 19 ++++++++-----
+>  drivers/gpio/gpio-twl4030.c | 10 +++++--
+>  drivers/gpio/gpiolib.c      | 64 ++++++++++++++++++++---------------------
+>  include/linux/gpio/driver.h | 69 +++++++++++++++++++++++++++------------------
+>  4 files changed, 93 insertions(+), 69 deletions(-)
+>
+> The patch-set is not a complete one though since only the GPIO OMAP
+> and GPIO TWL4030 drivers have been converted so I could test it on
+> my platform (DM3730 OMAP IGEPv2 board).
+>
+> But I preferred to send an early RFC than changing every single driver
+> before discussing if doing the split is worth it or not.
+>
+> To not break git bisect-ability, I added some patches that are
+> transitional changes. If you have a better suggestion on how to
+> handle that please let me know.
 
+We will probably need that transition phase. We will also need to
+switch every single driver to your new scheme, so please wait until we
+hear from Linus before proceeding. :)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
-
-for you to fetch changes up to 5c9313860657577d6f6b3489a04bb097faa0184a:
-
-  MAINTAINERS: Change e-mail to kernel.org one (2014-04-09 16:55:37 +0200)
-
-----------------------------------------------------------------
-perf/core improvements and fixes:
-
-Documentation:
-
-. Fix documentation of invalid 'perf top -s' option (Namhyung Kim)
-
-. Change e-mail to kernel.org one in MAINTAINERS file (Arnaldo Carvalho de Melo)
-
-Developer stuff:
-
-. Disable unwind libraries when libelf isn't found (Arnaldo Carvalho de Melo)
-
-. Add thread maps lookup automated tests (Jiri Olsa)
-
-. Print event name when showing libtraceevent warnings if possible (Namhyung Kim)
-
-. Add --list-cmds to 'kmem', 'mem', 'lock' and 'sched', for use by completion scripts (Ramkumar
-+Ramachandra)
-
-----------------------------------------------------------------
-Arnaldo Carvalho de Melo (2):
-      perf callchains: Disable unwind libraries when libelf isn't found
-      MAINTAINERS: Change e-mail to kernel.org one
-
-Jiri Olsa (1):
-      perf tests: Add thread maps lookup automated tests
-
-Namhyung Kim (3):
-      perf top: Fix documentation of invalid -s option
-      tools lib traceevent: Print event name when show warning if possible
-      tools lib traceevent: Do not call warning() directly
-
-Ramkumar Ramachandra (4):
-      perf kmem: Introduce --list-cmds for use by scripts
-      perf mem: Introduce --list-cmds for use by scripts
-      perf lock: Introduce --list-cmds for use by scripts
-      perf sched: Introduce --list-cmds for use by scripts
-
- MAINTAINERS                           |   2 +-
- tools/lib/traceevent/event-parse.c    | 109 +++++++++-------
- tools/perf/Documentation/perf-top.txt |   1 -
- tools/perf/Makefile.perf              |   1 +
- tools/perf/builtin-kmem.c             |   8 +-
- tools/perf/builtin-lock.c             |  10 +-
- tools/perf/builtin-mem.c              |  15 ++-
- tools/perf/builtin-sched.c            |  10 +-
- tools/perf/config/Makefile            |   2 +
- tools/perf/perf-completion.sh         |   4 +-
- tools/perf/perf.h                     |   6 +
- tools/perf/tests/builtin-test.c       |   4 +
- tools/perf/tests/mmap-thread-lookup.c | 233 ++++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h              |   1 +
- 14 files changed, 341 insertions(+), 65 deletions(-)
- create mode 100644 tools/perf/tests/mmap-thread-lookup.c
+Thanks,
+Alex.
