@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934615AbaDJDdE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:33:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41402 "EHLO
+	id S965333AbaDJDdl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:33:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41387 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964944AbaDJDXM (ORCPT
+	with ESMTP id S935200AbaDJDXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:23:12 -0400
+	Wed, 9 Apr 2014 23:23:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.4 134/134] powernow-k6: reorder frequencies
-Date: Wed,  9 Apr 2014 20:24:10 -0700
-Message-Id: <20140410032316.647547310@linuxfoundation.org>
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 131/134] media: saa7164: fix return value check in saa7164_initdev()
+Date: Wed,  9 Apr 2014 20:24:07 -0700
+Message-Id: <20140410032316.221901162@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -28,68 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-commit 22c73795b101597051924556dce019385a1e2fa0 upstream.
+commit 89f4d45b2752df5d222b5f63919ce59e2d8afaf4 upstream.
 
-This patch reorders reported frequencies from the highest to the lowest,
-just like in other frequency drivers.
+In case of error, the function kthread_run() returns ERR_PTR()
+and never returns NULL. The NULL test in the return value check
+should be replaced with IS_ERR().
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+[bwh: Backported to 3.2: adjust filename]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Cc: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/cpufreq/powernow-k6.c |   17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ drivers/media/video/saa7164/saa7164-core.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/cpufreq/powernow-k6.c
-+++ b/drivers/cpufreq/powernow-k6.c
-@@ -37,17 +37,20 @@ MODULE_PARM_DESC(bus_frequency, "Bus fre
+--- a/drivers/media/video/saa7164/saa7164-core.c
++++ b/drivers/media/video/saa7164/saa7164-core.c
+@@ -1386,9 +1386,11 @@ static int __devinit saa7164_initdev(str
+ 		if (fw_debug) {
+ 			dev->kthread = kthread_run(saa7164_thread_function, dev,
+ 				"saa7164 debug");
+-			if (!dev->kthread)
++			if (IS_ERR(dev->kthread)) {
++				dev->kthread = NULL;
+ 				printk(KERN_ERR "%s() Failed to create "
+ 					"debug kernel thread\n", __func__);
++			}
+ 		}
  
- /* Clock ratio multiplied by 10 - see table 27 in AMD#23446 */
- static struct cpufreq_frequency_table clock_ratio[] = {
--	{45,  /* 000 -> 4.5x */ 0},
-+	{60,  /* 110 -> 6.0x */ 0},
-+	{55,  /* 011 -> 5.5x */ 0},
- 	{50,  /* 001 -> 5.0x */ 0},
-+	{45,  /* 000 -> 4.5x */ 0},
- 	{40,  /* 010 -> 4.0x */ 0},
--	{55,  /* 011 -> 5.5x */ 0},
--	{20,  /* 100 -> 2.0x */ 0},
--	{30,  /* 101 -> 3.0x */ 0},
--	{60,  /* 110 -> 6.0x */ 0},
- 	{35,  /* 111 -> 3.5x */ 0},
-+	{30,  /* 101 -> 3.0x */ 0},
-+	{20,  /* 100 -> 2.0x */ 0},
- 	{0, CPUFREQ_TABLE_END}
- };
- 
-+static const u8 index_to_register[8] = { 6, 3, 1, 0, 2, 7, 5, 4 };
-+static const u8 register_to_index[8] = { 3, 2, 4, 1, 7, 6, 0, 5 };
-+
- static const struct {
- 	unsigned freq;
- 	unsigned mult;
-@@ -91,7 +94,7 @@ static int powernow_k6_get_cpu_multiplie
- 
- 	local_irq_enable();
- 
--	return clock_ratio[(invalue >> 5)&7].index;
-+	return clock_ratio[register_to_index[(invalue >> 5)&7]].index;
- }
- 
- static void powernow_k6_set_cpu_multiplier(unsigned int best_i)
-@@ -111,7 +114,7 @@ static void powernow_k6_set_cpu_multipli
- 	write_cr0(cr0 | X86_CR0_CD);
- 	wbinvd();
- 
--	outvalue = (1<<12) | (1<<10) | (1<<9) | (best_i<<5);
-+	outvalue = (1<<12) | (1<<10) | (1<<9) | (index_to_register[best_i]<<5);
- 
- 	msrval = POWERNOW_IOPORT + 0x1;
- 	wrmsr(MSR_K6_EPMR, msrval, 0); /* enable the PowerNow port */
+ 	} /* != BOARD_UNKNOWN */
 
 
