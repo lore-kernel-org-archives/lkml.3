@@ -1,179 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759341AbaDJX2N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 19:28:13 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:41237 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753715AbaDJX2K (ORCPT
+	id S1030567AbaDJXcI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 19:32:08 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:25865 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753845AbaDJXcG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 19:28:10 -0400
-From: Paul McQuade <paulmcquad@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, devel@acpica.org, linux-acpi@vger.kernel.org,
-        al.stone@linaro.org, naresh.bhat@linaro.org, arnd@arndb.de,
-        lv.zheng@intel.com
-Subject: [PATCH] include: replace asm headers to linux
-Date: Fri, 11 Apr 2014 00:28:05 +0100
-Message-Id: <1397172486-13214-1-git-send-email-paulmcquad@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Thu, 10 Apr 2014 19:32:06 -0400
+X-IronPort-AV: E=Sophos;i="4.97,837,1389772800"; 
+   d="scan'208";a="23714300"
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
+CC: Tim Kryger <tim.kryger@linaro.org>,
+        Linux MMC Mailing List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mmc: sdhci: Set ocr_avail directly based on vmmc
+Date: Thu, 10 Apr 2014 16:31:48 -0700
+Message-ID: <1397172708-19735-1-git-send-email-tim.kryger@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use #include <linux/uaccess.h> instead of <asm/uaccess.h>
-Use #include <linux/types.h> instead of <asm/types.h>
+When an external regulator provides VDD, set ocr_avail directly based on
+the supported voltage range.  This allows for the use of regulators that
+can't provide exactly 1.8v, 3.0v, or 3.3v and ensures that ocr_avil bits
+are only set for supported voltage ranges.  Commit cec2e21 had attempted
+to relax the range checks but because it relied on setting capabilities
+as an intermediate step, ocr_avail could easily get a bit set that the
+host couldn't support.
 
-Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
 ---
- include/acpi/platform/aclinux.h           | 2 +-
- include/asm-generic/bitops/__ffs.h        | 2 +-
- include/asm-generic/bitops/__fls.h        | 2 +-
- include/asm-generic/bitops/arch_hweight.h | 2 +-
- include/asm-generic/bitops/atomic.h       | 6 +++---
- include/asm-generic/bitops/count_zeros.h  | 2 +-
- include/asm-generic/bitops/fls64.h        | 2 +-
- include/asm-generic/bitops/le.h           | 2 +-
- include/asm-generic/bitops/non-atomic.h   | 2 +-
- include/asm-generic/bitops/sched.h        | 2 +-
- 10 files changed, 12 insertions(+), 12 deletions(-)
+ drivers/mmc/host/sdhci.c |  107 +++++++++++++++++++++++++---------------------
+ 1 file changed, 58 insertions(+), 49 deletions(-)
 
-diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
-index 93c55ed..d52317f 100644
---- a/include/acpi/platform/aclinux.h
-+++ b/include/acpi/platform/aclinux.h
-@@ -71,7 +71,7 @@
- #ifdef EXPORT_ACPI_INTERFACES
- #include <linux/export.h>
- #endif
--#include <asm/acpi.h>
-+#include <linux/acpi.h>
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 9a79fc4..4d56fbe 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -2769,6 +2769,29 @@ struct sdhci_host *sdhci_alloc_host(struct device *dev,
  
- /* Host-dependent types and defines for in-kernel ACPICA */
+ EXPORT_SYMBOL_GPL(sdhci_alloc_host);
  
-diff --git a/include/asm-generic/bitops/__ffs.h b/include/asm-generic/bitops/__ffs.h
-index 937d7c4..8236f91 100644
---- a/include/asm-generic/bitops/__ffs.h
-+++ b/include/asm-generic/bitops/__ffs.h
-@@ -1,7 +1,7 @@
- #ifndef _ASM_GENERIC_BITOPS___FFS_H_
- #define _ASM_GENERIC_BITOPS___FFS_H_
- 
--#include <asm/types.h>
-+#include <linux/types.h>
- 
- /**
-  * __ffs - find first bit in word.
-diff --git a/include/asm-generic/bitops/__fls.h b/include/asm-generic/bitops/__fls.h
-index a60a7cc..60e5360 100644
---- a/include/asm-generic/bitops/__fls.h
-+++ b/include/asm-generic/bitops/__fls.h
-@@ -1,7 +1,7 @@
- #ifndef _ASM_GENERIC_BITOPS___FLS_H_
- #define _ASM_GENERIC_BITOPS___FLS_H_
- 
--#include <asm/types.h>
-+#include <linux/types.h>
- 
- /**
-  * __fls - find last (most-significant) set bit in a long word
-diff --git a/include/asm-generic/bitops/arch_hweight.h b/include/asm-generic/bitops/arch_hweight.h
-index 6a211f4..a9a48a8 100644
---- a/include/asm-generic/bitops/arch_hweight.h
-+++ b/include/asm-generic/bitops/arch_hweight.h
-@@ -1,7 +1,7 @@
- #ifndef _ASM_GENERIC_BITOPS_ARCH_HWEIGHT_H_
- #define _ASM_GENERIC_BITOPS_ARCH_HWEIGHT_H_
- 
--#include <asm/types.h>
-+#include <linux/types.h>
- 
- static inline unsigned int __arch_hweight32(unsigned int w)
++static unsigned int sdhci_get_ocr_avail_from_vmmc(struct sdhci_host *host)
++{
++	unsigned int ocr_avail = 0;
++	struct regulator *vmmc = host->vmmc;
++
++	if (regulator_is_supported_voltage(vmmc, 1650000, 1950000) > 0)
++		ocr_avail |= MMC_VDD_165_195;
++
++	if (regulator_is_supported_voltage(vmmc, 2900000, 3000000) > 0)
++		ocr_avail |= MMC_VDD_29_30;
++
++	if (regulator_is_supported_voltage(vmmc, 3000000, 3100000) > 0)
++		ocr_avail |= MMC_VDD_30_31;
++
++	if (regulator_is_supported_voltage(vmmc, 3200000, 3300000) > 0)
++		ocr_avail |= MMC_VDD_32_33;
++
++	if (regulator_is_supported_voltage(vmmc, 3300000, 3400000) > 0)
++		ocr_avail |= MMC_VDD_33_34;
++
++	return ocr_avail;
++}
++
+ int sdhci_add_host(struct sdhci_host *host)
  {
-diff --git a/include/asm-generic/bitops/atomic.h b/include/asm-generic/bitops/atomic.h
-index 9ae6c34..4469696 100644
---- a/include/asm-generic/bitops/atomic.h
-+++ b/include/asm-generic/bitops/atomic.h
-@@ -1,12 +1,12 @@
- #ifndef _ASM_GENERIC_BITOPS_ATOMIC_H_
- #define _ASM_GENERIC_BITOPS_ATOMIC_H_
+ 	struct mmc_host *mmc;
+@@ -3063,24 +3086,39 @@ int sdhci_add_host(struct sdhci_host *host)
+ 		}
+ 	}
  
--#include <asm/types.h>
-+#include <linux/types.h>
- #include <linux/irqflags.h>
+-#ifdef CONFIG_REGULATOR
+-	/*
+-	 * Voltage range check makes sense only if regulator reports
+-	 * any voltage value.
+-	 */
++	/* If using external regulator, check supported voltage ranges */
+ 	if (host->vmmc && regulator_get_voltage(host->vmmc) > 0) {
+-		ret = regulator_is_supported_voltage(host->vmmc, 2700000,
+-			3600000);
+-		if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_330)))
+-			caps[0] &= ~SDHCI_CAN_VDD_330;
+-		if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_300)))
+-			caps[0] &= ~SDHCI_CAN_VDD_300;
+-		ret = regulator_is_supported_voltage(host->vmmc, 1700000,
+-			1950000);
+-		if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_180)))
+-			caps[0] &= ~SDHCI_CAN_VDD_180;
+-	}
+-#endif /* CONFIG_REGULATOR */
++		ocr_avail = sdhci_get_ocr_avail_from_vmmc(host);
++	} else {
++		if (caps[0] & SDHCI_CAN_VDD_330)
++			ocr_avail |= MMC_VDD_32_33 | MMC_VDD_33_34;
++		if (caps[0] & SDHCI_CAN_VDD_300)
++			ocr_avail |= MMC_VDD_29_30 | MMC_VDD_30_31;
++		if (caps[0] & SDHCI_CAN_VDD_180)
++			ocr_avail |= MMC_VDD_165_195;
++	}
++
++	if (host->ocr_mask)
++		ocr_avail = host->ocr_mask;
++
++	mmc->ocr_avail = ocr_avail;
++	mmc->ocr_avail_sdio = ocr_avail;
++	if (host->ocr_avail_sdio)
++		mmc->ocr_avail_sdio &= host->ocr_avail_sdio;
++	mmc->ocr_avail_sd = ocr_avail;
++	if (host->ocr_avail_sd)
++		mmc->ocr_avail_sd &= host->ocr_avail_sd;
++	else /* normal SD controllers don't support 1.8V */
++		mmc->ocr_avail_sd &= ~MMC_VDD_165_195;
++	mmc->ocr_avail_mmc = ocr_avail;
++	if (host->ocr_avail_mmc)
++		mmc->ocr_avail_mmc &= host->ocr_avail_mmc;
++
++	if (mmc->ocr_avail == 0) {
++		pr_err("%s: Hardware doesn't report any support voltages.\n",
++		       mmc_hostname(mmc));
++		return -ENODEV;
++	}
  
- #ifdef CONFIG_SMP
--#include <asm/spinlock.h>
--#include <asm/cache.h>		/* we use L1_CACHE_BYTES */
-+#include <linux/spinlock.h>
-+#include <linux/cache.h>		/* we use L1_CACHE_BYTES */
+ 	/*
+ 	 * According to SD Host Controller spec v3.00, if the Host System
+@@ -3106,52 +3144,23 @@ int sdhci_add_host(struct sdhci_host *host)
+ 		}
+ 	}
  
- /* Use an array of spinlocks for our atomic_ts.
-  * Hash function to index into a different SPINLOCK.
-diff --git a/include/asm-generic/bitops/count_zeros.h b/include/asm-generic/bitops/count_zeros.h
-index 97520d2..7f8e1d0 100644
---- a/include/asm-generic/bitops/count_zeros.h
-+++ b/include/asm-generic/bitops/count_zeros.h
-@@ -12,7 +12,7 @@
- #ifndef _ASM_GENERIC_BITOPS_COUNT_ZEROS_H_
- #define _ASM_GENERIC_BITOPS_COUNT_ZEROS_H_
+-	if (caps[0] & SDHCI_CAN_VDD_330) {
+-		ocr_avail |= MMC_VDD_32_33 | MMC_VDD_33_34;
+-
++	if (ocr_avail & (MMC_VDD_32_33 | MMC_VDD_33_34))
+ 		mmc->max_current_330 = ((max_current_caps &
+ 				   SDHCI_MAX_CURRENT_330_MASK) >>
+ 				   SDHCI_MAX_CURRENT_330_SHIFT) *
+ 				   SDHCI_MAX_CURRENT_MULTIPLIER;
+-	}
+-	if (caps[0] & SDHCI_CAN_VDD_300) {
+-		ocr_avail |= MMC_VDD_29_30 | MMC_VDD_30_31;
  
--#include <asm/bitops.h>
-+#include <linux/bitops.h>
++	if (ocr_avail & (MMC_VDD_29_30 | MMC_VDD_30_31))
+ 		mmc->max_current_300 = ((max_current_caps &
+ 				   SDHCI_MAX_CURRENT_300_MASK) >>
+ 				   SDHCI_MAX_CURRENT_300_SHIFT) *
+ 				   SDHCI_MAX_CURRENT_MULTIPLIER;
+-	}
+-	if (caps[0] & SDHCI_CAN_VDD_180) {
+-		ocr_avail |= MMC_VDD_165_195;
  
- /**
-  * count_leading_zeros - Count the number of zeros from the MSB back
-diff --git a/include/asm-generic/bitops/fls64.h b/include/asm-generic/bitops/fls64.h
-index b097cf8..3999f5c 100644
---- a/include/asm-generic/bitops/fls64.h
-+++ b/include/asm-generic/bitops/fls64.h
-@@ -1,7 +1,7 @@
- #ifndef _ASM_GENERIC_BITOPS_FLS64_H_
- #define _ASM_GENERIC_BITOPS_FLS64_H_
++	if (ocr_avail & MMC_VDD_165_195)
+ 		mmc->max_current_180 = ((max_current_caps &
+ 				   SDHCI_MAX_CURRENT_180_MASK) >>
+ 				   SDHCI_MAX_CURRENT_180_SHIFT) *
+ 				   SDHCI_MAX_CURRENT_MULTIPLIER;
+-	}
+-
+-	if (host->ocr_mask)
+-		ocr_avail = host->ocr_mask;
+-
+-	mmc->ocr_avail = ocr_avail;
+-	mmc->ocr_avail_sdio = ocr_avail;
+-	if (host->ocr_avail_sdio)
+-		mmc->ocr_avail_sdio &= host->ocr_avail_sdio;
+-	mmc->ocr_avail_sd = ocr_avail;
+-	if (host->ocr_avail_sd)
+-		mmc->ocr_avail_sd &= host->ocr_avail_sd;
+-	else /* normal SD controllers don't support 1.8V */
+-		mmc->ocr_avail_sd &= ~MMC_VDD_165_195;
+-	mmc->ocr_avail_mmc = ocr_avail;
+-	if (host->ocr_avail_mmc)
+-		mmc->ocr_avail_mmc &= host->ocr_avail_mmc;
+-
+-	if (mmc->ocr_avail == 0) {
+-		pr_err("%s: Hardware doesn't report any "
+-			"support voltages.\n", mmc_hostname(mmc));
+-		return -ENODEV;
+-	}
  
--#include <asm/types.h>
-+#include <linux/types.h>
+ 	spin_lock_init(&host->lock);
  
- /**
-  * fls64 - find last set bit in a 64-bit word
-diff --git a/include/asm-generic/bitops/le.h b/include/asm-generic/bitops/le.h
-index 6173154..8f4f574 100644
---- a/include/asm-generic/bitops/le.h
-+++ b/include/asm-generic/bitops/le.h
-@@ -1,7 +1,7 @@
- #ifndef _ASM_GENERIC_BITOPS_LE_H_
- #define _ASM_GENERIC_BITOPS_LE_H_
- 
--#include <asm/types.h>
-+#include <linux/types.h>
- #include <asm/byteorder.h>
- 
- #if defined(__LITTLE_ENDIAN)
-diff --git a/include/asm-generic/bitops/non-atomic.h b/include/asm-generic/bitops/non-atomic.h
-index 697cc2b..4b04267 100644
---- a/include/asm-generic/bitops/non-atomic.h
-+++ b/include/asm-generic/bitops/non-atomic.h
-@@ -1,7 +1,7 @@
- #ifndef _ASM_GENERIC_BITOPS_NON_ATOMIC_H_
- #define _ASM_GENERIC_BITOPS_NON_ATOMIC_H_
- 
--#include <asm/types.h>
-+#include <linux/types.h>
- 
- /**
-  * __set_bit - Set a bit in memory
-diff --git a/include/asm-generic/bitops/sched.h b/include/asm-generic/bitops/sched.h
-index 604fab7..65ad856 100644
---- a/include/asm-generic/bitops/sched.h
-+++ b/include/asm-generic/bitops/sched.h
-@@ -2,7 +2,7 @@
- #define _ASM_GENERIC_BITOPS_SCHED_H_
- 
- #include <linux/compiler.h>	/* unlikely() */
--#include <asm/types.h>
-+#include <linux/types.h>
- 
- /*
-  * Every architecture must define this function. It's the fastest
 -- 
-1.8.3.2
+1.7.9.5
 
