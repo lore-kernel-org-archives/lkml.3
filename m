@@ -1,108 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965585AbaDJQ7s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 12:59:48 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:58826 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934663AbaDJQ7q (ORCPT
+	id S965911AbaDJRDH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 13:03:07 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64867 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965795AbaDJRC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 12:59:46 -0400
+	Thu, 10 Apr 2014 13:02:59 -0400
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Subject: Re: [RFC PATCH 4/6] uprobes/x86: Emulate rip-relative call's
+Date: Thu, 10 Apr 2014 19:02:38 +0200
+User-Agent: KMail/1.8.2
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+References: <20140406201628.GA507@redhat.com> <20140410141806.GA23997@redhat.com> <5346AB07.4090909@redhat.com>
+In-Reply-To: <5346AB07.4090909@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <s5heh15pr18.wl%tiwai@suse.de>
-References: <CAB=NE6VvyBKzEg=ErZzQMktY8eLytQ21JCPrOQbxvZ9m-nqHkw@mail.gmail.com>
- <53451077.2030102@openwrt.org> <CAB=NE6UUN4vQd3SpsvO5tcgaYq3YXQeE0KtZGki7p7OnR=J4RA@mail.gmail.com>
- <20140409191225.GA10560@kroah.com> <CAB=NE6VqY8yXoYuE0o01vq86imY8EtqLdkPa4bGMvR3bTaj5KQ@mail.gmail.com>
- <20140409202224.GA12953@kroah.com> <CAB=NE6XY5++p7hJQpQdwrFNUcGbUsKpC+oJiZQciXNduo+8j8A@mail.gmail.com>
- <20140409210613.GA14392@kroah.com> <s5heh15pr18.wl%tiwai@suse.de>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Thu, 10 Apr 2014 09:59:24 -0700
-X-Google-Sender-Auth: rheyJI5zgU2wdFTbLpdmdNSwr5c
-Message-ID: <CAB=NE6VeNTFeGxKXpYunkU-W=JPLMpOnrehttvsqB+yXkdz5fg@mail.gmail.com>
-Subject: Re: Bumping required kernels to 3.0 for Linux backports ?
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felix Fietkau <nbd@openwrt.org>,
-        "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201404101902.38639.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 12:44 AM, Takashi Iwai <tiwai@suse.de> wrote:
-> At Wed, 9 Apr 2014 14:06:13 -0700,
-> Greg Kroah-Hartman wrote:
->>
->> On Wed, Apr 09, 2014 at 01:52:29PM -0700, Luis R. Rodriguez wrote:
->> > On Wed, Apr 9, 2014 at 1:22 PM, Greg Kroah-Hartman
->> > <gregkh@linuxfoundation.org> wrote:
->> > > On Wed, Apr 09, 2014 at 01:01:23PM -0700, Luis R. Rodriguez wrote:
->> > >> On Wed, Apr 9, 2014 at 12:12 PM, Greg Kroah-Hartman
->> > >> <gregkh@linuxfoundation.org> wrote:
->> > >> > On Wed, Apr 09, 2014 at 11:28:55AM -0700, Luis R. Rodriguez wrote:
->> > >> >> On Wed, Apr 9, 2014 at 2:18 AM, Felix Fietkau <nbd@openwrt.org> wrote:
->> > >> >> > The oldest kernel in OpenWrt that we're still supporting with updates of
->> > >> >> > the backports tree is 3.3, so raising the minimum requirement to 3.0 is
->> > >> >> > completely fine with me.
->> > >> >>
->> > >> >> OK note that 3.3 is not listed on kernel.org as supported. I'm fine in
->> > >> >> carrying the stuff for those for now but ultimately it'd also be nice
->> > >> >> if we didn't even have to test the kernels in between which are not
->> > >> >> listed. This does however raise the question of how often a kernel in
->> > >> >> between a list of supported kernels gets picked up to be supported
->> > >> >> eventually. Greg, Jiri, do you happen to know what the likelyhood of
->> > >> >> that can be?
->> > >> >
->> > >> > I don't know of anything ever getting picked up after I have said it
->> > >> > would not be supported anymore.
->> > >>
->> > >> Great! How soon after a release do you mention whether or not it will
->> > >> be supported? Like say, 3.14, which was just released.
->> > >
->> > > I only mention it around the time that it would normally go end-of-life.
->> > >
->> > > For example, if 3.13 were to be a release that was going to be "long
->> > > term", I would only say something around the normal time I would be no
->> > > longer supporting it.  Like in 2-3 weeks from now.
->> > >
->> > > So for 3.14, I'll not say anything about that until 3.16-rc1 is out,
->> > > give or take a week or two.
->> > >
->> > >> Also, as of late are you aware any distribution picking an unsupported
->> > >> kernel for their next choice of kernel?
->> > >
->> > > Sure, lots do, as they don't line up with my release cycles (I only pick
->> > > 1 long term kernel to maintain each year).  Look at the Ubuntu releases
->> > > for examples of that.  Also openSUSE and Fedora (although Fedora does
->> > > rev their kernel pretty regularly) don't usually line up.  The
->> > > "enterprise" distros are different, but even then, they don't always
->> > > line up either (which is why Jiri is maintaining 3.12...)
->> > >
->> > > Hope this helps,
->> >
->> > It does! Unless I don't hear any complaints then given that some
->> > distributions might choose a kernel in between and given also your
->> > great documented story behind the gains on trying to steer folks
->> > together on the 'ol 2.6.32 [0] and this now being faded, I'll be
->> > bumping backports to only support >= 3.0 soon, but we'll include all
->> > the series from 3.0 up to the latest. That should shrink compile /
->> > test time / support time on backports to 1/2.
->>
->> Why 3.0?  That's not supported by anyone anymore for "new hardware", I'd
->> move to 3.2 if you could, as that's the Debian stable release that will
->> be maintained for quite some time yet:
->>       https://www.kernel.org/category/releases.html
->
-> Well, the support for "new hardware" is what backports project itself
-> does, isn't it?
->
-> Besides, SLES11 is still supported, so yes, including 3.0.x would be
-> helpful.
+On Thursday 10 April 2014 16:30, Denys Vlasenko wrote:
+> On 04/10/2014 04:18 PM, Oleg Nesterov wrote:
+> > On 04/10, Denys Vlasenko wrote:
+> >>
+> >> There is this monstrosity, "16-bit override for branches" in 64-mode:
+> >>
+> >> 66 e8 nn nn       callw   <offset16>
+> >>
+> >> Nobody sane uses it because it truncates instruction pointer.
+> >>
+> >> Or rather, *I think* it should truncate it (i.e. zero-extend to full width),
+> >> but conceivably some CPUs can be buggy wrt that:
+> >> they can decide to modify only lower 16 bits of IP,
+> >> or even they can decided to use signed <offset16> but apply it
+> >> to full-width RIP.
+> >>
+> >> AMD manuals are not clear on what exactly should happen.
+> >>
+> >> I am sure no one sane uses this form of branch instructions
+> >> in 32-bit and 64-bit code.
+> >>
+> >> I don't think we should be trying to support it "correctly"
+> >> (we can just let program crash with SIGILL or something),
+> >> we only need to make sure we don't overlook its existence
+> >> and thus are not tricked into touching or modifying unrelated data.
+> > 
+> > And after the quick check it seems that lib/insn.c doesn't parse
+> > "66 e8 nn nn" correctly. It treats the next 2 bytes as the part
+> > of 32bit offset.
+> 
+> I didn't run-test it yet. By code inspection, it seems to work...
+> 
+> x86-opcode-map.txt:
+>     e8: CALL Jz (f64)
+> 
+> gen-insn-attr-x86.awk:
+>     imm_flag["Jz"] = "INAT_MAKE_IMM(INAT_IMM_VWORD32)"
+> 
+> 
+> insn.c:
+>         case INAT_IMM_VWORD32:
+>                 if (!__get_immv32(insn))
+>                         goto err_out;
+> ...
+> static int __get_immv32(struct insn *insn)
+> {
+>         switch (insn->opnd_bytes) {
+>         case 2:
+>                 insn->immediate.value = get_next(short, insn);
+>                 insn->immediate.nbytes = 2;
+>                 break;
+>         case 4:
+>         case 8:
+>                 insn->immediate.value = get_next(int, insn);
+>                 insn->immediate.nbytes = 4;
+>                 break;
+> 
+> 
+> ...until I notice this code:
+> 
+> void insn_get_modrm(struct insn *insn)
+> {
+> ...
+>         if (insn->x86_64 && inat_is_force64(insn->attr))
+>                 insn->opnd_bytes = 8;
+> 
+> 
+> The (f64) modifier in x86-opcode-map.txt means that inat_is_force64()
+> is true for call opcode. So we won't reach "case 2:" in __get_immv32():
+> insn_get_prefixes() did set insn->opnd_bytes to 2 when it saw 0x66 prefix,
+> but it was before we reach this place, and here we overrode it.
+> This is a bug in insn decoder.
 
-That's two stakeholders for 3.0 -- but nothing is voiced for anything
-older than that. Today I will rip the older kernels into oblivion.
-Thanks for all the feedback!
+I tested it on both Intel and AMD CPUs and my worst fears came true:
+this instruction has different widths on different CPUs.
 
- Luis
+This program:
+
+# compile with: gcc -nostartfiles -nostdlib -o int3 int3.S
+_start:         .globl  _start
+                .byte 0x66,0xe9,0,0
+                .byte 0,0
+1: jmp 1b
+
+compiles to this:
+
+00000000004000b0 <_start>:
+  4000b0:       66 e9 00 00             jmpw   b4 <_start-0x3ffffc>
+  4000b4:       00 00                   add    %al,(%rax)
+  4000b6:       eb fe                   jmp    4000b6 <_start+0x6>
+
+and it will reach 0x4000b6 on Intel CPU.
+IOW, Intel SandyBridge CPU thinks that insn is in fact 66 e9 00 00 00 00,
+no RIP truncation occurs.
+
+On AMD K10 CPU, the very same binary jumps to 0x00b4
+and gets SIGSEGV with MAPERR.
+AMD thinks that the insn is 66 e9 00 00 as shown above.
+
+Thus, insn.c decoder implements Intel's idea of this insn
+while binutils (objdump, gdb) implement AMD decode.
+
+This same program can be compiled to 32-bit code,
+in this mode both CPUs treat insn as 66 e9 00 00.
+
+Oleg, I'm sure you are very sympathetic by now to the idea
+of just not supporting this insn at all. ;)
+
+You can check whether insn had any prefix by checking
+insn->prefixes->nbytes != 0...
+
+..but there is a problem with that. P4 introduced branch hints,
+which are implemented using segment prefixes on conditional jumps.
+Meaning that some compilers produce
+
+2e 0f 82 nn nn nn nn
+
+as   (hint not taken) JB <offset32>   insn.
+
+2e is CS segment prefix. insn->prefixes->nbytes == 1 for this insn.
+DS prefix (3e) hints that branch is taken.
+
+They were nearly useless on P4 anyway and ignored by all CPUs
+before or since, but they can be seen in some programs.
+
+Looks like we'll need this:
+
+/*
+ * 16-bit overrides such as CALLW (66 e8 nn nn) are not supported.
+ * Intel and AMD behavior differ in 64-bit mode: Intel ignores 66 prefix.
+ * No one uses these insns.
+ * To filter them out, reject any branch insns with prefixes...
+ */
+if (insn->prefixes->nbytes > 1)
+	bail_out;
+/*
+ * ...Except a single 3e or 2e "branch taken/not taken" hint prefix.
+ * These are (rarely) used, but ignored by any CPU except P4.
+ * Example: 2e 0f 82 nn nn nn nn  is JB,PN <offset32>
+ */
+if (insn->prefixes->nbytes == 1 && (insn->prefixes->bytes[0] | 0x10) != 0x3e))
+	bail_out;
+
+
+
+-- 
+vda
