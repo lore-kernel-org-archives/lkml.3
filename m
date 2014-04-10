@@ -1,137 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965648AbaDJIeT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 04:34:19 -0400
-Received: from mga11.intel.com ([192.55.52.93]:18146 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964832AbaDJIeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 04:34:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,833,1389772800"; 
-   d="scan'208";a="518188944"
-Message-ID: <53465781.4010904@linux.intel.com>
-Date: Thu, 10 Apr 2014 16:34:09 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S965562AbaDJIqB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 04:46:01 -0400
+Received: from mail-ve0-f174.google.com ([209.85.128.174]:42098 "EHLO
+	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965484AbaDJIp7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 04:45:59 -0400
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        Baoquan He <bhe@redhat.com>
-CC: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>
-Subject: Re: hpsa driver bug crack kernel down!
-References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com> <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net> <1397084904.9519.62.camel@dabdike> <1397085044.9519.63.camel@dabdike> <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net> <1397087425.9519.67.camel@dabdike> <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net> <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
-In-Reply-To: <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
+In-Reply-To: <53440991.9090001@oracle.com>
+References: <53440991.9090001@oracle.com>
+Date: Thu, 10 Apr 2014 16:45:58 +0800
+Message-ID: <CAA_GA1d_boVA67EBK5Rv7_F_8pb_5rBA10WB9ooCdjON93C03w@mail.gmail.com>
+Subject: Re: mm: kernel BUG at mm/huge_memory.c:1829!
+From: Bob Liu <lliubbo@gmail.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Vlastimil Babka <vbabka@suse.cz>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Baoquan,
-	Could you please help to give output of "lspci -vvvv"?
-Is device "hpsa 0000:03:00.0" a legacy PCI device(non-PCIe)?
-It may have relationship with IOMMU driver.
-Thanks!
-Gerry
+On Tue, Apr 8, 2014 at 10:37 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> Hi all,
+>
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel, I've stumbled on the following:
+>
 
-On 2014/4/10 12:03, Bjorn Helgaas wrote:
-> [+cc Joerg, iommu list]
-> 
-> On Wed, Apr 9, 2014 at 6:19 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
->> On Wed, 2014-04-09 at 16:50 -0700, James Bottomley wrote:
->>> On Wed, 2014-04-09 at 16:40 -0700, Davidlohr Bueso wrote:
->>>> On Wed, 2014-04-09 at 16:10 -0700, James Bottomley wrote:
->>>>> On Wed, 2014-04-09 at 16:08 -0700, James Bottomley wrote:
->>>>>> [+linux-scsi]
->>>>>> On Wed, 2014-04-09 at 15:49 -0700, Davidlohr Bueso wrote:
->>>>>>> On Wed, 2014-04-09 at 10:39 +0800, Baoquan He wrote:
->>>>>>>> Hi,
->>>>>>>>
->>>>>>>> The kernel is 3.14.0+ which is pulled just now.
->>>>>>>
->>>>>>> Cc'ing more people.
->>>>>>>
->>>>>>> While the hpsa driver appears to be involved in some way, I'm sure if
->>>>>>> this is a related issue, but as of today's pull I'm getting another
->>>>>>> problem that causes my DL980 not to come up.
->>>>>>>
->>>>>>> *Massive* amounts of:
->>>>>>>
->>>>>>> DMAR:[fault reason 02] Present bit in context entry is clear
->>>>>>> dmar: DRHD: handling fault status reg 602
->>>>>>> dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr 7f61e000
->>>>>>>
->>>>>>> Then:
->>>>>>>
->>>>>>> hpsa 0000:03:00.0: Controller lockup detected: 0xffff0000
->>>>>>> ...
->>>>>>> Workqueue: events hpsa_monitor_ctlr_worker [hpsa]
->>>>>>> ...
->>>>>>>
->>>>>>> Screenshot of the actual LOCKUP:
->>>>>>> http://stgolabs.net/hpsa-hard-lockup-3.14+.png
->>>>>>>
->>>>>>> While I haven't bisected, things worked fine until at least until commit
->>>>>>> 39de65aa2c3e (April 2nd).
->>>>>>>
->>>>>>> Any ideas?
->>>>>>
->>>>>> Well, it's either a DMA remapping issue or a hpsa one.  Your assertion
->>>>>> that everything worked fine until 39de65aa2c3e would tend to vindicate
->>>>>> hpsa,
->>>>
->>>> Hmm here you mean DMA, right?
->>>
->>> No, it vindicates the hpsa changes ... they don't seem to be causing
->>> problems until something goes wrong with dma remapping.
->>>
->>>>> because all the hpsa changes went in before that under
->>>>> Missing crucial info:
->>>>>
->>>>> commit 1a0b6abaea78f73d9bc0a2f6df2d9e4c917cade1
->>>>>
->>>>>> Merge: 3e75c6d b2bff6c
->>>>>> Author: Linus Torvalds <torvalds@linux-foundation.org>
->>>>>> Date:   Tue Apr 1 18:49:04 2014 -0700
->>>>>>
->>>>>>     Merge tag 'scsi-misc' of
->>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi
->>>>>>
->>>>>> can you revalidate that this commit works OK just to make sure?
->>>>
->>>> Ok so I don't see those DMA messages and system starts just fine. I'm
->>>> thinking perhaps something broke after the IO mmu stuff in commit
->>>> 3f583bc21977a608908b83d03ee2250426a5695c... could this be indirectly
->>>> causing the CPU stalls and just blame hpsa in the path as a side effect?
->>>>
->>>> /me goes out to try the commit.
->>>
->>> That's my guess.  The DMAR messages are DMA remapping issues caused in
->>> the IOMMU.  If I had to guess, I'd say the DMAR fault message is
->>> indicating the IOMMU is calling for a mapping address before it can
->>> satisfy the driver read request, which is causing the hang apparently in
->>> the hpsa driver.
->>>
->>> I've added linux-pci to the cc; I think they deal with iommu issues on
->>> x86.
->>
->> So that merge commit appears to be the culprit, I see both the DMA
->> messages and the lockup blaming hpsa...
-> 
-> My understanding so far (please correct me if I'm wrong):
-> 
-> 39de65aa2c3e OK ("Merge branch 'i2c/for-next'")
-> 1a0b6abaea78 OK ("Merge tag 'scsi-misc'")
-> 3f583bc21977 BAD ("Merge tag 'iommu-updates-v3.15'")
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Wow! There are so many huge memory related bugs recently.
+AFAIR, there were still several without fix. I wanna is there any
+place can track those bugs instead of lost in maillist?
+It seems this link is out of date
+http://codemonkey.org.uk/projects/trinity/bugs-unfixed.php
+
+Thanks,
+-Bob
+
+> [ 1275.253114] kernel BUG at mm/huge_memory.c:1829!
+> [ 1275.253642] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> [ 1275.254775] Dumping ftrace buffer:
+> [ 1275.255631]    (ftrace buffer empty)
+> [ 1275.256440] Modules linked in:
+> [ 1275.257347] CPU: 20 PID: 22807 Comm: trinity-c299 Not tainted 3.14.0-next-20140407-sasha-00023-gd35b0d6 #382
+> [ 1275.258686] task: ffff8803e7873000 ti: ffff8803e7896000 task.ti: ffff8803e7896000
+> [ 1275.259416] RIP: __split_huge_page (mm/huge_memory.c:1829 (discriminator 1))
+> [ 1275.260527] RSP: 0018:ffff8803e7897bb8  EFLAGS: 00010297
+> [ 1275.261323] RAX: 000000000000012c RBX: ffff8803e789d600 RCX: 0000000000000006
+> [ 1275.261323] RDX: 0000000000005b80 RSI: ffff8803e7873d00 RDI: 0000000000000282
+> [ 1275.261323] RBP: ffff8803e7897c68 R08: 0000000000000000 R09: 0000000000000000
+> [ 1275.261323] R10: 0000000000000001 R11: 30303320746e756f R12: 0000000000000000
+> [ 1275.261323] R13: 0000000000a00000 R14: ffff8803ede73000 R15: ffffea0010030000
+> [ 1275.261323] FS:  00007f899d23f700(0000) GS:ffff880437000000(0000) knlGS:0000000000000000
+> [ 1275.261323] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [ 1275.261323] CR2: 00000000024cf048 CR3: 00000003e787f000 CR4: 00000000000006a0
+> [ 1275.261323] DR0: 0000000000696000 DR1: 0000000000696000 DR2: 0000000000000000
+> [ 1275.261323] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+> [ 1275.261323] Stack:
+> [ 1275.261323]  ffff8803e7897bd8 ffff880024dab898 ffff8803e7897bd8 ffffffffac1bea0e
+> [ 1275.261323]  ffff8803e7897c28 0000000000000282 00000014b06cc072 0000000000000000
+> [ 1275.261323]  0000012be7897c28 0000000000000a00 ffff880024dab8d0 ffff880024dab898
+> [ 1275.261323] Call Trace:
+> [ 1275.261323] ? put_lock_stats.isra.12 (arch/x86/include/asm/preempt.h:98 kernel/locking/lockdep.c:254)
+> [ 1275.261323] ? down_write (kernel/locking/rwsem.c:51 (discriminator 2))
+> [ 1275.261323] ? split_huge_page_to_list (mm/huge_memory.c:1874)
+> [ 1275.261323] split_huge_page_to_list (include/linux/vmstat.h:37 mm/huge_memory.c:1879)
+> [ 1275.261323] __split_huge_page_pmd (mm/huge_memory.c:2811)
+> [ 1275.261323] ? mutex_unlock (kernel/locking/mutex.c:220)
+> [ 1275.261323] ? __mutex_unlock_slowpath (arch/x86/include/asm/paravirt.h:809 kernel/locking/mutex.c:713 kernel/locking/mutex.c:722)
+> [ 1275.261323] ? get_parent_ip (kernel/sched/core.c:2471)
+> [ 1275.261323] ? preempt_count_sub (kernel/sched/core.c:2526)
+> [ 1275.261323] follow_page_mask (mm/memory.c:1518 (discriminator 1))
+> [ 1275.261323] SYSC_move_pages (mm/migrate.c:1227 mm/migrate.c:1353 mm/migrate.c:1508)
+> [ 1275.261323] ? SYSC_move_pages (include/linux/rcupdate.h:800 mm/migrate.c:1472)
+> [ 1275.261323] ? sched_clock_local (kernel/sched/clock.c:213)
+> [ 1275.261323] SyS_move_pages (mm/migrate.c:1456)
+> [ 1275.261323] tracesys (arch/x86/kernel/entry_64.S:749)
+> [ 1275.261323] Code: c0 01 39 45 94 74 18 41 8b 57 18 48 c7 c7 90 5e 6d b0 31 c0 8b 75 94 83 c2 01 e8 3d 6a 23 03 41 8b 47 18 83 c0 01 39 45 94 74 02 <0f> 0b 49 8b 07 48 89 c2 48 c1 e8 34 83 e0 03 48 c1 ea 36 4c 8d
+> [ 1275.261323] RIP __split_huge_page (mm/huge_memory.c:1829 (discriminator 1))
+> [ 1275.261323]  RSP <ffff8803e7897bb8>
+>
+> Looking at the code, there was supposed to be a printk printing both
+> mapcounts if they're different. However, there was no matching entry
+> in the log for that.
+>
+>
+> Thanks,
+> Sasha
