@@ -1,40 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935761AbaDJUBk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 16:01:40 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:46335 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759070AbaDJUBg (ORCPT
+	id S1422672AbaDJUDU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 16:03:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48515 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935282AbaDJUDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 16:01:36 -0400
+	Thu, 10 Apr 2014 16:03:18 -0400
+Date: Thu, 10 Apr 2014 13:05:51 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Camille Begue <camille.begue44@gmail.com>
+Cc: devel@driverdev.osuosl.org, Ian Abbott <abbotti@mev.co.uk>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 1/1] staging: comedi: Fix checkpatch warning
+Message-ID: <20140410200551.GA18478@kroah.com>
+References: <1396645854-20944-1-git-send-email-camille.begue44@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140410195402.GA17308@kroah.com>
-References: <20140410203146.767149e7@spike>
-	<CAJUuVQ5KW3v0DgwotDMow=rBvxoZKfYYD2misXbsMD6c1UaShw@mail.gmail.com>
-	<20140410195402.GA17308@kroah.com>
-Date: Thu, 10 Apr 2014 16:01:35 -0400
-Message-ID: <CAJUuVQ7xgRLDzwojDCdb3yhTm3HygypMLXyaRiErnVveNVz+sQ@mail.gmail.com>
-Subject: Re: [PATCH resend] rsi: Fix a potential memory leak in rsi_set_channel()
-From: Andev <debiandev@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Christian Engelmayer <cengelma@gmx.at>, linville@tuxdriver.com,
-        fariyaf@gmail.com, dan.carpenter@oracle.com, joe@perches.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396645854-20944-1-git-send-email-camille.begue44@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 3:54 PM, Greg Kroah-Hartman <greg@kroah.com> wrote:
-> On Thu, Apr 10, 2014 at 03:46:12PM -0400, Andev wrote:
->> Adding Greg KH,
->
-> Why do I care about this?
->
+On Fri, Apr 04, 2014 at 11:10:51PM +0200, Camille Begue wrote:
+> Wrap lines > 80 columns.
+> 
+> Signed-off-by: Camille Begue <camille.begue44@gmail.com>
 
-I am not sure if this needs to be applied to stable too. Should I have
-cc'ed stable@?
+Unfortunatly someone sent this same patch a few days before you, so I
+had to accept that one, not this one, sorry.
 
--- 
-Pratapa Rudra
+Feel free to send other cleanup patches, we need all the help we can get
+here :)
+
+thanks,
+
+greg k-h
