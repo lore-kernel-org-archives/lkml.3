@@ -1,525 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161038AbaDJNRh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 09:17:37 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:47271 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030661AbaDJNRb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 09:17:31 -0400
-X-AuditID: cbfee61a-b7fb26d00000724f-66-534699e81dd1
-From: Robert Baldyga <r.baldyga@samsung.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        myungjoo.ham@samsung.com, cw00.choi@samsung.com, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, balbi@ti.com, gregkh@linuxfoundation.org,
-        grant.likely@linaro.org, ldewangan@nvidia.com, kishon@ti.com,
-        gg@slimlogic.co.uk, anton@enomsg.org, jonghwa3.lee@samsung.com,
-        rongjun.ying@csr.com, linux@roeck-us.net, aaro.koskinen@iki.fi,
-        tony@atomide.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH 01/13] Documentation: add extcon devicetree bindings
-Date: Thu, 10 Apr 2014 15:16:39 +0200
-Message-id: <1397135811-12866-2-git-send-email-r.baldyga@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1397135811-12866-1-git-send-email-r.baldyga@samsung.com>
-References: <1397135811-12866-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAAzXRa0hTYRwG8N6dy85Wo9O0OihBLCKS1ETLFxL1g8pbUBiDIKPL0oOKTsem
-	okW08jrLNo1h5q1tbt4TTdFp3qYFy/LSSiMzxUyddAHxmtJySt9+f54Hng9/ChM24W5UbEIS
-	K0+QxItIPj7w9xvtaS8KE59UdfBg3Xww7G05Dnsn78KxpTkCFsz8xmB5/yAB86sfY1D9Q0dA
-	dXMI7NlsAzDd0EDCwYVqAFXvZjA4/P0hCY1dtTjUZVXg0NZeQsLiCjUO9aZMDM7o3nKgcWyE
-	A8fvVZGw8qeDhJrCehxO9Zm58Lm9EIeZnf1c2DW8ScDuD+eCD6G6sjqAVpYLcGR7lMdB7eYS
-	AmnUiwCZn05wUXXlEon6lnU4elHlgZpqVCRaqC0i0JfRlyTqLq3jorz0XySy52+QyLyq5Ia7
-	RvADotj42BRW7h14gx/T2NqBySoSU61FA1wlKI3IBTyKof2Y+TeV+I4PMMNfG8hcwKeEtB4w
-	ox/LOTtHNocZGrFynS2SPsE0r2qA0640xjzTDgFnCaOtBFPT2405Axc6hGnKyyKcxumjTKu+
-	ZdsCOpQZnLZvmdqaO8yUFAQ4yaPDmE7bESeFWw1tvUgDBM/Arhqwn5VFyhQ3o6U+XgqJVJGc
-	EO0VmShtAtufnHVrA9VKaAE0BUR7BD2mULGQkKQo0qQWwFCYyFXQqA0TCwVRkrRbrDzxujw5
-	nlVYgDuFiw4KejLPXBTS0ZIkNo5lZaz8f8qheG5KYArk7c3eaC0Lz3ZzTUxPdTgMGZ4blqrW
-	9XrG8GTW7Dd9oYWJveoYNX6+1pMzte4fukSueJ1d856cE/jaxyeQ+NUxMifIpFXvW3xv1U54
-	XlbdVt9nO92lGSsur1PE07tXF4svnRo1xrmL/fVrV+CnO+dt/TmnSwy+1gd/+EFCEa6Ikfh4
-	YHKF5B+dRCB5xQIAAA==
-To: unlisted-recipients:; (no To-header on input)
+	id S1161078AbaDJNRo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 09:17:44 -0400
+Received: from mga11.intel.com ([192.55.52.93]:13109 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161042AbaDJNRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 09:17:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,834,1389772800"; 
+   d="scan'208";a="510893441"
+Date: Thu, 10 Apr 2014 21:17:00 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        lkp@01.org
+Subject: Re: [writeback] 6903673566d: +2.5% fileio.requests_per_sec
+Message-ID: <20140410131700.GA20102@localhost>
+References: <20140410124137.GA17720@localhost>
+ <20140410130821.GB17871@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140410130821.GB17871@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds extcon devicetree bindings. Documentation describes in general
-client and provider bindings, and contains detailed desctiprion of bindings
-for each extcon provider.
+On Thu, Apr 10, 2014 at 09:08:21PM +0800, Fengguang Wu wrote:
+> On Thu, Apr 10, 2014 at 08:41:37PM +0800, Fengguang Wu wrote:
+> > Hi Jan,
+> > 
+> > I tried your writeback dirty list patchset and noticed some ups/downs.
+> > The main performance changes are
+> > 
+> > 1) +2.5% fileio.requests_per_sec
+> > 2) -7.1% iostat.md0.wkB/s
+> > 
+> > git://bee.sh.intel.com/git/wfg/linux-devel.git jan-dirty-list
+> > commit 6903673566d0289680e593dac088c787d119b067 ("writeback: Replace several writeback lists with inode tagging")
+> > 
+> > 836ecc5f024669e  6903673566d0289680e593dac  
+> > ---------------  -------------------------  
+> >       6526 ~ 0%      +3.2%       6736 ~ 0%  snb-drag/sysbench/fileio/600s-100%-1HDD-xfs-64G-1024-seqrewr-sync
+> >       6441 ~ 0%      +1.8%       6558 ~ 0%  snb-drag/sysbench/fileio/600s-100%-1HDD-xfs-64G-1024-seqwr-sync
+> >      12968 ~ 0%      +2.5%      13295 ~ 0%  TOTAL fileio.requests_per_sec
+> > 
+> > 836ecc5f024669e  6903673566d0289680e593dac  
+> > ---------------  -------------------------  
+> >     398147 ~ 0%      -7.1%     369866 ~ 0%  lkp-st02/micro/dd-write/11HDD-RAID5-cfq-xfs-10dd
+> >     398147 ~ 0%      -7.1%     369866 ~ 0%  TOTAL iostat.md0.wkB/s
+> 
+> Here are the complete power performance comparisons:
+> 
+> # the higher index, the better
+>     98      perf-index  ea87e2e7e0905325c58cf5643
+>    105     power-index  ea87e2e7e0905325c58cf5643
+>     99   latency-index  ea87e2e7e0905325c58cf5643
 
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
----
- .../devicetree/bindings/extcon/extcon-adc-jack.txt |   60 +++++++++++++++++++
- .../devicetree/bindings/extcon/extcon-arizona.txt  |   47 +++++++++++++++
- .../devicetree/bindings/extcon/extcon-bindings.txt |   36 +++++++++++
- .../devicetree/bindings/extcon/extcon-gpio.txt     |   63 ++++++++++++++++++++
- .../devicetree/bindings/extcon/extcon-max14577.txt |   49 +++++++++++++++
- .../devicetree/bindings/extcon/extcon-max77693.txt |   56 +++++++++++++++++
- .../devicetree/bindings/extcon/extcon-max8997.txt  |   49 +++++++++++++++
- .../devicetree/bindings/extcon/extcon-palmas.txt   |   37 ++++++++++--
- 8 files changed, 393 insertions(+), 4 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/extcon/extcon-adc-jack.txt
- create mode 100644 Documentation/devicetree/bindings/extcon/extcon-arizona.txt
- create mode 100644 Documentation/devicetree/bindings/extcon/extcon-bindings.txt
- create mode 100644 Documentation/devicetree/bindings/extcon/extcon-gpio.txt
- create mode 100644 Documentation/devicetree/bindings/extcon/extcon-max14577.txt
- create mode 100644 Documentation/devicetree/bindings/extcon/extcon-max77693.txt
- create mode 100644 Documentation/devicetree/bindings/extcon/extcon-max8997.txt
+Note that some few performance changes are caused by CPU frequency
+unstableness. Sorry for showing results with some defects - I only
+realized that after reading through the results..
 
-diff --git a/Documentation/devicetree/bindings/extcon/extcon-adc-jack.txt b/Documentation/devicetree/bindings/extcon/extcon-adc-jack.txt
-new file mode 100644
-index 0000000..6e43891
---- /dev/null
-+++ b/Documentation/devicetree/bindings/extcon/extcon-adc-jack.txt
-@@ -0,0 +1,60 @@
-+* ADC JACK Extcon Controller
-+
-+ADC JACK extcon controller is responsible for cable detection.
-+
-+Required Properties:
-+
-+- compatible: should be "extcon-adc-jack".
-+
-+- #extcon-cells: should be 1.
-+
-+- subnode <cables>: node describing list of cables.
-+	- subnode <cable>:
-+		- cable-name: name of specific cable
-+		- adc-min: minimum specific cable ADC values range
-+		- adc-max: maximum specific cable ADC values range
-+
-+Subnodes of node 'cables' describes specific cables with ADC value ranges
-+associated with this cables. When measured ADC value will be between min and
-+max value for specific cable, clients will be notified about connection of
-+this cable. Value ranges for individual cables cannot be overlaping.
-+
-+Example 1: An example of a extcon controller node is listed below.
-+
-+	extcon: adc-jack {
-+		compatible = "extcon-adc-jack";
-+		#extcon-cells = <1>;
-+
-+		cables {
-+			cable@0 {
-+				cable-name = "CABLE-0";
-+				adc-min = 120;
-+				adc-max = 240;
-+			}
-+			cable@1 {
-+				cable-name = "CABLE-1";
-+				adc-min = 250;
-+				adc-max = 400;
-+			}
-+			cable@2 {
-+				cable-name = "CABLE-2";
-+				adc-min = 500;
-+				adc-max = 700;
-+			};
-+		};
-+	};
-+
-+Example 2: USB controller node that uses cable from the extcon
-+	   controller. Refer to the standard extcon bindings for
-+	   information about 'extcon-cables' and 'extcon-names'
-+	   property.
-+
-+	usb@12480000 {
-+		vusb_d-supply = <&vusb_reg>;
-+		vusb_a-supply = <&vusbdac_reg>;
-+
-+		extcon-cables = <&extcon 0>;
-+		extcon-names = "USB";
-+
-+		status = "okay";
-+	};
-diff --git a/Documentation/devicetree/bindings/extcon/extcon-arizona.txt b/Documentation/devicetree/bindings/extcon/extcon-arizona.txt
-new file mode 100644
-index 0000000..9af4422
---- /dev/null
-+++ b/Documentation/devicetree/bindings/extcon/extcon-arizona.txt
-@@ -0,0 +1,47 @@
-+* Wolfson Arizona Extcon Controller
-+
-+The Wolfson Arizona Extcon Controller is responsible for cable
-+detection.
-+
-+Required Properties:
-+
-+- compatible: should be "wlf,arizona-extcon".
-+
-+- #extcon-cells: should be 1.
-+
-+The following is the list of cables detected by the controller. Each
-+cable is assigned an identifier and client nodes use this identifies
-+to specify the cable which they are interested in.
-+
-+  Cable			ID
-+  ----------------------------
-+
-+  Mechanical		0
-+  Microphone		1
-+  Headphone		2
-+  Line-out		3
-+
-+Example 1: An example of a extcon controller node is listed below.
-+
-+	extcon: arizona-extcon {
-+		compatible = "wlf,arizona-extcon";
-+		#extcon-cells = <1>;
-+	};
-+
-+Example 2: Audio controller node that uses cable from the extcon
-+	   controller. Refer to the standard extcon bindings for
-+	   information about 'extcon-cables' and 'extcon-names'
-+	   property.
-+
-+	audio-controller@b0000 {
-+		reg = <0xb0000 0x2210>;
-+		interrupts = <19>, <20>;
-+
-+		extcon-cables = <&extcon 1>, <&extcon 3>;
-+		extcon-names = "Microphone", "Line-out";
-+
-+		clocks = <&gate_clk 12>;
-+		clock-names = "internal";
-+
-+		status = "okay";
-+	};
-diff --git a/Documentation/devicetree/bindings/extcon/extcon-bindings.txt b/Documentation/devicetree/bindings/extcon/extcon-bindings.txt
-new file mode 100644
-index 0000000..5167f69
---- /dev/null
-+++ b/Documentation/devicetree/bindings/extcon/extcon-bindings.txt
-@@ -0,0 +1,36 @@
-+Extcon controllers can be represented by any node in the device
-+tree. Those nodes are designated as extcon cable providers. Extcon
-+cable consumer nodes use phandle and cable specifier pair to register
-+interest in specific cables.
-+
-+==Extcon providers==
-+
-+Required properties:
-+#extcon-cells:	Number of cells in extcon specifier.
-+		Always should be 1.
-+
-+For example:
-+
-+	extcon {
-+		#extcon-cells = <1>;
-+	};
-+
-+==Extcon consumers==
-+
-+Required properties:
-+extcon-cables:	List of phandle and cable specifier pairs, one pair
-+		for each cable.
-+
-+Optional properties:
-+extcon-names:	List of extcon cable name strings sorted in the same
-+		order as the extcon-cables property. Consumers drivers
-+		will use extcon-names to match cable names with cable
-+		specifiers.
-+
-+
-+For example:
-+
-+	device {
-+		extcon-cables = <&extcon 4>, <&extcon 7>;
-+		extcon-names = "USB", "Charger";
-+	};
-diff --git a/Documentation/devicetree/bindings/extcon/extcon-gpio.txt b/Documentation/devicetree/bindings/extcon/extcon-gpio.txt
-new file mode 100644
-index 0000000..216cc30
---- /dev/null
-+++ b/Documentation/devicetree/bindings/extcon/extcon-gpio.txt
-@@ -0,0 +1,63 @@
-+* GPIO Extcon Controller
-+
-+The GPIO Extcon Controller is responsible for cable detection.
-+
-+Required Properties:
-+
-+- compatible: should be "extcon-gpio".
-+
-+- #extcon-cells: should be 1.
-+
-+- gpios: device-tree gpio specification.
-+
-+- gpio-controller-name: choosen controller name.
-+
-+- gpio-cable-name: choosen cable name.
-+
-+Optional Properties:
-+
-+- gpio-debounce: debounce time value in ms.
-+
-+- gpio-active-low: indicates that cable is active when gpio state is low.
-+
-+- gpio-check-on-resume: indicates that state should be checked on resume.
-+
-+The following is the list of cables detected by the controller. Each
-+cable is assigned an identifier and client nodes use this identifies
-+to specify the cable which they are interested in.
-+
-+  Cable			ID
-+  ----------------------------
-+
-+  GPIO			0
-+
-+Example 1: An example of a extcon controller node is listed below.
-+
-+	extcon: gpio {
-+		compatible = "extcon-gpio";
-+		#extcon-cells = <1>;
-+
-+		gpios = <&gpx1 0 1>;
-+
-+		gpio-controller-name = "gpio-controller";
-+		gpio-cable-name = "gpio-cable";
-+
-+		gpio-debounce = 15;
-+		gpio-active-low;
-+		gpio-check-on-resume;
-+	};
-+
-+Example 2: USB controller node that uses cable from the extcon
-+	   controller. Refer to the standard extcon bindings for
-+	   information about 'extcon-cables' and 'extcon-names'
-+	   property.
-+
-+	usb@12480000 {
-+		vusb_d-supply = <&vusb_reg>;
-+		vusb_a-supply = <&vusbdac_reg>;
-+
-+		extcon-cables = <&extcon 0>;
-+		extcon-names = "USB-HOST";
-+
-+		status = "okay";
-+	};
-diff --git a/Documentation/devicetree/bindings/extcon/extcon-max14577.txt b/Documentation/devicetree/bindings/extcon/extcon-max14577.txt
-new file mode 100644
-index 0000000..a2b9e9e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/extcon/extcon-max14577.txt
-@@ -0,0 +1,49 @@
-+* Maxim MAX14577 MUIC Extcon Controller
-+
-+The MUIC part of MAX14577 IC is responsible for cable detection.
-+
-+Required Properties:
-+
-+- compatible: should be "maxim,max14577-muic".
-+
-+- #extcon-cells: should be 1.
-+
-+The following is the list of cables detected by the controller. Each
-+cable is assigned an identifier and client nodes use this identifies
-+to specify the cable which they are interested in.
-+
-+  Cable			ID
-+  ----------------------------
-+
-+  USB			0
-+  TA			1
-+  Fast-charger		2
-+  Slow-charger		3
-+  Charge-downstream	4
-+  JIG-USB-ON		5
-+  JIG-USB-OFF		6
-+  JIG-UART-OFF		7
-+  JIG-UART-ON		8
-+
-+Example 1: An example of a extcon controller node is listed below.
-+
-+	extcon: max14577-muic {
-+		compatible = "maxim,max14577-muic";
-+		#extcon-cells = <1>;
-+	};
-+
-+Example 2: USB controller node that uses cable from the extcon
-+	   controller. Refer to the standard extcon bindings for
-+	   information about 'extcon-cables' and 'extcon-names'
-+	   property.
-+
-+	usb@12480000 {
-+		vusb_d-supply = <&vusb_reg>;
-+		vusb_a-supply = <&vusbdac_reg>;
-+
-+		extcon-cables = <&extcon 0>, <&extcon 1>;
-+		extcon-names = "USB", "USB-HOST";
-+
-+		status = "okay";
-+	};
-+
-diff --git a/Documentation/devicetree/bindings/extcon/extcon-max77693.txt b/Documentation/devicetree/bindings/extcon/extcon-max77693.txt
-new file mode 100644
-index 0000000..ad6fe05
---- /dev/null
-+++ b/Documentation/devicetree/bindings/extcon/extcon-max77693.txt
-@@ -0,0 +1,56 @@
-+* Maxim MAX77693 MUIC Extcon Controller
-+
-+The MUIC part of MAX77693 IC is responsible for cable detection.
-+
-+Required Properties:
-+
-+- compatible: should be "maxim,max77693-muic".
-+
-+- #extcon-cells: should be 1.
-+
-+The following is the list of cables detected by the controller. Each
-+cable is assigned an identifier and client nodes use this identifies
-+to specify the cable which they are interested in.
-+
-+  Cable			ID
-+  ----------------------------
-+
-+  USB			0
-+  USB-Host		1
-+  TA			2
-+  Fast-charger		3
-+  Slow-charger		4
-+  Charge-downstream	5
-+  MHL			6
-+  MHL_TA		7
-+  JIG-USB-ON		8
-+  JIG-USB-OFF		9
-+  JIG-UART-OFF		10
-+  Dock-Car		11
-+  Dock-Smart		12
-+  Dock-Desk		13
-+  Dock-Audio		14
-+  Audio-video-load	15
-+
-+Example 1: An example of a extcon controller node is listed below.
-+
-+	extcon: max77693-muic {
-+		compatible = "maxim,max77693-muic";
-+		#extcon-cells = <1>;
-+	};
-+
-+Example 2: USB controller node that uses cable from the extcon
-+	   controller. Refer to the standard extcon bindings for
-+	   information about 'extcon-cables' and 'extcon-names'
-+	   property.
-+
-+	usb@12480000 {
-+		vusb_d-supply = <&vusb_reg>;
-+		vusb_a-supply = <&vusbdac_reg>;
-+
-+		extcon-cables = <&extcon 0>, <&extcon 1>;
-+		extcon-names = "USB", "USB-HOST";
-+
-+		status = "okay";
-+	};
-+
-diff --git a/Documentation/devicetree/bindings/extcon/extcon-max8997.txt b/Documentation/devicetree/bindings/extcon/extcon-max8997.txt
-new file mode 100644
-index 0000000..4ca7c5a
---- /dev/null
-+++ b/Documentation/devicetree/bindings/extcon/extcon-max8997.txt
-@@ -0,0 +1,49 @@
-+* Maxim MAX8997 MUIC Extcon Controller
-+
-+The MUIC part of MAX8997 IC is responsible for cable detection.
-+
-+Required Properties:
-+
-+- compatible: should be "maxim,max8997-muic".
-+
-+- #extcon-cells: should be 1.
-+
-+The following is the list of cables detected by the controller. Each
-+cable is assigned an identifier and client nodes use this identifies
-+to specify the cable which they are interested in.
-+
-+  Cable			ID
-+  ----------------------------
-+
-+  USB			0
-+  USB-Host		1
-+  TA			2
-+  Fast-charger		3
-+  Slow-charger		4
-+  Charge-downstream	5
-+  MHL			6
-+  Dock-Desk		7
-+  Dock-Card		8
-+  JIG			9
-+
-+Example 1: An example of a extcon controller node is listed below.
-+
-+	extcon: max8997-muic {
-+		compatible = "maxim,max8997-muic";
-+		#extcon-cells = <1>;
-+	};
-+
-+Example 2: USB controller node that uses cable from the extcon
-+	   controller. Refer to the standard extcon bindings for
-+	   information about 'extcon-cables' and 'extcon-names'
-+	   property.
-+
-+	usb@12480000 {
-+		vusb_d-supply = <&vusb_reg>;
-+		vusb_a-supply = <&vusbdac_reg>;
-+
-+		extcon-cables = <&extcon 0>, <&extcon 1>;
-+		extcon-names = "USB", "USB-HOST";
-+
-+		status = "okay";
-+	};
-diff --git a/Documentation/devicetree/bindings/extcon/extcon-palmas.txt b/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
-index 45414bb..35adcee 100644
---- a/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
-+++ b/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
-@@ -8,12 +8,41 @@ Required Properties:
-    * "ti,palmas-usb" (DEPRECATED - use "ti,palmas-usb-vid").
-    * "ti,twl6035-usb" (DEPRECATED - use "ti,twl6035-usb-vid").
- 
-+- #extcon-cells: should be 1.
-+
- Optional Properties:
-  - ti,wakeup : To enable the wakeup comparator in probe
-  - ti,enable-id-detection: Perform ID detection.
-  - ti,enable-vbus-detection: Perform VBUS detection.
- 
--palmas-usb {
--       compatible = "ti,twl6035-usb", "ti,palmas-usb";
--       ti,wakeup;
--};
-+The following is the list of cables detected by the controller. Each
-+cable is assigned an identifier and client nodes use this identifies
-+to specify the cable which they are interested in.
-+
-+  Cable                 ID
-+  ----------------------------
-+  USB			0
-+  USB-HOST		1
-+
-+Example 1: An example of a extcon controller node is listed below.
-+
-+	palmas-usb {
-+		compatible = "ti,twl6035-usb", "ti,palmas-usb";
-+		#extcon-cells = <1>;
-+		ti,wakeup;
-+	};
-+
-+Example 2: USB controller node that uses cable from the extcon
-+	   controller. Refer to the standard extcon bindings for
-+	   information about 'extcon-cables' and 'extcon-names'
-+	   property.
-+
-+	usb@12480000 {
-+		vusb_d-supply = <&vusb_reg>;
-+		vusb_a-supply = <&vusbdac_reg>;
-+
-+		extcon-cables = <&extcon 0>, <&extcon 1>;
-+		extcon-names = "USB", "USB-HOST";
-+
-+		status = "okay";
-+	};
--- 
-1.7.9.5
-
+      v3.14-rc8  ea87e2e7e0905325c58cf5643
+---------------  -------------------------
+      1.12 ~ 0%      -0.4%       1.12       brickland1/micro/will-it-scale/brk1
+      1.14 ~ 0%      +2.0%       1.16       brickland1/micro/will-it-scale/context_switch1
+      1.15 ~ 1%      +0.6%       1.16       brickland1/micro/will-it-scale/eventfd1
+      1.23 ~ 2%      +7.6%       1.32       brickland1/micro/will-it-scale/futex1
+      1.24 ~ 4%      -4.2%       1.19       brickland1/micro/will-it-scale/futex2
+      1.15 ~ 1%      -0.1%       1.15       brickland1/micro/will-it-scale/futex3
+      1.18 ~ 3%      -4.2%       1.13       brickland1/micro/will-it-scale/futex4
+      1.14 ~ 1%      -0.6%       1.13       brickland1/micro/will-it-scale/getppid1
+      1.09 ~14%      +5.6%       1.15       brickland1/micro/will-it-scale/lock1
+      1.13 ~ 1%      +1.9%       1.15       brickland1/micro/will-it-scale/lseek1
+      1.18 ~ 2%      +3.6%       1.22       brickland1/micro/will-it-scale/malloc1
+      1.13 ~ 0%      +0.6%       1.14       brickland1/micro/will-it-scale/malloc2
+      1.21 ~ 1%      +2.3%       1.24       brickland1/micro/will-it-scale/mmap1
+      1.18 ~ 1%      +6.6%       1.26       brickland1/micro/will-it-scale/mmap2
+      1.10 ~15%      +5.8%       1.16       brickland1/micro/will-it-scale/open1
+      1.11 ~15%      +4.9%       1.16       brickland1/micro/will-it-scale/open2
+      1.08 ~13%      +4.2%       1.13       brickland1/micro/will-it-scale/page_fault1
+      1.08 ~14%      +5.8%       1.14       brickland1/micro/will-it-scale/page_fault2
+      1.09 ~14%      +5.0%       1.14       brickland1/micro/will-it-scale/page_fault3
+      1.08 ~14%      +4.2%       1.13       brickland1/micro/will-it-scale/pipe1
+      1.09 ~15%      +5.6%       1.15       brickland1/micro/will-it-scale/poll1
+      1.07 ~14%      +5.2%       1.13       brickland1/micro/will-it-scale/poll2
+      1.09 ~14%      +4.9%       1.14       brickland1/micro/will-it-scale/posix_semaphore1
+      1.07 ~14%     +10.8%       1.19       brickland1/micro/will-it-scale/pread1
+      1.12 ~15%      +4.5%       1.17       brickland1/micro/will-it-scale/pread2
+      1.08 ~14%      +5.3%       1.14       brickland1/micro/will-it-scale/pthread_mutex1
+      1.08 ~14%      +4.3%       1.13       brickland1/micro/will-it-scale/pthread_mutex2
+      1.09 ~14%      +4.0%       1.13       brickland1/micro/will-it-scale/pwrite1
+      1.07 ~14%      +5.1%       1.12       brickland1/micro/will-it-scale/pwrite2
+      1.07 ~14%      +8.2%       1.16       brickland1/micro/will-it-scale/read1
+      1.07 ~14%      +5.3%       1.13       brickland1/micro/will-it-scale/read2
+      1.09 ~14%      +6.4%       1.16       brickland1/micro/will-it-scale/readseek
+      1.14 ~ 0%      +0.4%       1.14       brickland1/micro/will-it-scale/sched_yield
+      1.36 ~ 5%      +1.3%       1.38       brickland1/micro/will-it-scale/signal1
+      1.15 ~ 2%      -2.4%       1.12       brickland1/micro/will-it-scale/unix1
+      1.11 ~ 0%      +1.5%       1.13       brickland1/micro/will-it-scale/unlink1
+      1.18 ~ 1%      +0.8%       1.19       brickland1/micro/will-it-scale/unlink2
+      1.13 ~ 0%      +0.2%       1.13       brickland1/micro/will-it-scale/write1
+      1.15 ~ 1%      +0.6%       1.16       brickland1/micro/will-it-scale/writeseek
+      0.63           +0.0%       0.63       brickland2/micro/vm-scalability/300s-anon-cow-rand-64G
+      0.63           +0.0%       0.63       brickland2/micro/vm-scalability/300s-anon-cow-rand-mt-64G
+      0.62           +0.0%       0.62       brickland2/micro/vm-scalability/300s-anon-cow-seq-1T
+      0.64           -1.6%       0.63       brickland2/micro/vm-scalability/300s-anon-cow-seq-mt-1T
+      0.94 ~27%     -28.7%       0.67       brickland2/micro/vm-scalability/300s-anon-r-rand-mt
+      0.88 ~28%     -29.1%       0.62       brickland2/micro/vm-scalability/300s-anon-r-rand
+      0.94 ~28%     -28.3%       0.67       brickland2/micro/vm-scalability/300s-anon-r-seq-mt
+      0.87 ~28%     -28.7%       0.62       brickland2/micro/vm-scalability/300s-anon-r-seq
+      0.92 ~31%     -31.1%       0.63       brickland2/micro/vm-scalability/300s-anon-rx-rand-mt
+      0.88 ~28%     -28.0%       0.63       brickland2/micro/vm-scalability/300s-anon-rx-seq-mt
+      0.63           +0.0%       0.63       brickland2/micro/vm-scalability/300s-anon-w-rand-64G
+      0.63           +0.0%       0.63       brickland2/micro/vm-scalability/300s-anon-w-rand-mt-64G
+      0.62           +0.0%       0.62       brickland2/micro/vm-scalability/300s-anon-w-seq-1T
+      0.66           +0.0%       0.66       brickland2/micro/vm-scalability/300s-anon-w-seq-mt-64G
+      0.63           +0.0%       0.63       brickland2/micro/vm-scalability/300s-anon-wx-rand-mt-64G
+      0.88 ~28%     -28.0%       0.63       brickland2/micro/vm-scalability/300s-lru-file-mmap-read-rand
+      0.89 ~28%     -28.8%       0.63       brickland2/micro/vm-scalability/300s-lru-file-mmap-read
+      0.63 ~ 0%      +0.0%       0.63       brickland2/micro/vm-scalability/300s-lru-file-readonce
+      0.92 ~31%     -31.1%       0.63       brickland2/micro/vm-scalability/300s-lru-file-readtwice
+      0.61           +0.0%       0.61       brickland2/micro/vm-scalability/300s-lru-shm-128G
+      0.62           +0.0%       0.62       brickland2/micro/vm-scalability/300s-lru-shm-rand-64G
+      0.87 ~28%     -28.7%       0.62       brickland2/micro/vm-scalability/300s-mmap-pread-rand-mt
+      0.92 ~32%     -32.2%       0.62       brickland2/micro/vm-scalability/300s-mmap-pread-rand
+      0.94 ~28%     -28.3%       0.67       brickland2/micro/vm-scalability/300s-mmap-pread-seq-mt
+      0.89 ~30%     -30.3%       0.62       brickland2/micro/vm-scalability/300s-mmap-pread-seq
+      0.87 ~28%     -28.7%       0.62       brickland2/micro/vm-scalability/300s-mmap-xread-rand-mt
+      0.88 ~27%     -27.3%       0.64       brickland2/micro/vm-scalability/300s-mmap-xread-seq-mt
+      0.89 ~30%     -30.3%       0.62       brickland2/micro/vm-scalability/300s-mremap-xread-rand-mt
+      0.63           +0.0%       0.63       brickland2/micro/vm-scalability/300s-msync-mt-64G
+      0.62           +0.0%       0.62       brickland2/micro/vm-scalability/300s-remap-128G
+      0.62           +0.0%       0.62       brickland2/micro/vm-scalability/300s-shm-pread-rand-16G
+      0.67           +0.0%       0.67       brickland2/micro/vm-scalability/300s-shm-pread-rand-mt-16G
+      0.62           +0.0%       0.62       brickland2/micro/vm-scalability/300s-shm-pread-seq-1T
+      0.67           +0.0%       0.67       brickland2/micro/vm-scalability/300s-shm-pread-seq-mt-1T
+      0.62           +0.0%       0.62       brickland2/micro/vm-scalability/300s-shm-xread-rand-16G
+      0.62           +0.0%       0.62       brickland2/micro/vm-scalability/300s-shm-xread-rand-mt-16G
+      0.62           +0.0%       0.62       brickland2/micro/vm-scalability/300s-shm-xread-seq-1T
+      0.63           -1.6%       0.62       brickland2/micro/vm-scalability/300s-shm-xread-seq-mt-1T
+      0.89 ~27%     -27.7%       0.64       brickland2/micro/vm-scalability/300s-small-allocs-mt
+      0.87 ~28%     -28.7%       0.62       brickland2/micro/vm-scalability/300s-small-allocs
+      0.61           +0.0%       0.61       brickland2/micro/vm-scalability/300s-truncate-16G
+      2.44           +0.0%       2.44       grantley/micro/kbuild/200%-1HDD-ext4
+      2.44 ~ 0%      -0.0%       2.44       grantley/micro/kbuild/200%
+      2.08           +0.0%       2.08       grantley/micro/kbuild/50%-1HDD-ext4
+      2.08           +0.0%       2.08       grantley/micro/kbuild/50%
+      2.26           +0.0%       2.26       lkp-nex04/micro/ebizzy/200%-100-10
+      3.34           -0.3%       3.33       lkp-sb03/micro/nepim/300s-100%-tcp
+      3.31           +0.6%       3.33       lkp-sb03/micro/nepim/300s-100%-tcp6
+      3.49           -3.2%       3.38       lkp-sb03/micro/nepim/300s-100%-udp
+      3.49           -2.6%       3.40       lkp-sb03/micro/nepim/300s-100%-udp6
+      3.47           -4.0%       3.33       lkp-sb03/micro/nepim/300s-25%-tcp
+      3.36           +0.0%       3.36       lkp-sb03/micro/nepim/300s-25%-tcp6
+      3.49           +0.0%       3.49       lkp-sb03/micro/nepim/300s-25%-udp
+      3.49           +0.0%       3.49       lkp-sb03/micro/nepim/300s-25%-udp6
+      3.34 ~ 0%      +0.2%       3.35       lkp-sb03/micro/nuttcp/300s
+      3.08 ~ 0%      +0.2%       3.09       lkp-snb01/micro/hackbench/1600%-process-pipe
+      3.09 ~ 0%      +0.0%       3.09       lkp-snb01/micro/hackbench/1600%-process-socket
+      3.09 ~ 0%      +0.0%       3.09       lkp-snb01/micro/hackbench/1600%-threads-pipe
+      3.09 ~ 0%      +0.0%       3.09       lkp-snb01/micro/hackbench/1600%-threads-socket
+      3.09 ~ 0%      +0.0%       3.09       lkp-snb01/micro/hackbench/50%-process-pipe
+      3.09 ~ 0%      +0.0%       3.09       lkp-snb01/micro/hackbench/50%-process-socket
+      3.09 ~ 0%      +0.0%       3.09       lkp-snb01/micro/hackbench/50%-threads-pipe
+      3.09 ~ 0%      +0.0%       3.09       lkp-snb01/micro/hackbench/50%-threads-socket
+      2.80 ~ 0%      -0.0%       2.80       lkp-ws02/micro/dd-write/11HDD-JBOD-cfq-ext4-100dd
+      2.78 ~ 0%      -0.0%       2.78       lkp-ws02/micro/dd-write/11HDD-JBOD-cfq-ext4-10dd
+      2.76 ~ 0%      +0.2%       2.77 ~ 0%  lkp-ws02/micro/dd-write/11HDD-JBOD-cfq-ext4-1dd
+      2.80 ~ 0%      -0.0%       2.80       lkp-ws02/micro/dd-write/11HDD-JBOD-cfq-xfs-100dd
+      2.76 ~ 0%      -0.1%       2.76       lkp-ws02/micro/dd-write/11HDD-JBOD-cfq-xfs-10dd
+      2.72 ~ 0%      -1.1%       2.69       lkp-ws02/micro/dd-write/11HDD-JBOD-cfq-xfs-1dd
+      2.78 ~ 0%      +0.4%       2.79       lkp-ws02/micro/dd-write/11HDD-RAID5-cfq-ext4-100dd
+      2.76 ~ 0%      +0.1%       2.76       lkp-ws02/micro/dd-write/11HDD-RAID5-cfq-ext4-10dd
+      2.69 ~ 0%      -0.4%       2.68       lkp-ws02/micro/dd-write/11HDD-RAID5-cfq-ext4-1dd
+      2.73 ~ 0%      -0.2%       2.72       lkp-ws02/micro/dd-write/11HDD-RAID5-cfq-xfs-100dd
+      2.66 ~ 0%      -1.1%       2.63       lkp-ws02/micro/dd-write/11HDD-RAID5-cfq-xfs-10dd
+      2.69 ~ 0%      +0.1%       2.69       lkp-ws02/micro/dd-write/11HDD-RAID5-cfq-xfs-1dd
+      2.70 ~ 3%      +8.6%       2.93 ~ 0%  nhm-white/sysbench/oltp/600s-100%-1000000
+      3.51 ~ 0%      -3.7%       3.38       nhm8/micro/dbench/100%
+      1.79 ~ 0%      +0.1%       1.79       snb-drag/sysbench/fileio/600s-100%-1HDD-ext4-64G-1024-rndrd-sync
+      2.93 ~ 0%      +0.0%       2.93       xps2/micro/pigz/100%
+    185.24           -2.0%     181.62       TOTAL turbostat.GHz
