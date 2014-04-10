@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935239AbaDJECA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 00:02:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41147 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934640AbaDJDWb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934860AbaDJDWb (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 9 Apr 2014 23:22:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40853 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934640AbaDJDVi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 23:21:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 079/134] USB: mos7840: fix race in register handling
-Date: Wed,  9 Apr 2014 20:23:15 -0700
-Message-Id: <20140410032310.132937101@linuxfoundation.org>
+        George Spelvin <linux@horizon.com>,
+        Rodolfo Giometti <giometti@enneenne.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Qiang Huang <h.huangqiang@huawei.com>, Li Zefan <lizefan@huawei.com>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 011/134] pps: Use pps_lookup_dev to reduce ldisc coupling
+Date: Wed,  9 Apr 2014 20:22:07 -0700
+Message-Id: <20140410032301.215844488@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -27,88 +30,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: George Spelvin <linux@horizon.com>
 
-commit d8a083cc746664916d9d36ed9e4d08a29525f245 upstream.
+commit 03a7ffe4e542310838bac70ef85acc17536b6d7c upstream.
 
-Fix race in mos7840_get_reg which unconditionally manipulated the
-control urb (which may already be in use) by adding a control-urb busy
-flag.
+Now that N_TTY uses tty->disc_data for its private data,
+'subclass' ldiscs cannot use ->disc_data for their own private data.
+(This is a regression is v3.8-rc1)
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-[bwh: Backported to 3.2: adjust context]
+Use pps_lookup_dev to associate the tty with the pps source instead.
+
+This fixes a crashing regression in 3.8-rc1.
+
+Signed-off-by: George Spelvin <linux@horizon.com>
+Acked-by: Rodolfo Giometti <giometti@enneenne.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Yang Yingliang <yangyingliang@huawei.com>
+Cc: Qiang Huang <h.huangqiang@huawei.com>
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/mos7840.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ drivers/pps/clients/pps-ldisc.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/mos7840.c
-+++ b/drivers/usb/serial/mos7840.c
-@@ -185,6 +185,10 @@
- #define URB_TRANSFER_BUFFER_SIZE        32	/* URB Size  */
+--- a/drivers/pps/clients/pps-ldisc.c
++++ b/drivers/pps/clients/pps-ldisc.c
+@@ -31,7 +31,7 @@
+ static void pps_tty_dcd_change(struct tty_struct *tty, unsigned int status,
+ 				struct pps_event_time *ts)
+ {
+-	struct pps_device *pps = (struct pps_device *)tty->disc_data;
++	struct pps_device *pps = pps_lookup_dev(tty);
  
+ 	BUG_ON(pps == NULL);
  
-+enum mos7840_flag {
-+	MOS7840_FLAG_CTRL_BUSY,
-+};
-+
- static const struct usb_device_id moschip_port_id_table[] = {
- 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7840)},
- 	{USB_DEVICE(USB_VENDOR_ID_MOSCHIP, MOSCHIP_DEVICE_ID_7820)},
-@@ -258,6 +262,8 @@ struct moschip_port {
- 	struct urb *write_urb_pool[NUM_URBS];
- 	char busy[NUM_URBS];
- 	bool read_urb_busy;
-+
-+	unsigned long flags;
- };
- 
- 
-@@ -519,11 +525,11 @@ static void mos7840_control_callback(str
- 		/* this urb is terminated, clean up */
- 		dbg("%s - urb shutting down with status: %d", __func__,
- 		    status);
--		return;
-+		goto out;
- 	default:
- 		dbg("%s - nonzero urb status received: %d", __func__,
- 		    status);
--		return;
-+		goto out;
+@@ -67,9 +67,9 @@ static int pps_tty_open(struct tty_struc
+ 		pr_err("cannot register PPS source \"%s\"\n", info.path);
+ 		return -ENOMEM;
  	}
+-	tty->disc_data = pps;
++	pps->lookup_cookie = tty;
  
- 	dbg("%s urb buffer size is %d", __func__, urb->actual_length);
-@@ -536,6 +542,8 @@ static void mos7840_control_callback(str
- 		mos7840_handle_new_msr(mos7840_port, regval);
- 	else if (mos7840_port->MsrLsr == 1)
- 		mos7840_handle_new_lsr(mos7840_port, regval);
-+out:
-+	clear_bit_unlock(MOS7840_FLAG_CTRL_BUSY, &mos7840_port->flags);
- }
+-	/* Should open N_TTY ldisc too */
++	/* Now open the base class N_TTY ldisc */
+ 	ret = alias_n_tty_open(tty);
+ 	if (ret < 0) {
+ 		pr_err("cannot open tty ldisc \"%s\"\n", info.path);
+@@ -81,7 +81,6 @@ static int pps_tty_open(struct tty_struc
+ 	return 0;
  
- static int mos7840_get_reg(struct moschip_port *mcs, __u16 Wval, __u16 reg,
-@@ -546,6 +554,9 @@ static int mos7840_get_reg(struct moschi
- 	unsigned char *buffer = mcs->ctrl_buf;
- 	int ret;
- 
-+	if (test_and_set_bit_lock(MOS7840_FLAG_CTRL_BUSY, &mcs->flags))
-+		return -EBUSY;
-+
- 	dr->bRequestType = MCS_RD_RTYPE;
- 	dr->bRequest = MCS_RDREQ;
- 	dr->wValue = cpu_to_le16(Wval);	/* 0 */
-@@ -557,6 +568,9 @@ static int mos7840_get_reg(struct moschi
- 			     mos7840_control_callback, mcs);
- 	mcs->control_urb->transfer_buffer_length = 2;
- 	ret = usb_submit_urb(mcs->control_urb, GFP_ATOMIC);
-+	if (ret)
-+		clear_bit_unlock(MOS7840_FLAG_CTRL_BUSY, &mcs->flags);
-+
+ err_unregister:
+-	tty->disc_data = NULL;
+ 	pps_unregister_source(pps);
  	return ret;
  }
+@@ -90,11 +89,10 @@ static void (*alias_n_tty_close)(struct
  
+ static void pps_tty_close(struct tty_struct *tty)
+ {
+-	struct pps_device *pps = (struct pps_device *)tty->disc_data;
++	struct pps_device *pps = pps_lookup_dev(tty);
+ 
+ 	alias_n_tty_close(tty);
+ 
+-	tty->disc_data = NULL;
+ 	dev_info(pps->dev, "removed\n");
+ 	pps_unregister_source(pps);
+ }
 
 
