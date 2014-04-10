@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758605AbaDJP4X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 11:56:23 -0400
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:1680 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758537AbaDJP4W (ORCPT
+	id S1758643AbaDJP47 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 11:56:59 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:48075 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758575AbaDJP44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 11:56:22 -0400
-Date: Thu, 10 Apr 2014 09:56:23 -0600
-From: Jens Axboe <axboe@fb.com>
-To: <torvalds@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Block fixes for 3.15-rc1
-Message-ID: <20140410155623.GA3484@kernel.dk>
+	Thu, 10 Apr 2014 11:56:56 -0400
+X-Sasl-enc: J2L1qtx7Te4Pwyg5pvLWM3+5KYHpN+etRaTB9HyAtIYG 1397145414
+Date: Thu, 10 Apr 2014 08:59:27 -0700
+From: "greg@kroah.com" <greg@kroah.com>
+To: Narasimharao Bolisetti <narasimharao.b@hcl.com>
+Cc: Willy Tarreau <w@1wt.eu>, narasimharo bolisetti <nrbolisetti@yahoo.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernelnewbies@nl.linux.org" <kernelnewbies@nl.linux.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-hotplug@vger.kernel.org" <linux-hotplug@vger.kernel.org>,
+        "nrbolisetti@gmail.com" <nrbolisetti@gmail.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: Re: system hang
+Message-ID: <20140410155927.GB10958@kroah.com>
+References: <62C418AB752FEF4D931AB8E89E46539F02878DFC@chn-hclt-mbs06.HCLT.CORP.HCL.IN>
+ <1397113552.75117.YahooMailBasic@web160504.mail.bf1.yahoo.com>
+ <20140410075539.GB25198@1wt.eu>
+ <62C418AB752FEF4D931AB8E89E46539F02878EC8@chn-hclt-mbs06.HCLT.CORP.HCL.IN>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-10_04:2014-04-10,2014-04-10,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
- suspectscore=3 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
- adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1404100250
-X-FB-Internal: deliver
+In-Reply-To: <62C418AB752FEF4D931AB8E89E46539F02878EC8@chn-hclt-mbs06.HCLT.CORP.HCL.IN>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Apr 10, 2014 at 07:59:38AM +0000, Narasimharao Bolisetti wrote:
+> 
+> Hi,
+> 
+> I have checked the same in the recent kernel versions also. Issue is still remain.
 
-A small collection of fixes that should go in before -rc1. The pull
-request contains:
+What versions have you tried, and what are the logs from those versions?
 
-- A two patch fix for a regression with block enabled tagging caused by
-  a commit in the initial pull request. One patch is from Martin and
-  ensures that SCSI doesn't truncate 64-bit block flags, the other one
-  is from me and prevents us from double using struct request queuelist
-  for both completion and busy tags. This caused anything from a boot
-  crash for some, to crashes under load.
-
-- A blk-mq fix for a potential soft stall when hot unplugging CPUs with
-  busy IO.
-
-- percpu_counter fix is listed in here, that caused a suspend issue with
-  virtio-blk due to percpu counters having an inconsistent state during
-  CPU removal. Andrew sent this in separately a few days ago, but it's
-  here. JFYI.
-
-- A few fixes for block integrity from Martin.
-
-- A ratelimit fix for loop from Mike Galbraith, to avoid spewing too
-  much in error cases.
+> ::DISCLAIMER::
+> ----------------------------------------------------------------------------------------------------------------------------------------------------
+> 
+> The contents of this e-mail and any attachment(s) are confidential and intended for the named recipient(s) only.
+> E-mail transmission is not guaranteed to be secure or error-free as information could be intercepted, corrupted,
+> lost, destroyed, arrive late or incomplete, or may contain viruses in transmission. The e mail and its contents
+> (with or without referred errors) shall therefore not attach any liability on the originator or HCL or its affiliates.
+> Views or opinions, if any, presented in this email are solely those of the author and may not necessarily reflect the
+> views or opinions of HCL or its affiliates. Any form of reproduction, dissemination, copying, disclosure, modification,
+> distribution and / or publication of this message without the prior written consent of authorized representative of
+> HCL is strictly prohibited. If you have received this email in error please delete it and notify the sender immediately.
+> Before opening any email and/or attachments, please check them for viruses and other defects.
+> 
+> ----------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-Please pull!
+Oops, sorry, nope, I'm not allowed to respond to anyone with such an
+email footer, it's not compatible with Linux kernel development (Linux
+is not confidential.)
 
+Best of luck, I suggest you work with the vendor who is forcing you to
+stick with such an old kernel version.
 
-  git://git.kernel.dk/linux-block.git for-linus
-
-----------------------------------------------------------------
-Jens Axboe (3):
-      percpu_counter: fix bad counter state during suspend
-      blk-mq: fix potential stall during CPU unplug with IO pending
-      block: fix regression with block enabled tagging
-
-Martin K. Petersen (4):
-      block: Fix for_each_bvec()
-      block: Fix integrity verification
-      block: Ensure we only enable integrity metadata for reads and writes
-      scsi: Make sure cmd_flags are 64-bit
-
-Mike Galbraith (1):
-      drivers/block/loop.c: ratelimit error messages
-
- block/blk-core.c           |  2 +-
- block/blk-mq.c             |  8 ++++++--
- block/blk-softirq.c        | 17 ++++++-----------
- block/blk.h                |  2 +-
- block/elevator.c           |  2 ++
- drivers/block/loop.c       |  8 ++++----
- drivers/scsi/scsi_lib.c    |  4 ++--
- fs/bio-integrity.c         | 22 ++++++++++++----------
- include/linux/bio.h        |  6 +++---
- include/linux/blk_types.h  |  2 ++
- include/linux/blkdev.h     | 13 ++++++++++++-
- include/scsi/scsi_device.h |  4 ++--
- lib/percpu_counter.c       |  2 +-
- 13 files changed, 54 insertions(+), 38 deletions(-)
-
--- 
-Jens Axboe
-
+greg k-h
