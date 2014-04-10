@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161222AbaDJV11 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 17:27:27 -0400
-Received: from sam.nabble.com ([216.139.236.26]:56009 "EHLO sam.nabble.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161107AbaDJV10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 17:27:26 -0400
-Date: Thu, 10 Apr 2014 14:27:25 -0700 (PDT)
-From: =?UTF-8?Q?J=C3=B6rg_Krause?= <jk@lintech.de>
-To: linux-kernel@vger.kernel.org
-Message-ID: <1397165245229-838046.post@n7.nabble.com>
-In-Reply-To: <5337DC2E.5040000@broadcom.com>
-References: <1392059868-8782-1-git-send-email-arend@broadcom.com> <52FC8CB3.4090305@gmail.com> <CAGb2v67za+5yW3RE0pwBWk-NdTUSm-JkKE+j9NLjbBkE_Fc1hQ@mail.gmail.com> <5337DC2E.5040000@broadcom.com>
-Subject: Re: [RFC] dt: bindings: add bindings for Broadcom bcm43xx sdio
- devices
+	id S935768AbaDJVaO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 17:30:14 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:60373 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753612AbaDJVaM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 17:30:12 -0400
+Date: Thu, 10 Apr 2014 14:30:03 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <williams@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [RFC PATCH RT] rwsem: The return of multi-reader PI rwsems
+Message-ID: <20140410213003.GA21760@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140409151922.5fa5d999@gandalf.local.home>
+ <20140410094430.56ca9ee1@sluggy.gateway.2wire.net>
+ <5346B2C8.6000207@linutronix.de>
+ <20140410153617.GN10526@twins.programming.kicks-ass.net>
+ <20140410151741.617f86d9@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20140410151741.617f86d9@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041021-0928-0000-0000-00000124CAA9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/13/14 10:28, Chen-Yu Tsai wrote:
-> Hi,
->
-> On Thu, Feb 13, 2014 at 5:13 PM, Tomasz Figa&lt;tomasz.figa@&gt;  wrote:
->> Hi Arend,
->>
->>
->> On 10.02.2014 20:17, Arend van Spriel wrote:
+On Thu, Apr 10, 2014 at 03:17:41PM -0400, Steven Rostedt wrote:
+> On Thu, 10 Apr 2014 17:36:17 +0200
+> Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> 
+> > It defaults to the total number of CPUs in the system, given the default
+> > setup (all CPUs in a single balance domain), this should result in all
+> > CPUs working concurrently on the boosted read sides.
+> 
+> Unfortunately, it currently defaults to the number of possible CPUs in
+> the system. I should probably move the default assignment to after SMP
+> is setup. Currently it happens in early boot before all the CPUs are
+> running. On boot up, the limit is set to NR_CPUS which should be much
+> higher than what the system has, but shouldn't matter during boot. But
+> after all the CPUs are up and running, it can lower it to online CPUs.
 
-[...]
+Another approach is to use nr_cpu_ids, which is the maximum number of
+CPUs that the particular booting system could ever have.  I use this in
+RCU to resize the data structures down from their NR_CPUS compile-time
+hugeness.
 
-Hi Chen-Yu,
+							Thanx, Paul
 
-picking up this thread.
+> I think I'll go and make v3 of this patch.
+> 
+> -- Steve
+> 
 
-> AFAIK, the pinctrl in tied to the device node, and is selected when the
-> device
-> is registered. The MMC subsystem currently does not register child nodes,
-> so
-> this would be useless.
-
-So if MMC does not register child nodes, brcmfmac will not be probed 
-with of_node set? Have there been patches submitted for this in mmc 
-subsystem recently.
-
-[...]
-
-
-
-Sascha Hauer submitted a patch a week ago. Link: 
-https://lkml.org/lkml/2014/4/3/522 <https://lkml.org/lkml/2014/4/3/522>  
-
-
-
-
---
-View this message in context: http://linux-kernel.2935.n7.nabble.com/RFC-dt-bindings-add-bindings-for-Broadcom-bcm43xx-sdio-devices-tp801976p838046.html
-Sent from the Linux Kernel mailing list archive at Nabble.com.
