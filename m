@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759190AbaDJW5U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 18:57:20 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:62660 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753715AbaDJW5S (ORCPT
+	id S1422702AbaDJW7g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 18:59:36 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:35757 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753327AbaDJW7e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 18:57:18 -0400
+	Thu, 10 Apr 2014 18:59:34 -0400
+To: kishon@ti.com
+Subject: [PATCH] phy: fix kernel oops in phy_lookup()
+Cc: linux-sh@vger.kernel.org, magnus.damm@gmail.com,
+        linux-kernel@vger.kernel.org
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+Date: Fri, 11 Apr 2014 02:59:42 +0400
 MIME-Version: 1.0
-In-Reply-To: <CALCETrXVzLcVVSuPMFUgoRvpQgcQNy2_rW6=11CJAME0W2GyYQ@mail.gmail.com>
-References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
-	<20140320153250.GC20618@thunk.org>
-	<CANq1E4SUXrzAV8FS8HVYxnRVb1oOR6HSTyucJzyFs5PuS5Y88A@mail.gmail.com>
-	<20140320163806.GA10440@thunk.org>
-	<5346ED93.9040500@amacapital.net>
-	<20140410203246.GB31614@thunk.org>
-	<CALCETrVmaGNCxo-L4-dPbUev3VXXEPR7xBzo3Fux6ny7yh_Gzw@mail.gmail.com>
-	<CANq1E4RofJ7CUWWBPW1Qb4pX3rxYHCh1CPtbtX241KtJO+=Qhw@mail.gmail.com>
-	<CALCETrXVzLcVVSuPMFUgoRvpQgcQNy2_rW6=11CJAME0W2GyYQ@mail.gmail.com>
-Date: Fri, 11 Apr 2014 00:57:17 +0200
-Message-ID: <CANq1E4Qa8N0G8whyW5OWQS4x9=CVOF0PpcLhDi4j3wGTHX0==w@mail.gmail.com>
-Subject: Re: [PATCH 0/6] File Sealing & memfd_create()
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        John Stultz <john.stultz@linaro.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ryan Lortie <desrt@desrt.ca>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201404110259.43282.sergei.shtylyov@cogentembedded.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+The kernel oopses in phy_lookup() due to 'phy->init_data' being NULL if we
+register PHYs from a device tree probing driver and then call phy_get() on a
+device that has no representation in the device tree (e.g. a PCI device).
+Checking the pointer before dereferening it and skipping an interation if
+it's NULL prevents this kernel oops.
 
-On Thu, Apr 10, 2014 at 11:16 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> Would it make sense for the initial mode on a memfd inode to be 000?
-> Anyone who finds this to be problematic could use fchmod to fix it.
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-memfd_create() should be subject to umask() just like anything else.
-That should solve any possible race here, right?
+---
+The patch is against the 'fixes' branch of Kishon's 'linux-phy.git' repo.
 
-Thanks
-David
+ drivers/phy/phy-core.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+Index: linux-phy/drivers/phy/phy-core.c
+===================================================================
+--- linux-phy.orig/drivers/phy/phy-core.c
++++ linux-phy/drivers/phy/phy-core.c
+@@ -64,6 +64,9 @@ static struct phy *phy_lookup(struct dev
+ 	class_dev_iter_init(&iter, phy_class, NULL, NULL);
+ 	while ((dev = class_dev_iter_next(&iter))) {
+ 		phy = to_phy(dev);
++
++		if (!phy->init_data)
++			continue;
+ 		count = phy->init_data->num_consumers;
+ 		consumers = phy->init_data->consumers;
+ 		while (count--) {
