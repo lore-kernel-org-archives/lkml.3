@@ -1,92 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759223AbaDJWsv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 18:48:51 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48192 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753823AbaDJWss (ORCPT
+	id S1759250AbaDJWvY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 18:51:24 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:42638 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753896AbaDJWvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 18:48:48 -0400
-Date: Thu, 10 Apr 2014 23:48:25 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Harini Katakam <harinik@xilinx.com>
-Cc: grant.likely@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, michals@xilinx.com
-Message-ID: <20140410224825.GI6518@sirena.org.uk>
-References: <1397132030-2440-1-git-send-email-harinik@xilinx.com>
+	Thu, 10 Apr 2014 18:51:20 -0400
+Date: Thu, 10 Apr 2014 18:51:18 -0400 (EDT)
+From: Parag Warudkar <parag.lkml@gmail.com>
+X-X-Sender: parag@parag-Z230
+To: Bjorn Helgaas <bhelgaas@google.com>
+cc: Parag Warudkar <parag.lkml@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Yinghai Lu <yinghai@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: BAR 14: can't assign mem (size 0x200000)
+In-Reply-To: <CAErSpo6XjtrzSJE6n5aCMzketKv+rPt5eVvrzOQgUnviiRTWnA@mail.gmail.com>
+Message-ID: <alpine.DEB.2.10.1404101846120.4929@parag-Z230>
+References: <CAOULuOY5eryuH1KgaqiuGXyYiQd2h=TZoPe2M2+juts9XuzW6Q@mail.gmail.com> <CAE9FiQXmO_sSCnd-0NvXKmyeLP0m4XGRRkAgqSiMkfeTcvXs+A@mail.gmail.com> <CAOULuOaeBPpuiYc_Aru+awBDf=Ahbok-UjgY9o7gfO4VMctoqg@mail.gmail.com> <CAE9FiQWpprkp_dzviD8wRpqosJq5Oe+8UTwhL87fbzFm3OknUw@mail.gmail.com>
+ <CA+55aFx_zAO0iJVi==4X-bYFTopgaOCopCdUBbqUwKfOrXRYqw@mail.gmail.com> <20140329171903.GA10551@google.com> <CAOULuOaUke-W1W0o=1rhhk43Fy_RAYLdfhXQjdhy2xjHxP0oWA@mail.gmail.com> <CAErSpo6XjtrzSJE6n5aCMzketKv+rPt5eVvrzOQgUnviiRTWnA@mail.gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mMdCh5/a0q2ATNCM"
-Content-Disposition: inline
-In-Reply-To: <1397132030-2440-1-git-send-email-harinik@xilinx.com>
-X-Cookie: This report is filled with omissions.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 1/2] SPI: Add driver for Cadence SPI controller
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---mMdCh5/a0q2ATNCM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Thu, Apr 10, 2014 at 05:43:49PM +0530, Harini Katakam wrote:
-> Add driver for Cadence SPI controller. This is used in Xilinx Zynq.
+On Thu, 10 Apr 2014, Bjorn Helgaas wrote:
 
-This looks mostly good, the issues below are very small.
+> On Sat, Mar 29, 2014 at 6:14 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
+> >> On Sat, Mar 29, 2014 at 09:41:20AM -0700, Linus Torvalds wrote:
+> >
+> >>> Parag, can you add a WARN_ON_ONCE() to that message, so that we see
+> >>> what the call chain is for it.
+> 
+> Parag, did you ever try this?
 
-> +static int __maybe_unused cdns_spi_suspend(struct device *dev)
-> +{
-> +	struct platform_device *pdev = container_of(dev,
-> +			struct platform_device, dev);
-> +	struct spi_master *master = platform_get_drvdata(pdev);
-> +	struct cdns_spi *xspi = spi_master_get_devdata(master);
-> +
-> +	spi_master_suspend(master);
-> +
-> +	clk_disable(xspi->ref_clk);
-> +
-> +	clk_disable(xspi->pclk);
+No I haven't so far - I assumed the call chain you posted initially was 
+the only possibility. I will give it a try.
 
-You're only doing clk_disable() here, I would expect the clocks to also
-be unprepared over suspend - there is no value in leaving them prepared
-that I can see.  Just use clk_unprepare_disable().
+> I doubt that Ubuntu includes any patches relevant to this issue.
+> 
+> Even though it doesn't seem to cause any problems, we're going to get
+> a lot of complaints about these scary-looking messages when resuming,
+> so I think we should figure this out and fix it.
 
-It would also be good (though not essential) to implement runtime PM and
-disable the clocks while there are no transfers in progress for a small
-power saving.  The auto_runtime_pm feature in the core will do the
-runtime PM calls for you.
+Sure, since the resource assignments aren't an issue during fresh boot, it 
+might just be something worth fixing in the resume path.
 
-Otherwise this looks good.
-
---mMdCh5/a0q2ATNCM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTRx+1AAoJELSic+t+oim9YVkQAJ2dUex91vcYl6b65nAPLgvJ
-i8TriQvUQ5Sa0x4SJiaNp/42gnDDZY0697g4OL6SNozLmhbK+e4rJGH0pIW6Qnnw
-2c3oOj2zoImBaKC3psdXbwNAwib3AGFpMCXvL+xJr6vQUuFKoSne2R1WI4YbT+NA
-JGR4IVXhxU/pLF/xFXUMMFEMMLnf1g56GukVILzehocAvpBqOm0mXeoZrUDBJRxU
-4NYGQE+EGDZKRse4UryQ/LcgZreHUuaMTAj93B+emrmxwixhJhKVOtE1iLsDwoCV
-olUQ81ZmiKNVNY6cE2+9z+nDOxRdjCoqqPG5SOViFJAPZa9ot6/4PrpmD89DvtiR
-t5TzdkZMoHRvz0PahpE+aR5Crv5GTYX5WulrGmWCN12v42Op6uceh0PBpEtg9lVV
-fcbnRPFC2WqZzdiSCcfP3w8neVpQlsCz7ZyQThmEJvX75FUvj03eL8NWfIWIdckw
-JojHpijnbhWpI1lvOLoHOLJcq336mUmmxe9MbsE0mUI2noxq6XMz0hpPc3THGvwT
-1rR07nG3Ib2t0XdVXNIvh34vQhOc6xISDkUgK2CrsC+GGAnp6wtFmi53kDOGH9Ru
-yPUe66bNNeP5HF9QQHLyszWnwCA37928pbQK/iSFjBw9YlWJzxMYZ9W6blNI0KK+
-vvxIXt5Zr1YivmkvaYGM
-=3GyS
------END PGP SIGNATURE-----
-
---mMdCh5/a0q2ATNCM--
+Thanks,
+Parag
