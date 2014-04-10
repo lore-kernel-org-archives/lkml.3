@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934948AbaDJJDy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 05:03:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:63368 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934748AbaDJJDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 05:03:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,833,1389772800"; 
-   d="scan'208";a="510781578"
-Message-ID: <53465E3E.8070201@intel.com>
-Date: Thu, 10 Apr 2014 12:02:54 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S934895AbaDJJId (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 05:08:33 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58984 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934762AbaDJJI3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 05:08:29 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <53465F54.708@jp.fujitsu.com>
+Date: Thu, 10 Apr 2014 18:07:32 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH] perf tools: Fix double free in perf test 21 (code-reading.c)
-References: <20140410082648.GB1141@krava.brq.redhat.com>
-In-Reply-To: <20140410082648.GB1141@krava.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+CC: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Denys Vlasenko <vda.linux@googlemail.com>, stable@vger.kernel.org
+Subject: [PATCH v3 0/2] nohz: fix idle accounting in NO_HZ kernels
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf_evlist__delete() deletes attached cpu and thread maps
-but the test is still using them, so remove them from the
-evlist before deleting it.
+Hi all,
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
----
- tools/perf/tests/code-reading.c | 1 +
- 1 file changed, 1 insertion(+)
+This patch set (rebased on v3.14) is my 3rd try to fix an issue
+that idle/iowait of /proc/stat can go backward. Originally reported
+by Tetsuo and Fernando at last year, Mar 2013.
 
-diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
-index 653a8fe..bfb1869 100644
---- a/tools/perf/tests/code-reading.c
-+++ b/tools/perf/tests/code-reading.c
-@@ -504,6 +504,7 @@ static int do_test_code_reading(bool try_kcore)
- 		if (ret < 0) {
- 			if (!excl_kernel) {
- 				excl_kernel = true;
-+				perf_evlist__set_maps(evlist, NULL, NULL);
- 				perf_evlist__delete(evlist);
- 				evlist = NULL;
- 				continue;
--- 
-1.8.3.2
+This v3 takes new approach to fix the problem, and now use seqcount
+while v1 and v2 uses seqlock.
 
+Of course still reviews are welcome!
+
+Thanks,
+H.Seto
+
+Hidetoshi Seto (2):
+      nohz: stop updating sleep stats from get_cpu_{idle,iowait}_time_us()
+      nohz: use delayed iowait accounting to avoid race on idle time stats
+
+ include/linux/tick.h     |    6 ++-
+ kernel/time/tick-sched.c |  116 ++++++++++++++++++++++++++++------------------
+ 2 files changed, 74 insertions(+), 48 deletions(-)
 
