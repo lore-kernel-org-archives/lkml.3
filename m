@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935219AbaDJDXO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:23:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40797 "EHLO
+	id S965298AbaDJDcT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:32:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41408 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933287AbaDJDVb (ORCPT
+	with ESMTP id S934626AbaDJDXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:21:31 -0400
+	Wed, 9 Apr 2014 23:23:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Qiang Huang <h.huangqiang@huawei.com>, Li Zefan <lizefan@huawei.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 002/134] idr: fix top layer handling
-Date: Wed,  9 Apr 2014 20:21:58 -0700
-Message-Id: <20140410032259.944970012@linuxfoundation.org>
+        Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 130/134] media: hdpvr: fix iteration over uninitialized lists in hdpvr_probe()
+Date: Wed,  9 Apr 2014 20:24:06 -0700
+Message-Id: <20140410032316.084456404@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -31,183 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
 
-commit 326cf0f0f308933c10236280a322031f0097205d upstream.
+commit 2e923a0527ac439e135b9961e58d3acd876bba10 upstream.
 
-Most functions in idr fail to deal with the high bits when the idr
-tree grows to the maximum height.
+free_buff_list and rec_buff_list are initialized in the middle of hdpvr_probe(),
+but if something bad happens before that, error handling code calls hdpvr_delete(),
+which contains iteration over the lists (via hdpvr_free_buffers()).
+The patch moves the lists initialization to the beginning and by the way fixes
+goto label in error handling of registering videodev.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-* idr_get_empty_slot() stops growing idr tree once the depth reaches
-  MAX_IDR_LEVEL - 1, which is one depth shallower than necessary to
-  cover the whole range.  The function doesn't even notice that it
-  didn't grow the tree enough and ends up allocating the wrong ID
-  given sufficiently high @starting_id.
-
-  For example, on 64 bit, if the starting id is 0x7fffff01,
-  idr_get_empty_slot() will grow the tree 5 layer deep, which only
-  covers the 30 bits and then proceed to allocate as if the bit 30
-  wasn't specified.  It ends up allocating 0x3fffff01 without the bit
-  30 but still returns 0x7fffff01.
-
-* __idr_remove_all() will not remove anything if the tree is fully
-  grown.
-
-* idr_find() can't find anything if the tree is fully grown.
-
-* idr_for_each() and idr_get_next() can't iterate anything if the tree
-  is fully grown.
-
-Fix it by introducing idr_max() which returns the maximum possible ID
-given the depth of tree and replacing the id limit checks in all
-affected places.
-
-As the idr_layer pointer array pa[] needs to be 1 larger than the
-maximum depth, enlarge pa[] arrays by one.
-
-While this plugs the discovered issues, the whole code base is
-horrible and in desparate need of rewrite.  It's fragile like hell,
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2:
- - Adjust context
- - s/MAX_IDR_LEVEL/MAX_LEVEL/; s/MAX_IDR_SHIFT/MAX_ID_SHIFT/
- - Drop change to idr_alloc()]
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Qiang Huang <h.huangqiang@huawei.com>
-Cc: Li Zefan <lizefan@huawei.com>
 Cc: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- lib/idr.c |   36 ++++++++++++++++++++++--------------
- 1 file changed, 22 insertions(+), 14 deletions(-)
+ drivers/media/video/hdpvr/hdpvr-core.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -39,6 +39,14 @@
- static struct kmem_cache *idr_layer_cache;
- static DEFINE_SPINLOCK(simple_ida_lock);
+--- a/drivers/media/video/hdpvr/hdpvr-core.c
++++ b/drivers/media/video/hdpvr/hdpvr-core.c
+@@ -309,6 +309,11 @@ static int hdpvr_probe(struct usb_interf
  
-+/* the maximum ID which can be allocated given idr->layers */
-+static int idr_max(int layers)
-+{
-+	int bits = min_t(int, layers * IDR_BITS, MAX_ID_SHIFT);
+ 	dev->workqueue = 0;
+ 
++	/* init video transfer queues first of all */
++	/* to prevent oops in hdpvr_delete() on error paths */
++	INIT_LIST_HEAD(&dev->free_buff_list);
++	INIT_LIST_HEAD(&dev->rec_buff_list);
 +
-+	return (1 << bits) - 1;
-+}
-+
- static struct idr_layer *get_from_free_list(struct idr *idp)
- {
- 	struct idr_layer *p;
-@@ -223,7 +231,7 @@ build_up:
- 	 * Add a new layer to the top of the tree if the requested
- 	 * id is larger than the currently allocated space.
- 	 */
--	while ((layers < (MAX_LEVEL - 1)) && (id >= (1 << (layers*IDR_BITS)))) {
-+	while (id > idr_max(layers)) {
- 		layers++;
- 		if (!p->count) {
- 			/* special case: if the tree is currently empty,
-@@ -265,7 +273,7 @@ build_up:
+ 	/* register v4l2_device early so it can be used for printks */
+ 	if (v4l2_device_register(&interface->dev, &dev->v4l2_dev)) {
+ 		err("v4l2_device_register failed");
+@@ -331,10 +336,6 @@ static int hdpvr_probe(struct usb_interf
+ 	if (!dev->workqueue)
+ 		goto error;
  
- static int idr_get_new_above_int(struct idr *idp, void *ptr, int starting_id)
- {
--	struct idr_layer *pa[MAX_LEVEL];
-+	struct idr_layer *pa[MAX_LEVEL + 1];
- 	int id;
+-	/* init video transfer queues */
+-	INIT_LIST_HEAD(&dev->free_buff_list);
+-	INIT_LIST_HEAD(&dev->rec_buff_list);
+-
+ 	dev->options = hdpvr_default_options;
  
- 	id = idr_get_empty_slot(idp, starting_id, pa);
-@@ -357,7 +365,7 @@ static void idr_remove_warning(int id)
- static void sub_remove(struct idr *idp, int shift, int id)
- {
- 	struct idr_layer *p = idp->top;
--	struct idr_layer **pa[MAX_LEVEL];
-+	struct idr_layer **pa[MAX_LEVEL + 1];
- 	struct idr_layer ***paa = &pa[0];
- 	struct idr_layer *to_free;
- 	int n;
-@@ -451,16 +459,16 @@ void idr_remove_all(struct idr *idp)
- 	int n, id, max;
- 	int bt_mask;
- 	struct idr_layer *p;
--	struct idr_layer *pa[MAX_LEVEL];
-+	struct idr_layer *pa[MAX_LEVEL + 1];
- 	struct idr_layer **paa = &pa[0];
+ 	if (default_video_input < HDPVR_VIDEO_INPUTS)
+@@ -409,7 +410,7 @@ static int hdpvr_probe(struct usb_interf
+ 				    video_nr[atomic_inc_return(&dev_nr)]);
+ 	if (retval < 0) {
+ 		v4l2_err(&dev->v4l2_dev, "registering videodev failed\n");
+-		goto error;
++		goto reg_fail;
+ 	}
  
- 	n = idp->layers * IDR_BITS;
- 	p = idp->top;
- 	rcu_assign_pointer(idp->top, NULL);
--	max = 1 << n;
-+	max = idr_max(idp->layers);
- 
- 	id = 0;
--	while (id < max) {
-+	while (id >= 0 && id <= max) {
- 		while (n > IDR_BITS && p) {
- 			n -= IDR_BITS;
- 			*paa++ = p;
-@@ -519,7 +527,7 @@ void *idr_find(struct idr *idp, int id)
- 	/* Mask off upper bits we don't use for the search. */
- 	id &= MAX_ID_MASK;
- 
--	if (id >= (1 << n))
-+	if (id > idr_max(p->layer + 1))
- 		return NULL;
- 	BUG_ON(n == 0);
- 
-@@ -555,15 +563,15 @@ int idr_for_each(struct idr *idp,
- {
- 	int n, id, max, error = 0;
- 	struct idr_layer *p;
--	struct idr_layer *pa[MAX_LEVEL];
-+	struct idr_layer *pa[MAX_LEVEL + 1];
- 	struct idr_layer **paa = &pa[0];
- 
- 	n = idp->layers * IDR_BITS;
- 	p = rcu_dereference_raw(idp->top);
--	max = 1 << n;
-+	max = idr_max(idp->layers);
- 
- 	id = 0;
--	while (id < max) {
-+	while (id >= 0 && id <= max) {
- 		while (n > 0 && p) {
- 			n -= IDR_BITS;
- 			*paa++ = p;
-@@ -601,7 +609,7 @@ EXPORT_SYMBOL(idr_for_each);
-  */
- void *idr_get_next(struct idr *idp, int *nextidp)
- {
--	struct idr_layer *p, *pa[MAX_LEVEL];
-+	struct idr_layer *p, *pa[MAX_LEVEL + 1];
- 	struct idr_layer **paa = &pa[0];
- 	int id = *nextidp;
- 	int n, max;
-@@ -611,9 +619,9 @@ void *idr_get_next(struct idr *idp, int
- 	if (!p)
- 		return NULL;
- 	n = (p->layer + 1) * IDR_BITS;
--	max = 1 << n;
-+	max = idr_max(p->layer + 1);
- 
--	while (id < max) {
-+	while (id >= 0 && id <= max) {
- 		while (n > 0 && p) {
- 			n -= IDR_BITS;
- 			*paa++ = p;
-@@ -787,7 +795,7 @@ EXPORT_SYMBOL(ida_pre_get);
-  */
- int ida_get_new_above(struct ida *ida, int starting_id, int *p_id)
- {
--	struct idr_layer *pa[MAX_LEVEL];
-+	struct idr_layer *pa[MAX_LEVEL + 1];
- 	struct ida_bitmap *bitmap;
- 	unsigned long flags;
- 	int idr_id = starting_id / IDA_BITMAP_BITS;
+ 	/* let the user know what node this device is now attached to */
 
 
