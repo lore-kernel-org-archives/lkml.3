@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935177AbaDJDXH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:23:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40928 "EHLO
+	id S965208AbaDJDgx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:36:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41359 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934658AbaDJDVt (ORCPT
+	with ESMTP id S935165AbaDJDXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:21:49 -0400
+	Wed, 9 Apr 2014 23:23:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josh Boyer <jwboyer@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 3.4 026/134] HID: usbhid: quirk for MSI GX680R led panel
-Date: Wed,  9 Apr 2014 20:22:22 -0700
-Message-Id: <20140410032303.259933049@linuxfoundation.org>
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 126/134] media: v4l: Reset subdev v4l2_dev field to NULL if registration fails
+Date: Wed,  9 Apr 2014 20:24:02 -0700
+Message-Id: <20140410032315.543707855@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -28,48 +29,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Boyer <jwboyer@redhat.com>
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-commit 620ae90ed8ca8b6e40cb9e10279b4f5ef9f0ab81 upstream.
+commit 317efce991620adc589b3005b9baed433dcb2a56 upstream.
 
-This keyboard backlight device causes a 10 second delay to boot.  Add it
-to the quirk list with HID_QUIRK_NO_INIT_REPORTS.
+When subdev registration fails the subdev v4l2_dev field is left to a
+non-NULL value. Later calls to v4l2_device_unregister_subdev() will
+consider the subdev as registered and will module_put() the subdev
+module without any matching module_get().
+Fix this by setting the subdev v4l2_dev field to NULL in
+v4l2_device_register_subdev() when the function fails.
 
-This fixes Red Hat bugzilla https://bugzilla.redhat.com/show_bug.cgi?id=907221
-
-Signed-off-by: Josh Boyer <jwboyer@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+[bwh: Backported to 3.2: adjust context, filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Yijing Wang <wangyijing@huawei.com>
+Cc: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-ids.h           |    3 +++
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 2 files changed, 4 insertions(+)
+ drivers/media/video/v4l2-device.c |   30 ++++++++++++++----------------
+ 1 file changed, 14 insertions(+), 16 deletions(-)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -559,6 +559,9 @@
- #define USB_VENDOR_ID_MONTEREY		0x0566
- #define USB_DEVICE_ID_GENIUS_KB29E	0x3004
+--- a/drivers/media/video/v4l2-device.c
++++ b/drivers/media/video/v4l2-device.c
+@@ -159,31 +159,21 @@ int v4l2_device_register_subdev(struct v
+ 	sd->v4l2_dev = v4l2_dev;
+ 	if (sd->internal_ops && sd->internal_ops->registered) {
+ 		err = sd->internal_ops->registered(sd);
+-		if (err) {
+-			module_put(sd->owner);
+-			return err;
+-		}
++		if (err)
++			goto error_module;
+ 	}
  
-+#define USB_VENDOR_ID_MSI		0x1770
-+#define USB_DEVICE_ID_MSI_GX680R_LED_PANEL	0xff00
+ 	/* This just returns 0 if either of the two args is NULL */
+ 	err = v4l2_ctrl_add_handler(v4l2_dev->ctrl_handler, sd->ctrl_handler);
+-	if (err) {
+-		if (sd->internal_ops && sd->internal_ops->unregistered)
+-			sd->internal_ops->unregistered(sd);
+-		module_put(sd->owner);
+-		return err;
+-	}
++	if (err)
++		goto error_unregister;
+ 
+ #if defined(CONFIG_MEDIA_CONTROLLER)
+ 	/* Register the entity. */
+ 	if (v4l2_dev->mdev) {
+ 		err = media_device_register_entity(v4l2_dev->mdev, entity);
+-		if (err < 0) {
+-			if (sd->internal_ops && sd->internal_ops->unregistered)
+-				sd->internal_ops->unregistered(sd);
+-			module_put(sd->owner);
+-			return err;
+-		}
++		if (err < 0)
++			goto error_unregister;
+ 	}
+ #endif
+ 
+@@ -192,6 +182,14 @@ int v4l2_device_register_subdev(struct v
+ 	spin_unlock(&v4l2_dev->lock);
+ 
+ 	return 0;
 +
- #define USB_VENDOR_ID_NATIONAL_SEMICONDUCTOR 0x0400
- #define USB_DEVICE_ID_N_S_HARMONY	0xc359
++error_unregister:
++	if (sd->internal_ops && sd->internal_ops->unregistered)
++		sd->internal_ops->unregistered(sd);
++error_module:
++	module_put(sd->owner);
++	sd->v4l2_dev = NULL;
++	return err;
+ }
+ EXPORT_SYMBOL_GPL(v4l2_device_register_subdev);
  
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -73,6 +73,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
-+	{ USB_VENDIR_ID_MSI, USB_DEVICE_ID_MSI_GX680R_LED_PANEL, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN2, HID_QUIRK_NO_INIT_REPORTS },
 
 
