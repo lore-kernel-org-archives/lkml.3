@@ -1,82 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030300AbaDJLiy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 07:38:54 -0400
-Received: from mailout3.w2.samsung.com ([211.189.100.13]:58173 "EHLO
-	usmailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935486AbaDJLiv (ORCPT
+	id S935537AbaDJLkC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 07:40:02 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:36989 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935486AbaDJLj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 07:38:51 -0400
-X-AuditID: cbfec373-b7f4a6d000005e0a-bc-534682c9f5d2
-Date: Thu, 10 Apr 2014 08:38:41 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: shuah.kh@samsung.com, Greg KH <gregkh@linuxfoundation.org>, tj@kernel.org,
-        rafael.j.wysocki@intel.com, linux@roeck-us.net, toshi.kani@hp.com,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        shuahkhan@gmail.com
-Subject: Re: [RFC PATCH 0/2] managed token devres interfaces
-Message-id: <20140410083841.488f9c43@samsung.com>
-In-reply-to: <20140410120435.4c439a8b@alan.etchedpixels.co.uk>
-References: <cover.1397050852.git.shuah.kh@samsung.com>
- <20140409191740.GA10748@kroah.com> <5345CD32.8010305@samsung.com>
- <20140410120435.4c439a8b@alan.etchedpixels.co.uk>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsVy+t/hEN2TTW7BBr+uyVtMmvKXzaJ58Xo2
-	i8u75rBZ9GzYymrxZOEZJovHK96yW3z5zGXx9aeDxa/lRxkttt1ayOLA5bFz1l12j13bdjJ5
-	LN7zkslj06pONo/9c9ewe7Se3MTqsfN7A7tH35ZVjB6fN8kFcEZx2aSk5mSWpRbp2yVwZRx6
-	9Ju54Bd3xemnz1kbGGdydjFyckgImEgs2ribDcIWk7hwbz2YLSSwhFFiyxm9LkYuILuPSeJb
-	91VGkASLgKrE+svLmEBsNgEjiVeNLawgtgjQoOZXrxlBGpgFnjBK7P55ASwhLGAjsf/aFRYQ
-	m1fAUOJA0y+wOKeAncTcazOYITasZ5TYsOAYK8QZThKvXk9mgmgQlPgx+R5YM7OAlsTmbU2s
-	ELa8xOY1b5knMArMQlI2C0nZLCRlCxiZVzGKlhYnFxQnpeca6RUn5haX5qXrJefnbmKExErx
-	DsYXG6wOMQpwMCrx8B5Y5hosxJpYVlyZe4hRgoNZSYQ3r9ItWIg3JbGyKrUoP76oNCe1+BAj
-	EwenVAOjlJTbkvzHDE6+xstjXO4JSUXE5vDt7HEwVOOUv7A0a2XtBbtEnqUJ/CueVx2yN1Gv
-	ufb5g+yZgjatLd5Hls+onBm//0++2IL34t+MxLbnRSn2VfNOkRdZzs+V/GR+5YxtSjOO/mWc
-	VZMpvG9Zr3ZhW0R/b+xXuaxio6q2ADdj0yOGU/5tn63EUpyRaKjFXFScCABWckktcwIAAA==
+	Thu, 10 Apr 2014 07:39:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <53454C11.7060607@samsung.com>
+References: <1396967803-28868-1-git-send-email-gautam.vivek@samsung.com>
+	<1396967803-28868-2-git-send-email-gautam.vivek@samsung.com>
+	<534529B2.2020107@samsung.com>
+	<CAFp+6iEzaxCQNkGZWuBnAaAHk0uXrX4KhjVbaJfZFChB6uzk4A@mail.gmail.com>
+	<53454C11.7060607@samsung.com>
+Date: Thu, 10 Apr 2014 17:09:56 +0530
+Message-ID: <CAFp+6iHU0YXj18ajDwOqPh_SJWr6GkMPRr6qaGdmPoCc0+tz5g@mail.gmail.com>
+Subject: Re: [PATCH V4 1/5] phy: Add new Exynos5 USB 3.0 PHY driver
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org, kishon <kishon@ti.com>,
+        Greg KH <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>, Jingoo Han <jg1.han@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+On Wed, Apr 9, 2014 at 7:03 PM, Tomasz Figa <t.figa@samsung.com> wrote:
+> On 09.04.2014 13:49, Vivek Gautam wrote:
+>>
+>> Hi,
+>>
+>>
+>> On Wed, Apr 9, 2014 at 4:36 PM, Tomasz Figa <t.figa@samsung.com> wrote:
+>>>
+>>> Hi Vivek,
+>>>
+>>> Please see my comments inline.
+>>>
+>>>
+>>> On 08.04.2014 16:36, Vivek Gautam wrote:
+>>>>
+>>>>
+>>>> Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
+>>>> The new driver uses the generic PHY framework and will interact
+>>>> with DWC3 controller present on Exynos5 series of SoCs.
+>>>> Thereby, removing old phy-samsung-usb3 driver and related code
+>>>> used untill now which was based on usb/phy framework.
+>>>>
+>>>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>>>> ---
+>>>>    .../devicetree/bindings/phy/samsung-phy.txt        |   42 ++
+>>>>    drivers/phy/Kconfig                                |   11 +
+>>>>    drivers/phy/Makefile                               |    1 +
+>>>>    drivers/phy/phy-exynos5-usbdrd.c                   |  668
+>>>> ++++++++++++++++++++
+>>>>    4 files changed, 722 insertions(+)
+>>>>    create mode 100644 drivers/phy/phy-exynos5-usbdrd.c
+>>>
+>>>
+>>>
+>>> [snip]
+>>>
+>>>
+>>>> +       Additional clock required for Exynos5420:
+>>>> +       - usb30_sclk_100m: Additional special clock used for PHY
+>>>> operation
+>>>> +                          depicted as 'sclk_usbphy30' in CMU of
+>>>> Exynos5420.
+>>>
+>>>
+>>>
+>>> Are you sure this isn't simply a gate for the ref clock, as it can be
+>>> found
+>>> on another SoC that is not upstream yet? I don't have documentation for
+>>> Exynos 5420 so I can't tell, but I'd like to ask you to recheck this.
+>>
+>>
+>>> From what i can see in the manual :
+>>
+>> sclk_usbphy30 is derived from OSCCLK.
+>> It is coming from a MUX (default input line to this is OSCCLK)  and
+>> then through a DIV
+>> there's this gate.
+>>
+>>        {OSCCLK  + other sources} --->[MUX] ---> [DIV] --> [GATE for
+>> sclk_usbphy30]
+>>
+>> the {rate of sclk_usbphy30} == OSCCLK
+>>
+>> However the 'ref' clock that we have been using is the actual oscillator
+>> clock.
+>> And on SoC Exynos5250, we don't have any such gate (sclk_usbphy30).
+>> So should this mean that ref clock and sclk_usbphy30 are still be
+>> controlled by
+>> two different gates ?
+>>
+>
+> Is there maybe a diagram of PHY input clocks in the datasheet, like for USB
+> 2.0 PHY in Exynos4210/4412/5250 datasheets in the chapter about USB2.0
+> Device? Something like:
+>
+>                      ____________________________________
+>                     |                                    |
+>                     |                         ___________|
+> XusbXTI             |   Phy_fsel[2:0]        |  _______  |
+>    _______[X]_______|    |         __________|_|___|\__|_|
+>   |                 |   _v___     |  _____   ^ |   |/  | |
+> _____               |  |     |    | |     |  | |  ___  | |
+>  ___                |  |     |    | |     |  | | |   |_|_|
+> |___|               |  | X 0 |____|_| PLL |__|_|_|CLK|_|_|
+> _____               |  |     |      |     |    | |DIV|_|_|
+>   |_______[X]       |  |_____| 12   |_____|480 | |___| | |
+>                     |          MHz         MHz |Digital| |
+> XusbXTO             |   USB PHY                |_______| |
+>                     |____________________________________|
+>
+>
 
-Em Thu, 10 Apr 2014 12:04:35 +0100
-One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> escreveu:
+Below is the block diagram given for DRD controller.
 
-> > >>   - Construct string with (dev is struct em28xx *dev)
-> > >> 		format: "tuner:%s-%s-%d"
-> > >> 		with the following:
-> > >>     	            dev_name(&dev->udev->dev)
-> > >>                  dev->udev->bus->bus_name
-> > >>                  dev->tuner_addr
-> 
-> What guarantees this won't get confused by hot plugging and re-use of the
-> bus slot ?
+___________________
+|                                |
+|      ____________     |
+|      | PHY           |      |
+|      | controller     |-----|-----------------------------------------------
+|      |__________  |     |                                               |
+|                                |
+          |
+|         USB 3.0           |                                              V
+|           DRD              |
+-----------------------
+|        Controller          |                                      |
+                     |
+|                                |    USB30_SCLK_100M    | USB 3.0 DRD  |
+|      ----------------          |           ----------------------->
+|       PHY         |
+|     | Link cont. |         |                                      |
+                     |
+|      -------------             |
+ |                       |
+|___________________|                                     |_____________|
 
-Good point. Yes, this should be addressed.
+Does this help ?
 
-> I'm also not sure I understand why you can't have a shared parent device
-> and simply attach the resources to that. This sounds like a problem mfd
-> already solved ?
+So, USB30_SCLK_100M is the SCLK that we are talking in the driver. I
+don't see any reference to XXTI in the USB 3.0 DRD controller chapter
+(in both Exynos5250 and 5420)
+In addition to this there's one more point to be noticed here.
+On Exynos5420 system, the sclk_usbphy300 (which is the sclk_usbphy30
+for USB DRD channel 0), is also the PICO phy clock, i.e. USB 2.0 phy
+clock.
+So we should add a similar clk_get() for this clock in the
+phy-exynos5250-usb2 driver too, to support Exynos5420.
 
-There are some devices that have lots of different functions spread
-out on several subsystems.
 
-For example, some devices provide standard USB Audio Class, handled by
-snd-usb-audio for the audio stream, while the video stream is handled
-via a separate driver, like some em28xx devices.
+>
+> Best regards,
+> Tomasz
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-There are even more complex devices that provide 3G modem, storage
-and digital TV, whose USB ID changes when either the 3G modem starts
-or when the digital TV firmware is loaded.
 
-So, we need to find a way to lock some hardware resources among
-different subsystems that don't share anything in common. Not sure if
-mfd has the same type of problem of a non-mfd driver using another
-function of the same device that has some shared hardware resources
-between the separate functions, and, if so, how they solved it.
 
-Regards,
-Mauro
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
