@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030604AbaDJTx3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 15:53:29 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:44248 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758478AbaDJTx0 (ORCPT
+	id S1161170AbaDJTz7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 15:55:59 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:18143 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753679AbaDJTz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 15:53:26 -0400
-Message-ID: <5346F6AD.9060401@linux.vnet.ibm.com>
-Date: Thu, 10 Apr 2014 14:53:17 -0500
-From: Brian King <brking@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Thu, 10 Apr 2014 15:55:57 -0400
+Date: Thu, 10 Apr 2014 15:55:54 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
+Subject: Re: [PATCH RESEND 2/2] tracing: syscall_regfunc() should not skip
+ kernel threads
+Message-ID: <20140410155554.44f88536@gandalf.local.home>
+In-Reply-To: <20140410193820.GA15624@redhat.com>
+References: <20140409170505.GA27638@redhat.com>
+	<20140409170616.GC27638@redhat.com>
+	<20140410092842.1f9a8760@gandalf.local.home>
+	<20140410133855.GC12228@redhat.com>
+	<20140410102816.24337ffe@gandalf.local.home>
+	<20140410144655.GA25316@redhat.com>
+	<20140410110848.64c3f25e@gandalf.local.home>
+	<20140410175705.GB32332@redhat.com>
+	<20140410181417.GA2104@redhat.com>
+	<20140410151340.7d24aafd@gandalf.local.home>
+	<20140410193820.GA15624@redhat.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Linux-scsi <linux-scsi@vger.kernel.org>,
-        Robert Jennings <rob@pochix.net>
-Subject: Re: [PATCH] Update Maintainers for IBM Power 842, vscsi, and vfc
- drivers
-References: <53459226.2070002@linux.vnet.ibm.com>
-In-Reply-To: <53459226.2070002@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041019-0928-0000-0000-000001131012
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2014 01:32 PM, Nathan Fontenot wrote:
-> Update the MAINTAINERS file to indicate the current maintainers
-> for the IBM Power 842 Compression driver, IBM Power Virtual SCSI
-> driver and the IBM Power Virtual FC Driver.
-> 
-> Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-> ---
+On Thu, 10 Apr 2014 21:38:20 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-Acked-by: Brian King <brking@linux.vnet.ibm.com>
+> I _think_ that the kernel thread can only return from "call *%rbx" if
+> it is no longer a kernel thread, iow, do_execve() was called.
 
--- 
-Brian King
-Power Linux I/O
-IBM Linux Technology Center
+Ah right. But only in special cases.
 
+Actually, it only returns if the function in kernel_thread() returns,
+and in the case of ____call_usermodehelper, it does an exec and
+returns on success. But if it fails, it needs to call do_exit().
 
+Thus, it's not sufficient to just say "only if do_execve is called" but
+to say, if the handler that is called is only allowed to return iff it
+did a execve first and succeeded.
+
+-- Steve
