@@ -1,104 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965768AbaDJKhj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 06:37:39 -0400
-Received: from mta-out.inet.fi ([195.156.147.13]:52514 "EHLO jenni2.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965683AbaDJKhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 06:37:35 -0400
-Date: Thu, 10 Apr 2014 13:37:27 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm:  kernel BUG at mm/huge_memory.c:1371!
-Message-ID: <20140410103727.GA24354@node.dhcp.inet.fi>
-References: <5307D74C.5070002@oracle.com>
- <20140221235145.GA18046@node.dhcp.inet.fi>
- <5307F90C.9060602@oracle.com>
- <5310C56C.60709@oracle.com>
- <53446261.9070903@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53446261.9070903@oracle.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+	id S965815AbaDJKiU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 06:38:20 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:19996 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934795AbaDJKiQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 06:38:16 -0400
+X-AuditID: cbfee691-b7efc6d0000039d3-3b-53467497d6e2
+Message-id: <53467499.5000909@samsung.com>
+Date: Thu, 10 Apr 2014 19:38:17 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        t.figa@samsung.com, linux-samsung-soc@vger.kernel.org,
+        hyunhee.kim@samsung.com, sw0312.kim@samsung.com,
+        linux-kernel@vger.kernel.org, yj44.cho@samsung.com,
+        inki.dae@samsung.com, kyungmin.park@samsung.com
+Subject: Re: [PATCH 06/27] ARM: EXYNOS:: Enter a15 lowpower mode for Exynos3250
+ based on Cortex-a7
+References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
+ <1397122124-15690-7-git-send-email-cw00.choi@samsung.com>
+ <4896629.u0Ek9zNPG2@wuerfel>
+In-reply-to: <4896629.u0Ek9zNPG2@wuerfel>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJIsWRmVeSWpSXmKPExsWyRsSkQHdGiVuwwZYuRou/k46xW3z+0MJu
+	Men+BBaL3gVX2SzONr1ht9j0+BqrxeVdc9gsZpzfx2QxY/JLNov1M16zWOzdOZnRgdvj969J
+	jB6bl9R79G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8abJY8ZCyYyVZycsJipgfEkYxcjJ4eE
+	gInEt/drWSFsMYkL99azdTFycQgJLGWUWHF9KTNM0ezNq6ASixgljk7bANYhJPCaUeLkX4Mu
+	Rg4OXgEtif8zhEBMFgFViX+vQ0Aq2ICi+1/cYAOxRQXCJFZOv8ICYvMKCEr8mHwPzBYRUJSY
+	+uIZ2CpmgUlMEpPPcIHYwgIpEhN6IOqFBBYwSkx4kw0ynlNAU+LnXQGIch2J/a3T2CBseYnN
+	a94yg1wpIfCIXeL37ZtgCRYBAYlvkw+xgPRKCMhKbDoA9ZWkxMEVN1gmMIrNQnLRLCRjZyEZ
+	u4CReRWjaGpBckFxUnqRqV5xYm5xaV66XnJ+7iZGYDSe/vds4g7G+wesDzEmA62cyCwlmpwP
+	jOa8knhDYzMjC1MTU2Mjc0sz0oSVxHnTHyUFCQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamC0
+	+qWVIfPqdZ/f+TVFHBscd/Ktq/SL3D3BzvBHoPgpgwk//7mbK0/inPCo6eMDc7lpj25NPKdu
+	smva9496s9M5VOLmlwfP/7brXnkoG/8d316z/7c6p+1rP9x38uxbvR1J5VfyeV9IpLT2+RWI
+	OK5/UrRqm1mWGvd7PZZD3zifHDH2XrT4b/d1JZbijERDLeai4kQAZYdA6dwCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsVy+t9jAd3pJW7BBtdmmVn8nXSM3eLzhxZ2
+	i0n3J7BY9C64ymZxtukNu8Wmx9dYLS7vmsNmMeP8PiaLGZNfslmsn/GaxWLvzsmMDtwev39N
+	YvTYvKTeo2/LKkaPz5vkAliiGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU
+	8hJzU22VXHwCdN0yc4CuUlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBm
+	vFnymLFgIlPFyQmLmRoYTzJ2MXJySAiYSMzevIoNwhaTuHBvPZDNxSEksIhR4ui0DawgCSGB
+	14wSJ/8adDFycPAKaEn8nyEEYrIIqEr8ex0CUsEGFN3/4gbYGFGBMImV06+wgNi8AoISPybf
+	A7NFBBQlpr54xgxiMwtMYpKYfIYLxBYWSJGY0ANRLySwgFFiwptskPGcApoSP+8KQJTrSOxv
+	ncYGYctLbF7zlnkCo8AsJBtmISmbhaRsASPzKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzg
+	WH8mtYNxZYPFIUYBDkYlHt4Dy1yDhVgTy4orcw8xSnAwK4nw7s50CxbiTUmsrEotyo8vKs1J
+	LT7EmAz0/0RmKdHkfGAayiuJNzQ2MTOyNDI3tDAyNidNWEmc90CrdaCQQHpiSWp2ampBahHM
+	FiYOTqkGRpVEvr9Kz0vapzxs3bHK/JV0SLucudGHZ/sCq1s+HnCN0D2wcrWv0fIl0xc0XLm5
+	IrdyYYfShUPrC6IzuIqtU+2ndxxzmxhxr/hE+xKug6r5/rO6JA5ceskrP/PM9/WP6p7L3pyo
+	c+jg2p9TG0rzjjrF2nJc/F8fdEq9/r5/x98+Fr2zVmrqxUosxRmJhlrMRcWJAFRuh5k5AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 04:56:01PM -0400, Sasha Levin wrote:
-> On 02/28/2014 12:20 PM, Sasha Levin wrote:
-> > On 02/21/2014 08:10 PM, Sasha Levin wrote:
-> >> On 02/21/2014 06:51 PM, Kirill A. Shutemov wrote:
-> >>> On Fri, Feb 21, 2014 at 05:46:36PM -0500, Sasha Levin wrote:
-> >>>> >Hi all,
-> >>>> >
-> >>>> >While fuzzing with trinity inside a KVM tools guest running latest -next
-> >>>> >kernel I've stumbled on the following (now with pretty line numbers!) spew:
-> >>>> >
-> >>>> >[  746.125099] kernel BUG at mm/huge_memory.c:1371!
-> >>> It "VM_BUG_ON_PAGE(!PageHead(page), page);", correct?
-> >>> I don't see dump_page() output.
-> >>
-> >> Right. However, I'm not seeing the dump_page() output in the log.
-> >>
-> >> I see that dump_page() has been modified not long ago, I'm looking into it.
-> > 
-> > Alright, here we go:
-> > 
-> > [ 3323.062742] page:ffffea00080f0000 count:3 mapcount:0 mapping:ffff8802292ee0e1 index:0x7fa2e6800
-> > [ 3323.065978] page flags: 0x16fffff80090018(uptodate|dirty|swapcache|swapbacked)
-> > [ 3323.068535] ------------[ cut here ]------------
-> > [ 3323.069669] kernel BUG at mm/huge_memory.c:1371!
-> > [ 3323.070961] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> > [ 3323.071028] Dumping ftrace buffer:
-> > [ 3323.071028]    (ftrace buffer empty)
-> > [ 3323.071028] Modules linked in:
-> > [ 3323.071028] CPU: 101 PID: 48284 Comm: trinity-c101 Tainted: G        W 3.14.0-rc4-next-20140228-sasha-00011-g4077c67 #25
-> > [ 3323.071028] task: ffff8800c2718000 ti: ffff8800c26ec000 task.ti: ffff8800c26ec000
-> > [ 3323.071028] RIP: 0010:[<ffffffff812c083a>]  [<ffffffff812c083a>] zap_huge_pmd+0x17a/0x200
-> > [ 3323.071028] RSP: 0018:ffff8800c26edc78  EFLAGS: 00010246
-> > [ 3323.071028] RAX: ffff88022febc000 RBX: ffff8800c26edde8 RCX: 0000000000000040
-> > [ 3323.071028] RDX: 0000000000000000 RSI: ffff8800c2718cc0 RDI: 000000000203c000
-> > [ 3323.071028] RBP: ffff8800c26edcb8 R08: 0000000000000000 R09: 0000000000000000
-> > [ 3323.071028] R10: 0000000000000001 R11: 0000000000000001 R12: ffffea0008b9e240
-> > [ 3323.071028] R13: ffffea00080f0000 R14: 00007fa2e6800000 R15: 00007fa2ffffffff
-> > [ 3323.071028] FS:  00007fa31e1b8700(0000) GS:ffff880230600000(0000) knlGS:0000000000000000
-> > [ 3323.071028] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> > [ 3323.071028] CR2: 00007fa31e1e8990 CR3: 0000000005c25000 CR4: 00000000000006e0
-> > [ 3323.071028] DR0: 0000000000698000 DR1: 0000000000698000 DR2: 0000000000698000
-> > [ 3323.071028] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-> > [ 3323.071028] Stack:
-> > [ 3323.071028]  00000000000004de ffff88022e2139d0 ffff8800c26edcb8 ffff88021b7ef9a0
-> > [ 3323.071028]  00007fa2e6800000 00007fa300000000 ffff8800c26edde8 00007fa2ffffffff
-> > [ 3323.071028]  ffff8800c26edd48 ffffffff812800c6 ffffea0008454540 00007fa2e6a00000
-> > [ 3323.071028] Call Trace:
-> > [ 3323.071028]  [<ffffffff812800c6>] unmap_page_range+0x2c6/0x410
-> > [ 3323.071028]  [<ffffffff81280301>] unmap_single_vma+0xf1/0x110
-> > [ 3323.071028]  [<ffffffff81280381>] unmap_vmas+0x61/0xa0
-> > [ 3323.071028]  [<ffffffff812875e0>] exit_mmap+0xd0/0x170
-> > [ 3323.071028]  [<ffffffff811387a7>] mmput+0x77/0xe0
-> > [ 3323.071028]  [<ffffffff8113c80d>] exit_mm+0x18d/0x1a0
-> > [ 3323.071028]  [<ffffffff811ecea5>] ? acct_collect+0x175/0x1b0
-> > [ 3323.071028]  [<ffffffff8113ec1a>] do_exit+0x26a/0x510
-> > [ 3323.071028]  [<ffffffff8113ef61>] do_group_exit+0xa1/0xe0
-> > [ 3323.071028]  [<ffffffff8113efb2>] SyS_exit_group+0x12/0x20
-> > [ 3323.071028]  [<ffffffff8439f720>] tracesys+0xdd/0xe2
-> > [ 3323.071028] Code: 00 eb fe 66 0f 1f 44 00 00 48 8b 03 f0 48 81 80 60 03 00 00 00 fe ff ff 49 8b 45 00 f6 c4 40 75 18 31 f6 4c 89 ef e8 f6 1f f9 ff <0f> 0b 0f 1f 40 00 eb fe 66 0f 1f 44 00 00 48 8b 03 f0 48 ff 48
-> > [ 3323.071028] RIP  [<ffffffff812c083a>] zap_huge_pmd+0x17a/0x200
-> > [ 3323.071028]  RSP <ffff8800c26edc78>
+On 04/10/2014 06:40 PM, Arnd Bergmann wrote:
+> On Thursday 10 April 2014 18:28:23 Chanwoo Choi wrote:
+>> +        * while Exynos5 is A15/Exynos7 is A7; check the CPU part
+>>
 > 
-> This is still happening in -next. Anything else I can provide that'll be useful?
+> Exynos7 -> Exynos3 ?
+> 
 
-I don't know... :(
+You're right. I'll fix it.
 
-One theory I have is that the root cause of the bug is the same as with
-mm/huge_memory.c:1829 bug. If the compound page has been split but we miss
-the vma where PMD should be split, then we could see the effect. It could
-happend due anon_vma_interval_tree_foreach() vs.
-anon_vma_interval_tree_insert() race or something else.
+Best Regards,
+Chanwoo Choi
 
--- 
- Kirill A. Shutemov
