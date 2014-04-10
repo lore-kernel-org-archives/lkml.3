@@ -1,170 +1,463 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030264AbaDJQEP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 12:04:15 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:63543 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965535AbaDJQEI (ORCPT
+	id S935055AbaDJQCV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 12:02:21 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:48184 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758569AbaDJQCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 12:04:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <1397042790-10636-3-git-send-email-s.nawrocki@samsung.com>
-References: <1397042790-10636-1-git-send-email-s.nawrocki@samsung.com>
-	<1397042790-10636-3-git-send-email-s.nawrocki@samsung.com>
-Date: Thu, 10 Apr 2014 11:04:07 -0500
-Message-ID: <CAL_JsqKDJ_yFxFYnrTtmzMPoxO2rmypiujybwbhUh35y1LS-Mw@mail.gmail.com>
-Subject: Re: [PATCH RFC v5 2/2] clk: Add handling of clk parent and rate
- assigned from DT
-From: Rob Herring <robherring2@gmail.com>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Tero Kristo <t-kristo@ti.com>, sw0312.kim@samsung.com,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 10 Apr 2014 12:02:14 -0400
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <ak@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/7] perf report: Add --percentage option
+Date: Fri, 11 Apr 2014 01:01:55 +0900
+Message-Id: <1397145720-8063-3-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1397145720-8063-1-git-send-email-namhyung@kernel.org>
+References: <1397145720-8063-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 9, 2014 at 6:26 AM, Sylwester Nawrocki
-<s.nawrocki@samsung.com> wrote:
-> This patch adds a helper function to configure clock parents and
-> rates as specified in clock-parents, clock-rates DT properties
-> for a consumer device and a call to it before driver is bound to
-> a device.
->
-> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> ---
-> Changes since v4:
->  - added note explaining how to skip setting parent and rate
->    of a clock,
->  - moved of_clk_dev_init() calls to the platform bus,
->  - added missing call to of_node_put(),
->  - dropped debug traces.
->
-> Changes since v3:
->  - added detailed description of the assigned-clocks subnode,
->  - added missing 'static inline' to the function stub definition,
->  - clk-conf.c is now excluded when CONFIG_OF is not set,
->  - s/of_clk_device_setup/of_clk_device_init.
->
-> Changes since v2:
->  - edited in clock-bindings.txt, added note about 'assigned-clocks'
->    subnode which may be used to specify "global" clocks configuration
->    at a clock provider node,
->  - moved of_clk_device_setup() function declaration from clk-provider.h
->    to clk-conf.h so required function stubs are available when
->    CONFIG_COMMON_CLK is not enabled,
->
-> Changes since v1:
->  - the helper function to parse and set assigned clock parents and
->    rates made public so it is available to clock providers to call
->    directly;
->  - dropped the platform bus notification and call of_clk_device_setup()
->    is is now called from the driver core, rather than from the
->    notification callback;
->  - s/of_clk_get_list_entry/of_clk_get_by_property.
-> ---
->  .../devicetree/bindings/clock/clock-bindings.txt   |   44 ++++++++++
->  drivers/base/platform.c                            |    5 ++
->  drivers/clk/Makefile                               |    3 +
->  drivers/clk/clk-conf.c                             |   85 ++++++++++++++++++++
->  drivers/clk/clk.c                                  |   12 ++-
->  include/linux/clk/clk-conf.h                       |   19 +++++
->  6 files changed, 167 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/clk/clk-conf.c
->  create mode 100644 include/linux/clk/clk-conf.h
->
-> diff --git a/Documentation/devicetree/bindings/clock/clock-bindings.txt b/Documentation/devicetree/bindings/clock/clock-bindings.txt
-> index 700e7aa..93513fc 100644
-> --- a/Documentation/devicetree/bindings/clock/clock-bindings.txt
-> +++ b/Documentation/devicetree/bindings/clock/clock-bindings.txt
-> @@ -132,3 +132,47 @@ clock signal, and a UART.
->    ("pll" and "pll-switched").
->  * The UART has its baud clock connected the external oscillator and its
->    register clock connected to the PLL clock (the "pll-switched" signal)
-> +
-> +==Assigned clock parents and rates==
-> +
-> +Some platforms require static initial configuration of parts of the clocks
-> +controller. Such a configuration can be specified in a clock consumer node
-> +through clock-parents and clock-rates DT properties. The former should
-> +contain a list of parent clocks in form of phandle and clock specifier pairs,
-> +the latter the list of assigned clock frequency values (one cell each).
-> +To skip setting parent or rate of a clock its corresponding entry should be
-> +set to 0, or can be omitted if it is not followed by any non-zero entry.
-> +
-> +    uart@a000 {
-> +        compatible = "fsl,imx-uart";
-> +        reg = <0xa000 0x1000>;
-> +        ...
-> +        clocks = <&clkcon 0>, <&clkcon 3>;
-> +        clock-names = "baud", "mux";
-> +
-> +        clock-parents = <0>, <&pll 1>;
-> +        clock-rates = <460800>;
+The --percentage option is for controlling overhead percentage
+displayed.  It can only receive either of "relative" or "absolute".
 
-Is this the input frequency or serial baud rate? Looks like a baud
-rate, but the clock framework needs input (to the uart) frequency. I
-would say this should be clock-frequency and specify the max baud rate
-as is being done with i2c bindings. The uart driver should know how to
-convert between input clock freq and baud rate.
+"relative" means it's relative to filtered entries only so that the
+sum of shown entries will be always 100%.  "absolute" means it retains
+the original value before and after the filter is applied.
 
-> +    };
-> +
-> +In this example the pll is set as parent of "mux" clock and frequency of "baud"
-> +clock is specified as 460800 Hz.
+  $ perf report -s comm
+  # Overhead       Command
+  # ........  ............
+  #
+      74.19%           cc1
+       7.61%           gcc
+       6.11%            as
+       4.35%            sh
+       4.14%          make
+       1.13%        fixdep
+  ...
 
-I don't really like clock-parents. The parent information is part of
-the clock source, not the consumer.
+  $ perf report -s comm -c cc1,gcc --percentage absolute
+  # Overhead       Command
+  # ........  ............
+  #
+      74.19%           cc1
+       7.61%           gcc
 
-We've somewhat decided against having every single clock defined in DT
-and rather only describe a clock controller with leaf clocks to
-devices. That is not a hard rule, but for complex clock trees that is
-the norm. Doing something like this will require all levels of the
-clock tree to be described. You may have multiple layers of parents
-that have to be configured correctly. How are you configuring the rest
-of the tree?
+  $ perf report -s comm -c cc1,gcc --percentage relative
+  # Overhead       Command
+  # ........  ............
+  #
+      90.69%           cc1
+       9.31%           gcc
 
-> +
-> +Configuring a clock's parent and rate through the device node that uses
-> +the clock can be done only for clocks that have a single user. Specifying
-> +conflicting parent or rate configuration in multiple consumer nodes for
-> +a shared clock is forbidden.
-> +
-> +Configuration of common clocks, which affect multiple consumer devices
-> +can be specified in a dedicated 'assigned-clocks' subnode of a clock
-> +provider node, e.g.:
+Note that it has zero effect if no filter was applied.
 
-This seems like a work-around due to having clock-parents in the
-consumer node. If (I'm not convinced we should) we have a binding for
-parent config, it needs to be a single binding that works for both
-cases.
+Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Acked-by: Jiri Olsa <jolsa@redhat.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/Documentation/perf-report.txt |   24 +++++++++++++-----
+ tools/perf/builtin-report.c              |   30 +++++++++++++++++++++--
+ tools/perf/ui/browsers/hists.c           |   35 +++++++++++++++++++++------
+ tools/perf/ui/gtk/hists.c                |   11 ++++-----
+ tools/perf/ui/hist.c                     |    8 +++---
+ tools/perf/util/hist.c                   |   39 +++++++++++++++---------------
+ tools/perf/util/hist.h                   |    1 +
+ tools/perf/util/symbol.c                 |    1 +
+ tools/perf/util/symbol.h                 |    3 ++-
+ 9 files changed, 106 insertions(+), 46 deletions(-)
 
-> +
-> +    clkcon {
-> +        ...
-> +        #clock-cells = <1>;
-> +
-> +        assigned-clocks {
-> +            clocks = <&clkcon 16>, <&clkcon 17>;
-> +            clock-parents = <0>, <&clkcon 1>;
-> +            clock-rates = <200000>;
-> +        };
-> +    };
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 8eab8a4bdeb8..09af66298564 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -25,10 +25,6 @@ OPTIONS
+ --verbose::
+         Be more verbose. (show symbol address, etc)
+ 
+--d::
+---dsos=::
+-	Only consider symbols in these dsos. CSV that understands
+-	file://filename entries.
+ -n::
+ --show-nr-samples::
+ 	Show the number of samples for each symbol
+@@ -42,11 +38,18 @@ OPTIONS
+ -c::
+ --comms=::
+ 	Only consider symbols in these comms. CSV that understands
+-	file://filename entries.
++	file://filename entries.  This option will affect the percentage of
++	the overhead column.  See --percentage for more info.
++-d::
++--dsos=::
++	Only consider symbols in these dsos. CSV that understands
++	file://filename entries.  This option will affect the percentage of
++	the overhead column.  See --percentage for more info.
+ -S::
+ --symbols=::
+ 	Only consider these symbols. CSV that understands
+-	file://filename entries.
++	file://filename entries.  This option will affect the percentage of
++	the overhead column.  See --percentage for more info.
+ 
+ --symbol-filter=::
+ 	Only show symbols that match (partially) with this filter.
+@@ -237,6 +240,15 @@ OPTIONS
+ 	Do not show entries which have an overhead under that percent.
+ 	(Default: 0).
+ 
++--percentage::
++	Determine how to display the overhead percentage of filtered entries.
++	Filters can be applied by --comms, --dsos and/or --symbols options and
++	Zoom operations on the TUI (thread, dso, etc).
++
++	"relative" means it's relative to filtered entries only so that the
++	sum of shown entries will be always 100%.  "absolute" means it retains
++	the original value before and after the filter is applied.
++
+ --header::
+ 	Show header information in the perf.data file.  This includes
+ 	various information like hostname, OS and perf version, cpu/mem
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 2fca56c9d68a..7ec351bda833 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -343,6 +343,11 @@ static size_t hists__fprintf_nr_sample_events(struct hists *hists, struct report
+ 	char buf[512];
+ 	size_t size = sizeof(buf);
+ 
++	if (symbol_conf.filter_relative) {
++		nr_samples = hists->stats.nr_non_filtered_samples;
++		nr_events = hists->stats.total_non_filtered_period;
++	}
++
+ 	if (perf_evsel__is_group_event(evsel)) {
+ 		struct perf_evsel *pos;
+ 
+@@ -350,8 +355,13 @@ static size_t hists__fprintf_nr_sample_events(struct hists *hists, struct report
+ 		evname = buf;
+ 
+ 		for_each_group_member(pos, evsel) {
+-			nr_samples += pos->hists.stats.nr_events[PERF_RECORD_SAMPLE];
+-			nr_events += pos->hists.stats.total_period;
++			if (symbol_conf.filter_relative) {
++				nr_samples += pos->hists.stats.nr_non_filtered_samples;
++				nr_events += pos->hists.stats.total_non_filtered_period;
++			} else {
++				nr_samples += pos->hists.stats.nr_events[PERF_RECORD_SAMPLE];
++				nr_events += pos->hists.stats.total_period;
++			}
+ 		}
+ 	}
+ 
+@@ -707,6 +717,20 @@ parse_percent_limit(const struct option *opt, const char *str,
+ 	return 0;
+ }
+ 
++static int
++parse_percentage(const struct option *opt __maybe_unused, const char *str,
++		 int unset __maybe_unused)
++{
++	if (!strcmp(str, "relative"))
++		symbol_conf.filter_relative = true;
++	else if (!strcmp(str, "absolute"))
++		symbol_conf.filter_relative = false;
++	else
++		return -1;
++
++	return 0;
++}
++
+ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	struct perf_session *session;
+@@ -829,6 +853,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "mem-mode", &report.mem_mode, "mem access profile"),
+ 	OPT_CALLBACK(0, "percent-limit", &report, "percent",
+ 		     "Don't show entries under that percent", parse_percent_limit),
++	OPT_CALLBACK(0, "percentage", NULL, "relative|absolute",
++		     "how to display percentage of filtered entries", parse_percentage),
+ 	OPT_END()
+ 	};
+ 	struct perf_data_file file = {
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 7ec871af3f6f..7ad11477a0f5 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -769,12 +769,15 @@ static unsigned int hist_browser__refresh(struct ui_browser *browser)
+ 
+ 	for (nd = browser->top; nd; nd = rb_next(nd)) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		float percent = h->stat.period * 100.0 /
+-					hb->hists->stats.total_period;
++		u64 total = hists__total_period(h->hists);
++		float percent = 0.0;
+ 
+ 		if (h->filtered)
+ 			continue;
+ 
++		if (total)
++			percent = h->stat.period * 100.0 / total;
++
+ 		if (percent < hb->min_pcnt)
+ 			continue;
+ 
+@@ -792,8 +795,11 @@ static struct rb_node *hists__filter_entries(struct rb_node *nd,
+ {
+ 	while (nd != NULL) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		float percent = h->stat.period * 100.0 /
+-					hists->stats.total_period;
++		u64 total = hists__total_period(hists);
++		float percent = 0.0;
++
++		if (total)
++			percent = h->stat.period * 100.0 / total;
+ 
+ 		if (percent < min_pcnt)
+ 			return NULL;
+@@ -813,8 +819,11 @@ static struct rb_node *hists__filter_prev_entries(struct rb_node *nd,
+ {
+ 	while (nd != NULL) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		float percent = h->stat.period * 100.0 /
+-					hists->stats.total_period;
++		u64 total = hists__total_period(hists);
++		float percent = 0.0;
++
++		if (total)
++			percent = h->stat.period * 100.0 / total;
+ 
+ 		if (!h->filtered && percent >= min_pcnt)
+ 			return nd;
+@@ -1189,6 +1198,11 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
+ 	char buf[512];
+ 	size_t buflen = sizeof(buf);
+ 
++	if (symbol_conf.filter_relative) {
++		nr_samples = hists->stats.nr_non_filtered_samples;
++		nr_events = hists->stats.total_non_filtered_period;
++	}
++
+ 	if (perf_evsel__is_group_event(evsel)) {
+ 		struct perf_evsel *pos;
+ 
+@@ -1196,8 +1210,13 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
+ 		ev_name = buf;
+ 
+ 		for_each_group_member(pos, evsel) {
+-			nr_samples += pos->hists.stats.nr_events[PERF_RECORD_SAMPLE];
+-			nr_events += pos->hists.stats.total_period;
++			if (symbol_conf.filter_relative) {
++				nr_samples += pos->hists.stats.nr_non_filtered_samples;
++				nr_events += pos->hists.stats.total_non_filtered_period;
++			} else {
++				nr_samples += pos->hists.stats.nr_events[PERF_RECORD_SAMPLE];
++				nr_events += pos->hists.stats.total_period;
++			}
+ 		}
+ 	}
+ 
+diff --git a/tools/perf/ui/gtk/hists.c b/tools/perf/ui/gtk/hists.c
+index e395ef9b0ae0..91f10f3f6dd1 100644
+--- a/tools/perf/ui/gtk/hists.c
++++ b/tools/perf/ui/gtk/hists.c
+@@ -228,12 +228,15 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+ 		GtkTreeIter iter;
+-		float percent = h->stat.period * 100.0 /
+-					hists->stats.total_period;
++		u64 total = hists__total_period(h->hists);
++		float percent = 0.0;
+ 
+ 		if (h->filtered)
+ 			continue;
+ 
++		if (total)
++			percent = h->stat.period * 100.0 / total;
++
+ 		if (percent < min_pcnt)
+ 			continue;
+ 
+@@ -261,12 +264,8 @@ static void perf_gtk__show_hists(GtkWidget *window, struct hists *hists,
+ 		}
+ 
+ 		if (symbol_conf.use_callchain && sort__has_sym) {
+-			u64 total;
+-
+ 			if (callchain_param.mode == CHAIN_GRAPH_REL)
+ 				total = h->stat.period;
+-			else
+-				total = hists->stats.total_period;
+ 
+ 			perf_gtk__add_callchain(&h->sorted_chain, store, &iter,
+ 						sym_col, total);
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 0f403b83e9d1..0912805c08f4 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -32,10 +32,10 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+ 
+ 	if (fmt_percent) {
+ 		double percent = 0.0;
++		u64 total = hists__total_period(hists);
+ 
+-		if (hists->stats.total_period)
+-			percent = 100.0 * get_field(he) /
+-				  hists->stats.total_period;
++		if (total)
++			percent = 100.0 * get_field(he) / total;
+ 
+ 		ret += hpp__call_print_fn(hpp, print_fn, fmt, percent);
+ 	} else
+@@ -50,7 +50,7 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
+ 
+ 		list_for_each_entry(pair, &he->pairs.head, pairs.node) {
+ 			u64 period = get_field(pair);
+-			u64 total = pair->hists->stats.total_period;
++			u64 total = hists__total_period(pair->hists);
+ 
+ 			if (!total)
+ 				continue;
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 1ed3e2b86f0b..3ebd89a28257 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -321,9 +321,11 @@ void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h)
+ {
+ 	if (!h->filtered) {
+ 		hists__calc_col_len(hists, h);
+-		++hists->nr_entries;
+-		hists->stats.total_period += h->stat.period;
++		hists->nr_non_filtered_entries++;
++		hists->stats.total_non_filtered_period += h->stat.period;
+ 	}
++	hists->nr_entries++;
++	hists->stats.total_period += h->stat.period;
+ }
+ 
+ static u8 symbol__parent_filter(const struct symbol *parent)
+@@ -674,8 +676,9 @@ void hists__output_resort(struct hists *hists)
+ 	next = rb_first(root);
+ 	hists->entries = RB_ROOT;
+ 
+-	hists->nr_entries = hists->nr_non_filtered_entries = 0;
+-	hists->stats.total_period = hists->stats.total_non_filtered_period = 0;
++	hists->nr_non_filtered_entries = 0;
++	hists->stats.total_period = 0;
++	hists->stats.total_non_filtered_period = 0;
+ 	hists__reset_col_len(hists);
+ 
+ 	while (next) {
+@@ -694,16 +697,11 @@ static void hists__remove_entry_filter(struct hists *hists, struct hist_entry *h
+ 	if (h->filtered)
+ 		return;
+ 
+-	++hists->nr_entries;
+ 	++hists->nr_non_filtered_entries;
+-	if (h->ms.unfolded) {
+-		hists->nr_entries += h->nr_rows;
++	if (h->ms.unfolded)
+ 		hists->nr_non_filtered_entries += h->nr_rows;
+-	}
+ 	h->row_offset = 0;
+-	hists->stats.total_period += h->stat.period;
+ 	hists->stats.total_non_filtered_period += h->stat.period;
+-	hists->stats.nr_events[PERF_RECORD_SAMPLE] += h->stat.nr_events;
+ 	hists->stats.nr_non_filtered_samples += h->stat.nr_events;
+ 
+ 	hists__calc_col_len(hists, h);
+@@ -726,9 +724,8 @@ void hists__filter_by_dso(struct hists *hists)
+ {
+ 	struct rb_node *nd;
+ 
+-	hists->nr_entries = hists->stats.total_period = 0;
+-	hists->nr_non_filtered_entries = hists->stats.total_non_filtered_period = 0;
+-	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
++	hists->nr_non_filtered_entries = 0;
++	hists->stats.total_non_filtered_period = 0;
+ 	hists->stats.nr_non_filtered_samples = 0;
+ 	hists__reset_col_len(hists);
+ 
+@@ -761,9 +758,8 @@ void hists__filter_by_thread(struct hists *hists)
+ {
+ 	struct rb_node *nd;
+ 
+-	hists->nr_entries = hists->stats.total_period = 0;
+-	hists->nr_non_filtered_entries = hists->stats.total_non_filtered_period = 0;
+-	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
++	hists->nr_non_filtered_entries = 0;
++	hists->stats.total_non_filtered_period = 0;
+ 	hists->stats.nr_non_filtered_samples = 0;
+ 	hists__reset_col_len(hists);
+ 
+@@ -794,9 +790,8 @@ void hists__filter_by_symbol(struct hists *hists)
+ {
+ 	struct rb_node *nd;
+ 
+-	hists->nr_entries = hists->stats.total_period = 0;
+-	hists->nr_non_filtered_entries = hists->stats.total_non_filtered_period = 0;
+-	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
++	hists->nr_non_filtered_entries = 0;
++	hists->stats.total_non_filtered_period = 0;
+ 	hists->stats.nr_non_filtered_samples = 0;
+ 	hists__reset_col_len(hists);
+ 
+@@ -942,3 +937,9 @@ int hists__link(struct hists *leader, struct hists *other)
+ 
+ 	return 0;
+ }
++
++u64 hists__total_period(struct hists *hists)
++{
++	return symbol_conf.filter_relative ? hists->stats.total_non_filtered_period :
++		hists->stats.total_period;
++}
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 213551469f36..3191496bd3b7 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -115,6 +115,7 @@ void hists__collapse_resort(struct hists *hists, struct ui_progress *prog);
+ void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel);
+ void hists__output_recalc_col_len(struct hists *hists, int max_rows);
+ 
++u64 hists__total_period(struct hists *hists);
+ void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h);
+ void hists__inc_nr_events(struct hists *hists, u32 type);
+ void events_stats__inc(struct events_stats *stats, u32 type);
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 95e249779931..b2eca6c17a70 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -33,6 +33,7 @@ struct symbol_conf symbol_conf = {
+ 	.try_vmlinux_path = true,
+ 	.annotate_src	  = true,
+ 	.demangle	  = true,
++	.filter_relative  = true,
+ 	.symfs            = "",
+ };
+ 
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 501e4e722e8e..ae94e006a52d 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -115,7 +115,8 @@ struct symbol_conf {
+ 			annotate_asm_raw,
+ 			annotate_src,
+ 			event_group,
+-			demangle;
++			demangle,
++			filter_relative;
+ 	const char	*vmlinux_name,
+ 			*kallsyms_name,
+ 			*source_prefix,
+-- 
+1.7.9.2
 
-Rob
