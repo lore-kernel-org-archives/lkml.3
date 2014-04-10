@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935568AbaDJO1b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 10:27:31 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:35130 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934688AbaDJO13 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 10:27:29 -0400
+	id S935625AbaDJO2G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 10:28:06 -0400
+Received: from mga09.intel.com ([134.134.136.24]:56466 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934688AbaDJO2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 10:28:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,834,1389772800"; 
+   d="scan'208";a="490797977"
+Date: Thu, 10 Apr 2014 10:27:29 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Ross Zwisler <ross.zwisler@linux.intel.com>
+Subject: Re: [PATCH v7 18/22] xip: Add xip_zero_page_range
+Message-ID: <20140410142729.GL5727@linux.intel.com>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <5a87acda8c3e4d2b7ea5dd1249fcbf8be23b9645.1395591795.git.matthew.r.wilcox@intel.com>
+ <20140409101512.GL32103@quack.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <1397137433-19106-1-git-send-email-chander.kashyap@linaro.org>
-References: <1397137433-19106-1-git-send-email-chander.kashyap@linaro.org>
-Date: Thu, 10 Apr 2014 17:27:28 +0300
-Message-ID: <CAG-99FPLOXWnjb_oiDbLmdrYnDnticN9r1drDm_8JHtG=4BSiA@mail.gmail.com>
-Subject: Re: [PATCH] cpuidle: governor: menu: move repeated correction factor
- check to init
-From: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
-To: Chander Kashyap <chander.kashyap@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        rafael.j.wysocki@intel.com, Daniel Lezcano <daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140409101512.GL32103@quack.suse.cz>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 April 2014 16:43, Chander Kashyap <chander.kashyap@linaro.org> wrote:
-> In menu_select function we check for correction factor every time.
-> If it is zero we are initializing to unity. Hence move it to init function
-> and initialise by unity, hence avoid repeated comparisons.
->
-> Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
-> ---
->  drivers/cpuidle/governors/menu.c |   15 ++++++++-------
->  1 file changed, 8 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-> index cf7f2f0..048f6d9 100644
-> --- a/drivers/cpuidle/governors/menu.c
-> +++ b/drivers/cpuidle/governors/menu.c
-> @@ -315,13 +315,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
->         multiplier = performance_multiplier();
->
->         /*
-> -        * if the correction factor is 0 (eg first time init or cpu hotplug
-> -        * etc), we actually want to start out with a unity factor.
-> -        */
-> -       if (data->correction_factor[data->bucket] == 0)
-> -               data->correction_factor[data->bucket] = RESOLUTION * DECAY;
-> -
-> -       /*
->          * Force the result of multiplication to be 64 bits even if both
->          * operands are 32 bits.
->          * Make sure to round up for half microseconds.
-> @@ -453,9 +446,17 @@ static int menu_enable_device(struct cpuidle_driver *drv,
->                                 struct cpuidle_device *dev)
->  {
->         struct menu_device *data = &per_cpu(menu_devices, dev->cpu);
-> +       int i;
->
->         memset(data, 0, sizeof(struct menu_device));
->
-> +       /*
-> +        * if the correction factor is 0 (eg first time init or cpu hotplug
-> +        * etc), we actually want to start out with a unity factor.
-> +        */
-> +       for(i = 0; i < BUCKETS; i++)
-> +               data->correction_factor[i] = RESOLUTION * DECAY;
-> +
->         return 0;
->  }
->
-> --
-> 1.7.9.5
->
+On Wed, Apr 09, 2014 at 12:15:12PM +0200, Jan Kara wrote:
+> > +		/*
+> > +		 * ext4 sometimes asks to zero past the end of a block.  It
+> > +		 * really just wants to zero to the end of the block.
+> > +		 */
+>   Then we should really fix ext4 I believe...
 
-Reviewed-by: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
+Since I didn't want to do this ...
+
+> > +/* Can't be a function because PAGE_CACHE_SIZE is defined in pagemap.h */
+> > +#define dax_truncate_page(inode, from, get_block)	\
+> > +	dax_zero_page_range(inode, from, PAGE_CACHE_SIZE, get_block)
+>                                          ^^^^
+> This should be (PAGE_CACHE_SIZE - (from & (PAGE_CACHE_SIZE - 1))), shouldn't it?
+
+... I could get away without doing that ;-)
