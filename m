@@ -1,95 +1,316 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030691AbaDJM7E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 08:59:04 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:60532 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030535AbaDJM7B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 08:59:01 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: mmarek@suse.cz
-Cc: akpm@linux-foundation.org, michael.opdenacker@free-electrons.com,
-        tkhai@yandex.ru, linux-kernel@vger.kernel.org, nasa4836@gmail.com
-Subject: Re: [PATCH] scripts/tags.sh: add regular expression replacement pattern for memcg
-Date: Thu, 10 Apr 2014 20:58:52 +0800
-Message-Id: <1397134732-29106-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 1.9.0.GIT
+	id S1030728AbaDJNAX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 09:00:23 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37746 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030535AbaDJNAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 09:00:19 -0400
+Date: Thu, 10 Apr 2014 15:00:09 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: stable@vger.kernel.org
+Cc: Matt Fleming <matt@console-pimps.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: [PATCH for 3.14.y] x86/efi: Make efi virtual runtime map passing
+ more robust
+Message-ID: <20140410130009.GJ29093@pd.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, the comment in previous patch is somewhat misguiding, this patch
-replaces that one.
- 
-Currently, no regular expression replacement patterns for PageCgroup*
-flag-ops are defined, which causes quite a few pain while reading code. 
-Just get rid of it.
+Hi Greg,
 
-Also, add a comment to inform people to add pattern for whatever new
-flag-ops they add.
+please take the patch into the stable 3.14.y queue. It fixes a number
+of EFI machines which makes a stable backport a good thing. Before you
+apply it though, cherry-pick 42a5477251f on which this patch depends.
+Then, you apply the backport I'm adding below.
 
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+Thanks.
+
+--
+From: Borislav Petkov <bp@suse.de>
+Date: Sat, 18 Jan 2014 12:48:17 +0100
+Subject: [PATCH] x86/efi: Make efi virtual runtime map passing more robust
+
+Upstream commit: b7b898ae0c0a82489511a1ce1b35f26215e6beb5
+
+Currently, running SetVirtualAddressMap() and passing the physical
+address of the virtual map array was working only by a lucky coincidence
+because the memory was present in the EFI page table too. Until Toshi
+went and booted this on a big HP box - the krealloc() manner of resizing
+the memmap we're doing did allocate from such physical addresses which
+were not mapped anymore and boom:
+
+http://lkml.kernel.org/r/1386806463.1791.295.camel@misato.fc.hp.com
+
+One way to take care of that issue is to reimplement the krealloc thing
+but with pages. We start with contiguous pages of order 1, i.e. 2 pages,
+and when we deplete that memory (shouldn't happen all that often but you
+know firmware) we realloc the next power-of-two pages.
+
+Having the pages, it is much more handy and easy to map them into the
+EFI page table with the already existing mapping code which we're using
+for building the virtual mappings.
+
+Thanks to Toshi Kani and Matt for the great debugging help.
+
+Reported-by: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Tested-by: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
 ---
- include/linux/page_cgroup.h | 6 ++++++
- scripts/tags.sh             | 8 ++++++++
- 2 files changed, 14 insertions(+)
+ arch/x86/include/asm/efi.h     |  3 +-
+ arch/x86/platform/efi/efi.c    | 99 +++++++++++++++++++++++++++++++++---------
+ arch/x86/platform/efi/efi_32.c |  7 ++-
+ arch/x86/platform/efi/efi_64.c | 32 ++++++++++++--
+ 4 files changed, 115 insertions(+), 26 deletions(-)
 
-diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-index 777a524..9c60b77 100644
---- a/include/linux/page_cgroup.h
-+++ b/include/linux/page_cgroup.h
-@@ -44,6 +44,12 @@ static inline void __init page_cgroup_init(void)
- struct page_cgroup *lookup_page_cgroup(struct page *page);
- struct page *lookup_cgroup_page(struct page_cgroup *pc);
+diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
+index acd86c850414..f949715e3957 100644
+--- a/arch/x86/include/asm/efi.h
++++ b/arch/x86/include/asm/efi.h
+@@ -130,7 +130,8 @@ extern void efi_memory_uc(u64 addr, unsigned long size);
+ extern void __init efi_map_region(efi_memory_desc_t *md);
+ extern void __init efi_map_region_fixed(efi_memory_desc_t *md);
+ extern void efi_sync_low_kernel_mappings(void);
+-extern void efi_setup_page_tables(void);
++extern int efi_setup_page_tables(unsigned long pa_memmap, unsigned num_pages);
++extern void efi_cleanup_page_tables(unsigned long pa_memmap, unsigned num_pages);
+ extern void __init old_map_region(efi_memory_desc_t *md);
+ extern void __init runtime_code_page_mkexec(void);
+ extern void __init efi_runtime_mkexec(void);
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index b97acecf3fd9..abb81b0ad83f 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -939,14 +939,36 @@ static void __init efi_map_regions_fixed(void)
  
-+/*
-+ * Note, whenever you add a *PCGFLAG operation here, please add a
-+ * regular expression replacement pattern in scripts/tags.sh
-+ * to inform our friendly and smart tags generator.
-+ */
+ }
+ 
++static void *realloc_pages(void *old_memmap, int old_shift)
++{
++	void *ret;
 +
- #define TESTPCGFLAG(uname, lname)			\
- static inline int PageCgroup##uname(struct page_cgroup *pc)	\
- 	{ return test_bit(PCG_##lname, &pc->flags); }
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index 58c4559..c0d52d1 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -171,12 +171,16 @@ exuberant()
- 	--regex-c++='/PAGEFLAG\(([^,)]*).*/ClearPage\1/'		\
- 	--regex-c++='/TESTSETFLAG\(([^,)]*).*/TestSetPage\1/'		\
- 	--regex-c++='/TESTPAGEFLAG\(([^,)]*).*/Page\1/'			\
-+	--regex-c++='/TESTPCGFLAG\(([^,)]*).*/PageCgroup\1/'		\
- 	--regex-c++='/SETPAGEFLAG\(([^,)]*).*/SetPage\1/'		\
- 	--regex-c++='/__SETPAGEFLAG\(([^,)]*).*/__SetPage\1/'		\
-+	--regex-c++='/SETPCGFLAG\(([^,)]*).*/SetPageCgroup\1/'		\
- 	--regex-c++='/TESTCLEARFLAG\(([^,)]*).*/TestClearPage\1/'	\
- 	--regex-c++='/__TESTCLEARFLAG\(([^,)]*).*/TestClearPage\1/'	\
-+	--regex-c++='/TESTCLEARPCGFLAG\(([^,)]*).*/TestClearPageCgroup\1/' \
- 	--regex-c++='/CLEARPAGEFLAG\(([^,)]*).*/ClearPage\1/'		\
- 	--regex-c++='/__CLEARPAGEFLAG\(([^,)]*).*/__ClearPage\1/'	\
-+	--regex-c++='/CLEARPCGFLAG\(([^,)]*).*/ClearPageCgroup\1/'	\
- 	--regex-c++='/__PAGEFLAG\(([^,)]*).*/__SetPage\1/'		\
- 	--regex-c++='/__PAGEFLAG\(([^,)]*).*/__ClearPage\1/'		\
- 	--regex-c++='/PAGEFLAG_FALSE\(([^,)]*).*/Page\1/'		\
-@@ -229,12 +233,16 @@ emacs()
- 	--regex='/PAGEFLAG(\([^,)]*\).*/ClearPage\1/'		\
- 	--regex='/TESTSETFLAG(\([^,)]*\).*/TestSetPage\1/'	\
- 	--regex='/TESTPAGEFLAG(\([^,)]*\).*/Page\1/'		\
-+	--regex='/TESTPCGFLAG\(([^,)]*).*/PageCgroup\1/'	\
- 	--regex='/SETPAGEFLAG(\([^,)]*\).*/SetPage\1/'		\
- 	--regex='/__SETPAGEFLAG(\([^,)]*\).*/__SetPage\1/'	\
-+	--regex='/SETPCGFLAG\(([^,)]*).*/SetPageCgroup\1/'	\
- 	--regex='/TESTCLEARFLAG(\([^,)]*\).*/TestClearPage\1/'	\
- 	--regex='/__TESTCLEARFLAG(\([^,)]*\).*/TestClearPage\1/'	\
-+	--regex='/TESTCLEARPCGFLAG\(([^,)]*).*/TestClearPageCgroup\1/' \
- 	--regex='/CLEARPAGEFLAG(\([^,)]*\).*/ClearPage\1/'	\
- 	--regex='/__CLEARPAGEFLAG(\([^,)]*\).*/__ClearPage\1/'	\
-+	--regex='/CLEARPCGFLAG\(([^,)]*).*/ClearPageCgroup\1/'	\
- 	--regex='/__PAGEFLAG(\([^,)]*\).*/__SetPage\1/'		\
- 	--regex='/__PAGEFLAG(\([^,)]*\).*/__ClearPage\1/'	\
- 	--regex='/PAGEFLAG_FALSE(\([^,)]*\).*/Page\1/'		\
++	ret = (void *)__get_free_pages(GFP_KERNEL, old_shift + 1);
++	if (!ret)
++		goto out;
++
++	/*
++	 * A first-time allocation doesn't have anything to copy.
++	 */
++	if (!old_memmap)
++		return ret;
++
++	memcpy(ret, old_memmap, PAGE_SIZE << old_shift);
++
++out:
++	free_pages((unsigned long)old_memmap, old_shift);
++	return ret;
++}
++
+ /*
+- * Map efi memory ranges for runtime serivce and update new_memmap with virtual
+- * addresses.
++ * Map the efi memory ranges of the runtime services and update new_mmap with
++ * virtual addresses.
+  */
+-static void * __init efi_map_regions(int *count)
++static void * __init efi_map_regions(int *count, int *pg_shift)
+ {
++	void *p, *new_memmap = NULL;
++	unsigned long left = 0;
+ 	efi_memory_desc_t *md;
+-	void *p, *tmp, *new_memmap = NULL;
+ 
+ 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
+ 		md = p;
+@@ -961,20 +983,23 @@ static void * __init efi_map_regions(int *count)
+ 		efi_map_region(md);
+ 		get_systab_virt_addr(md);
+ 
+-		tmp = krealloc(new_memmap, (*count + 1) * memmap.desc_size,
+-			       GFP_KERNEL);
+-		if (!tmp)
+-			goto out;
+-		new_memmap = tmp;
++		if (left < memmap.desc_size) {
++			new_memmap = realloc_pages(new_memmap, *pg_shift);
++			if (!new_memmap)
++				return NULL;
++
++			left += PAGE_SIZE << *pg_shift;
++			(*pg_shift)++;
++		}
++
+ 		memcpy(new_memmap + (*count * memmap.desc_size), md,
+ 		       memmap.desc_size);
++
++		left -= memmap.desc_size;
+ 		(*count)++;
+ 	}
+ 
+ 	return new_memmap;
+-out:
+-	kfree(new_memmap);
+-	return NULL;
+ }
+ 
+ /*
+@@ -1000,9 +1025,9 @@ out:
+  */
+ void __init efi_enter_virtual_mode(void)
+ {
+-	efi_status_t status;
++	int err, count = 0, pg_shift = 0;
+ 	void *new_memmap = NULL;
+-	int err, count = 0;
++	efi_status_t status;
+ 
+ 	efi.systab = NULL;
+ 
+@@ -1019,20 +1044,24 @@ void __init efi_enter_virtual_mode(void)
+ 		efi_map_regions_fixed();
+ 	} else {
+ 		efi_merge_regions();
+-		new_memmap = efi_map_regions(&count);
++		new_memmap = efi_map_regions(&count, &pg_shift);
+ 		if (!new_memmap) {
+ 			pr_err("Error reallocating memory, EFI runtime non-functional!\n");
+ 			return;
+ 		}
+-	}
+ 
+-	err = save_runtime_map();
+-	if (err)
+-		pr_err("Error saving runtime map, efi runtime on kexec non-functional!!\n");
++		err = save_runtime_map();
++		if (err)
++			pr_err("Error saving runtime map, efi runtime on kexec non-functional!!\n");
++	}
+ 
+ 	BUG_ON(!efi.systab);
+ 
+-	efi_setup_page_tables();
++	if (!efi_setup) {
++		if (efi_setup_page_tables(__pa(new_memmap), 1 << pg_shift))
++			return;
++	}
++
+ 	efi_sync_low_kernel_mappings();
+ 
+ 	if (!efi_setup) {
+@@ -1072,7 +1101,35 @@ void __init efi_enter_virtual_mode(void)
+ 
+ 	efi_runtime_mkexec();
+ 
+-	kfree(new_memmap);
++
++	/*
++	 * We mapped the descriptor array into the EFI pagetable above but we're
++	 * not unmapping it here. Here's why:
++	 *
++	 * We're copying select PGDs from the kernel page table to the EFI page
++	 * table and when we do so and make changes to those PGDs like unmapping
++	 * stuff from them, those changes appear in the kernel page table and we
++	 * go boom.
++	 *
++	 * From setup_real_mode():
++	 *
++	 * ...
++	 * trampoline_pgd[0] = init_level4_pgt[pgd_index(__PAGE_OFFSET)].pgd;
++	 *
++	 * In this particular case, our allocation is in PGD 0 of the EFI page
++	 * table but we've copied that PGD from PGD[272] of the EFI page table:
++	 *
++	 *	pgd_index(__PAGE_OFFSET = 0xffff880000000000) = 272
++	 *
++	 * where the direct memory mapping in kernel space is.
++	 *
++	 * new_memmap's VA comes from that direct mapping and thus clearing it,
++	 * it would get cleared in the kernel page table too.
++	 *
++	 * efi_cleanup_page_tables(__pa(new_memmap), 1 << pg_shift);
++	 */
++	if (!efi_setup)
++		free_pages((unsigned long)new_memmap, pg_shift);
+ 
+ 	/* clean DUMMY object */
+ 	efi.set_variable(efi_dummy_name, &EFI_DUMMY_GUID,
+diff --git a/arch/x86/platform/efi/efi_32.c b/arch/x86/platform/efi/efi_32.c
+index 0b74cdf7f816..9ee3491e31fb 100644
+--- a/arch/x86/platform/efi/efi_32.c
++++ b/arch/x86/platform/efi/efi_32.c
+@@ -40,7 +40,12 @@
+ static unsigned long efi_rt_eflags;
+ 
+ void efi_sync_low_kernel_mappings(void) {}
+-void efi_setup_page_tables(void) {}
++void __init efi_dump_pagetable(void) {}
++int efi_setup_page_tables(unsigned long pa_memmap, unsigned num_pages)
++{
++	return 0;
++}
++void efi_cleanup_page_tables(unsigned long pa_memmap, unsigned num_pages) {}
+ 
+ void __init efi_map_region(efi_memory_desc_t *md)
+ {
+diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
+index 0c2a234fef1e..666b74a09092 100644
+--- a/arch/x86/platform/efi/efi_64.c
++++ b/arch/x86/platform/efi/efi_64.c
+@@ -137,12 +137,38 @@ void efi_sync_low_kernel_mappings(void)
+ 		sizeof(pgd_t) * num_pgds);
+ }
+ 
+-void efi_setup_page_tables(void)
++int efi_setup_page_tables(unsigned long pa_memmap, unsigned num_pages)
+ {
++	pgd_t *pgd;
++
++	if (efi_enabled(EFI_OLD_MEMMAP))
++		return 0;
++
+ 	efi_scratch.efi_pgt = (pgd_t *)(unsigned long)real_mode_header->trampoline_pgd;
++	pgd = __va(efi_scratch.efi_pgt);
+ 
+-	if (!efi_enabled(EFI_OLD_MEMMAP))
+-		efi_scratch.use_pgd = true;
++	/*
++	 * It can happen that the physical address of new_memmap lands in memory
++	 * which is not mapped in the EFI page table. Therefore we need to go
++	 * and ident-map those pages containing the map before calling
++	 * phys_efi_set_virtual_address_map().
++	 */
++	if (kernel_map_pages_in_pgd(pgd, pa_memmap, pa_memmap, num_pages, _PAGE_NX)) {
++		pr_err("Error ident-mapping new memmap (0x%lx)!\n", pa_memmap);
++		return 1;
++	}
++
++	efi_scratch.use_pgd = true;
++
++
++	return 0;
++}
++
++void efi_cleanup_page_tables(unsigned long pa_memmap, unsigned num_pages)
++{
++	pgd_t *pgd = (pgd_t *)__va(real_mode_header->trampoline_pgd);
++
++	kernel_unmap_pages_in_pgd(pgd, pa_memmap, num_pages);
+ }
+ 
+ static void __init __map_region(efi_memory_desc_t *md, u64 va)
 -- 
-1.9.0.GIT
+1.9.0
 
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
