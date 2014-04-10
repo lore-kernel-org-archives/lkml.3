@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935404AbaDJDqr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:46:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41244 "EHLO
+	id S935415AbaDJDrQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:47:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41240 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935022AbaDJDWs (ORCPT
+	with ESMTP id S934652AbaDJDWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:48 -0400
+	Wed, 9 Apr 2014 23:22:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Ritger <aritger@nvidia.com>,
-        Aaron Plattner <aplattner@nvidia.com>, Takashi Iwai <tiwai@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        kbuild test robot <fengguang.wu@intel.com>,
         Ben Hutchings <ben@decadent.org.uk>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 102/134] ALSA: hda - Add another GPU codec ID to snd-hda
-Date: Wed,  9 Apr 2014 20:23:38 -0700
-Message-Id: <20140410032312.846811152@linuxfoundation.org>
+        Yang Yingliang <yangyingliang@huawei.com>
+Subject: [PATCH 3.4 084/134] USB: fix build error when CONFIG_PM_SLEEP isnt enabled
+Date: Wed,  9 Apr 2014 20:23:20 -0700
+Message-Id: <20140410032310.729172190@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -29,40 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aaron Plattner <aplattner@nvidia.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit d52392b1a80458c0510810789c7db4a39b88022a upstream.
+commit 9d8924297cd9c256c23c02abae40202563452453 upstream.
 
-Vendor ID 0x10de0060 is used by a yet-to-be-named GPU chip.
+This patch fixes a build error that occurs when CONFIG_PM is enabled
+and CONFIG_PM_SLEEP isn't:
 
-Reviewed-by: Andy Ritger <aritger@nvidia.com>
-Signed-off-by: Aaron Plattner <aplattner@nvidia.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+>> drivers/usb/host/ohci-pci.c:294:10: error: 'usb_hcd_pci_pm_ops' undeclared here (not in a function)
+      .pm = &usb_hcd_pci_pm_ops
+
+Since the usb_hcd_pci_pm_ops structure is defined and used when
+CONFIG_PM is enabled, its declaration should not be protected by
+CONFIG_PM_SLEEP.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
+Cc: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |    2 ++
- 1 file changed, 2 insertions(+)
+ include/linux/usb/hcd.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -1910,6 +1910,7 @@ static const struct hda_codec_preset snd
- { .id = 0x10de0043, .name = "GPU 43 HDMI/DP",	.patch = patch_generic_hdmi },
- { .id = 0x10de0044, .name = "GPU 44 HDMI/DP",	.patch = patch_generic_hdmi },
- { .id = 0x10de0051, .name = "GPU 51 HDMI/DP",	.patch = patch_generic_hdmi },
-+{ .id = 0x10de0060, .name = "GPU 60 HDMI/DP",	.patch = patch_generic_hdmi },
- { .id = 0x10de0067, .name = "MCP67 HDMI",	.patch = patch_nvhdmi_2ch },
- { .id = 0x10de8001, .name = "MCP73 HDMI",	.patch = patch_nvhdmi_2ch },
- { .id = 0x80860054, .name = "IbexPeak HDMI",	.patch = patch_generic_hdmi },
-@@ -1957,6 +1958,7 @@ MODULE_ALIAS("snd-hda-codec-id:10de0042"
- MODULE_ALIAS("snd-hda-codec-id:10de0043");
- MODULE_ALIAS("snd-hda-codec-id:10de0044");
- MODULE_ALIAS("snd-hda-codec-id:10de0051");
-+MODULE_ALIAS("snd-hda-codec-id:10de0060");
- MODULE_ALIAS("snd-hda-codec-id:10de0067");
- MODULE_ALIAS("snd-hda-codec-id:10de8001");
- MODULE_ALIAS("snd-hda-codec-id:17e80047");
+--- a/include/linux/usb/hcd.h
++++ b/include/linux/usb/hcd.h
+@@ -393,7 +393,7 @@ extern int usb_hcd_pci_probe(struct pci_
+ extern void usb_hcd_pci_remove(struct pci_dev *dev);
+ extern void usb_hcd_pci_shutdown(struct pci_dev *dev);
+ 
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_PM
+ extern const struct dev_pm_ops usb_hcd_pci_pm_ops;
+ #endif
+ #endif /* CONFIG_PCI */
 
 
