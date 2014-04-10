@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935197AbaDJDXK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:23:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40936 "EHLO
+	id S965342AbaDJDev (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:34:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41381 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934660AbaDJDVu (ORCPT
+	with ESMTP id S935193AbaDJDXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:21:50 -0400
+	Wed, 9 Apr 2014 23:23:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Manoj Chourasia <mchourasia@nvidia.com>,
-        Peter Wu <lekensteyn@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Attila Kinali <attila@kinali.ch>,
+        Lauri Hintsala <lauri.hintsala@bluegiga.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Chris Ball <cjb@laptop.org>,
         Ben Hutchings <ben@decadent.org.uk>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 3.4 028/134] HID: hidraw: correctly deallocate memory on device disconnect
-Date: Wed,  9 Apr 2014 20:22:24 -0700
-Message-Id: <20140410032303.525427527@linuxfoundation.org>
+        Qiang Huang <h.huangqiang@huawei.com>
+Subject: [PATCH 3.4 121/134] mmc: mxs-mmc: fix deadlock caused by recursion loop
+Date: Wed,  9 Apr 2014 20:23:57 -0700
+Message-Id: <20140410032314.858947020@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -29,136 +30,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Manoj Chourasia <mchourasia@nvidia.com>
+From: Lauri Hintsala <lauri.hintsala@bluegiga.com>
 
-commit 212a871a3934beccf43431608c27ed2e05a476ec upstream.
+commit fc108d24d3a6da63576a460e122fa1df0cbdea20 upstream.
 
-This changes puts the commit 4fe9f8e203f back in place
-with the fixes for slab corruption because of the commit.
+Release the lock before mmc_signal_sdio_irq is called by
+mxs_mmc_enable_sdio_irq.
 
-When a device is unplugged, wait for all processes that
-have opened the device to close before deallocating the device.
+Backtrace:
+[   65.470000] =============================================
+[   65.470000] [ INFO: possible recursive locking detected ]
+[   65.470000] 3.5.0-rc5 #2 Not tainted
+[   65.470000] ---------------------------------------------
+[   65.470000] ksdioirqd/mmc0/73 is trying to acquire lock:
+[   65.470000]  (&(&host->lock)->rlock#2){-.-...}, at: [<bf054120>] mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc]
+[   65.470000]
+[   65.470000] but task is already holding lock:
+[   65.470000]  (&(&host->lock)->rlock#2){-.-...}, at: [<bf054120>] mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc]
+[   65.470000]
+[   65.470000] other info that might help us debug this:
+[   65.470000]  Possible unsafe locking scenario:
+[   65.470000]
+[   65.470000]        CPU0
+[   65.470000]        ----
+[   65.470000]   lock(&(&host->lock)->rlock#2);
+[   65.470000]   lock(&(&host->lock)->rlock#2);
+[   65.470000]
+[   65.470000]  *** DEADLOCK ***
+[   65.470000]
+[   65.470000]  May be due to missing lock nesting notation
+[   65.470000]
+[   65.470000] 1 lock held by ksdioirqd/mmc0/73:
+[   65.470000]  #0:  (&(&host->lock)->rlock#2){-.-...}, at: [<bf054120>] mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc]
+[   65.470000]
+[   65.470000] stack backtrace:
+[   65.470000] [<c0014990>] (unwind_backtrace+0x0/0xf4) from [<c005ccb8>] (__lock_acquire+0x14f8/0x1b98)
+[   65.470000] [<c005ccb8>] (__lock_acquire+0x14f8/0x1b98) from [<c005d3f8>] (lock_acquire+0xa0/0x108)
+[   65.470000] [<c005d3f8>] (lock_acquire+0xa0/0x108) from [<c02f671c>] (_raw_spin_lock_irqsave+0x48/0x5c)
+[   65.470000] [<c02f671c>] (_raw_spin_lock_irqsave+0x48/0x5c) from [<bf054120>] (mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc])
+[   65.470000] [<bf054120>] (mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc]) from [<bf0541d0>] (mxs_mmc_enable_sdio_irq+0xc8/0xdc [mxs_mmc])
+[   65.470000] [<bf0541d0>] (mxs_mmc_enable_sdio_irq+0xc8/0xdc [mxs_mmc]) from [<c0219b38>] (sdio_irq_thread+0x1bc/0x274)
+[   65.470000] [<c0219b38>] (sdio_irq_thread+0x1bc/0x274) from [<c003c324>] (kthread+0x8c/0x98)
+[   65.470000] [<c003c324>] (kthread+0x8c/0x98) from [<c00101ac>] (kernel_thread_exit+0x0/0x8)
+[   65.470000] BUG: spinlock lockup suspected on CPU#0, ksdioirqd/mmc0/73
+[   65.470000]  lock: 0xc3358724, .magic: dead4ead, .owner: ksdioirqd/mmc0/73, .owner_cpu: 0
+[   65.470000] [<c0014990>] (unwind_backtrace+0x0/0xf4) from [<c01b46b0>] (do_raw_spin_lock+0x100/0x144)
+[   65.470000] [<c01b46b0>] (do_raw_spin_lock+0x100/0x144) from [<c02f6724>] (_raw_spin_lock_irqsave+0x50/0x5c)
+[   65.470000] [<c02f6724>] (_raw_spin_lock_irqsave+0x50/0x5c) from [<bf054120>] (mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc])
+[   65.470000] [<bf054120>] (mxs_mmc_enable_sdio_irq+0x18/0xdc [mxs_mmc]) from [<bf0541d0>] (mxs_mmc_enable_sdio_irq+0xc8/0xdc [mxs_mmc])
+[   65.470000] [<bf0541d0>] (mxs_mmc_enable_sdio_irq+0xc8/0xdc [mxs_mmc]) from [<c0219b38>] (sdio_irq_thread+0x1bc/0x274)
+[   65.470000] [<c0219b38>] (sdio_irq_thread+0x1bc/0x274) from [<c003c324>] (kthread+0x8c/0x98)
+[   65.470000] [<c003c324>] (kthread+0x8c/0x98) from [<c00101ac>] (kernel_thread_exit+0x0/0x8)
 
-This commit was solving kernel crash because of the corruption in
-rb tree of vmalloc. The rootcause was the device data pointer was
-geting excessed after the memory associated with hidraw was freed.
-
-The commit 4fe9f8e203f was buggy as it was also freeing the hidraw
-first and then calling delete operation on the list associated with
-that hidraw leading to slab corruption.
-
-Signed-off-by: Manoj Chourasia <mchourasia@nvidia.com>
-Tested-by: Peter Wu <lekensteyn@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Reported-by: Attila Kinali <attila@kinali.ch>
+Signed-off-by: Lauri Hintsala <lauri.hintsala@bluegiga.com>
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - HW_SSP_STATUS is a simple rather than function-like macro]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Yijing Wang <wangyijing@huawei.com>
+Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hidraw.c |   60 +++++++++++++++++++++------------------------------
- 1 file changed, 25 insertions(+), 35 deletions(-)
+ drivers/mmc/host/mxs-mmc.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/hid/hidraw.c
-+++ b/drivers/hid/hidraw.c
-@@ -113,7 +113,7 @@ static ssize_t hidraw_send_report(struct
- 	__u8 *buf;
- 	int ret = 0;
- 
--	if (!hidraw_table[minor]) {
-+	if (!hidraw_table[minor] || !hidraw_table[minor]->exist) {
- 		ret = -ENODEV;
- 		goto out;
- 	}
-@@ -261,7 +261,7 @@ static int hidraw_open(struct inode *ino
- 	}
- 
- 	mutex_lock(&minors_lock);
--	if (!hidraw_table[minor]) {
-+	if (!hidraw_table[minor] || !hidraw_table[minor]->exist) {
- 		err = -ENODEV;
- 		goto out_unlock;
- 	}
-@@ -295,39 +295,38 @@ out:
- 
- }
- 
-+static void drop_ref(struct hidraw *hidraw, int exists_bit)
-+{
-+	if (exists_bit) {
-+		hid_hw_close(hidraw->hid);
-+		hidraw->exist = 0;
-+		if (hidraw->open)
-+			wake_up_interruptible(&hidraw->wait);
-+	} else {
-+		--hidraw->open;
-+	}
-+
-+	if (!hidraw->open && !hidraw->exist) {
-+		device_destroy(hidraw_class, MKDEV(hidraw_major, hidraw->minor));
-+		hidraw_table[hidraw->minor] = NULL;
-+		kfree(hidraw);
-+	}
-+}
-+
- static int hidraw_release(struct inode * inode, struct file * file)
- {
- 	unsigned int minor = iminor(inode);
--	struct hidraw *dev;
- 	struct hidraw_list *list = file->private_data;
--	int ret;
--	int i;
- 
- 	mutex_lock(&minors_lock);
--	if (!hidraw_table[minor]) {
--		ret = -ENODEV;
--		goto unlock;
--	}
- 
- 	list_del(&list->node);
--	dev = hidraw_table[minor];
--	if (!--dev->open) {
--		if (list->hidraw->exist) {
--			hid_hw_power(dev->hid, PM_HINT_NORMAL);
--			hid_hw_close(dev->hid);
--		} else {
--			kfree(list->hidraw);
--		}
--	}
+--- a/drivers/mmc/host/mxs-mmc.c
++++ b/drivers/mmc/host/mxs-mmc.c
+@@ -639,10 +639,6 @@ static void mxs_mmc_enable_sdio_irq(stru
+ 		       host->base + HW_SSP_CTRL0 + MXS_SET_ADDR);
+ 		writel(BM_SSP_CTRL1_SDIO_IRQ_EN,
+ 		       host->base + HW_SSP_CTRL1 + MXS_SET_ADDR);
 -
--	for (i = 0; i < HIDRAW_BUFFER_SIZE; ++i)
--		kfree(list->buffer[i].value);
- 	kfree(list);
--	ret = 0;
--unlock:
--	mutex_unlock(&minors_lock);
- 
--	return ret;
-+	drop_ref(hidraw_table[minor], 0);
-+
-+	mutex_unlock(&minors_lock);
-+	return 0;
- }
- 
- static long hidraw_ioctl(struct file *file, unsigned int cmd,
-@@ -531,18 +530,9 @@ void hidraw_disconnect(struct hid_device
- 	struct hidraw *hidraw = hid->hidraw;
- 
- 	mutex_lock(&minors_lock);
--	hidraw->exist = 0;
+-		if (readl(host->base + HW_SSP_STATUS) & BM_SSP_STATUS_SDIO_IRQ)
+-			mmc_signal_sdio_irq(host->mmc);
 -
--	device_destroy(hidraw_class, MKDEV(hidraw_major, hidraw->minor));
+ 	} else {
+ 		writel(BM_SSP_CTRL0_SDIO_IRQ_CHECK,
+ 		       host->base + HW_SSP_CTRL0 + MXS_CLR_ADDR);
+@@ -651,6 +647,10 @@ static void mxs_mmc_enable_sdio_irq(stru
+ 	}
  
--	hidraw_table[hidraw->minor] = NULL;
-+	drop_ref(hidraw, 1);
- 
--	if (hidraw->open) {
--		hid_hw_close(hid);
--		wake_up_interruptible(&hidraw->wait);
--	} else {
--		kfree(hidraw);
--	}
- 	mutex_unlock(&minors_lock);
+ 	spin_unlock_irqrestore(&host->lock, flags);
++
++	if (enable && readl(host->base + HW_SSP_STATUS) & BM_SSP_STATUS_SDIO_IRQ)
++		mmc_signal_sdio_irq(host->mmc);
++
  }
- EXPORT_SYMBOL_GPL(hidraw_disconnect);
+ 
+ static const struct mmc_host_ops mxs_mmc_ops = {
 
 
