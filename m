@@ -1,111 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965722AbaDJKnD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 06:43:03 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:61607 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934795AbaDJKm7 convert rfc822-to-8bit (ORCPT
+	id S965917AbaDJKns (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 06:43:48 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:50894 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965718AbaDJKnp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 06:42:59 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH 07/27] irqchip: Declare cortex-a7's irqchip to initialize gic from dt
-From: armdev <armdev.ftm@gmail.com>
-In-Reply-To: <87zjjt1n73.fsf@approximate.cambridge.arm.com>
-Date: Thu, 10 Apr 2014 16:12:56 +0530
-Cc: Chanwoo Choi <cw00.choi@samsung.com>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "t.figa@samsung.com" <t.figa@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "hyunhee.kim@samsung.com" <hyunhee.kim@samsung.com>,
-        "sw0312.kim@samsung.com" <sw0312.kim@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yj44.cho@samsung.com" <yj44.cho@samsung.com>,
-        "inki.dae@samsung.com" <inki.dae@samsung.com>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <Mark.Rutland@arm.com>
+	Thu, 10 Apr 2014 06:43:45 -0400
+From: Koen Kooi <koen@dominion.thruhere.net>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <907CEE7C-19F2-495C-BE8F-712AE4B0A0E1@gmail.com>
-References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com> <1397122124-15690-8-git-send-email-cw00.choi@samsung.com> <878urd33g4.fsf@approximate.cambridge.arm.com> <C136A675-6D64-42EE-918E-351A266946C5@gmail.com> <874n2132o8.fsf@approximate.cambridge.arm.com> <254FD85F-0C8E-4D16-8207-5BA4E7FBDE65@gmail.com> <87zjjt1n73.fsf@approximate.cambridge.arm.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
+Subject: "54b52d87268034859191d671505bb1cfce6bd74d - x86/efi: Build our own EFI services pointer table" breaks boot on thinkpad t440s
+Message-Id: <AF4406ED-6B0B-4E15-A329-04162E0ADC8A@dominion.thruhere.net>
+Date: Thu, 10 Apr 2014 12:43:43 +0200
+To: Matt Fleming <matt.fleming@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Kees Cook <keescook@chromium.org>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>, linux-efi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org List" <linux-kernel@vger.kernel.org>
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
 X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-On 10-Apr-2014, at 4:11 pm, Marc Zyngier <marc.zyngier@arm.com> wrote:
+After updating from 3.14-rc7 to a recent git the kernel fails to boot on my thinkpad t440s and displays:
 
-> On Thu, Apr 10 2014 at 11:30:41 am BST, armdev <armdev.ftm@gmail.com> wrote:
->> On 10-Apr-2014, at 3:51 pm, Marc Zyngier <marc.zyngier@arm.com> wrote:
->> 
->>> On Thu, Apr 10 2014 at 11:09:02 am BST, armdev <armdev.ftm@gmail.com> wrote:
->>>> On 10-Apr-2014, at 3:34 pm, Marc Zyngier <marc.zyngier@arm.com> wrote:
->>>> 
->>>>> On Thu, Apr 10 2014 at 10:28:24 am BST, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->>>>>> This patch declare coretex-a7's irqchip to initialze gic from dt
->>>>>> with "arm,cortex-a7-gic" data.
->>>>>> 
->>>>>> Cc: Thomas Gleixner <tglx@linutronix.de>
->>>>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->>>>>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->>>>>> ---
->>>>>> drivers/irqchip/irq-gic.c | 1 +
->>>>>> 1 file changed, 1 insertion(+)
->>>>>> 
->>>>>> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
->>>>>> index 4300b66..8e906e4 100644
->>>>>> --- a/drivers/irqchip/irq-gic.c
->>>>>> +++ b/drivers/irqchip/irq-gic.c
->>>>>> @@ -1069,6 +1069,7 @@ gic_of_init(struct device_node *node, struct device_node *parent)
->>>>>> }
->>>>>> IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
->>>>>> IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
->>>>>> +IRQCHIP_DECLARE(cortex_a7_gic, "arm,cortex-a7-gic", gic_of_init);
->>>>>> IRQCHIP_DECLARE(msm_8660_qgic, "qcom,msm-8660-qgic", gic_of_init);
->>>>>> IRQCHIP_DECLARE(msm_qgic2, "qcom,msm-qgic2", gic_of_init);
->>>>> 
->>>>> Frankly, this patch adds no value. Are we going to add
->>>>> "arm,cortex-a12-gic", "arm,cortex-a17-gic", "arm,cortex-a53-gic",
->>>>> "arm,cortex-a57-gic"? And that's just to mention the ARM Ltd cores...
->>>>> 
->>>>> Instead, how about defining a generic "arm,gic" property, and mandate
->>>>> that new DT files are using that? We can always use a more precise
->>>>> compatible for quirks.
->>>>> 
->>>> 
->>>> How about keeping it simple and tied to arm gic versions
->>>> arm,gicv1, arm,gicv2, arm,gicv2ve
->>> 
->>> That's a variation on the same theme. As for GICv2, we don't need to
->>> distinguish between having the Virtualization Extentions, the binding
->>> already allows you to tell one from the other.
->>> 
->> So if there be just 2 types of gic, it would be simple.
-> 
-> Not exactly. We just happen to support two revisions of the GIC
-> architecture with the same binding. GICv3 has an entierely separate
-> binding.
-> 
->> gicv1 - 2 address sets (gicc and gicd)
-> 
-> Yes.
-> 
->> gicv2 - 4 sets (gicc gicd gicv gich) and 1 maintenance interrupt. Right?
-> 
-> No.
-> 
-> The presence of the GICV, GICH and maintenance interrupt are indicative
-> of the support for the Virtualization Extentions. GICv2 itself can
-> perfectly be built without it.
+	Failed to get file info size
+	Failed to alloc highmem for files
 
-then does gicv2-ve makes sense ?
-> 
-> 	M.
-> -- 
-> Jazz is not dead. It just smells funny.
+After a morning of running git bisect and rebooting, the bad commit seems to be:
 
+	54b52d87268034859191d671505bb1cfce6bd74d - x86/efi: Build our own EFI services pointer table
+
+It doesn't revert cleanly, so I can't test current git without it to see if that fixes it or not. I'm using gummiboot as bootloader:
+
+Boot Loader Binaries:
+          ESP: /dev/disk/by-partuuid/47cab2d9-0641-476c-bc74-166b122fca15
+         File: └─/EFI/gummiboot/gummibootx64.efi (gummiboot 44)
+         File: └─/EFI/Boot/BOOTX64.EFI (gummiboot 44)
+
+Boot Loader Entries in EFI Variables:
+        Title: Linux Boot Manager
+           ID: 0x0016
+       Status: active, boot-order
+    Partition: /dev/disk/by-partuuid/b7b4fad3-3d19-40fd-b341-0ec7f2152b81
+         File: └─/EFI/gummiboot/gummibootx64.efi
+
+        Title: Linux Boot Manager
+           ID: 0x0015
+       Status: active, boot-order
+    Partition: /dev/disk/by-partuuid/47cab2d9-0641-476c-bc74-166b122fca15
+         File: └─/EFI/gummiboot/gummibootx64.efi
+
+        Title: Fedora
+           ID: 0x0014
+       Status: active, boot-order
+    Partition: /dev/disk/by-partuuid/47cab2d9-0641-476c-bc74-166b122fca15
+         File: └─/EFI/fedora/shim.efi
+
+        Title: Windows Boot Manager
+           ID: 0x0013
+       Status: active, boot-order
+    Partition: /dev/disk/by-partuuid/56dff960-86b5-4846-89d3-fed0620f471a
+         File: └─/EFI/Microsoft/Boot/bootmgfw.efi
+
+thanks,
+
+Koen
+
+Bisect log:
+
+git bisect start
+# good: [dcb99fd9b08cfe1afe426af4d8d3cbc429190f15] Linux 3.14-rc7
+git bisect good dcb99fd9b08cfe1afe426af4d8d3cbc429190f15
+# bad: [39de65aa2c3eee901db020a4f1396998e09602a3] Merge branch 'i2c/for-next' of git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux
+git bisect bad 39de65aa2c3eee901db020a4f1396998e09602a3
+# bad: [ec0159503ae74aeb834e78366bdf4b9663ca1129] hwmon: (k10temp) Add support for AMD F16 M30h processor
+git bisect bad ec0159503ae74aeb834e78366bdf4b9663ca1129
+# bad: [675c354a95d5375153b8bb80a0448cab916c7991] Merge tag 'char-misc-3.15-rc1' of git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc
+git bisect bad 675c354a95d5375153b8bb80a0448cab916c7991
+# bad: [3786075b5ebc8c4eaefd9e3ebf72883934fb64b3] Merge tag 'regulator-v3.15' of git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator
+git bisect bad 3786075b5ebc8c4eaefd9e3ebf72883934fb64b3
+# bad: [1ce235faa8fefa4eb7199cad890944c1d2ba1b3e] Merge tag 'arm64-upstream' of git://git.kernel.org/pub/scm/linux/kernel/git/arm64/linux
+git bisect bad 1ce235faa8fefa4eb7199cad890944c1d2ba1b3e
+# good: [8c292f11744297dfb3a69f4a0bccbe4a6417b50d] Merge branch 'perf-core-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+git bisect good 8c292f11744297dfb3a69f4a0bccbe4a6417b50d
+# bad: [e06df6a7eae1ab1ef4deb076aeeaed90e948e5c0] Merge branch 'x86-kaslr-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+git bisect bad e06df6a7eae1ab1ef4deb076aeeaed90e948e5c0
+# good: [971eae7c99212dd67b425a603f1fe3b763359907] Merge branch 'sched-core-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+git bisect good 971eae7c99212dd67b425a603f1fe3b763359907
+# bad: [204b0a1a4b92612c957a042df1a3be0e9cc79391] x86, efi: Abstract x86 efi_early calls
+git bisect bad 204b0a1a4b92612c957a042df1a3be0e9cc79391
+# bad: [3db4cafdfd05717dc939780134e53023a3c1f15f] x86/boot: Fix non-EFI build
+git bisect bad 3db4cafdfd05717dc939780134e53023a3c1f15f
+# bad: [0154416a71c2a84c3746c8dd8ed25287e36934d3] x86/efi: Add early thunk code to go from 64-bit to 32-bit
+git bisect bad 0154416a71c2a84c3746c8dd8ed25287e36934d3
+# good: [426e34cc4f6094cefe4f3175764cdf583128e7cd] x86/mm/pageattr: Always dump the right page table in an oops
+git bisect good 426e34cc4f6094cefe4f3175764cdf583128e7cd
+# good: [677703cef0a148ba07d37ced649ad25b1cda2f78] efi: Add separate 32-bit/64-bit definitions
+git bisect good 677703cef0a148ba07d37ced649ad25b1cda2f78
+
+Build command line:
+
+cp defconfig-3.13 .config ; yes '' | make oldconfig ; make bzImage -j4 && sudo cp arch/x86_64/boot/bzImage /boot/vmlinuz-3.14 && sudo reboot
