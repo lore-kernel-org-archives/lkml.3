@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935273AbaDJDie (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:38:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41340 "EHLO
+	id S965267AbaDJDix (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:38:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41337 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935142AbaDJDXE (ORCPT
+	with ESMTP id S934320AbaDJDXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:23:04 -0400
+	Wed, 9 Apr 2014 23:23:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Chan <mchan@broadcom.com>,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
         Ben Hutchings <ben@decadent.org.uk>,
         Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 123/134] tg3: Skip powering down function 0 on certain serdes devices
-Date: Wed,  9 Apr 2014 20:23:59 -0700
-Message-Id: <20140410032315.131623807@linuxfoundation.org>
+Subject: [PATCH 3.4 122/134] sb_edac: Avoid overflow errors at memory size calculation
+Date: Wed,  9 Apr 2014 20:23:58 -0700
+Message-Id: <20140410032314.991147249@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -30,78 +28,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nithin Sujir <nsujir@broadcom.com>
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-commit 44f3b503c16425c8e9db4bbaa2fc9cd0c9d0ba91 upstream.
+commit deb09ddaff1435f72dd598d38f9b58354c68a5ec upstream.
 
-On the 5718, 5719 and 5720 serdes devices, powering down function 0
-results in all the other ports being powered down. Add code to skip
-function 0 power down.
+Sandy bridge EDAC is calculating the memory size with overflow.
+Basically, the size field and the integer calculation is using 32 bits.
+More bits are needed, when the DIMM memories have high density.
 
-v2:
- - Modify tg3_phy_power_bug() function to use a switch instead of a
-   complicated if statement. Suggested by Joe Perches.
+The net result is that memories are improperly reported there, when
+high-density DIMMs are used:
 
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+EDAC DEBUG: in drivers/edac/sb_edac.c, line at 591: mc#0: channel 0, dimm 0, -16384 Mb (-4194304 pages) bank: 8, rank: 2, row: 0x10000, col: 0x800
+EDAC DEBUG: in drivers/edac/sb_edac.c, line at 591: mc#0: channel 1, dimm 0, -16384 Mb (-4194304 pages) bank: 8, rank: 2, row: 0x10000, col: 0x800
+
+As the number of pages value is handled at the EDAC core as unsigned
+ints, the driver shows the 16 GB memories at sysfs interface as 16760832
+MB! The fix is simple: calculate the number of pages as unsigned 64-bits
+integer.
+
+After the patch, the memory size (16 GB) is properly detected:
+
+EDAC DEBUG: in drivers/edac/sb_edac.c, line at 592: mc#0: channel 0, dimm 0, 16384 Mb (4194304 pages) bank: 8, rank: 2, row: 0x10000, col: 0x800
+EDAC DEBUG: in drivers/edac/sb_edac.c, line at 592: mc#0: channel 1, dimm 0, 16384 Mb (4194304 pages) bank: 8, rank: 2, row: 0x10000, col: 0x800
+
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 [bwh: Backported to 3.2:
- s/tg3_asic_rev\(tp\)/GET_ASIC_REV(tp->pci_chip_rev_id)/]
+ - Adjust context
+ - Debug log function is debugf0(), not edac_dbg()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[hq: Backported to 3.4: Adjust context]
-Signed-off-by: Qiang Huang <h.huangqiang@huawei.com>
+Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/broadcom/tg3.c |   32 ++++++++++++++++++++++++++------
- 1 file changed, 26 insertions(+), 6 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -2740,6 +2740,31 @@ static int tg3_5700_link_polarity(struct
- 	return 0;
- }
- 
-+static bool tg3_phy_power_bug(struct tg3 *tp)
-+{
-+	switch (GET_ASIC_REV(tp->pci_chip_rev_id)) {
-+	case ASIC_REV_5700:
-+	case ASIC_REV_5704:
-+		return true;
-+	case ASIC_REV_5780:
-+		if (tp->phy_flags & TG3_PHYFLG_MII_SERDES)
-+			return true;
-+		return false;
-+	case ASIC_REV_5717:
-+		if (!tp->pci_fn)
-+			return true;
-+		return false;
-+	case ASIC_REV_5719:
-+	case ASIC_REV_5720:
-+		if ((tp->phy_flags & TG3_PHYFLG_PHY_SERDES) &&
-+		    !tp->pci_fn)
-+			return true;
-+		return false;
-+	}
-+
-+	return false;
-+}
-+
- static void tg3_power_down_phy(struct tg3 *tp, bool do_low_power)
+---
+ drivers/edac/sb_edac.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+--- a/drivers/edac/sb_edac.c
++++ b/drivers/edac/sb_edac.c
+@@ -555,7 +555,8 @@ static int get_dimm_config(const struct
  {
- 	u32 val;
-@@ -2796,12 +2821,7 @@ static void tg3_power_down_phy(struct tg
- 	/* The PHY should not be powered down on some chips because
- 	 * of bugs.
- 	 */
--	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5700 ||
--	    GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5704 ||
--	    (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5780 &&
--	     (tp->phy_flags & TG3_PHYFLG_MII_SERDES)) ||
--	    (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5717 &&
--	     !tp->pci_fn))
-+	if (tg3_phy_power_bug(tp))
- 		return;
+ 	struct sbridge_pvt *pvt = mci->pvt_info;
+ 	struct csrow_info *csr;
+-	int i, j, banks, ranks, rows, cols, size, npages;
++	unsigned i, j, banks, ranks, rows, cols, npages;
++	u64 size;
+ 	int csrow = 0;
+ 	unsigned long last_page = 0;
+ 	u32 reg;
+@@ -627,10 +628,10 @@ static int get_dimm_config(const struct
+ 				cols = numcol(mtr);
  
- 	if (GET_CHIP_REV(tp->pci_chip_rev_id) == CHIPREV_5784_AX ||
+ 				/* DDR3 has 8 I/O banks */
+-				size = (rows * cols * banks * ranks) >> (20 - 3);
++				size = ((u64)rows * cols * banks * ranks) >> (20 - 3);
+ 				npages = MiB_TO_PAGES(size);
+ 
+-				debugf0("mc#%d: channel %d, dimm %d, %d Mb (%d pages) bank: %d, rank: %d, row: %#x, col: %#x\n",
++				debugf0("mc#%d: channel %d, dimm %d, %Ld Mb (%d pages) bank: %d, rank: %d, row: %#x, col: %#x\n",
+ 					pvt->sbridge_dev->mc, i, j,
+ 					size, npages,
+ 					banks, ranks, rows, cols);
 
 
