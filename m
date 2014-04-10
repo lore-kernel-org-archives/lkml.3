@@ -1,56 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030743AbaDJMyi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 08:54:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9276 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030515AbaDJMyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 08:54:35 -0400
-Message-ID: <1397134442.31272.38.camel@deneb.redhat.com>
-Subject: Re: [PATCH v3 06/10] arm64: efi: add EFI stub
-From: Mark Salter <msalter@redhat.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Leif Lindholm <leif.lindholm@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Date: Thu, 10 Apr 2014 08:54:02 -0400
-In-Reply-To: <20140409142013.GC26210@e106331-lin.cambridge.arm.com>
-References: <1396637113-22790-1-git-send-email-leif.lindholm@linaro.org>
-	 <1396637113-22790-7-git-send-email-leif.lindholm@linaro.org>
-	 <20140409142013.GC26210@e106331-lin.cambridge.arm.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1030691AbaDJM7E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 08:59:04 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:60532 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030535AbaDJM7B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 08:59:01 -0400
+From: Jianyu Zhan <nasa4836@gmail.com>
+To: mmarek@suse.cz
+Cc: akpm@linux-foundation.org, michael.opdenacker@free-electrons.com,
+        tkhai@yandex.ru, linux-kernel@vger.kernel.org, nasa4836@gmail.com
+Subject: Re: [PATCH] scripts/tags.sh: add regular expression replacement pattern for memcg
+Date: Thu, 10 Apr 2014 20:58:52 +0800
+Message-Id: <1397134732-29106-1-git-send-email-nasa4836@gmail.com>
+X-Mailer: git-send-email 1.9.0.GIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-09 at 15:20 +0100, Mark Rutland wrote:
-> >
-> > +config EFI
-> > +       bool "UEFI firmware support"
-> > +       depends on OF
-> 
-> I note we're not depending on !CPU_BIG_ENDIAN here, and it looks like
-> the implementation is not endian-clean (I've pointed out a few issues
-> below).
-> 
-> We need to fix that up for CPU_BIG_ENDIAN. For the moment we could
-> depend on !CPU_BIG_ENDIAN which would at least to make it clear we don't
-> support EFI && CPU_BIG_ENDIAN yet. The commit message should be updated
-> to mention that.
-> 
+Sorry, the comment in previous patch is somewhat misguiding, this patch
+replaces that one.
+ 
+Currently, no regular expression replacement patterns for PageCgroup*
+flag-ops are defined, which causes quite a few pain while reading code. 
+Just get rid of it.
 
-Yes, the !CPU_BIG_ENDIAN was there at one point but got lost along
-the way. It may be best to put it back for now, but I'll take a
-stab at getting the stub part sorted out based on your comments.
-Full runtime services will be trickier and need a followup patch in
-the future after the initial patch series goes in.
+Also, add a comment to inform people to add pattern for whatever new
+flag-ops they add.
 
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+---
+ include/linux/page_cgroup.h | 6 ++++++
+ scripts/tags.sh             | 8 ++++++++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+index 777a524..9c60b77 100644
+--- a/include/linux/page_cgroup.h
++++ b/include/linux/page_cgroup.h
+@@ -44,6 +44,12 @@ static inline void __init page_cgroup_init(void)
+ struct page_cgroup *lookup_page_cgroup(struct page *page);
+ struct page *lookup_cgroup_page(struct page_cgroup *pc);
+ 
++/*
++ * Note, whenever you add a *PCGFLAG operation here, please add a
++ * regular expression replacement pattern in scripts/tags.sh
++ * to inform our friendly and smart tags generator.
++ */
++
+ #define TESTPCGFLAG(uname, lname)			\
+ static inline int PageCgroup##uname(struct page_cgroup *pc)	\
+ 	{ return test_bit(PCG_##lname, &pc->flags); }
+diff --git a/scripts/tags.sh b/scripts/tags.sh
+index 58c4559..c0d52d1 100755
+--- a/scripts/tags.sh
++++ b/scripts/tags.sh
+@@ -171,12 +171,16 @@ exuberant()
+ 	--regex-c++='/PAGEFLAG\(([^,)]*).*/ClearPage\1/'		\
+ 	--regex-c++='/TESTSETFLAG\(([^,)]*).*/TestSetPage\1/'		\
+ 	--regex-c++='/TESTPAGEFLAG\(([^,)]*).*/Page\1/'			\
++	--regex-c++='/TESTPCGFLAG\(([^,)]*).*/PageCgroup\1/'		\
+ 	--regex-c++='/SETPAGEFLAG\(([^,)]*).*/SetPage\1/'		\
+ 	--regex-c++='/__SETPAGEFLAG\(([^,)]*).*/__SetPage\1/'		\
++	--regex-c++='/SETPCGFLAG\(([^,)]*).*/SetPageCgroup\1/'		\
+ 	--regex-c++='/TESTCLEARFLAG\(([^,)]*).*/TestClearPage\1/'	\
+ 	--regex-c++='/__TESTCLEARFLAG\(([^,)]*).*/TestClearPage\1/'	\
++	--regex-c++='/TESTCLEARPCGFLAG\(([^,)]*).*/TestClearPageCgroup\1/' \
+ 	--regex-c++='/CLEARPAGEFLAG\(([^,)]*).*/ClearPage\1/'		\
+ 	--regex-c++='/__CLEARPAGEFLAG\(([^,)]*).*/__ClearPage\1/'	\
++	--regex-c++='/CLEARPCGFLAG\(([^,)]*).*/ClearPageCgroup\1/'	\
+ 	--regex-c++='/__PAGEFLAG\(([^,)]*).*/__SetPage\1/'		\
+ 	--regex-c++='/__PAGEFLAG\(([^,)]*).*/__ClearPage\1/'		\
+ 	--regex-c++='/PAGEFLAG_FALSE\(([^,)]*).*/Page\1/'		\
+@@ -229,12 +233,16 @@ emacs()
+ 	--regex='/PAGEFLAG(\([^,)]*\).*/ClearPage\1/'		\
+ 	--regex='/TESTSETFLAG(\([^,)]*\).*/TestSetPage\1/'	\
+ 	--regex='/TESTPAGEFLAG(\([^,)]*\).*/Page\1/'		\
++	--regex='/TESTPCGFLAG\(([^,)]*).*/PageCgroup\1/'	\
+ 	--regex='/SETPAGEFLAG(\([^,)]*\).*/SetPage\1/'		\
+ 	--regex='/__SETPAGEFLAG(\([^,)]*\).*/__SetPage\1/'	\
++	--regex='/SETPCGFLAG\(([^,)]*).*/SetPageCgroup\1/'	\
+ 	--regex='/TESTCLEARFLAG(\([^,)]*\).*/TestClearPage\1/'	\
+ 	--regex='/__TESTCLEARFLAG(\([^,)]*\).*/TestClearPage\1/'	\
++	--regex='/TESTCLEARPCGFLAG\(([^,)]*).*/TestClearPageCgroup\1/' \
+ 	--regex='/CLEARPAGEFLAG(\([^,)]*\).*/ClearPage\1/'	\
+ 	--regex='/__CLEARPAGEFLAG(\([^,)]*\).*/__ClearPage\1/'	\
++	--regex='/CLEARPCGFLAG\(([^,)]*).*/ClearPageCgroup\1/'	\
+ 	--regex='/__PAGEFLAG(\([^,)]*\).*/__SetPage\1/'		\
+ 	--regex='/__PAGEFLAG(\([^,)]*\).*/__ClearPage\1/'	\
+ 	--regex='/PAGEFLAG_FALSE(\([^,)]*\).*/Page\1/'		\
+-- 
+1.9.0.GIT
 
