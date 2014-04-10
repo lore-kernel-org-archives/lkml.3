@@ -1,120 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030483AbaDJREq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 13:04:46 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:37171 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030400AbaDJREn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 13:04:43 -0400
-X-IronPort-AV: E=Sophos;i="4.97,835,1389772800"; 
-   d="scan'208";a="23669053"
-Message-ID: <5346CF27.3070406@broadcom.com>
-Date: Thu, 10 Apr 2014 19:04:39 +0200
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	id S1758682AbaDJRKS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 13:10:18 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:51899 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751235AbaDJRKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 13:10:16 -0400
+Message-ID: <5346D05E.2020201@gentoo.org>
+Date: Thu, 10 Apr 2014 13:09:50 -0400
+From: Richard Yao <ryao@gentoo.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-CC: Takashi Iwai <tiwai@suse.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felix Fietkau <nbd@openwrt.org>,
-        "backports@vger.kernel.org" <backports@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: Re: Bumping required kernels to 3.0 for Linux backports ?
-References: <CAB=NE6VvyBKzEg=ErZzQMktY8eLytQ21JCPrOQbxvZ9m-nqHkw@mail.gmail.com> <53451077.2030102@openwrt.org> <CAB=NE6UUN4vQd3SpsvO5tcgaYq3YXQeE0KtZGki7p7OnR=J4RA@mail.gmail.com> <20140409191225.GA10560@kroah.com> <CAB=NE6VqY8yXoYuE0o01vq86imY8EtqLdkPa4bGMvR3bTaj5KQ@mail.gmail.com> <20140409202224.GA12953@kroah.com> <CAB=NE6XY5++p7hJQpQdwrFNUcGbUsKpC+oJiZQciXNduo+8j8A@mail.gmail.com> <20140409210613.GA14392@kroah.com> <s5heh15pr18.wl%tiwai@suse.de> <CAB=NE6VeNTFeGxKXpYunkU-W=JPLMpOnrehttvsqB+yXkdz5fg@mail.gmail.com>
-In-Reply-To: <CAB=NE6VeNTFeGxKXpYunkU-W=JPLMpOnrehttvsqB+yXkdz5fg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Andi Kleen <andi@firstfloor.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Zhang Yanfei <zhangyanfei.yes@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kernel@gentoo.org,
+        Matthew Thode <mthode@mthode.org>
+Subject: Re: [PATCH] mm/vmalloc: Introduce DEBUG_VMALLOCINFO to reduce spinlock
+ contention
+References: <1397148058-8737-1-git-send-email-ryao@gentoo.org> <87txa1i0uq.fsf@tassilo.jf.intel.com>
+In-Reply-To: <87txa1i0uq.fsf@tassilo.jf.intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="9XQMfpVkEgXa76K4rLfhnGcqM2kGo6A3M"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/14 18:59, Luis R. Rodriguez wrote:
-> On Thu, Apr 10, 2014 at 12:44 AM, Takashi Iwai<tiwai@suse.de>  wrote:
->> At Wed, 9 Apr 2014 14:06:13 -0700,
->> Greg Kroah-Hartman wrote:
->>>
->>> On Wed, Apr 09, 2014 at 01:52:29PM -0700, Luis R. Rodriguez wrote:
->>>> On Wed, Apr 9, 2014 at 1:22 PM, Greg Kroah-Hartman
->>>> <gregkh@linuxfoundation.org>  wrote:
->>>>> On Wed, Apr 09, 2014 at 01:01:23PM -0700, Luis R. Rodriguez wrote:
->>>>>> On Wed, Apr 9, 2014 at 12:12 PM, Greg Kroah-Hartman
->>>>>> <gregkh@linuxfoundation.org>  wrote:
->>>>>>> On Wed, Apr 09, 2014 at 11:28:55AM -0700, Luis R. Rodriguez wrote:
->>>>>>>> On Wed, Apr 9, 2014 at 2:18 AM, Felix Fietkau<nbd@openwrt.org>  wrote:
->>>>>>>>> The oldest kernel in OpenWrt that we're still supporting with updates of
->>>>>>>>> the backports tree is 3.3, so raising the minimum requirement to 3.0 is
->>>>>>>>> completely fine with me.
->>>>>>>>
->>>>>>>> OK note that 3.3 is not listed on kernel.org as supported. I'm fine in
->>>>>>>> carrying the stuff for those for now but ultimately it'd also be nice
->>>>>>>> if we didn't even have to test the kernels in between which are not
->>>>>>>> listed. This does however raise the question of how often a kernel in
->>>>>>>> between a list of supported kernels gets picked up to be supported
->>>>>>>> eventually. Greg, Jiri, do you happen to know what the likelyhood of
->>>>>>>> that can be?
->>>>>>>
->>>>>>> I don't know of anything ever getting picked up after I have said it
->>>>>>> would not be supported anymore.
->>>>>>
->>>>>> Great! How soon after a release do you mention whether or not it will
->>>>>> be supported? Like say, 3.14, which was just released.
->>>>>
->>>>> I only mention it around the time that it would normally go end-of-life.
->>>>>
->>>>> For example, if 3.13 were to be a release that was going to be "long
->>>>> term", I would only say something around the normal time I would be no
->>>>> longer supporting it.  Like in 2-3 weeks from now.
->>>>>
->>>>> So for 3.14, I'll not say anything about that until 3.16-rc1 is out,
->>>>> give or take a week or two.
->>>>>
->>>>>> Also, as of late are you aware any distribution picking an unsupported
->>>>>> kernel for their next choice of kernel?
->>>>>
->>>>> Sure, lots do, as they don't line up with my release cycles (I only pick
->>>>> 1 long term kernel to maintain each year).  Look at the Ubuntu releases
->>>>> for examples of that.  Also openSUSE and Fedora (although Fedora does
->>>>> rev their kernel pretty regularly) don't usually line up.  The
->>>>> "enterprise" distros are different, but even then, they don't always
->>>>> line up either (which is why Jiri is maintaining 3.12...)
->>>>>
->>>>> Hope this helps,
->>>>
->>>> It does! Unless I don't hear any complaints then given that some
->>>> distributions might choose a kernel in between and given also your
->>>> great documented story behind the gains on trying to steer folks
->>>> together on the 'ol 2.6.32 [0] and this now being faded, I'll be
->>>> bumping backports to only support>= 3.0 soon, but we'll include all
->>>> the series from 3.0 up to the latest. That should shrink compile /
->>>> test time / support time on backports to 1/2.
->>>
->>> Why 3.0?  That's not supported by anyone anymore for "new hardware", I'd
->>> move to 3.2 if you could, as that's the Debian stable release that will
->>> be maintained for quite some time yet:
->>>        https://www.kernel.org/category/releases.html
->>
->> Well, the support for "new hardware" is what backports project itself
->> does, isn't it?
->>
->> Besides, SLES11 is still supported, so yes, including 3.0.x would be
->> helpful.
->
-> That's two stakeholders for 3.0 -- but nothing is voiced for anything
-> older than that. Today I will rip the older kernels into oblivion.
-> Thanks for all the feedback!
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--9XQMfpVkEgXa76K4rLfhnGcqM2kGo6A3M
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Ok, I guess my voice was cracking when I mentioned 2.6.38 as being used 
-over here. I am probably alone in that desert.
+On 04/10/2014 12:51 PM, Andi Kleen wrote:
+> Richard Yao <ryao@gentoo.org> writes:
+>=20
+>> Performance analysis of software compilation by Gentoo portage on an
+>> Intel E5-2620 with 64GB of RAM revealed that a sizeable amount of time=
+,
+>> anywhere from 5% to 15%, was spent in get_vmalloc_info(), with at leas=
+t
+>> 40% of that time spent in the _raw_spin_lock() invoked by it.
+>=20
+> I don't think that's the right fix. We want to be able=20
+> to debug kernels without having to recompile them.
 
-Regards,
-Arend
+There are plenty of other features for debugging the VM subsystem that
+are disabled in production kernels because they are too expensive. I see
+no reason why this should not be one of them.
 
->   Luis
-> --
-> To unsubscribe from this list: send the line "unsubscribe backports" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+If someone reading this has a use for this functionality in production
+systems, I would love to hear about it. I am having trouble finding uses
+for this in production.
 
+That being said, we are clearly spending plenty of time blocked on list
+traversal. I imagine that we could use an extent tree to track free
+space for even bigger gains, but I have difficulty seeing why
+/proc/vmallocinfo should be available on non-debug kernels. Allowing
+userland to hold a critical lock indefinitely on production systems is a
+deadlock waiting to happen.
+
+> And switching locking around dynamically like this is very
+> ugly and hard to maintain.
+
+I welcome suggestions on how to make the changes I have made in this
+patch more maintainable.
+
+> Besides are you sure the spin lock is not needed elsewhere?
+>=20
+> How are writers to the list protected?
+
+The spinlock is needed elsewhere, but not to protect this list.
+Modifications to this list are done under RCU. The only thing stopping
+RCU from being enough to avoid a spinlock is /proc/vmallocinfo, which
+does locking to prevent modification while userland is reading the list.
+
+
+--9XQMfpVkEgXa76K4rLfhnGcqM2kGo6A3M
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTRtBkAAoJECDuEZm+6Exkxd4P/3qGawWH/z110KPTadfUbUo5
+7aojuucZXCcEUZHGsnr433Vo7+WUyH/k0Cg3cvmCglEJNdWzy7vZbdQ3h963Wg1f
+1ShOTqv1WW1EmuVGRuwpHQhm+V29w7E9eMEQ2N+d2/VXB2MiTu0gijejcQ85enTu
+0skbA0WvAp0Oy3yzXL6NgUTUcBr9UfBB/zxOf80Sm9U7uck8RCbft3Viy9oi0Pgu
+ixqXEWopGZXMCj/pJHnhptj7/E+rYclJvbkg++7HTA9gUkXo7Cs4BhppVgw9YyxW
+aFHvyWtEAuJUusSQ0uEp6iYyhtZ3gZyTouXUsucmdBzmIJfXVji3cjhrJsoAsJ2m
+0b/Lmzb3wn0bFUzKHQikdhbMBHbHPiQ9Kc6QuJMJ1oLMnwvf4fOiOrYYQJP+/4N7
+HJZQD9yizo1bntANFgCcbh9YOt2jEzrauGOHpLW4IMJzaOritacBvnRiuo5eDaRM
+1UN5dfZ+b/IBy1V6NrlbDqcMWroT0hh3fzCYvyPAnADi5iENUiU582P7+402UCjw
+DIKezgdGD2mKsJnVfzy5BKw5a7uf7vLA8qg+kZyygIsWLBzvg0BwFiXtUvViVp+C
+xSSd7aHuOfm9H9F8pxxNBD2aSFZPrbl5QiHP8KatNTsZKn4JSF89HQ8UdMVNBnDu
+tPzpwJp7yEnvWTx1N4Hs
+=nBmN
+-----END PGP SIGNATURE-----
+
+--9XQMfpVkEgXa76K4rLfhnGcqM2kGo6A3M--
