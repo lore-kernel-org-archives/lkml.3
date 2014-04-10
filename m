@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030544AbaDJTtt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 15:49:49 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:47793 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030242AbaDJTtr (ORCPT
+	id S1161132AbaDJTu0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 15:50:26 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:48770 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030242AbaDJTuW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 15:49:47 -0400
-X-Sasl-enc: ruUV+3cS+tHzyHi960O49uBGJtSFqgpiUa+1WjbE6pNb 1397159385
-Date: Thu, 10 Apr 2014 19:45:38 +0000
-From: Colin Walters <walters@verbum.org>
-Subject: Re: [PATCH 0/6] File Sealing & memfd_create()
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: tytso@mit.edu, David Herrmann <dh.herrmann@gmail.com>,
-        linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Matthew Wilcox <matthew@wil.cx>,
-        Karol Lewandowski <k.lewandowsk@samsung.com>,
-        Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
-        Lennart Poettering <lennart@poettering.net>, Kristian@thunk.org,
-        john.stultz@linaro.org, Greg Kroah-Hartman <greg@kroah.com>,
-        Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        dri-devel@lists.freedesktop.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ryan Lortie <desrt@desrt.ca>, mtk.manpages@gmail.com
-Message-Id: <1397159378.4434.1@mail.messagingengine.com>
-In-Reply-To: <5346EDE8.2060004@amacapital.net>
-References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
-	<20140320153250.GC20618@thunk.org>
-	<1397141388.16343.10@mail.messagingengine.com>
-	<5346EDE8.2060004@amacapital.net>
-X-Mailer: geary/0.6.0
+	Thu, 10 Apr 2014 15:50:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
-X-OriginalDate: Thu, 10 Apr 2014 19:45:38 -0004
+In-Reply-To: <CAOULuOaUke-W1W0o=1rhhk43Fy_RAYLdfhXQjdhy2xjHxP0oWA@mail.gmail.com>
+References: <CAOULuOY5eryuH1KgaqiuGXyYiQd2h=TZoPe2M2+juts9XuzW6Q@mail.gmail.com>
+ <CAE9FiQXmO_sSCnd-0NvXKmyeLP0m4XGRRkAgqSiMkfeTcvXs+A@mail.gmail.com>
+ <CAOULuOaeBPpuiYc_Aru+awBDf=Ahbok-UjgY9o7gfO4VMctoqg@mail.gmail.com>
+ <CAE9FiQWpprkp_dzviD8wRpqosJq5Oe+8UTwhL87fbzFm3OknUw@mail.gmail.com>
+ <CA+55aFx_zAO0iJVi==4X-bYFTopgaOCopCdUBbqUwKfOrXRYqw@mail.gmail.com>
+ <20140329171903.GA10551@google.com> <CAOULuOaUke-W1W0o=1rhhk43Fy_RAYLdfhXQjdhy2xjHxP0oWA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 10 Apr 2014 13:50:01 -0600
+Message-ID: <CAErSpo6XjtrzSJE6n5aCMzketKv+rPt5eVvrzOQgUnviiRTWnA@mail.gmail.com>
+Subject: Re: BAR 14: can't assign mem (size 0x200000)
+To: Parag Warudkar <parag.lkml@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Yinghai Lu <yinghai@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 3:15 PM, Andy Lutomirski <luto@amacapital.net> 
-wrote:
-> 
-> 
-> COW links can do this already, I think.  Of course, you'll have to 
-> use a
-> filesystem that supports them.
+On Sat, Mar 29, 2014 at 6:14 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
+>> On Sat, Mar 29, 2014 at 09:41:20AM -0700, Linus Torvalds wrote:
+>
+>>> Parag, can you add a WARN_ON_ONCE() to that message, so that we see
+>>> what the call chain is for it.
 
-COW is nice if the filesystem supports them, but my userspace code 
-needs to be filesystem agnostic.  Because of that, the design for 
-userspace simply doesn't allow arbitrary writes.
+Parag, did you ever try this?
 
-Instead, I have to painfully audit every rpm %post/dpkg postinst type 
-script to ensure they break hardlinks, and furthermore only allow 
-executing scripts that are known to do so.
+> ...
+> Not sure if Ubuntu includes any patches on top of 3.11 mainline that
+> make a difference to this issue - but in case they don't this might be
+> a regression.
 
-But I think even in a btrfs world it'd still be useful to mark files as 
-content-immutable.
+I doubt that Ubuntu includes any patches relevant to this issue.
 
+Even though it doesn't seem to cause any problems, we're going to get
+a lot of complaints about these scary-looking messages when resuming,
+so I think we should figure this out and fix it.
 
-
-
+Bjorn
