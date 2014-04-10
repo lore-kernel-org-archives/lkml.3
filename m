@@ -1,77 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935007AbaDJKFL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 06:05:11 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:12106 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750763AbaDJKFI (ORCPT
+	id S935217AbaDJKFW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 06:05:22 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:60989 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935022AbaDJKFM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 06:05:08 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: "kgene.kim\@samsung.com" <kgene.kim@samsung.com>,
-        "t.figa\@samsung.com" <t.figa@samsung.com>,
-        "linux-samsung-soc\@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "hyunhee.kim\@samsung.com" <hyunhee.kim@samsung.com>,
-        "sw0312.kim\@samsung.com" <sw0312.kim@samsung.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yj44.cho\@samsung.com" <yj44.cho@samsung.com>,
-        "inki.dae\@samsung.com" <inki.dae@samsung.com>,
-        "kyungmin.park\@samsung.com" <kyungmin.park@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        mark.rutland@arm.com
-Subject: Re: [PATCH 07/27] irqchip: Declare cortex-a7's irqchip to initialize gic from dt
-In-Reply-To: <1397122124-15690-8-git-send-email-cw00.choi@samsung.com>
-	(Chanwoo Choi's message of "Thu, 10 Apr 2014 10:28:24 +0100")
-Organization: ARM Ltd
-References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
-	<1397122124-15690-8-git-send-email-cw00.choi@samsung.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Thu, 10 Apr 2014 11:04:59 +0100
-Message-ID: <878urd33g4.fsf@approximate.cambridge.arm.com>
+	Thu, 10 Apr 2014 06:05:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20140401040705.152847420@linuxfoundation.org>
+References: <20140401040703.045139933@linuxfoundation.org>
+	<20140401040705.152847420@linuxfoundation.org>
+Date: Thu, 10 Apr 2014 03:05:10 -0700
+Message-ID: <CAKbGBLj3Ep7DkJsMFfRt0Kv80DTL6FS4RbOZWgZuesSU58JJhg@mail.gmail.com>
+Subject: Re: [PATCH 3.13 08/22] Revert "xen: properly account for _PAGE_NUMA
+ during xen pte translations"
+From: Steven Noonan <steven@uplinklabs.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linux Kernel mailing List <linux-kernel@vger.kernel.org>,
+        stable@vger.kernel.org, David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10 2014 at 10:28:24 am BST, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> This patch declare coretex-a7's irqchip to initialze gic from dt
-> with "arm,cortex-a7-gic" data.
+I realize it's late to protest on this given that 3.13.9 is out, but
+what is the path forward for those experiencing the original issue
+that the reverted commit was intended to correct?
+
+http://marc.info/?l=linux-kernel&m=139034684731087&w=2
+
+On Mon, Mar 31, 2014 at 9:08 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> 3.13-stable review patch.  If anyone has any objections, please let me know.
 >
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ------------------
+>
+> From: David Vrabel <david.vrabel@citrix.com>
+>
+> commit 5926f87fdaad4be3ed10cec563bf357915e55a86 upstream.
+>
+> This reverts commit a9c8e4beeeb64c22b84c803747487857fe424b68.
+>
+> PTEs in Xen PV guests must contain machine addresses if _PAGE_PRESENT
+> is set and pseudo-physical addresses is _PAGE_PRESENT is clear.
+>
+> This is because during a domain save/restore (migration) the page
+> table entries are "canonicalised" and uncanonicalised". i.e., MFNs are
+> converted to PFNs during domain save so that on a restore the page
+> table entries may be rewritten with the new MFNs on the destination.
+> This canonicalisation is only done for PTEs that are present.
+>
+> This change resulted in writing PTEs with MFNs if _PAGE_PROTNONE (or
+> _PAGE_NUMA) was set but _PAGE_PRESENT was clear.  These PTEs would be
+> migrated as-is which would result in unexpected behaviour in the
+> destination domain.  Either a) the MFN would be translated to the
+> wrong PFN/page; b) setting the _PAGE_PRESENT bit would clear the PTE
+> because the MFN is no longer owned by the domain; or c) the present
+> bit would not get set.
+>
+> Symptoms include "Bad page" reports when munmapping after migrating a
+> domain.
+>
+> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>
 > ---
->  drivers/irqchip/irq-gic.c | 1 +
->  1 file changed, 1 insertion(+)
+>  arch/x86/include/asm/pgtable.h |   14 ++------------
+>  arch/x86/xen/mmu.c             |    4 ++--
+>  2 files changed, 4 insertions(+), 14 deletions(-)
 >
-> diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> index 4300b66..8e906e4 100644
-> --- a/drivers/irqchip/irq-gic.c
-> +++ b/drivers/irqchip/irq-gic.c
-> @@ -1069,6 +1069,7 @@ gic_of_init(struct device_node *node, struct device_node *parent)
+> --- a/arch/x86/include/asm/pgtable.h
+> +++ b/arch/x86/include/asm/pgtable.h
+> @@ -445,20 +445,10 @@ static inline int pte_same(pte_t a, pte_
+>         return a.pte == b.pte;
 >  }
->  IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
->  IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
-> +IRQCHIP_DECLARE(cortex_a7_gic, "arm,cortex-a7-gic", gic_of_init);
->  IRQCHIP_DECLARE(msm_8660_qgic, "qcom,msm-8660-qgic", gic_of_init);
->  IRQCHIP_DECLARE(msm_qgic2, "qcom,msm-qgic2", gic_of_init);
-
-Frankly, this patch adds no value. Are we going to add
-"arm,cortex-a12-gic", "arm,cortex-a17-gic", "arm,cortex-a53-gic",
-"arm,cortex-a57-gic"? And that's just to mention the ARM Ltd cores...
-
-Instead, how about defining a generic "arm,gic" property, and mandate
-that new DT files are using that? We can always use a more precise
-compatible for quirks.
-
-Mark, what do you think? I think this has been discussed in the past
-already.
-
-	M.
--- 
-Jazz is not dead. It just smells funny.
+>
+> -static inline int pteval_present(pteval_t pteval)
+> -{
+> -       /*
+> -        * Yes Linus, _PAGE_PROTNONE == _PAGE_NUMA. Expressing it this
+> -        * way clearly states that the intent is that protnone and numa
+> -        * hinting ptes are considered present for the purposes of
+> -        * pagetable operations like zapping, protection changes, gup etc.
+> -        */
+> -       return pteval & (_PAGE_PRESENT | _PAGE_PROTNONE | _PAGE_NUMA);
+> -}
+> -
+>  static inline int pte_present(pte_t a)
+>  {
+> -       return pteval_present(pte_flags(a));
+> +       return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE |
+> +                              _PAGE_NUMA);
+>  }
+>
+>  #define pte_accessible pte_accessible
+> --- a/arch/x86/xen/mmu.c
+> +++ b/arch/x86/xen/mmu.c
+> @@ -365,7 +365,7 @@ void xen_ptep_modify_prot_commit(struct
+>  /* Assume pteval_t is equivalent to all the other *val_t types. */
+>  static pteval_t pte_mfn_to_pfn(pteval_t val)
+>  {
+> -       if (pteval_present(val)) {
+> +       if (val & _PAGE_PRESENT) {
+>                 unsigned long mfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
+>                 unsigned long pfn = mfn_to_pfn(mfn);
+>
+> @@ -381,7 +381,7 @@ static pteval_t pte_mfn_to_pfn(pteval_t
+>
+>  static pteval_t pte_pfn_to_mfn(pteval_t val)
+>  {
+> -       if (pteval_present(val)) {
+> +       if (val & _PAGE_PRESENT) {
+>                 unsigned long pfn = (val & PTE_PFN_MASK) >> PAGE_SHIFT;
+>                 pteval_t flags = val & PTE_FLAGS_MASK;
+>                 unsigned long mfn;
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
