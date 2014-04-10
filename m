@@ -1,67 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758944AbaDJScK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 14:32:10 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:43708 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758897AbaDJScG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 14:32:06 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAGsJ_4wEbDhcYa5sK0e6eVKOyHRJA4HSZWsd_83WGbAsviEToQ@mail.gmail.com>
-References: <1396960077-30599-1-git-send-email-linus.walleij@linaro.org>
-	<CAGsJ_4yfCcQoMmUD08HBJDkXSPUOuUP-Sj9EZAJZ8grpodReiw@mail.gmail.com>
-	<CAGsJ_4wEbDhcYa5sK0e6eVKOyHRJA4HSZWsd_83WGbAsviEToQ@mail.gmail.com>
-Date: Thu, 10 Apr 2014 20:32:04 +0200
-Message-ID: <CACRpkdbz5uP+MNJn22z-GVuonZ_ungNwqfsNT6aB7r0pd0vHxQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] pinctrl: sirf: switch driver to use gpiolib irqchip helpers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Barry Song <baohua@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Barry Song <Baohua.Song@csr.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758985AbaDJScT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 14:32:19 -0400
+Received: from mout.gmx.net ([212.227.15.18]:49939 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758897AbaDJScQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 14:32:16 -0400
+Date: Thu, 10 Apr 2014 20:31:46 +0200
+From: Christian Engelmayer <cengelma@gmx.at>
+To: linville@tuxdriver.com, fariyaf@gmail.com
+Cc: dan.carpenter@oracle.com, joe@perches.com, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH resend] rsi: Fix a potential memory leak in
+ rsi_set_channel()
+Message-ID: <20140410203146.767149e7@spike>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/iHoF=8G47JmKKQiDyzh/ZF7"; protocol="application/pgp-signature"
+X-Provags-ID: V03:K0:Hooi4PtHQGlk6WhWVEtVy2KskjJaJKh6J1nXGheWP8WTKbon1A2
+ b/qxIzC9TIi63fcX5H5KhdA+VuzDSMDATjk+acJyo3SuldlGSh/GmnQe2RcMPMobXFCLPfy
+ uNBdwU97HKu+Ypff8S52EqrHUGztP4B01Na9uPj3qMl4LxLXoomYchjH88UrDlrWGCwe8sb
+ 1gRnmj4VrTAE0mCVg0fEQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 11:30 AM, Barry Song <baohua@kernel.org> wrote:
+--Sig_/iHoF=8G47JmKKQiDyzh/ZF7
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
->> with this:
->> # cat /proc/interrupts
->>            CPU0
->>  16:        944  irq_sirfsoc   0  sirfsoc_timer0
->> ...
->> 105:          0  sirf-gpio-irq  13  extcon-gpio
->> ...
->>
->> i will do a debug to find why. any idea from you?
->
-> hi linus, after reading the source codes of GPIOLIB_IRQCHIP, i think
-> the new irq number after applying your patch should not be a problem.
-> the reason is that you create irq mapping earlier in
-> gpiochip_irqchip_add(), but the old codes did it later on demand in
-> sirfsoc_gpio_to_irq().
+Fix a potential memory leak in function rsi_set_channel() that is used to
+program channel changes. The channel check block for the frequency bands
+directly exits the function in case of an error, thus leaving an already
+allocated skb unreferenced. Move the checks above allocating the skb.
+Detected by Coverity: CID 1195576.
 
-Yeah it's just some number, it's dynamically allocated to you should
-not need to worry about that. It could even change with probe order
-due to unpredictable things.
+Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
+---
+Applies against git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.g=
+it
+Compile tested.
+---
+ drivers/net/wireless/rsi/rsi_91x_mgmt.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-> the real problem here is that we have several gpio banks, but there is
-> only one device node, so i think this should be not good and will make
-> the gpiochip_irq_reqres(), gpiochip_irq_relres() fail since
-> sub-devices can only point its interrupt parent to the only gpio node,
-> this makes hwirq bigger than the size of the gpio bank.
->
-> so will you wait for me to send a patch to merge all banks into one
-> gpio_chip just as i have done by commit
-> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=8daeffb058f78deb0b0ef2cb67ef741c38788bf9
-> to merge irq_domain?
+diff --git a/drivers/net/wireless/rsi/rsi_91x_mgmt.c b/drivers/net/wireless=
+/rsi/rsi_91x_mgmt.c
+index 2361a68..be5b1fd 100644
+--- a/drivers/net/wireless/rsi/rsi_91x_mgmt.c
++++ b/drivers/net/wireless/rsi/rsi_91x_mgmt.c
+@@ -841,16 +841,6 @@ int rsi_set_channel(struct rsi_common *common, u16 cha=
+nnel)
+ 	rsi_dbg(MGMT_TX_ZONE,
+ 		"%s: Sending scan req frame\n", __func__);
+=20
+-	skb =3D dev_alloc_skb(FRAME_DESC_SZ);
+-	if (!skb) {
+-		rsi_dbg(ERR_ZONE, "%s: Failed in allocation of skb\n",
+-			__func__);
+-		return -ENOMEM;
+-	}
+-
+-	memset(skb->data, 0, FRAME_DESC_SZ);
+-	mgmt_frame =3D (struct rsi_mac_frame *)skb->data;
+-
+ 	if (common->band =3D=3D IEEE80211_BAND_5GHZ) {
+ 		if ((channel >=3D 36) && (channel <=3D 64))
+ 			channel =3D ((channel - 32) / 4);
+@@ -868,6 +858,16 @@ int rsi_set_channel(struct rsi_common *common, u16 cha=
+nnel)
+ 		}
+ 	}
+=20
++	skb =3D dev_alloc_skb(FRAME_DESC_SZ);
++	if (!skb) {
++		rsi_dbg(ERR_ZONE, "%s: Failed in allocation of skb\n",
++			__func__);
++		return -ENOMEM;
++	}
++
++	memset(skb->data, 0, FRAME_DESC_SZ);
++	mgmt_frame =3D (struct rsi_mac_frame *)skb->data;
++
+ 	mgmt_frame->desc_word[0] =3D cpu_to_le16(RSI_WIFI_MGMT_Q << 12);
+ 	mgmt_frame->desc_word[1] =3D cpu_to_le16(SCAN_REQUEST);
+ 	mgmt_frame->desc_word[4] =3D cpu_to_le16(channel);
+--=20
+1.8.3.2
 
-Sure I'm standing by.
+--Sig_/iHoF=8G47JmKKQiDyzh/ZF7
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-Bonus points if you rebase my patch on top of it and send it
-as patch 2/2 :-D
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
 
-Yours,
-Linus Walleij
+iQIcBAEBAgAGBQJTRuOSAAoJEKssnEpaPQKE8b8P/RQcnFMCHuu4EQsD7Uo9p36I
+xe4nYc6hImIpaQV1HsbBXA0Zvi7PjssSOOqobyVdyhsWrwxwiR9LvEH+n/+I+DIm
+qr8V09UnM7mcW6Qk7Kc5hojTZG0ggG+1G9WbDXNT9aJgskX2Q2ltPWdk1R6ShqJW
+L7QEY1+qX3LxVkUD60fPCa6xMt9UgRjEzB2MD57gOxDJYZ5rHXoVsOEvaeWcNQPe
+T7JOK2F+h/x7vhyRBOYkfWL7nM5JhOh3Sx7b3VE3nUkDy+QMu3cK5nq+d6YKFptK
+XLRqY3/hNmuaY8s6wVRlx7ES1q4flYQK2MLx0K+ElNzkkfOuYFnGPVBdyiLQGyKm
+DiUl7rOMsrLoqGB1MytZRPPZTQPqp8So9/HsKkOpfoslYichsbPvmKKMk92DQPw7
+SoOwPh7O7qgczgOGlHuZG3XHl2zA0jiZWR+EAWsX1ygJG2fsSuy0TxbT+e1b0aL3
+Fk2SbzqrNjY4UMx3bHN4H14wePhKbJuvjShVZfOcZm5rJCSrGbZQ10zoFgM3ya1l
+uqqhaYmeq9FLBOeoj9/H0GYaRt7/36lP59xXE8eLQB29TpHmSmzYmVRhbzdlHmFU
+NB3+tlv8GdoUP6PX+/m4CjbbyznrwfbWQ8RbAin08lHDv1n4SkA8EV/qhWZpB2wZ
+YqUhbqhuJ0XREhFNC/bQ
+=mh/v
+-----END PGP SIGNATURE-----
+
+--Sig_/iHoF=8G47JmKKQiDyzh/ZF7--
