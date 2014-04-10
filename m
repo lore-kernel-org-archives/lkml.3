@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935369AbaDJDYE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:24:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41332 "EHLO
+	id S935354AbaDJDYB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:24:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41327 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935138AbaDJDXC (ORCPT
+	with ESMTP id S935136AbaDJDXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:23:02 -0400
+	Wed, 9 Apr 2014 23:23:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>,
+        Grazvydas Ignotas <notasas@gmail.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         Ben Hutchings <ben@decadent.org.uk>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 111/134] ALSA: hda/realtek - Add support of ALC231 codec
-Date: Wed,  9 Apr 2014 20:23:47 -0700
-Message-Id: <20140410032313.830036540@linuxfoundation.org>
+        Qiang Huang <h.huangqiang@huawei.com>
+Subject: [PATCH 3.4 120/134] OMAPFB: fix framebuffer console colors
+Date: Wed,  9 Apr 2014 20:23:56 -0700
+Message-Id: <20140410032314.718614904@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -28,32 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kailang Yang <kailang@realtek.com>
+From: Grazvydas Ignotas <notasas@gmail.com>
 
-commit ba4c4d0a9021ab034554d532a98133d668b87599 upstream.
+commit c1c52848cef52e157468b8879fc3cae23b6f3a99 upstream.
 
-It's compatible with ALC269.
+omapfb does not currently set pseudo palette correctly for color depths
+above 16bpp, making red text invisible, command like
+  echo -e '\e[0;31mRED' > /dev/tty1
+will display nothing on framebuffer console in 24bpp mode.
+This is because temporary variable is declared incorrectly, fix it.
 
-Signed-off-by: Kailang Yang <kailang@realtek.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Grazvydas Ignotas <notasas@gmail.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
+Cc: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/video/omap2/omapfb/omapfb-main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -7031,6 +7031,7 @@ static int patch_alc680(struct hda_codec
-  */
- static const struct hda_codec_preset snd_hda_preset_realtek[] = {
- 	{ .id = 0x10ec0221, .name = "ALC221", .patch = patch_alc269 },
-+	{ .id = 0x10ec0231, .name = "ALC231", .patch = patch_alc269 },
- 	{ .id = 0x10ec0260, .name = "ALC260", .patch = patch_alc260 },
- 	{ .id = 0x10ec0262, .name = "ALC262", .patch = patch_alc262 },
- 	{ .id = 0x10ec0267, .name = "ALC267", .patch = patch_alc268 },
+--- a/drivers/video/omap2/omapfb/omapfb-main.c
++++ b/drivers/video/omap2/omapfb/omapfb-main.c
+@@ -1187,7 +1187,7 @@ static int _setcolreg(struct fb_info *fb
+ 			break;
+ 
+ 		if (regno < 16) {
+-			u16 pal;
++			u32 pal;
+ 			pal = ((red >> (16 - var->red.length)) <<
+ 					var->red.offset) |
+ 				((green >> (16 - var->green.length)) <<
 
 
