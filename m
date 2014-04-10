@@ -1,30 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935357AbaDJDnA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:43:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41275 "EHLO
+	id S935367AbaDJDnd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:43:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41270 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935067AbaDJDWx (ORCPT
+	with ESMTP id S935065AbaDJDWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:22:53 -0400
+	Wed, 9 Apr 2014 23:22:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Frank Zafka <kafkaesque1978@gmail.com>,
-        =?UTF-8?q?Peter=20Fr=C3=BChberger?= <fritsch@xbmc.org>,
-        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>,
+        Torsten Schenk <torsten.schenk@zoho.com>, Takashi Iwai <tiwai@suse.de>,
         Ben Hutchings <ben@decadent.org.uk>,
         Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 109/134] ALSA: hda - hdmi: Fallback to ALSA allocation when selecting CA
-Date: Wed,  9 Apr 2014 20:23:45 -0700
-Message-Id: <20140410032313.708580294@linuxfoundation.org>
+Subject: [PATCH 3.4 108/134] ALSA: 6fire: make buffers DMA-able (midi)
+Date: Wed,  9 Apr 2014 20:23:44 -0700
+Message-Id: <20140410032313.649447762@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -33,70 +28,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anssi Hannula <anssi.hannula@iki.fi>
+From: Torsten Schenk <torsten.schenk@zoho.com>
 
-commit 18e391862cceaf43ddb8eb5cca05e1a83abdebaa upstream.
+commit 4c2aee0032b70083dafebd733ed9c774633b2fa3 upstream.
 
-hdmi_channel_allocation() tries to find a HDMI channel allocation that
-matches the number channels in the playback stream and contains only
-speakers that the HDMI sink has reported as available via EDID. If no
-such allocation is found, 0 (stereo audio) is used.
+Patch makes midi output buffer DMA-able by allocating it separately.
 
-Using CA 0 causes the audio causes the sink to discard everything except
-the first two channels (front left and front right).
-
-However, the sink may be capable of receiving more channels than it has
-speakers (and then perform downmix or discard the extra channels), in
-which case it is preferable to use a CA that contains extra channels
-than to use CA 0 which discards all the non-stereo channels.
-
-Additionally, it seems that HBR (HD) passthrough output does not work on
-Intel HDMI codecs when CA is set to 0 (possibly the codec zeroes
-channels not present in CA). This happens with all receivers that report
-a 5.1 speaker mask since a HBR stream is carried on 8 channels to the
-codec.
-
-Add a fallback in the CA selection so that the CA channel count at least
-matches the stream channel count, even if the stream contains channels
-not present in the sink speaker descriptor.
-
-Thanks to GrimGriefer at OpenELEC forums for discovering that changing
-the sink speaker mask allowed HBR output.
-
-Reported-by: GrimGriefer
-Reported-by: Ashecrow
-Reported-by: Frank Zafka <kafkaesque1978@gmail.com>
-Reported-by: Peter Frühberger <fritsch@xbmc.org>
-Signed-off-by: Anssi Hannula <anssi.hannula@iki.fi>
+Signed-off-by: Torsten Schenk <torsten.schenk@zoho.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
-[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Weng Meiling <wengmeiling.weng@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_hdmi.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ sound/usb/6fire/midi.c |   16 +++++++++++++++-
+ sound/usb/6fire/midi.h |    6 +-----
+ 2 files changed, 16 insertions(+), 6 deletions(-)
 
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -513,6 +513,17 @@ static int hdmi_channel_allocation(struc
- 		}
- 	}
+--- a/sound/usb/6fire/midi.c
++++ b/sound/usb/6fire/midi.c
+@@ -19,6 +19,10 @@
+ #include "chip.h"
+ #include "comm.h"
  
-+	if (!ca) {
-+		/* if there was no match, select the regular ALSA channel
-+		 * allocation with the matching number of channels */
-+		for (i = 0; i < ARRAY_SIZE(channel_allocations); i++) {
-+			if (channels == channel_allocations[i].channels) {
-+				ca = channel_allocations[i].ca_index;
-+				break;
-+			}
-+		}
++enum {
++	MIDI_BUFSIZE = 64
++};
++
+ static void usb6fire_midi_out_handler(struct urb *urb)
+ {
+ 	struct midi_runtime *rt = urb->context;
+@@ -156,6 +160,12 @@ int __devinit usb6fire_midi_init(struct
+ 	if (!rt)
+ 		return -ENOMEM;
+ 
++	rt->out_buffer = kzalloc(MIDI_BUFSIZE, GFP_KERNEL);
++	if (!rt->out_buffer) {
++		kfree(rt);
++		return -ENOMEM;
 +	}
 +
- 	snd_print_channel_allocation(eld->spk_alloc, buf, sizeof(buf));
- 	snd_printdd("HDMI: select CA 0x%x for %d-channel allocation: %s\n",
- 		    ca, channels, buf);
+ 	rt->chip = chip;
+ 	rt->in_received = usb6fire_midi_in_received;
+ 	rt->out_buffer[0] = 0x80; /* 'send midi' command */
+@@ -169,6 +179,7 @@ int __devinit usb6fire_midi_init(struct
+ 
+ 	ret = snd_rawmidi_new(chip->card, "6FireUSB", 0, 1, 1, &rt->instance);
+ 	if (ret < 0) {
++		kfree(rt->out_buffer);
+ 		kfree(rt);
+ 		snd_printk(KERN_ERR PREFIX "unable to create midi.\n");
+ 		return ret;
+@@ -197,6 +208,9 @@ void usb6fire_midi_abort(struct sfire_ch
+ 
+ void usb6fire_midi_destroy(struct sfire_chip *chip)
+ {
+-	kfree(chip->midi);
++	struct midi_runtime *rt = chip->midi;
++
++	kfree(rt->out_buffer);
++	kfree(rt);
+ 	chip->midi = NULL;
+ }
+--- a/sound/usb/6fire/midi.h
++++ b/sound/usb/6fire/midi.h
+@@ -16,10 +16,6 @@
+ 
+ #include "common.h"
+ 
+-enum {
+-	MIDI_BUFSIZE = 64
+-};
+-
+ struct midi_runtime {
+ 	struct sfire_chip *chip;
+ 	struct snd_rawmidi *instance;
+@@ -32,7 +28,7 @@ struct midi_runtime {
+ 	struct snd_rawmidi_substream *out;
+ 	struct urb out_urb;
+ 	u8 out_serial; /* serial number of out packet */
+-	u8 out_buffer[MIDI_BUFSIZE];
++	u8 *out_buffer;
+ 	int buffer_offset;
+ 
+ 	void (*in_received)(struct midi_runtime *rt, u8 *data, int length);
 
 
