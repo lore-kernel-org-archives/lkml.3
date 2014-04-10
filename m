@@ -1,39 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935505AbaDJSIy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 14:08:54 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:40715 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934663AbaDJSIw (ORCPT
+	id S1030386AbaDJSLK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 14:11:10 -0400
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:38759 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753244AbaDJSLH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 14:08:52 -0400
+	Thu, 10 Apr 2014 14:11:07 -0400
+Message-ID: <5346DEB1.4050507@fb.com>
+Date: Thu, 10 Apr 2014 12:10:57 -0600
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <1396970509-28009-3-git-send-email-maxime.coquelin@st.com>
-References: <1396970509-28009-1-git-send-email-maxime.coquelin@st.com>
-	<1396970509-28009-3-git-send-email-maxime.coquelin@st.com>
-Date: Thu, 10 Apr 2014 20:08:52 +0200
-Message-ID: <CACRpkdaT7R6goqOod6ZH15FeA3Q=M_vSUPOiQHAUTg8SqOXWwA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] pinctrl: st: Use ARRAY_SIZE for STiH415 data
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Maxime COQUELIN <maxime.coquelin@st.com>
-Cc: Joe Perches <joe@perches.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kernel@stlinux.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Jan Kara <jack@suse.cz>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Brian J King <bjking1@us.ibm.com>
+Subject: Re: [BUG] kernel BUG at /.../block/cfq-iosched.c:3145!
+References: <1397018647.3671.123.camel@pasglop> <53454CBC.9060905@fb.com>	 <1397087273.3671.150.camel@pasglop> <1397088144.3671.155.camel@pasglop>	 <5345F476.2000602@fb.com> <1397093815.3671.156.camel@pasglop>	 <5346012A.50901@fb.com> <1397100937.3671.160.camel@pasglop>	 <5346158B.90005@fb.com> <1397112333.3671.179.camel@pasglop>
+In-Reply-To: <1397112333.3671.179.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-04-10_05:2014-04-10,2014-04-10,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.24344978758018e-14 kscore.compositescore=0
+ circleOfTrustscore=5.8201264735473 compositescore=0.307752384302029
+ urlsuspect_oldscore=0.307752384302029 suspectscore=0
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.307752384302029 spamscore=0
+ recipient_to_sender_domain_totalscore=16 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1404100284
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 8, 2014 at 5:21 PM, Maxime COQUELIN <maxime.coquelin@st.com> wrote:
-
-> This patch completes the one that used ARRAY_SIZE for STiH407 and STiH416
-> for setting ninput_delays and noutput_delays fields.
+On 04/10/2014 12:45 AM, Benjamin Herrenschmidt wrote:
+> On Wed, 2014-04-09 at 21:52 -0600, Jens Axboe wrote:
+>> On 2014-04-09 21:35, Benjamin Herrenschmidt wrote:
+>>> On Wed, 2014-04-09 at 20:25 -0600, Jens Axboe wrote:
+>>>> On 2014-04-09 19:36, Benjamin Herrenschmidt wrote:
+>>>>> On Wed, 2014-04-09 at 19:31 -0600, Jens Axboe wrote:
+>>>>>> OK, I think we're seeing different symptoms of the same bug. Stay
+>>>>>> tuned, will have something for you to test shortly, I hope.
+>>>>>
+>>>>> Ah thanks. I'll defer the bisection then (it's painful on that machine
+>>>>> for various reasons....)
+>>>>
+>>>> Can you try with these two patches applied?
+>>>
+>>> Booted to login prompt once ... and twice. Much better ! :-)
+>>
+>> Excellent! I was hoping it was the same bug :-)
+>> I'll amend the commit and add your tested-by.
 >
-> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+> A colleague was complaining of yet another oddball block related crash
+> today on another machine when doing rsync's with upstream (this machine
+> booted fine but crashed later on, but then it has less CPUs... maybe
+> that's relevant) and these patches fixed it too.
 
-Patch applied.
+Pull request is now in, jfyi.
 
-Yours,
-Linus Walleij
+-- 
+Jens Axboe
+
