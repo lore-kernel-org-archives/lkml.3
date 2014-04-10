@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935613AbaDJOVK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 10:21:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4669 "EHLO mx1.redhat.com"
+	id S935562AbaDJOYS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 10:24:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:45650 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934295AbaDJOVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 10:21:08 -0400
-Message-ID: <5346A8BE.5060401@redhat.com>
-Date: Thu, 10 Apr 2014 16:20:46 +0200
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S934688AbaDJOYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 10:24:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,834,1389772800"; 
+   d="scan'208";a="518525435"
+Date: Thu, 10 Apr 2014 10:22:54 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 12/22] ext2: Remove ext2_xip_verify_sb()
+Message-ID: <20140410142254.GI5727@linux.intel.com>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <5f91cb658e1ee1b593be9fd719e8f204b0069031.1395591795.git.matthew.r.wilcox@intel.com>
+ <20140409095254.GE32103@quack.suse.cz>
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: Oleg Nesterov <oleg@redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jonathan Lebon <jlebon@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 4/6] uprobes/x86: Emulate rip-relative call's
-References: <20140406201628.GA507@redhat.com> <1396995963.5056.46.camel@oc7886638347.ibm.com.usor.ibm.com> <20140409154346.GB18486@redhat.com> <53469F95.1030709@redhat.com> <5346A362.9010802@hitachi.com>
-In-Reply-To: <5346A362.9010802@hitachi.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140409095254.GE32103@quack.suse.cz>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2014 03:57 PM, Masami Hiramatsu wrote:
-> (2014/04/10 22:41), Denys Vlasenko wrote:
->> On 04/09/2014 05:43 PM, Oleg Nesterov wrote:
->>> On 04/08, Jim Keniston wrote:
->>>>
->>>> On Sun, 2014-04-06 at 22:16 +0200, Oleg Nesterov wrote:
->>>>> 0xe8. Anything else?
->>>>
->>>> No, I think e8 is the only call instruction uprobes will see.
->>>
->>> Good.
->>
->> There is this monstrosity, "16-bit override for branches" in 64-mode:
->>
->> 66 e8 nn nn       callw   <offset16>
->>
->> Nobody sane uses it because it truncates instruction pointer.
-> 
-> No problem, insn.c can handle that too. :)
+On Wed, Apr 09, 2014 at 11:52:54AM +0200, Jan Kara wrote:
+> > -	if ((sbi->s_mount_opt ^ old_mount_opt) & EXT2_MOUNT_XIP) {
+> > +	if ((sbi->s_mount_opt ^ old_opts.s_mount_opt) & EXT2_MOUNT_XIP) {
+> >  		ext2_msg(sb, KERN_WARNING, "warning: refusing change of "
+> >  			 "xip flag with busy inodes while remounting");
+> > -		sbi->s_mount_opt &= ~EXT2_MOUNT_XIP;
+> > -		sbi->s_mount_opt |= old_mount_opt & EXT2_MOUNT_XIP;
+> > +		sbi->s_mount_opt ^= EXT2_MOUNT_XIP;
+>   Although this is correct, it was easier to see that the previous code is
+> correct so I'd prefer if you kept it that way.
 
-That's good that we decode it correctly,
-but there is more to it.
-
-Call insn pushes return address to stack.
-
-This "mutant 16-bit call", what should it push?
-Full RIP?
-Truncated 16-bit IP? If yes, by how much does it
-advance RSP? +2? +8?
-Hmm. Does it affect RSP or only its 16-bit lower part?
-
-It's a can of worms! :)
-
+Depends how you think about it.  I think of foo ^= bar as 'toggle the
+bar bit in foo'.  So I read the code as 'If the mount bit is incorrect,
+print an error and toggle the bit'.  I think you're reading the old code
+as 'If the new mount bit differs from the old mount bit, make sure the
+new mount bit is the same as the old mount bit'.
