@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935754AbaDJU1c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 16:27:32 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:13662 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935410AbaDJU1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 16:27:30 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: criu@openvz.org, netdev@vger.kernel.org, Andrey Vagin <avagin@openvz.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, Eric Dumazet <edumazet@google.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [PATCH RFC 0/2] tcp: allow to repair a tcp connections in closing states
-Date: Fri, 11 Apr 2014 00:25:37 +0400
-Message-Id: <1397161539-27804-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.9.0
+	id S1161224AbaDJU30 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 16:29:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48684 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758550AbaDJU3Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 16:29:25 -0400
+Date: Thu, 10 Apr 2014 13:31:58 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Romer, Benjamin M" <Benjamin.Romer@unisys.com>
+Cc: *S-Par-Maintainer <SParMaintainer@unisys.com>, Ken Cox <jkc@redhat.com>,
+        driver devel <devel@driverdev.osuosl.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] staging: unisys: fix copyright notices
+Message-ID: <20140410203158.GA28612@kroah.com>
+References: <C97001BC43954D438ACB059713BA5CDF92040F0F0D@USEA-EXCH7.na.uis.unisys.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C97001BC43954D438ACB059713BA5CDF92040F0F0D@USEA-EXCH7.na.uis.unisys.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently connections only in the TCP_ESTABLISHED state can be dumped and
-restored. This series allows to restore connections in the FIN_WAIT_1,
-FIN_WAIT_2, LAST_ACK, CLOSE_WAIT, CLOSING or TIME_WAIT states.
+On Thu, Apr 10, 2014 at 10:08:52AM -0500, Romer, Benjamin M wrote:
+> This patch replaces the inconsistent copyright symbols in each source
+> file with (C).
+> 
+> Signed-off-by: Benjamin Romer <benjamin.romer@unisys.com>
+> ---
 
-v2: We decide to not use control message for repairing fin packets in
-queues. Because it looks quite tricky. Alexey suggested to restore each
-state separately and in this case setsockopt looks more logical.
+This patch is in base64, which ok, I can handle, as git can deal with
+that.  But then it totally fails to apply to Linus's latest tree at all.
 
-Andrey Vagin (2):
-  tcp: allow to enable repair mode for sockets in closing states
-  tcp: add ability to restore closing states (v2)
+Can you please take a look at this, and resend it after fixing up
+whatever needs to be fixed on your end?
 
- include/uapi/linux/tcp.h |  1 +
- net/ipv4/tcp.c           | 75 ++++++++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 71 insertions(+), 5 deletions(-)
+thanks,
 
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Cc: James Morris <jmorris@namei.org>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Eric Dumazet <edumazet@google.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
+greg k-h
