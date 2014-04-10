@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965401AbaDJHhM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 03:37:12 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:36615 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965179AbaDJHhF (ORCPT
+	id S965427AbaDJHhj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 03:37:39 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:51632 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965097AbaDJHhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 03:37:05 -0400
-Date: Thu, 10 Apr 2014 09:37:03 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Simon Horman <horms@verge.net.au>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Paul Parsons <lost.distance@yahoo.com>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-sh@vger.kernel.org
-Subject: Re: [PATCH 2/2] pwm: use PWM_LOOKUP to set the period and polarity
-Message-ID: <20140410073702.GF2879@piout.net>
-References: <1397066649-3767-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1397066649-3767-3-git-send-email-alexandre.belloni@free-electrons.com>
- <20140409231549.GD2187@verge.net.au>
+	Thu, 10 Apr 2014 03:37:34 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Matthias Brugger <matthias.bgg@gmail.com>, linux-kernel@vger.kernel.org,
+        mark.rutland@arm.com, andrew@lunn.ch, linux-doc@vger.kernel.org,
+        thierry.reding@gmail.com, heiko.stuebner@bq.com,
+        linux@arm.linux.org.uk, daniel.lezcano@linaro.org,
+        florian.vaussard@epfl.ch, sebastian.hesselbarth@gmail.com,
+        devicetree@vger.kernel.org, jason@lakedaemon.net, pawel.moll@arm.com,
+        ijc+devicetree@hellion.org.uk, robh+dt@kernel.org, tglx@linutronix.de,
+        rdunlap@infradead.org, silvio.fricke@gmail.com, galak@codeaurora.org,
+        olof@lixom.net, jic23@kernel.org, rmk+kernel@arm.linux.org.uk
+Subject: Re: [PATCH 3/4] arm: add basic support for Mediatek MT6589 boards
+Date: Thu, 10 Apr 2014 09:36:40 +0200
+Message-ID: <4752537.la6uZladzC@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1397072736-10793-4-git-send-email-matthias.bgg@gmail.com>
+References: <1397072736-10793-1-git-send-email-matthias.bgg@gmail.com> <1397072736-10793-4-git-send-email-matthias.bgg@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140409231549.GD2187@verge.net.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:NZrQ6QbPa5R5x9Qz5hYTx9SL0B1FbQWs17R83Bcwq5U
+ TAfiPTdzqQSYm2VD8kkbbzRInOGRel9uSnqjNM073YTimPpBBE
+ IbmgZKp/0Aau6kUjPHwcSkv6cOXlOQ60f/Zg6hjuAuOkqPj/3Y
+ SMKxhlqxxYL1PUU1FoKkaujLDYQ9UZZoV+XvxFsmnHY4V0NvzS
+ 0j/RgUV6Wd8qTAmBmOiPVcgKjr88qu7DXdEVre3Ix+U3/GsDHY
+ QwWrsi4iMJ9gz866L8CCLxgDiJjbQldCRrO/BxANuZlwXdoIGF
+ mWDaWmbzIBRYp9s+IRAfDAQTzNE7vyhIqBmG74nKq8t86uy4lp
+ LOFSIGmNYyKsRY8liAdI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2014 at 08:15:49 +0900, Simon Horman wrote :
-> On Wed, Apr 09, 2014 at 08:04:09PM +0200, Alexandre Belloni wrote:
-> > Now that the PWM core is able to set the period and polarity based on
-> > the lookup table, add those to PWM_LOOKUP to ease their usage.
+On Wednesday 09 April 2014 21:45:35 Matthias Brugger wrote:
+> This adds a generic devicetree board file and a dtsi for boards
+> based on the MT6589 SoCs from Mediatek.
 > 
-> I would prefer if this change was made in a non-atomic manner.
+> Apart from the generic parts (gic, clocks) the only component
+> currently supported are the timers.
 > 
-> 1. Add new infrastructure
-> 2. Update users individually
-> 3. Remove old infrastructure
-> 
+> Signed-off-by: Matthias Brugger <matthias.bgg@gmail.com>
 
-I agree this would be better but I'm not sure how you can modify a macro
-without renaming it or changing it everywhere at once. Like said, I'm
-open to creating a new macro.
+Hi Matthias,
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+First of all, I'm really glad to see this get started, thanks for looking
+into these!
+
+Do you know how similar the MT6589 is to the later chips like MT65x2
+and MT6588? What are the on-chip devices like, is it mostly licensed
+IP blocks from designware and others that we already have drivers for,
+or all new drivers?
+
+> +#include <asm/hardware/cache-l2x0.h>
+> +
+> +static void __init mediatek_dt_init(void)
+> +{
+> +	l2x0_of_init(0, ~0);
+> +	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+> +}
+
+I hope that with all the cleanup work that Russell has done in the
+past few weeks, we can manage to kill off the call to l2x0_of_init()
+here and have it done by core architecture code instead. That would
+let you have an empty machine file, unless you have other things you
+will need to add in the future.
+
+	Arnd
