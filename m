@@ -1,122 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935122AbaDJJ25 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 05:28:57 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:16726 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934368AbaDJJ2u (ORCPT
+	id S935407AbaDJJeE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 05:34:04 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:17618
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934795AbaDJJd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 05:28:50 -0400
-X-AuditID: cbfee68e-b7f566d000002344-4b-5346645082de
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: kgene.kim@samsung.com, t.figa@samsung.com,
-        linux-samsung-soc@vger.kernel.org
-Cc: kyungmin.park@samsung.com, cw00.choi@samsung.com, inki.dae@samsung.com,
-        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 00/27] Support new Exynos3250 SoC based on Cortex-A7 dual core
-Date: Thu, 10 Apr 2014 18:28:17 +0900
-Message-id: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOLMWRmVeSWpSXmKPExsWyRsSkUDcgxS3YYP4RA4vrX56zWnz+0MJu
-	Men+BBaL3gVX2SzONr1ht9j0+BqrxeVdc9gsZpzfx2QxY/JLNov1M16zWOzdOZnRgdtj85J6
-	j74tqxg9Pm+SC2CO4rJJSc3JLEst0rdL4MpYfv40e8E+qYq7My4zNjB+F+li5OSQEDCRmHmn
-	jQnCFpO4cG89WxcjF4eQwFJGiYedT5hhij5d2M0KkZjOKPHpznsWCKeJSaL512FGkCo2AS2J
-	/S9usIHYIgIBEj+OvwOzmQVuMkocex8GYgsL+EmsmbgTKM7BwSKgKrG+JxgkzCvgKvGr8Tkb
-	xDI5iQ97HrGDzJcQ6GeXWPP0Hth8FgEBiW+TD7GA9EoIyEpsOgB1nKTEwRU3WCYwCi5gZFjF
-	KJpakFxQnJReZKRXnJhbXJqXrpecn7uJERjIp/8969vBePOA9SHGZKBxE5mlRJPzgZGQVxJv
-	aGxmZGFqYmpsZG5pRpqwkjjvoodJQUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoY/V6tnd1j
-	ePzp0kCFvUFWAhwfBKNK5O7eUYl/oHPPYUPB0xX9V8/f72DctXLZ5jVH5jCUFbY83vOwc+ql
-	O2Hvo4JMq9/5ZX41ul11g8PNQ7wvf7vnBe9eu+3CNpvVecLyHZw3639tjJn+YqXfBL+eXhP7
-	+ocr3PM3yqw5LLmpfGFsyXPR3hZPJZbijERDLeai4kQAq0sHqHoCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCIsWRmVeSWpSXmKPExsVy+t9jQd2AFLdgg+kn1C2uf3nOavH5Qwu7
-	xaT7E1gsehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PFjMkv2SzWz3jNYrF352RGB26PzUvq
-	Pfq2rGL0+LxJLoA5qoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VW
-	ycUnQNctMwfoICWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYQ1jxvLzp9kL
-	9klV3J1xmbGB8btIFyMnh4SAicSnC7tZIWwxiQv31rN1MXJxCAlMZ5T4dOc9C4TTxCTR/Osw
-	I0gVm4CWxP4XN9hAbBGBAIkfx9+B2cwCNxkljr0PA7GFBfwk1kzcCRTn4GARUJVY3xMMEuYV
-	cJX41ficDWKZnMSHPY/YJzByL2BkWMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHCfPpHcw
-	rmqwOMQowMGoxMN7YJlrsBBrYllxZe4hRgkOZiUR3mvBbsFCvCmJlVWpRfnxRaU5qcWHGJOB
-	lk9klhJNzgfGcF5JvKGxiZmRpZG5oYWRsTlpwkrivAdbrQOFBNITS1KzU1MLUotgtjBxcEo1
-	MDquXm3+ejdvv1Ts3DatLN75shHTvFhyduulFitc2fjdLtvGzC2wVDrhwpv0qeVOO1teKtxV
-	fDQtT/KUSAHbo90cS5hvWE6VPpR//quTmd+1B/pbVkdM763IKnJYc6BrjtuKzZ/b5ti37Oz+
-	F7TrieS6rKtcKfOWqbxboFLxtkF5fmFO38Hjn5RYijMSDbWYi4oTATz3B6nXAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 10 Apr 2014 05:33:58 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zzbb2dI98dI9371Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzdchz1de098h8275bh1de097hz2dh2a8h839h93fhe5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh26b9h26d3h1889i1155h)
+Message-ID: <53466573.7050901@freescale.com>
+Date: Thu, 10 Apr 2014 17:33:39 +0800
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: David Laight <David.Laight@ACULAB.COM>,
+        "vkoul@infradead.org" <vkoul@infradead.org>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>
+CC: "scottwood@freescale.com" <scottwood@freescale.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "leo.li@freescale.com" <leo.li@freescale.com>
+Subject: Re: [PATCH v3 2/8] DMA: Freescale: unify register access methods
+References: <1397113805-24171-1-git-send-email-hongbo.zhang@freescale.com> <1397113805-24171-3-git-send-email-hongbo.zhang@freescale.com> <063D6719AE5E284EB5DD2968C1650D6D0F6F4317@AcuExch.aculab.com>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6F4317@AcuExch.aculab.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset support new Exynos3250 Samsung SoC based on Cortex-A7 dual core.
-Exynos3250 is a System-On-Chip (SoC) that is based on 32-bit RISC processor
-for Smartphone. It is desigend with the 28nm low-power high-K metal gate process
-and provides the best performance features.
 
-This patchset include some patches such as:
-- Support secondary CPU of Exynos3250 (cpu up/down)
-- Supoort uart/mct/adc/gic/i2c/spi/power-domain/pmu/mshc/pwm/amba
-- Support the gpio control for Exynos3250 using pinctrl
-- Support the clock control for Exynos3250 using common clk framework
+On 04/10/2014 04:46 PM, David Laight wrote:
+> From: hongbo.zhang@freescale.com
+>> Methods of accessing DMA contorller registers are inconsistent, some registers
+>                                 ^^
 
-Chanwoo Choi (11):
-  ARM: EXYNOS: Add Exynos3250 SoC ID
-  ARM: EXYNOS: Add IO mapping for non-secure SYSRAM of Exynos3250
-  ARM: EXYNOS: Add IO mapping for PMU of Exynos3250
-  ARM: EXYNOS: Support secondary CPU boot of Exynos3250
-  ARM: EXYNOS:: Enter a15 lowpower mode for Exynos3250 based on Cortex-a7
-  irqchip: Declare cortex-a7's irqchip to initialize gic from dt
-  ARM: dts: exynos3250: Add default interrupt-parent connected with GIC
-  ARM: dts: exynos3250: Add uart dt node to support seiral ports
-  ARM: dts: exynos3250: Add MCT dt node
-  ARM: dts: exynos3250: Add ADC dt node to read analog raw data
-  ARM: dts: exynos3250: Add CPUs dt node for Exynos3250
+Thanks.
+sorry, that it a typo.
+I would wait to see if there are other defects I have to correct, if yes 
+I can send a new iteration including this update, if no I would like to 
+know if the maintainer can do me the favor to correct it when merging 
+this patch, if still no, I will send a new iteration for this then.
 
-Hyunhee Kim (1):
-  ARM: dts: exynos3250: Add PMU dt data
+>> are accessed by DMA_IN/OUT directly, while others are accessed by functions
+>> get/set_* which are wrappers of DMA_IN/OUT, and even for the BCR register, it
+>> is read by get_bcr but written by DMA_OUT.
+>> This patch unifies the inconsistent methods, all registers are accessed by
+>> get/set_* now.
+> 	David
+>
 
-Inki Dae (2):
-  ARM: dts: exynos3250: Add i2c dt node
-  ARM: dts: exynos3250: Add power domain dt nodes
 
-Kyungmin Park (2):
-  ARM: EXYNOS: Support secondary CPU boot of Exynos4212
-  ARM: dts: exynos3250: Add Mobile Storage Host Card
-
-Tomasz Figa (11):
-  pinctrl: exynos: Add driver data for Exynos3250
-  clk: samsung: exynos3250: Add clocks using common clock framework
-  ARM: dts: exynos3250: Add new exynos3250.dtsi file
-  ARM: dts: exynos3250: Add GIC dt node for Exynos3250
-  ARM: dts: exynos3250: Add pin control device tree data
-  ARM: dts: exynos3250: Add device tree nodes for clock controllers
-  ARM: dts: exynos3250: Move definitions of external clocks to SoC dtsi
-  ARM: dts: exynos3250: Add amba and pdma dt node
-  ARM: dts: exynos3250: Add spi dt node to support spi bus
-  ARM: dts: exynos3250: Add pwm dt node to support PWM Timer
-  ARM: dts: exynos3250: Add RTC dt node
-
- arch/arm/boot/dts/exynos3250-pinctrl.dtsi | 477 ++++++++++++++++++
- arch/arm/boot/dts/exynos3250.dtsi         | 410 ++++++++++++++++
- arch/arm/mach-exynos/Kconfig              |  22 +
- arch/arm/mach-exynos/exynos.c             |  18 +
- arch/arm/mach-exynos/firmware.c           |  17 +-
- arch/arm/mach-exynos/hotplug.c            |  13 +-
- arch/arm/mach-exynos/include/mach/map.h   |   2 +
- arch/arm/plat-samsung/include/plat/cpu.h  |  10 +
- drivers/clk/samsung/Makefile              |   1 +
- drivers/clk/samsung/clk-exynos3250.c      | 785 ++++++++++++++++++++++++++++++
- drivers/irqchip/irq-gic.c                 |   1 +
- drivers/pinctrl/pinctrl-exynos.c          |  67 +++
- drivers/pinctrl/pinctrl-samsung.c         |   2 +
- drivers/pinctrl/pinctrl-samsung.h         |   1 +
- include/dt-bindings/clock/exynos3250.h    | 256 ++++++++++
- 15 files changed, 2077 insertions(+), 5 deletions(-)
- create mode 100644 arch/arm/boot/dts/exynos3250-pinctrl.dtsi
- create mode 100644 arch/arm/boot/dts/exynos3250.dtsi
- create mode 100644 drivers/clk/samsung/clk-exynos3250.c
- create mode 100644 include/dt-bindings/clock/exynos3250.h
-
--- 
-1.8.0
 
