@@ -1,113 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030376AbaDJSU0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 14:20:26 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:48932 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030210AbaDJSUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 14:20:24 -0400
-X-IronPort-AV: E=Sophos;i="4.97,835,1389744000"; 
-   d="scan'208";a="119991015"
-Message-ID: <5346E0E5.606@citrix.com>
-Date: Thu, 10 Apr 2014 19:20:21 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1758657AbaDJSWB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 14:22:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47937 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752308AbaDJSV7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 14:21:59 -0400
+Date: Thu, 10 Apr 2014 11:24:32 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Jean Delvare <jdelvare@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] driver core: Move driver_data back to struct device
+Message-ID: <20140410182432.GA21422@kroah.com>
+References: <20140407105322.2eae6b97@endymion.delvare>
+ <20140407205815.GA8043@kroah.com>
+ <20140410095014.3dc234ea@endymion.delvare>
 MIME-Version: 1.0
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-CC: <konrad.wilk@oracle.com>, <xen-devel@lists.xenproject.org>,
-        <linux-kernel@vger.kernel.org>, <srostedt@redhat.com>,
-        <andrew.cooper3@citrix.com>, <JBeulich@suse.com>
-Subject: Re: [PATCH v2] x86/xen: Fix 32-bit PV guests's usage of kernel_stack
-References: <1397146629-7159-1-git-send-email-boris.ostrovsky@oracle.com>
-In-Reply-To: <1397146629-7159-1-git-send-email-boris.ostrovsky@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140410095014.3dc234ea@endymion.delvare>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/14 17:17, Boris Ostrovsky wrote:
-> Commit 198d208df4371734ac4728f69cb585c284d20a15 ("x86: Keep thread_info
-> on thread stack in x86_32") made 32-bit kernels use kernel_stack to point to
-> thread_info. That change missed a couple of updates needed by Xen's
-> 32-bit PV guests:
+On Thu, Apr 10, 2014 at 09:50:14AM +0200, Jean Delvare wrote:
+> Hi Greg,
 > 
-> 1. kernel_stack needs to be initialized for secondary CPUs
-> 2. GET_THREAD_INFO() now uses %fs register which may not be the kernel's
-> version when executing xen_iret().
+> On Mon, 7 Apr 2014 13:58:15 -0700, Greg Kroah-Hartman wrote:
+> > On Mon, Apr 07, 2014 at 10:53:22AM +0200, Jean Delvare wrote:
+> > > Having to allocate memory as part of dev_set_drvdata() is a problem
+> > > because that memory may never get freed if the device itself is not
+> > > created. So move driver_data back to struct device.
+> > > 
+> > > This is a partial revert of commit b4028437.
+> > > 
+> > > Signed-off-by: Jean Delvare <jdelvare@suse.de>
+> > > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > > ---
+> > > Greg, we discussed that back in January (in a thread named "Freeing of
+> > > dev->p") but I did not hear back from you and I can't see this fix in
+> > > your driver-core tree.
+> > 
+> > Thanks for doing this, I'll queue this up after -rc1 is out.  I still
+> > have that thread in my TODO list, unfortunatly, higher-priority items
+> > keep bumping it down :(
 > 
-> With respect to the second issue, we don't need GET_THREAD_INFO()
-> anymore: we used it as an intermediate step to get to per_cpu xen_vcpu and avoid
-> referencing %fs. Now that we are going to use %fs anyway we may as well go
-> directly to xen_vcpu.
+> No problem, I understand.
 > 
-> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-> ---
->  arch/x86/xen/smp.c        |    3 ++-
->  arch/x86/xen/xen-asm_32.S |   25 +++++++++++++++++--------
->  2 files changed, 19 insertions(+), 9 deletions(-)
+> Meanwhile I have prepared a patch set with all the cleanups that could
+> go in after that one, basically reverting all of commit b4028437 step
+> by step. If you want to take a look, it's at:
+>   http://jdelvare.nerim.net/devel/linux-3/driver-core/
 > 
-> diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-> index a18eadd..7005974 100644
-> --- a/arch/x86/xen/smp.c
-> +++ b/arch/x86/xen/smp.c
-> @@ -441,10 +441,11 @@ static int xen_cpu_up(unsigned int cpu, struct task_struct *idle)
->  	irq_ctx_init(cpu);
->  #else
->  	clear_tsk_thread_flag(idle, TIF_FORK);
-> +#endif
->  	per_cpu(kernel_stack, cpu) =
->  		(unsigned long)task_stack_page(idle) -
->  		KERNEL_STACK_OFFSET + THREAD_SIZE;
-> -#endif
-> +
->  	xen_setup_runstate_info(cpu);
->  	xen_setup_timer(cpu);
->  	xen_init_lock_cpu(cpu);
-> diff --git a/arch/x86/xen/xen-asm_32.S b/arch/x86/xen/xen-asm_32.S
-> index 33ca6e4..fd92a64 100644
-> --- a/arch/x86/xen/xen-asm_32.S
-> +++ b/arch/x86/xen/xen-asm_32.S
-> @@ -75,6 +75,17 @@ ENDPROC(xen_sysexit)
->   * stack state in whatever form its in, we keep things simple by only
->   * using a single register which is pushed/popped on the stack.
->   */
-> +
-> +.macro POP_FS
-> +1:
-> +	popw %fs
-> +.pushsection .fixup, "ax"
-> +2:	movw $0, (%esp)
-> +	jmp 1b
-> +.popsection
-> +	_ASM_EXTABLE(1b,2b)
-> +.endm
-> +
->  ENTRY(xen_iret)
->  	/* test eflags for special cases */
->  	testl $(X86_EFLAGS_VM | XEN_EFLAGS_NMI), 8(%esp)
-> @@ -83,15 +94,13 @@ ENTRY(xen_iret)
->  	push %eax
->  	ESP_OFFSET=4	# bytes pushed onto stack
->  
-> -	/*
-> -	 * Store vcpu_info pointer for easy access.  Do it this way to
-> -	 * avoid having to reload %fs
-> -	 */
-> +	/* Store vcpu_info pointer for easy access */
->  #ifdef CONFIG_SMP
-> -	GET_THREAD_INFO(%eax)
-> -	movl %ss:TI_cpu(%eax), %eax
-> -	movl %ss:__per_cpu_offset(,%eax,4), %eax
-> -	mov %ss:xen_vcpu(%eax), %eax
-> +	pushw %fs
-> +	movl $(__KERNEL_PERCPU), %eax
-> +	movl %eax, %fs
-> +	movl %fs:xen_vcpu, %eax
+> FWIW the full patch set shaves about 1.2 MB off an allmodconfig x86_64
+> build. And it certainly comes with some performance gains too.
+> 
+> I can post the whole set now if you want, I just did not want to throw
+> too much at you if you are already swamped.
 
-How can this get the correct per-cpu xen_vcpu pointer if it doesn't ever
-get the current cpu number?  Doesn't this always get VCPU#0's xen_vcpu?
+Sure, please send them to me, my "swampedness" isn't an issue for
+queueing up patches, it helps, as they will then have to be dealt with
+in my queue :)
 
-David
+thanks,
+
+greg k-h
