@@ -1,130 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030302AbaDJKJS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 06:09:18 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:33767 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965948AbaDJKJN (ORCPT
+	id S965892AbaDJKHW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 06:07:22 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:53305 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965744AbaDJKGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 06:09:13 -0400
-Message-ID: <53466DBF.7030606@monstr.eu>
-Date: Thu, 10 Apr 2014 12:09:03 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Michal Simek <monstr@monstr.eu>, Punnaiah Choudary <kpc528@gmail.com>,
-        Rob Herring <robherring2@gmail.com>,
-        Punnaiah Choudary Kalluri 
-	<punnaiah.choudary.kalluri@xilinx.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-edac@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        punnaiah choudary kalluri <kalluripunnaiahchoudary@gmail.com>,
-        punnaiah choudary kalluri <punnaia@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [RFC PATCH] edac: add support for ARM PL310 L2 cache parity
-References: <1393770760-32550-1-git-send-email-punnaia@xilinx.com> <a1a9e47a-069c-4285-9899-d5a58cf532c2@CO9EHSMHS003.ehs.local> <20140409113246.GA8778@pd.tnic> <CAL_Jsq+gszc+R_BrLtHKEBGYd=3T+sE1d+-HoF9aYZt6C2k5-g@mail.gmail.com> <20140409151932.GK6529@pd.tnic> <CAHLkNHJTA5bGD1zAfzE2JrDFAWvmgYyYjir+4vR-d9Fe2-E48g@mail.gmail.com> <20140409174701.GO6529@pd.tnic> <53463641.1030800@monstr.eu> <20140410090246.GC29093@pd.tnic>
-In-Reply-To: <20140410090246.GC29093@pd.tnic>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="0VvOvo4OD33bFmFb7egxpwD48XDSkTK8a"
+	Thu, 10 Apr 2014 06:06:51 -0400
+X-AuditID: cbfee68f-b7f156d00000276c-35-53466d1c275b
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: kgene.kim@samsung.com, t.figa@samsung.com,
+        linux-samsung-soc@vger.kernel.org
+Cc: kyungmin.park@samsung.com, cw00.choi@samsung.com, inki.dae@samsung.com,
+        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 12/27] ARM: dts: exynos3250: Add default interrupt-parent
+ connected with GIC
+Date: Thu, 10 Apr 2014 19:06:02 +0900
+Message-id: <1397124377-16969-4-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+In-reply-to: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
+References: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsWyRsSkWFcm1y3Y4Nw0RYvrX56zWnz+0MJu
+	Men+BBaL3gVX2SzONr1ht9j0+BqrxeVdc9gsZpzfx2QxY/JLNov1M16zWOzdOZnRgdtj85J6
+	j74tqxg9Pm+SC2CO4rJJSc3JLEst0rdL4MpovZ5RsI+1Yv2pH0wNjJdYuhg5OSQETCR2nv3H
+	CGGLSVy4t56ti5GLQ0hgKaPE//9vWWGKGr9cY4ZILGKUuP/iNpTTxCRx4u02dpAqNgEtif0v
+	brCB2CICARI/jr8Ds5kFbjJKHHsfBmILC8RJdL/bAhZnEVCV2HNyM5jNK+AqcXTKbmaIbXIS
+	H/Y8ApvJKeAmMXPRSbAaIaCankcXwRZLCCxjl/i6dCMjxCABiW+TDwH9wwGUkJXYdABqjqTE
+	wRU3WCYwCi9gZFjFKJpakFxQnJReZKxXnJhbXJqXrpecn7uJERj4p/8969/BePeA9SHGZKBx
+	E5mlRJPzgZGTVxJvaGxmZGFqYmpsZG5pRpqwkjjv/YdJQUIC6YklqdmpqQWpRfFFpTmpxYcY
+	mTg4pRoYzWIvti+xvBH3QKLl7Jf6ij07mw0sHvsw7OOIMXr97VfP/bOJvRI/clO2LFzym72n
+	rkvnbLL79jI2OZ+XDd+2TxQwFlWcurLU+syvT7qdMisr7/lnfPG/rb+uR0VynXKc0pMdS8st
+	90R+DX0hUfbuJ9OR/VNEJ8W2fAsuvVZ+8WqvoObK2UwKSizFGYmGWsxFxYkAV71v7pICAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jAV2ZXLdgg4M/JSyuf3nOavH5Qwu7
+	xaT7E1gsehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PFjMkv2SzWz3jNYrF352RGB26PzUvq
+	Pfq2rGL0+LxJLoA5qoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VW
+	ycUnQNctMwfoICWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYQ1jRuv1jIJ9
+	rBXrT/1gamC8xNLFyMkhIWAi0fjlGjOELSZx4d56ti5GLg4hgUWMEvdf3GaGcJqYJE683cYO
+	UsUmoCWx/8UNNhBbRCBA4sfxd2A2s8BNRolj78NAbGGBOInud1vA4iwCqhJ7Tm4Gs3kFXCWO
+	TtkNtU1O4sOeR2AzOQXcJGYuOglWIwRU0/PoIvMERt4FjAyrGEVTC5ILipPSc430ihNzi0vz
+	0vWS83M3MYLj6pn0DsZVDRaHGAU4GJV4eA8scw0WYk0sK67MPcQowcGsJMK7O9MtWIg3JbGy
+	KrUoP76oNCe1+BBjMtBVE5mlRJPzgTGfVxJvaGxiZmRpZG5oYWRsTpqwkjjvwVbrQCGB9MSS
+	1OzU1ILUIpgtTBycUg2MsX9/NM8PbnuzbmukxVMZuQ6O2KQj3VqaxfL3+p8I8X9XDXt6o6Nf
+	jL/MdUc4286TzhqrnljclXlxfGGrlP7VN4+eC/IciVbwM52g07NYaJ2y7KkEfveH5xiWxUel
+	ljRUKiXcXRqtxj/ru8q3bw6J/eeu/E8M3Wv4JuPZIslWyXv5E7I6vUuVWIozEg21mIuKEwHf
+	4drx7wIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---0VvOvo4OD33bFmFb7egxpwD48XDSkTK8a
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+This patch add interrupt-parent node to connected with GIC.
+All interrupt-related dt nodes need default interrupt-parent node.
 
-Hi Borislav,
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ arch/arm/boot/dts/exynos3250.dtsi | 1 +
+ 1 file changed, 1 insertion(+)
 
->> My question is if using printk in IRQ handler and report problem is
->> equal to reporting this via edac interface. Or it is just easy way
->> to do but using edac interface is right solution and how to do it
->> properly is different question.
->=20
-> Yeah, it would probably be easier if you would point out first what you=
+diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
+index fe8960e..13efdbed 100644
+--- a/arch/arm/boot/dts/exynos3250.dtsi
++++ b/arch/arm/boot/dts/exynos3250.dtsi
+@@ -21,6 +21,7 @@
+ 
+ / {
+ 	compatible = "samsung,exynos3250";
++	interrupt-parent = <&gic>;
+ 
+ 	chipid@10000000 {
+ 		compatible = "samsung,exynos4210-chipid";
+-- 
+1.8.0
 
-> want to use the edac interface for and we can tell you whether it's
-> already there/doable/makes sense, etc.
-
-OK. This is the v1 that's why we are having this discussion now
-and I really appreciate your recommendation.
-It wasn't too complicated to create this driver that's why not big deal
-and it is always better to talk about the code and how to handle it prope=
-rly.
-
-I had a call with Punnaiah regarding this L2 edac driver and please
-correct me if my understanding of pl310 parity error
-is wrong (I didn't read pl310 specification).
-There are 2 memories in pl310 - data and tag,
-Through controller we are able to detect 2 errors:
-data parity error and tag parity error.
-Both of them are uncorrectable errors and could be just reported.
-L2 contains data and instructions together that's why error can
-happen in data or instruction part.
-
-The question here is.
-This driver is just reporting problem through edac interface
-which is counting that errors and provide an unified way
-how to report problems.
-
-Maybe as you said we don't need to use edac interface at all
-but by design because every error means that there is the problem and
-error should be reported and system should be reset because we just
-don't know where the problem is. We know that we have a problem.
-
-The question also is if we should execute any code because the problem
-can be with instructions and system should just reset.
-
-Isn't there any security issue that even executing any code is a problem?=
-
-
-=46rom the code I see that IRQ can be raised also for different things
-because only errors are handled here (BTW: IRQ_HANDLED should be return w=
-hen
-IRQ is actually handled).
-
-I just want to make sure that edac is right interface, we have right reac=
-tions
-and this is how to handle this problem.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---0VvOvo4OD33bFmFb7egxpwD48XDSkTK8a
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlNGbb8ACgkQykllyylKDCFeEgCfbJjLgaJnmX3OmxBMbnA2hn4U
-8CUAoIIG8pwv2bE00c9uUkr+nXq7SW6P
-=2CGb
------END PGP SIGNATURE-----
-
---0VvOvo4OD33bFmFb7egxpwD48XDSkTK8a--
