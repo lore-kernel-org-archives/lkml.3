@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030844AbaDJNE4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 09:04:56 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:48934 "EHLO
+	id S1030766AbaDJNGq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 09:06:46 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:32488 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1030583AbaDJNEy (ORCPT
+	by vger.kernel.org with ESMTP id S1030583AbaDJNGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 09:04:54 -0400
-Date: Thu, 10 Apr 2014 09:04:52 -0400
+	Thu, 10 Apr 2014 09:06:45 -0400
+Date: Thu, 10 Apr 2014 09:06:43 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
@@ -17,7 +17,7 @@ Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Ingo Molnar <mingo@kernel.org>
 Subject: Re: [PATCH RESEND 1/2] tracing: syscall_*regfunc() can race with
  copy_process()
-Message-ID: <20140410090452.6b7677fc@gandalf.local.home>
+Message-ID: <20140410090643.46ca2226@gandalf.local.home>
 In-Reply-To: <20140409170542.GB27638@redhat.com>
 References: <1397059882-23063-1-git-send-email-fweisbec@gmail.com>
 	<1397059882-23063-3-git-send-email-fweisbec@gmail.com>
@@ -58,8 +58,106 @@ Oleg Nesterov <oleg@redhat.com> wrote:
 > 	  another patch.
 > 
 > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  include/trace/syscall.h |   15 +++++++++++++++
+>  kernel/fork.c           |    2 ++
+>  kernel/tracepoint.c     |   12 +++++-------
+>  3 files changed, 22 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/trace/syscall.h b/include/trace/syscall.h
+> index 84bc419..15a954b 100644
+> --- a/include/trace/syscall.h
+> +++ b/include/trace/syscall.h
+> @@ -4,6 +4,7 @@
+>  #include <linux/tracepoint.h>
+>  #include <linux/unistd.h>
+>  #include <linux/ftrace_event.h>
+> +#include <linux/thread_info.h>
+>  
+>  #include <asm/ptrace.h>
+>  
+> @@ -31,4 +32,18 @@ struct syscall_metadata {
+>  	struct ftrace_event_call *exit_event;
+>  };
+>  
+> +#ifdef CONFIG_TRACEPOINTS
+> +static inline void syscall_tracepoint_update(struct task_struct *p)
+> +{
+> +	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
+> +		set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
+> +	else
+> +		clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
+> +}
+> +#else
+> +static inline void syscall_tracepoint_update(struct task_struct *p)
+> +{
+> +}
+> +#endif
+> +
+>  #endif /* _TRACE_SYSCALL_H */
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index 1766d32..e463f99 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -1472,7 +1472,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+>  
+>  	total_forks++;
+>  	spin_unlock(&current->sighand->siglock);
+> +	syscall_tracepoint_update(p);
+>  	write_unlock_irq(&tasklist_lock);
+> +
 
-BTW, how important is this fix? Something we should aim for the current
-merge window? stable? Or can it wait till 3.16?
+So this looks to be a fix that probably should go to stable?
+
+>  	proc_fork_connector(p);
+>  	cgroup_post_fork(p);
+>  	if (clone_flags & CLONE_THREAD)
+> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+> index 0c05a45..a16754b 100644
+> --- a/kernel/tracepoint.c
+> +++ b/kernel/tracepoint.c
+> @@ -732,33 +732,31 @@ static int sys_tracepoint_refcount;
+>  
+>  void syscall_regfunc(void)
+>  {
+> -	unsigned long flags;
+>  	struct task_struct *g, *t;
+>  
+>  	if (!sys_tracepoint_refcount) {
+> -		read_lock_irqsave(&tasklist_lock, flags);
+> +		read_lock(&tasklist_lock);
+>  		do_each_thread(g, t) {
+>  			/* Skip kernel threads. */
+> -			if (t->mm)
+> +			if (!(t->flags & PF_KTHREAD))
+>  				set_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
+>  		} while_each_thread(g, t);
+> -		read_unlock_irqrestore(&tasklist_lock, flags);
+> +		read_unlock(&tasklist_lock);
+>  	}
+>  	sys_tracepoint_refcount++;
+>  }
+>  
+>  void syscall_unregfunc(void)
+>  {
+> -	unsigned long flags;
+>  	struct task_struct *g, *t;
+>  
+>  	sys_tracepoint_refcount--;
+>  	if (!sys_tracepoint_refcount) {
+> -		read_lock_irqsave(&tasklist_lock, flags);
+> +		read_lock(&tasklist_lock);
+>  		do_each_thread(g, t) {
+>  			clear_tsk_thread_flag(t, TIF_SYSCALL_TRACEPOINT);
+>  		} while_each_thread(g, t);
+> -		read_unlock_irqrestore(&tasklist_lock, flags);
+> +		read_unlock(&tasklist_lock);
+
+These changes should be in a separate patch, as they can wait till 3.16.
 
 -- Steve
+
+>  	}
+>  }
+>  #endif
+
