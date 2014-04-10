@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161210AbaDJUtM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 16:49:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57342 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759131AbaDJUtK (ORCPT
+	id S1422685AbaDJUtb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 16:49:31 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:63549 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759164AbaDJUt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 16:49:10 -0400
-Date: Thu, 10 Apr 2014 22:48:56 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <williams@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC PATCH RT] rwsem: The return of multi-reader PI rwsems
-Message-ID: <20140410204856.GO10526@twins.programming.kicks-ass.net>
-References: <20140409151922.5fa5d999@gandalf.local.home>
- <20140410094430.56ca9ee1@sluggy.gateway.2wire.net>
- <5346B2C8.6000207@linutronix.de>
- <20140410153617.GN10526@twins.programming.kicks-ass.net>
- <20140410151741.617f86d9@gandalf.local.home>
+	Thu, 10 Apr 2014 16:49:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140410151741.617f86d9@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CALCETrVmaGNCxo-L4-dPbUev3VXXEPR7xBzo3Fux6ny7yh_Gzw@mail.gmail.com>
+References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
+	<20140320153250.GC20618@thunk.org>
+	<CANq1E4SUXrzAV8FS8HVYxnRVb1oOR6HSTyucJzyFs5PuS5Y88A@mail.gmail.com>
+	<20140320163806.GA10440@thunk.org>
+	<5346ED93.9040500@amacapital.net>
+	<20140410203246.GB31614@thunk.org>
+	<CALCETrVmaGNCxo-L4-dPbUev3VXXEPR7xBzo3Fux6ny7yh_Gzw@mail.gmail.com>
+Date: Thu, 10 Apr 2014 22:49:28 +0200
+Message-ID: <CANq1E4RofJ7CUWWBPW1Qb4pX3rxYHCh1CPtbtX241KtJO+=Qhw@mail.gmail.com>
+Subject: Re: [PATCH 0/6] File Sealing & memfd_create()
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Greg Kroah-Hartman <greg@kroah.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ryan Lortie <desrt@desrt.ca>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 03:17:41PM -0400, Steven Rostedt wrote:
-> On Thu, 10 Apr 2014 17:36:17 +0200
-> Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> 
-> > It defaults to the total number of CPUs in the system, given the default
-> > setup (all CPUs in a single balance domain), this should result in all
-> > CPUs working concurrently on the boosted read sides.
-> 
-> Unfortunately, it currently defaults to the number of possible CPUs in
-> the system. I should probably move the default assignment to after SMP
-> is setup. Currently it happens in early boot before all the CPUs are
-> running. On boot up, the limit is set to NR_CPUS which should be much
-> higher than what the system has, but shouldn't matter during boot. But
-> after all the CPUs are up and running, it can lower it to online CPUs.
-> 
-> I think I'll go and make v3 of this patch.
+Hi
 
-Yah, I should have read the patch in more than 5 seconds flat I suppose
-:-)
+On Thu, Apr 10, 2014 at 10:37 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> It occurs to me that, before going nuts with these kinds of flags, it
+> may pay to just try to fix the /proc/self/fd issue for real -- we
+> could just make open("/proc/self/fd/3", O_RDWR) fail if fd 3 is
+> read-only.  That may be enough for the file sealing thing.
 
-modifying the number post smp bringup should be fine.
+For the sealing API, none of this is needed. As long as the inode is
+owned by the uid who creates the memfd, you can pass it around and
+no-one besides root and you can open /proc/self/fd/$fd (assuming chmod
+700). If you share the fd with someone with the same uid as you,
+you're screwed anyway. We don't protect users against themselves (I
+mean, they can ptrace you, or kill()..). Therefore, I'm not really
+convinced that we want this for memfd. At least no-one has provided a
+_proper_ use-case for this so far.
+
+Thanks
+David
