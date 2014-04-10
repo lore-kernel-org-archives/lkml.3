@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422695AbaDJWCI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 18:02:08 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:4093 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753845AbaDJWCF (ORCPT
+	id S965665AbaDJWG7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 18:06:59 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:45690 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759165AbaDJWGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 18:02:05 -0400
-Date: Thu, 10 Apr 2014 18:02:03 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <williams@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC PATCH RT] rwsem: The return of multi-reader PI rwsems
-Message-ID: <20140410180203.79c08bfa@gandalf.local.home>
-In-Reply-To: <20140410213003.GA21760@linux.vnet.ibm.com>
-References: <20140409151922.5fa5d999@gandalf.local.home>
-	<20140410094430.56ca9ee1@sluggy.gateway.2wire.net>
-	<5346B2C8.6000207@linutronix.de>
-	<20140410153617.GN10526@twins.programming.kicks-ass.net>
-	<20140410151741.617f86d9@gandalf.local.home>
-	<20140410213003.GA21760@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 10 Apr 2014 18:06:51 -0400
+Date: Thu, 10 Apr 2014 15:06:49 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: drepper@gmail.com, anatol.pomozov@gmail.com, jkosina@suse.cz,
+        akpm@linux-foundation.org, xemul@parallels.com,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org
+Subject: Re: NUMA node information for pages
+In-Reply-To: <5345fe27.82dab40a.0831.0af9SMTPIN_ADDED_BROKEN@mx.google.com>
+Message-ID: <alpine.DEB.2.02.1404101500280.11995@chino.kir.corp.google.com>
+References: <87eh1ix7g0.fsf@x240.local.i-did-not-set--mail-host-address--so-tickle-me> <533a1563.ad318c0a.6a93.182bSMTPIN_ADDED_BROKEN@mx.google.com> <CAOPLpQc8R2SfTB+=BsMa09tcQ-iBNJHg+tGnPK-9EDH1M47MJw@mail.gmail.com> <5343806c.100cc30a.0461.ffffc401SMTPIN_ADDED_BROKEN@mx.google.com>
+ <alpine.DEB.2.02.1404091734060.1857@chino.kir.corp.google.com> <5345fe27.82dab40a.0831.0af9SMTPIN_ADDED_BROKEN@mx.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 10 Apr 2014 14:30:03 -0700
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+On Wed, 9 Apr 2014, Naoya Horiguchi wrote:
 
-> On Thu, Apr 10, 2014 at 03:17:41PM -0400, Steven Rostedt wrote:
-> > On Thu, 10 Apr 2014 17:36:17 +0200
-> > Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > 
-> > > It defaults to the total number of CPUs in the system, given the default
-> > > setup (all CPUs in a single balance domain), this should result in all
-> > > CPUs working concurrently on the boosted read sides.
-> > 
-> > Unfortunately, it currently defaults to the number of possible CPUs in
-> > the system. I should probably move the default assignment to after SMP
-> > is setup. Currently it happens in early boot before all the CPUs are
-> > running. On boot up, the limit is set to NR_CPUS which should be much
-> > higher than what the system has, but shouldn't matter during boot. But
-> > after all the CPUs are up and running, it can lower it to online CPUs.
+> >  [ And that block_size_bytes file is absolutely horrid, why are we
+> >    exporting all this information in hex and not telling anybody? ]
 > 
-> Another approach is to use nr_cpu_ids, which is the maximum number of
-> CPUs that the particular booting system could ever have.  I use this in
-> RCU to resize the data structures down from their NR_CPUS compile-time
-> hugeness.
+> Indeed, this kind of implicit hex numbers are commonly used in many place.
+> I guess that it's maybe for historical reasons.
 > 
 
-OK, also, in doing our benchmarks, there's a big difference with
-rt_rw_limit being num_online_cpus and 2 * num_online_cpus. It doesn't
-seem to get better adding more than that. This was shown on a case with
-12 cpus as well as 8 cpus. Same result.
+I think it was meant to be simple to that you could easily add the length 
+to the start, but it should at least prefix this with `0x'.  That code has 
+been around for years, though, so we probably can't fix it now.
 
-I really like to see a real use case benefit to find the best default.
-But as our mmap_sem stress test shows 2xCPUS as being the best, I'm
-going to go with that until someone comes up with a better test.
+> > I'd much prefer a single change that works for everybody and userspace can 
+> > rely on exporting accurate information as long as sysfs is mounted, and 
+> > not even need to rely on getpagesize() to convert from pfn to physical 
+> > address: just simple {start,end}_phys_addr files added to 
+> > /sys/devices/system/node/nodeN/ for node N.  Online information can 
+> > already be parsed for these ranges from /sys/devices/system/node/online.
+> 
+> OK, so what if some node has multiple address ranges?  I don't think that
+> start(end)_phys_addr simply returns minimum (maximum) possible address is optimal,
+> because users can't know about void range between valid address ranges
+> (non-exist pfn should not belong to any node).
+> Are printing multilined (or comma-separated) ranges preferable for example
+> like below?
+> 
+>   $ cat /sys/devices/system/node/nodeN/phys_addr
+>   0x0-0x80000000
+>   0x100000000-0x180000000
+> 
 
--- Steve
+What the...?  nodeN should represent the pgdat for that node and a pgdat 
+can only have a single range.  I'm suggesting that 
+/sys/devices/system/node/nodeN/start_phys_addr returns 
+node_start_pfn(N) << PAGE_SHIFT and 
+/sys/devices/system/node/nodeN/end_phys_addr returns
+node_end_pfn(N) << PAGE_SHIFT and prefix them correctly this time with 
+`0x'.
