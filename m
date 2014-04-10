@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934815AbaDJDWY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:22:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40844 "EHLO
+	id S934933AbaDJEHr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 00:07:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41118 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934637AbaDJDVg (ORCPT
+	with ESMTP id S934803AbaDJDWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:21:36 -0400
+	Wed, 9 Apr 2014 23:22:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Philipp Reisner <philipp.reisner@linbit.com>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Qiang Huang <h.huangqiang@huawei.com>, Li Zefan <lizefan@huawei.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 009/134] idr: idr_for_each_entry() macro
-Date: Wed,  9 Apr 2014 20:22:05 -0700
-Message-Id: <20140410032300.937951682@linuxfoundation.org>
+        Johan Hovold <jhovold@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Yang Yingliang <yangyingliang@huawei.com>
+Subject: [PATCH 3.4 070/134] USB: ssu100: fix use-after-free in TIOCMIWAIT
+Date: Wed,  9 Apr 2014 20:23:06 -0700
+Message-Id: <20140410032309.113957278@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -29,40 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Philipp Reisner <philipp.reisner@linbit.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 9749f30f1a387070e6e8351f35aeb829eacc3ab6 upstream.
+commit 43a66b4c417ad15f6d2f632ce67ad195bdf999e8 upstream.
 
-Inspired by the list_for_each_entry() macro
+Use the port wait queue and make sure to check the serial disconnected
+flag before accessing private port data after waking up.
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+This is is needed as the private port data (including the wait queue
+itself) can be gone when waking up after a disconnect.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Qiang Huang <h.huangqiang@huawei.com>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Jianguo Wu <wujianguo@huawei.com>
+Cc: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/idr.h |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ drivers/usb/serial/ssu100.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/include/linux/idr.h
-+++ b/include/linux/idr.h
-@@ -152,4 +152,15 @@ void ida_simple_remove(struct ida *ida,
+--- a/drivers/usb/serial/ssu100.c
++++ b/drivers/usb/serial/ssu100.c
+@@ -77,7 +77,6 @@ struct ssu100_port_private {
+ 	spinlock_t status_lock;
+ 	u8 shadowLSR;
+ 	u8 shadowMSR;
+-	wait_queue_head_t delta_msr_wait; /* Used for TIOCMIWAIT */
+ 	struct async_icount icount;
+ };
  
- void __init idr_init_cache(void);
+@@ -386,8 +385,9 @@ static int wait_modem_info(struct usb_se
+ 	spin_unlock_irqrestore(&priv->status_lock, flags);
  
-+/**
-+ * idr_for_each_entry - iterate over an idr's elements of a given type
-+ * @idp:     idr handle
-+ * @entry:   the type * to use as cursor
-+ * @id:      id entry's key
-+ */
-+#define idr_for_each_entry(idp, entry, id)				\
-+	for (id = 0, entry = (typeof(entry))idr_get_next((idp), &(id)); \
-+	     entry != NULL;                                             \
-+	     ++id, entry = (typeof(entry))idr_get_next((idp), &(id)))
+ 	while (1) {
+-		wait_event_interruptible(priv->delta_msr_wait,
+-					 ((priv->icount.rng != prev.rng) ||
++		wait_event_interruptible(port->delta_msr_wait,
++					 (port->serial->disconnected ||
++					  (priv->icount.rng != prev.rng) ||
+ 					  (priv->icount.dsr != prev.dsr) ||
+ 					  (priv->icount.dcd != prev.dcd) ||
+ 					  (priv->icount.cts != prev.cts)));
+@@ -395,6 +395,9 @@ static int wait_modem_info(struct usb_se
+ 		if (signal_pending(current))
+ 			return -ERESTARTSYS;
+ 
++		if (port->serial->disconnected)
++			return -EIO;
 +
- #endif /* __IDR_H__ */
+ 		spin_lock_irqsave(&priv->status_lock, flags);
+ 		cur = priv->icount;
+ 		spin_unlock_irqrestore(&priv->status_lock, flags);
+@@ -477,7 +480,6 @@ static int ssu100_attach(struct usb_seri
+ 	}
+ 
+ 	spin_lock_init(&priv->status_lock);
+-	init_waitqueue_head(&priv->delta_msr_wait);
+ 	usb_set_serial_port_data(port, priv);
+ 
+ 	return ssu100_initdevice(serial->dev);
+@@ -563,7 +565,7 @@ static void ssu100_update_msr(struct usb
+ 			priv->icount.dcd++;
+ 		if (msr & UART_MSR_TERI)
+ 			priv->icount.rng++;
+-		wake_up_interruptible(&priv->delta_msr_wait);
++		wake_up_interruptible(&port->delta_msr_wait);
+ 	}
+ }
+ 
 
 
