@@ -1,86 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965817AbaDJJuy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 05:50:54 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:16034
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965773AbaDJJup (ORCPT
+	id S965820AbaDJJv1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 05:51:27 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:59026 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S965642AbaDJJvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 05:50:45 -0400
-X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VPS3(z579eh551bizbb2dI98dI9371I1432I4015Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de097hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25f6h2605h268bh26d3h2673i19b6n1155h)
-Date: Thu, 10 Apr 2014 11:49:57 +0200
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Thu, 10 Apr 2014 05:51:23 -0400
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: "kgene.kim\@samsung.com" <kgene.kim@samsung.com>,
+        "t.figa\@samsung.com" <t.figa@samsung.com>,
+        "linux-samsung-soc\@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "hyunhee.kim\@samsung.com" <hyunhee.kim@samsung.com>,
+        "sw0312.kim\@samsung.com" <sw0312.kim@samsung.com>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yj44.cho\@samsung.com" <yj44.cho@samsung.com>,
+        "inki.dae\@samsung.com" <inki.dae@samsung.com>,
+        "kyungmin.park\@samsung.com" <kyungmin.park@samsung.com>,
+        "linux-arm-kernel\@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 06/27] ARM: EXYNOS:: Enter a15 lowpower mode for Exynos3250 based on Cortex-a7
+In-Reply-To: <1397122124-15690-7-git-send-email-cw00.choi@samsung.com>
+	(Chanwoo Choi's message of "Thu, 10 Apr 2014 10:28:23 +0100")
+Organization: ARM Ltd
+References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
+	<1397122124-15690-7-git-send-email-cw00.choi@samsung.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+Date: Thu, 10 Apr 2014 10:51:15 +0100
+Message-ID: <87d2gp3430.fsf@approximate.cambridge.arm.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Michal Simek <monstr@monstr.eu>,
-        Punnaiah Choudary Kalluri 
-	<punnaiah.choudary.kalluri@xilinx.com>,
-        <dougthompson@xmission.com>, <linux-edac@vger.kernel.org>,
-        <michal.simek@xilinx.com>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <rob@landley.net>, <sorenb@xilinx.com>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <kpc528@gmail.com>, <kalluripunnaiahchoudary@gmail.com>,
-        <punnaia@xilinx.com>
-Subject: Re: [RFC PATCH v2] edac: synopsys: Added EDAC support for zynq ddr
- ecc controller
-References: <1220b715-6fc2-42ed-8393-b9859fc0deb9@TX2EHSMHS021.ehs.local> <20140408204047.GQ30077@pd.tnic> <534633C0.9090905@monstr.eu> <20140410092144.GD29093@pd.tnic>
-In-Reply-To: <20140410092144.GD29093@pd.tnic>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-Message-ID: <5e0042b6-f169-4025-8fd7-9d70c2ed0cf6@AM1EHSMHS012.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2014 11:21 AM, Borislav Petkov wrote:
-> On Thu, Apr 10, 2014 at 08:01:36AM +0200, Michal Simek wrote:
->> Just add it to Zynq maintainer fragment as we are doing for non
->> zynq/xilinx drivers.
-> 
-> Yep, as a file pattern F:
+On Thu, Apr 10 2014 at 10:28:23 am BST, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+> This patch decide proper lowpower mode of either a15 or a9 according to own ID
+> from Main ID register.
+>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  arch/arm/mach-exynos/hotplug.c | 13 ++++++++++---
+>  1 file changed, 10 insertions(+), 3 deletions(-)
+>
+> diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
+> index 5eead53..36d3db6 100644
+> --- a/arch/arm/mach-exynos/hotplug.c
+> +++ b/arch/arm/mach-exynos/hotplug.c
+> @@ -135,13 +135,20 @@ void __ref exynos_cpu_die(unsigned int cpu)
+>  	int primary_part = 0;
+>  
+>  	/*
+> -	 * we're ready for shutdown now, so do it.
+> -	 * Exynos4 is A9 based while Exynos5 is A15; check the CPU part
+> +	 * we're ready for shutdown now, so do it. Exynos4 is A9 based
+> +	 * while Exynos5 is A15/Exynos7 is A7; check the CPU part
+>  	 * number by reading the Main ID register and then perform the
+>  	 * appropriate sequence for entering low power.
+>  	 */
+>  	asm("mrc p15, 0, %0, c0, c0, 0" : "=r"(primary_part) : : "cc");
 
-yep.
+While you're touching that code, how about using:
 
->> At least the is the first time when someone saying that only some
->> functions should be documented.
-> 
-> I don't see the need to document simple functions which are *obvious*.
-> But if you want to do that, I'm not going to stop you so be my guest.
+      primary_part = read_cpuid(CPUID_ID);
 
-ok. thanks.
+> -	if ((primary_part & 0xfff0) == 0xc0f0)
+> +
+> +	/*
+> +	 * Main ID register of Cortex series
+> +	 * - Cortex-a7  : 0x410F_C07x
+> +	 * - Cortex-a15 : 0x410F_C0Fx
+> +	 */
+> +	primary_part = primary_part & 0xfff0;
+> +	if (primary_part == 0xc0f0 || primary_part == 0xc070)
 
+ARM_CPU_PART_CORTEX_A15, ARM_CPU_PART_CORTEX_A7
 
->> I don't think this is good to do. When we remove this prefix entirely
->> it is bigger chance that the same function name will be used by
->> another driver. It is not a problem with linking but the same
->> functions names will be listed in System.map which will complicate
->> debugging.
-> 
-> Ok, fair enough. You probably still want to make them shorter, though,
-> so that your code doesn't have to be line-broken too much. For example,
-> since we only load a single edac driver per system, you can shorten the
-> prefix to "edac_" only.
-
-I agree with you that we can use shorter name.
-I have checked this with Punnaiah and I can't see any problem to have
-more edac drivers in the system.
-For zynq there is primary ddr controller which is target by this driver.
-Then we are talking about L2 in another thread.
-Because zynq has programmable logic next to chip where you can add
-soft memory controller (we have these hw designs) on the same bus
-then there could be others edac drivers.
-I would say how many you like till pins on the package.
+>  		cpu_enter_lowpower_a15();
+>  	else
+>  		cpu_enter_lowpower_a9();
 
 Thanks,
-Michal
 
-
+	M.
+-- 
+Jazz is not dead. It just smells funny.
