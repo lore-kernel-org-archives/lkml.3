@@ -1,197 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030237AbaDJKHN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 06:07:13 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:53304 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965755AbaDJKGy (ORCPT
+	id S965954AbaDJKLR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 06:11:17 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:51381
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965088AbaDJKLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 06:06:54 -0400
-X-AuditID: cbfee68e-b7f566d000002344-e5-53466d20ae31
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: kgene.kim@samsung.com, t.figa@samsung.com,
-        linux-samsung-soc@vger.kernel.org
-Cc: kyungmin.park@samsung.com, cw00.choi@samsung.com, inki.dae@samsung.com,
-        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 18/27] ARM: dts: exynos3250: Add i2c dt node
-Date: Thu, 10 Apr 2014 19:06:08 +0900
-Message-id: <1397124377-16969-10-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-In-reply-to: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
-References: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLLMWRmVeSWpSXmKPExsWyRsSkSFch1y3Y4NxlHYvrX56zWnz+0MJu
-	Men+BBaL3gVX2SzONr1ht9j0+BqrxeVdc9gsZpzfx2QxY/JLNov1M16zWOzdOZnRgdtj85J6
-	j74tqxg9Pm+SC2CO4rJJSc3JLEst0rdL4MrYuf8mU8FH6Ypf02+yNTDeE+1i5OCQEDCRWDgh
-	qIuRE8gUk7hwbz1bFyMXh5DAUkaJWyevs0MkTCQ6F85hhUgsYpSY82UVC0hCSKCJSaL9dy6I
-	zSagJbH/xQ02EFtEIEDix/F3YDazwE1GiWPvw0BsYQEbid37HrOALGYRUJWY/t4FJMwr4CZx
-	4ONdFohdchIf9jwC28sJFJ+56CQbxCpXiZ5HF5lBbpAQWMcusfPiMWaQBIuAgMS3yYdYIJ6R
-	ldh0gBlijqTEwRU3WCYwCi9gZFjFKJpakFxQnJReZKRXnJhbXJqXrpecn7uJERj0p/8969vB
-	ePOA9SHGZKBxE5mlRJPzgVGTVxJvaGxmZGFqYmpsZG5pRpqwkjjvoodJQUIC6YklqdmpqQWp
-	RfFFpTmpxYcYmTg4pRoYS/oV+zw+KH1cXywbWxrnz/B2bop6a1QXk2OD3G1Tj1an+IqOsl/M
-	v25Z3V23i8Xz9If7PakSBwx4yvUM/x7653d0yv8dk3YckNSu0XPIW3VELKXnn3/wkmDuJ+9f
-	iYkL/3PjWRX4oebHnPXuMT/+P91VMFshrzLk95OV+bPOnEyf+H6+9AxzJZbijERDLeai4kQA
-	lFBrfZACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t9jAV2FXLdggw9flC2uf3nOavH5Qwu7
-	xaT7E1gsehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PFjMkv2SzWz3jNYrF352RGB26PzUvq
-	Pfq2rGL0+LxJLoA5qoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VW
-	ycUnQNctMwfoICWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYQ1jxs79N5kK
-	PkpX/Jp+k62B8Z5oFyMnh4SAiUTnwjmsELaYxIV769m6GLk4hAQWMUrM+bKKBSQhJNDEJNH+
-	OxfEZhPQktj/4gYbiC0iECDx4/g7MJtZ4CajxLH3YSC2sICNxO59j4F6OThYBFQlpr93AQnz
-	CrhJHPh4lwVil5zEhz2P2EFsTqD4zEUn2SBWuUr0PLrIPIGRdwEjwypG0dSC5ILipPRcI73i
-	xNzi0rx0veT83E2M4Kh6Jr2DcVWDxSFGAQ5GJR7eA8tcg4VYE8uKK3MPMUpwMCuJ8O7OdAsW
-	4k1JrKxKLcqPLyrNSS0+xJgMdNREZinR5HxgxOeVxBsam5gZWRqZG1oYGZuTJqwkznuw1TpQ
-	SCA9sSQ1OzW1ILUIZgsTB6dUA+MyxYA5l2TE6mOvvv7B1dzAPOvCT4O7wpPnfPC7Wb3OS+9v
-	5ZSjPnWPVvEdVNjzbvMqvt1RHy8scZ+0U+tE3fs/v495Tt561aPl1+3Q1oQl2tYdd9Z8FuXx
-	yI1gkHgXprflZP62Nyr5N2IMXL/3/ylc2jZ5VcvpvYG8vVpGB45OE3u1Yf+THK81SizFGYmG
-	WsxFxYkAM59beu4CAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 10 Apr 2014 06:11:11 -0400
+X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VPS3(z579eh551bizbb2dI98dI9371I1432I4015Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzzz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25f6h2605h268bh26d3h2673i19b6n1155h)
+Date: Thu, 10 Apr 2014 12:10:54 +0200
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>
+CC: Michal Simek <michal.simek@xilinx.com>, Michal Simek <monstr@monstr.eu>,
+        Punnaiah Choudary Kalluri 
+	<punnaiah.choudary.kalluri@xilinx.com>,
+        <dougthompson@xmission.com>, <linux-edac@vger.kernel.org>,
+        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <sorenb@xilinx.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <kpc528@gmail.com>,
+        <kalluripunnaiahchoudary@gmail.com>, <punnaia@xilinx.com>
+Subject: Re: [RFC PATCH v2] edac: synopsys: Added EDAC support for zynq ddr
+ ecc controller
+References: <1220b715-6fc2-42ed-8393-b9859fc0deb9@TX2EHSMHS021.ehs.local> <20140408204047.GQ30077@pd.tnic> <534633C0.9090905@monstr.eu> <20140410092144.GD29093@pd.tnic> <5e0042b6-f169-4025-8fd7-9d70c2ed0cf6@AM1EHSMHS012.ehs.local> <20140410100047.GG29093@pd.tnic>
+In-Reply-To: <20140410100047.GG29093@pd.tnic>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+Message-ID: <98712034-021c-4b20-8f1a-1b848ef015c6@CH1EHSMHS043.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Inki Dae <inki.dae@samsung.com>
+On 04/10/2014 12:00 PM, Borislav Petkov wrote:
+> On Thu, Apr 10, 2014 at 11:49:57AM +0200, Michal Simek wrote:
+>> I agree with you that we can use shorter name. I have checked this
+>> with Punnaiah and I can't see any problem to have more edac drivers
+>> in the system. For zynq there is primary ddr controller which is
+>> target by this driver. Then we are talking about L2 in another thread.
+>> Because zynq has programmable logic next to chip where you can add
+>> soft memory controller (we have these hw designs) on the same bus then
+>> there could be others edac drivers. I would say how many you like till
+>> pins on the package.
+> 
+> I knew you were gonna say something like that! :-)
 
-Add the DTS nodes for all th i2c busses in the Exynos3250 SoC.
+:-) good. We are getting famous by non standard cases.
 
-Signed-off-by: Inki Dae <inki.dae@samsung.com>
-[Add i2c alias by Tomasz Figa]
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- arch/arm/boot/dts/exynos3250.dtsi | 112 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 112 insertions(+)
+> 
+> Then you'll have to check whether edac can even stomach more than one
+> drivers in parallel. TTBOMK, no one has ever done this so far... Yadda
+> yadda.
 
-diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
-index c5e6917..a16c3ea 100644
---- a/arch/arm/boot/dts/exynos3250.dtsi
-+++ b/arch/arm/boot/dts/exynos3250.dtsi
-@@ -28,6 +28,14 @@
- 	aliases {
- 		pinctrl0 = &pinctrl_0;
- 		pinctrl1 = &pinctrl_1;
-+		i2c0 = &i2c_0;
-+		i2c1 = &i2c_1;
-+		i2c2 = &i2c_2;
-+		i2c3 = &i2c_3;
-+		i2c4 = &i2c_4;
-+		i2c5 = &i2c_5;
-+		i2c6 = &i2c_6;
-+		i2c7 = &i2c_7;
- 	};
- 
- 	chipid@10000000 {
-@@ -112,4 +120,108 @@
- 		clock-names = "uart", "clk_uart_baud0";
- 		status = "disabled";
- 	};
-+
-+	i2c_0: i2c@13860000 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "samsung,s3c2440-i2c";
-+		reg = <0x13860000 0x100>;
-+		interrupts = <0 113 0>;
-+		clocks = <&cmu CLK_I2C0>;
-+		clock-names = "i2c";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&i2c0_bus>;
-+		status = "disabled";
-+	};
-+
-+	i2c_1: i2c@13870000 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "samsung,s3c2440-i2c";
-+		reg = <0x13870000 0x100>;
-+		interrupts = <0 114 0>;
-+		clocks = <&cmu CLK_I2C1>;
-+		clock-names = "i2c";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&i2c1_bus>;
-+		status = "disabled";
-+	};
-+
-+	i2c_2: i2c@13880000 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "samsung,s3c2440-i2c";
-+		reg = <0x13880000 0x100>;
-+		interrupts = <0 115 0>;
-+		clocks = <&cmu CLK_I2C2>;
-+		clock-names = "i2c";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&i2c2_bus>;
-+		status = "disabled";
-+	};
-+
-+	i2c_3: i2c@13890000 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "samsung,s3c2440-i2c";
-+		reg = <0x13890000 0x100>;
-+		interrupts = <0 116 0>;
-+		clocks = <&cmu CLK_I2C3>;
-+		clock-names = "i2c";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&i2c3_bus>;
-+		status = "disabled";
-+	};
-+
-+	i2c_4: i2c@138A0000 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "samsung,s3c2440-i2c";
-+		reg = <0x138A0000 0x100>;
-+		interrupts = <0 117 0>;
-+		clocks = <&cmu CLK_I2C4>;
-+		clock-names = "i2c";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&i2c4_bus>;
-+		status = "disabled";
-+	};
-+
-+	i2c_5: i2c@138B0000 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "samsung,s3c2440-i2c";
-+		reg = <0x138B0000 0x100>;
-+		interrupts = <0 118 0>;
-+		clocks = <&cmu CLK_I2C5>;
-+		clock-names = "i2c";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&i2c5_bus>;
-+		status = "disabled";
-+	};
-+
-+	i2c_6: i2c@138C0000 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "samsung,s3c2440-i2c";
-+		reg = <0x138C0000 0x100>;
-+		interrupts = <0 119 0>;
-+		clocks = <&cmu CLK_I2C6>;
-+		clock-names = "i2c";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&i2c6_bus>;
-+		status = "disabled";
-+	};
-+
-+	i2c_7: i2c@138D0000 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "samsung,s3c2440-i2c";
-+		reg = <0x138D0000 0x100>;
-+		interrupts = <0 120 0>;
-+		clocks = <&cmu CLK_I2C7>;
-+		clock-names = "i2c";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&i2c7_bus>;
-+		status = "disabled";
-+	};
- };
--- 
-1.8.0
+It can there is just a problem with some IDs. :-)
+
+> But before you do all that, you need to check whether edac is really
+> what you're looking for, as I put it in my other mail.
+
+If edac is the interface for reporting problems like this. It is probably
+just a limitation of current edac core and should be fixed.
+
+Thanks,
+Michal
+
 
