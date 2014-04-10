@@ -1,68 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759174AbaDJVQZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 17:16:25 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:49906 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752941AbaDJVQY (ORCPT
+	id S935725AbaDJVRd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 17:17:33 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:42184 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934020AbaDJVRb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 17:16:24 -0400
+	Thu, 10 Apr 2014 17:17:31 -0400
+Message-ID: <53470A68.6090005@free-electrons.com>
+Date: Thu, 10 Apr 2014 23:17:28 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <CANq1E4RofJ7CUWWBPW1Qb4pX3rxYHCh1CPtbtX241KtJO+=Qhw@mail.gmail.com>
-References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
- <20140320153250.GC20618@thunk.org> <CANq1E4SUXrzAV8FS8HVYxnRVb1oOR6HSTyucJzyFs5PuS5Y88A@mail.gmail.com>
- <20140320163806.GA10440@thunk.org> <5346ED93.9040500@amacapital.net>
- <20140410203246.GB31614@thunk.org> <CALCETrVmaGNCxo-L4-dPbUev3VXXEPR7xBzo3Fux6ny7yh_Gzw@mail.gmail.com>
- <CANq1E4RofJ7CUWWBPW1Qb4pX3rxYHCh1CPtbtX241KtJO+=Qhw@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 10 Apr 2014 14:16:03 -0700
-Message-ID: <CALCETrXVzLcVVSuPMFUgoRvpQgcQNy2_rW6=11CJAME0W2GyYQ@mail.gmail.com>
-Subject: Re: [PATCH 0/6] File Sealing & memfd_create()
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        John Stultz <john.stultz@linaro.org>,
-        Greg Kroah-Hartman <greg@kroah.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ryan Lortie <desrt@desrt.ca>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Randy Dunlap <rdunlap@infradead.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/15] pinctrl: sunxi: specify clk name when retrieving
+ pinctrl pio clk
+References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>	<1397051478-4113-5-git-send-email-boris.brezillon@free-electrons.com>	<CACRpkdYW6b_37V40TRxs=7ecaWuV0X7_YJ4=-Psr9CG-cTb79w@mail.gmail.com> <CACRpkdbG-D5RXrrJs9LBEGs-1dydmfPKvCgNb4S2=BbBq3SxQw@mail.gmail.com>
+In-Reply-To: <CACRpkdbG-D5RXrrJs9LBEGs-1dydmfPKvCgNb4S2=BbBq3SxQw@mail.gmail.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 1:49 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi
+Hello Linus,
+
+On 10/04/2014 20:16, Linus Walleij wrote:
+> On Thu, Apr 10, 2014 at 8:14 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>> On Wed, Apr 9, 2014 at 3:51 PM, Boris BREZILLON
+>> <boris.brezillon@free-electrons.com> wrote:
+>>
+>>> Specify base pio clk name when retrieving it using the CCF.
+>>> This way we will avoid conflicts when introducing a second clk for the A31
+>>> SoC.
+>>>
+>>> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+>> Are you merging all these through ARM SoC?
+>>
+>> In that case
+>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>>
+>> If it's OK to merge stand-alone tell me and I'll apply it to
+>> the pinctrl tree.
+> Hm there seems to be quite a few patches to pinctrl here...
 >
-> On Thu, Apr 10, 2014 at 10:37 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> It occurs to me that, before going nuts with these kinds of flags, it
->> may pay to just try to fix the /proc/self/fd issue for real -- we
->> could just make open("/proc/self/fd/3", O_RDWR) fail if fd 3 is
->> read-only.  That may be enough for the file sealing thing.
+> May I apply this and the others to the pinctrl tree simply?
+
+Actually I made a v2 (and then a v3 https://lkml.org/lkml/2014/4/10/320
+:-)) of this series, in which I removed all DT related stuff.
+So, if you agree with these changes, I guess you can take them through
+you tree.
+
+Best Regards,
+
+Boris
+
 >
-> For the sealing API, none of this is needed. As long as the inode is
-> owned by the uid who creates the memfd, you can pass it around and
-> no-one besides root and you can open /proc/self/fd/$fd (assuming chmod
-> 700). If you share the fd with someone with the same uid as you,
-> you're screwed anyway. We don't protect users against themselves (I
-> mean, they can ptrace you, or kill()..). Therefore, I'm not really
-> convinced that we want this for memfd. At least no-one has provided a
-> _proper_ use-case for this so far.
+> As DTS files should be maintained separately I don't think
+> it's important to keep driver and DTS file changes together.
+>
+> Yours,
+> Linus Walleij
 
-Hmm.  Fair enough.
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
-Would it make sense for the initial mode on a memfd inode to be 000?
-Anyone who finds this to be problematic could use fchmod to fix it.
-
-I might even go so far as to suggest that the default uid on the inode
-should be 0 (i.e. global root), since there is the odd corner case of
-root setting euid != 0, creating a memfd, and setting euid back to 0.
-The latter might cause resource accounting issues, though.
-
---Andy
