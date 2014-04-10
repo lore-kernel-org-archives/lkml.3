@@ -1,124 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758990AbaDJSPT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 14:15:19 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:55245 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758938AbaDJSPO (ORCPT
+	id S934732AbaDJSQd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 14:16:33 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:41708 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752918AbaDJSQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 14:15:14 -0400
-Message-ID: <1397153712.16584.41.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] softirq: punt to ksoftirqd if __do_softirq recently
- looped
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jiri Benc <jbenc@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        David Miller <davem@davemloft.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Thu, 10 Apr 2014 11:15:12 -0700
-In-Reply-To: <20140410115706.662fb5e7@annuminas.surriel.com>
-References: <20140410115706.662fb5e7@annuminas.surriel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 10 Apr 2014 14:16:31 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACRpkdYW6b_37V40TRxs=7ecaWuV0X7_YJ4=-Psr9CG-cTb79w@mail.gmail.com>
+References: <1397051478-4113-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1397051478-4113-5-git-send-email-boris.brezillon@free-electrons.com>
+	<CACRpkdYW6b_37V40TRxs=7ecaWuV0X7_YJ4=-Psr9CG-cTb79w@mail.gmail.com>
+Date: Thu, 10 Apr 2014 20:16:30 +0200
+Message-ID: <CACRpkdbG-D5RXrrJs9LBEGs-1dydmfPKvCgNb4S2=BbBq3SxQw@mail.gmail.com>
+Subject: Re: [PATCH 04/15] pinctrl: sunxi: specify clk name when retrieving
+ pinctrl pio clk
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        =?ISO-8859-1?Q?Emilio_L=F3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-10 at 11:57 -0400, Rik van Riel wrote:
-> Jiri noticed that netperf throughput had gotten worse in recent years,
-> for smaller message sizes. In the past, ksoftirqd would take around 80%
-> of a CPU, and netserver would take around 100% of another CPU.
-> 
-> On current kernels, sometimes all the softirq processing is done in the
-> context of the netperf process, which can result in as much as a 50%
-> performance drop, due to netserver spending all its CPU time "delivering"
-> packets to a socket it rarely empties, and dropping the packets on the
-> floor as a result.
-> 
-> This seems silly in an age where even cell phones are multi-core, and
-> we could simply let the ksoftirqd thread handle the softirq load, so
-> the scheduler can migrate the userspace task to another CPU.
-> 
-> This patch accomplishes that in a very simplistic way. The code
-> remembers when __do_softirq last looped, and will punt softirq
-> handling to ksoftirqd if another softirq happens in the same jiffie.
-> 
-> Netperf results:
-> 
-> 			without patch		with patch
-> UDP_STREAM      1472    957.17 / 954.18         957.15 / 951.73
-> UDP_STREAM      978     936.85 / 930.06         936.84 / 927.63
-> UDP_STREAM      466     875.98 / 865.62         875.98 / 868.65
-> UDP_STREAM      210     760.88 / 748.70         760.88 / 748.61
-> UDP_STREAM      82      554.06 / 329.96         554.06 / 505.95
->                         unstable ^^^^^^
-> UDP_STREAM      18      158.99 / 108.95         160.73 / 112.68
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: David Miller <davem@davemloft.net>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Tested-by: Jiri Benc <jbenc@redhat.com>
-> Reported-by: Jiri Benc <jbenc@redhat.com>
-> ---
->  kernel/softirq.c | 10 +++++++++-
->  1 file changed, 9 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/softirq.c b/kernel/softirq.c
-> index 787b3a0..020be2f 100644
-> --- a/kernel/softirq.c
-> +++ b/kernel/softirq.c
-> @@ -56,6 +56,7 @@ EXPORT_SYMBOL(irq_stat);
->  static struct softirq_action softirq_vec[NR_SOFTIRQS] __cacheline_aligned_in_smp;
->  
->  DEFINE_PER_CPU(struct task_struct *, ksoftirqd);
-> +DEFINE_PER_CPU(unsigned long, softirq_looped);
->  
->  char *softirq_to_name[NR_SOFTIRQS] = {
->  	"HI", "TIMER", "NET_TX", "NET_RX", "BLOCK", "BLOCK_IOPOLL",
-> @@ -271,6 +272,9 @@ asmlinkage void __do_softirq(void)
->  
->  	pending = local_softirq_pending();
->  	if (pending) {
-> +		/* Still busy? Remember this for invoke_softirq() below... */
-> +		this_cpu_write(softirq_looped, jiffies);
-> +
->  		if (time_before(jiffies, end) && !need_resched() &&
->  		    --max_restart)
->  			goto restart;
-> @@ -330,7 +334,11 @@ void irq_enter(void)
->  
->  static inline void invoke_softirq(void)
->  {
-> -	if (!force_irqthreads) {
-> +	/*
-> +	 * If force_irqthreads is set, or if we looped in __do_softirq this
-> +	 * jiffie, punt to ksoftirqd to prevent userland starvation.
-> +	 */
-> +	if (!force_irqthreads && this_cpu_read(softirq_looped) != jiffies) {
->  		/*
->  		 * We can safely execute softirq on the current stack if
->  		 * it is the irq stack, because it should be near empty
+On Thu, Apr 10, 2014 at 8:14 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Wed, Apr 9, 2014 at 3:51 PM, Boris BREZILLON
+> <boris.brezillon@free-electrons.com> wrote:
+>
+>> Specify base pio clk name when retrieving it using the CCF.
+>> This way we will avoid conflicts when introducing a second clk for the A31
+>> SoC.
+>>
+>> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+>
+> Are you merging all these through ARM SoC?
+>
+> In that case
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>
+> If it's OK to merge stand-alone tell me and I'll apply it to
+> the pinctrl tree.
 
+Hm there seems to be quite a few patches to pinctrl here...
 
-I guess this is the tradeoff between latencies and throughput.
+May I apply this and the others to the pinctrl tree simply?
 
-Have you tried some TCP_RR  / UDP_RR tests with one / multiple
-instances, and have you tried drivers that use deferred skb freeing
-(hard irq calling TX completion handler, then dev_kfree_skb_any()
-scheduling TX softirq) and increase chance of having a not zero
-local_softirq_pending() 
+As DTS files should be maintained separately I don't think
+it's important to keep driver and DTS file changes together.
 
-Calling skb destructor on a different cpu can have a huge false sharing
-effect. A TCP socket is really big.
-
-Your test only UDP_STREAM stresses the RX part, and UDP sockets dont
-use the complex callbacks TCP sockets use.
-
-
-
+Yours,
+Linus Walleij
