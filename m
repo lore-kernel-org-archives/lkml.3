@@ -1,121 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965660AbaDJKhS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 06:37:18 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:19798 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934795AbaDJKhN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 06:37:13 -0400
-X-AuditID: cbfee68f-b7f156d00000276c-15-53467457ef7f
-From: Chanho Park <chanho61.park@samsung.com>
-To: "'Marc Zyngier'" <marc.zyngier@arm.com>,
-        "'Chanwoo Choi'" <cw00.choi@samsung.com>
-Cc: mark.rutland@arm.com, linux-samsung-soc@vger.kernel.org,
-        t.figa@samsung.com, hyunhee.kim@samsung.com, sw0312.kim@samsung.com,
-        linux-kernel@vger.kernel.org, yj44.cho@samsung.com,
-        inki.dae@samsung.com, kyungmin.park@samsung.com, kgene.kim@samsung.com,
-        "'Thomas Gleixner'" <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
- <1397122124-15690-8-git-send-email-cw00.choi@samsung.com>
- <878urd33g4.fsf@approximate.cambridge.arm.com>
-In-reply-to: <878urd33g4.fsf@approximate.cambridge.arm.com>
-Subject: RE: [PATCH 07/27] irqchip: Declare cortex-a7's irqchip to initialize
- gic from dt
-Date: Thu, 10 Apr 2014 19:37:12 +0900
-Message-id: <002e01cf54a8$d59897e0$80c9c7a0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQHswY/dwiExWmV8C5CYXcVGb5tK2AINjaeNAnkl/FKaq5gCUA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphleLIzCtJLcpLzFFi42JZI2JSpBte4hZs0P1Hy+L6l+esFp8/tLBb
-	TLo/gcWid8FVNouzTW/YLTY9vsZqcXnXHDaLGef3MVn8vfOPzWLp9YtMFjMmv2SzWD/jNYvF
-	5k1TmS327pzM6MDnsWbeGkaPd+fOsXtsXlLv0bdlFaPH501yAaxRXDYpqTmZZalF+nYJXBkX
-	57AU7BWsmDjvEVMD4wu+LkZODgkBE4n566+xQdhiEhfurQeyuTiEBJYySvze94sJpmhR01Gw
-	IiGB6YwST/6wQhT9Y5R4NO8bI0iCTUBXYsvzV2C2iECwxKLPD1hAipgFLjFJXOjdyg7RsYlR
-	YnnzdaCxHBycAtYSR/s9QBqEBaIl/nw9zwJiswioShy8eZQZxOYVsJSY/38uG4QtKPFj8j2w
-	GmYBLYn1O48zQdjyEpvXvGWGuFRBYsfZ11BHOEk0zO5mh6gRkdj34h0jyA0SAnM5JM5d2c4E
-	sUxA4tvkQywg90gIyEpsOgA1R1Li4IobLBMYJWYhWT0LyepZSFbPQrJiASPLKkbR1ILkguKk
-	9CJjveLE3OLSvHS95PzcTYzAFHD637P+HYx3D1gfYkwGWj+RWUo0OR+YQvJK4g2NzYwsTE1M
-	jY3MLc1IE1YS573/MClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6Peft3ne3x+KR7rVPv6
-	+SjjT26bFdpWZQydC06z7whaocds6i+wYUW1/rNLna9evZ3Vyv7n7YY9qaFJjUxah8I17tRW
-	1ylb3Dj7r6Rkp09JrtI2z5X7mZdvf3Fx39HkqyW7L1mt9ffyPP7/hPDkA8djU2pMinb+S9Ba
-	P8GSN316uuXrHAPGk6FKLMUZiYZazEXFiQBWxsaOFwMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIKsWRmVeSWpSXmKPExsVy+t9jQd3wErdgg/knFC2uf3nOavH5Qwu7
-	xaT7E1gsehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PF3zv/2CyWXr/IZDFj8ks2i/UzXrNY
-	bN40ldli787JjA58HmvmrWH0eHfuHLvH5iX1Hn1bVjF6fN4kF8Aa1cBok5GamJJapJCal5yf
-	kpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0qZJCWWJOKVAoILG4WEnfDtOE
-	0BA3XQuYxghd35AguB4jAzSQsIYx4+IcloK9ghUT5z1iamB8wdfFyMkhIWAisajpKBuELSZx
-	4d56MFtIYDqjxJM/rF2MXED2P0aJR/O+MYIk2AR0JbY8fwVmiwgESyz6/IAFpIhZ4BKTxIXe
-	rewQHZsYJZY3X2fqYuTg4BSwljja7wHSICwQLfHn63kWEJtFQFXi4M2jzCA2r4ClxPz/c9kg
-	bEGJH5PvgdUwC2hJrN95nAnClpfYvOYtM8SlChI7zr6GOsJJomF2NztEjYjEvhfvGCcwCs1C
-	MmoWklGzkIyahaRlASPLKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzgBPNMagfjygaLQ4wC
-	HIxKPLwHlrkGC7EmlhVX5h5ilOBgVhLh3Z3pFizEm5JYWZValB9fVJqTWnyIMRno04nMUqLJ
-	+cDkl1cSb2hsYmZkaWRuaGFkbE6asJI474FW60AhgfTEktTs1NSC1CKYLUwcnFINjNu7Qzhj
-	ZRgEK+rPRCSnPLgcUtavdvqub4vuSh3nF753g7w+/wgzlmx8ZzZrt94rhUX2+xwOKOkwPzbM
-	fHxRNux78rc3Zq8CimU6OFu/lFubrvITLpofw1r69zFnmsub8Kjo5d0uApIPjO3Ld26vO7R+
-	5bYSIe0ZnPe0++5G9cvYbUu28yhUYinOSDTUYi4qTgQAfzvt1HQDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S965768AbaDJKhj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 06:37:39 -0400
+Received: from mta-out.inet.fi ([195.156.147.13]:52514 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965683AbaDJKhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 06:37:35 -0400
+Date: Thu, 10 Apr 2014 13:37:27 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm:  kernel BUG at mm/huge_memory.c:1371!
+Message-ID: <20140410103727.GA24354@node.dhcp.inet.fi>
+References: <5307D74C.5070002@oracle.com>
+ <20140221235145.GA18046@node.dhcp.inet.fi>
+ <5307F90C.9060602@oracle.com>
+ <5310C56C.60709@oracle.com>
+ <53446261.9070903@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53446261.9070903@oracle.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-> -----Original Message-----
-> From: linux-arm-kernel [mailto:linux-arm-kernel-
-> bounces@lists.infradead.org] On Behalf Of Marc Zyngier
-> Sent: Thursday, April 10, 2014 7:05 PM
-> To: Chanwoo Choi
-> Cc: mark.rutland@arm.com; linux-samsung-soc@vger.kernel.org;
-> t.figa@samsung.com; hyunhee.kim@samsung.com; sw0312.kim@samsung.com;
-> linux-kernel@vger.kernel.org; yj44.cho@samsung.com; inki.dae@samsung.com;
-> kyungmin.park@samsung.com; kgene.kim@samsung.com; Thomas Gleixner;
-> linux-arm-kernel@lists.infradead.org
-> Subject: Re: [PATCH 07/27] irqchip: Declare cortex-a7's irqchip to
-> initialize gic from dt
+On Tue, Apr 08, 2014 at 04:56:01PM -0400, Sasha Levin wrote:
+> On 02/28/2014 12:20 PM, Sasha Levin wrote:
+> > On 02/21/2014 08:10 PM, Sasha Levin wrote:
+> >> On 02/21/2014 06:51 PM, Kirill A. Shutemov wrote:
+> >>> On Fri, Feb 21, 2014 at 05:46:36PM -0500, Sasha Levin wrote:
+> >>>> >Hi all,
+> >>>> >
+> >>>> >While fuzzing with trinity inside a KVM tools guest running latest -next
+> >>>> >kernel I've stumbled on the following (now with pretty line numbers!) spew:
+> >>>> >
+> >>>> >[  746.125099] kernel BUG at mm/huge_memory.c:1371!
+> >>> It "VM_BUG_ON_PAGE(!PageHead(page), page);", correct?
+> >>> I don't see dump_page() output.
+> >>
+> >> Right. However, I'm not seeing the dump_page() output in the log.
+> >>
+> >> I see that dump_page() has been modified not long ago, I'm looking into it.
+> > 
+> > Alright, here we go:
+> > 
+> > [ 3323.062742] page:ffffea00080f0000 count:3 mapcount:0 mapping:ffff8802292ee0e1 index:0x7fa2e6800
+> > [ 3323.065978] page flags: 0x16fffff80090018(uptodate|dirty|swapcache|swapbacked)
+> > [ 3323.068535] ------------[ cut here ]------------
+> > [ 3323.069669] kernel BUG at mm/huge_memory.c:1371!
+> > [ 3323.070961] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+> > [ 3323.071028] Dumping ftrace buffer:
+> > [ 3323.071028]    (ftrace buffer empty)
+> > [ 3323.071028] Modules linked in:
+> > [ 3323.071028] CPU: 101 PID: 48284 Comm: trinity-c101 Tainted: G        W 3.14.0-rc4-next-20140228-sasha-00011-g4077c67 #25
+> > [ 3323.071028] task: ffff8800c2718000 ti: ffff8800c26ec000 task.ti: ffff8800c26ec000
+> > [ 3323.071028] RIP: 0010:[<ffffffff812c083a>]  [<ffffffff812c083a>] zap_huge_pmd+0x17a/0x200
+> > [ 3323.071028] RSP: 0018:ffff8800c26edc78  EFLAGS: 00010246
+> > [ 3323.071028] RAX: ffff88022febc000 RBX: ffff8800c26edde8 RCX: 0000000000000040
+> > [ 3323.071028] RDX: 0000000000000000 RSI: ffff8800c2718cc0 RDI: 000000000203c000
+> > [ 3323.071028] RBP: ffff8800c26edcb8 R08: 0000000000000000 R09: 0000000000000000
+> > [ 3323.071028] R10: 0000000000000001 R11: 0000000000000001 R12: ffffea0008b9e240
+> > [ 3323.071028] R13: ffffea00080f0000 R14: 00007fa2e6800000 R15: 00007fa2ffffffff
+> > [ 3323.071028] FS:  00007fa31e1b8700(0000) GS:ffff880230600000(0000) knlGS:0000000000000000
+> > [ 3323.071028] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > [ 3323.071028] CR2: 00007fa31e1e8990 CR3: 0000000005c25000 CR4: 00000000000006e0
+> > [ 3323.071028] DR0: 0000000000698000 DR1: 0000000000698000 DR2: 0000000000698000
+> > [ 3323.071028] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+> > [ 3323.071028] Stack:
+> > [ 3323.071028]  00000000000004de ffff88022e2139d0 ffff8800c26edcb8 ffff88021b7ef9a0
+> > [ 3323.071028]  00007fa2e6800000 00007fa300000000 ffff8800c26edde8 00007fa2ffffffff
+> > [ 3323.071028]  ffff8800c26edd48 ffffffff812800c6 ffffea0008454540 00007fa2e6a00000
+> > [ 3323.071028] Call Trace:
+> > [ 3323.071028]  [<ffffffff812800c6>] unmap_page_range+0x2c6/0x410
+> > [ 3323.071028]  [<ffffffff81280301>] unmap_single_vma+0xf1/0x110
+> > [ 3323.071028]  [<ffffffff81280381>] unmap_vmas+0x61/0xa0
+> > [ 3323.071028]  [<ffffffff812875e0>] exit_mmap+0xd0/0x170
+> > [ 3323.071028]  [<ffffffff811387a7>] mmput+0x77/0xe0
+> > [ 3323.071028]  [<ffffffff8113c80d>] exit_mm+0x18d/0x1a0
+> > [ 3323.071028]  [<ffffffff811ecea5>] ? acct_collect+0x175/0x1b0
+> > [ 3323.071028]  [<ffffffff8113ec1a>] do_exit+0x26a/0x510
+> > [ 3323.071028]  [<ffffffff8113ef61>] do_group_exit+0xa1/0xe0
+> > [ 3323.071028]  [<ffffffff8113efb2>] SyS_exit_group+0x12/0x20
+> > [ 3323.071028]  [<ffffffff8439f720>] tracesys+0xdd/0xe2
+> > [ 3323.071028] Code: 00 eb fe 66 0f 1f 44 00 00 48 8b 03 f0 48 81 80 60 03 00 00 00 fe ff ff 49 8b 45 00 f6 c4 40 75 18 31 f6 4c 89 ef e8 f6 1f f9 ff <0f> 0b 0f 1f 40 00 eb fe 66 0f 1f 44 00 00 48 8b 03 f0 48 ff 48
+> > [ 3323.071028] RIP  [<ffffffff812c083a>] zap_huge_pmd+0x17a/0x200
+> > [ 3323.071028]  RSP <ffff8800c26edc78>
 > 
-> On Thu, Apr 10 2014 at 10:28:24 am BST, Chanwoo Choi
-> <cw00.choi@samsung.com> wrote:
-> > This patch declare coretex-a7's irqchip to initialze gic from dt
-> > with "arm,cortex-a7-gic" data.
-> >
-> > Cc: Thomas Gleixner <tglx@linutronix.de>
-> > Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> > ---
-> >  drivers/irqchip/irq-gic.c | 1 +
-> >  1 file changed, 1 insertion(+)
-> >
-> > diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-> > index 4300b66..8e906e4 100644
-> > --- a/drivers/irqchip/irq-gic.c
-> > +++ b/drivers/irqchip/irq-gic.c
-> > @@ -1069,6 +1069,7 @@ gic_of_init(struct device_node *node, struct
-> device_node *parent)
-> >  }
-> >  IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
-> >  IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
-> > +IRQCHIP_DECLARE(cortex_a7_gic, "arm,cortex-a7-gic", gic_of_init);
-> >  IRQCHIP_DECLARE(msm_8660_qgic, "qcom,msm-8660-qgic", gic_of_init);
-> >  IRQCHIP_DECLARE(msm_qgic2, "qcom,msm-qgic2", gic_of_init);
-> 
-> Frankly, this patch adds no value. Are we going to add
-> "arm,cortex-a12-gic", "arm,cortex-a17-gic", "arm,cortex-a53-gic",
-> "arm,cortex-a57-gic"? And that's just to mention the ARM Ltd cores...
-> 
-> Instead, how about defining a generic "arm,gic" property, and mandate
-> that new DT files are using that? We can always use a more precise
-> compatible for quirks.
+> This is still happening in -next. Anything else I can provide that'll be useful?
 
-I prefer it would be arm,gicv2 instead arm-gic.
-In case of GICv3 of arm64, it can be arm,gicv3.
+I don't know... :(
 
-Best Regards,
-Chanho Park
+One theory I have is that the root cause of the bug is the same as with
+mm/huge_memory.c:1829 bug. If the compound page has been split but we miss
+the vma where PMD should be split, then we could see the effect. It could
+happend due anon_vma_interval_tree_foreach() vs.
+anon_vma_interval_tree_insert() race or something else.
 
+-- 
+ Kirill A. Shutemov
