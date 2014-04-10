@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935386AbaDJDpu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:45:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41251 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934653AbaDJDWt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S935028AbaDJDWt (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 9 Apr 2014 23:22:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40902 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934653AbaDJDVp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 23:21:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Torstein Hegge <hegge@resisty.net>, Daniel Mack <zonque@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>, Ben Hutchings <ben@decadent.org.uk>,
-        Weng Meiling <wengmeiling.weng@huawei.com>
-Subject: [PATCH 3.4 104/134] ALSA: usb: Parse UAC2 extension unit like for UAC1
-Date: Wed,  9 Apr 2014 20:23:40 -0700
-Message-Id: <20140410032313.123627434@linuxfoundation.org>
+        Matthieu CASTET <matthieu.castet@parrot.com>,
+        Jiri Kosina <jkosina@suse.cz>, Ben Hutchings <ben@decadent.org.uk>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: [PATCH 3.4 021/134] HID: hidraw: fix list->buffer memleak
+Date: Wed,  9 Apr 2014 20:22:17 -0700
+Message-Id: <20140410032302.629577313@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -28,47 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Torstein Hegge <hegge@resisty.net>
+From: Matthieu CASTET <matthieu.castet@parrot.com>
 
-commit 61ac51301e6c6d4ed977d7674ce2b8e713619a9b upstream.
+commit 4c7b417ecb756e85dfc955b0e7a04fd45585533e upstream.
 
-UAC2_EXTENSION_UNIT_V2 differs from UAC1_EXTENSION_UNIT, but can be handled in
-the same way when parsing the unit. Otherwise parse_audio_unit() fails when it
-sees an extension unit on a UAC2 device.
+If we don't read fast enough hidraw device, hidraw_report_event
+will cycle and we will leak list->buffer.
+Also list->buffer are not free on release.
+After this patch, kmemleak report nothing.
 
-UAC2_EXTENSION_UNIT_V2 is outside the range allocated by UAC1.
-
-Signed-off-by: Torstein Hegge <hegge@resisty.net>
-Acked-by: Daniel Mack <zonque@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Matthieu CASTET <matthieu.castet@parrot.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Weng Meiling <wengmeiling.weng@huawei.com>
+Cc: Yijing Wang <wangyijing@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/mixer.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/hid/hidraw.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -722,7 +722,8 @@ static int check_input_term(struct mixer
- 		case UAC1_PROCESSING_UNIT:
- 		case UAC1_EXTENSION_UNIT:
- 		/* UAC2_PROCESSING_UNIT_V2 */
--		/* UAC2_EFFECT_UNIT */ {
-+		/* UAC2_EFFECT_UNIT */
-+		case UAC2_EXTENSION_UNIT_V2: {
- 			struct uac_processing_unit_descriptor *d = p1;
+--- a/drivers/hid/hidraw.c
++++ b/drivers/hid/hidraw.c
+@@ -96,6 +96,7 @@ static ssize_t hidraw_read(struct file *
+ 		}
  
- 			if (state->mixer->protocol == UAC_VERSION_2 &&
-@@ -1975,6 +1976,8 @@ static int parse_audio_unit(struct mixer
- 			return parse_audio_extension_unit(state, unitid, p1);
- 		else /* UAC_VERSION_2 */
- 			return parse_audio_processing_unit(state, unitid, p1);
-+	case UAC2_EXTENSION_UNIT_V2:
-+		return parse_audio_extension_unit(state, unitid, p1);
- 	default:
- 		snd_printk(KERN_ERR "usbaudio: unit %u: unexpected type 0x%02x\n", unitid, p1[2]);
- 		return -EINVAL;
+ 		kfree(list->buffer[list->tail].value);
++		list->buffer[list->tail].value = NULL;
+ 		list->tail = (list->tail + 1) & (HIDRAW_BUFFER_SIZE - 1);
+ 	}
+ out:
+@@ -300,6 +301,7 @@ static int hidraw_release(struct inode *
+ 	struct hidraw *dev;
+ 	struct hidraw_list *list = file->private_data;
+ 	int ret;
++	int i;
+ 
+ 	mutex_lock(&minors_lock);
+ 	if (!hidraw_table[minor]) {
+@@ -317,6 +319,9 @@ static int hidraw_release(struct inode *
+ 			kfree(list->hidraw);
+ 		}
+ 	}
++
++	for (i = 0; i < HIDRAW_BUFFER_SIZE; ++i)
++		kfree(list->buffer[i].value);
+ 	kfree(list);
+ 	ret = 0;
+ unlock:
+@@ -446,12 +451,17 @@ int hidraw_report_event(struct hid_devic
+ 	int ret = 0;
+ 
+ 	list_for_each_entry(list, &dev->list, node) {
++		int new_head = (list->head + 1) & (HIDRAW_BUFFER_SIZE - 1);
++
++		if (new_head == list->tail)
++			continue;
++
+ 		if (!(list->buffer[list->head].value = kmemdup(data, len, GFP_ATOMIC))) {
+ 			ret = -ENOMEM;
+ 			break;
+ 		}
+ 		list->buffer[list->head].len = len;
+-		list->head = (list->head + 1) & (HIDRAW_BUFFER_SIZE - 1);
++		list->head = new_head;
+ 		kill_fasync(&list->fasync, SIGIO, POLL_IN);
+ 	}
+ 
 
 
