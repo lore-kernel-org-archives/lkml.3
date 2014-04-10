@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935150AbaDJJ3B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 05:29:01 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:45458 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934899AbaDJJ2z (ORCPT
+	id S935165AbaDJJ3W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 05:29:22 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:64883 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934952AbaDJJ3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 05:28:55 -0400
-X-AuditID: cbfee690-b7f266d00000287c-ef-534664513a8f
+	Thu, 10 Apr 2014 05:29:12 -0400
+X-AuditID: cbfee68f-b7f156d00000276c-d4-534664517315
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: kgene.kim@samsung.com, t.figa@samsung.com,
         linux-samsung-soc@vger.kernel.org
 Cc: kyungmin.park@samsung.com, cw00.choi@samsung.com, inki.dae@samsung.com,
         sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 03/27] ARM: EXYNOS: Add IO mapping for PMU of Exynos3250
-Date: Thu, 10 Apr 2014 18:28:20 +0900
-Message-id: <1397122124-15690-4-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH 05/27] ARM: EXYNOS: Support secondary CPU boot of Exynos3250
+Date: Thu, 10 Apr 2014 18:28:22 +0900
+Message-id: <1397122124-15690-6-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
 References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsWyRsSkWDcwxS3Y4N1KDovrX56zWnz+0MJu
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHLMWRmVeSWpSXmKPExsWyRsSkQDcwxS3YYOsTPovrX56zWnz+0MJu
 	Men+BBaL3gVX2SzONr1ht9j0+BqrxeVdc9gsZpzfx2QxY/JLNov1M16zWOzdOZnRgdtj85J6
-	j74tqxg9Pm+SC2CO4rJJSc3JLEst0rdL4MqYPeUGa8EGror5jxsYGxgvcnQxcnBICJhINH5V
-	62LkBDLFJC7cW8/WxcjFISSwlFHi5NRZ7BAJE4m7/7eyQiSmM0pM/HGcBcJpYpJo/nWYEaSK
-	TUBLYv+LG2wgtohAgMSP4+/AbGaBm4wSx96HgdjCAh4S12bNA6tnEVCVmH7lAQvIFbwCrhL7
-	W8MglslJfNjzCGwxp4CbxKfvrawgthBQSdOHfWDXSQisYpf4v3A9O8QcAYlvkw+xQHwjK7Hp
-	ADPEHEmJgytusExgFF7AyLCKUTS1ILmgOCm9yESvODG3uDQvXS85P3cTIzDsT/97NmEH470D
-	1ocYk4HGTWSWEk3OB8ZNXkm8obGZkYWpiamxkbmlGWnCSuK8ao+SgoQE0hNLUrNTUwtSi+KL
-	SnNSiw8xMnFwSjUwtresKPRyFp0qWH4lStfjsnLJvIqd5Z3C3TudTzy0/ucp+enRj6b9ahJM
-	c1JSTDTVJ5t/cWHk4Xjw2/NkvvS0BRJTxZ5NmMYsy/rszrICwechF9YmyD7fJ/tpApPl2ys/
-	py2oXXZYuJWTV+Hq3+LkFxcrdJe1bK0SUpjhPin8i/37qeqcfK4tSizFGYmGWsxFxYkAu7Sq
-	gpECAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t9jQd3AFLdgg2W2Fte/PGe1+Pyhhd1i
-	0v0JLBa9C66yWZxtesNusenxNVaLy7vmsFnMOL+PyWLG5JdsFutnvGax2LtzMqMDt8fmJfUe
-	fVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ibaqvk
-	4hOg65aZA3SPkkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMDNJCwhjFj9pQbrAUb
-	uCrmP25gbGC8yNHFyMkhIWAicff/VlYIW0ziwr31bF2MXBxCAtMZJSb+OM4C4TQxSTT/OswI
-	UsUmoCWx/8UNNhBbRCBA4sfxd2A2s8BNRolj78NAbGEBD4lrs+aB1bMIqEpMv/IAaBAHB6+A
-	q8T+1jCIZXISH/Y8YgexOQXcJD59bwU7QgiopOnDPrYJjLwLGBlWMYqmFiQXFCel5xrpFSfm
-	Fpfmpesl5+duYgRH1TPpHYyrGiwOMQpwMCrx8B5Y5hosxJpYVlyZe4hRgoNZSYT3WrBbsBBv
-	SmJlVWpRfnxRaU5q8SHGZKCjJjJLiSbnAyM+ryTe0NjEzMjSyNzQwsjYnDRhJXHeg63WgUIC
-	6YklqdmpqQWpRTBbmDg4pRoYxZLiem4e0551WVH2mzNP0cNlM/UtBXW+vIo+udLvu5//hUJL
-	STZ3WbbdM87cP5YbrX/9GM++SUIzOmaqa64zdOBlszJVSyhKmRn14nueTpJ/kOqV3LTEOzPD
-	hZPvHLvv/rtU7S1LFbPYkRu1/idvfvrjJ912ff3G2hkCoQ2PT6Tdc36fO7NIiaU4I9FQi7mo
-	OBEANNTxXO4CAAA=
+	j74tqxg9Pm+SC2CO4rJJSc3JLEst0rdL4Mq43FNX8J6j4saDNpYGxuXsXYycHBICJhLv5k9k
+	g7DFJC7cWw9kc3EICSxllJh65yIrTNHbNz3sEInpjBKzzl1jhXCamCSafx1mBKliE9CS2P/i
+	BtgoEYEAiR/H34HZzAI3GSWOvQ/rYuTgEBbwkThzOhgkzCKgKjH//E4mEJtXwFVi24bLUFfI
+	SXzY8wjsOk4BN4lP31vBjhACqmn6sA/sOgmBVewSk3sesEMMEpD4NvkQC8h8CQFZiU0HmCHm
+	SEocXHGDZQKj8AJGhlWMoqkFyQXFSelFxnrFibnFpXnpesn5uZsYgWF/+t+z/h2Mdw9YH2JM
+	Bho3kVlKNDkfGDd5JfGGxmZGFqYmpsZG5pZmpAkrifPef5gUJCSQnliSmp2aWpBaFF9UmpNa
+	fIiRiYNTqoHR2i1Qwmjjyvryqmn+LVt0Am5t4Z53Z9Yv6cein0tvqTzQmrRjgbfAMV4Bm5Tc
+	/6JrayZri1VlqKmVCRz9V7DniHtm+I2Og1vtLlSaeujILmRr7Ftyxvjw28URl09evXbL6sMs
+	nRZByVRxxpUT57bm87kuKf3vGTMp5HeT2uTaid8/mnLM3m6oxFKckWioxVxUnAgAkH/VvJEC	AAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNIsWRmVeSWpSXmKPExsVy+t9jQd3AFLdgg0Vv2C2uf3nOavH5Qwu7
+	xaT7E1gsehdcZbM42wSU2PT4GqvF5V1z2CxmnN/HZDFj8ks2i/UzXrNY7N05mdGB22PzknqP
+	vi2rGD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy
+	8QnQdcvMATpISaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5hxuaeu4D1H
+	xY0HbSwNjMvZuxg5OSQETCTevumBssUkLtxbz9bFyMUhJDCdUWLWuWusEE4Tk0Tzr8OMIFVs
+	AloS+1/cYAOxRQQCJH4cfwdmMwvcZJQ49j6si5GDQ1jAR+LM6WCQMIuAqsT88zuZQGxeAVeJ
+	bRsus0Esk5P4sOcR2GJOATeJT99bWUFsIaCapg/72CYw8i5gZFjFKJpakFxQnJSea6RXnJhb
+	XJqXrpecn7uJERxVz6R3MK5qsDjEKMDBqMTDe2CZa7AQa2JZcWXuIUYJDmYlEd5rwW7BQrwp
+	iZVVqUX58UWlOanFhxiTga6ayCwlmpwPjPi8knhDYxMzI0sjc0MLI2Nz0oSVxHkPtloHCgmk
+	J5akZqemFqQWwWxh4uCUamDkXB1+SMXpRM+1V++lV66eeHt1+ErHkzw71h7dLrzYebllQnvT
+	P8uJc/ZMe9Md911rq2Z+wkuhJrdPzfEBvGt43pU+/tnL4FJk5eRi/nH1f5GTlY8tOK1yneeG
+	nXb8FzGtji3G76wOh6euXp+VUcluJYZlLTXLJ0xcL3B2zjrdPXuf1XL/WyetxFKckWioxVxU
+	nAgAOOk3+O4CAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,44 +51,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add memory mapping for PMU (Power Management Unit) which is used
-for power control of Exynos3250.
+This patch fix the offset of CPU boot address and don't operate smc call
+of SMC_CMD_CPU1BOOT command for Exynos3250.
 
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/arm/mach-exynos/exynos.c           | 5 +++++
- arch/arm/mach-exynos/include/mach/map.h | 1 +
- 2 files changed, 6 insertions(+)
+ arch/arm/mach-exynos/firmware.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
-index cad3bfd..628e4b1 100644
---- a/arch/arm/mach-exynos/exynos.c
-+++ b/arch/arm/mach-exynos/exynos.c
-@@ -41,6 +41,11 @@ static struct map_desc exynos3250_iodesc[] __initdata = {
- 		.pfn		= __phys_to_pfn(EXYNOS3_PA_SYSRAM_NS),
- 		.length		= SZ_4K,
- 		.type		= MT_DEVICE,
-+	}, {
-+		.virtual	= (unsigned long)S5P_VA_PMU,
-+		.pfn		= __phys_to_pfn(EXYNOS3_PA_PMU),
-+		.length		= SZ_64K,
-+		.type		= MT_DEVICE,
- 	},
- };
+diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
+index 91a911d..8350007 100644
+--- a/arch/arm/mach-exynos/firmware.c
++++ b/arch/arm/mach-exynos/firmware.c
+@@ -30,10 +30,13 @@ static int exynos_do_idle(void)
  
-diff --git a/arch/arm/mach-exynos/include/mach/map.h b/arch/arm/mach-exynos/include/mach/map.h
-index a53981b..4aea694 100644
---- a/arch/arm/mach-exynos/include/mach/map.h
-+++ b/arch/arm/mach-exynos/include/mach/map.h
-@@ -36,6 +36,7 @@
- #define EXYNOS4_PA_SYSCON		0x10010000
- #define EXYNOS5_PA_SYSCON		0x10050100
+ static int exynos_cpu_boot(int cpu)
+ {
+-	if (soc_is_exynos4212())
++	if (soc_is_exynos3250())
++		goto out;
++	else if (soc_is_exynos4212())
+ 		exynos_smc(SMC_CMD_CPU1BOOT, 0, 0, 0);
+ 	else
+ 		exynos_smc(SMC_CMD_CPU1BOOT, cpu, 0, 0);
++out:
+ 	return 0;
+ }
  
-+#define EXYNOS3_PA_PMU			0x10020000
- #define EXYNOS4_PA_PMU			0x10020000
- #define EXYNOS5_PA_PMU			0x10040000
+@@ -41,7 +44,7 @@ static int exynos_set_cpu_boot_addr(int cpu, unsigned long boot_addr)
+ {
+ 	void __iomem *boot_reg = S5P_VA_SYSRAM_NS + 0x1c;
  
+-	if (soc_is_exynos4212())
++	if (soc_is_exynos4212() || soc_is_exynos3250())
+ 		goto out;
+ 	else
+ 		boot_reg += 4*cpu;
 -- 
 1.8.0
 
