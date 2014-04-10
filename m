@@ -1,112 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030223AbaDJKHJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 06:07:09 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:53305 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965756AbaDJKGy (ORCPT
+	id S965959AbaDJKMi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 06:12:38 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:52253
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965088AbaDJKM2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 06:06:54 -0400
-X-AuditID: cbfee68f-b7f156d00000276c-76-53466d227123
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: kgene.kim@samsung.com, t.figa@samsung.com,
-        linux-samsung-soc@vger.kernel.org
-Cc: kyungmin.park@samsung.com, cw00.choi@samsung.com, inki.dae@samsung.com,
-        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 20/27] ARM: dts: exynos3250: Move definitions of external
- clocks to SoC dtsi
-Date: Thu, 10 Apr 2014 19:06:10 +0900
-Message-id: <1397124377-16969-12-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-In-reply-to: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
-References: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42JZI2JSoquU6xZssOG6lcX1L89ZLT5/aGG3
-	mHR/AotF74KrbBZnm96wW2x6fI3V4vKuOWwWM87vY7KYMfklm8X6Ga9ZLPbunMzowO2xeUm9
-	R9+WVYwenzfJBTBHcdmkpOZklqUW6dslcGV8Pv6eveAod8Wat59YGhhnc3YxcnJICJhIvP8x
-	kwnCFpO4cG89WxcjF4eQwFJGif6+2UwwRRMmnmWESCxilPj46AszhNPEJLFuwyNmkCo2AS2J
-	/S9usIHYIgIBEj+OvwOzmQVuMkocex8GYgsLxElsuXmLHcRmEVCVeHL9AAuIzSvgJjGho5MF
-	YpucxIc9j8BqOIHiMxedBJsjJOAq0fPoIthiCYF17BIt124wQQwSkPg2+RBQMwdQQlZi0wFm
-	iDmSEgdX3GCZwCi8gJFhFaNoakFyQXFSepGxXnFibnFpXrpecn7uJkZg6J/+96x/B+PdA9aH
-	GJOBxk1klhJNzgfGTl5JvKGxmZGFqYmpsZG5pRlpwkrivPcfJgUJCaQnlqRmp6YWpBbFF5Xm
-	pBYfYmTi4JRqYNx25978vZVnVib0c0kyNKmkn7DmPbNVeB2Dqekz26Ka4/nrma63T6u/6e8x
-	U//NZoG5Ha5lDhrCLA+61n0xurr0huS77ecVLv1yevD/WOU1zjQ1n987jQwK+yZJ3tAK+nqs
-	m0215ePRd1+/PWLP6yudH17Q+7REaMWmi2xqURq8AjwMU8sTvymxFGckGmoxFxUnAgDLKjK9
-	kwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLIsWRmVeSWpSXmKPExsVy+t9jAV2lXLdgg7YPhhbXvzxntfj8oYXd
-	YtL9CSwWvQuuslmcbXrDbrHp8TVWi8u75rBZzDi/j8lixuSXbBbrZ7xmsdi7czKjA7fH5iX1
-	Hn1bVjF6fN4kF8Ac1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr
-	5OIToOuWmQN0kJJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsIYx4/Px9+wF
-	R7kr1rz9xNLAOJuzi5GTQ0LARGLCxLOMELaYxIV769m6GLk4hAQWMUp8fPSFGcJpYpJYt+ER
-	M0gVm4CWxP4XN9hAbBGBAIkfx9+B2cwCNxkljr0PA7GFBeIktty8xQ5iswioSjy5foAFxOYV
-	cJOY0NHJArFNTuLDnkdgNZxA8ZmLToLNERJwleh5dJF5AiPvAkaGVYyiqQXJBcVJ6bmGesWJ
-	ucWleel6yfm5mxjBkfVMagfjygaLQ4wCHIxKPLwHlrkGC7EmlhVX5h5ilOBgVhLh3Z3pFizE
-	m5JYWZValB9fVJqTWnyIMRnoqonMUqLJ+cCozyuJNzQ2MTOyNDI3tDAyNidNWEmc90CrdaCQ
-	QHpiSWp2ampBahHMFiYOTqkGxk3V/EGVV/IW/BLwXvVSp/oZ67OteVtsHHrvbXA2vdr59ZLu
-	4/z1U6Qe7/ssbbIlevMvn3CxhPVnK+WK921vkTl2U+fvlkobGb4D3gtnqdU015wSvX1q2hRZ
-	5szeSTMPPu/s07Z+8SHyE3Ps+eU2my7xTnDI+cFt903Edeb5bbNna/TMcNC7NVeJpTgj0VCL
-	uag4EQBrJhZ18AIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 10 Apr 2014 06:12:28 -0400
+X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VPS3(z579eh551bizbb2dI98dI9371I1432I4015Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzzz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25f6h2605h268bh26d3h2673i19b6n1155h)
+Date: Thu, 10 Apr 2014 12:11:58 +0200
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>
+CC: Michal Simek <michal.simek@xilinx.com>, Michal Simek <monstr@monstr.eu>,
+        Punnaiah Choudary Kalluri 
+	<punnaiah.choudary.kalluri@xilinx.com>,
+        <dougthompson@xmission.com>, <linux-edac@vger.kernel.org>,
+        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <sorenb@xilinx.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <kpc528@gmail.com>,
+        <kalluripunnaiahchoudary@gmail.com>, <punnaia@xilinx.com>
+Subject: Re: [RFC PATCH v2] edac: synopsys: Added EDAC support for zynq ddr
+ ecc controller
+References: <1220b715-6fc2-42ed-8393-b9859fc0deb9@TX2EHSMHS021.ehs.local> <20140408204047.GQ30077@pd.tnic> <534633C0.9090905@monstr.eu> <20140410092144.GD29093@pd.tnic> <5e0042b6-f169-4025-8fd7-9d70c2ed0cf6@AM1EHSMHS012.ehs.local> <20140410100047.GG29093@pd.tnic> <20140410100542.GH29093@pd.tnic>
+In-Reply-To: <20140410100542.GH29093@pd.tnic>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+Message-ID: <2508260c-5ae5-4ff5-97a9-248470c062af@CH1EHSMHS012.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tomasz Figa <t.figa@samsung.com>
+On 04/10/2014 12:05 PM, Borislav Petkov wrote:
+> On Thu, Apr 10, 2014 at 12:00:47PM +0200, Borislav Petkov wrote:
+>> Then you'll have to check whether edac can even stomach more than one
+>> drivers in parallel. TTBOMK, no one has ever done this so far... Yadda
+>> yadda.
+> 
+> Alternatively, you could put together a single edac driver which
+> contains both zynq and L2 functionality.
 
-This allows proper ordering of clock registration and is still correct,
-because list of external clocks is SoC-specific, just their frequencies
-and availability are board-specific.
+That's seems to more problematic because we just don't know what our
+customers will do and what combinations they will use.
 
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Signed-off-by: Hyunhee Kim <hyunhee.kim@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- arch/arm/boot/dts/exynos3250.dtsi | 30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+Thanks,
+Michal
 
-diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
-index 587a124..ceed761 100644
---- a/arch/arm/boot/dts/exynos3250.dtsi
-+++ b/arch/arm/boot/dts/exynos3250.dtsi
-@@ -40,6 +40,36 @@
- 		i2c7 = &i2c_7;
- 	};
- 
-+	fixed-rate-clocks {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		xusbxti: clock@0 {
-+			compatible = "fixed-clock";
-+			reg = <0>;
-+			clock-frequency = <0>;
-+			#clock-cells = <0>;
-+			clock-output-names = "xusbxti";
-+		};
-+
-+		xxti: clock@1 {
-+			compatible = "fixed-clock";
-+			reg = <1>;
-+			clock-frequency = <0>;
-+			#clock-cells = <0>;
-+			clock-output-names = "xxti";
-+		};
-+
-+		xtcxo: clock@2 {
-+			compatible = "fixed-clock";
-+			reg = <2>;
-+			clock-frequency = <0>;
-+			#clock-cells = <0>;
-+			clock-output-names = "xtcxo";
-+		};
-+	};
-+
- 	chipid@10000000 {
- 		compatible = "samsung,exynos4210-chipid";
- 		reg = <0x10000000 0x100>;
--- 
-1.8.0
 
