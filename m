@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934585AbaDJBwX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 21:52:23 -0400
-Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:38806 "EHLO
-	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934552AbaDJBwT (ORCPT
+	id S934560AbaDJCC1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 22:02:27 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57345 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933353AbaDJCCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 21:52:19 -0400
-Message-ID: <5345F951.8020603@akamai.com>
-Date: Wed, 09 Apr 2014 21:52:17 -0400
-From: Jason Baron <jbaron@akamai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 9 Apr 2014 22:02:25 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Kefeng Wang <wangkefeng.wang@huawei.com>,
+        Mark Langsdorf <mark.langsdorf@calxeda.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        guohanjun@huawei.com
+Subject: Re: [PATCH] cpufreq: highbank: fix ARM_HIGHBANK_CPUFREQ dependency warning
+Date: Thu, 10 Apr 2014 04:18:26 +0200
+Message-ID: <1453884.JQRzhD9Q31@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAKohponpGAm4J2shQRV8doMZGT22eJ2MnU0+GzF-GkZirGPW5g@mail.gmail.com>
+References: <1397010873-11020-1-git-send-email-wangkefeng.wang@huawei.com> <CAKohponpGAm4J2shQRV8doMZGT22eJ2MnU0+GzF-GkZirGPW5g@mail.gmail.com>
 MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>
-CC: Borislav Petkov <bp@alien8.de>, Aristeu Rozanski <aris@redhat.com>,
-        "hpa@zytor.com" <hpa@zytor.com>, "mingo@kernel.org" <mingo@kernel.org>,
-        "dougthompson@xmission.com" <dougthompson@xmission.com>,
-        "m.chehab@samsung.com" <m.chehab@samsung.com>,
-        "mitake@dcl.info.waseda.ac.jp" <mitake@dcl.info.waseda.ac.jp>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] ie31200_edac: Add driver
-References: <cover.1396645124.git.jbaron@akamai.com> <760765424abe31811027ff3efd078bc858b7d3ed.1396645124.git.jbaron@akamai.com> <20140409113552.GJ6529@pd.tnic> <20140409133433.GJ29214@redhat.com> <3908561D78D1C84285E8C5FCA982C28F31E22EAC@ORSMSX106.amr.corp.intel.com> <20140409173633.GN6529@pd.tnic> <5345980F.7070604@akamai.com> <20140409191454.GQ6529@pd.tnic> <5345A54D.2050808@akamai.com> <20140409201615.GS6529@pd.tnic> <3908561D78D1C84285E8C5FCA982C28F31E2358F@ORSMSX106.amr.corp.intel.com> <5345C683.2080307@akamai.com> <3908561D78D1C84285E8C5FCA982C28F31E237A2@ORSMSX106.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31E237A2@ORSMSX106.amr.corp.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2014 06:44 PM, Luck, Tony wrote:
->> So when the driver sees uncorrected errors, I'm also seeing them in my
->> memory scanning program - so they correspond nicely. I didn't see anything
->> logged in /var/log/mcelog, but I will update to the latest when possible.
-> I wonder if there are some BIOS options to enable reporting via CMCI/MCE?
-> On the E5 systems the reference BIOS uses phrases like "poison forwarding"
-> in the option names.
->
-> The above behavior sounds less than useful.
->
-> Scenario: Your mission critical app is running (controlling a giant laser cutter).
-> Oops there is a memory error, and the bad data arrives at the application causing
-> it to swing the laser beam through 180 degrees, destroying half of your lab.
-> A few seconds/minutes later - your EDAC driver prints a message saying that
-> the uncorrected error count just got incremented.
->
-> -Tony
+On Wednesday, April 09, 2014 09:58:26 AM Viresh Kumar wrote:
+> On 9 April 2014 08:04, Kefeng Wang <wangkefeng.wang@huawei.com> wrote:
+> > When make ARCH=arm multi_v7_defconfig, we get the following warnings:
+> >
+> > warning: (ARM_HIGHBANK_CPUFREQ) selects GENERIC_CPUFREQ_CPU0 which has
+> > unmet direct dependencies (ARCH_HAS_CPUFREQ && CPU_FREQ && HAVE_CLK
+> > && REGULATOR && OF && THERMAL && CPU_THERMAL)
+> >
+> > To fix this, make ARM_HIGHBANK_CPUFREQ depend on ARCH_HAS_CPUFREQ and
+> > REGULATOR instead of selecting them, PM_OPP will be selected by ARCH_HAS_CPUFREQ.
+> >
+> > Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
 
-Agreed, and I don't like the polling either. But so far on this h/w I have not
-been able to find a better option.
+Well, it doesn't work as intended, I'm afraid:
 
-I also seem to recall, that ce errors tend to proceed ue errors. So, I think
-alerting on ce errors can help avoid getting into ue errors.
+tree:   git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git bleeding-edge
+head:   588bc73d890c5dea35b7982a368c0e95089d5389
+commit: 51be80edc69390521622df71855d86da4e358488 [67/68] cpufreq: highbank: fix ARM_HIGHBANK_CPUFREQ dependency warning
+config: make ARCH=i386 allyesconfig
 
-So IMO there is currently value in this driver, and I know others have
-requested support for this h/w in the past (on the edac mailing lists).
+All warnings:
 
-I'll see what else I can find once I get the problematic h/w in hand.
+warning: (GENERIC_CPUFREQ_CPU0 && ARM_BIG_LITTLE_CPUFREQ && ARM_EXYNOS5440_CPUFREQ) selects PM_OPP which has unmet direct dependencies (ARCH_HAS_OPP)
 
-Thanks,
+> > ---
+> >  drivers/cpufreq/Kconfig.arm | 6 +-----
+> >  1 file changed, 1 insertion(+), 5 deletions(-)
+> 
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> --
+> To unsubscribe from this list: send the line "unsubscribe cpufreq" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
--Jason
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
