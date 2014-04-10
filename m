@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934528AbaDJAjF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 20:39:05 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:52238 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932847AbaDJAjD (ORCPT
+	id S934539AbaDJAl3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 20:41:29 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:40822 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933204AbaDJAl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 20:39:03 -0400
+	Wed, 9 Apr 2014 20:41:27 -0400
+Date: Wed, 9 Apr 2014 17:41:25 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: drepper@gmail.com, anatol.pomozov@gmail.com, jkosina@suse.cz,
+        akpm@linux-foundation.org, xemul@parallels.com,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org
+Subject: Re: NUMA node information for pages
+In-Reply-To: <5343806c.100cc30a.0461.ffffc401SMTPIN_ADDED_BROKEN@mx.google.com>
+Message-ID: <alpine.DEB.2.02.1404091734060.1857@chino.kir.corp.google.com>
+References: <87eh1ix7g0.fsf@x240.local.i-did-not-set--mail-host-address--so-tickle-me> <533a1563.ad318c0a.6a93.182bSMTPIN_ADDED_BROKEN@mx.google.com> <CAOPLpQc8R2SfTB+=BsMa09tcQ-iBNJHg+tGnPK-9EDH1M47MJw@mail.gmail.com>
+ <5343806c.100cc30a.0461.ffffc401SMTPIN_ADDED_BROKEN@mx.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <53432701.8020403@oracle.com>
-References: <1396630873-17372-1-git-send-email-sasha.levin@oracle.com>
- <CAK5ve-KGQJbWPO0N6rWJG4Z+aoEtr4+Whv5UkVCVyk8PzjNyvw@mail.gmail.com> <53432701.8020403@oracle.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Wed, 9 Apr 2014 17:38:41 -0700
-Message-ID: <CAK5ve-JiOCwXS5BWTBc-n3+bO7DJckd=H8T7Ey8WjzfqHDy_sA@mail.gmail.com>
-Subject: Re: [PATCH] leds: make sure we unregister a trigger only once
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        Linux LED Subsystem <linux-leds@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 7, 2014 at 3:30 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> On 04/07/2014 06:08 PM, Bryan Wu wrote:
->> On Fri, Apr 4, 2014 at 10:01 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
->>> Currently, we may attempt to unregister a trigger more than once, for
->>> example when we receive two consecutive reboot notifications, or when
->>> we do a regular unregistration plus reboot notification.
->>>
->>> This leads to the following error since we try to delete the list node
->>> twice:
->>>
->>> [ 2780.254922] WARNING: CPU: 0 PID: 13764 at lib/list_debug.c:53 __list_del_entry+0x3e/0xe0()
->>> [ 2780.265559] list_del corruption, ffffffffa5eb6470->next is LIST_POISON1 (dead000000100100)
->>> [ 2780.271710] Modules linked in:
->>> [ 2780.274156] CPU: 0 PID: 13764 Comm: kworker/0:2 Tainted: G        W     3.14.0-next-20140403-sasha-00012-gef5fa7d-dirty #373
->>> [ 2780.283063] Workqueue: events do_poweroff
->>> [ 2780.285644]  0000000000000009 ffff8800330dbb38 ffffffffa34bfa33 0000000000002fe0
->>> [ 2780.291571]  ffff8800330dbb88 ffff8800330dbb78 ffffffffa015a37c ffff8800330dbb68
->>> [ 2780.296670]  ffffffffa5eb6470 0000000000000000 ffffffffa5eb6400 ffffffffa5ad7430
->>> [ 2780.299756] Call Trace:
->>> [ 2780.301530] dump_stack (lib/dump_stack.c:52)
->>> [ 2780.303802] warn_slowpath_common (kernel/panic.c:418)
->>> [ 2780.306151] warn_slowpath_fmt (kernel/panic.c:433)
->>> [ 2780.308156] __list_del_entry (lib/list_debug.c:51 (discriminator 1))
->>> [ 2780.310800] list_del (lib/list_debug.c:78)
->>> [ 2780.313175] led_trigger_unregister (drivers/leds/led-triggers.c:225)
->>> [ 2780.315599] heartbeat_reboot_notifier (drivers/leds/trigger/ledtrig-heartbeat.c:119)
->>> [ 2780.317247] notifier_call_chain (kernel/notifier.c:95)
->>> [ 2780.320014] __blocking_notifier_call_chain (kernel/notifier.c:316)
->>> [ 2780.323263] blocking_notifier_call_chain (kernel/notifier.c:326)
->>> [ 2780.326096] kernel_power_off (include/linux/kmod.h:95 kernel/reboot.c:153 kernel/reboot.c:179)
->>> [ 2780.327883] do_poweroff (kernel/power/poweroff.c:23)
->>> [ 2780.330748] process_one_work (kernel/workqueue.c:2221 include/linux/jump_label.h:105 include/trace/events/workqueue.h:111 kernel/workqueue.c:2226)
->>> [ 2780.333027] ? process_one_work (include/linux/workqueue.h:186 kernel/workqueue.c:611 kernel/workqueue.c:638 kernel/workqueue.c:2214)
->>> [ 2780.335487] process_scheduled_works (include/linux/list.h:188 kernel/workqueue.c:2277)
->>> [ 2780.337101] worker_thread (kernel/workqueue.c:2352)
->>> [ 2780.338712] ? rescuer_thread (kernel/workqueue.c:2297)
->>> [ 2780.341326] kthread (kernel/kthread.c:219)
->>> [ 2780.343446] ? kthread_create_on_node (kernel/kthread.c:185)
->>> [ 2780.345733] ret_from_fork (arch/x86/kernel/entry_64.S:555)
->>> [ 2780.347168] ? kthread_create_on_node (kernel/kthread.c:185)
->>>
->>> Prevent it by making sure we don't attempt to unregister a trigger that
->>> is not in the triggers list.
->>>
->>
->> Looks good to me literally, could you please provide some simple test
->> case for me? I need verify it on my side.
->
-> First, make sure you test it on a kernel with list debugging enabled,
-> otherwise there won't be noticeable result unless you end up corrupting
-> something important in the memory.
->
-> Try calling reboot() and unregistering a device that has a led trigger
-> at the same time (from two different threads) and hope you hit that race.
->
->
+On Tue, 8 Apr 2014, Naoya Horiguchi wrote:
 
-Good, I hit that race and this patch solves the issue. Applied and
-sent out to Linus.
+> memory hotplug is done in memory block basis, so if we get info from under
+> /sys/devices/system/memory/memory<ID> it should be memory hotplug-aware
+> (/sys/devices/system/memory/memory<ID>/state shows online/offline status.)
+> 
+> And IIUC, "pfn-node_id" mapping might be already available for userspace.
+> /sys/devices/system/memory/block_size_bytes exports memory block size,
+> so we can simply map pfn (physical address) into memory block ID by
+> (physicall address)/(memory block size), then we can find associated node
+> from /sys/devices/system/memory/memory<ID>
+> 
+>   $ ls -l /sys/devices/system/memory/memory0
+>   ...
+>   lrwxrwxrwx 1 root root    0 Apr  8 00:15 node0 -> ../../node/node0
+> 
 
-Thanks,
--Bryan
+That's only possible with sparsemem and if you have memory hotplug 
+enabled.  I'm thinking that Ulrich is looking for a solution that won't 
+have such a dependency and work for all memory models (including one that 
+disables NUMA and simply represents all memory as one big node).
+
+ [ And that block_size_bytes file is absolutely horrid, why are we
+   exporting all this information in hex and not telling anybody? ]
+
+I'd much prefer a single change that works for everybody and userspace can 
+rely on exporting accurate information as long as sysfs is mounted, and 
+not even need to rely on getpagesize() to convert from pfn to physical 
+address: just simple {start,end}_phys_addr files added to 
+/sys/devices/system/node/nodeN/ for node N.  Online information can 
+already be parsed for these ranges from /sys/devices/system/node/online.
