@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965959AbaDJKMi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 06:12:38 -0400
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:52253
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965088AbaDJKM2 (ORCPT
+	id S1030205AbaDJKHD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 06:07:03 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:53304 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965752AbaDJKGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 06:12:28 -0400
-X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
-X-SpamScore: 3
-X-BigFish: VPS3(z579eh551bizbb2dI98dI9371I1432I4015Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzzz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25f6h2605h268bh26d3h2673i19b6n1155h)
-Date: Thu, 10 Apr 2014 12:11:58 +0200
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Michal Simek <michal.simek@xilinx.com>, Michal Simek <monstr@monstr.eu>,
-        Punnaiah Choudary Kalluri 
-	<punnaiah.choudary.kalluri@xilinx.com>,
-        <dougthompson@xmission.com>, <linux-edac@vger.kernel.org>,
-        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <sorenb@xilinx.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <kpc528@gmail.com>,
-        <kalluripunnaiahchoudary@gmail.com>, <punnaia@xilinx.com>
-Subject: Re: [RFC PATCH v2] edac: synopsys: Added EDAC support for zynq ddr
- ecc controller
-References: <1220b715-6fc2-42ed-8393-b9859fc0deb9@TX2EHSMHS021.ehs.local> <20140408204047.GQ30077@pd.tnic> <534633C0.9090905@monstr.eu> <20140410092144.GD29093@pd.tnic> <5e0042b6-f169-4025-8fd7-9d70c2ed0cf6@AM1EHSMHS012.ehs.local> <20140410100047.GG29093@pd.tnic> <20140410100542.GH29093@pd.tnic>
-In-Reply-To: <20140410100542.GH29093@pd.tnic>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-Message-ID: <2508260c-5ae5-4ff5-97a9-248470c062af@CH1EHSMHS012.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	Thu, 10 Apr 2014 06:06:52 -0400
+X-AuditID: cbfee68e-b7f566d000002344-d2-53466d1fabf3
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: kgene.kim@samsung.com, t.figa@samsung.com,
+        linux-samsung-soc@vger.kernel.org
+Cc: kyungmin.park@samsung.com, cw00.choi@samsung.com, inki.dae@samsung.com,
+        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 16/27] ARM: dts: exynos3250: Add MCT dt node
+Date: Thu, 10 Apr 2014 19:06:06 +0900
+Message-id: <1397124377-16969-8-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+In-reply-to: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
+References: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsWyRsSkWFc+1y3YYNJmPovrX56zWnz+0MJu
+	Men+BBaL3gVX2SzONr1ht9j0+BqrxeVdc9gsZpzfx2QxY/JLNov1M16zWOzdOZnRgdtj85J6
+	j74tqxg9Pm+SC2CO4rJJSc3JLEst0rdL4MqYuKSBraCHq2LOwvdMDYwLOboYOTkkBEwkVs1Y
+	wwxhi0lcuLeerYuRi0NIYCmjxMLnnUAOB1jR3INKEPFFjBKrT+5ngnCamCS2bLjLCtLNJqAl
+	sf/FDTYQW0QgQOLH8XdgNrPATUaJY+/DQGxhARuJp3NWg21jEVCV+P1yGTuIzSvgKnGxdQ4L
+	xBVyEh/2PAKLcwq4ScxcdBJsjhBQTc+ji8wgiyUE1rFLrDvawgYxSEDi2+RDLBCXykpsOgD1
+	jaTEwRU3WCYwCi9gZFjFKJpakFxQnJReZKRXnJhbXJqXrpecn7uJERj4p/8969vBePOA9SHG
+	ZKBxE5mlRJPzgZGTVxJvaGxmZGFqYmpsZG5pRpqwkjjvoodJQUIC6YklqdmpqQWpRfFFpTmp
+	xYcYmTg4pRoYhQzMG9jPO2oEi/x9ZfiBcS7HryN1nqduTiy7vsq8467a+q0sBiLSbX9Et9l+
+	XL5zz9drdUbhPS57F70om1/3r+xJ+VJWJjubCLOrnyVzw45MW1U/fcby/ctdOznf3jmbZCwU
+	WP8oSEJshY7Yk6Mfn5R0r1hgosCVxyzIcvmBeFud8EzZXdvWK7EUZyQaajEXFScCAHGgNXmS	AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jAV35XLdggy0H2Cyuf3nOavH5Qwu7
+	xaT7E1gsehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PFjMkv2SzWz3jNYrF352RGB26PzUvq
+	Pfq2rGL0+LxJLoA5qoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VW
+	ycUnQNctMwfoICWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYQ1jxsQlDWwF
+	PVwVcxa+Z2pgXMjRxcjBISFgIjH3oFIXIyeQKSZx4d56ti5GLg4hgUWMEqtP7meCcJqYJLZs
+	uMsKUsUmoCWx/8UNNhBbRCBA4sfxd2A2s8BNRolj78NAbGEBG4mnc1Yzg9gsAqoSv18uYwex
+	eQVcJS62zmGB2CYn8WHPI7A4p4CbxMxFJ8HmCAHV9Dy6yDyBkXcBI8MqRtHUguSC4qT0XEO9
+	4sTc4tK8dL3k/NxNjOC4eia1g3Flg8UhRgEORiUe3gPLXIOFWBPLiitzDzFKcDArifDuznQL
+	FuJNSaysSi3Kjy8qzUktPsSYDHTVRGYp0eR8YMznlcQbGpuYGVkamRtaGBmbkyasJM57oNU6
+	UEggPbEkNTs1tSC1CGYLEwenVAOj6Onf12WNTnY+OnRum78rzweWLc3bHJWLlbckmq3wKgtM
+	OLt8xqsJzr3rJ9yxFdrU3jTx0UmTj2v6eRT49pxZdyc8Vmh791nn5qApYhMY3vN4m71/FFx1
+	xXdTiO+E64Wn/r0vPBI4yf2AWqXyuvSrWyUXLtz8Vuo3++V9G1L5Lm//fM29UnSNshJLcUai
+	oRZzUXEiAFXrwk3vAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2014 12:05 PM, Borislav Petkov wrote:
-> On Thu, Apr 10, 2014 at 12:00:47PM +0200, Borislav Petkov wrote:
->> Then you'll have to check whether edac can even stomach more than one
->> drivers in parallel. TTBOMK, no one has ever done this so far... Yadda
->> yadda.
-> 
-> Alternatively, you could put together a single edac driver which
-> contains both zynq and L2 functionality.
+This patch add MCT (Multi Core Timer) dt node with "samsung,exynos4210-mct"
+compatible name bacause Exynos3250 uses SPI interrput type. And Exynos3250
+provide one global timer and four local timers for Multi Core CPU.
 
-That's seems to more problematic because we just don't know what our
-customers will do and what combinations they will use.
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+[Fix incorrect irq number of MCT and remove unnecessary code by Tomasz Figa]
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
+Signed-off-by: Hyunhee Kim <hyunhee.kim@samsung.com
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ arch/arm/boot/dts/exynos3250.dtsi | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-Thanks,
-Michal
-
+diff --git a/arch/arm/boot/dts/exynos3250.dtsi b/arch/arm/boot/dts/exynos3250.dtsi
+index d17ed54..2013d0d 100644
+--- a/arch/arm/boot/dts/exynos3250.dtsi
++++ b/arch/arm/boot/dts/exynos3250.dtsi
+@@ -57,6 +57,15 @@
+ 		      interrupts = <1 9 0xf04>;
+ 	};
+ 
++	mct@10050000 {
++		compatible = "samsung,exynos4210-mct";
++		reg = <0x10050000 0x800>;
++		interrupts = <0 218 0>, <0 219 0>, <0 220 0>, <0 221 0>,
++			     <0 223 0>, <0 226 0>, <0 227 0>, <0 228 0>;
++		clocks = <&cmu CLK_FIN_PLL>, <&cmu CLK_MCT>;
++		clock-names = "fin_pll", "mct";
++	};
++
+ 	pinctrl_1: pinctrl@11000000 {
+ 		compatible = "samsung,exynos3250-pinctrl";
+ 		reg = <0x11000000 0x1000>;
+-- 
+1.8.0
 
