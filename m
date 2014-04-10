@@ -1,20 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965151AbaDJEIf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 00:08:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41111 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934795AbaDJDWW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934794AbaDJDWW (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 9 Apr 2014 23:22:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40838 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934636AbaDJDVg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Apr 2014 23:21:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 068/134] USB: pl2303: fix use-after-free in TIOCMIWAIT
-Date: Wed,  9 Apr 2014 20:23:04 -0700
-Message-Id: <20140410032308.840713732@linuxfoundation.org>
+        Mathias Krause <minipli@googlemail.com>,
+        Pax Team <pageexec@freemail.hu>, Davidlohr Bueso <davidlohr@hp.com>,
+        Brad Spengler <spender@grsecurity.net>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Qiang Huang <h.huangqiang@huawei.com>, Li Zefan <lizefan@huawei.com>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: [PATCH 3.4 008/134] ipc, msg: fix message length check for negative values
+Date: Wed,  9 Apr 2014 20:22:04 -0700
+Message-Id: <20140410032300.805336891@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -27,76 +34,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 40509ca982c00c4b70fc00be887509feca0bff15 upstream.
+commit 4e9b45a19241354daec281d7a785739829b52359 upstream.
 
-Use the port wait queue and make sure to check the serial disconnected
-flag before accessing private port data after waking up.
+On 64 bit systems the test for negative message sizes is bogus as the
+size, which may be positive when evaluated as a long, will get truncated
+to an int when passed to load_msg().  So a long might very well contain a
+positive value but when truncated to an int it would become negative.
 
-This is is needed as the private port data (including the wait queue
-itself) can be gone when waking up after a disconnect.
+That in combination with a small negative value of msg_ctlmax (which will
+be promoted to an unsigned type for the comparison against msgsz, making
+it a big positive value and therefore make it pass the check) will lead to
+two problems: 1/ The kmalloc() call in alloc_msg() will allocate a too
+small buffer as the addition of alen is effectively a subtraction.  2/ The
+copy_from_user() call in load_msg() will first overflow the buffer with
+userland data and then, when the userland access generates an access
+violation, the fixup handler copy_user_handle_tail() will try to fill the
+remainder with zeros -- roughly 4GB.  That almost instantly results in a
+system crash or reset.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+  ,-[ Reproducer (needs to be run as root) ]--
+  | #include <sys/stat.h>
+  | #include <sys/msg.h>
+  | #include <unistd.h>
+  | #include <fcntl.h>
+  |
+  | int main(void) {
+  |     long msg = 1;
+  |     int fd;
+  |
+  |     fd = open("/proc/sys/kernel/msgmax", O_WRONLY);
+  |     write(fd, "-1", 2);
+  |     close(fd);
+  |
+  |     msgsnd(0, &msg, 0xfffffff0, IPC_NOWAIT);
+  |
+  |     return 0;
+  | }
+  '---
+
+Fix the issue by preventing msgsz from getting truncated by consistently
+using size_t for the message length.  This way the size checks in
+do_msgsnd() could still be passed with a negative value for msg_ctlmax but
+we would fail on the buffer allocation in that case and error out.
+
+Also change the type of m_ts from int to size_t to avoid similar nastiness
+in other code paths -- it is used in similar constructs, i.e.  signed vs.
+unsigned checks.  It should never become negative under normal
+circumstances, though.
+
+Setting msg_ctlmax to a negative value is an odd configuration and should
+be prevented.  As that might break existing userland, it will be handled
+in a separate commit so it could easily be reverted and reworked without
+reintroducing the above described bug.
+
+Hardening mechanisms for user copy operations would have catched that bug
+early -- e.g.  checking slab object sizes on user copy operations as the
+usercopy feature of the PaX patch does.  Or, for that matter, detect the
+long vs.  int sign change due to truncation, as the size overflow plugin
+of the very same patch does.
+
+[akpm@linux-foundation.org: fix i386 min() warnings]
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Pax Team <pageexec@freemail.hu>
+Cc: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Brad Spengler <spender@grsecurity.net>
+Cc: Manfred Spraul <manfred@colorfullife.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Drop changes to alloc_msg() and copy_msg(), which don't exist]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Yang Yingliang <yangyingliang@huawei.com>
+Cc: Qiang Huang <h.huangqiang@huawei.com>
+Cc: Li Zefan <lizefan@huawei.com>
+Cc: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/pl2303.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ include/linux/msg.h |    6 +++---
+ ipc/msgutil.c       |   12 ++++++------
+ ipc/util.h          |    4 ++--
+ 3 files changed, 11 insertions(+), 11 deletions(-)
 
---- a/drivers/usb/serial/pl2303.c
-+++ b/drivers/usb/serial/pl2303.c
-@@ -149,7 +149,6 @@ enum pl2303_type {
+--- a/include/linux/msg.h
++++ b/include/linux/msg.h
+@@ -76,9 +76,9 @@ struct msginfo {
  
- struct pl2303_private {
- 	spinlock_t lock;
--	wait_queue_head_t delta_msr_wait;
- 	u8 line_control;
- 	u8 line_status;
- 	enum pl2303_type type;
-@@ -203,7 +202,6 @@ static int pl2303_startup(struct usb_ser
- 		if (!priv)
- 			goto cleanup;
- 		spin_lock_init(&priv->lock);
--		init_waitqueue_head(&priv->delta_msr_wait);
- 		priv->type = type;
- 		usb_set_serial_port_data(serial->port[i], priv);
- 	}
-@@ -595,11 +593,14 @@ static int wait_modem_info(struct usb_se
- 	spin_unlock_irqrestore(&priv->lock, flags);
+ /* one msg_msg structure for each message */
+ struct msg_msg {
+-	struct list_head m_list; 
+-	long  m_type;          
+-	int m_ts;           /* message text size */
++	struct list_head m_list;
++	long m_type;
++	size_t m_ts;		/* message text size */
+ 	struct msg_msgseg* next;
+ 	void *security;
+ 	/* the actual message follows immediately */
+--- a/ipc/msgutil.c
++++ b/ipc/msgutil.c
+@@ -39,15 +39,15 @@ struct msg_msgseg {
+ 	/* the next part of the message follows immediately */
+ };
  
- 	while (1) {
--		interruptible_sleep_on(&priv->delta_msr_wait);
-+		interruptible_sleep_on(&port->delta_msr_wait);
- 		/* see if a signal did it */
- 		if (signal_pending(current))
- 			return -ERESTARTSYS;
+-#define DATALEN_MSG	(PAGE_SIZE-sizeof(struct msg_msg))
+-#define DATALEN_SEG	(PAGE_SIZE-sizeof(struct msg_msgseg))
++#define DATALEN_MSG	((size_t)PAGE_SIZE-sizeof(struct msg_msg))
++#define DATALEN_SEG	((size_t)PAGE_SIZE-sizeof(struct msg_msgseg))
  
-+		if (port->serial->disconnected)
-+			return -EIO;
-+
- 		spin_lock_irqsave(&priv->lock, flags);
- 		status = priv->line_status;
- 		spin_unlock_irqrestore(&priv->lock, flags);
-@@ -721,7 +722,7 @@ static void pl2303_update_line_status(st
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 	if (priv->line_status & UART_BREAK_ERROR)
- 		usb_serial_handle_break(port);
--	wake_up_interruptible(&priv->delta_msr_wait);
-+	wake_up_interruptible(&port->delta_msr_wait);
+-struct msg_msg *load_msg(const void __user *src, int len)
++struct msg_msg *load_msg(const void __user *src, size_t len)
+ {
+ 	struct msg_msg *msg;
+ 	struct msg_msgseg **pseg;
+ 	int err;
+-	int alen;
++	size_t alen;
  
- 	tty = tty_port_tty_get(&port->port);
- 	if (!tty)
-@@ -788,7 +789,7 @@ static void pl2303_process_read_urb(stru
- 	line_status = priv->line_status;
- 	priv->line_status &= ~UART_STATE_TRANSIENT_MASK;
- 	spin_unlock_irqrestore(&priv->lock, flags);
--	wake_up_interruptible(&priv->delta_msr_wait);
-+	wake_up_interruptible(&port->delta_msr_wait);
+ 	alen = len;
+ 	if (alen > DATALEN_MSG)
+@@ -101,9 +101,9 @@ out_err:
+ 	return ERR_PTR(err);
+ }
  
- 	if (!urb->actual_length)
- 		return;
+-int store_msg(void __user *dest, struct msg_msg *msg, int len)
++int store_msg(void __user *dest, struct msg_msg *msg, size_t len)
+ {
+-	int alen;
++	size_t alen;
+ 	struct msg_msgseg *seg;
+ 
+ 	alen = len;
+--- a/ipc/util.h
++++ b/ipc/util.h
+@@ -138,8 +138,8 @@ int ipc_parse_version (int *cmd);
+ #endif
+ 
+ extern void free_msg(struct msg_msg *msg);
+-extern struct msg_msg *load_msg(const void __user *src, int len);
+-extern int store_msg(void __user *dest, struct msg_msg *msg, int len);
++extern struct msg_msg *load_msg(const void __user *src, size_t len);
++extern int store_msg(void __user *dest, struct msg_msg *msg, size_t len);
+ 
+ extern void recompute_msgmni(struct ipc_namespace *);
+ 
 
 
