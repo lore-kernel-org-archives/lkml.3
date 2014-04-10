@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935137AbaDJDXB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:23:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40804 "EHLO
+	id S965362AbaDJDji (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:39:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41314 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934320AbaDJDVc (ORCPT
+	with ESMTP id S935120AbaDJDW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 23:21:32 -0400
+	Wed, 9 Apr 2014 23:22:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, Guy Streeter <streeter@redhat.com>,
-        Eric Paris <eparis@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Qiang Huang <h.huangqiang@huawei.com>, Li Zefan <lizefan@huawei.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: [PATCH 3.4 003/134] audit: wait_for_auditd() should use TASK_UNINTERRUPTIBLE
-Date: Wed,  9 Apr 2014 20:21:59 -0700
-Message-Id: <20140410032300.079283146@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Roger Lucas <vt8231@hiddenengine.co.uk>,
+        Jean Delvare <khali@linux-fr.org>, Ben Hutchings <ben@decadent.org.uk>,
+        Qiang Huang <h.huangqiang@huawei.com>
+Subject: [PATCH 3.4 117/134] hwmon: Prevent some divide by zeros in FAN_TO_REG()
+Date: Wed,  9 Apr 2014 20:23:53 -0700
+Message-Id: <20140410032314.303949802@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -32,51 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit f000cfdde5de4fc15dead5ccf524359c07eadf2b upstream.
+commit 3806b45ba4655147a011df03242cc197ab986c43 upstream.
 
-audit_log_start() does wait_for_auditd() in a loop until
-audit_backlog_wait_time passes or audit_skb_queue has a room.
+The "rpm * div" operations can overflow here, so this patch adds an
+upper limit to rpm to prevent that.  Jean Delvare helped me with this
+patch.
 
-If signal_pending() is true this becomes a busy-wait loop, schedule() in
-TASK_INTERRUPTIBLE won't block.
-
-Thanks to Guy for fully investigating and explaining the problem.
-
-(akpm: that'll cause the system to lock up on a non-preemptible
-uniprocessor kernel)
-
-(Guy: "Our customer was in fact running a uniprocessor machine, and they
-reported a system hang.")
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Guy Streeter <streeter@redhat.com>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context, indentation]
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Acked-by: Roger Lucas <vt8231@hiddenengine.co.uk>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Qiang Huang <h.huangqiang@huawei.com>
-Cc: Li Zefan <lizefan@huawei.com>
-Cc: Jianguo Wu <wujianguo@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/audit.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hwmon/lm78.c    |    2 ++
+ drivers/hwmon/sis5595.c |    2 ++
+ drivers/hwmon/vt8231.c  |    2 +-
+ 3 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1168,7 +1168,7 @@ struct audit_buffer *audit_log_start(str
+--- a/drivers/hwmon/lm78.c
++++ b/drivers/hwmon/lm78.c
+@@ -94,6 +94,8 @@ static inline u8 FAN_TO_REG(long rpm, in
+ {
+ 	if (rpm <= 0)
+ 		return 255;
++	if (rpm > 1350000)
++		return 1;
+ 	return SENSORS_LIMIT((1350000 + rpm * div / 2) / (rpm * div), 1, 254);
+ }
  
- 			/* Wait for auditd to drain the queue a little */
- 			DECLARE_WAITQUEUE(wait, current);
--			set_current_state(TASK_INTERRUPTIBLE);
-+			set_current_state(TASK_UNINTERRUPTIBLE);
- 			add_wait_queue(&audit_backlog_wait, &wait);
+--- a/drivers/hwmon/sis5595.c
++++ b/drivers/hwmon/sis5595.c
+@@ -141,6 +141,8 @@ static inline u8 FAN_TO_REG(long rpm, in
+ {
+ 	if (rpm <= 0)
+ 		return 255;
++	if (rpm > 1350000)
++		return 1;
+ 	return SENSORS_LIMIT((1350000 + rpm * div / 2) / (rpm * div), 1, 254);
+ }
  
- 			if (audit_backlog_limit &&
+--- a/drivers/hwmon/vt8231.c
++++ b/drivers/hwmon/vt8231.c
+@@ -145,7 +145,7 @@ static const u8 regtempmin[] = { 0x3a, 0
+  */
+ static inline u8 FAN_TO_REG(long rpm, int div)
+ {
+-	if (rpm == 0)
++	if (rpm <= 0 || rpm > 1310720)
+ 		return 0;
+ 	return SENSORS_LIMIT(1310720 / (rpm * div), 1, 255);
+ }
 
 
