@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965242AbaDJDh4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:37:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41346 "EHLO
+	id S935273AbaDJDie (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:38:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41340 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935155AbaDJDXE (ORCPT
+	with ESMTP id S935142AbaDJDXE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Apr 2014 23:23:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roland Dreier <roland@purestorage.com>,
-        Nithin Nayak Sujir <nsujir@broadcom.com>,
         Michael Chan <mchan@broadcom.com>,
+        Nithin Nayak Sujir <nsujir@broadcom.com>,
         "David S. Miller" <davem@davemloft.net>,
         Ben Hutchings <ben@decadent.org.uk>,
         Qiang Huang <h.huangqiang@huawei.com>
-Subject: [PATCH 3.4 124/134] tg3: Add read dma workaround for 5720
-Date: Wed,  9 Apr 2014 20:24:00 -0700
-Message-Id: <20140410032315.265717182@linuxfoundation.org>
+Subject: [PATCH 3.4 123/134] tg3: Skip powering down function 0 on certain serdes devices
+Date: Wed,  9 Apr 2014 20:23:59 -0700
+Message-Id: <20140410032315.131623807@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -33,104 +32,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nithin Sujir <nsujir@broadcom.com>
 
-commit 9bc297ea0622bb2a6b3abfa2fa84f0a3b86ef8c8 upstream.
+commit 44f3b503c16425c8e9db4bbaa2fc9cd0c9d0ba91 upstream.
 
-Commit 091f0ea30074bc43f9250961b3247af713024bc6 "tg3: Add New 5719 Read
-DMA workaround" added a workaround for TX DMA stall on the 5719. This
-workaround needs to be applied to the 5720 as well.
+On the 5718, 5719 and 5720 serdes devices, powering down function 0
+results in all the other ports being powered down. Add code to skip
+function 0 power down.
 
-Reported-by: Roland Dreier <roland@purestorage.com>
-Tested-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
+v2:
+ - Modify tg3_phy_power_bug() function to use a switch instead of a
+   complicated if statement. Suggested by Joe Perches.
+
 Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: Nithin Nayak Sujir <nsujir@broadcom.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[bwh: Backported to 3.2: use GET_ASIC_REV() instead of tg3_asic_rev()]
+[bwh: Backported to 3.2:
+ s/tg3_asic_rev\(tp\)/GET_ASIC_REV(tp->pci_chip_rev_id)/]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-[hq: Backproted to 3.4: Adjust context]
+[hq: Backported to 3.4: Adjust context]
 Signed-off-by: Qiang Huang <h.huangqiang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/broadcom/tg3.c |   21 +++++++++++++++------
- drivers/net/ethernet/broadcom/tg3.h |    5 +++--
- 2 files changed, 18 insertions(+), 8 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c |   32 ++++++++++++++++++++++++++------
+ 1 file changed, 26 insertions(+), 6 deletions(-)
 
 --- a/drivers/net/ethernet/broadcom/tg3.c
 +++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -8548,6 +8548,14 @@ static void tg3_rss_write_indir_tbl(stru
- 	}
+@@ -2740,6 +2740,31 @@ static int tg3_5700_link_polarity(struct
+ 	return 0;
  }
  
-+static inline u32 tg3_lso_rd_dma_workaround_bit(struct tg3 *tp)
++static bool tg3_phy_power_bug(struct tg3 *tp)
 +{
-+	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719)
-+		return TG3_LSO_RD_DMA_TX_LENGTH_WA_5719;
-+	else
-+		return TG3_LSO_RD_DMA_TX_LENGTH_WA_5720;
++	switch (GET_ASIC_REV(tp->pci_chip_rev_id)) {
++	case ASIC_REV_5700:
++	case ASIC_REV_5704:
++		return true;
++	case ASIC_REV_5780:
++		if (tp->phy_flags & TG3_PHYFLG_MII_SERDES)
++			return true;
++		return false;
++	case ASIC_REV_5717:
++		if (!tp->pci_fn)
++			return true;
++		return false;
++	case ASIC_REV_5719:
++	case ASIC_REV_5720:
++		if ((tp->phy_flags & TG3_PHYFLG_PHY_SERDES) &&
++		    !tp->pci_fn)
++			return true;
++		return false;
++	}
++
++	return false;
 +}
 +
- /* tp->lock is held. */
- static int tg3_reset_hw(struct tg3 *tp, int reset_phy)
+ static void tg3_power_down_phy(struct tg3 *tp, bool do_low_power)
  {
-@@ -9184,16 +9192,17 @@ static int tg3_reset_hw(struct tg3 *tp,
- 	tw32_f(RDMAC_MODE, rdmac_mode);
- 	udelay(40);
+ 	u32 val;
+@@ -2796,12 +2821,7 @@ static void tg3_power_down_phy(struct tg
+ 	/* The PHY should not be powered down on some chips because
+ 	 * of bugs.
+ 	 */
+-	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5700 ||
+-	    GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5704 ||
+-	    (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5780 &&
+-	     (tp->phy_flags & TG3_PHYFLG_MII_SERDES)) ||
+-	    (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5717 &&
+-	     !tp->pci_fn))
++	if (tg3_phy_power_bug(tp))
+ 		return;
  
--	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719) {
-+	if (GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5719 ||
-+	    GET_ASIC_REV(tp->pci_chip_rev_id) == ASIC_REV_5720) {
- 		for (i = 0; i < TG3_NUM_RDMA_CHANNELS; i++) {
- 			if (tr32(TG3_RDMA_LENGTH + (i << 2)) > TG3_MAX_MTU(tp))
- 				break;
- 		}
- 		if (i < TG3_NUM_RDMA_CHANNELS) {
- 			val = tr32(TG3_LSO_RD_DMA_CRPTEN_CTRL);
--			val |= TG3_LSO_RD_DMA_TX_LENGTH_WA;
-+			val |= tg3_lso_rd_dma_workaround_bit(tp);
- 			tw32(TG3_LSO_RD_DMA_CRPTEN_CTRL, val);
--			tg3_flag_set(tp, 5719_RDMA_BUG);
-+			tg3_flag_set(tp, 5719_5720_RDMA_BUG);
- 		}
- 	}
- 
-@@ -9459,15 +9468,15 @@ static void tg3_periodic_fetch_stats(str
- 	TG3_STAT_ADD32(&sp->tx_ucast_packets, MAC_TX_STATS_UCAST);
- 	TG3_STAT_ADD32(&sp->tx_mcast_packets, MAC_TX_STATS_MCAST);
- 	TG3_STAT_ADD32(&sp->tx_bcast_packets, MAC_TX_STATS_BCAST);
--	if (unlikely(tg3_flag(tp, 5719_RDMA_BUG) &&
-+	if (unlikely(tg3_flag(tp, 5719_5720_RDMA_BUG) &&
- 		     (sp->tx_ucast_packets.low + sp->tx_mcast_packets.low +
- 		      sp->tx_bcast_packets.low) > TG3_NUM_RDMA_CHANNELS)) {
- 		u32 val;
- 
- 		val = tr32(TG3_LSO_RD_DMA_CRPTEN_CTRL);
--		val &= ~TG3_LSO_RD_DMA_TX_LENGTH_WA;
-+		val &= ~tg3_lso_rd_dma_workaround_bit(tp);
- 		tw32(TG3_LSO_RD_DMA_CRPTEN_CTRL, val);
--		tg3_flag_clear(tp, 5719_RDMA_BUG);
-+		tg3_flag_clear(tp, 5719_5720_RDMA_BUG);
- 	}
- 
- 	TG3_STAT_ADD32(&sp->rx_octets, MAC_RX_STATS_OCTETS);
---- a/drivers/net/ethernet/broadcom/tg3.h
-+++ b/drivers/net/ethernet/broadcom/tg3.h
-@@ -1376,7 +1376,8 @@
- #define TG3_LSO_RD_DMA_CRPTEN_CTRL	0x00004910
- #define TG3_LSO_RD_DMA_CRPTEN_CTRL_BLEN_BD_4K	 0x00030000
- #define TG3_LSO_RD_DMA_CRPTEN_CTRL_BLEN_LSO_4K	 0x000c0000
--#define TG3_LSO_RD_DMA_TX_LENGTH_WA	 0x02000000
-+#define TG3_LSO_RD_DMA_TX_LENGTH_WA_5719	 0x02000000
-+#define TG3_LSO_RD_DMA_TX_LENGTH_WA_5720	 0x00200000
- /* 0x4914 --> 0x4be0 unused */
- 
- #define TG3_NUM_RDMA_CHANNELS		4
-@@ -2928,7 +2929,7 @@ enum TG3_FLAGS {
- 	TG3_FLAG_L1PLLPD_EN,
- 	TG3_FLAG_APE_HAS_NCSI,
- 	TG3_FLAG_4K_FIFO_LIMIT,
--	TG3_FLAG_5719_RDMA_BUG,
-+	TG3_FLAG_5719_5720_RDMA_BUG,
- 	TG3_FLAG_RESET_TASK_PENDING,
- 	TG3_FLAG_5705_PLUS,
- 	TG3_FLAG_IS_5788,
+ 	if (GET_CHIP_REV(tp->pci_chip_rev_id) == CHIPREV_5784_AX ||
 
 
