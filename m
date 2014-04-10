@@ -1,83 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935813AbaDJXRr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 19:17:47 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:58037 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935788AbaDJXRp (ORCPT
+	id S1759286AbaDJXYR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 19:24:17 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58780 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753823AbaDJXYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 19:17:45 -0400
+	Thu, 10 Apr 2014 19:24:14 -0400
+Message-ID: <5347280B.3000303@infradead.org>
+Date: Thu, 10 Apr 2014 16:23:55 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140410204525.GC21815@beardog.cce.hp.com>
-References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
-	<1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>
-	<1397084904.9519.62.camel@dabdike>
-	<1397085044.9519.63.camel@dabdike>
-	<1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
-	<1397087425.9519.67.camel@dabdike>
-	<1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>
-	<CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
-	<1397111557.2608.29.camel@buesod1.americas.hpqcorp.net>
-	<20140410204525.GC21815@beardog.cce.hp.com>
-Date: Thu, 10 Apr 2014 17:17:44 -0600
-Message-ID: <CAKocOONaqGAaiesf_MUFXEOMDtX8R8kYuPQYAxLBfth7nAx3Jg@mail.gmail.com>
-Subject: Re: hpsa driver bug crack kernel down!
-From: Shuah Khan <shuahkhan@gmail.com>
-To: scameron@beardog.cce.hp.com
-Cc: Davidlohr Bueso <davidlohr@hp.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Baoquan He <bhe@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>
+To: Tang Chen <tangchen@cn.fujitsu.com>, hannes@cmpxchg.org, mhocko@suse.cz,
+        bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com
+CC: cgroups@vger.kernel.org, linux-mm@kvack.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, guz.fnst@cn.fujitsu.com,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/1] doc, mempolicy: Fix wrong document in numa_memory_policy.txt
+References: <1396410782-26208-1-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1396410782-26208-1-git-send-email-tangchen@cn.fujitsu.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 2:45 PM,  <scameron@beardog.cce.hp.com> wrote:
->> > 3f583bc21977 BAD ("Merge tag 'iommu-updates-v3.15'")
->>
->> Yes, specifically (finally done bisecting):
->>
->> commit 2e45528930388658603ea24d49cf52867b928d3e
->> Author: Jiang Liu <jiang.liu@linux.intel.com>
->> Date:   Wed Feb 19 14:07:36 2014 +0800
->>
->>     iommu/vt-d: Unify the way to process DMAR device scope array
->>
->>     Now we have a PCI bus notification based mechanism to update DMAR
->>     device scope array, we could extend the mechanism to support boot
->>     time initialization too, which will help to unify and simplify
->>     the implementation.
->>
->>     Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
->>     Signed-off-by: Joerg Roedel <joro@8bytes.org>
->
-> My git bisect appears to be converging on something else, something
-> within the hpsa patches that I sent up recently, unfortunately for
-> me.  Will let you all know when it converges.
->
+On 04/01/2014 08:53 PM, Tang Chen wrote:
+> In document numa_memory_policy.txt, the following examples for flag
+> MPOL_F_RELATIVE_NODES are incorrect.
+> 
+> 	For example, consider a task that is attached to a cpuset with
+> 	mems 2-5 that sets an Interleave policy over the same set with
+> 	MPOL_F_RELATIVE_NODES.  If the cpuset's mems change to 3-7, the
+> 	interleave now occurs over nodes 3,5-6.  If the cpuset's mems
+> 	then change to 0,2-3,5, then the interleave occurs over nodes
+> 	0,3,5.
+> 
+> According to the comment of the patch adding flag MPOL_F_RELATIVE_NODES,
+> the nodemasks the user specifies should be considered relative to the
+> current task's mems_allowed.
+> (https://lkml.org/lkml/2008/2/29/428)
+> 
+> And according to numa_memory_policy.txt, if the user's nodemask includes
+> nodes that are outside the range of the new set of allowed nodes, then
+> the remap wraps around to the beginning of the nodemask and, if not already
+> set, sets the node in the mempolicy nodemask.
+> 
+> So in the example, if the user specifies 2-5, for a task whose mems_allowed
+> is 3-7, the nodemasks should be remapped the third, fourth, fifth, sixth
+> node in mems_allowed.  like the following:
+> 
+> 	mems_allowed:       3  4  5  6  7
+> 
+> 	relative index:     0  1  2  3  4
+> 	                    5
+> 
+> So the nodemasks should be remapped to 3,5-7, but not 3,5-6.
+> 
+> And for a task whose mems_allowed is 0,2-3,5, the nodemasks should be
+> remapped to 0,2-3,5, but not 0,3,5.
+> 
+> 	mems_allowed:       0  2  3  5
+> 
+>         relative index:     0  1  2  3
+>                             4  5
+> 
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 
-This smells very much like the problem that was solved couple of years
-ago for SI domain. It is likely that path is broken with the DMAR
-device scope array change. Please take a look to see if the following
-no longer occurs. Looks like BIOS could be expecting this RMRR to be
-still mapped.
+Wow.  This was not an April fools joke, right?
 
-               /*
-                 * We want to prevent any device associated with an RMRR from
-                 * getting placed into the SI Domain. This is done because
-                 * problems exist when devices are moved in and out of domains
-                 * and their respective RMRR info is lost. We exempt USB devices
-                 * from this process due to their usage of RMRRs that are known
-                 * to not be needed after BIOS hand-off to OS.
-                 */
-                if (device_has_rmrr(dev) &&
-                    (pdev->class >> 8) != PCI_CLASS_SERIAL_USB)
-                        return 0;
+Have there been any acks of this?  I haven't seen any responses to it.
 
--- Shuah
+Andrew, do you want to merge it?
+
+
+> ---
+>  Documentation/vm/numa_memory_policy.txt | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/vm/numa_memory_policy.txt b/Documentation/vm/numa_memory_policy.txt
+> index 4e7da65..badb050 100644
+> --- a/Documentation/vm/numa_memory_policy.txt
+> +++ b/Documentation/vm/numa_memory_policy.txt
+> @@ -174,7 +174,6 @@ Components of Memory Policies
+>  	allocation fails, the kernel will search other nodes, in order of
+>  	increasing distance from the preferred node based on information
+>  	provided by the platform firmware.
+> -	containing the cpu where the allocation takes place.
+>  
+>  	    Internally, the Preferred policy uses a single node--the
+>  	    preferred_node member of struct mempolicy.  When the internal
+> @@ -275,9 +274,9 @@ Components of Memory Policies
+>  	    For example, consider a task that is attached to a cpuset with
+>  	    mems 2-5 that sets an Interleave policy over the same set with
+>  	    MPOL_F_RELATIVE_NODES.  If the cpuset's mems change to 3-7, the
+> -	    interleave now occurs over nodes 3,5-6.  If the cpuset's mems
+> +	    interleave now occurs over nodes 3,5-7.  If the cpuset's mems
+>  	    then change to 0,2-3,5, then the interleave occurs over nodes
+> -	    0,3,5.
+> +	    0,2-3,5.
+>  
+>  	    Thanks to the consistent remapping, applications preparing
+>  	    nodemasks to specify memory policies using this flag should
+> 
+
+
+-- 
+~Randy
