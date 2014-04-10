@@ -1,145 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934633AbaDJGcl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 02:32:41 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:49678 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933287AbaDJGck (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 02:32:40 -0400
-Message-ID: <1397111557.2608.29.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: hpsa driver bug crack kernel down!
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Baoquan He <bhe@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Date: Wed, 09 Apr 2014 23:32:37 -0700
-In-Reply-To: <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
-References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
-	 <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>
-	 <1397084904.9519.62.camel@dabdike> <1397085044.9519.63.camel@dabdike>
-	 <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
-	 <1397087425.9519.67.camel@dabdike>
-	 <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>
-	 <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	id S934693AbaDJGgT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 02:36:19 -0400
+Received: from 1wt.eu ([62.212.114.60]:3863 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934647AbaDJGgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 02:36:18 -0400
+Date: Thu, 10 Apr 2014 08:35:40 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Neil Greatorex <neil@fatboyfat.co.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        Matthew Minter <matthew_minter@xyratex.com>,
+        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [PATCH v2] bus: mvebu-mbus: Avoid setting an undefined window size
+Message-ID: <20140410063540.GA25198@1wt.eu>
+References: <1397000654-10849-1-git-send-email-jgunthorpe@obsidianresearch.com> <20140409061128.GC16465@1wt.eu> <20140409162040.GA19743@obsidianresearch.com>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; boundary="jI8keyz6grp/JLjh"
+Content-Disposition: inline
+In-Reply-To: <20140409162040.GA19743@obsidianresearch.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-09 at 22:03 -0600, Bjorn Helgaas wrote:
-> [+cc Joerg, iommu list]
+
+--jI8keyz6grp/JLjh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+Hi Jason,
+
+On Wed, Apr 09, 2014 at 10:20:40AM -0600, Jason Gunthorpe wrote:
+> On Wed, Apr 09, 2014 at 08:11:29AM +0200, Willy Tarreau wrote:
 > 
-> On Wed, Apr 9, 2014 at 6:19 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> > On Wed, 2014-04-09 at 16:50 -0700, James Bottomley wrote:
-> >> On Wed, 2014-04-09 at 16:40 -0700, Davidlohr Bueso wrote:
-> >> > On Wed, 2014-04-09 at 16:10 -0700, James Bottomley wrote:
-> >> > > On Wed, 2014-04-09 at 16:08 -0700, James Bottomley wrote:
-> >> > > > [+linux-scsi]
-> >> > > > On Wed, 2014-04-09 at 15:49 -0700, Davidlohr Bueso wrote:
-> >> > > > > On Wed, 2014-04-09 at 10:39 +0800, Baoquan He wrote:
-> >> > > > > > Hi,
-> >> > > > > >
-> >> > > > > > The kernel is 3.14.0+ which is pulled just now.
-> >> > > > >
-> >> > > > > Cc'ing more people.
-> >> > > > >
-> >> > > > > While the hpsa driver appears to be involved in some way, I'm sure if
-> >> > > > > this is a related issue, but as of today's pull I'm getting another
-> >> > > > > problem that causes my DL980 not to come up.
-> >> > > > >
-> >> > > > > *Massive* amounts of:
-> >> > > > >
-> >> > > > > DMAR:[fault reason 02] Present bit in context entry is clear
-> >> > > > > dmar: DRHD: handling fault status reg 602
-> >> > > > > dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr 7f61e000
-> >> > > > >
-> >> > > > > Then:
-> >> > > > >
-> >> > > > > hpsa 0000:03:00.0: Controller lockup detected: 0xffff0000
-> >> > > > > ...
-> >> > > > > Workqueue: events hpsa_monitor_ctlr_worker [hpsa]
-> >> > > > > ...
-> >> > > > >
-> >> > > > > Screenshot of the actual LOCKUP:
-> >> > > > > http://stgolabs.net/hpsa-hard-lockup-3.14+.png
-> >> > > > >
-> >> > > > > While I haven't bisected, things worked fine until at least until commit
-> >> > > > > 39de65aa2c3e (April 2nd).
-> >> > > > >
-> >> > > > > Any ideas?
-> >> > > >
-> >> > > > Well, it's either a DMA remapping issue or a hpsa one.  Your assertion
-> >> > > > that everything worked fine until 39de65aa2c3e would tend to vindicate
-> >> > > > hpsa,
-> >> >
-> >> > Hmm here you mean DMA, right?
-> >>
-> >> No, it vindicates the hpsa changes ... they don't seem to be causing
-> >> problems until something goes wrong with dma remapping.
-> >>
-> >> > > because all the hpsa changes went in before that under
-> >> > > Missing crucial info:
-> >> > >
-> >> > > commit 1a0b6abaea78f73d9bc0a2f6df2d9e4c917cade1
-> >> > >
-> >> > > > Merge: 3e75c6d b2bff6c
-> >> > > > Author: Linus Torvalds <torvalds@linux-foundation.org>
-> >> > > > Date:   Tue Apr 1 18:49:04 2014 -0700
-> >> > > >
-> >> > > >     Merge tag 'scsi-misc' of
-> >> > > > git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi
-> >> > > >
-> >> > > > can you revalidate that this commit works OK just to make sure?
-> >> >
-> >> > Ok so I don't see those DMA messages and system starts just fine. I'm
-> >> > thinking perhaps something broke after the IO mmu stuff in commit
-> >> > 3f583bc21977a608908b83d03ee2250426a5695c... could this be indirectly
-> >> > causing the CPU stalls and just blame hpsa in the path as a side effect?
-> >> >
-> >> > /me goes out to try the commit.
-> >>
-> >> That's my guess.  The DMAR messages are DMA remapping issues caused in
-> >> the IOMMU.  If I had to guess, I'd say the DMAR fault message is
-> >> indicating the IOMMU is calling for a mapping address before it can
-> >> satisfy the driver read request, which is causing the hang apparently in
-> >> the hpsa driver.
-> >>
-> >> I've added linux-pci to the cc; I think they deal with iommu issues on
-> >> x86.
-> >
-> > So that merge commit appears to be the culprit, I see both the DMA
-> > messages and the lockup blaming hpsa...
+> > OK I just got it by adding two printk() in pci-mvebu.c. Both functions
+> > mvebu_pcie_handle_iobase_change() and mvebu_pcie_handle_membase_change()
+> > do pass a size which is in fact a mask (size - 1) and not the real size.
+> > So the mbus is fed with an incorrect size which is off by one :
 > 
-> My understanding so far (please correct me if I'm wrong):
+> Yes, that is right. I tested my patch here and didn't see any problem,
+> but I realize now that the mbus code is bailing early due to this:
 > 
-> 39de65aa2c3e OK ("Merge branch 'i2c/for-next'")
-> 1a0b6abaea78 OK ("Merge tag 'scsi-misc'")
-> 3f583bc21977 BAD ("Merge tag 'iommu-updates-v3.15'")
+> kernel: mvebu_mbus: cannot add window '4:e8', conflicts with another window
+> 
+> Which I've never got around to fixing.. (whole other story there)
+> 
+> Your patch looks fine, and it obviously needs to be sequenced before
+> mine. (Thomas/Jason C: how do you want to do this?)
+> 
+> Reviewed-By: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
 
-Yes, specifically (finally done bisecting):
+OK, thank you. I've updated the attached patch with your better description.
 
-commit 2e45528930388658603ea24d49cf52867b928d3e
-Author: Jiang Liu <jiang.liu@linux.intel.com>
-Date:   Wed Feb 19 14:07:36 2014 +0800
+Cheers,
+Willy
 
-    iommu/vt-d: Unify the way to process DMAR device scope array
-    
-    Now we have a PCI bus notification based mechanism to update DMAR
-    device scope array, we could extend the mechanism to support boot
-    time initialization too, which will help to unify and simplify
-    the implementation.
-    
-    Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-    Signed-off-by: Joerg Roedel <joro@8bytes.org>
 
+--jI8keyz6grp/JLjh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="0001-pci-mvebu-fix-off-by-one-in-the-computed-size-of-the.patch"
+
+>From f90886f625d95781a3302bbc025304635dd97e9c Mon Sep 17 00:00:00 2001
+From: Willy Tarreau <w@1wt.eu>
+Date: Wed, 9 Apr 2014 08:05:09 +0200
+Subject: pci: mvebu: fix off-by-one in the computed size of the mbus windows
+
+mvebu_pcie_handle_membase_change() and
+mvebu_pcie_handle_iobase_change() do not correctly compute the window
+size. PCI uses an inclusive start/end address pair, which requires a
++1 when converting to size.
+
+This only worked because a bug in the mbus driver allowed it to
+silently accept and round up bogus sizes.
+
+Fix this by adding one to the computed size.
+
+Signed-off-by: Willy Tarreau <w@1wt.eu>
+Reviewed-By: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+---
+ drivers/pci/host/pci-mvebu.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pci/host/pci-mvebu.c b/drivers/pci/host/pci-mvebu.c
+index 0e79665..eff0ab5 100644
+--- a/drivers/pci/host/pci-mvebu.c
++++ b/drivers/pci/host/pci-mvebu.c
+@@ -329,7 +329,7 @@ static void mvebu_pcie_handle_iobase_change(struct mvebu_pcie_port *port)
+ 	port->iowin_base = port->pcie->io.start + iobase;
+ 	port->iowin_size = ((0xFFF | ((port->bridge.iolimit & 0xF0) << 8) |
+ 			    (port->bridge.iolimitupper << 16)) -
+-			    iobase);
++			    iobase) + 1;
+ 
+ 	mvebu_mbus_add_window_remap_by_id(port->io_target, port->io_attr,
+ 					  port->iowin_base, port->iowin_size,
+@@ -362,7 +362,7 @@ static void mvebu_pcie_handle_membase_change(struct mvebu_pcie_port *port)
+ 	port->memwin_base  = ((port->bridge.membase & 0xFFF0) << 16);
+ 	port->memwin_size  =
+ 		(((port->bridge.memlimit & 0xFFF0) << 16) | 0xFFFFF) -
+-		port->memwin_base;
++		port->memwin_base + 1;
+ 
+ 	mvebu_mbus_add_window_by_id(port->mem_target, port->mem_attr,
+ 				    port->memwin_base, port->memwin_size);
+-- 
+1.7.12.2.21.g234cd45.dirty
+
+
+--jI8keyz6grp/JLjh--
