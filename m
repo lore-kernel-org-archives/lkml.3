@@ -1,67 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934560AbaDJCC1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 22:02:27 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:57345 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933353AbaDJCCZ (ORCPT
+	id S934552AbaDJCJh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 22:09:37 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:63319 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933779AbaDJCJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Apr 2014 22:02:25 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Kefeng Wang <wangkefeng.wang@huawei.com>,
-        Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        guohanjun@huawei.com
-Subject: Re: [PATCH] cpufreq: highbank: fix ARM_HIGHBANK_CPUFREQ dependency warning
-Date: Thu, 10 Apr 2014 04:18:26 +0200
-Message-ID: <1453884.JQRzhD9Q31@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAKohponpGAm4J2shQRV8doMZGT22eJ2MnU0+GzF-GkZirGPW5g@mail.gmail.com>
-References: <1397010873-11020-1-git-send-email-wangkefeng.wang@huawei.com> <CAKohponpGAm4J2shQRV8doMZGT22eJ2MnU0+GzF-GkZirGPW5g@mail.gmail.com>
+	Wed, 9 Apr 2014 22:09:11 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1396960063-30552-1-git-send-email-linus.walleij@linaro.org>
+References: <1396960063-30552-1-git-send-email-linus.walleij@linaro.org>
+From: Barry Song <baohua@kernel.org>
+Date: Thu, 10 Apr 2014 10:08:50 +0800
+X-Google-Sender-Auth: xBtFRLAUG3FLLeCwCsyluCAgWvQ
+Message-ID: <CAGsJ_4wTq5R+Mt1N+3Fh6e_6XBigCKz=WiMx+e-Z6W9DE7YakA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] pinctrl: sirf: rename inlined accessor
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Barry Song <Baohua.Song@csr.com>,
+        linux-gpio@vger.kernel.org,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 09, 2014 09:58:26 AM Viresh Kumar wrote:
-> On 9 April 2014 08:04, Kefeng Wang <wangkefeng.wang@huawei.com> wrote:
-> > When make ARCH=arm multi_v7_defconfig, we get the following warnings:
-> >
-> > warning: (ARM_HIGHBANK_CPUFREQ) selects GENERIC_CPUFREQ_CPU0 which has
-> > unmet direct dependencies (ARCH_HAS_CPUFREQ && CPU_FREQ && HAVE_CLK
-> > && REGULATOR && OF && THERMAL && CPU_THERMAL)
-> >
-> > To fix this, make ARM_HIGHBANK_CPUFREQ depend on ARCH_HAS_CPUFREQ and
-> > REGULATOR instead of selecting them, PM_OPP will be selected by ARCH_HAS_CPUFREQ.
-> >
-> > Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
+2014-04-08 20:27 GMT+08:00 Linus Walleij <linus.walleij@linaro.org>:
+> The sirfsoc_irqchip_to_bank() is obviously misnamed, as it is
+> not converting an irqchip to a bank but converts a gpiochip
+> to a bank so rename it sirfsoc_gpiochip_to_bank().
+>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 
-Well, it doesn't work as intended, I'm afraid:
+Acked-by: Barry Song <Baohua.Song@csr.com>
 
-tree:   git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git bleeding-edge
-head:   588bc73d890c5dea35b7982a368c0e95089d5389
-commit: 51be80edc69390521622df71855d86da4e358488 [67/68] cpufreq: highbank: fix ARM_HIGHBANK_CPUFREQ dependency warning
-config: make ARCH=i386 allyesconfig
+Thanks, linus.
 
-All warnings:
-
-warning: (GENERIC_CPUFREQ_CPU0 && ARM_BIG_LITTLE_CPUFREQ && ARM_EXYNOS5440_CPUFREQ) selects PM_OPP which has unmet direct dependencies (ARCH_HAS_OPP)
-
-> > ---
-> >  drivers/cpufreq/Kconfig.arm | 6 +-----
-> >  1 file changed, 1 insertion(+), 5 deletions(-)
-> 
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/pinctrl/sirf/pinctrl-sirf.c | 14 +++++++-------
+>  1 file changed, 7 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/pinctrl/sirf/pinctrl-sirf.c b/drivers/pinctrl/sirf/pinctrl-sirf.c
+> index 76502aab2cb1..2c3eb207ff87 100644
+> --- a/drivers/pinctrl/sirf/pinctrl-sirf.c
+> +++ b/drivers/pinctrl/sirf/pinctrl-sirf.c
+> @@ -483,7 +483,7 @@ static inline struct sirfsoc_gpio_bank *sirfsoc_gpio_to_bank(unsigned int gpio)
+>         return &sgpio_bank[gpio / SIRFSOC_GPIO_BANK_SIZE];
+>  }
+>
+> -static inline struct sirfsoc_gpio_bank *sirfsoc_irqchip_to_bank(struct gpio_chip *chip)
+> +static inline struct sirfsoc_gpio_bank *sirfsoc_gpiochip_to_bank(struct gpio_chip *chip)
+>  {
+>         return container_of(to_of_mm_gpio_chip(chip), struct sirfsoc_gpio_bank, chip);
+>  }
+> @@ -675,7 +675,7 @@ static inline void sirfsoc_gpio_set_input(struct sirfsoc_gpio_bank *bank, unsign
+>
+>  static int sirfsoc_gpio_request(struct gpio_chip *chip, unsigned offset)
+>  {
+> -       struct sirfsoc_gpio_bank *bank = sirfsoc_irqchip_to_bank(chip);
+> +       struct sirfsoc_gpio_bank *bank = sirfsoc_gpiochip_to_bank(chip);
+>         unsigned long flags;
+>
+>         if (pinctrl_request_gpio(chip->base + offset))
+> @@ -697,7 +697,7 @@ static int sirfsoc_gpio_request(struct gpio_chip *chip, unsigned offset)
+>
+>  static void sirfsoc_gpio_free(struct gpio_chip *chip, unsigned offset)
+>  {
+> -       struct sirfsoc_gpio_bank *bank = sirfsoc_irqchip_to_bank(chip);
+> +       struct sirfsoc_gpio_bank *bank = sirfsoc_gpiochip_to_bank(chip);
+>         unsigned long flags;
+>
+>         spin_lock_irqsave(&bank->lock, flags);
+> @@ -712,7 +712,7 @@ static void sirfsoc_gpio_free(struct gpio_chip *chip, unsigned offset)
+>
+>  static int sirfsoc_gpio_direction_input(struct gpio_chip *chip, unsigned gpio)
+>  {
+> -       struct sirfsoc_gpio_bank *bank = sirfsoc_irqchip_to_bank(chip);
+> +       struct sirfsoc_gpio_bank *bank = sirfsoc_gpiochip_to_bank(chip);
+>         int idx = sirfsoc_gpio_to_offset(gpio);
+>         unsigned long flags;
+>         unsigned offset;
+> @@ -751,7 +751,7 @@ static inline void sirfsoc_gpio_set_output(struct sirfsoc_gpio_bank *bank, unsig
+>
+>  static int sirfsoc_gpio_direction_output(struct gpio_chip *chip, unsigned gpio, int value)
+>  {
+> -       struct sirfsoc_gpio_bank *bank = sirfsoc_irqchip_to_bank(chip);
+> +       struct sirfsoc_gpio_bank *bank = sirfsoc_gpiochip_to_bank(chip);
+>         int idx = sirfsoc_gpio_to_offset(gpio);
+>         u32 offset;
+>         unsigned long flags;
+> @@ -769,7 +769,7 @@ static int sirfsoc_gpio_direction_output(struct gpio_chip *chip, unsigned gpio,
+>
+>  static int sirfsoc_gpio_get_value(struct gpio_chip *chip, unsigned offset)
+>  {
+> -       struct sirfsoc_gpio_bank *bank = sirfsoc_irqchip_to_bank(chip);
+> +       struct sirfsoc_gpio_bank *bank = sirfsoc_gpiochip_to_bank(chip);
+>         u32 val;
+>         unsigned long flags;
+>
+> @@ -785,7 +785,7 @@ static int sirfsoc_gpio_get_value(struct gpio_chip *chip, unsigned offset)
+>  static void sirfsoc_gpio_set_value(struct gpio_chip *chip, unsigned offset,
+>         int value)
+>  {
+> -       struct sirfsoc_gpio_bank *bank = sirfsoc_irqchip_to_bank(chip);
+> +       struct sirfsoc_gpio_bank *bank = sirfsoc_gpiochip_to_bank(chip);
+>         u32 ctrl;
+>         unsigned long flags;
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe cpufreq" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 1.9.0
+>
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+-barry
