@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030717AbaDJMyA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 08:54:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13120 "EHLO mx1.redhat.com"
+	id S1030743AbaDJMyi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 08:54:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9276 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030515AbaDJMx6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 08:53:58 -0400
-Message-ID: <5346944F.2040709@redhat.com>
-Date: Thu, 10 Apr 2014 14:53:35 +0200
-From: Denys Vlasenko <dvlasenk@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-CC: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2 4/6] uprobes/x86: Emulate rip-relative call's
-References: <20140409194434.GA6235@redhat.com>
-In-Reply-To: <20140409194434.GA6235@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1030515AbaDJMyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 08:54:35 -0400
+Message-ID: <1397134442.31272.38.camel@deneb.redhat.com>
+Subject: Re: [PATCH v3 06/10] arm64: efi: add EFI stub
+From: Mark Salter <msalter@redhat.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Leif Lindholm <leif.lindholm@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Date: Thu, 10 Apr 2014 08:54:02 -0400
+In-Reply-To: <20140409142013.GC26210@e106331-lin.cambridge.arm.com>
+References: <1396637113-22790-1-git-send-email-leif.lindholm@linaro.org>
+	 <1396637113-22790-7-git-send-email-leif.lindholm@linaro.org>
+	 <20140409142013.GC26210@e106331-lin.cambridge.arm.com>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/09/2014 09:44 PM, Oleg Nesterov wrote:
-> +static void ttt_clear_displacement(struct arch_uprobe *auprobe, struct insn *insn)
+On Wed, 2014-04-09 at 15:20 +0100, Mark Rutland wrote:
+> >
+> > +config EFI
+> > +       bool "UEFI firmware support"
+> > +       depends on OF
+> 
+> I note we're not depending on !CPU_BIG_ENDIAN here, and it looks like
+> the implementation is not endian-clean (I've pointed out a few issues
+> below).
+> 
+> We need to fix that up for CPU_BIG_ENDIAN. For the moment we could
+> depend on !CPU_BIG_ENDIAN which would at least to make it clear we don't
+> support EFI && CPU_BIG_ENDIAN yet. The commit message should be updated
+> to mention that.
+> 
 
-Branch instruction's offset isn't called "displacement"
-on x86.
+Yes, the !CPU_BIG_ENDIAN was there at one point but got lost along
+the way. It may be best to put it back for now, but I'll take a
+stab at getting the stub part sorted out based on your comments.
+Full runtime services will be trickier and need a followup patch in
+the future after the initial patch series goes in.
 
-How about ttt_clear_branch_offset?
-
-> +{
-> +	/*
-> +	 * Turn this insn into "call 1f; 1:", this is what we will execute
-> +	 * out-of-line if ->emulate() fails.
-> +	 *
-> +	 * In the likely case this will lead to arch_uprobe_abort_xol(), but
-> +	 * see the comment in ->emulate(). So we need to ensure that the new
-> +	 * ->ip can't fall into non-canonical area and trigger #GP.
-> +	 *
-> +	 * We could turn it into (say) "pushf", but then we would need to
-> +	 * divorce ->insn[] and ->ixol[]. We need to preserve the 1st byte
-> +	 * of ->insn[] for set_orig_insn().
-> +	 */
-> +	memset(auprobe->insn + insn_offset_immediate(insn),
-> +		0, insn->immediate.nbytes);
-> +}
 
