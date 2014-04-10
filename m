@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759201AbaDJUNk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 16:13:40 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:37382 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759128AbaDJUNe (ORCPT
+	id S1030558AbaDJU0A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 16:26:00 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:61800 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758538AbaDJUZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 16:13:34 -0400
-X-Sasl-enc: K7a4+Ov7vsT7lIx3HRfXeuaLFX8dIZeXL53h9Owwp9Mn 1397160813
-Date: Thu, 10 Apr 2014 13:16:06 -0700
-From: Greg KH <greg@kroah.com>
-To: Silvio Fricke <silvio.fricke@gmail.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [WIP] [PATCH v2 0/3] remove wrong cast of gfp_t flags
-Message-ID: <20140410201606.GA12335@kroah.com>
-References: <20140403094350.GH6991@mwanda>
- <cover.1396627781.git.silvio.fricke@gmail.com>
+	Thu, 10 Apr 2014 16:25:58 -0400
+Date: Thu, 10 Apr 2014 16:25:54 -0400
+From: Matt Porter <mporter@linaro.org>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: bcm590xx: Set n_voltages for linear reg
+Message-ID: <20140410202553.GE23695@beef>
+References: <1397160240-2833-1-git-send-email-tim.kryger@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1396627781.git.silvio.fricke@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1397160240-2833-1-git-send-email-tim.kryger@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 05, 2014 at 12:32:07AM +0200, Silvio Fricke wrote:
-> Hi Dan,
+On Thu, Apr 10, 2014 at 01:04:00PM -0700, Tim Kryger wrote:
+> Fix the macro used to define linear range regulators to include the
+> number of voltages.
 > 
-> thanks for your review.
-> Attached second version of this series.
+> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
 
-I don't understand what the [WIP] marking is.  Please just resend these
-as "real" patches if you feel they are ready to be merged.  If we have
-issues with them, we will be sure to let you know :)
+Looks good.
 
-thanks,
+Acked-by: Matt Porter <mporter@linaro.org>
 
-greg k-h
+Mark: will you take this for 3.15 fixes?
+
+-Matt
+
+> ---
+>  drivers/regulator/bcm590xx-regulator.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/regulator/bcm590xx-regulator.c b/drivers/regulator/bcm590xx-regulator.c
+> index ab08ca7..c3750c5 100644
+> --- a/drivers/regulator/bcm590xx-regulator.c
+> +++ b/drivers/regulator/bcm590xx-regulator.c
+> @@ -123,6 +123,7 @@ struct bcm590xx_info {
+>  #define BCM590XX_REG_RANGES(_name, _ranges) \
+>  	{ \
+>  		.name = #_name, \
+> +		.n_voltages = 64, \
+>  		.n_linear_ranges = ARRAY_SIZE(_ranges), \
+>  		.linear_ranges = _ranges, \
+>  	}
+> -- 
+> 1.7.9.5
+> 
