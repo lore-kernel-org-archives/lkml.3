@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935256AbaDJDsI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Apr 2014 23:48:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41231 "EHLO
+	id S965222AbaDJDsm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Apr 2014 23:48:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41227 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935004AbaDJDWp (ORCPT
+	with ESMTP id S934581AbaDJDWp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Apr 2014 23:22:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        James Ralston <james.d.ralston@intel.com>,
-        Jeff Garzik <jgarzik@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Colin Leitner <colin.leitner@gmail.com>,
+        Johan Hovold <jhovold@gmail.com>, Ben Hutchings <ben@decadent.org.uk>,
         Yang Yingliang <yangyingliang@huawei.com>
-Subject: [PATCH 3.4 092/134] ahci: Add Device IDs for Intel Wellsburg PCH
-Date: Wed,  9 Apr 2014 20:23:28 -0700
-Message-Id: <20140410032311.576952797@linuxfoundation.org>
+Subject: [PATCH 3.4 091/134] USB: ftdi_sio: fixed handling of unsupported CSIZE setting
+Date: Wed,  9 Apr 2014 20:23:27 -0700
+Message-Id: <20140410032311.438335055@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140410032259.587501440@linuxfoundation.org>
 References: <20140410032259.587501440@linuxfoundation.org>
@@ -28,38 +28,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Ralston <james.d.ralston@intel.com>
+From: Colin Leitner <colin.leitner@googlemail.com>
 
-commit 151743fd8dfb02956c5184b5f4f0f42677eb75bc upstream.
+commit 8704211f65a2106ba01b6ac9727cdaf9ca11594c upstream.
 
-This patch adds the AHCI-mode SATA Device IDs for the Intel Wellsburg PCH
+FTDI UARTs support only 7 or 8 data bits. Until now the ftdi_sio driver would
+only report this limitation for CS6 to dmesg and fail to reflect this fact to
+tcgetattr.
 
-Signed-off-by: James Ralston <james.d.ralston@intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+This patch reverts the unsupported CSIZE setting and reports the fact with less
+severance to dmesg for both CS5 and CS6.
+
+To test the patch it's sufficient to call
+
+    stty -F /dev/ttyUSB0 cs5
+
+which will succeed without the patch and report an error with the patch
+applied.
+
+As an additional fix this patch ensures that the control request will always
+include a data bit size.
+
+Signed-off-by: Colin Leitner <colin.leitner@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+[bwh: Backported to 3.2:
+ - Old code is cosmetically different
+ - s/ddev/\&port->dev/]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Cc: Yang Yingliang <yangyingliang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/ahci.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/usb/serial/ftdi_sio.c |   31 ++++++++++++++++++++++++-------
+ 1 file changed, 24 insertions(+), 7 deletions(-)
 
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -292,6 +292,14 @@ static const struct pci_device_id ahci_p
- 	{ PCI_VDEVICE(INTEL, 0x1f37), board_ahci }, /* Avoton RAID */
- 	{ PCI_VDEVICE(INTEL, 0x1f3e), board_ahci }, /* Avoton RAID */
- 	{ PCI_VDEVICE(INTEL, 0x1f3f), board_ahci }, /* Avoton RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8d02), board_ahci }, /* Wellsburg AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x8d04), board_ahci }, /* Wellsburg RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8d06), board_ahci }, /* Wellsburg RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8d0e), board_ahci }, /* Wellsburg RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8d62), board_ahci }, /* Wellsburg AHCI */
-+	{ PCI_VDEVICE(INTEL, 0x8d64), board_ahci }, /* Wellsburg RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8d66), board_ahci }, /* Wellsburg RAID */
-+	{ PCI_VDEVICE(INTEL, 0x8d6e), board_ahci }, /* Wellsburg RAID */
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -2201,6 +2201,20 @@ static void ftdi_set_termios(struct tty_
+ 		termios->c_cflag |= CRTSCTS;
+ 	}
  
- 	/* JMicron 360/1/3/5/6, match class to avoid IDE function */
- 	{ PCI_VENDOR_ID_JMICRON, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
++	/*
++	 * All FTDI UART chips are limited to CS7/8. We won't pretend to
++	 * support CS5/6 and revert the CSIZE setting instead.
++	 */
++	if ((C_CSIZE(tty) != CS8) && (C_CSIZE(tty) != CS7)) {
++		dev_warn(&port->dev, "requested CSIZE setting not supported\n");
++
++		termios->c_cflag &= ~CSIZE;
++		if (old_termios)
++			termios->c_cflag |= old_termios->c_cflag & CSIZE;
++		else
++			termios->c_cflag |= CS8;
++	}
++
+ 	cflag = termios->c_cflag;
+ 
+ 	if (!old_termios)
+@@ -2237,13 +2251,16 @@ no_skip:
+ 	} else {
+ 		urb_value |= FTDI_SIO_SET_DATA_PARITY_NONE;
+ 	}
+-	if (cflag & CSIZE) {
+-		switch (cflag & CSIZE) {
+-		case CS7: urb_value |= 7; dbg("Setting CS7"); break;
+-		case CS8: urb_value |= 8; dbg("Setting CS8"); break;
+-		default:
+-			dev_err(&port->dev, "CSIZE was set but not CS7-CS8\n");
+-		}
++	switch (cflag & CSIZE) {
++	case CS7:
++		urb_value |= 7;
++		dev_dbg(&port->dev, "Setting CS7\n");
++		break;
++	default:
++	case CS8:
++		urb_value |= 8;
++		dev_dbg(&port->dev, "Setting CS8\n");
++		break;
+ 	}
+ 
+ 	/* This is needed by the break command since it uses the same command
 
 
