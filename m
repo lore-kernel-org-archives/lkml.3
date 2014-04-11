@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759683AbaDKQfo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:35:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56664 "EHLO
+	id S1422972AbaDKQfk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:35:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56669 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759440AbaDKQJH (ORCPT
+	with ESMTP id S1759609AbaDKQJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:07 -0400
+	Fri, 11 Apr 2014 12:09:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Durrant <paul.durrant@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
+        Fabio Estevam <festevam@gmail.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 49/65] xen-netback: remove pointless clause from if statement
-Date: Fri, 11 Apr 2014 09:11:21 -0700
-Message-Id: <20140411161004.434928802@linuxfoundation.org>
+Subject: [PATCH 3.13 50/65] ipv6: some ipv6 statistic counters failed to disable bh
+Date: Fri, 11 Apr 2014 09:11:22 -0700
+Message-Id: <20140411161004.568731812@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
 References: <20140411160957.714773410@linuxfoundation.org>
@@ -29,39 +30,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Durrant <Paul.Durrant@citrix.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 0576eddf24df716d8570ef8ca11452a9f98eaab2 ]
+[ Upstream commit 43a43b6040165f7b40b5b489fe61a4cb7f8c4980 ]
 
-This patch removes a test in start_new_rx_buffer() that checks whether
-a copy operation is less than MAX_BUFFER_OFFSET in length, since
-MAX_BUFFER_OFFSET is defined to be PAGE_SIZE and the only caller of
-start_new_rx_buffer() already limits copy operations to PAGE_SIZE or less.
+After commit c15b1ccadb323ea ("ipv6: move DAD and addrconf_verify
+processing to workqueue") some counters are now updated in process context
+and thus need to disable bh before doing so, otherwise deadlocks can
+happen on 32-bit archs. Fabio Estevam noticed this while while mounting
+a NFS volume on an ARM board.
 
-Signed-off-by: Paul Durrant <paul.durrant@citrix.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>
-Cc: Wei Liu <wei.liu2@citrix.com>
-Cc: Sander Eikelenboom <linux@eikelenboom.it>
-Reported-By: Sander Eikelenboom <linux@eikelenboom.it>
-Tested-By: Sander Eikelenboom <linux@eikelenboom.it>
+As a compensation for missing this I looked after the other *_STATS_BH
+and found three other calls which need updating:
+
+1) icmp6_send: ip6_fragment -> icmpv6_send -> icmp6_send (error handling)
+2) ip6_push_pending_frames: rawv6_sendmsg -> rawv6_push_pending_frames -> ...
+   (only in case of icmp protocol with raw sockets in error handling)
+3) ping6_v6_sendmsg (error handling)
+
+Fixes: c15b1ccadb323ea ("ipv6: move DAD and addrconf_verify processing to workqueue")
+Reported-by: Fabio Estevam <festevam@gmail.com>
+Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/xen-netback/netback.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv6/icmp.c       |    2 +-
+ net/ipv6/ip6_output.c |    4 ++--
+ net/ipv6/mcast.c      |   11 ++++++-----
+ net/ipv6/ping.c       |    4 ++--
+ 4 files changed, 11 insertions(+), 10 deletions(-)
 
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -203,8 +203,8 @@ static bool start_new_rx_buffer(int offs
- 	 * into multiple copies tend to give large frags their
- 	 * own buffers as before.
- 	 */
--	if ((offset + size > MAX_BUFFER_OFFSET) &&
--	    (size <= MAX_BUFFER_OFFSET) && offset && !head)
-+	BUG_ON(size > MAX_BUFFER_OFFSET);
-+	if ((offset + size > MAX_BUFFER_OFFSET) && offset && !head)
- 		return true;
+--- a/net/ipv6/icmp.c
++++ b/net/ipv6/icmp.c
+@@ -516,7 +516,7 @@ static void icmp6_send(struct sk_buff *s
+ 			      np->tclass, NULL, &fl6, (struct rt6_info *)dst,
+ 			      MSG_DONTWAIT, np->dontfrag);
+ 	if (err) {
+-		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTERRORS);
++		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTERRORS);
+ 		ip6_flush_pending_frames(sk);
+ 	} else {
+ 		err = icmpv6_push_pending_frames(sk, &fl6, &tmp_hdr,
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -1553,8 +1553,8 @@ int ip6_push_pending_frames(struct sock
+ 	if (proto == IPPROTO_ICMPV6) {
+ 		struct inet6_dev *idev = ip6_dst_idev(skb_dst(skb));
  
- 	return false;
+-		ICMP6MSGOUT_INC_STATS_BH(net, idev, icmp6_hdr(skb)->icmp6_type);
+-		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTMSGS);
++		ICMP6MSGOUT_INC_STATS(net, idev, icmp6_hdr(skb)->icmp6_type);
++		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTMSGS);
+ 	}
+ 
+ 	err = ip6_local_out(skb);
+--- a/net/ipv6/mcast.c
++++ b/net/ipv6/mcast.c
+@@ -1620,11 +1620,12 @@ static void mld_sendpack(struct sk_buff
+ 		      dst_output);
+ out:
+ 	if (!err) {
+-		ICMP6MSGOUT_INC_STATS_BH(net, idev, ICMPV6_MLD2_REPORT);
+-		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTMSGS);
+-		IP6_UPD_PO_STATS_BH(net, idev, IPSTATS_MIB_OUTMCAST, payload_len);
+-	} else
+-		IP6_INC_STATS_BH(net, idev, IPSTATS_MIB_OUTDISCARDS);
++		ICMP6MSGOUT_INC_STATS(net, idev, ICMPV6_MLD2_REPORT);
++		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTMSGS);
++		IP6_UPD_PO_STATS(net, idev, IPSTATS_MIB_OUTMCAST, payload_len);
++	} else {
++		IP6_INC_STATS(net, idev, IPSTATS_MIB_OUTDISCARDS);
++	}
+ 
+ 	rcu_read_unlock();
+ 	return;
+--- a/net/ipv6/ping.c
++++ b/net/ipv6/ping.c
+@@ -182,8 +182,8 @@ int ping_v6_sendmsg(struct kiocb *iocb,
+ 			      MSG_DONTWAIT, np->dontfrag);
+ 
+ 	if (err) {
+-		ICMP6_INC_STATS_BH(sock_net(sk), rt->rt6i_idev,
+-				   ICMP6_MIB_OUTERRORS);
++		ICMP6_INC_STATS(sock_net(sk), rt->rt6i_idev,
++				ICMP6_MIB_OUTERRORS);
+ 		ip6_flush_pending_frames(sk);
+ 	} else {
+ 		err = icmpv6_push_pending_frames(sk, &fl6,
 
 
