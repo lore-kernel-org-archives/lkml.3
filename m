@@ -1,59 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933871AbaDKN0A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 09:26:00 -0400
-Received: from toro.web-alm.net ([62.245.132.31]:60953 "EHLO toro.web-alm.net"
+	id S1757450AbaDKNdv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 09:33:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7999 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932959AbaDKNZ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 09:25:58 -0400
-X-Greylist: delayed 1971 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Apr 2014 09:25:58 EDT
-Message-ID: <5347E475.4020009@osadl.org>
-Date: Fri, 11 Apr 2014 14:47:49 +0200
-From: Carsten Emde <C.Emde@osadl.org>
-Organization: Open Source Automation Development Lab (OSADL)
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754022AbaDKNdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 09:33:49 -0400
+Date: Fri, 11 Apr 2014 15:33:03 +0200
+From: Mateusz Guzik <mguzik@redhat.com>
+To: "Wang, Xiaoming" <xiaoming.wang@intel.com>
+Cc: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, chuansheng.liu@intel.com,
+        dongxing.zhang@intel.com, pmatouse@redhat.com
+Subject: Re: [PATCH] net: ipv4: current group_info should be put after using.
+Message-ID: <20140411133302.GE15546@mguzik.redhat.com>
+References: <1397237828.12958.3.camel@wxm-ubuntu>
+ <20140411083533.GA15546@mguzik.redhat.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-CC: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <williams@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC PATCH RT V3] rwsem: The return of multi-reader PI rwsems
-References: <20140409151922.5fa5d999@gandalf.local.home>	<20140410134217.38cd6db7@gandalf.local.home> <20140410223508.6d0fc135@gandalf.local.home>
-In-Reply-To: <20140410223508.6d0fc135@gandalf.local.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140411083533.GA15546@mguzik.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+On Fri, Apr 11, 2014 at 10:35:33AM +0200, Mateusz Guzik wrote:
+> On Fri, Apr 11, 2014 at 01:37:08PM -0400, Wang, Xiaoming wrote:
+> > There is a memory leak in ping. Current group_info had been got in 
+> > ping_init_sock and group_info->usage increased. 
+> > But the usage hasn't decreased anywhere in ping.
+> > This will make this group_info never freed and cause memory leak.
+> > 
+> 
+> Memory leak is only one of possible side-effects, thus I believe commit
+> message should be adjusted.
+> 
+> This is a typical refcount leak exploitable by unprivileged users, so
+> side effects can range from nothing through memory leaks and crashes to
+> possibly privilege escalation.
+> 
+> That said losing ' and cause memory leak' from your commit message
+> would be fine in my opinion.
+> 
 
-> [..] I added Carsten to the Cc, so I'll post the entire change log
-> of v1 here again.
-I've been listening and testing boxes all the time ...
+Huh, not sure why I wrote that last sentence, it does not make much
+sense. Sorry.
 
-> [..] If you have any benchmark on large machines I would be very
-> happy if you could test this patch against the unpatched version of
-> -rt.
-Three machines
-- an X32 x86_64 (AMD Opteron 6272 @2100 MHz) at rack #1/slot #1,
-- an X4x2 x86_64 (Intel i7-2600K @3400 MHz) at rack #4/slot #6, and
-- an X4 ARM (i.MX6 Quad @996 MHz) at rack #8/slot #7
-are running a v3-patched 3.12.15-rt25 kernel now. I'll equip more
-machines later.
+There is a pending CVE request for this bug:
+http://seclists.org/oss-sec/2014/q2/97
 
-What I can say so far is:
-- No evidence for any regression, no crashes
-- Performance certainly at least as good as unpatched, probably better
+The bug was introduced with:
+commit c319b4d76b9e583a5d88d6bf190e079c4e43213d
+Author: Vasiliy Kulikov <segoon@openwall.com>
+Date:   Fri May 13 10:01:00 2011 +0000
 
-I'll do more tests and come back with more precise performance
-comparison data.
+    net: ipv4: add IPPROTO_ICMP socket kind
 
-Thanks,
-	-Carsten.
+starting with 3.0 kernel.
+
+
+> See also a nit below.
+> 
+> > ---
+> >  net/ipv4/ping.c |   11 ++++++++---
+> >  1 files changed, 8 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
+> > index f4b19e5..2af7b1f 100644
+> > --- a/net/ipv4/ping.c
+> > +++ b/net/ipv4/ping.c
+> > @@ -255,23 +255,28 @@ int ping_init_sock(struct sock *sk)
+> >  	struct group_info *group_info = get_current_groups();
+> >  	int i, j, count = group_info->ngroups;
+> >  	kgid_t low, high;
+> > +	int ret = 0;
+> >  
+> >  	inet_get_ping_group_range_net(net, &low, &high);
+> >  	if (gid_lte(low, group) && gid_lte(group, high))
+> > -		return 0;
+> > +		goto out_release_group;
+> >  
+> 
+> Since group_info is not even used here maybe it would be better to leave
+> return 0 as it is and call get_current_groups before the loop?
+> 
+> >  	for (i = 0; i < group_info->nblocks; i++) {
+> >  		int cp_count = min_t(int, NGROUPS_PER_BLOCK, count);
+> >  		for (j = 0; j < cp_count; j++) {
+> >  			kgid_t gid = group_info->blocks[i][j];
+> >  			if (gid_lte(low, gid) && gid_lte(gid, high))
+> > -				return 0;
+> > +				goto out_release_group;
+> >  		}
+> >  
+> >  		count -= cp_count;
+> >  	}
+> >  
+> > -	return -EACCES;
+> > +	ret = -EACCES;
+> > +
+> > +out_release_group:
+> > +	put_group_info(group_info);
+> > +	return ret;
+> >  }
+> >  EXPORT_SYMBOL_GPL(ping_init_sock);
+> >  
+> 
+> -- 
+> Mateusz Guzik
+
+-- 
+Mateusz Guzik
