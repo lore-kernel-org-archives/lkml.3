@@ -1,156 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423000AbaDKQJk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:09:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56745 "EHLO
+	id S1422986AbaDKQJj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:09:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56730 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754211AbaDKQJZ (ORCPT
+	with ESMTP id S1422887AbaDKQJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:25 -0400
+	Fri, 11 Apr 2014 12:09:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: [PATCH 3.14 00/23] 3.14.1-stable review
-Date: Fri, 11 Apr 2014 09:11:49 -0700
-Message-Id: <20140411161200.236939691@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.13 65/65] crypto: ghash-clmulni-intel - use C implementation for setkey()
+Date: Fri, 11 Apr 2014 09:11:37 -0700
+Message-Id: <20140411161006.571006786@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
+References: <20140411160957.714773410@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.14.1 release.
-There are 23 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sun Apr 13 16:11:46 UTC 2014.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.1-rc1.gz
-and the diffstat can be found below.
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 
-thanks,
+commit 8ceee72808d1ae3fb191284afc2257a2be964725 upstream.
 
-greg k-h
+The GHASH setkey() function uses SSE registers but fails to call
+kernel_fpu_begin()/kernel_fpu_end(). Instead of adding these calls, and
+then having to deal with the restriction that they cannot be called from
+interrupt context, move the setkey() implementation to the C domain.
 
--------------
-Pseudo-Shortlog of commits:
+Note that setkey() does not use any particular SSE features and is not
+expected to become a performance bottleneck.
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.14.1-rc1
+Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+Fixes: 0e1227d356e9b (crypto: ghash - Add PCLMULQDQ accelerated implementation)
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Ard Biesheuvel <ard.biesheuvel@linaro.org>
-    crypto: ghash-clmulni-intel - use C implementation for setkey()
+---
+ arch/x86/crypto/ghash-clmulni-intel_asm.S  |   29 -----------------------------
+ arch/x86/crypto/ghash-clmulni-intel_glue.c |   14 +++++++++++---
+ 2 files changed, 11 insertions(+), 32 deletions(-)
 
-Finn Thain <fthain@telegraphics.com.au>
-    m68k: Skip futex_atomic_cmpxchg_inatomic() test
-
-Heiko Carstens <heiko.carstens@de.ibm.com>
-    futex: Allow architectures to skip futex_atomic_cmpxchg_inatomic() test
-
-Vineet Gupta <vgupta@synopsys.com>
-    ARC: [nsimosci] Unbork console
-
-Mischa Jonker <mjonker@synopsys.com>
-    ARC: [nsimosci] Change .dts to use generic 8250 UART
-
-Eyal Shapira <eyal@wizery.com>
-    iwlwifi: mvm: rs: fix search cycle rules
-
-Gilles Chanteperdrix <gilles.chanteperdrix@xenomai.org>
-    net/at91_ether: avoid NULL pointer dereference
-
-Sasha Levin <sasha.levin@oracle.com>
-    rds: prevent dereference of a NULL device in rds_iw_laddr_check
-
-Dan Carpenter <dan.carpenter@oracle.com>
-    isdnloop: several buffer overflows
-
-YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-    isdnloop: Validate NUL-terminated strings from user.
-
-Mike Rapoport <mike.rapoport@ravellosystems.com>
-    net: vxlan: fix crash when interface is created with no group
-
-Daniel Pieczko <dpieczko@solarflare.com>
-    Call efx_set_channels() before efx->type->dimension_resources()
-
-Wei Liu <wei.liu2@citrix.com>
-    xen-netback: disable rogue vif in kthread context
-
-Pablo Neira <pablo@netfilter.org>
-    netlink: don't compare the nul-termination in nla_strcmp
-
-Hannes Frederic Sowa <hannes@stressinduktion.org>
-    ipv6: some ipv6 statistic counters failed to disable bh
-
-Paul Durrant <Paul.Durrant@citrix.com>
-    xen-netback: BUG_ON in xenvif_rx_action() not catching overflow
-
-Paul Durrant <Paul.Durrant@citrix.com>
-    xen-netback: worse-case estimate in xenvif_rx_action is underestimating
-
-Paul Durrant <Paul.Durrant@citrix.com>
-    xen-netback: remove pointless clause from if statement
-
-Linus Torvalds <torvalds@linux-foundation.org>
-    futex: avoid race between requeue and wake
-
-Borislav Petkov <bp@suse.de>
-    x86/efi: Make efi virtual runtime map passing more robust
-
-Borislav Petkov <bp@suse.de>
-    x86, pageattr: Export page unmapping interface
-
-Paul Moore <pmoore@redhat.com>
-    selinux: correctly label /proc inodes in use before the policy is loaded
-
-Takashi Iwai <tiwai@suse.de>
-    Revert "ALSA: hda - Increment default stream numbers for AMD HDMI controllers"
-
-
--------------
-
-Diffstat:
-
- Makefile                                   |  4 +-
- arch/arc/boot/dts/nsimosci.dts             | 12 ++--
- arch/arc/configs/nsimosci_defconfig        |  1 +
- arch/m68k/Kconfig                          |  1 +
- arch/s390/Kconfig                          |  1 +
- arch/x86/crypto/ghash-clmulni-intel_asm.S  | 29 ---------
- arch/x86/crypto/ghash-clmulni-intel_glue.c | 14 ++++-
- arch/x86/include/asm/efi.h                 |  3 +-
- arch/x86/include/asm/pgtable_types.h       |  2 +
- arch/x86/mm/pageattr.c                     | 44 +++++++++----
- arch/x86/platform/efi/efi.c                | 99 +++++++++++++++++++++++-------
- arch/x86/platform/efi/efi_32.c             |  7 ++-
- arch/x86/platform/efi/efi_64.c             | 32 +++++++++-
- drivers/isdn/isdnloop/isdnloop.c           | 23 ++++---
- drivers/net/ethernet/cadence/at91_ether.c  |  3 +
- drivers/net/ethernet/sfc/ef10.c            |  7 +++
- drivers/net/ethernet/sfc/efx.c             |  3 +-
- drivers/net/vxlan.c                        |  6 +-
- drivers/net/wireless/iwlwifi/mvm/rs.c      | 36 +++++------
- drivers/net/xen-netback/common.h           |  5 ++
- drivers/net/xen-netback/interface.c        | 11 ++++
- drivers/net/xen-netback/netback.c          | 49 +++++++++++++--
- include/linux/futex.h                      |  4 ++
- init/Kconfig                               |  7 +++
- kernel/futex.c                             | 42 +++++++++----
- lib/nlattr.c                               | 10 ++-
- net/ipv6/icmp.c                            |  2 +-
- net/ipv6/ip6_output.c                      |  4 +-
- net/ipv6/mcast.c                           | 11 ++--
- net/ipv6/ping.c                            |  4 +-
- net/rds/iw.c                               |  3 +-
- security/selinux/hooks.c                   | 36 ++++++++---
- sound/pci/hda/hda_intel.c                  |  4 +-
- 33 files changed, 370 insertions(+), 149 deletions(-)
+--- a/arch/x86/crypto/ghash-clmulni-intel_asm.S
++++ b/arch/x86/crypto/ghash-clmulni-intel_asm.S
+@@ -24,10 +24,6 @@
+ .align 16
+ .Lbswap_mask:
+ 	.octa 0x000102030405060708090a0b0c0d0e0f
+-.Lpoly:
+-	.octa 0xc2000000000000000000000000000001
+-.Ltwo_one:
+-	.octa 0x00000001000000000000000000000001
+ 
+ #define DATA	%xmm0
+ #define SHASH	%xmm1
+@@ -134,28 +130,3 @@ ENTRY(clmul_ghash_update)
+ .Lupdate_just_ret:
+ 	ret
+ ENDPROC(clmul_ghash_update)
+-
+-/*
+- * void clmul_ghash_setkey(be128 *shash, const u8 *key);
+- *
+- * Calculate hash_key << 1 mod poly
+- */
+-ENTRY(clmul_ghash_setkey)
+-	movaps .Lbswap_mask, BSWAP
+-	movups (%rsi), %xmm0
+-	PSHUFB_XMM BSWAP %xmm0
+-	movaps %xmm0, %xmm1
+-	psllq $1, %xmm0
+-	psrlq $63, %xmm1
+-	movaps %xmm1, %xmm2
+-	pslldq $8, %xmm1
+-	psrldq $8, %xmm2
+-	por %xmm1, %xmm0
+-	# reduction
+-	pshufd $0b00100100, %xmm2, %xmm1
+-	pcmpeqd .Ltwo_one, %xmm1
+-	pand .Lpoly, %xmm1
+-	pxor %xmm1, %xmm0
+-	movups %xmm0, (%rdi)
+-	ret
+-ENDPROC(clmul_ghash_setkey)
+--- a/arch/x86/crypto/ghash-clmulni-intel_glue.c
++++ b/arch/x86/crypto/ghash-clmulni-intel_glue.c
+@@ -30,8 +30,6 @@ void clmul_ghash_mul(char *dst, const be
+ void clmul_ghash_update(char *dst, const char *src, unsigned int srclen,
+ 			const be128 *shash);
+ 
+-void clmul_ghash_setkey(be128 *shash, const u8 *key);
+-
+ struct ghash_async_ctx {
+ 	struct cryptd_ahash *cryptd_tfm;
+ };
+@@ -58,13 +56,23 @@ static int ghash_setkey(struct crypto_sh
+ 			const u8 *key, unsigned int keylen)
+ {
+ 	struct ghash_ctx *ctx = crypto_shash_ctx(tfm);
++	be128 *x = (be128 *)key;
++	u64 a, b;
+ 
+ 	if (keylen != GHASH_BLOCK_SIZE) {
+ 		crypto_shash_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
+ 		return -EINVAL;
+ 	}
+ 
+-	clmul_ghash_setkey(&ctx->shash, key);
++	/* perform multiplication by 'x' in GF(2^128) */
++	a = be64_to_cpu(x->a);
++	b = be64_to_cpu(x->b);
++
++	ctx->shash.a = (__be64)((b << 1) | (a >> 63));
++	ctx->shash.b = (__be64)((a << 1) | (b >> 63));
++
++	if (a >> 63)
++		ctx->shash.b ^= cpu_to_be64(0xc2);
+ 
+ 	return 0;
+ }
 
 
