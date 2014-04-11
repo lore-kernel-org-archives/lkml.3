@@ -1,76 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422947AbaDKRBL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 13:01:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56493 "EHLO
+	id S1759551AbaDKQIu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:08:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56418 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759554AbaDKQIw (ORCPT
+	with ESMTP id S1759426AbaDKQHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:08:52 -0400
+	Fri, 11 Apr 2014 12:07:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Stancek <jstancek@redhat.com>,
-        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
+        Fabio Estevam <festevam@gmail.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
         Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 04/65] bridge: multicast: add sanity check for query source addresses
-Date: Fri, 11 Apr 2014 09:10:36 -0700
-Message-Id: <20140411160958.333038084@linuxfoundation.org>
+Subject: [PATCH 3.10 30/41] ipv6: some ipv6 statistic counters failed to disable bh
+Date: Fri, 11 Apr 2014 09:10:01 -0700
+Message-Id: <20140411160935.002881212@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
-References: <20140411160957.714773410@linuxfoundation.org>
+In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
+References: <20140411160932.865173041@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 6565b9eeef194afbb3beec80d6dd2447f4091f8c ]
+[ Upstream commit 43a43b6040165f7b40b5b489fe61a4cb7f8c4980 ]
 
-MLD queries are supposed to have an IPv6 link-local source address
-according to RFC2710, section 4 and RFC3810, section 5.1.14. This patch
-adds a sanity check to ignore such broken MLD queries.
+After commit c15b1ccadb323ea ("ipv6: move DAD and addrconf_verify
+processing to workqueue") some counters are now updated in process context
+and thus need to disable bh before doing so, otherwise deadlocks can
+happen on 32-bit archs. Fabio Estevam noticed this while while mounting
+a NFS volume on an ARM board.
 
-Without this check, such malformed MLD queries can result in a
-denial of service: The queries are ignored by any MLD listener
-therefore they will not respond with an MLD report. However,
-without this patch these malformed MLD queries would enable the
-snooping part in the bridge code, potentially shutting down the
-according ports towards these hosts for multicast traffic as the
-bridge did not learn about these listeners.
+As a compensation for missing this I looked after the other *_STATS_BH
+and found three other calls which need updating:
 
-Reported-by: Jan Stancek <jstancek@redhat.com>
-Signed-off-by: Linus Lüssing <linus.luessing@web.de>
-Reviewed-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+1) icmp6_send: ip6_fragment -> icmpv6_send -> icmp6_send (error handling)
+2) ip6_push_pending_frames: rawv6_sendmsg -> rawv6_push_pending_frames -> ...
+   (only in case of icmp protocol with raw sockets in error handling)
+3) ping6_v6_sendmsg (error handling)
+
+Fixes: c15b1ccadb323ea ("ipv6: move DAD and addrconf_verify processing to workqueue")
+Reported-by: Fabio Estevam <festevam@gmail.com>
+Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_multicast.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ net/ipv6/icmp.c       |    2 +-
+ net/ipv6/ip6_output.c |    4 ++--
+ net/ipv6/mcast.c      |   11 ++++++-----
+ 3 files changed, 9 insertions(+), 8 deletions(-)
 
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -1235,6 +1235,12 @@ static int br_ip6_multicast_query(struct
- 	    (port && port->state == BR_STATE_DISABLED))
- 		goto out;
+--- a/net/ipv6/icmp.c
++++ b/net/ipv6/icmp.c
+@@ -508,7 +508,7 @@ static void icmp6_send(struct sk_buff *s
+ 			      np->tclass, NULL, &fl6, (struct rt6_info *)dst,
+ 			      MSG_DONTWAIT, np->dontfrag);
+ 	if (err) {
+-		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTERRORS);
++		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTERRORS);
+ 		ip6_flush_pending_frames(sk);
+ 	} else {
+ 		err = icmpv6_push_pending_frames(sk, &fl6, &tmp_hdr,
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -1554,8 +1554,8 @@ int ip6_push_pending_frames(struct sock
+ 	if (proto == IPPROTO_ICMPV6) {
+ 		struct inet6_dev *idev = ip6_dst_idev(skb_dst(skb));
  
-+	/* RFC2710+RFC3810 (MLDv1+MLDv2) require link-local source addresses */
-+	if (!(ipv6_addr_type(&ip6h->saddr) & IPV6_ADDR_LINKLOCAL)) {
-+		err = -EINVAL;
-+		goto out;
+-		ICMP6MSGOUT_INC_STATS_BH(net, idev, icmp6_hdr(skb)->icmp6_type);
+-		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTMSGS);
++		ICMP6MSGOUT_INC_STATS(net, idev, icmp6_hdr(skb)->icmp6_type);
++		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTMSGS);
+ 	}
+ 
+ 	err = ip6_local_out(skb);
+--- a/net/ipv6/mcast.c
++++ b/net/ipv6/mcast.c
+@@ -1439,11 +1439,12 @@ static void mld_sendpack(struct sk_buff
+ 		      dst_output);
+ out:
+ 	if (!err) {
+-		ICMP6MSGOUT_INC_STATS_BH(net, idev, ICMPV6_MLD2_REPORT);
+-		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTMSGS);
+-		IP6_UPD_PO_STATS_BH(net, idev, IPSTATS_MIB_OUTMCAST, payload_len);
+-	} else
+-		IP6_INC_STATS_BH(net, idev, IPSTATS_MIB_OUTDISCARDS);
++		ICMP6MSGOUT_INC_STATS(net, idev, ICMPV6_MLD2_REPORT);
++		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTMSGS);
++		IP6_UPD_PO_STATS(net, idev, IPSTATS_MIB_OUTMCAST, payload_len);
++	} else {
++		IP6_INC_STATS(net, idev, IPSTATS_MIB_OUTDISCARDS);
 +	}
-+
- 	if (skb->len == sizeof(*mld)) {
- 		if (!pskb_may_pull(skb, sizeof(*mld))) {
- 			err = -EINVAL;
+ 
+ 	rcu_read_unlock();
+ 	return;
 
 
