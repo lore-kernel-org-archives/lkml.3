@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423123AbaDKQTm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:19:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56777 "EHLO
+	id S1423130AbaDKQUR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:20:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56754 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755577AbaDKQJ2 (ORCPT
+	with ESMTP id S1759690AbaDKQJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:28 -0400
+	Fri, 11 Apr 2014 12:09:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fabio Estevam <festevam@gmail.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Paul Durrant <paul.durrant@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 09/23] ipv6: some ipv6 statistic counters failed to disable bh
-Date: Fri, 11 Apr 2014 09:11:58 -0700
-Message-Id: <20140411161201.508878674@linuxfoundation.org>
+Subject: [PATCH 3.14 07/23] xen-netback: worse-case estimate in xenvif_rx_action is underestimating
+Date: Fri, 11 Apr 2014 09:11:56 -0700
+Message-Id: <20140411161201.242621148@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411161200.236939691@linuxfoundation.org>
 References: <20140411161200.236939691@linuxfoundation.org>
@@ -30,94 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Paul Durrant <Paul.Durrant@citrix.com>
 
-[ Upstream commit 43a43b6040165f7b40b5b489fe61a4cb7f8c4980 ]
+[ Upstream commit a02eb4732cf975d7fc71b6d1a71c058c9988b949 ]
 
-After commit c15b1ccadb323ea ("ipv6: move DAD and addrconf_verify
-processing to workqueue") some counters are now updated in process context
-and thus need to disable bh before doing so, otherwise deadlocks can
-happen on 32-bit archs. Fabio Estevam noticed this while while mounting
-a NFS volume on an ARM board.
+The worse-case estimate for skb ring slot usage in xenvif_rx_action()
+fails to take fragment page_offset into account. The page_offset does,
+however, affect the number of times the fragmentation code calls
+start_new_rx_buffer() (i.e. consume another slot) and the worse-case
+should assume that will always return true. This patch adds the page_offset
+into the DIV_ROUND_UP for each frag.
 
-As a compensation for missing this I looked after the other *_STATS_BH
-and found three other calls which need updating:
+Unfortunately some frontends aggressively limit the number of requests
+they post into the shared ring so to avoid an estimate that is 'too'
+pessimal it is capped at MAX_SKB_FRAGS.
 
-1) icmp6_send: ip6_fragment -> icmpv6_send -> icmp6_send (error handling)
-2) ip6_push_pending_frames: rawv6_sendmsg -> rawv6_push_pending_frames -> ...
-   (only in case of icmp protocol with raw sockets in error handling)
-3) ping6_v6_sendmsg (error handling)
-
-Fixes: c15b1ccadb323ea ("ipv6: move DAD and addrconf_verify processing to workqueue")
-Reported-by: Fabio Estevam <festevam@gmail.com>
-Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Paul Durrant <paul.durrant@citrix.com>
+Cc: Ian Campbell <ian.campbell@citrix.com>
+Cc: Wei Liu <wei.liu2@citrix.com>
+Cc: Sander Eikelenboom <linux@eikelenboom.it>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/icmp.c       |    2 +-
- net/ipv6/ip6_output.c |    4 ++--
- net/ipv6/mcast.c      |   11 ++++++-----
- net/ipv6/ping.c       |    4 ++--
- 4 files changed, 11 insertions(+), 10 deletions(-)
+ drivers/net/xen-netback/netback.c |   21 ++++++++++++++++++++-
+ 1 file changed, 20 insertions(+), 1 deletion(-)
 
---- a/net/ipv6/icmp.c
-+++ b/net/ipv6/icmp.c
-@@ -520,7 +520,7 @@ static void icmp6_send(struct sk_buff *s
- 			      np->tclass, NULL, &fl6, (struct rt6_info *)dst,
- 			      MSG_DONTWAIT, np->dontfrag);
- 	if (err) {
--		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTERRORS);
-+		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTERRORS);
- 		ip6_flush_pending_frames(sk);
- 	} else {
- 		err = icmpv6_push_pending_frames(sk, &fl6, &tmp_hdr,
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1566,8 +1566,8 @@ int ip6_push_pending_frames(struct sock
- 	if (proto == IPPROTO_ICMPV6) {
- 		struct inet6_dev *idev = ip6_dst_idev(skb_dst(skb));
- 
--		ICMP6MSGOUT_INC_STATS_BH(net, idev, icmp6_hdr(skb)->icmp6_type);
--		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTMSGS);
-+		ICMP6MSGOUT_INC_STATS(net, idev, icmp6_hdr(skb)->icmp6_type);
-+		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTMSGS);
- 	}
- 
- 	err = ip6_local_out(skb);
---- a/net/ipv6/mcast.c
-+++ b/net/ipv6/mcast.c
-@@ -1620,11 +1620,12 @@ static void mld_sendpack(struct sk_buff
- 		      dst_output);
- out:
- 	if (!err) {
--		ICMP6MSGOUT_INC_STATS_BH(net, idev, ICMPV6_MLD2_REPORT);
--		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTMSGS);
--		IP6_UPD_PO_STATS_BH(net, idev, IPSTATS_MIB_OUTMCAST, payload_len);
--	} else
--		IP6_INC_STATS_BH(net, idev, IPSTATS_MIB_OUTDISCARDS);
-+		ICMP6MSGOUT_INC_STATS(net, idev, ICMPV6_MLD2_REPORT);
-+		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTMSGS);
-+		IP6_UPD_PO_STATS(net, idev, IPSTATS_MIB_OUTMCAST, payload_len);
-+	} else {
-+		IP6_INC_STATS(net, idev, IPSTATS_MIB_OUTDISCARDS);
-+	}
- 
- 	rcu_read_unlock();
- 	return;
---- a/net/ipv6/ping.c
-+++ b/net/ipv6/ping.c
-@@ -182,8 +182,8 @@ int ping_v6_sendmsg(struct kiocb *iocb,
- 			      MSG_DONTWAIT, np->dontfrag);
- 
- 	if (err) {
--		ICMP6_INC_STATS_BH(sock_net(sk), rt->rt6i_idev,
--				   ICMP6_MIB_OUTERRORS);
-+		ICMP6_INC_STATS(sock_net(sk), rt->rt6i_idev,
-+				ICMP6_MIB_OUTERRORS);
- 		ip6_flush_pending_frames(sk);
- 	} else {
- 		err = icmpv6_push_pending_frames(sk, &fl6,
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -493,9 +493,28 @@ static void xenvif_rx_action(struct xenv
+ 						PAGE_SIZE);
+ 		for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+ 			unsigned int size;
++			unsigned int offset;
++
+ 			size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
+-			max_slots_needed += DIV_ROUND_UP(size, PAGE_SIZE);
++			offset = skb_shinfo(skb)->frags[i].page_offset;
++
++			/* For a worse-case estimate we need to factor in
++			 * the fragment page offset as this will affect the
++			 * number of times xenvif_gop_frag_copy() will
++			 * call start_new_rx_buffer().
++			 */
++			max_slots_needed += DIV_ROUND_UP(offset + size,
++							 PAGE_SIZE);
+ 		}
++
++		/* To avoid the estimate becoming too pessimal for some
++		 * frontends that limit posted rx requests, cap the estimate
++		 * at MAX_SKB_FRAGS.
++		 */
++		if (max_slots_needed > MAX_SKB_FRAGS)
++			max_slots_needed = MAX_SKB_FRAGS;
++
++		/* We may need one more slot for GSO metadata */
+ 		if (skb_is_gso(skb) &&
+ 		   (skb_shinfo(skb)->gso_type & SKB_GSO_TCPV4 ||
+ 		    skb_shinfo(skb)->gso_type & SKB_GSO_TCPV6))
 
 
