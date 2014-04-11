@@ -1,122 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754977AbaDKGWO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 02:22:14 -0400
-Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:36569
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751462AbaDKGWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 02:22:12 -0400
-From: "Saxena, Sumit" <Sumit.Saxena@lsi.com>
-To: Rashika Kheria <rashika.kheria@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: DL-MegaRAID Linux <megaraidlinux@lsi.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "josh@joshtriplett.org" <josh@joshtriplett.org>
-Subject: RE: [PATCH 51/55] scsi: Move prototype declaration to header file
- megaraid/megaraid_sas_fusion.h from megaraid/megaraid_sas_base.c
-Thread-Topic: [PATCH 51/55] scsi: Move prototype declaration to header file
- megaraid/megaraid_sas_fusion.h from megaraid/megaraid_sas_base.c
-Thread-Index: AQHPS39OeXpeMNk38kq+xOCJoxvREpsMATPg
-Date: Fri, 11 Apr 2014 06:06:22 +0000
-Message-ID: <1c8b659ee2504ec4a351f9a17ab00412@DM2PR07MB400.namprd07.prod.outlook.com>
-References: <5fd6fa49a592043459f75ed83a72f8c1ed9ddc13.1396114897.git.rashika.kheria@gmail.com>
- <c3ef8857a4533ed6282301f74cec5a4b42e75944.1396114898.git.rashika.kheria@gmail.com>
-In-Reply-To: <c3ef8857a4533ed6282301f74cec5a4b42e75944.1396114898.git.rashika.kheria@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.19.224.250]
-x-forefront-prvs: 0178184651
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019001)(6009001)(428001)(51704005)(189002)(199002)(377454003)(13464003)(92566001)(74316001)(85852003)(20776003)(66066001)(99286001)(19580405001)(83322001)(19580395003)(76176999)(54356999)(50986999)(79102001)(80976001)(86362001)(4396001)(80022001)(2656002)(77982001)(33646001)(81342001)(76576001)(87936001)(74502001)(46102001)(74662001)(81542001)(76482001)(99396002)(31966008)(83072002)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR07MB398;H:DM2PR07MB400.namprd07.prod.outlook.com;FPR:BA3EF86E.240B8EDA.8BD79BFB.6B493AF1.20295;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: lsi.com
+	id S1753006AbaDKGcZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 02:32:25 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:38414 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076AbaDKGcV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 02:32:21 -0400
+X-AuditID: cbfee690-b7f266d00000287c-fc-53478c73f841
+Message-id: <53478C75.60302@samsung.com>
+Date: Fri, 11 Apr 2014 15:32:21 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Olof Johansson <olof@lixom.net>
+Cc: kgene.kim@samsung.com, t.figa@samsung.com,
+        linux-samsung-soc@vger.kernel.org, kyungmin.park@samsung.com,
+        inki.dae@samsung.com, sw0312.kim@samsung.com, hyunhee.kim@samsung.com,
+        yj44.cho@samsung.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 01/27] ARM: EXYNOS: Add Exynos3250 SoC ID
+References: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
+ <1397122658-16013-2-git-send-email-cw00.choi@samsung.com>
+ <20140411014650.GB14934@quad.lixom.net>
+In-reply-to: <20140411014650.GB14934@quad.lixom.net>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPIsWRmVeSWpSXmKPExsWyRsSkRLe4xz3Y4PJmK4vPH1rYLSbdn8Bi
+	0bvgKpvF2aY37BabHl9jtbi8aw6bxYzz+5gsTl3/DGRNfslmsX7GaxaLvTsnMzpwe2xeUu9x
+	5UQTq0ffllWMHp83yQWwRHHZpKTmZJalFunbJXBlvDpzjLngpErF3nV7WRoY++W6GDk5JARM
+	JJYuu8EEYYtJXLi3nq2LkYtDSGApo8SGJYtYYIomH7nGCpGYzihx5OoLJgjnNaPExLNLGEGq
+	eAU0JE5f/gTWwSKgKtE7fzaYzSagJbH/xQ02EFtUIExi5fQrLBD1ghI/Jt8Ds0UElCWetF1i
+	BhnKLDCFSeLuyw9gCWEBW4mTN+6zQGxbzSgxbedNVpAEJ9BN1/oPghUxC+hI7G+dxgZhy0ts
+	XvMWbJKEwCN2id/Lj7NCnCQg8W3yIaAGDqCErMSmA8wQv0lKHFxxg2UCo9gsJEfNQjJ2FpKx
+	CxiZVzGKphYkFxQnpReZ6BUn5haX5qXrJefnbmIERubpf88m7GC8d8D6EGMy0MqJzFKiyfnA
+	yM4riTc0NjOyMDUxNTYytzQjTVhJnFftUVKQkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkY7
+	XgFbrZXT+694KlcoqQRNn/oz5f6aPSUsnnoJ4h9eq60TfGXy6F3d1i3n4m0MwqO2CYTbPVKe
+	826fMd8W/tmt0fmle145CO1RLJS9WnN3+1GeNdEn5IV/rb/0lSdxatUNj4adlU3KB43EFjl+
+	irPSLGRPUX3z+r7HH3bxi7oSTE7Pps7k/K3EUpyRaKjFXFScCACvc81A4gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDKsWRmVeSWpSXmKPExsVy+t9jQd3iHvdgg99LDSw+f2hht5h0fwKL
+	Re+Cq2wWZ5vesFtsenyN1eLyrjlsFjPO72OyOHX9M5A1+SWbxfoZr1ks9u6czOjA7bF5Sb3H
+	lRNNrB59W1YxenzeJBfAEtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCX
+	mJtqq+TiE6DrlpkDdJWSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMePV
+	mWPMBSdVKvau28vSwNgv18XIySEhYCIx+cg1VghbTOLCvfVsXYxcHEIC0xkljlx9wQThvGaU
+	mHh2CSNIFa+AhsTpy59YQGwWAVWJ3vmzwWw2AS2J/S9usIHYogJhEiunX2GBqBeU+DH5Hpgt
+	IqAs8aTtEjPIUGaBKUwSd19+AEsIC9hKnLxxnwVi22pGiWk7b4LdxAl037X+g2BFzAI6Evtb
+	p7FB2PISm9e8ZZ7AKDALyZJZSMpmISlbwMi8ilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4
+	7p9J72Bc1WBxiFGAg1GJh/fAJbdgIdbEsuLK3EOMEhzMSiK8Zv7uwUK8KYmVValF+fFFpTmp
+	xYcYk4FhMJFZSjQ5H5iS8kriDY1NzIwsjcwNLYyMzUkTVhLnPdhqHSgkkJ5YkpqdmlqQWgSz
+	hYmDU6qBUXTtV8VKx/lfy2XcWaN+uRjUvjEM+Ja2dNOhwv9+r19liTq5PMiem5C6e9Nb5y1t
+	O0WvfF69U1w4fmay4mERocjbAQsbvH8/jZyaLK7zS9/SNETgSMyHqt8hZx5pFD6Yd1mzqaIq
+	MnjxH+0PS3LeJz7mSHL1lghROfja88M6VlZ1/hXms7ckK7EUZyQaajEXFScCAIgVVZY/AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3B6MMar000760
 
+Hi,
 
+On 04/11/2014 10:46 AM, Olof Johansson wrote:
+> On Thu, Apr 10, 2014 at 06:37:12PM +0900, Chanwoo Choi wrote:
+>> This patch add Exynos3250's SoC ID. Exynos 3250 is System-On-Chip(SoC) that
+>> is based on the 32-bit RISC processor for Smartphone. Exynos3250 uses Cortex-A7
+>> dual cores and has a target speed of 1.0GHz.
+>>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>>  arch/arm/mach-exynos/Kconfig             | 22 ++++++++++++++++++++++
+>>  arch/arm/mach-exynos/exynos.c            |  1 +
+>>  arch/arm/plat-samsung/include/plat/cpu.h | 10 ++++++++++
+>>  3 files changed, 33 insertions(+)
+>>
+>> diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
+>> index fc8bf18..6da8a68 100644
+>> --- a/arch/arm/mach-exynos/Kconfig
+>> +++ b/arch/arm/mach-exynos/Kconfig
+>> @@ -11,6 +11,17 @@ if ARCH_EXYNOS
+>>  
+>>  menu "SAMSUNG EXYNOS SoCs Support"
+>>  
+>> +config ARCH_EXYNOS3
+>> +	bool "SAMSUNG EXYNOS3"
+>> +	select ARM_AMBA
+>> +	select CLKSRC_OF
+>> +	select HAVE_ARM_SCU if SMP
+>> +	select HAVE_SMP
+>> +	select PINCTRL
+>> +	select PM_GENERIC_DOMAINS if PM_RUNTIME
+>> +	help
+>> +	  Samsung EXYNOS3 SoCs based systems
+>> +
+>>  config ARCH_EXYNOS4
+>>  	bool "SAMSUNG EXYNOS4"
+>>  	default y
+>> @@ -41,6 +52,17 @@ config ARCH_EXYNOS5
+>>  
+>>  comment "EXYNOS SoCs"
+>>  
+>> +config SOC_EXYNOS3250
+>> +	bool "SAMSUNG EXYNOS3250"
+>> +	default y
+>> +	depends on ARCH_EXYNOS3
+>> +	select ARCH_HAS_BANDGAP
+>> +	select ARM_CPU_SUSPEND if PM
+>> +	select PINCTRL_EXYNOS
+>> +	select SAMSUNG_DMADEV
+>> +	help
+>> +	  Enable EXYNOS3250 CPU support
+>> +
+>>  config CPU_EXYNOS4210
+>>  	bool "SAMSUNG EXYNOS4210"
+>>  	default y
+>> diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
+>> index b32a907..b134868 100644
+>> --- a/arch/arm/mach-exynos/exynos.c
+>> +++ b/arch/arm/mach-exynos/exynos.c
+>> @@ -370,6 +370,7 @@ static void __init exynos_dt_machine_init(void)
+>>  }
+>>  
+>>  static char const *exynos_dt_compat[] __initconst = {
+>> +	"samsung,exynos3250",
+> 
+> Please consider samsung,exynos3 instead, so you don't have to update this table
+> for every SoC. We've talked about this before..
 
->-----Original Message-----
->From: Rashika Kheria [mailto:rashika.kheria@gmail.com]
->Sent: Sunday, March 30, 2014 12:18 AM
->To: linux-kernel@vger.kernel.org
->Cc: DL-MegaRAID Linux; James E.J. Bottomley; linux-scsi@vger.kernel.org;
->josh@joshtriplett.org
->Subject: [PATCH 51/55] scsi: Move prototype declaration to header file
->megaraid/megaraid_sas_fusion.h from megaraid/megaraid_sas_base.c
->
->Move prototype declarations of functions to header file
->megaraid/megaraid_sas_fusion.h from megaraid/megaraid_sas_base.c
->because they are used by more than one file.
->
->This eliminates the following type of warnings in
->megaraid/megaraid_sas_fusion.c:
->drivers/scsi/megaraid/megaraid_sas_fusion.c:2170:1: warning: no previous
->prototype for â€˜megasas_release_fusionâ€™ [-Wmissing-prototypes]
->
->Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
->Reviewed-by: Josh Triplett <josh@joshtriplett.org>
->---
-> drivers/scsi/megaraid/megaraid_sas_base.c   |   13 -------------
-> drivers/scsi/megaraid/megaraid_sas_fusion.h |   14 ++++++++++++++
-> 2 files changed, 14 insertions(+), 13 deletions(-)
->
->diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c
->b/drivers/scsi/megaraid/megaraid_sas_base.c
->index 9768deee..0ad386b 100644
->--- a/drivers/scsi/megaraid/megaraid_sas_base.c
->+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
->@@ -160,21 +160,8 @@ u32
-> megasas_build_and_issue_cmd(struct megasas_instance *instance,
-> 			    struct scsi_cmnd *scmd);
-> static void megasas_complete_cmd_dpc(unsigned long instance_addr); -void
->-megasas_release_fusion(struct megasas_instance *instance); -int -
->megasas_ioc_init_fusion(struct megasas_instance *instance); -void -
->megasas_free_cmds_fusion(struct megasas_instance *instance);
->-u8
->-megasas_get_map_info(struct megasas_instance *instance); -int -
->megasas_sync_map_info(struct megasas_instance *instance);  int
->wait_and_poll(struct megasas_instance *instance, struct megasas_cmd
->*cmd); -void megasas_reset_reply_desc(struct megasas_instance *instance);
->-int megasas_reset_fusion(struct Scsi_Host *shost); -void
->megasas_fusion_ocr_wq(struct work_struct *work);
->
-> static void
-> megasas_issue_dcmd(struct megasas_instance *instance, struct
->megasas_cmd *cmd) diff --git
->a/drivers/scsi/megaraid/megaraid_sas_fusion.h
->b/drivers/scsi/megaraid/megaraid_sas_fusion.h
->index 35a5139..01e5ab3 100644
->--- a/drivers/scsi/megaraid/megaraid_sas_fusion.h
->+++ b/drivers/scsi/megaraid/megaraid_sas_fusion.h
->@@ -760,4 +760,18 @@ union desc_value {
-> 	} u;
-> };
->
->+void
->+megasas_release_fusion(struct megasas_instance *instance); int
->+megasas_ioc_init_fusion(struct megasas_instance *instance); void
->+megasas_free_cmds_fusion(struct megasas_instance *instance);
->+u8
->+megasas_get_map_info(struct megasas_instance *instance); int
->+megasas_sync_map_info(struct megasas_instance *instance); void
->+megasas_reset_reply_desc(struct megasas_instance *instance); int
->+megasas_reset_fusion(struct Scsi_Host *shost); void
->+megasas_fusion_ocr_wq(struct work_struct *work);
->+
-> #endif /* _MEGARAID_SAS_FUSION_H_ */
+This patchset included only exynos3250.dtsi without exynos3.dtsi.
+So, I added only "samsung,exynos3250" compatible name.
 
-Acked-by: Sumit Saxena <sumit.saxena@lsi.com>
+Do you prefer to add SoC version as following?
++       "samsung,exynos3",
++       "samsung,exynos3250",
 
--Sumit
->--
->1.7.9.5
->
+or ?
++       "samsung,exynos3",
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> 
+>>  	"samsung,exynos4",
+>>  	"samsung,exynos4210",
+>>  	"samsung,exynos4212",
+>> diff --git a/arch/arm/plat-samsung/include/plat/cpu.h b/arch/arm/plat-samsung/include/plat/cpu.h
+>> index 5992b8d..3d808f6b 100644
+>> --- a/arch/arm/plat-samsung/include/plat/cpu.h
+>> +++ b/arch/arm/plat-samsung/include/plat/cpu.h
+>> @@ -43,6 +43,9 @@ extern unsigned long samsung_cpu_id;
+>>  #define S5PV210_CPU_ID		0x43110000
+>>  #define S5PV210_CPU_MASK	0xFFFFF000
+>>  
+>> +#define EXYNOS3250_SOC_ID       0xE3472000
+>> +#define EXYNOS3_SOC_MASK        0xFFFFF000
+>> +
+>>  #define EXYNOS4210_CPU_ID	0x43210000
+>>  #define EXYNOS4212_CPU_ID	0x43220000
+>>  #define EXYNOS4412_CPU_ID	0xE4412200
+>> @@ -68,6 +71,7 @@ IS_SAMSUNG_CPU(s5p6440, S5P6440_CPU_ID, S5P64XX_CPU_MASK)
+>>  IS_SAMSUNG_CPU(s5p6450, S5P6450_CPU_ID, S5P64XX_CPU_MASK)
+>>  IS_SAMSUNG_CPU(s5pc100, S5PC100_CPU_ID, S5PC100_CPU_MASK)
+>>  IS_SAMSUNG_CPU(s5pv210, S5PV210_CPU_ID, S5PV210_CPU_MASK)
+>> +IS_SAMSUNG_CPU(exynos3250, EXYNOS3250_SOC_ID, EXYNOS3_SOC_MASK)
+>>  IS_SAMSUNG_CPU(exynos4210, EXYNOS4210_CPU_ID, EXYNOS4_CPU_MASK)
+>>  IS_SAMSUNG_CPU(exynos4212, EXYNOS4212_CPU_ID, EXYNOS4_CPU_MASK)
+>>  IS_SAMSUNG_CPU(exynos4412, EXYNOS4412_CPU_ID, EXYNOS4_CPU_MASK)
+>> @@ -126,6 +130,12 @@ IS_SAMSUNG_CPU(exynos5440, EXYNOS5440_SOC_ID, EXYNOS5_SOC_MASK)
+>>  # define soc_is_s5pv210()	0
+>>  #endif
+>>  
+>> +#if defined(CONFIG_SOC_EXYNOS3250)
+>> +# define soc_is_exynos3250()    is_samsung_exynos3250()
+>> +#else
+>> +# define soc_is_exynos3250()    0
+>> +#endif
+> 
+> In general, I think we have too much code littered with soc_is_<foo>() going
+> on, so please try to avoid adding more for this SoC. Especially in cases where
+> you just want to bail out of certain features where we might already have
+> function pointers to control if a function is called or not, such as the
+> firmware interfaces.
+> 
+
+Do you prefer dt helper function such as following function instead of new soc_is_xx() ?
+- of_machine_is_compatible("samsung,exynos3250")
+
+If you are OK, I'll use of_machine_is_compatible() instead of soc_is_xx().
+
+Best Regards,
+Chanwoo Choi
+
