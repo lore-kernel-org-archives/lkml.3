@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423006AbaDKQ4k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:56:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56509 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422754AbaDKQIy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1422753AbaDKQIy (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Apr 2014 12:08:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56421 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759427AbaDKQHh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 12:07:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Nayshtut <anton@swortex.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 12/65] ipv6: Fix exthdrs offload registration.
-Date: Fri, 11 Apr 2014 09:10:44 -0700
-Message-Id: <20140411160959.406136998@linuxfoundation.org>
+Subject: [PATCH 3.10 32/41] isdnloop: Validate NUL-terminated strings from user.
+Date: Fri, 11 Apr 2014 09:10:03 -0700
+Message-Id: <20140411160935.162250985@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
-References: <20140411160957.714773410@linuxfoundation.org>
+In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
+References: <20140411160932.865173041@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Anton Nayshtut <anton@swortex.com>
+From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
 
-[ Upstream commit d2d273ffabd315eecefce21a4391d44b6e156b73 ]
+[ Upstream commit 77bc6bed7121936bb2e019a8c336075f4c8eef62 ]
 
-Without this fix, ipv6_exthdrs_offload_init doesn't register IPPROTO_DSTOPTS
-offload, but returns 0 (as the IPPROTO_ROUTING registration actually succeeds).
+Return -EINVAL unless all of user-given strings are correctly
+NUL-terminated.
 
-This then causes the ipv6_gso_segment to drop IPv6 packets with IPPROTO_DSTOPTS
-header.
-
-The issue detected and the fix verified by running MS HCK Offload LSO test on
-top of QEMU Windows guests, as this test sends IPv6 packets with
-IPPROTO_DSTOPTS.
-
-Signed-off-by: Anton Nayshtut <anton@swortex.com>
+Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/exthdrs_offload.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/isdn/isdnloop/isdnloop.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/net/ipv6/exthdrs_offload.c
-+++ b/net/ipv6/exthdrs_offload.c
-@@ -25,11 +25,11 @@ int __init ipv6_exthdrs_offload_init(voi
- 	int ret;
- 
- 	ret = inet6_add_offload(&rthdr_offload, IPPROTO_ROUTING);
--	if (!ret)
-+	if (ret)
- 		goto out;
- 
- 	ret = inet6_add_offload(&dstopt_offload, IPPROTO_DSTOPTS);
--	if (!ret)
-+	if (ret)
- 		goto out_rt;
- 
- out:
+--- a/drivers/isdn/isdnloop/isdnloop.c
++++ b/drivers/isdn/isdnloop/isdnloop.c
+@@ -1070,6 +1070,12 @@ isdnloop_start(isdnloop_card *card, isdn
+ 		return -EBUSY;
+ 	if (copy_from_user((char *) &sdef, (char *) sdefp, sizeof(sdef)))
+ 		return -EFAULT;
++
++	for (i = 0; i < 3; i++) {
++		if (!memchr(sdef.num[i], 0, sizeof(sdef.num[i])))
++			return -EINVAL;
++	}
++
+ 	spin_lock_irqsave(&card->isdnloop_lock, flags);
+ 	switch (sdef.ptype) {
+ 	case ISDN_PTYPE_EURO:
 
 
