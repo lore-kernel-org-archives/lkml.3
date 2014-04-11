@@ -1,122 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983AbaDKSjm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 14:39:42 -0400
-Received: from mail-bn1lp0144.outbound.protection.outlook.com ([207.46.163.144]:24029
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752322AbaDKSjk convert rfc822-to-8bit (ORCPT
+	id S1755135AbaDKSlG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 14:41:06 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:55135 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754887AbaDKSlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 14:39:40 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Olaf Hering (olaf@aepfle.de)" <olaf@aepfle.de>
-Subject: RE: [GIT PULL] x86/hyperv fix for v3.15-rc1
-Thread-Topic: [GIT PULL] x86/hyperv fix for v3.15-rc1
-Thread-Index: AQHPVa0JUHnD2bQFn0i/aNxOnSVpmJsMvbgA
-Date: Fri, 11 Apr 2014 18:39:37 +0000
-Message-ID: <d2879039ca5e4164aedebe1c2cb0a596@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <201404111739.s3BHdRiW025864@terminus.zytor.com>
-In-Reply-To: <201404111739.s3BHdRiW025864@terminus.zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:4898:80e0:ee43::3]
-x-forefront-prvs: 0178184651
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(377424004)(377454003)(51704005)(199002)(13464003)(86612001)(33646001)(4396001)(99286001)(76482001)(31966008)(46102001)(86362001)(92566001)(79102001)(20776003)(87936001)(83072002)(99396002)(19580395003)(77982001)(74502001)(80022001)(81542001)(85852003)(81342001)(19580405001)(76576001)(80976001)(74662001)(54356999)(50986999)(76176999)(74316001)(2656002)(77096999)(83322001)(24736002)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB300;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:94DD5BE1.A736B5D6.B1E5B9A4.42E58AEA.203BB;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 11 Apr 2014 14:41:03 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+In-Reply-To: <CAMzpN2jx4H4p8fQr-WHxVyCHhWi0iO3WZZKyxYD7Dfa7pWkEgg@mail.gmail.com>
+References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org>
+	<CAMzpN2jx4H4p8fQr-WHxVyCHhWi0iO3WZZKyxYD7Dfa7pWkEgg@mail.gmail.com>
+Date: Fri, 11 Apr 2014 11:41:01 -0700
+X-Google-Sender-Auth: NxGi1VpQ3njd09x5vDekn37KCd0
+Message-ID: <CA+55aFwzvSiAGYfFb2R3JeVvh8_PQuOKJDrYP5C_3VQz2zhnBw@mail.gmail.com>
+Subject: Re: [tip:x86/urgent] x86-64, modify_ldt: Ban 16-bit segments on
+ 64-bit kernels
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Brian Gerst <brgerst@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 11, 2014 at 11:27 AM, Brian Gerst <brgerst@gmail.com> wrote:
+> Is this bug really still present in modern CPUs?  This change breaks
+> running 16-bit apps in Wine.  I have a few really old games I like to
+> play on occasion, and I don't have a copy of Win 3.11 to put in a VM.
 
+Ok, so you actually do this on x86-64, and it currently works? For
+some reason I thought that 16-bit windows apps already didn't work.
 
-> -----Original Message-----
-> From: H. Peter Anvin [mailto:hpa@linux.intel.com]
-> Sent: Friday, April 11, 2014 10:39 AM
-> To: Linus Torvalds
-> Cc: stable@vger.kernel.org; H. Peter Anvin; H. Peter Anvin; Ingo Molnar; KY
-> Srinivasan; Linux Kernel Mailing List; Thomas Gleixner
-> Subject: [GIT PULL] x86/hyperv fix for v3.15-rc1
-> 
-> Hi Linus,
-> 
-> A single fix for HyperV -- we never NEED the legacy PIC on HyperV, and in
-> kexec/kdump scenarios we don't always know that we originally booted EFI.
-> The right answer is probably to augment the legacy PIC initialization code to
-> detect a not-present PIC, but that is way too high risk for right now.
-> 
-> The following changes since commit
-> ca3ba2a2f4a49a308e7d78c784d51b2332064f15:
-> 
->   x86, hyperv: Bypass the timer_irq_works() check (2014-03-27 11:02:45 -
-> 0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-hyperv-for-
-> linus
-> 
-> for you to fetch changes up to 8df28b82ff0649dd293f0469b97792cfb9ed10ab:
-> 
->   x86, hyperv: When on Hyper-v use NULL legacy PIC (2014-04-03 22:00:13 -
-> 0700)
+Because if we have working users of this, then I don't think we can do
+the "we don't support 16-bit segments", or at least we need to make it
+runtime configurable.
 
-Peter,
-
-It may be better not to include the patch titled:
-
-x86, hyperv: When on Hyper-v use NULL legacy PIC (2014-04-03 22:00:13 -
-0700)
-
-Without this patch, kexec will not work on Hyper-V efi firmware and that is the way it has been.
-While I tested this patch on both legacy and EFI firmware on Hyper-V, Olaf is reporting that on the
-configurations he is building, this patch causes problems on Hyper-V legacy firmware.
-
-I am currently working on the idea you have had - using NULL legacy PIC only when
-PIC is not there.
-
-Regards,
-
-K. Y 
-> 
-> ----------------------------------------------------------------
-> K. Y. Srinivasan (1):
->       x86, hyperv: When on Hyper-v use NULL legacy PIC
-> 
->  arch/x86/kernel/cpu/mshyperv.c | 10 ++--------
->  1 file changed, 2 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mshyperv.c
-> b/arch/x86/kernel/cpu/mshyperv.c index 832d05a914ba..b7d82c7e1257
-> 100644
-> --- a/arch/x86/kernel/cpu/mshyperv.c
-> +++ b/arch/x86/kernel/cpu/mshyperv.c
-> @@ -93,14 +93,8 @@ static void __init ms_hyperv_init_platform(void)
->  		printk(KERN_INFO "HyperV: LAPIC Timer Frequency: %#x\n",
->  				lapic_timer_frequency);
-> 
-> -		/*
-> -		 * On Hyper-V, when we are booting off an EFI firmware
-> stack,
-> -		 * we do not have many legacy devices including PIC, PIT etc.
-> -		 */
-> -		if (efi_enabled(EFI_BOOT)) {
-> -			printk(KERN_INFO "HyperV: Using
-> null_legacy_pic\n");
-> -			legacy_pic = &null_legacy_pic;
-> -		}
-> +		printk(KERN_INFO "HyperV: Using null_legacy_pic\n");
-> +		legacy_pic = &null_legacy_pic;
->  	}
->  #endif
-> 
+             Linus
