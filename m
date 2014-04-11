@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759776AbaDKQqY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:46:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56580 "EHLO
+	id S1759571AbaDKQJA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:09:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56430 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759576AbaDKQJB (ORCPT
+	with ESMTP id S1759429AbaDKQHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:01 -0400
+	Fri, 11 Apr 2014 12:07:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David L Stevens <dlstevens@us.ibm.com>,
-        Cong Wang <cwang@twopensource.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 32/65] vxlan: fix potential NULL dereference in arp_reduce()
-Date: Fri, 11 Apr 2014 09:11:04 -0700
-Message-Id: <20140411161002.171037980@linuxfoundation.org>
+Subject: [PATCH 3.10 34/41] rds: prevent dereference of a NULL device in rds_iw_laddr_check
+Date: Fri, 11 Apr 2014 09:10:05 -0700
+Message-Id: <20140411160935.299380110@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
-References: <20140411160957.714773410@linuxfoundation.org>
+In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
+References: <20140411160932.865173041@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: David Stevens <dlstevens@us.ibm.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-[ Upstream commit 7346135dcd3f9b57f30a5512094848c678d7143e ]
+[ Upstream commit bf39b4247b8799935ea91d90db250ab608a58e50 ]
 
-This patch fixes a NULL pointer dereference in the event of an
-skb allocation failure in arp_reduce().
+Binding might result in a NULL device which is later dereferenced
+without checking.
 
-Signed-Off-By: David L Stevens <dlstevens@us.ibm.com>
-Acked-by: Cong Wang <cwang@twopensource.com>
-
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/vxlan.c |    3 +++
- 1 file changed, 3 insertions(+)
+ net/rds/iw.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -1208,6 +1208,9 @@ static int arp_reduce(struct net_device
+--- a/net/rds/iw.c
++++ b/net/rds/iw.c
+@@ -239,7 +239,8 @@ static int rds_iw_laddr_check(__be32 add
+ 	ret = rdma_bind_addr(cm_id, (struct sockaddr *)&sin);
+ 	/* due to this, we will claim to support IB devices unless we
+ 	   check node_type. */
+-	if (ret || cm_id->device->node_type != RDMA_NODE_RNIC)
++	if (ret || !cm_id->device ||
++	    cm_id->device->node_type != RDMA_NODE_RNIC)
+ 		ret = -EADDRNOTAVAIL;
  
- 		neigh_release(n);
- 
-+		if (reply == NULL)
-+			goto out;
-+
- 		skb_reset_mac_header(reply);
- 		__skb_pull(reply, skb_network_offset(reply));
- 		reply->ip_summed = CHECKSUM_UNNECESSARY;
+ 	rdsdebug("addr %pI4 ret %d node type %d\n",
 
 
