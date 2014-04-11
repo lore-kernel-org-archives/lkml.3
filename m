@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759716AbaDKQ5K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:57:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56499 "EHLO
+	id S1759587AbaDKQ5I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:57:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56505 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422744AbaDKQIy (ORCPT
+	with ESMTP id S1422749AbaDKQIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Apr 2014 12:08:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Phoebe Buckheister <phoebe.buckheister@itwm.fraunhofer.de>,
-        Alexander Aring <alex.aring@gmail.com>,
-        Florian Westphal <fw@strlen.de>, Eric Dumazet <edumazet@google.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Rainer Weikusat <rweikusat@mobileactivedefense.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 10/65] inet: frag: make sure forced eviction removes all frags
-Date: Fri, 11 Apr 2014 09:10:42 -0700
-Message-Id: <20140411160959.148710336@linuxfoundation.org>
+Subject: [PATCH 3.13 11/65] net: unix: non blocking recvmsg() should not return -EINTR
+Date: Fri, 11 Apr 2014 09:10:43 -0700
+Message-Id: <20140411160959.280925799@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
 References: <20140411160957.714773410@linuxfoundation.org>
@@ -29,57 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Westphal <fw@strlen.de>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit e588e2f286ed7da011ed357c24c5b9a554e26595 ]
+[ Upstream commit de1443916791d75fdd26becb116898277bb0273f ]
 
-Quoting Alexander Aring:
-  While fragmentation and unloading of 6lowpan module I got this kernel Oops
-  after few seconds:
+Some applications didn't expect recvmsg() on a non blocking socket
+could return -EINTR. This possibility was added as a side effect
+of commit b3ca9b02b00704 ("net: fix multithreaded signal handling in
+unix recv routines").
 
-  BUG: unable to handle kernel paging request at f88bbc30
-  [..]
-  Modules linked in: ipv6 [last unloaded: 6lowpan]
-  Call Trace:
-   [<c012af4c>] ? call_timer_fn+0x54/0xb3
-   [<c012aef8>] ? process_timeout+0xa/0xa
-   [<c012b66b>] run_timer_softirq+0x140/0x15f
+To hit this bug, you need to be a bit unlucky, as the u->readlock
+mutex is usually held for very small periods.
 
-Problem is that incomplete frags are still around after unload; when
-their frag expire timer fires, we get crash.
-
-When a netns is removed (also done when unloading module), inet_frag
-calls the evictor with 'force' argument to purge remaining frags.
-
-The evictor loop terminates when accounted memory ('work') drops to 0
-or the lru-list becomes empty.  However, the mem accounting is done
-via percpu counters and may not be accurate, i.e. loop may terminate
-prematurely.
-
-Alter evictor to only stop once the lru list is empty when force is
-requested.
-
-Reported-by: Phoebe Buckheister <phoebe.buckheister@itwm.fraunhofer.de>
-Reported-by: Alexander Aring <alex.aring@gmail.com>
-Tested-by: Alexander Aring <alex.aring@gmail.com>
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Acked-by: Eric Dumazet <edumazet@google.com>
+Fixes: b3ca9b02b00704 ("net: fix multithreaded signal handling in unix recv routines")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Rainer Weikusat <rweikusat@mobileactivedefense.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/inet_fragment.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/unix/af_unix.c |   17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
---- a/net/ipv4/inet_fragment.c
-+++ b/net/ipv4/inet_fragment.c
-@@ -208,7 +208,7 @@ int inet_frag_evictor(struct netns_frags
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -1785,8 +1785,11 @@ static int unix_dgram_recvmsg(struct kio
+ 		goto out;
+ 
+ 	err = mutex_lock_interruptible(&u->readlock);
+-	if (err) {
+-		err = sock_intr_errno(sock_rcvtimeo(sk, noblock));
++	if (unlikely(err)) {
++		/* recvmsg() in non blocking mode is supposed to return -EAGAIN
++		 * sk_rcvtimeo is not honored by mutex_lock_interruptible()
++		 */
++		err = noblock ? -EAGAIN : -ERESTARTSYS;
+ 		goto out;
  	}
  
- 	work = frag_mem_limit(nf) - nf->low_thresh;
--	while (work > 0) {
-+	while (work > 0 || force) {
- 		spin_lock(&nf->lru_lock);
+@@ -1911,6 +1914,7 @@ static int unix_stream_recvmsg(struct ki
+ 	struct unix_sock *u = unix_sk(sk);
+ 	struct sockaddr_un *sunaddr = msg->msg_name;
+ 	int copied = 0;
++	int noblock = flags & MSG_DONTWAIT;
+ 	int check_creds = 0;
+ 	int target;
+ 	int err = 0;
+@@ -1926,7 +1930,7 @@ static int unix_stream_recvmsg(struct ki
+ 		goto out;
  
- 		if (list_empty(&nf->lru_list)) {
+ 	target = sock_rcvlowat(sk, flags&MSG_WAITALL, size);
+-	timeo = sock_rcvtimeo(sk, flags&MSG_DONTWAIT);
++	timeo = sock_rcvtimeo(sk, noblock);
+ 
+ 	/* Lock the socket to prevent queue disordering
+ 	 * while sleeps in memcpy_tomsg
+@@ -1938,8 +1942,11 @@ static int unix_stream_recvmsg(struct ki
+ 	}
+ 
+ 	err = mutex_lock_interruptible(&u->readlock);
+-	if (err) {
+-		err = sock_intr_errno(timeo);
++	if (unlikely(err)) {
++		/* recvmsg() in non blocking mode is supposed to return -EAGAIN
++		 * sk_rcvtimeo is not honored by mutex_lock_interruptible()
++		 */
++		err = noblock ? -EAGAIN : -ERESTARTSYS;
+ 		goto out;
+ 	}
+ 
 
 
