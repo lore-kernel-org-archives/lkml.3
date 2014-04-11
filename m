@@ -1,82 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422889AbaDKQpu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:45:50 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.171]:46087 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754529AbaDKQpn (ORCPT
+	id S935133AbaDKQq2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:46:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56497 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759429AbaDKQJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:45:43 -0400
-X-Greylist: delayed 423 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Apr 2014 12:45:42 EDT
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-13.tower-38.messagelabs.com!1397234316!14206713!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.1; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Fri, 11 Apr 2014 18:38:36 +0200
-Date: Fri, 11 Apr 2014 18:38:29 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Johannes Thumshirn <johannes.thumshirn@men.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: MCB fixes for 3.15-rc1
-Message-ID: <20140411163829.GA10895@jtlinux>
-References: <20140411064829.GA11402@jtlinux>
- <20140411141634.GE3343@kroah.com>
+	Fri, 11 Apr 2014 12:09:00 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        =?UTF-8?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 31/65] net: cdc_ncm: fix control message ordering
+Date: Fri, 11 Apr 2014 09:11:03 -0700
+Message-Id: <20140411161002.027981724@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
+References: <20140411160957.714773410@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140411141634.GE3343@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 07:16:34AM -0700, Greg Kroah-Hartman wrote:
-> On Fri, Apr 11, 2014 at 08:48:40AM +0200, Johannes Thumshirn wrote:
-> > Hi Greg,
-> >
-> > Please pull this change for drivers/mcb.
-> >
-> > Thanks
-> > 	Johannes
-> >
-> > --
-> >
-> > The following changes since commit 9e897e13bd46fa03485468609741974259a8c573:
-> >
-> >   Merge branch 'for-linus' of git://git.open-osd.org/linux-open-osd (2014-04-10 14:33:02 -0700)
-> >
-> > are available in the git repository at:
-> >
-> >
-> >   git://github.com/morbidrsa/linux.git mcb
-> >
-> > for you to fetch changes up to e383c2430770c4bb080b4915826f34b729b33bbc:
-> >
-> >   drivers: mcb: fix memory leak in chameleon_parse_cells() error path (2014-04-11 08:37:37 +0200)
->
-> I really don't like taking git pull requests, and will not take one from
-> a non-kernel.org tree, nor one without a signed tag.
->
-> For just a single patch like this, just send it through email.  Much
-> faster and simpler.
->
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-OK, comming right away.
+------------------
 
-> Oh, and go get a kernel.org account :)
->
+From: =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+
+[ Upstream commit ff0992e9036e9810e7cd45234fa32ca1e79750e2 ]
+
+This is a context modified revert of commit 6a9612e2cb22
+("net: cdc_ncm: remove ncm_parm field") which introduced
+a NCM specification violation, causing setup errors for
+some devices. These errors resulted in the device and
+host disagreeing about shared settings, with complete
+failure to communicate as the end result.
+
+The NCM specification require that many of the NCM specific
+control reuests are sent only while the NCM Data Interface
+is in alternate setting 0. Reverting the commit ensures that
+we follow this requirement.
+
+Fixes: 6a9612e2cb22 ("net: cdc_ncm: remove ncm_parm field")
+Reported-and-tested-by: Pasi Kärkkäinen <pasik@iki.fi>
+Reported-by: Thomas Schäfer <tschaefer@t-online.de>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/usb/cdc_ncm.c   |   48 +++++++++++++++++++++-----------------------
+ include/linux/usb/cdc_ncm.h |    1 
+ 2 files changed, 24 insertions(+), 25 deletions(-)
+
+--- a/drivers/net/usb/cdc_ncm.c
++++ b/drivers/net/usb/cdc_ncm.c
+@@ -69,7 +69,6 @@ static struct usb_driver cdc_ncm_driver;
+ static int cdc_ncm_setup(struct usbnet *dev)
+ {
+ 	struct cdc_ncm_ctx *ctx = (struct cdc_ncm_ctx *)dev->data[0];
+-	struct usb_cdc_ncm_ntb_parameters ncm_parm;
+ 	u32 val;
+ 	u8 flags;
+ 	u8 iface_no;
+@@ -83,22 +82,22 @@ static int cdc_ncm_setup(struct usbnet *
+ 	err = usbnet_read_cmd(dev, USB_CDC_GET_NTB_PARAMETERS,
+ 			      USB_TYPE_CLASS | USB_DIR_IN
+ 			      |USB_RECIP_INTERFACE,
+-			      0, iface_no, &ncm_parm,
+-			      sizeof(ncm_parm));
++			      0, iface_no, &ctx->ncm_parm,
++			      sizeof(ctx->ncm_parm));
+ 	if (err < 0) {
+ 		dev_err(&dev->intf->dev, "failed GET_NTB_PARAMETERS\n");
+ 		return err; /* GET_NTB_PARAMETERS is required */
+ 	}
+ 
+ 	/* read correct set of parameters according to device mode */
+-	ctx->rx_max = le32_to_cpu(ncm_parm.dwNtbInMaxSize);
+-	ctx->tx_max = le32_to_cpu(ncm_parm.dwNtbOutMaxSize);
+-	ctx->tx_remainder = le16_to_cpu(ncm_parm.wNdpOutPayloadRemainder);
+-	ctx->tx_modulus = le16_to_cpu(ncm_parm.wNdpOutDivisor);
+-	ctx->tx_ndp_modulus = le16_to_cpu(ncm_parm.wNdpOutAlignment);
++	ctx->rx_max = le32_to_cpu(ctx->ncm_parm.dwNtbInMaxSize);
++	ctx->tx_max = le32_to_cpu(ctx->ncm_parm.dwNtbOutMaxSize);
++	ctx->tx_remainder = le16_to_cpu(ctx->ncm_parm.wNdpOutPayloadRemainder);
++	ctx->tx_modulus = le16_to_cpu(ctx->ncm_parm.wNdpOutDivisor);
++	ctx->tx_ndp_modulus = le16_to_cpu(ctx->ncm_parm.wNdpOutAlignment);
+ 	/* devices prior to NCM Errata shall set this field to zero */
+-	ctx->tx_max_datagrams = le16_to_cpu(ncm_parm.wNtbOutMaxDatagrams);
+-	ntb_fmt_supported = le16_to_cpu(ncm_parm.bmNtbFormatsSupported);
++	ctx->tx_max_datagrams = le16_to_cpu(ctx->ncm_parm.wNtbOutMaxDatagrams);
++	ntb_fmt_supported = le16_to_cpu(ctx->ncm_parm.bmNtbFormatsSupported);
+ 
+ 	/* there are some minor differences in NCM and MBIM defaults */
+ 	if (cdc_ncm_comm_intf_is_mbim(ctx->control->cur_altsetting)) {
+@@ -147,7 +146,7 @@ static int cdc_ncm_setup(struct usbnet *
+ 	}
+ 
+ 	/* inform device about NTB input size changes */
+-	if (ctx->rx_max != le32_to_cpu(ncm_parm.dwNtbInMaxSize)) {
++	if (ctx->rx_max != le32_to_cpu(ctx->ncm_parm.dwNtbInMaxSize)) {
+ 		__le32 dwNtbInMaxSize = cpu_to_le32(ctx->rx_max);
+ 
+ 		err = usbnet_write_cmd(dev, USB_CDC_SET_NTB_INPUT_SIZE,
+@@ -163,14 +162,6 @@ static int cdc_ncm_setup(struct usbnet *
+ 		dev_dbg(&dev->intf->dev, "Using default maximum transmit length=%d\n",
+ 			CDC_NCM_NTB_MAX_SIZE_TX);
+ 		ctx->tx_max = CDC_NCM_NTB_MAX_SIZE_TX;
+-
+-		/* Adding a pad byte here simplifies the handling in
+-		 * cdc_ncm_fill_tx_frame, by making tx_max always
+-		 * represent the real skb max size.
+-		 */
+-		if (ctx->tx_max % usb_maxpacket(dev->udev, dev->out, 1) == 0)
+-			ctx->tx_max++;
+-
+ 	}
+ 
+ 	/*
+@@ -440,6 +431,10 @@ advance:
+ 		goto error2;
+ 	}
+ 
++	/* initialize data interface */
++	if (cdc_ncm_setup(dev))
++		goto error2;
++
+ 	/* configure data interface */
+ 	temp = usb_set_interface(dev->udev, iface_no, data_altsetting);
+ 	if (temp) {
+@@ -454,12 +449,6 @@ advance:
+ 		goto error2;
+ 	}
+ 
+-	/* initialize data interface */
+-	if (cdc_ncm_setup(dev))	{
+-		dev_dbg(&intf->dev, "cdc_ncm_setup() failed\n");
+-		goto error2;
+-	}
+-
+ 	usb_set_intfdata(ctx->data, dev);
+ 	usb_set_intfdata(ctx->control, dev);
+ 
+@@ -476,6 +465,15 @@ advance:
+ 	dev->hard_mtu = ctx->tx_max;
+ 	dev->rx_urb_size = ctx->rx_max;
+ 
++	/* cdc_ncm_setup will override dwNtbOutMaxSize if it is
++	 * outside the sane range. Adding a pad byte here if necessary
++	 * simplifies the handling in cdc_ncm_fill_tx_frame, making
++	 * tx_max always represent the real skb max size.
++	 */
++	if (ctx->tx_max != le32_to_cpu(ctx->ncm_parm.dwNtbOutMaxSize) &&
++	    ctx->tx_max % usb_maxpacket(dev->udev, dev->out, 1) == 0)
++		ctx->tx_max++;
++
+ 	return 0;
+ 
+ error2:
+--- a/include/linux/usb/cdc_ncm.h
++++ b/include/linux/usb/cdc_ncm.h
+@@ -88,6 +88,7 @@
+ #define cdc_ncm_data_intf_is_mbim(x)  ((x)->desc.bInterfaceProtocol == USB_CDC_MBIM_PROTO_NTB)
+ 
+ struct cdc_ncm_ctx {
++	struct usb_cdc_ncm_ntb_parameters ncm_parm;
+ 	struct hrtimer tx_timer;
+ 	struct tasklet_struct bh;
+ 
 
 
-OK, I'll do my best.
-
-> thanks,
->
-> greg k-h
-
-Nice Weekend,
-     Johannes
