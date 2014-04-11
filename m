@@ -1,51 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759687AbaDKQJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:09:26 -0400
-Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:44697 "EHLO
-	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759445AbaDKQHv (ORCPT
+	id S1423139AbaDKQXM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:23:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56750 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759673AbaDKQJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:07:51 -0400
-Date: Fri, 11 Apr 2014 11:07:48 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@nuc
-To: Vladimir Davydov <vdavydov@parallels.com>
-cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, devel@openvz.org, Greg Thelen <gthelen@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Glauber Costa <glommer@gmail.com>, Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH -mm v2.2] mm: get rid of __GFP_KMEMCG
-In-Reply-To: <1396537559-17453-1-git-send-email-vdavydov@parallels.com>
-Message-ID: <alpine.DEB.2.10.1404111104550.13278@nuc>
-References: <1396419365-351-1-git-send-email-vdavydov@parallels.com> <1396537559-17453-1-git-send-email-vdavydov@parallels.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 11 Apr 2014 12:09:26 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>, Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.14 02/23] selinux: correctly label /proc inodes in use before the policy is loaded
+Date: Fri, 11 Apr 2014 09:11:51 -0700
+Message-Id: <20140411161200.581057879@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140411161200.236939691@linuxfoundation.org>
+References: <20140411161200.236939691@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Apr 2014, Vladimir Davydov wrote:
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-> --- a/include/linux/slab.h
-> +++ b/include/linux/slab.h
-> @@ -358,16 +358,7 @@ kmem_cache_alloc_node_trace(struct kmem_cache *s,
->  #include <linux/slub_def.h>
->  #endif
->
-> -static __always_inline void *
-> -kmalloc_order(size_t size, gfp_t flags, unsigned int order)
-> -{
-> -	void *ret;
-> -
-> -	flags |= (__GFP_COMP | __GFP_KMEMCG);
-> -	ret = (void *) __get_free_pages(flags, order);
-> -	kmemleak_alloc(ret, size, 1, flags);
-> -	return ret;
-> -}
-> +extern void *kmalloc_order(size_t size, gfp_t flags, unsigned int order);
+------------------
 
+From: Paul Moore <pmoore@redhat.com>
 
-Hmmm... This was intentional inlined to allow inline expansion for calls
-to kmalloc with large constants. The inline expansion directly converts
-these calls to page allocator calls avoiding slab overhead.
+commit f64410ec665479d7b4b77b7519e814253ed0f686 upstream.
+
+This patch is based on an earlier patch by Eric Paris, he describes
+the problem below:
+
+  "If an inode is accessed before policy load it will get placed on a
+   list of inodes to be initialized after policy load.  After policy
+   load we call inode_doinit() which calls inode_doinit_with_dentry()
+   on all inodes accessed before policy load.  In the case of inodes
+   in procfs that means we'll end up at the bottom where it does:
+
+     /* Default to the fs superblock SID. */
+     isec->sid = sbsec->sid;
+
+     if ((sbsec->flags & SE_SBPROC) && !S_ISLNK(inode->i_mode)) {
+             if (opt_dentry) {
+                     isec->sclass = inode_mode_to_security_class(...)
+                     rc = selinux_proc_get_sid(opt_dentry,
+                                               isec->sclass,
+                                               &sid);
+                     if (rc)
+                             goto out_unlock;
+                     isec->sid = sid;
+             }
+     }
+
+   Since opt_dentry is null, we'll never call selinux_proc_get_sid()
+   and will leave the inode labeled with the label on the superblock.
+   I believe a fix would be to mimic the behavior of xattrs.  Look
+   for an alias of the inode.  If it can't be found, just leave the
+   inode uninitialized (and pick it up later) if it can be found, we
+   should be able to call selinux_proc_get_sid() ..."
+
+On a system exhibiting this problem, you will notice a lot of files in
+/proc with the generic "proc_t" type (at least the ones that were
+accessed early in the boot), for example:
+
+   # ls -Z /proc/sys/kernel/shmmax | awk '{ print $4 " " $5 }'
+   system_u:object_r:proc_t:s0 /proc/sys/kernel/shmmax
+
+However, with this patch in place we see the expected result:
+
+   # ls -Z /proc/sys/kernel/shmmax | awk '{ print $4 " " $5 }'
+   system_u:object_r:sysctl_kernel_t:s0 /proc/sys/kernel/shmmax
+
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
+Acked-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ security/selinux/hooks.c |   36 +++++++++++++++++++++++++++---------
+ 1 file changed, 27 insertions(+), 9 deletions(-)
+
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -1418,15 +1418,33 @@ static int inode_doinit_with_dentry(stru
+ 		isec->sid = sbsec->sid;
+ 
+ 		if ((sbsec->flags & SE_SBPROC) && !S_ISLNK(inode->i_mode)) {
+-			if (opt_dentry) {
+-				isec->sclass = inode_mode_to_security_class(inode->i_mode);
+-				rc = selinux_proc_get_sid(opt_dentry,
+-							  isec->sclass,
+-							  &sid);
+-				if (rc)
+-					goto out_unlock;
+-				isec->sid = sid;
+-			}
++			/* We must have a dentry to determine the label on
++			 * procfs inodes */
++			if (opt_dentry)
++				/* Called from d_instantiate or
++				 * d_splice_alias. */
++				dentry = dget(opt_dentry);
++			else
++				/* Called from selinux_complete_init, try to
++				 * find a dentry. */
++				dentry = d_find_alias(inode);
++			/*
++			 * This can be hit on boot when a file is accessed
++			 * before the policy is loaded.  When we load policy we
++			 * may find inodes that have no dentry on the
++			 * sbsec->isec_head list.  No reason to complain as
++			 * these will get fixed up the next time we go through
++			 * inode_doinit() with a dentry, before these inodes
++			 * could be used again by userspace.
++			 */
++			if (!dentry)
++				goto out_unlock;
++			isec->sclass = inode_mode_to_security_class(inode->i_mode);
++			rc = selinux_proc_get_sid(dentry, isec->sclass, &sid);
++			dput(dentry);
++			if (rc)
++				goto out_unlock;
++			isec->sid = sid;
+ 		}
+ 		break;
+ 	}
+
 
