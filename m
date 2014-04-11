@@ -1,126 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099AbaDKJNw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 05:13:52 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:51314 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755443AbaDKJNu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 05:13:50 -0400
-Message-ID: <5347B249.6070706@gmail.com>
-Date: Fri, 11 Apr 2014 11:13:45 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>,
-        linus.walleij@linaro.org
-CC: alexandre.belloni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 4/5] Documentation: add the Marvell Berlin pinctrl
- documentation
-References: <1397135274-10764-1-git-send-email-antoine.tenart@free-electrons.com> <1397135274-10764-5-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1397135274-10764-5-git-send-email-antoine.tenart@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1756306AbaDKJST (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 05:18:19 -0400
+Received: from gate.crashing.org ([63.228.1.57]:57026 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756093AbaDKJSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 05:18:12 -0400
+Message-ID: <1397207819.19518.26.camel@pasglop>
+Subject: Re: [PATCH v7 4/6] pci: Introduce a domain number for
+ pci_host_bridge.
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 11 Apr 2014 19:16:59 +1000
+In-Reply-To: <5745677.MbvfSQPiZ9@wuerfel>
+References: <1394811272-1547-5-git-send-email-Liviu.Dudau@arm.com>
+	 <6459805.ygy4tBNDNz@wuerfel> <1397192469.19518.11.camel@pasglop>
+	 <5745677.MbvfSQPiZ9@wuerfel>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.90 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2014 03:07 PM, Antoine Ténart wrote:
+On Fri, 2014-04-11 at 10:36 +0200, Arnd Bergmann wrote:
 
-Missing commit message.
+> > EEH is one big nasty example on powerpc.
+> > 
+> > Another random one that happens to be hot in my brain right now because
+> > we just finished debugging it: On powernv, we are just fixing a series
+> > of bugs caused by the generic code trying to do hot resets on PCIe "by
+> > hand" by directly toggling the secondary reset register in bridges.
+> > 
+> > Well, on our root complexes, this triggers a link loss which triggers
+> > a fatal EEH "ER_all" interrupt which we escalate into a fence and all
+> > hell breaks loose.
+> > 
+> > We need to mask some error traps in the hardware before doing something
+> > that can cause an intentional link loss... and unmask them when done.
+> > (Among other things, there are other issues on P7 with hot reset).
+> > 
+> > So hot reset must be an architecture hook.
+> 
+> This sounds to me very much host bridge specific, not architecture specific.
+> If you have the same host bridge in an ARM system, you'd want the same
+> things to happen, and if you have another host bridge on PowerPC, you
+> probably don't want that code to be called.
 
-> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> ---
->   .../bindings/pinctrl/marvell,berlin-pinctrl.txt    | 43 ++++++++++++++++++++++
->   1 file changed, 43 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,berlin-pinctrl.txt
->
-> diff --git a/Documentation/devicetree/bindings/pinctrl/marvell,berlin-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/marvell,berlin-pinctrl.txt
-> new file mode 100644
-> index 000000000000..e21538a37734
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/pinctrl/marvell,berlin-pinctrl.txt
-> @@ -0,0 +1,43 @@
-> +* Pinctrl driver for the Marvell Berlin SoCs
-> +
-> +The pins controlled by the Marvell Berlin controller are organized in groups.
-> +Configuration is done by group, so no actual pin information is needed.
-> +
-> +Required properties:
-> +- compatible:	"marvell-berlin2cd-pinctrl",
-> +		"marvell-berlin2-pinctrl",
-> +		"marvell-berlin2q-pinctrl"
+Yes, it is partially host bridge specific, partially firmware related
+(OPAL vs. ACPI, vs....) so it's a mixture here.
 
-s/marvell-/marvell,/g
+So I do agree, host bridge ops to replace most of these pcibios_* hooks
+does make sense.
+> 
+> > PERST (fundamental reset) can *only* be a hook. The way to generate a
+> > PERST is not specified. In fact, on our machines, we have special GPIOs
+> > we can use to generate PERST on individual slots below a PLX bridge
+> > and a different methods for slots directly on a PHB.
+> > 
+> > Eventually most of those hooks land into firmware, and as such it's akin
+> > to ACPI which also keeps a separate state structure and a pile of hooks.
+> 
+> On PowerPC, there are currently a bunch of platform specific callbacks
+> in the ppc_md: pcibios_after_init, pci_exclude_device,
+> pcibios_fixup_resources, pcibios_fixup_bus, pcibios_enable_device_hook,
+> pcibios_fixup_phb, pcibios_window_alignment, and possibly some more.
+> There is some architecture specific code that gets called by the
+> PCI core, with the main purpose of calling into these.
 
-Also, you can add at least some prosa like
-"compatible: should be one of"...
+Yes. Most of them could be made into host bridge hooks fairly easily.
 
-> +- reg: registers physical addresses and lengths of the pin controller.
-> +- reg-names: name of the register regions.
-> +
-> +Please refer to pinctrl-bindings.txt in this directory for details of the
-> +common pinctrl bindings used by client devices.
-> +
-> +A pinctrl should contains subnodes representing the pinctrl pin group
+The remaining ones are going to need somebody (probably me) to
+untangle :-)
 
-s/pinctrl/pin-controller/g
-s/contains/contain
+> On ARM32, we have a similar set of callbacks in the architecture
+> private pci_sys_data: swizzle, map_irq, align_resource, add_bus,
+> remove_bus, and some more callbacks for setup in the hw_pci
+> structure that is used at initialization time: setup, scan,
+> preinit, postinit. Again, these are called from architecture
+> specific code that gets called by the PCI core.
+> 
+> I'm sure some of the other architectures have similar things, most
+> of them probably less verbose because there is fewer variability
+> between subarchitectures.
+> 
+> I think a nice way to deal with these in the long run would be
+> to have a generic 'struct pci_host_bridge_ops' that can be defined
+> by the architecture or the platform, or a particular host bridge
+> driver.
 
-> +configurations, one per group. Each subnode has the group name and the muxing
-> +function used.
-> +
-> +Required subnode-properties:
-> +- berlin,group: a string describing the group's name.
-> +- berlin,function: the function used to mux the group.
-> +	0: function 0
-> +	1: function 1
-> +	...
+Well, the host bridge needs either a "driver" or be subclassed or
+both...
 
-s/berlin,/marvell,/
+>  We'd have to define exactly which function pointers would
+> go in there, but a good start would be the set of functions that
+> are today provided by each architecture. The reset method you describe
+> above would also fit well into this.
+> 
+> A host bridge driver can fill out the pointers with its own functions,
+> or put platform or architecture specific function pointers in there,
+> that get called by the PCI core. There are multiple ways to deal with
+> default implementations here, one way would be that the core just
+> falls back to a generic implementation (which is currently the __weak
+> function) if it sees a NULL pointer. Another way would be to require
+> each driver to either fill out all pointers or none of them, in which
+> case we would use a default pci_host_bridge_ops struct that contains
+> the pointers to the global pcibios_*() functions.
 
-And I also prefer either DT binding includes for each function (even if
-the proper name is not known).
+Either works, we can start with the easy ones like window alignment, and
+move from there.
 
-> +
-> +Example:
-> +
-> +pinctrl: pinctrl@0 {
+Ben.
 
-I looked at ePAPR recommended node names yesterday. It uses
-foo-controller for all listed examples. Also, with the idea
-of splitting both pin-controllers into separate nodes the
-above (with broken unit-address) will become:
-
-soc_pinctrl: pin-controller@ea0000 {
-	compatible = "marvell,berlin2q-soc-pinctrl";
-	reg = <0xea0000 0x08>;
-};
-
-and
-
-sm_pinctrl: pin-controller@fc0000 {
-	compatible = "marvell,berlin2q-sysmgr-pinctrl";
-	reg = <0xfc0000 0x44>;
-};
-
-Sebastian
-
-> +	compatible = "marvell,berlin2q-pinctrl";
-> +	reg = <0xea0000 0x08>, <0xfc0000 0x44>;
-> +	reg-names = "global_base", "sm_base";
-> +
-> +	uart0_pmux: uart0-pmux {
-> +		berlin,group = "GSM12";
-> +		berlin,function = <0>;
-> +	};
-> +}
-> +
-> +&uart0 {
-> +	pinctrl-0 = <&uart0_pmux>;
-> +	pinctrl-names = "default";
-> +};
->
 
