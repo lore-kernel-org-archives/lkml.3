@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759551AbaDKQIu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:08:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56418 "EHLO
+	id S1759535AbaDKQIs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:08:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56409 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759426AbaDKQHg (ORCPT
+	with ESMTP id S1759424AbaDKQHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Apr 2014 12:07:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fabio Estevam <festevam@gmail.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 30/41] ipv6: some ipv6 statistic counters failed to disable bh
-Date: Fri, 11 Apr 2014 09:10:01 -0700
-Message-Id: <20140411160935.002881212@linuxfoundation.org>
+Subject: [PATCH 3.10 28/41] vhost: validate vhost_get_vq_desc return value
+Date: Fri, 11 Apr 2014 09:09:59 -0700
+Message-Id: <20140411160934.852902766@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
 References: <20140411160932.865173041@linuxfoundation.org>
@@ -30,80 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-[ Upstream commit 43a43b6040165f7b40b5b489fe61a4cb7f8c4980 ]
+[ Upstream commit a39ee449f96a2cd44ce056d8a0a112211a9b1a1f ]
 
-After commit c15b1ccadb323ea ("ipv6: move DAD and addrconf_verify
-processing to workqueue") some counters are now updated in process context
-and thus need to disable bh before doing so, otherwise deadlocks can
-happen on 32-bit archs. Fabio Estevam noticed this while while mounting
-a NFS volume on an ARM board.
+vhost fails to validate negative error code
+from vhost_get_vq_desc causing
+a crash: we are using -EFAULT which is 0xfffffff2
+as vector size, which exceeds the allocated size.
 
-As a compensation for missing this I looked after the other *_STATS_BH
-and found three other calls which need updating:
+The code in question was introduced in commit
+8dd014adfea6f173c1ef6378f7e5e7924866c923
+    vhost-net: mergeable buffers support
 
-1) icmp6_send: ip6_fragment -> icmpv6_send -> icmp6_send (error handling)
-2) ip6_push_pending_frames: rawv6_sendmsg -> rawv6_push_pending_frames -> ...
-   (only in case of icmp protocol with raw sockets in error handling)
-3) ping6_v6_sendmsg (error handling)
+CVE-2014-0055
 
-Fixes: c15b1ccadb323ea ("ipv6: move DAD and addrconf_verify processing to workqueue")
-Reported-by: Fabio Estevam <festevam@gmail.com>
-Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/icmp.c       |    2 +-
- net/ipv6/ip6_output.c |    4 ++--
- net/ipv6/mcast.c      |   11 ++++++-----
- 3 files changed, 9 insertions(+), 8 deletions(-)
+ drivers/vhost/net.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/net/ipv6/icmp.c
-+++ b/net/ipv6/icmp.c
-@@ -508,7 +508,7 @@ static void icmp6_send(struct sk_buff *s
- 			      np->tclass, NULL, &fl6, (struct rt6_info *)dst,
- 			      MSG_DONTWAIT, np->dontfrag);
- 	if (err) {
--		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTERRORS);
-+		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTERRORS);
- 		ip6_flush_pending_frames(sk);
- 	} else {
- 		err = icmpv6_push_pending_frames(sk, &fl6, &tmp_hdr,
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1554,8 +1554,8 @@ int ip6_push_pending_frames(struct sock
- 	if (proto == IPPROTO_ICMPV6) {
- 		struct inet6_dev *idev = ip6_dst_idev(skb_dst(skb));
- 
--		ICMP6MSGOUT_INC_STATS_BH(net, idev, icmp6_hdr(skb)->icmp6_type);
--		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTMSGS);
-+		ICMP6MSGOUT_INC_STATS(net, idev, icmp6_hdr(skb)->icmp6_type);
-+		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTMSGS);
- 	}
- 
- 	err = ip6_local_out(skb);
---- a/net/ipv6/mcast.c
-+++ b/net/ipv6/mcast.c
-@@ -1439,11 +1439,12 @@ static void mld_sendpack(struct sk_buff
- 		      dst_output);
- out:
- 	if (!err) {
--		ICMP6MSGOUT_INC_STATS_BH(net, idev, ICMPV6_MLD2_REPORT);
--		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTMSGS);
--		IP6_UPD_PO_STATS_BH(net, idev, IPSTATS_MIB_OUTMCAST, payload_len);
--	} else
--		IP6_INC_STATS_BH(net, idev, IPSTATS_MIB_OUTDISCARDS);
-+		ICMP6MSGOUT_INC_STATS(net, idev, ICMPV6_MLD2_REPORT);
-+		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTMSGS);
-+		IP6_UPD_PO_STATS(net, idev, IPSTATS_MIB_OUTMCAST, payload_len);
-+	} else {
-+		IP6_INC_STATS(net, idev, IPSTATS_MIB_OUTDISCARDS);
-+	}
- 
- 	rcu_read_unlock();
- 	return;
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -513,9 +513,13 @@ static int get_rx_bufs(struct vhost_virt
+ 			r = -ENOBUFS;
+ 			goto err;
+ 		}
+-		d = vhost_get_vq_desc(vq->dev, vq, vq->iov + seg,
++		r = vhost_get_vq_desc(vq->dev, vq, vq->iov + seg,
+ 				      ARRAY_SIZE(vq->iov) - seg, &out,
+ 				      &in, log, log_num);
++		if (unlikely(r < 0))
++			goto err;
++
++		d = r;
+ 		if (d == vq->num) {
+ 			r = 0;
+ 			goto err;
 
 
