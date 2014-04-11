@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423233AbaDKRBQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 13:01:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56481 "EHLO
+	id S1423214AbaDKRBO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 13:01:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56476 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759426AbaDKQIv (ORCPT
+	with ESMTP id S1422727AbaDKQIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Apr 2014 12:08:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>,
-        Jesper Dangaard Brouer <brouer@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Nikolay Aleksandrov <nikolay@redhat.com>
-Subject: [PATCH 3.13 02/65] net: fix for a race condition in the inet frag code
-Date: Fri, 11 Apr 2014 09:10:34 -0700
-Message-Id: <20140411160958.065060768@linuxfoundation.org>
+        Eric Paris <eparis@redhat.com>, Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.13 01/65] selinux: correctly label /proc inodes in use before the policy is loaded
+Date: Fri, 11 Apr 2014 09:10:33 -0700
+Message-Id: <20140411160957.929752545@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
 References: <20140411160957.714773410@linuxfoundation.org>
@@ -29,94 +26,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nikolay Aleksandrov <nikolay@redhat.com>
+From: Paul Moore <pmoore@redhat.com>
 
-[ Upstream commit 24b9bf43e93e0edd89072da51cf1fab95fc69dec ]
+commit f64410ec665479d7b4b77b7519e814253ed0f686 upstream.
 
-I stumbled upon this very serious bug while hunting for another one,
-it's a very subtle race condition between inet_frag_evictor,
-inet_frag_intern and the IPv4/6 frag_queue and expire functions
-(basically the users of inet_frag_kill/inet_frag_put).
+This patch is based on an earlier patch by Eric Paris, he describes
+the problem below:
 
-What happens is that after a fragment has been added to the hash chain
-but before it's been added to the lru_list (inet_frag_lru_add) in
-inet_frag_intern, it may get deleted (either by an expired timer if
-the system load is high or the timer sufficiently low, or by the
-fraq_queue function for different reasons) before it's added to the
-lru_list, then after it gets added it's a matter of time for the
-evictor to get to a piece of memory which has been freed leading to a
-number of different bugs depending on what's left there.
+  "If an inode is accessed before policy load it will get placed on a
+   list of inodes to be initialized after policy load.  After policy
+   load we call inode_doinit() which calls inode_doinit_with_dentry()
+   on all inodes accessed before policy load.  In the case of inodes
+   in procfs that means we'll end up at the bottom where it does:
 
-I've been able to trigger this on both IPv4 and IPv6 (which is normal
-as the frag code is the same), but it's been much more difficult to
-trigger on IPv4 due to the protocol differences about how fragments
-are treated.
+     /* Default to the fs superblock SID. */
+     isec->sid = sbsec->sid;
 
-The setup I used to reproduce this is: 2 machines with 4 x 10G bonded
-in a RR bond, so the same flow can be seen on multiple cards at the
-same time. Then I used multiple instances of ping/ping6 to generate
-fragmented packets and flood the machines with them while running
-other processes to load the attacked machine.
+     if ((sbsec->flags & SE_SBPROC) && !S_ISLNK(inode->i_mode)) {
+             if (opt_dentry) {
+                     isec->sclass = inode_mode_to_security_class(...)
+                     rc = selinux_proc_get_sid(opt_dentry,
+                                               isec->sclass,
+                                               &sid);
+                     if (rc)
+                             goto out_unlock;
+                     isec->sid = sid;
+             }
+     }
 
-*It is very important to have the _same flow_ coming in on multiple CPUs
-concurrently. Usually the attacked machine would die in less than 30
-minutes, if configured properly to have many evictor calls and timeouts
-it could happen in 10 minutes or so.
+   Since opt_dentry is null, we'll never call selinux_proc_get_sid()
+   and will leave the inode labeled with the label on the superblock.
+   I believe a fix would be to mimic the behavior of xattrs.  Look
+   for an alias of the inode.  If it can't be found, just leave the
+   inode uninitialized (and pick it up later) if it can be found, we
+   should be able to call selinux_proc_get_sid() ..."
 
-An important point to make is that any caller (frag_queue or timer) of
-inet_frag_kill will remove both the timer refcount and the
-original/guarding refcount thus removing everything that's keeping the
-frag from being freed at the next inet_frag_put.  All of this could
-happen before the frag was ever added to the LRU list, then it gets
-added and the evictor uses a freed fragment.
+On a system exhibiting this problem, you will notice a lot of files in
+/proc with the generic "proc_t" type (at least the ones that were
+accessed early in the boot), for example:
 
-An example for IPv6 would be if a fragment is being added and is at
-the stage of being inserted in the hash after the hash lock is
-released, but before inet_frag_lru_add executes (or is able to obtain
-the lru lock) another overlapping fragment for the same flow arrives
-at a different CPU which finds it in the hash, but since it's
-overlapping it drops it invoking inet_frag_kill and thus removing all
-guarding refcounts, and afterwards freeing it by invoking
-inet_frag_put which removes the last refcount added previously by
-inet_frag_find, then inet_frag_lru_add gets executed by
-inet_frag_intern and we have a freed fragment in the lru_list.
+   # ls -Z /proc/sys/kernel/shmmax | awk '{ print $4 " " $5 }'
+   system_u:object_r:proc_t:s0 /proc/sys/kernel/shmmax
 
-The fix is simple, just move the lru_add under the hash chain locked
-region so when a removing function is called it'll have to wait for
-the fragment to be added to the lru_list, and then it'll remove it (it
-works because the hash chain removal is done before the lru_list one
-and there's no window between the two list adds when the frag can get
-dropped). With this fix applied I couldn't kill the same machine in 24
-hours with the same setup.
+However, with this patch in place we see the expected result:
 
-Fixes: 3ef0eb0db4bf ("net: frag, move LRU list maintenance outside of
-rwlock")
+   # ls -Z /proc/sys/kernel/shmmax | awk '{ print $4 " " $5 }'
+   system_u:object_r:sysctl_kernel_t:s0 /proc/sys/kernel/shmmax
 
-CC: Florian Westphal <fw@strlen.de>
-CC: Jesper Dangaard Brouer <brouer@redhat.com>
-CC: David S. Miller <davem@davemloft.net>
-
-Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
-Acked-by: Jesper Dangaard Brouer <brouer@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
+Acked-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/inet_fragment.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/inet_fragment.c
-+++ b/net/ipv4/inet_fragment.c
-@@ -278,9 +278,10 @@ static struct inet_frag_queue *inet_frag
+---
+ security/selinux/hooks.c |   36 +++++++++++++++++++++++++++---------
+ 1 file changed, 27 insertions(+), 9 deletions(-)
+
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -1419,15 +1419,33 @@ static int inode_doinit_with_dentry(stru
+ 		isec->sid = sbsec->sid;
  
- 	atomic_inc(&qp->refcnt);
- 	hlist_add_head(&qp->list, &hb->chain);
-+	inet_frag_lru_add(nf, qp);
- 	spin_unlock(&hb->chain_lock);
- 	read_unlock(&f->lock);
--	inet_frag_lru_add(nf, qp);
-+
- 	return qp;
- }
- 
+ 		if ((sbsec->flags & SE_SBPROC) && !S_ISLNK(inode->i_mode)) {
+-			if (opt_dentry) {
+-				isec->sclass = inode_mode_to_security_class(inode->i_mode);
+-				rc = selinux_proc_get_sid(opt_dentry,
+-							  isec->sclass,
+-							  &sid);
+-				if (rc)
+-					goto out_unlock;
+-				isec->sid = sid;
+-			}
++			/* We must have a dentry to determine the label on
++			 * procfs inodes */
++			if (opt_dentry)
++				/* Called from d_instantiate or
++				 * d_splice_alias. */
++				dentry = dget(opt_dentry);
++			else
++				/* Called from selinux_complete_init, try to
++				 * find a dentry. */
++				dentry = d_find_alias(inode);
++			/*
++			 * This can be hit on boot when a file is accessed
++			 * before the policy is loaded.  When we load policy we
++			 * may find inodes that have no dentry on the
++			 * sbsec->isec_head list.  No reason to complain as
++			 * these will get fixed up the next time we go through
++			 * inode_doinit() with a dentry, before these inodes
++			 * could be used again by userspace.
++			 */
++			if (!dentry)
++				goto out_unlock;
++			isec->sclass = inode_mode_to_security_class(inode->i_mode);
++			rc = selinux_proc_get_sid(dentry, isec->sclass, &sid);
++			dput(dentry);
++			if (rc)
++				goto out_unlock;
++			isec->sid = sid;
+ 		}
+ 		break;
+ 	}
 
 
