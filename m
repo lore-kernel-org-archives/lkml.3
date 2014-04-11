@@ -1,67 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756844AbaDKJY6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 05:24:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37224 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756576AbaDKJV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 05:21:59 -0400
-Date: Fri, 11 Apr 2014 11:21:56 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: Richard Leitner <me@g0hl1n.net>
-Cc: r.marek@assembler.cz, wsa@the-dreams.de, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: busses: ali1563: fix checkpatch.pl issues
-Message-ID: <20140411112156.5e7e32c2@endymion.delvare>
-In-Reply-To: <1397150924-7260-1-git-send-email-me@g0hl1n.net>
-References: <1397150924-7260-1-git-send-email-me@g0hl1n.net>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1756882AbaDKJZX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 05:25:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:48870 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756250AbaDKJY5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 05:24:57 -0400
+Message-ID: <5347B4E5.6090901@canonical.com>
+Date: Fri, 11 Apr 2014 11:24:53 +0200
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Thomas Hellstrom <thellstrom@vmware.com>
+CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
+        ccross@google.com, linux-media@vger.kernel.org
+Subject: Re: [PATCH 2/2] [RFC v2 with seqcount] reservation: add suppport
+ for read-only access using rcu
+References: <20140409144239.26648.57918.stgit@patser> <20140409144831.26648.79163.stgit@patser> <53465A53.1090500@vmware.com> <53466D63.8080808@canonical.com> <53467B93.3000402@vmware.com> <5346B212.8050202@canonical.com> <5347A9FD.2070706@vmware.com>
+In-Reply-To: <5347A9FD.2070706@vmware.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+op 11-04-14 10:38, Thomas Hellstrom schreef:
+> Hi, Maarten.
+>
+> Here I believe we encounter a lot of locking inconsistencies.
+>
+> First, it seems you're use a number of pointers as RCU pointers without
+> annotating them as such and use the correct rcu
+> macros when assigning those pointers.
+>
+> Some pointers (like the pointers in the shared fence list) are both used
+> as RCU pointers (in dma_buf_poll()) for example,
+> or considered protected by the seqlock
+> (reservation_object_get_fences_rcu()), which I believe is OK, but then
+> the pointers must
+> be assigned using the correct rcu macros. In the memcpy in
+> reservation_object_get_fences_rcu() we might get away with an
+> ugly typecast, but with a verbose comment that the pointers are
+> considered protected by the seqlock at that location.
+>
+> So I've updated (attached) the headers with proper __rcu annotation and
+> locking comments according to how they are being used in the various
+> reading functions.
+> I believe if we want to get rid of this we need to validate those
+> pointers using the seqlock as well.
+> This will generate a lot of sparse warnings in those places needing
+> rcu_dereference()
+> rcu_assign_pointer()
+> rcu_dereference_protected()
+>
+> With this I think we can get rid of all ACCESS_ONCE macros: It's not
+> needed when the rcu_x() macros are used, and
+> it's never needed for the members protected by the seqlock, (provided
+> that the seq is tested). The only place where I think that's
+> *not* the case is at the krealloc in reservation_object_get_fences_rcu().
+>
+> Also I have some more comments in the
+> reservation_object_get_fences_rcu() function below:
+I felt that the barriers needed for rcu were already provided by checking the seqcount lock.
+But looking at rcu_dereference makes it seem harmless to add it in more places, it handles
+the ACCESS_ONCE and barrier() for us.
 
-On Thu, 10 Apr 2014 19:28:44 +0200, Richard Leitner wrote:
-> Fixed most checkpatch.pl issues
+We could probably get away with using RCU_INIT_POINTER on the writer side,
+because the smp_wmb is already done by arranging seqcount updates correctly.
 
-Thanks for doing this. Overall it looks good, there are just two
-warnings I would like fixed slightly differently:
-
-> @@ -268,13 +272,14 @@ static s32 ali1563_access(struct i2c_adapter * a, u16 addr,
->  	}
->  
->  	outb_p(((addr & 0x7f) << 1) | (rw & 0x01), SMB_HST_ADD);
-> -	outb_p((inb_p(SMB_HST_CNTL2) & ~HST_CNTL2_SIZEMASK) | (size << 3), SMB_HST_CNTL2);
-> +	outb_p((inb_p(SMB_HST_CNTL2) & ~HST_CNTL2_SIZEMASK) |
-> +			(size << 3), SMB_HST_CNTL2);
-
-Please align on the opening parenthesis.
-
-> @@ -392,14 +398,15 @@ static struct i2c_adapter ali1563_adapter = {
->  static int ali1563_probe(struct pci_dev *dev,
->  			 const struct pci_device_id *id_table)
->  {
-> -	int error;
-> +	int error = ali1563_setup(dev);
->  
-> -	if ((error = ali1563_setup(dev)))
-> +	if (error)
->  		goto exit;
-
-Please leave the variable declaration alone, so that the error check
-can immediately follow the assignment, as was the case before. Anyway
-it is not recommended to run "real code" during variable declaration.
-
-With these changes applied, feel free to add:
-
-Reviewed-by: Jean Delvare <jdelvare@suse.de>
-
-Thanks,
--- 
-Jean Delvare
-SUSE L3 Support
+> diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
+> index d89a98d2c37b..ca6ef0c4b358 100644
+> --- a/drivers/base/dma-buf.c
+> +++ b/drivers/base/dma-buf.c
+>
+> +int reservation_object_get_fences_rcu(struct reservation_object *obj,
+> +                      struct fence **pfence_excl,
+> +                      unsigned *pshared_count,
+> +                      struct fence ***pshared)
+> +{
+> +    unsigned shared_count = 0;
+> +    unsigned retry = 1;
+> +    struct fence **shared = NULL, *fence_excl = NULL;
+> +    int ret = 0;
+> +
+> +    while (retry) {
+> +        struct reservation_object_list *fobj;
+> +        unsigned seq, retry;
+> You're shadowing retry?
+Oops.
+>
+>> +
+>> +        seq = read_seqcount_begin(&obj->seq);
+>> +
+>> +        rcu_read_lock();
+>> +
+>> +        fobj = ACCESS_ONCE(obj->fence);
+>> +        if (fobj) {
+>> +            struct fence **nshared;
+>> +
+>> +            shared_count = ACCESS_ONCE(fobj->shared_count);
+>> +            nshared = krealloc(shared, sizeof(*shared) *
+>> shared_count, GFP_KERNEL);
+> krealloc inside rcu_read_lock(). Better to put this first in the loop.
+Except that shared_count isn't known until the rcu_read_lock is taken.
+> Thanks,
+> Thomas
+~Maarten
