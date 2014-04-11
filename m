@@ -1,98 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934698AbaDKPLh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 11:11:37 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:33979 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757876AbaDKPI4 (ORCPT
+	id S1756506AbaDKPOR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 11:14:17 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40814 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754045AbaDKPOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 11:08:56 -0400
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-input@vger.kernel.org, kernel@stlinux.com,
-        Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Subject: [PATCH v4 5/7] ARM: STi: DT: add keyscan for stih416
-Date: Fri, 11 Apr 2014 17:07:34 +0200
-Message-Id: <1397228856-9218-6-git-send-email-gabriel.fernandez@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1397228856-9218-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1397228856-9218-1-git-send-email-gabriel.fernandez@linaro.org>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-11_04:2014-04-11,2014-04-11,1970-01-01 signatures=0
+	Fri, 11 Apr 2014 11:14:16 -0400
+Date: Fri, 11 Apr 2014 17:14:09 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        nicolas.pitre@linaro.org, daniel.lezcano@linaro.org,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 0/8] sched,idle: need resched polling rework
+Message-ID: <20140411151409.GW11096@twins.programming.kicks-ass.net>
+References: <20140411134243.160989490@infradead.org>
+ <CALCETrWJZ1-T+qOY9v=KBOSJkck7YYe7khw_dYPc9Ar8WFgMKw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrWJZ1-T+qOY9v=KBOSJkck7YYe7khw_dYPc9Ar8WFgMKw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add keyscan support for stih416.
-It is disabled by default given that it is not enabled on all boards.
-Also there are PIOs conflict with already claimed lines.
+On Fri, Apr 11, 2014 at 08:00:23AM -0700, Andy Lutomirski wrote:
+> That being said, I think that this addresses once one of the two major
+> issues.  While the race you're fixing is more interesting, I think its
+> impact is dwarfed by the fact that ttwu_queue_remote completely
+> ignores polling.  (NB: I haven't actually tested this patch set, but I
+> did try to instrument this stuff awhile ago.)
+> 
+> To fix this, presumably the wake-from-idle path needs a
+> sched_ttwu_pending call, and ttwu_queue_remote could use resched_task.
+>  sched_ttwu_pending could benefit from a straightforward optimization:
+> it doesn't need rq->lock if llist is empty.
+> 
+> If you're not planning on trying to fix that, I can try to write up a
+> patch in the next day or two.
 
-Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
----
- arch/arm/boot/dts/stih416-pinctrl.dtsi | 16 ++++++++++++++++
- arch/arm/boot/dts/stih416.dtsi         | 12 ++++++++++++
- 2 files changed, 28 insertions(+)
+Right; I forgot to write about that; I was going to look at both ttwu
+and arch_send_call_function_single_ipi() after this got sorted.
 
-diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
-index aeea304..6252188 100644
---- a/arch/arm/boot/dts/stih416-pinctrl.dtsi
-+++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
-@@ -122,6 +122,22 @@
- 				};
- 			};
- 
-+			keyscan {
-+				pinctrl_keyscan: keyscan {
-+					st,pins {
-+						keyin0 = <&PIO0 2 ALT2 IN>;
-+						keyin1 = <&PIO0 3 ALT2 IN>;
-+						keyin2 = <&PIO0 4 ALT2 IN>;
-+						keyin3 = <&PIO2 6 ALT2 IN>;
-+
-+						keyout0 = <&PIO1 6 ALT2 OUT>;
-+						keyout1 = <&PIO1 7 ALT2 OUT>;
-+						keyout2 = <&PIO0 6 ALT2 OUT>;
-+						keyout3 = <&PIO2 7 ALT2 OUT>;
-+					};
-+				};
-+			};
-+
- 			sbc_i2c0 {
- 				pinctrl_sbc_i2c0_default: sbc_i2c0-default {
- 					st,pins {
-diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
-index 78746d2..d3bc263 100644
---- a/arch/arm/boot/dts/stih416.dtsi
-+++ b/arch/arm/boot/dts/stih416.dtsi
-@@ -224,5 +224,17 @@
- 
- 			status = "disabled";
- 		};
-+
-+		keyscan: keyscan@fe4b0000 {
-+			compatible = "st,sti-keyscan";
-+			status = "disabled";
-+			reg = <0xfe4b0000 0x2000>;
-+			interrupts = <GIC_SPI 212 IRQ_TYPE_NONE>;
-+			clocks = <&CLK_SYSIN>;
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&pinctrl_keyscan>;
-+			resets	= <&powerdown STIH416_KEYSCAN_POWERDOWN>,
-+				  <&softreset STIH416_KEYSCAN_SOFTRESET>;
-+		};
- 	};
- };
--- 
-1.9.1
+While you didn't complain about the remote function call IPI, Venki
+(while @google) did and this was their reason to look at this.
 
+> Even with all of this fixed, what happens when ttwu_queue_remote is
+> called with a task that has lower priority than whatever is currently
+> running on the targeted cpu?  I think the result is an IPI that serves
+> very little purpose other than avoiding taking a spinlock in the
+> waking thread.  This may be a bad tradeoff.  I doubt that this matters
+> for my particular workload, though.
+
+Today Mike also noted that on very high freq the IPI is actually a lot
+slower than doing the remote accesses for some weird reason --
+previously I've seen the remote wakeups queue a lot of wakeups and have
+the IPI take too long.
+
+So there's definitely something to prod at there.
