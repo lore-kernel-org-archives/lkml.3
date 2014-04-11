@@ -1,107 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853AbaDKKU1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 06:20:27 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51585 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754080AbaDKKUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 06:20:25 -0400
-Message-ID: <5347C1C2.6070304@ti.com>
-Date: Fri, 11 Apr 2014 15:49:46 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1756499AbaDKKY4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 06:24:56 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:48733 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753980AbaDKKYy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 06:24:54 -0400
+Date: Fri, 11 Apr 2014 06:24:51 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Alan Cox <alan@linux.intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Kristen Carlson Accardi <kristen.c.accardi@intel.com>,
+        Kefeng Wang <kefeng.wang@linaro.org>
+Subject: Re: [PATCH] ahci: disable DEVSLP for Intel Valleyview
+Message-ID: <20140411102451.GA26252@mtj.dyndns.org>
+References: <1397123934-27114-1-git-send-email-jacob.jun.pan@linux.intel.com>
+ <5800248.4YbvBlxjQc@amdc1032>
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>
-CC: <dan.j.williams@intel.com>, <dmaengine@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <joelf@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <mporter@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH v2 05/14] arm: common: edma: Select event queue 1 as default
- when booted with DT
-References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com> <1396357575-30585-6-git-send-email-peter.ujfalusi@ti.com> <5347A4FD.1030803@ti.com> <5347ACDE.7040407@ti.com> <5347AE49.5020109@ti.com> <5347B7F8.2000508@ti.com> <20140411094217.GA32284@intel.com>
-In-Reply-To: <20140411094217.GA32284@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5800248.4YbvBlxjQc@amdc1032>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 11 April 2014 03:12 PM, Vinod Koul wrote:
-> On Fri, Apr 11, 2014 at 12:38:00PM +0300, Peter Ujfalusi wrote:
->> On 04/11/2014 11:56 AM, Sekhar Nori wrote:
->>> On Friday 11 April 2014 02:20 PM, Peter Ujfalusi wrote:
->>>> On 04/11/2014 11:17 AM, Sekhar Nori wrote:
->>>>> On Tuesday 01 April 2014 06:36 PM, Peter Ujfalusi wrote:
->>>>>> Use the EVENTQ_1 for default and leave the EVENTQ_0 to be used by high
->>>>>> priority channels, like audio.
->>>>>>
->>>>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->>>>>
->>>>> Acked-by: Sekhar Nori <nsekhar@ti.com>
->>>>>
->>>>>> ---
->>>>>>  arch/arm/common/edma.c | 3 ++-
->>>>>>  1 file changed, 2 insertions(+), 1 deletion(-)
->>>>>>
->>>>>> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
->>>>>> index 86a8b263278f..19520e2519d9 100644
->>>>>> --- a/arch/arm/common/edma.c
->>>>>> +++ b/arch/arm/common/edma.c
->>>>>> @@ -1546,7 +1546,8 @@ static int edma_of_parse_dt(struct device *dev,
->>>>>>  
->>>>>>  	pdata->queue_priority_mapping = queue_priority_map;
->>>>>>  
->>>>>> -	pdata->default_queue = 0;
->>>>>> +	/* select queue 1 as default */
->>>>>
->>>>> It will be nice to expand the comment with explanation of why this is
->>>>> being chosen as default (lower priority queue by default for typical
->>>>> bulk data transfer).
->>>>
->>>> Yes, extended comment is a good idea.
->>>>
->>>> For the next version I think I'm going to change the code around default
->>>> TC/Queue and the non default queue selection, mostly based on Joel's comment:
->>>>
->>>> EVENTQ_1 as default queue.
->>>> Set the EVENTQ_1 priority to 7
->>>> EVENTQ_0 priority is going to stay 0 and EVENTQ_2 as 2
->>>>
->>>> Add new member to struct edma, like high_pri_queue.
->>>> When we set the queue priorities in edma_probe() we look for the highest
->>>> priority queue and save the number in high_pri_queue.
->>>>
->>>> I will rename the edma_request_non_default_queue() to
->>>> edma_request_high_pri_queue() and it will assign the channel to the high
->>>> priority queue.
->>>>
->>>> I think this way it is going to be more explicit and IMHO a bit more safer in
->>>> a sense the we are going to get high priority when we ask for it.
->>>
->>> Sounds much better. I had posted some ideas about adding support for
->>> channel priority in the core code but we can leave that for Vinod and
->>> Dan to say if they really see a need for that.
-> Is it part of this series?
+On Fri, Apr 11, 2014 at 12:14:14PM +0200, Bartlomiej Zolnierkiewicz wrote:
+> You most likely need to rebase your changes on top of the aforementioned
+> patch (Tejun?).
 
-No, the current series has an EDMA specific way of managing priority.
+Waiting for -rc1 to drop before applying patches.  I can resolve the
+conflict later when applying.  Please go ahead and post the updated
+version.
 
-> 
->> If we do it via the dmaengine core I think it would be better to have a new
->> flag to be passed to dmaengine_prep_dma_*().
->> We could have for example:
->> DMA_PREP_HIGH_PRI as flag to indicate that we need high priority DMA if it is
->> possible.
->> We can watch for this flag in the edma driver and act accordingly.
->> ALSA's dmaengine_pcm_prepare_and_submit() could set this flag unconditionally
->> since audio should be treated in this way if the DMA IP can do this.
-> Will the priority be different for each descriptor or would be based on channel
-> usage. If not then we can add this in dma_slave_config ?
+Thanks.
 
-The priority will be per-channel not per-transaction (at least for the
-use case we are talking about here).
-
-Thanks,
-Sekhar
+-- 
+tejun
