@@ -1,127 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756471AbaDKJhw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 05:37:52 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:48134 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755306AbaDKJhs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 05:37:48 -0400
-Date: Fri, 11 Apr 2014 11:37:15 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: Xiao Jin <jin.xiao@intel.com>, jhovold@gmail.com,
-        gnomes@lxorguk.ukuu.org.uk, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        david.a.cohen@linux.intel.com, yanmin.zhang@intel.com,
-        Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
-Subject: Re: [PATCH] cdc-acm: some enhancement on acm delayed write
-Message-ID: <20140411093715.GA17522@localhost>
-References: <53436770.9090008@intel.com>
- <53455FC6.7080009@intel.com>
- <1397116923.4802.10.camel@linux-fkkt.site>
+	id S1756543AbaDKJim (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 05:38:42 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55830 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750859AbaDKJii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 05:38:38 -0400
+Message-ID: <5347B7F8.2000508@ti.com>
+Date: Fri, 11 Apr 2014 12:38:00 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397116923.4802.10.camel@linux-fkkt.site>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Sekhar Nori <nsekhar@ti.com>, <dan.j.williams@intel.com>,
+        <vinod.koul@intel.com>
+CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <joelf@ti.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <mporter@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH v2 05/14] arm: common: edma: Select event queue 1 as default
+ when booted with DT
+References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com> <1396357575-30585-6-git-send-email-peter.ujfalusi@ti.com> <5347A4FD.1030803@ti.com> <5347ACDE.7040407@ti.com> <5347AE49.5020109@ti.com>
+In-Reply-To: <5347AE49.5020109@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ +CC: Jiri and Peter ]
-
-On Thu, Apr 10, 2014 at 10:02:03AM +0200, Oliver Neukum wrote:
-> On Wed, 2014-04-09 at 22:57 +0800, Xiao Jin wrote:
-> > Thanks all for the review. We meet with the problems when developing 
-> > product. I would like to explain my understanding.
-> > 
-> > On 04/08/2014 11:05 AM, Xiao Jin wrote:
-> > >
-> > > We find two problems on acm tty write delayed mechanism.
-> > > (1) When acm resume, the delayed wb will be started. But now
-> > > only one write can be saved during acm suspend. More acm write
-> > > may be abandoned.
-> > 
-> > The scenario usually happened when user space write series AT after acm 
-> > suspend. If acm accept the first AT, what's the reason for acm to refuse 
-> > the second AT? If write return 0, user space will try repeatedly until 
-> > resume. It looks simpler that acm accept all the data and sent out urb 
-> > when resume.
+On 04/11/2014 11:56 AM, Sekhar Nori wrote:
+> On Friday 11 April 2014 02:20 PM, Peter Ujfalusi wrote:
+>> On 04/11/2014 11:17 AM, Sekhar Nori wrote:
+>>> On Tuesday 01 April 2014 06:36 PM, Peter Ujfalusi wrote:
+>>>> Use the EVENTQ_1 for default and leave the EVENTQ_0 to be used by high
+>>>> priority channels, like audio.
+>>>>
+>>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>>>
+>>> Acked-by: Sekhar Nori <nsekhar@ti.com>
+>>>
+>>>> ---
+>>>>  arch/arm/common/edma.c | 3 ++-
+>>>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+>>>> index 86a8b263278f..19520e2519d9 100644
+>>>> --- a/arch/arm/common/edma.c
+>>>> +++ b/arch/arm/common/edma.c
+>>>> @@ -1546,7 +1546,8 @@ static int edma_of_parse_dt(struct device *dev,
+>>>>  
+>>>>  	pdata->queue_priority_mapping = queue_priority_map;
+>>>>  
+>>>> -	pdata->default_queue = 0;
+>>>> +	/* select queue 1 as default */
+>>>
+>>> It will be nice to expand the comment with explanation of why this is
+>>> being chosen as default (lower priority queue by default for typical
+>>> bulk data transfer).
+>>
+>> Yes, extended comment is a good idea.
+>>
+>> For the next version I think I'm going to change the code around default
+>> TC/Queue and the non default queue selection, mostly based on Joel's comment:
+>>
+>> EVENTQ_1 as default queue.
+>> Set the EVENTQ_1 priority to 7
+>> EVENTQ_0 priority is going to stay 0 and EVENTQ_2 as 2
+>>
+>> Add new member to struct edma, like high_pri_queue.
+>> When we set the queue priorities in edma_probe() we look for the highest
+>> priority queue and save the number in high_pri_queue.
+>>
+>> I will rename the edma_request_non_default_queue() to
+>> edma_request_high_pri_queue() and it will assign the channel to the high
+>> priority queue.
+>>
+>> I think this way it is going to be more explicit and IMHO a bit more safer in
+>> a sense the we are going to get high priority when we ask for it.
 > 
-> No. We cannot accept an arbitrary amount of data. It would let any
-> user OOM the system. There will have to be an arbitrary limit.
-> The simplest limit is 1 urb. And that is because we said that we
-> are ready to accept data.
+> Sounds much better. I had posted some ideas about adding support for
+> channel priority in the core code but we can leave that for Vinod and
+> Dan to say if they really see a need for that.
 
-That doesn't make much sense. Either tty can handle write returning 0 or
-it doesn't. Consider what happens when you get two consecutive writes
-(both preceded by write_room). Why should buffering the first write
-solve anything? In fact, it doesn't (at least not data being dropped).
+If we do it via the dmaengine core I think it would be better to have a new
+flag to be passed to dmaengine_prep_dma_*().
+We could have for example:
+DMA_PREP_HIGH_PRI as flag to indicate that we need high priority DMA if it is
+possible.
+We can watch for this flag in the edma driver and act accordingly.
+ALSA's dmaengine_pcm_prepare_and_submit() could set this flag unconditionally
+since audio should be treated in this way if the DMA IP can do this.
 
-If buffering is indeed needed, we must buffer at least as much data as
-reported by write_room, which in this cause should amount to buffering
-all write_urbs as Jin suggests.
+Not sure what to do with eDMA's 8 priority level. With that we could have high
+priority; low priority; low, but not the lowest priority; about in the middle
+priority; etc.
 
-And by the way, OOM is not an issue with Jin's patch as only ACM_NW (16)
-urbs are allocated and can be queued (the buffer should probably have
-been implemented using urb anchors, though).
+We could have also new callback in the dma_device struct with needed wrappers
+to set priority level, but where to draw the range? High, Mid and Low? Range
+of 0 - 10?
 
-> > > (2) acm tty port ASYNCB_INITIALIZED flag will be cleared when
-> > > close. If acm resume callback run after ASYNCB_INITIALIZED flag
-> > > cleared, there will have no chance for delayed write to start.
-> > > That lead to acm_wb.use can't be cleared. If user space open
-> > > acm tty again and try to setd, tty will be blocked in
-> > > tty_wait_until_sent for ever.
-> > >
-> > 
-> > We see tty write and close concurrently after acm suspend in this case. 
-> > It looks no method to avoid it from tty layer. acm_tty_write and
-> 
-> There is a delay user space can set.
-> 
-> > acm_resume call after acm_port_shutdown. It looks any action in 
-> > acm_port_shutdown can't solve the problem. As acm has accepted the user 
-> > space data, we can only find a way to send out urb. I feel anyway to 
-> > discard the data looks like a lie to user space.
-
-It's not a lie. Consider what happens if you write a large buffer to a
-device using a 300 baud line? We have mechanisms (e.g. tcdrain() and
-closing_wait) to let the user decide whether to wait for that data to
-drain or not. Please also note that when using flow control, this could
-take literally forever.
-
-Jin, what is closing_wait set to in your application? The default is 30
-seconds, which means there should have been plenty of the time for the
-device to resume (and submit any buffered data).
-
-> > In my understanding acm should accept data as much as possible, and send 
-> > out urb as soon as possible. What do you think of?
-> 
-> There's certainly no problem with sending out the data. Yet
-> simply resuming the device in shutdown() should do the job.
-
-As soon as possible, yes, but again, we shouldn't be sending out urbs
-at shutdown (that is were we stop transmissions). (Resuming the device at
-close could be ok, but that would still be redundant as we have already
-done the async autopm_get in write.)
-
-If the data is precious, make sure to have a reasonable closing_wait, or
-it may be dropped.
-
-All that said, there are some serious bugs in the ACM driver: write is
-dropping data and leaking write urbs, _and_ buffered urbs are never
-reclaimed at shutdown.
-
-If it is ok to not buffer anything in write even though write_room
-returned >0, then I think we should simply rip out the buffering from
-the ACM driver and rely on the tty buffers. Otherwise, we must make sure
-that the buffer space matches what is returned by write_room and buffer
-all 16 write-urbs if needed (preferably, using urb anchors).
-
-When implementing the first option, I came across what appears to be a
-line-discipline bug which needs to be addressed first, though. Please
-have a look at the follow-up RFC.
-
-Thanks,
-Johan
+-- 
+Péter
