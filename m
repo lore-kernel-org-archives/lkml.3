@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423066AbaDKQPW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:15:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56815 "EHLO
+	id S1422983AbaDKQPU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:15:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56819 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754288AbaDKQJb (ORCPT
+	with ESMTP id S1759446AbaDKQJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:31 -0400
+	Fri, 11 Apr 2014 12:09:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gilles Chanteperdrix <gilles.chanteperdrix@xenomai.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 17/23] net/at91_ether: avoid NULL pointer dereference
-Date: Fri, 11 Apr 2014 09:12:06 -0700
-Message-Id: <20140411161202.611355470@linuxfoundation.org>
+        Eyal Shapira <eyalx.shapira@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.14 18/23] iwlwifi: mvm: rs: fix search cycle rules
+Date: Fri, 11 Apr 2014 09:12:07 -0700
+Message-Id: <20140411161202.744093987@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411161200.236939691@linuxfoundation.org>
 References: <20140411161200.236939691@linuxfoundation.org>
@@ -28,36 +27,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gilles Chanteperdrix <gilles.chanteperdrix@xenomai.org>
+From: Eyal Shapira <eyal@wizery.com>
 
-[ Upstream commit c293fb785bdda64d88f197e6758a3c16ae83e569 ]
+commit 8930b05090acd321b1fc7c642528c697cb105c42 upstream.
 
-The at91_ether driver calls macb_mii_init passing a 'struct macb'
-structure whose tx_clk member is initialized to 0. However,
-macb_handle_link_change() expects tx_clk to be the result of
-a call to clk_get, and so IS_ERR(tx_clk) to be true if the clock
-is invalid. This causes an oops when booting Linux 3.14 on the
-csb637 board. The following changes avoids this.
+We should explore all possible columns when searching to be
+as resilient as possible to changing conditions. This fixes
+for example a scenario where even after a sudden creation of
+rssi difference between the 2 antennas we would keep doing MIMO
+at a low rate instead of switching to SISO at a higher rate using
+the better antenna which was the optimal configuration.
 
-Signed-off-by: Gilles Chanteperdrix <gilles.chanteperdrix@xenomai.org>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Eyal Shapira <eyalx.shapira@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/cadence/at91_ether.c |    3 +++
- 1 file changed, 3 insertions(+)
 
---- a/drivers/net/ethernet/cadence/at91_ether.c
-+++ b/drivers/net/ethernet/cadence/at91_ether.c
-@@ -342,6 +342,9 @@ static int __init at91ether_probe(struct
- 	}
- 	clk_enable(lp->pclk);
- 
-+	lp->hclk = ERR_PTR(-ENOENT);
-+	lp->tx_clk = ERR_PTR(-ENOENT);
-+
- 	/* Install the interrupt handler */
- 	dev->irq = platform_get_irq(pdev, 0);
- 	res = devm_request_irq(&pdev->dev, dev->irq, at91ether_interrupt, 0, dev->name, dev);
+---
+ drivers/net/wireless/iwlwifi/mvm/rs.c |   36 +++++++++++++++++-----------------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
+
+--- a/drivers/net/wireless/iwlwifi/mvm/rs.c
++++ b/drivers/net/wireless/iwlwifi/mvm/rs.c
+@@ -211,9 +211,9 @@ static const struct rs_tx_column rs_tx_c
+ 		.next_columns = {
+ 			RS_COLUMN_LEGACY_ANT_B,
+ 			RS_COLUMN_SISO_ANT_A,
++			RS_COLUMN_SISO_ANT_B,
+ 			RS_COLUMN_MIMO2,
+-			RS_COLUMN_INVALID,
+-			RS_COLUMN_INVALID,
++			RS_COLUMN_MIMO2_SGI,
+ 		},
+ 	},
+ 	[RS_COLUMN_LEGACY_ANT_B] = {
+@@ -221,10 +221,10 @@ static const struct rs_tx_column rs_tx_c
+ 		.ant = ANT_B,
+ 		.next_columns = {
+ 			RS_COLUMN_LEGACY_ANT_A,
++			RS_COLUMN_SISO_ANT_A,
+ 			RS_COLUMN_SISO_ANT_B,
+ 			RS_COLUMN_MIMO2,
+-			RS_COLUMN_INVALID,
+-			RS_COLUMN_INVALID,
++			RS_COLUMN_MIMO2_SGI,
+ 		},
+ 	},
+ 	[RS_COLUMN_SISO_ANT_A] = {
+@@ -234,8 +234,8 @@ static const struct rs_tx_column rs_tx_c
+ 			RS_COLUMN_SISO_ANT_B,
+ 			RS_COLUMN_MIMO2,
+ 			RS_COLUMN_SISO_ANT_A_SGI,
+-			RS_COLUMN_INVALID,
+-			RS_COLUMN_INVALID,
++			RS_COLUMN_SISO_ANT_B_SGI,
++			RS_COLUMN_MIMO2_SGI,
+ 		},
+ 		.checks = {
+ 			rs_siso_allow,
+@@ -248,8 +248,8 @@ static const struct rs_tx_column rs_tx_c
+ 			RS_COLUMN_SISO_ANT_A,
+ 			RS_COLUMN_MIMO2,
+ 			RS_COLUMN_SISO_ANT_B_SGI,
+-			RS_COLUMN_INVALID,
+-			RS_COLUMN_INVALID,
++			RS_COLUMN_SISO_ANT_A_SGI,
++			RS_COLUMN_MIMO2_SGI,
+ 		},
+ 		.checks = {
+ 			rs_siso_allow,
+@@ -263,8 +263,8 @@ static const struct rs_tx_column rs_tx_c
+ 			RS_COLUMN_SISO_ANT_B_SGI,
+ 			RS_COLUMN_MIMO2_SGI,
+ 			RS_COLUMN_SISO_ANT_A,
+-			RS_COLUMN_INVALID,
+-			RS_COLUMN_INVALID,
++			RS_COLUMN_SISO_ANT_B,
++			RS_COLUMN_MIMO2,
+ 		},
+ 		.checks = {
+ 			rs_siso_allow,
+@@ -279,8 +279,8 @@ static const struct rs_tx_column rs_tx_c
+ 			RS_COLUMN_SISO_ANT_A_SGI,
+ 			RS_COLUMN_MIMO2_SGI,
+ 			RS_COLUMN_SISO_ANT_B,
+-			RS_COLUMN_INVALID,
+-			RS_COLUMN_INVALID,
++			RS_COLUMN_SISO_ANT_A,
++			RS_COLUMN_MIMO2,
+ 		},
+ 		.checks = {
+ 			rs_siso_allow,
+@@ -292,10 +292,10 @@ static const struct rs_tx_column rs_tx_c
+ 		.ant = ANT_AB,
+ 		.next_columns = {
+ 			RS_COLUMN_SISO_ANT_A,
++			RS_COLUMN_SISO_ANT_B,
++			RS_COLUMN_SISO_ANT_A_SGI,
++			RS_COLUMN_SISO_ANT_B_SGI,
+ 			RS_COLUMN_MIMO2_SGI,
+-			RS_COLUMN_INVALID,
+-			RS_COLUMN_INVALID,
+-			RS_COLUMN_INVALID,
+ 		},
+ 		.checks = {
+ 			rs_mimo_allow,
+@@ -307,10 +307,10 @@ static const struct rs_tx_column rs_tx_c
+ 		.sgi = true,
+ 		.next_columns = {
+ 			RS_COLUMN_SISO_ANT_A_SGI,
++			RS_COLUMN_SISO_ANT_B_SGI,
++			RS_COLUMN_SISO_ANT_A,
++			RS_COLUMN_SISO_ANT_B,
+ 			RS_COLUMN_MIMO2,
+-			RS_COLUMN_INVALID,
+-			RS_COLUMN_INVALID,
+-			RS_COLUMN_INVALID,
+ 		},
+ 		.checks = {
+ 			rs_mimo_allow,
 
 
