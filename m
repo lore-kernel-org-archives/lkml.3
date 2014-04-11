@@ -1,98 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759442AbaDKOfs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 10:35:48 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:55516 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758983AbaDKOfM (ORCPT
+	id S934881AbaDKOkl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 10:40:41 -0400
+Received: from mail-lb0-f180.google.com ([209.85.217.180]:64241 "EHLO
+	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759361AbaDKOki (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 10:35:12 -0400
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-input@vger.kernel.org, kernel@stlinux.com,
-        Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Subject: [PATCH v3 5/7] ARM: STi: DT: add keyscan for stih416
-Date: Fri, 11 Apr 2014 16:33:35 +0200
-Message-Id: <1397226820-5604-9-git-send-email-gabriel.fernandez@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1397226820-5604-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1397226820-5604-1-git-send-email-gabriel.fernandez@linaro.org>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-11_04:2014-04-11,2014-04-11,1970-01-01 signatures=0
+	Fri, 11 Apr 2014 10:40:38 -0400
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arm@kernel.org, arnd@arndb.de,
+        Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH] ARM: moxart: add select CLKSRC_OF to ARCH_MOXART
+Date: Fri, 11 Apr 2014 16:40:26 +0200
+Message-Id: <1397227226-20763-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add keyscan support for stih416.
-It is disabled by default given that it is not enabled on all boards.
-Also there are PIOs conflict with already claimed lines.
+CLKSRC_OF was recently removed from options selected by
+ARCH_MULTIPLATFORM, breaking boot on MOXA ART SoCs.
 
-Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Add it to options selected by ARCH_MOXART.
+
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
 ---
- arch/arm/boot/dts/stih416-pinctrl.dtsi | 16 ++++++++++++++++
- arch/arm/boot/dts/stih416.dtsi         | 12 ++++++++++++
- 2 files changed, 28 insertions(+)
 
-diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
-index aeea304..6252188 100644
---- a/arch/arm/boot/dts/stih416-pinctrl.dtsi
-+++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
-@@ -122,6 +122,22 @@
- 				};
- 			};
- 
-+			keyscan {
-+				pinctrl_keyscan: keyscan {
-+					st,pins {
-+						keyin0 = <&PIO0 2 ALT2 IN>;
-+						keyin1 = <&PIO0 3 ALT2 IN>;
-+						keyin2 = <&PIO0 4 ALT2 IN>;
-+						keyin3 = <&PIO2 6 ALT2 IN>;
-+
-+						keyout0 = <&PIO1 6 ALT2 OUT>;
-+						keyout1 = <&PIO1 7 ALT2 OUT>;
-+						keyout2 = <&PIO0 6 ALT2 OUT>;
-+						keyout3 = <&PIO2 7 ALT2 OUT>;
-+					};
-+				};
-+			};
-+
- 			sbc_i2c0 {
- 				pinctrl_sbc_i2c0_default: sbc_i2c0-default {
- 					st,pins {
-diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
-index 78746d2..d3bc263 100644
---- a/arch/arm/boot/dts/stih416.dtsi
-+++ b/arch/arm/boot/dts/stih416.dtsi
-@@ -224,5 +224,17 @@
- 
- 			status = "disabled";
- 		};
-+
-+		keyscan: keyscan@fe4b0000 {
-+			compatible = "st,sti-keyscan";
-+			status = "disabled";
-+			reg = <0xfe4b0000 0x2000>;
-+			interrupts = <GIC_SPI 212 IRQ_TYPE_NONE>;
-+			clocks = <&CLK_SYSIN>;
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&pinctrl_keyscan>;
-+			resets	= <&powerdown STIH416_KEYSCAN_POWERDOWN>,
-+				  <&softreset STIH416_KEYSCAN_SOFTRESET>;
-+		};
- 	};
- };
+Notes:
+    see "Merge tag 'cleanup-3.15' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc" dfc25e4503aef6b82a1de4a0fbe19aafa8648fbe
+    
+    Applies to next-20140409
+
+ arch/arm/mach-moxart/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/mach-moxart/Kconfig b/arch/arm/mach-moxart/Kconfig
+index 82a4ba8..7b320c6 100644
+--- a/arch/arm/mach-moxart/Kconfig
++++ b/arch/arm/mach-moxart/Kconfig
+@@ -2,6 +2,7 @@ config ARCH_MOXART
+ 	bool "MOXA ART SoC" if ARCH_MULTI_V4
+ 	select CPU_FA526
+ 	select ARM_DMA_MEM_BUFFERABLE
++	select CLKSRC_OF
+ 	select CLKSRC_MMIO
+ 	select GENERIC_IRQ_CHIP
+ 	select ARCH_REQUIRE_GPIOLIB
 -- 
-1.9.1
+1.8.2.1
 
