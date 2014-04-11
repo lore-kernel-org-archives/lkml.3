@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422901AbaDKA3E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 20:29:04 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:54933 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422748AbaDKAZv (ORCPT
+	id S1759417AbaDKA3d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 20:29:33 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:48115 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422768AbaDKAZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 20:25:51 -0400
+	Thu, 10 Apr 2014 20:25:50 -0400
 From: Andreas Noever <andreas.noever@gmail.com>
 To: linux-kernel@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>
 Cc: Daniel J Blueman <daniel@quora.org>, Bjorn Helgaas <bhelgaas@google.com>,
         linux-pci@vger.kernel.org, Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH v2 09/14] thunderbolt: Handle hotplug events
-Date: Fri, 11 Apr 2014 02:24:56 +0200
-Message-Id: <1397175901-4023-10-git-send-email-andreas.noever@gmail.com>
+Subject: [PATCH v2 08/14] thunderbolt: Scan for downstream switches
+Date: Fri, 11 Apr 2014 02:24:55 +0200
+Message-Id: <1397175901-4023-9-git-send-email-andreas.noever@gmail.com>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1397175901-4023-1-git-send-email-andreas.noever@gmail.com>
 References: <1397175901-4023-1-git-send-email-andreas.noever@gmail.com>
@@ -21,163 +21,239 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We reveive a plug event callback whenever a thunderbolt device is added
-or removed. This patch fills in the tb_handle_hotplug method and starts
-reacting to these events by adding/removing switches from the hierarchy.
+Add utility methods tb_port_state and tb_wait_for_port. Add
+tb_scan_switch which recursively checks for downstream switches.
 
 Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
 ---
- drivers/thunderbolt/switch.c | 42 +++++++++++++++++++++++++++++++++++++++-
- drivers/thunderbolt/tb.c     | 46 +++++++++++++++++++++++++++++++++++++++++++-
- drivers/thunderbolt/tb.h     |  3 +++
- 3 files changed, 89 insertions(+), 2 deletions(-)
+ drivers/thunderbolt/switch.c | 97 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/thunderbolt/tb.c     | 44 ++++++++++++++++++++
+ drivers/thunderbolt/tb.h     | 16 ++++++++
+ 3 files changed, 157 insertions(+)
 
 diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
-index 279b9c5..c092f7c 100644
+index 21457cc..279b9c5 100644
 --- a/drivers/thunderbolt/switch.c
 +++ b/drivers/thunderbolt/switch.c
-@@ -195,6 +195,24 @@ static void tb_dump_switch(struct tb *tb, struct tb_regs_switch_header *sw)
- 		sw->__unknown1, sw->__unknown4);
+@@ -53,6 +53,92 @@ static void tb_dump_port(struct tb *tb, struct tb_regs_port_header *port)
  }
  
-+struct tb_switch *get_switch_at_route(struct tb_switch *sw, u64 route)
+ /**
++ * tb_port_state() - get connectedness state of a port
++ *
++ * The port must have a TB_CAP_PHY (i.e. it should be a real port).
++ *
++ * Return: Returns an enum tb_port_state on success or an error code on failure.
++ */
++static int tb_port_state(struct tb_port *port)
 +{
-+	u8 next_port = route; /*
-+			       * Routes use a stride of 8 bits,
-+			       * eventhough a port index has 6 bits at most.
-+			       * */
-+	if (route == 0)
-+		return sw;
-+	if (next_port > sw->config.max_port_number)
-+		return 0;
-+	if (tb_is_upstream_port(&sw->ports[next_port]))
-+		return 0;
-+	if (!sw->ports[next_port].remote)
-+		return 0;
-+	return get_switch_at_route(sw->ports[next_port].remote->sw,
-+				   route >> TB_ROUTE_SHIFT);
++	struct tb_cap_phy phy;
++	int res;
++	if (port->cap_phy == 0) {
++		tb_port_WARN(port, "does not have a PHY\n");
++		return -EINVAL;
++	}
++	res = tb_port_read(port, &phy, TB_CFG_PORT, port->cap_phy, 2);
++	if (res)
++		return res;
++	return phy.state;
 +}
 +
- /**
-  * tb_plug_events_active() - enable/disable plug events on a switch
++/**
++ * tb_wait_for_port() - wait for a port to become ready
++ *
++ * Wait up to 1 second for a port to reach state TB_PORT_UP. If
++ * wait_if_unplugged is set then we also wait if the port is in state
++ * TB_PORT_UNPLUGGED (it takes a while for the device to be registered after
++ * switch resume). Otherwise we only wait if a device is registered but the link
++ * has not yet been established.
++ *
++ * Return: Returns an error code on failure. Returns 0 if the port is not
++ * connected or failed to reach state TB_PORT_UP within one second. Returns 1
++ * if the port is connected and in state TB_PORT_UP.
++ */
++int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged)
++{
++	int retries = 10;
++	int state;
++	if (!port->cap_phy) {
++		tb_port_WARN(port, "does not have PHY\n");
++		return -EINVAL;
++	}
++	if (tb_is_upstream_port(port)) {
++		tb_port_WARN(port, "is the upstream port\n");
++		return -EINVAL;
++	}
++
++	while (retries--) {
++		state = tb_port_state(port);
++		if (state < 0)
++			return state;
++		if (state == TB_PORT_DISABLED) {
++			tb_port_info(port, "is disabled (state: 0)\n");
++			return 0;
++		}
++		if (state == TB_PORT_UNPLUGGED) {
++			if (wait_if_unplugged) {
++				/* used during resume */
++				tb_port_info(port,
++					     "is unplugged (state: 7), retrying...\n");
++				msleep(100);
++				continue;
++			}
++			tb_port_info(port, "is unplugged (state: 7)\n");
++			return 0;
++		}
++		if (state == TB_PORT_UP) {
++			tb_port_info(port,
++				     "is connected, link is up (state: 2)\n");
++			return 1;
++		}
++
++		/*
++		 * After plug-in the state is TB_PORT_CONNECTING. Give it some
++		 * time.
++		 */
++		tb_port_info(port,
++			     "is connected, link is not up (state: %d), retrying...\n",
++			     state);
++		msleep(100);
++	}
++	tb_port_warn(port,
++		     "failed to reach state TB_PORT_UP. Ignoring port...\n");
++	return 0;
++}
++
++/**
+  * tb_init_port() - initialize a port
   *
-@@ -243,7 +261,8 @@ void tb_switch_free(struct tb_switch *sw)
- 		sw->ports[i].remote = NULL;
- 	}
+  * This is a helper method for tb_switch_alloc. Does not check or initialize
+@@ -63,6 +149,7 @@ static void tb_dump_port(struct tb *tb, struct tb_regs_port_header *port)
+ static int tb_init_port(struct tb_switch *sw, u8 port_nr)
+ {
+ 	int res;
++	int cap;
+ 	struct tb_port *port = &sw->ports[port_nr];
+ 	port->sw = sw;
+ 	port->port = port_nr;
+@@ -71,6 +158,16 @@ static int tb_init_port(struct tb_switch *sw, u8 port_nr)
+ 	if (res)
+ 		return res;
  
--	tb_plug_events_active(sw, false);
-+	if (!sw->is_unplugged)
-+		tb_plug_events_active(sw, false);
++	/* Port 0 is the switch itself and has no PHY. */
++	if (port->config.type == TB_TYPE_PORT && port_nr != 0) {
++		cap = tb_find_cap(port, TB_CFG_PORT, TB_CAP_PHY);
++
++		if (cap > 0)
++			port->cap_phy = cap;
++		else
++			tb_port_WARN(port, "non switch port without a PHY\n");
++	}
++
+ 	tb_dump_port(sw->tb, &port->config);
  
- 	kfree(sw->ports);
- 	kfree(sw);
-@@ -327,3 +346,24 @@ err:
- 	return NULL;
+ 	/* TODO: Read dual link port, DP port and more from EEPROM. */
+diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
+index f1b6100..3b716fd 100644
+--- a/drivers/thunderbolt/tb.c
++++ b/drivers/thunderbolt/tb.c
+@@ -11,6 +11,47 @@
+ #include "tb.h"
+ #include "tb_regs.h"
+ 
++
++/* enumeration & hot plug handling */
++
++
++static void tb_scan_port(struct tb_port *port);
++
++/**
++ * tb_scan_switch() - scan for and initialize downstream switches
++ */
++static void tb_scan_switch(struct tb_switch *sw)
++{
++	int i;
++	for (i = 1; i <= sw->config.max_port_number; i++)
++		tb_scan_port(&sw->ports[i]);
++}
++
++/**
++ * tb_scan_port() - check for and initialize switches below port
++ */
++static void tb_scan_port(struct tb_port *port)
++{
++	struct tb_switch *sw;
++	if (tb_is_upstream_port(port))
++		return;
++	if (port->config.type != TB_TYPE_PORT)
++		return;
++	if (tb_wait_for_port(port, false) <= 0)
++		return;
++	if (port->remote) {
++		tb_port_WARN(port, "port already has a remote!\n");
++		return;
++	}
++	sw = tb_switch_alloc(port->sw->tb, tb_downstream_route(port));
++	if (!sw)
++		return;
++	port->remote = tb_upstream_port(sw);
++	tb_upstream_port(sw)->remote = port;
++	tb_scan_switch(sw);
++}
++
++
+ /* hotplug handling */
+ 
+ struct tb_hotplug_event {
+@@ -134,6 +175,9 @@ struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi)
+ 	if (!tb->root_switch)
+ 		goto err_locked;
+ 
++	/* Full scan to discover devices added before the driver was loaded. */
++	tb_scan_switch(tb->root_switch);
++
+ 	/* Allow tb_handle_hotplug to progress events */
+ 	tb->hotplug_active = true;
+ 	mutex_unlock(&tb->lock);
+diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
+index feb6c7a..7e7b3fe 100644
+--- a/drivers/thunderbolt/tb.h
++++ b/drivers/thunderbolt/tb.h
+@@ -29,6 +29,7 @@ struct tb_port {
+ 	struct tb_regs_port_header config;
+ 	struct tb_switch *sw;
+ 	struct tb_port *remote; /* remote port, NULL if not connected */
++	int cap_phy; /* offset, zero if not found */
+ 	u8 port; /* port number on switch */
+ };
+ 
+@@ -160,6 +161,8 @@ void thunderbolt_shutdown_and_free(struct tb *tb);
+ struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route);
+ void tb_switch_free(struct tb_switch *sw);
+ 
++int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged);
++
+ int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, u32 value);
+ 
+ 
+@@ -173,4 +176,17 @@ static inline bool tb_is_upstream_port(struct tb_port *port)
+ 	return port == tb_upstream_port(port->sw);
  }
  
 +/**
-+ * tb_sw_set_unpplugged() - set is_unplugged on switch and downstream switches
++ * tb_downstream_route() - get route to downstream switch
++ *
++ * Port must not be the upstream port (otherwise a loop is created).
++ *
++ * Return: Returns a route to the switch behind @port.
 + */
-+void tb_sw_set_unpplugged(struct tb_switch *sw)
++static inline u64 tb_downstream_route(struct tb_port *port)
 +{
-+	int i;
-+	if (sw == sw->tb->root_switch) {
-+		tb_sw_WARN(sw, "cannot unplug root switch\n");
-+		return;
-+	}
-+	if (sw->is_unplugged) {
-+		tb_sw_WARN(sw, "is_unplugged already set\n");
-+		return;
-+	}
-+	sw->is_unplugged = true;
-+	for (i = 0; i <= sw->config.max_port_number; i++) {
-+		if (!tb_is_upstream_port(&sw->ports[i]) && sw->ports[i].remote)
-+			tb_sw_set_unpplugged(sw->ports[i].remote->sw);
-+	}
++	return tb_route(port->sw)
++	       | ((u64) port->port << (port->sw->config.depth * 8));
 +}
 +
-diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
-index 3b716fd..1efcacc 100644
---- a/drivers/thunderbolt/tb.c
-+++ b/drivers/thunderbolt/tb.c
-@@ -71,11 +71,55 @@ static void tb_handle_hotplug(struct work_struct *work)
- {
- 	struct tb_hotplug_event *ev = container_of(work, typeof(*ev), work);
- 	struct tb *tb = ev->tb;
-+	struct tb_switch *sw;
-+	struct tb_port *port;
- 	mutex_lock(&tb->lock);
- 	if (!tb->hotplug_active)
- 		goto out; /* during init, suspend or shutdown */
- 
--	/* do nothing for now */
-+	sw = get_switch_at_route(tb->root_switch, ev->route);
-+	if (!sw) {
-+		tb_warn(tb,
-+			"hotplug event from non existent switch %llx:%x (unplug: %d)\n",
-+			ev->route, ev->port, ev->unplug);
-+		goto out;
-+	}
-+	if (ev->port > sw->config.max_port_number) {
-+		tb_warn(tb,
-+			"hotplug event from non existent port %llx:%x (unplug: %d)\n",
-+			ev->route, ev->port, ev->unplug);
-+		goto out;
-+	}
-+	port = &sw->ports[ev->port];
-+	if (tb_is_upstream_port(port)) {
-+		tb_warn(tb,
-+			"hotplug event for upstream port %llx:%x (unplug: %d)\n",
-+			ev->route, ev->port, ev->unplug);
-+		goto out;
-+	}
-+	if (ev->unplug) {
-+		if (port->remote) {
-+			tb_port_info(port, "unplugged\n");
-+			tb_sw_set_unpplugged(port->remote->sw);
-+			tb_switch_free(port->remote->sw);
-+			port->remote = NULL;
-+		} else {
-+			tb_port_info(port,
-+				     "got unplug event for disconnected port, ignoring\n");
-+		}
-+	} else if (port->remote) {
-+		tb_port_info(port,
-+			     "got plug event for connected port, ignoring\n");
-+	} else {
-+		tb_port_info(port, "hotplug: scanning\n");
-+		tb_scan_port(port);
-+		if (!port->remote) {
-+			tb_port_info(port, "hotplug: no switch found\n");
-+		} else if (port->remote->sw->config.depth > 1) {
-+			tb_sw_warn(port->remote->sw,
-+				   "hotplug: chaining not supported\n");
-+		}
-+	}
- out:
- 	mutex_unlock(&tb->lock);
- 	kfree(ev);
-diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
-index 7e7b3fe..3b83510 100644
---- a/drivers/thunderbolt/tb.h
-+++ b/drivers/thunderbolt/tb.h
-@@ -20,6 +20,7 @@ struct tb_switch {
- 	struct tb_port *ports;
- 	struct tb *tb;
- 	int cap_plug_events; /* offset, zero if not found */
-+	bool is_unplugged; /* unplugged, will go away */
- };
- 
- /**
-@@ -160,6 +161,8 @@ void thunderbolt_shutdown_and_free(struct tb *tb);
- 
- struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route);
- void tb_switch_free(struct tb_switch *sw);
-+void tb_sw_set_unpplugged(struct tb_switch *sw);
-+struct tb_switch *get_switch_at_route(struct tb_switch *sw, u64 route);
- 
- int tb_wait_for_port(struct tb_port *port, bool wait_if_unplugged);
- 
+ #endif
 -- 
 1.9.2
 
