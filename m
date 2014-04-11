@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423008AbaDKQQm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:16:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56807 "EHLO
+	id S1759765AbaDKQRL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:17:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56801 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759720AbaDKQJb (ORCPT
+	with ESMTP id S1759713AbaDKQJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:31 -0400
+	Fri, 11 Apr 2014 12:09:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 15/23] isdnloop: several buffer overflows
-Date: Fri, 11 Apr 2014 09:12:04 -0700
-Message-Id: <20140411161202.345257241@linuxfoundation.org>
+        Davidlohr Bueso <davidlohr@hp.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 05/23] futex: avoid race between requeue and wake
+Date: Fri, 11 Apr 2014 09:11:54 -0700
+Message-Id: <20140411161200.967310128@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411161200.236939691@linuxfoundation.org>
 References: <20140411161200.236939691@linuxfoundation.org>
@@ -27,95 +29,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-[ Upstream commit 7563487cbf865284dcd35e9ef5a95380da046737 ]
+commit 69cd9eba38867a493a043bb13eb9b33cad5f1a9a upstream.
 
-There are three buffer overflows addressed in this patch.
+Jan Stancek reported:
+ "pthread_cond_broadcast/4-1.c testcase from openposix testsuite (LTP)
+  occasionally fails, because some threads fail to wake up.
 
-1) In isdnloop_fake_err() we add an 'E' to a 60 character string and
-then copy it into a 60 character buffer.  I have made the destination
-buffer 64 characters and I'm changed the sprintf() to a snprintf().
+  Testcase creates 5 threads, which are all waiting on same condition.
+  Main thread then calls pthread_cond_broadcast() without holding mutex,
+  which calls:
 
-2) In isdnloop_parse_cmd(), p points to a 6 characters into a 60
-character buffer so we have 54 characters.  The ->eazlist[] is 11
-characters long.  I have modified the code to return if the source
-buffer is too long.
+      futex(uaddr1, FUTEX_CMP_REQUEUE_PRIVATE, 1, 2147483647, uaddr2, ..)
 
-3) In isdnloop_command() the cbuf[] array was 60 characters long but the
-max length of the string then can be up to 79 characters.  I made the
-cbuf array 80 characters long and changed the sprintf() to snprintf().
-I also removed the temporary "dial" buffer and changed it to use "p"
-directly.
+  This immediately wakes up single thread A, which unlocks mutex and
+  tries to wake up another thread:
 
-Unfortunately, we pass the "cbuf" string from isdnloop_command() to
-isdnloop_writecmd() which truncates anything over 60 characters to make
-it fit in card->omsg[].  (It can accept values up to 255 characters so
-long as there is a '\n' character every 60 characters).  For now I have
-just fixed the memory corruption bug and left the other problems in this
-driver alone.
+      futex(uaddr2, FUTEX_WAKE_PRIVATE, 1)
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+  If thread A manages to call futex_wake() before any waiters are
+  requeued for uaddr2, no other thread is woken up"
+
+The ordering constraints for the hash bucket waiter counting are that
+the waiter counts have to be incremented _before_ getting the spinlock
+(because the spinlock acts as part of the memory barrier), but the
+"requeue" operation didn't honor those rules, and nobody had even
+thought about that case.
+
+This fairly simple patch just increments the waiter count for the target
+hash bucket (hb2) when requeing a futex before taking the locks.  It
+then decrements them again after releasing the lock - the code that
+actually moves the futex(es) between hash buckets will do the additional
+required waiter count housekeeping.
+
+Reported-and-tested-by: Jan Stancek <jstancek@redhat.com>
+Acked-by: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/isdn/isdnloop/isdnloop.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
 
---- a/drivers/isdn/isdnloop/isdnloop.c
-+++ b/drivers/isdn/isdnloop/isdnloop.c
-@@ -518,9 +518,9 @@ static isdnloop_stat isdnloop_cmd_table[
- static void
- isdnloop_fake_err(isdnloop_card *card)
- {
--	char buf[60];
-+	char buf[64];
+---
+ kernel/futex.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -1450,6 +1450,7 @@ retry:
+ 	hb2 = hash_futex(&key2);
  
--	sprintf(buf, "E%s", card->omsg);
-+	snprintf(buf, sizeof(buf), "E%s", card->omsg);
- 	isdnloop_fake(card, buf, -1);
- 	isdnloop_fake(card, "NAK", -1);
- }
-@@ -903,6 +903,8 @@ isdnloop_parse_cmd(isdnloop_card *card)
- 	case 7:
- 		/* 0x;EAZ */
- 		p += 3;
-+		if (strlen(p) >= sizeof(card->eazlist[0]))
-+			break;
- 		strcpy(card->eazlist[ch - 1], p);
- 		break;
- 	case 8:
-@@ -1133,7 +1135,7 @@ isdnloop_command(isdn_ctrl *c, isdnloop_
- {
- 	ulong a;
- 	int i;
--	char cbuf[60];
-+	char cbuf[80];
- 	isdn_ctrl cmd;
- 	isdnloop_cdef cdef;
+ retry_private:
++	hb_waiters_inc(hb2);
+ 	double_lock_hb(hb1, hb2);
  
-@@ -1198,7 +1200,6 @@ isdnloop_command(isdn_ctrl *c, isdnloop_
+ 	if (likely(cmpval != NULL)) {
+@@ -1459,6 +1460,7 @@ retry_private:
+ 
+ 		if (unlikely(ret)) {
+ 			double_unlock_hb(hb1, hb2);
++			hb_waiters_dec(hb2);
+ 
+ 			ret = get_user(curval, uaddr1);
+ 			if (ret)
+@@ -1508,6 +1510,7 @@ retry_private:
  			break;
- 		if ((c->arg & 255) < ISDNLOOP_BCH) {
- 			char *p;
--			char dial[50];
- 			char dcode[4];
+ 		case -EFAULT:
+ 			double_unlock_hb(hb1, hb2);
++			hb_waiters_dec(hb2);
+ 			put_futex_key(&key2);
+ 			put_futex_key(&key1);
+ 			ret = fault_in_user_writeable(uaddr2);
+@@ -1517,6 +1520,7 @@ retry_private:
+ 		case -EAGAIN:
+ 			/* The owner was exiting, try again. */
+ 			double_unlock_hb(hb1, hb2);
++			hb_waiters_dec(hb2);
+ 			put_futex_key(&key2);
+ 			put_futex_key(&key1);
+ 			cond_resched();
+@@ -1592,6 +1596,7 @@ retry_private:
  
- 			a = c->arg;
-@@ -1210,10 +1211,10 @@ isdnloop_command(isdn_ctrl *c, isdnloop_
- 			} else
- 				/* Normal Dial */
- 				strcpy(dcode, "CAL");
--			strcpy(dial, p);
--			sprintf(cbuf, "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
--				dcode, dial, c->parm.setup.si1,
--				c->parm.setup.si2, c->parm.setup.eazmsn);
-+			snprintf(cbuf, sizeof(cbuf),
-+				 "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
-+				 dcode, p, c->parm.setup.si1,
-+				 c->parm.setup.si2, c->parm.setup.eazmsn);
- 			i = isdnloop_writecmd(cbuf, strlen(cbuf), 0, card);
- 		}
- 		break;
+ out_unlock:
+ 	double_unlock_hb(hb1, hb2);
++	hb_waiters_dec(hb2);
+ 
+ 	/*
+ 	 * drop_futex_key_refs() must be called outside the spinlocks. During
 
 
