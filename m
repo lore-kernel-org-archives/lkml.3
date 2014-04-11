@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794AbaDKKfl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 06:35:41 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:39288 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756994AbaDKK0M (ORCPT
+	id S932146AbaDKK0L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 06:26:11 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:50587 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756722AbaDKK0J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 06:26:12 -0400
+	Fri, 11 Apr 2014 06:26:09 -0400
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Miklos Szeredi <mszeredi@suse.cz>, Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH 03/15] arm: add renameat2 syscall
-Date: Fri, 11 Apr 2014 12:25:39 +0200
-Message-Id: <1397211951-20549-4-git-send-email-miklos@szeredi.hu>
+Subject: [PATCH 00/15] wire up renameat2 syscall for various archs
+Date: Fri, 11 Apr 2014 12:25:36 +0200
+Message-Id: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
 X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
-References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+This series wires up the recently added renameat2 syscall for archs that are
+up-to-date in the sense that they appear to support the latest syscalls.  I
+haven't touched the rest of them..
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Russell King <linux@arm.linux.org.uk>
+Plus three NR_syscalls miscalculation fixes.
+
+Untested.
+
+Thanks,
+Miklos
+
 ---
- arch/arm/include/asm/unistd.h      | 2 +-
- arch/arm/include/uapi/asm/unistd.h | 1 +
- arch/arm/kernel/calls.S            | 1 +
- 3 files changed, 3 insertions(+), 1 deletion(-)
+Miklos Szeredi (15):
+      i386: add renameat2 syscall
+      arm: __NR_syscalls fix
+      arm: add renameat2 syscall
+      arm64: __NR_compat_syscalls fix
+      arm64: add renameat2 syscall
+      m68k: add renameat2 syscall
+      mips: add renameat2 syscall
+      ia64: add renameat2 syscall
+      parisc: add renameat2 syscall
+      powerpc: add renameat2 syscall
+      s390: NR_syscalls fix
+      s390: add renameat2 syscall
+      sparc: add renameat2 syscall
+      xtensa: add renameat2 syscall
+      asm-generic: add renameat2 syscall
 
-diff --git a/arch/arm/include/asm/unistd.h b/arch/arm/include/asm/unistd.h
-index c4cd2060cac2..fbda7a3e5abe 100644
---- a/arch/arm/include/asm/unistd.h
-+++ b/arch/arm/include/asm/unistd.h
-@@ -15,7 +15,7 @@
- 
- #include <uapi/asm/unistd.h>
- 
--#define __NR_syscalls  (382)
-+#define __NR_syscalls  (383)
- #define __ARM_NR_cmpxchg		(__ARM_NR_BASE+0x00fff0)
- 
- #define __ARCH_WANT_STAT64
-diff --git a/arch/arm/include/uapi/asm/unistd.h b/arch/arm/include/uapi/asm/unistd.h
-index fb5584d0cc05..ba94446c72d9 100644
---- a/arch/arm/include/uapi/asm/unistd.h
-+++ b/arch/arm/include/uapi/asm/unistd.h
-@@ -408,6 +408,7 @@
- #define __NR_finit_module		(__NR_SYSCALL_BASE+379)
- #define __NR_sched_setattr		(__NR_SYSCALL_BASE+380)
- #define __NR_sched_getattr		(__NR_SYSCALL_BASE+381)
-+#define __NR_renameat2			(__NR_SYSCALL_BASE+382)
- 
- /*
-  * This may need to be greater than __NR_last_syscall+1 in order to
-diff --git a/arch/arm/kernel/calls.S b/arch/arm/kernel/calls.S
-index 166e945de832..8f51bdcdacbb 100644
---- a/arch/arm/kernel/calls.S
-+++ b/arch/arm/kernel/calls.S
-@@ -391,6 +391,7 @@
- 		CALL(sys_finit_module)
- /* 380 */	CALL(sys_sched_setattr)
- 		CALL(sys_sched_getattr)
-+		CALL(sys_renameat2)
- #ifndef syscalls_counted
- .equ syscalls_padding, ((NR_syscalls + 3) & ~3) - NR_syscalls
- #define syscalls_counted
--- 
-1.8.1.4
+---
+ arch/arm/include/asm/unistd.h          |  2 +-
+ arch/arm/include/uapi/asm/unistd.h     |  1 +
+ arch/arm/kernel/calls.S                |  1 +
+ arch/arm64/include/asm/unistd32.h      |  3 ++-
+ arch/ia64/include/asm/unistd.h         |  2 +-
+ arch/ia64/include/uapi/asm/unistd.h    |  1 +
+ arch/m68k/include/asm/unistd.h         |  2 +-
+ arch/m68k/include/uapi/asm/unistd.h    |  1 +
+ arch/m68k/kernel/syscalltable.S        |  1 +
+ arch/mips/include/uapi/asm/unistd.h    | 15 +++++++++------
+ arch/mips/kernel/scall32-o32.S         |  1 +
+ arch/mips/kernel/scall64-64.S          |  1 +
+ arch/mips/kernel/scall64-n32.S         |  1 +
+ arch/mips/kernel/scall64-o32.S         |  1 +
+ arch/parisc/include/uapi/asm/unistd.h  |  3 ++-
+ arch/parisc/kernel/syscall_table.S     |  1 +
+ arch/powerpc/include/asm/systbl.h      |  1 +
+ arch/powerpc/include/asm/unistd.h      |  2 +-
+ arch/powerpc/include/uapi/asm/unistd.h |  1 +
+ arch/s390/include/uapi/asm/unistd.h    |  3 ++-
+ arch/s390/kernel/compat_wrapper.c      |  1 +
+ arch/s390/kernel/syscalls.S            |  1 +
+ arch/sparc/include/uapi/asm/unistd.h   |  3 ++-
+ arch/sparc/kernel/systbls_32.S         |  1 +
+ arch/sparc/kernel/systbls_64.S         |  2 ++
+ arch/x86/syscalls/syscall_32.tbl       |  1 +
+ arch/xtensa/include/uapi/asm/unistd.h  |  5 ++++-
+ include/uapi/asm-generic/unistd.h      |  4 +++-
+ 28 files changed, 46 insertions(+), 16 deletions(-)
 
