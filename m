@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584AbaDKVW0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 17:22:26 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:43059 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831AbaDKVWY (ORCPT
+	id S1754750AbaDKVXr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 17:23:47 -0400
+Received: from g5t1625.atlanta.hp.com ([15.192.137.8]:17143 "EHLO
+	g5t1625.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754300AbaDKVXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 17:22:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPDyKFpS3x902iQqEC69hkryHVGieeDykD=rBJX5OqYAD+afwA@mail.gmail.com>
-References: <1396995583-5475-1-git-send-email-markus.mayer@linaro.org>
-	<CAPDyKFpS3x902iQqEC69hkryHVGieeDykD=rBJX5OqYAD+afwA@mail.gmail.com>
-Date: Fri, 11 Apr 2014 14:22:22 -0700
-Message-ID: <CAPdLdq=btQda3eJZAOwH7=CyEkcLipqa=5cyZ5Rn3vkm9cJM+A@mail.gmail.com>
-Subject: Re: [PATCH RESEND] mmc: Delay the card_event callback into the
- mmc_rescan worker
-From: Markus Mayer <markus.mayer@linaro.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Chris Ball <chris@printf.net>, Christian Daudt <bcm@fixthebug.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 11 Apr 2014 17:23:45 -0400
+Message-ID: <1397251420.2503.25.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] [v2] mm: pass VM_BUG_ON() reason to dump_page()
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, dave.hansen@linux.intel.com,
+        kirill.shutemov@linux.intel.com
+Date: Fri, 11 Apr 2014 14:23:40 -0700
+In-Reply-To: <20140411204232.C8CF1A7A@viggo.jf.intel.com>
+References: <20140411204232.C8CF1A7A@viggo.jf.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 April 2014 01:56, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+On Fri, 2014-04-11 at 13:42 -0700, Dave Hansen wrote:
+> Changes from v1:
+>  * Fix tabs before spaces in the multi-line #define
+> 
+> --
+> From: Dave Hansen <dave.hansen@linux.intel.com>
+> 
+> I recently added a patch to let folks pass a "reason" string
+> dump_page() which gets dumped out along with the page's data.
+> This essentially saves the bug-reader a trip in to the source
+> to figure out why we BUG_ON()'d.
+> 
+> The new VM_BUG_ON_PAGE() passes in NULL for "reason".  It seems
+> like we might as well pass the BUG_ON() condition if we have it.
+> This will bloat kernels a bit with ~160 new strings, but this
+> is all under a debugging option anyway.
+> 
+> 	page:ffffea0008560280 count:1 mapcount:0 mapping:(null) index:0x0
+> 	page flags: 0xbfffc0000000001(locked)
+> 	page dumped because: VM_BUG_ON_PAGE(PageLocked(page))
+> 	------------[ cut here ]------------
+> 	kernel BUG at /home/davehans/linux.git/mm/filemap.c:464!
+> 	invalid opcode: 0000 [#1] SMP
+> 	CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.0+ #251
+> 	Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> 	...
+> 
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+> Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
->> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
->> index 098374b..ff7fd2e 100644
->> --- a/drivers/mmc/core/core.c
->> +++ b/drivers/mmc/core/core.c
->> @@ -2421,6 +2421,11 @@ void mmc_rescan(struct work_struct *work)
->>                 container_of(work, struct mmc_host, detect.work);
->>         int i;
->>
->> +       if (host->trigger_card_event && host->ops->card_event) {
->> +               host->ops->card_event(host);
->> +               host->trigger_card_event = false;
->> +       }
->> +
->
-> So this might be a stupid question. :-)
->
-> Could you elaborate on why the host->ops->card_event then is needed at
-> all. Why can't host drivers use host->ops->get_cd to perform the
-> actions they need?
->
-> The reason for bringing this up, is because this patch moves the
-> invokes of the these callbacks quite close to each other. Earlier they
-> were more separated.
+Acked-by: Davidlohr Bueso <davidlohr@hp.com>
 
-Thanks for the question. I looked at the code and I don't think
-host->ops->get_cd would work in my case.
-
-I proposed this change based on behaviour exhibited by
-sdhci-bcm-kona.c (mutex sleeps in the IRQ handler cause "scheduling
-while atomic" errors). The idea of this patch is to move the card
-event processing (which does the actual card detection) out of the
-interrupt handler, so the mutex in my callback can be used without
-problems.
-
-https://git.linaro.org/landing-teams/working/broadcom/kernel.git/blob/refs/heads/review/mmc-card-event:/drivers/mmc/host/sdhci-bcm-kona.c#l160
-
-An earlier proposal to fix this issue was to simply replace the mutex
-with a spinlock in sdhci-bcm-kona.c, but that was not seen as good
-solution. (https://lkml.org/lkml/2014/3/5/527)
-
-Based on your question, I looked through the code some more. From what
-I can tell, SDHCI hosts have their host->ops->get_cd set to
-sdhci_get_cd() in sdhci.c (specifically by sdhci_add_host()). So,
-get_cd is not available to me to customize.
-
-Maybe we need a different solution from what I proposed above, but I
-don't think get_cd will do the trick.
-
-I can see how moving card_event and get_cd closer together, like I
-have done, can be a reason for concern. On the flip-side, de-coupling
-card_event from IRQ processing seems to be beneficial.
-
-What do you think?
-
-Regards,
--Markus
