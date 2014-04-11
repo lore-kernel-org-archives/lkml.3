@@ -1,1249 +1,967 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757627AbaDKO5e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 10:57:34 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:13604 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755985AbaDKO53 (ORCPT
+	id S1758738AbaDKO5o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 10:57:44 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:43416 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755601AbaDKO5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 10:57:29 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-1d-534802d75327
+	Fri, 11 Apr 2014 10:57:38 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-2a-534802e0a7cd
 From: Jacek Anaszewski <j.anaszewski@samsung.com>
 To: linux-media@vger.kernel.org, linux-leds@vger.kernel.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: s.nawrocki@samsung.com, a.hajda@samsung.com, kyungmin.park@samsung.com,
         Jacek Anaszewski <j.anaszewski@samsung.com>,
-        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
-Subject: [PATCH/RFC v3 1/5] leds: Add sysfs and kernel internal API for flash
- LEDs
-Date: Fri, 11 Apr 2014 16:56:52 +0200
-Message-id: <1397228216-6657-2-git-send-email-j.anaszewski@samsung.com>
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        SangYoung Son <hello.son@smasung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH/RFC v3 3/5] leds: Add support for max77693 mfd flash cell
+Date: Fri, 11 Apr 2014 16:56:54 +0200
+Message-id: <1397228216-6657-4-git-send-email-j.anaszewski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1397228216-6657-1-git-send-email-j.anaszewski@samsung.com>
 References: <1397228216-6657-1-git-send-email-j.anaszewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrALMWRmVeSWpSXmKPExsVy+t9jAd3rTB7BBht6FS1urTvHanF050Qm
-	i/lHgKzeq88ZLc42vWG3uLxrDpvF1jfrGC16Nmxltdi96ymrxeE37awOXB47Z91l99gz/wer
-	R9+WVYwenzfJBbBEcdmkpOZklqUW6dslcGU0H//EXHC9m6miu/UpawPj+juMXYycHBICJhKz
-	G9cyQ9hiEhfurWfrYuTiEBJYxCixfMdKFginnUmicfksVpAqNgFDiZ8vXjOB2CIC5RLTpj5i
-	AiliFtjHKLFp2nGwUcICIRK3rkE0sAioSlz8fh3M5hVwl+h82Q60ggNonYLEnEk2IGFOAQ+J
-	Ow/XsIDYQkAlx55PZZrAyLuAkWEVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnC4PZPewbiq
-	weIQowAHoxIP74FLbsFCrIllxZW5hxglOJiVRHg3XXUPFuJNSaysSi3Kjy8qzUktPsQozcGi
-	JM57sNU6UEggPbEkNTs1tSC1CCbLxMEp1cDoLqW2UX+DvFd71Rld4+Mnn58Xev8ue9NF8baM
-	uQ31G3m1/k+coJX4d3rYQcW3v27P77vb9ueJqODVr49kuz43nb4tHv//3bZNXT9TItvXC52N
-	4m7d1/jYrups+i2jn016/Y/1t2y9Za2d1/orfCnv2ReJMUxV0gw50Q/PbeZ/ZP9W44iay/uV
-	SizFGYmGWsxFxYkAqlHqlTMCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJLMWRmVeSWpSXmKPExsVy+t9jAd2HTB7BBicELW6tO8dqcXTnRCaL
+	+UeArI/3/rFa9F59zmhxtukNu8X9r0cZLS7vmsNmsfXNOkaLng1bWS1273rKanH4TTurxelu
+	Vgdej52z7rJ73Lm2h81j3slAjz3zf7B69G1Zxejx7OM7Zo/Pm+QC2KO4bFJSczLLUov07RK4
+	Mia2nWIpOHGRsaKtt5W1gfHmWsYuRk4OCQETidsHnzND2GISF+6tZ+ti5OIQEljEKHH18h2w
+	hJBAO5PE5NtJIDabgKHEzxevmUBsEYFyiWlTHzGBNDALrGeSmDizhQ0kISzgKfHv6QT2LkYO
+	DhYBVYkzj5xAwrwC7hIrGv+xgoQlBBQk5kyyAQlzCnhI3Hm4hgVilbvEsedTmSYw8i5gZFjF
+	KJpakFxQnJSea6RXnJhbXJqXrpecn7uJERygz6R3MK5qsDjEKMDBqMTDe+CSW7AQa2JZcWXu
+	IUYJDmYlEd5NV92DhXhTEiurUovy44tKc1KLDzFKc7AoifMebLUOFBJITyxJzU5NLUgtgsky
+	cXBKNTAquD7618TXG1b8WEspQHj+HfYlqdOmL3Y0PDP7b7bcktBLDz82eAi/M/7G8itlWsCi
+	dS7lirWbs1JmLQ7QLDEt+nP4+Grum/WfHxowH4y/khzNyHcuIkNjw+rlLxZaWjQyS896aO97
+	sln97kuG+nSpf1ryGzttP7v+XzP/eUByipSl+ZTJbzmUWIozEg21mIuKEwFGO8NrTAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some LED devices support two operation modes - torch and
-flash. This patch provides support for flash LED devices
-in the LED subsystem by introducing new sysfs attributes
-and kernel internal interface. The attributes being
-introduced are: flash_brightness, flash_strobe, flash_timeout,
-max_flash_timeout, max_flash_brightness, flash_fault and
-optional external_strobe, indicator_brightness and
-max_indicator_btightness. All the flash related features
-are placed in a separate module.
-The modifications aim to be compatible with V4L2 framework
-requirements related to the flash devices management. The
-design assumes that V4L2 sub-device can take of the LED class
-device control and communicate with it through the kernel
-internal interface. When V4L2 Flash sub-device file is
-opened, the LED class device sysfs interface is made
-unavailable.
+This patch adds led-flash support to Maxim max77693 chipset.
+A device can be exposed to user space through LED subsystem
+sysfs interface or through V4L2 subdevice when the support
+for V4L2 Flash sub-devices is enabled. Device supports up to
+two leds which can work in flash and torch mode. Leds can
+be triggered externally or by software.
 
+Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
 Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 Cc: Bryan Wu <cooloney@gmail.com>
 Cc: Richard Purdie <rpurdie@rpsys.net>
+Cc: SangYoung Son <hello.son@smasung.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/leds/Kconfig        |    8 +
- drivers/leds/Makefile       |    1 +
- drivers/leds/led-class.c    |   36 ++-
- drivers/leds/led-flash.c    |  627 +++++++++++++++++++++++++++++++++++++++++++
- drivers/leds/led-triggers.c |   16 +-
- drivers/leds/leds.h         |    6 +
- include/linux/leds.h        |   50 +++-
- include/linux/leds_flash.h  |  252 +++++++++++++++++
- 8 files changed, 982 insertions(+), 14 deletions(-)
- create mode 100644 drivers/leds/led-flash.c
- create mode 100644 include/linux/leds_flash.h
+ drivers/leds/Kconfig         |   10 +
+ drivers/leds/Makefile        |    1 +
+ drivers/leds/leds-max77693.c |  794 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/mfd/max77693.c       |    2 +-
+ include/linux/mfd/max77693.h |   38 ++
+ 5 files changed, 844 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/leds/leds-max77693.c
 
 diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index 2062682..1e1c81f 100644
+index 1e1c81f..b2152a6 100644
 --- a/drivers/leds/Kconfig
 +++ b/drivers/leds/Kconfig
-@@ -19,6 +19,14 @@ config LEDS_CLASS
- 	  This option enables the led sysfs class in /sys/class/leds.  You'll
- 	  need this to do anything useful with LEDs.  If unsure, say N.
+@@ -462,6 +462,16 @@ config LEDS_TCA6507
+ 	  LED driver chips accessed via the I2C bus.
+ 	  Driver support brightness control and hardware-assisted blinking.
  
-+config LEDS_CLASS_FLASH
-+	tristate "Flash LEDs Support"
-+	depends on LEDS_CLASS
++config LEDS_MAX77693
++	tristate "LED support for MAX77693 Flash"
++	depends on LEDS_CLASS_FLASH
++	depends on MFD_MAX77693
++	depends on OF
 +	help
-+	  This option enables support for flash LED devices. Say Y if you
-+	  want to use flash specific features of a LED device, if they
-+	  are supported.
++	  This option enables support for the flash part of the MAX77693
++	  multifunction device. It has build in control for two leds in flash
++	  and torch mode.
 +
- comment "LED drivers"
- 
- config LEDS_88PM860X
+ config LEDS_MAX8997
+ 	tristate "LED support for MAX8997 PMIC"
+ 	depends on LEDS_CLASS && MFD_MAX8997
 diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-index 3cd76db..8861b86 100644
+index 8861b86..64f6234 100644
 --- a/drivers/leds/Makefile
 +++ b/drivers/leds/Makefile
-@@ -2,6 +2,7 @@
- # LED Core
- obj-$(CONFIG_NEW_LEDS)			+= led-core.o
- obj-$(CONFIG_LEDS_CLASS)		+= led-class.o
-+obj-$(CONFIG_LEDS_CLASS_FLASH)		+= led-flash.o
- obj-$(CONFIG_LEDS_TRIGGERS)		+= led-triggers.o
- 
- # LED Platform Drivers
-diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
-index f37d63c..58f16c3 100644
---- a/drivers/leds/led-class.c
-+++ b/drivers/leds/led-class.c
-@@ -9,15 +9,16 @@
-  * published by the Free Software Foundation.
-  */
- 
--#include <linux/module.h>
--#include <linux/kernel.h>
-+#include <linux/ctype.h>
-+#include <linux/device.h>
-+#include <linux/err.h>
- #include <linux/init.h>
-+#include <linux/kernel.h>
- #include <linux/list.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
- #include <linux/spinlock.h>
--#include <linux/device.h>
- #include <linux/timer.h>
--#include <linux/err.h>
--#include <linux/ctype.h>
- #include <linux/leds.h>
- #include "leds.h"
- 
-@@ -45,28 +46,38 @@ static ssize_t brightness_store(struct device *dev,
- {
- 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
- 	unsigned long state;
--	ssize_t ret = -EINVAL;
-+	ssize_t ret;
-+
-+	mutex_lock(&led_cdev->led_lock);
-+
-+	if (led_sysfs_is_locked(led_cdev)) {
-+		ret = -EBUSY;
-+		goto unlock;
-+	}
- 
- 	ret = kstrtoul(buf, 10, &state);
- 	if (ret)
--		return ret;
-+		goto unlock;
- 
- 	if (state == LED_OFF)
- 		led_trigger_remove(led_cdev);
- 	__led_set_brightness(led_cdev, state);
-+	ret = size;
- 
--	return size;
-+unlock:
-+	mutex_unlock(&led_cdev->led_lock);
-+	return ret;
- }
- static DEVICE_ATTR_RW(brightness);
- 
--static ssize_t led_max_brightness_show(struct device *dev,
-+static ssize_t max_brightness_show(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
- 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
- 
- 	return sprintf(buf, "%u\n", led_cdev->max_brightness);
- }
--static DEVICE_ATTR(max_brightness, 0444, led_max_brightness_show, NULL);
-+static DEVICE_ATTR_RO(max_brightness);
- 
- #ifdef CONFIG_LEDS_TRIGGERS
- static DEVICE_ATTR(trigger, 0644, led_trigger_show, led_trigger_store);
-@@ -174,6 +185,8 @@ EXPORT_SYMBOL_GPL(led_classdev_suspend);
- void led_classdev_resume(struct led_classdev *led_cdev)
- {
- 	led_cdev->brightness_set(led_cdev, led_cdev->brightness);
-+	if (led_cdev->flash_resume)
-+		led_cdev->flash_resume(led_cdev);
- 	led_cdev->flags &= ~LED_SUSPENDED;
- }
- EXPORT_SYMBOL_GPL(led_classdev_resume);
-@@ -218,6 +231,7 @@ int led_classdev_register(struct device *parent, struct led_classdev *led_cdev)
- #ifdef CONFIG_LEDS_TRIGGERS
- 	init_rwsem(&led_cdev->trigger_lock);
- #endif
-+	mutex_init(&led_cdev->led_lock);
- 	/* add to the list of leds */
- 	down_write(&leds_list_lock);
- 	list_add_tail(&led_cdev->node, &leds_list);
-@@ -271,6 +285,8 @@ void led_classdev_unregister(struct led_classdev *led_cdev)
- 	down_write(&leds_list_lock);
- 	list_del(&led_cdev->node);
- 	up_write(&leds_list_lock);
-+
-+	mutex_destroy(&led_cdev->led_lock);
- }
- EXPORT_SYMBOL_GPL(led_classdev_unregister);
- 
-diff --git a/drivers/leds/led-flash.c b/drivers/leds/led-flash.c
+@@ -52,6 +52,7 @@ obj-$(CONFIG_LEDS_MC13783)		+= leds-mc13783.o
+ obj-$(CONFIG_LEDS_NS2)			+= leds-ns2.o
+ obj-$(CONFIG_LEDS_NETXBIG)		+= leds-netxbig.o
+ obj-$(CONFIG_LEDS_ASIC3)		+= leds-asic3.o
++obj-$(CONFIG_LEDS_MAX77693)		+= leds-max77693.o
+ obj-$(CONFIG_LEDS_MAX8997)		+= leds-max8997.o
+ obj-$(CONFIG_LEDS_LM355x)		+= leds-lm355x.o
+ obj-$(CONFIG_LEDS_BLINKM)		+= leds-blinkm.o
+diff --git a/drivers/leds/leds-max77693.c b/drivers/leds/leds-max77693.c
 new file mode 100644
-index 0000000..9d482a4
+index 0000000..979736c
 --- /dev/null
-+++ b/drivers/leds/led-flash.c
-@@ -0,0 +1,627 @@
++++ b/drivers/leds/leds-max77693.c
+@@ -0,0 +1,794 @@
 +/*
-+ * LED Class Flash interface
++ *	Copyright (C) 2014, Samsung Electronics Co., Ltd.
 + *
-+ * Copyright (C) 2014 Samsung Electronics Co., Ltd.
-+ * Author: Jacek Anaszewski <j.anaszewski@samsung.com>
++ *	Authors: Andrzej Hajda <a.hajda@samsung.com>
++ *		 Jacek Anaszewski <j.anaszewski@samsung.com>
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * version 2 as published by the Free Software Foundation.
 + */
 +
-+#include <linux/device.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/leds.h>
++#include <asm/div64.h>
 +#include <linux/leds_flash.h>
-+#include "leds.h"
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <media/v4l2-flash.h>
++#include <linux/workqueue.h>
++#include <linux/mfd/max77693.h>
++#include <linux/mfd/max77693-private.h>
 +
-+static ssize_t flash_brightness_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
++#define MAX77693_LED_NAME		"max77693-flash"
++
++#define MAX77693_TORCH_IOUT_BITS	4
++
++#define MAX77693_TORCH_NO_TIMER		0x40
++#define MAX77693_FLASH_TIMER_LEVEL	0x80
++
++#define MAX77693_FLASH_EN_OFF		0
++#define MAX77693_FLASH_EN_FLASH		1
++#define MAX77693_FLASH_EN_TORCH		2
++#define MAX77693_FLASH_EN_ON		3
++
++#define MAX77693_FLASH_EN1_SHIFT	6
++#define MAX77693_FLASH_EN2_SHIFT	4
++#define MAX77693_TORCH_EN1_SHIFT	2
++#define MAX77693_TORCH_EN2_SHIFT	0
++
++#define MAX77693_FLASH_LOW_BATTERY_EN	0x80
++
++#define MAX77693_FLASH_BOOST_FIXED	0x04
++#define MAX77693_FLASH_BOOST_LEDNUM_2	0x80
++
++#define MAX77693_FLASH_TIMEOUT_MIN	62500
++#define MAX77693_FLASH_TIMEOUT_MAX	1000000
++#define MAX77693_FLASH_TIMEOUT_STEP	62500
++
++#define MAX77693_TORCH_TIMEOUT_MIN	262000
++#define MAX77693_TORCH_TIMEOUT_MAX	15728000
++
++#define MAX77693_FLASH_IOUT_MIN		15625
++#define MAX77693_FLASH_IOUT_MAX_1LED	1000000
++#define MAX77693_FLASH_IOUT_MAX_2LEDS	625000
++#define MAX77693_FLASH_IOUT_STEP	15625
++
++#define MAX77693_TORCH_IOUT_MIN		15625
++#define MAX77693_TORCH_IOUT_MAX		250000
++#define MAX77693_TORCH_IOUT_STEP	15625
++
++#define MAX77693_FLASH_VSYS_MIN		2400
++#define MAX77693_FLASH_VSYS_MAX		3400
++#define MAX77693_FLASH_VSYS_STEP	33
++
++#define MAX77693_FLASH_VOUT_MIN		3300
++#define MAX77693_FLASH_VOUT_MAX		5500
++#define MAX77693_FLASH_VOUT_STEP	25
++#define MAX77693_FLASH_VOUT_RMIN	0x0c
++
++#define MAX77693_LED_STATUS_FLASH_ON	(1 << 3)
++#define MAX77693_LED_STATUS_TORCH_ON	(1 << 2)
++
++#define MAX77693_LED_FLASH_INT_FLED2_OPEN	(1 << 0)
++#define MAX77693_LED_FLASH_INT_FLED2_SHORT	(1 << 1)
++#define MAX77693_LED_FLASH_INT_FLED1_OPEN	(1 << 2)
++#define MAX77693_LED_FLASH_INT_FLED1_SHORT	(1 << 3)
++#define MAX77693_LED_FLASH_INT_OVER_CURRENT	(1 << 4)
++
++#define MAX77693_MODE_OFF			0
++#define MAX77693_MODE_FLASH			(1 << 0)
++#define MAX77693_MODE_TORCH			(1 << 1)
++#define MAX77693_MODE_FLASH_EXTERNAL		(1 << 2)
++
++enum {
++	FLASH1,
++	FLASH2,
++	TORCH1,
++	TORCH2
++};
++
++enum {
++	FLASH,
++	TORCH
++};
++
++struct max77693_led {
++	struct regmap *regmap;
++	struct platform_device *pdev;
++	struct max77693_led_platform_data *pdata;
++	struct mutex lock;
++
++	struct led_classdev ldev;
++
++	unsigned int torch_brightness;
++	struct work_struct work_brightness_set;
++	unsigned int mode_flags;
++};
++
++static u8 max77693_led_iout_to_reg(u32 ua)
 +{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	unsigned long state;
-+	ssize_t ret;
++	if (ua < MAX77693_FLASH_IOUT_MIN)
++		ua = MAX77693_FLASH_IOUT_MIN;
++	return (ua - MAX77693_FLASH_IOUT_MIN) / MAX77693_FLASH_IOUT_STEP;
++}
 +
-+	mutex_lock(&led_cdev->led_lock);
++static u8 max77693_flash_timeout_to_reg(u32 us)
++{
++	return (us - MAX77693_FLASH_TIMEOUT_MIN) / MAX77693_FLASH_TIMEOUT_STEP;
++}
 +
-+	if (led_sysfs_is_locked(led_cdev)) {
-+		ret = -EBUSY;
-+		goto unlock;
++static const u32 max77693_torch_timeouts[] = {
++	262000, 524000, 786000, 1048000,
++	1572000, 2096000, 2620000, 3144000,
++	4193000, 5242000, 6291000, 7340000,
++	9437000, 11534000, 13631000, 1572800
++};
++
++static u8 max77693_torch_timeout_to_reg(u32 us)
++{
++	int i, b = 0, e = ARRAY_SIZE(max77693_torch_timeouts);
++
++	while (e - b > 1) {
++		i = b + (e - b) / 2;
++		if (us < max77693_torch_timeouts[i])
++			e = i;
++		else
++			b = i;
++	}
++	return b;
++}
++
++static struct max77693_led *ldev_to_led(struct led_classdev *ldev)
++{
++	return container_of(ldev, struct max77693_led, ldev);
++}
++
++static u32 max77693_torch_timeout_from_reg(u8 reg)
++{
++	return max77693_torch_timeouts[reg];
++}
++
++static u8 max77693_led_vsys_to_reg(u32 mv)
++{
++	return ((mv - MAX77693_FLASH_VSYS_MIN) / MAX77693_FLASH_VSYS_STEP) << 2;
++}
++
++static u8 max77693_led_vout_to_reg(u32 mv)
++{
++	return (mv - MAX77693_FLASH_VOUT_MIN) / MAX77693_FLASH_VOUT_STEP +
++		MAX77693_FLASH_VOUT_RMIN;
++}
++
++/* split composite current @i into two @iout according to @imax weights */
++static void max77693_calc_iout(u32 iout[2], u32 i, u32 imax[2])
++{
++	u64 t = i;
++
++	t *= imax[1];
++	do_div(t, imax[0] + imax[1]);
++
++	iout[1] = (u32)t / MAX77693_FLASH_IOUT_STEP * MAX77693_FLASH_IOUT_STEP;
++	iout[0] = i - iout[1];
++}
++
++static int max77693_set_mode(struct max77693_led *led, unsigned int mode)
++{
++	struct max77693_led_platform_data *p = led->pdata;
++	struct regmap *rmap = led->regmap;
++	int ret, v = 0;
++
++	if (mode & MAX77693_MODE_TORCH) {
++		if (p->trigger[TORCH1] & MAX77693_LED_TRIG_SOFT)
++			v |= MAX77693_FLASH_EN_ON << MAX77693_TORCH_EN1_SHIFT;
++		if (p->trigger[TORCH2] & MAX77693_LED_TRIG_SOFT)
++			v |= MAX77693_FLASH_EN_ON << MAX77693_TORCH_EN2_SHIFT;
 +	}
 +
-+	ret = kstrtoul(buf, 10, &state);
-+	if (ret)
-+		goto unlock;
-+
-+	ret = led_set_flash_brightness(led_cdev, state);
-+	if (ret < 0)
-+		goto unlock;
-+
-+	ret = size;
-+unlock:
-+	mutex_unlock(&led_cdev->led_lock);
-+	return ret;
-+}
-+
-+static ssize_t flash_brightness_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	struct led_flash *flash = led_cdev->flash;
-+
-+	/* no lock needed for this */
-+	led_update_flash_brightness(led_cdev);
-+
-+	return sprintf(buf, "%u\n", flash->brightness.val);
-+}
-+static DEVICE_ATTR_RW(flash_brightness);
-+
-+static ssize_t max_flash_brightness_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	struct led_flash *flash = led_cdev->flash;
-+
-+	return sprintf(buf, "%u\n", flash->brightness.max);
-+}
-+static DEVICE_ATTR_RO(max_flash_brightness);
-+
-+static ssize_t indicator_brightness_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
-+{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	unsigned long state;
-+	ssize_t ret;
-+
-+	mutex_lock(&led_cdev->led_lock);
-+
-+	if (led_sysfs_is_locked(led_cdev)) {
-+		ret = -EBUSY;
-+		goto unlock;
++	if (mode & MAX77693_MODE_FLASH) {
++		if (p->trigger[FLASH1] & MAX77693_LED_TRIG_SOFT)
++			v |= MAX77693_FLASH_EN_ON << MAX77693_FLASH_EN1_SHIFT;
++		if (p->trigger[FLASH2] & MAX77693_LED_TRIG_SOFT)
++			v |= MAX77693_FLASH_EN_ON << MAX77693_FLASH_EN2_SHIFT;
++	} else if (mode & MAX77693_MODE_FLASH_EXTERNAL) {
++		if (p->trigger[FLASH1] & MAX77693_LED_TRIG_EXT)
++			v |= MAX77693_FLASH_EN_FLASH << MAX77693_FLASH_EN1_SHIFT;
++		if (p->trigger[FLASH2] & MAX77693_LED_TRIG_EXT)
++			v |= MAX77693_FLASH_EN_FLASH << MAX77693_FLASH_EN2_SHIFT;
++		/*
++		 * Enable hw triggering also for torch mode, as some camera
++		 * sensors use torch led to fathom ambient light conditions
++		 * before strobing the flash.
++		 */
++		if (p->trigger[TORCH1] & MAX77693_LED_TRIG_EXT)
++			v |= MAX77693_FLASH_EN_TORCH << MAX77693_TORCH_EN1_SHIFT;
++		if (p->trigger[TORCH2] & MAX77693_LED_TRIG_EXT)
++			v |= MAX77693_FLASH_EN_TORCH << MAX77693_TORCH_EN2_SHIFT;
 +	}
 +
-+	ret = kstrtoul(buf, 10, &state);
-+	if (ret)
-+		goto unlock;
-+
-+	ret = led_set_indicator_brightness(led_cdev, state);
-+	if (ret < 0)
-+		goto unlock;
-+
-+	ret = size;
-+unlock:
-+	mutex_unlock(&led_cdev->led_lock);
-+	return ret;
-+}
-+
-+static ssize_t indicator_brightness_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	struct led_flash *flash = led_cdev->flash;
-+
-+	/* no lock needed for this */
-+	led_update_indicator_brightness(led_cdev);
-+
-+	return sprintf(buf, "%u\n", flash->indicator_brightness->val);
-+}
-+static DEVICE_ATTR_RW(indicator_brightness);
-+
-+static ssize_t max_indicator_brightness_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	struct led_flash *flash = led_cdev->flash;
-+
-+	return sprintf(buf, "%u\n", flash->indicator_brightness->max);
-+}
-+static DEVICE_ATTR_RO(max_indicator_brightness);
-+
-+static ssize_t flash_strobe_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
-+{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	unsigned long state;
-+	ssize_t ret;
-+
-+	mutex_lock(&led_cdev->led_lock);
-+
-+	if (led_sysfs_is_locked(led_cdev)) {
-+		ret = -EBUSY;
-+		goto unlock;
++	/* Reset the register only prior setting flash modes */
++	if (mode != MAX77693_MODE_TORCH) {
++		ret = max77693_write_reg(rmap, MAX77693_LED_REG_FLASH_EN, 0);
++		if (ret < 0)
++			return ret;
 +	}
 +
-+	ret = kstrtoul(buf, 10, &state);
-+	if (ret)
-+		goto unlock;
-+
-+	if (state < 0 || state > 1)
-+		return -EINVAL;
-+
-+	ret = led_set_flash_strobe(led_cdev, state);
-+	if (ret < 0)
-+		goto unlock;
-+	ret = size;
-+unlock:
-+	mutex_unlock(&led_cdev->led_lock);
-+	return ret;
++	return max77693_write_reg(rmap, MAX77693_LED_REG_FLASH_EN, v);
 +}
 +
-+static ssize_t flash_strobe_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
++static int max77693_add_mode(struct max77693_led *led, unsigned int mode)
 +{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
 +	int ret;
 +
-+	/* no lock needed for this */
-+	ret = led_get_flash_strobe(led_cdev);
++	/* Once enabled torch mode is active until turned off */
++	if ((mode == MAX77693_MODE_TORCH) &&
++	    (led->mode_flags & MAX77693_MODE_TORCH))
++		return 0;
++
++	/*
++	 * FLASH_EXTERNAL mode activates HW triggered flash and torch
++	 * modes in the device. The related register settings interfere
++	 * with SW triggerred modes, thus clear them to ensure proper
++	 * device configuration.
++	 */
++	if (mode == MAX77693_MODE_FLASH_EXTERNAL)
++		led->mode_flags &= (~MAX77693_MODE_TORCH &
++				    ~MAX77693_MODE_FLASH);
++
++	led->mode_flags |= mode;
++
++	ret = max77693_set_mode(led, led->mode_flags);
 +	if (ret < 0)
 +		return ret;
 +
-+	return sprintf(buf, "%u\n", ret);
-+}
-+static DEVICE_ATTR_RW(flash_strobe);
++	/*
++	 * Clear flash mode flag after setting the mode to avoid
++	 * spurous flash strobing on each successive torch mode
++	 * setting.
++	 */
++	if ((mode == MAX77693_MODE_FLASH) ||
++	    (mode == MAX77693_MODE_FLASH_EXTERNAL))
++		led->mode_flags &= ~mode;
 +
-+static ssize_t flash_timeout_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
-+{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	unsigned long flash_timeout;
-+	ssize_t ret;
-+
-+	mutex_lock(&led_cdev->led_lock);
-+
-+	if (led_sysfs_is_locked(led_cdev)) {
-+		ret = -EBUSY;
-+		goto unlock;
-+	}
-+
-+	ret = kstrtoul(buf, 10, &flash_timeout);
-+	if (ret)
-+		goto unlock;
-+
-+	ret = led_set_flash_timeout(led_cdev, flash_timeout);
-+	if (ret < 0)
-+		goto unlock;
-+
-+	ret = size;
-+unlock:
-+	mutex_unlock(&led_cdev->led_lock);
-+	return ret;
++	return 0;
 +}
 +
-+static ssize_t flash_timeout_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
++static int max77693_clear_mode(struct max77693_led *led, unsigned int mode)
 +{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	struct led_flash *flash = led_cdev->flash;
++	led->mode_flags &= ~mode;
 +
-+	return sprintf(buf, "%d\n", flash->timeout.val);
++	return max77693_set_mode(led, led->mode_flags);
 +}
-+static DEVICE_ATTR_RW(flash_timeout);
 +
-+static ssize_t max_flash_timeout_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
++static int max77693_set_torch_current(struct max77693_led *led,
++					u32 micro_amp)
 +{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	struct led_flash *flash = led_cdev->flash;
-+
-+	return sprintf(buf, "%d\n", flash->timeout.max);
-+}
-+static DEVICE_ATTR_RO(max_flash_timeout);
-+
-+static ssize_t flash_fault_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	unsigned int fault;
++	struct max77693_led_platform_data *p = led->pdata;
++	struct regmap *rmap = led->regmap;
++	u32 iout[2];
++	u8 v, iout1_reg, iout2_reg;
 +	int ret;
 +
-+	ret = led_get_flash_fault(led_cdev, &fault);
++	max77693_calc_iout(iout, micro_amp, &p->iout[TORCH1]);
++	iout1_reg = max77693_led_iout_to_reg(iout[0]);
++	iout2_reg = max77693_led_iout_to_reg(iout[1]);
++
++	v = iout1_reg | (iout2_reg << MAX77693_TORCH_IOUT_BITS);
++	ret = max77693_write_reg(rmap, MAX77693_LED_REG_ITORCH, v);
 +	if (ret < 0)
-+		return -EINVAL;
++		return ret;
 +
-+	return sprintf(buf, "0x%8.8x\n", fault);
++	return 0;
 +}
-+static DEVICE_ATTR_RO(flash_fault);
 +
-+static ssize_t external_strobe_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t size)
++static int max77693_set_flash_current(struct max77693_led *led,
++					u32 micro_amp)
 +{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
-+	unsigned long external_strobe;
-+	ssize_t ret;
++	struct max77693_led_platform_data *p = led->pdata;
++	struct regmap *rmap = led->regmap;
++	u32 iout[2];
++	u8 iout1_reg, iout2_reg;
++	int ret;
 +
-+	mutex_lock(&led_cdev->led_lock);
++	max77693_calc_iout(iout, micro_amp, &p->iout[FLASH1]);
++	iout1_reg = max77693_led_iout_to_reg(iout[0]);
++	iout2_reg = max77693_led_iout_to_reg(iout[1]);
 +
-+	if (led_sysfs_is_locked(led_cdev)) {
++	ret = max77693_write_reg(rmap, MAX77693_LED_REG_IFLASH1, iout1_reg);
++	if (ret < 0)
++		goto error_ret;
++	ret = max77693_write_reg(rmap, MAX77693_LED_REG_IFLASH2, iout2_reg);
++	if (ret < 0)
++		goto error_ret;
++
++error_ret:
++	return ret;
++}
++
++static int max77693_set_timeout(struct max77693_led *led,
++				u32 timeout)
++{
++	struct max77693_led_platform_data *p = led->pdata;
++	struct regmap *rmap = led->regmap;
++	u8 v;
++
++	v = max77693_flash_timeout_to_reg(timeout);
++
++	if (p->trigger_type[FLASH] == MAX77693_LED_TRIG_TYPE_LEVEL)
++		v |= MAX77693_FLASH_TIMER_LEVEL;
++
++	return max77693_write_reg(rmap, MAX77693_LED_REG_FLASH_TIMER, v);
++}
++
++static int max77693_strobe_status_get(struct max77693_led *led)
++{
++	struct regmap *rmap = led->regmap;
++	u8 v;
++	int ret;
++
++	ret = max77693_read_reg(rmap, MAX77693_LED_REG_FLASH_INT_STATUS, &v);
++	if (ret < 0)
++		return ret;
++
++	return !!(v & MAX77693_LED_STATUS_FLASH_ON);
++}
++
++static int max77693_int_flag_get(struct max77693_led *led, u8 *v)
++{
++	struct regmap *rmap = led->regmap;
++
++	return max77693_read_reg(rmap, MAX77693_LED_REG_FLASH_INT, v);
++}
++
++static int max77693_setup(struct max77693_led *led)
++{
++	struct max77693_led_platform_data *p = led->pdata;
++	struct regmap *rmap = led->regmap;
++	int ret;
++	u8 v;
++
++	ret = max77693_set_torch_current(led, p->iout[TORCH1] +
++						p->iout[TORCH2]);
++	if (ret < 0)
++		return ret;
++
++	ret = max77693_set_flash_current(led, p->iout[FLASH1] +
++						p->iout[FLASH2]);
++	if (ret < 0)
++		return ret;
++
++	if (p->timeout[TORCH] > 0)
++		v = max77693_torch_timeout_to_reg(p->timeout[TORCH]);
++	else
++		v = MAX77693_TORCH_NO_TIMER;
++	if (p->trigger_type[TORCH] == MAX77693_LED_TRIG_TYPE_LEVEL)
++		v |= MAX77693_FLASH_TIMER_LEVEL;
++	ret = max77693_write_reg(rmap, MAX77693_LED_REG_ITORCHTIMER, v);
++	if (ret < 0)
++		return ret;
++
++	v = max77693_flash_timeout_to_reg(p->timeout[FLASH]);
++	if (p->trigger_type[FLASH] == MAX77693_LED_TRIG_TYPE_LEVEL)
++		v |= MAX77693_FLASH_TIMER_LEVEL;
++	ret = max77693_write_reg(rmap, MAX77693_LED_REG_FLASH_TIMER, v);
++	if (ret < 0)
++		return ret;
++
++	if (p->low_vsys > 0)
++		v = max77693_led_vsys_to_reg(p->low_vsys) |
++						MAX77693_FLASH_LOW_BATTERY_EN;
++	else
++		v = 0;
++
++	ret = max77693_write_reg(rmap, MAX77693_LED_REG_MAX_FLASH1, v);
++	if (ret < 0)
++		return ret;
++	ret = max77693_write_reg(rmap, MAX77693_LED_REG_MAX_FLASH2, 0);
++	if (ret < 0)
++		return ret;
++
++	if (p->boost_mode[FLASH1] == MAX77693_LED_BOOST_FIXED ||
++	    p->boost_mode[FLASH2] == MAX77693_LED_BOOST_FIXED)
++		v = MAX77693_FLASH_BOOST_FIXED;
++	else
++		v = p->boost_mode[FLASH1] | (p->boost_mode[FLASH2] << 1);
++	if (p->boost_mode[FLASH1] && p->boost_mode[FLASH2])
++		v |= MAX77693_FLASH_BOOST_LEDNUM_2;
++	ret = max77693_write_reg(rmap, MAX77693_LED_REG_VOUT_CNTL, v);
++	if (ret < 0)
++		return ret;
++
++	v = max77693_led_vout_to_reg(p->boost_vout);
++	ret = max77693_write_reg(rmap, MAX77693_LED_REG_VOUT_FLASH1, v);
++	if (ret < 0)
++		return ret;
++
++	return max77693_set_mode(led, MAX77693_MODE_OFF);
++}
++
++/* LED subsystem callbacks */
++
++static void max77693_brightness_set_work(struct work_struct *work)
++{
++	struct max77693_led *led =
++		container_of(work, struct max77693_led, work_brightness_set);
++	int ret;
++
++	mutex_lock(&led->lock);
++
++	if (led->torch_brightness == 0) {
++		ret = max77693_clear_mode(led, MAX77693_MODE_TORCH);
++		if (ret < 0)
++			dev_dbg(&led->pdev->dev,
++				"Failed to clear torch mode (%d)\n",
++				ret);
++		goto unlock;
++	}
++
++	ret = max77693_set_torch_current(led, led->torch_brightness *
++						MAX77693_TORCH_IOUT_STEP);
++	if (ret < 0) {
++		dev_dbg(&led->pdev->dev, "Failed to set torch current (%d)\n",
++			ret);
++		goto unlock;
++	}
++
++	ret = max77693_add_mode(led, MAX77693_MODE_TORCH);
++	if (ret < 0)
++		dev_dbg(&led->pdev->dev, "Failed to set torch mode (%d)\n",
++			ret);
++unlock:
++	mutex_unlock(&led->lock);
++}
++
++static void max77693_led_brightness_set(struct led_classdev *led_cdev,
++				enum led_brightness value)
++{
++	struct max77693_led *led = ldev_to_led(led_cdev);
++
++	led->torch_brightness = value;
++	schedule_work(&led->work_brightness_set);
++}
++
++static int max77693_led_flash_strobe_get(struct led_classdev *led_cdev)
++{
++	struct max77693_led *led = ldev_to_led(led_cdev);
++	int ret;
++
++	mutex_lock(&led->lock);
++	ret = max77693_strobe_status_get(led);
++	mutex_unlock(&led->lock);
++
++	return ret;
++}
++
++static int max77693_led_flash_fault_get(struct led_classdev *led_cdev,
++					u32 *fault)
++{
++	struct max77693_led *led = ldev_to_led(led_cdev);
++	u8 v;
++	int ret;
++
++	mutex_lock(&led->lock);
++
++	ret = max77693_int_flag_get(led, &v);
++	if (ret < 0)
++		goto unlock;
++
++	*fault = 0;
++
++	if (v & MAX77693_LED_FLASH_INT_FLED2_OPEN ||
++	    v & MAX77693_LED_FLASH_INT_FLED1_OPEN)
++		*fault |= LED_FAULT_OVER_VOLTAGE;
++	if (v & MAX77693_LED_FLASH_INT_FLED2_SHORT ||
++	    v & MAX77693_LED_FLASH_INT_FLED1_SHORT)
++		*fault |= LED_FAULT_SHORT_CIRCUIT;
++	if (v & MAX77693_LED_FLASH_INT_OVER_CURRENT)
++		*fault |= LED_FAULT_OVER_CURRENT;
++unlock:
++	mutex_unlock(&led->lock);
++	return ret;
++}
++
++static int max77693_led_flash_strobe_set(struct led_classdev *led_cdev,
++						bool state)
++{
++	struct max77693_led *led = ldev_to_led(led_cdev);
++	struct led_flash *flash = led_cdev->flash;
++	int ret;
++
++	mutex_lock(&led->lock);
++
++	if (flash->external_strobe) {
 +		ret = -EBUSY;
 +		goto unlock;
 +	}
 +
-+	ret = kstrtoul(buf, 10, &external_strobe);
-+	if (ret)
-+		goto unlock;
-+
-+	if (external_strobe > 1) {
-+		ret = -EINVAL;
++	if (!state) {
++		ret = max77693_clear_mode(led, MAX77693_MODE_FLASH);
 +		goto unlock;
 +	}
 +
-+	ret = led_set_external_strobe(led_cdev, external_strobe);
++	ret = max77693_add_mode(led, MAX77693_MODE_FLASH);
 +	if (ret < 0)
 +		goto unlock;
-+	ret = size;
 +unlock:
-+	mutex_unlock(&led_cdev->led_lock);
++	mutex_unlock(&led->lock);
 +	return ret;
 +}
 +
-+static ssize_t external_strobe_show(struct device *dev,
-+		struct device_attribute *attr, char *buf)
++static int max77693_led_external_strobe_set(struct led_classdev *led_cdev,
++						bool enable)
 +{
-+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
++	struct max77693_led *led = ldev_to_led(led_cdev);
++	int ret;
 +
-+	return sprintf(buf, "%u\n", led_cdev->flash->external_strobe);
-+}
-+static DEVICE_ATTR_RW(external_strobe);
++	mutex_lock(&led->lock);
 +
-+static struct attribute *led_flash_attrs[] = {
-+	&dev_attr_flash_brightness.attr,
-+	&dev_attr_flash_strobe.attr,
-+	&dev_attr_flash_timeout.attr,
-+	&dev_attr_max_flash_timeout.attr,
-+	&dev_attr_max_flash_brightness.attr,
-+	&dev_attr_flash_fault.attr,
-+	NULL,
-+};
++	if (enable)
++		ret = max77693_add_mode(led, MAX77693_MODE_FLASH_EXTERNAL);
++	else
++		ret = max77693_clear_mode(led, MAX77693_MODE_FLASH_EXTERNAL);
 +
-+static struct attribute *led_flash_indicator_attrs[] = {
-+	&dev_attr_indicator_brightness.attr,
-+	&dev_attr_max_indicator_brightness.attr,
-+	NULL,
-+};
++	mutex_unlock(&led->lock);
 +
-+static struct attribute *led_flash_external_strobe_attrs[] = {
-+	&dev_attr_external_strobe.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group led_flash_group = {
-+	.attrs = led_flash_attrs,
-+};
-+
-+static struct attribute_group led_flash_indicator_group = {
-+	.attrs = led_flash_indicator_attrs,
-+};
-+
-+static struct attribute_group led_flash_external_strobe_group = {
-+	.attrs = led_flash_external_strobe_attrs,
-+};
-+
-+void led_flash_resume(struct led_classdev *led_cdev)
-+{
-+	struct led_flash *flash = led_cdev->flash;
-+
-+	call_flash_op(brightness_set, led_cdev,
-+				flash->brightness.val);
-+	call_flash_op(timeout_set, led_cdev,
-+				flash->timeout.val);
-+	if (has_flash_op(indicator_brightness_set))
-+		call_flash_op(indicator_brightness_set, led_cdev,
-+				flash->indicator_brightness->val);
++	return ret;
 +}
 +
-+#ifdef CONFIG_V4L2_FLASH
-+static const struct v4l2_flash_ops v4l2_flash_ops = {
-+	.brightness_set = led_set_brightness,
-+	.brightness_update = led_update_brightness,
-+	.flash_brightness_set = led_set_flash_brightness,
-+	.flash_brightness_update = led_update_flash_brightness,
-+	.indicator_brightness_set = led_set_indicator_brightness,
-+	.indicator_brightness_update = led_update_indicator_brightness,
-+	.strobe_set = led_set_flash_strobe,
-+	.strobe_get = led_get_flash_strobe,
-+	.timeout_set = led_set_flash_timeout,
-+	.external_strobe_set = led_set_external_strobe,
-+	.fault_get = led_get_flash_fault,
-+	.sysfs_lock = led_sysfs_lock,
-+	.sysfs_unlock = led_sysfs_unlock,
-+};
-+#define V4L2_FLASH_OPS (&v4l2_flash_ops)
-+#else
-+#define V4L2_FLASH_OPS NULL
-+#endif
-+
-+
-+void led_flash_remove_sysfs_groups(struct led_classdev *led_cdev)
++static int max77693_led_flash_brightness_set(struct led_classdev *led_cdev,
++						u32 brightness)
 +{
-+	struct led_flash *flash = led_cdev->flash;
++	struct max77693_led *led = ldev_to_led(led_cdev);
++	int ret;
++
++	mutex_lock(&led->lock);
++
++	ret = max77693_set_flash_current(led, brightness);
++	if (ret < 0)
++		goto unlock;
++unlock:
++	mutex_unlock(&led->lock);
++	return ret;
++}
++
++static int max77693_led_flash_timeout_set(struct led_classdev *led_cdev,
++						u32 timeout)
++{
++	struct max77693_led *led = ldev_to_led(led_cdev);
++	int ret;
++
++	mutex_lock(&led->lock);
++
++	ret = max77693_set_timeout(led, timeout);
++	if (ret < 0)
++		goto unlock;
++
++unlock:
++	mutex_unlock(&led->lock);
++	return ret;
++}
++
++static void max77693_led_parse_dt(struct max77693_led_platform_data *p,
++			    struct device_node *node)
++{
++	of_property_read_u32_array(node, "maxim,iout", p->iout, 4);
++	of_property_read_u32_array(node, "maxim,trigger", p->trigger, 4);
++	of_property_read_u32_array(node, "maxim,trigger-type", p->trigger_type,
++									2);
++	of_property_read_u32_array(node, "maxim,timeout", p->timeout, 2);
++	of_property_read_u32_array(node, "maxim,boost-mode", p->boost_mode, 2);
++	of_property_read_u32(node, "maxim,boost-vout", &p->boost_vout);
++	of_property_read_u32(node, "maxim,vsys-min", &p->low_vsys);
++}
++
++static void clamp_align(u32 *v, u32 min, u32 max, u32 step)
++{
++	*v = clamp_val(*v, min, max);
++	if (step > 1)
++		*v = (*v - min) / step * step + min;
++}
++
++static void max77693_led_validate_platform_data(
++					struct max77693_led_platform_data *p)
++{
++	u32 max;
 +	int i;
 +
-+	for (i = 0; i < LED_FLASH_MAX_SYSFS_GROUPS; ++i)
-+		if (flash->sysfs_groups[i])
-+			sysfs_remove_group(&led_cdev->dev->kobj,
-+						flash->sysfs_groups[i]);
++	for (i = 0; i < 2; ++i)
++		clamp_align(&p->boost_mode[i], MAX77693_LED_BOOST_NONE,
++			    MAX77693_LED_BOOST_FIXED, 1);
++	/* boost, if enabled, should be the same on both leds */
++	if (p->boost_mode[0] != MAX77693_LED_BOOST_NONE &&
++	    p->boost_mode[1] != MAX77693_LED_BOOST_NONE)
++		p->boost_mode[1] = p->boost_mode[0];
++
++	max = (p->boost_mode[FLASH1] && p->boost_mode[FLASH2]) ?
++		  MAX77693_FLASH_IOUT_MAX_2LEDS : MAX77693_FLASH_IOUT_MAX_1LED;
++
++	clamp_align(&p->iout[FLASH1], MAX77693_FLASH_IOUT_MIN,
++		    max, MAX77693_FLASH_IOUT_STEP);
++	clamp_align(&p->iout[FLASH2], MAX77693_FLASH_IOUT_MIN,
++		    max, MAX77693_FLASH_IOUT_STEP);
++	clamp_align(&p->iout[TORCH1], MAX77693_TORCH_IOUT_MIN,
++		    MAX77693_TORCH_IOUT_MAX, MAX77693_TORCH_IOUT_STEP);
++	clamp_align(&p->iout[TORCH2], MAX77693_TORCH_IOUT_MIN,
++		    MAX77693_TORCH_IOUT_MAX, MAX77693_TORCH_IOUT_STEP);
++
++	for (i = 0; i < 4; ++i)
++		clamp_align(&p->trigger[i], 0, 7, 1);
++	for (i = 0; i < 2; ++i)
++		clamp_align(&p->trigger_type[i], MAX77693_LED_TRIG_TYPE_EDGE,
++			    MAX77693_LED_TRIG_TYPE_LEVEL, 1);
++
++	clamp_align(&p->timeout[FLASH], MAX77693_FLASH_TIMEOUT_MIN,
++		    MAX77693_FLASH_TIMEOUT_MAX, MAX77693_FLASH_TIMEOUT_STEP);
++
++	if (p->timeout[TORCH]) {
++		clamp_align(&p->timeout[TORCH], MAX77693_TORCH_TIMEOUT_MIN,
++			    MAX77693_TORCH_TIMEOUT_MAX, 1);
++		p->timeout[TORCH] = max77693_torch_timeout_from_reg(
++			      max77693_torch_timeout_to_reg(p->timeout[TORCH]));
++	}
++
++	clamp_align(&p->boost_vout, MAX77693_FLASH_VOUT_MIN,
++		    MAX77693_FLASH_VOUT_MAX, MAX77693_FLASH_VOUT_STEP);
++
++	if (p->low_vsys) {
++		clamp_align(&p->low_vsys, MAX77693_FLASH_VSYS_MIN,
++			    MAX77693_FLASH_VSYS_MAX, MAX77693_FLASH_VSYS_STEP);
++	}
 +}
 +
-+int led_flash_create_sysfs_groups(struct led_classdev *led_cdev)
++static int max77693_led_get_platform_data(struct max77693_led *led)
 +{
-+	struct led_flash *flash = led_cdev->flash;
-+	int ret, num_sysfs_groups = 0;
++	struct max77693_led_platform_data *p;
++	struct device *dev = &led->pdev->dev;
 +
-+	memset(flash->sysfs_groups, 0, sizeof(*flash->sysfs_groups) *
-+						LED_FLASH_MAX_SYSFS_GROUPS);
-+
-+	ret = sysfs_create_group(&led_cdev->dev->kobj, &led_flash_group);
-+	if (ret < 0)
-+		goto err_create_group;
-+	flash->sysfs_groups[num_sysfs_groups++] = &led_flash_group;
-+
-+	if (flash->indicator_brightness) {
-+		ret = sysfs_create_group(&led_cdev->dev->kobj,
-+					&led_flash_indicator_group);
-+		if (ret < 0)
-+			goto err_create_group;
-+		flash->sysfs_groups[num_sysfs_groups++] =
-+					&led_flash_indicator_group;
++	if (dev->of_node) {
++		p = devm_kzalloc(dev, sizeof(*led->pdata), GFP_KERNEL);
++		if (!p)
++			return -ENOMEM;
++		max77693_led_parse_dt(p, dev->of_node);
++	} else {
++		p = dev_get_platdata(dev);
++		if (!p)
++			return -ENODEV;
 +	}
-+	if (flash->has_external_strobe) {
-+		ret = sysfs_create_group(&led_cdev->dev->kobj,
-+					&led_flash_external_strobe_group);
-+		if (ret < 0)
-+			goto err_create_group;
-+		flash->sysfs_groups[num_sysfs_groups++] =
-+					&led_flash_external_strobe_group;
-+	}
++	led->pdata = p;
++
++	max77693_led_validate_platform_data(p);
 +
 +	return 0;
-+
-+err_create_group:
-+	led_flash_remove_sysfs_groups(led_cdev);
-+	return ret;
 +}
 +
-+int led_classdev_flash_register(struct device *parent,
-+				struct led_classdev *led_cdev)
++static struct led_flash led_flash = {
++	.ops = {
++		.brightness_set		= max77693_led_flash_brightness_set,
++		.strobe_set		= max77693_led_flash_strobe_set,
++		.strobe_get		= max77693_led_flash_strobe_get,
++		.timeout_set		= max77693_led_flash_timeout_set,
++		.external_strobe_set	= max77693_led_external_strobe_set,
++		.fault_get		= max77693_led_flash_fault_get,
++	},
++	.has_flash_led = true,
++};
++
++static void max77693_init_led_controls(struct led_classdev *led_cdev,
++					struct max77693_led_platform_data *p)
 +{
 +	struct led_flash *flash = led_cdev->flash;
-+	const struct led_flash_ops *ops;
++	struct led_ctrl *c;
++
++	/*
++	 * brightness_ctrl and fault_flags are used only
++	 * for initializing related V4L2 controls.
++	 */
++#ifdef CONFIG_V4L2_FLASH
++	flash->fault_flags = V4L2_FLASH_FAULT_OVER_VOLTAGE |
++			     V4L2_FLASH_FAULT_SHORT_CIRCUIT |
++			     V4L2_FLASH_FAULT_OVER_CURRENT;
++
++	c = &led_cdev->brightness_ctrl;
++	c->min = (p->iout[TORCH1] != 0 && p->iout[TORCH2] != 0) ?
++					MAX77693_TORCH_IOUT_MIN * 2 :
++					MAX77693_TORCH_IOUT_MIN;
++	c->max = p->iout[TORCH1] + p->iout[TORCH2];
++	c->step = MAX77693_TORCH_IOUT_STEP;
++	c->val = p->iout[TORCH1] + p->iout[TORCH2];
++#endif
++
++	c = &flash->brightness;
++	c->min = (p->iout[FLASH1] != 0 && p->iout[FLASH2] != 0) ?
++					MAX77693_FLASH_IOUT_MIN * 2 :
++					MAX77693_FLASH_IOUT_MIN;
++	c->max = p->iout[FLASH1] + p->iout[FLASH2];
++	c->step = MAX77693_FLASH_IOUT_STEP;
++	c->val = p->iout[FLASH1] + p->iout[FLASH2];
++
++	c = &flash->timeout;
++	c->min = MAX77693_FLASH_TIMEOUT_MIN;
++	c->max = MAX77693_FLASH_TIMEOUT_MAX;
++	c->step = MAX77693_FLASH_TIMEOUT_STEP;
++	c->val = p->timeout[FLASH];
++
++}
++
++static int max77693_led_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct max77693_dev *iodev = dev_get_drvdata(dev->parent);
++	struct max77693_led *led;
++	struct max77693_led_platform_data *p;
++	struct led_classdev *led_cdev;
 +	int ret;
 +
-+	if (!flash)
-+		return -EINVAL;
++	led = devm_kzalloc(dev, sizeof(*led), GFP_KERNEL);
++	if (!led)
++		return -ENOMEM;
 +
-+	/* Register led class device */
-+	ret = led_classdev_register(parent, led_cdev);
++	led->pdev = pdev;
++	led_cdev = &led->ldev;
++	led->regmap = iodev->regmap;
++	platform_set_drvdata(pdev, led);
++	ret = max77693_led_get_platform_data(led);
 +	if (ret < 0)
-+		return ret;
-+
-+	if (!flash->has_flash_led)
-+		goto exit;
-+
-+	/* Validate flash related ops */
-+	ops = &flash->ops;
-+	if (!ops || !ops->brightness_set || !ops->strobe_set || !ops->strobe_get
-+		|| !ops->timeout_set || !ops->fault_get)
 +		return -EINVAL;
++	p = led->pdata;
 +
-+	if (flash->has_external_strobe && !ops->external_strobe_set)
-+		return -EINVAL;
++	mutex_init(&led->lock);
 +
-+	if (flash->indicator_brightness && !ops->indicator_brightness_set)
-+		return -EINVAL;
++	INIT_WORK(&led->work_brightness_set, max77693_brightness_set_work);
 +
-+	/* Install resume callback for flash controls */
-+	led_cdev->flash_resume = led_flash_resume;
++	/* LED class device initialization */
++	led_cdev->name = MAX77693_LED_NAME;
++	led_cdev->brightness_set = max77693_led_brightness_set;
++	led_cdev->max_brightness = (p->iout[TORCH1] + p->iout[TORCH2]) /
++						MAX77693_TORCH_IOUT_STEP;
 +
-+	/* Create flash led specific sysfs attributes */
-+	ret = led_flash_create_sysfs_groups(led_cdev);
++	if ((p->trigger[FLASH1] & MAX77693_LED_TRIG_FLASH) ||
++	    (p->trigger[FLASH2] & MAX77693_LED_TRIG_FLASH))
++		led_flash.has_external_strobe = true;
++	led_cdev->flash = &led_flash;
++
++	max77693_init_led_controls(led_cdev, p);
++
++	/* Register in the LED subsystem. */
++	ret = led_classdev_flash_register(&pdev->dev, led_cdev);
 +	if (ret < 0)
-+		goto err_create_groups;
-+
-+exit:
-+	/* This will create V4L2 Flash sub-device if it is enabled */
-+	ret = v4l2_flash_init(led_cdev, V4L2_FLASH_OPS);
-+	if (ret < 0)
-+		goto err_create_groups;
-+
-+	return 0;
-+
-+err_create_groups:
-+	led_classdev_unregister(led_cdev);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(led_classdev_flash_register);
-+
-+void led_classdev_flash_unregister(struct led_classdev *led_cdev)
-+{
-+	v4l2_flash_release(led_cdev);
-+	led_flash_remove_sysfs_groups(led_cdev);
-+	led_classdev_unregister(led_cdev);
-+}
-+EXPORT_SYMBOL_GPL(led_classdev_flash_unregister);
-+
-+/* Caller must ensure led_cdev->led_lock held */
-+void led_sysfs_lock(struct led_classdev *led_cdev)
-+{
-+	led_cdev->flags |= LED_SYSFS_LOCK;
-+}
-+EXPORT_SYMBOL(led_sysfs_lock);
-+
-+/* Caller must ensure led_cdev->led_lock held */
-+void led_sysfs_unlock(struct led_classdev *led_cdev)
-+{
-+	led_cdev->flags &= ~LED_SYSFS_LOCK;
-+}
-+EXPORT_SYMBOL(led_sysfs_unlock);
-+
-+int led_set_flash_strobe(struct led_classdev *led_cdev, bool state)
-+{
-+	if (!has_flash_op(strobe_set))
 +		return -EINVAL;
 +
-+	return call_flash_op(strobe_set, led_cdev, state);
-+}
-+EXPORT_SYMBOL(led_set_flash_strobe);
-+
-+int led_get_flash_strobe(struct led_classdev *led_cdev)
-+{
-+	if (!has_flash_op(strobe_get))
-+		return -EINVAL;
-+
-+	return call_flash_op(strobe_get, led_cdev);
-+}
-+EXPORT_SYMBOL(led_get_flash_strobe);
-+
-+void led_clamp_align_val(struct led_ctrl *c)
-+{
-+	u32 v, offset;
-+
-+	v = c->val + c->step / 2;
-+	v = clamp(v, c->min, c->max);
-+	offset = v - c->min;
-+	offset = c->step * (offset / c->step);
-+	c->val = c->min + offset;
-+}
-+
-+int led_set_flash_timeout(struct led_classdev *led_cdev, u32 timeout)
-+{
-+	struct led_flash *flash = led_cdev->flash;
-+	struct led_ctrl *c = &flash->timeout;
-+	int ret = 0;
-+
-+	if (!has_flash_op(timeout_set))
-+		return -EINVAL;
-+
-+	c->val = timeout;
-+	led_clamp_align_val(c);
-+
-+	if (!(led_cdev->flags & LED_SUSPENDED))
-+		ret = call_flash_op(timeout_set, led_cdev, c->val);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(led_set_flash_timeout);
-+
-+int led_get_flash_fault(struct led_classdev *led_cdev, u32 *fault)
-+{
-+	if (!has_flash_op(fault_get))
-+		return -EINVAL;
-+
-+	return call_flash_op(fault_get, led_cdev, fault);
-+}
-+EXPORT_SYMBOL(led_get_flash_fault);
-+
-+int led_set_external_strobe(struct led_classdev *led_cdev, bool enable)
-+{
-+	struct led_flash *flash = led_cdev->flash;
-+	int ret;
-+
-+	if (!has_flash_op(external_strobe_set))
-+		return -EINVAL;
-+
-+	if (flash->has_external_strobe) {
-+		ret = call_flash_op(external_strobe_set, led_cdev, enable);
-+		if (ret < 0)
-+			return -EINVAL;
-+		flash->external_strobe = enable;
-+	} else if (enable)
-+		return -EINVAL;
++	ret = max77693_setup(led);
 +
 +	return 0;
 +}
-+EXPORT_SYMBOL(led_set_external_strobe);
 +
-+int led_set_flash_brightness(struct led_classdev *led_cdev,
-+				u32 brightness)
++static int max77693_led_remove(struct platform_device *pdev)
 +{
-+	struct led_flash *flash = led_cdev->flash;
-+	struct led_ctrl *c = &flash->brightness;
-+	int ret = 0;
++	struct max77693_led *led = platform_get_drvdata(pdev);
 +
-+	if (!has_flash_op(brightness_set))
-+		return -EINVAL;
++	led_classdev_flash_unregister(&led->ldev);
 +
-+	c->val = brightness;
-+	led_clamp_align_val(c);
-+
-+	if (!(led_cdev->flags & LED_SUSPENDED))
-+		ret = call_flash_op(brightness_set, led_cdev, c->val);
-+	return ret;
-+}
-+EXPORT_SYMBOL(led_set_flash_brightness);
-+
-+int led_update_flash_brightness(struct led_classdev *led_cdev)
-+{
-+	struct led_flash *flash = led_cdev->flash;
-+	struct led_ctrl *c = &flash->brightness;
-+	u32 brightness;
-+	int ret = 0;
-+
-+	if (has_flash_op(brightness_get)) {
-+		ret = call_flash_op(brightness_get, led_cdev, &brightness);
-+		if (ret < 0)
-+			return ret;
-+		c->val = brightness;
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(led_update_flash_brightness);
-+
-+int led_set_indicator_brightness(struct led_classdev *led_cdev,
-+					u32 brightness)
-+{
-+	struct led_flash *flash = led_cdev->flash;
-+	struct led_ctrl *c = flash->indicator_brightness;
-+	int ret = 0;
-+
-+	if (!has_flash_op(indicator_brightness_set))
-+		return -EINVAL;
-+
-+	c->val = brightness;
-+	led_clamp_align_val(c);
-+
-+	if (!(led_cdev->flags & LED_SUSPENDED))
-+		ret = call_flash_op(indicator_brightness_set, led_cdev, c->val);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(led_set_indicator_brightness);
-+
-+int led_update_indicator_brightness(struct led_classdev *led_cdev)
-+{
-+	struct led_flash *flash = led_cdev->flash;
-+	struct led_ctrl *c = flash->indicator_brightness;
-+	u32 brightness;
-+	int ret = 0;
-+
-+	if (has_flash_op(indicator_brightness_get)) {
-+		ret = call_flash_op(indicator_brightness_get, led_cdev,
-+							&brightness);
-+		if (ret < 0)
-+			return ret;
-+		c->val = brightness;
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL(led_update_indicator_brightness);
-+
-+static int __init leds_flash_init(void)
-+{
 +	return 0;
 +}
 +
-+static void __exit leds_flash_exit(void)
-+{
-+}
++static struct of_device_id max77693_led_dt_match[] = {
++	{.compatible = "maxim,max77693-flash"},
++	{},
++};
 +
-+subsys_initcall(leds_flash_init);
-+module_exit(leds_flash_exit);
++static struct platform_driver max77693_led_driver = {
++	.probe		= max77693_led_probe,
++	.remove		= max77693_led_remove,
++	.driver		= {
++		.name	= "max77693-flash",
++		.owner	= THIS_MODULE,
++		.of_match_table = max77693_led_dt_match,
++	},
++};
 +
++module_platform_driver(max77693_led_driver);
++
++MODULE_AUTHOR("Andrzej Hajda <a.hajda@samsung.com>");
 +MODULE_AUTHOR("Jacek Anaszewski <j.anaszewski@samsung.com>");
++MODULE_DESCRIPTION("Maxim MAX77693 led flash driver");
 +MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("LED Class Flash Interface");
-diff --git a/drivers/leds/led-triggers.c b/drivers/leds/led-triggers.c
-index df1a7c1..40e21c0 100644
---- a/drivers/leds/led-triggers.c
-+++ b/drivers/leds/led-triggers.c
-@@ -37,6 +37,14 @@ ssize_t led_trigger_store(struct device *dev, struct device_attribute *attr,
- 	char trigger_name[TRIG_NAME_MAX];
- 	struct led_trigger *trig;
- 	size_t len;
-+	int ret = count;
-+
-+	mutex_lock(&led_cdev->led_lock);
-+
-+	if (led_sysfs_is_locked(led_cdev)) {
-+		ret = -EBUSY;
-+		goto exit_unlock;
-+	}
- 
- 	trigger_name[sizeof(trigger_name) - 1] = '\0';
- 	strncpy(trigger_name, buf, sizeof(trigger_name) - 1);
-@@ -47,7 +55,7 @@ ssize_t led_trigger_store(struct device *dev, struct device_attribute *attr,
- 
- 	if (!strcmp(trigger_name, "none")) {
- 		led_trigger_remove(led_cdev);
--		return count;
-+		goto exit_unlock;
- 	}
- 
- 	down_read(&triggers_list_lock);
-@@ -58,12 +66,14 @@ ssize_t led_trigger_store(struct device *dev, struct device_attribute *attr,
- 			up_write(&led_cdev->trigger_lock);
- 
- 			up_read(&triggers_list_lock);
--			return count;
-+			goto exit_unlock;
- 		}
- 	}
- 	up_read(&triggers_list_lock);
- 
--	return -EINVAL;
-+exit_unlock:
-+	mutex_unlock(&led_cdev->led_lock);
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(led_trigger_store);
- 
-diff --git a/drivers/leds/leds.h b/drivers/leds/leds.h
-index 4c50365..f66a0c3 100644
---- a/drivers/leds/leds.h
-+++ b/drivers/leds/leds.h
-@@ -17,6 +17,12 @@
- #include <linux/rwsem.h>
- #include <linux/leds.h>
- 
-+#define call_flash_op(op, args...)		\
-+	((led_cdev)->flash->ops.op(args))
-+
-+#define has_flash_op(op)			\
-+	((led_cdev)->flash && (led_cdev)->flash->ops.op)
-+
- static inline void __led_set_brightness(struct led_classdev *led_cdev,
- 					enum led_brightness value)
- {
-diff --git a/include/linux/leds.h b/include/linux/leds.h
-index 0287ab2..a794817 100644
---- a/include/linux/leds.h
-+++ b/include/linux/leds.h
-@@ -13,12 +13,14 @@
- #define __LINUX_LEDS_H_INCLUDED
- 
- #include <linux/list.h>
--#include <linux/spinlock.h>
-+#include <linux/mutex.h>
- #include <linux/rwsem.h>
-+#include <linux/spinlock.h>
- #include <linux/timer.h>
- #include <linux/workqueue.h>
- 
- struct device;
-+struct led_flash;
- /*
-  * LED Core
-  */
-@@ -29,6 +31,28 @@ enum led_brightness {
- 	LED_FULL	= 255,
+diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+index c5535f0..f061aa8 100644
+--- a/drivers/mfd/max77693.c
++++ b/drivers/mfd/max77693.c
+@@ -44,7 +44,7 @@
+ static const struct mfd_cell max77693_devs[] = {
+ 	{ .name = "max77693-pmic", },
+ 	{ .name = "max77693-charger", },
+-	{ .name = "max77693-flash", },
++	{ .name = "max77693-flash", .of_compatible = "maxim,max77693-flash", },
+ 	{ .name = "max77693-muic", },
+ 	{ .name = "max77693-haptic", },
+ };
+diff --git a/include/linux/mfd/max77693.h b/include/linux/mfd/max77693.h
+index 3f3dc45..f2285b7 100644
+--- a/include/linux/mfd/max77693.h
++++ b/include/linux/mfd/max77693.h
+@@ -63,6 +63,43 @@ struct max77693_muic_platform_data {
+ 	int path_uart;
  };
  
-+/*
-+ * This structure is required in two cases:
-+ * - it defines allowed levels of flash leds brightness and timeout
-+ * - it provides initialization data for V4L2 Flash controls
-+ *   when CONFIG_V4L2_FLASH is enabled and allows for proper
-+ *   enum led_brightness <-> microamperes conversion for the
-+ *   V4L2_CID_FLASH_TORCH_INTENSITY
-+ */
-+struct led_ctrl {
-+	/* maximum allowed value */
-+	u32 min;
-+	/* maximum allowed value */
-+	u32 max;
-+	/* step value */
-+	u32 step;
-+	/*
-+	 * Default value for V4L2 controls and for flash leds
-+	 * it also serves for caching the value currently set.
-+	 */
-+	u32 val;
++/* MAX77693 led flash */
++
++/* triggers */
++enum max77693_led_trigger {
++	MAX77693_LED_TRIG_OFF,
++	MAX77693_LED_TRIG_FLASH,
++	MAX77693_LED_TRIG_TORCH,
++	MAX77693_LED_TRIG_EXT,
++	MAX77693_LED_TRIG_SOFT,
 +};
 +
- struct led_classdev {
- 	const char		*name;
- 	int			 brightness;
-@@ -42,6 +66,7 @@ struct led_classdev {
- #define LED_BLINK_ONESHOT	(1 << 17)
- #define LED_BLINK_ONESHOT_STOP	(1 << 18)
- #define LED_BLINK_INVERT	(1 << 19)
-+#define LED_SYSFS_LOCK		(1 << 21)
- 
- 	/* Set LED brightness level */
- 	/* Must not sleep, use a workqueue if needed */
-@@ -69,6 +94,17 @@ struct led_classdev {
- 	unsigned long		 blink_delay_on, blink_delay_off;
- 	struct timer_list	 blink_timer;
- 	int			 blink_brightness;
-+	struct led_flash	*flash;
-+	void			(*flash_resume)(struct led_classdev *led_cdev);
-+#ifdef CONFIG_V4L2_FLASH
-+	/* Initialization data for the V4L2_CID_FLASH_TORCH_INTENSITY control */
-+	struct led_ctrl		brightness_ctrl;
-+#endif
-+	/*
-+	 * Ensures consistent LED sysfs access and protects
-+	 * LED sysfs locking mechanism
-+	 */
-+	struct mutex		led_lock;
- 
- 	struct work_struct	set_brightness_work;
- 	int			delayed_set_value;
-@@ -139,6 +175,18 @@ extern void led_blink_set_oneshot(struct led_classdev *led_cdev,
- extern void led_set_brightness(struct led_classdev *led_cdev,
- 			       enum led_brightness brightness);
- 
-+/**
-+ * led_sysfs_is_locked
-+ * @led_cdev: the LED to query
-+ *
-+ * Returns: true if the sysfs interface of the led is disabled,
-+ *	    false otherwise
-+ */
-+static inline bool led_sysfs_is_locked(struct led_classdev *led_cdev)
-+{
-+	return led_cdev->flags & LED_SYSFS_LOCK;
-+}
 +
- /*
-  * LED Triggers
-  */
-diff --git a/include/linux/leds_flash.h b/include/linux/leds_flash.h
-new file mode 100644
-index 0000000..0f885a0
---- /dev/null
-+++ b/include/linux/leds_flash.h
-@@ -0,0 +1,252 @@
-+/*
-+ * Flash leds API
-+ *
-+ * Copyright (C) 2014 Samsung Electronics Co., Ltd.
-+ * Author: Jacek Anaszewski <j.anaszewski@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+#ifndef __LINUX_FLASH_LEDS_H_INCLUDED
-+#define __LINUX_FLASH_LEDS_H_INCLUDED
-+
-+#include <media/v4l2-flash.h>
-+#include <linux/leds.h>
-+
-+/*
-+ * Supported led fault bits - must be kept in synch
-+ * with V4L2_FLASH_FAULT bits.
-+ */
-+#define LED_FAULT_OVER_VOLTAGE		(1 << 0)
-+#define LED_FAULT_TIMEOUT		(1 << 1)
-+#define LED_FAULT_OVER_TEMPERATURE	(1 << 2)
-+#define LED_FAULT_SHORT_CIRCUIT		(1 << 3)
-+#define LED_FAULT_OVER_CURRENT		(1 << 4)
-+#define LED_FAULT_INDICATOR		(1 << 5)
-+#define LED_FAULT_UNDER_VOLTAGE		(1 << 6)
-+#define LED_FAULT_INPUT_VOLTAGE		(1 << 7)
-+#define LED_FAULT_LED_OVER_TEMPERATURE	(1 << 8)
-+
-+#define LED_FLASH_MAX_SYSFS_GROUPS 3
-+
-+struct led_flash_ops {
-+	/* set flash brightness */
-+	int	(*brightness_set)(struct led_classdev *led_cdev,
-+					u32 brightness);
-+	/* get flash brightness */
-+	int (*brightness_get)(struct led_classdev *led_cdev, u32 *brightness);
-+	/* set flash indicator brightness */
-+	int	(*indicator_brightness_set)(struct led_classdev *led_cdev,
-+					u32 brightness);
-+	/* get flash indicator brightness */
-+	int (*indicator_brightness_get)(struct led_classdev *led_cdev,
-+					u32 *brightness);
-+	/* setup flash strobe */
-+	int	(*strobe_set)(struct led_classdev *led_cdev,
-+					bool state);
-+	/* get flash strobe state */
-+	int	(*strobe_get)(struct led_classdev *led_cdev);
-+	/* setup flash timeout */
-+	int	(*timeout_set)(struct led_classdev *led_cdev,
-+					u32 timeout);
-+	/* setup strobing the flash from external source */
-+	int	(*external_strobe_set)(struct led_classdev *led_cdev,
-+					bool enable);
-+	/* get the flash LED fault */
-+	int	(*fault_get)(struct led_classdev *led_cdev,
-+					u32 *fault);
++/* trigger types */
++enum max77693_led_trigger_type {
++	MAX77693_LED_TRIG_TYPE_EDGE,
++	MAX77693_LED_TRIG_TYPE_LEVEL,
 +};
 +
-+struct led_flash {
-+	/*
-+	 * 1 - add support for both flash and torch leds,
-+	 * 0 - handle only torch led
-+	 */
-+	bool		has_flash_led;
-+	/* flash led specific ops */
-+	const struct	led_flash_ops	ops;
-+
-+	/* flash sysfs groups */
-+	struct	attribute_group *sysfs_groups[LED_FLASH_MAX_SYSFS_GROUPS];
-+
-+	/* flash brightness value in microamperes along with its constraints */
-+	struct led_ctrl brightness;
-+
-+	/* timeout value in microseconds along with its constraints */
-+	struct led_ctrl timeout;
-+
-+	/*
-+	 * Indicator brightness value in microamperes along with
-+	 * its constraints - this is an optional control and must
-+	 * be allocated by the driver if the device supports privacy
-+	 * indicator led.
-+	 */
-+	struct led_ctrl *indicator_brightness;
-+
-+	/*
-+	 * determines whether device supports external
-+	 * flash strobe sources
-+	 */
-+	bool		has_external_strobe;
-+
-+	/*
-+	 * If true the device doesn't strobe the flash immediately
-+	 * after writing 1 to the flash_strobe file, but waits
-+	 * for an external signal.
-+	 */
-+	bool		external_strobe;
-+
-+#ifdef CONFIG_V4L2_FLASH
-+	/* V4L2 Flash sub-device data */
-+	struct		v4l2_flash v4l2_flash;
-+
-+	/* flash fault bits that may be set by the device */
-+	u32 fault_flags;
-+#endif
-+
++/* boost modes */
++enum max77693_led_boost_mode {
++	MAX77693_LED_BOOST_NONE,
++	MAX77693_LED_BOOST_ADAPTIVE,
++	MAX77693_LED_BOOST_FIXED,
 +};
 +
-+/**
-+ * led_classdev_flash_register - register a new object of led_classdev class
-+				 with support for flash LEDs
-+ * @parent: the device to register
-+ * @led_cdev: the led_classdev structure for this device
-+ *
-+ * Returns: 0 on success, error code on failure.
-+ */
-+int led_classdev_flash_register(struct device *parent,
-+				struct led_classdev *led_cdev);
++struct max77693_led_platform_data {
++	u32 iout[4];
++	u32 trigger[4];
++	u32 trigger_type[2];
++	u32 timeout[2];
++	u32 boost_mode[2];
++	u32 boost_vout;
++	u32 low_vsys;
++};
 +
-+/**
-+ * led_classdev_flash_unregister - unregisters an object of led_properties class
-+				 with support for flash LEDs
-+ * @led_cdev: the flash led device to unregister
-+ *
-+ * Unregisters a previously registered via led_classdev_flash_register object
-+ */
-+void led_classdev_flash_unregister(struct led_classdev *led_cdev);
++/* MAX77693 */
 +
-+/**
-+ * led_set_flash_strobe - setup flash strobe
-+ * @led_cdev: the flash LED to set strobe on
-+ * @state: 1 - strobe flash, 0 - stop flash strobe
-+ *
-+ * Setup flash strobe - trigger flash strobe
-+ *
-+ * Returns: 0 on success or negative error value on failure
-+ */
-+extern int led_set_flash_strobe(struct led_classdev *led_cdev, bool state);
-+
-+/**
-+ * led_get_flash_strobe - get flash strobe status
-+ * @led_cdev: the LED to query
-+ *
-+ * Check whether the flash is strobing at the moment or not.
-+ *
-+ * Returns: flash strobe status (0 or 1) on success or negative
-+ *	    error value on failure.
-+ */
-+extern int led_get_flash_strobe(struct led_classdev *led_cdev);
-+
-+/**
-+ * led_set_flash_brightness - set flash LED brightness
-+ * @led_cdev: the LED to set
-+ * @brightness: the brightness to set it to
-+ *
-+ * Returns: 0 on success, -EINVAL on failure
-+ *
-+ * Set a flash LED's brightness.
-+ */
-+extern int led_set_flash_brightness(struct led_classdev *led_cdev,
-+					u32 brightness);
-+
-+/**
-+ * led_update_flash_brightness - update flash LED brightness
-+ * @led_cdev: the LED to query
-+ *
-+ * Get a flash LED's current brightness and update led_flash->brightness
-+ * member with the obtained value.
-+ *
-+ * Returns: 0 on success or negative error value on failure
-+ */
-+extern int led_update_flash_brightness(struct led_classdev *led_cdev);
-+
-+/**
-+ * led_set_flash_timeout - set flash LED timeout
-+ * @led_cdev: the LED to set
-+ * @timeout: the flash timeout to set it to
-+ *
-+ * Returns: 0 on success, -EINVAL on failure
-+ *
-+ * Set the flash strobe duration. The duration set by the driver
-+ * is returned in the timeout argument and may differ from the
-+ * one that was originally passed.
-+ */
-+extern int led_set_flash_timeout(struct led_classdev *led_cdev,
-+					u32 timeout);
-+
-+/**
-+ * led_get_flash_fault - get the flash LED fault
-+ * @led_cdev: the LED to query
-+ * @fault: bitmask containing flash faults
-+ *
-+ * Returns: 0 on success, -EINVAL on failure
-+ *
-+ * Get the flash LED fault.
-+ */
-+extern int led_get_flash_fault(struct led_classdev *led_cdev,
-+					u32 *fault);
-+
-+/**
-+ * led_set_external_strobe - set the flash LED external_strobe mode
-+ * @led_cdev: the LED to set
-+ * @enable: the state to set it to
-+ *
-+ * Returns: 0 on success, -EINVAL on failure
-+ *
-+ * Enable/disable strobing the flash LED with use of external source
-+ */
-+extern int led_set_external_strobe(struct led_classdev *led_cdev, bool enable);
-+
-+/**
-+ * led_set_indicator_brightness - set indicator LED brightness
-+ * @led_cdev: the LED to set
-+ * @brightness: the brightness to set it to
-+ *
-+ * Returns: 0 on success, -EINVAL on failure
-+ *
-+ * Set a flash LED's brightness.
-+ */
-+extern int led_set_indicator_brightness(struct led_classdev *led_cdev,
-+					u32 led_brightness);
-+
-+/**
-+ * led_update_indicator_brightness - update flash indicator LED brightness
-+ * @led_cdev: the LED to query
-+ *
-+ * Get a flash indicator LED's current brightness and update
-+ * led_flash->indicator_brightness member with the obtained value.
-+ *
-+ * Returns: 0 on success or negative error value on failure
-+ */
-+extern int led_update_indicator_brightness(struct led_classdev *led_cdev);
-+
-+/**
-+ * led_sysfs_lock - lock LED sysfs interface
-+ * @led_cdev: the LED to set
-+ *
-+ * Lock the LED's sysfs interface
-+ */
-+extern void led_sysfs_lock(struct led_classdev *led_cdev);
-+
-+/**
-+ * led_sysfs_unlock - unlock LED sysfs interface
-+ * @led_cdev: the LED to set
-+ *
-+ * Unlock the LED's sysfs interface
-+ */
-+extern void led_sysfs_unlock(struct led_classdev *led_cdev);
-+
-+#endif	/* __LINUX_FLASH_LEDS_H_INCLUDED */
+ struct max77693_platform_data {
+ 	/* regulator data */
+ 	struct max77693_regulator_data *regulators;
+@@ -70,5 +107,6 @@ struct max77693_platform_data {
+ 
+ 	/* muic data */
+ 	struct max77693_muic_platform_data *muic_data;
++	struct max77693_led_platform_data *led_data;
+ };
+ #endif	/* __LINUX_MFD_MAX77693_H */
 -- 
 1.7.9.5
 
