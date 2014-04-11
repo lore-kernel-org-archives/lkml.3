@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114AbaDKIkz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 04:40:55 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:28001 "EHLO
+	id S1756142AbaDKIlE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 04:41:04 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:61695 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755528AbaDKIkt (ORCPT
+	with ESMTP id S1755528AbaDKIk6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 04:40:49 -0400
+	Fri, 11 Apr 2014 04:40:58 -0400
 X-IronPort-AV: E=Sophos;i="4.97,840,1389715200"; 
-   d="scan'208";a="29141611"
+   d="scan'208";a="29141617"
 From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
-To: <shawn.guo@freescale.com>, <kernel@pengutronix.de>,
-        <linux@arm.linux.org.uk>
+To: <hpa@zytor.com>, <tglx@linutronix.de>, <mingo@redhat.com>,
+        <x86@kernel.org>
 CC: <linux-kernel@vger.kernel.org>, Duan Jiong <duanj.fnst@cn.fujitsu.com>
-Subject: [PATCH] serial: imx: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
-Date: Fri, 11 Apr 2014 16:38:42 +0800
-Message-ID: <1397205522-24551-1-git-send-email-duanj.fnst@cn.fujitsu.com>
+Subject: [PATCH] x86, cpuid: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
+Date: Fri, 11 Apr 2014 16:39:04 +0800
+Message-ID: <1397205544-24603-1-git-send-email-duanj.fnst@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -29,25 +29,22 @@ PTR_ERR instead of PTR_ERR_OR_ZERO.
 
 Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 ---
- arch/arm/mach-imx/mach-mx31moboard.c | 5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ arch/x86/kernel/cpuid.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-imx/mach-mx31moboard.c b/arch/arm/mach-imx/mach-mx31moboard.c
-index 8f45afe..c05d711 100644
---- a/arch/arm/mach-imx/mach-mx31moboard.c
-+++ b/arch/arm/mach-imx/mach-mx31moboard.c
-@@ -434,10 +434,7 @@ static int __init moboard_usbh2_init(void)
- 		return -ENODEV;
+diff --git a/arch/x86/kernel/cpuid.c b/arch/x86/kernel/cpuid.c
+index 3225ae6c..83741a7 100644
+--- a/arch/x86/kernel/cpuid.c
++++ b/arch/x86/kernel/cpuid.c
+@@ -143,7 +143,7 @@ static int cpuid_device_create(int cpu)
  
- 	pdev = imx31_add_mxc_ehci_hs(2, &usbh2_pdata);
--	if (IS_ERR(pdev))
--		return PTR_ERR(pdev);
--
--	return 0;
-+	return PTR_ERR_OR_ZERO(pdev);
+ 	dev = device_create(cpuid_class, NULL, MKDEV(CPUID_MAJOR, cpu), NULL,
+ 			    "cpu%d", cpu);
+-	return IS_ERR(dev) ? PTR_ERR(dev) : 0;
++	return PTR_ERR_OR_ZERO(dev);
  }
  
- static const struct gpio_led mx31moboard_leds[] __initconst = {
+ static void cpuid_device_destroy(int cpu)
 -- 
 1.8.3.1
 
