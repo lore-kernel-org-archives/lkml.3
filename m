@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759449AbaDKAbJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 20:31:09 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:58787 "EHLO
+	id S1422844AbaDKAbl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 20:31:41 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:58405 "EHLO
 	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422751AbaDKAZs (ORCPT
+	with ESMTP id S1422749AbaDKAZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 20:25:48 -0400
+	Thu, 10 Apr 2014 20:25:47 -0400
 From: Andreas Noever <andreas.noever@gmail.com>
 To: linux-kernel@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>
 Cc: Daniel J Blueman <daniel@quora.org>, Bjorn Helgaas <bhelgaas@google.com>,
         linux-pci@vger.kernel.org, Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH v2 06/14] thunderbolt: Add thunderbolt capability handling
-Date: Fri, 11 Apr 2014 02:24:53 +0200
-Message-Id: <1397175901-4023-7-git-send-email-andreas.noever@gmail.com>
+Subject: [PATCH v2 04/14] thunderbolt: Add tb_regs.h
+Date: Fri, 11 Apr 2014 02:24:51 +0200
+Message-Id: <1397175901-4023-5-git-send-email-andreas.noever@gmail.com>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1397175901-4023-1-git-send-email-andreas.noever@gmail.com>
 References: <1397175901-4023-1-git-send-email-andreas.noever@gmail.com>
@@ -21,162 +21,262 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thunderbolt config areas contain capability lists similar to those found
-on pci devices. This patch introduces a tb_find_cap utility method to
-search for capabilities.
+Every thunderbolt device consists (logically) of a switch with multiple
+ports. Every port contains up to four config regions (HOPS, PORT,
+SWITCH, COUNTERS) which are used to configure the device.
+
+The tb_regs.h file contains all known registers and capabilities from
+these config regions.
 
 Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
 ---
- drivers/thunderbolt/Makefile |   2 +-
- drivers/thunderbolt/cap.c    | 116 +++++++++++++++++++++++++++++++++++++++++++
- drivers/thunderbolt/tb.h     |   2 +
- 3 files changed, 119 insertions(+), 1 deletion(-)
- create mode 100644 drivers/thunderbolt/cap.c
+ drivers/thunderbolt/tb.c      |   5 +
+ drivers/thunderbolt/tb_regs.h | 213 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 218 insertions(+)
+ create mode 100644 drivers/thunderbolt/tb_regs.h
 
-diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
-index 4ac18d9..617b314 100644
---- a/drivers/thunderbolt/Makefile
-+++ b/drivers/thunderbolt/Makefile
-@@ -1,3 +1,3 @@
- obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
--thunderbolt-objs := nhi.o ctl.o tb.o switch.o
-+thunderbolt-objs := nhi.o ctl.o tb.o switch.o cap.o
+diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
+index 6920979..164dea0 100644
+--- a/drivers/thunderbolt/tb.c
++++ b/drivers/thunderbolt/tb.c
+@@ -9,6 +9,7 @@
+ #include <linux/delay.h>
  
-diff --git a/drivers/thunderbolt/cap.c b/drivers/thunderbolt/cap.c
+ #include "tb.h"
++#include "tb_regs.h"
+ 
+ /* hotplug handling */
+ 
+@@ -100,6 +101,10 @@ struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi)
+ {
+ 	struct tb *tb;
+ 
++	BUILD_BUG_ON(sizeof(struct tb_regs_switch_header) != 5 * 4);
++	BUILD_BUG_ON(sizeof(struct tb_regs_port_header) != 8 * 4);
++	BUILD_BUG_ON(sizeof(struct tb_regs_hop) != 2 * 4);
++
+ 	tb = kzalloc(sizeof(*tb), GFP_KERNEL);
+ 	if (!tb)
+ 		return NULL;
+diff --git a/drivers/thunderbolt/tb_regs.h b/drivers/thunderbolt/tb_regs.h
 new file mode 100644
-index 0000000..a7b47e7
+index 0000000..6577af7
 --- /dev/null
-+++ b/drivers/thunderbolt/cap.c
-@@ -0,0 +1,116 @@
++++ b/drivers/thunderbolt/tb_regs.h
+@@ -0,0 +1,213 @@
 +/*
-+ * Thunderbolt Cactus Ridge driver - capabilities lookup
++ * Thunderbolt Cactus Ridge driver - Port/Switch config area registers
++ *
++ * Every thunderbolt device consists (logically) of a switch with multiple
++ * ports. Every port contains up to four config regions (HOPS, PORT, SWITCH,
++ * COUNTERS) which are used to configure the device.
 + *
 + * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
 + */
 +
-+#include <linux/slab.h>
-+#include <linux/errno.h>
++#ifndef _TB_REGS
++#define _TB_REGS
 +
-+#include "tb.h"
++#include <linux/types.h>
 +
 +
-+struct tb_cap_any {
-+	union {
-+		struct tb_cap_basic basic;
-+		struct tb_cap_extended_short extended_short;
-+		struct tb_cap_extended_long extended_long;
-+	};
++#define TB_ROUTE_SHIFT 8  /* number of bits in a port entry of a route */
++
++
++/*
++ * TODO: should be 63? But we do not know how to receive frames larger than 256
++ * bytes at the frame level. (header + checksum = 16, 60*4 = 240)
++ */
++#define TB_MAX_CONFIG_RW_LENGTH 60
++
++enum tb_cap {
++	TB_CAP_PHY		= 0x0001,
++	TB_CAP_TIME1		= 0x0003,
++	TB_CAP_PCIE		= 0x0004,
++	TB_CAP_I2C		= 0x0005,
++	TB_CAP_PLUG_EVENTS	= 0x0105, /* also EEPROM */
++	TB_CAP_TIME2		= 0x0305,
++	TB_CAL_IECS		= 0x0405,
++	TB_CAP_LINK_CONTROLLER	= 0x0605, /* also IECS */
++};
++
++enum tb_port_state {
++	TB_PORT_DISABLED	= 0, /* tb_cap_phy.disable == 1 */
++	TB_PORT_CONNECTING	= 1, /* retry */
++	TB_PORT_UP		= 2,
++	TB_PORT_UNPLUGGED	= 7,
++};
++
++/* capability headers */
++
++struct tb_cap_basic {
++	u8 next;
++	/* enum tb_cap cap:8; prevent "narrower than values of its type" */
++	u8 cap; /* if cap == 0x05 then we have a extended capability */
 +} __packed;
 +
-+static bool tb_cap_is_basic(struct tb_cap_any *cap)
-+{
-+	/* basic.cap is u8. This checks only the lower 8 bit of cap. */
-+	return cap->basic.cap != 5;
-+}
++struct tb_cap_extended_short {
++	u8 next; /* if next and length are zero then we have a long cap */
++	enum tb_cap cap:16;
++	u8 length;
++} __packed;
 +
-+static bool tb_cap_is_long(struct tb_cap_any *cap)
-+{
-+	return !tb_cap_is_basic(cap)
-+	       && cap->extended_short.next == 0
-+	       && cap->extended_short.length == 0;
-+}
++struct tb_cap_extended_long {
++	u8 zero1;
++	enum tb_cap cap:16;
++	u8 zero2;
++	u16 next;
++	u16 length;
++} __packed;
 +
-+static enum tb_cap tb_cap(struct tb_cap_any *cap)
-+{
-+	if (tb_cap_is_basic(cap))
-+		return cap->basic.cap;
-+	else
-+		/* extended_short/long have cap at the same offset. */
-+		return cap->extended_short.cap;
-+}
++/* capabilities */
 +
-+static u32 tb_cap_next(struct tb_cap_any *cap, u32 offset)
-+{
-+	int next;
-+	if (offset == 1) {
-+		/*
-+		 * The first pointer is part of the switch header and always
-+		 * a simple pointer.
-+		 */
-+		next = cap->basic.next;
-+	} else {
-+		/*
-+		 * Somehow Intel decided to use 3 different types of capability
-+		 * headers. It is not like anyone could have predicted that
-+		 * single byte offsets are not enough...
-+		 */
-+		if (tb_cap_is_basic(cap))
-+			next = cap->basic.next;
-+		else if (!tb_cap_is_long(cap))
-+			next = cap->extended_short.next;
-+		else
-+			next = cap->extended_long.next;
-+	}
-+	/*
-+	 * "Hey, we could terminate some capability lists with a null offset
-+	 *  and others with a pointer to the last element." - "Great idea!"
-+	 */
-+	if (next == offset)
-+		return 0;
-+	return next;
-+}
++struct tb_cap_link_controller {
++	struct tb_cap_extended_long cap_header;
++	u32 count:4; /* number of link controllers */
++	u32 unknown1:4;
++	u32 base_offset:8; /*
++			    * offset (into this capability) of the configuration
++			    * area of the first link controller
++			    */
++	u32 length:12; /* link controller configuration area length */
++	u32 unknown2:4; /* TODO check that length is correct */
++} __packed;
 +
-+/**
-+ * tb_find_cap() - find a capability
-+ *
-+ * Return: Returns a positive offset if the capability was found and 0 if not.
-+ * Returns an error code on failure.
-+ */
-+int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, enum tb_cap cap)
-+{
-+	u32 offset = 1;
-+	struct tb_cap_any header;
-+	int res;
-+	int retries = 10;
-+	while (retries--) {
-+		res = tb_port_read(port, &header, space, offset, 1);
-+		if (res) {
-+			/* Intel needs some help with linked lists. */
-+			if (space == TB_CFG_PORT && offset == 0xa
-+			    && port->config.type == TB_TYPE_DP_HDMI_OUT) {
-+				offset = 0x39;
-+				continue;
-+			}
-+			return res;
-+		}
-+		if (offset != 1) {
-+			if (tb_cap(&header) == cap)
-+				return offset;
-+			if (tb_cap_is_long(&header)) {
-+				/* tb_cap_extended_long is 2 dwords */
-+				res = tb_port_read(port, &header, space,
-+						   offset, 2);
-+				if (res)
-+					return res;
-+			}
-+		}
-+		offset = tb_cap_next(&header, offset);
-+		if (!offset)
-+			return 0;
-+	}
-+	tb_port_WARN(port,
-+		     "run out of retries while looking for cap %#x in config space %d, last offset: %#x\n",
-+		     cap, space, offset);
-+	return -EIO;
-+}
-diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
-index 9f01800..e620f1b 100644
---- a/drivers/thunderbolt/tb.h
-+++ b/drivers/thunderbolt/tb.h
-@@ -159,6 +159,8 @@ void thunderbolt_shutdown_and_free(struct tb *tb);
- struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route);
- void tb_switch_free(struct tb_switch *sw);
- 
-+int tb_find_cap(struct tb_port *port, enum tb_cfg_space space, u32 value);
++struct tb_cap_phy {
++	struct tb_cap_basic cap_header;
++	u32 unknown1:16;
++	u32 unknown2:14;
++	bool disable:1;
++	u32 unknown3:11;
++	enum tb_port_state state:4;
++	u32 unknown4:2;
++} __packed;
 +
- 
- static inline int tb_route_length(u64 route)
- {
++struct tb_eeprom_ctl {
++	bool clock:1; /* send pulse to transfer one bit */
++	bool access_low:1; /* set to 0 before access */
++	bool data_out:1; /* to eeprom */
++	bool data_in:1; /* from eeprom */
++	bool access_high:1; /* set to 1 before access */
++	bool not_present:1; /* should be 0 */
++	bool unknown1:1;
++	bool present:1; /* should be 1 */
++	u32 unknown2:24;
++} __packed;
++
++struct tb_cap_plug_events {
++	struct tb_cap_extended_short cap_header;
++	u32 __unknown1:2;
++	u32 plug_events:5;
++	u32 __unknown2:25;
++	u32 __unknown3;
++	u32 __unknown4;
++	struct tb_eeprom_ctl eeprom_ctl;
++	u32 __unknown5[7];
++	u32 drom_offset; /* 32 bit register, but eeprom addresses are 16 bit */
++} __packed;
++
++/* device headers */
++
++/* Present on port 0 in TB_CFG_SWITCH at address zero. */
++struct tb_regs_switch_header {
++	/* DWORD 0 */
++	u16 vendor_id;
++	u16 device_id;
++	/* DWORD 1 */
++	u32 first_cap_offset:8;
++	u32 upstream_port_number:6;
++	u32 max_port_number:6;
++	u32 depth:3;
++	u32 __unknown1:1;
++	u32 revision:8;
++	/* DWORD 2 */
++	u32 route_lo;
++	/* DWORD 3 */
++	u32 route_hi:31;
++	bool enabled:1;
++	/* DWORD 4 */
++	u32 plug_events_delay:8; /*
++				  * RW, pause between plug events in
++				  * milliseconds. Writing 0x00 is interpreted
++				  * as 255ms.
++				  */
++	u32 __unknown4:16;
++	u32 thunderbolt_version:8;
++} __packed;
++
++enum tb_port_type {
++	TB_TYPE_INACTIVE	= 0x000000,
++	TB_TYPE_PORT		= 0x000001,
++	TB_TYPE_NHI		= 0x000002,
++	/* TB_TYPE_ETHERNET	= 0x020000, lower order bits are not known */
++	/* TB_TYPE_SATA		= 0x080000, lower order bits are not known */
++	TB_TYPE_DP_HDMI_IN	= 0x0e0101,
++	TB_TYPE_DP_HDMI_OUT	= 0x0e0102,
++	TB_TYPE_PCIE_DOWN	= 0x100101,
++	TB_TYPE_PCIE_UP		= 0x100102,
++	/* TB_TYPE_USB		= 0x200000, lower order bits are not known */
++};
++
++/* Present on every port in TB_CF_PORT at address zero. */
++struct tb_regs_port_header {
++	/* DWORD 0 */
++	u16 vendor_id;
++	u16 device_id;
++	/* DWORD 1 */
++	u32 first_cap_offset:8;
++	u32 max_counters:11;
++	u32 __unknown1:5;
++	u32 revision:8;
++	/* DWORD 2 */
++	enum tb_port_type type:24;
++	u32 thunderbolt_version:8;
++	/* DWORD 3 */
++	u32 __unknown2:20;
++	u32 port_number:6;
++	u32 __unknown3:6;
++	/* DWORD 4 */
++	u32 nfc_credits;
++	/* DWORD 5 */
++	u32 max_in_hop_id:11;
++	u32 max_out_hop_id:11;
++	u32 __unkown4:10;
++	/* DWORD 6 */
++	u32 __unknown5;
++	/* DWORD 7 */
++	u32 __unknown6;
++
++} __packed;
++
++/* Hop register from TB_CFG_HOPS. 8 byte per entry. */
++struct tb_regs_hop {
++	/* DWORD 0 */
++	u32 next_hop:11; /*
++			  * hop to take after sending the packet through
++			  * out_port (on the incoming port of the next switch)
++			  */
++	u32 out_port:6; /* next port of the path (on the same switch) */
++	u32 initial_credits:8;
++	u32 unknown1:6; /* set to zero */
++	bool enable:1;
++
++	/* DWORD 1 */
++	u32 weight:4;
++	u32 unknown2:4; /* set to zero */
++	u32 priority:3;
++	bool drop_packages:1;
++	u32 counter:11; /* index into TB_CFG_COUNTERS on this port */
++	bool counter_enable:1;
++	bool ingress_fc:1;
++	bool egress_fc:1;
++	bool ingress_shared_buffer:1;
++	bool egress_shared_buffer:1;
++	u32 unknown3:4; /* set to zero */
++} __packed;
++
++
++#endif
 -- 
 1.9.2
 
