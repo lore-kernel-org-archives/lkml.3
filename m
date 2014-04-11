@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932333AbaDKKee (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 06:34:34 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:57992 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757370AbaDKKe2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 06:34:28 -0400
-Date: Fri, 11 Apr 2014 11:33:51 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: Re: [PATCH 02/15] arm: __NR_syscalls fix
-Message-ID: <20140411103351.GJ16119@n2100.arm.linux.org.uk>
-References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu> <1397211951-20549-3-git-send-email-miklos@szeredi.hu>
+	id S1757555AbaDKKfw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 06:35:52 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:42216 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756111AbaDKKfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 06:35:45 -0400
+Subject: [PATCH 0/3] ppc:Set runlatch bits correctly for offline threads and
+ vcpus
+To: linuxppc-dev@ozlabs.org
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: benh@kernel.crashing.org, paulus@samba.org, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com
+Date: Fri, 11 Apr 2014 16:01:39 +0530
+Message-ID: <20140411103030.27683.2107.stgit@preeti.in.ibm.com>
+User-Agent: StGit/0.16-38-g167d
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397211951-20549-3-git-send-email-miklos@szeredi.hu>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041110-7182-0000-0000-00000A4DB41D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 12:25:38PM +0200, Miklos Szeredi wrote:
-> From: Miklos Szeredi <mszeredi@suse.cz>
-> 
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> ---
+The runlatch bits with their value indicated by CTRL_RUNLATCH are set and
+cleared in the SPRN_CTRL registers to indicate a busy and idle cpu
+respectively. This is currently being done in the cpuidle path of the host.
+But needs to be taken care of in hotplug and kvm scenarios. This patchset
+is aimed at ensuring that the runlatch bits are consisten with the
+utilization of a CPU under all circumstances.
+---
 
-This has me wondering...
+Preeti U Murthy (3):
+      ppc/powernv: Set the runlatch bits correctly for offline cpus
+      ppc/kvm: Set the runlatch bit of a CPU just before starting guest
+      ppc/kvm: Clear the runlatch bit of a vcpu before napping
 
-(a) what you think it fixes
-(b) whether you tried to build-test this
 
-The ARM instruction set supports 8-bit immediate constants with an even
-power of two shift.  384 fits that (0x180), 382 does not (0x17e), and
-in your following patch, 383 definitely doesn't (0x17f).
-
-Having this constant larger than necessary does not cause any problem
-for the syscall table: we explicitly pad it with calls to sys_ni_syscall
-to make up the difference.
+ arch/powerpc/kvm/book3s_hv_rmhandlers.S |   18 +++++++++++++++++-
+ arch/powerpc/platforms/powernv/smp.c    |    3 +++
+ 2 files changed, 20 insertions(+), 1 deletion(-)
 
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+
