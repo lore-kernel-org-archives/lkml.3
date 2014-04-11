@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934793AbaDKRMN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 13:12:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56301 "EHLO
+	id S1422732AbaDKRMl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 13:12:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56310 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758928AbaDKQH1 (ORCPT
+	with ESMTP id S1756206AbaDKQH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Apr 2014 12:07:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.10 02/41] powernow-k6: disable cache when changing frequency
-Date: Fri, 11 Apr 2014 09:09:33 -0700
-Message-Id: <20140411160933.035892697@linuxfoundation.org>
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Bruce Ashfield <bruce.ashfield@windriver.com>,
+        Michal Marek <mmarek@suse.cz>, Wang Nan <wangnan0@huawei.com>
+Subject: [PATCH 3.10 05/41] kbuild: fix make headers_install when path is too long
+Date: Fri, 11 Apr 2014 09:09:36 -0700
+Message-Id: <20140411160933.244697152@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
 References: <20140411160932.865173041@linuxfoundation.org>
@@ -27,144 +28,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-commit e20e1d0ac02308e2211306fc67abcd0b2668fb8b upstream.
+commit c0ff68f1611d6855a06d672989ad5cfea160a4eb upstream.
 
-I found out that a system with k6-3+ processor is unstable during network
-server load. The system locks up or the network card stops receiving. The
-reason for the instability is the CPU frequency scaling.
+If headers_install is executed from a deep/long directory structure, the
+shell's maximum argument length can be execeeded, which breaks the operation
+with:
 
-During frequency transition the processor is in "EPM Stop Grant" state.
-The documentation says that the processor doesn't respond to inquiry
-requests in this state. Consequently, coherency of processor caches and
-bus master devices is not maintained, causing the system instability.
+| make[2]: execvp: /bin/sh: Argument list too long
+| make[2]: ***
 
-This patch flushes the cache during frequency transition. It fixes the
-instability.
+Instead of passing each files name with the entire path, I give only the file
+name without the source path and give this path as a new argument to
+headers_install.pl.
 
-Other minor changes:
-* u64 invalue changed to unsigned long because the variable is 32-bit
-* move the logic to set the multiplier to a separate function
-  powernow_k6_set_cpu_multiplier
-* preserve lower 5 bits of the powernow port instead of 4 (the voltage
-  field has 5 bits)
-* mask interrupts when reading the multiplier, so that the port is not
-  open during other activity (running other kernel code with the port open
-  shouldn't cause any misbehavior, but we should better be safe and keep
-  the port closed)
+Because there is three possible paths, I have tree input-files list, one per
+path.
 
-This patch should be backported to all stable kernels. If it doesn't
-apply cleanly, change it, or ask me to change it.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Tested-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+Cc: Wang Nan <wangnan0@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/powernow-k6.c |   56 +++++++++++++++++++++++++++++-------------
- 1 file changed, 39 insertions(+), 17 deletions(-)
+ scripts/Makefile.headersinst |   20 ++++++++++++++------
+ scripts/headers_install.sh   |    7 +++++--
+ 2 files changed, 19 insertions(+), 8 deletions(-)
 
---- a/drivers/cpufreq/powernow-k6.c
-+++ b/drivers/cpufreq/powernow-k6.c
-@@ -44,23 +44,58 @@ static struct cpufreq_frequency_table cl
- /**
-  * powernow_k6_get_cpu_multiplier - returns the current FSB multiplier
-  *
-- *   Returns the current setting of the frequency multiplier. Core clock
-+ * Returns the current setting of the frequency multiplier. Core clock
-  * speed is frequency of the Front-Side Bus multiplied with this value.
-  */
- static int powernow_k6_get_cpu_multiplier(void)
- {
--	u64 invalue = 0;
-+	unsigned long invalue = 0;
- 	u32 msrval;
+--- a/scripts/Makefile.headersinst
++++ b/scripts/Makefile.headersinst
+@@ -47,18 +47,24 @@ header-y      := $(filter-out $(generic-
+ all-files     := $(header-y) $(genhdr-y) $(wrapper-files)
+ output-files  := $(addprefix $(installdir)/, $(all-files))
  
-+	local_irq_disable();
-+
- 	msrval = POWERNOW_IOPORT + 0x1;
- 	wrmsr(MSR_K6_EPMR, msrval, 0); /* enable the PowerNow port */
- 	invalue = inl(POWERNOW_IOPORT + 0x8);
- 	msrval = POWERNOW_IOPORT + 0x0;
- 	wrmsr(MSR_K6_EPMR, msrval, 0); /* disable it again */
+-input-files   := $(foreach hdr, $(header-y), \
++input-files1  := $(foreach hdr, $(header-y), \
+ 		   $(if $(wildcard $(srcdir)/$(hdr)), \
+-			$(wildcard $(srcdir)/$(hdr)), \
++			$(wildcard $(srcdir)/$(hdr))) \
++		   )
++input-files1-name := $(notdir $(input-files1))
++input-files2  := $(foreach hdr, $(header-y), \
++		   $(if  $(wildcard $(srcdir)/$(hdr)),, \
+ 			$(if $(wildcard $(oldsrcdir)/$(hdr)), \
+ 				$(wildcard $(oldsrcdir)/$(hdr)), \
+ 				$(error Missing UAPI file $(srcdir)/$(hdr))) \
+-		   )) \
+-		 $(foreach hdr, $(genhdr-y), \
++		   ))
++input-files2-name := $(notdir $(input-files2))
++input-files3  := $(foreach hdr, $(genhdr-y), \
+ 		   $(if	$(wildcard $(gendir)/$(hdr)), \
+ 			$(wildcard $(gendir)/$(hdr)), \
+ 			$(error Missing generated UAPI file $(gendir)/$(hdr)) \
+ 		   ))
++input-files3-name := $(notdir $(input-files3))
  
-+	local_irq_enable();
-+
- 	return clock_ratio[(invalue >> 5)&7].index;
- }
+ # Work out what needs to be removed
+ oldheaders    := $(patsubst $(installdir)/%,%,$(wildcard $(installdir)/*.h))
+@@ -72,7 +78,9 @@ printdir = $(patsubst $(INSTALL_HDR_PATH
+ quiet_cmd_install = INSTALL $(printdir) ($(words $(all-files))\
+                             file$(if $(word 2, $(all-files)),s))
+       cmd_install = \
+-        $(CONFIG_SHELL) $< $(installdir) $(input-files); \
++        $(CONFIG_SHELL) $< $(installdir) $(srcdir) $(input-files1-name); \
++        $(CONFIG_SHELL) $< $(installdir) $(oldsrcdir) $(input-files2-name); \
++        $(CONFIG_SHELL) $< $(installdir) $(gendir) $(input-files3-name); \
+         for F in $(wrapper-files); do                                   \
+                 echo "\#include <asm-generic/$$F>" > $(installdir)/$$F;    \
+         done;                                                           \
+@@ -98,7 +106,7 @@ __headersinst: $(subdirs) $(install-file
+ 	@:
  
-+static void powernow_k6_set_cpu_multiplier(unsigned int best_i)
-+{
-+	unsigned long outvalue, invalue;
-+	unsigned long msrval;
-+	unsigned long cr0;
-+
-+	/* we now need to transform best_i to the BVC format, see AMD#23446 */
-+
-+	/*
-+	 * The processor doesn't respond to inquiry cycles while changing the
-+	 * frequency, so we must disable cache.
-+	 */
-+	local_irq_disable();
-+	cr0 = read_cr0();
-+	write_cr0(cr0 | X86_CR0_CD);
-+	wbinvd();
-+
-+	outvalue = (1<<12) | (1<<10) | (1<<9) | (best_i<<5);
-+
-+	msrval = POWERNOW_IOPORT + 0x1;
-+	wrmsr(MSR_K6_EPMR, msrval, 0); /* enable the PowerNow port */
-+	invalue = inl(POWERNOW_IOPORT + 0x8);
-+	invalue = invalue & 0x1f;
-+	outvalue = outvalue | invalue;
-+	outl(outvalue, (POWERNOW_IOPORT + 0x8));
-+	msrval = POWERNOW_IOPORT + 0x0;
-+	wrmsr(MSR_K6_EPMR, msrval, 0); /* disable it again */
-+
-+	write_cr0(cr0);
-+	local_irq_enable();
-+}
+ targets += $(install-file)
+-$(install-file): scripts/headers_install.sh $(input-files) FORCE
++$(install-file): scripts/headers_install.sh $(input-files1) $(input-files2) $(input-files3) FORCE
+ 	$(if $(unwanted),$(call cmd,remove),)
+ 	$(if $(wildcard $(dir $@)),,$(shell mkdir -p $(dir $@)))
+ 	$(call if_changed,install)
+--- a/scripts/headers_install.sh
++++ b/scripts/headers_install.sh
+@@ -2,7 +2,7 @@
  
- /**
-  * powernow_k6_set_state - set the PowerNow! multiplier
-@@ -71,8 +106,6 @@ static int powernow_k6_get_cpu_multiplie
- static void powernow_k6_set_state(struct cpufreq_policy *policy,
- 		unsigned int best_i)
- {
--	unsigned long outvalue = 0, invalue = 0;
--	unsigned long msrval;
- 	struct cpufreq_freqs freqs;
+ if [ $# -lt 1 ]
+ then
+-	echo "Usage: headers_install.sh OUTDIR [FILES...]
++	echo "Usage: headers_install.sh OUTDIR SRCDIR [FILES...]
+ 	echo
+ 	echo "Prepares kernel header files for use by user space, by removing"
+ 	echo "all compiler.h definitions and #includes, removing any"
+@@ -10,6 +10,7 @@ then
+ 	echo "asm/inline/volatile keywords."
+ 	echo
+ 	echo "OUTDIR: directory to write each userspace header FILE to."
++	echo "SRCDIR: source directory where files are picked."
+ 	echo "FILES:  list of header files to operate on."
  
- 	if (clock_ratio[best_i].index > max_multiplier) {
-@@ -85,18 +118,7 @@ static void powernow_k6_set_state(struct
+ 	exit 1
+@@ -19,6 +20,8 @@ fi
  
- 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+ OUTDIR="$1"
+ shift
++SRCDIR="$1"
++shift
  
--	/* we now need to transform best_i to the BVC format, see AMD#23446 */
--
--	outvalue = (1<<12) | (1<<10) | (1<<9) | (best_i<<5);
--
--	msrval = POWERNOW_IOPORT + 0x1;
--	wrmsr(MSR_K6_EPMR, msrval, 0); /* enable the PowerNow port */
--	invalue = inl(POWERNOW_IOPORT + 0x8);
--	invalue = invalue & 0xf;
--	outvalue = outvalue | invalue;
--	outl(outvalue , (POWERNOW_IOPORT + 0x8));
--	msrval = POWERNOW_IOPORT + 0x0;
--	wrmsr(MSR_K6_EPMR, msrval, 0); /* disable it again */
-+	powernow_k6_set_cpu_multiplier(best_i);
+ # Iterate through files listed on command line
  
- 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
- 
-@@ -164,7 +186,7 @@ static int powernow_k6_cpu_init(struct c
- 	}
- 
- 	/* cpuinfo and default policy values */
--	policy->cpuinfo.transition_latency = 200000;
-+	policy->cpuinfo.transition_latency = 500000;
- 	policy->cur = busfreq * max_multiplier;
- 
- 	result = cpufreq_frequency_table_cpuinfo(policy, clock_ratio);
+@@ -34,7 +37,7 @@ do
+ 		-e 's/(^|[^a-zA-Z0-9])__packed([^a-zA-Z0-9_]|$)/\1__attribute__((packed))\2/g' \
+ 		-e 's/(^|[ \t(])(inline|asm|volatile)([ \t(]|$)/\1__\2__\3/g' \
+ 		-e 's@#(ifndef|define|endif[ \t]*/[*])[ \t]*_UAPI@#\1 @' \
+-		"$i" > "$OUTDIR/$FILE.sed" || exit 1
++		"$SRCDIR/$i" > "$OUTDIR/$FILE.sed" || exit 1
+ 	scripts/unifdef -U__KERNEL__ -D__EXPORTED_HEADERS__ "$OUTDIR/$FILE.sed" \
+ 		> "$OUTDIR/$FILE"
+ 	[ $? -gt 1 ] && exit 1
 
 
