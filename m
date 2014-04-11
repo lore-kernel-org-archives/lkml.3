@@ -1,68 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822AbaDKWFV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 18:05:21 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:50989 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146AbaDKWFT (ORCPT
+	id S1755287AbaDKWGI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 18:06:08 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:36112 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755043AbaDKWGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 18:05:19 -0400
-Date: Sat, 12 Apr 2014 00:05:17 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Christian Grothoff <christian@grothoff.org>
-Cc: Alejandra Morales <alejandra.morales@tum.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Cryogenic: Enabling Power-Aware Applications on Linux
-Message-ID: <20140411220517.GA1203@amd.pavel.ucw.cz>
-References: <9E3F9C2076C45D4783F09B90D5BE77CE1AEF7A@BADWLRZ-SWMBX13.ads.mwn.de>
- <20140411101926.GA27234@amd.pavel.ucw.cz>
- <534838E8.10005@grothoff.org>
+	Fri, 11 Apr 2014 18:06:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <534838E8.10005@grothoff.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <53485B63.1030305@vmware.com>
+References: <5347E32B.1080002@vmware.com>
+	<CANq1E4Rr5XDR3+WLRHSw6aYw6uDq90JJZOhmUKDJj=kFGcvJ8g@mail.gmail.com>
+	<53485B63.1030305@vmware.com>
+Date: Fri, 11 Apr 2014 18:05:59 -0400
+Message-ID: <CAF6AEGtRf3kFoOuJWQVtRPi7ONkTh09+42Cb9h0fGsGOk9CjJw@mail.gmail.com>
+Subject: Re: DRM security flaws and security levels.
+From: Rob Clark <robdclark@gmail.com>
+To: Thomas Hellstrom <thellstrom@vmware.com>
+Cc: David Herrmann <dh.herrmann@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Fri, Apr 11, 2014 at 5:15 PM, Thomas Hellstrom <thellstrom@vmware.com> wrote:
+> On 04/11/2014 10:31 PM, David Herrmann wrote:
+>> Hi
+>>
+>> On Fri, Apr 11, 2014 at 2:42 PM, Thomas Hellstrom <thellstrom@vmware.com> wrote:
+>>> as was discussed a while ago, there are some serious security flaws with
+>>> the current drm master model, that allows a
+>>> user that had previous access or current access to an X server terminal
+>>> to access the GPU memory of the active X server, without being
+>>> authenticated to the X server and thereby also access other user's
+>>> secret information
+>> 1a) and 1b) are moot if you disallow primary-node access but require
+>> clients to use render-nodes with dma-buf. There're no gem-names on
+>> render-nodes so no way to access other buffers (assuming the GPU does
+>> command-stream checking and/or VM).
+>
+> Disallowing primary node access will break older user-space drivers and
+> non-root
+> EGL clients. I'm not sure that's OK, even if the change is done from
+> user-space.
+> A simple gem fix would also do the trick.
+>
+>>
+>> 2) There is no DRM-generic data other than buffers that is global. So
+>> imho this is a driver-specific issue.
+>>
+>> So I cannot see why this is a DRM issue. The only leaks I see are
+>> legacy interfaces and driver-specific interfaces. The first can be
+>> disabled via chmod() for clients, and the second is something driver
+>> authors should fix.
+>
+> Yeah, but some driver authors can't or won't fix the drivers w r t this,
+> hence the security levels.
 
-> >> Cryogenic is the result of my Master's Thesis, completed at the Technical University
-> >> of Munich under the supervision of Christian Grothoff. You can find more information
-> >> about Cryogenic at https://gnunet.org/cryogenic
-> > 
-> > Do you have any measurements how much power it actually saves?
-> 
-> Yes, it depends on the device, but we have demonstrated power
-> savings for two different types of devices using two different
-> measurement setups performed by two independent groups.  Some
-> of the measurements are available on the website, the second
-> set should become available "soon" (but we can already say that
-> for the scenario we measured, the savings are in the same range
-> as before).
+fwiw, I do think we want security level reporting for drivers that
+don't have per-process pagetables (either the hw doesn't support, or
+simply just not implemented yet) to avoid giving a false sense of
+security with rendernodes.  It might be useful to even be able to
+request a security level.. ie. some hw might be able to support
+process isolation of gpu buffers, but at a performance penalty..  Joe
+Gamer might be ok with the tradeoff in return for moar fps.  Ideally
+you could request on a per process basis (via some sort of egl/glx
+extension) to firewall off, say, your online banking session.
 
-The video I seen.... AFAICT the savings are in <10% range?
+note, sencario 1a is, I think, only an issue for shared buffers (ie.
+ones that have an flink name).. so, ok, another process can see the
+video game you were playing.  Ok, that is not quite true, since
+browsers use gpu accel (but maybe they want to decide to
+enable/disable that, at least for certain sites (like your online
+banking) based on the max-security-level of the driver).  And gl
+compositing window managers.
 
-> > "I'd like to download my mails from IMAP server in next 30
-> > minutes. But... it would be better done when I'm on 3G network with
-> > good signal (0.01W transmit power used for 3 seconds) than on GPRS
-> > with poor signal (2W transmit power for 4 minutes)..."
-> 
-> Well, that's not quite what the API would allow, especially as it
-> is obviously hard to predict that a different network will become
-> available.
+I doubt any of that is worse than any closed src gpu driver.  But
+either way, for really classified/sensitive material you might want to
+think about a computer with no gpu.  I wouldn't be surprised if the
+NSA knew as much or more about these gpu's as we do.
 
-Actually... its a phone so it probably has GPS :-). But I'd guess that
-even simpler logic, "if UMTS was available in last hour, it is likely
-to be available within hour" would work ok.
+BR,
+-R
 
-I seen demo on UDP packets... delayed TCP socket write is probably
-easy, but would API allow delayed TCP connect?
-
-Hmm, but the API needs redoing, anyway, fcntl()?
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> Thanks,
+> /Thomas
+>
+>
+>>
+>> Thanks
+>> David
+>> _______________________________________________
+>> dri-devel mailing list
+>> dri-devel@lists.freedesktop.org
+>> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
