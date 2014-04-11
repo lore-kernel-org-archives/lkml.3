@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423032AbaDKQMd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:12:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56835 "EHLO
+	id S1759772AbaDKQOI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:14:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56826 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422954AbaDKQJe (ORCPT
+	with ESMTP id S1757543AbaDKQJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:34 -0400
+	Fri, 11 Apr 2014 12:09:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.14 21/23] futex: Allow architectures to skip futex_atomic_cmpxchg_inatomic() test
-Date: Fri, 11 Apr 2014 09:12:10 -0700
-Message-Id: <20140411161203.147556327@linuxfoundation.org>
+        Mischa Jonker <mjonker@synopsys.com>,
+        Vineet Gupta <vgupta@synopsys.com>,
+        Francois Bedard <Francois.Bedard@synopsys.com>
+Subject: [PATCH 3.14 19/23] ARC: [nsimosci] Change .dts to use generic 8250 UART
+Date: Fri, 11 Apr 2014 09:12:08 -0700
+Message-Id: <20140411161202.867963738@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411161200.236939691@linuxfoundation.org>
 References: <20140411161200.236939691@linuxfoundation.org>
@@ -29,132 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Mischa Jonker <mjonker@synopsys.com>
 
-commit 03b8c7b623c80af264c4c8d6111e5c6289933666 upstream.
+commit 6eda477b3c54b8236868c8784e5e042ff14244f0 upstream.
 
-If an architecture has futex_atomic_cmpxchg_inatomic() implemented and there
-is no runtime check necessary, allow to skip the test within futex_init().
+The Synopsys APB DW UART has a couple of special features that are not
+in the System C model. In 3.8, the 8250_dw driver didn't really use these
+features, but from 3.9 onwards, the 8250_dw driver has become incompatible
+with our model.
 
-This allows to get rid of some code which would always give the same result,
-and also allows the compiler to optimize a couple of if statements away.
-
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Finn Thain <fthain@telegraphics.com.au>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Link: http://lkml.kernel.org/r/20140302120947.GA3641@osiris
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Mischa Jonker <mjonker@synopsys.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Francois Bedard <Francois.Bedard@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/s390/Kconfig     |    1 +
- include/linux/futex.h |    4 ++++
- init/Kconfig          |    7 +++++++
- kernel/futex.c        |   37 ++++++++++++++++++++++++-------------
- 4 files changed, 36 insertions(+), 13 deletions(-)
+ arch/arc/boot/dts/nsimosci.dts |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -117,6 +117,7 @@ config S390
- 	select HAVE_FUNCTION_GRAPH_TRACER
- 	select HAVE_FUNCTION_TRACER
- 	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
-+	select HAVE_FUTEX_CMPXCHG if FUTEX
- 	select HAVE_KERNEL_BZIP2
- 	select HAVE_KERNEL_GZIP
- 	select HAVE_KERNEL_LZ4
---- a/include/linux/futex.h
-+++ b/include/linux/futex.h
-@@ -55,7 +55,11 @@ union futex_key {
- #ifdef CONFIG_FUTEX
- extern void exit_robust_list(struct task_struct *curr);
- extern void exit_pi_state_list(struct task_struct *curr);
-+#ifdef CONFIG_HAVE_FUTEX_CMPXCHG
-+#define futex_cmpxchg_enabled 1
-+#else
- extern int futex_cmpxchg_enabled;
-+#endif
- #else
- static inline void exit_robust_list(struct task_struct *curr)
- {
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1387,6 +1387,13 @@ config FUTEX
- 	  support for "fast userspace mutexes".  The resulting kernel may not
- 	  run glibc-based applications correctly.
+--- a/arch/arc/boot/dts/nsimosci.dts
++++ b/arch/arc/boot/dts/nsimosci.dts
+@@ -11,7 +11,7 @@
  
-+config HAVE_FUTEX_CMPXCHG
-+	bool
-+	help
-+	  Architectures should select this if futex_atomic_cmpxchg_inatomic()
-+	  is implemented and always working. This removes a couple of runtime
-+	  checks.
-+
- config EPOLL
- 	bool "Enable eventpoll support" if EXPERT
- 	default y
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -157,7 +157,9 @@
-  * enqueue.
-  */
+ / {
+ 	compatible = "snps,nsimosci";
+-	clock-frequency = <80000000>;	/* 80 MHZ */
++	clock-frequency = <20000000>;	/* 20 MHZ */
+ 	#address-cells = <1>;
+ 	#size-cells = <1>;
+ 	interrupt-parent = <&intc>;
+@@ -44,15 +44,14 @@
+ 		};
  
-+#ifndef CONFIG_HAVE_FUTEX_CMPXCHG
- int __read_mostly futex_cmpxchg_enabled;
-+#endif
+ 		uart0: serial@c0000000 {
+-			compatible = "snps,dw-apb-uart";
++			compatible = "ns8250";
+ 			reg = <0xc0000000 0x2000>;
+ 			interrupts = <11>;
+-			#clock-frequency = <80000000>;
+ 			clock-frequency = <3686400>;
+ 			baud = <115200>;
+ 			reg-shift = <2>;
+ 			reg-io-width = <4>;
+-			status = "okay";
++			no-loopback-test = <1>;
+ 		};
  
- /*
-  * Futex flags used to encode options to functions and preserve them across
-@@ -2880,9 +2882,28 @@ SYSCALL_DEFINE6(futex, u32 __user *, uad
- 	return do_futex(uaddr, op, val, tp, uaddr2, val2, val3);
- }
- 
--static int __init futex_init(void)
-+static void __init futex_detect_cmpxchg(void)
- {
-+#ifndef CONFIG_HAVE_FUTEX_CMPXCHG
- 	u32 curval;
-+
-+	/*
-+	 * This will fail and we want it. Some arch implementations do
-+	 * runtime detection of the futex_atomic_cmpxchg_inatomic()
-+	 * functionality. We want to know that before we call in any
-+	 * of the complex code paths. Also we want to prevent
-+	 * registration of robust lists in that case. NULL is
-+	 * guaranteed to fault and we get -EFAULT on functional
-+	 * implementation, the non-functional ones will return
-+	 * -ENOSYS.
-+	 */
-+	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
-+		futex_cmpxchg_enabled = 1;
-+#endif
-+}
-+
-+static int __init futex_init(void)
-+{
- 	unsigned int futex_shift;
- 	unsigned long i;
- 
-@@ -2898,18 +2919,8 @@ static int __init futex_init(void)
- 					       &futex_shift, NULL,
- 					       futex_hashsize, futex_hashsize);
- 	futex_hashsize = 1UL << futex_shift;
--	/*
--	 * This will fail and we want it. Some arch implementations do
--	 * runtime detection of the futex_atomic_cmpxchg_inatomic()
--	 * functionality. We want to know that before we call in any
--	 * of the complex code paths. Also we want to prevent
--	 * registration of robust lists in that case. NULL is
--	 * guaranteed to fault and we get -EFAULT on functional
--	 * implementation, the non-functional ones will return
--	 * -ENOSYS.
--	 */
--	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
--		futex_cmpxchg_enabled = 1;
-+
-+	futex_detect_cmpxchg();
- 
- 	for (i = 0; i < futex_hashsize; i++) {
- 		atomic_set(&futex_queues[i].waiters, 0);
+ 		pgu0: pgu@c9000000 {
 
 
