@@ -1,110 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267AbaDKBbK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 21:31:10 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:48811 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752611AbaDKBbH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 21:31:07 -0400
-X-AuditID: cbfee691-b7efc6d0000039d3-e5-534745d769b9
-Message-id: <534745D9.30604@samsung.com>
-Date: Fri, 11 Apr 2014 10:31:05 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, kgene.kim@samsung.com, t.figa@samsung.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        hyunhee.kim@samsung.com, sw0312.kim@samsung.com,
-        linux-kernel@vger.kernel.org, yj44.cho@samsung.com,
-        inki.dae@samsung.com, kyungmin.park@samsung.com
-Subject: Re: [PATCH 01/27] ARM: EXYNOS: Add Exynos3250 SoC ID
-References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
- <1397122124-15690-2-git-send-email-cw00.choi@samsung.com>
- <5032959.JQvlxpLHiQ@wuerfel>
-In-reply-to: <5032959.JQvlxpLHiQ@wuerfel>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsWyRsSkSPe6q3uwwZnTehZ/Jx1jt/j8oYXd
-	YtL9CSwWvQuuslmcbXrDbrHp8TVWi8u75rBZzDi/j8lixuSXbBbrZ7xmsdi7czKjA7fH71+T
-	GD02L6n36NuyitHj8ya5AJYoLpuU1JzMstQifbsEroxDDcEF3bwVU27sZ2lgPMjVxcjJISFg
-	ItH36ycThC0mceHeerYuRi4OIYGljBLT/3xmhSna/7qBFSKxiFFi4cZPzCAJIYHXjBK3LgmB
-	2LwCGhJX/p1hA7FZBFQldnZ1g01lE9CS2P/iBlhcVCBMYuX0KywQ9YISPybfA7NFBHwkNj9f
-	AbaZWeApo8SdefsZQRLCArYSJ2/cZ4HYvIBR4sfrc2AncQpoSqy4ewGsm1lAR2J/6zQ2CFte
-	YvOat8wgDRICL9klNndOYYU4SUDi2+RDQA0cQAlZiU0HmCFek5Q4uOIGywRGsVlIjpqFZOws
-	JGMXMDKvYhRNLUguKE5KLzLVK07MLS7NS9dLzs/dxAiMytP/nk3cwXj/gPUhxmSglROZpUST
-	84FRnVcSb2hsZmRhamJqbGRuaUaasJI4b/qjpCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFIN
-	jLpPXqgLyp6cJ/b+RthPoz/13L/WiHiWPLFmjcl+vmzfnw6vqokaF6N4zB3Xlp+dfSz0xUIj
-	yxUMK+rqRKp+L/q7br7PCpfv5+9p6jVt0Ux/P33Va+frVUvTYzhfpfK9uiV4wW1FjQf7+04F
-	q+Xhy6XflQZ+/bX2Y0b5iZ/PjjfIBN+4lFrhIa/EUpyRaKjFXFScCAAFqIsX4AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jAd3rru7BBm8Wqln8nXSM3eLzhxZ2
-	i0n3J7BY9C64ymZxtukNu8Wmx9dYLS7vmsNmMeP8PiaLGZNfslmsn/GaxWLvzsmMDtwev39N
-	YvTYvKTeo2/LKkaPz5vkAliiGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU
-	8hJzU22VXHwCdN0yc4CuUlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBm
-	HGoILujmrZhyYz9LA+NBri5GTg4JAROJ/a8bWCFsMYkL99azdTFycQgJLGKUWLjxEzNIQkjg
-	NaPErUtCIDavgIbElX9n2EBsFgFViZ1d3UwgNpuAlsT+FzfA4qICYRIrp19hgagXlPgx+R6Y
-	LSLgI7H5+QqwBcwCTxkl7szbzwiSEBawlTh54z4LxOYFjBI/Xp8DO4lTQFNixd0LYN3MAjoS
-	+1unsUHY8hKb17xlnsAoMAvJkllIymYhKVvAyLyKUTS1ILmgOCk911CvODG3uDQvXS85P3cT
-	Izjmn0ntYFzZYHGIUYCDUYmHN+OCW7AQa2JZcWXuIUYJDmYlEd6eH0Ah3pTEyqrUovz4otKc
-	1OJDjMnAMJjILCWanA9MR3kl8YbGJmZGlkbmhhZGxuakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C
-	2cLEwSnVwLjXacuG51dl9FlP+KupPYzNtzrXObMu3WKXx7OLD+Wdjp8RfPz6961TFx0X5O6R
-	tkjrs1+0SWr+gpAqm41FC339np7aLi7DOK1Gcn+AwspffWfenJsc5nnFP3z+luthzeVcbm0W
-	O6XPPuKQODXvz4k5X9WPe3U6LvumNfX4uf0Nx2/cTLo95ZifEktxRqKhFnNRcSIA80fdPT0D	AAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1754191AbaDKBhC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 21:37:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26432 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753294AbaDKBg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 21:36:59 -0400
+Date: Fri, 11 Apr 2014 09:34:22 +0800
+From: Baoquan He <bhe@redhat.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Joerg Roedel <joro@8bytes.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>
+Subject: Re: hpsa driver bug crack kernel down!
+Message-ID: <20140411013422.GL11839@dhcp-16-105.nay.redhat.com>
+References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
+ <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>
+ <1397084904.9519.62.camel@dabdike>
+ <1397085044.9519.63.camel@dabdike>
+ <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
+ <1397087425.9519.67.camel@dabdike>
+ <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>
+ <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
+ <53465781.4010904@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53465781.4010904@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/10/14 at 04:34pm, Jiang Liu wrote:
+> Hi Baoquan,
+> 	Could you please help to give output of "lspci -vvvv"?
+> Is device "hpsa 0000:03:00.0" a legacy PCI device(non-PCIe)?
+> It may have relationship with IOMMU driver.
+> Thanks!
+> Gerry
+
 Hi,
 
-On 04/10/2014 06:43 PM, Arnd Bergmann wrote:
-> On Thursday 10 April 2014 18:28:18 Chanwoo Choi wrote:
->> This patch add Exynos3250's SoC ID. Exynos 3250 is System-On-Chip(SoC) that
->> is based on the 32-bit RISC processor for Smartphone. Exynos3250 uses Cortex-A7
->> dual cores and has a target speed of 1.0GHz.
->>
->> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->>  arch/arm/mach-exynos/Kconfig             | 22 ++++++++++++++++++++++
->>  arch/arm/mach-exynos/exynos.c            |  1 +
->>  arch/arm/plat-samsung/include/plat/cpu.h | 10 ++++++++++
->>  3 files changed, 33 insertions(+)
->>
->> diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
->> index fc8bf18..6da8a68 100644
->> --- a/arch/arm/mach-exynos/Kconfig
->> +++ b/arch/arm/mach-exynos/Kconfig
->> @@ -11,6 +11,17 @@ if ARCH_EXYNOS
->>  
->>  menu "SAMSUNG EXYNOS SoCs Support"
->>  
->> +config ARCH_EXYNOS3
->> +	bool "SAMSUNG EXYNOS3"
->> +	select ARM_AMBA
->> +	select CLKSRC_OF
->> +	select HAVE_ARM_SCU if SMP
->> +	select HAVE_SMP
->> +	select PINCTRL
->> +	select PM_GENERIC_DOMAINS if PM_RUNTIME
->> +	help
->> +	  Samsung EXYNOS3 SoCs based systems
->> +
+I just saw your mail now. Do you still need the output of "lspci -vvvv"
+on my test machine? 
+
+In fact, I didn't see the DMAR error related to intel vt-d issues.
+
+If the output is helpful, I can make a latest build to do this.
+
+Thanks
+Baoquan
+
 > 
-> Isn't S5PV210 also called an Exynos3 these days? Are we going to get
-> any conflicts here when merging that code into Exynos as Tomasz has
-> suggested in the past?
-
-I knew. But, S5PV210/S5PC110 has not yet included in Exynos3 category on mainline.
-Need opinion of Exynos SoC Maintainer to clear this ambiguous stuff.
-
-Dear Kukjin and Tomasz,
-I need your opinion about this patch.
-
-Best Regards,
-Chanwoo Choi
-
-
+> On 2014/4/10 12:03, Bjorn Helgaas wrote:
+> > [+cc Joerg, iommu list]
+> > 
+> > On Wed, Apr 9, 2014 at 6:19 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> >> On Wed, 2014-04-09 at 16:50 -0700, James Bottomley wrote:
+> >>> On Wed, 2014-04-09 at 16:40 -0700, Davidlohr Bueso wrote:
+> >>>> On Wed, 2014-04-09 at 16:10 -0700, James Bottomley wrote:
+> >>>>> On Wed, 2014-04-09 at 16:08 -0700, James Bottomley wrote:
+> >>>>>> [+linux-scsi]
+> >>>>>> On Wed, 2014-04-09 at 15:49 -0700, Davidlohr Bueso wrote:
+> >>>>>>> On Wed, 2014-04-09 at 10:39 +0800, Baoquan He wrote:
+> >>>>>>>> Hi,
+> >>>>>>>>
+> >>>>>>>> The kernel is 3.14.0+ which is pulled just now.
+> >>>>>>>
+> >>>>>>> Cc'ing more people.
+> >>>>>>>
+> >>>>>>> While the hpsa driver appears to be involved in some way, I'm sure if
+> >>>>>>> this is a related issue, but as of today's pull I'm getting another
+> >>>>>>> problem that causes my DL980 not to come up.
+> >>>>>>>
+> >>>>>>> *Massive* amounts of:
+> >>>>>>>
+> >>>>>>> DMAR:[fault reason 02] Present bit in context entry is clear
+> >>>>>>> dmar: DRHD: handling fault status reg 602
+> >>>>>>> dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr 7f61e000
+> >>>>>>>
+> >>>>>>> Then:
+> >>>>>>>
+> >>>>>>> hpsa 0000:03:00.0: Controller lockup detected: 0xffff0000
+> >>>>>>> ...
+> >>>>>>> Workqueue: events hpsa_monitor_ctlr_worker [hpsa]
+> >>>>>>> ...
+> >>>>>>>
+> >>>>>>> Screenshot of the actual LOCKUP:
+> >>>>>>> http://stgolabs.net/hpsa-hard-lockup-3.14+.png
+> >>>>>>>
+> >>>>>>> While I haven't bisected, things worked fine until at least until commit
+> >>>>>>> 39de65aa2c3e (April 2nd).
+> >>>>>>>
+> >>>>>>> Any ideas?
+> >>>>>>
+> >>>>>> Well, it's either a DMA remapping issue or a hpsa one.  Your assertion
+> >>>>>> that everything worked fine until 39de65aa2c3e would tend to vindicate
+> >>>>>> hpsa,
+> >>>>
+> >>>> Hmm here you mean DMA, right?
+> >>>
+> >>> No, it vindicates the hpsa changes ... they don't seem to be causing
+> >>> problems until something goes wrong with dma remapping.
+> >>>
+> >>>>> because all the hpsa changes went in before that under
+> >>>>> Missing crucial info:
+> >>>>>
+> >>>>> commit 1a0b6abaea78f73d9bc0a2f6df2d9e4c917cade1
+> >>>>>
+> >>>>>> Merge: 3e75c6d b2bff6c
+> >>>>>> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> >>>>>> Date:   Tue Apr 1 18:49:04 2014 -0700
+> >>>>>>
+> >>>>>>     Merge tag 'scsi-misc' of
+> >>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi
+> >>>>>>
+> >>>>>> can you revalidate that this commit works OK just to make sure?
+> >>>>
+> >>>> Ok so I don't see those DMA messages and system starts just fine. I'm
+> >>>> thinking perhaps something broke after the IO mmu stuff in commit
+> >>>> 3f583bc21977a608908b83d03ee2250426a5695c... could this be indirectly
+> >>>> causing the CPU stalls and just blame hpsa in the path as a side effect?
+> >>>>
+> >>>> /me goes out to try the commit.
+> >>>
+> >>> That's my guess.  The DMAR messages are DMA remapping issues caused in
+> >>> the IOMMU.  If I had to guess, I'd say the DMAR fault message is
+> >>> indicating the IOMMU is calling for a mapping address before it can
+> >>> satisfy the driver read request, which is causing the hang apparently in
+> >>> the hpsa driver.
+> >>>
+> >>> I've added linux-pci to the cc; I think they deal with iommu issues on
+> >>> x86.
+> >>
+> >> So that merge commit appears to be the culprit, I see both the DMA
+> >> messages and the lockup blaming hpsa...
+> > 
+> > My understanding so far (please correct me if I'm wrong):
+> > 
+> > 39de65aa2c3e OK ("Merge branch 'i2c/for-next'")
+> > 1a0b6abaea78 OK ("Merge tag 'scsi-misc'")
+> > 3f583bc21977 BAD ("Merge tag 'iommu-updates-v3.15'")
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
