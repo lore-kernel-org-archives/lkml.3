@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422931AbaDKQxm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:53:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56499 "EHLO
+	id S1422975AbaDKQyJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:54:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56541 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422772AbaDKQI4 (ORCPT
+	with ESMTP id S1422767AbaDKQI4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Apr 2014 12:08:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Chan <mchan@broadcom.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 14/65] bnx2: Fix shutdown sequence
-Date: Fri, 11 Apr 2014 09:10:46 -0700
-Message-Id: <20140411160959.659667030@linuxfoundation.org>
+Subject: [PATCH 3.13 18/65] skbuff: skb_segment: s/frag/nskb_frag/
+Date: Fri, 11 Apr 2014 09:10:50 -0700
+Message-Id: <20140411161000.209758558@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
 References: <20140411160957.714773410@linuxfoundation.org>
@@ -27,112 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Chan <mchan@broadcom.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-[ Upstream commit a8d9bc2e9f5d1c5a25e33cec096d2a1652d3fd52 ]
+[ Upstream commit 8cb19905e9287a93ce7c2cbbdf742a060b00e219 ]
 
-The pci shutdown handler added in:
+frag points at nskb, so name it appropriately
 
-    bnx2: Add pci shutdown handler
-    commit 25bfb1dd4ba3b2d9a49ce9d9b0cd7be1840e15ed
-
-created a shutdown down sequence without chip reset if the device was
-never brought up.  This can cause the firmware to shutdown the PHY
-prematurely and cause MMIO read cycles to be unresponsive.  On some
-systems, it may generate NMI in the bnx2's pci shutdown handler.
-
-The fix is to tell the firmware not to shutdown the PHY if there was
-no prior chip reset.
-
-Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/broadcom/bnx2.c |   37 +++++++++++++++++++++++++++++++----
- drivers/net/ethernet/broadcom/bnx2.h |    5 ++++
- 2 files changed, 38 insertions(+), 4 deletions(-)
+ net/core/skbuff.c |   18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/bnx2.c
-+++ b/drivers/net/ethernet/broadcom/bnx2.c
-@@ -2490,6 +2490,7 @@ bnx2_fw_sync(struct bnx2 *bp, u32 msg_da
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -2794,7 +2794,7 @@ struct sk_buff *skb_segment(struct sk_bu
  
- 	bp->fw_wr_seq++;
- 	msg_data |= bp->fw_wr_seq;
-+	bp->fw_last_msg = msg_data;
+ 	do {
+ 		struct sk_buff *nskb;
+-		skb_frag_t *frag;
++		skb_frag_t *nskb_frag;
+ 		int hsize;
+ 		int size;
  
- 	bnx2_shmem_wr(bp, BNX2_DRV_MB, msg_data);
- 
-@@ -3982,8 +3983,23 @@ bnx2_setup_wol(struct bnx2 *bp)
- 			wol_msg = BNX2_DRV_MSG_CODE_SUSPEND_NO_WOL;
- 	}
- 
--	if (!(bp->flags & BNX2_FLAG_NO_WOL))
--		bnx2_fw_sync(bp, BNX2_DRV_MSG_DATA_WAIT3 | wol_msg, 1, 0);
-+	if (!(bp->flags & BNX2_FLAG_NO_WOL)) {
-+		u32 val;
-+
-+		wol_msg |= BNX2_DRV_MSG_DATA_WAIT3;
-+		if (bp->fw_last_msg || BNX2_CHIP(bp) != BNX2_CHIP_5709) {
-+			bnx2_fw_sync(bp, wol_msg, 1, 0);
-+			return;
-+		}
-+		/* Tell firmware not to power down the PHY yet, otherwise
-+		 * the chip will take a long time to respond to MMIO reads.
-+		 */
-+		val = bnx2_shmem_rd(bp, BNX2_PORT_FEATURE);
-+		bnx2_shmem_wr(bp, BNX2_PORT_FEATURE,
-+			      val | BNX2_PORT_FEATURE_ASF_ENABLED);
-+		bnx2_fw_sync(bp, wol_msg, 1, 0);
-+		bnx2_shmem_wr(bp, BNX2_PORT_FEATURE, val);
-+	}
- 
- }
- 
-@@ -4015,9 +4031,22 @@ bnx2_set_power_state(struct bnx2 *bp, pc
- 
- 			if (bp->wol)
- 				pci_set_power_state(bp->pdev, PCI_D3hot);
--		} else {
--			pci_set_power_state(bp->pdev, PCI_D3hot);
-+			break;
-+
-+		}
-+		if (!bp->fw_last_msg && BNX2_CHIP(bp) == BNX2_CHIP_5709) {
-+			u32 val;
-+
-+			/* Tell firmware not to power down the PHY yet,
-+			 * otherwise the other port may not respond to
-+			 * MMIO reads.
-+			 */
-+			val = bnx2_shmem_rd(bp, BNX2_BC_STATE_CONDITION);
-+			val &= ~BNX2_CONDITION_PM_STATE_MASK;
-+			val |= BNX2_CONDITION_PM_STATE_UNPREP;
-+			bnx2_shmem_wr(bp, BNX2_BC_STATE_CONDITION, val);
+@@ -2887,7 +2887,7 @@ struct sk_buff *skb_segment(struct sk_bu
+ 			continue;
  		}
-+		pci_set_power_state(bp->pdev, PCI_D3hot);
  
- 		/* No more memory access after this point until
- 		 * device is brought back to D0.
---- a/drivers/net/ethernet/broadcom/bnx2.h
-+++ b/drivers/net/ethernet/broadcom/bnx2.h
-@@ -6890,6 +6890,7 @@ struct bnx2 {
+-		frag = skb_shinfo(nskb)->frags;
++		nskb_frag = skb_shinfo(nskb)->frags;
  
- 	u16			fw_wr_seq;
- 	u16			fw_drv_pulse_wr_seq;
-+	u32			fw_last_msg;
+ 		skb_copy_from_linear_data_offset(skb, offset,
+ 						 skb_put(nskb, hsize), hsize);
+@@ -2915,13 +2915,13 @@ struct sk_buff *skb_segment(struct sk_bu
+ 				goto err;
+ 			}
  
- 	int			rx_max_ring;
- 	int			rx_ring_size;
-@@ -7396,6 +7397,10 @@ struct bnx2_rv2p_fw_file {
- #define BNX2_CONDITION_MFW_RUN_NCSI		 0x00006000
- #define BNX2_CONDITION_MFW_RUN_NONE		 0x0000e000
- #define BNX2_CONDITION_MFW_RUN_MASK		 0x0000e000
-+#define BNX2_CONDITION_PM_STATE_MASK		 0x00030000
-+#define BNX2_CONDITION_PM_STATE_FULL		 0x00030000
-+#define BNX2_CONDITION_PM_STATE_PREP		 0x00020000
-+#define BNX2_CONDITION_PM_STATE_UNPREP		 0x00010000
+-			*frag = *skb_frag;
+-			__skb_frag_ref(frag);
+-			size = skb_frag_size(frag);
++			*nskb_frag = *skb_frag;
++			__skb_frag_ref(nskb_frag);
++			size = skb_frag_size(nskb_frag);
  
- #define BNX2_BC_STATE_DEBUG_CMD			0x1dc
- #define BNX2_BC_STATE_BC_DBG_CMD_SIGNATURE	 0x42440000
+ 			if (pos < offset) {
+-				frag->page_offset += offset - pos;
+-				skb_frag_size_sub(frag, offset - pos);
++				nskb_frag->page_offset += offset - pos;
++				skb_frag_size_sub(nskb_frag, offset - pos);
+ 			}
+ 
+ 			skb_shinfo(nskb)->nr_frags++;
+@@ -2931,11 +2931,11 @@ struct sk_buff *skb_segment(struct sk_bu
+ 				skb_frag++;
+ 				pos += size;
+ 			} else {
+-				skb_frag_size_sub(frag, pos + size - (offset + len));
++				skb_frag_size_sub(nskb_frag, pos + size - (offset + len));
+ 				goto skip_fraglist;
+ 			}
+ 
+-			frag++;
++			nskb_frag++;
+ 		}
+ 
+ skip_fraglist:
 
 
