@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348AbaDKGjm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 02:39:42 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48369 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750859AbaDKGjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 02:39:40 -0400
-Message-ID: <53478E0E.8040709@ti.com>
-Date: Fri, 11 Apr 2014 09:39:10 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1753162AbaDKGqj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 02:46:39 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:26747 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750861AbaDKGqh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 02:46:37 -0400
+Date: Fri, 11 Apr 2014 14:44:31 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: Antoine =?UTF-8?B?VMOpbmFydA==?= 
+	<antoine.tenart@free-electrons.com>,
+        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
+CC: "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        Jimmy Xu <zmxu@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND 2/5] pinctrl: berlin: add a pinctrl driver for
+ Marvell Berlin SoCs
+Message-ID: <20140411144431.04fb148d@xhacker>
+In-Reply-To: <1397135274-10764-3-git-send-email-antoine.tenart@free-electrons.com>
+References: <1397135274-10764-1-git-send-email-antoine.tenart@free-electrons.com>
+	<1397135274-10764-3-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Joel Fernandes <joelf@ti.com>, <dan.j.williams@intel.com>,
-        <vinod.koul@intel.com>, <nsekhar@ti.com>
-CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <mporter@linaro.org>
-Subject: Re: [PATCH v2 10/14] dma: edma: Simplify direction configuration
- in edma_config_pset()
-References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com> <1396357575-30585-11-git-send-email-peter.ujfalusi@ti.com> <53471DC5.4090001@ti.com>
-In-Reply-To: <53471DC5.4090001@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-04-11_03:2014-04-11,2014-04-11,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1404110116
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2014 01:40 AM, Joel Fernandes wrote:
-> On 04/01/2014 08:06 AM, Peter Ujfalusi wrote:
->> We only support DEV_TO_MEM or MEM_TO_DEV directions with edma driver and the
->> check for the direction has been already done in the function calling
->> edma_config_pset().
->> The error reporting is redundant and also the "else if ()" can be removed.
->>
-> 
-> NAK. Please don't do this. I have been working on MEM_TO_MEM support as
-> well so leave it as it is for future.
+Hi Antoine,
 
-Sure. It is still valid to say that the error else {} will never going to
-happen since you have the same check in the calling function and they already
-filtered the non implemented direction.
+On Thu, 10 Apr 2014 06:07:51 -0700
+Antoine TÃ©nart <antoine.tenart@free-electrons.com> wrote:
 
-I'll leave this out from v3.
+...
+> +static int berlin_pinmux_enable(struct pinctrl_dev *pctrl_dev,
+> +                               unsigned function,
+> +                               unsigned group)
+> +{
+> +       struct berlin_pinctrl *pctrl = pinctrl_dev_get_drvdata(pctrl_dev);
+> +       struct berlin_pinctrl_group *group_desc = pctrl->groups + group;
+> +       struct berlin_pinctrl_function *function_desc =
+> +               pctrl->functions + function;
+> +       unsigned long flags;
+> +       u32 regval;
+> +
+> +       spin_lock_irqsave(&pctrl->lock, flags);
+> +
+> +       regval = readl(group_desc->reg);
+> +       regval &= group_desc->mask;
+> +       regval |= function_desc->muxval << group_desc->lsb;
+> +       writel(regval, group_desc->reg);
 
--- 
-Péter
+Could we use relaxed version instead?
 
-> 
-> Thanks,
-> -Joel
-> 
->> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->> ---
->>  drivers/dma/edma.c | 6 ++----
->>  1 file changed, 2 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
->> index 855766672aa9..d954099650ae 100644
->> --- a/drivers/dma/edma.c
->> +++ b/drivers/dma/edma.c
->> @@ -372,14 +372,12 @@ static int edma_config_pset(struct dma_chan *chan, struct edmacc_param *pset,
->>  		src_cidx = cidx;
->>  		dst_bidx = 0;
->>  		dst_cidx = 0;
->> -	} else if (direction == DMA_DEV_TO_MEM)  {
->> +	} else {
->> +		/* DMA_DEV_TO_MEM */
->>  		src_bidx = 0;
->>  		src_cidx = 0;
->>  		dst_bidx = acnt;
->>  		dst_cidx = cidx;
->> -	} else {
->> -		dev_err(dev, "%s: direction not implemented yet\n", __func__);
->> -		return -EINVAL;
->>  	}
->>  
->>  	pset->opt = EDMA_TCC(EDMA_CHAN_SLOT(echan->ch_num));
->>
-> 
-
+Thanks,
+Jisheng
