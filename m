@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887AbaDKEuf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 00:50:35 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:34923 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839AbaDKEud (ORCPT
+	id S1754508AbaDKEuw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 00:50:52 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:54589 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753972AbaDKEuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 00:50:33 -0400
-X-AuditID: cbfee690-b7f266d00000287c-cf-5347749722a4
-Message-id: <53477499.3030901@samsung.com>
-Date: Fri, 11 Apr 2014 13:50:33 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Inki Dae <inki.dae@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>, hyunhee.kim@samsung.com,
-        yj44.cho@samsung.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 15/27] ARM: dts: exynos3250: Add uart dt node to support
- seiral ports
-References: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
- <1397124377-16969-7-git-send-email-cw00.choi@samsung.com>
- <CAK9yfHxdeJarGCYgLADpxYS3BtxLt6hg0NJBrdYqrcKctFqU1g@mail.gmail.com>
-In-reply-to: <CAK9yfHxdeJarGCYgLADpxYS3BtxLt6hg0NJBrdYqrcKctFqU1g@mail.gmail.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsWyRsSkRHd6iXuwwc8TVhafP7SwW0y6P4HF
-	onfBVTaLs01v2C02Pb7GanF51xw2ixnn9zFZnPzTy2gxY/JLNov1M16zWOzdOZnRgdvjzrU9
-	bB6bl9R79G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8anuSuYC86wVFxf4tvAeJ+5i5GTQ0LA
-	RGL2nBNsELaYxIV764FsLg4hgaWMEns+3gIq4gArarmiDhFfxCix9v1MFgjnNaPElA//2EG6
-	eQW0JJY9e8ECYrMIqEps/HoXbAMbUHz/ixtgG0QFwiRWTr/CAlEvKPFj8j0wWwSo5mX3ciaQ
-	ocwCXcwSj89MBEsIC0RL3Fj3mQli2wlGiTXTp4Bt4xQIljj1Zz2YzSygI7G/dRobhC0vsXnN
-	W2aQBgmBR+wS+/5uYoI4SUDi2+RDLBD/yEpsOgD1v6TEwRU3WCYwis1CctQsJGNnIRm7gJF5
-	FaNoakFyQXFSepGJXnFibnFpXrpecn7uJkZgVJ7+92zCDsZ7B6wPMSYDrZzILCWanA+M6ryS
-	eENjMyMLUxNTYyNzSzPShJXEedUeJQUJCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYMzS/rF8
-	+aZXF6Kklx43uvl119Q5R1wcTgXwLLI453T2vQDTpsCeWwfq2v5ofeCffyHRTlh2rnRW8k6u
-	V5ERH/Zdke117J7EdGfys5YYzf49z1tymZdFcPi5v2FRfp8xz3ih6rL7u37MvP9bjGnJ9w4j
-	9lU3Jy5vejE750TUrqNGl90vvKtamqCuxFKckWioxVxUnAgARPWT0uACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jAd3pJe7BBtOnGll8/tDCbjHp/gQW
-	i94FV9kszja9YbfY9Pgaq8XlXXPYLGac38dkcfJPL6PFjMkv2SzWz3jNYrF352RGB26PO9f2
-	sHlsXlLv0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koK
-	eYm5qbZKLj4Bum6ZOUBXKSmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJaxgz
-	Ps1dwVxwhqXi+hLfBsb7zF2MHBwSAiYSLVfUuxg5gUwxiQv31rN1MXJxCAksYpRY+34mC4Tz
-	mlFiyod/7CBVvAJaEsuevWABsVkEVCU2fr3LDGKzAcX3v7jBBmKLCoRJrJx+hQWiXlDix+R7
-	YLYIUM3L7uVMIEOZBbqYJR6fmQiWEBaIlrix7jMTxLYTjBJrpk8B28YpECxx6s96MJtZQEdi
-	f+s0NghbXmLzmrfMExgFZiFZMgtJ2SwkZQsYmVcxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525i
-	BMf8M6kdjCsbLA4xCnAwKvHwZlxwCxZiTSwrrsw9xCjBwawkwmvm7x4sxJuSWFmVWpQfX1Sa
-	k1p8iDEZGAYTmaVEk/OB6SivJN7Q2MTMyNLI3NDCyNicNGElcd4DrdaBQgLpiSWp2ampBalF
-	MFuYODilgCmo25hbTCR2BWvsF+b+lecq795UP5IW4GdrFpm62/JPB/e6JUwmjydd+7O4Y1tm
-	UdfNEzt/hZ+2ZXx/yv1Tmlhy0ixz75OTAvMWR6jE+Wxa3fomPkvx8dd1e24JexwWqtS2WeVe
-	FR04R9G5+FTO0X7DcFH++g0bInp1dCUOe4YFRs/xCp9bosRSnJFoqMVcVJwIADDqu5E9AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 11 Apr 2014 00:50:51 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsYOAJZzR1NXQy1//2dsb2JhbABZgwaDTsF7AgKBHhd0glMTHCMYgQIkE4gAAc0TjmyEPwEDmF0BkkKDMjs
+Date: Fri, 11 Apr 2014 06:52:42 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, jack <jack@suse.cz>,
+        akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] FS: Add generic data flush to fsync
+Message-Id: <20140411065242.42916952dd5d8e4e53848b3b@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Currently, there's no generic HW flush management support in kernel.
+Only 7 filesystems have their own way to manage the barrier flag.
 
-On 04/11/2014 01:03 PM, Sachin Kamat wrote:
-> On 10 April 2014 15:36, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->> This patch add UART dt node for Exynos3250. Exynos3250 uses same UART IP
->> of Exynos4 SoC and has only two independent channels.
->>
->> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->> [Fix incorrect clock id by Tomasz Figa]
->> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
-> 
-> typo in patch subject: s/seiral/serial
-> 
+This patch adds MS_BARRIER in sb_flags and conditionnaly issues the flush
+in generic_file_fsync.
 
-I'll fix it. Thanks.
+That option would be enabled from userspace mount tool.
 
-Best Regards,
-Chanwoo Choi
+(-As discussed with Jan, we could add barrier/no barrier in older filesystems
+ but this would mix both filesystem and vfs barrier terminology plus
+ generic_file_fsync does not have access to FS sbi.
+ -Some modern FS will be involved as well ; eg no journal ext4 partitions.
+)
+
+Cc: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org
+Suggested-by: Jan Kara <jack@suse.cz>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/libfs.c              | 7 +++++++
+ include/uapi/linux/fs.h | 1 +
+ 2 files changed, 8 insertions(+)
+
+diff --git a/fs/libfs.c b/fs/libfs.c
+index a184424..21983d9 100644
+--- a/fs/libfs.c
++++ b/fs/libfs.c
+@@ -3,6 +3,7 @@
+  *	Library for filesystems writers.
+  */
+ 
++#include <linux/blkdev.h>
+ #include <linux/export.h>
+ #include <linux/pagemap.h>
+ #include <linux/slab.h>
+@@ -952,6 +953,12 @@ int generic_file_fsync(struct file *file, loff_t start, loff_t end,
+ 	err = sync_inode_metadata(inode, 1);
+ 	if (ret == 0)
+ 		ret = err;
++	if (inode->i_sb->s_flags & MS_BARRIER) {
++		err = blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
++		if (ret == 0)
++			ret = err;
++	}
++
+ out:
+ 	mutex_unlock(&inode->i_mutex);
+ 	return ret;
+diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
+index ca1a11b..7c14ebd 100644
+--- a/include/uapi/linux/fs.h
++++ b/include/uapi/linux/fs.h
+@@ -89,6 +89,7 @@ struct inodes_stat_t {
+ #define MS_KERNMOUNT	(1<<22) /* this is a kern_mount call */
+ #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
+ #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
++#define MS_BARRIER	(1<<25) /* Flush data during sync operations */
+ 
+ /* These sb flags are internal to the kernel */
+ #define MS_NOSEC	(1<<28)
+-- 
+1.8.4.5
+
