@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376AbaDKJq6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 05:46:58 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:39835 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755732AbaDKJqQ (ORCPT
+	id S1755818AbaDKJqP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 05:46:15 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:34952 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755523AbaDKJqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 05:46:16 -0400
+	Fri, 11 Apr 2014 05:46:06 -0400
 From: Vincent Guittot <vincent.guittot@linaro.org>
 To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
         tony.luck@intel.com, fenghua.yu@intel.com, schwidefsky@de.ibm.com,
@@ -15,76 +15,62 @@ To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
 Cc: dietmar.eggemann@arm.com, preeti@linux.vnet.ibm.com,
         linaro-kernel@lists.linaro.org,
         Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH v4 5/5] sched: ARM: create a dedicated scheduler topology table
-Date: Fri, 11 Apr 2014 11:44:41 +0200
-Message-Id: <1397209481-28542-6-git-send-email-vincent.guittot@linaro.org>
+Subject: [PATCH v4 0/5] rework sched_domain topology description
+Date: Fri, 11 Apr 2014 11:44:36 +0200
+Message-Id: <1397209481-28542-1-git-send-email-vincent.guittot@linaro.org>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1397209481-28542-1-git-send-email-vincent.guittot@linaro.org>
-References: <1397209481-28542-1-git-send-email-vincent.guittot@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create a dedicated topology table for ARM which will create new level to
-differentiate CPUs that can or not powergate independantly from others.
+This patchset was previously part of the larger tasks packing patchset [1].
+I have splitted the latter in 3 different patchsets (at least) to make the
+thing easier.
+-configuration of sched_domain topology (this patchset)
+-update and consolidation of cpu_power
+-tasks packing algorithm
 
-The patch gives an example of how to add domain that will take advantage of
-SD_SHARE_POWERDOMAIN.
+Based on Peter Z's proposal [2][3], this patchset modifies the way to configure
+the sched_domain level in order to let architectures to add specific level like
+the current BOOK level or the proposed power gating level for ARM architecture.
 
-Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
----
- arch/arm/kernel/topology.c | 26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+[1] https://lkml.org/lkml/2013/10/18/121
+[2] https://lkml.org/lkml/2013/11/5/239
+[3] https://lkml.org/lkml/2013/11/5/449
 
-diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-index 0bc94b1..71e1fec 100644
---- a/arch/arm/kernel/topology.c
-+++ b/arch/arm/kernel/topology.c
-@@ -185,6 +185,15 @@ const struct cpumask *cpu_coregroup_mask(int cpu)
- 	return &cpu_topology[cpu].core_sibling;
- }
- 
-+/*
-+ * The current assumption is that we can power gate each core independently.
-+ * This will be superseded by DT binding once available.
-+ */
-+const struct cpumask *cpu_corepower_mask(int cpu)
-+{
-+	return &cpu_topology[cpu].thread_sibling;
-+}
-+
- static void update_siblings_masks(unsigned int cpuid)
- {
- 	struct cputopo_arm *cpu_topo, *cpuid_topo = &cpu_topology[cpuid];
-@@ -266,6 +275,20 @@ void store_cpu_topology(unsigned int cpuid)
- 		cpu_topology[cpuid].socket_id, mpidr);
- }
- 
-+static inline const int cpu_corepower_flags(void)
-+{
-+	return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
-+}
-+
-+static struct sched_domain_topology_level arm_topology[] = {
-+#ifdef CONFIG_SCHED_MC
-+	{ cpu_corepower_mask, cpu_corepower_flags, SD_INIT_NAME(GMC) },
-+	{ cpu_coregroup_mask, cpu_core_flags, SD_INIT_NAME(MC) },
-+#endif
-+	{ cpu_cpu_mask, SD_INIT_NAME(DIE) },
-+	{ NULL, },
-+};
-+
- /*
-  * init_cpu_topology is called at boot when only one cpu is running
-  * which prevent simultaneous write access to cpu_topology array
-@@ -289,4 +312,7 @@ void __init init_cpu_topology(void)
- 	smp_wmb();
- 
- 	parse_dt_topology();
-+
-+	/* Set scheduler topology descriptor */
-+	set_sched_topology(arm_topology);
- }
+Change since v3:
+- remove last patch which was adding SD_SHARE_POWER_DOMAIN for powerpc's SMT
+  level
+
+Change since v2:
+- remove patch 1 as it has been already applied to metag tree for v3.15
+- updates some commit messages
+- add new flag description in TOPOLOGY_SD_FLAGS description
+
+Change since v1:
+- move sched_domains_curr_level back under #ifdef CONFIG_NUMA
+- use function pointer to set flag instead of a plain value.
+- add list of tunable flags in the commit message of patch 2
+- add SD_SHARE_POWER_DOMAIN flag for powerpc's SMT level
+
+Vincent Guittot (5):
+  sched: rework of sched_domain topology definition
+  sched: s390: create a dedicated topology table
+  sched: powerpc: create a dedicated topology table
+  sched: add a new SD_SHARE_POWERDOMAIN for sched_domain
+  sched: ARM: create a dedicated scheduler topology table
+
+ arch/arm/kernel/topology.c       |  26 +++++
+ arch/ia64/include/asm/topology.h |  24 ----
+ arch/powerpc/kernel/smp.c        |  31 +++--
+ arch/s390/include/asm/topology.h |  13 +--
+ arch/s390/kernel/topology.c      |  20 ++++
+ arch/tile/include/asm/topology.h |  33 ------
+ include/linux/sched.h            |  49 +++++++-
+ include/linux/topology.h         | 128 +++-----------------
+ kernel/sched/core.c              | 244 ++++++++++++++++++++-------------------
+ 9 files changed, 255 insertions(+), 313 deletions(-)
+
 -- 
 1.9.1
 
