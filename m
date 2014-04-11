@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820AbaDKDFG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 23:05:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40477 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754386AbaDKDFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 23:05:03 -0400
-Message-ID: <1397185491.6230.4.camel@localhost>
-Subject: Re: [PATCH RFC V2 4/4] tools: virtio: add a top-like utility for
- displaying vhost satistics
-From: Jason Wang <jasowang@redhat.com>
-To: Fam Zheng <famz@redhat.com>
-Cc: mst@redhat.com, kvm@vger.kernel.org, virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 11 Apr 2014 11:04:51 +0800
-In-Reply-To: <20140410092702.GJ22890@T430.nay.redhat.com>
-References: <1395394913-19548-1-git-send-email-jasowang@redhat.com>
-	 <1395394913-19548-5-git-send-email-jasowang@redhat.com>
-	 <20140410092702.GJ22890@T430.nay.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754688AbaDKDJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 23:09:56 -0400
+Received: from mail-yk0-f170.google.com ([209.85.160.170]:63635 "EHLO
+	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190AbaDKDJz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 23:09:55 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140410173616.GC6518@sirena.org.uk>
+References: <1397134229-2380-1-git-send-email-harinik@xilinx.com>
+	<20140410173616.GC6518@sirena.org.uk>
+Date: Fri, 11 Apr 2014 08:39:54 +0530
+Message-ID: <CAFcVECL-G_JPZXmzBLT_cFo3vmjYZd8xGFf-7Vv2uXWa9-O37Q@mail.gmail.com>
+Subject: Re: [PATCH] spi: core: Increase timeout value
+From: Harini Katakam <harinikatakamlinux@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        michals@xilinx.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-10 at 17:27 +0800, Fam Zheng wrote:
-> On Fri, 03/21 17:41, Jason Wang wrote:
-> > This patch adds simple python to display vhost satistics of vhost, the codes
-> > were based on kvm_stat script from qemu. As work function has been recored,
-> > filters could be used to distinguish which kinds of work are being executed or
-> > queued:
-> > 
-> > vhost statistics
-> > 
-> >  vhost_virtio_update_used_idx               1215215       0
-> >  vhost_virtio_get_vq_desc                   1215215       0
-> >  vhost_work_queue_wakeup                     986808       0
-> >  vhost_virtio_signal                         811601       0
-> >  vhost_net_tx                                611457       0
-> >  vhost_net_rx                                603758       0
-> >  vhost_net_tx(datacopy)                      601903       0
-> >  vhost_work_queue_wakeup(rx_net)             565081       0
-> >  vhost_virtio_signal(rx)                     461603       0
-> >  vhost_work_queue_wakeup(tx_kick)            421718       0
-> >  vhost_virtio_update_avail_event             417346       0
-> >  vhost_virtio_signal(tx)                     349998       0
-> >  vhost_work_queue_coalesce                    39384       0
-> >  vhost_work_queue_coalesce(rx_net)            38677       0
-> >  vhost_net_tx(zerocopy)                        9554       0
-> >  vhost_work_queue_coalesce(tx_kick)             707       0
-> >  vhost_work_queue_wakeup(rx_kick)                 9       0
-> > 
-> > Signed-off-by: Jason Wang <jasowang@redhat.com>
-> > ---
-> >  tools/virtio/vhost_stat | 375 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >  1 file changed, 375 insertions(+)
-> >  create mode 100755 tools/virtio/vhost_stat
-> > 
-> > diff --git a/tools/virtio/vhost_stat b/tools/virtio/vhost_stat
-> > new file mode 100755
-> > index 0000000..398fd4a
-> > --- /dev/null
-> > +++ b/tools/virtio/vhost_stat
-> > @@ -0,0 +1,375 @@
-> > +#!/usr/bin/python
-> > +#
-> > +# top-like utility for displaying vhost statistics
-> > +#
-> > +# Copyright 2012 Red Hat, Inc.
-> 
-> Should it be 2014?
-> 
-> Fam
-> 
-> <snip>
+Hi Mark,
 
-Yes it should, thanks for pointing this out.
+On Thu, Apr 10, 2014 at 11:06 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Thu, Apr 10, 2014 at 06:20:29PM +0530, Harini Katakam wrote:
+>
+>> Considering acceptable latencies, this timeout can be set to a large
+>> value >= 1*HZ typically.
+>
+>> This patch adds a tolerance of 2000 msec in the core accordingly.
+>
+> That's too much, it's 2 seconds which gets to be incredibly painful when
+> trying to debug problems - if you're sitting there waiting for a driver
+> to time out some operations (and it may be more than one of them) so you
+> can look at the diagnostics it can be quite aggrivating.  That's why the
+> delays are related to the expected runtime for the operation.  Something
+> like double the expected runtime plus something in the 100ms or so range
+> perhaps?
+>
 
+OK.
+
+> Ideally we'd use the actual speed the device set rather than the
+> requested one too, that'd help.
+
+How would you propose to do that - driver should write back actual speed set
+to xfer->speed_hz?
+
+Regards,
+Harini
