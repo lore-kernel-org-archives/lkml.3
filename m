@@ -1,59 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759227AbaDKP6x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 11:58:53 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:44836 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757502AbaDKP6H (ORCPT
+	id S932298AbaDKP72 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 11:59:28 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:38489 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754296AbaDKP7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 11:58:07 -0400
-Date: Fri, 11 Apr 2014 23:57:51 +0800
-From: Huang Shijie <shijie8@gmail.com>
-To: grmoore@altera.com
-Cc: ggrahammoore@gmail.com, Marek Vasut <marex@denx.de>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        linux-mtd@lists.infradead.org, Insop Song <insop.song@gainspeed.com>,
-        Alan Tull <atull@altera.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Dinh Nguyen <dinguyen@altera.com>
-Subject: Re: [PATCH V2] Add support for flag status register on Micron chips.
-Message-ID: <20140411155747.GA1584@localhost.localdomain>
-References: <1397228593-17996-1-git-send-email-grmoore@altera.com>
+	Fri, 11 Apr 2014 11:59:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397228593-17996-1-git-send-email-grmoore@altera.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAPDyKFrFyBLtL6dVgFy6DkY0gdCjiVpk1OhsfUXD0nhajCetxg@mail.gmail.com>
+References: <1397172708-19735-1-git-send-email-tim.kryger@linaro.org>
+	<CAPDyKFrFyBLtL6dVgFy6DkY0gdCjiVpk1OhsfUXD0nhajCetxg@mail.gmail.com>
+Date: Fri, 11 Apr 2014 08:59:11 -0700
+Message-ID: <CAAYSxhp7df9ee9+bfz0ht6Lr6ojtfbPAqsa5Sf0=BmVpKymJ6w@mail.gmail.com>
+Subject: Re: [PATCH] mmc: sdhci: Set ocr_avail directly based on vmmc
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Chris Ball <chris@printf.net>,
+        Linux MMC Mailing List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 10:03:13AM -0500, grmoore@altera.com wrote:
-> From: Graham Moore <grmoore@altera.com>
-> 
-> Some new Micron flash chips require reading the flag
-> status register to determine when operations have completed.
-> 
-> Furthermore, chips with multi-die stacks of the 65nm 256Mb QSPI also
-> require reading the status register before reading the flag status register.
-> 
-> This patch adds support for the flag status register in the n25q512a1 and n25q00
-> Micron QSPI flash chips.
-> 
-> Signed-off-by: Graham Moore <grmoore@altera.com>
-> ---
-> V2:
-> Remove leading underscore in function names.
-> Remove type cast in dev_err call and use the proper format
-> specifier instead.
-> ---
->  drivers/mtd/devices/m25p80.c |   91 ++++++++++++++++++++++++++++++++++++------
-please rebase this patch on the latest l2-mtd, branch spinor.
+On Fri, Apr 11, 2014 at 1:15 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> On 11 April 2014 01:31, Tim Kryger <tim.kryger@linaro.org> wrote:
 
-thanks
-Huang Shijie
+>> +static unsigned int sdhci_get_ocr_avail_from_vmmc(struct sdhci_host *host)
+>> +{
+>> +       unsigned int ocr_avail = 0;
+>> +       struct regulator *vmmc = host->vmmc;
+>> +
+>> +       if (regulator_is_supported_voltage(vmmc, 1650000, 1950000) > 0)
+>> +               ocr_avail |= MMC_VDD_165_195;
+>> +
+>> +       if (regulator_is_supported_voltage(vmmc, 2900000, 3000000) > 0)
+>> +               ocr_avail |= MMC_VDD_29_30;
+>> +
+>> +       if (regulator_is_supported_voltage(vmmc, 3000000, 3100000) > 0)
+>> +               ocr_avail |= MMC_VDD_30_31;
+>> +
+>> +       if (regulator_is_supported_voltage(vmmc, 3200000, 3300000) > 0)
+>> +               ocr_avail |= MMC_VDD_32_33;
+>> +
+>> +       if (regulator_is_supported_voltage(vmmc, 3300000, 3400000) > 0)
+>> +               ocr_avail |= MMC_VDD_33_34;
+>> +
+>> +       return ocr_avail;
+>> +}
+>> +
+>
+> There is an API called mmc_regulator_get_ocrmask() for this.
+
+Great.  Thanks for pointing this out.
+
+
+>> +               ocr_avail = sdhci_get_ocr_avail_from_vmmc(host);
+>> +       } else {
+>> +               if (caps[0] & SDHCI_CAN_VDD_330)
+>> +                       ocr_avail |= MMC_VDD_32_33 | MMC_VDD_33_34;
+>> +               if (caps[0] & SDHCI_CAN_VDD_300)
+>> +                       ocr_avail |= MMC_VDD_29_30 | MMC_VDD_30_31;
+>> +               if (caps[0] & SDHCI_CAN_VDD_180)
+>> +                       ocr_avail |= MMC_VDD_165_195;
+>> +       }
+>> +
+>> +       if (host->ocr_mask)
+>> +               ocr_avail = host->ocr_mask;
+>> +
+>> +       mmc->ocr_avail = ocr_avail;
+>> +       mmc->ocr_avail_sdio = ocr_avail;
+>> +       if (host->ocr_avail_sdio)
+>> +               mmc->ocr_avail_sdio &= host->ocr_avail_sdio;
+>> +       mmc->ocr_avail_sd = ocr_avail;
+>> +       if (host->ocr_avail_sd)
+>> +               mmc->ocr_avail_sd &= host->ocr_avail_sd;
+>> +       else /* normal SD controllers don't support 1.8V */
+>> +               mmc->ocr_avail_sd &= ~MMC_VDD_165_195;
+>> +       mmc->ocr_avail_mmc = ocr_avail;
+>> +       if (host->ocr_avail_mmc)
+>> +               mmc->ocr_avail_mmc &= host->ocr_avail_mmc;
+>> +
+>> +       if (mmc->ocr_avail == 0) {
+>> +               pr_err("%s: Hardware doesn't report any support voltages.\n",
+>> +                      mmc_hostname(mmc));
+>> +               return -ENODEV;
+>> +       }
+>
+> I have not fully understand why you have different ocr masks depending
+> on what card you initialize. Is that really supported by the
+> controller?
+
+Would you mind clarifying your question?  I'm not sure what you are
+after.  Also this logic is mostly unchanged, I have simply moved it up
+earlier in the function to keep all the ocr parts together.
+
+> I have seen some patches around lately touching the code for handling
+> the regulators (vcc and vccq) in sdhci.
+>
+> A few times I have suggested to switch to use the
+> mmc_regulator_get_supply() API to simplify and consolidate code. Could
+> you please have a look at that?
+
+Sure, I'll take a look.  Thanks for the helpful comments.
+
+-Tim
