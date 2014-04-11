@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243AbaDKUP4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 16:15:56 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:58658 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754192AbaDKUPx (ORCPT
+	id S1755325AbaDKUQA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 16:16:00 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:54554 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754192AbaDKUP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 16:15:53 -0400
+	Fri, 11 Apr 2014 16:15:56 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
@@ -22,134 +22,92 @@ Cc: John Stultz <john.stultz@linaro.org>,
         Michel Lespinasse <walken@google.com>,
         Minchan Kim <minchan@kernel.org>, Keith Packard <keithp@keithp.com>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: [PATCH 0/4] Volatile Ranges (v13)
-Date: Fri, 11 Apr 2014 13:15:36 -0700
-Message-Id: <1397247340-3365-1-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 2/4] mvolatile: Add mvolatile syscall and handle splitting/merging and marking vmas
+Date: Fri, 11 Apr 2014 13:15:38 -0700
+Message-Id: <1397247340-3365-3-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1397247340-3365-1-git-send-email-john.stultz@linaro.org>
+References: <1397247340-3365-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just wanted to send out an updated patch set that includes changes
-(mostly cleanups and fixes) from some of the reviews and discussion
-at LSF-MM.
+This patch introduces the mvolatile() syscall, which allows for specifying
+ranges of memory as volatile, and able to be discarded by the system.
 
-New changes are:
-----------------
-o Renamed vrange syscall to mvolatile (Per Hugh's suggestion)
-o Dropped any modifications made to page age when marking volatile.
-  (from LSF-MM discussion)
-o Changed "discard" usage to "purged" for clarity/consistency
-  (Kosaki-san's suggestion)
-o Moved appropriate header definitions to uapi/ (Kosaki-san)
-o Made sure to take write on mmap_sem (Kosaki-san/Minchan)
-o Made sure to clean ptes on marking non-volatile rather then
-  cleaning them on fault (Kosaki-san's suggestion)
-o Introduced a cleanup patch to make adding new psudo-swap types
-  simpler
-o Numerous other fixes from Minchan
-o Numerous other fixes suggested by Kosaki-san
-o For now I've also dropped the naive aging anonymous memory on
-  swapless systems, as I need to sort out accounting details first.
+This initial patch simply adds the syscall, and the vma handling,
+splitting and merging the vmas as needed, and marking them with
+VM_VOLATILE.
 
+No purging or discarding of volatile ranges is done at this point.
 
-Still on the TODO list
-----------------------------------------------------
-o Look into possibility of doing VMA splitting/merging more
-  carefully by hand to avoid potential allocation failures.
-  This would allow us to go back using madvise() syscall.
-o Sort out how best to do page accounting when the volatility
-  is tracked on a per-mm basis.
-o Revisit anonymous page aging on swapless systems
-o Draft up re-adding tmpfs/shm file volatility support
+Example man page:
 
+NAME
+	mvolatile - Mark or unmark range of memory as volatile
 
-There is of course, the ongoing discussion w/ Johannes
-about his suggestion of cleaning the pte entries dirty
-bit to represent volatility. While this method is
-attractive from a kernel mm-developer point of view,
-the resulting semantics are quite subtle and I worry
-would be confusing and error prone for application
-developers. If consensus builds for that approach,
-I'm willing to move to that method, but until then
-I figured I'd continue with this approach, which
-has simpler semantics (but will require more logic
-when tmpfs/shm file support is readded).
+SYNOPSIS
+	ssize_t mvolatile(unsigned_long start, size_t length,
+			 unsigned_long mode, unsigned_long flags,
+			 int *purged);
 
+DESCRIPTION
+	Applications can use mvolatile(2) to advise kernel that pages of
+	anonymous mapping in the given VM area can be reclaimed without
+	swapping (or can no longer be reclaimed without swapping).
+	The idea is that application can help kernel with page reclaim
+	under memory pressure by specifying data it can easily regenerate
+	and thus kernel can discard the data if needed.
 
-Many thanks again to Minchan, Kosaki-san, Johannes, Jan, Rik,
-Hugh, and others for the great feedback and discussion at
-LSF-MM.
+	mode:
+	MVOLATILE_VOLATILE
+		Informs the kernel that the VM can discard in pages in
+		the specified range when under memory pressure.
+	MVOLATILE_NONVOLATILE
+		Informs the kernel that the VM can no longer discard pages
+		in this range.
 
-thanks
--john
+	flags: Currently no flags are supported.
 
+	purged: Pointer to an integer which will return 1 if
+	mode == MVOLATILE_NONVOLATILE and any page in the affected range
+	was purged. If purged returns zero during a mode ==
+	MVOLATILE_NONVOLATILE call, it means all of the pages in the range
+	are intact.
 
-Volatile ranges provides a method for userland to inform the kernel
-that a range of memory is safe to discard (ie: can be regenerated)
-but userspace may want to try access it in the future.  It can be
-thought of as similar to MADV_DONTNEED, but that the actual freeing
-of the memory is delayed and only done under memory pressure, and the
-user can try to cancel the action and be able to quickly access any
-unpurged pages. The idea originated from Android's ashmem, but I've
-since learned that other OSes provide similar functionality.
+	If a process accesses volatile memory which has been purged, and
+	was not set as non volatile via a MVOLATILE_NONVOLATILE call, it
+	will recieve a SIGBUS.
 
-This functionality allows for a number of interesting uses. One such
-example is: Userland caches that have kernel triggered eviction under
-memory pressure. This allows for the kernel to "rightsize" userspace
-caches for current system-wide workload. Things like image bitmap
-caches, or rendered HTML in a hidden browser tab, where the data is
-not visible and can be regenerated if needed, are good examples.
+RETURN VALUE
+	On success mvolatile returns the number of bytes marked or unmarked.
 
-Both Chrome and Firefox already make use of volatile range-like
-functionality via the ashmem interface:
-https://hg.mozilla.org/releases/mozilla-b2g28_v1_3t/rev/a32c32b24a34
+	Similar to write(), it may return fewer bytes then specified
+	if it ran into a problem.
 
-https://chromium.googlesource.com/chromium/src/base/+/47617a69b9a57796935e03d78931bd01b4806e70/memory/discardable_memory_allocator_android.cc
+	When using MVOLATILE_NONVOLATILE, if the return value is smaller
+	than the specified length, then the value returned in the purged
+	pointer only reflects the purged state of the successfully marked
+	non-volatile pages.
 
+	If an error is returned, no changes were made.
 
-The basic usage of volatile ranges is as so:
-1) Userland marks a range of memory that can be regenerated if
-necessary as volatile
-2) Before accessing the memory again, userland marks the memory as
-nonvolatile, and the kernel will provide notification if any pages in
-the range has been purged.
+ERRORS
+	EINVAL This error can occur for the following reasons:
+		* The value length is negative or not page size units.
+		* addr is not page-aligned
+		* mode not a valid value.
+		* flags is not a valid value.
 
-If userland accesses memory while it is volatile, it will either
-get the value stored at that memory if there has been no memory
-pressure or the application will get a SIGBUS if the page has been
-purged.
+	ENOMEM Not enough memory
 
-Reads or writes to the memory do not affect the volatility state of the
-pages.
+	ENOMEM Addresses in the specified range are not currently mapped,
+	       or are outside the address space of the process.
 
-You can read more about the history of volatile ranges here (~reverse
-chronological order):
-https://lwn.net/Articles/592042/
-https://lwn.net/Articles/590991/
-http://permalink.gmane.org/gmane.linux.kernel.mm/98848
-http://permalink.gmane.org/gmane.linux.kernel.mm/98676
-https://lwn.net/Articles/522135/
-https://lwn.net/Kernel/Index/#Volatile_ranges
+	EFAULT Purged pointer is invalid
 
-
-Continuing from the last few releases, this revision is reduced in
-scope when compared to earlier attempts. I've only focused on handled
-volatility on anonymous memory, and we're storing the volatility in
-the VMA.  This may have performance implications compared with the
-earlier approach, but it does simplify the approach. I'm open to
-expanding functionality via flags arguments, but for now I'm wanting
-to keep focus on what the right default behavior should be and keep
-the use cases restricted to help get reviewer interest.
-
-Additionally, since we don't handle volatility on tmpfs files with this
-version of the patch, it is not able to be used to implement semantics
-similar to Android's ashmem. But since shared volatiltiy on files is
-more complex, my hope is to start small and hopefully grow from there.
-
-Again, much of the logic in this patchset is based on Minchan's earlier
-efforts, so I do want to make sure the credit goes to him for his major
-contribution!
+This a simplified implementation which reuses some of the logic
+from Minchan's earlier efforts. So credit to Minchan for his work.
 
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Android Kernel Team <kernel-team@android.com>
@@ -170,31 +128,284 @@ Cc: Michel Lespinasse <walken@google.com>
 Cc: Minchan Kim <minchan@kernel.org>
 Cc: Keith Packard <keithp@keithp.com>
 Cc: linux-mm@kvack.org <linux-mm@kvack.org>
-
-John Stultz (4):
-  swap: Cleanup how special swap file numbers are defined
-  mvolatile: Add mvolatile syscall and handle splitting/merging and
-    marking vmas
-  mvolatile: Add purged page detection on setting memory non-volatile
-  mvolatile: Add page purging logic & SIGBUS trap
-
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
  arch/x86/syscalls/syscall_64.tbl |   1 +
  include/linux/mm.h               |   1 +
- include/linux/mvolatile.h        |  10 +
- include/linux/swap.h             |  36 ++--
- include/linux/swapops.h          |  10 +
- include/uapi/linux/mvolatile.h   |   7 +
+ include/linux/mvolatile.h        |   8 ++
+ include/uapi/linux/mvolatile.h   |   7 ++
  mm/Makefile                      |   2 +-
- mm/internal.h                    |   2 -
- mm/memory.c                      |   8 +
- mm/mvolatile.c                   | 401 +++++++++++++++++++++++++++++++++++++++
- mm/rmap.c                        |   5 +
- mm/vmscan.c                      |  12 ++
- 12 files changed, 481 insertions(+), 14 deletions(-)
+ mm/mvolatile.c                   | 195 +++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 213 insertions(+), 1 deletion(-)
  create mode 100644 include/linux/mvolatile.h
  create mode 100644 include/uapi/linux/mvolatile.h
  create mode 100644 mm/mvolatile.c
 
+diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
+index a12bddc..6fa2087 100644
+--- a/arch/x86/syscalls/syscall_64.tbl
++++ b/arch/x86/syscalls/syscall_64.tbl
+@@ -322,6 +322,7 @@
+ 313	common	finit_module		sys_finit_module
+ 314	common	sched_setattr		sys_sched_setattr
+ 315	common	sched_getattr		sys_sched_getattr
++316	common	mvolatile		sys_mvolatile
+ 
+ #
+ # x32-specific system call numbers start at 512 to avoid cache impact
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index c1b7414..a1f11da 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -117,6 +117,7 @@ extern unsigned int kobjsize(const void *objp);
+ #define VM_IO           0x00004000	/* Memory mapped I/O or similar */
+ 
+ 					/* Used by sys_madvise() */
++#define VM_VOLATILE	0x00001000	/* VMA is volatile */
+ #define VM_SEQ_READ	0x00008000	/* App will access data sequentially */
+ #define VM_RAND_READ	0x00010000	/* App will not benefit from clustered reads */
+ 
+diff --git a/include/linux/mvolatile.h b/include/linux/mvolatile.h
+new file mode 100644
+index 0000000..973bb3b
+--- /dev/null
++++ b/include/linux/mvolatile.h
+@@ -0,0 +1,8 @@
++#ifndef _LINUX_MVOLATILE_H
++#define _LINUX_MVOLATILE_H
++
++#include <uapi/linux/mvolatile.h>
++
++#define MVOLATILE_VALID_FLAGS (0) /* Don't yet support any flags */
++
++#endif /* _LINUX_MVOLATILE_H */
+diff --git a/include/uapi/linux/mvolatile.h b/include/uapi/linux/mvolatile.h
+new file mode 100644
+index 0000000..1e92f3f
+--- /dev/null
++++ b/include/uapi/linux/mvolatile.h
+@@ -0,0 +1,7 @@
++#ifndef _UAPI_LINUX_MVOLATILE_H
++#define _UAPI_LINUX_MVOLATILE_H
++
++#define MVOLATILE_NONVOLATILE 0
++#define MVOLATILE_VOLATILE 1
++
++#endif /* _UAPI_LINUX_MVOLATILE_H */
+diff --git a/mm/Makefile b/mm/Makefile
+index 310c90a..76a3444 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -16,7 +16,7 @@ obj-y			:= filemap.o mempool.o oom_kill.o fadvise.o \
+ 			   readahead.o swap.o truncate.o vmscan.o shmem.o \
+ 			   util.o mmzone.o vmstat.o backing-dev.o \
+ 			   mm_init.o mmu_context.o percpu.o slab_common.o \
+-			   compaction.o balloon_compaction.o \
++			   compaction.o balloon_compaction.o mvolatile.o \
+ 			   interval_tree.o list_lru.o $(mmu-y)
+ 
+ obj-y += init-mm.o
+diff --git a/mm/mvolatile.c b/mm/mvolatile.c
+new file mode 100644
+index 0000000..d4d2eed
+--- /dev/null
++++ b/mm/mvolatile.c
+@@ -0,0 +1,195 @@
++/*
++ * mm/mvolatile.c
++ *
++ * Copyright (C) 2014, LG Electronics, Minchan Kim <minchan@kernel.org>
++ * Copyright (C) 2014 Linaro Ltd., John Stultz <john.stultz@linaro.org>
++ */
++#include <linux/syscalls.h>
++#include <linux/mvolatile.h>
++#include <linux/mm_inline.h>
++#include <linux/pagemap.h>
++#include <linux/rmap.h>
++#include <linux/hugetlb.h>
++#include <linux/mmu_notifier.h>
++#include <linux/mm_inline.h>
++#include "internal.h"
++
++
++/**
++ * do_mvolatile - Marks or clears VMAs in the range (start-end) as VM_VOLATILE
++ * @mm: mm_struct we're working on
++ * @start: starting address of the volatile range
++ * @end: ending address of the volatile range
++ * @mode: the mode of the volatile range (volatile or non-volatile)
++ * @flags: any additonal flags arguments (ignored for now, as there are none)
++ * @purged: pointer to integer value that is set to 1 if any pages in a range
++ * being set non-volatile have been purged.
++ *
++ * Core logic of sys_volatile. Iterates over the VMAs in the specified
++ * range, and marks or clears them as VM_VOLATILE, splitting or merging them
++ * as needed.
++ *
++ * Returns the number of bytes successfully modified.
++ *
++ * Returns error only if no bytes were modified.
++ */
++static ssize_t do_mvolatile(struct mm_struct *mm, unsigned long start,
++				unsigned long end, unsigned long mode,
++				unsigned long flags, int *purged)
++{
++	struct vm_area_struct *vma, *prev;
++	unsigned long orig_start = start;
++	ssize_t count = 0, ret = 0;
++
++	down_write(&mm->mmap_sem);
++
++	vma = find_vma_prev(mm, start, &prev);
++	if (vma && start > vma->vm_start)
++		prev = vma;
++
++	for (;;) {
++		unsigned long new_flags;
++		pgoff_t pgoff;
++		unsigned long tmp;
++
++		if (!vma)
++			goto out;
++
++		if (vma->vm_flags & (VM_SPECIAL|VM_LOCKED|VM_MIXEDMAP|
++					VM_HUGETLB))
++			goto out;
++
++		/* We don't support volatility on files for now */
++		if (vma->vm_file) {
++			ret = -EINVAL;
++			goto out;
++		}
++
++		/* return ENOMEM if we're trying to mark unmapped pages */
++		if (start < vma->vm_start) {
++			ret = -ENOMEM;
++			goto out;
++		}
++
++		new_flags = vma->vm_flags;
++
++		tmp = vma->vm_end;
++		if (end < tmp)
++			tmp = end;
++
++		switch (mode) {
++		case MVOLATILE_VOLATILE:
++			new_flags |= VM_VOLATILE;
++			break;
++		case MVOLATILE_NONVOLATILE:
++			new_flags &= ~VM_VOLATILE;
++		}
++
++		pgoff = vma->vm_pgoff + ((start - vma->vm_start) >> PAGE_SHIFT);
++		prev = vma_merge(mm, prev, start, tmp, new_flags,
++					vma->anon_vma, vma->vm_file, pgoff,
++					vma_policy(vma));
++		if (prev)
++			goto success;
++
++		if (start != vma->vm_start) {
++			ret = split_vma(mm, vma, start, 1);
++			if (ret)
++				goto out;
++		}
++
++		if (tmp != vma->vm_end) {
++			ret = split_vma(mm, vma, tmp, 0);
++			if (ret)
++				goto out;
++		}
++
++		prev = vma;
++success:
++		vma->vm_flags = new_flags;
++
++		/* update count to distance covered so far*/
++		count = tmp - orig_start;
++
++		start = tmp;
++		if (start < prev->vm_end)
++			start = prev->vm_end;
++		if (start >= end)
++			goto out;
++		vma = prev->vm_next;
++	}
++out:
++	up_write(&mm->mmap_sem);
++
++	/* report bytes successfully marked, even if we're exiting on error */
++	if (count)
++		return count;
++
++	return ret;
++}
++
++
++/**
++ * sys_mvolatile - Marks specified range as volatile or non-volatile.
++ * @start: starting address of the range
++ * @len: size of the range being requested
++ * @mode: the mode of the range (volatile or non-volatile)
++ * @flags: any additonal flags arguments (ignored for now, as there are none)
++ * @purged: pointer to integer value that is set to 1 if any pages in a range
++ * being set non-volatile have been purged.
++ *
++ * Validates the syscall inputs and calls do_mvolatile(), then copies the
++ * purged flag back out to userspace.
++ *
++ * Returns the number of bytes successfully modified.
++ * Returns error only if no bytes were modified.
++ */
++SYSCALL_DEFINE5(mvolatile, unsigned long, start, size_t, len,
++				unsigned long, mode, unsigned long, flags,
++				int __user *, purged)
++{
++	unsigned long end;
++	struct mm_struct *mm = current->mm;
++	ssize_t ret = -EINVAL;
++	int p = 0;
++
++	if (flags & ~MVOLATILE_VALID_FLAGS)
++		goto out;
++
++	if (start & ~PAGE_MASK)
++		goto out;
++
++	if (len & ~PAGE_MASK)
++		goto out;
++
++	end = start + len;
++	if (end < start)
++		goto out;
++
++	if (start >= TASK_SIZE)
++		goto out;
++
++	if (purged) {
++		/* Test pointer is valid before making any changes */
++		if (put_user(p, purged))
++			return -EFAULT;
++	}
++
++	ret = do_mvolatile(mm, start, end, mode, flags, &p);
++
++	if (purged) {
++		if (put_user(p, purged)) {
++			/*
++			 * This would be bad, since we've modified volatilty
++			 * and the change in purged state would be lost.
++			 * But the application is doing something dumb here,
++			 * so just return EFAULT and be ok with losing the
++			 * state.
++			 */
++			return -EFAULT;
++		}
++	}
++
++out:
++	return ret;
++}
 -- 
 1.8.3.2
 
