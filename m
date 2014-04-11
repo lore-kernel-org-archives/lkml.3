@@ -1,76 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816AbaDKS2V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 14:28:21 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:50906 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754705AbaDKS2T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 14:28:19 -0400
-Message-ID: <5348343F.6030300@colorfullife.com>
-Date: Fri, 11 Apr 2014 20:28:15 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754874AbaDKS2z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 14:28:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54311 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754599AbaDKS2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 14:28:54 -0400
+Date: Fri, 11 Apr 2014 14:28:35 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: acme@kernel.org, namhyung@kernel.org, eranian@google.com,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 5/5] perf: Enable multiple hist_entry_group output
+Message-ID: <20140411182834.GJ8488@redhat.com>
+References: <1397160661-33395-1-git-send-email-dzickus@redhat.com>
+ <1397160661-33395-6-git-send-email-dzickus@redhat.com>
+ <20140411173000.GC22707@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr@hp.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, aswin@hp.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Greg Thelen <gthelen@google.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] ipc,shm: disable shmmax and shmall by default
-References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net> <20140331170546.3b3e72f0.akpm@linux-foundation.org> <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net> <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com> <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com> <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com> <20140401142947.927642a408d84df27d581e36@linux-foundation.org> <CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com> <20140401144801.603c288674ab8f417b42a043@linux-foundation.org> <CAHGf_=r5AUu6yvJgOzwYDghBo6iT2q+nNumpvqwer+igcfChrA@mail.gmail.com> <1396394931.25314.34.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rH+vfFzRrh35TETxjFU2HM0xnDQFweQ+Bfw20Pm2nL3g@mail.gmail.com> <1396484447.2953.1.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1396484447.2953.1.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140411173000.GC22707@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Davidlohr,
+On Fri, Apr 11, 2014 at 07:30:00PM +0200, Jiri Olsa wrote:
+> On Thu, Apr 10, 2014 at 04:11:01PM -0400, Don Zickus wrote:
+> > Enable multiple hist_entry_group groups in the output based on a sort
+> > method.
+> > 
+> > Currently only 'perf report' is hooked in with '--group-sort='.  The choices
+> > are cpu, pid, and cacheline.  Only --stdio works right now.  I haven't figured
+> > out how the other outputs work.
+> > 
+> > Sample output from 'perf mem record -a grep -r foo /* > /dev/null'
+> > 
+> > (normal) perf mem report --percent-limit=1.0 --stdio
+> > 
+> >  Overhead       Samples
+> >   Local Weight             Memory access                                      Symbol
+> >  ........  ............  ............  ........................  ........................
+> > 
+> >      4.13%             1  1759          Uncached hit              [k] ahci_scr_read
+> >      1.16%             1  492           L1 hit                    [k] _raw_read_lock
+> > 
+> > (cpu groups) perf mem report --group-sort=cpu --percent-limit=1.0 --stdio
+> > 
+> >  Overhead       Samples  CPU
+> >   Local Weight             Memory access                                      Symbol
+> >  ........  ............  ............  ........................  ........................
+> > 
+> >     28.80%          1239   25
+> > 	     3.07%               377           L1 hit                    [k] complete_walk
+> > 	     2.76%               339           LFB hit                   [k] update_cfs_shares
+> > 	     2.66%               326           LFB hit                   [k] copy_user_enhanced_f
+> > 	     2.11%               259           Local RAM hit             [k] copy_user_enhanced_f
+> > 	     1.84%               226           LFB hit                   [k] copy_user_enhanced_f
+> > 	     1.74%               213           LFB hit                   [k] copy_user_enhanced_f
+> > 	     1.53%               187           LFB hit                   [k] copy_user_enhanced_f
+> > 	     1.04%               128           LFB hit                   [k] copy_user_enhanced_f
+> > 	     1.01%               124           LFB hit                   [k] copy_user_enhanced_f
+> >     27.44%           990    7
+> > 	    15.06%               1759          Uncached hit              [k] ahci_scr_read
+> > 	     4.21%               492           L1 hit                    [k] _raw_read_lock
+> > 	     1.04%               122           LFB hit                   [k] find_busiest_group
+> > 	     1.02%            1  7             L1 hit                    [.] __gconv_transform_ut
+> >     20.34%          1010    0
+> > 	     4.04%            5  7             L1 hit                    [k] poll_idle
+> > 	     3.56%               308           Local RAM hit             [k] copy_user_enhanced_f
+> > 	     2.59%               224           L3 hit                    [k] copy_user_enhanced_f
+> > 	     2.12%               184           Local RAM hit             [k] copy_user_enhanced_f
+> > 	     1.54%            1  7             L1 hit                    [.] __gconv_transform_ut
+> 
+> nice, that looks very usefull
 
-On 04/03/2014 02:20 AM, Davidlohr Bueso wrote:
-> The default size for shmmax is, and always has been, 32Mb.
-> Today, in the XXI century, it seems that this value is rather small,
-> making users have to increase it via sysctl, which can cause
-> unnecessary work and userspace application workarounds[1].
->
-> [snip]
-> Running this patch through LTP, everything passes, except the following,
-> which, due to the nature of this change, is quite expected:
->
-> shmget02    1  TFAIL  :  call succeeded unexpectedly
-Why is this TFAIL expected?
->
-> diff --git a/ipc/shm.c b/ipc/shm.c
-> index 7645961..ae01ffa 100644
-> --- a/ipc/shm.c
-> +++ b/ipc/shm.c
-> @@ -490,10 +490,12 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
->   	int id;
->   	vm_flags_t acctflag = 0;
+\o/  :-)
+
+> 
+> Correct me if I'm wrong, but your current design allows to define
+> just one group, right?
+
+No, you can do multiple groups, ie --group-sort=cpu,pid,cacheline
+(exactly the same way --sort works, in fact it uses the same sorting
+functions and routines [pid_cmp is the _same_ in sort and group-sort]).
+However, that is different than what you are asking below.  In my current
+design, the output mimics --sorts output, just add sorted columns for each
+group added.
+
+> 
+> so, current code can do following CPU sorting:
+> 
+>    Overhead   CPU
+>    ........   ...
+>    90%        0
+>    10%        1
+> 
+> 
+> and with your changes we could do:
+> 
+>    Overhead   CPU  symbol
+>    ........   ...  ......
+>    90%        0
+>         50%        krava1
+>         20%        krava2
+>         30%        krava3
+> 
+>    10%        1
+>         50%        krava4
+>         50%        krava5
 >   
-> -	if (size < SHMMIN || size > ns->shm_ctlmax)
-> +	if (ns->shm_ctlmax &&
-> +	    (size < SHMMIN || size > ns->shm_ctlmax))
->   		return -EINVAL;
->   
-> -	if (ns->shm_tot + numpages > ns->shm_ctlall)
-> +	if (ns->shm_ctlall &&
-> +	    ns->shm_tot + numpages > ns->shm_ctlall)
->   		return -ENOSPC;
->   
->   	shp = ipc_rcu_alloc(sizeof(*shp));
-Ok, I understand it:
-Your patch disables checking shmmax, shmall *AND* checking for SHMMIN.
+> 
+> I wonder we could go more generic and allow more nested groups,
+> like eg allow group sort on cpu and pid (or more):
 
-a) Have you double checked that 0-sized shm segments work properly?
-  Does the swap code handle it properly, ...?
+I never thought about that because I went in a different direction (as
+described above), but I like the nested idea.  Coding it up would be much
+trickier I think.  I would need to wrap my brain around it.
 
-b) It's that yet another risk for user space incompatibility?
+> 
+>    Overhead   CPU  pid  symbol
+>    ........   ...  ...  ......
+>    90%        0
+>       50%          100
+>         50%             krava1
+>         20%             krava2
+>         30%             krava3
+>       50%          110
+>         50%             krava1
+>         20%             krava2
+>         30%             krava3
+> 
+>    10%        1
+>       100%         200
+>         50%             krava4
+>         50%             krava5
+> 
+> 
+> I glanced over the changes and I wonder we could do it
+> by chaining hists structs via 'struct hist_entry'
+> 
+> like adding 'struct hists' into 'struct hists_entry'
+> and making the sort_order local for each 'struct hists'
 
-c) The patch summary is misleading, the impact on SHMMIN is not mentioned.
+Well 'struct hists' was in 'struct hists_entry' (until this patchset
+removed it).  :-)
 
---
-     Manfred
+We might be able to chain 'struct hists' somehow, though I am not sure how
+to tell when a traverse a 'struct hists' vs. using 'entries' because we
+hit an endpoint.  And if we have to write new sorting routines.  Also I
+was originally keeping 'struct hists' as the upper level gatekeeper of
+high level data, like filter_str and locks, col_len, etc.
+
+I am not opposed to chaining, just thinking 'struct hists' isn't the right
+struct to do it with.  I could be wrong. :-)  Will have to think about it.
+Gives me something to thinking about next week on a plane to SF. :-)
+
+Thanks for looking.
+
+Cheers,
+Don
