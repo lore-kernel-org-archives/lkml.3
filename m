@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754470AbaDKCmf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 22:42:35 -0400
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:24529 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753692AbaDKCme (ORCPT
+	id S1754620AbaDKCo1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 22:44:27 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:41116 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754132AbaDKCoZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 22:42:34 -0400
-Message-ID: <53475693.7050609@fb.com>
-Date: Thu, 10 Apr 2014 20:42:27 -0600
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 10 Apr 2014 22:44:25 -0400
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: Matias Bjorling <m@bjorling.me>, <linux-kernel@vger.kernel.org>,
-        <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 3/4] blk-mq: move request structures into struct blk_mq_tags
-References: <1396277175-21382-1-git-send-email-hch@lst.de> <1396277175-21382-4-git-send-email-hch@lst.de> <53457404.5070800@fb.com> <20140410100144.GB20342@lst.de>
-In-Reply-To: <20140410100144.GB20342@lst.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-11_01:2014-04-11,2014-04-11,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
- suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
- adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1404110042
-X-FB-Internal: deliver
+In-Reply-To: <5346BBDF.4050901@wwwdotorg.org>
+References: <1393876300-3061-1-git-send-email-swarren@wwwdotorg.org>
+ <1393876300-3061-4-git-send-email-swarren@wwwdotorg.org> <CAAVeFuJY67zdoHiZufxDbkaw=xt8YwxyDAwHW_T7UZeSOt35NA@mail.gmail.com>
+ <5346BBDF.4050901@wwwdotorg.org>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Fri, 11 Apr 2014 11:44:04 +0900
+Message-ID: <CAAVeFu++TPMG_TP1T2EEc5a04uqx_g2mtbrG1RWb2KLn+wvoxQ@mail.gmail.com>
+Subject: Re: [PATCH V3 4/5] mfd: palmas: support IRQ inversion at the board level
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-10 04:01, Christoph Hellwig wrote:
-> On Wed, Apr 09, 2014 at 10:23:32AM -0600, Jens Axboe wrote:
->> This should go into block/blk-mq-tag.h.
+On Fri, Apr 11, 2014 at 12:42 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 04/10/2014 01:04 AM, Alexandre Courbot wrote:
+>> Stephen, any news about this patch? I'm waiting for it to be merged in
+>> order to resend some Tegra DTs, but still cannot see it in -next.
 >
-> Ok.
->
->> We might as well leave this, the mtip32xx conversion ends up using it. So
->> if we pull it now, it'll just be reintroduced shortly.
->
-> It's back in the latest revision of the patch, just taking a
-> struct blk_mq_tag pointer now so that it can be used by SCSI as well.
->
-> I've also changed an opencode variant of it to use the helper.
+> To be honest, this became too painful to work on just to fix a warning
+> at boot which has no practical side-effect in our case. The best thing
+> to do is just merge your DTs for 3.16, and keep ignoring the warning
+> just like we always have on Dalmore. Hopefully at some point I (or
+> someone) will run out of higher priority work items and get back to this.
 
-Great. Will you send out an updated patchset?
+Ok, fine by me. I will wait for -rc1, see if I can enable more devices
+with 3.16 and send you the updated DTs soon after.
 
--- 
-Jens Axboe
-
+Thanks,
+Alex.
