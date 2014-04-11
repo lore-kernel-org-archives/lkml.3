@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423013AbaDKQLb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:11:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56841 "EHLO
+	id S1759756AbaDKQL2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:11:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56845 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422961AbaDKQJf (ORCPT
+	with ESMTP id S1759222AbaDKQJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Apr 2014 12:09:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.14 22/23] m68k: Skip futex_atomic_cmpxchg_inatomic() test
-Date: Fri, 11 Apr 2014 09:12:11 -0700
-Message-Id: <20140411161203.284284866@linuxfoundation.org>
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.14 23/23] crypto: ghash-clmulni-intel - use C implementation for setkey()
+Date: Fri, 11 Apr 2014 09:12:12 -0700
+Message-Id: <20140411161203.414846807@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411161200.236939691@linuxfoundation.org>
 References: <20140411161200.236939691@linuxfoundation.org>
@@ -28,32 +28,106 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Finn Thain <fthain@telegraphics.com.au>
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 
-commit e571c58f313d35c56e0018470e3375ddd1fd320e upstream.
+commit 8ceee72808d1ae3fb191284afc2257a2be964725 upstream.
 
-Skip the futex_atomic_cmpxchg_inatomic() test in futex_init(). It causes a
-fatal exception on 68030 (and presumably 68020 also).
+The GHASH setkey() function uses SSE registers but fails to call
+kernel_fpu_begin()/kernel_fpu_end(). Instead of adding these calls, and
+then having to deal with the restriction that they cannot be called from
+interrupt context, move the setkey() implementation to the C domain.
 
-Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Link: http://lkml.kernel.org/r/alpine.LNX.2.00.1403061006440.5525@nippy.intranet
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Note that setkey() does not use any particular SSE features and is not
+expected to become a performance bottleneck.
+
+Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+Fixes: 0e1227d356e9b (crypto: ghash - Add PCLMULQDQ accelerated implementation)
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/m68k/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/crypto/ghash-clmulni-intel_asm.S  |   29 -----------------------------
+ arch/x86/crypto/ghash-clmulni-intel_glue.c |   14 +++++++++++---
+ 2 files changed, 11 insertions(+), 32 deletions(-)
 
---- a/arch/m68k/Kconfig
-+++ b/arch/m68k/Kconfig
-@@ -17,6 +17,7 @@ config M68K
- 	select FPU if MMU
- 	select ARCH_WANT_IPC_PARSE_VERSION
- 	select ARCH_USES_GETTIMEOFFSET if MMU && !COLDFIRE
-+	select HAVE_FUTEX_CMPXCHG if MMU && FUTEX
- 	select HAVE_MOD_ARCH_SPECIFIC
- 	select MODULES_USE_ELF_REL
- 	select MODULES_USE_ELF_RELA
+--- a/arch/x86/crypto/ghash-clmulni-intel_asm.S
++++ b/arch/x86/crypto/ghash-clmulni-intel_asm.S
+@@ -24,10 +24,6 @@
+ .align 16
+ .Lbswap_mask:
+ 	.octa 0x000102030405060708090a0b0c0d0e0f
+-.Lpoly:
+-	.octa 0xc2000000000000000000000000000001
+-.Ltwo_one:
+-	.octa 0x00000001000000000000000000000001
+ 
+ #define DATA	%xmm0
+ #define SHASH	%xmm1
+@@ -134,28 +130,3 @@ ENTRY(clmul_ghash_update)
+ .Lupdate_just_ret:
+ 	ret
+ ENDPROC(clmul_ghash_update)
+-
+-/*
+- * void clmul_ghash_setkey(be128 *shash, const u8 *key);
+- *
+- * Calculate hash_key << 1 mod poly
+- */
+-ENTRY(clmul_ghash_setkey)
+-	movaps .Lbswap_mask, BSWAP
+-	movups (%rsi), %xmm0
+-	PSHUFB_XMM BSWAP %xmm0
+-	movaps %xmm0, %xmm1
+-	psllq $1, %xmm0
+-	psrlq $63, %xmm1
+-	movaps %xmm1, %xmm2
+-	pslldq $8, %xmm1
+-	psrldq $8, %xmm2
+-	por %xmm1, %xmm0
+-	# reduction
+-	pshufd $0b00100100, %xmm2, %xmm1
+-	pcmpeqd .Ltwo_one, %xmm1
+-	pand .Lpoly, %xmm1
+-	pxor %xmm1, %xmm0
+-	movups %xmm0, (%rdi)
+-	ret
+-ENDPROC(clmul_ghash_setkey)
+--- a/arch/x86/crypto/ghash-clmulni-intel_glue.c
++++ b/arch/x86/crypto/ghash-clmulni-intel_glue.c
+@@ -30,8 +30,6 @@ void clmul_ghash_mul(char *dst, const be
+ void clmul_ghash_update(char *dst, const char *src, unsigned int srclen,
+ 			const be128 *shash);
+ 
+-void clmul_ghash_setkey(be128 *shash, const u8 *key);
+-
+ struct ghash_async_ctx {
+ 	struct cryptd_ahash *cryptd_tfm;
+ };
+@@ -58,13 +56,23 @@ static int ghash_setkey(struct crypto_sh
+ 			const u8 *key, unsigned int keylen)
+ {
+ 	struct ghash_ctx *ctx = crypto_shash_ctx(tfm);
++	be128 *x = (be128 *)key;
++	u64 a, b;
+ 
+ 	if (keylen != GHASH_BLOCK_SIZE) {
+ 		crypto_shash_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
+ 		return -EINVAL;
+ 	}
+ 
+-	clmul_ghash_setkey(&ctx->shash, key);
++	/* perform multiplication by 'x' in GF(2^128) */
++	a = be64_to_cpu(x->a);
++	b = be64_to_cpu(x->b);
++
++	ctx->shash.a = (__be64)((b << 1) | (a >> 63));
++	ctx->shash.b = (__be64)((a << 1) | (b >> 63));
++
++	if (a >> 63)
++		ctx->shash.b ^= cpu_to_be64(0xc2);
+ 
+ 	return 0;
+ }
 
 
