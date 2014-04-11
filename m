@@ -1,67 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545AbaDKWLC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 18:11:02 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:52788 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751520AbaDKWK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 18:10:59 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Oliver Neukum <oliver@neukum.org>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: [PATCH] USB: cdc-acm: fix double usb_autopm_put_interface() in acm_port_activate()
-Date: Sat, 12 Apr 2014 02:10:45 +0400
-Message-Id: <1397254245-7498-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.3.2
+	id S1755591AbaDKWL6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 18:11:58 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:34152 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752379AbaDKWL5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 18:11:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140411215228.GA27354@mail.hallyn.com>
+References: <874n89rsoc.fsf@xmission.com> <20140402172049.GA13240@sergelap>
+ <20140402173248.GA22804@mail.hallyn.com> <533EF65E.6050508@mit.edu>
+ <20140404183022.GA6728@sergelap> <CALCETrUki+k+NsaAYTbvaUqFTwH_AUDtwLv0XRYx+zA=c3zACw@mail.gmail.com>
+ <20140404191000.GA13496@sergelap> <CALCETrW-M9QoqzkKyk9gRPLfx1fiTzs8_oAhdK6_kk=17PQc0Q@mail.gmail.com>
+ <20140407181331.GA15012@mail.hallyn.com> <CALCETrULqdffvHZMV_4hobs8=YX6hRSagkvR4opycBKsfTaTtg@mail.gmail.com>
+ <20140411215228.GA27354@mail.hallyn.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 11 Apr 2014 15:11:36 -0700
+Message-ID: <CALCETrW-o=ivJeZw4aC4o-8+qGZF0Fid36FJ7EtUBC9=5CrT4A@mail.gmail.com>
+Subject: Re: [lxc-devel] Kernel bug? Setuid apps and user namespaces
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sean Pajot <sean.pajot@execulink.com>,
+        lxc-devel@lists.linuxcontainers.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If acm_submit_read_urbs() fails in acm_port_activate(), error handling
-code calls usb_autopm_put_interface() while it is already called
-before acm_submit_read_urbs(). The patch reorganizes error handling code
-to avoid double decrement of USB interface's PM-usage counter.
+On Fri, Apr 11, 2014 at 2:52 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
+> Quoting Andy Lutomirski (luto@amacapital.net):
+>> On Mon, Apr 7, 2014 at 11:13 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
+>> > Quoting Andy Lutomirski (luto@amacapital.net):
+>> >> I'm starting to think that we need to extend dumpable to something
+>> >> much more general like a list of struct creds that someone needs to be
+>> >> able to ptrace, *in addition to current creds* in order to access
+>> >> sensitive /proc files, coredumps, etc.  If you get started as setuid,
+>> >
+>> > Hm, yeah, this sort of makes sense.
+>> >
+>> >> then you start with two struct creds in the list (or maybe just your
+>> >> euid and uid).  If you get started !setuid, then your initial creds
+>> >> are in the list.  It's possible that few or no things will need to
+>> >> change that list after execve.
+>> >>
+>> >> If all of the entries and current->cred are in the same user_ns, then
+>> >> we can dump as userns root.  If they're in different usernses, then we
+>> >> dump as global root or maybe the common ancestor root.
+>> >> setuid(getuid()) and other such nastiness may have to empty the list,
+>> >> or maybe we can just use a prctl for that.
+>> >
+>> > A few questions,
+>> >
+>> > 1. is there any other action which would trigger adding a new cred to
+>> > the ist?
+>>
+>> I don't think so.  Anyone who can ptrace you from the start can
+>> corrupt you such that you leak rights even if some future action
+>> prevents new ptracers from attaching.
+>>
+>> OTOH, it might be nice for something like an HTTPS server to be able
+>> to fork and shove its private key into the child, while preventing
+>> anyone from ptracing the child.  But doing this securely without help
+>> from someone with a different uid might be impossible anyway.
+>>
+>> >
+>> > 2. would execve clear (and re-init) the list of creds?
+>>
+>> Probably.  Thoughts?
+>
+> Yeah it seems to me it should be re-initialized, with a cred added
+> to the list for every open fd.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+What do you mean "every fd"?
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/usb/class/cdc-acm.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+It seems odd to me that execve of anything that isn't setuid would add
+anything to the list -- attackers can always ptrace before the execve
+happens.
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 900f7ff805ee..d5d2c922186a 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -518,13 +518,16 @@ static int acm_port_activate(struct tty_port *port, struct tty_struct *tty)
- 	if (usb_submit_urb(acm->ctrlurb, GFP_KERNEL)) {
- 		dev_err(&acm->control->dev,
- 			"%s - usb_submit_urb(ctrl irq) failed\n", __func__);
-+		usb_autopm_put_interface(acm->control);
- 		goto error_submit_urb;
- 	}
- 
- 	acm->ctrlout = ACM_CTRL_DTR | ACM_CTRL_RTS;
- 	if (acm_set_control(acm, acm->ctrlout) < 0 &&
--	    (acm->ctrl_caps & USB_CDC_CAP_LINE))
-+	    (acm->ctrl_caps & USB_CDC_CAP_LINE)) {
-+		usb_autopm_put_interface(acm->control);
- 		goto error_set_control;
-+	}
- 
- 	usb_autopm_put_interface(acm->control);
- 
-@@ -549,7 +552,6 @@ error_submit_read_urbs:
- error_set_control:
- 	usb_kill_urb(acm->ctrlurb);
- error_submit_urb:
--	usb_autopm_put_interface(acm->control);
- error_get_interface:
- disconnected:
- 	mutex_unlock(&acm->mutex);
--- 
-1.8.3.2
+>
+>> We could have a way to ask execve not to reinit the list.  Such a
+>> mechanism would have to require no_new_privs to prevent a
+>> straightforward attack on any setuid binary.
+>
+> If we don't add a cred for every open fd, then I think we need this.  If
+> we do, then I'm not sure this makes sense.
 
+See above.  I think I'm misunderstanding you.
+
+>
+>> We's also want PR_SET_DUMPABLE or a new prctl to be able reset the
+>> list to contain just current-.cred, I think.
+>
+> Yeah PR_SET_DUMPABLE should reset it, agreed.
+>
+> -serge
+
+--Andy
