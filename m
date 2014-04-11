@@ -1,115 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757450AbaDKNdv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 09:33:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7999 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754022AbaDKNdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 09:33:49 -0400
-Date: Fri, 11 Apr 2014 15:33:03 +0200
-From: Mateusz Guzik <mguzik@redhat.com>
-To: "Wang, Xiaoming" <xiaoming.wang@intel.com>
-Cc: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, chuansheng.liu@intel.com,
-        dongxing.zhang@intel.com, pmatouse@redhat.com
-Subject: Re: [PATCH] net: ipv4: current group_info should be put after using.
-Message-ID: <20140411133302.GE15546@mguzik.redhat.com>
-References: <1397237828.12958.3.camel@wxm-ubuntu>
- <20140411083533.GA15546@mguzik.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140411083533.GA15546@mguzik.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757836AbaDKNfP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 09:35:15 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:46245 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757522AbaDKNfM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 09:35:12 -0400
+Message-ID: <5347EF8A.8040600@gmail.com>
+Date: Fri, 11 Apr 2014 15:35:06 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>
+CC: linus.walleij@linaro.org, alexandre.belloni@free-electrons.com,
+        zmxu@marvell.com, jszhang@marvell.com,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND 2/5] pinctrl: berlin: add a pinctrl driver for
+ Marvell Berlin SoCs
+References: <1397135274-10764-1-git-send-email-antoine.tenart@free-electrons.com> <1397135274-10764-3-git-send-email-antoine.tenart@free-electrons.com> <5347AFF4.3050607@gmail.com> <20140411123737.GA5903@kwain>
+In-Reply-To: <20140411123737.GA5903@kwain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 10:35:33AM +0200, Mateusz Guzik wrote:
-> On Fri, Apr 11, 2014 at 01:37:08PM -0400, Wang, Xiaoming wrote:
-> > There is a memory leak in ping. Current group_info had been got in 
-> > ping_init_sock and group_info->usage increased. 
-> > But the usage hasn't decreased anywhere in ping.
-> > This will make this group_info never freed and cause memory leak.
-> > 
-> 
-> Memory leak is only one of possible side-effects, thus I believe commit
-> message should be adjusted.
-> 
-> This is a typical refcount leak exploitable by unprivileged users, so
-> side effects can range from nothing through memory leaks and crashes to
-> possibly privilege escalation.
-> 
-> That said losing ' and cause memory leak' from your commit message
-> would be fine in my opinion.
-> 
+On 04/11/2014 02:37 PM, Antoine Ténart wrote:
+> On Fri, Apr 11, 2014 at 11:03:48AM +0200, Sebastian Hesselbarth wrote:
+>> On 04/10/2014 03:07 PM, Antoine Ténart wrote:
+>>> The Marvell Berlin boards have a group based pinmuxing mechanism. This
+>>> driver adds the support for the BG2CD, BG2 and BG2Q. We actually do not
+>>> need any information about the pins here and only have the definition
+>>> of the groups.
+>>
+[...]
+>>> diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
+>>> index 4b835880cf80..fd5a01d4475f 100644
+>>> --- a/drivers/pinctrl/Makefile
+>>> +++ b/drivers/pinctrl/Makefile
+>>> @@ -21,6 +21,7 @@ obj-$(CONFIG_PINCTRL_BF60x)	+= pinctrl-adi2-bf60x.o
+>>>   obj-$(CONFIG_PINCTRL_AT91)	+= pinctrl-at91.o
+>>>   obj-$(CONFIG_PINCTRL_BCM2835)	+= pinctrl-bcm2835.o
+>>>   obj-$(CONFIG_PINCTRL_BAYTRAIL)	+= pinctrl-baytrail.o
+>>> +obj-$(CONFIG_PINCTRL_BERLIN)	+= pinctrl-berlin.o
+>>
+>> Please split the driver into common and soc-specific parts, and if
+>> you do please put it into a subfolder berlin, too.
+>
+> The only SoC specific part is the group structure. I'll need to have
+> functions in each SoC specific part calling ... only the common ones.
+> Do you have a better solution in mind ?
 
-Huh, not sure why I wrote that last sentence, it does not make much
-sense. Sorry.
+We have a similar structure for mvebu, control is common, structure is
+not. You'll have one common driver to register pinctrl and switch a
+specific mux, and one file for each SoC holding the group structure
+and function table.
 
-There is a pending CVE request for this bug:
-http://seclists.org/oss-sec/2014/q2/97
+If bg2 and bg2cd have the same group layout but different functions
+assigned to it, you can either strictly separate by SoC or separate
+by similarity. Have a look at e.g. pinctrl/mvebu/pinctrl-kirkwood.c,
+although SoCs are different with respect to individual functions, we
+have a variant mask to determine if a specific function is available
+on that SoC.
 
-The bug was introduced with:
-commit c319b4d76b9e583a5d88d6bf190e079c4e43213d
-Author: Vasiliy Kulikov <segoon@openwall.com>
-Date:   Fri May 13 10:01:00 2011 +0000
+But if bg2 and bg2cd are _very_ different from the functions assigned
+to each group, I'd rather have two separate files, too.
 
-    net: ipv4: add IPPROTO_ICMP socket kind
+Basically, folder structure will look like this:
+drivers/pinctrl
+   +- berlin/
+      +- common.c : common code (pinctrl register, pinmux)
+      +- common.h : common include (group structure, common callbacks)
+      +- bg2.c    : BG2 specific group/function tables
+      +- bg2cd.c  : BG2CD specific group/function tables
+      +- bg2q.c   : BG2Q specific group/function tables
+      +- ...
 
-starting with 3.0 kernel.
+(BTW, as we know we are beneath drivers/pinctrl, drop the pinctrl-
+prefix)
 
+If we consider bg2cd as a variant of bg2, join the two files above
+and have a variant mask as we have for Kirkwood.
 
-> See also a nit below.
-> 
-> > ---
-> >  net/ipv4/ping.c |   11 ++++++++---
-> >  1 files changed, 8 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
-> > index f4b19e5..2af7b1f 100644
-> > --- a/net/ipv4/ping.c
-> > +++ b/net/ipv4/ping.c
-> > @@ -255,23 +255,28 @@ int ping_init_sock(struct sock *sk)
-> >  	struct group_info *group_info = get_current_groups();
-> >  	int i, j, count = group_info->ngroups;
-> >  	kgid_t low, high;
-> > +	int ret = 0;
-> >  
-> >  	inet_get_ping_group_range_net(net, &low, &high);
-> >  	if (gid_lte(low, group) && gid_lte(group, high))
-> > -		return 0;
-> > +		goto out_release_group;
-> >  
-> 
-> Since group_info is not even used here maybe it would be better to leave
-> return 0 as it is and call get_current_groups before the loop?
-> 
-> >  	for (i = 0; i < group_info->nblocks; i++) {
-> >  		int cp_count = min_t(int, NGROUPS_PER_BLOCK, count);
-> >  		for (j = 0; j < cp_count; j++) {
-> >  			kgid_t gid = group_info->blocks[i][j];
-> >  			if (gid_lte(low, gid) && gid_lte(gid, high))
-> > -				return 0;
-> > +				goto out_release_group;
-> >  		}
-> >  
-> >  		count -= cp_count;
-> >  	}
-> >  
-> > -	return -EACCES;
-> > +	ret = -EACCES;
-> > +
-> > +out_release_group:
-> > +	put_group_info(group_info);
-> > +	return ret;
-> >  }
-> >  EXPORT_SYMBOL_GPL(ping_init_sock);
-> >  
-> 
-> -- 
-> Mateusz Guzik
+[...]
+>>> +	function_name = kzalloc(strlen(group_name) + 7, GFP_KERNEL);
+>>> +	if (!function_name)
+>>> +		return -ENOMEM;
+>>> +	snprintf(function_name, strlen(group_name) + 7, "%s_mode%d", group_name,
+>>> +			function);
+>>
+>> With proper mode tables above, this can refer to a const char* and you
+>> can get rid of allocation here. Also, below you already allocated
+>> function_names, how is this one different from the below?
+>
+> The one below is used to describe the available functions for a given group
+> while this one describe a function found in the device tree. It is used to check
+> the function we want to use in the device is provided by the driver. The
 
--- 
-Mateusz Guzik
+Ah, ok. With numeric values for marvell,function and proper function 
+tables for each of the groups, you can just look up the group and loop
+over the available functions. Or if you prefer strings, give a proper
+name to each function in the table and use that string as DT match.
+
+> function name used here may not actually exist. We could check the function
+> actually exists here (and find the previously allocated function name), but this
+> check is handled by the pinctrl framework. This would end up in a different
+> behaviour than the expected one, imho.
+[...]
+>>> +static int berlin_pinctrl_build_state(struct platform_device *pdev,
+>>> +			      struct berlin_pinctrl_reg_base *bases,
+>>> +			      unsigned nbases)
+>>> +{
+>>> +	struct berlin_pinctrl *pctrl = platform_get_drvdata(pdev);
+>>> +	int i, j, cur_fct = 0;
+>>> +
+>>> +	pctrl->ngroups = pctrl->desc->ngroups;
+>>> +	pctrl->nfunctions = 0;
+>>> +
+>>> +	for (i = 0; i < pctrl->ngroups; i++) {
+>>> +		struct berlin_desc_group const *desc = pctrl->desc->groups + i;
+>>> +		pctrl->nfunctions += NFCTS(desc->bit_width);
+>>> +	}
+>>
+>> As you need desc later on, make it global to this function. Then you
+>> can also walk through it with desc++
+>>
+>> desc = pctrl->desc->groups;
+>> for (i = 0; i < pctl->ngroups; i++, desc++)
+>> 	pctrl->nfunctions = ...
+>>
+>> Having said that, the above assumes that each function is unique
+>> but IIRC the idea of the function table was to group pins/groups
+>> with the same function, e.g. function "gpio", groups 1,7,25,...
+>
+> Most of the functions you can use on the Berlin they will be unique and would
+> only be used in one group, except for the 'gpio' one.
+
+Yeah, I had a similar discussion about it back then for mvebu. IIRC, the
+correct answer is: Have a list of functions with groups assigned to it
+no matter if there is only one group per function (or 40 per function as
+it will be for gpio).
+
+Maybe Linus can give an update on how to deal with it?
+
+Sebastian
+
