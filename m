@@ -1,65 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199AbaDKLYW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 07:24:22 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:52395 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754641AbaDKLYS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 07:24:18 -0400
-Date: Fri, 11 Apr 2014 13:24:12 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: Re: [PATCH 11/15] s390: NR_syscalls fix
-Message-ID: <20140411132412.2ef89a3b@mschwide>
-In-Reply-To: <1397211951-20549-12-git-send-email-miklos@szeredi.hu>
-References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
-	<1397211951-20549-12-git-send-email-miklos@szeredi.hu>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041111-5024-0000-0000-00000976173D
+	id S1755253AbaDKLdL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 07:33:11 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54284 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754485AbaDKLdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 07:33:08 -0400
+Message-ID: <5347D2CC.4030407@ti.com>
+Date: Fri, 11 Apr 2014 14:32:28 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Sekhar Nori <nsekhar@ti.com>, <dan.j.williams@intel.com>,
+        <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <joelf@ti.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <mporter@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH v2 05/14] arm: common: edma: Select event queue 1 as default
+ when booted with DT
+References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com> <1396357575-30585-6-git-send-email-peter.ujfalusi@ti.com> <5347A4FD.1030803@ti.com> <5347ACDE.7040407@ti.com> <5347AE49.5020109@ti.com> <5347B7F8.2000508@ti.com> <20140411094217.GA32284@intel.com>
+In-Reply-To: <20140411094217.GA32284@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Apr 2014 12:25:47 +0200
-Miklos Szeredi <miklos@szeredi.hu> wrote:
+Hi Vinod,
 
-> From: Miklos Szeredi <mszeredi@suse.cz>
-> 
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> ---
->  arch/s390/include/uapi/asm/unistd.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/s390/include/uapi/asm/unistd.h b/arch/s390/include/uapi/asm/unistd.h
-> index 5eb5c9ddb120..57194268fe63 100644
-> --- a/arch/s390/include/uapi/asm/unistd.h
-> +++ b/arch/s390/include/uapi/asm/unistd.h
-> @@ -282,7 +282,7 @@
->  #define __NR_finit_module	344
->  #define __NR_sched_setattr	345
->  #define __NR_sched_getattr	346
-> -#define NR_syscalls 345
-> +#define NR_syscalls 347
-> 
->  /* 
->   * There are some system calls that are not present on 64 bit, some
+On 04/11/2014 12:42 PM, Vinod Koul wrote:
+> On Fri, Apr 11, 2014 at 12:38:00PM +0300, Peter Ujfalusi wrote:
+>> On 04/11/2014 11:56 AM, Sekhar Nori wrote:
+>>> On Friday 11 April 2014 02:20 PM, Peter Ujfalusi wrote:
+>>>> On 04/11/2014 11:17 AM, Sekhar Nori wrote:
+>>>>> On Tuesday 01 April 2014 06:36 PM, Peter Ujfalusi wrote:
+>>>>>> Use the EVENTQ_1 for default and leave the EVENTQ_0 to be used by high
+>>>>>> priority channels, like audio.
+>>>>>>
+>>>>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>>>>>
+>>>>> Acked-by: Sekhar Nori <nsekhar@ti.com>
+>>>>>
+>>>>>> ---
+>>>>>>  arch/arm/common/edma.c | 3 ++-
+>>>>>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>>>>>
+>>>>>> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+>>>>>> index 86a8b263278f..19520e2519d9 100644
+>>>>>> --- a/arch/arm/common/edma.c
+>>>>>> +++ b/arch/arm/common/edma.c
+>>>>>> @@ -1546,7 +1546,8 @@ static int edma_of_parse_dt(struct device *dev,
+>>>>>>  
+>>>>>>  	pdata->queue_priority_mapping = queue_priority_map;
+>>>>>>  
+>>>>>> -	pdata->default_queue = 0;
+>>>>>> +	/* select queue 1 as default */
+>>>>>
+>>>>> It will be nice to expand the comment with explanation of why this is
+>>>>> being chosen as default (lower priority queue by default for typical
+>>>>> bulk data transfer).
+>>>>
+>>>> Yes, extended comment is a good idea.
+>>>>
+>>>> For the next version I think I'm going to change the code around default
+>>>> TC/Queue and the non default queue selection, mostly based on Joel's comment:
+>>>>
+>>>> EVENTQ_1 as default queue.
+>>>> Set the EVENTQ_1 priority to 7
+>>>> EVENTQ_0 priority is going to stay 0 and EVENTQ_2 as 2
+>>>>
+>>>> Add new member to struct edma, like high_pri_queue.
+>>>> When we set the queue priorities in edma_probe() we look for the highest
+>>>> priority queue and save the number in high_pri_queue.
+>>>>
+>>>> I will rename the edma_request_non_default_queue() to
+>>>> edma_request_high_pri_queue() and it will assign the channel to the high
+>>>> priority queue.
+>>>>
+>>>> I think this way it is going to be more explicit and IMHO a bit more safer in
+>>>> a sense the we are going to get high priority when we ask for it.
+>>>
+>>> Sounds much better. I had posted some ideas about adding support for
+>>> channel priority in the core code but we can leave that for Vinod and
+>>> Dan to say if they really see a need for that.
+> Is it part of this series?
 
-Is this patch part of a patch series that does upstream directly?
-I am asking because Heiko already created a patch for this and we have
-added it to the linux-s390:fixes branch for upstream integration.
+No, it is not. The original series tackled the DMA queue selection within the
+edma driver stack. It was selecting high priority channel for cyclic (audio)
+use only, all other DMA channels were executed on a lower priority queue.
+
+>> If we do it via the dmaengine core I think it would be better to have a new
+>> flag to be passed to dmaengine_prep_dma_*().
+>> We could have for example:
+>> DMA_PREP_HIGH_PRI as flag to indicate that we need high priority DMA if it is
+>> possible.
+>> We can watch for this flag in the edma driver and act accordingly.
+>> ALSA's dmaengine_pcm_prepare_and_submit() could set this flag unconditionally
+>> since audio should be treated in this way if the DMA IP can do this.
+>
+> Will the priority be different for each descriptor or would be based on channel
+> usage.
+
+I would say that it is channel based config. I don't see the reason why would
+one mix different priorities on a configured channel between descriptors.
+
+> If not then we can add this in dma_slave_config ?
+
+So adding to the struct for example:
+bool high_priority;
+
+I'm not sure if it helps if we have let's say three priority level like, low,
+normal and high.
+I don't think that any client would ask for low priority instead using the
+normal priority.
+
+> I can forsee its usage on slave controllers, so yes its useful :)
+
+True I'm sure it is going to be used as soon as it is available if the HW
+supports priorities.
 
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+Péter
