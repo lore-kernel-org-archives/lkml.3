@@ -1,180 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934911AbaDKQc7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:32:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56687 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422869AbaDKQJJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1422868AbaDKQJJ (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Apr 2014 12:09:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56468 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759441AbaDKQHk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 12:07:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Rapoport <mike.rapoport@ravellosystems.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 54/65] net: vxlan: fix crash when interface is created with no group
-Date: Fri, 11 Apr 2014 09:11:26 -0700
-Message-Id: <20140411161005.094341630@linuxfoundation.org>
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH 3.10 41/41] cpufreq: Fix timer/workqueue corruption due to double queueing
+Date: Fri, 11 Apr 2014 09:10:12 -0700
+Message-Id: <20140411160936.059119908@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
-References: <20140411160957.714773410@linuxfoundation.org>
+In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
+References: <20140411160932.865173041@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mike Rapoport <mike.rapoport@ravellosystems.com>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-[ Upstream commit 5933a7bbb5de66482ea8aa874a7ebaf8e67603c4 ]
+commit 3617f2ca6d0eba48114308532945a7f1577816a4 upstream.
 
-If the vxlan interface is created without explicit group definition,
-there are corner cases which may cause kernel panic.
+When a CPU is hot removed we'll cancel all the delayed work items
+via gov_cancel_work(). Normally this will just cancels a delayed
+timer on each CPU that the policy is managing and the work won't
+run, but if the work is already running the workqueue code will
+wait for the work to finish before continuing to prevent the
+work items from re-queuing themselves like they normally do. This
+scheme will work most of the time, except for the case where the
+work function determines that it should adjust the delay for all
+other CPUs that the policy is managing. If this scenario occurs,
+the canceling CPU will cancel its own work but queue up the other
+CPUs works to run. For example:
 
-For instance, in the following scenario:
+ CPU0                                        CPU1
+ ----                                        ----
+ cpu_down()
+  ...
+  __cpufreq_remove_dev()
+   cpufreq_governor_dbs()
+    case CPUFREQ_GOV_STOP:
+     gov_cancel_work(dbs_data, policy);
+      cpu0 work is canceled
+       timer is canceled
+       cpu1 work is canceled                    <work runs>
+       <waits for cpu1>                         od_dbs_timer()
+                                                 gov_queue_work(*, *, true);
+ 						  cpu0 work queued
+ 						  cpu1 work queued
+						  cpu2 work queued
+						  ...
+       cpu1 work is canceled
+       cpu2 work is canceled
+       ...
 
-node A:
-$ ip link add dev vxlan42  address 2c:c2:60:00:10:20 type vxlan id 42
-$ ip addr add dev vxlan42 10.0.0.1/24
-$ ip link set up dev vxlan42
-$ arp -i vxlan42 -s 10.0.0.2 2c:c2:60:00:01:02
-$ bridge fdb add dev vxlan42 to 2c:c2:60:00:01:02 dst <IPv4 address>
-$ ping 10.0.0.2
+At the end of the GOV_STOP case cpu0 still has a work queued to
+run although the code is expecting all of the works to be
+canceled. __cpufreq_remove_dev() will then proceed to
+re-initialize all the other CPUs works except for the CPU that is
+going down. The CPUFREQ_GOV_START case in cpufreq_governor_dbs()
+will trample over the queued work and debugobjects will spit out
+a warning:
 
-node B:
-$ ip link add dev vxlan42 address 2c:c2:60:00:01:02 type vxlan id 42
-$ ip addr add dev vxlan42 10.0.0.2/24
-$ ip link set up dev vxlan42
-$ arp -i vxlan42 -s 10.0.0.1 2c:c2:60:00:10:20
+WARNING: at lib/debugobjects.c:260 debug_print_object+0x94/0xbc()
+ODEBUG: init active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x10
+Modules linked in:
+CPU: 0 PID: 1491 Comm: sh Tainted: G        W    3.10.0 #19
+[<c010c178>] (unwind_backtrace+0x0/0x11c) from [<c0109dec>] (show_stack+0x10/0x14)
+[<c0109dec>] (show_stack+0x10/0x14) from [<c01904cc>] (warn_slowpath_common+0x4c/0x6c)
+[<c01904cc>] (warn_slowpath_common+0x4c/0x6c) from [<c019056c>] (warn_slowpath_fmt+0x2c/0x3c)
+[<c019056c>] (warn_slowpath_fmt+0x2c/0x3c) from [<c0388a7c>] (debug_print_object+0x94/0xbc)
+[<c0388a7c>] (debug_print_object+0x94/0xbc) from [<c0388e34>] (__debug_object_init+0x2d0/0x340)
+[<c0388e34>] (__debug_object_init+0x2d0/0x340) from [<c019e3b0>] (init_timer_key+0x14/0xb0)
+[<c019e3b0>] (init_timer_key+0x14/0xb0) from [<c0635f78>] (cpufreq_governor_dbs+0x3e8/0x5f8)
+[<c0635f78>] (cpufreq_governor_dbs+0x3e8/0x5f8) from [<c06325a0>] (__cpufreq_governor+0xdc/0x1a4)
+[<c06325a0>] (__cpufreq_governor+0xdc/0x1a4) from [<c0633704>] (__cpufreq_remove_dev.isra.10+0x3b4/0x434)
+[<c0633704>] (__cpufreq_remove_dev.isra.10+0x3b4/0x434) from [<c08989f4>] (cpufreq_cpu_callback+0x60/0x80)
+[<c08989f4>] (cpufreq_cpu_callback+0x60/0x80) from [<c08a43c0>] (notifier_call_chain+0x38/0x68)
+[<c08a43c0>] (notifier_call_chain+0x38/0x68) from [<c01938e0>] (__cpu_notify+0x28/0x40)
+[<c01938e0>] (__cpu_notify+0x28/0x40) from [<c0892ad4>] (_cpu_down+0x7c/0x2c0)
+[<c0892ad4>] (_cpu_down+0x7c/0x2c0) from [<c0892d3c>] (cpu_down+0x24/0x40)
+[<c0892d3c>] (cpu_down+0x24/0x40) from [<c0893ea8>] (store_online+0x2c/0x74)
+[<c0893ea8>] (store_online+0x2c/0x74) from [<c04519d8>] (dev_attr_store+0x18/0x24)
+[<c04519d8>] (dev_attr_store+0x18/0x24) from [<c02a69d4>] (sysfs_write_file+0x100/0x148)
+[<c02a69d4>] (sysfs_write_file+0x100/0x148) from [<c0255c18>] (vfs_write+0xcc/0x174)
+[<c0255c18>] (vfs_write+0xcc/0x174) from [<c0255f70>] (SyS_write+0x38/0x64)
+[<c0255f70>] (SyS_write+0x38/0x64) from [<c0106120>] (ret_fast_syscall+0x0/0x30)
 
-node B crashes:
-
- vxlan42: 2c:c2:60:00:10:20 migrated from 4011:eca4:c0a8:6466:c0a8:6415:8e09:2118 to (invalid address)
- vxlan42: 2c:c2:60:00:10:20 migrated from 4011:eca4:c0a8:6466:c0a8:6415:8e09:2118 to (invalid address)
- BUG: unable to handle kernel NULL pointer dereference at 0000000000000046
- IP: [<ffffffff8143c459>] ip6_route_output+0x58/0x82
- PGD 7bd89067 PUD 7bd4e067 PMD 0
- Oops: 0000 [#1] SMP
- Modules linked in:
- CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.14.0-rc8-hvx-xen-00019-g97a5221-dirty #154
- Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
- task: ffff88007c774f50 ti: ffff88007c79c000 task.ti: ffff88007c79c000
- RIP: 0010:[<ffffffff8143c459>]  [<ffffffff8143c459>] ip6_route_output+0x58/0x82
- RSP: 0018:ffff88007fd03668  EFLAGS: 00010282
- RAX: 0000000000000000 RBX: ffffffff8186a000 RCX: 0000000000000040
- RDX: 0000000000000000 RSI: ffff88007b0e4a80 RDI: ffff88007fd03754
- RBP: ffff88007fd03688 R08: ffff88007b0e4a80 R09: 0000000000000000
- R10: 0200000a0100000a R11: 0001002200000000 R12: ffff88007fd03740
- R13: ffff88007b0e4a80 R14: ffff88007b0e4a80 R15: ffff88007bba0c50
- FS:  0000000000000000(0000) GS:ffff88007fd00000(0000) knlGS:0000000000000000
- CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
- CR2: 0000000000000046 CR3: 000000007bb60000 CR4: 00000000000006e0
- Stack:
-  0000000000000000 ffff88007fd037a0 ffffffff8186a000 ffff88007fd03740
-  ffff88007fd036c8 ffffffff814320bb 0000000000006e49 ffff88007b8b7360
-  ffff88007bdbf200 ffff88007bcbc000 ffff88007b8b7000 ffff88007b8b7360
- Call Trace:
-  <IRQ>
-  [<ffffffff814320bb>] ip6_dst_lookup_tail+0x2d/0xa4
-  [<ffffffff814322a5>] ip6_dst_lookup+0x10/0x12
-  [<ffffffff81323b4e>] vxlan_xmit_one+0x32a/0x68c
-  [<ffffffff814a325a>] ? _raw_spin_unlock_irqrestore+0x12/0x14
-  [<ffffffff8104c551>] ? lock_timer_base.isra.23+0x26/0x4b
-  [<ffffffff8132451a>] vxlan_xmit+0x66a/0x6a8
-  [<ffffffff8141a365>] ? ipt_do_table+0x35f/0x37e
-  [<ffffffff81204ba2>] ? selinux_ip_postroute+0x41/0x26e
-  [<ffffffff8139d0c1>] dev_hard_start_xmit+0x2ce/0x3ce
-  [<ffffffff8139d491>] __dev_queue_xmit+0x2d0/0x392
-  [<ffffffff813b380f>] ? eth_header+0x28/0xb5
-  [<ffffffff8139d569>] dev_queue_xmit+0xb/0xd
-  [<ffffffff813a5aa6>] neigh_resolve_output+0x134/0x152
-  [<ffffffff813db741>] ip_finish_output2+0x236/0x299
-  [<ffffffff813dc074>] ip_finish_output+0x98/0x9d
-  [<ffffffff813dc749>] ip_output+0x62/0x67
-  [<ffffffff813da9f2>] dst_output+0xf/0x11
-  [<ffffffff813dc11c>] ip_local_out+0x1b/0x1f
-  [<ffffffff813dcf1b>] ip_send_skb+0x11/0x37
-  [<ffffffff813dcf70>] ip_push_pending_frames+0x2f/0x33
-  [<ffffffff813ff732>] icmp_push_reply+0x106/0x115
-  [<ffffffff813ff9e4>] icmp_reply+0x142/0x164
-  [<ffffffff813ffb3b>] icmp_echo.part.16+0x46/0x48
-  [<ffffffff813c1d30>] ? nf_iterate+0x43/0x80
-  [<ffffffff813d8037>] ? xfrm4_policy_check.constprop.11+0x52/0x52
-  [<ffffffff813ffb62>] icmp_echo+0x25/0x27
-  [<ffffffff814005f7>] icmp_rcv+0x1d2/0x20a
-  [<ffffffff813d8037>] ? xfrm4_policy_check.constprop.11+0x52/0x52
-  [<ffffffff813d810d>] ip_local_deliver_finish+0xd6/0x14f
-  [<ffffffff813d8037>] ? xfrm4_policy_check.constprop.11+0x52/0x52
-  [<ffffffff813d7fde>] NF_HOOK.constprop.10+0x4c/0x53
-  [<ffffffff813d82bf>] ip_local_deliver+0x4a/0x4f
-  [<ffffffff813d7f7b>] ip_rcv_finish+0x253/0x26a
-  [<ffffffff813d7d28>] ? inet_add_protocol+0x3e/0x3e
-  [<ffffffff813d7fde>] NF_HOOK.constprop.10+0x4c/0x53
-  [<ffffffff813d856a>] ip_rcv+0x2a6/0x2ec
-  [<ffffffff8139a9a0>] __netif_receive_skb_core+0x43e/0x478
-  [<ffffffff812a346f>] ? virtqueue_poll+0x16/0x27
-  [<ffffffff8139aa2f>] __netif_receive_skb+0x55/0x5a
-  [<ffffffff8139aaaa>] process_backlog+0x76/0x12f
-  [<ffffffff8139add8>] net_rx_action+0xa2/0x1ab
-  [<ffffffff81047847>] __do_softirq+0xca/0x1d1
-  [<ffffffff81047ace>] irq_exit+0x3e/0x85
-  [<ffffffff8100b98b>] do_IRQ+0xa9/0xc4
-  [<ffffffff814a37ad>] common_interrupt+0x6d/0x6d
-  <EOI>
-  [<ffffffff810378db>] ? native_safe_halt+0x6/0x8
-  [<ffffffff810110c7>] default_idle+0x9/0xd
-  [<ffffffff81011694>] arch_cpu_idle+0x13/0x1c
-  [<ffffffff8107480d>] cpu_startup_entry+0xbc/0x137
-  [<ffffffff8102e741>] start_secondary+0x1a0/0x1a5
- Code: 24 14 e8 f1 e5 01 00 31 d2 a8 32 0f 95 c2 49 8b 44 24 2c 49 0b 44 24 24 74 05 83 ca 04 eb 1c 4d 85 ed 74 17 49 8b 85 a8 02 00 00 <66> 8b 40 46 66 c1 e8 07 83 e0 07 c1 e0 03 09 c2 4c 89 e6 48 89
- RIP  [<ffffffff8143c459>] ip6_route_output+0x58/0x82
-  RSP <ffff88007fd03668>
- CR2: 0000000000000046
- ---[ end trace 4612329caab37efd ]---
-
-When vxlan interface is created without explicit group definition, the
-default_dst protocol family is initialiazed to AF_UNSPEC and the driver
-assumes IPv4 configuration. On the other side, the default_dst protocol
-family is used to differentiate between IPv4 and IPv6 cases and, since,
-AF_UNSPEC != AF_INET, the processing takes the IPv6 path.
-
-Making the IPv4 assumption explicit by settting default_dst protocol
-family to AF_INET4 and preventing mixing of IPv4 and IPv6 addresses in
-snooped fdb entries fixes the corner case crashes.
-
-Signed-off-by: Mike Rapoport <mike.rapoport@ravellosystems.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/vxlan.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -777,6 +777,9 @@ static int vxlan_fdb_add(struct ndmsg *n
- 	if (err)
- 		return err;
+---
+ drivers/cpufreq/cpufreq_governor.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -177,6 +177,9 @@ void gov_queue_work(struct dbs_data *dbs
+ {
+ 	int i;
  
-+	if (vxlan->default_dst.remote_ip.sa.sa_family != ip.sa.sa_family)
-+		return -EAFNOSUPPORT;
++	if (!policy->governor_enabled)
++		return;
 +
- 	spin_lock_bh(&vxlan->hash_lock);
- 	err = vxlan_fdb_create(vxlan, addr, &ip, ndm->ndm_state, flags,
- 			       port, vni, ifindex, ndm->ndm_flags);
-@@ -2486,9 +2489,10 @@ static int vxlan_newlink(struct net *net
- 	vni = nla_get_u32(data[IFLA_VXLAN_ID]);
- 	dst->remote_vni = vni;
- 
-+	/* Unless IPv6 is explicitly requested, assume IPv4 */
-+	dst->remote_ip.sa.sa_family = AF_INET;
- 	if (data[IFLA_VXLAN_GROUP]) {
- 		dst->remote_ip.sin.sin_addr.s_addr = nla_get_be32(data[IFLA_VXLAN_GROUP]);
--		dst->remote_ip.sa.sa_family = AF_INET;
- 	} else if (data[IFLA_VXLAN_GROUP6]) {
- 		if (!IS_ENABLED(CONFIG_IPV6))
- 			return -EPFNOSUPPORT;
+ 	if (!all_cpus) {
+ 		__gov_queue_work(smp_processor_id(), dbs_data, delay);
+ 	} else {
 
 
