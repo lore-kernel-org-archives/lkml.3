@@ -1,91 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599AbaDKVvi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 17:51:38 -0400
-Received: from smtp107.biz.mail.ne1.yahoo.com ([98.138.207.14]:27509 "HELO
-	smtp107.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754687AbaDKVvg (ORCPT
+	id S1755643AbaDKVwb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 17:52:31 -0400
+Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:54673
+	"EHLO hallynmail2" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754438AbaDKVwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 17:51:36 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: OabP148VM1mZDuuV.8OKC7WqnMr_vqQrGjvTgB.sSOdv7EP
- zqecN1iR2KxrQNhC4chQPN.KOBjU5vMLBNrR29ckgos8eff.Co2FOtDzT_Qs
- dBjgEtOyP3arqhlXg1jnwn.GtJLUD8fVLf2_Nrwqn3QLv0Ph0HsdBOsuUDT1
- LCbuDsF7LwBtIl7EdIOlETwv6XnMYjtV7R6j6tNF8tKv1_H9rHljVGmKNuuC
- 4yhBzJm_e1Sow_WKej_OKU.nnTEoteyZlr3kPxt8j7CqG1IA_gooUGS90gFM
- LCsQyVzUQ5oymgCMC9rGwwmEmqCIAJIWrfTptQyRErjajPkukukI4SBCrKxB
- hCwmi1LeU6DE6SHo3xJzIJRxRbyvD2UvF7ceLhyKdIfO2u.Sc9eMUNL5s7kq
- AlUq3JUd8imih7SJmbyb8.HFoAEk52axdZ87Icvjuzw4sc4JiqLWHp7sqxl3
- s_Cr.t9_v0osvv_5W68wnwpHVKwk4ZP2JR4GS_Oc9ojQ5cSfIGlbpKDP534D
- 9963in5s86A9YPU9.AtjjXRcpGnaknjbf.GCXWQNOi3cOfGU6aN0fYPf2l9E
- CpCZKoyMVg1_r_9nwfrAC5JuGL3S8Ve79OSVjsKytd0uIt18eEqLB6NyDzaK
- CRKUikmHR1Q--
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-X-Rocket-Received: from [192.168.0.105] (casey@67.180.103.242 with plain [98.138.105.25])
-        by smtp107.biz.mail.ne1.yahoo.com with SMTP; 11 Apr 2014 14:44:56 -0700 PDT
-Message-ID: <53486272.6020901@schaufler-ca.com>
-Date: Fri, 11 Apr 2014 14:45:22 -0700
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 11 Apr 2014 17:52:30 -0400
+Date: Fri, 11 Apr 2014 23:52:28 +0200
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sean Pajot <sean.pajot@execulink.com>,
+        lxc-devel@lists.linuxcontainers.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [lxc-devel] Kernel bug? Setuid apps and user namespaces
+Message-ID: <20140411215228.GA27354@mail.hallyn.com>
+References: <874n89rsoc.fsf@xmission.com>
+ <20140402172049.GA13240@sergelap>
+ <20140402173248.GA22804@mail.hallyn.com>
+ <533EF65E.6050508@mit.edu>
+ <20140404183022.GA6728@sergelap>
+ <CALCETrUki+k+NsaAYTbvaUqFTwH_AUDtwLv0XRYx+zA=c3zACw@mail.gmail.com>
+ <20140404191000.GA13496@sergelap>
+ <CALCETrW-M9QoqzkKyk9gRPLfx1fiTzs8_oAhdK6_kk=17PQc0Q@mail.gmail.com>
+ <20140407181331.GA15012@mail.hallyn.com>
+ <CALCETrULqdffvHZMV_4hobs8=YX6hRSagkvR4opycBKsfTaTtg@mail.gmail.com>
 MIME-Version: 1.0
-To: Pankaj Kumar <pankaj13lvs3@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-CC: pankaj.k2@samsung.com
-Subject: Re: [PATCH] smack lsm bug fixes
-References: <CABPv_jf7Sy26C=LUzFkYyDSFrvtk05Snv-PQJEu2fpm5dhJWrQ@mail.gmail.com>
-In-Reply-To: <CABPv_jf7Sy26C=LUzFkYyDSFrvtk05Snv-PQJEu2fpm5dhJWrQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrULqdffvHZMV_4hobs8=YX6hRSagkvR4opycBKsfTaTtg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2/20/2014 2:15 AM, Pankaj Kumar wrote:
-> From: Pankaj Kumar <pankaj.k2@samsung.com>
->
-> 1. In order to remove any SMACK extended attribute from a file, a user
-> should have CAP_MAC_ADMIN capability. But any user without this
-> capability is able to remove SMACK64MMAP security attribute. This error
-> has been corrected by a modification in smack_inode_removexattr hook.
->
-> 2. While setting extended attribute in smack_inode_setsecurity hook,
-> '-EACCES' error is returned if extended attribute size or value is not
-> correct. This is wrong error rather this is invalid extended attribute
-> case. Corrected error '-EINVAL' shall be returned.
->
-> Signed-off-by: Pankaj Kumar <pankaj.k2@samsung.com>
-> Signed-off-by: Himanshu Shukla <himanshu.sh@samsung.com>
+Quoting Andy Lutomirski (luto@amacapital.net):
+> On Mon, Apr 7, 2014 at 11:13 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
+> > Quoting Andy Lutomirski (luto@amacapital.net):
+> >> I'm starting to think that we need to extend dumpable to something
+> >> much more general like a list of struct creds that someone needs to be
+> >> able to ptrace, *in addition to current creds* in order to access
+> >> sensitive /proc files, coredumps, etc.  If you get started as setuid,
+> >
+> > Hm, yeah, this sort of makes sense.
+> >
+> >> then you start with two struct creds in the list (or maybe just your
+> >> euid and uid).  If you get started !setuid, then your initial creds
+> >> are in the list.  It's possible that few or no things will need to
+> >> change that list after execve.
+> >>
+> >> If all of the entries and current->cred are in the same user_ns, then
+> >> we can dump as userns root.  If they're in different usernses, then we
+> >> dump as global root or maybe the common ancestor root.
+> >> setuid(getuid()) and other such nastiness may have to empty the list,
+> >> or maybe we can just use a prctl for that.
+> >
+> > A few questions,
+> >
+> > 1. is there any other action which would trigger adding a new cred to
+> > the ist?
+> 
+> I don't think so.  Anyone who can ptrace you from the start can
+> corrupt you such that you leak rights even if some future action
+> prevents new ptracers from attaching.
+> 
+> OTOH, it might be nice for something like an HTTPS server to be able
+> to fork and shove its private key into the child, while preventing
+> anyone from ptracing the child.  But doing this securely without help
+> from someone with a different uid might be impossible anyway.
+> 
+> >
+> > 2. would execve clear (and re-init) the list of creds?
+> 
+> Probably.  Thoughts?
 
-Acked-by: Casey Schaufler <casey@schaufler-ca.com>
+Yeah it seems to me it should be re-initialized, with a cred added
+to the list for every open fd.
 
-Applied to git://git.gitorious.org/smack-next/kernel.git smack-for-3.16
+> We could have a way to ask execve not to reinit the list.  Such a
+> mechanism would have to require no_new_privs to prevent a
+> straightforward attack on any setuid binary.
 
-> ---
->  security/smack/smack_lsm.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> index 14f52be..e1b1650 100644
-> --- a/security/smack/smack_lsm.c
-> +++ b/security/smack/smack_lsm.c
-> @@ -938,7 +938,7 @@ static int smack_inode_removexattr(struct dentry
-> *dentry, const char *name)
->          strcmp(name, XATTR_NAME_SMACKIPOUT) == 0 ||
->          strcmp(name, XATTR_NAME_SMACKEXEC) == 0 ||
->          strcmp(name, XATTR_NAME_SMACKTRANSMUTE) == 0 ||
-> -        strcmp(name, XATTR_NAME_SMACKMMAP)) {
-> +        strcmp(name, XATTR_NAME_SMACKMMAP) == 0) {
->          if (!smack_privileged(CAP_MAC_ADMIN))
->              rc = -EPERM;
->      } else
-> @@ -2076,7 +2076,7 @@ static int smack_inode_setsecurity(struct inode
-> *inode, const char *name,
->      int rc = 0;
->
->      if (value == NULL || size > SMK_LONGLABEL || size == 0)
-> -        return -EACCES;
-> +        return -EINVAL;
->
->      skp = smk_import_entry(value, size);
->      if (skp == NULL)
+If we don't add a cred for every open fd, then I think we need this.  If
+we do, then I'm not sure this makes sense.
 
+> We's also want PR_SET_DUMPABLE or a new prctl to be able reset the
+> list to contain just current-.cred, I think.
+
+Yeah PR_SET_DUMPABLE should reset it, agreed.
+
+-serge
