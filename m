@@ -1,132 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417AbaDKURm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 16:17:42 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:38583 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754990AbaDKURj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 16:17:39 -0400
-Message-ID: <53484DB6.4080806@ti.com>
-Date: Fri, 11 Apr 2014 15:16:54 -0500
-From: Joel Fernandes <joelf@ti.com>
-Reply-To: <joelf@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
-MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>
-CC: <davinci-linux-open-source@linux.davincidsp.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Sekhar Nori <nsekhar@ti.com>, <linux-kernel@vger.kernel.org>,
-        <mporter@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Takashi Iwai <tiwai@suse.de>, <dmaengine@vger.kernel.org>,
-        <dan.j.williams@intel.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 05/14] arm: common: edma: Select event queue 1 as default
- when booted with DT
-References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com> <1396357575-30585-6-git-send-email-peter.ujfalusi@ti.com> <5347A4FD.1030803@ti.com> <5347ACDE.7040407@ti.com> <5347AE49.5020109@ti.com> <5347B7F8.2000508@ti.com> <20140411094217.GA32284@intel.com>
-In-Reply-To: <20140411094217.GA32284@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1755447AbaDKUSY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 16:18:24 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:43992 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754300AbaDKUPz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 16:15:55 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>, Keith Packard <keithp@keithp.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: [PATCH 1/4] swap: Cleanup how special swap file numbers are defined
+Date: Fri, 11 Apr 2014 13:15:37 -0700
+Message-Id: <1397247340-3365-2-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1397247340-3365-1-git-send-email-john.stultz@linaro.org>
+References: <1397247340-3365-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2014 04:42 AM, Vinod Koul wrote:> On Fri, Apr 11, 2014 at
-12:38:00PM +0300, Peter Ujfalusi wrote:
->> On 04/11/2014 11:56 AM, Sekhar Nori wrote:
->>> On Friday 11 April 2014 02:20 PM, Peter Ujfalusi wrote:
->>>> On 04/11/2014 11:17 AM, Sekhar Nori wrote:
->>>>> On Tuesday 01 April 2014 06:36 PM, Peter Ujfalusi wrote:
->>>>>> Use the EVENTQ_1 for default and leave the EVENTQ_0 to be used by
-high
->>>>>> priority channels, like audio.
->>>>>>
->>>>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->>>>>
->>>>> Acked-by: Sekhar Nori <nsekhar@ti.com>
->>>>>
->>>>>> ---
->>>>>>  arch/arm/common/edma.c | 3 ++-
->>>>>>  1 file changed, 2 insertions(+), 1 deletion(-)
->>>>>>
->>>>>> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
->>>>>> index 86a8b263278f..19520e2519d9 100644
->>>>>> --- a/arch/arm/common/edma.c
->>>>>> +++ b/arch/arm/common/edma.c
->>>>>> @@ -1546,7 +1546,8 @@ static int edma_of_parse_dt(struct device *dev,
->>>>>>
->>>>>>  	pdata->queue_priority_mapping = queue_priority_map;
->>>>>>
->>>>>> -	pdata->default_queue = 0;
->>>>>> +	/* select queue 1 as default */
->>>>>
->>>>> It will be nice to expand the comment with explanation of why this is
->>>>> being chosen as default (lower priority queue by default for typical
->>>>> bulk data transfer).
->>>>
->>>> Yes, extended comment is a good idea.
->>>>
->>>> For the next version I think I'm going to change the code around
-default
->>>> TC/Queue and the non default queue selection, mostly based on
-Joel's comment:
->>>>
->>>> EVENTQ_1 as default queue.
->>>> Set the EVENTQ_1 priority to 7
->>>> EVENTQ_0 priority is going to stay 0 and EVENTQ_2 as 2
->>>>
->>>> Add new member to struct edma, like high_pri_queue.
->>>> When we set the queue priorities in edma_probe() we look for the
-highest
->>>> priority queue and save the number in high_pri_queue.
->>>>
->>>> I will rename the edma_request_non_default_queue() to
->>>> edma_request_high_pri_queue() and it will assign the channel to the
-high
->>>> priority queue.
->>>>
->>>> I think this way it is going to be more explicit and IMHO a bit
-more safer in
->>>> a sense the we are going to get high priority when we ask for it.
->>>
->>> Sounds much better. I had posted some ideas about adding support for
->>> channel priority in the core code but we can leave that for Vinod and
->>> Dan to say if they really see a need for that.
-> Is it part of this series?
->
->> If we do it via the dmaengine core I think it would be better to have
-a new
->> flag to be passed to dmaengine_prep_dma_*().
->> We could have for example:
->> DMA_PREP_HIGH_PRI as flag to indicate that we need high priority DMA
-if it is
->> possible.
->> We can watch for this flag in the edma driver and act accordingly.
->> ALSA's dmaengine_pcm_prepare_and_submit() could set this flag
-unconditionally
->> since audio should be treated in this way if the DMA IP can do this.
-> Will the priority be different for each descriptor or would be based
-on channel
-> usage. If not then we can add this in dma_slave_config ?
->
-> I can forsee its usage on slave controllers, so yes its useful :)
->
+The SWP_HWPOISON and SWP_MIGRATION numbers are defined in
+a fairly awkward way. Since they are stolen from the top
+few values of the 1<<MAX_SWAPFILES_SHIFT bits, the values
+themselves are calculated by taking the MAX_SWAPFILES value
+(which is defined by subtraciting out all the available special
+types), and re-adding all the other various special types.
 
-I agree, a better place to do this would be in the config stage, since
-we can set in stone (for EDMA atleast) that the channel has a certain
-priority.
+However, in order to preserve the actual values when adding
+new entries, one would have to re-add the new entries value
+to all the type definitions. This gets ugly fast.
 
-I can see where per-desc priority may help, such as a case where 2 users
-of the same channel want to submit different priority desc. For EDMA
-hardware though, there is no such support and the priority mapping is
-from channel->queue.
+This patch tries to clean up how these values are defined so
+its simpler to understand how they are calculated and makes it
+easier add new special values.
 
-One way to add per-desc support would be to change the priority of the
-channel itself for every desc issued, based on the priority stored in
-the desc itself which would be stored in the prep stage. But currently
-we don't have such a usecase of changing priorities based on desc.
+This is done via a enum list which tracks the various special types
+making the MAX_SWAPFILES definition much simpler. Then we just
+define the special type as (MAX_SWAPFILES + <enum val>).
 
-thanks,
+As long as the enum values are added to the top of the enum
+instead of the bottom, the values for the types will be preserved.
 
--Joel
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Robert Love <rlove@google.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Dave Hansen <dave@sr71.net>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Cc: Neil Brown <neilb@suse.de>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mike Hommey <mh@glandium.org>
+Cc: Taras Glek <tglek@mozilla.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Keith Packard <keithp@keithp.com>
+Cc: linux-mm@kvack.org <linux-mm@kvack.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ include/linux/swap.h | 31 ++++++++++++++++++++-----------
+ 1 file changed, 20 insertions(+), 11 deletions(-)
+
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 46ba0c6..a90ea95 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -49,29 +49,38 @@ static inline int current_is_kswapd(void)
+  * actions on faults.
+  */
+ 
++enum {
++	/*
++	 * NOTE: We use the high bits here (subtracting from
++	 * 1<<MAX_SWPFILES_SHIFT), so to preserve the values insert
++	 * new entries here at the top of the enum, not at the bottom
++	 */
++#ifdef CONFIG_MEMORY_FAILURE
++	SWP_HWPOISON_NR,
++#endif
++#ifdef CONFIG_MIGRATION
++	SWP_MIGRATION_READ_NR,
++	SWP_MIGRATION_WRITE_NR,
++#endif
++	SWP_MAX_SPECIAL_TYPE_NR,
++};
++#define MAX_SWAPFILES ((1 << MAX_SWAPFILES_SHIFT) - SWP_MAX_SPECIAL_TYPE_NR)
++
+ /*
+  * NUMA node memory migration support
+  */
+ #ifdef CONFIG_MIGRATION
+-#define SWP_MIGRATION_NUM 2
+-#define SWP_MIGRATION_READ	(MAX_SWAPFILES + SWP_HWPOISON_NUM)
+-#define SWP_MIGRATION_WRITE	(MAX_SWAPFILES + SWP_HWPOISON_NUM + 1)
+-#else
+-#define SWP_MIGRATION_NUM 0
++#define SWP_MIGRATION_READ	(MAX_SWAPFILES + SWP_MIGRATION_READ_NR)
++#define SWP_MIGRATION_WRITE	(MAX_SWAPFILES + SWP_MIGRATION_WRITE_NR)
+ #endif
+ 
+ /*
+  * Handling of hardware poisoned pages with memory corruption.
+  */
+ #ifdef CONFIG_MEMORY_FAILURE
+-#define SWP_HWPOISON_NUM 1
+-#define SWP_HWPOISON		MAX_SWAPFILES
+-#else
+-#define SWP_HWPOISON_NUM 0
++#define SWP_HWPOISON		(MAX_SWAPFILES + SWP_HWPOISON_NR)
+ #endif
+ 
+-#define MAX_SWAPFILES \
+-	((1 << MAX_SWAPFILES_SHIFT) - SWP_MIGRATION_NUM - SWP_HWPOISON_NUM)
+ 
+ /*
+  * Magic header for a swap area. The first part of the union is
+-- 
+1.8.3.2
 
