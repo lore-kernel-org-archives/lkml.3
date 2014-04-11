@@ -1,133 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759756AbaDKQL2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:11:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56845 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759222AbaDKQJf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1422958AbaDKQJf (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Apr 2014 12:09:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56310 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759222AbaDKQH2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 12:07:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.14 23/23] crypto: ghash-clmulni-intel - use C implementation for setkey()
-Date: Fri, 11 Apr 2014 09:12:12 -0700
-Message-Id: <20140411161203.414846807@linuxfoundation.org>
+        Florian Westphal <fw@strlen.de>,
+        Jesper Dangaard Brouer <brouer@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Nikolay Aleksandrov <nikolay@redhat.com>
+Subject: [PATCH 3.10 07/41] net: fix for a race condition in the inet frag code
+Date: Fri, 11 Apr 2014 09:09:38 -0700
+Message-Id: <20140411160933.378896169@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411161200.236939691@linuxfoundation.org>
-References: <20140411161200.236939691@linuxfoundation.org>
+In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
+References: <20140411160932.865173041@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+From: Nikolay Aleksandrov <nikolay@redhat.com>
 
-commit 8ceee72808d1ae3fb191284afc2257a2be964725 upstream.
+[ Upstream commit 24b9bf43e93e0edd89072da51cf1fab95fc69dec ]
 
-The GHASH setkey() function uses SSE registers but fails to call
-kernel_fpu_begin()/kernel_fpu_end(). Instead of adding these calls, and
-then having to deal with the restriction that they cannot be called from
-interrupt context, move the setkey() implementation to the C domain.
+I stumbled upon this very serious bug while hunting for another one,
+it's a very subtle race condition between inet_frag_evictor,
+inet_frag_intern and the IPv4/6 frag_queue and expire functions
+(basically the users of inet_frag_kill/inet_frag_put).
 
-Note that setkey() does not use any particular SSE features and is not
-expected to become a performance bottleneck.
+What happens is that after a fragment has been added to the hash chain
+but before it's been added to the lru_list (inet_frag_lru_add) in
+inet_frag_intern, it may get deleted (either by an expired timer if
+the system load is high or the timer sufficiently low, or by the
+fraq_queue function for different reasons) before it's added to the
+lru_list, then after it gets added it's a matter of time for the
+evictor to get to a piece of memory which has been freed leading to a
+number of different bugs depending on what's left there.
 
-Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Acked-by: H. Peter Anvin <hpa@linux.intel.com>
-Fixes: 0e1227d356e9b (crypto: ghash - Add PCLMULQDQ accelerated implementation)
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+I've been able to trigger this on both IPv4 and IPv6 (which is normal
+as the frag code is the same), but it's been much more difficult to
+trigger on IPv4 due to the protocol differences about how fragments
+are treated.
+
+The setup I used to reproduce this is: 2 machines with 4 x 10G bonded
+in a RR bond, so the same flow can be seen on multiple cards at the
+same time. Then I used multiple instances of ping/ping6 to generate
+fragmented packets and flood the machines with them while running
+other processes to load the attacked machine.
+
+*It is very important to have the _same flow_ coming in on multiple CPUs
+concurrently. Usually the attacked machine would die in less than 30
+minutes, if configured properly to have many evictor calls and timeouts
+it could happen in 10 minutes or so.
+
+An important point to make is that any caller (frag_queue or timer) of
+inet_frag_kill will remove both the timer refcount and the
+original/guarding refcount thus removing everything that's keeping the
+frag from being freed at the next inet_frag_put.  All of this could
+happen before the frag was ever added to the LRU list, then it gets
+added and the evictor uses a freed fragment.
+
+An example for IPv6 would be if a fragment is being added and is at
+the stage of being inserted in the hash after the hash lock is
+released, but before inet_frag_lru_add executes (or is able to obtain
+the lru lock) another overlapping fragment for the same flow arrives
+at a different CPU which finds it in the hash, but since it's
+overlapping it drops it invoking inet_frag_kill and thus removing all
+guarding refcounts, and afterwards freeing it by invoking
+inet_frag_put which removes the last refcount added previously by
+inet_frag_find, then inet_frag_lru_add gets executed by
+inet_frag_intern and we have a freed fragment in the lru_list.
+
+The fix is simple, just move the lru_add under the hash chain locked
+region so when a removing function is called it'll have to wait for
+the fragment to be added to the lru_list, and then it'll remove it (it
+works because the hash chain removal is done before the lru_list one
+and there's no window between the two list adds when the frag can get
+dropped). With this fix applied I couldn't kill the same machine in 24
+hours with the same setup.
+
+Fixes: 3ef0eb0db4bf ("net: frag, move LRU list maintenance outside of
+rwlock")
+
+CC: Florian Westphal <fw@strlen.de>
+CC: Jesper Dangaard Brouer <brouer@redhat.com>
+CC: David S. Miller <davem@davemloft.net>
+
+Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Acked-by: Jesper Dangaard Brouer <brouer@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/x86/crypto/ghash-clmulni-intel_asm.S  |   29 -----------------------------
- arch/x86/crypto/ghash-clmulni-intel_glue.c |   14 +++++++++++---
- 2 files changed, 11 insertions(+), 32 deletions(-)
+ net/ipv4/inet_fragment.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/x86/crypto/ghash-clmulni-intel_asm.S
-+++ b/arch/x86/crypto/ghash-clmulni-intel_asm.S
-@@ -24,10 +24,6 @@
- .align 16
- .Lbswap_mask:
- 	.octa 0x000102030405060708090a0b0c0d0e0f
--.Lpoly:
--	.octa 0xc2000000000000000000000000000001
--.Ltwo_one:
--	.octa 0x00000001000000000000000000000001
+--- a/net/ipv4/inet_fragment.c
++++ b/net/ipv4/inet_fragment.c
+@@ -283,9 +283,10 @@ static struct inet_frag_queue *inet_frag
  
- #define DATA	%xmm0
- #define SHASH	%xmm1
-@@ -134,28 +130,3 @@ ENTRY(clmul_ghash_update)
- .Lupdate_just_ret:
- 	ret
- ENDPROC(clmul_ghash_update)
--
--/*
-- * void clmul_ghash_setkey(be128 *shash, const u8 *key);
-- *
-- * Calculate hash_key << 1 mod poly
-- */
--ENTRY(clmul_ghash_setkey)
--	movaps .Lbswap_mask, BSWAP
--	movups (%rsi), %xmm0
--	PSHUFB_XMM BSWAP %xmm0
--	movaps %xmm0, %xmm1
--	psllq $1, %xmm0
--	psrlq $63, %xmm1
--	movaps %xmm1, %xmm2
--	pslldq $8, %xmm1
--	psrldq $8, %xmm2
--	por %xmm1, %xmm0
--	# reduction
--	pshufd $0b00100100, %xmm2, %xmm1
--	pcmpeqd .Ltwo_one, %xmm1
--	pand .Lpoly, %xmm1
--	pxor %xmm1, %xmm0
--	movups %xmm0, (%rdi)
--	ret
--ENDPROC(clmul_ghash_setkey)
---- a/arch/x86/crypto/ghash-clmulni-intel_glue.c
-+++ b/arch/x86/crypto/ghash-clmulni-intel_glue.c
-@@ -30,8 +30,6 @@ void clmul_ghash_mul(char *dst, const be
- void clmul_ghash_update(char *dst, const char *src, unsigned int srclen,
- 			const be128 *shash);
- 
--void clmul_ghash_setkey(be128 *shash, const u8 *key);
--
- struct ghash_async_ctx {
- 	struct cryptd_ahash *cryptd_tfm;
- };
-@@ -58,13 +56,23 @@ static int ghash_setkey(struct crypto_sh
- 			const u8 *key, unsigned int keylen)
- {
- 	struct ghash_ctx *ctx = crypto_shash_ctx(tfm);
-+	be128 *x = (be128 *)key;
-+	u64 a, b;
- 
- 	if (keylen != GHASH_BLOCK_SIZE) {
- 		crypto_shash_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
- 		return -EINVAL;
- 	}
- 
--	clmul_ghash_setkey(&ctx->shash, key);
-+	/* perform multiplication by 'x' in GF(2^128) */
-+	a = be64_to_cpu(x->a);
-+	b = be64_to_cpu(x->b);
+ 	atomic_inc(&qp->refcnt);
+ 	hlist_add_head(&qp->list, &hb->chain);
++	inet_frag_lru_add(nf, qp);
+ 	spin_unlock(&hb->chain_lock);
+ 	read_unlock(&f->lock);
+-	inet_frag_lru_add(nf, qp);
 +
-+	ctx->shash.a = (__be64)((b << 1) | (a >> 63));
-+	ctx->shash.b = (__be64)((a << 1) | (b >> 63));
-+
-+	if (a >> 63)
-+		ctx->shash.b ^= cpu_to_be64(0xc2);
- 
- 	return 0;
+ 	return qp;
  }
+ 
 
 
