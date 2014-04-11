@@ -1,110 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882AbaDKJZX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 05:25:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:48870 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756250AbaDKJY5 (ORCPT
+	id S932227AbaDKJZz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 05:25:55 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:45564 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756391AbaDKJZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 05:24:57 -0400
-Message-ID: <5347B4E5.6090901@canonical.com>
-Date: Fri, 11 Apr 2014 11:24:53 +0200
-From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 11 Apr 2014 05:25:48 -0400
 MIME-Version: 1.0
-To: Thomas Hellstrom <thellstrom@vmware.com>
-CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        ccross@google.com, linux-media@vger.kernel.org
-Subject: Re: [PATCH 2/2] [RFC v2 with seqcount] reservation: add suppport
- for read-only access using rcu
-References: <20140409144239.26648.57918.stgit@patser> <20140409144831.26648.79163.stgit@patser> <53465A53.1090500@vmware.com> <53466D63.8080808@canonical.com> <53467B93.3000402@vmware.com> <5346B212.8050202@canonical.com> <5347A9FD.2070706@vmware.com>
-In-Reply-To: <5347A9FD.2070706@vmware.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1397205492-24447-1-git-send-email-duanj.fnst@cn.fujitsu.com>
+References: <1397205492-24447-1-git-send-email-duanj.fnst@cn.fujitsu.com>
+Date: Fri, 11 Apr 2014 17:25:46 +0800
+Message-ID: <CAAM7YA=CwbM8Hgh+QFMoGP1RLaA1drwabG_O2sOqCOcg_Wv+fg@mail.gmail.com>
+Subject: Re: [PATCH] rbd: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
+From: "Yan, Zheng" <ukernel@gmail.com>
+To: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+Cc: yehuda@inktank.com, Sage Weil <sage@inktank.com>, elder@kernel.org,
+        ceph-devel <ceph-devel@vger.kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-op 11-04-14 10:38, Thomas Hellstrom schreef:
-> Hi, Maarten.
+On Fri, Apr 11, 2014 at 4:38 PM, Duan Jiong <duanj.fnst@cn.fujitsu.com> wrote:
+> This patch fixes coccinelle error regarding usage of IS_ERR and
+> PTR_ERR instead of PTR_ERR_OR_ZERO.
 >
-> Here I believe we encounter a lot of locking inconsistencies.
+> Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+> ---
+>  drivers/block/rbd.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> First, it seems you're use a number of pointers as RCU pointers without
-> annotating them as such and use the correct rcu
-> macros when assigning those pointers.
+> diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
+> index 4c95b50..552a2ed 100644
+> --- a/drivers/block/rbd.c
+> +++ b/drivers/block/rbd.c
+> @@ -4752,7 +4752,7 @@ static int rbd_dev_image_id(struct rbd_device *rbd_dev)
 >
-> Some pointers (like the pointers in the shared fence list) are both used
-> as RCU pointers (in dma_buf_poll()) for example,
-> or considered protected by the seqlock
-> (reservation_object_get_fences_rcu()), which I believe is OK, but then
-> the pointers must
-> be assigned using the correct rcu macros. In the memcpy in
-> reservation_object_get_fences_rcu() we might get away with an
-> ugly typecast, but with a verbose comment that the pointers are
-> considered protected by the seqlock at that location.
->
-> So I've updated (attached) the headers with proper __rcu annotation and
-> locking comments according to how they are being used in the various
-> reading functions.
-> I believe if we want to get rid of this we need to validate those
-> pointers using the seqlock as well.
-> This will generate a lot of sparse warnings in those places needing
-> rcu_dereference()
-> rcu_assign_pointer()
-> rcu_dereference_protected()
->
-> With this I think we can get rid of all ACCESS_ONCE macros: It's not
-> needed when the rcu_x() macros are used, and
-> it's never needed for the members protected by the seqlock, (provided
-> that the seq is tested). The only place where I think that's
-> *not* the case is at the krealloc in reservation_object_get_fences_rcu().
->
-> Also I have some more comments in the
-> reservation_object_get_fences_rcu() function below:
-I felt that the barriers needed for rcu were already provided by checking the seqcount lock.
-But looking at rcu_dereference makes it seem harmless to add it in more places, it handles
-the ACCESS_ONCE and barrier() for us.
+>                 image_id = ceph_extract_encoded_string(&p, p + ret,
+>                                                 NULL, GFP_NOIO);
+> -               ret = IS_ERR(image_id) ? PTR_ERR(image_id) : 0;
+> +               ret = PTR_ERR_OR_ZERO(image_id);
+>                 if (!ret)
+>                         rbd_dev->image_format = 2;
+>         } else {
 
-We could probably get away with using RCU_INIT_POINTER on the writer side,
-because the smp_wmb is already done by arranging seqcount updates correctly.
+Reviewed-by: Yan, Zheng <zheng.z.yan@intel.com>
 
-> diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
-> index d89a98d2c37b..ca6ef0c4b358 100644
-> --- a/drivers/base/dma-buf.c
-> +++ b/drivers/base/dma-buf.c
+> --
+> 1.8.3.1
 >
-> +int reservation_object_get_fences_rcu(struct reservation_object *obj,
-> +                      struct fence **pfence_excl,
-> +                      unsigned *pshared_count,
-> +                      struct fence ***pshared)
-> +{
-> +    unsigned shared_count = 0;
-> +    unsigned retry = 1;
-> +    struct fence **shared = NULL, *fence_excl = NULL;
-> +    int ret = 0;
-> +
-> +    while (retry) {
-> +        struct reservation_object_list *fobj;
-> +        unsigned seq, retry;
-> You're shadowing retry?
-Oops.
->
->> +
->> +        seq = read_seqcount_begin(&obj->seq);
->> +
->> +        rcu_read_lock();
->> +
->> +        fobj = ACCESS_ONCE(obj->fence);
->> +        if (fobj) {
->> +            struct fence **nshared;
->> +
->> +            shared_count = ACCESS_ONCE(fobj->shared_count);
->> +            nshared = krealloc(shared, sizeof(*shared) *
->> shared_count, GFP_KERNEL);
-> krealloc inside rcu_read_lock(). Better to put this first in the loop.
-Except that shared_count isn't known until the rcu_read_lock is taken.
-> Thanks,
-> Thomas
-~Maarten
+> --
+> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
