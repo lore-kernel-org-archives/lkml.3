@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965206AbaDKQIS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:08:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56358 "EHLO
+	id S934736AbaDKQIP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:08:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56387 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759406AbaDKQHb (ORCPT
+	with ESMTP id S1759416AbaDKQHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:07:31 -0400
+	Fri, 11 Apr 2014 12:07:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heiner Kallweit <heiner.kallweit@web.de>,
+        Nithin Nayak Sujir <nsujir@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>, Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 17/41] ipv6: Avoid unnecessary temporary addresses being generated
-Date: Fri, 11 Apr 2014 09:09:48 -0700
-Message-Id: <20140411160934.054394679@linuxfoundation.org>
+Subject: [PATCH 3.10 24/41] tg3: Do not include vlan acceleration features in vlan_features
+Date: Fri, 11 Apr 2014 09:09:55 -0700
+Message-Id: <20140411160934.562974685@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
 References: <20140411160932.865173041@linuxfoundation.org>
@@ -27,41 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiner Kallweit <heiner.kallweit@web.de>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commit ecab67015ef6e3f3635551dcc9971cf363cc1cd5 ]
+[ Upstream commit 51dfe7b944998eaeb2b34d314f3a6b16a5fd621b ]
 
-tmp_prefered_lft is an offset to ifp->tstamp, not now. Therefore
-age needs to be added to the condition.
+Including hardware acceleration features in vlan_features breaks
+stacked vlans (Q-in-Q) by marking the bottom vlan interface as
+capable of acceleration.  This causes one of the tags to be lost
+and the packets are sent with a sing vlan header.
 
-Age calculation in ipv6_create_tempaddr is different from the one
-in addrconf_verify and doesn't consider ADDRCONF_TIMER_FUZZ_MINUS.
-This can cause age in ipv6_create_tempaddr to be less than the one
-in addrconf_verify and therefore unnecessary temporary address to
-be generated.
-Use age calculation as in addrconf_modify to avoid this.
-
-Signed-off-by: Heiner Kallweit <heiner.kallweit@web.de>
+CC: Nithin Nayak Sujir <nsujir@broadcom.com>
+CC: Michael Chan <mchan@broadcom.com>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/addrconf.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/net/ethernet/broadcom/tg3.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -1111,8 +1111,11 @@ retry:
- 	 * Lifetime is greater than REGEN_ADVANCE time units.  In particular,
- 	 * an implementation must not create a temporary address with a zero
- 	 * Preferred Lifetime.
-+	 * Use age calculation as in addrconf_verify to avoid unnecessary
-+	 * temporary addresses being generated.
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -17308,8 +17308,6 @@ static int tg3_init_one(struct pci_dev *
+ 
+ 	tg3_init_bufmgr_config(tp);
+ 
+-	features |= NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_HW_VLAN_CTAG_RX;
+-
+ 	/* 5700 B0 chips do not support checksumming correctly due
+ 	 * to hardware bugs.
  	 */
--	if (tmp_prefered_lft <= regen_advance) {
-+	age = (now - tmp_tstamp + ADDRCONF_TIMER_FUZZ_MINUS) / HZ;
-+	if (tmp_prefered_lft <= regen_advance + age) {
- 		in6_ifa_put(ifp);
- 		in6_dev_put(idev);
- 		ret = -1;
+@@ -17341,7 +17339,8 @@ static int tg3_init_one(struct pci_dev *
+ 			features |= NETIF_F_TSO_ECN;
+ 	}
+ 
+-	dev->features |= features;
++	dev->features |= features | NETIF_F_HW_VLAN_CTAG_TX |
++			 NETIF_F_HW_VLAN_CTAG_RX;
+ 	dev->vlan_features |= features;
+ 
+ 	/*
 
 
