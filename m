@@ -1,61 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422860AbaDKQsr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:48:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56568 "EHLO
+	id S1422802AbaDKQI6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:08:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56426 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759428AbaDKQI7 (ORCPT
+	with ESMTP id S1759428AbaDKQHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:08:59 -0400
+	Fri, 11 Apr 2014 12:07:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Leach <matthew.leach@arm.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 26/65] net: socket: error on a negative msg_namelen
-Date: Fri, 11 Apr 2014 09:10:58 -0700
-Message-Id: <20140411161001.329915827@linuxfoundation.org>
+Subject: [PATCH 3.10 33/41] isdnloop: several buffer overflows
+Date: Fri, 11 Apr 2014 09:10:04 -0700
+Message-Id: <20140411160935.233449771@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
-References: <20140411160957.714773410@linuxfoundation.org>
+In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
+References: <20140411160932.865173041@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Matthew Leach <matthew.leach@arm.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit dbb490b96584d4e958533fb637f08b557f505657 ]
+[ Upstream commit 7563487cbf865284dcd35e9ef5a95380da046737 ]
 
-When copying in a struct msghdr from the user, if the user has set the
-msg_namelen parameter to a negative value it gets clamped to a valid
-size due to a comparison between signed and unsigned values.
+There are three buffer overflows addressed in this patch.
 
-Ensure the syscall errors when the user passes in a negative value.
+1) In isdnloop_fake_err() we add an 'E' to a 60 character string and
+then copy it into a 60 character buffer.  I have made the destination
+buffer 64 characters and I'm changed the sprintf() to a snprintf().
 
-Signed-off-by: Matthew Leach <matthew.leach@arm.com>
+2) In isdnloop_parse_cmd(), p points to a 6 characters into a 60
+character buffer so we have 54 characters.  The ->eazlist[] is 11
+characters long.  I have modified the code to return if the source
+buffer is too long.
+
+3) In isdnloop_command() the cbuf[] array was 60 characters long but the
+max length of the string then can be up to 79 characters.  I made the
+cbuf array 80 characters long and changed the sprintf() to snprintf().
+I also removed the temporary "dial" buffer and changed it to use "p"
+directly.
+
+Unfortunately, we pass the "cbuf" string from isdnloop_command() to
+isdnloop_writecmd() which truncates anything over 60 characters to make
+it fit in card->omsg[].  (It can accept values up to 255 characters so
+long as there is a '\n' character every 60 characters).  For now I have
+just fixed the memory corruption bug and left the other problems in this
+driver alone.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/socket.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/isdn/isdnloop/isdnloop.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -1972,6 +1972,10 @@ static int copy_msghdr_from_user(struct
+--- a/drivers/isdn/isdnloop/isdnloop.c
++++ b/drivers/isdn/isdnloop/isdnloop.c
+@@ -518,9 +518,9 @@ static isdnloop_stat isdnloop_cmd_table[
+ static void
+ isdnloop_fake_err(isdnloop_card *card)
  {
- 	if (copy_from_user(kmsg, umsg, sizeof(struct msghdr)))
- 		return -EFAULT;
-+
-+	if (kmsg->msg_namelen < 0)
-+		return -EINVAL;
-+
- 	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
- 		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
- 	return 0;
+-	char buf[60];
++	char buf[64];
+ 
+-	sprintf(buf, "E%s", card->omsg);
++	snprintf(buf, sizeof(buf), "E%s", card->omsg);
+ 	isdnloop_fake(card, buf, -1);
+ 	isdnloop_fake(card, "NAK", -1);
+ }
+@@ -903,6 +903,8 @@ isdnloop_parse_cmd(isdnloop_card *card)
+ 	case 7:
+ 		/* 0x;EAZ */
+ 		p += 3;
++		if (strlen(p) >= sizeof(card->eazlist[0]))
++			break;
+ 		strcpy(card->eazlist[ch - 1], p);
+ 		break;
+ 	case 8:
+@@ -1133,7 +1135,7 @@ isdnloop_command(isdn_ctrl *c, isdnloop_
+ {
+ 	ulong a;
+ 	int i;
+-	char cbuf[60];
++	char cbuf[80];
+ 	isdn_ctrl cmd;
+ 	isdnloop_cdef cdef;
+ 
+@@ -1198,7 +1200,6 @@ isdnloop_command(isdn_ctrl *c, isdnloop_
+ 			break;
+ 		if ((c->arg & 255) < ISDNLOOP_BCH) {
+ 			char *p;
+-			char dial[50];
+ 			char dcode[4];
+ 
+ 			a = c->arg;
+@@ -1210,10 +1211,10 @@ isdnloop_command(isdn_ctrl *c, isdnloop_
+ 			} else
+ 				/* Normal Dial */
+ 				strcpy(dcode, "CAL");
+-			strcpy(dial, p);
+-			sprintf(cbuf, "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
+-				dcode, dial, c->parm.setup.si1,
+-				c->parm.setup.si2, c->parm.setup.eazmsn);
++			snprintf(cbuf, sizeof(cbuf),
++				 "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
++				 dcode, p, c->parm.setup.si1,
++				 c->parm.setup.si2, c->parm.setup.eazmsn);
+ 			i = isdnloop_writecmd(cbuf, strlen(cbuf), 0, card);
+ 		}
+ 		break;
 
 
