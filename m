@@ -1,54 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760AbaDKVgo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 17:36:44 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:48796 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751605AbaDKVgl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 17:36:41 -0400
-Message-ID: <53486067.6090506@mit.edu>
-Date: Fri, 11 Apr 2014 14:36:39 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755683AbaDKVhq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 17:37:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51426 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754609AbaDKVhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 17:37:45 -0400
+Message-ID: <53486087.9060304@redhat.com>
+Date: Fri, 11 Apr 2014 17:37:11 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-To: David Herrmann <dh.herrmann@gmail.com>,
-        Tony Battersby <tonyb@cybernetics.com>
-CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [PATCH 2/6] shm: add sealing API
-References: <53470E26.2030306@cybernetics.com> <CANq1E4RWf_VbzF+dPYhzHKJvnrh86me5KajmaaB1u9f9FLzftA@mail.gmail.com> <5347451C.4060106@amacapital.net> <5347F188.10408@cybernetics.com> <CANq1E4T=38VLezGH2XUZ9kc=Vtp6Ca++-ATwmEfaXZS6UrTPig@mail.gmail.com>
-In-Reply-To: <CANq1E4T=38VLezGH2XUZ9kc=Vtp6Ca++-ATwmEfaXZS6UrTPig@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+CC: viro@zeniv.linux.org.uk, eparis@redhat.com, rgb@redhat.com,
+        catalin.marinas@arm.com, will.deacon@arm.com,
+        linaro-kernel@lists.linaro.org, arndb@arndb.de,
+        linux-kernel@vger.kernel.org, dsaxena@linaro.org,
+        linux-audit@redhat.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH_v8 0/2] arm64: Add audit support
+References: <1394705767-12423-1-git-send-email-takahiro.akashi@linaro.org> <1394862548-29060-1-git-send-email-takahiro.akashi@linaro.org>
+In-Reply-To: <1394862548-29060-1-git-send-email-takahiro.akashi@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2014 02:31 PM, David Herrmann wrote:
-> Hi
-> 
-> On Fri, Apr 11, 2014 at 3:43 PM, Tony Battersby <tonyb@cybernetics.com> wrote:
->> Exactly.  For O_DIRECT, that would be the call to get_user_pages_fast()
->> from dio_refill_pages() in fs/direct-io.c, which is ultimately called
->> from blkdev_direct_IO().
-> 
-> If you drop mmap_sem after pinning a page without taking a write-ref,
-> you break i_mmap_writable / VM_DENYWRITE. In memfd I rely on
-> i_mmap_writable to work, same thing is done by exec() (and the old,
-> now disabled, MAP_DENYWRITE).
-> 
-> I don't know whether I should care. I mean, everyone pinning pages and
-> writing to it without holding the mmap_sem has to take a write-ref for
-> each page or it breaks i_mmap_writable. So this seems to be a bug in
-> direct-IO, not in anyone relying on it, right?
+On 03/15/2014 01:49 AM, AKASHI Takahiro wrote:
+> (Please apply this patch after my ftrace patch to resolve some conflict
+> on arm64/kernel/ptrace.c, functionally it doesn't depend on ftrace though)
+>
+> This patchset adds system call audit support on arm64.
+> Both 32-bit (AUDIT_ARCH_ARM) and 64-bit tasks (AUDIT_ARCH_AARCH64)
+> are supported. Since arm64 has the exact same set of system calls
+> on LE and BE, we don't care about endianness (or more specifically
+> __AUDIT_ARCH_64BIT bit in AUDIT_ARCH_*).
+>
+> There are some prerequisites for this patch to work correctly:
+> * "audit: Add CONFIG_HAVE_ARCH_AUDITSYSCALL" patch
+> * "audit: generic compat system call audit support" patch
+> * "arm64: __NR_* definitions for compat syscalls" patch from Catalin
+> * "arm64: make a single hook to syscall_trace() for all syscall features" patch
+> * "arm64: split syscall_trace() into separate functions for enter/exit" patch
+> * "arm64: Add regs_return_value() in syscall.h" patch
+> * "arm64: is_compat_task is defined both in asm/compat.h and
+>     linux/compat.h" patch
+> * userspace audit tool (v2.3.2 + my patch for arm64)
+>
+and the 2/2 patch won't apply to arch/arm64/kernel/ptrace.c
+without the patch from  [PATCH v7 7/7] arm64: ftrace: Add system call tracepoint;
+My question: do you need all 7 patches from arm64: Add ftrace support
+as well for this audit patch to work, or just this 7/7 patch ?
 
-A quick grep of the kernel tree finds exactly zero code paths
-incrementing i_mmap_writable outside of mmap and fork.
 
-Or do you mean a different kind of write ref?  What am I missing here?
+> Please review them as well for better understandings.
+>
+> This code was tested on both 32-bit and 64-bit LE userland
+> in the following two ways:
+> 1) basic operations with auditctl/autrace
+>    # auditctl -a exit,always -S openat -F path=/etc/inittab
+>    # auditctl -a exit,always -F dir=/tmp -F perm=rw
+>    # auditctl -a task,always
+>    # autrace /bin/ls
+>      by comparing output from autrace with one from strace
+>
+> 2) audit-test-code (+ my workarounds for arm/arm64)
+>    by running "audit-tool", "filter" and "syscalls" test categories.
+>
+> Changes v7 -> v8:
+> * aligned with the change in "audit: generic compat system call audit
+>    support" v5 [1/2]
+> * aligned with the change in "arm64: split syscall_trace() into separate
+>    functions for enter/exit" v5 [2/2]
+>
+> Changes v6 -> v7:
+> * changed an include file in syscall.h from <linux/audit.h> to
+>    <uapi/linux/audit.h> [1/2]
+> * aligned with the patch, "arm64: split syscall_trace() into separate
+>    functions for enter/exit" [2/2]
+>
+> Changes v5 -> v6:
+> * removed and put "arm64: Add regs_return_value() in syscall.h" patch into
+>    a separate set
+> * aligned with the change in "arm64: make a single hook to syscall_trace()
+>    for all syscall features" v3 [1/2]
+>
+> Changes v4 -> v5:
+> * rebased to 3.14-rcX
+> * added a guard against TIF_SYSCALL_AUDIT [3/3]
+> * aligned with the change in "arm64: make a single hook to syscall_trace()
+>    for all syscall features" v2 [3/3]
+>
+> Changes v3 -> v4:
+> * Modified to sync with the patch, "make a single hook to syscall_trace()
+>    for all syscall features"
+> * aligned with "audit: Add CONFIG_HAVE_ARCH_AUDITSYSCALL" patch
+>
+> Changes v2 -> v3:
+> * Remove asm/audit.h.
+>    See "generic compat syscall audit support" patch v4
+> * Remove endianness dependency, ie. AUDIT_ARCH_ARMEB/AARCH64EB.
+> * Remove kernel/syscalls/Makefile which was used to create unistd32.h.
+>    See Catalin's "Add __NR_* definitions for compat syscalls" patch
+>
+> Changes v1 -> v2:
+> * Modified to utilize "generic compat system call audit" [3/6, 4/6, 5/6]
+>    Please note that a required header, unistd_32.h, is automatically
+>    generated from unistd32.h.
+> * Refer to regs->orig_x0 instead of regs->x0 as the first argument of
+>    system call in audit_syscall_entry() [6/6]
+> * Include "Add regs_return_value() in syscall.h" patch [2/6],
+>    which was not intentionally included in v1 because it could be added
+>    by "kprobes support".
+>
+> AKASHI Takahiro (2):
+>    arm64: Add audit support
+>    arm64: audit: Add audit hook in syscall_trace_enter/exit()
+>
+>   arch/arm64/Kconfig               |  2 ++
+>   arch/arm64/include/asm/syscall.h | 15 +++++++++++++++
+>   arch/arm64/kernel/ptrace.c       |  7 +++++++
+>   include/uapi/linux/audit.h       |  1 +
+>   4 files changed, 25 insertions(+)
+>
 
---Andy
