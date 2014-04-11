@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755843AbaDKIUx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 04:20:53 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:37778 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755380AbaDKIUs convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 04:20:48 -0400
-Date: Fri, 11 Apr 2014 16:18:43 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Antoine =?UTF-8?B?VMOpbmFydA==?= 
+	id S1755957AbaDKIVO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 04:21:14 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:53809 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755776AbaDKIVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 04:21:08 -0400
+Date: Fri, 11 Apr 2014 10:18:59 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Antoine =?iso-8859-1?Q?T=E9nart?= 
 	<antoine.tenart@free-electrons.com>
-CC: "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        Jimmy Xu <zmxu@marvell.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND 4/5] Documentation: add the Marvell Berlin
- pinctrl documentation
-Message-ID: <20140411161843.0bc75185@xhacker>
-In-Reply-To: <20140411081259.GA20147@kwain>
+Cc: sebastian.hesselbarth@gmail.com, linus.walleij@linaro.org,
+        zmxu@marvell.com, jszhang@marvell.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alexandre.belloni@free-electrons.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RESEND 5/5] ARM: dts: berlin: add the pinctrl node and
+ muxing setup for uarts
+Message-ID: <20140411081859.GL10240@lunn.ch>
 References: <1397135274-10764-1-git-send-email-antoine.tenart@free-electrons.com>
-	<1397135274-10764-5-git-send-email-antoine.tenart@free-electrons.com>
-	<20140411143318.67e55a17@xhacker>
-	<20140411081259.GA20147@kwain>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+ <1397135274-10764-6-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-11_03:2014-04-11,2014-04-11,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1404110140
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1397135274-10764-6-git-send-email-antoine.tenart@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Antoine,
-
-On Fri, 11 Apr 2014 01:12:59 -0700
-Antoine TÃ©nart <antoine.tenart@free-electrons.com> wrote:
-
-> Hi Jisheng,
+On Thu, Apr 10, 2014 at 03:07:54PM +0200, Antoine Ténart wrote:
+> The uart0 pinmux configuration is in the dtsi because uart0 will always
+> use uart0-pmux to work, no other possibility. Same thing for uart1.
 > 
-> On Fri, Apr 11, 2014 at 02:33:18PM +0800, Jisheng Zhang wrote:
-> > On Thu, 10 Apr 2014 06:07:53 -0700
-> > Antoine TÃ©nart <antoine.tenart@free-electrons.com> wrote:
-> > > +Required subnode-properties:
-> > > +- berlin,group: a string describing the group's name.
-> > > +- berlin,function: the function used to mux the group.
-> > 
-> > Would it be better to s/function/mode? Because in mrvl internal technology
-> > discussion and docs, we usually say "set pinmux Gy as mode z".
+> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> ---
+>  arch/arm/boot/dts/berlin2.dtsi   | 20 ++++++++++++++++++++
+>  arch/arm/boot/dts/berlin2cd.dtsi | 13 +++++++++++++
+>  arch/arm/boot/dts/berlin2q.dtsi  | 20 ++++++++++++++++++++
+>  3 files changed, 53 insertions(+)
 > 
-> The pinctrl framework uses 'function', so I guess it's better not to
-> introduce an other keyword that may confuse people. But I agree this is not
-> what's used in the Marvell's docs. What do you think about we mention it in
-> this documentation ?
+> diff --git a/arch/arm/boot/dts/berlin2.dtsi b/arch/arm/boot/dts/berlin2.dtsi
+> index 56a1af2f1052..43eb90c36050 100644
+> --- a/arch/arm/boot/dts/berlin2.dtsi
+> +++ b/arch/arm/boot/dts/berlin2.dtsi
+> @@ -176,6 +176,22 @@
+>  			};
+>  		};
+>  
+> +		pinctrl: pinctrl@0 {
+> +			compatible = "marvell,berlin2-pinctrl";
+> +			reg = <0xea0000 0x08>, <0xfc0000 0x44>;
+> +			reg-names = "global_base", "apb_base";
+> +
+> +			uart0_pmux: uart0-pmux {
+> +				berlin,group = "GSM4";
+> +				berlin,function = <0>;
+> +			};
+> +
+> +			uart1_pmux: uart1-pmux {
+> +				berlin,group = "GSM5";
+> +				berlin,function = <1>;
 
-That's a good idea.
+Hi Antoine
 
-Thanks,
-Jisheng
+This very much looks like black magic.
+
+I assume the data sheet is not available? So i think you need to
+document all possible combinations of values of group and function.
+Maybe you can add a file in
+
+arch/arm/boot/dts/include/dt-bindings/pinctrl/
+
+with something like
+
+#define GSM4_UART0	0
+#define GSM5_UART1	1
+#define GSM12_UART0	1
+#define GSM12_IrDA0	1
+#define GSM12_GPIO	2
+
+	Andrew
