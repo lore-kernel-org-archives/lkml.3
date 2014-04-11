@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757945AbaDKNlI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 09:41:08 -0400
-Received: from mail.cybernetics.com ([173.71.130.66]:52209 "EHLO
-	mail.cybernetics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756256AbaDKNlG (ORCPT
+	id S1758564AbaDKNlT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 09:41:19 -0400
+Received: from relay6-d.mail.gandi.net ([217.70.183.198]:53737 "EHLO
+	relay6-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756539AbaDKNlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 09:41:06 -0400
-Message-ID: <5347F188.10408@cybernetics.com>
-Date: Fri, 11 Apr 2014 09:43:36 -0400
-From: Tony Battersby <tonyb@cybernetics.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
+	Fri, 11 Apr 2014 09:41:14 -0400
+X-Originating-IP: 50.43.32.211
+Date: Fri, 11 Apr 2014 06:41:05 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Neil Armstrong <superna9999@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Himangi Saraogi <himangi774@gmail.com>,
+        Tugce Sirin <ztugcesirin@gmail.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: wlan-ng: fix bad symbol declaration
+Message-ID: <20140411134104.GA29002@leaf>
+References: <5347E781.3030309@gmail.com>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: David Herrmann <dh.herrmann@gmail.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Subject: Re: [PATCH 2/6] shm: add sealing API
-References: <53470E26.2030306@cybernetics.com> <CANq1E4RWf_VbzF+dPYhzHKJvnrh86me5KajmaaB1u9f9FLzftA@mail.gmail.com> <5347451C.4060106@amacapital.net>
-In-Reply-To: <5347451C.4060106@amacapital.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5347E781.3030309@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Lutomirski wrote:
-> On 04/10/2014 05:22 PM, David Herrmann wrote:
->   
->> Hi
->>
->> On Thu, Apr 10, 2014 at 11:33 PM, Tony Battersby <tonyb@cybernetics.com> wrote:
->>     
->>> For O_DIRECT the kernel pins the submitted pages in memory for DMA by
->>> incrementing the page reference counts when the I/O is submitted,
->>> allowing the pages to be modified by DMA even if they are no longer
->>> mapped in the address space of the process.  This is different from a
->>> regular read(), which uses the CPU to copy the data and will fail if the
->>> pages are not mapped.
->>>       
->> Can you please provide an example code-path? For instance,
->> file_read_actor() does not pin any pages but only keeps the user-space
->> address and resolves it once it has data to write.
->>     
->
-> This may be an issue for anything in the kernel that calls
-> get_user_pages and holds onto the result at any time that mmap_sem isn't
-> held.
->
->   
+On Fri, Apr 11, 2014 at 03:00:49PM +0200, Neil Armstrong wrote:
+> With sparse, the following error appears :
+>   CHECK   drivers/staging/wlan-ng/p80211netdev.c
+> drivers/staging/wlan-ng/cfg80211.c:710:6: warning: symbol 'prism2_connect_result' was not declared. Should it be static?
+> drivers/staging/wlan-ng/cfg80211.c:719:6: warning: symbol 'prism2_disconnected' was not declared. Should it be static?
+> drivers/staging/wlan-ng/cfg80211.c:725:6: warning: symbol 'prism2_roamed' was not declared. Should it be static?
+> 
+> Move functions declaration to coherent internal header file.
+> 
+> Signed-off-by: Neil 'Superna' Armstrong <superna9999@gmail.com>
 
-Exactly.  For O_DIRECT, that would be the call to get_user_pages_fast()
-from dio_refill_pages() in fs/direct-io.c, which is ultimately called
-from blkdev_direct_IO().
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
->From the comment for get_user_pages_fast(): "Attempt to pin user pages
-in memory..."
-
-Tony
+>  drivers/staging/wlan-ng/prism2mgmt.h |    5 +++++
+>  drivers/staging/wlan-ng/prism2sta.c  |    4 ----
+>  2 files changed, 5 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/staging/wlan-ng/prism2mgmt.h b/drivers/staging/wlan-ng/prism2mgmt.h
+> index 190d390..b62fdcb 100644
+> --- a/drivers/staging/wlan-ng/prism2mgmt.h
+> +++ b/drivers/staging/wlan-ng/prism2mgmt.h
+> @@ -109,4 +109,9 @@ void prism2sta_processing_defer(struct work_struct *data);
+>  void prism2sta_commsqual_defer(struct work_struct *data);
+>  void prism2sta_commsqual_timer(unsigned long data);
+>  
+> +/* Interface callback functions, passing data back up to the cfg80211 layer */
+> +void prism2_connect_result(wlandevice_t *wlandev, u8 failed);
+> +void prism2_disconnected(wlandevice_t *wlandev);
+> +void prism2_roamed(wlandevice_t *wlandev);
+> +
+>  #endif
+> diff --git a/drivers/staging/wlan-ng/prism2sta.c b/drivers/staging/wlan-ng/prism2sta.c
+> index f9ccf23..3fd4538 100644
+> --- a/drivers/staging/wlan-ng/prism2sta.c
+> +++ b/drivers/staging/wlan-ng/prism2sta.c
+> @@ -120,10 +120,6 @@ MODULE_PARM_DESC(prism2_reset_settletime, "reset settle time in ms");
+>  
+>  MODULE_LICENSE("Dual MPL/GPL");
+>  
+> -void prism2_connect_result(wlandevice_t *wlandev, u8 failed);
+> -void prism2_disconnected(wlandevice_t *wlandev);
+> -void prism2_roamed(wlandevice_t *wlandev);
+> -
+>  static int prism2sta_open(wlandevice_t *wlandev);
+>  static int prism2sta_close(wlandevice_t *wlandev);
+>  static void prism2sta_reset(wlandevice_t *wlandev);
+> -- 
+> 1.7.10.4
