@@ -1,94 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852AbaDKGEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 02:04:15 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:64889 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754611AbaDKGEN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 02:04:13 -0400
-X-AuditID: cbfee691-b7efc6d0000039d3-8c-534785db9df8
-From: Sangbeom Kim <sbkim73@samsung.com>
-To: "'Chanwoo Choi'" <cw00.choi@samsung.com>,
-        "'Olof Johansson'" <olof@lixom.net>
-Cc: linux-samsung-soc@vger.kernel.org, t.figa@samsung.com,
-        hyunhee.kim@samsung.com, sw0312.kim@samsung.com,
-        linux-kernel@vger.kernel.org, yj44.cho@samsung.com,
-        inki.dae@samsung.com, kyungmin.park@samsung.com, kgene.kim@samsung.com,
-        linux-arm-kernel@lists.infradead.org
-References: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
- <1397122658-16013-5-git-send-email-cw00.choi@samsung.com>
- <20140411014424.GA14934@quad.lixom.net> <53477A19.6070509@samsung.com>
-In-reply-to: <53477A19.6070509@samsung.com>
-Subject: RE: [PATCH 04/27] ARM: EXYNOS: Support secondary CPU boot of Exynos4212
-Date: Fri, 11 Apr 2014 15:04:11 +0900
-Message-id: <006f01cf554b$dbc6a2d0$9353e870$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQGB6meoV0Op4c6O0JoKYhIbL435PgEUgv4/AeDvlO4BouzvnZuB+T8Q
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGIsWRmVeSWpSXmKPExsVy+t8zfd3bre7BBmv+GFhc//Kc1eLzhxZ2
-	i0n3J7BY9C64ymZxtukNu8Wmx9dYLS7vmsNmMeP8PiaLU9c/A1mTX7JZrJ/xmsVi787JjA48
-	HpuX1HtcOdHE6tG3ZRWjx+dNcgEsUVw2Kak5mWWpRfp2CVwZr3u7GQs+slecXVvWwDiHrYuR
-	k0NCwERi2Z5pULaYxIV764FsLg4hgWWMEpO6v7LAFL2bc5cVIjGdUWLaydVQzh9Gic1XOxlB
-	qtgENCRW7n4L1M7BISLgK/HutxpIDbPAJCaJqbMXQo09xSix7vpWsLGcAtoS55+uBWsWFgiQ
-	mPu1jRXEZhFQlZi34xQ7iM0rYClxvn8eM4QtKPFj8j2wXmYBLYn1O48zQdjyEpvXvGWGOFVB
-	YsfZ12AzRQTcJI48W8gKUSMise/FO0aQIyQEOjkkHvx6DbVMQOLb5EMsIFdLCMhKbDoANUdS
-	4uCKGywTGCVmIVk9C8nqWUhWz0KyYgEjyypG0dSC5ILipPQiU73ixNzi0rx0veT83E2MkDif
-	uIPx/gHrQ4zJQOsnMkuJJucD00ReSbyhsZmRhamJqbGRuaUZacJK4rzpj5KChATSE0tSs1NT
-	C1KL4otKc1KLDzEycXBKNTCufzD5QQ3PRTbj3W8yQ8tnsm8ya52oLaP6vPCP4rrPKy+s2Lkh
-	821abE1TWeydrE52V+fcSrEa/4+HBX0Kdp6N/ZMabCVyT/zhF6cUjV8Ssyb5Ti/SOlHwR+3g
-	1S1RCtHn2/vl9zaHxt2zsdljr3nG/GR7YMBPXZP5WceDWddHMJodXnBHTECJpTgj0VCLuag4
-	EQDEEdy1CQMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMKsWRmVeSWpSXmKPExsVy+t9jQd3bre7BBn3/tS2uf3nOavH5Qwu7
-	xaT7E1gsehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PFqeufgazJL9ks1s94zWKxd+dkRgce
-	j81L6j2unGhi9ejbsorR4/MmuQCWqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNL
-	C3MlhbzE3FRbJRefAF23zByg05QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCB
-	hHWMGa97uxkLPrJXnF1b1sA4h62LkZNDQsBE4t2cu6wQtpjEhXvrgeJcHEIC0xklpp1czQrh
-	/GGU2Hy1kxGkik1AQ2Ll7rdAVRwcIgK+Eu9+q4HUMAtMYpKYOnshVPcpRol117eygDRwCmhL
-	nH+6FqxZWCBAYu7XNrB1LAKqEvN2nGIHsXkFLCXO989jhrAFJX5MvgfWyyygJbF+53EmCFte
-	YvOat8wQpypI7Dj7GmymiICbxJFnC1khakQk9r14xziBUWgWklGzkIyahWTULCQtCxhZVjGK
-	phYkFxQnpeca6hUn5haX5qXrJefnbmIEJ5FnUjsYVzZYHGIU4GBU4uHNuOAWLMSaWFZcmXuI
-	UYKDWUmE18zfPViINyWxsiq1KD++qDQntfgQYzLQpxOZpUST84EJLq8k3tDYxMzI0sjMwsjE
-	3Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGL13fJ/9J+xLmf1Ct+nJJr2urkk5T84u
-	NtLunqASb7M1UftZ5ZHHF2tMr8xw81QvN48+uPTR1CfZs2IfnJXeNzPtquu85/f+7pCeYb7u
-	f1oKO99+tiV2X58u3+a0ok34CrNEyIUXbrnOkzwzC6a2ZhXO2n1P+v2qBee3al41dGTqMSpt
-	9bwo9l+JpTgj0VCLuag4EQBEdQFJZgMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1754953AbaDKGFq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 02:05:46 -0400
+Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:46708
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750909AbaDKGFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 02:05:45 -0400
+From: "Saxena, Sumit" <Sumit.Saxena@lsi.com>
+To: Rashika Kheria <rashika.kheria@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: DL-MegaRAID Linux <megaraidlinux@lsi.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "josh@joshtriplett.org" <josh@joshtriplett.org>
+Subject: RE: [PATCH 30/55] scsi: Mark functions as static in
+ megaraid/megaraid_sas_fp.c
+Thread-Topic: [PATCH 30/55] scsi: Mark functions as static in
+ megaraid/megaraid_sas_fp.c
+Thread-Index: AQHPS3syNGqKniR2iEqVJGOTb+U8gZsMAPfQ
+Date: Fri, 11 Apr 2014 06:05:23 +0000
+Message-ID: <36fa759414a6439dac8b1c0b004324f6@DM2PR07MB400.namprd07.prod.outlook.com>
+References: <5fd6fa49a592043459f75ed83a72f8c1ed9ddc13.1396114897.git.rashika.kheria@gmail.com>
+ <89d00f872fc1f109e8ae1ca9172c37bb8dc909b4.1396114898.git.rashika.kheria@gmail.com>
+In-Reply-To: <89d00f872fc1f109e8ae1ca9172c37bb8dc909b4.1396114898.git.rashika.kheria@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.19.224.250]
+x-forefront-prvs: 0178184651
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019001)(6009001)(428001)(13464003)(189002)(199002)(51704005)(377454003)(74502001)(74662001)(31966008)(81342001)(81542001)(83322001)(19580405001)(19580395003)(33646001)(76482001)(76576001)(46102001)(99286001)(77982001)(79102001)(99396002)(20776003)(54356999)(76176999)(80022001)(87936001)(2656002)(74316001)(83072002)(4396001)(85852003)(80976001)(66066001)(86362001)(50986999)(92566001)(24736002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR07MB397;H:DM2PR07MB400.namprd07.prod.outlook.com;FPR:8CAF585D.ACC28313.C9DC9132.8A3AAAEA.20390;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-OriginatorOrg: lsi.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3B65qxp000692
 
-Hi,
-On 04/11/2014 2:14 PM, Chanwoo Choi wrote:
 
-> >>  {
-> >> -	exynos_smc(SMC_CMD_CPU1BOOT, cpu, 0, 0);
-> >> +	if (soc_is_exynos4212())
-> >> +		exynos_smc(SMC_CMD_CPU1BOOT, 0, 0, 0);
-> >> +	else
-> >> +		exynos_smc(SMC_CMD_CPU1BOOT, cpu, 0, 0);
-> >
-> > 	/* <explain why you need this special case on 4212> */
-> 
-> It's better to ask system lsi person. We don't know it well.
-> I got the guide about secondary boot from system lsi.
-> But, this patch was completely tested.
 
-exynos_smc(SMC_CMD_CPU1BOOT, ...) is cpu hotplug SMC interface.
-Exynos4212 is dual core processor.
-Exynos4212 only have to boot cpu1 on smp boot.
-So, Second parameter of exynos_smc is fixed by 0 which means cpu1.
-It don't need to boot another cpu (ex. cpu2, cpu3 for quad core processor).
-But In case of quad core processor (ex. Exynos4412), 
-It need to boot another cpu and specify parameter of booting core.
-As I know, Exynos3250 is dual core. 
-So It can be included 1st condition too.
+>-----Original Message-----
+>From: Rashika Kheria [mailto:rashika.kheria@gmail.com]
+>Sent: Saturday, March 29, 2014 11:48 PM
+>To: linux-kernel@vger.kernel.org
+>Cc: DL-MegaRAID Linux; James E.J. Bottomley; linux-scsi@vger.kernel.org;
+>josh@joshtriplett.org
+>Subject: [PATCH 30/55] scsi: Mark functions as static in
+>megaraid/megaraid_sas_fp.c
+>
+>Mark functions as static in megaraid/megaraid_sas_fp.c because they are not
+>used outside this file.
+>
+>This eliminates the following warning in megaraid/megaraid_sas_fp.c:
+>drivers/scsi/megaraid/megaraid_sas_fp.c:80:5: warning: no previous
+>prototype for ‚Äòmega_mod64‚Äô [-Wmissing-prototypes]
+>drivers/scsi/megaraid/megaraid_sas_fp.c:98:5: warning: no previous
+>prototype for ‚Äòmega_div64_32‚Äô [-Wmissing-prototypes]
+>drivers/scsi/megaraid/megaraid_sas_fp.c:206:5: warning: no previous
+>prototype for ‚ÄòMR_GetSpanBlock‚Äô [-Wmissing-prototypes]
+>drivers/scsi/megaraid/megaraid_sas_fp.c:341:5: warning: no previous
+>prototype for ‚Äòmr_spanset_get_span_block‚Äô [-Wmissing-prototypes]
+>drivers/scsi/megaraid/megaraid_sas_fp.c:582:4: warning: no previous
+>prototype for ‚Äòget_arm‚Äô [-Wmissing-prototypes]
+>drivers/scsi/megaraid/megaraid_sas_fp.c:705:4: warning: no previous
+>prototype for ‚ÄòMR_GetPhyParams‚Äô [-Wmissing-prototypes]
+>drivers/scsi/megaraid/megaraid_sas_fp.c:1196:4: warning: no previous
+>prototype for ‚Äòmegasas_get_best_arm‚Äô [-Wmissing-prototypes]
+>
+>Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+>Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+>---
+> drivers/scsi/megaraid/megaraid_sas_fp.c |   26 ++++++++++++++------------
+> 1 file changed, 14 insertions(+), 12 deletions(-)
+>
+>diff --git a/drivers/scsi/megaraid/megaraid_sas_fp.c
+>b/drivers/scsi/megaraid/megaraid_sas_fp.c
+>index e24b6eb..83d5f74 100644
+>--- a/drivers/scsi/megaraid/megaraid_sas_fp.c
+>+++ b/drivers/scsi/megaraid/megaraid_sas_fp.c
+>@@ -77,7 +77,7 @@ static u8 mr_spanset_get_phy_params(struct
+>megasas_instance *instance, u32 ld,  static u64 get_row_from_strip(struct
+>megasas_instance *instance, u32 ld,
+> 	u64 strip, struct MR_FW_RAID_MAP_ALL *map);
+>
+>-u32 mega_mod64(u64 dividend, u32 divisor)
+>+static u32 mega_mod64(u64 dividend, u32 divisor)
+> {
+> 	u64 d;
+> 	u32 remainder;
+>@@ -95,7 +95,7 @@ u32 mega_mod64(u64 dividend, u32 divisor)
+>  *
+>  * @return quotient
+>  **/
+>-u64 mega_div64_32(uint64_t dividend, uint32_t divisor)
+>+static u64 mega_div64_32(uint64_t dividend, uint32_t divisor)
+> {
+> 	u32 remainder;
+> 	u64 d;
+>@@ -203,7 +203,7 @@ u8 MR_ValidateMapInfo(struct megasas_instance
+>*instance)
+> 	return 1;
+> }
+>
+>-u32 MR_GetSpanBlock(u32 ld, u64 row, u64 *span_blk,
+>+static u32 MR_GetSpanBlock(u32 ld, u64 row, u64 *span_blk,
+> 		    struct MR_FW_RAID_MAP_ALL *map)
+> {
+> 	struct MR_SPAN_BLOCK_INFO *pSpanBlock = MR_LdSpanInfoGet(ld,
+>map); @@ -338,7 +338,7 @@ static int getSpanInfo(struct
+>MR_FW_RAID_MAP_ALL *map, PLD_SPAN_INFO ldSpanInfo)
+> *    div_error	   - Devide error code.
+> */
+>
+>-u32 mr_spanset_get_span_block(struct megasas_instance *instance,
+>+static u32 mr_spanset_get_span_block(struct megasas_instance *instance,
+> 		u32 ld, u64 row, u64 *span_blk, struct
+>MR_FW_RAID_MAP_ALL *map)  {
+> 	struct fusion_context *fusion = instance->ctrl_context; @@ -579,8
+>+579,8 @@ static u32 get_arm_from_strip(struct megasas_instance
+>*instance,  }
+>
+> /* This Function will return Phys arm */
+>-u8 get_arm(struct megasas_instance *instance, u32 ld, u8 span, u64 stripe,
+>-		struct MR_FW_RAID_MAP_ALL *map)
+>+static u8 get_arm(struct megasas_instance *instance, u32 ld, u8 span,
+>+		  u64 stripe, struct MR_FW_RAID_MAP_ALL *map)
+> {
+> 	struct MR_LD_RAID  *raid = MR_LdRaidGet(ld, map);
+> 	/* Need to check correct default value */ @@ -702,10 +702,11 @@
+>static u8 mr_spanset_get_phy_params(struct megasas_instance *instance,
+>u32 ld,
+> *    span          - Span number
+> *    block         - Absolute Block number in the physical disk
+> */
+>-u8 MR_GetPhyParams(struct megasas_instance *instance, u32 ld, u64
+>stripRow,
+>-		u16 stripRef, struct IO_REQUEST_INFO *io_info,
+>-		struct RAID_CONTEXT *pRAID_Context,
+>-		struct MR_FW_RAID_MAP_ALL *map)
+>+static u8 MR_GetPhyParams(struct megasas_instance *instance, u32 ld,
+>+			  u64 stripRow, u16 stripRef,
+>+			  struct IO_REQUEST_INFO *io_info,
+>+			  struct RAID_CONTEXT *pRAID_Context,
+>+			  struct MR_FW_RAID_MAP_ALL *map)
+> {
+> 	struct MR_LD_RAID  *raid = MR_LdRaidGet(ld, map);
+> 	u32         pd, arRef;
+>@@ -1193,8 +1194,9 @@ mr_update_load_balance_params(struct
+>MR_FW_RAID_MAP_ALL *map,
+> 	}
+> }
+>
+>-u8 megasas_get_best_arm(struct LD_LOAD_BALANCE_INFO *lbInfo, u8 arm,
+>u64 block,
+>-			u32 count)
+>+static u8 megasas_get_best_arm(struct LD_LOAD_BALANCE_INFO *lbInfo,
+>u8 arm,
+>+			       u64 block,
+>+			       u32 count)
+> {
+> 	u16     pend0, pend1;
+> 	u64     diff0, diff1;
+ 
+Acked-by: Sumit Saxena <sumit.saxena@lsi.com>
 
-Sangbeom,
-Thanks,
+-Sumit
+>--
+>1.7.9.5
+>
 
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
