@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713AbaDKDgz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 23:36:55 -0400
-Received: from mail-yh0-f41.google.com ([209.85.213.41]:47100 "EHLO
-	mail-yh0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753692AbaDKDgx (ORCPT
+	id S1754568AbaDKDsX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 23:48:23 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:40049 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753970AbaDKDsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 23:36:53 -0400
+	Thu, 10 Apr 2014 23:48:22 -0400
+Date: Thu, 10 Apr 2014 20:48:16 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>, Jason Low <jason.low2@hp.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        "Michael L. Semon" <mlsemon35@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: 3.14.0+/x86: lockdep and mutexes not getting along
+Message-ID: <20140411034816.GB4496@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.LNX.2.11.1404060059020.8208@bpserver.ds>
+ <20140409121940.GA12890@node.dhcp.inet.fi>
+ <1397108579.2586.15.camel@j-VirtualBox>
+ <20140410091824.GL10526@twins.programming.kicks-ass.net>
+ <1397150084.3032.4.camel@j-VirtualBox>
+ <20140410232652.GA24658@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20140410224825.GI6518@sirena.org.uk>
-References: <1397132030-2440-1-git-send-email-harinik@xilinx.com>
-	<20140410224825.GI6518@sirena.org.uk>
-Date: Fri, 11 Apr 2014 09:06:52 +0530
-Message-ID: <CAFcVECL7fSn6S53712ZfaezVxfCbeT15Wbk432k61KuQOL4PdQ@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] SPI: Add driver for Cadence SPI controller
-From: Harini Katakam <harinikatakamlinux@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, linux-spi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        michals@xilinx.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140410232652.GA24658@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041103-7164-0000-0000-000000F81751
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Thu, Apr 10, 2014 at 07:26:52PM -0400, Dave Jones wrote:
+> On Thu, Apr 10, 2014 at 10:14:44AM -0700, Jason Low wrote:
+>  > On Thu, 2014-04-10 at 11:18 +0200, Peter Zijlstra wrote:
+>  > > On Wed, Apr 09, 2014 at 10:42:59PM -0700, Jason Low wrote:
+>  > > > As a starting point, would either of you like to test the following
+>  > > > patch to see if it fixes the issue? This patch essentially generates the
+>  > > > same code as in older kernels in the debug case. This applies on top of
+>  > > > kernels with both commits 6f008e72cd11 and 1d8fe7dc8078.
+>  > > 
+>  > > 
+>  > > So I managed to reproduce, and the below makes it go away. I just don't
+>  > > understand why though. will stare more.
+>  > 
+>  > So one thing I noticed that is different in the current code is that in
+>  > debug_mutex_unlock(), there is is a possibility that it does not unlock
+>  > the mutex (when !debug_locks). May be interesting to try out this
+>  > patch too:
+> 
+> I've been seeing lockups this last week or two too, that manifested by
+> RCU spewing stall messages, and the box being totally unresponsive.
+> This patch seems to cure that for me, which I'm sure will make Paul
+> happy to hear.
 
-On Fri, Apr 11, 2014 at 4:18 AM, Mark Brown <broonie@kernel.org> wrote:
-> On Thu, Apr 10, 2014 at 05:43:49PM +0530, Harini Katakam wrote:
->> Add driver for Cadence SPI controller. This is used in Xilinx Zynq.
->
-> This looks mostly good, the issues below are very small.
->
->> +static int __maybe_unused cdns_spi_suspend(struct device *dev)
->> +{
->> +     struct platform_device *pdev = container_of(dev,
->> +                     struct platform_device, dev);
->> +     struct spi_master *master = platform_get_drvdata(pdev);
->> +     struct cdns_spi *xspi = spi_master_get_devdata(master);
->> +
->> +     spi_master_suspend(master);
->> +
->> +     clk_disable(xspi->ref_clk);
->> +
->> +     clk_disable(xspi->pclk);
->
-> You're only doing clk_disable() here, I would expect the clocks to also
-> be unprepared over suspend - there is no value in leaving them prepared
-> that I can see.  Just use clk_unprepare_disable().
->
-> It would also be good (though not essential) to implement runtime PM and
-> disable the clocks while there are no transfers in progress for a small
-> power saving.  The auto_runtime_pm feature in the core will do the
-> runtime PM calls for you.
->
-> Otherwise this looks good.
+Whew!!!  ;-)
 
-Thanks. I'll make these changes and send a v4 next week.
+							Thanx, Paul
 
-Regards,
-Harini
