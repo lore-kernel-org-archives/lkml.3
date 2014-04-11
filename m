@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434AbaDKUbF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 16:31:05 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:60988 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575AbaDKUbC (ORCPT
+	id S1755477AbaDKUb0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 16:31:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58108 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755167AbaDKUbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 16:31:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <5347E32B.1080002@vmware.com>
-References: <5347E32B.1080002@vmware.com>
-Date: Fri, 11 Apr 2014 22:31:01 +0200
-Message-ID: <CANq1E4Rr5XDR3+WLRHSw6aYw6uDq90JJZOhmUKDJj=kFGcvJ8g@mail.gmail.com>
-Subject: Re: DRM security flaws and security levels.
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Thomas Hellstrom <thellstrom@vmware.com>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+	Fri, 11 Apr 2014 16:31:21 -0400
+Date: Fri, 11 Apr 2014 13:34:03 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>,
+        "linux-crypto@vger.kernel.org" <linux-crypto@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: Fwd: [crypto:master 60/60]
+ arch/x86/crypto/ghash-clmulni-intel_glue.c:71:25: sparse: cast to restricted
+ __be64
+Message-ID: <20140411203403.GA17945@kroah.com>
+References: <533aa1ae.qq4Hi3RBnPzgncue%fengguang.wu@intel.com>
+ <CAKv+Gu_unwqLWWn-VDegy=vF=rprC5qFhazo_sJFNm738MVgaQ@mail.gmail.com>
+ <20140401124824.GA13642@gondor.apana.org.au>
+ <CAKv+Gu9bg1AgDSb3H-tMGBq53_ySaTZAeYsQeDYKS6cTnaBGUA@mail.gmail.com>
+ <20140411160312.GB31676@kroah.com>
+ <CAKv+Gu-ZKVz7JKhW9iWuZeKiRnyS3Z4uakPn2_UMW_CpSBgXkw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKv+Gu-ZKVz7JKhW9iWuZeKiRnyS3Z4uakPn2_UMW_CpSBgXkw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Fri, Apr 11, 2014 at 09:48:42PM +0200, Ard Biesheuvel wrote:
+> On 11 April 2014 18:03, gregkh@linuxfoundation.org
+> <gregkh@linuxfoundation.org> wrote:
+> > On Fri, Apr 04, 2014 at 10:11:19AM +0200, Ard Biesheuvel wrote:
+> >> Greg,
+> >>
+> >> This pertains to commit 8ceee72808d1 (crypto: ghash-clmulni-intel -
+> >> use C implementation for setkey()) that has been pulled by Linus
+> >> during the current merge window.
+> >>
+> >> It is missing two things:
+> >> - a cc to stable annotation
+> >> - a fix for the sparse warning below (change cast from __be64 to __force __be64)
+> >>
+> >> The reason for cc'ing stable on this patch is that it fixes a
+> >> potential data corruption issue where the ghash setkey() method uses
+> >> SSE registers without calling kernel_fpu_begin() first. This issue was
+> >> introduced by 0e1227d356e9b (crypto: ghash - Add PCLMULQDQ accelerated
+> >> implementation).
+> >>
+> >> So how would you like to proceed with this? Should I propose a new
+> >> patch somewhere?
+> >
+> > No problem, I'll apply this as-is.  But it doesn't apply to the
+> > 3.4-stable tree cleanly, can you send me a backported version if it's
+> > still needed there as well?
+> >
+> 
+> Yes, the code was broken from the start. 3.4 version is attached, the
+> only difference is the missing ENDPROC() at the end of the asm file.
+> 
+> In the mean time, Herbert has submitted a fix for the sparse warning,
+> but we settled on a different fix than I had suggested before.
+> https://git.kernel.org/cgit/linux/kernel/git/herbert/cryptodev-2.6.git/commit/?id=0ea481466d1c
+> 
+> Note that this code has not been tested (not by me, at least), so I
+> wouldn't suggest you take it straight away, but if you care about the
+> sparse warning, we could add a cc stable to it as well, I suppose.
 
-On Fri, Apr 11, 2014 at 2:42 PM, Thomas Hellstrom <thellstrom@vmware.com> wrote:
-> as was discussed a while ago, there are some serious security flaws with
-> the current drm master model, that allows a
-> user that had previous access or current access to an X server terminal
-> to access the GPU memory of the active X server, without being
-> authenticated to the X server and thereby also access other user's
-> secret information
+No, I don't care about a sparse warning, unless it's fixing a real bug.
 
-1a) and 1b) are moot if you disallow primary-node access but require
-clients to use render-nodes with dma-buf. There're no gem-names on
-render-nodes so no way to access other buffers (assuming the GPU does
-command-stream checking and/or VM).
+I'll queue this up for the next 3.4 release after the one that happens
+this weekend, thanks.
 
-2) There is no DRM-generic data other than buffers that is global. So
-imho this is a driver-specific issue.
-
-So I cannot see why this is a DRM issue. The only leaks I see are
-legacy interfaces and driver-specific interfaces. The first can be
-disabled via chmod() for clients, and the second is something driver
-authors should fix.
-
-Thanks
-David
+greg k-h
