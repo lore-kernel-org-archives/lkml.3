@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533AbaDKDZq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 23:25:46 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:8500 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751462AbaDKDZp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 23:25:45 -0400
-Date: Thu, 10 Apr 2014 23:25:42 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Clark Williams <williams@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC PATCH RT] rwsem: The return of multi-reader PI rwsems
-Message-ID: <20140410232542.23ee9920@gandalf.local.home>
-In-Reply-To: <1397184626.5139.24.camel@marge.simpson.net>
-References: <20140409151922.5fa5d999@gandalf.local.home>
-	<1397139510.5137.92.camel@marge.simpson.net>
-	<1397140123.5137.99.camel@marge.simpson.net>
-	<1397184626.5139.24.camel@marge.simpson.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	id S1754675AbaDKD2Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 23:28:16 -0400
+Received: from ozlabs.org ([103.22.144.67]:60066 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751938AbaDKD2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 23:28:15 -0400
+Date: Fri, 11 Apr 2014 13:28:07 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: <linux-next@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for Apr 11
+Message-Id: <20140411132807.031d90304b91fae47ea3368d@canb.auug.org.au>
+In-Reply-To: <20140411130313.f01ee5d3c66fc031789c692b@canb.auug.org.au>
+References: <20140411130313.f01ee5d3c66fc031789c692b@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__11_Apr_2014_13_28_07_+1000_G4Bog8QevbNwo0bE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Apr 2014 04:50:26 +0200
-Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
+--Signature=_Fri__11_Apr_2014_13_28_07_+1000_G4Bog8QevbNwo0bE
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Oh, there was another useful bit. 
-> 
-> 3.12.17-rt25       403991     384216     377786
->                    405466     394011     392850
-> 
-> 3.12.17-nopreempt  109049     186133     118766  !?!.. ew, TTWU_QUEUE
->                    350385     318786     367336  !TTWU_QUEUE
->                    326009     356939     378215  !TTWU_QUEUE
-> 
-> IPI == low-pass filter.
+On Fri, 11 Apr 2014 13:03:13 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> Non-merge commits (relative to Linus' tree): 568
+>  1077 files changed, 16245 insertions(+), 11823 deletions(-)
 
-I'm sorry, but I don't have the foggiest clue to what the above means.
+Actually ...
 
--- Steve
+Non-merge commits (relative to Linus' tree): 533
+ 996 files changed, 12720 insertions(+), 12603 deletions(-)
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__11_Apr_2014_13_28_07_+1000_G4Bog8QevbNwo0bE
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTR2FMAAoJEMDTa8Ir7ZwVGdsP/1VFK8DoDDogIEiTSNxj2CrQ
+mz55BkvLn2bfOLYV/YSLiD3e2lt+J2RwW+XfyH421IkVAdvdAcP3EtMehQcrrA+x
+PLkFys4ibsBjAhP/n3pss7tuQS+o0C6NV3OXIlQrrH1JBGVgQ6EKqxh2gi5xLJLR
+HbmgO0mnTaSaag48HCWM3wtO3QIZ044S/ykiWUdODYx/n/XIe9gvdSXS3Ob9tQxU
+hEG6qCvWiEZ2VWlwUhsxh8iNjYBeLCM9NLYZexKfTvlUvTlWEXU0nH3CHXJ1Gna2
+7JoZ2PzsUGDSTZf4hk1zli4ZEkkMuztGmSGaSyH1Nh1QYaf2qIcPf3qYPdMTdJ8r
+T2It6PbKnGMH+jfN1G+tTI2gd6LcsKeytgGLLgcLzjjEF2jLia7tYHxBUvq82F0q
+UHDOaHwe0LmB8wXRvCDcquJMbuyOu00Y8LPRZ/Wf08jeBxNUY67+uAT/YJ3EQlLK
+fWSIsBTvOfauU3cGKsaevp8mOwYq3CZTF7QqrEXNWDmGIxcJpdq1ubVSaHi98WaQ
+9OQnN/PhyTZaVYSAkSt9VRyq7y4doUcvDdEhur+QnHjT+OrVFFgC4PCwa6yxEHFt
+U2ADrg6zcJ0+4Szxot9ckQyf/ZBII2AOVsG4aZFmXcO26G3y3Ve5/Q9enAGmqngn
+mdS+iQgaNPZRdprI79hR
+=0GnJ
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__11_Apr_2014_13_28_07_+1000_G4Bog8QevbNwo0bE--
