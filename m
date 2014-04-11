@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759809AbaDKQRz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:17:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56794 "EHLO
+	id S1423094AbaDKQRy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:17:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56797 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759282AbaDKQJ3 (ORCPT
+	with ESMTP id S1759710AbaDKQJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:29 -0400
+	Fri, 11 Apr 2014 12:09:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shradha Shah <sshah@solarflare.com>,
+        Mike Rapoport <mike.rapoport@ravellosystems.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 12/23] Call efx_set_channels() before efx->type->dimension_resources()
-Date: Fri, 11 Apr 2014 09:12:01 -0700
-Message-Id: <20140411161201.929555705@linuxfoundation.org>
+Subject: [PATCH 3.14 13/23] net: vxlan: fix crash when interface is created with no group
+Date: Fri, 11 Apr 2014 09:12:02 -0700
+Message-Id: <20140411161202.067396993@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411161200.236939691@linuxfoundation.org>
 References: <20140411161200.236939691@linuxfoundation.org>
@@ -27,67 +27,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Pieczko <dpieczko@solarflare.com>
+From: Mike Rapoport <mike.rapoport@ravellosystems.com>
 
-[ Upstream commit 52ad762b85ed7947ec9eff6b036eb985352f6874 ]
+[ Upstream commit 5933a7bbb5de66482ea8aa874a7ebaf8e67603c4 ]
 
-When using the "separate_tx_channels=1" module parameter, the TX queues are
-initially numbered starting from the first TX-only channel number (after all the
-RX-only channels).  efx_set_channels() renumbers the queues so that they are
-indexed from zero.
+If the vxlan interface is created without explicit group definition,
+there are corner cases which may cause kernel panic.
 
-On EF10, the TX queues need to be relabelled in this way before calling the
-dimension_resources NIC type operation, otherwise the TX queue PIO buffers can be
-linked to the wrong VIs when using "separate_tx_channels=1".
+For instance, in the following scenario:
 
-Added comments to explain UC/WC mappings for PIO buffers
+node A:
+$ ip link add dev vxlan42  address 2c:c2:60:00:10:20 type vxlan id 42
+$ ip addr add dev vxlan42 10.0.0.1/24
+$ ip link set up dev vxlan42
+$ arp -i vxlan42 -s 10.0.0.2 2c:c2:60:00:01:02
+$ bridge fdb add dev vxlan42 to 2c:c2:60:00:01:02 dst <IPv4 address>
+$ ping 10.0.0.2
 
-Signed-off-by: Shradha Shah <sshah@solarflare.com>
+node B:
+$ ip link add dev vxlan42 address 2c:c2:60:00:01:02 type vxlan id 42
+$ ip addr add dev vxlan42 10.0.0.2/24
+$ ip link set up dev vxlan42
+$ arp -i vxlan42 -s 10.0.0.1 2c:c2:60:00:10:20
+
+node B crashes:
+
+ vxlan42: 2c:c2:60:00:10:20 migrated from 4011:eca4:c0a8:6466:c0a8:6415:8e09:2118 to (invalid address)
+ vxlan42: 2c:c2:60:00:10:20 migrated from 4011:eca4:c0a8:6466:c0a8:6415:8e09:2118 to (invalid address)
+ BUG: unable to handle kernel NULL pointer dereference at 0000000000000046
+ IP: [<ffffffff8143c459>] ip6_route_output+0x58/0x82
+ PGD 7bd89067 PUD 7bd4e067 PMD 0
+ Oops: 0000 [#1] SMP
+ Modules linked in:
+ CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.14.0-rc8-hvx-xen-00019-g97a5221-dirty #154
+ Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+ task: ffff88007c774f50 ti: ffff88007c79c000 task.ti: ffff88007c79c000
+ RIP: 0010:[<ffffffff8143c459>]  [<ffffffff8143c459>] ip6_route_output+0x58/0x82
+ RSP: 0018:ffff88007fd03668  EFLAGS: 00010282
+ RAX: 0000000000000000 RBX: ffffffff8186a000 RCX: 0000000000000040
+ RDX: 0000000000000000 RSI: ffff88007b0e4a80 RDI: ffff88007fd03754
+ RBP: ffff88007fd03688 R08: ffff88007b0e4a80 R09: 0000000000000000
+ R10: 0200000a0100000a R11: 0001002200000000 R12: ffff88007fd03740
+ R13: ffff88007b0e4a80 R14: ffff88007b0e4a80 R15: ffff88007bba0c50
+ FS:  0000000000000000(0000) GS:ffff88007fd00000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: 0000000000000046 CR3: 000000007bb60000 CR4: 00000000000006e0
+ Stack:
+  0000000000000000 ffff88007fd037a0 ffffffff8186a000 ffff88007fd03740
+  ffff88007fd036c8 ffffffff814320bb 0000000000006e49 ffff88007b8b7360
+  ffff88007bdbf200 ffff88007bcbc000 ffff88007b8b7000 ffff88007b8b7360
+ Call Trace:
+  <IRQ>
+  [<ffffffff814320bb>] ip6_dst_lookup_tail+0x2d/0xa4
+  [<ffffffff814322a5>] ip6_dst_lookup+0x10/0x12
+  [<ffffffff81323b4e>] vxlan_xmit_one+0x32a/0x68c
+  [<ffffffff814a325a>] ? _raw_spin_unlock_irqrestore+0x12/0x14
+  [<ffffffff8104c551>] ? lock_timer_base.isra.23+0x26/0x4b
+  [<ffffffff8132451a>] vxlan_xmit+0x66a/0x6a8
+  [<ffffffff8141a365>] ? ipt_do_table+0x35f/0x37e
+  [<ffffffff81204ba2>] ? selinux_ip_postroute+0x41/0x26e
+  [<ffffffff8139d0c1>] dev_hard_start_xmit+0x2ce/0x3ce
+  [<ffffffff8139d491>] __dev_queue_xmit+0x2d0/0x392
+  [<ffffffff813b380f>] ? eth_header+0x28/0xb5
+  [<ffffffff8139d569>] dev_queue_xmit+0xb/0xd
+  [<ffffffff813a5aa6>] neigh_resolve_output+0x134/0x152
+  [<ffffffff813db741>] ip_finish_output2+0x236/0x299
+  [<ffffffff813dc074>] ip_finish_output+0x98/0x9d
+  [<ffffffff813dc749>] ip_output+0x62/0x67
+  [<ffffffff813da9f2>] dst_output+0xf/0x11
+  [<ffffffff813dc11c>] ip_local_out+0x1b/0x1f
+  [<ffffffff813dcf1b>] ip_send_skb+0x11/0x37
+  [<ffffffff813dcf70>] ip_push_pending_frames+0x2f/0x33
+  [<ffffffff813ff732>] icmp_push_reply+0x106/0x115
+  [<ffffffff813ff9e4>] icmp_reply+0x142/0x164
+  [<ffffffff813ffb3b>] icmp_echo.part.16+0x46/0x48
+  [<ffffffff813c1d30>] ? nf_iterate+0x43/0x80
+  [<ffffffff813d8037>] ? xfrm4_policy_check.constprop.11+0x52/0x52
+  [<ffffffff813ffb62>] icmp_echo+0x25/0x27
+  [<ffffffff814005f7>] icmp_rcv+0x1d2/0x20a
+  [<ffffffff813d8037>] ? xfrm4_policy_check.constprop.11+0x52/0x52
+  [<ffffffff813d810d>] ip_local_deliver_finish+0xd6/0x14f
+  [<ffffffff813d8037>] ? xfrm4_policy_check.constprop.11+0x52/0x52
+  [<ffffffff813d7fde>] NF_HOOK.constprop.10+0x4c/0x53
+  [<ffffffff813d82bf>] ip_local_deliver+0x4a/0x4f
+  [<ffffffff813d7f7b>] ip_rcv_finish+0x253/0x26a
+  [<ffffffff813d7d28>] ? inet_add_protocol+0x3e/0x3e
+  [<ffffffff813d7fde>] NF_HOOK.constprop.10+0x4c/0x53
+  [<ffffffff813d856a>] ip_rcv+0x2a6/0x2ec
+  [<ffffffff8139a9a0>] __netif_receive_skb_core+0x43e/0x478
+  [<ffffffff812a346f>] ? virtqueue_poll+0x16/0x27
+  [<ffffffff8139aa2f>] __netif_receive_skb+0x55/0x5a
+  [<ffffffff8139aaaa>] process_backlog+0x76/0x12f
+  [<ffffffff8139add8>] net_rx_action+0xa2/0x1ab
+  [<ffffffff81047847>] __do_softirq+0xca/0x1d1
+  [<ffffffff81047ace>] irq_exit+0x3e/0x85
+  [<ffffffff8100b98b>] do_IRQ+0xa9/0xc4
+  [<ffffffff814a37ad>] common_interrupt+0x6d/0x6d
+  <EOI>
+  [<ffffffff810378db>] ? native_safe_halt+0x6/0x8
+  [<ffffffff810110c7>] default_idle+0x9/0xd
+  [<ffffffff81011694>] arch_cpu_idle+0x13/0x1c
+  [<ffffffff8107480d>] cpu_startup_entry+0xbc/0x137
+  [<ffffffff8102e741>] start_secondary+0x1a0/0x1a5
+ Code: 24 14 e8 f1 e5 01 00 31 d2 a8 32 0f 95 c2 49 8b 44 24 2c 49 0b 44 24 24 74 05 83 ca 04 eb 1c 4d 85 ed 74 17 49 8b 85 a8 02 00 00 <66> 8b 40 46 66 c1 e8 07 83 e0 07 c1 e0 03 09 c2 4c 89 e6 48 89
+ RIP  [<ffffffff8143c459>] ip6_route_output+0x58/0x82
+  RSP <ffff88007fd03668>
+ CR2: 0000000000000046
+ ---[ end trace 4612329caab37efd ]---
+
+When vxlan interface is created without explicit group definition, the
+default_dst protocol family is initialiazed to AF_UNSPEC and the driver
+assumes IPv4 configuration. On the other side, the default_dst protocol
+family is used to differentiate between IPv4 and IPv6 cases and, since,
+AF_UNSPEC != AF_INET, the processing takes the IPv6 path.
+
+Making the IPv4 assumption explicit by settting default_dst protocol
+family to AF_INET4 and preventing mixing of IPv4 and IPv6 addresses in
+snooped fdb entries fixes the corner case crashes.
+
+Signed-off-by: Mike Rapoport <mike.rapoport@ravellosystems.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/sfc/ef10.c |    7 +++++++
- drivers/net/ethernet/sfc/efx.c  |    3 ++-
- 2 files changed, 9 insertions(+), 1 deletion(-)
+ drivers/net/vxlan.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/sfc/ef10.c
-+++ b/drivers/net/ethernet/sfc/ef10.c
-@@ -565,10 +565,17 @@ static int efx_ef10_dimension_resources(
- 	 * several of each (in fact that's the only option if host
- 	 * page size is >4K).  So we may allocate some extra VIs just
- 	 * for writing PIO buffers through.
-+	 *
-+	 * The UC mapping contains (min_vis - 1) complete VIs and the
-+	 * first half of the next VI.  Then the WC mapping begins with
-+	 * the second half of this last VI.
- 	 */
- 	uc_mem_map_size = PAGE_ALIGN((min_vis - 1) * EFX_VI_PAGE_SIZE +
- 				     ER_DZ_TX_PIOBUF);
- 	if (nic_data->n_piobufs) {
-+		/* pio_write_vi_base rounds down to give the number of complete
-+		 * VIs inside the UC mapping.
-+		 */
- 		pio_write_vi_base = uc_mem_map_size / EFX_VI_PAGE_SIZE;
- 		wc_mem_map_size = (PAGE_ALIGN((pio_write_vi_base +
- 					       nic_data->n_piobufs) *
---- a/drivers/net/ethernet/sfc/efx.c
-+++ b/drivers/net/ethernet/sfc/efx.c
-@@ -1603,6 +1603,8 @@ static int efx_probe_nic(struct efx_nic
- 	if (rc)
- 		goto fail1;
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -871,6 +871,9 @@ static int vxlan_fdb_add(struct ndmsg *n
+ 	if (err)
+ 		return err;
  
-+	efx_set_channels(efx);
++	if (vxlan->default_dst.remote_ip.sa.sa_family != ip.sa.sa_family)
++		return -EAFNOSUPPORT;
 +
- 	rc = efx->type->dimension_resources(efx);
- 	if (rc)
- 		goto fail2;
-@@ -1613,7 +1615,6 @@ static int efx_probe_nic(struct efx_nic
- 		efx->rx_indir_table[i] =
- 			ethtool_rxfh_indir_default(i, efx->rss_spread);
+ 	spin_lock_bh(&vxlan->hash_lock);
+ 	err = vxlan_fdb_create(vxlan, addr, &ip, ndm->ndm_state, flags,
+ 			       port, vni, ifindex, ndm->ndm_flags);
+@@ -2612,9 +2615,10 @@ static int vxlan_newlink(struct net *net
+ 	vni = nla_get_u32(data[IFLA_VXLAN_ID]);
+ 	dst->remote_vni = vni;
  
--	efx_set_channels(efx);
- 	netif_set_real_num_tx_queues(efx->net_dev, efx->n_tx_channels);
- 	netif_set_real_num_rx_queues(efx->net_dev, efx->n_rx_channels);
- 
++	/* Unless IPv6 is explicitly requested, assume IPv4 */
++	dst->remote_ip.sa.sa_family = AF_INET;
+ 	if (data[IFLA_VXLAN_GROUP]) {
+ 		dst->remote_ip.sin.sin_addr.s_addr = nla_get_be32(data[IFLA_VXLAN_GROUP]);
+-		dst->remote_ip.sa.sa_family = AF_INET;
+ 	} else if (data[IFLA_VXLAN_GROUP6]) {
+ 		if (!IS_ENABLED(CONFIG_IPV6))
+ 			return -EPFNOSUPPORT;
 
 
