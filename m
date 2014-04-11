@@ -1,119 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934899AbaDKOoL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 10:44:11 -0400
-Received: from mail-bn1bon0145.outbound.protection.outlook.com ([157.56.111.145]:49751
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759454AbaDKOoD convert rfc822-to-8bit (ORCPT
+	id S935040AbaDKOpD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 10:45:03 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:57088 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759218AbaDKOfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 10:44:03 -0400
-X-Greylist: delayed 377 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Apr 2014 10:44:02 EDT
-Message-ID: <1397227793.3054.1.camel@dinh-ubuntu>
-Subject: Re: [PATCH 1/3] dts: socfpga: Add bindings for Altera SoC SDRAM
- controller
-From: Thor Thayer <tthayer@altera.com>
-To: Rob Herring <robherring2@gmail.com>
-CC: delicious quinoa <delicious.quinoa@gmail.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Doug Thompson <dougthompson@xmission.com>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        Pawel Moll <pawel.moll@arm.com>, "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
-Date: Fri, 11 Apr 2014 09:49:53 -0500
-In-Reply-To: <CAL_JsqJRweynpCA7LMFU4wfa71XzjGC3b8H9XKJpogf5H93h_A@mail.gmail.com>
-References: <1396907649-20212-1-git-send-email-tthayer@altera.com>
-	 <1396907649-20212-2-git-send-email-tthayer@altera.com>
-	 <20140408133818.GB16054@pengutronix.de>
-	 <1396967390.23349.15.camel@dinh-ubuntu>
-	 <20140408143327.GC16054@pengutronix.de>
-	 <CANk1AXR0bDENDV673M-AVXNWHmGuee5SGc+ZnPqdBdEBwJXQXQ@mail.gmail.com>
-	 <CAL_JsqJRweynpCA7LMFU4wfa71XzjGC3b8H9XKJpogf5H93h_A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Fri, 11 Apr 2014 10:35:16 -0400
+Date: Fri, 11 Apr 2014 16:35:12 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: Re: [Query]: tick-sched: can idle_active be false in
+ tick_nohz_idle_exit()?
+Message-ID: <20140411143509.GB3438@localhost.localdomain>
+References: <CAKohpon3vJzL51V9aOBcXKJC4nr3K-0q77HsxFi+=ACUqNqhcA@mail.gmail.com>
+ <20140410145621.GC27654@localhost.localdomain>
+ <CAKohpo=auNFsivuM21pDxJ0e4sP-ScWc9EPvzhT6qud_UBSJqw@mail.gmail.com>
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(24454002)(377454003)(51704005)(377424004)(199002)(189002)(93916002)(44976005)(92726001)(92566001)(83072002)(6806004)(19580405001)(19580395003)(23676002)(86362001)(83322001)(84676001)(87286001)(74502001)(16796002)(74662001)(85852003)(77982001)(31966008)(89996001)(79102001)(77156001)(47776003)(20776003)(88136002)(46102001)(33646001)(80022001)(62966002)(76482001)(1411001)(42186004)(99396002)(50986999)(33716001)(87936001)(2009001)(76176999)(80976001)(81542001)(97736001)(50226001)(81342001)(50466002)(4396001)(99106001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB056;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:EE84F462.A7225719.BDD77F33.48CAF0F1.2030C;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-OriginatorOrg: altera.onmicrosoft.com
-X-Forefront-PRVS: 0178184651
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKohpo=auNFsivuM21pDxJ0e4sP-ScWc9EPvzhT6qud_UBSJqw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-08 at 13:52 -0500, Rob Herring wrote:
-> On Tue, Apr 8, 2014 at 11:02 AM, delicious quinoa
-> <delicious.quinoa@gmail.com> wrote:
-> > On Tue, Apr 8, 2014 at 9:33 AM, Steffen Trumtrar
-> > <s.trumtrar@pengutronix.de> wrote:
-> >> On Tue, Apr 08, 2014 at 09:29:50AM -0500, Thor Thayer wrote:
-> >>> On Tue, 2014-04-08 at 15:38 +0200, Steffen Trumtrar wrote:
-> >>> > Hi!
-> >>> >
-> >>> > On Mon, Apr 07, 2014 at 04:54:07PM -0500, tthayer@altera.com wrote:
-> >>> > > From: Thor Thayer <tthayer@altera.com>
-> >>> > >
-> >>> > > Addition of the Altera SDRAM controller bindings and device
-> >>> > > tree changes to the Altera SoC project.
-> >>> > >
-> >>> [snip]
-> >>> > > +
-> >>> > > +Required properties:
-> >>> > > +- compatible : "altr,sdr-ctl", "syscon";
-> >>> > > +                Note that syscon is invoked for this device to support the FPGA
-> >>> > > +         bridge driver, EDAC driver and other devices that share the
-> >>> > > +         registers.
-> >>> > > +- reg : Should contain 1 register ranges(address and length)
-> >>> >
-> >>> > I haven't really thought this through, but why would the FPGA bridge driver
-> >>> > access the sdram controller? For releasing the resets in fpgaportrst ? Or is
-> >>> > there more?
-> >>>
-> >>> Hi Steffan. No, not for resets. We need to enable the FPGA to SDRAM
-> >>> path. Our SDRAM controller allows FPGA master access to the SDRAM.
-> >>>
-> >>
-> >> Yes. But what you have to do to enable the path is let the FPGA port you use
-> >> out of reset. And that is it as far as I can see. The rest happens in the
-> >> bitstream. Or is there more to enable the path?
-> >> The FPGA2SDRAM bridge is the one I didn't use as of yet, so if I miss something
-> >> please elaborate.
+On Fri, Apr 11, 2014 at 03:24:11PM +0530, Viresh Kumar wrote:
+> On 10 April 2014 20:26, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > When a dynticks idle CPU is woken up (typically with an IPI), tick_nohz_stop_idle()
+> > is called on interrupt entry but, because this is a waking up IPI, tick_nohz_start_idle()
+> > won't be called. The reason is that need_resched() prevents tick_nohz_irq_exit() to be
+> > called in irq_exit().
 > >
-> > Hi Steffen,
+> > After all if we know that the CPU is going to exit the idle task, we don't need to account
+> > any more idle time. We also don't need to retry to enter in dynticks idle mode since we
+> > are going to restart the tick with tick_nohz_idle_exit().
 > >
-> > The sdram controller is used by two drivers.  That's why we want to
-> > specify "syscon" here.  The other driver is the FPGA bridge driver.
-> > Its functionality is very separate from what this driver is doing (we
-> > are not enabling the bridge in this driver; we are enabling the
-> > monitoring and resetting the interrupt bit of the EDAC).  We wanted to
-> > specify "syscon" her so that we don't have to have to change it for
-> > the other driver.
+> > So in case of wake up IPIs, we may end up with !ts->idle_active in tick_nohz_idle_exit() :)
+> >
+> > I must confess this is not obvious.
 > 
-> But are there actually overlapping registers which are accessed by
-> both drivers and need the protection of regmap?
+> I agree.. I didn't had a clue that this can happen. Good that I asked
+> this question :)
 > 
-> Perhaps MFD is more appropriate than syscon?
+> > It confused me as well when I met that part. A small
+> > comment in tick_nohz_idle_exit() would be welcome ;)
+> 
+> Looks hard. I tried for a small comment and this is the smallest I could get:
+> 
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index c2d868d..26cf5bb 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -925,6 +925,22 @@ void tick_nohz_idle_exit(void)
+> 
+>         ts->inidle = 0;
+> 
+> +       /*
+> +        * Can idle_active be false here?
+> +        * Ideally this would be the sequence of calls:
+> +        * - tick_nohz_idle_enter(), i.e. idle_active = true;
+> +        * - local_irq_disable()
+> +        * - IDLE
+> +        * - wake up due to IPI or other interrupt
+> +        * - local_irq_enable()
+> +        * - tick_nohz_irq_enter(), i.e. idle_active = false;
+> +        * - tick_nohz_irq_exit(), i.e. idle_active = true; This is not called
+> +        *   in case of IPI's as need_resched() will prevent that in
+> +        *   tick_irq_exit(), as we don't need to account any more for idle time
+> +        *   or try to enter dyntics mode (We are going to exit idle state).
+> +        *
+> +        * - tick_nohz_idle_exit()
+> +        */
+>         if (ts->idle_active || ts->tick_stopped)
+>                 now = ktime_get();
 
-Hi Rob,
+I'm sure we can summarize a lot of uninteresting details there. Many of what
+you describe can be guessed after a simple review on the code. Let rather
+focus on the trickies.
 
-We are accessing bits in the SDRAM Controller's Configuration register which
-has other bits that configure the SDRAM controller. Since this main
-configuration register may be accessed by other drivers (more likely for
-reading the current SDRAM configuration setup than for writing), the
-syscon still seems like an appropriate use.
+How about something like:
 
-Thor
-
+          /*
+            * ts->active can be 0 if a wake up IPI pulled us out of idle mode. When
+            * that happens we know we're exiting the idle task. Pending idle sleep
+            * time is flushed on irq entry then no more is accounted afterward.
+            * The need_resched() check on irq_exit() prevents from accounting more.
+           */
 
 > 
-> Rob
+> 
+> I am preparing a cleanup patchset (separate from the timer/hrtimers 36 patch
+> set) for kernel/time/ and will add this change to that.. I am waiting
+> for the merge
+> window to close and Thomas to comment on my timers/hrtimers patches first.
+> Only then will I send another 40 :)
 
+Thanks! Note you can post before the merge window closes. Reviews are possible
+anytime :)
 
+> 
+> --
+> viresh
