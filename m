@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688AbaDKDJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 23:09:56 -0400
-Received: from mail-yk0-f170.google.com ([209.85.160.170]:63635 "EHLO
-	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753190AbaDKDJz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 23:09:55 -0400
+	id S1754856AbaDKDKh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 23:10:37 -0400
+Received: from mga01.intel.com ([192.55.52.88]:10978 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754722AbaDKDKf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 23:10:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,838,1389772800"; 
+   d="scan'208";a="511275847"
+Date: Thu, 10 Apr 2014 20:08:48 -0700
+From: Jon Mason <jon.mason@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] NTB bug fixes and features for v3.15
+Message-ID: <20140411030848.GA7169@jonmason-lab>
 MIME-Version: 1.0
-In-Reply-To: <20140410173616.GC6518@sirena.org.uk>
-References: <1397134229-2380-1-git-send-email-harinik@xilinx.com>
-	<20140410173616.GC6518@sirena.org.uk>
-Date: Fri, 11 Apr 2014 08:39:54 +0530
-Message-ID: <CAFcVECL-G_JPZXmzBLT_cFo3vmjYZd8xGFf-7Vv2uXWa9-O37Q@mail.gmail.com>
-Subject: Re: [PATCH] spi: core: Increase timeout value
-From: Harini Katakam <harinikatakamlinux@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-spi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        michals@xilinx.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Hi Linus,
+Below are a number of NTB bug fixes for v3.15.  Please consider
+pulling them.
 
-On Thu, Apr 10, 2014 at 11:06 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Thu, Apr 10, 2014 at 06:20:29PM +0530, Harini Katakam wrote:
->
->> Considering acceptable latencies, this timeout can be set to a large
->> value >= 1*HZ typically.
->
->> This patch adds a tolerance of 2000 msec in the core accordingly.
->
-> That's too much, it's 2 seconds which gets to be incredibly painful when
-> trying to debug problems - if you're sitting there waiting for a driver
-> to time out some operations (and it may be more than one of them) so you
-> can look at the diagnostics it can be quite aggrivating.  That's why the
-> delays are related to the expected runtime for the operation.  Something
-> like double the expected runtime plus something in the 100ms or so range
-> perhaps?
->
+Thanks,
+Jon
 
-OK.
+The following changes since commit 455c6fdbd219161bd09b1165f11699d6d73de11c:
 
-> Ideally we'd use the actual speed the device set rather than the
-> requested one too, that'd help.
+  Linux 3.14 (2014-03-30 20:40:15 -0700)
 
-How would you propose to do that - driver should write back actual speed set
-to xfer->speed_hz?
+are available in the git repository at:
 
-Regards,
-Harini
+  git://github.com/jonmason/ntb.git tags/ntb-3.15
+
+for you to fetch changes up to f220baad08963a75c78c80cdc1c9e9492ca0eb2a:
+
+  ntb: Use pci_enable_msix_range() instead of pci_enable_msix() (2014-04-07 10:59:20 -0700)
+
+----------------------------------------------------------------
+NTB driver bug fixes to address issues in list traversal, skb leak in
+ntb_netdev, a typo, and a leak of msix entries in the error path.
+Clean ups of the event handling logic, as well as a overall style
+cleanup.  Finally, the driver was converted to use the new
+pci_enable_msix_range logic (and the refactoring to go along with it).
+
+----------------------------------------------------------------
+Alexander Gordeev (4):
+      ntb: Fix leakage of ntb_device::msix_entries[] array
+      ntb: Use pci_msix_vec_count() to obtain number of MSI-Xs
+      ntb: Split ntb_setup_msix() into separate BWD/SNB routines
+      ntb: Use pci_enable_msix_range() instead of pci_enable_msix()
+
+Jon Mason (4):
+      ntb_netdev: Fix list_for_each_entry exit issue
+      ntb_netdev: Fix skb free issue in open
+      NTB: client event cleanup
+      NTB: Code Style Clean-up
+
+Roland Dreier (1):
+      NTB: Fix typo in setting one translation register
+
+ drivers/net/ntb_netdev.c    |   27 ++++++++++++++++++-------
+ drivers/ntb/ntb_hw.c        |  192 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------------------------------------------------------------------
+ drivers/ntb/ntb_hw.h        |    8 ++------
+ drivers/ntb/ntb_transport.c |   20 +++++++++----------
+ include/linux/ntb.h         |   19 +++++++++++-------
+ 5 files changed, 150 insertions(+), 116 deletions(-)
