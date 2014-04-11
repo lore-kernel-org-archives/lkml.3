@@ -1,59 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695AbaDKMDt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 08:03:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6817 "EHLO mx1.redhat.com"
+	id S1755913AbaDKMKp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 08:10:45 -0400
+Received: from mta-out.inet.fi ([195.156.147.13]:44007 "EHLO jenni1.inet.fi"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756593AbaDKMDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 08:03:47 -0400
-Date: Fri, 11 Apr 2014 14:03:47 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
-Subject: Re: [PATCH RESEND 2/2] tracing: syscall_regfunc() should not skip
-	kernel threads
-Message-ID: <20140411120347.GA19753@redhat.com>
-References: <20140410092842.1f9a8760@gandalf.local.home> <20140410133855.GC12228@redhat.com> <20140410102816.24337ffe@gandalf.local.home> <20140410144655.GA25316@redhat.com> <20140410110848.64c3f25e@gandalf.local.home> <20140410175705.GB32332@redhat.com> <20140410181417.GA2104@redhat.com> <20140410151340.7d24aafd@gandalf.local.home> <20140410193820.GA15624@redhat.com> <20140410155554.44f88536@gandalf.local.home>
+	id S1754278AbaDKMKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 08:10:43 -0400
+Date: Fri, 11 Apr 2014 15:08:40 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mtosatti@redhat.com,
+        aarcange@redhat.com, mgorman@suse.de, akpm@linux-foundation.org,
+        andi@firstfloor.org, davidlohr@hp.com, rientjes@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org, riel@redhat.com,
+        n-horiguchi@ah.jp.nec.com
+Subject: Re: [PATCH v3 0/5] hugetlb: add support gigantic page allocation at
+ runtime
+Message-ID: <20140411120840.GA27458@node.dhcp.inet.fi>
+References: <1397152725-20990-1-git-send-email-lcapitulino@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140410155554.44f88536@gandalf.local.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1397152725-20990-1-git-send-email-lcapitulino@redhat.com>
+User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10, Steven Rostedt wrote:
->
-> On Thu, 10 Apr 2014 21:38:20 +0200
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > I _think_ that the kernel thread can only return from "call *%rbx" if
-> > it is no longer a kernel thread, iow, do_execve() was called.
->
-> Ah right. But only in special cases.
->
-> Actually, it only returns if the function in kernel_thread() returns,
-> and in the case of ____call_usermodehelper, it does an exec and
-> returns on success. But if it fails, it needs to call do_exit().
+On Thu, Apr 10, 2014 at 01:58:40PM -0400, Luiz Capitulino wrote:
+> [Full introduction right after the changelog]
+> 
+> Changelog
+> ---------
+> 
+> v3
+> 
+> - Dropped unnecessary WARN_ON() call [Kirill]
+> - Always check if the pfn range lies within a zone [Yasuaki]
+> - Renamed some function arguments for consistency
+> 
+> v2
+> 
+> - Rewrote allocation loop to avoid scanning unless PFNs [Yasuaki]
+> - Dropped incomplete multi-arch support [Naoya]
+> - Added patch to drop __init from prep_compound_gigantic_page()
+> - Restricted the feature to x86_64 (more details in patch 5/5)
+> - Added review-bys plus minor changelog changes
+> 
+> Introduction
+> ------------
+> 
+> The HugeTLB subsystem uses the buddy allocator to allocate hugepages during
+> runtime. This means that hugepages allocation during runtime is limited to
+> MAX_ORDER order. For archs supporting gigantic pages (that is, page sizes
+> greater than MAX_ORDER), this in turn means that those pages can't be
+> allocated at runtime.
+> 
+> HugeTLB supports gigantic page allocation during boottime, via the boot
+> allocator. To this end the kernel provides the command-line options
+> hugepagesz= and hugepages=, which can be used to instruct the kernel to
+> allocate N gigantic pages during boot.
+> 
+> For example, x86_64 supports 2M and 1G hugepages, but only 2M hugepages can
+> be allocated and freed at runtime. If one wants to allocate 1G gigantic pages,
+> this has to be done at boot via the hugepagesz= and hugepages= command-line
+> options.
+> 
+> Now, gigantic page allocation at boottime has two serious problems:
+> 
+>  1. Boottime allocation is not NUMA aware. On a NUMA machine the kernel
+>     evenly distributes boottime allocated hugepages among nodes.
+> 
+>     For example, suppose you have a four-node NUMA machine and want
+>     to allocate four 1G gigantic pages at boottime. The kernel will
+>     allocate one gigantic page per node.
+> 
+>     On the other hand, we do have users who want to be able to specify
+>     which NUMA node gigantic pages should allocated from. So that they
+>     can place virtual machines on a specific NUMA node.
+> 
+>  2. Gigantic pages allocated at boottime can't be freed
+> 
+> At this point it's important to observe that regular hugepages allocated
+> at runtime don't have those problems. This is so because HugeTLB interface
+> for runtime allocation in sysfs supports NUMA and runtime allocated pages
+> can be freed just fine via the buddy allocator.
+> 
+> This series adds support for allocating gigantic pages at runtime. It does
+> so by allocating gigantic pages via CMA instead of the buddy allocator.
+> Releasing gigantic pages is also supported via CMA. As this series builds
+> on top of the existing HugeTLB interface, it makes gigantic page allocation
+> and releasing just like regular sized hugepages. This also means that NUMA
+> support just works.
+> 
+> For example, to allocate two 1G gigantic pages on node 1, one can do:
+> 
+>  # echo 2 > \
+>    /sys/devices/system/node/node1/hugepages/hugepages-1048576kB/nr_hugepages
+> 
+> And, to release all gigantic pages on the same node:
+> 
+>  # echo 0 > \
+>    /sys/devices/system/node/node1/hugepages/hugepages-1048576kB/nr_hugepages
+> 
+> Please, refer to patch 5/5 for full technical details.
+> 
+> Finally, please note that this series is a follow up for a previous series
+> that tried to extend the command-line options set to be NUMA aware:
+> 
+>  http://marc.info/?l=linux-mm&m=139593335312191&w=2
+> 
+> During the discussion of that series it was agreed that having runtime
+> allocation support for gigantic pages was a better solution.
+> 
+> Luiz Capitulino (5):
+>   hugetlb: prep_compound_gigantic_page(): drop __init marker
+>   hugetlb: add hstate_is_gigantic()
+>   hugetlb: update_and_free_page(): don't clear PG_reserved bit
+>   hugetlb: move helpers up in the file
+>   hugetlb: add support for gigantic page allocation at runtime
 
-Yes. If it simply returns the kernel will crash, without start_thread/etc
-"int_ret_from_sys_call" can do nothing good.
+Thanks for doing this. It was on my todo list for some time.
 
-So we can conclude that "there is only one case when a kernel thread can
-reach the usual syscall exit tracing path:" from cc3b13c11c567c69 is no
-longer valid and we can kille the PF_KTHREAD check in regfuncs.
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
 
-> Thus, it's not sufficient to just say "only if do_execve is called" but
-> to say, if the handler that is called is only allowed to return iff it
-> did a execve first and succeeded.
-
-I do remember, I already told you are pedant!
-
-Oleg.
-
+-- 
+ Kirill A. Shutemov
