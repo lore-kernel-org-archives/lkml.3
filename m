@@ -1,143 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757826AbaDKOvk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 10:51:40 -0400
-Received: from smtprelay.synopsys.com ([198.182.60.111]:55032 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757110AbaDKOvh convert rfc822-to-8bit (ORCPT
+	id S1758766AbaDKOxj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 10:53:39 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:65406 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754371AbaDKOxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 10:51:37 -0400
-From: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-To: "ezequiel.garcia@free-electrons.com" 
-	<ezequiel.garcia@free-electrons.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Vineet.Gupta1@synopsys.com" <Vineet.Gupta1@synopsys.com>,
-        "Francois.Bedard@synopsys.com" <Francois.Bedard@synopsys.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "computersforpeace@gmail.com" <computersforpeace@gmail.com>
-Subject: Re: [PATCH v2] axs_nand - add driver for NAND controller used on
- Synopsys AXS dev boards
-Thread-Topic: [PATCH v2] axs_nand - add driver for NAND controller used on
- Synopsys AXS dev boards
-Thread-Index: AQHPT9jeNnkMkCwR+kyAUJXIQJtz9psBXckAgAQyHoCABtnqgA==
-Date: Fri, 11 Apr 2014 14:51:29 +0000
-Message-ID: <1397227889.3284.17.camel@abrodkin-8560l.internal.synopsys.com>
-References: <1396597089-1081-1-git-send-email-abrodkin@synopsys.com>
-	 <20140404140933.GA25772@arch.cereza>
-	 <1396851239.4081.10.camel@abrodkin-8560l.internal.synopsys.com>
-In-Reply-To: <1396851239.4081.10.camel@abrodkin-8560l.internal.synopsys.com>
-Accept-Language: en-US, ru-RU
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.225.15.248]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <FA034EBC1515CA4A815AE778F2E19C94@internal.synopsys.com>
-Content-Transfer-Encoding: 7BIT
+	Fri, 11 Apr 2014 10:53:38 -0400
+Date: Fri, 11 Apr 2014 16:53:35 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [Query]: tick-sched: why don't we stop tick when we are running
+ idle task?
+Message-ID: <20140411145333.GC3438@localhost.localdomain>
+References: <CAKohpo=uT0oC+bZVJQPsoGLb-a4y4huYKtd1ayb4_+iH4906nw@mail.gmail.com>
+ <CAKohpom5Ft_XrNTExE9Ukyv1e4car+wicDiPp_Bdhy=PW9Sq8g@mail.gmail.com>
+ <20140410143857.GA27654@localhost.localdomain>
+ <CAKohpomMhpGsYGafr5uZ0QgO0MEndqDA4G=4syhus4sZW3d8cg@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKohpomMhpGsYGafr5uZ0QgO0MEndqDA4G=4syhus4sZW3d8cg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ezequiel,
+On Fri, Apr 11, 2014 at 03:34:23PM +0530, Viresh Kumar wrote:
+> On 10 April 2014 20:09, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> > index 9f8af69..1e2d6b7 100644
+> > --- a/kernel/time/tick-sched.c
+> > +++ b/kernel/time/tick-sched.c
+> > @@ -202,13 +202,16 @@ static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now);
+> >  void __tick_nohz_full_check(void)
+> >  {
+> >         struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
+> > +       unsigned long flags;
+> >
+> > +       local_irq_save(flags);
+> 
+> As we need to disable interrupts to read this variable, would it be
+> better to just remove this completely and use is_idle_task(current)
+> instead?
 
-On Mon, 2014-04-07 at 10:13 +0400, Alexey Brodkin wrote:
-> Hi Ezequiel,
-> 
-> On Fri, 2014-04-04 at 11:09 -0300, Ezequiel Garcia wrote:
-> > On Apr 04, Alexey Brodkin wrote:
-> > > Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
-> > > 
-> > 
-> > Maybe it would be nice adding some driver description here, so the commit
-> > log actually says something useful about the commit.
-> 
-> Well, I thought about it but frankly I'm not sure if there's anything
-> else to add to commit title "driver for NAND controller used on Synopsys
-> AXS dev boards".
-> 
-> Do you think more info may make sense?
-> 
-> > > +/**
-> > > + * axs_flag_wait_and_reset - Waits until requested flag in INT_STATUS register
-> > > + *              is set by HW and resets it by writing "1" in INT_CLR_STATUS.
-> > > + * @host:	Pointer to private data structure.
-> > > + * @flag:	Bit/flag offset in INT_STATUS register
-> > > + */
-> > > +static void axs_flag_wait_and_reset(struct axs_nand_host *host, int flag)
-> > > +{
-> > > +	unsigned int i;
-> > > +
-> > > +	for (i = 0; i < AXS_FLAG_WAIT_DELAY * 100; i++) {
-> > > +		unsigned int status = reg_get(host, INT_STATUS);
-> > > +
-> > > +		if (status & (1 << flag)) {
-> > > +			reg_set(host, INT_CLR_STATUS, 1 << flag);
-> > > +			return;
-> > > +		}
-> > > +
-> > > +		udelay(10);
-> > > +	}
-> > > +
-> > > +	/*
-> > > +	 * Since we cannot report this problem any further than
-> > > +	 * axs_nand_{write|read}_buf() letting user know there's a problem.
-> > > +	 */
-> > > +	dev_err(host->dev, "Waited too long (%d s.) for flag/bit %d\n",
-> > > +		AXS_FLAG_WAIT_DELAY, flag);
-> > > +}
-> > 
-> > Hm... I'm not sure the above is really true.
-> > 
-> > The NAND core uses the replaceable chip->waitfunc callback to check the
-> > status of issued commands. See for instance:
-> > 
-> > static int nand_write_oob_std(struct mtd_info *mtd, struct nand_chip *chip,
-> >                               int page)
-> > {
-> >         int status = 0;
-> >         const uint8_t *buf = chip->oob_poi;
-> >         int length = mtd->oobsize;
-> > 
-> >         chip->cmdfunc(mtd, NAND_CMD_SEQIN, mtd->writesize, page);
-> >         chip->write_buf(mtd, buf, length);
-> >         /* Send command to program the OOB data */
-> >         chip->cmdfunc(mtd, NAND_CMD_PAGEPROG, -1, -1);
-> > 
-> >         status = chip->waitfunc(mtd, chip);
-> > 
-> >         return status & NAND_STATUS_FAIL ? -EIO : 0;
-> > }
-> > 
-> > On the other side, if you are clearing the flags in axs_flag_wait_and_reset()
-> > it might be a bit hard for you to get this right.
-> > 
-> > IOW, I'm not saying you *must* do this, but instead suggesting that you take
-> > a look at waitfunc() and see if it helps report a proper error in the
-> > read/write path.
-> 
-> As I may understand from generic implementation of "waitfunc" in
-> "nand_base.c" it checks status of NAND chip itself - which IMHO makes
-> sense. And this is done via NAND_CMD_STATUS command sent to chip through
-> NAND controller.
-> 
-> In AXS NAND driver you may see 2 types of wait checks:
-> 1. NAND_ISR_CMDDONE - this flag means that NAND controller has just
-> executed provided command (i.e. set proper signal on control lines of
-> NAND chip etc), but it doesn't mean NAND chip itself has completed
-> command execution. That's why "waitfunc" is not direct replacement here.
-> 
-> 2. NAND_ISR_{RX|TX}DMACOMPLETE - this flag indicates completion of DMA
-> transfer to/from NAND chip to RAM. "waitfunc" won't work here as well.
-> 
-> I hope this explanation makes sense.
+I don't get what you mean. The goal was get read of the hammer is_idle_task()
+check, wasn't it?
 
-Please treat this message as a gentle reminder.
-I'm wondering if my explanation in the previous email makes any sense or
-I still need to fix stuff.
+Also irqs are disabled but this is fundamentaly not required as this can only be
+called by IPIs which always have irqs disabled.
 
-Regards,
-Alexey
+Hmm I should add a WARN_ON_(!irqs_disabled()) though just in case.
+
+> 
+> >         if (tick_nohz_full_cpu(smp_processor_id())) {
+> > -               if (ts->tick_stopped && !is_idle_task(current)) {
+> > +               if (ts->tick_stopped && !ts->inidle)) {
+> >                         if (!can_stop_full_tick())
+> >                                 tick_nohz_restart_sched_tick(ts, ktime_get());
+> >                 }
+> >         }
+> > +       local_irq_restore(flags);
+> >  }
+> 
+> > If you like it I'll push it to Ingo.
+> 
+> Yes please. And thanks for the explanations. It was pretty useful.
+> 
+> I am looking to offload 1 second tick to timekeeping CPUs and so
+> going through these frameworks. I don't have a working solution yet
+> (even partially :)). Would send a RFC to you as soon as I get anything
+> working.
+
+I see. The only solution I can think of right now is to have the timekeeper call
+sched_class(current[$CPU])::scheduler_tick() on behalf of all full dynticks CPUs.
+
+This sounds costly but can be done once per sec for each CPUs. Not sure if Peterz will
+like it but sending mockup RFC patches will tell us more about his opinion :)
+
+Otherwise (and ideally) we need to make the scheduler code able to handle long periods without
+calling scheduler_tick(). But this is a lot more plumbing. And the scheduler has gazillions
+accounting stuffs to handle. Sounds like a big nightmare to take that direction.
