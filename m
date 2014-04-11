@@ -1,98 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247AbaDKW31 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 18:29:27 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:54995
-	"EHLO hallynmail2" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754159AbaDKW30 (ORCPT
+	id S1755635AbaDKWas (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 18:30:48 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:33658 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754493AbaDKWaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 18:29:26 -0400
-Date: Sat, 12 Apr 2014 00:29:25 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Sean Pajot <sean.pajot@execulink.com>,
-        lxc-devel@lists.linuxcontainers.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [lxc-devel] Kernel bug? Setuid apps and user namespaces
-Message-ID: <20140411222925.GA27922@mail.hallyn.com>
-References: <20140402173248.GA22804@mail.hallyn.com>
- <533EF65E.6050508@mit.edu>
- <20140404183022.GA6728@sergelap>
- <CALCETrUki+k+NsaAYTbvaUqFTwH_AUDtwLv0XRYx+zA=c3zACw@mail.gmail.com>
- <20140404191000.GA13496@sergelap>
- <CALCETrW-M9QoqzkKyk9gRPLfx1fiTzs8_oAhdK6_kk=17PQc0Q@mail.gmail.com>
- <20140407181331.GA15012@mail.hallyn.com>
- <CALCETrULqdffvHZMV_4hobs8=YX6hRSagkvR4opycBKsfTaTtg@mail.gmail.com>
- <20140411215228.GA27354@mail.hallyn.com>
- <CALCETrW-o=ivJeZw4aC4o-8+qGZF0Fid36FJ7EtUBC9=5CrT4A@mail.gmail.com>
+	Fri, 11 Apr 2014 18:30:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrW-o=ivJeZw4aC4o-8+qGZF0Fid36FJ7EtUBC9=5CrT4A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5347AD19.7080905@samsung.com>
+References: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
+	<1397124377-16969-4-git-send-email-cw00.choi@samsung.com>
+	<20140411040050.GD14934@quad.lixom.net>
+	<53477347.1080603@samsung.com>
+	<5347AD19.7080905@samsung.com>
+Date: Sat, 12 Apr 2014 07:30:46 +0900
+Message-ID: <CAGTfZH2DEWjLi=d0_U0mHYACY+_EUTt4Y3GyOvzVYb7HQk62mA@mail.gmail.com>
+Subject: Re: [PATCH 12/27] ARM: dts: exynos3250: Add default interrupt-parent
+ connected with GIC
+From: =?UTF-8?B?7LWc7LCs7Jqw?= <cwchoi00@gmail.com>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        hyunhee.kim@samsung.com, sw0312.kim@samsung.com,
+        linux-kernel <linux-kernel@vger.kernel.org>, yj44.cho@samsung.com,
+        inki.dae@samsung.com, Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andy Lutomirski (luto@amacapital.net):
-> On Fri, Apr 11, 2014 at 2:52 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> > Quoting Andy Lutomirski (luto@amacapital.net):
-> >> On Mon, Apr 7, 2014 at 11:13 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> >> > Quoting Andy Lutomirski (luto@amacapital.net):
-> >> >> I'm starting to think that we need to extend dumpable to something
-> >> >> much more general like a list of struct creds that someone needs to be
-> >> >> able to ptrace, *in addition to current creds* in order to access
-> >> >> sensitive /proc files, coredumps, etc.  If you get started as setuid,
-> >> >
-> >> > Hm, yeah, this sort of makes sense.
-> >> >
-> >> >> then you start with two struct creds in the list (or maybe just your
-> >> >> euid and uid).  If you get started !setuid, then your initial creds
-> >> >> are in the list.  It's possible that few or no things will need to
-> >> >> change that list after execve.
-> >> >>
-> >> >> If all of the entries and current->cred are in the same user_ns, then
-> >> >> we can dump as userns root.  If they're in different usernses, then we
-> >> >> dump as global root or maybe the common ancestor root.
-> >> >> setuid(getuid()) and other such nastiness may have to empty the list,
-> >> >> or maybe we can just use a prctl for that.
-> >> >
-> >> > A few questions,
-> >> >
-> >> > 1. is there any other action which would trigger adding a new cred to
-> >> > the ist?
-> >>
-> >> I don't think so.  Anyone who can ptrace you from the start can
-> >> corrupt you such that you leak rights even if some future action
-> >> prevents new ptracers from attaching.
-> >>
-> >> OTOH, it might be nice for something like an HTTPS server to be able
-> >> to fork and shove its private key into the child, while preventing
-> >> anyone from ptracing the child.  But doing this securely without help
-> >> from someone with a different uid might be impossible anyway.
-> >>
-> >> >
-> >> > 2. would execve clear (and re-init) the list of creds?
-> >>
-> >> Probably.  Thoughts?
-> >
-> > Yeah it seems to me it should be re-initialized, with a cred added
-> > to the list for every open fd.
-> 
-> What do you mean "every fd"?
-> 
-> It seems odd to me that execve of anything that isn't setuid would add
-> anything to the list -- attackers can always ptrace before the execve
-> happens.
+Hi Tomasz,
 
-Maybe you're right.  Maybe I shouldn't reason about this on a friday
-afternoon.
+On Fri, Apr 11, 2014 at 5:51 PM, Tomasz Figa <t.figa@samsung.com> wrote:
+> Hi Chanwoo,
+>
+>
+> On 11.04.2014 06:44, Chanwoo Choi wrote:
+>>
+>> Hi,
+>>
+>> On 04/11/2014 01:00 PM, Olof Johansson wrote:
+>>>
+>>> On Thu, Apr 10, 2014 at 07:06:02PM +0900, Chanwoo Choi wrote:
+>>>>
+>>>> This patch add interrupt-parent node to connected with GIC.
+>>>> All interrupt-related dt nodes need default interrupt-parent node.
+>>>>
+>>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>>
+>>>
+>>> There's no point in splitting these off in separate patches; fold them
+>>> into one patch that introduces the SoC dtsi, please.
+>>
+>>
+>> OK, I will consolidate following two patches into one patch.
+>>
+>> [PATCH 11/27] ARM: dts: exynos3250: Add GIC dt node for Exynos3250
+>> [PATCH 12/27] ARM: dts: exynos3250: Add default interrupt-parent connected
+>> with GIC
+>>
+>
+> I believe the intention was to squash all the patches related to
+> exynos3250.dtsi into a single patch called "ARM: dts: Add device tree
+> sources for Exynos3250". To retain authorship information, signed-off-by
+> tags should be merged from all those patches too.
+>
 
-My *thought* was setuid-root program opens /etc/shadow, then execs a
-regular program keeping that open.  Attaching to that fails now though,
-presumably due to dumpable.
+As you comment, I will consolidate exynos3250.dtsi into only one patch
+on next posting(v2).
+Thanks,
 
--serge
+Best Regards,
+Chanwoo Choi
