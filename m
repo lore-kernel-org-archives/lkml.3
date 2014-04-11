@@ -1,69 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745AbaDKWtZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 18:49:25 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:48252 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575AbaDKWtX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 18:49:23 -0400
+	id S1755901AbaDKWtt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 18:49:49 -0400
+Received: from mail-by2lp0242.outbound.protection.outlook.com ([207.46.163.242]:21137
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755060AbaDKWtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 18:49:47 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "JBeulich@suse.com" <JBeulich@suse.com>, "bp@alien8.de" <bp@alien8.de>
+CC: Thomas Gleixner <tglx@linutronix.de>
+Subject: RE: [PATCH 1/1] X86: Probe for PIC and set legacy_pic appropriately
+Thread-Topic: [PATCH 1/1] X86: Probe for PIC and set legacy_pic appropriately
+Thread-Index: AQHPVdJ54mIOF0NK6kabgQnp4ES6l5sNARmAgAAC2NA=
+Date: Fri, 11 Apr 2014 22:49:45 +0000
+Message-ID: <3559a13421554386bdcc0e8b418802c3@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1397257344-3035-1-git-send-email-kys@microsoft.com>
+ <53486E3F.1020307@zytor.com>
+In-Reply-To: <53486E3F.1020307@zytor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [131.107.159.180]
+x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+x-forefront-prvs: 0178184651
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(51704005)(24454002)(479174003)(377454003)(13464003)(31966008)(80022001)(83322001)(85852003)(76576001)(79102001)(87936001)(46102001)(19580405001)(80976001)(92566001)(76176999)(74316001)(2656002)(77096999)(74502001)(2201001)(86362001)(50986999)(54356999)(81542001)(4396001)(86612001)(20776003)(99396002)(19580395003)(83072002)(33646001)(99286001)(76482001)(74662001)(77982001)(66066001)(81342001)(1121002)(921003)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB297;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:8DCDF925.8BE2A118.34F3FFB3.48F5EA0B.20384;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <5347BE67.1080209@samsung.com>
-References: <1397181640-18513-1-git-send-email-cw00.choi@samsung.com>
-	<5347BE67.1080209@samsung.com>
-Date: Sat, 12 Apr 2014 07:49:22 +0900
-Message-ID: <CAGTfZH1t9QEZk5qaDRnGkeMatwtTXFq5SGgR27-4nXhdzKU-Ng@mail.gmail.com>
-Subject: Re: [PATCH] iio: adc: exynos_adc: Control special clock of ADC to
- support Exynos3250 ADC
-From: =?UTF-8?B?7LWc7LCs7Jqw?= <cwchoi00@gmail.com>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-iio@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        ch.naveen@samsung.com, jic23@kernel.org
-Content-Type: text/plain; charset=UTF-8
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3BMnswc007486
 
-Hi Sylwester,
 
-On Fri, Apr 11, 2014 at 7:05 PM, Sylwester Nawrocki
-<s.nawrocki@samsung.com> wrote:
-> Hi Chanwoo,
->
-> On 11/04/14 04:00, Chanwoo Choi wrote:
->> This patch control special clock for ADC in Exynos series's FSYS block.
->> If special clock of ADC is registerd on clock list of common clk framework,
->> Exynos ADC drvier have to control this clock.
->>
->> Exynos3250/Exynos4/Exynos5 has 'adc' clock as following:
->> - 'adc' clock: bus clock for ADC
->>
->> Exynos3250 has additional 'sclk_tsadc' clock as following:
->> - 'sclk_tsadc' clock: special clock for ADC which provide clock to internal ADC
->>
->> Exynos 4210/4212/4412 and Exynos5250/5420 has not included 'sclk_tsadc' clock
->> in FSYS_BLK. But, Exynos3250 based on Cortex-A7 has only included 'sclk_tsadc'
->> clock in FSYS_BLK.
->
-> I think a new compatible should be added for the ADC device for Exynos3250
-> and the required clocks should be handled properly, based on compatible
-> value. This could be handled, e.g. through some flags in driver's data
-> selected based on the compatible property value.
 
-OK, I'll consider new patch using new compatible string according to
-your comment.
+> -----Original Message-----
+> From: H. Peter Anvin [mailto:hpa@zytor.com]
+> Sent: Friday, April 11, 2014 3:36 PM
+> To: KY Srinivasan; x86@kernel.org; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> apw@canonical.com; jasowang@redhat.com; tglx@linutronix.de;
+> JBeulich@suse.com; bp@alien8.de
+> Cc: Thomas Gleixner
+> Subject: Re: [PATCH 1/1] X86: Probe for PIC and set legacy_pic appropriately
+> 
+> On 04/11/2014 04:02 PM, K. Y. Srinivasan wrote:
+> >
+> > diff --git a/arch/x86/kernel/i8259.c b/arch/x86/kernel/i8259.c index
+> > 2e977b5..0a57a19 100644
+> > --- a/arch/x86/kernel/i8259.c
+> > +++ b/arch/x86/kernel/i8259.c
+> > @@ -299,11 +299,22 @@ static void unmask_8259A(void)  static void
+> > init_8259A(int auto_eoi)  {
+> >  	unsigned long flags;
+> > +	unsigned char probe_val = 0xfb;
+> >
+> >  	i8259A_auto_eoi = auto_eoi;
+> >
+> >  	raw_spin_lock_irqsave(&i8259A_lock, flags);
+> >
+> > +	/* Check to see if we have a PIC */
+> > +	outb(probe_val, PIC_MASTER_IMR);
+> > +	probe_val = inb(PIC_MASTER_IMR);
+> > +	if (probe_val == 0xff) {
+> > +		printk(KERN_INFO "Using NULL legacy PIC\n");
+> > +		legacy_pic = &null_legacy_pic;
+> > +		raw_spin_unlock_irqrestore(&i8259A_lock, flags);
+> > +		return;
+> > +	}
+> > +
+> >  	outb(0xff, PIC_MASTER_IMR);	/* mask all of 8259A-1 */
+> >  	outb(0xff, PIC_SLAVE_IMR);	/* mask all of 8259A-2 */
+> >
+> 
+> I think it is important to document what this actually means here.  0xfb is
+> "mask all except for the cascade."
+> 
+> Arguably, we should do this after masking the slave PIC.
+> 
+> On a whole other subject... the whole __byte() logic is a just plain horrific
+> piece of crap.  Clearly whomever wrote it had never heard of a union.
+> 
+> I'm still horrifically confused, though, why we mask IRQ 2 (the cascade
+> interrupt) in i8259.c, but we explicitly do *not* mask IRQ 2 in boot/pm.c (nor
+> in the assembly code on which boot/pm.c was based.)  In fact, it looks like we
+> never unmask it.  I'm guessing that the masking status of the cascade input
+> simply doesn't matter.
+> 
+> At the very least, though, we shouldn't have 0xfb as a magic number, but use
+> ~(1U << PIC_CASCADE_IR).
 
->
-> And the new clocks should be documented in Documentation/devicetree/bindings
-> /arm/samsung/exynos-adc.txt.
+I will get rid of this magic number as you have suggested.
 
-OK, I'll modify it. Thanks,
+K. Y
+ 
 
-Best Regards,
-Chanwoo Choi
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
