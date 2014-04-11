@@ -1,174 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750969AbaDKEK5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 00:10:57 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:60741 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710AbaDKEKz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 00:10:55 -0400
-Message-ID: <1397189445.3649.14.camel@ThinkPad-T5421>
-Subject: [RFC PATCH v2] Use kernfs_break_active_protection() for device
- online store callbacks
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
-        rafael.j.wysocki@intel.com, toshi.kani@hp.com
-Date: Fri, 11 Apr 2014 12:10:45 +0800
-In-Reply-To: <20140410133116.GB25308@htj.dyndns.org>
-References: <1397121514.25199.91.camel@ThinkPad-T5421.cn.ibm.com>
-	 <20140410133116.GB25308@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041104-7014-0000-0000-000004ADE253
+	id S1751920AbaDKEMB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 00:12:01 -0400
+Received: from mga02.intel.com ([134.134.136.20]:23550 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750751AbaDKEL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 00:11:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,838,1389772800"; 
+   d="scan'208";a="518926919"
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+To: wsa@the-dreams.de
+Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+Subject: [PATCH 2/2] i2c/ACPI: Don't ignore IRQ flags
+Date: Thu, 10 Apr 2014 21:15:17 -0700
+Message-Id: <1397189717-30657-2-git-send-email-srinivas.pandruvada@linux.intel.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1397189717-30657-1-git-send-email-srinivas.pandruvada@linux.intel.com>
+References: <1397189717-30657-1-git-send-email-srinivas.pandruvada@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I noticed following lockdep warning when trying acpi hot-remove cpus:
+Currently irq flags from IRQ resources are ignored. They have important
+IRQ configuration for level, trigger and sharable.
 
-[84154.204080] ======================================================
-[84154.204080] [ INFO: possible circular locking dependency detected ]
-[84154.204080] 3.14.0-next-20140408+ #24 Tainted: G        W    
-[84154.204080] -------------------------------------------------------
-[84154.204080] bash/777 is trying to acquire lock:
-[84154.204080]  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff810664a7>]
-cpu_maps_update_begin+0x17/0x20
-[84154.213203] 
-[84154.213203] but task is already holding lock:
-[84154.213203]  (s_active#79){++++.+}, at: [<ffffffff81256e14>]
-kernfs_fop_write+0xe4/0x190
-[84154.213203] 
-[84154.213203] which lock already depends on the new lock.
-[84154.213203] 
-[84154.213203] 
-[84154.213203] the existing dependency chain (in reverse order) is:
-[84154.213203] 
--> #3 (s_active#79){++++.+}:
-[84154.213203]        [<ffffffff810c408b>] lock_acquire+0x9b/0x1d0
-[84154.213203]        [<ffffffff812552e0>] __kernfs_remove+0x250/0x310
-[84154.213203]        [<ffffffff81256470>] kernfs_remove_by_name_ns
-+0x50/0xc0
-[84154.213203]        [<ffffffff81257af5>] sysfs_remove_file_ns
-+0x15/0x20
-[84154.213203]        [<ffffffff813df339>] device_remove_file+0x19/0x20
-[84154.213203]        [<ffffffff813dff33>] device_remove_attrs+0x33/0x80
-[84154.213203]        [<ffffffff813e00a7>] device_del+0x127/0x1c0
-[84154.213203]        [<ffffffff813e0162>] device_unregister+0x22/0x60
-[84154.213203]        [<ffffffff813e66de>] unregister_cpu+0x1e/0x40
-[84154.213203]        [<ffffffff81009a33>] arch_unregister_cpu+0x23/0x30
-[84154.213203]        [<ffffffff8136f619>] acpi_processor_remove
-+0x8d/0xb2
-[84154.213203]        [<ffffffff8136cfff>] acpi_bus_trim+0x5a/0x8d
-[84154.213203]        [<ffffffff8136ec3b>] acpi_device_hotplug
-+0x1a8/0x3ec
-[84154.213203]        [<ffffffff81369002>] acpi_hotplug_work_fn
-+0x1f/0x2b
-[84154.213203]        [<ffffffff8108754b>] process_one_work+0x1eb/0x6b0
-[84154.213203]        [<ffffffff81087e9b>] worker_thread+0x11b/0x370
-[84154.213203]        [<ffffffff81090324>] kthread+0xe4/0x100
-[84154.213203]        [<ffffffff815d2f2c>] ret_from_fork+0x7c/0xb0
-[84154.213203] 
--> #2 (cpu_hotplug.lock#2){+.+.+.}:
-[84154.213203]        [<ffffffff810c408b>] lock_acquire+0x9b/0x1d0
-[84154.213203]        [<ffffffff815c7700>] mutex_lock_nested+0x50/0x3c0
-[84154.213203]        [<ffffffff810665bf>] cpu_hotplug_begin+0x4f/0x80
-[84154.213203]        [<ffffffff8106666f>] _cpu_up+0x3f/0x160
-[84154.213203]        [<ffffffff810667f9>] cpu_up+0x69/0x80
-[84154.213203]        [<ffffffff81b18f14>] smp_init+0x60/0x8c
-[84154.213203]        [<ffffffff81b00fd8>] kernel_init_freeable
-+0x126/0x23b
-[84154.213203]        [<ffffffff815b4a3e>] kernel_init+0xe/0xf0
-[84154.213203]        [<ffffffff815d2f2c>] ret_from_fork+0x7c/0xb0
-[84154.213203] 
--> #1 (cpu_hotplug.lock){++++++}:
-[84154.213203]        [<ffffffff810c408b>] lock_acquire+0x9b/0x1d0
-[84154.213203]        [<ffffffff810665b1>] cpu_hotplug_begin+0x41/0x80
-[84154.213203]        [<ffffffff8106666f>] _cpu_up+0x3f/0x160
-[84154.213203]        [<ffffffff810667f9>] cpu_up+0x69/0x80
-[84154.213203]        [<ffffffff81b18f14>] smp_init+0x60/0x8c
-[84154.213203]        [<ffffffff81b00fd8>] kernel_init_freeable
-+0x126/0x23b
-[84154.213203]        [<ffffffff815b4a3e>] kernel_init+0xe/0xf0
-[84154.213203]        [<ffffffff815d2f2c>] ret_from_fork+0x7c/0xb0
-[84154.213203] 
--> #0 (cpu_add_remove_lock){+.+.+.}:
-[84154.213203]        [<ffffffff810c397a>] __lock_acquire+0x1f2a/0x1f60
-[84154.213203]        [<ffffffff810c408b>] lock_acquire+0x9b/0x1d0
-[84154.213203]        [<ffffffff815c7700>] mutex_lock_nested+0x50/0x3c0
-[84154.213203]        [<ffffffff810664a7>] cpu_maps_update_begin
-+0x17/0x20
-[84154.213203]        [<ffffffff815b582d>] cpu_down+0x1d/0x50
-[84154.213203]        [<ffffffff813e63b4>] cpu_subsys_offline+0x14/0x20
-[84154.213203]        [<ffffffff813e145d>] device_offline+0xad/0xd0
-[84154.213203]        [<ffffffff813e1562>] online_store+0x42/0x80
-[84154.213203]        [<ffffffff813deab8>] dev_attr_store+0x18/0x30
-[84154.213203]        [<ffffffff81257bb9>] sysfs_kf_write+0x49/0x60
-[84154.213203]        [<ffffffff81256e39>] kernfs_fop_write+0x109/0x190
-[84154.213203]        [<ffffffff811d15be>] vfs_write+0xbe/0x1c0
-[84154.213203]        [<ffffffff811d1a52>] SyS_write+0x52/0xb0
-[84154.213203]        [<ffffffff815d3162>] tracesys+0xd0/0xd5
-[84154.213203] 
-[84154.213203] other info that might help us debug this:
-[84154.213203] 
-[84154.213203] Chain exists of:
-  cpu_add_remove_lock --> cpu_hotplug.lock#2 --> s_active#79
-
-[84154.213203]  Possible unsafe locking scenario:
-[84154.213203] 
-[84154.213203]        CPU0                    CPU1
-[84154.213203]        ----                    ----
-[84154.213203]   lock(s_active#79);
-[84154.213203]                                lock(cpu_hotplug.lock#2);
-[84154.213203]                                lock(s_active#79);
-[84154.213203]   lock(cpu_add_remove_lock);
-[84154.213203] 
-[84154.213203]  *** DEADLOCK ***
-.............
-
-The deadlock itself seems already fixed in commit 5e33bc41. 
-
-As Tejun suggested, to avoid this lockdep warning,
-kernfs_break_active_protection() is used before online/offline callbacks
-to take the s_active lock out of the dependency chain during
-online/offline operations. 
-
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 ---
- drivers/base/core.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/i2c/i2c-core.c | 6 +++++-
+ include/linux/i2c.h    | 4 ++++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 0dd6528..2b9f68e 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -439,6 +439,7 @@ static ssize_t online_store(struct device *dev, struct device_attribute *attr,
- {
- 	bool val;
- 	int ret;
-+	struct kernfs_node *kn;
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index a69a7b4..cb72629 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -1093,6 +1093,7 @@ struct i2c_resource_info {
+ 	unsigned short flags[MAX_CRS_ELEMENTS];
+ 	int count;
+ 	int common_irq;
++	int common_irq_flags;
+ };
  
- 	ret = strtobool(buf, &val);
- 	if (ret < 0)
-@@ -448,7 +449,15 @@ static ssize_t online_store(struct device *dev, struct device_attribute *attr,
- 	if (ret)
- 		return ret;
+ static int acpi_i2c_add_resource(struct acpi_resource *ares, void *data)
+@@ -1116,8 +1117,10 @@ static int acpi_i2c_add_resource(struct acpi_resource *ares, void *data)
+ 	} else if (rcs_info->common_irq < 0) {
+ 		struct resource r;
  
-+	kn = kernfs_find_and_get(dev->kobj.sd, attr->attr.name);
-+	if (WARN_ON_ONCE(!kn))
-+		goto out;
-+
-+	kernfs_break_active_protection(kn);
-+
- 	ret = val ? device_online(dev) : device_offline(dev);
-+	kernfs_unbreak_active_protection(kn);
-+out:
- 	unlock_device_hotplug();
- 	return ret < 0 ? ret : count;
- }
-
+-		if (acpi_dev_resource_interrupt(ares, 0, &r))
++		if (acpi_dev_resource_interrupt(ares, 0, &r)) {
+ 			rcs_info->common_irq = r.start;
++			rcs_info->common_irq_flags = r.flags;
++		}
+ 	}
+ 
+ 	/* Tell the ACPI core to skip this resource */
+@@ -1157,6 +1160,7 @@ static acpi_status acpi_i2c_add_device(acpi_handle handle, u32 level,
+ 
+ 	adev->power.flags.ignore_parent = true;
+ 	info.irq = rcs_info.common_irq;
++	info.irq_flags = rcs_info.common_irq_flags;
+ 	for (i = 0; i < rcs_info.count; ++i) {
+ 		if (!rcs_info.addr[i])
+ 			continue;
+diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+index ce75c73..cea41ab 100644
+--- a/include/linux/i2c.h
++++ b/include/linux/i2c.h
+@@ -207,6 +207,7 @@ struct i2c_driver {
+  * @adapter: manages the bus segment hosting this I2C device
+  * @dev: Driver model device node for the slave.
+  * @irq: indicates the IRQ generated by this device (if any)
++ * @irq_flags: indicates the IRQ flags (format: IORESOURCE_IRQ_XXXX)
+  * @detected: member of an i2c_driver.clients list or i2c-core's
+  *	userspace_devices list
+  *
+@@ -223,6 +224,7 @@ struct i2c_client {
+ 	struct i2c_adapter *adapter;	/* the adapter we sit on	*/
+ 	struct device dev;		/* the device structure		*/
+ 	int irq;			/* irq issued by device		*/
++	unsigned long irq_flags;	/* irq flags by device		*/
+ 	struct list_head detected;
+ };
+ #define to_i2c_client(d) container_of(d, struct i2c_client, dev)
+@@ -256,6 +258,7 @@ static inline void i2c_set_clientdata(struct i2c_client *dev, void *data)
+  * @of_node: pointer to OpenFirmware device node
+  * @acpi_node: ACPI device node
+  * @irq: stored in i2c_client.irq
++ * @irq_flags: indicates the IRQ flags (format: IORESOURCE_IRQ_XXXX)
+  *
+  * I2C doesn't actually support hardware probing, although controllers and
+  * devices may be able to use I2C_SMBUS_QUICK to tell whether or not there's
+@@ -277,6 +280,7 @@ struct i2c_board_info {
+ 	struct device_node *of_node;
+ 	struct acpi_dev_node acpi_node;
+ 	int		irq;
++	unsigned long irq_flags;
+ };
+ 
+ /**
+-- 
+1.7.11.7
 
