@@ -1,123 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631AbaDKC4O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 22:56:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37237 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754362AbaDKC4M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 22:56:12 -0400
-Date: Thu, 10 Apr 2014 19:55:08 -0700
-From: tip-bot for WANG Chao <tipbot@zytor.com>
-Message-ID: <tip-0534af01cca338193abbfdb53650af91e65dbf10@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        mulix@mulix.org, vgoyal@redhat.com, jdmason@kudzu.us,
-        tglx@linutronix.de, hpa@linux.intel.com, chaowang@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mulix@mulix.org, vgoyal@redhat.com, jdmason@kudzu.us,
-        tglx@linutronix.de, chaowang@redhat.com, hpa@linux.intel.com
-In-Reply-To: <1394463120-26999-1-git-send-email-chaowang@redhat.com>
-References: <1394463120-26999-1-git-send-email-chaowang@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86, calgary: Use 8M TCE table size by default
-Git-Commit-ID: 0534af01cca338193abbfdb53650af91e65dbf10
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	id S1754704AbaDKC71 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 22:59:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26471 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750892AbaDKC7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 22:59:25 -0400
+Message-ID: <1397185075.6230.1.camel@localhost>
+Subject: Re: [PATCH] tuntap: add flow control to support back pressure
+From: Jason Wang <jasowang@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Steven Galgano <sgalgano@adjacentlink.com>, davem@davemloft.net,
+        xemul@parallels.com, wuzhy@linux.vnet.ibm.com, therbert@google.com,
+        yamato@redhat.com, richardcochran@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Brian Adamson <Brian.Adamson@nrl.navy.mil>,
+        Joseph Giovatto <jgiovatto@adjacentlink.com>
+Date: Fri, 11 Apr 2014 10:57:55 +0800
+In-Reply-To: <20140410102931.GA12077@redhat.com>
+References: <5345FFBC.7020502@adjacentlink.com>
+	 <20140410102931.GA12077@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0534af01cca338193abbfdb53650af91e65dbf10
-Gitweb:     http://git.kernel.org/tip/0534af01cca338193abbfdb53650af91e65dbf10
-Author:     WANG Chao <chaowang@redhat.com>
-AuthorDate: Mon, 10 Mar 2014 22:52:00 +0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 10 Apr 2014 19:51:32 -0700
+On Thu, 2014-04-10 at 13:29 +0300, Michael S. Tsirkin wrote:
+> On Wed, Apr 09, 2014 at 10:19:40PM -0400, Steven Galgano wrote:
+> > Add tuntap flow control support for use by back pressure routing protocols. Setting the new TUNSETIFF flag IFF_FLOW_CONTROL, will signal resources as unavailable when the tx queue limit is reached by issuing a netif_tx_stop_all_queues() rather than discarding frames. A netif_tx_wake_all_queues() is issued after reading a frame from the queue to signal resource availability.
+> > 
+> > Back pressure capability was previously supported by the legacy tun default mode. This change restores that functionality, which was last present in v3.7.
+> > 
+> > Reported-by: Brian Adamson <brian.adamson@nrl.navy.mil>
+> > Tested-by: Joseph Giovatto <jgiovatto@adjacentlink.com>
+> > Signed-off-by: Steven Galgano <sgalgano@adjacentlink.com>
+> 
+> I don't think it's a good idea.
+> 
+> This trivial flow control really created more problems than it was worth.
+> 
+> In particular this blocks all flows so it's trivially easy for one flow
+> to block and starve all others: just send a bunch of packets to loopback
+> destinations that get queued all over the place.
+> 
+> Luckily it was never documented so we changed the default and nothing
+> seems to break, but we won't be so lucky if we add an explicit API.
+> 
+> 
+> One way to implement this would be with ubuf_info callback this is
+> already invoked in most places where a packet might get stuck for a long
+> time.  It's still incomplete though: this will prevent head of queue
+> blocking literally forever, but a single bad flow can still degrade
+> performance significantly.
 
-x86, calgary: Use 8M TCE table size by default
+This is send queue for tuntap. Like all other real nics, we can solve
+this through fairness qdiscs?
+> 
+> Another alternative is to try and isolate the flows that we
+> can handle and throttle them.
+> 
+> It's all fixable but we really need to fix the issues *before*
+> exposing the interface to userspace.
+> 
+> 
+> 
+> > ---
+> > diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> > index ee328ba..268130c 100644
+> > --- a/drivers/net/tun.c
+> > +++ b/drivers/net/tun.c
+> > @@ -783,8 +783,19 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
+> >  	 * number of queues.
+> >  	 */
+> >  	if (skb_queue_len(&tfile->socket.sk->sk_receive_queue) * numqueues
+> > -			  >= dev->tx_queue_len)
+> > -		goto drop;
+> > +			>= dev->tx_queue_len) {
+> > +		if (tun->flags & TUN_FLOW_CONTROL) {
+> > +			/* Resources unavailable stop transmissions */
+> > +			netif_tx_stop_all_queues(dev);
+> > +
+> > +			/* We won't see all dropped packets individually, so
+> > +			 * over run error is more appropriate.
+> > +			 */
+> > +			dev->stats.tx_fifo_errors++;
+> > +		} else {
+> > +			goto drop;
+> > +		}
+> > +	}
+> >  
+> >  	if (unlikely(skb_orphan_frags(skb, GFP_ATOMIC)))
+> >  		goto drop;
+> > @@ -1362,6 +1373,9 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
+> >  			continue;
+> >  		}
+> >  
+> > +		/* Wake in case resources previously signaled unavailable */
+> > +		netif_tx_wake_all_queues(tun->dev);
+> > +
+> >  		ret = tun_put_user(tun, tfile, skb, iv, len);
+> >  		kfree_skb(skb);
+> >  		break;
+> > @@ -1550,6 +1564,9 @@ static int tun_flags(struct tun_struct *tun)
+> >  	if (tun->flags & TUN_PERSIST)
+> >  		flags |= IFF_PERSIST;
+> >  
+> > +	if (tun->flags & TUN_FLOW_CONTROL)
+> > +		flags |= IFF_FLOW_CONTROL;
+> > +
+> >  	return flags;
+> >  }
+> >  
+> > @@ -1732,6 +1749,11 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+> >  	else
+> >  		tun->flags &= ~TUN_TAP_MQ;
+> >  
+> > +	if (ifr->ifr_flags & IFF_FLOW_CONTROL)
+> > +		tun->flags |= TUN_FLOW_CONTROL;
+> > +	else
+> > +		tun->flags &= ~TUN_FLOW_CONTROL;
+> > +
+> >  	/* Make sure persistent devices do not get stuck in
+> >  	 * xoff state.
+> >  	 */
+> > @@ -1900,7 +1922,8 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+> >  		 * This is needed because we never checked for invalid flags on
+> >  		 * TUNSETIFF. */
+> >  		return put_user(IFF_TUN | IFF_TAP | IFF_NO_PI | IFF_ONE_QUEUE |
+> > -				IFF_VNET_HDR | IFF_MULTI_QUEUE,
+> > +				IFF_VNET_HDR | IFF_MULTI_QUEUE |
+> > +				IFF_FLOW_CONTROL,
+> >  				(unsigned int __user*)argp);
+> >  	} else if (cmd == TUNSETQUEUE)
+> >  		return tun_set_queue(file, &ifr);
+> > diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
+> > index e9502dd..bcf2790 100644
+> > --- a/include/uapi/linux/if_tun.h
+> > +++ b/include/uapi/linux/if_tun.h
+> > @@ -36,6 +36,7 @@
+> >  #define TUN_PERSIST 	0x0100	
+> >  #define TUN_VNET_HDR 	0x0200
+> >  #define TUN_TAP_MQ      0x0400
+> > +#define TUN_FLOW_CONTROL 0x0800
+> >  
+> >  /* Ioctl defines */
+> >  #define TUNSETNOCSUM  _IOW('T', 200, int) 
+> > @@ -70,6 +71,7 @@
+> >  #define IFF_MULTI_QUEUE 0x0100
+> >  #define IFF_ATTACH_QUEUE 0x0200
+> >  #define IFF_DETACH_QUEUE 0x0400
+> > +#define IFF_FLOW_CONTROL 0x0010
+> >  /* read-only flag */
+> >  #define IFF_PERSIST	0x0800
+> >  #define IFF_NOFILTER	0x1000
 
-New kexec-tools wants to pass kdump kernel needed memmap via E820
-directly, instead of memmap=exactmap. This makes saved_max_pfn not
-be passed down to 2nd kernel. To keep 1st kernel and 2nd kernel using
-the same TCE table size, Muli suggest to hard code the size to max (8M).
 
-We can't get rid of saved_max_pfn this time, for backward compatibility
-with old first kernel and new second kernel. However new first kernel
-and old second kernel can not work unfortunately.
-
-v2->v1:
-- retain saved_max_pfn so new 2nd kernel can work with old 1st kernel
-  from Vivek
-
-Signed-off-by: WANG Chao <chaowang@redhat.com>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-Acked-by: Muli Ben-Yehuda <mulix@mulix.org>
-Acked-by: Jon Mason <jdmason@kudzu.us>
-Link: http://lkml.kernel.org/r/1394463120-26999-1-git-send-email-chaowang@redhat.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/pci-calgary_64.c | 31 +++++++++++++++++++------------
- 1 file changed, 19 insertions(+), 12 deletions(-)
-
-diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
-index 299d493..0497f71 100644
---- a/arch/x86/kernel/pci-calgary_64.c
-+++ b/arch/x86/kernel/pci-calgary_64.c
-@@ -1207,23 +1207,31 @@ error:
- 	return ret;
- }
- 
--static inline int __init determine_tce_table_size(u64 ram)
-+static inline int __init determine_tce_table_size(void)
- {
- 	int ret;
- 
- 	if (specified_table_size != TCE_TABLE_SIZE_UNSPECIFIED)
- 		return specified_table_size;
- 
--	/*
--	 * Table sizes are from 0 to 7 (TCE_TABLE_SIZE_64K to
--	 * TCE_TABLE_SIZE_8M). Table size 0 has 8K entries and each
--	 * larger table size has twice as many entries, so shift the
--	 * max ram address by 13 to divide by 8K and then look at the
--	 * order of the result to choose between 0-7.
--	 */
--	ret = get_order(ram >> 13);
--	if (ret > TCE_TABLE_SIZE_8M)
-+	if (is_kdump_kernel() && saved_max_pfn) {
-+		/*
-+		 * Table sizes are from 0 to 7 (TCE_TABLE_SIZE_64K to
-+		 * TCE_TABLE_SIZE_8M). Table size 0 has 8K entries and each
-+		 * larger table size has twice as many entries, so shift the
-+		 * max ram address by 13 to divide by 8K and then look at the
-+		 * order of the result to choose between 0-7.
-+		 */
-+		ret = get_order((saved_max_pfn * PAGE_SIZE) >> 13);
-+		if (ret > TCE_TABLE_SIZE_8M)
-+			ret = TCE_TABLE_SIZE_8M;
-+	} else {
-+		/*
-+		 * Use 8M by default (suggested by Muli) if it's not
-+		 * kdump kernel and saved_max_pfn isn't set.
-+		 */
- 		ret = TCE_TABLE_SIZE_8M;
-+	}
- 
- 	return ret;
- }
-@@ -1418,8 +1426,7 @@ int __init detect_calgary(void)
- 		return -ENOMEM;
- 	}
- 
--	specified_table_size = determine_tce_table_size((is_kdump_kernel() ?
--					saved_max_pfn : max_pfn) * PAGE_SIZE);
-+	specified_table_size = determine_tce_table_size();
- 
- 	for (bus = 0; bus < MAX_PHB_BUS_NUM; bus++) {
- 		struct calgary_bus_info *info = &bus_info[bus];
