@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423154AbaDKQXq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:23:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56747 "EHLO
+	id S1759670AbaDKQJY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:09:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56335 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759006AbaDKQJZ (ORCPT
+	with ESMTP id S1759306AbaDKQH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:25 -0400
+	Fri, 11 Apr 2014 12:07:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Christian=20G=C3=BCdel?= <cg@dmesg.ch>,
-        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.14 01/23] Revert "ALSA: hda - Increment default stream numbers for AMD HDMI controllers"
-Date: Fri, 11 Apr 2014 09:11:50 -0700
-Message-Id: <20140411161200.446445522@linuxfoundation.org>
+        Phoebe Buckheister <phoebe.buckheister@itwm.fraunhofer.de>,
+        Alexander Aring <alex.aring@gmail.com>,
+        Florian Westphal <fw@strlen.de>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 10/41] inet: frag: make sure forced eviction removes all frags
+Date: Fri, 11 Apr 2014 09:09:41 -0700
+Message-Id: <20140411160933.572114053@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411161200.236939691@linuxfoundation.org>
-References: <20140411161200.236939691@linuxfoundation.org>
+In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
+References: <20140411160932.865173041@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Florian Westphal <fw@strlen.de>
 
-This reverts commit 7546abfb8e1f9933b549f05898377e9444ee4cb2.
+[ Upstream commit e588e2f286ed7da011ed357c24c5b9a554e26595 ]
 
-The commit [7546abfb: ALSA: hda - Increment default stream numbers for
-AMD HDMI controllers] introduced a regression where the AMD HDMI
-playback streams don't work properly.  As the simplest fix, this patch
-reverts that commit.
+Quoting Alexander Aring:
+  While fragmentation and unloading of 6lowpan module I got this kernel Oops
+  after few seconds:
 
-The upstream code has been changed largely and already contains
-another fix (by changing the stream assignment order), this revert
-should be applied only to 3.14 kernel where the regression was
-introduced.
+  BUG: unable to handle kernel paging request at f88bbc30
+  [..]
+  Modules linked in: ipv6 [last unloaded: 6lowpan]
+  Call Trace:
+   [<c012af4c>] ? call_timer_fn+0x54/0xb3
+   [<c012aef8>] ? process_timeout+0xa/0xa
+   [<c012b66b>] run_timer_softirq+0x140/0x15f
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=77002
-Reported-by: Christian Güdel <cg@dmesg.ch>
-Reported-by: Anssi Hannula <anssi.hannula@iki.fi>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Problem is that incomplete frags are still around after unload; when
+their frag expire timer fires, we get crash.
+
+When a netns is removed (also done when unloading module), inet_frag
+calls the evictor with 'force' argument to purge remaining frags.
+
+The evictor loop terminates when accounted memory ('work') drops to 0
+or the lru-list becomes empty.  However, the mem accounting is done
+via percpu counters and may not be accurate, i.e. loop may terminate
+prematurely.
+
+Alter evictor to only stop once the lru list is empty when force is
+requested.
+
+Reported-by: Phoebe Buckheister <phoebe.buckheister@itwm.fraunhofer.de>
+Reported-by: Alexander Aring <alex.aring@gmail.com>
+Tested-by: Alexander Aring <alex.aring@gmail.com>
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
+ net/ipv4/inet_fragment.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Greg, there is no upstream commit id due to the reason describe in the
-above.  It's a simple revert, so please take as is.
-
-thanks,
-
-Takashi
-
- sound/pci/hda/hda_intel.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -297,9 +297,9 @@ enum { SDI0, SDI1, SDI2, SDI3, SDO0, SDO
- #define ULI_NUM_CAPTURE		5
- #define ULI_NUM_PLAYBACK	6
+--- a/net/ipv4/inet_fragment.c
++++ b/net/ipv4/inet_fragment.c
+@@ -211,7 +211,7 @@ int inet_frag_evictor(struct netns_frags
+ 	}
  
--/* ATI HDMI may have up to 8 playbacks and 0 capture */
-+/* ATI HDMI has 1 playback and 0 capture */
- #define ATIHDMI_NUM_CAPTURE	0
--#define ATIHDMI_NUM_PLAYBACK	8
-+#define ATIHDMI_NUM_PLAYBACK	1
+ 	work = frag_mem_limit(nf) - nf->low_thresh;
+-	while (work > 0) {
++	while (work > 0 || force) {
+ 		spin_lock(&nf->lru_lock);
  
- /* TERA has 4 playback and 3 capture */
- #define TERA_NUM_CAPTURE	3
+ 		if (list_empty(&nf->lru_list)) {
 
 
