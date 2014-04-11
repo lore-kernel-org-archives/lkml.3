@@ -1,115 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552AbaDKXAj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 19:00:39 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:48034 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754747AbaDKXAh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 19:00:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140411224629.GA28181@mail.hallyn.com>
-References: <20140404183022.GA6728@sergelap> <CALCETrUki+k+NsaAYTbvaUqFTwH_AUDtwLv0XRYx+zA=c3zACw@mail.gmail.com>
- <20140404191000.GA13496@sergelap> <CALCETrW-M9QoqzkKyk9gRPLfx1fiTzs8_oAhdK6_kk=17PQc0Q@mail.gmail.com>
- <20140407181331.GA15012@mail.hallyn.com> <CALCETrULqdffvHZMV_4hobs8=YX6hRSagkvR4opycBKsfTaTtg@mail.gmail.com>
- <20140411215228.GA27354@mail.hallyn.com> <CALCETrW-o=ivJeZw4aC4o-8+qGZF0Fid36FJ7EtUBC9=5CrT4A@mail.gmail.com>
- <20140411222925.GA27922@mail.hallyn.com> <CALCETrUAdOo0v7hw9jU65spaY2VUqMj=rXqR2_iTdZX9OKqVDw@mail.gmail.com>
- <20140411224629.GA28181@mail.hallyn.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 11 Apr 2014 16:00:16 -0700
-Message-ID: <CALCETrXT176V-Un=tO=_=_jzvsgdtGz=YbdvJc_aPR4oRxrCkg@mail.gmail.com>
-Subject: Re: [lxc-devel] Kernel bug? Setuid apps and user namespaces
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Sean Pajot <sean.pajot@execulink.com>,
-        lxc-devel@lists.linuxcontainers.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754689AbaDKX1b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 19:27:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51572 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751504AbaDKX13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 19:27:29 -0400
+Date: Sat, 12 Apr 2014 09:27:17 +1000
+From: NeilBrown <neilb@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Shaohua Li <shli@kernel.org>, "majianpeng" <majianpeng@gmail.com>,
+        Kent Overstreet <kmo@daterainc.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        linux RAID <linux-raid@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL REQUEST] md for 3.15
+Message-ID: <20140412092717.1e1bec76@notabene.brown>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/ebruKAj24/Pe_5AVIKGiAve"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 3:46 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> Quoting Andy Lutomirski (luto@amacapital.net):
->> On Fri, Apr 11, 2014 at 3:29 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
->> > Quoting Andy Lutomirski (luto@amacapital.net):
->> >> On Fri, Apr 11, 2014 at 2:52 PM, Serge E. Hallyn <serge@hallyn.com> wrote:
->> >> > Quoting Andy Lutomirski (luto@amacapital.net):
->> >> >> On Mon, Apr 7, 2014 at 11:13 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
->> >> >> > Quoting Andy Lutomirski (luto@amacapital.net):
->> >> >> >> I'm starting to think that we need to extend dumpable to something
->> >> >> >> much more general like a list of struct creds that someone needs to be
->> >> >> >> able to ptrace, *in addition to current creds* in order to access
->> >> >> >> sensitive /proc files, coredumps, etc.  If you get started as setuid,
->> >> >> >
->> >> >> > Hm, yeah, this sort of makes sense.
->> >> >> >
->> >> >> >> then you start with two struct creds in the list (or maybe just your
->> >> >> >> euid and uid).  If you get started !setuid, then your initial creds
->> >> >> >> are in the list.  It's possible that few or no things will need to
->> >> >> >> change that list after execve.
->> >> >> >>
->> >> >> >> If all of the entries and current->cred are in the same user_ns, then
->> >> >> >> we can dump as userns root.  If they're in different usernses, then we
->> >> >> >> dump as global root or maybe the common ancestor root.
->> >> >> >> setuid(getuid()) and other such nastiness may have to empty the list,
->> >> >> >> or maybe we can just use a prctl for that.
->> >> >> >
->> >> >> > A few questions,
->> >> >> >
->> >> >> > 1. is there any other action which would trigger adding a new cred to
->> >> >> > the ist?
->> >> >>
->> >> >> I don't think so.  Anyone who can ptrace you from the start can
->> >> >> corrupt you such that you leak rights even if some future action
->> >> >> prevents new ptracers from attaching.
->> >> >>
->> >> >> OTOH, it might be nice for something like an HTTPS server to be able
->> >> >> to fork and shove its private key into the child, while preventing
->> >> >> anyone from ptracing the child.  But doing this securely without help
->> >> >> from someone with a different uid might be impossible anyway.
->> >> >>
->> >> >> >
->> >> >> > 2. would execve clear (and re-init) the list of creds?
->> >> >>
->> >> >> Probably.  Thoughts?
->> >> >
->> >> > Yeah it seems to me it should be re-initialized, with a cred added
->> >> > to the list for every open fd.
->> >>
->> >> What do you mean "every fd"?
->> >>
->> >> It seems odd to me that execve of anything that isn't setuid would add
->> >> anything to the list -- attackers can always ptrace before the execve
->> >> happens.
->> >
->> > Maybe you're right.  Maybe I shouldn't reason about this on a friday
->> > afternoon.
->> >
->> > My *thought* was setuid-root program opens /etc/shadow, then execs a
->> > regular program keeping that open.  Attaching to that fails now though,
->> > presumably due to dumpable.
->> >
->>
->> Why would it fail?
->
-> I had expected it to succeed when I tried it, but it did in fact fail.
->
->>   Isn't dumpable cleared on execve of a non-setuid
->> program?  Maybe I need to look this stuff up again.
->
-> I guess this particular case was handled by setup_new_exec:
->
->         if (uid_eq(current_euid(), current_uid()) && gid_eq(current_egid(), current_gid()))
->                 set_dumpable(current->mm, SUID_DUMP_USER);
->         else
->                 set_dumpable(current->mm, suid_dumpable);
->
-> since my euid was 0 and uid 1000, when I did the exec.
->
+--Sig_/ebruKAj24/Pe_5AVIKGiAve
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Then we need to keep this working.  I guess we can just keep the
-dumpable bit around.
 
---Andy
+Not much happening in md/raid at the moment. Just a few bug fixes (one for
+-stable) and a couple of performance tweaks.
+
+NeilBrown
+
+
+The following changes since commit 455c6fdbd219161bd09b1165f11699d6d73de11c:
+
+  Linux 3.14 (2014-03-30 20:40:15 -0700)
+
+are available in the git repository at:
+
+  git://neil.brown.name/md/ tags/md/3.15
+
+for you to fetch changes up to e240c1839d11152b0355442f8ac6d2d2d921be36:
+
+  raid5: get_active_stripe avoids device_lock (2014-04-09 14:42:42 +1000)
+
+----------------------------------------------------------------
+Just a few md patches for the 3.15 merge window.
+
+----------------------------------------------------------------
+NeilBrown (3):
+      md/bitmap: don't abuse i_writecount for bitmap files.
+      md/raid1: r1buf_pool_alloc: free allocate pages when subsequent alloc=
+ation fails.
+      md: avoid oops on unload if some process is in poll or select.
+
+Shaohua Li (2):
+      raid5: make_request does less prepare wait
+      raid5: get_active_stripe avoids device_lock
+
+ drivers/md/bitmap.c |  1 -
+ drivers/md/md.c     | 65 ++++++++++++++++++++++++++-----------------------=
+----
+ drivers/md/md.h     |  1 -
+ drivers/md/raid1.c  | 17 ++++++++++----
+ drivers/md/raid5.c  | 28 +++++++++++++----------
+ 5 files changed, 61 insertions(+), 51 deletions(-)
+
+--Sig_/ebruKAj24/Pe_5AVIKGiAve
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBU0h6VTnsnt1WYoG5AQK0RRAArX5DILJWJHAE0hZ8gy5upjoPRFRmw1kX
+gVKzYUr7crRvaZi0aGDFAaB9fxvp+hViZ8VAhWJv+pM1v3yDLJoE4ke1ex2BTUJT
+Oq1svKvWB2NUK1ywHcoDuO4v9r092VOZytHS4EjorOjksJVRoZrzrdksZKB9JieJ
+t4jfg/LHuiJvwehBBBDcck+THj5+Xlg/bwZRgbHcYsIA9A8xd/dtRagnTQ8N+R1Z
+9vv+Fl5Zb4wEv7CTEzzCMrWh6Em6h2csrUfXMHo18wGpd71lQvoglRSsFFADwbo9
+LXS5Wkjm1Od+0xeWUmMf02HgWGIJozCcKwxQQr/6WBcHeBwDGsV7rNNtb2OHCQTO
+N7wNtb3MSJi6wTQulbhinWhmRNOiN5zcqRwsIpgFeUq9ux8MR0/RrsOo8KSFBiZR
+ZGFZbkLIFlMvCSdzaqSTZ5C07hS17gAz3NrgdL4mdEiaZXuoivDbi2/24E8nDBwn
+JerY0P4ApHzo+c3ki6OJvm2qDsrWk4aWIx+Gv8fGquz2eCsy8bF+UIAtFDSGUjjw
+ctVxLCLSIARiF3YDL/WBv1TmWAKJQ0kyG7WqW634hpbtmII5wMve5bqCsaQRuMJ0
+oPaqTqISfgxzDEm7s0D8q2uWFqRiCnxKAWnHOY+/xJcRaytJd6zdfmGMEwxhmLp4
+r9oTfg46/NY=
+=Ft32
+-----END PGP SIGNATURE-----
+
+--Sig_/ebruKAj24/Pe_5AVIKGiAve--
