@@ -1,71 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658AbaDKRjv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 13:39:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45576 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060AbaDKRjs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 13:39:48 -0400
-Date: Fri, 11 Apr 2014 10:39:27 -0700
-Message-Id: <201404111739.s3BHdRiW025864@terminus.zytor.com>
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] x86/hyperv fix for v3.15-rc1
-Cc: <stable@vger.kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
+	id S1754495AbaDKRlK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 13:41:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45596 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750952AbaDKRlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 13:41:05 -0400
+Message-ID: <5348291B.7090501@zytor.com>
+Date: Fri, 11 Apr 2014 10:40:43 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Jet Chen <jet.chen@intel.com>,
+        "Romer, Benjamin M" <Benjamin.Romer@unisys.com>
+CC: Fengguang Wu <fengguang.wu@intel.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [visorchipset] invalid opcode: 0000 [#1] PREEMPT SMP
+References: <20140407111725.GC25152@localhost> <C97001BC43954D438ACB059713BA5CDF92040F0F00@USEA-EXCH7.na.uis.unisys.com> <53444220.50009@intel.com> <C97001BC43954D438ACB059713BA5CDF92040F0F06@USEA-EXCH7.na.uis.unisys.com> <53458A3A.1050608@intel.com> <20140409230114.GB8370@localhost> <5345D360.5000506@linux.intel.com> <C97001BC43954D438ACB059713BA5CDF92040F0F0A@USEA-EXCH7.na.uis.unisys.com> <53475344.5090009@linux.intel.com> <C97001BC43954D438ACB059713BA5CDF92040F0F10@USEA-EXCH7.na.uis.unisys.com> <53481976.3020209@zytor.com> <534827F5.1020004@intel.com>
+In-Reply-To: <534827F5.1020004@intel.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 04/11/2014 10:35 AM, Jet Chen wrote:
+> 
+> As Peter said, QEMU probably should *not* set the hypervisor bit. But based on my testing, I think KVM works properly in this case.
+> 
 
-A single fix for HyperV -- we never NEED the legacy PIC on HyperV, and
-in kexec/kdump scenarios we don't always know that we originally
-booted EFI.  The right answer is probably to augment the legacy PIC
-initialization code to detect a not-present PIC, but that is way too
-high risk for right now.
+Either way, unless there is a CPUID interface exposed in CPUID levels
+0x40000000+, then relying on the hypervisor bit to do VMCALL is wrong in
+the extreme.
 
-The following changes since commit ca3ba2a2f4a49a308e7d78c784d51b2332064f15:
+	-hpa
 
-  x86, hyperv: Bypass the timer_irq_works() check (2014-03-27 11:02:45 -0700)
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-hyperv-for-linus
-
-for you to fetch changes up to 8df28b82ff0649dd293f0469b97792cfb9ed10ab:
-
-  x86, hyperv: When on Hyper-v use NULL legacy PIC (2014-04-03 22:00:13 -0700)
-
-----------------------------------------------------------------
-K. Y. Srinivasan (1):
-      x86, hyperv: When on Hyper-v use NULL legacy PIC
-
- arch/x86/kernel/cpu/mshyperv.c | 10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-index 832d05a914ba..b7d82c7e1257 100644
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -93,14 +93,8 @@ static void __init ms_hyperv_init_platform(void)
- 		printk(KERN_INFO "HyperV: LAPIC Timer Frequency: %#x\n",
- 				lapic_timer_frequency);
- 
--		/*
--		 * On Hyper-V, when we are booting off an EFI firmware stack,
--		 * we do not have many legacy devices including PIC, PIT etc.
--		 */
--		if (efi_enabled(EFI_BOOT)) {
--			printk(KERN_INFO "HyperV: Using null_legacy_pic\n");
--			legacy_pic = &null_legacy_pic;
--		}
-+		printk(KERN_INFO "HyperV: Using null_legacy_pic\n");
-+		legacy_pic = &null_legacy_pic;
- 	}
- #endif
- 
