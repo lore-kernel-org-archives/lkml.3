@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423173AbaDKQmF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:42:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56626 "EHLO
+	id S934852AbaDKQnE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:43:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56616 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422824AbaDKQJE (ORCPT
+	with ESMTP id S1422808AbaDKQJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:04 -0400
+	Fri, 11 Apr 2014 12:09:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li RongQing <roy.qing.li@gmail.com>, WANG Cong <amwang@redhat.com>
-Subject: [PATCH 3.13 39/65] netpoll: fix the skb check in pkt_is_ns
-Date: Fri, 11 Apr 2014 09:11:11 -0700
-Message-Id: <20140411161003.107768654@linuxfoundation.org>
+        Thomas Graf <tgraf@suug.ch>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 37/65] ip6mr: fix mfc notification flags
+Date: Fri, 11 Apr 2014 09:11:09 -0700
+Message-Id: <20140411161002.838513401@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
 References: <20140411160957.714773410@linuxfoundation.org>
@@ -26,31 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li RongQing <roy.qing.li@gmail.com>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-[ Not applicable upstream commit, the code here has been removed
-  upstream. ]
+[ Upstream commit f518338b16038beeb73e155e60d0f70beb9379f4 ]
 
-Neighbor Solicitation is ipv6 protocol, so we should check
-skb->protocol with ETH_P_IPV6
+Commit 812e44dd1829 ("ip6mr: advertise new mfc entries via rtnl") reuses the
+function ip6mr_fill_mroute() to notify mfc events.
+But this function was used only for dump and thus was always setting the
+flag NLM_F_MULTI, which is wrong in case of a single notification.
 
-Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
-Cc: WANG Cong <amwang@redhat.com>
+Libraries like libnl will wait forever for NLMSG_DONE.
+
+CC: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Acked-by: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/netpoll.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/ipv6/ip6mr.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -742,7 +742,7 @@ static bool pkt_is_ns(struct sk_buff *sk
- 	struct nd_msg *msg;
- 	struct ipv6hdr *hdr;
+--- a/net/ipv6/ip6mr.c
++++ b/net/ipv6/ip6mr.c
+@@ -2349,13 +2349,14 @@ int ip6mr_get_route(struct net *net,
+ }
  
--	if (skb->protocol != htons(ETH_P_ARP))
-+	if (skb->protocol != htons(ETH_P_IPV6))
- 		return false;
- 	if (!pskb_may_pull(skb, sizeof(struct ipv6hdr) + sizeof(struct nd_msg)))
- 		return false;
+ static int ip6mr_fill_mroute(struct mr6_table *mrt, struct sk_buff *skb,
+-			     u32 portid, u32 seq, struct mfc6_cache *c, int cmd)
++			     u32 portid, u32 seq, struct mfc6_cache *c, int cmd,
++			     int flags)
+ {
+ 	struct nlmsghdr *nlh;
+ 	struct rtmsg *rtm;
+ 	int err;
+ 
+-	nlh = nlmsg_put(skb, portid, seq, cmd, sizeof(*rtm), NLM_F_MULTI);
++	nlh = nlmsg_put(skb, portid, seq, cmd, sizeof(*rtm), flags);
+ 	if (nlh == NULL)
+ 		return -EMSGSIZE;
+ 
+@@ -2423,7 +2424,7 @@ static void mr6_netlink_event(struct mr6
+ 	if (skb == NULL)
+ 		goto errout;
+ 
+-	err = ip6mr_fill_mroute(mrt, skb, 0, 0, mfc, cmd);
++	err = ip6mr_fill_mroute(mrt, skb, 0, 0, mfc, cmd, 0);
+ 	if (err < 0)
+ 		goto errout;
+ 
+@@ -2462,7 +2463,8 @@ static int ip6mr_rtm_dumproute(struct sk
+ 				if (ip6mr_fill_mroute(mrt, skb,
+ 						      NETLINK_CB(cb->skb).portid,
+ 						      cb->nlh->nlmsg_seq,
+-						      mfc, RTM_NEWROUTE) < 0)
++						      mfc, RTM_NEWROUTE,
++						      NLM_F_MULTI) < 0)
+ 					goto done;
+ next_entry:
+ 				e++;
+@@ -2476,7 +2478,8 @@ next_entry:
+ 			if (ip6mr_fill_mroute(mrt, skb,
+ 					      NETLINK_CB(cb->skb).portid,
+ 					      cb->nlh->nlmsg_seq,
+-					      mfc, RTM_NEWROUTE) < 0) {
++					      mfc, RTM_NEWROUTE,
++					      NLM_F_MULTI) < 0) {
+ 				spin_unlock_bh(&mfc_unres_lock);
+ 				goto done;
+ 			}
 
 
