@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965255AbaDKNUr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 09:20:47 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:52794 "EHLO
+	id S1758620AbaDKNUo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 09:20:44 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:45837 "EHLO
 	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757784AbaDKNUa (ORCPT
+	by vger.kernel.org with ESMTP id S1757778AbaDKNUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Apr 2014 09:20:30 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
@@ -13,9 +13,9 @@ To: linux-kernel@vger.kernel.org, patrice.chotard@st.com,
 Cc: kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
         mturquette@linaro.org,
         Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [PATCH 7/9] ARM: STi: DT: STiH415: Remove unused CLK_S_ICN_REG_0 fixed clock
-Date: Fri, 11 Apr 2014 15:19:54 +0200
-Message-Id: <1397222396-30106-8-git-send-email-gabriel.fernandez@linaro.org>
+Subject: [PATCH 2/9] ARM: STi: DT: STiH416: Remove unused CLK_S_ICN_REG_0 fixed clock
+Date: Fri, 11 Apr 2014 15:19:49 +0200
+Message-Id: <1397222396-30106-3-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397222396-30106-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1397222396-30106-1-git-send-email-gabriel.fernandez@linaro.org>
@@ -29,28 +29,29 @@ CLK_S_ICN_REG_0 clock is no longer used.
 
 Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
 ---
- arch/arm/boot/dts/stih415-clock.dtsi | 10 ----------
- 1 file changed, 10 deletions(-)
+ arch/arm/boot/dts/stih416-clock.dtsi | 11 -----------
+ 1 file changed, 11 deletions(-)
 
-diff --git a/arch/arm/boot/dts/stih415-clock.dtsi b/arch/arm/boot/dts/stih415-clock.dtsi
-index f67762d7a..5bdba06 100644
---- a/arch/arm/boot/dts/stih415-clock.dtsi
-+++ b/arch/arm/boot/dts/stih415-clock.dtsi
-@@ -32,16 +32,6 @@
- 			clock-frequency = <500000000>;
+diff --git a/arch/arm/boot/dts/stih416-clock.dtsi b/arch/arm/boot/dts/stih416-clock.dtsi
+index 66693e4..47bbfd4 100644
+--- a/arch/arm/boot/dts/stih416-clock.dtsi
++++ b/arch/arm/boot/dts/stih416-clock.dtsi
+@@ -34,17 +34,6 @@
+ 			clock-frequency = <600000000>;
  		};
  
 -		/*
 -		 * Bootloader initialized system infrastructure clock for
 -		 * serial devices.
 -		 */
--		CLKS_ICN_REG_0: CLKS_ICN_REG_0 {
+-		CLK_S_ICN_REG_0: clockgenA0@4 {
 -			#clock-cells = <0>;
 -			compatible = "fixed-clock";
 -			clock-frequency = <100000000>;
+-			clock-output-names = "CLK_S_ICN_REG_0";
 -		};
 -
- 		CLKS_GMAC0_PHY: clockgenA1@7 {
+ 		CLK_S_GMAC0_PHY: clockgenA1@7 {
  			#clock-cells = <0>;
  			compatible = "fixed-clock";
 -- 
