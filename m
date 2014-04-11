@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423051AbaDKQ2Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:28:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56713 "EHLO
+	id S1423114AbaDKQ2u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:28:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56709 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759632AbaDKQJN (ORCPT
+	with ESMTP id S1759431AbaDKQJM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:13 -0400
+	Fri, 11 Apr 2014 12:09:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mischa Jonker <mjonker@synopsys.com>,
-        Vineet Gupta <vgupta@synopsys.com>,
-        Francois Bedard <Francois.Bedard@synopsys.com>
-Subject: [PATCH 3.13 61/65] ARC: [nsimosci] Change .dts to use generic 8250 UART
-Date: Fri, 11 Apr 2014 09:11:33 -0700
-Message-Id: <20140411161006.029155279@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.13 60/65] powernow-k6: reorder frequencies
+Date: Fri, 11 Apr 2014 09:11:32 -0700
+Message-Id: <20140411161005.890703355@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
 References: <20140411160957.714773410@linuxfoundation.org>
@@ -28,52 +28,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mischa Jonker <mjonker@synopsys.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 6eda477b3c54b8236868c8784e5e042ff14244f0 upstream.
+commit 22c73795b101597051924556dce019385a1e2fa0 upstream.
 
-The Synopsys APB DW UART has a couple of special features that are not
-in the System C model. In 3.8, the 8250_dw driver didn't really use these
-features, but from 3.9 onwards, the 8250_dw driver has become incompatible
-with our model.
+This patch reorders reported frequencies from the highest to the lowest,
+just like in other frequency drivers.
 
-Signed-off-by: Mischa Jonker <mjonker@synopsys.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Francois Bedard <Francois.Bedard@synopsys.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arc/boot/dts/nsimosci.dts |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/cpufreq/powernow-k6.c |   17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
---- a/arch/arc/boot/dts/nsimosci.dts
-+++ b/arch/arc/boot/dts/nsimosci.dts
-@@ -11,7 +11,7 @@
+--- a/drivers/cpufreq/powernow-k6.c
++++ b/drivers/cpufreq/powernow-k6.c
+@@ -37,17 +37,20 @@ MODULE_PARM_DESC(bus_frequency, "Bus fre
  
- / {
- 	compatible = "snps,nsimosci";
--	clock-frequency = <80000000>;	/* 80 MHZ */
-+	clock-frequency = <20000000>;	/* 20 MHZ */
- 	#address-cells = <1>;
- 	#size-cells = <1>;
- 	interrupt-parent = <&intc>;
-@@ -44,15 +44,14 @@
- 		};
+ /* Clock ratio multiplied by 10 - see table 27 in AMD#23446 */
+ static struct cpufreq_frequency_table clock_ratio[] = {
+-	{45,  /* 000 -> 4.5x */ 0},
++	{60,  /* 110 -> 6.0x */ 0},
++	{55,  /* 011 -> 5.5x */ 0},
+ 	{50,  /* 001 -> 5.0x */ 0},
++	{45,  /* 000 -> 4.5x */ 0},
+ 	{40,  /* 010 -> 4.0x */ 0},
+-	{55,  /* 011 -> 5.5x */ 0},
+-	{20,  /* 100 -> 2.0x */ 0},
+-	{30,  /* 101 -> 3.0x */ 0},
+-	{60,  /* 110 -> 6.0x */ 0},
+ 	{35,  /* 111 -> 3.5x */ 0},
++	{30,  /* 101 -> 3.0x */ 0},
++	{20,  /* 100 -> 2.0x */ 0},
+ 	{0, CPUFREQ_TABLE_END}
+ };
  
- 		uart0: serial@c0000000 {
--			compatible = "snps,dw-apb-uart";
-+			compatible = "ns8250";
- 			reg = <0xc0000000 0x2000>;
- 			interrupts = <11>;
--			#clock-frequency = <80000000>;
- 			clock-frequency = <3686400>;
- 			baud = <115200>;
- 			reg-shift = <2>;
- 			reg-io-width = <4>;
--			status = "okay";
-+			no-loopback-test = <1>;
- 		};
++static const u8 index_to_register[8] = { 6, 3, 1, 0, 2, 7, 5, 4 };
++static const u8 register_to_index[8] = { 3, 2, 4, 1, 7, 6, 0, 5 };
++
+ static const struct {
+ 	unsigned freq;
+ 	unsigned mult;
+@@ -91,7 +94,7 @@ static int powernow_k6_get_cpu_multiplie
  
- 		pgu0: pgu@c9000000 {
+ 	local_irq_enable();
+ 
+-	return clock_ratio[(invalue >> 5)&7].driver_data;
++	return clock_ratio[register_to_index[(invalue >> 5)&7]].driver_data;
+ }
+ 
+ static void powernow_k6_set_cpu_multiplier(unsigned int best_i)
+@@ -111,7 +114,7 @@ static void powernow_k6_set_cpu_multipli
+ 	write_cr0(cr0 | X86_CR0_CD);
+ 	wbinvd();
+ 
+-	outvalue = (1<<12) | (1<<10) | (1<<9) | (best_i<<5);
++	outvalue = (1<<12) | (1<<10) | (1<<9) | (index_to_register[best_i]<<5);
+ 
+ 	msrval = POWERNOW_IOPORT + 0x1;
+ 	wrmsr(MSR_K6_EPMR, msrval, 0); /* enable the PowerNow port */
 
 
