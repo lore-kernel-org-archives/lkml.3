@@ -1,115 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622AbaDKK4b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 06:56:31 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:51333 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbaDKK4Z (ORCPT
+	id S1754811AbaDKLA0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 07:00:26 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:63294 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644AbaDKLAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 06:56:25 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-cf-5347ca56f3cb
-Message-id: <5347CA51.8020003@samsung.com>
-Date: Fri, 11 Apr 2014 12:56:17 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Cc: jic23@kernel.org, ch.naveen@samsung.com, kgene.kim@samsung.com,
-        linux-iio@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH] iio: adc: exynos_adc: Control special clock of ADC to
- support Exynos3250 ADC
-References: <1397181640-18513-1-git-send-email-cw00.choi@samsung.com>
- <18632148.yOYlTYattA@amdc1032>
-In-reply-to: <18632148.yOYlTYattA@amdc1032>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrALMWRmVeSWpSXmKPExsVy+t/xa7php9yDDRY2GltsnLGe1eLu88OM
-	Fte/PGe1eNC0ismid8FVNouzTW/YLTY9vsZqMe/IOxaLy7vmsFnMOL+PyYHLY9OqTjaPzUvq
-	Pfq2rGL0+LxJLoAlissmJTUnsyy1SN8ugSvj/cW3LAUvBSsOTjvM2sC4ha+LkZNDQsBEYv+h
-	DUwQtpjEhXvr2boYuTiEBJYySkx5tJoZwvnMKHH8zXYgh4ODV0BL4thWfRCTRUBV4v2ESpBe
-	NgE1ic8Nj9hAbH6gijVN11lAbFGBCIl7jYdZQWxeAUGJH5PvgcVFBBIkNm0/DLaLWeAro8ST
-	78vAxgsLJEusvSAAUiMkkCZx834DE0iYU0Bb4uWMapAws4C1xMpJ2xghbHmJzWveMk9gFJyF
-	ZMMsJGWzkJQtYGRexSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRESC193MC49ZnWIUYCDUYmH
-	98Alt2Ah1sSy4srcQ4wSHMxKIrzme92DhXhTEiurUovy44tKc1KLDzEycXBKNTCK75W127yr
-	4OHyBa0JnvKuHidP/D+ybrMum/PVcJ5uo6rCw82b+rcotcmpxATofjJpaAu+anBU/FP9kzMJ
-	Xq5ZZyauzwtlE86TmHH+oauBw27d9SsYlJ1XvVAp3PBk64o5bglf5k/l437Kv2HxKk3O/s4p
-	kRvPyvxcOfPMS5frv3LjT/DJTbBXYinOSDTUYi4qTgQAPm9FnWMCAAA=
+	Fri, 11 Apr 2014 07:00:23 -0400
+Date: Fri, 11 Apr 2014 04:00:20 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: drepper@gmail.com, anatol.pomozov@gmail.com, jkosina@suse.cz,
+        akpm@linux-foundation.org, xemul@parallels.com,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] drivers/base/node.c: export physical address range of
+ given node (Re: NUMA node information for pages)
+In-Reply-To: <53474709.e59ec20a.3bd5.3b91SMTPIN_ADDED_BROKEN@mx.google.com>
+Message-ID: <alpine.DEB.2.02.1404110325210.30610@chino.kir.corp.google.com>
+References: <87eh1ix7g0.fsf@x240.local.i-did-not-set--mail-host-address--so-tickle-me> <533a1563.ad318c0a.6a93.182bSMTPIN_ADDED_BROKEN@mx.google.com> <CAOPLpQc8R2SfTB+=BsMa09tcQ-iBNJHg+tGnPK-9EDH1M47MJw@mail.gmail.com> <5343806c.100cc30a.0461.ffffc401SMTPIN_ADDED_BROKEN@mx.google.com>
+ <alpine.DEB.2.02.1404091734060.1857@chino.kir.corp.google.com> <5345fe27.82dab40a.0831.0af9SMTPIN_ADDED_BROKEN@mx.google.com> <alpine.DEB.2.02.1404101500280.11995@chino.kir.corp.google.com> <53474709.e59ec20a.3bd5.3b91SMTPIN_ADDED_BROKEN@mx.google.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 10 Apr 2014, Naoya Horiguchi wrote:
 
-On 11.04.2014 11:41, Bartlomiej Zolnierkiewicz wrote:
->
-> Hi,
->
-> On Friday, April 11, 2014 11:00:40 AM Chanwoo Choi wrote:
->> This patch control special clock for ADC in Exynos series's FSYS block.
->
-> s/control/controls/
->
->> If special clock of ADC is registerd on clock list of common clk framework,
->> Exynos ADC drvier have to control this clock.
->
-> s/drvier/driver/
->
->> Exynos3250/Exynos4/Exynos5 has 'adc' clock as following:
->> - 'adc' clock: bus clock for ADC
->>
->> Exynos3250 has additional 'sclk_tsadc' clock as following:
->> - 'sclk_tsadc' clock: special clock for ADC which provide clock to internal ADC
->>
->> Exynos 4210/4212/4412 and Exynos5250/5420 has not included 'sclk_tsadc' clock
->> in FSYS_BLK. But, Exynos3250 based on Cortex-A7 has only included 'sclk_tsadc'
->> clock in FSYS_BLK.
->>
->> Cc: Jonathan Cameron <jic23@kernel.org>
->> Cc: Kukjin Kim <kgene.kim@samsung.com>
->> Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
->> Cc: linux-iio@vger.kernel.org
->> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->>   drivers/iio/adc/exynos_adc.c | 13 +++++++++++++
->>   1 file changed, 13 insertions(+)
+> Yes, that's right, but it seems to me that just node_start_pfn and node_end_pfn
+> is not enough because there can be holes (without any page struct backed) inside
+> [node_start_pfn, node_end_pfn), and it's not aware of memory hotplug.
+> 
 
-This change alters DT bindings for Exynos ADC, so documentation must be 
-modified appropriately.
+So?  Who cares if there are non-addressable holes in part of the span?  
+Ulrich, correct me if I'm wrong, but it seems you're looking for just a 
+address-to-nodeid mapping (or pfn-to-nodeid mapping) and aren't actually 
+expecting that there are no holes in a node for things like acpi or I/O or 
+reserved memory.
 
->>
->> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
->> index d25b262..4cd1975 100644
->> --- a/drivers/iio/adc/exynos_adc.c
->> +++ b/drivers/iio/adc/exynos_adc.c
->> @@ -88,6 +88,7 @@ struct exynos_adc {
->>   	void __iomem		*regs;
->>   	void __iomem		*enable_reg;
->>   	struct clk		*clk;
->> +	struct clk		*sclk;
->>   	unsigned int		irq;
->>   	struct regulator	*vdd;
->>
->> @@ -308,6 +309,13 @@ static int exynos_adc_probe(struct platform_device *pdev)
->>   		goto err_irq;
->>   	}
->>
->> +	info->sclk = devm_clk_get(&pdev->dev, "sclk_tsadc");
->> +	if (IS_ERR(info->sclk)) {
->> +		dev_warn(&pdev->dev, "failed getting sclk clock, err = %ld\n",
->> +							PTR_ERR(info->sclk));
->> +		info->sclk = NULL;
->> +	}
->> +
+The node spans a contiguous length of memory, there's no consideration for 
+addresses that aren't actually backed by physical memory.  We are just 
+representing proximity domains that have a base address and length in the 
+acpi world.
 
-Is there any reason why we should have a warning on SoCs which don't 
-have this clock? I think this clock should be acquired only for affected 
-SoCs.
+Memory hotplug is already taken care of because onlining and offlining 
+nodes already add these node classes and {start,end}_phys_addr would 
+show up automatically.  If you use node_start_pfn(nid) and 
+node_end_pfn(nid) as suggested, there's no futher consideration needed for 
+hotplug.
 
-Best regards,
-Tomasz
+I think trying to represent holes and handling different memory models and 
+hotplug in special ways is complete overkill.
+
+Ulrich, can I have your ack?
+---
+ Documentation/ABI/stable/sysfs-devices-node | 12 ++++++++++++
+ drivers/base/node.c                         | 18 ++++++++++++++++++
+ 2 files changed, 30 insertions(+)
+
+diff --git a/Documentation/ABI/stable/sysfs-devices-node b/Documentation/ABI/stable/sysfs-devices-node
+--- a/Documentation/ABI/stable/sysfs-devices-node
++++ b/Documentation/ABI/stable/sysfs-devices-node
+@@ -63,6 +63,18 @@ Description:
+ 		The node's hit/miss statistics, in units of pages.
+ 		See Documentation/numastat.txt
+ 
++What:		/sys/devices/system/node/nodeX/start_phys_addr
++Date:		April 2014
++Contact:	David Rientjes <rientjes@google.com>
++Description:
++		The physical base address of this node.
++
++What:		/sys/devices/system/node/nodeX/end_phys_addr
++Date:		April 2014
++Contact:	David Rientjes <rientjes@google.com>
++Description:
++		The physical base + length address of this node.
++
+ What:		/sys/devices/system/node/nodeX/distance
+ Date:		October 2002
+ Contact:	Linux Memory Management list <linux-mm@kvack.org>
+diff --git a/drivers/base/node.c b/drivers/base/node.c
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -170,6 +170,20 @@ static ssize_t node_read_numastat(struct device *dev,
+ }
+ static DEVICE_ATTR(numastat, S_IRUGO, node_read_numastat, NULL);
+ 
++static ssize_t node_read_start_phys_addr(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "0x%lx\n", node_start_pfn(dev->id) << PAGE_SHIFT);
++}
++static DEVICE_ATTR(start_phys_addr, S_IRUGO, node_read_start_phys_addr, NULL);
++
++static ssize_t node_read_end_phys_addr(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	return sprintf(buf, "0x%lx\n", node_end_pfn(dev->id) << PAGE_SHIFT);
++}
++static DEVICE_ATTR(end_phys_addr, S_IRUGO, node_read_end_phys_addr, NULL);
++
+ static ssize_t node_read_vmstat(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+ {
+@@ -286,6 +300,8 @@ static int register_node(struct node *node, int num, struct node *parent)
+ 		device_create_file(&node->dev, &dev_attr_cpulist);
+ 		device_create_file(&node->dev, &dev_attr_meminfo);
+ 		device_create_file(&node->dev, &dev_attr_numastat);
++		device_create_file(&node->dev, &dev_attr_start_phys_addr);
++		device_create_file(&node->dev, &dev_attr_end_phys_addr);
+ 		device_create_file(&node->dev, &dev_attr_distance);
+ 		device_create_file(&node->dev, &dev_attr_vmstat);
+ 
+@@ -311,6 +327,8 @@ void unregister_node(struct node *node)
+ 	device_remove_file(&node->dev, &dev_attr_cpulist);
+ 	device_remove_file(&node->dev, &dev_attr_meminfo);
+ 	device_remove_file(&node->dev, &dev_attr_numastat);
++	device_remove_file(&node->dev, &dev_attr_start_phys_addr);
++	device_remove_file(&node->dev, &dev_attr_end_phys_addr);
+ 	device_remove_file(&node->dev, &dev_attr_distance);
+ 	device_remove_file(&node->dev, &dev_attr_vmstat);
+ 
