@@ -1,51 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934827AbaDKOib (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 10:38:31 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:60286 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759529AbaDKOiV (ORCPT
+	id S1759442AbaDKOfs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 10:35:48 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:55516 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758983AbaDKOfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 10:38:21 -0400
-Message-ID: <5347FE56.5000206@twiddle.net>
-Date: Fri, 11 Apr 2014 07:38:14 -0700
-From: Richard Henderson <rth@twiddle.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        tglx@linutronix.de, luto@amacapital.net, nicolas.pitre@linaro.org,
-        daniel.lezcano@linaro.org, umgwanakikbuti@gmail.com
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 1/8] sched,idle,alpha: Switch from TS_POLLING to
- TIF_POLLING_NRFLAG
-References: <20140411134243.160989490@infradead.org> <20140411135218.181563050@infradead.org>
-In-Reply-To: <20140411135218.181563050@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Apr 2014 10:35:12 -0400
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-input@vger.kernel.org, kernel@stlinux.com,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
+        Giuseppe Condorelli <giuseppe.condorelli@st.com>
+Subject: [PATCH v3 5/7] ARM: STi: DT: add keyscan for stih416
+Date: Fri, 11 Apr 2014 16:33:35 +0200
+Message-Id: <1397226820-5604-9-git-send-email-gabriel.fernandez@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1397226820-5604-1-git-send-email-gabriel.fernandez@linaro.org>
+References: <1397226820-5604-1-git-send-email-gabriel.fernandez@linaro.org>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-04-11_04:2014-04-11,2014-04-11,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2014 06:42 AM, Peter Zijlstra wrote:
-> Standardize the idle polling indicator to TIF_POLLING_NRFLAG such that
-> both TIF_NEED_RESCHED and TIF_POLLING_NRFLAG are in the same word.
-> This will allow us, using fetch_or(), to both set NEED_RESCHED and
-> check for POLLING_NRFLAG in a single operation and avoid pointless
-> wakeups.
-> 
-> Changing from the non-atomic thread_info::status flags to the atomic
-> thread_info::flags shouldn't be a big issue since most polling state
-> changes were followed/preceded by a full memory barrier anyway.
-> 
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Andy Lutomirski <luto@amacapital.net>
-> Cc: Richard Henderson <rth@twiddle.net>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> ---
->  arch/alpha/include/asm/thread_info.h |    4 ++--
->  1 file changed, 2 inser
+Add keyscan support for stih416.
+It is disabled by default given that it is not enabled on all boards.
+Also there are PIOs conflict with already claimed lines.
 
-Acked-by: Richard Henderson <rth@twiddle.net>
+Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+---
+ arch/arm/boot/dts/stih416-pinctrl.dtsi | 16 ++++++++++++++++
+ arch/arm/boot/dts/stih416.dtsi         | 12 ++++++++++++
+ 2 files changed, 28 insertions(+)
 
+diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+index aeea304..6252188 100644
+--- a/arch/arm/boot/dts/stih416-pinctrl.dtsi
++++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+@@ -122,6 +122,22 @@
+ 				};
+ 			};
+ 
++			keyscan {
++				pinctrl_keyscan: keyscan {
++					st,pins {
++						keyin0 = <&PIO0 2 ALT2 IN>;
++						keyin1 = <&PIO0 3 ALT2 IN>;
++						keyin2 = <&PIO0 4 ALT2 IN>;
++						keyin3 = <&PIO2 6 ALT2 IN>;
++
++						keyout0 = <&PIO1 6 ALT2 OUT>;
++						keyout1 = <&PIO1 7 ALT2 OUT>;
++						keyout2 = <&PIO0 6 ALT2 OUT>;
++						keyout3 = <&PIO2 7 ALT2 OUT>;
++					};
++				};
++			};
++
+ 			sbc_i2c0 {
+ 				pinctrl_sbc_i2c0_default: sbc_i2c0-default {
+ 					st,pins {
+diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+index 78746d2..d3bc263 100644
+--- a/arch/arm/boot/dts/stih416.dtsi
++++ b/arch/arm/boot/dts/stih416.dtsi
+@@ -224,5 +224,17 @@
+ 
+ 			status = "disabled";
+ 		};
++
++		keyscan: keyscan@fe4b0000 {
++			compatible = "st,sti-keyscan";
++			status = "disabled";
++			reg = <0xfe4b0000 0x2000>;
++			interrupts = <GIC_SPI 212 IRQ_TYPE_NONE>;
++			clocks = <&CLK_SYSIN>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&pinctrl_keyscan>;
++			resets	= <&powerdown STIH416_KEYSCAN_POWERDOWN>,
++				  <&softreset STIH416_KEYSCAN_SOFTRESET>;
++		};
+ 	};
+ };
+-- 
+1.9.1
 
-r~
