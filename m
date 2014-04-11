@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422983AbaDKQPU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:15:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56819 "EHLO
+	id S1423070AbaDKQQR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:16:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56811 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759446AbaDKQJc (ORCPT
+	with ESMTP id S1754296AbaDKQJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:32 -0400
+	Fri, 11 Apr 2014 12:09:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eyal Shapira <eyalx.shapira@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.14 18/23] iwlwifi: mvm: rs: fix search cycle rules
-Date: Fri, 11 Apr 2014 09:12:07 -0700
-Message-Id: <20140411161202.744093987@linuxfoundation.org>
+        Sasha Levin <sasha.levin@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.14 16/23] rds: prevent dereference of a NULL device in rds_iw_laddr_check
+Date: Fri, 11 Apr 2014 09:12:05 -0700
+Message-Id: <20140411161202.475523963@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411161200.236939691@linuxfoundation.org>
 References: <20140411161200.236939691@linuxfoundation.org>
@@ -27,123 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eyal Shapira <eyal@wizery.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-commit 8930b05090acd321b1fc7c642528c697cb105c42 upstream.
+[ Upstream commit bf39b4247b8799935ea91d90db250ab608a58e50 ]
 
-We should explore all possible columns when searching to be
-as resilient as possible to changing conditions. This fixes
-for example a scenario where even after a sudden creation of
-rssi difference between the 2 antennas we would keep doing MIMO
-at a low rate instead of switching to SISO at a higher rate using
-the better antenna which was the optimal configuration.
+Binding might result in a NULL device which is later dereferenced
+without checking.
 
-Signed-off-by: Eyal Shapira <eyalx.shapira@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/wireless/iwlwifi/mvm/rs.c |   36 +++++++++++++++++-----------------
- 1 file changed, 18 insertions(+), 18 deletions(-)
+ net/rds/iw.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/rs.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/rs.c
-@@ -211,9 +211,9 @@ static const struct rs_tx_column rs_tx_c
- 		.next_columns = {
- 			RS_COLUMN_LEGACY_ANT_B,
- 			RS_COLUMN_SISO_ANT_A,
-+			RS_COLUMN_SISO_ANT_B,
- 			RS_COLUMN_MIMO2,
--			RS_COLUMN_INVALID,
--			RS_COLUMN_INVALID,
-+			RS_COLUMN_MIMO2_SGI,
- 		},
- 	},
- 	[RS_COLUMN_LEGACY_ANT_B] = {
-@@ -221,10 +221,10 @@ static const struct rs_tx_column rs_tx_c
- 		.ant = ANT_B,
- 		.next_columns = {
- 			RS_COLUMN_LEGACY_ANT_A,
-+			RS_COLUMN_SISO_ANT_A,
- 			RS_COLUMN_SISO_ANT_B,
- 			RS_COLUMN_MIMO2,
--			RS_COLUMN_INVALID,
--			RS_COLUMN_INVALID,
-+			RS_COLUMN_MIMO2_SGI,
- 		},
- 	},
- 	[RS_COLUMN_SISO_ANT_A] = {
-@@ -234,8 +234,8 @@ static const struct rs_tx_column rs_tx_c
- 			RS_COLUMN_SISO_ANT_B,
- 			RS_COLUMN_MIMO2,
- 			RS_COLUMN_SISO_ANT_A_SGI,
--			RS_COLUMN_INVALID,
--			RS_COLUMN_INVALID,
-+			RS_COLUMN_SISO_ANT_B_SGI,
-+			RS_COLUMN_MIMO2_SGI,
- 		},
- 		.checks = {
- 			rs_siso_allow,
-@@ -248,8 +248,8 @@ static const struct rs_tx_column rs_tx_c
- 			RS_COLUMN_SISO_ANT_A,
- 			RS_COLUMN_MIMO2,
- 			RS_COLUMN_SISO_ANT_B_SGI,
--			RS_COLUMN_INVALID,
--			RS_COLUMN_INVALID,
-+			RS_COLUMN_SISO_ANT_A_SGI,
-+			RS_COLUMN_MIMO2_SGI,
- 		},
- 		.checks = {
- 			rs_siso_allow,
-@@ -263,8 +263,8 @@ static const struct rs_tx_column rs_tx_c
- 			RS_COLUMN_SISO_ANT_B_SGI,
- 			RS_COLUMN_MIMO2_SGI,
- 			RS_COLUMN_SISO_ANT_A,
--			RS_COLUMN_INVALID,
--			RS_COLUMN_INVALID,
-+			RS_COLUMN_SISO_ANT_B,
-+			RS_COLUMN_MIMO2,
- 		},
- 		.checks = {
- 			rs_siso_allow,
-@@ -279,8 +279,8 @@ static const struct rs_tx_column rs_tx_c
- 			RS_COLUMN_SISO_ANT_A_SGI,
- 			RS_COLUMN_MIMO2_SGI,
- 			RS_COLUMN_SISO_ANT_B,
--			RS_COLUMN_INVALID,
--			RS_COLUMN_INVALID,
-+			RS_COLUMN_SISO_ANT_A,
-+			RS_COLUMN_MIMO2,
- 		},
- 		.checks = {
- 			rs_siso_allow,
-@@ -292,10 +292,10 @@ static const struct rs_tx_column rs_tx_c
- 		.ant = ANT_AB,
- 		.next_columns = {
- 			RS_COLUMN_SISO_ANT_A,
-+			RS_COLUMN_SISO_ANT_B,
-+			RS_COLUMN_SISO_ANT_A_SGI,
-+			RS_COLUMN_SISO_ANT_B_SGI,
- 			RS_COLUMN_MIMO2_SGI,
--			RS_COLUMN_INVALID,
--			RS_COLUMN_INVALID,
--			RS_COLUMN_INVALID,
- 		},
- 		.checks = {
- 			rs_mimo_allow,
-@@ -307,10 +307,10 @@ static const struct rs_tx_column rs_tx_c
- 		.sgi = true,
- 		.next_columns = {
- 			RS_COLUMN_SISO_ANT_A_SGI,
-+			RS_COLUMN_SISO_ANT_B_SGI,
-+			RS_COLUMN_SISO_ANT_A,
-+			RS_COLUMN_SISO_ANT_B,
- 			RS_COLUMN_MIMO2,
--			RS_COLUMN_INVALID,
--			RS_COLUMN_INVALID,
--			RS_COLUMN_INVALID,
- 		},
- 		.checks = {
- 			rs_mimo_allow,
+--- a/net/rds/iw.c
++++ b/net/rds/iw.c
+@@ -239,7 +239,8 @@ static int rds_iw_laddr_check(__be32 add
+ 	ret = rdma_bind_addr(cm_id, (struct sockaddr *)&sin);
+ 	/* due to this, we will claim to support IB devices unless we
+ 	   check node_type. */
+-	if (ret || cm_id->device->node_type != RDMA_NODE_RNIC)
++	if (ret || !cm_id->device ||
++	    cm_id->device->node_type != RDMA_NODE_RNIC)
+ 		ret = -EADDRNOTAVAIL;
+ 
+ 	rdsdebug("addr %pI4 ret %d node type %d\n",
 
 
