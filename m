@@ -1,23 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423214AbaDKRBO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 13:01:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56476 "EHLO
+	id S1422947AbaDKRBL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 13:01:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56493 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422727AbaDKQIv (ORCPT
+	with ESMTP id S1759554AbaDKQIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:08:51 -0400
+	Fri, 11 Apr 2014 12:08:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Paul Moore <pmoore@redhat.com>
-Subject: [PATCH 3.13 01/65] selinux: correctly label /proc inodes in use before the policy is loaded
-Date: Fri, 11 Apr 2014 09:10:33 -0700
-Message-Id: <20140411160957.929752545@linuxfoundation.org>
+        Jan Stancek <jstancek@redhat.com>,
+        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 04/65] bridge: multicast: add sanity check for query source addresses
+Date: Fri, 11 Apr 2014 09:10:36 -0700
+Message-Id: <20140411160958.333038084@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
 References: <20140411160957.714773410@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,106 +32,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
 
-commit f64410ec665479d7b4b77b7519e814253ed0f686 upstream.
+[ Upstream commit 6565b9eeef194afbb3beec80d6dd2447f4091f8c ]
 
-This patch is based on an earlier patch by Eric Paris, he describes
-the problem below:
+MLD queries are supposed to have an IPv6 link-local source address
+according to RFC2710, section 4 and RFC3810, section 5.1.14. This patch
+adds a sanity check to ignore such broken MLD queries.
 
-  "If an inode is accessed before policy load it will get placed on a
-   list of inodes to be initialized after policy load.  After policy
-   load we call inode_doinit() which calls inode_doinit_with_dentry()
-   on all inodes accessed before policy load.  In the case of inodes
-   in procfs that means we'll end up at the bottom where it does:
+Without this check, such malformed MLD queries can result in a
+denial of service: The queries are ignored by any MLD listener
+therefore they will not respond with an MLD report. However,
+without this patch these malformed MLD queries would enable the
+snooping part in the bridge code, potentially shutting down the
+according ports towards these hosts for multicast traffic as the
+bridge did not learn about these listeners.
 
-     /* Default to the fs superblock SID. */
-     isec->sid = sbsec->sid;
-
-     if ((sbsec->flags & SE_SBPROC) && !S_ISLNK(inode->i_mode)) {
-             if (opt_dentry) {
-                     isec->sclass = inode_mode_to_security_class(...)
-                     rc = selinux_proc_get_sid(opt_dentry,
-                                               isec->sclass,
-                                               &sid);
-                     if (rc)
-                             goto out_unlock;
-                     isec->sid = sid;
-             }
-     }
-
-   Since opt_dentry is null, we'll never call selinux_proc_get_sid()
-   and will leave the inode labeled with the label on the superblock.
-   I believe a fix would be to mimic the behavior of xattrs.  Look
-   for an alias of the inode.  If it can't be found, just leave the
-   inode uninitialized (and pick it up later) if it can be found, we
-   should be able to call selinux_proc_get_sid() ..."
-
-On a system exhibiting this problem, you will notice a lot of files in
-/proc with the generic "proc_t" type (at least the ones that were
-accessed early in the boot), for example:
-
-   # ls -Z /proc/sys/kernel/shmmax | awk '{ print $4 " " $5 }'
-   system_u:object_r:proc_t:s0 /proc/sys/kernel/shmmax
-
-However, with this patch in place we see the expected result:
-
-   # ls -Z /proc/sys/kernel/shmmax | awk '{ print $4 " " $5 }'
-   system_u:object_r:sysctl_kernel_t:s0 /proc/sys/kernel/shmmax
-
-Cc: Eric Paris <eparis@redhat.com>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
-Acked-by: Eric Paris <eparis@redhat.com>
+Reported-by: Jan Stancek <jstancek@redhat.com>
+Signed-off-by: Linus Lüssing <linus.luessing@web.de>
+Reviewed-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- security/selinux/hooks.c |   36 +++++++++++++++++++++++++++---------
- 1 file changed, 27 insertions(+), 9 deletions(-)
+ net/bridge/br_multicast.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -1419,15 +1419,33 @@ static int inode_doinit_with_dentry(stru
- 		isec->sid = sbsec->sid;
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -1235,6 +1235,12 @@ static int br_ip6_multicast_query(struct
+ 	    (port && port->state == BR_STATE_DISABLED))
+ 		goto out;
  
- 		if ((sbsec->flags & SE_SBPROC) && !S_ISLNK(inode->i_mode)) {
--			if (opt_dentry) {
--				isec->sclass = inode_mode_to_security_class(inode->i_mode);
--				rc = selinux_proc_get_sid(opt_dentry,
--							  isec->sclass,
--							  &sid);
--				if (rc)
--					goto out_unlock;
--				isec->sid = sid;
--			}
-+			/* We must have a dentry to determine the label on
-+			 * procfs inodes */
-+			if (opt_dentry)
-+				/* Called from d_instantiate or
-+				 * d_splice_alias. */
-+				dentry = dget(opt_dentry);
-+			else
-+				/* Called from selinux_complete_init, try to
-+				 * find a dentry. */
-+				dentry = d_find_alias(inode);
-+			/*
-+			 * This can be hit on boot when a file is accessed
-+			 * before the policy is loaded.  When we load policy we
-+			 * may find inodes that have no dentry on the
-+			 * sbsec->isec_head list.  No reason to complain as
-+			 * these will get fixed up the next time we go through
-+			 * inode_doinit() with a dentry, before these inodes
-+			 * could be used again by userspace.
-+			 */
-+			if (!dentry)
-+				goto out_unlock;
-+			isec->sclass = inode_mode_to_security_class(inode->i_mode);
-+			rc = selinux_proc_get_sid(dentry, isec->sclass, &sid);
-+			dput(dentry);
-+			if (rc)
-+				goto out_unlock;
-+			isec->sid = sid;
- 		}
- 		break;
- 	}
++	/* RFC2710+RFC3810 (MLDv1+MLDv2) require link-local source addresses */
++	if (!(ipv6_addr_type(&ip6h->saddr) & IPV6_ADDR_LINKLOCAL)) {
++		err = -EINVAL;
++		goto out;
++	}
++
+ 	if (skb->len == sizeof(*mld)) {
+ 		if (!pskb_may_pull(skb, sizeof(*mld))) {
+ 			err = -EINVAL;
 
 
