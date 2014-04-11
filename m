@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757087AbaDKKeT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 06:34:19 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:56191 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932333AbaDKK0O (ORCPT
+	id S932333AbaDKKee (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 06:34:34 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:57992 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757370AbaDKKe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 06:26:14 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Miklos Szeredi <mszeredi@suse.cz>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 04/15] arm64: __NR_compat_syscalls fix
-Date: Fri, 11 Apr 2014 12:25:40 +0200
-Message-Id: <1397211951-20549-5-git-send-email-miklos@szeredi.hu>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
-References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
+	Fri, 11 Apr 2014 06:34:28 -0400
+Date: Fri, 11 Apr 2014 11:33:51 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: Re: [PATCH 02/15] arm: __NR_syscalls fix
+Message-ID: <20140411103351.GJ16119@n2100.arm.linux.org.uk>
+References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu> <1397211951-20549-3-git-send-email-miklos@szeredi.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397211951-20549-3-git-send-email-miklos@szeredi.hu>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On Fri, Apr 11, 2014 at 12:25:38PM +0200, Miklos Szeredi wrote:
+> From: Miklos Szeredi <mszeredi@suse.cz>
+> 
+> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> ---
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
----
- arch/arm64/include/asm/unistd32.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This has me wondering...
 
-diff --git a/arch/arm64/include/asm/unistd32.h b/arch/arm64/include/asm/unistd32.h
-index bb8eb8a78e67..faa0e1ce59df 100644
---- a/arch/arm64/include/asm/unistd32.h
-+++ b/arch/arm64/include/asm/unistd32.h
-@@ -404,7 +404,7 @@ __SYSCALL(379, sys_finit_module)
- __SYSCALL(380, sys_sched_setattr)
- __SYSCALL(381, sys_sched_getattr)
- 
--#define __NR_compat_syscalls		379
-+#define __NR_compat_syscalls		382
- 
- /*
-  * Compat syscall numbers used by the AArch64 kernel.
+(a) what you think it fixes
+(b) whether you tried to build-test this
+
+The ARM instruction set supports 8-bit immediate constants with an even
+power of two shift.  384 fits that (0x180), 382 does not (0x17e), and
+in your following patch, 383 definitely doesn't (0x17f).
+
+Having this constant larger than necessary does not cause any problem
+for the syscall table: we explicitly pad it with calls to sys_ni_syscall
+to make up the difference.
+
 -- 
-1.8.1.4
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
