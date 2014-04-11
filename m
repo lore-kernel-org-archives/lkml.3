@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423139AbaDKQXM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:23:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56750 "EHLO
+	id S1423154AbaDKQXq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:23:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56747 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759673AbaDKQJ0 (ORCPT
+	with ESMTP id S1759006AbaDKQJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:26 -0400
+	Fri, 11 Apr 2014 12:09:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, Paul Moore <pmoore@redhat.com>
-Subject: [PATCH 3.14 02/23] selinux: correctly label /proc inodes in use before the policy is loaded
-Date: Fri, 11 Apr 2014 09:11:51 -0700
-Message-Id: <20140411161200.581057879@linuxfoundation.org>
+        =?UTF-8?q?Christian=20G=C3=BCdel?= <cg@dmesg.ch>,
+        Anssi Hannula <anssi.hannula@iki.fi>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.14 01/23] Revert "ALSA: hda - Increment default stream numbers for AMD HDMI controllers"
+Date: Fri, 11 Apr 2014 09:11:50 -0700
+Message-Id: <20140411161200.446445522@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411161200.236939691@linuxfoundation.org>
 References: <20140411161200.236939691@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -26,106 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Moore <pmoore@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit f64410ec665479d7b4b77b7519e814253ed0f686 upstream.
+This reverts commit 7546abfb8e1f9933b549f05898377e9444ee4cb2.
 
-This patch is based on an earlier patch by Eric Paris, he describes
-the problem below:
+The commit [7546abfb: ALSA: hda - Increment default stream numbers for
+AMD HDMI controllers] introduced a regression where the AMD HDMI
+playback streams don't work properly.  As the simplest fix, this patch
+reverts that commit.
 
-  "If an inode is accessed before policy load it will get placed on a
-   list of inodes to be initialized after policy load.  After policy
-   load we call inode_doinit() which calls inode_doinit_with_dentry()
-   on all inodes accessed before policy load.  In the case of inodes
-   in procfs that means we'll end up at the bottom where it does:
+The upstream code has been changed largely and already contains
+another fix (by changing the stream assignment order), this revert
+should be applied only to 3.14 kernel where the regression was
+introduced.
 
-     /* Default to the fs superblock SID. */
-     isec->sid = sbsec->sid;
-
-     if ((sbsec->flags & SE_SBPROC) && !S_ISLNK(inode->i_mode)) {
-             if (opt_dentry) {
-                     isec->sclass = inode_mode_to_security_class(...)
-                     rc = selinux_proc_get_sid(opt_dentry,
-                                               isec->sclass,
-                                               &sid);
-                     if (rc)
-                             goto out_unlock;
-                     isec->sid = sid;
-             }
-     }
-
-   Since opt_dentry is null, we'll never call selinux_proc_get_sid()
-   and will leave the inode labeled with the label on the superblock.
-   I believe a fix would be to mimic the behavior of xattrs.  Look
-   for an alias of the inode.  If it can't be found, just leave the
-   inode uninitialized (and pick it up later) if it can be found, we
-   should be able to call selinux_proc_get_sid() ..."
-
-On a system exhibiting this problem, you will notice a lot of files in
-/proc with the generic "proc_t" type (at least the ones that were
-accessed early in the boot), for example:
-
-   # ls -Z /proc/sys/kernel/shmmax | awk '{ print $4 " " $5 }'
-   system_u:object_r:proc_t:s0 /proc/sys/kernel/shmmax
-
-However, with this patch in place we see the expected result:
-
-   # ls -Z /proc/sys/kernel/shmmax | awk '{ print $4 " " $5 }'
-   system_u:object_r:sysctl_kernel_t:s0 /proc/sys/kernel/shmmax
-
-Cc: Eric Paris <eparis@redhat.com>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
-Acked-by: Eric Paris <eparis@redhat.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=77002
+Reported-by: Christian Güdel <cg@dmesg.ch>
+Reported-by: Anssi Hannula <anssi.hannula@iki.fi>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- security/selinux/hooks.c |   36 +++++++++++++++++++++++++++---------
- 1 file changed, 27 insertions(+), 9 deletions(-)
 
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -1418,15 +1418,33 @@ static int inode_doinit_with_dentry(stru
- 		isec->sid = sbsec->sid;
+Greg, there is no upstream commit id due to the reason describe in the
+above.  It's a simple revert, so please take as is.
+
+thanks,
+
+Takashi
+
+ sound/pci/hda/hda_intel.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -297,9 +297,9 @@ enum { SDI0, SDI1, SDI2, SDI3, SDO0, SDO
+ #define ULI_NUM_CAPTURE		5
+ #define ULI_NUM_PLAYBACK	6
  
- 		if ((sbsec->flags & SE_SBPROC) && !S_ISLNK(inode->i_mode)) {
--			if (opt_dentry) {
--				isec->sclass = inode_mode_to_security_class(inode->i_mode);
--				rc = selinux_proc_get_sid(opt_dentry,
--							  isec->sclass,
--							  &sid);
--				if (rc)
--					goto out_unlock;
--				isec->sid = sid;
--			}
-+			/* We must have a dentry to determine the label on
-+			 * procfs inodes */
-+			if (opt_dentry)
-+				/* Called from d_instantiate or
-+				 * d_splice_alias. */
-+				dentry = dget(opt_dentry);
-+			else
-+				/* Called from selinux_complete_init, try to
-+				 * find a dentry. */
-+				dentry = d_find_alias(inode);
-+			/*
-+			 * This can be hit on boot when a file is accessed
-+			 * before the policy is loaded.  When we load policy we
-+			 * may find inodes that have no dentry on the
-+			 * sbsec->isec_head list.  No reason to complain as
-+			 * these will get fixed up the next time we go through
-+			 * inode_doinit() with a dentry, before these inodes
-+			 * could be used again by userspace.
-+			 */
-+			if (!dentry)
-+				goto out_unlock;
-+			isec->sclass = inode_mode_to_security_class(inode->i_mode);
-+			rc = selinux_proc_get_sid(dentry, isec->sclass, &sid);
-+			dput(dentry);
-+			if (rc)
-+				goto out_unlock;
-+			isec->sid = sid;
- 		}
- 		break;
- 	}
+-/* ATI HDMI may have up to 8 playbacks and 0 capture */
++/* ATI HDMI has 1 playback and 0 capture */
+ #define ATIHDMI_NUM_CAPTURE	0
+-#define ATIHDMI_NUM_PLAYBACK	8
++#define ATIHDMI_NUM_PLAYBACK	1
+ 
+ /* TERA has 4 playback and 3 capture */
+ #define TERA_NUM_CAPTURE	3
 
 
