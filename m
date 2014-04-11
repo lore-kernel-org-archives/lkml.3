@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759230AbaDKPXy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 11:23:54 -0400
-Received: from forward2m.mail.yandex.net ([37.140.138.2]:38957 "EHLO
-	forward2m.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757942AbaDKPXx (ORCPT
+	id S1758801AbaDKPbJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 11:31:09 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40948 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755577AbaDKPbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 11:23:53 -0400
-X-Greylist: delayed 455 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Apr 2014 11:23:53 EDT
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Sasha Levin <sasha.levin@oracle.com>,
-        Michael wang <wangyun@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "ktkhai@parallels.com" <ktkhai@parallels.com>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <5347FCED.8040706@oracle.com>
-References: <5304F32A.4040907@oracle.com> <5305856F.3000109@linux.vnet.ibm.com> <53078241.3060201@oracle.com> <53080122.609@linux.vnet.ibm.com> <530ABB44.5000601@oracle.com> <530AD653.3000808@linux.vnet.ibm.com> <20140224071028.GW9987@twins.programming.kicks-ass.net> <530B1B80.4000307@linux.vnet.ibm.com> <20140224121218.GR15586@twins.programming.kicks-ass.net> <534610A4.5000302@oracle.com> <53464164.5030701@linux.vnet.ibm.com> <336561397137116@web27h.yandex.ru> <5347FCED.8040706@oracle.com>
-Subject: Re: sched: hang in migrate_swap
+	Fri, 11 Apr 2014 11:31:07 -0400
+Date: Fri, 11 Apr 2014 17:30:59 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: mingo@kernel.org, tglx@linutronix.de, luto@amacapital.net,
+        nicolas.pitre@linaro.org, daniel.lezcano@linaro.org,
+        umgwanakikbuti@gmail.com, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC][PATCH 2/8] sched,idle,tile: Switch from TS_POLLING to
+ TIF_POLLING_NRFLAG
+Message-ID: <20140411153059.GY11096@twins.programming.kicks-ass.net>
+References: <20140411134243.160989490@infradead.org>
+ <20140411135218.242750053@infradead.org>
+ <53480702.3080100@tilera.com>
 MIME-Version: 1.0
-Message-Id: <1442521397229373@web20m.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Fri, 11 Apr 2014 19:16:13 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53480702.3080100@tilera.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-11.04.2014, 18:33, "Sasha Levin" <sasha.levin@oracle.com>:
-> On 04/10/2014 09:38 AM, Kirill Tkhai wrote:
->
->> š10.04.2014, 11:00, "Michael wang" <wangyun@linux.vnet.ibm.com>:
->>>> šOn 04/10/2014 11:31 AM, Sasha Levin wrote:
->>>> š[snip]
->>>>>> ššI'd like to re-open this issue. It seems that something broke and I'm
->>>>>> ššnow seeing the same issues that have gone away 2 months with this patch
->>>>>> ššagain.
->>>> šA new mechanism has been designed to move the priority checking inside
->>>> šidle_balance(), including Kirill who is the designer ;-)
->> šNot sure, it's connected with my patch. But looks like, we forgot
->> šexactly stop class. Maybe this will help?
->>
->> š[PATCH] sched: Checking for stop task appearance when balancing happens
->>
->> šJust do it, like we do for other higher priority classes...
->>
->> šSigned-off-by: Kirill Tkhai <tkhai@yandex.ru>
->
-> I've been running with this patch for the last two days and the hang
-> seems to be gone.
->
-> I'll leave it running on the weekend and will update again on Monday.
+On Fri, Apr 11, 2014 at 11:15:14AM -0400, Chris Metcalf wrote:
+> It's unfortunate that you're rolling the fetch_or() unconditionally
+> out of cmpxchg(), since some architectures (like tilegx) do have
+> support for "fetchor" as a primitive atomic operation.  Currently the
+> tilegx fetchor is only exposed to architecture-independent code via
+> set_bit() and test_and_set_bit(), but perhaps it's worth having an
+> atomic_or() in atomic.h so architectures can choose to optimize it?
 
-Thanks for testing.
+Yeah, I know.. Linus hated atomic_or_return() -- which admittedly is a
+little worse than fetch_or, because the operation isn't reversible.
 
-Sorry for I killed your linuxes by this lost need_resched().
+Note that atomic_or_return() or rather, atomic_return_or() won't
+actually work here because thread_info::flags is not a fixed typed
+between archs, some have int, some have long.
 
->
-> Thanks,
-> Sasha
+Then again, when I proposed that thing, I didn't have a usage for it.
+Still, Linus' main argument still holds, its a crappy primitive on x86
+and one should not encourage its use by pretending its 'easy'.
+
+
