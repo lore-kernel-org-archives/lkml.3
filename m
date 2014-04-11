@@ -1,107 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558AbaDKRg3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 13:36:29 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23347 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750914AbaDKRg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 13:36:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,843,1389772800"; 
-   d="scan'208";a="519264057"
-Message-ID: <534827F5.1020004@intel.com>
-Date: Sat, 12 Apr 2014 01:35:49 +0800
-From: Jet Chen <jet.chen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754614AbaDKRhL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 13:37:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45512 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754576AbaDKRhH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 13:37:07 -0400
+Date: Fri, 11 Apr 2014 10:36:51 -0700
+From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
+Message-ID: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, stable@vger.kernel.org,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, tglx@linutronix.de,
+        stable@vger.kernel.org, hpa@linux.intel.com
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86-64, modify_ldt:
+  Ban 16-bit segments on 64-bit kernels
+Git-Commit-ID: b3b42ac2cbae1f3cecbb6229964a4d48af31d382
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>,
-        "Romer, Benjamin M" <Benjamin.Romer@unisys.com>
-CC: Fengguang Wu <fengguang.wu@intel.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [visorchipset] invalid opcode: 0000 [#1] PREEMPT SMP
-References: <20140407111725.GC25152@localhost> <C97001BC43954D438ACB059713BA5CDF92040F0F00@USEA-EXCH7.na.uis.unisys.com> <53444220.50009@intel.com> <C97001BC43954D438ACB059713BA5CDF92040F0F06@USEA-EXCH7.na.uis.unisys.com> <53458A3A.1050608@intel.com> <20140409230114.GB8370@localhost> <5345D360.5000506@linux.intel.com> <C97001BC43954D438ACB059713BA5CDF92040F0F0A@USEA-EXCH7.na.uis.unisys.com> <53475344.5090009@linux.intel.com> <C97001BC43954D438ACB059713BA5CDF92040F0F10@USEA-EXCH7.na.uis.unisys.com> <53481976.3020209@zytor.com>
-In-Reply-To: <53481976.3020209@zytor.com>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2014 12:33 AM, H. Peter Anvin wrote:
-> On 04/11/2014 06:51 AM, Romer, Benjamin M wrote:
->>
->>> I'm still confused where KVM comes into the picture.  Are you actually
->>> using KVM (and thus talking about nested virtualization) or are you
->>> using Qemu in JIT mode and running another hypervisor underneath?
->>
->> The test that Fengguang used to find the problem was running the linux
->> kernel directly using KVM. When the kernel was run with "-cpu Haswell,
->> +smep,+smap" set, the vmcall failed with invalid op, but when the kernel
->> is run with "-cpu qemu64", the vmcall causes a vmexit, as it should.
-> 
-> As far as I know, Fengguang's test doesn't use KVM at all, it runs Qemu
-> as a JIT.  Completely different thing.  In that case Qemu probably
-> should *not* set the hypervisor bit.  However, the only thing that the
-> hypervisor bit means is that you can look for specific hypervisor APIs
-> in CPUID level 0x40000000+.
-> 
->> My point is, the vmcall was made because the hypervisor bit was set. If
->> this bit had been turned off, as it would be on a real processor, the
->> vmcall wouldn't have happened.
-> 
-> And my point is that that is a bug.  In the driver.  A very serious one.
->  You cannot call VMCALL until you know *which* hypervisor API(s) you
-> have available, period.
-> 
->>> The hypervisor bit is a complete red herring. If the guest CPU is
->>> running in VT-x mode, then VMCALL should VMEXIT inside the guest
->>> (invoking the guest root VT-x), 
->>
->> The CPU is running in VT-X. That was my point, the kernel is running in
->> the KVM guest, and KVM is setting the CPU feature bits such that bit 31
->> is enabled.
-> 
-> Which it is because it wants to export the KVM hypercall interface.
-> However, keying VMCALL *only* on the HYPERVISOR bit is wrong in the extreme.
-> 
->> I don't think it's a red herring because the kernel uses this bit
->> elsewhere - it is reported as X86_FEATURE_HYPERVISOR in the CPU
->> features, and can be checked with the cpu_has_hypervisor macro (which
->> was not used by the original author of the code in the driver, but
->> should have been). VMWare and KVM support in the kernel also check for
->> this bit before checking their hypervisor leaves for an ID. If it's not
->> properly set it affects more than just the s-Par drivers.
->>
->>> but the fact still remains that you
->>> should never, ever, invoke VMCALL unless you know what hypervisor you
->>> have underneath.
->>
->> From the standpoint of the s-Par drivers, yes, I agree (as I already
->> said). However, VMCALL is not a privileged instruction, so anyone could
->> use it from user space and go right past the OS straight to the
->> hypervisor. IMHO, making it *lethal* to the guest is a bad idea, since
->> any user could hard-stop the guest with a couple of lines of C.
-> 
-> Typically the hypervisor wants to generate a #UD inside of the guest for
-> that case.  The guest OS will intercept it and SIGILL the user space
-> process.
-> 
-> 	-hpa
-> 
+Commit-ID:  b3b42ac2cbae1f3cecbb6229964a4d48af31d382
+Gitweb:     http://git.kernel.org/tip/b3b42ac2cbae1f3cecbb6229964a4d48af31d382
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Sun, 16 Mar 2014 15:31:54 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 11 Apr 2014 10:10:09 -0700
 
-Hi Ben,
+x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
 
-I re-tested this case with/without option -enable-kvm.
+The IRET instruction, when returning to a 16-bit segment, only
+restores the bottom 16 bits of the user space stack pointer.  We have
+a software workaround for that ("espfix") for the 32-bit kernel, but
+it relies on a nonzero stack segment base which is not available in
+32-bit mode.
 
-qemu-system-x86_64 -cpu Haswell,+smep,+smap			invalid op
-qemu-system-x86_64 -cpu kvm64					invalid op
-qemu-system-x86_64 -cpu Haswell,+smep,+smap -enable-kvm 	everything OK
-qemu-system-x86_64 -cpu kvm64 -enable-kvm			everything OK
+Since 16-bit support is somewhat crippled anyway on a 64-bit kernel
+(no V86 mode), and most (if not quite all) 64-bit processors support
+virtualization for the users who really need it, simply reject
+attempts at creating a 16-bit segment when running on top of a 64-bit
+kernel.
 
-I think this is probably a bug in QEMU.
-Sorry for misleading you. I am not experienced in QEMU usage. I don't realize I need try this case with different options Until read Peter's reply.
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/n/tip-kicdm89kzw9lldryb1br9od0@git.kernel.org
+Cc: <stable@vger.kernel.org>
+---
+ arch/x86/kernel/ldt.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-As Peter said, QEMU probably should *not* set the hypervisor bit. But based on my testing, I think KVM works properly in this case.
-
-Thanks,
-Jet
+diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
+index ebc9873..af1d14a 100644
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -229,6 +229,17 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
+ 		}
+ 	}
+ 
++	/*
++	 * On x86-64 we do not support 16-bit segments due to
++	 * IRET leaking the high bits of the kernel stack address.
++	 */
++#ifdef CONFIG_X86_64
++	if (!ldt_info.seg_32bit) {
++		error = -EINVAL;
++		goto out_unlock;
++	}
++#endif
++
+ 	fill_ldt(&ldt, &ldt_info);
+ 	if (oldmode)
+ 		ldt.avl = 0;
