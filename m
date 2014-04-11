@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423AbaDKCDU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 22:03:20 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:35594 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294AbaDKCDS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 22:03:18 -0400
-X-AuditID: cbfee68d-b7fcd6d00000315b-d2-53474d650138
-Message-id: <53474D66.7020605@samsung.com>
-Date: Fri, 11 Apr 2014 11:03:18 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Olof Johansson <olof@lixom.net>
-Cc: kgene.kim@samsung.com, t.figa@samsung.com,
-        linux-samsung-soc@vger.kernel.org, hyunhee.kim@samsung.com,
-        sw0312.kim@samsung.com, linux-kernel@vger.kernel.org,
-        yj44.cho@samsung.com, inki.dae@samsung.com, kyungmin.park@samsung.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 03/27] ARM: EXYNOS: Add IO mapping for PMU of Exynos3250
-References: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
- <1397122658-16013-4-git-send-email-cw00.choi@samsung.com>
- <20140411014858.GC14934@quad.lixom.net>
-In-reply-to: <20140411014858.GC14934@quad.lixom.net>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsWyRsSkQDfV1z3YoG+9sMXnDy3sFpPuT2Cx
-	6F1wlc3ibNMbdotNj6+xWlzeNYfNYsb5fUwWp65/BrImv2SzWD/jNYvF3p2TGR24PTYvqfe4
-	cqKJ1aNvyypGj8+b5AJYorhsUlJzMstSi/TtErgynhx9yVwwk6Xi1cZWpgbGTcxdjJwcEgIm
-	EttbG9khbDGJC/fWs3UxcnEICSxllJiy+StjFyMHWFFPZzBEfDqjxP2vTawQzmtGie9zXrGB
-	dPMKaEk0n5vPCmKzCKhK7F71EsxmA4rvf3EDrEZUIExi5fQrLBD1ghI/Jt8Ds0UElCWetF1i
-	BhnKLDCFSWLhtD9gzcICPhJ3r54FO09IYDWjxIXvmiA2J9BFs7b0M4HYzAI6Evtbp7FB2PIS
-	m9e8BRskIfCSXaJt/SMWiIsEJL5NPsQC8Y6sxKYDUO9LShxccYNlAqPYLCQ3zUIydhaSsQsY
-	mVcxiqYWJBcUJ6UXGeoVJ+YWl+al6yXn525iBEbl6X/Pencw3j5gfYgxGWjlRGYp0eR8YFTn
-	lcQbGpsZWZiamBobmVuakSasJM6b9DApSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVANj6BbV
-	fTxP7wv8K+t967nKY7vBtevPtp6XdFvg8vnW95w71U93si6w/ldrlHRBdcnOhqBskwuff9xa
-	YPFp3USFct1QKx8WxfuXPv7aubBRLf6Jz9H2V5eFmGJFY834VuR28p2unK83ufRRRG6USdZ3
-	qfyZpada2MRWP5pafG/ygikWR75//BF7W4mlOCPRUIu5qDgRADEh99bgAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jQd1UX/dggx93uC0+f2hht5h0fwKL
-	Re+Cq2wWZ5vesFtsenyN1eLyrjlsFjPO72OyOHX9M5A1+SWbxfoZr1ks9u6czOjA7bF5Sb3H
-	lRNNrB59W1YxenzeJBfAEtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCX
-	mJtqq+TiE6DrlpkDdJWSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMePJ
-	0ZfMBTNZKl5tbGVqYNzE3MXIwSEhYCLR0xncxcgJZIpJXLi3nq2LkYtDSGA6o8T9r02sEM5r
-	Ronvc16xgVTxCmhJNJ+bzwpiswioSuxe9RLMZgOK739xA6xGVCBMYuX0KywQ9YISPybfA7NF
-	BJQlnrRdYgYZyiwwhUli4bQ/YM3CAj4Sd6+eZQexhQRWM0pc+K4JYnMCXTdrSz8TiM0soCOx
-	v3UaG4QtL7F5zVvmCYwCs5DsmIWkbBaSsgWMzKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcx
-	gmP+mfQOxlUNFocYBTgYlXh4D1xyCxZiTSwrrsw9xCjBwawkwtvzAyjEm5JYWZValB9fVJqT
-	WnyIMRkYBBOZpUST84HpKK8k3tDYxMzI0sjc0MLI2Jw0YSVx3oOt1oFCAumJJanZqakFqUUw
-	W5g4OKUaGO39Typ/Nn7v0jZB475v3JwqLQPvpxL3Tcufp7K1up+48jx+uXrj4se/9NgDS709
-	GyZvjfVwKX/N0r32rVX3mQOfLl6KXS5jIWW9rFBgwfYrp083HL5+xzv337fUiX/EI+3iJt7Z
-	6rBw+yLlQ0uVrh8u/fzC4P4JpVN39xRVLgnO2zrpeIlm6xYlluKMREMt5qLiRADsA8MWPQMA	AA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1754550AbaDKCEH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 22:04:07 -0400
+Received: from mga11.intel.com ([192.55.52.93]:16935 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754482AbaDKCEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 22:04:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,838,1389772800"; 
+   d="scan'208";a="511254770"
+Subject: [PATCH] net: ipv4: current group_info should be put after using.
+From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
+To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: chuansheng.liu@intel.com, dongxing.zhang@intel.com,
+        xiaoming.wang@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 Apr 2014 12:10:38 -0400
+Message-ID: <1397232638.20759.28.camel@wxm-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2014 10:48 AM, Olof Johansson wrote:
-> On Thu, Apr 10, 2014 at 06:37:14PM +0900, Chanwoo Choi wrote:
->> This patch add memory mapping for PMU (Power Management Unit) which is used
->> for power control of Exynos3250.
->>
->> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> 
-> Signed-off-by is in the wrong order, if Kyungmin wrote the patch and you're
-> just posting it...
+There is a memory leak in ping when call ping in dumpstate.
+Current group_info had been got in ping_init_sock and group_info->usage
+increased. But the usage hasn't decreased.
+This will make group_info never freed and cause memory leak.
 
+unreferenced object 0xcd0e8840 (size 192):
+  comm "dumpstate", pid 7583, jiffies 78360 (age 91.810s)
+  hex dump (first 32 bytes):
+    02 00 00 00 06 00 00 00 01 00 00 00 ef 03 00 00  ................
+    f1 03 00 00 f7 03 00 00 04 04 00 00 bb 0b 00 00  ................
+  backtrace:
+    [<c1a6bbfc>] kmemleak_alloc+0x3c/0xa0
+    [<c1320457>] __kmalloc+0xe7/0x1d0
+    [<c1267c04>] groups_alloc+0x34/0xb0
+    [<c1267e5c>] SyS_setgroups+0x3c/0xf0
+    [<c1a864a8>] syscall_call+0x7/0xb
+    [<ffffffff>] 0xffffffff
 
-No, I implemented this patch and posted it.
+Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
+Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+---
+ net/ipv4/ping.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
-Best Regards,
-Chanwoo Choi
+diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
+index f4b19e5..2af7b1f 100644
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -255,23 +255,28 @@ int ping_init_sock(struct sock *sk)
+ 	struct group_info *group_info = get_current_groups();
+ 	int i, j, count = group_info->ngroups;
+ 	kgid_t low, high;
++	int ret = 0;
+ 
+ 	inet_get_ping_group_range_net(net, &low, &high);
+ 	if (gid_lte(low, group) && gid_lte(group, high))
+-		return 0;
++		goto EXIT;
+ 
+ 	for (i = 0; i < group_info->nblocks; i++) {
+ 		int cp_count = min_t(int, NGROUPS_PER_BLOCK, count);
+ 		for (j = 0; j < cp_count; j++) {
+ 			kgid_t gid = group_info->blocks[i][j];
+ 			if (gid_lte(low, gid) && gid_lte(gid, high))
+-				return 0;
++				goto EXIT;
+ 		}
+ 
+ 		count -= cp_count;
+ 	}
+ 
+-	return -EACCES;
++	ret = -EACCES;
++
++EXIT:
++	put_group_info(group_info);
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(ping_init_sock);
+ 
+-- 
+1.7.1
+
 
