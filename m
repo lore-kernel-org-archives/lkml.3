@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435AbaDKILG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 04:11:06 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:58316 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754811AbaDKIKO (ORCPT
+	id S1755608AbaDKINX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 04:13:23 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:44077 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755547AbaDKIND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 04:10:14 -0400
-From: Liu Hua <sdu.liu@huawei.com>
-To: <nicolas.pitre@linaro.org>
-CC: <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <wangnan0@huawei.com>, <peifeiyue@huawei.com>, <liusdu@126.com>,
-        <m.szyprowski@samsung.com>, Liu Hua <sdu.liu@huawei.com>
-Subject: [PATCH v2 1/2] ARM : DMA : remove useless information about DMA
-Date: Fri, 11 Apr 2014 16:00:51 +0800
-Message-ID: <1397203252-22977-2-git-send-email-sdu.liu@huawei.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1397203252-22977-1-git-send-email-sdu.liu@huawei.com>
-References: <1397203252-22977-1-git-send-email-sdu.liu@huawei.com>
+	Fri, 11 Apr 2014 04:13:03 -0400
+Date: Fri, 11 Apr 2014 10:12:59 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Jisheng Zhang <jszhang@marvell.com>
+Cc: "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        Jimmy Xu <zmxu@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND 4/5] Documentation: add the Marvell Berlin pinctrl
+ documentation
+Message-ID: <20140411081259.GA20147@kwain>
+References: <1397135274-10764-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1397135274-10764-5-git-send-email-antoine.tenart@free-electrons.com>
+ <20140411143318.67e55a17@xhacker>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140411143318.67e55a17@xhacker>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because commit e9da6e9905e6 has remove custom consistent dma
-region. So the related variable and document should be removed
+Hi Jisheng,
 
-Signed-off-by: Liu Hua <sdu.liu@huawei.com>
----
- Documentation/arm/memory.txt  | 4 ----
- arch/arm/include/asm/memory.h | 2 --
- 2 files changed, 6 deletions(-)
+On Fri, Apr 11, 2014 at 02:33:18PM +0800, Jisheng Zhang wrote:
+> On Thu, 10 Apr 2014 06:07:53 -0700
+> Antoine Ténart <antoine.tenart@free-electrons.com> wrote:
+> > +Required subnode-properties:
+> > +- berlin,group: a string describing the group's name.
+> > +- berlin,function: the function used to mux the group.
+> 
+> Would it be better to s/function/mode? Because in mrvl internal technology
+> discussion and docs, we usually say "set pinmux Gy as mode z".
 
-diff --git a/Documentation/arm/memory.txt b/Documentation/arm/memory.txt
-index 4bfb9ff..8a361c0 100644
---- a/Documentation/arm/memory.txt
-+++ b/Documentation/arm/memory.txt
-@@ -44,10 +44,6 @@ fffe0000	fffe7fff	ITCM mapping area for platforms with
- fff00000	fffdffff	Fixmap mapping region.  Addresses provided
- 				by fix_to_virt() will be located here.
- 
--ffc00000	ffefffff	DMA memory mapping region.  Memory returned
--				by the dma_alloc_xxx functions will be
--				dynamically mapped here.
--
- ff000000	ffbfffff	Reserved for future expansion of DMA
- 				mapping region.
- 
-diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-index 02fa255..2b75146 100644
---- a/arch/arm/include/asm/memory.h
-+++ b/arch/arm/include/asm/memory.h
-@@ -83,8 +83,6 @@
-  */
- #define IOREMAP_MAX_ORDER	24
- 
--#define CONSISTENT_END		(0xffe00000UL)
--
- #else /* CONFIG_MMU */
- 
- /*
+The pinctrl framework uses 'function', so I guess it's better not to introduce
+an other keyword that may confuse people. But I agree this is not what's used in
+the Marvell's docs. What do you think about we mention it in this documentation ?
+
+Thanks for the feedback !
+
+Antoine
+
 -- 
-1.9.0
-
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
