@@ -1,100 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934852AbaDKQnE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:43:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56616 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422808AbaDKQJD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759595AbaDKQJD (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Apr 2014 12:09:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56450 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759438AbaDKQHj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 12:07:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Graf <tgraf@suug.ch>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 37/65] ip6mr: fix mfc notification flags
-Date: Fri, 11 Apr 2014 09:11:09 -0700
-Message-Id: <20140411161002.838513401@linuxfoundation.org>
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.10 39/41] crypto: ghash-clmulni-intel - use C implementation for setkey()
+Date: Fri, 11 Apr 2014 09:10:10 -0700
+Message-Id: <20140411160935.713476714@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
-References: <20140411160957.714773410@linuxfoundation.org>
+In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
+References: <20140411160932.865173041@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 
-[ Upstream commit f518338b16038beeb73e155e60d0f70beb9379f4 ]
+commit 8ceee72808d1ae3fb191284afc2257a2be964725 upstream.
 
-Commit 812e44dd1829 ("ip6mr: advertise new mfc entries via rtnl") reuses the
-function ip6mr_fill_mroute() to notify mfc events.
-But this function was used only for dump and thus was always setting the
-flag NLM_F_MULTI, which is wrong in case of a single notification.
+The GHASH setkey() function uses SSE registers but fails to call
+kernel_fpu_begin()/kernel_fpu_end(). Instead of adding these calls, and
+then having to deal with the restriction that they cannot be called from
+interrupt context, move the setkey() implementation to the C domain.
 
-Libraries like libnl will wait forever for NLMSG_DONE.
+Note that setkey() does not use any particular SSE features and is not
+expected to become a performance bottleneck.
 
-CC: Thomas Graf <tgraf@suug.ch>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Acked-by: Thomas Graf <tgraf@suug.ch>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+Fixes: 0e1227d356e9b (crypto: ghash - Add PCLMULQDQ accelerated implementation)
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/ip6mr.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/net/ipv6/ip6mr.c
-+++ b/net/ipv6/ip6mr.c
-@@ -2349,13 +2349,14 @@ int ip6mr_get_route(struct net *net,
- }
+---
+ arch/x86/crypto/ghash-clmulni-intel_asm.S  |   29 -----------------------------
+ arch/x86/crypto/ghash-clmulni-intel_glue.c |   14 +++++++++++---
+ 2 files changed, 11 insertions(+), 32 deletions(-)
+
+--- a/arch/x86/crypto/ghash-clmulni-intel_asm.S
++++ b/arch/x86/crypto/ghash-clmulni-intel_asm.S
+@@ -24,10 +24,6 @@
+ .align 16
+ .Lbswap_mask:
+ 	.octa 0x000102030405060708090a0b0c0d0e0f
+-.Lpoly:
+-	.octa 0xc2000000000000000000000000000001
+-.Ltwo_one:
+-	.octa 0x00000001000000000000000000000001
  
- static int ip6mr_fill_mroute(struct mr6_table *mrt, struct sk_buff *skb,
--			     u32 portid, u32 seq, struct mfc6_cache *c, int cmd)
-+			     u32 portid, u32 seq, struct mfc6_cache *c, int cmd,
-+			     int flags)
+ #define DATA	%xmm0
+ #define SHASH	%xmm1
+@@ -134,28 +130,3 @@ ENTRY(clmul_ghash_update)
+ .Lupdate_just_ret:
+ 	ret
+ ENDPROC(clmul_ghash_update)
+-
+-/*
+- * void clmul_ghash_setkey(be128 *shash, const u8 *key);
+- *
+- * Calculate hash_key << 1 mod poly
+- */
+-ENTRY(clmul_ghash_setkey)
+-	movaps .Lbswap_mask, BSWAP
+-	movups (%rsi), %xmm0
+-	PSHUFB_XMM BSWAP %xmm0
+-	movaps %xmm0, %xmm1
+-	psllq $1, %xmm0
+-	psrlq $63, %xmm1
+-	movaps %xmm1, %xmm2
+-	pslldq $8, %xmm1
+-	psrldq $8, %xmm2
+-	por %xmm1, %xmm0
+-	# reduction
+-	pshufd $0b00100100, %xmm2, %xmm1
+-	pcmpeqd .Ltwo_one, %xmm1
+-	pand .Lpoly, %xmm1
+-	pxor %xmm1, %xmm0
+-	movups %xmm0, (%rdi)
+-	ret
+-ENDPROC(clmul_ghash_setkey)
+--- a/arch/x86/crypto/ghash-clmulni-intel_glue.c
++++ b/arch/x86/crypto/ghash-clmulni-intel_glue.c
+@@ -30,8 +30,6 @@ void clmul_ghash_mul(char *dst, const be
+ void clmul_ghash_update(char *dst, const char *src, unsigned int srclen,
+ 			const be128 *shash);
+ 
+-void clmul_ghash_setkey(be128 *shash, const u8 *key);
+-
+ struct ghash_async_ctx {
+ 	struct cryptd_ahash *cryptd_tfm;
+ };
+@@ -58,13 +56,23 @@ static int ghash_setkey(struct crypto_sh
+ 			const u8 *key, unsigned int keylen)
  {
- 	struct nlmsghdr *nlh;
- 	struct rtmsg *rtm;
- 	int err;
+ 	struct ghash_ctx *ctx = crypto_shash_ctx(tfm);
++	be128 *x = (be128 *)key;
++	u64 a, b;
  
--	nlh = nlmsg_put(skb, portid, seq, cmd, sizeof(*rtm), NLM_F_MULTI);
-+	nlh = nlmsg_put(skb, portid, seq, cmd, sizeof(*rtm), flags);
- 	if (nlh == NULL)
- 		return -EMSGSIZE;
+ 	if (keylen != GHASH_BLOCK_SIZE) {
+ 		crypto_shash_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
+ 		return -EINVAL;
+ 	}
  
-@@ -2423,7 +2424,7 @@ static void mr6_netlink_event(struct mr6
- 	if (skb == NULL)
- 		goto errout;
+-	clmul_ghash_setkey(&ctx->shash, key);
++	/* perform multiplication by 'x' in GF(2^128) */
++	a = be64_to_cpu(x->a);
++	b = be64_to_cpu(x->b);
++
++	ctx->shash.a = (__be64)((b << 1) | (a >> 63));
++	ctx->shash.b = (__be64)((a << 1) | (b >> 63));
++
++	if (a >> 63)
++		ctx->shash.b ^= cpu_to_be64(0xc2);
  
--	err = ip6mr_fill_mroute(mrt, skb, 0, 0, mfc, cmd);
-+	err = ip6mr_fill_mroute(mrt, skb, 0, 0, mfc, cmd, 0);
- 	if (err < 0)
- 		goto errout;
- 
-@@ -2462,7 +2463,8 @@ static int ip6mr_rtm_dumproute(struct sk
- 				if (ip6mr_fill_mroute(mrt, skb,
- 						      NETLINK_CB(cb->skb).portid,
- 						      cb->nlh->nlmsg_seq,
--						      mfc, RTM_NEWROUTE) < 0)
-+						      mfc, RTM_NEWROUTE,
-+						      NLM_F_MULTI) < 0)
- 					goto done;
- next_entry:
- 				e++;
-@@ -2476,7 +2478,8 @@ next_entry:
- 			if (ip6mr_fill_mroute(mrt, skb,
- 					      NETLINK_CB(cb->skb).portid,
- 					      cb->nlh->nlmsg_seq,
--					      mfc, RTM_NEWROUTE) < 0) {
-+					      mfc, RTM_NEWROUTE,
-+					      NLM_F_MULTI) < 0) {
- 				spin_unlock_bh(&mfc_unres_lock);
- 				goto done;
- 			}
+ 	return 0;
+ }
 
 
