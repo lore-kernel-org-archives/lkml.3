@@ -1,86 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759138AbaDKO6i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 10:58:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42261 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759006AbaDKO6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 10:58:36 -0400
-Date: Fri, 11 Apr 2014 16:57:54 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, acme@ghostprotocols.net,
-        LKML <linux-kernel@vger.kernel.org>, jmario@redhat.com,
-        fowles@inreach.com, peterz@infradead.org, eranian@google.com,
-        andi.kleen@intel.com
-Subject: Re: [PATCH 05/15 V3] perf, c2c: Rework setup code to prepare for
- features
-Message-ID: <20140411145754.GA22707@krava.brq.redhat.com>
-References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
- <1395689826-215033-6-git-send-email-dzickus@redhat.com>
- <20140329171018.GA2022@krava.redhat.com>
- <87ob0cw9na.fsf@sejong.aot.lge.com>
- <20140408141107.GT8488@redhat.com>
- <87eh17uwzj.fsf@sejong.aot.lge.com>
- <20140409013658.GA8488@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140409013658.GA8488@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932618AbaDKO7r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 10:59:47 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:43408 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754371AbaDKO5c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 10:57:32 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-86-534802db9012
+From: Jacek Anaszewski <j.anaszewski@samsung.com>
+To: linux-media@vger.kernel.org, linux-leds@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: s.nawrocki@samsung.com, a.hajda@samsung.com, kyungmin.park@samsung.com,
+        Jacek Anaszewski <j.anaszewski@samsung.com>,
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
+Subject: [PATCH/RFC v3 2/5] leds: Improve and export led_update_brightness
+ function
+Date: Fri, 11 Apr 2014 16:56:53 +0200
+Message-id: <1397228216-6657-3-git-send-email-j.anaszewski@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1397228216-6657-1-git-send-email-j.anaszewski@samsung.com>
+References: <1397228216-6657-1-git-send-email-j.anaszewski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHLMWRmVeSWpSXmKPExsVy+t9jAd3bTB7BBl9bVCxurTvHanF050Qm
+	i/lHgKzeq88ZLc42vWG3uLxrDpvF1jfrGC16Nmxltdi96ymrxeE37awOXB47Z91l99gz/wer
+	R9+WVYwenzfJBbBEcdmkpOZklqUW6dslcGUcnb+ZteCXSMXzW0/YGhgPCHYxcnJICJhILFq3
+	kxXCFpO4cG89WxcjF4eQwCJGiYOrmhghnHYmidcPdzGDVLEJGEr8fPGaCcQWESiXmDb1ERNI
+	EbPAPkaJTdOOgxUJC4RKXHn/hg3EZhFQlZg9/QM7iM0r4C6xZuJsli5GDqB1ChJzJtmAhDkF
+	PCTuPFzDAmILAZUcez6VaQIj7wJGhlWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwaH2TGoH
+	48oGi0OMAhyMSjy8GRfcgoVYE8uKK3MPMUpwMCuJ8G666h4sxJuSWFmVWpQfX1Sak1p8iFGa
+	g0VJnPdAq3WgkEB6YklqdmpqQWoRTJaJg1OqgXHr7fQ5N5j+LwhZJOro+nWlT57r690H5Uwk
+	3gflLFe8fnMzR5ZRK6NdxNns1N+50oenFmxQDvg3+8ra7uPxPTLPLXyV9v0TyDpwnP/r6elO
+	L16FMOzZpLvVJNZe4qaF0x/Wl+4ON37/rPM4uOsL251sAcHpHprFN5qW2z1Oc3q/aUdncrrN
+	jkVKLMUZiYZazEXFiQCaIiG4MQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 09:36:58PM -0400, Don Zickus wrote:
-> On Wed, Apr 09, 2014 at 10:12:32AM +0900, Namhyung Kim wrote:
-> > On Tue, 8 Apr 2014 10:11:07 -0400, Don Zickus wrote:
-> > > On Tue, Apr 08, 2014 at 04:41:29PM +0900, Namhyung Kim wrote:
-> > >> On Sat, 29 Mar 2014 18:10:18 +0100, Jiri Olsa wrote:
-> > >> > On Mon, Mar 24, 2014 at 03:36:56PM -0400, Don Zickus wrote:
-> > >> >
-> > >> > SNIP
-> > >> >
-> > >> >>  
-> > >> >>  static int perf_c2c__process_load_store(struct perf_c2c *c2c,
-> > >> >> +					struct addr_location *al,
-> > >> >>  					struct perf_sample *sample,
-> > >> >> -					struct addr_location *al)
-> > >> >> +					struct perf_evsel *evsel)
-> > >> >>  {
-> > >> >> -	if (c2c->raw_records)
-> > >> >> -		perf_sample__fprintf(sample, ' ', "raw input", al, stdout);
-> > >> >> +	struct mem_info *mi;
-> > >> >> +
-> > >> >> +	mi = sample__resolve_mem(sample, al);
-> > >> >> +	if (!mi)
-> > >> >> +		return -ENOMEM;
-> > >> >
-> > >> > perhaps not directly related to this patchset, but I needed
-> > >> > attached patch to get resolved data in .bss (static), which
-> > >> > for some reason happened to be located in executable segment
-> > >> 
-> > >> Wasn't it a read-only/const data?
-> > >
-> > > I believe it had the 'x' bit set.  Or the kernel was not passing any
-> > > protection bits, so it defaulted to MAP_FUNCTION?
-> > 
-> > The perf treats a mapping as a data mapping (MAP_VARIABLE) by default if
-> > the 'x' bit is not set.  As Jiri said its a static data, I guessed it's
-> > a const data (set to 0?) and moved into .rodata section and then to the
-> > text segment.
+led_update_brightness helper function used to be exploited
+only locally in the led-class.c module, where its result was
+being passed to the brightness_show sysfs callback. With the
+introduction of v4l2-flash subdevice the same functionality
+became required for reading current brightness from a LED
+device. This patch adds checking brightness_get callback
+error code and adds the function to the LED subsystem
+public API.
 
-it was not initialized static data, .. not sure why it ended up
-in text segment, because I dont see it anymore :-)
+Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Bryan Wu <cooloney@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+---
+ drivers/leds/led-class.c |    6 ------
+ drivers/leds/led-core.c  |   16 ++++++++++++++++
+ include/linux/leds.h     |   10 ++++++++++
+ 3 files changed, 26 insertions(+), 6 deletions(-)
 
-> 
-> Unfortunately, his patch will be needed eventually, if not for his reason,
-> I had a java JAR file example that was pulling data addresses out of a
-> shared memory region with the protection bits set to 'rwx' (in the
-> /proc/<pid>/maps area).  I was losing lots of samples until I came up with
-> a more complicated hack.
+diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+index 58f16c3..7f285d7 100644
+--- a/drivers/leds/led-class.c
++++ b/drivers/leds/led-class.c
+@@ -24,12 +24,6 @@
+ 
+ static struct class *leds_class;
+ 
+-static void led_update_brightness(struct led_classdev *led_cdev)
+-{
+-	if (led_cdev->brightness_get)
+-		led_cdev->brightness = led_cdev->brightness_get(led_cdev);
+-}
+-
+ static ssize_t brightness_show(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
+ {
+diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
+index 71b40d3..376166c 100644
+--- a/drivers/leds/led-core.c
++++ b/drivers/leds/led-core.c
+@@ -126,3 +126,19 @@ void led_set_brightness(struct led_classdev *led_cdev,
+ 	__led_set_brightness(led_cdev, brightness);
+ }
+ EXPORT_SYMBOL(led_set_brightness);
++
++int led_update_brightness(struct led_classdev *led_cdev)
++{
++	int ret = 0;
++
++	if (led_cdev->brightness_get) {
++		ret = led_cdev->brightness_get(led_cdev);
++		if (ret >= 0) {
++			led_cdev->brightness = ret;
++			return 0;
++		}
++	}
++
++	return ret;
++}
++EXPORT_SYMBOL(led_update_brightness);
+diff --git a/include/linux/leds.h b/include/linux/leds.h
+index a794817..d085c21 100644
+--- a/include/linux/leds.h
++++ b/include/linux/leds.h
+@@ -174,6 +174,16 @@ extern void led_blink_set_oneshot(struct led_classdev *led_cdev,
+  */
+ extern void led_set_brightness(struct led_classdev *led_cdev,
+ 			       enum led_brightness brightness);
++/**
++ * led_update_brightness - update LED brightness
++ * @led_cdev: the LED to query
++ *
++ * Get an LED's current brightness and update led_cdev->brightness
++ * member with the obtained value.
++ *
++ * Returns: 0 on success or negative error value on failure
++ */
++extern int led_update_brightness(struct led_classdev *led_cdev);
+ 
+ /**
+  * led_sysfs_is_locked
+-- 
+1.7.9.5
 
-also, I think nothing prevents user from mapping memory as 'rwx'
-and load/store data there.. we should be able to handle this case
-
-jirka
