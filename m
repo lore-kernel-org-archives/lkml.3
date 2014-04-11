@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757976AbaDKNO6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 09:14:58 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38561 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757475AbaDKNOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 09:14:51 -0400
-Date: Fri, 11 Apr 2014 15:14:42 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Punnaiah Choudary <kpc528@gmail.com>, Rob Herring <robherring2@gmail.com>,
-        Punnaiah Choudary Kalluri 
-	<punnaiah.choudary.kalluri@xilinx.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-edac@vger.kernel.org, Michal Simek <michal.simek@xilinx.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        punnaiah choudary kalluri <kalluripunnaiahchoudary@gmail.com>,
-        punnaiah choudary kalluri <punnaia@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [RFC PATCH] edac: add support for ARM PL310 L2 cache parity
-Message-ID: <20140411131442.GA11636@pd.tnic>
-References: <1393770760-32550-1-git-send-email-punnaia@xilinx.com>
- <a1a9e47a-069c-4285-9899-d5a58cf532c2@CO9EHSMHS003.ehs.local>
- <20140409113246.GA8778@pd.tnic>
- <CAL_Jsq+gszc+R_BrLtHKEBGYd=3T+sE1d+-HoF9aYZt6C2k5-g@mail.gmail.com>
- <20140409151932.GK6529@pd.tnic>
- <CAHLkNHJTA5bGD1zAfzE2JrDFAWvmgYyYjir+4vR-d9Fe2-E48g@mail.gmail.com>
- <20140409174701.GO6529@pd.tnic>
- <53463641.1030800@monstr.eu>
- <20140410090246.GC29093@pd.tnic>
- <53466DBF.7030606@monstr.eu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <53466DBF.7030606@monstr.eu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757636AbaDKNU0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 09:20:26 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:47268 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753489AbaDKNUW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 09:20:22 -0400
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: linux-kernel@vger.kernel.org, patrice.chotard@st.com,
+        maxime.coquelin@st.com
+Cc: kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
+        mturquette@linaro.org,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: [PATCH 8/9] ARM: STi: DT: STiH415: Remove unused CLK_S_GMAC0_PHY & CLK_S_ETH1_PHY fixed clocks
+Date: Fri, 11 Apr 2014 15:19:55 +0200
+Message-Id: <1397222396-30106-9-git-send-email-gabriel.fernandez@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1397222396-30106-1-git-send-email-gabriel.fernandez@linaro.org>
+References: <1397222396-30106-1-git-send-email-gabriel.fernandez@linaro.org>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-04-11_04:2014-04-11,2014-04-11,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 12:09:03PM +0200, Michal Simek wrote:
-> The question here is. This driver is just reporting problem through
-> edac interface which is counting that errors and provide an unified
-> way how to report problems.
+CLK_S_GMAC0_PHY &  CLK_S_ETH1_PH clocks are no longer used.
 
-Yes, normally you can use edac for reporting and error counting. But,
-if, as I said earlier, it is easier to solve your issue of having two
-entities touch one hardware and synchronizing around it is too much,
-just for this one case, you can simply report the errors with simple
-printk, without the edac interface.
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+---
+ arch/arm/boot/dts/stih415-clock.dtsi | 14 --------------
+ 1 file changed, 14 deletions(-)
 
-This is why I was asking the practical question of why do you even need
-the edac interface? If it is only for reporting, use printk and solve
-the problem of having two drivers.
-
-> Maybe as you said we don't need to use edac interface at all but by
-> design because every error means that there is the problem and error
-> should be reported and system should be reset because we just don't
-> know where the problem is. We know that we have a problem.
->
-> The question also is if we should execute any code because the problem
-> can be with instructions and system should just reset.
->
-> Isn't there any security issue that even executing any code is a
-> problem?
-
-Well, this is up to you to answer. If an UE (Uncorrectable Error) causes
-data to get corrupted on your system, which, as a result, corrupts
-visible state which lands on storage, you definitely want to stop
-executing any code. x86 deals very rigorously with errors like those
-by running an exception handler, on AMD there's also this thing called
-syncflood which stops any execution and a warm reset happens.
-
-So you have to think hard what those UEs cause on your systems and only
-then act accordingly. If something bad like the above happens, the last
-thing you want to do is report them to dmesg.
-
-HTH.
-
+diff --git a/arch/arm/boot/dts/stih415-clock.dtsi b/arch/arm/boot/dts/stih415-clock.dtsi
+index 5bdba06..24a7508 100644
+--- a/arch/arm/boot/dts/stih415-clock.dtsi
++++ b/arch/arm/boot/dts/stih415-clock.dtsi
+@@ -32,20 +32,6 @@
+ 			clock-frequency = <500000000>;
+ 		};
+ 
+-		CLKS_GMAC0_PHY: clockgenA1@7 {
+-			#clock-cells = <0>;
+-			compatible = "fixed-clock";
+-			clock-frequency = <25000000>;
+-			clock-output-names = "CLKS_GMAC0_PHY";
+-		};
+-
+-		CLKS_ETH1_PHY: clockgenA0@7 {
+-			#clock-cells = <0>;
+-			compatible = "fixed-clock";
+-			clock-frequency = <25000000>;
+-			clock-output-names = "CLKS_ETH1_PHY";
+-		};
+-
+ 		/*
+ 		 * ClockGenAs on SASG1
+ 		 */
 -- 
-Regards/Gruss,
-    Boris.
+1.9.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
