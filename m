@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422732AbaDKRMl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 13:12:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56310 "EHLO
+	id S1759446AbaDKRNL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 13:13:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56301 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756206AbaDKQH1 (ORCPT
+	with ESMTP id S1754381AbaDKQH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:07:27 -0400
+	Fri, 11 Apr 2014 12:07:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Bruce Ashfield <bruce.ashfield@windriver.com>,
-        Michal Marek <mmarek@suse.cz>, Wang Nan <wangnan0@huawei.com>
-Subject: [PATCH 3.10 05/41] kbuild: fix make headers_install when path is too long
-Date: Fri, 11 Apr 2014 09:09:36 -0700
-Message-Id: <20140411160933.244697152@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.10 03/41] powernow-k6: correctly initialize default parameters
+Date: Fri, 11 Apr 2014 09:09:34 -0700
+Message-Id: <20140411160933.107957927@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
 References: <20140411160932.865173041@linuxfoundation.org>
@@ -28,122 +27,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit c0ff68f1611d6855a06d672989ad5cfea160a4eb upstream.
+commit d82b922a4acc1781d368aceac2f9da43b038cab2 upstream.
 
-If headers_install is executed from a deep/long directory structure, the
-shell's maximum argument length can be execeeded, which breaks the operation
-with:
+The powernow-k6 driver used to read the initial multiplier from the
+powernow register. However, there is a problem with this:
 
-| make[2]: execvp: /bin/sh: Argument list too long
-| make[2]: ***
+* If there was a frequency transition before, the multiplier read from the
+  register corresponds to the current multiplier.
+* If there was no frequency transition since reset, the field in the
+  register always reads as zero, regardless of the current multiplier that
+  is set using switches on the mainboard and that the CPU is running at.
 
-Instead of passing each files name with the entire path, I give only the file
-name without the source path and give this path as a new argument to
-headers_install.pl.
+The zero value corresponds to multiplier 4.5, so as a consequence, the
+powernow-k6 driver always assumes multiplier 4.5.
 
-Because there is three possible paths, I have tree input-files list, one per
-path.
+For example, if we have 550MHz CPU with bus frequency 100MHz and
+multiplier 5.5, the powernow-k6 driver thinks that the multiplier is 4.5
+and bus frequency is 122MHz. The powernow-k6 driver then sets the
+multiplier to 4.5, underclocking the CPU to 450MHz, but reports the
+current frequency as 550MHz.
 
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Tested-by: Bruce Ashfield <bruce.ashfield@windriver.com>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
-Cc: Wang Nan <wangnan0@huawei.com>
+There is no reliable way how to read the initial multiplier. I modified
+the driver so that it contains a table of known frequencies (based on
+parameters of existing CPUs and some common overclocking schemes) and sets
+the multiplier according to the frequency. If the frequency is unknown
+(because of unusual overclocking or underclocking), the user must supply
+the bus speed and maximum multiplier as module parameters.
+
+This patch should be backported to all stable kernels. If it doesn't
+apply cleanly, change it, or ask me to change it.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- scripts/Makefile.headersinst |   20 ++++++++++++++------
- scripts/headers_install.sh   |    7 +++++--
- 2 files changed, 19 insertions(+), 8 deletions(-)
 
---- a/scripts/Makefile.headersinst
-+++ b/scripts/Makefile.headersinst
-@@ -47,18 +47,24 @@ header-y      := $(filter-out $(generic-
- all-files     := $(header-y) $(genhdr-y) $(wrapper-files)
- output-files  := $(addprefix $(installdir)/, $(all-files))
+---
+ drivers/cpufreq/powernow-k6.c |   76 +++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 72 insertions(+), 4 deletions(-)
+
+--- a/drivers/cpufreq/powernow-k6.c
++++ b/drivers/cpufreq/powernow-k6.c
+@@ -26,6 +26,14 @@
+ static unsigned int                     busfreq;   /* FSB, in 10 kHz */
+ static unsigned int                     max_multiplier;
  
--input-files   := $(foreach hdr, $(header-y), \
-+input-files1  := $(foreach hdr, $(header-y), \
- 		   $(if $(wildcard $(srcdir)/$(hdr)), \
--			$(wildcard $(srcdir)/$(hdr)), \
-+			$(wildcard $(srcdir)/$(hdr))) \
-+		   )
-+input-files1-name := $(notdir $(input-files1))
-+input-files2  := $(foreach hdr, $(header-y), \
-+		   $(if  $(wildcard $(srcdir)/$(hdr)),, \
- 			$(if $(wildcard $(oldsrcdir)/$(hdr)), \
- 				$(wildcard $(oldsrcdir)/$(hdr)), \
- 				$(error Missing UAPI file $(srcdir)/$(hdr))) \
--		   )) \
--		 $(foreach hdr, $(genhdr-y), \
-+		   ))
-+input-files2-name := $(notdir $(input-files2))
-+input-files3  := $(foreach hdr, $(genhdr-y), \
- 		   $(if	$(wildcard $(gendir)/$(hdr)), \
- 			$(wildcard $(gendir)/$(hdr)), \
- 			$(error Missing generated UAPI file $(gendir)/$(hdr)) \
- 		   ))
-+input-files3-name := $(notdir $(input-files3))
++static unsigned int			param_busfreq = 0;
++static unsigned int			param_max_multiplier = 0;
++
++module_param_named(max_multiplier, param_max_multiplier, uint, S_IRUGO);
++MODULE_PARM_DESC(max_multiplier, "Maximum multiplier (allowed values: 20 30 35 40 45 50 55 60)");
++
++module_param_named(bus_frequency, param_busfreq, uint, S_IRUGO);
++MODULE_PARM_DESC(bus_frequency, "Bus frequency in kHz");
  
- # Work out what needs to be removed
- oldheaders    := $(patsubst $(installdir)/%,%,$(wildcard $(installdir)/*.h))
-@@ -72,7 +78,9 @@ printdir = $(patsubst $(INSTALL_HDR_PATH
- quiet_cmd_install = INSTALL $(printdir) ($(words $(all-files))\
-                             file$(if $(word 2, $(all-files)),s))
-       cmd_install = \
--        $(CONFIG_SHELL) $< $(installdir) $(input-files); \
-+        $(CONFIG_SHELL) $< $(installdir) $(srcdir) $(input-files1-name); \
-+        $(CONFIG_SHELL) $< $(installdir) $(oldsrcdir) $(input-files2-name); \
-+        $(CONFIG_SHELL) $< $(installdir) $(gendir) $(input-files3-name); \
-         for F in $(wrapper-files); do                                   \
-                 echo "\#include <asm-generic/$$F>" > $(installdir)/$$F;    \
-         done;                                                           \
-@@ -98,7 +106,7 @@ __headersinst: $(subdirs) $(install-file
- 	@:
+ /* Clock ratio multiplied by 10 - see table 27 in AMD#23446 */
+ static struct cpufreq_frequency_table clock_ratio[] = {
+@@ -40,6 +48,27 @@ static struct cpufreq_frequency_table cl
+ 	{0, CPUFREQ_TABLE_END}
+ };
  
- targets += $(install-file)
--$(install-file): scripts/headers_install.sh $(input-files) FORCE
-+$(install-file): scripts/headers_install.sh $(input-files1) $(input-files2) $(input-files3) FORCE
- 	$(if $(unwanted),$(call cmd,remove),)
- 	$(if $(wildcard $(dir $@)),,$(shell mkdir -p $(dir $@)))
- 	$(call if_changed,install)
---- a/scripts/headers_install.sh
-+++ b/scripts/headers_install.sh
-@@ -2,7 +2,7 @@
++static const struct {
++	unsigned freq;
++	unsigned mult;
++} usual_frequency_table[] = {
++	{ 400000, 40 },	// 100   * 4
++	{ 450000, 45 }, // 100   * 4.5
++	{ 475000, 50 }, //  95   * 5
++	{ 500000, 50 }, // 100   * 5
++	{ 506250, 45 }, // 112.5 * 4.5
++	{ 533500, 55 }, //  97   * 5.5
++	{ 550000, 55 }, // 100   * 5.5
++	{ 562500, 50 }, // 112.5 * 5
++	{ 570000, 60 }, //  95   * 6
++	{ 600000, 60 }, // 100   * 6
++	{ 618750, 55 }, // 112.5 * 5.5
++	{ 660000, 55 }, // 120   * 5.5
++	{ 675000, 60 }, // 112.5 * 6
++	{ 720000, 60 }, // 120   * 6
++};
++
++#define FREQ_RANGE		3000
  
- if [ $# -lt 1 ]
- then
--	echo "Usage: headers_install.sh OUTDIR [FILES...]
-+	echo "Usage: headers_install.sh OUTDIR SRCDIR [FILES...]
- 	echo
- 	echo "Prepares kernel header files for use by user space, by removing"
- 	echo "all compiler.h definitions and #includes, removing any"
-@@ -10,6 +10,7 @@ then
- 	echo "asm/inline/volatile keywords."
- 	echo
- 	echo "OUTDIR: directory to write each userspace header FILE to."
-+	echo "SRCDIR: source directory where files are picked."
- 	echo "FILES:  list of header files to operate on."
+ /**
+  * powernow_k6_get_cpu_multiplier - returns the current FSB multiplier
+@@ -163,18 +192,57 @@ static int powernow_k6_target(struct cpu
+ 	return 0;
+ }
  
- 	exit 1
-@@ -19,6 +20,8 @@ fi
+-
+ static int powernow_k6_cpu_init(struct cpufreq_policy *policy)
+ {
+ 	unsigned int i, f;
+ 	int result;
++	unsigned khz;
  
- OUTDIR="$1"
- shift
-+SRCDIR="$1"
-+shift
+ 	if (policy->cpu != 0)
+ 		return -ENODEV;
  
- # Iterate through files listed on command line
+-	/* get frequencies */
+-	max_multiplier = powernow_k6_get_cpu_multiplier();
+-	busfreq = cpu_khz / max_multiplier;
++	max_multiplier = 0;
++	khz = cpu_khz;
++	for (i = 0; i < ARRAY_SIZE(usual_frequency_table); i++) {
++		if (khz >= usual_frequency_table[i].freq - FREQ_RANGE &&
++		    khz <= usual_frequency_table[i].freq + FREQ_RANGE) {
++			khz = usual_frequency_table[i].freq;
++			max_multiplier = usual_frequency_table[i].mult;
++			break;
++		}
++	}
++	if (param_max_multiplier) {
++		for (i = 0; (clock_ratio[i].frequency != CPUFREQ_TABLE_END); i++) {
++			if (clock_ratio[i].index == param_max_multiplier) {
++				max_multiplier = param_max_multiplier;
++				goto have_max_multiplier;
++			}
++		}
++		printk(KERN_ERR "powernow-k6: invalid max_multiplier parameter, valid parameters 20, 30, 35, 40, 45, 50, 55, 60\n");
++		return -EINVAL;
++	}
++
++	if (!max_multiplier) {
++		printk(KERN_WARNING "powernow-k6: unknown frequency %u, cannot determine current multiplier\n", khz);
++		printk(KERN_WARNING "powernow-k6: use module parameters max_multiplier and bus_frequency\n");
++		return -EOPNOTSUPP;
++	}
++
++have_max_multiplier:
++	param_max_multiplier = max_multiplier;
++
++	if (param_busfreq) {
++		if (param_busfreq >= 50000 && param_busfreq <= 150000) {
++			busfreq = param_busfreq / 10;
++			goto have_busfreq;
++		}
++		printk(KERN_ERR "powernow-k6: invalid bus_frequency parameter, allowed range 50000 - 150000 kHz\n");
++		return -EINVAL;
++	}
++
++	busfreq = khz / max_multiplier;
++have_busfreq:
++	param_busfreq = busfreq * 10;
  
-@@ -34,7 +37,7 @@ do
- 		-e 's/(^|[^a-zA-Z0-9])__packed([^a-zA-Z0-9_]|$)/\1__attribute__((packed))\2/g' \
- 		-e 's/(^|[ \t(])(inline|asm|volatile)([ \t(]|$)/\1__\2__\3/g' \
- 		-e 's@#(ifndef|define|endif[ \t]*/[*])[ \t]*_UAPI@#\1 @' \
--		"$i" > "$OUTDIR/$FILE.sed" || exit 1
-+		"$SRCDIR/$i" > "$OUTDIR/$FILE.sed" || exit 1
- 	scripts/unifdef -U__KERNEL__ -D__EXPORTED_HEADERS__ "$OUTDIR/$FILE.sed" \
- 		> "$OUTDIR/$FILE"
- 	[ $? -gt 1 ] && exit 1
+ 	/* table init */
+ 	for (i = 0; (clock_ratio[i].frequency != CPUFREQ_TABLE_END); i++) {
 
 
