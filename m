@@ -1,51 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759188AbaDKPci (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 11:32:38 -0400
-Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:54505 "EHLO
-	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756206AbaDKPcg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 11:32:36 -0400
-Date: Fri, 11 Apr 2014 17:32:32 +0200
-From: Alessandro Zummo <a.zummo@towertech.it>
-To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-Cc: David Dajun Chen <david.chen@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RTC linux <rtc-linux@googlegroups.com>,
-        "Lee Jones" <lee.jones@linaro.org>
-Subject: Re: [PATCH V1 2/2] rtc: da9063: RTC driver
-Message-ID: <20140411173232.7ec322b5@linux.lan.towertech.it>
-In-Reply-To: <6ED8E3B22081A4459DAC7699F3695FB7A7A71727@SW-EX-MBX02.diasemi.com>
-References: <cover.1394124002.git.stwiss.opensource@diasemi.com>
-	<93327cde91bcaef9a467adc6c7b34c3231d9e1e7.1394124002.git.stwiss.opensource@diasemi.com>
-	<20140307103310.3444cef6@linux.lan.towertech.it>
-	<6ED8E3B22081A4459DAC7699F3695FB7A7A71727@SW-EX-MBX02.diasemi.com>
-Organization: Tower Technologies
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759370AbaDKPf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 11:35:29 -0400
+Received: from anhedonia.sammy.net ([174.143.180.86]:59842 "EHLO sammy.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756939AbaDKPf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 11:35:27 -0400
+X-Greylist: delayed 3380 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Apr 2014 11:35:27 EDT
+Date: Fri, 11 Apr 2014 10:39:01 -0400
+From: Sam Creasey <sammy@sammy.net>
+To: Finn Thain <fthain@telegraphics.com.au>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, Sam Creasey <sammy@sammy.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michael Schmitz <schmitz@debian.org>, Joe Perches <joe@perches.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-m68k@vger.kernel.org
+Subject: Re: [PATCH v2 00/12] scsi/NCR5380: fix debugging macros and #include structure
+Message-ID: <20140411143900.GG21346@anhedonia>
+References: <20140319123516.542623278@telegraphics.com.au>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140319123516.542623278@telegraphics.com.au>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Apr 2014 11:45:33 +0000
-"Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com> wrote:
+Acked-by: Sam Creasey <sammy@sammy.net>
 
-> Is it possible to merge my RTC patch so it appears in linux-next please?
+On Wed, Mar 19, 2014 at 11:35:16PM +1100, Finn Thain wrote:
 > 
-> You originally Acked it around 1 month ago
-> https://lkml.org/lkml/2014/3/7/112
-
-
- Please send me (cc to the list) the whole patchset. thanks!
-
--- 
-
- Best regards,
-
- Alessandro Zummo,
-  Tower Technologies - Torino, Italy
-
-  http://www.towertech.it
-
+> This patch series addresses several issues with NCR5380 drivers:
+> 
+> 1. The complex network of #include directives.
+> 
+> 2. Three inconsistent implementations of the core driver all attempting
+>    to share the same macro definitions in NCR5380.h.
+> 
+> 3. Broken debugging code.
+> 
+> In the past these issues have led to compiler warnings and ugly hacks to
+> fix build failures.
+> 
+> This patch series fixes the debugging code by reducing the divergence
+> between the various core driver implementations.
+> 
+> The final two patches in the series further reduce divergence by refactoring
+> sun3_scsi.c and sun3_scsi_vme.c so that they follow the same structure as
+> the other NCR5380 drivers.
+> 
+> By the end of this patch series over 800 net lines of code have been
+> removed. This is mostly duplicated code that's easily eliminated once the
+> debugging code is made consistent (and some dead code is removed).
+> 
+> Better uniformity and less duplication should assist future work such as
+> modernization and trivial clean-up.
+> 
+> To make code review easier I've tried to keep these patches succinct and
+> free of extraneous changes. Though I did run checkpatch.pl, I've ignored
+> whitespace issues in existing code. I will send separate patches for
+> whitespace clean-up of NCR5380 drivers.
+> 
+> All NCR5380 drivers have been compile-tested with this patch series:
+>   arm/cumana_1.c
+>   arm/oak.c
+>   atari_scsi.c
+>   dmx3191d.c
+>   dtc.c
+>   g_NCR5380.c
+>   g_NCR5380_mmio.c
+>   mac_scsi.c
+>   pas16.c
+>   sun3_scsi.c
+>   sun3_scsi_vme.c
+>   t128.c
+> 
+> I've successfully regression tested this patch series using mac_scsi on a 
+> PowerBook 180. The debugging macros are now usable again.
