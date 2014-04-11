@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423070AbaDKQQR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:16:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56811 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754296AbaDKQJb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1422928AbaDKQJb (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Apr 2014 12:09:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56306 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754288AbaDKQH3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 12:07:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
+        Jan Stancek <jstancek@redhat.com>,
+        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 16/23] rds: prevent dereference of a NULL device in rds_iw_laddr_check
-Date: Fri, 11 Apr 2014 09:12:05 -0700
-Message-Id: <20140411161202.475523963@linuxfoundation.org>
+Subject: [PATCH 3.10 09/41] bridge: multicast: add sanity check for query source addresses
+Date: Fri, 11 Apr 2014 09:09:40 -0700
+Message-Id: <20140411160933.509041367@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411161200.236939691@linuxfoundation.org>
-References: <20140411161200.236939691@linuxfoundation.org>
+In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
+References: <20140411160932.865173041@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
 
-[ Upstream commit bf39b4247b8799935ea91d90db250ab608a58e50 ]
+[ Upstream commit 6565b9eeef194afbb3beec80d6dd2447f4091f8c ]
 
-Binding might result in a NULL device which is later dereferenced
-without checking.
+MLD queries are supposed to have an IPv6 link-local source address
+according to RFC2710, section 4 and RFC3810, section 5.1.14. This patch
+adds a sanity check to ignore such broken MLD queries.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Without this check, such malformed MLD queries can result in a
+denial of service: The queries are ignored by any MLD listener
+therefore they will not respond with an MLD report. However,
+without this patch these malformed MLD queries would enable the
+snooping part in the bridge code, potentially shutting down the
+according ports towards these hosts for multicast traffic as the
+bridge did not learn about these listeners.
+
+Reported-by: Jan Stancek <jstancek@redhat.com>
+Signed-off-by: Linus Lüssing <linus.luessing@web.de>
+Reviewed-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/rds/iw.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/bridge/br_multicast.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/net/rds/iw.c
-+++ b/net/rds/iw.c
-@@ -239,7 +239,8 @@ static int rds_iw_laddr_check(__be32 add
- 	ret = rdma_bind_addr(cm_id, (struct sockaddr *)&sin);
- 	/* due to this, we will claim to support IB devices unless we
- 	   check node_type. */
--	if (ret || cm_id->device->node_type != RDMA_NODE_RNIC)
-+	if (ret || !cm_id->device ||
-+	    cm_id->device->node_type != RDMA_NODE_RNIC)
- 		ret = -EADDRNOTAVAIL;
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -1176,6 +1176,12 @@ static int br_ip6_multicast_query(struct
  
- 	rdsdebug("addr %pI4 ret %d node type %d\n",
+ 	br_multicast_query_received(br, port, !ipv6_addr_any(&ip6h->saddr));
+ 
++	/* RFC2710+RFC3810 (MLDv1+MLDv2) require link-local source addresses */
++	if (!(ipv6_addr_type(&ip6h->saddr) & IPV6_ADDR_LINKLOCAL)) {
++		err = -EINVAL;
++		goto out;
++	}
++
+ 	if (skb->len == sizeof(*mld)) {
+ 		if (!pskb_may_pull(skb, sizeof(*mld))) {
+ 			err = -EINVAL;
 
 
