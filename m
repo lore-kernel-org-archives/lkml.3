@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412AbaDKIY1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 04:24:27 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:53817 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751586AbaDKIYY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 04:24:24 -0400
-Date: Fri, 11 Apr 2014 10:22:18 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-Cc: Jisheng Zhang <jszhang@marvell.com>, Jimmy Xu <zmxu@marvell.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH RESEND 4/5] Documentation: add the Marvell Berlin pinctrl
- documentation
-Message-ID: <20140411082218.GM10240@lunn.ch>
-References: <1397135274-10764-1-git-send-email-antoine.tenart@free-electrons.com>
- <1397135274-10764-5-git-send-email-antoine.tenart@free-electrons.com>
- <20140411143318.67e55a17@xhacker>
- <20140411081259.GA20147@kwain>
+	id S1755481AbaDKI1Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 04:27:25 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43247 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805AbaDKI1W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 04:27:22 -0400
+Date: Fri, 11 Apr 2014 10:27:16 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] EFI urgent fixes
+Message-ID: <20140411082716.GC15418@gmail.com>
+References: <20140411071622.GB17021@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140411081259.GA20147@kwain>
+In-Reply-To: <20140411071622.GB17021@console-pimps.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 10:12:59AM +0200, Antoine Ténart wrote:
-> Hi Jisheng,
+
+* Matt Fleming <matt@console-pimps.org> wrote:
+
+> Guys, please pull the following. One of the fixes is for a regression
+> introduced during the merge window. The other two are bugs that have
+> existed in the EFI boot stub for a while, but which have only just been
+> reported.
 > 
-> On Fri, Apr 11, 2014 at 02:33:18PM +0800, Jisheng Zhang wrote:
-> > On Thu, 10 Apr 2014 06:07:53 -0700
-> > Antoine Ténart <antoine.tenart@free-electrons.com> wrote:
-> > > +Required subnode-properties:
-> > > +- berlin,group: a string describing the group's name.
-> > > +- berlin,function: the function used to mux the group.
-> > 
-> > Would it be better to s/function/mode? Because in mrvl internal technology
-> > discussion and docs, we usually say "set pinmux Gy as mode z".
+> I'm going to take care of submitting the later two to stable separately
+> because they won't apply cleanly as-is.
 > 
-> The pinctrl framework uses 'function', so I guess it's better not to introduce
-> an other keyword that may confuse people.
+> The following changes since commit 204b0a1a4b92612c957a042df1a3be0e9cc79391:
+> 
+>   x86, efi: Abstract x86 efi_early calls (2014-03-26 11:30:03 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
+> 
+> for you to fetch changes up to 47514c996fac5e6f13ef3a4c5e23f1c5cffabb7b:
+> 
+>   efi: Pass correct file handle to efi_file_{read,close} (2014-04-10 21:20:03 +0100)
+> 
+> ----------------------------------------------------------------
+>  * Fix EFI boot regression introduced during the merge window where the
+>    firmware was reading random values from the stack because we were
+>    passing a pointer to the wrong object type.
+> 
+>  * Kernel corruption has been reported when booting with the EFI boot
+>    stub which was tracked down to setting a bogus value for
+>    bp->hdr.code32_start, resulting in corruption during relocation.
+> 
+>  * Olivier Martin reported that the wrong file handles were being passed
+>    to efi_file_(read|close), which works for x86 by luck due to the way
+>    that the FAT driver is implemented, but doesn't work on ARM.
+> 
+> ----------------------------------------------------------------
+> Matt Fleming (3):
+>       x86/efi: Fix boot failure with EFI stub
+>       x86/efi: Correct EFI boot stub use of code32_start
+>       efi: Pass correct file handle to efi_file_{read,close}
+> 
+>  arch/x86/boot/compressed/eboot.c       | 19 ++++++++++---------
+>  arch/x86/boot/compressed/head_32.S     |  8 ++------
+>  arch/x86/boot/compressed/head_64.S     |  9 +++------
+>  drivers/firmware/efi/efi-stub-helper.c |  6 +++---
+>  4 files changed, 18 insertions(+), 24 deletions(-)
 
-Agreed. DT is a standard, Marvell datasheets are just datasheets.
+Pulled, thanks a lot Matt!
 
-> But I agree this is not what's used in the Marvell's docs. What do
-> you think about we mention it in this documentation ?
-
-Or ask for the datahsheet to be changed :-)
-
-   Andrew
+	Ingo
