@@ -1,85 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759670AbaDKQJY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:09:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56335 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759306AbaDKQH3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:07:29 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Phoebe Buckheister <phoebe.buckheister@itwm.fraunhofer.de>,
-        Alexander Aring <alex.aring@gmail.com>,
-        Florian Westphal <fw@strlen.de>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 10/41] inet: frag: make sure forced eviction removes all frags
-Date: Fri, 11 Apr 2014 09:09:41 -0700
-Message-Id: <20140411160933.572114053@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
-References: <20140411160932.865173041@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S1423164AbaDKQYZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:24:25 -0400
+Received: from mga02.intel.com ([134.134.136.20]:25187 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422998AbaDKQYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 12:24:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,842,1389772800"; 
+   d="scan'208";a="519227917"
+Message-ID: <53481724.8020304@intel.com>
+Date: Fri, 11 Apr 2014 09:24:04 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: drepper@gmail.com, anatol.pomozov@gmail.com, jkosina@suse.cz,
+        akpm@linux-foundation.org, xemul@parallels.com,
+        paul.gortmaker@windriver.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] drivers/base/node.c: export physical address range of
+ given node (Re: NUMA node information for pages)
+References: <87eh1ix7g0.fsf@x240.local.i-did-not-set--mail-host-address--so-tickle-me> <533a1563.ad318c0a.6a93.182bSMTPIN_ADDED_BROKEN@mx.google.com> <CAOPLpQc8R2SfTB+=BsMa09tcQ-iBNJHg+tGnPK-9EDH1M47MJw@mail.gmail.com> <5343806c.100cc30a.0461.ffffc401SMTPIN_ADDED_BROKEN@mx.google.com> <alpine.DEB.2.02.1404091734060.1857@chino.kir.corp.google.com> <5345fe27.82dab40a.0831.0af9SMTPIN_ADDED_BROKEN@mx.google.com> <alpine.DEB.2.02.1404101500280.11995@chino.kir.corp.google.com> <53474709.e59ec20a.3bd5.3b91SMTPIN_ADDED_BROKEN@mx.google.com> <alpine.DEB.2.02.1404110325210.30610@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.02.1404110325210.30610@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On 04/11/2014 04:00 AM, David Rientjes wrote:
+> On Thu, 10 Apr 2014, Naoya Horiguchi wrote:
+>> > Yes, that's right, but it seems to me that just node_start_pfn and node_end_pfn
+>> > is not enough because there can be holes (without any page struct backed) inside
+>> > [node_start_pfn, node_end_pfn), and it's not aware of memory hotplug.
+>> > 
+> So?  Who cares if there are non-addressable holes in part of the span?  
+> Ulrich, correct me if I'm wrong, but it seems you're looking for just a 
+> address-to-nodeid mapping (or pfn-to-nodeid mapping) and aren't actually 
+> expecting that there are no holes in a node for things like acpi or I/O or 
+> reserved memory.
+...
+> I think trying to represent holes and handling different memory models and 
+> hotplug in special ways is complete overkill.
 
-------------------
+This isn't just about memory hotplug or different memory models.  There
+are systems out there today, in production, that have layouts like this:
 
-From: Florian Westphal <fw@strlen.de>
+|------Node0-----|
+     |------Node1-----|
 
-[ Upstream commit e588e2f286ed7da011ed357c24c5b9a554e26595 ]
+and this:
 
-Quoting Alexander Aring:
-  While fragmentation and unloading of 6lowpan module I got this kernel Oops
-  after few seconds:
+|------Node0-----|
+     |-Node1-|
 
-  BUG: unable to handle kernel paging request at f88bbc30
-  [..]
-  Modules linked in: ipv6 [last unloaded: 6lowpan]
-  Call Trace:
-   [<c012af4c>] ? call_timer_fn+0x54/0xb3
-   [<c012aef8>] ? process_timeout+0xa/0xa
-   [<c012b66b>] run_timer_softirq+0x140/0x15f
+For those systems, this interface has no meaning.  Given a page in the
+shared-span areas, this interface provides no way to figure out which
+node it is in.
 
-Problem is that incomplete frags are still around after unload; when
-their frag expire timer fires, we get crash.
-
-When a netns is removed (also done when unloading module), inet_frag
-calls the evictor with 'force' argument to purge remaining frags.
-
-The evictor loop terminates when accounted memory ('work') drops to 0
-or the lru-list becomes empty.  However, the mem accounting is done
-via percpu counters and may not be accurate, i.e. loop may terminate
-prematurely.
-
-Alter evictor to only stop once the lru list is empty when force is
-requested.
-
-Reported-by: Phoebe Buckheister <phoebe.buckheister@itwm.fraunhofer.de>
-Reported-by: Alexander Aring <alex.aring@gmail.com>
-Tested-by: Alexander Aring <alex.aring@gmail.com>
-Signed-off-by: Florian Westphal <fw@strlen.de>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/inet_fragment.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/net/ipv4/inet_fragment.c
-+++ b/net/ipv4/inet_fragment.c
-@@ -211,7 +211,7 @@ int inet_frag_evictor(struct netns_frags
- 	}
- 
- 	work = frag_mem_limit(nf) - nf->low_thresh;
--	while (work > 0) {
-+	while (work > 0 || force) {
- 		spin_lock(&nf->lru_lock);
- 
- 		if (list_empty(&nf->lru_list)) {
-
-
+If you want a non-portable hack that just works on one system, I'd
+suggest parsing the existing firmware tables.
