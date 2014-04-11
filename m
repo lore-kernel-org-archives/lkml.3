@@ -1,59 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268AbaDKGgg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 02:36:36 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:47373 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817AbaDKGgf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 02:36:35 -0400
-From: Harini Katakam <harinik@xilinx.com>
-To: broonie@kernel.org, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: michals@xilinx.com, Harini Katakam <harinik@xilinx.com>
-Subject: [PATCH v2] spi: core: Increase timeout value
-Date: Fri, 11 Apr 2014 12:06:28 +0530
-Message-Id: <1397198188-8602-1-git-send-email-harinik@xilinx.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754348AbaDKGjm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 02:39:42 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48369 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750859AbaDKGjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 02:39:40 -0400
+Message-ID: <53478E0E.8040709@ti.com>
+Date: Fri, 11 Apr 2014 09:39:10 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Joel Fernandes <joelf@ti.com>, <dan.j.williams@intel.com>,
+        <vinod.koul@intel.com>, <nsekhar@ti.com>
+CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <mporter@linaro.org>
+Subject: Re: [PATCH v2 10/14] dma: edma: Simplify direction configuration
+ in edma_config_pset()
+References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com> <1396357575-30585-11-git-send-email-peter.ujfalusi@ti.com> <53471DC5.4090001@ti.com>
+In-Reply-To: <53471DC5.4090001@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The existing timeout value in wait_for_completion_timeout is
-calculated from the transfer length and speed with tolerance of 10msec.
-This is too low because this is used for error conditions such as
-hardware hang etc.
-The xfer->speed_hz considered may not be the actual speed set
-because the best clock divisor is chosen from a limited set such that
-the actual speed <= requested speed. This will lead to timeout being
-less than actual transfer time.
-Considering acceptable latencies, this timeout can be set to a
-value double the expected transfer plus 100 msecs.
-This patch adds the same in the core.
+On 04/11/2014 01:40 AM, Joel Fernandes wrote:
+> On 04/01/2014 08:06 AM, Peter Ujfalusi wrote:
+>> We only support DEV_TO_MEM or MEM_TO_DEV directions with edma driver and the
+>> check for the direction has been already done in the function calling
+>> edma_config_pset().
+>> The error reporting is redundant and also the "else if ()" can be removed.
+>>
+> 
+> NAK. Please don't do this. I have been working on MEM_TO_MEM support as
+> well so leave it as it is for future.
 
-Signed-off-by: Harini Katakam <harinik@xilinx.com>
----
+Sure. It is still valid to say that the error else {} will never going to
+happen since you have the same check in the calling function and they already
+filtered the non implemented direction.
 
-v2 changes:
-Decrease timeout - make it double of expected time + 100ms
+I'll leave this out from v3.
 
----
- drivers/spi/spi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 4eb9bf0..f01cbb4 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -775,7 +775,7 @@ static int spi_transfer_one_message(struct spi_master *master,
- 		if (ret > 0) {
- 			ret = 0;
- 			ms = xfer->len * 8 * 1000 / xfer->speed_hz;
--			ms += 10; /* some tolerance */
-+			ms += ms + 100; /* some tolerance */
- 
- 			ms = wait_for_completion_timeout(&master->xfer_completion,
- 							 msecs_to_jiffies(ms));
 -- 
-1.7.9.5
+Péter
+
+> 
+> Thanks,
+> -Joel
+> 
+>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>> ---
+>>  drivers/dma/edma.c | 6 ++----
+>>  1 file changed, 2 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+>> index 855766672aa9..d954099650ae 100644
+>> --- a/drivers/dma/edma.c
+>> +++ b/drivers/dma/edma.c
+>> @@ -372,14 +372,12 @@ static int edma_config_pset(struct dma_chan *chan, struct edmacc_param *pset,
+>>  		src_cidx = cidx;
+>>  		dst_bidx = 0;
+>>  		dst_cidx = 0;
+>> -	} else if (direction == DMA_DEV_TO_MEM)  {
+>> +	} else {
+>> +		/* DMA_DEV_TO_MEM */
+>>  		src_bidx = 0;
+>>  		src_cidx = 0;
+>>  		dst_bidx = acnt;
+>>  		dst_cidx = cidx;
+>> -	} else {
+>> -		dev_err(dev, "%s: direction not implemented yet\n", __func__);
+>> -		return -EINVAL;
+>>  	}
+>>  
+>>  	pset->opt = EDMA_TCC(EDMA_CHAN_SLOT(echan->ch_num));
+>>
+> 
 
