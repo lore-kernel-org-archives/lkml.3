@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678AbaDKRmO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 13:42:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58357 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751273AbaDKRmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 13:42:12 -0400
-Message-ID: <53482953.3070201@redhat.com>
-Date: Fri, 11 Apr 2014 13:41:39 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754598AbaDKRnW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 13:43:22 -0400
+Received: from mail-lb0-f196.google.com ([209.85.217.196]:38747 "EHLO
+	mail-lb0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863AbaDKRnU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 13:43:20 -0400
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: linux-kernel@vger.kernel.org, mingo@kernel.org, peterz@infradead.org,
-        chegu_vinod@hp.com, mgorman@suse.de
-Subject: Re: [PATCH 1/3] sched,numa: count pages on active node as local
-References: <1397235629-16328-1-git-send-email-riel@redhat.com>	 <1397235629-16328-2-git-send-email-riel@redhat.com> <1397237673.7113.22.camel@joe-AO722>
-In-Reply-To: <1397237673.7113.22.camel@joe-AO722>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Reply-To: ramirodeemerico@gmail.com
+Date: Fri, 11 Apr 2014 10:43:19 -0700
+Message-ID: <CAFziyaJPrh71Gv-DQ5QRzp6eUUK2Zg4_mS=s1bZY=_P4zJz5Dg@mail.gmail.com>
+Subject: From Sr. Ramiro De Emerico
+From: "Sr. Ramiro De Emerico" <mj068109@gmail.com>
+To: undisclosed-recipients:;
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2014 01:34 PM, Joe Perches wrote:
-> On Fri, 2014-04-11 at 13:00 -0400, riel@redhat.com wrote:
->> This should reduce the overhead of the automatic NUMA placement
->> code, when a workload spans multiple NUMA nodes.
-> 
-> trivial style note:
-> 
->> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> []
->> @@ -1737,6 +1737,7 @@ void task_numa_fault(int last_cpupid, int mem_node, int pages, int flags)
->>  	struct task_struct *p = current;
->>  	bool migrated = flags & TNF_MIGRATED;
->>  	int cpu_node = task_node(current);
->> +	int local = !!(flags & TNF_FAULT_LOCAL);
-> 
-> Perhaps local would look nicer as bool
-> and be better placed next to migrated.
+My Name is Sr. Ramiro De Emerico
 
-The problem is, at the end of the function, local is used as an
-array index...
+I am from Portugal I have been diagnosed with cancer. It has defiled
+all forms of medical treatment, and right now I have only about a few
+months to live, according to medical experts. I have not particularly
+lived my life so well, as I never really cared for anyone (not even
+myself) but my business. Though I am very rich, I was never generous;
+I was always hostile to People and only focused on my business as that
+was the only thing I cared for. But now I regret all this as I now
+know that there is more to life than just wanting to have or make all
+the money in the world. I believe when God gives me a second chance to
+come to this world I would live my life a different way from how I
+have lived it. I would want to have a Personal and Trustworthy
+Relationship with you, as I intend and willing to empower the change
+of ownership for the transfer of my Deposits to your personal
+possession for further Investment and Charity Disbursement to the Less
+Privilege and Homeless write me via my mail: ramirodeemerico@gmail.com
 
-        p->numa_faults_locality[local] += pages;
-}
+I will send you the photos of me and my very hopeless and selfish
+family members, including my wife, who I learn t is getting married to
+my personal friend and attorney,
 
-I'm not sure I really want to use a bool as an array index :)
+Thank you for your due consideration. God be with you
 
--- 
-All rights reversed
+Yours Brother.
+
+Sr. Ramiro De Emerico
