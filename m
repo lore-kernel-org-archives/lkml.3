@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758942AbaDKQJP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:09:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56446 "EHLO
+	id S1423030AbaDKQ0Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:26:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56733 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759437AbaDKQHj (ORCPT
+	with ESMTP id S1422880AbaDKQJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:07:39 -0400
+	Fri, 11 Apr 2014 12:09:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.10 38/41] m68k: Skip futex_atomic_cmpxchg_inatomic() test
-Date: Fri, 11 Apr 2014 09:10:09 -0700
-Message-Id: <20140411160935.582306572@linuxfoundation.org>
+        Vineet Gupta <vgupta@synopsys.com>,
+        Francois Bedard <Francois.Bedard@synopsys.com>
+Subject: [PATCH 3.13 62/65] ARC: [nsimosci] Unbork console
+Date: Fri, 11 Apr 2014 09:11:34 -0700
+Message-Id: <20140411161006.165808374@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
-References: <20140411160932.865173041@linuxfoundation.org>
+In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
+References: <20140411160957.714773410@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Finn Thain <fthain@telegraphics.com.au>
+From: Vineet Gupta <vgupta@synopsys.com>
 
-commit e571c58f313d35c56e0018470e3375ddd1fd320e upstream.
+commit 61fb4bfc010b0d2940f7fd87acbce6a0f03217cb upstream.
 
-Skip the futex_atomic_cmpxchg_inatomic() test in futex_init(). It causes a
-fatal exception on 68030 (and presumably 68020 also).
+Despite the switch to right UART driver (prev patch), serial console
+still doesn't work due to missing CONFIG_SERIAL_OF_PLATFORM
 
-Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Link: http://lkml.kernel.org/r/alpine.LNX.2.00.1403061006440.5525@nippy.intranet
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Also fix the default cmdline in DT to not refer to out-of-tree
+ARC framebuffer driver for console.
+
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Francois Bedard <Francois.Bedard@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/m68k/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arc/boot/dts/nsimosci.dts      |    5 ++++-
+ arch/arc/configs/nsimosci_defconfig |    1 +
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/arch/m68k/Kconfig
-+++ b/arch/m68k/Kconfig
-@@ -16,6 +16,7 @@ config M68K
- 	select FPU if MMU
- 	select ARCH_WANT_IPC_PARSE_VERSION
- 	select ARCH_USES_GETTIMEOFFSET if MMU && !COLDFIRE
-+	select HAVE_FUTEX_CMPXCHG if MMU && FUTEX
- 	select HAVE_MOD_ARCH_SPECIFIC
- 	select MODULES_USE_ELF_REL
- 	select MODULES_USE_ELF_RELA
+--- a/arch/arc/boot/dts/nsimosci.dts
++++ b/arch/arc/boot/dts/nsimosci.dts
+@@ -17,7 +17,10 @@
+ 	interrupt-parent = <&intc>;
+ 
+ 	chosen {
+-		bootargs = "console=tty0 consoleblank=0";
++		/* this is for console on PGU */
++		/* bootargs = "console=tty0 consoleblank=0"; */
++		/* this is for console on serial */
++		bootargs = "earlycon=uart8250,mmio32,0xc0000000,115200n8 console=ttyS0,115200n8 consoleblank=0 debug";
+ 	};
+ 
+ 	aliases {
+--- a/arch/arc/configs/nsimosci_defconfig
++++ b/arch/arc/configs/nsimosci_defconfig
+@@ -54,6 +54,7 @@ CONFIG_SERIO_ARC_PS2=y
+ CONFIG_SERIAL_8250=y
+ CONFIG_SERIAL_8250_CONSOLE=y
+ CONFIG_SERIAL_8250_DW=y
++CONFIG_SERIAL_OF_PLATFORM=y
+ CONFIG_SERIAL_ARC=y
+ CONFIG_SERIAL_ARC_CONSOLE=y
+ # CONFIG_HW_RANDOM is not set
 
 
