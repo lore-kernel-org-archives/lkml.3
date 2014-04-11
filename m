@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161042AbaDKQMg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:12:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56829 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422946AbaDKQJe (ORCPT
+	id S1423055AbaDKQNH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:13:07 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:45104 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161061AbaDKQND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:34 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vineet Gupta <vgupta@synopsys.com>,
-        Francois Bedard <Francois.Bedard@synopsys.com>
-Subject: [PATCH 3.14 20/23] ARC: [nsimosci] Unbork console
-Date: Fri, 11 Apr 2014 09:12:09 -0700
-Message-Id: <20140411161203.007489895@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411161200.236939691@linuxfoundation.org>
-References: <20140411161200.236939691@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Fri, 11 Apr 2014 12:13:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6F5DFA@AcuExch.aculab.com>
+References: <20140410213029.24916.93892.stgit@bhelgaas-glaptop.roam.corp.google.com>
+ <063D6719AE5E284EB5DD2968C1650D6D0F6F5DFA@AcuExch.aculab.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 11 Apr 2014 10:12:43 -0600
+Message-ID: <CAErSpo4KOe5zBYNXDhdEFUMdhCBhs00CCvYHbW3071ZUdN6s6A@mail.gmail.com>
+Subject: Re: [PATCH] tcp: fix compiler array bounds warning on selective_acks[]
+To: David Laight <David.Laight@aculab.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        James Morris <jmorris@namei.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Patrick McHardy <kaber@trash.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Apr 11, 2014 at 2:59 AM, David Laight <David.Laight@aculab.com> wrote:
+> Bjorn Helgaas
+>> With -Werror=array-bounds, gcc v4.8.x warns that in tcp_sack_remove(), a
+>> selective_acks[] "array subscript is above array bounds".
+>>
+>> I don't understand how gcc figures this out, or why we don't see similar
+>> problems many other places, but this is the only fix I can figure out.
+> ...
+>> diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
+>> index 65cf90e063d5..65133b108236 100644
+>> --- a/net/ipv4/tcp_input.c
+>> +++ b/net/ipv4/tcp_input.c
+>> @@ -4047,7 +4047,8 @@ static void tcp_sack_remove(struct tcp_sock *tp)
+>>
+>>                       /* Zap this SACK, by moving forward any other SACKS. */
+>>                       for (i = this_sack+1; i < num_sacks; i++)
+>> -                             tp->selective_acks[i-1] = tp->selective_acks[i];
+>> +                             if (i < ARRAY_SIZE(tp->selective_acks))
+>> +                                     tp->selective_acks[i-1] = tp->selective_acks[i];
+>>                       num_sacks--;
+>>                       continue;
+>>               }
+>
+> You really shouldn't add that test every time around the loop.
+>
+> Try changing the loop so the assignment is:
+>    tp->selective_acks[i] = tp->selective_acks[i + 1];
+>
+> or the loop test to:
+>         i <= num_sacks - 1;
+>
+> Or beat up the gcc developers :-)
 
-------------------
+You're right, that *is* ugly.  And it seems that gcc-v4.9.x doesn't
+complain about this, and that's good enough for my purposes, so I
+withdraw this patch.
 
-From: Vineet Gupta <vgupta@synopsys.com>
-
-commit 61fb4bfc010b0d2940f7fd87acbce6a0f03217cb upstream.
-
-Despite the switch to right UART driver (prev patch), serial console
-still doesn't work due to missing CONFIG_SERIAL_OF_PLATFORM
-
-Also fix the default cmdline in DT to not refer to out-of-tree
-ARC framebuffer driver for console.
-
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Francois Bedard <Francois.Bedard@synopsys.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arc/boot/dts/nsimosci.dts      |    5 ++++-
- arch/arc/configs/nsimosci_defconfig |    1 +
- 2 files changed, 5 insertions(+), 1 deletion(-)
-
---- a/arch/arc/boot/dts/nsimosci.dts
-+++ b/arch/arc/boot/dts/nsimosci.dts
-@@ -17,7 +17,10 @@
- 	interrupt-parent = <&intc>;
- 
- 	chosen {
--		bootargs = "console=tty0 consoleblank=0";
-+		/* this is for console on PGU */
-+		/* bootargs = "console=tty0 consoleblank=0"; */
-+		/* this is for console on serial */
-+		bootargs = "earlycon=uart8250,mmio32,0xc0000000,115200n8 console=ttyS0,115200n8 consoleblank=0 debug";
- 	};
- 
- 	aliases {
---- a/arch/arc/configs/nsimosci_defconfig
-+++ b/arch/arc/configs/nsimosci_defconfig
-@@ -54,6 +54,7 @@ CONFIG_SERIO_ARC_PS2=y
- CONFIG_SERIAL_8250=y
- CONFIG_SERIAL_8250_CONSOLE=y
- CONFIG_SERIAL_8250_DW=y
-+CONFIG_SERIAL_OF_PLATFORM=y
- CONFIG_SERIAL_ARC=y
- CONFIG_SERIAL_ARC_CONSOLE=y
- # CONFIG_HW_RANDOM is not set
-
-
+Thanks and sorry for the noise,
+  Bjorn
