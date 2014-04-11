@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423114AbaDKQ2u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:28:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56709 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759431AbaDKQJM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759628AbaDKQJM (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Apr 2014 12:09:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56435 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759431AbaDKQHi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 12:07:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.13 60/65] powernow-k6: reorder frequencies
-Date: Fri, 11 Apr 2014 09:11:32 -0700
-Message-Id: <20140411161005.890703355@linuxfoundation.org>
+        Vineet Gupta <vgupta@synopsys.com>,
+        Francois Bedard <Francois.Bedard@synopsys.com>
+Subject: [PATCH 3.10 36/41] ARC: [nsimosci] Unbork console
+Date: Fri, 11 Apr 2014 09:10:07 -0700
+Message-Id: <20140411160935.438092265@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
-References: <20140411160957.714773410@linuxfoundation.org>
+In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
+References: <20140411160932.865173041@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Vineet Gupta <vgupta@synopsys.com>
 
-commit 22c73795b101597051924556dce019385a1e2fa0 upstream.
+commit 61fb4bfc010b0d2940f7fd87acbce6a0f03217cb upstream.
 
-This patch reorders reported frequencies from the highest to the lowest,
-just like in other frequency drivers.
+Despite the switch to right UART driver (prev patch), serial console
+still doesn't work due to missing CONFIG_SERIAL_OF_PLATFORM
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Also fix the default cmdline in DT to not refer to out-of-tree
+ARC framebuffer driver for console.
+
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Francois Bedard <Francois.Bedard@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/powernow-k6.c |   17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ arch/arc/boot/dts/nsimosci.dts      |    5 ++++-
+ arch/arc/configs/nsimosci_defconfig |    1 +
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/cpufreq/powernow-k6.c
-+++ b/drivers/cpufreq/powernow-k6.c
-@@ -37,17 +37,20 @@ MODULE_PARM_DESC(bus_frequency, "Bus fre
+--- a/arch/arc/boot/dts/nsimosci.dts
++++ b/arch/arc/boot/dts/nsimosci.dts
+@@ -17,7 +17,10 @@
+ 	interrupt-parent = <&intc>;
  
- /* Clock ratio multiplied by 10 - see table 27 in AMD#23446 */
- static struct cpufreq_frequency_table clock_ratio[] = {
--	{45,  /* 000 -> 4.5x */ 0},
-+	{60,  /* 110 -> 6.0x */ 0},
-+	{55,  /* 011 -> 5.5x */ 0},
- 	{50,  /* 001 -> 5.0x */ 0},
-+	{45,  /* 000 -> 4.5x */ 0},
- 	{40,  /* 010 -> 4.0x */ 0},
--	{55,  /* 011 -> 5.5x */ 0},
--	{20,  /* 100 -> 2.0x */ 0},
--	{30,  /* 101 -> 3.0x */ 0},
--	{60,  /* 110 -> 6.0x */ 0},
- 	{35,  /* 111 -> 3.5x */ 0},
-+	{30,  /* 101 -> 3.0x */ 0},
-+	{20,  /* 100 -> 2.0x */ 0},
- 	{0, CPUFREQ_TABLE_END}
- };
+ 	chosen {
+-		bootargs = "console=tty0 consoleblank=0";
++		/* this is for console on PGU */
++		/* bootargs = "console=tty0 consoleblank=0"; */
++		/* this is for console on serial */
++		bootargs = "earlycon=uart8250,mmio32,0xc0000000,115200n8 console=ttyS0,115200n8 consoleblank=0 debug";
+ 	};
  
-+static const u8 index_to_register[8] = { 6, 3, 1, 0, 2, 7, 5, 4 };
-+static const u8 register_to_index[8] = { 3, 2, 4, 1, 7, 6, 0, 5 };
-+
- static const struct {
- 	unsigned freq;
- 	unsigned mult;
-@@ -91,7 +94,7 @@ static int powernow_k6_get_cpu_multiplie
- 
- 	local_irq_enable();
- 
--	return clock_ratio[(invalue >> 5)&7].driver_data;
-+	return clock_ratio[register_to_index[(invalue >> 5)&7]].driver_data;
- }
- 
- static void powernow_k6_set_cpu_multiplier(unsigned int best_i)
-@@ -111,7 +114,7 @@ static void powernow_k6_set_cpu_multipli
- 	write_cr0(cr0 | X86_CR0_CD);
- 	wbinvd();
- 
--	outvalue = (1<<12) | (1<<10) | (1<<9) | (best_i<<5);
-+	outvalue = (1<<12) | (1<<10) | (1<<9) | (index_to_register[best_i]<<5);
- 
- 	msrval = POWERNOW_IOPORT + 0x1;
- 	wrmsr(MSR_K6_EPMR, msrval, 0); /* enable the PowerNow port */
+ 	aliases {
+--- a/arch/arc/configs/nsimosci_defconfig
++++ b/arch/arc/configs/nsimosci_defconfig
+@@ -54,6 +54,7 @@ CONFIG_SERIO_ARC_PS2=y
+ CONFIG_SERIAL_8250=y
+ CONFIG_SERIAL_8250_CONSOLE=y
+ CONFIG_SERIAL_8250_DW=y
++CONFIG_SERIAL_OF_PLATFORM=y
+ CONFIG_SERIAL_ARC=y
+ CONFIG_SERIAL_ARC_CONSOLE=y
+ # CONFIG_HW_RANDOM is not set
 
 
