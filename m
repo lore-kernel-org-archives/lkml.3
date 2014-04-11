@@ -1,83 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755828AbaDKVxN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 17:53:13 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:50768 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755203AbaDKVxK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755774AbaDKVxK (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Apr 2014 17:53:10 -0400
-Date: Fri, 11 Apr 2014 22:53:02 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20140411215302.GJ28800@sirena.org.uk>
-References: <20140411103807.GQ6518@sirena.org.uk>
- <CA+55aFznxvzfqa7OM0VoQ337kVYQ0hSjkqC26sxv7mxBuX9J-Q@mail.gmail.com>
- <CA+55aFxGbTdk-0mRtrYCRLJ1X6hbbrmOvKpgupA+4X1Cpoj=OQ@mail.gmail.com>
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:38264 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755348AbaDKVxF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 17:53:05 -0400
+Message-ID: <5348643F.1020405@mit.edu>
+Date: Fri, 11 Apr 2014 14:53:03 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="huG+SbfbdD6eblZQ"
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxGbTdk-0mRtrYCRLJ1X6hbbrmOvKpgupA+4X1Cpoj=OQ@mail.gmail.com>
-X-Cookie: There is a fly on your nose.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [GIT PULL] regulator fixes for v3.15
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: "H. Peter Anvin" <hpa@zytor.com>, Andy Lutomirski <luto@amacapital.net>,
+        Brian Gerst <brgerst@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, stable@vger.kernel.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [tip:x86/urgent] x86-64, modify_ldt: Ban 16-bit segments on 64-bit
+ kernels
+References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <CAMzpN2jx4H4p8fQr-WHxVyCHhWi0iO3WZZKyxYD7Dfa7pWkEgg@mail.gmail.com> <53483487.6030103@zytor.com> <53485BB8.1000106@mit.edu> <53485D95.9030301@zytor.com>
+In-Reply-To: <53485D95.9030301@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/11/2014 02:24 PM, H. Peter Anvin wrote:
+> On 04/11/2014 02:16 PM, Andy Lutomirski wrote:
+>> I wonder if there's an easy-ish good-enough fix:
+>>
+>> Allocate some percpu space in the fixmap.  (OK, this is ugly, but
+>> kvmclock already does it, so it's possible.)  To return to 16-bit
+>> userspace, make sure interrupts are off, copy the whole iret descriptor
+>> to the current cpu's fixmap space, change rsp to point to that space,
+>> and then do the iret.
+>>
+>> This won't restore the correct value to the high bits of [er]sp, but it
+>> will at least stop leaking anything interesting to userspace.
+>>
+> 
+> This would fix the infoleak, at the cost of allocating a chunk of memory
+> for each CPU.  It doesn't fix the functionality problem.
+> 
+> If we're going to do a workaround I would prefer to do something that
+> fixes both, but it is highly nontrivial.
+> 
+> This is a writeup I did to a select audience before this was public:
+> 
+>> Hello,
+>>
+>> This is both a functionality problem (16-bit code gets the upper bits of
+>> %esp corrupted when the kernel is invoked) and an information leak.  The
+>> 32-bit workaround was labeled as a fix for the functionality problem,
+>> but it of course also addresses the leak.
 
---huG+SbfbdD6eblZQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+How big of a functionality problem is it?  Apparently it doesn't break
+16-bit code on wine.
 
-On Fri, Apr 11, 2014 at 01:32:59PM -0700, Linus Torvalds wrote:
-> On Fri, Apr 11, 2014 at 1:30 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
+Since the high bits of esp have been corrupted on x86_64 since the
+beginning, there's no regression issue here if an eventual fix writes
+less meaningful crap to those bits -- I see no real reason to try to put
+the correct values in there.
 
-> > Not an immediate problem, but have you tested just adding a simple
-> > "git fetch" from my repo to your scripts?
 
-> Oh, actually, the problem may just be that back-merge you have. When
-> those cause multiple merge bases, "git diff" can no longer reliably
-> generate a diff, since there is no clear base for it. And then "git
-> fetch" to update my current state won't likely help, since the problem
-> isn't that you don't see my previous pull, the problem is that the
-> base isn't unique any more.
+>> I would have suggested rejecting modify_ldt() entirely, to reduce attack
+>> surface, except that some early versions of 32-bit NPTL glibc use
+>> modify_ldt() to exclusion of all other methods of establishing the
+>> thread pointer, so in order to stay compatible with those we would need
+>> to allow 32-bit segments via modify_ldt() still.
 
-Yeah, I'm pretty sure the problem is the actual back merge - the
-shortlog is doing the right thing for example.  I did in fact have a
-copy of your merge in my tree, that's how the shortlog turned out right
-in this round of pull requests.  I just need to arrange not to have the
-back merge either through being more sensible about what I ask you to
-pull or by improving the scripts.
+I actually use modify_ldt for amusement: it's the only way I know of to
+issue real 32-bit syscalls from 64-bit userspace.  Yes, this isn't
+really a legitimate use case.
 
---huG+SbfbdD6eblZQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+>>
+>> a. Using paging in a similar way to the 32-bit segment base workaround
+>>
+>> This one requires a very large swath of virtual user space (depending on
+>> allocation policy, as much as 4 GiB per CPU.)  The "per CPU" requirement
+>> comes in as locking is not feasible -- as we return to user space there
+>> is nowhere to release the lock.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Why not just 4k per CPU?  Write the pfn to the pte, invlpg, update rsp,
+iret.  This leaks the CPU number, but that's all.
 
-iQIcBAEBAgAGBQJTSGQ7AAoJELSic+t+oim9YDEP/2hCAK3TSQO1R94Lfoc0C6CT
-+HbY6FpR8otWtqf2pc9AV8WXjV8cNKNfvmrBYKEei9MjLGv+RevbvNmwF2fngrfq
-frqCK5Y58EFYP3LoFkAlP901y4SLNOMHrGlCyqodz5BTKT2e840RdbCZiaUYb/7O
-szDMAT4YVTcJi/iCgv6DmW7QHQV9n0OrEBfhbTQXv1ZXLsX2OnwuzvsSyc3S7c0E
-170X7KgV7mj8OpxfWLSqd+ruF1pKtpOOIlNESifYfwlRNaWHt50cK7a4jSKsGPu1
-Xp85hJv5az/HdUDjI8CACwIbVNzBGwlpcWMSWvdnu3SL7Vk9zEOlJKiHmM9vPcT8
-wX4snRFjkxvkb2M6i10f0rkffJT6Vu2h2UzjLSmQ7/MlzBaUA/uh5Uk17jbdZ0Jk
-TRo9Lqkkl0VkTtGL5ES79CpY1/U4gOx4uU3ILaDB8wuGdg11l+DyFO1y+OWXLbnK
-6Ntk+e4ji0cESSThGCY0SksPZk3neCrtlLC5KzuCH9ZfE2LaE4Ea8sJOPfo1Cuky
-+WSR36N097sORVViIpCyUOOFVIXLtlgF9myaXi3XnJxxwtsQiYead2gkRzcdHyIx
-Ep+iUatbXhKEdquHupfUzumRn81eJt2L/z+9F6s0kIp40pkUns8gIN8rIf9fOPYj
-guvMz2N4FVyELYdH9Iz2
-=vXtc
------END PGP SIGNATURE-----
+To me, this sounds like the easiest solution, so long as rsp is known to
+be sufficiently far from a page boundary.
 
---huG+SbfbdD6eblZQ--
+These ptes could even be read-only to limit the extra exposure to
+known-address attacks.
+
+If you want a fully correct solution, you can use a fancier allocation
+policy that can fit quite a few cpus per 4G :)
+
+>>
+>> d. Trampoline in user space
+>>
+>> A return to the vdso with values set up in registers r8-r15 would enable
+>> a trampoline in user space.  Unfortunately there is no way
+>> to do a far JMP entirely with register state so this would require
+>> touching user space memory, possibly in an unsafe manner.
+>>
+>> The most likely variant is to use the address of the 16-bit user stack
+>> and simply hope that this is a safe thing to do.
+>>
+>> This appears to be the most feasible workaround if a workaround is
+>> deemed necessary.
+
+Eww.
+
+--Andy
