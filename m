@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934488AbaDKQIL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:08:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56353 "EHLO
+	id S1759471AbaDKQIJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:08:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56342 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759401AbaDKQHb (ORCPT
+	with ESMTP id S1759337AbaDKQHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:07:31 -0400
+	Fri, 11 Apr 2014 12:07:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Matthew Leach <matthew.leach@arm.com>,
+        Eric Dumazet <edumazet@google.com>,
+        Rainer Weikusat <rweikusat@mobileactivedefense.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 16/41] net: socket: error on a negative msg_namelen
-Date: Fri, 11 Apr 2014 09:09:47 -0700
-Message-Id: <20140411160933.987830898@linuxfoundation.org>
+Subject: [PATCH 3.10 11/41] net: unix: non blocking recvmsg() should not return -EINTR
+Date: Fri, 11 Apr 2014 09:09:42 -0700
+Message-Id: <20140411160933.642953472@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
 References: <20140411160932.865173041@linuxfoundation.org>
@@ -27,35 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Leach <matthew.leach@arm.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit dbb490b96584d4e958533fb637f08b557f505657 ]
+[ Upstream commit de1443916791d75fdd26becb116898277bb0273f ]
 
-When copying in a struct msghdr from the user, if the user has set the
-msg_namelen parameter to a negative value it gets clamped to a valid
-size due to a comparison between signed and unsigned values.
+Some applications didn't expect recvmsg() on a non blocking socket
+could return -EINTR. This possibility was added as a side effect
+of commit b3ca9b02b00704 ("net: fix multithreaded signal handling in
+unix recv routines").
 
-Ensure the syscall errors when the user passes in a negative value.
+To hit this bug, you need to be a bit unlucky, as the u->readlock
+mutex is usually held for very small periods.
 
-Signed-off-by: Matthew Leach <matthew.leach@arm.com>
+Fixes: b3ca9b02b00704 ("net: fix multithreaded signal handling in unix recv routines")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Rainer Weikusat <rweikusat@mobileactivedefense.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/socket.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ net/unix/af_unix.c |   17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -1964,6 +1964,10 @@ static int copy_msghdr_from_user(struct
- {
- 	if (copy_from_user(kmsg, umsg, sizeof(struct msghdr)))
- 		return -EFAULT;
-+
-+	if (kmsg->msg_namelen < 0)
-+		return -EINVAL;
-+
- 	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
- 		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
- 	return 0;
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -1792,8 +1792,11 @@ static int unix_dgram_recvmsg(struct kio
+ 		goto out;
+ 
+ 	err = mutex_lock_interruptible(&u->readlock);
+-	if (err) {
+-		err = sock_intr_errno(sock_rcvtimeo(sk, noblock));
++	if (unlikely(err)) {
++		/* recvmsg() in non blocking mode is supposed to return -EAGAIN
++		 * sk_rcvtimeo is not honored by mutex_lock_interruptible()
++		 */
++		err = noblock ? -EAGAIN : -ERESTARTSYS;
+ 		goto out;
+ 	}
+ 
+@@ -1913,6 +1916,7 @@ static int unix_stream_recvmsg(struct ki
+ 	struct unix_sock *u = unix_sk(sk);
+ 	struct sockaddr_un *sunaddr = msg->msg_name;
+ 	int copied = 0;
++	int noblock = flags & MSG_DONTWAIT;
+ 	int check_creds = 0;
+ 	int target;
+ 	int err = 0;
+@@ -1928,7 +1932,7 @@ static int unix_stream_recvmsg(struct ki
+ 		goto out;
+ 
+ 	target = sock_rcvlowat(sk, flags&MSG_WAITALL, size);
+-	timeo = sock_rcvtimeo(sk, flags&MSG_DONTWAIT);
++	timeo = sock_rcvtimeo(sk, noblock);
+ 
+ 	/* Lock the socket to prevent queue disordering
+ 	 * while sleeps in memcpy_tomsg
+@@ -1940,8 +1944,11 @@ static int unix_stream_recvmsg(struct ki
+ 	}
+ 
+ 	err = mutex_lock_interruptible(&u->readlock);
+-	if (err) {
+-		err = sock_intr_errno(timeo);
++	if (unlikely(err)) {
++		/* recvmsg() in non blocking mode is supposed to return -EAGAIN
++		 * sk_rcvtimeo is not honored by mutex_lock_interruptible()
++		 */
++		err = noblock ? -EAGAIN : -ERESTARTSYS;
+ 		goto out;
+ 	}
+ 
 
 
