@@ -1,105 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756543AbaDKJim (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 05:38:42 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55830 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750859AbaDKJii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 05:38:38 -0400
-Message-ID: <5347B7F8.2000508@ti.com>
-Date: Fri, 11 Apr 2014 12:38:00 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>, <dan.j.williams@intel.com>,
-        <vinod.koul@intel.com>
-CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <joelf@ti.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <mporter@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH v2 05/14] arm: common: edma: Select event queue 1 as default
- when booted with DT
-References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com> <1396357575-30585-6-git-send-email-peter.ujfalusi@ti.com> <5347A4FD.1030803@ti.com> <5347ACDE.7040407@ti.com> <5347AE49.5020109@ti.com>
-In-Reply-To: <5347AE49.5020109@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+	id S1756459AbaDKJl4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 05:41:56 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:29850 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462AbaDKJlv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 05:41:51 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-6c-5347b8dd8ba6
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: jic23@kernel.org, ch.naveen@samsung.com, kgene.kim@samsung.com,
+        linux-iio@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH] iio: adc: exynos_adc: Control special clock of ADC to
+ support Exynos3250 ADC
+Date: Fri, 11 Apr 2014 11:41:41 +0200
+Message-id: <18632148.yOYlTYattA@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <1397181640-18513-1-git-send-email-cw00.choi@samsung.com>
+References: <1397181640-18513-1-git-send-email-cw00.choi@samsung.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t9jQd27O9yDDT5ts7K4+/wwo8X1L89Z
+	LR40rWKy6F1wlc3ibNMbdotNj6+xWsw78o7F4vKuOWwWM87vY3Lg9Ni0qpPNY/OSeo++LasY
+	PT5vkgtgieKySUnNySxLLdK3S+DK+HB1F0vBJumKvXOmsDUwLhPrYuTgkBAwkbh1pryLkRPI
+	FJO4cG89G4gtJDCdUeL9Uo0uRi4gu4VJYtHaBWAJNgEriYntqxhBbBEBDYmZf68wghQxC3xl
+	lHjyfRkzyFBhgWSJtRcEQGpYBFQlHj7YzA5i8wpoSWw9/IIFxBYV8JTYsX0lG0g5p4CbxLJ1
+	rBB7XSVazz9igygXlPgx+R5YObOAvMS+/VNZIWwdif2t09gmMArMQlI2C0nZLCRlCxiZVzGK
+	phYkFxQnpeca6hUn5haX5qXrJefnbmIEB/ozqR2MKxssDjEKcDAq8fBmXHALFmJNLCuuzD3E
+	KMHBrCTC67bBPViINyWxsiq1KD++qDQntfgQozQHi5I474FW60AhgfTEktTs1NSC1CKYLBMH
+	p1QD4462/Qo+E7XX8IkqckfeWdXbaZ5+XXv99yc5j8K0yxOmbWLdai9Vv73qE+srftMs5Yws
+	KWmLrCkFa+vy2C7PXPPOXkhnp3V2Tth61jUPlreYpbyYefZaqa6V2G+e6POR1RMvzvm3+Hya
+	44fGVy7TqyY7RHhvUVghaN8S+e58TO1uhwnpK5Y6KbEUZyQaajEXFScCABJRB2FwAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2014 11:56 AM, Sekhar Nori wrote:
-> On Friday 11 April 2014 02:20 PM, Peter Ujfalusi wrote:
->> On 04/11/2014 11:17 AM, Sekhar Nori wrote:
->>> On Tuesday 01 April 2014 06:36 PM, Peter Ujfalusi wrote:
->>>> Use the EVENTQ_1 for default and leave the EVENTQ_0 to be used by high
->>>> priority channels, like audio.
->>>>
->>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->>>
->>> Acked-by: Sekhar Nori <nsekhar@ti.com>
->>>
->>>> ---
->>>>  arch/arm/common/edma.c | 3 ++-
->>>>  1 file changed, 2 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
->>>> index 86a8b263278f..19520e2519d9 100644
->>>> --- a/arch/arm/common/edma.c
->>>> +++ b/arch/arm/common/edma.c
->>>> @@ -1546,7 +1546,8 @@ static int edma_of_parse_dt(struct device *dev,
->>>>  
->>>>  	pdata->queue_priority_mapping = queue_priority_map;
->>>>  
->>>> -	pdata->default_queue = 0;
->>>> +	/* select queue 1 as default */
->>>
->>> It will be nice to expand the comment with explanation of why this is
->>> being chosen as default (lower priority queue by default for typical
->>> bulk data transfer).
->>
->> Yes, extended comment is a good idea.
->>
->> For the next version I think I'm going to change the code around default
->> TC/Queue and the non default queue selection, mostly based on Joel's comment:
->>
->> EVENTQ_1 as default queue.
->> Set the EVENTQ_1 priority to 7
->> EVENTQ_0 priority is going to stay 0 and EVENTQ_2 as 2
->>
->> Add new member to struct edma, like high_pri_queue.
->> When we set the queue priorities in edma_probe() we look for the highest
->> priority queue and save the number in high_pri_queue.
->>
->> I will rename the edma_request_non_default_queue() to
->> edma_request_high_pri_queue() and it will assign the channel to the high
->> priority queue.
->>
->> I think this way it is going to be more explicit and IMHO a bit more safer in
->> a sense the we are going to get high priority when we ask for it.
+
+Hi,
+
+On Friday, April 11, 2014 11:00:40 AM Chanwoo Choi wrote:
+> This patch control special clock for ADC in Exynos series's FSYS block.
+
+s/control/controls/
+
+> If special clock of ADC is registerd on clock list of common clk framework,
+> Exynos ADC drvier have to control this clock.
+
+s/drvier/driver/
+
+> Exynos3250/Exynos4/Exynos5 has 'adc' clock as following:
+> - 'adc' clock: bus clock for ADC
 > 
-> Sounds much better. I had posted some ideas about adding support for
-> channel priority in the core code but we can leave that for Vinod and
-> Dan to say if they really see a need for that.
+> Exynos3250 has additional 'sclk_tsadc' clock as following:
+> - 'sclk_tsadc' clock: special clock for ADC which provide clock to internal ADC
+> 
+> Exynos 4210/4212/4412 and Exynos5250/5420 has not included 'sclk_tsadc' clock
+> in FSYS_BLK. But, Exynos3250 based on Cortex-A7 has only included 'sclk_tsadc'
+> clock in FSYS_BLK.
+> 
+> Cc: Jonathan Cameron <jic23@kernel.org>
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> Cc: linux-iio@vger.kernel.org
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  drivers/iio/adc/exynos_adc.c | 13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+> 
+> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+> index d25b262..4cd1975 100644
+> --- a/drivers/iio/adc/exynos_adc.c
+> +++ b/drivers/iio/adc/exynos_adc.c
+> @@ -88,6 +88,7 @@ struct exynos_adc {
+>  	void __iomem		*regs;
+>  	void __iomem		*enable_reg;
+>  	struct clk		*clk;
+> +	struct clk		*sclk;
+>  	unsigned int		irq;
+>  	struct regulator	*vdd;
+>  
+> @@ -308,6 +309,13 @@ static int exynos_adc_probe(struct platform_device *pdev)
+>  		goto err_irq;
+>  	}
+>  
+> +	info->sclk = devm_clk_get(&pdev->dev, "sclk_tsadc");
+> +	if (IS_ERR(info->sclk)) {
+> +		dev_warn(&pdev->dev, "failed getting sclk clock, err = %ld\n",
+> +							PTR_ERR(info->sclk));
+> +		info->sclk = NULL;
+> +	}
+> +
+>  	info->vdd = devm_regulator_get(&pdev->dev, "vdd");
+>  	if (IS_ERR(info->vdd)) {
+>  		dev_err(&pdev->dev, "failed getting regulator, err = %ld\n",
+> @@ -341,6 +349,7 @@ static int exynos_adc_probe(struct platform_device *pdev)
+>  		goto err_iio_dev;
+>  
+>  	clk_prepare_enable(info->clk);
+> +	clk_prepare_enable(info->sclk);
+>  
+>  	exynos_adc_hw_init(info);
+>  
+> @@ -357,6 +366,7 @@ err_of_populate:
+>  				exynos_adc_remove_devices);
+>  	regulator_disable(info->vdd);
+>  	clk_disable_unprepare(info->clk);
+> +	clk_disable_unprepare(info->sclk);
 
-If we do it via the dmaengine core I think it would be better to have a new
-flag to be passed to dmaengine_prep_dma_*().
-We could have for example:
-DMA_PREP_HIGH_PRI as flag to indicate that we need high priority DMA if it is
-possible.
-We can watch for this flag in the edma driver and act accordingly.
-ALSA's dmaengine_pcm_prepare_and_submit() could set this flag unconditionally
-since audio should be treated in this way if the DMA IP can do this.
+Please disable clocks in the reverse of order in which they were enabled.
 
-Not sure what to do with eDMA's 8 priority level. With that we could have high
-priority; low priority; low, but not the lowest priority; about in the middle
-priority; etc.
+>  err_iio_dev:
+>  	iio_device_unregister(indio_dev);
+>  err_irq:
+> @@ -373,6 +383,7 @@ static int exynos_adc_remove(struct platform_device *pdev)
+>  				exynos_adc_remove_devices);
+>  	regulator_disable(info->vdd);
+>  	clk_disable_unprepare(info->clk);
+> +	clk_disable_unprepare(info->sclk);
 
-We could have also new callback in the dma_device struct with needed wrappers
-to set priority level, but where to draw the range? High, Mid and Low? Range
-of 0 - 10?
+ditto
 
--- 
-Péter
+>  	writel(0, info->enable_reg);
+>  	iio_device_unregister(indio_dev);
+>  	free_irq(info->irq, info);
+> @@ -398,6 +409,7 @@ static int exynos_adc_suspend(struct device *dev)
+>  	}
+>  
+>  	clk_disable_unprepare(info->clk);
+> +	clk_disable_unprepare(info->sclk);
+
+ditto
+
+>  	writel(0, info->enable_reg);
+>  	regulator_disable(info->vdd);
+>  
+> @@ -416,6 +428,7 @@ static int exynos_adc_resume(struct device *dev)
+>  
+>  	writel(1, info->enable_reg);
+>  	clk_prepare_enable(info->clk);
+> +	clk_prepare_enable(info->sclk);
+>  
+>  	exynos_adc_hw_init(info);
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
