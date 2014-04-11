@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759631AbaDKQzl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:55:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56532 "EHLO
+	id S1422797AbaDKQ4N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:56:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56530 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422757AbaDKQIz (ORCPT
+	with ESMTP id S1759427AbaDKQIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Apr 2014 12:08:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
+        Sabrina Dubroca <sd@queasysnail.net>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 15/65] pkt_sched: fq: do not hold qdisc lock while allocating memory
-Date: Fri, 11 Apr 2014 09:10:47 -0700
-Message-Id: <20140411160959.783178615@linuxfoundation.org>
+Subject: [PATCH 3.13 13/65] ipv6: dont set DST_NOCOUNT for remotely added routes
+Date: Fri, 11 Apr 2014 09:10:45 -0700
+Message-Id: <20140411160959.521577790@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
 References: <20140411160957.714773410@linuxfoundation.org>
@@ -27,88 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Sabrina Dubroca <sd@queasysnail.net>
 
-[ Upstream commit 2d8d40afd187bced0a3d056366fb58d66fe845e3 ]
+[ Upstream commit c88507fbad8055297c1d1e21e599f46960cbee39 ]
 
-Resizing fq hash table allocates memory while holding qdisc spinlock,
-with BH disabled.
+DST_NOCOUNT should only be used if an authorized user adds routes
+locally. In case of routes which are added on behalf of router
+advertisments this flag must not get used as it allows an unlimited
+number of routes getting added remotely.
 
-This is definitely not good, as allocation might sleep.
-
-We can drop the lock and get it when needed, we hold RTNL so no other
-changes can happen at the same time.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Fixes: afe4fd062416 ("pkt_sched: fq: Fair Queue packet scheduler")
+Signed-off-by: Sabrina Dubroca <sd@queasysnail.net>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sched/sch_fq.c |   28 +++++++++++++++++++---------
- 1 file changed, 19 insertions(+), 9 deletions(-)
+ net/ipv6/route.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/sched/sch_fq.c
-+++ b/net/sched/sch_fq.c
-@@ -578,9 +578,11 @@ static void fq_rehash(struct fq_sched_da
- 	q->stat_gc_flows += fcnt;
- }
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1495,7 +1495,7 @@ int ip6_route_add(struct fib6_config *cf
+ 	if (!table)
+ 		goto out;
  
--static int fq_resize(struct fq_sched_data *q, u32 log)
-+static int fq_resize(struct Qdisc *sch, u32 log)
- {
-+	struct fq_sched_data *q = qdisc_priv(sch);
- 	struct rb_root *array;
-+	void *old_fq_root;
- 	u32 idx;
+-	rt = ip6_dst_alloc(net, NULL, DST_NOCOUNT, table);
++	rt = ip6_dst_alloc(net, NULL, (cfg->fc_flags & RTF_ADDRCONF) ? 0 : DST_NOCOUNT, table);
  
- 	if (q->fq_root && log == q->fq_trees_log)
-@@ -593,13 +595,19 @@ static int fq_resize(struct fq_sched_dat
- 	for (idx = 0; idx < (1U << log); idx++)
- 		array[idx] = RB_ROOT;
- 
--	if (q->fq_root) {
--		fq_rehash(q, q->fq_root, q->fq_trees_log, array, log);
--		kfree(q->fq_root);
--	}
-+	sch_tree_lock(sch);
-+
-+	old_fq_root = q->fq_root;
-+	if (old_fq_root)
-+		fq_rehash(q, old_fq_root, q->fq_trees_log, array, log);
-+
- 	q->fq_root = array;
- 	q->fq_trees_log = log;
- 
-+	sch_tree_unlock(sch);
-+
-+	kfree(old_fq_root);
-+
- 	return 0;
- }
- 
-@@ -675,9 +683,11 @@ static int fq_change(struct Qdisc *sch,
- 		q->flow_refill_delay = usecs_to_jiffies(usecs_delay);
- 	}
- 
--	if (!err)
--		err = fq_resize(q, fq_log);
--
-+	if (!err) {
-+		sch_tree_unlock(sch);
-+		err = fq_resize(sch, fq_log);
-+		sch_tree_lock(sch);
-+	}
- 	while (sch->q.qlen > sch->limit) {
- 		struct sk_buff *skb = fq_dequeue(sch);
- 
-@@ -723,7 +733,7 @@ static int fq_init(struct Qdisc *sch, st
- 	if (opt)
- 		err = fq_change(sch, opt);
- 	else
--		err = fq_resize(q, q->fq_trees_log);
-+		err = fq_resize(sch, q->fq_trees_log);
- 
- 	return err;
- }
+ 	if (!rt) {
+ 		err = -ENOMEM;
 
 
