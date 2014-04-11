@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506AbaDKPOR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 11:14:17 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:40814 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045AbaDKPOQ (ORCPT
+	id S1758016AbaDKPPS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 11:15:18 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:53586 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754116AbaDKPPQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 11:14:16 -0400
-Date: Fri, 11 Apr 2014 17:14:09 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        nicolas.pitre@linaro.org, daniel.lezcano@linaro.org,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 0/8] sched,idle: need resched polling rework
-Message-ID: <20140411151409.GW11096@twins.programming.kicks-ass.net>
-References: <20140411134243.160989490@infradead.org>
- <CALCETrWJZ1-T+qOY9v=KBOSJkck7YYe7khw_dYPc9Ar8WFgMKw@mail.gmail.com>
+	Fri, 11 Apr 2014 11:15:16 -0400
+Message-ID: <53480702.3080100@tilera.com>
+Date: Fri, 11 Apr 2014 11:15:14 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrWJZ1-T+qOY9v=KBOSJkck7YYe7khw_dYPc9Ar8WFgMKw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Peter Zijlstra <peterz@infradead.org>, <mingo@kernel.org>,
+        <tglx@linutronix.de>, <luto@amacapital.net>,
+        <nicolas.pitre@linaro.org>, <daniel.lezcano@linaro.org>,
+        <umgwanakikbuti@gmail.com>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH 2/8] sched,idle,tile: Switch from TS_POLLING to TIF_POLLING_NRFLAG
+References: <20140411134243.160989490@infradead.org> <20140411135218.242750053@infradead.org>
+In-Reply-To: <20140411135218.242750053@infradead.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 08:00:23AM -0700, Andy Lutomirski wrote:
-> That being said, I think that this addresses once one of the two major
-> issues.  While the race you're fixing is more interesting, I think its
-> impact is dwarfed by the fact that ttwu_queue_remote completely
-> ignores polling.  (NB: I haven't actually tested this patch set, but I
-> did try to instrument this stuff awhile ago.)
-> 
-> To fix this, presumably the wake-from-idle path needs a
-> sched_ttwu_pending call, and ttwu_queue_remote could use resched_task.
->  sched_ttwu_pending could benefit from a straightforward optimization:
-> it doesn't need rq->lock if llist is empty.
-> 
-> If you're not planning on trying to fix that, I can try to write up a
-> patch in the next day or two.
+On 4/11/2014 9:42 AM, Peter Zijlstra wrote:
+> Standardize the idle polling indicator to TIF_POLLING_NRFLAG such that
+> both TIF_NEED_RESCHED and TIF_POLLING_NRFLAG are in the same word.
+> This will allow us, using fetch_or(), to both set NEED_RESCHED and
+> check for POLLING_NRFLAG in a single operation and avoid pointless
+> wakeups.
+>
+> Changing from the non-atomic thread_info::status flags to the atomic
+> thread_info::flags shouldn't be a big issue since most polling state
+> changes were followed/preceded by a full memory barrier anyway.
+>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Andy Lutomirski <luto@amacapital.net>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  arch/tile/include/asm/thread_info.h |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
 
-Right; I forgot to write about that; I was going to look at both ttwu
-and arch_send_call_function_single_ipi() after this got sorted.
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 
-While you didn't complain about the remote function call IPI, Venki
-(while @google) did and this was their reason to look at this.
+It's unfortunate that you're rolling the fetch_or() unconditionally out of cmpxchg(), since some architectures (like tilegx) do have support for "fetchor" as a primitive atomic operation.  Currently the tilegx fetchor is only exposed to architecture-independent code via set_bit() and test_and_set_bit(), but perhaps it's worth having an atomic_or() in atomic.h so architectures can choose to optimize it?
 
-> Even with all of this fixed, what happens when ttwu_queue_remote is
-> called with a task that has lower priority than whatever is currently
-> running on the targeted cpu?  I think the result is an IPI that serves
-> very little purpose other than avoiding taking a spinlock in the
-> waking thread.  This may be a bad tradeoff.  I doubt that this matters
-> for my particular workload, though.
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-Today Mike also noted that on very high freq the IPI is actually a lot
-slower than doing the remote accesses for some weird reason --
-previously I've seen the remote wakeups queue a lot of wakeups and have
-the IPI take too long.
-
-So there's definitely something to prod at there.
