@@ -1,100 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759587AbaDKQ5I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:57:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56505 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422749AbaDKQIy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:08:54 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Rainer Weikusat <rweikusat@mobileactivedefense.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 11/65] net: unix: non blocking recvmsg() should not return -EINTR
-Date: Fri, 11 Apr 2014 09:10:43 -0700
-Message-Id: <20140411160959.280925799@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
-References: <20140411160957.714773410@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S1423053AbaDKQ5z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:57:55 -0400
+Received: from mga11.intel.com ([192.55.52.93]:16171 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422754AbaDKQ5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 12:57:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,842,1389772800"; 
+   d="scan'208";a="519029246"
+Date: Fri, 11 Apr 2014 22:17:55 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Joel Fernandes <joelf@ti.com>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, dan.j.williams@intel.com,
+        nsekhar@ti.com, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com, mporter@linaro.org
+Subject: Re: [PATCH v2 08/14] DMA: edma: Use different eventq for cyclic
+ channels
+Message-ID: <20140411164755.GE32284@intel.com>
+References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com>
+ <1396357575-30585-9-git-send-email-peter.ujfalusi@ti.com>
+ <5346C88E.8010504@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5346C88E.8010504@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Apr 10, 2014 at 11:36:30AM -0500, Joel Fernandes wrote:
+> On 04/01/2014 08:06 AM, Peter Ujfalusi wrote:
+> > To improve latency with cyclic DMA operation it is preferred to
+> > use different eventq/tc than the default which is used by all
+> > other drivers (mmc, spi, i2c, etc).
+> > When preparing the cyclic dma ask for non default queue for the
+> > channel which is going to be used with cyclic mode.
+> > 
+> > Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> > ---
+> >  drivers/dma/edma.c | 3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+> > index 1dd9e8806975..10048b40fac8 100644
+> > --- a/drivers/dma/edma.c
+> > +++ b/drivers/dma/edma.c
+> > @@ -628,6 +628,9 @@ static struct dma_async_tx_descriptor *edma_prep_dma_cyclic(
+> >  		edesc->pset[i].opt |= TCINTEN;
+> >  	}
+> >  
+> > +	/* Use different eventq/tc for cyclic DMA to reduce latency */
+> > +	edma_request_non_default_queue(echan->ch_num);
+> > +
+> >  	return vchan_tx_prep(&echan->vchan, &edesc->vdesc, tx_flags);
+> >  }
+> >  
+> > 
+> 
+> Is there any way to guarantee that the non-default queue is of the
+> highest priority, or in other words default queue is of lowest priority.
+well as we are discussing in other thread, it would make sense to pass the
+required priority (i am using audio so pls give me highest one)
 
-------------------
+-- 
+~Vinod
+> I know you set queue 1 as default because by default 0 is higher
+> priority. And then assigning non-default queue.
+> 
+> When assigning default to Queue 1, it would be good to also call
+> assign_priority_to_queue and set QUEPRI to 7 for Queue 1. Since 0, 2 and
+> 4 are all non-defaults.
+> 
+> Thanks,
+> -Joel
 
-From: Eric Dumazet <edumazet@google.com>
-
-[ Upstream commit de1443916791d75fdd26becb116898277bb0273f ]
-
-Some applications didn't expect recvmsg() on a non blocking socket
-could return -EINTR. This possibility was added as a side effect
-of commit b3ca9b02b00704 ("net: fix multithreaded signal handling in
-unix recv routines").
-
-To hit this bug, you need to be a bit unlucky, as the u->readlock
-mutex is usually held for very small periods.
-
-Fixes: b3ca9b02b00704 ("net: fix multithreaded signal handling in unix recv routines")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Rainer Weikusat <rweikusat@mobileactivedefense.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/unix/af_unix.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
-
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -1785,8 +1785,11 @@ static int unix_dgram_recvmsg(struct kio
- 		goto out;
- 
- 	err = mutex_lock_interruptible(&u->readlock);
--	if (err) {
--		err = sock_intr_errno(sock_rcvtimeo(sk, noblock));
-+	if (unlikely(err)) {
-+		/* recvmsg() in non blocking mode is supposed to return -EAGAIN
-+		 * sk_rcvtimeo is not honored by mutex_lock_interruptible()
-+		 */
-+		err = noblock ? -EAGAIN : -ERESTARTSYS;
- 		goto out;
- 	}
- 
-@@ -1911,6 +1914,7 @@ static int unix_stream_recvmsg(struct ki
- 	struct unix_sock *u = unix_sk(sk);
- 	struct sockaddr_un *sunaddr = msg->msg_name;
- 	int copied = 0;
-+	int noblock = flags & MSG_DONTWAIT;
- 	int check_creds = 0;
- 	int target;
- 	int err = 0;
-@@ -1926,7 +1930,7 @@ static int unix_stream_recvmsg(struct ki
- 		goto out;
- 
- 	target = sock_rcvlowat(sk, flags&MSG_WAITALL, size);
--	timeo = sock_rcvtimeo(sk, flags&MSG_DONTWAIT);
-+	timeo = sock_rcvtimeo(sk, noblock);
- 
- 	/* Lock the socket to prevent queue disordering
- 	 * while sleeps in memcpy_tomsg
-@@ -1938,8 +1942,11 @@ static int unix_stream_recvmsg(struct ki
- 	}
- 
- 	err = mutex_lock_interruptible(&u->readlock);
--	if (err) {
--		err = sock_intr_errno(timeo);
-+	if (unlikely(err)) {
-+		/* recvmsg() in non blocking mode is supposed to return -EAGAIN
-+		 * sk_rcvtimeo is not honored by mutex_lock_interruptible()
-+		 */
-+		err = noblock ? -EAGAIN : -ERESTARTSYS;
- 		goto out;
- 	}
- 
-
-
+-- 
