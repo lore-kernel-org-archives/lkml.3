@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554AbaDKVE2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 17:04:28 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:59437 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754358AbaDKVD7 (ORCPT
+	id S1753569AbaDKVPW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 17:15:22 -0400
+Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:33859 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750813AbaDKVPV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 17:03:59 -0400
-X-Sasl-enc: 6kXD7fV/tDjp3De4OO/PIQJEPax2TuucPfBkIzX5bTXT 1397250234
-Date: Fri, 11 Apr 2014 14:06:39 -0700
-From: Greg KH <greg@kroah.com>
-To: Andreas Noever <andreas.noever@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Daniel J Blueman <daniel@quora.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org
-Subject: Re: [Patch v2 00/14] Thunderbolt support for Apple MBP
-Message-ID: <20140411210639.GA22760@kroah.com>
-References: <1397175901-4023-1-git-send-email-andreas.noever@gmail.com>
+	Fri, 11 Apr 2014 17:15:21 -0400
+Message-ID: <53485B63.1030305@vmware.com>
+Date: Fri, 11 Apr 2014 23:15:15 +0200
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397175901-4023-1-git-send-email-andreas.noever@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: David Herrmann <dh.herrmann@gmail.com>
+CC: Thomas Hellstrom <thellstrom@vmware.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Subject: Re: DRM security flaws and security levels.
+References: <5347E32B.1080002@vmware.com> <CANq1E4Rr5XDR3+WLRHSw6aYw6uDq90JJZOhmUKDJj=kFGcvJ8g@mail.gmail.com>
+In-Reply-To: <CANq1E4Rr5XDR3+WLRHSw6aYw6uDq90JJZOhmUKDJj=kFGcvJ8g@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 02:24:47AM +0200, Andreas Noever wrote:
+On 04/11/2014 10:31 PM, David Herrmann wrote:
 > Hi
-> 
-> This is version 2 of my Thunderbolt driver for Apple hardware (see [1] for v1).
-> The short story is that Apple decided to implement hotplug support in a driver
-> instead of the firmware. The firmware will only initialize coldplugged devices.
-> Hotplugged devices do not work.
-> 
-> This series adds support for single device hotplug (no chaining) for the Cactus
-> Ridge C4 Thunderbolt controller (device id 0x1547, present on MacBookPro10,1).
-> As far as I can tell newer generations work quite similar and it should be
-> possible to add support for more controllers with some work.
-> 
-> Changes from v1:
->  - suspend/hibernate support (yeah)
->  - general cleanups and refactoring
-> 
-> >From my perspective the driver is working quite well and is ready for merging
-> (maybe someone can tell me whom I should ask to get a review?). I have taken
-> some care to not stomp on tunnels setup by the firmware for coldplugged
-> devices. If this works as intendend then there should be no regressions
-> (coldplugged devices continue to work and simple hotplugged devices will start
-> working). In particular the Apple Ethernet adapter works very well (and this is
-> probably the most used TB device out there).
-> 
-> Some notes:
->  - The patch requires Matthew's acpi_osi fix [2]
->  - @pci, Bjorn: I hope patch 12 is acceptable. If there is a better way to do
->    this please let me know.
->  - Thunderbolt displays: I have a pretty good idea on how they should work, but
->    I did not yet write any code to support them. Also judging by the replies I
-> got for v1 of the patch it seems that there are some graphics driver problems
-> even with coldplugged tb displays (at least on MBP models with discrete
-> graphics cards).
->  - Hibernate gotcha: The amount of available memory reported by the firmware
->    depends on whether a tb device is connected. This makes Linux refuse to
-> restore the saved image. This has nothing to do with this driver, but you might
-> run into it during testing.
+>
+> On Fri, Apr 11, 2014 at 2:42 PM, Thomas Hellstrom <thellstrom@vmware.com> wrote:
+>> as was discussed a while ago, there are some serious security flaws with
+>> the current drm master model, that allows a
+>> user that had previous access or current access to an X server terminal
+>> to access the GPU memory of the active X server, without being
+>> authenticated to the X server and thereby also access other user's
+>> secret information
+> 1a) and 1b) are moot if you disallow primary-node access but require
+> clients to use render-nodes with dma-buf. There're no gem-names on
+> render-nodes so no way to access other buffers (assuming the GPU does
+> command-stream checking and/or VM).
 
-Very nice work with all of this, I never thought I would ever see this
-happen for Linux.  Of course, I now can't find my thunderbolt ethernet
-device around here anymore to test this out, I'll go get another one
-soon...
+Disallowing primary node access will break older user-space drivers and
+non-root
+EGL clients. I'm not sure that's OK, even if the change is done from
+user-space.
+A simple gem fix would also do the trick.
 
-thanks,
+>
+> 2) There is no DRM-generic data other than buffers that is global. So
+> imho this is a driver-specific issue.
+>
+> So I cannot see why this is a DRM issue. The only leaks I see are
+> legacy interfaces and driver-specific interfaces. The first can be
+> disabled via chmod() for clients, and the second is something driver
+> authors should fix.
 
-greg k-h
+Yeah, but some driver authors can't or won't fix the drivers w r t this,
+hence the security levels.
+
+Thanks,
+/Thomas
+
+
+>
+> Thanks
+> David
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
