@@ -1,76 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422928AbaDKQJb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:09:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56306 "EHLO
+	id S1423008AbaDKQQm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:16:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56807 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754288AbaDKQH3 (ORCPT
+	with ESMTP id S1759720AbaDKQJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:07:29 -0400
+	Fri, 11 Apr 2014 12:09:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Stancek <jstancek@redhat.com>,
-        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 09/41] bridge: multicast: add sanity check for query source addresses
-Date: Fri, 11 Apr 2014 09:09:40 -0700
-Message-Id: <20140411160933.509041367@linuxfoundation.org>
+Subject: [PATCH 3.14 15/23] isdnloop: several buffer overflows
+Date: Fri, 11 Apr 2014 09:12:04 -0700
+Message-Id: <20140411161202.345257241@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
-References: <20140411160932.865173041@linuxfoundation.org>
+In-Reply-To: <20140411161200.236939691@linuxfoundation.org>
+References: <20140411161200.236939691@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 6565b9eeef194afbb3beec80d6dd2447f4091f8c ]
+[ Upstream commit 7563487cbf865284dcd35e9ef5a95380da046737 ]
 
-MLD queries are supposed to have an IPv6 link-local source address
-according to RFC2710, section 4 and RFC3810, section 5.1.14. This patch
-adds a sanity check to ignore such broken MLD queries.
+There are three buffer overflows addressed in this patch.
 
-Without this check, such malformed MLD queries can result in a
-denial of service: The queries are ignored by any MLD listener
-therefore they will not respond with an MLD report. However,
-without this patch these malformed MLD queries would enable the
-snooping part in the bridge code, potentially shutting down the
-according ports towards these hosts for multicast traffic as the
-bridge did not learn about these listeners.
+1) In isdnloop_fake_err() we add an 'E' to a 60 character string and
+then copy it into a 60 character buffer.  I have made the destination
+buffer 64 characters and I'm changed the sprintf() to a snprintf().
 
-Reported-by: Jan Stancek <jstancek@redhat.com>
-Signed-off-by: Linus Lüssing <linus.luessing@web.de>
-Reviewed-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+2) In isdnloop_parse_cmd(), p points to a 6 characters into a 60
+character buffer so we have 54 characters.  The ->eazlist[] is 11
+characters long.  I have modified the code to return if the source
+buffer is too long.
+
+3) In isdnloop_command() the cbuf[] array was 60 characters long but the
+max length of the string then can be up to 79 characters.  I made the
+cbuf array 80 characters long and changed the sprintf() to snprintf().
+I also removed the temporary "dial" buffer and changed it to use "p"
+directly.
+
+Unfortunately, we pass the "cbuf" string from isdnloop_command() to
+isdnloop_writecmd() which truncates anything over 60 characters to make
+it fit in card->omsg[].  (It can accept values up to 255 characters so
+long as there is a '\n' character every 60 characters).  For now I have
+just fixed the memory corruption bug and left the other problems in this
+driver alone.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_multicast.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/isdn/isdnloop/isdnloop.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -1176,6 +1176,12 @@ static int br_ip6_multicast_query(struct
+--- a/drivers/isdn/isdnloop/isdnloop.c
++++ b/drivers/isdn/isdnloop/isdnloop.c
+@@ -518,9 +518,9 @@ static isdnloop_stat isdnloop_cmd_table[
+ static void
+ isdnloop_fake_err(isdnloop_card *card)
+ {
+-	char buf[60];
++	char buf[64];
  
- 	br_multicast_query_received(br, port, !ipv6_addr_any(&ip6h->saddr));
+-	sprintf(buf, "E%s", card->omsg);
++	snprintf(buf, sizeof(buf), "E%s", card->omsg);
+ 	isdnloop_fake(card, buf, -1);
+ 	isdnloop_fake(card, "NAK", -1);
+ }
+@@ -903,6 +903,8 @@ isdnloop_parse_cmd(isdnloop_card *card)
+ 	case 7:
+ 		/* 0x;EAZ */
+ 		p += 3;
++		if (strlen(p) >= sizeof(card->eazlist[0]))
++			break;
+ 		strcpy(card->eazlist[ch - 1], p);
+ 		break;
+ 	case 8:
+@@ -1133,7 +1135,7 @@ isdnloop_command(isdn_ctrl *c, isdnloop_
+ {
+ 	ulong a;
+ 	int i;
+-	char cbuf[60];
++	char cbuf[80];
+ 	isdn_ctrl cmd;
+ 	isdnloop_cdef cdef;
  
-+	/* RFC2710+RFC3810 (MLDv1+MLDv2) require link-local source addresses */
-+	if (!(ipv6_addr_type(&ip6h->saddr) & IPV6_ADDR_LINKLOCAL)) {
-+		err = -EINVAL;
-+		goto out;
-+	}
-+
- 	if (skb->len == sizeof(*mld)) {
- 		if (!pskb_may_pull(skb, sizeof(*mld))) {
- 			err = -EINVAL;
+@@ -1198,7 +1200,6 @@ isdnloop_command(isdn_ctrl *c, isdnloop_
+ 			break;
+ 		if ((c->arg & 255) < ISDNLOOP_BCH) {
+ 			char *p;
+-			char dial[50];
+ 			char dcode[4];
+ 
+ 			a = c->arg;
+@@ -1210,10 +1211,10 @@ isdnloop_command(isdn_ctrl *c, isdnloop_
+ 			} else
+ 				/* Normal Dial */
+ 				strcpy(dcode, "CAL");
+-			strcpy(dial, p);
+-			sprintf(cbuf, "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
+-				dcode, dial, c->parm.setup.si1,
+-				c->parm.setup.si2, c->parm.setup.eazmsn);
++			snprintf(cbuf, sizeof(cbuf),
++				 "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
++				 dcode, p, c->parm.setup.si1,
++				 c->parm.setup.si2, c->parm.setup.eazmsn);
+ 			i = isdnloop_writecmd(cbuf, strlen(cbuf), 0, card);
+ 		}
+ 		break;
 
 
