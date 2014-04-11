@@ -1,75 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732AbaDKTcb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 15:32:31 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:45792 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664AbaDKTc3 (ORCPT
+	id S1754806AbaDKTfM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 15:35:12 -0400
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:42142 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752312AbaDKTfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 15:32:29 -0400
-Message-ID: <53484349.1000806@linaro.org>
-Date: Fri, 11 Apr 2014 12:32:25 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 11 Apr 2014 15:35:10 -0400
+Message-ID: <534843EA.6060602@vmware.com>
+Date: Fri, 11 Apr 2014 21:35:06 +0200
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Dave Hansen <dave@sr71.net>, "H. Peter Anvin" <hpa@zytor.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
-References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org> <20140401212102.GM4407@cmpxchg.org> <533B313E.5000403@zytor.com> <533B4555.3000608@sr71.net> <533B8E3C.3090606@linaro.org> <20140402163638.GQ14688@cmpxchg.org> <CALAqxLUNKJQs+q__fwqggaRtqLz5sJtuxKdVPja8X0htDyaT6A@mail.gmail.com> <20140402175852.GS14688@cmpxchg.org> <CALAqxLXs+tB3h6wqZ3m5qOFWfgeJcH03k-0dsj+NUoB5D5LEgQ@mail.gmail.com> <20140402194708.GV14688@cmpxchg.org> <533C6F6E.4080601@linaro.org>
-In-Reply-To: <533C6F6E.4080601@linaro.org>
-X-Enigmail-Version: 1.6
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+CC: Thomas Hellstrom <thellstrom@vmware.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org, ccross@google.com,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH 2/2] [RFC v2 with seqcount] reservation: add suppport
+ for read-only access using rcu
+References: <20140409144239.26648.57918.stgit@patser> <20140409144831.26648.79163.stgit@patser> <53465A53.1090500@vmware.com> <53466D63.8080808@canonical.com> <53467B93.3000402@vmware.com> <5346B212.8050202@canonical.com> <5347A9FD.2070706@vmware.com> <5347B4E5.6090901@canonical.com> <5347BFC9.3020503@vmware.com> <53482FF1.1090406@canonical.com>
+In-Reply-To: <53482FF1.1090406@canonical.com>
+X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2014 01:13 PM, John Stultz wrote:
-> On 04/02/2014 12:47 PM, Johannes Weiner wrote:
->
->> It's really nothing but a use-after-free bug that has consequences for
->> no-one but the faulty application.  The thing that IS new is that even
->> a read is enough to corrupt your data in this case.
+On 04/11/2014 08:09 PM, Maarten Lankhorst wrote:
+> op 11-04-14 12:11, Thomas Hellstrom schreef:
+>> On 04/11/2014 11:24 AM, Maarten Lankhorst wrote:
+>>> op 11-04-14 10:38, Thomas Hellstrom schreef:
+>>>> Hi, Maarten.
+>>>>
+>>>> Here I believe we encounter a lot of locking inconsistencies.
+>>>>
+>>>> First, it seems you're use a number of pointers as RCU pointers
+>>>> without
+>>>> annotating them as such and use the correct rcu
+>>>> macros when assigning those pointers.
+>>>>
+>>>> Some pointers (like the pointers in the shared fence list) are both
+>>>> used
+>>>> as RCU pointers (in dma_buf_poll()) for example,
+>>>> or considered protected by the seqlock
+>>>> (reservation_object_get_fences_rcu()), which I believe is OK, but then
+>>>> the pointers must
+>>>> be assigned using the correct rcu macros. In the memcpy in
+>>>> reservation_object_get_fences_rcu() we might get away with an
+>>>> ugly typecast, but with a verbose comment that the pointers are
+>>>> considered protected by the seqlock at that location.
+>>>>
+>>>> So I've updated (attached) the headers with proper __rcu annotation
+>>>> and
+>>>> locking comments according to how they are being used in the various
+>>>> reading functions.
+>>>> I believe if we want to get rid of this we need to validate those
+>>>> pointers using the seqlock as well.
+>>>> This will generate a lot of sparse warnings in those places needing
+>>>> rcu_dereference()
+>>>> rcu_assign_pointer()
+>>>> rcu_dereference_protected()
+>>>>
+>>>> With this I think we can get rid of all ACCESS_ONCE macros: It's not
+>>>> needed when the rcu_x() macros are used, and
+>>>> it's never needed for the members protected by the seqlock, (provided
+>>>> that the seq is tested). The only place where I think that's
+>>>> *not* the case is at the krealloc in
+>>>> reservation_object_get_fences_rcu().
+>>>>
+>>>> Also I have some more comments in the
+>>>> reservation_object_get_fences_rcu() function below:
+>>> I felt that the barriers needed for rcu were already provided by
+>>> checking the seqcount lock.
+>>> But looking at rcu_dereference makes it seem harmless to add it in
+>>> more places, it handles
+>>> the ACCESS_ONCE and barrier() for us.
+>> And it makes the code more maintainable, and helps sparse doing a lot of
+>> checking for us. I guess
+>> we can tolerate a couple of extra barriers for that.
 >>
->> MADV_REVIVE could return 0 if all pages in the specified range were
->> present, -Esomething if otherwise.  That would be semantically sound
->> even if userspace messes up.
-> So its semantically more of just a combined mincore+dirty operation..
-> and nothing more?
+>>> We could probably get away with using RCU_INIT_POINTER on the writer
+>>> side,
+>>> because the smp_wmb is already done by arranging seqcount updates
+>>> correctly.
+>> Hmm. yes, probably. At least in the replace function. I think if we do
+>> it in other places, we should add comments as to where
+>> the smp_wmb() is located, for future reference.
+>>
+>>
+>> Also  I saw in a couple of places where you're checking the shared
+>> pointers, you're not checking for NULL pointers, which I guess may
+>> happen if shared_count and pointers are not in full sync?
+>>
+> No, because shared_count is protected with seqcount. I only allow
+> appending to the array, so when
+> shared_count is validated by seqcount it means that the
+> [0...shared_count) indexes are valid and non-null.
+> What could happen though is that the fence at a specific index is
+> updated with another one from the same
+> context, but that's harmless.
 >
-> What are other folks thinking about this? Although I don't particularly
-> like it, I probably could go along with Johannes' approach, forgoing
-> SIGBUS for zero-fill and adapting the semantics that are in my mind a
-> bit stranger. This would allow for ashmem-like style behavior w/ the
-> additional  write-clears-volatile-state and read-clears-purged-state
-> constraints (which I don't think would be problematic for Android, but
-> am not totally sure).
->
-> But I do worry that these semantics are easier for kernel-mm-developers
-> to grasp, but are much much harder for application developers to
-> understand.
 
-So I don't feel like we've gotten enough feedback for consensus here.
+Hmm, doesn't attaching an exclusive fence clear all shared fence
+pointers from under a reader?
 
-Thus, to at least address other issues pointed out at LSF-MM, I'm going
-to shortly send out a v13 of the patchset which keeps with the previous
-approach instead of adopting Johannes' suggested approach here.
+/Thomas
 
-If folks do prefer Johannes' approach, please speak up as I'm willing to
-give it a whirl, despite my concerns about the subtle semantics.
 
-thanks
--john
 
+
+
+> ~Maarten
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
