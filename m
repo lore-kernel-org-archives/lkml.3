@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755815AbaDKXqQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 19:46:16 -0400
-Received: from mailout4.w2.samsung.com ([211.189.100.14]:58602 "EHLO
-	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645AbaDKXqP (ORCPT
+	id S1755923AbaDKXrA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 19:47:00 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:21803 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755429AbaDKXq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 19:46:15 -0400
-X-AuditID: cbfec37d-b7f616d0000059df-d7-53487ec61ffa
-Message-id: <53487EC2.3000001@samsung.com>
-Date: Fri, 11 Apr 2014 17:46:10 -0600
+	Fri, 11 Apr 2014 19:46:58 -0400
+X-AuditID: cbfec37c-b7f536d0000059f2-40-53487ef1b524
+Message-id: <53487EEF.6070507@samsung.com>
+Date: Fri, 11 Apr 2014 17:46:55 -0600
 From: Shuah Khan <shuah.kh@samsung.com>
 Reply-to: shuah.kh@samsung.com
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
@@ -20,48 +20,38 @@ To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
         Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 3.13 00/65] 3.13.10-stable review
-References: <20140411160957.714773410@linuxfoundation.org>
-In-reply-to: <20140411160957.714773410@linuxfoundation.org>
-Content-type: text/plain; charset=UTF-8; format=flowed
+Subject: Re: [PATCH 3.14 00/23] 3.14.1-stable review
+References: <20140411161200.236939691@linuxfoundation.org>
+In-reply-to: <20140411161200.236939691@linuxfoundation.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
 Content-transfer-encoding: 7bit
 X-Originating-IP: [105.144.134.215]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsVy+t9hP91jdR7BBvvucFrMWb+GzaJ58Xo2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrILMWRmVeSWpSXmKPExsVy+t9hX91PdR7BBtMPsFrMWb+GzaJ58Xo2
 	i8u75rBZPFl4hsli6qkJLBYLNj5itHjU95bdgd1j56y77B4nZvxm8dg/dw2Q+72B3ePzJrkA
-	1igum5TUnMyy1CJ9uwSujEmnP7MWtHBW3Pj/lK2BcRJ7FyMnh4SAicSalZtYIWwxiQv31rN1
-	MXJxCAksY5Q4fWANO4TTyyQx78RMVghnG6PExdYFLCAtvAJaEtNfn2QGsVkEVCUWHbnEBGKz
-	CahLfH69A2yFkICcRNOS1WA1ogIREq/OToTqFZT4MfkemC0iECyx9utCRpAFzAKrGCWuX17O
-	BpIQFjCVmPdoHxvEICuJVyvngQ3iFLCWaN67CyzOLGAm8ahlHTOELS+xec1bZoh6ZYk/l08x
-	QfymLHHncjfjBEaRWUh2z0LSPgtJ+wJG5lWMYqXFyQXFSempFSZ6xYm5xaV56XrJ+bmbGCHR
-	VLuD8f5Xm0OMAhyMSjy8HzQ8goVYE8uKK3MPMUpwMCuJ8L7NAgrxpiRWVqUW5ccXleakFh9i
-	ZOLglGpg1HjjNevizxsfHvWfKiwWLZA5a/fL/L2r4rPw0kNRCQsuZF/L31tiqX7l4bTjq5Re
-	yQZ+kwjP2DPnro5/o0JzSETt1tBFkvvi1f1+ePx/di/rMf/d9xKuz59nxP0M3sVxacqreW+K
-	PQ/VOzvO0Jtu6538MexmzzVvcabGzSZef9tn5175N/+eiBJLcUaioRZzUXEiAFeMHm+EAgAA
+	1igum5TUnMyy1CJ9uwSujPaOSawFx9kq/hw7z97AOJO1i5GTQ0LAROLI7U3MELaYxIV769m6
+	GLk4hASWMUq83H6VEcLpZZJ4dus1VGYbo0THhgVsIC28AloSh552go1iEVCVaP89lRHEZhNQ
+	l/j8egc7iC0kICfRtGQ12ApRgQiJV2cnskD0Ckr8mHwPzBYRCJZY+3Uh2DZmgVWMEtcvLwdb
+	IAx03+n+e8wQg6wk2lqWgS3gFLCW6JzbD2YzA9krJ22DsuUlNq95C1WvLPHn8ikmiN+UJe5c
+	7macwCgyC8nuWUjaZyFpX8DIvIpRrLQ4uaA4KT21wlivODG3uDQvXS85P3cTIySaanYw3vtq
+	c4hRgINRiYf3g4ZHsBBrYllxZe4hRgkOZiUR3rdZQCHelMTKqtSi/Pii0pzU4kOMTBycUg2M
+	EjtKt0tdYdfcf8yqkvtj/Z11sneePH/MWNCsMYdpCnfADf8WsZUbjUKOLOY78d9u8ktHZedT
+	fE4pUtl2dyTtC7UWTah/vIP/SUkvY8/l6V15tlU/U7foPjK3EnjEuiIiurH41vuC2z8r3hln
+	zc9ZuaNFekO1g+HXUsHdcl0Nl6MXR2XncKxVYinOSDTUYi4qTgQAxWSx3IQCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2014 10:10 AM, Greg Kroah-Hartman wrote:
-> ------------------------
-> NOTE
->
-> This is probably going to be the last 3.13.y kernel release.  There
-> _might_ be one more after this, but given my travel schedule for the
-> next few weeks, don't count on it.  Please move to the 3.14 kernel tree
-> as soon as possible.
->
-> ------------------------
->
-> This is the start of the stable review cycle for the 3.13.10 release.
-> There are 65 patches in this series, all will be posted as a response
+On 04/11/2014 10:11 AM, Greg Kroah-Hartman wrote:
+> This is the start of the stable review cycle for the 3.14.1 release.
+> There are 23 patches in this series, all will be posted as a response
 > to this one.  If anyone has any issues with these being applied, please
 > let me know.
 >
-> Responses should be made by Sun Apr 13 16:09:42 UTC 2014.
+> Responses should be made by Sun Apr 13 16:11:46 UTC 2014.
 > Anything received after that time might be too late.
 >
 > The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.13.10-rc1.gz
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.14.1-rc1.gz
 > and the diffstat can be found below.
 >
 > thanks,
