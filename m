@@ -1,106 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199AbaDKB3z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 21:29:55 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:54542 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754080AbaDKB3x (ORCPT
+	id S1754267AbaDKBbK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 21:31:10 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:48811 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752611AbaDKBbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 21:29:53 -0400
-Message-ID: <53474587.5080805@hitachi.com>
-Date: Fri, 11 Apr 2014 10:29:43 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jonathan Lebon <jlebon@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: Re: [RFC PATCH 4/6] uprobes/x86: Emulate rip-relative call's
-References: <20140406201628.GA507@redhat.com> <1396995963.5056.46.camel@oc7886638347.ibm.com.usor.ibm.com> <20140409154346.GB18486@redhat.com> <53469F95.1030709@redhat.com> <5346A362.9010802@hitachi.com> <20140410142820.GA24720@redhat.com>
-In-Reply-To: <20140410142820.GA24720@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 10 Apr 2014 21:31:07 -0400
+X-AuditID: cbfee691-b7efc6d0000039d3-e5-534745d769b9
+Message-id: <534745D9.30604@samsung.com>
+Date: Fri, 11 Apr 2014 10:31:05 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>, kgene.kim@samsung.com, t.figa@samsung.com
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        hyunhee.kim@samsung.com, sw0312.kim@samsung.com,
+        linux-kernel@vger.kernel.org, yj44.cho@samsung.com,
+        inki.dae@samsung.com, kyungmin.park@samsung.com
+Subject: Re: [PATCH 01/27] ARM: EXYNOS: Add Exynos3250 SoC ID
+References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
+ <1397122124-15690-2-git-send-email-cw00.choi@samsung.com>
+ <5032959.JQvlxpLHiQ@wuerfel>
+In-reply-to: <5032959.JQvlxpLHiQ@wuerfel>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsWyRsSkSPe6q3uwwZnTehZ/Jx1jt/j8oYXd
+	YtL9CSwWvQuuslmcbXrDbrHp8TVWi8u75rBZzDi/j8lixuSXbBbrZ7xmsdi7czKjA7fH71+T
+	GD02L6n36NuyitHj8ya5AJYoLpuU1JzMstQifbsEroxDDcEF3bwVU27sZ2lgPMjVxcjJISFg
+	ItH36ycThC0mceHeerYuRi4OIYGljBLT/3xmhSna/7qBFSKxiFFi4cZPzCAJIYHXjBK3LgmB
+	2LwCGhJX/p1hA7FZBFQldnZ1g01lE9CS2P/iBlhcVCBMYuX0KywQ9YISPybfA7NFBHwkNj9f
+	AbaZWeApo8SdefsZQRLCArYSJ2/cZ4HYvIBR4sfrc2AncQpoSqy4ewGsm1lAR2J/6zQ2CFte
+	YvOat8wgDRICL9klNndOYYU4SUDi2+RDQA0cQAlZiU0HmCFek5Q4uOIGywRGsVlIjpqFZOws
+	JGMXMDKvYhRNLUguKE5KLzLVK07MLS7NS9dLzs/dxAiMytP/nk3cwXj/gPUhxmSglROZpUST
+	84FRnVcSb2hsZmRhamJqbGRuaUaasJI4b/qjpCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFIN
+	jLpPXqgLyp6cJ/b+RthPoz/13L/WiHiWPLFmjcl+vmzfnw6vqokaF6N4zB3Xlp+dfSz0xUIj
+	yxUMK+rqRKp+L/q7br7PCpfv5+9p6jVt0Ux/P33Va+frVUvTYzhfpfK9uiV4wW1FjQf7+04F
+	q+Xhy6XflQZ+/bX2Y0b5iZ/PjjfIBN+4lFrhIa/EUpyRaKjFXFScCAAFqIsX4AIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jAd3rru7BBm8Wqln8nXSM3eLzhxZ2
+	i0n3J7BY9C64ymZxtukNu8Wmx9dYLS7vmsNmMeP8PiaLGZNfslmsn/GaxWLvzsmMDtwev39N
+	YvTYvKTeo2/LKkaPz5vkAliiGhhtMlITU1KLFFLzkvNTMvPSbZW8g+Od403NDAx1DS0tzJUU
+	8hJzU22VXHwCdN0yc4CuUlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBm
+	HGoILujmrZhyYz9LA+NBri5GTg4JAROJ/a8bWCFsMYkL99azdTFycQgJLGKUWLjxEzNIQkjg
+	NaPErUtCIDavgIbElX9n2EBsFgFViZ1d3UwgNpuAlsT+FzfA4qICYRIrp19hgagXlPgx+R6Y
+	LSLgI7H5+QqwBcwCTxkl7szbzwiSEBawlTh54z4LxOYFjBI/Xp8DO4lTQFNixd0LYN3MAjoS
+	+1unsUHY8hKb17xlnsAoMAvJkllIymYhKVvAyLyKUTS1ILmgOCk911CvODG3uDQvXS85P3cT
+	Izjmn0ntYFzZYHGIUYCDUYmHN+OCW7AQa2JZcWXuIUYJDmYlEd6eH0Ah3pTEyqrUovz4otKc
+	1OJDjMnAMJjILCWanA9MR3kl8YbGJmZGlkbmhhZGxuakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C
+	2cLEwSnVwLjXacuG51dl9FlP+KupPYzNtzrXObMu3WKXx7OLD+Wdjp8RfPz6961TFx0X5O6R
+	tkjrs1+0SWr+gpAqm41FC339np7aLi7DOK1Gcn+AwspffWfenJsc5nnFP3z+luthzeVcbm0W
+	O6XPPuKQODXvz4k5X9WPe3U6LvumNfX4uf0Nx2/cTLo95ZifEktxRqKhFnNRcSIA80fdPT0D	AAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/10 23:28), Oleg Nesterov wrote:
-> On 04/10, Masami Hiramatsu wrote:
+Hi,
+
+On 04/10/2014 06:43 PM, Arnd Bergmann wrote:
+> On Thursday 10 April 2014 18:28:18 Chanwoo Choi wrote:
+>> This patch add Exynos3250's SoC ID. Exynos 3250 is System-On-Chip(SoC) that
+>> is based on the 32-bit RISC processor for Smartphone. Exynos3250 uses Cortex-A7
+>> dual cores and has a target speed of 1.0GHz.
 >>
->> (2014/04/10 22:41), Denys Vlasenko wrote:
->>> On 04/09/2014 05:43 PM, Oleg Nesterov wrote:
->>>> On 04/08, Jim Keniston wrote:
->>>>>
->>>>> On Sun, 2014-04-06 at 22:16 +0200, Oleg Nesterov wrote:
->>>>>> 0xe8. Anything else?
->>>>>
->>>>> No, I think e8 is the only call instruction uprobes will see.
->>>>
->>>> Good.
->>>
->>> There is this monstrosity, "16-bit override for branches" in 64-mode:
->>>
->>> 66 e8 nn nn       callw   <offset16>
->>>
->>> Nobody sane uses it because it truncates instruction pointer.
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>>  arch/arm/mach-exynos/Kconfig             | 22 ++++++++++++++++++++++
+>>  arch/arm/mach-exynos/exynos.c            |  1 +
+>>  arch/arm/plat-samsung/include/plat/cpu.h | 10 ++++++++++
+>>  3 files changed, 33 insertions(+)
 >>
->> No problem, insn.c can handle that too. :)
+>> diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
+>> index fc8bf18..6da8a68 100644
+>> --- a/arch/arm/mach-exynos/Kconfig
+>> +++ b/arch/arm/mach-exynos/Kconfig
+>> @@ -11,6 +11,17 @@ if ARCH_EXYNOS
+>>  
+>>  menu "SAMSUNG EXYNOS SoCs Support"
+>>  
+>> +config ARCH_EXYNOS3
+>> +	bool "SAMSUNG EXYNOS3"
+>> +	select ARM_AMBA
+>> +	select CLKSRC_OF
+>> +	select HAVE_ARM_SCU if SMP
+>> +	select HAVE_SMP
+>> +	select PINCTRL
+>> +	select PM_GENERIC_DOMAINS if PM_RUNTIME
+>> +	help
+>> +	  Samsung EXYNOS3 SoCs based systems
+>> +
 > 
-> Does it?
-> 
-> 	"callw 1f; 1:\n"
-> 	"rep; nop\n"
-> 
-> objdump:
-> 
-> 	66 e8 00 00             callw  485 <_init-0x3ffed3>
-> 	f3 90                   pause
-> 
-> 
-> if we probe this "callw", we copy MAX_INSN_BYTES into auprobe->insn,
-> and after insn_get_length() (insn_complete() == T)
-> 
-> 	// this is correct
-> 	OPCODE1() == e8	
-> 
-> 	// this all looks wrong
-> 	insn->length == 6
-> 	insn->immediate.value == -1863122944
-> 	insn->immediate.nbytes == 4
+> Isn't S5PV210 also called an Exynos3 these days? Are we going to get
+> any conflicts here when merging that code into Exynos as Tomasz has
+> suggested in the past?
 
+I knew. But, S5PV210/S5PC110 has not yet included in Exynos3 category on mainline.
+Need opinion of Exynos SoC Maintainer to clear this ambiguous stuff.
 
+Dear Kukjin and Tomasz,
+I need your opinion about this patch.
 
-Oops, that should be a bug in insn.c!
-I'll fix that asap!
-
-Thank you,
-
-
-> 
-> so it seems that lib/insn.c treats the next "pause" insn as the high
-> 16 bits of address.
-> 
-> Oleg.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Best Regards,
+Chanwoo Choi
 
 
