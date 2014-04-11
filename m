@@ -1,149 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759674AbaDKQtz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:49:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56559 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422795AbaDKQI6 (ORCPT
+	id S1422861AbaDKQuK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:50:10 -0400
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:61164 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757094AbaDKQuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:08:58 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars Persson <lars.persson@axis.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 23/65] tcp: tcp_release_cb() should release socket ownership
-Date: Fri, 11 Apr 2014 09:10:55 -0700
-Message-Id: <20140411161000.897953190@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
-References: <20140411160957.714773410@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Fri, 11 Apr 2014 12:50:05 -0400
+Message-ID: <53481D52.5070608@fb.com>
+Date: Fri, 11 Apr 2014 12:50:26 -0400
+From: Chris Mason <clm@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>
+Subject: [GIT PULL] Btrfs part two
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-04-11_06:2014-04-11,2014-04-11,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 spamscore=0
+ suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam
+ adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1404110260
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+Hi Linus,
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+Please grab my for-linus branch:
 
-[ Upstream commit c3f9b01849ef3bc69024990092b9f42e20df7797 ]
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/linux-btrfs.git for-linus
 
-Lars Persson reported following deadlock :
+The most important changes here are from Josef, fixing a btrfs
+regression in 3.14 that can cause corruptions in the extent allocation
+tree when snapshots are in use.  Josef also fixed some deadlocks in
+send/recv and other assorted races when balance is running.
 
--000 |M:0x0:0x802B6AF8(asm) <-- arch_spin_lock
--001 |tcp_v4_rcv(skb = 0x8BD527A0) <-- sk = 0x8BE6B2A0
--002 |ip_local_deliver_finish(skb = 0x8BD527A0)
--003 |__netif_receive_skb_core(skb = 0x8BD527A0, ?)
--004 |netif_receive_skb(skb = 0x8BD527A0)
--005 |elk_poll(napi = 0x8C770500, budget = 64)
--006 |net_rx_action(?)
--007 |__do_softirq()
--008 |do_softirq()
--009 |local_bh_enable()
--010 |tcp_rcv_established(sk = 0x8BE6B2A0, skb = 0x87D3A9E0, th = 0x814EBE14, ?)
--011 |tcp_v4_do_rcv(sk = 0x8BE6B2A0, skb = 0x87D3A9E0)
--012 |tcp_delack_timer_handler(sk = 0x8BE6B2A0)
--013 |tcp_release_cb(sk = 0x8BE6B2A0)
--014 |release_sock(sk = 0x8BE6B2A0)
--015 |tcp_sendmsg(?, sk = 0x8BE6B2A0, ?, ?)
--016 |sock_sendmsg(sock = 0x8518C4C0, msg = 0x87D8DAA8, size = 4096)
--017 |kernel_sendmsg(?, ?, ?, ?, size = 4096)
--018 |smb_send_kvec()
--019 |smb_send_rqst(server = 0x87C4D400, rqst = 0x87D8DBA0)
--020 |cifs_call_async()
--021 |cifs_async_writev(wdata = 0x87FD6580)
--022 |cifs_writepages(mapping = 0x852096E4, wbc = 0x87D8DC88)
--023 |__writeback_single_inode(inode = 0x852095D0, wbc = 0x87D8DC88)
--024 |writeback_sb_inodes(sb = 0x87D6D800, wb = 0x87E4A9C0, work = 0x87D8DD88)
--025 |__writeback_inodes_wb(wb = 0x87E4A9C0, work = 0x87D8DD88)
--026 |wb_writeback(wb = 0x87E4A9C0, work = 0x87D8DD88)
--027 |wb_do_writeback(wb = 0x87E4A9C0, force_wait = 0)
--028 |bdi_writeback_workfn(work = 0x87E4A9CC)
--029 |process_one_work(worker = 0x8B045880, work = 0x87E4A9CC)
--030 |worker_thread(__worker = 0x8B045880)
--031 |kthread(_create = 0x87CADD90)
--032 |ret_from_kernel_thread(asm)
+Josef Bacik (6) commits (+147/-228):
+    Btrfs: hold the commit_root_sem when getting the commit root during send (+39/-16)
+    Btrfs: abort the transaction when we don't find our extent ref (+2/-0)
+    Btrfs: do not reset last_snapshot after relocation (+0/-21)
+    Btrfs: don't clear uptodate if the eb is under IO (+27/-3)
+    Btrfs: check for an extent_op on the locked ref (+2/-1)
+    Btrfs: remove transaction from send (+77/-187)
 
-Bug occurs because __tcp_checksum_complete_user() enables BH, assuming
-it is running from softirq context.
+Wang Shilong (5) commits (+122/-24):
+    Btrfs: fix compile warnings on on avr32 platform (+1/-1)
+    Btrfs: fix unlock in __start_delalloc_inodes() (+3/-2)
+    Btrfs: scrub raid56 stripes in the right way (+89/-19)
+    Btrfs: don't compress for a small write (+8/-0)
+    Btrfs: fix snapshot vs nocow writting (+21/-2)
 
-Lars trace involved a NIC without RX checksum support but other points
-are problematic as well, like the prequeue stuff.
+Filipe Manana (3) commits (+11/-5):
+    Btrfs: send, fix data corruption due to incorrect hole detection (+3/-1)
+    Btrfs: more efficient io tree navigation on wait_extent_bit (+5/-1)
+    Btrfs: send, build path string only once in send_hole (+3/-3)
 
-Problem is triggered by a timer, that found socket being owned by user.
+David Sterba (2) commits (+52/-12):
+    btrfs: export global block reserve size as space_info (+28/-1)
+    btrfs: make device scan less noisy (+24/-11)
 
-tcp_release_cb() should call tcp_write_timer_handler() or
-tcp_delack_timer_handler() in the appropriate context :
+Sergei Trofimovich (1) commits (+2/-0):
+    btrfs: fix crash in remount(thread_pool=) case
 
-BH disabled and socket lock held, but 'owned' field cleared,
-as if they were running from timer handlers.
+Jeff Mahoney (1) commits (+7/-3):
+    btrfs: fix lockdep warning with reclaim lock inversion
 
-Fixes: 6f458dfb4092 ("tcp: improve latencies of timer triggered events")
-Reported-by: Lars Persson <lars.persson@axis.com>
-Tested-by: Lars Persson <lars.persson@axis.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/sock.h    |    5 +++++
- net/core/sock.c       |    5 ++++-
- net/ipv4/tcp_output.c |   11 +++++++++++
- 3 files changed, 20 insertions(+), 1 deletion(-)
+Gui Hecheng (1) commits (+3/-2):
+    btrfs: filter invalid arg for btrfs resize
 
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1474,6 +1474,11 @@ static inline void sk_wmem_free_skb(stru
-  */
- #define sock_owned_by_user(sk)	((sk)->sk_lock.owned)
- 
-+static inline void sock_release_ownership(struct sock *sk)
-+{
-+	sk->sk_lock.owned = 0;
-+}
-+
- /*
-  * Macro so as to not evaluate some arguments when
-  * lockdep is not enabled.
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -2384,10 +2384,13 @@ void release_sock(struct sock *sk)
- 	if (sk->sk_backlog.tail)
- 		__release_sock(sk);
- 
-+	/* Warning : release_cb() might need to release sk ownership,
-+	 * ie call sock_release_ownership(sk) before us.
-+	 */
- 	if (sk->sk_prot->release_cb)
- 		sk->sk_prot->release_cb(sk);
- 
--	sk->sk_lock.owned = 0;
-+	sock_release_ownership(sk);
- 	if (waitqueue_active(&sk->sk_lock.wq))
- 		wake_up(&sk->sk_lock.wq);
- 	spin_unlock_bh(&sk->sk_lock.slock);
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -765,6 +765,17 @@ void tcp_release_cb(struct sock *sk)
- 	if (flags & (1UL << TCP_TSQ_DEFERRED))
- 		tcp_tsq_handler(sk);
- 
-+	/* Here begins the tricky part :
-+	 * We are called from release_sock() with :
-+	 * 1) BH disabled
-+	 * 2) sk_lock.slock spinlock held
-+	 * 3) socket owned by us (sk->sk_lock.owned == 1)
-+	 *
-+	 * But following code is meant to be called from BH handlers,
-+	 * so we should keep BH disabled, but early release socket ownership
-+	 */
-+	sock_release_ownership(sk);
-+
- 	if (flags & (1UL << TCP_WRITE_TIMER_DEFERRED)) {
- 		tcp_write_timer_handler(sk);
- 		__sock_put(sk);
+Harald Hoyer (1) commits (+22/-0):
+    btrfs: allow mounting btrfs subvolumes with different ro/rw options
 
+Chris Mason (1) commits (+3/-2):
+    Btrfs: fix EINVAL checks in btrfs_clone
 
+Qu Wenruo (1) commits (+4/-1):
+    btrfs: Change the expanding write sequence to fix snapshot related bug.
+
+Dan Carpenter (1) commits (+2/-3):
+    Btrfs: kmalloc() doesn't return an ERR_PTR
+
+Total: (23) commits
+
+ fs/btrfs/async-thread.c |   2 +
+ fs/btrfs/backref.c      |  33 +++++++++++---
+ fs/btrfs/ctree.c        |  94 +++-----------------------------------
+ fs/btrfs/ctree.h        |  13 ++++--
+ fs/btrfs/disk-io.c      |  23 ++++++++--
+ fs/btrfs/extent-tree.c  |  35 +++++++++------
+ fs/btrfs/extent_io.c    |   8 +++-
+ fs/btrfs/extent_io.h    |   1 +
+ fs/btrfs/file.c         |   5 ++-
+ fs/btrfs/inode-map.c    |  14 +++---
+ fs/btrfs/inode.c        |  36 +++++++++++++--
+ fs/btrfs/ioctl.c        |  35 ++++++++++++---
+ fs/btrfs/relocation.c   |  21 ---------
+ fs/btrfs/scrub.c        | 108 ++++++++++++++++++++++++++++++++++++--------
+ fs/btrfs/send.c         | 117 +++++++++++++++++-------------------------------
+ fs/btrfs/super.c        |  22 +++++++++
+ fs/btrfs/transaction.c  |  48 ++++++++++++--------
+ fs/btrfs/transaction.h  |   3 ++
+ fs/btrfs/volumes.c      |  35 ++++++++++-----
+ 19 files changed, 374 insertions(+), 279 deletions(-)
