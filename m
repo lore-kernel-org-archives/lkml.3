@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704AbaDKS1R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 14:27:17 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:55001 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750863AbaDKS1O (ORCPT
+	id S1754816AbaDKS2V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 14:28:21 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:50906 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754705AbaDKS2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 14:27:14 -0400
+	Fri, 11 Apr 2014 14:28:19 -0400
+Message-ID: <5348343F.6030300@colorfullife.com>
+Date: Fri, 11 Apr 2014 20:28:15 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org>
-References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org>
-Date: Fri, 11 Apr 2014 14:27:13 -0400
-Message-ID: <CAMzpN2jx4H4p8fQr-WHxVyCHhWi0iO3WZZKyxYD7Dfa7pWkEgg@mail.gmail.com>
-Subject: Re: [tip:x86/urgent] x86-64, modify_ldt: Ban 16-bit segments on
- 64-bit kernels
-From: Brian Gerst <brgerst@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Davidlohr Bueso <davidlohr@hp.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Greg Thelen <gthelen@google.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] ipc,shm: disable shmmax and shmall by default
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net> <20140331170546.3b3e72f0.akpm@linux-foundation.org> <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net> <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com> <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com> <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com> <20140401142947.927642a408d84df27d581e36@linux-foundation.org> <CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com> <20140401144801.603c288674ab8f417b42a043@linux-foundation.org> <CAHGf_=r5AUu6yvJgOzwYDghBo6iT2q+nNumpvqwer+igcfChrA@mail.gmail.com> <1396394931.25314.34.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rH+vfFzRrh35TETxjFU2HM0xnDQFweQ+Bfw20Pm2nL3g@mail.gmail.com> <1396484447.2953.1.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1396484447.2953.1.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Is this bug really still present in modern CPUs?  This change breaks
-running 16-bit apps in Wine.  I have a few really old games I like to
-play on occasion, and I don't have a copy of Win 3.11 to put in a VM.
+Hi Davidlohr,
 
-On Fri, Apr 11, 2014 at 1:36 PM, tip-bot for H. Peter Anvin
-<tipbot@zytor.com> wrote:
-> Commit-ID:  b3b42ac2cbae1f3cecbb6229964a4d48af31d382
-> Gitweb:     http://git.kernel.org/tip/b3b42ac2cbae1f3cecbb6229964a4d48af31d382
-> Author:     H. Peter Anvin <hpa@linux.intel.com>
-> AuthorDate: Sun, 16 Mar 2014 15:31:54 -0700
-> Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> CommitDate: Fri, 11 Apr 2014 10:10:09 -0700
+On 04/03/2014 02:20 AM, Davidlohr Bueso wrote:
+> The default size for shmmax is, and always has been, 32Mb.
+> Today, in the XXI century, it seems that this value is rather small,
+> making users have to increase it via sysctl, which can cause
+> unnecessary work and userspace application workarounds[1].
 >
-> x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
+> [snip]
+> Running this patch through LTP, everything passes, except the following,
+> which, due to the nature of this change, is quite expected:
 >
-> The IRET instruction, when returning to a 16-bit segment, only
-> restores the bottom 16 bits of the user space stack pointer.  We have
-> a software workaround for that ("espfix") for the 32-bit kernel, but
-> it relies on a nonzero stack segment base which is not available in
-> 32-bit mode.
+> shmget02    1  TFAIL  :  call succeeded unexpectedly
+Why is this TFAIL expected?
 >
-> Since 16-bit support is somewhat crippled anyway on a 64-bit kernel
-> (no V86 mode), and most (if not quite all) 64-bit processors support
-> virtualization for the users who really need it, simply reject
-> attempts at creating a 16-bit segment when running on top of a 64-bit
-> kernel.
->
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> Link: http://lkml.kernel.org/n/tip-kicdm89kzw9lldryb1br9od0@git.kernel.org
-> Cc: <stable@vger.kernel.org>
-> ---
->  arch/x86/kernel/ldt.c | 11 +++++++++++
->  1 file changed, 11 insertions(+)
->
-> diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
-> index ebc9873..af1d14a 100644
-> --- a/arch/x86/kernel/ldt.c
-> +++ b/arch/x86/kernel/ldt.c
-> @@ -229,6 +229,17 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
->                 }
->         }
->
-> +       /*
-> +        * On x86-64 we do not support 16-bit segments due to
-> +        * IRET leaking the high bits of the kernel stack address.
-> +        */
-> +#ifdef CONFIG_X86_64
-> +       if (!ldt_info.seg_32bit) {
-> +               error = -EINVAL;
-> +               goto out_unlock;
-> +       }
-> +#endif
-> +
->         fill_ldt(&ldt, &ldt_info);
->         if (oldmode)
->                 ldt.avl = 0;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> diff --git a/ipc/shm.c b/ipc/shm.c
+> index 7645961..ae01ffa 100644
+> --- a/ipc/shm.c
+> +++ b/ipc/shm.c
+> @@ -490,10 +490,12 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+>   	int id;
+>   	vm_flags_t acctflag = 0;
+>   
+> -	if (size < SHMMIN || size > ns->shm_ctlmax)
+> +	if (ns->shm_ctlmax &&
+> +	    (size < SHMMIN || size > ns->shm_ctlmax))
+>   		return -EINVAL;
+>   
+> -	if (ns->shm_tot + numpages > ns->shm_ctlall)
+> +	if (ns->shm_ctlall &&
+> +	    ns->shm_tot + numpages > ns->shm_ctlall)
+>   		return -ENOSPC;
+>   
+>   	shp = ipc_rcu_alloc(sizeof(*shp));
+Ok, I understand it:
+Your patch disables checking shmmax, shmall *AND* checking for SHMMIN.
+
+a) Have you double checked that 0-sized shm segments work properly?
+  Does the swap code handle it properly, ...?
+
+b) It's that yet another risk for user space incompatibility?
+
+c) The patch summary is misleading, the impact on SHMMIN is not mentioned.
+
+--
+     Manfred
