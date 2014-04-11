@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030584AbaDKQId (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:08:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56380 "EHLO
+	id S1030537AbaDKQIa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:08:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56306 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759414AbaDKQHd (ORCPT
+	with ESMTP id S1759415AbaDKQHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Apr 2014 12:07:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Nayshtut <anton@swortex.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 12/41] ipv6: Fix exthdrs offload registration.
-Date: Fri, 11 Apr 2014 09:09:43 -0700
-Message-Id: <20140411160933.708331066@linuxfoundation.org>
+        Li RongQing <roy.qing.li@gmail.com>, WANG Cong <amwang@redhat.com>
+Subject: [PATCH 3.10 23/41] netpoll: fix the skb check in pkt_is_ns
+Date: Fri, 11 Apr 2014 09:09:54 -0700
+Message-Id: <20140411160934.484058294@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
 References: <20140411160932.865173041@linuxfoundation.org>
@@ -27,42 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Nayshtut <anton@swortex.com>
+From: Li RongQing <roy.qing.li@gmail.com>
 
-[ Upstream commit d2d273ffabd315eecefce21a4391d44b6e156b73 ]
+[ Not applicable upstream commit, the code here has been removed
+  upstream. ]
 
-Without this fix, ipv6_exthdrs_offload_init doesn't register IPPROTO_DSTOPTS
-offload, but returns 0 (as the IPPROTO_ROUTING registration actually succeeds).
+Neighbor Solicitation is ipv6 protocol, so we should check
+skb->protocol with ETH_P_IPV6
 
-This then causes the ipv6_gso_segment to drop IPv6 packets with IPPROTO_DSTOPTS
-header.
-
-The issue detected and the fix verified by running MS HCK Offload LSO test on
-top of QEMU Windows guests, as this test sends IPv6 packets with
-IPPROTO_DSTOPTS.
-
-Signed-off-by: Anton Nayshtut <anton@swortex.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Cc: WANG Cong <amwang@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/exthdrs_offload.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/core/netpoll.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/ipv6/exthdrs_offload.c
-+++ b/net/ipv6/exthdrs_offload.c
-@@ -25,11 +25,11 @@ int __init ipv6_exthdrs_offload_init(voi
- 	int ret;
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -745,7 +745,7 @@ static bool pkt_is_ns(struct sk_buff *sk
+ 	struct nd_msg *msg;
+ 	struct ipv6hdr *hdr;
  
- 	ret = inet6_add_offload(&rthdr_offload, IPPROTO_ROUTING);
--	if (!ret)
-+	if (ret)
- 		goto out;
- 
- 	ret = inet6_add_offload(&dstopt_offload, IPPROTO_DSTOPTS);
--	if (!ret)
-+	if (ret)
- 		goto out_rt;
- 
- out:
+-	if (skb->protocol != htons(ETH_P_ARP))
++	if (skb->protocol != htons(ETH_P_IPV6))
+ 		return false;
+ 	if (!pskb_may_pull(skb, sizeof(struct ipv6hdr) + sizeof(struct nd_msg)))
+ 		return false;
 
 
