@@ -1,39 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965200AbaDKN4u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 09:56:50 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:61628 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757817AbaDKN4r (ORCPT
+	id S1759165AbaDKN5Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 09:57:24 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:39771 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757905AbaDKNzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 09:56:47 -0400
-Message-ID: <5347F4A1.4060403@kernel.dk>
-Date: Fri, 11 Apr 2014 07:56:49 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@fb.com>
-CC: Matias Bjorling <m@bjorling.me>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 3/4] blk-mq: move request structures into struct blk_mq_tags
-References: <1396277175-21382-1-git-send-email-hch@lst.de> <1396277175-21382-4-git-send-email-hch@lst.de> <53457404.5070800@fb.com> <20140410100144.GB20342@lst.de> <53475693.7050609@fb.com> <20140411073336.GA26328@lst.de>
-In-Reply-To: <20140411073336.GA26328@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Apr 2014 09:55:53 -0400
+Message-Id: <20140411135218.478299389@infradead.org>
+User-Agent: quilt/0.60-1
+Date: Fri, 11 Apr 2014 15:42:49 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: mingo@kernel.org, tglx@linutronix.de, luto@amacapital.net,
+        nicolas.pitre@linaro.org, daniel.lezcano@linaro.org,
+        peterz@infradead.org, umgwanakikbuti@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [RFC][PATCH 6/8] sched,idle: Avoid spurious wakeup IPIs
+References: <20140411134243.160989490@infradead.org>
+Content-Disposition: inline; filename=peterz-sched-resched_cpu.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2014 01:33 AM, Christoph Hellwig wrote:
-> On Thu, Apr 10, 2014 at 08:42:27PM -0600, Jens Axboe wrote:
->> Great. Will you send out an updated patchset?
->
-> I was waiting for you to apply the previous series, but I'll just resend my
-> whole set of outstanding patches, it'll need a bit of rebasing against
-> your updated tree anyway.
+Because mwait_idle_with_hints() gets called from !idle context it must
+call current_clr_polling(). This however means that resched_task() is
+very likely to send an IPI even when we were polling:
 
-I'll take a look at the previous series and apply/comment.
+  CPU0					CPU1
 
--- 
-Jens Axboe
+  if (current_set_polling_and_test())
+    goto out;
+
+  __monitor(&ti->flags);
+  if (!need_resched())
+    __mwait(eax, ecx);
+					set_tsk_need_resched(p);
+					smp_mb();
+out:
+  current_clr_polling();
+					if (!tsk_is_polling(p))
+					  smp_send_reschedule(cpu);
+
+
+So while it is correct (extra IPIs aren't a problem, whereas a missed
+IPI would be) it is a performance problem (for some).
+
+Avoid this issue by using fetch_or() to atomically set NEED_RESCHED
+and test if POLLING_NRFLAG is set.
+
+Since a CPU stuck in mwait is unlikely to modify the flags word,
+contention on the cmpxchg is unlikely and thus we should mostly
+succeed in a single go.
+
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/sched/core.c |   41 ++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 36 insertions(+), 5 deletions(-)
+
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -505,6 +505,39 @@ static inline void init_hrtick(void)
+ #endif	/* CONFIG_SCHED_HRTICK */
+ 
+ /*
++ * cmpxchg based fetch_or, macro so it works for different integer types
++ */
++#define fetch_or(ptr, val)						\
++({	typeof(*(ptr)) __old, __val = *(ptr);				\
++ 	for (;;) {							\
++ 		__old = cmpxchg((ptr), __val, __val | (val));		\
++ 		if (__old == __val)					\
++ 			break;						\
++ 		__val = __old;						\
++ 	}								\
++ 	__old;								\
++})
++
++#ifdef TIF_POLLING_NRFLAG
++/*
++ * Atomically set TIF_NEED_RESCHED and test for TIF_POLLING_NRFLAG,
++ * this avoids any races wrt polling state changes and thereby avoids
++ * spurious IPIs.
++ */
++static bool set_nr_and_not_polling(struct task_struct *p)
++{
++	struct thread_info *ti = task_thread_info(p);
++	return !(fetch_or(&ti->flags, _TIF_NEED_RESCHED) & _TIF_POLLING_NRFLAG);
++}
++#else
++static bool set_nr_and_not_polling(struct task_struct *p)
++{
++	set_tsk_need_resched(p);
++	return true;
++}
++#endif
++
++/*
+  * resched_task - mark a task 'to be rescheduled now'.
+  *
+  * On UP this means the setting of the need_resched flag, on SMP it
+@@ -520,17 +553,15 @@ void resched_task(struct task_struct *p)
+ 	if (test_tsk_need_resched(p))
+ 		return;
+ 
+-	set_tsk_need_resched(p);
+-
+ 	cpu = task_cpu(p);
++
+ 	if (cpu == smp_processor_id()) {
++		set_tsk_need_resched(p);
+ 		set_preempt_need_resched();
+ 		return;
+ 	}
+ 
+-	/* NEED_RESCHED must be visible before we test polling */
+-	smp_mb();
+-	if (!tsk_is_polling(p))
++	if (set_nr_and_not_polling(p))
+ 		smp_send_reschedule(cpu);
+ }
+ 
+
 
