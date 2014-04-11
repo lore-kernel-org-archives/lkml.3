@@ -1,91 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759578AbaDKRBn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 13:01:43 -0400
-Received: from mga01.intel.com ([192.55.52.88]:50078 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754418AbaDKRBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 13:01:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,842,1389772800"; 
-   d="scan'208";a="519031531"
-Date: Fri, 11 Apr 2014 22:22:24 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: dan.j.williams@intel.com, nsekhar@ti.com, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, joelf@ti.com,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com, mporter@linaro.org
-Subject: Re: [PATCH v2 00/14] dma: edma: Fixes for cyclic (audio) operation
-Message-ID: <20140411165224.GF32284@intel.com>
-References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1423253AbaDKRBS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 13:01:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56485 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759553AbaDKQIv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 12:08:51 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Vlad Yasevich <yasevich@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 03/65] net: sctp: fix skb leakage in COOKIE ECHO path of chunk->auth_chunk
+Date: Fri, 11 Apr 2014 09:10:35 -0700
+Message-Id: <20140411160958.194942316@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
+References: <20140411160957.714773410@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 04:06:01PM +0300, Peter Ujfalusi wrote:
-> Hi,
-> 
-> This is basically a resend of the previous series:
-> https://lkml.org/lkml/2014/3/13/119
-> with removed ASoC patches (most of them are applied already).
-> 
-> Changes since v1:
-> - ASoC patches removed
-> - Comments from Andriy Shevchenko addressed
-> - patch added to fix cases when src/dst_maxburst is set to 0
-> 
-> Adding support for DMA pause/resume
-> Possibility to select non default event queue/TC for cyclic (audio) dma
-> channels: all devices using the eDMA via dmaengine was assigned to the default
-> EQ/TC (mmc, i2c, spi, etc, and audio). This is not optimal from system
-> performance point of view since sharing the same EQ/TC can cause latency spikes
-> for cyclic channels (long DMA transfers for MMC for example).
-> 
-> While debugging the edma to get things sorted out I noticed that the debug was
-> too verbose and the important information was hidden even when the we did not
-> asked for verbose dmaengine debug.
-> I have included some debug cleanups for the edma dmaengine driver also.
-> 
-> Regards,
-> Peter
-> ---
-> Peter Ujfalusi (14):
->   platform_data: edma: Be precise with the paRAM struct
->   dma: edma: Correct the handling of src/dst_maxburst == 0
->   dma: edma: Add support for DMA_PAUSE/RESUME operation
->   dma: edma: Set DMA_CYCLIC capability flag
->   arm: common: edma: Select event queue 1 as default when booted with DT
->   arm: common: edma: Save the number of event queues/TCs
->   arm: common: edma: API to request non default queue for a channel
->   DMA: edma: Use different eventq for cyclic channels
->   dma: edma: Implement device_slave_caps callback
->   dma: edma: Simplify direction configuration in edma_config_pset()
->   dma: edma: Reduce debug print verbosity for non verbose debugging
->   dma: edma: Prefix debug prints where the text were identical in prep
->     callbacks
->   dma: edma: Add channel number to debug prints
->   dma: edma: Print the direction value as well when it is not supported
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-Okay I have noticed lots of folks are using dma: which IMO isn't right here,
-would prefer folks to use the right subsystem name, so dmaengine: xxxx would be
-right subject line :)
+------------------
 
--- 
-~Vinod
-> 
->  arch/arm/common/edma.c             | 34 +++++++++++++-
->  drivers/dma/edma.c                 | 96 +++++++++++++++++++++++++++++---------
->  include/linux/platform_data/edma.h | 20 ++++----
->  3 files changed, 119 insertions(+), 31 deletions(-)
-> 
-> -- 
-> 1.9.1
-> 
+From: Daniel Borkmann <dborkman@redhat.com>
 
--- 
+[ Upstream commit c485658bae87faccd7aed540fd2ca3ab37992310 ]
+
+While working on ec0223ec48a9 ("net: sctp: fix sctp_sf_do_5_1D_ce to
+verify if we/peer is AUTH capable"), we noticed that there's a skb
+memory leakage in the error path.
+
+Running the same reproducer as in ec0223ec48a9 and by unconditionally
+jumping to the error label (to simulate an error condition) in
+sctp_sf_do_5_1D_ce() receive path lets kmemleak detector bark about
+the unfreed chunk->auth_chunk skb clone:
+
+Unreferenced object 0xffff8800b8f3a000 (size 256):
+  comm "softirq", pid 0, jiffies 4294769856 (age 110.757s)
+  hex dump (first 32 bytes):
+    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+    89 ab 75 5e d4 01 58 13 00 00 00 00 00 00 00 00  ..u^..X.........
+  backtrace:
+    [<ffffffff816660be>] kmemleak_alloc+0x4e/0xb0
+    [<ffffffff8119f328>] kmem_cache_alloc+0xc8/0x210
+    [<ffffffff81566929>] skb_clone+0x49/0xb0
+    [<ffffffffa0467459>] sctp_endpoint_bh_rcv+0x1d9/0x230 [sctp]
+    [<ffffffffa046fdbc>] sctp_inq_push+0x4c/0x70 [sctp]
+    [<ffffffffa047e8de>] sctp_rcv+0x82e/0x9a0 [sctp]
+    [<ffffffff815abd38>] ip_local_deliver_finish+0xa8/0x210
+    [<ffffffff815a64af>] nf_reinject+0xbf/0x180
+    [<ffffffffa04b4762>] nfqnl_recv_verdict+0x1d2/0x2b0 [nfnetlink_queue]
+    [<ffffffffa04aa40b>] nfnetlink_rcv_msg+0x14b/0x250 [nfnetlink]
+    [<ffffffff815a3269>] netlink_rcv_skb+0xa9/0xc0
+    [<ffffffffa04aa7cf>] nfnetlink_rcv+0x23f/0x408 [nfnetlink]
+    [<ffffffff815a2bd8>] netlink_unicast+0x168/0x250
+    [<ffffffff815a2fa1>] netlink_sendmsg+0x2e1/0x3f0
+    [<ffffffff8155cc6b>] sock_sendmsg+0x8b/0xc0
+    [<ffffffff8155d449>] ___sys_sendmsg+0x369/0x380
+
+What happens is that commit bbd0d59809f9 clones the skb containing
+the AUTH chunk in sctp_endpoint_bh_rcv() when having the edge case
+that an endpoint requires COOKIE-ECHO chunks to be authenticated:
+
+  ---------- INIT[RANDOM; CHUNKS; HMAC-ALGO] ---------->
+  <------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] ---------
+  ------------------ AUTH; COOKIE-ECHO ---------------->
+  <-------------------- COOKIE-ACK ---------------------
+
+When we enter sctp_sf_do_5_1D_ce() and before we actually get to
+the point where we process (and subsequently free) a non-NULL
+chunk->auth_chunk, we could hit the "goto nomem_init" path from
+an error condition and thus leave the cloned skb around w/o
+freeing it.
+
+The fix is to centrally free such clones in sctp_chunk_destroy()
+handler that is invoked from sctp_chunk_free() after all refs have
+dropped; and also move both kfree_skb(chunk->auth_chunk) there,
+so that chunk->auth_chunk is either NULL (since sctp_chunkify()
+allocs new chunks through kmem_cache_zalloc()) or non-NULL with
+a valid skb pointer. chunk->skb and chunk->auth_chunk are the
+only skbs in the sctp_chunk structure that need to be handeled.
+
+While at it, we should use consume_skb() for both. It is the same
+as dev_kfree_skb() but more appropriately named as we are not
+a device but a protocol. Also, this effectively replaces the
+kfree_skb() from both invocations into consume_skb(). Functions
+are the same only that kfree_skb() assumes that the frame was
+being dropped after a failure (e.g. for tools like drop monitor),
+usage of consume_skb() seems more appropriate in function
+sctp_chunk_destroy() though.
+
+Fixes: bbd0d59809f9 ("[SCTP]: Implement the receive and verification of AUTH chunk")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Vlad Yasevich <yasevich@gmail.com>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/sctp/sm_make_chunk.c |    4 ++--
+ net/sctp/sm_statefuns.c  |    5 -----
+ 2 files changed, 2 insertions(+), 7 deletions(-)
+
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -1420,8 +1420,8 @@ static void sctp_chunk_destroy(struct sc
+ 	BUG_ON(!list_empty(&chunk->list));
+ 	list_del_init(&chunk->transmitted_list);
+ 
+-	/* Free the chunk skb data and the SCTP_chunk stub itself. */
+-	dev_kfree_skb(chunk->skb);
++	consume_skb(chunk->skb);
++	consume_skb(chunk->auth_chunk);
+ 
+ 	SCTP_DBG_OBJCNT_DEC(chunk);
+ 	kmem_cache_free(sctp_chunk_cachep, chunk);
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -761,7 +761,6 @@ sctp_disposition_t sctp_sf_do_5_1D_ce(st
+ 
+ 		/* Make sure that we and the peer are AUTH capable */
+ 		if (!net->sctp.auth_enable || !new_asoc->peer.auth_capable) {
+-			kfree_skb(chunk->auth_chunk);
+ 			sctp_association_free(new_asoc);
+ 			return sctp_sf_pdiscard(net, ep, asoc, type, arg, commands);
+ 		}
+@@ -776,10 +775,6 @@ sctp_disposition_t sctp_sf_do_5_1D_ce(st
+ 		auth.transport = chunk->transport;
+ 
+ 		ret = sctp_sf_authenticate(net, ep, new_asoc, type, &auth);
+-
+-		/* We can now safely free the auth_chunk clone */
+-		kfree_skb(chunk->auth_chunk);
+-
+ 		if (ret != SCTP_IERROR_NO_ERROR) {
+ 			sctp_association_free(new_asoc);
+ 			return sctp_sf_pdiscard(net, ep, asoc, type, arg, commands);
+
+
