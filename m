@@ -1,103 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758598AbaDKNvv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 09:51:51 -0400
-Received: from mail1.bemta12.messagelabs.com ([216.82.251.6]:57095 "EHLO
-	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755478AbaDKNvr (ORCPT
+	id S933017AbaDKNv4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 09:51:56 -0400
+Received: from moutng.kundenserver.de ([212.227.17.13]:55174 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757913AbaDKNvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 09:51:47 -0400
-X-Env-Sender: Benjamin.Romer@unisys.com
-X-Msg-Ref: server-14.tower-28.messagelabs.com!1397224299!28266902!11
-X-Originating-IP: [192.61.61.104]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.1; banners=-,-,-
-X-VirusChecked: Checked
-From: "Romer, Benjamin M" <Benjamin.Romer@unisys.com>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-CC: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
-        Paolo Bonzini <pbonzini@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Fri, 11 Apr 2014 08:51:29 -0500
-Subject: Re: [visorchipset] invalid opcode: 0000 [#1] PREEMPT SMP
-Thread-Topic: [visorchipset] invalid opcode: 0000 [#1] PREEMPT SMP
-Thread-Index: Ac9VjSP/MBDV1KcZQ1+SeXCHt28gRQ==
-Message-ID: <C97001BC43954D438ACB059713BA5CDF92040F0F10@USEA-EXCH7.na.uis.unisys.com>
-References: <20140407111725.GC25152@localhost>
- <C97001BC43954D438ACB059713BA5CDF92040F0F00@USEA-EXCH7.na.uis.unisys.com>
- <53444220.50009@intel.com>
- <C97001BC43954D438ACB059713BA5CDF92040F0F06@USEA-EXCH7.na.uis.unisys.com>
- <53458A3A.1050608@intel.com> <20140409230114.GB8370@localhost>
- <5345D360.5000506@linux.intel.com>
- <C97001BC43954D438ACB059713BA5CDF92040F0F0A@USEA-EXCH7.na.uis.unisys.com>
- <53475344.5090009@linux.intel.com>
-In-Reply-To: <53475344.5090009@linux.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Fri, 11 Apr 2014 09:51:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Liviu Dudau <Liviu.Dudau@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Will Deacon <Will.Deacon@arm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH v7 4/6] pci: Introduce a domain number for pci_host_bridge.
+Date: Fri, 11 Apr 2014 15:51:15 +0200
+Message-ID: <4601983.fD0IEt2fVM@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140411092225.GW985@e106497-lin.cambridge.arm.com>
+References: <1394811272-1547-5-git-send-email-Liviu.Dudau@arm.com> <6459805.ygy4tBNDNz@wuerfel> <20140411092225.GW985@e106497-lin.cambridge.arm.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:x1tlgpaxYfc/HRLcb3OwHb8AY5lpV92P4AxhREVS3eY
+ wWBw+KfMF8vdn8+U6EpjXXXKbruTt7HUtkcHbjeMj0ZhU+rnuJ
+ njMqOJnkZr0z0F17J4CTBMN8yiesj5PahzpZRATVxHjThQKw2x
+ Aksb6gniwdSD5wRwFT00Wpb2ZYKuq+athBLRV8MMAM2HlbO4JA
+ +VCHZeQF5c1tYsK7weIGbi7PA6XBntWXRF28scHinCj1AsbW5r
+ QLhEo8eGU5Y1a6K4omijiaf9N+htBhBviDIH1oKKZbew9OhTI2
+ iYtxkKawimAcSVJkqLi6l9q8vjaP4sw9YTiB1fzZGNK53d3ZMt
+ RzvwWZJm5597XaPYwZNc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3BDpvLA003559
 
-On Thu, 2014-04-10 at 19:28 -0700, H. Peter Anvin wrote:
-> On 04/10/2014 06:19 AM, Romer, Benjamin M wrote:
+On Friday 11 April 2014 10:22:25 Liviu Dudau wrote:
+> On Thu, Apr 10, 2014 at 09:46:36PM +0100, Arnd Bergmann wrote:
+> > On Thursday 10 April 2014 15:53:04 Liviu Dudau wrote:
+> > > So Arnd seems to agree with me: we should try to get out of architecture specific
+> > > pci_sys_data and link the host bridge driver straight into the PCI core. The
+> > > core then can call into arch code via pcibios_*() functions.
+> > > 
+> > > Arnd, am I reading correctly into what you are saying?
 > > 
-> > I'm confused by the intended behavior of KVM.. Is the intention of the
-> > -cpu switch to fully emulate a particular CPU? If that's the case, the
-> > Intel documentation says bit 31 should always be 0, so the value
-> > returned by the cpuid instruction isn't correct. If the intention is to
-> > present a VM with a specific CPU architecture, the CPU ought to behave
-> > as described in Intel's virtualization documentation and just vmexit
-> > instead of faulting with invalid op, IMHO. 
+> > Half of it ;-)
 > > 
-> > I've already said the check in the code was insufficient, and I'm trying
-> > to fix that part now. :)
-> > 
+> > I think it would be better to not have an architecture specific data
+> > structure, just like it would be better not to have architecture specific
+> > pcibios_* functions that get called by the PCI core. Note that the
+> > architecture specific functions are the ones that rely on the architecture
+> > specific data structures as well. If they only use the common fields,
+> > it should also be possible to share the code.
 > 
-> I'm still confused where KVM comes into the picture.  Are you actually
-> using KVM (and thus talking about nested virtualization) or are you
-> using Qemu in JIT mode and running another hypervisor underneath?
+> While I've come to like the pcibios_*() interface (and yes, it could be
+> formalised and abstracted into a pci_xxxx_ops structure) I don't like the fact
+> that those functions use architectural data in order to function. I know it
+> might sound strange, as they *are* supposed to be implemented by the arches,
+> but in my mind the link between generic code and arch code for PCI should be
+> done by the host bridge driver. That's how PCI spec describes it, and I see no
+> reason why we should not be able to adopt the same view.
 
-The test that Fengguang used to find the problem was running the linux
-kernel directly using KVM. When the kernel was run with "-cpu Haswell,
-+smep,+smap" set, the vmcall failed with invalid op, but when the kernel
-is run with "-cpu qemu64", the vmcall causes a vmexit, as it should.
+Yes, that's a good goal for the architectures that need the complexity.
+I would also like to have a way to change as little as possible for
+the architectures that don't care about this because they only have
+one possible host controller implementation, which isn't necessarily
+a conflict.
 
-My point is, the vmcall was made because the hypervisor bit was set. If
-this bit had been turned off, as it would be on a real processor, the
-vmcall wouldn't have happened.
+> To be more precise, what I would like to happen in the case of some functions
+> would be for the PCI core code to call a pci_host_bridge_ops method which
+> in turn will call the arch specific code if it needs to. Why I think that would
+> be better? Because otherwise you put in the architectural side code to cope
+> with a certain host bridge, then another host bridge comes in and you add
+> more architectural code, but then when you port host bridge X to arch B you
+> discover that you need to add code there as well for X. And it all ends up in
+> the mess we currently have where the drivers in drivers/pci/host are not capable
+> of being ported to a different architecture because they rely on infrastructure
+> only present in arm32 that is not properly documented.
 
-> The hypervisor bit is a complete red herring. If the guest CPU is
-> running in VT-x mode, then VMCALL should VMEXIT inside the guest
-> (invoking the guest root VT-x), 
+Right. Now it was intentional that we started putting the host drivers
+into drivers/pci/host before cleaning it all up. We just had to start
+somewhere.
 
-The CPU is running in VT-X. That was my point, the kernel is running in
-the KVM guest, and KVM is setting the CPU feature bits such that bit 31
-is enabled.
+> > I also don't realistically think we can get there on a lot of architectures
+> > any time soon. Note that most architectures only have one PCI host
+> > implementation, so the architecture structure is the same as the host
+> > driver structure anyway.
+> > 
+> > For architectures like powerpc and arm that have people actively working
+> > on them, we have a chance to clean up that code in the way we want it
+> > (if we can agree on the direction), but it's still not trivial to do.
+> > 
+> > Speaking of arm32 in particular, I think we will end up with a split
+> > approach: modern platforms (multiplatform, possibly all DT based) using
+> > PCI core infrastructure directly and no architecture specific PCI
+> > code on the one side, and a variation of today's code for the legacy
+> > platforms on the other.
+> 
+> Actually, if we could come up with a compromise for the pci_fixup_*() functions
+> (are they still used by functional hardware?)  then I think we could convert
+> most of the arm32 arch code to re-direct the calls to the infrastructure code.
 
-I don't think it's a red herring because the kernel uses this bit
-elsewhere - it is reported as X86_FEATURE_HYPERVISOR in the CPU
-features, and can be checked with the cpu_has_hypervisor macro (which
-was not used by the original author of the code in the driver, but
-should have been). VMWare and KVM support in the kernel also check for
-this bit before checking their hypervisor leaves for an ID. If it's not
-properly set it affects more than just the s-Par drivers.
+The fixups are used by hardware that we want to keep supporting, but I don't
+see a problem there. None of them rely on the architecture specific PCI
+implementation, and we could easily move the fixup code into a separate
+file. Also, I suspect they are all used only on platforms that won't be
+using CONFIG_ARCH_MULTIPLATFORM.
 
-> but the fact still remains that you
-> should never, ever, invoke VMCALL unless you know what hypervisor you
-> have underneath.
+> But yes, there might be a lot of resistance to change due to lack of resources
+> when changing old platforms.
 
->From the standpoint of the s-Par drivers, yes, I agree (as I already
-said). However, VMCALL is not a privileged instruction, so anyone could
-use it from user space and go right past the OS straight to the
-hypervisor. IMHO, making it *lethal* to the guest is a bad idea, since
-any user could hard-stop the guest with a couple of lines of C.
+Well, it should be trivial to just create a pci_host_bridge_ops structure
+containing the currently global functions, and use that for everything
+registered through pci_common_init_dev(). We definitely have to support
+this method for things like iop/ixp/pxa/sa1100/footbridge, especially those
+that have their own concept of PCI domains.
 
--- Ben
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+For the more modern multiplatform stuff that uses DT for probing and
+has a driver in drivers/pci/host, we should be able to use completely
+distinct pci_host_bridge_ops structure that can be shared with arm64.
+
+	Arnd
