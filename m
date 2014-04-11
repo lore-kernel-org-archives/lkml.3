@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224AbaDKLKQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 07:10:16 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48646 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754278AbaDKLKO (ORCPT
+	id S1755199AbaDKLYW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 07:24:22 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:52395 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754641AbaDKLYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 07:10:14 -0400
-Date: Fri, 11 Apr 2014 12:10:00 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Harini Katakam <harinik@xilinx.com>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        michals@xilinx.com
-Message-ID: <20140411111000.GA28800@sirena.org.uk>
-References: <1397198188-8602-1-git-send-email-harinik@xilinx.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="azLHFNyN32YCQGCU"
-Content-Disposition: inline
-In-Reply-To: <1397198188-8602-1-git-send-email-harinik@xilinx.com>
-X-Cookie: There is a fly on your nose.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2] spi: core: Increase timeout value
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Fri, 11 Apr 2014 07:24:18 -0400
+Date: Fri, 11 Apr 2014 13:24:12 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: Re: [PATCH 11/15] s390: NR_syscalls fix
+Message-ID: <20140411132412.2ef89a3b@mschwide>
+In-Reply-To: <1397211951-20549-12-git-send-email-miklos@szeredi.hu>
+References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
+	<1397211951-20549-12-git-send-email-miklos@szeredi.hu>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041111-5024-0000-0000-00000976173D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 11 Apr 2014 12:25:47 +0200
+Miklos Szeredi <miklos@szeredi.hu> wrote:
 
---azLHFNyN32YCQGCU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> From: Miklos Szeredi <mszeredi@suse.cz>
+> 
+> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> ---
+>  arch/s390/include/uapi/asm/unistd.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/s390/include/uapi/asm/unistd.h b/arch/s390/include/uapi/asm/unistd.h
+> index 5eb5c9ddb120..57194268fe63 100644
+> --- a/arch/s390/include/uapi/asm/unistd.h
+> +++ b/arch/s390/include/uapi/asm/unistd.h
+> @@ -282,7 +282,7 @@
+>  #define __NR_finit_module	344
+>  #define __NR_sched_setattr	345
+>  #define __NR_sched_getattr	346
+> -#define NR_syscalls 345
+> +#define NR_syscalls 347
+> 
+>  /* 
+>   * There are some system calls that are not present on 64 bit, some
 
-On Fri, Apr 11, 2014 at 12:06:28PM +0530, Harini Katakam wrote:
-> The existing timeout value in wait_for_completion_timeout is
-> calculated from the transfer length and speed with tolerance of 10msec.
-> This is too low because this is used for error conditions such as
-> hardware hang etc.
+Is this patch part of a patch series that does upstream directly?
+I am asking because Heiko already created a patch for this and we have
+added it to the linux-s390:fixes branch for upstream integration.
 
-Applied, thanks.
+-- 
+blue skies,
+   Martin.
 
---azLHFNyN32YCQGCU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+"Reality continues to ruin my life." - Calvin.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTR82FAAoJELSic+t+oim9Z/IP/iBaI4waLUagyfvZQr+pvbjR
-0/SPeFko1XQ4zw6zsczxkfDwQHlHyUrsOvwQemGUlK6f97FxVm62FYbSfF+xkJ17
-cfOU+nlj2AvdhOdVLXGn//1+N8EvBX37XtrBJDVSX895QPXsEPyEalPZAh3d5XpY
-tYDWX7h4VVWYttOOiBg3Hb0kJCHHCo3vNSDD73dOFDwDbEuPC2DZflJZ/Lzm7Ja0
-1GqiWdIcvr0Bz1bh4+yYcEypmltW2yNYeJSKjNxx1JRPU+LpFUbQrs9ze5MTTjVB
-rxpSDdP4KtWgyFO7lBvsK/yU91vjvnakG567LfEhjuPkOzcM7/H9FYc5SlhrRk14
-lek8J5xz+x9NcwA0fsmtR52bw2esSpyhMVK4aSjg4L7IPgpdNdla4Mzuy7+Ws3jD
-4ezzYYDyDSNclJeFwFjjcUC3hSR486uoeOYFF4CQIpfYBTopXEMVyU2A0WXkMWkL
-15r3omUvswCDAZ+nWptQ7BdSv25ITonBZVidDMusX4gSoKmidwDaFd3dYh6fxowe
-puJVnaFLBRb863Xgaya4dKYG3erRZ1e6HHSbFnj1Q7//uZJKPpF73d6F2CkkKRJO
-6vON4lIMoKjZn1J/S516jPM0Zkt+tbX2VO8nyVBA5dajN6bJZ24kMWCtsMp4fsqJ
-jt+l+MqdmLxETH65eSfU
-=3rOv
------END PGP SIGNATURE-----
-
---azLHFNyN32YCQGCU--
