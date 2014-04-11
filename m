@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028AbaDKLzZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 07:55:25 -0400
-Received: from classic.fenleys.co.uk ([83.67.51.87]:35758 "EHLO
-	classic.fenleys.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755364AbaDKLzV (ORCPT
+	id S1756136AbaDKL6O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 07:58:14 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:55335 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755715AbaDKL6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 07:55:21 -0400
-X-Greylist: delayed 1738 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Apr 2014 07:55:21 EDT
-Date: Fri, 11 Apr 2014 12:26:11 +0100
-From: Michael Fyles <mf@vorston.net>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] initramfs: remove "compression mode" choice
-Message-ID: <20140411112611.GA508@dev0.mafconsulting.com>
+	Fri, 11 Apr 2014 07:58:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1396958857.26620.35.camel@x220>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <20140411132412.2ef89a3b@mschwide>
+References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
+	<1397211951-20549-12-git-send-email-miklos@szeredi.hu>
+	<20140411132412.2ef89a3b@mschwide>
+Date: Fri, 11 Apr 2014 13:52:08 +0200
+Message-ID: <CAJfpegvqoiZ6ZDF78ptvDLdav4AAcLfYpji6c-_rqu4-BoGXTg@mail.gmail.com>
+Subject: Re: [PATCH 11/15] s390: NR_syscalls fix
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: linux-arch <linux-arch@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-08 14:07:37+0200, Paul Bolle wrote:
-> Commit 9ba4bcb64589 ("initramfs: read CONFIG_RD_ variables for
-> initramfs compression") removed the users of the various
-> INITRAMFS_COMPRESSION_* Kconfig symbols. So since v3.13 the entire
-> "Built-in initramfs compression mode" choice is a set of knobs connected
-> to nothing. The entire choice can safely be removed.
+On Fri, Apr 11, 2014 at 1:24 PM, Martin Schwidefsky
+<schwidefsky@de.ibm.com> wrote:
+> On Fri, 11 Apr 2014 12:25:47 +0200
+> Miklos Szeredi <miklos@szeredi.hu> wrote:
+>
+>> From: Miklos Szeredi <mszeredi@suse.cz>
+>>
+>> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+>> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+>> ---
+>>  arch/s390/include/uapi/asm/unistd.h | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/s390/include/uapi/asm/unistd.h b/arch/s390/include/uapi/asm/unistd.h
+>> index 5eb5c9ddb120..57194268fe63 100644
+>> --- a/arch/s390/include/uapi/asm/unistd.h
+>> +++ b/arch/s390/include/uapi/asm/unistd.h
+>> @@ -282,7 +282,7 @@
+>>  #define __NR_finit_module    344
+>>  #define __NR_sched_setattr   345
+>>  #define __NR_sched_getattr   346
+>> -#define NR_syscalls 345
+>> +#define NR_syscalls 347
+>>
+>>  /*
+>>   * There are some system calls that are not present on 64 bit, some
+>
+> Is this patch part of a patch series that does upstream directly?
+> I am asking because Heiko already created a patch for this and we have
+> added it to the linux-s390:fixes branch for upstream integration.
 
-Whilst I agree (for my use-cases) with INITRAMFS_COMPRESSION and
-RD being merged, I think it has happened the wrong way round.
+No, I don't mean to upstream directly.   So you can just drop my submission...
 
-Commit 9ba4bcb64589 mistakenly forced the logic in usr/Makefile
-to prioritise the selection of RD options such that selecting
-more than one supported compression pretty much rail-roads you
-into having your initrd compressed with gzip. This happends
-because because suffix-y gets updated once for each supported
-compression and, by default (on x86, at least) all compressions
-are supported.
-
-I think that either:
-1. the options should be merged (with whatever name gets chosen)
-   and pick both the run-time supported and the build-time
-   compressions
-2. both options should remain, with one choosing the supported
-   run-time compressions and the other choosing the build-time
-   compression
-
-If 1 is chosen, it would be advantageous to have RD as a
-mutually-exclusive choice -- this would be the place to put all
-the help texts that your patch removes.
-
-I currently have a patch that performs 2, if you decide that
-might be better.
-
--- 
-Michael Fyles
+Thanks,
+Miklos
