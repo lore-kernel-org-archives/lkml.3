@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423061AbaDKQV0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:21:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56765 "EHLO
+	id S1423046AbaDKQV6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:21:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56754 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759445AbaDKQJ1 (ORCPT
+	with ESMTP id S1759679AbaDKQJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:27 -0400
+	Fri, 11 Apr 2014 12:09:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Durrant <paul.durrant@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.14 06/23] xen-netback: remove pointless clause from if statement
-Date: Fri, 11 Apr 2014 09:11:55 -0700
-Message-Id: <20140411161201.101613970@linuxfoundation.org>
+        Borislav Petkov <bp@suse.de>, Toshi Kani <toshi.kani@hp.com>,
+        Matt Fleming <matt.fleming@intel.com>
+Subject: [PATCH 3.14 03/23] x86, pageattr: Export page unmapping interface
+Date: Fri, 11 Apr 2014 09:11:52 -0700
+Message-Id: <20140411161200.707561283@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411161200.236939691@linuxfoundation.org>
 References: <20140411161200.236939691@linuxfoundation.org>
@@ -29,39 +27,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Durrant <Paul.Durrant@citrix.com>
+From: Borislav Petkov <bp@suse.de>
 
-[ Upstream commit 0576eddf24df716d8570ef8ca11452a9f98eaab2 ]
+commit 42a5477251f0e0f33ad5f6a95c48d685ec03191e upstream.
 
-This patch removes a test in start_new_rx_buffer() that checks whether
-a copy operation is less than MAX_BUFFER_OFFSET in length, since
-MAX_BUFFER_OFFSET is defined to be PAGE_SIZE and the only caller of
-start_new_rx_buffer() already limits copy operations to PAGE_SIZE or less.
+We will use it in efi so expose it.
 
-Signed-off-by: Paul Durrant <paul.durrant@citrix.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>
-Cc: Wei Liu <wei.liu2@citrix.com>
-Cc: Sander Eikelenboom <linux@eikelenboom.it>
-Reported-By: Sander Eikelenboom <linux@eikelenboom.it>
-Tested-By: Sander Eikelenboom <linux@eikelenboom.it>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Tested-by: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/xen-netback/netback.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -192,8 +192,8 @@ static bool start_new_rx_buffer(int offs
- 	 * into multiple copies tend to give large frags their
- 	 * own buffers as before.
- 	 */
--	if ((offset + size > MAX_BUFFER_OFFSET) &&
--	    (size <= MAX_BUFFER_OFFSET) && offset && !head)
-+	BUG_ON(size > MAX_BUFFER_OFFSET);
-+	if ((offset + size > MAX_BUFFER_OFFSET) && offset && !head)
- 		return true;
+---
+ arch/x86/include/asm/pgtable_types.h |    2 +
+ arch/x86/mm/pageattr.c               |   44 ++++++++++++++++++++++++-----------
+ 2 files changed, 33 insertions(+), 13 deletions(-)
+
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -385,6 +385,8 @@ extern pte_t *lookup_address(unsigned lo
+ extern phys_addr_t slow_virt_to_phys(void *__address);
+ extern int kernel_map_pages_in_pgd(pgd_t *pgd, u64 pfn, unsigned long address,
+ 				   unsigned numpages, unsigned long page_flags);
++void kernel_unmap_pages_in_pgd(pgd_t *root, unsigned long address,
++			       unsigned numpages);
+ #endif	/* !__ASSEMBLY__ */
  
- 	return false;
+ #endif /* _ASM_X86_PGTABLE_DEFS_H */
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -692,6 +692,18 @@ static bool try_to_free_pmd_page(pmd_t *
+ 	return true;
+ }
+ 
++static bool try_to_free_pud_page(pud_t *pud)
++{
++	int i;
++
++	for (i = 0; i < PTRS_PER_PUD; i++)
++		if (!pud_none(pud[i]))
++			return false;
++
++	free_page((unsigned long)pud);
++	return true;
++}
++
+ static bool unmap_pte_range(pmd_t *pmd, unsigned long start, unsigned long end)
+ {
+ 	pte_t *pte = pte_offset_kernel(pmd, start);
+@@ -805,6 +817,16 @@ static void unmap_pud_range(pgd_t *pgd,
+ 	 */
+ }
+ 
++static void unmap_pgd_range(pgd_t *root, unsigned long addr, unsigned long end)
++{
++	pgd_t *pgd_entry = root + pgd_index(addr);
++
++	unmap_pud_range(pgd_entry, addr, end);
++
++	if (try_to_free_pud_page((pud_t *)pgd_page_vaddr(*pgd_entry)))
++		pgd_clear(pgd_entry);
++}
++
+ static int alloc_pte_page(pmd_t *pmd)
+ {
+ 	pte_t *pte = (pte_t *)get_zeroed_page(GFP_KERNEL | __GFP_NOTRACK);
+@@ -999,9 +1021,8 @@ static int populate_pud(struct cpa_data
+ static int populate_pgd(struct cpa_data *cpa, unsigned long addr)
+ {
+ 	pgprot_t pgprot = __pgprot(_KERNPG_TABLE);
+-	bool allocd_pgd = false;
+-	pgd_t *pgd_entry;
+ 	pud_t *pud = NULL;	/* shut up gcc */
++	pgd_t *pgd_entry;
+ 	int ret;
+ 
+ 	pgd_entry = cpa->pgd + pgd_index(addr);
+@@ -1015,7 +1036,6 @@ static int populate_pgd(struct cpa_data
+ 			return -1;
+ 
+ 		set_pgd(pgd_entry, __pgd(__pa(pud) | _KERNPG_TABLE));
+-		allocd_pgd = true;
+ 	}
+ 
+ 	pgprot_val(pgprot) &= ~pgprot_val(cpa->mask_clr);
+@@ -1023,19 +1043,11 @@ static int populate_pgd(struct cpa_data
+ 
+ 	ret = populate_pud(cpa, addr, pgd_entry, pgprot);
+ 	if (ret < 0) {
+-		unmap_pud_range(pgd_entry, addr,
++		unmap_pgd_range(cpa->pgd, addr,
+ 				addr + (cpa->numpages << PAGE_SHIFT));
+-
+-		if (allocd_pgd) {
+-			/*
+-			 * If I allocated this PUD page, I can just as well
+-			 * free it in this error path.
+-			 */
+-			pgd_clear(pgd_entry);
+-			free_page((unsigned long)pud);
+-		}
+ 		return ret;
+ 	}
++
+ 	cpa->numpages = ret;
+ 	return 0;
+ }
+@@ -1861,6 +1873,12 @@ out:
+ 	return retval;
+ }
+ 
++void kernel_unmap_pages_in_pgd(pgd_t *root, unsigned long address,
++			       unsigned numpages)
++{
++	unmap_pgd_range(root, address, address + (numpages << PAGE_SHIFT));
++}
++
+ /*
+  * The testcases use internal knowledge of the implementation that shouldn't
+  * be exposed to the rest of the kernel. Include these directly here.
 
 
