@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759799AbaDKQjd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:39:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56631 "EHLO
+	id S1422955AbaDKQjb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:39:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56638 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422827AbaDKQJE (ORCPT
+	with ESMTP id S1759439AbaDKQJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:04 -0400
+	Fri, 11 Apr 2014 12:09:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Erik Hugne <erik.hugne@ericsson.com>,
-        Jon Maloy <jon.maloy@ericsson.com>,
+        David L Stevens <dlstevens@us.ibm.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 40/65] tipc: fix spinlock recursion bug for failed subscriptions
-Date: Fri, 11 Apr 2014 09:11:12 -0700
-Message-Id: <20140411161003.229305588@linuxfoundation.org>
+Subject: [PATCH 3.13 33/65] vxlan: fix nonfunctional neigh_reduce()
+Date: Fri, 11 Apr 2014 09:11:05 -0700
+Message-Id: <20140411161002.302383123@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
 References: <20140411160957.714773410@linuxfoundation.org>
@@ -28,138 +27,208 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Erik Hugne <erik.hugne@ericsson.com>
+From: David Stevens <dlstevens@us.ibm.com>
 
-[ Upstream commit a5d0e7c037119484a7006b883618bfa87996cb41 ]
+[ Upstream commit 4b29dba9c085a4fb79058fb1c45a2f6257ca3dfa ]
 
-If a topology event subscription fails for any reason, such as out
-of memory, max number reached or because we received an invalid
-request the correct behavior is to terminate the subscribers
-connection to the topology server. This is currently broken and
-produces the following oops:
+The VXLAN neigh_reduce() code is completely non-functional since
+check-in. Specific errors:
 
-[27.953662] tipc: Subscription rejected, illegal request
-[27.955329] BUG: spinlock recursion on CPU#1, kworker/u4:0/6
-[27.957066]  lock: 0xffff88003c67f408, .magic: dead4ead, .owner: kworker/u4:0/6, .owner_cpu: 1
-[27.958054] CPU: 1 PID: 6 Comm: kworker/u4:0 Not tainted 3.14.0-rc6+ #5
-[27.960230] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[27.960874] Workqueue: tipc_rcv tipc_recv_work [tipc]
-[27.961430]  ffff88003c67f408 ffff88003de27c18 ffffffff815c0207 ffff88003de1c050
-[27.962292]  ffff88003de27c38 ffffffff815beec5 ffff88003c67f408 ffffffff817f0a8a
-[27.963152]  ffff88003de27c58 ffffffff815beeeb ffff88003c67f408 ffffffffa0013520
-[27.964023] Call Trace:
-[27.964292]  [<ffffffff815c0207>] dump_stack+0x45/0x56
-[27.964874]  [<ffffffff815beec5>] spin_dump+0x8c/0x91
-[27.965420]  [<ffffffff815beeeb>] spin_bug+0x21/0x26
-[27.965995]  [<ffffffff81083df6>] do_raw_spin_lock+0x116/0x140
-[27.966631]  [<ffffffff815c6215>] _raw_spin_lock_bh+0x15/0x20
-[27.967256]  [<ffffffffa0008540>] subscr_conn_shutdown_event+0x20/0xa0 [tipc]
-[27.968051]  [<ffffffffa000fde4>] tipc_close_conn+0xa4/0xb0 [tipc]
-[27.968722]  [<ffffffffa00101ba>] tipc_conn_terminate+0x1a/0x30 [tipc]
-[27.969436]  [<ffffffffa00089a2>] subscr_conn_msg_event+0x1f2/0x2f0 [tipc]
-[27.970209]  [<ffffffffa0010000>] tipc_receive_from_sock+0x90/0xf0 [tipc]
-[27.970972]  [<ffffffffa000fa79>] tipc_recv_work+0x29/0x50 [tipc]
-[27.971633]  [<ffffffff8105dbf5>] process_one_work+0x165/0x3e0
-[27.972267]  [<ffffffff8105e869>] worker_thread+0x119/0x3a0
-[27.972896]  [<ffffffff8105e750>] ? manage_workers.isra.25+0x2a0/0x2a0
-[27.973622]  [<ffffffff810648af>] kthread+0xdf/0x100
-[27.974168]  [<ffffffff810647d0>] ? kthread_create_on_node+0x1a0/0x1a0
-[27.974893]  [<ffffffff815ce13c>] ret_from_fork+0x7c/0xb0
-[27.975466]  [<ffffffff810647d0>] ? kthread_create_on_node+0x1a0/0x1a0
+1) The original code drops all packets with a multicast destination address,
+	even though neighbor solicitations are sent to the solicited-node
+	address, a multicast address. The code after this check was never run.
+2) The neighbor table lookup used the IPv6 header destination, which is the
+	solicited node address, rather than the target address from the
+	neighbor solicitation. So neighbor lookups would always fail if it
+	got this far. Also for L3MISSes.
+3) The code calls ndisc_send_na(), which does a send on the tunnel device.
+	The context for neigh_reduce() is the transmit path, vxlan_xmit(),
+	where the host or a bridge-attached neighbor is trying to transmit
+	a neighbor solicitation. To respond to it, the tunnel endpoint needs
+	to do a *receive* of the appropriate neighbor advertisement. Doing a
+	send, would only try to send the advertisement, encapsulated, to the
+	remote destinations in the fdb -- hosts that definitely did not do the
+	corresponding solicitation.
+4) The code uses the tunnel endpoint IPv6 forwarding flag to determine the
+	isrouter flag in the advertisement. This has nothing to do with whether
+	or not the target is a router, and generally won't be set since the
+	tunnel endpoint is bridging, not routing, traffic.
 
-The recursion occurs when subscr_terminate tries to grab the
-subscriber lock, which is already taken by subscr_conn_msg_event.
-We fix this by checking if the request to establish a new
-subscription was successful, and if not we initiate termination of
-the subscriber after we have released the subscriber lock.
+	The patch below creates a proxy neighbor advertisement to respond to
+neighbor solicitions as intended, providing proper IPv6 support for neighbor
+reduction.
 
-Signed-off-by: Erik Hugne <erik.hugne@ericsson.com>
-Reviewed-by: Jon Maloy <jon.maloy@ericsson.com>
+Signed-off-by: David L Stevens <dlstevens@us.ibm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/tipc/subscr.c |   29 +++++++++++++++--------------
- 1 file changed, 15 insertions(+), 14 deletions(-)
+ drivers/net/vxlan.c |  127 ++++++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 113 insertions(+), 14 deletions(-)
 
---- a/net/tipc/subscr.c
-+++ b/net/tipc/subscr.c
-@@ -263,9 +263,9 @@ static void subscr_cancel(struct tipc_su
-  *
-  * Called with subscriber lock held.
-  */
--static struct tipc_subscription *subscr_subscribe(struct tipc_subscr *s,
--					     struct tipc_subscriber *subscriber)
--{
-+static int subscr_subscribe(struct tipc_subscr *s,
-+			    struct tipc_subscriber *subscriber,
-+			    struct tipc_subscription **sub_p) {
- 	struct tipc_subscription *sub;
- 	int swap;
- 
-@@ -276,23 +276,21 @@ static struct tipc_subscription *subscr_
- 	if (s->filter & htohl(TIPC_SUB_CANCEL, swap)) {
- 		s->filter &= ~htohl(TIPC_SUB_CANCEL, swap);
- 		subscr_cancel(s, subscriber);
--		return NULL;
-+		return 0;
- 	}
- 
- 	/* Refuse subscription if global limit exceeded */
- 	if (atomic_read(&subscription_count) >= TIPC_MAX_SUBSCRIPTIONS) {
- 		pr_warn("Subscription rejected, limit reached (%u)\n",
- 			TIPC_MAX_SUBSCRIPTIONS);
--		subscr_terminate(subscriber);
--		return NULL;
-+		return -EINVAL;
- 	}
- 
- 	/* Allocate subscription object */
- 	sub = kmalloc(sizeof(*sub), GFP_ATOMIC);
- 	if (!sub) {
- 		pr_warn("Subscription rejected, no memory\n");
--		subscr_terminate(subscriber);
--		return NULL;
-+		return -ENOMEM;
- 	}
- 
- 	/* Initialize subscription object */
-@@ -306,8 +304,7 @@ static struct tipc_subscription *subscr_
- 	    (sub->seq.lower > sub->seq.upper)) {
- 		pr_warn("Subscription rejected, illegal request\n");
- 		kfree(sub);
--		subscr_terminate(subscriber);
--		return NULL;
-+		return -EINVAL;
- 	}
- 	INIT_LIST_HEAD(&sub->nameseq_list);
- 	list_add(&sub->subscription_list, &subscriber->subscription_list);
-@@ -320,8 +317,8 @@ static struct tipc_subscription *subscr_
- 			     (Handler)subscr_timeout, (unsigned long)sub);
- 		k_start_timer(&sub->timer, sub->timeout);
- 	}
--
--	return sub;
-+	*sub_p = sub;
-+	return 0;
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -1232,15 +1232,103 @@ out:
  }
  
- /* Handle one termination request for the subscriber */
-@@ -335,10 +332,14 @@ static void subscr_conn_msg_event(int co
- 				  void *usr_data, void *buf, size_t len)
- {
- 	struct tipc_subscriber *subscriber = usr_data;
--	struct tipc_subscription *sub;
-+	struct tipc_subscription *sub = NULL;
- 
- 	spin_lock_bh(&subscriber->lock);
--	sub = subscr_subscribe((struct tipc_subscr *)buf, subscriber);
-+	if (subscr_subscribe((struct tipc_subscr *)buf, subscriber, &sub) < 0) {
-+		spin_unlock_bh(&subscriber->lock);
-+		subscr_terminate(subscriber);
-+		return;
+ #if IS_ENABLED(CONFIG_IPV6)
++
++static struct sk_buff *vxlan_na_create(struct sk_buff *request,
++	struct neighbour *n, bool isrouter)
++{
++	struct net_device *dev = request->dev;
++	struct sk_buff *reply;
++	struct nd_msg *ns, *na;
++	struct ipv6hdr *pip6;
++	u8 *daddr;
++	int na_olen = 8; /* opt hdr + ETH_ALEN for target */
++	int ns_olen;
++	int i, len;
++
++	if (dev == NULL)
++		return NULL;
++
++	len = LL_RESERVED_SPACE(dev) + sizeof(struct ipv6hdr) +
++		sizeof(*na) + na_olen + dev->needed_tailroom;
++	reply = alloc_skb(len, GFP_ATOMIC);
++	if (reply == NULL)
++		return NULL;
++
++	reply->protocol = htons(ETH_P_IPV6);
++	reply->dev = dev;
++	skb_reserve(reply, LL_RESERVED_SPACE(request->dev));
++	skb_push(reply, sizeof(struct ethhdr));
++	skb_set_mac_header(reply, 0);
++
++	ns = (struct nd_msg *)skb_transport_header(request);
++
++	daddr = eth_hdr(request)->h_source;
++	ns_olen = request->len - skb_transport_offset(request) - sizeof(*ns);
++	for (i = 0; i < ns_olen-1; i += (ns->opt[i+1]<<3)) {
++		if (ns->opt[i] == ND_OPT_SOURCE_LL_ADDR) {
++			daddr = ns->opt + i + sizeof(struct nd_opt_hdr);
++			break;
++		}
 +	}
- 	if (sub)
- 		tipc_nametbl_subscribe(sub);
- 	spin_unlock_bh(&subscriber->lock);
++
++	/* Ethernet header */
++	memcpy(eth_hdr(reply)->h_dest, daddr, ETH_ALEN);
++	memcpy(eth_hdr(reply)->h_source, n->ha, ETH_ALEN);
++	eth_hdr(reply)->h_proto = htons(ETH_P_IPV6);
++	reply->protocol = htons(ETH_P_IPV6);
++
++	skb_pull(reply, sizeof(struct ethhdr));
++	skb_set_network_header(reply, 0);
++	skb_put(reply, sizeof(struct ipv6hdr));
++
++	/* IPv6 header */
++
++	pip6 = ipv6_hdr(reply);
++	memset(pip6, 0, sizeof(struct ipv6hdr));
++	pip6->version = 6;
++	pip6->priority = ipv6_hdr(request)->priority;
++	pip6->nexthdr = IPPROTO_ICMPV6;
++	pip6->hop_limit = 255;
++	pip6->daddr = ipv6_hdr(request)->saddr;
++	pip6->saddr = *(struct in6_addr *)n->primary_key;
++
++	skb_pull(reply, sizeof(struct ipv6hdr));
++	skb_set_transport_header(reply, 0);
++
++	na = (struct nd_msg *)skb_put(reply, sizeof(*na) + na_olen);
++
++	/* Neighbor Advertisement */
++	memset(na, 0, sizeof(*na)+na_olen);
++	na->icmph.icmp6_type = NDISC_NEIGHBOUR_ADVERTISEMENT;
++	na->icmph.icmp6_router = isrouter;
++	na->icmph.icmp6_override = 1;
++	na->icmph.icmp6_solicited = 1;
++	na->target = ns->target;
++	memcpy(&na->opt[2], n->ha, ETH_ALEN);
++	na->opt[0] = ND_OPT_TARGET_LL_ADDR;
++	na->opt[1] = na_olen >> 3;
++
++	na->icmph.icmp6_cksum = csum_ipv6_magic(&pip6->saddr,
++		&pip6->daddr, sizeof(*na)+na_olen, IPPROTO_ICMPV6,
++		csum_partial(na, sizeof(*na)+na_olen, 0));
++
++	pip6->payload_len = htons(sizeof(*na)+na_olen);
++
++	skb_push(reply, sizeof(struct ipv6hdr));
++
++	reply->ip_summed = CHECKSUM_UNNECESSARY;
++
++	return reply;
++}
++
+ static int neigh_reduce(struct net_device *dev, struct sk_buff *skb)
+ {
+ 	struct vxlan_dev *vxlan = netdev_priv(dev);
+-	struct neighbour *n;
+-	union vxlan_addr ipa;
++	struct nd_msg *msg;
+ 	const struct ipv6hdr *iphdr;
+ 	const struct in6_addr *saddr, *daddr;
+-	struct nd_msg *msg;
+-	struct inet6_dev *in6_dev = NULL;
++	struct neighbour *n;
++	struct inet6_dev *in6_dev;
+ 
+ 	in6_dev = __in6_dev_get(dev);
+ 	if (!in6_dev)
+@@ -1253,19 +1341,20 @@ static int neigh_reduce(struct net_devic
+ 	saddr = &iphdr->saddr;
+ 	daddr = &iphdr->daddr;
+ 
+-	if (ipv6_addr_loopback(daddr) ||
+-	    ipv6_addr_is_multicast(daddr))
+-		goto out;
+-
+ 	msg = (struct nd_msg *)skb_transport_header(skb);
+ 	if (msg->icmph.icmp6_code != 0 ||
+ 	    msg->icmph.icmp6_type != NDISC_NEIGHBOUR_SOLICITATION)
+ 		goto out;
+ 
+-	n = neigh_lookup(ipv6_stub->nd_tbl, daddr, dev);
++	if (ipv6_addr_loopback(daddr) ||
++	    ipv6_addr_is_multicast(&msg->target))
++		goto out;
++
++	n = neigh_lookup(ipv6_stub->nd_tbl, &msg->target, dev);
+ 
+ 	if (n) {
+ 		struct vxlan_fdb *f;
++		struct sk_buff *reply;
+ 
+ 		if (!(n->nud_state & NUD_CONNECTED)) {
+ 			neigh_release(n);
+@@ -1279,13 +1368,23 @@ static int neigh_reduce(struct net_devic
+ 			goto out;
+ 		}
+ 
+-		ipv6_stub->ndisc_send_na(dev, n, saddr, &msg->target,
+-					 !!in6_dev->cnf.forwarding,
+-					 true, false, false);
++		reply = vxlan_na_create(skb, n,
++					!!(f ? f->flags & NTF_ROUTER : 0));
++
+ 		neigh_release(n);
++
++		if (reply == NULL)
++			goto out;
++
++		if (netif_rx_ni(reply) == NET_RX_DROP)
++			dev->stats.rx_dropped++;
++
+ 	} else if (vxlan->flags & VXLAN_F_L3MISS) {
+-		ipa.sin6.sin6_addr = *daddr;
+-		ipa.sa.sa_family = AF_INET6;
++		union vxlan_addr ipa = {
++			.sin6.sin6_addr = msg->target,
++			.sa.sa_family = AF_INET6,
++		};
++
+ 		vxlan_ip_miss(dev, &ipa);
+ 	}
+ 
 
 
