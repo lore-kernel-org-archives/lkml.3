@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759526AbaDKOiL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 10:38:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44225 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757457AbaDKOiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 10:38:06 -0400
-Date: Fri, 11 Apr 2014 16:38:03 +0200
-From: Jean Delvare <jdelvare@suse.de>
-To: Richard Leitner <me@g0hl1n.net>
-Cc: r.marek@assembler.cz, wsa@the-dreams.de, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] i2c: busses: ali1563: fix checkpatch.pl issues
-Message-ID: <20140411163803.2b18114a@endymion.delvare>
-In-Reply-To: <1397216684-6332-1-git-send-email-me@g0hl1n.net>
-References: <1397216684-6332-1-git-send-email-me@g0hl1n.net>
-Organization: SUSE Linux
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S934827AbaDKOib (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 10:38:31 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:60286 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759529AbaDKOiV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 10:38:21 -0400
+Message-ID: <5347FE56.5000206@twiddle.net>
+Date: Fri, 11 Apr 2014 07:38:14 -0700
+From: Richard Henderson <rth@twiddle.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
+        tglx@linutronix.de, luto@amacapital.net, nicolas.pitre@linaro.org,
+        daniel.lezcano@linaro.org, umgwanakikbuti@gmail.com
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 1/8] sched,idle,alpha: Switch from TS_POLLING to
+ TIF_POLLING_NRFLAG
+References: <20140411134243.160989490@infradead.org> <20140411135218.181563050@infradead.org>
+In-Reply-To: <20140411135218.181563050@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Apr 2014 13:44:44 +0200, Richard Leitner wrote:
-> Fixed most checkpatch.pl issues
+On 04/11/2014 06:42 AM, Peter Zijlstra wrote:
+> Standardize the idle polling indicator to TIF_POLLING_NRFLAG such that
+> both TIF_NEED_RESCHED and TIF_POLLING_NRFLAG are in the same word.
+> This will allow us, using fetch_or(), to both set NEED_RESCHED and
+> check for POLLING_NRFLAG in a single operation and avoid pointless
+> wakeups.
 > 
-> Signed-off-by: Richard Leitner <me@g0hl1n.net>
-> Reviewed-by: Jean Delvare <jdelvare@suse.de>
+> Changing from the non-atomic thread_info::status flags to the atomic
+> thread_info::flags shouldn't be a big issue since most polling state
+> changes were followed/preceded by a full memory barrier anyway.
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Andy Lutomirski <luto@amacapital.net>
+> Cc: Richard Henderson <rth@twiddle.net>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 > ---
-> v2: applied changes recommended by Jean Delvare
-> ---
->  drivers/i2c/busses/i2c-ali1563.c | 82 ++++++++++++++++++++++------------------
->  1 file changed, 45 insertions(+), 37 deletions(-)
-> (...)
+>  arch/alpha/include/asm/thread_info.h |    4 ++--
+>  1 file changed, 2 inser
 
-Very nice, thank you.
+Acked-by: Richard Henderson <rth@twiddle.net>
 
-Wolfram, please apply.
 
--- 
-Jean Delvare
-SUSE L3 Support
+r~
