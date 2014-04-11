@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756702AbaDKJW1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 05:22:27 -0400
-Received: from mga02.intel.com ([134.134.136.20]:11502 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755998AbaDKJWW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 05:22:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,841,1389772800"; 
-   d="scan'208";a="519043386"
-Date: Fri, 11 Apr 2014 12:29:56 +0300
-From: "Westerberg, Mika" <mika.westerberg@intel.com>
-To: "Du, Wenkai" <wenkai.du@intel.com>
-Cc: "'linux-i2c@vger.kernel.org'" <linux-i2c@vger.kernel.org>,
-        "'Wolfram Sang'" <wsa@the-dreams.de>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] i2c-designware: Mask all interrupts during i2c
- controller enable
-Message-ID: <20140411092956.GE19349@intel.com>
-References: <7286EAF50D3F4E4AADE7FEECEBF8B5A547FF93E0@ORSMSX110.amr.corp.intel.com>
+	id S1756770AbaDKJYP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 05:24:15 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:44622 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756580AbaDKJWB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 05:22:01 -0400
+Date: Fri, 11 Apr 2014 11:21:57 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Jisheng Zhang <jszhang@marvell.com>
+Cc: "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        Jimmy Xu <zmxu@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND 2/5] pinctrl: berlin: add a pinctrl driver for
+ Marvell Berlin SoCs
+Message-ID: <20140411092157.GD20147@kwain>
+References: <1397135274-10764-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1397135274-10764-3-git-send-email-antoine.tenart@free-electrons.com>
+ <20140411144431.04fb148d@xhacker>
+ <20140411081839.GB20147@kwain>
+ <20140411162716.74e739e1@xhacker>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <7286EAF50D3F4E4AADE7FEECEBF8B5A547FF93E0@ORSMSX110.amr.corp.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140411162716.74e739e1@xhacker>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 02:03:19AM +0300, Du, Wenkai wrote:
-> Hi all,
-> 
-> Updated problem descriptions from Mika's feedback and new test data: 
-> 
-> There have been "i2c_designware 80860F41:00: controller timed out" errors
-> on a number of Baytrail platforms. The issue is caused by incorrect value in
-> Interrupt Mask Register (DW_IC_INTR_MASK)  when i2c core is being enabled. 
-> This causes call to __i2c_dw_enable() to immediately start the transfer which
-> leads to timeout. There are 3 failure modes observed:
-> 
-> 1. Failure in S0 to S3 resume path
-> 
-> The default value after reset for DW_IC_INTR_MASK is 0x8ff. When we start 
-> the first transaction after resuming from system sleep, TX_EMPTY interrupt 
-> is already unmasked because of the hardware default.
-> 
-> 2. Failure in normal operational path
-> 
-> This failure happens rarely and is hard to reproduce. Debug trace showed that
-> DW_IC_INTR_MASK had value of 0x254 when failure occurred, which meant 
-> TX_EMPTY was unmasked.
-> 
-> 2. Failure in S3 to S0 suspend path
+Jisheng,
 
-This should probably be 3.
+On Fri, Apr 11, 2014 at 04:27:16PM +0800, Jisheng Zhang wrote:
+> Hi Antoine,
+> 
+> On Fri, 11 Apr 2014 01:18:39 -0700
+> Antoine Ténart <antoine.tenart@free-electrons.com> wrote:
+> 
+> > Hi Jisheng,
+> > 
+> > On Fri, Apr 11, 2014 at 02:44:31PM +0800, Jisheng Zhang wrote:
+> > > On Thu, 10 Apr 2014 06:07:51 -0700
+> > > Antoine Ténart <antoine.tenart@free-electrons.com> wrote:
+> > > 
+> > > ...
+> > > > +static int berlin_pinmux_enable(struct pinctrl_dev *pctrl_dev,
+> > > > +                               unsigned function,
+> > > > +                               unsigned group)
+> > > > +{
+> > > > +       struct berlin_pinctrl *pctrl =
+> > > > pinctrl_dev_get_drvdata(pctrl_dev);
+> > > > +       struct berlin_pinctrl_group *group_desc = pctrl->groups + group;
+> > > > +       struct berlin_pinctrl_function *function_desc =
+> > > > +               pctrl->functions + function;
+> > > > +       unsigned long flags;
+> > > > +       u32 regval;
+> > > > +
+> > > > +       spin_lock_irqsave(&pctrl->lock, flags);
+> > > > +
+> > > > +       regval = readl(group_desc->reg);
+> > > > +       regval &= group_desc->mask;
+> > > > +       regval |= function_desc->muxval << group_desc->lsb;
+> > > > +       writel(regval, group_desc->reg);
+> > > 
+> > > Could we use relaxed version instead?
+> > 
+> > We could, but this is not a performance issue here at all, so I guess we can
+> > keep writel().
+> 
+> Yes it's not a performance issue here but an issue for the system which is doing
+> PL310 L2 cache maintenance. If pinmux operation hold the l2x0_lock due to writel()
+> the important video/audio process which is cleaning PL310 cache must wait, thus
+> cause jitter. So I'd like relaxed version if we can. Then I don't need to add this
+> patch to mainline kernel when we upgrade internal tree.
 
-> This failure also happens rarely and is hard to reproduce. Adding debug trace
-> that read DW_IC_INTR_MASK made this failure not reproducible. But from ISR 
-> call trace we could conclude TX_EMPTY was unmasked when problem occurred.
-> 
-> 
-> The patch masks all interrupts before the controller is enabled to resolve the
-> faulty DW_IC_INTR_MASK conditions.
-> 
-> Signed-off-by: Wenkai Du <wenkai.du@intel.com>
+I'm not sure I got that. As I understand it, you will need to play video/audio
+*while* configuring the pinmux. But the pinmuxing configuration is done at boot
+time, and I don't think a video/audio is being played then. So I'm not certain a
+jitter will appear. What do you think ?
 
-Acked-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Antoine
+
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
