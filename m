@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759505AbaDKQIg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:08:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56390 "EHLO
+	id S1030584AbaDKQId (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:08:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56380 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759420AbaDKQHe (ORCPT
+	with ESMTP id S1759414AbaDKQHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:07:34 -0400
+	Fri, 11 Apr 2014 12:07:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oliver Neukum <oneukum@suse.de>, Grant Grundler <grundler@google.com>,
+        Anton Nayshtut <anton@swortex.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 25/41] usbnet: include wait queue head in device structure
-Date: Fri, 11 Apr 2014 09:09:56 -0700
-Message-Id: <20140411160934.645221901@linuxfoundation.org>
+Subject: [PATCH 3.10 12/41] ipv6: Fix exthdrs offload registration.
+Date: Fri, 11 Apr 2014 09:09:43 -0700
+Message-Id: <20140411160933.708331066@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
 References: <20140411160932.865173041@linuxfoundation.org>
@@ -27,142 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Anton Nayshtut <anton@swortex.com>
 
-[ Upstream commit 14a0d635d18d0fb552dcc979d6d25106e6541f2e ]
+[ Upstream commit d2d273ffabd315eecefce21a4391d44b6e156b73 ]
 
-This fixes a race which happens by freeing an object on the stack.
-Quoting Julius:
-> The issue is
-> that it calls usbnet_terminate_urbs() before that, which temporarily
-> installs a waitqueue in dev->wait in order to be able to wait on the
-> tasklet to run and finish up some queues. The waiting itself looks
-> okay, but the access to 'dev->wait' is totally unprotected and can
-> race arbitrarily. I think in this case usbnet_bh() managed to succeed
-> it's dev->wait check just before usbnet_terminate_urbs() sets it back
-> to NULL. The latter then finishes and the waitqueue_t structure on its
-> stack gets overwritten by other functions halfway through the
-> wake_up() call in usbnet_bh().
+Without this fix, ipv6_exthdrs_offload_init doesn't register IPPROTO_DSTOPTS
+offload, but returns 0 (as the IPPROTO_ROUTING registration actually succeeds).
 
-The fix is to just not allocate the data structure on the stack.
-As dev->wait is abused as a flag it also takes a runtime PM change
-to fix this bug.
+This then causes the ipv6_gso_segment to drop IPv6 packets with IPPROTO_DSTOPTS
+header.
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Reported-by: Grant Grundler <grundler@google.com>
-Tested-by: Grant Grundler <grundler@google.com>
+The issue detected and the fix verified by running MS HCK Offload LSO test on
+top of QEMU Windows guests, as this test sends IPv6 packets with
+IPPROTO_DSTOPTS.
+
+Signed-off-by: Anton Nayshtut <anton@swortex.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/usb/usbnet.c   |   33 +++++++++++++++++++--------------
- include/linux/usb/usbnet.h |    2 +-
- 2 files changed, 20 insertions(+), 15 deletions(-)
+ net/ipv6/exthdrs_offload.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -727,14 +727,12 @@ EXPORT_SYMBOL_GPL(usbnet_unlink_rx_urbs)
- // precondition: never called in_interrupt
- static void usbnet_terminate_urbs(struct usbnet *dev)
- {
--	DECLARE_WAIT_QUEUE_HEAD_ONSTACK(unlink_wakeup);
- 	DECLARE_WAITQUEUE(wait, current);
- 	int temp;
+--- a/net/ipv6/exthdrs_offload.c
++++ b/net/ipv6/exthdrs_offload.c
+@@ -25,11 +25,11 @@ int __init ipv6_exthdrs_offload_init(voi
+ 	int ret;
  
- 	/* ensure there are no more active urbs */
--	add_wait_queue(&unlink_wakeup, &wait);
-+	add_wait_queue(&dev->wait, &wait);
- 	set_current_state(TASK_UNINTERRUPTIBLE);
--	dev->wait = &unlink_wakeup;
- 	temp = unlink_urbs(dev, &dev->txq) +
- 		unlink_urbs(dev, &dev->rxq);
+ 	ret = inet6_add_offload(&rthdr_offload, IPPROTO_ROUTING);
+-	if (!ret)
++	if (ret)
+ 		goto out;
  
-@@ -748,15 +746,14 @@ static void usbnet_terminate_urbs(struct
- 				  "waited for %d urb completions\n", temp);
- 	}
- 	set_current_state(TASK_RUNNING);
--	dev->wait = NULL;
--	remove_wait_queue(&unlink_wakeup, &wait);
-+	remove_wait_queue(&dev->wait, &wait);
- }
+ 	ret = inet6_add_offload(&dstopt_offload, IPPROTO_DSTOPTS);
+-	if (!ret)
++	if (ret)
+ 		goto out_rt;
  
- int usbnet_stop (struct net_device *net)
- {
- 	struct usbnet		*dev = netdev_priv(net);
- 	struct driver_info	*info = dev->driver_info;
--	int			retval;
-+	int			retval, pm;
- 
- 	clear_bit(EVENT_DEV_OPEN, &dev->flags);
- 	netif_stop_queue (net);
-@@ -766,6 +763,8 @@ int usbnet_stop (struct net_device *net)
- 		   net->stats.rx_packets, net->stats.tx_packets,
- 		   net->stats.rx_errors, net->stats.tx_errors);
- 
-+	/* to not race resume */
-+	pm = usb_autopm_get_interface(dev->intf);
- 	/* allow minidriver to stop correctly (wireless devices to turn off
- 	 * radio etc) */
- 	if (info->stop) {
-@@ -792,6 +791,9 @@ int usbnet_stop (struct net_device *net)
- 	dev->flags = 0;
- 	del_timer_sync (&dev->delay);
- 	tasklet_kill (&dev->bh);
-+	if (!pm)
-+		usb_autopm_put_interface(dev->intf);
-+
- 	if (info->manage_power &&
- 	    !test_and_clear_bit(EVENT_NO_RUNTIME_PM, &dev->flags))
- 		info->manage_power(dev, 0);
-@@ -1360,11 +1362,12 @@ static void usbnet_bh (unsigned long par
- 	/* restart RX again after disabling due to high error rate */
- 	clear_bit(EVENT_RX_KILL, &dev->flags);
- 
--	// waiting for all pending urbs to complete?
--	if (dev->wait) {
--		if ((dev->txq.qlen + dev->rxq.qlen + dev->done.qlen) == 0) {
--			wake_up (dev->wait);
--		}
-+	/* waiting for all pending urbs to complete?
-+	 * only then can we forgo submitting anew
-+	 */
-+	if (waitqueue_active(&dev->wait)) {
-+		if (dev->txq.qlen + dev->rxq.qlen + dev->done.qlen == 0)
-+			wake_up_all(&dev->wait);
- 
- 	// or are we maybe short a few urbs?
- 	} else if (netif_running (dev->net) &&
-@@ -1502,6 +1505,7 @@ usbnet_probe (struct usb_interface *udev
- 	dev->driver_name = name;
- 	dev->msg_enable = netif_msg_init (msg_level, NETIF_MSG_DRV
- 				| NETIF_MSG_PROBE | NETIF_MSG_LINK);
-+	init_waitqueue_head(&dev->wait);
- 	skb_queue_head_init (&dev->rxq);
- 	skb_queue_head_init (&dev->txq);
- 	skb_queue_head_init (&dev->done);
-@@ -1694,9 +1698,10 @@ int usbnet_resume (struct usb_interface
- 		spin_unlock_irq(&dev->txq.lock);
- 
- 		if (test_bit(EVENT_DEV_OPEN, &dev->flags)) {
--			/* handle remote wakeup ASAP */
--			if (!dev->wait &&
--				netif_device_present(dev->net) &&
-+			/* handle remote wakeup ASAP
-+			 * we cannot race against stop
-+			 */
-+			if (netif_device_present(dev->net) &&
- 				!timer_pending(&dev->delay) &&
- 				!test_bit(EVENT_RX_HALT, &dev->flags))
- 					rx_alloc_submit(dev, GFP_NOIO);
---- a/include/linux/usb/usbnet.h
-+++ b/include/linux/usb/usbnet.h
-@@ -30,7 +30,7 @@ struct usbnet {
- 	struct driver_info	*driver_info;
- 	const char		*driver_name;
- 	void			*driver_priv;
--	wait_queue_head_t	*wait;
-+	wait_queue_head_t	wait;
- 	struct mutex		phy_mutex;
- 	unsigned char		suspend_count;
- 	unsigned char		pkt_cnt, pkt_err;
+ out:
 
 
