@@ -1,155 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191AbaDKBhC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 21:37:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26432 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753294AbaDKBg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 21:36:59 -0400
-Date: Fri, 11 Apr 2014 09:34:22 +0800
-From: Baoquan He <bhe@redhat.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>
-Subject: Re: hpsa driver bug crack kernel down!
-Message-ID: <20140411013422.GL11839@dhcp-16-105.nay.redhat.com>
-References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
- <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>
- <1397084904.9519.62.camel@dabdike>
- <1397085044.9519.63.camel@dabdike>
- <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
- <1397087425.9519.67.camel@dabdike>
- <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>
- <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
- <53465781.4010904@linux.intel.com>
+	id S1754294AbaDKBmY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 21:42:24 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:56464 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754113AbaDKBmV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 21:42:21 -0400
+Message-ID: <5347487B.4040608@adjacentlink.com>
+Date: Thu, 10 Apr 2014 21:42:19 -0400
+From: Steven Galgano <sgalgano@adjacentlink.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53465781.4010904@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: davem@davemloft.net, jasowang@redhat.com, xemul@parallels.com,
+        wuzhy@linux.vnet.ibm.com, therbert@google.com, yamato@redhat.com,
+        richardcochran@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Brian Adamson <Brian.Adamson@nrl.navy.mil>,
+        Joseph Giovatto <jgiovatto@adjacentlink.com>
+Subject: Re: [PATCH] tuntap: add flow control to support back pressure
+References: <5345FFBC.7020502@adjacentlink.com> <20140410102931.GA12077@redhat.com>
+In-Reply-To: <20140410102931.GA12077@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/14 at 04:34pm, Jiang Liu wrote:
-> Hi Baoquan,
-> 	Could you please help to give output of "lspci -vvvv"?
-> Is device "hpsa 0000:03:00.0" a legacy PCI device(non-PCIe)?
-> It may have relationship with IOMMU driver.
-> Thanks!
-> Gerry
-
-Hi,
-
-I just saw your mail now. Do you still need the output of "lspci -vvvv"
-on my test machine? 
-
-In fact, I didn't see the DMAR error related to intel vt-d issues.
-
-If the output is helpful, I can make a latest build to do this.
-
-Thanks
-Baoquan
-
+On 04/10/2014 06:29 AM, Michael S. Tsirkin wrote:
+> On Wed, Apr 09, 2014 at 10:19:40PM -0400, Steven Galgano wrote:
+>> Add tuntap flow control support for use by back pressure routing protocols. Setting the new TUNSETIFF flag IFF_FLOW_CONTROL, will signal resources as unavailable when the tx queue limit is reached by issuing a netif_tx_stop_all_queues() rather than discarding frames. A netif_tx_wake_all_queues() is issued after reading a frame from the queue to signal resource availability.
+>>
+>> Back pressure capability was previously supported by the legacy tun default mode. This change restores that functionality, which was last present in v3.7.
+>>
+>> Reported-by: Brian Adamson <brian.adamson@nrl.navy.mil>
+>> Tested-by: Joseph Giovatto <jgiovatto@adjacentlink.com>
+>> Signed-off-by: Steven Galgano <sgalgano@adjacentlink.com>
 > 
-> On 2014/4/10 12:03, Bjorn Helgaas wrote:
-> > [+cc Joerg, iommu list]
-> > 
-> > On Wed, Apr 9, 2014 at 6:19 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> >> On Wed, 2014-04-09 at 16:50 -0700, James Bottomley wrote:
-> >>> On Wed, 2014-04-09 at 16:40 -0700, Davidlohr Bueso wrote:
-> >>>> On Wed, 2014-04-09 at 16:10 -0700, James Bottomley wrote:
-> >>>>> On Wed, 2014-04-09 at 16:08 -0700, James Bottomley wrote:
-> >>>>>> [+linux-scsi]
-> >>>>>> On Wed, 2014-04-09 at 15:49 -0700, Davidlohr Bueso wrote:
-> >>>>>>> On Wed, 2014-04-09 at 10:39 +0800, Baoquan He wrote:
-> >>>>>>>> Hi,
-> >>>>>>>>
-> >>>>>>>> The kernel is 3.14.0+ which is pulled just now.
-> >>>>>>>
-> >>>>>>> Cc'ing more people.
-> >>>>>>>
-> >>>>>>> While the hpsa driver appears to be involved in some way, I'm sure if
-> >>>>>>> this is a related issue, but as of today's pull I'm getting another
-> >>>>>>> problem that causes my DL980 not to come up.
-> >>>>>>>
-> >>>>>>> *Massive* amounts of:
-> >>>>>>>
-> >>>>>>> DMAR:[fault reason 02] Present bit in context entry is clear
-> >>>>>>> dmar: DRHD: handling fault status reg 602
-> >>>>>>> dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr 7f61e000
-> >>>>>>>
-> >>>>>>> Then:
-> >>>>>>>
-> >>>>>>> hpsa 0000:03:00.0: Controller lockup detected: 0xffff0000
-> >>>>>>> ...
-> >>>>>>> Workqueue: events hpsa_monitor_ctlr_worker [hpsa]
-> >>>>>>> ...
-> >>>>>>>
-> >>>>>>> Screenshot of the actual LOCKUP:
-> >>>>>>> http://stgolabs.net/hpsa-hard-lockup-3.14+.png
-> >>>>>>>
-> >>>>>>> While I haven't bisected, things worked fine until at least until commit
-> >>>>>>> 39de65aa2c3e (April 2nd).
-> >>>>>>>
-> >>>>>>> Any ideas?
-> >>>>>>
-> >>>>>> Well, it's either a DMA remapping issue or a hpsa one.  Your assertion
-> >>>>>> that everything worked fine until 39de65aa2c3e would tend to vindicate
-> >>>>>> hpsa,
-> >>>>
-> >>>> Hmm here you mean DMA, right?
-> >>>
-> >>> No, it vindicates the hpsa changes ... they don't seem to be causing
-> >>> problems until something goes wrong with dma remapping.
-> >>>
-> >>>>> because all the hpsa changes went in before that under
-> >>>>> Missing crucial info:
-> >>>>>
-> >>>>> commit 1a0b6abaea78f73d9bc0a2f6df2d9e4c917cade1
-> >>>>>
-> >>>>>> Merge: 3e75c6d b2bff6c
-> >>>>>> Author: Linus Torvalds <torvalds@linux-foundation.org>
-> >>>>>> Date:   Tue Apr 1 18:49:04 2014 -0700
-> >>>>>>
-> >>>>>>     Merge tag 'scsi-misc' of
-> >>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi
-> >>>>>>
-> >>>>>> can you revalidate that this commit works OK just to make sure?
-> >>>>
-> >>>> Ok so I don't see those DMA messages and system starts just fine. I'm
-> >>>> thinking perhaps something broke after the IO mmu stuff in commit
-> >>>> 3f583bc21977a608908b83d03ee2250426a5695c... could this be indirectly
-> >>>> causing the CPU stalls and just blame hpsa in the path as a side effect?
-> >>>>
-> >>>> /me goes out to try the commit.
-> >>>
-> >>> That's my guess.  The DMAR messages are DMA remapping issues caused in
-> >>> the IOMMU.  If I had to guess, I'd say the DMAR fault message is
-> >>> indicating the IOMMU is calling for a mapping address before it can
-> >>> satisfy the driver read request, which is causing the hang apparently in
-> >>> the hpsa driver.
-> >>>
-> >>> I've added linux-pci to the cc; I think they deal with iommu issues on
-> >>> x86.
-> >>
-> >> So that merge commit appears to be the culprit, I see both the DMA
-> >> messages and the lockup blaming hpsa...
-> > 
-> > My understanding so far (please correct me if I'm wrong):
-> > 
-> > 39de65aa2c3e OK ("Merge branch 'i2c/for-next'")
-> > 1a0b6abaea78 OK ("Merge tag 'scsi-misc'")
-> > 3f583bc21977 BAD ("Merge tag 'iommu-updates-v3.15'")
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
+> I don't think it's a good idea.
+> 
+> This trivial flow control really created more problems than it was worth.
+> 
+> In particular this blocks all flows so it's trivially easy for one flow
+> to block and starve all others: just send a bunch of packets to loopback
+> destinations that get queued all over the place.
+> 
+> Luckily it was never documented so we changed the default and nothing
+> seems to break, but we won't be so lucky if we add an explicit API.
+> 
+> 
+> One way to implement this would be with ubuf_info callback this is
+> already invoked in most places where a packet might get stuck for a long
+> time.  It's still incomplete though: this will prevent head of queue
+> blocking literally forever, but a single bad flow can still degrade
+> performance significantly.
+> 
+> Another alternative is to try and isolate the flows that we
+> can handle and throttle them.
+> 
+> It's all fixable but we really need to fix the issues *before*
+> exposing the interface to userspace.
+> 
+> 
+> 
+
+It was only after recent upgrades that we picked up a newer kernel and
+discovered the change to the default tun mode.
+
+The new default behavior has broken applications that depend on the
+legacy behavior. Although not documented, the legacy behavior was well
+known at least to those working in the back pressure research community.
+The default legacy mode was/is a valid use case although I am not sure
+it fits with recent multiqueue support.
+
+When back pressure protocols are running over a tun interface they
+require legacy flow control in order to communicate congestion detected
+on the physical media they are using. Multiqueues do not apply here.
+These protocols only use one queue, so netif_tx_stop_all_queues() is the
+necessary behavior.
+
+I'm not tied to the idea of IFF_FLOW_CONTROL. I was aiming for middle
+ground where an application controlling the tun interface can state it
+wants the legacy flow control behavior understanding its limitations
+concerning multiple queues.
+
+What if we resurrect IFF_ONE_QUEUE and use that as a mechanism to
+indicate legacy flow control. A tun instance initially configured with
+IFF_ONE_QUEUE would not be allowed to attach or detach queues with
+TUNSETQUEUE and any additional opens with the same device name would
+fail. This mode would use the
+netif_tx_stop_all_queues()/netif_tx_wake_all_queues() flow control
+mechanism.
+
+If a tun application wants the current default behavior with only a
+single queue, it would not set the IFF_ONE_QUEUE flag. Not setting
+IFF_MULTI_QUEUE would not imply IFF_ONE_QUEUE.
+
+I'd be happy to implement this change if it is an acceptable solution.
+This would allow multiqueue tun development to advance while still
+supporting use cases dependent on legacy flow control.
+
+-steve
+
+>> ---
+>> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+>> index ee328ba..268130c 100644
+>> --- a/drivers/net/tun.c
+>> +++ b/drivers/net/tun.c
+>> @@ -783,8 +783,19 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
+>>  	 * number of queues.
+>>  	 */
+>>  	if (skb_queue_len(&tfile->socket.sk->sk_receive_queue) * numqueues
+>> -			  >= dev->tx_queue_len)
+>> -		goto drop;
+>> +			>= dev->tx_queue_len) {
+>> +		if (tun->flags & TUN_FLOW_CONTROL) {
+>> +			/* Resources unavailable stop transmissions */
+>> +			netif_tx_stop_all_queues(dev);
+>> +
+>> +			/* We won't see all dropped packets individually, so
+>> +			 * over run error is more appropriate.
+>> +			 */
+>> +			dev->stats.tx_fifo_errors++;
+>> +		} else {
+>> +			goto drop;
+>> +		}
+>> +	}
+>>  
+>>  	if (unlikely(skb_orphan_frags(skb, GFP_ATOMIC)))
+>>  		goto drop;
+>> @@ -1362,6 +1373,9 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
+>>  			continue;
+>>  		}
+>>  
+>> +		/* Wake in case resources previously signaled unavailable */
+>> +		netif_tx_wake_all_queues(tun->dev);
+>> +
+>>  		ret = tun_put_user(tun, tfile, skb, iv, len);
+>>  		kfree_skb(skb);
+>>  		break;
+>> @@ -1550,6 +1564,9 @@ static int tun_flags(struct tun_struct *tun)
+>>  	if (tun->flags & TUN_PERSIST)
+>>  		flags |= IFF_PERSIST;
+>>  
+>> +	if (tun->flags & TUN_FLOW_CONTROL)
+>> +		flags |= IFF_FLOW_CONTROL;
+>> +
+>>  	return flags;
+>>  }
+>>  
+>> @@ -1732,6 +1749,11 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+>>  	else
+>>  		tun->flags &= ~TUN_TAP_MQ;
+>>  
+>> +	if (ifr->ifr_flags & IFF_FLOW_CONTROL)
+>> +		tun->flags |= TUN_FLOW_CONTROL;
+>> +	else
+>> +		tun->flags &= ~TUN_FLOW_CONTROL;
+>> +
+>>  	/* Make sure persistent devices do not get stuck in
+>>  	 * xoff state.
+>>  	 */
+>> @@ -1900,7 +1922,8 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
+>>  		 * This is needed because we never checked for invalid flags on
+>>  		 * TUNSETIFF. */
+>>  		return put_user(IFF_TUN | IFF_TAP | IFF_NO_PI | IFF_ONE_QUEUE |
+>> -				IFF_VNET_HDR | IFF_MULTI_QUEUE,
+>> +				IFF_VNET_HDR | IFF_MULTI_QUEUE |
+>> +				IFF_FLOW_CONTROL,
+>>  				(unsigned int __user*)argp);
+>>  	} else if (cmd == TUNSETQUEUE)
+>>  		return tun_set_queue(file, &ifr);
+>> diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
+>> index e9502dd..bcf2790 100644
+>> --- a/include/uapi/linux/if_tun.h
+>> +++ b/include/uapi/linux/if_tun.h
+>> @@ -36,6 +36,7 @@
+>>  #define TUN_PERSIST 	0x0100	
+>>  #define TUN_VNET_HDR 	0x0200
+>>  #define TUN_TAP_MQ      0x0400
+>> +#define TUN_FLOW_CONTROL 0x0800
+>>  
+>>  /* Ioctl defines */
+>>  #define TUNSETNOCSUM  _IOW('T', 200, int) 
+>> @@ -70,6 +71,7 @@
+>>  #define IFF_MULTI_QUEUE 0x0100
+>>  #define IFF_ATTACH_QUEUE 0x0200
+>>  #define IFF_DETACH_QUEUE 0x0400
+>> +#define IFF_FLOW_CONTROL 0x0010
+>>  /* read-only flag */
+>>  #define IFF_PERSIST	0x0800
+>>  #define IFF_NOFILTER	0x1000
