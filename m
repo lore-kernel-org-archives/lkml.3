@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422923AbaDKQJV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:09:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56306 "EHLO
+	id S1758942AbaDKQJP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:09:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56446 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759359AbaDKQHa (ORCPT
+	with ESMTP id S1759437AbaDKQHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:07:30 -0400
+	Fri, 11 Apr 2014 12:07:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Peter=20Bostr=C3=B6m?= <peter.bostrom@netrounds.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 14/41] vlan: Set correct source MAC address with TX VLAN offload enabled
-Date: Fri, 11 Apr 2014 09:09:45 -0700
-Message-Id: <20140411160933.838254539@linuxfoundation.org>
+        Finn Thain <fthain@telegraphics.com.au>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.10 38/41] m68k: Skip futex_atomic_cmpxchg_inatomic() test
+Date: Fri, 11 Apr 2014 09:10:09 -0700
+Message-Id: <20140411160935.582306572@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
 References: <20140411160932.865173041@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,38 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Boström <peter.bostrom@netrounds.com>
+From: Finn Thain <fthain@telegraphics.com.au>
 
-[ Upstream commit dd38743b4cc2f86be250eaf156cf113ba3dd531a ]
+commit e571c58f313d35c56e0018470e3375ddd1fd320e upstream.
 
-With TX VLAN offload enabled the source MAC address for frames sent using the
-VLAN interface is currently set to the address of the real interface. This is
-wrong since the VLAN interface may be configured with a different address.
+Skip the futex_atomic_cmpxchg_inatomic() test in futex_init(). It causes a
+fatal exception on 68030 (and presumably 68020 also).
 
-The bug was introduced in commit 2205369a314e12fcec4781cc73ac9c08fc2b47de
-("vlan: Fix header ops passthru when doing TX VLAN offload.").
-
-This patch sets the source address before calling the create function of the
-real interface.
-
-Signed-off-by: Peter Boström <peter.bostrom@netrounds.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Link: http://lkml.kernel.org/r/alpine.LNX.2.00.1403061006440.5525@nippy.intranet
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/8021q/vlan_dev.c |    3 +++
- 1 file changed, 3 insertions(+)
 
---- a/net/8021q/vlan_dev.c
-+++ b/net/8021q/vlan_dev.c
-@@ -557,6 +557,9 @@ static int vlan_passthru_hard_header(str
- 	struct vlan_dev_priv *vlan = vlan_dev_priv(dev);
- 	struct net_device *real_dev = vlan->real_dev;
- 
-+	if (saddr == NULL)
-+		saddr = dev->dev_addr;
-+
- 	return dev_hard_header(skb, real_dev, type, daddr, saddr, len);
- }
- 
+---
+ arch/m68k/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/arch/m68k/Kconfig
++++ b/arch/m68k/Kconfig
+@@ -16,6 +16,7 @@ config M68K
+ 	select FPU if MMU
+ 	select ARCH_WANT_IPC_PARSE_VERSION
+ 	select ARCH_USES_GETTIMEOFFSET if MMU && !COLDFIRE
++	select HAVE_FUTEX_CMPXCHG if MMU && FUTEX
+ 	select HAVE_MOD_ARCH_SPECIFIC
+ 	select MODULES_USE_ELF_REL
+ 	select MODULES_USE_ELF_RELA
 
 
