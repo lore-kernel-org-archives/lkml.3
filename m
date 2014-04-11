@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030666AbaDKQIm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:08:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56402 "EHLO
+	id S1030639AbaDKQIj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:08:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56396 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759422AbaDKQHf (ORCPT
+	with ESMTP id S1759421AbaDKQHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Apr 2014 12:07:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Patrick McHardy <kaber@trash.net>, Vlad Yasevich <vyasevic@redhat.com>,
+        Thomas Graf <tgraf@suug.ch>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 26/41] vlan: Set hard_header_len according to available acceleration
-Date: Fri, 11 Apr 2014 09:09:57 -0700
-Message-Id: <20140411160934.711130406@linuxfoundation.org>
+Subject: [PATCH 3.10 22/41] ip6mr: fix mfc notification flags
+Date: Fri, 11 Apr 2014 09:09:53 -0700
+Message-Id: <20140411160934.420168951@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
 References: <20140411160932.865173041@linuxfoundation.org>
@@ -27,52 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-[ Upstream commit fc0d48b8fb449ca007b2057328abf736cb516168 ]
+[ Upstream commit f518338b16038beeb73e155e60d0f70beb9379f4 ]
 
-Currently, if the card supports CTAG acceleration we do not
-account for the vlan header even if we are configuring an
-8021AD vlan.  This may not be best since we'll do software
-tagging for 8021AD which will cause data copy on skb head expansion
-Configure the length based on available hw offload capabilities and
-vlan protocol.
+Commit 812e44dd1829 ("ip6mr: advertise new mfc entries via rtnl") reuses the
+function ip6mr_fill_mroute() to notify mfc events.
+But this function was used only for dump and thus was always setting the
+flag NLM_F_MULTI, which is wrong in case of a single notification.
 
-CC: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Libraries like libnl will wait forever for NLMSG_DONE.
+
+CC: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Acked-by: Thomas Graf <tgraf@suug.ch>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/8021q/vlan.c     |    4 +++-
- net/8021q/vlan_dev.c |    3 ++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ net/ipv6/ip6mr.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
---- a/net/8021q/vlan.c
-+++ b/net/8021q/vlan.c
-@@ -305,9 +305,11 @@ static void vlan_sync_address(struct net
- static void vlan_transfer_features(struct net_device *dev,
- 				   struct net_device *vlandev)
+--- a/net/ipv6/ip6mr.c
++++ b/net/ipv6/ip6mr.c
+@@ -2351,13 +2351,14 @@ int ip6mr_get_route(struct net *net,
+ }
+ 
+ static int ip6mr_fill_mroute(struct mr6_table *mrt, struct sk_buff *skb,
+-			     u32 portid, u32 seq, struct mfc6_cache *c, int cmd)
++			     u32 portid, u32 seq, struct mfc6_cache *c, int cmd,
++			     int flags)
  {
-+	struct vlan_dev_priv *vlan = vlan_dev_priv(vlandev);
-+
- 	vlandev->gso_max_size = dev->gso_max_size;
+ 	struct nlmsghdr *nlh;
+ 	struct rtmsg *rtm;
+ 	int err;
  
--	if (dev->features & NETIF_F_HW_VLAN_CTAG_TX)
-+	if (vlan_hw_offload_capable(dev->features, vlan->vlan_proto))
- 		vlandev->hard_header_len = dev->hard_header_len;
- 	else
- 		vlandev->hard_header_len = dev->hard_header_len + VLAN_HLEN;
---- a/net/8021q/vlan_dev.c
-+++ b/net/8021q/vlan_dev.c
-@@ -611,7 +611,8 @@ static int vlan_dev_init(struct net_devi
- #endif
+-	nlh = nlmsg_put(skb, portid, seq, cmd, sizeof(*rtm), NLM_F_MULTI);
++	nlh = nlmsg_put(skb, portid, seq, cmd, sizeof(*rtm), flags);
+ 	if (nlh == NULL)
+ 		return -EMSGSIZE;
  
- 	dev->needed_headroom = real_dev->needed_headroom;
--	if (real_dev->features & NETIF_F_HW_VLAN_CTAG_TX) {
-+	if (vlan_hw_offload_capable(real_dev->features,
-+				    vlan_dev_priv(dev)->vlan_proto)) {
- 		dev->header_ops      = &vlan_passthru_header_ops;
- 		dev->hard_header_len = real_dev->hard_header_len;
- 	} else {
+@@ -2425,7 +2426,7 @@ static void mr6_netlink_event(struct mr6
+ 	if (skb == NULL)
+ 		goto errout;
+ 
+-	err = ip6mr_fill_mroute(mrt, skb, 0, 0, mfc, cmd);
++	err = ip6mr_fill_mroute(mrt, skb, 0, 0, mfc, cmd, 0);
+ 	if (err < 0)
+ 		goto errout;
+ 
+@@ -2464,7 +2465,8 @@ static int ip6mr_rtm_dumproute(struct sk
+ 				if (ip6mr_fill_mroute(mrt, skb,
+ 						      NETLINK_CB(cb->skb).portid,
+ 						      cb->nlh->nlmsg_seq,
+-						      mfc, RTM_NEWROUTE) < 0)
++						      mfc, RTM_NEWROUTE,
++						      NLM_F_MULTI) < 0)
+ 					goto done;
+ next_entry:
+ 				e++;
+@@ -2478,7 +2480,8 @@ next_entry:
+ 			if (ip6mr_fill_mroute(mrt, skb,
+ 					      NETLINK_CB(cb->skb).portid,
+ 					      cb->nlh->nlmsg_seq,
+-					      mfc, RTM_NEWROUTE) < 0) {
++					      mfc, RTM_NEWROUTE,
++					      NLM_F_MULTI) < 0) {
+ 				spin_unlock_bh(&mfc_unres_lock);
+ 				goto done;
+ 			}
 
 
