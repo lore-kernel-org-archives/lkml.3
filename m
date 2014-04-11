@@ -1,93 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550AbaDKCEH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 22:04:07 -0400
-Received: from mga11.intel.com ([192.55.52.93]:16935 "EHLO mga11.intel.com"
+	id S1754234AbaDKC21 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 22:28:27 -0400
+Received: from mga03.intel.com ([143.182.124.21]:21540 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754482AbaDKCEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 22:04:05 -0400
+	id S1753327AbaDKC2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 22:28:25 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,838,1389772800"; 
-   d="scan'208";a="511254770"
-Subject: [PATCH] net: ipv4: current group_info should be put after using.
-From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
-To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: chuansheng.liu@intel.com, dongxing.zhang@intel.com,
-        xiaoming.wang@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Apr 2014 12:10:38 -0400
-Message-ID: <1397232638.20759.28.camel@wxm-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+   d="scan'208";a="417602701"
+Message-ID: <53475344.5090009@linux.intel.com>
+Date: Thu, 10 Apr 2014 19:28:20 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: "Romer, Benjamin M" <Benjamin.Romer@unisys.com>
+CC: Fengguang Wu <fengguang.wu@intel.com>, Jet Chen <jet.chen@intel.com>,
+        Paolo Bonzini <pbonzini@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [visorchipset] invalid opcode: 0000 [#1] PREEMPT SMP
+References: <20140407111725.GC25152@localhost> <C97001BC43954D438ACB059713BA5CDF92040F0F00@USEA-EXCH7.na.uis.unisys.com> <53444220.50009@intel.com> <C97001BC43954D438ACB059713BA5CDF92040F0F06@USEA-EXCH7.na.uis.unisys.com> <53458A3A.1050608@intel.com> <20140409230114.GB8370@localhost> <5345D360.5000506@linux.intel.com> <C97001BC43954D438ACB059713BA5CDF92040F0F0A@USEA-EXCH7.na.uis.unisys.com>
+In-Reply-To: <C97001BC43954D438ACB059713BA5CDF92040F0F0A@USEA-EXCH7.na.uis.unisys.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a memory leak in ping when call ping in dumpstate.
-Current group_info had been got in ping_init_sock and group_info->usage
-increased. But the usage hasn't decreased.
-This will make group_info never freed and cause memory leak.
+On 04/10/2014 06:19 AM, Romer, Benjamin M wrote:
+> 
+> I'm confused by the intended behavior of KVM.. Is the intention of the
+> -cpu switch to fully emulate a particular CPU? If that's the case, the
+> Intel documentation says bit 31 should always be 0, so the value
+> returned by the cpuid instruction isn't correct. If the intention is to
+> present a VM with a specific CPU architecture, the CPU ought to behave
+> as described in Intel's virtualization documentation and just vmexit
+> instead of faulting with invalid op, IMHO. 
+> 
+> I've already said the check in the code was insufficient, and I'm trying
+> to fix that part now. :)
+> 
 
-unreferenced object 0xcd0e8840 (size 192):
-  comm "dumpstate", pid 7583, jiffies 78360 (age 91.810s)
-  hex dump (first 32 bytes):
-    02 00 00 00 06 00 00 00 01 00 00 00 ef 03 00 00  ................
-    f1 03 00 00 f7 03 00 00 04 04 00 00 bb 0b 00 00  ................
-  backtrace:
-    [<c1a6bbfc>] kmemleak_alloc+0x3c/0xa0
-    [<c1320457>] __kmalloc+0xe7/0x1d0
-    [<c1267c04>] groups_alloc+0x34/0xb0
-    [<c1267e5c>] SyS_setgroups+0x3c/0xf0
-    [<c1a864a8>] syscall_call+0x7/0xb
-    [<ffffffff>] 0xffffffff
+I'm still confused where KVM comes into the picture.  Are you actually
+using KVM (and thus talking about nested virtualization) or are you
+using Qemu in JIT mode and running another hypervisor underneath?
 
-Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
-Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
-Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
----
- net/ipv4/ping.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+The hypervisor bit is a complete red herring.  If the guest CPU is
+running in VT-x mode, then VMCALL should VMEXIT inside the guest
+(invoking the guest root VT-x), but the fact still remains that you
+should never, ever, invoke VMCALL unless you know what hypervisor you
+have underneath.
 
-diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
-index f4b19e5..2af7b1f 100644
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -255,23 +255,28 @@ int ping_init_sock(struct sock *sk)
- 	struct group_info *group_info = get_current_groups();
- 	int i, j, count = group_info->ngroups;
- 	kgid_t low, high;
-+	int ret = 0;
- 
- 	inet_get_ping_group_range_net(net, &low, &high);
- 	if (gid_lte(low, group) && gid_lte(group, high))
--		return 0;
-+		goto EXIT;
- 
- 	for (i = 0; i < group_info->nblocks; i++) {
- 		int cp_count = min_t(int, NGROUPS_PER_BLOCK, count);
- 		for (j = 0; j < cp_count; j++) {
- 			kgid_t gid = group_info->blocks[i][j];
- 			if (gid_lte(low, gid) && gid_lte(gid, high))
--				return 0;
-+				goto EXIT;
- 		}
- 
- 		count -= cp_count;
- 	}
- 
--	return -EACCES;
-+	ret = -EACCES;
-+
-+EXIT:
-+	put_group_info(group_info);
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(ping_init_sock);
- 
--- 
-1.7.1
-
+	-hpa
 
