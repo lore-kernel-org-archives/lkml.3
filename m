@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422845AbaDKQJH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:09:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56461 "EHLO
+	id S1423019AbaDKQg4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:36:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56626 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759440AbaDKQHk (ORCPT
+	with ESMTP id S1422840AbaDKQJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:07:40 -0400
+	Fri, 11 Apr 2014 12:09:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>, Thomas Graf <tgraf@suug.ch>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 31/41] netlink: dont compare the nul-termination in nla_strcmp
-Date: Fri, 11 Apr 2014 09:10:02 -0700
-Message-Id: <20140411160935.086543855@linuxfoundation.org>
+Subject: [PATCH 3.13 47/65] vhost: validate vhost_get_vq_desc return value
+Date: Fri, 11 Apr 2014 09:11:19 -0700
+Message-Id: <20140411161004.165579384@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
-References: <20140411160932.865173041@linuxfoundation.org>
+In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
+References: <20140411160957.714773410@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Pablo Neira <pablo@netfilter.org>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-[ Upstream commit 8b7b932434f5eee495b91a2804f5b64ebb2bc835 ]
+[ Upstream commit a39ee449f96a2cd44ce056d8a0a112211a9b1a1f ]
 
-nla_strcmp compares the string length plus one, so it's implicitly
-including the nul-termination in the comparison.
+vhost fails to validate negative error code
+from vhost_get_vq_desc causing
+a crash: we are using -EFAULT which is 0xfffffff2
+as vector size, which exceeds the allocated size.
 
- int nla_strcmp(const struct nlattr *nla, const char *str)
- {
-        int len = strlen(str) + 1;
-        ...
-                d = memcmp(nla_data(nla), str, len);
+The code in question was introduced in commit
+8dd014adfea6f173c1ef6378f7e5e7924866c923
+    vhost-net: mergeable buffers support
 
-However, if NLA_STRING is used, userspace can send us a string without
-the nul-termination. This is a problem since the string
-comparison will not match as the last byte may be not the
-nul-termination.
+CVE-2014-0055
 
-Fix this by skipping the comparison of the nul-termination if the
-attribute data is nul-terminated. Suggested by Thomas Graf.
-
-Cc: Florian Westphal <fw@strlen.de>
-Cc: Thomas Graf <tgraf@suug.ch>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- lib/nlattr.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/vhost/net.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/lib/nlattr.c
-+++ b/lib/nlattr.c
-@@ -303,9 +303,15 @@ int nla_memcmp(const struct nlattr *nla,
-  */
- int nla_strcmp(const struct nlattr *nla, const char *str)
- {
--	int len = strlen(str) + 1;
--	int d = nla_len(nla) - len;
-+	int len = strlen(str);
-+	char *buf = nla_data(nla);
-+	int attrlen = nla_len(nla);
-+	int d;
- 
-+	if (attrlen > 0 && buf[attrlen - 1] == '\0')
-+		attrlen--;
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -501,9 +501,13 @@ static int get_rx_bufs(struct vhost_virt
+ 			r = -ENOBUFS;
+ 			goto err;
+ 		}
+-		d = vhost_get_vq_desc(vq->dev, vq, vq->iov + seg,
++		r = vhost_get_vq_desc(vq->dev, vq, vq->iov + seg,
+ 				      ARRAY_SIZE(vq->iov) - seg, &out,
+ 				      &in, log, log_num);
++		if (unlikely(r < 0))
++			goto err;
 +
-+	d = attrlen - len;
- 	if (d == 0)
- 		d = memcmp(nla_data(nla), str, len);
- 
++		d = r;
+ 		if (d == vq->num) {
+ 			r = 0;
+ 			goto err;
 
 
