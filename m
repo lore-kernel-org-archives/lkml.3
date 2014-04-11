@@ -1,133 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755856AbaDKWvF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 18:51:05 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:51229 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752575AbaDKWvD convert rfc822-to-8bit (ORCPT
+	id S1755945AbaDKWwk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 18:52:40 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:35109 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754522AbaDKWwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 18:51:03 -0400
-X-AuditID: cbfec372-b7fa96d000006a7b-77-534871d5f983
-Date: Fri, 11 Apr 2014 19:50:55 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL for v3.15-rc1] media fixes
-Message-id: <20140411195055.29fa1b26@samsung.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-Importance: high
-X-Priority: 1 (Highest)
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLLMWRmVeSWpSXmKPExsVy+t/hQN2rhR7BBusPWlnMWb+GzeLyrjls
-	Fj0btrJaPOp7y+7A4nFixm8Wj8+b5AKYorhsUlJzMstSi/TtErgyetduZyu4Jlcx/9Ue9gbG
-	O+JdjJwcEgImEifeb2eDsMUkLtxbD2YLCSxhlLg4376LkQPI7mGS6GEBMVkEVCUaJoSDVLAJ
-	GEm8amxhBbFFgOzPL64A2VwczAKLGSU+Pl/PDpIQFtCVONf/lhHE5hUwlNh3bwczxConiVev
-	JzOB2JwCAhK/2mexQMTFJc7+eQlVLyjxY/I9sDizgLrEpHmLmCFsbYkn7y6wTmAUmIWkbBaS
-	sllIyhYwMq9iFC0tTi4oTkrPNdQrTswtLs1L10vOz93ECAnSoh2MzzZYHWIU4GBU4uH9qOER
-	LMSaWFZcmXuIUYKDWUmE920WUIg3JbGyKrUoP76oNCe1+BAjEwenVAPjLauQmzFdelO7zRbX
-	3Xwpk+Xh+ybyBtPvRRbSpcEMC9tX/Vf5+GHH9Jf3I7Rn6F6UaV5g68bHvNpu00qpyz/aEi+H
-	norNl3fy//0/2ndlX7RyudMbu8lWE7L/8P8SOlh4+9KMuDlXL3RlKF77XfablanEs9i346iH
-	/6QuVp0pjjFJTo9DboYpsRRnJBpqMRcVJwIA4IY98DACAAA=
+	Fri, 11 Apr 2014 18:52:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <5347CA51.8020003@samsung.com>
+References: <1397181640-18513-1-git-send-email-cw00.choi@samsung.com>
+	<18632148.yOYlTYattA@amdc1032>
+	<5347CA51.8020003@samsung.com>
+Date: Sat, 12 Apr 2014 07:52:37 +0900
+Message-ID: <CAGTfZH3Qnh_F8cHy+y9onvsuUxR+-F+3S=PgzGvsxdn0U1eGkw@mail.gmail.com>
+Subject: Re: [PATCH] iio: adc: exynos_adc: Control special clock of ADC to
+ support Exynos3250 ADC
+From: =?UTF-8?B?7LWc7LCs7Jqw?= <cwchoi00@gmail.com>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-iio@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        ch.naveen@samsung.com, jic23@kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Tomasz,
 
-Please pull from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+On Fri, Apr 11, 2014 at 7:56 PM, Tomasz Figa <t.figa@samsung.com> wrote:
+> Hi,
+>
+>
+> On 11.04.2014 11:41, Bartlomiej Zolnierkiewicz wrote:
+>>
+>>
+>> Hi,
+>>
+>> On Friday, April 11, 2014 11:00:40 AM Chanwoo Choi wrote:
+>>>
+>>> This patch control special clock for ADC in Exynos series's FSYS block.
+>>
+>>
+>> s/control/controls/
+>>
+>>> If special clock of ADC is registerd on clock list of common clk
+>>> framework,
+>>> Exynos ADC drvier have to control this clock.
+>>
+>>
+>> s/drvier/driver/
+>>
+>>> Exynos3250/Exynos4/Exynos5 has 'adc' clock as following:
+>>> - 'adc' clock: bus clock for ADC
+>>>
+>>> Exynos3250 has additional 'sclk_tsadc' clock as following:
+>>> - 'sclk_tsadc' clock: special clock for ADC which provide clock to
+>>> internal ADC
+>>>
+>>> Exynos 4210/4212/4412 and Exynos5250/5420 has not included 'sclk_tsadc'
+>>> clock
+>>> in FSYS_BLK. But, Exynos3250 based on Cortex-A7 has only included
+>>> 'sclk_tsadc'
+>>> clock in FSYS_BLK.
+>>>
+>>> Cc: Jonathan Cameron <jic23@kernel.org>
+>>> Cc: Kukjin Kim <kgene.kim@samsung.com>
+>>> Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>>> Cc: linux-iio@vger.kernel.org
+>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>> ---
+>>>   drivers/iio/adc/exynos_adc.c | 13 +++++++++++++
+>>>   1 file changed, 13 insertions(+)
+>
+>
+> This change alters DT bindings for Exynos ADC, so documentation must be
+> modified appropriately.
 
-For a series of bug fix patches for v3.15-rc1. Most are just driver fixes.
-There are some changes at remote controller core level, fixing some 
-definitions on a new API added for Kernel v3.15.
+OK, I'll add DT modification patch on next posting.
 
-It also adds the missing include at include/uapi/linux/v4l2-common.h, 
-to allow its compilation on userspace, as pointed by you.
+>
+>
+>>>
+>>> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+>>> index d25b262..4cd1975 100644
+>>> --- a/drivers/iio/adc/exynos_adc.c
+>>> +++ b/drivers/iio/adc/exynos_adc.c
+>>> @@ -88,6 +88,7 @@ struct exynos_adc {
+>>>         void __iomem            *regs;
+>>>         void __iomem            *enable_reg;
+>>>         struct clk              *clk;
+>>> +       struct clk              *sclk;
+>>>         unsigned int            irq;
+>>>         struct regulator        *vdd;
+>>>
+>>> @@ -308,6 +309,13 @@ static int exynos_adc_probe(struct platform_device
+>>> *pdev)
+>>>                 goto err_irq;
+>>>         }
+>>>
+>>> +       info->sclk = devm_clk_get(&pdev->dev, "sclk_tsadc");
+>>> +       if (IS_ERR(info->sclk)) {
+>>> +               dev_warn(&pdev->dev, "failed getting sclk clock, err =
+>>> %ld\n",
+>>> +
+>>> PTR_ERR(info->sclk));
+>>> +               info->sclk = NULL;
+>>> +       }
+>>> +
+>
+>
+> Is there any reason why we should have a warning on SoCs which don't have
+> this clock? I think this clock should be acquired only for affected SoCs.
 
-Thanks,
-Mauro
+You are right.
 
-The following changes since commit 463b21fb27509061b3e97fb4fa69f26d089ddaf4:
+As Sylwester comment on previous reply, I'll consider to use new compatible name
+to handle clock in only proper SoC according to compatible name.
 
-  Merge branch 'topic/exynos' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media (2014-04-05 13:10:00 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
-
-for you to fetch changes up to 32654fba2fdb417390efb1af29f1b5693bc91397:
-
-  [media] gpsca: remove the risk of a division by zero (2014-04-08 11:01:12 -0300)
-
-----------------------------------------------------------------
-Antti Palosaari (5):
-      [media] msi001: fix possible integer overflow
-      [media] msi3101: remove unused variable assignment
-      [media] msi3101: check I/O return values on stop streaming
-      [media] xc2028: add missing break to switch
-      [media] rtl28xxu: remove duplicate ID 0458:707f Genius TVGo DVB-T03
-
-Archit Taneja (9):
-      [media] v4l: ti-vpe: Make sure in job_ready that we have the needed number of dst_bufs
-      [media] v4l: ti-vpe: Use video_device_release_empty
-      [media] v4l: ti-vpe: Allow usage of smaller images
-      [media] v4l: ti-vpe: report correct capabilities in querycap
-      [media] v4l: ti-vpe: Use correct bus_info name for the device in querycap
-      [media] v4l: ti-vpe: Fix initial configuration queue data
-      [media] v4l: ti-vpe: zero out reserved fields in try_fmt
-      [media] v4l: ti-vpe: Set correct field parameter for output and capture buffers
-      [media] v4l: ti-vpe: retain v4l2_buffer flags for captured buffers
-
-Benjamin Larsson (1):
-      [media] r820t: fix size and init values
-
-David Härdeman (3):
-      [media] rc-core: do not change 32bit NEC scancode format for now
-      [media] rc-core: split dev->s_filter
-      [media] rc-core: remove generic scancode filter
-
-Malcolm Priestley (1):
-      [media] m88rs2000: fix sparse static warnings
-
-Mauro Carvalho Chehab (3):
-      [media] v4l2-common: fix warning when used on userpace
-      [media] stk1160: warrant a NUL terminated string
-      [media] gpsca: remove the risk of a division by zero
-
-Paul Bolle (1):
-      [media] drx-j: use customise option correctly
-
-Shuah Khan (1):
-      [media] lgdt3305: include sleep functionality in lgdt3304_ops
-
- drivers/media/dvb-frontends/drx39xyj/Kconfig |  2 +-
- drivers/media/dvb-frontends/lgdt3305.c       |  1 +
- drivers/media/dvb-frontends/m88rs2000.c      |  8 +--
- drivers/media/platform/ti-vpe/vpe.c          | 45 +++++++++----
- drivers/media/rc/img-ir/img-ir-hw.c          | 15 ++++-
- drivers/media/rc/img-ir/img-ir-nec.c         | 27 ++++----
- drivers/media/rc/ir-nec-decoder.c            |  5 +-
- drivers/media/rc/keymaps/rc-tivo.c           | 86 ++++++++++++------------
- drivers/media/rc/rc-main.c                   | 98 ++++++++++++++++++----------
- drivers/media/tuners/r820t.c                 |  3 +-
- drivers/media/tuners/tuner-xc2028.c          |  1 +
- drivers/media/usb/dvb-usb-v2/rtl28xxu.c      |  2 -
- drivers/media/usb/gspca/jpeg.h               |  4 +-
- drivers/media/usb/stk1160/stk1160-ac97.c     |  2 +-
- drivers/staging/media/msi3101/msi001.c       |  2 +-
- drivers/staging/media/msi3101/sdr-msi3101.c  | 15 +++--
- include/media/rc-core.h                      |  8 ++-
- include/uapi/linux/v4l2-common.h             |  2 +
- 18 files changed, 200 insertions(+), 126 deletions(-)
-
-
-
--- 
-
-Regards,
-Mauro
+Best Regards,
+Chanwoo Choi
