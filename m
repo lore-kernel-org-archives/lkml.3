@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755822AbaDKIvK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 04:51:10 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:47101 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750848AbaDKIvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 04:51:06 -0400
-Message-ID: <5347ACDE.7040407@ti.com>
-Date: Fri, 11 Apr 2014 11:50:38 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>, <dan.j.williams@intel.com>,
-        <vinod.koul@intel.com>
-CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <joelf@ti.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <mporter@linaro.org>
-Subject: Re: [PATCH v2 05/14] arm: common: edma: Select event queue 1 as default
- when booted with DT
-References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com> <1396357575-30585-6-git-send-email-peter.ujfalusi@ti.com> <5347A4FD.1030803@ti.com>
-In-Reply-To: <5347A4FD.1030803@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+	id S1756004AbaDKIvr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 04:51:47 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:37842 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755904AbaDKIvo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 04:51:44 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-e4-5347ad1e16ab
+Message-id: <5347AD19.7080905@samsung.com>
+Date: Fri, 11 Apr 2014 10:51:37 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.4.0
+MIME-version: 1.0
+To: Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>
+Cc: kgene.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
+        kyungmin.park@samsung.com, inki.dae@samsung.com,
+        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 12/27] ARM: dts: exynos3250: Add default interrupt-parent
+ connected with GIC
+References: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
+ <1397124377-16969-4-git-send-email-cw00.choi@samsung.com>
+ <20140411040050.GD14934@quad.lixom.net> <53477347.1080603@samsung.com>
+In-reply-to: <53477347.1080603@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJLMWRmVeSWpSXmKPExsVy+t/xa7pya92DDRZvZbG4/uU5q8XnDy3s
+	FpPuT2Cx6F1wlc3ibNMbdotNj6+xWlzeNYfNYsb5fUwWp65/BrImv2Sz2LtzMqMDt8fmJfUe
+	V040sXr0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxoI1fWwFZzkqXv/tZm9gbGHvYuTkkBAw
+	kbg14wkzhC0mceHeerYuRi4OIYGljBLt0x+wQzifGSW+br/OBlLFK6AlsfPGRTCbRUBV4tjF
+	PWA2m4CaxOeGR2A2P1DNmqbrLCC2qECExL3Gw6wQvYISPybfA4uLCHhKPPm7ixFkAbPAP0aJ
+	8yu2M4EkhAWSJE6dP8kMsfkUo8TEk++AEhwcnALaEuv/FYDUMAtYS6yctI0RwpaX2LzmLfME
+	RsFZSHbMQlI2C0nZAkbmVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxgh0fF1B+PSY1aHGAU4
+	GJV4eA9ccgsWYk0sK67MPcQowcGsJML7bJl7sBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZG8+J0
+	rvUzvkzczZ9zODjiI18K75R37N7zuh4naM9hf7b24ulTXDcWsU9Z1JyRkt15/v2vtVylEUZt
+	Ad1NfFvL7Y7Muq96rsVd6EhfYePm6ENOpccVisoLcrfUpyf+a0wr7Pl7R2/zJ83Jx/pyrvE0
+	S72U2rCE+93cZ38vbIi2Lc0VevnlyHMOJZbijERDLeai4kQAf67tAGwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2014 11:17 AM, Sekhar Nori wrote:
-> On Tuesday 01 April 2014 06:36 PM, Peter Ujfalusi wrote:
->> Use the EVENTQ_1 for default and leave the EVENTQ_0 to be used by high
->> priority channels, like audio.
+Hi Chanwoo,
+
+On 11.04.2014 06:44, Chanwoo Choi wrote:
+> Hi,
+>
+> On 04/11/2014 01:00 PM, Olof Johansson wrote:
+>> On Thu, Apr 10, 2014 at 07:06:02PM +0900, Chanwoo Choi wrote:
+>>> This patch add interrupt-parent node to connected with GIC.
+>>> All interrupt-related dt nodes need default interrupt-parent node.
+>>>
+>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 >>
->> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> 
-> Acked-by: Sekhar Nori <nsekhar@ti.com>
-> 
->> ---
->>  arch/arm/common/edma.c | 3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
->> index 86a8b263278f..19520e2519d9 100644
->> --- a/arch/arm/common/edma.c
->> +++ b/arch/arm/common/edma.c
->> @@ -1546,7 +1546,8 @@ static int edma_of_parse_dt(struct device *dev,
->>  
->>  	pdata->queue_priority_mapping = queue_priority_map;
->>  
->> -	pdata->default_queue = 0;
->> +	/* select queue 1 as default */
-> 
-> It will be nice to expand the comment with explanation of why this is
-> being chosen as default (lower priority queue by default for typical
-> bulk data transfer).
+>> There's no point in splitting these off in separate patches; fold them
+>> into one patch that introduces the SoC dtsi, please.
+>
+> OK, I will consolidate following two patches into one patch.
+>
+> [PATCH 11/27] ARM: dts: exynos3250: Add GIC dt node for Exynos3250
+> [PATCH 12/27] ARM: dts: exynos3250: Add default interrupt-parent connected with GIC
+>
 
-Yes, extended comment is a good idea.
+I believe the intention was to squash all the patches related to 
+exynos3250.dtsi into a single patch called "ARM: dts: Add device tree 
+sources for Exynos3250". To retain authorship information, signed-off-by 
+tags should be merged from all those patches too.
 
-For the next version I think I'm going to change the code around default
-TC/Queue and the non default queue selection, mostly based on Joel's comment:
-
-EVENTQ_1 as default queue.
-Set the EVENTQ_1 priority to 7
-EVENTQ_0 priority is going to stay 0 and EVENTQ_2 as 2
-
-Add new member to struct edma, like high_pri_queue.
-When we set the queue priorities in edma_probe() we look for the highest
-priority queue and save the number in high_pri_queue.
-
-I will rename the edma_request_non_default_queue() to
-edma_request_high_pri_queue() and it will assign the channel to the high
-priority queue.
-
-I think this way it is going to be more explicit and IMHO a bit more safer in
-a sense the we are going to get high priority when we ask for it.
-
--- 
-Péter
+Best regards,
+Tomasz
