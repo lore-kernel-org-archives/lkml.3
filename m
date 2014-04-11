@@ -1,128 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913AbaDKMKp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 08:10:45 -0400
-Received: from mta-out.inet.fi ([195.156.147.13]:44007 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754278AbaDKMKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 08:10:43 -0400
-Date: Fri, 11 Apr 2014 15:08:40 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Luiz Capitulino <lcapitulino@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mtosatti@redhat.com,
-        aarcange@redhat.com, mgorman@suse.de, akpm@linux-foundation.org,
-        andi@firstfloor.org, davidlohr@hp.com, rientjes@google.com,
-        isimatu.yasuaki@jp.fujitsu.com, yinghai@kernel.org, riel@redhat.com,
-        n-horiguchi@ah.jp.nec.com
-Subject: Re: [PATCH v3 0/5] hugetlb: add support gigantic page allocation at
- runtime
-Message-ID: <20140411120840.GA27458@node.dhcp.inet.fi>
-References: <1397152725-20990-1-git-send-email-lcapitulino@redhat.com>
+	id S1755092AbaDKMXu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 08:23:50 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:49154 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754325AbaDKMXs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 08:23:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397152725-20990-1-git-send-email-lcapitulino@redhat.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+In-Reply-To: <53475B74.30504@hitachi.com>
+References: <20140406201628.GA507@redhat.com> <1396995963.5056.46.camel@oc7886638347.ibm.com.usor.ibm.com>
+ <20140409154346.GB18486@redhat.com> <53469F95.1030709@redhat.com>
+ <5346A362.9010802@hitachi.com> <5346A8BE.5060401@redhat.com> <53475B74.30504@hitachi.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Fri, 11 Apr 2014 14:23:27 +0200
+Message-ID: <CAK1hOcMO7HUUihGwxYW8PkkLtA2mAZSc9J2JMuehHEWoX15rUQ@mail.gmail.com>
+Subject: Re: Re: [RFC PATCH 4/6] uprobes/x86: Emulate rip-relative call's
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 01:58:40PM -0400, Luiz Capitulino wrote:
-> [Full introduction right after the changelog]
-> 
-> Changelog
-> ---------
-> 
-> v3
-> 
-> - Dropped unnecessary WARN_ON() call [Kirill]
-> - Always check if the pfn range lies within a zone [Yasuaki]
-> - Renamed some function arguments for consistency
-> 
-> v2
-> 
-> - Rewrote allocation loop to avoid scanning unless PFNs [Yasuaki]
-> - Dropped incomplete multi-arch support [Naoya]
-> - Added patch to drop __init from prep_compound_gigantic_page()
-> - Restricted the feature to x86_64 (more details in patch 5/5)
-> - Added review-bys plus minor changelog changes
-> 
-> Introduction
-> ------------
-> 
-> The HugeTLB subsystem uses the buddy allocator to allocate hugepages during
-> runtime. This means that hugepages allocation during runtime is limited to
-> MAX_ORDER order. For archs supporting gigantic pages (that is, page sizes
-> greater than MAX_ORDER), this in turn means that those pages can't be
-> allocated at runtime.
-> 
-> HugeTLB supports gigantic page allocation during boottime, via the boot
-> allocator. To this end the kernel provides the command-line options
-> hugepagesz= and hugepages=, which can be used to instruct the kernel to
-> allocate N gigantic pages during boot.
-> 
-> For example, x86_64 supports 2M and 1G hugepages, but only 2M hugepages can
-> be allocated and freed at runtime. If one wants to allocate 1G gigantic pages,
-> this has to be done at boot via the hugepagesz= and hugepages= command-line
-> options.
-> 
-> Now, gigantic page allocation at boottime has two serious problems:
-> 
->  1. Boottime allocation is not NUMA aware. On a NUMA machine the kernel
->     evenly distributes boottime allocated hugepages among nodes.
-> 
->     For example, suppose you have a four-node NUMA machine and want
->     to allocate four 1G gigantic pages at boottime. The kernel will
->     allocate one gigantic page per node.
-> 
->     On the other hand, we do have users who want to be able to specify
->     which NUMA node gigantic pages should allocated from. So that they
->     can place virtual machines on a specific NUMA node.
-> 
->  2. Gigantic pages allocated at boottime can't be freed
-> 
-> At this point it's important to observe that regular hugepages allocated
-> at runtime don't have those problems. This is so because HugeTLB interface
-> for runtime allocation in sysfs supports NUMA and runtime allocated pages
-> can be freed just fine via the buddy allocator.
-> 
-> This series adds support for allocating gigantic pages at runtime. It does
-> so by allocating gigantic pages via CMA instead of the buddy allocator.
-> Releasing gigantic pages is also supported via CMA. As this series builds
-> on top of the existing HugeTLB interface, it makes gigantic page allocation
-> and releasing just like regular sized hugepages. This also means that NUMA
-> support just works.
-> 
-> For example, to allocate two 1G gigantic pages on node 1, one can do:
-> 
->  # echo 2 > \
->    /sys/devices/system/node/node1/hugepages/hugepages-1048576kB/nr_hugepages
-> 
-> And, to release all gigantic pages on the same node:
-> 
->  # echo 0 > \
->    /sys/devices/system/node/node1/hugepages/hugepages-1048576kB/nr_hugepages
-> 
-> Please, refer to patch 5/5 for full technical details.
-> 
-> Finally, please note that this series is a follow up for a previous series
-> that tried to extend the command-line options set to be NUMA aware:
-> 
->  http://marc.info/?l=linux-mm&m=139593335312191&w=2
-> 
-> During the discussion of that series it was agreed that having runtime
-> allocation support for gigantic pages was a better solution.
-> 
-> Luiz Capitulino (5):
->   hugetlb: prep_compound_gigantic_page(): drop __init marker
->   hugetlb: add hstate_is_gigantic()
->   hugetlb: update_and_free_page(): don't clear PG_reserved bit
->   hugetlb: move helpers up in the file
->   hugetlb: add support for gigantic page allocation at runtime
+On Fri, Apr 11, 2014 at 5:03 AM, Masami Hiramatsu
+<masami.hiramatsu.pt@hitachi.com> wrote:
+> At least, if we can trust Intel SDM, it says that depends
+> on the operand-size (insn->opnd_bytes) and stack segment
+> descriptor. Please check the SDM vol.1 6.2.2 Stack Alignment
+> and vol.2a, 3.2 Instructions (A-M), CALL--Call Procedure.
+> But we'd better check it on x86-32.
 
-Thanks for doing this. It was on my todo list for some time.
+I am past trusting CPU manuals on this one:
 
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+By now I verified on the real hardware that AMD and Intel CPUs
+handle this insn differently in 64-bit mode: Intel ignores 0x66 prefix.
+AMD treats this insn the same as in 32-bit mode: as 16-bit insn.
+
+(Should I submit a patch adding comment about it
+in x86-opcode-map.txt?)
+
+So there is no universally "correct" way to emulate it.
+
+We, theoretically, can decode it differently *depending
+on actual CPU(s) on the system*... do we really want
+to go *that* far? I guess not.
 
 -- 
- Kirill A. Shutemov
+vda
