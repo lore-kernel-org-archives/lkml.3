@@ -1,84 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511AbaDKJyP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 05:54:15 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:64533 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754232AbaDKJyM (ORCPT
+	id S1756717AbaDKJzR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 05:55:17 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:56499 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755686AbaDKJzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 05:54:12 -0400
+	Fri, 11 Apr 2014 05:55:13 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s3B9t44u013842, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: <netdev@vger.kernel.org>
+CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <sejeong.na@samsung.com>
+Subject: [PATCH net] r8152: check RTL8152_UNPLUG
+Date: Fri, 11 Apr 2014 17:54:31 +0800
+Message-ID: <1394712342-15778-4-Taiwan-albertk@realtek.com>
+X-Mailer: Microsoft Office Outlook 11
 MIME-Version: 1.0
-In-Reply-To: <20140410145621.GC27654@localhost.localdomain>
-References: <CAKohpon3vJzL51V9aOBcXKJC4nr3K-0q77HsxFi+=ACUqNqhcA@mail.gmail.com>
-	<20140410145621.GC27654@localhost.localdomain>
-Date: Fri, 11 Apr 2014 15:24:11 +0530
-Message-ID: <CAKohpo=auNFsivuM21pDxJ0e4sP-ScWc9EPvzhT6qud_UBSJqw@mail.gmail.com>
-Subject: Re: [Query]: tick-sched: can idle_active be false in tick_nohz_idle_exit()?
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [172.21.71.44]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 April 2014 20:26, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> When a dynticks idle CPU is woken up (typically with an IPI), tick_nohz_stop_idle()
-> is called on interrupt entry but, because this is a waking up IPI, tick_nohz_start_idle()
-> won't be called. The reason is that need_resched() prevents tick_nohz_irq_exit() to be
-> called in irq_exit().
->
-> After all if we know that the CPU is going to exit the idle task, we don't need to account
-> any more idle time. We also don't need to retry to enter in dynticks idle mode since we
-> are going to restart the tick with tick_nohz_idle_exit().
->
-> So in case of wake up IPIs, we may end up with !ts->idle_active in tick_nohz_idle_exit() :)
->
-> I must confess this is not obvious.
+When the device is unplugged, the driver would try to disable the
+device. Add checking the flag of RTL8152_UNPLUG to skip setting
+the device when it is unplugged. This could shorten the time of
+unloading the driver.
 
-I agree.. I didn't had a clue that this can happen. Good that I asked
-this question :)
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r8152.c | 48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 48 insertions(+)
 
-> It confused me as well when I met that part. A small
-> comment in tick_nohz_idle_exit() would be welcome ;)
+diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
+index 18e12a3..3fbfb08 100644
+--- a/drivers/net/usb/r8152.c
++++ b/drivers/net/usb/r8152.c
+@@ -929,6 +929,9 @@ static int read_mii_word(struct net_device *netdev, int phy_id, int reg)
+ 	struct r8152 *tp = netdev_priv(netdev);
+ 	int ret;
+ 
++	if (test_bit(RTL8152_UNPLUG, &tp->flags))
++		return -ENODEV;
++
+ 	if (phy_id != R8152_PHY_ID)
+ 		return -EINVAL;
+ 
+@@ -949,6 +952,9 @@ void write_mii_word(struct net_device *netdev, int phy_id, int reg, int val)
+ {
+ 	struct r8152 *tp = netdev_priv(netdev);
+ 
++	if (test_bit(RTL8152_UNPLUG, &tp->flags))
++		return;
++
+ 	if (phy_id != R8152_PHY_ID)
+ 		return;
+ 
+@@ -1962,6 +1968,9 @@ static int rtl_enable(struct r8152 *tp)
+ 
+ static int rtl8152_enable(struct r8152 *tp)
+ {
++	if (test_bit(RTL8152_UNPLUG, &tp->flags))
++		return -ENODEV;
++
+ 	set_tx_qlen(tp);
+ 	rtl_set_eee_plus(tp);
+ 
+@@ -1994,6 +2003,9 @@ static void r8153_set_rx_agg(struct r8152 *tp)
+ 
+ static int rtl8153_enable(struct r8152 *tp)
+ {
++	if (test_bit(RTL8152_UNPLUG, &tp->flags))
++		return -ENODEV;
++
+ 	set_tx_qlen(tp);
+ 	rtl_set_eee_plus(tp);
+ 	r8153_set_rx_agg(tp);
+@@ -2006,6 +2018,11 @@ static void rtl8152_disable(struct r8152 *tp)
+ 	u32 ocp_data;
+ 	int i;
+ 
++	if (test_bit(RTL8152_UNPLUG, &tp->flags)) {
++		rtl_drop_queued_tx(tp);
++		return;
++	}
++
+ 	ocp_data = ocp_read_dword(tp, MCU_TYPE_PLA, PLA_RCR);
+ 	ocp_data &= ~RCR_ACPT_ALL;
+ 	ocp_write_dword(tp, MCU_TYPE_PLA, PLA_RCR, ocp_data);
+@@ -2232,6 +2249,9 @@ static void r8152b_exit_oob(struct r8152 *tp)
+ 	u32 ocp_data;
+ 	int i;
+ 
++	if (test_bit(RTL8152_UNPLUG, &tp->flags))
++		return;
++
+ 	ocp_data = ocp_read_dword(tp, MCU_TYPE_PLA, PLA_RCR);
+ 	ocp_data &= ~RCR_ACPT_ALL;
+ 	ocp_write_dword(tp, MCU_TYPE_PLA, PLA_RCR, ocp_data);
+@@ -2460,6 +2480,9 @@ static void r8153_first_init(struct r8152 *tp)
+ 	u32 ocp_data;
+ 	int i;
+ 
++	if (test_bit(RTL8152_UNPLUG, &tp->flags))
++		return;
++
+ 	rxdy_gated_en(tp, true);
+ 	r8153_teredo_off(tp);
+ 
+@@ -2687,6 +2710,11 @@ out:
+ 
+ static void rtl8152_down(struct r8152 *tp)
+ {
++	if (test_bit(RTL8152_UNPLUG, &tp->flags)) {
++		rtl_drop_queued_tx(tp);
++		return;
++	}
++
+ 	r8152_power_cut_en(tp, false);
+ 	r8152b_disable_aldps(tp);
+ 	r8152b_enter_oob(tp);
+@@ -2695,6 +2723,11 @@ static void rtl8152_down(struct r8152 *tp)
+ 
+ static void rtl8153_down(struct r8152 *tp)
+ {
++	if (test_bit(RTL8152_UNPLUG, &tp->flags)) {
++		rtl_drop_queued_tx(tp);
++		return;
++	}
++
+ 	r8153_u1u2en(tp, false);
+ 	r8153_power_cut_en(tp, false);
+ 	r8153_disable_aldps(tp);
+@@ -2904,6 +2937,9 @@ static void r8152b_init(struct r8152 *tp)
+ {
+ 	u32 ocp_data;
+ 
++	if (test_bit(RTL8152_UNPLUG, &tp->flags))
++		return;
++
+ 	if (tp->version == RTL_VER_01) {
+ 		ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_LED_FEATURE);
+ 		ocp_data &= ~LED_MODE_MASK;
+@@ -2939,6 +2975,9 @@ static void r8153_init(struct r8152 *tp)
+ 	u32 ocp_data;
+ 	int i;
+ 
++	if (test_bit(RTL8152_UNPLUG, &tp->flags))
++		return;
++
+ 	r8153_u1u2en(tp, false);
+ 
+ 	for (i = 0; i < 500; i++) {
+@@ -3213,6 +3252,9 @@ static int rtl8152_ioctl(struct net_device *netdev, struct ifreq *rq, int cmd)
+ 	struct mii_ioctl_data *data = if_mii(rq);
+ 	int res;
+ 
++	if (test_bit(RTL8152_UNPLUG, &tp->flags))
++		return -ENODEV;
++
+ 	res = usb_autopm_get_interface(tp->intf);
+ 	if (res < 0)
+ 		goto out;
+@@ -3293,12 +3335,18 @@ static void r8152b_get_version(struct r8152 *tp)
+ 
+ static void rtl8152_unload(struct r8152 *tp)
+ {
++	if (test_bit(RTL8152_UNPLUG, &tp->flags))
++		return;
++
+ 	if (tp->version != RTL_VER_01)
+ 		r8152_power_cut_en(tp, true);
+ }
+ 
+ static void rtl8153_unload(struct r8152 *tp)
+ {
++	if (test_bit(RTL8152_UNPLUG, &tp->flags))
++		return;
++
+ 	r8153_power_cut_en(tp, true);
+ }
+ 
+-- 
+1.9.0
 
-Looks hard. I tried for a small comment and this is the smallest I could get:
-
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index c2d868d..26cf5bb 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -925,6 +925,22 @@ void tick_nohz_idle_exit(void)
-
-        ts->inidle = 0;
-
-+       /*
-+        * Can idle_active be false here?
-+        * Ideally this would be the sequence of calls:
-+        * - tick_nohz_idle_enter(), i.e. idle_active = true;
-+        * - local_irq_disable()
-+        * - IDLE
-+        * - wake up due to IPI or other interrupt
-+        * - local_irq_enable()
-+        * - tick_nohz_irq_enter(), i.e. idle_active = false;
-+        * - tick_nohz_irq_exit(), i.e. idle_active = true; This is not called
-+        *   in case of IPI's as need_resched() will prevent that in
-+        *   tick_irq_exit(), as we don't need to account any more for idle time
-+        *   or try to enter dyntics mode (We are going to exit idle state).
-+        *
-+        * - tick_nohz_idle_exit()
-+        */
-        if (ts->idle_active || ts->tick_stopped)
-                now = ktime_get();
-
-
-I am preparing a cleanup patchset (separate from the timer/hrtimers 36 patch
-set) for kernel/time/ and will add this change to that.. I am waiting
-for the merge
-window to close and Thomas to comment on my timers/hrtimers patches first.
-Only then will I send another 40 :)
-
---
-viresh
