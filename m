@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422869AbaDKQjZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:39:25 -0400
+	id S1759799AbaDKQjd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:39:33 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:56631 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759599AbaDKQJF (ORCPT
+	with ESMTP id S1422827AbaDKQJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:05 -0400
+	Fri, 11 Apr 2014 12:09:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heinz Graalfs <graalfs@linux.vnet.ibm.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
+        Erik Hugne <erik.hugne@ericsson.com>,
+        Jon Maloy <jon.maloy@ericsson.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 43/65] virtio-net: correct error handling of virtqueue_kick()
-Date: Fri, 11 Apr 2014 09:11:15 -0700
-Message-Id: <20140411161003.625009111@linuxfoundation.org>
+Subject: [PATCH 3.13 40/65] tipc: fix spinlock recursion bug for failed subscriptions
+Date: Fri, 11 Apr 2014 09:11:12 -0700
+Message-Id: <20140411161003.229305588@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
 References: <20140411160957.714773410@linuxfoundation.org>
@@ -30,63 +28,138 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Erik Hugne <erik.hugne@ericsson.com>
 
-[ Upstream commit 681daee2443291419c57cccb0671f5f94a839005 ]
+[ Upstream commit a5d0e7c037119484a7006b883618bfa87996cb41 ]
 
-Current error handling of virtqueue_kick() was wrong in two places:
-- The skb were freed immediately when virtqueue_kick() fail during
-  xmit. This may lead double free since the skb was not detached from
-  the virtqueue.
-- try_fill_recv() returns false when virtqueue_kick() fail. This will
-  lead unnecessary rescheduling of refill work.
+If a topology event subscription fails for any reason, such as out
+of memory, max number reached or because we received an invalid
+request the correct behavior is to terminate the subscribers
+connection to the topology server. This is currently broken and
+produces the following oops:
 
-Actually, it's safe to just ignore the kick failure in those two
-places. So this patch fixes this by partially revert commit
-67975901183799af8e93ec60e322f9e2a1940b9b.
+[27.953662] tipc: Subscription rejected, illegal request
+[27.955329] BUG: spinlock recursion on CPU#1, kworker/u4:0/6
+[27.957066]  lock: 0xffff88003c67f408, .magic: dead4ead, .owner: kworker/u4:0/6, .owner_cpu: 1
+[27.958054] CPU: 1 PID: 6 Comm: kworker/u4:0 Not tainted 3.14.0-rc6+ #5
+[27.960230] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[27.960874] Workqueue: tipc_rcv tipc_recv_work [tipc]
+[27.961430]  ffff88003c67f408 ffff88003de27c18 ffffffff815c0207 ffff88003de1c050
+[27.962292]  ffff88003de27c38 ffffffff815beec5 ffff88003c67f408 ffffffff817f0a8a
+[27.963152]  ffff88003de27c58 ffffffff815beeeb ffff88003c67f408 ffffffffa0013520
+[27.964023] Call Trace:
+[27.964292]  [<ffffffff815c0207>] dump_stack+0x45/0x56
+[27.964874]  [<ffffffff815beec5>] spin_dump+0x8c/0x91
+[27.965420]  [<ffffffff815beeeb>] spin_bug+0x21/0x26
+[27.965995]  [<ffffffff81083df6>] do_raw_spin_lock+0x116/0x140
+[27.966631]  [<ffffffff815c6215>] _raw_spin_lock_bh+0x15/0x20
+[27.967256]  [<ffffffffa0008540>] subscr_conn_shutdown_event+0x20/0xa0 [tipc]
+[27.968051]  [<ffffffffa000fde4>] tipc_close_conn+0xa4/0xb0 [tipc]
+[27.968722]  [<ffffffffa00101ba>] tipc_conn_terminate+0x1a/0x30 [tipc]
+[27.969436]  [<ffffffffa00089a2>] subscr_conn_msg_event+0x1f2/0x2f0 [tipc]
+[27.970209]  [<ffffffffa0010000>] tipc_receive_from_sock+0x90/0xf0 [tipc]
+[27.970972]  [<ffffffffa000fa79>] tipc_recv_work+0x29/0x50 [tipc]
+[27.971633]  [<ffffffff8105dbf5>] process_one_work+0x165/0x3e0
+[27.972267]  [<ffffffff8105e869>] worker_thread+0x119/0x3a0
+[27.972896]  [<ffffffff8105e750>] ? manage_workers.isra.25+0x2a0/0x2a0
+[27.973622]  [<ffffffff810648af>] kthread+0xdf/0x100
+[27.974168]  [<ffffffff810647d0>] ? kthread_create_on_node+0x1a0/0x1a0
+[27.974893]  [<ffffffff815ce13c>] ret_from_fork+0x7c/0xb0
+[27.975466]  [<ffffffff810647d0>] ? kthread_create_on_node+0x1a0/0x1a0
 
-Fixes 67975901183799af8e93ec60e322f9e2a1940b9b
-(virtio_net: verify if virtqueue_kick() succeeded).
+The recursion occurs when subscr_terminate tries to grab the
+subscriber lock, which is already taken by subscr_conn_msg_event.
+We fix this by checking if the request to establish a new
+subscription was successful, and if not we initiate termination of
+the subscriber after we have released the subscriber lock.
 
-Cc: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Erik Hugne <erik.hugne@ericsson.com>
+Reviewed-by: Jon Maloy <jon.maloy@ericsson.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/virtio_net.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ net/tipc/subscr.c |   29 +++++++++++++++--------------
+ 1 file changed, 15 insertions(+), 14 deletions(-)
 
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -633,8 +633,7 @@ static bool try_fill_recv(struct receive
- 	} while (rq->vq->num_free);
- 	if (unlikely(rq->num > rq->max))
- 		rq->max = rq->num;
--	if (unlikely(!virtqueue_kick(rq->vq)))
--		return false;
-+	virtqueue_kick(rq->vq);
- 	return !oom;
+--- a/net/tipc/subscr.c
++++ b/net/tipc/subscr.c
+@@ -263,9 +263,9 @@ static void subscr_cancel(struct tipc_su
+  *
+  * Called with subscriber lock held.
+  */
+-static struct tipc_subscription *subscr_subscribe(struct tipc_subscr *s,
+-					     struct tipc_subscriber *subscriber)
+-{
++static int subscr_subscribe(struct tipc_subscr *s,
++			    struct tipc_subscriber *subscriber,
++			    struct tipc_subscription **sub_p) {
+ 	struct tipc_subscription *sub;
+ 	int swap;
+ 
+@@ -276,23 +276,21 @@ static struct tipc_subscription *subscr_
+ 	if (s->filter & htohl(TIPC_SUB_CANCEL, swap)) {
+ 		s->filter &= ~htohl(TIPC_SUB_CANCEL, swap);
+ 		subscr_cancel(s, subscriber);
+-		return NULL;
++		return 0;
+ 	}
+ 
+ 	/* Refuse subscription if global limit exceeded */
+ 	if (atomic_read(&subscription_count) >= TIPC_MAX_SUBSCRIPTIONS) {
+ 		pr_warn("Subscription rejected, limit reached (%u)\n",
+ 			TIPC_MAX_SUBSCRIPTIONS);
+-		subscr_terminate(subscriber);
+-		return NULL;
++		return -EINVAL;
+ 	}
+ 
+ 	/* Allocate subscription object */
+ 	sub = kmalloc(sizeof(*sub), GFP_ATOMIC);
+ 	if (!sub) {
+ 		pr_warn("Subscription rejected, no memory\n");
+-		subscr_terminate(subscriber);
+-		return NULL;
++		return -ENOMEM;
+ 	}
+ 
+ 	/* Initialize subscription object */
+@@ -306,8 +304,7 @@ static struct tipc_subscription *subscr_
+ 	    (sub->seq.lower > sub->seq.upper)) {
+ 		pr_warn("Subscription rejected, illegal request\n");
+ 		kfree(sub);
+-		subscr_terminate(subscriber);
+-		return NULL;
++		return -EINVAL;
+ 	}
+ 	INIT_LIST_HEAD(&sub->nameseq_list);
+ 	list_add(&sub->subscription_list, &subscriber->subscription_list);
+@@ -320,8 +317,8 @@ static struct tipc_subscription *subscr_
+ 			     (Handler)subscr_timeout, (unsigned long)sub);
+ 		k_start_timer(&sub->timer, sub->timeout);
+ 	}
+-
+-	return sub;
++	*sub_p = sub;
++	return 0;
  }
  
-@@ -840,7 +839,7 @@ static netdev_tx_t start_xmit(struct sk_
- 	err = xmit_skb(sq, skb);
+ /* Handle one termination request for the subscriber */
+@@ -335,10 +332,14 @@ static void subscr_conn_msg_event(int co
+ 				  void *usr_data, void *buf, size_t len)
+ {
+ 	struct tipc_subscriber *subscriber = usr_data;
+-	struct tipc_subscription *sub;
++	struct tipc_subscription *sub = NULL;
  
- 	/* This should not happen! */
--	if (unlikely(err) || unlikely(!virtqueue_kick(sq->vq))) {
-+	if (unlikely(err)) {
- 		dev->stats.tx_fifo_errors++;
- 		if (net_ratelimit())
- 			dev_warn(&dev->dev,
-@@ -849,6 +848,7 @@ static netdev_tx_t start_xmit(struct sk_
- 		kfree_skb(skb);
- 		return NETDEV_TX_OK;
- 	}
-+	virtqueue_kick(sq->vq);
- 
- 	/* Don't wait up for transmitted skbs to be freed. */
- 	skb_orphan(skb);
+ 	spin_lock_bh(&subscriber->lock);
+-	sub = subscr_subscribe((struct tipc_subscr *)buf, subscriber);
++	if (subscr_subscribe((struct tipc_subscr *)buf, subscriber, &sub) < 0) {
++		spin_unlock_bh(&subscriber->lock);
++		subscr_terminate(subscriber);
++		return;
++	}
+ 	if (sub)
+ 		tipc_nametbl_subscribe(sub);
+ 	spin_unlock_bh(&subscriber->lock);
 
 
