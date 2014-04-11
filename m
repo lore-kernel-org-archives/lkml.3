@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458AbaDKHp3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 03:45:29 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:52997 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755402AbaDKHp2 (ORCPT
+	id S1754999AbaDKHte (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 03:49:34 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:58426 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750909AbaDKHtc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 03:45:28 -0400
-Date: Fri, 11 Apr 2014 00:45:22 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>, jack <jack@suse.cz>,
-        akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/1] FS: Add generic data flush to fsync
-Message-ID: <20140411074522.GA15518@infradead.org>
-References: <20140411065242.42916952dd5d8e4e53848b3b@skynet.be>
+	Fri, 11 Apr 2014 03:49:32 -0400
+X-IronPort-AV: E=Sophos;i="4.97,839,1389715200"; 
+   d="scan'208";a="29139291"
+From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+To: <shawn.guo@freescale.com>, <kernel@pengutronix.de>,
+        <linux@arm.linux.org.uk>
+CC: <linux-kernel@vger.kernel.org>, Duan Jiong <duanj.fnst@cn.fujitsu.com>
+Subject: [PATCH] ARM: imx: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
+Date: Fri, 11 Apr 2014 15:46:41 +0800
+Message-ID: <1397202401-16023-1-git-send-email-duanj.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140411065242.42916952dd5d8e4e53848b3b@skynet.be>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain
+X-Originating-IP: [10.167.225.86]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 06:52:42AM +0200, Fabian Frederick wrote:
-> Currently, there's no generic HW flush management support in kernel.
-> Only 7 filesystems have their own way to manage the barrier flag.
-> 
-> This patch adds MS_BARRIER in sb_flags and conditionnaly issues the flush
-> in generic_file_fsync.
+This patch fixes coccinelle error regarding usage of IS_ERR and
+PTR_ERR instead of PTR_ERR_OR_ZERO.
 
-Please don't add a binary mount option for something thast already is a
-text option in many filesystems.  We can actually enable/disable cache
-flushes at the block device level, so I think this can be
-unconditional.
+Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+---
+ arch/arm/mach-imx/mx31moboard-smartbot.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/arch/arm/mach-imx/mx31moboard-smartbot.c b/arch/arm/mach-imx/mx31moboard-smartbot.c
+index 04ae45d..af6550e 100644
+--- a/arch/arm/mach-imx/mx31moboard-smartbot.c
++++ b/arch/arm/mach-imx/mx31moboard-smartbot.c
+@@ -141,10 +141,7 @@ static int __init smartbot_otg_host_init(void)
+ 		return -ENODEV;
+ 
+ 	pdev = imx31_add_mxc_ehci_otg(&otg_host_pdata);
+-	if (IS_ERR(pdev))
+-		return PTR_ERR(pdev);
+-
+-	return 0;
++	return PTR_ERR_OR_ZERO(pdev);
+ }
+ #else
+ static inline int smartbot_otg_host_init(void) { return 0; }
+-- 
+1.8.3.1
+
