@@ -1,74 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755070AbaDKGzT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 02:55:19 -0400
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.113]:16264 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754989AbaDKGzP (ORCPT
+	id S1754836AbaDKGyy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 02:54:54 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:51071 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753711AbaDKGys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 02:55:15 -0400
-X-Greylist: delayed 386 seconds by postgrey-1.27 at vger.kernel.org; Fri, 11 Apr 2014 02:55:15 EDT
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-6.tower-194.messagelabs.com!1397198926!14145756!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.1; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Fri, 11 Apr 2014 08:48:46 +0200
-Date: Fri, 11 Apr 2014 08:48:40 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: MCB fixes for 3.15-rc1
-Message-ID: <20140411064829.GA11402@jtlinux>
+	Fri, 11 Apr 2014 02:54:48 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s3B6s0So016296, This message is accepted by code: ctloc85258
+From: <rogerable@realtek.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Chris Ball <chris@printf.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oliver Neukum <oneukum@suse.de>
+CC: <rogerable@realtek.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <driverdev-devel@linuxdriverproject.org>,
+        <wei_wang@realsil.com.cn>, <micky_ching@realsil.com.cn>
+Subject: [PATCH v7 0/4] Add modules for realtek USB card reader
+Date: Fri, 11 Apr 2014 14:53:19 +0800
+Message-ID: <1397199203-2235-1-git-send-email-rogerable@realtek.com>
+X-Mailer: git-send-email 1.8.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: [192.1.1.31]
+Content-Type: text/plain
+X-Originating-IP: [172.21.81.189]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+From: Roger Tseng <rogerable@realtek.com>
 
-Please pull this change for drivers/mcb.
+This patchset adds modules to support Realtek USB vendor specific class flash
+card reader: one base module in MFD subsystem and two host modules in both mmc
+and memstick subsystems. The architecture is similar to rtsx_pci.
 
-Thanks
-	Johannes
+This work is done primarily to replace the staging driver: staging/rts5139,
+which doesn't utilize mmc nor memstick subsystems. Once the patchset or its
+revision is applied, we may need Greg's help to remove the staging one.
 
---
+v2:
+1. Fix potential buffer overflow in rtsx_usb_seq_write_register()
+2. Remove unnecessary casting and messages
+3. Revise coding style and white spaces
 
-The following changes since commit 9e897e13bd46fa03485468609741974259a8c573:
+v3:
+1. Fix MMC detection fail when under xhci
+2. Minor change of pm_runtime behavior in rtsx_usb_ms to prevent some rare
+   freeze due to erroneous Memstick card(not MS-Pro)
+3. Further revise coding style as suggested in the thread of v2
+4. Using managed resources: devm_*
+5. Change license from "GPL v2 and later" to "GPL v2"
 
-  Merge branch 'for-linus' of git://git.open-osd.org/linux-open-osd (2014-04-10 14:33:02 -0700)
+v4:
+1. Remove invocations to deprecated/removed mmc_suspend|resume_host APIs and
+   unnecessary platform device pm routines
+2. Support CRC-ignored R1 response for CMD13 in response to commit:
+   a27fbf2f067b0cd6f172c8b696b9a44c58bfaa7a: mmc: add ignorance case for 
+   CMD13 CRC error
+3. Remove unnecessary #ifdef CONFIG_PM_RUNTIME
 
-are available in the git repository at:
+v5:
+1. rtsx_usb_ms.c: adding header inclusion, removing unnecessary NULL checking,
+   and add cancel_work_sync in removal handler to wait possible pending
+   works.
+(Changes only rtsx_usb_ms. Other files remain the same to v4)
 
+v6:
+NOTE:since the v3 of patch 1/3 (rtsx_usb) has been merged, only diffs are
+submitted and splitted into two.
+1. rtsx_usb.c: fix possible race conditions:
+   rtsx_usb_bulk_transfer_sglist(): del_timer() => del_timer_sync()
+   rtsx_usb_probe(): move setup_timer() before mfd_add_devices() and also
+		     remove unnecessary init_timer()
+2. rtsx_usb.c: rtsx_usb_suspend(): add comments to LED turn-off
+(Changes only rtsx_usb.c. Other files remain the same to v5)
 
-  git://github.com/morbidrsa/linux.git mcb
+v7:
+1. rtsx_usb_sdmmc: remove unnecessary pm usage balancing during removal
+2. rtsx_usb_sdmmc: add Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
 
-for you to fetch changes up to e383c2430770c4bb080b4915826f34b729b33bbc:
+Roger Tseng (4):
+  [v6 fix] mfd/rtsx_usb: fix possible race condition
+  [v6 fix] mfd/rtsx_usb: add comment in rtsx_usb_suspend
+  mmc: Add realtek USB sdmmc host driver
+  memstick: Add realtek USB memstick host driver
 
-  drivers: mcb: fix memory leak in chameleon_parse_cells() error path (2014-04-11 08:37:37 +0200)
+ drivers/memstick/host/Kconfig       |   10 +
+ drivers/memstick/host/Makefile      |    1 +
+ drivers/memstick/host/rtsx_usb_ms.c |  839 ++++++++++++++++++++
+ drivers/mfd/rtsx_usb.c              |   14 +-
+ drivers/mmc/host/Kconfig            |    7 +
+ drivers/mmc/host/Makefile           |    1 +
+ drivers/mmc/host/rtsx_usb_sdmmc.c   | 1455 +++++++++++++++++++++++++++++++++++
+ 7 files changed, 2323 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/memstick/host/rtsx_usb_ms.c
+ create mode 100644 drivers/mmc/host/rtsx_usb_sdmmc.c
 
-----------------------------------------------------------------
-Christoph Jaeger (1):
-      drivers: mcb: fix memory leak in chameleon_parse_cells() error path
+-- 
+1.8.2
 
- drivers/mcb/mcb-parse.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/mcb/mcb-parse.c b/drivers/mcb/mcb-parse.c
-index d1278b5..0049269 100644
---- a/drivers/mcb/mcb-parse.c
-+++ b/drivers/mcb/mcb-parse.c
-@@ -141,6 +141,7 @@ int chameleon_parse_cells(struct mcb_bus *bus, phys_addr_t mapbase,
- 		default:
- 			pr_err("Invalid chameleon descriptor type 0x%x\n",
- 				dtype);
-+			kfree(header);
- 			return -EINVAL;
- 		}
- 		num_cells++;
