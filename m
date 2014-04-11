@@ -1,143 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991AbaDKSfM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 14:35:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57450 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754577AbaDKSfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 14:35:07 -0400
-Date: Fri, 11 Apr 2014 14:34:52 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: acme@kernel.org, namhyung@kernel.org, eranian@google.com,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 5/5] perf: Enable multiple hist_entry_group output
-Message-ID: <20140411183452.GK8488@redhat.com>
-References: <1397160661-33395-1-git-send-email-dzickus@redhat.com>
- <1397160661-33395-6-git-send-email-dzickus@redhat.com>
- <20140411173000.GC22707@krava.brq.redhat.com>
+	id S1755068AbaDKSgb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 14:36:31 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:48686 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754779AbaDKSg3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 14:36:29 -0400
+Date: Fri, 11 Apr 2014 20:36:26 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Tony Lindgren <tony@atomide.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Paul Walmsley <paul@pwsan.com>, Rob Herring <robherring2@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] of/platform: Fix no irq domain found errors when
+ populating interrupts
+Message-ID: <20140411183625.GB3673@mithrandir>
+References: <20140410213808.GA5990@atomide.com>
+ <20140411092028.GI16119@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DBIVS5p969aUjpLe"
 Content-Disposition: inline
-In-Reply-To: <20140411173000.GC22707@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140411092028.GI16119@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 07:30:00PM +0200, Jiri Olsa wrote:
-> On Thu, Apr 10, 2014 at 04:11:01PM -0400, Don Zickus wrote:
-> > Enable multiple hist_entry_group groups in the output based on a sort
-> > method.
-> > 
-> > Currently only 'perf report' is hooked in with '--group-sort='.  The choices
-> > are cpu, pid, and cacheline.  Only --stdio works right now.  I haven't figured
-> > out how the other outputs work.
-> > 
-> > Sample output from 'perf mem record -a grep -r foo /* > /dev/null'
-> > 
-> > (normal) perf mem report --percent-limit=1.0 --stdio
-> > 
-> >  Overhead       Samples
-> >   Local Weight             Memory access                                      Symbol
-> >  ........  ............  ............  ........................  ........................
-> > 
-> >      4.13%             1  1759          Uncached hit              [k] ahci_scr_read
-> >      1.16%             1  492           L1 hit                    [k] _raw_read_lock
-> > 
-> > (cpu groups) perf mem report --group-sort=cpu --percent-limit=1.0 --stdio
-> > 
-> >  Overhead       Samples  CPU
-> >   Local Weight             Memory access                                      Symbol
-> >  ........  ............  ............  ........................  ........................
-> > 
-> >     28.80%          1239   25
-> > 	     3.07%               377           L1 hit                    [k] complete_walk
-> > 	     2.76%               339           LFB hit                   [k] update_cfs_shares
-> > 	     2.66%               326           LFB hit                   [k] copy_user_enhanced_f
-> > 	     2.11%               259           Local RAM hit             [k] copy_user_enhanced_f
-> > 	     1.84%               226           LFB hit                   [k] copy_user_enhanced_f
-> > 	     1.74%               213           LFB hit                   [k] copy_user_enhanced_f
-> > 	     1.53%               187           LFB hit                   [k] copy_user_enhanced_f
-> > 	     1.04%               128           LFB hit                   [k] copy_user_enhanced_f
-> > 	     1.01%               124           LFB hit                   [k] copy_user_enhanced_f
-> >     27.44%           990    7
-> > 	    15.06%               1759          Uncached hit              [k] ahci_scr_read
-> > 	     4.21%               492           L1 hit                    [k] _raw_read_lock
-> > 	     1.04%               122           LFB hit                   [k] find_busiest_group
-> > 	     1.02%            1  7             L1 hit                    [.] __gconv_transform_ut
-> >     20.34%          1010    0
-> > 	     4.04%            5  7             L1 hit                    [k] poll_idle
-> > 	     3.56%               308           Local RAM hit             [k] copy_user_enhanced_f
-> > 	     2.59%               224           L3 hit                    [k] copy_user_enhanced_f
-> > 	     2.12%               184           Local RAM hit             [k] copy_user_enhanced_f
-> > 	     1.54%            1  7             L1 hit                    [.] __gconv_transform_ut
-> 
-> nice, that looks very usefull
-> 
-> Correct me if I'm wrong, but your current design allows to define
-> just one group, right?
-> 
-> so, current code can do following CPU sorting:
-> 
->    Overhead   CPU
->    ........   ...
->    90%        0
->    10%        1
-> 
-> 
-> and with your changes we could do:
-> 
->    Overhead   CPU  symbol
->    ........   ...  ......
->    90%        0
->         50%        krava1
->         20%        krava2
->         30%        krava3
-> 
->    10%        1
->         50%        krava4
->         50%        krava5
->   
-> 
-> I wonder we could go more generic and allow more nested groups,
-> like eg allow group sort on cpu and pid (or more):
-> 
->    Overhead   CPU  pid  symbol
->    ........   ...  ...  ......
->    90%        0
->       50%          100
->         50%             krava1
->         20%             krava2
->         30%             krava3
->       50%          110
->         50%             krava1
->         20%             krava2
->         30%             krava3
-> 
->    10%        1
->       100%         200
->         50%             krava4
->         50%             krava5
-> 
-> 
-> I glanced over the changes and I wonder we could do it
-> by chaining hists structs via 'struct hist_entry'
-> 
-> like adding 'struct hists' into 'struct hists_entry'
-> and making the sort_order local for each 'struct hists'
 
-Unless you meant:
+--DBIVS5p969aUjpLe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-hists
- \- hist_entry
-      \- hists
-           \- hist_entry -> hist_entry -> hist_entry -> hist_entry
-                              \- hists
-                                   \- hist_entry -> hist_entry -> hist_entry
+On Fri, Apr 11, 2014 at 10:20:28AM +0100, Russell King - ARM Linux wrote:
+> On Thu, Apr 10, 2014 at 02:38:09PM -0700, Tony Lindgren wrote:
+> > Currently we get the following kind of errors if we try to use interrupt
+> > phandles to irqchips that have not yet initialized:
+> >=20
+> > irq: no irq domain found for /ocp/pinmux@48002030 !
+> > ------------[ cut here ]------------
+> > WARNING: CPU: 0 PID: 1 at drivers/of/platform.c:171 of_device_alloc+0x1=
+44/0x184()
+> > Modules linked in:
+> > CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-00038-g42a9708 #1012
+> > (show_stack+0x14/0x1c)
+> > (dump_stack+0x6c/0xa0)
+> > (warn_slowpath_common+0x64/0x84)
+> > (warn_slowpath_null+0x1c/0x24)
+> > (of_device_alloc+0x144/0x184)
+> > (of_platform_device_create_pdata+0x44/0x9c)
+> > (of_platform_bus_create+0xd0/0x170)
+> > (of_platform_bus_create+0x12c/0x170)
+> > (of_platform_populate+0x60/0x98)
+> >=20
+> > This is because we're wrongly trying to populate resources that are not=
+ yet
+> > available. It's perfectly valid to create irqchips dynamically, so let's
+> > fix up the issue by populating the interrupt resources at the driver pr=
+obe
+> > time instead.
+> >=20
+> > Note that at least currently we cannot dynamically allocate the resourc=
+es as bus
+> > specific code may add legacy resources with platform_device_add_resourc=
+es()
+> > before the driver probe. At least omap_device_alloc() currently relies =
+on
+> > num_resources to determine if legacy resources should be added. Some of=
+ these
+> > will clear automatically when mach-omap2 boots with DT only, but there =
+are
+> > probably other places too where platform_device_add_resources() modifies
+> > things before driver probe.
+> >=20
+> > This patch was discussed quite a bit earlier, but so far it seems we do=
+n't
+> > have any better options to fix the problem. For the earlier discussion,
+> > please see:
+> >=20
+> > https://lkml.org/lkml/2013/11/22/520
+> >=20
+> > The addition of of_platform_probe() is based on patches posted earlier =
+by
+> > Thierry Reding <thierry.reding@gmail.com>.
+> >=20
+> > Signed-off-by: Tony Lindgren <tony@atomide.com>
+>=20
+> So what happens if a device driver probe function:
+>=20
+> - creates a new platform device
+> - copies the resources from the original to the new device
+> - copies the of_node from the original to the new device
+> - registers the new device
+>=20
+> Yes, it's broken (because it can result in the same driver being re-probed
+> by the new device) but we *do* have stuff in the kernel tree which does
+> this.
 
-where each 'hists' represents a new group and a hist_entry->hists != NULL
-is a group otherwise just a node?
+=46rom what I can tell the only clean solution would be to allow the OF
+functions to properly propagate errors. My earlier attempt was exactly
+that, but was deemed too invasive.
 
-Cheers,
-Don
+But that doesn't really solve the case you describe above either. So I
+think the only good generic solution would be for all resources to be
+resolved by the driver's .probe() function so that resources aren't
+"cached" in the device node.
+
+Thierry
+
+--DBIVS5p969aUjpLe
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTSDYpAAoJEN0jrNd/PrOhpikP/RgSAM8vkG0NKabtmrGQiIWp
+UmV/Ca8vDWyCd214RCKSbRQs2YRtMqd0EfX5HfOgzSbumTqwhgBrlFXlpdRRji5w
+5sc/aDIHNw709P8MRD+P0jcfMtIWiWNGvNO4WkM19EYt0OFEVcrLmqb5O8KbePFR
+VbHY69/inUNdNXhUvjFFW5IEeJmr4Iomown3gMrkIT6CGXm2Ide9juJ24rFecw8i
+eN+IhkhMlc8ZrhyPJdWE4wOTUsg+kKXolvTwufbtr2NFST9yfw1hdIMxAXzonr3x
+QFpd0Ip92uGd8pU2xtMfr0BUYFOck5k7EJ5d47Am+0k6aGXzhjeouRO+7Z7re/SP
+oxXmZT9kFC6Dx5xjFtDCnHxqLKUl/tNPlQhH+b61RsUCCFcUJa1rue2o2u7Q0IvH
+DmX+YjJ+QP5bWlFtL66EG7sYKNhPdQWitWJ7KkbIVpqEV89W0qeJUeaglmg0mO37
+UEAffFp1qS0KP2w8fDamNbcfAhQcwQ0QeO9WUqRhz/Gn0LKHsVLnP7xPpkyfUJ1v
+daTiLgEHXlA2jrZj2J4slMsZkQDEh09hObUQuiCg8EC1o6daJGzoE9o7rkK0LKvV
+fWLbUGGbDqJv3pjTRtSSf6bUzoFxssRdGw+dFh54qfCuUwUr6+kSN/8b2dE8n+bH
+e3ALCgc629+TsmZC/wgx
+=a6q+
+-----END PGP SIGNATURE-----
+
+--DBIVS5p969aUjpLe--
