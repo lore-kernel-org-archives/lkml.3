@@ -1,80 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422907AbaDKA3q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 20:29:46 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:35748 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759420AbaDKA3h (ORCPT
+	id S1422769AbaDKAZu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 20:25:50 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:51890 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422748AbaDKAZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 20:29:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140410213808.GA5990@atomide.com>
-References: <20140410213808.GA5990@atomide.com>
-Date: Thu, 10 Apr 2014 19:29:36 -0500
-Message-ID: <CAL_JsqL4-gnMWaR_G_Bpk8Yiyopnx0x6gkJtpNkF3+TTkC-nYg@mail.gmail.com>
-Subject: Re: [PATCH] of/platform: Fix no irq domain found errors when
- populating interrupts
-From: Rob Herring <robherring2@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@linaro.org>, Paul Walmsley <paul@pwsan.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 10 Apr 2014 20:25:46 -0400
+From: Andreas Noever <andreas.noever@gmail.com>
+To: linux-kernel@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Daniel J Blueman <daniel@quora.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        linux-pci@vger.kernel.org, Andreas Noever <andreas.noever@gmail.com>
+Subject: [PATCH v2 03/14] thunderbolt: Setup control channel
+Date: Fri, 11 Apr 2014 02:24:50 +0200
+Message-Id: <1397175901-4023-4-git-send-email-andreas.noever@gmail.com>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1397175901-4023-1-git-send-email-andreas.noever@gmail.com>
+References: <1397175901-4023-1-git-send-email-andreas.noever@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 4:38 PM, Tony Lindgren <tony@atomide.com> wrote:
-> Currently we get the following kind of errors if we try to use interrupt
-> phandles to irqchips that have not yet initialized:
->
-> irq: no irq domain found for /ocp/pinmux@48002030 !
-> ------------[ cut here ]------------
-> WARNING: CPU: 0 PID: 1 at drivers/of/platform.c:171 of_device_alloc+0x144/0x184()
-> Modules linked in:
-> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-00038-g42a9708 #1012
-> (show_stack+0x14/0x1c)
-> (dump_stack+0x6c/0xa0)
-> (warn_slowpath_common+0x64/0x84)
-> (warn_slowpath_null+0x1c/0x24)
-> (of_device_alloc+0x144/0x184)
-> (of_platform_device_create_pdata+0x44/0x9c)
-> (of_platform_bus_create+0xd0/0x170)
-> (of_platform_bus_create+0x12c/0x170)
-> (of_platform_populate+0x60/0x98)
->
-> This is because we're wrongly trying to populate resources that are not yet
-> available. It's perfectly valid to create irqchips dynamically, so let's
-> fix up the issue by populating the interrupt resources at the driver probe
-> time instead.
->
-> Note that at least currently we cannot dynamically allocate the resources as bus
-> specific code may add legacy resources with platform_device_add_resources()
-> before the driver probe. At least omap_device_alloc() currently relies on
-> num_resources to determine if legacy resources should be added. Some of these
-> will clear automatically when mach-omap2 boots with DT only, but there are
-> probably other places too where platform_device_add_resources() modifies
-> things before driver probe.
->
-> This patch was discussed quite a bit earlier, but so far it seems we don't
-> have any better options to fix the problem. For the earlier discussion,
-> please see:
->
-> https://lkml.org/lkml/2013/11/22/520
+Add struct tb which will contain our view of the thunderbolt bus.  For
+now it just contains a pointer to the control channel and a workqueue
+for hotplug events.
 
-There is a newer solution here which Grant seemed happier with:
+Add thunderbolt_alloc_and_start() and thunderbolt_shutdown_and_free()
+which are responsible for setup and teardown of struct tb.
 
-http://lkml.iu.edu/hypermail/linux/kernel/1403.2/03666.html
+Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
+---
+ drivers/thunderbolt/Makefile |   2 +-
+ drivers/thunderbolt/nhi.c    |  18 +++++-
+ drivers/thunderbolt/tb.c     | 134 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/thunderbolt/tb.h     |  35 +++++++++++
+ 4 files changed, 186 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/thunderbolt/tb.c
+ create mode 100644 drivers/thunderbolt/tb.h
 
-Does it work for you?
+diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
+index 4b21c99..1f996bb 100644
+--- a/drivers/thunderbolt/Makefile
++++ b/drivers/thunderbolt/Makefile
+@@ -1,3 +1,3 @@
+ obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
+-thunderbolt-objs := nhi.o ctl.o
++thunderbolt-objs := nhi.o ctl.o tb.o
+ 
+diff --git a/drivers/thunderbolt/nhi.c b/drivers/thunderbolt/nhi.c
+index 1c6adc7..fd2e3ee 100644
+--- a/drivers/thunderbolt/nhi.c
++++ b/drivers/thunderbolt/nhi.c
+@@ -16,6 +16,7 @@
+ 
+ #include "nhi.h"
+ #include "nhi_regs.h"
++#include "tb.h"
+ 
+ #define RING_TYPE(ring) ((ring)->is_tx ? "TX ring" : "RX ring")
+ 
+@@ -517,6 +518,7 @@ static void nhi_shutdown(struct tb_nhi *nhi)
+ static int nhi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ {
+ 	struct tb_nhi *nhi;
++	struct tb *tb;
+ 	int res;
+ 
+ 	res = pcim_enable_device(pdev);
+@@ -575,14 +577,26 @@ static int nhi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	/* magic value - clock related? */
+ 	iowrite32(3906250 / 10000, nhi->iobase + 0x38c00);
+ 
+-	pci_set_drvdata(pdev, nhi);
++	dev_info(&nhi->pdev->dev, "NHI initialized, starting thunderbolt\n");
++	tb = thunderbolt_alloc_and_start(nhi);
++	if (!tb) {
++		/*
++		 * At this point the RX/TX rings might already have been
++		 * activated. Do a proper shutdown.
++		 */
++		nhi_shutdown(nhi);
++		return -EIO;
++	}
++	pci_set_drvdata(pdev, tb);
+ 
+ 	return 0;
+ }
+ 
+ static void nhi_remove(struct pci_dev *pdev)
+ {
+-	struct tb_nhi *nhi = pci_get_drvdata(pdev);
++	struct tb *tb = pci_get_drvdata(pdev);
++	struct tb_nhi *nhi = tb->nhi;
++	thunderbolt_shutdown_and_free(tb);
+ 	nhi_shutdown(nhi);
+ }
+ 
+diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
+new file mode 100644
+index 0000000..6920979
+--- /dev/null
++++ b/drivers/thunderbolt/tb.c
+@@ -0,0 +1,134 @@
++/*
++ * Thunderbolt Cactus Ridge driver - bus logic (NHI independent)
++ *
++ * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
++ */
++
++#include <linux/slab.h>
++#include <linux/errno.h>
++#include <linux/delay.h>
++
++#include "tb.h"
++
++/* hotplug handling */
++
++struct tb_hotplug_event {
++	struct work_struct work;
++	struct tb *tb;
++	u64 route;
++	u8 port;
++	bool unplug;
++};
++
++/**
++ * tb_handle_hotplug() - handle hotplug event
++ *
++ * Executes on tb->wq.
++ */
++static void tb_handle_hotplug(struct work_struct *work)
++{
++	struct tb_hotplug_event *ev = container_of(work, typeof(*ev), work);
++	struct tb *tb = ev->tb;
++	mutex_lock(&tb->lock);
++	if (!tb->hotplug_active)
++		goto out; /* during init, suspend or shutdown */
++
++	/* do nothing for now */
++out:
++	mutex_unlock(&tb->lock);
++	kfree(ev);
++}
++
++/**
++ * tb_schedule_hotplug_handler() - callback function for the control channel
++ *
++ * Delegates to tb_handle_hotplug.
++ */
++static void tb_schedule_hotplug_handler(void *data, u64 route, u8 port,
++					bool unplug)
++{
++	struct tb *tb = data;
++	struct tb_hotplug_event *ev = kmalloc(sizeof(*ev), GFP_KERNEL);
++	if (!ev)
++		return;
++	INIT_WORK(&ev->work, tb_handle_hotplug);
++	ev->tb = tb;
++	ev->route = route;
++	ev->port = port;
++	ev->unplug = unplug;
++	queue_work(tb->wq, &ev->work);
++}
++
++/**
++ * thunderbolt_shutdown_and_free() - shutdown everything
++ *
++ * Free all switches and the config channel.
++ *
++ * Used in the error path of thunderbolt_alloc_and_start.
++ */
++void thunderbolt_shutdown_and_free(struct tb *tb)
++{
++	mutex_lock(&tb->lock);
++
++	if (tb->ctl) {
++		tb_ctl_stop(tb->ctl);
++		tb_ctl_free(tb->ctl);
++	}
++	tb->ctl = NULL;
++	tb->hotplug_active = false; /* signal tb_handle_hotplug to quit */
++
++	/* allow tb_handle_hotplug to acquire the lock */
++	mutex_unlock(&tb->lock);
++	if (tb->wq) {
++		flush_workqueue(tb->wq);
++		destroy_workqueue(tb->wq);
++		tb->wq = NULL;
++	}
++	mutex_destroy(&tb->lock);
++	kfree(tb);
++}
++
++/**
++ * thunderbolt_alloc_and_start() - setup the thunderbolt bus
++ *
++ * Allocates a tb_cfg control channel, initializes the root switch, enables
++ * plug events and activates pci devices.
++ *
++ * Return: Returns NULL on error.
++ */
++struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi)
++{
++	struct tb *tb;
++
++	tb = kzalloc(sizeof(*tb), GFP_KERNEL);
++	if (!tb)
++		return NULL;
++
++	tb->nhi = nhi;
++	mutex_init(&tb->lock);
++	mutex_lock(&tb->lock);
++
++	tb->wq = alloc_ordered_workqueue("thunderbolt", 0);
++	if (!tb->wq)
++		goto err_locked;
++
++	tb->ctl = tb_ctl_alloc(tb->nhi, tb_schedule_hotplug_handler, tb);
++	if (!tb->ctl)
++		goto err_locked;
++	/*
++	 * tb_schedule_hotplug_handler may be called as soon as the config
++	 * channel is started. Thats why we have to hold the lock here.
++	 */
++	tb_ctl_start(tb->ctl);
++
++	/* Allow tb_handle_hotplug to progress events */
++	tb->hotplug_active = true;
++	mutex_unlock(&tb->lock);
++	return tb;
++
++err_locked:
++	mutex_unlock(&tb->lock);
++	thunderbolt_shutdown_and_free(tb);
++	return NULL;
++}
++
+diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
+new file mode 100644
+index 0000000..19dace0
+--- /dev/null
++++ b/drivers/thunderbolt/tb.h
+@@ -0,0 +1,35 @@
++/*
++ * Thunderbolt Cactus Ridge driver - bus logic (NHI independent)
++ *
++ * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
++ */
++
++#ifndef TB_H_
++#define TB_H_
++
++#include "ctl.h"
++
++/**
++ * struct tb - main thunderbolt bus structure
++ */
++struct tb {
++	struct mutex lock;	/*
++				 * Big lock. Must be held when accessing cfg or
++				 * any struct tb_switch / struct tb_port.
++				 */
++	struct tb_nhi *nhi;
++	struct tb_ctl *ctl;
++	struct workqueue_struct *wq; /* ordered workqueue for plug events */
++	bool hotplug_active; /*
++			      * tb_handle_hotplug will stop progressing plug
++			      * events and exit if this is not seet (it needs to
++			      * acquire the lock one more time). Used to drain
++			      * wq after cfg has been paused.
++			      */
++
++};
++
++struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi);
++void thunderbolt_shutdown_and_free(struct tb *tb);
++
++#endif
+-- 
+1.9.2
 
-> The addition of of_platform_probe() is based on patches posted earlier by
-> Thierry Reding <thierry.reding@gmail.com>.
-
-I fail to see how this patch does EPROBE_DEFER and solves the problem.
-Don't you need Thierry's other patches for that? I'm probably missing
-something.
-
-Rob
