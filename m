@@ -1,70 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777AbaDKCyz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 22:54:55 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42083 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710AbaDKCyx (ORCPT
+	id S1754631AbaDKC4O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 22:56:14 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37237 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754362AbaDKC4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 22:54:53 -0400
-From: Saravana Kannan <skannan@codeaurora.org>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        "Saravana Kannan" <skannan@codeaurora.org>
-Subject: [PATCH] PM / devfreq: Use freq_table for available_frequencies
-Date: Thu, 10 Apr 2014 19:54:41 -0700
-Message-Id: <1397184881-12223-1-git-send-email-skannan@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Thu, 10 Apr 2014 22:56:12 -0400
+Date: Thu, 10 Apr 2014 19:55:08 -0700
+From: tip-bot for WANG Chao <tipbot@zytor.com>
+Message-ID: <tip-0534af01cca338193abbfdb53650af91e65dbf10@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        mulix@mulix.org, vgoyal@redhat.com, jdmason@kudzu.us,
+        tglx@linutronix.de, hpa@linux.intel.com, chaowang@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        mulix@mulix.org, vgoyal@redhat.com, jdmason@kudzu.us,
+        tglx@linutronix.de, chaowang@redhat.com, hpa@linux.intel.com
+In-Reply-To: <1394463120-26999-1-git-send-email-chaowang@redhat.com>
+References: <1394463120-26999-1-git-send-email-chaowang@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86, calgary: Use 8M TCE table size by default
+Git-Commit-ID: 0534af01cca338193abbfdb53650af91e65dbf10
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some devices use freq_table instead of OPP. For those devices, the
-available_frequencies file shows up empty. Fix that by using freq_table to
-generate the available_frequencies data when OPP is not present.
+Commit-ID:  0534af01cca338193abbfdb53650af91e65dbf10
+Gitweb:     http://git.kernel.org/tip/0534af01cca338193abbfdb53650af91e65dbf10
+Author:     WANG Chao <chaowang@redhat.com>
+AuthorDate: Mon, 10 Mar 2014 22:52:00 +0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 10 Apr 2014 19:51:32 -0700
 
-Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
+x86, calgary: Use 8M TCE table size by default
+
+New kexec-tools wants to pass kdump kernel needed memmap via E820
+directly, instead of memmap=exactmap. This makes saved_max_pfn not
+be passed down to 2nd kernel. To keep 1st kernel and 2nd kernel using
+the same TCE table size, Muli suggest to hard code the size to max (8M).
+
+We can't get rid of saved_max_pfn this time, for backward compatibility
+with old first kernel and new second kernel. However new first kernel
+and old second kernel can not work unfortunately.
+
+v2->v1:
+- retain saved_max_pfn so new 2nd kernel can work with old 1st kernel
+  from Vivek
+
+Signed-off-by: WANG Chao <chaowang@redhat.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Acked-by: Muli Ben-Yehuda <mulix@mulix.org>
+Acked-by: Jon Mason <jdmason@kudzu.us>
+Link: http://lkml.kernel.org/r/1394463120-26999-1-git-send-email-chaowang@redhat.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- drivers/devfreq/devfreq.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ arch/x86/kernel/pci-calgary_64.c | 31 +++++++++++++++++++------------
+ 1 file changed, 19 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-index 2042ec3..a715d15 100644
---- a/drivers/devfreq/devfreq.c
-+++ b/drivers/devfreq/devfreq.c
-@@ -912,19 +912,26 @@ static ssize_t available_frequencies_show(struct device *d,
- 	struct devfreq *df = to_devfreq(d);
- 	struct device *dev = df->dev.parent;
- 	struct dev_pm_opp *opp;
-+	unsigned int i = 0, max_state = df->profile->max_state;
-+	bool use_opp;
- 	ssize_t count = 0;
- 	unsigned long freq = 0;
+diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
+index 299d493..0497f71 100644
+--- a/arch/x86/kernel/pci-calgary_64.c
++++ b/arch/x86/kernel/pci-calgary_64.c
+@@ -1207,23 +1207,31 @@ error:
+ 	return ret;
+ }
  
- 	rcu_read_lock();
-+	use_opp = dev_pm_opp_get_opp_count(dev) > 0;
- 	do {
--		opp = dev_pm_opp_find_freq_ceil(dev, &freq);
--		if (IS_ERR(opp))
--			break;
-+		if (use_opp) {
-+			opp = dev_pm_opp_find_freq_ceil(dev, &freq);
-+			if (IS_ERR(opp))
-+				break;
-+		} else {
-+			freq = df->profile->freq_table[i++];
-+		}
+-static inline int __init determine_tce_table_size(u64 ram)
++static inline int __init determine_tce_table_size(void)
+ {
+ 	int ret;
  
- 		count += scnprintf(&buf[count], (PAGE_SIZE - count - 2),
- 				   "%lu ", freq);
- 		freq++;
--	} while (1);
-+	} while (use_opp || (!use_opp && i < max_state));
- 	rcu_read_unlock();
+ 	if (specified_table_size != TCE_TABLE_SIZE_UNSPECIFIED)
+ 		return specified_table_size;
  
- 	/* Truncate the trailing space */
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+-	/*
+-	 * Table sizes are from 0 to 7 (TCE_TABLE_SIZE_64K to
+-	 * TCE_TABLE_SIZE_8M). Table size 0 has 8K entries and each
+-	 * larger table size has twice as many entries, so shift the
+-	 * max ram address by 13 to divide by 8K and then look at the
+-	 * order of the result to choose between 0-7.
+-	 */
+-	ret = get_order(ram >> 13);
+-	if (ret > TCE_TABLE_SIZE_8M)
++	if (is_kdump_kernel() && saved_max_pfn) {
++		/*
++		 * Table sizes are from 0 to 7 (TCE_TABLE_SIZE_64K to
++		 * TCE_TABLE_SIZE_8M). Table size 0 has 8K entries and each
++		 * larger table size has twice as many entries, so shift the
++		 * max ram address by 13 to divide by 8K and then look at the
++		 * order of the result to choose between 0-7.
++		 */
++		ret = get_order((saved_max_pfn * PAGE_SIZE) >> 13);
++		if (ret > TCE_TABLE_SIZE_8M)
++			ret = TCE_TABLE_SIZE_8M;
++	} else {
++		/*
++		 * Use 8M by default (suggested by Muli) if it's not
++		 * kdump kernel and saved_max_pfn isn't set.
++		 */
+ 		ret = TCE_TABLE_SIZE_8M;
++	}
+ 
+ 	return ret;
+ }
+@@ -1418,8 +1426,7 @@ int __init detect_calgary(void)
+ 		return -ENOMEM;
+ 	}
+ 
+-	specified_table_size = determine_tce_table_size((is_kdump_kernel() ?
+-					saved_max_pfn : max_pfn) * PAGE_SIZE);
++	specified_table_size = determine_tce_table_size();
+ 
+ 	for (bus = 0; bus < MAX_PHB_BUS_NUM; bus++) {
+ 		struct calgary_bus_info *info = &bus_info[bus];
