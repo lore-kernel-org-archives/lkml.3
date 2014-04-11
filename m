@@ -1,369 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755922AbaDKIi3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 04:38:29 -0400
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:37325 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753107AbaDKIi0 (ORCPT
+	id S1755969AbaDKIj2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 04:39:28 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:43013 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177AbaDKIjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 04:38:26 -0400
-Message-ID: <5347A9FD.2070706@vmware.com>
-Date: Fri, 11 Apr 2014 10:38:21 +0200
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-CC: Thomas Hellstrom <thellstrom@vmware.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, ccross@google.com,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH 2/2] [RFC v2 with seqcount] reservation: add suppport
- for read-only access using rcu
-References: <20140409144239.26648.57918.stgit@patser> <20140409144831.26648.79163.stgit@patser> <53465A53.1090500@vmware.com> <53466D63.8080808@canonical.com> <53467B93.3000402@vmware.com> <5346B212.8050202@canonical.com>
-In-Reply-To: <5346B212.8050202@canonical.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/mixed;
- boundary="------------060504020804050705070008"
+	Fri, 11 Apr 2014 04:39:24 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-72-5347aa3a59a7
+Message-id: <5347AA35.4010504@samsung.com>
+Date: Fri, 11 Apr 2014 10:39:17 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.4.0
+MIME-version: 1.0
+To: Chanwoo Choi <cw00.choi@samsung.com>, Olof Johansson <olof@lixom.net>
+Cc: kgene.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
+        kyungmin.park@samsung.com, inki.dae@samsung.com,
+        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 01/27] ARM: EXYNOS: Add Exynos3250 SoC ID
+References: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
+ <1397122658-16013-2-git-send-email-cw00.choi@samsung.com>
+ <20140411014650.GB14934@quad.lixom.net> <53478C75.60302@samsung.com>
+In-reply-to: <53478C75.60302@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOLMWRmVeSWpSXmKPExsVy+t/xq7pWq9yDDTZOYrK4/uU5q8XnDy3s
+	FpPuT2Cx6F1wlc3ibNMbdotNj6+xWlzeNYfNYsb5fUwWp65/BrImv2Sz2LtzMqMDt8fmJfUe
+	V040sXr0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxsJntxgLvutULDs2h72B8YdKFyMHh4SA
+	icSlWcldjJxAppjEhXvr2boYuTiEBJYySmz/c50RJCEk8JlRYupaERCbV0BLYvOyZrA4i4Cq
+	RNezNjYQm01ATeJzwyMwmx+oZk3TdRYQW1QgQuJe42FWiF5BiR+T74HFRQQ8JZ783cUIsoxZ
+	4B+jxPkV25lAEsICthInb9xngVh8glHi6TE/EJtTQFPi6uH1YIuZBawlVk7aBmXLS2xe85Z5
+	AqPgLCQ7ZiEpm4WkbAEj8ypG0dTS5ILipPRcQ73ixNzi0rx0veT83E2MkMj4soNx8TGrQ4wC
+	HIxKPLwHLrkFC7EmlhVX5h5ilOBgVhLhfbbMPViINyWxsiq1KD++qDQntfgQIxMHp1QDIzPP
+	puiTCwKNSn1uixe53VkVIJ0j1Fj1e/JZ0dbLC5KC5ywSeiLJ4LpF/73L07eHD5/4Y8pud+77
+	pGWHY7nv+s5YVP6nrNF/5prQw9tfSb/rFZ72v+Tin4szNqQYTmk9N/nXzhtGGUvWqVQ9e/e5
+	OvCQ55cS6R+P3Ku379OfZtD2UulSaEqo3kklluKMREMt5qLiRADnD2k5agIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060504020804050705070008
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-
-Hi, Maarten.
-
-Here I believe we encounter a lot of locking inconsistencies.
-
-First, it seems you're use a number of pointers as RCU pointers without
-annotating them as such and use the correct rcu
-macros when assigning those pointers.
-
-Some pointers (like the pointers in the shared fence list) are both used
-as RCU pointers (in dma_buf_poll()) for example,
-or considered protected by the seqlock
-(reservation_object_get_fences_rcu()), which I believe is OK, but then
-the pointers must
-be assigned using the correct rcu macros. In the memcpy in
-reservation_object_get_fences_rcu() we might get away with an
-ugly typecast, but with a verbose comment that the pointers are
-considered protected by the seqlock at that location.
-
-So I've updated (attached) the headers with proper __rcu annotation and
-locking comments according to how they are being used in the various
-reading functions.
-I believe if we want to get rid of this we need to validate those
-pointers using the seqlock as well.
-This will generate a lot of sparse warnings in those places needing
-rcu_dereference()
-rcu_assign_pointer()
-rcu_dereference_protected()
-
-With this I think we can get rid of all ACCESS_ONCE macros: It's not
-needed when the rcu_x() macros are used, and
-it's never needed for the members protected by the seqlock, (provided
-that the seq is tested). The only place where I think that's
-*not* the case is at the krealloc in reservation_object_get_fences_rcu().
-
-Also I have some more comments in the
-reservation_object_get_fences_rcu() function below:
-
-
-On 04/10/2014 05:00 PM, Maarten Lankhorst wrote:
-> op 10-04-14 13:08, Thomas Hellstrom schreef:
->> On 04/10/2014 12:07 PM, Maarten Lankhorst wrote:
->>> Hey,
+On 11.04.2014 08:32, Chanwoo Choi wrote:
+> Hi,
+>
+> On 04/11/2014 10:46 AM, Olof Johansson wrote:
+>> On Thu, Apr 10, 2014 at 06:37:12PM +0900, Chanwoo Choi wrote:
+>>> This patch add Exynos3250's SoC ID. Exynos 3250 is System-On-Chip(SoC) that
+>>> is based on the 32-bit RISC processor for Smartphone. Exynos3250 uses Cortex-A7
+>>> dual cores and has a target speed of 1.0GHz.
 >>>
->>> op 10-04-14 10:46, Thomas Hellstrom schreef:
->>>> Hi!
->>>>
->>>> Ugh. This became more complicated than I thought, but I'm OK with
->>>> moving
->>>> TTM over to fence while we sort out
->>>> how / if we're going to use this.
->>>>
->>>> While reviewing, it struck me that this is kind of error-prone, and
->>>> hard
->>>> to follow since we're operating on a structure that may be
->>>> continually updated under us, needing a lot of RCU-specific macros and
->>>> barriers.
->>> Yeah, but with the exception of dma_buf_poll I don't think there is
->>> anything else
->>> outside drivers/base/reservation.c has to deal with rcu.
+>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>> ---
+>>>   arch/arm/mach-exynos/Kconfig             | 22 ++++++++++++++++++++++
+>>>   arch/arm/mach-exynos/exynos.c            |  1 +
+>>>   arch/arm/plat-samsung/include/plat/cpu.h | 10 ++++++++++
+>>>   3 files changed, 33 insertions(+)
 >>>
->>>> Also the rcu wait appears to not complete until there are no busy
->>>> fences
->>>> left (new ones can be added while we wait) rather than
->>>> waiting on a snapshot of busy fences.
->>> This has been by design, because 'wait for bo idle' type of functions
->>> only care
->>> if the bo is completely idle or not.
->> No, not when using RCU, because the bo may be busy again before the
->> function returns :)
->> Complete idleness can only be guaranteed if holding the reservation, or
->> otherwise making sure
->> that no new rendering is submitted to the buffer, so it's an overkill to
->> wait for complete idleness here.
-> You're probably right, but it makes waiting a lot easier if I don't
-> have to deal with memory allocations. :P
->>> It would be easy to make a snapshot even without seqlocks, just copy
->>> reservation_object_test_signaled_rcu to return a shared list if
->>> test_all is set, or return pointer to exclusive otherwise.
+>>> diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
+>>> index fc8bf18..6da8a68 100644
+>>> --- a/arch/arm/mach-exynos/Kconfig
+>>> +++ b/arch/arm/mach-exynos/Kconfig
+>>> @@ -11,6 +11,17 @@ if ARCH_EXYNOS
 >>>
->>>> I wonder if these issues can be addressed by having a function that
->>>> provides a snapshot of all busy fences: This can be accomplished
->>>> either by including the exclusive fence in the fence_list structure
->>>> and
->>>> allocate a new such structure each time it is updated. The RCU reader
->>>> could then just make a copy of the current fence_list structure
->>>> pointed
->>>> to by &obj->fence, but I'm not sure we want to reallocate *each*
->>>> time we
->>>> update the fence pointer.
->>> No, the most common operation is updating fence pointers, which is why
->>> the current design makes that cheap. It's also why doing rcu reads is
->>> more expensive.
->>>> The other approach uses a seqlock to obtain a consistent snapshot, and
->>>> I've attached an incomplete outline, and I'm not 100% whether it's
->>>> OK to
->>>> combine RCU and seqlocks in this way...
->>>>
->>>> Both these approaches have the benefit of hiding the RCU
->>>> snapshotting in
->>>> a single function, that can then be used by any waiting
->>>> or polling function.
->>>>
->>> I think the middle way with using seqlocks to protect the fence_excl
->>> pointer and shared list combination,
->>> and using RCU to protect the refcounts for fences and the availability
->>> of the list could work for our usecase
->>> and might remove a bunch of memory barriers. But yeah that depends on
->>> layering rcu and seqlocks.
->>> No idea if that is allowed. But I suppose it is.
+>>>   menu "SAMSUNG EXYNOS SoCs Support"
 >>>
->>> Also, you're being overly paranoid with seqlock reading, we would only
->>> need something like this:
+>>> +config ARCH_EXYNOS3
+>>> +	bool "SAMSUNG EXYNOS3"
+>>> +	select ARM_AMBA
+>>> +	select CLKSRC_OF
+>>> +	select HAVE_ARM_SCU if SMP
+>>> +	select HAVE_SMP
+>>> +	select PINCTRL
+>>> +	select PM_GENERIC_DOMAINS if PM_RUNTIME
+>>> +	help
+>>> +	  Samsung EXYNOS3 SoCs based systems
+>>> +
+>>>   config ARCH_EXYNOS4
+>>>   	bool "SAMSUNG EXYNOS4"
+>>>   	default y
+>>> @@ -41,6 +52,17 @@ config ARCH_EXYNOS5
 >>>
->>> rcu_read_lock()
->>>      preempt_disable()
->>>      seq = read_seqcount_begin()
->>>      read fence_excl, shared_count = ACCESS_ONCE(fence->shared_count)
->>>      copy shared to a struct.
->>>      if (read_seqcount_retry()) { unlock and retry }
->>>    preempt_enable();
->>>    use fence_get_rcu() to bump refcount on everything, if that fails
->>> unlock, put, and retry
->>> rcu_read_unlock()
+>>>   comment "EXYNOS SoCs"
 >>>
->>> But the shared list would still need to be RCU'd, to make sure we're
->>> not reading freed garbage.
->> Ah. OK,
->> But I think we should use rcu inside seqcount, because
->> read_seqcount_begin() may spin for a long time if there are
->> many writers. Also I don't think the preempt_disable() is needed for
->> read_seq critical sections other than they might
->> decrease the risc of retries..
+>>> +config SOC_EXYNOS3250
+>>> +	bool "SAMSUNG EXYNOS3250"
+>>> +	default y
+>>> +	depends on ARCH_EXYNOS3
+>>> +	select ARCH_HAS_BANDGAP
+>>> +	select ARM_CPU_SUSPEND if PM
+>>> +	select PINCTRL_EXYNOS
+>>> +	select SAMSUNG_DMADEV
+>>> +	help
+>>> +	  Enable EXYNOS3250 CPU support
+>>> +
+>>>   config CPU_EXYNOS4210
+>>>   	bool "SAMSUNG EXYNOS4210"
+>>>   	default y
+>>> diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
+>>> index b32a907..b134868 100644
+>>> --- a/arch/arm/mach-exynos/exynos.c
+>>> +++ b/arch/arm/mach-exynos/exynos.c
+>>> @@ -370,6 +370,7 @@ static void __init exynos_dt_machine_init(void)
+>>>   }
+>>>
+>>>   static char const *exynos_dt_compat[] __initconst = {
+>>> +	"samsung,exynos3250",
 >>
-> Reading the seqlock code makes me suspect that's the case too. The
-> lockdep code calls
-> local_irq_disable, so it's probably safe without preemption disabled.
+>> Please consider samsung,exynos3 instead, so you don't have to update this table
+>> for every SoC. We've talked about this before..
 >
-> ~Maarten
->
-> I like the ability of not allocating memory, so I kept
-> reservation_object_wait_timeout_rcu mostly
-> the way it was. This code appears to fail on nouveau when using the
-> shared members,
-> but I'm not completely sure whether the error is in nouveau or this
-> code yet.
->
-> --8<--------
-> [RFC v2] reservation: add suppport for read-only access using rcu
->
-> This adds 4 more functions to deal with rcu.
->
-> reservation_object_get_fences_rcu() will obtain the list of shared
-> and exclusive fences without obtaining the ww_mutex.
->
-> reservation_object_wait_timeout_rcu() will wait on all fences of the
-> reservation_object, without obtaining the ww_mutex.
->
-> reservation_object_test_signaled_rcu() will test if all fences of the
-> reservation_object are signaled without using the ww_mutex.
->
-> reservation_object_get_excl() is added because touching the fence_excl
-> member directly will trigger a sparse warning.
->
-> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
->
-> diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
-> index d89a98d2c37b..ca6ef0c4b358 100644
-> --- a/drivers/base/dma-buf.c
-> +++ b/drivers/base/dma-buf.c
->
-> +int reservation_object_get_fences_rcu(struct reservation_object *obj,
-> +                      struct fence **pfence_excl,
-> +                      unsigned *pshared_count,
-> +                      struct fence ***pshared)
-> +{
-> +    unsigned shared_count = 0;
-> +    unsigned retry = 1;
-> +    struct fence **shared = NULL, *fence_excl = NULL;
-> +    int ret = 0;
-> +
-> +    while (retry) {
-> +        struct reservation_object_list *fobj;
-> +        unsigned seq, retry;
+> This patchset included only exynos3250.dtsi without exynos3.dtsi.
+> So, I added only "samsung,exynos3250" compatible name.
 
-You're shadowing retry?
-
-
-> +
-> +        seq = read_seqcount_begin(&obj->seq);
-> +
-> +        rcu_read_lock();
-> +
-> +        fobj = ACCESS_ONCE(obj->fence);
-> +        if (fobj) {
-> +            struct fence **nshared;
-> +
-> +            shared_count = ACCESS_ONCE(fobj->shared_count);
-> +            nshared = krealloc(shared, sizeof(*shared) *
-> shared_count, GFP_KERNEL);
-
-krealloc inside rcu_read_lock(). Better to put this first in the loop.
+There is no direct relation between dts file names and compatible string 
+(although usually they correspond). You don't need exynos3.dtsi (at 
+least until another SoC from this family shows up).
 
 >
-> +            if (!nshared) {
-> +                ret = -ENOMEM;
-> +                shared_count = retry = 0;
-> +                goto unlock;
-> +            }
-> +            shared = nshared;
-> +            memcpy(shared, fobj->shared, sizeof(*shared) *
-> shared_count);
-> +        } else
-> +            shared_count = 0;
-> +        fence_excl = obj->fence_excl;
-> +
-> +        retry = read_seqcount_retry(&obj->seq, seq);
-> +        if (retry)
-> +            goto unlock;
-> +
-> +        if (!fence_excl || fence_get_rcu(fence_excl)) {
-> +            unsigned i;
-> +
-> +            for (i = 0; i < shared_count; ++i) {
-> +                if (fence_get_rcu(shared[i]))
-> +                    continue;
-> +
-> +                /* uh oh, refcount failed, abort and retry */
-> +                while (i--)
-> +                    fence_put(shared[i]);
-> +
-> +                if (fence_excl) {
-> +                    fence_put(fence_excl);
-> +                    fence_excl = NULL;
-> +                }
-> +
-> +                retry = 1;
-> +                break;
-> +            }
-> +        } else
-> +            retry = 1;
-> +
-> +unlock:
-> +        rcu_read_unlock();
-> +    }
-> +    *pshared_count = shared_count;
-> +    if (shared_count)
-> +        *pshared = shared;
-> +    else {
-> +        *pshared = NULL;
-> +        kfree(shared);
-> +    }
-> +    *pfence_excl = fence_excl;
-> +
-> +    return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(reservation_object_get_fences_rcu);
-> +
+> Do you prefer to add SoC version as following?
+> +       "samsung,exynos3",
+> +       "samsung,exynos3250",
+>
+> or ?
+> +       "samsung,exynos3",
 
-Thanks,
-Thomas
+This is actually a good question. If adding exynos3 anyway, it probably 
+wouldn't hurt to add exynos3250 anyway, to avoid adding it in future if 
+some SoC specific quirks show up, especially when both of compatible 
+strings need to be documented anyway.
 
+>
+>>
+>>>   	"samsung,exynos4",
+>>>   	"samsung,exynos4210",
+>>>   	"samsung,exynos4212",
+>>> diff --git a/arch/arm/plat-samsung/include/plat/cpu.h b/arch/arm/plat-samsung/include/plat/cpu.h
+>>> index 5992b8d..3d808f6b 100644
+>>> --- a/arch/arm/plat-samsung/include/plat/cpu.h
+>>> +++ b/arch/arm/plat-samsung/include/plat/cpu.h
+>>> @@ -43,6 +43,9 @@ extern unsigned long samsung_cpu_id;
+>>>   #define S5PV210_CPU_ID		0x43110000
+>>>   #define S5PV210_CPU_MASK	0xFFFFF000
+>>>
+>>> +#define EXYNOS3250_SOC_ID       0xE3472000
+>>> +#define EXYNOS3_SOC_MASK        0xFFFFF000
+>>> +
+>>>   #define EXYNOS4210_CPU_ID	0x43210000
+>>>   #define EXYNOS4212_CPU_ID	0x43220000
+>>>   #define EXYNOS4412_CPU_ID	0xE4412200
+>>> @@ -68,6 +71,7 @@ IS_SAMSUNG_CPU(s5p6440, S5P6440_CPU_ID, S5P64XX_CPU_MASK)
+>>>   IS_SAMSUNG_CPU(s5p6450, S5P6450_CPU_ID, S5P64XX_CPU_MASK)
+>>>   IS_SAMSUNG_CPU(s5pc100, S5PC100_CPU_ID, S5PC100_CPU_MASK)
+>>>   IS_SAMSUNG_CPU(s5pv210, S5PV210_CPU_ID, S5PV210_CPU_MASK)
+>>> +IS_SAMSUNG_CPU(exynos3250, EXYNOS3250_SOC_ID, EXYNOS3_SOC_MASK)
+>>>   IS_SAMSUNG_CPU(exynos4210, EXYNOS4210_CPU_ID, EXYNOS4_CPU_MASK)
+>>>   IS_SAMSUNG_CPU(exynos4212, EXYNOS4212_CPU_ID, EXYNOS4_CPU_MASK)
+>>>   IS_SAMSUNG_CPU(exynos4412, EXYNOS4412_CPU_ID, EXYNOS4_CPU_MASK)
+>>> @@ -126,6 +130,12 @@ IS_SAMSUNG_CPU(exynos5440, EXYNOS5440_SOC_ID, EXYNOS5_SOC_MASK)
+>>>   # define soc_is_s5pv210()	0
+>>>   #endif
+>>>
+>>> +#if defined(CONFIG_SOC_EXYNOS3250)
+>>> +# define soc_is_exynos3250()    is_samsung_exynos3250()
+>>> +#else
+>>> +# define soc_is_exynos3250()    0
+>>> +#endif
+>>
+>> In general, I think we have too much code littered with soc_is_<foo>() going
+>> on, so please try to avoid adding more for this SoC. Especially in cases where
+>> you just want to bail out of certain features where we might already have
+>> function pointers to control if a function is called or not, such as the
+>> firmware interfaces.
+>>
+>
+> Do you prefer dt helper function such as following function instead of new soc_is_xx() ?
+> - of_machine_is_compatible("samsung,exynos3250")
+>
+> If you are OK, I'll use of_machine_is_compatible() instead of soc_is_xx().
 
---------------060504020804050705070008
-Content-Type: text/x-patch;
- name="wake_up_sparse.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="wake_up_sparse.diff"
+First of all, there is still a lot of code in mach-exynos/ using the 
+soc_is_xx() macros, so having some SoCs use them and other SoCs use 
+of_machine_is_compatible() wouldn't make the code cleaner.
 
-diff --git a/include/linux/fence.h b/include/linux/fence.h
-index 8499ace..33a265d 100644
---- a/include/linux/fence.h
-+++ b/include/linux/fence.h
-@@ -200,10 +200,13 @@ static inline void fence_get(struct fence *fence)
-  */
- static inline struct fence *fence_get_rcu(struct fence *fence)
- {
--	struct fence *f = ACCESS_ONCE(fence);
-+	/*
-+	 * Either we make the function operate on __rcu pointers
-+	 * or remove ACCESS_ONCE
-+	 */
- 
--	if (kref_get_unless_zero(&f->refcount))
--		return f;
-+	if (kref_get_unless_zero(&fence->refcount))
-+		return fence;
- 	else
- 		return NULL;
- }
-diff --git a/include/linux/reservation.h b/include/linux/reservation.h
-index d6e1f62..ab586a6 100644
---- a/include/linux/reservation.h
-+++ b/include/linux/reservation.h
-@@ -50,16 +50,26 @@ extern struct lock_class_key reservation_seqcount_class;
- 
- struct reservation_object_list {
- 	struct rcu_head rcu;
-+	/* Protected by reservation_object::seq */
- 	u32 shared_count, shared_max;
--	struct fence *shared[];
-+	/* 
-+	 * Immutable. Individual pointers in the array are protected
-+	 * by reservation_object::seq and rcu. Hence while assigning those
-+	 * pointers, rcu_assign_pointer is needed. When reading them
-+	 * inside the seqlock, you may use rcu_dereference_protected().
-+	 */
-+	struct fence __rcu *shared[];
- };
- 
- struct reservation_object {
- 	struct ww_mutex lock;
- 	seqcount_t seq;
- 
-+	/* protected by @seq */
- 	struct fence *fence_excl;
--	struct reservation_object_list *fence;
-+	/* rcu protected by @lock */
-+	struct reservation_object_list __rcu *fence;
-+	/* Protected by @lock */
- 	struct reservation_object_list *staged;
- };
- 
-@@ -109,7 +119,7 @@ reservation_object_get_list(struct reservation_object *obj)
- {
- 	reservation_object_assert_held(obj);
- 
--	return obj->fence;
-+	return rcu_dereference_protected(obj->fence, 1);
- }
- 
- static inline struct fence *
+For now, I wouldn't mind adding soc_is_exynos3250(), but in general such 
+code surrounded with if (soc_is_xx()) blocks should be reworked to use 
+something better, for example function pointers, as Olof suggested.
 
---------------060504020804050705070008--
+Best regards,
+Tomasz
