@@ -1,159 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756636AbaDKJWE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 05:22:04 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:44187 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756570AbaDKJV5 (ORCPT
+	id S932111AbaDKJWa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 05:22:30 -0400
+Received: from moutng.kundenserver.de ([212.227.126.130]:64665 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755949AbaDKJWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 05:21:57 -0400
-Message-ID: <5347B431.5060506@gmail.com>
-Date: Fri, 11 Apr 2014 11:21:53 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>,
-        linus.walleij@linaro.org
-CC: alexandre.belloni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 1/5] pinctrl: allows not to define the get_group_pins
- operation
-References: <1397135274-10764-1-git-send-email-antoine.tenart@free-electrons.com> <1397135274-10764-2-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1397135274-10764-2-git-send-email-antoine.tenart@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Fri, 11 Apr 2014 05:22:20 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Matthias Brugger <matthias.bgg@gmail.com>
+Cc: Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Jonathan Cameron <jic23@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Silvio F <silvio.fricke@gmail.com>,
+        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko.stuebner@bq.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/4] clocksource: Add support for the Mediatek SoCs
+Date: Fri, 11 Apr 2014 11:21:59 +0200
+Message-ID: <129772722.mXH1xx9vCv@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CABuKBeKr77qJwusoTgjR2yOspWbi6Exvt5i8WPc5tjd7fez-YA@mail.gmail.com>
+References: <1397072736-10793-1-git-send-email-matthias.bgg@gmail.com> <CAOesGMg2zvPPeyqTvztiNKVJzWP5PsNs2pkXKMaS+CfXHgO0rQ@mail.gmail.com> <CABuKBeKr77qJwusoTgjR2yOspWbi6Exvt5i8WPc5tjd7fez-YA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:7M3Dkc7fXOTCsWfNGItxKWfNlolrXf+NNe8Zedz5cM1
+ eKH6W2JPjMA0HLdNBsbvS3iH2ovgX0bVmh2AStrK8azJiwX+7a
+ sVmYIbhmokH9DT27ltmeB6eMLLCcI+T8MKDs2dyquUr+vSnKrw
+ rQbw0k+AkWCY6UAs04/4whlIjwmPHNTCly/jo8oPugHeDk6VCT
+ U9wTUZY+9zJsGLAttLCgMrJC0h+DCPQjnofFhSfXGMQojGv1fv
+ bl667nVbrebfK7BY9BHcoKnO9DSVf2eoqNQcd2i7tHWm4xHaW1
+ PBrNeXXPXlhJjHso1YutBOwLclat7/SSKXF8hHaQMGKpi+wj6I
+ mRe+6efJzxOW4TvGEl1Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2014 03:07 PM, Antoine Ténart wrote:
-> When using a group only pinctrl driver, which does not have any
-> information on the pins it is useless to define a get_group_pins
-> always returning an empty list of pins.
->
-> When not using get_group_pin[1], a driver must implement it so
-> pins = NULL and num_pins = 0. This patch makes it the default
-> behaviour if not defined in the pinctrl driver when used in
-> pinmux enable and disable funtions and in pinctrl_groups_show.
->
-> It also adds a check in pinctrl_get_group_pins and return -EINVAL if
-> not defined. This function is called in the gpiolib when adding when
-> pingroup range. It cannot be used if no group is defined, so this seams
-> reasonable.
+On Friday 11 April 2014 11:07:35 Matthias Brugger wrote:
+> >
+> > Of course, you'll still need these for the A9-based platforms, so the
+> > driver might very well be needed anyway. Some of the earlier patches
+> > seem to be for A7-based systems so I'm not sure what you're primarily
+> > working on here. 
+> 
+> I'm working on a Cortex-A7 based platform. But ARM_ARCH_TIMER seems to
+> get no clocking.
+> Initializing the timer fails with:
+> Architected timer frequency not available
+> 
+> That's why I use the SoC timer.
 
-I don't have a strong opinion about making pins optional for pinctrl
-drivers. I'll leave it for Linus to decide on it.
+Are you sure you're not just missing a "clock-frequency" property
+in your DT node for the timer?
 
-But have you checked all the other places pins are referred to?
-
-One place that jumps into my mind would be the DEBUGFS files...
-
-Sebastian
-
-> [1] get_group_pin(struct pinctrl_dev *pctldev,
-> 		  unsigned selector,
-> 		  const unsigned **pins,
-> 		  unsigned *num_pins);
->
-> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> ---
->   drivers/pinctrl/core.c   | 17 ++++++++++-------
->   drivers/pinctrl/pinmux.c | 23 +++++++++++++----------
->   2 files changed, 23 insertions(+), 17 deletions(-)
->
-> diff --git a/drivers/pinctrl/core.c b/drivers/pinctrl/core.c
-> index c0fe6091566a..e09474ecde23 100644
-> --- a/drivers/pinctrl/core.c
-> +++ b/drivers/pinctrl/core.c
-> @@ -468,6 +468,9 @@ int pinctrl_get_group_pins(struct pinctrl_dev *pctldev, const char *pin_group,
->   	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
->   	int gs;
->
-> +	if (!pctlops->get_group_pins)
-> +		return -EINVAL;
-> +
->   	gs = pinctrl_get_group_selector(pctldev, pin_group);
->   	if (gs < 0)
->   		return gs;
-> @@ -1362,15 +1365,16 @@ static int pinctrl_groups_show(struct seq_file *s, void *what)
->
->   	seq_puts(s, "registered pin groups:\n");
->   	while (selector < ngroups) {
-> -		const unsigned *pins;
-> -		unsigned num_pins;
-> +		const unsigned *pins = NULL;
-> +		unsigned num_pins = 0;
->   		const char *gname = ops->get_group_name(pctldev, selector);
->   		const char *pname;
-> -		int ret;
-> +		int ret = 0;
->   		int i;
->
-> -		ret = ops->get_group_pins(pctldev, selector,
-> -					  &pins, &num_pins);
-> +		if (ops->get_group_pins)
-> +			ret = ops->get_group_pins(pctldev, selector,
-> +						  &pins, &num_pins);
->   		if (ret)
->   			seq_printf(s, "%s [ERROR GETTING PINS]\n",
->   				   gname);
-> @@ -1694,8 +1698,7 @@ static int pinctrl_check_ops(struct pinctrl_dev *pctldev)
->
->   	if (!ops ||
->   	    !ops->get_groups_count ||
-> -	    !ops->get_group_name ||
-> -	    !ops->get_group_pins)
-> +	    !ops->get_group_name)
->   		return -EINVAL;
->
->   	if (ops->dt_node_to_map && !ops->dt_free_map)
-> diff --git a/drivers/pinctrl/pinmux.c b/drivers/pinctrl/pinmux.c
-> index 9248ce4efed4..051e8592990e 100644
-> --- a/drivers/pinctrl/pinmux.c
-> +++ b/drivers/pinctrl/pinmux.c
-> @@ -391,14 +391,16 @@ int pinmux_enable_setting(struct pinctrl_setting const *setting)
->   	struct pinctrl_dev *pctldev = setting->pctldev;
->   	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
->   	const struct pinmux_ops *ops = pctldev->desc->pmxops;
-> -	int ret;
-> -	const unsigned *pins;
-> -	unsigned num_pins;
-> +	int ret = 0;
-> +	const unsigned *pins = NULL;
-> +	unsigned num_pins = 0;
->   	int i;
->   	struct pin_desc *desc;
->
-> -	ret = pctlops->get_group_pins(pctldev, setting->data.mux.group,
-> -				      &pins, &num_pins);
-> +	if (pctlops->get_group_pins)
-> +		ret = pctlops->get_group_pins(pctldev, setting->data.mux.group,
-> +					      &pins, &num_pins);
-> +
->   	if (ret) {
->   		const char *gname;
->
-> @@ -470,14 +472,15 @@ void pinmux_disable_setting(struct pinctrl_setting const *setting)
->   	struct pinctrl_dev *pctldev = setting->pctldev;
->   	const struct pinctrl_ops *pctlops = pctldev->desc->pctlops;
->   	const struct pinmux_ops *ops = pctldev->desc->pmxops;
-> -	int ret;
-> -	const unsigned *pins;
-> -	unsigned num_pins;
-> +	int ret = 0;
-> +	const unsigned *pins = NULL;
-> +	unsigned num_pins = 0;
->   	int i;
->   	struct pin_desc *desc;
->
-> -	ret = pctlops->get_group_pins(pctldev, setting->data.mux.group,
-> -				      &pins, &num_pins);
-> +	if (pctlops->get_group_pins)
-> +		ret = pctlops->get_group_pins(pctldev, setting->data.mux.group,
-> +					      &pins, &num_pins);
->   	if (ret) {
->   		const char *gname;
->
->
-
+	Arnd
