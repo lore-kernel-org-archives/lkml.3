@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470AbaDKIRf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 04:17:35 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35404 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750817AbaDKIRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 04:17:30 -0400
-Message-ID: <5347A4FD.1030803@ti.com>
-Date: Fri, 11 Apr 2014 13:47:01 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755749AbaDKISq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 04:18:46 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:44169 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750805AbaDKISn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 04:18:43 -0400
+Date: Fri, 11 Apr 2014 10:18:39 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Jisheng Zhang <jszhang@marvell.com>
+Cc: "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        Jimmy Xu <zmxu@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND 2/5] pinctrl: berlin: add a pinctrl driver for
+ Marvell Berlin SoCs
+Message-ID: <20140411081839.GB20147@kwain>
+References: <1397135274-10764-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1397135274-10764-3-git-send-email-antoine.tenart@free-electrons.com>
+ <20140411144431.04fb148d@xhacker>
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <dan.j.williams@intel.com>,
-        <vinod.koul@intel.com>
-CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <joelf@ti.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <mporter@linaro.org>
-Subject: Re: [PATCH v2 05/14] arm: common: edma: Select event queue 1 as default
- when booted with DT
-References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com> <1396357575-30585-6-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1396357575-30585-6-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140411144431.04fb148d@xhacker>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 01 April 2014 06:36 PM, Peter Ujfalusi wrote:
-> Use the EVENTQ_1 for default and leave the EVENTQ_0 to be used by high
-> priority channels, like audio.
+Hi Jisheng,
+
+On Fri, Apr 11, 2014 at 02:44:31PM +0800, Jisheng Zhang wrote:
+> On Thu, 10 Apr 2014 06:07:51 -0700
+> Antoine Ténart <antoine.tenart@free-electrons.com> wrote:
 > 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-
-Acked-by: Sekhar Nori <nsekhar@ti.com>
-
-> ---
->  arch/arm/common/edma.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+> ...
+> > +static int berlin_pinmux_enable(struct pinctrl_dev *pctrl_dev,
+> > +                               unsigned function,
+> > +                               unsigned group)
+> > +{
+> > +       struct berlin_pinctrl *pctrl = pinctrl_dev_get_drvdata(pctrl_dev);
+> > +       struct berlin_pinctrl_group *group_desc = pctrl->groups + group;
+> > +       struct berlin_pinctrl_function *function_desc =
+> > +               pctrl->functions + function;
+> > +       unsigned long flags;
+> > +       u32 regval;
+> > +
+> > +       spin_lock_irqsave(&pctrl->lock, flags);
+> > +
+> > +       regval = readl(group_desc->reg);
+> > +       regval &= group_desc->mask;
+> > +       regval |= function_desc->muxval << group_desc->lsb;
+> > +       writel(regval, group_desc->reg);
 > 
-> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
-> index 86a8b263278f..19520e2519d9 100644
-> --- a/arch/arm/common/edma.c
-> +++ b/arch/arm/common/edma.c
-> @@ -1546,7 +1546,8 @@ static int edma_of_parse_dt(struct device *dev,
->  
->  	pdata->queue_priority_mapping = queue_priority_map;
->  
-> -	pdata->default_queue = 0;
-> +	/* select queue 1 as default */
+> Could we use relaxed version instead?
 
-It will be nice to expand the comment with explanation of why this is
-being chosen as default (lower priority queue by default for typical
-bulk data transfer).
+We could, but this is not a performance issue here at all, so I guess we can
+keep writel().
 
-Thanks,
-Sekhar
+Thanks for the feedback !
 
+Antoine
+
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
