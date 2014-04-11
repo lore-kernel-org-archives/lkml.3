@@ -1,180 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755783AbaDKUym (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 16:54:42 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:38248 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831AbaDKUyk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 16:54:40 -0400
-Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH] nfs-rdma: Fix for FMR leaks
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <002e01cf5444$a58c2c10$f0a48430$@cox.net>
-Date: Fri, 11 Apr 2014 16:54:15 -0400
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <36E0E306-3227-4F42-AD1F-9A8B2AFB574E@oracle.com>
-References: <nyc61n00p3VzoHe01yc7ug> <002e01cf5444$a58c2c10$f0a48430$@cox.net>
-To: Allen Andrews <allen.andrews@cox.net>
-X-Mailer: Apple Mail (2.1874)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1755587AbaDKU43 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 16:56:29 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51702 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753067AbaDKU42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 16:56:28 -0400
+Message-ID: <534856E0.1040806@ti.com>
+Date: Fri, 11 Apr 2014 15:56:00 -0500
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Peter Ujfalusi <peter.ujfalusi@ti.com>, <dan.j.williams@intel.com>,
+        <nsekhar@ti.com>, <dmaengine@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <mporter@linaro.org>
+Subject: Re: [PATCH v2 08/14] DMA: edma: Use different eventq for cyclic channels
+References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com> <1396357575-30585-9-git-send-email-peter.ujfalusi@ti.com> <5346C88E.8010504@ti.com> <20140411164755.GE32284@intel.com>
+In-Reply-To: <20140411164755.GE32284@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Allen-
-
-I reviewed and tested your patch. Comments inline below.
-
-
-On Apr 9, 2014, at 6:40 PM, Allen Andrews <allen.andrews@cox.net> wrote:
-
-> Two memory region leaks iwere found during testing:
+On 04/11/2014 11:47 AM, Vinod Koul wrote:
+> On Thu, Apr 10, 2014 at 11:36:30AM -0500, Joel Fernandes wrote:
+>> On 04/01/2014 08:06 AM, Peter Ujfalusi wrote:
+>>> To improve latency with cyclic DMA operation it is preferred to
+>>> use different eventq/tc than the default which is used by all
+>>> other drivers (mmc, spi, i2c, etc).
+>>> When preparing the cyclic dma ask for non default queue for the
+>>> channel which is going to be used with cyclic mode.
+>>>
+>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>>> ---
+>>>  drivers/dma/edma.c | 3 +++
+>>>  1 file changed, 3 insertions(+)
+>>>
+>>> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+>>> index 1dd9e8806975..10048b40fac8 100644
+>>> --- a/drivers/dma/edma.c
+>>> +++ b/drivers/dma/edma.c
+>>> @@ -628,6 +628,9 @@ static struct dma_async_tx_descriptor *edma_prep_dma_cyclic(
+>>>  		edesc->pset[i].opt |= TCINTEN;
+>>>  	}
+>>>  
+>>> +	/* Use different eventq/tc for cyclic DMA to reduce latency */
+>>> +	edma_request_non_default_queue(echan->ch_num);
+>>> +
+>>>  	return vchan_tx_prep(&echan->vchan, &edesc->vdesc, tx_flags);
+>>>  }
+>>>  
+>>>
+>>
+>> Is there any way to guarantee that the non-default queue is of the
+>> highest priority, or in other words default queue is of lowest priority.
+> well as we are discussing in other thread, it would make sense to pass the
+> required priority (i am using audio so pls give me highest one)
 > 
-> 1. rpcrdma_buffer_create: While allocating RPCRDMA_FRMR's ib_alloc_fast_reg_mr is called and then ib_alloc_fast_reg_page_list is called.  If ib_alloc_fast_reg_page_list returns an error it bails out of the routine dropping the last ib_alloc_fast_reg_mr frmr region creating a memory leak.  Added code to dereg the last frmr if ib_alloc_fast_reg_page_list fails.
-> 
-> 2. rpcrdma_buffer_destroy: While cleaning up, the routine will only free the MR's on the rb_mws list if there are rb_send_bufs present.  However, in rpcrdma_buffer_create while the rb_mws list is being built if one of the MR allocation requests fail after some MR's have been allocated on the rb_mws list the routine never gets to create any rb_send_bufs but instead jumps to the rpcrdma_buffer_destroy routine which will never free the MR's on rb_mws
-> list because the rb_send_bufs were never created.   This leaks all the MR's
-> on the rb_mws list that were created prior to one of the MR allocations failing.
-> 
-> Issue(2) was seen during testing. Our adapter had a finite number of MR's available and we created enough connections to where we saw an MR allocation failure on our Nth NFS connection request. After the kernel cleaned up the resources it had allocated for the Nth connection we noticed that FMR's had been leaked due to the coding error described above.
-> 
-> Issue(1) was seen during a code review while debugging issue(2).
-> 
-> Signed-off-by: Allen Andrews <allen.andrews@emulex.com>
-> ---
-> 
-> net/sunrpc/xprtrdma/verbs.c |   79 ++++++++++++++++++++++++-------------------
-> 1 files changed, 44 insertions(+), 35 deletions(-)
-> 
-> diff --git a/net/sunrpc/xprtrdma/verbs.c b/net/sunrpc/xprtrdma/verbs.c index 9372656..54f592d 100644
-> --- a/net/sunrpc/xprtrdma/verbs.c
-> +++ b/net/sunrpc/xprtrdma/verbs.c
-> @@ -1058,6 +1058,14 @@ rpcrdma_buffer_create(struct rpcrdma_buffer *buf, struct rpcrdma_ep *ep,
-> 				dprintk("RPC:       %s: "
-> 					"ib_alloc_fast_reg_page_list "
-> 					"failed %i\n", __func__, rc);
-> +
-> +				rc = ib_dereg_mr(r->r.frmr.fr_mr);
 
-This clears “rc,” wiping the error returned by ib_alloc_fast_reg_page_list().
+Yes, I'm aware of that part of the discussion ;) I also replied there.
+This post was sent much earlier on.
 
-Then rpcrdma_buffer_create() returns zero, even though it failed, and xprtrdma thinks the
-transport is set up and ready for use. Panic.
+thanks,
 
-I think you can safely ignore the return code from ib_dereg_mr() here.
-
-
-> +				if (rc)
-> +					dprintk("RPC:       %s:"
-> +						" ib_dereg_mr"
-> +						" failed %i\n",
-> +						__func__, rc);
-> +
-> 				goto out;
-> 			}
-> 			list_add(&r->mw_list, &buf->rb_mws); @@ -1194,41 +1202,6 @@ rpcrdma_buffer_destroy(struct rpcrdma_buffer *buf)
-
-This line is broken: the “@@“ should start on the next line. Some kind of e-mail snafu?
-
-
-> 			kfree(buf->rb_recv_bufs[i]);
-> 		}
-> 		if (buf->rb_send_bufs && buf->rb_send_bufs[i]) {
-> -			while (!list_empty(&buf->rb_mws)) {
-> -				r = list_entry(buf->rb_mws.next,
-> -					struct rpcrdma_mw, mw_list);
-> -				list_del(&r->mw_list);
-> -				switch (ia->ri_memreg_strategy) {
-> -				case RPCRDMA_FRMR:
-> -					rc = ib_dereg_mr(r->r.frmr.fr_mr);
-> -					if (rc)
-> -						dprintk("RPC:       %s:"
-> -							" ib_dereg_mr"
-> -							" failed %i\n",
-> -							__func__, rc);
-> -					ib_free_fast_reg_page_list(r->r.frmr.fr_pgl);
-> -					break;
-> -				case RPCRDMA_MTHCAFMR:
-> -					rc = ib_dealloc_fmr(r->r.fmr);
-> -					if (rc)
-> -						dprintk("RPC:       %s:"
-> -							" ib_dealloc_fmr"
-> -							" failed %i\n",
-> -							__func__, rc);
-> -					break;
-> -				case RPCRDMA_MEMWINDOWS_ASYNC:
-> -				case RPCRDMA_MEMWINDOWS:
-> -					rc = ib_dealloc_mw(r->r.mw);
-> -					if (rc)
-> -						dprintk("RPC:       %s:"
-> -							" ib_dealloc_mw"
-> -							" failed %i\n",
-> -							__func__, rc);
-> -					break;
-> -				default:
-> -					break;
-> -				}
-> -			}
-> 			rpcrdma_deregister_internal(ia,
-> 					buf->rb_send_bufs[i]->rl_handle,
-> 					&buf->rb_send_bufs[i]->rl_iov);
-> @@ -1236,6 +1209,42 @@ rpcrdma_buffer_destroy(struct rpcrdma_buffer *buf)
-> 		}
-> 	}
-> 
-> +	while (!list_empty(&buf->rb_mws)) {
-> +		r = list_entry(buf->rb_mws.next,
-> +			struct rpcrdma_mw, mw_list);
-> +		list_del(&r->mw_list);
-> +		switch (ia->ri_memreg_strategy) {
-> +		case RPCRDMA_FRMR:
-> +			rc = ib_dereg_mr(r->r.frmr.fr_mr);
-> +			if (rc)
-> +				dprintk("RPC:       %s:"
-> +					" ib_dereg_mr"
-> +					" failed %i\n",
-> +					__func__, rc);
-> +			ib_free_fast_reg_page_list(r->r.frmr.fr_pgl);
-> +			break;
-> +		case RPCRDMA_MTHCAFMR:
-> +			rc = ib_dealloc_fmr(r->r.fmr);
-> +			if (rc)
-> +				dprintk("RPC:       %s:"
-> +					" ib_dealloc_fmr"
-> +					" failed %i\n",
-> +					__func__, rc);
-> +			break;
-> +		case RPCRDMA_MEMWINDOWS_ASYNC:
-> +		case RPCRDMA_MEMWINDOWS:
-> +			rc = ib_dealloc_mw(r->r.mw);
-> +			if (rc)
-> +				dprintk("RPC:       %s:"
-> +					" ib_dealloc_mw"
-> +					" failed %i\n",
-> +					__func__, rc);
-> +			break;
-> +		default:
-> +			break;
-> +		}
-> +	}
-> +
-> 	kfree(buf->rb_pool);
-> }
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
---
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
-
+-Joel
