@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759409AbaDKOfl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 10:35:41 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:55517 "EHLO
+	id S934600AbaDKOfi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 10:35:38 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:54299 "EHLO
 	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758967AbaDKOfM (ORCPT
+	by vger.kernel.org with ESMTP id S1758975AbaDKOfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Apr 2014 10:35:12 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
@@ -20,9 +20,9 @@ Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-input@vger.kernel.org, kernel@stlinux.com,
         Lee Jones <lee.jones@linaro.org>,
         Giuseppe CONDORELLI <giuseppe.condorelli@st.com>
-Subject: [PATCH v3 6/7] driver: reset: sti: add keyscan for stih415
-Date: Fri, 11 Apr 2014 16:33:38 +0200
-Message-Id: <1397226820-5604-12-git-send-email-gabriel.fernandez@linaro.org>
+Subject: [PATCH v3 2/7] driver: reset: sti: add keyscan for stih415
+Date: Fri, 11 Apr 2014 16:33:30 +0200
+Message-Id: <1397226820-5604-4-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397226820-5604-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1397226820-5604-1-git-send-email-gabriel.fernandez@linaro.org>
