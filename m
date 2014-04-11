@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568AbaDKDsX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 23:48:23 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:40049 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970AbaDKDsW (ORCPT
+	id S1754752AbaDKDwl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 23:52:41 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:49670 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938AbaDKDwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 23:48:22 -0400
-Date: Thu, 10 Apr 2014 20:48:16 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, Jason Low <jason.low2@hp.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        "Michael L. Semon" <mlsemon35@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: 3.14.0+/x86: lockdep and mutexes not getting along
-Message-ID: <20140411034816.GB4496@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.LNX.2.11.1404060059020.8208@bpserver.ds>
- <20140409121940.GA12890@node.dhcp.inet.fi>
- <1397108579.2586.15.camel@j-VirtualBox>
- <20140410091824.GL10526@twins.programming.kicks-ass.net>
- <1397150084.3032.4.camel@j-VirtualBox>
- <20140410232652.GA24658@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140410232652.GA24658@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041103-7164-0000-0000-000000F81751
+	Thu, 10 Apr 2014 23:52:39 -0400
+Message-ID: <1397188356.5139.33.camel@marge.simpson.net>
+Subject: Re: [RFC PATCH RT] rwsem: The return of multi-reader PI rwsems
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <williams@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Date: Fri, 11 Apr 2014 05:52:36 +0200
+In-Reply-To: <20140410232542.23ee9920@gandalf.local.home>
+References: <20140409151922.5fa5d999@gandalf.local.home>
+	 <1397139510.5137.92.camel@marge.simpson.net>
+	 <1397140123.5137.99.camel@marge.simpson.net>
+	 <1397184626.5139.24.camel@marge.simpson.net>
+	 <20140410232542.23ee9920@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 07:26:52PM -0400, Dave Jones wrote:
-> On Thu, Apr 10, 2014 at 10:14:44AM -0700, Jason Low wrote:
->  > On Thu, 2014-04-10 at 11:18 +0200, Peter Zijlstra wrote:
->  > > On Wed, Apr 09, 2014 at 10:42:59PM -0700, Jason Low wrote:
->  > > > As a starting point, would either of you like to test the following
->  > > > patch to see if it fixes the issue? This patch essentially generates the
->  > > > same code as in older kernels in the debug case. This applies on top of
->  > > > kernels with both commits 6f008e72cd11 and 1d8fe7dc8078.
->  > > 
->  > > 
->  > > So I managed to reproduce, and the below makes it go away. I just don't
->  > > understand why though. will stare more.
->  > 
->  > So one thing I noticed that is different in the current code is that in
->  > debug_mutex_unlock(), there is is a possibility that it does not unlock
->  > the mutex (when !debug_locks). May be interesting to try out this
->  > patch too:
+On Thu, 2014-04-10 at 23:25 -0400, Steven Rostedt wrote: 
+> On Fri, 11 Apr 2014 04:50:26 +0200
+> Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
 > 
-> I've been seeing lockups this last week or two too, that manifested by
-> RCU spewing stall messages, and the box being totally unresponsive.
-> This patch seems to cure that for me, which I'm sure will make Paul
-> happy to hear.
+> > Oh, there was another useful bit. 
+> > 
+> > 3.12.17-rt25       403991     384216     377786
+> >                    405466     394011     392850
+> > 
+> > 3.12.17-nopreempt  109049     186133     118766  !?!.. ew, TTWU_QUEUE
+> >                    350385     318786     367336  !TTWU_QUEUE
+> >                    326009     356939     378215  !TTWU_QUEUE
+> > 
+> > IPI == low-pass filter.
+> 
+> I'm sorry, but I don't have the foggiest clue to what the above means.
 
-Whew!!!  ;-)
+It means..
 
-							Thanx, Paul
+# Overhead                                                                                                                                                                                   Symbol
+# ........  .......................................................................................................................................................................................
+#
+    17.33%  [k] native_write_msr_safe
+            |
+            |--88.45%-- __x2apic_send_IPI_mask
+            |          |
+            |          |--97.89%-- try_to_wake_up
+            |          |          |
+            |          |          |--99.91%-- wake_futex
+            |          |          |          |
+            |          |          |          |--99.77%-- futex_wake_op
+            |          |          |          |          do_futex
+            |          |          |          |          sys_futex
+            |          |          |          |          system_call_fastpath
+
+..wakeup frequency is restricted by the IPI.
+
+	-Mike
 
