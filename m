@@ -1,52 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021AbaDKB2B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 21:28:01 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:55802 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327AbaDKB17 (ORCPT
+	id S1754199AbaDKB3z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 21:29:55 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:54542 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754080AbaDKB3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 21:27:59 -0400
-Message-ID: <5347451C.4060106@amacapital.net>
-Date: Thu, 10 Apr 2014 18:27:56 -0700
-From: Andy Lutomirski <luto@amacapital.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 10 Apr 2014 21:29:53 -0400
+Message-ID: <53474587.5080805@hitachi.com>
+Date: Fri, 11 Apr 2014 10:29:43 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: David Herrmann <dh.herrmann@gmail.com>,
-        Tony Battersby <tonyb@cybernetics.com>
-CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Subject: Re: [PATCH 2/6] shm: add sealing API
-References: <53470E26.2030306@cybernetics.com> <CANq1E4RWf_VbzF+dPYhzHKJvnrh86me5KajmaaB1u9f9FLzftA@mail.gmail.com>
-In-Reply-To: <CANq1E4RWf_VbzF+dPYhzHKJvnrh86me5KajmaaB1u9f9FLzftA@mail.gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: Re: [RFC PATCH 4/6] uprobes/x86: Emulate rip-relative call's
+References: <20140406201628.GA507@redhat.com> <1396995963.5056.46.camel@oc7886638347.ibm.com.usor.ibm.com> <20140409154346.GB18486@redhat.com> <53469F95.1030709@redhat.com> <5346A362.9010802@hitachi.com> <20140410142820.GA24720@redhat.com>
+In-Reply-To: <20140410142820.GA24720@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/10/2014 05:22 PM, David Herrmann wrote:
-> Hi
+(2014/04/10 23:28), Oleg Nesterov wrote:
+> On 04/10, Masami Hiramatsu wrote:
+>>
+>> (2014/04/10 22:41), Denys Vlasenko wrote:
+>>> On 04/09/2014 05:43 PM, Oleg Nesterov wrote:
+>>>> On 04/08, Jim Keniston wrote:
+>>>>>
+>>>>> On Sun, 2014-04-06 at 22:16 +0200, Oleg Nesterov wrote:
+>>>>>> 0xe8. Anything else?
+>>>>>
+>>>>> No, I think e8 is the only call instruction uprobes will see.
+>>>>
+>>>> Good.
+>>>
+>>> There is this monstrosity, "16-bit override for branches" in 64-mode:
+>>>
+>>> 66 e8 nn nn       callw   <offset16>
+>>>
+>>> Nobody sane uses it because it truncates instruction pointer.
+>>
+>> No problem, insn.c can handle that too. :)
 > 
-> On Thu, Apr 10, 2014 at 11:33 PM, Tony Battersby <tonyb@cybernetics.com> wrote:
->> For O_DIRECT the kernel pins the submitted pages in memory for DMA by
->> incrementing the page reference counts when the I/O is submitted,
->> allowing the pages to be modified by DMA even if they are no longer
->> mapped in the address space of the process.  This is different from a
->> regular read(), which uses the CPU to copy the data and will fail if the
->> pages are not mapped.
+> Does it?
 > 
-> Can you please provide an example code-path? For instance,
-> file_read_actor() does not pin any pages but only keeps the user-space
-> address and resolves it once it has data to write.
+> 	"callw 1f; 1:\n"
+> 	"rep; nop\n"
+> 
+> objdump:
+> 
+> 	66 e8 00 00             callw  485 <_init-0x3ffed3>
+> 	f3 90                   pause
+> 
+> 
+> if we probe this "callw", we copy MAX_INSN_BYTES into auprobe->insn,
+> and after insn_get_length() (insn_complete() == T)
+> 
+> 	// this is correct
+> 	OPCODE1() == e8	
+> 
+> 	// this all looks wrong
+> 	insn->length == 6
+> 	insn->immediate.value == -1863122944
+> 	insn->immediate.nbytes == 4
 
-This may be an issue for anything in the kernel that calls
-get_user_pages and holds onto the result at any time that mmap_sem isn't
-held.
 
-I don't know exactly what does that, but RDMA comes to mind.  So does
-(ugh!) vmsplice, although I suspect that vmsplice doesn't write.
 
---Andy
+Oops, that should be a bug in insn.c!
+I'll fix that asap!
+
+Thank you,
+
+
+> 
+> so it seems that lib/insn.c treats the next "pause" insn as the high
+> 16 bits of address.
+> 
+> Oleg.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
