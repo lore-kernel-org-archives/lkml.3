@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759345AbaDKOf0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 10:35:26 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:55518 "EHLO
+	id S934320AbaDKOfX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 10:35:23 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:54297 "EHLO
 	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757042AbaDKOfM (ORCPT
+	by vger.kernel.org with ESMTP id S1757522AbaDKOfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Apr 2014 10:35:12 -0400
 From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
@@ -19,11 +19,10 @@ Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-input@vger.kernel.org, kernel@stlinux.com,
         Lee Jones <lee.jones@linaro.org>,
-        Giuseppe CONDORELLI <giuseppe.condorelli@st.com>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: [PATCH v3 7/7] driver: reset: sti: add keyscan for stih416
-Date: Fri, 11 Apr 2014 16:33:40 +0200
-Message-Id: <1397226820-5604-14-git-send-email-gabriel.fernandez@linaro.org>
+        Gabriel Fernandez <gabriel.fernandez@st.com>
+Subject: [PATCH v3 7/7] ARM: multi_v7_defconfig: add ST Keyscan driver
+Date: Fri, 11 Apr 2014 16:33:39 +0200
+Message-Id: <1397226820-5604-13-git-send-email-gabriel.fernandez@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397226820-5604-1-git-send-email-gabriel.fernandez@linaro.org>
 References: <1397226820-5604-1-git-send-email-gabriel.fernandez@linaro.org>
@@ -33,40 +32,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Giuseppe CONDORELLI <giuseppe.condorelli@st.com>
+From: Gabriel Fernandez <gabriel.fernandez@st.com>
 
-Add keyscan reset on stih416 reset controller.
+This patch adds KEYBOARD_ST_KEYSCAN config
 
-Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/reset/sti/reset-stih416.c                     | 1 +
- include/dt-bindings/reset-controller/stih416-resets.h | 1 +
- 2 files changed, 2 insertions(+)
+ arch/arm/configs/multi_v7_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/reset/sti/reset-stih416.c b/drivers/reset/sti/reset-stih416.c
-index fe3bf02..5fc9870 100644
---- a/drivers/reset/sti/reset-stih416.c
-+++ b/drivers/reset/sti/reset-stih416.c
-@@ -104,6 +104,7 @@ static const struct syscfg_reset_channel_data stih416_softresets[] = {
- 	[STIH416_COMPO_A_SOFTRESET] = STIH416_SRST_CPU(SYSCFG_7564, 4),
- 	[STIH416_VP8_DEC_SOFTRESET] = STIH416_SRST_CPU(SYSCFG_7564, 10),
- 	[STIH416_VTG_MAIN_SOFTRESET] = STIH416_SRST_CPU(SYSCFG_7564, 16),
-+	[STIH416_KEYSCAN_SOFTRESET] = STIH416_SRST_LPM(LPM_SYSCFG_1, 8),
- };
- 
- static struct syscfg_reset_controller_data stih416_powerdown_controller = {
-diff --git a/include/dt-bindings/reset-controller/stih416-resets.h b/include/dt-bindings/reset-controller/stih416-resets.h
-index 2127743..fcf9af1 100644
---- a/include/dt-bindings/reset-controller/stih416-resets.h
-+++ b/include/dt-bindings/reset-controller/stih416-resets.h
-@@ -46,5 +46,6 @@
- #define STIH416_COMPO_A_SOFTRESET	25
- #define STIH416_VP8_DEC_SOFTRESET	26
- #define STIH416_VTG_MAIN_SOFTRESET	27
-+#define STIH416_KEYSCAN_SOFTRESET	28
- 
- #endif /* _DT_BINDINGS_RESET_CONTROLLER_STIH416 */
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index d4e8a47..4f0dce1 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -143,6 +143,7 @@ CONFIG_INPUT_EVDEV=y
+ CONFIG_KEYBOARD_GPIO=y
+ CONFIG_KEYBOARD_TEGRA=y
+ CONFIG_KEYBOARD_SPEAR=y
++CONFIG_KEYBOARD_ST_KEYSCAN=y
+ CONFIG_KEYBOARD_CROS_EC=y
+ CONFIG_MOUSE_PS2_ELANTECH=y
+ CONFIG_INPUT_MISC=y
 -- 
 1.9.1
 
