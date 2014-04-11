@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757343AbaDKOZa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 10:25:30 -0400
-Received: from mx.tbricks.com ([212.247.19.44]:40978 "EHLO mx.tbricks.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753964AbaDKOZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 10:25:28 -0400
-From: "Vladimir Nikulichev" <nvs@tbricks.com>
-Subject: [PATCH] perf tools: Adjust symbols in VDSO
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        "linux-perf-users@vger.kernel.org" <linux-perf-users@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-X-Mailer: CommuniGate Pro WebUser v5.2.20
-Date: Fri, 11 Apr 2014 18:25:27 +0400
-Message-ID: <web-7508803@mx2.tbricks.com>
+	id S1758754AbaDKOc7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 10:32:59 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:33534 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756093AbaDKOc6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 10:32:58 -0400
+Message-ID: <5347FCED.8040706@oracle.com>
+Date: Fri, 11 Apr 2014 10:32:13 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8;format="flowed"
-Content-Transfer-Encoding: 8bit
+To: Kirill Tkhai <tkhai@yandex.ru>, Michael wang <wangyun@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "ktkhai@parallels.com" <ktkhai@parallels.com>
+CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: sched: hang in migrate_swap
+References: <5304F32A.4040907@oracle.com> <5305856F.3000109@linux.vnet.ibm.com> <53078241.3060201@oracle.com> <53080122.609@linux.vnet.ibm.com> <530ABB44.5000601@oracle.com> <530AD653.3000808@linux.vnet.ibm.com> <20140224071028.GW9987@twins.programming.kicks-ass.net> <530B1B80.4000307@linux.vnet.ibm.com> <20140224121218.GR15586@twins.programming.kicks-ass.net> <534610A4.5000302@oracle.com> <53464164.5030701@linux.vnet.ibm.com> <336561397137116@web27h.yandex.ru>
+In-Reply-To: <336561397137116@web27h.yandex.ru>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf tools: Adjust symbols in VDSO
+On 04/10/2014 09:38 AM, Kirill Tkhai wrote:
+> 10.04.2014, 11:00, "Michael wang" <wangyun@linux.vnet.ibm.com>:
+>> > On 04/10/2014 11:31 AM, Sasha Levin wrote:
+>> > [snip]
+>> >
+>>> >>  I'd like to re-open this issue. It seems that something broke and I'm
+>>> >>  now seeing the same issues that have gone away 2 months with this patch
+>>> >>  again.
+>> >
+>> > A new mechanism has been designed to move the priority checking inside
+>> > idle_balance(), including Kirill who is the designer ;-)
+> Not sure, it's connected with my patch. But looks like, we forgot
+> exactly stop class. Maybe this will help?
+> 
+> [PATCH] sched: Checking for stop task appearance when balancing happens
+> 
+> Just do it, like we do for other higher priority classes...
+> 
+> Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
 
-pert-report doesn't resolve function names in VDSO:
+I've been running with this patch for the last two days and the hang
+seems to be gone.
 
-$ perf report --stdio -g flat,0.0,15,callee --sort pid
-...
-             8.76%
-                0x7fff6b1fe861
-                __gettimeofday
-                ACE_OS::gettimeofday()
-...
+I'll leave it running on the weekend and will update again on Monday.
 
-In this case symbol values should be adjusted the same way as for 
-executables,
-relocatable objects and prelinked libraries.
 
-After fix:
-
-$ perf report --stdio -g flat,0.0,15,callee --sort pid
-...
-             8.76%
-                __vdso_gettimeofday
-                __gettimeofday
-                ACE_OS::gettimeofday()
-
-Signed-off-by: Vladimir Nikulichev <nvs@tbricks.com>
-
-diff --git a/tools/perf/util/symbol-elf.c 
-b/tools/perf/util/symbol-elf.c
-index 3b7dbf5..6864661 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -6,6 +6,7 @@
-#include <inttypes.h>
-
-#include "symbol.h"
-+#include "vdso.h"
-#include <symbol/kallsyms.h>
-#include "debug.h"
-
-@@ -618,6 +619,7 @@ int symsrc__init(struct symsrc *ss, struct dso 
-*dso, const char *name,
-		GElf_Shdr shdr;
-		ss->adjust_symbols = (ehdr.e_type == ET_EXEC ||
-				ehdr.e_type == ET_REL ||
-+				is_vdso_map(dso->short_name) ||
-				elf_section_by_name(elf, &ehdr, &shdr,
-						     ".gnu.prelink_undo",
-						     NULL) != NULL);
+Thanks,
+Sasha
