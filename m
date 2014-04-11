@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754826AbaDKKEZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 06:04:25 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:33735 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750848AbaDKKEX (ORCPT
+	id S1756807AbaDKKFF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 06:05:05 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48569 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848AbaDKKFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 06:04:23 -0400
+	Fri, 11 Apr 2014 06:05:02 -0400
+Date: Fri, 11 Apr 2014 11:04:48 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <20140411100448.GN6518@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20140410143857.GA27654@localhost.localdomain>
-References: <CAKohpo=uT0oC+bZVJQPsoGLb-a4y4huYKtd1ayb4_+iH4906nw@mail.gmail.com>
-	<CAKohpom5Ft_XrNTExE9Ukyv1e4car+wicDiPp_Bdhy=PW9Sq8g@mail.gmail.com>
-	<20140410143857.GA27654@localhost.localdomain>
-Date: Fri, 11 Apr 2014 15:34:23 +0530
-Message-ID: <CAKohpomMhpGsYGafr5uZ0QgO0MEndqDA4G=4syhus4sZW3d8cg@mail.gmail.com>
-Subject: Re: [Query]: tick-sched: why don't we stop tick when we are running
- idle task?
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2DT8m24oj8Onh3Jp"
+Content-Disposition: inline
+X-Cookie: This report is filled with omissions.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [GIT PULL] regmap fix for v3.15
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 April 2014 20:09, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 9f8af69..1e2d6b7 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -202,13 +202,16 @@ static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now);
->  void __tick_nohz_full_check(void)
->  {
->         struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
-> +       unsigned long flags;
->
-> +       local_irq_save(flags);
 
-As we need to disable interrupts to read this variable, would it be
-better to just remove this completely and use is_idle_task(current)
-instead?
+--2DT8m24oj8Onh3Jp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->         if (tick_nohz_full_cpu(smp_processor_id())) {
-> -               if (ts->tick_stopped && !is_idle_task(current)) {
-> +               if (ts->tick_stopped && !ts->inidle)) {
->                         if (!can_stop_full_tick())
->                                 tick_nohz_restart_sched_tick(ts, ktime_get());
->                 }
->         }
-> +       local_irq_restore(flags);
->  }
+The following changes since commit 6cfec04bcc05a829179c02584bb55f28fee03795:
 
-> If you like it I'll push it to Ingo.
+  regmap: Separate regmap dev initialization (2014-02-16 09:53:02 +0800)
 
-Yes please. And thanks for the explanations. It was pretty useful.
+are available in the git repository at:
 
-I am looking to offload 1 second tick to timekeeping CPUs and so
-going through these frameworks. I don't have a working solution yet
-(even partially :)). Would send a RFC to you as soon as I get anything
-working.
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/regmap-v3.15-nodev
 
---
-viresh
+for you to fetch changes up to a7a037c837cb0f9d011cb3ca6e6837989986570c:
+
+  regmap: adds missing braces in regmap_init() (2014-04-01 12:09:08 +0100)
+
+----------------------------------------------------------------
+regmap: Fix for nodev mode
+
+Add mising braces so that the nodev mode actually works (which was a bit
+of an oversight).
+
+----------------------------------------------------------------
+Daeseok Youn (1):
+      regmap: adds missing braces in regmap_init()
+
+ drivers/base/regmap/regmap.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--2DT8m24oj8Onh3Jp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTR749AAoJELSic+t+oim9ZTkP/RY8RY260UxBVk0wwhU7KsDR
+j5fJIyVso2F1etBWeqOZ46Xn2xL6o4mrAVvrRGWmUwJZADMWdxHIeBjn89CyqtC6
+Cg/9jUxKiiT+1dlEdBB2Is3ZqSE2TMpYoEjfHuFlBq+5LkP62XUM5sQQT5OZjcYs
+My7lZ002PfLKlgDeAvkEYbswbZLyjuubNgv5w/CZc5AaIeFLVdK7ukUzrlz3H8VR
+7PFXjNycbRSma3f+f95vJ8Kvvcko0a95B2Q5IIPlKN5g9IwSyF7p8AWFq4aiKrrj
+zM+A0wbW6w9qvGhx7bQhtHYryoXgaPyydsSRk52sI23XmOZD5pmlx8KHCxh+Fb0n
+fQ6v8KVrTaGdp+cFoeC/+lT0HSlwfuJjjgQhbIk2Zcj6E1fGwa0+uzNTjmgHNlRE
+Dvu9eHy5TfSEl7IJmHz9A3Wt5DhQ44Ea5WNbonMg8qz+odSDNHKlFpQ7xxSqd0rf
+0K8/FE/4k2sZQ6775i9e7WEuQpMpf2cQYWabLv/S8ZtYqfBV37lr0J7uEV/UTJQ1
+8wu6TSCCzN1Ur/NPEXYdp7a8AwjZn3GLn/vICAlaMDmAoPTpX2o5nYMWWrIa/1h4
+ExAgN51Uj6duT5KPE6E1Hokzer226BOVwBS7o9Y2kAUtWLU+j56W/nquVG6n9049
+wU0c+FfkQzlRI0SGlKYB
+=9SBi
+-----END PGP SIGNATURE-----
+
+--2DT8m24oj8Onh3Jp--
