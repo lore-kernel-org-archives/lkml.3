@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934881AbaDKOkl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 10:40:41 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:64241 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759361AbaDKOki (ORCPT
+	id S934649AbaDKOfp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 10:35:45 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:55520 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758999AbaDKOfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 10:40:38 -0400
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, arm@kernel.org, arnd@arndb.de,
-        Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH] ARM: moxart: add select CLKSRC_OF to ARCH_MOXART
-Date: Fri, 11 Apr 2014 16:40:26 +0200
-Message-Id: <1397227226-20763-1-git-send-email-jonas.jensen@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
+	Fri, 11 Apr 2014 10:35:12 -0400
+From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-input@vger.kernel.org, kernel@stlinux.com,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@st.com>
+Subject: [PATCH v3 5/7] ARM: multi_v7_defconfig: add ST Keyscan driver
+Date: Fri, 11 Apr 2014 16:33:36 +0200
+Message-Id: <1397226820-5604-10-git-send-email-gabriel.fernandez@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1397226820-5604-1-git-send-email-gabriel.fernandez@linaro.org>
+References: <1397226820-5604-1-git-send-email-gabriel.fernandez@linaro.org>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-04-11_04:2014-04-11,2014-04-11,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CLKSRC_OF was recently removed from options selected by
-ARCH_MULTIPLATFORM, breaking boot on MOXA ART SoCs.
+From: Gabriel Fernandez <gabriel.fernandez@st.com>
 
-Add it to options selected by ARCH_MOXART.
+This patch adds KEYBOARD_ST_KEYSCAN config
 
-Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
-
-Notes:
-    see "Merge tag 'cleanup-3.15' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc" dfc25e4503aef6b82a1de4a0fbe19aafa8648fbe
-    
-    Applies to next-20140409
-
- arch/arm/mach-moxart/Kconfig | 1 +
+ arch/arm/configs/multi_v7_defconfig | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/mach-moxart/Kconfig b/arch/arm/mach-moxart/Kconfig
-index 82a4ba8..7b320c6 100644
---- a/arch/arm/mach-moxart/Kconfig
-+++ b/arch/arm/mach-moxart/Kconfig
-@@ -2,6 +2,7 @@ config ARCH_MOXART
- 	bool "MOXA ART SoC" if ARCH_MULTI_V4
- 	select CPU_FA526
- 	select ARM_DMA_MEM_BUFFERABLE
-+	select CLKSRC_OF
- 	select CLKSRC_MMIO
- 	select GENERIC_IRQ_CHIP
- 	select ARCH_REQUIRE_GPIOLIB
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index d4e8a47..4f0dce1 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -143,6 +143,7 @@ CONFIG_INPUT_EVDEV=y
+ CONFIG_KEYBOARD_GPIO=y
+ CONFIG_KEYBOARD_TEGRA=y
+ CONFIG_KEYBOARD_SPEAR=y
++CONFIG_KEYBOARD_ST_KEYSCAN=y
+ CONFIG_KEYBOARD_CROS_EC=y
+ CONFIG_MOUSE_PS2_ELANTECH=y
+ CONFIG_INPUT_MISC=y
 -- 
-1.8.2.1
+1.9.1
 
