@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323AbaDKCAw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 22:00:52 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:9159 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922AbaDKCAt (ORCPT
+	id S1754423AbaDKCDU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 22:03:20 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:35594 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753294AbaDKCDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 22:00:49 -0400
-X-AuditID: cbfee68e-b7f566d000002344-d5-53474ccfa690
+	Thu, 10 Apr 2014 22:03:18 -0400
+X-AuditID: cbfee68d-b7fcd6d00000315b-d2-53474d650138
+Message-id: <53474D66.7020605@samsung.com>
+Date: Fri, 11 Apr 2014 11:03:18 +0900
 From: Chanwoo Choi <cw00.choi@samsung.com>
-To: jic23@kernel.org, ch.naveen@samsung.com, kgene.kim@samsung.com
-Cc: linux-iio@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH] iio: adc: exynos_adc: Control special clock of ADC to support
- Exynos3250 ADC
-Date: Fri, 11 Apr 2014 11:00:40 +0900
-Message-id: <1397181640-18513-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrELMWRmVeSWpSXmKPExsWyRsSkWPe8j3uwwcRrBhZ3nx9mtLj+5Tmr
-	xYOmVUwWvQuuslmcbXrDbrHp8TVWi3lH3rFYXN41h81ixvl9TA6cHptWdbJ5bF5S79G3ZRWj
-	x+dNcgEsUVw2Kak5mWWpRfp2CVwZ3xYvYS64JV6x98kGlgbG58JdjJwcEgImEj1H+pkhbDGJ
-	C/fWs3UxcnEICSxllHi+7jojTNG32WfYQWwhgemMEqvXK0AUNTFJzPy8EqyITUBLYv+LG2wg
-	toiAk8TPb/fAbGaBm4wSXzriQGxhgXiJdafXMoHYLAKqEhM7l7OA2LwCrhIXp5xlglgmJ/Fh
-	zyN2kAUSAu3sElevv2eBaBCQ+Db5EJDNAZSQldh0AOpqSYmDK26wTGAUXMDIsIpRNLUguaA4
-	Kb3ISK84Mbe4NC9dLzk/dxMjMHxP/3vWt4Px5gHrQ4zJQOMmMkuJJucDwz+vJN7Q2MzIwtTE
-	1NjI3NKMNGElcd5FD5OChATSE0tSs1NTC1KL4otKc1KLDzEycXBKNTDq/eFND7ZOluWa8+vY
-	9tSD/fMubKyYfDPO6knzaseLRhXskY98HrYuzVfRK8yY2rK8f2+RZaruyvsxaqKTRXjvr08o
-	3mFvnsKVc6rG/Rvn0Zigs7OfSLxmYua2eMi1Jb1y6qvPN3fLt2Rm3OhvWTv1K9v0L3fS/SZc
-	/nLp68aypXaMufM4tKyUWIozEg21mIuKEwGgjc6SdQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t9jQd3zPu7BBtN3aVjcfX6Y0eL6l+es
-	Fg+aVjFZ9C64ymZxtukNu8Wmx9dYLeYdecdicXnXHDaLGef3MTlwemxa1cnmsXlJvUffllWM
-	Hp83yQWwRDUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6
-	ZeYA3aKkUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxhzPi2eAlzwS3xir1P
-	NrA0MD4X7mLk5JAQMJH4NvsMO4QtJnHh3no2EFtIYDqjxOr1Cl2MXEB2E5PEzM8rGUESbAJa
-	Evtf3AArEhFwkvj57R6YzSxwk1HiS0cciC0sEC+x7vRaJhCbRUBVYmLnchYQm1fAVeLilLNM
-	EMvkJD7secQ+gZF7ASPDKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzg6HgmtYNxZYPFIUYB
-	DkYlHt6MC27BQqyJZcWVuYcYJTiYlUR4e34AhXhTEiurUovy44tKc1KLDzEmA22fyCwlmpwP
-	jNy8knhDYxMzI0sjc0MLI2Nz0oSVxHkPtFoHCgmkJ5akZqemFqQWwWxh4uCUamDk3JtVcH8J
-	wyL3MMFtHH+Phr2ffqNi88+0g1d43t/Ytq9fKinESO/G4145pgmiv5YJvknx6mQ5/+gk18Xj
-	jiH+VoKfcpuSpI/k8EsqHNr6l2GrcmJO6mrX5XMqzs75euFfiJxvh+6bXCEnN5GQK38cyw8t
-	LPjKEC/teZQ9dImlG7Pj3kdPj+9UYinOSDTUYi4qTgQANMY2tNICAAA=
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Olof Johansson <olof@lixom.net>
+Cc: kgene.kim@samsung.com, t.figa@samsung.com,
+        linux-samsung-soc@vger.kernel.org, hyunhee.kim@samsung.com,
+        sw0312.kim@samsung.com, linux-kernel@vger.kernel.org,
+        yj44.cho@samsung.com, inki.dae@samsung.com, kyungmin.park@samsung.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 03/27] ARM: EXYNOS: Add IO mapping for PMU of Exynos3250
+References: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
+ <1397122658-16013-4-git-send-email-cw00.choi@samsung.com>
+ <20140411014858.GC14934@quad.lixom.net>
+In-reply-to: <20140411014858.GC14934@quad.lixom.net>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLIsWRmVeSWpSXmKPExsWyRsSkQDfV1z3YoG+9sMXnDy3sFpPuT2Cx
+	6F1wlc3ibNMbdotNj6+xWlzeNYfNYsb5fUwWp65/BrImv2SzWD/jNYvF3p2TGR24PTYvqfe4
+	cqKJ1aNvyypGj8+b5AJYorhsUlJzMstSi/TtErgynhx9yVwwk6Xi1cZWpgbGTcxdjJwcEgIm
+	EttbG9khbDGJC/fWs3UxcnEICSxllJiy+StjFyMHWFFPZzBEfDqjxP2vTawQzmtGie9zXrGB
+	dPMKaEk0n5vPCmKzCKhK7F71EsxmA4rvf3EDrEZUIExi5fQrLBD1ghI/Jt8Ds0UElCWetF1i
+	BhnKLDCFSWLhtD9gzcICPhJ3r54FO09IYDWjxIXvmiA2J9BFs7b0M4HYzAI6Evtbp7FB2PIS
+	m9e8BRskIfCSXaJt/SMWiIsEJL5NPsQC8Y6sxKYDUO9LShxccYNlAqPYLCQ3zUIydhaSsQsY
+	mVcxiqYWJBcUJ6UXGeoVJ+YWl+al6yXn525iBEbl6X/Pencw3j5gfYgxGWjlRGYp0eR8YFTn
+	lcQbGpsZWZiamBobmVuakSasJM6b9DApSEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVANj6BbV
+	fTxP7wv8K+t967nKY7vBtevPtp6XdFvg8vnW95w71U93si6w/ldrlHRBdcnOhqBskwuff9xa
+	YPFp3USFct1QKx8WxfuXPv7aubBRLf6Jz9H2V5eFmGJFY834VuR28p2unK83ufRRRG6USdZ3
+	qfyZpada2MRWP5pafG/ygikWR75//BF7W4mlOCPRUIu5qDgRADEh99bgAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFKsWRmVeSWpSXmKPExsVy+t9jQd1UX/dggx93uC0+f2hht5h0fwKL
+	Re+Cq2wWZ5vesFtsenyN1eLyrjlsFjPO72OyOHX9M5A1+SWbxfoZr1ks9u6czOjA7bF5Sb3H
+	lRNNrB59W1YxenzeJBfAEtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCX
+	mJtqq+TiE6DrlpkDdJWSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMePJ
+	0ZfMBTNZKl5tbGVqYNzE3MXIwSEhYCLR0xncxcgJZIpJXLi3nq2LkYtDSGA6o8T9r02sEM5r
+	Ronvc16xgVTxCmhJNJ+bzwpiswioSuxe9RLMZgOK739xA6xGVCBMYuX0KywQ9YISPybfA7NF
+	BJQlnrRdYgYZyiwwhUli4bQ/YM3CAj4Sd6+eZQexhQRWM0pc+K4JYnMCXTdrSz8TiM0soCOx
+	v3UaG4QtL7F5zVvmCYwCs5DsmIWkbBaSsgWMzKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcx
+	gmP+mfQOxlUNFocYBTgYlXh4D1xyCxZiTSwrrsw9xCjBwawkwtvzAyjEm5JYWZValB9fVJqT
+	WnyIMRkYBBOZpUST84HpKK8k3tDYxMzI0sjc0MLI2Jw0YSVx3oOt1oFCAumJJanZqakFqUUw
+	W5g4OKUaGO39Typ/Nn7v0jZB475v3JwqLQPvpxL3Tcufp7K1up+48jx+uXrj4se/9NgDS709
+	GyZvjfVwKX/N0r32rVX3mQOfLl6KXS5jIWW9rFBgwfYrp083HL5+xzv337fUiX/EI+3iJt7Z
+	6rBw+yLlQ0uVrh8u/fzC4P4JpVN39xRVLgnO2zrpeIlm6xYlluKMREMt5qLiRADsA8MWPQMA	AA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -49,96 +59,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch control special clock for ADC in Exynos series's FSYS block.
-If special clock of ADC is registerd on clock list of common clk framework,
-Exynos ADC drvier have to control this clock.
+On 04/11/2014 10:48 AM, Olof Johansson wrote:
+> On Thu, Apr 10, 2014 at 06:37:14PM +0900, Chanwoo Choi wrote:
+>> This patch add memory mapping for PMU (Power Management Unit) which is used
+>> for power control of Exynos3250.
+>>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> 
+> Signed-off-by is in the wrong order, if Kyungmin wrote the patch and you're
+> just posting it...
 
-Exynos3250/Exynos4/Exynos5 has 'adc' clock as following:
-- 'adc' clock: bus clock for ADC
 
-Exynos3250 has additional 'sclk_tsadc' clock as following:
-- 'sclk_tsadc' clock: special clock for ADC which provide clock to internal ADC
+No, I implemented this patch and posted it.
 
-Exynos 4210/4212/4412 and Exynos5250/5420 has not included 'sclk_tsadc' clock
-in FSYS_BLK. But, Exynos3250 based on Cortex-A7 has only included 'sclk_tsadc'
-clock in FSYS_BLK.
-
-Cc: Jonathan Cameron <jic23@kernel.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: linux-iio@vger.kernel.org
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/iio/adc/exynos_adc.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
-
-diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
-index d25b262..4cd1975 100644
---- a/drivers/iio/adc/exynos_adc.c
-+++ b/drivers/iio/adc/exynos_adc.c
-@@ -88,6 +88,7 @@ struct exynos_adc {
- 	void __iomem		*regs;
- 	void __iomem		*enable_reg;
- 	struct clk		*clk;
-+	struct clk		*sclk;
- 	unsigned int		irq;
- 	struct regulator	*vdd;
- 
-@@ -308,6 +309,13 @@ static int exynos_adc_probe(struct platform_device *pdev)
- 		goto err_irq;
- 	}
- 
-+	info->sclk = devm_clk_get(&pdev->dev, "sclk_tsadc");
-+	if (IS_ERR(info->sclk)) {
-+		dev_warn(&pdev->dev, "failed getting sclk clock, err = %ld\n",
-+							PTR_ERR(info->sclk));
-+		info->sclk = NULL;
-+	}
-+
- 	info->vdd = devm_regulator_get(&pdev->dev, "vdd");
- 	if (IS_ERR(info->vdd)) {
- 		dev_err(&pdev->dev, "failed getting regulator, err = %ld\n",
-@@ -341,6 +349,7 @@ static int exynos_adc_probe(struct platform_device *pdev)
- 		goto err_iio_dev;
- 
- 	clk_prepare_enable(info->clk);
-+	clk_prepare_enable(info->sclk);
- 
- 	exynos_adc_hw_init(info);
- 
-@@ -357,6 +366,7 @@ err_of_populate:
- 				exynos_adc_remove_devices);
- 	regulator_disable(info->vdd);
- 	clk_disable_unprepare(info->clk);
-+	clk_disable_unprepare(info->sclk);
- err_iio_dev:
- 	iio_device_unregister(indio_dev);
- err_irq:
-@@ -373,6 +383,7 @@ static int exynos_adc_remove(struct platform_device *pdev)
- 				exynos_adc_remove_devices);
- 	regulator_disable(info->vdd);
- 	clk_disable_unprepare(info->clk);
-+	clk_disable_unprepare(info->sclk);
- 	writel(0, info->enable_reg);
- 	iio_device_unregister(indio_dev);
- 	free_irq(info->irq, info);
-@@ -398,6 +409,7 @@ static int exynos_adc_suspend(struct device *dev)
- 	}
- 
- 	clk_disable_unprepare(info->clk);
-+	clk_disable_unprepare(info->sclk);
- 	writel(0, info->enable_reg);
- 	regulator_disable(info->vdd);
- 
-@@ -416,6 +428,7 @@ static int exynos_adc_resume(struct device *dev)
- 
- 	writel(1, info->enable_reg);
- 	clk_prepare_enable(info->clk);
-+	clk_prepare_enable(info->sclk);
- 
- 	exynos_adc_hw_init(info);
- 
--- 
-1.8.0
+Best Regards,
+Chanwoo Choi
 
