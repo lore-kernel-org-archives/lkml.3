@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814AbaDKDaf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 23:30:35 -0400
-Received: from mga09.intel.com ([134.134.136.24]:56065 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754654AbaDKDad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 23:30:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,838,1389772800"; 
-   d="scan'208";a="491148289"
-Subject: [PATCH] net: ipv4: current group_info should be put after using.
-From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
-To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: chuansheng.liu@intel.com, dongxing.zhang@intel.com,
-        xiaoming.wang@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 11 Apr 2014 13:37:08 -0400
-Message-ID: <1397237828.12958.3.camel@wxm-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754838AbaDKDdK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 23:33:10 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:50066 "EHLO
+	ringil.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104AbaDKDdI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 23:33:08 -0400
+Date: Fri, 11 Apr 2014 11:32:46 +0800
+From: Herbert Xu <herbert@gondor.apana.org.au>
+To: Matt Porter <mporter@linaro.org>
+Cc: Lubomir Rintel <lkundrak@v3.sk>, Arnd Bergmann <arnd@arndb.de>,
+        Matt Mackall <mpm@selenic.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hwrng: bcm2835: fix oops when rng h/w is accessed during
+ registration
+Message-ID: <20140411033246.GA32231@gondor.apana.org.au>
+References: <1397157730-31161-1-git-send-email-mporter@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397157730-31161-1-git-send-email-mporter@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a memory leak in ping. Current group_info had been got in 
-ping_init_sock and group_info->usage increased. 
-But the usage hasn't decreased anywhere in ping.
-This will make this group_info never freed and cause memory leak.
+On Thu, Apr 10, 2014 at 03:22:10PM -0400, Matt Porter wrote:
+> Commit "d9e7972 hwrng: add randomness to system from rng sources"
+> exposed a bug in the bcm2835-rng driver resulting in boot failure
+> on Raspberry Pi due to the following oops:
+> 
+> [   28.261523] BUG: soft lockup - CPU#0 stuck for 23s! [swapper:1]
+> [   28.271058]
+> [   28.275958] CPU: 0 PID: 1 Comm: swapper Not tainted 3.14.0+ #11
+> [   28.285374] task: db480000 ti: db484000 task.ti: db484000
+> [   28.294279] PC is at bcm2835_rng_read+0x28/0x48
+> [   28.302276] LR is at hwrng_register+0x1a8/0x238
+> .
+> .
+> .
+> 
+> The RNG h/w is not completely initialized and enabled before
+> hwrng_register() is called and so the bcm2835_rng_read() fails.
+> Fix this by making the warmup/enable writes before registering
+> the RNG source with the hwrng core.
+> 
+> Signed-off-by: Matt Porter <mporter@linaro.org>
 
-unreferenced object 0xcd0e8840 (size 192):
-  comm "dumpstate", pid 7583, jiffies 78360 (age 91.810s)
-  hex dump (first 32 bytes):
-    02 00 00 00 06 00 00 00 01 00 00 00 ef 03 00 00  ................
-    f1 03 00 00 f7 03 00 00 04 04 00 00 bb 0b 00 00  ................
-  backtrace:
-    [<c1a6bbfc>] kmemleak_alloc+0x3c/0xa0
-    [<c1320457>] __kmalloc+0xe7/0x1d0
-    [<c1267c04>] groups_alloc+0x34/0xb0
-    [<c1267e5c>] SyS_setgroups+0x3c/0xf0
-    [<c1a864a8>] syscall_call+0x7/0xb
-    [<ffffffff>] 0xffffffff
-
-Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
-Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
-Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
----
- net/ipv4/ping.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
-
-diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
-index f4b19e5..2af7b1f 100644
---- a/net/ipv4/ping.c
-+++ b/net/ipv4/ping.c
-@@ -255,23 +255,28 @@ int ping_init_sock(struct sock *sk)
- 	struct group_info *group_info = get_current_groups();
- 	int i, j, count = group_info->ngroups;
- 	kgid_t low, high;
-+	int ret = 0;
- 
- 	inet_get_ping_group_range_net(net, &low, &high);
- 	if (gid_lte(low, group) && gid_lte(group, high))
--		return 0;
-+		goto out_release_group;
- 
- 	for (i = 0; i < group_info->nblocks; i++) {
- 		int cp_count = min_t(int, NGROUPS_PER_BLOCK, count);
- 		for (j = 0; j < cp_count; j++) {
- 			kgid_t gid = group_info->blocks[i][j];
- 			if (gid_lte(low, gid) && gid_lte(gid, high))
--				return 0;
-+				goto out_release_group;
- 		}
- 
- 		count -= cp_count;
- 	}
- 
--	return -EACCES;
-+	ret = -EACCES;
-+
-+out_release_group:
-+	put_group_info(group_info);
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(ping_init_sock);
- 
+Patch applied.  Thanks a lot!
 -- 
-1.7.1
-
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
