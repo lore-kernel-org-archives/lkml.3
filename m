@@ -1,156 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759779AbaDKQ1e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:27:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56717 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759646AbaDKQJN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759645AbaDKQJN (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Apr 2014 12:09:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56440 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759432AbaDKQHj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 12:07:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?T=C3=B6r=C3=B6k=20Edwin?= <edwin@etorok.net>,
-        Wei Liu <wei.liu2@citrix.com>, Ian Campbell <ian.campbell@citrix.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 52/65] xen-netback: disable rogue vif in kthread context
-Date: Fri, 11 Apr 2014 09:11:24 -0700
-Message-Id: <20140411161004.824119196@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Finn Thain <fthain@telegraphics.com.au>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.10 37/41] futex: Allow architectures to skip futex_atomic_cmpxchg_inatomic() test
+Date: Fri, 11 Apr 2014 09:10:08 -0700
+Message-Id: <20140411160935.506318339@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
-References: <20140411160957.714773410@linuxfoundation.org>
+In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
+References: <20140411160932.865173041@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Wei Liu <wei.liu2@citrix.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-[ Upstream commit e9d8b2c2968499c1f96563e6522c56958d5a1d0d ]
+commit 03b8c7b623c80af264c4c8d6111e5c6289933666 upstream.
 
-When netback discovers frontend is sending malformed packet it will
-disables the interface which serves that frontend.
+If an architecture has futex_atomic_cmpxchg_inatomic() implemented and there
+is no runtime check necessary, allow to skip the test within futex_init().
 
-However disabling a network interface involving taking a mutex which
-cannot be done in softirq context, so we need to defer this process to
-kthread context.
+This allows to get rid of some code which would always give the same result,
+and also allows the compiler to optimize a couple of if statements away.
 
-This patch does the following:
-1. introduce a flag to indicate the interface is disabled.
-2. check that flag in TX path, don't do any work if it's true.
-3. check that flag in RX path, turn off that interface if it's true.
-
-The reason to disable it in RX path is because RX uses kthread. After
-this change the behavior of netback is still consistent -- it won't do
-any TX work for a rogue frontend, and the interface will be eventually
-turned off.
-
-Also change a "continue" to "break" after xenvif_fatal_tx_err, as it
-doesn't make sense to continue processing packets if frontend is rogue.
-
-This is a fix for XSA-90.
-
-Reported-by: Török Edwin <edwin@etorok.net>
-Signed-off-by: Wei Liu <wei.liu2@citrix.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Finn Thain <fthain@telegraphics.com.au>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Link: http://lkml.kernel.org/r/20140302120947.GA3641@osiris
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[geert: Backported to v3.10..v3.13]
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/xen-netback/common.h    |    5 +++++
- drivers/net/xen-netback/interface.c |   11 +++++++++++
- drivers/net/xen-netback/netback.c   |   16 ++++++++++++++--
- 3 files changed, 30 insertions(+), 2 deletions(-)
+ arch/s390/Kconfig     |    1 +
+ include/linux/futex.h |    4 ++++
+ init/Kconfig          |    7 +++++++
+ kernel/futex.c        |   14 ++++++++++++--
+ 4 files changed, 24 insertions(+), 2 deletions(-)
 
---- a/drivers/net/xen-netback/common.h
-+++ b/drivers/net/xen-netback/common.h
-@@ -113,6 +113,11 @@ struct xenvif {
- 	domid_t          domid;
- 	unsigned int     handle;
- 
-+	/* Is this interface disabled? True when backend discovers
-+	 * frontend is rogue.
-+	 */
-+	bool disabled;
-+
- 	/* Use NAPI for guest TX */
- 	struct napi_struct napi;
- 	/* When feature-split-event-channels = 0, tx_irq = rx_irq. */
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -67,6 +67,15 @@ static int xenvif_poll(struct napi_struc
- 	struct xenvif *vif = container_of(napi, struct xenvif, napi);
- 	int work_done;
- 
-+	/* This vif is rogue, we pretend we've there is nothing to do
-+	 * for this vif to deschedule it from NAPI. But this interface
-+	 * will be turned off in thread context later.
-+	 */
-+	if (unlikely(vif->disabled)) {
-+		napi_complete(napi);
-+		return 0;
-+	}
-+
- 	work_done = xenvif_tx_action(vif, budget);
- 
- 	if (work_done < budget) {
-@@ -323,6 +332,8 @@ struct xenvif *xenvif_alloc(struct devic
- 	vif->ip_csum = 1;
- 	vif->dev = dev;
- 
-+	vif->disabled = false;
-+
- 	vif->credit_bytes = vif->remaining_credit = ~0UL;
- 	vif->credit_usec  = 0UL;
- 	init_timer(&vif->credit_timeout);
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -752,7 +752,8 @@ static void xenvif_tx_err(struct xenvif
- static void xenvif_fatal_tx_err(struct xenvif *vif)
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -116,6 +116,7 @@ config S390
+ 	select HAVE_FUNCTION_GRAPH_TRACER
+ 	select HAVE_FUNCTION_TRACER
+ 	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
++	select HAVE_FUTEX_CMPXCHG if FUTEX
+ 	select HAVE_KERNEL_BZIP2
+ 	select HAVE_KERNEL_GZIP
+ 	select HAVE_KERNEL_LZMA
+--- a/include/linux/futex.h
++++ b/include/linux/futex.h
+@@ -55,7 +55,11 @@ union futex_key {
+ #ifdef CONFIG_FUTEX
+ extern void exit_robust_list(struct task_struct *curr);
+ extern void exit_pi_state_list(struct task_struct *curr);
++#ifdef CONFIG_HAVE_FUTEX_CMPXCHG
++#define futex_cmpxchg_enabled 1
++#else
+ extern int futex_cmpxchg_enabled;
++#endif
+ #else
+ static inline void exit_robust_list(struct task_struct *curr)
  {
- 	netdev_err(vif->dev, "fatal error; disabling device\n");
--	xenvif_carrier_off(vif);
-+	vif->disabled = true;
-+	xenvif_kick_thread(vif);
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1365,6 +1365,13 @@ config FUTEX
+ 	  support for "fast userspace mutexes".  The resulting kernel may not
+ 	  run glibc-based applications correctly.
+ 
++config HAVE_FUTEX_CMPXCHG
++	bool
++	help
++	  Architectures should select this if futex_atomic_cmpxchg_inatomic()
++	  is implemented and always working. This removes a couple of runtime
++	  checks.
++
+ config EPOLL
+ 	bool "Enable eventpoll support" if EXPERT
+ 	default y
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -67,7 +67,9 @@
+ 
+ #include "rtmutex_common.h"
+ 
++#ifndef CONFIG_HAVE_FUTEX_CMPXCHG
+ int __read_mostly futex_cmpxchg_enabled;
++#endif
+ 
+ #define FUTEX_HASHBITS (CONFIG_BASE_SMALL ? 4 : 8)
+ 
+@@ -2729,10 +2731,10 @@ SYSCALL_DEFINE6(futex, u32 __user *, uad
+ 	return do_futex(uaddr, op, val, tp, uaddr2, val2, val3);
  }
  
- static int xenvif_count_requests(struct xenvif *vif,
-@@ -1479,7 +1480,7 @@ static unsigned xenvif_tx_build_gops(str
- 				   vif->tx.sring->req_prod, vif->tx.req_cons,
- 				   XEN_NETIF_TX_RING_SIZE);
- 			xenvif_fatal_tx_err(vif);
--			continue;
-+			break;
- 		}
+-static int __init futex_init(void)
++static void __init futex_detect_cmpxchg(void)
+ {
++#ifndef CONFIG_HAVE_FUTEX_CMPXCHG
+ 	u32 curval;
+-	int i;
  
- 		work_to_do = RING_HAS_UNCONSUMED_REQUESTS(&vif->tx);
-@@ -1873,7 +1874,18 @@ int xenvif_kthread(void *data)
- 	while (!kthread_should_stop()) {
- 		wait_event_interruptible(vif->wq,
- 					 rx_work_todo(vif) ||
-+					 vif->disabled ||
- 					 kthread_should_stop());
+ 	/*
+ 	 * This will fail and we want it. Some arch implementations do
+@@ -2746,6 +2748,14 @@ static int __init futex_init(void)
+ 	 */
+ 	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
+ 		futex_cmpxchg_enabled = 1;
++#endif
++}
 +
-+		/* This frontend is found to be rogue, disable it in
-+		 * kthread context. Currently this is only set when
-+		 * netback finds out frontend sends malformed packet,
-+		 * but we cannot disable the interface in softirq
-+		 * context so we defer it here.
-+		 */
-+		if (unlikely(vif->disabled && netif_carrier_ok(vif->dev)))
-+			xenvif_carrier_off(vif);
++static int __init futex_init(void)
++{
++	int i;
 +
- 		if (kthread_should_stop())
- 			break;
++	futex_detect_cmpxchg();
  
+ 	for (i = 0; i < ARRAY_SIZE(futex_queues); i++) {
+ 		plist_head_init(&futex_queues[i].chain);
 
 
