@@ -1,100 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607AbaDKUuv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 16:50:51 -0400
-Received: from mga02.intel.com ([134.134.136.20]:25642 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755322AbaDKUuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755475AbaDKUuK (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Apr 2014 16:50:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,843,1389772800"; 
-   d="scan'208";a="491550251"
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: wim@iguana.be, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        gnomes@lxorguk.ukuu.org.uk, david.a.cohen@linux.intel.com
-Subject: [PATCH v2 2/2] x86: intel-mid: add watchdog platform code for Merrifield
-Date: Fri, 11 Apr 2014 13:50:07 -0700
-Message-Id: <1397249407-5417-3-git-send-email-david.a.cohen@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1397249407-5417-1-git-send-email-david.a.cohen@linux.intel.com>
-References: <1396990744-10695-1-git-send-email-david.a.cohen@linux.intel.com>
- <1397249407-5417-1-git-send-email-david.a.cohen@linux.intel.com>
+Received: from shards.monkeyblade.net ([149.20.54.216]:59211 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754159AbaDKUuI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 16:50:08 -0400
+Date: Fri, 11 Apr 2014 16:50:06 -0400 (EDT)
+Message-Id: <20140411.165006.1694951753458959411.davem@davemloft.net>
+To: daniel@quora.org
+Cc: mchan@broadcom.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Don't build unused suspend/resume functions not enabled
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1397204066-7389-1-git-send-email-daniel@quora.org>
+References: <1397204066-7389-1-git-send-email-daniel@quora.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 11 Apr 2014 13:50:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds platform code for Intel Merrifield.
-Since the watchdog is not part of SFI table, we have no other option but
-to manually register watchdog's platform device (argh!).
+From: Daniel J Blueman <daniel@quora.org>
+Date: Fri, 11 Apr 2014 16:14:26 +0800
 
-Change-Id: I920968649847577a0aa1ae0b26f2a3551f77d576
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
----
- arch/x86/platform/intel-mid/device_libs/Makefile   |  1 +
- .../platform/intel-mid/device_libs/platform_wdt.c  | 43 ++++++++++++++++++++++
- 2 files changed, 44 insertions(+)
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_wdt.c
+> When CONFIG_PM_SLEEP isn't enabled, bnx2_suspend/resume are unused; don't
+> build them when they aren't used.
+> 
+> Signed-off-by: Daniel J Blueman <daniel@quora.org>
 
-diff --git a/arch/x86/platform/intel-mid/device_libs/Makefile b/arch/x86/platform/intel-mid/device_libs/Makefile
-index 097e7a7940d8..af9307f2cc28 100644
---- a/arch/x86/platform/intel-mid/device_libs/Makefile
-+++ b/arch/x86/platform/intel-mid/device_libs/Makefile
-@@ -20,3 +20,4 @@ obj-$(subst m,y,$(CONFIG_DRM_MEDFIELD)) += platform_tc35876x.o
- obj-$(subst m,y,$(CONFIG_SERIAL_MRST_MAX3110)) += platform_max3111.o
- # MISC Devices
- obj-$(subst m,y,$(CONFIG_KEYBOARD_GPIO)) += platform_gpio_keys.o
-+obj-$(subst m,y,$(CONFIG_INTEL_MID_WATCHDOG)) += platform_wdt.o
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_wdt.c b/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
-new file mode 100644
-index 000000000000..be4fc66fbe1b
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
-@@ -0,0 +1,43 @@
-+/*
-+ * platform_wdt.c: Watchdog platform library file
-+ *
-+ * (C) Copyright 2014 Intel Corporation
-+ * Author: David Cohen <david.a.cohen@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <asm/intel-mid.h>
-+
-+#define EXT_TIMER0_MSI 15
-+
-+static const struct resource tangier_wdt_res[] = {
-+	{
-+		.start = EXT_TIMER0_MSI,
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct platform_device mid_wdt_dev = {
-+	.name = "intel_mid_wdt",
-+	.id = -1,
-+};
-+
-+static int __init register_mid_wdt(void)
-+{
-+	if (intel_mid_identify_cpu() == INTEL_MID_CPU_CHIP_TANGIER) {
-+		platform_device_add_resources(&mid_wdt_dev,
-+					      tangier_wdt_res,
-+					      ARRAY_SIZE(tangier_wdt_res));
-+		return platform_device_register(&mid_wdt_dev);
-+	}
-+
-+	return -ENODEV;
-+}
-+
-+rootfs_initcall(register_mid_wdt);
--- 
-1.9.1
-
+Applied, thank you.
