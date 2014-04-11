@@ -1,108 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759856AbaDKQvs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:51:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56499 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422782AbaDKQI5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1422778AbaDKQI5 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 11 Apr 2014 12:08:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56432 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759430AbaDKQHi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 12:07:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 21/65] skbuff: skb_segment: s/fskb/list_skb/
-Date: Fri, 11 Apr 2014 09:10:53 -0700
-Message-Id: <20140411161000.622323555@linuxfoundation.org>
+        Mischa Jonker <mjonker@synopsys.com>,
+        Vineet Gupta <vgupta@synopsys.com>,
+        Francois Bedard <Francois.Bedard@synopsys.com>
+Subject: [PATCH 3.10 35/41] ARC: [nsimosci] Change .dts to use generic 8250 UART
+Date: Fri, 11 Apr 2014 09:10:06 -0700
+Message-Id: <20140411160935.368874322@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
-References: <20140411160957.714773410@linuxfoundation.org>
+In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
+References: <20140411160932.865173041@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Mischa Jonker <mjonker@synopsys.com>
 
-[ Upstream commit 1a4cedaf65491e66e1e55b8428c89209da729209 ]
+commit 6eda477b3c54b8236868c8784e5e042ff14244f0 upstream.
 
-fskb is unrelated to frag: it's coming from
-frag_list. Rename it list_skb to avoid confusion.
+The Synopsys APB DW UART has a couple of special features that are not
+in the System C model. In 3.8, the 8250_dw driver didn't really use these
+features, but from 3.9 onwards, the 8250_dw driver has become incompatible
+with our model.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Mischa Jonker <mjonker@synopsys.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Francois Bedard <Francois.Bedard@synopsys.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/core/skbuff.c |   26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
 
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2768,7 +2768,7 @@ struct sk_buff *skb_segment(struct sk_bu
- {
- 	struct sk_buff *segs = NULL;
- 	struct sk_buff *tail = NULL;
--	struct sk_buff *fskb = skb_shinfo(head_skb)->frag_list;
-+	struct sk_buff *list_skb = skb_shinfo(head_skb)->frag_list;
- 	skb_frag_t *frag = skb_shinfo(head_skb)->frags;
- 	unsigned int mss = skb_shinfo(head_skb)->gso_size;
- 	unsigned int doffset = head_skb->data - skb_mac_header(head_skb);
-@@ -2809,14 +2809,14 @@ struct sk_buff *skb_segment(struct sk_bu
- 		if (hsize > len || !sg)
- 			hsize = len;
+---
+ arch/arc/boot/dts/nsimosci.dts |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+--- a/arch/arc/boot/dts/nsimosci.dts
++++ b/arch/arc/boot/dts/nsimosci.dts
+@@ -11,7 +11,7 @@
  
--		if (!hsize && i >= nfrags && skb_headlen(fskb) &&
--		    (skb_headlen(fskb) == len || sg)) {
--			BUG_ON(skb_headlen(fskb) > len);
-+		if (!hsize && i >= nfrags && skb_headlen(list_skb) &&
-+		    (skb_headlen(list_skb) == len || sg)) {
-+			BUG_ON(skb_headlen(list_skb) > len);
+ / {
+ 	compatible = "snps,nsimosci";
+-	clock-frequency = <80000000>;	/* 80 MHZ */
++	clock-frequency = <20000000>;	/* 20 MHZ */
+ 	#address-cells = <1>;
+ 	#size-cells = <1>;
+ 	interrupt-parent = <&intc>;
+@@ -44,15 +44,14 @@
+ 		};
  
- 			i = 0;
--			nfrags = skb_shinfo(fskb)->nr_frags;
--			frag = skb_shinfo(fskb)->frags;
--			pos += skb_headlen(fskb);
-+			nfrags = skb_shinfo(list_skb)->nr_frags;
-+			frag = skb_shinfo(list_skb)->frags;
-+			pos += skb_headlen(list_skb);
+ 		uart0: serial@c0000000 {
+-			compatible = "snps,dw-apb-uart";
++			compatible = "ns8250";
+ 			reg = <0xc0000000 0x2000>;
+ 			interrupts = <11>;
+-			#clock-frequency = <80000000>;
+ 			clock-frequency = <3686400>;
+ 			baud = <115200>;
+ 			reg-shift = <2>;
+ 			reg-io-width = <4>;
+-			status = "okay";
++			no-loopback-test = <1>;
+ 		};
  
- 			while (pos < offset + len) {
- 				BUG_ON(i >= nfrags);
-@@ -2830,8 +2830,8 @@ struct sk_buff *skb_segment(struct sk_bu
- 				frag++;
- 			}
- 
--			nskb = skb_clone(fskb, GFP_ATOMIC);
--			fskb = fskb->next;
-+			nskb = skb_clone(list_skb, GFP_ATOMIC);
-+			list_skb = list_skb->next;
- 
- 			if (unlikely(!nskb))
- 				goto err;
-@@ -2898,15 +2898,15 @@ struct sk_buff *skb_segment(struct sk_bu
- 
- 		while (pos < offset + len) {
- 			if (i >= nfrags) {
--				BUG_ON(skb_headlen(fskb));
-+				BUG_ON(skb_headlen(list_skb));
- 
- 				i = 0;
--				nfrags = skb_shinfo(fskb)->nr_frags;
--				frag = skb_shinfo(fskb)->frags;
-+				nfrags = skb_shinfo(list_skb)->nr_frags;
-+				frag = skb_shinfo(list_skb)->frags;
- 
- 				BUG_ON(!nfrags);
- 
--				fskb = fskb->next;
-+				list_skb = list_skb->next;
- 			}
- 
- 			if (unlikely(skb_shinfo(nskb)->nr_frags >=
+ 		pgu0: pgu@c9000000 {
 
 
