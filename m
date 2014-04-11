@@ -1,68 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872AbaDKDOH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 23:14:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61438 "EHLO mx1.redhat.com"
+	id S1754848AbaDKDRQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 23:17:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43113 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751104AbaDKDOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 23:14:04 -0400
-Date: Fri, 11 Apr 2014 11:11:31 +0800
+	id S1751938AbaDKDRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 23:17:13 -0400
+Date: Fri, 11 Apr 2014 11:14:37 +0800
 From: Baoquan He <bhe@redhat.com>
-To: scameron@beardog.cce.hp.com
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Davidlohr Bueso <davidlohr@hp.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
         linux-scsi <linux-scsi@vger.kernel.org>,
         "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         Joerg Roedel <joro@8bytes.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Subject: Re: [PATCH] hpsa: fix uninitialized trans_support in
- hpsa_put_ctlr_into_performant_mode()
-Message-ID: <20140411031131.GN11839@dhcp-16-105.nay.redhat.com>
-References: <20140410221704.GA22465@beardog.cce.hp.com>
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>
+Subject: Re: hpsa driver bug crack kernel down!
+Message-ID: <20140411031437.GO11839@dhcp-16-105.nay.redhat.com>
+References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
+ <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>
+ <1397084904.9519.62.camel@dabdike>
+ <1397085044.9519.63.camel@dabdike>
+ <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
+ <1397087425.9519.67.camel@dabdike>
+ <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>
+ <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
+ <53465781.4010904@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140410221704.GA22465@beardog.cce.hp.com>
+In-Reply-To: <53465781.4010904@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch works for me.
+On 04/10/14 at 04:34pm, Jiang Liu wrote:
+> Hi Baoquan,
+> 	Could you please help to give output of "lspci -vvvv"?
+> Is device "hpsa 0000:03:00.0" a legacy PCI device(non-PCIe)?
+> It may have relationship with IOMMU driver.
+> Thanks!
+> Gerry
 
-Tested-by: Baoquan He <bhe@redhat.com>
+Well, the machine bug was reported on is a AMD machine, and it doesn't
+have the IOMMU problem. David saw there are some DMAR errors, it should
+be a intel machine which use the VT-d.
 
-Thanks
-Baoquan
-
-On 04/10/14 at 05:17pm, scameron@beardog.cce.hp.com wrote:
 > 
-> Without this, you'll see a null pointer dereference in
-> hpsa_enter_performant_mode().
-> 
-> Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> ---
->  drivers/scsi/hpsa.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-> index 8cf4a0c..ef4dfdd 100644
-> --- a/drivers/scsi/hpsa.c
-> +++ b/drivers/scsi/hpsa.c
-> @@ -7463,6 +7463,10 @@ static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
->  	if (hpsa_simple_mode)
->  		return;
->  
-> +	trans_support = readl(&(h->cfgtable->TransportSupport));
-> +	if (!(trans_support & PERFORMANT_MODE))
-> +		return;
-> +
->  	/* Check for I/O accelerator mode support */
->  	if (trans_support & CFGTBL_Trans_io_accel1) {
->  		transMethod |= CFGTBL_Trans_io_accel1 |
-> -- 
-> 1.7.1
-> 
+> On 2014/4/10 12:03, Bjorn Helgaas wrote:
+> > [+cc Joerg, iommu list]
+> > 
+> > On Wed, Apr 9, 2014 at 6:19 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> >> On Wed, 2014-04-09 at 16:50 -0700, James Bottomley wrote:
+> >>> On Wed, 2014-04-09 at 16:40 -0700, Davidlohr Bueso wrote:
+> >>>> On Wed, 2014-04-09 at 16:10 -0700, James Bottomley wrote:
+> >>>>> On Wed, 2014-04-09 at 16:08 -0700, James Bottomley wrote:
+> >>>>>> [+linux-scsi]
+> >>>>>> On Wed, 2014-04-09 at 15:49 -0700, Davidlohr Bueso wrote:
+> >>>>>>> On Wed, 2014-04-09 at 10:39 +0800, Baoquan He wrote:
+> >>>>>>>> Hi,
+> >>>>>>>>
+> >>>>>>>> The kernel is 3.14.0+ which is pulled just now.
+> >>>>>>>
+> >>>>>>> Cc'ing more people.
+> >>>>>>>
+> >>>>>>> While the hpsa driver appears to be involved in some way, I'm sure if
+> >>>>>>> this is a related issue, but as of today's pull I'm getting another
+> >>>>>>> problem that causes my DL980 not to come up.
+> >>>>>>>
+> >>>>>>> *Massive* amounts of:
+> >>>>>>>
+> >>>>>>> DMAR:[fault reason 02] Present bit in context entry is clear
+> >>>>>>> dmar: DRHD: handling fault status reg 602
+> >>>>>>> dmar: DMAR:[DMA Read] Request device [02:00.0] fault addr 7f61e000
+> >>>>>>>
+> >>>>>>> Then:
+> >>>>>>>
+> >>>>>>> hpsa 0000:03:00.0: Controller lockup detected: 0xffff0000
+> >>>>>>> ...
+> >>>>>>> Workqueue: events hpsa_monitor_ctlr_worker [hpsa]
+> >>>>>>> ...
+> >>>>>>>
+> >>>>>>> Screenshot of the actual LOCKUP:
+> >>>>>>> http://stgolabs.net/hpsa-hard-lockup-3.14+.png
+> >>>>>>>
+> >>>>>>> While I haven't bisected, things worked fine until at least until commit
+> >>>>>>> 39de65aa2c3e (April 2nd).
+> >>>>>>>
+> >>>>>>> Any ideas?
+> >>>>>>
+> >>>>>> Well, it's either a DMA remapping issue or a hpsa one.  Your assertion
+> >>>>>> that everything worked fine until 39de65aa2c3e would tend to vindicate
+> >>>>>> hpsa,
+> >>>>
+> >>>> Hmm here you mean DMA, right?
+> >>>
+> >>> No, it vindicates the hpsa changes ... they don't seem to be causing
+> >>> problems until something goes wrong with dma remapping.
+> >>>
+> >>>>> because all the hpsa changes went in before that under
+> >>>>> Missing crucial info:
+> >>>>>
+> >>>>> commit 1a0b6abaea78f73d9bc0a2f6df2d9e4c917cade1
+> >>>>>
+> >>>>>> Merge: 3e75c6d b2bff6c
+> >>>>>> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> >>>>>> Date:   Tue Apr 1 18:49:04 2014 -0700
+> >>>>>>
+> >>>>>>     Merge tag 'scsi-misc' of
+> >>>>>> git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi
+> >>>>>>
+> >>>>>> can you revalidate that this commit works OK just to make sure?
+> >>>>
+> >>>> Ok so I don't see those DMA messages and system starts just fine. I'm
+> >>>> thinking perhaps something broke after the IO mmu stuff in commit
+> >>>> 3f583bc21977a608908b83d03ee2250426a5695c... could this be indirectly
+> >>>> causing the CPU stalls and just blame hpsa in the path as a side effect?
+> >>>>
+> >>>> /me goes out to try the commit.
+> >>>
+> >>> That's my guess.  The DMAR messages are DMA remapping issues caused in
+> >>> the IOMMU.  If I had to guess, I'd say the DMAR fault message is
+> >>> indicating the IOMMU is calling for a mapping address before it can
+> >>> satisfy the driver read request, which is causing the hang apparently in
+> >>> the hpsa driver.
+> >>>
+> >>> I've added linux-pci to the cc; I think they deal with iommu issues on
+> >>> x86.
+> >>
+> >> So that merge commit appears to be the culprit, I see both the DMA
+> >> messages and the lockup blaming hpsa...
+> > 
+> > My understanding so far (please correct me if I'm wrong):
+> > 
+> > 39de65aa2c3e OK ("Merge branch 'i2c/for-next'")
+> > 1a0b6abaea78 OK ("Merge tag 'scsi-misc'")
+> > 3f583bc21977 BAD ("Merge tag 'iommu-updates-v3.15'")
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
