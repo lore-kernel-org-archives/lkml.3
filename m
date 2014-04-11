@@ -1,67 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675AbaDKD2Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 23:28:16 -0400
-Received: from ozlabs.org ([103.22.144.67]:60066 "EHLO ozlabs.org"
+	id S1754814AbaDKDaf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 23:30:35 -0400
+Received: from mga09.intel.com ([134.134.136.24]:56065 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751938AbaDKD2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 10 Apr 2014 23:28:15 -0400
-Date: Fri, 11 Apr 2014 13:28:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: <linux-next@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Apr 11
-Message-Id: <20140411132807.031d90304b91fae47ea3368d@canb.auug.org.au>
-In-Reply-To: <20140411130313.f01ee5d3c66fc031789c692b@canb.auug.org.au>
-References: <20140411130313.f01ee5d3c66fc031789c692b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1754654AbaDKDad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Apr 2014 23:30:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,838,1389772800"; 
+   d="scan'208";a="491148289"
+Subject: [PATCH] net: ipv4: current group_info should be put after using.
+From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
+To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: chuansheng.liu@intel.com, dongxing.zhang@intel.com,
+        xiaoming.wang@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 Apr 2014 13:37:08 -0400
+Message-ID: <1397237828.12958.3.camel@wxm-ubuntu>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__11_Apr_2014_13_28_07_+1000_G4Bog8QevbNwo0bE"
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__11_Apr_2014_13_28_07_+1000_G4Bog8QevbNwo0bE
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+There is a memory leak in ping. Current group_info had been got in 
+ping_init_sock and group_info->usage increased. 
+But the usage hasn't decreased anywhere in ping.
+This will make this group_info never freed and cause memory leak.
 
-On Fri, 11 Apr 2014 13:03:13 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> Non-merge commits (relative to Linus' tree): 568
->  1077 files changed, 16245 insertions(+), 11823 deletions(-)
+unreferenced object 0xcd0e8840 (size 192):
+  comm "dumpstate", pid 7583, jiffies 78360 (age 91.810s)
+  hex dump (first 32 bytes):
+    02 00 00 00 06 00 00 00 01 00 00 00 ef 03 00 00  ................
+    f1 03 00 00 f7 03 00 00 04 04 00 00 bb 0b 00 00  ................
+  backtrace:
+    [<c1a6bbfc>] kmemleak_alloc+0x3c/0xa0
+    [<c1320457>] __kmalloc+0xe7/0x1d0
+    [<c1267c04>] groups_alloc+0x34/0xb0
+    [<c1267e5c>] SyS_setgroups+0x3c/0xf0
+    [<c1a864a8>] syscall_call+0x7/0xb
+    [<ffffffff>] 0xffffffff
 
-Actually ...
+Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
+Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+---
+ net/ipv4/ping.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
-Non-merge commits (relative to Linus' tree): 533
- 996 files changed, 12720 insertions(+), 12603 deletions(-)
+diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
+index f4b19e5..2af7b1f 100644
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -255,23 +255,28 @@ int ping_init_sock(struct sock *sk)
+ 	struct group_info *group_info = get_current_groups();
+ 	int i, j, count = group_info->ngroups;
+ 	kgid_t low, high;
++	int ret = 0;
+ 
+ 	inet_get_ping_group_range_net(net, &low, &high);
+ 	if (gid_lte(low, group) && gid_lte(group, high))
+-		return 0;
++		goto out_release_group;
+ 
+ 	for (i = 0; i < group_info->nblocks; i++) {
+ 		int cp_count = min_t(int, NGROUPS_PER_BLOCK, count);
+ 		for (j = 0; j < cp_count; j++) {
+ 			kgid_t gid = group_info->blocks[i][j];
+ 			if (gid_lte(low, gid) && gid_lte(gid, high))
+-				return 0;
++				goto out_release_group;
+ 		}
+ 
+ 		count -= cp_count;
+ 	}
+ 
+-	return -EACCES;
++	ret = -EACCES;
++
++out_release_group:
++	put_group_info(group_info);
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(ping_init_sock);
+ 
+-- 
+1.7.1
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Fri__11_Apr_2014_13_28_07_+1000_G4Bog8QevbNwo0bE
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTR2FMAAoJEMDTa8Ir7ZwVGdsP/1VFK8DoDDogIEiTSNxj2CrQ
-mz55BkvLn2bfOLYV/YSLiD3e2lt+J2RwW+XfyH421IkVAdvdAcP3EtMehQcrrA+x
-PLkFys4ibsBjAhP/n3pss7tuQS+o0C6NV3OXIlQrrH1JBGVgQ6EKqxh2gi5xLJLR
-HbmgO0mnTaSaag48HCWM3wtO3QIZ044S/ykiWUdODYx/n/XIe9gvdSXS3Ob9tQxU
-hEG6qCvWiEZ2VWlwUhsxh8iNjYBeLCM9NLYZexKfTvlUvTlWEXU0nH3CHXJ1Gna2
-7JoZ2PzsUGDSTZf4hk1zli4ZEkkMuztGmSGaSyH1Nh1QYaf2qIcPf3qYPdMTdJ8r
-T2It6PbKnGMH+jfN1G+tTI2gd6LcsKeytgGLLgcLzjjEF2jLia7tYHxBUvq82F0q
-UHDOaHwe0LmB8wXRvCDcquJMbuyOu00Y8LPRZ/Wf08jeBxNUY67+uAT/YJ3EQlLK
-fWSIsBTvOfauU3cGKsaevp8mOwYq3CZTF7QqrEXNWDmGIxcJpdq1ubVSaHi98WaQ
-9OQnN/PhyTZaVYSAkSt9VRyq7y4doUcvDdEhur+QnHjT+OrVFFgC4PCwa6yxEHFt
-U2ADrg6zcJ0+4Szxot9ckQyf/ZBII2AOVsG4aZFmXcO26G3y3Ve5/Q9enAGmqngn
-mdS+iQgaNPZRdprI79hR
-=0GnJ
------END PGP SIGNATURE-----
-
---Signature=_Fri__11_Apr_2014_13_28_07_+1000_G4Bog8QevbNwo0bE--
