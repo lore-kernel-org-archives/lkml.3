@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757463AbaDKNAf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 09:00:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41643 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754321AbaDKNAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 09:00:33 -0400
-Date: Fri, 11 Apr 2014 15:00:27 +0200
-From: Jan Kara <jack@suse.cz>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Fabian Frederick <fabf@skynet.be>, Viro <viro@zeniv.linux.org.uk>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>, jack <jack@suse.cz>,
-        akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/1] FS: Add generic data flush to fsync
-Message-ID: <20140411130027.GA15758@quack.suse.cz>
-References: <20140411065242.42916952dd5d8e4e53848b3b@skynet.be>
- <20140411074522.GA15518@infradead.org>
+	id S1757660AbaDKNA5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 09:00:57 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:53316 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755747AbaDKNAv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 09:00:51 -0400
+Message-ID: <5347E781.3030309@gmail.com>
+Date: Fri, 11 Apr 2014 15:00:49 +0200
+From: Neil Armstrong <superna9999@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140411074522.GA15518@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Himangi Saraogi <himangi774@gmail.com>,
+        Tugce Sirin <ztugcesirin@gmail.com>
+CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: wlan-ng: fix bad symbol declaration
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 11-04-14 00:45:22, Christoph Hellwig wrote:
-> On Fri, Apr 11, 2014 at 06:52:42AM +0200, Fabian Frederick wrote:
-> > Currently, there's no generic HW flush management support in kernel.
-> > Only 7 filesystems have their own way to manage the barrier flag.
-> > 
-> > This patch adds MS_BARRIER in sb_flags and conditionnaly issues the flush
-> > in generic_file_fsync.
-> 
-> Please don't add a binary mount option for something thast already is a
-> text option in many filesystems.  We can actually enable/disable cache
-> flushes at the block device level, so I think this can be
-> unconditional.
-  How can those be disabled? I didn't find that by a quick look through
-/sys and flush code in kernel...
+With sparse, the following error appears :
+  CHECK   drivers/staging/wlan-ng/p80211netdev.c
+drivers/staging/wlan-ng/cfg80211.c:710:6: warning: symbol 'prism2_connect_result' was not declared. Should it be static?
+drivers/staging/wlan-ng/cfg80211.c:719:6: warning: symbol 'prism2_disconnected' was not declared. Should it be static?
+drivers/staging/wlan-ng/cfg80211.c:725:6: warning: symbol 'prism2_roamed' was not declared. Should it be static?
 
-								Honza
+Move functions declaration to coherent internal header file.
+
+Signed-off-by: Neil 'Superna' Armstrong <superna9999@gmail.com>
+---
+ drivers/staging/wlan-ng/prism2mgmt.h |    5 +++++
+ drivers/staging/wlan-ng/prism2sta.c  |    4 ----
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/staging/wlan-ng/prism2mgmt.h b/drivers/staging/wlan-ng/prism2mgmt.h
+index 190d390..b62fdcb 100644
+--- a/drivers/staging/wlan-ng/prism2mgmt.h
++++ b/drivers/staging/wlan-ng/prism2mgmt.h
+@@ -109,4 +109,9 @@ void prism2sta_processing_defer(struct work_struct *data);
+ void prism2sta_commsqual_defer(struct work_struct *data);
+ void prism2sta_commsqual_timer(unsigned long data);
+ 
++/* Interface callback functions, passing data back up to the cfg80211 layer */
++void prism2_connect_result(wlandevice_t *wlandev, u8 failed);
++void prism2_disconnected(wlandevice_t *wlandev);
++void prism2_roamed(wlandevice_t *wlandev);
++
+ #endif
+diff --git a/drivers/staging/wlan-ng/prism2sta.c b/drivers/staging/wlan-ng/prism2sta.c
+index f9ccf23..3fd4538 100644
+--- a/drivers/staging/wlan-ng/prism2sta.c
++++ b/drivers/staging/wlan-ng/prism2sta.c
+@@ -120,10 +120,6 @@ MODULE_PARM_DESC(prism2_reset_settletime, "reset settle time in ms");
+ 
+ MODULE_LICENSE("Dual MPL/GPL");
+ 
+-void prism2_connect_result(wlandevice_t *wlandev, u8 failed);
+-void prism2_disconnected(wlandevice_t *wlandev);
+-void prism2_roamed(wlandevice_t *wlandev);
+-
+ static int prism2sta_open(wlandevice_t *wlandev);
+ static int prism2sta_close(wlandevice_t *wlandev);
+ static void prism2sta_reset(wlandevice_t *wlandev);
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.10.4
