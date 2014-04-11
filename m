@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934450AbaDKPAq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 11:00:46 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:35799 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759264AbaDKPAo (ORCPT
+	id S934576AbaDKPAy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 11:00:54 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:39858 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759281AbaDKPAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 11:00:44 -0400
+	Fri, 11 Apr 2014 11:00:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140411134243.160989490@infradead.org>
-References: <20140411134243.160989490@infradead.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 11 Apr 2014 08:00:23 -0700
-Message-ID: <CALCETrWJZ1-T+qOY9v=KBOSJkck7YYe7khw_dYPc9Ar8WFgMKw@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/8] sched,idle: need resched polling rework
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        nicolas.pitre@linaro.org, daniel.lezcano@linaro.org,
-        Mike Galbraith <umgwanakikbuti@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1397226820-5604-1-git-send-email-gabriel.fernandez@linaro.org>
+References: <1397226820-5604-1-git-send-email-gabriel.fernandez@linaro.org>
+Date: Fri, 11 Apr 2014 17:00:49 +0200
+Message-ID: <CAG374jD4qi-T=yXN8oagg+275QRSm_UeNmH2c=fROkzvz11XHw@mail.gmail.com>
+Subject: Re: [PATCH v3 0/7] Add ST Keyscan driver
+From: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
+        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 6:42 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> A while ago both Mike and Andy complained that we still get pointless wakeup
-> IPIs, we had a few patches back and forth but eventually more or less agreed
-> and then nothing... :-)
+Sorry,  don't review this v3 version, i made mistake...
+
+i prepare a v4 version.
+
+Best regards.
+
+Gabriel
+
+On 11 April 2014 16:33, Gabriel FERNANDEZ <gabriel.fernandez@st.com> wrote:
+> Changes in v3:
+> - add reset controller management
+> - rename 'st,debounce_us' into 'st,debounce-us' in dt binding
 >
-> So here's a number of patches that implement something near what we left off
-> with.
+> Changes in v2:
+> - use standard format for matrix keymap
+> - suppress __exit mark for keyscan_remove()
+> - Call to keyscan_stop() shoudl go into keyscan_close() implementation
+> - use of SIMPLE_DEV_PM_OPS()
+> - rename compatibility name into "st,sti-keyscan"
+> - suppress platform data management
+> - omit vendor information
+> - cosmetic change and renaming
 >
-> Its only been compile/boot tested on x86_64, I've no actually looked at the IPI
-> numbers yet.
+> The goal of this series is to add ST Keyscan support to ST SoCs.
+> The DT definition is added for STiH415 and STiH416 SoCs on
+> B2000 board.
 >
-
-Looks generally good and it should be a nice cleanup.
-
-That being said, I think that this addresses once one of the two major
-issues.  While the race you're fixing is more interesting, I think its
-impact is dwarfed by the fact that ttwu_queue_remote completely
-ignores polling.  (NB: I haven't actually tested this patch set, but I
-did try to instrument this stuff awhile ago.)
-
-To fix this, presumably the wake-from-idle path needs a
-sched_ttwu_pending call, and ttwu_queue_remote could use resched_task.
- sched_ttwu_pending could benefit from a straightforward optimization:
-it doesn't need rq->lock if llist is empty.
-
-If you're not planning on trying to fix that, I can try to write up a
-patch in the next day or two.
-
-Even with all of this fixed, what happens when ttwu_queue_remote is
-called with a task that has lower priority than whatever is currently
-running on the targeted cpu?  I think the result is an IPI that serves
-very little purpose other than avoiding taking a spinlock in the
-waking thread.  This may be a bad tradeoff.  I doubt that this matters
-for my particular workload, though.
-
---Andy
+> Gabriel Fernandez (5):
+>   drivers: input: keyboard: st-keyscan: add keyscan driver
+>   ARM: STi: DT: add keyscan for stih415
+>   ARM: STi: DT: add keyscan for stih416
+>   ARM: STi: DT: add keyscan for stih41x-b2000
+>   ARM: multi_v7_defconfig: add ST Keyscan driver
+>
+> Giuseppe CONDORELLI (2):
+>   driver: reset: sti: add keyscan for stih415
+>   driver: reset: sti: add keyscan for stih416
+>
+>  .../devicetree/bindings/input/st-keyscan.txt       |  60 +++++
+>  arch/arm/boot/dts/stih415-pinctrl.dtsi             |  16 ++
+>  arch/arm/boot/dts/stih415.dtsi                     |  12 +
+>  arch/arm/boot/dts/stih416-pinctrl.dtsi             |  16 ++
+>  arch/arm/boot/dts/stih416.dtsi                     |  12 +
+>  arch/arm/boot/dts/stih41x-b2000.dtsi               |  23 ++
+>  arch/arm/configs/multi_v7_defconfig                |   1 +
+>  drivers/input/keyboard/Kconfig                     |  12 +
+>  drivers/input/keyboard/Makefile                    |   1 +
+>  drivers/input/keyboard/st-keyscan.c                | 260 +++++++++++++++++++++
+>  drivers/reset/sti/reset-stih415.c                  |   1 +
+>  drivers/reset/sti/reset-stih416.c                  |   1 +
+>  .../dt-bindings/reset-controller/stih415-resets.h  |   1 +
+>  .../dt-bindings/reset-controller/stih416-resets.h  |   1 +
+>  14 files changed, 417 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/input/st-keyscan.txt
+>  create mode 100644 drivers/input/keyboard/st-keyscan.c
+>
+> --
+> 1.9.1
+>
