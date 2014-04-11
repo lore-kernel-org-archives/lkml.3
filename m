@@ -1,83 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496AbaDKWga (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 18:36:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48487 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754300AbaDKWg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 18:36:29 -0400
-Message-ID: <53486E3F.1020307@zytor.com>
-Date: Fri, 11 Apr 2014 15:35:43 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755752AbaDKWjO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 18:39:14 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:36076 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752291AbaDKWjL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 18:39:11 -0400
 MIME-Version: 1.0
-To: "K. Y. Srinivasan" <kys@microsoft.com>, x86@kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, tglx@linutronix.de, JBeulich@suse.com,
-        bp@alien8.de
-CC: Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 1/1] X86: Probe for PIC and set legacy_pic appropriately
-References: <1397257344-3035-1-git-send-email-kys@microsoft.com>
-In-Reply-To: <1397257344-3035-1-git-send-email-kys@microsoft.com>
-X-Enigmail-Version: 1.6
+In-Reply-To: <5435579.0l6Y80MnUs@wuerfel>
+References: <1397122658-16013-1-git-send-email-cw00.choi@samsung.com>
+	<20140411014858.GC14934@quad.lixom.net>
+	<53474D66.7020605@samsung.com>
+	<5435579.0l6Y80MnUs@wuerfel>
+Date: Sat, 12 Apr 2014 07:39:10 +0900
+Message-ID: <CAGTfZH0s53B+C1EVeOsX_zhkcddJFOwGEAaWPF8UxFSpwvoqFQ@mail.gmail.com>
+Subject: Re: [PATCH 03/27] ARM: EXYNOS: Add IO mapping for PMU of Exynos3250
+From: =?UTF-8?B?7LWc7LCs7Jqw?= <cwchoi00@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Tomasz Figa <t.figa@samsung.com>, hyunhee.kim@samsung.com,
+        sw0312.kim@samsung.com, linux-kernel <linux-kernel@vger.kernel.org>,
+        yj44.cho@samsung.com, inki.dae@samsung.com,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2014 04:02 PM, K. Y. Srinivasan wrote:
->  
-> diff --git a/arch/x86/kernel/i8259.c b/arch/x86/kernel/i8259.c
-> index 2e977b5..0a57a19 100644
-> --- a/arch/x86/kernel/i8259.c
-> +++ b/arch/x86/kernel/i8259.c
-> @@ -299,11 +299,22 @@ static void unmask_8259A(void)
->  static void init_8259A(int auto_eoi)
->  {
->  	unsigned long flags;
-> +	unsigned char probe_val = 0xfb;
->  
->  	i8259A_auto_eoi = auto_eoi;
->  
->  	raw_spin_lock_irqsave(&i8259A_lock, flags);
->  
-> +	/* Check to see if we have a PIC */
-> +	outb(probe_val, PIC_MASTER_IMR);
-> +	probe_val = inb(PIC_MASTER_IMR);
-> +	if (probe_val == 0xff) {
-> +		printk(KERN_INFO "Using NULL legacy PIC\n");
-> +		legacy_pic = &null_legacy_pic;
-> +		raw_spin_unlock_irqrestore(&i8259A_lock, flags);
-> +		return;
-> +	}
-> +
->  	outb(0xff, PIC_MASTER_IMR);	/* mask all of 8259A-1 */
->  	outb(0xff, PIC_SLAVE_IMR);	/* mask all of 8259A-2 */
->  
+Hi Arnd,
 
-I think it is important to document what this actually means here.  0xfb
-is "mask all except for the cascade."
+On Fri, Apr 11, 2014 at 5:41 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 11 April 2014 11:03:18 Chanwoo Choi wrote:
+>> On 04/11/2014 10:48 AM, Olof Johansson wrote:
+>> > On Thu, Apr 10, 2014 at 06:37:14PM +0900, Chanwoo Choi wrote:
+>> >> This patch add memory mapping for PMU (Power Management Unit) which is used
+>> >> for power control of Exynos3250.
+>> >>
+>> >> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> >
+>> > Signed-off-by is in the wrong order, if Kyungmin wrote the patch and you're
+>> > just posting it...
+>>
+>>
+>> No, I implemented this patch and posted it.
+>
+> What did Kyungmin do then? If you submitted the patch to him, and he
+> sent it back to you, you should be listed twice, although you could
+> just as easily leave him out.
+>
 
-Arguably, we should do this after masking the slave PIC.
+Sorry, It has happen a confusion due to my mistake.
 
-On a whole other subject... the whole __byte() logic is a just plain
-horrific piece of crap.  Clearly whomever wrote it had never heard of a
-union.
+As I reply on other patch as Olof comment, I'll use 'Acked-by' instead
+of  'Signed-off' for Kyungmin Park.
+- [PATCH 12/27] ARM: dts: exynos3250: Add default interrupt-parent
+connected with GIC
 
-I'm still horrifically confused, though, why we mask IRQ 2 (the cascade
-interrupt) in i8259.c, but we explicitly do *not* mask IRQ 2 in
-boot/pm.c (nor in the assembly code on which boot/pm.c was based.)  In
-fact, it looks like we never unmask it.  I'm guessing that the masking
-status of the cascade input simply doesn't matter.
+Thanks,
 
-At the very least, though, we shouldn't have 0xfb as a magic number, but
-use ~(1U << PIC_CASCADE_IR).
-
-	-hpa
-
-
-
-
-
+Best Regards,
+Chanwoo Choi
