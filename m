@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422675AbaDKQIo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:08:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56406 "EHLO
+	id S1030666AbaDKQIm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:08:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56402 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759423AbaDKQHf (ORCPT
+	with ESMTP id S1759422AbaDKQHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Apr 2014 12:07:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
+        Patrick McHardy <kaber@trash.net>, Vlad Yasevich <vyasevic@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 27/41] vhost: fix total length when packets are too short
-Date: Fri, 11 Apr 2014 09:09:58 -0700
-Message-Id: <20140411160934.779964264@linuxfoundation.org>
+Subject: [PATCH 3.10 26/41] vlan: Set hard_header_len according to available acceleration
+Date: Fri, 11 Apr 2014 09:09:57 -0700
+Message-Id: <20140411160934.711130406@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
 References: <20140411160932.865173041@linuxfoundation.org>
@@ -27,63 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-[ Upstream commit d8316f3991d207fe32881a9ac20241be8fa2bad0 ]
+[ Upstream commit fc0d48b8fb449ca007b2057328abf736cb516168 ]
 
-When mergeable buffers are disabled, and the
-incoming packet is too large for the rx buffer,
-get_rx_bufs returns success.
+Currently, if the card supports CTAG acceleration we do not
+account for the vlan header even if we are configuring an
+8021AD vlan.  This may not be best since we'll do software
+tagging for 8021AD which will cause data copy on skb head expansion
+Configure the length based on available hw offload capabilities and
+vlan protocol.
 
-This was intentional in order for make recvmsg
-truncate the packet and then handle_rx would
-detect err != sock_len and drop it.
-
-Unfortunately we pass the original sock_len to
-recvmsg - which means we use parts of iov not fully
-validated.
-
-Fix this up by detecting this overrun and doing packet drop
-immediately.
-
-CVE-2014-0077
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+CC: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/vhost/net.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ net/8021q/vlan.c     |    4 +++-
+ net/8021q/vlan_dev.c |    3 ++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -540,6 +540,12 @@ static int get_rx_bufs(struct vhost_virt
- 	*iovcount = seg;
- 	if (unlikely(log))
- 		*log_num = nlogs;
+--- a/net/8021q/vlan.c
++++ b/net/8021q/vlan.c
+@@ -305,9 +305,11 @@ static void vlan_sync_address(struct net
+ static void vlan_transfer_features(struct net_device *dev,
+ 				   struct net_device *vlandev)
+ {
++	struct vlan_dev_priv *vlan = vlan_dev_priv(vlandev);
 +
-+	/* Detect overrun */
-+	if (unlikely(datalen > 0)) {
-+		r = UIO_MAXIOV + 1;
-+		goto err;
-+	}
- 	return headcount;
- err:
- 	vhost_discard_vq_desc(vq, headcount);
-@@ -595,6 +601,14 @@ static void handle_rx(struct vhost_net *
- 		/* On error, stop handling until the next kick. */
- 		if (unlikely(headcount < 0))
- 			break;
-+		/* On overrun, truncate and discard */
-+		if (unlikely(headcount > UIO_MAXIOV)) {
-+			msg.msg_iovlen = 1;
-+			err = sock->ops->recvmsg(NULL, sock, &msg,
-+						 1, MSG_DONTWAIT | MSG_TRUNC);
-+			pr_debug("Discarded rx packet: len %zd\n", sock_len);
-+			continue;
-+		}
- 		/* OK, now we need to know about added descriptors. */
- 		if (!headcount) {
- 			if (unlikely(vhost_enable_notify(&net->dev, vq))) {
+ 	vlandev->gso_max_size = dev->gso_max_size;
+ 
+-	if (dev->features & NETIF_F_HW_VLAN_CTAG_TX)
++	if (vlan_hw_offload_capable(dev->features, vlan->vlan_proto))
+ 		vlandev->hard_header_len = dev->hard_header_len;
+ 	else
+ 		vlandev->hard_header_len = dev->hard_header_len + VLAN_HLEN;
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -611,7 +611,8 @@ static int vlan_dev_init(struct net_devi
+ #endif
+ 
+ 	dev->needed_headroom = real_dev->needed_headroom;
+-	if (real_dev->features & NETIF_F_HW_VLAN_CTAG_TX) {
++	if (vlan_hw_offload_capable(real_dev->features,
++				    vlan_dev_priv(dev)->vlan_proto)) {
+ 		dev->header_ops      = &vlan_passthru_header_ops;
+ 		dev->hard_header_len = real_dev->hard_header_len;
+ 	} else {
 
 
