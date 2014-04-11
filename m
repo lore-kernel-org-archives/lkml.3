@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759873AbaDKQvz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:51:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56541 "EHLO
+	id S1759856AbaDKQvs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:51:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56499 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422780AbaDKQI5 (ORCPT
+	with ESMTP id S1422782AbaDKQI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Apr 2014 12:08:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         "Michael S. Tsirkin" <mst@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 20/65] skbuff: skb_segment: s/skb/head_skb/
-Date: Fri, 11 Apr 2014 09:10:52 -0700
-Message-Id: <20140411161000.485682348@linuxfoundation.org>
+Subject: [PATCH 3.13 21/65] skbuff: skb_segment: s/fskb/list_skb/
+Date: Fri, 11 Apr 2014 09:10:53 -0700
+Message-Id: <20140411161000.622323555@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
 References: <20140411160957.714773410@linuxfoundation.org>
@@ -29,154 +29,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Michael S. Tsirkin" <mst@redhat.com>
 
-[ Upstream commit df5771ffefb13f8af5392bd54fd7e2b596a3a357 ]
+[ Upstream commit 1a4cedaf65491e66e1e55b8428c89209da729209 ]
 
-rename local variable to make it easier to tell at a glance that we are
-dealing with a head skb.
+fskb is unrelated to frag: it's coming from
+frag_list. Rename it list_skb to avoid confusion.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/skbuff.c |   51 +++++++++++++++++++++++++--------------------------
- 1 file changed, 25 insertions(+), 26 deletions(-)
+ net/core/skbuff.c |   26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
 --- a/net/core/skbuff.c
 +++ b/net/core/skbuff.c
-@@ -2756,41 +2756,42 @@ EXPORT_SYMBOL_GPL(skb_pull_rcsum);
- 
- /**
-  *	skb_segment - Perform protocol segmentation on skb.
-- *	@skb: buffer to segment
-+ *	@head_skb: buffer to segment
-  *	@features: features for the output path (see dev->features)
-  *
-  *	This function performs segmentation on the given skb.  It returns
-  *	a pointer to the first in a list of new skbs for the segments.
-  *	In case of error it returns ERR_PTR(err).
-  */
--struct sk_buff *skb_segment(struct sk_buff *skb, netdev_features_t features)
-+struct sk_buff *skb_segment(struct sk_buff *head_skb,
-+			    netdev_features_t features)
+@@ -2768,7 +2768,7 @@ struct sk_buff *skb_segment(struct sk_bu
  {
  	struct sk_buff *segs = NULL;
  	struct sk_buff *tail = NULL;
--	struct sk_buff *fskb = skb_shinfo(skb)->frag_list;
--	skb_frag_t *frag = skb_shinfo(skb)->frags;
--	unsigned int mss = skb_shinfo(skb)->gso_size;
--	unsigned int doffset = skb->data - skb_mac_header(skb);
-+	struct sk_buff *fskb = skb_shinfo(head_skb)->frag_list;
-+	skb_frag_t *frag = skb_shinfo(head_skb)->frags;
-+	unsigned int mss = skb_shinfo(head_skb)->gso_size;
-+	unsigned int doffset = head_skb->data - skb_mac_header(head_skb);
- 	unsigned int offset = doffset;
--	unsigned int tnl_hlen = skb_tnl_header_len(skb);
-+	unsigned int tnl_hlen = skb_tnl_header_len(head_skb);
- 	unsigned int headroom;
- 	unsigned int len;
- 	__be16 proto;
- 	bool csum;
- 	int sg = !!(features & NETIF_F_SG);
--	int nfrags = skb_shinfo(skb)->nr_frags;
-+	int nfrags = skb_shinfo(head_skb)->nr_frags;
- 	int err = -ENOMEM;
- 	int i = 0;
- 	int pos;
- 
--	proto = skb_network_protocol(skb);
-+	proto = skb_network_protocol(head_skb);
- 	if (unlikely(!proto))
- 		return ERR_PTR(-EINVAL);
- 
- 	csum = !!can_checksum_protocol(features, proto);
--	__skb_push(skb, doffset);
--	headroom = skb_headroom(skb);
--	pos = skb_headlen(skb);
-+	__skb_push(head_skb, doffset);
-+	headroom = skb_headroom(head_skb);
-+	pos = skb_headlen(head_skb);
- 
- 	do {
- 		struct sk_buff *nskb;
-@@ -2798,11 +2799,11 @@ struct sk_buff *skb_segment(struct sk_bu
- 		int hsize;
- 		int size;
- 
--		len = skb->len - offset;
-+		len = head_skb->len - offset;
- 		if (len > mss)
- 			len = mss;
- 
--		hsize = skb_headlen(skb) - offset;
-+		hsize = skb_headlen(head_skb) - offset;
- 		if (hsize < 0)
- 			hsize = 0;
+-	struct sk_buff *fskb = skb_shinfo(head_skb)->frag_list;
++	struct sk_buff *list_skb = skb_shinfo(head_skb)->frag_list;
+ 	skb_frag_t *frag = skb_shinfo(head_skb)->frags;
+ 	unsigned int mss = skb_shinfo(head_skb)->gso_size;
+ 	unsigned int doffset = head_skb->data - skb_mac_header(head_skb);
+@@ -2809,14 +2809,14 @@ struct sk_buff *skb_segment(struct sk_bu
  		if (hsize > len || !sg)
-@@ -2851,7 +2852,7 @@ struct sk_buff *skb_segment(struct sk_bu
- 			__skb_push(nskb, doffset);
- 		} else {
- 			nskb = __alloc_skb(hsize + doffset + headroom,
--					   GFP_ATOMIC, skb_alloc_rx_flag(skb),
-+					   GFP_ATOMIC, skb_alloc_rx_flag(head_skb),
- 					   NUMA_NO_NODE);
+ 			hsize = len;
+ 
+-		if (!hsize && i >= nfrags && skb_headlen(fskb) &&
+-		    (skb_headlen(fskb) == len || sg)) {
+-			BUG_ON(skb_headlen(fskb) > len);
++		if (!hsize && i >= nfrags && skb_headlen(list_skb) &&
++		    (skb_headlen(list_skb) == len || sg)) {
++			BUG_ON(skb_headlen(list_skb) > len);
+ 
+ 			i = 0;
+-			nfrags = skb_shinfo(fskb)->nr_frags;
+-			frag = skb_shinfo(fskb)->frags;
+-			pos += skb_headlen(fskb);
++			nfrags = skb_shinfo(list_skb)->nr_frags;
++			frag = skb_shinfo(list_skb)->frags;
++			pos += skb_headlen(list_skb);
+ 
+ 			while (pos < offset + len) {
+ 				BUG_ON(i >= nfrags);
+@@ -2830,8 +2830,8 @@ struct sk_buff *skb_segment(struct sk_bu
+ 				frag++;
+ 			}
+ 
+-			nskb = skb_clone(fskb, GFP_ATOMIC);
+-			fskb = fskb->next;
++			nskb = skb_clone(list_skb, GFP_ATOMIC);
++			list_skb = list_skb->next;
  
  			if (unlikely(!nskb))
-@@ -2867,12 +2868,12 @@ struct sk_buff *skb_segment(struct sk_bu
- 			segs = nskb;
- 		tail = nskb;
- 
--		__copy_skb_header(nskb, skb);
--		nskb->mac_len = skb->mac_len;
-+		__copy_skb_header(nskb, head_skb);
-+		nskb->mac_len = head_skb->mac_len;
- 
- 		skb_headers_offset_update(nskb, skb_headroom(nskb) - headroom);
- 
--		skb_copy_from_linear_data_offset(skb, -tnl_hlen,
-+		skb_copy_from_linear_data_offset(head_skb, -tnl_hlen,
- 						 nskb->data - tnl_hlen,
- 						 doffset + tnl_hlen);
- 
-@@ -2881,7 +2882,7 @@ struct sk_buff *skb_segment(struct sk_bu
- 
- 		if (!sg) {
- 			nskb->ip_summed = CHECKSUM_NONE;
--			nskb->csum = skb_copy_and_csum_bits(skb, offset,
-+			nskb->csum = skb_copy_and_csum_bits(head_skb, offset,
- 							    skb_put(nskb, len),
- 							    len, 0);
- 			continue;
-@@ -2889,10 +2890,11 @@ struct sk_buff *skb_segment(struct sk_bu
- 
- 		nskb_frag = skb_shinfo(nskb)->frags;
- 
--		skb_copy_from_linear_data_offset(skb, offset,
-+		skb_copy_from_linear_data_offset(head_skb, offset,
- 						 skb_put(nskb, hsize), hsize);
- 
--		skb_shinfo(nskb)->tx_flags = skb_shinfo(skb)->tx_flags & SKBTX_SHARED_FRAG;
-+		skb_shinfo(nskb)->tx_flags = skb_shinfo(head_skb)->tx_flags &
-+			SKBTX_SHARED_FRAG;
+ 				goto err;
+@@ -2898,15 +2898,15 @@ struct sk_buff *skb_segment(struct sk_bu
  
  		while (pos < offset + len) {
  			if (i >= nfrags) {
-@@ -2949,15 +2951,12 @@ perform_csum_check:
- 						  nskb->len - doffset, 0);
- 			nskb->ip_summed = CHECKSUM_NONE;
- 		}
--	} while ((offset += len) < skb->len);
-+	} while ((offset += len) < head_skb->len);
+-				BUG_ON(skb_headlen(fskb));
++				BUG_ON(skb_headlen(list_skb));
  
- 	return segs;
+ 				i = 0;
+-				nfrags = skb_shinfo(fskb)->nr_frags;
+-				frag = skb_shinfo(fskb)->frags;
++				nfrags = skb_shinfo(list_skb)->nr_frags;
++				frag = skb_shinfo(list_skb)->frags;
  
- err:
--	while ((skb = segs)) {
--		segs = skb->next;
--		kfree_skb(skb);
--	}
-+	kfree_skb_list(segs);
- 	return ERR_PTR(err);
- }
- EXPORT_SYMBOL_GPL(skb_segment);
+ 				BUG_ON(!nfrags);
+ 
+-				fskb = fskb->next;
++				list_skb = list_skb->next;
+ 			}
+ 
+ 			if (unlikely(skb_shinfo(nskb)->nr_frags >=
 
 
