@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422975AbaDKQyJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:54:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56541 "EHLO
+	id S1422904AbaDKQyp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:54:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56499 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422767AbaDKQI4 (ORCPT
+	with ESMTP id S1422759AbaDKQIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:08:56 -0400
+	Fri, 11 Apr 2014 12:08:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
+        Annie Li <annie.li@oracle.com>, Wei Liu <wei.liu2@citrix.com>,
+        Paul Durrant <paul.durrant@citrix.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 18/65] skbuff: skb_segment: s/frag/nskb_frag/
-Date: Fri, 11 Apr 2014 09:10:50 -0700
-Message-Id: <20140411161000.209758558@linuxfoundation.org>
+Subject: [PATCH 3.13 16/65] Xen-netback: Fix issue caused by using gso_type wrongly
+Date: Fri, 11 Apr 2014 09:10:48 -0700
+Message-Id: <20140411160959.897774297@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
 References: <20140411160957.714773410@linuxfoundation.org>
@@ -27,71 +28,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Annie Li <annie.li@oracle.com>
 
-[ Upstream commit 8cb19905e9287a93ce7c2cbbdf742a060b00e219 ]
+[ Upstream commit 5bd076708664313f2bdbbc1cf71093313b7774a1 ]
 
-frag points at nskb, so name it appropriately
+Current netback uses gso_type to check whether the skb contains
+gso offload, and this is wrong. Gso_size is the right one to
+check gso existence, and gso_type is only used to check gso type.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Some skbs contains nonzero gso_type and zero gso_size, current
+netback would treat these skbs as gso and create wrong response
+for this. This also causes ssh failure to domu from other server.
+
+V2: use skb_is_gso function as Paul Durrant suggested
+
+Signed-off-by: Annie Li <annie.li@oracle.com>
+Acked-by: Wei Liu <wei.liu2@citrix.com>
+Reviewed-by: Paul Durrant <paul.durrant@citrix.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/skbuff.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/net/xen-netback/netback.c |   34 +++++++++++++++-------------------
+ 1 file changed, 15 insertions(+), 19 deletions(-)
 
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -2794,7 +2794,7 @@ struct sk_buff *skb_segment(struct sk_bu
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -338,7 +338,7 @@ static void xenvif_gop_frag_copy(struct
+ 	struct gnttab_copy *copy_gop;
+ 	struct xenvif_rx_meta *meta;
+ 	unsigned long bytes;
+-	int gso_type;
++	int gso_type = XEN_NETIF_GSO_TYPE_NONE;
  
- 	do {
- 		struct sk_buff *nskb;
--		skb_frag_t *frag;
-+		skb_frag_t *nskb_frag;
- 		int hsize;
- 		int size;
- 
-@@ -2887,7 +2887,7 @@ struct sk_buff *skb_segment(struct sk_bu
- 			continue;
+ 	/* Data must not cross a page boundary. */
+ 	BUG_ON(size + offset > PAGE_SIZE<<compound_order(page));
+@@ -397,12 +397,12 @@ static void xenvif_gop_frag_copy(struct
  		}
  
--		frag = skb_shinfo(nskb)->frags;
-+		nskb_frag = skb_shinfo(nskb)->frags;
+ 		/* Leave a gap for the GSO descriptor. */
+-		if (skb_shinfo(skb)->gso_type & SKB_GSO_TCPV4)
+-			gso_type = XEN_NETIF_GSO_TYPE_TCPV4;
+-		else if (skb_shinfo(skb)->gso_type & SKB_GSO_TCPV6)
+-			gso_type = XEN_NETIF_GSO_TYPE_TCPV6;
+-		else
+-			gso_type = XEN_NETIF_GSO_TYPE_NONE;
++		if (skb_is_gso(skb)) {
++			if (skb_shinfo(skb)->gso_type & SKB_GSO_TCPV4)
++				gso_type = XEN_NETIF_GSO_TYPE_TCPV4;
++			else if (skb_shinfo(skb)->gso_type & SKB_GSO_TCPV6)
++				gso_type = XEN_NETIF_GSO_TYPE_TCPV6;
++		}
  
- 		skb_copy_from_linear_data_offset(skb, offset,
- 						 skb_put(nskb, hsize), hsize);
-@@ -2915,13 +2915,13 @@ struct sk_buff *skb_segment(struct sk_bu
- 				goto err;
- 			}
+ 		if (*head && ((1 << gso_type) & vif->gso_mask))
+ 			vif->rx.req_cons++;
+@@ -436,19 +436,15 @@ static int xenvif_gop_skb(struct sk_buff
+ 	int head = 1;
+ 	int old_meta_prod;
+ 	int gso_type;
+-	int gso_size;
  
--			*frag = *skb_frag;
--			__skb_frag_ref(frag);
--			size = skb_frag_size(frag);
-+			*nskb_frag = *skb_frag;
-+			__skb_frag_ref(nskb_frag);
-+			size = skb_frag_size(nskb_frag);
+ 	old_meta_prod = npo->meta_prod;
  
- 			if (pos < offset) {
--				frag->page_offset += offset - pos;
--				skb_frag_size_sub(frag, offset - pos);
-+				nskb_frag->page_offset += offset - pos;
-+				skb_frag_size_sub(nskb_frag, offset - pos);
- 			}
+-	if (skb_shinfo(skb)->gso_type & SKB_GSO_TCPV4) {
+-		gso_type = XEN_NETIF_GSO_TYPE_TCPV4;
+-		gso_size = skb_shinfo(skb)->gso_size;
+-	} else if (skb_shinfo(skb)->gso_type & SKB_GSO_TCPV6) {
+-		gso_type = XEN_NETIF_GSO_TYPE_TCPV6;
+-		gso_size = skb_shinfo(skb)->gso_size;
+-	} else {
+-		gso_type = XEN_NETIF_GSO_TYPE_NONE;
+-		gso_size = 0;
++	gso_type = XEN_NETIF_GSO_TYPE_NONE;
++	if (skb_is_gso(skb)) {
++		if (skb_shinfo(skb)->gso_type & SKB_GSO_TCPV4)
++			gso_type = XEN_NETIF_GSO_TYPE_TCPV4;
++		else if (skb_shinfo(skb)->gso_type & SKB_GSO_TCPV6)
++			gso_type = XEN_NETIF_GSO_TYPE_TCPV6;
+ 	}
  
- 			skb_shinfo(nskb)->nr_frags++;
-@@ -2931,11 +2931,11 @@ struct sk_buff *skb_segment(struct sk_bu
- 				skb_frag++;
- 				pos += size;
- 			} else {
--				skb_frag_size_sub(frag, pos + size - (offset + len));
-+				skb_frag_size_sub(nskb_frag, pos + size - (offset + len));
- 				goto skip_fraglist;
- 			}
+ 	/* Set up a GSO prefix descriptor, if necessary */
+@@ -456,7 +452,7 @@ static int xenvif_gop_skb(struct sk_buff
+ 		req = RING_GET_REQUEST(&vif->rx, vif->rx.req_cons++);
+ 		meta = npo->meta + npo->meta_prod++;
+ 		meta->gso_type = gso_type;
+-		meta->gso_size = gso_size;
++		meta->gso_size = skb_shinfo(skb)->gso_size;
+ 		meta->size = 0;
+ 		meta->id = req->id;
+ 	}
+@@ -466,7 +462,7 @@ static int xenvif_gop_skb(struct sk_buff
  
--			frag++;
-+			nskb_frag++;
- 		}
- 
- skip_fraglist:
+ 	if ((1 << gso_type) & vif->gso_mask) {
+ 		meta->gso_type = gso_type;
+-		meta->gso_size = gso_size;
++		meta->gso_size = skb_shinfo(skb)->gso_size;
+ 	} else {
+ 		meta->gso_type = XEN_NETIF_GSO_TYPE_NONE;
+ 		meta->gso_size = 0;
 
 
