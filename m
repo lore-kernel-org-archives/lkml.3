@@ -1,85 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614AbaDKRhL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 13:37:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45512 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754576AbaDKRhH (ORCPT
+	id S1754209AbaDKRjV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 13:39:21 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57107 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735AbaDKRjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 13:37:07 -0400
-Date: Fri, 11 Apr 2014 10:36:51 -0700
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, stable@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, tglx@linutronix.de,
-        stable@vger.kernel.org, hpa@linux.intel.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86-64, modify_ldt:
-  Ban 16-bit segments on 64-bit kernels
-Git-Commit-ID: b3b42ac2cbae1f3cecbb6229964a4d48af31d382
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Fri, 11 Apr 2014 13:39:19 -0400
+Date: Fri, 11 Apr 2014 13:39:17 -0400 (EDT)
+Message-Id: <20140411.133917.994491919904460059.davem@davemloft.net>
+To: miklos@szeredi.hu
+Cc: linux@arm.linux.org.uk, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mszeredi@suse.cz
+Subject: Re: [PATCH 03/15] arm: add renameat2 syscall
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAJfpegsbS8M4L7jKUfgw88wWnt7NYtSe5LHTsVF_oTL94xm=Fw@mail.gmail.com>
+References: <1397211951-20549-4-git-send-email-miklos@szeredi.hu>
+	<20140411103507.GK16119@n2100.arm.linux.org.uk>
+	<CAJfpegsbS8M4L7jKUfgw88wWnt7NYtSe5LHTsVF_oTL94xm=Fw@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 11 Apr 2014 10:39:19 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b3b42ac2cbae1f3cecbb6229964a4d48af31d382
-Gitweb:     http://git.kernel.org/tip/b3b42ac2cbae1f3cecbb6229964a4d48af31d382
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Sun, 16 Mar 2014 15:31:54 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 11 Apr 2014 10:10:09 -0700
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Fri, 11 Apr 2014 13:48:05 +0200
 
-x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
+> It would probably have been a good idea to CC all maintainers on the
+> cover letter, but I don't know how I could do that with "git
+> send-email".
 
-The IRET instruction, when returning to a 16-bit segment, only
-restores the bottom 16 bits of the user space stack pointer.  We have
-a software workaround for that ("espfix") for the 32-bit kernel, but
-it relies on a nonzero stack segment base which is not available in
-32-bit mode.
+I strongly suggest that this _not_ be done.
 
-Since 16-bit support is somewhat crippled anyway on a 64-bit kernel
-(no V86 mode), and most (if not quite all) 64-bit processors support
-virtualization for the users who really need it, simply reject
-attempts at creating a 16-bit segment when running on top of a 64-bit
-kernel.
+There is a 1024 character limit imposed for email header fields in order
+to reduce spam at vger.kernel.org
 
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/n/tip-kicdm89kzw9lldryb1br9od0@git.kernel.org
-Cc: <stable@vger.kernel.org>
----
- arch/x86/kernel/ldt.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
-
-diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
-index ebc9873..af1d14a 100644
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -229,6 +229,17 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
- 		}
- 	}
- 
-+	/*
-+	 * On x86-64 we do not support 16-bit segments due to
-+	 * IRET leaking the high bits of the kernel stack address.
-+	 */
-+#ifdef CONFIG_X86_64
-+	if (!ldt_info.seg_32bit) {
-+		error = -EINVAL;
-+		goto out_unlock;
-+	}
-+#endif
-+
- 	fill_ldt(&ldt, &ldt_info);
- 	if (oldmode)
- 		ldt.avl = 0;
+We have lists like linux-arch for a reason, CC:'ing tons of people who
+should absolutely be on that list doesn't make any sense at all and
+as I just described is not going to work.
