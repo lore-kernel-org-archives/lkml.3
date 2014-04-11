@@ -1,41 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506AbaDKUl7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 16:41:59 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:37820 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754239AbaDKUl5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 16:41:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140411105604.GR6518@sirena.org.uk>
-References: <20140411105604.GR6518@sirena.org.uk>
-Date: Fri, 11 Apr 2014 13:41:56 -0700
-X-Google-Sender-Auth: rqY3qksaPX4qSEqpr6gFWWjDcdg
-Message-ID: <CA+55aFxCubywWSLdhAva9dvj26=o4WkaVnhYjgEKrEuMuaFo+g@mail.gmail.com>
-Subject: Re: [GIT PULL] spi fixes for v3.15
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-spi@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1755559AbaDKUmh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 16:42:37 -0400
+Received: from mga03.intel.com ([143.182.124.21]:17971 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755513AbaDKUmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 16:42:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,843,1389772800"; 
+   d="scan'208";a="417960430"
+Subject: [PATCH] [v2] mm: pass VM_BUG_ON() reason to dump_page()
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Dave Hansen <dave@sr71.net>, dave.hansen@linux.intel.com,
+        kirill.shutemov@linux.intel.com
+From: Dave Hansen <dave@sr71.net>
+Date: Fri, 11 Apr 2014 13:42:32 -0700
+Message-Id: <20140411204232.C8CF1A7A@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 3:56 AM, Mark Brown <broonie@kernel.org> wrote:
->
-> Same issue as on the regulator pull request with the entire diffstat for
-> the original pull request for this merge window has appeared - like I
-> say I will try to fix the scripts as it's annoying and unclear.
 
-Yeah, looking at this, the problem does seem to be that extraneous
-merge. I'm not sure why you did that "Merge tag 'spi-v3.15' into
-spi-linus" at all, but it basically acts as an indirect back-merge
-giving you two different merge bases.
+Changes from v1:
+ * Fix tabs before spaces in the multi-line #define
 
-You seem to start your development by doing a merge of that tag that
-you sent me. Why? Why not just start *at* the tag you sent me, not at
-that extraneous merge of that tag and v3.14.
+--
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-               Linus
+I recently added a patch to let folks pass a "reason" string
+dump_page() which gets dumped out along with the page's data.
+This essentially saves the bug-reader a trip in to the source
+to figure out why we BUG_ON()'d.
+
+The new VM_BUG_ON_PAGE() passes in NULL for "reason".  It seems
+like we might as well pass the BUG_ON() condition if we have it.
+This will bloat kernels a bit with ~160 new strings, but this
+is all under a debugging option anyway.
+
+	page:ffffea0008560280 count:1 mapcount:0 mapping:(null) index:0x0
+	page flags: 0xbfffc0000000001(locked)
+	page dumped because: VM_BUG_ON_PAGE(PageLocked(page))
+	------------[ cut here ]------------
+	kernel BUG at /home/davehans/linux.git/mm/filemap.c:464!
+	invalid opcode: 0000 [#1] SMP
+	CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.0+ #251
+	Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+	...
+
+
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+
+ b/include/linux/mmdebug.h |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff -puN include/linux/mmdebug.h~pass-VM_BUG_ON-reason-to-dump_page include/linux/mmdebug.h
+--- a/include/linux/mmdebug.h~pass-VM_BUG_ON-reason-to-dump_page	2014-04-11 13:39:26.313125298 -0700
++++ b/include/linux/mmdebug.h	2014-04-11 13:40:26.417835916 -0700
+@@ -9,8 +9,13 @@ extern void dump_page_badflags(struct pa
+ 
+ #ifdef CONFIG_DEBUG_VM
+ #define VM_BUG_ON(cond) BUG_ON(cond)
+-#define VM_BUG_ON_PAGE(cond, page) \
+-	do { if (unlikely(cond)) { dump_page(page, NULL); BUG(); } } while (0)
++#define VM_BUG_ON_PAGE(cond, page)						\
++	do {									\
++		if (unlikely(cond)) {						\
++			dump_page(page, "VM_BUG_ON_PAGE(" __stringify(cond)")");\
++			BUG();							\
++		}								\
++	} while (0)
+ #else
+ #define VM_BUG_ON(cond) BUILD_BUG_ON_INVALID(cond)
+ #define VM_BUG_ON_PAGE(cond, page) VM_BUG_ON(cond)
+_
