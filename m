@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934654AbaDKKgq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 06:36:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38699 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757903AbaDKKgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 06:36:44 -0400
-Message-ID: <1397212602.4632.2.camel@linux-fkkt.site>
-Subject: Re: [PATCH v7 0/4] Add modules for realtek USB card reader
-From: Oliver Neukum <oneukum@suse.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: rogerable@realtek.com, Samuel Ortiz <sameo@linux.intel.com>,
-        Chris Ball <chris@printf.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org, wei_wang@realsil.com.cn,
-        micky_ching@realsil.com.cn
-Date: Fri, 11 Apr 2014 12:36:42 +0200
-In-Reply-To: <20140411102846.GB9801@lee--X1>
-References: <1397199203-2235-1-git-send-email-rogerable@realtek.com>
-	 <1397201514.1589.0.camel@linux-fkkt.site> <20140411102846.GB9801@lee--X1>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757491AbaDKKfs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 06:35:48 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:57996 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757178AbaDKKfp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 06:35:45 -0400
+Date: Fri, 11 Apr 2014 11:35:07 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: Re: [PATCH 03/15] arm: add renameat2 syscall
+Message-ID: <20140411103507.GK16119@n2100.arm.linux.org.uk>
+References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu> <1397211951-20549-4-git-send-email-miklos@szeredi.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397211951-20549-4-git-send-email-miklos@szeredi.hu>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-04-11 at 11:28 +0100, Lee Jones wrote:
-> > > From: Roger Tseng <rogerable@realtek.com>
-> > > 
-> > > This patchset adds modules to support Realtek USB vendor specific class flash
-> > > card reader: one base module in MFD subsystem and two host modules in both mmc
-> > > and memstick subsystems. The architecture is similar to rtsx_pci.
-> > > 
-> > > This work is done primarily to replace the staging driver: staging/rts5139,
-> > > which doesn't utilize mmc nor memstick subsystems. Once the patchset or its
-> > > revision is applied, we may need Greg's help to remove the staging one.
-> > 
-> > Looks good to me.
+On Fri, Apr 11, 2014 at 12:25:39PM +0200, Miklos Szeredi wrote:
+> From: Miklos Szeredi <mszeredi@suse.cz>
 > 
-> Is that an Ack?
-Acked-by: Oliver <oneukum@suse.de>
+> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> Cc: Russell King <linux@arm.linux.org.uk>
 
-	Sorry
-		Oliver
+Same comments for the previous patch.  What is/where is the remainder of
+the series, or at least the cover message to explain what the series is
+about (which may also show why the other patches are not relevant to
+everyone.)
 
-
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
