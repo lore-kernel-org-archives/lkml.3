@@ -1,95 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643AbaDKVwb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 17:52:31 -0400
-Received: from static.92.5.9.176.clients.your-server.de ([176.9.5.92]:54673
-	"EHLO hallynmail2" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754438AbaDKVwa (ORCPT
+	id S1755712AbaDKVwx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 17:52:53 -0400
+Received: from smtp107.biz.mail.ne1.yahoo.com ([98.138.207.14]:27810 "HELO
+	smtp107.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755660AbaDKVwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 17:52:30 -0400
-Date: Fri, 11 Apr 2014 23:52:28 +0200
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Sean Pajot <sean.pajot@execulink.com>,
-        lxc-devel@lists.linuxcontainers.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [lxc-devel] Kernel bug? Setuid apps and user namespaces
-Message-ID: <20140411215228.GA27354@mail.hallyn.com>
-References: <874n89rsoc.fsf@xmission.com>
- <20140402172049.GA13240@sergelap>
- <20140402173248.GA22804@mail.hallyn.com>
- <533EF65E.6050508@mit.edu>
- <20140404183022.GA6728@sergelap>
- <CALCETrUki+k+NsaAYTbvaUqFTwH_AUDtwLv0XRYx+zA=c3zACw@mail.gmail.com>
- <20140404191000.GA13496@sergelap>
- <CALCETrW-M9QoqzkKyk9gRPLfx1fiTzs8_oAhdK6_kk=17PQc0Q@mail.gmail.com>
- <20140407181331.GA15012@mail.hallyn.com>
- <CALCETrULqdffvHZMV_4hobs8=YX6hRSagkvR4opycBKsfTaTtg@mail.gmail.com>
+	Fri, 11 Apr 2014 17:52:51 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: gNPRwNEVM1n6r6L2HPnY_6njF86jgGiL4V6NS4Za.frzOmi
+ cqvW7x.7PSIz2O9BOivvDdK13zfXD7hUl_5_4i8ilcBLx7pw8Jsg8c.3GzfB
+ F7DDnnRPngC_F3BIU0ON7oHcXAP_WsqtTe6LAT5PUlYR9rSmE7UotzEJm.oj
+ F8jTY86osMTa8fVdJtKYDq9tHDuKeDG5QxAIcbem5b6B_udfFrO73vW.xBIv
+ ZKjSec2to.xrfkx0nH3wpnPxtamos0HnXy5QQAI4q4TlnCCUN7dyfYXt1geG
+ Rh6kw_uuOYT1QdKKatR678d7kcuSLQcI8hdVZWobGOb5ennrDSR3InH6yr_g
+ uYzORYWxQyI_K.PImRq4sJKNr5j.mX7VItfSBaNo62YeyE6L.Q29JWOUCCfT
+ u2SSK.G1JyJxo1Hq_cbaIzSckE2AvlLrw4SCLJ_T8DK9wT.m4CeSVFQBRS9b
+ A3i6yjWvwRQ.fHPZdGZgdlFym6Mold5wx..CykF0hHDdfk9mytp9PZGR63CD
+ UGbWfkn7stWgi5e4cgMw.ak8KHc5yYzC0DywZq2Gso5vOFsj3c8.80o_C4Rl
+ J5Uw53eYJxihTuGhA44svB8Lbxs3zR_1ErE8EiIbGnTMFFebFmLyxwhvKQXY
+ 9urpqCwlTLg--
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+X-Rocket-Received: from [192.168.0.105] (casey@67.180.103.242 with plain [98.138.105.25])
+        by smtp107.biz.mail.ne1.yahoo.com with SMTP; 11 Apr 2014 14:46:11 -0700 PDT
+Message-ID: <534862BD.8010101@schaufler-ca.com>
+Date: Fri, 11 Apr 2014 14:46:37 -0700
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrULqdffvHZMV_4hobs8=YX6hRSagkvR4opycBKsfTaTtg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?UTF-8?B?Sm9zw6kgQm9sbG8=?= <jose.bollo@open.eurogiciel.org>,
+        James Morris <james.l.morris@oracle.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: jobol@nonadev.net
+Subject: Re: [PATCH 1/1] SMACK: Fix handling value==NULL in post setxattr
+References: <1396525721-17307-1-git-send-email-jose.bollo@open.eurogiciel.org>
+In-Reply-To: <1396525721-17307-1-git-send-email-jose.bollo@open.eurogiciel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andy Lutomirski (luto@amacapital.net):
-> On Mon, Apr 7, 2014 at 11:13 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> > Quoting Andy Lutomirski (luto@amacapital.net):
-> >> I'm starting to think that we need to extend dumpable to something
-> >> much more general like a list of struct creds that someone needs to be
-> >> able to ptrace, *in addition to current creds* in order to access
-> >> sensitive /proc files, coredumps, etc.  If you get started as setuid,
-> >
-> > Hm, yeah, this sort of makes sense.
-> >
-> >> then you start with two struct creds in the list (or maybe just your
-> >> euid and uid).  If you get started !setuid, then your initial creds
-> >> are in the list.  It's possible that few or no things will need to
-> >> change that list after execve.
-> >>
-> >> If all of the entries and current->cred are in the same user_ns, then
-> >> we can dump as userns root.  If they're in different usernses, then we
-> >> dump as global root or maybe the common ancestor root.
-> >> setuid(getuid()) and other such nastiness may have to empty the list,
-> >> or maybe we can just use a prctl for that.
-> >
-> > A few questions,
-> >
-> > 1. is there any other action which would trigger adding a new cred to
-> > the ist?
-> 
-> I don't think so.  Anyone who can ptrace you from the start can
-> corrupt you such that you leak rights even if some future action
-> prevents new ptracers from attaching.
-> 
-> OTOH, it might be nice for something like an HTTPS server to be able
-> to fork and shove its private key into the child, while preventing
-> anyone from ptracing the child.  But doing this securely without help
-> from someone with a different uid might be impossible anyway.
-> 
-> >
-> > 2. would execve clear (and re-init) the list of creds?
-> 
-> Probably.  Thoughts?
+On 4/3/2014 4:48 AM, José Bollo wrote:
+> The function `smack_inode_post_setxattr` is called each
+> time that a setxattr is done, for any value of name.
+> The kernel allow to put value==NULL when size==0
+> to set an empty attribute value. The systematic
+> call to smk_import_entry was causing the dereference
+> of a NULL pointer hence a KERNEL PANIC!
+>
+> The problem can be produced easily by issuing the
+> command `setfattr -n user.data file` under bash prompt
+> when SMACK is active.
+>
+> Moving the call to smk_import_entry as proposed by this
+> patch is correcting the behaviour because the function
+> smack_inode_post_setxattr is called for the SMACK's
+> attributes only if the function smack_inode_setxattr validated
+> the value and its size (what will not be the case when size==0).
+>
+> It also has a benefical effect to not fill the smack hash
+> with garbage values coming from any extended attribute
+> write.
+>
+> Change-Id: Iaf0039c2be9bccb6cee11c24a3b44d209101fe47
+> Signed-off-by: José Bollo <jose.bollo@open.eurogiciel.org>
 
-Yeah it seems to me it should be re-initialized, with a cred added
-to the list for every open fd.
+Acked-by: Casey Schaufler <casey@schaufler-ca.com>
 
-> We could have a way to ask execve not to reinit the list.  Such a
-> mechanism would have to require no_new_privs to prevent a
-> straightforward attack on any setuid binary.
+Applied to git://git.gitorious.org/smack-next/kernel.git smack-for-3.16
 
-If we don't add a cred for every open fd, then I think we need this.  If
-we do, then I'm not sure this makes sense.
+> ---
+>  security/smack/smack_lsm.c | 4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> index 3f01cf5..28d482c 100644
+> --- a/security/smack/smack_lsm.c
+> +++ b/security/smack/smack_lsm.c
+> @@ -893,18 +893,20 @@ static void smack_inode_post_setxattr(struct dentry *dentry, const char *name,
+>  		return;
+>  	}
+>  
+> -	skp = smk_import_entry(value, size);
+>  	if (strcmp(name, XATTR_NAME_SMACK) == 0) {
+> +		skp = smk_import_entry(value, size);
+>  		if (skp != NULL)
+>  			isp->smk_inode = skp->smk_known;
+>  		else
+>  			isp->smk_inode = smack_known_invalid.smk_known;
+>  	} else if (strcmp(name, XATTR_NAME_SMACKEXEC) == 0) {
+> +		skp = smk_import_entry(value, size);
+>  		if (skp != NULL)
+>  			isp->smk_task = skp;
+>  		else
+>  			isp->smk_task = &smack_known_invalid;
+>  	} else if (strcmp(name, XATTR_NAME_SMACKMMAP) == 0) {
+> +		skp = smk_import_entry(value, size);
+>  		if (skp != NULL)
+>  			isp->smk_mmap = skp;
+>  		else
 
-> We's also want PR_SET_DUMPABLE or a new prctl to be able reset the
-> list to contain just current-.cred, I think.
-
-Yeah PR_SET_DUMPABLE should reset it, agreed.
-
--serge
