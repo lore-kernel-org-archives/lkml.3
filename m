@@ -1,234 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422955AbaDKQjb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:39:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56638 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759439AbaDKQJF (ORCPT
+	id S1423098AbaDKQkN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:40:13 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:37017 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759767AbaDKQj3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:05 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David L Stevens <dlstevens@us.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 33/65] vxlan: fix nonfunctional neigh_reduce()
-Date: Fri, 11 Apr 2014 09:11:05 -0700
-Message-Id: <20140411161002.302383123@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
-References: <20140411160957.714773410@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Fri, 11 Apr 2014 12:39:29 -0400
+MIME-Version: 1.0
+X-Originating-IP: [85.250.55.196]
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Fri, 11 Apr 2014 19:39:06 +0300
+Message-ID: <CAK=WgbYgnu38wGr3gGg_k5ULguQHYPitJyoyb-QO0z3CwCrAUw@mail.gmail.com>
+Subject: [GIT PULL] remoteproc cleanups for 3.15
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Jingoo Han <jg1.han@samsung.com>, Julia Lawall <Julia.Lawall@lip6.fr>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+The following changes since commit cfbf8d4857c26a8a307fb7cd258074c9dcd8c691:
 
-------------------
+  Linux 3.14-rc4 (2014-02-23 17:40:03 -0800)
 
-From: David Stevens <dlstevens@us.ibm.com>
+are available in the git repository at:
 
-[ Upstream commit 4b29dba9c085a4fb79058fb1c45a2f6257ca3dfa ]
+  git://git.kernel.org/pub/scm/linux/kernel/git/ohad/remoteproc.git
+tags/remoteproc-3.15-cleanups
 
-The VXLAN neigh_reduce() code is completely non-functional since
-check-in. Specific errors:
+for you to fetch changes up to bd88acba5f9809af48f66267bb16024b9e33cf2b:
 
-1) The original code drops all packets with a multicast destination address,
-	even though neighbor solicitations are sent to the solicited-node
-	address, a multicast address. The code after this check was never run.
-2) The neighbor table lookup used the IPv6 header destination, which is the
-	solicited node address, rather than the target address from the
-	neighbor solicitation. So neighbor lookups would always fail if it
-	got this far. Also for L3MISSes.
-3) The code calls ndisc_send_na(), which does a send on the tunnel device.
-	The context for neigh_reduce() is the transmit path, vxlan_xmit(),
-	where the host or a bridge-attached neighbor is trying to transmit
-	a neighbor solicitation. To respond to it, the tunnel endpoint needs
-	to do a *receive* of the appropriate neighbor advertisement. Doing a
-	send, would only try to send the advertisement, encapsulated, to the
-	remote destinations in the fdb -- hosts that definitely did not do the
-	corresponding solicitation.
-4) The code uses the tunnel endpoint IPv6 forwarding flag to determine the
-	isrouter flag in the advertisement. This has nothing to do with whether
-	or not the target is a router, and generally won't be set since the
-	tunnel endpoint is bridging, not routing, traffic.
+  remoteproc/ste_modem: staticize local symbols (2014-02-24 11:16:16 +0200)
 
-	The patch below creates a proxy neighbor advertisement to respond to
-neighbor solicitions as intended, providing proper IPv6 support for neighbor
-reduction.
+----------------------------------------------------------------
+Several remoteproc cleanup patches coming from Jingoo Han, Julia
+Lawall and Uwe Kleine-König.
 
-Signed-off-by: David L Stevens <dlstevens@us.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/vxlan.c |  127 ++++++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 113 insertions(+), 14 deletions(-)
+----------------------------------------------------------------
+Jingoo Han (1):
+      remoteproc/ste_modem: staticize local symbols
 
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -1232,15 +1232,103 @@ out:
- }
- 
- #if IS_ENABLED(CONFIG_IPV6)
-+
-+static struct sk_buff *vxlan_na_create(struct sk_buff *request,
-+	struct neighbour *n, bool isrouter)
-+{
-+	struct net_device *dev = request->dev;
-+	struct sk_buff *reply;
-+	struct nd_msg *ns, *na;
-+	struct ipv6hdr *pip6;
-+	u8 *daddr;
-+	int na_olen = 8; /* opt hdr + ETH_ALEN for target */
-+	int ns_olen;
-+	int i, len;
-+
-+	if (dev == NULL)
-+		return NULL;
-+
-+	len = LL_RESERVED_SPACE(dev) + sizeof(struct ipv6hdr) +
-+		sizeof(*na) + na_olen + dev->needed_tailroom;
-+	reply = alloc_skb(len, GFP_ATOMIC);
-+	if (reply == NULL)
-+		return NULL;
-+
-+	reply->protocol = htons(ETH_P_IPV6);
-+	reply->dev = dev;
-+	skb_reserve(reply, LL_RESERVED_SPACE(request->dev));
-+	skb_push(reply, sizeof(struct ethhdr));
-+	skb_set_mac_header(reply, 0);
-+
-+	ns = (struct nd_msg *)skb_transport_header(request);
-+
-+	daddr = eth_hdr(request)->h_source;
-+	ns_olen = request->len - skb_transport_offset(request) - sizeof(*ns);
-+	for (i = 0; i < ns_olen-1; i += (ns->opt[i+1]<<3)) {
-+		if (ns->opt[i] == ND_OPT_SOURCE_LL_ADDR) {
-+			daddr = ns->opt + i + sizeof(struct nd_opt_hdr);
-+			break;
-+		}
-+	}
-+
-+	/* Ethernet header */
-+	memcpy(eth_hdr(reply)->h_dest, daddr, ETH_ALEN);
-+	memcpy(eth_hdr(reply)->h_source, n->ha, ETH_ALEN);
-+	eth_hdr(reply)->h_proto = htons(ETH_P_IPV6);
-+	reply->protocol = htons(ETH_P_IPV6);
-+
-+	skb_pull(reply, sizeof(struct ethhdr));
-+	skb_set_network_header(reply, 0);
-+	skb_put(reply, sizeof(struct ipv6hdr));
-+
-+	/* IPv6 header */
-+
-+	pip6 = ipv6_hdr(reply);
-+	memset(pip6, 0, sizeof(struct ipv6hdr));
-+	pip6->version = 6;
-+	pip6->priority = ipv6_hdr(request)->priority;
-+	pip6->nexthdr = IPPROTO_ICMPV6;
-+	pip6->hop_limit = 255;
-+	pip6->daddr = ipv6_hdr(request)->saddr;
-+	pip6->saddr = *(struct in6_addr *)n->primary_key;
-+
-+	skb_pull(reply, sizeof(struct ipv6hdr));
-+	skb_set_transport_header(reply, 0);
-+
-+	na = (struct nd_msg *)skb_put(reply, sizeof(*na) + na_olen);
-+
-+	/* Neighbor Advertisement */
-+	memset(na, 0, sizeof(*na)+na_olen);
-+	na->icmph.icmp6_type = NDISC_NEIGHBOUR_ADVERTISEMENT;
-+	na->icmph.icmp6_router = isrouter;
-+	na->icmph.icmp6_override = 1;
-+	na->icmph.icmp6_solicited = 1;
-+	na->target = ns->target;
-+	memcpy(&na->opt[2], n->ha, ETH_ALEN);
-+	na->opt[0] = ND_OPT_TARGET_LL_ADDR;
-+	na->opt[1] = na_olen >> 3;
-+
-+	na->icmph.icmp6_cksum = csum_ipv6_magic(&pip6->saddr,
-+		&pip6->daddr, sizeof(*na)+na_olen, IPPROTO_ICMPV6,
-+		csum_partial(na, sizeof(*na)+na_olen, 0));
-+
-+	pip6->payload_len = htons(sizeof(*na)+na_olen);
-+
-+	skb_push(reply, sizeof(struct ipv6hdr));
-+
-+	reply->ip_summed = CHECKSUM_UNNECESSARY;
-+
-+	return reply;
-+}
-+
- static int neigh_reduce(struct net_device *dev, struct sk_buff *skb)
- {
- 	struct vxlan_dev *vxlan = netdev_priv(dev);
--	struct neighbour *n;
--	union vxlan_addr ipa;
-+	struct nd_msg *msg;
- 	const struct ipv6hdr *iphdr;
- 	const struct in6_addr *saddr, *daddr;
--	struct nd_msg *msg;
--	struct inet6_dev *in6_dev = NULL;
-+	struct neighbour *n;
-+	struct inet6_dev *in6_dev;
- 
- 	in6_dev = __in6_dev_get(dev);
- 	if (!in6_dev)
-@@ -1253,19 +1341,20 @@ static int neigh_reduce(struct net_devic
- 	saddr = &iphdr->saddr;
- 	daddr = &iphdr->daddr;
- 
--	if (ipv6_addr_loopback(daddr) ||
--	    ipv6_addr_is_multicast(daddr))
--		goto out;
--
- 	msg = (struct nd_msg *)skb_transport_header(skb);
- 	if (msg->icmph.icmp6_code != 0 ||
- 	    msg->icmph.icmp6_type != NDISC_NEIGHBOUR_SOLICITATION)
- 		goto out;
- 
--	n = neigh_lookup(ipv6_stub->nd_tbl, daddr, dev);
-+	if (ipv6_addr_loopback(daddr) ||
-+	    ipv6_addr_is_multicast(&msg->target))
-+		goto out;
-+
-+	n = neigh_lookup(ipv6_stub->nd_tbl, &msg->target, dev);
- 
- 	if (n) {
- 		struct vxlan_fdb *f;
-+		struct sk_buff *reply;
- 
- 		if (!(n->nud_state & NUD_CONNECTED)) {
- 			neigh_release(n);
-@@ -1279,13 +1368,23 @@ static int neigh_reduce(struct net_devic
- 			goto out;
- 		}
- 
--		ipv6_stub->ndisc_send_na(dev, n, saddr, &msg->target,
--					 !!in6_dev->cnf.forwarding,
--					 true, false, false);
-+		reply = vxlan_na_create(skb, n,
-+					!!(f ? f->flags & NTF_ROUTER : 0));
-+
- 		neigh_release(n);
-+
-+		if (reply == NULL)
-+			goto out;
-+
-+		if (netif_rx_ni(reply) == NET_RX_DROP)
-+			dev->stats.rx_dropped++;
-+
- 	} else if (vxlan->flags & VXLAN_F_L3MISS) {
--		ipa.sin6.sin6_addr = *daddr;
--		ipa.sa.sa_family = AF_INET6;
-+		union vxlan_addr ipa = {
-+			.sin6.sin6_addr = msg->target,
-+			.sa.sa_family = AF_INET6,
-+		};
-+
- 		vxlan_ip_miss(dev, &ipa);
- 	}
- 
+Julia Lawall (1):
+      remoteproc/davinci: simplify use of devm_ioremap_resource
 
+Uwe Kleine-König (1):
+      remoteproc/davinci: drop needless devm_clk_put
 
+ drivers/remoteproc/da8xx_remoteproc.c | 16 +---------------
+ drivers/remoteproc/ste_modem_rproc.c  |  4 ++--
+ 2 files changed, 3 insertions(+), 17 deletions(-)
