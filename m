@@ -1,60 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423162AbaDKQk2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:40:28 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.147]:46541 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1422918AbaDKQkY (ORCPT
+	id S1759759AbaDKQj1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:39:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56626 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422832AbaDKQJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:40:24 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-5.tower-178.messagelabs.com!1397234418!26081338!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.1; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Fri, 11 Apr 2014 18:40:19 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>,
-        Johannes Thumshirn <Johannes.Thumshirn@men.de>,
-        Christoph Jaeger <christophjaeger@linux.com>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>
-Subject: [PATCH] drivers: mcb: fix memory leak in chameleon_parse_cells() error path
-Date: Fri, 11 Apr 2014 18:40:05 +0200
-Message-ID: <1397234405-11073-1-git-send-email-johannes.thumshirn@men.de>
-X-Mailer: git-send-email 1.9.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.1.1.31]
+	Fri, 11 Apr 2014 12:09:05 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Xin Long <lucien.xin@gmail.com>, Pravin B Shelar <pshelar@nicira.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 41/65] ip_tunnel: Fix dst ref-count.
+Date: Fri, 11 Apr 2014 09:11:13 -0700
+Message-Id: <20140411161003.365561626@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
+References: <20140411160957.714773410@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Jaeger <christophjaeger@linux.com>
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-chameleon_parse_cells() bails out if chameleon descriptor type is
-invalid but does not free the storage 'header' points to.
+------------------
 
-Signed-off-by: Christoph Jaeger <christophjaeger@linux.com>
-Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+From: Pravin B Shelar <pshelar@nicira.com>
+
+[ Upstream commit fbd02dd405d0724a0f25897ed4a6813297c9b96f ]
+
+Commit 10ddceb22ba (ip_tunnel:multicast process cause panic due
+to skb->_skb_refdst NULL pointer) removed dst-drop call from
+ip-tunnel-recv.
+
+Following commit reintroduce dst-drop and fix the original bug by
+checking loopback packet before releasing dst.
+Original bug: https://bugzilla.kernel.org/show_bug.cgi?id=70681
+
+CC: Xin Long <lucien.xin@gmail.com>
+Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/mcb/mcb-parse.c | 1 +
- 1 file changed, 1 insertion(+)
+ net/ipv4/gre_demux.c      |    8 ++++++++
+ net/ipv4/ip_tunnel.c      |    3 ---
+ net/ipv4/ip_tunnel_core.c |    1 +
+ 3 files changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mcb/mcb-parse.c b/drivers/mcb/mcb-parse.c
-index d1278b5..0049269 100644
---- a/drivers/mcb/mcb-parse.c
-+++ b/drivers/mcb/mcb-parse.c
-@@ -141,6 +141,7 @@ int chameleon_parse_cells(struct mcb_bus *bus, phys_addr_t mapbase,
- 		default:
- 			pr_err("Invalid chameleon descriptor type 0x%x\n",
- 				dtype);
-+			kfree(header);
- 			return -EINVAL;
- 		}
- 		num_cells++;
--- 
-1.9.1
+--- a/net/ipv4/gre_demux.c
++++ b/net/ipv4/gre_demux.c
+@@ -182,6 +182,14 @@ static int gre_cisco_rcv(struct sk_buff
+ 	int i;
+ 	bool csum_err = false;
+ 
++#ifdef CONFIG_NET_IPGRE_BROADCAST
++	if (ipv4_is_multicast(ip_hdr(skb)->daddr)) {
++		/* Looped back packet, drop it! */
++		if (rt_is_output_route(skb_rtable(skb)))
++			goto drop;
++	}
++#endif
++
+ 	if (parse_gre_header(skb, &tpi, &csum_err) < 0)
+ 		goto drop;
+ 
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -411,9 +411,6 @@ int ip_tunnel_rcv(struct ip_tunnel *tunn
+ 
+ #ifdef CONFIG_NET_IPGRE_BROADCAST
+ 	if (ipv4_is_multicast(iph->daddr)) {
+-		/* Looped back packet, drop it! */
+-		if (rt_is_output_route(skb_rtable(skb)))
+-			goto drop;
+ 		tunnel->dev->stats.multicast++;
+ 		skb->pkt_type = PACKET_BROADCAST;
+ 	}
+--- a/net/ipv4/ip_tunnel_core.c
++++ b/net/ipv4/ip_tunnel_core.c
+@@ -109,6 +109,7 @@ int iptunnel_pull_header(struct sk_buff
+ 	secpath_reset(skb);
+ 	if (!skb->l4_rxhash)
+ 		skb->rxhash = 0;
++	skb_dst_drop(skb);
+ 	skb->vlan_tci = 0;
+ 	skb_set_queue_mapping(skb, 0);
+ 	skb->pkt_type = PACKET_HOST;
+
 
