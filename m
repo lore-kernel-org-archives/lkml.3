@@ -1,99 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935164AbaDKQwz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:52:55 -0400
-Received: from mga01.intel.com ([192.55.52.88]:51301 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934988AbaDKQwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:52:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,842,1389772800"; 
-   d="scan'208";a="519027716"
-Date: Fri, 11 Apr 2014 22:13:27 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: dan.j.williams@intel.com, nsekhar@ti.com, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, joelf@ti.com,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com, mporter@linaro.org
-Subject: Re: [PATCH v2 03/14] dma: edma: Add support for DMA_PAUSE/RESUME
- operation
-Message-ID: <20140411164327.GD32284@intel.com>
-References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com>
- <1396357575-30585-4-git-send-email-peter.ujfalusi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396357575-30585-4-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1422931AbaDKQxm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:53:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56499 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422772AbaDKQI4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 12:08:56 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Michael Chan <mchan@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 14/65] bnx2: Fix shutdown sequence
+Date: Fri, 11 Apr 2014 09:10:46 -0700
+Message-Id: <20140411160959.659667030@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
+References: <20140411160957.714773410@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 01, 2014 at 04:06:04PM +0300, Peter Ujfalusi wrote:
-> Pause/Resume can be used by the audio stack when the stream is paused/resumed
-> The edma platform code has support for this and the legacy audio stack used
-> this.
-> 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> ---
->  drivers/dma/edma.c | 28 ++++++++++++++++++++++++++++
->  1 file changed, 28 insertions(+)
-> 
-> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-> index 2742867fd1e6..7891378a03f0 100644
-> --- a/drivers/dma/edma.c
-> +++ b/drivers/dma/edma.c
-> @@ -240,6 +240,26 @@ static int edma_slave_config(struct edma_chan *echan,
->  	return 0;
->  }
->  
-> +static int edma_dma_pause(struct edma_chan *echan)
-> +{
-> +	/* Pause/Resume only allowed with cyclic mode */
-> +	if (!echan->edesc->cyclic)
-> +		return -EINVAL;
-why this artificial restriction? The driver can do pause even for non cyclic
-cases too? Yes the usage is in cyclic context but why should we limit any future
-work on this?
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
--- 
-~Vinod
-> +
-> +	edma_pause(echan->ch_num);
-> +	return 0;
-> +}
-> +
-> +static int edma_dma_resume(struct edma_chan *echan)
-> +{
-> +	/* Pause/Resume only allowed with cyclic mode */
-> +	if (!echan->edesc->cyclic)
-> +		return -EINVAL;
-> +
-> +	edma_resume(echan->ch_num);
-> +	return 0;
-> +}
-> +
->  static int edma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
->  			unsigned long arg)
->  {
-> @@ -255,6 +275,14 @@ static int edma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
->  		config = (struct dma_slave_config *)arg;
->  		ret = edma_slave_config(echan, config);
->  		break;
-> +	case DMA_PAUSE:
-> +		ret = edma_dma_pause(echan);
-> +		break;
-> +
-> +	case DMA_RESUME:
-> +		ret = edma_dma_resume(echan);
-> +		break;
-> +
->  	default:
->  		ret = -ENOSYS;
->  	}
-> -- 
-> 1.9.1
-> 
+------------------
 
--- 
+From: Michael Chan <mchan@broadcom.com>
+
+[ Upstream commit a8d9bc2e9f5d1c5a25e33cec096d2a1652d3fd52 ]
+
+The pci shutdown handler added in:
+
+    bnx2: Add pci shutdown handler
+    commit 25bfb1dd4ba3b2d9a49ce9d9b0cd7be1840e15ed
+
+created a shutdown down sequence without chip reset if the device was
+never brought up.  This can cause the firmware to shutdown the PHY
+prematurely and cause MMIO read cycles to be unresponsive.  On some
+systems, it may generate NMI in the bnx2's pci shutdown handler.
+
+The fix is to tell the firmware not to shutdown the PHY if there was
+no prior chip reset.
+
+Signed-off-by: Michael Chan <mchan@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/ethernet/broadcom/bnx2.c |   37 +++++++++++++++++++++++++++++++----
+ drivers/net/ethernet/broadcom/bnx2.h |    5 ++++
+ 2 files changed, 38 insertions(+), 4 deletions(-)
+
+--- a/drivers/net/ethernet/broadcom/bnx2.c
++++ b/drivers/net/ethernet/broadcom/bnx2.c
+@@ -2490,6 +2490,7 @@ bnx2_fw_sync(struct bnx2 *bp, u32 msg_da
+ 
+ 	bp->fw_wr_seq++;
+ 	msg_data |= bp->fw_wr_seq;
++	bp->fw_last_msg = msg_data;
+ 
+ 	bnx2_shmem_wr(bp, BNX2_DRV_MB, msg_data);
+ 
+@@ -3982,8 +3983,23 @@ bnx2_setup_wol(struct bnx2 *bp)
+ 			wol_msg = BNX2_DRV_MSG_CODE_SUSPEND_NO_WOL;
+ 	}
+ 
+-	if (!(bp->flags & BNX2_FLAG_NO_WOL))
+-		bnx2_fw_sync(bp, BNX2_DRV_MSG_DATA_WAIT3 | wol_msg, 1, 0);
++	if (!(bp->flags & BNX2_FLAG_NO_WOL)) {
++		u32 val;
++
++		wol_msg |= BNX2_DRV_MSG_DATA_WAIT3;
++		if (bp->fw_last_msg || BNX2_CHIP(bp) != BNX2_CHIP_5709) {
++			bnx2_fw_sync(bp, wol_msg, 1, 0);
++			return;
++		}
++		/* Tell firmware not to power down the PHY yet, otherwise
++		 * the chip will take a long time to respond to MMIO reads.
++		 */
++		val = bnx2_shmem_rd(bp, BNX2_PORT_FEATURE);
++		bnx2_shmem_wr(bp, BNX2_PORT_FEATURE,
++			      val | BNX2_PORT_FEATURE_ASF_ENABLED);
++		bnx2_fw_sync(bp, wol_msg, 1, 0);
++		bnx2_shmem_wr(bp, BNX2_PORT_FEATURE, val);
++	}
+ 
+ }
+ 
+@@ -4015,9 +4031,22 @@ bnx2_set_power_state(struct bnx2 *bp, pc
+ 
+ 			if (bp->wol)
+ 				pci_set_power_state(bp->pdev, PCI_D3hot);
+-		} else {
+-			pci_set_power_state(bp->pdev, PCI_D3hot);
++			break;
++
++		}
++		if (!bp->fw_last_msg && BNX2_CHIP(bp) == BNX2_CHIP_5709) {
++			u32 val;
++
++			/* Tell firmware not to power down the PHY yet,
++			 * otherwise the other port may not respond to
++			 * MMIO reads.
++			 */
++			val = bnx2_shmem_rd(bp, BNX2_BC_STATE_CONDITION);
++			val &= ~BNX2_CONDITION_PM_STATE_MASK;
++			val |= BNX2_CONDITION_PM_STATE_UNPREP;
++			bnx2_shmem_wr(bp, BNX2_BC_STATE_CONDITION, val);
+ 		}
++		pci_set_power_state(bp->pdev, PCI_D3hot);
+ 
+ 		/* No more memory access after this point until
+ 		 * device is brought back to D0.
+--- a/drivers/net/ethernet/broadcom/bnx2.h
++++ b/drivers/net/ethernet/broadcom/bnx2.h
+@@ -6890,6 +6890,7 @@ struct bnx2 {
+ 
+ 	u16			fw_wr_seq;
+ 	u16			fw_drv_pulse_wr_seq;
++	u32			fw_last_msg;
+ 
+ 	int			rx_max_ring;
+ 	int			rx_ring_size;
+@@ -7396,6 +7397,10 @@ struct bnx2_rv2p_fw_file {
+ #define BNX2_CONDITION_MFW_RUN_NCSI		 0x00006000
+ #define BNX2_CONDITION_MFW_RUN_NONE		 0x0000e000
+ #define BNX2_CONDITION_MFW_RUN_MASK		 0x0000e000
++#define BNX2_CONDITION_PM_STATE_MASK		 0x00030000
++#define BNX2_CONDITION_PM_STATE_FULL		 0x00030000
++#define BNX2_CONDITION_PM_STATE_PREP		 0x00020000
++#define BNX2_CONDITION_PM_STATE_UNPREP		 0x00010000
+ 
+ #define BNX2_BC_STATE_DEBUG_CMD			0x1dc
+ #define BNX2_BC_STATE_BC_DBG_CMD_SIGNATURE	 0x42440000
+
+
