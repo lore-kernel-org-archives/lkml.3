@@ -1,228 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759279AbaDKQH2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:07:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56293 "EHLO
+	id S1759399AbaDKQHb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:07:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56296 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754288AbaDKQH0 (ORCPT
+	with ESMTP id S1754345AbaDKQH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Apr 2014 12:07:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: [PATCH 3.10 00/41] 3.10.37-stable review
-Date: Fri, 11 Apr 2014 09:09:31 -0700
-Message-Id: <20140411160932.865173041@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>, Paul Moore <pmoore@redhat.com>
+Subject: [PATCH 3.10 01/41] selinux: correctly label /proc inodes in use before the policy is loaded
+Date: Fri, 11 Apr 2014 09:09:32 -0700
+Message-Id: <20140411160932.967943324@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
+References: <20140411160932.865173041@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.10.37 release.
-There are 41 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sun Apr 13 16:09:00 UTC 2014.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.37-rc1.gz
-and the diffstat can be found below.
+From: Paul Moore <pmoore@redhat.com>
 
-thanks,
+commit f64410ec665479d7b4b77b7519e814253ed0f686 upstream.
 
-greg k-h
+This patch is based on an earlier patch by Eric Paris, he describes
+the problem below:
 
--------------
-Pseudo-Shortlog of commits:
+  "If an inode is accessed before policy load it will get placed on a
+   list of inodes to be initialized after policy load.  After policy
+   load we call inode_doinit() which calls inode_doinit_with_dentry()
+   on all inodes accessed before policy load.  In the case of inodes
+   in procfs that means we'll end up at the bottom where it does:
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.10.37-rc1
+     /* Default to the fs superblock SID. */
+     isec->sid = sbsec->sid;
 
-Stephen Boyd <sboyd@codeaurora.org>
-    cpufreq: Fix timer/workqueue corruption due to double queueing
+     if ((sbsec->flags & SE_SBPROC) && !S_ISLNK(inode->i_mode)) {
+             if (opt_dentry) {
+                     isec->sclass = inode_mode_to_security_class(...)
+                     rc = selinux_proc_get_sid(opt_dentry,
+                                               isec->sclass,
+                                               &sid);
+                     if (rc)
+                             goto out_unlock;
+                     isec->sid = sid;
+             }
+     }
 
-Xiaoguang Chen <chenxg@marvell.com>
-    cpufreq: Fix governor start/stop race condition
+   Since opt_dentry is null, we'll never call selinux_proc_get_sid()
+   and will leave the inode labeled with the label on the superblock.
+   I believe a fix would be to mimic the behavior of xattrs.  Look
+   for an alias of the inode.  If it can't be found, just leave the
+   inode uninitialized (and pick it up later) if it can be found, we
+   should be able to call selinux_proc_get_sid() ..."
 
-Ard Biesheuvel <ard.biesheuvel@linaro.org>
-    crypto: ghash-clmulni-intel - use C implementation for setkey()
+On a system exhibiting this problem, you will notice a lot of files in
+/proc with the generic "proc_t" type (at least the ones that were
+accessed early in the boot), for example:
 
-Finn Thain <fthain@telegraphics.com.au>
-    m68k: Skip futex_atomic_cmpxchg_inatomic() test
+   # ls -Z /proc/sys/kernel/shmmax | awk '{ print $4 " " $5 }'
+   system_u:object_r:proc_t:s0 /proc/sys/kernel/shmmax
 
-Heiko Carstens <heiko.carstens@de.ibm.com>
-    futex: Allow architectures to skip futex_atomic_cmpxchg_inatomic() test
+However, with this patch in place we see the expected result:
 
-Vineet Gupta <vgupta@synopsys.com>
-    ARC: [nsimosci] Unbork console
+   # ls -Z /proc/sys/kernel/shmmax | awk '{ print $4 " " $5 }'
+   system_u:object_r:sysctl_kernel_t:s0 /proc/sys/kernel/shmmax
 
-Mischa Jonker <mjonker@synopsys.com>
-    ARC: [nsimosci] Change .dts to use generic 8250 UART
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
+Acked-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Sasha Levin <sasha.levin@oracle.com>
-    rds: prevent dereference of a NULL device in rds_iw_laddr_check
+---
+ security/selinux/hooks.c |   36 +++++++++++++++++++++++++++---------
+ 1 file changed, 27 insertions(+), 9 deletions(-)
 
-Dan Carpenter <dan.carpenter@oracle.com>
-    isdnloop: several buffer overflows
-
-YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-    isdnloop: Validate NUL-terminated strings from user.
-
-Pablo Neira <pablo@netfilter.org>
-    netlink: don't compare the nul-termination in nla_strcmp
-
-Hannes Frederic Sowa <hannes@stressinduktion.org>
-    ipv6: some ipv6 statistic counters failed to disable bh
-
-Paul Durrant <Paul.Durrant@citrix.com>
-    xen-netback: remove pointless clause from if statement
-
-Michael S. Tsirkin <mst@redhat.com>
-    vhost: validate vhost_get_vq_desc return value
-
-Michael S. Tsirkin <mst@redhat.com>
-    vhost: fix total length when packets are too short
-
-Vlad Yasevich <vyasevic@redhat.com>
-    vlan: Set hard_header_len according to available acceleration
-
-Oliver Neukum <oneukum@suse.de>
-    usbnet: include wait queue head in device structure
-
-Vlad Yasevich <vyasevic@redhat.com>
-    tg3: Do not include vlan acceleration features in vlan_features
-
-Li RongQing <roy.qing.li@gmail.com>
-    netpoll: fix the skb check in pkt_is_ns
-
-Nicolas Dichtel <nicolas.dichtel@6wind.com>
-    ip6mr: fix mfc notification flags
-
-Nicolas Dichtel <nicolas.dichtel@6wind.com>
-    ipmr: fix mfc notification flags
-
-Nicolas Dichtel <nicolas.dichtel@6wind.com>
-    rtnetlink: fix fdb notification flags
-
-David Stevens <dlstevens@us.ibm.com>
-    vxlan: fix potential NULL dereference in arp_reduce()
-
-lucien <lucien.xin@gmail.com>
-    ipv6: ip6_append_data_mtu do not handle the mtu of the second fragment properly
-
-Heiner Kallweit <heiner.kallweit@web.de>
-    ipv6: Avoid unnecessary temporary addresses being generated
-
-Matthew Leach <matthew.leach@arm.com>
-    net: socket: error on a negative msg_namelen
-
-Eric Dumazet <eric.dumazet@gmail.com>
-    tcp: tcp_release_cb() should release socket ownership
-
-Peter Boström <peter.bostrom@netrounds.com>
-    vlan: Set correct source MAC address with TX VLAN offload enabled
-
-Sabrina Dubroca <sd@queasysnail.net>
-    ipv6: don't set DST_NOCOUNT for remotely added routes
-
-Anton Nayshtut <anton@swortex.com>
-    ipv6: Fix exthdrs offload registration.
-
-Eric Dumazet <edumazet@google.com>
-    net: unix: non blocking recvmsg() should not return -EINTR
-
-Florian Westphal <fw@strlen.de>
-    inet: frag: make sure forced eviction removes all frags
-
-Linus Lüssing <linus.luessing@web.de>
-    bridge: multicast: add sanity check for query source addresses
-
-Daniel Borkmann <dborkman@redhat.com>
-    net: sctp: fix skb leakage in COOKIE ECHO path of chunk->auth_chunk
-
-Nikolay Aleksandrov <nikolay@redhat.com>
-    net: fix for a race condition in the inet frag code
-
-Daniel Fu <danifu@nvidia.com>
-    cpuidle: Check the result of cpuidle_get_driver() against NULL
-
-Nicolas Dichtel <nicolas.dichtel@6wind.com>
-    kbuild: fix make headers_install when path is too long
-
-Mikulas Patocka <mpatocka@redhat.com>
-    powernow-k6: reorder frequencies
-
-Mikulas Patocka <mpatocka@redhat.com>
-    powernow-k6: correctly initialize default parameters
-
-Mikulas Patocka <mpatocka@redhat.com>
-    powernow-k6: disable cache when changing frequency
-
-Paul Moore <pmoore@redhat.com>
-    selinux: correctly label /proc inodes in use before the policy is loaded
-
-
--------------
-
-Diffstat:
-
- Makefile                                   |   4 +-
- arch/arc/boot/dts/nsimosci.dts             |  12 ++-
- arch/arc/configs/nsimosci_defconfig        |   1 +
- arch/m68k/Kconfig                          |   1 +
- arch/s390/Kconfig                          |   1 +
- arch/x86/crypto/ghash-clmulni-intel_asm.S  |  29 ------
- arch/x86/crypto/ghash-clmulni-intel_glue.c |  14 ++-
- drivers/cpufreq/cpufreq.c                  |  24 +++++
- drivers/cpufreq/cpufreq_governor.c         |   3 +
- drivers/cpufreq/powernow-k6.c              | 147 +++++++++++++++++++++++------
- drivers/cpuidle/driver.c                   |   3 +-
- drivers/isdn/isdnloop/isdnloop.c           |  23 +++--
- drivers/net/ethernet/broadcom/tg3.c        |   5 +-
- drivers/net/usb/usbnet.c                   |  33 ++++---
- drivers/net/vxlan.c                        |   3 +
- drivers/net/xen-netback/netback.c          |   4 +-
- drivers/vhost/net.c                        |  20 +++-
- include/linux/cpufreq.h                    |   1 +
- include/linux/futex.h                      |   4 +
- include/linux/usb/usbnet.h                 |   2 +-
- include/net/sock.h                         |   5 +
- init/Kconfig                               |   7 ++
- kernel/futex.c                             |  14 ++-
- lib/nlattr.c                               |  10 +-
- net/8021q/vlan.c                           |   4 +-
- net/8021q/vlan_dev.c                       |   6 +-
- net/bridge/br_multicast.c                  |   6 ++
- net/core/netpoll.c                         |   2 +-
- net/core/rtnetlink.c                       |  10 +-
- net/core/sock.c                            |   5 +-
- net/ipv4/inet_fragment.c                   |   5 +-
- net/ipv4/ipmr.c                            |  13 ++-
- net/ipv4/tcp_output.c                      |  11 +++
- net/ipv6/addrconf.c                        |   5 +-
- net/ipv6/exthdrs_offload.c                 |   4 +-
- net/ipv6/icmp.c                            |   2 +-
- net/ipv6/ip6_output.c                      |  18 ++--
- net/ipv6/ip6mr.c                           |  13 ++-
- net/ipv6/mcast.c                           |  11 ++-
- net/ipv6/route.c                           |   2 +-
- net/rds/iw.c                               |   3 +-
- net/sctp/sm_make_chunk.c                   |   4 +-
- net/sctp/sm_statefuns.c                    |   5 -
- net/socket.c                               |   4 +
- net/unix/af_unix.c                         |  17 +++-
- scripts/Makefile.headersinst               |  20 ++--
- scripts/headers_install.sh                 |   7 +-
- security/selinux/hooks.c                   |  36 +++++--
- 48 files changed, 413 insertions(+), 170 deletions(-)
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -1361,15 +1361,33 @@ static int inode_doinit_with_dentry(stru
+ 		isec->sid = sbsec->sid;
+ 
+ 		if ((sbsec->flags & SE_SBPROC) && !S_ISLNK(inode->i_mode)) {
+-			if (opt_dentry) {
+-				isec->sclass = inode_mode_to_security_class(inode->i_mode);
+-				rc = selinux_proc_get_sid(opt_dentry,
+-							  isec->sclass,
+-							  &sid);
+-				if (rc)
+-					goto out_unlock;
+-				isec->sid = sid;
+-			}
++			/* We must have a dentry to determine the label on
++			 * procfs inodes */
++			if (opt_dentry)
++				/* Called from d_instantiate or
++				 * d_splice_alias. */
++				dentry = dget(opt_dentry);
++			else
++				/* Called from selinux_complete_init, try to
++				 * find a dentry. */
++				dentry = d_find_alias(inode);
++			/*
++			 * This can be hit on boot when a file is accessed
++			 * before the policy is loaded.  When we load policy we
++			 * may find inodes that have no dentry on the
++			 * sbsec->isec_head list.  No reason to complain as
++			 * these will get fixed up the next time we go through
++			 * inode_doinit() with a dentry, before these inodes
++			 * could be used again by userspace.
++			 */
++			if (!dentry)
++				goto out_unlock;
++			isec->sclass = inode_mode_to_security_class(inode->i_mode);
++			rc = selinux_proc_get_sid(dentry, isec->sclass, &sid);
++			dput(dentry);
++			if (rc)
++				goto out_unlock;
++			isec->sid = sid;
+ 		}
+ 		break;
+ 	}
 
 
