@@ -1,45 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351AbaDKHdY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 03:33:24 -0400
-Received: from s3.sipsolutions.net ([144.76.43.152]:50726 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754925AbaDKHdX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 03:33:23 -0400
-Message-ID: <1397201577.4420.1.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCHv3 0/5] net: rfkill: gpio: cleanup and a few new acpi ids
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Chen-Yu Tsai <wens@csie.org>, Rhyland Klein <rklein@nvidia.com>,
-        Marc Dietrich <marvin24@gmx.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org
-Date: Fri, 11 Apr 2014 09:32:57 +0200
-In-Reply-To: <1396360976-28657-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1396360976-28657-1-git-send-email-heikki.krogerus@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755392AbaDKHdm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 03:33:42 -0400
+Received: from verein.lst.de ([213.95.11.211]:36327 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754925AbaDKHdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 03:33:40 -0400
+Date: Fri, 11 Apr 2014 09:33:36 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Jens Axboe <axboe@fb.com>
+Cc: Christoph Hellwig <hch@lst.de>, Matias Bjorling <m@bjorling.me>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 3/4] blk-mq: move request structures into struct
+	blk_mq_tags
+Message-ID: <20140411073336.GA26328@lst.de>
+References: <1396277175-21382-1-git-send-email-hch@lst.de> <1396277175-21382-4-git-send-email-hch@lst.de> <53457404.5070800@fb.com> <20140410100144.GB20342@lst.de> <53475693.7050609@fb.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53475693.7050609@fb.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-01 at 17:02 +0300, Heikki Krogerus wrote:
-> Hi,
-> 
-> I hope this one is OK with everyone.
+On Thu, Apr 10, 2014 at 08:42:27PM -0600, Jens Axboe wrote:
+> Great. Will you send out an updated patchset?
 
-Looks good to me, all applied.
-
-It's in jberg/mac80211-next.git rfkill-gpio-cleanups branch, in case
-anybody needs this separately. John isn't taking pull requests for -next
-until after -rc1, at which point I'll send it to him.
-
-johannes
+I was waiting for you to apply the previous series, but I'll just resend my
+whole set of outstanding patches, it'll need a bit of rebasing against
+your updated tree anyway.
 
