@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755641AbaDKWN7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 18:13:59 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:62880 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754432AbaDKWN6 (ORCPT
+	id S1755679AbaDKWPk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 18:15:40 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:34889 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831AbaDKWPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 18:13:58 -0400
-Date: Fri, 11 Apr 2014 15:13:56 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Dave Hansen <dave.hansen@intel.com>
-cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, drepper@gmail.com,
-        anatol.pomozov@gmail.com, jkosina@suse.cz, akpm@linux-foundation.org,
-        xemul@parallels.com, paul.gortmaker@windriver.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] drivers/base/node.c: export physical address range of
- given node (Re: NUMA node information for pages)
-In-Reply-To: <53481724.8020304@intel.com>
-Message-ID: <alpine.DEB.2.02.1404111513040.17724@chino.kir.corp.google.com>
-References: <87eh1ix7g0.fsf@x240.local.i-did-not-set--mail-host-address--so-tickle-me> <533a1563.ad318c0a.6a93.182bSMTPIN_ADDED_BROKEN@mx.google.com> <CAOPLpQc8R2SfTB+=BsMa09tcQ-iBNJHg+tGnPK-9EDH1M47MJw@mail.gmail.com> <5343806c.100cc30a.0461.ffffc401SMTPIN_ADDED_BROKEN@mx.google.com>
- <alpine.DEB.2.02.1404091734060.1857@chino.kir.corp.google.com> <5345fe27.82dab40a.0831.0af9SMTPIN_ADDED_BROKEN@mx.google.com> <alpine.DEB.2.02.1404101500280.11995@chino.kir.corp.google.com> <53474709.e59ec20a.3bd5.3b91SMTPIN_ADDED_BROKEN@mx.google.com>
- <alpine.DEB.2.02.1404110325210.30610@chino.kir.corp.google.com> <53481724.8020304@intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 11 Apr 2014 18:15:37 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <534865DF.2090703@linux.intel.com>
+References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <CAMzpN2jx4H4p8fQr-WHxVyCHhWi0iO3WZZKyxYD7Dfa7pWkEgg@mail.gmail.com>
+ <53483487.6030103@zytor.com> <53485BB8.1000106@mit.edu> <53485D95.9030301@zytor.com>
+ <5348643F.1020405@mit.edu> <534865DF.2090703@linux.intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 11 Apr 2014 15:15:16 -0700
+Message-ID: <CALCETrX4BLLL1Con7+Fr5cfodHQs40qA4TE39yop2NeARdwA+A@mail.gmail.com>
+Subject: Re: [tip:x86/urgent] x86-64, modify_ldt: Ban 16-bit segments on
+ 64-bit kernels
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Brian Gerst <brgerst@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, stable@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Apr 2014, Dave Hansen wrote:
+On Fri, Apr 11, 2014 at 2:59 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+> On 04/11/2014 02:53 PM, Andy Lutomirski wrote:
+>>
+>> How big of a functionality problem is it?  Apparently it doesn't break
+>> 16-bit code on wine.
+>>
+>
+> It breaks *some* 16-bit code.  This is actually the reason that 32 bits
+> has the espfix workaround - it wasn't identified as an infoleak at the time.
+>
+>> Since the high bits of esp have been corrupted on x86_64 since the
+>> beginning, there's no regression issue here if an eventual fix writes
+>> less meaningful crap to those bits -- I see no real reason to try to put
+>> the correct values in there.
+>
+> It is a regression vs. the 32-bit kernel, and if we're going to support
+> 16-bit code we should arguably support 16-bit code correctly.
+>
+> This is actually how I stumbled onto this problem in the first place: it
+> broke a compiler test suite for gcc -m16 I was working on.  The
+> workaround for *that* was to run in a VM instead.
+>
+>>>> I would have suggested rejecting modify_ldt() entirely, to reduce attack
+>>>> surface, except that some early versions of 32-bit NPTL glibc use
+>>>> modify_ldt() to exclusion of all other methods of establishing the
+>>>> thread pointer, so in order to stay compatible with those we would need
+>>>> to allow 32-bit segments via modify_ldt() still.
+>>
+>> I actually use modify_ldt for amusement: it's the only way I know of to
+>> issue real 32-bit syscalls from 64-bit userspace.  Yes, this isn't
+>> really a legitimate use case.
+>
+> That's actually wrong on no less than two levels:
+>
+> 1. You can issue real 32-bit system calls from 64-bit user space simply
+>    by invoking int $0x80; it works in 64-bit mode as well.
+>
+> 2. Even if you want to be in 32-bit mode you can simply call via
+>    __USER32_CS, you don't need an LDT entry.
 
-> > So?  Who cares if there are non-addressable holes in part of the span?  
-> > Ulrich, correct me if I'm wrong, but it seems you're looking for just a 
-> > address-to-nodeid mapping (or pfn-to-nodeid mapping) and aren't actually 
-> > expecting that there are no holes in a node for things like acpi or I/O or 
-> > reserved memory.
-> ...
-> > I think trying to represent holes and handling different memory models and 
-> > hotplug in special ways is complete overkill.
-> 
-> This isn't just about memory hotplug or different memory models.  There
-> are systems out there today, in production, that have layouts like this:
-> 
-> |------Node0-----|
->      |------Node1-----|
-> 
-> and this:
-> 
-> |------Node0-----|
->      |-Node1-|
-> 
+I just looked up my hideous code.  I was doing this to test the
+now-deleted int 0xcc vsyscall stuff.  I used modify_ldt because either
+I didn't realize that __USER32_CS was usable or I didn't think it was
+ABI.  Or I was just being silly.
 
-What additional information, in your opinion, can we export to assist 
-userspace in making this determination that $address is on $nid?
+But yes, breaking my hack would not matter. :)
+
+--Andy
