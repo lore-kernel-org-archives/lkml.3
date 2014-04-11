@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270AbaDKIHI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 04:07:08 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:9373 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853AbaDKIGz (ORCPT
+	id S1755383AbaDKIKQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 04:10:16 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:6354 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817AbaDKIKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 04:06:55 -0400
-X-IronPort-AV: E=Sophos;i="4.97,840,1389772800"; 
-   d="scan'208";a="23771425"
-Message-ID: <5347A29C.7020602@broadcom.com>
-Date: Fri, 11 Apr 2014 10:06:52 +0200
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 11 Apr 2014 04:10:02 -0400
+From: Liu Hua <sdu.liu@huawei.com>
+To: <nicolas.pitre@linaro.org>
+CC: <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <wangnan0@huawei.com>, <peifeiyue@huawei.com>, <liusdu@126.com>,
+        <m.szyprowski@samsung.com>, Liu Hua <sdu.liu@huawei.com>
+Subject: [PATCH v2 0/2] change ARM linux memory layout to support 32 CPUs
+Date: Fri, 11 Apr 2014 16:00:50 +0800
+Message-ID: <1397203252-22977-1-git-send-email-sdu.liu@huawei.com>
+X-Mailer: git-send-email 1.9.0
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?J=F6rg_Krause?= <jk@lintech.de>,
-        <linux-kernel@vger.kernel.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: [RFC] dt: bindings: add bindings for Broadcom bcm43xx sdio devices
-References: <1392059868-8782-1-git-send-email-arend@broadcom.com> <52FC8CB3.4090305@gmail.com> <CAGb2v67za+5yW3RE0pwBWk-NdTUSm-JkKE+j9NLjbBkE_Fc1hQ@mail.gmail.com> <5337DC2E.5040000@broadcom.com> <1397165245229-838046.post@n7.nabble.com>
-In-Reply-To: <1397165245229-838046.post@n7.nabble.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/14 23:27, Jörg Krause wrote:
-> On 02/13/14 10:28, Chen-Yu Tsai wrote:
->> Hi,
->>
->> On Thu, Feb 13, 2014 at 5:13 PM, Tomasz Figa&lt;tomasz.figa@&gt;  wrote:
->>> Hi Arend,
->>>
->>>
->>> On 10.02.2014 20:17, Arend van Spriel wrote:
->
-> [...]
->
-> Hi Chen-Yu,
->
-> picking up this thread.
->
->> AFAIK, the pinctrl in tied to the device node, and is selected when the
->> device
->> is registered. The MMC subsystem currently does not register child nodes,
->> so
->> this would be useless.
->
-> So if MMC does not register child nodes, brcmfmac will not be probed
-> with of_node set? Have there been patches submitted for this in mmc
-> subsystem recently.
->
-> [...]
->
->
->
-> Sascha Hauer submitted a patch a week ago. Link:
-> https://lkml.org/lkml/2014/4/3/522 <https://lkml.org/lkml/2014/4/3/522>
+Hi Nicolas or Russell,
 
-Thanks, Jörg
+This patch series change fixmap mapping region to suppport 32 CPUs.
+Because the "top_pmd" covers 0xfffe0000 - 0xffffffff(2M). And part 
+is used by vector table. So I move this region down to 0xffc00000
+ - 0xffdffff. 
 
-It is a partial solution, but it seems to conflict with my change. So 
-thanks for the heads up. I am not convinced whether the GPIO and clock 
-should be bound to the function. They seem more a property of the 
-card/device inserted.
 
-Regards,
-Arend
-> --
-> View this message in context: http://linux-kernel.2935.n7.nabble.com/RFC-dt-bindings-add-bindings-for-Broadcom-bcm43xx-sdio-devices-tp801976p838046.html
-> Sent from the Linux Kernel mailing list archive at Nabble.com.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+I have tested the patches on arma9(2 CPUs) and arma15(16 CPUs) platforms
+
+BTW, As we know we can configure NR_CPUS up to 32. So we need 2048K 
+at most. But for ARM systems with less cpus, there is a waste 
+of virtual address. So should we change its size according to
+NR_CPUS, as what MIPS linux does ?
+
+Changes from v1:
+---------------
+- changed documentation for ARM linux memory layout.
+- moved fixmap mapping region, not just extended.
+
+Liu Hua (2):
+  ARM : DMA : remove useless information about DMA
+  ARM : extend fixmap mapping region to support 32 CPUs
+
+ Documentation/arm/memory.txt   |  8 ++------
+ arch/arm/include/asm/fixmap.h  |  4 ++--
+ arch/arm/include/asm/highmem.h |  1 +
+ arch/arm/include/asm/memory.h  |  2 --
+ arch/arm/mm/highmem.c          | 10 +++++-----
+ arch/arm/mm/mm.h               |  7 +++++++
+ arch/arm/mm/mmu.c              |  4 ++++
+ mm/highmem.c                   |  1 +
+ 8 files changed, 22 insertions(+), 15 deletions(-)
+
+-- 
+1.9.0
 
