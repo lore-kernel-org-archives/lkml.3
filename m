@@ -1,60 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422753AbaDKQIy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:08:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56421 "EHLO
+	id S1759716AbaDKQ5K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:57:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56499 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759427AbaDKQHh (ORCPT
+	with ESMTP id S1422744AbaDKQIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:07:37 -0400
+	Fri, 11 Apr 2014 12:08:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Phoebe Buckheister <phoebe.buckheister@itwm.fraunhofer.de>,
+        Alexander Aring <alex.aring@gmail.com>,
+        Florian Westphal <fw@strlen.de>, Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 32/41] isdnloop: Validate NUL-terminated strings from user.
-Date: Fri, 11 Apr 2014 09:10:03 -0700
-Message-Id: <20140411160935.162250985@linuxfoundation.org>
+Subject: [PATCH 3.13 10/65] inet: frag: make sure forced eviction removes all frags
+Date: Fri, 11 Apr 2014 09:10:42 -0700
+Message-Id: <20140411160959.148710336@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
-References: <20140411160932.865173041@linuxfoundation.org>
+In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
+References: <20140411160957.714773410@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+From: Florian Westphal <fw@strlen.de>
 
-[ Upstream commit 77bc6bed7121936bb2e019a8c336075f4c8eef62 ]
+[ Upstream commit e588e2f286ed7da011ed357c24c5b9a554e26595 ]
 
-Return -EINVAL unless all of user-given strings are correctly
-NUL-terminated.
+Quoting Alexander Aring:
+  While fragmentation and unloading of 6lowpan module I got this kernel Oops
+  after few seconds:
 
-Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+  BUG: unable to handle kernel paging request at f88bbc30
+  [..]
+  Modules linked in: ipv6 [last unloaded: 6lowpan]
+  Call Trace:
+   [<c012af4c>] ? call_timer_fn+0x54/0xb3
+   [<c012aef8>] ? process_timeout+0xa/0xa
+   [<c012b66b>] run_timer_softirq+0x140/0x15f
+
+Problem is that incomplete frags are still around after unload; when
+their frag expire timer fires, we get crash.
+
+When a netns is removed (also done when unloading module), inet_frag
+calls the evictor with 'force' argument to purge remaining frags.
+
+The evictor loop terminates when accounted memory ('work') drops to 0
+or the lru-list becomes empty.  However, the mem accounting is done
+via percpu counters and may not be accurate, i.e. loop may terminate
+prematurely.
+
+Alter evictor to only stop once the lru list is empty when force is
+requested.
+
+Reported-by: Phoebe Buckheister <phoebe.buckheister@itwm.fraunhofer.de>
+Reported-by: Alexander Aring <alex.aring@gmail.com>
+Tested-by: Alexander Aring <alex.aring@gmail.com>
+Signed-off-by: Florian Westphal <fw@strlen.de>
+Acked-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/isdn/isdnloop/isdnloop.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ net/ipv4/inet_fragment.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/isdn/isdnloop/isdnloop.c
-+++ b/drivers/isdn/isdnloop/isdnloop.c
-@@ -1070,6 +1070,12 @@ isdnloop_start(isdnloop_card *card, isdn
- 		return -EBUSY;
- 	if (copy_from_user((char *) &sdef, (char *) sdefp, sizeof(sdef)))
- 		return -EFAULT;
-+
-+	for (i = 0; i < 3; i++) {
-+		if (!memchr(sdef.num[i], 0, sizeof(sdef.num[i])))
-+			return -EINVAL;
-+	}
-+
- 	spin_lock_irqsave(&card->isdnloop_lock, flags);
- 	switch (sdef.ptype) {
- 	case ISDN_PTYPE_EURO:
+--- a/net/ipv4/inet_fragment.c
++++ b/net/ipv4/inet_fragment.c
+@@ -208,7 +208,7 @@ int inet_frag_evictor(struct netns_frags
+ 	}
+ 
+ 	work = frag_mem_limit(nf) - nf->low_thresh;
+-	while (work > 0) {
++	while (work > 0 || force) {
+ 		spin_lock(&nf->lru_lock);
+ 
+ 		if (list_empty(&nf->lru_list)) {
 
 
