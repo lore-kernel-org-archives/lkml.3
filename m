@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112AbaDKHQh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 03:16:37 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:48561 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755015AbaDKHQf (ORCPT
+	id S1754797AbaDKHUv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 03:20:51 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:36386 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754080AbaDKHUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 03:16:35 -0400
-Date: Fri, 11 Apr 2014 08:16:22 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] EFI urgent fixes
-Message-ID: <20140411071622.GB17021@console-pimps.org>
+	Fri, 11 Apr 2014 03:20:49 -0400
+Date: Fri, 11 Apr 2014 09:20:44 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Koen Kooi <koen@dominion.thruhere.net>,
+        Matt Fleming <matt.fleming@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Kees Cook <keescook@chromium.org>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: "54b52d87268034859191d671505bb1cfce6bd74d - x86/efi: Build our
+ own EFI services pointer table" breaks boot on thinkpad t440s
+Message-ID: <20140411072044.GA15418@gmail.com>
+References: <AF4406ED-6B0B-4E15-A329-04162E0ADC8A@dominion.thruhere.net>
+ <20140410121146.GA17021@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140410121146.GA17021@console-pimps.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guys, please pull the following. One of the fixes is for a regression
-introduced during the merge window. The other two are bugs that have
-existed in the EFI boot stub for a while, but which have only just been
-reported.
 
-I'm going to take care of submitting the later two to stable separately
-because they won't apply cleanly as-is.
+* Matt Fleming <matt@console-pimps.org> wrote:
 
-The following changes since commit 204b0a1a4b92612c957a042df1a3be0e9cc79391:
+> On Thu, 10 Apr, at 12:43:43PM, Koen Kooi wrote:
+> > Hi,
+> > 
+> > After updating from 3.14-rc7 to a recent git the kernel fails to boot on my thinkpad t440s and displays:
+> > 
+> > 	Failed to get file info size
+> > 	Failed to alloc highmem for files
+> > 
+> > After a morning of running git bisect and rebooting, the bad commit seems to be:
+> > 
+> > 	54b52d87268034859191d671505bb1cfce6bd74d - x86/efi: Build our own EFI services pointer table
+> 
+> Thanks for the report. Can you try this patch against Linus' tree?
+> 
+> 
+> diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+> index 1e6146137f8e..280165524ee4 100644
+> --- a/arch/x86/boot/compressed/eboot.c
+> +++ b/arch/x86/boot/compressed/eboot.c
+> @@ -112,7 +112,7 @@ __file_size64(void *__fh, efi_char16_t *filename_16,
+>  	efi_file_info_t *info;
+>  	efi_status_t status;
+>  	efi_guid_t info_guid = EFI_FILE_INFO_ID;
+> -	u32 info_sz;
+> +	u64 info_sz;
 
-  x86, efi: Abstract x86 efi_early calls (2014-03-26 11:30:03 -0700)
+Might be prudent to do the same in __file_size32(), instead of 
+truncating silently, especially is that function too has a u64 output 
+AFAICS.
 
-are available in the git repository at:
+Also, while reviewing the file I noticed that there's "u32 fb_base", 
+which is recovered like:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-urgent
+                status = __gop_query64(gop64, &info, &size, &fb_base);
 
-for you to fetch changes up to 47514c996fac5e6f13ef3a4c5e23f1c5cffabb7b:
+but ->frame_buffer_base is u64. Is it always guaranteed u32?
 
-  efi: Pass correct file handle to efi_file_{read,close} (2014-04-10 21:20:03 +0100)
+Thanks,
 
-----------------------------------------------------------------
- * Fix EFI boot regression introduced during the merge window where the
-   firmware was reading random values from the stack because we were
-   passing a pointer to the wrong object type.
-
- * Kernel corruption has been reported when booting with the EFI boot
-   stub which was tracked down to setting a bogus value for
-   bp->hdr.code32_start, resulting in corruption during relocation.
-
- * Olivier Martin reported that the wrong file handles were being passed
-   to efi_file_(read|close), which works for x86 by luck due to the way
-   that the FAT driver is implemented, but doesn't work on ARM.
-
-----------------------------------------------------------------
-Matt Fleming (3):
-      x86/efi: Fix boot failure with EFI stub
-      x86/efi: Correct EFI boot stub use of code32_start
-      efi: Pass correct file handle to efi_file_{read,close}
-
- arch/x86/boot/compressed/eboot.c       | 19 ++++++++++---------
- arch/x86/boot/compressed/head_32.S     |  8 ++------
- arch/x86/boot/compressed/head_64.S     |  9 +++------
- drivers/firmware/efi/efi-stub-helper.c |  6 +++---
- 4 files changed, 18 insertions(+), 24 deletions(-)
--- 
-Matt Fleming, Intel Open Source Technology Center
+	Ingo
