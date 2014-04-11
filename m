@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934589AbaDKKdB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 06:33:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23869 "EHLO mx1.redhat.com"
+	id S1755010AbaDKKdo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 06:33:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47236 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756804AbaDKKc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 06:32:56 -0400
-Date: Fri, 11 Apr 2014 12:32:53 +0200
+	id S1755039AbaDKKdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 06:33:41 -0400
+Date: Fri, 11 Apr 2014 12:33:38 +0200
 From: Jiri Olsa <jolsa@redhat.com>
 To: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH v2] perf list: Fix --raw-dump argument
-Message-ID: <20140411103253.GA1107@krava.brq.redhat.com>
-References: <1397176953-2006-1-git-send-email-artagnon@gmail.com>
+Subject: Re: [PATCH 1/3] perf bench: Set more defaults in the 'numa' suite
+Message-ID: <20140411103338.GB1107@krava.brq.redhat.com>
+References: <1395964219-22173-1-git-send-email-artagnon@gmail.com>
+ <1395964219-22173-2-git-send-email-artagnon@gmail.com>
+ <20140409121618.GA2556@krava.brq.redhat.com>
+ <CALkWK0=xjT7tAxGfzQ+6+=sjbtpu865_FKr8ai4tsLVg=CYdGQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397176953-2006-1-git-send-email-artagnon@gmail.com>
+In-Reply-To: <CALkWK0=xjT7tAxGfzQ+6+=sjbtpu865_FKr8ai4tsLVg=CYdGQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 08:42:33PM -0400, Ramkumar Ramachandra wrote:
-> While adding usage information, 44d742e (perf list: Add usage,
-> 2013-10-30) broke
+On Thu, Apr 10, 2014 at 08:31:32PM -0400, Ramkumar Ramachandra wrote:
+> Jiri Olsa wrote:
+> >  ###
+> >  # 1 task will execute (on 1 nodes, 4 CPUs):
+> >  #         -1x     1MB global  shared mem operations
+> >  #         -1x     0MB process shared mem operations
+> >  #         -1x     0MB thread  local  mem operations
+> >  ###
+> > ...
+> >
+> >
+> > '-1x' does not seem right/intentional for default case
 > 
->   $ perf list --raw-dump
-> 
-> Fix this by making raw-dump a subcommand.
+> As you can see from print_summary(), -1 is the value of nr_loops. In
+> init_params(), Ingo set nr_loops is set to -1 in his original patch --
+> I haven't touched that. So, unless I'm missing something, it's quite
+> an apt default case.
 
-you need to update perf-completion.sh now
-also please add it to perf list man page as well
+fair enough ;-) ok
 
 thanks,
 jirka
-
-> 
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-> ---
->  tools/perf/builtin-list.c     | 2 +-
->  tools/perf/perf-completion.sh | 2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
-> index 011195e..c74aef5 100644
-> --- a/tools/perf/builtin-list.c
-> +++ b/tools/perf/builtin-list.c
-> @@ -53,7 +53,7 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
->  			print_hwcache_events(NULL, false);
->  		else if (strcmp(argv[i], "pmu") == 0)
->  			print_pmu_events(NULL, false);
-> -		else if (strcmp(argv[i], "--raw-dump") == 0)
-> +		else if (strcmp(argv[i], "raw-dump") == 0)
->  			print_events(NULL, true);
->  		else {
->  			char *sep = strchr(argv[i], ':'), *s;
-> diff --git a/tools/perf/perf-completion.sh b/tools/perf/perf-completion.sh
-> index ae3a576..8f518f0 100644
-> --- a/tools/perf/perf-completion.sh
-> +++ b/tools/perf/perf-completion.sh
-> @@ -119,7 +119,7 @@ __perf_main ()
->  		fi
->  	# List possible events for -e option
->  	elif [[ $prev == "-e" && "${words[1]}" == @(record|stat|top) ]]; then
-> -		evts=$($cmd list --raw-dump)
-> +		evts=$($cmd list raw-dump)
->  		__perfcomp_colon "$evts" "$cur"
->  	# List subcommands for 'perf kvm'
->  	elif [[ $prev == "kvm" ]]; then
-> -- 
-> 1.9.2.667.ge5b74e1
-> 
