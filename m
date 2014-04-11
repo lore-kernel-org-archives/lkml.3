@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501AbaDKWID (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 18:08:03 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:45246 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755404AbaDKWH6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 18:07:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <CANq1E4TBtRcN+tpQW9bozQkRjJ7BJCK+KO0iw5k+8Q3Y3TcUeQ@mail.gmail.com>
-References: <53470E26.2030306@cybernetics.com> <CANq1E4RWf_VbzF+dPYhzHKJvnrh86me5KajmaaB1u9f9FLzftA@mail.gmail.com>
- <5347451C.4060106@amacapital.net> <5347F188.10408@cybernetics.com>
- <CANq1E4T=38VLezGH2XUZ9kc=Vtp6Ca++-ATwmEfaXZS6UrTPig@mail.gmail.com>
- <53486067.6090506@mit.edu> <CANq1E4TBtRcN+tpQW9bozQkRjJ7BJCK+KO0iw5k+8Q3Y3TcUeQ@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 11 Apr 2014 15:07:38 -0700
-Message-ID: <CALCETrWYRmkM3hyYu8WmSd-M=3mNMU2=xF_bSuTfyfkUTys5sg@mail.gmail.com>
-Subject: Re: [PATCH 2/6] shm: add sealing API
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Tony Battersby <tonyb@cybernetics.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755545AbaDKWLC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 18:11:02 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:52788 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751520AbaDKWK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 18:10:59 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: [PATCH] USB: cdc-acm: fix double usb_autopm_put_interface() in acm_port_activate()
+Date: Sat, 12 Apr 2014 02:10:45 +0400
+Message-Id: <1397254245-7498-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 2:42 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi
->
-> On Fri, Apr 11, 2014 at 11:36 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> A quick grep of the kernel tree finds exactly zero code paths
->> incrementing i_mmap_writable outside of mmap and fork.
->>
->> Or do you mean a different kind of write ref?  What am I missing here?
->
-> Sorry, I meant i_writecount.
+If acm_submit_read_urbs() fails in acm_port_activate(), error handling
+code calls usb_autopm_put_interface() while it is already called
+before acm_submit_read_urbs(). The patch reorganizes error handling code
+to avoid double decrement of USB interface's PM-usage counter.
 
-I bet this is missing from lots of places.  For example, I can't find
-any write_access stuff in the rdma code.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-I suspect that the VM_DENYWRITE code is just generally racy.
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+---
+ drivers/usb/class/cdc-acm.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---Andy
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index 900f7ff805ee..d5d2c922186a 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -518,13 +518,16 @@ static int acm_port_activate(struct tty_port *port, struct tty_struct *tty)
+ 	if (usb_submit_urb(acm->ctrlurb, GFP_KERNEL)) {
+ 		dev_err(&acm->control->dev,
+ 			"%s - usb_submit_urb(ctrl irq) failed\n", __func__);
++		usb_autopm_put_interface(acm->control);
+ 		goto error_submit_urb;
+ 	}
+ 
+ 	acm->ctrlout = ACM_CTRL_DTR | ACM_CTRL_RTS;
+ 	if (acm_set_control(acm, acm->ctrlout) < 0 &&
+-	    (acm->ctrl_caps & USB_CDC_CAP_LINE))
++	    (acm->ctrl_caps & USB_CDC_CAP_LINE)) {
++		usb_autopm_put_interface(acm->control);
+ 		goto error_set_control;
++	}
+ 
+ 	usb_autopm_put_interface(acm->control);
+ 
+@@ -549,7 +552,6 @@ error_submit_read_urbs:
+ error_set_control:
+ 	usb_kill_urb(acm->ctrlurb);
+ error_submit_urb:
+-	usb_autopm_put_interface(acm->control);
+ error_get_interface:
+ disconnected:
+ 	mutex_unlock(&acm->mutex);
+-- 
+1.8.3.2
+
