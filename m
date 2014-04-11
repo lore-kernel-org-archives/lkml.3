@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423253AbaDKRBS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 13:01:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56485 "EHLO
+	id S1423233AbaDKRBQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 13:01:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56481 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759553AbaDKQIv (ORCPT
+	with ESMTP id S1759426AbaDKQIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 11 Apr 2014 12:08:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Vlad Yasevich <yasevich@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 03/65] net: sctp: fix skb leakage in COOKIE ECHO path of chunk->auth_chunk
-Date: Fri, 11 Apr 2014 09:10:35 -0700
-Message-Id: <20140411160958.194942316@linuxfoundation.org>
+        Florian Westphal <fw@strlen.de>,
+        Jesper Dangaard Brouer <brouer@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Nikolay Aleksandrov <nikolay@redhat.com>
+Subject: [PATCH 3.13 02/65] net: fix for a race condition in the inet frag code
+Date: Fri, 11 Apr 2014 09:10:34 -0700
+Message-Id: <20140411160958.065060768@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
 References: <20140411160957.714773410@linuxfoundation.org>
@@ -30,120 +29,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Nikolay Aleksandrov <nikolay@redhat.com>
 
-[ Upstream commit c485658bae87faccd7aed540fd2ca3ab37992310 ]
+[ Upstream commit 24b9bf43e93e0edd89072da51cf1fab95fc69dec ]
 
-While working on ec0223ec48a9 ("net: sctp: fix sctp_sf_do_5_1D_ce to
-verify if we/peer is AUTH capable"), we noticed that there's a skb
-memory leakage in the error path.
+I stumbled upon this very serious bug while hunting for another one,
+it's a very subtle race condition between inet_frag_evictor,
+inet_frag_intern and the IPv4/6 frag_queue and expire functions
+(basically the users of inet_frag_kill/inet_frag_put).
 
-Running the same reproducer as in ec0223ec48a9 and by unconditionally
-jumping to the error label (to simulate an error condition) in
-sctp_sf_do_5_1D_ce() receive path lets kmemleak detector bark about
-the unfreed chunk->auth_chunk skb clone:
+What happens is that after a fragment has been added to the hash chain
+but before it's been added to the lru_list (inet_frag_lru_add) in
+inet_frag_intern, it may get deleted (either by an expired timer if
+the system load is high or the timer sufficiently low, or by the
+fraq_queue function for different reasons) before it's added to the
+lru_list, then after it gets added it's a matter of time for the
+evictor to get to a piece of memory which has been freed leading to a
+number of different bugs depending on what's left there.
 
-Unreferenced object 0xffff8800b8f3a000 (size 256):
-  comm "softirq", pid 0, jiffies 4294769856 (age 110.757s)
-  hex dump (first 32 bytes):
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-    89 ab 75 5e d4 01 58 13 00 00 00 00 00 00 00 00  ..u^..X.........
-  backtrace:
-    [<ffffffff816660be>] kmemleak_alloc+0x4e/0xb0
-    [<ffffffff8119f328>] kmem_cache_alloc+0xc8/0x210
-    [<ffffffff81566929>] skb_clone+0x49/0xb0
-    [<ffffffffa0467459>] sctp_endpoint_bh_rcv+0x1d9/0x230 [sctp]
-    [<ffffffffa046fdbc>] sctp_inq_push+0x4c/0x70 [sctp]
-    [<ffffffffa047e8de>] sctp_rcv+0x82e/0x9a0 [sctp]
-    [<ffffffff815abd38>] ip_local_deliver_finish+0xa8/0x210
-    [<ffffffff815a64af>] nf_reinject+0xbf/0x180
-    [<ffffffffa04b4762>] nfqnl_recv_verdict+0x1d2/0x2b0 [nfnetlink_queue]
-    [<ffffffffa04aa40b>] nfnetlink_rcv_msg+0x14b/0x250 [nfnetlink]
-    [<ffffffff815a3269>] netlink_rcv_skb+0xa9/0xc0
-    [<ffffffffa04aa7cf>] nfnetlink_rcv+0x23f/0x408 [nfnetlink]
-    [<ffffffff815a2bd8>] netlink_unicast+0x168/0x250
-    [<ffffffff815a2fa1>] netlink_sendmsg+0x2e1/0x3f0
-    [<ffffffff8155cc6b>] sock_sendmsg+0x8b/0xc0
-    [<ffffffff8155d449>] ___sys_sendmsg+0x369/0x380
+I've been able to trigger this on both IPv4 and IPv6 (which is normal
+as the frag code is the same), but it's been much more difficult to
+trigger on IPv4 due to the protocol differences about how fragments
+are treated.
 
-What happens is that commit bbd0d59809f9 clones the skb containing
-the AUTH chunk in sctp_endpoint_bh_rcv() when having the edge case
-that an endpoint requires COOKIE-ECHO chunks to be authenticated:
+The setup I used to reproduce this is: 2 machines with 4 x 10G bonded
+in a RR bond, so the same flow can be seen on multiple cards at the
+same time. Then I used multiple instances of ping/ping6 to generate
+fragmented packets and flood the machines with them while running
+other processes to load the attacked machine.
 
-  ---------- INIT[RANDOM; CHUNKS; HMAC-ALGO] ---------->
-  <------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] ---------
-  ------------------ AUTH; COOKIE-ECHO ---------------->
-  <-------------------- COOKIE-ACK ---------------------
+*It is very important to have the _same flow_ coming in on multiple CPUs
+concurrently. Usually the attacked machine would die in less than 30
+minutes, if configured properly to have many evictor calls and timeouts
+it could happen in 10 minutes or so.
 
-When we enter sctp_sf_do_5_1D_ce() and before we actually get to
-the point where we process (and subsequently free) a non-NULL
-chunk->auth_chunk, we could hit the "goto nomem_init" path from
-an error condition and thus leave the cloned skb around w/o
-freeing it.
+An important point to make is that any caller (frag_queue or timer) of
+inet_frag_kill will remove both the timer refcount and the
+original/guarding refcount thus removing everything that's keeping the
+frag from being freed at the next inet_frag_put.  All of this could
+happen before the frag was ever added to the LRU list, then it gets
+added and the evictor uses a freed fragment.
 
-The fix is to centrally free such clones in sctp_chunk_destroy()
-handler that is invoked from sctp_chunk_free() after all refs have
-dropped; and also move both kfree_skb(chunk->auth_chunk) there,
-so that chunk->auth_chunk is either NULL (since sctp_chunkify()
-allocs new chunks through kmem_cache_zalloc()) or non-NULL with
-a valid skb pointer. chunk->skb and chunk->auth_chunk are the
-only skbs in the sctp_chunk structure that need to be handeled.
+An example for IPv6 would be if a fragment is being added and is at
+the stage of being inserted in the hash after the hash lock is
+released, but before inet_frag_lru_add executes (or is able to obtain
+the lru lock) another overlapping fragment for the same flow arrives
+at a different CPU which finds it in the hash, but since it's
+overlapping it drops it invoking inet_frag_kill and thus removing all
+guarding refcounts, and afterwards freeing it by invoking
+inet_frag_put which removes the last refcount added previously by
+inet_frag_find, then inet_frag_lru_add gets executed by
+inet_frag_intern and we have a freed fragment in the lru_list.
 
-While at it, we should use consume_skb() for both. It is the same
-as dev_kfree_skb() but more appropriately named as we are not
-a device but a protocol. Also, this effectively replaces the
-kfree_skb() from both invocations into consume_skb(). Functions
-are the same only that kfree_skb() assumes that the frame was
-being dropped after a failure (e.g. for tools like drop monitor),
-usage of consume_skb() seems more appropriate in function
-sctp_chunk_destroy() though.
+The fix is simple, just move the lru_add under the hash chain locked
+region so when a removing function is called it'll have to wait for
+the fragment to be added to the lru_list, and then it'll remove it (it
+works because the hash chain removal is done before the lru_list one
+and there's no window between the two list adds when the frag can get
+dropped). With this fix applied I couldn't kill the same machine in 24
+hours with the same setup.
 
-Fixes: bbd0d59809f9 ("[SCTP]: Implement the receive and verification of AUTH chunk")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Vlad Yasevich <yasevich@gmail.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Fixes: 3ef0eb0db4bf ("net: frag, move LRU list maintenance outside of
+rwlock")
+
+CC: Florian Westphal <fw@strlen.de>
+CC: Jesper Dangaard Brouer <brouer@redhat.com>
+CC: David S. Miller <davem@davemloft.net>
+
+Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Acked-by: Jesper Dangaard Brouer <brouer@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/sctp/sm_make_chunk.c |    4 ++--
- net/sctp/sm_statefuns.c  |    5 -----
- 2 files changed, 2 insertions(+), 7 deletions(-)
+ net/ipv4/inet_fragment.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/sctp/sm_make_chunk.c
-+++ b/net/sctp/sm_make_chunk.c
-@@ -1420,8 +1420,8 @@ static void sctp_chunk_destroy(struct sc
- 	BUG_ON(!list_empty(&chunk->list));
- 	list_del_init(&chunk->transmitted_list);
+--- a/net/ipv4/inet_fragment.c
++++ b/net/ipv4/inet_fragment.c
+@@ -278,9 +278,10 @@ static struct inet_frag_queue *inet_frag
  
--	/* Free the chunk skb data and the SCTP_chunk stub itself. */
--	dev_kfree_skb(chunk->skb);
-+	consume_skb(chunk->skb);
-+	consume_skb(chunk->auth_chunk);
+ 	atomic_inc(&qp->refcnt);
+ 	hlist_add_head(&qp->list, &hb->chain);
++	inet_frag_lru_add(nf, qp);
+ 	spin_unlock(&hb->chain_lock);
+ 	read_unlock(&f->lock);
+-	inet_frag_lru_add(nf, qp);
++
+ 	return qp;
+ }
  
- 	SCTP_DBG_OBJCNT_DEC(chunk);
- 	kmem_cache_free(sctp_chunk_cachep, chunk);
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -761,7 +761,6 @@ sctp_disposition_t sctp_sf_do_5_1D_ce(st
- 
- 		/* Make sure that we and the peer are AUTH capable */
- 		if (!net->sctp.auth_enable || !new_asoc->peer.auth_capable) {
--			kfree_skb(chunk->auth_chunk);
- 			sctp_association_free(new_asoc);
- 			return sctp_sf_pdiscard(net, ep, asoc, type, arg, commands);
- 		}
-@@ -776,10 +775,6 @@ sctp_disposition_t sctp_sf_do_5_1D_ce(st
- 		auth.transport = chunk->transport;
- 
- 		ret = sctp_sf_authenticate(net, ep, new_asoc, type, &auth);
--
--		/* We can now safely free the auth_chunk clone */
--		kfree_skb(chunk->auth_chunk);
--
- 		if (ret != SCTP_IERROR_NO_ERROR) {
- 			sctp_association_free(new_asoc);
- 			return sctp_sf_pdiscard(net, ep, asoc, type, arg, commands);
 
 
