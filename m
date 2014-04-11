@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749AbaDKISq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 04:18:46 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:44169 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750805AbaDKISn (ORCPT
+	id S1755914AbaDKITO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 04:19:14 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:59193 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755668AbaDKITL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 04:18:43 -0400
-Date: Fri, 11 Apr 2014 10:18:39 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Jisheng Zhang <jszhang@marvell.com>
-Cc: "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        Jimmy Xu <zmxu@marvell.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND 2/5] pinctrl: berlin: add a pinctrl driver for
- Marvell Berlin SoCs
-Message-ID: <20140411081839.GB20147@kwain>
-References: <1397135274-10764-1-git-send-email-antoine.tenart@free-electrons.com>
- <1397135274-10764-3-git-send-email-antoine.tenart@free-electrons.com>
- <20140411144431.04fb148d@xhacker>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140411144431.04fb148d@xhacker>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 11 Apr 2014 04:19:11 -0400
+Message-ID: <1397204349.22353.11.camel@x220>
+Subject: Re: aic94xx: maybe uninitialized variable in asd_process_ctrl_a_user
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Filipe Brandenburger <filbranden@google.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michel Lespinasse <walken@google.com>
+Date: Fri, 11 Apr 2014 10:19:09 +0200
+In-Reply-To: <CADU+-uBr9UctHt1crnYAjYm5uNYmva2KDh5BZyZtkRG9_Xm-ag@mail.gmail.com>
+References: <CADU+-uBr9UctHt1crnYAjYm5uNYmva2KDh5BZyZtkRG9_Xm-ag@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Apr 2014 08:19:09.0549 (UTC) FILETIME=[B69441D0:01CF555E]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jisheng,
-
-On Fri, Apr 11, 2014 at 02:44:31PM +0800, Jisheng Zhang wrote:
-> On Thu, 10 Apr 2014 06:07:51 -0700
-> Antoine Ténart <antoine.tenart@free-electrons.com> wrote:
+On Thu, 2014-04-10 at 22:13 -0700, Filipe Brandenburger wrote:
+> While building a recent kernel with -Werror I found this warning:
 > 
-> ...
-> > +static int berlin_pinmux_enable(struct pinctrl_dev *pctrl_dev,
-> > +                               unsigned function,
-> > +                               unsigned group)
-> > +{
-> > +       struct berlin_pinctrl *pctrl = pinctrl_dev_get_drvdata(pctrl_dev);
-> > +       struct berlin_pinctrl_group *group_desc = pctrl->groups + group;
-> > +       struct berlin_pinctrl_function *function_desc =
-> > +               pctrl->functions + function;
-> > +       unsigned long flags;
-> > +       u32 regval;
-> > +
-> > +       spin_lock_irqsave(&pctrl->lock, flags);
-> > +
-> > +       regval = readl(group_desc->reg);
-> > +       regval &= group_desc->mask;
-> > +       regval |= function_desc->muxval << group_desc->lsb;
-> > +       writel(regval, group_desc->reg);
+> drivers/scsi/aic94xx/aic94xx_sds.c: In function 'asd_read_flash':
+> drivers/scsi/aic94xx/aic94xx_sds.c:597:21: error: 'offs' may be used
+> uninitialized in this function [-Werror=maybe-uninitialized]
+> drivers/scsi/aic94xx/aic94xx_sds.c:985:6: note: 'offs' was declared here
+
+This warning is actually rather old.
+
+> This looks like a valid complaint from the compiler, since in
+> asd_process_ctrl_a_user if the call to asd_find_flash_de fails (and
+> returns -ENOENT) then offs will not be set, but that will not prevent
+> the variable to be later passed to the call to asd_read_flash_seg
+> later in that same function.
 > 
-> Could we use relaxed version instead?
+> Would you please have a look at it? Let me know if there's a more
+> appropriate way to report these issues (e.g. bug tracker.)
 
-We could, but this is not a performance issue here at all, so I guess we can
-keep writel().
+I tried a few times to fix this warning.
 
-Thanks for the feedback !
+In the end I just asked Fedora to disable aic94xx in their kernel builds
+(which they did for Rawhide, their development branch). See
+https://lists.fedoraproject.org/pipermail/kernel/2014-January/004759.html for all the boring details.
 
-Antoine
 
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Paul Bolle
+
