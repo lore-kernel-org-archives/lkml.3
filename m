@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756576AbaDKJzQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 05:55:16 -0400
-Received: from smtp5.epfl.ch ([128.178.224.8]:53898 "EHLO smtp5.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755705AbaDKJzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 05:55:11 -0400
-Message-ID: <5347BBF4.2060408@epfl.ch>
-Date: Fri, 11 Apr 2014 11:55:00 +0200
-From: Florian Vaussard <florian.vaussard@epfl.ch>
-Reply-To: florian.vaussard@epfl.ch
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755943AbaDKJ7E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 05:59:04 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:37138 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750848AbaDKJ7B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 05:59:01 -0400
+X-IronPort-AV: E=Sophos;i="4.97,841,1389715200"; 
+   d="scan'208";a="29145720"
+Message-ID: <5347BAA5.6070104@cn.fujitsu.com>
+Date: Fri, 11 Apr 2014 17:49:25 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Joe Perches <joe@perches.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] Documentation: dt: Reduce fragmentation of <..> placeholders
-References: <CAMuHMdUmcnzafPhWrp4qYBB3UniFbVtqzNNg-7ed_Q6hZKMeDw@mail.gmail.com>	<1394234910-8547-1-git-send-email-florian.vaussard@epfl.ch>	<CAL_Jsq+4SztwyrmMtN31Vof3Tb8U9VVpLs1uON5W=VVOpX=nUQ@mail.gmail.com> <CAL_JsqLiAF916KvHDgRu2df0qbkYAUL51BFq-62z50xfzZOr-g@mail.gmail.com>
-In-Reply-To: <CAL_JsqLiAF916KvHDgRu2df0qbkYAUL51BFq-62z50xfzZOr-g@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kim <jaegeuk.kim@samsung.com>
+CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/7] f2fs: some fix and cleanup about flush_merge
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Gu Zheng (7):
+  f2fs: put the bio when issue_flush completed
+  f2fs: remove the unuseful "issue_tail" list
+  f2fs: use __GFP_ZERO to avoid appending set-NULL
+  f2fs: enable flush_merge only in f2fs is not read-only
+  f2fs: add the flush_merge handle in the remount flow
+  f2fs: introduce struct flush_cmd_control to wrap the flush_merge
+    fields
+  f2fs: introduce help function {create,destroy}_flush_cmd_control
 
-On 04/11/2014 02:25 AM, Rob Herring wrote:
-> On Sat, Mar 8, 2014 at 3:09 PM, Rob Herring <robherring2@gmail.com> wrote:
->> On Fri, Mar 7, 2014 at 5:28 PM, Florian Vaussard
->> <florian.vaussard@epfl.ch> wrote:
->>> Placeholders <..> are sometimes used in the devicetree documentation
->>> to define family-wide compatible strings (like fsl,<chip>-ipu where
->>> chip can be any Freescale SoC).
->>>
->>> These placeholders are loosly defined. This lead to some
->>> fragmentation. Looking at the current placeholders, we have:
->>>
->>>       3 <board>
->>>      32 <chip>
->>>       1 <chip name>
->>>       1 <mcu-chip>
->>>       1 <processor>
->>>      30 <soc>
->>>       1 <SOC>
->>>       1 <soc-family>
->>>
->>> This patch consolidates this to:
->>>
->>>       3 <board>
->>>      33 <chip>
->>>       1 <mcu-chip>
->>>       1 <processor>
->>>      32 <soc>
->>>
->>
->> I would prefer to consolidate these into just board and chip. If we
->> have any oddballs, they can just document the exact strings.
-> 
-> Florian, Do you plan to re-spin this? I can take it for 3.15 if it is
-> early in the rc's.
-> 
+ fs/f2fs/f2fs.h    |   17 ++++++---
+ fs/f2fs/segment.c |  102 +++++++++++++++++++++++++++++++++++-----------------
+ fs/f2fs/super.c   |   32 ++++++++++++++--
+ 3 files changed, 107 insertions(+), 44 deletions(-)
 
-Yes sure, I can re-spin this as soon as 3.15-rc1 is out.
+-- 
+1.7.7
 
-Regards,
-Florian
+
