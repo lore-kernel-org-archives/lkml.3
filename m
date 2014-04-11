@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422844AbaDKAbl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 10 Apr 2014 20:31:41 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:58405 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422749AbaDKAZr (ORCPT
+	id S1422814AbaDKAbj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 10 Apr 2014 20:31:39 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:54358 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422750AbaDKAZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 10 Apr 2014 20:25:47 -0400
 From: Andreas Noever <andreas.noever@gmail.com>
 To: linux-kernel@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>
 Cc: Daniel J Blueman <daniel@quora.org>, Bjorn Helgaas <bhelgaas@google.com>,
         linux-pci@vger.kernel.org, Andreas Noever <andreas.noever@gmail.com>
-Subject: [PATCH v2 04/14] thunderbolt: Add tb_regs.h
-Date: Fri, 11 Apr 2014 02:24:51 +0200
-Message-Id: <1397175901-4023-5-git-send-email-andreas.noever@gmail.com>
+Subject: [PATCH v2 05/14] thunderbolt: Initialize root switch and ports
+Date: Fri, 11 Apr 2014 02:24:52 +0200
+Message-Id: <1397175901-4023-6-git-send-email-andreas.noever@gmail.com>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1397175901-4023-1-git-send-email-andreas.noever@gmail.com>
 References: <1397175901-4023-1-git-send-email-andreas.noever@gmail.com>
@@ -21,262 +21,412 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Every thunderbolt device consists (logically) of a switch with multiple
-ports. Every port contains up to four config regions (HOPS, PORT,
-SWITCH, COUNTERS) which are used to configure the device.
-
-The tb_regs.h file contains all known registers and capabilities from
-these config regions.
+This patch adds the structures tb_switch and tb_port as well as code to
+initialize the root switch.
 
 Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
 ---
- drivers/thunderbolt/tb.c      |   5 +
- drivers/thunderbolt/tb_regs.h | 213 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 218 insertions(+)
- create mode 100644 drivers/thunderbolt/tb_regs.h
+ drivers/thunderbolt/Makefile |   2 +-
+ drivers/thunderbolt/switch.c | 186 +++++++++++++++++++++++++++++++++++++++++++
+ drivers/thunderbolt/tb.c     |   8 ++
+ drivers/thunderbolt/tb.h     | 138 ++++++++++++++++++++++++++++++++
+ 4 files changed, 333 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/thunderbolt/switch.c
 
-diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
-index 6920979..164dea0 100644
---- a/drivers/thunderbolt/tb.c
-+++ b/drivers/thunderbolt/tb.c
-@@ -9,6 +9,7 @@
- #include <linux/delay.h>
+diff --git a/drivers/thunderbolt/Makefile b/drivers/thunderbolt/Makefile
+index 1f996bb..4ac18d9 100644
+--- a/drivers/thunderbolt/Makefile
++++ b/drivers/thunderbolt/Makefile
+@@ -1,3 +1,3 @@
+ obj-${CONFIG_THUNDERBOLT} := thunderbolt.o
+-thunderbolt-objs := nhi.o ctl.o tb.o
++thunderbolt-objs := nhi.o ctl.o tb.o switch.o
  
- #include "tb.h"
-+#include "tb_regs.h"
- 
- /* hotplug handling */
- 
-@@ -100,6 +101,10 @@ struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi)
- {
- 	struct tb *tb;
- 
-+	BUILD_BUG_ON(sizeof(struct tb_regs_switch_header) != 5 * 4);
-+	BUILD_BUG_ON(sizeof(struct tb_regs_port_header) != 8 * 4);
-+	BUILD_BUG_ON(sizeof(struct tb_regs_hop) != 2 * 4);
-+
- 	tb = kzalloc(sizeof(*tb), GFP_KERNEL);
- 	if (!tb)
- 		return NULL;
-diff --git a/drivers/thunderbolt/tb_regs.h b/drivers/thunderbolt/tb_regs.h
+diff --git a/drivers/thunderbolt/switch.c b/drivers/thunderbolt/switch.c
 new file mode 100644
-index 0000000..6577af7
+index 0000000..e89121f
 --- /dev/null
-+++ b/drivers/thunderbolt/tb_regs.h
-@@ -0,0 +1,213 @@
++++ b/drivers/thunderbolt/switch.c
+@@ -0,0 +1,186 @@
 +/*
-+ * Thunderbolt Cactus Ridge driver - Port/Switch config area registers
-+ *
-+ * Every thunderbolt device consists (logically) of a switch with multiple
-+ * ports. Every port contains up to four config regions (HOPS, PORT, SWITCH,
-+ * COUNTERS) which are used to configure the device.
++ * Thunderbolt Cactus Ridge driver - switch/port utility functions
 + *
 + * Copyright (c) 2014 Andreas Noever <andreas.noever@gmail.com>
 + */
 +
-+#ifndef _TB_REGS
-+#define _TB_REGS
++#include <linux/delay.h>
 +
-+#include <linux/types.h>
++#include "tb.h"
 +
++/* port utility functions */
 +
-+#define TB_ROUTE_SHIFT 8  /* number of bits in a port entry of a route */
++static const char *tb_port_type(struct tb_regs_port_header *port)
++{
++	switch (port->type >> 16) {
++	case 0:
++		switch ((u8) port->type) {
++		case 0:
++			return "Inactive";
++		case 1:
++			return "Port";
++		case 2:
++			return "NHI";
++		default:
++			return "unknown";
++		}
++	case 0x2:
++		return "Ethernet";
++	case 0x8:
++		return "SATA";
++	case 0xe:
++		return "DP/HDMI";
++	case 0x10:
++		return "PCIe";
++	case 0x20:
++		return "USB";
++	default:
++		return "unknown";
++	}
++}
 +
++static void tb_dump_port(struct tb *tb, struct tb_regs_port_header *port)
++{
++	tb_info(tb,
++		" Port %d: %x:%x (Revision: %d, TB Version: %d, Type: %s (%#x))\n",
++		port->port_number, port->vendor_id, port->device_id,
++		port->revision, port->thunderbolt_version, tb_port_type(port),
++		port->type);
++	tb_info(tb, "  Max hop id (in/out): %d/%d\n",
++		port->max_in_hop_id, port->max_out_hop_id);
++	tb_info(tb, "  Max counters: %d\n", port->max_counters);
++	tb_info(tb, "  NFC Credits: %#x\n", port->nfc_credits);
++}
 +
-+/*
-+ * TODO: should be 63? But we do not know how to receive frames larger than 256
-+ * bytes at the frame level. (header + checksum = 16, 60*4 = 240)
++/**
++ * tb_init_port() - initialize a port
++ *
++ * This is a helper method for tb_switch_alloc. Does not check or initialize
++ * any downstream switches.
++ *
++ * Return: Returns 0 on success or an error code on failure.
 + */
-+#define TB_MAX_CONFIG_RW_LENGTH 60
++static int tb_init_port(struct tb_switch *sw, u8 port_nr)
++{
++	int res;
++	struct tb_port *port = &sw->ports[port_nr];
++	port->sw = sw;
++	port->port = port_nr;
++	port->remote = NULL;
++	res = tb_port_read(port, &port->config, TB_CFG_PORT, 0, 8);
++	if (res)
++		return res;
 +
-+enum tb_cap {
-+	TB_CAP_PHY		= 0x0001,
-+	TB_CAP_TIME1		= 0x0003,
-+	TB_CAP_PCIE		= 0x0004,
-+	TB_CAP_I2C		= 0x0005,
-+	TB_CAP_PLUG_EVENTS	= 0x0105, /* also EEPROM */
-+	TB_CAP_TIME2		= 0x0305,
-+	TB_CAL_IECS		= 0x0405,
-+	TB_CAP_LINK_CONTROLLER	= 0x0605, /* also IECS */
++	tb_dump_port(sw->tb, &port->config);
++
++	/* TODO: Read dual link port, DP port and more from EEPROM. */
++	return 0;
++
++}
++
++/* switch utility functions */
++
++static void tb_dump_switch(struct tb *tb, struct tb_regs_switch_header *sw)
++{
++	tb_info(tb,
++		" Switch: %x:%x (Revision: %d, TB Version: %d)\n",
++		sw->vendor_id, sw->device_id, sw->revision,
++		sw->thunderbolt_version);
++	tb_info(tb, "  Max Port Number: %d\n", sw->max_port_number);
++	tb_info(tb, "  Config:\n");
++	tb_info(tb,
++		"   Upstream Port Number: %d Depth: %d Route String: %#llx Enabled: %d, PlugEventsDelay: %dms\n",
++		sw->upstream_port_number, sw->depth,
++		(((u64) sw->route_hi) << 32) | sw->route_lo,
++		sw->enabled, sw->plug_events_delay);
++	tb_info(tb,
++		"   unknown1: %#x unknown4: %#x\n",
++		sw->__unknown1, sw->__unknown4);
++}
++
++/**
++ * tb_switch_free() - free a tb_switch and all downstream switches
++ */
++void tb_switch_free(struct tb_switch *sw)
++{
++	int i;
++	/* port 0 is the switch itself and never has a remote */
++	for (i = 1; i <= sw->config.max_port_number; i++) {
++		if (tb_is_upstream_port(&sw->ports[i]))
++			continue;
++		if (sw->ports[i].remote)
++			tb_switch_free(sw->ports[i].remote->sw);
++		sw->ports[i].remote = NULL;
++	}
++
++	kfree(sw->ports);
++	kfree(sw);
++}
++
++/**
++ * tb_switch_alloc() - allocate and initialize a switch
++ *
++ * Return: Returns a NULL on failure.
++ */
++struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route)
++{
++	int i;
++	struct tb_switch *sw;
++	int upstream_port = tb_cfg_get_upstream_port(tb->ctl, route);
++	if (upstream_port < 0)
++		return NULL;
++
++	sw = kzalloc(sizeof(*sw), GFP_KERNEL);
++	if (!sw)
++		return NULL;
++
++	sw->tb = tb;
++	if (tb_cfg_read(tb->ctl, &sw->config, route, 0, 2, 0, 5))
++		goto err;
++	tb_info(tb,
++		"initializing Switch at %#llx (depth: %d, up port: %d)\n",
++		route, tb_route_length(route), upstream_port);
++	tb_info(tb, "old switch config:\n");
++	tb_dump_switch(tb, &sw->config);
++
++	/* configure switch */
++	sw->config.upstream_port_number = upstream_port;
++	sw->config.depth = tb_route_length(route);
++	sw->config.route_lo = route;
++	sw->config.route_hi = route >> 32;
++	sw->config.enabled = 1;
++	/* from here on we may use the tb_sw_* functions & macros */
++
++	if (sw->config.vendor_id != 0x8086)
++		tb_sw_warn(sw, "unknown switch vendor id %#x\n",
++			   sw->config.vendor_id);
++
++	if (sw->config.device_id != 0x1547 && sw->config.device_id != 0x1549)
++		tb_sw_warn(sw, "unsupported switch device id %#x\n",
++			   sw->config.device_id);
++
++	/* upload configuration */
++	if (tb_sw_write(sw, 1 + (u32 *) &sw->config, TB_CFG_SWITCH, 1, 3))
++		goto err;
++
++	/* initialize ports */
++	sw->ports = kcalloc(sw->config.max_port_number + 1, sizeof(*sw->ports),
++	GFP_KERNEL);
++	if (!sw->ports)
++		goto err;
++
++	for (i = 0; i <= sw->config.max_port_number; i++) {
++		if (tb_init_port(sw, i))
++			goto err;
++		/* TODO: check if port is disabled (EEPROM) */
++	}
++
++	/* TODO: I2C, IECS, EEPROM, link controller */
++
++	return sw;
++err:
++	kfree(sw->ports);
++	kfree(sw);
++	return NULL;
++}
++
+diff --git a/drivers/thunderbolt/tb.c b/drivers/thunderbolt/tb.c
+index 164dea0..f1b6100 100644
+--- a/drivers/thunderbolt/tb.c
++++ b/drivers/thunderbolt/tb.c
+@@ -71,6 +71,10 @@ void thunderbolt_shutdown_and_free(struct tb *tb)
+ {
+ 	mutex_lock(&tb->lock);
+ 
++	if (tb->root_switch)
++		tb_switch_free(tb->root_switch);
++	tb->root_switch = NULL;
++
+ 	if (tb->ctl) {
+ 		tb_ctl_stop(tb->ctl);
+ 		tb_ctl_free(tb->ctl);
+@@ -126,6 +130,10 @@ struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi)
+ 	 */
+ 	tb_ctl_start(tb->ctl);
+ 
++	tb->root_switch = tb_switch_alloc(tb, 0);
++	if (!tb->root_switch)
++		goto err_locked;
++
+ 	/* Allow tb_handle_hotplug to progress events */
+ 	tb->hotplug_active = true;
+ 	mutex_unlock(&tb->lock);
+diff --git a/drivers/thunderbolt/tb.h b/drivers/thunderbolt/tb.h
+index 19dace0..9f01800 100644
+--- a/drivers/thunderbolt/tb.h
++++ b/drivers/thunderbolt/tb.h
+@@ -7,9 +7,31 @@
+ #ifndef TB_H_
+ #define TB_H_
+ 
++#include <linux/pci.h>
++
++#include "tb_regs.h"
+ #include "ctl.h"
+ 
+ /**
++ * struct tb_switch - a thunderbolt switch
++ */
++struct tb_switch {
++	struct tb_regs_switch_header config;
++	struct tb_port *ports;
++	struct tb *tb;
 +};
 +
-+enum tb_port_state {
-+	TB_PORT_DISABLED	= 0, /* tb_cap_phy.disable == 1 */
-+	TB_PORT_CONNECTING	= 1, /* retry */
-+	TB_PORT_UP		= 2,
-+	TB_PORT_UNPLUGGED	= 7,
++/**
++ * struct tb_port - a thunderbolt port, part of a tb_switch
++ */
++struct tb_port {
++	struct tb_regs_port_header config;
++	struct tb_switch *sw;
++	struct tb_port *remote; /* remote port, NULL if not connected */
++	u8 port; /* port number on switch */
 +};
 +
-+/* capability headers */
++/**
+  * struct tb - main thunderbolt bus structure
+  */
+ struct tb {
+@@ -20,6 +42,7 @@ struct tb {
+ 	struct tb_nhi *nhi;
+ 	struct tb_ctl *ctl;
+ 	struct workqueue_struct *wq; /* ordered workqueue for plug events */
++	struct tb_switch *root_switch;
+ 	bool hotplug_active; /*
+ 			      * tb_handle_hotplug will stop progressing plug
+ 			      * events and exit if this is not seet (it needs to
+@@ -29,7 +52,122 @@ struct tb {
+ 
+ };
+ 
++/* helper functions & macros */
 +
-+struct tb_cap_basic {
-+	u8 next;
-+	/* enum tb_cap cap:8; prevent "narrower than values of its type" */
-+	u8 cap; /* if cap == 0x05 then we have a extended capability */
-+} __packed;
++/**
++ * tb_upstream_port() - return the upstream port of a switch
++ *
++ * Every switch has an upstream port (for the root switch it is the NHI).
++ *
++ * During switch alloc/init tb_upstream_port()->remote may be NULL, even for
++ * non root switches (on the NHI port remote is always NULL).
++ *
++ * Return: Returns the upstream port of the switch.
++ */
++static inline struct tb_port *tb_upstream_port(struct tb_switch *sw)
++{
++	return &sw->ports[sw->config.upstream_port_number];
++}
 +
-+struct tb_cap_extended_short {
-+	u8 next; /* if next and length are zero then we have a long cap */
-+	enum tb_cap cap:16;
-+	u8 length;
-+} __packed;
++static inline u64 tb_route(struct tb_switch *sw)
++{
++	return ((u64) sw->config.route_hi) << 32 | sw->config.route_lo;
++}
 +
-+struct tb_cap_extended_long {
-+	u8 zero1;
-+	enum tb_cap cap:16;
-+	u8 zero2;
-+	u16 next;
-+	u16 length;
-+} __packed;
++static inline int tb_sw_read(struct tb_switch *sw, void *buffer,
++			     enum tb_cfg_space space, u32 offset, u32 length)
++{
++	return tb_cfg_read(sw->tb->ctl,
++			   buffer,
++			   tb_route(sw),
++			   0,
++			   space,
++			   offset,
++			   length);
++}
 +
-+/* capabilities */
++static inline int tb_sw_write(struct tb_switch *sw, void *buffer,
++			      enum tb_cfg_space space, u32 offset, u32 length)
++{
++	return tb_cfg_write(sw->tb->ctl,
++			    buffer,
++			    tb_route(sw),
++			    0,
++			    space,
++			    offset,
++			    length);
++}
 +
-+struct tb_cap_link_controller {
-+	struct tb_cap_extended_long cap_header;
-+	u32 count:4; /* number of link controllers */
-+	u32 unknown1:4;
-+	u32 base_offset:8; /*
-+			    * offset (into this capability) of the configuration
-+			    * area of the first link controller
-+			    */
-+	u32 length:12; /* link controller configuration area length */
-+	u32 unknown2:4; /* TODO check that length is correct */
-+} __packed;
++static inline int tb_port_read(struct tb_port *port, void *buffer,
++			       enum tb_cfg_space space, u32 offset, u32 length)
++{
++	return tb_cfg_read(port->sw->tb->ctl,
++			   buffer,
++			   tb_route(port->sw),
++			   port->port,
++			   space,
++			   offset,
++			   length);
++}
 +
-+struct tb_cap_phy {
-+	struct tb_cap_basic cap_header;
-+	u32 unknown1:16;
-+	u32 unknown2:14;
-+	bool disable:1;
-+	u32 unknown3:11;
-+	enum tb_port_state state:4;
-+	u32 unknown4:2;
-+} __packed;
++static inline int tb_port_write(struct tb_port *port, void *buffer,
++				enum tb_cfg_space space, u32 offset, u32 length)
++{
++	return tb_cfg_write(port->sw->tb->ctl,
++			    buffer,
++			    tb_route(port->sw),
++			    port->port,
++			    space,
++			    offset,
++			    length);
++}
 +
-+struct tb_eeprom_ctl {
-+	bool clock:1; /* send pulse to transfer one bit */
-+	bool access_low:1; /* set to 0 before access */
-+	bool data_out:1; /* to eeprom */
-+	bool data_in:1; /* from eeprom */
-+	bool access_high:1; /* set to 1 before access */
-+	bool not_present:1; /* should be 0 */
-+	bool unknown1:1;
-+	bool present:1; /* should be 1 */
-+	u32 unknown2:24;
-+} __packed;
-+
-+struct tb_cap_plug_events {
-+	struct tb_cap_extended_short cap_header;
-+	u32 __unknown1:2;
-+	u32 plug_events:5;
-+	u32 __unknown2:25;
-+	u32 __unknown3;
-+	u32 __unknown4;
-+	struct tb_eeprom_ctl eeprom_ctl;
-+	u32 __unknown5[7];
-+	u32 drom_offset; /* 32 bit register, but eeprom addresses are 16 bit */
-+} __packed;
-+
-+/* device headers */
-+
-+/* Present on port 0 in TB_CFG_SWITCH at address zero. */
-+struct tb_regs_switch_header {
-+	/* DWORD 0 */
-+	u16 vendor_id;
-+	u16 device_id;
-+	/* DWORD 1 */
-+	u32 first_cap_offset:8;
-+	u32 upstream_port_number:6;
-+	u32 max_port_number:6;
-+	u32 depth:3;
-+	u32 __unknown1:1;
-+	u32 revision:8;
-+	/* DWORD 2 */
-+	u32 route_lo;
-+	/* DWORD 3 */
-+	u32 route_hi:31;
-+	bool enabled:1;
-+	/* DWORD 4 */
-+	u32 plug_events_delay:8; /*
-+				  * RW, pause between plug events in
-+				  * milliseconds. Writing 0x00 is interpreted
-+				  * as 255ms.
-+				  */
-+	u32 __unknown4:16;
-+	u32 thunderbolt_version:8;
-+} __packed;
-+
-+enum tb_port_type {
-+	TB_TYPE_INACTIVE	= 0x000000,
-+	TB_TYPE_PORT		= 0x000001,
-+	TB_TYPE_NHI		= 0x000002,
-+	/* TB_TYPE_ETHERNET	= 0x020000, lower order bits are not known */
-+	/* TB_TYPE_SATA		= 0x080000, lower order bits are not known */
-+	TB_TYPE_DP_HDMI_IN	= 0x0e0101,
-+	TB_TYPE_DP_HDMI_OUT	= 0x0e0102,
-+	TB_TYPE_PCIE_DOWN	= 0x100101,
-+	TB_TYPE_PCIE_UP		= 0x100102,
-+	/* TB_TYPE_USB		= 0x200000, lower order bits are not known */
-+};
-+
-+/* Present on every port in TB_CF_PORT at address zero. */
-+struct tb_regs_port_header {
-+	/* DWORD 0 */
-+	u16 vendor_id;
-+	u16 device_id;
-+	/* DWORD 1 */
-+	u32 first_cap_offset:8;
-+	u32 max_counters:11;
-+	u32 __unknown1:5;
-+	u32 revision:8;
-+	/* DWORD 2 */
-+	enum tb_port_type type:24;
-+	u32 thunderbolt_version:8;
-+	/* DWORD 3 */
-+	u32 __unknown2:20;
-+	u32 port_number:6;
-+	u32 __unknown3:6;
-+	/* DWORD 4 */
-+	u32 nfc_credits;
-+	/* DWORD 5 */
-+	u32 max_in_hop_id:11;
-+	u32 max_out_hop_id:11;
-+	u32 __unkown4:10;
-+	/* DWORD 6 */
-+	u32 __unknown5;
-+	/* DWORD 7 */
-+	u32 __unknown6;
-+
-+} __packed;
-+
-+/* Hop register from TB_CFG_HOPS. 8 byte per entry. */
-+struct tb_regs_hop {
-+	/* DWORD 0 */
-+	u32 next_hop:11; /*
-+			  * hop to take after sending the packet through
-+			  * out_port (on the incoming port of the next switch)
-+			  */
-+	u32 out_port:6; /* next port of the path (on the same switch) */
-+	u32 initial_credits:8;
-+	u32 unknown1:6; /* set to zero */
-+	bool enable:1;
-+
-+	/* DWORD 1 */
-+	u32 weight:4;
-+	u32 unknown2:4; /* set to zero */
-+	u32 priority:3;
-+	bool drop_packages:1;
-+	u32 counter:11; /* index into TB_CFG_COUNTERS on this port */
-+	bool counter_enable:1;
-+	bool ingress_fc:1;
-+	bool egress_fc:1;
-+	bool ingress_shared_buffer:1;
-+	bool egress_shared_buffer:1;
-+	u32 unknown3:4; /* set to zero */
-+} __packed;
++#define tb_err(tb, fmt, arg...) dev_err(&(tb)->nhi->pdev->dev, fmt, ## arg)
++#define tb_WARN(tb, fmt, arg...) dev_WARN(&(tb)->nhi->pdev->dev, fmt, ## arg)
++#define tb_warn(tb, fmt, arg...) dev_warn(&(tb)->nhi->pdev->dev, fmt, ## arg)
++#define tb_info(tb, fmt, arg...) dev_info(&(tb)->nhi->pdev->dev, fmt, ## arg)
 +
 +
-+#endif
++#define __TB_SW_PRINT(level, sw, fmt, arg...)           \
++	do {                                            \
++		struct tb_switch *__sw = (sw);          \
++		level(__sw->tb, "%llx: " fmt,           \
++		      tb_route(__sw), ## arg);          \
++	} while (0)
++#define tb_sw_WARN(sw, fmt, arg...) __TB_SW_PRINT(tb_WARN, sw, fmt, ##arg)
++#define tb_sw_warn(sw, fmt, arg...) __TB_SW_PRINT(tb_warn, sw, fmt, ##arg)
++#define tb_sw_info(sw, fmt, arg...) __TB_SW_PRINT(tb_info, sw, fmt, ##arg)
++
++
++#define __TB_PORT_PRINT(level, _port, fmt, arg...)                      \
++	do {                                                            \
++		struct tb_port *__port = (_port);                       \
++		level(__port->sw->tb, "%llx:%x: " fmt,                  \
++		      tb_route(__port->sw), __port->port, ## arg);      \
++	} while (0)
++#define tb_port_WARN(port, fmt, arg...) \
++	__TB_PORT_PRINT(tb_WARN, port, fmt, ##arg)
++#define tb_port_warn(port, fmt, arg...) \
++	__TB_PORT_PRINT(tb_warn, port, fmt, ##arg)
++#define tb_port_info(port, fmt, arg...) \
++	__TB_PORT_PRINT(tb_info, port, fmt, ##arg)
++
++
+ struct tb *thunderbolt_alloc_and_start(struct tb_nhi *nhi);
+ void thunderbolt_shutdown_and_free(struct tb *tb);
+ 
++struct tb_switch *tb_switch_alloc(struct tb *tb, u64 route);
++void tb_switch_free(struct tb_switch *sw);
++
++
++static inline int tb_route_length(u64 route)
++{
++	return (fls64(route) + TB_ROUTE_SHIFT - 1) / TB_ROUTE_SHIFT;
++}
++
++static inline bool tb_is_upstream_port(struct tb_port *port)
++{
++	return port == tb_upstream_port(port->sw);
++}
++
+ #endif
 -- 
 1.9.2
 
