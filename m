@@ -1,87 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934965AbaDKOo7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 10:44:59 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:54339 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759233AbaDKOfR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 10:35:17 -0400
-From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-input@vger.kernel.org, kernel@stlinux.com,
-        Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Subject: [PATCH v3 4/7] ARM: STi: DT: add keyscan for stih41x-b2000
-Date: Fri, 11 Apr 2014 16:33:34 +0200
-Message-Id: <1397226820-5604-8-git-send-email-gabriel.fernandez@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1397226820-5604-1-git-send-email-gabriel.fernandez@linaro.org>
-References: <1397226820-5604-1-git-send-email-gabriel.fernandez@linaro.org>
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-11_04:2014-04-11,2014-04-11,1970-01-01 signatures=0
+	id S1756257AbaDKOvM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 10:51:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32706 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754211AbaDKOvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 10:51:10 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20140410142918.GU11096@twins.programming.kicks-ass.net>
+References: <20140410142918.GU11096@twins.programming.kicks-ass.net> <alpine.LNX.2.11.1404060059020.8208@bpserver.ds> <20140409121940.GA12890@node.dhcp.inet.fi>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: dhowells@redhat.com, "Kirill A. Shutemov" <kirill@shutemov.name>,
+        "Michael L. Semon" <mlsemon35@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, jason.low2@hp.com,
+        linux-kernel@vger.kernel.org, viro@ZenIV.linux.org.uk
+Subject: Re: cred_guard_mutex vs seq_file::lock [was: Re: 3.14.0+/x86: lockdep and mutexes not getting along]
+Date: Fri, 11 Apr 2014 15:50:27 +0100
+Message-ID: <26259.1397227827@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add keyscan setup for stih415/h416 b2000.
-Both have same raw/column lines number, debounce time and keymap.
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
----
- arch/arm/boot/dts/stih41x-b2000.dtsi | 23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+> Al, David, any bright ideas on how to best fix this?
 
-diff --git a/arch/arm/boot/dts/stih41x-b2000.dtsi b/arch/arm/boot/dts/stih41x-b2000.dtsi
-index bf65c49..403bf1b 100644
---- a/arch/arm/boot/dts/stih41x-b2000.dtsi
-+++ b/arch/arm/boot/dts/stih41x-b2000.dtsi
-@@ -6,6 +6,7 @@
-  * it under the terms of the GNU General Public License version 2 as
-  * publishhed by the Free Software Foundation.
-  */
-+#include <dt-bindings/input/input.h>
- / {
- 
- 	memory{
-@@ -68,5 +69,27 @@
- 			snps,reset-active-low;
- 			snps,reset-delays-us 	= <0 10000 10000>;
- 		};
-+
-+		keyscan: keyscan@fe4b0000 {
-+			keypad,num-rows = <4>;
-+			keypad,num-columns = <4>;
-+			st,debounce-us = <5000>;
-+			linux,keymap = < MATRIX_KEY(0x00, 0x00, KEY_F13)
-+					 MATRIX_KEY(0x00, 0x01, KEY_F9)
-+					 MATRIX_KEY(0x00, 0x02, KEY_F5)
-+					 MATRIX_KEY(0x00, 0x03, KEY_F1)
-+					 MATRIX_KEY(0x01, 0x00, KEY_F14)
-+					 MATRIX_KEY(0x01, 0x01, KEY_F10)
-+					 MATRIX_KEY(0x01, 0x02, KEY_F6)
-+					 MATRIX_KEY(0x01, 0x03, KEY_F2)
-+					 MATRIX_KEY(0x02, 0x00, KEY_F15)
-+					 MATRIX_KEY(0x02, 0x01, KEY_F11)
-+					 MATRIX_KEY(0x02, 0x02, KEY_F7)
-+					 MATRIX_KEY(0x02, 0x03, KEY_F3)
-+					 MATRIX_KEY(0x03, 0x00, KEY_F16)
-+					 MATRIX_KEY(0x03, 0x01, KEY_F12)
-+					 MATRIX_KEY(0x03, 0x02, KEY_F8)
-+					 MATRIX_KEY(0x03, 0x03, KEY_F4) >;
-+		};
- 	};
- };
--- 
-1.9.1
+Have the seq_xxx() code throw an error if current->in_execve is true.  I can't
+think of any circumstance where execve() should be reading anything that uses
+seq_xxx().
 
+David
