@@ -1,125 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422868AbaDKQJJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:09:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56468 "EHLO
+	id S1422897AbaDKQdc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:33:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56684 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759441AbaDKQHk (ORCPT
+	with ESMTP id S1422862AbaDKQJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:07:40 -0400
+	Fri, 11 Apr 2014 12:09:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 3.10 41/41] cpufreq: Fix timer/workqueue corruption due to double queueing
-Date: Fri, 11 Apr 2014 09:10:12 -0700
-Message-Id: <20140411160936.059119908@linuxfoundation.org>
+        Shradha Shah <sshah@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 53/65] Call efx_set_channels() before efx->type->dimension_resources()
+Date: Fri, 11 Apr 2014 09:11:25 -0700
+Message-Id: <20140411161004.959944736@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
-References: <20140411160932.865173041@linuxfoundation.org>
+In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
+References: <20140411160957.714773410@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Daniel Pieczko <dpieczko@solarflare.com>
 
-commit 3617f2ca6d0eba48114308532945a7f1577816a4 upstream.
+[ Upstream commit 52ad762b85ed7947ec9eff6b036eb985352f6874 ]
 
-When a CPU is hot removed we'll cancel all the delayed work items
-via gov_cancel_work(). Normally this will just cancels a delayed
-timer on each CPU that the policy is managing and the work won't
-run, but if the work is already running the workqueue code will
-wait for the work to finish before continuing to prevent the
-work items from re-queuing themselves like they normally do. This
-scheme will work most of the time, except for the case where the
-work function determines that it should adjust the delay for all
-other CPUs that the policy is managing. If this scenario occurs,
-the canceling CPU will cancel its own work but queue up the other
-CPUs works to run. For example:
+When using the "separate_tx_channels=1" module parameter, the TX queues are
+initially numbered starting from the first TX-only channel number (after all the
+RX-only channels).  efx_set_channels() renumbers the queues so that they are
+indexed from zero.
 
- CPU0                                        CPU1
- ----                                        ----
- cpu_down()
-  ...
-  __cpufreq_remove_dev()
-   cpufreq_governor_dbs()
-    case CPUFREQ_GOV_STOP:
-     gov_cancel_work(dbs_data, policy);
-      cpu0 work is canceled
-       timer is canceled
-       cpu1 work is canceled                    <work runs>
-       <waits for cpu1>                         od_dbs_timer()
-                                                 gov_queue_work(*, *, true);
- 						  cpu0 work queued
- 						  cpu1 work queued
-						  cpu2 work queued
-						  ...
-       cpu1 work is canceled
-       cpu2 work is canceled
-       ...
+On EF10, the TX queues need to be relabelled in this way before calling the
+dimension_resources NIC type operation, otherwise the TX queue PIO buffers can be
+linked to the wrong VIs when using "separate_tx_channels=1".
 
-At the end of the GOV_STOP case cpu0 still has a work queued to
-run although the code is expecting all of the works to be
-canceled. __cpufreq_remove_dev() will then proceed to
-re-initialize all the other CPUs works except for the CPU that is
-going down. The CPUFREQ_GOV_START case in cpufreq_governor_dbs()
-will trample over the queued work and debugobjects will spit out
-a warning:
+Added comments to explain UC/WC mappings for PIO buffers
 
-WARNING: at lib/debugobjects.c:260 debug_print_object+0x94/0xbc()
-ODEBUG: init active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x10
-Modules linked in:
-CPU: 0 PID: 1491 Comm: sh Tainted: G        W    3.10.0 #19
-[<c010c178>] (unwind_backtrace+0x0/0x11c) from [<c0109dec>] (show_stack+0x10/0x14)
-[<c0109dec>] (show_stack+0x10/0x14) from [<c01904cc>] (warn_slowpath_common+0x4c/0x6c)
-[<c01904cc>] (warn_slowpath_common+0x4c/0x6c) from [<c019056c>] (warn_slowpath_fmt+0x2c/0x3c)
-[<c019056c>] (warn_slowpath_fmt+0x2c/0x3c) from [<c0388a7c>] (debug_print_object+0x94/0xbc)
-[<c0388a7c>] (debug_print_object+0x94/0xbc) from [<c0388e34>] (__debug_object_init+0x2d0/0x340)
-[<c0388e34>] (__debug_object_init+0x2d0/0x340) from [<c019e3b0>] (init_timer_key+0x14/0xb0)
-[<c019e3b0>] (init_timer_key+0x14/0xb0) from [<c0635f78>] (cpufreq_governor_dbs+0x3e8/0x5f8)
-[<c0635f78>] (cpufreq_governor_dbs+0x3e8/0x5f8) from [<c06325a0>] (__cpufreq_governor+0xdc/0x1a4)
-[<c06325a0>] (__cpufreq_governor+0xdc/0x1a4) from [<c0633704>] (__cpufreq_remove_dev.isra.10+0x3b4/0x434)
-[<c0633704>] (__cpufreq_remove_dev.isra.10+0x3b4/0x434) from [<c08989f4>] (cpufreq_cpu_callback+0x60/0x80)
-[<c08989f4>] (cpufreq_cpu_callback+0x60/0x80) from [<c08a43c0>] (notifier_call_chain+0x38/0x68)
-[<c08a43c0>] (notifier_call_chain+0x38/0x68) from [<c01938e0>] (__cpu_notify+0x28/0x40)
-[<c01938e0>] (__cpu_notify+0x28/0x40) from [<c0892ad4>] (_cpu_down+0x7c/0x2c0)
-[<c0892ad4>] (_cpu_down+0x7c/0x2c0) from [<c0892d3c>] (cpu_down+0x24/0x40)
-[<c0892d3c>] (cpu_down+0x24/0x40) from [<c0893ea8>] (store_online+0x2c/0x74)
-[<c0893ea8>] (store_online+0x2c/0x74) from [<c04519d8>] (dev_attr_store+0x18/0x24)
-[<c04519d8>] (dev_attr_store+0x18/0x24) from [<c02a69d4>] (sysfs_write_file+0x100/0x148)
-[<c02a69d4>] (sysfs_write_file+0x100/0x148) from [<c0255c18>] (vfs_write+0xcc/0x174)
-[<c0255c18>] (vfs_write+0xcc/0x174) from [<c0255f70>] (SyS_write+0x38/0x64)
-[<c0255f70>] (SyS_write+0x38/0x64) from [<c0106120>] (ret_fast_syscall+0x0/0x30)
-
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Shradha Shah <sshah@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/cpufreq/cpufreq_governor.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/ethernet/sfc/ef10.c |    7 +++++++
+ drivers/net/ethernet/sfc/efx.c  |    3 ++-
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -177,6 +177,9 @@ void gov_queue_work(struct dbs_data *dbs
- {
- 	int i;
+--- a/drivers/net/ethernet/sfc/ef10.c
++++ b/drivers/net/ethernet/sfc/ef10.c
+@@ -555,10 +555,17 @@ static int efx_ef10_dimension_resources(
+ 	 * several of each (in fact that's the only option if host
+ 	 * page size is >4K).  So we may allocate some extra VIs just
+ 	 * for writing PIO buffers through.
++	 *
++	 * The UC mapping contains (min_vis - 1) complete VIs and the
++	 * first half of the next VI.  Then the WC mapping begins with
++	 * the second half of this last VI.
+ 	 */
+ 	uc_mem_map_size = PAGE_ALIGN((min_vis - 1) * EFX_VI_PAGE_SIZE +
+ 				     ER_DZ_TX_PIOBUF);
+ 	if (nic_data->n_piobufs) {
++		/* pio_write_vi_base rounds down to give the number of complete
++		 * VIs inside the UC mapping.
++		 */
+ 		pio_write_vi_base = uc_mem_map_size / EFX_VI_PAGE_SIZE;
+ 		wc_mem_map_size = (PAGE_ALIGN((pio_write_vi_base +
+ 					       nic_data->n_piobufs) *
+--- a/drivers/net/ethernet/sfc/efx.c
++++ b/drivers/net/ethernet/sfc/efx.c
+@@ -1514,6 +1514,8 @@ static int efx_probe_nic(struct efx_nic
+ 	if (rc)
+ 		goto fail1;
  
-+	if (!policy->governor_enabled)
-+		return;
++	efx_set_channels(efx);
 +
- 	if (!all_cpus) {
- 		__gov_queue_work(smp_processor_id(), dbs_data, delay);
- 	} else {
+ 	rc = efx->type->dimension_resources(efx);
+ 	if (rc)
+ 		goto fail2;
+@@ -1524,7 +1526,6 @@ static int efx_probe_nic(struct efx_nic
+ 		efx->rx_indir_table[i] =
+ 			ethtool_rxfh_indir_default(i, efx->rss_spread);
+ 
+-	efx_set_channels(efx);
+ 	netif_set_real_num_tx_queues(efx->net_dev, efx->n_tx_channels);
+ 	netif_set_real_num_rx_queues(efx->net_dev, efx->n_rx_channels);
+ 
 
 
