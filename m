@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030639AbaDKQIj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:08:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56396 "EHLO
+	id S1759505AbaDKQIg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:08:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56390 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759421AbaDKQHf (ORCPT
+	with ESMTP id S1759420AbaDKQHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:07:35 -0400
+	Fri, 11 Apr 2014 12:07:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Graf <tgraf@suug.ch>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Oliver Neukum <oneukum@suse.de>, Grant Grundler <grundler@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 22/41] ip6mr: fix mfc notification flags
-Date: Fri, 11 Apr 2014 09:09:53 -0700
-Message-Id: <20140411160934.420168951@linuxfoundation.org>
+Subject: [PATCH 3.10 25/41] usbnet: include wait queue head in device structure
+Date: Fri, 11 Apr 2014 09:09:56 -0700
+Message-Id: <20140411160934.645221901@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
 References: <20140411160932.865173041@linuxfoundation.org>
@@ -28,73 +27,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-[ Upstream commit f518338b16038beeb73e155e60d0f70beb9379f4 ]
+[ Upstream commit 14a0d635d18d0fb552dcc979d6d25106e6541f2e ]
 
-Commit 812e44dd1829 ("ip6mr: advertise new mfc entries via rtnl") reuses the
-function ip6mr_fill_mroute() to notify mfc events.
-But this function was used only for dump and thus was always setting the
-flag NLM_F_MULTI, which is wrong in case of a single notification.
+This fixes a race which happens by freeing an object on the stack.
+Quoting Julius:
+> The issue is
+> that it calls usbnet_terminate_urbs() before that, which temporarily
+> installs a waitqueue in dev->wait in order to be able to wait on the
+> tasklet to run and finish up some queues. The waiting itself looks
+> okay, but the access to 'dev->wait' is totally unprotected and can
+> race arbitrarily. I think in this case usbnet_bh() managed to succeed
+> it's dev->wait check just before usbnet_terminate_urbs() sets it back
+> to NULL. The latter then finishes and the waitqueue_t structure on its
+> stack gets overwritten by other functions halfway through the
+> wake_up() call in usbnet_bh().
 
-Libraries like libnl will wait forever for NLMSG_DONE.
+The fix is to just not allocate the data structure on the stack.
+As dev->wait is abused as a flag it also takes a runtime PM change
+to fix this bug.
 
-CC: Thomas Graf <tgraf@suug.ch>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Acked-by: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Reported-by: Grant Grundler <grundler@google.com>
+Tested-by: Grant Grundler <grundler@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/ip6mr.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ drivers/net/usb/usbnet.c   |   33 +++++++++++++++++++--------------
+ include/linux/usb/usbnet.h |    2 +-
+ 2 files changed, 20 insertions(+), 15 deletions(-)
 
---- a/net/ipv6/ip6mr.c
-+++ b/net/ipv6/ip6mr.c
-@@ -2351,13 +2351,14 @@ int ip6mr_get_route(struct net *net,
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -727,14 +727,12 @@ EXPORT_SYMBOL_GPL(usbnet_unlink_rx_urbs)
+ // precondition: never called in_interrupt
+ static void usbnet_terminate_urbs(struct usbnet *dev)
+ {
+-	DECLARE_WAIT_QUEUE_HEAD_ONSTACK(unlink_wakeup);
+ 	DECLARE_WAITQUEUE(wait, current);
+ 	int temp;
+ 
+ 	/* ensure there are no more active urbs */
+-	add_wait_queue(&unlink_wakeup, &wait);
++	add_wait_queue(&dev->wait, &wait);
+ 	set_current_state(TASK_UNINTERRUPTIBLE);
+-	dev->wait = &unlink_wakeup;
+ 	temp = unlink_urbs(dev, &dev->txq) +
+ 		unlink_urbs(dev, &dev->rxq);
+ 
+@@ -748,15 +746,14 @@ static void usbnet_terminate_urbs(struct
+ 				  "waited for %d urb completions\n", temp);
+ 	}
+ 	set_current_state(TASK_RUNNING);
+-	dev->wait = NULL;
+-	remove_wait_queue(&unlink_wakeup, &wait);
++	remove_wait_queue(&dev->wait, &wait);
  }
  
- static int ip6mr_fill_mroute(struct mr6_table *mrt, struct sk_buff *skb,
--			     u32 portid, u32 seq, struct mfc6_cache *c, int cmd)
-+			     u32 portid, u32 seq, struct mfc6_cache *c, int cmd,
-+			     int flags)
+ int usbnet_stop (struct net_device *net)
  {
- 	struct nlmsghdr *nlh;
- 	struct rtmsg *rtm;
- 	int err;
+ 	struct usbnet		*dev = netdev_priv(net);
+ 	struct driver_info	*info = dev->driver_info;
+-	int			retval;
++	int			retval, pm;
  
--	nlh = nlmsg_put(skb, portid, seq, cmd, sizeof(*rtm), NLM_F_MULTI);
-+	nlh = nlmsg_put(skb, portid, seq, cmd, sizeof(*rtm), flags);
- 	if (nlh == NULL)
- 		return -EMSGSIZE;
+ 	clear_bit(EVENT_DEV_OPEN, &dev->flags);
+ 	netif_stop_queue (net);
+@@ -766,6 +763,8 @@ int usbnet_stop (struct net_device *net)
+ 		   net->stats.rx_packets, net->stats.tx_packets,
+ 		   net->stats.rx_errors, net->stats.tx_errors);
  
-@@ -2425,7 +2426,7 @@ static void mr6_netlink_event(struct mr6
- 	if (skb == NULL)
- 		goto errout;
++	/* to not race resume */
++	pm = usb_autopm_get_interface(dev->intf);
+ 	/* allow minidriver to stop correctly (wireless devices to turn off
+ 	 * radio etc) */
+ 	if (info->stop) {
+@@ -792,6 +791,9 @@ int usbnet_stop (struct net_device *net)
+ 	dev->flags = 0;
+ 	del_timer_sync (&dev->delay);
+ 	tasklet_kill (&dev->bh);
++	if (!pm)
++		usb_autopm_put_interface(dev->intf);
++
+ 	if (info->manage_power &&
+ 	    !test_and_clear_bit(EVENT_NO_RUNTIME_PM, &dev->flags))
+ 		info->manage_power(dev, 0);
+@@ -1360,11 +1362,12 @@ static void usbnet_bh (unsigned long par
+ 	/* restart RX again after disabling due to high error rate */
+ 	clear_bit(EVENT_RX_KILL, &dev->flags);
  
--	err = ip6mr_fill_mroute(mrt, skb, 0, 0, mfc, cmd);
-+	err = ip6mr_fill_mroute(mrt, skb, 0, 0, mfc, cmd, 0);
- 	if (err < 0)
- 		goto errout;
+-	// waiting for all pending urbs to complete?
+-	if (dev->wait) {
+-		if ((dev->txq.qlen + dev->rxq.qlen + dev->done.qlen) == 0) {
+-			wake_up (dev->wait);
+-		}
++	/* waiting for all pending urbs to complete?
++	 * only then can we forgo submitting anew
++	 */
++	if (waitqueue_active(&dev->wait)) {
++		if (dev->txq.qlen + dev->rxq.qlen + dev->done.qlen == 0)
++			wake_up_all(&dev->wait);
  
-@@ -2464,7 +2465,8 @@ static int ip6mr_rtm_dumproute(struct sk
- 				if (ip6mr_fill_mroute(mrt, skb,
- 						      NETLINK_CB(cb->skb).portid,
- 						      cb->nlh->nlmsg_seq,
--						      mfc, RTM_NEWROUTE) < 0)
-+						      mfc, RTM_NEWROUTE,
-+						      NLM_F_MULTI) < 0)
- 					goto done;
- next_entry:
- 				e++;
-@@ -2478,7 +2480,8 @@ next_entry:
- 			if (ip6mr_fill_mroute(mrt, skb,
- 					      NETLINK_CB(cb->skb).portid,
- 					      cb->nlh->nlmsg_seq,
--					      mfc, RTM_NEWROUTE) < 0) {
-+					      mfc, RTM_NEWROUTE,
-+					      NLM_F_MULTI) < 0) {
- 				spin_unlock_bh(&mfc_unres_lock);
- 				goto done;
- 			}
+ 	// or are we maybe short a few urbs?
+ 	} else if (netif_running (dev->net) &&
+@@ -1502,6 +1505,7 @@ usbnet_probe (struct usb_interface *udev
+ 	dev->driver_name = name;
+ 	dev->msg_enable = netif_msg_init (msg_level, NETIF_MSG_DRV
+ 				| NETIF_MSG_PROBE | NETIF_MSG_LINK);
++	init_waitqueue_head(&dev->wait);
+ 	skb_queue_head_init (&dev->rxq);
+ 	skb_queue_head_init (&dev->txq);
+ 	skb_queue_head_init (&dev->done);
+@@ -1694,9 +1698,10 @@ int usbnet_resume (struct usb_interface
+ 		spin_unlock_irq(&dev->txq.lock);
+ 
+ 		if (test_bit(EVENT_DEV_OPEN, &dev->flags)) {
+-			/* handle remote wakeup ASAP */
+-			if (!dev->wait &&
+-				netif_device_present(dev->net) &&
++			/* handle remote wakeup ASAP
++			 * we cannot race against stop
++			 */
++			if (netif_device_present(dev->net) &&
+ 				!timer_pending(&dev->delay) &&
+ 				!test_bit(EVENT_RX_HALT, &dev->flags))
+ 					rx_alloc_submit(dev, GFP_NOIO);
+--- a/include/linux/usb/usbnet.h
++++ b/include/linux/usb/usbnet.h
+@@ -30,7 +30,7 @@ struct usbnet {
+ 	struct driver_info	*driver_info;
+ 	const char		*driver_name;
+ 	void			*driver_priv;
+-	wait_queue_head_t	*wait;
++	wait_queue_head_t	wait;
+ 	struct mutex		phy_mutex;
+ 	unsigned char		suspend_count;
+ 	unsigned char		pkt_cnt, pkt_err;
 
 
