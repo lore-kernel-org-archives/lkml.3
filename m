@@ -1,133 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759595AbaDKQJD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:09:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56450 "EHLO
+	id S1759819AbaDKQnv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:43:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56584 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759438AbaDKQHj (ORCPT
+	with ESMTP id S1759588AbaDKQJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:07:39 -0400
+	Fri, 11 Apr 2014 12:09:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-Subject: [PATCH 3.10 39/41] crypto: ghash-clmulni-intel - use C implementation for setkey()
-Date: Fri, 11 Apr 2014 09:10:10 -0700
-Message-Id: <20140411160935.713476714@linuxfoundation.org>
+        Thomas Graf <tgraf@suug.ch>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 35/65] rtnetlink: fix fdb notification flags
+Date: Fri, 11 Apr 2014 09:11:07 -0700
+Message-Id: <20140411161002.558180561@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
-References: <20140411160932.865173041@linuxfoundation.org>
+In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
+References: <20140411160957.714773410@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-commit 8ceee72808d1ae3fb191284afc2257a2be964725 upstream.
+[ Upstream commit 1c104a6bebf3c16b6248408b84f91d09ac8a26b6 ]
 
-The GHASH setkey() function uses SSE registers but fails to call
-kernel_fpu_begin()/kernel_fpu_end(). Instead of adding these calls, and
-then having to deal with the restriction that they cannot be called from
-interrupt context, move the setkey() implementation to the C domain.
+Commit 3ff661c38c84 ("net: rtnetlink notify events for FDB NTF_SELF adds and
+deletes") reuses the function nlmsg_populate_fdb_fill() to notify fdb events.
+But this function was used only for dump and thus was always setting the
+flag NLM_F_MULTI, which is wrong in case of a single notification.
 
-Note that setkey() does not use any particular SSE features and is not
-expected to become a performance bottleneck.
+Libraries like libnl will wait forever for NLMSG_DONE.
 
-Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Acked-by: H. Peter Anvin <hpa@linux.intel.com>
-Fixes: 0e1227d356e9b (crypto: ghash - Add PCLMULQDQ accelerated implementation)
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+CC: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Acked-by: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/x86/crypto/ghash-clmulni-intel_asm.S  |   29 -----------------------------
- arch/x86/crypto/ghash-clmulni-intel_glue.c |   14 +++++++++++---
- 2 files changed, 11 insertions(+), 32 deletions(-)
+ net/core/rtnetlink.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/arch/x86/crypto/ghash-clmulni-intel_asm.S
-+++ b/arch/x86/crypto/ghash-clmulni-intel_asm.S
-@@ -24,10 +24,6 @@
- .align 16
- .Lbswap_mask:
- 	.octa 0x000102030405060708090a0b0c0d0e0f
--.Lpoly:
--	.octa 0xc2000000000000000000000000000001
--.Ltwo_one:
--	.octa 0x00000001000000000000000000000001
- 
- #define DATA	%xmm0
- #define SHASH	%xmm1
-@@ -134,28 +130,3 @@ ENTRY(clmul_ghash_update)
- .Lupdate_just_ret:
- 	ret
- ENDPROC(clmul_ghash_update)
--
--/*
-- * void clmul_ghash_setkey(be128 *shash, const u8 *key);
-- *
-- * Calculate hash_key << 1 mod poly
-- */
--ENTRY(clmul_ghash_setkey)
--	movaps .Lbswap_mask, BSWAP
--	movups (%rsi), %xmm0
--	PSHUFB_XMM BSWAP %xmm0
--	movaps %xmm0, %xmm1
--	psllq $1, %xmm0
--	psrlq $63, %xmm1
--	movaps %xmm1, %xmm2
--	pslldq $8, %xmm1
--	psrldq $8, %xmm2
--	por %xmm1, %xmm0
--	# reduction
--	pshufd $0b00100100, %xmm2, %xmm1
--	pcmpeqd .Ltwo_one, %xmm1
--	pand .Lpoly, %xmm1
--	pxor %xmm1, %xmm0
--	movups %xmm0, (%rdi)
--	ret
--ENDPROC(clmul_ghash_setkey)
---- a/arch/x86/crypto/ghash-clmulni-intel_glue.c
-+++ b/arch/x86/crypto/ghash-clmulni-intel_glue.c
-@@ -30,8 +30,6 @@ void clmul_ghash_mul(char *dst, const be
- void clmul_ghash_update(char *dst, const char *src, unsigned int srclen,
- 			const be128 *shash);
- 
--void clmul_ghash_setkey(be128 *shash, const u8 *key);
--
- struct ghash_async_ctx {
- 	struct cryptd_ahash *cryptd_tfm;
- };
-@@ -58,13 +56,23 @@ static int ghash_setkey(struct crypto_sh
- 			const u8 *key, unsigned int keylen)
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -2014,12 +2014,13 @@ EXPORT_SYMBOL(rtmsg_ifinfo);
+ static int nlmsg_populate_fdb_fill(struct sk_buff *skb,
+ 				   struct net_device *dev,
+ 				   u8 *addr, u32 pid, u32 seq,
+-				   int type, unsigned int flags)
++				   int type, unsigned int flags,
++				   int nlflags)
  {
- 	struct ghash_ctx *ctx = crypto_shash_ctx(tfm);
-+	be128 *x = (be128 *)key;
-+	u64 a, b;
+ 	struct nlmsghdr *nlh;
+ 	struct ndmsg *ndm;
  
- 	if (keylen != GHASH_BLOCK_SIZE) {
- 		crypto_shash_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
- 		return -EINVAL;
- 	}
+-	nlh = nlmsg_put(skb, pid, seq, type, sizeof(*ndm), NLM_F_MULTI);
++	nlh = nlmsg_put(skb, pid, seq, type, sizeof(*ndm), nlflags);
+ 	if (!nlh)
+ 		return -EMSGSIZE;
  
--	clmul_ghash_setkey(&ctx->shash, key);
-+	/* perform multiplication by 'x' in GF(2^128) */
-+	a = be64_to_cpu(x->a);
-+	b = be64_to_cpu(x->b);
-+
-+	ctx->shash.a = (__be64)((b << 1) | (a >> 63));
-+	ctx->shash.b = (__be64)((a << 1) | (b >> 63));
-+
-+	if (a >> 63)
-+		ctx->shash.b ^= cpu_to_be64(0xc2);
+@@ -2057,7 +2058,7 @@ static void rtnl_fdb_notify(struct net_d
+ 	if (!skb)
+ 		goto errout;
  
- 	return 0;
- }
+-	err = nlmsg_populate_fdb_fill(skb, dev, addr, 0, 0, type, NTF_SELF);
++	err = nlmsg_populate_fdb_fill(skb, dev, addr, 0, 0, type, NTF_SELF, 0);
+ 	if (err < 0) {
+ 		kfree_skb(skb);
+ 		goto errout;
+@@ -2282,7 +2283,8 @@ static int nlmsg_populate_fdb(struct sk_
+ 
+ 		err = nlmsg_populate_fdb_fill(skb, dev, ha->addr,
+ 					      portid, seq,
+-					      RTM_NEWNEIGH, NTF_SELF);
++					      RTM_NEWNEIGH, NTF_SELF,
++					      NLM_F_MULTI);
+ 		if (err < 0)
+ 			return err;
+ skip:
 
 
