@@ -1,79 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422778AbaDKQI5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:08:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56432 "EHLO
+	id S934927AbaDKQwi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:52:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56497 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759430AbaDKQHi (ORCPT
+	with ESMTP id S1422776AbaDKQI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:07:38 -0400
+	Fri, 11 Apr 2014 12:08:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mischa Jonker <mjonker@synopsys.com>,
-        Vineet Gupta <vgupta@synopsys.com>,
-        Francois Bedard <Francois.Bedard@synopsys.com>
-Subject: [PATCH 3.10 35/41] ARC: [nsimosci] Change .dts to use generic 8250 UART
-Date: Fri, 11 Apr 2014 09:10:06 -0700
-Message-Id: <20140411160935.368874322@linuxfoundation.org>
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 19/65] skbuff: skb_segment: s/skb_frag/frag/
+Date: Fri, 11 Apr 2014 09:10:51 -0700
+Message-Id: <20140411161000.348683625@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
-References: <20140411160932.865173041@linuxfoundation.org>
+In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
+References: <20140411160957.714773410@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mischa Jonker <mjonker@synopsys.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-commit 6eda477b3c54b8236868c8784e5e042ff14244f0 upstream.
+[ Upstream commit 4e1beba12d094c6c761ba5c49032b9b9e46380e8 ]
 
-The Synopsys APB DW UART has a couple of special features that are not
-in the System C model. In 3.8, the 8250_dw driver didn't really use these
-features, but from 3.9 onwards, the 8250_dw driver has become incompatible
-with our model.
+skb_frag can in fact point at either skb
+or fskb so rename it generally "frag".
 
-Signed-off-by: Mischa Jonker <mjonker@synopsys.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Francois Bedard <Francois.Bedard@synopsys.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/arc/boot/dts/nsimosci.dts |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ net/core/skbuff.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
---- a/arch/arc/boot/dts/nsimosci.dts
-+++ b/arch/arc/boot/dts/nsimosci.dts
-@@ -11,7 +11,7 @@
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -2768,7 +2768,7 @@ struct sk_buff *skb_segment(struct sk_bu
+ 	struct sk_buff *segs = NULL;
+ 	struct sk_buff *tail = NULL;
+ 	struct sk_buff *fskb = skb_shinfo(skb)->frag_list;
+-	skb_frag_t *skb_frag = skb_shinfo(skb)->frags;
++	skb_frag_t *frag = skb_shinfo(skb)->frags;
+ 	unsigned int mss = skb_shinfo(skb)->gso_size;
+ 	unsigned int doffset = skb->data - skb_mac_header(skb);
+ 	unsigned int offset = doffset;
+@@ -2814,19 +2814,19 @@ struct sk_buff *skb_segment(struct sk_bu
  
- / {
- 	compatible = "snps,nsimosci";
--	clock-frequency = <80000000>;	/* 80 MHZ */
-+	clock-frequency = <20000000>;	/* 20 MHZ */
- 	#address-cells = <1>;
- 	#size-cells = <1>;
- 	interrupt-parent = <&intc>;
-@@ -44,15 +44,14 @@
- 		};
+ 			i = 0;
+ 			nfrags = skb_shinfo(fskb)->nr_frags;
+-			skb_frag = skb_shinfo(fskb)->frags;
++			frag = skb_shinfo(fskb)->frags;
+ 			pos += skb_headlen(fskb);
  
- 		uart0: serial@c0000000 {
--			compatible = "snps,dw-apb-uart";
-+			compatible = "ns8250";
- 			reg = <0xc0000000 0x2000>;
- 			interrupts = <11>;
--			#clock-frequency = <80000000>;
- 			clock-frequency = <3686400>;
- 			baud = <115200>;
- 			reg-shift = <2>;
- 			reg-io-width = <4>;
--			status = "okay";
-+			no-loopback-test = <1>;
- 		};
+ 			while (pos < offset + len) {
+ 				BUG_ON(i >= nfrags);
  
- 		pgu0: pgu@c9000000 {
+-				size = skb_frag_size(skb_frag);
++				size = skb_frag_size(frag);
+ 				if (pos + size > offset + len)
+ 					break;
+ 
+ 				i++;
+ 				pos += size;
+-				skb_frag++;
++				frag++;
+ 			}
+ 
+ 			nskb = skb_clone(fskb, GFP_ATOMIC);
+@@ -2900,7 +2900,7 @@ struct sk_buff *skb_segment(struct sk_bu
+ 
+ 				i = 0;
+ 				nfrags = skb_shinfo(fskb)->nr_frags;
+-				skb_frag = skb_shinfo(fskb)->frags;
++				frag = skb_shinfo(fskb)->frags;
+ 
+ 				BUG_ON(!nfrags);
+ 
+@@ -2915,7 +2915,7 @@ struct sk_buff *skb_segment(struct sk_bu
+ 				goto err;
+ 			}
+ 
+-			*nskb_frag = *skb_frag;
++			*nskb_frag = *frag;
+ 			__skb_frag_ref(nskb_frag);
+ 			size = skb_frag_size(nskb_frag);
+ 
+@@ -2928,7 +2928,7 @@ struct sk_buff *skb_segment(struct sk_bu
+ 
+ 			if (pos + size <= offset + len) {
+ 				i++;
+-				skb_frag++;
++				frag++;
+ 				pos += size;
+ 			} else {
+ 				skb_frag_size_sub(nskb_frag, pos + size - (offset + len));
 
 
