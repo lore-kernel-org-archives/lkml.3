@@ -1,79 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348AbaDKWHu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 18:07:50 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:56272
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751286AbaDKWHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 18:07:48 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: x86@kernel.org, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, tglx@linutronix.de, hpa@zytor.com,
-        JBeulich@suse.com, bp@alien8.de
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 1/1] X86: Probe for PIC and set legacy_pic appropriately
-Date: Fri, 11 Apr 2014 16:02:24 -0700
-Message-Id: <1397257344-3035-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755501AbaDKWID (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 18:08:03 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:45246 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755404AbaDKWH6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 18:07:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <CANq1E4TBtRcN+tpQW9bozQkRjJ7BJCK+KO0iw5k+8Q3Y3TcUeQ@mail.gmail.com>
+References: <53470E26.2030306@cybernetics.com> <CANq1E4RWf_VbzF+dPYhzHKJvnrh86me5KajmaaB1u9f9FLzftA@mail.gmail.com>
+ <5347451C.4060106@amacapital.net> <5347F188.10408@cybernetics.com>
+ <CANq1E4T=38VLezGH2XUZ9kc=Vtp6Ca++-ATwmEfaXZS6UrTPig@mail.gmail.com>
+ <53486067.6090506@mit.edu> <CANq1E4TBtRcN+tpQW9bozQkRjJ7BJCK+KO0iw5k+8Q3Y3TcUeQ@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 11 Apr 2014 15:07:38 -0700
+Message-ID: <CALCETrWYRmkM3hyYu8WmSd-M=3mNMU2=xF_bSuTfyfkUTys5sg@mail.gmail.com>
+Subject: Re: [PATCH 2/6] shm: add sealing API
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Tony Battersby <tonyb@cybernetics.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Probe for the existance of legacy PIC, if one does not exist, use the
-null_legacy_pic.
+On Fri, Apr 11, 2014 at 2:42 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
+>
+> On Fri, Apr 11, 2014 at 11:36 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> A quick grep of the kernel tree finds exactly zero code paths
+>> incrementing i_mmap_writable outside of mmap and fork.
+>>
+>> Or do you mean a different kind of write ref?  What am I missing here?
+>
+> Sorry, I meant i_writecount.
 
-This patch implements the proposal put forth by H. Peter Anvin <hpa@linux.intel.com>.
+I bet this is missing from lots of places.  For example, I can't find
+any write_access stuff in the rdma code.
 
+I suspect that the VM_DENYWRITE code is just generally racy.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- arch/x86/kernel/cpu/mshyperv.c |    2 --
- arch/x86/kernel/i8259.c        |   11 +++++++++++
- 2 files changed, 11 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-index 47359f7..9ca9587 100644
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -133,8 +133,6 @@ static void __init ms_hyperv_init_platform(void)
- 		printk(KERN_INFO "HyperV: LAPIC Timer Frequency: %#x\n",
- 				lapic_timer_frequency);
- 
--		printk(KERN_INFO "HyperV: Using null_legacy_pic\n");
--		legacy_pic = &null_legacy_pic;
- 	}
- #endif
- 
-diff --git a/arch/x86/kernel/i8259.c b/arch/x86/kernel/i8259.c
-index 2e977b5..0a57a19 100644
---- a/arch/x86/kernel/i8259.c
-+++ b/arch/x86/kernel/i8259.c
-@@ -299,11 +299,22 @@ static void unmask_8259A(void)
- static void init_8259A(int auto_eoi)
- {
- 	unsigned long flags;
-+	unsigned char probe_val = 0xfb;
- 
- 	i8259A_auto_eoi = auto_eoi;
- 
- 	raw_spin_lock_irqsave(&i8259A_lock, flags);
- 
-+	/* Check to see if we have a PIC */
-+	outb(probe_val, PIC_MASTER_IMR);
-+	probe_val = inb(PIC_MASTER_IMR);
-+	if (probe_val == 0xff) {
-+		printk(KERN_INFO "Using NULL legacy PIC\n");
-+		legacy_pic = &null_legacy_pic;
-+		raw_spin_unlock_irqrestore(&i8259A_lock, flags);
-+		return;
-+	}
-+
- 	outb(0xff, PIC_MASTER_IMR);	/* mask all of 8259A-1 */
- 	outb(0xff, PIC_SLAVE_IMR);	/* mask all of 8259A-2 */
- 
--- 
-1.7.4.1
-
+--Andy
