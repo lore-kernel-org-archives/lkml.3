@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758016AbaDKPPS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 11:15:18 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:53586 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116AbaDKPPQ (ORCPT
+	id S1759116AbaDKPRS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 11:17:18 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:43436 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755766AbaDKPRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 11:15:16 -0400
-Message-ID: <53480702.3080100@tilera.com>
-Date: Fri, 11 Apr 2014 11:15:14 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 11 Apr 2014 11:17:16 -0400
+Date: Fri, 11 Apr 2014 08:17:15 -0700 (PDT)
+From: Sage Weil <sage@inktank.com>
+X-X-Sender: sage@cobra.newdream.net
+To: "Yan, Zheng" <ukernel@gmail.com>
+cc: Duan Jiong <duanj.fnst@cn.fujitsu.com>, yehuda@inktank.com,
+        elder@kernel.org, ceph-devel <ceph-devel@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rbd: replace IS_ERR and PTR_ERR with PTR_ERR_OR_ZERO
+In-Reply-To: <CAAM7YA=CwbM8Hgh+QFMoGP1RLaA1drwabG_O2sOqCOcg_Wv+fg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1404110817110.16913@cobra.newdream.net>
+References: <1397205492-24447-1-git-send-email-duanj.fnst@cn.fujitsu.com> <CAAM7YA=CwbM8Hgh+QFMoGP1RLaA1drwabG_O2sOqCOcg_Wv+fg@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, <mingo@kernel.org>,
-        <tglx@linutronix.de>, <luto@amacapital.net>,
-        <nicolas.pitre@linaro.org>, <daniel.lezcano@linaro.org>,
-        <umgwanakikbuti@gmail.com>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 2/8] sched,idle,tile: Switch from TS_POLLING to TIF_POLLING_NRFLAG
-References: <20140411134243.160989490@infradead.org> <20140411135218.242750053@infradead.org>
-In-Reply-To: <20140411135218.242750053@infradead.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/11/2014 9:42 AM, Peter Zijlstra wrote:
-> Standardize the idle polling indicator to TIF_POLLING_NRFLAG such that
-> both TIF_NEED_RESCHED and TIF_POLLING_NRFLAG are in the same word.
-> This will allow us, using fetch_or(), to both set NEED_RESCHED and
-> check for POLLING_NRFLAG in a single operation and avoid pointless
-> wakeups.
->
-> Changing from the non-atomic thread_info::status flags to the atomic
-> thread_info::flags shouldn't be a big issue since most polling state
-> changes were followed/preceded by a full memory barrier anyway.
->
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Andy Lutomirski <luto@amacapital.net>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> ---
->  arch/tile/include/asm/thread_info.h |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+Applied, thanks!
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+sage
 
-It's unfortunate that you're rolling the fetch_or() unconditionally out of cmpxchg(), since some architectures (like tilegx) do have support for "fetchor" as a primitive atomic operation.  Currently the tilegx fetchor is only exposed to architecture-independent code via set_bit() and test_and_set_bit(), but perhaps it's worth having an atomic_or() in atomic.h so architectures can choose to optimize it?
+On Fri, 11 Apr 2014, Yan, Zheng wrote:
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+> On Fri, Apr 11, 2014 at 4:38 PM, Duan Jiong <duanj.fnst@cn.fujitsu.com> wrote:
+> > This patch fixes coccinelle error regarding usage of IS_ERR and
+> > PTR_ERR instead of PTR_ERR_OR_ZERO.
+> >
+> > Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+> > ---
+> >  drivers/block/rbd.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/block/rbd.c b/drivers/block/rbd.c
+> > index 4c95b50..552a2ed 100644
+> > --- a/drivers/block/rbd.c
+> > +++ b/drivers/block/rbd.c
+> > @@ -4752,7 +4752,7 @@ static int rbd_dev_image_id(struct rbd_device *rbd_dev)
+> >
+> >                 image_id = ceph_extract_encoded_string(&p, p + ret,
+> >                                                 NULL, GFP_NOIO);
+> > -               ret = IS_ERR(image_id) ? PTR_ERR(image_id) : 0;
+> > +               ret = PTR_ERR_OR_ZERO(image_id);
+> >                 if (!ret)
+> >                         rbd_dev->image_format = 2;
+> >         } else {
+> 
+> Reviewed-by: Yan, Zheng <zheng.z.yan@intel.com>
+> 
+> > --
+> > 1.8.3.1
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe ceph-devel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
