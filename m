@@ -1,144 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422829AbaDKQJE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:09:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56454 "EHLO
+	id S1423204AbaDKQmI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:42:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56621 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759439AbaDKQHk (ORCPT
+	with ESMTP id S1422817AbaDKQJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:07:40 -0400
+	Fri, 11 Apr 2014 12:09:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xiaoguang Chen <chenxg@marvell.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 3.10 40/41] cpufreq: Fix governor start/stop race condition
-Date: Fri, 11 Apr 2014 09:10:11 -0700
-Message-Id: <20140411160935.906769115@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Markus Pargmann <mpa@pengutronix.de>, Nishanth Menon <nm@ti.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 38/65] net: micrel : ks8851-ml: add vdd-supply support
+Date: Fri, 11 Apr 2014 09:11:10 -0700
+Message-Id: <20140411161002.974423332@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140411160932.865173041@linuxfoundation.org>
-References: <20140411160932.865173041@linuxfoundation.org>
+In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
+References: <20140411160957.714773410@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Xiaoguang Chen <chenxg@marvell.com>
+From: Nishanth Menon <nm@ti.com>
 
-commit 95731ebb114c5f0c028459388560fc2a72fe5049 upstream.
+[ Upstream commit ebf4ad955d3e26d4d2a33709624fc7b5b9d3b969 ]
 
-Cpufreq governors' stop and start operations should be carried out
-in sequence.  Otherwise, there will be unexpected behavior, like in
-the example below.
+Few platforms use external regulator to keep the ethernet MAC supplied.
+So, request and enable the regulator for driver functionality.
 
-Suppose there are 4 CPUs and policy->cpu=CPU0, CPU1/2/3 are linked
-to CPU0.  The normal sequence is:
-
- 1) Current governor is userspace.  An application tries to set the
-    governor to ondemand.  It will call __cpufreq_set_policy() in
-    which it will stop the userspace governor and then start the
-    ondemand governor.
-
- 2) Current governor is userspace.  The online of CPU3 runs on CPU0.
-    It will call cpufreq_add_policy_cpu() in which it will first
-    stop the userspace governor, and then start it again.
-
-If the sequence of the above two cases interleaves, it becomes:
-
- 1) Application stops userspace governor
- 2)                                  Hotplug stops userspace governor
-
-which is a problem, because the governor shouldn't be stopped twice
-in a row.  What happens next is:
-
- 3) Application starts ondemand governor
- 4)                                  Hotplug starts a governor
-
-In step 4, the hotplug is supposed to start the userspace governor,
-but now the governor has been changed by the application to ondemand,
-so the ondemand governor is started once again, which is incorrect.
-
-The solution is to prevent policy governors from being stopped
-multiple times in a row.  A governor should only be stopped once for
-one policy.  After it has been stopped, no more governor stop
-operations should be executed.
-
-Also add a mutex to serialize governor operations.
-
-[rjw: Changelog.  And you owe me a beverage of my choice.]
-Signed-off-by: Xiaoguang Chen <chenxg@marvell.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Fixes: 66fda75f47dc (regulator: core: Replace direct ops->disable usage)
+Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Suggested-by: Markus Pargmann <mpa@pengutronix.de>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/cpufreq/cpufreq.c |   24 ++++++++++++++++++++++++
- include/linux/cpufreq.h   |    1 +
- 2 files changed, 25 insertions(+)
+ Documentation/devicetree/bindings/net/micrel-ks8851.txt |    1 
+ drivers/net/ethernet/micrel/ks8851.c                    |   30 +++++++++++++++-
+ 2 files changed, 30 insertions(+), 1 deletion(-)
 
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -46,6 +46,7 @@ static DEFINE_PER_CPU(struct cpufreq_pol
- static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
- #endif
- static DEFINE_RWLOCK(cpufreq_driver_lock);
-+static DEFINE_MUTEX(cpufreq_governor_lock);
+--- a/Documentation/devicetree/bindings/net/micrel-ks8851.txt
++++ b/Documentation/devicetree/bindings/net/micrel-ks8851.txt
+@@ -7,3 +7,4 @@ Required properties:
  
- /*
-  * cpu_policy_rwsem is a per CPU reader-writer semaphore designed to cure
-@@ -1563,6 +1564,21 @@ static int __cpufreq_governor(struct cpu
+ Optional properties:
+ - local-mac-address : Ethernet mac address to use
++- vdd-supply:	supply for Ethernet mac
+--- a/drivers/net/ethernet/micrel/ks8851.c
++++ b/drivers/net/ethernet/micrel/ks8851.c
+@@ -23,6 +23,7 @@
+ #include <linux/crc32.h>
+ #include <linux/mii.h>
+ #include <linux/eeprom_93cx6.h>
++#include <linux/regulator/consumer.h>
  
- 	pr_debug("__cpufreq_governor for CPU %u, event %u\n",
- 						policy->cpu, event);
-+
-+	mutex_lock(&cpufreq_governor_lock);
-+	if ((!policy->governor_enabled && (event == CPUFREQ_GOV_STOP)) ||
-+	    (policy->governor_enabled && (event == CPUFREQ_GOV_START))) {
-+		mutex_unlock(&cpufreq_governor_lock);
-+		return -EBUSY;
+ #include <linux/spi/spi.h>
+ 
+@@ -83,6 +84,7 @@ union ks8851_tx_hdr {
+  * @rc_rxqcr: Cached copy of KS_RXQCR.
+  * @eeprom_size: Companion eeprom size in Bytes, 0 if no eeprom
+  * @eeprom: 93CX6 EEPROM state for accessing on-board EEPROM.
++ * @vdd_reg:	Optional regulator supplying the chip
+  *
+  * The @lock ensures that the chip is protected when certain operations are
+  * in progress. When the read or write packet transfer is in progress, most
+@@ -130,6 +132,7 @@ struct ks8851_net {
+ 	struct spi_transfer	spi_xfer2[2];
+ 
+ 	struct eeprom_93cx6	eeprom;
++	struct regulator	*vdd_reg;
+ };
+ 
+ static int msg_enable;
+@@ -1414,6 +1417,21 @@ static int ks8851_probe(struct spi_devic
+ 	ks->spidev = spi;
+ 	ks->tx_space = 6144;
+ 
++	ks->vdd_reg = regulator_get_optional(&spi->dev, "vdd");
++	if (IS_ERR(ks->vdd_reg)) {
++		ret = PTR_ERR(ks->vdd_reg);
++		if (ret == -EPROBE_DEFER)
++			goto err_reg;
++	} else {
++		ret = regulator_enable(ks->vdd_reg);
++		if (ret) {
++			dev_err(&spi->dev, "regulator enable fail: %d\n",
++				ret);
++			goto err_reg_en;
++		}
 +	}
 +
-+	if (event == CPUFREQ_GOV_STOP)
-+		policy->governor_enabled = false;
-+	else if (event == CPUFREQ_GOV_START)
-+		policy->governor_enabled = true;
 +
-+	mutex_unlock(&cpufreq_governor_lock);
-+
- 	ret = policy->governor->governor(policy, event);
+ 	mutex_init(&ks->lock);
+ 	spin_lock_init(&ks->statelock);
  
- 	if (!ret) {
-@@ -1570,6 +1586,14 @@ static int __cpufreq_governor(struct cpu
- 			policy->governor->initialized++;
- 		else if (event == CPUFREQ_GOV_POLICY_EXIT)
- 			policy->governor->initialized--;
-+	} else {
-+		/* Restore original values */
-+		mutex_lock(&cpufreq_governor_lock);
-+		if (event == CPUFREQ_GOV_STOP)
-+			policy->governor_enabled = true;
-+		else if (event == CPUFREQ_GOV_START)
-+			policy->governor_enabled = false;
-+		mutex_unlock(&cpufreq_governor_lock);
- 	}
+@@ -1508,8 +1526,14 @@ static int ks8851_probe(struct spi_devic
+ err_netdev:
+ 	free_irq(ndev->irq, ks);
  
- 	/* we keep one module reference alive for
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -107,6 +107,7 @@ struct cpufreq_policy {
- 	unsigned int		policy; /* see above */
- 	struct cpufreq_governor	*governor; /* see below */
- 	void			*governor_data;
-+	bool			governor_enabled; /* governor start/stop flag */
+-err_id:
+ err_irq:
++err_id:
++	if (!IS_ERR(ks->vdd_reg))
++		regulator_disable(ks->vdd_reg);
++err_reg_en:
++	if (!IS_ERR(ks->vdd_reg))
++		regulator_put(ks->vdd_reg);
++err_reg:
+ 	free_netdev(ndev);
+ 	return ret;
+ }
+@@ -1523,6 +1547,10 @@ static int ks8851_remove(struct spi_devi
  
- 	struct work_struct	update; /* if update_policy() needs to be
- 					 * called, but you're in IRQ context */
+ 	unregister_netdev(priv->netdev);
+ 	free_irq(spi->irq, priv);
++	if (!IS_ERR(priv->vdd_reg)) {
++		regulator_disable(priv->vdd_reg);
++		regulator_put(priv->vdd_reg);
++	}
+ 	free_netdev(priv->netdev);
+ 
+ 	return 0;
 
 
