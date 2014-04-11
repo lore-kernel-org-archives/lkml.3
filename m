@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423187AbaDKQaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 12:30:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56687 "EHLO
+	id S1423211AbaDKQbB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 12:31:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56684 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759614AbaDKQJL (ORCPT
+	with ESMTP id S1759441AbaDKQJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 12:09:11 -0400
+	Fri, 11 Apr 2014 12:09:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 57/65] rds: prevent dereference of a NULL device in rds_iw_laddr_check
-Date: Fri, 11 Apr 2014 09:11:29 -0700
-Message-Id: <20140411161005.494399576@linuxfoundation.org>
+Subject: [PATCH 3.13 55/65] isdnloop: Validate NUL-terminated strings from user.
+Date: Fri, 11 Apr 2014 09:11:27 -0700
+Message-Id: <20140411161005.223954252@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140411160957.714773410@linuxfoundation.org>
 References: <20140411160957.714773410@linuxfoundation.org>
@@ -27,31 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
 
-[ Upstream commit bf39b4247b8799935ea91d90db250ab608a58e50 ]
+[ Upstream commit 77bc6bed7121936bb2e019a8c336075f4c8eef62 ]
 
-Binding might result in a NULL device which is later dereferenced
-without checking.
+Return -EINVAL unless all of user-given strings are correctly
+NUL-terminated.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/rds/iw.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/isdn/isdnloop/isdnloop.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
---- a/net/rds/iw.c
-+++ b/net/rds/iw.c
-@@ -239,7 +239,8 @@ static int rds_iw_laddr_check(__be32 add
- 	ret = rdma_bind_addr(cm_id, (struct sockaddr *)&sin);
- 	/* due to this, we will claim to support IB devices unless we
- 	   check node_type. */
--	if (ret || cm_id->device->node_type != RDMA_NODE_RNIC)
-+	if (ret || !cm_id->device ||
-+	    cm_id->device->node_type != RDMA_NODE_RNIC)
- 		ret = -EADDRNOTAVAIL;
- 
- 	rdsdebug("addr %pI4 ret %d node type %d\n",
+--- a/drivers/isdn/isdnloop/isdnloop.c
++++ b/drivers/isdn/isdnloop/isdnloop.c
+@@ -1070,6 +1070,12 @@ isdnloop_start(isdnloop_card *card, isdn
+ 		return -EBUSY;
+ 	if (copy_from_user((char *) &sdef, (char *) sdefp, sizeof(sdef)))
+ 		return -EFAULT;
++
++	for (i = 0; i < 3; i++) {
++		if (!memchr(sdef.num[i], 0, sizeof(sdef.num[i])))
++			return -EINVAL;
++	}
++
+ 	spin_lock_irqsave(&card->isdnloop_lock, flags);
+ 	switch (sdef.ptype) {
+ 	case ISDN_PTYPE_EURO:
 
 
