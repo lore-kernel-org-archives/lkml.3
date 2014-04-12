@@ -1,83 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756073AbaDLTFL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Apr 2014 15:05:11 -0400
-Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:36258
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754472AbaDLTFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Apr 2014 15:05:09 -0400
-From: Jane Wan <Jane.Wan@gainspeed.com>
-To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <broonie@kernel.org>, <Emilian.Medve@Freescale.com>,
-        <kenth.eriksson@transmode.com>, <thomas.de.schampheleire@gmail.com>,
-        <b48286@Freescale.com>, <jg1.han@samsung.com>, <sr@denx.de>,
-        <insop.song@gainspeed.com>
-CC: <spi-devel-general@lists.sourceforge.net>, <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        Jane Wan <Jane.Wan@gainspeed.com>
-Subject: [PATCH] Configure FSL eSPI CSBEF, CSAFT, and whether to send all received data to user
-Date: Sat, 12 Apr 2014 11:48:35 -0700
-Message-ID: <1397328516-13260-1-git-send-email-Jane.Wan@gainspeed.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755720AbaDLTfy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Apr 2014 15:35:54 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:60506 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754645AbaDLTfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Apr 2014 15:35:52 -0400
+Date: Sat, 12 Apr 2014 21:35:41 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Brian Gerst <brgerst@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [tip:x86/urgent] x86-64, modify_ldt: Ban 16-bit segments on
+ 64-bit kernels
+Message-ID: <20140412193541.GA30697@pd.tnic>
+References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org>
+ <CAMzpN2jx4H4p8fQr-WHxVyCHhWi0iO3WZZKyxYD7Dfa7pWkEgg@mail.gmail.com>
+ <CA+55aFwzvSiAGYfFb2R3JeVvh8_PQuOKJDrYP5C_3VQz2zhnBw@mail.gmail.com>
+ <CAMzpN2jj3dwQG7qC__8zLPhkg_ER6n4CcNxa5eg7okRN+k_VUA@mail.gmail.com>
+ <CA+55aFxr_dz3vhko1FPXhZd0ZNeGveX0oSLqUo_wyiVbxatLQw@mail.gmail.com>
+ <CAMzpN2jn69_E7UEP6OHBbc4r7UuJbsW50WA25YhXuQs5sHFxQQ@mail.gmail.com>
+ <6f5f98f2-aa96-433f-9ee8-5ba216624957@email.android.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [108.60.97.2]
-X-Forefront-PRVS: 01792087B6
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(50226001)(4396001)(81342001)(74502001)(66066001)(19580395003)(62966002)(83322001)(19580405001)(79102001)(77156001)(74662001)(31966008)(77982001)(50986999)(80022001)(46102001)(36756003)(81542001)(50466002)(80976001)(99396002)(15202345003)(20776003)(47776003)(2201001)(92566001)(89996001)(48376002)(87936001)(87286001)(88136002)(83072002)(93916002)(15975445006)(86362001)(85852003)(92726001)(921003)(1121002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR07MB465;H:BY2PRD0711HT002.namprd07.prod.outlook.com;FPR:ECF175D7.A3F69532.73F41CA7.6E5F9EB.202A6;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: gainspeed.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <6f5f98f2-aa96-433f-9ee8-5ba216624957@email.android.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make FSL eSPI properties configurable through device tree.  The
-configurable parameters include CSnBEF and CSnAFT in ESPI_SPMODEn
-registers (n=0,1,2,3), and whether to send all received data to user.
+On Sat, Apr 12, 2014 at 10:18:25AM -0700, H. Peter Anvin wrote:
+> So Wine regressed and noone noticed? They doesn't sound like an active
+> user base.
 
-The FSL eSPI driver hardcodes CSnBEF and CSnAFT to 0.  Some device
-needs to set them to different values.
+Btw, wouldn't this obscure use case simply work in a KVM guest with a
+kernel <= 3.14?
 
-When user sends n_tx bytes and receives n_rx bytes on FSL eSPI
-interface, the FSL eSPI driver sends (n_tx + n_rx) bytes on MOSI.
-Simultaniously, there are (n_tx + n_rx) received on MISO.  The FSL
-eSPI driver only passes the last n_rx bytes to user device driver.
-The other n_tx bytes received from the slave device are dropped.  
-Some device has issue with this mechanism.  The device driver
-requires to know all bytes that the slave device puts on MISO.
-
-Part of this fix is based on a previous patch that was not included,
-see http://www.mail-archive.com/spi-devel-general@lists.sourceforge.net/msg08658.html
-
-Test done:
-- Kernel version 3.8.13
-- Three devices attached to FSL eSPI interface with chip select 0-2.
-- The device at cs0 and cs1 work with original FSL eSPI driver.
-- The device driver at cs2 has issue with original FSL eSPI driver.
-  It requires to receive all data that the slave device puts on MISO.
-  It also requires CS2BEF in SPI_SPMODE2 register to be set to 1.
-- After set proper values in the device tree (as example below), all
-  three  devices work fine with the FSL eSPI driver.
-        spi@110000 {
-                redpine@2 {
-                        #address-cells = <1>;
-                        #size-cells = <1>;
-                        compatible = "spidev";
-                        reg = <2>;
-                        spi-max-frequency = <10000000>; /* input clock */
-                        fsl,csbef = <1>; /* CS assertiion time in bits before frame start */
-                        fsl,csaft = <1>; /* CS assertiion time in bits after frame end */
-                        fsl,spi-raw-rxdata-to-user = <1>; /* send all rx data to user */
-                };
-        };
-
-
-Jane Wan (1):
-  Configure fsl espi CSBEF, CSAFT, and whether to send all received
-    data to user
-
- drivers/spi/spi-fsl-espi.c       |   68 ++++++++++++++++++++++++++++++++++----
- 1 files changed, 61 insertions(+), 7 deletions(-)
+Because if so, we simply cut it at 3.14, everything newer has the leak
+fix and people who still want to play phone games on a x86 machine, can
+do so in a guest with an older kernel. Everybody's happy.
 
 -- 
-1.7.9.5
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
