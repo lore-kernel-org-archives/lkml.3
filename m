@@ -1,129 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051AbaDLDW2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 23:22:28 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:22696 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755055AbaDLDW0 (ORCPT
+	id S1756129AbaDLD0s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 23:26:48 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:61039 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755060AbaDLD0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 23:22:26 -0400
-Message-ID: <1397272942.2686.4.camel@buesod1.americas.hpqcorp.net>
-Subject: [PATCH v2] ipc,shm: disable shmmax and shmall by default
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Manfred Spraul <manfred@colorfullife.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, DavidlohrBueso <davidlohr@hp.com>,
-        aswin@hp.com, LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Date: Fri, 11 Apr 2014 20:22:22 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 11 Apr 2014 23:26:47 -0400
+Date: Fri, 11 Apr 2014 23:26:44 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Liu Hua <sdu.liu@huawei.com>
+cc: linux@arm.linux.org.uk, will.deacon@arm.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        wangnan0@huawei.com, peifeiyue@huawei.com, liusdu@126.com,
+        m.szyprowski@samsung.com
+Subject: Re: [PATCH v2 2/2] ARM : change fixmap mapping region to support 32
+ CPUs
+In-Reply-To: <1397203252-22977-3-git-send-email-sdu.liu@huawei.com>
+Message-ID: <alpine.LFD.2.11.1404112314560.980@knanqh.ubzr>
+References: <1397203252-22977-1-git-send-email-sdu.liu@huawei.com> <1397203252-22977-3-git-send-email-sdu.liu@huawei.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davidlohr Bueso <davidlohr@hp.com>
+On Fri, 11 Apr 2014, Liu Hua wrote:
 
-The default size for shmmax is, and always has been, 32Mb.
-Today, in the XXI century, it seems that this value is rather small,
-making users have to increase it via sysctl, which can cause
-unnecessary work and userspace application workarounds[1].
+> In 32-bit ARM systems, the fixmap mapping region can support
+> no more than 14 CPUs(total: 896k; one CPU: 64K). And we can
+> configure NR_CPUS up to 32. So there is a mismatch.
+> 
+> This patch moves fixmapping region downwards to region
+> 0xffc00000-0xffe00000 . Then the fixmap mapping region can
+> support up to 32 CPUs.
+> 
+> Signed-off-by: Liu Hua <sdu.liu@huawei.com>
 
-Instead of choosing yet another arbitrary value, larger than 32Mb,
-this patch disables the use of both shmmax and shmall by default,
-allowing users to create segments of unlimited sizes. Users and
-applications that already explicitly set these values through sysctl
-are left untouched, and thus does not change any of the behavior.
+Comments below.
 
-So a value of 0 bytes or pages, for shmmax and shmall, respectively,
-implies unlimited memory, as opposed to disabling sysv shared memory.
-This is safe as 0 cannot possibly be used previously as SHMMIN is
-hardcoded to 1 and cannot be modified.
+> ---
+>  Documentation/arm/memory.txt   |  2 +-
+>  arch/arm/include/asm/fixmap.h  |  4 ++--
+>  arch/arm/include/asm/highmem.h |  1 +
+>  arch/arm/mm/highmem.c          | 10 +++++-----
+>  arch/arm/mm/mm.h               |  7 +++++++
+>  arch/arm/mm/mmu.c              |  4 ++++
+>  mm/highmem.c                   |  1 +
+>  7 files changed, 21 insertions(+), 8 deletions(-)
+> 
+> diff --git a/Documentation/arm/memory.txt b/Documentation/arm/memory.txt
+> index 8a361c0..4bca737 100644
+> --- a/Documentation/arm/memory.txt
+> +++ b/Documentation/arm/memory.txt
+> @@ -41,7 +41,7 @@ fffe8000	fffeffff	DTCM mapping area for platforms with
+>  fffe0000	fffe7fff	ITCM mapping area for platforms with
+>  				ITCM mounted inside the CPU.
+>  
+> -fff00000	fffdffff	Fixmap mapping region.  Addresses provided
+> +ffc00000	ffdfffff	Fixmap mapping region.  Addresses provided
+>  				by fix_to_virt() will be located here.
+>  
+>  ff000000	ffbfffff	Reserved for future expansion of DMA
+> diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
+> index bbae919..014a70d 100644
+> --- a/arch/arm/include/asm/fixmap.h
+> +++ b/arch/arm/include/asm/fixmap.h
+> @@ -13,8 +13,8 @@
+>   * 0xfffe0000 and 0xfffeffff.
+>   */
+>  
+> -#define FIXADDR_START		0xfff00000UL
+> -#define FIXADDR_TOP		0xfffe0000UL
+> +#define FIXADDR_START		0xffc00000UL
+> +#define FIXADDR_TOP		0xffe00000UL
+>  #define FIXADDR_SIZE		(FIXADDR_TOP - FIXADDR_START)
+>  
+>  #define FIX_KMAP_BEGIN		0
+> diff --git a/arch/arm/include/asm/highmem.h b/arch/arm/include/asm/highmem.h
+> index 91b99ab..5355795 100644
+> --- a/arch/arm/include/asm/highmem.h
+> +++ b/arch/arm/include/asm/highmem.h
+> @@ -18,6 +18,7 @@
+>  	} while (0)
+>  
+>  extern pte_t *pkmap_page_table;
+> +extern pte_t *fixmap_page_table;
+>  
+>  extern void *kmap_high(struct page *page);
+>  extern void kunmap_high(struct page *page);
+> diff --git a/arch/arm/mm/highmem.c b/arch/arm/mm/highmem.c
+> index 21b9e1b..9bc8988 100644
+> --- a/arch/arm/mm/highmem.c
+> +++ b/arch/arm/mm/highmem.c
+> @@ -69,14 +69,14 @@ void *kmap_atomic(struct page *page)
+>  	 * With debugging enabled, kunmap_atomic forces that entry to 0.
+>  	 * Make sure it was indeed properly unmapped.
+>  	 */
+> -	BUG_ON(!pte_none(get_top_pte(vaddr)));
+> +	BUG_ON(!pte_none(*(fixmap_page_table + idx)));
+>  #endif
+>  	/*
+>  	 * When debugging is off, kunmap_atomic leaves the previous mapping
+>  	 * in place, so the contained TLB flush ensures the TLB is updated
+>  	 * with the new mapping.
+>  	 */
+> -	set_top_pte(vaddr, mk_pte(page, kmap_prot));
+> +	set_fixmap_pte(idx, mk_pte(page, kmap_prot));
+>  
+>  	return (void *)vaddr;
+>  }
+> @@ -95,7 +95,7 @@ void __kunmap_atomic(void *kvaddr)
+>  			__cpuc_flush_dcache_area((void *)vaddr, PAGE_SIZE);
+>  #ifdef CONFIG_DEBUG_HIGHMEM
+>  		BUG_ON(vaddr != __fix_to_virt(FIX_KMAP_BEGIN + idx));
+> -		set_top_pte(vaddr, __pte(0));
+> +		set_fixmap_pte(idx, __pte(0));
+>  #else
+>  		(void) idx;  /* to kill a warning */
+>  #endif
+> @@ -119,9 +119,9 @@ void *kmap_atomic_pfn(unsigned long pfn)
+>  	idx = type + KM_TYPE_NR * smp_processor_id();
+>  	vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
+>  #ifdef CONFIG_DEBUG_HIGHMEM
+> -	BUG_ON(!pte_none(get_top_pte(vaddr)));
+> +	BUG_ON(!pte_none(*(fixmap_page_table + idx)));
+>  #endif
+> -	set_top_pte(vaddr, pfn_pte(pfn, kmap_prot));
+> +	set_fixmap_pte(idx, pfn_pte(pfn, kmap_prot));
+>  
+>  	return (void *)vaddr;
+>  }
+> diff --git a/arch/arm/mm/mm.h b/arch/arm/mm/mm.h
+> index 7ea641b..3460d73 100644
+> --- a/arch/arm/mm/mm.h
+> +++ b/arch/arm/mm/mm.h
+> @@ -1,6 +1,7 @@
+>  #ifdef CONFIG_MMU
+>  #include <linux/list.h>
+>  #include <linux/vmalloc.h>
+> +#include <asm/fixmap.h>
+>  
+>  /* the upper-most page table pointer */
+>  extern pmd_t *top_pmd;
+> @@ -25,6 +26,12 @@ static inline void set_top_pte(unsigned long va, pte_t pte)
+>  	local_flush_tlb_kernel_page(va);
+>  }
+>  
+> +static inline void set_fixmap_pte(int idx, pte_t pte)
+> +{
+> +	unsigned long vaddr = __fix_to_virt(FIX_KMAP_BEGIN + idx);
+> +	set_pte_ext(fixmap_page_table + idx, pte, 0);
+> +	local_flush_tlb_kernel_page(vaddr);
+> +}
 
-This change allows Linux to treat shm just as regular anonymous memory.
-One important difference between them, though, is handling out-of-memory
-conditions: as opposed to regular anon memory, the OOM killer will not
-free the memory as it is shm, allowing users to potentially abuse this.
-To overcome this situation, the shm_rmid_forced option must be enabled.
+This has no other users than the code in highmem.c so it probably should 
+live there.
 
-[1]: http://rhaas.blogspot.com/2012/06/absurd-shared-memory-limits.html
+Other than that...
 
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
-Changes from v1:
- - Respect SHMMIN even when shmmax is 0 (unlimited).
-   This fixes the shmget02 test that broke in v1. (per Manfred)
+Acked-by: Nicolas Pitre <nico@linaro.org>
 
- - Update changelog regarding OOM description (per Kosaki)
-
- include/linux/shm.h      | 2 +-
- include/uapi/linux/shm.h | 8 ++++----
- ipc/shm.c                | 6 ++++--
- 3 files changed, 9 insertions(+), 7 deletions(-)
-
-diff --git a/include/linux/shm.h b/include/linux/shm.h
-index 1e2cd2e..0ca06a3 100644
---- a/include/linux/shm.h
-+++ b/include/linux/shm.h
-@@ -4,7 +4,7 @@
- #include <asm/page.h>
- #include <uapi/linux/shm.h>
- 
--#define SHMALL (SHMMAX/PAGE_SIZE*(SHMMNI/16)) /* max shm system wide (pages) */
-+#define SHMALL 0 /* max shm system wide (pages) */
- #include <asm/shmparam.h>
- struct shmid_kernel /* private to the kernel */
- {	
-diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
-index 78b6941..5f0ef28 100644
---- a/include/uapi/linux/shm.h
-+++ b/include/uapi/linux/shm.h
-@@ -9,14 +9,14 @@
- 
- /*
-  * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
-- * be increased by sysctl
-+ * be increased by sysctl. By default, disable SHMMAX and SHMALL with
-+ * 0 bytes, thus allowing processes to have unlimited shared memory.
-  */
--
--#define SHMMAX 0x2000000		 /* max shared seg size (bytes) */
-+#define SHMMAX 0		         /* max shared seg size (bytes) */
- #define SHMMIN 1			 /* min shared seg size (bytes) */
- #define SHMMNI 4096			 /* max num of segs system wide */
- #ifndef __KERNEL__
--#define SHMALL (SHMMAX/getpagesize()*(SHMMNI/16))
-+#define SHMALL 0
- #endif
- #define SHMSEG SHMMNI			 /* max shared segs per process */
- 
-diff --git a/ipc/shm.c b/ipc/shm.c
-index 7645961..8630561 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -490,10 +490,12 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
- 	int id;
- 	vm_flags_t acctflag = 0;
- 
--	if (size < SHMMIN || size > ns->shm_ctlmax)
-+	if (size < SHMMIN ||
-+	    (ns->shm_ctlmax && size > ns->shm_ctlmax))
- 		return -EINVAL;
- 
--	if (ns->shm_tot + numpages > ns->shm_ctlall)
-+	if (ns->shm_ctlall &&
-+	    ns->shm_tot + numpages > ns->shm_ctlall)
- 		return -ENOSPC;
- 
- 	shp = ipc_rcu_alloc(sizeof(*shp));
--- 
-1.8.1.4
-
-
-
+>  static inline pte_t get_top_pte(unsigned long va)
+>  {
+>  	pte_t *ptep = pte_offset_kernel(top_pmd, va);
+> diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+> index b68c6b2..09c0a16 100644
+> --- a/arch/arm/mm/mmu.c
+> +++ b/arch/arm/mm/mmu.c
+> @@ -35,6 +35,7 @@
+>  #include <asm/mach/arch.h>
+>  #include <asm/mach/map.h>
+>  #include <asm/mach/pci.h>
+> +#include <asm/fixmap.h>
+>  
+>  #include "mm.h"
+>  #include "tcm.h"
+> @@ -1359,6 +1360,9 @@ static void __init kmap_init(void)
+>  #ifdef CONFIG_HIGHMEM
+>  	pkmap_page_table = early_pte_alloc(pmd_off_k(PKMAP_BASE),
+>  		PKMAP_BASE, _PAGE_KERNEL_TABLE);
+> +
+> +	fixmap_page_table = early_pte_alloc(pmd_off_k(FIXADDR_START),
+> +		FIXADDR_START, _PAGE_KERNEL_TABLE);
+>  #endif
+>  }
+>  
+> diff --git a/mm/highmem.c b/mm/highmem.c
+> index b32b70c..d0094ba 100644
+> --- a/mm/highmem.c
+> +++ b/mm/highmem.c
+> @@ -72,6 +72,7 @@ static unsigned int last_pkmap_nr;
+>  static  __cacheline_aligned_in_smp DEFINE_SPINLOCK(kmap_lock);
+>  
+>  pte_t * pkmap_page_table;
+> +pte_t *fixmap_page_table;
+>  
+>  static DECLARE_WAIT_QUEUE_HEAD(pkmap_map_wait);
+>  
+> -- 
+> 1.9.0
+> 
