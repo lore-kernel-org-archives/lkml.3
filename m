@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751359AbaDLEo0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Apr 2014 00:44:26 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:55263 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930AbaDLEoX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Apr 2014 00:44:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFxr_dz3vhko1FPXhZd0ZNeGveX0oSLqUo_wyiVbxatLQw@mail.gmail.com>
-References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org>
-	<CAMzpN2jx4H4p8fQr-WHxVyCHhWi0iO3WZZKyxYD7Dfa7pWkEgg@mail.gmail.com>
-	<CA+55aFwzvSiAGYfFb2R3JeVvh8_PQuOKJDrYP5C_3VQz2zhnBw@mail.gmail.com>
-	<CAMzpN2jj3dwQG7qC__8zLPhkg_ER6n4CcNxa5eg7okRN+k_VUA@mail.gmail.com>
-	<CA+55aFxr_dz3vhko1FPXhZd0ZNeGveX0oSLqUo_wyiVbxatLQw@mail.gmail.com>
-Date: Sat, 12 Apr 2014 00:44:22 -0400
-Message-ID: <CAMzpN2jn69_E7UEP6OHBbc4r7UuJbsW50WA25YhXuQs5sHFxQQ@mail.gmail.com>
-Subject: Re: [tip:x86/urgent] x86-64, modify_ldt: Ban 16-bit segments on
- 64-bit kernels
-From: Brian Gerst <brgerst@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751268AbaDLFCB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Apr 2014 01:02:01 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:54340
+	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750833AbaDLFB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Apr 2014 01:01:59 -0400
+x-originating-ip: 72.167.245.219
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: x86@kernel.org, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        jasowang@redhat.com, tglx@linutronix.de, hpa@zytor.com,
+        JBeulich@suse.com
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH V2 1/1] X86: Probe for PIC and set legacy_pic appropriately
+Date: Fri, 11 Apr 2014 22:56:40 -0700
+Message-Id: <1397282200-10143-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 2:50 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Fri, Apr 11, 2014 at 11:45 AM, Brian Gerst <brgerst@gmail.com> wrote:
->>
->> I haven't tested it recently but I do know it has worked on 64-bit
->> kernels.  There is no reason for it not to, the only thing not
->> supported in long mode is vm86.  16-bit protected mode is unchanged.
->
-> Afaik 64-bit windows doesn't support 16-bit binaries, so I just
-> assumed Wine wouldn't do it either on x86-64. Not for any real
-> technical reasons, though.
->
-> HOWEVER. I'd like to hear something more definitive than "I haven't
-> tested recently". The "we don't break user space" is about having
-> actual real *users*, not about test programs.
->
-> Are there people actually using 16-bit old windows programs under
-> wine? That's what matters.
->
->                 Linus
+Probe for the existance of legacy PIC, if one does not exist, use the
+null_legacy_pic.
 
-I just verified that the game does still run on a 64-bit kernel
-(3.13.8-200.fc20.x86_64).  It needed an older version of Wine, but
-that's a Wine regression and not kernel related.
+This patch implements the proposal put forth by H. Peter Anvin <hpa@linux.intel.com>.
+
+In  version V1 of the patch, I had cleaned up the code based on comments from
+Peter.
+
+In this version of the patch, I have addressed additional comments from Peter.
+
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ arch/x86/kernel/cpu/mshyperv.c |    2 --
+ arch/x86/kernel/i8259.c        |   19 +++++++++++++++++++
+ 2 files changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
+index 47359f7..9ca9587 100644
+--- a/arch/x86/kernel/cpu/mshyperv.c
++++ b/arch/x86/kernel/cpu/mshyperv.c
+@@ -133,8 +133,6 @@ static void __init ms_hyperv_init_platform(void)
+ 		printk(KERN_INFO "HyperV: LAPIC Timer Frequency: %#x\n",
+ 				lapic_timer_frequency);
+ 
+-		printk(KERN_INFO "HyperV: Using null_legacy_pic\n");
+-		legacy_pic = &null_legacy_pic;
+ 	}
+ #endif
+ 
+diff --git a/arch/x86/kernel/i8259.c b/arch/x86/kernel/i8259.c
+index 2e977b5..7f7bd02 100644
+--- a/arch/x86/kernel/i8259.c
++++ b/arch/x86/kernel/i8259.c
+@@ -299,11 +299,30 @@ static void unmask_8259A(void)
+ static void init_8259A(int auto_eoi)
+ {
+ 	unsigned long flags;
++	unsigned char probe_val = ~(1 << PIC_CASCADE_IR);
++	unsigned char new_val;
+ 
+ 	i8259A_auto_eoi = auto_eoi;
+ 
+ 	raw_spin_lock_irqsave(&i8259A_lock, flags);
+ 
++	/*
++	 * Check to see if we have a PIC.
++	 * Mask all except the cascade and read
++	 * back the value we just wrote. If we don't
++	 * have a PIC, we will read 0xff as opposed to the
++	 * value we wrote.
++	 */
++	outb(0xff, PIC_SLAVE_IMR);	/* mask all of 8259A-2 */
++	outb(probe_val, PIC_MASTER_IMR);
++	new_val = inb(PIC_MASTER_IMR);
++	if (probe_val != new_val) {
++		printk(KERN_INFO "Using NULL legacy PIC\n");
++		legacy_pic = &null_legacy_pic;
++		raw_spin_unlock_irqrestore(&i8259A_lock, flags);
++		return;
++	}
++
+ 	outb(0xff, PIC_MASTER_IMR);	/* mask all of 8259A-1 */
+ 	outb(0xff, PIC_SLAVE_IMR);	/* mask all of 8259A-2 */
+ 
+-- 
+1.7.4.1
+
