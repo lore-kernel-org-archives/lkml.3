@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991AbaDLAbE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 20:31:04 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:44441 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755938AbaDLAag (ORCPT
+	id S1756025AbaDLAbd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 20:31:33 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:63308 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842AbaDLAai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 20:30:36 -0400
+	Fri, 11 Apr 2014 20:30:38 -0400
 From: Silvio Fricke <silvio.fricke@gmail.com>
 To: Greg KH <greg@kroah.com>
 Cc: Silvio Fricke <silvio.fricke@gmail.com>,
         Dan Carpenter <dan.carpenter@oracle.com>, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org
-Subject: [PATCH v3 1/3] staging: vt6655: removed incorrect casting in wpactl.c
-Date: Sat, 12 Apr 2014 02:30:24 +0200
-Message-Id: <0147390e77605c761a903394b158997995385199.1397260702.git.silvio.fricke@gmail.com>
+Subject: [PATCH v3 2/3] staging: vt6655: removed incorrect casting in ioctl.c
+Date: Sat, 12 Apr 2014 02:30:25 +0200
+Message-Id: <14070162d25289e27a3c25e6d37718f65afc8718.1397260702.git.silvio.fricke@gmail.com>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <cover.1397260702.git.silvio.fricke@gmail.com>
 References: <cover.1397260702.git.silvio.fricke@gmail.com>
@@ -26,46 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This patch fixes the following type of sparse warnings:
 
-drivers/staging/vt6655/wpactl.c:596:47: warning: cast from restricted gfp_t
-drivers/staging/vt6655/wpactl.c:638:68: warning: cast from restricted gfp_t
-drivers/staging/vt6655/wpactl.c:860:42: warning: cast from restricted gfp_t
+drivers/staging/vt6655/ioctl.c:308:104: warning: cast from restricted gfp_t
+drivers/staging/vt6655/ioctl.c:579:109: warning: cast from restricted gfp_t
 
 Signed-off-by: Silvio Fricke <silvio.fricke@gmail.com>
 ---
- drivers/staging/vt6655/wpactl.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/vt6655/ioctl.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/vt6655/wpactl.c b/drivers/staging/vt6655/wpactl.c
-index d17224f..4745429 100644
---- a/drivers/staging/vt6655/wpactl.c
-+++ b/drivers/staging/vt6655/wpactl.c
-@@ -593,7 +593,7 @@ static int wpa_get_scan(PSDevice pDevice,
- 
- 	unsigned char *ptempBSS;
- 
--	ptempBSS = kmalloc(sizeof(KnownBSS), (int)GFP_ATOMIC);
-+	ptempBSS = kmalloc(sizeof(KnownBSS), GFP_ATOMIC);
- 
- 	if (ptempBSS == NULL) {
- 		printk(KERN_ERR "bubble sort kmalloc memory fail@@@\n");
-@@ -635,7 +635,7 @@ static int wpa_get_scan(PSDevice pDevice,
- 		count++;
- 	}
- 
--	pBuf = kcalloc(count, sizeof(struct viawget_scan_result), (int)GFP_ATOMIC);
-+	pBuf = kcalloc(count, sizeof(struct viawget_scan_result), GFP_ATOMIC);
- 
- 	if (pBuf == NULL) {
- 		ret = -ENOMEM;
-@@ -857,7 +857,7 @@ int wpa_ioctl(PSDevice pDevice, struct iw_point *p)
- 	    p->length > VIAWGET_WPA_MAX_BUF_SIZE || !p->pointer)
- 		return -EINVAL;
- 
--	param = kmalloc((int)p->length, (int)GFP_KERNEL);
-+	param = kmalloc((int)p->length, GFP_KERNEL);
- 	if (param == NULL)
- 		return -ENOMEM;
- 
+diff --git a/drivers/staging/vt6655/ioctl.c b/drivers/staging/vt6655/ioctl.c
+index b5cd2e4..1de5d2c9 100644
+--- a/drivers/staging/vt6655/ioctl.c
++++ b/drivers/staging/vt6655/ioctl.c
+@@ -305,7 +305,8 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq)
+ 			result = -EINVAL;
+ 			break;
+ 		}
+-		pList = (PSBSSIDList)kmalloc(sizeof(SBSSIDList) + (sList.uItem * sizeof(SBSSIDItem)), (int)GFP_ATOMIC);
++		pList = (PSBSSIDList)kmalloc(sizeof(SBSSIDList) + (sList.uItem * sizeof(SBSSIDItem)),
++					     GFP_ATOMIC);
+ 		if (pList == NULL) {
+ 			result = -ENOMEM;
+ 			break;
+@@ -576,7 +577,8 @@ int private_ioctl(PSDevice pDevice, struct ifreq *rq)
+ 			result = -EINVAL;
+ 			break;
+ 		}
+-		pNodeList = (PSNodeList)kmalloc(sizeof(SNodeList) + (sNodeList.uItem * sizeof(SNodeItem)), (int)GFP_ATOMIC);
++		pNodeList = (PSNodeList)kmalloc(sizeof(SNodeList) + (sNodeList.uItem * sizeof(SNodeItem)),
++						GFP_ATOMIC);
+ 		if (pNodeList == NULL) {
+ 			result = -ENOMEM;
+ 			break;
 -- 
 1.9.2
 
