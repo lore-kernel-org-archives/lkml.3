@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880AbaDKMpn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 08:45:43 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:58397 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754442AbaDKMpl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 08:45:41 -0400
-Date: Fri, 11 Apr 2014 13:45:02 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Miklos Szeredi <miklos@szeredi.hu>,
-        Wade Farnsworth <wade_farnsworth@mentor.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-arch <linux-arch@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: Re: [PATCH 02/15] arm: __NR_syscalls fix
-Message-ID: <20140411124502.GO16119@n2100.arm.linux.org.uk>
-References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu> <1397211951-20549-3-git-send-email-miklos@szeredi.hu> <20140411103351.GJ16119@n2100.arm.linux.org.uk> <CAJfpegvZ-n4sT0ojj9iUg_R5gMZHT0caad6TpOdcmF=pdiXkqg@mail.gmail.com> <20140411115421.GL16119@n2100.arm.linux.org.uk> <CAJfpegtenNUCEAJ3SZpQ8NYcdbCeS8pVxaT767szkR1PF8YPNA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJfpegtenNUCEAJ3SZpQ8NYcdbCeS8pVxaT767szkR1PF8YPNA@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1757016AbaDKMqr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 08:46:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:34216 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755524AbaDKMqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 08:46:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,842,1389772800"; 
+   d="scan'208";a="511460612"
+Subject: [PATCH] net: ipv4: current group_info should be put after using.
+From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
+To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: chuansheng.liu@intel.com, dongxing.zhang@intel.com,
+        xiaoming.wang@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 11 Apr 2014 22:53:21 -0400
+Message-ID: <1397271201.2575.4.camel@wxm-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 02:02:32PM +0200, Miklos Szeredi wrote:
-> On Fri, Apr 11, 2014 at 1:54 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Fri, Apr 11, 2014 at 01:50:50PM +0200, Miklos Szeredi wrote:
-> >> Yes, and the padding will be of wrong length if NR_syscalls is
-> >> incorrect (which may be Oopsable?).  At least that is my impression
-> >> from a casual glance.
-> >
-> > Please explain.
-> 
-> Look at ending lines of arch/arm/kernel/calls.S: if  NR_syscalls is a
-> multiple of 4, then syscalls_padding will be zero.  I.e. no padding
-> despite the fact that there is in fact only 382 system calls in table
-> and there should be 2 sys_ni_syscall pads.
+This is a typical refcount leak exploitable by unprivileged users.
+Current group_info had been got in ping_init_sock and
+group_info->usage increased. But the usage hasn't decreased
+anywhere in ping. This will make this group_info never freed.
 
-Hmm, it looks like you're right... this used to work fine until...
+Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
+Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+---
+ net/ipv4/ping.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
 
-commit 1f66e06fb6414732bef7bf4a071ef76a837badec
-Author: Wade Farnsworth <wade_farnsworth@mentor.com>
-Date:   Fri Sep 7 18:18:25 2012 +0100
-
-    ARM: 7524/1: support syscall tracing
-
-because the tracing code wanted to know the number of syscalls.  I don't
-know what the answer is here, because the current solution is IMHO far
-to fragile.
-
+diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
+index f4b19e5..8210964 100644
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -252,26 +252,33 @@ int ping_init_sock(struct sock *sk)
+ {
+ 	struct net *net = sock_net(sk);
+ 	kgid_t group = current_egid();
+-	struct group_info *group_info = get_current_groups();
+-	int i, j, count = group_info->ngroups;
++	struct group_info *group_info;
++	int i, j, count;
+ 	kgid_t low, high;
++	int ret = 0;
+ 
+ 	inet_get_ping_group_range_net(net, &low, &high);
+ 	if (gid_lte(low, group) && gid_lte(group, high))
+ 		return 0;
+ 
++	group_info = get_current_groups();
++	count = group_info->ngroups;
+ 	for (i = 0; i < group_info->nblocks; i++) {
+ 		int cp_count = min_t(int, NGROUPS_PER_BLOCK, count);
+ 		for (j = 0; j < cp_count; j++) {
+ 			kgid_t gid = group_info->blocks[i][j];
+ 			if (gid_lte(low, gid) && gid_lte(gid, high))
+-				return 0;
++				goto out_release_group;
+ 		}
+ 
+ 		count -= cp_count;
+ 	}
+ 
+-	return -EACCES;
++	ret = -EACCES;
++
++out_release_group:
++	put_group_info(group_info);
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(ping_init_sock);
+ 
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+1.7.1
+
+
