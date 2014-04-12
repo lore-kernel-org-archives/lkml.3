@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756433AbaDLVNp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Apr 2014 17:13:45 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:39598 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833AbaDLVNm (ORCPT
+	id S1756460AbaDLV1H (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Apr 2014 17:27:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:50710 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750833AbaDLV1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Apr 2014 17:13:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140412205920.GD30694@pd.tnic>
-References: <CAMzpN2jx4H4p8fQr-WHxVyCHhWi0iO3WZZKyxYD7Dfa7pWkEgg@mail.gmail.com>
-	<CA+55aFwzvSiAGYfFb2R3JeVvh8_PQuOKJDrYP5C_3VQz2zhnBw@mail.gmail.com>
-	<CAMzpN2jj3dwQG7qC__8zLPhkg_ER6n4CcNxa5eg7okRN+k_VUA@mail.gmail.com>
-	<CA+55aFxr_dz3vhko1FPXhZd0ZNeGveX0oSLqUo_wyiVbxatLQw@mail.gmail.com>
-	<CAMzpN2jn69_E7UEP6OHBbc4r7UuJbsW50WA25YhXuQs5sHFxQQ@mail.gmail.com>
-	<6f5f98f2-aa96-433f-9ee8-5ba216624957@email.android.com>
-	<20140412193541.GA30697@pd.tnic>
-	<21a22ace-fbc3-4f97-a277-9cdf4f2253eb@email.android.com>
-	<20140412201126.GC30694@pd.tnic>
-	<CAMzpN2jHrBZ7DCd79GkCdjwCWJBv+YR5o9BGjypCdazJB9bJYQ@mail.gmail.com>
-	<20140412205920.GD30694@pd.tnic>
-Date: Sat, 12 Apr 2014 17:13:40 -0400
-Message-ID: <CAMzpN2hkfw0p71H9QLFvbdmuiYqXqXJwBHK=GY_U_VHfjBL4Lg@mail.gmail.com>
-Subject: Re: [tip:x86/urgent] x86-64, modify_ldt: Ban 16-bit segments on
- 64-bit kernels
-From: Brian Gerst <brgerst@gmail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 12 Apr 2014 17:27:03 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: linux-pwm@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 0/7] Add Allwinner SoCs PWM support
+Date: Sat, 12 Apr 2014 23:25:52 +0200
+Message-Id: <1397337959-12408-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 12, 2014 at 4:59 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Sat, Apr 12, 2014 at 04:34:14PM -0400, Brian Gerst wrote:
->> My experience with kvm so far is that is slow and clunky. It may be OK
->> for a server environment, but interactively it's difficult to use.
->
-> Are you saying, you've run your game in a guest and perf. is sucky?
->
+Hi,
 
-Performance is bad in general, running a 32-bit Fedora 20 guest.
+This patch set adds support for the PWM controller found on the Allwinner SoCs.
+
+The first patch adds the driver itself.
+The second patch adds the DT binding documentation
+The third patch adds the bindings to the sun7i-a20 DTS include.
+And finally, the la patch adds support for the PWMs to the cubietruck which is
+the board I used to test.
+
+Changes in v2:
+ - changed the compatible string
+ - documented the clocks property
+ - Added support in the A10 dtsi
+ - split the patch adding pinctrl
+ - a few cosmetic changes (removed empty lines, PWM_PRESCAL_MASK, ...)
+ - fixed the period register calculation (the period is actually N + 1 cycles)
+   so write prd - 1
+ - properly locked accesses to PWM_CTRL_REG with a mutex
+
+Alexandre Belloni (7):
+  pwm: Add Allwinner SoC support
+  pwm: sunxi: document OF bindings
+  ARM: sun4i: dt: add pinmux configuration for the PWM
+  ARM: sun4i: dt: add PWM support
+  ARM: sun7i: dt: add pinmux configuration for the PWM
+  ARM: sun7i: dt: add PWM support
+  ARM: sunxi: dt: add PWM support for the cubietruck
+
+ .../devicetree/bindings/pwm/pwm-sunxi.txt          |  20 ++
+ arch/arm/boot/dts/sun4i-a10.dtsi                   |  22 ++
+ arch/arm/boot/dts/sun7i-a20-cubietruck.dts         |   6 +
+ arch/arm/boot/dts/sun7i-a20.dtsi                   |  22 ++
+ drivers/pwm/Kconfig                                |   9 +
+ drivers/pwm/Makefile                               |   1 +
+ drivers/pwm/pwm-sunxi.c                            | 345 +++++++++++++++++++++
+ 7 files changed, 425 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pwm/pwm-sunxi.txt
+ create mode 100644 drivers/pwm/pwm-sunxi.c
+
+-- 
+1.8.3.2
+
