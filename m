@@ -1,129 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755864AbaDLAKl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 20:10:41 -0400
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:40389 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754685AbaDLAKh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 20:10:37 -0400
-Message-ID: <5348846F.6020405@redhat.com>
-Date: Fri, 11 Apr 2014 20:10:23 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755970AbaDLALd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 20:11:33 -0400
+Received: from mail.lang.hm ([64.81.33.126]:42369 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755896AbaDLALG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 20:11:06 -0400
+Date: Fri, 11 Apr 2014 17:10:18 -0700 (PDT)
+From: David Lang <david@lang.hm>
+X-X-Sender: dlang@asgard.lang.hm
+To: Christian Grothoff <christian@grothoff.org>
+cc: Pavel Machek <pavel@ucw.cz>, Alejandra Morales <alejandra.morales@tum.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Cryogenic: Enabling Power-Aware Applications on Linux
+In-Reply-To: <53487FE7.2040604@grothoff.org>
+Message-ID: <alpine.DEB.2.02.1404111705460.2186@nftneq.ynat.uz>
+References: <9E3F9C2076C45D4783F09B90D5BE77CE1AEF7A@BADWLRZ-SWMBX13.ads.mwn.de> <20140411101926.GA27234@amd.pavel.ucw.cz> <534838E8.10005@grothoff.org> <20140411220517.GA1203@amd.pavel.ucw.cz> <53487FE7.2040604@grothoff.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Fam Zheng <famz@redhat.com>, linux-kernel@vger.kernel.org
-CC: linux-scsi@vger.kernel.org, kvm@vger.kernel.org, stable@vger.kernel.org,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: Re: [PATCH] virtio-scsi: Skip setting affinity on uninitialized vq
-References: <1397201025-26412-1-git-send-email-famz@redhat.com>
-In-Reply-To: <1397201025-26412-1-git-send-email-famz@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/Mixed; BOUNDARY=------------080104060505010809000309
+Content-ID: <alpine.DEB.2.02.1404111705461.2186@nftneq.ynat.uz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 11/04/2014 03:23, Fam Zheng ha scritto:
-> virtscsi_init calls virtscsi_remove_vqs on err, even before initializing
-> the vqs. The latter calls virtscsi_set_affinity, so let's check the
-> pointer there before setting affinity on it.
->
-> This fixes a panic when setting device's num_queues=2 on RHEL 6.5:
->
-> qemu-system-x86_64 ... \
-> -device virtio-scsi-pci,id=scsi0,addr=0x13,...,num_queues=2 \
-> -drive file=/stor/vm/dummy.raw,id=drive-scsi-disk,... \
-> -device scsi-hd,drive=drive-scsi-disk,...
->
-> [    0.354734] scsi0 : Virtio SCSI HBA
-> [    0.379504] BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
-> [    0.380141] IP: [<ffffffff814741ef>] __virtscsi_set_affinity+0x4f/0x120
-> [    0.380141] PGD 0
-> [    0.380141] Oops: 0000 [#1] SMP
-> [    0.380141] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.0+ #5
-> [    0.380141] Hardware name: Red Hat KVM, BIOS 0.5.1 01/01/2007
-> [    0.380141] task: ffff88003c9f0000 ti: ffff88003c9f8000 task.ti: ffff88003c9f8000
-> [    0.380141] RIP: 0010:[<ffffffff814741ef>]  [<ffffffff814741ef>] __virtscsi_set_affinity+0x4f/0x120
-> [    0.380141] RSP: 0000:ffff88003c9f9c08  EFLAGS: 00010256
-> [    0.380141] RAX: 0000000000000000 RBX: ffff88003c3a9d40 RCX: 0000000000001070
-> [    0.380141] RDX: 0000000000000002 RSI: 0000000000000000 RDI: 0000000000000000
-> [    0.380141] RBP: ffff88003c9f9c28 R08: 00000000000136c0 R09: ffff88003c801c00
-> [    0.380141] R10: ffffffff81475229 R11: 0000000000000008 R12: 0000000000000000
-> [    0.380141] R13: ffffffff81cc7ca8 R14: ffff88003cac3d40 R15: ffff88003cac37a0
-> [    0.380141] FS:  0000000000000000(0000) GS:ffff88003e400000(0000) knlGS:0000000000000000
-> [    0.380141] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [    0.380141] CR2: 0000000000000020 CR3: 0000000001c0e000 CR4: 00000000000006f0
-> [    0.380141] Stack:
-> [    0.380141]  ffff88003c3a9d40 0000000000000000 ffff88003cac3d80 ffff88003cac3d40
-> [    0.380141]  ffff88003c9f9c48 ffffffff814742e8 ffff88003c26d000 ffff88003c26d000
-> [    0.380141]  ffff88003c9f9c68 ffffffff81474321 ffff88003c26d000 ffff88003c3a9d40
-> [    0.380141] Call Trace:
-> [    0.380141]  [<ffffffff814742e8>] virtscsi_set_affinity+0x28/0x40
-> [    0.380141]  [<ffffffff81474321>] virtscsi_remove_vqs+0x21/0x50
-> [    0.380141]  [<ffffffff81475231>] virtscsi_init+0x91/0x240
-> [    0.380141]  [<ffffffff81365290>] ? vp_get+0x50/0x70
-> [    0.380141]  [<ffffffff81475544>] virtscsi_probe+0xf4/0x280
-> [    0.380141]  [<ffffffff81363ea5>] virtio_dev_probe+0xe5/0x140
-> [    0.380141]  [<ffffffff8144c669>] driver_probe_device+0x89/0x230
-> [    0.380141]  [<ffffffff8144c8ab>] __driver_attach+0x9b/0xa0
-> [    0.380141]  [<ffffffff8144c810>] ? driver_probe_device+0x230/0x230
-> [    0.380141]  [<ffffffff8144c810>] ? driver_probe_device+0x230/0x230
-> [    0.380141]  [<ffffffff8144ac1c>] bus_for_each_dev+0x8c/0xb0
-> [    0.380141]  [<ffffffff8144c499>] driver_attach+0x19/0x20
-> [    0.380141]  [<ffffffff8144bf28>] bus_add_driver+0x198/0x220
-> [    0.380141]  [<ffffffff8144ce9f>] driver_register+0x5f/0xf0
-> [    0.380141]  [<ffffffff81d27c91>] ? spi_transport_init+0x79/0x79
-> [    0.380141]  [<ffffffff8136403b>] register_virtio_driver+0x1b/0x30
-> [    0.380141]  [<ffffffff81d27d19>] init+0x88/0xd6
-> [    0.380141]  [<ffffffff81d27c18>] ? scsi_init_procfs+0x5b/0x5b
-> [    0.380141]  [<ffffffff81ce88a7>] do_one_initcall+0x7f/0x10a
-> [    0.380141]  [<ffffffff81ce8aa7>] kernel_init_freeable+0x14a/0x1de
-> [    0.380141]  [<ffffffff81ce8b3b>] ? kernel_init_freeable+0x1de/0x1de
-> [    0.380141]  [<ffffffff817dec20>] ? rest_init+0x80/0x80
-> [    0.380141]  [<ffffffff817dec29>] kernel_init+0x9/0xf0
-> [    0.380141]  [<ffffffff817e68fc>] ret_from_fork+0x7c/0xb0
-> [    0.380141]  [<ffffffff817dec20>] ? rest_init+0x80/0x80
-> [    0.380141] RIP  [<ffffffff814741ef>] __virtscsi_set_affinity+0x4f/0x120
-> [    0.380141]  RSP <ffff88003c9f9c08>
-> [    0.380141] CR2: 0000000000000020
-> [    0.380141] ---[ end trace 8074b70c3d5e1d73 ]---
-> [    0.475018] Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000009
-> [    0.475018]
-> [    0.475068] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
-> [    0.475068] ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000009
->
-> Signed-off-by: Fam Zheng <famz@redhat.com>
-> ---
->  drivers/scsi/virtio_scsi.c | 6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
-> index 16bfd50..3019267 100644
-> --- a/drivers/scsi/virtio_scsi.c
-> +++ b/drivers/scsi/virtio_scsi.c
-> @@ -750,8 +750,12 @@ static void __virtscsi_set_affinity(struct virtio_scsi *vscsi, bool affinity)
->
->  		vscsi->affinity_hint_set = true;
->  	} else {
-> -		for (i = 0; i < vscsi->num_queues; i++)
-> +		for (i = 0; i < vscsi->num_queues; i++) {
-> +			if (!vscsi->req_vqs[i].vq) {
-> +				continue;
-> +			}
->  			virtqueue_set_affinity(vscsi->req_vqs[i].vq, -1);
-> +		}
->
->  		vscsi->affinity_hint_set = false;
->  	}
->
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-You put the if inside the loop, but it's really all or nothing since the 
-failure point is find_vqs.
+--------------080104060505010809000309
+Content-Type: TEXT/PLAIN; CHARSET=US-ASCII; format=flowed
+Content-ID: <alpine.DEB.2.02.1404111705462.2186@nftneq.ynat.uz>
 
-Not a problem though; the queues are few and this is not a hot path anyway.
+On Sat, 12 Apr 2014, Christian Grothoff wrote:
 
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+> On 04/12/2014 12:05 AM, Pavel Machek wrote:
+>> Hi!
+>>
+>>>>> Cryogenic is the result of my Master's Thesis, completed at the Technical University
+>>>>> of Munich under the supervision of Christian Grothoff. You can find more information
+>>>>> about Cryogenic at https://gnunet.org/cryogenic
+>
+>> Hmm, but the API needs redoing, anyway, fcntl()?
+>
+> Depends --- while I like the idea, I did not hear enough to be
+> certain that having this feature embedded in such a non-modular
+> way was already the consensus (and I do not see a reasonable
+> way to change the API this way while maintaining the modularity
+> of the current code).
 
-Paolo
+
+hpa has a good track record for things like this, and there is very little 
+desire in Linux for things to be kept as an optional add-on module (and cgroups 
+is a very pointed example of what happens if a capability that people wants gets 
+ignored).
+
+this sort of capability is something that is very desirable, there are many 
+people making attempts to provide this sort of event consolidation. So I think 
+it's _very_ safe to say that if this is accepted, it will be a change to the 
+core, not just a loadable module.
+
+This means that you need to go through the work hpa was pointing you at, and you 
+will also need to do some analysis of what the cost is to have this capability 
+in place, but without the application making use of it (because anything 
+remotely useful _will_ get enabled in a distro kernel, so how badly does it hurt 
+high-performance server apps if it's compiled in)
+
+David Lang
+--------------080104060505010809000309
+Content-Type: APPLICATION/PGP-KEYS; NAME=0x48426C7E.asc
+Content-Transfer-Encoding: QUOTED-PRINTABLE
+Content-ID: <alpine.DEB.2.02.1404111705463.2186@nftneq.ynat.uz>
+Content-Description: 
+Content-Disposition: ATTACHMENT; FILENAME=0x48426C7E.asc
+
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+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
+bi50dW0uZGU+iGIEExECACIFAlIxk6cCGwMGCwkIBwMCBhUIAgkKCwQWAgMBAh4B
+AheAAAoJEL9gcItIQmx+vb0An1MmoZCJS6g0yt3zYyGfJHsAKq5HAJ44c8HytmeP
+5dZWXUN2FDTuVmrWaLQrQ2hyaXN0aWFuIEdyb3Rob2ZmIDxncm90aG9mZkBuZXQu
+aW4udHVtLmRlPohiBBMRAgAiBQJSMZPOAhsDBgsJCAcDAgYVCAIJCgsEFgIDAQIe
+AQIXgAAKCRC/YHCLSEJsfjscAJ9Pr+YACJEhAYpA6vuVRvxcow0lFgCgoqN6CY7G
+F6eGRW/UsoApFOae8Em0JENocmlzdGlhbiBHcm90aG9mZiA8Z3JvdGhvZmZAdHVt
+LmRlPohiBBMRAgAiBQJSMZPgAhsDBgsJCAcDAgYVCAIJCgsEFgIDAQIeAQIXgAAK
+CRC/YHCLSEJsfmpHAKC1yUDliBcIb0feo+gKQfWrzHmYYgCeIWQ+4jhr6UddrDR0
+GbaIewayoc25BA0ERYbybxAQAOAcuyco8qdniS2SuCP+Yar9bnu1ZDo2ccawMMLl
+A7BRTZzml8Uv4cy3XXnEjuSk5HreFZsb9phJuYpSn7rb4lWs38VSTNy7dDc0Q5px
+AI1ViFJP/hANV5LzdGPRqEzHGgi/fX41X3eERiWK+nHOfIF1oxfgof2Ef9pEY3/L
++pxHKV+c+xqOYzJiIIKbEgQ/meZwHh6KgG90aVx7diJt9ajOIGAQb9BCu2gjLmby
+D0CbOpF05VWp/T20Y3e9Io/W7JD9aJGXPo0sAhOOf2z2GmY2nx2Yoy+UYLpGEbTj
+jRHLChD6ioMmw0w4iEDWB9TN9aW5K1MrVwdo2VLj2knF06HKZIv8ZOahaZe6P7pU
+ApcG2NxHnaWqH91mPdICSUeamhaB8sZ/ByXOOvQsTH12lXCMPVVdDw49chFHSJrK
+dY210uO55OobVodx62TvzZTEUb06cjtaC3EIf+8G/mde8O5PapGVYHVlUoDbDdR8
+TEmaBxHjHhPRBFzapWPHxdxzwb/kN+m1826o+8hZ/yCCDNGvXZHKmXpEv2xgLkYH
+7j55JUeIc3BFhbjsb4JW1A+KsNu8sBT/a9JvYzIAdd7uUWtGrOWnB2i+IHNRxGHI
+3bBgI2ueq6ZR1e4T6m56+sdjzCMJC930YTNeysGidA9du0HWis5XNI4rZYhP6MsB
+iUmrAAMGD/sFT/8vmkvorHoXiKL3Kz/LJWsSEheApwHPq4HpqauMO58CKPKUSm5O
+wgD7i6ofi62qmORIZ5CVPSC/CJCWEAGBJo7XZvZb2iDwl+mRdd+XQD3WUL5saamv
+grFHWby07YvBO+x9BEWHMSNSLNzbhptEDI9cI4cccX848CYxLMwHspgQ2MoCxJWA
+FwOy25Qmg+B8NB6E0jqR9nkE05uqZAdja/rs+0zmvJ9KxC9I/+fVwnY1w8dSleh6
+s6ktT1nR5IVX0BtUmj5n5zaXDjrqf2dnlf1GbibsuXTad95wXHQo6eha+hg2mEJd
+Mbn1kIT1lEkwxLnm27JKgv9FxCp09KmikC7BT+zqtJY5E9V4n648J3VknnqoXWuM
+0QGYLsKzSXPHjqBotpy4ZS0YbVs9kNp0KgFBPg6N9pxgCPPB8lw85EOnbnfDn+E6
+tBZkF8Nnv+pVxXxhb9Zhk1GEVpzQU8HnXBNl7A+i1vvJdnjP4TEr9F0X/F3YB4dS
+1vX7bhxC6DK1Z18232vbowQlrIg2vzyH/9uQ+odHntcAA1Hi+txMkaJ5UzYWxyBj
+IIt6rz2uFnA2/JskhtAYvp2Eix8LspT8wDhdW4nRBGw75omwHo5rHLNaWymvNGhN
+Kje+DSwNwDC9dSC3p7xkHUPmVOYQeGsWdeMp1UNRvWeicaQ7HOuJYIhJBBgRAgAJ
+BQJFhvJvAhsMAAoJEL9gcItIQmx+zJwAn3MrafB4VpPGwsPWugS1oylK3cfJAJ9b
+SPkWd91LUq4ARWVVq5jaQopDGQ=3D=3D
+=3DSAK6
+-----END PGP PUBLIC KEY BLOCK-----
+
+--------------080104060505010809000309--
