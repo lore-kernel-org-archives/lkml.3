@@ -1,318 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756033AbaDLBFB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 21:05:01 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:36331 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754438AbaDLBE6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 21:04:58 -0400
-Date: Fri, 11 Apr 2014 18:04:55 -0700
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [ANNOUNCE] iproute2 3.14.0
-Message-ID: <20140411180455.08af8bcb@nehalam.linuxnetplumber.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1755952AbaDLBPO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 21:15:14 -0400
+Received: from mail.kernel.org ([198.145.19.201]:55204 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755343AbaDLBPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 21:15:11 -0400
+From: Steven Miao <realmz6@kernel.org>
+To: torvalds@linux-foundation.org
+Cc: adi-buildroot-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [uclinux-dist-devel] [GIT PULL] Blackfin updates for 3.15
+Date: Sat, 12 Apr 2014 09:13:02 +0800
+Message-Id: <1397265182-2830-1-git-send-email-realmz6@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Time for the release of iproute2 for 3.14 (aka Shuffling Zombie Juror)
+please pull blackfin updates for Linux 3.15, code cleanup, some previously ignored patches,
+and bug fixes.
 
-The main new features are:
-  * ss gets lots of attention
-  * Support for PIE qdisc
-  * A bunch of HTB related changes from Eric
-  * better bonding support
-  * Lots of little corrections and build fixes
+The following changes since commit 455c6fdbd219161bd09b1165f11699d6d73de11c:
 
-Source:
-  http://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-3.14.0.tar.gz
+  Linux 3.14 (2014-03-30 20:40:15 -0700)
 
-Repository:
-  git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
+are available in the git repository at:
 
-Report problems (or enhancements) to the netdev@vger.kernel.org mailing list.
+  http://git.kernel.org/pub/scm/linux/kernel/git/realmz6/blackfin-linux.git tags/blackfin-for-linus
 
----
-Adam Borowski (1):
-      ip: fix build failure if time_t is not long int
+for you to fetch changes up to c4a2c58d20953ff1080f50f705cdd952f6d301b2:
 
-Alexander Duyck (1):
-      iproute2: act_ipt fix xtables breakage on older versions.
+  blackfin: cleanup board files (2014-04-12 08:48:01 +0800)
 
-Amerigo Wang (1):
-      iptunnel: check SIT_ISATAP flag only for SIT tunnel
+----------------------------------------------------------------
+blackfin updates for Linux 3.15
 
-Andreas Henriksson (3):
-      iproute2: fix build failure on sparc due to -Wformat and tv_usec
-      ss: avoid passing negative numbers to malloc
+----------------------------------------------------------------
+Paul Bolle (7):
+      blackfin: bf60x: fix typo "CONFIG_PM_BFIN_WAKE_PA15_POL"
+      blackfin: Remove GENERIC_GPIO config option again
+      Blackfin: remove "config IP_CHECKSUM_L1"
+      blackfin: bf537: fix typo "CONFIG_SND_SOC_ADV80X_MODULE"
+      Blackfin: bf537: rename ad2s120x ->ad2s1200
+      Blackfin: bf537: rename "CONFIG_AD7314"
+      Blackfin: bf537: rename "CONFIG_ADT75"
 
-Andrey Vagin (5):
-      ip: set the close-on-exec flag for descriptors
-      ss: handle socket diag request in a separate function
-      ss: create a function to print info about netlink sockets
-      ss: show destination address for netlink sockets
-      ss: Get netlink sockets info via sock-diag (v2)
+Sonic Zhang (2):
+      bfin_crc: Move architecture independant crc header file out of the blackfin folder.
+      blackfin: dma: current count mmr is read only
 
-Arvid Brodin (1):
-      ip: Add HSR support
+Steven Miao (4):
+      blackfin: portmux: cleanup head file
+      bf54x: drop unuesd HOST status,control,timeout registers bit define macros
+      bf609: clock: drop unused clock bit set/clear functions
+      blackfin: cleanup board files
 
-Atzm Watanabe (1):
-      vxlan: Allow setting destination to unicast address.
+Thomas Gleixner (1):
+      blackfin:Use generic /proc/interrupts implementation
 
-Christoph Paasch (3):
-      tcp_metrics: Rename addr to daddr and add local variable
-      tcp_metrics: Display source-address
-      tcp_metrics: Allow removal based on the source-IP
-
-Christophe Gouault (1):
-      xfrm: enable to set non-wildcard mark 0 on SAs and SPs
-
-Cong Wang (1):
-      add quickack option to ip route
-
-Daniel Borkmann (2):
-      ip: ipv6: add tokenized interface identifier support
-      tc: add cls_bpf frontend
-
-David L Stevens (1):
-      iproute2: support NTF_ROUTER flag in VXLAN fdb entries
-
-David Stevens (1):
-      iproute2: generalize VXLAN forwarding tables
-
-Eric Dumazet (10):
-      ss: add fastopen support
-      htb: report overhead attribute
-      get_rate: detect 32bit overflows
-      ss: add more TCP_INFO components
-      pkt_sched: fq: Fair Queue packet scheduler
-      tc: support TCA_STATS_RATE_EST64
-      htb: add support for direct_qlen attribute
-      htb: support 64bit rates
-      tc: more user friendly rates
-
-FX Le Bail (1):
-      ss: display interface name as zone index when needed
-
-Fan Du (1):
-      xfrm: use memcpy to suppress gcc phony buffer overflow warning.
-
-Hangbin Liu (3):
-      ipaddrlabel: use uint32_t instead of int32_t
-      iptunnel: Allow GRE_KEY for vti interface
-
-Heiner Kallweit (1):
-      ip: officially support flag mngtmpaddr also for "ip addr del"
-
-Hiroaki SHIMODA (1):
-      htb: Move direct_qlen code part to htb_parse_opt().
-
-Jamal Hadi Salim (8):
-      tc: introduce simple action
-      action: typo nat fix
-      skbedit to default to pipe
-      skbedit print missing metadata
-      policer - retire old syntax
-      simple print newline
-      allow batch gets of actions
-      dont skip action order
-
-Jesper Dangaard Brouer (1):
-      linklayer interface between kernel and tc/userspace
-
-Jiri Pirko (5):
-      iplink: add support for bonding netlink
-      add support for extended ifa_flags
-      add support for IFA_F_MANAGETEMPADDR
-      introduce support for slave info data
-      iplink: add support for bonding slave
-
-John Fastabend (2):
-      iproute2: bridge: fix 'bridge link' setlink/getlink parsing
-      iproute2: add man page for mqprio
-
-JunweiZhang (1):
-      ipbatch: fix use of 'ip netns exec'
-
-Kamil Rytarowski (1):
-      iproute2 patch against GCC 4.8.0
-
-Kusanagi Kouichi (1):
-      veth: Handle flags correctry
-
-Lutz Jaenicke (1):
-      macvlan: fix typo in macvlan_print_opt()
-
-Martin Schwenke (1):
-      ip: Add label option to ip monitor
-
-Masatake YAMATO (7):
-      ss: handle seqpacket type of unix domain socket
-      ss: enable query by type in unix domain related socket
-      ss: add unix_seqpacket to the help message and the man page
-      genl: fix a typo in help message of ctrl
-      iproute2: use named constants instead of number literals to fill rtnl_rttable_hash
-      iproute: Show default type, table, proto and scope of route
-
-Michal Kubeček (3):
-      iplink_bond: fix arp_all_targets parameter name in output
-      iplink_bond: fix parameter value matching
-      iplink_bond_slave: show mii_status only once
-
-Mike Rapoport (1):
-      bridge: fix reporting of IPv6 addresses
-
-Mythili Prabhu (1):
-      PIE: Add man page
-
-Nicolas Dichtel (9):
-      ip: add missing help about mode argument
-      ip/xfrm: all to set flag XFRM_SA_XFLAG_DONT_ENCAP_DSCP
-      ipnetconf: by default dump all entries
-      ss: allow to retrieve AF_PACKET info via netlink
-      man: describe --bpf option of ss
-      ipadress: fix display of IPv6 peer address
-      ip: allow to specify mode for sit tunnels
-      ipnetns: fix ip batch mode when using 'netns exec'
-      iplink: update available type list
-
-Nigel Kukard (1):
-      Fix tc stats when using -batch mode
-
-Patric McHardy (1):
-      ip: iplink_vlan: add 802.1ad support
-
-Pavel Emelyanov (4):
-      ss: Show inet and unix sockets' shutdown state
-      iproute: Make it possible to specify index on link creation
-      iproute: Document the "ip link add index IDX" possibility
-      iproute: Fix Netid value for multi-families output
-
-Petr Písař (2):
-      iproute2: bridge: document mdb
-      iproute2: bridge: Close file with bridge monitor file
-
-Rami Rosen (1):
-      ss: replace bfp with bpf in usage().
-
-Richard Godbee (3):
-      iproute2: iproute.c: fix usage() spacing problems
-      iproute2: spelling: noptmudisc -> nopmtudisc
-      iproute2: ip-route.8.in: minor fixes
-
-Richard Haines (1):
-      ss: Add support for retrieving SELinux contexts
-
-Rony Efraim (1):
-      Add VF link state control
-
-Sami Kerola (2):
-      ip: make -resolve addr to print names rather than addresses
-
-Sergey Popovich (1):
-      Handle netdev group for veth peer too
-
-Sriram Narasimhan (1):
-      iptuntap: allow creation of multi-queue tun/tap device
-
-Stefan Tomanek (2):
-      ip link: fix display of interface groups
-      ip rule: add route suppression options
-
-Stephen Hemminger (53):
-      Update headers to 3.10
-      Add vxlan destination port option
-      vxlan: nag user to set port value
-      add BPF header files
-      vxlan: remove dstport option
-      man: get rid of useless reference to GNU style options
-      htb: fix indentation
-      update to 3.10-net-next headers
-      netns: follow return value conventions of the rest of the code
-      ip: add batch mode to man page
-      Make tc and ip batch mode consistent
-      v3.10.0
-      Update to 3.11-rc1 kernel headers
-      Remove -Werror
-      Update kernel headers to net-next for 3.12
-      cleanup help message
-      Fix spelling errors
-      More minor spelling fixes
-      tc: allow qdisc without options
-      add ability to filter neighbour discovery by protocol
-      Update kernel headers to 3.11
-      v3.11.0
-      Update to 3.11 net-next kernel headers
-      nstat: add json output format
-      Update to 3.12-rc1 headers
-      nstat: revise json output
-      ifstat: add json output format
-      lnstat: add json output format
-      lnstat, nstat, ifstat: update man pages
-      tc: add default action to kernel headers
-      ipv6 gre: add entry to ether types
-      Fix handling of qdis without options
-      htb: remove old unused duplicate qdisc name
-      update kernel headers
-      v3.12.0
-      update kernel headers to 3.13-rc1
-      update to net-next headers
-      Update headers to 3.13-rc2
-      Fix FSF address in file headers
-      Update header files to 3.13-rc2 net-next
-      netconf: add support for neighbor proxy attribute
-      check return value of rtnl_send and related functions
-      veth: fix uninitialized arguments
-      update to latest net-next headers
-      Update to 3.13-rc6 + net-next headers
-      Revert "vxlan: remove dstport option"
-      Update headers files from net-next
-      Update kernel headers to 3.13-rc2
-      Remove trailing whitespace
-      kill spaces before tabs
-      fix indentation of ip neighbour man page
-      v3.14.0
-
-Thomas Egerer (1):
-      ip/xfrm: Fix potential SIGSEGV when printing extra flags
-
-Thomas Haller (1):
-      add support for IFA_F_NOPREFIXROUTE
-
-Thomas Richter (3):
-      iproute2 vxlan documentation update for bridge command
-      iproute2 vxlan documentation update for ip command
-      iproute vxlan add support for fdb replace command
-
-Vijay Subramanian (1):
-      PIE: Proportional Integral controller Enhanced
-
-WANG Cong (3):
-      vxlan: add ipv6 support
-      pedit: do not print debugging information by default
-      ipaddress: do not add IFA_FLAGS when not necessary
-
-Yang Yingliang (3):
-      tbf: add 64bit rates support
-      tbf: support sending burst/mtu to kernel directly
-      netem: add 64bit rates support
-
-esr@thyrsus.com (4):
-      First set of manpage markup fixes
-      tc-stab.8: Fix synopsis errors, an invalid escape, and incorrect English usge.
-      In tc-ematch.8, remove no-op .ti requests to prevent translation warnings
-      ip-rule.8: Fix presentational use of .SS.
-
-sfeldma@cumulusnetworks.com (1):
-      iproute2: finish support for bonding attributes
-
-xeb@mail.ru (2):
-      iproute2: GRE over IPv6 tunnel support.
-      iproute2: ip6gre: update man pages
-
+ arch/blackfin/Kconfig                            |   12 +-
+ arch/blackfin/include/asm/bfin_crc.h             |  125 -------
+ arch/blackfin/include/asm/dma.h                  |    2 -
+ arch/blackfin/include/asm/portmux.h              |   10 +-
+ arch/blackfin/kernel/irqchip.c                   |   39 +-
+ arch/blackfin/mach-bf518/boards/ezbrd.c          |   87 +++--
+ arch/blackfin/mach-bf518/boards/tcm-bf518.c      |   64 ++--
+ arch/blackfin/mach-bf527/boards/ad7160eval.c     |   71 ++--
+ arch/blackfin/mach-bf527/boards/cm_bf527.c       |   91 +++--
+ arch/blackfin/mach-bf527/boards/ezbrd.c          |   76 ++--
+ arch/blackfin/mach-bf527/boards/ezkit.c          |  139 ++++---
+ arch/blackfin/mach-bf527/boards/tll6527m.c       |   91 +++--
+ arch/blackfin/mach-bf533/boards/H8606.c          |   46 +--
+ arch/blackfin/mach-bf533/boards/blackstamp.c     |   44 +--
+ arch/blackfin/mach-bf533/boards/cm_bf533.c       |   54 +--
+ arch/blackfin/mach-bf533/boards/ezkit.c          |   56 +--
+ arch/blackfin/mach-bf533/boards/ip0x.c           |   26 +-
+ arch/blackfin/mach-bf533/boards/stamp.c          |  118 +++---
+ arch/blackfin/mach-bf537/boards/cm_bf537e.c      |   82 ++---
+ arch/blackfin/mach-bf537/boards/cm_bf537u.c      |   70 ++--
+ arch/blackfin/mach-bf537/boards/dnp5370.c        |   32 +-
+ arch/blackfin/mach-bf537/boards/minotaur.c       |   50 ++-
+ arch/blackfin/mach-bf537/boards/pnav10.c         |   55 ++-
+ arch/blackfin/mach-bf537/boards/stamp.c          |  425 ++++++++++------------
+ arch/blackfin/mach-bf537/boards/tcm_bf537.c      |   70 ++--
+ arch/blackfin/mach-bf538/boards/ezkit.c          |   62 ++--
+ arch/blackfin/mach-bf548/boards/cm_bf548.c       |   78 ++--
+ arch/blackfin/mach-bf548/boards/ezkit.c          |  136 ++++---
+ arch/blackfin/mach-bf548/include/mach/defBF544.h |   30 --
+ arch/blackfin/mach-bf548/include/mach/defBF547.h |   30 --
+ arch/blackfin/mach-bf561/boards/acvilon.c        |   28 +-
+ arch/blackfin/mach-bf561/boards/cm_bf561.c       |   56 +--
+ arch/blackfin/mach-bf561/boards/ezkit.c          |   74 ++--
+ arch/blackfin/mach-bf561/boards/tepla.c          |    8 +-
+ arch/blackfin/mach-bf609/boards/ezkit.c          |  131 +++----
+ arch/blackfin/mach-bf609/clock.c                 |   18 -
+ arch/blackfin/mach-bf609/pm.c                    |    2 +-
+ 37 files changed, 1115 insertions(+), 1473 deletions(-)
+ delete mode 100644 arch/blackfin/include/asm/bfin_crc.h
