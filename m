@@ -1,90 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161AbaDLDHa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 23:07:30 -0400
-Received: from exprod5og118.obsmtp.com ([64.18.0.160]:43766 "HELO
-	exprod5og118.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756085AbaDLDG1 (ORCPT
+	id S1756104AbaDLDMg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 23:12:36 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:47320 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755060AbaDLDMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 23:06:27 -0400
-From: Iyappan Subramanian <isubramanian@apm.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, devicetree@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
-        Iyappan Subramanian <isubramanian@apm.com>,
-        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
-Subject: [PATCH v2 2/4] Documentation: dts: Add bindings for APM X-Gene SoC ethernet driver
-Date: Fri, 11 Apr 2014 20:06:22 -0700
-Message-Id: <1397271984-23405-3-git-send-email-isubramanian@apm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1397271984-23405-1-git-send-email-isubramanian@apm.com>
-References: <1397271984-23405-1-git-send-email-isubramanian@apm.com>
+	Fri, 11 Apr 2014 23:12:35 -0400
+Date: Fri, 11 Apr 2014 23:12:31 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Liu Hua <sdu.liu@huawei.com>
+cc: linux@arm.linux.org.uk, will.deacon@arm.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        wangnan0@huawei.com, peifeiyue@huawei.com, liusdu@126.com,
+        m.szyprowski@samsung.com
+Subject: Re: [PATCH v2 1/2] ARM : DMA : remove useless information about
+ DMA
+In-Reply-To: <1397203252-22977-2-git-send-email-sdu.liu@huawei.com>
+Message-ID: <alpine.LFD.2.11.1404112252050.980@knanqh.ubzr>
+References: <1397203252-22977-1-git-send-email-sdu.liu@huawei.com> <1397203252-22977-2-git-send-email-sdu.liu@huawei.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds documentation for APM X-Gene SoC ethernet DTS binding.
+On Fri, 11 Apr 2014, Liu Hua wrote:
 
-Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
-Signed-off-by: Ravi Patel <rapatel@apm.com>
-Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
----
- .../devicetree/bindings/net/apm-xgene-enet.txt     |   46 ++++++++++++++++++++
- 1 file changed, 46 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/net/apm-xgene-enet.txt
+> Because commit e9da6e9905e6 has remove custom consistent dma
+> region. So the related variable and document should be removed
+> 
+> Signed-off-by: Liu Hua <sdu.liu@huawei.com>
 
-diff --git a/Documentation/devicetree/bindings/net/apm-xgene-enet.txt b/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
-new file mode 100644
-index 0000000..0c983e8
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
-@@ -0,0 +1,46 @@
-+APM X-Gene SoC Ethernet nodes
-+
-+Ethernet nodes are defined to describe on-chip ethernet interfaces in
-+APM X-Gene SoC.
-+
-+Required properties:
-+- compatible		: Should be "apm,xgene-enet"
-+- reg			: First resource is the ethernet base register set
-+			  Second resource is the ring base register set
-+			  Third resource is the ring command register set
-+- interrupts		: Ethernet main interrupt
-+- clocks		: Reference to the clock entry.
-+- local-mac-address	: Ethernet MAC address.
-+- phy-addr		: Ethernet MII phy address.
-+- phy-mode		: Ethernet MII mode.
-+
-+Optional properties:
-+- status		: Should be "ok" or "disabled" for enabled/disabled.
-+			  Default is "ok".
-+
-+Example:
-+	menetclk: menetclk {
-+		compatible = "apm,xgene-device-clock";
-+		clock-output-names = "menetclk";
-+		status = "ok";
-+	};
-+
-+	menet: ethernet@17020000 {
-+		compatible = "apm,xgene-enet";
-+		status = "disabled";
-+		reg = <0x0 0x17020000 0x0 0xd100>,
-+		      <0x0 0X17030000 0x0 0X400>,
-+		      <0x0 0X10000000 0x0 0X200>;
-+		interrupts = <0x0 0x3c 0x4>;
-+		clocks = <&menetclk 0>;
-+		local-mac-address = [00 01 73 00 00 01];
-+		phy-addr = <3>;
-+		phy-mode = "rgmii";
-+	};
-+
-+
-+/* Board-specific peripheral configurations */
-+
-+&menet {
-+        status = "ok";
-+};
--- 
-1.7.9.5
+Acked-by: Nicolas Pitre <nico@linaro.org>
 
+Incidentally I sent an identical patch to RMK's patch system:
+
+http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=8023/1
+
+Either version is fine with me.
+
+
+Nicolas
