@@ -1,59 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919AbaDLADB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 20:03:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55462 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754575AbaDLAC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 20:02:59 -0400
-Message-ID: <53488291.1040501@redhat.com>
-Date: Fri, 11 Apr 2014 20:02:25 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1755864AbaDLAKl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 20:10:41 -0400
+Received: from mail-yh0-f51.google.com ([209.85.213.51]:40389 "EHLO
+	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754685AbaDLAKh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 20:10:37 -0400
+Message-ID: <5348846F.6020405@redhat.com>
+Date: Fri, 11 Apr 2014 20:10:23 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, jbenc@redhat.com,
-        peterz@infradead.org, tglx@linutronix.de, fweisbec@gmail.com
-Subject: Re: [PATCH] softirq: punt to ksoftirqd if __do_softirq recently looped
-References: <20140410115706.662fb5e7@annuminas.surriel.com> <20140411.163342.1319748709214614224.davem@davemloft.net>
-In-Reply-To: <20140411.163342.1319748709214614224.davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+To: Fam Zheng <famz@redhat.com>, linux-kernel@vger.kernel.org
+CC: linux-scsi@vger.kernel.org, kvm@vger.kernel.org, stable@vger.kernel.org,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: Re: [PATCH] virtio-scsi: Skip setting affinity on uninitialized vq
+References: <1397201025-26412-1-git-send-email-famz@redhat.com>
+In-Reply-To: <1397201025-26412-1-git-send-email-famz@redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2014 04:33 PM, David Miller wrote:
-> From: Rik van Riel <riel@redhat.com>
-> Date: Thu, 10 Apr 2014 11:57:06 -0400
-> 
->> @@ -330,7 +334,11 @@ void irq_enter(void)
->>  
->>  static inline void invoke_softirq(void)
->>  {
->> -	if (!force_irqthreads) {
->> +	/*
->> +	 * If force_irqthreads is set, or if we looped in __do_softirq this
->> +	 * jiffie, punt to ksoftirqd to prevent userland starvation.
->> +	 */
->> +	if (!force_irqthreads && this_cpu_read(softirq_looped) != jiffies) {
-> 
-> If we do this, which I'm not convinced of yet, I think we should use two
-> jiffies as the cutoff.
+Il 11/04/2014 03:23, Fam Zheng ha scritto:
+> virtscsi_init calls virtscsi_remove_vqs on err, even before initializing
+> the vqs. The latter calls virtscsi_set_affinity, so let's check the
+> pointer there before setting affinity on it.
+>
+> This fixes a panic when setting device's num_queues=2 on RHEL 6.5:
+>
+> qemu-system-x86_64 ... \
+> -device virtio-scsi-pci,id=scsi0,addr=0x13,...,num_queues=2 \
+> -drive file=/stor/vm/dummy.raw,id=drive-scsi-disk,... \
+> -device scsi-hd,drive=drive-scsi-disk,...
+>
+> [    0.354734] scsi0 : Virtio SCSI HBA
+> [    0.379504] BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
+> [    0.380141] IP: [<ffffffff814741ef>] __virtscsi_set_affinity+0x4f/0x120
+> [    0.380141] PGD 0
+> [    0.380141] Oops: 0000 [#1] SMP
+> [    0.380141] CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.0+ #5
+> [    0.380141] Hardware name: Red Hat KVM, BIOS 0.5.1 01/01/2007
+> [    0.380141] task: ffff88003c9f0000 ti: ffff88003c9f8000 task.ti: ffff88003c9f8000
+> [    0.380141] RIP: 0010:[<ffffffff814741ef>]  [<ffffffff814741ef>] __virtscsi_set_affinity+0x4f/0x120
+> [    0.380141] RSP: 0000:ffff88003c9f9c08  EFLAGS: 00010256
+> [    0.380141] RAX: 0000000000000000 RBX: ffff88003c3a9d40 RCX: 0000000000001070
+> [    0.380141] RDX: 0000000000000002 RSI: 0000000000000000 RDI: 0000000000000000
+> [    0.380141] RBP: ffff88003c9f9c28 R08: 00000000000136c0 R09: ffff88003c801c00
+> [    0.380141] R10: ffffffff81475229 R11: 0000000000000008 R12: 0000000000000000
+> [    0.380141] R13: ffffffff81cc7ca8 R14: ffff88003cac3d40 R15: ffff88003cac37a0
+> [    0.380141] FS:  0000000000000000(0000) GS:ffff88003e400000(0000) knlGS:0000000000000000
+> [    0.380141] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [    0.380141] CR2: 0000000000000020 CR3: 0000000001c0e000 CR4: 00000000000006f0
+> [    0.380141] Stack:
+> [    0.380141]  ffff88003c3a9d40 0000000000000000 ffff88003cac3d80 ffff88003cac3d40
+> [    0.380141]  ffff88003c9f9c48 ffffffff814742e8 ffff88003c26d000 ffff88003c26d000
+> [    0.380141]  ffff88003c9f9c68 ffffffff81474321 ffff88003c26d000 ffff88003c3a9d40
+> [    0.380141] Call Trace:
+> [    0.380141]  [<ffffffff814742e8>] virtscsi_set_affinity+0x28/0x40
+> [    0.380141]  [<ffffffff81474321>] virtscsi_remove_vqs+0x21/0x50
+> [    0.380141]  [<ffffffff81475231>] virtscsi_init+0x91/0x240
+> [    0.380141]  [<ffffffff81365290>] ? vp_get+0x50/0x70
+> [    0.380141]  [<ffffffff81475544>] virtscsi_probe+0xf4/0x280
+> [    0.380141]  [<ffffffff81363ea5>] virtio_dev_probe+0xe5/0x140
+> [    0.380141]  [<ffffffff8144c669>] driver_probe_device+0x89/0x230
+> [    0.380141]  [<ffffffff8144c8ab>] __driver_attach+0x9b/0xa0
+> [    0.380141]  [<ffffffff8144c810>] ? driver_probe_device+0x230/0x230
+> [    0.380141]  [<ffffffff8144c810>] ? driver_probe_device+0x230/0x230
+> [    0.380141]  [<ffffffff8144ac1c>] bus_for_each_dev+0x8c/0xb0
+> [    0.380141]  [<ffffffff8144c499>] driver_attach+0x19/0x20
+> [    0.380141]  [<ffffffff8144bf28>] bus_add_driver+0x198/0x220
+> [    0.380141]  [<ffffffff8144ce9f>] driver_register+0x5f/0xf0
+> [    0.380141]  [<ffffffff81d27c91>] ? spi_transport_init+0x79/0x79
+> [    0.380141]  [<ffffffff8136403b>] register_virtio_driver+0x1b/0x30
+> [    0.380141]  [<ffffffff81d27d19>] init+0x88/0xd6
+> [    0.380141]  [<ffffffff81d27c18>] ? scsi_init_procfs+0x5b/0x5b
+> [    0.380141]  [<ffffffff81ce88a7>] do_one_initcall+0x7f/0x10a
+> [    0.380141]  [<ffffffff81ce8aa7>] kernel_init_freeable+0x14a/0x1de
+> [    0.380141]  [<ffffffff81ce8b3b>] ? kernel_init_freeable+0x1de/0x1de
+> [    0.380141]  [<ffffffff817dec20>] ? rest_init+0x80/0x80
+> [    0.380141]  [<ffffffff817dec29>] kernel_init+0x9/0xf0
+> [    0.380141]  [<ffffffff817e68fc>] ret_from_fork+0x7c/0xb0
+> [    0.380141]  [<ffffffff817dec20>] ? rest_init+0x80/0x80
+> [    0.380141] RIP  [<ffffffff814741ef>] __virtscsi_set_affinity+0x4f/0x120
+> [    0.380141]  RSP <ffff88003c9f9c08>
+> [    0.380141] CR2: 0000000000000020
+> [    0.380141] ---[ end trace 8074b70c3d5e1d73 ]---
+> [    0.475018] Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000009
+> [    0.475018]
+> [    0.475068] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
+> [    0.475068] ---[ end Kernel panic - not syncing: Attempted to kill init! exitcode=0x00000009
+>
+> Signed-off-by: Fam Zheng <famz@redhat.com>
+> ---
+>  drivers/scsi/virtio_scsi.c | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/scsi/virtio_scsi.c b/drivers/scsi/virtio_scsi.c
+> index 16bfd50..3019267 100644
+> --- a/drivers/scsi/virtio_scsi.c
+> +++ b/drivers/scsi/virtio_scsi.c
+> @@ -750,8 +750,12 @@ static void __virtscsi_set_affinity(struct virtio_scsi *vscsi, bool affinity)
+>
+>  		vscsi->affinity_hint_set = true;
+>  	} else {
+> -		for (i = 0; i < vscsi->num_queues; i++)
+> +		for (i = 0; i < vscsi->num_queues; i++) {
+> +			if (!vscsi->req_vqs[i].vq) {
+> +				continue;
+> +			}
+>  			virtqueue_set_affinity(vscsi->req_vqs[i].vq, -1);
+> +		}
+>
+>  		vscsi->affinity_hint_set = false;
+>  	}
+>
 
-I am not fully convinced, either.  This patch mostly just illustrates
-the problem, and gives something that solves Jiri's immediate problem.
+You put the if inside the loop, but it's really all or nothing since the 
+failure point is find_vqs.
 
-It is quite likely that there is a better way to solve the problem of:
-1) softirq handling starving out userspace processing,
-2) which could be solved by moving the userspace process elsewhere, and
-3) shifting softirq processing to ksoftirqd
+Not a problem though; the queues are few and this is not a hot path anyway.
 
-A working patch seems to be one of the better ways to start a
-discussion, though.
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
 
-If anybody has a nicer idea on how to solve the problem, I'd even be
-willing to implement your idea, and give Jiri another patch to test :)
-
--- 
-All rights reversed
+Paolo
