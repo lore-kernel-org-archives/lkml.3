@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754AbaDLWkJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Apr 2014 18:40:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57535 "EHLO mail.zytor.com"
+	id S1756839AbaDLWlr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Apr 2014 18:41:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57540 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750833AbaDLWkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Apr 2014 18:40:07 -0400
-Message-ID: <5349C09D.8000906@zytor.com>
-Date: Sat, 12 Apr 2014 15:39:25 -0700
+	id S1750833AbaDLWlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Apr 2014 18:41:46 -0400
+Message-ID: <5349C119.7050208@zytor.com>
+Date: Sat, 12 Apr 2014 15:41:29 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>, Christian Grothoff <christian@grothoff.org>
-CC: Alejandra Morales <alejandra.morales@tum.de>,
+To: =?ISO-8859-1?Q?Ville_Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
+CC: Ingo Molnar <mingo@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Cryogenic: Enabling Power-Aware Applications on Linux
-References: <9E3F9C2076C45D4783F09B90D5BE77CE1AEF7A@BADWLRZ-SWMBX13.ads.mwn.de> <20140411101926.GA27234@amd.pavel.ucw.cz> <534838E8.10005@grothoff.org> <20140411220517.GA1203@amd.pavel.ucw.cz> <53487FE7.2040604@grothoff.org> <20140412113653.GA10806@Nokia-N900>
-In-Reply-To: <20140412113653.GA10806@Nokia-N900>
+Subject: Re: Fwd: New Defects reported by Coverity Scan for Linux
+References: <5348ea4572e7_5d4d7ac86c27677@209.249.196.67.mail> <CAErSpo6r3Xw8fZ7eaW=8Mg9EabtPUAOQU8ExGt4aYL--+OnLgA@mail.gmail.com> <20140412214145.GL18465@intel.com>
+In-Reply-To: <20140412214145.GL18465@intel.com>
 X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2014 04:36 AM, Pavel Machek wrote:
->>
->>> Hmm, but the API needs redoing, anyway, fcntl()?
->>
->> Depends --- while I like the idea, I did not hear enough to be
->> certain that having this feature embedded in such a non-modular
->> way was already the consensus (and I do not see a reasonable
->> way to change the API this way while maintaining the modularity
->> of the current code).
+On 04/12/2014 02:41 PM, Ville Syrjälä wrote:
+> On Sat, Apr 12, 2014 at 07:29:29AM -0600, Bjorn Helgaas wrote:
+>> FYI, looks like these were added by a4dff76924fe ("x86/gpu: Add Intel
+>> graphics stolen memory quirk for gen2 platforms").
 > 
-> Being modular is not important for small piece of code like
-> this. Having reasonable interface is...
+> Some of the affected gen2 platforms do support up to 2GB of RAM which
+> means that if the sign extension were to happen they could hit this.
+> However I believe all gen2 platforms are 32bit which AFAIK makes size_t 
+> 32 bits. So looks like we can't hit this in practice..
+> 
+> But if someone were to change the return type to 64bits we'd
+> be in real danger, so I guess it would be better to fix the bug
+> anyway.
+> 
+> -#define KB(x)  ((x) * 1024)
+> +#define KB(x)  ((x) * 1024U)
+> should be sufficient to eliminate the problem. If someone wants me to
+> put that into a real patch and send it out let me know.
 > 
 
-Yes, it is critical.
+Please do, but make it UL (in the Linux kernel context, unsigned long is
+always equivalent to size_t/pointer size.)
 
 	-hpa
 
