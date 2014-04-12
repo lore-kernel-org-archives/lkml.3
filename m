@@ -1,487 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710AbaDLJCK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Apr 2014 05:02:10 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49704 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753786AbaDLJCE (ORCPT
+	id S1755055AbaDLJf4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Apr 2014 05:35:56 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:33984 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752134AbaDLJfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Apr 2014 05:02:04 -0400
-Message-ID: <53490109.5050006@free-electrons.com>
-Date: Sat, 12 Apr 2014 11:02:01 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Chen-Yu Tsai <wens@csie.org>, Hans de Goede <hdegoede@redhat.com>,
-        Carlo Caione <carlo@caione.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Subject: Re: [RFC PATCH] regmap: smbus: add support for regmap over SMBus
-References: <1397292335-5516-1-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1397292335-5516-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 12 Apr 2014 05:35:53 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtgNAJsISVNbske0/2dsb2JhbABZgwaDUMBoAgKBFxd0gmYcFQ4YFW0QFBOIAAHMAI5uhD8Ejl+KAQGKZIdfgzM7
+Date: Sat, 12 Apr 2014 11:37:22 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] sys_sgetmask/sys_ssetmask: Add CONFIG_SGETMASK_SYSCALL
+Message-Id: <20140412113722.c670eaacb86b3cf0ae287815@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+sys_sgetmask and sys_ssetmask are obsolete system calls no longer
+supported in libc.
 
-On 12/04/2014 10:45, Boris BREZILLON wrote:
-> SMBus is a subset of the I2C protocol, oftenly used to access registers on
-> external devices.
->
-> I2C adpaters are able to access SMBus devices thanks to the SMBus
-> emulation layer. In the other hand SMBus adapters may not provide
-> regular I2C transfers, and thus you may not be able to expose a regmap
-> if your device is connected to such kind of adapter.
-> Hence why we need this regmap over SMBus implementation.
->
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
-> Hello Mark,
->
-> I know you were not in favor of the smbus regmap (according to this thread
-> [1]), but I now hit a point where I need this functionnality.
->
-> The A31 SoC have an SMBus adatper which do not support regular I2C transfers
-> and on some boards (if not all) the AXP221 PMIC is connected to thi adapter.
-> Moreover the AXP221 really looks like the AXP209 whose driver is being
-> submitting ([2]), and this driver uses regmap to expose PMIC's registers.
->
-> I'd like to reuse the driver, and the only thing I need to do so is to add
-> support for regmap over SMBus, and patch the axp20x driver to register an
-> smbus regmap instead of an i2c one.
->
-> Let me now if you still think regmap over SMBus should not be supported, or
-> if you've find a better way to achieve my goal.
->
-> Best Regards,
->
-> Boris
->
-> [1] http://comments.gmane.org/gmane.linux.kernel/1167755
-Oops, I forgot to add the 2nd reference link:
+This patch replaces architecture related __ARCH_WANT_SYS_SGETMAX
+by expert mode configuration.That option is enabled by default
+for those architectures.
 
-[2] http://www.spinics.net/lists/linux-input/msg30806.html
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ arch/blackfin/include/asm/unistd.h   |  1 -
+ arch/cris/include/asm/unistd.h       |  1 -
+ arch/frv/include/asm/unistd.h        |  1 -
+ arch/m68k/include/asm/unistd.h       |  1 -
+ arch/microblaze/include/asm/unistd.h |  1 -
+ arch/mips/include/asm/unistd.h       |  1 -
+ arch/mn10300/include/asm/unistd.h    |  1 -
+ arch/parisc/include/asm/unistd.h     |  1 -
+ arch/powerpc/include/asm/unistd.h    |  1 -
+ arch/sh/include/asm/unistd.h         |  1 -
+ arch/sparc/include/asm/unistd.h      |  1 -
+ arch/x86/include/asm/unistd.h        |  1 -
+ init/Kconfig                         | 10 ++++++++++
+ kernel/signal.c                      |  4 ++--
+ kernel/sys_ni.c                      |  2 ++
+ 15 files changed, 14 insertions(+), 14 deletions(-)
 
->  drivers/base/regmap/Kconfig        |   5 +-
->  drivers/base/regmap/Makefile       |   1 +
->  drivers/base/regmap/regmap-smbus.c | 364 +++++++++++++++++++++++++++++++++++++
->  3 files changed, 369 insertions(+), 1 deletion(-)
->  create mode 100644 drivers/base/regmap/regmap-smbus.c
->
-> diff --git a/drivers/base/regmap/Kconfig b/drivers/base/regmap/Kconfig
-> index 4251570..450b4c1 100644
-> --- a/drivers/base/regmap/Kconfig
-> +++ b/drivers/base/regmap/Kconfig
-> @@ -3,7 +3,7 @@
->  # subsystems should select the appropriate symbols.
->  
->  config REGMAP
-> -	default y if (REGMAP_I2C || REGMAP_SPI || REGMAP_SPMI || REGMAP_MMIO || REGMAP_IRQ)
-> +	default y if (REGMAP_I2C || REGMAP_SMBUS || REGMAP_SPI || REGMAP_SPMI || REGMAP_MMIO || REGMAP_IRQ)
->  	select LZO_COMPRESS
->  	select LZO_DECOMPRESS
->  	select IRQ_DOMAIN if REGMAP_IRQ
-> @@ -12,6 +12,9 @@ config REGMAP
->  config REGMAP_I2C
->  	tristate
->  
-> +config REGMAP_SMBUS
-> +	tristate
-> +
->  config REGMAP_SPI
->  	tristate
->  
-> diff --git a/drivers/base/regmap/Makefile b/drivers/base/regmap/Makefile
-> index a7c670b..e752b9c 100644
-> --- a/drivers/base/regmap/Makefile
-> +++ b/drivers/base/regmap/Makefile
-> @@ -2,6 +2,7 @@ obj-$(CONFIG_REGMAP) += regmap.o regcache.o
->  obj-$(CONFIG_REGMAP) += regcache-rbtree.o regcache-lzo.o regcache-flat.o
->  obj-$(CONFIG_DEBUG_FS) += regmap-debugfs.o
->  obj-$(CONFIG_REGMAP_I2C) += regmap-i2c.o
-> +obj-$(CONFIG_REGMAP_SMBUS) += regmap-smbus.o
->  obj-$(CONFIG_REGMAP_SPI) += regmap-spi.o
->  obj-$(CONFIG_REGMAP_SPMI) += regmap-spmi.o
->  obj-$(CONFIG_REGMAP_MMIO) += regmap-mmio.o
-> diff --git a/drivers/base/regmap/regmap-smbus.c b/drivers/base/regmap/regmap-smbus.c
-> new file mode 100644
-> index 0000000..c8b8075
-> --- /dev/null
-> +++ b/drivers/base/regmap/regmap-smbus.c
-> @@ -0,0 +1,364 @@
-> +/*
-> + * Register map access API - SMBus support
-> + *
-> + * Copyright 2014 Free Electrons
-> + *
-> + * Author: Boris Brezillon <boris.brezillon@free-electrons.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/regmap.h>
-> +#include <linux/i2c.h>
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +
-> +struct regmap_smbus_context {
-> +	struct i2c_client *i2c;
-> +	enum regmap_smbus_transfer_type transfer_type;
-> +	int val_bytes;
-> +};
-> +
-> +static int regmap_smbus_write(void *context, const void *data, size_t count)
-> +{
-> +	struct regmap_smbus_context *ctx = context;
-> +	int ret = 0;
-> +	u8 reg = *(u8 *)data++;
-> +
-> +	count--;
-> +
-> +	switch (ctx->transfer_type) {
-> +	case REGMAP_SMBUS_BYTE_TRANSFER:
-> +		while (count > 0 && !ret) {
-> +			ret = i2c_smbus_write_byte_data(ctx->i2c, reg++,
-> +							*(u8 *)data++);
-> +
-> +			count--;
-> +		}
-> +		break;
-> +
-> +	case REGMAP_SMBUS_WORD_TRANSFER:
-> +		while (count > 0 && !ret) {
-> +			ret = i2c_smbus_write_word_data(ctx->i2c, reg,
-> +							*(u16 *)data++);
-> +
-> +			reg += 2;
-> +			count -= 2;
-> +		}
-> +		break;
-> +
-> +	case REGMAP_SMBUS_BLOCK_TRANSFER:
-> +		while (count > 0 && !ret) {
-> +			ret = i2c_smbus_write_block_data(ctx->i2c,
-> +							 reg,
-> +							 ctx->val_bytes,
-> +							 (const u8 *)data);
-> +
-> +			reg += ctx->val_bytes;
-> +			count -= ctx->val_bytes;
-> +			data += ctx->val_bytes;
-> +		}
-> +		break;
-> +
-> +	case REGMAP_SMBUS_I2C_BLOCK_TRANSFER:
-> +		while (count > 0 && !ret) {
-> +			ret = i2c_smbus_write_i2c_block_data(ctx->i2c,
-> +							     reg,
-> +							     ctx->val_bytes,
-> +							     (const u8 *)data);
-> +
-> +			reg += ctx->val_bytes;
-> +			count -= ctx->val_bytes;
-> +			data += ctx->val_bytes;
-> +		}
-> +		break;
-> +
-> +	default:
-> +		return -ENOTSUPP;
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static int regmap_smbus_gather_write(void *context,
-> +				     const void *reg, size_t reg_size,
-> +				     const void *val, size_t val_size)
-> +{
-> +	struct regmap_smbus_context *ctx = context;
-> +	u8 smbus_reg;
-> +	int ret = 0;
-> +
-> +	if (reg_size != 1)
-> +		return -ENOTSUPP;
-> +
-> +	smbus_reg = *(u8 *)reg;
-> +
-> +	switch (ctx->transfer_type) {
-> +	case REGMAP_SMBUS_BYTE_TRANSFER:
-> +		while (val_size && !ret) {
-> +			ret = i2c_smbus_write_byte_data(ctx->i2c,
-> +							smbus_reg++,
-> +							*(u8 *)val++);
-> +
-> +			val_size--;
-> +		}
-> +		break;
-> +
-> +	case REGMAP_SMBUS_WORD_TRANSFER:
-> +		while (val_size && !ret) {
-> +			ret = i2c_smbus_write_word_data(ctx->i2c,
-> +							smbus_reg,
-> +							*(u16 *)val++);
-> +
-> +			smbus_reg += 2;
-> +			val_size -= 2;
-> +		}
-> +		break;
-> +
-> +	case REGMAP_SMBUS_BLOCK_TRANSFER:
-> +		while (val_size && !ret) {
-> +			ret = i2c_smbus_write_block_data(ctx->i2c,
-> +							 smbus_reg,
-> +							 ctx->val_bytes,
-> +							 (const u8 *)val);
-> +
-> +			smbus_reg += ctx->val_bytes;
-> +			val_size -= ctx->val_bytes;
-> +			val += ctx->val_bytes;
-> +		}
-> +		break;
-> +
-> +	case REGMAP_SMBUS_I2C_BLOCK_TRANSFER:
-> +		if (val_size > I2C_SMBUS_BLOCK_MAX)
-> +			return -ENOTSUPP;
-> +
-> +		while (val_size && !ret) {
-> +			ret = i2c_smbus_write_i2c_block_data(ctx->i2c,
-> +							     smbus_reg,
-> +							     ctx->val_bytes,
-> +							     (const u8 *)val);
-> +
-> +			smbus_reg += ctx->val_bytes;
-> +			val_size -= ctx->val_bytes;
-> +			val += ctx->val_bytes;
-> +		}
-> +		break;
-> +
-> +	default:
-> +		return -ENOTSUPP;
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +static int regmap_smbus_read(void *context,
-> +			     const void *reg, size_t reg_size,
-> +			     void *val, size_t val_size)
-> +{
-> +	struct regmap_smbus_context *ctx = context;
-> +	u8 buffer[I2C_SMBUS_BLOCK_MAX];
-> +	u8 smbus_reg;
-> +	int ret = 0;
-> +
-> +	if (reg_size != 1)
-> +		return -ENOTSUPP;
-> +
-> +	smbus_reg = *(u8 *)reg;
-> +
-> +	switch (ctx->transfer_type) {
-> +	case REGMAP_SMBUS_BYTE_TRANSFER:
-> +		while (val_size && ret >= 0) {
-> +			ret = i2c_smbus_read_byte_data(ctx->i2c, smbus_reg++);
-> +			if (ret >= 0)
-> +				*((u8 *)val++) = ret;
-> +
-> +			val_size--;
-> +		}
-> +		break;
-> +
-> +	case REGMAP_SMBUS_WORD_TRANSFER:
-> +		while (val_size && ret >= 0) {
-> +			ret = i2c_smbus_read_word_data(ctx->i2c, smbus_reg);
-> +			if (ret >= 0)
-> +				*(u16 *)val++ = ret;
-> +
-> +			smbus_reg += 2;
-> +			val_size -= 2;
-> +		}
-> +		break;
-> +
-> +	case REGMAP_SMBUS_BLOCK_TRANSFER:
-> +		while (val_size && ret >= 0) {
-> +			ret = i2c_smbus_read_block_data(ctx->i2c,
-> +							smbus_reg,
-> +							buffer);
-> +			if (ret >= 0 && ret < ctx->val_bytes) {
-> +				ret = -EIO;
-> +				break;
-> +			}
-> +
-> +			memcpy(val, buffer, ctx->val_bytes);
-> +			smbus_reg += ctx->val_bytes;
-> +			val_size -= ctx->val_bytes;
-> +			val += ctx->val_bytes;
-> +		}
-> +		break;
-> +
-> +	case REGMAP_SMBUS_I2C_BLOCK_TRANSFER:
-> +		while (val_size && ret >= 0) {
-> +			return -ENOTSUPP;
-> +
-> +			ret = i2c_smbus_read_i2c_block_data(ctx->i2c,
-> +							    smbus_reg,
-> +							    ctx->val_bytes,
-> +							    (u8 *)val);
-> +			if (ret >= 0 && ret < val_size) {
-> +				ret = -EIO;
-> +				break;
-> +			}
-> +
-> +			smbus_reg += ctx->val_bytes;
-> +			val_size -= ctx->val_bytes;
-> +			val += ctx->val_bytes;
-> +		}
-> +		break;
-> +
-> +	default:
-> +		return -ENOTSUPP;
-> +	}
-> +
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return 0;
-> +}
-> +
-> +static void regmap_smbus_free_context(void *context)
-> +{
-> +	kfree(context);
-> +}
-> +
-> +struct regmap_smbus_context *regmap_smbus_gen_context(struct i2c_client *i2c,
-> +				const struct regmap_config *config,
-> +				enum regmap_smbus_transfer_type transfer_type)
-> +{
-> +	struct regmap_smbus_context *ctx;
-> +	int val_bytes = 0;
-> +
-> +	if (config->reg_bits != 8 || config->pad_bits != 0)
-> +		return ERR_PTR(-ENOTSUPP);
-> +
-> +	switch (transfer_type) {
-> +	case REGMAP_SMBUS_BYTE_TRANSFER:
-> +		if (config->val_bits != 8)
-> +			return ERR_PTR(-EINVAL);
-> +
-> +		if (!i2c_check_functionality(i2c->adapter,
-> +					     I2C_FUNC_SMBUS_BYTE_DATA))
-> +			return ERR_PTR(-ENOTSUPP);
-> +		break;
-> +
-> +	case REGMAP_SMBUS_WORD_TRANSFER:
-> +		if (config->val_bits != 16)
-> +			return ERR_PTR(-EINVAL);
-> +
-> +		if (!i2c_check_functionality(i2c->adapter,
-> +					     I2C_FUNC_SMBUS_WORD_DATA))
-> +			return ERR_PTR(-ENOTSUPP);
-> +		break;
-> +
-> +	case REGMAP_SMBUS_BLOCK_TRANSFER:
-> +		if (config->val_bits > (I2C_SMBUS_BLOCK_MAX * 8))
-> +			return ERR_PTR(-EINVAL);
-> +
-> +		val_bytes = DIV_ROUND_UP(config->val_bits, 8);
-> +		if (!i2c_check_functionality(i2c->adapter,
-> +					     I2C_FUNC_SMBUS_BLOCK_DATA))
-> +			return ERR_PTR(-ENOTSUPP);
-> +		break;
-> +
-> +	case REGMAP_SMBUS_I2C_BLOCK_TRANSFER:
-> +		if (config->val_bits > (I2C_SMBUS_BLOCK_MAX * 8))
-> +			return ERR_PTR(-EINVAL);
-> +
-> +		val_bytes = DIV_ROUND_UP(config->val_bits, 8);
-> +
-> +		if (!i2c_check_functionality(i2c->adapter,
-> +					     I2C_FUNC_SMBUS_I2C_BLOCK))
-> +			return ERR_PTR(-ENOTSUPP);
-> +		break;
-> +
-> +	default:
-> +		return ERR_PTR(-ENOTSUPP);
-> +	}
-> +
-> +	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
-> +	if (!ctx)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	ctx->i2c = i2c;
-> +	ctx->transfer_type = transfer_type;
-> +	ctx->val_bytes = val_bytes;
-> +
-> +	return ctx;
-> +}
-> +
-> +static struct regmap_bus regmap_smbus = {
-> +	.write = regmap_smbus_write,
-> +	.gather_write = regmap_smbus_gather_write,
-> +	.read = regmap_smbus_read,
-> +	.free_context = regmap_smbus_free_context,
-> +};
-> +
-> +/**
-> + * regmap_init_smbus(): Initialise register map
-> + *
-> + * @i2c: Device that will be interacted with
-> + * @config: Configuration for register map
-> + * @transfer_type: SMBUS transfer type
-> + *
-> + * The return value will be an ERR_PTR() on error or a valid pointer to
-> + * a struct regmap.
-> + */
-> +struct regmap *regmap_init_smbus(struct i2c_client *i2c,
-> +				 const struct regmap_config *config,
-> +				 enum regmap_smbus_transfer_type transfer_type)
-> +{
-> +	struct regmap_smbus_context *ctx =
-> +		regmap_smbus_gen_context(i2c, config, transfer_type);
-> +
-> +	if (IS_ERR(ctx))
-> +		return ERR_PTR(PTR_ERR(ctx));
-> +
-> +	return regmap_init(&i2c->dev, &regmap_smbus, ctx, config);
-> +}
-> +EXPORT_SYMBOL_GPL(regmap_init_smbus);
-> +
-> +/**
-> + * devm_regmap_init_smbus(): Initialise managed register map
-> + *
-> + * @i2c: Device that will be interacted with
-> + * @config: Configuration for register map
-> + * @transfer_type: SMBUS transfer type
-> + *
-> + * The return value will be an ERR_PTR() on error or a valid pointer
-> + * to a struct regmap.  The regmap will be automatically freed by the
-> + * device management code.
-> + */
-> +struct regmap *devm_regmap_init_smbus(struct i2c_client *i2c,
-> +				const struct regmap_config *config,
-> +				enum regmap_smbus_transfer_type transfer_type)
-> +{
-> +	struct regmap_smbus_context *ctx =
-> +		regmap_smbus_gen_context(i2c, config, transfer_type);
-> +
-> +	if (IS_ERR(ctx))
-> +		return ERR_PTR(PTR_ERR(ctx));
-> +
-> +	return devm_regmap_init(&i2c->dev, &regmap_smbus, ctx, config);
-> +}
-> +EXPORT_SYMBOL_GPL(devm_regmap_init_smbus);
-> +
-> +MODULE_LICENSE("GPL");
-
+diff --git a/arch/blackfin/include/asm/unistd.h b/arch/blackfin/include/asm/unistd.h
+index c35414b..c8c8ff9 100644
+--- a/arch/blackfin/include/asm/unistd.h
++++ b/arch/blackfin/include/asm/unistd.h
+@@ -12,7 +12,6 @@
+ #define __ARCH_WANT_SYS_ALARM
+ #define __ARCH_WANT_SYS_GETHOSTNAME
+ #define __ARCH_WANT_SYS_PAUSE
+-#define __ARCH_WANT_SYS_SGETMASK
+ #define __ARCH_WANT_SYS_TIME
+ #define __ARCH_WANT_SYS_FADVISE64
+ #define __ARCH_WANT_SYS_GETPGRP
+diff --git a/arch/cris/include/asm/unistd.h b/arch/cris/include/asm/unistd.h
+index 5cc7d19..0f40fed 100644
+--- a/arch/cris/include/asm/unistd.h
++++ b/arch/cris/include/asm/unistd.h
+@@ -15,7 +15,6 @@
+ #define __ARCH_WANT_SYS_GETHOSTNAME
+ #define __ARCH_WANT_SYS_IPC
+ #define __ARCH_WANT_SYS_PAUSE
+-#define __ARCH_WANT_SYS_SGETMASK
+ #define __ARCH_WANT_SYS_SIGNAL
+ #define __ARCH_WANT_SYS_TIME
+ #define __ARCH_WANT_SYS_UTIME
+diff --git a/arch/frv/include/asm/unistd.h b/arch/frv/include/asm/unistd.h
+index 70ec729..17b5df8 100644
+--- a/arch/frv/include/asm/unistd.h
++++ b/arch/frv/include/asm/unistd.h
+@@ -13,7 +13,6 @@
+ /* #define __ARCH_WANT_SYS_GETHOSTNAME */
+ #define __ARCH_WANT_SYS_IPC
+ #define __ARCH_WANT_SYS_PAUSE
+-/* #define __ARCH_WANT_SYS_SGETMASK */
+ /* #define __ARCH_WANT_SYS_SIGNAL */
+ #define __ARCH_WANT_SYS_TIME
+ #define __ARCH_WANT_SYS_UTIME
+diff --git a/arch/m68k/include/asm/unistd.h b/arch/m68k/include/asm/unistd.h
+index 9d38b73..6a43c16 100644
+--- a/arch/m68k/include/asm/unistd.h
++++ b/arch/m68k/include/asm/unistd.h
+@@ -13,7 +13,6 @@
+ #define __ARCH_WANT_SYS_GETHOSTNAME
+ #define __ARCH_WANT_SYS_IPC
+ #define __ARCH_WANT_SYS_PAUSE
+-#define __ARCH_WANT_SYS_SGETMASK
+ #define __ARCH_WANT_SYS_SIGNAL
+ #define __ARCH_WANT_SYS_TIME
+ #define __ARCH_WANT_SYS_UTIME
+diff --git a/arch/microblaze/include/asm/unistd.h b/arch/microblaze/include/asm/unistd.h
+index b14232b..fd56a8f 100644
+--- a/arch/microblaze/include/asm/unistd.h
++++ b/arch/microblaze/include/asm/unistd.h
+@@ -19,7 +19,6 @@
+ #define __ARCH_WANT_SYS_ALARM
+ #define __ARCH_WANT_SYS_GETHOSTNAME
+ #define __ARCH_WANT_SYS_PAUSE
+-#define __ARCH_WANT_SYS_SGETMASK
+ #define __ARCH_WANT_SYS_SIGNAL
+ #define __ARCH_WANT_SYS_TIME
+ #define __ARCH_WANT_SYS_UTIME
+diff --git a/arch/mips/include/asm/unistd.h b/arch/mips/include/asm/unistd.h
+index 413d6c6..e558130 100644
+--- a/arch/mips/include/asm/unistd.h
++++ b/arch/mips/include/asm/unistd.h
+@@ -29,7 +29,6 @@
+ #define __ARCH_WANT_SYS_GETHOSTNAME
+ #define __ARCH_WANT_SYS_IPC
+ #define __ARCH_WANT_SYS_PAUSE
+-#define __ARCH_WANT_SYS_SGETMASK
+ #define __ARCH_WANT_SYS_UTIME
+ #define __ARCH_WANT_SYS_WAITPID
+ #define __ARCH_WANT_SYS_SOCKETCALL
+diff --git a/arch/mn10300/include/asm/unistd.h b/arch/mn10300/include/asm/unistd.h
+index 9d4e2d1..0522468 100644
+--- a/arch/mn10300/include/asm/unistd.h
++++ b/arch/mn10300/include/asm/unistd.h
+@@ -26,7 +26,6 @@
+ #define __ARCH_WANT_SYS_GETHOSTNAME
+ #define __ARCH_WANT_SYS_IPC
+ #define __ARCH_WANT_SYS_PAUSE
+-#define __ARCH_WANT_SYS_SGETMASK
+ #define __ARCH_WANT_SYS_SIGNAL
+ #define __ARCH_WANT_SYS_TIME
+ #define __ARCH_WANT_SYS_UTIME
+diff --git a/arch/parisc/include/asm/unistd.h b/arch/parisc/include/asm/unistd.h
+index 74d8358..5f4c68d 100644
+--- a/arch/parisc/include/asm/unistd.h
++++ b/arch/parisc/include/asm/unistd.h
+@@ -145,7 +145,6 @@ type name(type1 arg1, type2 arg2, type3 arg3, type4 arg4, type5 arg5)	\
+ #define __ARCH_WANT_SYS_ALARM
+ #define __ARCH_WANT_SYS_GETHOSTNAME
+ #define __ARCH_WANT_SYS_PAUSE
+-#define __ARCH_WANT_SYS_SGETMASK
+ #define __ARCH_WANT_SYS_SIGNAL
+ #define __ARCH_WANT_SYS_TIME
+ #define __ARCH_WANT_COMPAT_SYS_TIME
+diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
+index 4494f02..cadd550 100644
+--- a/arch/powerpc/include/asm/unistd.h
++++ b/arch/powerpc/include/asm/unistd.h
+@@ -29,7 +29,6 @@
+ #define __ARCH_WANT_SYS_GETHOSTNAME
+ #define __ARCH_WANT_SYS_IPC
+ #define __ARCH_WANT_SYS_PAUSE
+-#define __ARCH_WANT_SYS_SGETMASK
+ #define __ARCH_WANT_SYS_SIGNAL
+ #define __ARCH_WANT_SYS_TIME
+ #define __ARCH_WANT_SYS_UTIME
+diff --git a/arch/sh/include/asm/unistd.h b/arch/sh/include/asm/unistd.h
+index e77816c..126fe83 100644
+--- a/arch/sh/include/asm/unistd.h
++++ b/arch/sh/include/asm/unistd.h
+@@ -11,7 +11,6 @@
+ # define __ARCH_WANT_SYS_GETHOSTNAME
+ # define __ARCH_WANT_SYS_IPC
+ # define __ARCH_WANT_SYS_PAUSE
+-# define __ARCH_WANT_SYS_SGETMASK
+ # define __ARCH_WANT_SYS_SIGNAL
+ # define __ARCH_WANT_SYS_TIME
+ # define __ARCH_WANT_SYS_UTIME
+diff --git a/arch/sparc/include/asm/unistd.h b/arch/sparc/include/asm/unistd.h
+index dfa53fd..0aac1e8 100644
+--- a/arch/sparc/include/asm/unistd.h
++++ b/arch/sparc/include/asm/unistd.h
+@@ -25,7 +25,6 @@
+ #define __ARCH_WANT_SYS_ALARM
+ #define __ARCH_WANT_SYS_GETHOSTNAME
+ #define __ARCH_WANT_SYS_PAUSE
+-#define __ARCH_WANT_SYS_SGETMASK
+ #define __ARCH_WANT_SYS_SIGNAL
+ #define __ARCH_WANT_SYS_TIME
+ #define __ARCH_WANT_SYS_UTIME
+diff --git a/arch/x86/include/asm/unistd.h b/arch/x86/include/asm/unistd.h
+index 3f556c6..2b19caa 100644
+--- a/arch/x86/include/asm/unistd.h
++++ b/arch/x86/include/asm/unistd.h
+@@ -41,7 +41,6 @@
+ # define __ARCH_WANT_SYS_OLD_GETRLIMIT
+ # define __ARCH_WANT_SYS_OLD_UNAME
+ # define __ARCH_WANT_SYS_PAUSE
+-# define __ARCH_WANT_SYS_SGETMASK
+ # define __ARCH_WANT_SYS_SIGNAL
+ # define __ARCH_WANT_SYS_SIGPENDING
+ # define __ARCH_WANT_SYS_SIGPROCMASK
+diff --git a/init/Kconfig b/init/Kconfig
+index 427ba60..b052613 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1301,6 +1301,16 @@ config UID16
+ 	help
+ 	  This enables the legacy 16-bit UID syscall wrappers.
+ 
++config SGETMASK_SYSCALL
++	bool "sgetmask/ssetmask syscalls support" if EXPERT
++	def_bool PARISC || MN10300 || BLACKFIN || M68K || PPC || MIPS || X86 || SPARC || CRIS || MICROBLAZE || SUPERH
++	---help---
++	  sys_sgetmask and sys_ssetmask are obsolete system calls
++	  no longer supported in libc but still enabled by default in some
++	  architectures.
++
++	  If unsure, leave the default option here.
++
+ config SYSFS_SYSCALL
+ 	bool "Sysfs syscall support" if EXPERT
+ 	default y
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 6ea13c0..6e600aaa 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -3496,7 +3496,7 @@ COMPAT_SYSCALL_DEFINE3(sigaction, int, sig,
+ }
+ #endif
+ 
+-#ifdef __ARCH_WANT_SYS_SGETMASK
++#ifdef CONFIG_SGETMASK_SYSCALL
+ 
+ /*
+  * For backwards compatibility.  Functionality superseded by sigprocmask.
+@@ -3517,7 +3517,7 @@ SYSCALL_DEFINE1(ssetmask, int, newmask)
+ 
+ 	return old;
+ }
+-#endif /* __ARCH_WANT_SGETMASK */
++#endif /* CONFIG_SGETMASK_SYSCALL */
+ 
+ #ifdef __ARCH_WANT_SYS_SIGNAL
+ /*
+diff --git a/kernel/sys_ni.c b/kernel/sys_ni.c
+index bc8d1b7..36441b5 100644
+--- a/kernel/sys_ni.c
++++ b/kernel/sys_ni.c
+@@ -135,6 +135,8 @@ cond_syscall(sys_setresgid16);
+ cond_syscall(sys_setresuid16);
+ cond_syscall(sys_setreuid16);
+ cond_syscall(sys_setuid16);
++cond_syscall(sys_sgetmask);
++cond_syscall(sys_ssetmask);
+ cond_syscall(sys_vm86old);
+ cond_syscall(sys_vm86);
+ cond_syscall(sys_ipc);
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+1.8.4.5
 
