@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362AbaDLLhE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Apr 2014 07:37:04 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42162 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756291AbaDLLhB (ORCPT
+	id S1756239AbaDLLs1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Apr 2014 07:48:27 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:37774 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755312AbaDLLsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Apr 2014 07:37:01 -0400
-Date: Sat, 12 Apr 2014 13:36:53 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Christian Grothoff <christian@grothoff.org>
-Cc: Alejandra Morales <alejandra.morales@tum.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Cryogenic: Enabling Power-Aware Applications on Linux
-Message-ID: <20140412113653.GA10806@Nokia-N900>
-References: <9E3F9C2076C45D4783F09B90D5BE77CE1AEF7A@BADWLRZ-SWMBX13.ads.mwn.de>
- <20140411101926.GA27234@amd.pavel.ucw.cz>
- <534838E8.10005@grothoff.org>
- <20140411220517.GA1203@amd.pavel.ucw.cz>
- <53487FE7.2040604@grothoff.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53487FE7.2040604@grothoff.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 12 Apr 2014 07:48:25 -0400
+From: Manfred Spraul <manfred@colorfullife.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, gthelen@google.com,
+        aswin@hp.com, linux-mm@kvack.org,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: [PATCH] ipc/shm: disable SHMALL, SHMMAX
+Date: Sat, 12 Apr 2014 13:48:04 +0200
+Message-Id: <1397303284-2216-1-git-send-email-manfred@colorfullife.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Shared memory segment can be abused to trigger out-of-memory conditions and
+the standard measures against out-of-memory do not work:
 
-> >> Yes, it depends on the device, but we have demonstrated power
-> >> savings for two different types of devices using two different
-> >> measurement setups performed by two independent groups.  Some
-> >> of the measurements are available on the website, the second
-> >> set should become available "soon" (but we can already say that
-> >> for the scenario we measured, the savings are in the same range
-> >> as before).
-> > 
-> > The video I seen.... AFAICT the savings are in <10% range?
-> 
-> For the scenario we scripted, yes. But note that we only
-> allowed 50% of the packets transmitted to be delayed (a bit).
-> If you were to increase the allowed delay or allowed a larger
-> fraction of packets to be delayed, you should see larger savings.
-> 
-> > I seen demo on UDP packets... delayed TCP socket write is probably
-> > easy, but would API allow delayed TCP connect?
-> 
-> Yes.
-> 
-> > Hmm, but the API needs redoing, anyway, fcntl()?
-> 
-> Depends --- while I like the idea, I did not hear enough to be
-> certain that having this feature embedded in such a non-modular
-> way was already the consensus (and I do not see a reasonable
-> way to change the API this way while maintaining the modularity
-> of the current code).
+- It is not possible to use setrlimit to limit the size of shm segments.
 
-Being modular is not important for small piece of code like
-this. Having reasonable interface is...
+- Segments can exist without association with any processes, thus
+  the oom-killer is unable to free that memory.
 
-						Pavel
+Therefore Linux always limited the size of segments by default to 32 MB.
+As most systems do not need a protection against malicious user space apps,
+a default that forces most admins and distros to change it doesn't make
+sense.
+
+The patch disables both limits by setting the limits to ULONG_MAX.
+
+Admins who need a protection against out-of-memory conditions should
+reduce the limits again and/or enable shm_rmid_forced.
+
+Davidlohr: What do you think?
+
+I prefer this approach: No need to update the man pages, smaller change
+of the code, smaller risk of user space incompatibilities.
+
+Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+---
+ include/linux/shm.h      | 2 +-
+ include/uapi/linux/shm.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/shm.h b/include/linux/shm.h
+index 1e2cd2e..37bf9c6 100644
+--- a/include/linux/shm.h
++++ b/include/linux/shm.h
+@@ -4,7 +4,7 @@
+ #include <asm/page.h>
+ #include <uapi/linux/shm.h>
+ 
+-#define SHMALL (SHMMAX/PAGE_SIZE*(SHMMNI/16)) /* max shm system wide (pages) */
++#define SHMALL ULONG_MAX /* max shm system wide (pages) */
+ #include <asm/shmparam.h>
+ struct shmid_kernel /* private to the kernel */
+ {	
+diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
+index 78b6941..d9497b7 100644
+--- a/include/uapi/linux/shm.h
++++ b/include/uapi/linux/shm.h
+@@ -12,7 +12,7 @@
+  * be increased by sysctl
+  */
+ 
+-#define SHMMAX 0x2000000		 /* max shared seg size (bytes) */
++#define SHMMAX ULONG_MAX		 /* max shared seg size (bytes) */
+ #define SHMMIN 1			 /* min shared seg size (bytes) */
+ #define SHMMNI 4096			 /* max num of segs system wide */
+ #ifndef __KERNEL__
+-- 
+1.9.0
+
