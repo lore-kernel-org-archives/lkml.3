@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756795AbaDLV2S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Apr 2014 17:28:18 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:50719 "EHLO
+	id S1756710AbaDLV2N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Apr 2014 17:28:13 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:50716 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755715AbaDLV1E (ORCPT
+	with ESMTP id S1755583AbaDLV1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 12 Apr 2014 17:27:04 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
@@ -13,9 +13,9 @@ To: Thierry Reding <thierry.reding@gmail.com>,
 Cc: linux-pwm@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv2 3/7] ARM: sun4i: dt: add pinmux configuration for the PWM
-Date: Sat, 12 Apr 2014 23:25:55 +0200
-Message-Id: <1397337959-12408-4-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 2/7] pwm: sunxi: document OF bindings
+Date: Sat, 12 Apr 2014 23:25:54 +0200
+Message-Id: <1397337959-12408-3-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1397337959-12408-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1397337959-12408-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -23,38 +23,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the pinctrl descriptions for both PWM channels of the Allwinner A10.
+This is the documentation for the Allwinner Socs PWM bindings.
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/boot/dts/sun4i-a10.dtsi | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ Documentation/devicetree/bindings/pwm/pwm-sunxi.txt | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pwm/pwm-sunxi.txt
 
-diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a10.dtsi
-index 9174724571e2..109e796e4a69 100644
---- a/arch/arm/boot/dts/sun4i-a10.dtsi
-+++ b/arch/arm/boot/dts/sun4i-a10.dtsi
-@@ -477,6 +477,20 @@
- 			#size-cells = <0>;
- 			#gpio-cells = <3>;
- 
-+			pwm0_pins_a: pwm0@0 {
-+				allwinner,pins = "PB2";
-+				allwinner,function = "pwm";
-+				allwinner,drive = <0>;
-+				allwinner,pull = <0>;
-+			};
+diff --git a/Documentation/devicetree/bindings/pwm/pwm-sunxi.txt b/Documentation/devicetree/bindings/pwm/pwm-sunxi.txt
+new file mode 100644
+index 000000000000..9eda87e7d233
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pwm/pwm-sunxi.txt
+@@ -0,0 +1,20 @@
++Allwinner PWM controller
 +
-+			pwm1_pins_a: pwm1@0 {
-+				allwinner,pins = "PI3";
-+				allwinner,function = "pwm";
-+				allwinner,drive = <0>;
-+				allwinner,pull = <0>;
-+			};
++Required properties:
++  - compatible: should be one of:
++    - "allwinner,sun4i-a10-pwm"
++    - "allwinner,sun7i-a20-pwm"
++  - reg: physical base address and length of the controller's registers
++  - #pwm-cells: should be 3. See pwm.txt in this directory for a description of
++    the cells format.
++  - clocks: from common clock binding, handle to the parent clock.
 +
- 			uart0_pins_a: uart0@0 {
- 				allwinner,pins = "PB22", "PB23";
- 				allwinner,function = "uart0";
++Example:
++
++	pwm: pwm@01c20e00 {
++		compatible = "allwinner,sun7i-a20-pwm";
++		reg = <0x01c20e00 0xc>;
++		clocks = <&osc24M>;
++		#pwm-cells = <3>;
++		status = "disabled";
++	};
 -- 
 1.8.3.2
 
