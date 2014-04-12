@@ -1,243 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727AbaDLKGI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Apr 2014 06:06:08 -0400
-Received: from fallback2.mail.ru ([94.100.176.87]:39509 "EHLO
-	fallback6.mail.ru" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752511AbaDLKGF (ORCPT
+	id S1756145AbaDLKJi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Apr 2014 06:09:38 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39723 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756020AbaDLKJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Apr 2014 06:06:05 -0400
-From: Brilliantov Kirill Vladimirovich <brilliantov@inbox.ru>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Sascha Hauer <kernel@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Brilliantov Kirill Vladimirovich <brilliantov@inbox.ru>
-Subject: [PATCH] staging/imx-drm: fix code line width
-Date: Sat, 12 Apr 2014 14:04:21 +0400
-Message-Id: <1397297061-3778-1-git-send-email-brilliantov@inbox.ru>
-X-Mailer: git-send-email 1.9.1
-X-Spam: Not detected
-X-Mras: Ok
+	Sat, 12 Apr 2014 06:09:36 -0400
+Date: Sat, 12 Apr 2014 12:09:34 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        David Herrmann <dh.herrmann@gmail.com>, akpm@linux-foundation.org,
+        jslaby@suse.cz, Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Matt Sealey <matt@genesi-usa.com>, Rob Clark <robdclark@gmail.com>,
+        Niels de Vos <devos@fedoraproject.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Steev Klimaszewski <steev@genesi-usa.com>, blogic@openwrt.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Subject: Re: [PATCH] Route keyboard LEDs through the generic LEDs layer.
+Message-ID: <20140412100934.GA7196@amd.pavel.ucw.cz>
+References: <20140331122323.GC6044@type.bordeaux.inria.fr>
+ <20140407021015.GA8518@core.coreip.homeip.net>
+ <20140407075423.GZ7179@type.wlan.youpi.perso.aquilenet.fr>
+ <20140408083940.GA22855@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140408083940.GA22855@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Brilliantov Kirill Vladimirovich <brilliantov@inbox.ru>
----
- drivers/staging/imx-drm/imx-tve.c           |  3 ++-
- drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h |  3 ++-
- drivers/staging/imx-drm/ipu-v3/ipu-common.c | 23 +++++++++++++++--------
- drivers/staging/imx-drm/ipu-v3/ipu-dc.c     | 27 ++++++++++++++++++---------
- drivers/staging/imx-drm/ipu-v3/ipu-di.c     | 12 ++++++++----
- drivers/staging/imx-drm/ipuv3-crtc.c        |  6 ++++--
- 6 files changed, 49 insertions(+), 25 deletions(-)
+Hi!
 
-diff --git a/drivers/staging/imx-drm/imx-tve.c b/drivers/staging/imx-drm/imx-tve.c
-index 575533f..7023035 100644
---- a/drivers/staging/imx-drm/imx-tve.c
-+++ b/drivers/staging/imx-drm/imx-tve.c
-@@ -669,7 +669,8 @@ static int imx_tve_bind(struct device *dev, struct device *master, void *data)
- 
- 	ret = regmap_read(tve->regmap, TVE_COM_CONF_REG, &val);
- 	if (ret < 0) {
--		dev_err(dev, "failed to read configuration register: %d\n", ret);
-+		dev_err(dev,
-+			"failed to read configuration register: %d\n", ret);
- 		return ret;
- 	}
- 	if (val != 0x00100000) {
-diff --git a/drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h b/drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h
-index c4d14ea..4fd7be7 100644
---- a/drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h
-+++ b/drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h
-@@ -230,7 +230,8 @@ struct ipu_ch_param {
- 	struct ipu_cpmem_word word[2];
- };
- 
--void ipu_ch_param_write_field(struct ipu_ch_param __iomem *base, u32 wbs, u32 v);
-+void ipu_ch_param_write_field(struct ipu_ch_param __iomem *base, u32 wbs,
-+				u32 v);
- u32 ipu_ch_param_read_field(struct ipu_ch_param __iomem *base, u32 wbs);
- struct ipu_ch_param __iomem *ipu_get_cpmem(struct ipuv3_channel *channel);
- void ipu_ch_param_dump(struct ipu_ch_param __iomem *p);
-diff --git a/drivers/staging/imx-drm/ipu-v3/ipu-common.c b/drivers/staging/imx-drm/ipu-v3/ipu-common.c
-index ca85d3d..b2c672f 100644
---- a/drivers/staging/imx-drm/ipu-v3/ipu-common.c
-+++ b/drivers/staging/imx-drm/ipu-v3/ipu-common.c
-@@ -233,14 +233,20 @@ void ipu_cpmem_set_yuv_interleaved(struct ipu_ch_param __iomem *p,
- {
- 	switch (pixel_format) {
- 	case V4L2_PIX_FMT_UYVY:
--		ipu_ch_param_write_field(p, IPU_FIELD_BPP, 3);    /* bits/pixel */
--		ipu_ch_param_write_field(p, IPU_FIELD_PFS, 0xA);  /* pix format */
--		ipu_ch_param_write_field(p, IPU_FIELD_NPB, 31);   /* burst size */
-+		/* bits/pixel */
-+		ipu_ch_param_write_field(p, IPU_FIELD_BPP, 3);
-+		/* pix format */
-+		ipu_ch_param_write_field(p, IPU_FIELD_PFS, 0xA);
-+		/* burst size */
-+		ipu_ch_param_write_field(p, IPU_FIELD_NPB, 31);
- 		break;
- 	case V4L2_PIX_FMT_YUYV:
--		ipu_ch_param_write_field(p, IPU_FIELD_BPP, 3);    /* bits/pixel */
--		ipu_ch_param_write_field(p, IPU_FIELD_PFS, 0x8);  /* pix format */
--		ipu_ch_param_write_field(p, IPU_FIELD_NPB, 31);   /* burst size */
-+		/* bits/pixel */
-+		ipu_ch_param_write_field(p, IPU_FIELD_BPP, 3);
-+		/* pix format */
-+		ipu_ch_param_write_field(p, IPU_FIELD_PFS, 0x8);
-+		/* burst size */
-+		ipu_ch_param_write_field(p, IPU_FIELD_NPB, 31);
- 		break;
- 	}
- }
-@@ -900,7 +906,8 @@ static void ipu_irq_handle(struct ipu_soc *ipu, const int *regs, int num_regs)
- 		status &= ipu_cm_read(ipu, IPU_INT_CTRL(regs[i]));
- 
- 		for_each_set_bit(bit, &status, 32) {
--			irq = irq_linear_revmap(ipu->domain, regs[i] * 32 + bit);
-+			irq =
-+			    irq_linear_revmap(ipu->domain, regs[i] * 32 + bit);
- 			if (irq)
- 				generic_handle_irq(irq);
- 		}
-@@ -1053,7 +1060,7 @@ static int ipu_irq_init(struct ipu_soc *ipu)
- 	}
- 
- 	ret = irq_alloc_domain_generic_chips(ipu->domain, 32, 1, "IPU",
--					     handle_level_irq, 0, IRQF_VALID, 0);
-+				     handle_level_irq, 0, IRQF_VALID, 0);
- 	if (ret < 0) {
- 		dev_err(ipu->dev, "failed to alloc generic irq chips\n");
- 		irq_domain_remove(ipu->domain);
-diff --git a/drivers/staging/imx-drm/ipu-v3/ipu-dc.c b/drivers/staging/imx-drm/ipu-v3/ipu-dc.c
-index d5de8bb..b05111a 100644
---- a/drivers/staging/imx-drm/ipu-v3/ipu-dc.c
-+++ b/drivers/staging/imx-drm/ipu-v3/ipu-dc.c
-@@ -132,10 +132,12 @@ static void dc_write_tmpl(struct ipu_dc *dc, int word, u32 opcode, u32 operand,
- 		reg1 = (operand << 20) & 0xfff00000;
- 		reg2 = operand >> 12 | opcode << 1 | stop << 9;
- 	} else if (opcode == WRG) {
--		reg1 = sync | glue << 4 | ++wave << 11 | ((operand << 15) & 0xffff8000);
-+		reg1 = sync | glue << 4 | ++wave << 11 |
-+			((operand << 15) & 0xffff8000);
- 		reg2 = operand >> 17 | opcode << 7 | stop << 9;
- 	} else {
--		reg1 = sync | glue << 4 | ++wave << 11 | ++map << 15 | ((operand << 20) & 0xfff00000);
-+		reg1 = sync | glue << 4 | ++wave << 11 | ++map << 15 |
-+			((operand << 20) & 0xfff00000);
- 		reg2 = operand >> 12 | opcode << 4 | stop << 9;
- 	}
- 	writel(reg1, priv->dc_tmpl_reg + word * 8);
-@@ -188,19 +190,25 @@ int ipu_dc_init_sync(struct ipu_dc *dc, struct ipu_di *di, bool interlaced,
- 			dc_link_event(dc, DC_EVT_EOL, 3, 2);
- 			dc_link_event(dc, DC_EVT_NEW_DATA, 1, 1);
- 			/* Init template microcode */
--			dc_write_tmpl(dc, 2, WROD(0), 0, map, SYNC_WAVE, 8, 5, 1);
--			dc_write_tmpl(dc, 3, WROD(0), 0, map, SYNC_WAVE, 4, 5, 0);
-+			dc_write_tmpl(dc, 2, WROD(0), 0, map, SYNC_WAVE, 8,
-+					5, 1);
-+			dc_write_tmpl(dc, 3, WROD(0), 0, map, SYNC_WAVE, 4,
-+					5, 0);
- 			dc_write_tmpl(dc, 4, WRG, 0, map, NULL_WAVE, 0, 0, 1);
--			dc_write_tmpl(dc, 1, WROD(0), 0, map, SYNC_WAVE, 0, 5, 1);
-+			dc_write_tmpl(dc, 1, WROD(0), 0, map, SYNC_WAVE, 0,
-+					5, 1);
- 		} else {
- 			dc_link_event(dc, DC_EVT_NL, 5, 3);
- 			dc_link_event(dc, DC_EVT_EOL, 6, 2);
- 			dc_link_event(dc, DC_EVT_NEW_DATA, 8, 1);
- 			/* Init template microcode */
--			dc_write_tmpl(dc, 5, WROD(0), 0, map, SYNC_WAVE, 8, 5, 1);
--			dc_write_tmpl(dc, 6, WROD(0), 0, map, SYNC_WAVE, 4, 5, 0);
-+			dc_write_tmpl(dc, 5, WROD(0), 0, map, SYNC_WAVE, 8,
-+					5, 1);
-+			dc_write_tmpl(dc, 6, WROD(0), 0, map, SYNC_WAVE, 4,
-+					5, 0);
- 			dc_write_tmpl(dc, 7, WRG, 0, map, NULL_WAVE, 0, 0, 1);
--			dc_write_tmpl(dc, 8, WROD(0), 0, map, SYNC_WAVE, 0, 5, 1);
-+			dc_write_tmpl(dc, 8, WROD(0), 0, map, SYNC_WAVE, 0,
-+					5, 1);
- 		}
- 	}
- 	dc_link_event(dc, DC_EVT_NF, 0, 0);
-@@ -367,7 +375,8 @@ int ipu_dc_init(struct ipu_soc *ipu, struct device *dev,
- 	writel(DC_WR_CH_CONF_WORD_SIZE_24 | DC_WR_CH_CONF_DISP_ID_PARALLEL(0),
- 			priv->channels[5].base + DC_WR_CH_CONF);
- 
--	writel(DC_GEN_SYNC_1_6_SYNC | DC_GEN_SYNC_PRIORITY_1, priv->dc_reg + DC_GEN);
-+	writel(DC_GEN_SYNC_1_6_SYNC | DC_GEN_SYNC_PRIORITY_1,
-+		priv->dc_reg + DC_GEN);
- 
- 	ipu->dc_priv = priv;
- 
-diff --git a/drivers/staging/imx-drm/ipu-v3/ipu-di.c b/drivers/staging/imx-drm/ipu-v3/ipu-di.c
-index 82a9eba..97d20c0 100644
---- a/drivers/staging/imx-drm/ipu-v3/ipu-di.c
-+++ b/drivers/staging/imx-drm/ipu-v3/ipu-di.c
-@@ -347,7 +347,8 @@ static void ipu_di_sync_config_noninterlaced(struct ipu_di *di,
- 			/* PIN4: HSYNC for VGA via TVEv2 on TQ MBa53 */
- 			.run_count = h_total - 1,
- 			.run_src = DI_SYNC_CLK,
--			.offset_count = div * sig->v_to_h_sync + 18, /* magic value from Freescale TVE driver */
-+			/* magic value from Freescale TVE driver */
-+			.offset_count = div * sig->v_to_h_sync + 18,
- 			.offset_src = DI_SYNC_CLK,
- 			.cnt_polarity_gen_en = 1,
- 			.cnt_polarity_trigger_src = DI_SYNC_CLK,
-@@ -363,7 +364,8 @@ static void ipu_di_sync_config_noninterlaced(struct ipu_di *di,
- 			/* PIN6: VSYNC for VGA via TVEv2 on TQ MBa53 */
- 			.run_count = v_total - 1,
- 			.run_src = DI_SYNC_INT_HSYNC,
--			.offset_count = 1, /* magic value from Freescale TVE driver */
-+			/* magic value from Freescale TVE driver */
-+			.offset_count = 1,
- 			.offset_src = DI_SYNC_INT_HSYNC,
- 			.cnt_polarity_gen_en = 1,
- 			.cnt_polarity_trigger_src = DI_SYNC_INT_HSYNC,
-@@ -372,7 +374,8 @@ static void ipu_di_sync_config_noninterlaced(struct ipu_di *di,
- 			/* PIN4: HSYNC for VGA via TVEv2 on i.MX53-QSB */
- 			.run_count = h_total - 1,
- 			.run_src = DI_SYNC_CLK,
--			.offset_count = div * sig->v_to_h_sync + 18, /* magic value from Freescale TVE driver */
-+			/* magic value from Freescale TVE driver */
-+			.offset_count = div * sig->v_to_h_sync + 18,
- 			.offset_src = DI_SYNC_CLK,
- 			.cnt_polarity_gen_en = 1,
- 			.cnt_polarity_trigger_src = DI_SYNC_CLK,
-@@ -381,7 +384,8 @@ static void ipu_di_sync_config_noninterlaced(struct ipu_di *di,
- 			/* PIN6: VSYNC for VGA via TVEv2 on i.MX53-QSB */
- 			.run_count = v_total - 1,
- 			.run_src = DI_SYNC_INT_HSYNC,
--			.offset_count = 1, /* magic value from Freescale TVE driver */
-+			/* magic value from Freescale TVE driver */
-+			.offset_count = 1,
- 			.offset_src = DI_SYNC_INT_HSYNC,
- 			.cnt_polarity_gen_en = 1,
- 			.cnt_polarity_trigger_src = DI_SYNC_INT_HSYNC,
-diff --git a/drivers/staging/imx-drm/ipuv3-crtc.c b/drivers/staging/imx-drm/ipuv3-crtc.c
-index c48f640..39752c5 100644
---- a/drivers/staging/imx-drm/ipuv3-crtc.c
-+++ b/drivers/staging/imx-drm/ipuv3-crtc.c
-@@ -193,7 +193,8 @@ static int ipu_crtc_mode_set(struct drm_crtc *crtc,
- 		return ret;
- 	}
- 
--	return ipu_plane_mode_set(ipu_crtc->plane[0], crtc, mode, crtc->primary->fb,
-+	return ipu_plane_mode_set(ipu_crtc->plane[0], crtc, mode,
-+				crtc->primary->fb,
- 				  0, 0, mode->hdisplay, mode->vdisplay,
- 				  x, y, mode->hdisplay, mode->vdisplay);
- }
-@@ -219,7 +220,8 @@ static irqreturn_t ipu_irq_handler(int irq, void *dev_id)
- 
- 	if (ipu_crtc->newfb) {
- 		ipu_crtc->newfb = NULL;
--		ipu_plane_set_base(ipu_crtc->plane[0], ipu_crtc->base.primary->fb,
-+		ipu_plane_set_base(ipu_crtc->plane[0],
-+				ipu_crtc->base.primary->fb,
- 				ipu_crtc->plane[0]->x, ipu_crtc->plane[0]->y);
- 		ipu_crtc_handle_pageflip(ipu_crtc);
- 	}
+> > > > This permits to reassign keyboard LEDs to something else than keyboard "leds"
+> > > > state, by adding keyboard led and modifier triggers connected to a series
+> > > > of VT input LEDs, themselves connected to VT input triggers, which
+> > > > per-input device LEDs use by default.  Userland can thus easily change the LED
+> > > > behavior of (a priori) all input devices, or of particular input devices.
+> > > > 
+> > > 
+> > > I still have the same concern that I believe I already mentioned a while
+> > > ago: how do we reconcile the LED control via triggers with LED control
+> > > done through event devices?
+
+I think we should deprecate LED controls using event devices. We have
+nice API for LEDs, and it is not in input.
+
+
+
+
+> > > Currently, as far as I can see, they will be
+> > > clashing with each other. I.e. if I remap my capslock led to be the new
+> > > shiftlock and then userspace writes EV_LED/LED_CAPSL it would light up
+> > > my new "shift lock", right?
+> > 
+> > Well, yes, sure, if you shoot in your foot it will hurt :) (although
+> > here the damage is really small, it is just LED lighting or not).
+> 
+> This is not about amount of damage but the overall correctness of the
+> implementation. I'd rather not have a solution with known holes, if
+> possible.
+
+I'd say that applications using direct EV_LED interface should just
+stop doing it. Yes, you can probably use led API and still toggle the
+led using gpio api behind leds back (not tested, perhaps there are
+interlocks that prevent that)... and it is same situation with
+EV_LED. We should just teach applications not to do that.
+
+Would solution where EV_LED would be ignored when there's non-default
+trigger selected work for you?
+
+> > My goal, at the beginning, was to be able to fix the console-setup
+> > bug.  That was that console-setup wants to use, for the capslock key,
+> > something else than the capslock mechanism hard-wired in the kernel,
+> > so as to get way more fine-grain control over how caps is handled.
+> > But then the capslock LED would not lit any more.  By remapping the
+> > VT-level capslock led to the foo-lock used by console-setup, one gets
+> > back capslock LEDs of all keyboards working back as expected by the
+> > user.  I also use it for getting a group LED, just like I have on X,
+> > to know which keyboard layout group I am in.  People using non-latin
+> > layouts really need that.
+> 
+> I understand the desire, however I still wonder if we should be
+> extending legacy VT given that David wants to move it all to
+> userspace.
+
+It looks like legacy VT is going to stay here for long long time...
+									Pavel
 -- 
-1.9.1
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
