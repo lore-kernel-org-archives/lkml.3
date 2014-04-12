@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756392AbaDLKrA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Apr 2014 06:47:00 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:59416 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753910AbaDLKq7 (ORCPT
+	id S1756193AbaDLLeZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Apr 2014 07:34:25 -0400
+Received: from smtprelay03.ispgateway.de ([80.67.31.30]:59258 "EHLO
+	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754319AbaDLLeX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Apr 2014 06:46:59 -0400
-X-IronPort-AV: E=Sophos;i="4.97,847,1389715200"; 
-   d="scan'208";a="29177032"
-Message-ID: <53491A85.70004@cn.fujitsu.com>
-Date: Sat, 12 Apr 2014 18:50:45 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] workqueue: simpler&better workers management synchronization
-References: <1397299543-12012-1-git-send-email-laijs@cn.fujitsu.com>
-In-Reply-To: <1397299543-12012-1-git-send-email-laijs@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+	Sat, 12 Apr 2014 07:34:23 -0400
+From: Christoph Jaeger <christophjaeger@linux.com>
+To: clm@fb.com, jbacik@fb.com
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Jaeger <christophjaeger@linux.com>
+Subject: [PATCH] btrfs: fix use-after-free in mount_subvol()
+Date: Sat, 12 Apr 2014 13:33:13 +0200
+Message-Id: <1397302393-22145-1-git-send-email-christophjaeger@linux.com>
+X-Mailer: git-send-email 1.9.0
+X-Df-Sender: MTg4NDM4Mw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry,
-the cover letter was forgotten to send to LKML.
+Pointer 'newargs' is used after the memory that it points to has already
+been freed.
 
-On 04/12/2014 06:45 PM, Lai Jiangshan wrote:
-> Each patches remove codes!
-> 
-> Patch1&2 are the basic patches. They add a *united* mechanism for managing
-> percpu pools' workers' & unbound pools' workers' & rescuers' CPUMASK.
-> 
-> Patch1&4 make workers-concurrency-enabling atomically when cpu_online()
-> and create_worker(). after this, workers-concurrency-enabling-disabling
-> are all atomically.
-> 
-> Old manager_mutex protects:
-> 1) workers creation&destruction
-> 2) workers cpumask managing when cpu_online()/workers-creation
-> 3) workers concurrency enabling&disabling.
-> 
-> Now, the above three things' synchronization are separated.
-> 1) We don't need manager_mutex protects workers creation&destruction
->    1.1) creation is only happened when the cpu is first online, the unbound pool
-> 	is just created, and manage_workers(). they have their one synchronization.
->    1.2) destruction only happens on idle-timeout handler, protected by pool->lock.
->    1.3) put_unbound_pool() uses manager_arb&workers_leave(new) to synchronize
-> 	with workers creation&destruction.
-> 
-> 2) bind_mutex and bind_list handle all the workers'(percpu,unbound,
->    normal,rescuer) cpumask when cpu_online()/workers-creation/worker-destrution.
->    we don't need manager_mutex.
-> 
-> 3) pool->lock and worker_idr handle workers concurrency enabling&disabling.
-> 
-> Note, bind_list is always a super set of worker_idr, and when cpu-online or
-> workers-creation, cpumask is set at first and then concurrency-enabling.
-> concurrency-management depends on local-wakeup which depends on cpumask
-> is properly set for all the workers.
-> 
-> This patchset depends on previous patch:
-> "workqueue: fix possible race condition when rescuer VS pwq-release"
-> 
-> Thanks,
-> Lai
-> 
-> 
-> Lai Jiangshan (6):
->   workqueue: generic routine to restore percpu/unbound pools' workers'
->     cpumask
->   workqueue: generic framework to manage normal&rescuer workers'
->     cpumask
->   workqueue: make destroy_worker() atomically
->   workqueue: commit worker to pool's concurrency setting atomically.
->   workqueue: remove manager_mutex
->   workqueue: destroy worker directly in idle timeout handler
-> 
->  kernel/workqueue.c          |  366 ++++++++++++------------------------------
->  kernel/workqueue_internal.h |    1 +
->  2 files changed, 106 insertions(+), 261 deletions(-)
-> 
+Picked up by Coverity - CID 1201425.
+
+Fixes: 0723a0473f ("btrfs: allow mounting btrfs subvolumes with
+different ro/rw options")
+Signed-off-by: Christoph Jaeger <christophjaeger@linux.com>
+---
+ fs/btrfs/super.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
+index 5011aad..62f70cc 100644
+--- a/fs/btrfs/super.c
++++ b/fs/btrfs/super.c
+@@ -1186,7 +1186,6 @@ static struct dentry *mount_subvol(const char *subvol_name, int flags,
+ 		return ERR_PTR(-ENOMEM);
+ 	mnt = vfs_kern_mount(&btrfs_fs_type, flags, device_name,
+ 			     newargs);
+-	kfree(newargs);
+ 
+ 	if (PTR_RET(mnt) == -EBUSY) {
+ 		if (flags & MS_RDONLY) {
+@@ -1196,17 +1195,22 @@ static struct dentry *mount_subvol(const char *subvol_name, int flags,
+ 			int r;
+ 			mnt = vfs_kern_mount(&btrfs_fs_type, flags | MS_RDONLY, device_name,
+ 					     newargs);
+-			if (IS_ERR(mnt))
++			if (IS_ERR(mnt)) {
++				kfree(newargs);
+ 				return ERR_CAST(mnt);
++			}
+ 
+ 			r = btrfs_remount(mnt->mnt_sb, &flags, NULL);
+ 			if (r < 0) {
+ 				/* FIXME: release vfsmount mnt ??*/
++				kfree(newargs);
+ 				return ERR_PTR(r);
+ 			}
+ 		}
+ 	}
+ 
++	kfree(newargs);
++
+ 	if (IS_ERR(mnt))
+ 		return ERR_CAST(mnt);
+ 
+-- 
+1.9.0
 
