@@ -1,105 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752344AbaDLM42 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Apr 2014 08:56:28 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:58038 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799AbaDLM4X convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Apr 2014 08:56:23 -0400
-Message-ID: <534937F0.3020702@arm.com>
-Date: Sat, 12 Apr 2014 13:56:16 +0100
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH v4 0/5] rework sched_domain topology description
-References: <1397209481-28542-1-git-send-email-vincent.guittot@linaro.org>
-In-Reply-To: <1397209481-28542-1-git-send-email-vincent.guittot@linaro.org>
-X-OriginalArrivalTime: 12 Apr 2014 12:56:32.0156 (UTC) FILETIME=[A0C24DC0:01CF564E]
-X-MC-Unique: 114041213562000201
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+	id S1753778AbaDLNTX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Apr 2014 09:19:23 -0400
+Received: from smtp4-g21.free.fr ([212.27.42.4]:59170 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751159AbaDLNTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Apr 2014 09:19:21 -0400
+From: Dominique van den Broeck <domdevlin@free.fr>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Dominique van den Broeck <domdevlin@free.fr>
+Subject: [PATCH v2 1/4] fwserial: (coding style) open parenthesis alignments
+Date: Sat, 12 Apr 2014 15:18:12 +0200
+Message-Id: <1397308695-30779-1-git-send-email-domdevlin@free.fr>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140412010411.GA29370@kroah.com>
+References: <20140412010411.GA29370@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/04/14 10:44, Vincent Guittot wrote:
-> This patchset was previously part of the larger tasks packing patchset [1].
-> I have splitted the latter in 3 different patchsets (at least) to make the
-> thing easier.
-> -configuration of sched_domain topology (this patchset)
-> -update and consolidation of cpu_power
-> -tasks packing algorithm
->
-> Based on Peter Z's proposal [2][3], this patchset modifies the way to configure
-> the sched_domain level in order to let architectures to add specific level like
-> the current BOOK level or the proposed power gating level for ARM architecture.
->
-> [1] https://lkml.org/lkml/2013/10/18/121
-> [2] https://lkml.org/lkml/2013/11/5/239
-> [3] https://lkml.org/lkml/2013/11/5/449
+Style-only modifications to make checkpatch.pl --file --strict a bit happier.
+Open parenthesis alignments.
 
-Hi Vincent,
-
-given the discussion we had for v1-v3 and a short boot test of v4:
-
-For patch 1/5, 4/5, 5/5 on ARM TC2 (heterogeneous dual socket w/o SMT 
-machine):
-
-Reviewed-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Tested-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
-
-Cheers,
-
--- Dietmar
-
->
-> Change since v3:
-> - remove last patch which was adding SD_SHARE_POWER_DOMAIN for powerpc's SMT
->    level
->
-> Change since v2:
-> - remove patch 1 as it has been already applied to metag tree for v3.15
-> - updates some commit messages
-> - add new flag description in TOPOLOGY_SD_FLAGS description
->
-> Change since v1:
-> - move sched_domains_curr_level back under #ifdef CONFIG_NUMA
-> - use function pointer to set flag instead of a plain value.
-> - add list of tunable flags in the commit message of patch 2
-> - add SD_SHARE_POWER_DOMAIN flag for powerpc's SMT level
->
-> Vincent Guittot (5):
->    sched: rework of sched_domain topology definition
->    sched: s390: create a dedicated topology table
->    sched: powerpc: create a dedicated topology table
->    sched: add a new SD_SHARE_POWERDOMAIN for sched_domain
->    sched: ARM: create a dedicated scheduler topology table
->
->   arch/arm/kernel/topology.c       |  26 +++++
->   arch/ia64/include/asm/topology.h |  24 ----
->   arch/powerpc/kernel/smp.c        |  31 +++--
->   arch/s390/include/asm/topology.h |  13 +--
->   arch/s390/kernel/topology.c      |  20 ++++
->   arch/tile/include/asm/topology.h |  33 ------
->   include/linux/sched.h            |  49 +++++++-
->   include/linux/topology.h         | 128 +++-----------------
->   kernel/sched/core.c              | 244 ++++++++++++++++++++-------------------
->   9 files changed, 255 insertions(+), 313 deletions(-)
->
-
-
+Signed-off-by: Dominique van den Broeck <domdevlin@free.fr>
+---
+diff -upr a/drivers/staging/fwserial/dma_fifo.c b/drivers/staging/fwserial/dma_fifo.c
+--- a/drivers/staging/fwserial/dma_fifo.c	2014-04-11 20:48:20.813667706 +0200
++++ b/drivers/staging/fwserial/dma_fifo.c	2014-04-11 20:47:49.700058306 +0200
+@@ -169,9 +165,9 @@ int dma_fifo_in(struct dma_fifo *fifo, c
+ 	memcpy(fifo->data, src + l, n - l);
+ 
+ 	if (FAIL(fifo, addr_check(fifo->done, fifo->in, fifo->in + n) ||
+-			fifo->avail < n,
+-			"fifo corrupt: in:%u out:%u done:%u n:%d avail:%d",
+-			fifo->in, fifo->out, fifo->done, n, fifo->avail))
++		 fifo->avail < n,
++		 "fifo corrupt: in:%u out:%u done:%u n:%d avail:%d",
++		 fifo->in, fifo->out, fifo->done, n, fifo->avail))
+ 		return -ENXIO;
+ 
+ 	fifo->in += n;
+@@ -236,12 +232,12 @@ int dma_fifo_out_pend(struct dma_fifo *f
+ 	++fifo->open;
+ 
+ 	if (FAIL(fifo, fifo->open > fifo->open_limit,
+-			"past open limit:%d (limit:%d)",
+-			fifo->open, fifo->open_limit))
++		 "past open limit:%d (limit:%d)",
++		 fifo->open, fifo->open_limit))
+ 		return -ENXIO;
+ 	if (FAIL(fifo, fifo->out & (fifo->align - 1),
+-			"fifo out unaligned:%u (align:%u)",
+-			fifo->out, fifo->align))
++		 "fifo out unaligned:%u (align:%u)",
++		 fifo->out, fifo->align))
+ 		return -ENXIO;
+ 
+ 	return len - n;
+@@ -264,8 +260,8 @@ int dma_fifo_out_complete(struct dma_fif
+ 		return -EINVAL;
+ 
+ 	if (FAIL(fifo, list_empty(&fifo->pending) != (fifo->open == 0),
+-			"pending list disagrees with open count:%d",
+-			fifo->open))
++		 "pending list disagrees with open count:%d",
++		 fifo->open))
+ 		return -ENXIO;
+ 
+ 	tmp = complete->data;
+@@ -282,10 +278,10 @@ int dma_fifo_out_complete(struct dma_fif
+ 		}
+ 
+ 		if (FAIL(fifo, pending->out != fifo->done ||
+-				addr_check(fifo->in, fifo->done, pending->next),
+-				"in:%u out:%u done:%u saved:%u next:%u",
+-				fifo->in, fifo->out, fifo->done, pending->out,
+-				pending->next))
++			 addr_check(fifo->in, fifo->done, pending->next),
++			 "in:%u out:%u done:%u saved:%u next:%u",
++			 fifo->in, fifo->out, fifo->done, pending->out,
++			 pending->next))
+ 			return -ENXIO;
+ 
+ 		list_del_init(&pending->link);
+@@ -300,7 +296,7 @@ int dma_fifo_out_complete(struct dma_fif
+ 	if (FAIL(fifo, fifo->open < 0, "open dma:%d < 0", fifo->open))
+ 		return -ENXIO;
+ 	if (FAIL(fifo, fifo->avail > fifo->size, "fifo avail:%d > size:%d",
+-			fifo->avail, fifo->size))
++		 fifo->avail, fifo->size))
+ 		return -ENXIO;
+ 
+ 	return 0;
+diff -upr a/drivers/staging/fwserial/fwserial.c b/drivers/staging/fwserial/fwserial.c
+--- a/drivers/staging/fwserial/fwserial.c	2014-04-11 20:48:20.813667706 +0200
++++ b/drivers/staging/fwserial/fwserial.c	2014-04-11 20:47:49.701058326 +0200
+@@ -530,7 +526,7 @@ static void fwtty_emit_breaks(struct wor
+ 	while (n) {
+ 		t = min(n, 16);
+ 		c = tty_insert_flip_string_fixed_flag(&port->port, buf,
+-				TTY_BREAK, t);
++						      TTY_BREAK, t);
+ 		n -= c;
+ 		brk += c;
+ 		if (c < t)
+@@ -741,7 +737,7 @@ static int fwtty_tx(struct fwtty_port *p
+ 	/* try to write as many dma transactions out as possible */
+ 	n = -EAGAIN;
+ 	while (!tty->stopped && !tty->hw_stopped &&
+-			!test_bit(STOP_TX, &port->flags)) {
++	       !test_bit(STOP_TX, &port->flags)) {
+ 		txn = kmem_cache_alloc(fwtty_txn_cache, GFP_ATOMIC);
+ 		if (!txn) {
+ 			n = -ENOMEM;
+@@ -884,7 +880,7 @@ static void fwserial_destroy(struct kref
+ 	for (j = 0; j < num_ports; ++i, ++j) {
+ 		port_table_corrupt |= port_table[i] != ports[j];
+ 		WARN_ONCE(port_table_corrupt, "port_table[%d]: %p != ports[%d]: %p",
+-		     i, port_table[i], j, ports[j]);
++			  i, port_table[i], j, ports[j]);
+ 
+ 		port_table[i] = NULL;
+ 	}
+@@ -1257,7 +1253,7 @@ static int set_serial_info(struct fwtty_
+ 		return -EFAULT;
+ 
+ 	if (tmp.irq != 0 || tmp.port != 0 || tmp.custom_divisor != 0 ||
+-			tmp.baud_base != 400000000)
++	    tmp.baud_base != 400000000)
+ 		return -EPERM;
+ 
+ 	if (!capable(CAP_SYS_ADMIN)) {
