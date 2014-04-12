@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535AbaDLPkH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Apr 2014 11:40:07 -0400
-Received: from g5t1626.atlanta.hp.com ([15.192.137.9]:18980 "EHLO
-	g5t1626.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754631AbaDLPkF (ORCPT
+	id S1754831AbaDLQWa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Apr 2014 12:22:30 -0400
+Received: from g2t2353.austin.hp.com ([15.217.128.52]:15863 "EHLO
+	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750833AbaDLQW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Apr 2014 11:40:05 -0400
-Message-ID: <1397317199.2686.12.camel@buesod1.americas.hpqcorp.net>
+	Sat, 12 Apr 2014 12:22:29 -0400
+Message-ID: <1397319744.2686.16.camel@buesod1.americas.hpqcorp.net>
 Subject: Re: [PATCH] ipc/shm: disable SHMALL, SHMMAX
 From: Davidlohr Bueso <davidlohr@hp.com>
 To: Manfred Spraul <manfred@colorfullife.com>
@@ -17,9 +17,10 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, gthelen@google.com,
         aswin@hp.com, linux-mm@kvack.org
-Date: Sat, 12 Apr 2014 08:39:59 -0700
-In-Reply-To: <1397303284-2216-1-git-send-email-manfred@colorfullife.com>
+Date: Sat, 12 Apr 2014 09:22:24 -0700
+In-Reply-To: <1397317199.2686.12.camel@buesod1.americas.hpqcorp.net>
 References: <1397303284-2216-1-git-send-email-manfred@colorfullife.com>
+	 <1397317199.2686.12.camel@buesod1.americas.hpqcorp.net>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
@@ -28,42 +29,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-04-12 at 13:48 +0200, Manfred Spraul wrote:
-> Shared memory segment can be abused to trigger out-of-memory conditions and
-> the standard measures against out-of-memory do not work:
+On Sat, 2014-04-12 at 08:39 -0700, Davidlohr Bueso wrote:
+> On Sat, 2014-04-12 at 13:48 +0200, Manfred Spraul wrote:
+> > Shared memory segment can be abused to trigger out-of-memory conditions and
+> > the standard measures against out-of-memory do not work:
+> > 
+> > - It is not possible to use setrlimit to limit the size of shm segments.
+> > 
+> > - Segments can exist without association with any processes, thus
+> >   the oom-killer is unable to free that memory.
+> > 
+> > Therefore Linux always limited the size of segments by default to 32 MB.
+> > As most systems do not need a protection against malicious user space apps,
+> > a default that forces most admins and distros to change it doesn't make
+> > sense.
+> > 
+> > The patch disables both limits by setting the limits to ULONG_MAX.
+> > 
+> > Admins who need a protection against out-of-memory conditions should
+> > reduce the limits again and/or enable shm_rmid_forced.
+> > 
+> > Davidlohr: What do you think?
+> > 
+> > I prefer this approach: No need to update the man pages, smaller change
+> > of the code, smaller risk of user space incompatibilities.
 > 
-> - It is not possible to use setrlimit to limit the size of shm segments.
+> As I've mentioned before, both approaches are correct.
 > 
-> - Segments can exist without association with any processes, thus
->   the oom-killer is unable to free that memory.
-> 
-> Therefore Linux always limited the size of segments by default to 32 MB.
-> As most systems do not need a protection against malicious user space apps,
-> a default that forces most admins and distros to change it doesn't make
-> sense.
-> 
-> The patch disables both limits by setting the limits to ULONG_MAX.
-> 
-> Admins who need a protection against out-of-memory conditions should
-> reduce the limits again and/or enable shm_rmid_forced.
-> 
-> Davidlohr: What do you think?
-> 
-> I prefer this approach: No need to update the man pages, smaller change
-> of the code, smaller risk of user space incompatibilities.
+> I still much prefer using 0 instead of ULONG_MAX, it's far easier to
+> understand. And considering the v2 which fixes the shmget(key, 0, flg)
+> usage, I _still_ don't see why it would cause legitimate user
+> incompatibilities.
 
-As I've mentioned before, both approaches are correct.
-
-I still much prefer using 0 instead of ULONG_MAX, it's far easier to
-understand. And considering the v2 which fixes the shmget(key, 0, flg)
-usage, I _still_ don't see why it would cause legitimate user
-incompatibilities.
-
-Regarding the manpage, regardless the approach we end up taking, it
-should still be updated. This is an important change for users, making
-their life easier. We should inform them explicitly about them not
-really needing to deal with the hassle of shm limits anymore.
-
-Thanks,
-Davidlohr
+Also, if the user overflows the variable (indicating that he/she wants
+to increase it to reflect something 'unlimited') and it ends up being 0,
+then it becomes a valid value, not something totally wrong as it is
+today.
 
