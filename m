@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600AbaDLGBY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Apr 2014 02:01:24 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33584 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750845AbaDLGBW (ORCPT
+	id S1752699AbaDLHWd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Apr 2014 03:22:33 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:58020 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065AbaDLHWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Apr 2014 02:01:22 -0400
-Date: Sat, 12 Apr 2014 02:01:20 -0400 (EDT)
-Message-Id: <20140412.020120.1042243807724903382.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, sejeong.na@samsung.com
-Subject: Re: [PATCH net] r8152: check RTL8152_UNPLUG
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394712342-15778-4-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-4-Taiwan-albertk@realtek.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 11 Apr 2014 23:01:22 -0700 (PDT)
+	Sat, 12 Apr 2014 03:22:32 -0400
+From: Jianyu Zhan <nasa4836@gmail.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org, nasa4836@gmail.com
+Subject: [PATCH] block/blk-core.c: print readable string instead of values.
+Date: Sat, 12 Apr 2014 15:22:23 +0800
+Message-Id: <1397287343-10059-1-git-send-email-nasa4836@gmail.com>
+X-Mailer: git-send-email 1.9.0.GIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Fri, 11 Apr 2014 17:54:31 +0800
+Print the r/w direction string instead of internal values.
 
-> When the device is unplugged, the driver would try to disable the
-> device. Add checking the flag of RTL8152_UNPLUG to skip setting
-> the device when it is unplugged. This could shorten the time of
-> unloading the driver.
-> 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+---
+ block/blk-core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Applied.
+diff --git a/block/blk-core.c b/block/blk-core.c
+index a0e3096..0a3bde3 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1625,9 +1625,9 @@ static void handle_bad_sector(struct bio *bio)
+ 	char b[BDEVNAME_SIZE];
+ 
+ 	printk(KERN_INFO "attempt to access beyond end of device\n");
+-	printk(KERN_INFO "%s: rw=%ld, want=%Lu, limit=%Lu\n",
++	printk(KERN_INFO "%s: rw=%s, want=%Lu, limit=%Lu\n",
+ 			bdevname(bio->bi_bdev, b),
+-			bio->bi_rw,
++			(bio->bi_rw & WRITE) ? "WRITE" : "READ",
+ 			(unsigned long long)bio_end_sector(bio),
+ 			(long long)(i_size_read(bio->bi_bdev->bd_inode) >> 9));
+ 
+-- 
+1.9.0.GIT
+
