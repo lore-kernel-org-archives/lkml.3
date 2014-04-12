@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013AbaDLCqa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 22:46:30 -0400
-Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:15038
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754438AbaDLCq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 22:46:28 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "JBeulich@suse.com" <JBeulich@suse.com>
-Subject: RE: [PATCH V1 1/1] X86: Probe for PIC and set legacy_pic
- appropriately
-Thread-Topic: [PATCH V1 1/1] X86: Probe for PIC and set legacy_pic
- appropriately
-Thread-Index: AQHPVeGCk3d5oIQvZEiA/cAVWdUh2psNGFyAgAAueFA=
-Date: Sat, 12 Apr 2014 02:46:23 +0000
-Message-ID: <4ffa16b7f32449d2b445054ce8a51d9e@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <1397263802-5934-1-git-send-email-kys@microsoft.com>
- <534881DB.40901@zytor.com>
-In-Reply-To: <534881DB.40901@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2601:8:9b00:402:7c67:871b:cd27:65d2]
-x-forefront-prvs: 01792087B6
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(13464003)(51704005)(164054003)(479174003)(377454003)(189002)(199002)(2656002)(83072002)(81342001)(83322001)(76576001)(81542001)(99396002)(19580395003)(19580405001)(99286001)(74502001)(85852003)(74316001)(46102001)(79102001)(4396001)(86612001)(86362001)(87936001)(76482001)(33646001)(31966008)(80022001)(74662001)(2201001)(54356999)(50986999)(76176999)(77982001)(92566001)(80976001)(20776003)(77096999)(921003)(1121002)(24736002)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB298;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:BCCFF902.9B32AD1A.38E3F3B3.48EDC93B.20232;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+	id S1756053AbaDLDG0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 23:06:26 -0400
+Received: from exprod5og116.obsmtp.com ([64.18.0.147]:40089 "HELO
+	exprod5og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755055AbaDLDGX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 11 Apr 2014 23:06:23 -0400
+From: Iyappan Subramanian <isubramanian@apm.com>
+To: davem@davemloft.net, netdev@vger.kernel.org, devicetree@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
+        Iyappan Subramanian <isubramanian@apm.com>,
+        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
+Subject: [PATCH v2 0/4] net: Add APM X-Gene SoC Ethernet driver support
+Date: Fri, 11 Apr 2014 20:06:20 -0700
+Message-Id: <1397271984-23405-1-git-send-email-isubramanian@apm.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3C2lRns008141
 
+This patch series adds support for the APM X-Gene SoC Ethernet driver.
 
+v2
+* Completely redesigned ethernet driver
+* Added support to work with big endian kernel
+* Renamed dtb phyid entry to phy_addr
+* Changed dtb local-mac-address entry to byte string format
+* Renamed dtb eth8clk entry to menetclk
 
-> -----Original Message-----
-> From: H. Peter Anvin [mailto:hpa@zytor.com]
-> Sent: Friday, April 11, 2014 4:59 PM
-> To: KY Srinivasan; x86@kernel.org; gregkh@linuxfoundation.org; linux-
-> kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
-> apw@canonical.com; jasowang@redhat.com; tglx@linutronix.de;
-> JBeulich@suse.com
-> Subject: Re: [PATCH V1 1/1] X86: Probe for PIC and set legacy_pic
-> appropriately
-> 
-> On 04/11/2014 05:50 PM, K. Y. Srinivasan wrote:
-> >
-> > +	/*
-> > +	 * Check to see if we have a PIC.
-> > +	 * Mask all except the cascade and read
-> > +	 * back the value we just wrote. If we don't
-> > +	 * have a PIC, we will read 0xff as opposed to the
-> > +	 * value we wrote.
-> > +	 */
-> > +	outb(probe_val, PIC_MASTER_IMR);
-> > +	probe_val = inb(PIC_MASTER_IMR);
-> > +	if (probe_val == 0xff) {
-> > +		printk(KERN_INFO "Using NULL legacy PIC\n");
-> > +		legacy_pic = &null_legacy_pic;
-> > +		raw_spin_unlock_irqrestore(&i8259A_lock, flags);
-> > +		return;
-> > +	}
-> > +
-> >  	outb(0xff, PIC_MASTER_IMR);	/* mask all of 8259A-1 */
-> >  	outb(0xff, PIC_SLAVE_IMR);	/* mask all of 8259A-2 */
-> >
-> 
-> Again, I would do at least the slave masking above the probe.
-> 
-> Also, I would compare to make sure we get the probe_val back and compare
-> with != instead of comparing with ==.
+v1
+* Initial version
 
-Will do.
+Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
+Signed-off-by: Ravi Patel <rapatel@apm.com>
+Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
+---
+Iyappan Subramanian (4):
+  MAINTAINERS: Add entry for APM X-Gene SoC ethernet driver
+  Documentation: dts: Add bindings for APM X-Gene SoC ethernet driver
+  dts: Add bindings for APM X-Gene SoC ethernet driver
+  drivers: net: Add APM X-Gene SoC ethernet driver support.
 
-Thanks,
+ .../devicetree/bindings/net/apm-xgene-enet.txt     |   46 +
+ MAINTAINERS                                        |    8 +
+ arch/arm64/boot/dts/apm-mustang.dts                |    4 +
+ arch/arm64/boot/dts/apm-storm.dtsi                 |   18 +-
+ drivers/net/ethernet/Kconfig                       |    1 +
+ drivers/net/ethernet/Makefile                      |    1 +
+ drivers/net/ethernet/apm/Kconfig                   |    1 +
+ drivers/net/ethernet/apm/Makefile                  |    5 +
+ drivers/net/ethernet/apm/xgene/Kconfig             |   10 +
+ drivers/net/ethernet/apm/xgene/Makefile            |    6 +
+ drivers/net/ethernet/apm/xgene/xgene_enet_hw.c     |  829 +++++++++++++++++
+ drivers/net/ethernet/apm/xgene/xgene_enet_hw.h     |  383 ++++++++
+ drivers/net/ethernet/apm/xgene/xgene_enet_main.c   |  927 ++++++++++++++++++++
+ drivers/net/ethernet/apm/xgene/xgene_enet_main.h   |  153 ++++
+ 14 files changed, 2389 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/net/apm-xgene-enet.txt
+ create mode 100644 drivers/net/ethernet/apm/Kconfig
+ create mode 100644 drivers/net/ethernet/apm/Makefile
+ create mode 100644 drivers/net/ethernet/apm/xgene/Kconfig
+ create mode 100644 drivers/net/ethernet/apm/xgene/Makefile
+ create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_hw.c
+ create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_hw.h
+ create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_main.c
+ create mode 100644 drivers/net/ethernet/apm/xgene/xgene_enet_main.h
 
-K. Y
+-- 
+1.7.9.5
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
