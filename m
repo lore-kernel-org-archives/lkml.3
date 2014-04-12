@@ -1,29 +1,32 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1758278AbaDBJVd (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
-        Wed, 2 Apr 2014 05:21:33 -0400
-Received: from correo.saren.gob.ve ([201.249.231.78]:36530 "EHLO
-        svmailsar00.saren.gob.ve" rhost-flags-OK-OK-OK-FAIL)
-        by vger.kernel.org with ESMTP id S1755178AbaDBJVM convert rfc822-to-8bit
-        (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-        Wed, 2 Apr 2014 05:21:12 -0400
-X-Greylist: delayed 7681 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Apr 2014 05:21:11 EDT
-Content-Type: text/plain; charset=US-ASCII
+        id S1756833AbaDLXhC (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
+        Sat, 12 Apr 2014 19:37:02 -0400
+Received: from smtp.dentalshow.com.br ([200.170.138.211]:61584 "EHLO
+        smtp.valecard.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1756704AbaDLXhA (ORCPT
+        <rfc822;linux-kernel@vger.kernel.org>);
+        Sat, 12 Apr 2014 19:37:00 -0400
+X-Greylist: delayed 485 seconds by postgrey-1.27 at vger.kernel.org; Sat, 12 Apr 2014 19:37:00 EDT
+Date: Sat, 12 Apr 2014 20:27:42 -0300 (BRT)
+From: "Mr.Robinson Dee" <ana.abdala@valecard.com.br>
+Reply-To: "robinsondeehm@hotmail.com" <robinsondeehm@hotmail.com>
+Message-ID: <6159679.1619001397345262597.JavaMail.root@correio>
+Subject: Loan Offer
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7BIT
-Content-Description: Mail message body
-Subject: LOAN OFFER 
-To: Recipients <vclavaud@saren.gob.ve>
-From: Frank Moses <vclavaud@saren.gob.ve>
-Date: Wed, 02 Apr 2014 00:53:33 -0500
-Reply-To: frankloanmoses@gmail.com
-Message-Id: <20140402054956.ACF946464B@svmailsar00.saren.gob.ve>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [69.22.184.25]
+To: undisclosed-recipients:;
+X-MailScanner-ID: 6A23E25DD39.AA8C2
+X-Valecard-MailScanner: Found to be clean
+X-Valecard-MailScanner-SpamScore: ss
+X-Valecard-MailScanner-From: ana.abdala@valecard.com.br
+MailScanner-NULL-Check: 1397950089.50573@1XgBT3DeG1abXTiq6faUbg
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-Frank Moses a private Lender offers a loan you are looking for @ 3% interest rate.For Urgent Response Email: frankloanmoses@gmail.com if interetsed.
 
-Frank Moses.
-Email: frankloanmoses@gmail.com
-Telephone:(404)-662-5935
+
+DO YOU NEED A LOAN TO PAY OFF YOUR BILLS EMAIL robinsondeehm@hotmail.com
