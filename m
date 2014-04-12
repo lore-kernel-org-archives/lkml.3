@@ -1,99 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756145AbaDLKJi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Apr 2014 06:09:38 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39723 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756020AbaDLKJg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Apr 2014 06:09:36 -0400
-Date: Sat, 12 Apr 2014 12:09:34 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        David Herrmann <dh.herrmann@gmail.com>, akpm@linux-foundation.org,
-        jslaby@suse.cz, Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Matt Sealey <matt@genesi-usa.com>, Rob Clark <robdclark@gmail.com>,
-        Niels de Vos <devos@fedoraproject.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Steev Klimaszewski <steev@genesi-usa.com>, blogic@openwrt.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Subject: Re: [PATCH] Route keyboard LEDs through the generic LEDs layer.
-Message-ID: <20140412100934.GA7196@amd.pavel.ucw.cz>
-References: <20140331122323.GC6044@type.bordeaux.inria.fr>
- <20140407021015.GA8518@core.coreip.homeip.net>
- <20140407075423.GZ7179@type.wlan.youpi.perso.aquilenet.fr>
- <20140408083940.GA22855@core.coreip.homeip.net>
+	id S1756094AbaDLKPK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Apr 2014 06:15:10 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:59808 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753910AbaDLKPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 12 Apr 2014 06:15:06 -0400
+Date: Sat, 12 Apr 2014 12:14:55 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, virtio-dev@lists.oasis-open.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] tools: Unify export.h
+Message-ID: <20140412101455.GA30694@pd.tnic>
+References: <1393153753-2369-1-git-send-email-bp@alien8.de>
+ <87eh2s55tg.fsf@rustcorp.com.au>
+ <20140225070020.GA19504@pd.tnic>
+ <87eh2r4c2d.fsf@rustcorp.com.au>
+ <20140225140511.GD5982@ghostprotocols.net>
+ <20140410173805.GA28613@pd.tnic>
+ <20140411115930.GC1107@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140408083940.GA22855@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140411115930.GC1107@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Fri, Apr 11, 2014 at 01:59:30PM +0200, Jiri Olsa wrote:
+> hum, this breaks tarpkg test.. note that I needed attached patch to
+> make the test output verbose
 
-> > > > This permits to reassign keyboard LEDs to something else than keyboard "leds"
-> > > > state, by adding keyboard led and modifier triggers connected to a series
-> > > > of VT input LEDs, themselves connected to VT input triggers, which
-> > > > per-input device LEDs use by default.  Userland can thus easily change the LED
-> > > > behavior of (a priori) all input devices, or of particular input devices.
-> > > > 
-> > > 
-> > > I still have the same concern that I believe I already mentioned a while
-> > > ago: how do we reconcile the LED control via triggers with LED control
-> > > done through event devices?
+Bah, I could swear
 
-I think we should deprecate LED controls using event devices. We have
-nice API for LEDs, and it is not in input.
+make -C tools/perf build-test
 
+passed before sending out. Alternatively, I might've been smoking
+something funny yesterday, though, too.
 
+Anyway, it is the MANIFEST - I keep forgetting this thing and acme
+already made me aware about it in the past. Shame on me!
 
+Anyway, here's a fixed version which passes.
 
-> > > Currently, as far as I can see, they will be
-> > > clashing with each other. I.e. if I remap my capslock led to be the new
-> > > shiftlock and then userspace writes EV_LED/LED_CAPSL it would light up
-> > > my new "shift lock", right?
-> > 
-> > Well, yes, sure, if you shoot in your foot it will hurt :) (although
-> > here the damage is really small, it is just LED lighting or not).
-> 
-> This is not about amount of damage but the overall correctness of the
-> implementation. I'd rather not have a solution with known holes, if
-> possible.
+Thanks.
 
-I'd say that applications using direct EV_LED interface should just
-stop doing it. Yes, you can probably use led API and still toggle the
-led using gpio api behind leds back (not tested, perhaps there are
-interlocks that prevent that)... and it is same situation with
-EV_LED. We should just teach applications not to do that.
+---
+From: Borislav Petkov <bp@suse.de>
+Date: Sun, 23 Feb 2014 12:04:53 +0100
+Subject: [PATCH] tools: Unify export.h
 
-Would solution where EV_LED would be ignored when there's non-default
-trigger selected work for you?
+So tools/ has been growing three, at a different stage of their
+development export.h headers and so we should unite into one. Add
+tools/include/ to the include path of virtio and liblockdep to pick the
+shared header now.
 
-> > My goal, at the beginning, was to be able to fix the console-setup
-> > bug.  That was that console-setup wants to use, for the capslock key,
-> > something else than the capslock mechanism hard-wired in the kernel,
-> > so as to get way more fine-grain control over how caps is handled.
-> > But then the capslock LED would not lit any more.  By remapping the
-> > VT-level capslock led to the foo-lock used by console-setup, one gets
-> > back capslock LEDs of all keyboards working back as expected by the
-> > user.  I also use it for getting a group LED, just like I have on X,
-> > to know which keyboard layout group I am in.  People using non-latin
-> > layouts really need that.
-> 
-> I understand the desire, however I still wonder if we should be
-> extending legacy VT given that David wants to move it all to
-> userspace.
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: virtio-dev@lists.oasis-open.org
+Cc: virtualization@lists.linux-foundation.org
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ tools/{virtio => include}/linux/export.h  | 5 +++++
+ tools/lib/lockdep/Makefile                | 2 +-
+ tools/lib/lockdep/uinclude/linux/export.h | 7 -------
+ tools/perf/MANIFEST                       | 1 +
+ tools/perf/Makefile.perf                  | 2 +-
+ tools/perf/util/include/linux/export.h    | 6 ------
+ tools/virtio/Makefile                     | 2 +-
+ 7 files changed, 9 insertions(+), 16 deletions(-)
+ rename tools/{virtio => include}/linux/export.h (70%)
+ delete mode 100644 tools/lib/lockdep/uinclude/linux/export.h
+ delete mode 100644 tools/perf/util/include/linux/export.h
 
-It looks like legacy VT is going to stay here for long long time...
-									Pavel
+diff --git a/tools/virtio/linux/export.h b/tools/include/linux/export.h
+similarity index 70%
+rename from tools/virtio/linux/export.h
+rename to tools/include/linux/export.h
+index 7311d326894a..d07e586b9ba0 100644
+--- a/tools/virtio/linux/export.h
++++ b/tools/include/linux/export.h
+@@ -1,5 +1,10 @@
++#ifndef _TOOLS_LINUX_EXPORT_H_
++#define _TOOLS_LINUX_EXPORT_H_
++
+ #define EXPORT_SYMBOL(sym)
+ #define EXPORT_SYMBOL_GPL(sym)
+ #define EXPORT_SYMBOL_GPL_FUTURE(sym)
+ #define EXPORT_UNUSED_SYMBOL(sym)
+ #define EXPORT_UNUSED_SYMBOL_GPL(sym)
++
++#endif
+diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
+index 07b0b7542511..41d4a99ce46e 100644
+--- a/tools/lib/lockdep/Makefile
++++ b/tools/lib/lockdep/Makefile
+@@ -112,7 +112,7 @@ export Q VERBOSE
+ 
+ LIBLOCKDEP_VERSION = $(LL_VERSION).$(LL_PATCHLEVEL).$(LL_EXTRAVERSION)
+ 
+-INCLUDES = -I. -I/usr/local/include -I./uinclude -I./include $(CONFIG_INCLUDES)
++INCLUDES = -I. -I/usr/local/include -I./uinclude -I./include -I../../include $(CONFIG_INCLUDES)
+ 
+ # Set compile option CFLAGS if not set elsewhere
+ CFLAGS ?= -g -DCONFIG_LOCKDEP -DCONFIG_STACKTRACE -DCONFIG_PROVE_LOCKING -DBITS_PER_LONG=__WORDSIZE -DLIBLOCKDEP_VERSION='"$(LIBLOCKDEP_VERSION)"' -rdynamic -O0 -g
+diff --git a/tools/lib/lockdep/uinclude/linux/export.h b/tools/lib/lockdep/uinclude/linux/export.h
+deleted file mode 100644
+index 6bdf3492c535..000000000000
+--- a/tools/lib/lockdep/uinclude/linux/export.h
++++ /dev/null
+@@ -1,7 +0,0 @@
+-#ifndef _LIBLOCKDEP_LINUX_EXPORT_H_
+-#define _LIBLOCKDEP_LINUX_EXPORT_H_
+-
+-#define EXPORT_SYMBOL(sym)
+-#define EXPORT_SYMBOL_GPL(sym)
+-
+-#endif
+diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
+index c0c87c87b60f..81783c2037fc 100644
+--- a/tools/perf/MANIFEST
++++ b/tools/perf/MANIFEST
+@@ -7,6 +7,7 @@ tools/lib/symbol/kallsyms.h
+ tools/include/asm/bug.h
+ tools/include/linux/compiler.h
+ tools/include/linux/hash.h
++tools/include/linux/export.h
+ include/linux/const.h
+ include/linux/perf_event.h
+ include/linux/rbtree.h
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 667e85a1f949..791ad6d1994e 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -222,7 +222,7 @@ LIB_H += util/include/linux/const.h
+ LIB_H += util/include/linux/ctype.h
+ LIB_H += util/include/linux/kernel.h
+ LIB_H += util/include/linux/list.h
+-LIB_H += util/include/linux/export.h
++LIB_H += ../include/linux/export.h
+ LIB_H += util/include/linux/poison.h
+ LIB_H += util/include/linux/rbtree.h
+ LIB_H += util/include/linux/rbtree_augmented.h
+diff --git a/tools/perf/util/include/linux/export.h b/tools/perf/util/include/linux/export.h
+deleted file mode 100644
+index b43e2dc21e04..000000000000
+--- a/tools/perf/util/include/linux/export.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#ifndef PERF_LINUX_MODULE_H
+-#define PERF_LINUX_MODULE_H
+-
+-#define EXPORT_SYMBOL(name)
+-
+-#endif
+diff --git a/tools/virtio/Makefile b/tools/virtio/Makefile
+index 3187c62d9814..9325f4693821 100644
+--- a/tools/virtio/Makefile
++++ b/tools/virtio/Makefile
+@@ -3,7 +3,7 @@ test: virtio_test vringh_test
+ virtio_test: virtio_ring.o virtio_test.o
+ vringh_test: vringh_test.o vringh.o virtio_ring.o
+ 
+-CFLAGS += -g -O2 -Wall -I. -I ../../usr/include/ -Wno-pointer-sign -fno-strict-overflow -fno-strict-aliasing -fno-common -MMD -U_FORTIFY_SOURCE
++CFLAGS += -g -O2 -Wall -I. -I../include/ -I ../../usr/include/ -Wno-pointer-sign -fno-strict-overflow -fno-strict-aliasing -fno-common -MMD -U_FORTIFY_SOURCE
+ vpath %.c ../../drivers/virtio ../../drivers/vhost
+ mod:
+ 	${MAKE} -C `pwd`/../.. M=`pwd`/vhost_test
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.9.0
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
