@@ -1,45 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104AbaDLDMg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 11 Apr 2014 23:12:36 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:47320 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755060AbaDLDMf (ORCPT
+	id S1756051AbaDLDW2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 11 Apr 2014 23:22:28 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:22696 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755055AbaDLDW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 11 Apr 2014 23:12:35 -0400
-Date: Fri, 11 Apr 2014 23:12:31 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Liu Hua <sdu.liu@huawei.com>
-cc: linux@arm.linux.org.uk, will.deacon@arm.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        wangnan0@huawei.com, peifeiyue@huawei.com, liusdu@126.com,
-        m.szyprowski@samsung.com
-Subject: Re: [PATCH v2 1/2] ARM : DMA : remove useless information about
- DMA
-In-Reply-To: <1397203252-22977-2-git-send-email-sdu.liu@huawei.com>
-Message-ID: <alpine.LFD.2.11.1404112252050.980@knanqh.ubzr>
-References: <1397203252-22977-1-git-send-email-sdu.liu@huawei.com> <1397203252-22977-2-git-send-email-sdu.liu@huawei.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 11 Apr 2014 23:22:26 -0400
+Message-ID: <1397272942.2686.4.camel@buesod1.americas.hpqcorp.net>
+Subject: [PATCH v2] ipc,shm: disable shmmax and shmall by default
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Manfred Spraul <manfred@colorfullife.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, DavidlohrBueso <davidlohr@hp.com>,
+        aswin@hp.com, LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Fri, 11 Apr 2014 20:22:22 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Apr 2014, Liu Hua wrote:
+From: Davidlohr Bueso <davidlohr@hp.com>
 
-> Because commit e9da6e9905e6 has remove custom consistent dma
-> region. So the related variable and document should be removed
-> 
-> Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+The default size for shmmax is, and always has been, 32Mb.
+Today, in the XXI century, it seems that this value is rather small,
+making users have to increase it via sysctl, which can cause
+unnecessary work and userspace application workarounds[1].
 
-Acked-by: Nicolas Pitre <nico@linaro.org>
+Instead of choosing yet another arbitrary value, larger than 32Mb,
+this patch disables the use of both shmmax and shmall by default,
+allowing users to create segments of unlimited sizes. Users and
+applications that already explicitly set these values through sysctl
+are left untouched, and thus does not change any of the behavior.
 
-Incidentally I sent an identical patch to RMK's patch system:
+So a value of 0 bytes or pages, for shmmax and shmall, respectively,
+implies unlimited memory, as opposed to disabling sysv shared memory.
+This is safe as 0 cannot possibly be used previously as SHMMIN is
+hardcoded to 1 and cannot be modified.
 
-http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=8023/1
+This change allows Linux to treat shm just as regular anonymous memory.
+One important difference between them, though, is handling out-of-memory
+conditions: as opposed to regular anon memory, the OOM killer will not
+free the memory as it is shm, allowing users to potentially abuse this.
+To overcome this situation, the shm_rmid_forced option must be enabled.
 
-Either version is fine with me.
+[1]: http://rhaas.blogspot.com/2012/06/absurd-shared-memory-limits.html
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+Changes from v1:
+ - Respect SHMMIN even when shmmax is 0 (unlimited).
+   This fixes the shmget02 test that broke in v1. (per Manfred)
+
+ - Update changelog regarding OOM description (per Kosaki)
+
+ include/linux/shm.h      | 2 +-
+ include/uapi/linux/shm.h | 8 ++++----
+ ipc/shm.c                | 6 ++++--
+ 3 files changed, 9 insertions(+), 7 deletions(-)
+
+diff --git a/include/linux/shm.h b/include/linux/shm.h
+index 1e2cd2e..0ca06a3 100644
+--- a/include/linux/shm.h
++++ b/include/linux/shm.h
+@@ -4,7 +4,7 @@
+ #include <asm/page.h>
+ #include <uapi/linux/shm.h>
+ 
+-#define SHMALL (SHMMAX/PAGE_SIZE*(SHMMNI/16)) /* max shm system wide (pages) */
++#define SHMALL 0 /* max shm system wide (pages) */
+ #include <asm/shmparam.h>
+ struct shmid_kernel /* private to the kernel */
+ {	
+diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
+index 78b6941..5f0ef28 100644
+--- a/include/uapi/linux/shm.h
++++ b/include/uapi/linux/shm.h
+@@ -9,14 +9,14 @@
+ 
+ /*
+  * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
+- * be increased by sysctl
++ * be increased by sysctl. By default, disable SHMMAX and SHMALL with
++ * 0 bytes, thus allowing processes to have unlimited shared memory.
+  */
+-
+-#define SHMMAX 0x2000000		 /* max shared seg size (bytes) */
++#define SHMMAX 0		         /* max shared seg size (bytes) */
+ #define SHMMIN 1			 /* min shared seg size (bytes) */
+ #define SHMMNI 4096			 /* max num of segs system wide */
+ #ifndef __KERNEL__
+-#define SHMALL (SHMMAX/getpagesize()*(SHMMNI/16))
++#define SHMALL 0
+ #endif
+ #define SHMSEG SHMMNI			 /* max shared segs per process */
+ 
+diff --git a/ipc/shm.c b/ipc/shm.c
+index 7645961..8630561 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -490,10 +490,12 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+ 	int id;
+ 	vm_flags_t acctflag = 0;
+ 
+-	if (size < SHMMIN || size > ns->shm_ctlmax)
++	if (size < SHMMIN ||
++	    (ns->shm_ctlmax && size > ns->shm_ctlmax))
+ 		return -EINVAL;
+ 
+-	if (ns->shm_tot + numpages > ns->shm_ctlall)
++	if (ns->shm_ctlall &&
++	    ns->shm_tot + numpages > ns->shm_ctlall)
+ 		return -ENOSPC;
+ 
+ 	shp = ipc_rcu_alloc(sizeof(*shp));
+-- 
+1.8.1.4
 
 
-Nicolas
+
