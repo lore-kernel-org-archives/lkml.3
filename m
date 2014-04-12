@@ -1,474 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754412AbaDLIpv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Apr 2014 04:45:51 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49651 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751838AbaDLIpn (ORCPT
+	id S1755521AbaDLIuU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Apr 2014 04:50:20 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:51783 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818AbaDLIuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Apr 2014 04:45:43 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Mark Brown <broonie@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Chen-Yu Tsai <wens@csie.org>, Hans de Goede <hdegoede@redhat.com>,
-        Carlo Caione <carlo@caione.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [RFC PATCH] regmap: smbus: add support for regmap over SMBus
-Date: Sat, 12 Apr 2014 10:45:35 +0200
-Message-Id: <1397292335-5516-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
+	Sat, 12 Apr 2014 04:50:15 -0400
+Message-ID: <5348FE43.1070508@colorfullife.com>
+Date: Sat, 12 Apr 2014 10:50:11 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Davidlohr Bueso <davidlohr@hp.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Greg Thelen <gthelen@google.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] ipc,shm: disable shmmax and shmall by default
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net> <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net> <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com> <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com> <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com> <20140401142947.927642a408d84df27d581e36@linux-foundation.org> <CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com> <20140401144801.603c288674ab8f417b42a043@linux-foundation.org> <CAHGf_=r5AUu6yvJgOzwYDghBo6iT2q+nNumpvqwer+igcfChrA@mail.gmail.com> <1396394931.25314.34.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rH+vfFzRrh35TETxjFU2HM0xnDQFweQ+Bfw20Pm2nL3g@mail.gmail.com> <1396484447.2953.1.camel@buesod1.americas.hpqcorp.net> <5348343F.6030300@colorfullife.com> <1397248035.2503.20.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1397248035.2503.20.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SMBus is a subset of the I2C protocol, oftenly used to access registers on
-external devices.
+On 04/11/2014 10:27 PM, Davidlohr Bueso wrote:
+> On Fri, 2014-04-11 at 20:28 +0200, Manfred Spraul wrote:
+>> Hi Davidlohr,
+>>
+>> On 04/03/2014 02:20 AM, Davidlohr Bueso wrote:
+>>> The default size for shmmax is, and always has been, 32Mb.
+>>> Today, in the XXI century, it seems that this value is rather small,
+>>> making users have to increase it via sysctl, which can cause
+>>> unnecessary work and userspace application workarounds[1].
+>>>
+>>> [snip]
+>>> Running this patch through LTP, everything passes, except the following,
+>>> which, due to the nature of this change, is quite expected:
+>>>
+>>> shmget02    1  TFAIL  :  call succeeded unexpectedly
+>> Why is this TFAIL expected?
+> So looking at shmget02.c, this is the case that fails:
+>
+> 		for (i = 0; i < TST_TOTAL; i++) {
+> 			/*
+> 			 * Look for a failure ...
+> 			 */
+>
+> 			TEST(shmget(*(TC[i].skey), TC[i].size, TC[i].flags));
+>
+> 			if (TEST_RETURN != -1) {
+> 				tst_resm(TFAIL, "call succeeded unexpectedly");
+> 				continue;
+> 			}
+>
+> Where TC[0] is:
+> struct test_case_t {
+> 	int *skey;
+> 	int size;
+> 	int flags;
+> 	int error;
+> } TC[] = {
+> 	/* EINVAL - size is 0 */
+> 	{
+> 	&shmkey2, 0, IPC_CREAT | IPC_EXCL | SHM_RW, EINVAL},
+>
+> So it's expected because now 0 is actually valid. And before:
+>
+>   EINVAL A new segment was to be created and size < SHMMIN or size > SHMMAX
+>
+>>> diff --git a/ipc/shm.c b/ipc/shm.c
+>>> index 7645961..ae01ffa 100644
+>>> --- a/ipc/shm.c
+>>> +++ b/ipc/shm.c
+>>> @@ -490,10 +490,12 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+>>>    	int id;
+>>>    	vm_flags_t acctflag = 0;
+>>>    
+>>> -	if (size < SHMMIN || size > ns->shm_ctlmax)
+>>> +	if (ns->shm_ctlmax &&
+>>> +	    (size < SHMMIN || size > ns->shm_ctlmax))
+>>>    		return -EINVAL;
+>>>    
+>>> -	if (ns->shm_tot + numpages > ns->shm_ctlall)
+>>> +	if (ns->shm_ctlall &&
+>>> +	    ns->shm_tot + numpages > ns->shm_ctlall)
+>>>    		return -ENOSPC;
+>>>    
+>>>    	shp = ipc_rcu_alloc(sizeof(*shp));
+>> Ok, I understand it:
+>> Your patch disables checking shmmax, shmall *AND* checking for SHMMIN.
+> Right, if shmmax is 0, then there's no point checking for shmmin,
+> otherwise we'd always end up returning EINVAL.
+>
+>> a) Have you double checked that 0-sized shm segments work properly?
+>>    Does the swap code handle it properly, ...? EINVAL A new segment was to be created and size < SHMMIN or size > SHMMAX
+> Hmm so I've been using this patch just fine on my laptop since I sent
+> it. So far I haven't seen any issues. Are you refering to something in
+> particular? I'd be happy to run any cases you're concerned with.
+I'm thinking about malicious applications.
+Create 0-sized segments and then map them. Does find_vma_intersection 
+handle that case?
+The same for all other functions that are called by the shm code.
 
-I2C adpaters are able to access SMBus devices thanks to the SMBus
-emulation layer. In the other hand SMBus adapters may not provide
-regular I2C transfers, and thus you may not be able to expose a regmap
-if your device is connected to such kind of adapter.
-Hence why we need this regmap over SMBus implementation.
+You can't replace code review by "runs for a month"
+>> b) It's that yet another risk for user space incompatibility?
+> Sorry, I don't follow here.
+Applications expect that shmget(,0,) fails.
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
-Hello Mark,
-
-I know you were not in favor of the smbus regmap (according to this thread
-[1]), but I now hit a point where I need this functionnality.
-
-The A31 SoC have an SMBus adatper which do not support regular I2C transfers
-and on some boards (if not all) the AXP221 PMIC is connected to thi adapter.
-Moreover the AXP221 really looks like the AXP209 whose driver is being
-submitting ([2]), and this driver uses regmap to expose PMIC's registers.
-
-I'd like to reuse the driver, and the only thing I need to do so is to add
-support for regmap over SMBus, and patch the axp20x driver to register an
-smbus regmap instead of an i2c one.
-
-Let me now if you still think regmap over SMBus should not be supported, or
-if you've find a better way to achieve my goal.
-
-Best Regards,
-
-Boris
-
-[1] http://comments.gmane.org/gmane.linux.kernel/1167755
-
- drivers/base/regmap/Kconfig        |   5 +-
- drivers/base/regmap/Makefile       |   1 +
- drivers/base/regmap/regmap-smbus.c | 364 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 369 insertions(+), 1 deletion(-)
- create mode 100644 drivers/base/regmap/regmap-smbus.c
-
-diff --git a/drivers/base/regmap/Kconfig b/drivers/base/regmap/Kconfig
-index 4251570..450b4c1 100644
---- a/drivers/base/regmap/Kconfig
-+++ b/drivers/base/regmap/Kconfig
-@@ -3,7 +3,7 @@
- # subsystems should select the appropriate symbols.
- 
- config REGMAP
--	default y if (REGMAP_I2C || REGMAP_SPI || REGMAP_SPMI || REGMAP_MMIO || REGMAP_IRQ)
-+	default y if (REGMAP_I2C || REGMAP_SMBUS || REGMAP_SPI || REGMAP_SPMI || REGMAP_MMIO || REGMAP_IRQ)
- 	select LZO_COMPRESS
- 	select LZO_DECOMPRESS
- 	select IRQ_DOMAIN if REGMAP_IRQ
-@@ -12,6 +12,9 @@ config REGMAP
- config REGMAP_I2C
- 	tristate
- 
-+config REGMAP_SMBUS
-+	tristate
-+
- config REGMAP_SPI
- 	tristate
- 
-diff --git a/drivers/base/regmap/Makefile b/drivers/base/regmap/Makefile
-index a7c670b..e752b9c 100644
---- a/drivers/base/regmap/Makefile
-+++ b/drivers/base/regmap/Makefile
-@@ -2,6 +2,7 @@ obj-$(CONFIG_REGMAP) += regmap.o regcache.o
- obj-$(CONFIG_REGMAP) += regcache-rbtree.o regcache-lzo.o regcache-flat.o
- obj-$(CONFIG_DEBUG_FS) += regmap-debugfs.o
- obj-$(CONFIG_REGMAP_I2C) += regmap-i2c.o
-+obj-$(CONFIG_REGMAP_SMBUS) += regmap-smbus.o
- obj-$(CONFIG_REGMAP_SPI) += regmap-spi.o
- obj-$(CONFIG_REGMAP_SPMI) += regmap-spmi.o
- obj-$(CONFIG_REGMAP_MMIO) += regmap-mmio.o
-diff --git a/drivers/base/regmap/regmap-smbus.c b/drivers/base/regmap/regmap-smbus.c
-new file mode 100644
-index 0000000..c8b8075
---- /dev/null
-+++ b/drivers/base/regmap/regmap-smbus.c
-@@ -0,0 +1,364 @@
-+/*
-+ * Register map access API - SMBus support
-+ *
-+ * Copyright 2014 Free Electrons
-+ *
-+ * Author: Boris Brezillon <boris.brezillon@free-electrons.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/regmap.h>
-+#include <linux/i2c.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+
-+struct regmap_smbus_context {
-+	struct i2c_client *i2c;
-+	enum regmap_smbus_transfer_type transfer_type;
-+	int val_bytes;
-+};
-+
-+static int regmap_smbus_write(void *context, const void *data, size_t count)
-+{
-+	struct regmap_smbus_context *ctx = context;
-+	int ret = 0;
-+	u8 reg = *(u8 *)data++;
-+
-+	count--;
-+
-+	switch (ctx->transfer_type) {
-+	case REGMAP_SMBUS_BYTE_TRANSFER:
-+		while (count > 0 && !ret) {
-+			ret = i2c_smbus_write_byte_data(ctx->i2c, reg++,
-+							*(u8 *)data++);
-+
-+			count--;
-+		}
-+		break;
-+
-+	case REGMAP_SMBUS_WORD_TRANSFER:
-+		while (count > 0 && !ret) {
-+			ret = i2c_smbus_write_word_data(ctx->i2c, reg,
-+							*(u16 *)data++);
-+
-+			reg += 2;
-+			count -= 2;
-+		}
-+		break;
-+
-+	case REGMAP_SMBUS_BLOCK_TRANSFER:
-+		while (count > 0 && !ret) {
-+			ret = i2c_smbus_write_block_data(ctx->i2c,
-+							 reg,
-+							 ctx->val_bytes,
-+							 (const u8 *)data);
-+
-+			reg += ctx->val_bytes;
-+			count -= ctx->val_bytes;
-+			data += ctx->val_bytes;
-+		}
-+		break;
-+
-+	case REGMAP_SMBUS_I2C_BLOCK_TRANSFER:
-+		while (count > 0 && !ret) {
-+			ret = i2c_smbus_write_i2c_block_data(ctx->i2c,
-+							     reg,
-+							     ctx->val_bytes,
-+							     (const u8 *)data);
-+
-+			reg += ctx->val_bytes;
-+			count -= ctx->val_bytes;
-+			data += ctx->val_bytes;
-+		}
-+		break;
-+
-+	default:
-+		return -ENOTSUPP;
-+	}
-+
-+	return ret;
-+}
-+
-+static int regmap_smbus_gather_write(void *context,
-+				     const void *reg, size_t reg_size,
-+				     const void *val, size_t val_size)
-+{
-+	struct regmap_smbus_context *ctx = context;
-+	u8 smbus_reg;
-+	int ret = 0;
-+
-+	if (reg_size != 1)
-+		return -ENOTSUPP;
-+
-+	smbus_reg = *(u8 *)reg;
-+
-+	switch (ctx->transfer_type) {
-+	case REGMAP_SMBUS_BYTE_TRANSFER:
-+		while (val_size && !ret) {
-+			ret = i2c_smbus_write_byte_data(ctx->i2c,
-+							smbus_reg++,
-+							*(u8 *)val++);
-+
-+			val_size--;
-+		}
-+		break;
-+
-+	case REGMAP_SMBUS_WORD_TRANSFER:
-+		while (val_size && !ret) {
-+			ret = i2c_smbus_write_word_data(ctx->i2c,
-+							smbus_reg,
-+							*(u16 *)val++);
-+
-+			smbus_reg += 2;
-+			val_size -= 2;
-+		}
-+		break;
-+
-+	case REGMAP_SMBUS_BLOCK_TRANSFER:
-+		while (val_size && !ret) {
-+			ret = i2c_smbus_write_block_data(ctx->i2c,
-+							 smbus_reg,
-+							 ctx->val_bytes,
-+							 (const u8 *)val);
-+
-+			smbus_reg += ctx->val_bytes;
-+			val_size -= ctx->val_bytes;
-+			val += ctx->val_bytes;
-+		}
-+		break;
-+
-+	case REGMAP_SMBUS_I2C_BLOCK_TRANSFER:
-+		if (val_size > I2C_SMBUS_BLOCK_MAX)
-+			return -ENOTSUPP;
-+
-+		while (val_size && !ret) {
-+			ret = i2c_smbus_write_i2c_block_data(ctx->i2c,
-+							     smbus_reg,
-+							     ctx->val_bytes,
-+							     (const u8 *)val);
-+
-+			smbus_reg += ctx->val_bytes;
-+			val_size -= ctx->val_bytes;
-+			val += ctx->val_bytes;
-+		}
-+		break;
-+
-+	default:
-+		return -ENOTSUPP;
-+	}
-+
-+	return ret;
-+}
-+
-+static int regmap_smbus_read(void *context,
-+			     const void *reg, size_t reg_size,
-+			     void *val, size_t val_size)
-+{
-+	struct regmap_smbus_context *ctx = context;
-+	u8 buffer[I2C_SMBUS_BLOCK_MAX];
-+	u8 smbus_reg;
-+	int ret = 0;
-+
-+	if (reg_size != 1)
-+		return -ENOTSUPP;
-+
-+	smbus_reg = *(u8 *)reg;
-+
-+	switch (ctx->transfer_type) {
-+	case REGMAP_SMBUS_BYTE_TRANSFER:
-+		while (val_size && ret >= 0) {
-+			ret = i2c_smbus_read_byte_data(ctx->i2c, smbus_reg++);
-+			if (ret >= 0)
-+				*((u8 *)val++) = ret;
-+
-+			val_size--;
-+		}
-+		break;
-+
-+	case REGMAP_SMBUS_WORD_TRANSFER:
-+		while (val_size && ret >= 0) {
-+			ret = i2c_smbus_read_word_data(ctx->i2c, smbus_reg);
-+			if (ret >= 0)
-+				*(u16 *)val++ = ret;
-+
-+			smbus_reg += 2;
-+			val_size -= 2;
-+		}
-+		break;
-+
-+	case REGMAP_SMBUS_BLOCK_TRANSFER:
-+		while (val_size && ret >= 0) {
-+			ret = i2c_smbus_read_block_data(ctx->i2c,
-+							smbus_reg,
-+							buffer);
-+			if (ret >= 0 && ret < ctx->val_bytes) {
-+				ret = -EIO;
-+				break;
-+			}
-+
-+			memcpy(val, buffer, ctx->val_bytes);
-+			smbus_reg += ctx->val_bytes;
-+			val_size -= ctx->val_bytes;
-+			val += ctx->val_bytes;
-+		}
-+		break;
-+
-+	case REGMAP_SMBUS_I2C_BLOCK_TRANSFER:
-+		while (val_size && ret >= 0) {
-+			return -ENOTSUPP;
-+
-+			ret = i2c_smbus_read_i2c_block_data(ctx->i2c,
-+							    smbus_reg,
-+							    ctx->val_bytes,
-+							    (u8 *)val);
-+			if (ret >= 0 && ret < val_size) {
-+				ret = -EIO;
-+				break;
-+			}
-+
-+			smbus_reg += ctx->val_bytes;
-+			val_size -= ctx->val_bytes;
-+			val += ctx->val_bytes;
-+		}
-+		break;
-+
-+	default:
-+		return -ENOTSUPP;
-+	}
-+
-+	if (ret < 0)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static void regmap_smbus_free_context(void *context)
-+{
-+	kfree(context);
-+}
-+
-+struct regmap_smbus_context *regmap_smbus_gen_context(struct i2c_client *i2c,
-+				const struct regmap_config *config,
-+				enum regmap_smbus_transfer_type transfer_type)
-+{
-+	struct regmap_smbus_context *ctx;
-+	int val_bytes = 0;
-+
-+	if (config->reg_bits != 8 || config->pad_bits != 0)
-+		return ERR_PTR(-ENOTSUPP);
-+
-+	switch (transfer_type) {
-+	case REGMAP_SMBUS_BYTE_TRANSFER:
-+		if (config->val_bits != 8)
-+			return ERR_PTR(-EINVAL);
-+
-+		if (!i2c_check_functionality(i2c->adapter,
-+					     I2C_FUNC_SMBUS_BYTE_DATA))
-+			return ERR_PTR(-ENOTSUPP);
-+		break;
-+
-+	case REGMAP_SMBUS_WORD_TRANSFER:
-+		if (config->val_bits != 16)
-+			return ERR_PTR(-EINVAL);
-+
-+		if (!i2c_check_functionality(i2c->adapter,
-+					     I2C_FUNC_SMBUS_WORD_DATA))
-+			return ERR_PTR(-ENOTSUPP);
-+		break;
-+
-+	case REGMAP_SMBUS_BLOCK_TRANSFER:
-+		if (config->val_bits > (I2C_SMBUS_BLOCK_MAX * 8))
-+			return ERR_PTR(-EINVAL);
-+
-+		val_bytes = DIV_ROUND_UP(config->val_bits, 8);
-+		if (!i2c_check_functionality(i2c->adapter,
-+					     I2C_FUNC_SMBUS_BLOCK_DATA))
-+			return ERR_PTR(-ENOTSUPP);
-+		break;
-+
-+	case REGMAP_SMBUS_I2C_BLOCK_TRANSFER:
-+		if (config->val_bits > (I2C_SMBUS_BLOCK_MAX * 8))
-+			return ERR_PTR(-EINVAL);
-+
-+		val_bytes = DIV_ROUND_UP(config->val_bits, 8);
-+
-+		if (!i2c_check_functionality(i2c->adapter,
-+					     I2C_FUNC_SMBUS_I2C_BLOCK))
-+			return ERR_PTR(-ENOTSUPP);
-+		break;
-+
-+	default:
-+		return ERR_PTR(-ENOTSUPP);
-+	}
-+
-+	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
-+	if (!ctx)
-+		return ERR_PTR(-ENOMEM);
-+
-+	ctx->i2c = i2c;
-+	ctx->transfer_type = transfer_type;
-+	ctx->val_bytes = val_bytes;
-+
-+	return ctx;
-+}
-+
-+static struct regmap_bus regmap_smbus = {
-+	.write = regmap_smbus_write,
-+	.gather_write = regmap_smbus_gather_write,
-+	.read = regmap_smbus_read,
-+	.free_context = regmap_smbus_free_context,
-+};
-+
-+/**
-+ * regmap_init_smbus(): Initialise register map
-+ *
-+ * @i2c: Device that will be interacted with
-+ * @config: Configuration for register map
-+ * @transfer_type: SMBUS transfer type
-+ *
-+ * The return value will be an ERR_PTR() on error or a valid pointer to
-+ * a struct regmap.
-+ */
-+struct regmap *regmap_init_smbus(struct i2c_client *i2c,
-+				 const struct regmap_config *config,
-+				 enum regmap_smbus_transfer_type transfer_type)
-+{
-+	struct regmap_smbus_context *ctx =
-+		regmap_smbus_gen_context(i2c, config, transfer_type);
-+
-+	if (IS_ERR(ctx))
-+		return ERR_PTR(PTR_ERR(ctx));
-+
-+	return regmap_init(&i2c->dev, &regmap_smbus, ctx, config);
-+}
-+EXPORT_SYMBOL_GPL(regmap_init_smbus);
-+
-+/**
-+ * devm_regmap_init_smbus(): Initialise managed register map
-+ *
-+ * @i2c: Device that will be interacted with
-+ * @config: Configuration for register map
-+ * @transfer_type: SMBUS transfer type
-+ *
-+ * The return value will be an ERR_PTR() on error or a valid pointer
-+ * to a struct regmap.  The regmap will be automatically freed by the
-+ * device management code.
-+ */
-+struct regmap *devm_regmap_init_smbus(struct i2c_client *i2c,
-+				const struct regmap_config *config,
-+				enum regmap_smbus_transfer_type transfer_type)
-+{
-+	struct regmap_smbus_context *ctx =
-+		regmap_smbus_gen_context(i2c, config, transfer_type);
-+
-+	if (IS_ERR(ctx))
-+		return ERR_PTR(PTR_ERR(ctx));
-+
-+	return devm_regmap_init(&i2c->dev, &regmap_smbus, ctx, config);
-+}
-+EXPORT_SYMBOL_GPL(devm_regmap_init_smbus);
-+
-+MODULE_LICENSE("GPL");
--- 
-1.8.3.2
-
+--
+     Manfred
