@@ -1,136 +1,699 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754122AbaDMO27 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 10:28:59 -0400
-Received: from mout.gmx.net ([212.227.15.19]:58031 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750991AbaDMO26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 10:28:58 -0400
-Message-ID: <534A9F22.4090902@gmx.de>
-Date: Sun, 13 Apr 2014 16:28:50 +0200
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	id S1753518AbaDMOnG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 10:43:06 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:40537 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112AbaDMOnE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 10:43:04 -0400
+Message-ID: <534AA271.5010303@gmail.com>
+Date: Sun, 13 Apr 2014 20:12:57 +0530
+From: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Eric Paris <eparis@redhat.com>, Jan Kara <jack@suse.cz>,
-        tvrtko.ursulin@onelan.co.uk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] Avoid having to provide a fake/invalid fd and path
- (fanotify)
-References: <1395847805-6714-1-git-send-email-xypron.glpk@gmx.de>  <20140326184731.GA18118@quack.suse.cz> <1395860454.24733.15.camel@flatline.rdu.redhat.com>
-In-Reply-To: <1395860454.24733.15.camel@flatline.rdu.redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: a.zummo@towertech.it, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com
+Subject: [PATCH] rtc: add support for maxim dallas rtc ds1343 and ds1344
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:YoaHEloej29VcgUN4nroNcy0jt/nmLqJQCkzA+tks2WibxnL1ML
- c4S81fCkVMFlW1l4mix6MKOGrmUL9icHbMJTREXPNRvAwt+1JPLrNHHGCCAHrZk1XfSXGaf
- yYRzgZRBFCYH/SNzUBNygLsp7VAXZiW+TieTooSNaP4OxpMVs+dxO4whu+zzaRaGhKaTS81
- xD6MO1FtUBRGLOlkrh6Xg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew,
+>From 54dad3ebbce5aba4d749a14d8173e94297e14b1a Mon Sep 17 00:00:00 2001
+From: Raghavendra Ganiga <ravi23ganiga@gmail.com>
+Date: Sun, 13 Apr 2014 20:02:59 +0530
+Subject: [PATCH] rtc: add support for maxim dallas rtc ds1343 and ds1344
 
-may I again bring this patch to your attention.
+This is patch to add support for
+maxim dallas rtc ds1343 and ds1344
 
-Jan Kara <jack@suse.cz> reviewed it and
-fanotify maintainer Eric Paris <eparis@redhat.com>
-asked you to, please, apply it.
+Signed-off-by: Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
+---
+ drivers/rtc/Kconfig      |   10 +
+ drivers/rtc/Makefile     |    1 +
+ drivers/rtc/rtc-ds1343.c |  619 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 630 insertions(+)
+ create mode 100644 drivers/rtc/rtc-ds1343.c
 
-Unfortunately I could not see any update.
-
-Best regards
-
-Heinrich Schuchardt
-
-
-On 26.03.2014 20:00, Eric Paris wrote:
-> On Wed, 2014-03-26 at 19:47 +0100, Jan Kara wrote:
->> On Wed 26-03-14 16:30:05, xypron.glpk@gmx.de wrote:
->>> From: Heinrich Schuchardt <xypron.glpk@gmx.de>
->>>
->>> https://lkml.org/lkml/2011/1/12/112
->>> holds a patch by Tvrtko Ursulin
->>>
->>>    Avoid having to provide a fake/invalid fd and path when flushing marks
->>>
->>>    Currently for a group to flush marks it has set it needs to
->>>    provide a fake or invalid (but resolvable) file descriptor
->>>    and path when calling fanotify_mark. This patch pulls the
->>>    flush handling a bit up so file descriptor and path are
->>>    completely ignored when flushing.
->>>
->>> Eric wrote it was applied.
->>> https://lkml.org/lkml/2011/1/19/321
->>>
->>> Unfortunately it is still not in the main stream code and the problem remains.
->>>
->>> I reworked the patch to be applicable again (the signature of fanotify_mark
->>> has changed since Tvrtko's work).
->>>
->>> Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
->>    The patch looks good to me. You can add:
->> Reviewed-by: Jan Kara <jack@suse.cz>
->>
->>    Andrew, can you please add the patch to the fanotify patches you already
->> carry? Thanks!
->
-> Acked-by: Eric Paris <eparis@redhat.com>
->
-> that would be great Andrew!
->
->>
->> 								Honza
->>
->>> ---
->>>   fs/notify/fanotify/fanotify_user.c |   17 ++++++++++-------
->>>   1 file changed, 10 insertions(+), 7 deletions(-)
->>>
->>> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
->>> index 287a22c..05bb38a 100644
->>> --- a/fs/notify/fanotify/fanotify_user.c
->>> +++ b/fs/notify/fanotify/fanotify_user.c
->>> @@ -856,6 +856,15 @@ SYSCALL_DEFINE5(fanotify_mark, int, fanotify_fd, unsigned int, flags,
->>>   	    group->priority == FS_PRIO_0)
->>>   		goto fput_and_out;
->>>
->>> +	if (flags & FAN_MARK_FLUSH) {
->>> +		ret = 0;
->>> +		if (flags & FAN_MARK_MOUNT)
->>> +			fsnotify_clear_vfsmount_marks_by_group(group);
->>> +		else
->>> +			fsnotify_clear_inode_marks_by_group(group);
->>> +		goto fput_and_out;
->>> +	}
->>> +
->>>   	ret = fanotify_find_path(dfd, pathname, &path, flags);
->>>   	if (ret)
->>>   		goto fput_and_out;
->>> @@ -867,7 +876,7 @@ SYSCALL_DEFINE5(fanotify_mark, int, fanotify_fd, unsigned int, flags,
->>>   		mnt = path.mnt;
->>>
->>>   	/* create/update an inode mark */
->>> -	switch (flags & (FAN_MARK_ADD | FAN_MARK_REMOVE | FAN_MARK_FLUSH)) {
->>> +	switch (flags & (FAN_MARK_ADD | FAN_MARK_REMOVE)) {
->>>   	case FAN_MARK_ADD:
->>>   		if (flags & FAN_MARK_MOUNT)
->>>   			ret = fanotify_add_vfsmount_mark(group, mnt, mask, flags);
->>> @@ -880,12 +889,6 @@ SYSCALL_DEFINE5(fanotify_mark, int, fanotify_fd, unsigned int, flags,
->>>   		else
->>>   			ret = fanotify_remove_inode_mark(group, inode, mask, flags);
->>>   		break;
->>> -	case FAN_MARK_FLUSH:
->>> -		if (flags & FAN_MARK_MOUNT)
->>> -			fsnotify_clear_vfsmount_marks_by_group(group);
->>> -		else
->>> -			fsnotify_clear_inode_marks_by_group(group);
->>> -		break;
->>>   	default:
->>>   		ret = -EINVAL;
->>>   	}
->>> --
->>> 1.7.10.4
->>>
->
->
->
-
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 2e565f8..eb5cdcb 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -573,6 +573,16 @@ config RTC_DRV_DS1305
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-ds1305.
+ 
++config RTC_DRV_DS1343
++	tristate "Dallas/Maxim DS1343/DS1344"
++	help
++	  If you say yes here you get support for the
++	  Dallas/Maxim DS1343 and DS1344 real time clock chips.
++	  Support for trickle charger, alarm is provided.
++
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-ds1343.
++
+ config RTC_DRV_DS1347
+ 	tristate "Dallas/Maxim DS1347"
+ 	help
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 40a0991..a8daf6c 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -40,6 +40,7 @@ obj-$(CONFIG_RTC_DRV_DS1286)	+= rtc-ds1286.o
+ obj-$(CONFIG_RTC_DRV_DS1302)	+= rtc-ds1302.o
+ obj-$(CONFIG_RTC_DRV_DS1305)	+= rtc-ds1305.o
+ obj-$(CONFIG_RTC_DRV_DS1307)	+= rtc-ds1307.o
++obj-$(CONFIG_RTC_DRV_DS1343)	+= rtc-ds1343.o
+ obj-$(CONFIG_RTC_DRV_DS1347)	+= rtc-ds1347.o
+ obj-$(CONFIG_RTC_DRV_DS1374)	+= rtc-ds1374.o
+ obj-$(CONFIG_RTC_DRV_DS1390)	+= rtc-ds1390.o
+diff --git a/drivers/rtc/rtc-ds1343.c b/drivers/rtc/rtc-ds1343.c
+new file mode 100644
+index 0000000..9bd9313
+--- /dev/null
++++ b/drivers/rtc/rtc-ds1343.c
+@@ -0,0 +1,619 @@
++/* rtc-ds1343.c
++ *
++ * Driver for Dallas Semiconductor DS1343 Low Current, SPI Compatible
++ * Real Time Clock
++ *
++ * Author : Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/interrupt.h>
++#include <linux/device.h>
++#include <linux/spi/spi.h>
++#include <linux/rtc.h>
++#include <linux/bcd.h>
++#include <linux/pm.h>
++#include <linux/slab.h>
++#include <linux/workqueue.h>
++
++#define DS1343_DRV_VERSION	"01.00"
++
++/* RTC DS1343 Registers */
++#define DS1343_SECONDS_REG	0x00
++#define DS1343_MINUTES_REG	0x01
++#define DS1343_HOURS_REG	0x02
++#define DS1343_DAY_REG		0x03
++#define DS1343_DATE_REG		0x04
++#define DS1343_MONTH_REG	0x05
++#define DS1343_YEAR_REG		0x06
++#define DS1343_ALM0_SEC_REG	0x07
++#define DS1343_ALM0_MIN_REG	0x08
++#define DS1343_ALM0_HOUR_REG	0x09
++#define DS1343_ALM0_DAY_REG	0x0A
++#define DS1343_ALM1_SEC_REG	0x0B
++#define DS1343_ALM1_MIN_REG	0x0C
++#define DS1343_ALM1_HOUR_REG	0x0D
++#define DS1343_ALM1_DAY_REG	0x0E
++#define DS1343_CONTROL_REG	0x0F
++#define DS1343_STATUS_REG	0x10
++#define DS1343_TRICKLE_REG	0x11
++
++/* DS1343 Control Registers bits */
++#define DS1343_EOSC		0x80
++#define DS1343_DOSF		0x20
++#define DS1343_EGFIL		0x10
++#define DS1343_SQW		0x08
++#define DS1343_INTCN		0x04
++#define DS1343_A1IE		0x02
++#define DS1343_A0IE		0x01
++
++/* DS1343 Status Registers bits */
++#define DS1343_OSF		0x80
++#define DS1343_IRQF1		0x02
++#define DS1343_IRQF0		0x01
++
++/* DS1343 Trickle Charger Registers bits */
++#define DS1343_TRICKLE_MAGIC	0xa0
++#define DS1343_TRICKLE_DS1	0x08
++#define DS1343_TRICKLE_1K	0x01
++#define DS1343_TRICKLE_2K	0x02
++#define DS1343_TRICKLE_4K	0x03
++
++static const struct spi_device_id ds1343_id[] = {
++	{ "ds1343", 0 },
++	{ "ds1344", 1 },
++	{ }
++};
++MODULE_DEVICE_TABLE(spi, ds1343_id);
++
++struct ds1343_priv {
++	struct spi_device *spi;
++	struct rtc_device *rtc;
++	struct mutex mutex;
++	struct work_struct work;
++	unsigned int irqen;
++	int alarm_sec;
++	int alarm_min;
++	int alarm_hour;
++	int alarm_mday;
++};
++
++static int ds1343_get_reg(struct device *dev, unsigned char address,
++				unsigned char *buf)
++{
++	struct spi_device *spi = to_spi_device(dev);
++
++	/* MSB of the spi address                        _
++	   in this rtc should be zero for read operation R/W */
++	*buf = address;
++
++	return spi_write_then_read(spi, buf, 1, buf, 1);
++}
++
++static int ds1343_set_reg(struct device *dev, unsigned char address,
++				unsigned char data)
++{
++	struct spi_device *spi = to_spi_device(dev);
++	unsigned char buf[2];
++
++	/* MSB of the spi address                        _
++	   in this rtc should be one for write operation R/W */
++	buf[0] = address | 0x80;
++	buf[1] = data;
++
++	return spi_write_then_read(spi, buf, 2, NULL, 0);
++}
++
++static int ds1343_ioctl(struct device *dev, unsigned int cmd, unsigned long arg)
++{
++	switch (cmd) {
++#ifdef RTC_SET_CHARGE
++	case RTC_SET_CHARGE:
++	{
++		int val;
++
++		if (copy_from_user(&val, (int __user *)arg, sizeof(int)))
++			return -EFAULT;
++
++		return ds1343_set_reg(dev, DS1343_TRICKLE_REG, val);
++	}
++	break;
++#endif
++	}
++
++	return -ENOIOCTLCMD;
++}
++
++#ifdef CONFIG_PROC_FS
++
++static int ds1343_proc(struct device *dev, struct seq_file *seq)
++{
++	struct ds1343_priv *priv = dev_get_drvdata(dev);
++	struct  spi_device *spi = priv->spi;
++	unsigned char data, alarm_mode = 0;
++	const char *alarm_str, *diodes = "disabled", *resistors = " ";
++
++	ds1343_get_reg(&spi->dev, DS1343_CONTROL_REG, &data);
++
++	seq_printf(seq,
++			"oscillator\t: %s\n"
++			"disable_oscillator_stop_flag\t: %s\n"
++			"glitch_filter\t: %s\n"
++			"square_wave\t: %s\n"
++			"alarm_enable\t: %s\n",
++			(data & DS1343_EOSC) ? "disabled" : "enabled",
++			(data & DS1343_DOSF) ? "disabled" : "enabled",
++			(data & DS1343_EGFIL) ? "enabled" : "disabled",
++			(data & DS1343_SQW) ? "enabled" : "disabled",
++			(data & DS1343_A0IE) ? "enabled" : "disabled");
++
++	ds1343_get_reg(&spi->dev, DS1343_ALM0_SEC_REG, &data);
++	alarm_mode = (data & 0x80) >> 4;
++
++	ds1343_get_reg(&spi->dev, DS1343_ALM0_MIN_REG, &data);
++	alarm_mode |= (data & 0x80) >> 5;
++
++	ds1343_get_reg(&spi->dev, DS1343_ALM0_HOUR_REG, &data);
++	alarm_mode |= (data & 0x80) >> 6;
++
++	ds1343_get_reg(&spi->dev, DS1343_ALM0_DAY_REG, &data);
++	alarm_mode |= (data & 0x80) >> 7;
++
++	switch (alarm_mode) {
++	case 15:
++		alarm_str = "each second";
++		break;
++
++	case 7:
++		alarm_str = "seconds match";
++		break;
++
++	case 3:
++		alarm_str = "minutes and seconds match";
++		break;
++
++	case 1:
++		alarm_str = "hours, minutes and seconds match";
++		break;
++
++	case 0:
++		alarm_str = "day, hours, minutes and seconds match";
++		break;
++
++	default:
++		alarm_str = "invalid";
++		break;
++	}
++
++	seq_printf(seq, "alarm_mode\t: %s\n", alarm_str);
++
++	ds1343_get_reg(dev, DS1343_STATUS_REG, &data);
++	seq_printf(seq,
++			"alarm_pending\t: %s\n"
++			"oscillator_stop_flag\t: %s\n",
++			(data & DS1343_IRQF0) ? "yes" : "no",
++			(data & DS1343_OSF) ? "1" : "0");
++
++	ds1343_get_reg(dev, DS1343_TRICKLE_REG, &data);
++
++	if ((data & 0xf0) == DS1343_TRICKLE_MAGIC) {
++		switch (data & 0x0c) {
++		case DS1343_TRICKLE_DS1:
++			diodes = "one diode,";
++			break;
++
++		default:
++			diodes = "no diode,";
++			break;
++		}
++
++		switch (data & 0x03) {
++		case DS1343_TRICKLE_1K:
++			resistors = "1k Ohm";
++			break;
++
++		case DS1343_TRICKLE_2K:
++			resistors = "2k Ohm";
++			break;
++
++		case DS1343_TRICKLE_4K:
++			resistors = "4k Ohm";
++			break;
++
++		default:
++			diodes = "disabled";
++			break;
++		}
++	}
++
++	seq_printf(seq,
++			"trickle_charger\t: %s %s\n",
++			diodes, resistors);
++
++	return 0;
++}
++
++#else
++
++#define ds1343_proc NULL
++
++#endif
++
++static int ds1343_read_time(struct device *dev, struct rtc_time *dt)
++{
++	struct spi_device *spi = to_spi_device(dev);
++	unsigned char buf[7];
++	int res;
++
++	buf[0] = DS1343_SECONDS_REG;
++
++	res = spi_write_then_read(spi, buf, 1, buf, 7);
++	if (res)
++		return res;
++
++	dt->tm_sec	= bcd2bin(buf[0]);
++	dt->tm_min	= bcd2bin(buf[1]);
++	dt->tm_hour	= bcd2bin(buf[2] & 0x3F);
++	dt->tm_wday	= bcd2bin(buf[3]) - 1;
++	dt->tm_mday	= bcd2bin(buf[4]);
++	dt->tm_mon	= bcd2bin(buf[5] & 0x1F) - 1;
++	dt->tm_year	= bcd2bin(buf[6]) + 100; /* year offset from 1900 */
++
++	return rtc_valid_tm(dt);
++}
++
++static int ds1343_set_time(struct device *dev, struct rtc_time *dt)
++{
++	int res;
++	res = ds1343_set_reg(dev, DS1343_SECONDS_REG,
++				bin2bcd(dt->tm_sec));
++	if (res)
++		return res;
++
++	res = ds1343_set_reg(dev, DS1343_MINUTES_REG,
++				bin2bcd(dt->tm_min));
++	if (res)
++		return res;
++
++	res = ds1343_set_reg(dev, DS1343_HOURS_REG,
++				bin2bcd(dt->tm_hour) & 0x3F);
++	if (res)
++		return res;
++
++	res = ds1343_set_reg(dev, DS1343_DAY_REG,
++				bin2bcd(dt->tm_wday + 1));
++	if (res)
++		return res;
++
++	res = ds1343_set_reg(dev, DS1343_DATE_REG,
++				bin2bcd(dt->tm_mday));
++	if (res)
++		return res;
++
++	res = ds1343_set_reg(dev, DS1343_MONTH_REG,
++				bin2bcd(dt->tm_mon + 1));
++	if (res)
++		return res;
++
++	dt->tm_year %= 100;
++
++	res = ds1343_set_reg(dev, DS1343_YEAR_REG,
++				bin2bcd(dt->tm_year));
++	if (res)
++		return res;
++
++	return 0;
++}
++
++static int ds1343_update_alarm(struct device *dev)
++{
++	struct ds1343_priv *priv = dev_get_drvdata(dev);
++	struct spi_device *spi = priv->spi;
++	unsigned char control, stat;
++	unsigned char buf[5];
++	int res = 0;
++
++	res = ds1343_get_reg(dev, DS1343_CONTROL_REG, &control);
++	if (res)
++		return res;
++
++	res = ds1343_get_reg(dev, DS1343_STATUS_REG, &stat);
++	if (res)
++		return res;
++
++	control &= ~(DS1343_A0IE);
++	stat &= ~(DS1343_IRQF0);
++
++	res = ds1343_set_reg(dev, DS1343_CONTROL_REG, control);
++	if (res)
++		return res;
++
++	res = ds1343_set_reg(dev, DS1343_STATUS_REG, stat);
++	if (res)
++		return res;
++
++	buf[0] = DS1343_ALM0_SEC_REG | 0x80;
++	buf[1] = priv->alarm_sec < 0 || (priv->irqen & RTC_UF) ?
++		0x80 : bin2bcd(priv->alarm_sec) & 0x7F;
++	buf[2] = priv->alarm_min < 0 || (priv->irqen & RTC_UF) ?
++		0x80 : bin2bcd(priv->alarm_min) & 0x7F;
++	buf[3] = priv->alarm_hour < 0 || (priv->irqen & RTC_UF) ?
++		0x80 : bin2bcd(priv->alarm_hour) & 0x3F;
++	buf[4] = priv->alarm_mday < 0 || (priv->irqen & RTC_UF) ?
++		0x80 : bin2bcd(priv->alarm_mday) & 0x7F;
++
++	res = spi_write_then_read(spi, buf, 5, NULL, 0);
++	if (res)
++		return res;
++
++	if (priv->irqen) {
++		control |= DS1343_A0IE;
++		res = ds1343_set_reg(dev, DS1343_CONTROL_REG, control);
++	}
++
++	return res;
++}
++
++static int ds1343_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
++{
++	struct ds1343_priv *priv = dev_get_drvdata(dev);
++	struct spi_device *spi = priv->spi;
++	int res = 0;
++	unsigned char stat;
++
++	if (spi->irq <= 0)
++		return -EINVAL;
++
++	mutex_lock(&priv->mutex);
++
++	res = ds1343_get_reg(dev, DS1343_STATUS_REG, &stat);
++	if (res)
++		goto out;
++
++	alarm->enabled = !!(priv->irqen & RTC_AF);
++	alarm->pending = !!(stat & DS1343_IRQF0);
++
++	alarm->time.tm_sec = priv->alarm_sec < 0 ? 0 : priv->alarm_sec;
++	alarm->time.tm_min = priv->alarm_min < 0 ? 0 : priv->alarm_min;
++	alarm->time.tm_hour = priv->alarm_hour < 0 ? 0 : priv->alarm_hour;
++	alarm->time.tm_mday = priv->alarm_mday < 0 ? 0 : priv->alarm_mday;
++
++	alarm->time.tm_mon = -1;
++	alarm->time.tm_year = -1;
++	alarm->time.tm_wday = -1;
++	alarm->time.tm_yday = -1;
++	alarm->time.tm_isdst = -1;
++
++out:
++	mutex_unlock(&priv->mutex);
++	return res;
++}
++
++static int ds1343_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
++{
++	struct ds1343_priv *priv = dev_get_drvdata(dev);
++	struct spi_device *spi = priv->spi;
++	int res = 0;
++
++	if (spi->irq <= 0)
++		return -EINVAL;
++
++	mutex_lock(&priv->mutex);
++
++	priv->alarm_sec = alarm->time.tm_sec;
++	priv->alarm_min = alarm->time.tm_min;
++	priv->alarm_hour = alarm->time.tm_hour;
++	priv->alarm_mday = alarm->time.tm_mday;
++
++	if (alarm->enabled)
++		priv->irqen |= RTC_AF;
++
++	res = ds1343_update_alarm(dev);
++
++	mutex_unlock(&priv->mutex);
++
++	return res;
++}
++
++static int ds1343_alarm_irq_enable(struct device *dev, unsigned int enabled)
++{
++	struct ds1343_priv *priv = dev_get_drvdata(dev);
++	struct spi_device *spi = priv->spi;
++	int res = 0;
++
++	if (spi->irq <= 0)
++		return -EINVAL;
++
++	mutex_lock(&priv->mutex);
++
++	if (enabled)
++		priv->irqen |= RTC_AF;
++	else
++		priv->irqen &= ~RTC_AF;
++
++	res = ds1343_update_alarm(dev);
++
++	mutex_unlock(&priv->mutex);
++
++	return res;
++}
++
++static irqreturn_t ds1343_irq(int irq, void *dev_id)
++{
++	struct ds1343_priv *priv = dev_id;
++
++	disable_irq_nosync(irq);
++	schedule_work(&priv->work);
++	return IRQ_HANDLED;
++}
++
++static void ds1343_work(struct work_struct *work)
++{
++	struct ds1343_priv *priv = container_of(work, struct ds1343_priv, work);
++	struct spi_device *spi = priv->spi;
++	unsigned char stat, control;
++	int res = 0;
++
++	mutex_lock(&priv->mutex);
++
++	res = ds1343_get_reg(&spi->dev, DS1343_STATUS_REG, &stat);
++	if (res)
++		goto out;
++
++	if (stat & DS1343_IRQF0) {
++		stat &= ~DS1343_IRQF0;
++		ds1343_set_reg(&spi->dev, DS1343_STATUS_REG, stat);
++
++		res = ds1343_get_reg(&spi->dev, DS1343_CONTROL_REG, &control);
++		if (res)
++			goto out;
++
++		control &= ~DS1343_A0IE;
++		ds1343_set_reg(&spi->dev, DS1343_CONTROL_REG, control);
++
++		rtc_update_irq(priv->rtc, 1, RTC_AF | RTC_IRQF);
++	}
++
++out:
++	if (priv->irqen)
++		enable_irq(spi->irq);
++
++	mutex_unlock(&priv->mutex);
++}
++
++static const struct rtc_class_ops ds1343_rtc_ops = {
++	.ioctl		= ds1343_ioctl,
++	.proc		= ds1343_proc,
++	.read_time	= ds1343_read_time,
++	.set_time	= ds1343_set_time,
++	.read_alarm	= ds1343_read_alarm,
++	.set_alarm	= ds1343_set_alarm,
++	.alarm_irq_enable = ds1343_alarm_irq_enable,
++};
++
++static int ds1343_probe(struct spi_device *spi)
++{
++	struct ds1343_priv *priv;
++	unsigned char data;
++	int res;
++
++	priv = devm_kzalloc(&spi->dev, sizeof(struct ds1343_priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	priv->spi = spi;
++	mutex_init(&priv->mutex);
++	INIT_WORK(&priv->work, ds1343_work);
++
++	/* RTC DS1347 works in spi mode 3 and
++	 * its chip select is active high
++	 */
++	spi->mode = SPI_MODE_3 | SPI_CS_HIGH;
++	spi->bits_per_word = 8;
++	res = spi_setup(spi);
++	if (res)
++		return res;
++
++	spi_set_drvdata(spi, priv);
++
++	res = ds1343_get_reg(&spi->dev, DS1343_SECONDS_REG, &data);
++	if (res)
++		return res;
++
++	ds1343_get_reg(&spi->dev, DS1343_CONTROL_REG, &data);
++	data |= DS1343_INTCN;
++	data &= ~(DS1343_EOSC | DS1343_A1IE | DS1343_A0IE);
++	ds1343_set_reg(&spi->dev, DS1343_CONTROL_REG, data);
++
++	ds1343_get_reg(&spi->dev, DS1343_STATUS_REG, &data);
++	data &= ~(DS1343_OSF | DS1343_IRQF1 | DS1343_IRQF0);
++	ds1343_set_reg(&spi->dev, DS1343_STATUS_REG, data);
++
++	priv->rtc = devm_rtc_device_register(&spi->dev, "ds1343",
++					&ds1343_rtc_ops, THIS_MODULE);
++	if (IS_ERR(priv->rtc)) {
++		dev_err(&spi->dev, "unable to register rtc ds1343\n");
++		return PTR_ERR(priv->rtc);
++	}
++
++	if (spi->irq >= 0) {
++		res = devm_request_irq(&spi->dev, spi->irq, ds1343_irq, 0,
++				"ds1343", priv);
++		if (res) {
++			dev_err(&spi->dev, "unable to request irq for rtc ds1343\n");
++			return res;
++		}
++
++		device_set_wakeup_capable(&spi->dev, 1);
++	}
++
++	return 0;
++}
++
++static int ds1343_remove(struct spi_device *spi)
++{
++	struct ds1343_priv *priv = spi_get_drvdata(spi);
++
++	if (spi->irq) {
++		mutex_lock(&priv->mutex);
++		priv->irqen &= ~RTC_AF;
++		mutex_unlock(&priv->mutex);
++
++		devm_free_irq(&spi->dev, spi->irq, priv);
++		cancel_work_sync(&priv->work);
++	}
++
++	spi_set_drvdata(spi, NULL);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM_SLEEP
++
++static int ds1343_suspend(struct device *dev)
++{
++	struct spi_device *spi = to_spi_device(dev);
++
++	if (spi->irq >= 0 && device_may_wakeup(dev))
++		enable_irq_wake(spi->irq);
++
++	return 0;
++}
++
++static int ds1343_resume(struct device *dev)
++{
++	struct spi_device *spi = to_spi_device(dev);
++
++	if (spi->irq >= 0 && device_may_wakeup(dev))
++		disable_irq_wake(spi->irq);
++
++	return 0;
++}
++
++#endif
++
++static SIMPLE_DEV_PM_OPS(ds1343_pm, ds1343_suspend, ds1343_resume);
++
++static struct spi_driver ds1343_driver = {
++	.driver = {
++		.name = "ds1343",
++		.owner = THIS_MODULE,
++		.pm = &ds1343_pm,
++	},
++	.probe = ds1343_probe,
++	.remove = ds1343_remove,
++	.id_table = ds1343_id,
++};
++
++module_spi_driver(ds1343_driver);
++
++MODULE_DESCRIPTION("DS1343 RTC SPI Driver");
++MODULE_AUTHOR("Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>");
++MODULE_LICENSE("GPL v2");
++MODULE_VERSION(DS1343_DRV_VERSION);
+-- 
+1.7.10.4
