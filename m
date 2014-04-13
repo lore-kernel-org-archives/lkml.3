@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263AbaDMXPt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 19:15:49 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:6774 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757AbaDMXPp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 19:15:45 -0400
-Message-ID: <1397430940.31076.2.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Date: Sun, 13 Apr 2014 16:15:40 -0700
-In-Reply-To: <534AD1EE.3050705@colorfullife.com>
-References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
-	 <1396306773.18499.22.camel@buesod1.americas.hpqcorp.net>
-	 <20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
-	 <1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>
-	 <20140331170546.3b3e72f0.akpm@linux-foundation.org>
-	 <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
-	 <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
-	 <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net>
-	 <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
-	 <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net>
-	 <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
-	 <20140401142947.927642a408d84df27d581e36@linux-foundation.org>
-	 <CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com>
-	 <20140401144801.603c288674ab8f417b42a043@linux-foundation.org>
-	 <1396389751.25314.26.camel@buesod1.americas.hpqcorp.net>
-	 <20140401150843.13da3743554ad541629c936d@linux-foundation.org>
-	 <534AD1EE.3050705@colorfullife.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+	id S1752960AbaDMXSa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 19:18:30 -0400
+Received: from ozlabs.org ([103.22.144.67]:48810 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751030AbaDMXS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 19:18:28 -0400
+Date: Mon, 14 Apr 2014 09:18:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.15-rc1 out, merge window closed
+Message-Id: <20140414091818.2d43bcd17ef49a65b0b969a3@canb.auug.org.au>
+In-Reply-To: <CA+55aFykrvKAe29pTUqq8Oc2FKtnFWwU7vxbTQXa7ysZ6xxMXw@mail.gmail.com>
+References: <CA+55aFykrvKAe29pTUqq8Oc2FKtnFWwU7vxbTQXa7ysZ6xxMXw@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__14_Apr_2014_09_18_18_+1000__eOO+tMR8mQjIJE8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-04-13 at 20:05 +0200, Manfred Spraul wrote:
-> Hi Andrew,
-> 
-> On 04/02/2014 12:08 AM, Andrew Morton wrote:
-> > Well, I'm assuming 64GB==infinity. It *was* infinity in the RHEL5 
-> > timeframe, but infinity has since become larger so pickanumber. 
-> 
-> I think infinity is the right solution:
-> The only common case where infinity is wrong would be Android - and 
-> Android disables sysv shm entirely.
-> 
-> There are two patches:
-> http://marc.info/?l=linux-kernel&m=139730332306185&q=raw
+--Signature=_Mon__14_Apr_2014_09_18_18_+1000__eOO+tMR8mQjIJE8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If you apply this one, please include the below, which updates a missing
-definition for SHMALL.
+The merge window is closed, so this would be a good moment for everyone
+to tidy up their linux-next included trees/branches (i.e. reset to
+v3.15-rc1) before continuing on.  For most, this will be a simple fast
+forward ...
 
-diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
-index d9497b7..0774ec4 100644
---- a/include/uapi/linux/shm.h
-+++ b/include/uapi/linux/shm.h
-@@ -9,14 +9,14 @@
- 
- /*
-  * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
-- * be increased by sysctl
-+ * be decreased by sysctl.
-  */
- 
- #define SHMMAX ULONG_MAX		 /* max shared seg size (bytes) */
- #define SHMMIN 1			 /* min shared seg size (bytes) */
- #define SHMMNI 4096			 /* max num of segs system wide */
- #ifndef __KERNEL__
--#define SHMALL (SHMMAX/getpagesize()*(SHMMNI/16))
-+#define SHMALL ULONG_MAX
- #endif
- #define SHMSEG SHMMNI			 /* max shared segs per process */
- 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Mon__14_Apr_2014_09_18_18_+1000__eOO+tMR8mQjIJE8
+Content-Type: application/pgp-signature
 
-> http://marc.info/?l=linux-kernel&m=139727299800644&q=raw
-> 
-> Could you apply one of them?
-> I wrote the first one, thus I'm biased which one is better.
-> 
-> --
->      Manfred
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBCAAGBQJTSxtAAAoJEMDTa8Ir7ZwVLNcP/RUqR613k+L0KXr8JpJ5N1PU
+xqP9J5CTg7LJJ53FBKst90rrnBYmg2S3XLOY2p8AVxKbySB0fjbxAwLRmeBEA2TC
+HP+KlIVtNA62WIdZJWhoCgl/A+ZO323xzKqf7+6dTW8qfkpfT/oag0P0xbI7TH0c
+EAfQdCNUKw1pmsjD1XpV53wGiiaxxEH0NOzbBf4C5ps2OX2LI5H6ub7evc0/WA7C
+VFXXNFANcGs4VIB7Grd6AHrtjC8NcDBHidT9igA75Ar0bphA2jTid+G75aDvkJK0
+10DQz7gRfI41x95l96eOAWIgKgFyAxySelmtIhbJb1Xym0ol680BvarTkOhlitE+
+wwt/VbYYY8qrBpUk/I8RNu+rRX29WaISfALht2QZqkqyxVtOqyjUJvmIum109kLO
+OHNQ+UO1KHvRveflP/dTmdqJ5ODhu6FOJ3OPYJLXwpEZqi0KxYisQ434NVuEQwMj
+a2PHwVdktjh0DwNAcyq2uroKNpXu8qLur5xS8sJ6l+rMuJ3CNY7NxoDAN8QLEisL
+CVhvXwR8F1fCuLLxV0fP+77NMlJiTD0c+lnV/muEXVMp1f4zil3PAXjeuheYCQIJ
+ZF2v1uIGkDoRmZ8SUCSdzPi0wjMfiHgM8gso0UC4oDPkkirp701aNeetbEQ5XDcC
+QjXX6SPx54sPvB+znIiq
+=Q27u
+-----END PGP SIGNATURE-----
 
+--Signature=_Mon__14_Apr_2014_09_18_18_+1000__eOO+tMR8mQjIJE8--
