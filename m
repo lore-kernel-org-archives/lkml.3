@@ -1,91 +1,372 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332AbaDMBay (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 12 Apr 2014 21:30:54 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:53573 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806AbaDMBax (ORCPT
+	id S1753294AbaDMBcQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 12 Apr 2014 21:32:16 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:37649 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883AbaDMBcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 12 Apr 2014 21:30:53 -0400
-Date: Sat, 12 Apr 2014 18:30:49 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        David Herrmann <dh.herrmann@gmail.com>, akpm@linux-foundation.org,
-        jslaby@suse.cz, Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Matt Sealey <matt@genesi-usa.com>, Rob Clark <robdclark@gmail.com>,
-        Niels de Vos <devos@fedoraproject.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Steev Klimaszewski <steev@genesi-usa.com>, blogic@openwrt.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Subject: Re: [PATCH] Route keyboard LEDs through the generic LEDs layer.
-Message-ID: <20140413013049.GB28990@core.coreip.homeip.net>
-References: <20140331122323.GC6044@type.bordeaux.inria.fr>
- <20140407021015.GA8518@core.coreip.homeip.net>
- <20140407075423.GZ7179@type.wlan.youpi.perso.aquilenet.fr>
- <20140408083940.GA22855@core.coreip.homeip.net>
- <20140412100934.GA7196@amd.pavel.ucw.cz>
+	Sat, 12 Apr 2014 21:32:13 -0400
+Date: Sat, 12 Apr 2014 21:32:09 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
+        cgroups@vger.kernel.org
+Subject: [PATCH RFC] blkcg: prepare blkcg knobs for default hierarchy
+Message-ID: <20140413013209.GC26252@mtj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140412100934.GA7196@amd.pavel.ucw.cz>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 12, 2014 at 12:09:34PM +0200, Pavel Machek wrote:
-> Hi!
-> 
-> > > > > This permits to reassign keyboard LEDs to something else than keyboard "leds"
-> > > > > state, by adding keyboard led and modifier triggers connected to a series
-> > > > > of VT input LEDs, themselves connected to VT input triggers, which
-> > > > > per-input device LEDs use by default.  Userland can thus easily change the LED
-> > > > > behavior of (a priori) all input devices, or of particular input devices.
-> > > > > 
-> > > > 
-> > > > I still have the same concern that I believe I already mentioned a while
-> > > > ago: how do we reconcile the LED control via triggers with LED control
-> > > > done through event devices?
-> 
-> I think we should deprecate LED controls using event devices. We have
-> nice API for LEDs, and it is not in input.
-> 
-> 
-> 
-> 
-> > > > Currently, as far as I can see, they will be
-> > > > clashing with each other. I.e. if I remap my capslock led to be the new
-> > > > shiftlock and then userspace writes EV_LED/LED_CAPSL it would light up
-> > > > my new "shift lock", right?
-> > > 
-> > > Well, yes, sure, if you shoot in your foot it will hurt :) (although
-> > > here the damage is really small, it is just LED lighting or not).
-> > 
-> > This is not about amount of damage but the overall correctness of the
-> > implementation. I'd rather not have a solution with known holes, if
-> > possible.
-> 
-> I'd say that applications using direct EV_LED interface should just
-> stop doing it. Yes, you can probably use led API and still toggle the
-> led using gpio api behind leds back (not tested, perhaps there are
-> interlocks that prevent that)... and it is same situation with
-> EV_LED. We should just teach applications not to do that.
-> 
-> Would solution where EV_LED would be ignored when there's non-default
-> trigger selected work for you?
+Hello,
 
-Not ignored but rather routed to the LED that is currently selected for
-given function. This way if I re-purposed CapsLock LED for Wifi and do
-not provide a replacement EV_LED will be effectively dropped, but if I
-switch CapsLock with NumLock I want the event to affect the appropriate
-LED.
+Unified hierarchy has finally been posted.
+
+  http://thread.gmane.org/gmane.linux.kernel.containers/27601
+
+It took a lot longer than I originally anticipated and over the course
+quite a few aspects of the initial design have changed, hopefully, for
+the better.  One of the areas which has seen major redirection is
+internal tasks competing against child cgroups.  The original plan was
+implementing an implicit leaf node for each cgroup so that internal
+tasks compete as an implicit child against other children.  cfq was
+chosen as the first one to try the strategy and the result was
+leaf_weight[_device] knobs.  This, unfortunately, doesn't seem to be
+the right direction.
+
+The strategy complicates the controller interface and implementation,
+and ends up adding an extra layer of nesting at leaves.  Also,
+initially, it was thought that internal tasks are problematic only for
+weight based controllers; however, it turns out it also is a problem
+for absolute limit based ones like memory, which means that we'd need
+to complicate more controllers.
+
+As the problem is something fundamental in most resource controllers,
+the implemented unified hierarchy now enforces structural constraint
+which prevents competion between internal tasks and child cgroups from
+the get-go making leaf_weight[_device] mechanism unnecessary.
+
+In addition, blkio interface is generally a bit messy and all cfq
+knobs are missing "cfq." prefix.  As unified hierarchy involves
+noticeable changes in usage, this patch takes the chance and make
+blkio present more consistent and concise interface on unified
+hierarchy
+
+I'm currently preparing a doc describing the design and rationales of
+unified hierarchy and most of the above information will be present in
+the documentation.
 
 Thanks.
 
--- 
-Dmitry
+------ 8< ------
+Some blkcg knobs don't make sense on unified hierarchy.  This patch
+makes the following changes for unified hierarchy.
+
+* reset_stats never made much sense outside developement and
+  debugging.  Omit it.
+
+* As unified hierarchy excludes internal tasks competing against child
+  cgroups, cfq's leaf_weight[_device] knobs are no longer necessary.
+  Omit it.
+
+* For cfq, weight[_device] behave inherently differently from the same
+  knobs on !root cgroups as root cgroup is treated as parallel to
+  immediate children.  Let's omit it for now.
+
+* cfq's time stats reports the total time slice consumed but its unit
+  is in jiffies and it's not reported per-device like all other stats.
+  Omit it for now.  If slice time is actually necessary, let's add it
+  in the form consistent with other stats.
+
+* cfq's io_queued reporting is different from all other stats in that
+  it's a snapshot value rather than accumulated value and is mostly
+  meaningful only for debugging.  Omit it.
+
+* As unified hierarchy doesn't allow internal tasks, non-recursive
+  stats are largely irrelevant.  Omit them.
+
+* cfq adds a number of stats knobs if CONFIG_DEBUG_BLK_CGROUP.  If
+  these are actually for debugging, they shouldn't show up by default
+  (ie. should be gated by kernel param or something).  If userland
+  already developed dependency on them, we need to take them out of
+  CONFIG_DEBUG_BLK_CGROUP.  Skip them for now.  We can add back the
+  relevant ones later.
+
+* Prefix the remaining cfq knobs with "cfq." and make the names
+  consistent.
+
+  weight_device			-> cfq.weight_device
+  weight			-> cfq.weight
+  sectors_recursive		-> cfq.sectors
+  io_service_bytes_recursive	-> cfq.bytes
+  io_serviced_recursive		-> cfq.serviced
+  io_merged_recursive		-> cfq.merged
+  io_service_time_recursive	-> cfq.io_time
+  io_wait_time_recursive	-> cfq.wait_time
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+---
+ block/blk-cgroup.c  |    1 
+ block/cfq-iosched.c |   89 +++++++++++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 86 insertions(+), 4 deletions(-)
+
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -761,6 +761,7 @@ EXPORT_SYMBOL_GPL(blkg_conf_finish);
+ struct cftype blkcg_files[] = {
+ 	{
+ 		.name = "reset_stats",
++		.flags = CFTYPE_INSANE,
+ 		.write_u64 = blkcg_reset_stats,
+ 	},
+ 	{ }	/* terminate */
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1835,13 +1835,13 @@ static struct cftype cfq_blkcg_files[] =
+ 	/* on root, weight is mapped to leaf_weight */
+ 	{
+ 		.name = "weight_device",
+-		.flags = CFTYPE_ONLY_ON_ROOT,
++		.flags = CFTYPE_INSANE | CFTYPE_ONLY_ON_ROOT,
+ 		.seq_show = cfqg_print_leaf_weight_device,
+ 		.write_string = cfqg_set_leaf_weight_device,
+ 	},
+ 	{
+ 		.name = "weight",
+-		.flags = CFTYPE_ONLY_ON_ROOT,
++		.flags = CFTYPE_INSANE | CFTYPE_ONLY_ON_ROOT,
+ 		.seq_show = cfq_print_leaf_weight,
+ 		.write_u64 = cfq_set_leaf_weight,
+ 	},
+@@ -1849,24 +1849,26 @@ static struct cftype cfq_blkcg_files[] =
+ 	/* no such mapping necessary for !roots */
+ 	{
+ 		.name = "weight_device",
+-		.flags = CFTYPE_NOT_ON_ROOT,
++		.flags = CFTYPE_INSANE | CFTYPE_NOT_ON_ROOT,
+ 		.seq_show = cfqg_print_weight_device,
+ 		.write_string = cfqg_set_weight_device,
+ 	},
+ 	{
+ 		.name = "weight",
+-		.flags = CFTYPE_NOT_ON_ROOT,
++		.flags = CFTYPE_INSANE | CFTYPE_NOT_ON_ROOT,
+ 		.seq_show = cfq_print_weight,
+ 		.write_u64 = cfq_set_weight,
+ 	},
+ 
+ 	{
+ 		.name = "leaf_weight_device",
++		.flags = CFTYPE_INSANE,
+ 		.seq_show = cfqg_print_leaf_weight_device,
+ 		.write_string = cfqg_set_leaf_weight_device,
+ 	},
+ 	{
+ 		.name = "leaf_weight",
++		.flags = CFTYPE_INSANE,
+ 		.seq_show = cfq_print_leaf_weight,
+ 		.write_u64 = cfq_set_leaf_weight,
+ 	},
+@@ -1874,41 +1876,49 @@ static struct cftype cfq_blkcg_files[] =
+ 	/* statistics, covers only the tasks in the cfqg */
+ 	{
+ 		.name = "time",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.time),
+ 		.seq_show = cfqg_print_stat,
+ 	},
+ 	{
+ 		.name = "sectors",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.sectors),
+ 		.seq_show = cfqg_print_stat,
+ 	},
+ 	{
+ 		.name = "io_service_bytes",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.service_bytes),
+ 		.seq_show = cfqg_print_rwstat,
+ 	},
+ 	{
+ 		.name = "io_serviced",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.serviced),
+ 		.seq_show = cfqg_print_rwstat,
+ 	},
+ 	{
+ 		.name = "io_service_time",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.service_time),
+ 		.seq_show = cfqg_print_rwstat,
+ 	},
+ 	{
+ 		.name = "io_wait_time",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.wait_time),
+ 		.seq_show = cfqg_print_rwstat,
+ 	},
+ 	{
+ 		.name = "io_merged",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.merged),
+ 		.seq_show = cfqg_print_rwstat,
+ 	},
+ 	{
+ 		.name = "io_queued",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.queued),
+ 		.seq_show = cfqg_print_rwstat,
+ 	},
+@@ -1916,75 +1926,146 @@ static struct cftype cfq_blkcg_files[] =
+ 	/* the same statictics which cover the cfqg and its descendants */
+ 	{
+ 		.name = "time_recursive",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.time),
+ 		.seq_show = cfqg_print_stat_recursive,
+ 	},
+ 	{
+ 		.name = "sectors_recursive",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.sectors),
+ 		.seq_show = cfqg_print_stat_recursive,
+ 	},
+ 	{
+ 		.name = "io_service_bytes_recursive",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.service_bytes),
+ 		.seq_show = cfqg_print_rwstat_recursive,
+ 	},
+ 	{
+ 		.name = "io_serviced_recursive",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.serviced),
+ 		.seq_show = cfqg_print_rwstat_recursive,
+ 	},
+ 	{
+ 		.name = "io_service_time_recursive",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.service_time),
+ 		.seq_show = cfqg_print_rwstat_recursive,
+ 	},
+ 	{
+ 		.name = "io_wait_time_recursive",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.wait_time),
+ 		.seq_show = cfqg_print_rwstat_recursive,
+ 	},
+ 	{
+ 		.name = "io_merged_recursive",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.merged),
+ 		.seq_show = cfqg_print_rwstat_recursive,
+ 	},
+ 	{
+ 		.name = "io_queued_recursive",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.queued),
+ 		.seq_show = cfqg_print_rwstat_recursive,
+ 	},
+ #ifdef CONFIG_DEBUG_BLK_CGROUP
+ 	{
+ 		.name = "avg_queue_size",
++		.flags = CFTYPE_INSANE,
+ 		.seq_show = cfqg_print_avg_queue_size,
+ 	},
+ 	{
+ 		.name = "group_wait_time",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.group_wait_time),
+ 		.seq_show = cfqg_print_stat,
+ 	},
+ 	{
+ 		.name = "idle_time",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.idle_time),
+ 		.seq_show = cfqg_print_stat,
+ 	},
+ 	{
+ 		.name = "empty_time",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.empty_time),
+ 		.seq_show = cfqg_print_stat,
+ 	},
+ 	{
+ 		.name = "dequeue",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.dequeue),
+ 		.seq_show = cfqg_print_stat,
+ 	},
+ 	{
+ 		.name = "unaccounted_time",
++		.flags = CFTYPE_INSANE,
+ 		.private = offsetof(struct cfq_group, stats.unaccounted_time),
+ 		.seq_show = cfqg_print_stat,
+ 	},
+ #endif	/* CONFIG_DEBUG_BLK_CGROUP */
++
++	/* files for default hierarchy, properly prefixed with cfq */
++	{
++		.name = "cfq.weight_device",
++		.flags = CFTYPE_ONLY_ON_DFL | CFTYPE_NOT_ON_ROOT,
++		.seq_show = cfqg_print_weight_device,
++		.write_string = cfqg_set_weight_device,
++	},
++	{
++		.name = "cfq.weight",
++		.flags = CFTYPE_ONLY_ON_DFL | CFTYPE_NOT_ON_ROOT,
++		.seq_show = cfq_print_weight,
++		.write_u64 = cfq_set_weight,
++	},
++
++	/*
++	 * All stats are recursive and fewer are visible.  Please do not
++	 * add stats which aren't strictly necessary or expose internal
++	 * details.
++	 */
++	{
++		.name = "cfq.sectors",
++		.flags = CFTYPE_ONLY_ON_DFL,
++		.private = offsetof(struct cfq_group, stats.sectors),
++		.seq_show = cfqg_print_stat_recursive,
++	},
++	{
++		.name = "cfq.bytes",
++		.flags = CFTYPE_ONLY_ON_DFL,
++		.private = offsetof(struct cfq_group, stats.service_bytes),
++		.seq_show = cfqg_print_rwstat_recursive,
++	},
++	{
++		.name = "cfq.serviced",
++		.flags = CFTYPE_ONLY_ON_DFL,
++		.private = offsetof(struct cfq_group, stats.serviced),
++		.seq_show = cfqg_print_rwstat_recursive,
++	},
++	{
++		.name = "cfq.merged",
++		.flags = CFTYPE_ONLY_ON_DFL,
++		.private = offsetof(struct cfq_group, stats.merged),
++		.seq_show = cfqg_print_rwstat_recursive,
++	},
++	{
++		.name = "cfq.io_time",
++		.flags = CFTYPE_ONLY_ON_DFL,
++		.private = offsetof(struct cfq_group, stats.service_time),
++		.seq_show = cfqg_print_rwstat_recursive,
++	},
++	{
++		.name = "cfq.wait_time",
++		.flags = CFTYPE_ONLY_ON_DFL,
++		.private = offsetof(struct cfq_group, stats.wait_time),
++		.seq_show = cfqg_print_rwstat_recursive,
++	},
++
+ 	{ }	/* terminate */
+ };
+ #else /* GROUP_IOSCHED */
