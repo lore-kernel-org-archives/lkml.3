@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516AbaDMXCb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 19:02:31 -0400
-Received: from mga03.intel.com ([143.182.124.21]:48520 "EHLO mga03.intel.com"
+	id S1754440AbaDMXC3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 19:02:29 -0400
+Received: from mga09.intel.com ([134.134.136.24]:43405 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751412AbaDMXAC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 19:00:02 -0400
+	id S1751475AbaDMXAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 19:00:03 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,853,1389772800"; 
-   d="scan'208";a="418489414"
+   d="scan'208";a="492297727"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>
 Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v3 3/7] Factor page_endio() out of mpage_end_io()
-Date: Sun, 13 Apr 2014 18:59:52 -0400
-Message-Id: <0e407d145508f69c966b0f9b26941cd6c619ebb1.1397429628.git.matthew.r.wilcox@intel.com>
+Subject: [PATCH v3 6/7] brd: Add support for rw_page
+Date: Sun, 13 Apr 2014 18:59:55 -0400
+Message-Id: <9563a366f721fd188a9a95edd47a7e5041359df6.1397429628.git.matthew.r.wilcox@intel.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <cover.1397429628.git.matthew.r.wilcox@intel.com>
 References: <cover.1397429628.git.matthew.r.wilcox@intel.com>
@@ -26,96 +26,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-page_endio() takes care of updating all the appropriate page flags
-once I/O has finished to a page.  Switch to using mapping_set_error()
-instead of setting AS_EIO directly; this will handle thin-provisioned
-devices correctly.
-
 Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
 ---
- fs/mpage.c              | 18 +-----------------
- include/linux/pagemap.h |  2 ++
- mm/filemap.c            | 25 +++++++++++++++++++++++++
- 3 files changed, 28 insertions(+), 17 deletions(-)
+ drivers/block/brd.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-diff --git a/fs/mpage.c b/fs/mpage.c
-index 4cc9c5d..10da0da 100644
---- a/fs/mpage.c
-+++ b/fs/mpage.c
-@@ -48,23 +48,7 @@ static void mpage_end_io(struct bio *bio, int err)
- 
- 	bio_for_each_segment_all(bv, bio, i) {
- 		struct page *page = bv->bv_page;
--
--		if (bio_data_dir(bio) == READ) {
--			if (!err) {
--				SetPageUptodate(page);
--			} else {
--				ClearPageUptodate(page);
--				SetPageError(page);
--			}
--			unlock_page(page);
--		} else { /* bio_data_dir(bio) == WRITE */
--			if (err) {
--				SetPageError(page);
--				if (page->mapping)
--					set_bit(AS_EIO, &page->mapping->flags);
--			}
--			end_page_writeback(page);
--		}
-+		page_endio(page, bio_data_dir(bio), err);
- 	}
- 
- 	bio_put(bio);
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index 45598f1..718214c 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -425,6 +425,8 @@ static inline void wait_on_page_writeback(struct page *page)
- extern void end_page_writeback(struct page *page);
- void wait_for_stable_page(struct page *page);
- 
-+void page_endio(struct page *page, int rw, int err);
-+
- /*
-  * Add an arbitrary waiter to a page's wait queue
-  */
-diff --git a/mm/filemap.c b/mm/filemap.c
-index a82fbe4..ee6a3ce 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -762,6 +762,31 @@ void end_page_writeback(struct page *page)
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index e73b85c..807d3d5 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -360,6 +360,15 @@ out:
+ 	bio_endio(bio, err);
  }
- EXPORT_SYMBOL(end_page_writeback);
  
-+/*
-+ * After completing I/O on a page, call this routine to update the page
-+ * flags appropriately
-+ */
-+void page_endio(struct page *page, int rw, int err)
++static int brd_rw_page(struct block_device *bdev, sector_t sector,
++		       struct page *page, int rw)
 +{
-+	if (rw == READ) {
-+		if (!err) {
-+			SetPageUptodate(page);
-+		} else {
-+			ClearPageUptodate(page);
-+			SetPageError(page);
-+		}
-+		unlock_page(page);
-+	} else { /* rw == WRITE */
-+		if (err) {
-+			SetPageError(page);
-+			if (page->mapping)
-+				mapping_set_error(page->mapping, err);
-+		}
-+		end_page_writeback(page);
-+	}
++	struct brd_device *brd = bdev->bd_disk->private_data;
++	int err = brd_do_bvec(brd, page, PAGE_CACHE_SIZE, 0, rw, sector);
++	page_endio(page, rw & WRITE, err);
++	return err;
 +}
-+EXPORT_SYMBOL_GPL(page_endio);
 +
- /**
-  * __lock_page - get a lock on the page, assuming we need to sleep to get it
-  * @page: the page to lock
+ #ifdef CONFIG_BLK_DEV_XIP
+ static int brd_direct_access(struct block_device *bdev, sector_t sector,
+ 			void **kaddr, unsigned long *pfn)
+@@ -419,6 +428,7 @@ static int brd_ioctl(struct block_device *bdev, fmode_t mode,
+ 
+ static const struct block_device_operations brd_fops = {
+ 	.owner =		THIS_MODULE,
++	.rw_page =		brd_rw_page,
+ 	.ioctl =		brd_ioctl,
+ #ifdef CONFIG_BLK_DEV_XIP
+ 	.direct_access =	brd_direct_access,
 -- 
 1.9.1
 
