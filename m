@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753739AbaDMI00 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 04:26:26 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47874 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301AbaDMI0X (ORCPT
+	id S1753870AbaDMJ20 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 05:28:26 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:60252 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147AbaDMJ2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 04:26:23 -0400
-From: Antonio Borneo <borneo.antonio@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Borislav Petkov <bp@alien8.de>, Antonio Borneo <borneo.antonio@gmail.com>
-Subject: [PATCH] x86/platform: fix "make O=dir kvmconfig"
-Date: Sun, 13 Apr 2014 16:26:08 +0800
-Message-Id: <1397377568-8375-1-git-send-email-borneo.antonio@gmail.com>
-X-Mailer: git-send-email 1.9.2
+	Sun, 13 Apr 2014 05:28:23 -0400
+From: Pekka Enberg <penberg@iki.fi>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] SLAB changes for v3.15-rc1
+Date: Sun, 13 Apr 2014 12:28:16 +0300
+Message-Id: <1397381296-13961-1-git-send-email-penberg@iki.fi>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Running:
-	make O=dir x86_64_defconfig
-	make O=dir kvmconfig
-the second command dirties the source tree with file ".config",
-symlink "source" and objects in folder "scripts".
+Hi Linus,
 
-Fixed by adding paths in arch Makefile.
+Please pull the latest SLAB tree from:
 
-Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
----
- arch/x86/Makefile | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/next
 
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 602f57e..d1b7c37 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -250,8 +250,8 @@ archclean:
- PHONY += kvmconfig
- kvmconfig:
- 	$(if $(wildcard $(objtree)/.config),, $(error You need an existing .config for this target))
--	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/kconfig/merge_config.sh -m -O $(objtree) $(objtree)/.config arch/x86/configs/kvm_guest.config
--	$(Q)yes "" | $(MAKE) oldconfig
-+	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/kconfig/merge_config.sh -m -O $(objtree) $(objtree)/.config $(srctree)/arch/x86/configs/kvm_guest.config
-+	$(Q)yes "" | $(MAKE) -f $(srctree)/Makefile oldconfig
- 
- define archhelp
-   echo  '* bzImage      - Compressed kernel image (arch/x86/boot/bzImage)'
--- 
-1.9.2
+The biggest change is byte-sized freelist indices which reduces slab freelist
+memory usage:
 
+  https://lkml.org/lkml/2013/12/2/64
+
+			Pekka
+
+------------------>
+The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
+
+  Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/next
+
+for you to fetch changes up to 34bf6ef94a835a8f1d8abd3e7d38c6c08d205867:
+
+  mm: slab/slub: use page->list consistently instead of page->lru (2014-04-11 10:06:06 +0300)
+
+----------------------------------------------------------------
+Dave Hansen (1):
+      mm: slab/slub: use page->list consistently instead of page->lru
+
+Jianyu Zhan (1):
+      mm/slab.c: cleanup outdated comments and unify variables naming
+
+Joe Perches (1):
+      slab: Make allocations with GFP_ZERO slightly more efficient
+
+Joonsoo Kim (7):
+      slab: factor out calculate nr objects in cache_estimate
+      slab: introduce helper functions to get/set free object
+      slab: restrict the number of objects in a slab
+      slab: introduce byte sized index for the freelist of a slab
+      slab: make more slab management structure off the slab
+      slub: fix high order page allocation problem with __GFP_NOFAIL
+      slab: fix wrongly used macro
+
+ include/linux/mm_types.h |   3 +-
+ include/linux/slab.h     |  11 +++
+ mm/slab.c                | 183 +++++++++++++++++++++++++++--------------------
+ mm/slob.c                |  10 +--
+ mm/slub.c                |   5 +-
+ 5 files changed, 128 insertions(+), 84 deletions(-)
