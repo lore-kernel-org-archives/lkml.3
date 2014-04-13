@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755649AbaDMRq2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 13:46:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4643 "EHLO mx1.redhat.com"
+	id S1755608AbaDMRqZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 13:46:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50824 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755089AbaDMRp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 13:45:59 -0400
-Date: Sun, 13 Apr 2014 19:45:53 +0200
+	id S1755070AbaDMRpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 13:45:54 -0400
+Date: Sun, 13 Apr 2014 19:45:49 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -16,9 +16,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 09/15] uprobes/x86: Teach arch_uprobe_post_xol() to
-	restart if possible
-Message-ID: <20140413174553.GA11871@redhat.com>
+Subject: [PATCH v3 08/15] uprobes/x86: Send SIGILL if
+	arch_uprobe_post_xol() fails
+Message-ID: <20140413174549.GA11866@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,78 +28,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SIGILL after the failed arch_uprobe_post_xol() should only be used as
-a last resort, we should try to restart the probed insn if possible.
+Currently the error from arch_uprobe_post_xol() is silently ignored.
+This doesn't look good and this can lead to the hard-to-debug problems.
 
-Currently only adjust_ret_addr() can fail, and this can only happen if
-another thread unmapped our stack after we executed "call" out-of-line.
-Most probably the application if buggy, but even in this case it can
-have a handler for SIGSEGV/etc. And in theory it can be even correct
-and do something non-trivial with its memory.
+1. Change handle_singlestep() to loudly complain and send SIGILL.
 
-Of course we can't restart unconditionally, so arch_uprobe_post_xol()
-does this only if ->post_xol() returns -ERESTART even if currently this
-is the only possible error.
+   Note: this only affects x86, ppc/arm can't fail.
 
-default_post_xol_op(UPROBE_FIX_CALL) can always restart, but as Jim
-pointed out it should not forget to pop off the return address pushed
-by this insn executed out-of-line.
+2. Change arch_uprobe_post_xol() to call arch_uprobe_abort_xol() and
+   avoid TF games if it is going to return an error.
 
-Note: this is not "perfect", we do not want the extra handler_chain()
-after restart, but I think this is the best solution we can realistically
-do without too much uglifications.
+   This can help to to analyze the problem, if nothing else we should
+   not report ->ip = xol_slot in the core-file.
+
+   Note: this means that handle_riprel_post_xol() can be called twice,
+   but this is fine because it is idempotent.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
 ---
- arch/x86/kernel/uprobes.c |   20 ++++++++++++++++----
- 1 files changed, 16 insertions(+), 4 deletions(-)
+ arch/x86/kernel/uprobes.c |   16 ++++++++++++----
+ kernel/events/uprobes.c   |    8 +++++++-
+ 2 files changed, 19 insertions(+), 5 deletions(-)
 
 diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index e0f1406..1ea7e1a 100644
+index f4b436b..e0f1406 100644
 --- a/arch/x86/kernel/uprobes.c
 +++ b/arch/x86/kernel/uprobes.c
-@@ -443,16 +443,22 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
- {
+@@ -594,6 +594,15 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
  	struct uprobe_task *utask = current->utask;
- 	long correction = (long)(utask->vaddr - utask->xol_vaddr);
--	int ret = 0;
  
- 	handle_riprel_post_xol(auprobe, regs, &correction);
- 	if (auprobe->fixups & UPROBE_FIX_IP)
- 		regs->ip += correction;
- 
--	if (auprobe->fixups & UPROBE_FIX_CALL)
--		ret = adjust_ret_addr(regs->sp, correction);
-+	if (auprobe->fixups & UPROBE_FIX_CALL) {
-+		if (adjust_ret_addr(regs->sp, correction)) {
-+			if (is_ia32_task())
-+				regs->sp += 4;
-+			else
-+				regs->sp += 8;
-+			return -ERESTART;
+ 	WARN_ON_ONCE(current->thread.trap_nr != UPROBE_TRAP_NR);
++
++	if (auprobe->ops->post_xol) {
++		int err = auprobe->ops->post_xol(auprobe, regs);
++		if (err) {
++			arch_uprobe_abort_xol(auprobe, regs);
++			return err;
 +		}
 +	}
++
+ 	current->thread.trap_nr = utask->autask.saved_trap_nr;
+ 	/*
+ 	 * arch_uprobe_pre_xol() doesn't save the state of TIF_BLOCKSTEP
+@@ -605,8 +614,6 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ 	else if (!(auprobe->fixups & UPROBE_FIX_SETF))
+ 		regs->flags &= ~X86_EFLAGS_TF;
  
--	return ret;
-+	return 0;
+-	if (auprobe->ops->post_xol)
+-		return auprobe->ops->post_xol(auprobe, regs);
+ 	return 0;
  }
  
- static struct uprobe_xol_ops default_xol_ops = {
-@@ -599,6 +605,12 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
- 		int err = auprobe->ops->post_xol(auprobe, regs);
- 		if (err) {
- 			arch_uprobe_abort_xol(auprobe, regs);
-+			/*
-+			 * Restart the probed insn. ->post_xol() must ensure
-+			 * this is really possible if it returns -ERESTART.
-+			 */
-+			if (err == -ERESTART)
-+				return 0;
- 			return err;
- 		}
- 	}
+@@ -641,8 +648,9 @@ int arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val,
+ 
+ /*
+  * This function gets called when XOL instruction either gets trapped or
+- * the thread has a fatal signal, so reset the instruction pointer to its
+- * probed address.
++ * the thread has a fatal signal, or if arch_uprobe_post_xol() failed.
++ * Reset the instruction pointer to its probed address for the potential
++ * restart or for post mortem analysis.
+  */
+ void arch_uprobe_abort_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ {
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 7a3e14e..2adbc97 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -1858,10 +1858,11 @@ out:
+ static void handle_singlestep(struct uprobe_task *utask, struct pt_regs *regs)
+ {
+ 	struct uprobe *uprobe;
++	int err = 0;
+ 
+ 	uprobe = utask->active_uprobe;
+ 	if (utask->state == UTASK_SSTEP_ACK)
+-		arch_uprobe_post_xol(&uprobe->arch, regs);
++		err = arch_uprobe_post_xol(&uprobe->arch, regs);
+ 	else if (utask->state == UTASK_SSTEP_TRAPPED)
+ 		arch_uprobe_abort_xol(&uprobe->arch, regs);
+ 	else
+@@ -1875,6 +1876,11 @@ static void handle_singlestep(struct uprobe_task *utask, struct pt_regs *regs)
+ 	spin_lock_irq(&current->sighand->siglock);
+ 	recalc_sigpending(); /* see uprobe_deny_signal() */
+ 	spin_unlock_irq(&current->sighand->siglock);
++
++	if (unlikely(err)) {
++		uprobe_warn(current, "execute the probed insn, sending SIGILL.");
++		force_sig_info(SIGILL, SEND_SIG_FORCED, current);
++	}
+ }
+ 
+ /*
 -- 
 1.5.5.1
 
