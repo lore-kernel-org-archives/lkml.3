@@ -1,53 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983AbaDMQnA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 12:43:00 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:33396 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754870AbaDMQm6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 12:42:58 -0400
-Date: Sun, 13 Apr 2014 12:42:55 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Liu hua <sdu.liu@huawei.com>
-cc: linux@arm.linux.org.uk, will.deacon@arm.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        wangnan0@huawei.com, peifeiyue@huawei.com, liusdu@126.com,
-        m.szyprowski@samsung.com
-Subject: Re: [PATCH v2 1/2] ARM : DMA : remove useless information about
- DMA
-In-Reply-To: <534A7EA7.5090900@huawei.com>
-Message-ID: <alpine.LFD.2.11.1404131240150.980@knanqh.ubzr>
-References: <1397203252-22977-1-git-send-email-sdu.liu@huawei.com> <1397203252-22977-2-git-send-email-sdu.liu@huawei.com> <alpine.LFD.2.11.1404112252050.980@knanqh.ubzr> <5348C040.1060305@huawei.com> <alpine.LFD.2.11.1404121031170.980@knanqh.ubzr>
- <534A7EA7.5090900@huawei.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	id S1755089AbaDMQnk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 12:43:40 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753518AbaDMQnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 12:43:39 -0400
+Message-ID: <534ABEB2.7050506@nod.at>
+Date: Sun, 13 Apr 2014 18:43:30 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Alexander.Kleinsorge@gmx.de
+CC: andi@firstfloor.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: new module to check constant memory for corruption
+References: <trinity-aef9715a-72d2-4824-a3d8-306d5850c633-1397352790457@3capp-gmx-bs18> <87eh12hr1t.fsf@tassilo.jf.intel.com> <trinity-516ff83e-4833-4dad-856a-dd0597993837-1397384072115@3capp-gmx-bs62>, <CAFLxGvyiVaONh61j7z1s6u15f0Uz-Yb3Js0Vk9C2WiB6OR4yKA@mail.gmail.com> <trinity-99a290b9-30fa-464e-b67b-b8555d48011b-1397406377024@3capp-gmx-bs45>
+In-Reply-To: <trinity-99a290b9-30fa-464e-b67b-b8555d48011b-1397406377024@3capp-gmx-bs45>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 13 Apr 2014, Liu hua wrote:
+Alex,
 
-> On 2014/4/12 22:32, Nicolas Pitre write:
-> > On Sat, 12 Apr 2014, Liu hua wrote:
-> > 
-> >> Hi Nicolas,
-> >>
-> >> Your version is better. you tell me this in the former letters.
-> >> So I am very sorry to forget to check that.
-> >>
-> >> May be I should remake this second patch to fit your change. What do
-> >> you think about that patch?
-> > 
-> > You may simply drop your first patch and only keep the other two.
-> > 
-> Sure. But your patch and my second one both change Document/arm/memory.txt.
-> I am afraid there will be conflicts when someone tests my patch before
-> yours getting into the mainline.
+please don't crop the recipient list.
 
-That's still an easy conflict to fix.  And it is likely that git will 
-fix it automatically.
+Am 13.04.2014 18:26, schrieb Alexander.Kleinsorge@gmx.de:
+> Hi Richard,
+> 
+> I updated my code and check for ftrace (cat /proc/sys/kernel/ftrace_enabled > 0).
+> http://tauruz.homeip.net/ramcheck.tgz
+> 
+> On a 24/7 server ftrace is not a common thing anyway.
 
+I disagree with you.
+perf, systemtap and other tools are widely used on "24/7" servers.
+As Andi noted, you have to hook all places where kernel code get's modified.
 
-Nicolas
+Thanks,
+//richard
+
+> Thx, Alex
+>  
+> 
+> Gesendet: Sonntag, 13. April 2014 um 12:26 Uhr
+> Von: "Richard Weinberger" <richard.weinberger@gmail.com>
+> An: Alexander.Kleinsorge@gmx.de
+> Cc: "Andi Kleen" <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+> Betreff: Re: Re: new module to check constant memory for corruption
+> On Sun, Apr 13, 2014 at 12:14 PM, <Alexander.Kleinsorge@gmx.de> wrote:
+>> Hi Andi,
+>>
+>> the module considers only the adress range between: kallsyms_lookup_name("_text") .. kallsyms_lookup_name("__end_rodata").
+>> this range has a typical size of 10..20 mb (depending on kernel-version and arch).
+>> see files: linux-3.*\arch\x86\mm\init_32.c + init_64.c
+>> function: void mark_rodata_ro(void)
+>> "Write protecting the kernel text: %luk\n"
+>> "Write protecting the kernel read-only data: %luk\n"
+>> dmesg | grep protecting
+>>
+>> your question: there are no writes in this write protected adress range (e.g. kernel code).
+> 
+> And what happens if one enables dynamic ftrace or other kernel
+> features which modify kernel code?
+> 
+>> my idea is to calculate a checksum (xor is fastest) over this range and check later (periodically) if its unchanged.
+>> see source code download (5 KB): http://tauruz.homeip.net/ramcheck.tgz
+>> the code is working fine and the checksum is (as expected) constant (at least for many hours).
+>>
+>> regards, Alexander
+>>
+>>
+>> Gesendet: Sonntag, 13. April 2014 um 05:00 Uhr
+>> Von: "Andi Kleen" <andi@firstfloor.org>
+>> An: Alexander.Kleinsorge@gmx.de
+>> Cc: linux-kernel@vger.kernel.org
+>> Betreff: Re: new module to check constant memory for corruption
+>> Alexander.Kleinsorge@gmx.de writes:
+>>
+>>> ramcheck kernel module
+>>> new module to check constant memory for corruption
+>>>
+>>> detect corruption of constant kernel memory (text and data) periodically.
+>>> runtime costs about 1..2 ms per sec (about 10 mb with 5 mb/ms),
+>>> which is distributed over 8 (BLOCKS) time partitions (less than half
+>>> ms per sec).
+>>> in case of checksum (xor) error, an kernel log is posted.
+>>> manual trigger via /proc/ramcheck is possible.
+>>> range: kallsyms_lookup_name("_text") .. kallsyms_lookup_name("__end_rodata")
+>>
+>>
+>> Can you explain how this works? How does it handle legal writes?
+>>
+>> If it just checks its own memory it could be done in user space.
+>>
+>> -Andi
+>>
+>> --
+>> ak@linux.intel.com -- Speaking for myself only
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at http://vger.kernel.org/majordomo-info.html[http://vger.kernel.org/majordomo-info.html]
+>> Please read the FAQ at http://www.tux.org/lkml/[http://www.tux.org/lkml/]
+> 
+> 
+> 
+> --
+> Thanks,
+> //richard
+> 
