@@ -1,90 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715AbaDMQJj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 12:09:39 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58387 "EHLO mail.skyhub.de"
+	id S1754897AbaDMQKr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 12:10:47 -0400
+Received: from mout.gmx.net ([212.227.15.18]:49197 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752935AbaDMQJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 12:09:38 -0400
-Date: Sun, 13 Apr 2014 18:09:24 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@suse.de>,
-        Jacob Shin <jacob.shin@amd.com>, Jeff Layton <jlayton@redhat.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] x86: microcode: report if CPU has up-to-date
- microcode
-Message-ID: <20140413160924.GH25088@pd.tnic>
-References: <1396188574-2067-1-git-send-email-dvlasenk@redhat.com>
- <20140331162340.GB16144@pd.tnic>
- <5339A0F8.70606@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5339A0F8.70606@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752935AbaDMQKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 12:10:45 -0400
+From: xypron.glpk@gmx.de
+To: viro@zeniv.linux.org.uk
+Cc: jack@suse.cz, eparis@redhat.com, mtk.manpages@gmail.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Heinrich Schuchardt <xypron.glpk@gmx.de>
+Subject: [PATCH 1/1] fanotify: create FAN_ACCESS event for readdir
+Date: Sun, 13 Apr 2014 18:10:30 +0200
+Message-Id: <1397405430-7577-1-git-send-email-xypron.glpk@gmx.de>
+X-Mailer: git-send-email 1.7.10.4
+X-Provags-ID: V03:K0:o+l9FrOjL6R8CI7DDqd3QhVz/7I5f1P2WgqRXLvrDyXHfKSR9Gz
+ +Jg7H8UdH5O5i2mF+tjuqnjxRejp9U2Pc9Q5/z08YkACVVG1INeVFb7eS23VKY7SzLORpML
+ +OtZ3J2iukm4dsObzKvpVuHsi9tiaDAyQ43iyLyavgHbemqcl6LDs2yJ6J/YNw0mHT/UuuU
+ f1YKaqEB1tWEoYXwDuMuQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 07:08:08PM +0200, Denys Vlasenko wrote:
-> What prompted me to create this patch is a bunch of vmcores
-> from people having mysterious crashes.
-> 
-> Basically, I am in a real-world scenario where I have only vmcore
-> from somebody else. I have no /proc/cpuinfo.
-> 
-> Every bit of information I don't have at a minimum incurs email
-> round-trip delay.
-> 
-> Eventually I did manage to figure out what version of microcode
-> my users had (they did have old one), but it took some time.
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
 
-Out of curiosity: the old microcode version wasn't the culprit for the
-bug, was it?
+Before the patch,
+read creates FAN_ACCESS_PERM and FAN_ACCESS events,
+readdir creates only FAN_ACCESS_PERM events.
 
-> You are correct, the lack of boot-time dmesg is a problem for
-> post-mortem vmcore analysis in general.
-> 
-> I contemplate creating a patch to optionally save it.
+This is inconsistent.
 
-Btw, can vmcore stash ucode version somewhere too, as part of the data
-dump it saves? Or even the whole /proc/cpuinfo?
+After the patch,
+readdir creates FAN_ACCESS_PERM and FAN_ACCESS events.
 
-> That is not a bad thing: if my users would have been spooked that
-> way, maybe they'd install a newer microcode. Or newer BIOS with new
-> microcode - they did not do that either, despite it being available
-> from the manufacturer for two years already.
+Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+---
+ fs/readdir.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Right, ok. So in thinking about this more. How about we drop the "bool
-report_old" machinery and add those printks as debug printks? And by
-that I mean,
-
-	printk(KERN_DEBUG...
-
-and not all that other pr_debug() gunk?
-
-This way, you need to boot with "debug" or "ignore_loglevel" on the
-cmdline and they will get issued.
-
-My concern is still with spooked users who'll come and say, my machine says:
-
-+			pr_info("microcode: CPU rev 0x%x is same or newer"
-+				" than 0x%x in microcode data\n",
-
-Does that mean, I need to go and replace my CPU?
-
-The usual case is that microcode gets upgraded with system upgrade as a
-intel-ucode or amd-ucode or whatever package, so people upgrading their
-distros will always get the latest ucode anyway.
-
-Hmmm.
-
+diff --git a/fs/readdir.c b/fs/readdir.c
+index 5b53d99..33fd922 100644
+--- a/fs/readdir.c
++++ b/fs/readdir.c
+@@ -13,6 +13,7 @@
+ #include <linux/stat.h>
+ #include <linux/file.h>
+ #include <linux/fs.h>
++#include <linux/fsnotify.h>
+ #include <linux/dirent.h>
+ #include <linux/security.h>
+ #include <linux/syscalls.h>
+@@ -40,6 +41,7 @@ int iterate_dir(struct file *file, struct dir_context *ctx)
+ 		ctx->pos = file->f_pos;
+ 		res = file->f_op->iterate(file, ctx);
+ 		file->f_pos = ctx->pos;
++		fsnotify_access(file);
+ 		file_accessed(file);
+ 	}
+ 	mutex_unlock(&inode->i_mutex);
 -- 
-Regards/Gruss,
-    Boris.
+1.7.10.4
 
-Sent from a fat crate under my desk. Formatting is fine.
---
