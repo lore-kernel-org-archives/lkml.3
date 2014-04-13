@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870AbaDMJ20 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 05:28:26 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:60252 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147AbaDMJ2X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 05:28:23 -0400
-From: Pekka Enberg <penberg@iki.fi>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] SLAB changes for v3.15-rc1
-Date: Sun, 13 Apr 2014 12:28:16 +0300
-Message-Id: <1397381296-13961-1-git-send-email-penberg@iki.fi>
-X-Mailer: git-send-email 1.8.3.1
+	id S1754391AbaDMJp4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 05:45:56 -0400
+Received: from mga09.intel.com ([134.134.136.24]:37280 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754222AbaDMJpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 05:45:33 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,850,1389772800"; 
+   d="scan'208";a="519962316"
+From: ville.syrjala@linux.intel.com
+To: linux-kernel@vger.kernel.org
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH] x86/gpu: Fix sign extension issue in Intel graphics stolen memory quirks
+Date: Sun, 13 Apr 2014 12:45:03 +0300
+Message-Id: <1397382303-17525-1-git-send-email-ville.syrjala@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <5349C119.7050208@zytor.com>
+References: <5349C119.7050208@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: Ville Syrjälä <ville.syrjala@linux.intel.com>
 
-Please pull the latest SLAB tree from:
+Have the KB(),MB(),GB() macros produce unsigned longs to avoid
+uninteded sign extension issues with the gen2 memory size detection.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/next
+What happens is first the uint8_t returned by read_pci_config_byte()
+gets promoted to an int which gets multiplied by another int from the
+MB() macro, and finally the result gets sign extended to size_t.
 
-The biggest change is byte-sized freelist indices which reduces slab freelist
-memory usage:
+Although this shouldn't be a problem in practice as all affected gen2
+platforms are 32bit AFAIK, so size_t will be 32 bits.
 
-  https://lkml.org/lkml/2013/12/2/64
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+---
+ arch/x86/kernel/early-quirks.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-			Pekka
+diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
+index b0cc380..6e2537c 100644
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -240,7 +240,7 @@ static u32 __init intel_stolen_base(int num, int slot, int func, size_t stolen_s
+ 	return base;
+ }
+ 
+-#define KB(x)	((x) * 1024)
++#define KB(x)	((x) * 1024UL)
+ #define MB(x)	(KB (KB (x)))
+ #define GB(x)	(MB (KB (x)))
+ 
+-- 
+1.8.3.2
 
------------------->
-The following changes since commit 38dbfb59d1175ef458d006556061adeaa8751b72:
-
-  Linus 3.14-rc1 (2014-02-02 16:42:13 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/penberg/linux.git slab/next
-
-for you to fetch changes up to 34bf6ef94a835a8f1d8abd3e7d38c6c08d205867:
-
-  mm: slab/slub: use page->list consistently instead of page->lru (2014-04-11 10:06:06 +0300)
-
-----------------------------------------------------------------
-Dave Hansen (1):
-      mm: slab/slub: use page->list consistently instead of page->lru
-
-Jianyu Zhan (1):
-      mm/slab.c: cleanup outdated comments and unify variables naming
-
-Joe Perches (1):
-      slab: Make allocations with GFP_ZERO slightly more efficient
-
-Joonsoo Kim (7):
-      slab: factor out calculate nr objects in cache_estimate
-      slab: introduce helper functions to get/set free object
-      slab: restrict the number of objects in a slab
-      slab: introduce byte sized index for the freelist of a slab
-      slab: make more slab management structure off the slab
-      slub: fix high order page allocation problem with __GFP_NOFAIL
-      slab: fix wrongly used macro
-
- include/linux/mm_types.h |   3 +-
- include/linux/slab.h     |  11 +++
- mm/slab.c                | 183 +++++++++++++++++++++++++++--------------------
- mm/slob.c                |  10 +--
- mm/slub.c                |   5 +-
- 5 files changed, 128 insertions(+), 84 deletions(-)
