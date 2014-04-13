@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754814AbaDMQkr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 12:40:47 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:38983 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499AbaDMQkp (ORCPT
+	id S1754983AbaDMQnA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 12:43:00 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:33396 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754870AbaDMQm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 12:40:45 -0400
-From: code@slynux.com
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Sarath Lakshman <sarathlakshman@slynux.com>
-Subject: [PATCH] staging: wlan-ng: Fix sparse warnings
-Date: Sun, 13 Apr 2014 22:09:49 +0530
-Message-Id: <1397407189-6648-1-git-send-email-code@slynux.com>
-X-Mailer: git-send-email 1.8.3.2
+	Sun, 13 Apr 2014 12:42:58 -0400
+Date: Sun, 13 Apr 2014 12:42:55 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Liu hua <sdu.liu@huawei.com>
+cc: linux@arm.linux.org.uk, will.deacon@arm.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        wangnan0@huawei.com, peifeiyue@huawei.com, liusdu@126.com,
+        m.szyprowski@samsung.com
+Subject: Re: [PATCH v2 1/2] ARM : DMA : remove useless information about
+ DMA
+In-Reply-To: <534A7EA7.5090900@huawei.com>
+Message-ID: <alpine.LFD.2.11.1404131240150.980@knanqh.ubzr>
+References: <1397203252-22977-1-git-send-email-sdu.liu@huawei.com> <1397203252-22977-2-git-send-email-sdu.liu@huawei.com> <alpine.LFD.2.11.1404112252050.980@knanqh.ubzr> <5348C040.1060305@huawei.com> <alpine.LFD.2.11.1404121031170.980@knanqh.ubzr>
+ <534A7EA7.5090900@huawei.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sarath Lakshman <sarathlakshman@slynux.com>
+On Sun, 13 Apr 2014, Liu hua wrote:
 
-Fixed missed declarations for few non-static functions.
+> On 2014/4/12 22:32, Nicolas Pitre write:
+> > On Sat, 12 Apr 2014, Liu hua wrote:
+> > 
+> >> Hi Nicolas,
+> >>
+> >> Your version is better. you tell me this in the former letters.
+> >> So I am very sorry to forget to check that.
+> >>
+> >> May be I should remake this second patch to fit your change. What do
+> >> you think about that patch?
+> > 
+> > You may simply drop your first patch and only keep the other two.
+> > 
+> Sure. But your patch and my second one both change Document/arm/memory.txt.
+> I am afraid there will be conflicts when someone tests my patch before
+> yours getting into the mainline.
 
-Signed-off-by: Sarath Lakshman <sarathlakshman@slynux.com>
----
- drivers/staging/wlan-ng/cfg80211.c   | 1 +
- drivers/staging/wlan-ng/prism2mgmt.h | 6 ++++++
- 2 files changed, 7 insertions(+)
+That's still an easy conflict to fix.  And it is likely that git will 
+fix it automatically.
 
-diff --git a/drivers/staging/wlan-ng/cfg80211.c b/drivers/staging/wlan-ng/cfg80211.c
-index f76f95c..662581c 100644
---- a/drivers/staging/wlan-ng/cfg80211.c
-+++ b/drivers/staging/wlan-ng/cfg80211.c
-@@ -1,4 +1,5 @@
- /* cfg80211 Interface for prism2_usb module */
-+#include "prism2mgmt.h"
- 
- 
- /* Prism2 channel/frequency/bitrate declarations */
-diff --git a/drivers/staging/wlan-ng/prism2mgmt.h b/drivers/staging/wlan-ng/prism2mgmt.h
-index 190d390..ad049ad 100644
---- a/drivers/staging/wlan-ng/prism2mgmt.h
-+++ b/drivers/staging/wlan-ng/prism2mgmt.h
-@@ -60,6 +60,8 @@
- #ifndef _PRISM2MGMT_H
- #define _PRISM2MGMT_H
- 
-+#include "hfa384x.h"
-+
- extern int prism2_reset_holdtime;
- extern int prism2_reset_settletime;
- 
-@@ -109,4 +111,8 @@ void prism2sta_processing_defer(struct work_struct *data);
- void prism2sta_commsqual_defer(struct work_struct *data);
- void prism2sta_commsqual_timer(unsigned long data);
- 
-+void prism2_connect_result(wlandevice_t *wlandev, u8 failed);
-+void prism2_disconnected(wlandevice_t *wlandev);
-+void prism2_roamed(wlandevice_t *wlandev);
-+
- #endif
--- 
-1.8.3.2
 
+Nicolas
