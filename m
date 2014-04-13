@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754421AbaDNJfs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 05:35:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57761 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753892AbaDNJfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 05:35:03 -0400
-From: Gerd Hoffmann <kraxel@redhat.com>
-To: airlied@linux.ie, dri-devel@lists.freedesktop.org
-Cc: Gerd Hoffmann <kraxel@redhat.com>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 3/3] drm: bochs: drop unused struct fields
-Date: Mon, 14 Apr 2014 11:34:50 +0200
-Message-Id: <1397468090-25941-4-git-send-email-kraxel@redhat.com>
-In-Reply-To: <1397468090-25941-1-git-send-email-kraxel@redhat.com>
-References: <1397468090-25941-1-git-send-email-kraxel@redhat.com>
+	id S1754566AbaDNJgX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 05:36:23 -0400
+Received: from mail.mp.al.gov.br ([200.223.178.28]:20815 "EHLO
+	mail.mp.al.gov.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644AbaDNJgU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 05:36:20 -0400
+X-Greylist: delayed 35285 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Apr 2014 05:36:20 EDT
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Description: Mail message body
+Subject: 500,000.00 Euro
+To: Recipients <sostenes.gaia@mpal.mp.br>
+From: "Western Union" <sostenes.gaia@mpal.mp.br>
+Date: Sun, 13 Apr 2014 14:15:53 +0200
+Reply-To: wuoutlet@yeah.net
+X-Antivirus: avast! (VPS 140413-0, 04/13/2014), Outbound message
+X-Antivirus-Status: Clean
+Message-Id: <20140413121119.C71C6F9DEBF@mail.mp.al.gov.br>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
----
- drivers/gpu/drm/bochs/bochs.h       | 2 --
- drivers/gpu/drm/bochs/bochs_fbdev.c | 1 -
- 2 files changed, 3 deletions(-)
+Sehr geehrte Begünstigten,
 
-diff --git a/drivers/gpu/drm/bochs/bochs.h b/drivers/gpu/drm/bochs/bochs.h
-index 4608205..7eb52dd 100644
---- a/drivers/gpu/drm/bochs/bochs.h
-+++ b/drivers/gpu/drm/bochs/bochs.h
-@@ -88,8 +88,6 @@ struct bochs_device {
- 		struct bochs_framebuffer gfb;
- 		struct drm_fb_helper helper;
- 		int size;
--		int x1, y1, x2, y2; /* dirty rect */
--		spinlock_t dirty_lock;
- 		bool initialized;
- 	} fb;
- };
-diff --git a/drivers/gpu/drm/bochs/bochs_fbdev.c b/drivers/gpu/drm/bochs/bochs_fbdev.c
-index 4da5206..561b844 100644
---- a/drivers/gpu/drm/bochs/bochs_fbdev.c
-+++ b/drivers/gpu/drm/bochs/bochs_fbdev.c
-@@ -190,7 +190,6 @@ int bochs_fbdev_init(struct bochs_device *bochs)
- 	int ret;
- 
- 	bochs->fb.helper.funcs = &bochs_fb_helper_funcs;
--	spin_lock_init(&bochs->fb.dirty_lock);
- 
- 	ret = drm_fb_helper_init(bochs->dev, &bochs->fb.helper,
- 				 1, 1);
--- 
-1.8.3.1
+Sie haben als der einzige Begünstigte der Summe der fünfhunderttausend Euro (€ 500,000.00 Euro) ausgewählt wurde, die hier in WESTERN UNION Büro von der ONU-Organisation für Sie hinterlegt ist.
+
+Bitte kontaktieren Sie uns für Ansprüche E-Mail: wuremittancedpt@outlook.com
+
+
+Beachten Sie, wenn Sie die Antwort direkt klicken, können wir Ihre e-Mail nicht erhalten auf Zeit, ist es am besten, Sie reagieren auf diese e-Mail; wu.claims.dpt1@outlook.com
+
+
+Kundendienst
+Western Union Büro
+
+---
+This email is free from viruses and malware because avast! Antivirus protection is active.
+http://www.avast.com
 
