@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810AbaDMMw6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 08:52:58 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:18399 "EHLO
+	id S1754822AbaDMMzk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 08:55:40 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:63292 "EHLO
 	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754190AbaDMMw5 (ORCPT
+	by vger.kernel.org with ESMTP id S1754100AbaDMMzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 08:52:57 -0400
+	Sun, 13 Apr 2014 08:55:39 -0400
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ar0GAEGISlNXQ5wQ/2dsb2JhbABZgwaCS4EYwFyBGBd0glMTHCMYgQIkE4gAAco3jm6EPwEDjl+KAQGSQ4MzOw
-Date: Sun, 13 Apr 2014 14:52:54 +0200
+X-IronPort-Anti-Spam-Result: AlIGAEGISlNXQ5wQ/2dsb2JhbABZgwbEP4EYF3SCUxMcIxiBAiQTiAAByjeOboQ/AQOOX4oBAZJDgzM7
+Date: Sun, 13 Apr 2014 14:55:37 +0200
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Tytso <tytso@mit.edu>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] fs/ext4/extents.c: fix bool assignments
-Message-Id: <20140413145254.461c0e2e060fb31e48c91973@skynet.be>
+Cc: akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] fs/befs/btree.c: Replace strncpy by strlcpy + coding
+ style fixing
+Message-Id: <20140413145537.318888ad8aa263e69120c11a@skynet.be>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -24,36 +25,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixing coccinelle warnings.
+-strncpy + end of string assignement replaced by strlcpy
+-Fix endif };
+-Fix typo
 
-Cc: "Theodore Ts'o" <tytso@mit.edu>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- fs/ext4/extents.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/befs/btree.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 82df3ce..c44f42c 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -5209,7 +5209,7 @@ ext4_ext_shift_path_extents(struct ext4_ext_path *path, ext4_lblk_t shift,
- {
- 	int depth, err = 0;
- 	struct ext4_extent *ex_start, *ex_last;
--	bool update = 0;
-+	bool update = false;
- 	depth = path->p_depth;
+diff --git a/fs/befs/btree.c b/fs/befs/btree.c
+index a2cd305..9d7d00e 100644
+--- a/fs/befs/btree.c
++++ b/fs/befs/btree.c
+@@ -405,7 +405,7 @@ befs_find_key(struct super_block *sb, befs_btree_node * node,
+  * Heres how it works: Key_no is the index of the key/value pair to 
+  * return in keybuf/value.
+  * Bufsize is the size of keybuf (BEFS_NAME_LEN+1 is a good size). Keysize is 
+- * the number of charecters in the key (just a convenience).
++ * the number of characters in the key (just a convenience).
+  *
+  * Algorithm:
+  *   Get the first leafnode of the tree. See if the requested key is in that
+@@ -502,12 +502,11 @@ befs_btree_read(struct super_block *sb, befs_data_stream * ds,
+ 			   "for key of size %d", __func__, bufsize, keylen);
+ 		brelse(this_node->bh);
+ 		goto error_alloc;
+-	};
++	}
  
- 	while (depth >= 0) {
-@@ -5227,7 +5227,7 @@ ext4_ext_shift_path_extents(struct ext4_ext_path *path, ext4_lblk_t shift,
- 				goto out;
+-	strncpy(keybuf, keystart, keylen);
++	strlcpy(keybuf, keystart, keylen + 1);
+ 	*value = fs64_to_cpu(sb, valarray[cur_key]);
+ 	*keysize = keylen;
+-	keybuf[keylen] = '\0';
  
- 			if (ex_start == EXT_FIRST_EXTENT(path[depth].p_hdr))
--				update = 1;
-+				update = true;
- 
- 			*start = ex_last->ee_block +
- 				ext4_ext_get_actual_len(ex_last);
+ 	befs_debug(sb, "Read [%llu,%d]: Key \"%.*s\", Value %llu", node_off,
+ 		   cur_key, keylen, keybuf, *value);
 -- 
 1.8.3.2
