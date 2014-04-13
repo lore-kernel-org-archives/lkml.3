@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753569AbaDMXAH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 19:00:07 -0400
-Received: from mga03.intel.com ([143.182.124.21]:48520 "EHLO mga03.intel.com"
+	id S1754196AbaDMXA2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 19:00:28 -0400
+Received: from mga11.intel.com ([192.55.52.93]:28935 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750900AbaDMXAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 19:00:01 -0400
+	id S1753639AbaDMXAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 19:00:13 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,853,1389772800"; 
-   d="scan'208";a="418489412"
+   d="scan'208";a="512366915"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>
 Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v3 0/7] Page I/O
-Date: Sun, 13 Apr 2014 18:59:49 -0400
-Message-Id: <cover.1397429628.git.matthew.r.wilcox@intel.com>
+Subject: [PATCH v3 7/7] brd: Return -ENOSPC rather than -ENOMEM on page allocation failure
+Date: Sun, 13 Apr 2014 18:59:56 -0400
+Message-Id: <f79dcaa7a00de26924c563f91e22418896904167.1397429628.git.matthew.r.wilcox@intel.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <cover.1397429628.git.matthew.r.wilcox@intel.com>
+References: <cover.1397429628.git.matthew.r.wilcox@intel.com>
+In-Reply-To: <cover.1397429628.git.matthew.r.wilcox@intel.com>
+References: <cover.1397429628.git.matthew.r.wilcox@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+brd is effectively a thinly provisioned device.  Thinly provisioned
+devices return -ENOSPC when they can't write a new block.  -ENOMEM is
+an implementation detail that callers shouldn't know.
 
-Now that 3.15-rc1 is out, could you queue these patches for 3.16 please?
-Patches 1-3 & 7 are, IMO, worthwhile cleanups / bug fixes, regardless
-of the rest of the patch set.
+Acked-by: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+---
+ drivers/block/brd.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-If this patch series gets in, I'll take care of including the NVMe
-driver piece.  It'll be a bit more tricky than the proof of concept that
-I've been flashing around because we have to make sure that the device
-responds better to page sized I/Os than accumulating larger I/Os.
-
-It's indisputably a win for brd and for other NVM technology devices
-that are accessed synchronously rather than through DMA.
-
-Matthew Wilcox (7):
-  Remove block_write_full_page_endio()
-  Factor clean_buffers() out of __mpage_writepage()
-  Factor page_endio() out of mpage_end_io()
-  Add bdev_read_page() and bdev_write_page()
-  swap: Use bdev_read_page() / bdev_write_page()
-  brd: Add support for rw_page
-  brd: Return -ENOSPC rather than -ENOMEM on page allocation failure
-
- drivers/block/brd.c         | 16 +++++++--
- fs/block_dev.c              | 63 ++++++++++++++++++++++++++++++++++
- fs/buffer.c                 | 21 +++---------
- fs/ext4/page-io.c           |  2 +-
- fs/mpage.c                  | 84 +++++++++++++++++++++++----------------------
- fs/ocfs2/file.c             |  2 +-
- include/linux/blkdev.h      |  4 +++
- include/linux/buffer_head.h |  2 --
- include/linux/pagemap.h     |  2 ++
- mm/filemap.c                | 25 ++++++++++++++
- mm/page_io.c                | 23 +++++++++++--
- 11 files changed, 178 insertions(+), 66 deletions(-)
-
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index 807d3d5..c7d138e 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -200,11 +200,11 @@ static int copy_to_brd_setup(struct brd_device *brd, sector_t sector, size_t n)
+ 
+ 	copy = min_t(size_t, n, PAGE_SIZE - offset);
+ 	if (!brd_insert_page(brd, sector))
+-		return -ENOMEM;
++		return -ENOSPC;
+ 	if (copy < n) {
+ 		sector += copy >> SECTOR_SHIFT;
+ 		if (!brd_insert_page(brd, sector))
+-			return -ENOMEM;
++			return -ENOSPC;
+ 	}
+ 	return 0;
+ }
+@@ -384,7 +384,7 @@ static int brd_direct_access(struct block_device *bdev, sector_t sector,
+ 		return -ERANGE;
+ 	page = brd_insert_page(brd, sector);
+ 	if (!page)
+-		return -ENOMEM;
++		return -ENOSPC;
+ 	*kaddr = page_address(page);
+ 	*pfn = page_to_pfn(page);
+ 
 -- 
 1.9.1
 
