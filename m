@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020AbaDMRs6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 13:48:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12210 "EHLO mx1.redhat.com"
+	id S1755383AbaDMRqP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 13:46:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57115 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755412AbaDMRqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 13:46:18 -0400
-Date: Sun, 13 Apr 2014 19:46:10 +0200
+	id S1754977AbaDMRpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 13:45:42 -0400
+Date: Sun, 13 Apr 2014 19:45:36 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -16,9 +16,8 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 14/15] uprobes/x86: Emulate relative conditional "short"
-	jmp's
-Message-ID: <20140413174610.GA11898@redhat.com>
+Subject: [PATCH v3 04/15] uprobes/x86: Gather "riprel" functions together
+Message-ID: <20140413174536.GA11846@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,108 +27,174 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Teach branch_emulate_op() to emulate the conditional "short" jmp's which
-check regs->flags.
+Cosmetic. Move pre_xol_rip_insn() and handle_riprel_post_xol() up to
+the closely related handle_riprel_insn(). This way it is simpler to
+read and understand this code, and this lessens the number of ifdef's.
 
-Note: this doesn't support jcxz/jcexz, loope/loopz, and loopne/loopnz.
-They all are rel8 and thus they can't trigger the problem, but perhaps
-we will add the support in future just for completeness.
+While at it, update the comment in handle_riprel_post_xol() as Jim
+suggested.
 
-Reported-by: Jonathan Lebon <jlebon@redhat.com>
+TODO: rename them somehow to make the naming consistent.
+
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
 ---
- arch/x86/kernel/uprobes.c |   57 +++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 55 insertions(+), 2 deletions(-)
+ arch/x86/kernel/uprobes.c |  118 ++++++++++++++++++++-------------------------
+ 1 files changed, 53 insertions(+), 65 deletions(-)
 
 diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 68034b0..b5f2fa4 100644
+index 642c1a5..c982ea0 100644
 --- a/arch/x86/kernel/uprobes.c
 +++ b/arch/x86/kernel/uprobes.c
-@@ -466,9 +466,58 @@ static bool branch_is_call(struct arch_uprobe *auprobe)
- 	return auprobe->branch.opc1 == 0xe8;
+@@ -313,6 +313,48 @@ handle_riprel_insn(struct arch_uprobe *auprobe, struct insn *insn)
+ 	}
  }
  
-+#define CASE_COND					\
-+	COND(70, 71, XF(OF))				\
-+	COND(72, 73, XF(CF))				\
-+	COND(74, 75, XF(ZF))				\
-+	COND(78, 79, XF(SF))				\
-+	COND(7a, 7b, XF(PF))				\
-+	COND(76, 77, XF(CF) || XF(ZF))			\
-+	COND(7c, 7d, XF(SF) != XF(OF))			\
-+	COND(7e, 7f, XF(ZF) || XF(SF) != XF(OF))
-+
-+#define COND(op_y, op_n, expr)				\
-+	case 0x ## op_y: DO((expr) != 0)		\
-+	case 0x ## op_n: DO((expr) == 0)
-+
-+#define XF(xf)	(!!(flags & X86_EFLAGS_ ## xf))
-+
-+static bool is_cond_jmp_opcode(u8 opcode)
++/*
++ * If we're emulating a rip-relative instruction, save the contents
++ * of the scratch register and store the target address in that register.
++ */
++static void
++pre_xol_rip_insn(struct arch_uprobe *auprobe, struct pt_regs *regs,
++				struct arch_uprobe_task *autask)
 +{
-+	switch (opcode) {
-+	#define DO(expr)	\
-+		return true;
-+	CASE_COND
-+	#undef	DO
-+
-+	default:
-+		return false;
++	if (auprobe->fixups & UPROBE_FIX_RIP_AX) {
++		autask->saved_scratch_register = regs->ax;
++		regs->ax = current->utask->vaddr;
++		regs->ax += auprobe->rip_rela_target_address;
++	} else if (auprobe->fixups & UPROBE_FIX_RIP_CX) {
++		autask->saved_scratch_register = regs->cx;
++		regs->cx = current->utask->vaddr;
++		regs->cx += auprobe->rip_rela_target_address;
 +	}
 +}
 +
-+static bool check_jmp_cond(struct arch_uprobe *auprobe, struct pt_regs *regs)
++static void
++handle_riprel_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs, long *correction)
 +{
-+	unsigned long flags = regs->flags;
++	if (auprobe->fixups & (UPROBE_FIX_RIP_AX | UPROBE_FIX_RIP_CX)) {
++		struct arch_uprobe_task *autask;
 +
-+	switch (auprobe->branch.opc1) {
-+	#define DO(expr)	\
-+		return expr;
-+	CASE_COND
-+	#undef	DO
++		autask = &current->utask->autask;
++		if (auprobe->fixups & UPROBE_FIX_RIP_AX)
++			regs->ax = autask->saved_scratch_register;
++		else
++			regs->cx = autask->saved_scratch_register;
 +
-+	default:	/* not a conditional jmp */
-+		return true;
++		/*
++		 * The original instruction includes a displacement, and so
++		 * is 4 bytes longer than what we've just single-stepped.
++		 * Caller may need to apply other fixups to handle stuff
++		 * like "jmpq *...(%rip)" and "callq *...(%rip)".
++		 */
++		if (correction)
++			*correction += 4;
 +	}
 +}
 +
-+#undef	XF
-+#undef	COND
-+#undef	CASE_COND
-+
- static bool branch_emulate_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ static int validate_insn_64bits(struct arch_uprobe *auprobe, struct insn *insn)
  {
- 	unsigned long new_ip = regs->ip += auprobe->branch.ilen;
-+	unsigned long offs = (long)auprobe->branch.offs;
- 
- 	if (branch_is_call(auprobe)) {
- 		unsigned long new_sp = regs->sp - sizeof_long();
-@@ -484,9 +533,11 @@ static bool branch_emulate_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
- 		if (copy_to_user((void __user *)new_sp, &new_ip, sizeof_long()))
- 			return false;
- 		regs->sp = new_sp;
-+	} else if (!check_jmp_cond(auprobe, regs)) {
-+		offs = 0;
- 	}
- 
--	regs->ip = new_ip + auprobe->branch.offs;
-+	regs->ip = new_ip + offs;
- 	return true;
+ 	insn_init(insn, auprobe->insn, true);
+@@ -339,9 +381,19 @@ static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 	return validate_insn_64bits(auprobe, insn);
+ }
+ #else /* 32-bit: */
++/*
++ * No RIP-relative addressing on 32-bit
++ */
+ static void handle_riprel_insn(struct arch_uprobe *auprobe, struct insn *insn)
+ {
+-	/* No RIP-relative addressing on 32-bit */
++}
++static void pre_xol_rip_insn(struct arch_uprobe *auprobe, struct pt_regs *regs,
++				struct arch_uprobe_task *autask)
++{
++}
++static void handle_riprel_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs,
++					long *correction)
++{
  }
  
-@@ -547,8 +598,10 @@ static int branch_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
- 	case 0xe8:	/* call relative */
- 		branch_clear_offset(auprobe, insn);
- 		break;
-+
- 	default:
--		return -ENOSYS;
-+		if (!is_cond_jmp_opcode(opc1))
-+			return -ENOSYS;
- 	}
+ static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm,  struct insn *insn)
+@@ -415,34 +467,6 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 	return 0;
+ }
  
- 	auprobe->branch.opc1 = opc1;
+-#ifdef CONFIG_X86_64
+-/*
+- * If we're emulating a rip-relative instruction, save the contents
+- * of the scratch register and store the target address in that register.
+- */
+-static void
+-pre_xol_rip_insn(struct arch_uprobe *auprobe, struct pt_regs *regs,
+-				struct arch_uprobe_task *autask)
+-{
+-	if (auprobe->fixups & UPROBE_FIX_RIP_AX) {
+-		autask->saved_scratch_register = regs->ax;
+-		regs->ax = current->utask->vaddr;
+-		regs->ax += auprobe->rip_rela_target_address;
+-	} else if (auprobe->fixups & UPROBE_FIX_RIP_CX) {
+-		autask->saved_scratch_register = regs->cx;
+-		regs->cx = current->utask->vaddr;
+-		regs->cx += auprobe->rip_rela_target_address;
+-	}
+-}
+-#else
+-static void
+-pre_xol_rip_insn(struct arch_uprobe *auprobe, struct pt_regs *regs,
+-				struct arch_uprobe_task *autask)
+-{
+-	/* No RIP-relative addressing on 32-bit */
+-}
+-#endif
+-
+ /*
+  * arch_uprobe_pre_xol - prepare to execute out of line.
+  * @auprobe: the probepoint information.
+@@ -492,42 +516,6 @@ static int adjust_ret_addr(unsigned long sp, long correction)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_X86_64
+-static bool is_riprel_insn(struct arch_uprobe *auprobe)
+-{
+-	return ((auprobe->fixups & (UPROBE_FIX_RIP_AX | UPROBE_FIX_RIP_CX)) != 0);
+-}
+-
+-static void
+-handle_riprel_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs, long *correction)
+-{
+-	if (is_riprel_insn(auprobe)) {
+-		struct arch_uprobe_task *autask;
+-
+-		autask = &current->utask->autask;
+-		if (auprobe->fixups & UPROBE_FIX_RIP_AX)
+-			regs->ax = autask->saved_scratch_register;
+-		else
+-			regs->cx = autask->saved_scratch_register;
+-
+-		/*
+-		 * The original instruction includes a displacement, and so
+-		 * is 4 bytes longer than what we've just single-stepped.
+-		 * Fall through to handle stuff like "jmpq *...(%rip)" and
+-		 * "callq *...(%rip)".
+-		 */
+-		if (correction)
+-			*correction += 4;
+-	}
+-}
+-#else
+-static void
+-handle_riprel_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs, long *correction)
+-{
+-	/* No RIP-relative addressing on 32-bit */
+-}
+-#endif
+-
+ /*
+  * If xol insn itself traps and generates a signal(Say,
+  * SIGILL/SIGSEGV/etc), then detect the case where a singlestepped
 -- 
 1.5.5.1
 
