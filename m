@@ -1,101 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346AbaDMUnw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 16:43:52 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:58478 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752768AbaDMUnv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 16:43:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <534431EB.1060803@linux.com>
-References: <20140323193839.GY15608@titan.lakedaemon.net>
-	<CAAsK9AF8VevpdF-3nLC5sadV4y31cVeVWb5f2E=sV3ROu3Yk4Q@mail.gmail.com>
-	<20140401142051.GO28304@titan.lakedaemon.net>
-	<alpine.DEB.2.02.1404031353280.14073@nftneq.ynat.uz>
-	<20140404151542.GB28334@titan.lakedaemon.net>
-	<533EDB15.40305@linux.com>
-	<CACV2jQCxfQzRydFD6KizFnquasqtqaz1O_yNnVDBetFA5UryrA@mail.gmail.com>
-	<533FC8A6.6050905@linux.com>
-	<20140407152003.GF28334@titan.lakedaemon.net>
-	<534418C8.6080105@linux.com>
-	<20140408172022.GC13102@titan.lakedaemon.net>
-	<534431EB.1060803@linux.com>
-Date: Sun, 13 Apr 2014 22:43:49 +0200
-X-Google-Sender-Auth: xH9jcF6qd3sQrE88ZJ4phaTLIMU
-Message-ID: <CAAsK9AHesqBOwYEaovg5m-Rxcd+_xnk-eN+EURxECYUBAsTC7A@mail.gmail.com>
-Subject: Re: [RFC] QR encoding for Oops messages
-From: Levente Kurusa <levex@linux.com>
-To: Jason Cooper <jason@lakedaemon.net>,
-        =?ISO-8859-2?B?VGVvZG9yYSBC42x1/uM=?= <teobaluta@gmail.com>
-Cc: David Lang <david@lang.hm>, Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755621AbaDMUqn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 16:46:43 -0400
+Received: from mout.gmx.net ([212.227.15.18]:60200 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755424AbaDMUqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 16:46:42 -0400
+Date: Sun, 13 Apr 2014 22:46:31 +0200
+From: Christian Engelmayer <cengelma@gmx.at>
+To: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Dan Carpenter <dan.carpenter@oracle.com>,
+        Vinod Koul <vinod.koul@intel.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ASoC: Intel: Fix a self assignment in
+ sst_mem_block_alloc_scratch()
+Message-ID: <20140413224631.1a1bdce1@spike>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/6tzXmpl9EFswPUYPSaZdRPF"; protocol="application/pgp-signature"
+X-Provags-ID: V03:K0:urjqqH/5jgmXr9ASZg4kovKwl0hf5pr0MM3NTt4pjmu7BMQ8OSX
+ 4dUEToCprtkprt6EFMW5hwq/1Ny27qE+iHLZxBERR+EzUNwoXxud3Gz9h9i/aps56hmV2vF
+ LEn9q/0Il9PdgRkJTuVztF01rkH5lZFxFHBWNEd5eIqqzNHC2RWI1TvaOsL1fHHLovVmyQY
+ iCs4YZCE7Q0etvW0x7apA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Sig_/6tzXmpl9EFswPUYPSaZdRPF
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-2014-04-08 19:29 GMT+02:00 Levente Kurusa <levex@linux.com>:
-> Hi,
->
-> On 04/08/2014 07:20 PM, Jason Cooper wrote:
->> On Tue, Apr 08, 2014 at 05:42:00PM +0200, Levente Kurusa wrote:
->>> On 04/07/2014 05:20 PM, Jason Cooper wrote:
->>>> On Sat, Apr 05, 2014 at 11:11:02AM +0200, Levente Kurusa wrote:
->>>>> Oh and another suggestion, I think placing it in the bottom-right
->>>>> corner would be better since then we wouldn't overwrite some of
->>>>> the timestamps and messages.
->>>>
->>>> The real text is still sent to the (hopefully written to disk) logs.  If
->>>> a user (or distro) builds with this feature, I would think centered and
->>>> scaled for ease of scanning would be highest priority.
->>>
->>> Yup, I'll be traveling on the train a lot this week, so I'll
->>> have plenty of time to implement scaling and centering. Maybe
->>> we could also implement this:
->>>
->>> qr_oops=center   (center the QR code with scale 1)
->>> qr_oops=center,3 (center the QR code with scale 3)
->>>
->>> 'center' could also be 'topleft', 'bottomright', etc.
->>> Or just remain at the KISS rule? (keep it simple)
->>>
->>> Any objections?
->>
->> KISS. ;-)
->>
->> Iff we find we need the feature later, we can always add qr_oops_pos or
->> similar.
->>
->
-> Alright, I'll start the work on that tomorrow.
->
-> Maybe I'll also find some time to clean up the library,
-> since I guess that should be our primary priority.
+Remove a self assignment in sst_mem_block_alloc_scratch(). When calculating
+buffer sizes there is no need for statements without effect. Detected by
+Coverity: CID 1195249.
 
-Just a quick reminder that scaling was just merged in [0].
-I'd highly appreciate feedback. Thanks!
+Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
+---
+ sound/soc/intel/sst-firmware.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-Now that rendering is a bit cleaner I'll start cleaning up
-the library. This is what I intend to do next week:
+diff --git a/sound/soc/intel/sst-firmware.c b/sound/soc/intel/sst-firmware.c
+index f768710..f24619a 100644
+--- a/sound/soc/intel/sst-firmware.c
++++ b/sound/soc/intel/sst-firmware.c
+@@ -505,9 +505,7 @@ struct sst_module *sst_mem_block_alloc_scratch(struct s=
+st_dsp *dsp)
+=20
+ 	/* calculate required scratch size */
+ 	list_for_each_entry(sst_module, &dsp->module_list, list) {
+-		if (scratch->s.size > sst_module->s.size)
+-			scratch->s.size =3D scratch->s.size;
+-		else
++		if (scratch->s.size < sst_module->s.size)
+ 			scratch->s.size =3D sst_module->s.size;
+ 	}
+=20
+--=20
+1.8.3.2
 
-* Extract bitstream.c into a new kernel library. No point
-  in restricting this to QR only.
+--Sig_/6tzXmpl9EFswPUYPSaZdRPF
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-* Rework bitstream to propagate errors, to use a caller
-  allocation scheme and remove the ugly OOPness.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
 
-* Fix up the QR library so that it propagates errors
-  from the new bitstream code.
+iQIcBAEBAgAGBQJTSvenAAoJEKssnEpaPQKEwXQQANSrujXA4kpRYe1F3Nywh+6m
+9itVV6sAeiEaVfRECBctASDHpUg2MRD0QN454xwmDateYhf4lshMsXPWy/3tS2FL
+G7nN0TifgYjD1eFjAsbtaD33AiJLtw2Cdfsn7YQOOgpo42qm5ZNSJ9W3FCT8zJHL
+bwj47BE2FBro6dRQnvPVBE/loxljGGCM6pm0utNIlxfBPi5/4GO6nLm0IXleC6IZ
+ibbniWOUx9BL1N/0YP8bI4qVrBQSmT8J2KVG5W5MvXDcllh9dlkOosNWc7FKLf4S
+w6mdW9EujzIEgPhSpJBRpqoTTYQ/qWcHWXM4qfsThjV/4YxMNs6RN7JCJKLU4i83
+WhE3C/vqyTV9l9StC12JU6cdfnasPda3WWqz77NFpi60T2XYkX4m4qayLmPwnQVd
+MKfcj/NL8HZSQc/V5B2uA3AhHzEv9emYGOow2C/JZeEGkDjFDKclgLXwoaflS3j4
+6uXKDjjB7+CPnzR8WVHOgM6epj8HSALTK4aG1K9GvJVcJxmTs5f6OSxIV3CY0jH0
+IeZPBC9rA0wa7A0Z96sY9E9V5A9JEwMcshuViNnrycFL7XPKLcXW990cz2M5gLLJ
+mUwyRqZ3DP9U+7iBQzAmkAf/eT/ACOBJ8zcs61I3qwBuYh8qlqXa0vPrwOVtt7eE
+tqdhh8j6gd9PfeDootJj
+=avaV
+-----END PGP SIGNATURE-----
 
-Any objections?
-
-[0]: https://github.com/teobaluta/qr-linux-kernel/commit/70401a9918e0810e7b0784fa6e1bdc766df20352
-
---
-Regards,
-Levente Kurusa
-PGP: 4EF5D641
+--Sig_/6tzXmpl9EFswPUYPSaZdRPF--
