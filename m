@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434AbaDMRqT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 13:46:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64490 "EHLO mx1.redhat.com"
+	id S1756020AbaDMRs6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 13:48:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12210 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754983AbaDMRpq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 13:45:46 -0400
-Date: Sun, 13 Apr 2014 19:45:39 +0200
+	id S1755412AbaDMRqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 13:46:18 -0400
+Date: Sun, 13 Apr 2014 19:46:10 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -16,9 +16,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 05/15] uprobes/x86: move the UPROBE_FIX_{RIP,IP,CALL}
-	code at the end of pre/post hooks
-Message-ID: <20140413174539.GA11849@redhat.com>
+Subject: [PATCH v3 14/15] uprobes/x86: Emulate relative conditional "short"
+	jmp's
+Message-ID: <20140413174610.GA11898@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,89 +28,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No functional changes. Preparation to simplify the review of the next
-change. Just reorder the code in arch_uprobe_pre/post_xol() functions
-so that UPROBE_FIX_{RIP_*,IP,CALL} logic goes to the end.
+Teach branch_emulate_op() to emulate the conditional "short" jmp's which
+check regs->flags.
 
-Also change arch_uprobe_pre_xol() to use utask instead of autask, to
-make the code more symmetrical with arch_uprobe_post_xol().
+Note: this doesn't support jcxz/jcexz, loope/loopz, and loopne/loopnz.
+They all are rel8 and thus they can't trigger the problem, but perhaps
+we will add the support in future just for completeness.
 
+Reported-by: Jonathan Lebon <jlebon@redhat.com>
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- arch/x86/kernel/uprobes.c |   30 ++++++++++++++----------------
- 1 files changed, 14 insertions(+), 16 deletions(-)
+ arch/x86/kernel/uprobes.c |   57 +++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 55 insertions(+), 2 deletions(-)
 
 diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index c982ea0..b32053a 100644
+index 68034b0..b5f2fa4 100644
 --- a/arch/x86/kernel/uprobes.c
 +++ b/arch/x86/kernel/uprobes.c
-@@ -474,19 +474,18 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
-  */
- int arch_uprobe_pre_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
- {
--	struct arch_uprobe_task *autask;
-+	struct uprobe_task *utask = current->utask;
- 
--	autask = &current->utask->autask;
--	autask->saved_trap_nr = current->thread.trap_nr;
-+	regs->ip = utask->xol_vaddr;
-+	utask->autask.saved_trap_nr = current->thread.trap_nr;
- 	current->thread.trap_nr = UPROBE_TRAP_NR;
--	regs->ip = current->utask->xol_vaddr;
--	pre_xol_rip_insn(auprobe, regs, autask);
- 
--	autask->saved_tf = !!(regs->flags & X86_EFLAGS_TF);
-+	utask->autask.saved_tf = !!(regs->flags & X86_EFLAGS_TF);
- 	regs->flags |= X86_EFLAGS_TF;
- 	if (test_tsk_thread_flag(current, TIF_BLOCKSTEP))
- 		set_task_blockstep(current, false);
- 
-+	pre_xol_rip_insn(auprobe, regs, &utask->autask);
- 	return 0;
+@@ -466,9 +466,58 @@ static bool branch_is_call(struct arch_uprobe *auprobe)
+ 	return auprobe->branch.opc1 == 0xe8;
  }
  
-@@ -560,22 +559,13 @@ bool arch_uprobe_xol_was_trapped(struct task_struct *t)
-  */
- int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
++#define CASE_COND					\
++	COND(70, 71, XF(OF))				\
++	COND(72, 73, XF(CF))				\
++	COND(74, 75, XF(ZF))				\
++	COND(78, 79, XF(SF))				\
++	COND(7a, 7b, XF(PF))				\
++	COND(76, 77, XF(CF) || XF(ZF))			\
++	COND(7c, 7d, XF(SF) != XF(OF))			\
++	COND(7e, 7f, XF(ZF) || XF(SF) != XF(OF))
++
++#define COND(op_y, op_n, expr)				\
++	case 0x ## op_y: DO((expr) != 0)		\
++	case 0x ## op_n: DO((expr) == 0)
++
++#define XF(xf)	(!!(flags & X86_EFLAGS_ ## xf))
++
++static bool is_cond_jmp_opcode(u8 opcode)
++{
++	switch (opcode) {
++	#define DO(expr)	\
++		return true;
++	CASE_COND
++	#undef	DO
++
++	default:
++		return false;
++	}
++}
++
++static bool check_jmp_cond(struct arch_uprobe *auprobe, struct pt_regs *regs)
++{
++	unsigned long flags = regs->flags;
++
++	switch (auprobe->branch.opc1) {
++	#define DO(expr)	\
++		return expr;
++	CASE_COND
++	#undef	DO
++
++	default:	/* not a conditional jmp */
++		return true;
++	}
++}
++
++#undef	XF
++#undef	COND
++#undef	CASE_COND
++
+ static bool branch_emulate_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
  {
--	struct uprobe_task *utask;
-+	struct uprobe_task *utask = current->utask;
- 	long correction;
- 	int result = 0;
+ 	unsigned long new_ip = regs->ip += auprobe->branch.ilen;
++	unsigned long offs = (long)auprobe->branch.offs;
  
- 	WARN_ON_ONCE(current->thread.trap_nr != UPROBE_TRAP_NR);
+ 	if (branch_is_call(auprobe)) {
+ 		unsigned long new_sp = regs->sp - sizeof_long();
+@@ -484,9 +533,11 @@ static bool branch_emulate_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ 		if (copy_to_user((void __user *)new_sp, &new_ip, sizeof_long()))
+ 			return false;
+ 		regs->sp = new_sp;
++	} else if (!check_jmp_cond(auprobe, regs)) {
++		offs = 0;
+ 	}
  
--	utask = current->utask;
- 	current->thread.trap_nr = utask->autask.saved_trap_nr;
--	correction = (long)(utask->vaddr - utask->xol_vaddr);
--	handle_riprel_post_xol(auprobe, regs, &correction);
--	if (auprobe->fixups & UPROBE_FIX_IP)
--		regs->ip += correction;
--
--	if (auprobe->fixups & UPROBE_FIX_CALL)
--		result = adjust_ret_addr(regs->sp, correction);
--
- 	/*
- 	 * arch_uprobe_pre_xol() doesn't save the state of TIF_BLOCKSTEP
- 	 * so we can get an extra SIGTRAP if we do not clear TF. We need
-@@ -586,6 +576,14 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
- 	else if (!(auprobe->fixups & UPROBE_FIX_SETF))
- 		regs->flags &= ~X86_EFLAGS_TF;
- 
-+	correction = (long)(utask->vaddr - utask->xol_vaddr);
-+	handle_riprel_post_xol(auprobe, regs, &correction);
-+	if (auprobe->fixups & UPROBE_FIX_IP)
-+		regs->ip += correction;
-+
-+	if (auprobe->fixups & UPROBE_FIX_CALL)
-+		result = adjust_ret_addr(regs->sp, correction);
-+
- 	return result;
+-	regs->ip = new_ip + auprobe->branch.offs;
++	regs->ip = new_ip + offs;
+ 	return true;
  }
  
+@@ -547,8 +598,10 @@ static int branch_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
+ 	case 0xe8:	/* call relative */
+ 		branch_clear_offset(auprobe, insn);
+ 		break;
++
+ 	default:
+-		return -ENOSYS;
++		if (!is_cond_jmp_opcode(opc1))
++			return -ENOSYS;
+ 	}
+ 
+ 	auprobe->branch.opc1 = opc1;
 -- 
 1.5.5.1
 
