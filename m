@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750894AbaDMVlv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 17:41:51 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:43434 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714AbaDMVlt (ORCPT
+	id S1750958AbaDMVvI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 17:51:08 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:50780 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714AbaDMVvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 17:41:49 -0400
-Date: Sun, 13 Apr 2014 17:41:47 -0400 (EDT)
+	Sun, 13 Apr 2014 17:51:06 -0400
+Date: Sun, 13 Apr 2014 17:51:03 -0400 (EDT)
 From: Nicolas Pitre <nicolas.pitre@linaro.org>
 To: Peter Zijlstra <peterz@infradead.org>
 cc: mingo@kernel.org, tglx@linutronix.de, luto@amacapital.net,
         daniel.lezcano@linaro.org, umgwanakikbuti@gmail.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 6/8] sched,idle: Avoid spurious wakeup IPIs
-In-Reply-To: <20140411135218.478299389@infradead.org>
-Message-ID: <alpine.LFD.2.11.1404131740290.980@knanqh.ubzr>
-References: <20140411134243.160989490@infradead.org> <20140411135218.478299389@infradead.org>
+Subject: Re: [RFC][PATCH 7/8] sched,idle: Delay clearing the polling bit
+In-Reply-To: <20140411135218.546673774@infradead.org>
+Message-ID: <alpine.LFD.2.11.1404131749430.980@knanqh.ubzr>
+References: <20140411134243.160989490@infradead.org> <20140411135218.546673774@infradead.org>
 User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -26,110 +26,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, 11 Apr 2014, Peter Zijlstra wrote:
 
-> Because mwait_idle_with_hints() gets called from !idle context it must
-> call current_clr_polling(). This however means that resched_task() is
-> very likely to send an IPI even when we were polling:
+> With the generic idle functions assuming !polling we should only clear
+> the polling bit at the very last opportunity in order to avoid
+> spurious IPIs.
 > 
->   CPU0					CPU1
+> Ideally we'd flip the default to polling, but that means auditing all
+> arch idle functions.
 > 
->   if (current_set_polling_and_test())
->     goto out;
-> 
->   __monitor(&ti->flags);
->   if (!need_resched())
->     __mwait(eax, ecx);
-> 					set_tsk_need_resched(p);
-> 					smp_mb();
-> out:
->   current_clr_polling();
-> 					if (!tsk_is_polling(p))
-> 					  smp_send_reschedule(cpu);
-> 
-> 
-> So while it is correct (extra IPIs aren't a problem, whereas a missed
-> IPI would be) it is a performance problem (for some).
-> 
-> Avoid this issue by using fetch_or() to atomically set NEED_RESCHED
-> and test if POLLING_NRFLAG is set.
-> 
-> Since a CPU stuck in mwait is unlikely to modify the flags word,
-> contention on the cmpxchg is unlikely and thus we should mostly
-> succeed in a single go.
-
-Looks like a nice cleanup.
+> Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 
 Acked-by: Nicolas Pitre <nico@linaro.org>
 
-> 
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Andy Lutomirski <luto@amacapital.net>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+
 > ---
->  kernel/sched/core.c |   41 ++++++++++++++++++++++++++++++++++++-----
->  1 file changed, 36 insertions(+), 5 deletions(-)
+>  kernel/sched/idle.c |   17 ++++++++++-------
+>  1 file changed, 10 insertions(+), 7 deletions(-)
 > 
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -505,6 +505,39 @@ static inline void init_hrtick(void)
->  #endif	/* CONFIG_SCHED_HRTICK */
+> --- a/kernel/sched/idle.c
+> +++ b/kernel/sched/idle.c
+> @@ -78,12 +78,10 @@ static int cpuidle_idle_call(void)
 >  
->  /*
-> + * cmpxchg based fetch_or, macro so it works for different integer types
-> + */
-> +#define fetch_or(ptr, val)						\
-> +({	typeof(*(ptr)) __old, __val = *(ptr);				\
-> + 	for (;;) {							\
-> + 		__old = cmpxchg((ptr), __val, __val | (val));		\
-> + 		if (__old == __val)					\
-> + 			break;						\
-> + 		__val = __old;						\
-> + 	}								\
-> + 	__old;								\
-> +})
-> +
-> +#ifdef TIF_POLLING_NRFLAG
-> +/*
-> + * Atomically set TIF_NEED_RESCHED and test for TIF_POLLING_NRFLAG,
-> + * this avoids any races wrt polling state changes and thereby avoids
-> + * spurious IPIs.
-> + */
-> +static bool set_nr_and_not_polling(struct task_struct *p)
-> +{
-> +	struct thread_info *ti = task_thread_info(p);
-> +	return !(fetch_or(&ti->flags, _TIF_NEED_RESCHED) & _TIF_POLLING_NRFLAG);
-> +}
-> +#else
-> +static bool set_nr_and_not_polling(struct task_struct *p)
-> +{
-> +	set_tsk_need_resched(p);
-> +	return true;
-> +}
-> +#endif
-> +
-> +/*
->   * resched_task - mark a task 'to be rescheduled now'.
->   *
->   * On UP this means the setting of the need_resched flag, on SMP it
-> @@ -520,17 +553,15 @@ void resched_task(struct task_struct *p)
->  	if (test_tsk_need_resched(p))
->  		return;
->  
-> -	set_tsk_need_resched(p);
-> -
->  	cpu = task_cpu(p);
-> +
->  	if (cpu == smp_processor_id()) {
-> +		set_tsk_need_resched(p);
->  		set_preempt_need_resched();
->  		return;
+>  	/*
+>  	 * Check if the idle task must be rescheduled. If it is the
+> -	 * case, exit the function after re-enabling the local irq and
+> -	 * set again the polling flag
+> +	 * case, exit the function after re-enabling the local irq.
+>  	 */
+> -	if (current_clr_polling_and_test()) {
+> +	if (need_resched()) {
+>  		local_irq_enable();
+> -		__current_set_polling();
+>  		return 0;
 >  	}
 >  
-> -	/* NEED_RESCHED must be visible before we test polling */
-> -	smp_mb();
-> -	if (!tsk_is_polling(p))
-> +	if (set_nr_and_not_polling(p))
->  		smp_send_reschedule(cpu);
->  }
+> @@ -127,7 +125,7 @@ static int cpuidle_idle_call(void)
+>  			broadcast = !!(drv->states[next_state].flags &
+>  				       CPUIDLE_FLAG_TIMER_STOP);
+>  
+> -			if (broadcast)
+> +			if (broadcast) {
+>  				/*
+>  				 * Tell the time framework to switch
+>  				 * to a broadcast timer because our
+> @@ -139,6 +137,7 @@ static int cpuidle_idle_call(void)
+>  				ret = clockevents_notify(
+>  					CLOCK_EVT_NOTIFY_BROADCAST_ENTER,
+>  					&dev->cpu);
+> +			}
+>  
+>  			if (!ret) {
+>  				trace_cpu_idle_rcuidle(next_state, dev->cpu);
+> @@ -175,8 +174,12 @@ static int cpuidle_idle_call(void)
+>  	 * We can't use the cpuidle framework, let's use the default
+>  	 * idle routine
+>  	 */
+> -	if (ret)
+> -		arch_cpu_idle();
+> +	if (ret) {
+> +		if (!current_clr_polling_and_test())
+> +			arch_cpu_idle();
+> +		else
+> +			local_irq_enable();
+> +	}
+>  
+>  	__current_set_polling();
 >  
 > 
 > 
