@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552AbaDMRqX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 13:46:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35080 "EHLO mx1.redhat.com"
+	id S1755496AbaDMRqV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 13:46:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23119 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755057AbaDMRpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 13:45:53 -0400
-Date: Sun, 13 Apr 2014 19:45:46 +0200
+	id S1755052AbaDMRpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 13:45:49 -0400
+Date: Sun, 13 Apr 2014 19:45:43 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -16,9 +16,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 07/15] uprobes/x86: Conditionalize the usage of
-	handle_riprel_insn()
-Message-ID: <20140413174546.GA11859@redhat.com>
+Subject: [PATCH v3 06/15] uprobes/x86: Introduce uprobe_xol_ops and
+	arch_uprobe->ops
+Message-ID: <20140413174543.GA11856@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,54 +28,199 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-arch_uprobe_analyze_insn() calls handle_riprel_insn() at the start,
-but only "0xff" and "default" cases need the UPROBE_FIX_RIP_ logic.
-Move the callsite into "default" case and change the "0xff" case to
-fall-through.
+Introduce arch_uprobe->ops pointing to the "struct uprobe_xol_ops",
+move the current UPROBE_FIX_{RIP*,IP,CALL} code into the default
+set of methods and change arch_uprobe_pre/post_xol() accordingly.
 
-We are going to add the various hooks to handle the rip-relative
-jmp/call instructions (and more), we need this change to enforce the
-fact that the new code can not conflict with is_riprel_insn() logic
-which, after this change, can only be used by default_xol_ops.
-
-Note: arch_uprobe_abort_xol() still calls handle_riprel_post_xol()
-directly. This is fine unless another _xol_ops we may add later will
-need to reuse "UPROBE_FIX_RIP_AX|UPROBE_FIX_RIP_CX" bits in ->fixup.
-In this case we can add uprobe_xol_ops->abort() hook, which (perhaps)
-we will need anyway in the long term.
+This way we can add the new uprobe_xol_ops's to handle the insns
+which need the special processing (rip-relative jmp/call at least).
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
 Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
- arch/x86/kernel/uprobes.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/uprobes.h |    7 ++-
+ arch/x86/kernel/uprobes.c      |  107 +++++++++++++++++++++++++--------------
+ 2 files changed, 74 insertions(+), 40 deletions(-)
 
+diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+index 3087ea9..9f8210b 100644
+--- a/arch/x86/include/asm/uprobes.h
++++ b/arch/x86/include/asm/uprobes.h
+@@ -33,12 +33,17 @@ typedef u8 uprobe_opcode_t;
+ #define UPROBE_SWBP_INSN		0xcc
+ #define UPROBE_SWBP_INSN_SIZE		   1
+ 
++struct uprobe_xol_ops;
++
+ struct arch_uprobe {
+-	u16				fixups;
+ 	union {
+ 		u8			insn[MAX_UINSN_BYTES];
+ 		u8			ixol[MAX_UINSN_BYTES];
+ 	};
++
++	u16				fixups;
++	const struct uprobe_xol_ops	*ops;
++
+ #ifdef CONFIG_X86_64
+ 	unsigned long			rip_rela_target_address;
+ #endif
 diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 6ba6705..f4b436b 100644
+index b32053a..6ba6705 100644
 --- a/arch/x86/kernel/uprobes.c
 +++ b/arch/x86/kernel/uprobes.c
-@@ -482,8 +482,6 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
- 	 * and annotate arch_uprobe->fixups accordingly. To start with, ->fixups
- 	 * is either zero or it reflects rip-related fixups.
- 	 */
--	handle_riprel_insn(auprobe, &insn);
--
- 	switch (OPCODE1(&insn)) {
- 	case 0x9d:		/* popf */
- 		auprobe->fixups |= UPROBE_FIX_SETF;
-@@ -512,9 +510,9 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
- 		case 4: case 5:			/* jmp or ljmp, indirect */
- 			fix_ip = false;
- 		}
--		break;
-+		/* fall through */
- 	default:
--		break;
-+		handle_riprel_insn(auprobe, &insn);
- 	}
+@@ -402,6 +402,64 @@ static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ }
+ #endif /* CONFIG_X86_64 */
  
- 	if (fix_ip)
++struct uprobe_xol_ops {
++	bool	(*emulate)(struct arch_uprobe *, struct pt_regs *);
++	int	(*pre_xol)(struct arch_uprobe *, struct pt_regs *);
++	int	(*post_xol)(struct arch_uprobe *, struct pt_regs *);
++};
++
++static int default_pre_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
++{
++	pre_xol_rip_insn(auprobe, regs, &current->utask->autask);
++	return 0;
++}
++
++/*
++ * Adjust the return address pushed by a call insn executed out of line.
++ */
++static int adjust_ret_addr(unsigned long sp, long correction)
++{
++	int rasize, ncopied;
++	long ra = 0;
++
++	if (is_ia32_task())
++		rasize = 4;
++	else
++		rasize = 8;
++
++	ncopied = copy_from_user(&ra, (void __user *)sp, rasize);
++	if (unlikely(ncopied))
++		return -EFAULT;
++
++	ra += correction;
++	ncopied = copy_to_user((void __user *)sp, &ra, rasize);
++	if (unlikely(ncopied))
++		return -EFAULT;
++
++	return 0;
++}
++
++static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
++{
++	struct uprobe_task *utask = current->utask;
++	long correction = (long)(utask->vaddr - utask->xol_vaddr);
++	int ret = 0;
++
++	handle_riprel_post_xol(auprobe, regs, &correction);
++	if (auprobe->fixups & UPROBE_FIX_IP)
++		regs->ip += correction;
++
++	if (auprobe->fixups & UPROBE_FIX_CALL)
++		ret = adjust_ret_addr(regs->sp, correction);
++
++	return ret;
++}
++
++static struct uprobe_xol_ops default_xol_ops = {
++	.pre_xol  = default_pre_xol_op,
++	.post_xol = default_post_xol_op,
++};
++
+ /**
+  * arch_uprobe_analyze_insn - instruction analysis including validity and fixups.
+  * @mm: the probed address space.
+@@ -464,6 +522,7 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 	if (fix_call)
+ 		auprobe->fixups |= UPROBE_FIX_CALL;
+ 
++	auprobe->ops = &default_xol_ops;
+ 	return 0;
+ }
+ 
+@@ -485,33 +544,8 @@ int arch_uprobe_pre_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ 	if (test_tsk_thread_flag(current, TIF_BLOCKSTEP))
+ 		set_task_blockstep(current, false);
+ 
+-	pre_xol_rip_insn(auprobe, regs, &utask->autask);
+-	return 0;
+-}
+-
+-/*
+- * This function is called by arch_uprobe_post_xol() to adjust the return
+- * address pushed by a call instruction executed out of line.
+- */
+-static int adjust_ret_addr(unsigned long sp, long correction)
+-{
+-	int rasize, ncopied;
+-	long ra = 0;
+-
+-	if (is_ia32_task())
+-		rasize = 4;
+-	else
+-		rasize = 8;
+-
+-	ncopied = copy_from_user(&ra, (void __user *)sp, rasize);
+-	if (unlikely(ncopied))
+-		return -EFAULT;
+-
+-	ra += correction;
+-	ncopied = copy_to_user((void __user *)sp, &ra, rasize);
+-	if (unlikely(ncopied))
+-		return -EFAULT;
+-
++	if (auprobe->ops->pre_xol)
++		return auprobe->ops->pre_xol(auprobe, regs);
+ 	return 0;
+ }
+ 
+@@ -560,11 +594,8 @@ bool arch_uprobe_xol_was_trapped(struct task_struct *t)
+ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ {
+ 	struct uprobe_task *utask = current->utask;
+-	long correction;
+-	int result = 0;
+ 
+ 	WARN_ON_ONCE(current->thread.trap_nr != UPROBE_TRAP_NR);
+-
+ 	current->thread.trap_nr = utask->autask.saved_trap_nr;
+ 	/*
+ 	 * arch_uprobe_pre_xol() doesn't save the state of TIF_BLOCKSTEP
+@@ -576,15 +607,9 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ 	else if (!(auprobe->fixups & UPROBE_FIX_SETF))
+ 		regs->flags &= ~X86_EFLAGS_TF;
+ 
+-	correction = (long)(utask->vaddr - utask->xol_vaddr);
+-	handle_riprel_post_xol(auprobe, regs, &correction);
+-	if (auprobe->fixups & UPROBE_FIX_IP)
+-		regs->ip += correction;
+-
+-	if (auprobe->fixups & UPROBE_FIX_CALL)
+-		result = adjust_ret_addr(regs->sp, correction);
+-
+-	return result;
++	if (auprobe->ops->post_xol)
++		return auprobe->ops->post_xol(auprobe, regs);
++	return 0;
+ }
+ 
+ /* callback routine for handling exceptions. */
+@@ -642,6 +667,10 @@ static bool __skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ {
+ 	int i;
+ 
++	if (auprobe->ops->emulate)
++		return auprobe->ops->emulate(auprobe, regs);
++
++	/* TODO: move this code into ->emulate() hook */
+ 	for (i = 0; i < MAX_UINSN_BYTES; i++) {
+ 		if (auprobe->insn[i] == 0x66)
+ 			continue;
 -- 
 1.5.5.1
 
