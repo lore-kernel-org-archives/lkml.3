@@ -1,133 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755669AbaDMRvH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 13:51:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54353 "EHLO mx1.redhat.com"
+	id S1755123AbaDMR5H (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 13:57:07 -0400
+Received: from mout.gmx.net ([212.227.17.22]:58116 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755214AbaDMRqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 13:46:07 -0400
-Date: Sun, 13 Apr 2014 19:46:00 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 11/15] uprobes/x86: Emulate unconditional relative jmp's
-Message-ID: <20140413174600.GA11885@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140413174508.GA11811@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754657AbaDMR5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 13:57:05 -0400
+Date: Sun, 13 Apr 2014 19:56:36 +0200
+From: Christian Engelmayer <cengelma@gmx.at>
+To: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Dan Carpenter <dan.carpenter@oracle.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ASoC: Intel: Fix incorrect sizeof() in
+ sst_hsw_stream_get_volume()
+Message-ID: <20140413195636.32f31cb2@spike>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/Vbp.Ey767=g0k8PnMBs3Z26"; protocol="application/pgp-signature"
+X-Provags-ID: V03:K0:CKayOFTwZGvnHc67J5/+XCcnDeWX6o3Du7ocaZ9bSOvNp5+Gfo+
+ YoimSEf9QID0zNvdMBxq0H+N21KLjaFb/hK2BWZgd9iWo80yVy0VTq3rl4a64XMWvIafj3I
+ hFaSRa8pxkinPO9WxHhf9FkXiNKLk/zk1y4vYMd0sPm62ZmyeBJh8MxoyuX2FBlEVrVZibf
+ 1MKuc6HToyj9tUK3uDZYQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we always execute all insns out-of-line, including relative
-jmp's and call's. This assumes that even if regs->ip points to nowhere
-after the single-step, default_post_xol_op(UPROBE_FIX_IP) logic will
-update it correctly.
+--Sig_/Vbp.Ey767=g0k8PnMBs3Z26
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-However, this doesn't work if this regs->ip == xol_vaddr + insn_offset
-is not canonical. In this case CPU generates #GP and general_protection()
-kills the task which tries to execute this insn out-of-line.
+Fix an incorrect sizeof() usage in sst_hsw_stream_get_volume(). sst_dsp_rea=
+d()
+is called to read into a variable of type u32, but is passed sizeof(u32 *) =
+for
+argument 'size_t bytes'. Detected by Coverity: CID 1195260.
 
-Now that we have uprobe_xol_ops we can teach uprobes to emulate these
-insns and solve the problem. This patch adds branch_xol_ops which has
-a single branch_emulate_op() hook, so far it can only handle rel8/32
-relative jmp's.
-
-TODO: move ->fixup into the union along with rip_rela_target_address.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Jonathan Lebon <jlebon@redhat.com>
-Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
+Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
 ---
- arch/x86/include/asm/uprobes.h |    8 +++++++-
- arch/x86/kernel/uprobes.c      |   38 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 45 insertions(+), 1 deletions(-)
+ sound/soc/intel/sst-haswell-ipc.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
-index 9f8210b..e9fd4d5 100644
---- a/arch/x86/include/asm/uprobes.h
-+++ b/arch/x86/include/asm/uprobes.h
-@@ -44,9 +44,15 @@ struct arch_uprobe {
- 	u16				fixups;
- 	const struct uprobe_xol_ops	*ops;
- 
-+	union {
- #ifdef CONFIG_X86_64
--	unsigned long			rip_rela_target_address;
-+		unsigned long			rip_rela_target_address;
- #endif
-+		struct {
-+			s32	offs;
-+			u8	ilen;
-+		}				branch;
-+	};
- };
- 
- struct arch_uprobe_task {
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index ef59ef9..b1d129d 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -461,6 +461,40 @@ static struct uprobe_xol_ops default_xol_ops = {
- 	.post_xol = default_post_xol_op,
- };
- 
-+static bool branch_emulate_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
-+{
-+	regs->ip += auprobe->branch.ilen + auprobe->branch.offs;
-+	return true;
-+}
-+
-+static struct uprobe_xol_ops branch_xol_ops = {
-+	.emulate  = branch_emulate_op,
-+};
-+
-+/* Returns -ENOSYS if branch_xol_ops doesn't handle this insn */
-+static int branch_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
-+{
-+
-+	switch (OPCODE1(insn)) {
-+	case 0xeb:	/* jmp 8 */
-+	case 0xe9:	/* jmp 32 */
-+		break;
-+	default:
-+		return -ENOSYS;
-+	}
-+
-+	/* has the side-effect of processing the entire instruction */
-+	insn_get_length(insn);
-+	if (WARN_ON_ONCE(!insn_complete(insn)))
-+		return -ENOEXEC;
-+
-+	auprobe->branch.ilen = insn->length;
-+	auprobe->branch.offs = insn->immediate.value;
-+
-+	auprobe->ops = &branch_xol_ops;
-+	return 0;
-+}
-+
- /**
-  * arch_uprobe_analyze_insn - instruction analysis including validity and fixups.
-  * @mm: the probed address space.
-@@ -478,6 +512,10 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
- 	if (ret)
- 		return ret;
- 
-+	ret = branch_setup_xol_ops(auprobe, &insn);
-+	if (ret != -ENOSYS)
-+		return ret;
-+
- 	/*
- 	 * Figure out which fixups arch_uprobe_post_xol() will need to perform,
- 	 * and annotate arch_uprobe->fixups accordingly. To start with, ->fixups
--- 
-1.5.5.1
+diff --git a/sound/soc/intel/sst-haswell-ipc.c b/sound/soc/intel/sst-haswel=
+l-ipc.c
+index f46bb4d..455a185 100644
+--- a/sound/soc/intel/sst-haswell-ipc.c
++++ b/sound/soc/intel/sst-haswell-ipc.c
+@@ -991,7 +991,8 @@ int sst_hsw_stream_get_volume(struct sst_hsw *hsw, stru=
+ct sst_hsw_stream *stream
+ 		return -EINVAL;
+=20
+ 	sst_dsp_read(hsw->dsp, volume,
+-		stream->reply.volume_register_address[channel], sizeof(volume));
++		stream->reply.volume_register_address[channel],
++		sizeof(*volume));
+=20
+ 	return 0;
+ }
+--=20
+1.8.3.2
 
+--Sig_/Vbp.Ey767=g0k8PnMBs3Z26
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTSs/UAAoJEKssnEpaPQKEE6cP/RqjOPIHvxixyaLZtfsayWbJ
+MfAMAcGLLxS1ctb7ffRzF+tIQLeG4/lfEuv4IfTLb4+R7J3CwrzoDbKjNbHzPWQi
+BLXeoHiRgSAddolJW83fwi8wQZYOmDeLhhzM22RQCPetv8MHljC8F4cFb2j26o5H
+pUPf1BkAzre4nLY7njaoB94WI1yG60AswG5FyuWfepreSpUIpnTby9BgYbpk/CjJ
+gIvED5yRReq1MOOr1WcuSIsW7CJrIwIPTZ7gtkuftK3us7uD2A9J2emrhZq18xqm
+kUVIEl/P7TOhUB5I2kI5PbijAfZBJchi2xmb1CGntKwxBlmOY/O9HekYQat8Ol8m
+KislB9HjDA4DK2ctvnE7uPcsOCz366tHHNbU6Z/pEb+UT752EBW0XhBV4RyAPZgX
+TKXsXU29XJsdwR9JXBO35PNgvmoUfWISDljsvp/5cxAV4t6zhOkuZIrS5fWZAban
+LydT0BOQQcsIKwTrGE9iEmUhHlNpRej5M8X2Td2EL3Rqn86Yzgpw/UdpDjcptp1k
+LdVMVD+qNbFyASqDXnJZIhZaFPH/vIYFRiHic5EZvNUFQ+YWcpjEacjYge637HVV
+VD0AkS4eEsD3ZWcznmC8tOn8ba/62MLSwUqFUk/ggAX7taVp1UIILj4z0TJZL7Kg
+t7346X+P8s3pKztDIlIT
+=U4jA
+-----END PGP SIGNATURE-----
+
+--Sig_/Vbp.Ey767=g0k8PnMBs3Z26--
