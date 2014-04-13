@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755412AbaDMRuF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 13:50:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13476 "EHLO mx1.redhat.com"
+	id S1755263AbaDMRqK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 13:46:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14576 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754897AbaDMRqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 13:46:11 -0400
-Date: Sun, 13 Apr 2014 19:46:03 +0200
+	id S1754897AbaDMRpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 13:45:39 -0400
+Date: Sun, 13 Apr 2014 19:45:32 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -16,8 +16,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 12/15] uprobes/x86: Emulate nop's using ops->emulate()
-Message-ID: <20140413174603.GA11888@redhat.com>
+Subject: [PATCH v3 03/15] uprobes/x86: Kill the "ia32_compat" check in
+	handle_riprel_insn(), remove "mm" arg
+Message-ID: <20140413174532.GA11839@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -27,60 +28,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Finally we can kill the ugly (and very limited) code in __skip_sstep().
-Just change branch_setup_xol_ops() to treat "nop" as jmp to the next insn.
+Kill the "mm->context.ia32_compat" check in handle_riprel_insn(), if
+it is true insn_rip_relative() must return false. validate_insn_bits()
+passed "ia32_compat" as !x86_64 to insn_init(), and insn_rip_relative()
+checks insn->x86_64.
 
-Thanks to lib/insn.c, it is clever enough. OPCODE1() == 0x90 includes
-"(rep;)+ nop;" at least, and (afaics) much more.
+Also, remove the no longer needed "struct mm_struct *mm" argument and
+the unnecessary "return" at the end.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- arch/x86/kernel/uprobes.c |   20 +-------------------
- 1 files changed, 1 insertions(+), 19 deletions(-)
+ arch/x86/kernel/uprobes.c |   10 +++-------
+ 1 files changed, 3 insertions(+), 7 deletions(-)
 
 diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index b1d129d..e228d95 100644
+index d39a91a..642c1a5 100644
 --- a/arch/x86/kernel/uprobes.c
 +++ b/arch/x86/kernel/uprobes.c
-@@ -478,6 +478,7 @@ static int branch_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
- 	switch (OPCODE1(insn)) {
- 	case 0xeb:	/* jmp 8 */
- 	case 0xe9:	/* jmp 32 */
-+	case 0x90:	/* prefix* + nop; same as jmp with .offs = 0 */
- 		break;
- 	default:
- 		return -ENOSYS;
-@@ -710,29 +711,10 @@ void arch_uprobe_abort_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
- 		regs->flags &= ~X86_EFLAGS_TF;
- }
- 
--/*
-- * Skip these instructions as per the currently known x86 ISA.
-- * rep=0x66*; nop=0x90
-- */
- static bool __skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
+@@ -253,14 +253,11 @@ static int validate_insn_32bits(struct arch_uprobe *auprobe, struct insn *insn)
+  *  - The displacement is always 4 bytes.
+  */
+ static void
+-handle_riprel_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, struct insn *insn)
++handle_riprel_insn(struct arch_uprobe *auprobe, struct insn *insn)
  {
--	int i;
+ 	u8 *cursor;
+ 	u8 reg;
+ 
+-	if (mm->context.ia32_compat)
+-		return;
 -
- 	if (auprobe->ops->emulate)
- 		return auprobe->ops->emulate(auprobe, regs);
--
--	/* TODO: move this code into ->emulate() hook */
--	for (i = 0; i < MAX_UINSN_BYTES; i++) {
--		if (auprobe->insn[i] == 0x66)
--			continue;
--
--		if (auprobe->insn[i] == 0x90) {
--			regs->ip += i + 1;
--			return true;
--		}
--
--		break;
--	}
- 	return false;
+ 	if (!insn_rip_relative(insn))
+ 		return;
+ 
+@@ -314,7 +311,6 @@ handle_riprel_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, struct ins
+ 		cursor++;
+ 		memmove(cursor, cursor + insn->displacement.nbytes, insn->immediate.nbytes);
+ 	}
+-	return;
  }
  
+ static int validate_insn_64bits(struct arch_uprobe *auprobe, struct insn *insn)
+@@ -343,7 +339,7 @@ static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 	return validate_insn_64bits(auprobe, insn);
+ }
+ #else /* 32-bit: */
+-static void handle_riprel_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, struct insn *insn)
++static void handle_riprel_insn(struct arch_uprobe *auprobe, struct insn *insn)
+ {
+ 	/* No RIP-relative addressing on 32-bit */
+ }
+@@ -376,7 +372,7 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 	 * and annotate arch_uprobe->fixups accordingly. To start with, ->fixups
+ 	 * is either zero or it reflects rip-related fixups.
+ 	 */
+-	handle_riprel_insn(auprobe, mm, &insn);
++	handle_riprel_insn(auprobe, &insn);
+ 
+ 	switch (OPCODE1(&insn)) {
+ 	case 0x9d:		/* popf */
 -- 
 1.5.5.1
 
