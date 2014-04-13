@@ -1,40 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755AbaDMWDh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 18:03:37 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:50091 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261AbaDMWDg (ORCPT
+	id S1751491AbaDMWHi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 18:07:38 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:47771 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750950AbaDMWHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 18:03:36 -0400
-Date: Mon, 14 Apr 2014 00:03:34 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Ling Ma <ling.ma.program@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, mingo@redhat.com, tglx@linutronix.de,
-        hpa@zytor.com, neleai@seznam.cz, linux-kernel@vger.kernel.org,
-        Ling Ma <ling.ml@alibaba-inc.com>
-Subject: Re: [PATCH RFC] x86:Improve memset with general 64bit instruction
-Message-ID: <20140413220334.GE22728@two.firstfloor.org>
-References: <1396882237-27608-1-git-send-email-ling.ma@alipay.com>
- <877g71jdl8.fsf@tassilo.jf.intel.com>
- <CAOGi=dPOEnNOLfnxTfvsVupRWQZtGs7-9LxDF8g2Kbun2v0hQA@mail.gmail.com>
- <CAOGi=dMbRv6S+UGthYTCvW=C7hBRwpnZdM-BYYqT1fn=kF2SLg@mail.gmail.com>
+	Sun, 13 Apr 2014 18:07:36 -0400
+Date: Mon, 14 Apr 2014 01:07:01 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Pascal COMBES <pascom@orange.fr>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Jarod Wilson <jarod@wilsonet.com>, Jingoo Han <jg1.han@samsung.com>,
+        Valentina Manea <valentina.manea.m@gmail.com>,
+        linux-kernel@vger.kernel.org, Naren Sankar <nsankar@broadcom.com>,
+        Monam Agarwal <monamagarwal123@gmail.com>,
+        Scott Davilla <davilla@4pi.com>,
+        Amarjargal Gundjalam <amarjargal16@gmail.com>,
+        Robert Foss <dev@robertfoss.se>
+Subject: Re: [PATCH v2 1/3] Fix alignement problems in
+ drivers/staging/crystalhd/crystalhd_lnx.c
+Message-ID: <20140413220701.GR4963@mwanda>
+References: <534AAED2.7050205@orange.fr>
+ <20140413154859.GA18189@kroah.com>
+ <534AE0DE.6020404@orange.fr>
+ <20140413210243.GK26890@mwanda>
+ <1397424375.31896.7.camel@x220>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOGi=dMbRv6S+UGthYTCvW=C7hBRwpnZdM-BYYqT1fn=kF2SLg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1397424375.31896.7.camel@x220>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 13, 2014 at 11:11:59PM +0800, Ling Ma wrote:
-> Any further comments  ?
+On Sun, Apr 13, 2014 at 11:26:15PM +0200, Paul Bolle wrote:
+> On Mon, 2014-04-14 at 00:02 +0300, Dan Carpenter wrote:
+> > The subeject should be:
+> > 
+> > [PATCH v2 1/3] Staging: crystalhd: Fix alignement in crystalhd_lnx.c
+> > 
+> > Please resend it.  Also you should use shorter subject lines.
+> > 
+> > "Fix coding style problem (cast with space) in drivers/staging/crystalhd/crystalhd_lnx.c"
+> > 
+> > This is too long.  Say:
+> > 
+> > "Remove a stray space character in crystalhd_lnx.c"
+> 
+> The commit explanation also was a copy of the subject line.
 
-It would be good to test on some more machines that you don't cause
-regressions.
+Huh?  No it wasn't.
 
-But I'm not aware of any workload that is doing a lot of memset (not
-counting clear_page).  Copies likely matter much more.
+> That
+> suggests that the explanation can be dropped.
 
--Andi
+The long description was fine.  It included a copy of the error message
+and everything.
+
+> Many trivial fixes can
+> (and should) be submitted without a commit explanation.
+> 
+
+Don't encourage people to leave out the commit message.  They can figure
+out on their own when that is appropriate.  In my experience people only
+err on the other side, by not commenting enough.  I've only rarely been
+annoyed by a long description which was too long.
+
+regards,
+dan carpenter
+
