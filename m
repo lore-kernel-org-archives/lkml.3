@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679AbaDMRqc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 13:46:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35596 "EHLO mx1.redhat.com"
+	id S1755649AbaDMRq2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 13:46:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4643 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755112AbaDMRqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 13:46:04 -0400
-Date: Sun, 13 Apr 2014 19:45:56 +0200
+	id S1755089AbaDMRp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 13:45:59 -0400
+Date: Sun, 13 Apr 2014 19:45:53 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -16,9 +16,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 10/15] uprobes/x86: Introduce sizeof_long(), cleanup
-	adjust_ret_addr() and arch_uretprobe_hijack_return_addr()
-Message-ID: <20140413174556.GA11878@redhat.com>
+Subject: [PATCH v3 09/15] uprobes/x86: Teach arch_uprobe_post_xol() to
+	restart if possible
+Message-ID: <20140413174553.GA11871@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,112 +28,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. Add the trivial sizeof_long() helper and change other callers of
-   is_ia32_task() to use it.
+SIGILL after the failed arch_uprobe_post_xol() should only be used as
+a last resort, we should try to restart the probed insn if possible.
 
-   TODO: is_ia32_task() is not what we actually want, TS_COMPAT does
-   not necessarily mean 32bit. Fortunately syscall-like insns can't be
-   probed so it actually works, but it would be better to rename and
-   use is_ia32_frame().
+Currently only adjust_ret_addr() can fail, and this can only happen if
+another thread unmapped our stack after we executed "call" out-of-line.
+Most probably the application if buggy, but even in this case it can
+have a handler for SIGSEGV/etc. And in theory it can be even correct
+and do something non-trivial with its memory.
 
-2. As Jim pointed out "ncopied" in arch_uretprobe_hijack_return_addr()
-   and adjust_ret_addr() should be named "nleft". And in fact only the
-   last copy_to_user() in arch_uretprobe_hijack_return_addr() actually
-   needs to inspect the non-zero error code.
+Of course we can't restart unconditionally, so arch_uprobe_post_xol()
+does this only if ->post_xol() returns -ERESTART even if currently this
+is the only possible error.
 
-TODO: adjust_ret_addr() should die. We can always calculate the value
-we need to write into *regs->sp, just UPROBE_FIX_CALL should record
-insn->length.
+default_post_xol_op(UPROBE_FIX_CALL) can always restart, but as Jim
+pointed out it should not forget to pop off the return address pushed
+by this insn executed out-of-line.
+
+Note: this is not "perfect", we do not want the extra handler_chain()
+after restart, but I think this is the best solution we can realistically
+do without too much uglifications.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
 ---
- arch/x86/kernel/uprobes.c |   37 +++++++++++++++----------------------
- 1 files changed, 15 insertions(+), 22 deletions(-)
+ arch/x86/kernel/uprobes.c |   20 ++++++++++++++++----
+ 1 files changed, 16 insertions(+), 4 deletions(-)
 
 diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 1ea7e1a..ef59ef9 100644
+index e0f1406..1ea7e1a 100644
 --- a/arch/x86/kernel/uprobes.c
 +++ b/arch/x86/kernel/uprobes.c
-@@ -408,6 +408,11 @@ struct uprobe_xol_ops {
- 	int	(*post_xol)(struct arch_uprobe *, struct pt_regs *);
- };
- 
-+static inline int sizeof_long(void)
-+{
-+	return is_ia32_task() ? 4 : 8;
-+}
-+
- static int default_pre_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
+@@ -443,16 +443,22 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
  {
- 	pre_xol_rip_insn(auprobe, regs, &current->utask->autask);
-@@ -419,21 +424,14 @@ static int default_pre_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
-  */
- static int adjust_ret_addr(unsigned long sp, long correction)
- {
--	int rasize, ncopied;
--	long ra = 0;
--
--	if (is_ia32_task())
--		rasize = 4;
--	else
--		rasize = 8;
-+	int rasize = sizeof_long();
-+	long ra;
+ 	struct uprobe_task *utask = current->utask;
+ 	long correction = (long)(utask->vaddr - utask->xol_vaddr);
+-	int ret = 0;
  
--	ncopied = copy_from_user(&ra, (void __user *)sp, rasize);
--	if (unlikely(ncopied))
-+	if (copy_from_user(&ra, (void __user *)sp, rasize))
- 		return -EFAULT;
+ 	handle_riprel_post_xol(auprobe, regs, &correction);
+ 	if (auprobe->fixups & UPROBE_FIX_IP)
+ 		regs->ip += correction;
  
- 	ra += correction;
--	ncopied = copy_to_user((void __user *)sp, &ra, rasize);
--	if (unlikely(ncopied))
-+	if (copy_to_user((void __user *)sp, &ra, rasize))
- 		return -EFAULT;
+-	if (auprobe->fixups & UPROBE_FIX_CALL)
+-		ret = adjust_ret_addr(regs->sp, correction);
++	if (auprobe->fixups & UPROBE_FIX_CALL) {
++		if (adjust_ret_addr(regs->sp, correction)) {
++			if (is_ia32_task())
++				regs->sp += 4;
++			else
++				regs->sp += 8;
++			return -ERESTART;
++		}
++	}
  
- 	return 0;
-@@ -450,10 +448,7 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
+-	return ret;
++	return 0;
+ }
  
- 	if (auprobe->fixups & UPROBE_FIX_CALL) {
- 		if (adjust_ret_addr(regs->sp, correction)) {
--			if (is_ia32_task())
--				regs->sp += 4;
--			else
--				regs->sp += 8;
-+			regs->sp += sizeof_long();
- 			return -ERESTART;
+ static struct uprobe_xol_ops default_xol_ops = {
+@@ -599,6 +605,12 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ 		int err = auprobe->ops->post_xol(auprobe, regs);
+ 		if (err) {
+ 			arch_uprobe_abort_xol(auprobe, regs);
++			/*
++			 * Restart the probed insn. ->post_xol() must ensure
++			 * this is really possible if it returns -ERESTART.
++			 */
++			if (err == -ERESTART)
++				return 0;
+ 			return err;
  		}
  	}
-@@ -716,23 +711,21 @@ if (ret) pr_crit("EMULATE: %lx -> %lx\n", ip, regs->ip);
- unsigned long
- arch_uretprobe_hijack_return_addr(unsigned long trampoline_vaddr, struct pt_regs *regs)
- {
--	int rasize, ncopied;
-+	int rasize = sizeof_long(), nleft;
- 	unsigned long orig_ret_vaddr = 0; /* clear high bits for 32-bit apps */
- 
--	rasize = is_ia32_task() ? 4 : 8;
--	ncopied = copy_from_user(&orig_ret_vaddr, (void __user *)regs->sp, rasize);
--	if (unlikely(ncopied))
-+	if (copy_from_user(&orig_ret_vaddr, (void __user *)regs->sp, rasize))
- 		return -1;
- 
- 	/* check whether address has been already hijacked */
- 	if (orig_ret_vaddr == trampoline_vaddr)
- 		return orig_ret_vaddr;
- 
--	ncopied = copy_to_user((void __user *)regs->sp, &trampoline_vaddr, rasize);
--	if (likely(!ncopied))
-+	nleft = copy_to_user((void __user *)regs->sp, &trampoline_vaddr, rasize);
-+	if (likely(!nleft))
- 		return orig_ret_vaddr;
- 
--	if (ncopied != rasize) {
-+	if (nleft != rasize) {
- 		pr_err("uprobe: return address clobbered: pid=%d, %%sp=%#lx, "
- 			"%%ip=%#lx\n", current->pid, regs->sp, regs->ip);
- 
 -- 
 1.5.5.1
 
