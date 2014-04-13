@@ -1,57 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755133AbaDMS5E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 14:57:04 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:45934 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754953AbaDMS5C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 14:57:02 -0400
-Date: Sun, 13 Apr 2014 14:56:57 -0400
-From: JulianGindi <juliangindi@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] bcm: Fixing a few checkpatch issues in InterfaceMisc.h
-Message-ID: <20140413185654.GA80497@juliangindimbp>
+	id S1755351AbaDMS63 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 14:58:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46187 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750789AbaDMS62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 14:58:28 -0400
+Date: Sun, 13 Apr 2014 20:58:28 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH v2 0/3] tracing: syscall_*regfunc() fixes
+Message-ID: <20140413185828.GA20668@redhat.com>
+References: <1397059882-23063-1-git-send-email-fweisbec@gmail.com> <1397059882-23063-3-git-send-email-fweisbec@gmail.com> <360091921.1294.1397060915052.JavaMail.zimbra@efficios.com> <20140409124249.4081e665@gandalf.local.home> <20140409170505.GA27638@redhat.com> <20140409170542.GB27638@redhat.com> <20140410090643.46ca2226@gandalf.local.home> <20140410133435.GB12228@redhat.com> <20140411112259.79f0a0ba@gandalf.local.home> <20140411155845.GA30199@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140411155845.GA30199@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just cleaned up a few issues presented by checkpatch in InterfaceMisc.h. I converted some spaces to tabs, and removed unnecessary whitespace. The kernel version I am using linux-next-20140411.
+On 04/11, Oleg Nesterov wrote:
+>
+> On 04/11, Steven Rostedt wrote:
+> >
+> > Are you going to send a new series?
+>
+> Yes, will do. I will split 1/2, and I need to update the changelog
+> in 2/2.
 
-Signed-off-by: JulianGindi <juliangindi@gmail.com>
----
- drivers/staging/bcm/InterfaceMisc.h | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+Please see the patches.
 
-diff --git a/drivers/staging/bcm/InterfaceMisc.h b/drivers/staging/bcm/InterfaceMisc.h
-index bce6869..efb6860 100644
---- a/drivers/staging/bcm/InterfaceMisc.h
-+++ b/drivers/staging/bcm/InterfaceMisc.h
-@@ -14,13 +14,13 @@ InterfaceWRM(struct bcm_interface_adapter *psIntfAdapter,
- 			INT len);
- 
- 
--int InterfaceFileDownload( PVOID psIntfAdapter,
--                        struct file *flp,
--                        unsigned int on_chip_loc);
-+int InterfaceFileDownload(PVOID psIntfAdapter,
-+			struct file *flp,
-+			unsigned int on_chip_loc);
- 
--int InterfaceFileReadbackFromChip( PVOID psIntfAdapter,
--                        struct file *flp,
--                        unsigned int on_chip_loc);
-+int InterfaceFileReadbackFromChip(PVOID psIntfAdapter,
-+			struct file *flp,
-+			unsigned int on_chip_loc);
- 
- 
- int BcmRDM(PVOID arg,
--- 
-1.9.0
+Frederic! I am sorry, I decided to steal your patch to simplify the
+merging and avoid too many changes in the trivial syscall_*regfunc's.
+In case you do not object, could you add your sob into 2/3 ? Otherwise
+I can wait for your patch, then send v3 on top of it.
+
+
+
+Hmm. This is off-topic, but CLONE_KERNEL should die, and kernel_init()
+should be spawned without CLONE_SIGHAND. I'll send another patch.
+
+Oleg.
 
