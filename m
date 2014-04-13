@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383AbaDMRqP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 13:46:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57115 "EHLO mx1.redhat.com"
+	id S1755325AbaDMRqN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 13:46:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20040 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754977AbaDMRpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 13:45:42 -0400
-Date: Sun, 13 Apr 2014 19:45:36 +0200
+	id S1754928AbaDMRpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 13:45:39 -0400
+Date: Sun, 13 Apr 2014 19:45:25 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -16,8 +16,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3 04/15] uprobes/x86: Gather "riprel" functions together
-Message-ID: <20140413174536.GA11846@redhat.com>
+Subject: [PATCH v3 01/15] uprobes: Kill UPROBE_SKIP_SSTEP and
+	can_skip_sstep()
+Message-ID: <20140413174525.GA11829@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -27,174 +28,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cosmetic. Move pre_xol_rip_insn() and handle_riprel_post_xol() up to
-the closely related handle_riprel_insn(). This way it is simpler to
-read and understand this code, and this lessens the number of ifdef's.
+UPROBE_COPY_INSN, UPROBE_SKIP_SSTEP, and uprobe->flags must die. This
+patch kills UPROBE_SKIP_SSTEP. I never understood why it was added;
+not only it doesn't help, it harms.
 
-While at it, update the comment in handle_riprel_post_xol() as Jim
-suggested.
+It can only help to avoid arch_uprobe_skip_sstep() if it was already
+called before and failed. But this is ugly, if we want to know whether
+we can emulate this instruction or not we should do this analysis in
+arch_uprobe_analyze_insn(), not when we hit this probe for the first
+time.
 
-TODO: rename them somehow to make the naming consistent.
+And in fact this logic is simply wrong. arch_uprobe_skip_sstep() can
+fail or not depending on the task/register state, if this insn can be
+emulated but, say, put_user() fails we need to xol it this time, but
+this doesn't mean we shouldn't try to emulate it when this or another
+thread hits this bp next time.
+
+And this is the actual reason for this change. We need to emulate the
+"call" insn, but push(return-address) can obviously fail.
+
+Per-arch notes:
+
+	x86: __skip_sstep() can only emulate "rep;nop". With this
+	     change it will be called every time and most probably
+	     for no reason.
+
+	     This will be fixed by the next changes. We need to
+	     change this suboptimal code anyway.
+
+	arm: Should not be affected. It has its own "bool simulate"
+	     flag checked in arch_uprobe_skip_sstep().
+
+	ppc: Looks like, it can emulate almost everything. Does it
+	     actually need to record the fact that emulate_step()
+	     failed? Hopefully not. But if yes, it can add the ppc-
+	     specific flag into arch_uprobe.
+
+TODO: rename arch_uprobe_skip_sstep() to arch_uprobe_emulate_insn(),
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Reviewed-by: David A. Long <dave.long@linaro.org>
 Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
- arch/x86/kernel/uprobes.c |  118 ++++++++++++++++++++-------------------------
- 1 files changed, 53 insertions(+), 65 deletions(-)
+ kernel/events/uprobes.c |   23 ++---------------------
+ 1 files changed, 2 insertions(+), 21 deletions(-)
 
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 642c1a5..c982ea0 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -313,6 +313,48 @@ handle_riprel_insn(struct arch_uprobe *auprobe, struct insn *insn)
- 	}
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 307d87c..7a3e14e 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -60,8 +60,6 @@ static struct percpu_rw_semaphore dup_mmap_sem;
+ 
+ /* Have a copy of original instruction */
+ #define UPROBE_COPY_INSN	0
+-/* Can skip singlestep */
+-#define UPROBE_SKIP_SSTEP	1
+ 
+ struct uprobe {
+ 	struct rb_node		rb_node;	/* node in the rb tree */
+@@ -491,12 +489,9 @@ static struct uprobe *alloc_uprobe(struct inode *inode, loff_t offset)
+ 	uprobe->offset = offset;
+ 	init_rwsem(&uprobe->register_rwsem);
+ 	init_rwsem(&uprobe->consumer_rwsem);
+-	/* For now assume that the instruction need not be single-stepped */
+-	__set_bit(UPROBE_SKIP_SSTEP, &uprobe->flags);
+ 
+ 	/* add to uprobes_tree, sorted on inode:offset */
+ 	cur_uprobe = insert_uprobe(uprobe);
+-
+ 	/* a uprobe exists for this inode:offset combination */
+ 	if (cur_uprobe) {
+ 		kfree(uprobe);
+@@ -1628,20 +1623,6 @@ bool uprobe_deny_signal(void)
+ 	return true;
  }
  
-+/*
-+ * If we're emulating a rip-relative instruction, save the contents
-+ * of the scratch register and store the target address in that register.
-+ */
-+static void
-+pre_xol_rip_insn(struct arch_uprobe *auprobe, struct pt_regs *regs,
-+				struct arch_uprobe_task *autask)
-+{
-+	if (auprobe->fixups & UPROBE_FIX_RIP_AX) {
-+		autask->saved_scratch_register = regs->ax;
-+		regs->ax = current->utask->vaddr;
-+		regs->ax += auprobe->rip_rela_target_address;
-+	} else if (auprobe->fixups & UPROBE_FIX_RIP_CX) {
-+		autask->saved_scratch_register = regs->cx;
-+		regs->cx = current->utask->vaddr;
-+		regs->cx += auprobe->rip_rela_target_address;
-+	}
-+}
-+
-+static void
-+handle_riprel_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs, long *correction)
-+{
-+	if (auprobe->fixups & (UPROBE_FIX_RIP_AX | UPROBE_FIX_RIP_CX)) {
-+		struct arch_uprobe_task *autask;
-+
-+		autask = &current->utask->autask;
-+		if (auprobe->fixups & UPROBE_FIX_RIP_AX)
-+			regs->ax = autask->saved_scratch_register;
-+		else
-+			regs->cx = autask->saved_scratch_register;
-+
-+		/*
-+		 * The original instruction includes a displacement, and so
-+		 * is 4 bytes longer than what we've just single-stepped.
-+		 * Caller may need to apply other fixups to handle stuff
-+		 * like "jmpq *...(%rip)" and "callq *...(%rip)".
-+		 */
-+		if (correction)
-+			*correction += 4;
-+	}
-+}
-+
- static int validate_insn_64bits(struct arch_uprobe *auprobe, struct insn *insn)
- {
- 	insn_init(insn, auprobe->insn, true);
-@@ -339,9 +381,19 @@ static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm,
- 	return validate_insn_64bits(auprobe, insn);
- }
- #else /* 32-bit: */
-+/*
-+ * No RIP-relative addressing on 32-bit
-+ */
- static void handle_riprel_insn(struct arch_uprobe *auprobe, struct insn *insn)
- {
--	/* No RIP-relative addressing on 32-bit */
-+}
-+static void pre_xol_rip_insn(struct arch_uprobe *auprobe, struct pt_regs *regs,
-+				struct arch_uprobe_task *autask)
-+{
-+}
-+static void handle_riprel_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs,
-+					long *correction)
-+{
- }
- 
- static int validate_insn_bits(struct arch_uprobe *auprobe, struct mm_struct *mm,  struct insn *insn)
-@@ -415,34 +467,6 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
- 	return 0;
- }
- 
--#ifdef CONFIG_X86_64
 -/*
-- * If we're emulating a rip-relative instruction, save the contents
-- * of the scratch register and store the target address in that register.
+- * Avoid singlestepping the original instruction if the original instruction
+- * is a NOP or can be emulated.
 - */
--static void
--pre_xol_rip_insn(struct arch_uprobe *auprobe, struct pt_regs *regs,
--				struct arch_uprobe_task *autask)
+-static bool can_skip_sstep(struct uprobe *uprobe, struct pt_regs *regs)
 -{
--	if (auprobe->fixups & UPROBE_FIX_RIP_AX) {
--		autask->saved_scratch_register = regs->ax;
--		regs->ax = current->utask->vaddr;
--		regs->ax += auprobe->rip_rela_target_address;
--	} else if (auprobe->fixups & UPROBE_FIX_RIP_CX) {
--		autask->saved_scratch_register = regs->cx;
--		regs->cx = current->utask->vaddr;
--		regs->cx += auprobe->rip_rela_target_address;
+-	if (test_bit(UPROBE_SKIP_SSTEP, &uprobe->flags)) {
+-		if (arch_uprobe_skip_sstep(&uprobe->arch, regs))
+-			return true;
+-		clear_bit(UPROBE_SKIP_SSTEP, &uprobe->flags);
 -	}
+-	return false;
 -}
--#else
--static void
--pre_xol_rip_insn(struct arch_uprobe *auprobe, struct pt_regs *regs,
--				struct arch_uprobe_task *autask)
--{
--	/* No RIP-relative addressing on 32-bit */
--}
--#endif
 -
- /*
-  * arch_uprobe_pre_xol - prepare to execute out of line.
-  * @auprobe: the probepoint information.
-@@ -492,42 +516,6 @@ static int adjust_ret_addr(unsigned long sp, long correction)
- 	return 0;
- }
+ static void mmf_recalc_uprobes(struct mm_struct *mm)
+ {
+ 	struct vm_area_struct *vma;
+@@ -1859,13 +1840,13 @@ static void handle_swbp(struct pt_regs *regs)
+ 		goto out;
  
--#ifdef CONFIG_X86_64
--static bool is_riprel_insn(struct arch_uprobe *auprobe)
--{
--	return ((auprobe->fixups & (UPROBE_FIX_RIP_AX | UPROBE_FIX_RIP_CX)) != 0);
--}
--
--static void
--handle_riprel_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs, long *correction)
--{
--	if (is_riprel_insn(auprobe)) {
--		struct arch_uprobe_task *autask;
--
--		autask = &current->utask->autask;
--		if (auprobe->fixups & UPROBE_FIX_RIP_AX)
--			regs->ax = autask->saved_scratch_register;
--		else
--			regs->cx = autask->saved_scratch_register;
--
--		/*
--		 * The original instruction includes a displacement, and so
--		 * is 4 bytes longer than what we've just single-stepped.
--		 * Fall through to handle stuff like "jmpq *...(%rip)" and
--		 * "callq *...(%rip)".
--		 */
--		if (correction)
--			*correction += 4;
--	}
--}
--#else
--static void
--handle_riprel_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs, long *correction)
--{
--	/* No RIP-relative addressing on 32-bit */
--}
--#endif
--
- /*
-  * If xol insn itself traps and generates a signal(Say,
-  * SIGILL/SIGSEGV/etc), then detect the case where a singlestepped
+ 	handler_chain(uprobe, regs);
+-	if (can_skip_sstep(uprobe, regs))
++	if (arch_uprobe_skip_sstep(&uprobe->arch, regs))
+ 		goto out;
+ 
+ 	if (!pre_ssout(uprobe, regs, bp_vaddr))
+ 		return;
+ 
+-	/* can_skip_sstep() succeeded, or restart if can't singlestep */
++	/* arch_uprobe_skip_sstep() succeeded, or restart if can't singlestep */
+ out:
+ 	put_uprobe(uprobe);
+ }
 -- 
 1.5.5.1
 
