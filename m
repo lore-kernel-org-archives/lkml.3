@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737AbaDMMvR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 08:51:17 -0400
-Received: from mail-yh0-f46.google.com ([209.85.213.46]:37494 "EHLO
-	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338AbaDMMvQ (ORCPT
+	id S1754810AbaDMMw6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 08:52:58 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:18399 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754190AbaDMMw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 08:51:16 -0400
-Message-ID: <534A8837.8010308@redhat.com>
-Date: Sun, 13 Apr 2014 08:51:03 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Bandan Das <bsd@redhat.com>, kvm@vger.kernel.org
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2 3/6] KVM: emulate: cleanup decode_rm
-References: <1397174612-17373-1-git-send-email-bsd@redhat.com> <1397174612-17373-4-git-send-email-bsd@redhat.com>
-In-Reply-To: <1397174612-17373-4-git-send-email-bsd@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sun, 13 Apr 2014 08:52:57 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ar0GAEGISlNXQ5wQ/2dsb2JhbABZgwaCS4EYwFyBGBd0glMTHCMYgQIkE4gAAco3jm6EPwEDjl+KAQGSQ4MzOw
+Date: Sun, 13 Apr 2014 14:52:54 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Tytso <tytso@mit.edu>, akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] fs/ext4/extents.c: fix bool assignments
+Message-Id: <20140413145254.461c0e2e060fb31e48c91973@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 10/04/2014 20:03, Bandan Das ha scritto:
-> -	if (ctxt->rex_prefix) {
-> -		ctxt->modrm_reg = (ctxt->rex_prefix & 4) << 1;	/* REX.R */
-> -		index_reg = (ctxt->rex_prefix & 2) << 2; /* REX.X */
-> -		ctxt->modrm_rm = base_reg = (ctxt->rex_prefix & 1) << 3; /* REG.B */
-> -	}
-> +	index_reg = (ctxt->rex_prefix << 2) & 8; /* REX.X */
-> +	base_reg = (ctxt->rex_prefix << 3) & 8; /* REG.B */
+Fixing coccinelle warnings.
 
-This is REX.B (preexisting typo), and please leave REX.R here too for 
-clarity.
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/ext4/extents.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Also, the function is "decode_modrm", not "decode_rm" (in the commit 
-message).
-
-Otherwise the series seems okay from a somewhat cursory review.
-
-Paolo
-
->
-> -	ctxt->modrm_mod |= (ctxt->modrm & 0xc0) >> 6;
-> -	ctxt->modrm_reg |= (ctxt->modrm & 0x38) >> 3;
-> -	ctxt->modrm_rm |= (ctxt->modrm & 0x07);
-> +	ctxt->modrm_mod = (ctxt->modrm & 0xc0) >> 6;
-> +	ctxt->modrm_reg = ((ctxt->rex_prefix << 1) & 8) | /* REX.R */
-> +		((ctxt->modrm & 0x38) >> 3);
-> +	ctxt->modrm_rm = base_reg | (ctxt->modrm & 0x07);
->  	ctxt->modrm_seg = VCPU_SREG_DS;
->
-
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 82df3ce..c44f42c 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -5209,7 +5209,7 @@ ext4_ext_shift_path_extents(struct ext4_ext_path *path, ext4_lblk_t shift,
+ {
+ 	int depth, err = 0;
+ 	struct ext4_extent *ex_start, *ex_last;
+-	bool update = 0;
++	bool update = false;
+ 	depth = path->p_depth;
+ 
+ 	while (depth >= 0) {
+@@ -5227,7 +5227,7 @@ ext4_ext_shift_path_extents(struct ext4_ext_path *path, ext4_lblk_t shift,
+ 				goto out;
+ 
+ 			if (ex_start == EXT_FIRST_EXTENT(path[depth].p_hdr))
+-				update = 1;
++				update = true;
+ 
+ 			*start = ex_last->ee_block +
+ 				ext4_ext_get_actual_len(ex_last);
+-- 
+1.8.3.2
