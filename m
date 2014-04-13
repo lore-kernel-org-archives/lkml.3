@@ -1,85 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732AbaDMPMC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 11:12:02 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:57599 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbaDMPMA (ORCPT
+	id S1754268AbaDMPfy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 11:35:54 -0400
+Received: from smtp09.smtpout.orange.fr ([80.12.242.131]:49573 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaDMPfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 11:12:00 -0400
+	Sun, 13 Apr 2014 11:35:52 -0400
+X-ME-Helo: PCombes.localdomain
+X-ME-Auth: cGFzY29tQHdhbmFkb28uZnI=
+X-ME-Date: Sun, 13 Apr 2014 17:35:50 +0200
+X-ME-IP: 82.124.119.218
+Message-ID: <534AAED2.7050205@orange.fr>
+Date: Sun, 13 Apr 2014 17:35:46 +0200
+From: Pascal COMBES <pascom@orange.fr>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <CAOGi=dPOEnNOLfnxTfvsVupRWQZtGs7-9LxDF8g2Kbun2v0hQA@mail.gmail.com>
-References: <1396882237-27608-1-git-send-email-ling.ma@alipay.com>
-	<877g71jdl8.fsf@tassilo.jf.intel.com>
-	<CAOGi=dPOEnNOLfnxTfvsVupRWQZtGs7-9LxDF8g2Kbun2v0hQA@mail.gmail.com>
-Date: Sun, 13 Apr 2014 23:11:59 +0800
-Message-ID: <CAOGi=dMbRv6S+UGthYTCvW=C7hBRwpnZdM-BYYqT1fn=kF2SLg@mail.gmail.com>
-Subject: Re: [PATCH RFC] x86:Improve memset with general 64bit instruction
-From: Ling Ma <ling.ma.program@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com, neleai@seznam.cz,
-        linux-kernel@vger.kernel.org, Ling Ma <ling.ml@alibaba-inc.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Monam Agarwal <monamagarwal123@gmail.com>,
+        Valentina Manea <valentina.manea.m@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Robert Foss <dev@robertfoss.se>, Jingoo Han <jg1.han@samsung.com>,
+        Amarjargal Gundjalam <amarjargal16@gmail.com>,
+        Aybuke Ozdemir <aybuke.147@gmail.com>,
+        Naren Sankar <nsankar@broadcom.com>, Jarod Wilson <jarod@wilsonet.com>,
+        Scott Davilla <davilla@4pi.com>, Manu Abraham <abraham.manu@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix coding style in drivers/staging/crystalhd/crystalhd_lnx.c
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any further comments  ?
+From: Pascal COMBES <pascom@orange.fr>
 
-Thanks
-Ling
+Fix alignement issues and two or three other coding style problems in 
+drivers/staging/crystalhd/crystalhd_lnx.c.
 
+NB:	-I did this for task 10 of Eudyptula challenge <http://eudyptula-challenge.org/>
+	-I did not address camel case related problem because it would have make a big patch.
 
-2014-04-08 22:00 GMT+08:00, Ling Ma <ling.ma.program@gmail.com>:
-> Andi,
->
-> The below is compared result on older machine(cpu info is attached):
-> That shows new code get better performance up to 1.6x.
->
-> Bytes: ORG_TIME: NEW_TIME: ORG vs NEW:
-> 7       0.87    0.76    1.14
-> 16      0.99    0.68    1.45
-> 18      1.07    0.77    1.38
-> 21      1.09    0.78    1.39
-> 25      1.11    0.77    1.44
-> 30      1.12    0.73    1.53
-> 36      1.15    0.75    1.53
-> 38      1.12    0.75    1.49
-> 62      1.18    0.77    1.53
-> 75      1.25    0.79    1.58
-> 85      1.28    0.80    1.60
-> 120     1.33    0.82    1.62
-> 193     1.45    0.88    1.64
-> 245     1.48    0.96    1.54
-> 256     1.45    0.90    1.61
-> 356     1.61    1.02    1.57
-> 601     1.78    1.22    1.45
-> 958     2.04    1.47    1.38
-> 1024    2.07    1.48    1.39
-> 2048    2.80    2.21    1.26
->
-> Thanks
-> Ling
->
-> 2014-04-08 0:42 GMT+08:00, Andi Kleen <andi@firstfloor.org>:
->> ling.ma.program@gmail.com writes:
->>
->>> From: Ling Ma <ling.ml@alibaba-inc.com>
->>>
->>> In this patch we manage to reduce miss branch prediction by
->>> avoiding using branch instructions and force destination to be aligned
->>> with general 64bit instruction.
->>> Below compared results shows we improve performance up to 1.8x
->>> (We modified test suit from Ondra, send after this patch)
->>
->> You didn't specify the CPU?
->>
->> I assume it's some Atom, as nothing else uses these open coded functions
->> anymore?
->>
->> -Andi
->>
->> --
->> ak@linux.intel.com -- Speaking for myself only
->>
->
+Signed-off-by: Pascal COMBES <pascom@orange.fr>
+---
+diff --git a/drivers/staging/crystalhd/crystalhd_lnx.c b/drivers/staging/crystalhd/crystalhd_lnx.c
+index 20be957..9f6a9d4 100644
+--- a/drivers/staging/crystalhd/crystalhd_lnx.c
++++ b/drivers/staging/crystalhd/crystalhd_lnx.c
+@@ -28,7 +28,7 @@ static struct crystalhd_adp *g_adp_info;
+ 
+ static irqreturn_t chd_dec_isr(int irq, void *arg)
+ {
+-	struct crystalhd_adp *adp = (struct crystalhd_adp *) arg;
++	struct crystalhd_adp *adp = (struct crystalhd_adp *)arg;
+ 	int rc = 0;
+ 	if (adp)
+ 		rc = crystalhd_cmd_interrupt(&adp->cmds);
+@@ -112,7 +112,7 @@ static void chd_dec_free_iodata(struct crystalhd_adp *adp,
+ }
+ 
+ static inline int crystalhd_user_data(void __user *ud, void *dr,
+-			 int size, int set)
++				      int size, int set)
+ {
+ 	int rc;
+ 
+@@ -135,7 +135,9 @@ static inline int crystalhd_user_data(void __user *ud, void *dr,
+ }
+ 
+ static int chd_dec_fetch_cdata(struct crystalhd_adp *adp,
+-	 struct crystalhd_ioctl_data *io, uint32_t m_sz, unsigned long ua)
++			       struct crystalhd_ioctl_data *io,
++			       uint32_t m_sz,
++			       unsigned long ua)
+ {
+ 	unsigned long ua_off;
+ 	int rc = 0;
+@@ -154,7 +156,7 @@ static int chd_dec_fetch_cdata(struct crystalhd_adp *adp,
+ 	io->add_cdata_sz = m_sz;
+ 	ua_off = ua + sizeof(io->udata);
+ 	rc = crystalhd_user_data((void __user *)ua_off, io->add_cdata,
+-			io->add_cdata_sz, 0);
++				 io->add_cdata_sz, 0);
+ 	if (rc) {
+ 		BCMLOG_ERR("failed to pull add_cdata sz:%x ua_off:%x\n",
+ 			   io->add_cdata_sz, (unsigned int)ua_off);
+@@ -167,7 +169,8 @@ static int chd_dec_fetch_cdata(struct crystalhd_adp *adp,
+ }
+ 
+ static int chd_dec_release_cdata(struct crystalhd_adp *adp,
+-			 struct crystalhd_ioctl_data *io, unsigned long ua)
++				 struct crystalhd_ioctl_data *io,
++				 unsigned long ua)
+ {
+ 	unsigned long ua_off;
+ 	int rc;
+@@ -180,7 +183,7 @@ static int chd_dec_release_cdata(struct crystalhd_adp *adp,
+ 	if (io->cmd != BCM_IOC_FW_DOWNLOAD) {
+ 		ua_off = ua + sizeof(io->udata);
+ 		rc = crystalhd_user_data((void __user *)ua_off, io->add_cdata,
+-					io->add_cdata_sz, 1);
++					 io->add_cdata_sz, 1);
+ 		if (rc) {
+ 			BCMLOG_ERR(
+ 				"failed to push add_cdata sz:%x ua_off:%x\n",
+@@ -210,7 +213,7 @@ static int chd_dec_proc_user_data(struct crystalhd_adp *adp,
+ 	}
+ 
+ 	rc = crystalhd_user_data((void __user *)ua, &io->udata,
+-			sizeof(io->udata), set);
++				 sizeof(io->udata), set);
+ 	if (rc) {
+ 		BCMLOG_ERR("failed to %s iodata\n", (set ? "set" : "get"));
+ 		return rc;
+@@ -382,7 +385,7 @@ static int chd_dec_init_chdev(struct crystalhd_adp *adp)
+ 	}
+ 
+ 	dev = device_create(crystalhd_class, NULL,
+-			 MKDEV(adp->chd_dec_major, 0), NULL, "crystalhd");
++			    MKDEV(adp->chd_dec_major, 0), NULL, "crystalhd");
+ 	if (IS_ERR(dev)) {
+ 		rc = PTR_ERR(dev);
+ 		BCMLOG_ERR("failed to create device\n");
+@@ -397,8 +400,7 @@ static int chd_dec_init_chdev(struct crystalhd_adp *adp)
+ 
+ 	/* Allocate general purpose ioctl pool. */
+ 	for (i = 0; i < CHD_IODATA_POOL_SZ; i++) {
+-		temp = kzalloc(sizeof(struct crystalhd_ioctl_data),
+-					 GFP_KERNEL);
++		temp = kzalloc(sizeof(*temp), GFP_KERNEL);
+ 		if (!temp) {
+ 			BCMLOG_ERR("ioctl data pool kzalloc failed\n");
+ 			rc = -ENOMEM;
+@@ -549,11 +551,11 @@ static int chd_dec_pci_probe(struct pci_dev *pdev,
+ 	enum BC_STATUS sts = BC_STS_SUCCESS;
+ 
+ 	BCMLOG(BCMLOG_DBG,
+-		"PCI_INFO: Vendor:0x%04x Device:0x%04x s_vendor:0x%04x s_device: 0x%04x\n",
+-		pdev->vendor, pdev->device, pdev->subsystem_vendor,
+-		pdev->subsystem_device);
++	       "PCI_INFO: Vendor:0x%04x Device:0x%04x s_vendor:0x%04x s_device: 0x%04x\n",
++	       pdev->vendor, pdev->device, pdev->subsystem_vendor,
++	       pdev->subsystem_device);
+ 
+-	pinfo = kzalloc(sizeof(struct crystalhd_adp), GFP_KERNEL);
++	pinfo = kzalloc(sizeof(*pinfo), GFP_KERNEL);
+ 	if (!pinfo) {
+ 		BCMLOG_ERR("Failed to allocate memory\n");
+ 		return -ENOMEM;
