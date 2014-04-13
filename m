@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199AbaDMTN3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 15:13:29 -0400
-Received: from smtp04.smtpout.orange.fr ([80.12.242.126]:46749 "EHLO
+	id S1755392AbaDMTNe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 15:13:34 -0400
+Received: from smtp04.smtpout.orange.fr ([80.12.242.126]:25370 "EHLO
 	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754983AbaDMTN2 (ORCPT
+	with ESMTP id S1755210AbaDMTNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 15:13:28 -0400
+	Sun, 13 Apr 2014 15:13:31 -0400
 X-ME-Helo: PCombes.localdomain
 X-ME-Auth: cGFzY29tQHdhbmFkb28uZnI=
-X-ME-Date: Sun, 13 Apr 2014 21:13:27 +0200
+X-ME-Date: Sun, 13 Apr 2014 21:13:30 +0200
 X-ME-IP: 82.124.119.218
-Message-ID: <534AE1D6.1040304@orange.fr>
-Date: Sun, 13 Apr 2014 21:13:26 +0200
+Message-ID: <534AE1D9.1000005@orange.fr>
+Date: Sun, 13 Apr 2014 21:13:29 +0200
 From: Pascal COMBES <pascom@orange.fr>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
@@ -27,7 +27,7 @@ CC: devel@driverdev.osuosl.org,
         Amarjargal Gundjalam <amarjargal16@gmail.com>,
         Dan Carpenter <dan.carpenter@oracle.com>,
         Robert Foss <dev@robertfoss.se>
-Subject: [PATCH v2 2/3] Fix coding style problem (cast with space) in drivers/staging/crystalhd/crystalhd_lnx.c
+Subject: [PATCH v2 3/3] Fix coding style problem (sizeof with type) in drivers/staging/crystalhd/crystalhd_lnx.c
 References: <534AAED2.7050205@orange.fr> <20140413154859.GA18189@kroah.com>
 In-Reply-To: <20140413154859.GA18189@kroah.com>
 Content-Type: text/plain; charset=ISO-8859-1
@@ -38,22 +38,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pascal COMBES <pascom@orange.fr>
 
-Fix coding style problem in drivers/staging/crystalhd/crystalhd_lnx.c:
-No space needed before a cast.
+Replace sizeof(type) by sizeof(variable) in
+drivers/staging/crystalhd/crystalhd_lnx.c.
 
 Signed-off-by: Pascal COMBES <pascom@orange.fr>
 ---
-diff --git a/drivers/staging/crystalhd/crystalhd_lnx.c b/drivers/staging/crystalhd/crystalhd_lnx.c
-index fd7f08a..15e8f02 100644
+diff --git a/drivers/staging/crystalhd/crystalhd_lnx.c
+b/drivers/staging/crystalhd/crystalhd_lnx.c
+index 15e8f02..7b14b28 100644
 --- a/drivers/staging/crystalhd/crystalhd_lnx.c
 +++ b/drivers/staging/crystalhd/crystalhd_lnx.c
-@@ -28,7 +28,7 @@ static struct crystalhd_adp *g_adp_info;
- 
- static irqreturn_t chd_dec_isr(int irq, void *arg)
- {
--	struct crystalhd_adp *adp = (struct crystalhd_adp *) arg;
-+	struct crystalhd_adp *adp = (struct crystalhd_adp *)arg;
- 	int rc = 0;
- 	if (adp)
- 		rc = crystalhd_cmd_interrupt(&adp->cmds);
+@@ -399,8 +399,7 @@ static int chd_dec_init_chdev(struct crystalhd_adp *adp)
+
+ 	/* Allocate general purpose ioctl pool. */
+ 	for (i = 0; i < CHD_IODATA_POOL_SZ; i++) {
+-		temp = kzalloc(sizeof(struct crystalhd_ioctl_data),
+-			       GFP_KERNEL);
++		temp = kzalloc(sizeof(*temp), GFP_KERNEL);
+ 		if (!temp) {
+ 			BCMLOG_ERR("ioctl data pool kzalloc failed\n");
+ 			rc = -ENOMEM;
+@@ -555,7 +554,7 @@ static int chd_dec_pci_probe(struct pci_dev *pdev,
+ 	       pdev->vendor, pdev->device, pdev->subsystem_vendor,
+ 	       pdev->subsystem_device);
+
+-	pinfo = kzalloc(sizeof(struct crystalhd_adp), GFP_KERNEL);
++	pinfo = kzalloc(sizeof(*pinfo), GFP_KERNEL);
+ 	if (!pinfo) {
+ 		BCMLOG_ERR("Failed to allocate memory\n");
+ 		return -ENOMEM;
 
