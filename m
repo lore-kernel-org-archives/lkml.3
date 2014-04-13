@@ -1,285 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381AbaDMKca (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 06:32:30 -0400
-Received: from mga09.intel.com ([134.134.136.24]:31647 "EHLO mga09.intel.com"
+	id S1754381AbaDMLVh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 07:21:37 -0400
+Received: from mga11.intel.com ([192.55.52.93]:23732 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752478AbaDMKc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 06:32:28 -0400
+	id S1750800AbaDMLVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 07:21:35 -0400
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,850,1389772800"; 
-   d="scan'208";a="519973579"
-Message-ID: <534A67B8.80600@linux.intel.com>
-Date: Sun, 13 Apr 2014 18:32:24 +0800
-From: "Li, Aubrey" <aubrey.li@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+X-IronPort-AV: E=Sophos;i="4.97,851,1389772800"; 
+   d="scan'208";a="519693502"
+Date: Sun, 13 Apr 2014 07:21:32 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 07/22] Replace the XIP page fault handler with the DAX
+ page fault handler
+Message-ID: <20140413112132.GP5727@linux.intel.com>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <c2e602f401a580c4fac54b9b8f4a6f8dd0ac1071.1395591795.git.matthew.r.wilcox@intel.com>
+ <20140408220525.GC26019@quack.suse.cz>
+ <20140409204806.GF5727@linux.intel.com>
+ <20140409211203.GP32103@quack.suse.cz>
 MIME-Version: 1.0
-To: Chew Chiau Ee <chiau.ee.chew@intel.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: Alan Cox <alan@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pwm_lpss: Add support for PCI devices
-References: <1397311131-13371-1-git-send-email-chiau.ee.chew@intel.com>
-In-Reply-To: <1397311131-13371-1-git-send-email-chiau.ee.chew@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140409211203.GP32103@quack.suse.cz>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/4/12 21:58, Chew Chiau Ee wrote:
-> From: Alan Cox <alan@linux.intel.com>
-> 
-> Not all systems enumerate the PWM devices via ACPI. They can also be exposed
-> via the PCI interface.
-> 
-> Signed-off-by: Alan Cox <alan@linux.intel.com>
-> Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
-> ---
->  drivers/pwm/pwm-lpss.c |  160 ++++++++++++++++++++++++++++++++++++++---------
->  1 files changed, 129 insertions(+), 31 deletions(-)
-> 
-> diff --git a/drivers/pwm/pwm-lpss.c b/drivers/pwm/pwm-lpss.c
-> index 449e372..6f79bf8 100644
-> --- a/drivers/pwm/pwm-lpss.c
-> +++ b/drivers/pwm/pwm-lpss.c
-> @@ -6,6 +6,7 @@
->   * Author: Chew Kean Ho <kean.ho.chew@intel.com>
->   * Author: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
->   * Author: Chew Chiau Ee <chiau.ee.chew@intel.com>
-> + * Author: Alan Cox <alan@linux.intel.com>
->   *
->   * This program is free software; you can redistribute it and/or modify
->   * it under the terms of the GNU General Public License version 2 as
-> @@ -19,6 +20,9 @@
->  #include <linux/module.h>
->  #include <linux/pwm.h>
->  #include <linux/platform_device.h>
-> +#include <linux/pci.h>
-> +
-> +static int pci_drv, plat_drv;	/* So we know which drivers registered */
->  
->  #define PWM				0x00000000
->  #define PWM_ENABLE			BIT(31)
-> @@ -34,6 +38,15 @@ struct pwm_lpss_chip {
->  	struct pwm_chip chip;
->  	void __iomem *regs;
->  	struct clk *clk;
-> +	unsigned long clk_rate;
-> +};
-> +
-> +struct pwm_lpss_boardinfo {
-> +	unsigned long clk_rate;
-> +};
-> +
-> +static const struct pwm_lpss_boardinfo byt_info = {
-> +	25000000
->  };
->  
->  static inline struct pwm_lpss_chip *to_lpwm(struct pwm_chip *chip)
-> @@ -55,7 +68,7 @@ static int pwm_lpss_config(struct pwm_chip *chip, struct pwm_device *pwm,
->  	/* The equation is: base_unit = ((freq / c) * 65536) + correction */
->  	base_unit = freq * 65536;
->  
-> -	c = clk_get_rate(lpwm->clk);
-> +	c = lpwm->clk_rate;
->  	if (!c)
->  		return -EINVAL;
->  
-> @@ -113,52 +126,47 @@ static const struct pwm_ops pwm_lpss_ops = {
->  	.owner = THIS_MODULE,
->  };
->  
-> -static const struct acpi_device_id pwm_lpss_acpi_match[] = {
-> -	{ "80860F09", 0 },
-> -	{ },
-> -};
-> -MODULE_DEVICE_TABLE(acpi, pwm_lpss_acpi_match);
-> -
-> -static int pwm_lpss_probe(struct platform_device *pdev)
-> +static struct pwm_lpss_chip *pwm_lpss_probe(struct device *dev,
-> +			struct resource *r, struct pwm_lpss_boardinfo *info)
->  {
->  	struct pwm_lpss_chip *lpwm;
-> -	struct resource *r;
->  	int ret;
->  
-> -	lpwm = devm_kzalloc(&pdev->dev, sizeof(*lpwm), GFP_KERNEL);
-> +	lpwm = devm_kzalloc(dev, sizeof(*lpwm), GFP_KERNEL);
->  	if (!lpwm)
-> -		return -ENOMEM;
-> -
-> -	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +		return ERR_PTR(-ENOMEM);
->  
-> -	lpwm->regs = devm_ioremap_resource(&pdev->dev, r);
-> +	lpwm->regs = devm_ioremap_resource(dev, r);
->  	if (IS_ERR(lpwm->regs))
-> -		return PTR_ERR(lpwm->regs);
-> -
-> -	lpwm->clk = devm_clk_get(&pdev->dev, NULL);
-> -	if (IS_ERR(lpwm->clk)) {
-> -		dev_err(&pdev->dev, "failed to get PWM clock\n");
-> -		return PTR_ERR(lpwm->clk);
-> +		return lpwm->regs;
-> +
-> +	if (info) {
-> +		lpwm->clk_rate = info->clk_rate;
-> +	} else {
-> +		lpwm->clk = devm_clk_get(dev, NULL);
-> +		if (IS_ERR(lpwm->clk)) {
-> +			dev_err(dev, "failed to get PWM clock\n");
-> +			return (void *)lpwm->clk;
-> +		}
-> +		lpwm->clk_rate = clk_get_rate(lpwm->clk);
->  	}
->  
-> -	lpwm->chip.dev = &pdev->dev;
-> +	lpwm->chip.dev = dev;
->  	lpwm->chip.ops = &pwm_lpss_ops;
->  	lpwm->chip.base = -1;
->  	lpwm->chip.npwm = 1;
->  
->  	ret = pwmchip_add(&lpwm->chip);
->  	if (ret) {
-> -		dev_err(&pdev->dev, "failed to add PWM chip: %d\n", ret);
-> -		return ret;
-> +		dev_err(dev, "failed to add PWM chip: %d\n", ret);
-> +		return ERR_PTR(ret);
->  	}
->  
-> -	platform_set_drvdata(pdev, lpwm);
-> -	return 0;
-> +	return lpwm;
->  }
->  
-> -static int pwm_lpss_remove(struct platform_device *pdev)
-> +static int pwm_lpss_remove(struct pwm_lpss_chip *lpwm)
->  {
-> -	struct pwm_lpss_chip *lpwm = platform_get_drvdata(pdev);
->  	u32 ctrl;
->  
->  	ctrl = readl(lpwm->regs + PWM);
-> @@ -167,17 +175,107 @@ static int pwm_lpss_remove(struct platform_device *pdev)
->  	return pwmchip_remove(&lpwm->chip);
->  }
->  
-> -static struct platform_driver pwm_lpss_driver = {
-> +static int pwm_lpss_probe_pci(struct pci_dev *pdev,
-> +			      const struct pci_device_id *id)
-> +{
-> +	struct pwm_lpss_boardinfo *info;
-> +	struct pwm_lpss_chip *lpwm;
-> +	int err;
-> +
-> +	err = pci_enable_device(pdev);
-> +	if (err < 0)
-> +		return err;
-> +
-> +	info =  (struct pwm_lpss_boardinfo *)id->driver_data;
-> +	lpwm = pwm_lpss_probe(&pdev->dev, &pdev->resource[0], info);
-> +	if (IS_ERR(lpwm))
-> +		return PTR_ERR(lpwm);
-> +
-> +	pci_set_drvdata(pdev, lpwm);
-> +	return 0;
-> +}
-> +
-> +static void pwm_lpss_remove_pci(struct pci_dev *pdev)
-> +{
-> +	struct pwm_lpss_chip *lpwm = pci_get_drvdata(pdev);
-> +
-> +	pwm_lpss_remove(lpwm);
-> +	pci_disable_device(pdev);
-> +}
-> +
-> +static struct pci_device_id pwm_lpss_pci_ids[] = {
-> +	{ PCI_VDEVICE(INTEL, 0x0F08), (unsigned long)&byt_info},
-> +	{ PCI_VDEVICE(INTEL, 0x0F09), (unsigned long)&byt_info},
-> +	{ 0,}
-> +};
-> +MODULE_DEVICE_TABLE(pci, pwm_lpss_pci_ids);
-> +
-> +static struct pci_driver pwm_lpss_driver_pci = {
-> +	.name	= "pwm-lpss",
-> +	.id_table	= pwm_lpss_pci_ids,
-> +	.probe	= pwm_lpss_probe_pci,
-> +	.remove	= pwm_lpss_remove_pci,
-> +};
-> +
-> +static int pwm_lpss_probe_platform(struct platform_device *pdev)
-> +{
-> +	struct pwm_lpss_chip *lpwm;
-> +	struct resource *r;
-> +
-> +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +
-> +	lpwm = pwm_lpss_probe(&pdev->dev, r, NULL);
-> +	if (IS_ERR(lpwm))
-> +		return PTR_ERR(lpwm);
-> +
-> +	platform_set_drvdata(pdev, lpwm);
-> +	return 0;
-> +}
-> +
-> +static int pwm_lpss_remove_platform(struct platform_device *pdev)
-> +{
-> +	struct pwm_lpss_chip *lpwm = platform_get_drvdata(pdev);
-> +
-> +	return pwm_lpss_remove(lpwm);
-> +}
-> +
-> +static const struct acpi_device_id pwm_lpss_acpi_match[] = {
-> +	{ "80860F09", 0 },
-> +	{ },
-> +};
-> +MODULE_DEVICE_TABLE(acpi, pwm_lpss_acpi_match);
-> +
-> +static struct platform_driver pwm_lpss_driver_platform = {
->  	.driver = {
->  		.name = "pwm-lpss",
->  		.acpi_match_table = pwm_lpss_acpi_match,
->  	},
-> -	.probe = pwm_lpss_probe,
-> -	.remove = pwm_lpss_remove,
-> +	.probe = pwm_lpss_probe_platform,
-> +	.remove = pwm_lpss_remove_platform,
->  };
-> -module_platform_driver(pwm_lpss_driver);
-> +
-> +static int __init pwm_init(void)
-> +{
-> +	pci_drv = pci_register_driver(&pwm_lpss_driver_pci);
-> +	plat_drv = platform_driver_register(&pwm_lpss_driver_platform);
-> +	if (pci_drv && plat_drv)
-> +		return pci_drv;
-> +
-> +	return 0;
-> +}
-> +
-> +static void __exit pwm_exit(void)
-> +{
-> +	if (!pci_drv)
-> +		pci_unregister_driver(&pwm_lpss_driver_pci);
-> +	if (!plat_drv)
-> +		platform_driver_unregister(&pwm_lpss_driver_platform);
-> +}
->  
->  MODULE_DESCRIPTION("PWM driver for Intel LPSS");
->  MODULE_AUTHOR("Mika Westerberg <mika.westerberg@linux.intel.com>");
->  MODULE_LICENSE("GPL v2");
->  MODULE_ALIAS("platform:pwm-lpss");
+On Wed, Apr 09, 2014 at 11:12:03PM +0200, Jan Kara wrote:
+>   This would be fine except that unmap_mapping_range() grabs i_mmap_mutex
+> again :-|. But it might be easier to provide a version of that function
+> which assumes i_mmap_mutex is already locked than what I was suggesting.
 
-Looks a good idea to combine pci and acpi driver together.
-Since pci driver is added, here the alias need to be refined.
-Others look good.
+*sigh*.  I knew that once ... which was why the call was after dropping
+the lock.  OK, another try at fixing the problem; handle it down in the
+insert_pfn code:
 
-Thanks,
--Aubrey
+diff --git a/fs/dax.c b/fs/dax.c
+index 6a8725b..2453025 100644
+--- a/fs/dax.c
++++ b/fs/dax.c
+@@ -390,7 +390,7 @@ static int do_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
+ 
+ 	error = dax_get_pfn(&bh, &pfn, blkbits);
+ 	if (error > 0)
+-		error = vm_insert_mixed(vma, vaddr, pfn);
++		error = vm_replace_mixed(vma, vaddr, pfn);
+ 	mutex_unlock(&mapping->i_mmap_mutex);
+ 
+ 	if (page) {
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index ba72c54..df25410 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1944,8 +1944,12 @@ int remap_pfn_range(struct vm_area_struct *, unsigned long addr,
+ int vm_insert_page(struct vm_area_struct *, unsigned long addr, struct page *);
+ int vm_insert_pfn(struct vm_area_struct *vma, unsigned long addr,
+ 			unsigned long pfn);
+-int vm_insert_mixed(struct vm_area_struct *vma, unsigned long addr,
+-			unsigned long pfn);
++int __vm_insert_mixed(struct vm_area_struct *vma, unsigned long addr,
++			unsigned long pfn, bool replace);
++#define vm_insert_mixed(vma, addr, pfn)	\
++	__vm_insert_mixed(vma, addr, pfn, false)
++#define vm_replace_mixed(vma, addr, pfn)	\
++	__vm_insert_mixed(vma, addr, pfn, true)
+ int vm_insert_pfn_pmd(struct vm_area_struct *, unsigned long addr, pmd_t *,
+ 			unsigned long pfn);
+ int vm_iomap_memory(struct vm_area_struct *vma, phys_addr_t start, unsigned long len);
+diff --git a/mm/memory.c b/mm/memory.c
+index 76fd657..ec59239 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2100,7 +2100,7 @@ pte_t *__get_locked_pte(struct mm_struct *mm, unsigned long addr,
+  * pages reserved for the old functions anyway.
+  */
+ static int insert_page(struct vm_area_struct *vma, unsigned long addr,
+-			struct page *page, pgprot_t prot)
++			struct page *page, pgprot_t prot, bool replace)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	int retval;
+@@ -2116,8 +2116,12 @@ static int insert_page(struct vm_area_struct *vma, unsigned long addr,
+ 	if (!pte)
+ 		goto out;
+ 	retval = -EBUSY;
+-	if (!pte_none(*pte))
+-		goto out_unlock;
++	if (!pte_none(*pte)) {
++		if (!replace)
++			goto out_unlock;
++		VM_BUG_ON(!mutex_is_locked(&vma->vm_file->f_mapping->i_mmap_mutex));
++		zap_page_range_single(vma, addr, PAGE_SIZE, NULL);
++	}
+ 
+ 	/* Ok, finally just insert the thing.. */
+ 	get_page(page);
+@@ -2173,12 +2177,12 @@ int vm_insert_page(struct vm_area_struct *vma, unsigned long addr,
+ 		BUG_ON(vma->vm_flags & VM_PFNMAP);
+ 		vma->vm_flags |= VM_MIXEDMAP;
+ 	}
+-	return insert_page(vma, addr, page, vma->vm_page_prot);
++	return insert_page(vma, addr, page, vma->vm_page_prot, false);
+ }
+ EXPORT_SYMBOL(vm_insert_page);
+ 
+ static int insert_pfn(struct vm_area_struct *vma, unsigned long addr,
+-			unsigned long pfn, pgprot_t prot)
++			unsigned long pfn, pgprot_t prot, bool replace)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	int retval;
+@@ -2190,8 +2194,12 @@ static int insert_pfn(struct vm_area_struct *vma, unsigned long addr,
+ 	if (!pte)
+ 		goto out;
+ 	retval = -EBUSY;
+-	if (!pte_none(*pte))
+-		goto out_unlock;
++	if (!pte_none(*pte)) {
++		if (!replace)
++			goto out_unlock;
++		VM_BUG_ON(!mutex_is_locked(&vma->vm_file->f_mapping->i_mmap_mutex));
++		zap_page_range_single(vma, addr, PAGE_SIZE, NULL);
++	}
+ 
+ 	/* Ok, finally just insert the thing.. */
+ 	entry = pte_mkspecial(pfn_pte(pfn, prot));
+@@ -2244,14 +2252,14 @@ int vm_insert_pfn(struct vm_area_struct *vma, unsigned long addr,
+ 	if (track_pfn_insert(vma, &pgprot, pfn))
+ 		return -EINVAL;
+ 
+-	ret = insert_pfn(vma, addr, pfn, pgprot);
++	ret = insert_pfn(vma, addr, pfn, pgprot, false);
+ 
+ 	return ret;
+ }
+ EXPORT_SYMBOL(vm_insert_pfn);
+ 
+-int vm_insert_mixed(struct vm_area_struct *vma, unsigned long addr,
+-			unsigned long pfn)
++int __vm_insert_mixed(struct vm_area_struct *vma, unsigned long addr,
++			unsigned long pfn, bool replace)
+ {
+ 	BUG_ON(!(vma->vm_flags & VM_MIXEDMAP));
+ 
+@@ -2269,11 +2277,11 @@ int vm_insert_mixed(struct vm_area_struct *vma, unsigned long addr,
+ 		struct page *page;
+ 
+ 		page = pfn_to_page(pfn);
+-		return insert_page(vma, addr, page, vma->vm_page_prot);
++		return insert_page(vma, addr, page, vma->vm_page_prot, replace);
+ 	}
+-	return insert_pfn(vma, addr, pfn, vma->vm_page_prot);
++	return insert_pfn(vma, addr, pfn, vma->vm_page_prot, replace);
+ }
+-EXPORT_SYMBOL(vm_insert_mixed);
++EXPORT_SYMBOL(__vm_insert_mixed);
+ 
+ static int insert_pfn_pmd(struct vm_area_struct *vma, unsigned long addr,
+ 			pmd_t *pmd, unsigned long pfn, pgprot_t prot)
 
-> +
-> +module_init(pwm_init);
-> +module_exit(pwm_exit);
+> > > > +int dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
+> > > > +			get_block_t get_block)
+> > > > +{
+> > > > +	int result;
+> > > > +	struct super_block *sb = file_inode(vma->vm_file)->i_sb;
+> > > > +
+> > > > +	sb_start_pagefault(sb);
+> > >   You don't need any filesystem freeze protection for the fault handler
+> > > since that's not going to modify the filesystem.
+> > 
+> > Err ... we might allocate a block as a result of doing a write to a hole.
+> > Or does that not count as 'modifying the filesystem' in this context?
+>   Ah, it does. But it would be nice to avoid doing sb_start_pagefault() if
+> it's not a write fault - because you don't want to block reading from a
+> frozen filesystem (imagine what would happen when you freeze your root
+> filesystem to do a snapshot...).
 > 
+> I have somewhat a mindset of standard pagecache mmap where filemap_fault()
+> only reads in data regardless of FAULT_FLAG_WRITE setting so I was confused
+> by your difference :).
 
+Understood!  So this should work:
+
+diff --git a/fs/dax.c b/fs/dax.c
+index 2453025..e4d00fc 100644
+--- a/fs/dax.c
++++ b/fs/dax.c
+@@ -431,10 +431,13 @@ int dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf,
+ 	int result;
+ 	struct super_block *sb = file_inode(vma->vm_file)->i_sb;
+ 
+-	sb_start_pagefault(sb);
+-	file_update_time(vma->vm_file);
++	if (vmf->flags & FAULT_FLAG_WRITE) {
++		sb_start_pagefault(sb);
++		file_update_time(vma->vm_file);
++	}
+ 	result = do_dax_fault(vma, vmf, get_block);
+-	sb_end_pagefault(sb);
++	if (vmf->flags & FAULT_FLAG_WRITE)
++		sb_end_pagefault(sb);
+ 
+ 	return result;
+ }
+@@ -453,15 +456,7 @@ EXPORT_SYMBOL_GPL(dax_fault);
+ int dax_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
+ 			get_block_t get_block)
+ {
+-	int result;
+-	struct super_block *sb = file_inode(vma->vm_file)->i_sb;
+-
+-	sb_start_pagefault(sb);
+-	file_update_time(vma->vm_file);
+-	result = do_dax_fault(vma, vmf, get_block);
+-	sb_end_pagefault(sb);
+-
+-	return result;
++	return dax_fault(vma, vmf, get_block);
+ }
+ EXPORT_SYMBOL_GPL(dax_mkwrite);
+ 
+
+> > > > +	file_update_time(vma->vm_file);
+> > >   Why do you update m/ctime? We are only reading the file...
+> > 
+> > ... except that it might be a write fault.  I think we modify the file
+> > iff we return VM_FAULT_MAJOR from do_dax_fault().  So I'd be open to
+> > something like this:
+> > 
+> > 	sb_start_pagefault(sb);
+> > 	result = do_dax_fault(vma, vmf, get_block);
+> > 	if (result & VM_FAULT_MAJOR)
+> > 		file_update_time(vma->vm_file);
+> > 	sb_end_pagefault(sb);
+> > 
+> > Would that work better for you?
+>   Definitely. It's also a performance thing BTW - updating time stamps is
+> relatively expensive for journalling filesystems - you have to start a
+> transaction, add block with inode to the journal, stop a transaction - not
+> something you want to do unless you have to.
+
+I realised that this isn't right.  If you do a store to an mmaped file,
+you should update the timestamps, whether or not the fs had to allocate
+blocks.  Hence the version above that only checks whether the fault is
+for write or not.
