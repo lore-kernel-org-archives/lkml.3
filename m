@@ -1,68 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750859AbaDMVgd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 17:36:33 -0400
-Received: from cpsmtpb-ews02.kpnxchange.com ([213.75.39.5]:51332 "EHLO
-	cpsmtpb-ews02.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750763AbaDMVgc (ORCPT
+	id S1750994AbaDMVha (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 17:37:30 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:42488 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900AbaDMVgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 17:36:32 -0400
-Message-ID: <1397424990.31896.10.camel@x220>
-Subject: Re: [PATCH v2 2/3] Fix coding style problem (cast with space) in
- drivers/staging/crystalhd/crystalhd_lnx.c
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Pascal COMBES <pascom@orange.fr>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Jarod Wilson <jarod@wilsonet.com>, Jingoo Han <jg1.han@samsung.com>,
-        Valentina Manea <valentina.manea.m@gmail.com>,
-        linux-kernel@vger.kernel.org, Naren Sankar <nsankar@broadcom.com>,
-        Monam Agarwal <monamagarwal123@gmail.com>,
-        Scott Davilla <davilla@4pi.com>,
-        Amarjargal Gundjalam <amarjargal16@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Robert Foss <dev@robertfoss.se>
-Date: Sun, 13 Apr 2014 23:36:30 +0200
-In-Reply-To: <534AE1D6.1040304@orange.fr>
-References: <534AAED2.7050205@orange.fr> <20140413154859.GA18189@kroah.com>
-	 <534AE1D6.1040304@orange.fr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Apr 2014 21:36:31.0285 (UTC) FILETIME=[6F4D5650:01CF5760]
-X-RcptDomain: vger.kernel.org
+	Sun, 13 Apr 2014 17:36:49 -0400
+Date: Sun, 13 Apr 2014 17:36:46 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: mingo@kernel.org, tglx@linutronix.de, luto@amacapital.net,
+        daniel.lezcano@linaro.org, umgwanakikbuti@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 8/8] sched,idle: Reflow cpuidle_idle_call()
+In-Reply-To: <20140411135218.617896630@infradead.org>
+Message-ID: <alpine.LFD.2.11.1404131734120.980@knanqh.ubzr>
+References: <20140411134243.160989490@infradead.org> <20140411135218.617896630@infradead.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-04-13 at 21:13 +0200, Pascal COMBES wrote:
-> From: Pascal COMBES <pascom@orange.fr>
+On Fri, 11 Apr 2014, Peter Zijlstra wrote:
+
+> Apply goto to reduce lines and nesting levels.
 > 
-> Fix coding style problem in drivers/staging/crystalhd/crystalhd_lnx.c:
-> No space needed before a cast.
-> 
-> Signed-off-by: Pascal COMBES <pascom@orange.fr>
+> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 > ---
-> diff --git a/drivers/staging/crystalhd/crystalhd_lnx.c b/drivers/staging/crystalhd/crystalhd_lnx.c
-> index fd7f08a..15e8f02 100644
-> --- a/drivers/staging/crystalhd/crystalhd_lnx.c
-> +++ b/drivers/staging/crystalhd/crystalhd_lnx.c
-> @@ -28,7 +28,7 @@ static struct crystalhd_adp *g_adp_info;
->  
->  static irqreturn_t chd_dec_isr(int irq, void *arg)
->  {
-> -	struct crystalhd_adp *adp = (struct crystalhd_adp *) arg;
-> +	struct crystalhd_adp *adp = (struct crystalhd_adp *)arg;
-
-Shouldn't this cast just be dropped instead?
-
->  	int rc = 0;
->  	if (adp)
->  		rc = crystalhd_cmd_interrupt(&adp->cmds);
+>  kernel/sched/idle.c |  138 +++++++++++++++++++++++-----------------------------
+>  1 file changed, 62 insertions(+), 76 deletions(-)
 > 
+> --- a/kernel/sched/idle.c
+> +++ b/kernel/sched/idle.c
+> @@ -73,7 +73,7 @@ static int cpuidle_idle_call(void)
+>  {
+>  	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+>  	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+> -	int next_state, entered_state, ret;
+> +	int next_state, entered_state;
+>  	bool broadcast;
+>  
+>  	/*
+> @@ -102,90 +102,64 @@ static int cpuidle_idle_call(void)
+>  	 * Check if the cpuidle framework is ready, otherwise fallback
+>  	 * to the default arch specific idle method
+>  	 */
+> -	ret = cpuidle_enabled(drv, dev);
+> +	if (cpuidle_enabled(drv, dev))
+> +		goto use_default;
+
+Why not using braces here and moving the use_default code block inside 
+it instead?
 
 
-Paul Bolle
-
+>  
+> -	if (!ret) {
+> -		/*
+> -		 * Ask the governor to choose an idle state it thinks
+> -		 * it is convenient to go to. There is *always* a
+> -		 * convenient idle state
+> -		 */
+> -		next_state = cpuidle_select(drv, dev);
+> -
+> -		/*
+> -		 * The idle task must be scheduled, it is pointless to
+> -		 * go to idle, just update no idle residency and get
+> -		 * out of this function
+> -		 */
+> -		if (current_clr_polling_and_test()) {
+> -			dev->last_residency = 0;
+> -			entered_state = next_state;
+> -			local_irq_enable();
+> -		} else {
+> -			broadcast = !!(drv->states[next_state].flags &
+> -				       CPUIDLE_FLAG_TIMER_STOP);
+> -
+> -			if (broadcast) {
+> -				/*
+> -				 * Tell the time framework to switch
+> -				 * to a broadcast timer because our
+> -				 * local timer will be shutdown. If a
+> -				 * local timer is used from another
+> -				 * cpu as a broadcast timer, this call
+> -				 * may fail if it is not available
+> -				 */
+> -				ret = clockevents_notify(
+> -					CLOCK_EVT_NOTIFY_BROADCAST_ENTER,
+> -					&dev->cpu);
+> -			}
+> -
+> -			if (!ret) {
+> -				trace_cpu_idle_rcuidle(next_state, dev->cpu);
+> -
+> -				/*
+> -				 * Enter the idle state previously
+> -				 * returned by the governor
+> -				 * decision. This function will block
+> -				 * until an interrupt occurs and will
+> -				 * take care of re-enabling the local
+> -				 * interrupts
+> -				 */
+> -				entered_state = cpuidle_enter(drv, dev,
+> -							      next_state);
+> -
+> -				trace_cpu_idle_rcuidle(PWR_EVENT_EXIT,
+> -						       dev->cpu);
+> -
+> -				if (broadcast)
+> -					clockevents_notify(
+> -						CLOCK_EVT_NOTIFY_BROADCAST_EXIT,
+> -						&dev->cpu);
+> -
+> -				/*
+> -				 * Give the governor an opportunity to reflect on the
+> -				 * outcome
+> -				 */
+> -				cpuidle_reflect(dev, entered_state);
+> -			}
+> -		}
+> -	}
+> +	/*
+> +	 * Ask the governor to choose an idle state it thinks
+> +	 * it is convenient to go to. There is *always* a
+> +	 * convenient idle state
+> +	 */
+> +	next_state = cpuidle_select(drv, dev);
+>  
+>  	/*
+> -	 * We can't use the cpuidle framework, let's use the default
+> -	 * idle routine
+> +	 * The idle task must be scheduled, it is pointless to
+> +	 * go to idle, just update no idle residency and get
+> +	 * out of this function
+>  	 */
+> -	if (ret) {
+> -		if (!current_clr_polling_and_test())
+> -			arch_cpu_idle();
+> -		else
+> -			local_irq_enable();
+> +	if (current_clr_polling_and_test()) {
+> +		dev->last_residency = 0;
+> +		entered_state = next_state;
+> +		local_irq_enable();
+> +		goto exit_idle;
+>  	}
+>  
+> +	broadcast = !!(drv->states[next_state].flags & CPUIDLE_FLAG_TIMER_STOP);
+> +
+> +	/*
+> +	 * Tell the time framework to switch to a broadcast timer
+> +	 * because our local timer will be shutdown. If a local timer
+> +	 * is used from another cpu as a broadcast timer, this call may
+> +	 * fail if it is not available
+> +	 */
+> +	if (broadcast &&
+> +	    clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &dev->cpu))
+> +		goto use_default;
+> +
+> +	trace_cpu_idle_rcuidle(next_state, dev->cpu);
+> +
+> +	/*
+> +	 * Enter the idle state previously returned by the governor decision.
+> +	 * This function will block until an interrupt occurs and will take
+> +	 * care of re-enabling the local interrupts
+> +	 */
+> +	entered_state = cpuidle_enter(drv, dev, next_state);
+> +
+> +	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
+> +
+> +	if (broadcast)
+> +		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
+> +
+> +	/*
+> +	 * Give the governor an opportunity to reflect on the outcome
+> +	 */
+> +	cpuidle_reflect(dev, entered_state);
+> +
+> +exit_idle:
+>  	__current_set_polling();
+>  
+>  	/*
+> -	 * It is up to the idle functions to enable back the local
+> -	 * interrupt
+> +	 * It is up to the idle functions to reenable local interrupts
+>  	 */
+>  	if (WARN_ON_ONCE(irqs_disabled()))
+>  		local_irq_enable();
+> @@ -194,6 +168,18 @@ static int cpuidle_idle_call(void)
+>  	start_critical_timings();
+>  
+>  	return 0;
+> +
+> +	/*
+> +	 * We can't use the cpuidle framework, let's use the default idle
+> +	 * routine
+> +	 */
+> +use_default:
+> +	if (current_clr_polling_and_test())
+> +		local_irq_enable();
+> +	else
+> +		arch_cpu_idle();
+> +
+> +	goto exit_idle;
+>  }
+>  
+>  /*
+> 
+> 
