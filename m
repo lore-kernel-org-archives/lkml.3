@@ -1,103 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781AbaDNPpX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 11:45:23 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:54911 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754239AbaDNPpU (ORCPT
+	id S1754411AbaDNPpS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 11:45:18 -0400
+Received: from www84.your-server.de ([213.133.104.84]:35719 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754239AbaDNPpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 11:45:20 -0400
-Message-ID: <1397490316.2207.23.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH] hpsa: fix uninitialized trans_support in
- hpsa_put_ctlr_into_performant_mode()
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: scameron@beardog.cce.hp.com
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        Baoquan He <bhe@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Date: Mon, 14 Apr 2014 08:45:16 -0700
-In-Reply-To: <20140410221704.GA22465@beardog.cce.hp.com>
-References: <20140410221704.GA22465@beardog.cce.hp.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Apr 2014 11:45:12 -0400
+Date: Mon, 14 Apr 2014 17:44:58 +0200
+Message-ID: <20140414174458.Horde.ieyRX8PcZ0lg3nY1QFE2DA4@webmail.your-server.de>
+From: stefani@seibold.net
+To: Benjamin Herrenschmidt <benh@au1.ibm.com>
+Cc: linux-usb <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        Greg KH <greg@kroah.com>, Alan Stern <stern@rowland.harvard.edu>,
+        sarah.a.sharp@linux.intel.com,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Subject: Re: Missing USB XHCI and EHCI reset for kexec
+References: <1397416959.1555.30.camel@vger.seibold.net>
+ <1397468521.9258.28.camel@pasglop>
+In-Reply-To: <1397468521.9258.28.camel@pasglop>
+User-Agent: Internet Messaging Program (IMP) H5 (6.1.7)
+Content-Type: text/plain; charset=UTF-8; format=flowed; DelSp=Yes
+MIME-Version: 1.0
+Content-Disposition: inline
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your subject line is very tame.  It should be the one line summary of
-why we apply the patch, so it should read something like
 
- hpsa: fix NULL deref in performant mode
+Zitat von Benjamin Herrenschmidt <benh@au1.ibm.com>:
 
-On Thu, 2014-04-10 at 17:17 -0500, scameron@beardog.cce.hp.com wrote:
-> Without this, you'll see a null pointer dereference in
-> hpsa_enter_performant_mode().
+> On Sun, 2014-04-13 at 21:22 +0200, Stefani Seibold wrote:
+>> When executing a kexec kernel on a PowerPC board the new started kernel
+>> will not find already enumerated USB devices due a missing reset on the
+>> USB bus.
+>>
+>> As a work around a
+>>
+>> echo 1 >/sys/bus/pci/drivers/[ex]hci-pci/BUS-ADDRESS-OF-THE-HCD/reset
+>>
+>> will solve this. But this is far from beauty.
+>>
+>> My latest kernel without this issue was for EHCI kernel 2.6.39 and for
+>> XHCI kernel 3.4, but i have no idea when exactly this behavior was
+>> introduced.
+>>
+>> For X86 all is fine.
+>
+> I don't know about EHCI specifically but this is a known issue with
+> XHCI, I observe similar issues on other powerpc platforms (servers)
+> and this isn't architecture specific (looks more like actualy xhc
+> implementation specific).
+>
+> Thadeu Cascardo (on CC) has been the one investigating that on our side,
+> he might have more to add including patches.
+>
 
-The description should be more comprehensible.
+I have now a kernel 3.14 dmesg log of the problem. After a kexec the  
+kexeced 3.14 kernel shows:
 
-I'm clear that the use before initialisation is a bug ... I'm less clear
-on why it causes an oops.
+[    1.170029] xhci_hcd 0001:03:00.0: xHCI Host Controller
+[    1.175306] xhci_hcd 0001:03:00.0: new USB bus registered, assigned  
+bus number 1
+[    1.212561] xhci_hcd 0001:03:00.0: Host not halted after 16000  
+microseconds.
+[    1.219621] xhci_hcd 0001:03:00.0: can't setup: -110
+[    1.224597] xhci_hcd 0001:03:00.0: USB bus 1 deregistered
+[    1.230021] xhci_hcd 0001:03:00.0: init 0001:03:00.0 fail, -110
+[    1.235955] xhci_hcd: probe of 0001:03:00.0 failed with error -110
 
-> Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> ---
->  drivers/scsi/hpsa.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-> index 8cf4a0c..ef4dfdd 100644
-> --- a/drivers/scsi/hpsa.c
-> +++ b/drivers/scsi/hpsa.c
-> @@ -7463,6 +7463,10 @@ static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
->  	if (hpsa_simple_mode)
->  		return;
->  
-> +	trans_support = readl(&(h->cfgtable->TransportSupport));
-> +	if (!(trans_support & PERFORMANT_MODE))
-> +		return;
-> +
->  	/* Check for I/O accelerator mode support */
->  	if (trans_support & CFGTBL_Trans_io_accel1) {
->  		transMethod |= CFGTBL_Trans_io_accel1 |
+Any idea?
 
-Shouldn't you be moving this check from its previous location, rather
-than adding a new one that makes the original obsolete?
-
-James
-
----
-
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 8cf4a0c..9a6e4a2 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -7463,6 +7463,10 @@ static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
- 	if (hpsa_simple_mode)
- 		return;
- 
-+	trans_support = readl(&(h->cfgtable->TransportSupport));
-+	if (!(trans_support & PERFORMANT_MODE))
-+		return;
-+
- 	/* Check for I/O accelerator mode support */
- 	if (trans_support & CFGTBL_Trans_io_accel1) {
- 		transMethod |= CFGTBL_Trans_io_accel1 |
-@@ -7479,10 +7483,6 @@ static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
- 	}
- 
- 	/* TODO, check that this next line h->nreply_queues is correct */
--	trans_support = readl(&(h->cfgtable->TransportSupport));
--	if (!(trans_support & PERFORMANT_MODE))
--		return;
--
- 	h->nreply_queues = h->msix_vector > 0 ? h->msix_vector : 1;
- 	hpsa_get_max_perf_mode_cmds(h);
- 	/* Performant mode ring buffer and supporting data structures */
+- Stefani
 
 
