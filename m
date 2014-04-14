@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240AbaDNCyN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 22:54:13 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:49450 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779AbaDNCyM (ORCPT
+	id S1751198AbaDNDDw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 23:03:52 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:57345 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaDNDDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 22:54:12 -0400
-Date: Sun, 13 Apr 2014 22:54:07 -0400 (EDT)
-Message-Id: <20140413.225407.1762639913754561393.davem@davemloft.net>
-To: xiaoming.wang@intel.com
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mguzik@redhat.com, chuansheng.liu@intel.com, dongxing.zhang@intel.com
-Subject: Re: [PATCH] net: ipv4: current group_info should be put after
- using.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1397493045.2575.8.camel@wxm-ubuntu>
-References: <1397493045.2575.8.camel@wxm-ubuntu>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 13 Apr 2014 19:54:11 -0700 (PDT)
+	Sun, 13 Apr 2014 23:03:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <1397443846.5243.2.camel@joe-AO722>
+References: <CAJhHMCCE0QHvzqrdY-w8bB8ZK=JRN02V29XwaFYRXmu=9RhG9Q@mail.gmail.com>
+ <CAJhHMCCgMgL2etE8sYPgUfy+OXcyxG6_X1v1OhUxzX5c0kaZ4w@mail.gmail.com> <1397443846.5243.2.camel@joe-AO722>
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Sun, 13 Apr 2014 23:03:19 -0400
+Message-ID: <CAJhHMCBsa6ypbaLZ2Uv6x60uU-xq=veAem85Ke=-R+nbW5=5fA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] kernel/rcu/tree.c: remove duplicate extern definition
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
-Date: Mon, 14 Apr 2014 12:30:45 -0400
+On Sun, Apr 13, 2014 at 10:50 PM, Joe Perches <joe@perches.com> wrote:
+>>
+>> -/*
+>> - * This function really isn't for public consumption, but RCU is special in
+>> - * that context switches can allow the state machine to make progress.
+>> - */
+>> -extern void resched_cpu(int cpu);
+>
+> why not #include "sched.h"
+>
+> and remove both declarations?
+>
+>
 
-> Plug a group_info refcount leak in ping_init.
-> group_info is only needed during initialization and 
-> the code failed to release the reference on exit.
-> While here move grabbing the reference to a place 
-> where it is actually needed.
-> 
-> Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
-> Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
-> Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+As the comment mentions, resched_cpu is internal to the scheduler and
+hence is in sched/sched.h file and not in linux/sched.h.
 
-Applied and queued up for -stable, thanks.
+sched/sched.h cannot be included in other subsystems directly.
+
+Regards,
+-- 
+Pranith
