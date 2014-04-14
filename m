@@ -1,51 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752049AbaDNHNM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 03:13:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62817 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751176AbaDNHMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 03:12:36 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Frank Haverkamp <haver@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH 0/2] Phase out pci_enable_msi_block()
-Date: Mon, 14 Apr 2014 09:14:05 +0200
-Message-Id: <cover.1397458024.git.agordeev@redhat.com>
+	id S1752772AbaDNHPl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 03:15:41 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:40064 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752534AbaDNHPk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 03:15:40 -0400
+Date: Mon, 14 Apr 2014 09:15:35 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas =?iso-8859-1?Q?B=E4chler?= <thomas@archlinux.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] efi: Clarify Kconfig help for EFI_MIXED
+Message-ID: <20140414071534.GA19501@gmail.com>
+References: <1397239154-30121-1-git-send-email-thomas@archlinux.org>
+ <53482E61.8050606@zytor.com>
+ <20140411184433.GA15344@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140411184433.GA15344@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-This series is against 3.15-rc1.
+* Matt Fleming <matt@console-pimps.org> wrote:
 
-This update obsoletes pci_enable_msi_block() function in
-favor of pci_enable_msi_range() and pci_enable_msi_exact().
+> On Fri, 11 Apr, at 11:03:13AM, H. Peter Anvin wrote:
+> > On 04/11/2014 10:59 AM, Thomas Bächler wrote:
+> > > EFI stub support is only missing for a 64 bit kernel on 32-bit firmware,
+> > > on 64-bit kernels, EFI stub works as usual.
+> > > ---
+> > > 
+> > > Matt, I don't know if this help was intentionally discouraging,
+> > > however, out of curiosity, I tested this with ovmf, and the
+> > > kernel boots fine on 64-bit firmware bit with EFI stub, and on
+> > > 32-bit firmware using efilinux.
+> > > 
+> > > Documenting this properly is important for distribution kernels.
+> > > We would want to support this on Arch, but not if it means
+> > > introducing a regression for EFI stub users.
+> > > 
+> > >  arch/x86/Kconfig | 4 ++--
+> > >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> > > index 5b8ec0f..2bbbbb9 100644
+> > > --- a/arch/x86/Kconfig
+> > > +++ b/arch/x86/Kconfig
+> > > @@ -1529,8 +1529,8 @@ config EFI_MIXED
+> > >  	   mode.
+> > >  
+> > >  	   Note that it is not possible to boot a mixed-mode enabled
+> > > -	   kernel via the EFI boot stub - a bootloader that supports
+> > > -	   the EFI handover protocol must be used.
+> > > +	   kernel via the EFI boot stub on 32-bit firmware - a bootloader
+> > > +	   that supports the EFI handover protocol must be used.
+> > >  
+> > >  	   If unsure, say N.
+> > >  
+> > 
+> > Right, it is really that it is not possible to boot a mixed-mode kernel
+> > on its non-native firmware using the stub, since the stub itself can
+> > only be one way or the other.
+> 
+> Yeah, my help text was a bit... unhelpful.
+> 
+> CONFIG_EFI_MIXED does not introduce a regression of any sort, you can
+> enable it without worrying about that.
+> 
+> All the boot configurations that used to work will continue to work.
+> 
+> What I meant to say was that it isn't possible to use the EFI mixed 
+> *feature* (booting a 64-bit kernel with 32-bit firmware) with the 
+> EFI boot stub - so you can build support into your kernel but 
+> there's no way to make the CPU actually execute those code paths.
 
+Same goes for booting a 32-bit kernel on 64-bit firmware, right?
 
-Cc: Frank Haverkamp <haver@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-mips@linux-mips.org
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: linux-s390@vger.kernel.org
-Cc: x86@kernel.org
-Cc: linux-pci@vger.kernel.org
+Thanks,
 
-
-Alexander Gordeev (2):
-  GenWQE: Use pci_enable_msi_exact() instead of pci_enable_msi_block()
-  PCI/MSI: Phase out pci_enable_msi_block()
-
- drivers/misc/genwqe/card_utils.c |    2 +-
- drivers/pci/msi.c                |   79 ++++++++++++++++----------------------
- include/linux/pci.h              |    5 +--
- 3 files changed, 35 insertions(+), 51 deletions(-)
-
--- 
-1.7.7.6
-
+	Ingo
