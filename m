@@ -1,111 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220AbaDNPxu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 11:53:50 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:31427 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471AbaDNPxq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 11:53:46 -0400
-Date: Mon, 14 Apr 2014 10:52:41 -0500
-From: scameron@beardog.cce.hp.com
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        Baoquan He <bhe@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Joerg Roedel <joro@8bytes.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>, scameron@beardog.cce.hp.com
-Subject: Re: [PATCH] hpsa: fix uninitialized trans_support in hpsa_put_ctlr_into_performant_mode()
-Message-ID: <20140414155241.GC21686@beardog.cce.hp.com>
-References: <20140410221704.GA22465@beardog.cce.hp.com> <1397490316.2207.23.camel@dabdike.int.hansenpartnership.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397490316.2207.23.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1754822AbaDNPwT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 11:52:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32954 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753984AbaDNPwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 11:52:18 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jiri Olsa <jolsa@redhat.com>, Don Zickus <dzickus@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCHv2 0/5] perf tools: Share map groups within process
+Date: Mon, 14 Apr 2014 17:51:58 +0200
+Message-Id: <1397490723-1992-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 08:45:16AM -0700, James Bottomley wrote:
-> Your subject line is very tame.  It should be the one line summary of
-> why we apply the patch, so it should read something like
-> 
->  hpsa: fix NULL deref in performant mode
-> 
-> On Thu, 2014-04-10 at 17:17 -0500, scameron@beardog.cce.hp.com wrote:
-> > Without this, you'll see a null pointer dereference in
-> > hpsa_enter_performant_mode().
-> 
-> The description should be more comprehensible.
-> 
-> I'm clear that the use before initialisation is a bug ... I'm less clear
-> on why it causes an oops.
-> 
-> > Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> > ---
-> >  drivers/scsi/hpsa.c |    4 ++++
-> >  1 files changed, 4 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-> > index 8cf4a0c..ef4dfdd 100644
-> > --- a/drivers/scsi/hpsa.c
-> > +++ b/drivers/scsi/hpsa.c
-> > @@ -7463,6 +7463,10 @@ static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
-> >  	if (hpsa_simple_mode)
-> >  		return;
-> >  
-> > +	trans_support = readl(&(h->cfgtable->TransportSupport));
-> > +	if (!(trans_support & PERFORMANT_MODE))
-> > +		return;
-> > +
-> >  	/* Check for I/O accelerator mode support */
-> >  	if (trans_support & CFGTBL_Trans_io_accel1) {
-> >  		transMethod |= CFGTBL_Trans_io_accel1 |
-> 
-> Shouldn't you be moving this check from its previous location, rather
-> than adding a new one that makes the original obsolete?
+hi,
+this patchset moves thread's map_groups to be dynamically
+allocated and shared within process threads.
 
-Oh... I didn't notice that.   So that's what happened to that hunk.
-Yes, that is what should be done.
+The main benefit would be to be able to look up memory
+map from any thread that belongs to the process.
 
-I will resend the patch after fixing up this and the commit message.
+This implements one of the solution ideas for issue
+described by Don in following thread:
+http://marc.info/?l=linux-kernel&m=139403876017159&w=2
 
--- steve
+v2 changes:
+  - changing mmap groups allocation strategy - have it allocated
+    always when thread is created, which seems less confusing
+    and less error prone. The previous strategy was to allocate
+    it when it's actually used.
+  - fix test compilation for i386
+
+RFC changes:
+  - added automated test for thread map groups get/put methods
+  - fix reference count for case described by Namhyung
+  - rename the mmap-events.c test to mmap-thread-lookup.c
+  - added PROT_EXEC to mmap call in tests/mmap-thread-lookup.c
+    as it's not implied by default on all archs (Namhyung)
+  - lazy mg allocation in thread__find_addr_map (Namhyung)
+  - fix compilation failures (Arnaldo)
+
+also available in here:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+  perf/core_mmaps
+
+thanks,
+jirka
 
 
-> 
-> James
-> 
-> ---
-> 
-> diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-> index 8cf4a0c..9a6e4a2 100644
-> --- a/drivers/scsi/hpsa.c
-> +++ b/drivers/scsi/hpsa.c
-> @@ -7463,6 +7463,10 @@ static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
->  	if (hpsa_simple_mode)
->  		return;
->  
-> +	trans_support = readl(&(h->cfgtable->TransportSupport));
-> +	if (!(trans_support & PERFORMANT_MODE))
-> +		return;
-> +
->  	/* Check for I/O accelerator mode support */
->  	if (trans_support & CFGTBL_Trans_io_accel1) {
->  		transMethod |= CFGTBL_Trans_io_accel1 |
-> @@ -7479,10 +7483,6 @@ static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
->  	}
->  
->  	/* TODO, check that this next line h->nreply_queues is correct */
-> -	trans_support = readl(&(h->cfgtable->TransportSupport));
-> -	if (!(trans_support & PERFORMANT_MODE))
-> -		return;
-> -
->  	h->nreply_queues = h->msix_vector > 0 ? h->msix_vector : 1;
->  	hpsa_get_max_perf_mode_cmds(h);
->  	/* Performant mode ring buffer and supporting data structures */
-> 
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+---
+Arnaldo Carvalho de Melo (2):
+      perf tools: Allocate thread map_groups's dynamically
+      perf tools: Reference count map_groups objects
+
+Jiri Olsa (3):
+      perf tests: Add thread maps lookup automated tests
+      perf tools: Share map_groups among threads of the same group
+      perf tests: Add map groups sharing with thread object test
+
+ tools/perf/Makefile.perf                 |   2 +
+ tools/perf/arch/x86/tests/dwarf-unwind.c |   2 +-
+ tools/perf/perf.h                        |   6 +++
+ tools/perf/tests/builtin-test.c          |   8 ++++
+ tools/perf/tests/mmap-thread-lookup.c    | 233 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/tests/tests.h                 |   2 +
+ tools/perf/tests/thread-mg-share.c       |  90 +++++++++++++++++++++++++++++++++++
+ tools/perf/ui/stdio/hist.c               |   2 +-
+ tools/perf/util/event.c                  |   2 +-
+ tools/perf/util/machine.c                |  11 +++++
+ tools/perf/util/map.c                    |  23 +++++++++
+ tools/perf/util/map.h                    |  12 +++++
+ tools/perf/util/thread.c                 |  52 +++++++++++++++-----
+ tools/perf/util/thread.h                 |   3 +-
+ 14 files changed, 432 insertions(+), 16 deletions(-)
+ create mode 100644 tools/perf/tests/mmap-thread-lookup.c
+ create mode 100644 tools/perf/tests/thread-mg-share.c
