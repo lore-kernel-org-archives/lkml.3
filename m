@@ -1,65 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990AbaDNRZk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 13:25:40 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:38834 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828AbaDNRZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 13:25:38 -0400
-X-IronPort-AV: E=Sophos;i="4.97,858,1389744000"; 
-   d="scan'208";a="120936562"
-Message-ID: <534C1A0E.1080307@citrix.com>
-Date: Mon, 14 Apr 2014 18:25:34 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	id S1755164AbaDNR0S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 13:26:18 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:58453 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754267AbaDNR0Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 13:26:16 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <v.maffione@gmail.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        <boris.ostrovsky@oracle.com>
-Subject: Re: [Xen-devel] [PATCH] drivers: net: xen-netfront: fix array initialization
- bug
-References: <1397296540-3007-1-git-send-email-v.maffione@gmail.com>	<20140412.165152.1877473530496221304.davem@davemloft.net>	<534BAD7C.6090107@citrix.com> <20140414.125131.1934050779129550948.davem@davemloft.net>
-In-Reply-To: <20140414.125131.1934050779129550948.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+In-Reply-To: <CAMEtUuzCBXROUE6Nf6B8+vmTaD2xOh5LjkmsVSGuwKo1gO-mNQ@mail.gmail.com>
+References: <20140414171114.GA31384@www.outflux.net>
+	<CAMEtUuzCBXROUE6Nf6B8+vmTaD2xOh5LjkmsVSGuwKo1gO-mNQ@mail.gmail.com>
+Date: Mon, 14 Apr 2014 10:26:15 -0700
+X-Google-Sender-Auth: mBFQaBPzYlsomP8YgFKWcqD01H0
+Message-ID: <CAGXu5jK6f2HHzLr9SOR3yzr8tCrDJatcT2csy+gRFpc-Lb46pQ@mail.gmail.com>
+Subject: Re: [PATCH] seccomp: fix memory leak on filter attach
+From: Kees Cook <keescook@chromium.org>
+To: James Morris <james.l.morris@oracle.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Alexei Starovoitov <ast@plumgrid.com>,
+        Masami Ichikawa <masami256@gmail.com>, Will Drewry <wad@chromium.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Paris <eparis@redhat.com>,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/04/14 17:51, David Miller wrote:
-> From: David Vrabel <david.vrabel@citrix.com>
-> Date: Mon, 14 Apr 2014 10:42:20 +0100
-> 
->> On 12/04/14 21:51, David Miller wrote:
->>> From: Vincenzo Maffione <v.maffione@gmail.com>
->>> Date: Sat, 12 Apr 2014 11:55:40 +0200
->>>
->>>> This patch fixes the initialization of an array used in the TX
->>>> datapath that was mistakenly initialized together with the
->>>> RX datapath arrays. An out of range array access could happen
->>>> when RX and TX rings had different sizes.
->>>>
->>>> Signed-off-by: Vincenzo Maffione <v.maffione@gmail.com>
->>>
->>> Good catch, applied, thanks.
+On Mon, Apr 14, 2014 at 10:17 AM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+> On Mon, Apr 14, 2014 at 10:11 AM, Kees Cook <keescook@chromium.org> wrote:
+>> This sets the correct error code when final filter memory is unavailable,
+>> and frees the raw filter no matter what.
 >>
->> Thanks.  You can queue this for net-next since the Tx and Rx rings are
->> the same constant size.
-> 
-> I was able to determine when I reviewed this patch that the size in bytes
-> of the rings are the same (PAGE_SIZE), but I couldn't ascertain whether
-> the individual ring entries in the TX ring and RX ring are the same size.
-> 
-> Are they?
+>> unreferenced object 0xffff8800d6ea4000 (size 512):
+>>   comm "sshd", pid 278, jiffies 4294898315 (age 46.653s)
+>>   hex dump (first 32 bytes):
+>>     21 00 00 00 04 00 00 00 15 00 01 00 3e 00 00 c0  !...........>...
+>>     06 00 00 00 00 00 00 00 21 00 00 00 00 00 00 00  ........!.......
+>>   backtrace:
+>>     [<ffffffff8151414e>] kmemleak_alloc+0x4e/0xb0
+>>     [<ffffffff811a3a40>] __kmalloc+0x280/0x320
+>>     [<ffffffff8110842e>] prctl_set_seccomp+0x11e/0x3b0
+>>     [<ffffffff8107bb6b>] SyS_prctl+0x3bb/0x4a0
+>>     [<ffffffff8152ef2d>] system_call_fastpath+0x1a/0x1f
+>>     [<ffffffffffffffff>] 0xffffffffffffffff
+>>
+>> Reported-by: Masami Ichikawa <masami256@gmail.com>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> Cc: stable@vger.kernel.org
+>
+> Acked-by: Alexei Starovoitov <ast@plumgrid.com>
+>
+>> ---
+>>  kernel/seccomp.c |    2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+>> index fd609bd9d6dd..2d7dcdfb7422 100644
+>> --- a/kernel/seccomp.c
+>> +++ b/kernel/seccomp.c
+>> @@ -256,6 +256,7 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
+>>                 goto free_prog;
+>>
+>>         /* Allocate a new seccomp_filter */
+>> +       ret = -ENOMEM;
+>>         filter = kzalloc(sizeof(struct seccomp_filter) +
+>>                          sizeof(struct sock_filter_int) * new_len,
+>>                          GFP_KERNEL|__GFP_NOWARN);
+>> @@ -265,6 +266,7 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
+>>         ret = sk_convert_filter(fp, fprog->len, filter->insnsi, &new_len);
+>>         if (ret)
+>>                 goto free_filter;
+>> +       kfree(fp);
+>>
+>>         atomic_set(&filter->usage, 1);
+>>         filter->len = new_len;
+>> --
+>> 1.7.9.5
+>>
+>>
+>> --
+>> Kees Cook
+>> Chrome OS Security
 
-Yes.  It's not at all obvious, but each ends up with 256 entries.
+James (or anyone), can you be sure to pull this soon? I'd like to get
+it into 3.14 stable ASAP. Under kernel memory pressure, it would be
+possible for the prctl to return 0 without having attached the seccomp
+filter.
 
-Tx entries are 12 bytes and Rx entries are 8 bytes.  The ring macros
-reserve some space in the shared page for the producer/consumer indexes
-/and/ round down the number to the next power of two.
+Thanks!
 
-David
+-Kees
 
+-- 
+Kees Cook
+Chrome OS Security
