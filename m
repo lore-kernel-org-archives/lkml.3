@@ -1,285 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754971AbaDNNtJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 09:49:09 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:46826 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754793AbaDNNtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 09:49:06 -0400
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Russell King <linux@arm.linux.org.uk>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Stephen Boyd <sboyd@codeaurora.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH] ARM: debug: qcom: make UART address selection configuration option
-Date: Mon, 14 Apr 2014 16:47:34 +0300
-Message-Id: <1397483254-3612-1-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <53458708.40702@codeaurora.org>
-References: <53458708.40702@codeaurora.org>
+	id S1755225AbaDNNtZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 09:49:25 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:39654 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755006AbaDNNtW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 09:49:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <534BE658.8050606@gmail.com>
+References: <1396967803-28868-1-git-send-email-gautam.vivek@samsung.com>
+	<1396967803-28868-2-git-send-email-gautam.vivek@samsung.com>
+	<534529B2.2020107@samsung.com>
+	<534BCC91.8090108@ti.com>
+	<CAFp+6iGxhfgZRPysMuj5nALEQBbFXnAXhtDPpbf3P42LDHqFxg@mail.gmail.com>
+	<534BDD17.60003@ti.com>
+	<534BE658.8050606@gmail.com>
+Date: Mon, 14 Apr 2014 19:19:20 +0530
+Message-ID: <CAFp+6iHhUvLhAKGPARS8RUfmO8RGcTrumvYb7QjJXbFD1nUuig@mail.gmail.com>
+Subject: Re: [PATCH V4 1/5] phy: Add new Exynos5 USB 3.0 PHY driver
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>, Tomasz Figa <t.figa@samsung.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>, Jingoo Han <jg1.han@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Hi,
 
-Separate Qualcomm low-level debugging UART to two options.
 
-DEBUG_MSM_UART is used in earlier non-multi platform arches,
-like MSM7X00A, QSD8X50 and MSM7X30.
+On Mon, Apr 14, 2014 at 7:14 PM, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+> On 14.04.2014 15:05, Kishon Vijay Abraham I wrote:
+>>
+>>
+>>
+>> On Monday 14 April 2014 05:35 PM, Vivek Gautam wrote:
+>>>
+>>> Hi Kishon,
+>>>
+>>>
+>>> On Mon, Apr 14, 2014 at 5:24 PM, Kishon Vijay Abraham I <kishon@ti.com>
+>>> wrote:
+>>>>
+>>>> Hi,
+>>>>
+>>>> On Wednesday 09 April 2014 04:36 PM, Tomasz Figa wrote:
+>>>>>
+>>>>> Hi Vivek,
+>>>>>
+>>>>> Please see my comments inline.
+>>>>>
+>>>>> On 08.04.2014 16:36, Vivek Gautam wrote:
+>>>>>>
+>>>>>> Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
+>>>>>> The new driver uses the generic PHY framework and will interact
+>>>>>> with DWC3 controller present on Exynos5 series of SoCs.
+>>>>>> Thereby, removing old phy-samsung-usb3 driver and related code
+>>>>>> used untill now which was based on usb/phy framework.
+>>>>>>
+>>>>>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>>>>>> ---
+>>>>>>    .../devicetree/bindings/phy/samsung-phy.txt        |   42 ++
+>>>>>>    drivers/phy/Kconfig                                |   11 +
+>>>>>>    drivers/phy/Makefile                               |    1 +
+>>>>>>    drivers/phy/phy-exynos5-usbdrd.c                   |  668
+>>>>>> ++++++++++++++++++++
+>>>>>>    4 files changed, 722 insertions(+)
+>>>>>>    create mode 100644 drivers/phy/phy-exynos5-usbdrd.c
+>>>>>
+>>>>>
+>>>>> [snip]
+>>>>>
+>>>>>> +    Additional clock required for Exynos5420:
+>>>>>> +    - usb30_sclk_100m: Additional special clock used for PHY
+>>>>>> operation
+>>>>>> +               depicted as 'sclk_usbphy30' in CMU of Exynos5420.
+>>>>>
+>>>>>
+>>>>> Are you sure this isn't simply a gate for the ref clock, as it can be
+>>>>> found on
+>>>>> another SoC that is not upstream yet? I don't have documentation for
+>>>>> Exynos
+>>>>> 5420 so I can't tell, but I'd like to ask you to recheck this.
+>>>>>
+>>>>>> +- samsung,syscon-phandle: phandle for syscon interface, which is used
+>>>>>> to
+>>>>>> +              control pmu registers for power isolation.
+>>>>>> +- samsung,pmu-offset: phy power control register offset to
+>>>>>> pmu-system-controller
+>>>>>> +              base.
+>>>>>> +- #phy-cells : from the generic PHY bindings, must be 1;
+>>>>>> +
+>>>>>> +For "samsung,exynos5250-usbdrd-phy" and
+>>>>>> "samsung,exynos5420-usbdrd-phy"
+>>>>>> +compatible PHYs, the second cell in the PHY specifier identifies the
+>>>>>> +PHY id, which is interpreted as follows:
+>>>>>> +  0 - UTMI+ type phy,
+>>>>>> +  1 - PIPE3 type phy,
+>>>>>> +
+>>>>>> +Example:
+>>>>>> +    usb3_phy: usbphy@12100000 {
+>>>>>> +        compatible = "samsung,exynos5250-usbdrd-phy";
+>>>>>> +        reg = <0x12100000 0x100>;
+>>>>>> +        clocks = <&clock 286>, <&clock 1>;
+>>>>>> +        clock-names = "phy", "usb3phy_refclk";
+>>>>>
+>>>>>
+>>>>> Binding description above doesn't mention "usb3phy_refclk" entry.
+>>>>>
+>>>>>> +        samsung,syscon-phandle = <&pmu_syscon>;
+>>>>>> +        samsung,pmu-offset = <0x704>;
+>>>>>> +        #phy-cells = <1>;
+>>>>>> +    };
+>>>>>
+>>>>>
+>>>>> [snip]
+>>>>>
+>>>>>> diff --git a/drivers/phy/phy-exynos5-usbdrd.c
+>>>>>> b/drivers/phy/phy-exynos5-usbdrd.c
+>>>>>> new file mode 100644
+>>>>>> index 0000000..ff54a7c
+>>>>>> --- /dev/null
+>>>>>> +++ b/drivers/phy/phy-exynos5-usbdrd.c
+>>>>>
+>>>>>
+>>>>> [snip]
+>>>>>
+>>>>>> +static int exynos5_usbdrd_phy_probe(struct platform_device *pdev)
+>>>>>> +{
+>>>>>> +    struct device *dev = &pdev->dev;
+>>>>>> +    struct device_node *node = dev->of_node;
+>>>>>> +    struct exynos5_usbdrd_phy *phy_drd;
+>>>>>> +    struct phy_provider *phy_provider;
+>>>>>> +    struct resource *res;
+>>>>>> +    const struct of_device_id *match;
+>>>>>> +    const struct exynos5_usbdrd_phy_drvdata *drv_data;
+>>>>>> +    struct regmap *reg_pmu;
+>>>>>> +    u32 pmu_offset;
+>>>>>> +    int i;
+>>>>>> +
+>>>>>> +    /*
+>>>>>> +     * Exynos systems are completely DT enabled,
+>>>>>> +     * so lets not have any platform data support for this driver.
+>>>>>> +     */
+>>>>>> +    if (!node) {
+>>>>>> +        dev_err(dev, "no device node found\n");
+>>>>>
+>>>>>
+>>>>> This error message is not very meaningful. I'd rather use something
+>>>>> like "This
+>>>>> driver can be only instantiated using Device Tree".
+>>>>
+>>>>
+>>>> how about just adding depend_on OF in Kconfig?
+>>>
+>>>
+>>> Already added a depend on 'OF'. Copying below the part of Kconfig in this
+>>> patch.
+>>
+>>
+>> Alright.. Do we need the check then? If config_OF is enabled devices will
+>> be
+>> created using device tree no?
+>
+>
+> Not necessarily. Enabling support for OF doesn't mean that it is the only
+> boot method that can be used. Legacy board files may be still available. I'm
+> not sure why someone would try to instantiate this driver from them, though.
 
-DEBUG_QCOM_UARTDM is used in multi-plafrom arches and have
-embedded data mover.
+True, we don't have a scope of instantiating this driver using old
+platform device and
+old legacy board files.
+So we don't need this check then, right ?
 
-Make DEBUG_UART_PHYS and DEBUG_UART_BASE user adjustable by
-Kconfig menu.
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
----
- arch/arm/Kconfig.debug       | 81 ++++++++++++++++++--------------------------
- arch/arm/include/debug/msm.S | 46 +++----------------------
- arch/arm/mach-msm/Kconfig    |  3 --
- 3 files changed, 38 insertions(+), 92 deletions(-)
-
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 4a2fc0bf..cdbfd8b 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -349,56 +349,39 @@ choice
- 		  Say Y here if you want kernel low-level debugging support
- 		  on MMP UART3.
-
--	config DEBUG_MSM_UART1
--		bool "Kernel low-level debugging messages via MSM UART1"
--		depends on ARCH_MSM7X00A || ARCH_MSM7X30 || ARCH_QSD8X50
--		select DEBUG_MSM_UART
-+	config DEBUG_MSM_UART
-+		bool "Kernel low-level debugging messages via MSM UART"
-+		depends on ARCH_MSM
- 		help
- 		  Say Y here if you want the debug print routines to direct
--		  their output to the first serial port on MSM devices.
-+		  their output to the serial port on MSM devices.
-
--	config DEBUG_MSM_UART2
--		bool "Kernel low-level debugging messages via MSM UART2"
--		depends on ARCH_MSM7X00A || ARCH_MSM7X30 || ARCH_QSD8X50
--		select DEBUG_MSM_UART
--		help
--		  Say Y here if you want the debug print routines to direct
--		  their output to the second serial port on MSM devices.
-+		  ARCH                DEBUG_UART_PHYS   DEBUG_UART_BASE   #
-+		  MSM7X00A, QSD8X50   0xa9a00000        0xe1000000        UART1
-+		  MSM7X00A, QSD8X50   0xa9b00000        0xe1000000        UART2
-+		  MSM7X00A, QSD8X50   0xa9c00000        0xe1000000        UART3
-
--	config DEBUG_MSM_UART3
--		bool "Kernel low-level debugging messages via MSM UART3"
--		depends on ARCH_MSM7X00A || ARCH_MSM7X30 || ARCH_QSD8X50
--		select DEBUG_MSM_UART
--		help
--		  Say Y here if you want the debug print routines to direct
--		  their output to the third serial port on MSM devices.
-+		  MSM7X30             0xaca00000        0xe1000000        UART1
-+		  MSM7X30             0xacb00000        0xe1000000        UART2
-+		  MSM7X30             0xacc00000        0xe1000000        UART3
-
--	config DEBUG_MSM8660_UART
--		bool "Kernel low-level debugging messages via MSM 8660 UART"
--		depends on ARCH_MSM8X60
--		select MSM_HAS_DEBUG_UART_HS
--		select DEBUG_MSM_UART
--		help
--		  Say Y here if you want the debug print routines to direct
--		  their output to the serial port on MSM 8660 devices.
-+		  Please adjust DEBUG_UART_PHYS and DEBUG_UART_BASE configuration
-+		  options based on your needs.
-
--	config DEBUG_MSM8960_UART
--		bool "Kernel low-level debugging messages via MSM 8960 UART"
--		depends on ARCH_MSM8960
--		select MSM_HAS_DEBUG_UART_HS
--		select DEBUG_MSM_UART
-+	config DEBUG_QCOM_UARTDM
-+		bool "Kernel low-level debugging messages via QCOM UARTDM"
-+		depends on ARCH_QCOM
- 		help
- 		  Say Y here if you want the debug print routines to direct
--		  their output to the serial port on MSM 8960 devices.
-+		  their output to the serial port on Qualcomm devices.
-
--	config DEBUG_MSM8974_UART
--		bool "Kernel low-level debugging messages via MSM 8974 UART"
--		depends on ARCH_MSM8974
--		select MSM_HAS_DEBUG_UART_HS
--		select DEBUG_MSM_UART
--		help
--		  Say Y here if you want the debug print routines to direct
--		  their output to the serial port on MSM 8974 devices.
-+		  ARCH      DEBUG_UART_PHYS   DEBUG_UART_BASE
-+		  MSM8X60   0x19c40000        0xf0040000
-+		  MSM8960   0x16440000        0xf0040000
-+		  MSM8974   0xf991e000        0xfa71e000
-+
-+		  Please adjust DEBUG_UART_PHYS and DEBUG_UART_BASE configuration
-+		  options based on your needs.
-
- 	config DEBUG_MVEBU_UART
- 		bool "Kernel low-level debugging messages via MVEBU UART (old bootloaders)"
-@@ -950,10 +933,6 @@ config DEBUG_STI_UART
- 	bool
- 	depends on ARCH_STI
-
--config DEBUG_MSM_UART
--	bool
--	depends on ARCH_MSM || ARCH_QCOM
--
- config DEBUG_LL_INCLUDE
- 	string
- 	default "debug/8250.S" if DEBUG_LL_UART_8250 || DEBUG_UART_8250
-@@ -971,7 +950,7 @@ config DEBUG_LL_INCLUDE
- 				 DEBUG_IMX53_UART ||\
- 				 DEBUG_IMX6Q_UART || \
- 				 DEBUG_IMX6SL_UART
--	default "debug/msm.S" if DEBUG_MSM_UART
-+	default "debug/msm.S" if DEBUG_MSM_UART || DEBUG_QCOM_UARTDM
- 	default "debug/omap2plus.S" if DEBUG_OMAP2PLUS_UART
- 	default "debug/sirf.S" if DEBUG_SIRFPRIMA2_UART1 || DEBUG_SIRFMARCO_UART1
- 	default "debug/sti.S" if DEBUG_STI_UART
-@@ -1035,6 +1014,7 @@ config DEBUG_UART_PHYS
- 	default 0x80074000 if DEBUG_IMX28_UART
- 	default 0x808c0000 if ARCH_EP93XX
- 	default 0x90020000 if DEBUG_NSPIRE_CLASSIC_UART || DEBUG_NSPIRE_CX_UART
-+	default 0xa9a00000 if DEBUG_MSM_UART
- 	default 0xb0090000 if DEBUG_VEXPRESS_UART0_CRX
- 	default 0xc0013000 if DEBUG_U300_UART
- 	default 0xc8000000 if ARCH_IXP4XX && !CPU_BIG_ENDIAN
-@@ -1050,6 +1030,7 @@ config DEBUG_UART_PHYS
- 				ARCH_ORION5X
- 	default 0xf7fc9000 if DEBUG_BERLIN_UART
- 	default 0xf8b00000 if DEBUG_HI3716_UART
-+	default 0xf991e000 if DEBUG_QCOM_UARTDM
- 	default 0xfcb00000 if DEBUG_HI3620_UART
- 	default 0xfe800000 if ARCH_IOP32X
- 	default 0xffc02000 if DEBUG_SOCFPGA_UART
-@@ -1058,11 +1039,13 @@ config DEBUG_UART_PHYS
- 	default 0xfffff700 if ARCH_IOP33X
- 	depends on DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
- 		DEBUG_LL_UART_EFM32 || \
--		DEBUG_UART_8250 || DEBUG_UART_PL01X
-+		DEBUG_UART_8250 || DEBUG_UART_PL01X || \
-+		DEBUG_MSM_UART || DEBUG_QCOM_UARTDM
-
- config DEBUG_UART_VIRT
- 	hex "Virtual base address of debug UART"
- 	default 0xe0010fe0 if ARCH_RPC
-+	default 0xe1000000 if DEBUG_MSM_UART
- 	default 0xf0000be0 if ARCH_EBSA110
- 	default 0xf0009000 if DEBUG_CNS3XXX
- 	default 0xf01fb000 if DEBUG_NOMADIK_UART
-@@ -1078,6 +1061,7 @@ config DEBUG_UART_VIRT
- 	default 0xf7fc9000 if DEBUG_BERLIN_UART
- 	default 0xf8009000 if DEBUG_VEXPRESS_UART0_CA9
- 	default 0xf8090000 if DEBUG_VEXPRESS_UART0_RS1
-+	default 0xfa71e000 if DEBUG_QCOM_UARTDM
- 	default 0xfb009000 if DEBUG_REALVIEW_STD_PORT
- 	default 0xfb10c000 if DEBUG_REALVIEW_PB1176_PORT
- 	default 0xfd000000 if ARCH_SPEAR3XX || ARCH_SPEAR6XX
-@@ -1116,7 +1100,8 @@ config DEBUG_UART_VIRT
- 	default 0xff003000 if DEBUG_U300_UART
- 	default DEBUG_UART_PHYS if !MMU
- 	depends on DEBUG_LL_UART_8250 || DEBUG_LL_UART_PL01X || \
--		DEBUG_UART_8250 || DEBUG_UART_PL01X
-+		DEBUG_UART_8250 || DEBUG_UART_PL01X || \
-+		DEBUG_MSM_UART || DEBUG_QCOM_UARTDM
-
- config DEBUG_UART_8250_SHIFT
- 	int "Register offset shift for the 8250 debug UART"
-diff --git a/arch/arm/include/debug/msm.S b/arch/arm/include/debug/msm.S
-index 9d653d4..9ef5761 100644
---- a/arch/arm/include/debug/msm.S
-+++ b/arch/arm/include/debug/msm.S
-@@ -15,51 +15,15 @@
-  *
-  */
-
--#if defined(CONFIG_ARCH_MSM7X00A) || defined(CONFIG_ARCH_QSD8X50)
--#define MSM_UART1_PHYS        0xA9A00000
--#define MSM_UART2_PHYS        0xA9B00000
--#define MSM_UART3_PHYS        0xA9C00000
--#elif defined(CONFIG_ARCH_MSM7X30)
--#define MSM_UART1_PHYS        0xACA00000
--#define MSM_UART2_PHYS        0xACB00000
--#define MSM_UART3_PHYS        0xACC00000
--#endif
--
--#if defined(CONFIG_DEBUG_MSM_UART1)
--#define MSM_DEBUG_UART_BASE	0xE1000000
--#define MSM_DEBUG_UART_PHYS	MSM_UART1_PHYS
--#elif defined(CONFIG_DEBUG_MSM_UART2)
--#define MSM_DEBUG_UART_BASE	0xE1000000
--#define MSM_DEBUG_UART_PHYS	MSM_UART2_PHYS
--#elif defined(CONFIG_DEBUG_MSM_UART3)
--#define MSM_DEBUG_UART_BASE	0xE1000000
--#define MSM_DEBUG_UART_PHYS	MSM_UART3_PHYS
--#endif
--
--#ifdef CONFIG_DEBUG_MSM8660_UART
--#define MSM_DEBUG_UART_BASE	0xF0040000
--#define MSM_DEBUG_UART_PHYS	0x19C40000
--#endif
--
--#ifdef CONFIG_DEBUG_MSM8960_UART
--#define MSM_DEBUG_UART_BASE	0xF0040000
--#define MSM_DEBUG_UART_PHYS	0x16440000
--#endif
--
--#ifdef CONFIG_DEBUG_MSM8974_UART
--#define MSM_DEBUG_UART_BASE	0xFA71E000
--#define MSM_DEBUG_UART_PHYS	0xF991E000
--#endif
--
- 	.macro	addruart, rp, rv, tmp
--#ifdef MSM_DEBUG_UART_PHYS
--	ldr	\rp, =MSM_DEBUG_UART_PHYS
--	ldr	\rv, =MSM_DEBUG_UART_BASE
-+#ifdef CONFIG_DEBUG_UART_PHYS
-+	ldr	\rp, =CONFIG_DEBUG_UART_PHYS
-+	ldr	\rv, =CONFIG_DEBUG_UART_VIRT
- #endif
- 	.endm
-
- 	.macro	senduart, rd, rx
--#ifdef CONFIG_MSM_HAS_DEBUG_UART_HS
-+#ifdef CONFIG_DEBUG_QCOM_UARTDM
- 	@ Write the 1 character to UARTDM_TF
- 	str	\rd, [\rx, #0x70]
- #else
-@@ -68,7 +32,7 @@
- 	.endm
-
- 	.macro	waituart, rd, rx
--#ifdef CONFIG_MSM_HAS_DEBUG_UART_HS
-+#ifdef CONFIG_DEBUG_QCOM_UARTDM
- 	@ check for TX_EMT in UARTDM_SR
- 	ldr	\rd, [\rx, #0x08]
- 	tst	\rd, #0x08
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index a7f959e..9b26976 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -42,9 +42,6 @@ config ARCH_QSD8X50
-
- endchoice
-
--config MSM_HAS_DEBUG_UART_HS
--	bool
--
- config MSM_SOC_REV_A
- 	bool
-
---
-1.8.3.2
-
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
