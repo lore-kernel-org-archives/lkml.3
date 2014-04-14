@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804AbaDNPUz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 11:20:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25854 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751589AbaDNPUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 11:20:51 -0400
-Date: Mon, 14 Apr 2014 17:20:25 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, David Woodhouse <dwmw2@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Richard Weinberger <richard@nod.at>,
-        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND 11/11] signals: change wait_for_helper() to use
-	kernel_sigaction()
-Message-ID: <20140414152025.GA22032@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140414151929.GA21470@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755094AbaDNPVv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 11:21:51 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34240 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754435AbaDNPVs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 11:21:48 -0400
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: devel@driverdev.osuosl.org, Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH 6/7] imx-drm: imx-dp: When disabling the DP foreground channel, wait until the DP background channel is finished before disabling the IDMAC channel
+Date: Mon, 14 Apr 2014 17:21:34 +0200
+Message-Id: <1397488895-17930-7-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1397488895-17930-1-git-send-email-p.zabel@pengutronix.de>
+References: <1397488895-17930-1-git-send-email-p.zabel@pengutronix.de>
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have kernel_sigaction() we can change wait_for_helper()
-to use it and cleanups the code a bit.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 ---
- kernel/kmod.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+ drivers/staging/imx-drm/ipu-v3/ipu-dp.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/kernel/kmod.c b/kernel/kmod.c
-index 6b375af..c18c891 100644
---- a/kernel/kmod.c
-+++ b/kernel/kmod.c
-@@ -285,10 +285,7 @@ static int wait_for_helper(void *data)
- 	pid_t pid;
+diff --git a/drivers/staging/imx-drm/ipu-v3/ipu-dp.c b/drivers/staging/imx-drm/ipu-v3/ipu-dp.c
+index 6980fa1..d90f82a 100644
+--- a/drivers/staging/imx-drm/ipu-v3/ipu-dp.c
++++ b/drivers/staging/imx-drm/ipu-v3/ipu-dp.c
+@@ -277,6 +277,9 @@ void ipu_dp_disable_channel(struct ipu_dp *dp)
+ 	writel(0, flow->base + DP_FG_POS);
+ 	ipu_srm_dp_sync_update(priv->ipu);
  
- 	/* If SIGCLD is ignored sys_wait4 won't populate the status. */
--	spin_lock_irq(&current->sighand->siglock);
--	current->sighand->action[SIGCHLD-1].sa.sa_handler = SIG_DFL;
--	spin_unlock_irq(&current->sighand->siglock);
--
-+	kernel_sigaction(SIGCHLD, SIG_DFL);
- 	pid = kernel_thread(____call_usermodehelper, sub_info, SIGCHLD);
- 	if (pid < 0) {
- 		sub_info->retval = pid;
++	if (ipu_idmac_channel_busy(priv->ipu, IPUV3_CHANNEL_MEM_BG_SYNC))
++		ipu_wait_interrupt(priv->ipu, IPU_IRQ_DP_SF_END, 50);
++
+ 	mutex_unlock(&priv->mutex);
+ }
+ EXPORT_SYMBOL_GPL(ipu_dp_disable_channel);
 -- 
-1.5.5.1
+1.9.1
 
