@@ -1,89 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411AbaDNMNW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 08:13:22 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35979 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753367AbaDNMNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 08:13:19 -0400
-Message-ID: <534BD0B5.5000004@ti.com>
-Date: Mon, 14 Apr 2014 17:42:37 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754151AbaDNMY5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 08:24:57 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:37362 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341AbaDNMY4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 08:24:56 -0400
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, Vinod Koul <vinod.koul@intel.com>
-CC: <dan.j.williams@intel.com>, <dmaengine@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <joelf@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <mporter@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH v2 05/14] arm: common: edma: Select event queue 1 as default
- when booted with DT
-References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com> <1396357575-30585-6-git-send-email-peter.ujfalusi@ti.com> <5347A4FD.1030803@ti.com> <5347ACDE.7040407@ti.com> <5347AE49.5020109@ti.com> <5347B7F8.2000508@ti.com> <20140411094217.GA32284@intel.com> <5347D2CC.4030407@ti.com> <20140411113154.GB32284@intel.com> <5347DEDA.2060008@ti.com> <20140411124641.GC32284@intel.com> <534BCCD3.9060805@ti.com>
-In-Reply-To: <534BCCD3.9060805@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <534B6EA5.5090302@hitachi.com>
+References: <20140406201628.GA507@redhat.com> <20140410141806.GA23997@redhat.com>
+ <5346AB07.4090909@redhat.com> <201404101902.38639.vda.linux@googlemail.com> <534B6EA5.5090302@hitachi.com>
+From: Denys Vlasenko <vda.linux@googlemail.com>
+Date: Mon, 14 Apr 2014 14:24:35 +0200
+Message-ID: <CAK1hOcNM-kDF3QHWLJCAuVi0xM0Cf3OUixowyrEp_JN=L6yS2w@mail.gmail.com>
+Subject: Re: Re: [RFC PATCH 4/6] uprobes/x86: Emulate rip-relative call's
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 14 April 2014 05:26 PM, Peter Ujfalusi wrote:
-> Hi Vinod,
-> 
-> On 04/11/2014 03:46 PM, Vinod Koul wrote:
->> I think the number shouldn't be viewed in absolute terms. If we decide that (lets
->> say) 0-7, then any controller should map 0 to lowest and 7 to highest.
->>
->> For your case you can do this and then intermediate numbers would be medium
->> priority. Such a system might work well...
->>
->> Also how would a client driver know which priority to use? Would it come from
->> DT?
-> 
-> I think DT would be the best place.
+On Mon, Apr 14, 2014 at 7:14 AM, Masami Hiramatsu
+<masami.hiramatsu.pt@hitachi.com> wrote:
+>> You can check whether insn had any prefix by checking
+>> insn->prefixes->nbytes != 0...
+>
+> No, since there are other prefixes (and it may be meaningless)
+> you should find 0x66 in insn->prefixes->bytes[].
 
-In the strict sense of what DT is supposed to represent, DT is not the
-best place for this. Priority is usecase driven rather that hardware
-description driven. So on a reasonably less loaded system, I am sure you
-could run audio even with a lower priority DMA queue.
-
-Moreover, IMHO, encoding it in DT now will make it an ABI. Without a
-wide variety of example use cases, I think it is too early to commit to
-an ABI.
-
-> Not sure if we should set the range for this either. What I was thinking is to
-> add an optional new property to be set by the client nodes, using DMA:
-> 
-> mcasp0: mcasp@48038000 {
-> 	compatible = "ti,am33xx-mcasp-audio";
-> 	...
-> 	dmas =	<&edma 8>,
-> 		<&edma 9>;
-> 	dma-names = "tx", "rx";
-> 	dma-priorities = <2>, <2>;
-> };
-> 
-> We could agree that lower number means lower priority, higher is - well -
-> higher priority.
-> If the dma-priority is missing we should assume lowest priority (0).
-> The highest priority depends on the platform. For eDMA3 in AM335x it is three
-> level. For designware controller you might have the range 0-8 as valid.
-> 
-> The question is how to get this information into use?
-> We can take the priority number in the core when the dma channel is requested
-> and add field to "struct dma_chan" in order to store it and the DMA drivers
-> could have access to it.
-> In this way we only need to update the nodes which needs non default priority
-> for DMA.
-> 
-> What do you think?
-
-If we are using dma_slave_config, I think it will be easiest to define
-two levels of priority (HIGH and LOW, as thats all we see a need for
-right now), and have the audio driver select the HIGH priority. If
-nothing is set, EDMA can default to LOW.
-
-Thanks,
-Sekhar
-
+What "no"? Is my statement not true? Please reread it.
+I'm not talking about checking for 0x66 prefix.
+Here, I am talking about checking that insn has *any* prefix.
