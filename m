@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800AbaDNBqI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 21:46:08 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:31902 "EHLO
+	id S1753925AbaDNBqW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 21:46:22 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:32018 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784AbaDNBqF (ORCPT
+	with ESMTP id S1753240AbaDNBqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 21:46:05 -0400
-X-AuditID: cbfee68d-b7fcd6d00000315b-0a-534b3dd83fe5
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kyungmin.park@samsung.com, Tomasz Figa <t.figa@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv2] pinctrl: exynos: Add driver data for Exynos3250
-Date: Mon, 14 Apr 2014 10:45:47 +0900
-Message-id: <1397439947-31592-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsWyRsSkSPemrXewwdmtLBbXvzxntehdcJXN
-	4mzTG3aLKX+WM1lsenyN1eLyrjlsFjPO72OyWD/jNYvFsRlLGB04Pe5c28PmsXlJvUffllWM
-	Hp83yQWwRHHZpKTmZJalFunbJXBl9D3pZi+YoVGxtX8dYwPjIaUuRg4OCQETicYlsV2MnECm
-	mMSFe+vZuhi5OIQEljJKfNm7iQUiYSLx4/AEJojEdEaJS/1PWCGcJiaJp9P3MYJUsQloSex/
-	cYMNxBYRUJDY3PuMFcRmFtjAJHHjoz6ILSzgJLF7/hk2kM0sAqoS3/sNQMK8Aq4SXfceQS2T
-	k/iw5xE7hN3NLrGpmRPEZhEQkPg2+RALxNGyEpsOMEOUSEocXHGDZQKj4AJGhlWMoqkFyQXF
-	SelFhnrFibnFpXnpesn5uZsYgaF7+t+z3h2Mtw9YH2JMBho3kVlKNDkfGPp5JfGGxmZGFqYm
-	psZG5pZmpAkrifMmPUwKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cCY+kiq7IHZm3WCsrb7
-	H33J8cx8oJzfWMGieutGk13fkb3xPwJd7yYJ/Vji1nimNenPsu6afQxHlnj8O5h/o3nVZZut
-	yzI1c4Lfi2rN1F9fe6bsQIx6fOfyu82Llz+o/Ka69sdbo/8rppQVCKmfa2gtvrTaODpTIbPk
-	yWuPzQH76os/NO8+MctYiaU4I9FQi7moOBEATmk3QnMCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrPIsWRmVeSWpSXmKPExsVy+t9jQd0btt7BBj//mFhc//Kc1aJ3wVU2
-	i7NNb9gtpvxZzmSx6fE1VovLu+awWcw4v4/JYv2M1ywWx2YsYXTg9LhzbQ+bx+Yl9R59W1Yx
-	enzeJBfAEtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6Dr
-	lpkDdIuSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCGMaPvSTd7wQyNiq39
-	6xgbGA8pdTFyckgImEj8ODyBCcIWk7hwbz1bFyMXh5DAdEaJS/1PWCGcJiaJp9P3MYJUsQlo
-	Sex/cYMNxBYRUJDY3PuMFcRmFtjAJHHjoz6ILSzgJLF7/hmgGg4OFgFVie/9BiBhXgFXia57
-	j1gglslJfNjziH0CI/cCRoZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMHR8Ux6B+OqBotD
-	jAIcjEo8vAnbPYOFWBPLiitzDzFKcDArifBuy/AKFuJNSaysSi3Kjy8qzUktPsSYDLR8IrOU
-	aHI+MHLzSuINjU3MjCyNzA0tjIzNSRNWEuc92GodKCSQnliSmp2aWpBaBLOFiYNTqoGRY+GO
-	dQ3LAup8hFn7z077Wv/uylUJ6zcHpWy29CREPD106MSd7Z/7l8YtlPzwNYhrVbTslAlLiuTk
-	pYoqXoetu85l/zRl80rxtE1GfwW6v1qGHt35fZ7Adq6EqFcPGzon/VfIzN1ac97v76McpffW
-	icWPX0p+u2Slenkm/zbxZXNrdgX+uxCSpcRSnJFoqMVcVJwIAPSEDeLSAgAA
+	Sun, 13 Apr 2014 21:46:17 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee68e-b7f566d000002344-7a-534b3de64bb1
+Content-transfer-encoding: 8BIT
+Message-id: <1397439855.24638.24.camel@kjgkr>
+Subject: Re: [PATCH 0/7] f2fs: some fix and cleanup about flush_merge
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Mon, 14 Apr 2014 10:44:15 +0900
+In-reply-to: <534B374C.8030009@cn.fujitsu.com>
+References: <5347BAA5.6070104@cn.fujitsu.com> <534B374C.8030009@cn.fujitsu.com>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t8zI91ntt7BBs1brCyetx9gtri0yN1i
+	z96TLBaXd81hc2Dx+H9wErPH7gWfmTw+b5ILYI7isklJzcksSy3St0vgyvg7v5214BF3xcR7
+	J5kaGOdydjFyckgImEjMeLGYFcIWk7hwbz1bFyMXh5DAMkaJvXNuscAV7VnACJFYxCixvucO
+	O0iCV0BQ4sfke0BFHBzMAvISRy5lg4SZBdQlJs1bxAxR/4pR4tfvyUwQ9boSmy+vZwaxhQVc
+	JdY/aWAF6WUT0JbYvN8AJCwkoCjxdv9dsINEBNQknr27xAQyh1mgm1Hi7PpXYHtZBFQlpnx/
+	wwhicwroSez8OJENotlf4nvLXLBmfgFRicMLtzNDPKAksbu9kx1kkITAOXaJfVP+MkEMEpD4
+	NvkQ2AMSArISmw5A1UtKHFxxg2UCo8QsJG/OQnhzFpI3FzAyr2IUTS1ILihOSi8y0itOzC0u
+	zUvXS87P3cQIibi+HYw3D1gfYkwG2jiRWUo0OR8YsXkl8YbGZkYWpiamxkbmlmakCSuJ8y56
+	mBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgZEhcqXi2+NiXLlbNi3PiTpTwWe8TOqsIf+H
+	7t2ZS/+8r9J2XJV1+IDit6fNxsW+3ZUt7NnOM2WFViyQFVBoWR35S3Gak8syqQ5pxsnW208l
+	7JzwK+Pm8b4Xet/W32lwWd1rnvjyrYfxmUcbd645megZZFl52Z/P7U+5R6OxVoeLZo7n9IVn
+	JJRYijMSDbWYi4oTAWsrBFDOAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBKsWRmVeSWpSXmKPExsVy+t9jAd1ntt7BBifPmVk8bz/AbHFpkbvF
+	nr0nWSwu75rD5sDi8f/gJGaP3Qs+M3l83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
+	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
+	SBBcj5EBGkhYx5jxd347a8Ej7oqJ904yNTDO5exi5OSQEDCRmLFnASOELSZx4d56ti5GLg4h
+	gUWMEut77rCDJHgFBCV+TL7H0sXIwcEsIC9x5FI2SJhZQF1i0rxFzBD1rxglfv2ezARRryux
+	+fJ6ZhBbWMBVYv2TBlaQXjYBbYnN+w1AwkICihJv999lBbFFBNQknr27xAQyh1mgm1Hi7PpX
+	YHtZBFQlpnx/A3Ycp4CexM6PE9kgmv0lvrfMBWvmFxCVOLxwOzPEA0oSu9s72ScwCs1CcvYs
+	hLNnITl7ASPzKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgeH4mvYNxVYPFIUYBDkYlHt6E
+	7Z7BQqyJZcWVuYcYJTiYlUR4t2V4BQvxpiRWVqUW5ccXleakFh9iTAY6fCKzlGhyPjDV5JXE
+	GxqbmBlZGplZGJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMHp1QDY3gq+3Wpq/8mMbV9
+	/X/Kqfv1ynWXrm/ffmbt+Zl9tlaC0+9yfe6Y15JbMWUa79UpTisOxJrIvFMuOrXu2vSNl1bE
+	2omvfaXfs7+4XSPi96X5rTuiSlMFn98LaTxXvZDzVGnY6R9fLnho/eg6LndDmT9Y9OLu+Gt6
+	r5mqnrhN5Xn35M9hyX+H73EosRRnJBpqMRcVJwIAk97wbSsDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -50,132 +56,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tomasz Figa <t.figa@samsung.com>
+Hi Gu,
 
-This patch adds driver data (bank list and EINT layout) for Exynos3250
-to pinctrl-exynos driver. Exynos3250 includes 158 multi-functional input/output
-ports. There are 23 general port groups.
+I just started to review the patches and merge them individually though.
+Since I've been internally doing in my local tree, so that should be no
+problem. I'll roll back to the latest point.
+Anyway, thank you for your work. :)
 
-Changes from v1:
-- Add signed-off of sender
-- Post only separated patch for pinctrl from following patchset(v1)
-  : https://lkml.org/lkml/2014/4/10/286
+2014-04-14 (월), 09:18 +0800, Gu Zheng:
+> Hi All,
+> There seems to be a mistake in "[PATCH 2/7]f2fs: remove the unuseful "issue_tail" list",
+> and the whole patchset needs to be reworked. So please ignore this one.
+> Sorry for the noise.
+> 
+> Regards,
+> Gu
+> On 04/11/2014 05:49 PM, Gu Zheng wrote:
+> 
+> > Gu Zheng (7):
+> >   f2fs: put the bio when issue_flush completed
+> >   f2fs: remove the unuseful "issue_tail" list
+> >   f2fs: use __GFP_ZERO to avoid appending set-NULL
+> >   f2fs: enable flush_merge only in f2fs is not read-only
+> >   f2fs: add the flush_merge handle in the remount flow
+> >   f2fs: introduce struct flush_cmd_control to wrap the flush_merge
+> >     fields
+> >   f2fs: introduce help function {create,destroy}_flush_cmd_control
+> > 
+> >  fs/f2fs/f2fs.h    |   17 ++++++---
+> >  fs/f2fs/segment.c |  102 +++++++++++++++++++++++++++++++++++-----------------
+> >  fs/f2fs/super.c   |   32 ++++++++++++++--
+> >  3 files changed, 107 insertions(+), 44 deletions(-)
+> > 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Cc: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Signed-off-by: Tomasz Figa <t.figa@samsung.com>
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/pinctrl/pinctrl-exynos.c  | 67 +++++++++++++++++++++++++++++++++++++++
- drivers/pinctrl/pinctrl-samsung.c |  2 ++
- drivers/pinctrl/pinctrl-samsung.h |  1 +
- 3 files changed, 70 insertions(+)
-
-diff --git a/drivers/pinctrl/pinctrl-exynos.c b/drivers/pinctrl/pinctrl-exynos.c
-index 07c8130..9609c23 100644
---- a/drivers/pinctrl/pinctrl-exynos.c
-+++ b/drivers/pinctrl/pinctrl-exynos.c
-@@ -718,6 +718,73 @@ struct samsung_pin_ctrl s5pv210_pin_ctrl[] = {
- 	},
- };
- 
-+/* pin banks of exynos3250 pin-controller 0 */
-+static struct samsung_pin_bank exynos3250_pin_banks0[] = {
-+	EXYNOS_PIN_BANK_EINTG(8, 0x000, "gpa0", 0x00),
-+	EXYNOS_PIN_BANK_EINTG(6, 0x020, "gpa1", 0x04),
-+	EXYNOS_PIN_BANK_EINTG(8, 0x040, "gpb",  0x08),
-+	EXYNOS_PIN_BANK_EINTG(5, 0x060, "gpc0", 0x0c),
-+	EXYNOS_PIN_BANK_EINTG(5, 0x080, "gpc1", 0x10),
-+	EXYNOS_PIN_BANK_EINTG(4, 0x0a0, "gpd0", 0x14),
-+	EXYNOS_PIN_BANK_EINTG(4, 0x0c0, "gpd1", 0x18),
-+};
-+
-+/* pin banks of exynos3250 pin-controller 1 */
-+static struct samsung_pin_bank exynos3250_pin_banks1[] = {
-+	EXYNOS_PIN_BANK_EINTN(8, 0x120, "gpe0"),
-+	EXYNOS_PIN_BANK_EINTN(8, 0x140, "gpe1"),
-+	EXYNOS_PIN_BANK_EINTN(3, 0x180, "gpe2"),
-+	EXYNOS_PIN_BANK_EINTG(8, 0x040, "gpk0", 0x08),
-+	EXYNOS_PIN_BANK_EINTG(7, 0x060, "gpk1", 0x0c),
-+	EXYNOS_PIN_BANK_EINTG(7, 0x080, "gpk2", 0x10),
-+	EXYNOS_PIN_BANK_EINTG(4, 0x0c0, "gpl0", 0x18),
-+	EXYNOS_PIN_BANK_EINTG(8, 0x260, "gpm0", 0x24),
-+	EXYNOS_PIN_BANK_EINTG(7, 0x280, "gpm1", 0x28),
-+	EXYNOS_PIN_BANK_EINTG(5, 0x2a0, "gpm2", 0x2c),
-+	EXYNOS_PIN_BANK_EINTG(8, 0x2c0, "gpm3", 0x30),
-+	EXYNOS_PIN_BANK_EINTG(8, 0x2e0, "gpm4", 0x34),
-+	EXYNOS_PIN_BANK_EINTW(8, 0xc00, "gpx0", 0x00),
-+	EXYNOS_PIN_BANK_EINTW(8, 0xc20, "gpx1", 0x04),
-+	EXYNOS_PIN_BANK_EINTW(8, 0xc40, "gpx2", 0x08),
-+	EXYNOS_PIN_BANK_EINTW(8, 0xc60, "gpx3", 0x0c),
-+};
-+
-+/*
-+ * Samsung pinctrl driver data for Exynos3250 SoC. Exynos3250 SoC includes
-+ * two gpio/pin-mux/pinconfig controllers.
-+ */
-+struct samsung_pin_ctrl exynos3250_pin_ctrl[] = {
-+	{
-+		/* pin-controller instance 0 data */
-+		.pin_banks	= exynos3250_pin_banks0,
-+		.nr_banks	= ARRAY_SIZE(exynos3250_pin_banks0),
-+		.geint_con	= EXYNOS_GPIO_ECON_OFFSET,
-+		.geint_mask	= EXYNOS_GPIO_EMASK_OFFSET,
-+		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
-+		.svc		= EXYNOS_SVC_OFFSET,
-+		.eint_gpio_init = exynos_eint_gpio_init,
-+		.suspend	= exynos_pinctrl_suspend,
-+		.resume		= exynos_pinctrl_resume,
-+		.label		= "exynos3250-gpio-ctrl0",
-+	}, {
-+		/* pin-controller instance 1 data */
-+		.pin_banks	= exynos3250_pin_banks1,
-+		.nr_banks	= ARRAY_SIZE(exynos3250_pin_banks1),
-+		.geint_con	= EXYNOS_GPIO_ECON_OFFSET,
-+		.geint_mask	= EXYNOS_GPIO_EMASK_OFFSET,
-+		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
-+		.weint_con	= EXYNOS_WKUP_ECON_OFFSET,
-+		.weint_mask	= EXYNOS_WKUP_EMASK_OFFSET,
-+		.weint_pend	= EXYNOS_WKUP_EPEND_OFFSET,
-+		.svc		= EXYNOS_SVC_OFFSET,
-+		.eint_gpio_init = exynos_eint_gpio_init,
-+		.eint_wkup_init = exynos_eint_wkup_init,
-+		.suspend	= exynos_pinctrl_suspend,
-+		.resume		= exynos_pinctrl_resume,
-+		.label		= "exynos3250-gpio-ctrl1",
-+	},
-+};
-+
- /* pin banks of exynos4210 pin-controller 0 */
- static struct samsung_pin_bank exynos4210_pin_banks0[] = {
- 	EXYNOS_PIN_BANK_EINTG(8, 0x000, "gpa0", 0x00),
-diff --git a/drivers/pinctrl/pinctrl-samsung.c b/drivers/pinctrl/pinctrl-samsung.c
-index 0324d4c..3e61d0f 100644
---- a/drivers/pinctrl/pinctrl-samsung.c
-+++ b/drivers/pinctrl/pinctrl-samsung.c
-@@ -1114,6 +1114,8 @@ static struct syscore_ops samsung_pinctrl_syscore_ops = {
- 
- static const struct of_device_id samsung_pinctrl_dt_match[] = {
- #ifdef CONFIG_PINCTRL_EXYNOS
-+	{ .compatible = "samsung,exynos3250-pinctrl",
-+		.data = (void *)exynos3250_pin_ctrl },
- 	{ .compatible = "samsung,exynos4210-pinctrl",
- 		.data = (void *)exynos4210_pin_ctrl },
- 	{ .compatible = "samsung,exynos4x12-pinctrl",
-diff --git a/drivers/pinctrl/pinctrl-samsung.h b/drivers/pinctrl/pinctrl-samsung.h
-index bab9c21..b3e41fa 100644
---- a/drivers/pinctrl/pinctrl-samsung.h
-+++ b/drivers/pinctrl/pinctrl-samsung.h
-@@ -251,6 +251,7 @@ struct samsung_pmx_func {
- };
- 
- /* list of all exported SoC specific data */
-+extern struct samsung_pin_ctrl exynos3250_pin_ctrl[];
- extern struct samsung_pin_ctrl exynos4210_pin_ctrl[];
- extern struct samsung_pin_ctrl exynos4x12_pin_ctrl[];
- extern struct samsung_pin_ctrl exynos5250_pin_ctrl[];
 -- 
-1.8.0
+Jaegeuk Kim
+Samsung
 
