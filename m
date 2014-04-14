@@ -1,108 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849AbaDNQ1Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:27:24 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42600 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755804AbaDNQ1T (ORCPT
+	id S1755358AbaDNQ1d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:27:33 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:38343 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753360AbaDNQ12 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:27:19 -0400
-Date: Mon, 14 Apr 2014 12:27:18 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: stefani@seibold.net
-cc: linux-usb <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>, <sarah.a.sharp@linux.intel.com>,
-        <andreas.brief@rohde-schwarz.com>
-Subject: Re: Missing USB XHCI and EHCI reset for kexec
-In-Reply-To: <20140414172520.Horde.a0pUS344KcjNMpOsLcnEXQ6@webmail.your-server.de>
-Message-ID: <Pine.LNX.4.44L0.1404141215240.874-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 14 Apr 2014 12:27:28 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: tglx@linutronix.de
+Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, Arvind.Chauhan@arm.com,
+        linaro-networking@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 29/38] tick-sched: remove wrapper around __tick_nohz_task_switch()
+Date: Mon, 14 Apr 2014 21:53:51 +0530
+Message-Id: <b38dda39bf6cd18df5fab86f7c7cc86a6979786f.1397492345.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1397492345.git.viresh.kumar@linaro.org>
+References: <cover.1397492345.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1397492345.git.viresh.kumar@linaro.org>
+References: <cover.1397492345.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Apr 2014 stefani@seibold.net wrote:
+__tick_nohz_task_switch() was called only from tick_nohz_task_switch() and there
+is nothing much in tick_nohz_task_switch() as well. IOW, we don't need
+unnecessary wrapper over __tick_nohz_task_switch() to be there. Merge all code
+from __tick_nohz_task_switch() into tick_nohz_task_switch() and move it to
+tick-sched.c.
 
-> Zitat von Alan Stern <stern@rowland.harvard.edu>:
-> 
-> 
-> >> <6>[  167.936921] usb 2-2.1: new full-speed USB device number 3  
-> >> using ohci-pci
-> >> <6>[  168.067890] usb 2-2.1: New USB device found, idVendor=076b,
-> >> idProduct=a021
-> >> <6>[  168.074871] usb 2-2.1: New USB device strings: Mfr=1, Product=2,
-> >> SerialNumber=0
-> >> <6>[  168.082226] usb 2-2.1: Product: Smart Card Reader
-> >> <6>[  168.086963] usb 2-2.1: Manufacturer: USB
-> >> <6>[  168.172893] usb 2-2.2: new low-speed USB device number 4  
-> >> using ohci-pci
-> >> <6>[  168.300839] usb 2-2.2: New USB device found, idVendor=0aad,
-> >> idProduct=0024
-> >> <6>[  168.307823] usb 2-2.2: New USB device strings: Mfr=1, Product=2,
-> >> SerialNumber=0
-> >> <6>[  168.315180] usb 2-2.2: Product: FrontPanel USB Keyboard
-> >> <6>[  168.320436] usb 2-2.2: Manufacturer: Rohde&Schwarz
-> >> <6>[  168.337895] input: Rohde&Schwarz FrontPanel USB Keyboard as
-> >> /devices/pci0000:00/0000:00:17.0/usb2/2-2/2-2.2/2-2.2:1.0/input/input0
-> >> <6>[  168.360988] input: Rohde&Schwarz FrontPanel USB Keyboard as
-> >> /devices/pci0000:00/0000:00:17.0/usb2/2-2/2-2.2/2-2.2:1.1/input/input1
-> >
-> > Since some devices work and some don't, maybe part of the problem lies
-> > in the particular devices.
-> >
-> 
-> The problem lies on the "Bus 001 Device 002: ID 0424:2514 Standard  
-> Microsystems Corp. USB 2.0 Hub", which hangs for arround 162 seconds  
-> after a kexec.
-> 
-> The "Bus 002 Device 003: ID 076b:a021 OmniKey AG CCID Smart Card  
-> Reader" and "Bus 002 Device 004: ID 0aad:0024 Rohde & Schwarz GmbH &  
-> Co. KG" are attached to this Hub.
+This also moves check for tick_nohz_tick_stopped() outside of irq_save()
+context.
 
-Actually, it looks like they are plugged into the Texas Instruments
-hub, not the Standard Microsystems hub (because they are on bus 2, not
-bus 1).  Did you rearrange the USB cables?
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ include/linux/tick.h     | 11 ++---------
+ kernel/time/tick-sched.c |  7 +++++--
+ 2 files changed, 7 insertions(+), 11 deletions(-)
 
-> An other PowerPC device which is nearly eactly the same HW but without  
-> this USB HUB works perfectly.
-
-Maybe you should replace that hub with a different brand.
-
-> >> This is the output of lsusb:
-> >>
-> >> Bus 001 Device 002: ID 0424:2514 Standard Microsystems Corp. USB 2.0 Hub
-> >> Bus 001 Device 004: ID 0928:0007 Oxford Semiconductor, Ltd
-> >> Bus 002 Device 002: ID 0451:2036 Texas Instruments, Inc. TUSB2036 Hub
-> >> Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
-> >> Bus 002 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
-> >> Bus 003 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
-> >> Bus 002 Device 003: ID 076b:a021 OmniKey AG CCID Smart Card Reader
-> >> Bus 002 Device 004: ID 0aad:0024 Rohde & Schwarz GmbH & Co. KG
-
-Here, the only device that might be plugged into the Standard
-Microsystems hub is the Oxford Semiconductor thing (whatever it is).
-
-> > What about if you just do:
-> >
-> > 	rmmod ehci-pci
-> > 	modprobe ehci-pci
-> >
-> 
-> The kernel is monolitic because the USB HW is needed in a early boot  
-> stage. The problem also occurs with ehci-fsl used in by an other  
-> PowerPC device, which is a part of the SoC and is not attached to the  
-> PCI bus.
-> 
-> One thing is that the "echo 1  
->  >/sys/bus/pci/drivers/ehci-pci/0000\:00\:17.2/reset" workaround will  
-> no longer work for kernel 3.14.
-
-Instead, you could try
-
-	echo 0000:00:17.2 >/sys/bus/pci/drivers/ehci-pci/unbind
-	echo 0000:00:17.2 >/sys/bus/pci/drivers/ehci-pci/bind
-
-Alan Stern
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index 1065a51..585be84 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -201,7 +201,7 @@ extern void tick_nohz_init(void);
+ extern void __tick_nohz_full_check(void);
+ extern void tick_nohz_full_kick(void);
+ extern void tick_nohz_full_kick_all(void);
+-extern void __tick_nohz_task_switch(void);
++extern void tick_nohz_task_switch(void);
+ #else
+ static inline void tick_nohz_init(void) { }
+ static inline bool tick_nohz_full_enabled(void) { return false; }
+@@ -209,7 +209,7 @@ static inline bool tick_nohz_full_cpu(int cpu) { return false; }
+ static inline void __tick_nohz_full_check(void) { }
+ static inline void tick_nohz_full_kick(void) { }
+ static inline void tick_nohz_full_kick_all(void) { }
+-static inline void __tick_nohz_task_switch(void) { }
++static inline void tick_nohz_task_switch(void) { }
+ #endif
+ 
+ static inline void tick_nohz_full_check(void)
+@@ -218,11 +218,4 @@ static inline void tick_nohz_full_check(void)
+ 		__tick_nohz_full_check();
+ }
+ 
+-static inline void tick_nohz_task_switch(void)
+-{
+-	if (tick_nohz_full_enabled())
+-		__tick_nohz_task_switch();
+-}
+-
+-
+ #endif
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 5f7796d..d8b9a69 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -266,13 +266,16 @@ void tick_nohz_full_kick_all(void)
+  * It might need the tick due to per task/process properties:
+  * perf events, posix cpu timers, ...
+  */
+-void __tick_nohz_task_switch(void)
++void tick_nohz_task_switch(void)
+ {
+ 	unsigned long flags;
+ 
++	if (!tick_nohz_full_enabled() || !tick_nohz_tick_stopped())
++		return;
++
+ 	local_irq_save(flags);
+ 
+-	if (tick_nohz_tick_stopped() && !can_stop_full_tick())
++	if (!can_stop_full_tick())
+ 		tick_nohz_full_kick();
+ 
+ 	local_irq_restore(flags);
+-- 
+1.7.12.rc2.18.g61b472e
 
