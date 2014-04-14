@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871AbaDNM63 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 08:58:29 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:43140 "EHLO extserv.mm-sol.com"
+	id S1755198AbaDNM7J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 08:59:09 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:43182 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754169AbaDNM62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 08:58:28 -0400
+	id S1754209AbaDNM7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 08:59:05 -0400
 From: Stanimir Varbanov <svarbanov@mm-sol.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>
 Cc: Stanimir Varbanov <svarbanov@mm-sol.com>, linux-arm-msm@vger.kernel.org,
         Mona Hossain <mhossain@codeaurora.org>,
         Hariprasad Dhalinarasimha <hnamgund@codeaurora.org>,
         Zhen Kong <zkong@codeaurora.org>,
         Niranjana Vishwanathapura <nvishwan@codeaurora.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFC PATCH v2 8/9] crypto: qce: Build Qualcomm qce driver
-Date: Mon, 14 Apr 2014 15:48:44 +0300
-Message-Id: <1397479725-20954-9-git-send-email-svarbanov@mm-sol.com>
+        Rohit Vaswani <rvaswani@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH v2 9/9] ARM: DT: qcom: Add Qualcomm crypto driver binding document
+Date: Mon, 14 Apr 2014 15:48:45 +0300
+Message-Id: <1397479725-20954-10-git-send-email-svarbanov@mm-sol.com>
 X-Mailer: git-send-email 1.8.4.4
 In-Reply-To: <1397479725-20954-1-git-send-email-svarbanov@mm-sol.com>
 References: <1397479725-20954-1-git-send-email-svarbanov@mm-sol.com>
@@ -26,43 +28,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modify crypto Kconfig and Makefile in order to build the qce
-driver.
+Here is Qualcomm crypto driver device tree binding documentation
+to be used as a reference example.
 
 Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
 ---
- drivers/crypto/Kconfig  | 10 ++++++++++
- drivers/crypto/Makefile |  1 +
- 2 files changed, 11 insertions(+)
+ .../devicetree/bindings/crypto/qcom-qce.txt        | 25 ++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/crypto/qcom-qce.txt
 
-diff --git a/drivers/crypto/Kconfig b/drivers/crypto/Kconfig
-index 03ccdb0ccf9e..0f8ec047b9e2 100644
---- a/drivers/crypto/Kconfig
-+++ b/drivers/crypto/Kconfig
-@@ -418,4 +418,14 @@ config CRYPTO_DEV_MXS_DCP
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called mxs-dcp.
- 
-+config CRYPTO_DEV_QCE
-+	tristate "Qualcomm crypto engine accelerator"
-+	select CRYPTO_DES
-+	select CRYPTO_ALGAPI
-+	select CRYPTO_BLKCIPHER
-+	help
-+	  This driver supports Qualcomm crypto engine accelerator
-+	  hardware. To compile this driver as a module, choose M here. The
-+	  module will be called qcrypto.
+diff --git a/Documentation/devicetree/bindings/crypto/qcom-qce.txt b/Documentation/devicetree/bindings/crypto/qcom-qce.txt
+new file mode 100644
+index 000000000000..fdd53b184ba8
+--- /dev/null
++++ b/Documentation/devicetree/bindings/crypto/qcom-qce.txt
+@@ -0,0 +1,25 @@
++Qualcomm crypto engine driver
 +
- endif # CRYPTO_HW
-diff --git a/drivers/crypto/Makefile b/drivers/crypto/Makefile
-index 482f090d16d0..320937bf201e 100644
---- a/drivers/crypto/Makefile
-+++ b/drivers/crypto/Makefile
-@@ -23,3 +23,4 @@ obj-$(CONFIG_CRYPTO_DEV_S5P) += s5p-sss.o
- obj-$(CONFIG_CRYPTO_DEV_SAHARA) += sahara.o
- obj-$(CONFIG_CRYPTO_DEV_TALITOS) += talitos.o
- obj-$(CONFIG_CRYPTO_DEV_UX500) += ux500/
-+obj-$(CONFIG_CRYPTO_DEV_QCE) += qce/
++Required properties:
++
++- compatible  : should be "qcom,crypto-v5.1"
++- reg         : specifies base physical address and size of the registers map
++- clocks      : phandle to clock-controller plus clock-specifier pair
++- clock-names : "iface" clocks register interface
++                "bus" clocks data transfer interface
++                "core" clocks rest of the crypto block
++- dmas        : DMA specifiers for tx and rx dma channels. For more see
++                Documentation/devicetree/bindings/dma/dma.txt
++- dma-names   : DMA request names should be "rx" and "tx"
++
++Example:
++	crypto@fd45a000 {
++		compatible = "qcom,crypto-v5.1";
++		reg = <0xfd45a000 0x6000>;
++		clocks = <&gcc GCC_CE2_AHB_CLK>,
++			 <&gcc GCC_CE2_AXI_CLK>,
++			 <&gcc GCC_CE2_CLK>;
++		clock-names = "iface", "bus", "core";
++		dmas = <&cryptobam 2>, <&cryptobam 3>;
++		dma-names = "rx", "tx";
++	};
 -- 
 1.8.4.4
 
