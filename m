@@ -1,56 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252AbaDNOFB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 10:05:01 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42991 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754473AbaDNOFA (ORCPT
+	id S1755306AbaDNOFb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 10:05:31 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:41172 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754473AbaDNOF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 10:05:00 -0400
-Date: Mon, 14 Apr 2014 15:04:38 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: Johan Hovold <jhovold@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>, Xiao Jin <jin.xiao@intel.com>,
-        david.a.cohen@linux.intel.com, yanmin.zhang@intel.com
-Subject: Re: [RFC 1/2] n_tty: fix dropped output characters
-Message-ID: <20140414150438.2737893d@alan.etchedpixels.co.uk>
-In-Reply-To: <1397480749.16591.24.camel@linux-fkkt.site>
-References: <20140411093715.GA17522@localhost>
-	<1397209285-15471-1-git-send-email-jhovold@gmail.com>
-	<20140414135333.1057aac8@alan.etchedpixels.co.uk>
-	<1397480749.16591.24.camel@linux-fkkt.site>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 14 Apr 2014 10:05:27 -0400
+Message-ID: <534BEB20.3080501@codethink.co.uk>
+Date: Mon, 14 Apr 2014 15:05:20 +0100
+From: Ben Dooks <ben.dooks@codethink.co.uk>
+Organization: Codethink Limited.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+MIME-Version: 1.0
+To: Iyappan Subramanian <isubramanian@apm.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, devicetree@vger.kernel.org
+CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
+        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
+Subject: Re: [PATCH v2 4/4] drivers: net: Add APM X-Gene SoC ethernet driver
+ support.
+References: <1397271984-23405-1-git-send-email-isubramanian@apm.com> <1397271984-23405-5-git-send-email-isubramanian@apm.com>
+In-Reply-To: <1397271984-23405-5-git-send-email-isubramanian@apm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Apr 2014 15:05:49 +0200
-Oliver Neukum <oneukum@suse.de> wrote:
+On 12/04/14 04:06, Iyappan Subramanian wrote:
+> This patch adds network driver for APM X-Gene SoC ethernet.
+>
+> Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
+> Signed-off-by: Ravi Patel <rapatel@apm.com>
 
-> On Mon, 2014-04-14 at 13:53 +0100, One Thousand Gnomes wrote:
-> > On Fri, 11 Apr 2014 11:41:24 +0200
-> > Johan Hovold <jhovold@gmail.com> wrote:
-> > 
-> > > Fix characters being dropped by n_tty_write() due to a failure to
-> > > check the return value of tty_put_char() in do_output_char().
-> > > 
-> > > Characters are currently being dropped by write if a tty driver claims
-> > > to have write room available, but still fails to buffer any data
-> > 
-> > Your driver is buggy. If you advertise a buffer you must honour it and
-> > neither shrink nor revoke it.
-> 
-> Is that a general rule or does it apply only till the next write?
+[snip]
 
-Its a general rule. If you've advertised 5 bytes then you can only
-advertise 0 after 5 bytes have been sent your way (or a hangup etc
-occurred).
+> +{
+> +	struct xgene_enet_pdata *pdata = netdev_priv(ndev);
+> +	struct phy_device *phydev;
+> +	unsigned char phy_id[MII_BUS_ID_SIZE+3];
+> +	int ret = 0;
+> +
+> +	phydev = phy_find_first(pdata->mdio_bus);
+> +	if (!phydev) {
+> +		netdev_info(ndev, "no PHY found\n");
+> +		ret = -1;
+> +		goto out;
+> +	}
+> +
+> +	/* attach the mac to the phy */
+> +	snprintf(phy_id, sizeof(phy_id), PHY_ID_FMT, pdata->mdio_bus->id,
+> +		 pdata->phy_addr);
+> +	phydev = phy_connect(ndev, phy_id,
+> +			     &xgene_enet_mdio_link_change, pdata->phy_mode);
+> +	if (IS_ERR(phydev)) {
+> +		netdev_err(ndev, "Could not attach to PHY\n");
+> +		ret = PTR_ERR(phydev);
+> +		phydev = NULL;
+> +		goto out;
+> +	}
+> +
 
-Alan
+You should be using of_phy_connect or similar so that the
+necessary PHY<>OF data is properly initialised
+
+> +	netdev_info(ndev, "phy_id=0x%08x phy_drv=\"%s\"",
+> +		    phydev->phy_id, phydev->drv->name);
+> +out:
+> +	pdata->phy_link = 0;
+> +	pdata->phy_speed = 0;
+> +	pdata->phy_dev = phydev;
+> +
+> +	return ret;
+> +}
+> +
+
+
+[snip]
+
+> +struct xgene_enet_desc {
+> +	u64 m0;
+> +	u64 m1;
+> +	u64 m2;
+> +	u64 m3;
+> +};
+> +
+> +struct xgene_enet_desc16 {
+> +	u64 m0;
+> +	u64 m1;
+> +};
+> +
+> +static inline void xgene_enet_cpu_to_le64(struct xgene_enet_desc *desc,
+> +					  int count)
+> +{
+> +#ifdef CONFIG_CPU_BIG_ENDIAN
+> +	int i;
+> +
+> +	for (i = 0; i < count; i++)
+> +		((u64 *)desc)[i] = cpu_to_le64(((u64 *)desc)[i]);
+> +#endif
+> +}
+> +
+> +static inline void xgene_enet_le64_to_cpu(struct xgene_enet_desc *desc,
+> +					  int count)
+> +{
+> +#ifdef CONFIG_CPU_BIG_ENDIAN
+> +	int i;
+> +
+> +	for (i = 0; i < count; i++)
+> +		((u64 *)desc)[i] = le64_to_cpu(((u64 *)desc)[i]);
+> +#endif
+> +}
+> +
+> +static inline void xgene_enet_desc16_to_le64(struct xgene_enet_desc *desc)
+> +{
+> +#ifdef CONFIG_CPU_BIG_ENDIAN
+> +	((u64 *)desc)[1] = cpu_to_le64(((u64 *)desc)[1]);
+> +#endif
+> +}
+> +
+> +static inline void xgene_enet_le64_to_desc16(struct xgene_enet_desc *desc)
+> +{
+> +#ifdef CONFIG_CPU_BIG_ENDIAN
+> +	((u64 *)desc)[1] = le64_to_cpu(((u64 *)desc)[1]);
+> +#endif
+> +}
+
+With this do you not risk confusing the hardware by swapping the
+format of the descriptors?
+
+Why not use xxx_to_cpu() and cpu_to_xxx() functions when reading or
+writing the descriptors? It would also remove a lot of the #ifdef in
+this code.
+
+-- 
+Ben Dooks				http://www.codethink.co.uk/
+Senior Engineer				Codethink - Providing Genius
