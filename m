@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341AbaDNTW3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 15:22:29 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:57764 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754353AbaDNTW1 (ORCPT
+	id S1754255AbaDNT2c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 15:28:32 -0400
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:40218 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958AbaDNT2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 15:22:27 -0400
-Date: Mon, 14 Apr 2014 15:22:25 -0400 (EDT)
-Message-Id: <20140414.152225.1983723140136958968.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: nasa4836@gmail.com, jchapman@katalix.com, edumazet@google.com,
-        joe@perches.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [BUG] A panic caused by null pointer dereference aftering
- updating to
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1397502396.4222.45.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <1397499566.4222.36.camel@edumazet-glaptop2.roam.corp.google.com>
-	<20140414.144843.488522666550066271.davem@davemloft.net>
-	<1397502396.4222.45.camel@edumazet-glaptop2.roam.corp.google.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 14 Apr 2014 12:22:27 -0700 (PDT)
+	Mon, 14 Apr 2014 15:28:30 -0400
+Date: Mon, 14 Apr 2014 21:28:24 +0200 (CEST)
+From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+X-X-Sender: sebott@denkbrett
+To: Randy Dunlap <rdunlap@infradead.org>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Oberparleiter <oberpar@linux.vnet.ibm.com>,
+        linux-s390@vger.kernel.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com
+Subject: Re: [PATCH] s390: fix new ccwgroup.h kernel-doc warning
+In-Reply-To: <534C1DC9.7020108@infradead.org>
+Message-ID: <alpine.LFD.2.11.1404142127070.1561@denkbrett>
+References: <534C1DC9.7020108@infradead.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
+ =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041419-6892-0000-0000-000008776D7F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Mon, 14 Apr 2014 12:06:36 -0700
-
-> On Mon, 2014-04-14 at 14:48 -0400, David Miller wrote:
->> From: Eric Dumazet <eric.dumazet@gmail.com>
->> Date: Mon, 14 Apr 2014 11:19:26 -0700
->> 
->> > ip_local_out() doesn't use skb->sk
->> 
->> It does Eric.
->> 
+On Mon, 14 Apr 2014, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@infradead.org>
 > 
-> Hmmm, right...
+> Fix new s390 kernel-doc warning:
 > 
->> We had just such a report with this in the backtrace, when AF_PACKET
->> sends over vxlan devices.
->> 
->> The problem is ip_mc_output().
+> Warning(arch/s390/include/asm/ccwgroup.h:27): No description found for parameter 'ungroup_work'
 > 
-> So this means that : User socket wanted sk_mc_loop(sk), but because
-> vxlan changed skb->sk to internal socket, we were doing something else
-> anyway.
-
-Actually the exact opposite is happening.  vxlan does not override skb->sk,
-and leaves it as AF_PACKET's socket.  Then we crash in ip_mc_output() because
-it only expects IP sockets, not AF_PACKET ones, attached to skb->sk.
-
-> There are a lot of undocumented features here... like
+> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+> Cc:	Sebastian Ott <sebott@linux.vnet.ibm.com>
+> Cc:	Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+> Cc:	linux-s390@vger.kernel.org
+> Cc:	Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Cc:	Heiko Carstens <heiko.carstens@de.ibm.com>
+> Cc:	linux390@de.ibm.com
+> ---
+>  arch/s390/include/asm/ccwgroup.h |    2 ++
+>  1 file changed, 2 insertions(+)
 > 
->  	skb->priority = sk->sk_priority;
->  	skb->mark = sk->sk_mark;
+> --- lnx-315-rc1.orig/arch/s390/include/asm/ccwgroup.h
+> +++ lnx-315-rc1/arch/s390/include/asm/ccwgroup.h
+> @@ -10,6 +10,8 @@ struct ccw_driver;
+>   * @count: number of attached slave devices
+>   * @dev: embedded device structure
+>   * @cdev: variable number of slave devices, allocated as needed
+> + * @ungroup_work: work to be done when a ccwgroup notifier has action
+> + *	type %BUS_NOTIFY_UNBIND_DRIVER
+>   */
+>  struct ccwgroup_device {
+>  	enum {
 > 
-> which socket do we want here (in ip_queue_xmit()) ?
-
-Probably that of tunnel.
-
-> Its interesting to see ip6_xmit() already has a 'struct sock *sk'
-> parameter...
 > 
-> This was the preliminary patch I tested :
 
-You still need to make similar transformation to ip_local_out() as mentioned
-above.
+Applied, thanks!
+Sebastian
+
