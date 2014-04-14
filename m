@@ -1,75 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932AbaDNNG4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 09:06:56 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:63972 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752992AbaDNNGv (ORCPT
+	id S1755011AbaDNNHN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 09:07:13 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:38792 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754956AbaDNNHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 09:06:51 -0400
+	Mon, 14 Apr 2014 09:07:02 -0400
+Message-ID: <534BDD6F.2070903@codethink.co.uk>
+Date: Mon, 14 Apr 2014 14:06:55 +0100
+From: Ben Dooks <ben.dooks@codethink.co.uk>
+Organization: Codethink Limited.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140414145359.48b7337c@endymion.delvare>
-References: <20140414145359.48b7337c@endymion.delvare>
-Date: Mon, 14 Apr 2014 09:06:50 -0400
-X-Google-Sender-Auth: lEZJYrDU9-ZY_poc69osouJlfSI
-Message-ID: <CA+5PVA6aH8ZLQey3QJU9vG6kCrnguZcJ7dSDtntiOLbivt8nAw@mail.gmail.com>
-Subject: Re: Hardware dependencies in Kconfig
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Jean Delvare <jdelvare@suse.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Michal Marek <mmarek@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Iyappan Subramanian <isubramanian@apm.com>, davem@davemloft.net,
+        netdev@vger.kernel.org, devicetree@vger.kernel.org
+CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
+        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
+Subject: Re: [PATCH v2 2/4] Documentation: dts: Add bindings for APM X-Gene
+ SoC ethernet driver
+References: <1397271984-23405-1-git-send-email-isubramanian@apm.com> <1397271984-23405-3-git-send-email-isubramanian@apm.com>
+In-Reply-To: <1397271984-23405-3-git-send-email-isubramanian@apm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 8:53 AM, Jean Delvare <jdelvare@suse.de> wrote:
-> Hi all,
+On 12/04/14 04:06, Iyappan Subramanian wrote:
+> This patch adds documentation for APM X-Gene SoC ethernet DTS binding.
 >
-> Configuring kernels from scratch has become an incredibly long and
-> tedious task. The reason is that the number of drivers and options has
-> exploded in the past few years. Which in itself is great - Linux is
-> successful, yeah! - but the side effects must be dealt with.
-> 6000-line .config files are no fun.
+> Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
+> Signed-off-by: Ravi Patel <rapatel@apm.com>
+> Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
+> ---
+>   .../devicetree/bindings/net/apm-xgene-enet.txt     |   46 ++++++++++++++++++++
+>   1 file changed, 46 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/net/apm-xgene-enet.txt
 >
-> Earlier today, I found that NET_CADENCE is set in my x86-64 kernel
-> configuration. The two ethernet drivers below this menu are for ARM
-> machines. I really shouldn't be asked about that on x86-64. I just sent
-> a patch addressing this specific issue, which follows about 50 similar
-> patches from me for similar issues in various subsystems. But I can't
-> do all of that by myself, this is too much work quantitatively, and I
-> am not always the best person to find out the proper hardware
-> dependencies that should be added.
+> diff --git a/Documentation/devicetree/bindings/net/apm-xgene-enet.txt b/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
+> new file mode 100644
+> index 0000000..0c983e8
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
+> @@ -0,0 +1,46 @@
+> +APM X-Gene SoC Ethernet nodes
+> +
+> +Ethernet nodes are defined to describe on-chip ethernet interfaces in
+> +APM X-Gene SoC.
+> +
+> +Required properties:
+> +- compatible		: Should be "apm,xgene-enet"
+> +- reg			: First resource is the ethernet base register set
+> +			  Second resource is the ring base register set
+> +			  Third resource is the ring command register set
+> +- interrupts		: Ethernet main interrupt
+> +- clocks		: Reference to the clock entry.
+> +- local-mac-address	: Ethernet MAC address.
+> +- phy-addr		: Ethernet MII phy address.
+> +- phy-mode		: Ethernet MII mode.
+> +
+> +Optional properties:
+> +- status		: Should be "ok" or "disabled" for enabled/disabled.
+> +			  Default is "ok".
+> +
+> +Example:
+> +	menetclk: menetclk {
+> +		compatible = "apm,xgene-device-clock";
+> +		clock-output-names = "menetclk";
+> +		status = "ok";
+> +	};
+> +
+> +	menet: ethernet@17020000 {
+> +		compatible = "apm,xgene-enet";
+> +		status = "disabled";
+> +		reg = <0x0 0x17020000 0x0 0xd100>,
+> +		      <0x0 0X17030000 0x0 0X400>,
+> +		      <0x0 0X10000000 0x0 0X200>;
+> +		interrupts = <0x0 0x3c 0x4>;
+> +		clocks = <&menetclk 0>;
+> +		local-mac-address = [00 01 73 00 00 01];
+> +		phy-addr = <3>;
+> +		phy-mode = "rgmii";
+> +	};
 
-I have much the same problem when I'm doing the config changes for
-Fedora kernel rebases.  I've gotten to the point where I can somewhat
-guess based on the driver name which arch it's for (lately the
-majority are for ARM), but that isn't really a great way to handle
-things.  Only being asked about options for the arch being configured
-is much better than playing guessing games.
+That doesn't look correct for a phy binding.
 
-> I would like to call for proper hardware dependencies to become a
-> general trend: every new hardware-specific driver which is added to the
-> kernel should depend on ($hardware || COMPILE_TEST), so as to make it
-> clear right away, which type of hardware is expected to need the driver
-> in question.
->
-> $hardware can be the top-level architecture (e.g. ARM), but can also go
-> down to sub-architecture/platform (e.g. ARCH_AT91 or PLATFORM_AT32AP) or
-> even machine (e.g. PICOXCELL_PC3X3). The list can always be extended
-> later if needed. Ideally we should restrict as much as possible as long
-> as the result is easy to maintain, not too complex, and not likely to
-> break in a near future.
->
-> Thanks to COMPILE_TEST, we don't lose the build test coverage, and it
-> also makes it possible for anyone to still build the driver if the
-> dependency is too strict (as a temporary workaround until it gets fixed
-> upstream, that is.)
->
-> Does anyone object to this?
 
-I think this is a great idea.  Thanks for bringing up the suggestion.
-
-josh
+-- 
+Ben Dooks				http://www.codethink.co.uk/
+Senior Engineer				Codethink - Providing Genius
