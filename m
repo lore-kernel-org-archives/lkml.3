@@ -1,97 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755058AbaDNQSK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:18:10 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:52038 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753939AbaDNQSI (ORCPT
+	id S1755215AbaDNQSw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:18:52 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:47674 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755029AbaDNQSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:18:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <1397491333-13746-1-git-send-email-masami256@gmail.com>
-References: <1397491333-13746-1-git-send-email-masami256@gmail.com>
-Date: Mon, 14 Apr 2014 09:18:06 -0700
-Message-ID: <CAMEtUuz6v1JKev+Saq4kcc=k9nW2Q9pU__n=7bjvvZV2EofLYA@mail.gmail.com>
-Subject: Re: [PATCH] seccomp: Release fp pointer when leaving from seccomp_attach_filter().
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Masami Ichikawa <masami256@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>, "David S. Miller" <davem@davemloft.net>,
-        josh@joshtriplett.org, eparis@redhat.com, rashika.kheria@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 14 Apr 2014 12:18:49 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: peterz@infradead.org
+Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] sched/core: fix formatting issues in sched_can_stop_tick()
+Date: Mon, 14 Apr 2014 21:47:41 +0530
+Message-Id: <6c3484ccb8220d0c58db1cbd9c929fc8d83005fd.1397492119.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 9:02 AM, Masami Ichikawa <masami256@gmail.com> wrote:
-> kmemleak reported some memory leak as below.
+sched_can_stop_tick() was using 7 spaces instead of 8 spaces or a 'tab' at the
+beginning of each line. Which doesn't align with the Coding Guidelines.
 
-grrr. yes. sorry.
+Also it removes the *rq variable as it was used at only one place and hence we
+can directly use this_rq() instead.
 
-> unreferenced object 0xffff8800d6ea4000 (size 512):
->   comm "sshd", pid 278, jiffies 4294898315 (age 46.653s)
->   hex dump (first 32 bytes):
->     21 00 00 00 04 00 00 00 15 00 01 00 3e 00 00 c0  !...........>...
->     06 00 00 00 00 00 00 00 21 00 00 00 00 00 00 00  ........!.......
->   backtrace:
->     [<ffffffff8151414e>] kmemleak_alloc+0x4e/0xb0
->     [<ffffffff811a3a40>] __kmalloc+0x280/0x320
->     [<ffffffff8110842e>] prctl_set_seccomp+0x11e/0x3b0
->     [<ffffffff8107bb6b>] SyS_prctl+0x3bb/0x4a0
->     [<ffffffff8152ef2d>] system_call_fastpath+0x1a/0x1f
->     [<ffffffffffffffff>] 0xffffffffffffffff
->
-> This memory leak happend in seccomp_attach_filter().
-> The fp pointer was allocated via kzalloc so that it needs to realase memory
-> when leaving from function.
->
-> This patch changed two things.
-> One is set -ENOMEM to ret, if fp is unable to get memory.
-> The other is removes "return 0" statement, and frees fp pointer before
-> leaving.
->
-> Signed-off-by: Masami Ichikawa <masami256@gmail.com>
-> ---
->  kernel/seccomp.c | 8 +++++---
->  1 file changed, 5 insertions(+), 3 deletions(-)
->
-> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-> index d8d046c..a9ce7a9 100644
-> --- a/kernel/seccomp.c
-> +++ b/kernel/seccomp.c
-> @@ -259,8 +259,10 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
->         filter = kzalloc(sizeof(struct seccomp_filter) +
->                          sizeof(struct sock_filter_int) * new_len,
->                          GFP_KERNEL|__GFP_NOWARN);
-> -       if (!filter)
-> +       if (!filter) {
-> +               ret = -ENOMEM;
->                 goto free_prog;
-> +       }
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+I don't think rq = tihs_rq() has to be done before smp_mb(), in case yes sorry
+for this patch :(
 
-agree. that's a good addition.
+ kernel/sched/core.c | 16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
 
->         ret = sk_convert_filter(fp, fprog->len, filter->insnsi, &new_len);
->         if (ret)
-> @@ -275,10 +277,10 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
->          */
->         filter->prev = current->seccomp.filter;
->         current->seccomp.filter = filter;
-> -       return 0;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 268a45e..13299c5 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -666,18 +666,14 @@ static inline bool got_nohz_idle_kick(void)
+ #ifdef CONFIG_NO_HZ_FULL
+ bool sched_can_stop_tick(void)
+ {
+-       struct rq *rq;
+-
+-       rq = this_rq();
+-
+-       /* Make sure rq->nr_running update is visible after the IPI */
+-       smp_rmb();
++	/* Make sure rq->nr_running update is visible after the IPI */
++	smp_rmb();
+ 
+-       /* More than one running task need preemption */
+-       if (rq->nr_running > 1)
+-               return false;
++	/* More than one running task need preemption */
++	if (this_rq()->nr_running > 1)
++		return false;
+ 
+-       return true;
++	return true;
+ }
+ #endif /* CONFIG_NO_HZ_FULL */
+ 
+-- 
+1.7.12.rc2.18.g61b472e
 
-I think mixing error and ok return paths is ugly.
-Can you add kfree(fp) here instead of removing return 0?
-
-Thanks!
-
->  free_filter:
-> -       kfree(filter);
-> +       if (ret)
-> +               kfree(filter);
->  free_prog:
->         kfree(fp);
->         return ret;
-> --
-> 1.9.1
->
