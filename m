@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770AbaDNPox (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 11:44:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34167 "EHLO mx1.redhat.com"
+	id S1754225AbaDNPpB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 11:45:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57498 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751027AbaDNPov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 11:44:51 -0400
-From: Igor Mammedov <imammedo@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        imammedo@redhat.com, bp@suse.de, paul.gortmaker@windriver.com,
-        JBeulich@suse.com, prarit@redhat.com, drjones@redhat.com,
-        toshi.kani@hp.com, riel@redhat.com, gong.chen@linux.intel.com,
-        andi@firstfloor.org, lenb@kernel.org, rjw@rjwysocki.net,
-        linux-acpi@vger.kernel.org
-Subject: [PATCH v4 3/5] acpi_processor: do not mark present at boot but not onlined CPU as onlined
-Date: Mon, 14 Apr 2014 17:11:15 +0200
-Message-Id: <1397488277-14865-4-git-send-email-imammedo@redhat.com>
-In-Reply-To: <1397488277-14865-1-git-send-email-imammedo@redhat.com>
-References: <1397488277-14865-1-git-send-email-imammedo@redhat.com>
+	id S1753910AbaDNPo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 11:44:59 -0400
+Date: Mon, 14 Apr 2014 17:20:18 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, David Woodhouse <dwmw2@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Richard Weinberger <richard@nod.at>,
+        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND 09/11] signals: disallow_signal() should flush the
+	potentially pending signal
+Message-ID: <20140414152018.GA22022@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140414151929.GA21470@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acpi_processor_add() assumes that present at boot CPUs
-are always onlined, it is not so if a CPU failed to become
-onlined. As result acpi_processor_add() will mark such CPU
-device as onlined in sysfs and following attempts to
-online/offline it using /sys/device/system/cpu/cpuX/online
-attribute will fail.
+disallow_signal() simply sets SIG_IGN, this is not enough and
+recalc_sigpending() is simply pointless because in can never
+change the state of TIF_SIGPENDING.
 
-Do not poke into device internals in acpi_processor_add()
-and touch "struct device { .offline }" attribute, since
-for CPUs onlined at boot it's set by:
-  topology_init() -> arch_register_cpu() -> register_cpu()
-before ACPI device tree is parsed, and for hotplugged
-CPUs it's set when userspace onlines CPU via sysfs.
+If we ignore a signal, we also need to do flush_sigqueue_mask() for
+the case when this signal is pending, this way recalc_sigpending()
+can actually clear TIF_SIGPENDING and we do not "leak" the allocated
+siginfo's.
 
-Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
-v2:
- - fix regression in v1 leading to NULL pointer dereference
-   on CPU unplug, do not remove "pr->dev = dev;"
----
- drivers/acpi/acpi_processor.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ kernel/signal.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
-index c29c2c3..42d66f8 100644
---- a/drivers/acpi/acpi_processor.c
-+++ b/drivers/acpi/acpi_processor.c
-@@ -404,7 +404,6 @@ static int acpi_processor_add(struct acpi_device *device,
- 		goto err;
+diff --git a/kernel/signal.c b/kernel/signal.c
+index 3eec27b..4bab1b7 100644
+--- a/kernel/signal.c
++++ b/kernel/signal.c
+@@ -3084,8 +3084,15 @@ EXPORT_SYMBOL(allow_signal);
  
- 	pr->dev = dev;
--	dev->offline = pr->flags.need_hotplug_init;
- 
- 	/* Trigger the processor driver's .probe() if present. */
- 	if (device_attach(dev) >= 0)
+ void disallow_signal(int sig)
+ {
++	sigset_t mask;
++
++	sigemptyset(&mask);
++	sigaddset(&mask, sig);
++
+ 	spin_lock_irq(&current->sighand->siglock);
+ 	current->sighand->action[(sig)-1].sa.sa_handler = SIG_IGN;
++	flush_sigqueue_mask(&mask, &current->signal->shared_pending);
++	flush_sigqueue_mask(&mask, &current->pending);
+ 	recalc_sigpending();
+ 	spin_unlock_irq(&current->sighand->siglock);
+ }
 -- 
-1.7.1
+1.5.5.1
 
