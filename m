@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586AbaDNVho (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 17:37:44 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:49182 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755517AbaDNVhb (ORCPT
+	id S1755562AbaDNVhl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 17:37:41 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:49974 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754819AbaDNVhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 17:37:31 -0400
+	Mon, 14 Apr 2014 17:37:23 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 11/12] cgroup: prepare migration path for unified hierarchy
-Date: Mon, 14 Apr 2014 17:37:09 -0400
-Message-Id: <1397511430-2673-12-git-send-email-tj@kernel.org>
+Subject: [PATCH 05/12] cgroup: reorganize css_task_iter
+Date: Mon, 14 Apr 2014 17:37:03 -0400
+Message-Id: <1397511430-2673-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1397511430-2673-1-git-send-email-tj@kernel.org>
 References: <1397511430-2673-1-git-send-email-tj@kernel.org>
@@ -21,113 +21,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unified hierarchy implementation would require re-migrating tasks onto
-the same cgroup on the default hierarchy to reflect updated effective
-csses.  Update cgroup_migrate_prepare_dst() so that it accepts NULL as
-the destination cgrp.  When NULL is specified, the destination is
-considered to be the cgroup on the default hierarchy associated with
-each css_set.
+This patch reorganizes css_task_iter so that adding effective css
+support is easier.
 
-After this change, the identity check in cgroup_migrate_add_src()
-isn't sufficient for noop detection as the associated csses may change
-without any cgroup association changing.  The only way to tell whether
-a migration is noop or not is testing whether the source and
-destination csets are identical.  The noop check in
-cgroup_migrate_add_src() is removed and cset identity test is added to
-cgroup_migreate_prepare_dst().  If it's detected that source and
-destination csets are identical, the cset is removed removed from
-@preloaded_csets and all the migration nodes are cleared which makes
-cgroup_migrate() ignore the cset.
+* s/->cset_link/->cset_pos/ and s/->task/->task_pos/ for consistency
 
-Also, make the function append the destination css_sets to
-@preloaded_list so that destination css_sets always come after source
-css_sets.
+* ->origin_css is used to determine whether the iteration reached the
+  last css_set.  Replace it with explicit ->cset_head so that
+  css_advance_task_iter() doesn't have to know the termination
+  condition directly.
+
+* css_task_iter_next() currently assumes that it's walking list of
+  cgrp_cset_link and reaches into the current cset through the current
+  link to determine the termination conditions for task walking.  As
+  this won't always be true for effective css walking, add
+  ->tasks_head and ->mg_tasks_head and use them to control task
+  walking so that css_task_iter_next() doesn't have to know how
+  css_sets are being walked.
+
+This patch doesn't make any behavior changes.  The iteration logic
+stays unchanged after the patch.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/cgroup.c | 34 +++++++++++++++++++++++-----------
- 1 file changed, 23 insertions(+), 11 deletions(-)
+ include/linux/cgroup.h |  9 ++++++---
+ kernel/cgroup.c        | 33 +++++++++++++++++----------------
+ 2 files changed, 23 insertions(+), 19 deletions(-)
 
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 33a0043..bee3905 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -842,9 +842,12 @@ css_next_descendant_post(struct cgroup_subsys_state *pos,
+ 
+ /* A css_task_iter should be treated as an opaque object */
+ struct css_task_iter {
+-	struct cgroup_subsys_state	*origin_css;
+-	struct list_head		*cset_link;
+-	struct list_head		*task;
++	struct list_head		*cset_pos;
++	struct list_head		*cset_head;
++
++	struct list_head		*task_pos;
++	struct list_head		*tasks_head;
++	struct list_head		*mg_tasks_head;
+ };
+ 
+ void css_task_iter_start(struct cgroup_subsys_state *css,
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 888e037..c7b8509 100644
+index f525578..bcf390f 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -1902,10 +1902,6 @@ static void cgroup_migrate_add_src(struct css_set *src_cset,
+@@ -2861,27 +2861,30 @@ css_next_descendant_post(struct cgroup_subsys_state *pos,
+  */
+ static void css_advance_task_iter(struct css_task_iter *it)
+ {
+-	struct list_head *l = it->cset_link;
++	struct list_head *l = it->cset_pos;
+ 	struct cgrp_cset_link *link;
+ 	struct css_set *cset;
  
- 	src_cgrp = cset_cgroup_from_root(src_cset, dst_cgrp->root);
+ 	/* Advance to the next non-empty css_set */
+ 	do {
+ 		l = l->next;
+-		if (l == &it->origin_css->cgroup->cset_links) {
+-			it->cset_link = NULL;
++		if (l == it->cset_head) {
++			it->cset_pos = NULL;
+ 			return;
+ 		}
+ 		link = list_entry(l, struct cgrp_cset_link, cset_link);
+ 		cset = link->cset;
+ 	} while (list_empty(&cset->tasks) && list_empty(&cset->mg_tasks));
  
--	/* nothing to do if this cset already belongs to the cgroup */
--	if (src_cgrp == dst_cgrp)
--		return;
--
- 	if (!list_empty(&src_cset->mg_preload_node))
- 		return;
+-	it->cset_link = l;
++	it->cset_pos = l;
  
-@@ -1920,13 +1916,14 @@ static void cgroup_migrate_add_src(struct css_set *src_cset,
+ 	if (!list_empty(&cset->tasks))
+-		it->task = cset->tasks.next;
++		it->task_pos = cset->tasks.next;
+ 	else
+-		it->task = cset->mg_tasks.next;
++		it->task_pos = cset->mg_tasks.next;
++
++	it->tasks_head = &cset->tasks;
++	it->mg_tasks_head = &cset->mg_tasks;
+ }
  
  /**
-  * cgroup_migrate_prepare_dst - prepare destination css_sets for migration
-- * @dst_cgrp: the destination cgroup
-+ * @dst_cgrp: the destination cgroup (may be %NULL)
-  * @preloaded_csets: list of preloaded source css_sets
-  *
-  * Tasks are about to be moved to @dst_cgrp and all the source css_sets
-  * have been preloaded to @preloaded_csets.  This function looks up and
-- * pins all destination css_sets, links each to its source, and put them on
-- * @preloaded_csets.
-+ * pins all destination css_sets, links each to its source, and append them
-+ * to @preloaded_csets.  If @dst_cgrp is %NULL, the destination of each
-+ * source css_set is assumed to be its cgroup on the default hierarchy.
-  *
-  * This function must be called after cgroup_migrate_add_src() has been
-  * called on each migration source css_set.  After migration is performed
-@@ -1937,19 +1934,34 @@ static int cgroup_migrate_prepare_dst(struct cgroup *dst_cgrp,
- 				      struct list_head *preloaded_csets)
+@@ -2907,8 +2910,8 @@ void css_task_iter_start(struct cgroup_subsys_state *css,
+ 
+ 	down_read(&css_set_rwsem);
+ 
+-	it->origin_css = css;
+-	it->cset_link = &css->cgroup->cset_links;
++	it->cset_pos = &css->cgroup->cset_links;
++	it->cset_head = it->cset_pos;
+ 
+ 	css_advance_task_iter(it);
+ }
+@@ -2924,12 +2927,10 @@ void css_task_iter_start(struct cgroup_subsys_state *css,
+ struct task_struct *css_task_iter_next(struct css_task_iter *it)
  {
- 	LIST_HEAD(csets);
--	struct css_set *src_cset;
-+	struct css_set *src_cset, *tmp_cset;
+ 	struct task_struct *res;
+-	struct list_head *l = it->task;
+-	struct cgrp_cset_link *link = list_entry(it->cset_link,
+-					struct cgrp_cset_link, cset_link);
++	struct list_head *l = it->task_pos;
  
- 	lockdep_assert_held(&cgroup_mutex);
+ 	/* If the iterator cg is NULL, we have no tasks */
+-	if (!it->cset_link)
++	if (!it->cset_pos)
+ 		return NULL;
+ 	res = list_entry(l, struct task_struct, cg_list);
  
- 	/* look up the dst cset for each src cset and link it to src */
--	list_for_each_entry(src_cset, preloaded_csets, mg_preload_node) {
-+	list_for_each_entry_safe(src_cset, tmp_cset, preloaded_csets, mg_preload_node) {
- 		struct css_set *dst_cset;
+@@ -2940,13 +2941,13 @@ struct task_struct *css_task_iter_next(struct css_task_iter *it)
+ 	 */
+ 	l = l->next;
  
--		dst_cset = find_css_set(src_cset, dst_cgrp);
-+		dst_cset = find_css_set(src_cset,
-+					dst_cgrp ?: src_cset->dfl_cgrp);
- 		if (!dst_cset)
- 			goto err;
+-	if (l == &link->cset->tasks)
+-		l = link->cset->mg_tasks.next;
++	if (l == it->tasks_head)
++		l = it->mg_tasks_head->next;
  
- 		WARN_ON_ONCE(src_cset->mg_dst_cset || dst_cset->mg_dst_cset);
-+
-+		/*
-+		 * If src cset equals dst, it's noop.  Drop the src.
-+		 * cgroup_migrate() will skip the cset too.  Note that we
-+		 * can't handle src == dst as some nodes are used by both.
-+		 */
-+		if (src_cset == dst_cset) {
-+			src_cset->mg_src_cgrp = NULL;
-+			list_del_init(&src_cset->mg_preload_node);
-+			put_css_set(src_cset, false);
-+			put_css_set(dst_cset, false);
-+			continue;
-+		}
-+
- 		src_cset->mg_dst_cset = dst_cset;
+-	if (l == &link->cset->mg_tasks)
++	if (l == it->mg_tasks_head)
+ 		css_advance_task_iter(it);
+ 	else
+-		it->task = l;
++		it->task_pos = l;
  
- 		if (list_empty(&dst_cset->mg_preload_node))
-@@ -1958,7 +1970,7 @@ static int cgroup_migrate_prepare_dst(struct cgroup *dst_cgrp,
- 			put_css_set(dst_cset, false);
- 	}
- 
--	list_splice(&csets, preloaded_csets);
-+	list_splice_tail(&csets, preloaded_csets);
- 	return 0;
- err:
- 	cgroup_migrate_finish(&csets);
+ 	return res;
+ }
 -- 
 1.9.0
 
