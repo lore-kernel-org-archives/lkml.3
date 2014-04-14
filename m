@@ -1,140 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751281AbaDNHc0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 03:32:26 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:59026 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750831AbaDNHcY (ORCPT
+	id S1751803AbaDNHj2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 03:39:28 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:59901 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750807AbaDNHjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 03:32:24 -0400
-X-IronPort-AV: E=Sophos;i="4.97,854,1389715200"; 
-   d="scan'208";a="29220173"
-Message-ID: <534B8EB7.50708@cn.fujitsu.com>
-Date: Mon, 14 Apr 2014 15:31:03 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131030 Thunderbird/17.0.10
-MIME-Version: 1.0
-To: Luiz Capitulino <lcapitulino@redhat.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <mtosatti@redhat.com>, <aarcange@redhat.com>, <mgorman@suse.de>,
-        <akpm@linux-foundation.org>, <andi@firstfloor.org>, <davidlohr@hp.com>,
-        <rientjes@google.com>, <isimatu.yasuaki@jp.fujitsu.com>,
-        <yinghai@kernel.org>, <riel@redhat.com>, <n-horiguchi@ah.jp.nec.com>,
-        <kirill@shutemov.name>
-Subject: Re: [PATCH v3 0/5] hugetlb: add support gigantic page allocation
- at runtime
-References: <1397152725-20990-1-git-send-email-lcapitulino@redhat.com>
-In-Reply-To: <1397152725-20990-1-git-send-email-lcapitulino@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	Mon, 14 Apr 2014 03:39:04 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlcGADSPS1NXQ6NG/2dsb2JhbABagwbEK4EfF3SCUxMcIxiBAiQTiAAByxiOboQ/AQOYYAGKZIdfgzM7
+Date: Mon, 14 Apr 2014 09:39:01 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Dave <shaggy@kernel.org>, Tytso <tytso@mit.edu>
+Subject: [PATCH V2] fs/jfs/jfs_inode.c: atomically set inode->i_flags
+Message-Id: <20140414093901.ea2d873d712ca4c8155d7827@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.197]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clear explanation and implementation!
+According to commit 5f16f3225b0624
 
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+ext4: atomically set inode->i_flags in ext4_set_inode_flags()
 
-On 04/11/2014 01:58 AM, Luiz Capitulino wrote:
-> [Full introduction right after the changelog]
-> 
-> Changelog
-> ---------
-> 
-> v3
-> 
-> - Dropped unnecessary WARN_ON() call [Kirill]
-> - Always check if the pfn range lies within a zone [Yasuaki]
-> - Renamed some function arguments for consistency
-> 
-> v2
-> 
-> - Rewrote allocation loop to avoid scanning unless PFNs [Yasuaki]
-> - Dropped incomplete multi-arch support [Naoya]
-> - Added patch to drop __init from prep_compound_gigantic_page()
-> - Restricted the feature to x86_64 (more details in patch 5/5)
-> - Added review-bys plus minor changelog changes
-> 
-> Introduction
-> ------------
-> 
-> The HugeTLB subsystem uses the buddy allocator to allocate hugepages during
-> runtime. This means that hugepages allocation during runtime is limited to
-> MAX_ORDER order. For archs supporting gigantic pages (that is, page sizes
-> greater than MAX_ORDER), this in turn means that those pages can't be
-> allocated at runtime.
-> 
-> HugeTLB supports gigantic page allocation during boottime, via the boot
-> allocator. To this end the kernel provides the command-line options
-> hugepagesz= and hugepages=, which can be used to instruct the kernel to
-> allocate N gigantic pages during boot.
-> 
-> For example, x86_64 supports 2M and 1G hugepages, but only 2M hugepages can
-> be allocated and freed at runtime. If one wants to allocate 1G gigantic pages,
-> this has to be done at boot via the hugepagesz= and hugepages= command-line
-> options.
-> 
-> Now, gigantic page allocation at boottime has two serious problems:
-> 
->  1. Boottime allocation is not NUMA aware. On a NUMA machine the kernel
->     evenly distributes boottime allocated hugepages among nodes.
-> 
->     For example, suppose you have a four-node NUMA machine and want
->     to allocate four 1G gigantic pages at boottime. The kernel will
->     allocate one gigantic page per node.
-> 
->     On the other hand, we do have users who want to be able to specify
->     which NUMA node gigantic pages should allocated from. So that they
->     can place virtual machines on a specific NUMA node.
-> 
->  2. Gigantic pages allocated at boottime can't be freed
-> 
-> At this point it's important to observe that regular hugepages allocated
-> at runtime don't have those problems. This is so because HugeTLB interface
-> for runtime allocation in sysfs supports NUMA and runtime allocated pages
-> can be freed just fine via the buddy allocator.
-> 
-> This series adds support for allocating gigantic pages at runtime. It does
-> so by allocating gigantic pages via CMA instead of the buddy allocator.
-> Releasing gigantic pages is also supported via CMA. As this series builds
-> on top of the existing HugeTLB interface, it makes gigantic page allocation
-> and releasing just like regular sized hugepages. This also means that NUMA
-> support just works.
-> 
-> For example, to allocate two 1G gigantic pages on node 1, one can do:
-> 
->  # echo 2 > \
->    /sys/devices/system/node/node1/hugepages/hugepages-1048576kB/nr_hugepages
-> 
-> And, to release all gigantic pages on the same node:
-> 
->  # echo 0 > \
->    /sys/devices/system/node/node1/hugepages/hugepages-1048576kB/nr_hugepages
-> 
-> Please, refer to patch 5/5 for full technical details.
-> 
-> Finally, please note that this series is a follow up for a previous series
-> that tried to extend the command-line options set to be NUMA aware:
-> 
->  http://marc.info/?l=linux-mm&m=139593335312191&w=2
-> 
-> During the discussion of that series it was agreed that having runtime
-> allocation support for gigantic pages was a better solution.
-> 
-> Luiz Capitulino (5):
->   hugetlb: prep_compound_gigantic_page(): drop __init marker
->   hugetlb: add hstate_is_gigantic()
->   hugetlb: update_and_free_page(): don't clear PG_reserved bit
->   hugetlb: move helpers up in the file
->   hugetlb: add support for gigantic page allocation at runtime
-> 
->  include/linux/hugetlb.h |   5 +
->  mm/hugetlb.c            | 336 ++++++++++++++++++++++++++++++++++--------------
->  2 files changed, 245 insertions(+), 96 deletions(-)
-> 
+Inspired-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Dave Kleikamp <shaggy@kernel.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/jfs/jfs_inode.c | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-
+diff --git a/fs/jfs/jfs_inode.c b/fs/jfs/jfs_inode.c
+index 7f464c5..6b0f816 100644
+--- a/fs/jfs/jfs_inode.c
++++ b/fs/jfs/jfs_inode.c
+@@ -29,20 +29,20 @@
+ void jfs_set_inode_flags(struct inode *inode)
+ {
+ 	unsigned int flags = JFS_IP(inode)->mode2;
+-
+-	inode->i_flags &= ~(S_IMMUTABLE | S_APPEND |
+-		S_NOATIME | S_DIRSYNC | S_SYNC);
++	unsigned int new_fl = 0;
+ 
+ 	if (flags & JFS_IMMUTABLE_FL)
+-		inode->i_flags |= S_IMMUTABLE;
++		new_fl |= S_IMMUTABLE;
+ 	if (flags & JFS_APPEND_FL)
+-		inode->i_flags |= S_APPEND;
++		new_fl |= S_APPEND;
+ 	if (flags & JFS_NOATIME_FL)
+-		inode->i_flags |= S_NOATIME;
++		new_fl |= S_NOATIME;
+ 	if (flags & JFS_DIRSYNC_FL)
+-		inode->i_flags |= S_DIRSYNC;
++		new_fl |= S_DIRSYNC;
+ 	if (flags & JFS_SYNC_FL)
+-		inode->i_flags |= S_SYNC;
++		new_fl |= S_SYNC;
++	inode_set_flags(inode, new_fl, S_IMMUTABLE | S_APPEND | S_NOATIME |
++			S_DIRSYNC | S_SYNC);
+ }
+ 
+ void jfs_get_inode_flags(struct jfs_inode_info *jfs_ip)
 -- 
-Thanks.
-Zhang Yanfei
+1.8.3.2
