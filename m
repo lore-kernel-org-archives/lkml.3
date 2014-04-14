@@ -1,114 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755345AbaDNTDI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 15:03:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14989 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751601AbaDNTDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 15:03:05 -0400
-From: Daniel Borkmann <dborkman@redhat.com>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, Alexei Starovoitov <ast@plumgrid.com>,
-        Eric Paris <eparis@redhat.com>,
-        James Morris <james.l.morris@oracle.com>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH] seccomp: fix populating a0-a5 syscall args in 32-bit x86 BPF
-Date: Mon, 14 Apr 2014 21:02:59 +0200
-Message-Id: <1397502179-15029-1-git-send-email-dborkman@redhat.com>
+	id S1755265AbaDNTEp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 15:04:45 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:47848 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933AbaDNTEn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 15:04:43 -0400
+X-Auth-Info: C1bgZ+CrtAReA619/X6a2Qw0rT5CGN7nKElKOy58Jrk=
+From: Marek Vasut <marex@denx.de>
+To: Graham Moore <ggrahammoore@gmail.com>
+Subject: Re: [PATCH V2] Add support for flag status register on Micron chips.
+Date: Mon, 14 Apr 2014 20:29:15 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
+Cc: "grmoore@altera.com" <grmoore@altera.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Sourav Poddar <sourav.poddar@ti.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Insop Song <insop.song@gainspeed.com>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>
+References: <1397228593-17996-1-git-send-email-grmoore@altera.com> <201404131918.45753.marex@denx.de> <CA+iBjpSHL0+A=wzhhVvT_y+mhZoFNLUkNe18OtxPn1hZVCdUDw@mail.gmail.com>
+In-Reply-To: <CA+iBjpSHL0+A=wzhhVvT_y+mhZoFNLUkNe18OtxPn1hZVCdUDw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201404142029.15280.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus reports that on 32-bit x86 Chromium throws the following seccomp
-resp. audit log messages:
+On Monday, April 14, 2014 at 06:19:24 PM, Graham Moore wrote:
+> On Sun, Apr 13, 2014 at 12:18 PM, Marek Vasut <marex@denx.de> wrote:
+> [...]
+> 
+> >> +#define      OPCODE_RDFSR            0x70  /* read flag status register
+> >> */
+> > 
+> > I know this is not your fault, but can you please indent this properly
+> > with tabs?
+> > 
+> >>  #define      OPCODE_NORM_READ        0x03    /* Read data bytes (low
+> > 
+> > frequency) */
+> > 
+> >>  #define      OPCODE_FAST_READ        0x0b    /* Read data bytes (high
+> > 
+> > frequency) */
+> > 
+> >>  #define      OPCODE_QUAD_READ        0x6b    /* Read data bytes */
+> > 
+> > And fix this one in a separate patch to use tabs as well please ?
+> 
+> I'm rebasing on l2-mtd spinor, and the tabs are jacked up there too.
+> I'll fix the
+> one I added, and fix other tabs in a new patch on that branch.
 
-  audit: type=1326 audit(1397359304.356:28108): auid=500 uid=500
-gid=500 ses=2 subj=unconfined_u:unconfined_r:chrome_sandbox_t:s0-s0:c0.c1023
-pid=3677 comm="chrome" exe="/opt/google/chrome/chrome" sig=0
-syscall=172 compat=0 ip=0xb2dd9852 code=0x30000
+I know :( , thanks!
 
-  audit: type=1326 audit(1397359304.356:28109): auid=500 uid=500
-gid=500 ses=2 subj=unconfined_u:unconfined_r:chrome_sandbox_t:s0-s0:c0.c1023
-pid=3677 comm="chrome" exe="/opt/google/chrome/chrome" sig=0 syscall=5
-compat=0 ip=0xb2dd9852 code=0x50000
+> [...]
+> 
+> > I wonder, can't wait_till_ready() be made a wrapper that will check the
+> > USE_FSR flag and call correct wait-function ? This would avoid adding a
+> > new member to *flash and also would avoid so many changes throughout the
+> > code. What do you think?
+> 
+> Yeah, that's kind of ugly, but the flags exist only in the static
+> m25p_ids[] and are only
+> used in the scan/init.  I'd have to add a new member to save them for
+> later use.
+> And then other uses would crop up.  So, seemed kinda iffy either way.
+> 
+> It's going to change anyway, because l2-mtd spinor branch has refactored
+> wait_till_ready() such that it uses a function pointer from the new
+> spi_nor struct.
+> I'm still mulling it over :)
 
-These audit messages are being triggered via audit_seccomp() through
-__secure_computing() in seccomp mode (BPF) filter with seccomp return
-codes 0x30000 (== SECCOMP_RET_TRAP) and 0x50000 (== SECCOMP_RET_ERRNO)
-during filter runtime. Moreover, Linus reports that x86_64 Chromium
-seems fine.
+Roger that, I'll wait for the V3 . Thanks!
 
-The underlying issue that explains this is that the implementation of
-populate_seccomp_data() is wrong. Our seccomp data structure sd that
-is being shared with user ABI is:
-
-  struct seccomp_data {
-    int nr;
-    __u32 arch;
-    __u64 instruction_pointer;
-    __u64 args[6];
-  };
-
-Therefore, a simple cast to 'unsigned long *' for storing the value of
-the syscall argument via syscall_get_arguments() is just wrong as on
-32-bit x86 (or any other 32bit arch), it would result in storing a0-a5
-at wrong offsets in args[] member, and thus i) could leak stack memory
-to user space and ii) tampers with the logic of seccomp BPF programs
-that read out and check for syscall arguments:
-
-  syscall_get_arguments(task, regs, 0, 1, (unsigned long *) &sd->args[0]);
-
-Tested on 32-bit x86 with Google Chrome, unfortunately only via remote
-test machine through slow ssh X forwarding, but it fixes the issue on
-my side. So fix it up by storing args in type correct variables, gcc
-is clever and optimizes the copy away in other cases, e.g. x86_64.
-
-Fixes: bd4cf0ed331a ("net: filter: rework/optimize internal BPF interpreter's instruction set")
-Reported-and-bisected-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: James Morris <james.l.morris@oracle.com>
-Cc: Kees Cook <keescook@chromium.org>
----
- Dave, do you want to pick this up?
-
- kernel/seccomp.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
-
-diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-index d8d046c..590c379 100644
---- a/kernel/seccomp.c
-+++ b/kernel/seccomp.c
-@@ -69,18 +69,17 @@ static void populate_seccomp_data(struct seccomp_data *sd)
- {
- 	struct task_struct *task = current;
- 	struct pt_regs *regs = task_pt_regs(task);
-+	unsigned long args[6];
- 
- 	sd->nr = syscall_get_nr(task, regs);
- 	sd->arch = syscall_get_arch();
--
--	/* Unroll syscall_get_args to help gcc on arm. */
--	syscall_get_arguments(task, regs, 0, 1, (unsigned long *) &sd->args[0]);
--	syscall_get_arguments(task, regs, 1, 1, (unsigned long *) &sd->args[1]);
--	syscall_get_arguments(task, regs, 2, 1, (unsigned long *) &sd->args[2]);
--	syscall_get_arguments(task, regs, 3, 1, (unsigned long *) &sd->args[3]);
--	syscall_get_arguments(task, regs, 4, 1, (unsigned long *) &sd->args[4]);
--	syscall_get_arguments(task, regs, 5, 1, (unsigned long *) &sd->args[5]);
--
-+	syscall_get_arguments(task, regs, 0, 6, args);
-+	sd->args[0] = args[0];
-+	sd->args[1] = args[1];
-+	sd->args[2] = args[2];
-+	sd->args[3] = args[3];
-+	sd->args[4] = args[4];
-+	sd->args[5] = args[5];
- 	sd->instruction_pointer = KSTK_EIP(task);
- }
- 
--- 
-1.7.11.7
-
+Best regards,
+Marek Vasut
