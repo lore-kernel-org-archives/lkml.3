@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488AbaDNPA1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 11:00:27 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:43597 "EHLO
+	id S1752340AbaDNPI7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 11:08:59 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:44100 "EHLO
 	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037AbaDNPAY (ORCPT
+	with ESMTP id S1751169AbaDNPI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 11:00:24 -0400
-Message-ID: <534BF7FE.6050603@hitachi.com>
-Date: Tue, 15 Apr 2014 00:00:14 +0900
+	Mon, 14 Apr 2014 11:08:57 -0400
+X-Greylist: delayed 513 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Apr 2014 11:08:57 EDT
+Message-ID: <534BFA00.2060302@hitachi.com>
+Date: Tue, 15 Apr 2014 00:08:48 +0900
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Organization: Hitachi, Ltd., Japan
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
@@ -16,7 +17,8 @@ MIME-Version: 1.0
 To: Jianyu Zhan <nasa4836@gmail.com>
 Cc: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, davem@davemloft.net,
         rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+        linux-kernel@vger.kernel.org,
+        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
 Subject: Re: [PATCH] kprobes: be more permissive when user specifies both
  symbol name and address
 References: <1397472050-19947-1-git-send-email-nasa4836@gmail.com>
