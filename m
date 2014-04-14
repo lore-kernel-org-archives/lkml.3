@@ -1,170 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197AbaDNRFO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 13:05:14 -0400
-Received: from mga09.intel.com ([134.134.136.24]:32213 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752340AbaDNRFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 13:05:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,858,1389772800"; 
-   d="p7s'?scan'208";a="512747028"
-From: "Woodhouse, David" <david.woodhouse@intel.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-CC: Jiang Liu <jiang.liu@linux.intel.com>, "joro@8bytes.org" <joro@8bytes.org>,
+	id S1755201AbaDNRHh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 13:07:37 -0400
+Received: from www84.your-server.de ([213.133.104.84]:40327 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754346AbaDNRHf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 13:07:35 -0400
+Message-ID: <1397495205.1854.3.camel@vger.seibold.net>
+Subject: Re: EHCI hotplug kernel crash in kernel 3.14 and 3.13
+From: Stefani Seibold <stefani@seibold.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb <linux-usb@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bhe@redhat.com" <bhe@redhat.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "James.Bottomley@hansenpartnership.com" 
-	<James.Bottomley@hansenpartnership.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>
-Subject: Re: hpsa driver bug crack kernel down!
-Thread-Topic: hpsa driver bug crack kernel down!
-Thread-Index: AQHPV/igc4dwKY4180e5mx3ldqxwrpsROgaAgAAG0wCAAAD7gIAABHoA
-Date: Mon, 14 Apr 2014 17:03:51 +0000
-Message-ID: <1397495030.19944.198.camel@shinybook.infradead.org>
-References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
-	 <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>
-	 <1397084904.9519.62.camel@dabdike> <1397085044.9519.63.camel@dabdike>
-	 <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
-	 <1397087425.9519.67.camel@dabdike>
-	 <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>
-	 <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
-	 <1397111557.2608.29.camel@buesod1.americas.hpqcorp.net>
-	 <20140410071535.GX13491@8bytes.org>
-	 <1397119587.19944.14.camel@shinybook.infradead.org>
-	 <1397146781.2608.46.camel@buesod1.americas.hpqcorp.net>
-	 <1397207932.19944.58.camel@shinybook.infradead.org>
-	 <1397490358.31076.6.camel@buesod1.americas.hpqcorp.net>
-	 <534C0AA9.5080909@linux.intel.com>
-	 <1397493858.31076.8.camel@buesod1.americas.hpqcorp.net>
-	 <1397494069.31076.9.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1397494069.31076.9.camel@buesod1.americas.hpqcorp.net>
-Accept-Language: en-GB, en-US
-Content-Language: en-GB
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-Content-Type: multipart/signed; micalg=sha-1;
-	protocol="application/x-pkcs7-signature"; boundary="=-eL3B1t8JUWdQ6i0kdbKt"
-MIME-Version: 1.0
+        Greg KH <greg@kroah.com>
+Date: Mon, 14 Apr 2014 19:06:45 +0200
+In-Reply-To: <Pine.LNX.4.44L0.1404141107520.874-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1404141107520.874-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-eL3B1t8JUWdQ6i0kdbKt
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Hi Alan,
 
-On Mon, 2014-04-14 at 09:47 -0700, Davidlohr Bueso wrote:
-> On Mon, 2014-04-14 at 09:44 -0700, Davidlohr Bueso wrote:
-> > On Tue, 2014-04-15 at 00:19 +0800, Jiang Liu wrote:
-> > > Hi Davidlohr,
-> > > 	Thanks for providing the DMAR table. According to the DMAR
-> > > table, one bug in the iommu driver fails to handle this entry:
-> > > [1D2h 0466   1]      Device Scope Entry Type : 01
-> > > [1D3h 0467   1]                 Entry Length : 0A
-> > > [1D4h 0468   2]                     Reserved : 0000
-> > > [1D6h 0470   1]               Enumeration ID : 00
-> > > [1D7h 0471   1]               PCI Bus Number : 00
-> > > [1D8h 0472   2]                     PCI Path : 1C,04
-> > > [1DAh 0474   2]                     PCI Path : 00,02
-> > >=20
-> > > 	And the patch sent out by me should fix this bug. Could you please h=
-elp
-> > > to have a try?
-> >=20
-> > Sorry, I am unable to find any patches from you regarding this issue...
-> > I must be missing something. Could you please point me to the lkml link=
-?
->=20
-> Never mind, I got it internally. I'll let you know  as soon as I can
-> test it later today.
+the patch fix the issue. I tested it on a notebook with a cardbus
+controller and on desktop machine with a thunderbolt interface. Both are
+working.
 
-Thanks.
+Thunderbolt will sometimes crash but i think this is a issue with
+dynamic added pci bridges, which cause a lot of trouble and headache  to
+me.
 
-Jiang, if you can then let me have a copy with a signed-off-by I'll
-shepherd it upstream along with your other patch which is already in my
-iommu-2.6.git tree.
+Thanks,
 
---=20
-                  Sent with Evolution's ActiveSync support.
+Greetings,
+Stefani
 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
-
-
-
-
-
---=-eL3B1t8JUWdQ6i0kdbKt
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
-
-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
-kiW8/Nj6KITQvHqz7x/Es0IRJCc9/zBES7yMeD+fgJKHAEv/uTcFfGM9HIWxPQIDAQABo4IC6jCC
-AuYwHQYDVR0OBBYEFGK1Mey+kPYGHowHJ0YXtQU4NmbSMB8GA1UdIwQYMBaAFB5pKrTcKP5HGE4h
-Cz+8rBEv8Jj1MIHJBgNVHR8EgcEwgb4wgbuggbiggbWGVGh0dHA6Ly93d3cuaW50ZWwuY29tL3Jl
-cG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3VpbmclMjBDQSUyMDRB
-LmNybIZdaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9DUkwvSW50ZWwl
-MjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIwNEEuY3JsMIHvBggrBgEFBQcBAQSB
-4jCB3zBpBggrBgEFBQcwAoZdaHR0cDovL3d3dy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZp
-Y2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIwNEEuY3J0MHIG
-CCsGAQUFBzAChmZodHRwOi8vY2VydGlmaWNhdGVzLmludGVsLmNvbS9yZXBvc2l0b3J5L2NlcnRp
-ZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0ElMjA0QS5jcnQw
-CwYDVR0PBAQDAgeAMDwGCSsGAQQBgjcVBwQvMC0GJSsGAQQBgjcVCIbDjHWEmeVRg/2BKIWOn1OC
-kcAJZ4HevTmV8EMCAWQCAQgwHwYDVR0lBBgwFgYIKwYBBQUHAwQGCisGAQQBgjcKAwwwKQYJKwYB
-BAGCNxUKBBwwGjAKBggrBgEFBQcDBDAMBgorBgEEAYI3CgMMME8GA1UdEQRIMEagKQYKKwYBBAGC
-NxQCA6AbDBlkYXZpZC53b29kaG91c2VAaW50ZWwuY29tgRlkYXZpZC53b29kaG91c2VAaW50ZWwu
-Y29tMA0GCSqGSIb3DQEBBQUAA4IBAQBCQ4UH3yybC+PzPo7W4PQJQwIDkKfD2i20i/DosQ7+Yeof
-KF7qDASe9eoJGXbINBx1u648uOnaMBsxgUUamJo7pdt1ZnsetRtCQrJIsrsJA3Q2MOsrv7xHkzqn
-DF99KHEbO2yKvyjJVDznHUWh8M1OFmdoziyWE/VPdqTwXwS/UKO81XaTtWUDGO716HHVlfT9yPle
-Ukg2MTcIhhNWmlS8gDUayhteIAlPci71f/oXzXxBiGiO6FVZUEx+rZBQB84Ey0S0Tfm7hiGzoegg
-ra0hfiiMOKMio+n0r4NUn03Z+VRUTbdjHIA6Lkozwpadvs9/uK8dIGqfcgxYgk9qdjFPMYICDjCC
-AgoCAQEwgYcweTELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAkNBMRQwEgYDVQQHEwtTYW50YSBDbGFy
-YTEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJh
-c2ljIElzc3VpbmcgQ0EgNEECCmJiMmoAAAAATKAwCQYFKw4DAhoFAKBdMBgGCSqGSIb3DQEJAzEL
-BgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTE0MDQxNDE3MDM1MFowIwYJKoZIhvcNAQkEMRYE
-FIZfNjzUVnVaHgL1wQIF2AqEEauhMA0GCSqGSIb3DQEBAQUABIIBAFSFPHKceRkG+DvQu8/XIDbF
-MC9zvh1fclijx0CtTxVg5KHHwWsQI9gXl4ddjxXMedPAVc7eIYzqqyK1mNyNztyYhJx2QFosiDyN
-D+QZ2WXFmDBJkxLVlmoOIwCIXmLqy2ljfg1jvnWONT6wLpVft2oQUX4HprBf1gIKd0K4JjVpffx7
-OnfNRNw/rrEuakGO2yEydbR+sDEBDh0eLiKiv5fq97mArrUg4gAFfvcLqz8+qweyYphheRDJzjlT
-WrBPzz5wZIo4F6oTivzciuyLpymlGE87tTDNU4+60ROvhoV2BCnS2pAtRTouidb/TagwNdub/XMF
-1ai7WwQz8JO2oA8AAAAAAAA=
+Am Montag, den 14.04.2014, 11:11 -0400 schrieb Alan Stern:
+> On Sun, 13 Apr 2014, Stefani Seibold wrote:
+> 
+> > A hot plug of an USB 2.0 EHCI controller cardbus card will result in a
+> > kernel crash. This is the kernel log of a vanilla 3.14 x86_64 kernel. I
+> > will attach my kernel config.
+> 
+> > [   70.419755] ehci-pci 0000:04:00.2: EHCI Host Controller
+> > [   70.419874] ehci-pci 0000:04:00.2: new USB bus registered, assigned bus number 9
+> > [   70.419980] ehci-pci 0000:04:00.2: irq 19, io mem 0xf1402000
+> > [   70.422796] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+> > [   70.424894] ohci-pci: OHCI PCI platform driver
+> > [   70.425072] ehci-pci 0000:04:00.2: USB 2.0 started, EHCI 0.95
+> > [   70.425132] usb usb9: New USB device found, idVendor=1d6b, idProduct=0002
+> > [   70.425135] usb usb9: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+> > [   70.425138] usb usb9: Product: EHCI Host Controller
+> > [   70.425141] usb usb9: Manufacturer: Linux 3.14.0 ehci_hcd
+> > [   70.425144] usb usb9: SerialNumber: 0000:04:00.2
+> > [   70.425332] hub 9-0:1.0: USB hub found
+> > [   70.425344] hub 9-0:1.0: 5 ports detected
+> > [   70.425556] BUG: unable to handle kernel NULL pointer dereference at 0000000000000040
+> > [   70.425560] IP: [<ffffffff814947cc>] usb_set_configuration+0x1c/0x7d0
+> > [   70.425568] PGD 30d571067 PUD 30d570067 PMD 0 
+> > [   70.425572] Oops: 0000 [#1] PREEMPT SMP 
+> > [   70.425576] Modules linked in: ohci_pci(+) ohci_hcd rfcomm btusb ppdev intel_agp intel_gtt 8250 video parport_pc parport serial_core nvidia(PO) drm agpgart
+> > [   70.425604] CPU: 3 PID: 83 Comm: pccardd Tainted: P           O 3.14.0 #1
+> > [   70.425607] Hardware name: Dell Inc. Precision M6400                 /0G841G, BIOS A13 06/05/2013
+> > [   70.425609] task: ffff88030eefe150 ti: ffff88030ef86000 task.ti: ffff88030ef86000
+> > [   70.425611] RIP: 0010:[<ffffffff814947cc>]  [<ffffffff814947cc>] usb_set_configuration+0x1c/0x7d0
+> > [   70.425615] RSP: 0018:ffff88030ef87ba0  EFLAGS: 00010286
+> > [   70.425617] RAX: ffff88030c7ce800 RBX: 0000000000000000 RCX: ffff88030ea57000
+> > [   70.425619] RDX: ffff88030dcb6800 RSI: 0000000000000001 RDI: 0000000000000000
+> > [   70.425620] RBP: ffff88030ef87c38 R08: ffff88030dfa6910 R09: 0000000000000000
+> > [   70.425622] R10: 0000000000004e2e R11: 0000000000000000 R12: 0000000000000000
+> > [   70.425624] R13: 0000000000000000 R14: ffffffff814a0b80 R15: ffff88030c7ce800
+> > [   70.425626] FS:  0000000000000000(0000) GS:ffff88031fd80000(0000) knlGS:0000000000000000
+> > [   70.425628] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> > [   70.425630] CR2: 0000000000000040 CR3: 000000030c714000 CR4: 00000000000407e0
+> > [   70.425631] Stack:
+> > [   70.425632]  ffffffff81340110 ffffffff814a0b80 ffff88030ef87bc8 ffffffff817b3858
+> > [   70.425636]  ffff88030dcb6898 ffff88030ef87c00 ffffffff813d6daf ffff88030f429000
+> > [   70.425640]  000000010ef87bf0 ffffffff813d4737 ffff88030ef87c00 ffffffff8133f19a
+> > [   70.425644] Call Trace:
+> > [   70.425650]  [<ffffffff81340110>] ? pci_do_find_bus+0x70/0x70
+> > [   70.425653]  [<ffffffff814a0b80>] ? hcd_pci_suspend_noirq+0xa0/0xa0
+> > [   70.425659]  [<ffffffff817b3858>] ? klist_iter_exit+0x18/0x30
+> > [   70.425663]  [<ffffffff813d6daf>] ? bus_find_device+0x7f/0xb0
+> > [   70.425666]  [<ffffffff813d4737>] ? put_device+0x17/0x20
+> > [   70.425669]  [<ffffffff8133f19a>] ? pci_dev_put+0x1a/0x20
+> > [   70.425672]  [<ffffffff81340361>] ? pci_get_dev_by_id+0x61/0x90
+> > [   70.425675]  [<ffffffff814a0b80>] ? hcd_pci_suspend_noirq+0xa0/0xa0
+> > [   70.425679]  [<ffffffff814a0bcb>] ehci_post_add+0x4b/0x60
+> > [   70.425682]  [<ffffffff814a0070>] for_each_companion+0x80/0xa0
+> > [   70.425685]  [<ffffffff814a0504>] usb_hcd_pci_probe+0x474/0x4e0
+> 
+> I think I see the problem; the driver data for the companion controller 
+> gets set before we expect it.  The patch below should help, by adding a 
+> check to see that the companion's root hub has been allocated.
+> 
+> Alan Stern
+> 
+> 
+> 
+> Index: usb-3.14/drivers/usb/core/hcd-pci.c
+> ===================================================================
+> --- usb-3.14.orig/drivers/usb/core/hcd-pci.c
+> +++ usb-3.14/drivers/usb/core/hcd-pci.c
+> @@ -75,7 +75,7 @@ static void for_each_companion(struct pc
+>  				PCI_SLOT(companion->devfn) != slot)
+>  			continue;
+>  		companion_hcd = pci_get_drvdata(companion);
+> -		if (!companion_hcd)
+> +		if (!companion_hcd || !companion_hcd->self.root_hub)
+>  			continue;
+>  		fn(pdev, hcd, companion, companion_hcd);
+>  	}
+> 
 
 
---=-eL3B1t8JUWdQ6i0kdbKt--
