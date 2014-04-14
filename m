@@ -1,87 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362AbaDNMtE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 08:49:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13403 "EHLO mx1.redhat.com"
+	id S1754563AbaDNMvK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 08:51:10 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:42576 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751282AbaDNMtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 08:49:01 -0400
-Date: Mon, 14 Apr 2014 08:48:54 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org,
-        Satoru MORIYA <satoru.moriya.br@hitachi.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Takenori Nagano <t-nagano@ah.jp.nec.com>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] kernel/panic: Add "late_kdump" option for kdump in
- unstable condition
-Message-ID: <20140414124854.GA928@redhat.com>
-References: <20140414045158.10846.35462.stgit@ltc230.yrl.intra.hitachi.co.jp>
- <87d2gkxzkl.fsf@x220.int.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87d2gkxzkl.fsf@x220.int.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751519AbaDNMvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 08:51:08 -0400
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: Stanimir Varbanov <svarbanov@mm-sol.com>, linux-arm-msm@vger.kernel.org,
+        Mona Hossain <mhossain@codeaurora.org>,
+        Hariprasad Dhalinarasimha <hnamgund@codeaurora.org>,
+        Zhen Kong <zkong@codeaurora.org>,
+        Niranjana Vishwanathapura <nvishwan@codeaurora.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org
+Subject: [RFC PATCH v2 0/9] Add Qualcomm crypto driver
+Date: Mon, 14 Apr 2014 15:48:36 +0300
+Message-Id: <1397479725-20954-1-git-send-email-svarbanov@mm-sol.com>
+X-Mailer: git-send-email 1.8.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 13, 2014 at 10:14:18PM -0700, Eric W. Biederman wrote:
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
-> 
-> > Add a "late_kdump" option to run kdump after running panic
-> > notifiers and dump kmsg. This can help rare situations which
-> > kdump drops in failure because of unstable crashed kernel
-> > or hardware failure (memory corruption on critical data/code),
-> > or the 2nd kernel is broken by the 1st kernel (it's a broken
-> > behavior, but who can guarantee that the "crashed" kernel
-> > works correctly?).
-> >
-> > Usage: add "late_kdump" to kernel boot option. That's all.
-> >
-> > Note that this actually increases risks of the failure of
-> > kdump. This option should be set only if you worry about
-> > the rare case of kdump failure rather than increasing the
-> > chance of success.
-> 
-> This is better than some others, but every time I have seen a request
-> to do this it is because someone wants to do something horrible that
-> makes kdump more brittle and generally unsupportable.
-> 
-> You seem to in general understand that.
-> 
-> But how can we support an option to make the kernel flakier?
-> 
-> I suspect it would be more productive to work on the lkcd (spelling?)
-> test module and show that crash dump actually works in the situation
-> people are worried about.
-> 
-> Just thinking about this send shivers up my spine. Ick.
+Hi,
 
-Eric,
+Here is the second version of the patch set. This time tagged
+as an RFC to avoid confusions. The driver is splitted by files
+and is buildable at the last patch. When the review has finished
+1/9 to 7/9 could be squashed in one patch.
 
-This question has been raised many a times. Our argument has been that
-it reduces kdump reliability. And their argument is that so be it. They
-are ready to bear that cost and before we really transition into kdump
-kernel they want to do something else. One such use case is trying to
-save some information into NVRAM.
+Any comments appreciated!
 
-Their argument is that saving to NVRAM is more reliable. There are no
-guarantees that kdump kernel will actually come and save full dump. So
-they think that they can save kernel log buffers to NVRAM atleast before
-jumping to kdump kernel.
+Changes since v1:
 
-I understand that this is antithesis to executing some code in crashed
-kernel and it reduces the reliability of kdump operation. But I also think
-we should atleast provide people with a choice. And it is up to them whether
-how do they want to configure the system.
+core
+ - added MODULE_DEVICE_TABLE
+ - reorganise includes
+ - kernel doc comments
+ - fix probe error path, forgot to destroy workqueue
+ - rework clocks and kill loops for enabling
+ - restructure the interfaces between core part of the driver
+   and crypto type algorithms. Now struct qce_algo_ops has
+   .unregister_algs operation and it is implemented by every
+   algorithm type (unregister_algs was common in v1).
+   Also async_req_queue/done are now part of core structure
+   qce_device
 
-If somebody is willing to live with reduced reliability of kdump
-operation, why should we enforce that no such option will be provided.
+regs-v5
+ - use GENMASK and include bitops.h
 
-Thanks
-Vivek
+dma-sg helpers
+ - do not check !IS_ERR on error path
+ - various fixes as per review comments
+ - reorganise includes
+ - return error on qce_dma_terminate_all
+
+ablkcipher
+ - use queue and done callbacks from struct qce_device
+ - reorganise includes
+ - kernel doc notation
+
+sha-hmac
+ - use queue and done callbacks from struct qce_device
+ - make byte_count __be32
+ - kernel doc notation
+ - make rctx flags member unsigned long
+ - cleanup qce_ahash_update function
+ - make const * input args of qce_import_common
+
+common
+ - rename bits/masks to use _SHIFT suffix
+ - reorganise includes and add qce_get_version function
+ - make rctx flags unsigned long
+ - move blocksize boundary check on function begging and
+   clear BYTECOUNT registers on first processing block
+
+This driver is based on Codeaurora's driver found at [1]
+
+regards,
+Stan
+
+[1] https://www.codeaurora.org/cgit/quic/la/kernel/msm-3.10/tree/drivers
+/crypto/msm?h=msm-3.10
+------------------------------------------------------------
+v1.
+
+The following patch set implements support for Qualcomm
+crypto hardware accelerator driver. It registers itself
+to the crypto subsystem and adds the following operations
+for encryption/decription - AES with ECB CBC CTR XTS modes,
+DES with ECB CBC modes, and 3DES ECB CBC modes.
+For hashing and MAC it adds support for sha1 sha256,
+hmac(sha1) hmac(sha256).
+
+The version of the driver is reworked by me and it is based
+on Codeaurora's qcrypto driver. The proposed version has many
+coding style fixes, re-factored files, separated by
+functionality. I wanted to make the driver more readable and
+easier for review, hope I done well. I'll appreciate any review
+comments which will help me to make this code clear and ready
+for mainline kernel.
+
+Stanimir Varbanov (9):
+  crypto: qce: Add core driver implementation
+  crypto: qce: Add register defines
+  crypto: qce: Add dma and sg helpers
+  crypto: qce: Add ablkcipher algorithms
+  crypto: qce: Adds sha and hmac transforms
+  crypto: qce: Adds infrastructure to setup the crypto block
+  crypto: qce: Adds Makefile to build the driver
+  crypto: qce: Build Qualcomm qce driver
+  ARM: DT: qcom: Add Qualcomm crypto driver binding document
+
+ .../devicetree/bindings/crypto/qcom-qce.txt        |  25 +
+ drivers/crypto/Kconfig                             |  10 +
+ drivers/crypto/Makefile                            |   1 +
+ drivers/crypto/qce/Makefile                        |   6 +
+ drivers/crypto/qce/ablkcipher.c                    | 403 ++++++++++++++
+ drivers/crypto/qce/cipher.h                        |  67 +++
+ drivers/crypto/qce/common.c                        | 438 +++++++++++++++
+ drivers/crypto/qce/common.h                        | 104 ++++
+ drivers/crypto/qce/core.c                          | 295 ++++++++++
+ drivers/crypto/qce/core.h                          |  73 +++
+ drivers/crypto/qce/dma.c                           | 188 +++++++
+ drivers/crypto/qce/dma.h                           |  58 ++
+ drivers/crypto/qce/regs-v5.h                       | 331 ++++++++++++
+ drivers/crypto/qce/sha.c                           | 591 +++++++++++++++++++++
+ drivers/crypto/qce/sha.h                           |  81 +++
+ 15 files changed, 2671 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/crypto/qcom-qce.txt
+ create mode 100644 drivers/crypto/qce/Makefile
+ create mode 100644 drivers/crypto/qce/ablkcipher.c
+ create mode 100644 drivers/crypto/qce/cipher.h
+ create mode 100644 drivers/crypto/qce/common.c
+ create mode 100644 drivers/crypto/qce/common.h
+ create mode 100644 drivers/crypto/qce/core.c
+ create mode 100644 drivers/crypto/qce/core.h
+ create mode 100644 drivers/crypto/qce/dma.c
+ create mode 100644 drivers/crypto/qce/dma.h
+ create mode 100644 drivers/crypto/qce/regs-v5.h
+ create mode 100644 drivers/crypto/qce/sha.c
+ create mode 100644 drivers/crypto/qce/sha.h
+
+-- 
+1.8.4.4
+
