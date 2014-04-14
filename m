@@ -1,54 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126AbaDNQvy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:51:54 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:56062 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755501AbaDNQvg (ORCPT
+	id S1755847AbaDNQwZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:52:25 -0400
+Received: from michel.telenet-ops.be ([195.130.137.88]:39710 "EHLO
+	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752197AbaDNQwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:51:36 -0400
-Date: Mon, 14 Apr 2014 12:51:31 -0400 (EDT)
-Message-Id: <20140414.125131.1934050779129550948.davem@davemloft.net>
-To: david.vrabel@citrix.com
-Cc: v.maffione@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com
-Subject: Re: [Xen-devel] [PATCH] drivers: net: xen-netfront: fix array
- initialization bug
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <534BAD7C.6090107@citrix.com>
-References: <1397296540-3007-1-git-send-email-v.maffione@gmail.com>
-	<20140412.165152.1877473530496221304.davem@davemloft.net>
-	<534BAD7C.6090107@citrix.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 14 Apr 2014 09:51:35 -0700 (PDT)
+	Mon, 14 Apr 2014 12:52:21 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Randy Dunlap <rdunlap@infradead.org>, Harry Wei <harryxiyou@gmail.com>
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: =?UTF-8?q?=5BPATCH=5D=20Documentation=3A=20Update=20stable=20address=20in=20Chinese=20and=20Japanese=20translations?=
+Date: Mon, 14 Apr 2014 18:52:14 +0200
+Message-Id: <1397494334-22092-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Vrabel <david.vrabel@citrix.com>
-Date: Mon, 14 Apr 2014 10:42:20 +0100
+From: Geert Uytterhoeven <geert+renesas@glider.be>
 
-> On 12/04/14 21:51, David Miller wrote:
->> From: Vincenzo Maffione <v.maffione@gmail.com>
->> Date: Sat, 12 Apr 2014 11:55:40 +0200
->> 
->>> This patch fixes the initialization of an array used in the TX
->>> datapath that was mistakenly initialized together with the
->>> RX datapath arrays. An out of range array access could happen
->>> when RX and TX rings had different sizes.
->>>
->>> Signed-off-by: Vincenzo Maffione <v.maffione@gmail.com>
->> 
->> Good catch, applied, thanks.
-> 
-> Thanks.  You can queue this for net-next since the Tx and Rx rings are
-> the same constant size.
+The English and Korean translations were updated, the Chinese and Japanese
+weren't.
 
-I was able to determine when I reviewed this patch that the size in bytes
-of the rings are the same (PAGE_SIZE), but I couldn't ascertain whether
-the individual ring entries in the TX ring and RX ring are the same size.
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+ Documentation/ja_JP/HOWTO                   |    2 +-
+ Documentation/ja_JP/stable_kernel_rules.txt |    6 +++---
+ Documentation/zh_CN/HOWTO                   |    2 +-
+ Documentation/zh_CN/stable_kernel_rules.txt |    2 +-
+ 4 files changed, 6 insertions(+), 6 deletions(-)
 
-Are they?
+diff --git a/Documentation/ja_JP/HOWTO b/Documentation/ja_JP/HOWTO
+index 0091a8215ac1..b61885c35ce1 100644
+--- a/Documentation/ja_JP/HOWTO
++++ b/Documentation/ja_JP/HOWTO
+@@ -315,7 +315,7 @@ Andrew Morton が Linux-kernel メーリングリストにカーネルリリー
+ もし、3.x.y カーネルが存在しない場合には、番号が一番大きい 3.x が
+ 最新の安定版カーネルです。
+ 
+-3.x.y は "stable" チーム <stable@kernel.org> でメンテされており、必
++3.x.y は "stable" チーム <stable@vger.kernel.org> でメンテされており、必
+ 要に応じてリリースされます。通常のリリース期間は 2週間毎ですが、差し迫っ
+ た問題がなければもう少し長くなることもあります。セキュリティ関連の問題
+ の場合はこれに対してだいたいの場合、すぐにリリースがされます。
+diff --git a/Documentation/ja_JP/stable_kernel_rules.txt b/Documentation/ja_JP/stable_kernel_rules.txt
+index 14265837c4ce..9dbda9b5d21e 100644
+--- a/Documentation/ja_JP/stable_kernel_rules.txt
++++ b/Documentation/ja_JP/stable_kernel_rules.txt
+@@ -50,16 +50,16 @@ linux-2.6.29/Documentation/stable_kernel_rules.txt
+ 
+ -stable ツリーにパッチを送付する手続き-
+ 
+- - 上記の規則に従っているかを確認した後に、stable@kernel.org にパッチ
++ - 上記の規則に従っているかを確認した後に、stable@vger.kernel.org にパッチ
+    を送る。
+  - 送信者はパッチがキューに受け付けられた際には ACK を、却下された場合
+    には NAK を受け取る。この反応は開発者たちのスケジュールによって、数
+    日かかる場合がある。
+  - もし受け取られたら、パッチは他の開発者たちと関連するサブシステムの
+    メンテナーによるレビューのために -stable キューに追加される。
+- - パッチに stable@kernel.org のアドレスが付加されているときには、それ
++ - パッチに stable@vger.kernel.org のアドレスが付加されているときには、それ
+    が Linus のツリーに入る時に自動的に stable チームに email される。
+- - セキュリティパッチはこのエイリアス (stable@kernel.org) に送られるべ
++ - セキュリティパッチはこのエイリアス (stable@vger.kernel.org) に送られるべ
+    きではなく、代わりに security@kernel.org のアドレスに送られる。
+ 
+ レビューサイクル-
+diff --git a/Documentation/zh_CN/HOWTO b/Documentation/zh_CN/HOWTO
+index 6c914aa87e71..54ea24ff63c7 100644
+--- a/Documentation/zh_CN/HOWTO
++++ b/Documentation/zh_CN/HOWTO
+@@ -237,7 +237,7 @@ kernel.org网站的pub/linux/kernel/v2.6/目录下找到它。它的开发遵循
+ 如果没有2.6.x.y版本内核存在，那么最新的2.6.x版本内核就相当于是当前的稳定
+ 版内核。
+ 
+-2.6.x.y版本由“稳定版”小组（邮件地址<stable@kernel.org>）维护，一般隔周发
++2.6.x.y版本由“稳定版”小组（邮件地址<stable@vger.kernel.org>）维护，一般隔周发
+ 布新版本。
+ 
+ 内核源码中的Documentation/stable_kernel_rules.txt文件具体描述了可被稳定
+diff --git a/Documentation/zh_CN/stable_kernel_rules.txt b/Documentation/zh_CN/stable_kernel_rules.txt
+index b5b9b0ab02fd..26ea5ed7cd9c 100644
+--- a/Documentation/zh_CN/stable_kernel_rules.txt
++++ b/Documentation/zh_CN/stable_kernel_rules.txt
+@@ -42,7 +42,7 @@ Documentation/stable_kernel_rules.txt 的中文翻译
+ 
+ 向稳定版代码树提交补丁的过程：
+ 
+-  - 在确认了补丁符合以上的规则后，将补丁发送到stable@kernel.org。
++  - 在确认了补丁符合以上的规则后，将补丁发送到stable@vger.kernel.org。
+   - 如果补丁被接受到队列里，发送者会收到一个ACK回复，如果没有被接受，收
+     到的是NAK回复。回复需要几天的时间，这取决于开发者的时间安排。
+   - 被接受的补丁会被加到稳定版本队列里，等待其他开发者的审查。
+-- 
+1.7.9.5
+
