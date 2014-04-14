@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370AbaDNIEb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 04:04:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12590 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754320AbaDNIE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 04:04:27 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Neela Syam Kolli <megaraidlinux@lsi.com>, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v2 RESEND 14/23] megaraid: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Mon, 14 Apr 2014 10:05:38 +0200
-Message-Id: <4c833c2a7120915767c71c3262dada8896723e7b.1397461652.git.agordeev@redhat.com>
-In-Reply-To: <cover.1397461652.git.agordeev@redhat.com>
-References: <cover.1397461652.git.agordeev@redhat.com>
+	id S1754527AbaDNIRH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 04:17:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:56672 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754386AbaDNIRD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 04:17:03 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Bo Shen <voice.shen@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH 1/4] ARM: at91: prepare common clk transition for sam9n12 SoC
+Date: Mon, 14 Apr 2014 10:16:36 +0200
+Message-Id: <1397463399-11771-2-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1397463399-11771-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1397463399-11771-1-git-send-email-boris.brezillon@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
+This patch encloses sam9n12 old clk registration in
+"#if defined(CONFIG_OLD_CLK_AT91) #endif" sections.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Neela Syam Kolli <megaraidlinux@lsi.com>
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
+Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 ---
- drivers/scsi/megaraid/megaraid_sas_base.c |   20 +++++++-------------
- 1 files changed, 7 insertions(+), 13 deletions(-)
+ arch/arm/mach-at91/at91sam9n12.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
-index 2df717c..26f89d4 100644
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -4106,17 +4106,11 @@ static int megasas_init_fw(struct megasas_instance *instance)
- 					     (unsigned int)num_online_cpus());
- 		for (i = 0; i < instance->msix_vectors; i++)
- 			instance->msixentry[i].entry = i;
--		i = pci_enable_msix(instance->pdev, instance->msixentry,
--				    instance->msix_vectors);
--		if (i >= 0) {
--			if (i) {
--				if (!pci_enable_msix(instance->pdev,
--						     instance->msixentry, i))
--					instance->msix_vectors = i;
--				else
--					instance->msix_vectors = 0;
--			}
--		} else
-+		i = pci_enable_msix_range(instance->pdev, instance->msixentry,
-+					  1, instance->msix_vectors);
-+		if (i)
-+			instance->msix_vectors = i;
-+		else
- 			instance->msix_vectors = 0;
+diff --git a/arch/arm/mach-at91/at91sam9n12.c b/arch/arm/mach-at91/at91sam9n12.c
+index f2ea7b0..c8988fe 100644
+--- a/arch/arm/mach-at91/at91sam9n12.c
++++ b/arch/arm/mach-at91/at91sam9n12.c
+@@ -19,9 +19,10 @@
+ #include "board.h"
+ #include "soc.h"
+ #include "generic.h"
+-#include "clock.h"
+ #include "sam9_smc.h"
  
- 		dev_info(&instance->pdev->dev, "[scsi%d]: FW supports"
-@@ -5136,8 +5130,8 @@ megasas_resume(struct pci_dev *pdev)
++#if defined(CONFIG_OLD_CLK_AT91)
++#include "clock.h"
+ /* --------------------------------------------------------------------
+  *  Clocks
+  * -------------------------------------------------------------------- */
+@@ -215,6 +216,9 @@ static void __init at91sam9n12_register_clocks(void)
+ 			 ARRAY_SIZE(periph_clocks_lookups));
  
- 	/* Now re-enable MSI-X */
- 	if (instance->msix_vectors &&
--	    pci_enable_msix(instance->pdev, instance->msixentry,
--			    instance->msix_vectors))
-+	    pci_enable_msix_exact(instance->pdev, instance->msixentry,
-+				  instance->msix_vectors))
- 		goto fail_reenable_msix;
+ }
++#else
++#define at91sam9n12_register_clocks NULL
++#endif
  
- 	switch (instance->pdev->device) {
+ /* --------------------------------------------------------------------
+  *  AT91SAM9N12 processor initialization
 -- 
-1.7.7.6
+1.8.3.2
 
