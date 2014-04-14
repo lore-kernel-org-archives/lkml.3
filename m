@@ -1,114 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753644AbaDNHk7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 03:40:59 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:13857 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753022AbaDNHkw (ORCPT
+	id S1753897AbaDNHlM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 03:41:12 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:36073 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753794AbaDNHlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 03:40:52 -0400
-X-AuditID: cbfee68e-b7f566d000002344-39-534b9103663d
-From: Jungseok Lee <jays.lee@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        Catalin.Marinas@arm.com, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        sungjinn.chung@samsung.com, Arnd Bergmann <arnd@arndb.de>,
-        kgene.kim@samsung.com, ilho215.lee@samsung.com
-Subject: [PATCH 4/8] arm64: Introduce a kernel configuration option for VA_BITS
-Date: Mon, 14 Apr 2014 16:40:51 +0900
-Message-id: <000201cf57b4$dbe63260$93b29720$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac9XrUy/hcb4eczCQ7qwkj0Y19kvsA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsVy+t8zfV3mid7BBvt2SVv8nXSM3eL9sh5G
-	ixev/zFaHP23kNGid8FVNouPp46zW2x6fI3V4vKuOWwWM87vY7L4e+cfm8WHGSsZHbg91sxb
-	w+jx+9ckRo871/aweZzftIbZY/OSeo++LasYPT5vkgtgj+KySUnNySxLLdK3S+DKmN69kK1g
-	Mm/F8/brTA2M17m6GDk5JARMJH4/uccMYYtJXLi3nq2LkYtDSGAZo8TVdS2sXYwcYEWb1nNA
-	xKczSlw6PpMFwvnDKHFg8mNGkG42AU2JR3d72EESIgI7GCUmr13ECuIwC5xglFh6Zy0rSJWw
-	gL/E7IV3mEBsFgFVic5VP8DivAKWEg+eP4CyBSV+TL7HAmIzC2hJrN95nAnClpfYvOYt1K0K
-	EjvOvgbbLCKgJ/HpCEQvs4CIxL4X7xhBFksItHJIPFj2DmqZgMS3yYdYIP6Rldh0AGqOpMTB
-	FTdYJjCKzUKyehaS1bOQrJ6FZMUCRpZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ+bmbGCHR3LeD
-	8eYB60OMyUDrJzJLiSbnA5NBXkm8obGZkYWpiamxkbmlGWnCSuK8ix4mBQkJpCeWpGanphak
-	FsUXleakFh9iZOLglGpgXJlSKLzk14xlRtee/J15TSrumZBMoiDriZfPWLnlMhSWzgtJUGdz
-	s8k/p6PCZMXxgbNcX0D/q0cJS9Yig7kLL8U/d7etKGp1FX98hbsy+r1qj5faM78mxmkMvTYz
-	eZY/SZyZxnFxw4Utx2ZxObr19LBzZPGeeqzmMiN2aylj0oHYL9w/bK8qsRRnJBpqMRcVJwIA
-	DdiTovwCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGKsWRmVeSWpSXmKPExsVy+t9jQV3mid7BBn9niVv8nXSM3eL9sh5G
-	ixev/zFaHP23kNGid8FVNouPp46zW2x6fI3V4vKuOWwWM87vY7L4e+cfm8WHGSsZHbg91sxb
-	w+jx+9ckRo871/aweZzftIbZY/OSeo++LasYPT5vkgtgj2pgtMlITUxJLVJIzUvOT8nMS7dV
-	8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wBOlJJoSwxpxQoFJBYXKykb4dpQmiIm64F
-	TGOErm9IEFyPkQEaSFjHmDG9eyFbwWTeiuft15kaGK9zdTFycEgImEhsWs/RxcgJZIpJXLi3
-	nq2LkYtDSGA6o8Sl4zNZIJw/jBIHJj9mBKliE9CUeHS3hx0kISKwg1Fi8tpFrCAOs8AJRoml
-	d9ayglQJC/hLzF54hwnEZhFQlehc9QMszitgKfHg+QMoW1Dix+R7LCA2s4CWxPqdx5kgbHmJ
-	zWveMkPcpCCx4+xrsM0iAnoSn45A9DILiEjse/GOcQKjwCwko2YhGTULyahZSFoWMLKsYhRN
-	LUguKE5KzzXUK07MLS7NS9dLzs/dxAhOFc+kdjCubLA4xCjAwajEw5uw3TNYiDWxrLgy9xCj
-	BAezkgjvtgyvYCHelMTKqtSi/Pii0pzU4kOMyUCfTmSWEk3OB6axvJJ4Q2MTMyNLIzMLIxNz
-	c9KElcR5D7RaBwoJpCeWpGanphakFsFsYeLglGpg3OBRpHT+aZH88VTOXUFHpgY5Lg4vDsuv
-	X3eK97Dimssf3BRjIp5+SuOa83tS6O7lD37o3DFJXKkrI8PpacVh1Tsn32CiG7M9+1XfvL1T
-	RKW6anfaGx+9mntCj9klK+7TpfPHZaKk5RN8LDYqrzZfVsHR99PlQN6Two9yXt8nPOdRuSt9
-	M3axEktxRqKhFnNRcSIAUGecA1kDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 14 Apr 2014 03:41:08 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, tytso@mit.edu
+References: <87sipmbe8x.fsf@x220.int.ebiederm.org>
+	<20140409175322.GZ18016@ZenIV.linux.org.uk>
+	<20140409182830.GA18016@ZenIV.linux.org.uk>
+	<87txa286fu.fsf@x220.int.ebiederm.org>
+	<87fvlm860e.fsf_-_@x220.int.ebiederm.org>
+	<20140409232423.GB18016@ZenIV.linux.org.uk>
+	<87lhva5h4k.fsf@x220.int.ebiederm.org>
+	<20140413053956.GM18016@ZenIV.linux.org.uk>
+	<87zjjp3e7w.fsf@x220.int.ebiederm.org>
+	<87ppkl1xb7.fsf@x220.int.ebiederm.org>
+	<20140413215242.GP18016@ZenIV.linux.org.uk>
+	<87y4z8uzqw.fsf_-_@x220.int.ebiederm.org>
+Date: Mon, 14 Apr 2014 00:40:44 -0700
+In-Reply-To: <87y4z8uzqw.fsf_-_@x220.int.ebiederm.org> (Eric W. Biederman's
+	message of "Mon, 14 Apr 2014 00:38:47 -0700")
+Message-ID: <87mwfouznn.fsf_-_@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX180awVdj7wDFg4ArSgZT3qY3WXvo8dm4hU=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.7 XMSubLong Long Subject
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4425]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;Al Viro <viro@ZenIV.linux.org.uk>
+X-Spam-Relay-Country: 
+Subject: [PATCH 2/4] vfs: Move autoclose of BSD accounting into a work queue
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a kernel configuration for VA_BITS.
 
-It helps to prevent unnecessary #ifdef statements insertions
-for VA_BITS when implementing different page sizes and level of
-translation tables.
+The autoclose of BSD accounting writes a record to the BSD accounting
+file.  When mntput is called from moderaly deep within the stack the
+(3KiB or so) generating I/O can be problemenatic as some I/O paths
+require nearly 5KiB of stack on their own.
 
-Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
-Reviewed-by: Sungjinn Chung <sungjinn.chung@samsung.com>
+Avoid the possibility of stack overflow by moving the close of the BSD
+accounting file into a work queue.
+
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
- arch/arm64/Kconfig              |    8 ++++++++
- arch/arm64/include/asm/memory.h |    6 +-----
- 2 files changed, 9 insertions(+), 5 deletions(-)
+ kernel/acct.c | 25 ++++++++++++++++++++-----
+ 1 file changed, 20 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 1a2faf9..431acbc 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -186,6 +186,14 @@ config ARM64_3_LEVELS
+diff --git a/kernel/acct.c b/kernel/acct.c
+index 8d6e145138bb..1853dd4a1d01 100644
+--- a/kernel/acct.c
++++ b/kernel/acct.c
+@@ -93,6 +93,7 @@ struct bsd_acct_struct {
  
- endchoice
+ static DEFINE_SPINLOCK(acct_lock);
+ static LIST_HEAD(acct_list);
++static LIST_HEAD(acct_close_list);
  
-+config ARM64_VA_BITS
-+	int "Virtual address space size"
-+	range 39 39 if ARM64_4K_PAGES && ARM64_3_LEVELS
-+	range 42 42 if ARM64_64K_PAGES && ARM64_2_LEVELS
-+	help
-+	  This feature is determined by a combination of page size and
-+	  level of translation tables.
+ /*
+  * Check the amount of free space and suspend/resume accordingly.
+@@ -280,6 +281,20 @@ SYSCALL_DEFINE1(acct, const char __user *, name)
+ 	return error;
+ }
+ 
++static void acct_close_mnts(struct work_struct *unused)
++{
++	struct bsd_acct_struct *acct;
 +
- config CPU_BIG_ENDIAN
-        bool "Build big-endian kernel"
-        help
-diff --git a/arch/arm64/include/asm/memory.h b/arch/arm64/include/asm/memory.h
-index e94f945..f6e7480 100644
---- a/arch/arm64/include/asm/memory.h
-+++ b/arch/arm64/include/asm/memory.h
-@@ -41,11 +41,7 @@
-  * The module space lives between the addresses given by TASK_SIZE
-  * and PAGE_OFFSET - it must be within 128MB of the kernel text.
++	spin_lock(&acct_lock);
++restart:
++	list_for_each_entry(acct, &acct_close_list, list) {
++		acct_file_reopen(acct, NULL, NULL);
++		goto restart;
++	}
++	spin_unlock(&acct_lock);
++}
++static DECLARE_WORK(acct_close_work, acct_close_mnts);
++
+ /**
+  * acct_auto_close - turn off a filesystem's accounting if it is on
+  * @m: vfsmount being shut down
+@@ -289,15 +304,15 @@ SYSCALL_DEFINE1(acct, const char __user *, name)
   */
--#ifdef CONFIG_ARM64_64K_PAGES
--#define VA_BITS			(42)
--#else
--#define VA_BITS			(39)
--#endif
-+#define VA_BITS			(CONFIG_ARM64_VA_BITS)
- #define PAGE_OFFSET		(UL(0xffffffffffffffff) << (VA_BITS - 1))
- #define MODULES_END		(PAGE_OFFSET)
- #define MODULES_VADDR		(MODULES_END - SZ_64M)
+ void acct_auto_close_mnt(struct vfsmount *m)
+ {
+-	struct bsd_acct_struct *acct;
++	struct bsd_acct_struct *acct, *tmp;
+ 
+ 	spin_lock(&acct_lock);
+-restart:
+-	list_for_each_entry(acct, &acct_list, list)
++	list_for_each_entry_safe(acct, tmp, &acct_list, list) {
+ 		if (acct->file && acct->file->f_path.mnt == m) {
+-			acct_file_reopen(acct, NULL, NULL);
+-			goto restart;
++			list_move_tail(&acct->list, &acct_close_list);
++			schedule_work(&acct_close_work);
+ 		}
++	}
+ 	spin_unlock(&acct_lock);
+ }
+ 
 -- 
-1.7.10.4
-
+1.9.1
 
