@@ -1,103 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989AbaDNW63 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 18:58:29 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:48828 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753777AbaDNW60 (ORCPT
+	id S1754920AbaDNXEJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 19:04:09 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:54276 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002AbaDNXEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 18:58:26 -0400
-Date: Tue, 15 Apr 2014 07:58:22 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>,
-        Paul Parsons <lost.distance@yahoo.com>,
-        Magnus Damm <magnus.damm@gmail.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-leds@vger.kernel.org, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCHv2 02/11] ARM: shmobile: Armadillo 800 EVA: initialize all
- struct pwm_lookup members
-Message-ID: <20140414225822.GG22518@verge.net.au>
-References: <1397512793-10325-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1397512793-10325-3-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 14 Apr 2014 19:04:07 -0400
+Date: Tue, 15 Apr 2014 01:04:03 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@fb.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [GIT PULL v2] nohz: Move nohz kick out of scheduler IPI
+Message-ID: <20140414230401.GB1877@localhost.localdomain>
+References: <1396541832-459-1-git-send-email-fweisbec@gmail.com>
+ <20140409152822.GB17782@localhost.localdomain>
+ <20140414112217.GA4050@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397512793-10325-3-git-send-email-alexandre.belloni@free-electrons.com>
-Organisation: Horms Solutions Ltd.
+In-Reply-To: <20140414112217.GA4050@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 11:59:44PM +0200, Alexandre Belloni wrote:
-> Initializing all the struct pwm_lookup members allows to get rid of the struct
-> tpu_pwm_platform_data as the polarity initialization will be taken care of by
-> the PWM core.
+On Mon, Apr 14, 2014 at 01:22:17PM +0200, Ingo Molnar wrote:
 > 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-
-
-This looks good to me.
-Please let me know when the driver code has been merged and
-I'll take this patch. Likewise for the other shmobile patch in this series.
-
-> ---
->  arch/arm/mach-shmobile/board-armadillo800eva.c | 20 +++++++++-----------
->  1 file changed, 9 insertions(+), 11 deletions(-)
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
 > 
-> diff --git a/arch/arm/mach-shmobile/board-armadillo800eva.c b/arch/arm/mach-shmobile/board-armadillo800eva.c
-> index 2858f380beae..1bf61dad9a35 100644
-> --- a/arch/arm/mach-shmobile/board-armadillo800eva.c
-> +++ b/arch/arm/mach-shmobile/board-armadillo800eva.c
-> @@ -31,7 +31,7 @@
->  #include <linux/gpio_keys.h>
->  #include <linux/regulator/driver.h>
->  #include <linux/pinctrl/machine.h>
-> -#include <linux/platform_data/pwm-renesas-tpu.h>
-> +#include <linux/pwm.h>
->  #include <linux/pwm_backlight.h>
->  #include <linux/regulator/fixed.h>
->  #include <linux/regulator/gpio-regulator.h>
-> @@ -399,24 +399,22 @@ static struct resource pwm_resources[] = {
->  	},
->  };
->  
-> -static struct tpu_pwm_platform_data pwm_device_data = {
-> -	.channels[2] = {
-> -		.polarity = PWM_POLARITY_INVERSED,
-> -	}
-> -};
-> -
->  static struct platform_device pwm_device = {
->  	.name = "renesas-tpu-pwm",
->  	.id = -1,
-> -	.dev = {
-> -		.platform_data = &pwm_device_data,
-> -	},
->  	.num_resources = ARRAY_SIZE(pwm_resources),
->  	.resource = pwm_resources,
->  };
->  
->  static struct pwm_lookup pwm_lookup[] = {
-> -	PWM_LOOKUP("renesas-tpu-pwm", 2, "pwm-backlight.0", NULL),
-> +	{
-> +		.provider = "renesas-tpu-pwm",
-> +		.index = 2,
-> +		.dev_id = "pwm-backlight.0",
-> +		.con_id = NULL,
-> +		.period = 33333,
-> +		.polarity = PWM_POLARITY_INVERSED,
-> +	},
->  };
->  
->  /* LCDC and backlight */
-> -- 
-> 1.8.3.2
+> > On Thu, Apr 03, 2014 at 06:17:10PM +0200, Frederic Weisbecker wrote:
+> > > Ingo, Thomas,
+> > > 
+> > > Please pull the timers/nohz-ipi-for-tip-v3 branch that can be found at:
+> > > 
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+> > > 	timers/nohz-ipi-for-tip-v3
+> > 
+> > Ping?
 > 
+> So this came a bit late - will it be fine for v3.16 as-is?
+
+It was late on purpose due to dependencies on the block tree. But nevermind.
+
+It's still fine to be pulled as is after -rc1 for 3.16.
+
+Thanks!
+ 
+> Thanks,
+> 
+> 	Ingo
