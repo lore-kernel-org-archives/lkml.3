@@ -1,91 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206AbaDNPYY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 11:24:24 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34246 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754506AbaDNPVt (ORCPT
+	id S1754550AbaDNPZe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 11:25:34 -0400
+Received: from www84.your-server.de ([213.133.104.84]:34735 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866AbaDNPZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 11:21:49 -0400
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: devel@driverdev.osuosl.org, Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH 3/7] imx-drm: ipu-dmfc: Wait for FIFOs to run empty before disabling
-Date: Mon, 14 Apr 2014 17:21:31 +0200
-Message-Id: <1397488895-17930-4-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1397488895-17930-1-git-send-email-p.zabel@pengutronix.de>
-References: <1397488895-17930-1-git-send-email-p.zabel@pengutronix.de>
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 14 Apr 2014 11:25:32 -0400
+Date: Mon, 14 Apr 2014 17:25:20 +0200
+Message-ID: <20140414172520.Horde.a0pUS344KcjNMpOsLcnEXQ6@webmail.your-server.de>
+From: stefani@seibold.net
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        Greg KH <greg@kroah.com>, sarah.a.sharp@linux.intel.com,
+        andreas.brief@rohde-schwarz.com
+Subject: Re: Missing USB XHCI and EHCI reset for kexec
+References: <Pine.LNX.4.44L0.1404141035540.874-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1404141035540.874-100000@iolanthe.rowland.org>
+User-Agent: Internet Messaging Program (IMP) H5 (6.1.7)
+Content-Type: text/plain; charset=UTF-8; format=flowed; DelSp=Yes
+MIME-Version: 1.0
+Content-Disposition: inline
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disabling the DMFC module while there is still data in the FIFOs could
-cause the "new frame before end of frame" error state when the DMFC is
-enabled again.
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- drivers/staging/imx-drm/ipu-v3/ipu-dmfc.c | 25 +++++++++++++++++++++++--
- 1 file changed, 23 insertions(+), 2 deletions(-)
+Zitat von Alan Stern <stern@rowland.harvard.edu>:
 
-diff --git a/drivers/staging/imx-drm/ipu-v3/ipu-dmfc.c b/drivers/staging/imx-drm/ipu-v3/ipu-dmfc.c
-index 4521301..59f182b 100644
---- a/drivers/staging/imx-drm/ipu-v3/ipu-dmfc.c
-+++ b/drivers/staging/imx-drm/ipu-v3/ipu-dmfc.c
-@@ -28,7 +28,12 @@
- #define DMFC_GENERAL1		0x0014
- #define DMFC_GENERAL2		0x0018
- #define DMFC_IC_CTRL		0x001c
--#define DMFC_STAT		0x0020
-+#define DMFC_WR_CHAN_ALT	0x0020
-+#define DMFC_WR_CHAN_DEF_ALT	0x0024
-+#define DMFC_DP_CHAN_ALT	0x0028
-+#define DMFC_DP_CHAN_DEF_ALT	0x002c
-+#define DMFC_GENERAL1_ALT	0x0030
-+#define DMFC_STAT		0x0034
- 
- #define DMFC_WR_CHAN_1_28		0
- #define DMFC_WR_CHAN_2_41		8
-@@ -133,6 +138,20 @@ int ipu_dmfc_enable_channel(struct dmfc_channel *dmfc)
- }
- EXPORT_SYMBOL_GPL(ipu_dmfc_enable_channel);
- 
-+static void ipu_dmfc_wait_fifos(struct ipu_dmfc_priv *priv)
-+{
-+	unsigned long timeout = jiffies + msecs_to_jiffies(1000);
-+
-+	while ((readl(priv->base + DMFC_STAT) & 0x02fff000) != 0x02fff000) {
-+		if (time_after(jiffies, timeout)) {
-+			dev_warn(priv->dev,
-+				 "Timeout waiting for DMFC FIFOs to clear\n");
-+			break;
-+		}
-+		cpu_relax();
-+	}
-+}
-+
- void ipu_dmfc_disable_channel(struct dmfc_channel *dmfc)
- {
- 	struct ipu_dmfc_priv *priv = dmfc->priv;
-@@ -141,8 +160,10 @@ void ipu_dmfc_disable_channel(struct dmfc_channel *dmfc)
- 
- 	priv->use_count--;
- 
--	if (!priv->use_count)
-+	if (!priv->use_count) {
-+		ipu_dmfc_wait_fifos(priv);
- 		ipu_module_disable(priv->ipu, IPU_CONF_DMFC_EN);
-+	}
- 
- 	if (priv->use_count < 0)
- 		priv->use_count = 0;
--- 
-1.9.1
+
+>> <6>[  167.936921] usb 2-2.1: new full-speed USB device number 3  
+>> using ohci-pci
+>> <6>[  168.067890] usb 2-2.1: New USB device found, idVendor=076b,
+>> idProduct=a021
+>> <6>[  168.074871] usb 2-2.1: New USB device strings: Mfr=1, Product=2,
+>> SerialNumber=0
+>> <6>[  168.082226] usb 2-2.1: Product: Smart Card Reader
+>> <6>[  168.086963] usb 2-2.1: Manufacturer: USB
+>> <6>[  168.172893] usb 2-2.2: new low-speed USB device number 4  
+>> using ohci-pci
+>> <6>[  168.300839] usb 2-2.2: New USB device found, idVendor=0aad,
+>> idProduct=0024
+>> <6>[  168.307823] usb 2-2.2: New USB device strings: Mfr=1, Product=2,
+>> SerialNumber=0
+>> <6>[  168.315180] usb 2-2.2: Product: FrontPanel USB Keyboard
+>> <6>[  168.320436] usb 2-2.2: Manufacturer: Rohde&Schwarz
+>> <6>[  168.337895] input: Rohde&Schwarz FrontPanel USB Keyboard as
+>> /devices/pci0000:00/0000:00:17.0/usb2/2-2/2-2.2/2-2.2:1.0/input/input0
+>> <6>[  168.360988] input: Rohde&Schwarz FrontPanel USB Keyboard as
+>> /devices/pci0000:00/0000:00:17.0/usb2/2-2/2-2.2/2-2.2:1.1/input/input1
+>
+> Since some devices work and some don't, maybe part of the problem lies
+> in the particular devices.
+>
+
+The problem lies on the "Bus 001 Device 002: ID 0424:2514 Standard  
+Microsystems Corp. USB 2.0 Hub", which hangs for arround 162 seconds  
+after a kexec.
+
+The "Bus 002 Device 003: ID 076b:a021 OmniKey AG CCID Smart Card  
+Reader" and "Bus 002 Device 004: ID 0aad:0024 Rohde & Schwarz GmbH &  
+Co. KG" are attached to this Hub.
+
+An other PowerPC device which is nearly eactly the same HW but without  
+this USB HUB works perfectly.
+
+>> This is the output of lsusb:
+>>
+>> Bus 001 Device 002: ID 0424:2514 Standard Microsystems Corp. USB 2.0 Hub
+>> Bus 001 Device 004: ID 0928:0007 Oxford Semiconductor, Ltd
+>> Bus 002 Device 002: ID 0451:2036 Texas Instruments, Inc. TUSB2036 Hub
+>> Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+>> Bus 002 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+>> Bus 003 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+>> Bus 002 Device 003: ID 076b:a021 OmniKey AG CCID Smart Card Reader
+>> Bus 002 Device 004: ID 0aad:0024 Rohde & Schwarz GmbH & Co. KG
+>>
+>> My old kernel 3.4 does not show this problem. Since kernel 3.10 i need
+>> to reset to ehci-pci device when kexec. But this workaround does not
+>> work any longer on kernel 3.14.
+>
+> Have you tried bisecting between 3.4 and 3.10 to find which commit
+> caused the behavior to change?
+>
+
+I cannot do a besecting run for this PowerPC emebbed device, since  
+there are some other patches like a BSP and older squashfs which are  
+not available. Nearly all of this generated kernels will not boot and  
+work. For X86 this is a easy job, but not for a "out of tree" PowerPC  
+device.
+
+> What about if you just do:
+>
+> 	rmmod ehci-pci
+> 	modprobe ehci-pci
+>
+
+The kernel is monolitic because the USB HW is needed in a early boot  
+stage. The problem also occurs with ehci-fsl used in by an other  
+PowerPC device, which is a part of the SoC and is not attached to the  
+PCI bus.
+
+One thing is that the "echo 1  
+ >/sys/bus/pci/drivers/ehci-pci/0000\:00\:17.2/reset" workaround will  
+no longer work for kernel 3.14.
+
+- Stefani
+
 
