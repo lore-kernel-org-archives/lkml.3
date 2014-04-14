@@ -1,43 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434AbaDNI7Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 04:59:25 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50327 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562AbaDNI7Y (ORCPT
+	id S1754466AbaDNJAp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 05:00:45 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57077 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751493AbaDNJAn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 04:59:24 -0400
-Date: Mon, 14 Apr 2014 10:59:11 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: mingo@kernel.org, tglx@linutronix.de, luto@amacapital.net,
-        daniel.lezcano@linaro.org, umgwanakikbuti@gmail.com,
+	Mon, 14 Apr 2014 05:00:43 -0400
+Date: Mon, 14 Apr 2014 10:59:35 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 8/8] sched,idle: Reflow cpuidle_idle_call()
-Message-ID: <20140414085911.GB11096@twins.programming.kicks-ass.net>
-References: <20140411134243.160989490@infradead.org>
- <20140411135218.617896630@infradead.org>
- <alpine.LFD.2.11.1404131734120.980@knanqh.ubzr>
+Subject: Re: [PATCH 1/4] ARM: at91: prepare common clk transition for sam9x5
+ SoCs
+Message-ID: <20140414085935.GO2967@piout.net>
+References: <1397464994-27267-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1397464994-27267-2-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.11.1404131734120.980@knanqh.ubzr>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1397464994-27267-2-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 13, 2014 at 05:36:46PM -0400, Nicolas Pitre wrote:
-> > @@ -102,90 +102,64 @@ static int cpuidle_idle_call(void)
-> >  	 * Check if the cpuidle framework is ready, otherwise fallback
-> >  	 * to the default arch specific idle method
-> >  	 */
-> > -	ret = cpuidle_enabled(drv, dev);
-> > +	if (cpuidle_enabled(drv, dev))
-> > +		goto use_default;
+On 14/04/2014 at 10:43:11 +0200, Boris Brezillon wrote :
+> This patch encloses sam9x5 old clk registration in
+> "#if defined(CONFIG_OLD_CLK_AT91) #endif" sections.
 > 
-> Why not using braces here and moving the use_default code block inside 
-> it instead?
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>  arch/arm/mach-at91/at91sam9x5.c | 6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
+> index 9ad781d..e994edd 100644
+> --- a/arch/arm/mach-at91/at91sam9x5.c
+> +++ b/arch/arm/mach-at91/at91sam9x5.c
+> @@ -19,9 +19,10 @@
+>  #include "board.h"
+>  #include "soc.h"
+>  #include "generic.h"
+> -#include "clock.h"
+>  #include "sam9_smc.h"
+>  
+> +#if defined(CONFIG_OLD_CLK_AT91)
+> +#include "clock.h"
+>  /* --------------------------------------------------------------------
+>   *  Clocks
+>   * -------------------------------------------------------------------- */
+> @@ -313,6 +314,7 @@ static void __init at91sam9x5_register_clocks(void)
+>  	clk_register(&pck0);
+>  	clk_register(&pck1);
+>  }
+> +#endif
+>  
+>  /* --------------------------------------------------------------------
+>   *  AT91SAM9x5 processor initialization
+> @@ -334,6 +336,8 @@ static void __init at91sam9x5_initialize(void)
+>  
+>  AT91_SOC_START(at91sam9x5)
+>  	.map_io = at91sam9x5_map_io,
+> +#if defined(CONFIG_OLD_CLK_AT91)
+>  	.register_clocks = at91sam9x5_register_clocks,
+> +#endif
+>  	.init = at91sam9x5_initialize,
+>  AT91_SOC_END
+> -- 
+> 1.8.3.2
+> 
 
-I didn't because there's two goto use_default sites, but sure, I can do
-that.
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
