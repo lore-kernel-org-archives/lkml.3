@@ -1,122 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505AbaDNHpj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 03:45:39 -0400
-Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:49704 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752862AbaDNHpf (ORCPT
+	id S1752555AbaDNHkP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 03:40:15 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:58081 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752049AbaDNHjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 03:45:35 -0400
-Message-ID: <534B921B.4080504@vmware.com>
-Date: Mon, 14 Apr 2014 09:45:31 +0200
-From: Thomas Hellstrom <thellstrom@vmware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
-        ccross@google.com, linux-media@vger.kernel.org
-Subject: Re: [PATCH 2/2] [RFC v2 with seqcount] reservation: add suppport
- for read-only access using rcu
-References: <20140409144239.26648.57918.stgit@patser> <20140409144831.26648.79163.stgit@patser> <53465A53.1090500@vmware.com> <53466D63.8080808@canonical.com> <53467B93.3000402@vmware.com> <5346B212.8050202@canonical.com> <5347A9FD.2070706@vmware.com> <5347B4E5.6090901@canonical.com> <5347BFC9.3020503@vmware.com> <53482FF1.1090406@canonical.com> <534843EA.6060602@vmware.com> <534B9165.4000101@canonical.com>
-In-Reply-To: <534B9165.4000101@canonical.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Apr 2014 03:39:53 -0400
+X-AuditID: cbfee68e-b7f566d000002344-e0-534b90c7f6b4
+From: Jungseok Lee <jays.lee@samsung.com>
+To: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        Catalin.Marinas@arm.com, Marc Zyngier <Marc.Zyngier@arm.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>
+Cc: linux-kernel@vger.kernel.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        sungjinn.chung@samsung.com, Arnd Bergmann <arnd@arndb.de>,
+        kgene.kim@samsung.com, ilho215.lee@samsung.com
+Subject: [PATCH 0/8] Support 4 levels of translation tables for ARM64
+Date: Mon, 14 Apr 2014 16:39:51 +0900
+Message-id: <000001cf57b4$b86facd0$294f0670$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac9XqvDiot5A7T37S4CDj5Fj9VDL6A==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsVy+t8zQ93jE7yDDd4stLb4O+kYu8X7ZT2M
+	Fi9e/2O0OPpvIaNF74KrbBYfTx1nt9j0+BqrxeVdc9gsZpzfx2Tx984/NosPM1YyOnB7rJm3
+	htHj969JjB53ru1h8zi/aQ2zx+Yl9R59W1YxenzeJBfAHsVlk5Kak1mWWqRvl8CVcfTiCcaC
+	2wIVu+bNYW9gfMjdxcjJISFgIvFteQMThC0mceHeerYuRi4OIYFljBKT9uxhhCk6eWYJE0Ri
+	OqNE473jUFV/GCV2dexiBqliE9CUeHS3hx0kISKwg1Fi8tpFrCAOs8AJRomld9ayglQJC7hK
+	tH95D9bBIqAq0TD5FwuIzStgKdF05QY7hC0o8WPyPbA4s4CWxPqdx5kgbHmJzWveMkPcpCCx
+	4+xrsPtEBPQk/v46xw5RIyKx78U7RpDFEgKNHBL3p8xmh1gmIPFt8iGgoRxACVmJTQeg5khK
+	HFxxg2UCo9gsJKtnIVk9C8nqWUhWLGBkWcUomlqQXFCclF5kpFecmFtcmpeul5yfu4kREs99
+	OxhvHrA+xJgMtH4is5Rocj4wHeSVxBsamxlZmJqYGhuZW5qRJqwkzrvoYVKQkEB6Yklqdmpq
+	QWpRfFFpTmrxIUYmDk6pBsZu3otM4sEnw3SMZNYsmhHqYn/dSK3uUO2v99tjc25NPrLx1zIV
+	n+Sp/k9FGpa+OGttLpL2ddryT5udJjtOTM5dNXejvPDeGy8D9q3fsPxpVoHnU9frlvmmLzJv
+	7haJ+/Zau2HS7IsJy55+VSzakbleo/3h6Y3TbVmtuSJeXXZzvtG/9OFhC8liJZbijERDLeai
+	4kQAiN/MqP0CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOKsWRmVeSWpSXmKPExsVy+t9jQd3jE7yDDW7OMbP4O+kYu8X7ZT2M
+	Fi9e/2O0OPpvIaNF74KrbBYfTx1nt9j0+BqrxeVdc9gsZpzfx2Tx984/NosPM1YyOnB7rJm3
+	htHj969JjB53ru1h8zi/aQ2zx+Yl9R59W1YxenzeJBfAHtXAaJORmpiSWqSQmpecn5KZl26r
+	5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDdKSSQlliTilQKCCxuFhJ3w7ThNAQN10L
+	mMYIXd+QILgeIwM0kLCOMePoxROMBbcFKnbNm8PewPiQu4uRk0NCwETi5JklTBC2mMSFe+vZ
+	uhi5OIQEpjNKNN47DuX8YZTY1bGLGaSKTUBT4tHdHnaQhIjADkaJyWsXsYI4zAInGCWW3lnL
+	ClIlLOAq0f7lPVgHi4CqRMPkXywgNq+ApUTTlRvsELagxI/J98DizAJaEut3HmeCsOUlNq95
+	ywxxk4LEjrOvGUFsEQE9ib+/zrFD1IhI7HvxjnECo8AsJKNmIRk1C8moWUhaFjCyrGIUTS1I
+	LihOSs810itOzC0uzUvXS87P3cQIThbPpHcwrmqwOMQowMGoxMObsN0zWIg1say4MvcQowQH
+	s5II77YMr2Ah3pTEyqrUovz4otKc1OJDjMlAn05klhJNzgcmsrySeENjEzMjSyMzCyMTc3PS
+	hJXEeQ+2WgcKCaQnlqRmp6YWpBbBbGHi4JRqYPQRyjT29SjamP9MbtMyo58TVwgcOda1+qym
+	aU3RrklctYvkE+4fcXn3e2dr5LzjNosNlp8qPsH5WVnLsziIzTCwdKXk4WlL5HQFzlx7Hdvr
+	ER6VFPcwR6u86NVD1TuLDt13jm46ddIyLC3wS8LZdWcWpvnmijVs3bC2tWaC/Ec3kcuJbiq6
+	zEosxRmJhlrMRcWJACnPE/JaAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2014 09:42 AM, Maarten Lankhorst wrote:
-> op 11-04-14 21:35, Thomas Hellstrom schreef:
->> On 04/11/2014 08:09 PM, Maarten Lankhorst wrote:
->>> op 11-04-14 12:11, Thomas Hellstrom schreef:
->>>> On 04/11/2014 11:24 AM, Maarten Lankhorst wrote:
->>>>> op 11-04-14 10:38, Thomas Hellstrom schreef:
->>>>>> Hi, Maarten.
->>>>>>
->>>>>> Here I believe we encounter a lot of locking inconsistencies.
->>>>>>
->>>>>> First, it seems you're use a number of pointers as RCU pointers
->>>>>> without
->>>>>> annotating them as such and use the correct rcu
->>>>>> macros when assigning those pointers.
->>>>>>
->>>>>> Some pointers (like the pointers in the shared fence list) are both
->>>>>> used
->>>>>> as RCU pointers (in dma_buf_poll()) for example,
->>>>>> or considered protected by the seqlock
->>>>>> (reservation_object_get_fences_rcu()), which I believe is OK, but
->>>>>> then
->>>>>> the pointers must
->>>>>> be assigned using the correct rcu macros. In the memcpy in
->>>>>> reservation_object_get_fences_rcu() we might get away with an
->>>>>> ugly typecast, but with a verbose comment that the pointers are
->>>>>> considered protected by the seqlock at that location.
->>>>>>
->>>>>> So I've updated (attached) the headers with proper __rcu annotation
->>>>>> and
->>>>>> locking comments according to how they are being used in the various
->>>>>> reading functions.
->>>>>> I believe if we want to get rid of this we need to validate those
->>>>>> pointers using the seqlock as well.
->>>>>> This will generate a lot of sparse warnings in those places needing
->>>>>> rcu_dereference()
->>>>>> rcu_assign_pointer()
->>>>>> rcu_dereference_protected()
->>>>>>
->>>>>> With this I think we can get rid of all ACCESS_ONCE macros: It's not
->>>>>> needed when the rcu_x() macros are used, and
->>>>>> it's never needed for the members protected by the seqlock,
->>>>>> (provided
->>>>>> that the seq is tested). The only place where I think that's
->>>>>> *not* the case is at the krealloc in
->>>>>> reservation_object_get_fences_rcu().
->>>>>>
->>>>>> Also I have some more comments in the
->>>>>> reservation_object_get_fences_rcu() function below:
->>>>> I felt that the barriers needed for rcu were already provided by
->>>>> checking the seqcount lock.
->>>>> But looking at rcu_dereference makes it seem harmless to add it in
->>>>> more places, it handles
->>>>> the ACCESS_ONCE and barrier() for us.
->>>> And it makes the code more maintainable, and helps sparse doing a
->>>> lot of
->>>> checking for us. I guess
->>>> we can tolerate a couple of extra barriers for that.
->>>>
->>>>> We could probably get away with using RCU_INIT_POINTER on the writer
->>>>> side,
->>>>> because the smp_wmb is already done by arranging seqcount updates
->>>>> correctly.
->>>> Hmm. yes, probably. At least in the replace function. I think if we do
->>>> it in other places, we should add comments as to where
->>>> the smp_wmb() is located, for future reference.
->>>>
->>>>
->>>> Also  I saw in a couple of places where you're checking the shared
->>>> pointers, you're not checking for NULL pointers, which I guess may
->>>> happen if shared_count and pointers are not in full sync?
->>>>
->>> No, because shared_count is protected with seqcount. I only allow
->>> appending to the array, so when
->>> shared_count is validated by seqcount it means that the
->>> [0...shared_count) indexes are valid and non-null.
->>> What could happen though is that the fence at a specific index is
->>> updated with another one from the same
->>> context, but that's harmless.
->>>
->> Hmm, doesn't attaching an exclusive fence clear all shared fence
->> pointers from under a reader?
->>
-> No, for that reason. It only resets shared_count to 0.
+Hi All,
 
-Ah. OK. I guess I didn't read the code carefully enough.
+This patchset supports 4 levels of tranlsation tables for ARM64.
 
-Thanks,
-Thomas
+Firstly, the patchset decouples page size from level of translation tables
+as taking account into the comment from Catalin Marinas:
+http://www.spinics.net/linux/lists/arm-kernel/msg319552.html
+
+Then, it implements 4 levels of translation tables for both native, HYP
+and stage2 sides.
+
+This series is validated with Fast Models and kvmtool as platform and guest
+launcher, respectively.
+
+Jungseok Lee (8):
+      arm64: Use pr_* instead of printk
+      arm/arm64: KVM: Fix line length exceeding 80 characters
+      arm64: Decouple page size from level of translation tables
+      arm64: Introduce a kernel configuration option for VA_BITS
+      arm64: Add a description on 48-bit address space with 4KB pages
+      arm64: Add 4 levels of page tables definition with 4KB pages
+      arm64: mm: Implement 4 levels of translation tables
+      arm64: KVM: Implement 4 levels of translation tables for HYP and stage2
+
+Documentation/arm64/memory.txt                |   59 ++++++++++--
+ arch/arm/kvm/mmu.c                            |  100 ++++++++++++++++++---
+ arch/arm64/Kconfig                            |   51 ++++++++++-
+ arch/arm64/include/asm/kvm_arm.h              |   20 +++++
+ arch/arm64/include/asm/kvm_mmu.h              |    1 +
+ arch/arm64/include/asm/memory.h               |    6 +-
+ arch/arm64/include/asm/page.h                 |    6 +-
+ arch/arm64/include/asm/pgalloc.h              |   24 ++++-
+ arch/arm64/include/asm/pgtable-4level-hwdef.h |   50 +++++++++++
+ arch/arm64/include/asm/pgtable-4level-types.h |   71 +++++++++++++++
+ arch/arm64/include/asm/pgtable-hwdef.h        |   10 ++-
+ arch/arm64/include/asm/pgtable.h              |   52 +++++++++--
+ arch/arm64/include/asm/tlb.h                  |   10 ++-
+ arch/arm64/kernel/head.S                      |   45 +++++++++-
+ arch/arm64/kernel/traps.c                     |   19 ++--
+ arch/arm64/mm/fault.c                         |    1 +
+ arch/arm64/mm/mmu.c                           |   14 ++-
+ 17 files changed, 488 insertions(+), 51 deletions(-)
 
 
-
->
-> ~Maarten
