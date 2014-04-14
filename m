@@ -1,160 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048AbaDNNns (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 09:43:48 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:45856 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754230AbaDNNnq (ORCPT
+	id S1755099AbaDNNpG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 09:45:06 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:50115 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993AbaDNNpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 09:43:46 -0400
-Message-ID: <534BE610.7070305@adjacentlink.com>
-Date: Mon, 14 Apr 2014 09:43:44 -0400
-From: Steven Galgano <sgalgano@adjacentlink.com>
+	Mon, 14 Apr 2014 09:45:01 -0400
+Message-ID: <534BE658.8050606@gmail.com>
+Date: Mon, 14 Apr 2014 15:44:56 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: David Miller <davem@davemloft.net>, jasowang@redhat.com,
-        xemul@parallels.com, wuzhy@linux.vnet.ibm.com, therbert@google.com,
-        yamato@redhat.com, richardcochran@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Brian.Adamson@nrl.navy.mil,
-        jgiovatto@adjacentlink.com
-Subject: Re: [PATCH v3] tuntap: add flow control to support back pressure
-References: <534B3A33.9090401@adjacentlink.com> <20140413.214004.1087903132047842986.davem@davemloft.net> <534B61C2.1080700@adjacentlink.com> <20140414.003449.294037863611224523.davem@davemloft.net> <534BE0EB.2080409@adjacentlink.com> <20140414133111.GA16525@redhat.com>
-In-Reply-To: <20140414133111.GA16525@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kishon Vijay Abraham I <kishon@ti.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>
+CC: Tomasz Figa <t.figa@samsung.com>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Kamil Debski <k.debski@samsung.com>, Jingoo Han <jg1.han@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Subject: Re: [PATCH V4 1/5] phy: Add new Exynos5 USB 3.0 PHY driver
+References: <1396967803-28868-1-git-send-email-gautam.vivek@samsung.com>	<1396967803-28868-2-git-send-email-gautam.vivek@samsung.com>	<534529B2.2020107@samsung.com>	<534BCC91.8090108@ti.com> <CAFp+6iGxhfgZRPysMuj5nALEQBbFXnAXhtDPpbf3P42LDHqFxg@mail.gmail.com> <534BDD17.60003@ti.com>
+In-Reply-To: <534BDD17.60003@ti.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2014 09:31 AM, Michael S. Tsirkin wrote:
-> On Mon, Apr 14, 2014 at 09:21:47AM -0400, Steven Galgano wrote:
->> Added optional per queue flow control support using IFF_FLOW_CONTROL. When the 
->> IFF_FLOW_CONTROL TUNSETIFF flag is specified it will set a per queue flag to 
->> indicate that the queue should be stopped using netif_tx_stop_queue(), rather 
->> than discarding frames once full. After reading a frame from the respective 
->> stopped queue, a netif_tx_wake_queue() is issued to signal resource 
->> availability.
+On 14.04.2014 15:05, Kishon Vijay Abraham I wrote:
+>
+>
+> On Monday 14 April 2014 05:35 PM, Vivek Gautam wrote:
+>> Hi Kishon,
 >>
->> The per queue TUN_FLOW_CONTROL flag is stored in struct tun_file. This provides 
->> the flexibility to enable flow control on all, none or some queues when using 
->> IFF_MULTI_QUEUE. When not using IFF_MULTI_QUEUE, IFF_FLOW_CONTROL will apply to 
->> the single queue. No changes were made to the default drop frame policy.
 >>
->> This change adds support for back pressure use cases.
+>> On Mon, Apr 14, 2014 at 5:24 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>> Hi,
+>>>
+>>> On Wednesday 09 April 2014 04:36 PM, Tomasz Figa wrote:
+>>>> Hi Vivek,
+>>>>
+>>>> Please see my comments inline.
+>>>>
+>>>> On 08.04.2014 16:36, Vivek Gautam wrote:
+>>>>> Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
+>>>>> The new driver uses the generic PHY framework and will interact
+>>>>> with DWC3 controller present on Exynos5 series of SoCs.
+>>>>> Thereby, removing old phy-samsung-usb3 driver and related code
+>>>>> used untill now which was based on usb/phy framework.
+>>>>>
+>>>>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>>>>> ---
+>>>>>    .../devicetree/bindings/phy/samsung-phy.txt        |   42 ++
+>>>>>    drivers/phy/Kconfig                                |   11 +
+>>>>>    drivers/phy/Makefile                               |    1 +
+>>>>>    drivers/phy/phy-exynos5-usbdrd.c                   |  668 ++++++++++++++++++++
+>>>>>    4 files changed, 722 insertions(+)
+>>>>>    create mode 100644 drivers/phy/phy-exynos5-usbdrd.c
+>>>>
+>>>> [snip]
+>>>>
+>>>>> +    Additional clock required for Exynos5420:
+>>>>> +    - usb30_sclk_100m: Additional special clock used for PHY operation
+>>>>> +               depicted as 'sclk_usbphy30' in CMU of Exynos5420.
+>>>>
+>>>> Are you sure this isn't simply a gate for the ref clock, as it can be found on
+>>>> another SoC that is not upstream yet? I don't have documentation for Exynos
+>>>> 5420 so I can't tell, but I'd like to ask you to recheck this.
+>>>>
+>>>>> +- samsung,syscon-phandle: phandle for syscon interface, which is used to
+>>>>> +              control pmu registers for power isolation.
+>>>>> +- samsung,pmu-offset: phy power control register offset to
+>>>>> pmu-system-controller
+>>>>> +              base.
+>>>>> +- #phy-cells : from the generic PHY bindings, must be 1;
+>>>>> +
+>>>>> +For "samsung,exynos5250-usbdrd-phy" and "samsung,exynos5420-usbdrd-phy"
+>>>>> +compatible PHYs, the second cell in the PHY specifier identifies the
+>>>>> +PHY id, which is interpreted as follows:
+>>>>> +  0 - UTMI+ type phy,
+>>>>> +  1 - PIPE3 type phy,
+>>>>> +
+>>>>> +Example:
+>>>>> +    usb3_phy: usbphy@12100000 {
+>>>>> +        compatible = "samsung,exynos5250-usbdrd-phy";
+>>>>> +        reg = <0x12100000 0x100>;
+>>>>> +        clocks = <&clock 286>, <&clock 1>;
+>>>>> +        clock-names = "phy", "usb3phy_refclk";
+>>>>
+>>>> Binding description above doesn't mention "usb3phy_refclk" entry.
+>>>>
+>>>>> +        samsung,syscon-phandle = <&pmu_syscon>;
+>>>>> +        samsung,pmu-offset = <0x704>;
+>>>>> +        #phy-cells = <1>;
+>>>>> +    };
+>>>>
+>>>> [snip]
+>>>>
+>>>>> diff --git a/drivers/phy/phy-exynos5-usbdrd.c b/drivers/phy/phy-exynos5-usbdrd.c
+>>>>> new file mode 100644
+>>>>> index 0000000..ff54a7c
+>>>>> --- /dev/null
+>>>>> +++ b/drivers/phy/phy-exynos5-usbdrd.c
+>>>>
+>>>> [snip]
+>>>>
+>>>>> +static int exynos5_usbdrd_phy_probe(struct platform_device *pdev)
+>>>>> +{
+>>>>> +    struct device *dev = &pdev->dev;
+>>>>> +    struct device_node *node = dev->of_node;
+>>>>> +    struct exynos5_usbdrd_phy *phy_drd;
+>>>>> +    struct phy_provider *phy_provider;
+>>>>> +    struct resource *res;
+>>>>> +    const struct of_device_id *match;
+>>>>> +    const struct exynos5_usbdrd_phy_drvdata *drv_data;
+>>>>> +    struct regmap *reg_pmu;
+>>>>> +    u32 pmu_offset;
+>>>>> +    int i;
+>>>>> +
+>>>>> +    /*
+>>>>> +     * Exynos systems are completely DT enabled,
+>>>>> +     * so lets not have any platform data support for this driver.
+>>>>> +     */
+>>>>> +    if (!node) {
+>>>>> +        dev_err(dev, "no device node found\n");
+>>>>
+>>>> This error message is not very meaningful. I'd rather use something like "This
+>>>> driver can be only instantiated using Device Tree".
+>>>
+>>> how about just adding depend_on OF in Kconfig?
 >>
->> Reported-by: Brian Adamson <brian.adamson@nrl.navy.mil>
->> Tested-by: Joseph Giovatto <jgiovatto@adjacentlink.com>
->> Signed-off-by: Steven Galgano <sgalgano@adjacentlink.com>
->> ---
->> Version 3 patch reformatted commit message to be 80 columns max width. 
->>  Corrected Tested-By email address.
->> Version 2 patch added support for individual queues when applying flow
->> control instead of using netif_tx_stop_all_queues()/netif_tx_wake_all_queues().
-> 
-> Any plans to try and address the more material comments on v2?
-> 
-Yes. My apologies, I missed your response.
+>> Already added a depend on 'OF'. Copying below the part of Kconfig in this patch.
+>
+> Alright.. Do we need the check then? If config_OF is enabled devices will be
+> created using device tree no?
 
->>  drivers/net/tun.c           | 32 ++++++++++++++++++++++++++++----
->>  include/uapi/linux/if_tun.h |  2 ++
->>  2 files changed, 30 insertions(+), 4 deletions(-)
->> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
->> index ee328ba..3d09f5a 100644
->> --- a/drivers/net/tun.c
->> +++ b/drivers/net/tun.c
->> @@ -137,7 +137,7 @@ struct tun_file {
->>  	struct tun_struct __rcu *tun;
->>  	struct net *net;
->>  	struct fasync_struct *fasync;
->> -	/* only used for fasnyc */
->> +	/* used for fasnyc and flow control */
->>  	unsigned int flags;
->>  	union {
->>  		u16 queue_index;
->> @@ -783,8 +783,19 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
->>  	 * number of queues.
->>  	 */
->>  	if (skb_queue_len(&tfile->socket.sk->sk_receive_queue) * numqueues
->> -			  >= dev->tx_queue_len)
->> -		goto drop;
->> +			>= dev->tx_queue_len) {
->> +		if (tfile->flags & TUN_FLOW_CONTROL) {
->> +			/* Resources unavailable stop queue */
->> +			netif_tx_stop_queue(netdev_get_tx_queue(dev, txq));
->> +
->> +			/* We won't see all dropped packets individually, so
->> +			 * over run error is more appropriate.
->> +			 */
->> +			dev->stats.tx_fifo_errors++;
->> +		} else {
->> +			goto drop;
->> +		}
->> +	}
->>  
->>  	if (unlikely(skb_orphan_frags(skb, GFP_ATOMIC)))
->>  		goto drop;
->> @@ -1333,6 +1344,7 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
->>  	DECLARE_WAITQUEUE(wait, current);
->>  	struct sk_buff *skb;
->>  	ssize_t ret = 0;
->> +	struct netdev_queue *ntxq;
->>  
->>  	tun_debug(KERN_INFO, tun, "tun_do_read\n");
->>  
->> @@ -1362,6 +1374,12 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
->>  			continue;
->>  		}
->>  
->> +		ntxq = netdev_get_tx_queue(tun->dev, tfile->queue_index);
->> +
->> +		if (tfile->flags & TUN_FLOW_CONTROL &&
->> +		    netif_tx_queue_stopped(ntxq))
->> +			netif_tx_wake_queue(ntxq);
->> +
->>  		ret = tun_put_user(tun, tfile, skb, iv, len);
->>  		kfree_skb(skb);
->>  		break;
->> @@ -1732,6 +1750,11 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
->>  	else
->>  		tun->flags &= ~TUN_TAP_MQ;
->>  
->> +	if (ifr->ifr_flags & IFF_FLOW_CONTROL)
->> +		tfile->flags |= TUN_FLOW_CONTROL;
->> +	else
->> +		tfile->flags &= ~TUN_FLOW_CONTROL;
->> +
->>  	/* Make sure persistent devices do not get stuck in
->>  	 * xoff state.
->>  	 */
->> @@ -1900,7 +1923,8 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
->>  		 * This is needed because we never checked for invalid flags on
->>  		 * TUNSETIFF. */
->>  		return put_user(IFF_TUN | IFF_TAP | IFF_NO_PI | IFF_ONE_QUEUE |
->> -				IFF_VNET_HDR | IFF_MULTI_QUEUE,
->> +				IFF_VNET_HDR | IFF_MULTI_QUEUE |
->> +				IFF_FLOW_CONTROL,
->>  				(unsigned int __user*)argp);
->>  	} else if (cmd == TUNSETQUEUE)
->>  		return tun_set_queue(file, &ifr);
->> diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
->> index e9502dd..bcf2790 100644
->> --- a/include/uapi/linux/if_tun.h
->> +++ b/include/uapi/linux/if_tun.h
->> @@ -36,6 +36,7 @@
->>  #define TUN_PERSIST 	0x0100	
->>  #define TUN_VNET_HDR 	0x0200
->>  #define TUN_TAP_MQ      0x0400
->> +#define TUN_FLOW_CONTROL 0x0800
->>  
->>  /* Ioctl defines */
->>  #define TUNSETNOCSUM  _IOW('T', 200, int) 
->> @@ -70,6 +71,7 @@
->>  #define IFF_MULTI_QUEUE 0x0100
->>  #define IFF_ATTACH_QUEUE 0x0200
->>  #define IFF_DETACH_QUEUE 0x0400
->> +#define IFF_FLOW_CONTROL 0x0010
->>  /* read-only flag */
->>  #define IFF_PERSIST	0x0800
->>  #define IFF_NOFILTER	0x1000
+Not necessarily. Enabling support for OF doesn't mean that it is the 
+only boot method that can be used. Legacy board files may be still 
+available. I'm not sure why someone would try to instantiate this driver 
+from them, though.
+
+Best regards,
+Tomasz
