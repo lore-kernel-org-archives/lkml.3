@@ -1,82 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834AbaDNI10 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 04:27:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41447 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753276AbaDNIEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 04:04:09 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Anil Gurumurthy <agurumur@brocade.com>,
-        Vijaya Mohan Guvva <vmohan@brocade.com>, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v2 RESEND 04/23] bfa: Use pci_enable_msix_exact() instead of pci_enable_msix()
-Date: Mon, 14 Apr 2014 10:05:28 +0200
-Message-Id: <7db0ca73195c7a4b41ec8263e23ffaeb7ff4dce2.1397461652.git.agordeev@redhat.com>
-In-Reply-To: <cover.1397461652.git.agordeev@redhat.com>
-References: <cover.1397461652.git.agordeev@redhat.com>
+	id S1754392AbaDNI2H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 04:28:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43806 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913AbaDNI2D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 04:28:03 -0400
+From: Christoph Hellwig <hch@lst.de>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Matias Bjorling <m@bjorling.me>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: 
+Date: Mon, 14 Apr 2014 10:30:05 +0200
+Message-Id: <1397464212-4454-1-git-send-email-hch@lst.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <blk-mq updates>
+References: <blk-mq updates>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
-
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Anil Gurumurthy <agurumur@brocade.com>
-Cc: Vijaya Mohan Guvva <vmohan@brocade.com>
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
----
- drivers/scsi/bfa/bfad.c |   20 ++++++--------------
- 1 files changed, 6 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/scsi/bfa/bfad.c b/drivers/scsi/bfa/bfad.c
-index e7e4774..839c81c 100644
---- a/drivers/scsi/bfa/bfad.c
-+++ b/drivers/scsi/bfa/bfad.c
-@@ -1234,29 +1234,21 @@ bfad_setup_intr(struct bfad_s *bfad)
- 	if ((bfa_asic_id_ctc(pdev->device) && !msix_disable_ct) ||
- 	   (bfa_asic_id_cb(pdev->device) && !msix_disable_cb)) {
- 
--		error = pci_enable_msix(bfad->pcidev, msix_entries, bfad->nvec);
-+		error = pci_enable_msix_exact(bfad->pcidev,
-+					      msix_entries, bfad->nvec);
- 		/* In CT1 & CT2, try to allocate just one vector */
--		if (error > 0 && bfa_asic_id_ctc(pdev->device)) {
-+		if (error == -ENOSPC && bfa_asic_id_ctc(pdev->device)) {
- 			printk(KERN_WARNING "bfa %s: trying one msix "
- 			       "vector failed to allocate %d[%d]\n",
- 			       bfad->pci_name, bfad->nvec, error);
- 			bfad->nvec = 1;
--			error = pci_enable_msix(bfad->pcidev,
--						msix_entries, bfad->nvec);
-+			error = pci_enable_msix_exact(bfad->pcidev,
-+						      msix_entries, 1);
- 		}
- 
--		/*
--		 * Only error number of vector is available.
--		 * We don't have a mechanism to map multiple
--		 * interrupts into one vector, so even if we
--		 * can try to request less vectors, we don't
--		 * know how to associate interrupt events to
--		 *  vectors. Linux doesn't duplicate vectors
--		 * in the MSIX table for this case.
--		 */
- 		if (error) {
- 			printk(KERN_WARNING "bfad%d: "
--			       "pci_enable_msix failed (%d), "
-+			       "pci_enable_msix_exact failed (%d), "
- 			       "use line based.\n",
- 				bfad->inst_no, error);
- 			goto line_based;
--- 
-1.7.7.6
+This is the majority of the blk-mq work still required for switching
+over SCSI.  There are a few more bits for I/O completion and requeueing
+pending, but they will need further work.
 
