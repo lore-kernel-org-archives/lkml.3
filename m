@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145AbaDNJn4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 05:43:56 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:29989 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751282AbaDNJny (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 05:43:54 -0400
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        <alsa-devel@alsa-project.org>, <linux-kernel@vger.kernel.org>
-Cc: "Li, Zhen-Hua" <zhen-hual@hp.com>
-Subject: [PATCH 1/1] driver/snd: es18xx driver should use udelay error
-Date: Mon, 14 Apr 2014 17:43:08 +0800
-Message-Id: <1397468588-18559-1-git-send-email-zhen-hual@hp.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754322AbaDNJpH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 05:45:07 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:37667 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752142AbaDNJpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 05:45:04 -0400
+Date: Mon, 14 Apr 2014 11:44:50 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Brian Gerst <brgerst@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: Re: [tip:x86/urgent] x86-64, modify_ldt: Ban 16-bit segments on
+ 64-bit kernels
+Message-ID: <20140414094450.GA3663@pd.tnic>
+References: <CAMzpN2jn69_E7UEP6OHBbc4r7UuJbsW50WA25YhXuQs5sHFxQQ@mail.gmail.com>
+ <6f5f98f2-aa96-433f-9ee8-5ba216624957@email.android.com>
+ <20140412193541.GA30697@pd.tnic>
+ <21a22ace-fbc3-4f97-a277-9cdf4f2253eb@email.android.com>
+ <20140412201126.GC30694@pd.tnic>
+ <CAMzpN2jHrBZ7DCd79GkCdjwCWJBv+YR5o9BGjypCdazJB9bJYQ@mail.gmail.com>
+ <20140412205920.GD30694@pd.tnic>
+ <CAMzpN2hkfw0p71H9QLFvbdmuiYqXqXJwBHK=GY_U_VHfjBL4Lg@mail.gmail.com>
+ <20140412214034.GF30694@pd.tnic>
+ <20140414072113.GA19569@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140414072113.GA19569@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+On Mon, Apr 14, 2014 at 09:21:13AM +0200, Ingo Molnar wrote:
+> Apparently the game in question is "Exile: Escape from the pit":
+> 
+>   http://osdir.com/ml/wine-bugs/2014-04/msg01159.html
 
-udelay with more than 20000 may cause __bad_udelay.
-Use mdelay for instead.
+Ah, thanks.
 
-Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
----
- sound/isa/es18xx.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+Well, FWIW, you can get the game for free:
 
-diff --git a/sound/isa/es18xx.c b/sound/isa/es18xx.c
-index 1c16830..8d3a3b6 100644
---- a/sound/isa/es18xx.c
-+++ b/sound/isa/es18xx.c
-@@ -520,7 +520,7 @@ static int snd_es18xx_playback1_trigger(struct snd_es18xx *chip,
- 			snd_es18xx_mixer_write(chip, 0x78, 0x93);
- #ifdef AVOID_POPS
- 		/* Avoid pops */
--                udelay(100000);
-+		mudelay(100);
- 		if (chip->caps & ES18XX_PCM2)
- 			/* Restore Audio 2 volume */
- 			snd_es18xx_mixer_write(chip, 0x7C, chip->audio2_vol);
-@@ -537,7 +537,7 @@ static int snd_es18xx_playback1_trigger(struct snd_es18xx *chip,
-                 /* Stop DMA */
-                 snd_es18xx_mixer_write(chip, 0x78, 0x00);
- #ifdef AVOID_POPS
--                udelay(25000);
-+		mdelay(25);
- 		if (chip->caps & ES18XX_PCM2)
- 			/* Set Audio 2 volume to 0 */
- 			snd_es18xx_mixer_write(chip, 0x7C, 0);
-@@ -596,7 +596,7 @@ static int snd_es18xx_capture_prepare(struct snd_pcm_substream *substream)
- 	snd_es18xx_write(chip, 0xA5, count >> 8);
- 
- #ifdef AVOID_POPS
--	udelay(100000);
-+	mdelay(100);
- #endif
- 
-         /* Set format */
-@@ -691,7 +691,7 @@ static int snd_es18xx_playback2_trigger(struct snd_es18xx *chip,
-                 snd_es18xx_write(chip, 0xB8, 0x05);
- #ifdef AVOID_POPS
- 		/* Avoid pops */
--                udelay(100000);
-+		mdelay(100);
-                 /* Enable Audio 1 */
-                 snd_es18xx_dsp_command(chip, 0xD1);
- #endif
-@@ -705,7 +705,7 @@ static int snd_es18xx_playback2_trigger(struct snd_es18xx *chip,
-                 snd_es18xx_write(chip, 0xB8, 0x00);
- #ifdef AVOID_POPS
- 		/* Avoid pops */
--                udelay(25000);
-+		mdelay(25);
-                 /* Disable Audio 1 */
-                 snd_es18xx_dsp_command(chip, 0xD3);
- #endif
+http://www.spiderwebsoftware.com/exile/winexile.html
+
+I did run it on an old windoze guest I had lying around. Performance
+feels like native considering this game is from the previous century :-)
+
+https://en.wikipedia.org/wiki/Exile_%28video_game_series%29
+
+Wikipedia says you can get it on steam too, which runs linux and stuff.
+
+Thanks.
+
 -- 
-1.7.10.4
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
