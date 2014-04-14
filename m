@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892AbaDNPrn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 11:47:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55103 "EHLO mx1.redhat.com"
+	id S1754678AbaDNPqG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 11:46:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63624 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750866AbaDNPrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 11:47:37 -0400
-Date: Mon, 14 Apr 2014 17:20:14 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, David Woodhouse <dwmw2@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Richard Weinberger <richard@nod.at>,
-        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND 08/11] signals: kill the obsolete sigdelset() and
-	recalc_sigpending() in allow_signal()
-Message-ID: <20140414152014.GA22015@redhat.com>
+	id S1754562AbaDNPqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 11:46:03 -0400
+Date: Mon, 14 Apr 2014 11:45:56 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET cgroup/for-3.15] cgroup: implement unified hierarchy
+Message-ID: <20140414154556.GA9552@redhat.com>
+References: <1395974461-12735-1-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140414151929.GA21470@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1395974461-12735-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-allow_signal() does sigdelset(current->blocked) due to historic
-reason, previously it could be called by a daemonize()'ed kthread,
-and daemonize() played with current->blocked.
+On Thu, Mar 27, 2014 at 10:40:49PM -0400, Tejun Heo wrote:
 
-Now that daemonize() has gone away we can remove sigdelset() and
-recalc_sigpending(). If a user really wants to unblock a signal,
-it must use sigprocmask() or set_current_block() explicitely.
+[..]
+> This patchset finally implements the default unified hierarchy.  The
+> goal is providing enough flexibility while enforcing stricter common
+> structure where appropriate to address the above listed issues.
+> 
+> Controllers which aren't bound to other hierarchies are
+> automatically attached to the unified hierarchy,
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/signal.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+Hi Tejun,
 
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 8a7ee44..3eec27b 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -3071,16 +3071,13 @@ COMPAT_SYSCALL_DEFINE4(rt_tgsigqueueinfo,
-  */
- void allow_signal(int sig)
- {
--	spin_lock_irq(&current->sighand->siglock);
--	/* This is only needed for daemonize()'ed kthreads */
--	sigdelset(&current->blocked, sig);
- 	/*
- 	 * Kernel threads handle their own signals. Let the signal code
- 	 * know it'll be handled, so that they don't get converted to
- 	 * SIGKILL or just silently dropped.
- 	 */
-+	spin_lock_irq(&current->sighand->siglock);
- 	current->sighand->action[(sig)-1].sa.sa_handler = (void __user *)2;
--	recalc_sigpending();
- 	spin_unlock_irq(&current->sighand->siglock);
- }
- EXPORT_SYMBOL(allow_signal);
--- 
-1.5.5.1
+So this patchset does not *enforce* a single hierarchy? So user space
+can still mount other hierarchies.
 
+> which is different in
+> that controllers are enabled explicitly for each subtree.
+> "cgroup.subtree_control" controls which controllers are enabled on the
+> child cgroups.  Let's assume a hierarchy like the following.
+> 
+>   root - A - B - C
+>                \ D
+> 
+> root's "cgroup.subtree_control" determines which controllers are
+> enabled on A.  A's on B.  B's on C and D.  This coincides with the
+> fact that controllers on the immediate sub-level are used to
+> distribute the resources of the parent.  In fact, it's natural to
+> assume that resource control knobs of a child belong to its parent.
+> Enabling a controller in "cgroup.subtree_control" declares that
+> distribution of the respective resources of the cgroup will be
+> controlled.  Note that this means that controller enable states are
+> shared among siblings.
+> 
+> The default hierarchy has an extra restriction - only cgroups which
+> don't contain any task may have controllers enabled in
+> "cgroup.subtree_control".  Combined with the other properties of the
+> default hierarchy, this guarantees that, from the view point of
+> controllers, tasks are only on the leaf cgroups.  In other words, only
+> leaf csses may contain tasks.  This rules out situations where child
+> cgroups compete against internal tasks of the parent.
+
+How does this work for root's tasks now? Given that task can only be
+in leaf cgroups, that means tasks can't be in / cgroup (If one wants
+to create some cgroups). Does that mean / will be empty and init system
+need to setup things right.
+
+Before one can create child cgroups, there will be some processes
+already running (init itlsef, kernel threads etc). I am assuming they
+will be running in /. So how would that work.
+
+Thanks
+Vivek
