@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163AbaDNSC5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 14:02:57 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:56738 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177AbaDNSCz (ORCPT
+	id S1755263AbaDNSEv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 14:04:51 -0400
+Received: from smtprelay0149.hostedemail.com ([216.40.44.149]:36794 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751027AbaDNSEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 14:02:55 -0400
-Date: Mon, 14 Apr 2014 14:02:53 -0400 (EDT)
-Message-Id: <20140414.140253.788885546068554928.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: nasa4836@gmail.com, jchapman@katalix.com, edumazet@google.com,
-        joe@perches.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [BUG] A panic caused by null pointer dereference aftering
- updating to
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1397498082.4222.29.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <1397497204.4222.28.camel@edumazet-glaptop2.roam.corp.google.com>
-	<20140414.134901.2191404761213317963.davem@davemloft.net>
-	<1397498082.4222.29.camel@edumazet-glaptop2.roam.corp.google.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 14 Apr 2014 14:04:50 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1566:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3867:3873:4321:4605:5007:7652:10004:10400:10848:11657:11658:11914:12043:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: road44_607498fd09e0c
+X-Filterd-Recvd-Size: 1276
+Message-ID: <1397498661.2962.5.camel@joe-AO722>
+Subject: Re: [PATCH 1/1] prefetch result for ARM64 atomic ops
+From: Joe Perches <joe@perches.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: catalin.marinas@arm.com, will.deacon@arm.com,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 14 Apr 2014 11:04:21 -0700
+In-Reply-To: <CAJhHMCDBPPB4H3Oc1JVd_R_dMaao9cWBj8rjrweFmAp9nn97AQ@mail.gmail.com>
+References: <CAJhHMCDBPPB4H3Oc1JVd_R_dMaao9cWBj8rjrweFmAp9nn97AQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 14 Apr 2014 11:02:55 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Mon, 14 Apr 2014 10:54:42 -0700
+On Mon, 2014-04-14 at 13:55 -0400, Pranith Kumar wrote:
 
-> On Mon, 2014-04-14 at 13:49 -0400, David Miller wrote:
+Are there some benchmark comparison results
+you neglected to attach?
+
+> diff --git a/arch/arm64/include/asm/atomic.h b/arch/arm64/include/asm/atomic.h
+[]
+> @@ -235,6 +244,7 @@ static inline long atomic64_cmpxchg(atomic64_t
+> *ptr, long old, long new)
+>      unsigned long res;
 > 
->> Yep that would handle the l2tp cases, but vxlan needs something different
->> since it goes through iptunnel_xmit().
->> 
->> So perhaps as a quick fix we can add an 'sk' arg to both
->> ip_queue_xmit() and ip_local_out().
-> 
-> Right, I am working on this right now.
+>      smp_mb();
+> +    prefetchw(&v->counter);
 
-Thanks a lot Eric.
+Does this compile?
 
-BTW, it occurs to me that there may be some other spots in the output path
-that expect that if SKB is ETH_P_IP then skb->sk is IP socket.  For example
-somewhere in netfilter or packet classifier paths.
 
-Just FYI... that was one of the things I was going to audit.
