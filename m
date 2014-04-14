@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456AbaDNUR7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 16:17:59 -0400
-Received: from mga01.intel.com ([192.55.52.88]:51847 "EHLO mga01.intel.com"
+	id S1755450AbaDNUSf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 16:18:35 -0400
+Received: from mga01.intel.com ([192.55.52.88]:38444 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754010AbaDNUPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 16:15:11 -0400
+	id S1753554AbaDNUPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 16:15:10 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,859,1389772800"; 
-   d="scan'208";a="520341987"
+   d="scan'208";a="520341970"
 From: Siva Yerramreddy <siva.krishna.kumar.reddy.yerramreddy@intel.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Dan Williams <dan.j.williams@intel.com>
@@ -16,9 +16,9 @@ Cc: Siva Yerramreddy <siva.krishna.kumar.reddy.yerramreddy@intel.com>,
         Sudeep Dutt <sudeep.dutt@intel.com>, Nikhil Rao <nikhil.rao@intel.com>,
         Ashutosh Dixit <ashutosh.dixit@intel.com>,
         linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: [PATCH 4/8] misc: mic: add threaded irq support in host driver
-Date: Mon, 14 Apr 2014 13:15:01 -0700
-Message-Id: <622af43a53cf61b3c61c43194610b6787f45df3a.1397504824.git.siva.krishna.kumar.reddy.yerramreddy@intel.com>
+Subject: [PATCH 2/8] misc: mic: add a bus driver for virtual MIC devices
+Date: Mon, 14 Apr 2014 13:14:59 -0700
+Message-Id: <3709ad31630160d33d7c3691922fd7e0ee271941.1397504824.git.siva.krishna.kumar.reddy.yerramreddy@intel.com>
 X-Mailer: git-send-email 1.8.2.2
 In-Reply-To: <cover.1397504824.git.siva.krishna.kumar.reddy.yerramreddy@intel.com>
 References: <cover.1397504824.git.siva.krishna.kumar.reddy.yerramreddy@intel.com>
@@ -28,390 +28,421 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert mic_request_irq to mic_request_threaded_irq to support threaded
-irq for virtual devices on mic bus.
+This MIC virtual bus driver takes the responsibility of creating all
+the virtual devices connected to the PCIe device on the host and the
+platform device on the card. The MIC bus hardware operations provide
+a way to abstract certain hardware details from the base physical devices.
+Examples of devices added on the MIC virtual bus include host DMA and card DMA.
+This abstraction enables using a common DMA driver on host and card.
 
 Reviewed-by: Ashutosh Dixit <ashutosh.dixit@intel.com>
 Reviewed-by: Nikhil Rao <nikhil.rao@intel.com>
-Reviewed-by: Sudeep Dutt <sudeep.dutt@intel.com>
+Signed-off-by: Sudeep Dutt <sudeep.dutt@intel.com>
 Signed-off-by: Siva Yerramreddy <siva.krishna.kumar.reddy.yerramreddy@intel.com>
 ---
- drivers/misc/mic/host/mic_intr.c   | 116 ++++++++++++++++++++++---------------
- drivers/misc/mic/host/mic_intr.h   |  18 ++++--
- drivers/misc/mic/host/mic_main.c   |   5 +-
- drivers/misc/mic/host/mic_virtio.c |   6 +-
- 4 files changed, 90 insertions(+), 55 deletions(-)
+ drivers/misc/mic/Kconfig       |  17 ++++
+ drivers/misc/mic/Makefile      |   1 +
+ drivers/misc/mic/bus/Makefile  |   5 ++
+ drivers/misc/mic/bus/mic_bus.c | 188 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/mic_bus.h        | 148 ++++++++++++++++++++++++++++++++
+ 5 files changed, 359 insertions(+)
+ create mode 100644 drivers/misc/mic/bus/Makefile
+ create mode 100644 drivers/misc/mic/bus/mic_bus.c
+ create mode 100644 include/linux/mic_bus.h
 
-diff --git a/drivers/misc/mic/host/mic_intr.c b/drivers/misc/mic/host/mic_intr.c
-index dbc5afd..e53b150 100644
---- a/drivers/misc/mic/host/mic_intr.c
-+++ b/drivers/misc/mic/host/mic_intr.c
-@@ -24,28 +24,29 @@
- #include "../common/mic_dev.h"
- #include "mic_device.h"
+diff --git a/drivers/misc/mic/Kconfig b/drivers/misc/mic/Kconfig
+index e42b331..cfe185f 100644
+--- a/drivers/misc/mic/Kconfig
++++ b/drivers/misc/mic/Kconfig
+@@ -1,3 +1,20 @@
++comment "Intel MIC Bus Driver"
++
++config INTEL_MIC_BUS
++	tristate "Intel MIC Bus Driver"
++	depends on 64BIT && PCI && X86 && X86_DEV_DMA_OPS
++	help
++	  This option is selected by any driver which registers a
++	  device or driver on the MIC Bus, such as CONFIG_INTEL_MIC_HOST,
++	  CONFIG_INTEL_MIC_CARD, CONFIG_INTEL_MIC_X100_DMA etc.
++
++	  If you are building a host/card kernel with an Intel MIC device
++	  then say M (recommended) or Y, else say N. If unsure say N.
++
++	  More information about the Intel MIC family as well as the Linux
++	  OS and tools for MIC to use with this driver are available from
++	  <http://software.intel.com/en-us/mic-developer>.
++
+ comment "Intel MIC Host Driver"
  
--/*
-- * mic_invoke_callback - Invoke callback functions registered for
-- * the corresponding source id.
-- *
-- * @mdev: pointer to the mic_device instance
-- * @idx: The interrupt source id.
-- *
-- * Returns none.
-- */
--static inline void mic_invoke_callback(struct mic_device *mdev, int idx)
-+static irqreturn_t mic_thread_fn(int irq, void *dev)
- {
-+	struct mic_device *mdev = dev;
-+	struct mic_intr_info *intr_info = mdev->intr_info;
-+	struct mic_irq_info *irq_info = &mdev->irq_info;
- 	struct mic_intr_cb *intr_cb;
- 	struct pci_dev *pdev = container_of(mdev->sdev->parent,
--		struct pci_dev, dev);
-+					    struct pci_dev, dev);
-+	int i;
- 
--	spin_lock(&mdev->irq_info.mic_intr_lock);
--	list_for_each_entry(intr_cb, &mdev->irq_info.cb_list[idx], list)
--		if (intr_cb->func)
--			intr_cb->func(pdev->irq, intr_cb->data);
--	spin_unlock(&mdev->irq_info.mic_intr_lock);
-+	spin_lock(&irq_info->mic_thread_lock);
-+	for (i = intr_info->intr_start_idx[MIC_INTR_DB];
-+			i < intr_info->intr_len[MIC_INTR_DB]; i++)
-+		if (test_and_clear_bit(i, &irq_info->mask)) {
-+			list_for_each_entry(intr_cb, &irq_info->cb_list[i],
-+					    list)
-+				if (intr_cb->thread_fn)
-+					intr_cb->thread_fn(pdev->irq,
-+							 intr_cb->data);
-+		}
-+	spin_unlock(&irq_info->mic_thread_lock);
-+	return IRQ_HANDLED;
- }
--
- /**
-  * mic_interrupt - Generic interrupt handler for
-  * MSI and INTx based interrupts.
-@@ -53,7 +54,11 @@ static inline void mic_invoke_callback(struct mic_device *mdev, int idx)
- static irqreturn_t mic_interrupt(int irq, void *dev)
- {
- 	struct mic_device *mdev = dev;
--	struct mic_intr_info *info = mdev->intr_info;
-+	struct mic_intr_info *intr_info = mdev->intr_info;
-+	struct mic_irq_info *irq_info = &mdev->irq_info;
-+	struct mic_intr_cb *intr_cb;
-+	struct pci_dev *pdev = container_of(mdev->sdev->parent,
-+					    struct pci_dev, dev);
- 	u32 mask;
- 	int i;
- 
-@@ -61,12 +66,19 @@ static irqreturn_t mic_interrupt(int irq, void *dev)
- 	if (!mask)
- 		return IRQ_NONE;
- 
--	for (i = info->intr_start_idx[MIC_INTR_DB];
--			i < info->intr_len[MIC_INTR_DB]; i++)
--		if (mask & BIT(i))
--			mic_invoke_callback(mdev, i);
--
--	return IRQ_HANDLED;
-+	spin_lock(&irq_info->mic_intr_lock);
-+	for (i = intr_info->intr_start_idx[MIC_INTR_DB];
-+			i < intr_info->intr_len[MIC_INTR_DB]; i++)
-+		if (mask & BIT(i)) {
-+			list_for_each_entry(intr_cb, &irq_info->cb_list[i],
-+					    list)
-+				if (intr_cb->handler)
-+					intr_cb->handler(pdev->irq,
-+							 intr_cb->data);
-+			set_bit(i, &irq_info->mask);
-+		}
-+	spin_unlock(&irq_info->mic_intr_lock);
-+	return IRQ_WAKE_THREAD;
- }
- 
- /* Return the interrupt offset from the index. Index is 0 based. */
-@@ -99,14 +111,15 @@ static struct msix_entry *mic_get_available_vector(struct mic_device *mdev)
-  *
-  * @mdev: pointer to the mic_device instance
-  * @idx: The source id to be registered.
-- * @func: The function to be called when the source id receives
-+ * @handler: The function to be called when the source id receives
-  * the interrupt.
-+ * @thread_fn: thread fn. corresponding to the handler
-  * @data: Private data of the requester.
-  * Return the callback structure that was registered or an
-  * appropriate error on failure.
-  */
- static struct mic_intr_cb *mic_register_intr_callback(struct mic_device *mdev,
--			u8 idx, irqreturn_t (*func) (int irq, void *dev),
-+			u8 idx, irq_handler_t handler, irq_handler_t thread_fn,
- 			void *data)
- {
- 	struct mic_intr_cb *intr_cb;
-@@ -117,7 +130,8 @@ static struct mic_intr_cb *mic_register_intr_callback(struct mic_device *mdev,
- 	if (!intr_cb)
- 		return ERR_PTR(-ENOMEM);
- 
--	intr_cb->func = func;
-+	intr_cb->handler = handler;
-+	intr_cb->thread_fn = thread_fn;
- 	intr_cb->data = data;
- 	intr_cb->cb_id = ida_simple_get(&mdev->irq_info.cb_ida,
- 		0, 0, GFP_KERNEL);
-@@ -126,9 +140,11 @@ static struct mic_intr_cb *mic_register_intr_callback(struct mic_device *mdev,
- 		goto ida_fail;
- 	}
- 
-+	spin_lock(&mdev->irq_info.mic_thread_lock);
- 	spin_lock_irqsave(&mdev->irq_info.mic_intr_lock, flags);
- 	list_add_tail(&intr_cb->list, &mdev->irq_info.cb_list[idx]);
- 	spin_unlock_irqrestore(&mdev->irq_info.mic_intr_lock, flags);
-+	spin_unlock(&mdev->irq_info.mic_thread_lock);
- 
- 	return intr_cb;
- ida_fail:
-@@ -152,8 +168,9 @@ static u8 mic_unregister_intr_callback(struct mic_device *mdev, u32 idx)
- 	unsigned long flags;
- 	int i;
- 
-+	spin_lock(&mdev->irq_info.mic_thread_lock);
-+	spin_lock_irqsave(&mdev->irq_info.mic_intr_lock, flags);
- 	for (i = 0;  i < MIC_NUM_OFFSETS; i++) {
--		spin_lock_irqsave(&mdev->irq_info.mic_intr_lock, flags);
- 		list_for_each_safe(pos, tmp, &mdev->irq_info.cb_list[i]) {
- 			intr_cb = list_entry(pos, struct mic_intr_cb, list);
- 			if (intr_cb->cb_id == idx) {
-@@ -163,11 +180,13 @@ static u8 mic_unregister_intr_callback(struct mic_device *mdev, u32 idx)
- 				kfree(intr_cb);
- 				spin_unlock_irqrestore(
- 					&mdev->irq_info.mic_intr_lock, flags);
-+				spin_unlock(&mdev->irq_info.mic_thread_lock);
- 				return i;
- 			}
- 		}
--		spin_unlock_irqrestore(&mdev->irq_info.mic_intr_lock, flags);
- 	}
-+	spin_unlock_irqrestore(&mdev->irq_info.mic_intr_lock, flags);
-+	spin_unlock(&mdev->irq_info.mic_thread_lock);
- 	return MIC_NUM_OFFSETS;
- }
- 
-@@ -242,6 +261,7 @@ static int mic_setup_callbacks(struct mic_device *mdev)
- 		INIT_LIST_HEAD(&mdev->irq_info.cb_list[i]);
- 	ida_init(&mdev->irq_info.cb_ida);
- 	spin_lock_init(&mdev->irq_info.mic_intr_lock);
-+	spin_lock_init(&mdev->irq_info.mic_thread_lock);
- 	return 0;
- }
- 
-@@ -258,14 +278,12 @@ static void mic_release_callbacks(struct mic_device *mdev)
- 	struct mic_intr_cb *intr_cb;
- 	int i;
- 
-+	spin_lock(&mdev->irq_info.mic_thread_lock);
-+	spin_lock_irqsave(&mdev->irq_info.mic_intr_lock, flags);
- 	for (i = 0; i < MIC_NUM_OFFSETS; i++) {
--		spin_lock_irqsave(&mdev->irq_info.mic_intr_lock, flags);
- 
--		if (list_empty(&mdev->irq_info.cb_list[i])) {
--			spin_unlock_irqrestore(&mdev->irq_info.mic_intr_lock,
--					       flags);
-+		if (list_empty(&mdev->irq_info.cb_list[i]))
- 			break;
--		}
- 
- 		list_for_each_safe(pos, tmp, &mdev->irq_info.cb_list[i]) {
- 			intr_cb = list_entry(pos, struct mic_intr_cb, list);
-@@ -274,8 +292,9 @@ static void mic_release_callbacks(struct mic_device *mdev)
- 					  intr_cb->cb_id);
- 			kfree(intr_cb);
- 		}
--		spin_unlock_irqrestore(&mdev->irq_info.mic_intr_lock, flags);
- 	}
-+	spin_unlock_irqrestore(&mdev->irq_info.mic_intr_lock, flags);
-+	spin_unlock(&mdev->irq_info.mic_thread_lock);
- 	ida_destroy(&mdev->irq_info.cb_ida);
- 	kfree(mdev->irq_info.cb_list);
- }
-@@ -313,7 +332,8 @@ static int mic_setup_msi(struct mic_device *mdev, struct pci_dev *pdev)
- 		goto err_nomem2;
- 	}
- 
--	rc = request_irq(pdev->irq, mic_interrupt, 0 , "mic-msi", mdev);
-+	rc = request_threaded_irq(pdev->irq, mic_interrupt, mic_thread_fn,
-+				  0, "mic-msi", mdev);
- 	if (rc) {
- 		dev_err(&pdev->dev, "Error allocating MSI interrupt\n");
- 		goto err_irq_req_fail;
-@@ -353,8 +373,8 @@ static int mic_setup_intx(struct mic_device *mdev, struct pci_dev *pdev)
- 		goto err_nomem;
- 	}
- 
--	rc = request_irq(pdev->irq, mic_interrupt,
--		IRQF_SHARED, "mic-intx", mdev);
-+	rc = request_threaded_irq(pdev->irq, mic_interrupt, mic_thread_fn,
-+				  IRQF_SHARED, "mic-intx", mdev);
- 	if (rc)
- 		goto err;
- 
-@@ -391,13 +411,14 @@ int mic_next_db(struct mic_device *mdev)
- #define MK_COOKIE(x, y) ((x) | (y) << COOKIE_ID_SHIFT)
- 
- /**
-- * mic_request_irq - request an irq. mic_mutex needs
-+ * mic_request_threaded_irq - request an irq. mic_mutex needs
-  * to be held before calling this function.
-  *
-  * @mdev: pointer to mic_device instance
-- * @func: The callback function that handles the interrupt.
-+ * @handler: The callback function that handles the interrupt.
-  * The function needs to call ack_interrupts
-  * (mdev->ops->ack_interrupt(mdev)) when handling the interrupts.
-+ * @thread_fn: thread fn required by request_threaded_irq.
-  * @name: The ASCII name of the callee requesting the irq.
-  * @data: private data that is returned back when calling the
-  * function handler.
-@@ -412,8 +433,8 @@ int mic_next_db(struct mic_device *mdev)
-  * error code.
-  *
-  */
--struct mic_irq *mic_request_irq(struct mic_device *mdev,
--	irqreturn_t (*func)(int irq, void *dev),
-+struct mic_irq *mic_request_threaded_irq(struct mic_device *mdev,
-+	irq_handler_t handler, irq_handler_t thread_fn,
- 	const char *name, void *data, int intr_src,
- 	enum mic_intr_type type)
- {
-@@ -444,7 +465,8 @@ struct mic_irq *mic_request_irq(struct mic_device *mdev,
- 			goto err;
- 		}
- 
--		rc = request_irq(msix->vector, func, 0, name, data);
-+		rc = request_threaded_irq(msix->vector, handler, thread_fn,
-+					  0, name, data);
- 		if (rc) {
- 			dev_dbg(mdev->sdev->parent,
- 				"request irq failed rc = %d\n", rc);
-@@ -458,8 +480,8 @@ struct mic_irq *mic_request_irq(struct mic_device *mdev,
- 		dev_dbg(mdev->sdev->parent, "irq: %d assigned for src: %d\n",
- 			msix->vector, intr_src);
- 	} else {
--		intr_cb = mic_register_intr_callback(mdev,
--				offset, func, data);
-+		intr_cb = mic_register_intr_callback(mdev, offset, handler,
-+						     thread_fn, data);
- 		if (IS_ERR(intr_cb)) {
- 			dev_err(mdev->sdev->parent,
- 				"No available callback entries for use\n");
-@@ -487,9 +509,9 @@ err:
-  *  needs to be held before calling this function.
-  *
-  * @mdev: pointer to mic_device instance
-- * @cookie: cookie obtained during a successful call to mic_request_irq
-+ * @cookie: cookie obtained during a successful call to mic_request_threaded_irq
-  * @data: private data specified by the calling function during the
-- * mic_request_irq
-+ * mic_request_threaded_irq
-  *
-  * returns: none.
-  */
-diff --git a/drivers/misc/mic/host/mic_intr.h b/drivers/misc/mic/host/mic_intr.h
-index 6091aa9..6b03f84 100644
---- a/drivers/misc/mic/host/mic_intr.h
-+++ b/drivers/misc/mic/host/mic_intr.h
-@@ -21,6 +21,8 @@
- #ifndef _MIC_INTR_H_
- #define _MIC_INTR_H_
- 
-+#include <linux/bitops.h>
+ config INTEL_MIC_HOST
+diff --git a/drivers/misc/mic/Makefile b/drivers/misc/mic/Makefile
+index 05b34d6..e9bf148 100644
+--- a/drivers/misc/mic/Makefile
++++ b/drivers/misc/mic/Makefile
+@@ -4,3 +4,4 @@
+ #
+ obj-$(CONFIG_INTEL_MIC_HOST) += host/
+ obj-$(CONFIG_INTEL_MIC_CARD) += card/
++obj-$(CONFIG_INTEL_MIC_BUS) += bus/
+diff --git a/drivers/misc/mic/bus/Makefile b/drivers/misc/mic/bus/Makefile
+new file mode 100644
+index 0000000..d85c7f2
+--- /dev/null
++++ b/drivers/misc/mic/bus/Makefile
+@@ -0,0 +1,5 @@
++#
++# Makefile - Intel MIC Linux driver.
++# Copyright(c) 2014, Intel Corporation.
++#
++obj-$(CONFIG_INTEL_MIC_BUS) += mic_bus.o
+diff --git a/drivers/misc/mic/bus/mic_bus.c b/drivers/misc/mic/bus/mic_bus.c
+new file mode 100644
+index 0000000..39253b5
+--- /dev/null
++++ b/drivers/misc/mic/bus/mic_bus.c
+@@ -0,0 +1,188 @@
++/*
++ * Intel MIC Platform Software Stack (MPSS)
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
++ *
++ * The full GNU General Public License is included in this distribution in
++ * the file called "COPYING".
++ *
++ * Intel MIC Bus driver.
++ *
++ * This implementation is very similar to the the virtio bus driver
++ * implementation @ drivers/virtio/virtio.c
++ */
++#include <linux/spinlock.h>
++#include <linux/module.h>
++#include <linux/idr.h>
++#include <linux/mic_bus.h>
++
++/* Unique numbering for mbus devices. */
++static DEFINE_IDA(mbus_index_ida);
++
++static ssize_t device_show(struct device *d,
++			   struct device_attribute *attr, char *buf)
++{
++	struct mbus_device *dev = dev_to_mbus(d);
++	return sprintf(buf, "0x%04x\n", dev->id.device);
++}
++static DEVICE_ATTR_RO(device);
++
++static ssize_t vendor_show(struct device *d,
++			   struct device_attribute *attr, char *buf)
++{
++	struct mbus_device *dev = dev_to_mbus(d);
++	return sprintf(buf, "0x%04x\n", dev->id.vendor);
++}
++static DEVICE_ATTR_RO(vendor);
++
++static ssize_t modalias_show(struct device *d,
++			     struct device_attribute *attr, char *buf)
++{
++	struct mbus_device *dev = dev_to_mbus(d);
++	return sprintf(buf, "mbus:d%08Xv%08X\n",
++		       dev->id.device, dev->id.vendor);
++}
++static DEVICE_ATTR_RO(modalias);
++
++static struct attribute *mbus_dev_attrs[] = {
++	&dev_attr_device.attr,
++	&dev_attr_vendor.attr,
++	&dev_attr_modalias.attr,
++	NULL,
++};
++ATTRIBUTE_GROUPS(mbus_dev);
++
++static inline int mbus_id_match(const struct mbus_device *dev,
++				  const struct mbus_device_id *id)
++{
++	if (id->device != dev->id.device && id->device != MBUS_DEV_ANY_ID)
++		return 0;
++
++	return id->vendor == MBUS_DEV_ANY_ID || id->vendor == dev->id.vendor;
++}
++
++/*
++ * This looks through all the IDs a driver claims to support.  If any of them
++ * match, we return 1 and the kernel will call mbus_dev_probe().
++ */
++static int mbus_dev_match(struct device *dv, struct device_driver *dr)
++{
++	unsigned int i;
++	struct mbus_device *dev = dev_to_mbus(dv);
++	const struct mbus_device_id *ids;
++
++	ids = drv_to_mbus(dr)->id_table;
++	for (i = 0; ids[i].device; i++)
++		if (mbus_id_match(dev, &ids[i]))
++			return 1;
++	return 0;
++}
++
++static int mbus_uevent(struct device *dv, struct kobj_uevent_env *env)
++{
++	struct mbus_device *dev = dev_to_mbus(dv);
++
++	return add_uevent_var(env, "MODALIAS=mbus:d%08Xv%08X",
++			      dev->id.device, dev->id.vendor);
++}
++
++static int mbus_dev_probe(struct device *d)
++{
++	int err;
++	struct mbus_device *dev = dev_to_mbus(d);
++	struct mbus_driver *drv = drv_to_mbus(dev->dev.driver);
++
++	err = drv->probe(dev);
++	if (!err)
++		if (drv->scan)
++			drv->scan(dev);
++	return err;
++}
++
++static int mbus_dev_remove(struct device *d)
++{
++	struct mbus_device *dev = dev_to_mbus(d);
++	struct mbus_driver *drv = drv_to_mbus(dev->dev.driver);
++
++	drv->remove(dev);
++	return 0;
++}
++
++static struct bus_type mic_bus = {
++	.name  = "mic_bus",
++	.match = mbus_dev_match,
++	.dev_groups = mbus_dev_groups,
++	.uevent = mbus_uevent,
++	.probe = mbus_dev_probe,
++	.remove = mbus_dev_remove,
++};
++
++int register_mbus_driver(struct mbus_driver *driver)
++{
++	driver->driver.bus = &mic_bus;
++	return driver_register(&driver->driver);
++}
++EXPORT_SYMBOL_GPL(register_mbus_driver);
++
++void unregister_mbus_driver(struct mbus_driver *driver)
++{
++	driver_unregister(&driver->driver);
++}
++EXPORT_SYMBOL_GPL(unregister_mbus_driver);
++
++int register_mbus_device(struct mbus_device *dev)
++{
++	int err;
++
++	dev->dev.bus = &mic_bus;
++
++	/* Assign a unique device index and hence name. */
++	err = ida_simple_get(&mbus_index_ida, 0, 0, GFP_KERNEL);
++	if (err < 0)
++		return err;
++
++	dev->index = err;
++	dev_set_name(&dev->dev, "mbus-dev%u", dev->index);
++	/*
++	 * device_register() causes the bus infrastructure to look for a
++	 * matching driver.
++	 */
++	err = device_register(&dev->dev);
++	return err;
++}
++EXPORT_SYMBOL_GPL(register_mbus_device);
++
++void unregister_mbus_device(struct mbus_device *dev)
++{
++	int index = dev->index; /* save for after device release */
++
++	device_unregister(&dev->dev);
++	ida_simple_remove(&mbus_index_ida, index);
++}
++EXPORT_SYMBOL_GPL(unregister_mbus_device);
++
++static int __init mbus_init(void)
++{
++	return bus_register(&mic_bus);
++}
++
++static void __exit mbus_exit(void)
++{
++	bus_unregister(&mic_bus);
++}
++
++core_initcall(mbus_init);
++module_exit(mbus_exit);
++
++MODULE_AUTHOR("Intel Corporation");
++MODULE_DESCRIPTION("Intel(R) MIC Bus driver");
++MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/mic_bus.h b/include/linux/mic_bus.h
+new file mode 100644
+index 0000000..8297573
+--- /dev/null
++++ b/include/linux/mic_bus.h
+@@ -0,0 +1,148 @@
++/*
++ * Intel MIC Platform Software Stack (MPSS)
++ *
++ * Copyright(c) 2014 Intel Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License, version 2, as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++ * General Public License for more details.
++ *
++ * The full GNU General Public License is included in this distribution in
++ * the file called "COPYING".
++ *
++ * Intel MIC Bus driver.
++ *
++ * This implementation is very similar to the the virtio bus driver
++ * implementation @ include/linux/virtio.h.
++ */
++#ifndef _MIC_BUS_H_
++#define _MIC_BUS_H_
++/*
++ * Everything a mbus driver needs to work with any particular mbus
++ * implementation.
++ */
++#include <linux/types.h>
++#include <linux/device.h>
++#include <linux/mod_devicetable.h>
 +#include <linux/interrupt.h>
- /*
-  * The minimum number of msix vectors required for normal operation.
-  * 3 for virtio network, console and block devices.
-@@ -68,7 +70,11 @@ struct mic_intr_info {
-  * @num_vectors: The number of MSI/MSI-x vectors that have been allocated.
-  * @cb_ida: callback ID allocator to track the callbacks registered.
-  * @mic_intr_lock: spinlock to protect the interrupt callback list.
-+ * @mic_thread_lock: spinlock to protect the thread callback list.
-+ *		   This lock is used to protect against thread_fn while
-+ *		   mic_intr_lock is used to protect against interrupt handler.
-  * @cb_list: Array of callback lists one for each source.
-+ * @mask: Mask used by the main thread fn to call the underlying thread fns.
-  */
- struct mic_irq_info {
- 	int next_avail_src;
-@@ -77,19 +83,23 @@ struct mic_irq_info {
- 	u16 num_vectors;
- 	struct ida cb_ida;
- 	spinlock_t mic_intr_lock;
-+	spinlock_t mic_thread_lock;
- 	struct list_head *cb_list;
-+	unsigned long mask;
- };
- 
- /**
-  * struct mic_intr_cb - Interrupt callback structure.
-  *
-- * @func: The callback function
-+ * @handler: The callback function
-+ * @thread_fn: The thread_fn.
-  * @data: Private data of the requester.
-  * @cb_id: The callback id. Identifies this callback.
-  * @list: list head pointing to the next callback structure.
-  */
- struct mic_intr_cb {
--	irqreturn_t (*func) (int irq, void *data);
-+	irq_handler_t handler;
-+	irq_handler_t thread_fn;
- 	void *data;
- 	int cb_id;
- 	struct list_head list;
-@@ -124,8 +134,8 @@ struct mic_hw_intr_ops {
- };
- 
- int mic_next_db(struct mic_device *mdev);
--struct mic_irq *mic_request_irq(struct mic_device *mdev,
--	irqreturn_t (*func)(int irq, void *data),
-+struct mic_irq *mic_request_threaded_irq(struct mic_device *mdev,
-+	irq_handler_t handler, irq_handler_t thread_fn,
- 	const char *name, void *data, int intr_src,
- 	enum mic_intr_type type);
- 
-diff --git a/drivers/misc/mic/host/mic_main.c b/drivers/misc/mic/host/mic_main.c
-index c04a021..fdc9c13 100644
---- a/drivers/misc/mic/host/mic_main.c
-+++ b/drivers/misc/mic/host/mic_main.c
-@@ -389,8 +389,9 @@ static int mic_probe(struct pci_dev *pdev,
- 	mutex_lock(&mdev->mic_mutex);
- 
- 	mdev->shutdown_db = mic_next_db(mdev);
--	mdev->shutdown_cookie = mic_request_irq(mdev, mic_shutdown_db,
--		"shutdown-interrupt", mdev, mdev->shutdown_db, MIC_INTR_DB);
-+	mdev->shutdown_cookie = mic_request_threaded_irq(mdev, mic_shutdown_db,
-+					NULL, "shutdown-interrupt", mdev,
-+					mdev->shutdown_db, MIC_INTR_DB);
- 	if (IS_ERR(mdev->shutdown_cookie)) {
- 		rc = PTR_ERR(mdev->shutdown_cookie);
- 		mutex_unlock(&mdev->mic_mutex);
-diff --git a/drivers/misc/mic/host/mic_virtio.c b/drivers/misc/mic/host/mic_virtio.c
-index 7e1ef0e..aba3e83 100644
---- a/drivers/misc/mic/host/mic_virtio.c
-+++ b/drivers/misc/mic/host/mic_virtio.c
-@@ -594,8 +594,10 @@ int mic_virtio_add_device(struct mic_vdev *mvdev,
- 	snprintf(irqname, sizeof(irqname), "mic%dvirtio%d", mdev->id,
- 		 mvdev->virtio_id);
- 	mvdev->virtio_db = mic_next_db(mdev);
--	mvdev->virtio_cookie = mic_request_irq(mdev, mic_virtio_intr_handler,
--			irqname, mvdev, mvdev->virtio_db, MIC_INTR_DB);
-+	mvdev->virtio_cookie = mic_request_threaded_irq(mdev,
-+					       mic_virtio_intr_handler,
-+					       NULL, irqname, mvdev,
-+					       mvdev->virtio_db, MIC_INTR_DB);
- 	if (IS_ERR(mvdev->virtio_cookie)) {
- 		ret = PTR_ERR(mvdev->virtio_cookie);
- 		dev_dbg(mdev->sdev->parent, "request irq failed\n");
++#include <linux/dma-mapping.h>
++
++struct mbus_device_id {
++	__u32 device;
++	__u32 vendor;
++};
++
++#define MBUS_DEV_DMA_HOST 2
++#define MBUS_DEV_DMA_MIC 3
++#define MBUS_DEV_ANY_ID 0xffffffff
++
++/**
++ * mbus_device - representation of a device using mbus
++ * @priv: private pointer for the driver's use.
++ * @mmio_va: virtual address of mmio space
++ * @hw_ops: the hardware ops supported by this device.
++ * @id: the device type identification (used to match it with a driver).
++ * @dev: underlying device.
++ * be used to communicate with.
++ * @index: unique position on the mbus bus
++ */
++struct mbus_device {
++	void *priv;
++	void __iomem *mmio_va;
++	struct mbus_hw_ops *hw_ops;
++	struct mbus_device_id id;
++	struct device dev;
++	int index;
++};
++
++/**
++ * mbus_driver - operations for a mbus I/O driver
++ * @driver: underlying device driver (populate name and owner).
++ * @id_table: the ids serviced by this driver.
++ * @probe: the function to call when a device is found.  Returns 0 or -errno.
++ * @remove: the function to call when a device is removed.
++ */
++struct mbus_driver {
++	struct device_driver driver;
++	const struct mbus_device_id *id_table;
++	int (*probe)(struct mbus_device *dev);
++	void (*scan)(struct mbus_device *dev);
++	void (*remove)(struct mbus_device *dev);
++};
++
++/**
++ * struct mic_irq - opaque pointer used as cookie
++ */
++struct mic_irq;
++
++/**
++ * mbus_hw_ops - Hardware operations for accessing a MIC device on the MIC bus.
++ */
++struct mbus_hw_ops {
++	struct mic_irq* (*request_threaded_irq)(struct mbus_device *mbdev,
++			irq_handler_t handler, irq_handler_t thread_fn,
++			const char *name, void *data, int intr_src);
++	void (*free_irq)(struct mbus_device *mbdev,
++			struct mic_irq *cookie, void *data);
++	void (*ack_interrupt)(struct mbus_device *mbdev, int num);
++};
++
++int register_mbus_device(struct mbus_device *dev);
++void unregister_mbus_device(struct mbus_device *dev);
++
++int register_mbus_driver(struct mbus_driver *drv);
++void unregister_mbus_driver(struct mbus_driver *drv);
++
++static inline struct mbus_device *dev_to_mbus(struct device *_dev)
++{
++	return container_of(_dev, struct mbus_device, dev);
++}
++
++static inline struct mbus_driver *drv_to_mbus(struct device_driver *drv)
++{
++	return container_of(drv, struct mbus_driver, driver);
++}
++
++static inline void mbus_release_dev(struct device *d)
++{
++}
++
++static inline int
++mbus_add_device(struct mbus_device *mbdev, struct device *pdev, int id,
++		struct dma_map_ops *dma_ops, struct mbus_hw_ops *hw_ops,
++		void __iomem *mmio_va)
++{
++	int ret;
++
++	mbdev->mmio_va = mmio_va;
++	mbdev->dev.parent = pdev;
++	mbdev->id.device = id;
++	mbdev->id.vendor = MBUS_DEV_ANY_ID;
++	mbdev->dev.archdata.dma_ops = dma_ops;
++	mbdev->dev.dma_mask = &mbdev->dev.coherent_dma_mask;
++	dma_set_mask(&mbdev->dev, DMA_BIT_MASK(64));
++	mbdev->dev.release = mbus_release_dev;
++	mbdev->hw_ops = hw_ops;
++	dev_set_drvdata(&mbdev->dev, mbdev);
++
++	ret = register_mbus_device(mbdev);
++	if (ret) {
++		dev_err(mbdev->dev.parent,
++			"Failed to register mbus device type %u\n", id);
++		return ret;
++	}
++	return 0;
++}
++
++static inline void mbus_remove_device(struct mbus_device *mbdev)
++{
++	unregister_mbus_device(mbdev);
++	memset(mbdev, 0x0, sizeof(*mbdev));
++}
++
++#endif /* _MIC_BUS_H */
 -- 
 1.8.2.2
 
