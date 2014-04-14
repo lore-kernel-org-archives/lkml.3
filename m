@@ -1,43 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461AbaDNMIQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 08:08:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50860 "EHLO mx1.redhat.com"
+	id S1754411AbaDNMNW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 08:13:22 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35979 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752241AbaDNMIN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 08:08:13 -0400
-Date: Mon, 14 Apr 2014 14:09:22 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 2/2] PCI/MSI: Phase out pci_enable_msi_block()
-Message-ID: <20140414120921.GA32132@dhcp-26-207.brq.redhat.com>
-References: <cover.1397458024.git.agordeev@redhat.com>
- <0b08613dc17cd608c1babc1f42b8919f60e1093f.1397458024.git.agordeev@redhat.com>
+	id S1753367AbaDNMNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 08:13:19 -0400
+Message-ID: <534BD0B5.5000004@ti.com>
+Date: Mon, 14 Apr 2014 17:42:37 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0b08613dc17cd608c1babc1f42b8919f60e1093f.1397458024.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, Vinod Koul <vinod.koul@intel.com>
+CC: <dan.j.williams@intel.com>, <dmaengine@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <joelf@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <mporter@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH v2 05/14] arm: common: edma: Select event queue 1 as default
+ when booted with DT
+References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com> <1396357575-30585-6-git-send-email-peter.ujfalusi@ti.com> <5347A4FD.1030803@ti.com> <5347ACDE.7040407@ti.com> <5347AE49.5020109@ti.com> <5347B7F8.2000508@ti.com> <20140411094217.GA32284@intel.com> <5347D2CC.4030407@ti.com> <20140411113154.GB32284@intel.com> <5347DEDA.2060008@ti.com> <20140411124641.GC32284@intel.com> <534BCCD3.9060805@ti.com>
+In-Reply-To: <534BCCD3.9060805@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 09:14:07AM +0200, Alexander Gordeev wrote:
-> @@ -1244,7 +1241,7 @@ static inline void pcie_set_ecrc_checking(struct pci_dev *dev) { }
->  static inline void pcie_ecrc_get_policy(char *str) { }
->  #endif
->  
-> -#define pci_enable_msi(pdev)	pci_enable_msi_block(pdev, 1)
-> +#define pci_enable_msi(pdev)	pci_enable_msi_range(pdev, 1, 1)
+On Monday 14 April 2014 05:26 PM, Peter Ujfalusi wrote:
+> Hi Vinod,
+> 
+> On 04/11/2014 03:46 PM, Vinod Koul wrote:
+>> I think the number shouldn't be viewed in absolute terms. If we decide that (lets
+>> say) 0-7, then any controller should map 0 to lowest and 7 to highest.
+>>
+>> For your case you can do this and then intermediate numbers would be medium
+>> priority. Such a system might work well...
+>>
+>> Also how would a client driver know which priority to use? Would it come from
+>> DT?
+> 
+> I think DT would be the best place.
 
-Self-Nack, it should have been pci_enable_msi_exact(pdev, 1) ^^^
+In the strict sense of what DT is supposed to represent, DT is not the
+best place for this. Priority is usecase driven rather that hardware
+description driven. So on a reasonably less loaded system, I am sure you
+could run audio even with a lower priority DMA queue.
 
->  #ifdef CONFIG_HT_IRQ
->  /* The functions a driver should call */
+Moreover, IMHO, encoding it in DT now will make it an ABI. Without a
+wide variety of example use cases, I think it is too early to commit to
+an ABI.
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+> Not sure if we should set the range for this either. What I was thinking is to
+> add an optional new property to be set by the client nodes, using DMA:
+> 
+> mcasp0: mcasp@48038000 {
+> 	compatible = "ti,am33xx-mcasp-audio";
+> 	...
+> 	dmas =	<&edma 8>,
+> 		<&edma 9>;
+> 	dma-names = "tx", "rx";
+> 	dma-priorities = <2>, <2>;
+> };
+> 
+> We could agree that lower number means lower priority, higher is - well -
+> higher priority.
+> If the dma-priority is missing we should assume lowest priority (0).
+> The highest priority depends on the platform. For eDMA3 in AM335x it is three
+> level. For designware controller you might have the range 0-8 as valid.
+> 
+> The question is how to get this information into use?
+> We can take the priority number in the core when the dma channel is requested
+> and add field to "struct dma_chan" in order to store it and the DMA drivers
+> could have access to it.
+> In this way we only need to update the nodes which needs non default priority
+> for DMA.
+> 
+> What do you think?
+
+If we are using dma_slave_config, I think it will be easiest to define
+two levels of priority (HIGH and LOW, as thats all we see a need for
+right now), and have the audio driver select the HIGH priority. If
+nothing is set, EDMA can default to LOW.
+
+Thanks,
+Sekhar
+
