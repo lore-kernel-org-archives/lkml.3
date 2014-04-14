@@ -1,545 +1,580 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752460AbaDNI4L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 04:56:11 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:54095 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979AbaDNI4H (ORCPT
+	id S1753308AbaDNI5D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 04:57:03 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57015 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751282AbaDNI5A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 04:56:07 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <534B3E5D.6090905@linux.intel.com>
-References: <1397004988-31550-1-git-send-email-srinivas.pandruvada@linux.intel.com> <1397004988-31550-5-git-send-email-srinivas.pandruvada@linux.intel.com> <53497627.3000903@kernel.org> <534B3E5D.6090905@linux.intel.com>
+	Mon, 14 Apr 2014 04:57:00 -0400
+Date: Mon, 14 Apr 2014 10:56:43 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Bo Shen <voice.shen@atmel.com>, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] ARM: at91/dt: define sam9n12 clocks
+Message-ID: <20140414085643.GK2967@piout.net>
+References: <1397463399-11771-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1397463399-11771-3-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [Patch v3 5/6] iio: hid-sensors: Added device rotation support
-From: Jonathan Cameron <jic23@kernel.org>
-Date: Mon, 14 Apr 2014 08:00:40 +0100
-To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <ec813e30-307a-4391-b85b-600b0c7f7ff0@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397463399-11771-3-git-send-email-boris.brezillon@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 14/04/2014 at 10:16:37 +0200, Boris Brezillon wrote :
+> Define sam9n12 clocks and make use of them in peripheral definitions.
+> 
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+> ---
+>  arch/arm/boot/dts/at91sam9n12.dtsi | 350 ++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 348 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
+> index 9f04808..4d036a3 100644
+> --- a/arch/arm/boot/dts/at91sam9n12.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9n12.dtsi
+> @@ -12,6 +12,7 @@
+>  #include <dt-bindings/pinctrl/at91.h>
+>  #include <dt-bindings/interrupt-controller/irq.h>
+>  #include <dt-bindings/gpio/gpio.h>
+> +#include <dt-bindings/clk/at91.h>
+>  
+>  / {
+>  	model = "Atmel AT91SAM9N12 SoC";
+> @@ -49,6 +50,20 @@
+>  		reg = <0x20000000 0x10000000>;
+>  	};
+>  
+> +	clocks {
+> +		slow_xtal: slow_xtal {
+> +			compatible = "fixed-clock";
+> +			#clock-cells = <0>;
+> +			clock-frequency = <0>;
+> +		};
+> +
+> +		main_xtal: main_xtal {
+> +			compatible = "fixed-clock";
+> +			#clock-cells = <0>;
+> +			clock-frequency = <0>;
+> +		};
 
+You can put those two xtal nodes directly under root, as mentioned by
+Mark Rutland:
 
-On April 14, 2014 2:48:13 AM GMT+01:00, Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com> wrote:
->
->On 04/12/2014 10:21 AM, Jonathan Cameron wrote:
->> On 09/04/14 01:56, Srinivas Pandruvada wrote:
->>> Added usage id processing for device rotation. This uses IIO
->>> interfaces for triggered buffer to present data to user
->>> mode.This uses HID sensor framework for registering callback
->>> events from the sensor hub.
->>> Data is exported to user space in the form of quaternion rotation
->>> format.
->>>
->>> Signed-off-by: Srinivas Pandruvada
-><srinivas.pandruvada@linux.intel.com>
->> Very nice.  Happy to take this the moment we have a go ahead on
->> the devm_kmemdup and perhaps those minor tweaks I asked for in the
->> multi value handling patch.
->>
->> Actually, may seem a random question, but what the heck are the scale
->> units you can read for the quaternion?  Firstly it's an integer, so
->> would only make the value bigger, and secondly we are dealing with
->> a quaternion, which is inherently scale free (when used for rotation 
->> anyway).
->> I suppose these units might be meant to transform to a unit
->quaternion
->> (though this can be easily established form the quaternion itself).
->>
->Good point. For quaternion there is no scale exported in channel spec.
->I 
->have in switch case, which was left over, I will remove it. The offset 
->field mostly will be 0, but as you pointed out below they are unit
->exponent.
->
->
->> Looking quickly at the other HID drivers, I am a little confused as
->> to what is going on in general. Could you talk me through this stuff?
->> I have a vague recollection we went through this before, but can't
->> recall the result of those discussions.
->>
->> At first glance, it looks like scale is being used to indicate the
->> base units (via magic numbers) and offset to contain exponents
->> to be applied also as magic numbers.  Neither of these is anywhere
->> near our ABI which is going to cause issues for any 'standard'
->> userspace library..
->>
->We had this discussion long time back. Initially introduced separate 
->attributes for units ans scale but suggestion was to use offset and
->scale.
->
->Currently these drivers are used only by Android kernel, which has 
->corresponding user space to interpret.
->But now since after Win8, they became available in many devices.
->I have received questions on this from user space developers now, so I 
->have to either document them or make complaint to others. I am working 
->on it. I have many units to convert to standard format. I will submit a
->
->change for this.
+"A "clocks" container is non-standard, and not guarantee to probe. The
+fact these clocks probe currently is an artifact of the current
+organisation of Linux rather than any conscious decision."
 
-Good to know you have this in hand.
-
-Thanks
-
-Jonathan
->
->Thanks,
->Srinivas
->
->> Thanks.
->>
->> Jonathan
->>> ---
->>>   drivers/iio/orientation/Kconfig               |  12 +
->>>   drivers/iio/orientation/Makefile              |   1 +
->>>   drivers/iio/orientation/hid-sensor-rotation.c | 359 
->>> ++++++++++++++++++++++++++
->>>   include/linux/hid-sensor-ids.h                |   1 +
->>>   4 files changed, 373 insertions(+)
->>>   create mode 100644 drivers/iio/orientation/hid-sensor-rotation.c
->>>
->>> diff --git a/drivers/iio/orientation/Kconfig 
->>> b/drivers/iio/orientation/Kconfig
->>> index 58c62c8..e3aa1e5 100644
->>> --- a/drivers/iio/orientation/Kconfig
->>> +++ b/drivers/iio/orientation/Kconfig
->>> @@ -16,4 +16,16 @@ config HID_SENSOR_INCLINOMETER_3D
->>>         Say yes here to build support for the HID SENSOR
->>>         Inclinometer 3D.
->>>
->>> +config HID_SENSOR_DEVICE_ROTATION
->>> +    depends on HID_SENSOR_HUB
->>> +    select IIO_BUFFER
->>> +    select IIO_TRIGGERED_BUFFER
->>> +    select HID_SENSOR_IIO_COMMON
->>> +    select HID_SENSOR_IIO_TRIGGER
->>> +    tristate "HID Device Rotation"
->>> +    help
->>> +      Say yes here to build support for the HID SENSOR
->>> +      device rotation. The output of a device rotation sensor
->>> +      is presented using quaternion format.
->>> +
->>>   endmenu
->>> diff --git a/drivers/iio/orientation/Makefile 
->>> b/drivers/iio/orientation/Makefile
->>> index 2c97572..4734dab 100644
->>> --- a/drivers/iio/orientation/Makefile
->>> +++ b/drivers/iio/orientation/Makefile
->>> @@ -4,3 +4,4 @@
->>>
->>>   # When adding new entries keep the list in alphabetical order
->>>   obj-$(CONFIG_HID_SENSOR_INCLINOMETER_3D) += hid-sensor-incl-3d.o
->>> +obj-$(CONFIG_HID_SENSOR_DEVICE_ROTATION) += hid-sensor-rotation.o
->>> diff --git a/drivers/iio/orientation/hid-sensor-rotation.c 
->>> b/drivers/iio/orientation/hid-sensor-rotation.c
->>> new file mode 100644
->>> index 0000000..5c7d558
->>> --- /dev/null
->>> +++ b/drivers/iio/orientation/hid-sensor-rotation.c
->>> @@ -0,0 +1,359 @@
->>> +/*
->>> + * HID Sensors Driver
->>> + * Copyright (c) 2014, Intel Corporation.
->>> + *
->>> + * This program is free software; you can redistribute it and/or 
->>> modify it
->>> + * under the terms and conditions of the GNU General Public
->License,
->>> + * version 2, as published by the Free Software Foundation.
->>> + *
->>> + * This program is distributed in the hope it will be useful, but 
->>> WITHOUT
->>> + * ANY WARRANTY; without even the implied warranty of 
->>> MERCHANTABILITY or
->>> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public 
->>> License for
->>> + * more details.
->>> + */
->>> +
->>> +#include <linux/device.h>
->>> +#include <linux/platform_device.h>
->>> +#include <linux/module.h>
->>> +#include <linux/interrupt.h>
->>> +#include <linux/irq.h>
->>> +#include <linux/slab.h>
->>> +#include <linux/hid-sensor-hub.h>
->>> +#include <linux/iio/iio.h>
->>> +#include <linux/iio/sysfs.h>
->>> +#include <linux/iio/buffer.h>
->>> +#include <linux/iio/trigger_consumer.h>
->>> +#include <linux/iio/triggered_buffer.h>
->>> +#include "../common/hid-sensors/hid-sensor-trigger.h"
->>> +
->>> +struct dev_rot_state {
->>> +    struct hid_sensor_hub_callbacks callbacks;
->>> +    struct hid_sensor_common common_attributes;
->>> +    struct hid_sensor_hub_attribute_info quaternion;
->>> +    u32 sampled_vals[4];
->>> +};
->>> +
->>> +/* Channel definitions */
->>> +static const struct iio_chan_spec dev_rot_channels[] = {
->>> +    {
->>> +        .type = IIO_ROT,
->>> +        .modified = 1,
->>> +        .channel2 = IIO_MOD_QUATERNION,
->>> +        .info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
->>> +        .info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
->>> +                    BIT(IIO_CHAN_INFO_SAMP_FREQ) |
->>> +                    BIT(IIO_CHAN_INFO_HYSTERESIS) |
->>> +                    BIT(IIO_CHAN_INFO_RAW),
->>> +    }
->>> +};
->>> +
->>> +/* Adjust channel real bits based on report descriptor */
->>> +static void dev_rot_adjust_channel_bit_mask(struct iio_chan_spec
->*chan,
->>> +                        int size)
->>> +{
->>> +    chan->scan_type.sign = 's';
->>> +    /* Real storage bits will change based on the report desc. */
->>> +    chan->scan_type.realbits = size * 8;
->>> +    /* Maximum size of a sample to capture is u32 */
->>> +    chan->scan_type.storagebits = sizeof(u32) * 8;
->>> +    chan->scan_type.repeat = 4;
->>> +}
->>> +
->>> +/* Channel read_raw handler */
->>> +static int dev_rot_read_raw(struct iio_dev *indio_dev,
->>> +                struct iio_chan_spec const *chan,
->>> +                int size, int *vals, int *val_len,
->>> +                long mask)
->>> +{
->>> +    struct dev_rot_state *rot_state = iio_priv(indio_dev);
->>> +    int ret_type;
->>> +    int i;
->>> +
->>> +    vals[0] = 0;
->>> +    vals[1] = 0;
->>> +
->>> +    switch (mask) {
->>> +    case IIO_CHAN_INFO_RAW:
->>> +        if (size >= 4) {
->>> +            for (i = 0; i < 4; ++i)
->>> +                vals[i] = rot_state->sampled_vals[i];
->>> +            ret_type = IIO_VAL_INT_MULTIPLE;
->>> +            *val_len =  4;
->>> +        } else
->>> +            ret_type = -EINVAL;
->>> +        break;
->>> +    case IIO_CHAN_INFO_SCALE:
->>> +        vals[0] = rot_state->quaternion.units;
->>> +        ret_type = IIO_VAL_INT;
->>> +        break;
->>> +    case IIO_CHAN_INFO_OFFSET:
->>> +        vals[1] = hid_sensor_convert_exponent(
->>> +            rot_state->quaternion.unit_expo);
->>> +        ret_type = IIO_VAL_INT;
->>> +        break;
->>> +    case IIO_CHAN_INFO_SAMP_FREQ:
->>> +        ret_type = hid_sensor_read_samp_freq_value(
->>> +            &rot_state->common_attributes, &vals[0], &vals[1]);
->>> +        break;
->>> +    case IIO_CHAN_INFO_HYSTERESIS:
->>> +        ret_type = hid_sensor_read_raw_hyst_value(
->>> +            &rot_state->common_attributes, &vals[0], &vals[1]);
->>> +        break;
->>> +    default:
->>> +        ret_type = -EINVAL;
->>> +        break;
->>> +    }
->>> +
->>> +    return ret_type;
->>> +}
->>> +
->>> +/* Channel write_raw handler */
->>> +static int dev_rot_write_raw(struct iio_dev *indio_dev,
->>> +                   struct iio_chan_spec const *chan,
->>> +                   int val,
->>> +                   int val2,
->>> +                   long mask)
->>> +{
->>> +    struct dev_rot_state *rot_state = iio_priv(indio_dev);
->>> +    int ret;
->>> +
->>> +    switch (mask) {
->>> +    case IIO_CHAN_INFO_SAMP_FREQ:
->>> +        ret = hid_sensor_write_samp_freq_value(
->>> +                &rot_state->common_attributes, val, val2);
->>> +        break;
->>> +    case IIO_CHAN_INFO_HYSTERESIS:
->>> +        ret = hid_sensor_write_raw_hyst_value(
->>> +                &rot_state->common_attributes, val, val2);
->>> +        break;
->>> +    default:
->>> +        ret = -EINVAL;
->>> +    }
->>> +
->>> +    return ret;
->>> +}
->>> +
->>> +static const struct iio_info dev_rot_info = {
->>> +    .driver_module = THIS_MODULE,
->>> +    .read_raw_multi = &dev_rot_read_raw,
->>> +    .write_raw = &dev_rot_write_raw,
->>> +};
->>> +
->>> +/* Function to push data to buffer */
->>> +static void hid_sensor_push_data(struct iio_dev *indio_dev, u8 
->>> *data, int len)
->>> +{
->>> +    dev_dbg(&indio_dev->dev, "hid_sensor_push_data >>\n");
->>> +    iio_push_to_buffers(indio_dev, (u8 *)data);
->>> +    dev_dbg(&indio_dev->dev, "hid_sensor_push_data <<\n");
->>> +
->>> +}
->>> +
->>> +/* Callback handler to send event after all samples are received
->and 
->>> captured */
->>> +static int dev_rot_proc_event(struct hid_sensor_hub_device *hsdev,
->>> +                unsigned usage_id,
->>> +                void *priv)
->>> +{
->>> +    struct iio_dev *indio_dev = platform_get_drvdata(priv);
->>> +    struct dev_rot_state *rot_state = iio_priv(indio_dev);
->>> +
->>> +    dev_dbg(&indio_dev->dev, "dev_rot_proc_event [%d]\n",
->>> +                rot_state->common_attributes.data_ready);
->>> +
->>> +    if (rot_state->common_attributes.data_ready)
->>> +        hid_sensor_push_data(indio_dev,
->>> +                (u8 *)rot_state->sampled_vals,
->>> +                sizeof(rot_state->sampled_vals));
->>> +
->>> +    return 0;
->>> +}
->>> +
->>> +/* Capture samples in local storage */
->>> +static int dev_rot_capture_sample(struct hid_sensor_hub_device
->*hsdev,
->>> +                unsigned usage_id,
->>> +                size_t raw_len, char *raw_data,
->>> +                void *priv)
->>> +{
->>> +    struct iio_dev *indio_dev = platform_get_drvdata(priv);
->>> +    struct dev_rot_state *rot_state = iio_priv(indio_dev);
->>> +
->>> +    if (usage_id == HID_USAGE_SENSOR_ORIENT_QUATERNION) {
->>> +        memcpy(rot_state->sampled_vals, raw_data,
->>> +                    sizeof(rot_state->sampled_vals));
->>> +        dev_dbg(&indio_dev->dev, "Recd Quat len:%zu::%zu\n",
->raw_len,
->>> +                    sizeof(rot_state->sampled_vals));
->>> +    }
->>> +
->>> +    return 0;
->>> +}
->>> +
->>> +/* Parse report which is specific to an usage id*/
->>> +static int dev_rot_parse_report(struct platform_device *pdev,
->>> +                struct hid_sensor_hub_device *hsdev,
->>> +                struct iio_chan_spec *channels,
->>> +                unsigned usage_id,
->>> +                struct dev_rot_state *st)
->>> +{
->>> +    int ret;
->>> +
->>> +    ret = sensor_hub_input_get_attribute_info(hsdev,
->>> +                HID_INPUT_REPORT,
->>> +                usage_id,
->>> +                HID_USAGE_SENSOR_ORIENT_QUATERNION,
->>> +                &st->quaternion);
->>> +    if (ret)
->>> +        return ret;
->>> +
->>> +    dev_rot_adjust_channel_bit_mask(&channels[0],
->>> +        st->quaternion.size / 4);
->>> +
->>> +    dev_dbg(&pdev->dev, "dev_rot %x:%x\n", st->quaternion.index,
->>> +        st->quaternion.report_id);
->>> +
->>> +    dev_dbg(&pdev->dev, "dev_rot: attrib size %d\n",
->>> +                st->quaternion.size);
->>> +
->>> +    /* Set Sensitivity field ids, when there is no individual 
->>> modifier */
->>> +    if (st->common_attributes.sensitivity.index < 0) {
->>> +        sensor_hub_input_get_attribute_info(hsdev,
->>> +            HID_FEATURE_REPORT, usage_id,
->>> +            HID_USAGE_SENSOR_DATA_MOD_CHANGE_SENSITIVITY_ABS |
->>> +            HID_USAGE_SENSOR_DATA_ORIENTATION,
->>> +            &st->common_attributes.sensitivity);
->>> +        dev_dbg(&pdev->dev, "Sensitivity index:report %d:%d\n",
->>> +            st->common_attributes.sensitivity.index,
->>> +            st->common_attributes.sensitivity.report_id);
->>> +    }
->>> +
->>> +    return 0;
->>> +}
->>> +
->>> +/* Function to initialize the processing for usage id */
->>> +static int hid_dev_rot_probe(struct platform_device *pdev)
->>> +{
->>> +    int ret;
->>> +    static char *name = "dev_rotation";
->>> +    struct iio_dev *indio_dev;
->>> +    struct dev_rot_state *rot_state;
->>> +    struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
->>> +    struct iio_chan_spec *channels;
->>> +
->>> +    indio_dev = devm_iio_device_alloc(&pdev->dev,
->>> +                      sizeof(struct dev_rot_state));
->>> +    if (indio_dev == NULL)
->>> +        return -ENOMEM;
->>> +
->>> +    platform_set_drvdata(pdev, indio_dev);
->>> +
->>> +    rot_state = iio_priv(indio_dev);
->>> +    rot_state->common_attributes.hsdev = hsdev;
->>> +    rot_state->common_attributes.pdev = pdev;
->>> +
->>> +    ret = hid_sensor_parse_common_attributes(hsdev,
->>> +                HID_USAGE_SENSOR_DEVICE_ORIENTATION,
->>> +                &rot_state->common_attributes);
->>> +    if (ret) {
->>> +        dev_err(&pdev->dev, "failed to setup common attributes\n");
->>> +        return ret;
->>> +    }
->>> +
->>> +    channels = devm_kmemdup(&pdev->dev, dev_rot_channels, 
->>> sizeof(dev_rot_channels),
->>> +               GFP_KERNEL);
->>> +    if (!channels) {
->>> +        dev_err(&pdev->dev, "failed to duplicate channels\n");
->>> +        return -ENOMEM;
->>> +    }
->>> +
->>> +    ret = dev_rot_parse_report(pdev, hsdev, channels,
->>> +            HID_USAGE_SENSOR_DEVICE_ORIENTATION, rot_state);
->>> +    if (ret) {
->>> +        dev_err(&pdev->dev, "failed to setup attributes\n");
->>> +        return ret;
->>> +    }
->>> +
->>> +    indio_dev->channels = channels;
->>> +    indio_dev->num_channels = ARRAY_SIZE(dev_rot_channels);
->>> +    indio_dev->dev.parent = &pdev->dev;
->>> +    indio_dev->info = &dev_rot_info;
->>> +    indio_dev->name = name;
->>> +    indio_dev->modes = INDIO_DIRECT_MODE;
->>> +
->>> +    ret = iio_triggered_buffer_setup(indio_dev, 
->>> &iio_pollfunc_store_time,
->>> +        NULL, NULL);
->>> +    if (ret) {
->>> +        dev_err(&pdev->dev, "failed to initialize trigger
->buffer\n");
->>> +        return ret;
->>> +    }
->>> +    rot_state->common_attributes.data_ready = false;
->>> +    ret = hid_sensor_setup_trigger(indio_dev, name,
->>> +                    &rot_state->common_attributes);
->>> +    if (ret) {
->>> +        dev_err(&pdev->dev, "trigger setup failed\n");
->>> +        goto error_unreg_buffer_funcs;
->>> +    }
->>> +
->>> +    ret = iio_device_register(indio_dev);
->>> +    if (ret) {
->>> +        dev_err(&pdev->dev, "device register failed\n");
->>> +        goto error_remove_trigger;
->>> +    }
->>> +
->>> +    rot_state->callbacks.send_event = dev_rot_proc_event;
->>> +    rot_state->callbacks.capture_sample = dev_rot_capture_sample;
->>> +    rot_state->callbacks.pdev = pdev;
->>> +    ret = sensor_hub_register_callback(hsdev,
->>> +                    HID_USAGE_SENSOR_DEVICE_ORIENTATION,
->>> +                    &rot_state->callbacks);
->>> +    if (ret) {
->>> +        dev_err(&pdev->dev, "callback reg failed\n");
->>> +        goto error_iio_unreg;
->>> +    }
->>> +
->>> +    return 0;
->>> +
->>> +error_iio_unreg:
->>> +    iio_device_unregister(indio_dev);
->>> +error_remove_trigger:
->>> + hid_sensor_remove_trigger(&rot_state->common_attributes);
->>> +error_unreg_buffer_funcs:
->>> +    iio_triggered_buffer_cleanup(indio_dev);
->>> +    return ret;
->>> +}
->>> +
->>> +/* Function to deinitialize the processing for usage id */
->>> +static int hid_dev_rot_remove(struct platform_device *pdev)
->>> +{
->>> +    struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
->>> +    struct iio_dev *indio_dev = platform_get_drvdata(pdev);
->>> +    struct dev_rot_state *rot_state = iio_priv(indio_dev);
->>> +
->>> +    sensor_hub_remove_callback(hsdev, 
->>> HID_USAGE_SENSOR_DEVICE_ORIENTATION);
->>> +    iio_device_unregister(indio_dev);
->>> + hid_sensor_remove_trigger(&rot_state->common_attributes);
->>> +    iio_triggered_buffer_cleanup(indio_dev);
->>> +
->>> +    return 0;
->>> +}
->>> +
->>> +static struct platform_device_id hid_dev_rot_ids[] = {
->>> +    {
->>> +        /* Format: HID-SENSOR-usage_id_in_hex_lowercase */
->>> +        .name = "HID-SENSOR-20008a",
->>> +    },
->>> +    { /* sentinel */ }
->>> +};
->>> +MODULE_DEVICE_TABLE(platform, hid_dev_rot_ids);
->>> +
->>> +static struct platform_driver hid_dev_rot_platform_driver = {
->>> +    .id_table = hid_dev_rot_ids,
->>> +    .driver = {
->>> +        .name    = KBUILD_MODNAME,
->>> +        .owner    = THIS_MODULE,
->>> +    },
->>> +    .probe        = hid_dev_rot_probe,
->>> +    .remove        = hid_dev_rot_remove,
->>> +};
->>> +module_platform_driver(hid_dev_rot_platform_driver);
->>> +
->>> +MODULE_DESCRIPTION("HID Sensor Device Rotation");
->>> +MODULE_AUTHOR("Srinivas Pandruvada 
->>> <srinivas.pandruvada@linux.intel.com>");
->>> +MODULE_LICENSE("GPL");
->>> diff --git a/include/linux/hid-sensor-ids.h 
->>> b/include/linux/hid-sensor-ids.h
->>> index 14ead9e..109f0e6 100644
->>> --- a/include/linux/hid-sensor-ids.h
->>> +++ b/include/linux/hid-sensor-ids.h
->>> @@ -76,6 +76,7 @@
->>>   #define HID_USAGE_SENSOR_ORIENT_TILT_Y                0x200480
->>>   #define HID_USAGE_SENSOR_ORIENT_TILT_Z                0x200481
->>>
->>> +#define HID_USAGE_SENSOR_DEVICE_ORIENTATION            0x20008A
->>>   #define HID_USAGE_SENSOR_ORIENT_ROTATION_MATRIX 0x200482
->>>   #define HID_USAGE_SENSOR_ORIENT_QUATERNION            0x200483
->>>   #define HID_USAGE_SENSOR_ORIENT_MAGN_FLUX            0x200484
->>>
->>
->> -- 
->> To unsubscribe from this list: send the line "unsubscribe linux-iio"
->in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
+> +	};
+> +
+>  	ahb {
+>  		compatible = "simple-bus";
+>  		#address-cells = <1>;
+> @@ -75,8 +90,280 @@
+>  			};
+>  
+>  			pmc: pmc@fffffc00 {
+> -				compatible = "atmel,at91rm9200-pmc";
+> -				reg = <0xfffffc00 0x100>;
+> +				compatible = "atmel,at91sam9n12-pmc";
+> +				reg = <0xfffffc00 0x200>;
+> +				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
+> +				interrupt-controller;
+> +				#address-cells = <1>;
+> +				#size-cells = <0>;
+> +				#interrupt-cells = <1>;
+> +
+> +				main_rc_osc: main_rc_osc {
+> +					compatible = "atmel,at91sam9x5-clk-main-rc-osc";
+> +					#clock-cells = <0>;
+> +					interrupts-extended = <&pmc AT91_PMC_MOSCRCS>;
+> +					clock-frequency = <12000000>;
+> +					clock-accuracy = <50000000>;
+> +				};
+> +
+> +				main_osc: main_osc {
+> +					compatible = "atmel,at91sam9x5-clk-main-osc";
+> +					#clock-cells = <0>;
+> +					interrupts-extended = <&pmc AT91_PMC_MOSCS>;
+> +					clocks = <&main_xtal>;
+> +				};
+> +
+> +				main: mainck {
+> +					compatible = "atmel,at91sam9x5-clk-main";
+> +					#clock-cells = <0>;
+> +					interrupts-extended = <&pmc AT91_PMC_MOSCSELS>;
+> +					clocks = <&main_rc_osc>, <&main_osc>;
+> +				};
+> +
+> +				plla: pllack {
+> +					compatible = "atmel,at91rm9200-clk-pll";
+> +					#clock-cells = <0>;
+> +					interrupts-extended = <&pmc AT91_PMC_LOCKA>;
+> +					clocks = <&main>;
+> +					reg = <0>;
+> +					atmel,clk-input-range = <2000000 32000000>;
+> +					#atmel,pll-clk-output-range-cells = <4>;
+> +					atmel,pll-clk-output-ranges = <745000000 800000000 0 0>,
+> +								      <695000000 750000000 1 0>,
+> +								      <645000000 700000000 2 0>,
+> +								      <595000000 650000000 3 0>,
+> +								      <545000000 600000000 0 1>,
+> +								      <495000000 555000000 1 1>,
+> +								      <445000000 500000000 1 2>,
+> +								      <400000000 450000000 1 3>;
+> +				};
+> +
+> +				plladiv: plladivck {
+> +					compatible = "atmel,at91sam9x5-clk-plldiv";
+> +					#clock-cells = <0>;
+> +					clocks = <&plla>;
+> +				};
+> +
+> +				pllb: pllbck {
+> +					compatible = "atmel,at91rm9200-clk-pll";
+> +					#clock-cells = <0>;
+> +					interrupts-extended = <&pmc AT91_PMC_LOCKB>;
+> +					clocks = <&main>;
+> +					reg = <1>;
+> +					atmel,clk-input-range = <2000000 32000000>;
+> +					#atmel,pll-clk-output-range-cells = <3>;
+> +					atmel,pll-clk-output-ranges = <30000000 100000000 0>;
+> +				};
+> +
+> +				mck: masterck {
+> +					compatible = "atmel,at91sam9x5-clk-master";
+> +					#clock-cells = <0>;
+> +					interrupts-extended = <&pmc AT91_PMC_MCKRDY>;
+> +					clocks = <&clk32k>, <&main>, <&plladiv>, <&pllb>;
+> +					atmel,clk-output-range = <0 133333333>;
+> +					atmel,clk-divisors = <1 2 4 3>;
+> +					atmel,master-clk-have-div3-pres;
+> +				};
+> +
+> +				usb: usbck {
+> +					compatible = "atmel,at91sam9n12-clk-usb";
+> +					#clock-cells = <0>;
+> +					clocks = <&pllb>;
+> +				};
+> +
+> +				prog: progck {
+> +					compatible = "atmel,at91sam9x5-clk-programmable";
+> +					#address-cells = <1>;
+> +					#size-cells = <0>;
+> +					interrupt-parent = <&pmc>;
+> +					clocks = <&clk32k>, <&main>, <&plladiv>, <&pllb>, <&mck>;
+> +
+> +					prog0: prog0 {
+> +						#clock-cells = <0>;
+> +						reg = <0>;
+> +						interrupts = <AT91_PMC_PCKRDY(0)>;
+> +					};
+> +
+> +					prog1: prog1 {
+> +						#clock-cells = <0>;
+> +						reg = <1>;
+> +						interrupts = <AT91_PMC_PCKRDY(1)>;
+> +					};
+> +				};
+> +
+> +				systemck {
+> +					compatible = "atmel,at91rm9200-clk-system";
+> +					#address-cells = <1>;
+> +					#size-cells = <0>;
+> +
+> +					ddrck: ddrck {
+> +						#clock-cells = <0>;
+> +						reg = <2>;
+> +						clocks = <&mck>;
+> +					};
+> +
+> +					lcdck: lcdck {
+> +						#clock-cells = <0>;
+> +						reg = <3>;
+> +						clocks = <&mck>;
+> +					};
+> +
+> +					uhpck: uhpck {
+> +						#clock-cells = <0>;
+> +						reg = <6>;
+> +						clocks = <&usb>;
+> +					};
+> +
+> +					udpck: udpck {
+> +						#clock-cells = <0>;
+> +						reg = <7>;
+> +						clocks = <&usb>;
+> +					};
+> +
+> +					pck0: pck0 {
+> +						#clock-cells = <0>;
+> +						reg = <8>;
+> +						clocks = <&prog0>;
+> +					};
+> +
+> +					pck1: pck1 {
+> +						#clock-cells = <0>;
+> +						reg = <9>;
+> +						clocks = <&prog1>;
+> +					};
+> +				};
+> +
+> +				periphck {
+> +					compatible = "atmel,at91sam9x5-clk-peripheral";
+> +					#address-cells = <1>;
+> +					#size-cells = <0>;
+> +					clocks = <&mck>;
+> +
+> +					pioAB_clk: pioAB_clk {
+> +						#clock-cells = <0>;
+> +						reg = <2>;
+> +					};
+> +
+> +					pioCD_clk: pioCD_clk {
+> +						#clock-cells = <0>;
+> +						reg = <3>;
+> +					};
+> +
+> +					fuse_clk: fuse_clk {
+> +						#clock-cells = <0>;
+> +						reg = <4>;
+> +					};
+> +
+> +					usart0_clk: usart0_clk {
+> +						#clock-cells = <0>;
+> +						reg = <5>;
+> +					};
+> +
+> +					usart1_clk: usart1_clk {
+> +						#clock-cells = <0>;
+> +						reg = <6>;
+> +					};
+> +
+> +					usart2_clk: usart2_clk {
+> +						#clock-cells = <0>;
+> +						reg = <7>;
+> +					};
+> +
+> +					usart3_clk: usart3_clk {
+> +						#clock-cells = <0>;
+> +						reg = <8>;
+> +					};
+> +
+> +					twi0_clk: twi0_clk {
+> +						reg = <9>;
+> +						#clock-cells = <0>;
+> +					};
+> +
+> +					twi1_clk: twi1_clk {
+> +						#clock-cells = <0>;
+> +						reg = <10>;
+> +					};
+> +
+> +					mci0_clk: mci0_clk {
+> +						#clock-cells = <0>;
+> +						reg = <12>;
+> +					};
+> +
+> +					spi0_clk: spi0_clk {
+> +						#clock-cells = <0>;
+> +						reg = <13>;
+> +					};
+> +
+> +					spi1_clk: spi1_clk {
+> +						#clock-cells = <0>;
+> +						reg = <14>;
+> +					};
+> +
+> +					uart0_clk: uart0_clk {
+> +						#clock-cells = <0>;
+> +						reg = <15>;
+> +					};
+> +
+> +					uart1_clk: uart1_clk {
+> +						#clock-cells = <0>;
+> +						reg = <16>;
+> +					};
+> +
+> +					tcb_clk: tcb_clk {
+> +						#clock-cells = <0>;
+> +						reg = <17>;
+> +					};
+> +
+> +					pwm_clk: pwm_clk {
+> +						#clock-cells = <0>;
+> +						reg = <18>;
+> +					};
+> +
+> +					adc_clk: adc_clk {
+> +						#clock-cells = <0>;
+> +						reg = <19>;
+> +					};
+> +
+> +					dma0_clk: dma0_clk {
+> +						#clock-cells = <0>;
+> +						reg = <20>;
+> +					};
+> +
+> +					uhphs_clk: uhphs_clk {
+> +						#clock-cells = <0>;
+> +						reg = <22>;
+> +					};
+> +
+> +					udphs_clk: udphs_clk {
+> +						#clock-cells = <0>;
+> +						reg = <23>;
+> +					};
+> +
+> +					lcdc_clk: lcdc_clk {
+> +						#clock-cells = <0>;
+> +						reg = <25>;
+> +					};
+> +
+> +					sha_clk: sha_clk {
+> +						#clock-cells = <0>;
+> +						reg = <27>;
+> +					};
+> +
+> +					ssc0_clk: ssc0_clk {
+> +						#clock-cells = <0>;
+> +						reg = <28>;
+> +					};
+> +
+> +					aes_clk: aes_clk {
+> +						#clock-cells = <0>;
+> +						reg = <29>;
+> +					};
+> +
+> +					trng_clk: trng_clk {
+> +						#clock-cells = <0>;
+> +						reg = <30>;
+> +					};
+> +				};
+>  			};
+>  
+>  			rstc@fffffe00 {
+> @@ -88,6 +375,7 @@
+>  				compatible = "atmel,at91sam9260-pit";
+>  				reg = <0xfffffe30 0xf>;
+>  				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
+> +				clocks = <&mck>;
+>  			};
+>  
+>  			shdwc@fffffe10 {
+> @@ -95,12 +383,38 @@
+>  				reg = <0xfffffe10 0x10>;
+>  			};
+>  
+> +			sckc@fffffe50 {
+> +				compatible = "atmel,at91sam9x5-sckc";
+> +				reg = <0xfffffe50 0x4>;
+> +
+> +				slow_osc: slow_osc {
+> +					compatible = "atmel,at91sam9x5-clk-slow-osc";
+> +					#clock-cells = <0>;
+> +					clocks = <&slow_xtal>;
+> +				};
+> +
+> +				slow_rc_osc: slow_rc_osc {
+> +					compatible = "atmel,at91sam9x5-clk-slow-rc-osc";
+> +					#clock-cells = <0>;
+> +					clock-frequency = <32768>;
+> +					clock-accuracy = <50000000>;
+> +				};
+> +
+> +				clk32k: slck {
+> +					compatible = "atmel,at91sam9x5-clk-slow";
+> +					#clock-cells = <0>;
+> +					clocks = <&slow_rc_osc>, <&slow_osc>;
+> +				};
+> +			};
+> +
+>  			mmc0: mmc@f0008000 {
+>  				compatible = "atmel,hsmci";
+>  				reg = <0xf0008000 0x600>;
+>  				interrupts = <12 IRQ_TYPE_LEVEL_HIGH 0>;
+>  				dmas = <&dma 1 AT91_DMA_CFG_PER_ID(0)>;
+>  				dma-names = "rxtx";
+> +				clocks = <&mci0_clk>;
+> +				clock-names = "mci_clk";
+>  				#address-cells = <1>;
+>  				#size-cells = <0>;
+>  				status = "disabled";
+> @@ -110,12 +424,16 @@
+>  				compatible = "atmel,at91sam9x5-tcb";
+>  				reg = <0xf8008000 0x100>;
+>  				interrupts = <17 IRQ_TYPE_LEVEL_HIGH 0>;
+> +				clocks = <&tcb_clk>;
+> +				clock-names = "t0_clk";
+>  			};
+>  
+>  			tcb1: timer@f800c000 {
+>  				compatible = "atmel,at91sam9x5-tcb";
+>  				reg = <0xf800c000 0x100>;
+>  				interrupts = <17 IRQ_TYPE_LEVEL_HIGH 0>;
+> +				clocks = <&tcb_clk>;
+> +				clock-names = "t0_clk";
+>  			};
+>  
+>  			dma: dma-controller@ffffec00 {
+> @@ -123,6 +441,8 @@
+>  				reg = <0xffffec00 0x200>;
+>  				interrupts = <20 IRQ_TYPE_LEVEL_HIGH 0>;
+>  				#dma-cells = <2>;
+> +				clocks = <&dma0_clk>;
+> +				clock-names = "dma_clk";
+>  			};
+>  
+>  			pinctrl@fffff400 {
+> @@ -392,6 +712,7 @@
+>  					gpio-controller;
+>  					interrupt-controller;
+>  					#interrupt-cells = <2>;
+> +					clocks = <&pioAB_clk>;
+>  				};
+>  
+>  				pioB: gpio@fffff600 {
+> @@ -402,6 +723,7 @@
+>  					gpio-controller;
+>  					interrupt-controller;
+>  					#interrupt-cells = <2>;
+> +					clocks = <&pioAB_clk>;
+>  				};
+>  
+>  				pioC: gpio@fffff800 {
+> @@ -412,6 +734,7 @@
+>  					gpio-controller;
+>  					interrupt-controller;
+>  					#interrupt-cells = <2>;
+> +					clocks = <&pioCD_clk>;
+>  				};
+>  
+>  				pioD: gpio@fffffa00 {
+> @@ -422,6 +745,7 @@
+>  					gpio-controller;
+>  					interrupt-controller;
+>  					#interrupt-cells = <2>;
+> +					clocks = <&pioCD_clk>;
+>  				};
+>  			};
+>  
+> @@ -431,6 +755,8 @@
+>  				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
+>  				pinctrl-names = "default";
+>  				pinctrl-0 = <&pinctrl_dbgu>;
+> +				clocks = <&mck>;
+> +				clock-names = "usart";
+>  				status = "disabled";
+>  			};
+>  
+> @@ -443,6 +769,8 @@
+>  				dma-names = "tx", "rx";
+>  				pinctrl-names = "default";
+>  				pinctrl-0 = <&pinctrl_ssc0_tx &pinctrl_ssc0_rx>;
+> +				clocks = <&ssc0_clk>;
+> +				clock-names = "pclk";
+>  				status = "disabled";
+>  			};
+>  
+> @@ -452,6 +780,8 @@
+>  				interrupts = <5 IRQ_TYPE_LEVEL_HIGH 5>;
+>  				pinctrl-names = "default";
+>  				pinctrl-0 = <&pinctrl_usart0>;
+> +				clocks = <&usart0_clk>;
+> +				clock-names = "usart";
+>  				status = "disabled";
+>  			};
+>  
+> @@ -461,6 +791,8 @@
+>  				interrupts = <6 IRQ_TYPE_LEVEL_HIGH 5>;
+>  				pinctrl-names = "default";
+>  				pinctrl-0 = <&pinctrl_usart1>;
+> +				clocks = <&usart1_clk>;
+> +				clock-names = "usart";
+>  				status = "disabled";
+>  			};
+>  
+> @@ -470,6 +802,8 @@
+>  				interrupts = <7 IRQ_TYPE_LEVEL_HIGH 5>;
+>  				pinctrl-names = "default";
+>  				pinctrl-0 = <&pinctrl_usart2>;
+> +				clocks = <&usart2_clk>;
+> +				clock-names = "usart";
+>  				status = "disabled";
+>  			};
+>  
+> @@ -479,6 +813,8 @@
+>  				interrupts = <8 IRQ_TYPE_LEVEL_HIGH 5>;
+>  				pinctrl-names = "default";
+>  				pinctrl-0 = <&pinctrl_usart3>;
+> +				clocks = <&usart3_clk>;
+> +				clock-names = "usart";
+>  				status = "disabled";
+>  			};
+>  
+> @@ -493,6 +829,7 @@
+>  				#size-cells = <0>;
+>  				pinctrl-names = "default";
+>  				pinctrl-0 = <&pinctrl_i2c0>;
+> +				clocks = <&twi0_clk>;
+>  				status = "disabled";
+>  			};
+>  
+> @@ -507,6 +844,7 @@
+>  				#size-cells = <0>;
+>  				pinctrl-names = "default";
+>  				pinctrl-0 = <&pinctrl_i2c1>;
+> +				clocks = <&twi1_clk>;
+>  				status = "disabled";
+>  			};
+>  
+> @@ -521,6 +859,8 @@
+>  				dma-names = "tx", "rx";
+>  				pinctrl-names = "default";
+>  				pinctrl-0 = <&pinctrl_spi0>;
+> +				clocks = <&spi0_clk>;
+> +				clock-names = "spi_clk";
+>  				status = "disabled";
+>  			};
+>  
+> @@ -535,6 +875,8 @@
+>  				dma-names = "tx", "rx";
+>  				pinctrl-names = "default";
+>  				pinctrl-0 = <&pinctrl_spi1>;
+> +				clocks = <&spi1_clk>;
+> +				clock-names = "spi_clk";
+>  				status = "disabled";
+>  			};
+>  
+> @@ -554,6 +896,7 @@
+>  				reg = <0xf8034000 0x300>;
+>  				interrupts = <18 IRQ_TYPE_LEVEL_HIGH 4>;
+>  				#pwm-cells = <3>;
+> +				clocks = <&pwm_clk>;
+>  				status = "disabled";
+>  			};
+>  		};
+> @@ -584,6 +927,9 @@
+>  			compatible = "atmel,at91rm9200-ohci", "usb-ohci";
+>  			reg = <0x00500000 0x00100000>;
+>  			interrupts = <22 IRQ_TYPE_LEVEL_HIGH 2>;
+> +			clocks = <&usb>, <&uhphs_clk>, <&udphs_clk>,
+> +				 <&uhpck>;
+> +			clock-names = "usb_clk", "ohci_clk", "hclk", "uhpck";
+>  			status = "disabled";
+>  		};
+>  	};
+> -- 
+> 1.8.3.2
+> 
 
 -- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
