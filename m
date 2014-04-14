@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750975AbaDNG4n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 02:56:43 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:52920 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbaDNG4m (ORCPT
+	id S1751329AbaDNG7S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 02:59:18 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:35321 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750914AbaDNG7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 02:56:42 -0400
-From: "Zhao, Gang" <gamerh2o@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Kyungsik Lee <kyungsik.lee@lge.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
-Subject: [PATCH] .gitignore: ignore Module.symvers in all directories
-Date: Mon, 14 Apr 2014 14:56:15 +0800
-Message-Id: <415f152dbdb6d675ebca57afd8bfbc785a70cfd1.1397458539.git.gamerh2o@gmail.com>
-X-Mailer: git-send-email 1.9.0
+	Mon, 14 Apr 2014 02:59:17 -0400
+X-IronPort-AV: E=Sophos;i="4.97,854,1389715200"; 
+   d="scan'208";a="29218504"
+Message-ID: <534B8820.7090906@cn.fujitsu.com>
+Date: Mon, 14 Apr 2014 15:02:56 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] workqueue: fix possible race condition when rescuer
+ VS pwq-release
+References: <1395937212-4103-1-git-send-email-laijs@cn.fujitsu.com> <5335661E.7030408@cn.fujitsu.com> <53397E6F.6050600@cn.fujitsu.com> <20140331200209.GD28901@mtj.dyndns.org>
+In-Reply-To: <20140331200209.GD28901@mtj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using `make M=/path/to/driver modules` to build a module, file
-Module.symvers will be created in that directory, so it's better to
-ignore it in all directories.
+On 04/01/2014 04:06 AM, Tejun Heo wrote:
+> On Mon, Mar 31, 2014 at 10:40:47PM +0800, Lai Jiangshan wrote:
+>> Ping
+> 
+> Lai, I'll keep the mail tagged but can you pleaes ping me once -rc1
+> drops?  While it is an actual bug, given that it'd be pretty difficult
+> to trigger, I don't think it's too urgent.
+> 
+> Thanks!
+> 
 
-Slightly reordered, let specific file names behind general ones.
+Hi, Tejun
+Ping.
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kyungsik Lee <kyungsik.lee@lge.com>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>
-Signed-off-by: Zhao, Gang <gamerh2o@gmail.com>
----
- .gitignore | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Very old (resent) patch(1 patch):
+workqueue: add __WQ_FREEZING and remove POOL_FREEZING
 
-diff --git a/.gitignore b/.gitignore
-index 7e9932e..3aa8145 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -22,7 +22,6 @@
- *.lst
- *.symtypes
- *.order
--modules.builtin
- *.elf
- *.bin
- *.gz
-@@ -33,6 +32,8 @@ modules.builtin
- *.lzo
- *.patch
- *.gcno
-+modules.builtin
-+Module.symvers
- 
- #
- # Top-level generic files
-@@ -44,7 +45,6 @@ modules.builtin
- /vmlinuz
- /System.map
- /Module.markers
--/Module.symvers
- 
- #
- # Debian directory (make deb-pkg)
--- 
-1.9.0
+Possible race condition patch(1 patch), (In this email thread)
+workqueue: fix possible race condition when rescuer VS pwq-release
 
+Worker management patchset(6 patches)
+workqueue: simpler&better workers management synchronization
+  workqueue: generic routine to restore percpu/unbound pools' workers'
+    cpumask
+  workqueue: generic framework to manage normal&rescuer workers'
+    cpumask
+  workqueue: make destroy_worker() atomically
+  workqueue: commit worker to pool's concurrency setting atomically.
+  workqueue: remove manager_mutex
+  workqueue: destroy worker directly in idle timeout handler
+
+Sorry for adding some work to you.
+
+Thanks
+Lai
