@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568AbaDNJRn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 05:17:43 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:54678 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235AbaDNJRj (ORCPT
+	id S1754688AbaDNJRy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 05:17:54 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:52272 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341AbaDNJRm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 05:17:39 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-b4-534ba7afecde
+	Mon, 14 Apr 2014 05:17:42 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-cc-534ba7b2ff61
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: MyungJoo Ham <myungjoo.ham@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>,
@@ -18,204 +18,584 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v5 3/9] mfd: max14577: Add detection of device type
-Date: Mon, 14 Apr 2014 11:17:14 +0200
-Message-id: <1397467040-30502-4-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v5 9/9] regulator: max14577: Add support for MAX77836 regulators
+Date: Mon, 14 Apr 2014 11:17:20 +0200
+Message-id: <1397467040-30502-10-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.8.3.2
 In-reply-to: <1397467040-30502-1-git-send-email-k.kozlowski@samsung.com>
 References: <1397467040-30502-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmluLIzCtJLcpLzFFi42I5/e/4Fd31y72DDRpahC02zljPajH14RM2
-	i+tfnrNavH5haHG26Q27xf2vRxktvl3pYLK4vGsOm8XaI3fZLW43rmCzON3N6sDtsXPWXXaP
-	Tas62TzuXNvD5jHvZKBH35ZVjB6fN8kFsEVx2aSk5mSWpRbp2yVwZXx69Y+1YJdWxaul3cwN
-	jD+Uuhg5OSQETCQO3+hhgrDFJC7cW88GYgsJLGWUWDkppouRC8juY5JoXPuGHSTBJmAssXn5
-	EjaQhIhAM5NES99ZRhCHWeAoo8T03rdAozg4hAWcJfaeFQIxWQRUJX7vBxvKK+Au0Tt7HtQy
-	BYllX9Yyg9icAh4St7qPMUMsdpd48ek2+wRG3gWMDKsYRVNLkwuKk9JzjfSKE3OLS/PS9ZLz
-	czcxQgLw6w7GpcesDjEKcDAq8fB2zPEOFmJNLCuuzD3EKMHBrCTCuy3DK1iINyWxsiq1KD++
-	qDQntfgQIxMHp1QD4xx+m1eGi52d99q+qkipyL0hOr8sN7nCJO+nWMtNw+iQrbrd7u8urGxY
-	vKOEz+PR2/p43qQtQU/uzbAzqXVPkDU6wGJeuferf8kbJiH284c27BF6f7P6/r2IUrn46Twx
-	HIkfG6Tztmu7hQcKZF6sWv7pteMTp13y+n93r5OL4y0q6svf5Z6sxFKckWioxVxUnAgAVmps
-	+h4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnluLIzCtJLcpLzFFi42I5/e/4Fd1Ny72DDaa3altsnLGe1WLqwyds
+	Fte/PGe1eP3C0OJs0xt2i/tfjzJafLvSwWRxedccNou1R+6yW9xuXMFmcbqb1YHbY+esu+we
+	m1Z1snncubaHzWPeyUCPvi2rGD0+b5ILYIvisklJzcksSy3St0vgyujZfYGtYMZ8xop97xcy
+	NzCebWXsYuTgkBAwkZg5N6CLkRPIFJO4cG89WxcjF4eQwFJGib2LlrJCOH1MEhN7T7KDVLEJ
+	GEtsXr4ErEpEoJlJoqXvLCOIwyxwlFFieu9bJpAqYYEAiR3rLzKD2CwCqhInl80Ai/MKeEgc
+	+3uUEWKfgsSyL2vBajiB4re6j4HZQgLuEi8+3WafwMi7gJFhFaNoamlyQXFSeq6RXnFibnFp
+	Xrpecn7uJkZIIH7dwbj0mNUhRgEORiUe3o453sFCrIllxZW5hxglOJiVRHi3ZXgFC/GmJFZW
+	pRblxxeV5qQWH2Jk4uCUamBc55LyryXz+2rVyqS+EnMe/RkifHtiuya+vf/6h8NhoRKl4+ts
+	DDdGWZ28vLDgscjP+s6di7zWJopVSqz8dPWLnfXKRWoXox036NzY+dnUymTFzIIizq6N3esr
+	ZGtUAjyWbC2tXBLtrpt89l3C4ropiwrfvzskrV7yuF6V+fzpK8+X7vv4ZdUrJZbijERDLeai
+	4kQAXWWc/yICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch continues the preparation for adding support for MAX77836
-device to existing max14577 driver.
+Add support for MAX77836 chipset and its additional two LDO regulators.
+These LDO regulators are controlled by the PMIC block with additional
+regmap (different I2C slave address).
 
-Add enum for types of devices supported by this driver. The device type
-will be detected by matching of_device_id, or i2c_device_id as a
-fallback.
-
-The patch also moves to separate function the code related to displaying
-DeviceID register values.
+The MAX77836 charger and safeout regulators are almost identical to
+MAX14577. The registers layout is the same, except values for charger's
+current. The patch adds simple mapping between device type and supported
+current by the charger regulator.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Reviewed-by: Mark Brown <broonie@linaro.org>
 Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mfd/max14577.c               | 64 +++++++++++++++++++++++++-----------
- include/linux/mfd/max14577-private.h | 12 ++++---
- 2 files changed, 53 insertions(+), 23 deletions(-)
+ drivers/regulator/Kconfig            |   7 +-
+ drivers/regulator/max14577.c         | 277 ++++++++++++++++++++++++++++++-----
+ include/linux/mfd/max14577-private.h |  32 ++++
+ include/linux/mfd/max14577.h         |  12 +-
+ 4 files changed, 289 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
-index d180fae8e317..0e07ed74ab41 100644
---- a/drivers/mfd/max14577.c
-+++ b/drivers/mfd/max14577.c
-@@ -21,6 +21,7 @@
- #include <linux/err.h>
- #include <linux/module.h>
- #include <linux/interrupt.h>
-+#include <linux/of_device.h>
- #include <linux/mfd/core.h>
- #include <linux/mfd/max14577.h>
- #include <linux/mfd/max14577-private.h>
-@@ -37,6 +38,14 @@ static struct mfd_cell max14577_devs[] = {
- 	{ .name = "max14577-charger", },
- };
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 903eb37f047a..f0cc9e6dac3a 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -266,11 +266,12 @@ config REGULATOR_LP8788
+ 	  This driver supports LP8788 voltage regulator chip.
  
-+static struct of_device_id max14577_dt_match[] = {
-+	{
-+		.compatible = "maxim,max14577",
-+		.data = (void *)MAXIM_DEVICE_TYPE_MAX14577,
-+	},
-+	{},
+ config REGULATOR_MAX14577
+-	tristate "Maxim 14577 regulator"
++	tristate "Maxim 14577/77836 regulator"
+ 	depends on MFD_MAX14577
+ 	help
+-	  This driver controls a Maxim 14577 regulator via I2C bus.
+-	  The regulators include safeout LDO and current regulator 'CHARGER'.
++	  This driver controls a Maxim MAX14577/77836 regulator via I2C bus.
++	  The MAX14577 regulators include safeout LDO and charger current
++	  regulator. The MAX77836 has two additional LDOs.
+ 
+ config REGULATOR_MAX1586
+ 	tristate "Maxim 1586/1587 voltage regulator"
+diff --git a/drivers/regulator/max14577.c b/drivers/regulator/max14577.c
+index ed60baaeceec..5d9c605cf534 100644
+--- a/drivers/regulator/max14577.c
++++ b/drivers/regulator/max14577.c
+@@ -1,5 +1,5 @@
+ /*
+- * max14577.c - Regulator driver for the Maxim 14577
++ * max14577.c - Regulator driver for the Maxim 14577/77836
+  *
+  * Copyright (C) 2013,2014 Samsung Electronics
+  * Krzysztof Kozlowski <k.kozlowski@samsung.com>
+@@ -22,6 +22,42 @@
+ #include <linux/mfd/max14577-private.h>
+ #include <linux/regulator/of_regulator.h>
+ 
++/*
++ * Valid limits of current for max14577 and max77836 chargers.
++ * They must correspond to MBCICHWRCL and MBCICHWRCH fields in CHGCTRL4
++ * register for given chipset.
++ */
++struct maxim_charger_current {
++	/* Minimal current, set in CHGCTRL4/MBCICHWRCL, uA */
++	unsigned int min;
++	/*
++	 * Minimal current when high setting is active,
++	 * set in CHGCTRL4/MBCICHWRCH, uA
++	 */
++	unsigned int high_start;
++	/* Value of one step in high setting, uA */
++	unsigned int high_step;
++	/* Maximum current of high setting, uA */
++	unsigned int max;
 +};
 +
- static bool max14577_muic_volatile_reg(struct device *dev, unsigned int reg)
++/* Table of valid charger currents for different Maxim chipsets */
++static const struct maxim_charger_current maxim_charger_currents[] = {
++	[MAXIM_DEVICE_TYPE_UNKNOWN] = { 0, 0, 0, 0 },
++	[MAXIM_DEVICE_TYPE_MAX14577] = {
++		.min		= MAX14577_REGULATOR_CURRENT_LIMIT_MIN,
++		.high_start	= MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START,
++		.high_step	= MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP,
++		.max		= MAX14577_REGULATOR_CURRENT_LIMIT_MAX,
++	},
++	[MAXIM_DEVICE_TYPE_MAX77836] = {
++		.min		= MAX77836_REGULATOR_CURRENT_LIMIT_MIN,
++		.high_start	= MAX77836_REGULATOR_CURRENT_LIMIT_HIGH_START,
++		.high_step	= MAX77836_REGULATOR_CURRENT_LIMIT_HIGH_STEP,
++		.max		= MAX77836_REGULATOR_CURRENT_LIMIT_MAX,
++	},
++};
++
+ static int max14577_reg_is_enabled(struct regulator_dev *rdev)
  {
- 	switch (reg) {
-@@ -83,13 +92,34 @@ static const struct regmap_irq_chip max14577_irq_chip = {
- 	.num_irqs		= ARRAY_SIZE(max14577_irqs),
+ 	int rid = rdev_get_id(rdev);
+@@ -47,6 +83,9 @@ static int max14577_reg_get_current_limit(struct regulator_dev *rdev)
+ {
+ 	u8 reg_data;
+ 	struct regmap *rmap = rdev->regmap;
++	struct max14577 *max14577 = rdev_get_drvdata(rdev);
++	const struct maxim_charger_current *limits =
++		&maxim_charger_currents[max14577->dev_type];
+ 
+ 	if (rdev_get_id(rdev) != MAX14577_CHARGER)
+ 		return -EINVAL;
+@@ -54,12 +93,11 @@ static int max14577_reg_get_current_limit(struct regulator_dev *rdev)
+ 	max14577_read_reg(rmap, MAX14577_CHG_REG_CHG_CTRL4, &reg_data);
+ 
+ 	if ((reg_data & CHGCTRL4_MBCICHWRCL_MASK) == 0)
+-		return MAX14577_REGULATOR_CURRENT_LIMIT_MIN;
++		return limits->min;
+ 
+ 	reg_data = ((reg_data & CHGCTRL4_MBCICHWRCH_MASK) >>
+ 			CHGCTRL4_MBCICHWRCH_SHIFT);
+-	return MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START +
+-		reg_data * MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP;
++	return limits->high_start + reg_data * limits->high_step;
+ }
+ 
+ static int max14577_reg_set_current_limit(struct regulator_dev *rdev,
+@@ -67,33 +105,39 @@ static int max14577_reg_set_current_limit(struct regulator_dev *rdev,
+ {
+ 	int i, current_bits = 0xf;
+ 	u8 reg_data;
++	struct max14577 *max14577 = rdev_get_drvdata(rdev);
++	const struct maxim_charger_current *limits =
++		&maxim_charger_currents[max14577->dev_type];
+ 
+ 	if (rdev_get_id(rdev) != MAX14577_CHARGER)
+ 		return -EINVAL;
+ 
+-	if (min_uA > MAX14577_REGULATOR_CURRENT_LIMIT_MAX ||
+-			max_uA < MAX14577_REGULATOR_CURRENT_LIMIT_MIN)
++	if (min_uA > limits->max || max_uA < limits->min)
+ 		return -EINVAL;
+ 
+-	if (max_uA < MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START) {
+-		/* Less than 200 mA, so set 90mA (turn only Low Bit off) */
++	if (max_uA < limits->high_start) {
++		/*
++		 * Less than high_start,
++		 * so set the minimal current (turn only Low Bit off)
++		 */
+ 		u8 reg_data = 0x0 << CHGCTRL4_MBCICHWRCL_SHIFT;
+ 		return max14577_update_reg(rdev->regmap,
+ 				MAX14577_CHG_REG_CHG_CTRL4,
+ 				CHGCTRL4_MBCICHWRCL_MASK, reg_data);
+ 	}
+ 
+-	/* max_uA is in range: <LIMIT_HIGH_START, inifinite>, so search for
+-	 * valid current starting from LIMIT_MAX. */
+-	for (i = MAX14577_REGULATOR_CURRENT_LIMIT_MAX;
+-			i >= MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START;
+-			i -= MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP) {
++	/*
++	 * max_uA is in range: <high_start, inifinite>, so search for
++	 * valid current starting from maximum current.
++	 */
++	for (i = limits->max; i >= limits->high_start; i -= limits->high_step) {
+ 		if (i <= max_uA)
+ 			break;
+ 		current_bits--;
+ 	}
+ 	BUG_ON(current_bits < 0); /* Cannot happen */
+-	/* Turn Low Bit on (use range 200mA-950 mA) */
++
++	/* Turn Low Bit on (use range high_start-max)... */
+ 	reg_data = 0x1 << CHGCTRL4_MBCICHWRCL_SHIFT;
+ 	/* and set proper High Bits */
+ 	reg_data |= current_bits << CHGCTRL4_MBCICHWRCH_SHIFT;
+@@ -118,7 +162,7 @@ static struct regulator_ops max14577_charger_ops = {
+ 	.set_current_limit	= max14577_reg_set_current_limit,
  };
  
-+static void max14577_print_dev_type(struct max14577 *max14577)
-+{
-+	u8 reg_data, vendor_id, device_id;
-+	int ret;
+-static const struct regulator_desc supported_regulators[] = {
++static const struct regulator_desc max14577_supported_regulators[] = {
+ 	[MAX14577_SAFEOUT] = {
+ 		.name		= "SAFEOUT",
+ 		.id		= MAX14577_SAFEOUT,
+@@ -141,16 +185,88 @@ static const struct regulator_desc supported_regulators[] = {
+ 	},
+ };
+ 
++static struct regulator_ops max77836_ldo_ops = {
++	.is_enabled		= regulator_is_enabled_regmap,
++	.enable			= regulator_enable_regmap,
++	.disable		= regulator_disable_regmap,
++	.list_voltage		= regulator_list_voltage_linear,
++	.map_voltage		= regulator_map_voltage_linear,
++	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
++	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
++	/* TODO: add .set_suspend_mode */
++};
 +
-+	ret = max14577_read_reg(max14577->regmap, MAX14577_REG_DEVICEID,
-+			&reg_data);
-+	if (ret) {
-+		dev_err(max14577->dev,
-+			"Failed to read DEVICEID register: %d\n", ret);
-+		return;
++static const struct regulator_desc max77836_supported_regulators[] = {
++	[MAX14577_SAFEOUT] = {
++		.name		= "SAFEOUT",
++		.id		= MAX14577_SAFEOUT,
++		.ops		= &max14577_safeout_ops,
++		.type		= REGULATOR_VOLTAGE,
++		.owner		= THIS_MODULE,
++		.n_voltages	= 1,
++		.min_uV		= MAX14577_REGULATOR_SAFEOUT_VOLTAGE,
++		.enable_reg	= MAX14577_REG_CONTROL2,
++		.enable_mask	= CTRL2_SFOUTORD_MASK,
++	},
++	[MAX14577_CHARGER] = {
++		.name		= "CHARGER",
++		.id		= MAX14577_CHARGER,
++		.ops		= &max14577_charger_ops,
++		.type		= REGULATOR_CURRENT,
++		.owner		= THIS_MODULE,
++		.enable_reg	= MAX14577_CHG_REG_CHG_CTRL2,
++		.enable_mask	= CHGCTRL2_MBCHOSTEN_MASK,
++	},
++	[MAX77836_LDO1] = {
++		.name		= "LDO1",
++		.id		= MAX77836_LDO1,
++		.ops		= &max77836_ldo_ops,
++		.type		= REGULATOR_VOLTAGE,
++		.owner		= THIS_MODULE,
++		.n_voltages	= MAX77836_REGULATOR_LDO_VOLTAGE_STEPS_NUM,
++		.min_uV		= MAX77836_REGULATOR_LDO_VOLTAGE_MIN,
++		.uV_step	= MAX77836_REGULATOR_LDO_VOLTAGE_STEP,
++		.enable_reg	= MAX77836_LDO_REG_CNFG1_LDO1,
++		.enable_mask	= MAX77836_CNFG1_LDO_PWRMD_MASK,
++		.vsel_reg	= MAX77836_LDO_REG_CNFG1_LDO1,
++		.vsel_mask	= MAX77836_CNFG1_LDO_TV_MASK,
++	},
++	[MAX77836_LDO2] = {
++		.name		= "LDO2",
++		.id		= MAX77836_LDO2,
++		.ops		= &max77836_ldo_ops,
++		.type		= REGULATOR_VOLTAGE,
++		.owner		= THIS_MODULE,
++		.n_voltages	= MAX77836_REGULATOR_LDO_VOLTAGE_STEPS_NUM,
++		.min_uV		= MAX77836_REGULATOR_LDO_VOLTAGE_MIN,
++		.uV_step	= MAX77836_REGULATOR_LDO_VOLTAGE_STEP,
++		.enable_reg	= MAX77836_LDO_REG_CNFG1_LDO2,
++		.enable_mask	= MAX77836_CNFG1_LDO_PWRMD_MASK,
++		.vsel_reg	= MAX77836_LDO_REG_CNFG1_LDO2,
++		.vsel_mask	= MAX77836_CNFG1_LDO_TV_MASK,
++	},
++};
++
+ #ifdef CONFIG_OF
+ static struct of_regulator_match max14577_regulator_matches[] = {
+ 	{ .name	= "SAFEOUT", },
+ 	{ .name = "CHARGER", },
+ };
+ 
+-static int max14577_regulator_dt_parse_pdata(struct platform_device *pdev)
++static struct of_regulator_match max77836_regulator_matches[] = {
++	{ .name	= "SAFEOUT", },
++	{ .name = "CHARGER", },
++	{ .name = "LDO1", },
++	{ .name = "LDO2", },
++};
++
++static int max14577_regulator_dt_parse_pdata(struct platform_device *pdev,
++		enum maxim_device_type dev_type)
+ {
+ 	int ret;
+ 	struct device_node *np;
++	struct of_regulator_match *regulator_matches;
++	unsigned int regulator_matches_size;
+ 
+ 	np = of_get_child_by_name(pdev->dev.parent->of_node, "regulators");
+ 	if (!np) {
+@@ -158,8 +274,19 @@ static int max14577_regulator_dt_parse_pdata(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
+ 
+-	ret = of_regulator_match(&pdev->dev, np, max14577_regulator_matches,
+-			MAX14577_REG_MAX);
++	switch (dev_type) {
++	case MAXIM_DEVICE_TYPE_MAX77836:
++		regulator_matches = max77836_regulator_matches;
++		regulator_matches_size = ARRAY_SIZE(max77836_regulator_matches);
++		break;
++	case MAXIM_DEVICE_TYPE_MAX14577:
++	default:
++		regulator_matches = max14577_regulator_matches;
++		regulator_matches_size = ARRAY_SIZE(max14577_regulator_matches);
 +	}
 +
-+	vendor_id = ((reg_data & DEVID_VENDORID_MASK) >>
-+				DEVID_VENDORID_SHIFT);
-+	device_id = ((reg_data & DEVID_DEVICEID_MASK) >>
-+				DEVID_DEVICEID_SHIFT);
++	ret = of_regulator_match(&pdev->dev, np, regulator_matches,
++			regulator_matches_size);
+ 	if (ret < 0)
+ 		dev_err(&pdev->dev, "Error parsing regulator init data: %d\n", ret);
+ 	else
+@@ -170,31 +297,74 @@ static int max14577_regulator_dt_parse_pdata(struct platform_device *pdev)
+ 	return ret;
+ }
+ 
+-static inline struct regulator_init_data *match_init_data(int index)
++static inline struct regulator_init_data *match_init_data(int index,
++		enum maxim_device_type dev_type)
+ {
+-	return max14577_regulator_matches[index].init_data;
++	switch (dev_type) {
++	case MAXIM_DEVICE_TYPE_MAX77836:
++		return max77836_regulator_matches[index].init_data;
 +
-+	dev_info(max14577->dev, "Device type: %u (ID: 0x%x, vendor: 0x%x)\n",
-+			max14577->dev_type, device_id, vendor_id);
++	case MAXIM_DEVICE_TYPE_MAX14577:
++	default:
++		return max14577_regulator_matches[index].init_data;
++	}
+ }
+ 
+-static inline struct device_node *match_of_node(int index)
++static inline struct device_node *match_of_node(int index,
++		enum maxim_device_type dev_type)
+ {
+-	return max14577_regulator_matches[index].of_node;
++	switch (dev_type) {
++	case MAXIM_DEVICE_TYPE_MAX77836:
++		return max77836_regulator_matches[index].of_node;
++
++	case MAXIM_DEVICE_TYPE_MAX14577:
++	default:
++		return max14577_regulator_matches[index].of_node;
++	}
+ }
+ #else /* CONFIG_OF */
+-static int max14577_regulator_dt_parse_pdata(struct platform_device *pdev)
++static int max14577_regulator_dt_parse_pdata(struct platform_device *pdev,
++		enum maxim_device_type dev_type)
+ {
+ 	return 0;
+ }
+-static inline struct regulator_init_data *match_init_data(int index)
++static inline struct regulator_init_data *match_init_data(int index,
++		enum maxim_device_type dev_type)
+ {
+ 	return NULL;
+ }
+ 
+-static inline struct device_node *match_of_node(int index)
++static inline struct device_node *match_of_node(int index,
++		enum maxim_device_type dev_type)
+ {
+ 	return NULL;
+ }
+ #endif /* CONFIG_OF */
+ 
++/**
++ * Registers for regulators of max77836 use different I2C slave addresses so
++ * different regmaps must be used for them.
++ *
++ * Returns proper regmap for accessing regulator passed by id.
++ */
++static struct regmap *max14577_get_regmap(struct max14577 *max14577,
++		int reg_id)
++{
++	switch (max14577->dev_type) {
++	case MAXIM_DEVICE_TYPE_MAX77836:
++		switch (reg_id) {
++		case MAX77836_SAFEOUT ... MAX77836_CHARGER:
++			return max14577->regmap;
++		default:
++			/* MAX77836_LDO1 ... MAX77836_LDO2 */
++			return max14577->regmap_pmic;
++		}
++
++	case MAXIM_DEVICE_TYPE_MAX14577:
++	default:
++		return max14577->regmap;
++	}
 +}
-+
- static int max14577_i2c_probe(struct i2c_client *i2c,
- 			      const struct i2c_device_id *id)
- {
- 	struct max14577 *max14577;
- 	struct max14577_platform_data *pdata = dev_get_platdata(&i2c->dev);
- 	struct device_node *np = i2c->dev.of_node;
--	u8 reg_data;
- 	int ret = 0;
  
- 	if (np) {
-@@ -122,19 +152,17 @@ static int max14577_i2c_probe(struct i2c_client *i2c,
+ static int max14577_regulator_probe(struct platform_device *pdev)
+ {
+@@ -202,15 +372,29 @@ static int max14577_regulator_probe(struct platform_device *pdev)
+ 	struct max14577_platform_data *pdata = dev_get_platdata(max14577->dev);
+ 	int i, ret;
+ 	struct regulator_config config = {};
++	const struct regulator_desc *supported_regulators;
++	unsigned int supported_regulators_size;
++	enum maxim_device_type dev_type = max14577->dev_type;
+ 
+-	ret = max14577_regulator_dt_parse_pdata(pdev);
++	ret = max14577_regulator_dt_parse_pdata(pdev, dev_type);
+ 	if (ret)
  		return ret;
- 	}
  
--	ret = max14577_read_reg(max14577->regmap, MAX14577_REG_DEVICEID,
--			&reg_data);
--	if (ret) {
--		dev_err(max14577->dev, "Device not found on this channel: %d\n",
--				ret);
--		return ret;
-+	if (np) {
-+		const struct of_device_id *of_id;
++	switch (dev_type) {
++	case MAXIM_DEVICE_TYPE_MAX77836:
++		supported_regulators = max77836_supported_regulators;
++		supported_regulators_size = ARRAY_SIZE(max77836_supported_regulators);
++		break;
++	case MAXIM_DEVICE_TYPE_MAX14577:
++	default:
++		supported_regulators = max14577_supported_regulators;
++		supported_regulators_size = ARRAY_SIZE(max14577_supported_regulators);
++	}
 +
-+		of_id = of_match_device(max14577_dt_match, &i2c->dev);
-+		if (of_id)
-+			max14577->dev_type = (unsigned int)of_id->data;
-+	} else {
-+		max14577->dev_type = id->driver_data;
- 	}
--	max14577->vendor_id = ((reg_data & DEVID_VENDORID_MASK) >>
--				DEVID_VENDORID_SHIFT);
--	max14577->device_id = ((reg_data & DEVID_DEVICEID_MASK) >>
--				DEVID_DEVICEID_SHIFT);
--	dev_info(max14577->dev, "Device ID: 0x%x, vendor: 0x%x\n",
--			max14577->device_id, max14577->vendor_id);
-+
-+	max14577_print_dev_type(max14577);
+ 	config.dev = &pdev->dev;
+-	config.regmap = max14577->regmap;
++	config.driver_data = max14577;
  
- 	ret = regmap_add_irq_chip(max14577->regmap, max14577->irq,
- 				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT, 0,
-@@ -173,7 +201,7 @@ static int max14577_i2c_remove(struct i2c_client *i2c)
+-	for (i = 0; i < ARRAY_SIZE(supported_regulators); i++) {
++	for (i = 0; i < supported_regulators_size; i++) {
+ 		struct regulator_dev *regulator;
+ 		/*
+ 		 * Index of supported_regulators[] is also the id and must
+@@ -220,17 +404,19 @@ static int max14577_regulator_probe(struct platform_device *pdev)
+ 			config.init_data = pdata->regulators[i].initdata;
+ 			config.of_node = pdata->regulators[i].of_node;
+ 		} else {
+-			config.init_data = match_init_data(i);
+-			config.of_node = match_of_node(i);
++			config.init_data = match_init_data(i, dev_type);
++			config.of_node = match_of_node(i, dev_type);
+ 		}
++		config.regmap = max14577_get_regmap(max14577,
++				supported_regulators[i].id);
+ 
+ 		regulator = devm_regulator_register(&pdev->dev,
+ 				&supported_regulators[i], &config);
+ 		if (IS_ERR(regulator)) {
+ 			ret = PTR_ERR(regulator);
+ 			dev_err(&pdev->dev,
+-					"Regulator init failed for ID %d with error: %d\n",
+-					i, ret);
++					"Regulator init failed for %d/%s with error: %d\n",
++					i, supported_regulators[i].name, ret);
+ 			return ret;
+ 		}
+ 	}
+@@ -238,20 +424,41 @@ static int max14577_regulator_probe(struct platform_device *pdev)
+ 	return ret;
  }
  
- static const struct i2c_device_id max14577_i2c_id[] = {
--	{ "max14577", 0 },
-+	{ "max14577", MAXIM_DEVICE_TYPE_MAX14577, },
- 	{ }
++static const struct platform_device_id max14577_regulator_id[] = {
++	{ "max14577-regulator", MAXIM_DEVICE_TYPE_MAX14577, },
++	{ "max77836-regulator", MAXIM_DEVICE_TYPE_MAX77836, },
++	{ }
++};
++MODULE_DEVICE_TABLE(platform, max14577_regulator_id);
++
+ static struct platform_driver max14577_regulator_driver = {
+ 	.driver = {
+ 		   .owner = THIS_MODULE,
+ 		   .name = "max14577-regulator",
+ 		   },
+-	.probe	= max14577_regulator_probe,
++	.probe		= max14577_regulator_probe,
++	.id_table	= max14577_regulator_id,
  };
- MODULE_DEVICE_TABLE(i2c, max14577_i2c_id);
-@@ -216,11 +244,6 @@ static int max14577_resume(struct device *dev)
- }
- #endif /* CONFIG_PM_SLEEP */
  
--static struct of_device_id max14577_dt_match[] = {
--	{ .compatible = "maxim,max14577", },
--	{},
--};
--
- static SIMPLE_DEV_PM_OPS(max14577_pm, max14577_suspend, max14577_resume);
- 
- static struct i2c_driver max14577_i2c_driver = {
-@@ -237,6 +260,9 @@ static struct i2c_driver max14577_i2c_driver = {
- 
- static int __init max14577_i2c_init(void)
+ static int __init max14577_regulator_init(void)
  {
-+	BUILD_BUG_ON(ARRAY_SIZE(max14577_i2c_id) != MAXIM_DEVICE_TYPE_NUM);
-+	BUILD_BUG_ON(ARRAY_SIZE(max14577_dt_match) != MAXIM_DEVICE_TYPE_NUM);
++	/* Check for valid values for charger */
+ 	BUILD_BUG_ON(MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START +
+ 			MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP * 0xf !=
+ 			MAX14577_REGULATOR_CURRENT_LIMIT_MAX);
+-	BUILD_BUG_ON(ARRAY_SIZE(supported_regulators) != MAX14577_REG_MAX);
++	BUILD_BUG_ON(MAX77836_REGULATOR_CURRENT_LIMIT_HIGH_START +
++			MAX77836_REGULATOR_CURRENT_LIMIT_HIGH_STEP * 0xf !=
++			MAX77836_REGULATOR_CURRENT_LIMIT_MAX);
++	/* Valid charger current values must be provided for each chipset */
++	BUILD_BUG_ON(ARRAY_SIZE(maxim_charger_currents) != MAXIM_DEVICE_TYPE_NUM);
 +
- 	return i2c_add_driver(&max14577_i2c_driver);
++	BUILD_BUG_ON(ARRAY_SIZE(max14577_supported_regulators) != MAX14577_REGULATOR_NUM);
++	BUILD_BUG_ON(ARRAY_SIZE(max77836_supported_regulators) != MAX77836_REGULATOR_NUM);
++
++	BUILD_BUG_ON(MAX77836_REGULATOR_LDO_VOLTAGE_MIN +
++			(MAX77836_REGULATOR_LDO_VOLTAGE_STEP *
++			  (MAX77836_REGULATOR_LDO_VOLTAGE_STEPS_NUM - 1)) !=
++			MAX77836_REGULATOR_LDO_VOLTAGE_MAX);
+ 
+ 	return platform_driver_register(&max14577_regulator_driver);
  }
- subsys_initcall(max14577_i2c_init);
+@@ -264,6 +471,6 @@ static void __exit max14577_regulator_exit(void)
+ module_exit(max14577_regulator_exit);
+ 
+ MODULE_AUTHOR("Krzysztof Kozlowski <k.kozlowski@samsung.com>");
+-MODULE_DESCRIPTION("MAXIM 14577 regulator driver");
++MODULE_DESCRIPTION("Maxim 14577/77836 regulator driver");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:max14577-regulator");
 diff --git a/include/linux/mfd/max14577-private.h b/include/linux/mfd/max14577-private.h
-index 97b78d94f92f..1ce6f2952cc9 100644
+index a557ae27d8a8..499253604026 100644
 --- a/include/linux/mfd/max14577-private.h
 +++ b/include/linux/mfd/max14577-private.h
-@@ -22,6 +22,13 @@
- #include <linux/i2c.h>
- #include <linux/regmap.h>
+@@ -261,9 +261,21 @@ enum max14577_charger_reg {
+ #define MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP	 50000
+ #define MAX14577_REGULATOR_CURRENT_LIMIT_MAX		950000
  
-+enum maxim_device_type {
-+	MAXIM_DEVICE_TYPE_UNKNOWN	= 0,
-+	MAXIM_DEVICE_TYPE_MAX14577,
++/* MAX77836 regulator current limits (as in CHGCTRL4 register), uA */
++#define MAX77836_REGULATOR_CURRENT_LIMIT_MIN		 45000
++#define MAX77836_REGULATOR_CURRENT_LIMIT_HIGH_START	100000
++#define MAX77836_REGULATOR_CURRENT_LIMIT_HIGH_STEP	 25000
++#define MAX77836_REGULATOR_CURRENT_LIMIT_MAX		475000
 +
-+	MAXIM_DEVICE_TYPE_NUM,
+ /* MAX14577 regulator SFOUT LDO voltage, fixed, uV */
+ #define MAX14577_REGULATOR_SAFEOUT_VOLTAGE		4900000
+ 
++/* MAX77836 regulator LDOx voltage, uV */
++#define MAX77836_REGULATOR_LDO_VOLTAGE_MIN		800000
++#define MAX77836_REGULATOR_LDO_VOLTAGE_MAX		3950000
++#define MAX77836_REGULATOR_LDO_VOLTAGE_STEP		50000
++#define MAX77836_REGULATOR_LDO_VOLTAGE_STEPS_NUM	64
++
+ /* Slave addr = 0x46: PMIC */
+ enum max77836_pmic_reg {
+ 	MAX77836_PMIC_REG_PMIC_ID		= 0x20,
+@@ -298,6 +310,26 @@ enum max77836_pmic_reg {
+ #define MAX77836_TOPSYS_INT_T120C_MASK		BIT(MAX77836_TOPSYS_INT_T120C_SHIFT)
+ #define MAX77836_TOPSYS_INT_T140C_MASK		BIT(MAX77836_TOPSYS_INT_T140C_SHIFT)
+ 
++/* LDO1/LDO2 CONFIG1 register */
++#define MAX77836_CNFG1_LDO_PWRMD_SHIFT		6
++#define MAX77836_CNFG1_LDO_TV_SHIFT		0
++#define MAX77836_CNFG1_LDO_PWRMD_MASK		(0x3 << MAX77836_CNFG1_LDO_PWRMD_SHIFT)
++#define MAX77836_CNFG1_LDO_TV_MASK		(0x3f << MAX77836_CNFG1_LDO_TV_SHIFT)
++
++/* LDO1/LDO2 CONFIG2 register */
++#define MAX77836_CNFG2_LDO_OVCLMPEN_SHIFT	7
++#define MAX77836_CNFG2_LDO_ALPMEN_SHIFT		6
++#define MAX77836_CNFG2_LDO_COMP_SHIFT		4
++#define MAX77836_CNFG2_LDO_POK_SHIFT		3
++#define MAX77836_CNFG2_LDO_ADE_SHIFT		1
++#define MAX77836_CNFG2_LDO_SS_SHIFT		0
++#define MAX77836_CNFG2_LDO_OVCLMPEN_MASK	BIT(MAX77836_CNFG2_LDO_OVCLMPEN_SHIFT)
++#define MAX77836_CNFG2_LDO_ALPMEN_MASK		BIT(MAX77836_CNFG2_LDO_ALPMEN_SHIFT)
++#define MAX77836_CNFG2_LDO_COMP_MASK		(0x3 << MAX77836_CNFG2_LDO_COMP_SHIFT)
++#define MAX77836_CNFG2_LDO_POK_MASK		BIT(MAX77836_CNFG2_LDO_POK_SHIFT)
++#define MAX77836_CNFG2_LDO_ADE_MASK		BIT(MAX77836_CNFG2_LDO_ADE_SHIFT)
++#define MAX77836_CNFG2_LDO_SS_MASK		BIT(MAX77836_CNFG2_LDO_SS_SHIFT)
++
+ /* Slave addr = 0x6C: Fuel-Gauge/Battery */
+ enum max77836_fg_reg {
+ 	MAX77836_FG_REG_VCELL_MSB	= 0x02,
+diff --git a/include/linux/mfd/max14577.h b/include/linux/mfd/max14577.h
+index 08b449159fd1..c83fbed1c7b6 100644
+--- a/include/linux/mfd/max14577.h
++++ b/include/linux/mfd/max14577.h
+@@ -35,7 +35,17 @@ enum max14577_regulators {
+ 	MAX14577_SAFEOUT = 0,
+ 	MAX14577_CHARGER,
+ 
+-	MAX14577_REG_MAX,
++	MAX14577_REGULATOR_NUM,
 +};
 +
- /* Slave addr = 0x4A: MUIC and Charger */
- enum max14577_reg {
- 	MAX14577_REG_DEVICEID		= 0x00,
-@@ -271,15 +278,12 @@ enum max14577_irq {
- struct max14577 {
- 	struct device *dev;
- 	struct i2c_client *i2c; /* Slave addr = 0x4A */
-+	enum maxim_device_type dev_type;
- 
- 	struct regmap *regmap;
- 
- 	struct regmap_irq_chip_data *irq_data;
- 	int irq;
--
--	/* Device ID */
--	u8 vendor_id;	/* Vendor Identification */
--	u8 device_id;	/* Chip Version */
++/* MAX77836 regulator IDs */
++enum max77836_regulators {
++	MAX77836_SAFEOUT = 0,
++	MAX77836_CHARGER,
++	MAX77836_LDO1,
++	MAX77836_LDO2,
++
++	MAX77836_REGULATOR_NUM,
  };
  
- /* MAX14577 shared regmap API function */
+ struct max14577_regulator_platform_data {
 -- 
 1.8.3.2
 
