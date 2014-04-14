@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588AbaDNPUh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 11:20:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53531 "EHLO mx1.redhat.com"
+	id S1754994AbaDNPU6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 11:20:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20712 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754332AbaDNPUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 11:20:33 -0400
-Date: Mon, 14 Apr 2014 17:20:03 +0200
+	id S1751589AbaDNPU4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 11:20:56 -0400
+Date: Mon, 14 Apr 2014 17:20:21 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Peter Zijlstra <peterz@infradead.org>
@@ -18,9 +18,8 @@ Cc: Al Viro <viro@ZenIV.linux.org.uk>, David Woodhouse <dwmw2@infradead.org>,
         Richard Weinberger <richard@nod.at>,
         Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND 05/11] signals: cleanup the usage of t/current in
-	do_sigaction()
-Message-ID: <20140414152003.GA22002@redhat.com>
+Subject: [PATCH RESEND 10/11] signals: introduce kernel_sigaction()
+Message-ID: <20140414152021.GA22029@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -30,64 +29,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The usage of "task_struct *t" and "current" in do_sigaction() looks
-really annoying and chaotic. Initially "t" is used as a cached value
-of current but not consistently, then it is reused as a loop variable
-and we have to use "current" again.
+Now that allow_signal() is really trivial we can unify it with
+disallow_signal(). Add the new helper, kernel_sigaction(), and
+reimplement allow_signal/disallow_signal as a trivial wrappers.
 
-Cleanup this mess and also convert the code to use for_each_thread().
+This saves one EXPORT_SYMBOL() and the new helper can have more
+users.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/signal.c |   15 +++++++--------
- 1 files changed, 7 insertions(+), 8 deletions(-)
+ include/linux/signal.h |   18 ++++++++++++++++--
+ kernel/signal.c        |   36 ++++++++++++------------------------
+ 2 files changed, 28 insertions(+), 26 deletions(-)
 
+diff --git a/include/linux/signal.h b/include/linux/signal.h
+index ac83c59..c9e6536 100644
+--- a/include/linux/signal.h
++++ b/include/linux/signal.h
+@@ -284,8 +284,22 @@ extern int get_signal_to_deliver(siginfo_t *info, struct k_sigaction *return_ka,
+ extern void signal_setup_done(int failed, struct ksignal *ksig, int stepping);
+ extern void signal_delivered(int sig, siginfo_t *info, struct k_sigaction *ka, struct pt_regs *regs, int stepping);
+ extern void exit_signals(struct task_struct *tsk);
+-extern void allow_signal(int);
+-extern void disallow_signal(int);
++extern void kernel_sigaction(int, __sighandler_t);
++
++static inline void allow_signal(int sig)
++{
++	/*
++	 * Kernel threads handle their own signals. Let the signal code
++	 * know it'll be handled, so that they don't get converted to
++	 * SIGKILL or just silently dropped.
++	 */
++	kernel_sigaction(sig, (__force __sighandler_t)2);
++}
++
++static inline void disallow_signal(int sig)
++{
++	kernel_sigaction(sig, SIG_IGN);
++}
+ 
+ /*
+  * Eventually that'll replace get_signal_to_deliver(); macro for now,
 diff --git a/kernel/signal.c b/kernel/signal.c
-index c0b7d0c..a58b0db 100644
+index 4bab1b7..45dba61 100644
 --- a/kernel/signal.c
 +++ b/kernel/signal.c
-@@ -3067,16 +3067,16 @@ COMPAT_SYSCALL_DEFINE4(rt_tgsigqueueinfo,
+@@ -3066,37 +3066,25 @@ COMPAT_SYSCALL_DEFINE4(rt_tgsigqueueinfo,
+ #endif
+ 
+ /*
+- * Let kernel threads use this to say that they allow a certain signal.
+- * Must not be used if kthread was cloned with CLONE_SIGHAND.
++ * For kthreads only, must not be used if cloned with CLONE_SIGHAND
+  */
+-void allow_signal(int sig)
++void kernel_sigaction(int sig, __sighandler_t action)
+ {
+-	/*
+-	 * Kernel threads handle their own signals. Let the signal code
+-	 * know it'll be handled, so that they don't get converted to
+-	 * SIGKILL or just silently dropped.
+-	 */
+ 	spin_lock_irq(&current->sighand->siglock);
+-	current->sighand->action[(sig)-1].sa.sa_handler = (void __user *)2;
+-	spin_unlock_irq(&current->sighand->siglock);
+-}
+-EXPORT_SYMBOL(allow_signal);
++	current->sighand->action[sig - 1].sa.sa_handler = action;
++	if (action == SIG_IGN) {
++		sigset_t mask;
+ 
+-void disallow_signal(int sig)
+-{
+-	sigset_t mask;
++		sigemptyset(&mask);
++		sigaddset(&mask, sig);
+ 
+-	sigemptyset(&mask);
+-	sigaddset(&mask, sig);
+-
+-	spin_lock_irq(&current->sighand->siglock);
+-	current->sighand->action[(sig)-1].sa.sa_handler = SIG_IGN;
+-	flush_sigqueue_mask(&mask, &current->signal->shared_pending);
+-	flush_sigqueue_mask(&mask, &current->pending);
+-	recalc_sigpending();
++		flush_sigqueue_mask(&mask, &current->signal->shared_pending);
++		flush_sigqueue_mask(&mask, &current->pending);
++		recalc_sigpending();
++	}
+ 	spin_unlock_irq(&current->sighand->siglock);
+ }
+-EXPORT_SYMBOL(disallow_signal);
++EXPORT_SYMBOL(kernel_sigaction);
  
  int do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
  {
--	struct task_struct *t = current;
-+	struct task_struct *p = current, *t;
- 	struct k_sigaction *k;
- 	sigset_t mask;
- 
- 	if (!valid_signal(sig) || sig < 1 || (act && sig_kernel_only(sig)))
- 		return -EINVAL;
- 
--	k = &t->sighand->action[sig-1];
-+	k = &p->sighand->action[sig-1];
- 
--	spin_lock_irq(&current->sighand->siglock);
-+	spin_lock_irq(&p->sighand->siglock);
- 	if (oact)
- 		*oact = *k;
- 
-@@ -3095,17 +3095,16 @@ int do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
- 		 *   (for example, SIGCHLD), shall cause the pending signal to
- 		 *   be discarded, whether or not it is blocked"
- 		 */
--		if (sig_handler_ignored(sig_handler(t, sig), sig)) {
-+		if (sig_handler_ignored(sig_handler(p, sig), sig)) {
- 			sigemptyset(&mask);
- 			sigaddset(&mask, sig);
--			flush_sigqueue_mask(&mask, &t->signal->shared_pending);
--			do {
-+			flush_sigqueue_mask(&mask, &p->signal->shared_pending);
-+			for_each_thread(p, t)
- 				flush_sigqueue_mask(&mask, &t->pending);
--			} while_each_thread(current, t);
- 		}
- 	}
- 
--	spin_unlock_irq(&current->sighand->siglock);
-+	spin_unlock_irq(&p->sighand->siglock);
- 	return 0;
- }
- 
 -- 
 1.5.5.1
 
