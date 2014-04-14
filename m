@@ -1,60 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366AbaDNOwo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 10:52:44 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:58977 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754264AbaDNOwm (ORCPT
+	id S1752488AbaDNPA1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 11:00:27 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:43597 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751037AbaDNPAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 10:52:42 -0400
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: Lad Prabhakar <prabhakar.csengg@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] media: davinci: vpbe: release buffers in case start_streaming call back fails
-Date: Mon, 14 Apr 2014 20:22:31 +0530
-Message-Id: <1397487151-6185-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 14 Apr 2014 11:00:24 -0400
+Message-ID: <534BF7FE.6050603@hitachi.com>
+Date: Tue, 15 Apr 2014 00:00:14 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Jianyu Zhan <nasa4836@gmail.com>
+Cc: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, davem@davemloft.net,
+        rdunlap@infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kprobes: be more permissive when user specifies both
+ symbol name and address
+References: <1397472050-19947-1-git-send-email-nasa4836@gmail.com>
+In-Reply-To: <1397472050-19947-1-git-send-email-nasa4836@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+(2014/04/14 19:40), Jianyu Zhan wrote:
+> Currently, if user specifies both symbol name and address, we just
+> bail out.
+> 
+> This might be too rude. This patch makes it give more tolerance.
+> If both are specified, let symbol name take precedence; upon failure,
+> try address. And print a warning message if user specify an address
+> to inform him that using symbol is more preferred.
 
-this patch adds support to release the buffer by calling
-vb2_buffer_done(), with state marked as VB2_BUF_STATE_QUEUED
-if start_streaming() call back fails.
+No, please don't do such thing. Using addr and symbol for double checking
+is good, but if user sets "func1" and if it is not found, it should be
+an error.
+This is for the fail-safe and foolproof principle.
+See below comments too.
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/media/platform/davinci/vpbe_display.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+> ---
+>  Documentation/kprobes.txt |  4 +++-
+>  kernel/kprobes.c          | 33 +++++++++++++++++++++++++++++----
+>  2 files changed, 32 insertions(+), 5 deletions(-)
+> 
+> diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
+> index 0cfb00f..ecf901b 100644
+> --- a/Documentation/kprobes.txt
+> +++ b/Documentation/kprobes.txt
+> @@ -344,7 +344,9 @@ to install a probepoint is known. This field is used to calculate the
+>  probepoint.
+>  
+>  3. Specify either the kprobe "symbol_name" OR the "addr". If both are
+> -specified, kprobe registration will fail with -EINVAL.
+> +specified, searching for "symbol_name" takes precedence; upon failure,
+> +then try "addr". If neither is specified, kprobe registration will fail
+> +with -EINVAL.
+>  
+>  4. With CISC architectures (such as i386 and x86_64), the kprobes code
+>  does not validate if the kprobe.addr is at an instruction boundary.
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index ceeadfc..2444a7a 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -1354,17 +1354,42 @@ static int __kprobes in_kprobes_functions(unsigned long addr)
+>  static kprobe_opcode_t __kprobes *kprobe_addr(struct kprobe *p)
+>  {
+>  	kprobe_opcode_t *addr = p->addr;
+> +	char namebuf[KSYM_NAME_LEN];
+> +	const char *sym_name = NULL;
+>  
+> -	if ((p->symbol_name && p->addr) ||
+> -	    (!p->symbol_name && !p->addr))
+> +	if (!p->symbol_name && !p->addr)
+>  		goto invalid;
+>  
+>  	if (p->symbol_name) {
+>  		kprobe_lookup_name(p->symbol_name, addr);
+> -		if (!addr)
+> -			return ERR_PTR(-ENOENT);
+> +		if (addr) {
+> +			if (p->addr && p->addr != addr)
+> +				printk(KERN_WARNING "Warning: kprobe adrress for %s "
+> +					"mismatch, should be %p, not %p.\n",
+> +					p->symbol_name, addr, p->addr);
+> +			goto found;
+> +		}
 
-diff --git a/drivers/media/platform/davinci/vpbe_display.c b/drivers/media/platform/davinci/vpbe_display.c
-index a9ad949..c8403ab 100644
---- a/drivers/media/platform/davinci/vpbe_display.c
-+++ b/drivers/media/platform/davinci/vpbe_display.c
-@@ -355,8 +355,17 @@ static int vpbe_start_streaming(struct vb2_queue *vq, unsigned int count)
- 
- 	/* Set parameters in OSD and VENC */
- 	ret = vpbe_set_osd_display_params(fh->disp_dev, layer);
--	if (ret < 0)
-+	if (ret < 0) {
-+		struct vpbe_disp_buffer *buf, *tmp;
-+
-+		vb2_buffer_done(&layer->cur_frm->vb, VB2_BUF_STATE_QUEUED);
-+		list_for_each_entry_safe(buf, tmp, &layer->dma_queue, list) {
-+			list_del(&buf->list);
-+			vb2_buffer_done(&buf->vb, VB2_BUF_STATE_QUEUED);
-+		}
-+
- 		return ret;
-+	}
- 
- 	/*
- 	 * if request format is yuv420 semiplanar, need to
+This should be an error.
+
+> +	}
+> +	if (p->addr) {
+> +		printk(KERN_WARNING "Warning: kprobes symbol name is now supported."
+> +			"Please use it instead.\n");
+
+No, don't put this warning. Since the local symbols can have same name in the
+kallsyms, sometimes p->addr is the only solution. From the same reason, if you
+need a double check, you should check p->addr first. sometimes kprobe_lookup_name()
+may return unwilling address (same symbol but another instance).
+
+So the correct double-check should be;
+
+ ----
+if (p->addr) {
+  if (p->symbol) {
+    sym = kallsyms_lookup(p->addr, ... &offs ...);
+    if (strcmp(sym,p->symbol) != 0 || offs != p->offset) {
+      pr_warning("Error! ...");
+      goto fail;
+    }
+  }
+} else if (p->symbol) {
+  kprobe_lookup_name(p->symbol_name, addr);
+  if (!addr)
+    goto fail;
+} else
+  goto fail;
+ ----
+
+
+
+> +		sym_name = kallsyms_lookup((unsigned long)(p->addr),
+> +				NULL, NULL, NULL, namebuf);
+> +		if (sym_name) {
+> +			if (p->symbol_name && strncmp(sym_name, p->symbol_name,
+> +						KSYM_NAME_LEN))
+> +				printk(KERN_WARNING "Warning: found %s at addres "
+> +				"%p, but not %s.\n",
+> +				p->symbol_name, addr, sym_name);
+> +
+> +			addr = p->addr;
+
+Here, we also treat this as an error.
+
+> +			goto found;
+> +		}
+> +
+>  	}
+> +	return ｃ
+>  
+> +found:
+>  	addr = (kprobe_opcode_t *)(((char *)addr) + p->offset);
+>  	if (addr)
+>  		return addr;
+> 
+
+Thank you,
+
+
 -- 
-1.7.9.5
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
