@@ -1,64 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322AbaDNJpH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 05:45:07 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:37667 "EHLO mail.skyhub.de"
+	id S1754437AbaDNJqt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 05:46:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32729 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752142AbaDNJpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 05:45:04 -0400
-Date: Mon, 14 Apr 2014 11:44:50 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Brian Gerst <brgerst@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [tip:x86/urgent] x86-64, modify_ldt: Ban 16-bit segments on
- 64-bit kernels
-Message-ID: <20140414094450.GA3663@pd.tnic>
-References: <CAMzpN2jn69_E7UEP6OHBbc4r7UuJbsW50WA25YhXuQs5sHFxQQ@mail.gmail.com>
- <6f5f98f2-aa96-433f-9ee8-5ba216624957@email.android.com>
- <20140412193541.GA30697@pd.tnic>
- <21a22ace-fbc3-4f97-a277-9cdf4f2253eb@email.android.com>
- <20140412201126.GC30694@pd.tnic>
- <CAMzpN2jHrBZ7DCd79GkCdjwCWJBv+YR5o9BGjypCdazJB9bJYQ@mail.gmail.com>
- <20140412205920.GD30694@pd.tnic>
- <CAMzpN2hkfw0p71H9QLFvbdmuiYqXqXJwBHK=GY_U_VHfjBL4Lg@mail.gmail.com>
- <20140412214034.GF30694@pd.tnic>
- <20140414072113.GA19569@gmail.com>
+	id S1750912AbaDNJqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 05:46:48 -0400
+Date: Mon, 14 Apr 2014 10:50:28 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: acme@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, eranian@google.com, namhyung@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/2] perf, tools: Support spark lines in perf stat
+Message-ID: <20140414085028.GA1433@krava.brq.redhat.com>
+References: <1395768699-16060-1-git-send-email-andi@firstfloor.org>
+ <1395768699-16060-2-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140414072113.GA19569@gmail.com>
+In-Reply-To: <1395768699-16060-2-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 09:21:13AM +0200, Ingo Molnar wrote:
-> Apparently the game in question is "Exile: Escape from the pit":
+On Tue, Mar 25, 2014 at 10:31:39AM -0700, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
->   http://osdir.com/ml/wine-bugs/2014-04/msg01159.html
 
-Ah, thanks.
+SNIP
 
-Well, FWIW, you can get the game for free:
+> @@ -1176,6 +1176,9 @@ static void print_aggr(char *prefix)
+>  				if (run != ena)
+>  					fprintf(output, "  (%.2f%%)",
+>  						100.0 * run / ena);
+> +
+> +				fputc(' ', output);
+> +				print_stat_spark(output, counter->priv);
+>  			}
+>  			fputc('\n', output);
+>  		}
+> @@ -1224,6 +1227,9 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
+>  
+>  	print_noise(counter, avg);
+>  
+> +	fputc(' ', output);
+> +	print_stat_spark(output, counter->priv);
+> +
+>  	if (csv_output) {
+>  		fputc('\n', output);
+>  		return;
+> @@ -1295,6 +1301,9 @@ static void print_counter(struct perf_evsel *counter, char *prefix)
+>  			if (run != ena)
+>  				fprintf(output, "  (%.2f%%)",
+>  					100.0 * run / ena);
+> +
+> +			fputc(' ', output);
+> +			print_stat_spark(output, counter->priv);
+>  		}
+>  		fputc('\n', output);
+>  	}
+> @@ -1355,6 +1364,9 @@ static void print_stat(int argc, const char **argv)
+>  			fprintf(output, "                                        ");
+>  			print_noise_pct(stddev_stats(&walltime_nsecs_stats),
+>  					avg_stats(&walltime_nsecs_stats));
+> +
+> +			fputc(' ', output);
+> +			print_stat_spark(output, &walltime_nsecs_stats);
 
-http://www.spiderwebsoftware.com/exile/winexile.html
+Do we want to be that explicit about printing ' ' here?
+I dont see it elsewhere..
 
-I did run it on an old windoze guest I had lying around. Performance
-feels like native considering this game is from the previous century :-)
+fput could go into print_stat_spark
 
-https://en.wikipedia.org/wiki/Exile_%28video_game_series%29
 
-Wikipedia says you can get it on steam too, which runs linux and stuff.
+SNIP
 
-Thanks.
+> +void print_stat_spark(FILE *f, struct stats *stat)
+> +{
+> +	int n = stat->n, len;
+> +
+> +	if (n <= 1)
+> +		return;
+> +	len = n;
+> +	if (len > NUM_SPARK_VALS)
+> +		len = NUM_SPARK_VALS;
+> +	if (all_the_same(stat->svals, len))
+> +		return;
+> +	print_spark(f, stat->svals, len);
+> +	if (stat->n > NUM_SPARK_VALS)
+> +		fputs("..", f);
+> +}
 
--- 
-Regards/Gruss,
-    Boris.
+whats the reason for 'n' in here?  looks like you could do only with 'len'
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+thanks,
+jirka
