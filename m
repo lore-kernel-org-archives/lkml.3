@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890AbaDNSpt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 14:45:49 -0400
-Received: from moutng.kundenserver.de ([212.227.126.130]:63930 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451AbaDNSpp (ORCPT
+	id S1754898AbaDNSsP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 14:48:15 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:55133 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754228AbaDNSsN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 14:45:45 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, santosh.shilimkar@ti.com,
-        grant.likely@linaro.org, devicetree@vger.kernel.org,
-        grygorii.strashko@ti.com, linux@arm.linux.org.uk,
-        linux-doc@vger.kernel.org, w-kwok2@ti.com, rdunlap@infradead.org,
-        sboyd@codeaurora.org, linux-kernel@vger.kernel.org, olof@lixom.net
-Subject: Re: [PATCH v2 2/5] Power: reset: add bindings for keystone reset driver
-Date: Mon, 14 Apr 2014 20:44:32 +0200
-Message-ID: <6937937.4J6iI7VpBO@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1397497283-16391-3-git-send-email-ivan.khoronzhuk@ti.com>
-References: <1397497283-16391-1-git-send-email-ivan.khoronzhuk@ti.com> <1397497283-16391-3-git-send-email-ivan.khoronzhuk@ti.com>
+	Mon, 14 Apr 2014 14:48:13 -0400
+Date: Mon, 14 Apr 2014 21:43:53 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: David Miller <davem@davemloft.net>
+Cc: mroos@linux.ee, sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: sparc64 WARNING: at mm/mmap.c:2757 exit_mmap+0x13c/0x160()
+Message-ID: <20140414184353.GA5630@drone.musicnaut.iki.fi>
+References: <20130617055839.GB3073@blackmetal.musicnaut.iki.fi>
+ <20130803.134042.2228681844349448961.davem@davemloft.net>
+ <20131022174612.GC24448@blackmetal.musicnaut.iki.fi>
+ <20131022.135442.1072093301788210177.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:aZGnq0Ein+V8WXOEGj9/vzl3X0Ji+lOMkZR9zaaN1Yn
- tZ1ijCvCH9mJ+qVHod9uo+GrIXVS90VUE2fy6PCy1cgE9AjHKz
- xM83Lc8MoxQo7NjKZS3E73a2rReoaoNIjBFu7nU1CLBQGjZ9Ux
- U2d6mh5OZAhQaEsUTTRXXRGdsh0yAZEqvyL6clQRj724Nwp1WU
- s/KZrtMBmhdzC4ie2xilC+MboY2fhxyw0qKCn7aRJZG+LxT1Ox
- E2dQpBgzn3QVmYcclZZALPRyW2mk9ZP+Yroz/wpRJOGytz6dqC
- BrodoRdX1Oz9gHMwBlE8/Cz8f/xSmTQYiLMrKSd/+NUK0T7lCC
- Ndju1b7CdAj1O0Lz54d4=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20131022.135442.1072093301788210177.davem@davemloft.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 14 April 2014 20:41:20 Ivan Khoronzhuk wrote:
-> +Optional properties:
-> +
-> +- ti,soft-reset:       Boolean option indicating soft reset.
-> +                       By default hard reset is used.
-> +
-> +- ti,wdt_list:         WDT list that can cause SoC reset.
-> +                       The list in format: <0>, <2>;
-> +                       Begins from 0 to 3, as keystone can contain up
-> +                       to 4 SoC reset watchdogs.
-> 
+Hi,
 
-This looks like your binding just describes a subset of the
-watchdog timer registers. If so, don't do a standalone reset
-driver, but instead do a watchdog driver that can also be
-used for reset, and have a binding that properly describes
-the watchdog hardware.
+Just for the archives, I got one of these again with 3.14:
 
-It is bad to have overlapping register ranges between logical
-devices, and it's also generally wrong to describe devices that
-are not actually there: The hardware contains a watchdog, not
-a system-reset device, so you should not make one up because
-it seems easier given the Linux driver model.
+[68674.536190] ------------[ cut here ]------------
+[68674.590467] WARNING: CPU: 0 PID: 14600 at /home/aaro/los/work/shared/linux-v3.14/mm/mmap.c:2738 exit_mmap+0x138/0x160()
+[68674.719635] Modules linked in:
+[68674.756022] CPU: 0 PID: 14600 Comm: rm Not tainted 3.14.0-ultra-los_0a2b #1
+[68674.839349] Call Trace:
+[68674.868507]  [00000000004b9c78] exit_mmap+0x138/0x160
+[68674.928931]  [00000000004503cc] mmput+0x2c/0xc0
+[68674.983103]  [0000000000452e98] do_exit+0x1b8/0x800
+[68675.041409]  [000000000045406c] do_group_exit+0x2c/0xa0
+[68675.103897]  [00000000004540f4] SyS_exit_group+0x14/0x20
+[68675.167439]  [0000000000406074] linux_sparc_syscall32+0x34/0x60
+[68675.238258] ---[ end trace 8a52741fbdb89d8e ]---
+[68675.293470] BUG: Bad rss-counter state mm:ffffff001df3d900 idx:1 val:1
 
-	Arnd
+A.
