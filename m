@@ -1,98 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803AbaDNQ1O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:27:14 -0400
-Received: from verein.lst.de ([213.95.11.211]:49663 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755747AbaDNQ1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:27:07 -0400
-Date: Mon, 14 Apr 2014 18:27:03 +0200
-From: Torsten Duwe <duwe@lst.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        ingo.tuchscherer@de.ibm.com, linux-kernel@vger.kernel.org,
-        Hans-Georg Markgraf <MGRF@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Joe Perches <joe@perches.com>
-Subject: [PATCH v4 03/03]: hwrng: khwrngd derating per device
-Message-ID: <20140414162703.GF29351@lst.de>
-References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de> <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com> <20140414160211.GE711@lst.de> <7b22b881-9359-42c9-a632-6a8cbdb13b71@email.android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7b22b881-9359-42c9-a632-6a8cbdb13b71@email.android.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1755777AbaDNQ1M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:27:12 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:51518 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755749AbaDNQ1J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 12:27:09 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: tglx@linutronix.de
+Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, Arvind.Chauhan@arm.com,
+        linaro-networking@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [PATCH 26/38] tick-sched: don't call update_wall_time() when delta is lesser than tick_period
+Date: Mon, 14 Apr 2014 21:53:48 +0530
+Message-Id: <8cf944ba5c78a47f83db9391f423150202816e61.1397492345.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1397492345.git.viresh.kumar@linaro.org>
+References: <cover.1397492345.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1397492345.git.viresh.kumar@linaro.org>
+References: <cover.1397492345.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In tick_do_update_jiffies64() we are processing ticks only if delta is greater
+than tick_period. This is what we are supposed to do here and it broke a bit
+with this patch:
 
-This patch introduces a derating factor to struct hwrng for
-the random bits going into the kernel input pool, and a common
-default derating for drivers which do not specify one.
+commit 47a1b796306356f358e515149d86baf0cc6bf007
+Author: John Stultz <john.stultz@linaro.org>
+Date:   Thu Dec 12 13:10:55 2013 -0800
 
-Signed-off-by: Torsten Duwe <duwe@suse.de>
+    tick/timekeeping: Call update_wall_time outside the jiffies lock
 
+With above patch, we might end up calling update_wall_time() even if delta is
+found to be smaller that tick_period. Fix this by reversing the check and
+returning early.
+
+Cc: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- drivers/char/hw_random/core.c |   11 ++++++++++-
- include/linux/hw_random.h     |    3 +++
- 2 files changed, 13 insertions(+), 1 deletion(-)
+ kernel/time/tick-sched.c | 32 +++++++++++++++++---------------
+ 1 file changed, 17 insertions(+), 15 deletions(-)
 
---- linux/include/linux/hw_random.h.orig
-+++ linux/include/linux/hw_random.h
-@@ -29,6 +29,8 @@
-  * @read:		New API. drivers can fill up to max bytes of data
-  *			into the buffer. The buffer is aligned for any type.
-  * @priv:		Private data, for use by the RNG driver.
-+ * @derating:		Estimation of true entropy in RNG's bitstream
-+ *			(per mill).
-  */
- struct hwrng {
- 	const char *name;
-@@ -38,6 +39,7 @@ struct hwrng {
- 	int (*data_read)(struct hwrng *rng, u32 *data);
- 	int (*read)(struct hwrng *rng, void *data, size_t max, bool wait);
- 	unsigned long priv;
-+	unsigned short derating;
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index b7b09b9..bff7f97 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -65,26 +65,28 @@ static void tick_do_update_jiffies64(ktime_t now)
+ 	write_seqlock(&jiffies_lock);
  
- 	/* internal. */
- 	struct list_head list;
---- linux/drivers/char/hw_random/core.c.orig
-+++ linux/drivers/char/hw_random/core.c
-@@ -56,11 +56,15 @@ static LIST_HEAD(rng_list);
- static DEFINE_MUTEX(rng_mutex);
- static int data_avail;
- static u8 *rng_buffer, *rng_fillbuf;
--static unsigned short derating_current = 700; /* an arbitrary 70% */
-+static unsigned short derating_current;
-+static unsigned short derating_default = 0; /* default to "off" */
+ 	delta = ktime_sub(now, last_jiffies_update);
+-	if (delta.tv64 >= tick_period.tv64) {
+-
+-		delta = ktime_sub(delta, tick_period);
+-		last_jiffies_update = ktime_add(last_jiffies_update,
+-						tick_period);
++	if (delta.tv64 < tick_period.tv64) {
++		write_sequnlock(&jiffies_lock);
++		return;
++	}
  
- module_param(derating_current, ushort, 0644);
- MODULE_PARM_DESC(derating_current,
- 		 "current hwrng entropy estimation per mill");
-+module_param(derating_default, ushort, 0644);
-+MODULE_PARM_DESC(derating_default,
-+		 "default entropy content of hwrng per mill");
+-		/* Slow path for long timeouts */
+-		if (unlikely(delta.tv64 >= tick_period.tv64)) {
+-			s64 incr = ktime_to_ns(tick_period);
++	delta = ktime_sub(delta, tick_period);
++	last_jiffies_update = ktime_add(last_jiffies_update, tick_period);
  
- static void start_khwrngd(void);
+-			ticks = ktime_divns(delta, incr);
++	/* Slow path for long timeouts */
++	if (unlikely(delta.tv64 >= tick_period.tv64)) {
++		s64 incr = ktime_to_ns(tick_period);
  
-@@ -79,6 +83,11 @@ static inline int hwrng_init(struct hwrn
- 	if (err)
- 		return err;
+-			last_jiffies_update = ktime_add_ns(last_jiffies_update,
+-							   incr * ticks);
+-		}
+-		do_timer(++ticks);
++		ticks = ktime_divns(delta, incr);
  
-+	derating_current = rng->derating ? : derating_default;
-+	derating_current &= 1023;
+-		/* Keep the tick_next_period variable up to date */
+-		tick_next_period = ktime_add(last_jiffies_update, tick_period);
++		last_jiffies_update = ktime_add_ns(last_jiffies_update,
++						   incr * ticks);
+ 	}
++	do_timer(++ticks);
 +
-+	if (derating_current == 0 && hwrng_fill)
-+		kthread_stop(hwrng_fill);
- 	if (derating_current > 0 && !hwrng_fill)
- 		start_khwrngd();
- 
++	/* Keep the tick_next_period variable up to date */
++	tick_next_period = ktime_add(last_jiffies_update, tick_period);
++
+ 	write_sequnlock(&jiffies_lock);
+ 	update_wall_time();
+ }
+-- 
+1.7.12.rc2.18.g61b472e
+
