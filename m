@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056AbaDNTVr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 15:21:47 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:56307 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751018AbaDNTVn (ORCPT
+	id S1755341AbaDNTW3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 15:22:29 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57764 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754353AbaDNTW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 15:21:43 -0400
-Date: Mon, 14 Apr 2014 15:21:39 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET cgroup/for-3.15] cgroup: implement unified hierarchy
-Message-ID: <20140414192139.GB16835@htj.dyndns.org>
-References: <1395974461-12735-1-git-send-email-tj@kernel.org>
- <20140414154556.GA9552@redhat.com>
- <20140414175236.GB15249@htj.dyndns.org>
- <20140414181421.GC9552@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140414181421.GC9552@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 14 Apr 2014 15:22:27 -0400
+Date: Mon, 14 Apr 2014 15:22:25 -0400 (EDT)
+Message-Id: <20140414.152225.1983723140136958968.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: nasa4836@gmail.com, jchapman@katalix.com, edumazet@google.com,
+        joe@perches.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [BUG] A panic caused by null pointer dereference aftering
+ updating to
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1397502396.4222.45.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1397499566.4222.36.camel@edumazet-glaptop2.roam.corp.google.com>
+	<20140414.144843.488522666550066271.davem@davemloft.net>
+	<1397502396.4222.45.camel@edumazet-glaptop2.roam.corp.google.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 14 Apr 2014 12:22:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Mon, 14 Apr 2014 12:06:36 -0700
 
-On Mon, Apr 14, 2014 at 02:14:21PM -0400, Vivek Goyal wrote:
-> So is this an intermediate mode before we move to single hiearchy *only*
-> mode. AFAIK, you had mentioned that we will support legacy multiple
-> hiearchy mode but single hiearchy is the new default mode.
+> On Mon, 2014-04-14 at 14:48 -0400, David Miller wrote:
+>> From: Eric Dumazet <eric.dumazet@gmail.com>
+>> Date: Mon, 14 Apr 2014 11:19:26 -0700
+>> 
+>> > ip_local_out() doesn't use skb->sk
+>> 
+>> It does Eric.
+>> 
+> 
+> Hmmm, right...
+> 
+>> We had just such a report with this in the backtrace, when AF_PACKET
+>> sends over vxlan devices.
+>> 
+>> The problem is ip_mc_output().
+> 
+> So this means that : User socket wanted sk_mc_loop(sk), but because
+> vxlan changed skb->sk to internal socket, we were doing something else
+> anyway.
 
-Hmmm?  It's a separate special hierarchy which can co-exist with other
-hierarchies.  There's no inherent intermediacy to it.  As long as
-traditional hierarchies exist, it's gonna be like this.
+Actually the exact opposite is happening.  vxlan does not override skb->sk,
+and leaves it as AF_PACKET's socket.  Then we crash in ip_mc_output() because
+it only expects IP sockets, not AF_PACKET ones, attached to skb->sk.
 
-> How does one figure out which one is unified hiearchy (out of multiple
-> hierarchies). Is there a flag somewhere? Or sane flag will be used to
-> mark unified hiearchy.
+> There are a lot of undocumented features here... like
+> 
+>  	skb->priority = sk->sk_priority;
+>  	skb->mark = sk->sk_mark;
+> 
+> which socket do we want here (in ip_queue_xmit()) ?
 
-You can tell it multiple ways - from its mount options, whether
-cgroup.controllers exists, but it'll most likely be mounted on a
-distinctive mount point, wouldn't it?
+Probably that of tunnel.
 
-> So task and child groups can co-exist in root *only*?
+> Its interesting to see ip6_xmit() already has a 'struct sock *sk'
+> parameter...
+> 
+> This was the preliminary patch I tested :
 
-Note that the restriction doesn't apply if no controller is enabled
-but yes root is the only cgroup where tasks can exist and controllers
-are enabled at the same time.
-
-Thanks.
-
--- 
-tejun
+You still need to make similar transformation to ip_local_out() as mentioned
+above.
