@@ -1,95 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755768AbaDNVKW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 17:10:22 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:54772 "EHLO
+	id S1755798AbaDNVKh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 17:10:37 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:54776 "EHLO
 	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754766AbaDNVKT (ORCPT
+	with ESMTP id S1755774AbaDNVK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 17:10:19 -0400
-Message-ID: <534C4EB8.9080704@semaphore.gr>
-Date: Tue, 15 Apr 2014 00:10:16 +0300
+	Mon, 14 Apr 2014 17:10:29 -0400
+Message-ID: <534C4EC2.5080008@semaphore.gr>
+Date: Tue, 15 Apr 2014 00:10:26 +0300
 From: Stratos Karafotis <stratosk@semaphore.gr>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+To: Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
 CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Viresh Kumar <viresh.kumar@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 15/20] mfd: db8500-prcmu: Use cpufreq_for_each_entry macro
- for iteration
+Subject: [PATCH 14/20] thermal: cpu_cooling: Use cpufreq_for_each_valid_entry
+ macro for iteration
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cpufreq core supports the cpufreq_for_each_entry macro helper
-for iteration over the cpufreq_frequency_table, so use it.
+The cpufreq core supports the cpufreq_for_each_valid_entry macro
+helper for iteration over the cpufreq_frequency_table, so use it.
 
 It should have no functional changes.
 
 Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
 ---
- drivers/mfd/db8500-prcmu.c | 18 ++++++++----------
- 1 file changed, 8 insertions(+), 10 deletions(-)
+ drivers/thermal/cpu_cooling.c | 33 +++++++++++++--------------------
+ 1 file changed, 13 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-index 7694e07..3429e4f 100644
---- a/drivers/mfd/db8500-prcmu.c
-+++ b/drivers/mfd/db8500-prcmu.c
-@@ -1734,18 +1734,17 @@ static struct cpufreq_frequency_table db8500_cpufreq_table[] = {
- 
- static long round_armss_rate(unsigned long rate)
+diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+index 4246262..3040629 100644
+--- a/drivers/thermal/cpu_cooling.c
++++ b/drivers/thermal/cpu_cooling.c
+@@ -144,11 +144,11 @@ static int get_property(unsigned int cpu, unsigned long input,
+ 			unsigned int *output,
+ 			enum cpufreq_cooling_property property)
  {
-+	struct cpufreq_frequency_table *pos;
- 	long freq = 0;
--	int i = 0;
+-	int i, j;
++	int i;
+ 	unsigned long max_level = 0, level = 0;
+ 	unsigned int freq = CPUFREQ_ENTRY_INVALID;
+ 	int descend = -1;
+-	struct cpufreq_frequency_table *table =
++	struct cpufreq_frequency_table *pos, *table =
+ 					cpufreq_frequency_get_table(cpu);
  
- 	/* cpufreq table frequencies is in KHz. */
- 	rate = rate / 1000;
- 
- 	/* Find the corresponding arm opp from the cpufreq table. */
--	while (db8500_cpufreq_table[i].frequency != CPUFREQ_TABLE_END) {
--		freq = db8500_cpufreq_table[i].frequency;
-+	cpufreq_for_each_entry(pos, db8500_cpufreq_table) {
-+		freq = pos->frequency;
- 		if (freq == rate)
- 			break;
--		i++;
- 	}
- 
- 	/* Return the last valid value, even if a match was not found. */
-@@ -1886,23 +1885,22 @@ static void set_clock_rate(u8 clock, unsigned long rate)
- 
- static int set_armss_rate(unsigned long rate)
- {
--	int i = 0;
-+	struct cpufreq_frequency_table *pos;
- 
- 	/* cpufreq table frequencies is in KHz. */
- 	rate = rate / 1000;
- 
- 	/* Find the corresponding arm opp from the cpufreq table. */
--	while (db8500_cpufreq_table[i].frequency != CPUFREQ_TABLE_END) {
--		if (db8500_cpufreq_table[i].frequency == rate)
-+	cpufreq_for_each_entry(pos, db8500_cpufreq_table) {
-+		if (pos->frequency == rate)
- 			break;
--		i++;
- 	}
- 
--	if (db8500_cpufreq_table[i].frequency != rate)
-+	if (pos->frequency != rate)
+ 	if (!output)
+@@ -157,20 +157,16 @@ static int get_property(unsigned int cpu, unsigned long input,
+ 	if (!table)
  		return -EINVAL;
  
- 	/* Set the new arm opp. */
--	return db8500_prcmu_set_arm_opp(db8500_cpufreq_table[i].driver_data);
-+	return db8500_prcmu_set_arm_opp(pos->driver_data);
- }
+-	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+-		/* ignore invalid entries */
+-		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+-			continue;
+-
++	cpufreq_for_each_valid_entry(pos, table) {
+ 		/* ignore duplicate entry */
+-		if (freq == table[i].frequency)
++		if (freq == pos->frequency)
+ 			continue;
  
- static int set_plldsi_rate(unsigned long rate)
+ 		/* get the frequency order */
+ 		if (freq != CPUFREQ_ENTRY_INVALID && descend == -1)
+-			descend = !!(freq > table[i].frequency);
++			descend = !!(freq > pos->frequency);
+ 
+-		freq = table[i].frequency;
++		freq = pos->frequency;
+ 		max_level++;
+ 	}
+ 
+@@ -190,29 +186,26 @@ static int get_property(unsigned int cpu, unsigned long input,
+ 	if (property == GET_FREQ)
+ 		level = descend ? input : (max_level - input);
+ 
+-	for (i = 0, j = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+-		/* ignore invalid entry */
+-		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+-			continue;
+-
++	i = 0;
++	cpufreq_for_each_valid_entry(pos, table) {
+ 		/* ignore duplicate entry */
+-		if (freq == table[i].frequency)
++		if (freq == pos->frequency)
+ 			continue;
+ 
+ 		/* now we have a valid frequency entry */
+-		freq = table[i].frequency;
++		freq = pos->frequency;
+ 
+ 		if (property == GET_LEVEL && (unsigned int)input == freq) {
+ 			/* get level by frequency */
+-			*output = descend ? j : (max_level - j);
++			*output = descend ? i : (max_level - i);
+ 			return 0;
+ 		}
+-		if (property == GET_FREQ && level == j) {
++		if (property == GET_FREQ && level == i) {
+ 			/* get frequency by level */
+ 			*output = freq;
+ 			return 0;
+ 		}
+-		j++;
++		i++;
+ 	}
+ 
+ 	return -EINVAL;
 -- 
 1.9.0
