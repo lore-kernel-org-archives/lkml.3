@@ -1,91 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840AbaDNQTq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:19:46 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47176 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753240AbaDNQT0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:19:26 -0400
-Date: Mon, 14 Apr 2014 17:19:06 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 06/31] arch,arm: Convert smp_mb__*
-Message-ID: <20140414161906.GA12916@arm.com>
-References: <20140319064729.660482086@infradead.org>
- <20140319065204.099395624@infradead.org>
+	id S1754979AbaDNQUE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:20:04 -0400
+Received: from mga11.intel.com ([192.55.52.93]:59302 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754662AbaDNQUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 12:20:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,857,1389772800"; 
+   d="scan'208";a="512725282"
+Message-ID: <534C0AA9.5080909@linux.intel.com>
+Date: Tue, 15 Apr 2014 00:19:53 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140319065204.099395624@infradead.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Davidlohr Bueso <davidlohr@hp.com>,
+        "Woodhouse, David" <david.woodhouse@intel.com>
+CC: "joro@8bytes.org" <joro@8bytes.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bhe@redhat.com" <bhe@redhat.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "James.Bottomley@hansenpartnership.com" 
+	<James.Bottomley@hansenpartnership.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>
+Subject: Re: hpsa driver bug crack kernel down!
+References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>	 <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>	 <1397084904.9519.62.camel@dabdike> <1397085044.9519.63.camel@dabdike>	 <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>	 <1397087425.9519.67.camel@dabdike>	 <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>	 <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>	 <1397111557.2608.29.camel@buesod1.americas.hpqcorp.net>	 <20140410071535.GX13491@8bytes.org>	 <1397119587.19944.14.camel@shinybook.infradead.org>	 <1397146781.2608.46.camel@buesod1.americas.hpqcorp.net>	 <1397207932.19944.58.camel@shinybook.infradead.org> <1397490358.31076.6.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1397490358.31076.6.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 06:47:35AM +0000, Peter Zijlstra wrote:
-> ARM uses ll/sc primitives that do not imply barriers for all regular
-> atomic ops, therefore smp_mb__{before,after} need be a full barrier.
-> 
-> Since ARM doesn't use asm-generic/barrier.h include the required
-> definitions in its asm/barrier.h
-> 
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Hi Davidlohr,
+	Thanks for providing the DMAR table. According to the DMAR
+table, one bug in the iommu driver fails to handle this entry:
+[1D2h 0466   1]      Device Scope Entry Type : 01
+[1D3h 0467   1]                 Entry Length : 0A
+[1D4h 0468   2]                     Reserved : 0000
+[1D6h 0470   1]               Enumeration ID : 00
+[1D7h 0471   1]               PCI Bus Number : 00
+[1D8h 0472   2]                     PCI Path : 1C,04
+[1DAh 0474   2]                     PCI Path : 00,02
 
-  Acked-by: Will Deacon <will.deacon@arm.com>
+	And the patch sent out by me should fix this bug. Could you please help
+to have a try?
+Thanks!
+Gerry
 
-Will
-
-> ---
->  arch/arm/include/asm/atomic.h  |    5 -----
->  arch/arm/include/asm/barrier.h |    3 +++
->  arch/arm/include/asm/bitops.h  |    4 +---
->  3 files changed, 4 insertions(+), 8 deletions(-)
+On 2014/4/14 23:45, Davidlohr Bueso wrote:
+> Sorry for the delay, I've been having to take turns for this box.
 > 
-> --- a/arch/arm/include/asm/atomic.h
-> +++ b/arch/arm/include/asm/atomic.h
-> @@ -211,11 +211,6 @@ static inline int __atomic_add_unless(at
->  
->  #define atomic_add_negative(i,v) (atomic_add_return(i, v) < 0)
->  
-> -#define smp_mb__before_atomic_dec()	smp_mb()
-> -#define smp_mb__after_atomic_dec()	smp_mb()
-> -#define smp_mb__before_atomic_inc()	smp_mb()
-> -#define smp_mb__after_atomic_inc()	smp_mb()
-> -
->  #ifndef CONFIG_GENERIC_ATOMIC64
->  typedef struct {
->  	long long counter;
-> --- a/arch/arm/include/asm/barrier.h
-> +++ b/arch/arm/include/asm/barrier.h
-> @@ -79,5 +79,8 @@ do {									\
->  
->  #define set_mb(var, value)	do { var = value; smp_mb(); } while (0)
->  
-> +#define smp_mb__before_atomic()	smp_mb()
-> +#define smp_mb__after_atomic()	smp_mb()
-> +
->  #endif /* !__ASSEMBLY__ */
->  #endif /* __ASM_BARRIER_H */
-> --- a/arch/arm/include/asm/bitops.h
-> +++ b/arch/arm/include/asm/bitops.h
-> @@ -25,9 +25,7 @@
->  
->  #include <linux/compiler.h>
->  #include <linux/irqflags.h>
-> -
-> -#define smp_mb__before_clear_bit()	smp_mb()
-> -#define smp_mb__after_clear_bit()	smp_mb()
-> +#include <asm/barrier.h>
->  
->  /*
->   * These functions are the basis of our bit ops.
+> On Fri, 2014-04-11 at 09:18 +0000, Woodhouse, David wrote:
+>> On Thu, 2014-04-10 at 09:19 -0700, Davidlohr Bueso wrote:
+>>> Attaching a dmesg from one of the kernels that boots. It doesn't appear
+>>> to have much of the related information... is there any debug config
+>>> option I can enable that might give you more data?
+>>
+>> I'd like the contents of /sys/firmware/acpi/tables/DMAR please.
 > 
+> Attached is the disassembly of the raw output.
 > 
+>>  And
+>> please could you also apply this patch to both the last-working and
+>> first-failing kernels and show me the output in both cases?
+> 
+> So I still cannot get around getting the info for the first failing
+> kernel, but below is for the last working. Thanks.
+> 
+> Device 0:03:00.0 on IOMMU at a8000000
+> Device 0:03:00.0 on IOMMU at a8000000
+> IOMMU: Setting identity map for device 0000:02:00.0 [0x7f61e000 - 0x7f61ffff]
+> Device 0:02:00.0 on IOMMU at a8000000
+> Device 0:02:00.0 on IOMMU at a8000000
+> IOMMU: Setting identity map for device 0000:02:00.2 [0x7f61e000 - 0x7f61ffff]
+> Device 0:02:00.2 on IOMMU at a8000000
+> Device 0:02:00.2 on IOMMU at a8000000
+> IOMMU: Setting identity map for device 0000:00:1d.0 [0x7f7e7000 - 0x7f7ecfff]
+> Device 0:00:1d.0 on IOMMU at a8000000
+> Device 0:00:1d.0 on IOMMU at a8000000
+> IOMMU: Setting identity map for device 0000:00:1d.1 [0x7f7e7000 - 0x7f7ecfff]
+> Device 0:00:1d.1 on IOMMU at a8000000
+> Device 0:00:1d.1 on IOMMU at a8000000
+> IOMMU: Setting identity map for device 0000:00:1d.2 [0x7f7e7000 - 0x7f7ecfff]
+> Device 0:00:1d.2 on IOMMU at a8000000
+> Device 0:00:1d.2 on IOMMU at a8000000
+> IOMMU: Setting identity map for device 0000:00:1d.3 [0x7f7e7000 - 0x7f7ecfff]
+> Device 0:00:1d.3 on IOMMU at a8000000
+> Device 0:00:1d.3 on IOMMU at a8000000
+> IOMMU: Setting identity map for device 0000:02:00.0 [0x7f7e7000 - 0x7f7ecfff]
+> Device 0:02:00.0 on IOMMU at a8000000
+> IOMMU: Setting identity map for device 0000:02:00.2 [0x7f7e7000 - 0x7f7ecfff]
+> Device 0:02:00.2 on IOMMU at a8000000
+> IOMMU: Setting identity map for device 0000:02:00.4 [0x7f7e7000 - 0x7f7ecfff]
+> Device 0:02:00.4 on IOMMU at a8000000
+> Device 0:02:00.4 on IOMMU at a8000000
+> IOMMU: Setting identity map for device 0000:00:1d.7 [0x7f7ee000 - 0x7f7effff]
+> Device 0:00:1d.7 on IOMMU at a8000000
+> Device 0:00:1d.7 on IOMMU at a8000000
+> IOMMU: Prepare 0-16MiB unity mapping for LPC
+> IOMMU: Setting identity map for device 0000:00:1f.0 [0x0 - 0xffffff]
+> Device 0:00:1f.0 on IOMMU at a8000000
+> Device 0:00:1f.0 on IOMMU at a8000000
+> PCI-DMA: Intel(R) Virtualization Technology for Directed I/O
+> Device 0:00:00.0 on IOMMU at a8000000
+> Device 0:00:01.0 on IOMMU at a8000000
+> Device 0:00:02.0 on IOMMU at a8000000
+> Device 0:00:03.0 on IOMMU at a8000000
+> Device 0:00:04.0 on IOMMU at a8000000
+> Device 0:00:05.0 on IOMMU at a8000000
+> Device 0:00:06.0 on IOMMU at a8000000
+> Device 0:00:07.0 on IOMMU at a8000000
+> Device 0:00:08.0 on IOMMU at a8000000
+> Device 0:00:09.0 on IOMMU at a8000000
+> Device 0:00:0a.0 on IOMMU at a8000000
+> Device 0:00:14.0 on IOMMU at a8000000
+> Device 0:00:1c.0 on IOMMU at a8000000
+> Device 0:00:1c.4 on IOMMU at a8000000
+> Device 0:00:1d.0 on IOMMU at a8000000
+> Device 0:00:1d.1 on IOMMU at a8000000
+> Device 0:00:1d.2 on IOMMU at a8000000
+> Device 0:00:1d.3 on IOMMU at a8000000
+> Device 0:00:1d.7 on IOMMU at a8000000
+> Device 0:00:1e.0 on IOMMU at a8000000
+> Device 0:00:1f.0 on IOMMU at a8000000
+> Device 0:04:00.0 on IOMMU at a8000000
+> Device 0:04:00.1 on IOMMU at a8000000
+> Device 0:04:00.2 on IOMMU at a8000000
+> Device 0:04:00.3 on IOMMU at a8000000
+> Device 0:03:00.0 on IOMMU at a8000000
+> Device 0:02:00.0 on IOMMU at a8000000
+> Device 0:02:00.2 on IOMMU at a8000000
+> Device 0:02:00.4 on IOMMU at a8000000
+> Device 0:01:03.0 on IOMMU at a8000000
+> Device 0:50:00.0 on IOMMU at ac000000
+> Device 0:50:01.0 on IOMMU at ac000000
+> Device 0:50:02.0 on IOMMU at ac000000
+> Device 0:50:03.0 on IOMMU at ac000000
+> Device 0:50:04.0 on IOMMU at ac000000
+> Device 0:50:05.0 on IOMMU at ac000000
+> Device 0:50:06.0 on IOMMU at ac000000
+> Device 0:50:07.0 on IOMMU at ac000000
+> Device 0:50:08.0 on IOMMU at ac000000
+> Device 0:50:09.0 on IOMMU at ac000000
+> Device 0:50:0a.0 on IOMMU at ac000000
+> Device 0:50:14.0 on IOMMU at a8000000
+> Device 0:a0:00.0 on IOMMU at b0000000
+> Device 0:a0:01.0 on IOMMU at b0000000
+> Device 0:a0:02.0 on IOMMU at b0000000
+> Device 0:a0:03.0 on IOMMU at b0000000
+> Device 0:a0:04.0 on IOMMU at b0000000
+> Device 0:a0:05.0 on IOMMU at b0000000
+> Device 0:a0:06.0 on IOMMU at b0000000
+> Device 0:a0:07.0 on IOMMU at b0000000
+> Device 0:a0:08.0 on IOMMU at b0000000
+> Device 0:a0:09.0 on IOMMU at b0000000
+> Device 0:a0:0a.0 on IOMMU at b0000000
+> Device 0:a0:14.0 on IOMMU at a8000000
+> Device 0:7c:00.0 on IOMMU at a8000000
+> Device 0:7c:08.0 on IOMMU at a8000000
+> Device 0:82:00.0 on IOMMU at a8000000
+> Device 0:82:08.0 on IOMMU at a8000000
 > 
