@@ -1,73 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198AbaDNM7J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 08:59:09 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:43182 "EHLO extserv.mm-sol.com"
+	id S1754999AbaDNNAS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 09:00:18 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38182 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754209AbaDNM7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 08:59:05 -0400
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>
-Cc: Stanimir Varbanov <svarbanov@mm-sol.com>, linux-arm-msm@vger.kernel.org,
-        Mona Hossain <mhossain@codeaurora.org>,
-        Hariprasad Dhalinarasimha <hnamgund@codeaurora.org>,
-        Zhen Kong <zkong@codeaurora.org>,
-        Niranjana Vishwanathapura <nvishwan@codeaurora.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH v2 9/9] ARM: DT: qcom: Add Qualcomm crypto driver binding document
-Date: Mon, 14 Apr 2014 15:48:45 +0300
-Message-Id: <1397479725-20954-10-git-send-email-svarbanov@mm-sol.com>
-X-Mailer: git-send-email 1.8.4.4
-In-Reply-To: <1397479725-20954-1-git-send-email-svarbanov@mm-sol.com>
-References: <1397479725-20954-1-git-send-email-svarbanov@mm-sol.com>
+	id S1753786AbaDNNAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 09:00:13 -0400
+Message-ID: <534BDBBC.5010701@ti.com>
+Date: Mon, 14 Apr 2014 18:29:40 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Vivek Gautam <gautam.vivek@samsung.com>
+CC: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Subject: Re: [PATCH V4 1/5] phy: Add new Exynos5 USB 3.0 PHY driver
+References: <1396967803-28868-1-git-send-email-gautam.vivek@samsung.com>	<1396967803-28868-2-git-send-email-gautam.vivek@samsung.com>	<534BD447.1080909@ti.com> <CAFp+6iF=SpEax+5KUhZkmtkwp=Pj7LbAHOoySgOwJx_50u6GZQ@mail.gmail.com>
+In-Reply-To: <CAFp+6iF=SpEax+5KUhZkmtkwp=Pj7LbAHOoySgOwJx_50u6GZQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is Qualcomm crypto driver device tree binding documentation
-to be used as a reference example.
 
-Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
----
- .../devicetree/bindings/crypto/qcom-qce.txt        | 25 ++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/crypto/qcom-qce.txt
 
-diff --git a/Documentation/devicetree/bindings/crypto/qcom-qce.txt b/Documentation/devicetree/bindings/crypto/qcom-qce.txt
-new file mode 100644
-index 000000000000..fdd53b184ba8
---- /dev/null
-+++ b/Documentation/devicetree/bindings/crypto/qcom-qce.txt
-@@ -0,0 +1,25 @@
-+Qualcomm crypto engine driver
-+
-+Required properties:
-+
-+- compatible  : should be "qcom,crypto-v5.1"
-+- reg         : specifies base physical address and size of the registers map
-+- clocks      : phandle to clock-controller plus clock-specifier pair
-+- clock-names : "iface" clocks register interface
-+                "bus" clocks data transfer interface
-+                "core" clocks rest of the crypto block
-+- dmas        : DMA specifiers for tx and rx dma channels. For more see
-+                Documentation/devicetree/bindings/dma/dma.txt
-+- dma-names   : DMA request names should be "rx" and "tx"
-+
-+Example:
-+	crypto@fd45a000 {
-+		compatible = "qcom,crypto-v5.1";
-+		reg = <0xfd45a000 0x6000>;
-+		clocks = <&gcc GCC_CE2_AHB_CLK>,
-+			 <&gcc GCC_CE2_AXI_CLK>,
-+			 <&gcc GCC_CE2_CLK>;
-+		clock-names = "iface", "bus", "core";
-+		dmas = <&cryptobam 2>, <&cryptobam 3>;
-+		dma-names = "rx", "tx";
-+	};
--- 
-1.8.4.4
+On Monday 14 April 2014 06:12 PM, Vivek Gautam wrote:
+> Hi,
+> 
+> 
+> On Mon, Apr 14, 2014 at 5:57 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>> Hi,
+>>
+>> On Tuesday 08 April 2014 08:06 PM, Vivek Gautam wrote:
+>>> Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
+>>> The new driver uses the generic PHY framework and will interact
+>>> with DWC3 controller present on Exynos5 series of SoCs.
+>>> Thereby, removing old phy-samsung-usb3 driver and related code
+>>> used untill now which was based on usb/phy framework.
+>>>
+>>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>>> ---
+>>>  .../devicetree/bindings/phy/samsung-phy.txt        |   42 ++
+>>>  drivers/phy/Kconfig                                |   11 +
+>>>  drivers/phy/Makefile                               |    1 +
+>>>  drivers/phy/phy-exynos5-usbdrd.c                   |  668 ++++++++++++++++++++
+>>>  4 files changed, 722 insertions(+)
+>>>  create mode 100644 drivers/phy/phy-exynos5-usbdrd.c
+>>>
+>>> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+>>> index 28f9edb..6d99ba9 100644
+>>> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
+>>> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+>>> @@ -74,3 +74,45 @@ phy-consumer@12340000 {
+>>>
+>>>  Refer to DT bindings documentation of particular PHY consumer devices for more
+>>>  information about required PHYs and the way of specification.
+>>> +
+>>> +Samsung Exynos5 SoC series USB DRD PHY controller
+>>> +--------------------------------------------------
+>>> +
+>>> +Required properties:
+>>> +- compatible : Should be set to one of the following supported values:
+>>> +     - "samsung,exynos5250-usbdrd-phy" - for exynos5250 SoC,
+>>> +     - "samsung,exynos5420-usbdrd-phy" - for exynos5420 SoC.
+>>> +- reg : Register offset and length of USB DRD PHY register set;
+>>> +- clocks: Clock IDs array as required by the controller
+>>> +- clock-names: names of clocks correseponding to IDs in the clock property;
+>>> +            Required clocks:
+>>> +     - phy: main PHY clock (same as USB DRD controller i.e. DWC3 IP clock),
+>>> +            used for register access.
+>>> +     - ref: PHY's reference clock (usually crystal clock), associated by
+>>> +            phy name, used to determine bit values for clock settings
+>>> +            register.
+>>> +     Additional clock required for Exynos5420:
+>>> +     - usb30_sclk_100m: Additional special clock used for PHY operation
+>>> +                        depicted as 'sclk_usbphy30' in CMU of Exynos5420.
+>>> +- samsung,syscon-phandle: phandle for syscon interface, which is used to
+>>> +                       control pmu registers for power isolation.
+>>> +- samsung,pmu-offset: phy power control register offset to pmu-system-controller
+>>> +                   base.
+>>> +- #phy-cells : from the generic PHY bindings, must be 1;
+>>> +
+>>> +For "samsung,exynos5250-usbdrd-phy" and "samsung,exynos5420-usbdrd-phy"
+>>> +compatible PHYs, the second cell in the PHY specifier identifies the
+>>> +PHY id, which is interpreted as follows:
+>>> +  0 - UTMI+ type phy,
+>>> +  1 - PIPE3 type phy,
+>>> +
+>>> +Example:
+>>> +     usb3_phy: usbphy@12100000 {
+>>> +             compatible = "samsung,exynos5250-usbdrd-phy";
+>>> +             reg = <0x12100000 0x100>;
+>>> +             clocks = <&clock 286>, <&clock 1>;
+>>> +             clock-names = "phy", "usb3phy_refclk";
+>>> +             samsung,syscon-phandle = <&pmu_syscon>;
+>>> +             samsung,pmu-offset = <0x704>;
+>>> +             #phy-cells = <1>;
+>>> +     };
+>>> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+>>> index 8d3c49c..d955a05 100644
+>>> --- a/drivers/phy/Kconfig
+>>> +++ b/drivers/phy/Kconfig
+>>> @@ -166,4 +166,15 @@ config PHY_XGENE
+>>>       help
+>>>         This option enables support for APM X-Gene SoC multi-purpose PHY.
+>>>
+>>> +config PHY_EXYNOS5_USBDRD
+>>> +     tristate "Exynos5 SoC series USB DRD PHY driver"
+>>> +     depends on ARCH_EXYNOS5 && OF
+>>> +     depends on HAS_IOMEM
+>>> +     select GENERIC_PHY
+>>> +     select MFD_SYSCON
+>>
+>> Lets try to avoid select in Kconfig. We've got enough problems with that.
+> 
+> I hope you meant with "select MFD_SYSCON".
+> We are referencing the syscon for accessing pmu reg, for which we need
+> this config to be selected.
+> Other Exynos phy drivers also need this config and for that they have
+> selected this.
+> 
+> Do you want me to do it any other way ?
 
+depends on is one option.
+
+Thanks
+Kishon
