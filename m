@@ -1,56 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935AbaDNNmX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 09:42:23 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14428 "EHLO mga02.intel.com"
+	id S1754877AbaDNNmP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 09:42:15 -0400
+Received: from datenkhaos.de ([81.89.99.198]:57230 "EHLO datenkhaos.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751803AbaDNNmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 09:42:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,857,1389772800"; 
-   d="scan'208";a="492591676"
-Message-ID: <1397482917.11914.128.camel@smile.fi.intel.com>
-Subject: Re: [PATCH v3 6/8] DMA: Freescale: change descriptor release
- process for supporting async_tx
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Hongbo Zhang <hongbo.zhang@freescale.com>
-Cc: vkoul@infradead.org, dan.j.williams@intel.com, dmaengine@vger.kernel.org,
-        scottwood@freescale.com, leo.li@freescale.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Date: Mon, 14 Apr 2014 16:41:57 +0300
-In-Reply-To: <5347A8F2.4050603@freescale.com>
-References: <1397113805-24171-1-git-send-email-hongbo.zhang@freescale.com>
-	 <1397113805-24171-7-git-send-email-hongbo.zhang@freescale.com>
-	 <1397131003.11914.108.camel@smile.fi.intel.com>
-	 <5347A12F.8040006@freescale.com> <5347A8F2.4050603@freescale.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
+	id S1752562AbaDNNmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 09:42:13 -0400
+X-Greylist: delayed 465 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Apr 2014 09:42:12 EDT
+Date: Mon, 14 Apr 2014 15:34:24 +0200
+From: Johannes Hirte <johannes.hirte@datenkhaos.de>
+To: Josh Cartwright <joshc@codeaurora.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH -next] slub: Replace __this_cpu_inc usage w/ SLUB_STATS
+Message-ID: <20140414153424.0eca4c7d@datenkhaos.de>
+In-Reply-To: <20140306182941.GH18529@joshc.qualcomm.com>
+References: <20140306194821.3715d0b6212cc10415374a68@canb.auug.org.au>
+	<20140306155316.GG18529@joshc.qualcomm.com>
+	<20140306182941.GH18529@joshc.qualcomm.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-04-11 at 16:33 +0800, Hongbo Zhang wrote:
+On Thu, 6 Mar 2014 12:29:41 -0600
+Josh Cartwright <joshc@codeaurora.org> wrote:
 
-> >>> +         * hardware channel, subsequent descriptors are either in
-> >>> +         * process or have not been submitted
-> >> Dot at the eol. Check in all comments.
-> >
-> > Even though I saw there are other comments without the dots, I think 
-> > it is better to have it.
-> > Thanks, all.
-> >
-> Hmm... think it again, it it really necessary to have it?
-> Even I have it in my patch, there are already so many comments exists 
-> without it.
+> On Thu, Mar 06, 2014 at 09:53:16AM -0600, Josh Cartwright wrote:
+> > Booting on my Samsung Series 9 laptop gives me loads and loads of
+> > BUGs triggered by __this_cpu_add(), making making the system
+> > completely unusable:
+> > 
+> > [    5.808326] BUG: using __this_cpu_add() in preemptible
+> > [00000000] code: swapper/0/1 [    5.812331] caller is
+> > __this_cpu_preempt_check+0x2b/0x30 [    5.815654] CPU: 0 PID: 1
+> > Comm: swapper/0 Not tainted
+> > 3.14.0-rc5-next-20140306-joshc-08290-g0ffb2fe #1 [    5.819553]
+> > Hardware name: SAMSUNG ELECTRONICS CO., LTD.
+> > 900X3C/900X3D/900X3E/900X4C/900X4D/NP900X3E-A02US, BIOS P07ABK
+> > 04/09/2013 [    5.823558]  ffff8801182157c0 ffff880118215790
+> > ffffffff81a64cec 0000000000000000 [    5.827177]  ffff8801182157b0
+> > ffffffff81462360 ffff8800c3d553e0 ffffea00030f5500 [    5.830744]
+> > ffff8801182157e8 ffffffff814623bb 635f736968745f5f 29286464615f7570
+> > [    5.834134] Call Trace: [    5.836848]  [<ffffffff81a64cec>]
+> > dump_stack+0x4e/0x7a [    5.839943]  [<ffffffff81462360>]
+> > check_preemption_disabled+0xd0/0xe0 [    5.842997]
+> > [<ffffffff814623bb>] __this_cpu_preempt_check+0x2b/0x30
+> > [    5.846022]  [<ffffffff81a6331d>] __slab_free+0x38/0x590
+> > [    5.848863]  [<ffffffff811759dd>] ? get_parent_ip+0xd/0x50
+> > [    5.850467] BUG: using __this_cpu_add() in preemptible
+> > [00000000] code: khubd/36 [    5.850472] caller is
+> > __this_cpu_preempt_check+0x2b/0x30 [    5.859125]
+> > [<ffffffff81175b3b>] ? preempt_count_sub+0x6b/0xf0 [    5.862521]
+> > [<ffffffff81a7175a>] ? _raw_spin_unlock_irqrestore+0x4a/0x80
+> > [    5.865599]  [<ffffffff81462e5e>] ?
+> > __debug_check_no_obj_freed+0x13e/0x240 [    5.868738]
+> > [<ffffffff814623bb>] ? __this_cpu_preempt_check+0x2b/0x30
+> > [    5.871799]  [<ffffffff81287327>] kfree+0x2f7/0x300
+> 
+> FWIW, it looks like the magic combination of options are:
+> 	- CONFIG_DEBUG_PREEMPT=y
+> 	- CONFIG_SLUB=y
+> 	- CONFIG_SLUB_STATS=y
+> 
+> Looks like the new percpu() checks are complaining about SLUB's use of
+> __this_cpu_inc() for maintaining it's stat counters.  The below patch
+> seems to fix it.
+> 
+> Although, I'm wondering how exact these statistics need to be.  Is
+> making them preemption safe even a concern?
+> 
 
-For my opinion is better to keep style in your patches. Better if it
-commonly used style in the driver. But comment against comments is
-really minor thing.
+Looks like there is a similar issue in touch_softlockup_watchdog too:
 
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Apr 14 14:56:01 localhost kernel: BUG: using __this_cpu_write() in
+preemptible [00000000] code: systemd-udevd/1307
+Apr 14 14:56:01 localhost kernel: caller is
+touch_softlockup_watchdog+0x11/0x1f
+Apr 14 14:56:01 localhost kernel: CPU: 0 PID: 1307 Comm: systemd-udevd
+Tainted: G        W     3.15.0-rc1 #44
+Apr 14 14:56:01 localhost kernel: Hardware name: Hewlett-Packard HP
+ProBook 6450b/146D, BIOS 68CDE Ver. F.23 06/13/2012
+Apr 14 14:56:01 localhost kernel: 0000000000000000 ffffffff815b6385
+0000000000000000 ffffffff813005a4
+Apr 14 14:56:01 localhost kernel: 0000000000000000 0000000000000032
+00000000000003e8 ffffffff810c63bc
+Apr 14 14:56:01 localhost kernel: ffffffff81332592 ffff8800b4ea8800
+0000000000000000 ffff8800b686e030
+Apr 14 14:56:01 localhost kernel: Call Trace:
+Apr 14 14:56:01 localhost kernel: [<ffffffff815b6385>] ?
+dump_stack+0x4a/0x75
+Apr 14 14:56:01 localhost kernel: [<ffffffff813005a4>] ?
+check_preemption_disabled+0xd6/0xe5
+Apr 14 14:56:01 localhost kernel: [<ffffffff810c63bc>] ?
+touch_softlockup_watchdog+0x11/0x1f
+Apr 14 14:56:01 localhost kernel: [<ffffffff81332592>] ?
+acpi_os_stall+0x2f/0x36
+Apr 14 14:56:01 localhost kernel: [<ffffffff8134b64a>] ?
+acpi_ex_system_do_stall+0x34/0x37
+Apr 14 14:56:01 localhost kernel: [<ffffffff813411d4>] ?
+acpi_ds_exec_end_op+0xcc/0x3d5
+Apr 14 14:56:01 localhost kernel: [<ffffffff81351fcf>] ?
+acpi_ps_parse_loop+0x50c/0x564
+Apr 14 14:56:01 localhost kernel: [<ffffffff81352a21>] ?
+acpi_ps_parse_aml+0x93/0x26f
+Apr 14 14:56:01 localhost kernel: [<ffffffff813531eb>] ?
+acpi_ps_execute_method+0x1b6/0x25f
+Apr 14 14:56:01 localhost kernel: [<ffffffff8134debe>] ?
+acpi_ns_evaluate+0x1ba/0x247
+Apr 14 14:56:01 localhost kernel: [<ffffffff81350557>] ?
+acpi_evaluate_object+0x122/0x231
+Apr 14 14:56:01 localhost kernel: [<ffffffffa005a230>] ?
+lis3lv02d_acpi_init+0x1c/0x27 [hp_accel]
+Apr 14 14:56:01 localhost kernel: [<ffffffffa005320a>] ?
+lis3lv02d_poweron+0xe/0xca [lis3lv02d]
+Apr 14 14:56:01 localhost kernel: [<ffffffffa0053b16>] ?
+lis3lv02d_init_device+0x22a/0x4e5 [lis3lv02d]
+Apr 14 14:56:01 localhost kernel: [<ffffffffa005a347>] ?
+lis3lv02d_add+0x10c/0x18a [hp_accel]
+Apr 14 14:56:01 localhost kernel: [<ffffffff81335d82>] ?
+acpi_device_probe+0x3d/0xeb
+Apr 14 14:56:01 localhost kernel: [<ffffffff81418e8b>] ?
+driver_probe_device+0x97/0x1b8
+Apr 14 14:56:01 localhost kernel: [<ffffffff8141903a>] ?
+__driver_attach+0x58/0x78
+Apr 14 14:56:01 localhost kernel: [<ffffffff81418fe2>] ?
+__device_attach+0x36/0x36
+Apr 14 14:56:01 localhost kernel: [<ffffffff81417650>] ?
+bus_for_each_dev+0x73/0x7d
+Apr 14 14:56:01 localhost kernel: [<ffffffff814186f4>] ?
+bus_add_driver+0x105/0x1ce
+Apr 14 14:56:01 localhost kernel: [<ffffffff81419577>] ?
+driver_register+0x88/0xc0
+Apr 14 14:56:01 localhost kernel: [<ffffffffa005f000>] ?
+0xffffffffa005efff
+Apr 14 14:56:01 localhost kernel: [<ffffffff8100029e>] ?
+do_one_initcall+0x7d/0x101
+Apr 14 14:56:01 localhost kernel: [<ffffffff815be854>] ?
+notifier_call_chain+0x37/0x57
+Apr 14 14:56:01 localhost kernel: [<ffffffff81076cd2>] ?
+__blocking_notifier_call_chain+0x53/0x60
+Apr 14 14:56:01 localhost kernel: [<ffffffff810b0740>] ?
+load_module+0x19f6/0x1ba7
+Apr 14 14:56:01 localhost kernel: [<ffffffff810ad754>] ?
+module_flags+0x74/0x74
+Apr 14 14:56:01 localhost kernel: [<ffffffff810b09de>] ?
+SyS_finit_module+0x4f/0x63
+Apr 14 14:56:01 localhost kernel: [<ffffffff815c199f>] ?
+tracesys+0xdd/0xe2
 
+kernel/watchdog.c:
+
+void touch_softlockup_watchdog(void)
+{
+        __this_cpu_write(watchdog_touch_ts, 0);
+}
+EXPORT_SYMBOL(touch_softlockup_watchdog);
+
+Don't know if the change to this_cpu_write() is the right way here too.
+
+regards,
+  Johannes
