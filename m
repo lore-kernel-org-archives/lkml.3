@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660AbaDNJxv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 05:53:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60173 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751301AbaDNJwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 05:52:43 -0400
-Date: Mon, 14 Apr 2014 11:52:10 +0200
-From: Igor Mammedov <imammedo@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, bp@suse.de,
-        paul.gortmaker@windriver.com, JBeulich@suse.com, prarit@redhat.com,
-        drjones@redhat.com, toshi.kani@hp.com, riel@redhat.com,
-        gong.chen@linux.intel.com, andi@firstfloor.org, lenb@kernel.org,
-        rjw@rjwysocki.net, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v3 1/5] x86: initialize secondary CPU only if master CPU
- will wait for it
-Message-ID: <20140414115210.51193098@thinkpad>
-In-Reply-To: <20140414091600.GA19771@gmail.com>
-References: <1397150061-29735-1-git-send-email-imammedo@redhat.com>
-	<1397150061-29735-2-git-send-email-imammedo@redhat.com>
-	<20140414091600.GA19771@gmail.com>
+	id S1754543AbaDNJyn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 05:54:43 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:42701 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314AbaDNJym (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 05:54:42 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <linux-arm-kernel@lists.infradead.org>, Mark Brown <broonie@kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>
+CC: <linux-kernel@vger.kernel.org>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH v4 1/2] ASoC: sam9g20_wm8731: remove useless mach/gpio.h
+Date: Mon, 14 Apr 2014 11:54:38 +0200
+Message-ID: <cb4eece4e6fadca4627a869bfe6efb3d41c66700.1397468934.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.8.2.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Apr 2014 11:16:00 +0200
-Ingo Molnar <mingo@kernel.org> wrote:
+This include file is about to disapear. In addition it is
+useless for this code. So it is time to remove it.
 
-> 
-> * Igor Mammedov <imammedo@redhat.com> wrote:
-> 
-> >  	/*
-> > +	 * wait for ACK from master CPU before continuing
-> > +	 * with AP initialization
-> > +	 */
-> > +	cpumask_set_cpu(cpu, cpu_initialized_mask);
-> > +	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
-> > +		cpu_relax();
-> 
-> > +	/*
-> > +	 * wait for ACK from master CPU before continuing
-> > +	 * with AP initialization
-> > +	 */
-> > +	cpumask_set_cpu(cpu, cpu_initialized_mask);
-> > +	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
-> > +		cpu_relax();
-> 
-> That repetitive pattern could be stuck into a properly named helper 
-> inline function.
-sure
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+Hi Mark,
 
-> (Also, before the cpumask_set_cpu() we should probably do a WARN_ON() 
-> if the bit is already set.)
-The reason why there is no any WARN_ON or likes is that printk is quite
-complicated, takes looks and so on. So it's not safe at this point since
-CPU could be shot down by any time by INIT/SIPI until it's out of 
-cpu_callout_mask loop.
-That said it's possible to add WARN_ON in do_boot_cpu() before
-cpu_initialized_mask is cleared, to achieve the same effect,
-so I'll stick it there.
+This patch is needed before we integrate the folling one. It will allow us to
+remove the mach/gpio.h header file for AT91 and will be a move forward in the
+single zImage direction.
 
+So, can you have a look and if you agree, we may add both in arm-soc during
+the 3.15-rc phase...
 
-> 
-> Thanks,
-> 
-> 	Ingo
+ Thanks, bye
 
+ sound/soc/atmel/sam9g20_wm8731.c | 1 -
+ 1 file changed, 1 deletion(-)
 
+diff --git a/sound/soc/atmel/sam9g20_wm8731.c b/sound/soc/atmel/sam9g20_wm8731.c
+index 174bd546c08b..bb1149126c54 100644
+--- a/sound/soc/atmel/sam9g20_wm8731.c
++++ b/sound/soc/atmel/sam9g20_wm8731.c
+@@ -48,7 +48,6 @@
+ 
+ #include <asm/mach-types.h>
+ #include <mach/hardware.h>
+-#include <mach/gpio.h>
+ 
+ #include "../codecs/wm8731.h"
+ #include "atmel-pcm.h"
 -- 
-Regards,
-  Igor
+1.8.2.2
+
