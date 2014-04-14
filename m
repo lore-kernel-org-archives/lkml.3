@@ -1,123 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400AbaDNQZH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:25:07 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:41049 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754839AbaDNQZB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:25:01 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de
-Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, Arvind.Chauhan@arm.com,
-        linaro-networking@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 08/38] tick-oneshot: move tick_is_oneshot_available() to tick-oneshot.c
-Date: Mon, 14 Apr 2014 21:53:30 +0530
-Message-Id: <9792e3ff835266ba2c1678867e88ac3606a57cd2.1397492345.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1397492345.git.viresh.kumar@linaro.org>
-References: <cover.1397492345.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1397492345.git.viresh.kumar@linaro.org>
-References: <cover.1397492345.git.viresh.kumar@linaro.org>
+	id S1755395AbaDNQZA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:25:00 -0400
+Received: from verein.lst.de ([213.95.11.211]:49639 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754839AbaDNQYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 12:24:54 -0400
+Date: Mon, 14 Apr 2014 18:24:51 +0200
+From: Torsten Duwe <duwe@lst.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        ingo.tuchscherer@de.ibm.com, linux-kernel@vger.kernel.org,
+        Hans-Georg Markgraf <MGRF@de.ibm.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Joe Perches <joe@perches.com>
+Subject: Re: [PATCH v3 00/03]: hwrng: an in-kernel rngd
+Message-ID: <20140414162451.GE29351@lst.de>
+References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de> <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com> <20140414160211.GE711@lst.de> <7b22b881-9359-42c9-a632-6a8cbdb13b71@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7b22b881-9359-42c9-a632-6a8cbdb13b71@email.android.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is tick-oneshot specific routine and hence must be there in this file. Also
-it isn't used outside of kernel/time/ and so moving its declaration to
-tick-internal.h.
+On Mon, Apr 14, 2014 at 09:09:14AM -0700, H. Peter Anvin wrote:
+> I think the default should be zero, so each hwrng driver maintainer would have to consider what guarantees that particular driver can give.  If anything 50% ought to be the maximum.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- include/linux/tick.h        |  1 -
- kernel/time/tick-common.c   | 14 --------------
- kernel/time/tick-internal.h |  2 ++
- kernel/time/tick-oneshot.c  | 14 ++++++++++++++
- 4 files changed, 16 insertions(+), 15 deletions(-)
+Repost of v4 just for patch 03/03 is on its way then, defaulting to 0
+(off), which happens to be the old behaviour, which I think I've also
+expressed my sympathy for already.
 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index 98065e5..b8ee6f4 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -84,7 +84,6 @@ struct tick_sched {
- };
- 
- extern void __init tick_init(void);
--extern int tick_is_oneshot_available(void);
- 
- DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
- static inline struct tick_device *tick_get_device(int cpu)
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index b4fdb28..298467e 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -53,20 +53,6 @@ int tick_do_timer_cpu __read_mostly = TICK_DO_TIMER_BOOT;
- /*
-  * Debugging: see timer_list.c
-  */
--/**
-- * tick_is_oneshot_available - check for a oneshot capable event device
-- */
--int tick_is_oneshot_available(void)
--{
--	struct clock_event_device *dev = tick_get_cpu_device()->evtdev;
--
--	if (!dev || !(dev->features & CLOCK_EVT_FEAT_ONESHOT))
--		return 0;
--	if (!(dev->features & CLOCK_EVT_FEAT_C3STOP))
--		return 1;
--	return tick_broadcast_oneshot_available();
--}
--
- /*
-  * Periodic tick
-  */
-diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
-index 57c1a76..09f4307 100644
---- a/kernel/time/tick-internal.h
-+++ b/kernel/time/tick-internal.h
-@@ -42,6 +42,7 @@ extern void tick_setup_oneshot(struct clock_event_device *newdev,
- extern int tick_program_event(ktime_t expires, int force);
- extern void tick_oneshot_notify(void);
- extern int tick_switch_to_oneshot(void (*handler)(struct clock_event_device *));
-+extern int tick_is_oneshot_available(void);
- extern void tick_resume_oneshot(void);
- # ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
- extern void tick_broadcast_setup_oneshot(struct clock_event_device *bc);
-@@ -96,6 +97,7 @@ static inline int tick_resume_broadcast_oneshot(struct clock_event_device *bc)
- 	return 0;
- }
- static inline int tick_broadcast_oneshot_active(void) { return 0; }
-+static inline int tick_is_oneshot_available(void) { return 0; };
- static inline bool tick_broadcast_oneshot_available(void) { return false; }
- #endif /* !TICK_ONESHOT */
- 
-diff --git a/kernel/time/tick-oneshot.c b/kernel/time/tick-oneshot.c
-index 39492f1..cb158f7 100644
---- a/kernel/time/tick-oneshot.c
-+++ b/kernel/time/tick-oneshot.c
-@@ -95,6 +95,20 @@ int tick_oneshot_mode_active(void)
- 	return tick_get_cpu_device()->mode == TICKDEV_MODE_ONESHOT;
- }
- 
-+/**
-+ * tick_is_oneshot_available - check for a oneshot capable event device
-+ */
-+int tick_is_oneshot_available(void)
-+{
-+	struct clock_event_device *dev = tick_get_cpu_device()->evtdev;
-+
-+	if (!dev || !(dev->features & CLOCK_EVT_FEAT_ONESHOT))
-+		return 0;
-+	if (!(dev->features & CLOCK_EVT_FEAT_C3STOP))
-+		return 1;
-+	return tick_broadcast_oneshot_available();
-+}
-+
- #ifdef CONFIG_HIGH_RES_TIMERS
- /**
-  * tick_init_highres - switch to high resolution mode
--- 
-1.7.12.rc2.18.g61b472e
+	Torsten
 
