@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793AbaDNJ4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 05:56:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18078 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751003AbaDNJ4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 05:56:30 -0400
-Date: Mon, 14 Apr 2014 11:56:00 +0200
-From: Igor Mammedov <imammedo@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, bp@suse.de,
-        paul.gortmaker@windriver.com, JBeulich@suse.com, prarit@redhat.com,
-        drjones@redhat.com, toshi.kani@hp.com, riel@redhat.com,
-        gong.chen@linux.intel.com, andi@firstfloor.org, lenb@kernel.org,
-        rjw@rjwysocki.net, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v3 3/5] x86: fix list corruption on CPU hotplug
-Message-ID: <20140414115600.0d5dbbb5@thinkpad>
-In-Reply-To: <20140414091954.GB19771@gmail.com>
-References: <1397150061-29735-1-git-send-email-imammedo@redhat.com>
-	<1397150061-29735-4-git-send-email-imammedo@redhat.com>
-	<20140414091954.GB19771@gmail.com>
+	id S1754358AbaDNKAF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 06:00:05 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57612 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750968AbaDNKAD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 06:00:03 -0400
+Date: Mon, 14 Apr 2014 11:55:53 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] PHY: sunxi: replace IS_ERR and PTR_ERR with
+ PTR_ERR_OR_ZERO
+Message-ID: <20140414095553.GB28585@lukather>
+References: <1397205483-24395-1-git-send-email-duanj.fnst@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ri7MIv52hxsKkbzo"
+Content-Disposition: inline
+In-Reply-To: <1397205483-24395-1-git-send-email-duanj.fnst@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Apr 2014 11:19:54 +0200
-Ingo Molnar <mingo@kernel.org> wrote:
 
-> 
-> * Igor Mammedov <imammedo@redhat.com> wrote:
-> 
-> > currently if AP wake up is failed, master CPU marks AP as not present
-> > in do_boot_cpu() by calling set_cpu_present(cpu, false).
-> > That leads to following list corruption on the next physical CPU
-> > hotplug:
-> 
-> Shouldn't this fix precede the main change to the smp bootup logic?
-> 
-> Can this bug trigger with current upstream kernels?
-That's not impossible, tests showed that with current kernel there will
-be other problems due wild AP running around.
+--ri7MIv52hxsKkbzo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'll reorder patch anyway.
+On Fri, Apr 11, 2014 at 04:38:03PM +0800, Duan Jiong wrote:
+> This patch fixes coccinelle error regarding usage of IS_ERR and
+> PTR_ERR instead of PTR_ERR_OR_ZERO.
+>=20
+> Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 
-> 
-> Thanks,
-> 
-> 	Ingo
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
+You should probably send it to Kishon so that he can merge it though.
 
--- 
-Regards,
-  Igor
+Thanks!
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--ri7MIv52hxsKkbzo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTS7CpAAoJEBx+YmzsjxAgGaQQALJqy/RUqsO0gqXnoEa/4wrp
+KYpjmu9kNhaa+JXJyCSDHn9E0erY0KyczIEjM1DlIYOIOyKot6fSHrPIJ3MSk0ZB
+BiXN3h+bBPZ//+9uq/4aYpUebRoJHBrlq/Ji6MuSiP8Yq9J/xBIK3yU9t7jquZ0p
+5Bs1B1r4Q7so5KAkdNcNcN+O0MxBCHB1C+7LnlUFIdYohQYLDls3VdvUZn0BUlWt
+COOzdYSRvYhXG8cTgqO4E6GxP9WhcX3GxWvh7qXfYrzWiBzhTj8jNKA+ROn55iJP
+ndZZsSj5qOuJw28gnYvhSzqCAjRn9RW66uhkYOU1+YtOvhuldXPg2ESsuRC0Q2kO
+eSKl4+h0GtejBF1SPLcSNI/y5CHljrFjT9NT4RG6OtPT2+fMrSw+e0ShkmfPg4ek
+k1TC1h4bSQjuqmkq9GQV26k08dvf+QpsyyKigyQ8bCiK+NuPJVWClsnGzgwmMixw
+9s5aUPwbZBthyuc8q6G1xdKPqPyxQnx+u5EviuojtY0ecYjIpSYTjppbiaI+fUlL
+94HV2g+Hz6oJWtY5wgY+y2cVV3T0fB5IgM8YFhxhuO6WP/Cq6bF6kHwZ2hv5mHY5
+cwUQvss5vEgm9RHK8bGNrFxo5Fk/eiEV8u2b6GCaqD1K+EhdPmgC+KVHMTsneTPK
+JTjF6Phu8yWlrVq1g1NP
+=d0qN
+-----END PGP SIGNATURE-----
+
+--ri7MIv52hxsKkbzo--
