@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755245AbaDNPwu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 11:52:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33567 "EHLO mx1.redhat.com"
+	id S1755258AbaDNPxP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 11:53:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28294 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751194AbaDNPwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 11:52:44 -0400
+	id S1755220AbaDNPwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 11:52:47 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
         David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 2/5] perf tools: Allocate thread map_groups's dynamically
-Date: Mon, 14 Apr 2014 17:52:00 +0200
-Message-Id: <1397490723-1992-3-git-send-email-jolsa@redhat.com>
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 3/5] perf tools: Reference count map_groups objects
+Date: Mon, 14 Apr 2014 17:52:01 +0200
+Message-Id: <1397490723-1992-4-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1397490723-1992-1-git-send-email-jolsa@redhat.com>
 References: <1397490723-1992-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,194 +27,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Moving towards sharing map groups within a process threads.
-
-Because of this we need the map groups to be dynamically allocated. No
-other functional change is intended in here.
-
-Based on a patch by Jiri Olsa, but this time _just_ making the
-conversion from statically allocating thread->mg to turning it into a
-pointer and instead of initializing it at thread's constructor,
-introduce a constructor/destructor for the map_groups class and
-call at thread creation time.
-
-Later we will introduce the get/put methods when we move to sharing
-those map_groups, when the get/put refcounting semantics will be needed.
+We will share it among threads in the same process.
 
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Don Zickus <dzickus@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/arch/x86/tests/dwarf-unwind.c |  2 +-
- tools/perf/ui/stdio/hist.c               |  2 +-
- tools/perf/util/event.c                  |  2 +-
- tools/perf/util/map.c                    | 16 ++++++++++++++++
- tools/perf/util/map.h                    |  3 +++
- tools/perf/util/thread.c                 | 18 ++++++++++++------
- tools/perf/util/thread.h                 |  2 +-
- 7 files changed, 35 insertions(+), 10 deletions(-)
+ tools/perf/util/map.c    | 7 +++++++
+ tools/perf/util/map.h    | 9 +++++++++
+ tools/perf/util/thread.c | 2 +-
+ 3 files changed, 17 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/arch/x86/tests/dwarf-unwind.c b/tools/perf/arch/x86/tests/dwarf-unwind.c
-index b602ad9..d804511 100644
---- a/tools/perf/arch/x86/tests/dwarf-unwind.c
-+++ b/tools/perf/arch/x86/tests/dwarf-unwind.c
-@@ -23,7 +23,7 @@ static int sample_ustack(struct perf_sample *sample,
- 
- 	sp = (unsigned long) regs[PERF_REG_X86_SP];
- 
--	map = map_groups__find(&thread->mg, MAP__FUNCTION, (u64) sp);
-+	map = map_groups__find(thread->mg, MAP__FUNCTION, (u64) sp);
- 	if (!map) {
- 		pr_debug("failed to get stack map\n");
- 		return -1;
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index d59893e..9eccf7f 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -495,7 +495,7 @@ print_entries:
- 			break;
- 
- 		if (h->ms.map == NULL && verbose > 1) {
--			__map_groups__fprintf_maps(&h->thread->mg,
-+			__map_groups__fprintf_maps(h->thread->mg,
- 						   MAP__FUNCTION, verbose, fp);
- 			fprintf(fp, "%.10s end\n", graph_dotted_line);
- 		}
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 9d12aa6..dbcaea1 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -699,7 +699,7 @@ void thread__find_addr_map(struct thread *thread,
- 			   enum map_type type, u64 addr,
- 			   struct addr_location *al)
- {
--	struct map_groups *mg = &thread->mg;
-+	struct map_groups *mg = thread->mg;
- 	bool load_map = false;
- 
- 	al->machine = machine;
 diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 39cd2d0..ae4c5e1 100644
+index ae4c5e1..ba5f5c0c 100644
 --- a/tools/perf/util/map.c
 +++ b/tools/perf/util/map.c
-@@ -358,6 +358,22 @@ void map_groups__exit(struct map_groups *mg)
+@@ -323,6 +323,7 @@ void map_groups__init(struct map_groups *mg)
+ 		INIT_LIST_HEAD(&mg->removed_maps[i]);
  	}
+ 	mg->machine = NULL;
++	mg->refcnt = 1;
  }
  
-+struct map_groups *map_groups__new(void)
+ static void maps__delete(struct rb_root *maps)
+@@ -374,6 +375,12 @@ void map_groups__delete(struct map_groups *mg)
+ 	free(mg);
+ }
+ 
++void map_groups__put(struct map_groups *mg)
 +{
-+	struct map_groups *mg = malloc(sizeof(*mg));
-+
-+	if (mg != NULL)
-+		map_groups__init(mg);
-+
-+	return mg;
-+}
-+
-+void map_groups__delete(struct map_groups *mg)
-+{
-+	map_groups__exit(mg);
-+	free(mg);
++	if (--mg->refcnt == 0)
++		map_groups__delete(mg);
 +}
 +
  void map_groups__flush(struct map_groups *mg)
  {
  	int type;
 diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index f00f058..1073e2d 100644
+index 1073e2d..d6445b2 100644
 --- a/tools/perf/util/map.h
 +++ b/tools/perf/util/map.h
-@@ -61,6 +61,9 @@ struct map_groups {
+@@ -59,11 +59,20 @@ struct map_groups {
+ 	struct rb_root	 maps[MAP__NR_TYPES];
+ 	struct list_head removed_maps[MAP__NR_TYPES];
  	struct machine	 *machine;
++	int		 refcnt;
  };
  
-+struct map_groups *map_groups__new(void);
-+void map_groups__delete(struct map_groups *mg);
+ struct map_groups *map_groups__new(void);
+ void map_groups__delete(struct map_groups *mg);
+ 
++static inline struct map_groups *map_groups__get(struct map_groups *mg)
++{
++	++mg->refcnt;
++	return mg;
++}
++
++void map_groups__put(struct map_groups *mg);
 +
  static inline struct kmap *map__kmap(struct map *map)
  {
  	return (struct kmap *)(map + 1);
 diff --git a/tools/perf/util/thread.c b/tools/perf/util/thread.c
-index 3ce0498..dc51d16 100644
+index dc51d16..b501848 100644
 --- a/tools/perf/util/thread.c
 +++ b/tools/perf/util/thread.c
-@@ -15,7 +15,10 @@ struct thread *thread__new(pid_t pid, pid_t tid)
- 	struct thread *thread = zalloc(sizeof(*thread));
- 
- 	if (thread != NULL) {
--		map_groups__init(&thread->mg);
-+		thread->mg = map_groups__new();
-+		if (thread->mg == NULL)
-+			goto out_free;
-+
- 		thread->pid_ = pid;
- 		thread->tid = tid;
- 		thread->ppid = -1;
-@@ -37,6 +40,8 @@ struct thread *thread__new(pid_t pid, pid_t tid)
- 	return thread;
- 
- err_thread:
-+	map_groups__delete(thread->mg);
-+out_free:
- 	free(thread);
- 	return NULL;
- }
-@@ -45,7 +50,8 @@ void thread__delete(struct thread *thread)
+@@ -50,7 +50,7 @@ void thread__delete(struct thread *thread)
  {
  	struct comm *comm, *tmp;
  
--	map_groups__exit(&thread->mg);
-+	map_groups__delete(thread->mg);
-+	thread->mg = NULL;
+-	map_groups__delete(thread->mg);
++	map_groups__put(thread->mg);
+ 	thread->mg = NULL;
  	list_for_each_entry_safe(comm, tmp, &thread->comm_list, list) {
  		list_del(&comm->list);
- 		comm__free(comm);
-@@ -111,13 +117,13 @@ int thread__comm_len(struct thread *thread)
- size_t thread__fprintf(struct thread *thread, FILE *fp)
- {
- 	return fprintf(fp, "Thread %d %s\n", thread->tid, thread__comm_str(thread)) +
--	       map_groups__fprintf(&thread->mg, verbose, fp);
-+	       map_groups__fprintf(thread->mg, verbose, fp);
- }
- 
- void thread__insert_map(struct thread *thread, struct map *map)
- {
--	map_groups__fixup_overlappings(&thread->mg, map, verbose, stderr);
--	map_groups__insert(&thread->mg, map);
-+	map_groups__fixup_overlappings(thread->mg, map, verbose, stderr);
-+	map_groups__insert(thread->mg, map);
- }
- 
- int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp)
-@@ -135,7 +141,7 @@ int thread__fork(struct thread *thread, struct thread *parent, u64 timestamp)
- 	}
- 
- 	for (i = 0; i < MAP__NR_TYPES; ++i)
--		if (map_groups__clone(&thread->mg, &parent->mg, i) < 0)
-+		if (map_groups__clone(thread->mg, parent->mg, i) < 0)
- 			return -ENOMEM;
- 
- 	thread->ppid = parent->tid;
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index 9b29f08..bee1eb0 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -13,7 +13,7 @@ struct thread {
- 		struct rb_node	 rb_node;
- 		struct list_head node;
- 	};
--	struct map_groups	mg;
-+	struct map_groups	*mg;
- 	pid_t			pid_; /* Not all tools update this */
- 	pid_t			tid;
- 	pid_t			ppid;
 -- 
 1.8.3.1
 
