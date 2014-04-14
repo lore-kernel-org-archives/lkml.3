@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936AbaDNPVu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 11:21:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34242 "EHLO
+	id S1754986AbaDNPX5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 11:23:57 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34244 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488AbaDNPVs (ORCPT
+	with ESMTP id S1754493AbaDNPVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 11:21:48 -0400
+	Mon, 14 Apr 2014 11:21:49 -0400
 From: Philipp Zabel <p.zabel@pengutronix.de>
 To: devel@driverdev.osuosl.org, Russell King <rmk+kernel@arm.linux.org.uk>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
         kernel@pengutronix.de, Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH 7/7] imx-drm: ipuv3-crtc: Change display enable/disable order
-Date: Mon, 14 Apr 2014 17:21:35 +0200
-Message-Id: <1397488895-17930-8-git-send-email-p.zabel@pengutronix.de>
+Subject: [PATCH 5/7] imx-drm: ipu-dp: Split disabling the DP foreground channel from disabling the DP module
+Date: Mon, 14 Apr 2014 17:21:33 +0200
+Message-Id: <1397488895-17930-6-git-send-email-p.zabel@pengutronix.de>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397488895-17930-1-git-send-email-p.zabel@pengutronix.de>
 References: <1397488895-17930-1-git-send-email-p.zabel@pengutronix.de>
@@ -26,50 +26,163 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that ipu_dc_disable_channel correctly waits for the channel to finish,
-we can reorder the enable/disable order to first stop the DC and DI and
-only then disable the IDMAC. Enabling is done the other way around: IDMAC
-first, then DC, then DI.
-
-This avoids an issue where sometimes the channel would not correctly start,
-leading to non-working LVDS displays.
+The former has to be done before disabling the DMFC, the latter has to be
+done afterwards. Otherwise the DMFC FIFOs never get cleared properly.
 
 Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 ---
- drivers/staging/imx-drm/ipuv3-crtc.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h |  2 +
+ drivers/staging/imx-drm/ipu-v3/ipu-dp.c     | 68 +++++++++++++++++++----------
+ drivers/staging/imx-drm/ipuv3-plane.c       |  4 ++
+ 3 files changed, 51 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/staging/imx-drm/ipuv3-crtc.c b/drivers/staging/imx-drm/ipuv3-crtc.c
-index c48f640..c771ac1 100644
---- a/drivers/staging/imx-drm/ipuv3-crtc.c
-+++ b/drivers/staging/imx-drm/ipuv3-crtc.c
-@@ -63,9 +63,11 @@ static void ipu_fb_enable(struct ipu_crtc *ipu_crtc)
- 	if (ipu_crtc->enabled)
- 		return;
+diff --git a/drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h b/drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h
+index 2966e42..8678ad1 100644
+--- a/drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h
++++ b/drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h
+@@ -153,8 +153,10 @@ void ipu_dmfc_put(struct dmfc_channel *dmfc);
  
--	ipu_di_enable(ipu_crtc->di);
--	ipu_dc_enable_channel(ipu_crtc->dc);
-+	/* TODO: Enable DC module here, right now it is never disabled */
- 	ipu_plane_enable(ipu_crtc->plane[0]);
-+	/* Start DC channel and DI after IDMAC */
-+	ipu_dc_enable_channel(ipu_crtc->dc);
-+	ipu_di_enable(ipu_crtc->di);
- 
- 	ipu_crtc->enabled = 1;
+ struct ipu_dp *ipu_dp_get(struct ipu_soc *ipu, unsigned int flow);
+ void ipu_dp_put(struct ipu_dp *);
++int ipu_dp_enable(struct ipu_soc *ipu);
+ int ipu_dp_enable_channel(struct ipu_dp *dp);
+ void ipu_dp_disable_channel(struct ipu_dp *dp);
++void ipu_dp_disable(struct ipu_soc *ipu);
+ int ipu_dp_setup_channel(struct ipu_dp *dp,
+ 		enum ipu_color_space in, enum ipu_color_space out);
+ int ipu_dp_set_window_pos(struct ipu_dp *, u16 x_pos, u16 y_pos);
+diff --git a/drivers/staging/imx-drm/ipu-v3/ipu-dp.c b/drivers/staging/imx-drm/ipu-v3/ipu-dp.c
+index 58f87c8..6980fa1 100644
+--- a/drivers/staging/imx-drm/ipu-v3/ipu-dp.c
++++ b/drivers/staging/imx-drm/ipu-v3/ipu-dp.c
+@@ -215,10 +215,9 @@ int ipu_dp_setup_channel(struct ipu_dp *dp,
  }
-@@ -75,9 +77,11 @@ static void ipu_fb_disable(struct ipu_crtc *ipu_crtc)
- 	if (!ipu_crtc->enabled)
- 		return;
+ EXPORT_SYMBOL_GPL(ipu_dp_setup_channel);
  
--	ipu_plane_disable(ipu_crtc->plane[0]);
-+	/* Stop DC channel and DI before IDMAC */
- 	ipu_dc_disable_channel(ipu_crtc->dc);
- 	ipu_di_disable(ipu_crtc->di);
-+	ipu_plane_disable(ipu_crtc->plane[0]);
-+	/* TODO: Disable DC module here */
+-int ipu_dp_enable_channel(struct ipu_dp *dp)
++int ipu_dp_enable(struct ipu_soc *ipu)
+ {
+-	struct ipu_flow *flow = to_flow(dp);
+-	struct ipu_dp_priv *priv = flow->priv;
++	struct ipu_dp_priv *priv = ipu->dp_priv;
  
- 	ipu_crtc->enabled = 0;
+ 	mutex_lock(&priv->mutex);
+ 
+@@ -227,15 +226,28 @@ int ipu_dp_enable_channel(struct ipu_dp *dp)
+ 
+ 	priv->use_count++;
+ 
+-	if (dp->foreground) {
+-		u32 reg;
++	mutex_unlock(&priv->mutex);
+ 
+-		reg = readl(flow->base + DP_COM_CONF);
+-		reg |= DP_COM_CONF_FG_EN;
+-		writel(reg, flow->base + DP_COM_CONF);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(ipu_dp_enable);
+ 
+-		ipu_srm_dp_sync_update(priv->ipu);
+-	}
++int ipu_dp_enable_channel(struct ipu_dp *dp)
++{
++	struct ipu_flow *flow = to_flow(dp);
++	struct ipu_dp_priv *priv = flow->priv;
++	u32 reg;
++
++	if (!dp->foreground)
++		return 0;
++
++	mutex_lock(&priv->mutex);
++
++	reg = readl(flow->base + DP_COM_CONF);
++	reg |= DP_COM_CONF_FG_EN;
++	writel(reg, flow->base + DP_COM_CONF);
++
++	ipu_srm_dp_sync_update(priv->ipu);
+ 
+ 	mutex_unlock(&priv->mutex);
+ 
+@@ -247,25 +259,35 @@ void ipu_dp_disable_channel(struct ipu_dp *dp)
+ {
+ 	struct ipu_flow *flow = to_flow(dp);
+ 	struct ipu_dp_priv *priv = flow->priv;
++	u32 reg, csc;
++
++	if (!dp->foreground)
++		return;
+ 
+ 	mutex_lock(&priv->mutex);
+ 
+-	priv->use_count--;
++	reg = readl(flow->base + DP_COM_CONF);
++	csc = reg & DP_COM_CONF_CSC_DEF_MASK;
++	if (csc == DP_COM_CONF_CSC_DEF_FG)
++		reg &= ~DP_COM_CONF_CSC_DEF_MASK;
+ 
+-	if (dp->foreground) {
+-		u32 reg, csc;
++	reg &= ~DP_COM_CONF_FG_EN;
++	writel(reg, flow->base + DP_COM_CONF);
+ 
+-		reg = readl(flow->base + DP_COM_CONF);
+-		csc = reg & DP_COM_CONF_CSC_DEF_MASK;
+-		if (csc == DP_COM_CONF_CSC_DEF_FG)
+-			reg &= ~DP_COM_CONF_CSC_DEF_MASK;
++	writel(0, flow->base + DP_FG_POS);
++	ipu_srm_dp_sync_update(priv->ipu);
+ 
+-		reg &= ~DP_COM_CONF_FG_EN;
+-		writel(reg, flow->base + DP_COM_CONF);
++	mutex_unlock(&priv->mutex);
++}
++EXPORT_SYMBOL_GPL(ipu_dp_disable_channel);
+ 
+-		writel(0, flow->base + DP_FG_POS);
+-		ipu_srm_dp_sync_update(priv->ipu);
+-	}
++void ipu_dp_disable(struct ipu_soc *ipu)
++{
++	struct ipu_dp_priv *priv = ipu->dp_priv;
++
++	mutex_lock(&priv->mutex);
++
++	priv->use_count--;
+ 
+ 	if (!priv->use_count)
+ 		ipu_module_disable(priv->ipu, IPU_CONF_DP_EN);
+@@ -275,7 +297,7 @@ void ipu_dp_disable_channel(struct ipu_dp *dp)
+ 
+ 	mutex_unlock(&priv->mutex);
  }
+-EXPORT_SYMBOL_GPL(ipu_dp_disable_channel);
++EXPORT_SYMBOL_GPL(ipu_dp_disable);
+ 
+ struct ipu_dp *ipu_dp_get(struct ipu_soc *ipu, unsigned int flow)
+ {
+diff --git a/drivers/staging/imx-drm/ipuv3-plane.c b/drivers/staging/imx-drm/ipuv3-plane.c
+index 27a8d73..5697e59 100644
+--- a/drivers/staging/imx-drm/ipuv3-plane.c
++++ b/drivers/staging/imx-drm/ipuv3-plane.c
+@@ -239,6 +239,8 @@ err_out:
+ 
+ void ipu_plane_enable(struct ipu_plane *ipu_plane)
+ {
++	if (ipu_plane->dp)
++		ipu_dp_enable(ipu_plane->ipu);
+ 	ipu_dmfc_enable_channel(ipu_plane->dmfc);
+ 	ipu_idmac_enable_channel(ipu_plane->ipu_ch);
+ 	if (ipu_plane->dp)
+@@ -257,6 +259,8 @@ void ipu_plane_disable(struct ipu_plane *ipu_plane)
+ 		ipu_dp_disable_channel(ipu_plane->dp);
+ 	ipu_idmac_disable_channel(ipu_plane->ipu_ch);
+ 	ipu_dmfc_disable_channel(ipu_plane->dmfc);
++	if (ipu_plane->dp)
++		ipu_dp_disable(ipu_plane->ipu);
+ }
+ 
+ static void ipu_plane_dpms(struct ipu_plane *ipu_plane, int mode)
 -- 
 1.9.1
 
