@@ -1,222 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027AbaDNTGm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 15:06:42 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:34389 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751937AbaDNTGi (ORCPT
+	id S1755369AbaDNTH0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 15:07:26 -0400
+Received: from p01c12o143.mxlogic.net ([208.65.145.66]:52626 "EHLO
+	p01c12o143.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754288AbaDNTHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 15:06:38 -0400
-Message-ID: <1397502396.4222.45.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [BUG] A panic caused by null pointer dereference aftering
- updating to
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: nasa4836@gmail.com, jchapman@katalix.com, edumazet@google.com,
-        joe@perches.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Date: Mon, 14 Apr 2014 12:06:36 -0700
-In-Reply-To: <20140414.144843.488522666550066271.davem@davemloft.net>
-References: <1397498082.4222.29.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140414.140253.788885546068554928.davem@davemloft.net>
-	 <1397499566.4222.36.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140414.144843.488522666550066271.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Mon, 14 Apr 2014 15:07:20 -0400
+X-Greylist: delayed 557 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Apr 2014 15:07:20 EDT
+X-MXL-Hash: 534c31e802603747-b08a80a967da5105a6175a3b67765202b4795e79
+X-MXL-Hash: 534c2f994c946d9f-bbd16216a87a3b683584f19a2fb9f57d898e0a4e
+Date: Mon, 14 Apr 2014 14:57:00 -0400
+From: Joe Lawrence <joe.lawrence@stratus.com>
+To: Christoph Hellwig <hch@infradead.org>
+CC: Sander Eikelenboom <linux@eikelenboom.it>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        <linux-scsi@vger.kernel.org>
+Subject: Re: 3.15-mw:  Oops Workqueue: writeback bdi_writeback_workfn
+ (flush-8:16)  RIP: e030:[<ffffffff814c6bc1>]  [<ffffffff814c6bc1>]
+ kobject_put+0x11/0x70
+Message-ID: <20140414145700.74825388@jlaw-desktop.mno.stratus.com>
+In-Reply-To: <20140414113015.GA4765@infradead.org>
+References: <1299097701.20140412133431@eikelenboom.it>
+	<20140414113015.GA4765@infradead.org>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-AnalysisOut: [v=2.1 cv=YsCBRuoX c=1 sm=1 tr=0 a=o2bo05G+d1rlxuoNbFVhCw==]
+X-AnalysisOut: [:17 a=ftLHOSqBBVoA:10 a=_KQqW7t0BisA:10 a=BLceEmwcHowA:10 ]
+X-AnalysisOut: [a=kj9zAlcOel0A:10 a=uelBKuKpAAAA:8 a=YlVTAMxIAAAA:8 a=Jfrn]
+X-AnalysisOut: [Yn6hAAAA:8 a=Izhp58NCqN4hK47uKv8A:9 a=CjuIK1q_8ugA:10 a=3R]
+X-AnalysisOut: [fx1nUSh_UA:10 a=oUQuMaGMe1cA:10]
+X-Spam: [F=0.5000000000; CM=0.500; MH=0.500(2014041418); S=0.200(2010122901)]
+X-MAIL-FROM: <joe.lawrence@stratus.com>
+X-SOURCE-IP: [134.111.1.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-14 at 14:48 -0400, David Miller wrote:
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Mon, 14 Apr 2014 11:19:26 -0700
+On Mon, 14 Apr 2014 04:30:15 -0700
+Christoph Hellwig <hch@infradead.org> wrote:
+
+> On Sat, Apr 12, 2014 at 01:34:31PM +0200, Sander Eikelenboom wrote:
+> > Hi,
+> > 
+> > I just ran into the oops belowafter some uptime.
 > 
-> > ip_local_out() doesn't use skb->sk
+> Classic use after free introduced by my recent changes, sorry.
 > 
-> It does Eric.
+> This should fix it:
 > 
-
-Hmmm, right...
-
-> We had just such a report with this in the backtrace, when AF_PACKET
-> sends over vxlan devices.
+> ---
+> From: Christoph Hellwig <hch@lst.de>
+> Subject: scsi: don't reference freed command in scsi_init_sgtable
 > 
-> The problem is ip_mc_output().
+> When scsi_init_io fails we have to release our device reference, but
+> we do this trying to reference the just freed command.  Add a local
+> scsi_device pointer to fix this.
+> 
+> Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
+> 
+> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+> index 65a123d..54eff6a 100644
+> --- a/drivers/scsi/scsi_lib.c
+> +++ b/drivers/scsi/scsi_lib.c
+> @@ -1044,6 +1044,7 @@ static int scsi_init_sgtable(struct request *req, struct scsi_data_buffer *sdb,
+>   */
+>  int scsi_init_io(struct scsi_cmnd *cmd, gfp_t gfp_mask)
+>  {
+> +	struct scsi_device *sdev = cmd->device;
+>  	struct request *rq = cmd->request;
+>  
+>  	int error = scsi_init_sgtable(rq, &cmd->sdb, gfp_mask);
+> @@ -1091,7 +1092,7 @@ err_exit:
+>  	scsi_release_buffers(cmd);
+>  	cmd->request->special = NULL;
+>  	scsi_put_command(cmd);
+> -	put_device(&cmd->device->sdev_gendev);
+> +	put_device(&sdev->sdev_gendev);
+>  	return error;
+>  }
+>  EXPORT_SYMBOL(scsi_init_io);
 
-So this means that : User socket wanted sk_mc_loop(sk), but because
-vxlan changed skb->sk to internal socket, we were doing something else
-anyway.
+Hi Christoph,
 
-There are a lot of undocumented features here... like
+I hit a similar crash last week on a franken-kernel here (3.14 + scsi
+misc + qlogic patches + out of tree drivers + terriblethingsIknow).  I
+think there is one other similar use-after-free that's been in place
+for a while now:
 
- 	skb->priority = sk->sk_priority;
- 	skb->mark = sk->sk_mark;
+int scsi_prep_return(struct request_queue *q, struct request *req, int ret)
+{
+	struct scsi_device *sdev = q->queuedata;
 
-which socket do we want here (in ip_queue_xmit()) ?
+	switch (ret) {
+	case BLKPREP_KILL:
+		req->errors = DID_NO_CONNECT << 16;
+		/* release the command and kill it */
+		if (req->special) {
+			struct scsi_cmnd *cmd = req->special;
+			scsi_release_buffers(cmd);
+			scsi_put_command(cmd);                    <<
+			put_device(&cmd->device->sdev_gendev);    <<
+			req->special = NULL;
+		}
+		break;
+	...
 
-Its interesting to see ip6_xmit() already has a 'struct sock *sk'
-parameter...
+and the backtrace looked like:
 
-This was the preliminary patch I tested :
+general protection fault: 0000 [#1] SMP 
+Modules linked in: ccmod(POF) ftmod(OF) ipmi_devintf ipmi_msghandler bonding sg x86_pkg_temp_thermal coretemp crct10dif_pclmul crc32_pclmul crc32c_intel ghash_clmulni_intel ixgbe(OF) aesni_intel igb(OF) ptp lrw pps_core gf128mul glue_helper i2c_algo_bit mdio ablk_helper cryptd pcspkr dca ntb i2c_core matroxfb(OF) videosw(OF) nfsd auth_rpcgss nfs_acl lockd sunrpc xfs libcrc32c dm_service_time sd_mod(OF) crc_t10dif crct10dif_common qla2xxx(OF) scsi_transport_fc mpt2sas(OF) raid_class scsi_tgt scsi_transport_sas dm_mirror dm_region_hash dm_log dm_multipath dm_mod
+CPU: 8 PID: 23976 Comm: systemd-udevd Tainted: PF       W  O 3.14.0+ #2
+Hardware name: Stratus ftServer 6400/G7LAY, BIOS BIOS Version 6.3:57 12/25/2013
+task: ffff880420b3d7c0 ti: ffff880729138000 task.ti: ffff880729138000
+RIP: 0010:[<ffffffff812e2a2d>]  [<ffffffff812e2a2d>] kobject_put+0xd/0x60
+RSP: 0018:ffff880729139a80  EFLAGS: 00010002
+RAX: 0000000000000000 RBX: 6b6b6b6b6b6b6ce3 RCX: 00000001002e0003
+RDX: 000000000000002e RSI: ffffea0021370400 RDI: 6b6b6b6b6b6b6ce3
+RBP: ffff880729139a88 R08: ffff88084dc16300 R09: 00000001002e0002
+R10: ffff88104f603a80 R11: ffffea0021370400 R12: ffff88084dc16300
+R13: 0000000000000001 R14: ffff881026935388 R15: ffff880ff56b3a18
+FS:  00007f2eed940880(0000) GS:ffff88085fd00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007f2eed0e2c20 CR3: 000000084d6c8000 CR4: 00000000000407e0
+Stack:
+ ffff88076248d0a8 ffff880729139a98 ffffffff813e57d7 ffff880729139ac0
+ ffffffff8141bf3e 000000018141be66 ffff88076248d0a8 ffff88104def6840
+ ffff880729139b20 ffffffffa00a46e0 ffff88104def6840 ffff88076248d0a8
+Call Trace:
+ [<ffffffff813e57d7>] put_device+0x17/0x20
+ [<ffffffff8141bf3e>] scsi_prep_return+0x9e/0xc0
+ [<ffffffffa00a46e0>] sd_prep_fn+0x70/0xcd0 [sd_mod]
+ [<ffffffff812bb49f>] blk_peek_request+0x12f/0x250
+ [<ffffffff8141cdf8>] scsi_request_fn+0x48/0x570
+ [<ffffffff812b66f3>] __blk_run_queue+0x33/0x40
+ [<ffffffff812b67aa>] queue_unplugged+0x2a/0xa0
+ [<ffffffff812bb928>] blk_flush_plug_list+0x1d8/0x230
+ [<ffffffff812bbd14>] blk_finish_plug+0x14/0x40
+ [<ffffffff8116b239>] __do_page_cache_readahead+0x209/0x290
+ [<ffffffff8116b52d>] force_page_cache_readahead+0x6d/0xa0
+ [<ffffffff8116b843>] page_cache_sync_readahead+0x43/0x50
+ [<ffffffff81161b35>] generic_file_aio_read+0x4f5/0x720
+ [<ffffffff8120dc2b>] blkdev_aio_read+0x4b/0x70
+ [<ffffffff811d27e7>] do_sync_read+0x67/0xa0
+ [<ffffffff811d2efb>] vfs_read+0x9b/0x160
+ [<ffffffff811d3a05>] SyS_read+0x55/0xd0
+ [<ffffffff81637aa9>] system_call_fastpath+0x16/0x1b
 
- include/net/inet6_connection_sock.h |    2 +-
- include/net/inet_connection_sock.h  |    2 +-
- include/net/ip.h                    |    2 +-
- net/dccp/output.c                   |    2 +-
- net/ipv4/ip_output.c                |    5 +++--
- net/ipv4/tcp_output.c               |    2 +-
- net/ipv6/inet6_connection_sock.c    |    3 +--
- net/l2tp/l2tp_core.c                |    4 ++--
- net/l2tp/l2tp_ip.c                  |    2 +-
- net/sctp/protocol.c                 |    2 +-
- 10 files changed, 13 insertions(+), 13 deletions(-)
-diff --git a/include/net/inet6_connection_sock.h b/include/net/inet6_connection_sock.h
-index f981ba7adeed..74af137304be 100644
---- a/include/net/inet6_connection_sock.h
-+++ b/include/net/inet6_connection_sock.h
-@@ -40,7 +40,7 @@ void inet6_csk_reqsk_queue_hash_add(struct sock *sk, struct request_sock *req,
- 
- void inet6_csk_addr2sockaddr(struct sock *sk, struct sockaddr *uaddr);
- 
--int inet6_csk_xmit(struct sk_buff *skb, struct flowi *fl);
-+int inet6_csk_xmit(struct sock *sk, struct sk_buff *skb, struct flowi *fl);
- 
- struct dst_entry *inet6_csk_update_pmtu(struct sock *sk, u32 mtu);
- #endif /* _INET6_CONNECTION_SOCK_H */
-diff --git a/include/net/inet_connection_sock.h b/include/net/inet_connection_sock.h
-index c55aeed41ace..7a4313887568 100644
---- a/include/net/inet_connection_sock.h
-+++ b/include/net/inet_connection_sock.h
-@@ -36,7 +36,7 @@ struct tcp_congestion_ops;
-  * (i.e. things that depend on the address family)
-  */
- struct inet_connection_sock_af_ops {
--	int	    (*queue_xmit)(struct sk_buff *skb, struct flowi *fl);
-+	int	    (*queue_xmit)(struct sock *sk, struct sk_buff *skb, struct flowi *fl);
- 	void	    (*send_check)(struct sock *sk, struct sk_buff *skb);
- 	int	    (*rebuild_header)(struct sock *sk);
- 	void	    (*sk_rx_dst_set)(struct sock *sk, const struct sk_buff *skb);
-diff --git a/include/net/ip.h b/include/net/ip.h
-index 25064c28e059..77e73d293e09 100644
---- a/include/net/ip.h
-+++ b/include/net/ip.h
-@@ -111,7 +111,7 @@ int ip_do_nat(struct sk_buff *skb);
- void ip_send_check(struct iphdr *ip);
- int __ip_local_out(struct sk_buff *skb);
- int ip_local_out(struct sk_buff *skb);
--int ip_queue_xmit(struct sk_buff *skb, struct flowi *fl);
-+int ip_queue_xmit(struct sock *sk, struct sk_buff *skb, struct flowi *fl);
- void ip_init(void);
- int ip_append_data(struct sock *sk, struct flowi4 *fl4,
- 		   int getfrag(void *from, char *to, int offset, int len,
-diff --git a/net/dccp/output.c b/net/dccp/output.c
-index 8876078859da..0248e8a3460c 100644
---- a/net/dccp/output.c
-+++ b/net/dccp/output.c
-@@ -138,7 +138,7 @@ static int dccp_transmit_skb(struct sock *sk, struct sk_buff *skb)
- 
- 		DCCP_INC_STATS(DCCP_MIB_OUTSEGS);
- 
--		err = icsk->icsk_af_ops->queue_xmit(skb, &inet->cork.fl);
-+		err = icsk->icsk_af_ops->queue_xmit(sk, skb, &inet->cork.fl);
- 		return net_xmit_eval(err);
- 	}
- 	return -ENOBUFS;
-diff --git a/net/ipv4/ip_output.c b/net/ipv4/ip_output.c
-index 1a0755fea491..7ad68b860935 100644
---- a/net/ipv4/ip_output.c
-+++ b/net/ipv4/ip_output.c
-@@ -315,9 +315,9 @@ static void ip_copy_addrs(struct iphdr *iph, const struct flowi4 *fl4)
- 	       sizeof(fl4->saddr) + sizeof(fl4->daddr));
- }
- 
--int ip_queue_xmit(struct sk_buff *skb, struct flowi *fl)
-+/* Note: skb->sk can be different from sk, in case of tunnels */
-+int ip_queue_xmit(struct sock *sk, struct sk_buff *skb, struct flowi *fl)
- {
--	struct sock *sk = skb->sk;
- 	struct inet_sock *inet = inet_sk(sk);
- 	struct ip_options_rcu *inet_opt;
- 	struct flowi4 *fl4;
-@@ -389,6 +389,7 @@ packet_routed:
- 	ip_select_ident_more(skb, &rt->dst, sk,
- 			     (skb_shinfo(skb)->gso_segs ?: 1) - 1);
- 
-+	/* TODO : should we use skb->sk here instead of sk ? */
- 	skb->priority = sk->sk_priority;
- 	skb->mark = sk->sk_mark;
- 
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 699fb102e971..025e25093984 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -981,7 +981,7 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb, int clone_it,
- 		TCP_ADD_STATS(sock_net(sk), TCP_MIB_OUTSEGS,
- 			      tcp_skb_pcount(skb));
- 
--	err = icsk->icsk_af_ops->queue_xmit(skb, &inet->cork.fl);
-+	err = icsk->icsk_af_ops->queue_xmit(sk, skb, &inet->cork.fl);
- 	if (likely(err <= 0))
- 		return err;
- 
-diff --git a/net/ipv6/inet6_connection_sock.c b/net/ipv6/inet6_connection_sock.c
-index c9138189415a..d4ade34ab375 100644
---- a/net/ipv6/inet6_connection_sock.c
-+++ b/net/ipv6/inet6_connection_sock.c
-@@ -224,9 +224,8 @@ static struct dst_entry *inet6_csk_route_socket(struct sock *sk,
- 	return dst;
- }
- 
--int inet6_csk_xmit(struct sk_buff *skb, struct flowi *fl_unused)
-+int inet6_csk_xmit(struct sock *sk, struct sk_buff *skb, struct flowi *fl_unused)
- {
--	struct sock *sk = skb->sk;
- 	struct ipv6_pinfo *np = inet6_sk(sk);
- 	struct flowi6 fl6;
- 	struct dst_entry *dst;
-diff --git a/net/l2tp/l2tp_core.c b/net/l2tp/l2tp_core.c
-index 47f7a5490555..a4e37d7158dc 100644
---- a/net/l2tp/l2tp_core.c
-+++ b/net/l2tp/l2tp_core.c
-@@ -1131,10 +1131,10 @@ static int l2tp_xmit_core(struct l2tp_session *session, struct sk_buff *skb,
- 	skb->local_df = 1;
- #if IS_ENABLED(CONFIG_IPV6)
- 	if (tunnel->sock->sk_family == PF_INET6 && !tunnel->v4mapped)
--		error = inet6_csk_xmit(skb, NULL);
-+		error = inet6_csk_xmit(tunnel->sock, skb, NULL);
- 	else
- #endif
--		error = ip_queue_xmit(skb, fl);
-+		error = ip_queue_xmit(tunnel->sock, skb, fl);
- 
- 	/* Update stats */
- 	if (error >= 0) {
-diff --git a/net/l2tp/l2tp_ip.c b/net/l2tp/l2tp_ip.c
-index 0b44d855269c..3397fe6897c0 100644
---- a/net/l2tp/l2tp_ip.c
-+++ b/net/l2tp/l2tp_ip.c
-@@ -487,7 +487,7 @@ static int l2tp_ip_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *m
- 
- xmit:
- 	/* Queue the packet to IP for output */
--	rc = ip_queue_xmit(skb, &inet->cork.fl);
-+	rc = ip_queue_xmit(sk, skb, &inet->cork.fl);
- 	rcu_read_unlock();
- 
- error:
-diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
-index 4e1d0fcb028e..c09757fbf803 100644
---- a/net/sctp/protocol.c
-+++ b/net/sctp/protocol.c
-@@ -957,7 +957,7 @@ static inline int sctp_v4_xmit(struct sk_buff *skb,
- 
- 	SCTP_INC_STATS(sock_net(&inet->sk), SCTP_MIB_OUTSCTPPACKS);
- 
--	return ip_queue_xmit(skb, &transport->fl);
-+	return ip_queue_xmit(&inet->sk, skb, &transport->fl);
- }
- 
- static struct sctp_af sctp_af_inet;
+Regards,
 
-
+-- Joe
