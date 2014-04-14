@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939AbaDNB4Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 21:56:16 -0400
-Received: from smtprelay0228.hostedemail.com ([216.40.44.228]:38768 "EHLO
+	id S1755177AbaDNCCH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 22:02:07 -0400
+Received: from smtprelay0013.hostedemail.com ([216.40.44.13]:44505 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753513AbaDNB4N (ORCPT
+	by vger.kernel.org with ESMTP id S1754113AbaDNB4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 21:56:13 -0400
+	Sun, 13 Apr 2014 21:56:18 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 10,1,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:196:355:379:541:800:960:968:973:988:989:1260:1345:1359:1437:1534:1541:1622:1711:1730:1747:1777:1792:1801:2393:2559:2562:3138:3139:3140:3141:3142:3353:3868:3870:3871:3874:4605:5007:6261:10004:10026:10848:11026:11658:11914:12043:12296:12438:12517:12519:12555:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: night61_533f0a0c80f2d
-X-Filterd-Recvd-Size: 2530
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:69:355:379:541:800:960:968:973:988:989:1260:1345:1359:1437:1535:1544:1605:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3868:3871:4321:4605:5007:6261:10004:10026:10848:11026:11473:11658:11914:12043:12291:12296:12438:12517:12519:12555:12683:13255:14110,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: plane29_53fc50b465136
+X-Filterd-Recvd-Size: 5341
 From: Joe Perches <joe@perches.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: [PATCH -next 3.16 04/19] cdrom: Convert use of typedef ctl_table to struct ctl_table
-Date: Sun, 13 Apr 2014 18:55:36 -0700
-Message-Id: <b6402bd92c6c2768c2f6094b98120aeed018d3d9.1397438826.git.joe@perches.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH -next 3.16 06/19] parport: Convert use of typedef ctl_table to struct ctl_table
+Date: Sun, 13 Apr 2014 18:55:38 -0700
+Message-Id: <c5121846c1a45f29c1537361f9c40e21982831c1.1397438826.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1397438826.git.joe@perches.com>
 References: <cover.1397438826.git.joe@perches.com>
@@ -28,58 +28,134 @@ This typedef is unnecessary and should just be removed.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/cdrom/cdrom.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/parport/procfs.c | 58 ++++++++++++++++++++++++------------------------
+ 1 file changed, 29 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index 8a3aff7..d49a76f 100644
---- a/drivers/cdrom/cdrom.c
-+++ b/drivers/cdrom/cdrom.c
-@@ -3465,7 +3465,7 @@ static int cdrom_print_info(const char *header, int val, char *info,
- 	return 0;
- }
+diff --git a/drivers/parport/procfs.c b/drivers/parport/procfs.c
+index 92ed045..3b47080 100644
+--- a/drivers/parport/procfs.c
++++ b/drivers/parport/procfs.c
+@@ -31,7 +31,7 @@
+ #define PARPORT_MIN_SPINTIME_VALUE 1
+ #define PARPORT_MAX_SPINTIME_VALUE 1000
  
--static int cdrom_sysctl_info(ctl_table *ctl, int write,
-+static int cdrom_sysctl_info(struct ctl_table *ctl, int write,
-                            void __user *buffer, size_t *lenp, loff_t *ppos)
+-static int do_active_device(ctl_table *table, int write,
++static int do_active_device(struct ctl_table *table, int write,
+ 		      void __user *result, size_t *lenp, loff_t *ppos)
  {
- 	int pos;
-@@ -3578,7 +3578,7 @@ static void cdrom_update_settings(void)
- 	mutex_unlock(&cdrom_mutex);
+ 	struct parport *port = (struct parport *)table->extra1;
+@@ -68,7 +68,7 @@ static int do_active_device(ctl_table *table, int write,
  }
  
--static int cdrom_sysctl_handler(ctl_table *ctl, int write,
-+static int cdrom_sysctl_handler(struct ctl_table *ctl, int write,
- 				void __user *buffer, size_t *lenp, loff_t *ppos)
+ #ifdef CONFIG_PARPORT_1284
+-static int do_autoprobe(ctl_table *table, int write,
++static int do_autoprobe(struct ctl_table *table, int write,
+ 			void __user *result, size_t *lenp, loff_t *ppos)
  {
- 	int ret;
-@@ -3604,7 +3604,7 @@ static int cdrom_sysctl_handler(ctl_table *ctl, int write,
+ 	struct parport_device_info *info = table->extra2;
+@@ -110,9 +110,9 @@ static int do_autoprobe(ctl_table *table, int write,
+ }
+ #endif /* IEEE1284.3 support. */
+ 
+-static int do_hardware_base_addr (ctl_table *table, int write,
+-				  void __user *result,
+-				  size_t *lenp, loff_t *ppos)
++static int do_hardware_base_addr(struct ctl_table *table, int write,
++				 void __user *result,
++				 size_t *lenp, loff_t *ppos)
+ {
+ 	struct parport *port = (struct parport *)table->extra1;
+ 	char buffer[20];
+@@ -138,9 +138,9 @@ static int do_hardware_base_addr (ctl_table *table, int write,
+ 	return copy_to_user(result, buffer, len) ? -EFAULT : 0;
  }
  
- /* Place files in /proc/sys/dev/cdrom */
--static ctl_table cdrom_table[] = {
-+static struct ctl_table cdrom_table[] = {
- 	{
- 		.procname	= "info",
- 		.data		= &cdrom_sysctl_settings.info, 
-@@ -3650,7 +3650,7 @@ static ctl_table cdrom_table[] = {
- 	{ }
+-static int do_hardware_irq (ctl_table *table, int write,
+-			    void __user *result,
+-			    size_t *lenp, loff_t *ppos)
++static int do_hardware_irq(struct ctl_table *table, int write,
++			   void __user *result,
++			   size_t *lenp, loff_t *ppos)
+ {
+ 	struct parport *port = (struct parport *)table->extra1;
+ 	char buffer[20];
+@@ -166,9 +166,9 @@ static int do_hardware_irq (ctl_table *table, int write,
+ 	return copy_to_user(result, buffer, len) ? -EFAULT : 0;
+ }
+ 
+-static int do_hardware_dma (ctl_table *table, int write,
+-			    void __user *result,
+-			    size_t *lenp, loff_t *ppos)
++static int do_hardware_dma(struct ctl_table *table, int write,
++			   void __user *result,
++			   size_t *lenp, loff_t *ppos)
+ {
+ 	struct parport *port = (struct parport *)table->extra1;
+ 	char buffer[20];
+@@ -194,9 +194,9 @@ static int do_hardware_dma (ctl_table *table, int write,
+ 	return copy_to_user(result, buffer, len) ? -EFAULT : 0;
+ }
+ 
+-static int do_hardware_modes (ctl_table *table, int write,
+-			      void __user *result,
+-			      size_t *lenp, loff_t *ppos)
++static int do_hardware_modes(struct ctl_table *table, int write,
++			     void __user *result,
++			     size_t *lenp, loff_t *ppos)
+ {
+ 	struct parport *port = (struct parport *)table->extra1;
+ 	char buffer[40];
+@@ -255,11 +255,11 @@ PARPORT_MAX_SPINTIME_VALUE;
+ 
+ struct parport_sysctl_table {
+ 	struct ctl_table_header *sysctl_header;
+-	ctl_table vars[12];
+-	ctl_table device_dir[2];
+-	ctl_table port_dir[2];
+-	ctl_table parport_dir[2];
+-	ctl_table dev_dir[2];
++	struct ctl_table vars[12];
++	struct ctl_table device_dir[2];
++	struct ctl_table port_dir[2];
++	struct ctl_table parport_dir[2];
++	struct ctl_table dev_dir[2];
  };
  
--static ctl_table cdrom_cdrom_table[] = {
-+static struct ctl_table cdrom_cdrom_table[] = {
- 	{
- 		.procname	= "cdrom",
- 		.maxlen		= 0,
-@@ -3661,7 +3661,7 @@ static ctl_table cdrom_cdrom_table[] = {
+ static const struct parport_sysctl_table parport_sysctl_template = {
+@@ -369,12 +369,12 @@ static const struct parport_sysctl_table parport_sysctl_template = {
+ struct parport_device_sysctl_table
+ {
+ 	struct ctl_table_header *sysctl_header;
+-	ctl_table vars[2];
+-	ctl_table device_dir[2];
+-	ctl_table devices_root_dir[2];
+-	ctl_table port_dir[2];
+-	ctl_table parport_dir[2];
+-	ctl_table dev_dir[2];
++	struct ctl_table vars[2];
++	struct ctl_table device_dir[2];
++	struct ctl_table devices_root_dir[2];
++	struct ctl_table port_dir[2];
++	struct ctl_table parport_dir[2];
++	struct ctl_table dev_dir[2];
  };
  
- /* Make sure that /proc/sys/dev is there */
--static ctl_table cdrom_root_table[] = {
-+static struct ctl_table cdrom_root_table[] = {
- 	{
- 		.procname	= "dev",
- 		.maxlen		= 0,
+ static const struct parport_device_sysctl_table
+@@ -422,10 +422,10 @@ parport_device_sysctl_template = {
+ struct parport_default_sysctl_table
+ {
+ 	struct ctl_table_header *sysctl_header;
+-	ctl_table vars[3];
+-        ctl_table default_dir[2];
+-	ctl_table parport_dir[2];
+-	ctl_table dev_dir[2];
++	struct ctl_table vars[3];
++	struct ctl_table default_dir[2];
++	struct ctl_table parport_dir[2];
++	struct ctl_table dev_dir[2];
+ };
+ 
+ static struct parport_default_sysctl_table
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
