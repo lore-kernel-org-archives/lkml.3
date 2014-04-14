@@ -1,164 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933AbaDNOmo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 10:42:44 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:64447 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751151AbaDNOmk (ORCPT
+	id S1754556AbaDNOrJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 10:47:09 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:47213 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751883AbaDNOrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 10:42:40 -0400
-Date: Mon, 14 Apr 2014 16:42:36 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        Richard Yao <ryao@gentoo.org>, Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        William Cohen <wcohen@redhat.com>
-Subject: Re: [GIT PULL v3 00/17] perf/core fixes
-Message-ID: <20140414144236.GB22659@gmail.com>
-References: <1397485061-17215-1-git-send-email-jolsa@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397485061-17215-1-git-send-email-jolsa@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 14 Apr 2014 10:47:05 -0400
+From: minyard@acm.org
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        OpenIPMI Developers <openipmi-developer@lists.sourceforge.net>,
+        Jiri Slaby <jslaby@suse.cz>, Tomas Cech <tcech@suse.cz>,
+        Corey Minyard <minyard@acm.org>, Corey Minyard <cminyard@mvista.com>
+Subject: [PATCH 1/7] Char: ipmi_bt_sm, fix infinite loop
+Date: Mon, 14 Apr 2014 09:46:50 -0500
+Message-Id: <1397486816-18045-2-git-send-email-minyard@acm.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1397486816-18045-1-git-send-email-minyard@acm.org>
+References: <1397486816-18045-1-git-send-email-minyard@acm.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jiri Slaby <jslaby@suse.cz>
 
-* Jiri Olsa <jolsa@redhat.com> wrote:
+In read_all_bytes, we do
+  unsigned char i;
+...
+  bt->read_data[0] = BMC2HOST;
+  bt->read_count = bt->read_data[0];
+...
+  for (i = 1; i <= bt->read_count; i++)
+    bt->read_data[i] = BMC2HOST;
 
-> hi Ingo,
-> please consider pulling.
-> 
-> As requested, sending only fixies for 3.15. I'll send the rest for 3.16.
-> 
-> thanks,
-> jirka
-> 
-> 
-> The following changes since commit 538592ff0b008237ae88f5ce5fb1247127dc3ce5:
-> 
->   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2014-03-19 08:05:47 +0100)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to c12702d9bf3485d1b34c7913430b4e9271126561:
-> 
->   perf tools: Instead of redirecting flex output, use -o (2014-04-14 13:00:46 +0200)
-> 
-> ----------------------------------------------------------------
-> perf/core fixes:
-> 
-> Documentation:
-> 
-> . Fix documentation of invalid 'perf top -s' option (Namhyung Kim)
-> 
-> . Change e-mail to kernel.org one in MAINTAINERS file (Arnaldo Carvalho de Melo)
-> 
-> . Update bench manpage to mention numa and futex (Ramkumar Ramachandra)
-> 
-> Developer stuff:
-> 
-> . Disable unwind libraries when libelf isn't found (Arnaldo Carvalho de Melo)
-> 
-> . Print event name when showing libtraceevent warnings if possible (Namhyung Kim)
-> 
-> . Pick up libdw without explicit LIBDW_DIR (Ramkumar Ramachandra)
-> 
-> . Fix perf bench all segfault (Ramkumar Ramachandra)
-> 
-> . Set more defaults in the 'numa' suite (Ramkumar Ramachandra)
-> 
-> . Fix double free in perf test 21 (Adrian Hunter)
-> 
-> . Initialize statistics correctly (Andi Kleen)
-> 
-> . Instead of redirecting flex output, use -o (Cody P Schafer)
-> 
-> User visible:
-> 
-> . Assorted perf probe fixies (Namhyung Kim)
-> 
-> . Fix perf probe segfault (Masami Hiramatsu)
-> 
-> . Fix metrics calculation with event qualifiers (Andi Kleen)
-> 
-> . Search for modules in %s/lib/modules/%s (Richard Yao)
-> 
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> 
-> ----------------------------------------------------------------
-> Adrian Hunter (1):
->       perf tools: Fix double free in perf test 21 (code-reading.c)
-> 
-> Andi Kleen (2):
->       perf stat: Initialize statistics correctly
->       perf tools: Fix metrics calculation with event qualifiers
-> 
-> Arnaldo Carvalho de Melo (2):
->       perf callchains: Disable unwind libraries when libelf isn't found
->       MAINTAINERS: Change e-mail to kernel.org one
-> 
-> Cody P Schafer (1):
->       perf tools: Instead of redirecting flex output, use -o
-> 
-> Masami Hiramatsu (1):
->       perf probe: Fix to handle errors in line_range searching
-> 
-> Namhyung Kim (5):
->       perf top: Fix documentation of invalid -s option
->       tools lib traceevent: Print event name when show warning if possible
->       tools lib traceevent: Do not call warning() directly
->       perf probe: Fix --line option behavior
->       perf probe: Use dwarf_getcfi_elf() instead of dwarf_getcfi()
-> 
-> Ramkumar Ramachandra (4):
->       perf tools: Pick up libdw without explicit LIBDW_DIR
->       perf bench: Update manpage to mention numa and futex
->       perf bench: Fix segfault at the end of an 'all' execution
->       perf bench: Set more defaults in the 'numa' suite
-> 
-> Richard Yao (1):
->       perf machine: Search for modules in %s/lib/modules/%s
-> 
->  MAINTAINERS                             |   2 +-
->  tools/lib/traceevent/event-parse.c      | 109 +++++++++++++++----------
->  tools/perf/Documentation/perf-bench.txt |  22 +++++
->  tools/perf/Documentation/perf-top.txt   |   1 -
->  tools/perf/Makefile.perf                |   4 +-
->  tools/perf/bench/numa.c                 |   4 +
->  tools/perf/builtin-bench.c              |   2 +-
->  tools/perf/builtin-stat.c               | 140 ++++++++++++++++++++------------
->  tools/perf/config/Makefile              |   7 +-
->  tools/perf/tests/code-reading.c         |   1 +
->  tools/perf/util/machine.c               |   2 +-
->  tools/perf/util/probe-finder.c          |  15 ++--
->  12 files changed, 197 insertions(+), 112 deletions(-)
+If bt->read_data[0] == bt->read_count == 255, we loop infinitely in
+the 'for' loop. Make 'i' an 'int' instead of 'char' to get rid of the
+overflow and finish the loop after 255 iterations every time.
 
-I've pulled most of the patches, up to patch #13, thanks Jiri!
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Reported-and-debugged-by: Rui Hui Dian <rhdian@novell.com>
+Cc: Tomas Cech <tcech@suse.cz>
+Cc: Corey Minyard <minyard@acm.org>
+Cc: <openipmi-developer@lists.sourceforge.net>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+---
+ drivers/char/ipmi/ipmi_bt_sm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I left out #14 because it seems incomplete to me - see my previous 
-mail.
+diff --git a/drivers/char/ipmi/ipmi_bt_sm.c b/drivers/char/ipmi/ipmi_bt_sm.c
+index f5e4cd7..61e7161 100644
+--- a/drivers/char/ipmi/ipmi_bt_sm.c
++++ b/drivers/char/ipmi/ipmi_bt_sm.c
+@@ -352,7 +352,7 @@ static inline void write_all_bytes(struct si_sm_data *bt)
+ 
+ static inline int read_all_bytes(struct si_sm_data *bt)
+ {
+-	unsigned char i;
++	unsigned int i;
+ 
+ 	/*
+ 	 * length is "framing info", minimum = 4: NetFn, Seq, Cmd, cCode.
+-- 
+1.8.3.1
 
-You could rebase #15,16,17 on top of #13 to get the rest to me as 
-well, until #14 is resolved.
-
-Thanks!
-
-	Ingo
