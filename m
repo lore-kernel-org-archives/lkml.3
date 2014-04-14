@@ -1,153 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805AbaDNNVy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 09:21:54 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:46547 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272AbaDNNVu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 09:21:50 -0400
-Message-ID: <534BE0EB.2080409@adjacentlink.com>
-Date: Mon, 14 Apr 2014 09:21:47 -0400
-From: Steven Galgano <sgalgano@adjacentlink.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754423AbaDNN07 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 09:26:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4715 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751644AbaDNN04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 09:26:56 -0400
+Date: Mon, 14 Apr 2014 15:28:35 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
+Subject: [PATCH 2/2] PCI/MSI: Phase out pci_enable_msi_block()
+Message-ID: <20140414132834.GA9164@dhcp-26-207.brq.redhat.com>
+References: <cover.1397458024.git.agordeev@redhat.com>
+ <0b08613dc17cd608c1babc1f42b8919f60e1093f.1397458024.git.agordeev@redhat.com>
+ <20140414120921.GA32132@dhcp-26-207.brq.redhat.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>, mst@redhat.com, jasowang@redhat.com,
-        xemul@parallels.com, wuzhy@linux.vnet.ibm.com, therbert@google.com,
-        yamato@redhat.com, richardcochran@gmail.com
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Brian.Adamson@nrl.navy.mil, jgiovatto@adjacentlink.com
-Subject: [PATCH v3] tuntap: add flow control to support back pressure
-References: <534B3A33.9090401@adjacentlink.com>	<20140413.214004.1087903132047842986.davem@davemloft.net>	<534B61C2.1080700@adjacentlink.com> <20140414.003449.294037863611224523.davem@davemloft.net>
-In-Reply-To: <20140414.003449.294037863611224523.davem@davemloft.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140414120921.GA32132@dhcp-26-207.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added optional per queue flow control support using IFF_FLOW_CONTROL. When the 
-IFF_FLOW_CONTROL TUNSETIFF flag is specified it will set a per queue flag to 
-indicate that the queue should be stopped using netif_tx_stop_queue(), rather 
-than discarding frames once full. After reading a frame from the respective 
-stopped queue, a netif_tx_wake_queue() is issued to signal resource 
-availability.
+There are no users of pci_enable_msi_block() function have
+left. Obsolete it in favor of pci_enable_msi_range() and
+pci_enable_msi_exact() functions.
 
-The per queue TUN_FLOW_CONTROL flag is stored in struct tun_file. This provides 
-the flexibility to enable flow control on all, none or some queues when using 
-IFF_MULTI_QUEUE. When not using IFF_MULTI_QUEUE, IFF_FLOW_CONTROL will apply to 
-the single queue. No changes were made to the default drop frame policy.
+Up until now, when enabling MSI mode for a device a single
+successful call to arch_msi_check_device() was followed by
+a single call to arch_setup_msi_irqs() function.
 
-This change adds support for back pressure use cases.
+Yet, if arch_msi_check_device() returned success we should be
+able to call arch_setup_msi_irqs() multiple times - while it
+returns a number of MSI vectors that could have been allocated
+(a third state).
 
-Reported-by: Brian Adamson <brian.adamson@nrl.navy.mil>
-Tested-by: Joseph Giovatto <jgiovatto@adjacentlink.com>
-Signed-off-by: Steven Galgano <sgalgano@adjacentlink.com>
+This update makes use of the assumption described above. It
+could have broke things had the architectures done any pre-
+allocations or switch to some state in a call to function
+arch_msi_check_device(). But because arch_msi_check_device()
+is expected stateless and MSI resources are allocated in a
+follow-up call to arch_setup_msi_irqs() we should be fine.
+
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-mips@linux-mips.org
+Cc: linuxppc-dev@lists.ozlabs.org
+Cc: linux-s390@vger.kernel.org
+Cc: x86@kernel.org
+Cc: linux-pci@vger.kernel.org
 ---
-Version 3 patch reformatted commit message to be 80 columns max width. 
- Corrected Tested-By email address.
-Version 2 patch added support for individual queues when applying flow
-control instead of using netif_tx_stop_all_queues()/netif_tx_wake_all_queues().
+ drivers/pci/msi.c   |   79 +++++++++++++++++++++-----------------------------
+ include/linux/pci.h |    5 +--
+ 2 files changed, 34 insertions(+), 50 deletions(-)
 
- drivers/net/tun.c           | 32 ++++++++++++++++++++++++++++----
- include/uapi/linux/if_tun.h |  2 ++
- 2 files changed, 30 insertions(+), 4 deletions(-)
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index ee328ba..3d09f5a 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -137,7 +137,7 @@ struct tun_file {
- 	struct tun_struct __rcu *tun;
- 	struct net *net;
- 	struct fasync_struct *fasync;
--	/* only used for fasnyc */
-+	/* used for fasnyc and flow control */
- 	unsigned int flags;
- 	union {
- 		u16 queue_index;
-@@ -783,8 +783,19 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
- 	 * number of queues.
- 	 */
- 	if (skb_queue_len(&tfile->socket.sk->sk_receive_queue) * numqueues
--			  >= dev->tx_queue_len)
--		goto drop;
-+			>= dev->tx_queue_len) {
-+		if (tfile->flags & TUN_FLOW_CONTROL) {
-+			/* Resources unavailable stop queue */
-+			netif_tx_stop_queue(netdev_get_tx_queue(dev, txq));
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index 955ab79..fc669ab 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -883,50 +883,6 @@ int pci_msi_vec_count(struct pci_dev *dev)
+ }
+ EXPORT_SYMBOL(pci_msi_vec_count);
+ 
+-/**
+- * pci_enable_msi_block - configure device's MSI capability structure
+- * @dev: device to configure
+- * @nvec: number of interrupts to configure
+- *
+- * Allocate IRQs for a device with the MSI capability.
+- * This function returns a negative errno if an error occurs.  If it
+- * is unable to allocate the number of interrupts requested, it returns
+- * the number of interrupts it might be able to allocate.  If it successfully
+- * allocates at least the number of interrupts requested, it returns 0 and
+- * updates the @dev's irq member to the lowest new interrupt number; the
+- * other interrupt numbers allocated to this device are consecutive.
+- */
+-int pci_enable_msi_block(struct pci_dev *dev, int nvec)
+-{
+-	int status, maxvec;
+-
+-	if (dev->current_state != PCI_D0)
+-		return -EINVAL;
+-
+-	maxvec = pci_msi_vec_count(dev);
+-	if (maxvec < 0)
+-		return maxvec;
+-	if (nvec > maxvec)
+-		return maxvec;
+-
+-	status = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSI);
+-	if (status)
+-		return status;
+-
+-	WARN_ON(!!dev->msi_enabled);
+-
+-	/* Check whether driver already requested MSI-X irqs */
+-	if (dev->msix_enabled) {
+-		dev_info(&dev->dev, "can't enable MSI "
+-			 "(MSI-X already enabled)\n");
+-		return -EINVAL;
+-	}
+-
+-	status = msi_capability_init(dev, nvec);
+-	return status;
+-}
+-EXPORT_SYMBOL(pci_enable_msi_block);
+-
+ void pci_msi_shutdown(struct pci_dev *dev)
+ {
+ 	struct msi_desc *desc;
+@@ -1132,14 +1088,45 @@ void pci_msi_init_pci_dev(struct pci_dev *dev)
+  **/
+ int pci_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec)
+ {
+-	int nvec = maxvec;
++	int nvec;
+ 	int rc;
+ 
++	if (dev->current_state != PCI_D0)
++		return -EINVAL;
 +
-+			/* We won't see all dropped packets individually, so
-+			 * over run error is more appropriate.
-+			 */
-+			dev->stats.tx_fifo_errors++;
-+		} else {
-+			goto drop;
-+		}
++	WARN_ON(!!dev->msi_enabled);
++
++	/* Check whether driver already requested MSI-X irqs */
++	if (dev->msix_enabled) {
++		dev_info(&dev->dev,
++			 "can't enable MSI (MSI-X already enabled)\n");
++		return -EINVAL;
 +	}
- 
- 	if (unlikely(skb_orphan_frags(skb, GFP_ATOMIC)))
- 		goto drop;
-@@ -1333,6 +1344,7 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
- 	DECLARE_WAITQUEUE(wait, current);
- 	struct sk_buff *skb;
- 	ssize_t ret = 0;
-+	struct netdev_queue *ntxq;
- 
- 	tun_debug(KERN_INFO, tun, "tun_do_read\n");
- 
-@@ -1362,6 +1374,12 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
- 			continue;
- 		}
- 
-+		ntxq = netdev_get_tx_queue(tun->dev, tfile->queue_index);
 +
-+		if (tfile->flags & TUN_FLOW_CONTROL &&
-+		    netif_tx_queue_stopped(ntxq))
-+			netif_tx_wake_queue(ntxq);
-+
- 		ret = tun_put_user(tun, tfile, skb, iv, len);
- 		kfree_skb(skb);
- 		break;
-@@ -1732,6 +1750,11 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 	else
- 		tun->flags &= ~TUN_TAP_MQ;
+ 	if (maxvec < minvec)
+ 		return -ERANGE;
  
-+	if (ifr->ifr_flags & IFF_FLOW_CONTROL)
-+		tfile->flags |= TUN_FLOW_CONTROL;
-+	else
-+		tfile->flags &= ~TUN_FLOW_CONTROL;
++	nvec = pci_msi_vec_count(dev);
++	if (nvec < 0)
++		return nvec;
++	else if (nvec < minvec)
++		return -EINVAL;
++	else if (nvec > maxvec)
++		nvec = maxvec;
 +
- 	/* Make sure persistent devices do not get stuck in
- 	 * xoff state.
- 	 */
-@@ -1900,7 +1923,8 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 		 * This is needed because we never checked for invalid flags on
- 		 * TUNSETIFF. */
- 		return put_user(IFF_TUN | IFF_TAP | IFF_NO_PI | IFF_ONE_QUEUE |
--				IFF_VNET_HDR | IFF_MULTI_QUEUE,
-+				IFF_VNET_HDR | IFF_MULTI_QUEUE |
-+				IFF_FLOW_CONTROL,
- 				(unsigned int __user*)argp);
- 	} else if (cmd == TUNSETQUEUE)
- 		return tun_set_queue(file, &ifr);
-diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
-index e9502dd..bcf2790 100644
---- a/include/uapi/linux/if_tun.h
-+++ b/include/uapi/linux/if_tun.h
-@@ -36,6 +36,7 @@
- #define TUN_PERSIST 	0x0100	
- #define TUN_VNET_HDR 	0x0200
- #define TUN_TAP_MQ      0x0400
-+#define TUN_FLOW_CONTROL 0x0800
++	do {
++		rc = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSI);
++		if (rc < 0) {
++			return rc;
++		} else if (rc > 0) {
++			if (rc < minvec)
++				return -ENOSPC;
++			nvec = rc;
++		}
++	} while (rc);
++
+ 	do {
+-		rc = pci_enable_msi_block(dev, nvec);
++		rc = msi_capability_init(dev, nvec);
+ 		if (rc < 0) {
+ 			return rc;
+ 		} else if (rc > 0) {
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index aab57b4..499755e 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -1158,7 +1158,6 @@ struct msix_entry {
  
- /* Ioctl defines */
- #define TUNSETNOCSUM  _IOW('T', 200, int) 
-@@ -70,6 +71,7 @@
- #define IFF_MULTI_QUEUE 0x0100
- #define IFF_ATTACH_QUEUE 0x0200
- #define IFF_DETACH_QUEUE 0x0400
-+#define IFF_FLOW_CONTROL 0x0010
- /* read-only flag */
- #define IFF_PERSIST	0x0800
- #define IFF_NOFILTER	0x1000
+ #ifdef CONFIG_PCI_MSI
+ int pci_msi_vec_count(struct pci_dev *dev);
+-int pci_enable_msi_block(struct pci_dev *dev, int nvec);
+ void pci_msi_shutdown(struct pci_dev *dev);
+ void pci_disable_msi(struct pci_dev *dev);
+ int pci_msix_vec_count(struct pci_dev *dev);
+@@ -1188,8 +1187,6 @@ static inline int pci_enable_msix_exact(struct pci_dev *dev,
+ }
+ #else
+ static inline int pci_msi_vec_count(struct pci_dev *dev) { return -ENOSYS; }
+-static inline int pci_enable_msi_block(struct pci_dev *dev, int nvec)
+-{ return -ENOSYS; }
+ static inline void pci_msi_shutdown(struct pci_dev *dev) { }
+ static inline void pci_disable_msi(struct pci_dev *dev) { }
+ static inline int pci_msix_vec_count(struct pci_dev *dev) { return -ENOSYS; }
+@@ -1244,7 +1241,7 @@ static inline void pcie_set_ecrc_checking(struct pci_dev *dev) { }
+ static inline void pcie_ecrc_get_policy(char *str) { }
+ #endif
+ 
+-#define pci_enable_msi(pdev)	pci_enable_msi_block(pdev, 1)
++#define pci_enable_msi(pdev)	pci_enable_msi_exact(pdev, 1)
+ 
+ #ifdef CONFIG_HT_IRQ
+ /* The functions a driver should call */
+-- 
+1.7.7.6
+
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
