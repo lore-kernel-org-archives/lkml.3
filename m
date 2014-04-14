@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851AbaDNVRP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 17:17:15 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33125 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755379AbaDNVRM (ORCPT
+	id S1755524AbaDNVIs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 17:08:48 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:57216 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754929AbaDNVIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 17:17:12 -0400
-Date: Mon, 14 Apr 2014 22:16:44 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Chris Ball <chris@printf.net>, Liam Girdwood <lgirdwood@gmail.com>,
-        Balaji T K <balajitk@ti.com>,
-        Florian Vaussard <florian.vaussard@epfl.ch>, Stefan Roese <sr@denx.de>,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Message-ID: <20140414211644.GG12304@sirena.org.uk>
-References: <1394250929.3892.1.camel@phoenix>
+	Mon, 14 Apr 2014 17:08:38 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="doKZ0ri6bHmN2Q5y"
-Content-Disposition: inline
-In-Reply-To: <1394250929.3892.1.camel@phoenix>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 1/2] regulator: pbias: Fix is_enabled callback
- implementation
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20140414154911.GH3308@sgi.com>
+References: <CAHO5Pa0VCzR7oqNXkwELuAsNQnnvF8Xoo=CuCaM64-GzjDuoFA@mail.gmail.com>
+ <20140414154911.GH3308@sgi.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Mon, 14 Apr 2014 23:08:16 +0200
+Message-ID: <CAKgNAkicfxhdsa_fa6MCOR-UtbjzYaTv2gRzWq2qKHCuYHc3KA@mail.gmail.com>
+Subject: Re: Documenting prctl() PR_SET_THP_DISABLE and PR_GET_THP_DISABLE
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-mm <linux-mm@kvack.org>, Linux API <linux-api@vger.kernel.org>,
+        linux-man <linux-man@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 14, 2014 at 5:49 PM, Alex Thorlton <athorlton@sgi.com> wrote:
+> On Mon, Apr 14, 2014 at 12:15:01PM +0200, Michael Kerrisk wrote:
+>> Alex,
+>>
+>> Your commit a0715cc22601e8830ace98366c0c2bd8da52af52 added the prctl()
+>> PR_SET_THP_DISABLE and PR_GET_THP_DISABLE flags.
+>>
+>> The text below attempts to document these flags for the prctl(3).
+>> Could you (and anyone else who is willing) please review the text
+>> below (one or two p[ieces of which are drawn from your commit message)
+>> to verify that it accurately reflects reality and your intent, and
+>> that I have not missed any significant details.
+>
+> Looks fine to me!
 
---doKZ0ri6bHmN2Q5y
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks, Alex.
 
-On Sat, Mar 08, 2014 at 11:55:29AM +0800, Axel Lin wrote:
-> The is_enabled implementation is wrong in some cases:
-> e.g. for pbias_mmc_omap5: enable_mask is : BIT(27) | BIT(25) | BIT(26)
-> However, pbias_regulator_enable() only sets BIT(27) | BIT(26) bits.
-> So is_enabled callback will always return false in this case.
-> Fix the logic to compare the register value with info->enable rather than
-> info->enable_mask.
+Cheers,
 
-Applied both, thanks.
+Michael
 
---doKZ0ri6bHmN2Q5y
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTTFA5AAoJELSic+t+oim9JQMP/20rRsKXT4ak8E0OlIBfw+vj
-ySYYv/ipvCFqanhlxPW6w+n5xSvjCaJFslktkXSkDwrFo4go/9I0yOGge3jr+viV
-15HfMROhNBtZmRJX213U+XJZaw/0KINnTvZqlMwo2kcDhdJ1wg4/YXQhliY38pv5
-CJpcoW5sMulsn3EqgZN/8dGUyDkf2dvi8QJTjME39vAdzazfe/87RojokdtveneG
-L09Z5fBVP5/oAtzP9Jz/Md8JVC1FjmDOt8+L+hMAlL8fp/SHUb1zfS064PLh/0qz
-1Jp/T7IhaaM0QBa56XzH986PeQ5f1EUA3g8xpn+WBmixUCAk+2FJuC+7+KhfZ89h
-EXzPQtSAK5VfxCZHcAfQqCbtK7FADLQTOUsLgQ2QyEDi5JxOMofd4ZQ/Ec+M8gTC
-cmMz3eG7KJv4nBeBKxW4o2Bz0wLPkKGGdoNJ2kFiOkhQUNFPzPpJKA5EMfhUy1oi
-zBhHkCUSTJXVQ2YWoSlOPKbW4Qjs2ubdR6iWdMZmVoog26ri3ktkRFSCMHNH7NWD
-opajMEQYrYL0m6MNkeLbyS7JqbN8uUaCaEQbvfuwtW8Mp4XmQ+Zy07LnUBhDiL0n
-zKNBwomtPF8PHk6gQRqEh0ufiC+4QwgqlOGbyykxhAc0W355aAyboB639rKFlXku
-OKcfAhRSYyZJZ2mXdhyL
-=A465
------END PGP SIGNATURE-----
-
---doKZ0ri6bHmN2Q5y--
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
