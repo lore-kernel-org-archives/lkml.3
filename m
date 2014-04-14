@@ -1,93 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071AbaDNWNP (ORCPT <rfc822;w@1wt.eu>);
+	id S1756212AbaDNWNU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 18:13:20 -0400
+Received: from mail-bn1lp0145.outbound.protection.outlook.com ([207.46.163.145]:26432
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755682AbaDNWNP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Apr 2014 18:13:15 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3329 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754954AbaDNWHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 18:07:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,859,1389772800"; 
-   d="scan'208";a="520716155"
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-To: jic23@kernel.org
-Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Subject: [Patch v5 1/6] devres: introduce API "devm_kmemdup
-Date: Mon, 14 Apr 2014 15:11:02 -0700
-Message-Id: <1397513467-21397-2-git-send-email-srinivas.pandruvada@linux.intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1397513467-21397-1-git-send-email-srinivas.pandruvada@linux.intel.com>
-References: <1397513467-21397-1-git-send-email-srinivas.pandruvada@linux.intel.com>
+X-Greylist: delayed 1783 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Apr 2014 18:13:15 EDT
+X-WSS-ID: 0N41KDV-08-EI7-02
+X-M-MSG: 
+From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+To: Christoph Jaeger <christophjaeger@linux.com>,
+        "Koenig, Christian" <Christian.Koenig@amd.com>,
+        "airlied@linux.ie" <airlied@linux.ie>
+CC: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] drm/radeon: fix VCE fence command
+Thread-Topic: [PATCH] drm/radeon: fix VCE fence command
+Thread-Index: AQHPWC5qzje95AzAV0CBczEcWMQp+ZsRrN4A
+Date: Mon, 14 Apr 2014 22:13:08 +0000
+Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D03ECB19EF@satlexdag05.amd.com>
+References: <1397513422-1566-1-git-send-email-christophjaeger@linux.com>
+In-Reply-To: <1397513422-1566-1-git-send-email-christophjaeger@linux.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.180.168.240]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(377454003)(13464003)(51704005)(97756001)(80976001)(44976005)(19580395003)(83322001)(19580405001)(50986999)(76176999)(54356999)(99396002)(2009001)(50466002)(53416003)(4396001)(76482001)(55846006)(79102001)(23726002)(80022001)(20776003)(47776003)(81542001)(46406003)(2656002)(92566001)(92726001)(86362001)(84676001)(46102001)(77982001)(33656001)(81342001)(87936001)(85852003)(31966008)(74502001)(74662001)(83072002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR02MB113;H:atltwp02.amd.com;FPR:1A7E41A1.80F70542.F3E0AB87.B2EE7AC2.201F6;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-PRVS: 0181F4652A
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce devm_kmemdup, which uses resource managed kmalloc.
-There are several request from maintainers to add this instead
-of using kmemdup.
+> -----Original Message-----
+> From: Christoph Jaeger [mailto:christophjaeger@linux.com]
+> Sent: Monday, April 14, 2014 6:10 PM
+> To: Deucher, Alexander; Koenig, Christian; airlied@linux.ie
+> Cc: dri-devel@lists.freedesktop.org; linux-kernel@vger.kernel.org; Christoph
+> Jaeger
+> Subject: [PATCH] drm/radeon: fix VCE fence command
+> 
+> Due to a type mismatch that causes an implicit type conversion, the
+> upper 32 bits of the GPU address have been zeroed out when adding to the
+> command buffer.
+> 
+> Picked up by Coverity - CID 1198624.
+> 
+> Signed-off-by: Christoph Jaeger <christophjaeger@linux.com>
 
-Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
----
- Documentation/driver-model/devres.txt |  1 +
- drivers/base/devres.c                 | 21 +++++++++++++++++++++
- include/linux/device.h                |  2 ++
- 3 files changed, 24 insertions(+)
+Good catch!
 
-diff --git a/Documentation/driver-model/devres.txt b/Documentation/driver-model/devres.txt
-index 4f7897e..4999518 100644
---- a/Documentation/driver-model/devres.txt
-+++ b/Documentation/driver-model/devres.txt
-@@ -236,6 +236,7 @@ certainly invest a bit more effort into libata core layer).
- MEM
-   devm_kzalloc()
-   devm_kfree()
-+  devm_kmemdup()
- 
- IIO
-   devm_iio_device_alloc()
-diff --git a/drivers/base/devres.c b/drivers/base/devres.c
-index db4e264..d0914cb 100644
---- a/drivers/base/devres.c
-+++ b/drivers/base/devres.c
-@@ -831,3 +831,24 @@ void devm_kfree(struct device *dev, void *p)
- 	WARN_ON(rc);
- }
- EXPORT_SYMBOL_GPL(devm_kfree);
-+
-+/**
-+ * devm_kmemdup - Resource-managed kmemdup
-+ * @dev: Device this memory belongs to
-+ * @src: Memory region to duplicate
-+ * @len: Memory region length
-+ * @gfp: GFP mask to use
-+ *
-+ * Duplicate region of a memory using resource managed kmalloc
-+ */
-+void *devm_kmemdup(struct device *dev, const void *src, size_t len, gfp_t gfp)
-+{
-+	void *p;
-+
-+	p = devm_kmalloc(dev, len, gfp);
-+	if (p)
-+		memcpy(p, src, len);
-+
-+	return p;
-+}
-+EXPORT_SYMBOL_GPL(devm_kmemdup);
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 233bbbe..4a37849 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -629,6 +629,8 @@ static inline void *devm_kcalloc(struct device *dev,
- }
- extern void devm_kfree(struct device *dev, void *p);
- extern char *devm_kstrdup(struct device *dev, const char *s, gfp_t gfp);
-+extern void *devm_kmemdup(struct device *dev, const void *src, size_t len,
-+			  gfp_t gfp);
- 
- void __iomem *devm_ioremap_resource(struct device *dev, struct resource *res);
- void __iomem *devm_request_and_ioremap(struct device *dev,
--- 
-1.7.11.7
+Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+
+> ---
+>  drivers/gpu/drm/radeon/radeon_vce.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/gpu/drm/radeon/radeon_vce.c
+> b/drivers/gpu/drm/radeon/radeon_vce.c
+> index 76e9904..ced53dd 100644
+> --- a/drivers/gpu/drm/radeon/radeon_vce.c
+> +++ b/drivers/gpu/drm/radeon/radeon_vce.c
+> @@ -613,7 +613,7 @@ void radeon_vce_fence_emit(struct radeon_device
+> *rdev,
+>  			   struct radeon_fence *fence)
+>  {
+>  	struct radeon_ring *ring = &rdev->ring[fence->ring];
+> -	uint32_t addr = rdev->fence_drv[fence->ring].gpu_addr;
+> +	uint64_t addr = rdev->fence_drv[fence->ring].gpu_addr;
+> 
+>  	radeon_ring_write(ring, VCE_CMD_FENCE);
+>  	radeon_ring_write(ring, addr);
+> --
+> 1.9.0
 
