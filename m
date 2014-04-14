@@ -1,68 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281AbaDNSvT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 14:51:19 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:55173 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755112AbaDNSun (ORCPT
+	id S1755322AbaDNSvp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 14:51:45 -0400
+Received: from mail-yk0-f181.google.com ([209.85.160.181]:48840 "EHLO
+	mail-yk0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906AbaDNSvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 14:50:43 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Devicetree List <devicetree@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-Cc: Tim Kryger <tim.kryger@linaro.org>, Markus Mayer <markus.mayer@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 4/4] ARM: dts: bcm590xx: add support for GPLDO and VBUS regulators
-Date: Mon, 14 Apr 2014 14:50:28 -0400
-Message-Id: <1397501428-8857-5-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <1397501428-8857-1-git-send-email-mporter@linaro.org>
-References: <1397501428-8857-1-git-send-email-mporter@linaro.org>
+	Mon, 14 Apr 2014 14:51:43 -0400
+X-Greylist: delayed 380 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Apr 2014 14:51:43 EDT
+Message-ID: <534C2CC2.9050706@gmail.com>
+Date: Mon, 14 Apr 2014 14:45:22 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: catalin.marinas@arm.com, will.deacon@arm.com,
+        Joe Perches <joe@perches.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [RFC PATCH 1/1] prefetch result in 64 bit atomic ops
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds additional nodes to support GPLDO1-6 and VBUS regulators which
-are not supported in the bcm590xx regulator driver.
+Please disregard previous patches. This is the correct one. 
 
-Signed-off-by: Matt Porter <mporter@linaro.org>
+prefetch destination as is being done in ARM32 atomic ops
+
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 ---
- arch/arm/boot/dts/bcm59056.dtsi | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ arch/arm64/include/asm/atomic.h | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/arch/arm/boot/dts/bcm59056.dtsi b/arch/arm/boot/dts/bcm59056.dtsi
-index dfadaaa..066adfb 100644
---- a/arch/arm/boot/dts/bcm59056.dtsi
-+++ b/arch/arm/boot/dts/bcm59056.dtsi
-@@ -70,5 +70,26 @@
+diff --git a/arch/arm64/include/asm/atomic.h b/arch/arm64/include/asm/atomic.h
+index 0237f08..845f9be 100644
+--- a/arch/arm64/include/asm/atomic.h
++++ b/arch/arm64/include/asm/atomic.h
+@@ -48,6 +48,7 @@ static inline void atomic_add(int i, atomic_t *v)
+ 	unsigned long tmp;
+ 	int result;
  
- 		vsr_reg: vsr {
- 		};
-+
-+		gpldo1_reg: gpldo1 {
-+		};
-+
-+		gpldo2_reg: gpldo2 {
-+		};
-+
-+		gpldo3_reg: gpldo3 {
-+		};
-+
-+		gpldo4_reg: gpldo4 {
-+		};
-+
-+		gpldo5_reg: gpldo5 {
-+		};
-+
-+		gpldo6_reg: gpldo6 {
-+		};
-+
-+		vbus_reg: vbus {
-+		};
- 	};
- };
++	prefetchw(&v->counter);
+ 	asm volatile("// atomic_add\n"
+ "1:	ldxr	%w0, %2\n"
+ "	add	%w0, %w0, %w3\n"
+@@ -62,6 +63,7 @@ static inline int atomic_add_return(int i, atomic_t *v)
+ 	unsigned long tmp;
+ 	int result;
+ 
++	prefetchw(&v->counter);
+ 	asm volatile("// atomic_add_return\n"
+ "1:	ldxr	%w0, %2\n"
+ "	add	%w0, %w0, %w3\n"
+@@ -80,6 +82,7 @@ static inline void atomic_sub(int i, atomic_t *v)
+ 	unsigned long tmp;
+ 	int result;
+ 
++	prefetchw(&v->counter);
+ 	asm volatile("// atomic_sub\n"
+ "1:	ldxr	%w0, %2\n"
+ "	sub	%w0, %w0, %w3\n"
+@@ -94,6 +97,7 @@ static inline int atomic_sub_return(int i, atomic_t *v)
+ 	unsigned long tmp;
+ 	int result;
+ 
++	prefetchw(&v->counter);
+ 	asm volatile("// atomic_sub_return\n"
+ "1:	ldxr	%w0, %2\n"
+ "	sub	%w0, %w0, %w3\n"
+@@ -113,6 +117,7 @@ static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
+ 	int oldval;
+ 
+ 	smp_mb();
++	prefetchw(&ptr->counter);
+ 
+ 	asm volatile("// atomic_cmpxchg\n"
+ "1:	ldxr	%w1, %2\n"
+@@ -170,6 +175,7 @@ static inline void atomic64_add(u64 i, atomic64_t *v)
+ 	long result;
+ 	unsigned long tmp;
+ 
++	prefetchw(&v->counter);
+ 	asm volatile("// atomic64_add\n"
+ "1:	ldxr	%0, %2\n"
+ "	add	%0, %0, %3\n"
+@@ -184,6 +190,7 @@ static inline long atomic64_add_return(long i, atomic64_t *v)
+ 	long result;
+ 	unsigned long tmp;
+ 
++	prefetchw(&v->counter);
+ 	asm volatile("// atomic64_add_return\n"
+ "1:	ldxr	%0, %2\n"
+ "	add	%0, %0, %3\n"
+@@ -202,6 +209,7 @@ static inline void atomic64_sub(u64 i, atomic64_t *v)
+ 	long result;
+ 	unsigned long tmp;
+ 
++	prefetchw(&v->counter);
+ 	asm volatile("// atomic64_sub\n"
+ "1:	ldxr	%0, %2\n"
+ "	sub	%0, %0, %3\n"
+@@ -216,6 +224,7 @@ static inline long atomic64_sub_return(long i, atomic64_t *v)
+ 	long result;
+ 	unsigned long tmp;
+ 
++	prefetchw(&v->counter);
+ 	asm volatile("// atomic64_sub_return\n"
+ "1:	ldxr	%0, %2\n"
+ "	sub	%0, %0, %3\n"
+@@ -235,6 +244,7 @@ static inline long atomic64_cmpxchg(atomic64_t *ptr, long old, long new)
+ 	unsigned long res;
+ 
+ 	smp_mb();
++	prefetchw(&ptr->counter);
+ 
+ 	asm volatile("// atomic64_cmpxchg\n"
+ "1:	ldxr	%1, %2\n"
+@@ -258,6 +268,7 @@ static inline long atomic64_dec_if_positive(atomic64_t *v)
+ 	long result;
+ 	unsigned long tmp;
+ 
++	prefetchw(&v->counter);
+ 	asm volatile("// atomic64_dec_if_positive\n"
+ "1:	ldxr	%0, %2\n"
+ "	subs	%0, %0, #1\n"
 -- 
-1.8.4
-
+1.9.1
