@@ -1,85 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140AbaDNGEs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 02:04:48 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:47616 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905AbaDNGEq (ORCPT
+	id S1752864AbaDNGFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 02:05:47 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:38273 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752263AbaDNGFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 02:04:46 -0400
-X-AuditID: cbfee68f-b7f156d00000276c-c2-534b7a7cb1c6
-Message-id: <534B7A80.3010509@samsung.com>
-Date: Mon, 14 Apr 2014 15:04:48 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        t.figa@samsung.com, linux-samsung-soc@vger.kernel.org,
-        hyunhee.kim@samsung.com, sw0312.kim@samsung.com,
-        linux-kernel@vger.kernel.org, yj44.cho@samsung.com,
-        inki.dae@samsung.com, kyungmin.park@samsung.com,
-        Sachin Kamat <sachin.kamat@linaro.org>
-Subject: Re: [PATCH 03/27] ARM: EXYNOS: Add IO mapping for PMU of Exynos3250
-References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
- <1397122124-15690-4-git-send-email-cw00.choi@samsung.com>
- <4996376.GgWd9rnCP3@wuerfel>
-In-reply-to: <4996376.GgWd9rnCP3@wuerfel>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJIsWRmVeSWpSXmKPExsWyRsSkQLe2yjvYYP42Jou/k46xW3z+0MJu
-	Men+BBaL3gVX2SzONr1ht9j0+BqrxeVdc9gsZpzfx2Rx8k8vo8WMyS/ZLNbPeM1isXfnZEYH
-	Ho/fvyYxety5tofNY/OSeo++LasYPT5vkgtgjeKySUnNySxLLdK3S+DK2HJlIWvBdraKqXu+
-	MDYwLmHtYuTkkBAwkXj/7gojhC0mceHeerYuRi4OIYGljBJrJ3+EK/q7Yz0LRGIRo8TyaaeZ
-	IJzXjBJ3Px5iBqniFdCSWHrmE9goFgFViQ3dq8FsNqD4/hc32EBsUYEwiZXTr7BA1AtK/Jh8
-	D8wWEVCUmPriGTPIUGaBPUwSl7u/gSWEBXwk7l49yw6xbQGjxPaJz8AmcQpoSky/uAJsA7OA
-	jsT+1mlsELa8xOY1b8EmSQj8ZJe4dKeVGeIkAYlvkw8BTeUASshKbDrADPGbpMTBFTdYJjCK
-	zUJy1CwkY2chGbuAkXkVo2hqQXJBcVJ6kbFecWJucWleul5yfu4mRmC0nv73rH8H490D1ocY
-	k4FWTmSWEk3OB0Z7Xkm8obGZkYWpiamxkbmlGWnCSuK89x8mBQkJpCeWpGanphakFsUXleak
-	Fh9iZOLglGpgXP/lmFL1oTPlmu+mt8yOWLwqv3ureWqJ79+LJdE6Zzk0lvOEKkUq5H+vm6M0
-	65bgH+Z/OcFvju+7GqPtwHTW18XvwIyt2dKf8xQOfHgyU2Lx26dJnqfWX2buD7mQsjm5im35
-	NIcuoZ3i/GZt9Vvf2RnPZeSQPlZy+3OG0rObZU92POE6UB6bpMRSnJFoqMVcVJwIAIZst+Xs	AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGKsWRmVeSWpSXmKPExsVy+t9jAd2aKu9gg9fzzS3+TjrGbvH5Qwu7
-	xaT7E1gsehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PFyT+9jBYzJr9ks1g/4zWLxd6dkxkd
-	eDx+/5rE6HHn2h42j81L6j36tqxi9Pi8SS6ANaqB0SYjNTEltUghNS85PyUzL91WyTs43jne
-	1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6D4lhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4h
-	QXA9RgZoIGENY8aWKwtZC7azVUzd84WxgXEJaxcjJ4eEgInE3x3rWSBsMYkL99azdTFycQgJ
-	LGKUWD7tNBOE85pR4u7HQ8wgVbwCWhJLz3xiBLFZBFQlNnSvBrPZgOL7X9xgA7FFBcIkVk6/
-	wgJRLyjxY/I9MFtEQFFi6otnzCBDmQX2MElc7v4GlhAW8JG4e/UsO8S2BYwS2yc+A5vEKaAp
-	Mf3iCrANzAI6Evtbp7FB2PISm9e8ZZ7AKDALyZJZSMpmISlbwMi8ilE0tSC5oDgpPddIrzgx
-	t7g0L10vOT93EyM4FTyT3sG4qsHiEKMAB6MSD2/Cds9gIdbEsuLK3EOMEhzMSiK82zK8goV4
-	UxIrq1KL8uOLSnNSiw8xJgPDYCKzlGhyPjBN5ZXEGxqbmBlZGpkbWhgZm5MmrCTOe7DVOlBI
-	ID2xJDU7NbUgtQhmCxMHp1QDYzWbjcmxozUVGZn+v9+4KtUeV5m89x3HIUOflJ1TbQpdHv3a
-	fvOhrOzxr/P4FjiohU+v+bJzpYKjYeqDhsSDzreT2bXLmkLXbDu3+IHlHLmzekYZJXa+x0s2
-	ndl4sWnz65Spq47GlUSWMjluU82+vrieT81vj/iUNTtX753575hm+e67n7l2zlNiKc5INNRi
-	LipOBACGR+VDSQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 14 Apr 2014 02:05:45 -0400
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: viro@zeniv.linux.org.uk, akpm@linux-foundation.org
+Cc: fabf@skynet.be, rakesh@tuxera.com, tytso@mit.edu,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] befs: replace goto with while
+Date: Mon, 14 Apr 2014 15:05:40 +0900
+Message-ID: <1621522.xn25S7ZxMj@daeseok-laptop.cloud.net>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Arnd and Kukjin,
 
-On 04/10/2014 06:46 PM, Arnd Bergmann wrote:
-> On Thursday 10 April 2014 18:28:20 Chanwoo Choi wrote:
->> This patch add memory mapping for PMU (Power Management Unit) which is used
->> for power control of Exynos3250.
->>
->> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> 
-> Same thing as for the SRAM here, can you work on making this a proper
-> driver instead?
-> 
+The goto in befs_readdir() can be replaced with while.
 
-As Chanho Park said, Sachin already submitted the DT support[1] for SYSRAM area.
-[1] : http://www.spinics.net/lists/linux-samsung-soc/msg27647.html
+And also fix smatch warnings:
+ fs/befs/linuxvfs.c:283 befs_readdir() info:
+ignoring unreachable code.
+ fs/befs/linuxvfs.c:283 befs_readdir() info:
+ignoring unreachable code.
 
-But, this patch has not yet to merge git repository(linux-samsung.git, arm-soc.git).
-So, I'll make a driver to handle PMU memory mapping after Sachin's patch is merged.
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+ fs/befs/linuxvfs.c |   86 +++++++++++++++++++++++++++-------------------------
+ 1 files changed, 45 insertions(+), 41 deletions(-)
 
-Best Regards,
-Chanwoo Choi
+diff --git a/fs/befs/linuxvfs.c b/fs/befs/linuxvfs.c
+index d626756..640f8775 100644
+--- a/fs/befs/linuxvfs.c
++++ b/fs/befs/linuxvfs.c
+@@ -227,6 +227,7 @@ befs_readdir(struct file *file, struct dir_context *ctx)
+ 	befs_data_stream *ds = &BEFS_I(inode)->i_data.ds;
+ 	befs_off_t value;
+ 	int result;
++	int ret = 0;
+ 	size_t keysize;
+ 	unsigned char d_type;
+ 	char keybuf[BEFS_NAME_LEN + 1];
+@@ -235,54 +236,57 @@ befs_readdir(struct file *file, struct dir_context *ctx)
+ 	befs_debug(sb, "---> %s name %s, inode %ld, ctx->pos %lld",
+ 		  __func__, dirname, inode->i_ino, ctx->pos);
+ 
+-more:
+-	result = befs_btree_read(sb, ds, ctx->pos, BEFS_NAME_LEN + 1,
+-				 keybuf, &keysize, &value);
++	while (1) {
++		result = befs_btree_read(sb, ds, ctx->pos, BEFS_NAME_LEN + 1,
++					 keybuf, &keysize, &value);
+ 
+-	if (result == BEFS_ERR) {
+-		befs_debug(sb, "<--- %s ERROR", __func__);
+-		befs_error(sb, "IO error reading %s (inode %lu)",
+-			   dirname, inode->i_ino);
+-		return -EIO;
++		if (result == BEFS_ERR) {
++			befs_debug(sb, "<--- %s ERROR", __func__);
++			befs_error(sb, "IO error reading %s (inode %lu)",
++				   dirname, inode->i_ino);
++			ret = -EIO;
++			break;
+ 
+-	} else if (result == BEFS_BT_END) {
+-		befs_debug(sb, "<--- %s END", __func__);
+-		return 0;
++		} else if (result == BEFS_BT_END) {
++			befs_debug(sb, "<--- %s END", __func__);
++			break;
+ 
+-	} else if (result == BEFS_BT_EMPTY) {
+-		befs_debug(sb, "<--- %s Empty directory", __func__);
+-		return 0;
+-	}
++		} else if (result == BEFS_BT_EMPTY) {
++			befs_debug(sb, "<--- %s Empty directory", __func__);
++			break;
++		}
+ 
+-	d_type = DT_UNKNOWN;
++		d_type = DT_UNKNOWN;
+ 
+-	/* Convert to NLS */
+-	if (BEFS_SB(sb)->nls) {
+-		char *nlsname;
+-		int nlsnamelen;
+-		result =
+-		    befs_utf2nls(sb, keybuf, keysize, &nlsname, &nlsnamelen);
+-		if (result < 0) {
+-			befs_debug(sb, "<--- %s ERROR", __func__);
+-			return result;
+-		}
+-		if (!dir_emit(ctx, nlsname, nlsnamelen,
+-				 (ino_t) value, d_type)) {
++		/* Convert to NLS */
++		if (BEFS_SB(sb)->nls) {
++			char *nlsname;
++			int nlsnamelen;
++
++			result = befs_utf2nls(sb, keybuf, keysize, &nlsname,
++					      &nlsnamelen);
++
++			if (result < 0) {
++				befs_debug(sb, "<--- %s ERROR", __func__);
++				ret = result;
++				break;
++			}
++			if (!dir_emit(ctx, nlsname, nlsnamelen,
++				      (ino_t) value, d_type)) {
++				kfree(nlsname);
++				break;
++			}
+ 			kfree(nlsname);
+-			return 0;
++		} else {
++			if (!dir_emit(ctx, keybuf, keysize,
++				      (ino_t) value, d_type))
++				break;
+ 		}
+-		kfree(nlsname);
+-	} else {
+-		if (!dir_emit(ctx, keybuf, keysize,
+-				 (ino_t) value, d_type))
+-			return 0;
++		ctx->pos++;
++		befs_debug(sb, "<--- %s pos %lld", __func__, ctx->pos);
+ 	}
+-	ctx->pos++;
+-	goto more;
+ 
+-	befs_debug(sb, "<--- %s pos %lld", __func__, ctx->pos);
+-
+-	return 0;
++	return ret;
+ }
+ 
+ static struct inode *
+-- 
+1.7.4.4
+
+
