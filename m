@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549AbaDNIEz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 04:04:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30784 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754452AbaDNIEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 04:04:43 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, xjtuwjp@gmail.com,
-        lindar_liu@usish.com, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v2 RESEND 17/23] pm8001: Fix invalid return when request_irq() failed
-Date: Mon, 14 Apr 2014 10:05:41 +0200
-Message-Id: <9b683169555723c3b38d523923d1e8f809de9493.1397461652.git.agordeev@redhat.com>
-In-Reply-To: <cover.1397461652.git.agordeev@redhat.com>
-References: <cover.1397461652.git.agordeev@redhat.com>
+	id S1753922AbaDNIIJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 04:08:09 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:58821 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085AbaDNIIC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 04:08:02 -0400
+X-Original-SENDERIP: 10.178.36.63
+X-Original-MAILFROM: chanho.min@lge.com
+From: Chanho Min <chanho.min@lge.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Chanho Min <chanho.min@lge.com>
+Subject: [PATCH] arm64:kconfig: make default for CONFIG_COMPAT
+Date: Mon, 14 Apr 2014 17:08:03 +0900
+Message-Id: <1397462883-12740-1-git-send-email-chanho.min@lge.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a call to request_irq() failed pm8001_setup_msix()
-still returns the success. This udate fixes the described
-misbehaviour.
+'make savedefconfig' doesn't generate defconfig properly due to
+missing COMPAT default. So Add default and set to yes.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: xjtuwjp@gmail.com
-Cc: lindar_liu@usish.com
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
-Acked-by: Jack Wang <xjtuwjp@gmail.com>
+Signed-off-by: Chanho Min <chanho.min@lge.com>
 ---
- drivers/scsi/pm8001/pm8001_init.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ arch/arm64/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/scsi/pm8001/pm8001_init.c b/drivers/scsi/pm8001/pm8001_init.c
-index c4f31b21..df421f5 100644
---- a/drivers/scsi/pm8001/pm8001_init.c
-+++ b/drivers/scsi/pm8001/pm8001_init.c
-@@ -740,9 +740,10 @@ static u32 pm8001_setup_msix(struct pm8001_hba_info *pm8001_ha)
- 			pm8001_ha->irq_vector[i].irq_id = i;
- 			pm8001_ha->irq_vector[i].drv_inst = pm8001_ha;
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 4907b85..93b7531 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -294,6 +294,7 @@ source "fs/Kconfig.binfmt"
  
--			if (request_irq(pm8001_ha->msix_entries[i].vector,
-+			rc = request_irq(pm8001_ha->msix_entries[i].vector,
- 				pm8001_interrupt_handler_msix, flag,
--				intr_drvname[i], &(pm8001_ha->irq_vector[i]))) {
-+				intr_drvname[i], &(pm8001_ha->irq_vector[i]));
-+			if (rc) {
- 				for (j = 0; j < i; j++)
- 					free_irq(
- 					pm8001_ha->msix_entries[j].vector,
+ config COMPAT
+ 	bool "Kernel support for 32-bit EL0"
++	default y
+ 	depends on !ARM64_64K_PAGES
+ 	select COMPAT_BINFMT_ELF
+ 	select HAVE_UID16
 -- 
-1.7.7.6
+1.7.9.5
 
