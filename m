@@ -1,95 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384AbaDNRWE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 13:22:04 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42344 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975AbaDNRWB (ORCPT
+	id S1754778AbaDNRXQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 13:23:16 -0400
+Received: from mail-qg0-f50.google.com ([209.85.192.50]:56733 "EHLO
+	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474AbaDNRXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 13:22:01 -0400
-Message-ID: <534C193A.2000806@gmail.com>
-Date: Mon, 14 Apr 2014 11:22:02 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 14 Apr 2014 13:23:15 -0400
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 3/5] perf tools: Reference count map_groups objects
-References: <1397490723-1992-1-git-send-email-jolsa@redhat.com> <1397490723-1992-4-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1397490723-1992-4-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <cover.1397487345.git.luto@amacapital.net>
+References: <cover.1397487345.git.luto@amacapital.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 14 Apr 2014 10:22:54 -0700
+Message-ID: <CALCETrV3iP4ogtqK26D_YYXi9eHXfLcjNcLeXP9TNYRwV0ogZw@mail.gmail.com>
+Subject: Re: [PATCH resend 0/2] random: Use DRBG sources
+To: "Theodore Ts'o" <tytso@mit.edu>, Greg Price <price@mit.edu>
+Cc: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>,
+        tpmdd-devel@lists.sourceforge.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/14/14, 9:52 AM, Jiri Olsa wrote:
-> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Mon, Apr 14, 2014 at 8:49 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> [Resent because I forgot to email lkml.  This also surreptitiously
+>  fixes a silly typo on a patch description.]
 >
-> We will share it among threads in the same process.
+> This is my attempt to come up with a workable way to use so-called
+> entropy sources like a TPM to feed /dev/urandom.
 >
-> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Adrian Hunter <adrian.hunter@intel.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Don Zickus <dzickus@redhat.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Mike Galbraith <efault@gmx.de>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Stephane Eranian <eranian@google.com>
-> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-> ---
->   tools/perf/util/map.c    | 7 +++++++
->   tools/perf/util/map.h    | 9 +++++++++
->   tools/perf/util/thread.c | 2 +-
->   3 files changed, 17 insertions(+), 1 deletion(-)
+> Arguably we should be feeding the input pool as well, but if the
+> /dev/random algorithm is correct, this shouldn't matter.  I don't want
+> sensible use of TPMs for /dev/urandom to block on a long debate about
+> /dev/random, so these patches have no effect on /dev/random.
+
+Please consider these patches withdrawn.  I'll redo them on top of the
+hwrng stuff.
+
+Reasons:
+
+ - add_drbg_randomness can probably be replaced with
+add_device_randomness.  I'm not convinced that I like
+add_device_randomness as a way to add small amounts of entropy: if an
+attacker knows the initial state of the nonblocking pool, they can use
+it to back out small amounts of entropy added via
+add_device_randomness, which allows them to track all input_pool
+entropy added by add_device_randomness.  This type of attack is
+impractical for large amounts of device randomness added at once, so
+this is orthogonal to the purpose of my patches.
+
+ - The hwrng code itself is already a sensible place to do this kind
+of initial seeding of the nonblocking pool, so I think that it would
+be better to improve the hwrng code a bit instead.
+
+My current thought is to split CONFIG_HW_RANDOM into
+CONFIG_HW_RANDOM_DEVICES and CONFIG_HW_RANDOM.
+CONFIG_HW_RANDOM_DEVICES will default to m and will expose
+hwrng_register but not the /dev/hwrng code.  hwrng_register will call
+add_device_randomness, but I'll add logging so that we can tell that
+it's working.
+
+I'll also rewrite the tpm hwrng driver.  There should be a hwrng
+instance per TPM, and it shouldn't show up until there's actually a
+TPM there.
+
+--Andy
+
 >
-> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-> index ae4c5e1..ba5f5c0c 100644
-> --- a/tools/perf/util/map.c
-> +++ b/tools/perf/util/map.c
-> @@ -323,6 +323,7 @@ void map_groups__init(struct map_groups *mg)
->   		INIT_LIST_HEAD(&mg->removed_maps[i]);
->   	}
->   	mg->machine = NULL;
-> +	mg->refcnt = 1;
->   }
+> Andy Lutomirski (2):
+>   random: Add add_drbg_randomness to safely seed urandom from crypto hw
+>   tpm,random: Call add_drbg_randomness after selftest
 >
->   static void maps__delete(struct rb_root *maps)
-> @@ -374,6 +375,12 @@ void map_groups__delete(struct map_groups *mg)
->   	free(mg);
->   }
+>  drivers/char/random.c            | 56 +++++++++++++++++++++++++++++++++++-----
+>  drivers/char/tpm/tpm-interface.c | 15 ++++++++++-
+>  include/linux/random.h           |  1 +
+>  include/trace/events/random.h    | 19 ++++++++++++++
+>  4 files changed, 83 insertions(+), 8 deletions(-)
 >
-> +void map_groups__put(struct map_groups *mg)
-> +{
-> +	if (--mg->refcnt == 0)
-> +		map_groups__delete(mg);
-> +}
-> +
->   void map_groups__flush(struct map_groups *mg)
->   {
->   	int type;
-> diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-> index 1073e2d..d6445b2 100644
-> --- a/tools/perf/util/map.h
-> +++ b/tools/perf/util/map.h
-> @@ -59,11 +59,20 @@ struct map_groups {
->   	struct rb_root	 maps[MAP__NR_TYPES];
->   	struct list_head removed_maps[MAP__NR_TYPES];
->   	struct machine	 *machine;
-> +	int		 refcnt;
->   };
+> --
+> 1.9.0
+>
 
 
-atomic for refcnt? This is part of a libperf; would be good to support 
-multithreaded users.
 
-David
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
