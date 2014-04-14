@@ -1,146 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755730AbaDNX5b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 19:57:31 -0400
-Received: from g2t2352.austin.hp.com ([15.217.128.51]:14085 "EHLO
-	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755629AbaDNX52 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 19:57:28 -0400
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: akpm@linux-foundation.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, davidlohr@hp.com,
-        aswin@hp.com
-Subject: [PATCH 2/3] mm,vmacache: add debug data
-Date: Mon, 14 Apr 2014 16:57:20 -0700
-Message-Id: <1397519841-24847-3-git-send-email-davidlohr@hp.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1397519841-24847-1-git-send-email-davidlohr@hp.com>
-References: <1397519841-24847-1-git-send-email-davidlohr@hp.com>
+	id S1755617AbaDNX51 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 19:57:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22794 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754607AbaDNX5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 19:57:23 -0400
+From: Baoquan He <bhe@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: rjw@rjwysocki.net, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        jiang.liu@linux.intel.com, vgoyal@redhat.com,
+        Baoquan He <bhe@redhat.com>
+Subject: [PATCH] acpi: try to trust cpu_index from x86_cpu_to_apicid
+Date: Tue, 15 Apr 2014 07:55:54 +0800
+Message-Id: <1397519754-10205-1-git-send-email-bhe@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a CONFIG_DEBUG_VM_VMACACHE option to enable
-counting the cache hit rate -- exported in /proc/vmstat.
+In smp with multi cpus, when enter into kdump kernel with only 1 cpu,
+a warning message is printed out:
 
-Any updates to the caching scheme needs this kind of data,
-thus it can save some work re-implementing the counting
-all the time.
+acpi LNXCPU:0a: BIOS reported wrong ACPI id 0 for the processor
 
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+In this case kdump kernel use the same ACPI tables as 1st kernel,
+means lapic information is got from MADT. The acpi_id related to
+this cpu index and lapic_id may not be 0, so the code to assign
+value to cpu_index is not correct in this case per cpu0_initialized.
+cpu index stored in x86_cpu_to_apicid need be respected.
+
+Now fix it in this patch per boot_cpu_physical_apicid. When cpu index
+related to boot_cpu_physical_apicid is not stored in x86_cpu_to_apicid,
+then we can say this is UP system running SMP kernel with no LAPIC in MADT
+
+Signed-off-by: Baoquan He <bhe@redhat.com>
 ---
- include/linux/vm_event_item.h |  4 ++++
- include/linux/vmstat.h        |  6 ++++++
- lib/Kconfig.debug             | 10 ++++++++++
- mm/vmacache.c                 |  9 ++++++++-
- mm/vmstat.c                   |  4 ++++
- 5 files changed, 32 insertions(+), 1 deletion(-)
+ drivers/acpi/acpi_processor.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
-index 486c397..ced9234 100644
---- a/include/linux/vm_event_item.h
-+++ b/include/linux/vm_event_item.h
-@@ -80,6 +80,10 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
- 		NR_TLB_LOCAL_FLUSH_ALL,
- 		NR_TLB_LOCAL_FLUSH_ONE,
- #endif /* CONFIG_DEBUG_TLBFLUSH */
-+#ifdef CONFIG_DEBUG_VM_VMACACHE
-+		VMACACHE_FIND_CALLS,
-+		VMACACHE_FIND_HITS,
-+#endif
- 		NR_VM_EVENT_ITEMS
- };
+diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+index c29c2c3..1ae460c 100644
+--- a/drivers/acpi/acpi_processor.c
++++ b/drivers/acpi/acpi_processor.c
+@@ -267,7 +267,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
+ 	pr->apic_id = apic_id;
  
-diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
-index 45c9cd1..82e7db7 100644
---- a/include/linux/vmstat.h
-+++ b/include/linux/vmstat.h
-@@ -95,6 +95,12 @@ static inline void vm_events_fold_cpu(int cpu)
- #define count_vm_tlb_events(x, y) do { (void)(y); } while (0)
- #endif
- 
-+#ifdef CONFIG_DEBUG_VM_VMACACHE
-+#define count_vm_vmacache_event(x) count_vm_event(x)
-+#else
-+#define count_vm_vmacache_event(x) do {} while (0)
-+#endif
-+
- #define __count_zone_vm_events(item, zone, delta) \
- 		__count_vm_events(item##_NORMAL - ZONE_NORMAL + \
- 		zone_idx(zone), delta)
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 819ac51..9ed3d9b 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -501,6 +501,16 @@ config DEBUG_VM
- 
- 	  If unsure, say N.
- 
-+config DEBUG_VM_VMACACHE
-+	bool "Debug VMA caching"
-+	depends on DEBUG_VM
-+	help
-+	  Enable this to turn on VMA caching debug information. Doing so
-+	  can cause significant overhead, so only enable it in non-production
-+	  environments.
-+
-+	  If unsure, say N.
-+
- config DEBUG_VM_RB
- 	bool "Debug VM red-black trees"
- 	depends on DEBUG_VM
-diff --git a/mm/vmacache.c b/mm/vmacache.c
-index d4224b3..e167da2 100644
---- a/mm/vmacache.c
-+++ b/mm/vmacache.c
-@@ -78,11 +78,14 @@ struct vm_area_struct *vmacache_find(struct mm_struct *mm, unsigned long addr)
- 	if (!vmacache_valid(mm))
- 		return NULL;
- 
-+	count_vm_vmacache_event(VMACACHE_FIND_CALLS);
-+
- 	for (i = 0; i < VMACACHE_SIZE; i++) {
- 		struct vm_area_struct *vma = current->vmacache[i];
- 
- 		if (vma && vma->vm_start <= addr && vma->vm_end > addr) {
- 			BUG_ON(vma->vm_mm != mm);
-+			count_vm_vmacache_event(VMACACHE_FIND_HITS);
- 			return vma;
- 		}
- 	}
-@@ -100,11 +103,15 @@ struct vm_area_struct *vmacache_find_exact(struct mm_struct *mm,
- 	if (!vmacache_valid(mm))
- 		return NULL;
- 
-+	count_vm_vmacache_event(VMACACHE_FIND_CALLS);
-+
- 	for (i = 0; i < VMACACHE_SIZE; i++) {
- 		struct vm_area_struct *vma = current->vmacache[i];
- 
--		if (vma && vma->vm_start == start && vma->vm_end == end)
-+		if (vma && vma->vm_start == start && vma->vm_end == end) {
-+			count_vm_vmacache_event(VMACACHE_FIND_HITS);
- 			return vma;
-+		}
- 	}
- 
- 	return NULL;
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 302dd07..82ce17c 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -866,6 +866,10 @@ const char * const vmstat_text[] = {
- 	"nr_tlb_local_flush_one",
- #endif /* CONFIG_DEBUG_TLBFLUSH */
- 
-+#ifdef CONFIG_DEBUG_VM_VMACACHE
-+	"vmacache_find_calls",
-+	"vmacache_find_hits",
-+#endif
- #endif /* CONFIG_VM_EVENTS_COUNTERS */
- };
- #endif /* CONFIG_PROC_FS || CONFIG_SYSFS || CONFIG_NUMA */
+ 	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
+-	if (!cpu0_initialized) {
++	if (!cpu0_initialized && (boot_cpu_physical_apicid == pr->apic_id)) {
+ 		cpu0_initialized = 1;
+ 		/* Handle UP system running SMP kernel, with no LAPIC in MADT */
+ 		if ((cpu_index == -1) && (num_online_cpus() == 1))
 -- 
-1.8.1.4
+1.8.5.3
 
