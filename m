@@ -1,52 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017AbaDNQQh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:16:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11284 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753583AbaDNQQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:16:35 -0400
-Date: Mon, 14 Apr 2014 18:18:23 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 RESEND 2/4] portdrv: Use pci_enable_msix_exact()
- instead of pci_enable_msix()
-Message-ID: <20140414161822.GA11804@dhcp-26-207.brq.redhat.com>
-References: <cover.1394128952.git.agordeev@redhat.com>
- <b1f560f01a176784ebfff28b84574d2850413729.1394128952.git.agordeev@redhat.com>
- <20140313035634.GA26657@google.com>
+	id S1755058AbaDNQSK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:18:10 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:52038 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753939AbaDNQSI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 12:18:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140313035634.GA26657@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1397491333-13746-1-git-send-email-masami256@gmail.com>
+References: <1397491333-13746-1-git-send-email-masami256@gmail.com>
+Date: Mon, 14 Apr 2014 09:18:06 -0700
+Message-ID: <CAMEtUuz6v1JKev+Saq4kcc=k9nW2Q9pU__n=7bjvvZV2EofLYA@mail.gmail.com>
+Subject: Re: [PATCH] seccomp: Release fp pointer when leaving from seccomp_attach_filter().
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Masami Ichikawa <masami256@gmail.com>
+Cc: Kees Cook <keescook@chromium.org>, "David S. Miller" <davem@davemloft.net>,
+        josh@joshtriplett.org, eparis@redhat.com, rashika.kheria@gmail.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 12, 2014 at 09:56:34PM -0600, Bjorn Helgaas wrote:
-> On Thu, Mar 06, 2014 at 09:11:22PM +0100, Alexander Gordeev wrote:
-> > As result of deprecation of MSI-X/MSI enablement functions
-> > pci_enable_msix() and pci_enable_msi_block() all drivers
-> > using these two interfaces need to be updated to use the
-> > new pci_enable_msi_range()  or pci_enable_msi_exact()
-> > and pci_enable_msix_range() or pci_enable_msix_exact()
-> > interfaces.
-> > 
-> > Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> > Cc: Bjorn Helgaas <bhelgaas@google.com>
-> > Cc: linux-pci@vger.kernel.org
-> 
-> Applied to pci/msi for v3.15, thanks!
+On Mon, Apr 14, 2014 at 9:02 AM, Masami Ichikawa <masami256@gmail.com> wrote:
+> kmemleak reported some memory leak as below.
 
-Hi Bjorn,
+grrr. yes. sorry.
 
-If this one indeed applied?
+> unreferenced object 0xffff8800d6ea4000 (size 512):
+>   comm "sshd", pid 278, jiffies 4294898315 (age 46.653s)
+>   hex dump (first 32 bytes):
+>     21 00 00 00 04 00 00 00 15 00 01 00 3e 00 00 c0  !...........>...
+>     06 00 00 00 00 00 00 00 21 00 00 00 00 00 00 00  ........!.......
+>   backtrace:
+>     [<ffffffff8151414e>] kmemleak_alloc+0x4e/0xb0
+>     [<ffffffff811a3a40>] __kmalloc+0x280/0x320
+>     [<ffffffff8110842e>] prctl_set_seccomp+0x11e/0x3b0
+>     [<ffffffff8107bb6b>] SyS_prctl+0x3bb/0x4a0
+>     [<ffffffff8152ef2d>] system_call_fastpath+0x1a/0x1f
+>     [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> This memory leak happend in seccomp_attach_filter().
+> The fp pointer was allocated via kzalloc so that it needs to realase memory
+> when leaving from function.
+>
+> This patch changed two things.
+> One is set -ENOMEM to ret, if fp is unable to get memory.
+> The other is removes "return 0" statement, and frees fp pointer before
+> leaving.
+>
+> Signed-off-by: Masami Ichikawa <masami256@gmail.com>
+> ---
+>  kernel/seccomp.c | 8 +++++---
+>  1 file changed, 5 insertions(+), 3 deletions(-)
+>
+> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+> index d8d046c..a9ce7a9 100644
+> --- a/kernel/seccomp.c
+> +++ b/kernel/seccomp.c
+> @@ -259,8 +259,10 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
+>         filter = kzalloc(sizeof(struct seccomp_filter) +
+>                          sizeof(struct sock_filter_int) * new_len,
+>                          GFP_KERNEL|__GFP_NOWARN);
+> -       if (!filter)
+> +       if (!filter) {
+> +               ret = -ENOMEM;
+>                 goto free_prog;
+> +       }
+
+agree. that's a good addition.
+
+>         ret = sk_convert_filter(fp, fprog->len, filter->insnsi, &new_len);
+>         if (ret)
+> @@ -275,10 +277,10 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
+>          */
+>         filter->prev = current->seccomp.filter;
+>         current->seccomp.filter = filter;
+> -       return 0;
+
+I think mixing error and ok return paths is ugly.
+Can you add kfree(fp) here instead of removing return 0?
 
 Thanks!
 
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+>  free_filter:
+> -       kfree(filter);
+> +       if (ret)
+> +               kfree(filter);
+>  free_prog:
+>         kfree(fp);
+>         return ret;
+> --
+> 1.9.1
+>
