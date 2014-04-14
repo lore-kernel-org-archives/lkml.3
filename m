@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605AbaDNSYO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 14:24:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49830 "EHLO mx1.redhat.com"
+	id S1754673AbaDNS12 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 14:27:28 -0400
+Received: from david.siemens.de ([192.35.17.14]:60680 "EHLO david.siemens.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751686AbaDNSYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 14:24:11 -0400
-Message-ID: <534C27BE.9020709@redhat.com>
-Date: Mon, 14 Apr 2014 20:23:58 +0200
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751053AbaDNS11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 14:27:27 -0400
+Message-ID: <534C2884.7050004@siemens.com>
+Date: Mon, 14 Apr 2014 20:27:16 +0200
+From: Jan Kiszka <jan.kiszka@siemens.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, Masami Ichikawa <masami256@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        James Morris <james.l.morris@oracle.com>, davem@davemloft.net,
-        eparis@redhat.com, netdev@vger.kernel.org
-Subject: Re: [PATCH] seccomp: fix memory leak on filter attach
-References: <20140414171114.GA31384@www.outflux.net>
-In-Reply-To: <20140414171114.GA31384@www.outflux.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Jailhouse <jailhouse-dev@googlegroups.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: "Sabony, Mazda" <Mazda.Sabony@amd.com>
+Subject: Developer wanted: AMD64 port of Jailhouse hypervisor
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2014 07:11 PM, Kees Cook wrote:
-> This sets the correct error code when final filter memory is unavailable,
-> and frees the raw filter no matter what.
->
-> unreferenced object 0xffff8800d6ea4000 (size 512):
->    comm "sshd", pid 278, jiffies 4294898315 (age 46.653s)
->    hex dump (first 32 bytes):
->      21 00 00 00 04 00 00 00 15 00 01 00 3e 00 00 c0  !...........>...
->      06 00 00 00 00 00 00 00 21 00 00 00 00 00 00 00  ........!.......
->    backtrace:
->      [<ffffffff8151414e>] kmemleak_alloc+0x4e/0xb0
->      [<ffffffff811a3a40>] __kmalloc+0x280/0x320
->      [<ffffffff8110842e>] prctl_set_seccomp+0x11e/0x3b0
->      [<ffffffff8107bb6b>] SyS_prctl+0x3bb/0x4a0
->      [<ffffffff8152ef2d>] system_call_fastpath+0x1a/0x1f
->      [<ffffffffffffffff>] 0xffffffffffffffff
->
-> Reported-by: Masami Ichikawa <masami256@gmail.com>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Cc: stable@vger.kernel.org
+Hi all,
 
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
+so far the Linux-based Jailhouse hypervisor [1] is only available for
+Intel x86 CPUs. I'm now very happy to announce that AMD is offering to
+sponsor the initial port of Jailhouse to the AMD64 architecture. Our
+resources here are unfortunately bound to different tasks, but if anyone
+out there with the required skills is interested in working on this
+project, just reply to this email or contact me and Mazda directly.
+
+The work to be done is manageable: we basically need corresponding
+implementations of vmx.c and vtd.c in the current Jailhouse code base -
+provided our existing abstractions were done right. Someone familiar
+with virtualization on x86 in general and, ideally, even on AMD
+processors should be able to complete this task within a couple of weeks.
+
+For more details on the Jailhouse architecture and implementations, see
+our slowly growing Documentation folder in the source tree or simply ask
+on the mailing list.
+
+Jan
+
+[1] https://github.com/siemens/jailhouse
+
+-- 
+Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+Corporate Competence Center Embedded Linux
