@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474AbaDNWCa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 18:02:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52313 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754590AbaDNWCY (ORCPT
+	id S1756002AbaDNWAh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 18:00:37 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35531 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755800AbaDNWAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 18:02:24 -0400
-Date: Mon, 14 Apr 2014 15:02:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Richard Weinberger <richard@nod.at>,
-        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 04/11] signals: rename rm_from_queue_full() to
- flush_sigqueue_mask()
-Message-Id: <20140414150221.b62ccb9fb9056527c565872f@linux-foundation.org>
-In-Reply-To: <20140414151959.GA21995@redhat.com>
-References: <20140414151929.GA21470@redhat.com>
-	<20140414151959.GA21995@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Apr 2014 18:00:19 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Tony Lindgren <tony@atomide.com>, Philipp Zabel <philipp.zabel@gmail.com>,
+        Paul Parsons <lost.distance@yahoo.com>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-leds@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 05/11] ARM: pxa: hx4700: initialize all the struct pwm_lookup members
+Date: Mon, 14 Apr 2014 23:59:47 +0200
+Message-Id: <1397512793-10325-6-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1397512793-10325-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1397512793-10325-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Apr 2014 17:19:59 +0200 Oleg Nesterov <oleg@redhat.com> wrote:
+This will allow to get rid of the .pwm_period_ns member of struct
+platform_pwm_backlight_data as the period will be set by the PWM core.
 
-> "rm_from_queue_full" looks ugly and misleading, especially now that
-> rm_from_queue() has gone away. Rename it to flush_sigqueue_mask(),
-> this matches flush_sigqueue() we already have.
-> 
-> Also remove the obsolete comment which explains the difference with
-> rm_from_queue() we already killed.
-> 
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/mach-pxa/hx4700.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
-Confused.  You sent 0..11 on March 24 and today you resent just 4, 5,
-10 and 11.  If they're supposed to be replacement versions then please
-explain this!
+diff --git a/arch/arm/mach-pxa/hx4700.c b/arch/arm/mach-pxa/hx4700.c
+index a7c30eb0c8db..0788a1f171fe 100644
+--- a/arch/arm/mach-pxa/hx4700.c
++++ b/arch/arm/mach-pxa/hx4700.c
+@@ -574,7 +574,14 @@ static struct platform_device backlight = {
+ };
+ 
+ static struct pwm_lookup hx4700_pwm_lookup[] = {
+-	PWM_LOOKUP("pxa27x-pwm.1", 0, "pwm-backlight", NULL),
++	{
++		.provider = "pxa27x-pwm.1",
++		.index = 0,
++		.dev_id = "pwm-backlight",
++		.con_id = NULL,
++		.period = 30923,
++		.polarity = PWM_POLARITY_NORMAL,
++	},
+ };
+ 
+ /*
+-- 
+1.8.3.2
 
-Anyway, emails are cheap and nobody reads lkml so please just resend
-everything ;)
