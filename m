@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499AbaDNLDA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 07:03:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:50560 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003AbaDNLC5 (ORCPT
+	id S1754750AbaDNLDM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 07:03:12 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34237 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751803AbaDNLDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 07:02:57 -0400
-Date: Mon, 14 Apr 2014 13:02:45 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+	Mon, 14 Apr 2014 07:03:05 -0400
+Date: Mon, 14 Apr 2014 11:53:14 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [Query]: tick-sched: why don't we stop tick when we are running
- idle task?
-Message-ID: <20140414110245.GG11096@twins.programming.kicks-ass.net>
-References: <CAKohpo=uT0oC+bZVJQPsoGLb-a4y4huYKtd1ayb4_+iH4906nw@mail.gmail.com>
- <CAKohpom5Ft_XrNTExE9Ukyv1e4car+wicDiPp_Bdhy=PW9Sq8g@mail.gmail.com>
- <20140410143857.GA27654@localhost.localdomain>
- <CAKohpomMhpGsYGafr5uZ0QgO0MEndqDA4G=4syhus4sZW3d8cg@mail.gmail.com>
- <20140411145333.GC3438@localhost.localdomain>
- <20140411151825.GX11096@twins.programming.kicks-ass.net>
- <CAKohpomgv-LbUcPxazfJkf0Jq0sSULxT0WjrbFovn0k0O-ORwg@mail.gmail.com>
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Steven Capper <steve.capper@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH v9 1/2] ARM: avoid tracers in soft_restart
+Message-ID: <20140414105314.GB3530@arm.com>
+References: <1395178858-27343-1-git-send-email-sebastian.capella@linaro.org>
+ <1395178858-27343-2-git-send-email-sebastian.capella@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKohpomgv-LbUcPxazfJkf0Jq0sSULxT0WjrbFovn0k0O-ORwg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1395178858-27343-2-git-send-email-sebastian.capella@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 10:08:30PM +0530, Viresh Kumar wrote:
-> On 11 April 2014 20:48, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Fri, Apr 11, 2014 at 04:53:35PM +0200, Frederic Weisbecker wrote:
-> 
-> > I think there's assumptions that tick runs on the local cpu;
-> 
-> Yes, many function behave that way, i.e. with smp_processor_id() as
-> CPU.
-> 
-> > also what
-> > are you going to do when running it on all remote cpus takes longer than
-> > the tick?
-> >
-> >> Otherwise (and ideally) we need to make the scheduler code able to handle long periods without
-> >> calling scheduler_tick(). But this is a lot more plumbing. And the scheduler has gazillions
-> >> accounting stuffs to handle. Sounds like a big nightmare to take that direction.
-> >
-> > So i'm not at all sure what you guys are talking about, but it seems to
-> > me you should all put down the bong and have a detox round instead.
-> >
-> > This all sounds like a cure worse than the problem.
-> 
-> So, what I was working on isn't ready yet but I would like to show what lines
-> I have been trying on. In case that is completely incorrect and I should stop
-> making that work :)
-> 
-> Please share your feedback about this (Yes there are several parts broken
-> currently, specially the assumption that tick runs on local CPU):
+Hi Sebastian,
 
-I'm still not sure _what_ you're trying to solve here. What are you
-doing and why?
+On Tue, Mar 18, 2014 at 09:40:57PM +0000, Sebastian Capella wrote:
+> Use of tracers in local_irq_disable is causes abort loops when called
+> with irqs disabled using a temporary stack.  Replace local_irq_disable
+> with raw_local_irq_disable instead to avoid tracers.
+
+Do you have any more information about these aborts? At the time we call
+local_irq_disable, the stack is still intact, so if the issue is simply
+related to having any tracers active at the call_with_stack invocation, we'd
+be better off disabling tracing here altogether.
+
+Will
+
+> Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: Robin Holt <holt@sgi.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+> Cc: Steven Capper <steve.capper@linaro.org>
+> Cc: Stephen Warren <swarren@nvidia.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> ---
+>  arch/arm/kernel/process.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+> index 92f7b15..f58b723 100644
+> --- a/arch/arm/kernel/process.c
+> +++ b/arch/arm/kernel/process.c
+> @@ -100,7 +100,7 @@ void soft_restart(unsigned long addr)
+>  	u64 *stack = soft_restart_stack + ARRAY_SIZE(soft_restart_stack);
+>  
+>  	/* Disable interrupts first */
+> -	local_irq_disable();
+> +	raw_local_irq_disable();
+>  	local_fiq_disable();
+>  
+>  	/* Disable the L2 if we're the last man standing. */
+> -- 
+> 1.7.9.5
+> 
+> 
