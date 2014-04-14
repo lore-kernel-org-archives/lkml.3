@@ -1,101 +1,522 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925AbaDNBqW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 21:46:22 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:32018 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753240AbaDNBqR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 21:46:17 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee68e-b7f566d000002344-7a-534b3de64bb1
-Content-transfer-encoding: 8BIT
-Message-id: <1397439855.24638.24.camel@kjgkr>
-Subject: Re: [PATCH 0/7] f2fs: some fix and cleanup about flush_merge
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
-        fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Mon, 14 Apr 2014 10:44:15 +0900
-In-reply-to: <534B374C.8030009@cn.fujitsu.com>
-References: <5347BAA5.6070104@cn.fujitsu.com> <534B374C.8030009@cn.fujitsu.com>
-Organization: Samsung
-X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t8zI91ntt7BBs1brCyetx9gtri0yN1i
-	z96TLBaXd81hc2Dx+H9wErPH7gWfmTw+b5ILYI7isklJzcksSy3St0vgyvg7v5214BF3xcR7
-	J5kaGOdydjFyckgImEjMeLGYFcIWk7hwbz1bFyMXh5DAMkaJvXNuscAV7VnACJFYxCixvucO
-	O0iCV0BQ4sfke0BFHBzMAvISRy5lg4SZBdQlJs1bxAxR/4pR4tfvyUwQ9boSmy+vZwaxhQVc
-	JdY/aWAF6WUT0JbYvN8AJCwkoCjxdv9dsINEBNQknr27xAQyh1mgm1Hi7PpXYHtZBFQlpnx/
-	wwhicwroSez8OJENotlf4nvLXLBmfgFRicMLtzNDPKAksbu9kx1kkITAOXaJfVP+MkEMEpD4
-	NvkQ2AMSArISmw5A1UtKHFxxg2UCo8QsJG/OQnhzFpI3FzAyr2IUTS1ILihOSi8y0itOzC0u
-	zUvXS87P3cQIibi+HYw3D1gfYkwG2jiRWUo0OR8YsXkl8YbGZkYWpiamxkbmlmakCSuJ8y56
-	mBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgZEhcqXi2+NiXLlbNi3PiTpTwWe8TOqsIf+H
-	7t2ZS/+8r9J2XJV1+IDit6fNxsW+3ZUt7NnOM2WFViyQFVBoWR35S3Gak8syqQ5pxsnW208l
-	7JzwK+Pm8b4Xet/W32lwWd1rnvjyrYfxmUcbd645megZZFl52Z/P7U+5R6OxVoeLZo7n9IVn
-	JJRYijMSDbWYi4oTAWsrBFDOAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBKsWRmVeSWpSXmKPExsVy+t9jAd1ntt7BBifPmVk8bz/AbHFpkbvF
-	nr0nWSwu75rD5sDi8f/gJGaP3Qs+M3l83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
-	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
-	SBBcj5EBGkhYx5jxd347a8Ej7oqJ904yNTDO5exi5OSQEDCRmLFnASOELSZx4d56ti5GLg4h
-	gUWMEut77rCDJHgFBCV+TL7H0sXIwcEsIC9x5FI2SJhZQF1i0rxFzBD1rxglfv2ezARRryux
-	+fJ6ZhBbWMBVYv2TBlaQXjYBbYnN+w1AwkICihJv999lBbFFBNQknr27xAQyh1mgm1Hi7PpX
-	YHtZBFQlpnx/A3Ycp4CexM6PE9kgmv0lvrfMBWvmFxCVOLxwOzPEA0oSu9s72ScwCs1CcvYs
-	hLNnITl7ASPzKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgeH4mvYNxVYPFIUYBDkYlHt6E
-	7Z7BQqyJZcWVuYcYJTiYlUR4t2V4BQvxpiRWVqUW5ccXleakFh9iTAY6fCKzlGhyPjDV5JXE
-	GxqbmBlZGplZGJmYm5MmrCTOe7DVOlBIID2xJDU7NbUgtQhmCxMHp1QDY3gq+3Wpq/8mMbV9
-	/X/Kqfv1ynWXrm/ffmbt+Zl9tlaC0+9yfe6Y15JbMWUa79UpTisOxJrIvFMuOrXu2vSNl1bE
-	2omvfaXfs7+4XSPi96X5rTuiSlMFn98LaTxXvZDzVGnY6R9fLnho/eg6LndDmT9Y9OLu+Gt6
-	r5mqnrhN5Xn35M9hyX+H73EosRRnJBpqMRcVJwIAk97wbSsDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1754187AbaDNBsT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 21:48:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:34431 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750770AbaDNBsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 21:48:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,853,1389772800"; 
+   d="scan'208";a="520184723"
+Message-ID: <534B3E5D.6090905@linux.intel.com>
+Date: Sun, 13 Apr 2014 18:48:13 -0700
+From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Jonathan Cameron <jic23@kernel.org>
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [Patch v3 5/6] iio: hid-sensors: Added device rotation support
+References: <1397004988-31550-1-git-send-email-srinivas.pandruvada@linux.intel.com> <1397004988-31550-5-git-send-email-srinivas.pandruvada@linux.intel.com> <53497627.3000903@kernel.org>
+In-Reply-To: <53497627.3000903@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gu,
 
-I just started to review the patches and merge them individually though.
-Since I've been internally doing in my local tree, so that should be no
-problem. I'll roll back to the latest point.
-Anyway, thank you for your work. :)
+On 04/12/2014 10:21 AM, Jonathan Cameron wrote:
+> On 09/04/14 01:56, Srinivas Pandruvada wrote:
+>> Added usage id processing for device rotation. This uses IIO
+>> interfaces for triggered buffer to present data to user
+>> mode.This uses HID sensor framework for registering callback
+>> events from the sensor hub.
+>> Data is exported to user space in the form of quaternion rotation
+>> format.
+>>
+>> Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+> Very nice.  Happy to take this the moment we have a go ahead on
+> the devm_kmemdup and perhaps those minor tweaks I asked for in the
+> multi value handling patch.
+>
+> Actually, may seem a random question, but what the heck are the scale
+> units you can read for the quaternion?  Firstly it's an integer, so
+> would only make the value bigger, and secondly we are dealing with
+> a quaternion, which is inherently scale free (when used for rotation 
+> anyway).
+> I suppose these units might be meant to transform to a unit quaternion
+> (though this can be easily established form the quaternion itself).
+>
+Good point. For quaternion there is no scale exported in channel spec. I 
+have in switch case, which was left over, I will remove it. The offset 
+field mostly will be 0, but as you pointed out below they are unit exponent.
 
-2014-04-14 (월), 09:18 +0800, Gu Zheng:
-> Hi All,
-> There seems to be a mistake in "[PATCH 2/7]f2fs: remove the unuseful "issue_tail" list",
-> and the whole patchset needs to be reworked. So please ignore this one.
-> Sorry for the noise.
-> 
-> Regards,
-> Gu
-> On 04/11/2014 05:49 PM, Gu Zheng wrote:
-> 
-> > Gu Zheng (7):
-> >   f2fs: put the bio when issue_flush completed
-> >   f2fs: remove the unuseful "issue_tail" list
-> >   f2fs: use __GFP_ZERO to avoid appending set-NULL
-> >   f2fs: enable flush_merge only in f2fs is not read-only
-> >   f2fs: add the flush_merge handle in the remount flow
-> >   f2fs: introduce struct flush_cmd_control to wrap the flush_merge
-> >     fields
-> >   f2fs: introduce help function {create,destroy}_flush_cmd_control
-> > 
-> >  fs/f2fs/f2fs.h    |   17 ++++++---
-> >  fs/f2fs/segment.c |  102 +++++++++++++++++++++++++++++++++++-----------------
-> >  fs/f2fs/super.c   |   32 ++++++++++++++--
-> >  3 files changed, 107 insertions(+), 44 deletions(-)
-> > 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+
+> Looking quickly at the other HID drivers, I am a little confused as
+> to what is going on in general. Could you talk me through this stuff?
+> I have a vague recollection we went through this before, but can't
+> recall the result of those discussions.
+>
+> At first glance, it looks like scale is being used to indicate the
+> base units (via magic numbers) and offset to contain exponents
+> to be applied also as magic numbers.  Neither of these is anywhere
+> near our ABI which is going to cause issues for any 'standard'
+> userspace library..
+>
+We had this discussion long time back. Initially introduced separate 
+attributes for units ans scale but suggestion was to use offset and scale.
+
+Currently these drivers are used only by Android kernel, which has 
+corresponding user space to interpret.
+But now since after Win8, they became available in many devices.
+I have received questions on this from user space developers now, so I 
+have to either document them or make complaint to others. I am working 
+on it. I have many units to convert to standard format. I will submit a 
+change for this.
+
+Thanks,
+Srinivas
+
+> Thanks.
+>
+> Jonathan
+>> ---
+>>   drivers/iio/orientation/Kconfig               |  12 +
+>>   drivers/iio/orientation/Makefile              |   1 +
+>>   drivers/iio/orientation/hid-sensor-rotation.c | 359 
+>> ++++++++++++++++++++++++++
+>>   include/linux/hid-sensor-ids.h                |   1 +
+>>   4 files changed, 373 insertions(+)
+>>   create mode 100644 drivers/iio/orientation/hid-sensor-rotation.c
+>>
+>> diff --git a/drivers/iio/orientation/Kconfig 
+>> b/drivers/iio/orientation/Kconfig
+>> index 58c62c8..e3aa1e5 100644
+>> --- a/drivers/iio/orientation/Kconfig
+>> +++ b/drivers/iio/orientation/Kconfig
+>> @@ -16,4 +16,16 @@ config HID_SENSOR_INCLINOMETER_3D
+>>         Say yes here to build support for the HID SENSOR
+>>         Inclinometer 3D.
+>>
+>> +config HID_SENSOR_DEVICE_ROTATION
+>> +    depends on HID_SENSOR_HUB
+>> +    select IIO_BUFFER
+>> +    select IIO_TRIGGERED_BUFFER
+>> +    select HID_SENSOR_IIO_COMMON
+>> +    select HID_SENSOR_IIO_TRIGGER
+>> +    tristate "HID Device Rotation"
+>> +    help
+>> +      Say yes here to build support for the HID SENSOR
+>> +      device rotation. The output of a device rotation sensor
+>> +      is presented using quaternion format.
+>> +
+>>   endmenu
+>> diff --git a/drivers/iio/orientation/Makefile 
+>> b/drivers/iio/orientation/Makefile
+>> index 2c97572..4734dab 100644
+>> --- a/drivers/iio/orientation/Makefile
+>> +++ b/drivers/iio/orientation/Makefile
+>> @@ -4,3 +4,4 @@
+>>
+>>   # When adding new entries keep the list in alphabetical order
+>>   obj-$(CONFIG_HID_SENSOR_INCLINOMETER_3D) += hid-sensor-incl-3d.o
+>> +obj-$(CONFIG_HID_SENSOR_DEVICE_ROTATION) += hid-sensor-rotation.o
+>> diff --git a/drivers/iio/orientation/hid-sensor-rotation.c 
+>> b/drivers/iio/orientation/hid-sensor-rotation.c
+>> new file mode 100644
+>> index 0000000..5c7d558
+>> --- /dev/null
+>> +++ b/drivers/iio/orientation/hid-sensor-rotation.c
+>> @@ -0,0 +1,359 @@
+>> +/*
+>> + * HID Sensors Driver
+>> + * Copyright (c) 2014, Intel Corporation.
+>> + *
+>> + * This program is free software; you can redistribute it and/or 
+>> modify it
+>> + * under the terms and conditions of the GNU General Public License,
+>> + * version 2, as published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope it will be useful, but 
+>> WITHOUT
+>> + * ANY WARRANTY; without even the implied warranty of 
+>> MERCHANTABILITY or
+>> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public 
+>> License for
+>> + * more details.
+>> + */
+>> +
+>> +#include <linux/device.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/module.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/irq.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/hid-sensor-hub.h>
+>> +#include <linux/iio/iio.h>
+>> +#include <linux/iio/sysfs.h>
+>> +#include <linux/iio/buffer.h>
+>> +#include <linux/iio/trigger_consumer.h>
+>> +#include <linux/iio/triggered_buffer.h>
+>> +#include "../common/hid-sensors/hid-sensor-trigger.h"
+>> +
+>> +struct dev_rot_state {
+>> +    struct hid_sensor_hub_callbacks callbacks;
+>> +    struct hid_sensor_common common_attributes;
+>> +    struct hid_sensor_hub_attribute_info quaternion;
+>> +    u32 sampled_vals[4];
+>> +};
+>> +
+>> +/* Channel definitions */
+>> +static const struct iio_chan_spec dev_rot_channels[] = {
+>> +    {
+>> +        .type = IIO_ROT,
+>> +        .modified = 1,
+>> +        .channel2 = IIO_MOD_QUATERNION,
+>> +        .info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+>> +        .info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
+>> +                    BIT(IIO_CHAN_INFO_SAMP_FREQ) |
+>> +                    BIT(IIO_CHAN_INFO_HYSTERESIS) |
+>> +                    BIT(IIO_CHAN_INFO_RAW),
+>> +    }
+>> +};
+>> +
+>> +/* Adjust channel real bits based on report descriptor */
+>> +static void dev_rot_adjust_channel_bit_mask(struct iio_chan_spec *chan,
+>> +                        int size)
+>> +{
+>> +    chan->scan_type.sign = 's';
+>> +    /* Real storage bits will change based on the report desc. */
+>> +    chan->scan_type.realbits = size * 8;
+>> +    /* Maximum size of a sample to capture is u32 */
+>> +    chan->scan_type.storagebits = sizeof(u32) * 8;
+>> +    chan->scan_type.repeat = 4;
+>> +}
+>> +
+>> +/* Channel read_raw handler */
+>> +static int dev_rot_read_raw(struct iio_dev *indio_dev,
+>> +                struct iio_chan_spec const *chan,
+>> +                int size, int *vals, int *val_len,
+>> +                long mask)
+>> +{
+>> +    struct dev_rot_state *rot_state = iio_priv(indio_dev);
+>> +    int ret_type;
+>> +    int i;
+>> +
+>> +    vals[0] = 0;
+>> +    vals[1] = 0;
+>> +
+>> +    switch (mask) {
+>> +    case IIO_CHAN_INFO_RAW:
+>> +        if (size >= 4) {
+>> +            for (i = 0; i < 4; ++i)
+>> +                vals[i] = rot_state->sampled_vals[i];
+>> +            ret_type = IIO_VAL_INT_MULTIPLE;
+>> +            *val_len =  4;
+>> +        } else
+>> +            ret_type = -EINVAL;
+>> +        break;
+>> +    case IIO_CHAN_INFO_SCALE:
+>> +        vals[0] = rot_state->quaternion.units;
+>> +        ret_type = IIO_VAL_INT;
+>> +        break;
+>> +    case IIO_CHAN_INFO_OFFSET:
+>> +        vals[1] = hid_sensor_convert_exponent(
+>> +            rot_state->quaternion.unit_expo);
+>> +        ret_type = IIO_VAL_INT;
+>> +        break;
+>> +    case IIO_CHAN_INFO_SAMP_FREQ:
+>> +        ret_type = hid_sensor_read_samp_freq_value(
+>> +            &rot_state->common_attributes, &vals[0], &vals[1]);
+>> +        break;
+>> +    case IIO_CHAN_INFO_HYSTERESIS:
+>> +        ret_type = hid_sensor_read_raw_hyst_value(
+>> +            &rot_state->common_attributes, &vals[0], &vals[1]);
+>> +        break;
+>> +    default:
+>> +        ret_type = -EINVAL;
+>> +        break;
+>> +    }
+>> +
+>> +    return ret_type;
+>> +}
+>> +
+>> +/* Channel write_raw handler */
+>> +static int dev_rot_write_raw(struct iio_dev *indio_dev,
+>> +                   struct iio_chan_spec const *chan,
+>> +                   int val,
+>> +                   int val2,
+>> +                   long mask)
+>> +{
+>> +    struct dev_rot_state *rot_state = iio_priv(indio_dev);
+>> +    int ret;
+>> +
+>> +    switch (mask) {
+>> +    case IIO_CHAN_INFO_SAMP_FREQ:
+>> +        ret = hid_sensor_write_samp_freq_value(
+>> +                &rot_state->common_attributes, val, val2);
+>> +        break;
+>> +    case IIO_CHAN_INFO_HYSTERESIS:
+>> +        ret = hid_sensor_write_raw_hyst_value(
+>> +                &rot_state->common_attributes, val, val2);
+>> +        break;
+>> +    default:
+>> +        ret = -EINVAL;
+>> +    }
+>> +
+>> +    return ret;
+>> +}
+>> +
+>> +static const struct iio_info dev_rot_info = {
+>> +    .driver_module = THIS_MODULE,
+>> +    .read_raw_multi = &dev_rot_read_raw,
+>> +    .write_raw = &dev_rot_write_raw,
+>> +};
+>> +
+>> +/* Function to push data to buffer */
+>> +static void hid_sensor_push_data(struct iio_dev *indio_dev, u8 
+>> *data, int len)
+>> +{
+>> +    dev_dbg(&indio_dev->dev, "hid_sensor_push_data >>\n");
+>> +    iio_push_to_buffers(indio_dev, (u8 *)data);
+>> +    dev_dbg(&indio_dev->dev, "hid_sensor_push_data <<\n");
+>> +
+>> +}
+>> +
+>> +/* Callback handler to send event after all samples are received and 
+>> captured */
+>> +static int dev_rot_proc_event(struct hid_sensor_hub_device *hsdev,
+>> +                unsigned usage_id,
+>> +                void *priv)
+>> +{
+>> +    struct iio_dev *indio_dev = platform_get_drvdata(priv);
+>> +    struct dev_rot_state *rot_state = iio_priv(indio_dev);
+>> +
+>> +    dev_dbg(&indio_dev->dev, "dev_rot_proc_event [%d]\n",
+>> +                rot_state->common_attributes.data_ready);
+>> +
+>> +    if (rot_state->common_attributes.data_ready)
+>> +        hid_sensor_push_data(indio_dev,
+>> +                (u8 *)rot_state->sampled_vals,
+>> +                sizeof(rot_state->sampled_vals));
+>> +
+>> +    return 0;
+>> +}
+>> +
+>> +/* Capture samples in local storage */
+>> +static int dev_rot_capture_sample(struct hid_sensor_hub_device *hsdev,
+>> +                unsigned usage_id,
+>> +                size_t raw_len, char *raw_data,
+>> +                void *priv)
+>> +{
+>> +    struct iio_dev *indio_dev = platform_get_drvdata(priv);
+>> +    struct dev_rot_state *rot_state = iio_priv(indio_dev);
+>> +
+>> +    if (usage_id == HID_USAGE_SENSOR_ORIENT_QUATERNION) {
+>> +        memcpy(rot_state->sampled_vals, raw_data,
+>> +                    sizeof(rot_state->sampled_vals));
+>> +        dev_dbg(&indio_dev->dev, "Recd Quat len:%zu::%zu\n", raw_len,
+>> +                    sizeof(rot_state->sampled_vals));
+>> +    }
+>> +
+>> +    return 0;
+>> +}
+>> +
+>> +/* Parse report which is specific to an usage id*/
+>> +static int dev_rot_parse_report(struct platform_device *pdev,
+>> +                struct hid_sensor_hub_device *hsdev,
+>> +                struct iio_chan_spec *channels,
+>> +                unsigned usage_id,
+>> +                struct dev_rot_state *st)
+>> +{
+>> +    int ret;
+>> +
+>> +    ret = sensor_hub_input_get_attribute_info(hsdev,
+>> +                HID_INPUT_REPORT,
+>> +                usage_id,
+>> +                HID_USAGE_SENSOR_ORIENT_QUATERNION,
+>> +                &st->quaternion);
+>> +    if (ret)
+>> +        return ret;
+>> +
+>> +    dev_rot_adjust_channel_bit_mask(&channels[0],
+>> +        st->quaternion.size / 4);
+>> +
+>> +    dev_dbg(&pdev->dev, "dev_rot %x:%x\n", st->quaternion.index,
+>> +        st->quaternion.report_id);
+>> +
+>> +    dev_dbg(&pdev->dev, "dev_rot: attrib size %d\n",
+>> +                st->quaternion.size);
+>> +
+>> +    /* Set Sensitivity field ids, when there is no individual 
+>> modifier */
+>> +    if (st->common_attributes.sensitivity.index < 0) {
+>> +        sensor_hub_input_get_attribute_info(hsdev,
+>> +            HID_FEATURE_REPORT, usage_id,
+>> +            HID_USAGE_SENSOR_DATA_MOD_CHANGE_SENSITIVITY_ABS |
+>> +            HID_USAGE_SENSOR_DATA_ORIENTATION,
+>> +            &st->common_attributes.sensitivity);
+>> +        dev_dbg(&pdev->dev, "Sensitivity index:report %d:%d\n",
+>> +            st->common_attributes.sensitivity.index,
+>> +            st->common_attributes.sensitivity.report_id);
+>> +    }
+>> +
+>> +    return 0;
+>> +}
+>> +
+>> +/* Function to initialize the processing for usage id */
+>> +static int hid_dev_rot_probe(struct platform_device *pdev)
+>> +{
+>> +    int ret;
+>> +    static char *name = "dev_rotation";
+>> +    struct iio_dev *indio_dev;
+>> +    struct dev_rot_state *rot_state;
+>> +    struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
+>> +    struct iio_chan_spec *channels;
+>> +
+>> +    indio_dev = devm_iio_device_alloc(&pdev->dev,
+>> +                      sizeof(struct dev_rot_state));
+>> +    if (indio_dev == NULL)
+>> +        return -ENOMEM;
+>> +
+>> +    platform_set_drvdata(pdev, indio_dev);
+>> +
+>> +    rot_state = iio_priv(indio_dev);
+>> +    rot_state->common_attributes.hsdev = hsdev;
+>> +    rot_state->common_attributes.pdev = pdev;
+>> +
+>> +    ret = hid_sensor_parse_common_attributes(hsdev,
+>> +                HID_USAGE_SENSOR_DEVICE_ORIENTATION,
+>> +                &rot_state->common_attributes);
+>> +    if (ret) {
+>> +        dev_err(&pdev->dev, "failed to setup common attributes\n");
+>> +        return ret;
+>> +    }
+>> +
+>> +    channels = devm_kmemdup(&pdev->dev, dev_rot_channels, 
+>> sizeof(dev_rot_channels),
+>> +               GFP_KERNEL);
+>> +    if (!channels) {
+>> +        dev_err(&pdev->dev, "failed to duplicate channels\n");
+>> +        return -ENOMEM;
+>> +    }
+>> +
+>> +    ret = dev_rot_parse_report(pdev, hsdev, channels,
+>> +            HID_USAGE_SENSOR_DEVICE_ORIENTATION, rot_state);
+>> +    if (ret) {
+>> +        dev_err(&pdev->dev, "failed to setup attributes\n");
+>> +        return ret;
+>> +    }
+>> +
+>> +    indio_dev->channels = channels;
+>> +    indio_dev->num_channels = ARRAY_SIZE(dev_rot_channels);
+>> +    indio_dev->dev.parent = &pdev->dev;
+>> +    indio_dev->info = &dev_rot_info;
+>> +    indio_dev->name = name;
+>> +    indio_dev->modes = INDIO_DIRECT_MODE;
+>> +
+>> +    ret = iio_triggered_buffer_setup(indio_dev, 
+>> &iio_pollfunc_store_time,
+>> +        NULL, NULL);
+>> +    if (ret) {
+>> +        dev_err(&pdev->dev, "failed to initialize trigger buffer\n");
+>> +        return ret;
+>> +    }
+>> +    rot_state->common_attributes.data_ready = false;
+>> +    ret = hid_sensor_setup_trigger(indio_dev, name,
+>> +                    &rot_state->common_attributes);
+>> +    if (ret) {
+>> +        dev_err(&pdev->dev, "trigger setup failed\n");
+>> +        goto error_unreg_buffer_funcs;
+>> +    }
+>> +
+>> +    ret = iio_device_register(indio_dev);
+>> +    if (ret) {
+>> +        dev_err(&pdev->dev, "device register failed\n");
+>> +        goto error_remove_trigger;
+>> +    }
+>> +
+>> +    rot_state->callbacks.send_event = dev_rot_proc_event;
+>> +    rot_state->callbacks.capture_sample = dev_rot_capture_sample;
+>> +    rot_state->callbacks.pdev = pdev;
+>> +    ret = sensor_hub_register_callback(hsdev,
+>> +                    HID_USAGE_SENSOR_DEVICE_ORIENTATION,
+>> +                    &rot_state->callbacks);
+>> +    if (ret) {
+>> +        dev_err(&pdev->dev, "callback reg failed\n");
+>> +        goto error_iio_unreg;
+>> +    }
+>> +
+>> +    return 0;
+>> +
+>> +error_iio_unreg:
+>> +    iio_device_unregister(indio_dev);
+>> +error_remove_trigger:
+>> + hid_sensor_remove_trigger(&rot_state->common_attributes);
+>> +error_unreg_buffer_funcs:
+>> +    iio_triggered_buffer_cleanup(indio_dev);
+>> +    return ret;
+>> +}
+>> +
+>> +/* Function to deinitialize the processing for usage id */
+>> +static int hid_dev_rot_remove(struct platform_device *pdev)
+>> +{
+>> +    struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
+>> +    struct iio_dev *indio_dev = platform_get_drvdata(pdev);
+>> +    struct dev_rot_state *rot_state = iio_priv(indio_dev);
+>> +
+>> +    sensor_hub_remove_callback(hsdev, 
+>> HID_USAGE_SENSOR_DEVICE_ORIENTATION);
+>> +    iio_device_unregister(indio_dev);
+>> + hid_sensor_remove_trigger(&rot_state->common_attributes);
+>> +    iio_triggered_buffer_cleanup(indio_dev);
+>> +
+>> +    return 0;
+>> +}
+>> +
+>> +static struct platform_device_id hid_dev_rot_ids[] = {
+>> +    {
+>> +        /* Format: HID-SENSOR-usage_id_in_hex_lowercase */
+>> +        .name = "HID-SENSOR-20008a",
+>> +    },
+>> +    { /* sentinel */ }
+>> +};
+>> +MODULE_DEVICE_TABLE(platform, hid_dev_rot_ids);
+>> +
+>> +static struct platform_driver hid_dev_rot_platform_driver = {
+>> +    .id_table = hid_dev_rot_ids,
+>> +    .driver = {
+>> +        .name    = KBUILD_MODNAME,
+>> +        .owner    = THIS_MODULE,
+>> +    },
+>> +    .probe        = hid_dev_rot_probe,
+>> +    .remove        = hid_dev_rot_remove,
+>> +};
+>> +module_platform_driver(hid_dev_rot_platform_driver);
+>> +
+>> +MODULE_DESCRIPTION("HID Sensor Device Rotation");
+>> +MODULE_AUTHOR("Srinivas Pandruvada 
+>> <srinivas.pandruvada@linux.intel.com>");
+>> +MODULE_LICENSE("GPL");
+>> diff --git a/include/linux/hid-sensor-ids.h 
+>> b/include/linux/hid-sensor-ids.h
+>> index 14ead9e..109f0e6 100644
+>> --- a/include/linux/hid-sensor-ids.h
+>> +++ b/include/linux/hid-sensor-ids.h
+>> @@ -76,6 +76,7 @@
+>>   #define HID_USAGE_SENSOR_ORIENT_TILT_Y                0x200480
+>>   #define HID_USAGE_SENSOR_ORIENT_TILT_Z                0x200481
+>>
+>> +#define HID_USAGE_SENSOR_DEVICE_ORIENTATION            0x20008A
+>>   #define HID_USAGE_SENSOR_ORIENT_ROTATION_MATRIX 0x200482
+>>   #define HID_USAGE_SENSOR_ORIENT_QUATERNION            0x200483
+>>   #define HID_USAGE_SENSOR_ORIENT_MAGN_FLUX            0x200484
+>>
+>
+> -- 
+> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-Jaegeuk Kim
-Samsung
+>
 
