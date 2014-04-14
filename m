@@ -1,83 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756192AbaDNWLk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 18:11:40 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:63951 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755577AbaDNWLg (ORCPT
+	id S1756198AbaDNWMF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 18:12:05 -0400
+Received: from exprod5og111.obsmtp.com ([64.18.0.22]:41106 "HELO
+	exprod5og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755581AbaDNWLi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 18:11:36 -0400
+	Mon, 14 Apr 2014 18:11:38 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140414220804.GB22800@saruman.home>
-References: <1396186455-3276-1-git-send-email-minipli@googlemail.com>
-	<1396186455-3276-3-git-send-email-minipli@googlemail.com>
-	<20140414213504.GB22607@saruman.home>
-	<CA+rthh__aRaY+DQ7drj_MPB3Gb35RFFUCd50ZN_pQR3OGr2GEw@mail.gmail.com>
-	<20140414220804.GB22800@saruman.home>
-Date: Tue, 15 Apr 2014 00:11:34 +0200
-Message-ID: <CA+rthh-kbPJndH8xkF6NSS6BHSFecKtu3vR8xPbK1N_kTiN9Qw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] pda_power: Unregister USB notifier in pda_power_remove()
-From: Mathias Krause <minipli@googlemail.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
+In-Reply-To: <CAGVrzcbFHbZBaN1GsxViHaWsttU==2+9cf5mNRGwj9nbNxesVA@mail.gmail.com>
+References: <1397271984-23405-1-git-send-email-isubramanian@apm.com>
+	<1397271984-23405-3-git-send-email-isubramanian@apm.com>
+	<CAGVrzcbFHbZBaN1GsxViHaWsttU==2+9cf5mNRGwj9nbNxesVA@mail.gmail.com>
+Date: Mon, 14 Apr 2014 15:11:36 -0700
+Message-ID: <CAKh23Fk3f=aKq-dvB-bpMFdKFQVP06pkXa1DLzgVErJDAOGPoQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/4] Documentation: dts: Add bindings for APM X-Gene
+ SoC ethernet driver
+From: Iyappan Subramanian <isubramanian@apm.com>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "jcm@redhat.com" <jcm@redhat.com>,
+        Greg KH <gregkh@linuxfoundation.org>, patches <patches@apm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        PaX Team <pageexec@freemail.hu>, Anton Vorontsov <anton@enomsg.org>
-Content-Type: text/plain; charset=UTF-8
+        Keyur Chudgar <kchudgar@apm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ravi Patel <rapatel@apm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 April 2014 00:08, Felipe Balbi <balbi@ti.com> wrote:
-> On Tue, Apr 15, 2014 at 12:07:13AM +0200, Mathias Krause wrote:
->> On 14 April 2014 23:35, Felipe Balbi <balbi@ti.com> wrote:
->> > On Sun, Mar 30, 2014 at 03:34:15PM +0200, Mathias Krause wrote:
->> >> If we've registered a notifier in pda_power_probe() we must deregister
->> >> it in pda_power_remove() to not let it work on stale data like, e.g.,
->> >> the charger timer.
->> >>
->> >> Cc: Felipe Balbi <balbi@ti.com>
->> >> Cc: Anton Vorontsov <anton@enomsg.org>
->> >> Signed-off-by: Mathias Krause <minipli@googlemail.com>
->> >> ---
->> >>  drivers/power/pda_power.c |    5 +++++
->> >>  1 file changed, 5 insertions(+)
->> >>
->> >> diff --git a/drivers/power/pda_power.c b/drivers/power/pda_power.c
->> >> index 87a963d0a8..aba23d6848 100644
->> >> --- a/drivers/power/pda_power.c
->> >> +++ b/drivers/power/pda_power.c
->> >> @@ -430,6 +430,11 @@ static int pda_power_remove(struct platform_device *pdev)
->> >>       if (pdata->is_ac_online && ac_irq)
->> >>               free_irq(ac_irq->start, &pda_psy_ac);
->> >>
->> >> +#if IS_ENABLED(CONFIG_USB_PHY)
->> >> +     if (!IS_ERR_OR_NULL(transceiver) && pdata->use_otg_notifier)
->> >
->> > IS_ERR() should be enough here.
+Hi Florian,
+
+Thanks for the review comments.  Please find my responses inline.
+
+On Sat, Apr 12, 2014 at 11:55 AM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+> 2014-04-11 20:06 GMT-07:00 Iyappan Subramanian <isubramanian@apm.com>:
+>> This patch adds documentation for APM X-Gene SoC ethernet DTS binding.
 >>
->> That's true! The usb_get_phy() call in pda_power_probe() will always
->> return a valid pointer or an ERR_PTR() -- never NULL. Albeit, looking
->> at usb_get_phy(), it contains another bug, returning a valid pointer,
->> even when the try_module_get() call fails. *sigh* It should set ptr to
->> an ERR_PTR() in this case.
+>> Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
+>> Signed-off-by: Ravi Patel <rapatel@apm.com>
+>> Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
+>> ---
+>>  .../devicetree/bindings/net/apm-xgene-enet.txt     |   46 ++++++++++++++++++++
+>>  1 file changed, 46 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/net/apm-xgene-enet.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/net/apm-xgene-enet.txt b/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
+>> new file mode 100644
+>> index 0000000..0c983e8
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/net/apm-xgene-enet.txt
+>> @@ -0,0 +1,46 @@
+>> +APM X-Gene SoC Ethernet nodes
+>> +
+>> +Ethernet nodes are defined to describe on-chip ethernet interfaces in
+>> +APM X-Gene SoC.
+>> +
+>> +Required properties:
+>> +- compatible           : Should be "apm,xgene-enet"
+>> +- reg                  : First resource is the ethernet base register set
+>> +                         Second resource is the ring base register set
+>> +                         Third resource is the ring command register set
+>> +- interrupts           : Ethernet main interrupt
+>> +- clocks               : Reference to the clock entry.
+>> +- local-mac-address    : Ethernet MAC address.
+>> +- phy-addr             : Ethernet MII phy address.
+>> +- phy-mode             : Ethernet MII mode.
+>> +
+>> +Optional properties:
+>> +- status               : Should be "ok" or "disabled" for enabled/disabled.
+>> +                         Default is "ok".
+>> +
+>> +Example:
+>> +       menetclk: menetclk {
+>> +               compatible = "apm,xgene-device-clock";
+>> +               clock-output-names = "menetclk";
+>> +               status = "ok";
+>> +       };
+>> +
+>> +       menet: ethernet@17020000 {
+>> +               compatible = "apm,xgene-enet";
+>> +               status = "disabled";
+>> +               reg = <0x0 0x17020000 0x0 0xd100>,
+>> +                     <0x0 0X17030000 0x0 0X400>,
+>> +                     <0x0 0X10000000 0x0 0X200>;
+>> +               interrupts = <0x0 0x3c 0x4>;
+>> +               clocks = <&menetclk 0>;
+>> +               local-mac-address = [00 01 73 00 00 01];
+>> +               phy-addr = <3>;
 >
-> good catch, can you send a patch for that ?
+> An Ethernet PHY node needs to follow the ePAPR recommended
+> representation, which is not this one. Please refer to
+> Documentation/devicetree/bindinsg/net/phy.txt for examples on how to
+> do this properly.
 
-Sure, will do it tomorrow.
+Okay.  I will change the dts to use phy-handle property and remove
+phy-addr.
 
 >
->> Anyway, probably all the transceiver checks in pda_power.c can be
->> changed to IS_ERR() checks. The reason I am using IS_ERR_OR_NULL() in
->> my patch is that I just copied the test from a few lines below. I'll
->> create a follow up patch in case somebody cares about this series in
->> the first place.
+>> +               phy-mode = "rgmii";
+>> +       };
+>> +
+>> +
+>> +/* Board-specific peripheral configurations */
+>> +
+>> +&menet {
+>> +        status = "ok";
+>> +};
+>> --
+>> 1.7.9.5
+>>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 >
-> awesome, thanks
+>
 >
 > --
-> balbi
-
-
-Cheers,
-Mathias
+> Florian
