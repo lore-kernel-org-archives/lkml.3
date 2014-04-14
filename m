@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229AbaDNQVE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:21:04 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:46965 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754690AbaDNQUD convert rfc822-to-8bit (ORCPT
+	id S1755238AbaDNQVn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:21:43 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:54052 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049AbaDNQT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:20:03 -0400
+	Mon, 14 Apr 2014 12:19:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140414160743.GF4496@linux.vnet.ibm.com>
-References: <CAJhHMCBVQTpDecjd5sVhCWJk++K_Rne0DfHRoF7aSd7SRYp1WA@mail.gmail.com>
- <20140414160743.GF4496@linux.vnet.ibm.com>
-From: Pranith Kumar <pranith@gatech.edu>
-Date: Mon, 14 Apr 2014 12:19:31 -0400
-X-Google-Sender-Auth: PGuNs2vLTDJVFwDnfR3wkCOuCdk
-Message-ID: <CAJhHMCB5_A8xRHAnpQuTTcc4KhXEiS5Uo+oZEih=cci9H+H79w@mail.gmail.com>
-Subject: Re: [PATCH 1/1] kernel/rcu/tree.c: remove duplicate extern definition
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <201404131918.45753.marex@denx.de>
+References: <1397228593-17996-1-git-send-email-grmoore@altera.com>
+	<201404131918.45753.marex@denx.de>
+Date: Mon, 14 Apr 2014 11:19:24 -0500
+Message-ID: <CA+iBjpSHL0+A=wzhhVvT_y+mhZoFNLUkNe18OtxPn1hZVCdUDw@mail.gmail.com>
+Subject: Re: [PATCH V2] Add support for flag status register on Micron chips.
+From: Graham Moore <ggrahammoore@gmail.com>
+To: Marek Vasut <marex@denx.de>
+Cc: "grmoore@altera.com" <grmoore@altera.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Sourav Poddar <sourav.poddar@ti.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Insop Song <insop.song@gainspeed.com>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
-
-On Mon, Apr 14, 2014 at 12:07 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Sun, Apr 13, 2014 at 05:53:53PM -0400, Pranith Kumar wrote:
->> remove duplicate definition of extern resched_cpu
->>
->> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+On Sun, Apr 13, 2014 at 12:18 PM, Marek Vasut <marex@denx.de> wrote:
+[...]
+>> +#define      OPCODE_RDFSR            0x70  /* read flag status register */
 >
-> Hello, Pranith,
+> I know this is not your fault, but can you please indent this properly with
+> tabs?
 >
-> When I apply this patch I get the following:
+>>  #define      OPCODE_NORM_READ        0x03    /* Read data bytes (low
+> frequency) */
+>>  #define      OPCODE_FAST_READ        0x0b    /* Read data bytes (high
+> frequency) */
+>>  #define      OPCODE_QUAD_READ        0x6b    /* Read data bytes */
 >
-> /home/paulmck/public_git/linux-rcu/kernel/rcu/tree.c: In function ‘rcu_implicit_dynticks_qs’:
-> /home/paulmck/public_git/linux-rcu/kernel/rcu/tree.c:895:3: error: implicit declaration of function ‘resched_cpu’ [-Werror=implicit-function-declaration]
-> /home/paulmck/public_git/linux-rcu/kernel/rcu/tree.c: At top level:
-> /home/paulmck/public_git/linux-rcu/kernel/rcu/tree.c:1009:13: warning: conflicting types for ‘resched_cpu’ [enabled by default]
-> /home/paulmck/public_git/linux-rcu/kernel/rcu/tree.c:895:3: note: previous implicit declaration of ‘resched_cpu’ was here
->
-> This failed in under number of different Kconfig setups, the .config file
-> for one of them is attached.
->
-> So this declaration really is needed.  Just out of curiosity, what led
-> you to believe that it could be removed?
->
+> And fix this one in a separate patch to use tabs as well please ?
 
-That is strange. The patch removes a duplicate declaration of
-resched_cpu (on lines 768, 954) of the file kernel/rcu/tree.c of the
-latest git.
+I'm rebasing on l2-mtd spinor, and the tabs are jacked up there too.
+I'll fix the
+one I added, and fix other tabs in a new patch on that branch.
 
-The patch compiles fine here with the latest tip of the git tree.
+[...]
+> I wonder, can't wait_till_ready() be made a wrapper that will check the USE_FSR
+> flag and call correct wait-function ? This would avoid adding a new member to
+> *flash and also would avoid so many changes throughout the code. What do you
+> think?
 
-  CC      kernel/rcu/tree.o
+Yeah, that's kind of ugly, but the flags exist only in the static
+m25p_ids[] and are only
+used in the scan/init.  I'd have to add a new member to save them for
+later use.
+And then other uses would crop up.  So, seemed kinda iffy either way.
 
-Can you please check if your tree.c has two declarations for resched_cpu?
+It's going to change anyway, because l2-mtd spinor branch has refactored
+wait_till_ready() such that it uses a function pointer from the new
+spi_nor struct.
+I'm still mulling it over :)
 
--- 
-Pranith
+Thanks,
+-Graham
