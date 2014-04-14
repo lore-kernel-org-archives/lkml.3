@@ -1,29 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754377AbaDNOzf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 10:55:35 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46615 "EHLO
+	id S1755354AbaDNOx2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 10:53:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46590 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753259AbaDNOxq (ORCPT
+	with ESMTP id S1751123AbaDNOxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 10:53:46 -0400
-Date: Mon, 14 Apr 2014 07:53:13 -0700
-From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
-Message-ID: <tip-182c228ebcf1ac67a44e62236d8f7a8a9a3c5699@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@kernel.org, a.p.zijlstra@chello.nl, namhyung.kim@lge.com,
-        acme@kernel.org, namhyung@kernel.org, jolsa@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        namhyung.kim@lge.com, acme@kernel.org, namhyung@kernel.org,
-        jolsa@redhat.com, masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de
-In-Reply-To: <20140402054831.19080.27006.stgit@ltc230.yrl.intra.hitachi.co.jp>
-References: <20140402054831.19080.27006.stgit@ltc230.yrl.intra.hitachi.co.jp>
+	Mon, 14 Apr 2014 10:53:20 -0400
+Date: Mon, 14 Apr 2014 07:53:00 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-202c7c123c96a1c193149b7fa2718d7fb143efb2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
+        namhyung@kernel.org, jolsa@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
+        namhyung@kernel.org, jolsa@redhat.com
+In-Reply-To: <1396327677-3657-1-git-send-email-namhyung@kernel.org>
+References: <1396327677-3657-1-git-send-email-namhyung@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf probe:
-  Fix to handle errors in line_range searching
-Git-Commit-ID: 182c228ebcf1ac67a44e62236d8f7a8a9a3c5699
+Subject: [tip:perf/urgent] perf probe: Fix --line option behavior
+Git-Commit-ID: 202c7c123c96a1c193149b7fa2718d7fb143efb2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -36,76 +33,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  182c228ebcf1ac67a44e62236d8f7a8a9a3c5699
-Gitweb:     http://git.kernel.org/tip/182c228ebcf1ac67a44e62236d8f7a8a9a3c5699
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Wed, 2 Apr 2014 14:48:31 +0900
+Commit-ID:  202c7c123c96a1c193149b7fa2718d7fb143efb2
+Gitweb:     http://git.kernel.org/tip/202c7c123c96a1c193149b7fa2718d7fb143efb2
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Tue, 1 Apr 2014 13:47:57 +0900
 Committer:  Jiri Olsa <jolsa@redhat.com>
 CommitDate: Mon, 14 Apr 2014 12:55:39 +0200
 
-perf probe: Fix to handle errors in line_range searching
+perf probe: Fix --line option behavior
 
-As Namhyung reported(https://lkml.org/lkml/2014/4/1/89),
-current perf-probe -L option doesn't handle errors in line-range
-searching correctly. It causes a SEGV if an error occured in the
-line-range searching.
+The commit 5a62257a3ddd1 ("perf probe: Replace line_list with
+intlist") replaced line_list to intlist but it has a problem that if a
+same line was added again, it'd return -EEXIST rather than 1.
 
-  ----
-  $ perf probe -x ./perf -v -L map__load
-  Open Debuginfo file: /home/namhyung/project/linux/tools/perf/perf
-  fname: util/map.c, lineno:153
-  New line range: 153 to 2147483647
-  path: (null)
-  Segmentation fault (core dumped)
-  ----
+Since line_range_walk_cb() only checks the result being negative, it
+resulted in failure or segfault sometimes.
 
-This is because line_range_inline_cb() ignores errors
-from find_line_range_by_line() which means that lr->path is
-already freed on the error path in find_line_range_by_line().
-As a result, get_real_path() accesses the lr->path and it
-causes a NULL pointer exception.
-
-This fixes line_range_inline_cb() to handle the error correctly,
-and report it to the caller.
-
-Anyway, this just fixes a possible SEGV bug, Namhyung's patch
-is also required.
-
-Reported-by: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20140402054831.19080.27006.stgit@ltc230.yrl.intra.hitachi.co.jp
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Link: http://lkml.kernel.org/r/1396327677-3657-1-git-send-email-namhyung@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/probe-finder.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ tools/perf/util/probe-finder.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 3bf0c8c..fae274e 100644
+index df02386..3bf0c8c 100644
 --- a/tools/perf/util/probe-finder.c
 +++ b/tools/perf/util/probe-finder.c
-@@ -1475,14 +1475,15 @@ static int find_line_range_by_line(Dwarf_Die *sp_die, struct line_finder *lf)
- 
- static int line_range_inline_cb(Dwarf_Die *in_die, void *data)
+@@ -1441,13 +1441,15 @@ static int line_range_walk_cb(const char *fname, int lineno,
+ 			      void *data)
  {
--	find_line_range_by_line(in_die, data);
-+	int ret = find_line_range_by_line(in_die, data);
+ 	struct line_finder *lf = data;
++	int err;
  
- 	/*
- 	 * We have to check all instances of inlined function, because
- 	 * some execution paths can be optimized out depends on the
--	 * function argument of instances
-+	 * function argument of instances. However, if an error occurs,
-+	 * it should be handled by the caller.
- 	 */
--	return 0;
-+	return ret < 0 ? ret : 0;
+ 	if ((strtailcmp(fname, lf->fname) != 0) ||
+ 	    (lf->lno_s > lineno || lf->lno_e < lineno))
+ 		return 0;
+ 
+-	if (line_range_add_line(fname, lineno, lf->lr) < 0)
+-		return -EINVAL;
++	err = line_range_add_line(fname, lineno, lf->lr);
++	if (err < 0 && err != -EEXIST)
++		return err;
+ 
+ 	return 0;
  }
- 
- /* Search function definition from function name */
