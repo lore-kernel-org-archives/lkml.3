@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417AbaDNLq5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 07:46:57 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:29694 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751177AbaDNLqw (ORCPT
+	id S1754933AbaDNLrN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 07:47:13 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:49638 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754555AbaDNLrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 07:46:52 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-fc-534bcaaa79e3
+	Mon, 14 Apr 2014 07:47:04 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-13-534bcab61c55
 From: Robert Baldyga <r.baldyga@samsung.com>
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
@@ -21,102 +21,46 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         linux-omap@vger.kernel.org, aaro.koskinen@iki.fi,
         m.szyprowski@samsung.com, t.figa@samsung.com,
         Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH v2 00/13] extcon: major rework
-Date: Mon, 14 Apr 2014 13:46:11 +0200
-Message-id: <1397475984-28001-1-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH v2 01/13] Documentation: add extcon devicetree bindings
+Date: Mon, 14 Apr 2014 13:46:12 +0200
+Message-id: <1397475984-28001-2-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAAzXRaUiTcQAGcP97j83p4GVaviqFLgqytAypf2WlkPBOyQM/CILV1Ncpbjo2
-	Nc2oeZX3DqlZWTlv52zglJyk6TaozFvLwpNSSzuEUCy0wxl9+/E8H54PDwvhVqNurKSUNFqa
-	IhDxcDb66vcHwlvXHxJ59Gf3caj/FAD7Og7CvrkbcHLtIwbVC6sIfGQdwqCquQKBii9aDCra
-	z8PerU4A82oNOBxaaQawaHABgSOLpTis72lBofZmHQrHu6pweL9OgcKahgIELmgHGLDVOsOE
-	9ZOjDDiV04TDxq9/cKjUtKJw3mJiwsfLGhQWdFuZsGdkC4OGys9owF5K/1APqPHyMgbVZarC
-	KKXiO6BM92aYVHPjGk5Z1rUoZWzyotp0RTi10nIXo6bfPMWpZw/0TKos7xtOLas2ccq0IWdS
-	5e06EO4UzfaPp0VJGbT0yNnL7MTqXwYgmfDIrNCoMDmYci0G9iyS8CO19fnMf95NjswacJu5
-	RA0gx0r4xYC97VsM8rmxh2ErcOIw2b6hBDY7EwhZfXt4xwixiJFPfpyx2YnwITdntTs5Suwn
-	cy2tqM0cIoi0lqxixYC1PeZBVqn9lcChGtjpwC5aEieRxQrFx3xkArEsPUXoE5cqbgM7vy25
-	dwKdHJoBwQI8R05hVUgkFxNkyLLEZkCyEJ4zJ6hjO+LEC7Ku0tLUS9J0ES0zA3cWynPh9BWc
-	juASQkEanUzTElr6v2Ww7N3kwC95LjRKmnQgtLbhmvJd6fDb2hieJiAixlHSq34P+GGvL4gm
-	5/2iw7MnpsY8tzJ9W1+6NKH8sLBp19zxwRN2RocEhqFu8Iq6fJ47Snf1XvfsN+d797hbgmcv
-	ZgdzloSVaaZze2JP5SR4nDykWTauD8Ty77gVRqoCo8QvAvepHXioLFHg64VIZYK/zCaCALMC	AAA=
+In-reply-to: <1397475984-28001-1-git-send-email-r.baldyga@samsung.com>
+References: <1397475984-28001-1-git-send-email-r.baldyga@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAAzWRfSyUcRzA/e55uYd19eyIx7GmazUvRVlbPy+JLXqW2TLrj/xTF09Y7tzu
+	MFqNZlcY7jAJJ04njpMlF3ckb61F6Uxlzfs6yomandRQ3Z313+f7+X627x9fAuHqUR6RIkpn
+	JCJBKh93Qkf/fCaPPRuJjjtu0LlB7ddwOKDzgQNzOXDS8gWDZabvCKwbHsNgqaYcgfJvKgzK
+	O8/C/u1uAPMetuNwzKwBsOCtCYHGxSIcNva1olB1R43CCYMShzVqOQobHskQaFK9YcG24Rk2
+	bJwcZ8Gp2804bFr9i0NFZRsK54f0bPh4uRKFsufDbNhn3MZg+/0VNPwArX2gBfRESTGLNuiV
+	GK2QrwNaXz3DpjVNFpwe2lCh9NNmX7qjpQCnza1VGD39sRenX9Rq2XRx3hpOL5du4bR+M5dN
+	l3S2gAvO8U6hiUxqSiYjCQi74pT8pKsHEavTsl5XjbJzQW18IXAkKPIkpVt/gO2yK2WcbccL
+	gRPBJRsApV1qRHeHuyyqRzOL2iqcPEp1biqAjV1IhKqveGdnhFzEqK5fp23sTJ6jel8W2T1K
+	HqbkK3OIjTlkJLVRrbV6wnrNi1KWhdq0IxlFDVTt2BOuNenPm0IUgFMPHFrAfkacIJZeTRIG
+	+ksFQmmGKMk/IU3YAewPXfLoBi25cBCQBODv4eQro+O4mCBTmi0cBBSB8F04kTqr4iQKsm8w
+	krTLkoxURjoIPAiU78YZkIXEcskkQTpznWHEjOT/lkU48nJBeeWnn1HuYW3mm6x0c8WRDgYN
+	LivxzvdbrQsyWT7keLrGLMXoLhmXQsI963d+LARbDt3jABk30Httn4/lt0ts3a0Kz4awU2pl
+	jag8gjdeQAgdvIIW5Ka8yYm97rJMQZUhImB+Z2uk6RXO81k9yDl/Zmpac3H6vcc1MebXlrXF
+	R6XJghO+iEQq+Adyv42zzAIAAA==
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds many improvements to extcon class driver and extcon
-provider drivers. It changes extcon API to faster and safer by replaceing
-function taking extcon and cable names with functions working with
-structures representing this objects.
+This patch adds extcon devicetree bindings. Documentation describes in general
+client and provider bindings, and contains detailed desctiprion of bindings
+for each extcon provider.
 
-It adds more advanced devicetree support which allows to pass specified
-cables to client drivers. It gives independency from cable naming
-conventions in individual extcon provider drivers, and allows to simply
-connect client drivers with providers in way that being transpatent for
-both of them.
-
-It adds also some minor fixes like additional checks for safety increase,
-and another improvements.
-
-Also added some improvements to extcon provider drivers, improved devicetree
-support and updated them to use faster extcon API.
-
-Patches contains also documentation for extcon, and devicetree bindings
-for all provider drivers.
-
-More details can be found in commit messages and Documentation.
-
-Best regards
-Robert Baldyga
-Samsung R&D Institute Poland
-
-Changelog:
-v2:
-- add support for platforms without devicetree support
-- update Documentation
-
-v1: https://lkml.org/lkml/2014/4/10/603
-
-Robert Baldyga (13):
-  Documentation: add extcon devicetree bindings
-  Documentation: update charger-manager devicetree bindings
-  extcon: extcon-class: remove extcon_set_cable_state() function
-  extcon: extcon-class: match extcon device by devicetree node
-  extcon: extcon-class: improve extcon client API
-  extcon: extcon-class: remove unused functions
-  extcon: extcon-class: improve get_cable_state_()/set_cable_state_()
-    functions
-  extcon: extcon-class: simplify extcon_updata_state() function
-  extcon: extcon-class: move example to Documentation
-  extcon: extcon-gpio: add devicetree support
-  extcon: extcon-adc-jack: add devicetree support
-  extcon: extcon-max8997: check if pdata exists
-  extcon: extcon-max77693: check if pdata exists
-
- .../devicetree/bindings/extcon/extcon-adc-jack.txt |   60 +++
- .../devicetree/bindings/extcon/extcon-arizona.txt  |   47 ++
- .../devicetree/bindings/extcon/extcon-bindings.txt |   36 ++
- .../devicetree/bindings/extcon/extcon-gpio.txt     |   63 +++
- .../devicetree/bindings/extcon/extcon-max14577.txt |   49 +++
- .../devicetree/bindings/extcon/extcon-max77693.txt |   56 +++
- .../devicetree/bindings/extcon/extcon-max8997.txt  |   49 +++
- .../devicetree/bindings/extcon/extcon-palmas.txt   |   37 +-
- .../bindings/power_supply/charger-manager.txt      |   11 +-
- Documentation/extcon/extcon.txt                    |  112 +++++
- drivers/extcon/extcon-adc-jack.c                   |   82 ++++
- drivers/extcon/extcon-arizona.c                    |    1 +
- drivers/extcon/extcon-class.c                      |  451 ++++++++++----------
- drivers/extcon/extcon-gpio.c                       |   71 ++-
- drivers/extcon/extcon-max14577.c                   |   26 +-
- drivers/extcon/extcon-max77693.c                   |   82 ++--
- drivers/extcon/extcon-max8997.c                    |   35 +-
- drivers/extcon/extcon-palmas.c                     |   28 +-
- drivers/power/charger-manager.c                    |   36 +-
- drivers/usb/dwc3/dwc3-omap.c                       |   68 +--
- drivers/usb/phy/phy-omap-otg.c                     |   70 +--
- include/linux/extcon.h                             |  165 +++----
- include/linux/extcon/extcon-gpio.h                 |    2 +-
- include/linux/power/charger-manager.h              |    6 +-
- 24 files changed, 1136 insertions(+), 507 deletions(-)
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+---
+ .../devicetree/bindings/extcon/extcon-adc-jack.txt |   60 +++++++++++++++++++
+ .../devicetree/bindings/extcon/extcon-arizona.txt  |   47 +++++++++++++++
+ .../devicetree/bindings/extcon/extcon-bindings.txt |   36 +++++++++++
+ .../devicetree/bindings/extcon/extcon-gpio.txt     |   63 ++++++++++++++++++++
+ .../devicetree/bindings/extcon/extcon-max14577.txt |   49 +++++++++++++++
+ .../devicetree/bindings/extcon/extcon-max77693.txt |   56 +++++++++++++++++
+ .../devicetree/bindings/extcon/extcon-max8997.txt  |   49 +++++++++++++++
+ .../devicetree/bindings/extcon/extcon-palmas.txt   |   37 ++++++++++--
+ 8 files changed, 393 insertions(+), 4 deletions(-)
  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-adc-jack.txt
  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-arizona.txt
  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-bindings.txt
@@ -124,8 +68,459 @@ Robert Baldyga (13):
  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-max14577.txt
  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-max77693.txt
  create mode 100644 Documentation/devicetree/bindings/extcon/extcon-max8997.txt
- create mode 100644 Documentation/extcon/extcon.txt
 
+diff --git a/Documentation/devicetree/bindings/extcon/extcon-adc-jack.txt b/Documentation/devicetree/bindings/extcon/extcon-adc-jack.txt
+new file mode 100644
+index 0000000..6e43891
+--- /dev/null
++++ b/Documentation/devicetree/bindings/extcon/extcon-adc-jack.txt
+@@ -0,0 +1,60 @@
++* ADC JACK Extcon Controller
++
++ADC JACK extcon controller is responsible for cable detection.
++
++Required Properties:
++
++- compatible: should be "extcon-adc-jack".
++
++- #extcon-cells: should be 1.
++
++- subnode <cables>: node describing list of cables.
++	- subnode <cable>:
++		- cable-name: name of specific cable
++		- adc-min: minimum specific cable ADC values range
++		- adc-max: maximum specific cable ADC values range
++
++Subnodes of node 'cables' describes specific cables with ADC value ranges
++associated with this cables. When measured ADC value will be between min and
++max value for specific cable, clients will be notified about connection of
++this cable. Value ranges for individual cables cannot be overlaping.
++
++Example 1: An example of a extcon controller node is listed below.
++
++	extcon: adc-jack {
++		compatible = "extcon-adc-jack";
++		#extcon-cells = <1>;
++
++		cables {
++			cable@0 {
++				cable-name = "CABLE-0";
++				adc-min = 120;
++				adc-max = 240;
++			}
++			cable@1 {
++				cable-name = "CABLE-1";
++				adc-min = 250;
++				adc-max = 400;
++			}
++			cable@2 {
++				cable-name = "CABLE-2";
++				adc-min = 500;
++				adc-max = 700;
++			};
++		};
++	};
++
++Example 2: USB controller node that uses cable from the extcon
++	   controller. Refer to the standard extcon bindings for
++	   information about 'extcon-cables' and 'extcon-names'
++	   property.
++
++	usb@12480000 {
++		vusb_d-supply = <&vusb_reg>;
++		vusb_a-supply = <&vusbdac_reg>;
++
++		extcon-cables = <&extcon 0>;
++		extcon-names = "USB";
++
++		status = "okay";
++	};
+diff --git a/Documentation/devicetree/bindings/extcon/extcon-arizona.txt b/Documentation/devicetree/bindings/extcon/extcon-arizona.txt
+new file mode 100644
+index 0000000..9af4422
+--- /dev/null
++++ b/Documentation/devicetree/bindings/extcon/extcon-arizona.txt
+@@ -0,0 +1,47 @@
++* Wolfson Arizona Extcon Controller
++
++The Wolfson Arizona Extcon Controller is responsible for cable
++detection.
++
++Required Properties:
++
++- compatible: should be "wlf,arizona-extcon".
++
++- #extcon-cells: should be 1.
++
++The following is the list of cables detected by the controller. Each
++cable is assigned an identifier and client nodes use this identifies
++to specify the cable which they are interested in.
++
++  Cable			ID
++  ----------------------------
++
++  Mechanical		0
++  Microphone		1
++  Headphone		2
++  Line-out		3
++
++Example 1: An example of a extcon controller node is listed below.
++
++	extcon: arizona-extcon {
++		compatible = "wlf,arizona-extcon";
++		#extcon-cells = <1>;
++	};
++
++Example 2: Audio controller node that uses cable from the extcon
++	   controller. Refer to the standard extcon bindings for
++	   information about 'extcon-cables' and 'extcon-names'
++	   property.
++
++	audio-controller@b0000 {
++		reg = <0xb0000 0x2210>;
++		interrupts = <19>, <20>;
++
++		extcon-cables = <&extcon 1>, <&extcon 3>;
++		extcon-names = "Microphone", "Line-out";
++
++		clocks = <&gate_clk 12>;
++		clock-names = "internal";
++
++		status = "okay";
++	};
+diff --git a/Documentation/devicetree/bindings/extcon/extcon-bindings.txt b/Documentation/devicetree/bindings/extcon/extcon-bindings.txt
+new file mode 100644
+index 0000000..5167f69
+--- /dev/null
++++ b/Documentation/devicetree/bindings/extcon/extcon-bindings.txt
+@@ -0,0 +1,36 @@
++Extcon controllers can be represented by any node in the device
++tree. Those nodes are designated as extcon cable providers. Extcon
++cable consumer nodes use phandle and cable specifier pair to register
++interest in specific cables.
++
++==Extcon providers==
++
++Required properties:
++#extcon-cells:	Number of cells in extcon specifier.
++		Always should be 1.
++
++For example:
++
++	extcon {
++		#extcon-cells = <1>;
++	};
++
++==Extcon consumers==
++
++Required properties:
++extcon-cables:	List of phandle and cable specifier pairs, one pair
++		for each cable.
++
++Optional properties:
++extcon-names:	List of extcon cable name strings sorted in the same
++		order as the extcon-cables property. Consumers drivers
++		will use extcon-names to match cable names with cable
++		specifiers.
++
++
++For example:
++
++	device {
++		extcon-cables = <&extcon 4>, <&extcon 7>;
++		extcon-names = "USB", "Charger";
++	};
+diff --git a/Documentation/devicetree/bindings/extcon/extcon-gpio.txt b/Documentation/devicetree/bindings/extcon/extcon-gpio.txt
+new file mode 100644
+index 0000000..216cc30
+--- /dev/null
++++ b/Documentation/devicetree/bindings/extcon/extcon-gpio.txt
+@@ -0,0 +1,63 @@
++* GPIO Extcon Controller
++
++The GPIO Extcon Controller is responsible for cable detection.
++
++Required Properties:
++
++- compatible: should be "extcon-gpio".
++
++- #extcon-cells: should be 1.
++
++- gpios: device-tree gpio specification.
++
++- gpio-controller-name: choosen controller name.
++
++- gpio-cable-name: choosen cable name.
++
++Optional Properties:
++
++- gpio-debounce: debounce time value in ms.
++
++- gpio-active-low: indicates that cable is active when gpio state is low.
++
++- gpio-check-on-resume: indicates that state should be checked on resume.
++
++The following is the list of cables detected by the controller. Each
++cable is assigned an identifier and client nodes use this identifies
++to specify the cable which they are interested in.
++
++  Cable			ID
++  ----------------------------
++
++  GPIO			0
++
++Example 1: An example of a extcon controller node is listed below.
++
++	extcon: gpio {
++		compatible = "extcon-gpio";
++		#extcon-cells = <1>;
++
++		gpios = <&gpx1 0 1>;
++
++		gpio-controller-name = "gpio-controller";
++		gpio-cable-name = "gpio-cable";
++
++		gpio-debounce = 15;
++		gpio-active-low;
++		gpio-check-on-resume;
++	};
++
++Example 2: USB controller node that uses cable from the extcon
++	   controller. Refer to the standard extcon bindings for
++	   information about 'extcon-cables' and 'extcon-names'
++	   property.
++
++	usb@12480000 {
++		vusb_d-supply = <&vusb_reg>;
++		vusb_a-supply = <&vusbdac_reg>;
++
++		extcon-cables = <&extcon 0>;
++		extcon-names = "USB-HOST";
++
++		status = "okay";
++	};
+diff --git a/Documentation/devicetree/bindings/extcon/extcon-max14577.txt b/Documentation/devicetree/bindings/extcon/extcon-max14577.txt
+new file mode 100644
+index 0000000..a2b9e9e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/extcon/extcon-max14577.txt
+@@ -0,0 +1,49 @@
++* Maxim MAX14577 MUIC Extcon Controller
++
++The MUIC part of MAX14577 IC is responsible for cable detection.
++
++Required Properties:
++
++- compatible: should be "maxim,max14577-muic".
++
++- #extcon-cells: should be 1.
++
++The following is the list of cables detected by the controller. Each
++cable is assigned an identifier and client nodes use this identifies
++to specify the cable which they are interested in.
++
++  Cable			ID
++  ----------------------------
++
++  USB			0
++  TA			1
++  Fast-charger		2
++  Slow-charger		3
++  Charge-downstream	4
++  JIG-USB-ON		5
++  JIG-USB-OFF		6
++  JIG-UART-OFF		7
++  JIG-UART-ON		8
++
++Example 1: An example of a extcon controller node is listed below.
++
++	extcon: max14577-muic {
++		compatible = "maxim,max14577-muic";
++		#extcon-cells = <1>;
++	};
++
++Example 2: USB controller node that uses cable from the extcon
++	   controller. Refer to the standard extcon bindings for
++	   information about 'extcon-cables' and 'extcon-names'
++	   property.
++
++	usb@12480000 {
++		vusb_d-supply = <&vusb_reg>;
++		vusb_a-supply = <&vusbdac_reg>;
++
++		extcon-cables = <&extcon 0>, <&extcon 1>;
++		extcon-names = "USB", "USB-HOST";
++
++		status = "okay";
++	};
++
+diff --git a/Documentation/devicetree/bindings/extcon/extcon-max77693.txt b/Documentation/devicetree/bindings/extcon/extcon-max77693.txt
+new file mode 100644
+index 0000000..ad6fe05
+--- /dev/null
++++ b/Documentation/devicetree/bindings/extcon/extcon-max77693.txt
+@@ -0,0 +1,56 @@
++* Maxim MAX77693 MUIC Extcon Controller
++
++The MUIC part of MAX77693 IC is responsible for cable detection.
++
++Required Properties:
++
++- compatible: should be "maxim,max77693-muic".
++
++- #extcon-cells: should be 1.
++
++The following is the list of cables detected by the controller. Each
++cable is assigned an identifier and client nodes use this identifies
++to specify the cable which they are interested in.
++
++  Cable			ID
++  ----------------------------
++
++  USB			0
++  USB-Host		1
++  TA			2
++  Fast-charger		3
++  Slow-charger		4
++  Charge-downstream	5
++  MHL			6
++  MHL_TA		7
++  JIG-USB-ON		8
++  JIG-USB-OFF		9
++  JIG-UART-OFF		10
++  Dock-Car		11
++  Dock-Smart		12
++  Dock-Desk		13
++  Dock-Audio		14
++  Audio-video-load	15
++
++Example 1: An example of a extcon controller node is listed below.
++
++	extcon: max77693-muic {
++		compatible = "maxim,max77693-muic";
++		#extcon-cells = <1>;
++	};
++
++Example 2: USB controller node that uses cable from the extcon
++	   controller. Refer to the standard extcon bindings for
++	   information about 'extcon-cables' and 'extcon-names'
++	   property.
++
++	usb@12480000 {
++		vusb_d-supply = <&vusb_reg>;
++		vusb_a-supply = <&vusbdac_reg>;
++
++		extcon-cables = <&extcon 0>, <&extcon 1>;
++		extcon-names = "USB", "USB-HOST";
++
++		status = "okay";
++	};
++
+diff --git a/Documentation/devicetree/bindings/extcon/extcon-max8997.txt b/Documentation/devicetree/bindings/extcon/extcon-max8997.txt
+new file mode 100644
+index 0000000..4ca7c5a
+--- /dev/null
++++ b/Documentation/devicetree/bindings/extcon/extcon-max8997.txt
+@@ -0,0 +1,49 @@
++* Maxim MAX8997 MUIC Extcon Controller
++
++The MUIC part of MAX8997 IC is responsible for cable detection.
++
++Required Properties:
++
++- compatible: should be "maxim,max8997-muic".
++
++- #extcon-cells: should be 1.
++
++The following is the list of cables detected by the controller. Each
++cable is assigned an identifier and client nodes use this identifies
++to specify the cable which they are interested in.
++
++  Cable			ID
++  ----------------------------
++
++  USB			0
++  USB-Host		1
++  TA			2
++  Fast-charger		3
++  Slow-charger		4
++  Charge-downstream	5
++  MHL			6
++  Dock-Desk		7
++  Dock-Card		8
++  JIG			9
++
++Example 1: An example of a extcon controller node is listed below.
++
++	extcon: max8997-muic {
++		compatible = "maxim,max8997-muic";
++		#extcon-cells = <1>;
++	};
++
++Example 2: USB controller node that uses cable from the extcon
++	   controller. Refer to the standard extcon bindings for
++	   information about 'extcon-cables' and 'extcon-names'
++	   property.
++
++	usb@12480000 {
++		vusb_d-supply = <&vusb_reg>;
++		vusb_a-supply = <&vusbdac_reg>;
++
++		extcon-cables = <&extcon 0>, <&extcon 1>;
++		extcon-names = "USB", "USB-HOST";
++
++		status = "okay";
++	};
+diff --git a/Documentation/devicetree/bindings/extcon/extcon-palmas.txt b/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
+index 45414bb..35adcee 100644
+--- a/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
++++ b/Documentation/devicetree/bindings/extcon/extcon-palmas.txt
+@@ -8,12 +8,41 @@ Required Properties:
+    * "ti,palmas-usb" (DEPRECATED - use "ti,palmas-usb-vid").
+    * "ti,twl6035-usb" (DEPRECATED - use "ti,twl6035-usb-vid").
+ 
++- #extcon-cells: should be 1.
++
+ Optional Properties:
+  - ti,wakeup : To enable the wakeup comparator in probe
+  - ti,enable-id-detection: Perform ID detection.
+  - ti,enable-vbus-detection: Perform VBUS detection.
+ 
+-palmas-usb {
+-       compatible = "ti,twl6035-usb", "ti,palmas-usb";
+-       ti,wakeup;
+-};
++The following is the list of cables detected by the controller. Each
++cable is assigned an identifier and client nodes use this identifies
++to specify the cable which they are interested in.
++
++  Cable                 ID
++  ----------------------------
++  USB			0
++  USB-HOST		1
++
++Example 1: An example of a extcon controller node is listed below.
++
++	palmas-usb {
++		compatible = "ti,twl6035-usb", "ti,palmas-usb";
++		#extcon-cells = <1>;
++		ti,wakeup;
++	};
++
++Example 2: USB controller node that uses cable from the extcon
++	   controller. Refer to the standard extcon bindings for
++	   information about 'extcon-cables' and 'extcon-names'
++	   property.
++
++	usb@12480000 {
++		vusb_d-supply = <&vusb_reg>;
++		vusb_a-supply = <&vusbdac_reg>;
++
++		extcon-cables = <&extcon 0>, <&extcon 1>;
++		extcon-names = "USB", "USB-HOST";
++
++		status = "okay";
++	};
 -- 
 1.7.9.5
 
