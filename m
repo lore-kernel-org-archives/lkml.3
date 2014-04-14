@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414AbaDNIFq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 04:05:46 -0400
-Received: from mail.codeweavers.com ([216.251.189.131]:53895 "EHLO
-	mail.codeweavers.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753177AbaDNIFk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 04:05:40 -0400
-X-Greylist: delayed 1036 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Apr 2014 04:05:40 EDT
-From: Alexandre Julliard <julliard@winehq.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Brian Gerst <brgerst@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, stable <stable@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [tip:x86/urgent] x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
-References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org>
-	<CAMzpN2jx4H4p8fQr-WHxVyCHhWi0iO3WZZKyxYD7Dfa7pWkEgg@mail.gmail.com>
-	<CA+55aFwzvSiAGYfFb2R3JeVvh8_PQuOKJDrYP5C_3VQz2zhnBw@mail.gmail.com>
-	<CAMzpN2jj3dwQG7qC__8zLPhkg_ER6n4CcNxa5eg7okRN+k_VUA@mail.gmail.com>
-	<CA+55aFxr_dz3vhko1FPXhZd0ZNeGveX0oSLqUo_wyiVbxatLQw@mail.gmail.com>
-Date: Mon, 14 Apr 2014 09:48:10 +0200
-In-Reply-To: <CA+55aFxr_dz3vhko1FPXhZd0ZNeGveX0oSLqUo_wyiVbxatLQw@mail.gmail.com>
-	(Linus Torvalds's message of "Fri, 11 Apr 2014 11:50:10 -0700")
-Message-ID: <87k3aspd1h.fsf@wine.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Spam-Score: -2.9
+	id S1754603AbaDNIGg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 04:06:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48169 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753022AbaDNIF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 04:05:29 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        iss_storagedev@hp.com, linux-scsi@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH v2 RESEND 10/23] hpsa: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Mon, 14 Apr 2014 10:05:34 +0200
+Message-Id: <6e17ab33b0ddbe49f72bf0d9c5fd3019acf6d6ca.1397461652.git.agordeev@redhat.com>
+In-Reply-To: <cover.1397461652.git.agordeev@redhat.com>
+References: <cover.1397461652.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range()  or pci_enable_msi_exact()
+and pci_enable_msix_range() or pci_enable_msix_exact()
+interfaces.
 
-> On Fri, Apr 11, 2014 at 11:45 AM, Brian Gerst <brgerst@gmail.com> wrote:
->>
->> I haven't tested it recently but I do know it has worked on 64-bit
->> kernels.  There is no reason for it not to, the only thing not
->> supported in long mode is vm86.  16-bit protected mode is unchanged.
->
-> Afaik 64-bit windows doesn't support 16-bit binaries, so I just
-> assumed Wine wouldn't do it either on x86-64. Not for any real
-> technical reasons, though.
->
-> HOWEVER. I'd like to hear something more definitive than "I haven't
-> tested recently". The "we don't break user space" is about having
-> actual real *users*, not about test programs.
->
-> Are there people actually using 16-bit old windows programs under
-> wine? That's what matters.
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: iss_storagedev@hp.com
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-pci@vger.kernel.org
+---
+ drivers/scsi/hpsa.c |   29 +++++++++++++----------------
+ 1 files changed, 13 insertions(+), 16 deletions(-)
 
-Yes, there is still a significant number of users, and we still
-regularly get bug reports about specific 16-bit apps. It would be really
-nice if we could continue to support them on x86-64, particularly since
-Microsoft doesn't ;-)
-
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 3284edb..36bb1e4 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -6144,26 +6144,23 @@ static void hpsa_interrupt_mode(struct ctlr_info *h)
+ 		goto default_int_mode;
+ 	if (pci_find_capability(h->pdev, PCI_CAP_ID_MSIX)) {
+ 		dev_info(&h->pdev->dev, "MSIX\n");
+-		h->msix_vector = MAX_REPLY_QUEUES;
+-		err = pci_enable_msix(h->pdev, hpsa_msix_entries,
+-				      h->msix_vector);
+-		if (err > 0) {
++		err = pci_enable_msix_range(h->pdev, hpsa_msix_entries,
++					    1, MAX_REPLY_QUEUES);
++		if (err < 0) {
++			dev_warn(&h->pdev->dev, "MSI-X init failed %d\n", err);
++			h->msix_vector = 0;
++			goto single_msi_mode;
++		} else if (err < MAX_REPLY_QUEUES) {
+ 			dev_warn(&h->pdev->dev, "only %d MSI-X vectors "
+ 			       "available\n", err);
+-			h->msix_vector = err;
+-			err = pci_enable_msix(h->pdev, hpsa_msix_entries,
+-					      h->msix_vector);
+-		}
+-		if (!err) {
+-			for (i = 0; i < h->msix_vector; i++)
+-				h->intr[i] = hpsa_msix_entries[i].vector;
+-			return;
+-		} else {
+-			dev_warn(&h->pdev->dev, "MSI-X init failed %d\n",
+-			       err);
+-			h->msix_vector = 0;
+ 		}
++
++		h->msix_vector = err;
++		for (i = 0; i < h->msix_vector; i++)
++			h->intr[i] = hpsa_msix_entries[i].vector;
++		return;
+ 	}
++single_msi_mode:
+ 	if (pci_find_capability(h->pdev, PCI_CAP_ID_MSI)) {
+ 		dev_info(&h->pdev->dev, "MSI\n");
+ 		if (!pci_enable_msi(h->pdev))
 -- 
-Alexandre Julliard
-julliard@winehq.org
+1.7.7.6
+
