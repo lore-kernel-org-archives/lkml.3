@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750AbaDNLDM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 07:03:12 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:34237 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751803AbaDNLDF (ORCPT
+	id S1754830AbaDNLEt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 07:04:49 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:62225 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753834AbaDNLEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 07:03:05 -0400
-Date: Mon, 14 Apr 2014 11:53:14 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Mon, 14 Apr 2014 07:04:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Tarek Dakhran <t.dakhran@samsung.com>, linux-kernel@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>, Heiko Stuebner <heiko@sntech.de>,
+        linux-doc@vger.kernel.org, Tomasz Figa <t.figa@samsung.com>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        Romain Naour <romain.naour@openwide.fr>,
+        Tarek Dakhran <t.dakhran@gmail.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
         Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Robin Holt <holt@sgi.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Steven Capper <steve.capper@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v9 1/2] ARM: avoid tracers in soft_restart
-Message-ID: <20140414105314.GB3530@arm.com>
-References: <1395178858-27343-1-git-send-email-sebastian.capella@linaro.org>
- <1395178858-27343-2-git-send-email-sebastian.capella@linaro.org>
+        Thomas Abraham <thomas.abraham@linaro.org>, devicetree@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        linux-samsung-soc@vger.kernel.org,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v8 1/3] ARM: EXYNOS: Add support for EXYNOS5410 SoC
+Date: Mon, 14 Apr 2014 13:03:42 +0200
+Message-ID: <5617478.sn2TYu7iO3@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1397459860-21869-2-git-send-email-t.dakhran@samsung.com>
+References: <1397459860-21869-1-git-send-email-t.dakhran@samsung.com> <1397459860-21869-2-git-send-email-t.dakhran@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395178858-27343-2-git-send-email-sebastian.capella@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:LDs5sLZL04H5eECgFwr8LHV48yFDJv9on8S7lBVPAFd
+ FizQepR9byO+Ab4+c4tu/BgvcdDy9JJnRWPNg8WKpgkeoT+NE1
+ VhpStxXca9h4slKi+RJdsXliN6n9QhCFRKuLXbUxkpWFqMpiC7
+ JHVbjW8zgvUDwhESF6Ofdb+9P2oNy2K8KssAJumrer+qgOZnn7
+ Cqatl72kpG/LvtdC/H+otbeOpX2AZQr9E69s60D30mvjpTCtlv
+ 2Qih6+/ZdcI3zWALD5duoDEhzslk+1JF6pAgKvWw8XYHUPaeZA
+ c2b7nm5lLVcFNi9JJBaHdF6YP/iMOYgLHNs0pPst4vAGP5ni6Z
+ n+NWpL8VpuY+1bkiKU1U=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
-
-On Tue, Mar 18, 2014 at 09:40:57PM +0000, Sebastian Capella wrote:
-> Use of tracers in local_irq_disable is causes abort loops when called
-> with irqs disabled using a temporary stack.  Replace local_irq_disable
-> with raw_local_irq_disable instead to avoid tracers.
-
-Do you have any more information about these aborts? At the time we call
-local_irq_disable, the stack is still intact, so if the issue is simply
-related to having any tracers active at the call_with_stack invocation, we'd
-be better off disabling tracing here altogether.
-
-Will
-
-> Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Robin Holt <holt@sgi.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-> Cc: Steven Capper <steve.capper@linaro.org>
-> Cc: Stephen Warren <swarren@nvidia.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> ---
->  arch/arm/kernel/process.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-> index 92f7b15..f58b723 100644
-> --- a/arch/arm/kernel/process.c
-> +++ b/arch/arm/kernel/process.c
-> @@ -100,7 +100,7 @@ void soft_restart(unsigned long addr)
->  	u64 *stack = soft_restart_stack + ARRAY_SIZE(soft_restart_stack);
+On Monday 14 April 2014 11:17:38 Tarek Dakhran wrote:
+> --- a/arch/arm/mach-exynos/exynos.c
+> +++ b/arch/arm/mach-exynos/exynos.c
+> @@ -159,6 +159,15 @@ static struct map_desc exynos5250_iodesc[] __initdata = {
+>         },
+>  };
 >  
->  	/* Disable interrupts first */
-> -	local_irq_disable();
-> +	raw_local_irq_disable();
->  	local_fiq_disable();
->  
->  	/* Disable the L2 if we're the last man standing. */
-> -- 
-> 1.7.9.5
-> 
-> 
+> +static struct map_desc exynos5410_iodesc[] __initdata = {
+> +       {
+> +               .virtual        = (unsigned long)S5P_VA_SYSRAM_NS,
+> +               .pfn            = __phys_to_pfn(EXYNOS5410_PA_SYSRAM_NS),
+> +               .length         = SZ_4K,
+> +               .type           = MT_DEVICE,
+> +       },
+> +};
+> +
+>  static struct map_desc exynos5_iodesc[] __initdata = {
+
+NAK
+
+Why does this keep coming up?
+
+	Arnd
