@@ -1,589 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389AbaDNJIj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 05:08:39 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57182 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751314AbaDNJIf (ORCPT
+	id S1754516AbaDNJJS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 05:09:18 -0400
+Received: from smtp.adetelgroup.com ([94.247.26.71]:15070 "EHLO
+	hbg-pa71.hmc-pa.adm" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754461AbaDNJJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 05:08:35 -0400
-Message-ID: <534BA52B.3040906@free-electrons.com>
-Date: Mon, 14 Apr 2014 11:06:51 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Bo Shen <voice.shen@atmel.com>, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] ARM: at91/dt: define sam9n12 clocks
-References: <1397463399-11771-1-git-send-email-boris.brezillon@free-electrons.com> <1397463399-11771-3-git-send-email-boris.brezillon@free-electrons.com> <20140414085643.GK2967@piout.net>
-In-Reply-To: <20140414085643.GK2967@piout.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Apr 2014 05:09:14 -0400
+From: Hubert Chaumette <hchaumette@adeneo-embedded.com>
+To: linux-kernel@vger.kernel.org
+Cc: Hubert Chaumette <hchaumette@adeneo-embedded.com>, shawn.guo@linaro.org,
+        kernel@pengutronix.de, linux@arm.linux.org.uk, f.fainelli@gmail.com,
+        linux-arm-kernel@lists.infradead.org, netdev@vger.kernel.org,
+        agust@denx.de
+Subject: [PATCH] ARM: i.MX6: Add OF configuration support for ksz9031
+Date: Mon, 14 Apr 2014 11:08:16 +0200
+Message-Id: <1397466496-24750-1-git-send-email-hchaumette@adeneo-embedded.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
+- Adds support for ksz9031 PAD skew configuration over devicetree
+- Removes hard-coded pad skew configuration for imx6q-sabrelite, now redundant
+  with arch/arm/boot/dts/imx6qdl-sabrelite.dtsi
 
-On 14/04/2014 10:56, Alexandre Belloni wrote:
-> On 14/04/2014 at 10:16:37 +0200, Boris Brezillon wrote :
->> Define sam9n12 clocks and make use of them in peripheral definitions.
->>
->> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
->> ---
->>  arch/arm/boot/dts/at91sam9n12.dtsi | 350 ++++++++++++++++++++++++++++++++++++-
->>  1 file changed, 348 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
->> index 9f04808..4d036a3 100644
->> --- a/arch/arm/boot/dts/at91sam9n12.dtsi
->> +++ b/arch/arm/boot/dts/at91sam9n12.dtsi
->> @@ -12,6 +12,7 @@
->>  #include <dt-bindings/pinctrl/at91.h>
->>  #include <dt-bindings/interrupt-controller/irq.h>
->>  #include <dt-bindings/gpio/gpio.h>
->> +#include <dt-bindings/clk/at91.h>
->>  
->>  / {
->>  	model = "Atmel AT91SAM9N12 SoC";
->> @@ -49,6 +50,20 @@
->>  		reg = <0x20000000 0x10000000>;
->>  	};
->>  
->> +	clocks {
->> +		slow_xtal: slow_xtal {
->> +			compatible = "fixed-clock";
->> +			#clock-cells = <0>;
->> +			clock-frequency = <0>;
->> +		};
->> +
->> +		main_xtal: main_xtal {
->> +			compatible = "fixed-clock";
->> +			#clock-cells = <0>;
->> +			clock-frequency = <0>;
->> +		};
-> You can put those two xtal nodes directly under root, as mentioned by
-> Mark Rutland:
->
-> "A "clocks" container is non-standard, and not guarantee to probe. The
-> fact these clocks probe currently is an artifact of the current
-> organisation of Linux rather than any conscious decision."
+Tested on congatec conga-QEVAL board with conga-QMX6 module.
 
-Okay, I will fix it for the next version.
+This patch is based on Anatolij Gustschin's patch from
+http://www.spinics.net/lists/arm-kernel/msg319771.html
 
-Thanks.
+Signed-off-by: Hubert Chaumette <hchaumette@adeneo-embedded.com>
+---
+ arch/arm/mach-imx/mach-imx6q.c |  45 ----------
+ drivers/net/phy/micrel.c       | 185 ++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 184 insertions(+), 46 deletions(-)
 
-Boris
-
->> +	};
->> +
->>  	ahb {
->>  		compatible = "simple-bus";
->>  		#address-cells = <1>;
->> @@ -75,8 +90,280 @@
->>  			};
->>  
->>  			pmc: pmc@fffffc00 {
->> -				compatible = "atmel,at91rm9200-pmc";
->> -				reg = <0xfffffc00 0x100>;
->> +				compatible = "atmel,at91sam9n12-pmc";
->> +				reg = <0xfffffc00 0x200>;
->> +				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
->> +				interrupt-controller;
->> +				#address-cells = <1>;
->> +				#size-cells = <0>;
->> +				#interrupt-cells = <1>;
->> +
->> +				main_rc_osc: main_rc_osc {
->> +					compatible = "atmel,at91sam9x5-clk-main-rc-osc";
->> +					#clock-cells = <0>;
->> +					interrupts-extended = <&pmc AT91_PMC_MOSCRCS>;
->> +					clock-frequency = <12000000>;
->> +					clock-accuracy = <50000000>;
->> +				};
->> +
->> +				main_osc: main_osc {
->> +					compatible = "atmel,at91sam9x5-clk-main-osc";
->> +					#clock-cells = <0>;
->> +					interrupts-extended = <&pmc AT91_PMC_MOSCS>;
->> +					clocks = <&main_xtal>;
->> +				};
->> +
->> +				main: mainck {
->> +					compatible = "atmel,at91sam9x5-clk-main";
->> +					#clock-cells = <0>;
->> +					interrupts-extended = <&pmc AT91_PMC_MOSCSELS>;
->> +					clocks = <&main_rc_osc>, <&main_osc>;
->> +				};
->> +
->> +				plla: pllack {
->> +					compatible = "atmel,at91rm9200-clk-pll";
->> +					#clock-cells = <0>;
->> +					interrupts-extended = <&pmc AT91_PMC_LOCKA>;
->> +					clocks = <&main>;
->> +					reg = <0>;
->> +					atmel,clk-input-range = <2000000 32000000>;
->> +					#atmel,pll-clk-output-range-cells = <4>;
->> +					atmel,pll-clk-output-ranges = <745000000 800000000 0 0>,
->> +								      <695000000 750000000 1 0>,
->> +								      <645000000 700000000 2 0>,
->> +								      <595000000 650000000 3 0>,
->> +								      <545000000 600000000 0 1>,
->> +								      <495000000 555000000 1 1>,
->> +								      <445000000 500000000 1 2>,
->> +								      <400000000 450000000 1 3>;
->> +				};
->> +
->> +				plladiv: plladivck {
->> +					compatible = "atmel,at91sam9x5-clk-plldiv";
->> +					#clock-cells = <0>;
->> +					clocks = <&plla>;
->> +				};
->> +
->> +				pllb: pllbck {
->> +					compatible = "atmel,at91rm9200-clk-pll";
->> +					#clock-cells = <0>;
->> +					interrupts-extended = <&pmc AT91_PMC_LOCKB>;
->> +					clocks = <&main>;
->> +					reg = <1>;
->> +					atmel,clk-input-range = <2000000 32000000>;
->> +					#atmel,pll-clk-output-range-cells = <3>;
->> +					atmel,pll-clk-output-ranges = <30000000 100000000 0>;
->> +				};
->> +
->> +				mck: masterck {
->> +					compatible = "atmel,at91sam9x5-clk-master";
->> +					#clock-cells = <0>;
->> +					interrupts-extended = <&pmc AT91_PMC_MCKRDY>;
->> +					clocks = <&clk32k>, <&main>, <&plladiv>, <&pllb>;
->> +					atmel,clk-output-range = <0 133333333>;
->> +					atmel,clk-divisors = <1 2 4 3>;
->> +					atmel,master-clk-have-div3-pres;
->> +				};
->> +
->> +				usb: usbck {
->> +					compatible = "atmel,at91sam9n12-clk-usb";
->> +					#clock-cells = <0>;
->> +					clocks = <&pllb>;
->> +				};
->> +
->> +				prog: progck {
->> +					compatible = "atmel,at91sam9x5-clk-programmable";
->> +					#address-cells = <1>;
->> +					#size-cells = <0>;
->> +					interrupt-parent = <&pmc>;
->> +					clocks = <&clk32k>, <&main>, <&plladiv>, <&pllb>, <&mck>;
->> +
->> +					prog0: prog0 {
->> +						#clock-cells = <0>;
->> +						reg = <0>;
->> +						interrupts = <AT91_PMC_PCKRDY(0)>;
->> +					};
->> +
->> +					prog1: prog1 {
->> +						#clock-cells = <0>;
->> +						reg = <1>;
->> +						interrupts = <AT91_PMC_PCKRDY(1)>;
->> +					};
->> +				};
->> +
->> +				systemck {
->> +					compatible = "atmel,at91rm9200-clk-system";
->> +					#address-cells = <1>;
->> +					#size-cells = <0>;
->> +
->> +					ddrck: ddrck {
->> +						#clock-cells = <0>;
->> +						reg = <2>;
->> +						clocks = <&mck>;
->> +					};
->> +
->> +					lcdck: lcdck {
->> +						#clock-cells = <0>;
->> +						reg = <3>;
->> +						clocks = <&mck>;
->> +					};
->> +
->> +					uhpck: uhpck {
->> +						#clock-cells = <0>;
->> +						reg = <6>;
->> +						clocks = <&usb>;
->> +					};
->> +
->> +					udpck: udpck {
->> +						#clock-cells = <0>;
->> +						reg = <7>;
->> +						clocks = <&usb>;
->> +					};
->> +
->> +					pck0: pck0 {
->> +						#clock-cells = <0>;
->> +						reg = <8>;
->> +						clocks = <&prog0>;
->> +					};
->> +
->> +					pck1: pck1 {
->> +						#clock-cells = <0>;
->> +						reg = <9>;
->> +						clocks = <&prog1>;
->> +					};
->> +				};
->> +
->> +				periphck {
->> +					compatible = "atmel,at91sam9x5-clk-peripheral";
->> +					#address-cells = <1>;
->> +					#size-cells = <0>;
->> +					clocks = <&mck>;
->> +
->> +					pioAB_clk: pioAB_clk {
->> +						#clock-cells = <0>;
->> +						reg = <2>;
->> +					};
->> +
->> +					pioCD_clk: pioCD_clk {
->> +						#clock-cells = <0>;
->> +						reg = <3>;
->> +					};
->> +
->> +					fuse_clk: fuse_clk {
->> +						#clock-cells = <0>;
->> +						reg = <4>;
->> +					};
->> +
->> +					usart0_clk: usart0_clk {
->> +						#clock-cells = <0>;
->> +						reg = <5>;
->> +					};
->> +
->> +					usart1_clk: usart1_clk {
->> +						#clock-cells = <0>;
->> +						reg = <6>;
->> +					};
->> +
->> +					usart2_clk: usart2_clk {
->> +						#clock-cells = <0>;
->> +						reg = <7>;
->> +					};
->> +
->> +					usart3_clk: usart3_clk {
->> +						#clock-cells = <0>;
->> +						reg = <8>;
->> +					};
->> +
->> +					twi0_clk: twi0_clk {
->> +						reg = <9>;
->> +						#clock-cells = <0>;
->> +					};
->> +
->> +					twi1_clk: twi1_clk {
->> +						#clock-cells = <0>;
->> +						reg = <10>;
->> +					};
->> +
->> +					mci0_clk: mci0_clk {
->> +						#clock-cells = <0>;
->> +						reg = <12>;
->> +					};
->> +
->> +					spi0_clk: spi0_clk {
->> +						#clock-cells = <0>;
->> +						reg = <13>;
->> +					};
->> +
->> +					spi1_clk: spi1_clk {
->> +						#clock-cells = <0>;
->> +						reg = <14>;
->> +					};
->> +
->> +					uart0_clk: uart0_clk {
->> +						#clock-cells = <0>;
->> +						reg = <15>;
->> +					};
->> +
->> +					uart1_clk: uart1_clk {
->> +						#clock-cells = <0>;
->> +						reg = <16>;
->> +					};
->> +
->> +					tcb_clk: tcb_clk {
->> +						#clock-cells = <0>;
->> +						reg = <17>;
->> +					};
->> +
->> +					pwm_clk: pwm_clk {
->> +						#clock-cells = <0>;
->> +						reg = <18>;
->> +					};
->> +
->> +					adc_clk: adc_clk {
->> +						#clock-cells = <0>;
->> +						reg = <19>;
->> +					};
->> +
->> +					dma0_clk: dma0_clk {
->> +						#clock-cells = <0>;
->> +						reg = <20>;
->> +					};
->> +
->> +					uhphs_clk: uhphs_clk {
->> +						#clock-cells = <0>;
->> +						reg = <22>;
->> +					};
->> +
->> +					udphs_clk: udphs_clk {
->> +						#clock-cells = <0>;
->> +						reg = <23>;
->> +					};
->> +
->> +					lcdc_clk: lcdc_clk {
->> +						#clock-cells = <0>;
->> +						reg = <25>;
->> +					};
->> +
->> +					sha_clk: sha_clk {
->> +						#clock-cells = <0>;
->> +						reg = <27>;
->> +					};
->> +
->> +					ssc0_clk: ssc0_clk {
->> +						#clock-cells = <0>;
->> +						reg = <28>;
->> +					};
->> +
->> +					aes_clk: aes_clk {
->> +						#clock-cells = <0>;
->> +						reg = <29>;
->> +					};
->> +
->> +					trng_clk: trng_clk {
->> +						#clock-cells = <0>;
->> +						reg = <30>;
->> +					};
->> +				};
->>  			};
->>  
->>  			rstc@fffffe00 {
->> @@ -88,6 +375,7 @@
->>  				compatible = "atmel,at91sam9260-pit";
->>  				reg = <0xfffffe30 0xf>;
->>  				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
->> +				clocks = <&mck>;
->>  			};
->>  
->>  			shdwc@fffffe10 {
->> @@ -95,12 +383,38 @@
->>  				reg = <0xfffffe10 0x10>;
->>  			};
->>  
->> +			sckc@fffffe50 {
->> +				compatible = "atmel,at91sam9x5-sckc";
->> +				reg = <0xfffffe50 0x4>;
->> +
->> +				slow_osc: slow_osc {
->> +					compatible = "atmel,at91sam9x5-clk-slow-osc";
->> +					#clock-cells = <0>;
->> +					clocks = <&slow_xtal>;
->> +				};
->> +
->> +				slow_rc_osc: slow_rc_osc {
->> +					compatible = "atmel,at91sam9x5-clk-slow-rc-osc";
->> +					#clock-cells = <0>;
->> +					clock-frequency = <32768>;
->> +					clock-accuracy = <50000000>;
->> +				};
->> +
->> +				clk32k: slck {
->> +					compatible = "atmel,at91sam9x5-clk-slow";
->> +					#clock-cells = <0>;
->> +					clocks = <&slow_rc_osc>, <&slow_osc>;
->> +				};
->> +			};
->> +
->>  			mmc0: mmc@f0008000 {
->>  				compatible = "atmel,hsmci";
->>  				reg = <0xf0008000 0x600>;
->>  				interrupts = <12 IRQ_TYPE_LEVEL_HIGH 0>;
->>  				dmas = <&dma 1 AT91_DMA_CFG_PER_ID(0)>;
->>  				dma-names = "rxtx";
->> +				clocks = <&mci0_clk>;
->> +				clock-names = "mci_clk";
->>  				#address-cells = <1>;
->>  				#size-cells = <0>;
->>  				status = "disabled";
->> @@ -110,12 +424,16 @@
->>  				compatible = "atmel,at91sam9x5-tcb";
->>  				reg = <0xf8008000 0x100>;
->>  				interrupts = <17 IRQ_TYPE_LEVEL_HIGH 0>;
->> +				clocks = <&tcb_clk>;
->> +				clock-names = "t0_clk";
->>  			};
->>  
->>  			tcb1: timer@f800c000 {
->>  				compatible = "atmel,at91sam9x5-tcb";
->>  				reg = <0xf800c000 0x100>;
->>  				interrupts = <17 IRQ_TYPE_LEVEL_HIGH 0>;
->> +				clocks = <&tcb_clk>;
->> +				clock-names = "t0_clk";
->>  			};
->>  
->>  			dma: dma-controller@ffffec00 {
->> @@ -123,6 +441,8 @@
->>  				reg = <0xffffec00 0x200>;
->>  				interrupts = <20 IRQ_TYPE_LEVEL_HIGH 0>;
->>  				#dma-cells = <2>;
->> +				clocks = <&dma0_clk>;
->> +				clock-names = "dma_clk";
->>  			};
->>  
->>  			pinctrl@fffff400 {
->> @@ -392,6 +712,7 @@
->>  					gpio-controller;
->>  					interrupt-controller;
->>  					#interrupt-cells = <2>;
->> +					clocks = <&pioAB_clk>;
->>  				};
->>  
->>  				pioB: gpio@fffff600 {
->> @@ -402,6 +723,7 @@
->>  					gpio-controller;
->>  					interrupt-controller;
->>  					#interrupt-cells = <2>;
->> +					clocks = <&pioAB_clk>;
->>  				};
->>  
->>  				pioC: gpio@fffff800 {
->> @@ -412,6 +734,7 @@
->>  					gpio-controller;
->>  					interrupt-controller;
->>  					#interrupt-cells = <2>;
->> +					clocks = <&pioCD_clk>;
->>  				};
->>  
->>  				pioD: gpio@fffffa00 {
->> @@ -422,6 +745,7 @@
->>  					gpio-controller;
->>  					interrupt-controller;
->>  					#interrupt-cells = <2>;
->> +					clocks = <&pioCD_clk>;
->>  				};
->>  			};
->>  
->> @@ -431,6 +755,8 @@
->>  				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
->>  				pinctrl-names = "default";
->>  				pinctrl-0 = <&pinctrl_dbgu>;
->> +				clocks = <&mck>;
->> +				clock-names = "usart";
->>  				status = "disabled";
->>  			};
->>  
->> @@ -443,6 +769,8 @@
->>  				dma-names = "tx", "rx";
->>  				pinctrl-names = "default";
->>  				pinctrl-0 = <&pinctrl_ssc0_tx &pinctrl_ssc0_rx>;
->> +				clocks = <&ssc0_clk>;
->> +				clock-names = "pclk";
->>  				status = "disabled";
->>  			};
->>  
->> @@ -452,6 +780,8 @@
->>  				interrupts = <5 IRQ_TYPE_LEVEL_HIGH 5>;
->>  				pinctrl-names = "default";
->>  				pinctrl-0 = <&pinctrl_usart0>;
->> +				clocks = <&usart0_clk>;
->> +				clock-names = "usart";
->>  				status = "disabled";
->>  			};
->>  
->> @@ -461,6 +791,8 @@
->>  				interrupts = <6 IRQ_TYPE_LEVEL_HIGH 5>;
->>  				pinctrl-names = "default";
->>  				pinctrl-0 = <&pinctrl_usart1>;
->> +				clocks = <&usart1_clk>;
->> +				clock-names = "usart";
->>  				status = "disabled";
->>  			};
->>  
->> @@ -470,6 +802,8 @@
->>  				interrupts = <7 IRQ_TYPE_LEVEL_HIGH 5>;
->>  				pinctrl-names = "default";
->>  				pinctrl-0 = <&pinctrl_usart2>;
->> +				clocks = <&usart2_clk>;
->> +				clock-names = "usart";
->>  				status = "disabled";
->>  			};
->>  
->> @@ -479,6 +813,8 @@
->>  				interrupts = <8 IRQ_TYPE_LEVEL_HIGH 5>;
->>  				pinctrl-names = "default";
->>  				pinctrl-0 = <&pinctrl_usart3>;
->> +				clocks = <&usart3_clk>;
->> +				clock-names = "usart";
->>  				status = "disabled";
->>  			};
->>  
->> @@ -493,6 +829,7 @@
->>  				#size-cells = <0>;
->>  				pinctrl-names = "default";
->>  				pinctrl-0 = <&pinctrl_i2c0>;
->> +				clocks = <&twi0_clk>;
->>  				status = "disabled";
->>  			};
->>  
->> @@ -507,6 +844,7 @@
->>  				#size-cells = <0>;
->>  				pinctrl-names = "default";
->>  				pinctrl-0 = <&pinctrl_i2c1>;
->> +				clocks = <&twi1_clk>;
->>  				status = "disabled";
->>  			};
->>  
->> @@ -521,6 +859,8 @@
->>  				dma-names = "tx", "rx";
->>  				pinctrl-names = "default";
->>  				pinctrl-0 = <&pinctrl_spi0>;
->> +				clocks = <&spi0_clk>;
->> +				clock-names = "spi_clk";
->>  				status = "disabled";
->>  			};
->>  
->> @@ -535,6 +875,8 @@
->>  				dma-names = "tx", "rx";
->>  				pinctrl-names = "default";
->>  				pinctrl-0 = <&pinctrl_spi1>;
->> +				clocks = <&spi1_clk>;
->> +				clock-names = "spi_clk";
->>  				status = "disabled";
->>  			};
->>  
->> @@ -554,6 +896,7 @@
->>  				reg = <0xf8034000 0x300>;
->>  				interrupts = <18 IRQ_TYPE_LEVEL_HIGH 4>;
->>  				#pwm-cells = <3>;
->> +				clocks = <&pwm_clk>;
->>  				status = "disabled";
->>  			};
->>  		};
->> @@ -584,6 +927,9 @@
->>  			compatible = "atmel,at91rm9200-ohci", "usb-ohci";
->>  			reg = <0x00500000 0x00100000>;
->>  			interrupts = <22 IRQ_TYPE_LEVEL_HIGH 2>;
->> +			clocks = <&usb>, <&uhphs_clk>, <&udphs_clk>,
->> +				 <&uhpck>;
->> +			clock-names = "usb_clk", "ohci_clk", "hclk", "uhpck";
->>  			status = "disabled";
->>  		};
->>  	};
->> -- 
->> 1.8.3.2
->>
-
+diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
+index 76e5db4..21ad961 100644
+--- a/arch/arm/mach-imx/mach-imx6q.c
++++ b/arch/arm/mach-imx/mach-imx6q.c
+@@ -39,47 +39,6 @@
+ #include "cpuidle.h"
+ #include "hardware.h"
+ 
+-/* For imx6q sabrelite board: set KSZ9021RN RGMII pad skew */
+-static int ksz9021rn_phy_fixup(struct phy_device *phydev)
+-{
+-	if (IS_BUILTIN(CONFIG_PHYLIB)) {
+-		/* min rx data delay */
+-		phy_write(phydev, MICREL_KSZ9021_EXTREG_CTRL,
+-			0x8000 | MICREL_KSZ9021_RGMII_RX_DATA_PAD_SCEW);
+-		phy_write(phydev, MICREL_KSZ9021_EXTREG_DATA_WRITE, 0x0000);
+-
+-		/* max rx/tx clock delay, min rx/tx control delay */
+-		phy_write(phydev, MICREL_KSZ9021_EXTREG_CTRL,
+-			0x8000 | MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SCEW);
+-		phy_write(phydev, MICREL_KSZ9021_EXTREG_DATA_WRITE, 0xf0f0);
+-		phy_write(phydev, MICREL_KSZ9021_EXTREG_CTRL,
+-			MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SCEW);
+-	}
+-
+-	return 0;
+-}
+-
+-static void mmd_write_reg(struct phy_device *dev, int device, int reg, int val)
+-{
+-	phy_write(dev, 0x0d, device);
+-	phy_write(dev, 0x0e, reg);
+-	phy_write(dev, 0x0d, (1 << 14) | device);
+-	phy_write(dev, 0x0e, val);
+-}
+-
+-static int ksz9031rn_phy_fixup(struct phy_device *dev)
+-{
+-	/*
+-	 * min rx data delay, max rx/tx clock delay,
+-	 * min rx/tx control delay
+-	 */
+-	mmd_write_reg(dev, 2, 4, 0);
+-	mmd_write_reg(dev, 2, 5, 0);
+-	mmd_write_reg(dev, 2, 8, 0x003ff);
+-
+-	return 0;
+-}
+-
+ /*
+  * fixup for PLX PEX8909 bridge to configure GPIO1-7 as output High
+  * as they are used for slots1-7 PERST#
+@@ -169,10 +128,6 @@ static int ar8035_phy_fixup(struct phy_device *dev)
+ static void __init imx6q_enet_phy_init(void)
+ {
+ 	if (IS_BUILTIN(CONFIG_PHYLIB)) {
+-		phy_register_fixup_for_uid(PHY_ID_KSZ9021, MICREL_PHY_ID_MASK,
+-				ksz9021rn_phy_fixup);
+-		phy_register_fixup_for_uid(PHY_ID_KSZ9031, MICREL_PHY_ID_MASK,
+-				ksz9031rn_phy_fixup);
+ 		phy_register_fixup_for_uid(PHY_ID_AR8031, 0xffffffff,
+ 				ar8031_phy_fixup);
+ 		phy_register_fixup_for_uid(PHY_ID_AR8035, 0xffffffef,
+diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
+index 5a8993b..df56b26 100644
+--- a/drivers/net/phy/micrel.c
++++ b/drivers/net/phy/micrel.c
+@@ -242,6 +242,189 @@ static int ksz9021_config_init(struct phy_device *phydev)
+ 	return 0;
+ }
+ 
++#define MII_KSZ9031RN_MMD_CTRL_REG	0x0d
++#define MII_KSZ9031RN_MMD_REGDATA_REG	0x0e
++#define OP_DATA				1
++#define KSZ9031_PS_TO_REG		60
++
++/* Extended registers */
++#define MII_KSZ9031RN_CONTROL_PAD_SKEW	4
++#define MII_KSZ9031RN_RX_DATA_PAD_SKEW	5
++#define MII_KSZ9031RN_TX_DATA_PAD_SKEW	6
++#define MII_KSZ9031RN_CLK_PAD_SKEW	8
++
++static int ksz9031_extended_write(struct phy_device *phydev,
++				  u8 mode, u32 dev_addr, u32 regnum, u16 val)
++{
++	phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, dev_addr);
++	phy_write(phydev, MII_KSZ9031RN_MMD_REGDATA_REG, regnum);
++	phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, (mode << 14) | dev_addr);
++	return phy_write(phydev, MII_KSZ9031RN_MMD_REGDATA_REG, val);
++}
++
++static int ksz9031_extended_read(struct phy_device *phydev,
++				 u8 mode, u32 dev_addr, u32 regnum)
++{
++	phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, dev_addr);
++	phy_write(phydev, MII_KSZ9031RN_MMD_REGDATA_REG, regnum);
++	phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, (mode << 14) | dev_addr);
++	return phy_read(phydev, MII_KSZ9031RN_MMD_REGDATA_REG);
++}
++
++/* Two 5-bit fields register */
++static int ksz9031_load_clk_skew_values(struct phy_device *phydev,
++					struct device_node *of_node,
++					char *field1, char *field2)
++{
++	int val1 = -1;
++	int val2 = -2;
++	int newval;
++	int matches = 0;
++
++	if (!of_property_read_u32(of_node, field1, &val1))
++		matches++;
++
++	if (!of_property_read_u32(of_node, field2, &val2))
++		matches++;
++
++	if (!matches)
++		return 0;
++
++	if (matches < 2)
++		newval = ksz9031_extended_read(phydev, OP_DATA, 2,
++				MII_KSZ9031RN_CLK_PAD_SKEW);
++	else
++		newval = 0;
++
++	if (val1 != -1)
++		newval = (newval & 0xffe0) |
++			 ((val1 / KSZ9031_PS_TO_REG) & 0x1f);
++
++	if (val2 != -2)
++		newval = (newval & 0xfc1f) |
++			 (((val2 / KSZ9031_PS_TO_REG) & 0x1f) << 5);
++
++	return ksz9031_extended_write(phydev, OP_DATA, 2,
++			MII_KSZ9031RN_CLK_PAD_SKEW, newval);
++}
++
++/* Four 4-bit fields register */
++static int ksz9031_load_data_skew_values(struct phy_device *phydev,
++					 struct device_node *of_node, u16 reg,
++					 char *field1, char *field2,
++					 char *field3, char *field4)
++{
++	int val1 = -1;
++	int val2 = -2;
++	int val3 = -3;
++	int val4 = -4;
++	int newval;
++	int matches = 0;
++
++	if (!of_property_read_u32(of_node, field1, &val1))
++		matches++;
++
++	if (!of_property_read_u32(of_node, field2, &val2))
++		matches++;
++
++	if (!of_property_read_u32(of_node, field3, &val3))
++		matches++;
++
++	if (!of_property_read_u32(of_node, field4, &val4))
++		matches++;
++
++	if (!matches)
++		return 0;
++
++	if (matches < 4)
++		newval = ksz9031_extended_read(phydev, OP_DATA, 2, reg);
++	else
++		newval = 0;
++
++	if (val1 != -1)
++		newval = (newval & 0xfff0) |
++			 (((val1 / KSZ9031_PS_TO_REG) & 0xf) << 0);
++
++	if (val2 != -2)
++		newval = (newval & 0xff0f) |
++			 (((val2 / KSZ9031_PS_TO_REG) & 0xf) << 4);
++
++	if (val3 != -3)
++		newval = (newval & 0xf0ff) |
++			 (((val3 / KSZ9031_PS_TO_REG) & 0xf) << 8);
++
++	if (val4 != -4)
++		newval = (newval & 0x0fff) |
++			 (((val4 / KSZ9031_PS_TO_REG) & 0xf) << 12);
++
++	return ksz9031_extended_write(phydev, OP_DATA, 2, reg, newval);
++}
++
++/* Two 4-bit fields register */
++static int ksz9031_load_ctrl_skew_values(struct phy_device *phydev,
++					 struct device_node *of_node,
++					 char *field1, char *field2)
++{
++	int val1 = -1;
++	int val2 = -2;
++	int newval;
++	int matches = 0;
++
++	if (!of_property_read_u32(of_node, field1, &val1))
++		matches++;
++
++	if (!of_property_read_u32(of_node, field2, &val2))
++		matches++;
++
++	if (!matches)
++		return 0;
++
++	if (matches < 2)
++		newval = ksz9031_extended_read(phydev, OP_DATA, 2,
++				MII_KSZ9031RN_CONTROL_PAD_SKEW);
++	else
++		newval = 0;
++
++	if (val1 != -1)
++		newval = (newval & 0xfff0) |
++			 (((val1 / KSZ9031_PS_TO_REG) & 0xf) << 0);
++
++	if (val2 != -2)
++		newval = (newval & 0xff0f) |
++			 (((val2 / KSZ9031_PS_TO_REG) & 0xf) << 4);
++
++	return ksz9031_extended_write(phydev, OP_DATA, 2,
++			MII_KSZ9031RN_CONTROL_PAD_SKEW, newval);
++}
++
++static int ksz9031_config_init(struct phy_device *phydev)
++{
++	struct device *dev = &phydev->dev;
++	struct device_node *of_node = dev->of_node;
++
++	if (!of_node && dev->parent->of_node)
++		of_node = dev->parent->of_node;
++
++	if (of_node) {
++		ksz9031_load_clk_skew_values(phydev, of_node,
++				"rxc-skew-ps", "txc-skew-ps");
++
++		ksz9031_load_data_skew_values(phydev, of_node,
++				MII_KSZ9031RN_RX_DATA_PAD_SKEW,
++				"rxd0-skew-ps", "rxd1-skew-ps",
++				"rxd2-skew-ps", "rxd3-skew-ps");
++
++		ksz9031_load_data_skew_values(phydev, of_node,
++				MII_KSZ9031RN_TX_DATA_PAD_SKEW,
++				"txd0-skew-ps", "txd1-skew-ps",
++				"txd2-skew-ps", "txd3-skew-ps");
++
++		ksz9031_load_ctrl_skew_values(phydev, of_node,
++				"txen-skew-ps", "rxdv-skew-ps");
++	}
++	return 0;
++}
++
+ #define KSZ8873MLL_GLOBAL_CONTROL_4	0x06
+ #define KSZ8873MLL_GLOBAL_CONTROL_4_DUPLEX	(1 << 6)
+ #define KSZ8873MLL_GLOBAL_CONTROL_4_SPEED	(1 << 4)
+@@ -428,7 +611,7 @@ static struct phy_driver ksphy_driver[] = {
+ 	.features	= (PHY_GBIT_FEATURES | SUPPORTED_Pause
+ 				| SUPPORTED_Asym_Pause),
+ 	.flags		= PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
+-	.config_init	= kszphy_config_init,
++	.config_init	= ksz9031_config_init,
+ 	.config_aneg	= genphy_config_aneg,
+ 	.read_status	= genphy_read_status,
+ 	.ack_interrupt	= kszphy_ack_interrupt,
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+1.9.1
 
