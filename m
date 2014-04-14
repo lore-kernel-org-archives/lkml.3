@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349AbaDNL4p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 07:56:45 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33513 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755278AbaDNL4m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 07:56:42 -0400
-Message-ID: <534BCCD3.9060805@ti.com>
-Date: Mon, 14 Apr 2014 14:56:03 +0300
+	id S1754446AbaDNLml (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 07:42:41 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:45678 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753162AbaDNLmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 07:42:35 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+To: <dan.j.williams@intel.com>, <vinod.koul@intel.com>, <nsekhar@ti.com>,
+        <joelf@ti.com>
+CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+Subject: [PATCH v3 00/10] dma: edma: Fixes for cyclic (audio) operation
+Date: Mon, 14 Apr 2014 14:41:55 +0300
+Message-ID: <1397475725-5036-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.9.2
 MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: Sekhar Nori <nsekhar@ti.com>, <dan.j.williams@intel.com>,
-        <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <joelf@ti.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <mporter@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH v2 05/14] arm: common: edma: Select event queue 1 as default
- when booted with DT
-References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com> <1396357575-30585-6-git-send-email-peter.ujfalusi@ti.com> <5347A4FD.1030803@ti.com> <5347ACDE.7040407@ti.com> <5347AE49.5020109@ti.com> <5347B7F8.2000508@ti.com> <20140411094217.GA32284@intel.com> <5347D2CC.4030407@ti.com> <20140411113154.GB32284@intel.com> <5347DEDA.2060008@ti.com> <20140411124641.GC32284@intel.com>
-In-Reply-To: <20140411124641.GC32284@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vinod,
+Hi,
 
-On 04/11/2014 03:46 PM, Vinod Koul wrote:
-> I think the number shouldn't be viewed in absolute terms. If we decide that (lets
-> say) 0-7, then any controller should map 0 to lowest and 7 to highest.
-> 
-> For your case you can do this and then intermediate numbers would be medium
-> priority. Such a system might work well...
-> 
-> Also how would a client driver know which priority to use? Would it come from
-> DT?
+Changes since v2:
+- Dropped patch 10 from v2 (simplify direction configuration...)
+- Dropped the channel priority related patches since we are going to go via
+  different route for configuring the priority.
+- Added ACK from Joel for the patches since they are not changed since v2
 
-I think DT would be the best place.
-Not sure if we should set the range for this either. What I was thinking is to
-add an optional new property to be set by the client nodes, using DMA:
+Changes since v1:
+- ASoC patches removed
+- Comments from Andriy Shevchenko addressed
+- patch added to fix cases when src/dst_maxburst is set to 0
 
-mcasp0: mcasp@48038000 {
-	compatible = "ti,am33xx-mcasp-audio";
-	...
-	dmas =	<&edma 8>,
-		<&edma 9>;
-	dma-names = "tx", "rx";
-	dma-priorities = <2>, <2>;
-};
+The series contains now only:
+Support for DMA pause/resume in cyclic mode
+device_slave_caps callback and DMA_CYCLIC flag correction.
+While debugging the edma to get things sorted out I noticed that the debug was
+too verbose and the important information was hidden even when the we did not
+asked for verbose dmaengine debug.
+I have included some debug cleanups for the edma dmaengine driver also.
 
-We could agree that lower number means lower priority, higher is - well -
-higher priority.
-If the dma-priority is missing we should assume lowest priority (0).
-The highest priority depends on the platform. For eDMA3 in AM335x it is three
-level. For designware controller you might have the range 0-8 as valid.
+Regards,
+Peter
+---
+Peter Ujfalusi (10):
+  platform_data: edma: Be precise with the paRAM struct
+  arm: common: edma: Save the number of event queues/TCs
+  dmaengine: edma: Correct the handling of src/dst_maxburst == 0
+  dmaengine: edma: Add support for DMA_PAUSE/RESUME operation
+  dmaengine: edma: Set DMA_CYCLIC capability flag
+  dmaengine: edma: Implement device_slave_caps callback
+  dmaengine: edma: Reduce debug print verbosity for non verbose
+    debugging
+  dmaengine: edma: Prefix debug prints where the text were identical in
+    prep callbacks
+  dmaengine: edma: Add channel number to debug prints
+  dmaengine: edma: Print the direction value as well when it is not
+    supported
 
-The question is how to get this information into use?
-We can take the priority number in the core when the dma channel is requested
-and add field to "struct dma_chan" in order to store it and the DMA drivers
-could have access to it.
-In this way we only need to update the nodes which needs non default priority
-for DMA.
-
-What do you think?
+ arch/arm/common/edma.c             |  4 ++
+ drivers/dma/edma.c                 | 87 ++++++++++++++++++++++++++++++--------
+ include/linux/platform_data/edma.h | 18 ++++----
+ 3 files changed, 83 insertions(+), 26 deletions(-)
 
 -- 
-Péter
+1.9.2
+
