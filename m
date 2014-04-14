@@ -1,112 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897AbaDNHXQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 03:23:16 -0400
-Received: from mga02.intel.com ([134.134.136.20]:28687 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752699AbaDNHXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 03:23:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,855,1389772800"; 
-   d="scan'208";a="520297550"
-From: Chen Tingjie <tingjie.chen@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
-Cc: Chen Tingjie <tingjie.chen@intel.com>, Zhang Jun <jun.zhang@intel.com>
-Subject: [PATCH] [PATCH V2] tty: memleak in alloc_pid
-Date: Mon, 14 Apr 2014 15:31:15 +0800
-Message-Id: <1397460675-17983-1-git-send-email-tingjie.chen@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754023AbaDNHX0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 03:23:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42388 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752699AbaDNHXV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 03:23:21 -0400
+Date: Mon, 14 Apr 2014 00:22:05 -0700
+From: tip-bot for Mike Galbraith <tipbot@zytor.com>
+Message-ID: <tip-60e69eed85bb7b5198ef70643b5895c26ad76ef7@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, sasha.levin@oracle.com, hpa@zytor.com,
+        mingo@kernel.org, peterz@infradead.org, bitbucket@online.de,
+        davej@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, sasha.levin@oracle.com,
+        linux-kernel@vger.kernel.org, peterz@infradead.org,
+        bitbucket@online.de, davej@redhat.com, tglx@linutronix.de
+In-Reply-To: <1396860915.5170.5.camel@marge.simpson.net>
+References: <1396860915.5170.5.camel@marge.simpson.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched/numa: Fix task_numa_free() lockdep splat
+Git-Commit-ID: 60e69eed85bb7b5198ef70643b5895c26ad76ef7
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is memleak in alloc_pid:
-------------------------------
-unreferenced object 0xd3453a80 (size 64):
-  comm "adbd", pid 1730, jiffies 66363 (age 6586.950s)
-  hex dump (first 32 bytes):
-    01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-    00 00 00 00 40 c2 f6 d5 00 d3 25 c1 59 28 00 00  ....@.....%.Y(..
-  backtrace:
-    [<c1a6f15c>] kmemleak_alloc+0x3c/0xa0
-    [<c1320546>] kmem_cache_alloc+0xc6/0x190
-    [<c125d51e>] alloc_pid+0x1e/0x400
-    [<c123d344>] copy_process.part.39+0xad4/0x1120
-    [<c123da59>] do_fork+0x99/0x330
-    [<c123dd58>] sys_fork+0x28/0x30
-    [<c1a89a08>] syscall_call+0x7/0xb
-    [<ffffffff>] 0xffffffff
+Commit-ID:  60e69eed85bb7b5198ef70643b5895c26ad76ef7
+Gitweb:     http://git.kernel.org/tip/60e69eed85bb7b5198ef70643b5895c26ad76ef7
+Author:     Mike Galbraith <bitbucket@online.de>
+AuthorDate: Mon, 7 Apr 2014 10:55:15 +0200
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 11 Apr 2014 10:39:15 +0200
 
-the leak is due to unreleased pid->count, which execute in function:
-get_pid()(pid->count++) and put_pid()(pid->count--).
+sched/numa: Fix task_numa_free() lockdep splat
 
-The race condition as following:
-task[dumpsys]               task[adbd]
-in disassociate_ctty()      in tty_signal_session_leader()
------------------------     -------------------------
-tty = get_current_tty();
-// tty is not NULL
-...
-spin_lock_irq(&current->sighand->siglock);
-put_pid(current->signal->tty_old_pgrp);
-current->signal->tty_old_pgrp = NULL;
-spin_unlock_irq(&current->sighand->siglock);
+Sasha reported that lockdep claims that the following commit:
+made numa_group.lock interrupt unsafe:
 
-                            spin_lock_irq(&p->sighand->siglock);
-                            ...
-                            p->signal->tty = NULL;
-                            ...
-                            spin_unlock_irq(&p->sighand->siglock);
+  156654f491dd ("sched/numa: Move task_numa_free() to __put_task_struct()")
 
-tty = get_current_tty();
-// tty NULL, goto else branch by accident.
-if (tty) {
-    ...
-    put_pid(tty_session);
-    put_pid(tty_pgrp);
-    ...
-} else {
-    print msg
-}
+While I don't see how that could be, given the commit in question moved
+task_numa_free() from one irq enabled region to another, the below does
+make both gripes and lockups upon gripe with numa=fake=4 go away.
 
-in task[dumpsys], in disassociate_ctty(), tty is set NULL by task[adbd],
-tty_signal_session_leader(), then it goto else branch and lack of
-put_pid(), cause memleak.
-
-move spin_unlock(sighand->siglock) after get_current_tty() can avoid
-the race and fix the memleak.
-
-Change-Id: Ic960dda039c8f99aad3e0f4d176489a966c62f6a
-Signed-off-by: Zhang Jun <jun.zhang@intel.com>
-Signed-off-by: Chen Tingjie <tingjie.chen@intel.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Fixes: 156654f491dd ("sched/numa: Move task_numa_free() to __put_task_struct()")
+Signed-off-by: Mike Galbraith <bitbucket@online.de>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: torvalds@linux-foundation.org
+Cc: mgorman@suse.com
+Cc: akpm@linux-foundation.org
+Cc: Dave Jones <davej@redhat.com>
+Link: http://lkml.kernel.org/r/1396860915.5170.5.camel@marge.simpson.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/tty/tty_io.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/sched/fair.c  | 13 +++++++------
+ kernel/sched/sched.h |  9 +++++++++
+ 2 files changed, 16 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 31c4a57..72547a3 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -874,9 +874,8 @@ void disassociate_ctty(int on_exit)
- 	spin_lock_irq(&current->sighand->siglock);
- 	put_pid(current->signal->tty_old_pgrp);
- 	current->signal->tty_old_pgrp = NULL;
--	spin_unlock_irq(&current->sighand->siglock);
- 
--	tty = get_current_tty();
-+	tty = tty_kref_get(current->signal->tty);
- 	if (tty) {
- 		unsigned long flags;
- 		spin_lock_irqsave(&tty->ctrl_lock, flags);
-@@ -893,6 +892,7 @@ void disassociate_ctty(int on_exit)
- #endif
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7e9bd0b..4f14a65 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1497,7 +1497,7 @@ static void task_numa_placement(struct task_struct *p)
+ 	/* If the task is part of a group prevent parallel updates to group stats */
+ 	if (p->numa_group) {
+ 		group_lock = &p->numa_group->lock;
+-		spin_lock(group_lock);
++		spin_lock_irq(group_lock);
  	}
  
-+	spin_unlock_irq(&current->sighand->siglock);
- 	/* Now clear signal->tty under the lock */
- 	read_lock(&tasklist_lock);
- 	session_clear_tty(task_session(current));
--- 
-1.7.9.5
-
+ 	/* Find the node with the highest number of faults */
+@@ -1572,7 +1572,7 @@ static void task_numa_placement(struct task_struct *p)
+ 			}
+ 		}
+ 
+-		spin_unlock(group_lock);
++		spin_unlock_irq(group_lock);
+ 	}
+ 
+ 	/* Preferred node as the node with the most faults */
+@@ -1677,7 +1677,8 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
+ 	if (!join)
+ 		return;
+ 
+-	double_lock(&my_grp->lock, &grp->lock);
++	BUG_ON(irqs_disabled());
++	double_lock_irq(&my_grp->lock, &grp->lock);
+ 
+ 	for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++) {
+ 		my_grp->faults[i] -= p->numa_faults_memory[i];
+@@ -1691,7 +1692,7 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
+ 	grp->nr_tasks++;
+ 
+ 	spin_unlock(&my_grp->lock);
+-	spin_unlock(&grp->lock);
++	spin_unlock_irq(&grp->lock);
+ 
+ 	rcu_assign_pointer(p->numa_group, grp);
+ 
+@@ -1710,14 +1711,14 @@ void task_numa_free(struct task_struct *p)
+ 	void *numa_faults = p->numa_faults_memory;
+ 
+ 	if (grp) {
+-		spin_lock(&grp->lock);
++		spin_lock_irq(&grp->lock);
+ 		for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++)
+ 			grp->faults[i] -= p->numa_faults_memory[i];
+ 		grp->total_faults -= p->total_numa_faults;
+ 
+ 		list_del(&p->numa_entry);
+ 		grp->nr_tasks--;
+-		spin_unlock(&grp->lock);
++		spin_unlock_irq(&grp->lock);
+ 		rcu_assign_pointer(p->numa_group, NULL);
+ 		put_numa_group(grp);
+ 	}
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index c9007f2..456e492 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1385,6 +1385,15 @@ static inline void double_lock(spinlock_t *l1, spinlock_t *l2)
+ 	spin_lock_nested(l2, SINGLE_DEPTH_NESTING);
+ }
+ 
++static inline void double_lock_irq(spinlock_t *l1, spinlock_t *l2)
++{
++	if (l1 > l2)
++		swap(l1, l2);
++
++	spin_lock_irq(l1);
++	spin_lock_nested(l2, SINGLE_DEPTH_NESTING);
++}
++
+ static inline void double_raw_lock(raw_spinlock_t *l1, raw_spinlock_t *l2)
+ {
+ 	if (l1 > l2)
