@@ -1,99 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437AbaDNJqt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 05:46:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32729 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750912AbaDNJqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 05:46:48 -0400
-Date: Mon, 14 Apr 2014 10:50:28 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: acme@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, eranian@google.com, namhyung@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/2] perf, tools: Support spark lines in perf stat
-Message-ID: <20140414085028.GA1433@krava.brq.redhat.com>
-References: <1395768699-16060-1-git-send-email-andi@firstfloor.org>
- <1395768699-16060-2-git-send-email-andi@firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395768699-16060-2-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754586AbaDNJrJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 05:47:09 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38721 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754456AbaDNJrG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 05:47:06 -0400
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>, cpufreq@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH RESEND 1/2] cpufreq: imx6q: Drop devm_clk/regulator_get usage
+Date: Mon, 14 Apr 2014 11:46:56 +0200
+Message-Id: <1397468817-23266-1-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 1.9.1
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 10:31:39AM -0700, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
-> 
+This driver is using devres managed calls incorrectly, giving the cpu0
+device as first parameter instead of the cpufreq platform device.
+This results in resources not being freed if the cpufreq platform device
+is unbound, for example if probing has to be deferred for a missing
+regulator.
+Supporting probe deferral properly is a prerequisite to enabling the
+internal LDO bypass on i.MX6 and regulating the CPU voltage with an
+external regulator.
 
-SNIP
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Acked-by: Shawn Guo <shawn.guo@freescale.com>
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+---
+This didn't turn up in v3.15-rc1. Resend in case it fell through the cracks.
+---
+ drivers/cpufreq/imx6q-cpufreq.c | 53 ++++++++++++++++++++++++++++++-----------
+ 1 file changed, 39 insertions(+), 14 deletions(-)
 
-> @@ -1176,6 +1176,9 @@ static void print_aggr(char *prefix)
->  				if (run != ena)
->  					fprintf(output, "  (%.2f%%)",
->  						100.0 * run / ena);
-> +
-> +				fputc(' ', output);
-> +				print_stat_spark(output, counter->priv);
->  			}
->  			fputc('\n', output);
->  		}
-> @@ -1224,6 +1227,9 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
->  
->  	print_noise(counter, avg);
->  
-> +	fputc(' ', output);
-> +	print_stat_spark(output, counter->priv);
-> +
->  	if (csv_output) {
->  		fputc('\n', output);
->  		return;
-> @@ -1295,6 +1301,9 @@ static void print_counter(struct perf_evsel *counter, char *prefix)
->  			if (run != ena)
->  				fprintf(output, "  (%.2f%%)",
->  					100.0 * run / ena);
-> +
-> +			fputc(' ', output);
-> +			print_stat_spark(output, counter->priv);
->  		}
->  		fputc('\n', output);
->  	}
-> @@ -1355,6 +1364,9 @@ static void print_stat(int argc, const char **argv)
->  			fprintf(output, "                                        ");
->  			print_noise_pct(stddev_stats(&walltime_nsecs_stats),
->  					avg_stats(&walltime_nsecs_stats));
-> +
-> +			fputc(' ', output);
-> +			print_stat_spark(output, &walltime_nsecs_stats);
+diff --git a/drivers/cpufreq/imx6q-cpufreq.c b/drivers/cpufreq/imx6q-cpufreq.c
+index e27fca8..92a82ec 100644
+--- a/drivers/cpufreq/imx6q-cpufreq.c
++++ b/drivers/cpufreq/imx6q-cpufreq.c
+@@ -170,25 +170,25 @@ static int imx6q_cpufreq_probe(struct platform_device *pdev)
+ 		return -ENOENT;
+ 	}
+ 
+-	arm_clk = devm_clk_get(cpu_dev, "arm");
+-	pll1_sys_clk = devm_clk_get(cpu_dev, "pll1_sys");
+-	pll1_sw_clk = devm_clk_get(cpu_dev, "pll1_sw");
+-	step_clk = devm_clk_get(cpu_dev, "step");
+-	pll2_pfd2_396m_clk = devm_clk_get(cpu_dev, "pll2_pfd2_396m");
++	arm_clk = clk_get(cpu_dev, "arm");
++	pll1_sys_clk = clk_get(cpu_dev, "pll1_sys");
++	pll1_sw_clk = clk_get(cpu_dev, "pll1_sw");
++	step_clk = clk_get(cpu_dev, "step");
++	pll2_pfd2_396m_clk = clk_get(cpu_dev, "pll2_pfd2_396m");
+ 	if (IS_ERR(arm_clk) || IS_ERR(pll1_sys_clk) || IS_ERR(pll1_sw_clk) ||
+ 	    IS_ERR(step_clk) || IS_ERR(pll2_pfd2_396m_clk)) {
+ 		dev_err(cpu_dev, "failed to get clocks\n");
+ 		ret = -ENOENT;
+-		goto put_node;
++		goto put_clk;
+ 	}
+ 
+-	arm_reg = devm_regulator_get(cpu_dev, "arm");
+-	pu_reg = devm_regulator_get(cpu_dev, "pu");
+-	soc_reg = devm_regulator_get(cpu_dev, "soc");
++	arm_reg = regulator_get(cpu_dev, "arm");
++	pu_reg = regulator_get(cpu_dev, "pu");
++	soc_reg = regulator_get(cpu_dev, "soc");
+ 	if (IS_ERR(arm_reg) || IS_ERR(pu_reg) || IS_ERR(soc_reg)) {
+ 		dev_err(cpu_dev, "failed to get regulators\n");
+ 		ret = -ENOENT;
+-		goto put_node;
++		goto put_reg;
+ 	}
+ 
+ 	/*
+@@ -201,21 +201,21 @@ static int imx6q_cpufreq_probe(struct platform_device *pdev)
+ 		ret = of_init_opp_table(cpu_dev);
+ 		if (ret < 0) {
+ 			dev_err(cpu_dev, "failed to init OPP table: %d\n", ret);
+-			goto put_node;
++			goto put_reg;
+ 		}
+ 
+ 		num = dev_pm_opp_get_opp_count(cpu_dev);
+ 		if (num < 0) {
+ 			ret = num;
+ 			dev_err(cpu_dev, "no OPP table is found: %d\n", ret);
+-			goto put_node;
++			goto put_reg;
+ 		}
+ 	}
+ 
+ 	ret = dev_pm_opp_init_cpufreq_table(cpu_dev, &freq_table);
+ 	if (ret) {
+ 		dev_err(cpu_dev, "failed to init cpufreq table: %d\n", ret);
+-		goto put_node;
++		goto put_reg;
+ 	}
+ 
+ 	/* Make imx6_soc_volt array's size same as arm opp number */
+@@ -301,7 +301,24 @@ soc_opp_out:
+ 
+ free_freq_table:
+ 	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
+-put_node:
++put_reg:
++	if (!IS_ERR(arm_reg))
++		regulator_put(arm_reg);
++	if (!IS_ERR(pu_reg))
++		regulator_put(pu_reg);
++	if (!IS_ERR(soc_reg))
++		regulator_put(soc_reg);
++put_clk:
++	if (!IS_ERR(arm_clk))
++		clk_put(arm_clk);
++	if (!IS_ERR(pll1_sys_clk))
++		clk_put(pll1_sys_clk);
++	if (!IS_ERR(pll1_sw_clk))
++		clk_put(pll1_sw_clk);
++	if (!IS_ERR(step_clk))
++		clk_put(step_clk);
++	if (!IS_ERR(pll2_pfd2_396m_clk))
++		clk_put(pll2_pfd2_396m_clk);
+ 	of_node_put(np);
+ 	return ret;
+ }
+@@ -310,6 +327,14 @@ static int imx6q_cpufreq_remove(struct platform_device *pdev)
+ {
+ 	cpufreq_unregister_driver(&imx6q_cpufreq_driver);
+ 	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
++	regulator_put(arm_reg);
++	regulator_put(pu_reg);
++	regulator_put(soc_reg);
++	clk_put(arm_clk);
++	clk_put(pll1_sys_clk);
++	clk_put(pll1_sw_clk);
++	clk_put(step_clk);
++	clk_put(pll2_pfd2_396m_clk);
+ 
+ 	return 0;
+ }
+-- 
+1.9.1
 
-Do we want to be that explicit about printing ' ' here?
-I dont see it elsewhere..
-
-fput could go into print_stat_spark
-
-
-SNIP
-
-> +void print_stat_spark(FILE *f, struct stats *stat)
-> +{
-> +	int n = stat->n, len;
-> +
-> +	if (n <= 1)
-> +		return;
-> +	len = n;
-> +	if (len > NUM_SPARK_VALS)
-> +		len = NUM_SPARK_VALS;
-> +	if (all_the_same(stat->svals, len))
-> +		return;
-> +	print_spark(f, stat->svals, len);
-> +	if (stat->n > NUM_SPARK_VALS)
-> +		fputs("..", f);
-> +}
-
-whats the reason for 'n' in here?  looks like you could do only with 'len'
-
-thanks,
-jirka
