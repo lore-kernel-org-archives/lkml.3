@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755816AbaDNVkp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 17:40:45 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:56429 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755481AbaDNVh2 (ORCPT
+	id S1755601AbaDNVmi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 17:42:38 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:57885 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755317AbaDNVhT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 17:37:28 -0400
+	Mon, 14 Apr 2014 17:37:19 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 09/12] cgroup: add css_set->dfl_cgrp
-Date: Mon, 14 Apr 2014 17:37:07 -0400
-Message-Id: <1397511430-2673-10-git-send-email-tj@kernel.org>
+Subject: [PATCH 03/12] cgroup: implement cgroup->e_csets[]
+Date: Mon, 14 Apr 2014 17:37:01 -0400
+Message-Id: <1397511430-2673-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1397511430-2673-1-git-send-email-tj@kernel.org>
 References: <1397511430-2673-1-git-send-email-tj@kernel.org>
@@ -21,46 +21,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To implement the unified hierarchy behavior, we'll need to be able to
-determine the associated cgroup on the default hierarchy from css_set.
-Let's add css_set->dfl_cgrp so that it can be accessed conveniently
-and efficiently.
+On the default unified hierarchy, a cgroup may be associated with
+csses of its ancestors, which means that a css of a given cgroup may
+be associated with css_sets of descendant cgroups.  This means that we
+can't walk all tasks associated with a css by iterating the css_sets
+associated with the cgroup as there are css_sets which are pointing to
+the css but linked on the descendants.
+
+This patch adds per-subsystem list heads cgroup->e_csets[].  Any
+css_set which is pointing to a css is linked to
+css->cgroup->e_csets[$SUBSYS_ID] through
+css_set->e_cset_node[$SUBSYS_ID].  The lists are protected by
+css_set_rwsem and will allow us to walk all css_sets associated with a
+given css so that we can find out all associated tasks.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/cgroup.h | 3 +++
- kernel/cgroup.c        | 4 ++++
- 2 files changed, 7 insertions(+)
+ include/linux/cgroup.h | 18 ++++++++++++++++++
+ kernel/cgroup.c        | 30 ++++++++++++++++++++++++++++--
+ 2 files changed, 46 insertions(+), 2 deletions(-)
 
 diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 18fcae3..c49d161 100644
+index 1b5b2fe..33a0043 100644
 --- a/include/linux/cgroup.h
 +++ b/include/linux/cgroup.h
-@@ -354,6 +354,9 @@ struct css_set {
- 	 */
- 	struct list_head cgrp_links;
+@@ -188,6 +188,15 @@ struct cgroup {
+ 	struct list_head cset_links;
  
-+	/* the default cgroup associated with this css_set */
-+	struct cgroup *dfl_cgrp;
-+
  	/*
- 	 * Set of subsystem states, one for each subsystem. This array is
- 	 * immutable after creation apart from the init_css_set during
++	 * On the default hierarchy, a css_set for a cgroup with some
++	 * susbsys disabled will point to css's which are associated with
++	 * the closest ancestor which has the subsys enabled.  The
++	 * following lists all css_sets which point to this cgroup's css
++	 * for the given subsystem.
++	 */
++	struct list_head e_csets[CGROUP_SUBSYS_COUNT];
++
++	/*
+ 	 * Linked list running through all cgroups that can
+ 	 * potentially be reaped by the release agent. Protected by
+ 	 * release_list_lock
+@@ -369,6 +378,15 @@ struct css_set {
+ 	struct cgroup *mg_src_cgrp;
+ 	struct css_set *mg_dst_cset;
+ 
++	/*
++	 * On the default hierarhcy, ->subsys[ssid] may point to a css
++	 * attached to an ancestor instead of the cgroup this css_set is
++	 * associated with.  The following node is anchored at
++	 * ->subsys[ssid]->cgroup->e_csets[ssid] and provides a way to
++	 * iterate through all css's attached to a given cgroup.
++	 */
++	struct list_head e_cset_node[CGROUP_SUBSYS_COUNT];
++
+ 	/* For RCU-protected deletion */
+ 	struct rcu_head rcu_head;
+ };
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 02c99a3..b4cd1fe 100644
+index a6a438f..29e8698 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -651,6 +651,10 @@ static void link_css_set(struct list_head *tmp_links, struct css_set *cset,
- 	struct cgrp_cset_link *link;
+@@ -425,6 +425,8 @@ static unsigned long css_set_hash(struct cgroup_subsys_state *css[])
+ static void put_css_set_locked(struct css_set *cset, bool taskexit)
+ {
+ 	struct cgrp_cset_link *link, *tmp_link;
++	struct cgroup_subsys *ss;
++	int ssid;
  
- 	BUG_ON(list_empty(tmp_links));
+ 	lockdep_assert_held(&css_set_rwsem);
+ 
+@@ -432,6 +434,8 @@ static void put_css_set_locked(struct css_set *cset, bool taskexit)
+ 		return;
+ 
+ 	/* This css_set is dead. unlink it and release cgroup refcounts */
++	for_each_subsys(ss, ssid)
++		list_del(&cset->e_cset_node[ssid]);
+ 	hash_del(&cset->hlist);
+ 	css_set_count--;
+ 
+@@ -673,7 +677,9 @@ static struct css_set *find_css_set(struct css_set *old_cset,
+ 	struct css_set *cset;
+ 	struct list_head tmp_links;
+ 	struct cgrp_cset_link *link;
++	struct cgroup_subsys *ss;
+ 	unsigned long key;
++	int ssid;
+ 
+ 	lockdep_assert_held(&cgroup_mutex);
+ 
+@@ -724,10 +730,14 @@ static struct css_set *find_css_set(struct css_set *old_cset,
+ 
+ 	css_set_count++;
+ 
+-	/* Add this cgroup group to the hash table */
++	/* Add @cset to the hash table */
+ 	key = css_set_hash(cset->subsys);
+ 	hash_add(css_set_table, &cset->hlist, key);
+ 
++	for_each_subsys(ss, ssid)
++		list_add_tail(&cset->e_cset_node[ssid],
++			      &cset->subsys[ssid]->cgroup->e_csets[ssid]);
 +
-+	if (cgroup_on_dfl(cgrp))
-+		cset->dfl_cgrp = cgrp;
+ 	up_write(&css_set_rwsem);
+ 
+ 	return cset;
+@@ -1028,7 +1038,7 @@ static int rebind_subsystems(struct cgroup_root *dst_root,
+ 			     unsigned long ss_mask)
+ {
+ 	struct cgroup_subsys *ss;
+-	int ssid, ret;
++	int ssid, i, ret;
+ 
+ 	lockdep_assert_held(&cgroup_tree_mutex);
+ 	lockdep_assert_held(&cgroup_mutex);
+@@ -1081,6 +1091,7 @@ static int rebind_subsystems(struct cgroup_root *dst_root,
+ 	for_each_subsys(ss, ssid) {
+ 		struct cgroup_root *src_root;
+ 		struct cgroup_subsys_state *css;
++		struct css_set *cset;
+ 
+ 		if (!(ss_mask & (1 << ssid)))
+ 			continue;
+@@ -1095,6 +1106,12 @@ static int rebind_subsystems(struct cgroup_root *dst_root,
+ 		ss->root = dst_root;
+ 		css->cgroup = &dst_root->cgrp;
+ 
++		down_write(&css_set_rwsem);
++		hash_for_each(css_set_table, i, cset, hlist)
++			list_move_tail(&cset->e_cset_node[ss->id],
++				       &dst_root->cgrp.e_csets[ss->id]);
++		up_write(&css_set_rwsem);
 +
- 	link = list_first_entry(tmp_links, struct cgrp_cset_link, cset_link);
- 	link->cset = cset;
- 	link->cgrp = cgrp;
+ 		src_root->subsys_mask &= ~(1 << ssid);
+ 		src_root->cgrp.child_subsys_mask &= ~(1 << ssid);
+ 
+@@ -1417,6 +1434,9 @@ out_unlock:
+ 
+ static void init_cgroup_housekeeping(struct cgroup *cgrp)
+ {
++	struct cgroup_subsys *ss;
++	int ssid;
++
+ 	atomic_set(&cgrp->refcnt, 1);
+ 	INIT_LIST_HEAD(&cgrp->sibling);
+ 	INIT_LIST_HEAD(&cgrp->children);
+@@ -1425,6 +1445,9 @@ static void init_cgroup_housekeeping(struct cgroup *cgrp)
+ 	INIT_LIST_HEAD(&cgrp->pidlists);
+ 	mutex_init(&cgrp->pidlist_mutex);
+ 	cgrp->dummy_css.cgroup = cgrp;
++
++	for_each_subsys(ss, ssid)
++		INIT_LIST_HEAD(&cgrp->e_csets[ssid]);
+ }
+ 
+ static void init_cgroup_root(struct cgroup_root *root,
+@@ -4253,6 +4276,9 @@ int __init cgroup_init(void)
+ 		if (!ss->early_init)
+ 			cgroup_init_subsys(ss);
+ 
++		list_add_tail(&init_css_set.e_cset_node[ssid],
++			      &cgrp_dfl_root.cgrp.e_csets[ssid]);
++
+ 		/*
+ 		 * cftype registration needs kmalloc and can't be done
+ 		 * during early_init.  Register base cftypes separately.
 -- 
 1.9.0
 
