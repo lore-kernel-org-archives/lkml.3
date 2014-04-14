@@ -1,138 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346AbaDNRRk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 13:17:40 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:43258 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529AbaDNRRj (ORCPT
+	id S1754481AbaDNRR5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 13:17:57 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:52736 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754440AbaDNRRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 13:17:39 -0400
-Date: Mon, 14 Apr 2014 10:17:31 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Joe Perches <joe@perches.com>
-Cc: Pranith Kumar <pranith@gatech.edu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] kernel/rcu/tree.c: remove duplicate extern definition
-Message-ID: <20140414171731.GH4496@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CAJhHMCBVQTpDecjd5sVhCWJk++K_Rne0DfHRoF7aSd7SRYp1WA@mail.gmail.com>
- <20140414160743.GF4496@linux.vnet.ibm.com>
- <CAJhHMCB5_A8xRHAnpQuTTcc4KhXEiS5Uo+oZEih=cci9H+H79w@mail.gmail.com>
- <20140414163207.GG4496@linux.vnet.ibm.com>
- <1397494407.2962.2.camel@joe-AO722>
+	Mon, 14 Apr 2014 13:17:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1397494407.2962.2.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041417-0928-0000-0000-00000136729E
+In-Reply-To: <20140414171114.GA31384@www.outflux.net>
+References: <20140414171114.GA31384@www.outflux.net>
+Date: Mon, 14 Apr 2014 10:17:53 -0700
+Message-ID: <CAMEtUuzCBXROUE6Nf6B8+vmTaD2xOh5LjkmsVSGuwKo1gO-mNQ@mail.gmail.com>
+Subject: Re: [PATCH] seccomp: fix memory leak on filter attach
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Masami Ichikawa <masami256@gmail.com>,
+        Will Drewry <wad@chromium.org>, Josh Triplett <josh@joshtriplett.org>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        James Morris <james.l.morris@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, eparis@redhat.com,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 09:53:27AM -0700, Joe Perches wrote:
-> On Mon, 2014-04-14 at 09:32 -0700, Paul E. McKenney wrote:
-> > On Mon, Apr 14, 2014 at 12:19:31PM -0400, Pranith Kumar wrote:
-> > > Hi Paul,
-> > > 
-> > > On Mon, Apr 14, 2014 at 12:07 PM, Paul E. McKenney
-> > > <paulmck@linux.vnet.ibm.com> wrote:
-> > > > On Sun, Apr 13, 2014 at 05:53:53PM -0400, Pranith Kumar wrote:
-> > > >> remove duplicate definition of extern resched_cpu
-> > > >>
-> > > >> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> > > >
-> > > > Hello, Pranith,
-> > > >
-> > > > When I apply this patch I get the following:
-> > > >
-> > > > /home/paulmck/public_git/linux-rcu/kernel/rcu/tree.c: In function ‘rcu_implicit_dynticks_qs’:
-> > > > /home/paulmck/public_git/linux-rcu/kernel/rcu/tree.c:895:3: error: implicit declaration of function ‘resched_cpu’ [-Werror=implicit-function-declaration]
-> > > > /home/paulmck/public_git/linux-rcu/kernel/rcu/tree.c: At top level:
-> > > > /home/paulmck/public_git/linux-rcu/kernel/rcu/tree.c:1009:13: warning: conflicting types for ‘resched_cpu’ [enabled by default]
-> > > > /home/paulmck/public_git/linux-rcu/kernel/rcu/tree.c:895:3: note: previous implicit declaration of ‘resched_cpu’ was here
-> > > >
-> > > > This failed in under number of different Kconfig setups, the .config file
-> > > > for one of them is attached.
-> > > >
-> > > > So this declaration really is needed.  Just out of curiosity, what led
-> > > > you to believe that it could be removed?
-> > > >
-> > > 
-> > > That is strange. The patch removes a duplicate declaration of
-> > > resched_cpu (on lines 768, 954) of the file kernel/rcu/tree.c of the
-> > > latest git.
-> > > 
-> > > The patch compiles fine here with the latest tip of the git tree.
-> > > 
-> > >   CC      kernel/rcu/tree.o
-> > > 
-> > > Can you please check if your tree.c has two declarations for resched_cpu?
-> > 
-> > Ah, your patch didn't apply, so I hand-applied it, and removed the first
-> > declaration rather than the second one.  Trying it again.
-> 
-> Perhaps this might be better than using the extern.
-> 
-> This also would allow the resched_cpu call to become
-> static inline as it's very small.
-> 
+On Mon, Apr 14, 2014 at 10:11 AM, Kees Cook <keescook@chromium.org> wrote:
+> This sets the correct error code when final filter memory is unavailable,
+> and frees the raw filter no matter what.
+>
+> unreferenced object 0xffff8800d6ea4000 (size 512):
+>   comm "sshd", pid 278, jiffies 4294898315 (age 46.653s)
+>   hex dump (first 32 bytes):
+>     21 00 00 00 04 00 00 00 15 00 01 00 3e 00 00 c0  !...........>...
+>     06 00 00 00 00 00 00 00 21 00 00 00 00 00 00 00  ........!.......
+>   backtrace:
+>     [<ffffffff8151414e>] kmemleak_alloc+0x4e/0xb0
+>     [<ffffffff811a3a40>] __kmalloc+0x280/0x320
+>     [<ffffffff8110842e>] prctl_set_seccomp+0x11e/0x3b0
+>     [<ffffffff8107bb6b>] SyS_prctl+0x3bb/0x4a0
+>     [<ffffffff8152ef2d>] system_call_fastpath+0x1a/0x1f
+>     [<ffffffffffffffff>] 0xffffffffffffffff
+>
+> Reported-by: Masami Ichikawa <masami256@gmail.com>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Cc: stable@vger.kernel.org
+
+Acked-by: Alexei Starovoitov <ast@plumgrid.com>
+
 > ---
->  kernel/rcu/tree.c | 19 +++++++------------
->  1 file changed, 7 insertions(+), 12 deletions(-)
-> 
-> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-> index 0c47e30..7f2c8c2 100644
-> --- a/kernel/rcu/tree.c
-> +++ b/kernel/rcu/tree.c
-> @@ -60,6 +60,13 @@
->  #include "tree.h"
->  #include "rcu.h"
-> 
-> +/*
-> + * This include of sched.h (for resched_cpu) really isn't for public
-> + * consumption, but RCU is special in that context switches can allow
-> + * the state machine to make progress.
-> + */
-> +#include "../sched/sched.h"
-
-This sort of thing hasn't been well-received recently.  Plus the call
-to resched_cpu() is very infrequent, so hardly worth the optimization.
-
-							Thanx, Paul
-
-> +
->  MODULE_ALIAS("rcutree");
->  #ifdef MODULE_PARAM_PREFIX
->  #undef MODULE_PARAM_PREFIX
-> @@ -762,12 +769,6 @@ static int dyntick_save_progress_counter(struct rcu_data *rdp,
->  }
-> 
->  /*
-> - * This function really isn't for public consumption, but RCU is special in
-> - * that context switches can allow the state machine to make progress.
-> - */
-> -extern void resched_cpu(int cpu);
-> -
-> -/*
->   * Return true if the specified CPU has passed through a quiescent
->   * state by virtue of being in or having passed through an dynticks
->   * idle state since the last call to dyntick_save_progress_counter()
-> @@ -947,12 +948,6 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
->  	force_quiescent_state(rsp);  /* Kick them all. */
->  }
-> 
-> -/*
-> - * This function really isn't for public consumption, but RCU is special in
-> - * that context switches can allow the state machine to make progress.
-> - */
-> -extern void resched_cpu(int cpu);
-> -
->  static void print_cpu_stall(struct rcu_state *rsp)
->  {
->  	int cpu;
-> 
-> 
-
+>  kernel/seccomp.c |    2 ++
+>  1 file changed, 2 insertions(+)
+>
+> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+> index fd609bd9d6dd..2d7dcdfb7422 100644
+> --- a/kernel/seccomp.c
+> +++ b/kernel/seccomp.c
+> @@ -256,6 +256,7 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
+>                 goto free_prog;
+>
+>         /* Allocate a new seccomp_filter */
+> +       ret = -ENOMEM;
+>         filter = kzalloc(sizeof(struct seccomp_filter) +
+>                          sizeof(struct sock_filter_int) * new_len,
+>                          GFP_KERNEL|__GFP_NOWARN);
+> @@ -265,6 +266,7 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
+>         ret = sk_convert_filter(fp, fprog->len, filter->insnsi, &new_len);
+>         if (ret)
+>                 goto free_filter;
+> +       kfree(fp);
+>
+>         atomic_set(&filter->usage, 1);
+>         filter->len = new_len;
+> --
+> 1.7.9.5
+>
+>
+> --
+> Kees Cook
+> Chrome OS Security
