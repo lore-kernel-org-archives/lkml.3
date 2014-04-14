@@ -1,76 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755009AbaDNNNo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 09:13:44 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:43094 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864AbaDNNNm (ORCPT
+	id S1754511AbaDNNUy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 09:20:54 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:50054 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644AbaDNNUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 09:13:42 -0400
+	Mon, 14 Apr 2014 09:20:49 -0400
 MIME-Version: 1.0
-In-Reply-To: <3760742.KPOjd8C4i8@daeseok-laptop.cloud.net>
-References: <3760742.KPOjd8C4i8@daeseok-laptop.cloud.net>
-Date: Mon, 14 Apr 2014 21:13:42 +0800
-X-Google-Sender-Auth: yAivqtFMWTt5PZNQ_iYRzNVYLqU
-Message-ID: <CACvQF5036uEas=7i7gMQW7M5XnhxH93N3jDYJGXBRK6oNh5o7Q@mail.gmail.com>
-Subject: Re: [PATCH V2] workqueue: fix double unlock bug
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <534BDBBC.5010701@ti.com>
+References: <1396967803-28868-1-git-send-email-gautam.vivek@samsung.com>
+	<1396967803-28868-2-git-send-email-gautam.vivek@samsung.com>
+	<534BD447.1080909@ti.com>
+	<CAFp+6iF=SpEax+5KUhZkmtkwp=Pj7LbAHOoySgOwJx_50u6GZQ@mail.gmail.com>
+	<534BDBBC.5010701@ti.com>
+Date: Mon, 14 Apr 2014 18:50:48 +0530
+Message-ID: <CAFp+6iFFW8XQg_UtYEZfaiENULZDD8A7_9fr4f2no=qfau7-sQ@mail.gmail.com>
+Subject: Re: [PATCH V4 1/5] phy: Add new Exynos5 USB 3.0 PHY driver
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 6:41 PM, Daeseok Youn <daeseok.youn@gmail.com> wrote:
+On Mon, Apr 14, 2014 at 6:29 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
 >
-> mutex_unlock() and put_pwq_unlocked() do not need to be called
-> when alloc_unbound_pwq() is failed.
 >
-> And remove "if" condition for whether "pwq" is same as "wq->dfl_pwq"
-> when wq_calc_node_cpumask() returns false and just use "goto use_dfl_pwq"
+> On Monday 14 April 2014 06:12 PM, Vivek Gautam wrote:
+>> Hi,
+>>
+>>
+>> On Mon, Apr 14, 2014 at 5:57 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>> Hi,
+>>>
+>>> On Tuesday 08 April 2014 08:06 PM, Vivek Gautam wrote:
+>>>> Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
+>>>> The new driver uses the generic PHY framework and will interact
+>>>> with DWC3 controller present on Exynos5 series of SoCs.
+>>>> Thereby, removing old phy-samsung-usb3 driver and related code
+>>>> used untill now which was based on usb/phy framework.
+>>>>
+>>>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>>>> ---
+>>>>  .../devicetree/bindings/phy/samsung-phy.txt        |   42 ++
+>>>>  drivers/phy/Kconfig                                |   11 +
+>>>>  drivers/phy/Makefile                               |    1 +
+>>>>  drivers/phy/phy-exynos5-usbdrd.c                   |  668 ++++++++++++++++++++
+>>>>  4 files changed, 722 insertions(+)
+>>>>  create mode 100644 drivers/phy/phy-exynos5-usbdrd.c
+>>>>
+>>>> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+>>>> index 28f9edb..6d99ba9 100644
+>>>> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
+>>>> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+>>>> @@ -74,3 +74,45 @@ phy-consumer@12340000 {
+>>>>
+>>>>  Refer to DT bindings documentation of particular PHY consumer devices for more
+>>>>  information about required PHYs and the way of specification.
+>>>> +
+>>>> +Samsung Exynos5 SoC series USB DRD PHY controller
+>>>> +--------------------------------------------------
+>>>> +
+>>>> +Required properties:
+>>>> +- compatible : Should be set to one of the following supported values:
+>>>> +     - "samsung,exynos5250-usbdrd-phy" - for exynos5250 SoC,
+>>>> +     - "samsung,exynos5420-usbdrd-phy" - for exynos5420 SoC.
+>>>> +- reg : Register offset and length of USB DRD PHY register set;
+>>>> +- clocks: Clock IDs array as required by the controller
+>>>> +- clock-names: names of clocks correseponding to IDs in the clock property;
+>>>> +            Required clocks:
+>>>> +     - phy: main PHY clock (same as USB DRD controller i.e. DWC3 IP clock),
+>>>> +            used for register access.
+>>>> +     - ref: PHY's reference clock (usually crystal clock), associated by
+>>>> +            phy name, used to determine bit values for clock settings
+>>>> +            register.
+>>>> +     Additional clock required for Exynos5420:
+>>>> +     - usb30_sclk_100m: Additional special clock used for PHY operation
+>>>> +                        depicted as 'sclk_usbphy30' in CMU of Exynos5420.
+>>>> +- samsung,syscon-phandle: phandle for syscon interface, which is used to
+>>>> +                       control pmu registers for power isolation.
+>>>> +- samsung,pmu-offset: phy power control register offset to pmu-system-controller
+>>>> +                   base.
+>>>> +- #phy-cells : from the generic PHY bindings, must be 1;
+>>>> +
+>>>> +For "samsung,exynos5250-usbdrd-phy" and "samsung,exynos5420-usbdrd-phy"
+>>>> +compatible PHYs, the second cell in the PHY specifier identifies the
+>>>> +PHY id, which is interpreted as follows:
+>>>> +  0 - UTMI+ type phy,
+>>>> +  1 - PIPE3 type phy,
+>>>> +
+>>>> +Example:
+>>>> +     usb3_phy: usbphy@12100000 {
+>>>> +             compatible = "samsung,exynos5250-usbdrd-phy";
+>>>> +             reg = <0x12100000 0x100>;
+>>>> +             clocks = <&clock 286>, <&clock 1>;
+>>>> +             clock-names = "phy", "usb3phy_refclk";
+>>>> +             samsung,syscon-phandle = <&pmu_syscon>;
+>>>> +             samsung,pmu-offset = <0x704>;
+>>>> +             #phy-cells = <1>;
+>>>> +     };
+>>>> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+>>>> index 8d3c49c..d955a05 100644
+>>>> --- a/drivers/phy/Kconfig
+>>>> +++ b/drivers/phy/Kconfig
+>>>> @@ -166,4 +166,15 @@ config PHY_XGENE
+>>>>       help
+>>>>         This option enables support for APM X-Gene SoC multi-purpose PHY.
+>>>>
+>>>> +config PHY_EXYNOS5_USBDRD
+>>>> +     tristate "Exynos5 SoC series USB DRD PHY driver"
+>>>> +     depends on ARCH_EXYNOS5 && OF
+>>>> +     depends on HAS_IOMEM
+>>>> +     select GENERIC_PHY
+>>>> +     select MFD_SYSCON
+>>>
+>>> Lets try to avoid select in Kconfig. We've got enough problems with that.
+>>
+>> I hope you meant with "select MFD_SYSCON".
+>> We are referencing the syscon for accessing pmu reg, for which we need
+>> this config to be selected.
+>> Other Exynos phy drivers also need this config and for that they have
+>> selected this.
+>>
+>> Do you want me to do it any other way ?
 >
-> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
-> ---
-> V2: replace "if condition" with "goto" as Lai's comment.
->
->  kernel/workqueue.c |    7 ++-----
->  1 files changed, 2 insertions(+), 5 deletions(-)
->
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 0ee63af..9853067 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -4087,10 +4087,7 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
->                 if (cpumask_equal(cpumask, pwq->pool->attrs->cpumask))
->                         goto out_unlock;
->         } else {
-> -               if (pwq == wq->dfl_pwq)
-> -                       goto out_unlock;
-> -               else
-> -                       goto use_dfl_pwq;
-> +               goto use_dfl_pwq;
->         }
->
->         mutex_unlock(&wq->mutex);
-> @@ -4100,7 +4097,7 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
->         if (!pwq) {
->                 pr_warning("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
->                            wq->name);
-> -               goto out_unlock;
-> +               return;
+> depends on is one option.
 
-Please acquire the  wq->mutex and goto use_dfl_pwq;
+Ok, i can see there are places where depends_on MFD_SYSCON is used.
+"drivers/gpu/drm/exynos/Kconfig:60"
 
->         }
+so, do you want me to fix at other places too ?
+
+But i also have a question here.
+MFD_SYSCON is a subsystem that's facilitating us in getting our work
+done here by giving an access to pmu_system_controller.
+So unless MFD_SYSCON is exposed, the phy driver will not be exposed to us.
+So is that valid enough really ?
+
 >
->         /*
+> Thanks
+> Kishon
 > --
-> 1.7.4.4
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
 > the body of a message to majordomo@vger.kernel.org
 > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
