@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436AbaDNRJg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 13:09:36 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:53017 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755188AbaDNRJe (ORCPT
+	id S1755092AbaDNRKH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 13:10:07 -0400
+Received: from mail-bl2lp0208.outbound.protection.outlook.com ([207.46.163.208]:47865
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753877AbaDNRKE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 13:09:34 -0400
-Date: Mon, 14 Apr 2014 19:09:32 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, acme@infradead.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, eranian@google.com,
-        namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/2] perf, tools: Support spark lines in perf stat
-Message-ID: <20140414170931.GF22728@two.firstfloor.org>
-References: <1395768699-16060-1-git-send-email-andi@firstfloor.org>
- <1395768699-16060-2-git-send-email-andi@firstfloor.org>
- <20140414085028.GA1433@krava.brq.redhat.com>
+	Mon, 14 Apr 2014 13:10:04 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "JBeulich@suse.com" <JBeulich@suse.com>
+Subject: RE: [PATCH V3 1/1] X86: Probe for PIC and set legacy_pic
+ appropriately
+Thread-Topic: [PATCH V3 1/1] X86: Probe for PIC and set legacy_pic
+ appropriately
+Thread-Index: AQHPWAHNedkd2X2EdkGHQBwaY8oyvZsRWCwAgAAAaXA=
+Date: Mon, 14 Apr 2014 17:09:49 +0000
+Message-ID: <666b84109e704ababfebc8232238623f@BY2PR03MB299.namprd03.prod.outlook.com>
+References: <1397497584-23717-1-git-send-email-kys@microsoft.com>
+ <534C15F2.105@zytor.com>
+In-Reply-To: <534C15F2.105@zytor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [2001:4898:80e8:ee31::3]
+x-forefront-prvs: 0181F4652A
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(13464003)(199002)(189002)(479174003)(377454003)(24454002)(33646001)(77982001)(83322001)(92566001)(86362001)(85852003)(76576001)(79102001)(81342001)(76482001)(54356999)(50986999)(80022001)(76176999)(77096999)(80976001)(86612001)(83072002)(19580405001)(99396002)(74316001)(74662001)(74502001)(31966008)(46102001)(99286001)(20776003)(4396001)(87936001)(2656002)(81542001)(19580395003)(1121002)(921003)(24736002)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB299;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:8E1EE522.98BE6D02.34FBC3BF.CB618BBB.2016B;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140414085028.GA1433@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> fput could go into print_stat_spark
 
-I wanted to keep the function generic, so that it can be easily
-used in other places. Adding the space is somewhat specific
-to stat.
 
-Also the rest of the stat code has the white space printing 
-centralized in the caller too. I suppose makes it easier to change.
-
-> > +	len = n;
-> > +	if (len > NUM_SPARK_VALS)
-> > +		len = NUM_SPARK_VALS;
-> > +	if (all_the_same(stat->svals, len))
-> > +		return;
-> > +	print_spark(f, stat->svals, len);
-> > +	if (stat->n > NUM_SPARK_VALS)
-> > +		fputs("..", f);
-> > +}
+> -----Original Message-----
+> From: H. Peter Anvin [mailto:hpa@zytor.com]
+> Sent: Monday, April 14, 2014 10:08 AM
+> To: KY Srinivasan; x86@kernel.org; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> apw@canonical.com; jasowang@redhat.com; tglx@linutronix.de;
+> JBeulich@suse.com
+> Subject: Re: [PATCH V3 1/1] X86: Probe for PIC and set legacy_pic
+> appropriately
 > 
-> whats the reason for 'n' in here?  looks like you could do only with 'len'
+> On 04/14/2014 10:46 AM, K. Y. Srinivasan wrote:
+> > +	new_val = inb(PIC_MASTER_IMR);
+> > +	if (probe_val != new_val) {
+> 
+> Nitpick: Linux coding style should have this as:
+> 
+> 	if (new_val != probe_val)
+> 
+> 	-hpa
+> 
+Will address this as well.
 
-len is capped to NUM_SPARK_VALS, but the test needs to be on the
-uncapped value. Otherwise exactly NUM_SPARK_VALS entries would
-get a .. incorrectly.
-
--Andi
+K. Y
