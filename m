@@ -1,106 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699AbaDNIfl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 04:35:41 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:56937 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbaDNIfg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 04:35:36 -0400
+	id S1751852AbaDNIix (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 04:38:53 -0400
+Received: from mail.us.es ([193.147.175.20]:44944 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751016AbaDNIiu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 04:38:50 -0400
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus1 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.98.1/18790. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-101.2/7.5):. 
+ Processed in 2.293039 secs); 14 Apr 2014 08:38:47 -0000
+X-Spam-ASN: AS12715 87.216.0.0/16
+X-Envelope-From: pneira@us.es
+Date: Mon, 14 Apr 2014 10:38:43 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: David Miller <davem@davemloft.net>
+Cc: avagin@openvz.org, linux-kernel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, netdev@vger.kernel.org, brouer@redhat.com,
+        kaber@trash.net, kadlec@blackhole.kfki.hu
+Subject: Re: [PATCH] netfilter: conntrack: initialize net.ct.generation
+Message-ID: <20140414083843.GA4553@localhost>
+References: <1397237660-30632-1-git-send-email-avagin@openvz.org>
+ <20140412.165818.1540640354445899640.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <53479B08.80104@nvidia.com>
-References: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
-	<1395650554-31925-3-git-send-email-acourbot@nvidia.com>
-	<20140324215408.GB17218@mithrandir>
-	<CACAvsv54BF3cD6y59=kQ=1j-S9tGixTz_J3gx2mbOEkB2eQ4cA@mail.gmail.com>
-	<CAAVeFuK-6RAfmZ8Zi3+bX_ibmPxPKEy7oT9YiLJWXpLMx3PsFw@mail.gmail.com>
-	<CACAvsv7Z7OfEx89FYm1F_+Lpb2q33Ay3zph3nRdNCj3PO=vR8w@mail.gmail.com>
-	<53479B08.80104@nvidia.com>
-Date: Mon, 14 Apr 2014 18:35:35 +1000
-Message-ID: <CACAvsv7gsRrXAk-=M08hjvhrRWvi80wrgRAp1M5T66zMa5ydtA@mail.gmail.com>
-Subject: Re: [PATCH 02/12] drm/nouveau/timer: skip calibration on GK20A
-From: Ben Skeggs <skeggsb@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140412.165818.1540640354445899640.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 5:34 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> On 04/11/2014 04:31 PM, Ben Skeggs wrote:
->>
->> On Fri, Apr 11, 2014 at 12:46 PM, Alexandre Courbot <gnurou@gmail.com>
->> wrote:
->>>
->>> On Wed, Mar 26, 2014 at 1:19 PM, Ben Skeggs <skeggsb@gmail.com> wrote:
->>>>
->>>> On Tue, Mar 25, 2014 at 7:54 AM, Thierry Reding
->>>> <thierry.reding@gmail.com> wrote:
->>>>>
->>>>> On Mon, Mar 24, 2014 at 05:42:24PM +0900, Alexandre Courbot wrote:
->>>>>>
->>>>>> GK20A's timer is directly attached to the system timer and cannot be
->>>>>> calibrated. Skip the calibration phase on that chip since the
->>>>>> corresponding registers do not exist.
->>>>>>
->>>>>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->>>>>> ---
->>>>>>   drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c | 19
->>>>>> +++++++++++++------
->>>>>>   1 file changed, 13 insertions(+), 6 deletions(-)
->>>>>>
->>>>>> diff --git a/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
->>>>>> b/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
->>>>>> index c0bdd10358d7..822fe0d8a871 100644
->>>>>> --- a/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
->>>>>> +++ b/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
->>>>>> @@ -185,6 +185,10 @@ nv04_timer_init(struct nouveau_object *object)
->>>>>>        if (ret)
->>>>>>                return ret;
->>>>>>
->>>>>> +     /* gk20a does not have the calibration registers */
->>>>>> +     if (device->chipset == 0xea)
->>>>>> +             goto skip_clk_init;
->>>>>
->>>>>
->>>>> I'm concerned that this won't scale in the future. Perhaps a better
->>>>> solution would be to add a "flags" or "features" field to struct
->>>>> nouveau_device along with feature bits such as HAS_CALIBRATION or
->>>>> similar.
->>>>>
->>>>> That way we don't have to touch this code for every new future Tegra
->>>>> chip. Unless perhaps if there's a reason to expect things to change in
->>>>> newer generations.
->>>>
->>>> I've already handled this in a slightly different way in the tree I'd
->>>> previously pointed Alex at (I think!), as I needed to do the same for
->>>> GM107.
->>>>
->>>> Should just be able to use that implementation (so, just change the
->>>> probe patch) here too.
->>>
->>>
->>> I will skip this patch and use your implementation then. Btw,
->>> shouldn't the source file for the GK20A implementation be named nvea.c
->>> instead of gk20a.c?
->>
->> For the Maxwell stuff I've been using "gm107" now too.  Since we're
->> working with you guys these days it seems better to use the same names
->> for things ;)
->
->
-> So would you like us to use the same naming scheme as well? So far all my
-> patches use "nvea.c" whenever I need to add code.
-If it's not too much of a problem at this point, then that'd be good.
-Right before I send -next for the next merge window I'll likely do a
-mass rename anyway, so if we can get your patches merged before then
-(which would be really good!), it doesn't matter much.
+On Sat, Apr 12, 2014 at 04:58:18PM -0400, David Miller wrote:
+> From: Andrey Vagin <avagin@openvz.org>
+> Date: Fri, 11 Apr 2014 21:34:20 +0400
+> 
+> > [  251.920788] INFO: trying to register non-static key.
+> 
+> I'll let Pablo integrate this.
 
-Ben.
+Applied, thanks.
