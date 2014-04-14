@@ -1,92 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723AbaDNJTi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 05:19:38 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:54678 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754346AbaDNJRk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 05:17:40 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-43-534ba7af6c45
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v5 4/9] extcon: max14577: Add max14577 prefix to muic_irqs
-Date: Mon, 14 Apr 2014 11:17:15 +0200
-Message-id: <1397467040-30502-5-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.8.3.2
-In-reply-to: <1397467040-30502-1-git-send-email-k.kozlowski@samsung.com>
-References: <1397467040-30502-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmluLIzCtJLcpLzFFi42I5/e/4Fd31y72DDW6vN7bYOGM9q8XUh0/Y
-	LK5/ec5q8fqFocXZpjfsFve/HmW0+Halg8ni8q45bBZrj9xlt7jduILN4nQ3qwO3x85Zd9k9
-	Nq3qZPO4c20Pm8e8k4EefVtWMXp83iQXwBbFZZOSmpNZllqkb5fAldH76wVbwQP+isfn7jI2
-	ME7m7WLk4JAQMJHo3lHfxcgJZIpJXLi3nq2LkYtDSGApo8T/GYcZIZw+JonGtW/YQarYBIwl
-	Ni9fAlYlItDMJNHSdxasilngKKPE9N63TCBjhQW8JL6d5wQxWQRUJWZPtgLp5RVwl1h26iEr
-	xDYFiWVf1jKD2JwCHhK3uo+B2UJANS8+3WafwMi7gJFhFaNoamlyQXFSeq6hXnFibnFpXrpe
-	cn7uJkZIAH7Zwbj4mNUhRgEORiUe3s453sFCrIllxZW5hxglOJiVRHi3ZXgFC/GmJFZWpRbl
-	xxeV5qQWH2Jk4uCUamCcEakkWL1Aer+G5rOU5bImSU5s3yI+v94d454aaxdiye9Vkf7mz9PP
-	gsZ5mnmvrBT/RCtsD5SMbtty5pCUw7lrwVtCdfaErLB8M7fX/EuO6oVFZVXTTk2LTPbbGfnz
-	1cfAUP3PVz/K1MS52+f3nihjUb326bBlVD7X+6MFltGbdqe3GDX1JCmxFGckGmoxFxUnAgDf
-	WxaPHgIAAA==
+	id S1754745AbaDNJTw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 05:19:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50685 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752211AbaDNJTu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 05:19:50 -0400
+Date: Mon, 14 Apr 2014 11:19:32 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: acme@kernel.org, namhyung@kernel.org, eranian@google.com,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 5/5] perf: Enable multiple hist_entry_group output
+Message-ID: <20140414091932.GC1433@krava.brq.redhat.com>
+References: <1397160661-33395-1-git-send-email-dzickus@redhat.com>
+ <1397160661-33395-6-git-send-email-dzickus@redhat.com>
+ <20140411173000.GC22707@krava.brq.redhat.com>
+ <20140411183452.GK8488@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140411183452.GK8488@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add max14577 prefix to muic_irqs array. This prepares for max77836
-support in this extcon driver.
+On Fri, Apr 11, 2014 at 02:34:52PM -0400, Don Zickus wrote:
+> On Fri, Apr 11, 2014 at 07:30:00PM +0200, Jiri Olsa wrote:
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
-Tested-by: Chanwoo Choi <cw00.choi@samsung.com>
----
- drivers/extcon/extcon-max14577.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+SNIP
 
-diff --git a/drivers/extcon/extcon-max14577.c b/drivers/extcon/extcon-max14577.c
-index 59f084fee4f3..6f921b7c3e5b 100644
---- a/drivers/extcon/extcon-max14577.c
-+++ b/drivers/extcon/extcon-max14577.c
-@@ -85,7 +85,7 @@ struct max14577_muic_irq {
- 	unsigned int virq;
- };
- 
--static struct max14577_muic_irq muic_irqs[] = {
-+static struct max14577_muic_irq max14577_muic_irqs[] = {
- 	{ MAX14577_IRQ_INT1_ADC,	"muic-ADC" },
- 	{ MAX14577_IRQ_INT1_ADCLOW,	"muic-ADCLOW" },
- 	{ MAX14577_IRQ_INT1_ADCERR,	"muic-ADCError" },
-@@ -538,9 +538,9 @@ static irqreturn_t max14577_muic_irq_handler(int irq, void *data)
- 	 * However we only need to know whether it was ADC, charger
- 	 * or both interrupts so decode IRQ and turn on proper flags.
- 	 */
--	for (i = 0; i < ARRAY_SIZE(muic_irqs); i++)
--		if (irq == muic_irqs[i].virq)
--			irq_type = muic_irqs[i].irq;
-+	for (i = 0; i < ARRAY_SIZE(max14577_muic_irqs); i++)
-+		if (irq == max14577_muic_irqs[i].virq)
-+			irq_type = max14577_muic_irqs[i].irq;
- 
- 	switch (irq_type) {
- 	case MAX14577_IRQ_INT1_ADC:
-@@ -644,8 +644,8 @@ static int max14577_muic_probe(struct platform_device *pdev)
- 	INIT_WORK(&info->irq_work, max14577_muic_irq_work);
- 
- 	/* Support irq domain for max14577 MUIC device */
--	for (i = 0; i < ARRAY_SIZE(muic_irqs); i++) {
--		struct max14577_muic_irq *muic_irq = &muic_irqs[i];
-+	for (i = 0; i < ARRAY_SIZE(max14577_muic_irqs); i++) {
-+		struct max14577_muic_irq *muic_irq = &max14577_muic_irqs[i];
- 		unsigned int virq = 0;
- 
- 		virq = regmap_irq_get_virq(max14577->irq_data, muic_irq->irq);
--- 
-1.8.3.2
+> > and with your changes we could do:
+> > 
+> >    Overhead   CPU  symbol
+> >    ........   ...  ......
+> >    90%        0
+> >         50%        krava1
+> >         20%        krava2
+> >         30%        krava3
+> > 
+> >    10%        1
+> >         50%        krava4
+> >         50%        krava5
+> >   
+> > 
+> > I wonder we could go more generic and allow more nested groups,
+> > like eg allow group sort on cpu and pid (or more):
+> > 
+> >    Overhead   CPU  pid  symbol
+> >    ........   ...  ...  ......
+> >    90%        0
+> >       50%          100
+> >         50%             krava1
+> >         20%             krava2
+> >         30%             krava3
+> >       50%          110
+> >         50%             krava1
+> >         20%             krava2
+> >         30%             krava3
+> > 
+> >    10%        1
+> >       100%         200
+> >         50%             krava4
+> >         50%             krava5
+> > 
+> > 
+> > I glanced over the changes and I wonder we could do it
+> > by chaining hists structs via 'struct hist_entry'
+> > 
+> > like adding 'struct hists' into 'struct hists_entry'
+> > and making the sort_order local for each 'struct hists'
+> 
+> Unless you meant:
+> 
+> hists
+>  \- hist_entry
+>       \- hists
+>            \- hist_entry -> hist_entry -> hist_entry -> hist_entry
+>                               \- hists
+>                                    \- hist_entry -> hist_entry -> hist_entry
+> 
+> where each 'hists' represents a new group and a hist_entry->hists != NULL
+> is a group otherwise just a node?
 
+right, hist_entry is either node or leaf, I see it like this:
+
+hists (A)
+  \-hist_entry(A)->(hists B1)
+                     \-hist_entry(B1)
+                     \-hist_entry(B1)
+                     \-hist_entry(B1)
+
+  \-hist_entry(A)->(hists B2)
+                     \-hist_entry(B2)
+
+  \-hist_entry(A)->(hists B3)
+                     \-hist_entry(B3)
+                     \-hist_entry(B3)
+
+
+hists (A)  - getting data groupped by CPU - hist_entry (A)
+hists (BX) - getting data belonging to CPU group and groupped by symbol (hist_entry BX)
+
+so hists(A) provides data for 1st column in Overhead,
+and hists(BX) provides data for the 2nd one:
+
+  Overhead   CPU  symbol
+  ........   ...  ......
+  90%        0
+       50%        krava1
+       20%        krava2
+       30%        krava3
+
+   5%        1
+      100%        krava4
+
+   5%        2
+       50%        krava4
+       50%        krava5
+
+
+jirka
