@@ -1,86 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357AbaDNXaK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 19:30:10 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:49734 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120AbaDNXaH (ORCPT
+	id S1754476AbaDNXia (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 19:38:30 -0400
+Received: from www.linutronix.de ([62.245.132.108]:50399 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873AbaDNXi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 19:30:07 -0400
+	Mon, 14 Apr 2014 19:38:29 -0400
+Date: Tue, 15 Apr 2014 01:38:40 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, Arvind.Chauhan@arm.com,
+        linaro-networking@linaro.org
+Subject: Re: [PATCH 00/38] tick cleanups and bugfixes
+In-Reply-To: <cover.1397492345.git.viresh.kumar@linaro.org>
+Message-ID: <alpine.DEB.2.02.1404150116130.22697@ionos.tec.linutronix.de>
+References: <cover.1397492345.git.viresh.kumar@linaro.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20140414171114.GA31384@www.outflux.net>
-References: <20140414171114.GA31384@www.outflux.net>
-Date: Tue, 15 Apr 2014 08:30:06 +0900
-Message-ID: <CACOXgS9UNKk67TePoqRmiDQZLiyJeiz=qZqJxMTrtt78totnfA@mail.gmail.com>
-Subject: Re: [PATCH] seccomp: fix memory leak on filter attach
-From: Masami Ichikawa <masami256@gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Alexei Starovoitov <ast@plumgrid.com>,
-        Will Drewry <wad@chromium.org>, Josh Triplett <josh@joshtriplett.org>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        James Morris <james.l.morris@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Eric Paris <eparis@redhat.com>,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 2:11 AM, Kees Cook <keescook@chromium.org> wrote:
-> This sets the correct error code when final filter memory is unavailable,
-> and frees the raw filter no matter what.
->
-> unreferenced object 0xffff8800d6ea4000 (size 512):
->   comm "sshd", pid 278, jiffies 4294898315 (age 46.653s)
->   hex dump (first 32 bytes):
->     21 00 00 00 04 00 00 00 15 00 01 00 3e 00 00 c0  !...........>...
->     06 00 00 00 00 00 00 00 21 00 00 00 00 00 00 00  ........!.......
->   backtrace:
->     [<ffffffff8151414e>] kmemleak_alloc+0x4e/0xb0
->     [<ffffffff811a3a40>] __kmalloc+0x280/0x320
->     [<ffffffff8110842e>] prctl_set_seccomp+0x11e/0x3b0
->     [<ffffffff8107bb6b>] SyS_prctl+0x3bb/0x4a0
->     [<ffffffff8152ef2d>] system_call_fastpath+0x1a/0x1f
->     [<ffffffffffffffff>] 0xffffffffffffffff
->
-> Reported-by: Masami Ichikawa <masami256@gmail.com>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Cc: stable@vger.kernel.org
+On Mon, 14 Apr 2014, Viresh Kumar wrote:
+> Hi Thomas,
+> 
+> These are separate cleanups from the timers/hrtimers ones I did. I was waiting
+> for the merge window to close in order to send these and by the time it
+> happened, I got a long pending list.
+> 
+> These are mostly cleanups, reorders for better readability or efficiency, and
+> few bugfixes.
 
-Tested-by: Masami Ichikawa <masami256@gmail.com>
+And that's wrong to begin with.
 
-> ---
->  kernel/seccomp.c |    2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-> index fd609bd9d6dd..2d7dcdfb7422 100644
-> --- a/kernel/seccomp.c
-> +++ b/kernel/seccomp.c
-> @@ -256,6 +256,7 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
->                 goto free_prog;
->
->         /* Allocate a new seccomp_filter */
-> +       ret = -ENOMEM;
->         filter = kzalloc(sizeof(struct seccomp_filter) +
->                          sizeof(struct sock_filter_int) * new_len,
->                          GFP_KERNEL|__GFP_NOWARN);
-> @@ -265,6 +266,7 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
->         ret = sk_convert_filter(fp, fprog->len, filter->insnsi, &new_len);
->         if (ret)
->                 goto free_filter;
-> +       kfree(fp);
->
->         atomic_set(&filter->usage, 1);
->         filter->len = new_len;
-> --
-> 1.7.9.5
->
->
-> --
-> Kees Cook
-> Chrome OS Security
+Bugfixes first and then all other stuff. We dont want dependencies of
+bugfixes on cleanups, reordering of code ...
 
--- 
-Masami Ichikawa
+I'm not applying a wholesale checkpatch.pl patch which creates noise
+for no value.
+
+I don't mind if you cleanup stuff while doing other changes, but
+definitely not as a stand alone starter of a large patch queue with
+bugfixes which depend on that.
+
+Now looking at the thing some more, it contains gems like this:
+
+-               printk(KERN_ERR "tick-broadcast: ignoring broadcast for "
+-                      "offline CPU #%d\n", *oncpu);
++               printk(KERN_ERR "tick-broadcast: ignoring broadcast for offline CPU #%d\n",
++                      *oncpu);
+
+If you fix that checkpatch.pl line wrap issue, why do you not change
+printk(KERN_ERR) to pr_err() as well?
+
+checkpatch.pl is happy, right?
+
+I'm tired of this, really.
+
+Please send me the next series in the following way:
+
+- send a bug fix series, which does nothing else than fixing bugs.
+
+  when that is applied, then
+
+- send a small batch of improvements for a particular issue and not a
+  mixed bag of random patches.
+
+Thanks,
+
+	tglx
