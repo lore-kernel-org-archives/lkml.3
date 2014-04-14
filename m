@@ -1,82 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754481AbaDNRR5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 13:17:57 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:52736 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754440AbaDNRRz (ORCPT
+	id S1754384AbaDNRWE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 13:22:04 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42344 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975AbaDNRWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 13:17:55 -0400
+	Mon, 14 Apr 2014 13:22:01 -0400
+Message-ID: <534C193A.2000806@gmail.com>
+Date: Mon, 14 Apr 2014 11:22:02 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140414171114.GA31384@www.outflux.net>
-References: <20140414171114.GA31384@www.outflux.net>
-Date: Mon, 14 Apr 2014 10:17:53 -0700
-Message-ID: <CAMEtUuzCBXROUE6Nf6B8+vmTaD2xOh5LjkmsVSGuwKo1gO-mNQ@mail.gmail.com>
-Subject: Re: [PATCH] seccomp: fix memory leak on filter attach
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Masami Ichikawa <masami256@gmail.com>,
-        Will Drewry <wad@chromium.org>, Josh Triplett <josh@joshtriplett.org>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        James Morris <james.l.morris@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, eparis@redhat.com,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 3/5] perf tools: Reference count map_groups objects
+References: <1397490723-1992-1-git-send-email-jolsa@redhat.com> <1397490723-1992-4-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1397490723-1992-4-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 10:11 AM, Kees Cook <keescook@chromium.org> wrote:
-> This sets the correct error code when final filter memory is unavailable,
-> and frees the raw filter no matter what.
+On 4/14/14, 9:52 AM, Jiri Olsa wrote:
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
 >
-> unreferenced object 0xffff8800d6ea4000 (size 512):
->   comm "sshd", pid 278, jiffies 4294898315 (age 46.653s)
->   hex dump (first 32 bytes):
->     21 00 00 00 04 00 00 00 15 00 01 00 3e 00 00 c0  !...........>...
->     06 00 00 00 00 00 00 00 21 00 00 00 00 00 00 00  ........!.......
->   backtrace:
->     [<ffffffff8151414e>] kmemleak_alloc+0x4e/0xb0
->     [<ffffffff811a3a40>] __kmalloc+0x280/0x320
->     [<ffffffff8110842e>] prctl_set_seccomp+0x11e/0x3b0
->     [<ffffffff8107bb6b>] SyS_prctl+0x3bb/0x4a0
->     [<ffffffff8152ef2d>] system_call_fastpath+0x1a/0x1f
->     [<ffffffffffffffff>] 0xffffffffffffffff
+> We will share it among threads in the same process.
 >
-> Reported-by: Masami Ichikawa <masami256@gmail.com>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
-> Cc: stable@vger.kernel.org
-
-Acked-by: Alexei Starovoitov <ast@plumgrid.com>
-
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Adrian Hunter <adrian.hunter@intel.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Don Zickus <dzickus@redhat.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 > ---
->  kernel/seccomp.c |    2 ++
->  1 file changed, 2 insertions(+)
+>   tools/perf/util/map.c    | 7 +++++++
+>   tools/perf/util/map.h    | 9 +++++++++
+>   tools/perf/util/thread.c | 2 +-
+>   3 files changed, 17 insertions(+), 1 deletion(-)
 >
-> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-> index fd609bd9d6dd..2d7dcdfb7422 100644
-> --- a/kernel/seccomp.c
-> +++ b/kernel/seccomp.c
-> @@ -256,6 +256,7 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
->                 goto free_prog;
+> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+> index ae4c5e1..ba5f5c0c 100644
+> --- a/tools/perf/util/map.c
+> +++ b/tools/perf/util/map.c
+> @@ -323,6 +323,7 @@ void map_groups__init(struct map_groups *mg)
+>   		INIT_LIST_HEAD(&mg->removed_maps[i]);
+>   	}
+>   	mg->machine = NULL;
+> +	mg->refcnt = 1;
+>   }
 >
->         /* Allocate a new seccomp_filter */
-> +       ret = -ENOMEM;
->         filter = kzalloc(sizeof(struct seccomp_filter) +
->                          sizeof(struct sock_filter_int) * new_len,
->                          GFP_KERNEL|__GFP_NOWARN);
-> @@ -265,6 +266,7 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
->         ret = sk_convert_filter(fp, fprog->len, filter->insnsi, &new_len);
->         if (ret)
->                 goto free_filter;
-> +       kfree(fp);
+>   static void maps__delete(struct rb_root *maps)
+> @@ -374,6 +375,12 @@ void map_groups__delete(struct map_groups *mg)
+>   	free(mg);
+>   }
 >
->         atomic_set(&filter->usage, 1);
->         filter->len = new_len;
-> --
-> 1.7.9.5
->
->
-> --
-> Kees Cook
-> Chrome OS Security
+> +void map_groups__put(struct map_groups *mg)
+> +{
+> +	if (--mg->refcnt == 0)
+> +		map_groups__delete(mg);
+> +}
+> +
+>   void map_groups__flush(struct map_groups *mg)
+>   {
+>   	int type;
+> diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+> index 1073e2d..d6445b2 100644
+> --- a/tools/perf/util/map.h
+> +++ b/tools/perf/util/map.h
+> @@ -59,11 +59,20 @@ struct map_groups {
+>   	struct rb_root	 maps[MAP__NR_TYPES];
+>   	struct list_head removed_maps[MAP__NR_TYPES];
+>   	struct machine	 *machine;
+> +	int		 refcnt;
+>   };
+
+
+atomic for refcnt? This is part of a libperf; would be good to support 
+multithreaded users.
+
+David
