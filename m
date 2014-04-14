@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755319AbaDNR6Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 13:58:24 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42817 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754311AbaDNR6W (ORCPT
+	id S1755315AbaDNR7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 13:59:21 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:57238 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750914AbaDNR7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 13:58:22 -0400
-Date: Mon, 14 Apr 2014 13:58:20 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Stefani Seibold <stefani@seibold.net>
-cc: linux-usb <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>, <sarah.a.sharp@linux.intel.com>,
-        <andreas.brief@rohde-schwarz.com>
-Subject: Re: Missing USB XHCI and EHCI reset for kexec
-In-Reply-To: <1397493335.1028.4.camel@vger.seibold.net>
-Message-ID: <Pine.LNX.4.44L0.1404141354360.874-100000@iolanthe.rowland.org>
+	Mon, 14 Apr 2014 13:59:20 -0400
+Message-ID: <534C2247.80804@kernel.org>
+Date: Mon, 14 Apr 2014 19:00:39 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Pull request ?
+References: <20140414081905.GJ2967@piout.net>
+In-Reply-To: <20140414081905.GJ2967@piout.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Apr 2014, Stefani Seibold wrote:
+On 14/04/14 09:19, Alexandre Belloni wrote:
+> Hi Jonathan,
+>
+> I realise you didn't send any pull request for 3.15 yet, do you intend
+> to send it soon. As you know, I have a patch set depending on a few
+> patches and I'd like to rebase and resend it soon.
+>
+> Regards,
+>
+Hi Alexandre.
 
-> > > An other PowerPC device which is nearly eactly the same HW but without  
-> > > this USB HUB works perfectly.
-> > 
-> > Maybe you should replace that hub with a different brand.
-> > 
-> 
-> Thats not possible, because the Hub is soldered on the board. And it is
-> also not a HW issue, since the Hub works perfectly which all previous
-> kernels including 3.4.
+All my patches are still routed via pull requests to Greg KH. That tends to
+mean that the IIO merge window closes a few weeks before Linus' opens.
 
-One other thing you can try is to increase the reset timeout in 
-drivers/usb/host/ehci-hub.c.  This is under the USB_PORT_FEAT_RESET 
-case in ehci_hub_control(), around line 1225:
+Anything going out now (other than fixes) will be 3.16 material.
+Now 3.15-rc1 is out I'll do a pull request to Greg sometime in the next
+couple of days.  That way we get stuff into Linux next asap.
 
-				/*
-				 * caller must wait, then call GetPortStatus
-				 * usb 2.0 spec says 50 ms resets on root
-				 */
-				ehci->reset_done [wIndex] = jiffies
-						+ msecs_to_jiffies (50);
-
-Increasing the 50 to 100 or more might help.
-
-Alan Stern
-
+Jonathan
