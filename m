@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298AbaDNPKe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 11:10:34 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60733 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754184AbaDNPK3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 11:10:29 -0400
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v7 07/11] ARM: mvebu: Allow to power down L2 cache controller in idle mode
-Date: Mon, 14 Apr 2014 17:10:10 +0200
-Message-Id: <1397488214-20685-8-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1397488214-20685-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1397488214-20685-1-git-send-email-gregory.clement@free-electrons.com>
+	id S1754710AbaDNPMY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 11:12:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57964 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753910AbaDNPMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 11:12:17 -0400
+From: Igor Mammedov <imammedo@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        imammedo@redhat.com, bp@suse.de, paul.gortmaker@windriver.com,
+        JBeulich@suse.com, prarit@redhat.com, drjones@redhat.com,
+        toshi.kani@hp.com, riel@redhat.com, gong.chen@linux.intel.com,
+        andi@firstfloor.org, lenb@kernel.org, rjw@rjwysocki.net,
+        linux-acpi@vger.kernel.org
+Subject: [PATCH v4 1/5] x86: fix list corruption on CPU hotplug
+Date: Mon, 14 Apr 2014 17:11:13 +0200
+Message-Id: <1397488277-14865-2-git-send-email-imammedo@redhat.com>
+In-Reply-To: <1397488277-14865-1-git-send-email-imammedo@redhat.com>
+References: <1397488277-14865-1-git-send-email-imammedo@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds a function which adjusts the PMSU configuration to
-automatically power down the L2 and coherency fabric when we enter a
-certain idle state.
+currently if AP wake up is failed, master CPU marks AP as not present
+in do_boot_cpu() by calling set_cpu_present(cpu, false).
+That leads to following list corruption on the next physical CPU
+hotplug:
 
-This feature is part of the Power Management Service Unit of the
-Armada 370 and Armada XP SoCs.
+[  418.107336] WARNING: CPU: 1 PID: 45 at lib/list_debug.c:33 __list_add+0xbe/0xd0()
+[  418.115268] list_add corruption. prev->next should be next (ffff88003dc57600), but was ffff88003e20c3a0. (prev=ffff88003e20c3a0).
+[  418.123693] Modules linked in: nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6t_REJECT ipt_REJECT cfg80211 xt_conntrack rfkill ee
+[  418.138979] CPU: 1 PID: 45 Comm: kworker/u10:1 Not tainted 3.14.0-rc6+ #387
+[  418.149989] Hardware name: Red Hat KVM, BIOS 0.5.1 01/01/2007
+[  418.165750] Workqueue: kacpi_hotplug acpi_hotplug_work_fn
+[  418.166433]  0000000000000021 ffff880038ca7988 ffffffff8159b22d 0000000000000021
+[  418.176460]  ffff880038ca79d8 ffff880038ca79c8 ffffffff8106942c ffff880038ca79e8
+[  418.177453]  ffff88003e20c3a0 ffff88003dc57600 ffff88003e20c3a0 00000000ffffffea
+[  418.178445] Call Trace:
+[  418.185811]  [<ffffffff8159b22d>] dump_stack+0x49/0x5c
+[  418.186440]  [<ffffffff8106942c>] warn_slowpath_common+0x8c/0xc0
+[  418.187192]  [<ffffffff81069516>] warn_slowpath_fmt+0x46/0x50
+[  418.191231]  [<ffffffff8136ef51>] ? acpi_ns_get_node+0xb7/0xc7
+[  418.193889]  [<ffffffff812f796e>] __list_add+0xbe/0xd0
+[  418.196649]  [<ffffffff812e2aa9>] kobject_add_internal+0x79/0x200
+[  418.208610]  [<ffffffff812e2e18>] kobject_add_varg+0x38/0x60
+[  418.213831]  [<ffffffff812e2ef4>] kobject_add+0x44/0x70
+[  418.229961]  [<ffffffff813e2c60>] device_add+0xd0/0x550
+[  418.234991]  [<ffffffff813f0e95>] ? pm_runtime_init+0xe5/0xf0
+[  418.250226]  [<ffffffff813e32be>] device_register+0x1e/0x30
+[  418.255296]  [<ffffffff813e82a3>] register_cpu+0xe3/0x130
+[  418.266539]  [<ffffffff81592be5>] arch_register_cpu+0x65/0x150
+[  418.285845]  [<ffffffff81355c0d>] acpi_processor_hotadd_init+0x5a/0x9b
+...
+Which is caused by the fact that generic_processor_info() allocates
+logical CPU id by calling:
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+ cpu = cpumask_next_zero(-1, cpu_present_mask);
+
+which returns id of previously failed to wake up CPU, since its bit
+is cleared by do_boot_cpu() and as result register_cpu() tries to
+register another CPU with the same id as already present but failed
+to be onlined CPU.
+
+Taking in account that AP will not do anything if master CPU failed to
+wake it up, there is no reason to mark that AP as not present and
+break next cpu hotplug attempts. As a side effect of not marking AP
+as not present, user would be allowed to online it again later.
+
+Signed-off-by: Igor Mammedov <imammedo@redhat.com>
 ---
- arch/arm/mach-mvebu/pmsu.c | 20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ arch/x86/kernel/smpboot.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-mvebu/pmsu.c b/arch/arm/mach-mvebu/pmsu.c
-index 8361281f9180..db5011f98df3 100644
---- a/arch/arm/mach-mvebu/pmsu.c
-+++ b/arch/arm/mach-mvebu/pmsu.c
-@@ -33,7 +33,12 @@ static void __iomem *pmsu_mp_base;
- #define PMSU_BASE_OFFSET    0x100
- #define PMSU_REG_SIZE	    0x1000
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 3482693..6124f15 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -860,7 +860,6 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
+ 		/* was set by cpu_init() */
+ 		cpumask_clear_cpu(cpu, cpu_initialized_mask);
  
--#define PMSU_BOOT_ADDR_REDIRECT_OFFSET(cpu)	((cpu * 0x100) + 0x124)
-+/* PMSU MP registers */
-+#define PMSU_BOOT_ADDR_REDIRECT_OFFSET(cpu) ((cpu * 0x100) + 0x124)
-+
-+/* PMSU fabric registers */
-+#define L2C_NFABRIC_PM_CTL		    0x4
-+#define L2C_NFABRIC_PM_CTL_PWR_DOWN		BIT(20)
+-		set_cpu_present(cpu, false);
+ 		per_cpu(x86_cpu_to_apicid, cpu) = BAD_APICID;
+ 	}
  
- static struct of_device_id of_pmsu_table[] = {
- 	{ .compatible = "marvell,armada-370-pmsu", },
-@@ -115,4 +120,17 @@ static int __init armada_370_xp_pmsu_init(void)
- 	return ret;
- }
- 
-+static void armada_370_xp_pmsu_enable_l2_powerdown_onidle(void)
-+{
-+	u32 reg;
-+
-+	if (pmsu_mp_base == NULL)
-+		return;
-+
-+	/* Enable L2 & Fabric powerdown in Deep-Idle mode - Fabric */
-+	reg = readl(pmsu_mp_base + L2C_NFABRIC_PM_CTL);
-+	reg |= L2C_NFABRIC_PM_CTL_PWR_DOWN;
-+	writel(reg, pmsu_mp_base + L2C_NFABRIC_PM_CTL);
-+}
-+
- early_initcall(armada_370_xp_pmsu_init);
 -- 
-1.8.1.2
+1.7.1
 
