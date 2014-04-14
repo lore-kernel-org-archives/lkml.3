@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396AbaDNTlk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 15:41:40 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:32856 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938AbaDNTlj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 15:41:39 -0400
-Date: Mon, 14 Apr 2014 20:41:11 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Message-ID: <20140414194111.GN25182@sirena.org.uk>
-References: <cb4eece4e6fadca4627a869bfe6efb3d41c66700.1397468934.git.nicolas.ferre@atmel.com>
+	id S1754573AbaDNTmu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 15:42:50 -0400
+Received: from home.keithp.com ([63.227.221.253]:43210 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750958AbaDNTmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 15:42:49 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Steven Noonan <steven@uplinklabs.net>
+Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        David Airlie <airlied@linux.ie>
+Subject: Re: REGRESSION 3.14 i915 warning & mouse cursor vanishing
+In-Reply-To: <20140414185602.GA892@falcon>
+References: <20140414164010.GA1019@falcon> <867g6ryd2e.fsf@hiro.keithp.com> <20140414185602.GA892@falcon>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 14 Apr 2014 12:42:39 -0700
+Message-ID: <86y4z7wvdc.fsf@hiro.keithp.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="v541l457l4DThMFo"
-Content-Disposition: inline
-In-Reply-To: <cb4eece4e6fadca4627a869bfe6efb3d41c66700.1397468934.git.nicolas.ferre@atmel.com>
-X-Cookie: Are we THERE yet?
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4 1/2] ASoC: sam9g20_wm8731: remove useless mach/gpio.h
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---v541l457l4DThMFo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+--=-=-=
+Content-Type: text/plain
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Apr 14, 2014 at 11:54:38AM +0200, Nicolas Ferre wrote:
-> This include file is about to disapear. In addition it is
-> useless for this code. So it is time to remove it.
->=20
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Steven Noonan <steven@uplinklabs.net> writes:
 
-Acked-by: Mark Brown <broonie@linaro.org>
+> OK, good to know. Thanks for pointing those out!
 
---v541l457l4DThMFo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+As Julien points out, this bug only affects people running master from
+the X server though...
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTTDnTAAoJELSic+t+oim9aU8P/29u0JeTTHZiNzf8oT0hD/N5
-OjZAP9R23EEgWsoox5ftkpeLpTjIlyuph97jQUqZX3EWJtcQEFcyoglR8GEmYX8b
-bXj52N1QBwP9QYcxqmYv5ZGmX1r43S3O063Lme+CxsxX0NnrMSFi5YqKGog+2+si
-r4969SFNKynNsxMSblgvIsapohWbSU1FKpklJNlMuABLDfZLOQkqS16nrVTWlAsB
-JR6/7h66IbhyFDj/YnghueoQIiRAqttlnYZqr3QOMqwCNLCPeE8ehnLK9JAA6jzH
-mM43keljoPRt4ve7W6GZDidR4uYOC2VfTEUNcl7qKosijtyL1XpER/H6HyUZ87VI
-KV1I5lugIO/pZwxsnjzLfKRSo3mLXDMfjbmeF6GaRx2yOzBt3GLexyQgjYqKCWAI
-jYf02IKACYdJG4S+BzBJVfAJYsWCk4rvYcm/SuqwG36A42KJputZGFa++/CfXFPh
-NJb5bzDiv4LsmhE3T8ZSW1jMl5yDL0s8pi454R8aZCzSpzNl9gZCgtwiYMw2D3pz
-fmrAPYn01mo149M09IUxFs3/5WNGjs5ai9SGuItOYZqCo6y27naeZSWp61xSiIcq
-HqywMBdztcf/g8cC0gFwYKVlH8fqveKtCIDxVGwtrYt8PgLrW6xT8+oH6/I72+Lq
-gGKlcEYl4MiG3pVQo8JG
-=HIGG
+iQIVAwUBU0w6L9siGmkAAAARAQj38A/+IuiWrMEnjf7+d+y3vX6QXu7JqSmCpzx2
+AmfS+eZ/sUulfRT1eK+62wrlvBNzSv4eGtwoQ3RN6vFEivydUaY/E75U19y7TeCe
+/Z/f62YjyIGio7zxWNDhRVLjKgNJ7u5Pyi4PaT7YRl3wl6vDwwUu05a+AwloWJOM
+nfYkXNaswRwwAp/JLLfmy7sk/VwZ9GNom90gRm/U9jRdIT2zLyf5m5NY2u89Y5ik
+z+1E+pv1XktDzA8nWF0AJUs8F0WPMPIMDfuFI/q2/QkNrW2TH/1bovj5VaRZln9G
+xqQzvgN+Adydtcz/yXHfZRJdGHd5j6FCPh6PE2YQ4y+1Yy9XOMR4e70D1PagOAIH
+JAWl0Wlns7608gmXU7dgv9AhhjK0izLn5MrBnwsYhPJ46fU5xho6Jr8fhnb/Q0qJ
+RFr2C8Ub/Z0rZGTltCS9j6RnM9SHfmTImVeHjn/701JI1LFN7opAMOSgbp46xG25
+o1iSAPdCbvMu7XY4XQ8+0fe0WjlCzVfhJIoYt4yRrGNl4QeUjKAy0jpGW93bd3K1
+A7l+EpIh3Mivekk22XdLRhukAQ2F3GmgzWxE0k0AotNm4P0Wt0f7HKp2LuP7vCi4
+DMBvbDBGQrkY+nnPKIN3L0flqgV3LoiLjX7hRnd9ZKo9+bLsucRyqaMeyCxB2eAn
+VzDFcd+On/o=
+=9c7u
 -----END PGP SIGNATURE-----
-
---v541l457l4DThMFo--
+--=-=-=--
