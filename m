@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755058AbaDNXqm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 19:46:42 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:61011 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012AbaDNXqi (ORCPT
+	id S1755425AbaDNXr5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 19:47:57 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:54815 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754566AbaDNXry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 19:46:38 -0400
-Date: Tue, 15 Apr 2014 01:46:35 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH v2 0/3] tracing: syscall_*regfunc() fixes
-Message-ID: <20140414234633.GG1877@localhost.localdomain>
-References: <1397059882-23063-3-git-send-email-fweisbec@gmail.com>
- <360091921.1294.1397060915052.JavaMail.zimbra@efficios.com>
- <20140409124249.4081e665@gandalf.local.home>
- <20140409170505.GA27638@redhat.com>
- <20140409170542.GB27638@redhat.com>
- <20140410090643.46ca2226@gandalf.local.home>
- <20140410133435.GB12228@redhat.com>
- <20140411112259.79f0a0ba@gandalf.local.home>
- <20140411155845.GA30199@redhat.com>
- <20140413185828.GA20668@redhat.com>
+	Mon, 14 Apr 2014 19:47:54 -0400
+Date: Mon, 14 Apr 2014 17:47:52 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Ryan Desfosses <ryan@desfo.org>
+Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCHv2] pci: changed "foo* bar" to "foo *bar"
+Message-ID: <20140414234752.GA16058@google.com>
+References: <1397192513-4498-1-git-send-email-ryan@desfo.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140413185828.GA20668@redhat.com>
+In-Reply-To: <1397192513-4498-1-git-send-email-ryan@desfo.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 13, 2014 at 08:58:28PM +0200, Oleg Nesterov wrote:
-> On 04/11, Oleg Nesterov wrote:
-> >
-> > On 04/11, Steven Rostedt wrote:
-> > >
-> > > Are you going to send a new series?
-> >
-> > Yes, will do. I will split 1/2, and I need to update the changelog
-> > in 2/2.
+On Fri, Apr 11, 2014 at 01:01:53AM -0400, Ryan Desfosses wrote:
+> change made to resolve following checkpatch message:
+>     drivers/pci/pci.c:109: ERROR: "foo* bar" should be "foo *bar"
+> branch: Linux 3.14-rc8
 > 
-> Please see the patches.
-> 
-> Frederic! I am sorry, I decided to steal your patch to simplify the
-> merging and avoid too many changes in the trivial syscall_*regfunc's.
-> In case you do not object, could you add your sob into 2/3 ?
+> Signed-off-by: Ryan Desfosses <ryan@desfo.org>
 
-Sure, feel free to add it!
+Applied to pci/misc, thanks!
 
-Thanks!
-
-> Otherwise
-> I can wait for your patch, then send v3 on top of it.
+> ---
+>  drivers/pci/pci.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 > 
-> 
-> 
-> Hmm. This is off-topic, but CLONE_KERNEL should die, and kernel_init()
-> should be spawned without CLONE_SIGHAND. I'll send another patch.
-> 
-> Oleg.
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index fdbc294..4070a60 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -106,7 +106,7 @@ static bool pcie_ari_disabled;
+>   * Given a PCI bus, returns the highest PCI bus number present in the set
+>   * including the given PCI bus and its list of child PCI buses.
+>   */
+> -unsigned char pci_bus_max_busnr(struct pci_bus* bus)
+> +unsigned char pci_bus_max_busnr(struct pci_bus *bus)
+>  {
+>  	struct list_head *tmp;
+>  	unsigned char max, n;
+> @@ -1359,7 +1359,7 @@ static void pcim_release(struct device *gendev, void *res)
+>  		pci_disable_device(dev);
+>  }
+>  
+> -static struct pci_devres * get_pci_dr(struct pci_dev *pdev)
+> +static struct pci_devres *get_pci_dr(struct pci_dev *pdev)
+>  {
+>  	struct pci_devres *dr, *new_dr;
+>  
+> @@ -1373,7 +1373,7 @@ static struct pci_devres * get_pci_dr(struct pci_dev *pdev)
+>  	return devres_get(&pdev->dev, new_dr, NULL, NULL);
+>  }
+>  
+> -static struct pci_devres * find_pci_dr(struct pci_dev *pdev)
+> +static struct pci_devres *find_pci_dr(struct pci_dev *pdev)
+>  {
+>  	if (pci_is_managed(pdev))
+>  		return devres_find(&pdev->dev, pcim_release, NULL, NULL);
+> -- 
+> 1.9.1
 > 
