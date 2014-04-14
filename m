@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711AbaDNWYB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 18:24:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52478 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755336AbaDNWX7 (ORCPT
+	id S1755911AbaDNWZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 18:25:27 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:36522 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601AbaDNWZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 18:23:59 -0400
-Date: Mon, 14 Apr 2014 15:26:58 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, john@johnmccutchan.com, rlove@rlove.org,
-        eparis@parisplace.org, serge.hallyn@ubuntu.com, lennart@poettering.net,
-        kay@vrfy.org, lizefan@huawei.com, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: implement cgroup.populated
-Message-ID: <20140414222658.GA18152@kroah.com>
-References: <1397056052-2829-1-git-send-email-tj@kernel.org>
- <20140414213100.GA1863@htj.dyndns.org>
+	Mon, 14 Apr 2014 18:25:25 -0400
+Subject: [PATCH] xen/pci: Remove unused dev_err() string
+To: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Date: Mon, 14 Apr 2014 16:25:23 -0600
+Message-ID: <20140414222523.15032.99127.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140414213100.GA1863@htj.dyndns.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 05:31:00PM -0400, Tejun Heo wrote:
-> On Wed, Apr 09, 2014 at 11:07:29AM -0400, Tejun Heo wrote:
-> > This patchset is on top of "cgroup: implement unified hierarchy"
-> > patchset[1] and availalbe in the following git branch.
-> > 
-> >  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-populated
-> 
-> Branch renamed to review-populated-v1.
+We previously verified that "action" is either BUS_NOTIFY_ADD_DEVICE or
+BUS_NOTIFY_DEL_DEVICE, so there's no need for the default "?" case.
 
-Do you want me to pull this branch into my tree for 3.16 now?  I have no
-objection to you taking it, if that's easier for you, which ever is fine
-for me.
+Found by Coverity (CID 146520).
 
-thanks,
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ drivers/xen/pci.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-greg k-h
+diff --git a/drivers/xen/pci.c b/drivers/xen/pci.c
+index dd9c249ea311..59a25f937bd7 100644
+--- a/drivers/xen/pci.c
++++ b/drivers/xen/pci.c
+@@ -177,8 +177,7 @@ static int xen_pci_notifier(struct notifier_block *nb,
+ 	}
+ 	if (r)
+ 		dev_err(dev, "Failed to %s - passthrough or MSI/MSI-X might fail!\n",
+-			action == BUS_NOTIFY_ADD_DEVICE ? "add" :
+-			(action == BUS_NOTIFY_DEL_DEVICE ? "delete" : "?"));
++			action == BUS_NOTIFY_ADD_DEVICE ? "add" : "del");
+ 	return NOTIFY_OK;
+ }
+ 
+
