@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754940AbaDNRXm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 13:23:42 -0400
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:55752 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754837AbaDNRXl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 13:23:41 -0400
-Date: Mon, 14 Apr 2014 19:23:34 +0200 (CEST)
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
-X-X-Sender: sebott@denkbrett
-To: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mm/mempool: warn about __GFP_ZERO usage
-Message-ID: <alpine.LFD.2.11.1404141918170.1561@denkbrett>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
-Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
- =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
+	id S1754990AbaDNRZk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 13:25:40 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:38834 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750828AbaDNRZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 13:25:38 -0400
+X-IronPort-AV: E=Sophos;i="4.97,858,1389744000"; 
+   d="scan'208";a="120936562"
+Message-ID: <534C1A0E.1080307@citrix.com>
+Date: Mon, 14 Apr 2014 18:25:34 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041417-5024-0000-0000-0000097C65F4
+To: David Miller <davem@davemloft.net>
+CC: <v.maffione@gmail.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
+        <boris.ostrovsky@oracle.com>
+Subject: Re: [Xen-devel] [PATCH] drivers: net: xen-netfront: fix array initialization
+ bug
+References: <1397296540-3007-1-git-send-email-v.maffione@gmail.com>	<20140412.165152.1877473530496221304.davem@davemloft.net>	<534BAD7C.6090107@citrix.com> <20140414.125131.1934050779129550948.davem@davemloft.net>
+In-Reply-To: <20140414.125131.1934050779129550948.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 14/04/14 17:51, David Miller wrote:
+> From: David Vrabel <david.vrabel@citrix.com>
+> Date: Mon, 14 Apr 2014 10:42:20 +0100
+> 
+>> On 12/04/14 21:51, David Miller wrote:
+>>> From: Vincenzo Maffione <v.maffione@gmail.com>
+>>> Date: Sat, 12 Apr 2014 11:55:40 +0200
+>>>
+>>>> This patch fixes the initialization of an array used in the TX
+>>>> datapath that was mistakenly initialized together with the
+>>>> RX datapath arrays. An out of range array access could happen
+>>>> when RX and TX rings had different sizes.
+>>>>
+>>>> Signed-off-by: Vincenzo Maffione <v.maffione@gmail.com>
+>>>
+>>> Good catch, applied, thanks.
+>>
+>> Thanks.  You can queue this for net-next since the Tx and Rx rings are
+>> the same constant size.
+> 
+> I was able to determine when I reviewed this patch that the size in bytes
+> of the rings are the same (PAGE_SIZE), but I couldn't ascertain whether
+> the individual ring entries in the TX ring and RX ring are the same size.
+> 
+> Are they?
 
-I recently found out the hard way, that using mempool_alloc together with
-__GFP_ZERO is not a good idea since memory which comes from the pool of
-preallocated elemtents is not zeroed. Fixing this doesn't seem to be trivial
-since mempool is not aware of the size of the objects it manages.
+Yes.  It's not at all obvious, but each ends up with 256 entries.
 
-Last time someone addressed this on lkml just the callers of mempool_alloc
-were fixed which obviously didn't help new users of mempool...
-How about the following patch?
+Tx entries are 12 bytes and Rx entries are 8 bytes.  The ring macros
+reserve some space in the shared page for the producer/consumer indexes
+/and/ round down the number to the next power of two.
 
-Regards,
-Sebastian
----
-
-mm/mempool: warn about __GFP_ZERO usage
-
-Memory obtained via mempool_alloc is not always zeroed even when
-called with __GFP_ZERO. Add a note and VM_BUG_ON statement to make
-that clear.
-
-Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
----
- mm/mempool.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/mm/mempool.c
-+++ b/mm/mempool.c
-@@ -192,6 +192,7 @@ EXPORT_SYMBOL(mempool_resize);
-  * returns NULL. Note that due to preallocation, this function
-  * *never* fails when called from process contexts. (it might
-  * fail if called from an IRQ context.)
-+ * Note: using __GFP_ZERO is not supported.
-  */
- void * mempool_alloc(mempool_t *pool, gfp_t gfp_mask)
- {
-@@ -200,6 +201,7 @@ void * mempool_alloc(mempool_t *pool, gf
- 	wait_queue_t wait;
- 	gfp_t gfp_temp;
- 
-+	VM_BUG_ON(gfp_mask & __GFP_ZERO);
- 	might_sleep_if(gfp_mask & __GFP_WAIT);
- 
- 	gfp_mask |= __GFP_NOMEMALLOC;	/* don't allocate emergency reserves */
+David
 
