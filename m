@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591AbaDNPLt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 11:11:49 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52227 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128AbaDNPLq (ORCPT
+	id S1754555AbaDNPLf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 11:11:35 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:41097 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128AbaDNPLa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 11:11:46 -0400
-Message-ID: <534BFAAF.3070805@codeaurora.org>
-Date: Mon, 14 Apr 2014 10:11:43 -0500
-From: Timur Tabi <timur@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Mon, 14 Apr 2014 11:11:30 -0400
+Date: Mon, 14 Apr 2014 17:11:25 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Cc: Alexei Starovoitov <ast@plumgrid.com>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Jiri Olsa <jolsa@redhat.com>,
+        Geoff Levand <geoff@infradead.org>
+Subject: Re: [RFC PATCH 00/28] ktap: A lightweight dynamic tracing tool for
+ Linux
+Message-ID: <20140414151125.GA27749@gmail.com>
+References: <20140331071749.GA1252@gmail.com>
+ <CAGdX0WEV5OEfk4vfMKYeEpHP_7XqpUKk2-iwTVoTup1ObYu3eg@mail.gmail.com>
+ <CAMEtUuw24=+CkcdwDnJ4AbSCjGBBFx+8pTFzn5gXbQAy=KYWng@mail.gmail.com>
+ <CAGdX0WEvsPqWjE8Uade5_i58AepKxGndM0eSg=viB+UYGOSkJw@mail.gmail.com>
+ <CAMEtUuxYigBYnH_n_MCrs_=r9KLGOha3rSuNZ876mgH1tAvVCg@mail.gmail.com>
+ <CAGdX0WE_xtUY7=CH7Qzxn9Oe8Mz=60wb6izD-APbF5d3caEthA@mail.gmail.com>
+ <20140402074322.GA22744@gmail.com>
+ <CAGdX0WHh3UqiCLbz+18_fj5s4PMpTfy638HA=LHpgLfVc2JpOg@mail.gmail.com>
+ <20140404073616.GC1637@gmail.com>
+ <CAGdX0WEkWq7hVnoffNaOEouDd17qr08EiPG2osF+DBPj4nZ-Gg@mail.gmail.com>
 MIME-Version: 1.0
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-CC: Linus <linus.walleij@linaro.org>, Grant Likely <grant.likely@secretlab.ca>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
-References: <1371555182-12418-1-git-send-email-mathias.nyman@linux.intel.com>	<1371555182-12418-2-git-send-email-mathias.nyman@linux.intel.com> <CAOZdJXU2hN+9TE=XN55TZF_W-0hxHZmK5330i6hwrhOERKFetw@mail.gmail.com> <534B93BA.6020406@linux.intel.com>
-In-Reply-To: <534B93BA.6020406@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGdX0WEkWq7hVnoffNaOEouDd17qr08EiPG2osF+DBPj4nZ-Gg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2014 02:52 AM, Mathias Nyman wrote:
->>
->
-> This was the conclusion we reached after some discussion with Linus W.
-> Initially this was just a GPIO driver, but Linus correctly spotted that
-> Baytrail has many pinctrl-like features (like pin muxing, etc) that we
-> might need to address in the future.
->
-> threads where this was discussed:
->
-> http://marc.info/?l=linux-kernel&m=136994203308585&w=2
-> http://marc.info/?l=linux-kernel&m=137113578604763&w=2
 
-So this is the interesting part:
+* Jovi Zhangwei <jovi.zhangwei@gmail.com> wrote:
 
-> We expect BIOS to set all pin configurations correctly.
+> Obviously many people love ktap nowadays even though it's not a 
+> C-family language, [...]
 
-This device will only be used on an ACPI system, right?  And isn't ACPI 
-supposed to hide all the pinctrl programming from the OS?  I thought 
-that was the whole point behind ACPI and the reason why ARM64 isn't 
-going to use device trees.
+Imagine how much more widespread it would become amongst kernel 
+developers if it had C syntax - see PeterZ's reply for example.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the
-Code Aurora Forum, hosted by the Linux Foundation.
+Thanks,
+
+	Ingo
