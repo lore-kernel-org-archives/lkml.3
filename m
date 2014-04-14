@@ -1,136 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755AbaDNFOX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 01:14:23 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:44796 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322AbaDNFOU (ORCPT
+	id S1753294AbaDNFOz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 01:14:55 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:58314 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752954AbaDNFOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 01:14:20 -0400
-Message-ID: <534B6EA5.5090302@hitachi.com>
-Date: Mon, 14 Apr 2014 14:14:13 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 14 Apr 2014 01:14:54 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Satoru MORIYA <satoru.moriya.br@hitachi.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Takenori Nagano <t-nagano@ah.jp.nec.com>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+References: <20140414045158.10846.35462.stgit@ltc230.yrl.intra.hitachi.co.jp>
+Date: Sun, 13 Apr 2014 22:14:18 -0700
+In-Reply-To: <20140414045158.10846.35462.stgit@ltc230.yrl.intra.hitachi.co.jp>
+	(Masami Hiramatsu's message of "Mon, 14 Apr 2014 13:51:58 +0900")
+Message-ID: <87d2gkxzkl.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jonathan Lebon <jlebon@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: Re: [RFC PATCH 4/6] uprobes/x86: Emulate rip-relative call's
-References: <20140406201628.GA507@redhat.com> <20140410141806.GA23997@redhat.com> <5346AB07.4090909@redhat.com> <201404101902.38639.vda.linux@googlemail.com>
-In-Reply-To: <201404101902.38639.vda.linux@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19LmRC1mf1p7/s3CdKZfAOOjg+x9tG//nc=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.5000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] kernel/panic: Add "late_kdump" option for kdump in unstable condition
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/11 2:02), Denys Vlasenko wrote:
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
 
->> The (f64) modifier in x86-opcode-map.txt means that inat_is_force64()
->> is true for call opcode. So we won't reach "case 2:" in __get_immv32():
->> insn_get_prefixes() did set insn->opnd_bytes to 2 when it saw 0x66 prefix,
->> but it was before we reach this place, and here we overrode it.
->> This is a bug in insn decoder.
-> 
-> I tested it on both Intel and AMD CPUs and my worst fears came true:
-> this instruction has different widths on different CPUs.
-> 
-> This program:
-> 
-> # compile with: gcc -nostartfiles -nostdlib -o int3 int3.S
-> _start:         .globl  _start
->                 .byte 0x66,0xe9,0,0
->                 .byte 0,0
-> 1: jmp 1b
-> 
-> compiles to this:
-> 
-> 00000000004000b0 <_start>:
->   4000b0:       66 e9 00 00             jmpw   b4 <_start-0x3ffffc>
->   4000b4:       00 00                   add    %al,(%rax)
->   4000b6:       eb fe                   jmp    4000b6 <_start+0x6>
-> 
-> and it will reach 0x4000b6 on Intel CPU.
-> IOW, Intel SandyBridge CPU thinks that insn is in fact 66 e9 00 00 00 00,
-> no RIP truncation occurs.
-> 
-> On AMD K10 CPU, the very same binary jumps to 0x00b4
-> and gets SIGSEGV with MAPERR.
-> AMD thinks that the insn is 66 e9 00 00 as shown above.
+> Add a "late_kdump" option to run kdump after running panic
+> notifiers and dump kmsg. This can help rare situations which
+> kdump drops in failure because of unstable crashed kernel
+> or hardware failure (memory corruption on critical data/code),
+> or the 2nd kernel is broken by the 1st kernel (it's a broken
+> behavior, but who can guarantee that the "crashed" kernel
+> works correctly?).
+>
+> Usage: add "late_kdump" to kernel boot option. That's all.
+>
+> Note that this actually increases risks of the failure of
+> kdump. This option should be set only if you worry about
+> the rare case of kdump failure rather than increasing the
+> chance of success.
 
-Hmm, interesting.
+This is better than some others, but every time I have seen a request
+to do this it is because someone wants to do something horrible that
+makes kdump more brittle and generally unsupportable.
 
-> Thus, insn.c decoder implements Intel's idea of this insn
-> while binutils (objdump, gdb) implement AMD decode.
+You seem to in general understand that.
 
-Yeah, insn.c relays on intel's opcode map.
+But how can we support an option to make the kernel flakier?
 
-> This same program can be compiled to 32-bit code,
-> in this mode both CPUs treat insn as 66 e9 00 00.
+I suspect it would be more productive to work on the lkcd (spelling?)
+test module and show that crash dump actually works in the situation
+people are worried about.
 
-In 32 bit mode, insn.c treats it as 66 e9 00 00 correctly.
+Just thinking about this send shivers up my spine. Ick.
 
-> Oleg, I'm sure you are very sympathetic by now to the idea
-> of just not supporting this insn at all. ;)
-> 
-> You can check whether insn had any prefix by checking
-> insn->prefixes->nbytes != 0...
+Eric
 
-No, since there are other prefixes (and it may be meaningless)
-you should find 0x66 in insn->prefixes->bytes[].
-
-> ..but there is a problem with that. P4 introduced branch hints,
-> which are implemented using segment prefixes on conditional jumps.
-> Meaning that some compilers produce
-> 
-> 2e 0f 82 nn nn nn nn
-> 
-> as   (hint not taken) JB <offset32>   insn.
-> 
-> 2e is CS segment prefix. insn->prefixes->nbytes == 1 for this insn.
-> DS prefix (3e) hints that branch is taken.
-> 
-> They were nearly useless on P4 anyway and ignored by all CPUs
-> before or since, but they can be seen in some programs.
-
-Hm, this could be done.
-
-> 
-> Looks like we'll need this:
-> 
-> /*
->  * 16-bit overrides such as CALLW (66 e8 nn nn) are not supported.
->  * Intel and AMD behavior differ in 64-bit mode: Intel ignores 66 prefix.
->  * No one uses these insns.
->  * To filter them out, reject any branch insns with prefixes...
->  */
-> if (insn->prefixes->nbytes > 1)
-> 	bail_out;
-
-As I said above, check insn->prefixes.bytes[0..nbytes].
-
-> /*
->  * ...Except a single 3e or 2e "branch taken/not taken" hint prefix.
->  * These are (rarely) used, but ignored by any CPU except P4.
->  * Example: 2e 0f 82 nn nn nn nn  is JB,PN <offset32>
->  */
-> if (insn->prefixes->nbytes == 1 && (insn->prefixes->bytes[0] | 0x10) != 0x3e))
-> 	bail_out;
-> 
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Eric Biederman <ebiederm@xmission.com>
+> Cc: Vivek Goyal <vgoyal@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+> Cc: Satoru MORIYA <satoru.moriya.br@hitachi.com>
+> Cc: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>
+> Cc: Takenori Nagano <t-nagano@ah.jp.nec.com>
+> ---
+>  Documentation/kernel-parameters.txt |    7 +++++++
+>  kernel/panic.c                      |   24 ++++++++++++++++++++++--
+>  2 files changed, 29 insertions(+), 2 deletions(-)
+>
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 03e50b4..1ba58da 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -2339,6 +2339,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  			timeout < 0: reboot immediately
+>  			Format: <timeout>
+>  
+> +	late_kdump	Run kdump after running panic-notifiers and dumping
+> +			kmsg. This only for the users who doubt kdump always
+> +			succeeds in any situation.
+> +			Note that this also increases risks of kdump failure,
+> +			because some panic notifiers can make the crashed
+> +			kernel more unstable.
+> +
+>  	parkbd.port=	[HW] Parallel port number the keyboard adapter is
+>  			connected to, default is 0.
+>  			Format: <parport#>
+> diff --git a/kernel/panic.c b/kernel/panic.c
+> index d02fa9f..bba42b5 100644
+> --- a/kernel/panic.c
+> +++ b/kernel/panic.c
+> @@ -32,6 +32,7 @@ static unsigned long tainted_mask;
+>  static int pause_on_oops;
+>  static int pause_on_oops_flag;
+>  static DEFINE_SPINLOCK(pause_on_oops_lock);
+> +static bool late_kdump;
+>  
+>  int panic_timeout = CONFIG_PANIC_TIMEOUT;
+>  EXPORT_SYMBOL_GPL(panic_timeout);
+> @@ -112,9 +113,14 @@ void panic(const char *fmt, ...)
+>  	/*
+>  	 * If we have crashed and we have a crash kernel loaded let it handle
+>  	 * everything else.
+> -	 * Do we want to call this before we try to display a message?
+> +	 * If we want to call this after we try to display a message, pass
+> +	 * the "late_kdump" option to the kernel.
+>  	 */
+> -	crash_kexec(NULL);
+> +	if (!late_kdump)
+> +		crash_kexec(NULL);
+> +	else
+> +		pr_emerg("Warning: late_kdump option is set. Please DO NOT "
+> +			"report bugs about kdump failure with this option.\n");
+>  
+>  	/*
+>  	 * Note smp_send_stop is the usual smp shutdown function, which
+> @@ -131,6 +137,13 @@ void panic(const char *fmt, ...)
+>  
+>  	kmsg_dump(KMSG_DUMP_PANIC);
+>  
+> +	/*
+> +	 * If you doubt kdump always works perfectly in any situation,
+> +	 * "late_kdump" offers you to try kdump after running panic_notifier
+> +	 * and dumping kmsg.
+> +	 */
+> +	crash_kexec(NULL);
+> +
+>  	bust_spinlocks(0);
+>  
+>  	if (!panic_blink)
+> @@ -472,6 +485,13 @@ EXPORT_SYMBOL(__stack_chk_fail);
+>  core_param(panic, panic_timeout, int, 0644);
+>  core_param(pause_on_oops, pause_on_oops, int, 0644);
+>  
+> +static int __init setup_late_kdump(char *s)
+> +{
+> +	late_kdump = true;
+> +	return 0;
+> +}
+> +early_param("late_kdump", setup_late_kdump);
+> +
+>  static int __init oops_setup(char *s)
+>  {
+>  	if (!s)
