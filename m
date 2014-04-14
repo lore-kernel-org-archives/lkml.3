@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232AbaDNOw6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 10:52:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40119 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755120AbaDNOwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 10:52:54 -0400
-Date: Mon, 14 Apr 2014 16:52:05 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        Richard Yao <ryao@gentoo.org>, Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        William Cohen <wcohen@redhat.com>
-Subject: Re: [GIT PULL v3 00/17] perf/core fixes
-Message-ID: <20140414145205.GA8192@krava.brq.redhat.com>
-References: <1397485061-17215-1-git-send-email-jolsa@redhat.com>
- <20140414144236.GB22659@gmail.com>
+	id S1755285AbaDNOxK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 10:53:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46570 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754242AbaDNOxD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 10:53:03 -0400
+Date: Mon, 14 Apr 2014 07:52:47 -0700
+From: tip-bot for Ramkumar Ramachandra <tipbot@zytor.com>
+Message-ID: <tip-2c529e4e6aab405aa52e8627cbd691ed28b56a0b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+        mingo@kernel.org, jean.pihet@linaro.org, jolsa@redhat.com,
+        tglx@linutronix.de, artagnon@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, jean.pihet@linaro.org, jolsa@redhat.com,
+        tglx@linutronix.de, artagnon@gmail.com
+In-Reply-To: <1395873845-466-1-git-send-email-artagnon@gmail.com>
+References: <1395873845-466-1-git-send-email-artagnon@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf tools:
+  Pick up libdw without explicit LIBDW_DIR
+Git-Commit-ID: 2c529e4e6aab405aa52e8627cbd691ed28b56a0b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140414144236.GB22659@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 04:42:36PM +0200, Ingo Molnar wrote:
+Commit-ID:  2c529e4e6aab405aa52e8627cbd691ed28b56a0b
+Gitweb:     http://git.kernel.org/tip/2c529e4e6aab405aa52e8627cbd691ed28b56a0b
+Author:     Ramkumar Ramachandra <artagnon@gmail.com>
+AuthorDate: Wed, 26 Mar 2014 18:44:05 -0400
+Committer:  Jiri Olsa <jolsa@redhat.com>
+CommitDate: Mon, 14 Apr 2014 12:55:17 +0200
 
-SNIP
+perf tools: Pick up libdw without explicit LIBDW_DIR
 
-> >       perf machine: Search for modules in %s/lib/modules/%s
-> > 
-> >  MAINTAINERS                             |   2 +-
-> >  tools/lib/traceevent/event-parse.c      | 109 +++++++++++++++----------
-> >  tools/perf/Documentation/perf-bench.txt |  22 +++++
-> >  tools/perf/Documentation/perf-top.txt   |   1 -
-> >  tools/perf/Makefile.perf                |   4 +-
-> >  tools/perf/bench/numa.c                 |   4 +
-> >  tools/perf/builtin-bench.c              |   2 +-
-> >  tools/perf/builtin-stat.c               | 140 ++++++++++++++++++++------------
-> >  tools/perf/config/Makefile              |   7 +-
-> >  tools/perf/tests/code-reading.c         |   1 +
-> >  tools/perf/util/machine.c               |   2 +-
-> >  tools/perf/util/probe-finder.c          |  15 ++--
-> >  12 files changed, 197 insertions(+), 112 deletions(-)
-> 
-> I've pulled most of the patches, up to patch #13, thanks Jiri!
-> 
-> I left out #14 because it seems incomplete to me - see my previous 
-> mail.
-> 
-> You could rebase #15,16,17 on top of #13 to get the rest to me as 
-> well, until #14 is resolved.
+The Makefile logic sets FEATURE_CHECKS_CFLAGS-libdw-dwarf-unwind and
+FEATURE_CHECKS_LDFLAGS-libdw-dwarf-unwind only if LIBDW_DIR is
+defined. This means that under a normal setup,
 
-ok, will do
+  $ make NO_LIBUNWIND=1
 
-thanks,
-jirka
+won't automatically pick up libdw. Fix this.
+
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Acked-by: Jean Pihet <jean.pihet@linaro.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/r/1395873845-466-1-git-send-email-artagnon@gmail.com
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/config/Makefile | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index 5a3c452..ee21fa9 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -65,10 +65,9 @@ ifndef NO_LIBELF
+   ifdef LIBDW_DIR
+     LIBDW_CFLAGS  := -I$(LIBDW_DIR)/include
+     LIBDW_LDFLAGS := -L$(LIBDW_DIR)/lib
+-
+-    FEATURE_CHECK_CFLAGS-libdw-dwarf-unwind := $(LIBDW_CFLAGS)
+-    FEATURE_CHECK_LDFLAGS-libdw-dwarf-unwind := $(LIBDW_LDFLAGS) -ldw
+   endif
++  FEATURE_CHECK_CFLAGS-libdw-dwarf-unwind := $(LIBDW_CFLAGS)
++  FEATURE_CHECK_LDFLAGS-libdw-dwarf-unwind := $(LIBDW_LDFLAGS) -ldw
+ endif
+ 
+ # include ARCH specific config
