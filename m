@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920AbaDNQNw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:13:52 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:41717 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438AbaDNQNs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:13:48 -0400
+	id S1755068AbaDNQOH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:14:07 -0400
+Received: from verein.lst.de ([213.95.11.211]:49566 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754890AbaDNQOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 12:14:02 -0400
+Date: Mon, 14 Apr 2014 18:13:59 +0200
+From: Torsten Duwe <duwe@lst.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Greg Price <price@mit.edu>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH resend 0/2] random: Use DRBG sources
+Message-ID: <20140414161359.GD29351@lst.de>
+References: <cover.1397487345.git.luto@amacapital.net>
 MIME-Version: 1.0
-In-Reply-To: <1706948.xQXQIMFS2B@amdc1032>
-References: <1706948.xQXQIMFS2B@amdc1032>
-Date: Mon, 14 Apr 2014 21:43:47 +0530
-X-Google-Sender-Auth: bNqs8FMIL-TB9HXo4spNTvAdKA8
-Message-ID: <CAOh2x=nQWZbYdbKpkVaXhRjTKq++GMujO+aFEBgLLyrEtsCPew@mail.gmail.com>
-Subject: Re: [PATCH v2] pata_arasan_cf: fix ata_host_activate() failure handling
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Tejun Heo <tj@kernel.org>, Shiraz Hashim <shiraz.hashim@st.com>,
-        "...)" <linux-ide@vger.kernel.org>,
-        spear-devel <spear-devel@list.st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1397487345.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 9:31 PM, Bartlomiej Zolnierkiewicz
-<b.zolnierkie@samsung.com> wrote:
-> Add missing cf_exit() and clk_put() calls to ata_host_activate()
-> failure path.
->
-> Cc: Viresh Kumar <viresh.linux@gmail.com>
-> Cc: Shiraz Hashim <shiraz.hashim@st.com>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> ---
-> v2:
-> - re-order code and then drop redundant goto statement
->
->  drivers/ata/pata_arasan_cf.c |    7 +++++--
->  1 file changed, 5 insertions(+), 2 deletions(-)
+On Mon, Apr 14, 2014 at 08:49:58AM -0700, Andy Lutomirski wrote:
+> [Resent because I forgot to email lkml.  This also surreptitiously
+>  fixes a silly typo on a patch description.]
+> 
+> This is my attempt to come up with a workable way to use so-called
+> entropy sources like a TPM to feed /dev/urandom.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Ahem, The TPM RNGs are true HWRNGs, but they are very limited.
+Their main purpose is to generate enough bits so that the TPM
+can generate a genuine key pair after a few seconds.
+
+Why do you want to put those valuable true random bits into urandom?
+
+> Arguably we should be feeding the input pool as well, but if the
+
+Yes.
+
+> /dev/random algorithm is correct, this shouldn't matter.  I don't want
+> sensible use of TPMs for /dev/urandom to block on a long debate about
+> /dev/random, so these patches have no effect on /dev/random.
+
+That confuses me a bit.
+
+	Torsten
+
