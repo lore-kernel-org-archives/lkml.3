@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897AbaDNVLl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 17:11:41 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33078 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754656AbaDNVLh (ORCPT
+	id S1755862AbaDNVLR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 17:11:17 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:54805 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752521AbaDNVLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 17:11:37 -0400
-Date: Mon, 14 Apr 2014 22:11:06 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Message-ID: <20140414211106.GC12304@sirena.org.uk>
-References: <1397462949-22379-1-git-send-email-k.kozlowski@samsung.com>
- <1397462949-22379-5-git-send-email-k.kozlowski@samsung.com>
+	Mon, 14 Apr 2014 17:11:11 -0400
+Message-ID: <534C4EEC.8070508@semaphore.gr>
+Date: Tue, 15 Apr 2014 00:11:08 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="L6iaP+gRLNZHKoI4"
-Content-Disposition: inline
-In-Reply-To: <1397462949-22379-5-git-send-email-k.kozlowski@samsung.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 4/4] regulator: s5m8767: Use same binding for external
- control as in s2mps11
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 19/20] cpufreq: pcc_cbe: Use cpufreq_for_each_entry macro
+ for iteration
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The cpufreq core supports the cpufreq_for_each_entry macro helper
+for iteration over the cpufreq_frequency_table, so use it.
 
---L6iaP+gRLNZHKoI4
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+It should have no functional changes.
 
-On Mon, Apr 14, 2014 at 10:09:09AM +0200, Krzysztof Kozlowski wrote:
+Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+---
 
-> -	- s5m8767,pmic-ext-control-gpios: (optional) GPIO specifier for one
-> +	- samsung,ext-control-gpios: (optional) GPIO specifier for one
->  		GPIO controlling this regulator (enable/disable); This is
->  		valid only for buck9.
+Please note that I was no able to compile test this patch due to 
+lack of cross compiler.
 
-This is an incompatible change.  It's OK to deprecate the old property
-but it's bad form to just remove it.
+ drivers/cpufreq/ppc_cbe_cpufreq.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---L6iaP+gRLNZHKoI4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTTE7nAAoJELSic+t+oim9wnQP/j1E9nH/Vo2WkPVYslXz7ClG
-FZcO7kNtYcc7FEHgs/KB+yOCY7qtp9Iu7HcdkJCdaYbTU5QHuGqprPmaFYWFEMPO
-DX4Yyh0qWUXy7hKWJKaD8cpEi/UhwLKaaEsCqFSCKvET8N7GHiRXP6WAeQDdW+LW
-gGQevoqC0cr+5dIPbxhKmuS+79FS1dOpvWW2YvGxYe5TPC43hLfNr3MKI/wnozgW
-PuOsyw43QSvw2LLJfynx2KQHnYL0r65+aqxcfI9Rjhv+bcnukPdQk3uPV2C4Obf/
-TdNGbVvBq97hEDVZHBkFoXqgKtd5b/YXYBudn2Oo3CQtExGUKFrSjnDnFdMTIBqB
-vJjEA+fvhdpj5bb1p+OhwtiUK1/M8QsdY6HmWeGU4ppwoADPaMU7ew9MvInotfnY
-1N+zWZ1ai8rzuzr7zxQ+jaa6oLrSV6IQZlk5gEdWQwAPb5TktYFVSiFPOzaKknEU
-JO5pXd3pnl0rTTRnc0FXWBk/DA8ESD3UdghZdSehP+xC/fpXPruKZT/oC+68VNLk
-A882ZxMILnBlmXjGN9C8XXsPNbS6oJZ3EpE7Na6X6RNn7BuBGjrENR+Bk7/PZUyM
-xKHMOO4MAH0l9ThJmuHnwsoeH9+Nl6EI85y+RL6DZLU7WXjG45pRTIDq2EqL4rV6
-OZyukAI8U7NKPwCKfN4y
-=ddaJ
------END PGP SIGNATURE-----
-
---L6iaP+gRLNZHKoI4--
+diff --git a/drivers/cpufreq/ppc_cbe_cpufreq.c b/drivers/cpufreq/ppc_cbe_cpufreq.c
+index 5be8a48..b550d5c 100644
+--- a/drivers/cpufreq/ppc_cbe_cpufreq.c
++++ b/drivers/cpufreq/ppc_cbe_cpufreq.c
+@@ -67,9 +67,10 @@ static int set_pmode(unsigned int cpu, unsigned int slow_mode)
+ 
+ static int cbe_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ {
++	struct cpufreq_frequency_table *pos;
+ 	const u32 *max_freqp;
+ 	u32 max_freq;
+-	int i, cur_pmode;
++	int cur_pmode;
+ 	struct device_node *cpu;
+ 
+ 	cpu = of_get_cpu_node(policy->cpu, NULL);
+@@ -102,9 +103,9 @@ static int cbe_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 	pr_debug("initializing frequency table\n");
+ 
+ 	/* initialize frequency table */
+-	for (i=0; cbe_freqs[i].frequency!=CPUFREQ_TABLE_END; i++) {
+-		cbe_freqs[i].frequency = max_freq / cbe_freqs[i].driver_data;
+-		pr_debug("%d: %d\n", i, cbe_freqs[i].frequency);
++	cpufreq_for_each_entry(pos, cbe_freqs) {
++		pos->frequency = max_freq / pos->driver_data;
++		pr_debug("%lu: %d\n", pos - cbe_freqs, pos->frequency);
+ 	}
+ 
+ 	/* if DEBUG is enabled set_pmode() measures the latency
+-- 
+1.9.0
