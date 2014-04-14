@@ -1,78 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753794AbaDNHXL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 03:23:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42376 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753022AbaDNHXE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 03:23:04 -0400
-Date: Mon, 14 Apr 2014 00:22:42 -0700
-From: "=?UTF-8?B?dGlwLWJvdCBmb3IgVmlsbGUgU3lyasOkbMOk?=" <tipbot@zytor.com>
-Message-ID: <tip-86e587623a0ca8426267dad8d3eaebd6fc2d00f1@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        bhelgaas@google.com, ville.syrjala@linux.intel.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, ville.syrjala@linux.intel.com, tglx@linutronix.de
-In-Reply-To: <1397382303-17525-1-git-send-email-ville.syrjala@linux.intel.com>
-References: <1397382303-17525-1-git-send-email-ville.syrjala@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/gpu:
-  Fix sign extension issue in Intel graphics stolen memory quirks
-Git-Commit-ID: 86e587623a0ca8426267dad8d3eaebd6fc2d00f1
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	id S1753897AbaDNHXQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 03:23:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:28687 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752699AbaDNHXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 03:23:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,855,1389772800"; 
+   d="scan'208";a="520297550"
+From: Chen Tingjie <tingjie.chen@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
+Cc: Chen Tingjie <tingjie.chen@intel.com>, Zhang Jun <jun.zhang@intel.com>
+Subject: [PATCH] [PATCH V2] tty: memleak in alloc_pid
+Date: Mon, 14 Apr 2014 15:31:15 +0800
+Message-Id: <1397460675-17983-1-git-send-email-tingjie.chen@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  86e587623a0ca8426267dad8d3eaebd6fc2d00f1
-Gitweb:     http://git.kernel.org/tip/86e587623a0ca8426267dad8d3eaebd6fc2d00f1
-Author:     Ville Syrjälä <ville.syrjala@linux.intel.com>
-AuthorDate: Sun, 13 Apr 2014 12:45:03 +0300
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 14 Apr 2014 08:50:56 +0200
+There is memleak in alloc_pid:
+------------------------------
+unreferenced object 0xd3453a80 (size 64):
+  comm "adbd", pid 1730, jiffies 66363 (age 6586.950s)
+  hex dump (first 32 bytes):
+    01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+    00 00 00 00 40 c2 f6 d5 00 d3 25 c1 59 28 00 00  ....@.....%.Y(..
+  backtrace:
+    [<c1a6f15c>] kmemleak_alloc+0x3c/0xa0
+    [<c1320546>] kmem_cache_alloc+0xc6/0x190
+    [<c125d51e>] alloc_pid+0x1e/0x400
+    [<c123d344>] copy_process.part.39+0xad4/0x1120
+    [<c123da59>] do_fork+0x99/0x330
+    [<c123dd58>] sys_fork+0x28/0x30
+    [<c1a89a08>] syscall_call+0x7/0xb
+    [<ffffffff>] 0xffffffff
 
-x86/gpu: Fix sign extension issue in Intel graphics stolen memory quirks
+the leak is due to unreleased pid->count, which execute in function:
+get_pid()(pid->count++) and put_pid()(pid->count--).
 
-Have the KB(),MB(),GB() macros produce unsigned longs to avoid
-unintended sign extension issues with the gen2 memory size
-detection.
+The race condition as following:
+task[dumpsys]               task[adbd]
+in disassociate_ctty()      in tty_signal_session_leader()
+-----------------------     -------------------------
+tty = get_current_tty();
+// tty is not NULL
+...
+spin_lock_irq(&current->sighand->siglock);
+put_pid(current->signal->tty_old_pgrp);
+current->signal->tty_old_pgrp = NULL;
+spin_unlock_irq(&current->sighand->siglock);
 
-What happens is first the uint8_t returned by
-read_pci_config_byte() gets promoted to an int which gets
-multiplied by another int from the MB() macro, and finally the
-result gets sign extended to size_t.
+                            spin_lock_irq(&p->sighand->siglock);
+                            ...
+                            p->signal->tty = NULL;
+                            ...
+                            spin_unlock_irq(&p->sighand->siglock);
 
-Although this shouldn't be a problem in practice as all affected
-gen2 platforms are 32bit AFAIK, so size_t will be 32 bits.
+tty = get_current_tty();
+// tty NULL, goto else branch by accident.
+if (tty) {
+    ...
+    put_pid(tty_session);
+    put_pid(tty_pgrp);
+    ...
+} else {
+    print msg
+}
 
-Reported-by: Bjorn Helgaas <bhelgaas@google.com>
-Suggested-by: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org
-Link: http://lkml.kernel.org/r/1397382303-17525-1-git-send-email-ville.syrjala@linux.intel.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+in task[dumpsys], in disassociate_ctty(), tty is set NULL by task[adbd],
+tty_signal_session_leader(), then it goto else branch and lack of
+put_pid(), cause memleak.
+
+move spin_unlock(sighand->siglock) after get_current_tty() can avoid
+the race and fix the memleak.
+
+Change-Id: Ic960dda039c8f99aad3e0f4d176489a966c62f6a
+Signed-off-by: Zhang Jun <jun.zhang@intel.com>
+Signed-off-by: Chen Tingjie <tingjie.chen@intel.com>
 ---
- arch/x86/kernel/early-quirks.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/tty_io.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index b0cc380..6e2537c 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -240,7 +240,7 @@ static u32 __init intel_stolen_base(int num, int slot, int func, size_t stolen_s
- 	return base;
- }
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 31c4a57..72547a3 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -874,9 +874,8 @@ void disassociate_ctty(int on_exit)
+ 	spin_lock_irq(&current->sighand->siglock);
+ 	put_pid(current->signal->tty_old_pgrp);
+ 	current->signal->tty_old_pgrp = NULL;
+-	spin_unlock_irq(&current->sighand->siglock);
  
--#define KB(x)	((x) * 1024)
-+#define KB(x)	((x) * 1024UL)
- #define MB(x)	(KB (KB (x)))
- #define GB(x)	(MB (KB (x)))
+-	tty = get_current_tty();
++	tty = tty_kref_get(current->signal->tty);
+ 	if (tty) {
+ 		unsigned long flags;
+ 		spin_lock_irqsave(&tty->ctrl_lock, flags);
+@@ -893,6 +892,7 @@ void disassociate_ctty(int on_exit)
+ #endif
+ 	}
  
++	spin_unlock_irq(&current->sighand->siglock);
+ 	/* Now clear signal->tty under the lock */
+ 	read_lock(&tasklist_lock);
+ 	session_clear_tty(task_session(current));
+-- 
+1.7.9.5
+
