@@ -1,74 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754980AbaDNPtV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 11:49:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37073 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754940AbaDNPtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 11:49:14 -0400
-Date: Mon, 14 Apr 2014 17:49:11 +0200
-From: Jan Kara <jack@suse.cz>
-To: xypron.glpk@gmx.de
-Cc: viro@zeniv.linux.org.uk, jack@suse.cz, eparis@redhat.com,
-        mtk.manpages@gmail.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] fanotify: create FAN_ACCESS event for readdir
-Message-ID: <20140414154911.GA13860@quack.suse.cz>
-References: <1397405430-7577-1-git-send-email-xypron.glpk@gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397405430-7577-1-git-send-email-xypron.glpk@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755041AbaDNPu3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 11:50:29 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:36148 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520AbaDNPu1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 11:50:27 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: "Theodore Ts'o" <tytso@mit.edu>, Greg Price <price@mit.edu>
+Cc: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH resend 0/2] random: Use DRBG sources
+Date: Mon, 14 Apr 2014 08:49:58 -0700
+Message-Id: <cover.1397487345.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 13-04-14 18:10:30, xypron.glpk@gmx.de wrote:
-> From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-> 
-> Before the patch,
-> read creates FAN_ACCESS_PERM and FAN_ACCESS events,
-> readdir creates only FAN_ACCESS_PERM events.
-> 
-> This is inconsistent.
-> 
-> After the patch,
-> readdir creates FAN_ACCESS_PERM and FAN_ACCESS events.
-> 
-> Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
-  Makes sense. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
+[Resent because I forgot to email lkml.  This also surreptitiously
+ fixes a silly typo on a patch description.]
 
-							Honza
+This is my attempt to come up with a workable way to use so-called
+entropy sources like a TPM to feed /dev/urandom.
 
-> ---
->  fs/readdir.c |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/fs/readdir.c b/fs/readdir.c
-> index 5b53d99..33fd922 100644
-> --- a/fs/readdir.c
-> +++ b/fs/readdir.c
-> @@ -13,6 +13,7 @@
->  #include <linux/stat.h>
->  #include <linux/file.h>
->  #include <linux/fs.h>
-> +#include <linux/fsnotify.h>
->  #include <linux/dirent.h>
->  #include <linux/security.h>
->  #include <linux/syscalls.h>
-> @@ -40,6 +41,7 @@ int iterate_dir(struct file *file, struct dir_context *ctx)
->  		ctx->pos = file->f_pos;
->  		res = file->f_op->iterate(file, ctx);
->  		file->f_pos = ctx->pos;
-> +		fsnotify_access(file);
->  		file_accessed(file);
->  	}
->  	mutex_unlock(&inode->i_mutex);
-> -- 
-> 1.7.10.4
-> 
+Arguably we should be feeding the input pool as well, but if the
+/dev/random algorithm is correct, this shouldn't matter.  I don't want
+sensible use of TPMs for /dev/urandom to block on a long debate about
+/dev/random, so these patches have no effect on /dev/random.
+
+Andy Lutomirski (2):
+  random: Add add_drbg_randomness to safely seed urandom from crypto hw
+  tpm,random: Call add_drbg_randomness after selftest
+
+ drivers/char/random.c            | 56 +++++++++++++++++++++++++++++++++++-----
+ drivers/char/tpm/tpm-interface.c | 15 ++++++++++-
+ include/linux/random.h           |  1 +
+ include/trace/events/random.h    | 19 ++++++++++++++
+ 4 files changed, 83 insertions(+), 8 deletions(-)
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.9.0
+
