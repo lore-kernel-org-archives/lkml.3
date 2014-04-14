@@ -1,107 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668AbaDNOdN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 10:33:13 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:41129 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbaDNOdL (ORCPT
+	id S1754455AbaDNOhL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 10:37:11 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:15077 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849AbaDNOhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 10:33:11 -0400
-Message-ID: <534BF181.6060503@ti.com>
-Date: Mon, 14 Apr 2014 20:02:33 +0530
-From: Sekhar Nori <nsekhar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, Vinod Koul <vinod.koul@intel.com>
-CC: <dan.j.williams@intel.com>, <dmaengine@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <joelf@ti.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <davinci-linux-open-source@linux.davincidsp.com>, <mporter@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: Re: [PATCH v2 05/14] arm: common: edma: Select event queue 1 as default
- when booted with DT
-References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com> <1396357575-30585-6-git-send-email-peter.ujfalusi@ti.com> <5347A4FD.1030803@ti.com> <5347ACDE.7040407@ti.com> <5347AE49.5020109@ti.com> <5347B7F8.2000508@ti.com> <20140411094217.GA32284@intel.com> <5347D2CC.4030407@ti.com> <20140411113154.GB32284@intel.com> <5347DEDA.2060008@ti.com> <20140411124641.GC32284@intel.com> <534BCCD3.9060805@ti.com> <534BD0B5.5000004@ti.com> <534BD788.3050406@ti.com>
-In-Reply-To: <534BD788.3050406@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Apr 2014 10:37:07 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-bc-534bf28fca28
+Message-id: <534BF28E.7040906@samsung.com>
+Date: Mon, 14 Apr 2014 16:37:02 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.4.0
+MIME-version: 1.0
+To: Vivek Gautam <gautam.vivek@samsung.com>
+Cc: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org, kishon@ti.com,
+        gregkh@linuxfoundation.org, balbi@ti.com, kgene.kim@samsung.com,
+        t.figa@samsung.com, k.debski@samsung.com, jg1.han@samsung.com
+Subject: Re: [PATCH V4 1/5] phy: Add new Exynos5 USB 3.0 PHY driver
+References: <1396967803-28868-1-git-send-email-gautam.vivek@samsung.com>
+ <1396967803-28868-2-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1396967803-28868-2-git-send-email-gautam.vivek@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsVy+t/xK7r9n7yDDc4fUbY4eL/eYv6Rc6wW
+	bVcOsls0L17PZnF54SVWix+vL7BZ9C64ymZx4WkPm8Wmx9dYLRa2LWGxuLxrDpvFjPP7mCwW
+	LWtltlg/4zWLA5/H/rlr2D02L6n36NuyitHj+I3tTB6fN8kFsEZx2aSk5mSWpRbp2yVwZWy6
+	t5e14JNgRXf/IaYGxv18XYycHBICJhKXjk5nh7DFJC7cW8/WxcjFISSwlFFi9cf1jBDOJ0aJ
+	ud/awKp4BbQkJs86zQxiswioSiw/vpARxGYTMJToPdoHZosKREjcazzMClEvKPFj8j0WEFtE
+	QFti+9xJrCBDmQUuMUm82LcGbJCwgLPE5RlLwBYICbQzSvRt4gSxOQU8JWYdnMkEYjML6Ejs
+	b53GBmHLS2xe85Z5AqPALCQ7ZiEpm4WkbAEj8ypG0dTS5ILipPRcI73ixNzi0rx0veT83E2M
+	kFj5uoNx6TGrQ4wCHIxKPLwT3nkHC7EmlhVX5h5ilOBgVhLhdd0KFOJNSaysSi3Kjy8qzUkt
+	PsTIxMEp1cB41se/qvUrK4/+ml/GtxLmyvlYRbyz6XmR+bohZaqeLqdgxrsu9lsX6ye++Zcn
+	XMKz6PK5hc5CC31LLHb6xaimnFLYUFd51mYL99pGayUliQs3+1e6z1opypudfetV2ZPWGXNV
+	Ej5nc3IdbQxica7+EnI+9UK7puC7q8+tZy+MvHnzk2Nup5oSS3FGoqEWc1FxIgCgveoTcwIA	AA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 14 April 2014 06:11 PM, Peter Ujfalusi wrote:
-> On 04/14/2014 03:12 PM, Sekhar Nori wrote:
->> On Monday 14 April 2014 05:26 PM, Peter Ujfalusi wrote:
->>> Hi Vinod,
->>>
->>> On 04/11/2014 03:46 PM, Vinod Koul wrote:
->>>> I think the number shouldn't be viewed in absolute terms. If we decide that (lets
->>>> say) 0-7, then any controller should map 0 to lowest and 7 to highest.
->>>>
->>>> For your case you can do this and then intermediate numbers would be medium
->>>> priority. Such a system might work well...
->>>>
->>>> Also how would a client driver know which priority to use? Would it come from
->>>> DT?
->>>
->>> I think DT would be the best place.
->>
->> In the strict sense of what DT is supposed to represent, DT is not the
->> best place for this. Priority is usecase driven rather that hardware
->> description driven.
-> 
-> While this is true, the DMA priority - if supported by the DMA engine - is a
-> HW feature as well. If it is supported by the HW it can be used to tune and
-> partition the system for the anticipated load or purpose.
-> 
->> So on a reasonably less loaded system, I am sure you
->> could run audio even with a lower priority DMA queue.
-> 
-> Yes, you can. But as soon as you have other devices using the same priority
-> (with eDMA3 at least) and asks for a 'long' transfer it can ruin the audio.
-> During audio playback/capture you execute a long MMC read for example can
-> introduce a glitch.
-> 
->> Moreover, IMHO, encoding it in DT now will make it an ABI. Without a
->> wide variety of example use cases, I think it is too early to commit to
->> an ABI.
-> 
-> True, but we need to start from somewhere?
+On 08/04/14 16:36, Vivek Gautam wrote:
+> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+> index 28f9edb..6d99ba9 100644
+> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
+> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+> @@ -74,3 +74,45 @@ phy-consumer@12340000 {
+>  
+>  Refer to DT bindings documentation of particular PHY consumer devices for more
+>  information about required PHYs and the way of specification.
+> +
+> +Samsung Exynos5 SoC series USB DRD PHY controller
+> +--------------------------------------------------
+> +
+> +Required properties:
+> +- compatible : Should be set to one of the following supported values:
+> +	- "samsung,exynos5250-usbdrd-phy" - for exynos5250 SoC,
+> +	- "samsung,exynos5420-usbdrd-phy" - for exynos5420 SoC.
+> +- reg : Register offset and length of USB DRD PHY register set;
+> +- clocks: Clock IDs array as required by the controller
+> +- clock-names: names of clocks correseponding to IDs in the clock property;
+> +	       Required clocks:
+> +	- phy: main PHY clock (same as USB DRD controller i.e. DWC3 IP clock),
+> +	       used for register access.
+> +	- ref: PHY's reference clock (usually crystal clock), associated by
+> +	       phy name, used to determine bit values for clock settings
+> +	       register.
+> +	Additional clock required for Exynos5420:
+> +	- usb30_sclk_100m: Additional special clock used for PHY operation
+> +			   depicted as 'sclk_usbphy30' in CMU of Exynos5420.
+> +- samsung,syscon-phandle: phandle for syscon interface, which is used to
+> +			  control pmu registers for power isolation.
 
-Right, and based on our IRC discussion, we are not really fixing up the
-priority value space. That makes me much more comfortable with the idea.
+Why to append "-phandle" to the property's name ? If this is for PMU
+perhaps make it more explicit and name it: samsung,pmu-syscon or
+samsung,pmureg ?
 
->>> Not sure if we should set the range for this either. What I was thinking is to
->>> add an optional new property to be set by the client nodes, using DMA:
->>>
->>> mcasp0: mcasp@48038000 {
->>> 	compatible = "ti,am33xx-mcasp-audio";
->>> 	...
->>> 	dmas =	<&edma 8>,
->>> 		<&edma 9>;
->>> 	dma-names = "tx", "rx";
->>> 	dma-priorities = <2>, <2>;
->>> };
->>>
+> +- samsung,pmu-offset: phy power control register offset to pmu-system-controller
+> +		      base.
+> +- #phy-cells : from the generic PHY bindings, must be 1;
+> +
+> +For "samsung,exynos5250-usbdrd-phy" and "samsung,exynos5420-usbdrd-phy"
+> +compatible PHYs, the second cell in the PHY specifier identifies the
+> +PHY id, which is interpreted as follows:
+> +  0 - UTMI+ type phy,
+> +  1 - PIPE3 type phy,
 
->>> We could agree that lower number means lower priority, higher is - well -
->>> higher priority.
-
-Even this does not have to be uniform across, right? The numbers could
-be left to interpretation per-SoC.
-
->>> If the dma-priority is missing we should assume lowest priority (0).
->>> The highest priority depends on the platform. For eDMA3 in AM335x it is three
->>> level. For designware controller you might have the range 0-8 as valid.
->>>
->>> The question is how to get this information into use?
->>> We can take the priority number in the core when the dma channel is requested
->>> and add field to "struct dma_chan" in order to store it and the DMA drivers
->>> could have access to it.
-
-How about Vinod's idea of extending dma_slave_config? Priority is
-similar to rest of the runtime setup dmaengine_slave_config() is meant
-to do.
-
+-- 
 Thanks,
-Sekhar
+Sylwester
