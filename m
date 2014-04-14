@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290AbaDNLuB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 07:50:01 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:49939 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754682AbaDNLty (ORCPT
+	id S1755268AbaDNLts (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 07:49:48 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:30061 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755093AbaDNLte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 07:49:54 -0400
-X-AuditID: cbfee61a-b7fb26d00000724f-3f-534bcb61bb08
+	Mon, 14 Apr 2014 07:49:34 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-fc-534bcb4c76ca
 From: Robert Baldyga <r.baldyga@samsung.com>
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
@@ -21,53 +21,197 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         linux-omap@vger.kernel.org, aaro.koskinen@iki.fi,
         m.szyprowski@samsung.com, t.figa@samsung.com,
         Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH v2 12/13] extcon: extcon-max8997: check if pdata exists
-Date: Mon, 14 Apr 2014 13:46:23 +0200
-Message-id: <1397475984-28001-13-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH v2 10/13] extcon: extcon-gpio: add devicetree support
+Date: Mon, 14 Apr 2014 13:46:21 +0200
+Message-id: <1397475984-28001-11-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1397475984-28001-1-git-send-email-r.baldyga@samsung.com>
 References: <1397475984-28001-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAAzWRa0hTYRjHe3cuO44NDtP0tEBkoJTkLRTeympRsxMSZOIHy6iTHtTldG0q
-	6ZcmY3kht2mkqTPv0+nMMCVnZTr9kC11IShmVtS0tFIwbVl2cZO+/Z7fn+f5f3gIRGhFRUR6
-	ZjarzGQyxDgPtf/5QIYw9tj48FFbALR8ksCh3r1w6O11OL32EYPlzhUE1o2MY7DMfAuB+i8N
-	GNT3nICDm30Aapq6cDi+ZAaweMyJQMf8TRy2DHSgsOFGMwon+404rGnWo7DRpEWgs+EFB3aO
-	zHFhy/RLDpwtaMNh69e/ODRUdqLw3bCVC+8tVqJQ+2SECwccmxjsuvMZlfjTlrsWQE/qSjl0
-	v9WI0Qb9KqCt1XNc2ty6htPD6w0o/aAtmO5uL8bppY4qjH499Rinn9ZauHSpZhmnF8t+4bTV
-	pebSup52cMb7HC86hc1Iz2WVYUcu8dK+T+mB4j5+rcWiw9XAhJUAL4IiIymXvQDdZl/K8aYL
-	LwE8Qkg2Aspl1WPbQyGH2tDPeTZwch/V4zIAN/uQCFV/e8LDCDmPUQ9/HHazN3mSanGaPB4l
-	AymjdtXTICBjKMPq+607xFZbAGUsj3Zrry09VPUbcbOQlFKDmlnEAAT1YEc72MkqkhWqy6ny
-	iFAVI1flZKaGJmfJu4HnoQuiPmBWQxsgCSDmC4qMsfFCjMlV5cltgCIQsY9A2rulBClMXj6r
-	zLqozMlgVTawm0DFfoJB7aE4IZnKZLNXWFbBKv+nHMJLpAY6RY0s6dkpkSlQf3x9RhfB+CY9
-	Snje1rSiaQ4Lq44aeaXulWykymoTp2dkscvZUKEaM0t9yPOys9LguAS/g/mF5NXh8v0VtVNj
-	R9OD6sKRkBgsa8FbyPWfqNg1usZESVaOJR5QL9iDfvZV8L8V2RyEi90TxW+6wKciibjTYlSV
-	xkQEI0oV8w9xya7uzAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t9jAV2f097BBls7TSzWvHCwOLhV0+Lg
+	/XqL61+es1pMevKe2WL+kXOsFhNXTma26H+zkNWif4uLxYE/OxgtmhevZ7M492olo0Xn2SfM
+	Fhee9rBZLN23msViYdsSFovLu+awWcxe0s9isWhZK7PFk4VnmCzWHrnLbrH0+kUmi9uNK9gs
+	lr/9z2YxYfpaFosHh3eyW6x7OZ3FonXvEXaLfRf+sFqsn/GaxUHOY828NYwel/t6mTx27ZzD
+	6jGh/xOjx85Zd9k9Vi7/wuZx+OtCFo/NK7Q8Nq3qZPN4tXomq8eda3vYPPbPXcPu0dv8js3j
+	5cTfbB47vzewe/RtWcUYIBzFZZOSmpNZllqkb5fAlbF/0T3WglWaFbvX9rM0MM5R6mLk5JAQ
+	MJG4fPMzK4QtJnHh3nq2LkYuDiGBRYwSCw8vYoRw2pkkfj2eC1bFJqAjseX7BEYQW0SAWWLB
+	1PNgNrPAU1aJ7T9sQWxhAVeJ11caWEBsFgFVidtLu5lBbF4BN4lV718B1XMAbVOQmDPJBiTM
+	CRQ+OPMvWIkQUOuB5tvMExh5FzAyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQIjtBnUjsY
+	VzZYHGIU4GBU4uHtmOMdLMSaWFZcmXuIUYKDWUmE13UrUIg3JbGyKrUoP76oNCe1+BCjNAeL
+	kjjvgVbrQCGB9MSS1OzU1ILUIpgsEwenVAPjsohF97/Ot3sTxmga+vF3s8LhN68WHzkq197H
+	t9Ryg33MP3n99NM/Oud+6WlgfJO6ZF/z4x+WsSu4rPJPnUw1MvG4bLTgptWCjsLj3UySSyR4
+	jHgMlmn+nG62t/CBTrLewdyjdeb3XBc+bPlwa9m7Pjk5l5z6q9t4HH91eNWk2HW8rs+a2Ver
+	xFKckWioxVxUnAgAw/7VF8wCAAA=
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds check if pdata is NULL, to avoid NULL pointer dereference
-when platform data is not available. After this changes, in described
-situation driver will be configured with default values.
+This patch modifies extcon-gpio driver to use initialization data from
+devicetree if platform data is not available. It allows to set controller
+and cable names, and another parameters from devicetree bindings.
 
 Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 ---
- drivers/extcon/extcon-max8997.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/extcon/extcon-gpio.c       |   70 +++++++++++++++++++++++++++++++-----
+ include/linux/extcon/extcon-gpio.h |    2 +-
+ 2 files changed, 62 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
-index c071588..d7d12e9 100644
---- a/drivers/extcon/extcon-max8997.c
-+++ b/drivers/extcon/extcon-max8997.c
-@@ -726,7 +726,7 @@ static int max8997_muic_probe(struct platform_device *pdev)
- 		goto err_irq;
+diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
+index fc90b7a..ef05bcb 100644
+--- a/drivers/extcon/extcon-gpio.c
++++ b/drivers/extcon/extcon-gpio.c
+@@ -28,6 +28,8 @@
+ #include <linux/slab.h>
+ #include <linux/workqueue.h>
+ #include <linux/gpio.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
+ #include <linux/extcon.h>
+ #include <linux/extcon/extcon-gpio.h>
+ 
+@@ -53,7 +55,7 @@ static void gpio_extcon_work(struct work_struct *work)
+ 	state = gpio_get_value(data->gpio);
+ 	if (data->gpio_active_low)
+ 		state = !state;
+-	extcon_set_state(&data->edev, state);
++	extcon_set_cable_state_(&data->edev, 0, state);
+ }
+ 
+ static irqreturn_t gpio_irq_handler(int irq, void *dev_id)
+@@ -70,7 +72,7 @@ static ssize_t extcon_gpio_print_state(struct extcon_dev *edev, char *buf)
+ 	struct gpio_extcon_data	*extcon_data =
+ 		container_of(edev, struct gpio_extcon_data, edev);
+ 	const char *state;
+-	if (extcon_get_state(edev))
++	if (extcon_get_cable_state_(edev, 0))
+ 		state = extcon_data->state_on;
+ 	else
+ 		state = extcon_data->state_off;
+@@ -80,17 +82,57 @@ static ssize_t extcon_gpio_print_state(struct extcon_dev *edev, char *buf)
+ 	return -EINVAL;
+ }
+ 
++#ifdef CONFIG_OF
++static struct gpio_extcon_platform_data *get_pdata_from_dt(struct device *dev)
++{
++	int ret;
++	struct gpio_extcon_platform_data *pdata =
++				devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
++
++	ret = of_property_read_string_index(dev->of_node,
++				"gpio-controller-name", 0, &pdata->name);
++	if (ret)
++		return NULL;
++
++	ret = of_property_read_string_index(dev->of_node,
++				"gpio-cable-name", 0, &pdata->cable_name);
++	if (ret)
++		return NULL;
++
++	ret = of_property_read_u32_array(dev->of_node,
++				"gpio-debounce", &pdata->debounce, 0);
++	if (ret)
++		pdata->debounce = 0;
++
++	pdata->gpio = of_get_gpio(dev->of_node, 0);
++	if (pdata->gpio < 0)
++		return NULL;
++
++	pdata->gpio_active_low = of_property_read_bool(dev->of_node,
++					"gpio-active-low");
++
++	pdata->check_on_resume = of_property_read_bool(dev->of_node,
++					"check-on-resume");
++	return pdata;
++}
++#else
++static struct gpio_extcon_platform_data *get_pdata_from_dt(struct device *dev)
++{
++	return NULL;
++}
++#endif /* CONFIG_OF */
++
+ static int gpio_extcon_probe(struct platform_device *pdev)
+ {
+ 	struct gpio_extcon_platform_data *pdata = dev_get_platdata(&pdev->dev);
+ 	struct gpio_extcon_data *extcon_data;
++	const char *gpio_extcon_cable[2];
+ 	int ret;
+ 
+-	if (!pdata)
+-		return -EBUSY;
+-	if (!pdata->irq_flags) {
+-		dev_err(&pdev->dev, "IRQ flag is not specified.\n");
+-		return -EINVAL;
++	if (!pdata) {
++		pdata = get_pdata_from_dt(&pdev->dev);
++		if (!pdata)
++			return -EINVAL;
  	}
  
--	if (pdata->muic_pdata) {
-+	if (pdata && pdata->muic_pdata) {
- 		struct max8997_muic_platform_data *muic_pdata
- 			= pdata->muic_pdata;
+ 	extcon_data = devm_kzalloc(&pdev->dev, sizeof(struct gpio_extcon_data),
+@@ -98,10 +140,14 @@ static int gpio_extcon_probe(struct platform_device *pdev)
+ 	if (!extcon_data)
+ 		return -ENOMEM;
  
++	gpio_extcon_cable[0] = pdata->cable_name;
++	gpio_extcon_cable[1] = NULL;
++
+ 	extcon_data->edev.name = pdata->name;
+ 	extcon_data->edev.dev.parent = &pdev->dev;
+ 	extcon_data->edev.node = pdev->dev.of_node;
+ 	extcon_data->gpio = pdata->gpio;
++	extcon_data->edev.supported_cable = gpio_extcon_cable;
+ 	extcon_data->gpio_active_low = pdata->gpio_active_low;
+ 	extcon_data->state_on = pdata->state_on;
+ 	extcon_data->state_off = pdata->state_off;
+@@ -135,8 +181,8 @@ static int gpio_extcon_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	ret = request_any_context_irq(extcon_data->irq, gpio_irq_handler,
+-				      pdata->irq_flags, pdev->name,
+-				      extcon_data);
++			IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
++			pdev->name, extcon_data);
+ 	if (ret < 0)
+ 		goto err;
+ 
+@@ -177,6 +223,11 @@ static int gpio_extcon_resume(struct device *dev)
+ }
+ #endif
+ 
++static struct of_device_id of_gpio_match_tbl[] = {
++	{ .compatible = "extcon-gpio", },
++	{ /* end */ },
++};
++
+ static SIMPLE_DEV_PM_OPS(gpio_extcon_pm_ops, NULL, gpio_extcon_resume);
+ 
+ static struct platform_driver gpio_extcon_driver = {
+@@ -184,6 +235,7 @@ static struct platform_driver gpio_extcon_driver = {
+ 	.remove		= gpio_extcon_remove,
+ 	.driver		= {
+ 		.name	= "extcon-gpio",
++		.of_match_table = of_gpio_match_tbl,
+ 		.owner	= THIS_MODULE,
+ 		.pm	= &gpio_extcon_pm_ops,
+ 	},
+diff --git a/include/linux/extcon/extcon-gpio.h b/include/linux/extcon/extcon-gpio.h
+index 8900fdf..3850588 100644
+--- a/include/linux/extcon/extcon-gpio.h
++++ b/include/linux/extcon/extcon-gpio.h
+@@ -43,10 +43,10 @@
+  */
+ struct gpio_extcon_platform_data {
+ 	const char *name;
++	const char *cable_name;
+ 	unsigned gpio;
+ 	bool gpio_active_low;
+ 	unsigned long debounce;
+-	unsigned long irq_flags;
+ 
+ 	/* if NULL, "0" or "1" will be printed */
+ 	const char *state_on;
 -- 
 1.7.9.5
 
