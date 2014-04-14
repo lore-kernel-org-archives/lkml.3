@@ -1,68 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905AbaDNQo0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:44:26 -0400
-Received: from g5t1625.atlanta.hp.com ([15.192.137.8]:47756 "EHLO
-	g5t1625.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128AbaDNQoW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:44:22 -0400
-Message-ID: <1397493858.31076.8.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: hpsa driver bug crack kernel down!
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: "Woodhouse, David" <david.woodhouse@intel.com>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bhe@redhat.com" <bhe@redhat.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "James.Bottomley@hansenpartnership.com" 
-	<James.Bottomley@hansenpartnership.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>
-Date: Mon, 14 Apr 2014 09:44:18 -0700
-In-Reply-To: <534C0AA9.5080909@linux.intel.com>
-References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
-		 <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>
-		 <1397084904.9519.62.camel@dabdike> <1397085044.9519.63.camel@dabdike>
-		 <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
-		 <1397087425.9519.67.camel@dabdike>
-		 <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>
-		 <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
-		 <1397111557.2608.29.camel@buesod1.americas.hpqcorp.net>
-		 <20140410071535.GX13491@8bytes.org>
-		 <1397119587.19944.14.camel@shinybook.infradead.org>
-		 <1397146781.2608.46.camel@buesod1.americas.hpqcorp.net>
-		 <1397207932.19944.58.camel@shinybook.infradead.org>
-	 <1397490358.31076.6.camel@buesod1.americas.hpqcorp.net>
-	 <534C0AA9.5080909@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755697AbaDNQpU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:45:20 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46070 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755489AbaDNQZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 12:25:55 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>
+CC: Sekhar Nori <nsekhar@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Nishanth Menon <nm@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 15/15] bus: omap_l3_noc: Add AM4372 interconnect error data
+Date: Mon, 14 Apr 2014 11:25:26 -0500
+Message-ID: <1397492726-17203-17-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1397492726-17203-1-git-send-email-nm@ti.com>
+References: <1397492726-17203-1-git-send-email-nm@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-15 at 00:19 +0800, Jiang Liu wrote:
-> Hi Davidlohr,
-> 	Thanks for providing the DMAR table. According to the DMAR
-> table, one bug in the iommu driver fails to handle this entry:
-> [1D2h 0466   1]      Device Scope Entry Type : 01
-> [1D3h 0467   1]                 Entry Length : 0A
-> [1D4h 0468   2]                     Reserved : 0000
-> [1D6h 0470   1]               Enumeration ID : 00
-> [1D7h 0471   1]               PCI Bus Number : 00
-> [1D8h 0472   2]                     PCI Path : 1C,04
-> [1DAh 0474   2]                     PCI Path : 00,02
-> 
-> 	And the patch sent out by me should fix this bug. Could you please help
-> to have a try?
+From: Afzal Mohammed <afzal@ti.com>
 
-Sorry, I am unable to find any patches from you regarding this issue...
-I must be missing something. Could you please point me to the lkml link?
+Add AM4372 information to handle L3 error.
 
-Thanks.
+AM4372 has two clk domains 100f and 200s. Provide flagmux and data
+associated with it.
+
+NOTE: Timeout doesn't have STDERRLOG_MAIN register. And per hardware
+team, L3 timeout error cannot be cleared the normal way (by setting
+bit 31 in STDERRLOG_MAIN), instead it may be required to do system
+reset. L3 error handler can't help in such scenarios.
+
+Hence indicate timeout target offset as L3_TARGET_NOT_SUPPORTED as
+done for undocumented bits.
+
+Signed-off-by: Dave Gerlach <d-gerlach@ti.com>
+Signed-off-by: Afzal Mohammed <afzal@ti.com>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ .../devicetree/bindings/arm/omap/l3-noc.txt        |    1 +
+ drivers/bus/omap_l3_noc.c                          |    1 +
+ drivers/bus/omap_l3_noc.h                          |   85 ++++++++++++++++++++
+ 3 files changed, 87 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/arm/omap/l3-noc.txt b/Documentation/devicetree/bindings/arm/omap/l3-noc.txt
+index 45d0fc2..974624e 100644
+--- a/Documentation/devicetree/bindings/arm/omap/l3-noc.txt
++++ b/Documentation/devicetree/bindings/arm/omap/l3-noc.txt
+@@ -7,6 +7,7 @@ Required properties:
+ - compatible : Should be "ti,omap3-l3-smx" for OMAP3 family
+                Should be "ti,omap4-l3-noc" for OMAP4 family
+ 	       Should be "ti,dra7-l3-noc" for DRA7 family
++               Should be "ti,am4372-l3-noc" for AM43 family
+ - reg:	Contains L3 register address range for each noc domain.
+ - ti,hwmods: "l3_main_1", ... One hwmod for each noc domain.
+ 
+diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+index 9b32e53..9853e1d 100644
+--- a/drivers/bus/omap_l3_noc.c
++++ b/drivers/bus/omap_l3_noc.c
+@@ -177,6 +177,7 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ static const struct of_device_id l3_noc_match[] = {
+ 	{.compatible = "ti,omap4-l3-noc", .data = &omap_l3_data},
+ 	{.compatible = "ti,dra7-l3-noc", .data = &dra_l3_data},
++	{.compatible = "ti,am4372-l3-noc", .data = &am4372_l3_data},
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, l3_noc_match);
+diff --git a/drivers/bus/omap_l3_noc.h b/drivers/bus/omap_l3_noc.h
+index 365a33c..91814e0 100644
+--- a/drivers/bus/omap_l3_noc.h
++++ b/drivers/bus/omap_l3_noc.h
+@@ -339,4 +339,89 @@ static const struct omap_l3 dra_l3_data = {
+ 	.num_masters = ARRAY_SIZE(dra_l3_masters),
+ };
+ 
++/* AM4372 data */
++static struct l3_target_data am4372_l3_target_data_200f[] = {
++	{0xf00,  "EMIF",},
++	{0x1200, "DES",},
++	{0x400,  "OCMCRAM",},
++	{0x700,  "TPTC0",},
++	{0x800,  "TPTC1",},
++	{0x900,  "TPTC2"},
++	{0xb00,  "TPCC",},
++	{0xd00,  "DEBUGSS",},
++	{0xdead, L3_TARGET_NOT_SUPPORTED,},
++	{0x200,  "SHA",},
++	{0xc00,  "SGX530",},
++	{0x500,  "AES0",},
++	{0xa00,  "L4_FAST",},
++	{0x300,  "MPUSS_L2_RAM",},
++	{0x100,  "ICSS",},
++};
++
++static struct l3_flagmux_data am4372_l3_flagmux_200f = {
++	.offset = 0x1000,
++	.l3_targ = am4372_l3_target_data_200f,
++	.num_targ_data = ARRAY_SIZE(am4372_l3_target_data_200f),
++};
++
++static struct l3_target_data am4372_l3_target_data_100s[] = {
++	{0x100, "L4_PER_0",},
++	{0x200, "L4_PER_1",},
++	{0x300, "L4_PER_2",},
++	{0x400, "L4_PER_3",},
++	{0x800, "McASP0",},
++	{0x900, "McASP1",},
++	{0xC00, "MMCHS2",},
++	{0x700, "GPMC",},
++	{0xD00, "L4_FW",},
++	{0xdead, L3_TARGET_NOT_SUPPORTED,},
++	{0x500, "ADCTSC",},
++	{0xE00, "L4_WKUP",},
++	{0xA00, "MAG_CARD",},
++};
++
++static struct l3_flagmux_data am4372_l3_flagmux_100s = {
++	.offset = 0x600,
++	.l3_targ = am4372_l3_target_data_100s,
++	.num_targ_data = ARRAY_SIZE(am4372_l3_target_data_100s),
++};
++
++static struct l3_masters_data am4372_l3_masters[] = {
++	{ 0x0, "M1 (128-bit)"},
++	{ 0x0, "M2 (64-bit)"},
++	{ 0x4, "DAP"},
++	{ 0x5, "P1500"},
++	{ 0xC, "ICSS0"},
++	{ 0xD, "ICSS1"},
++	{ 0x18, "TPTC0 Read"},
++	{ 0x19, "TPTC0 Write"},
++	{ 0x1A, "TPTC1 Read"},
++	{ 0x1B, "TPTC1 Write"},
++	{ 0x1C, "TPTC2 Read"},
++	{ 0x1D, "TPTC2 Write"},
++	{ 0x20, "SGX530"},
++	{ 0x25, "DSS"},
++	{ 0x28, "Crypto DMA RD"},
++	{ 0x29, "Crypto DMA WR"},
++	{ 0x2C, "VPFE0"},
++	{ 0x2D, "VPFE1"},
++	{ 0x30, "GEMAC"},
++	{ 0x34, "USB0 RD"},
++	{ 0x35, "USB0 WR"},
++	{ 0x36, "USB1 RD"},
++	{ 0x37, "USB1 WR"},
++};
++
++static struct l3_flagmux_data *am4372_l3_flagmux[] = {
++	&am4372_l3_flagmux_200f,
++	&am4372_l3_flagmux_100s,
++};
++
++static const struct omap_l3 am4372_l3_data = {
++	.l3_flagmux = am4372_l3_flagmux,
++	.num_modules = ARRAY_SIZE(am4372_l3_flagmux),
++	.l3_masters = am4372_l3_masters,
++	.num_masters = ARRAY_SIZE(am4372_l3_masters),
++};
++
+ #endif	/* __OMAP_L3_NOC_H */
+-- 
+1.7.9.5
 
