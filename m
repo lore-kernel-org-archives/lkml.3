@@ -1,49 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750983AbaDNGhL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 02:37:11 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:56388 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768AbaDNGhI (ORCPT
+	id S1751027AbaDNGq4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 02:46:56 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:41120 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750790AbaDNGqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 02:37:08 -0400
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: clm@fb.com, jbacik@fb.com
-Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] btrfs: remove redundant null check in btrfs_dentry_release()
-Date: Mon, 14 Apr 2014 15:37:02 +0900
-Message-ID: <3662362.sLylFx3ZAR@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
+	Mon, 14 Apr 2014 02:46:54 -0400
+X-IronPort-AV: E=Sophos;i="4.97,854,1389715200"; 
+   d="scan'208";a="29218138"
+Message-ID: <534B8540.4000904@cn.fujitsu.com>
+Date: Mon, 14 Apr 2014 14:50:40 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Daeseok Youn <daeseok.youn@gmail.com>
+CC: <tj@kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] workqueue: fix double unlock bug
+References: <5462835.Vnc4dWZRns@daeseok-laptop.cloud.net>
+In-Reply-To: <5462835.Vnc4dWZRns@daeseok-laptop.cloud.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/14/2014 08:58 AM, Daeseok Youn wrote:
+> 
+> mutex_unlock() and put_pwq_unlocked() do not need to be called
+> when alloc_unbound_pwq() is failed.
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+>  kernel/workqueue.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 0ee63af..e6e9f6a 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -4100,7 +4100,7 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
+>  	if (!pwq) {
+>  		pr_warning("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
+>  			   wq->name);
+> -		goto out_unlock;
+> +		return;
+>  	}
+>  
+>  	/*
 
-It doesn't need to check NULL for kfree()
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
- fs/btrfs/inode.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+Nice catch!!!
 
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 06e9a41..d9f54b0 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -5141,8 +5141,7 @@ static int btrfs_dentry_delete(const struct dentry *dentry)
- 
- static void btrfs_dentry_release(struct dentry *dentry)
- {
--	if (dentry->d_fsdata)
--		kfree(dentry->d_fsdata);
-+	kfree(dentry->d_fsdata);
- }
- 
- static struct dentry *btrfs_lookup(struct inode *dir, struct dentry *dentry,
--- 
-1.7.4.4
+The supposed correct behavior is documented in the head of
+this function. We forgot to do it.
 
+ * If NUMA affinity can't be adjusted due to memory allocation failure, it
+ * falls back to @wq->dfl_pwq which may not be optimal but is always
+ * correct.
 
+Could you use the following code instead of "goto out_unlock":
+		mutex_lock(&wq->mutex);
+		if (pwq == wq->dfl_pwq)
+			goto out_unlock;
+		else
+			goto use_dfl_pwq;
+
+Correct&BAD. There are two blocks of suck code in this function:
+		if (pwq == wq->dfl_pwq)
+			goto out_unlock;
+		else
+			goto use_dfl_pwq;
+
+You can replace both these two blocks code to the following code:
+		goto use_dfl_pwq;
+
+The result is the same as before except it adds some small overhead.
+I don't care the small overhead in this function.
+
+Thanks
+Lai
+		
