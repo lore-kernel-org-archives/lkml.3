@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367AbaDNHks (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 03:40:48 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:39237 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753001AbaDNHkm (ORCPT
+	id S1753644AbaDNHk7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 03:40:59 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:13857 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753022AbaDNHkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 03:40:42 -0400
-X-AuditID: cbfee68d-b7fcd6d00000315b-ad-534b90f4f63b
+	Mon, 14 Apr 2014 03:40:52 -0400
+X-AuditID: cbfee68e-b7f566d000002344-39-534b9103663d
 From: Jungseok Lee <jays.lee@samsung.com>
 To: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
         Catalin.Marinas@arm.com, Marc Zyngier <Marc.Zyngier@arm.com>,
@@ -16,42 +16,42 @@ Cc: linux-kernel@vger.kernel.org,
         linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
         sungjinn.chung@samsung.com, Arnd Bergmann <arnd@arndb.de>,
         kgene.kim@samsung.com, ilho215.lee@samsung.com
-Subject: [PATCH 2/8] arm/arm64: KVM: Fix line length exceeding 80 characters
-Date: Mon, 14 Apr 2014 16:40:36 +0900
-Message-id: <000001cf57b4$d3450780$79cf1680$@samsung.com>
+Subject: [PATCH 4/8] arm64: Introduce a kernel configuration option for VA_BITS
+Date: Mon, 14 Apr 2014 16:40:51 +0900
+Message-id: <000201cf57b4$dbe63260$93b29720$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac9XrOqSEvxwdIZkRuyR0VuAzwiv7Q==
+Thread-index: Ac9XrUy/hcb4eczCQ7qwkj0Y19kvsA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBIsWRmVeSWpSXmKPExsVy+t8zY92vE7yDDd4+ZLT4O+kYu8X7ZT2M
-	Fi9e/2O0OPpvIaNF74KrbBYfTx1nt9j0+BqrxeVdc9gsZpzfx2Tx984/NosPM1YyOnB7rJm3
-	htHj969JjB53ru1h8zi/aQ2zx+Yl9R59W1YxenzeJBfAHsVlk5Kak1mWWqRvl8CVsaqxh6Xg
-	OFvF14c/WRoY17B2MXJwSAiYSKz/nNHFyAlkiklcuLeerYuRi0NIYBmjxJb3y1ggEiYStzta
-	oRKLGCXe318O5fxhlNi0ZxM7SBWbgKbEo7s97CAJEYEdjBKT1y5iBXGYBU4wSiy9s5YVpEpY
-	wEeicfoWNhCbRUBV4szpaWBxXgFLiYlbFkHZghI/Jt8D280soCWxfudxJghbXmLzmrfMEDcp
-	SOw4+5oRxBYR0JPYePEKM0SNiMS+F+8YIWr+sks862OE2CUg8W3yIRaIn2UlNh2AGiMpcXDF
-	DZYJjGKzkGyehWTzLCSbZyHZsICRZRWjaGpBckFxUnqRoV5xYm5xaV66XnJ+7iZGSCz37mC8
-	fcD6EGMy0PqJzFKiyfnAVJBXEm9obGZkYWpiamxkbmlGmrCSOG/Sw6QgIYH0xJLU7NTUgtSi
-	+KLSnNTiQ4xMHJxSDYxr02bM8jmnd0X5jOWvNCmRFcs687Z8XG536YdwsRKvUCk3/7WrYv+f
-	fOyxqhf+lfyu+Vkzu79U2+wnmffuvfPYlSxU2NCa4Wd+rMhv+ROF4tVF9nveVseefWNV8ko/
-	I2hPu92S585tPb/+rdJ41ZtgJCZguZ7Vb8k1lkN8/xrkde8t4Gp8YqnEUpyRaKjFXFScCABt
-	Tu90+wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOKsWRmVeSWpSXmKPExsVy+t9jAd0vE7yDDd5Psbb4O+kYu8X7ZT2M
-	Fi9e/2O0OPpvIaNF74KrbBYfTx1nt9j0+BqrxeVdc9gsZpzfx2Tx984/NosPM1YyOnB7rJm3
-	htHj969JjB53ru1h8zi/aQ2zx+Yl9R59W1YxenzeJBfAHtXAaJORmpiSWqSQmpecn5KZl26r
-	5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDdKSSQlliTilQKCCxuFhJ3w7ThNAQN10L
-	mMYIXd+QILgeIwM0kLCOMWNVYw9LwXG2iq8Pf7I0MK5h7WLk5JAQMJG43dHKBmGLSVy4tx7I
-	5uIQEljEKPH+/nIo5w+jxKY9m9hBqtgENCUe3e1hB0mICOxglJi8dhEriMMscIJRYumdtWBz
-	hQV8JBqnbwGbyyKgKnHm9DSwOK+ApcTELYugbEGJH5PvsYDYzAJaEut3HmeCsOUlNq95ywxx
-	k4LEjrOvGUFsEQE9iY0XrzBD1IhI7HvxjnECo8AsJKNmIRk1C8moWUhaFjCyrGIUTS1ILihO
-	Ss811CtOzC0uzUvXS87P3cQIThbPpHYwrmywOMQowMGoxMObsN0zWIg1say4MvcQowQHs5II
-	77YMr2Ah3pTEyqrUovz4otKc1OJDjMlAn05klhJNzgcmsrySeENjEzMjSyMzCyMTc3PShJXE
-	eQ+0WgcKCaQnlqRmp6YWpBbBbGHi4JRqYBR4fremVOJDlWpEfsjPTW1fV+0y0Z/5Z43rV1eD
-	S/yTT3pPCrF4vs+j0Snfsj0jnzHlbEX37CNde9ZMeGeU2yy8/jVzZn7Rn7rTDzb+OP7D7f9y
-	9fuSmh/8mrgWipmvm7HWgpdRyYids5Rtmpv8yhbvywl/Tge+F555W7+N64rjbn3BnPUWWUos
-	xRmJhlrMRcWJAElMBMZaAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsVy+t8zfV3mid7BBvt2SVv8nXSM3eL9sh5G
+	ixev/zFaHP23kNGid8FVNouPp46zW2x6fI3V4vKuOWwWM87vY7L4e+cfm8WHGSsZHbg91sxb
+	w+jx+9ckRo871/aweZzftIbZY/OSeo++LasYPT5vkgtgj+KySUnNySxLLdK3S+DKmN69kK1g
+	Mm/F8/brTA2M17m6GDk5JARMJH4/uccMYYtJXLi3nq2LkYtDSGAZo8TVdS2sXYwcYEWb1nNA
+	xKczSlw6PpMFwvnDKHFg8mNGkG42AU2JR3d72EESIgI7GCUmr13ECuIwC5xglFh6Zy0rSJWw
+	gL/E7IV3mEBsFgFVic5VP8DivAKWEg+eP4CyBSV+TL7HAmIzC2hJrN95nAnClpfYvOYt1K0K
+	EjvOvgbbLCKgJ/HpCEQvs4CIxL4X7xhBFksItHJIPFj2DmqZgMS3yYdYIP6Rldh0AGqOpMTB
+	FTdYJjCKzUKyehaS1bOQrJ6FZMUCRpZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ+bmbGCHR3LeD
+	8eYB60OMyUDrJzJLiSbnA5NBXkm8obGZkYWpiamxkbmlGWnCSuK8ix4mBQkJpCeWpGanphak
+	FsUXleakFh9iZOLglGpgXJlSKLzk14xlRtee/J15TSrumZBMoiDriZfPWLnlMhSWzgtJUGdz
+	s8k/p6PCZMXxgbNcX0D/q0cJS9Yig7kLL8U/d7etKGp1FX98hbsy+r1qj5faM78mxmkMvTYz
+	eZY/SZyZxnFxw4Utx2ZxObr19LBzZPGeeqzmMiN2aylj0oHYL9w/bK8qsRRnJBpqMRcVJwIA
+	DdiTovwCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGKsWRmVeSWpSXmKPExsVy+t9jQV3mid7BBn9niVv8nXSM3eL9sh5G
+	ixev/zFaHP23kNGid8FVNouPp46zW2x6fI3V4vKuOWwWM87vY7L4e+cfm8WHGSsZHbg91sxb
+	w+jx+9ckRo871/aweZzftIbZY/OSeo++LasYPT5vkgtgj2pgtMlITUxJLVJIzUvOT8nMS7dV
+	8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wBOlJJoSwxpxQoFJBYXKykb4dpQmiIm64F
+	TGOErm9IEFyPkQEaSFjHmDG9eyFbwWTeiuft15kaGK9zdTFycEgImEhsWs/RxcgJZIpJXLi3
+	nq2LkYtDSGA6o8Sl4zNZIJw/jBIHJj9mBKliE9CUeHS3hx0kISKwg1Fi8tpFrCAOs8AJRoml
+	d9ayglQJC/hLzF54hwnEZhFQlehc9QMszitgKfHg+QMoW1Dix+R7LCA2s4CWxPqdx5kgbHmJ
+	zWveMkPcpCCx4+xrsM0iAnoSn45A9DILiEjse/GOcQKjwCwko2YhGTULyahZSFoWMLKsYhRN
+	LUguKE5KzzXUK07MLS7NS9dLzs/dxAhOFc+kdjCubLA4xCjAwajEw5uw3TNYiDWxrLgy9xCj
+	BAezkgjvtgyvYCHelMTKqtSi/Pii0pzU4kOMyUCfTmSWEk3OB6axvJJ4Q2MTMyNLIzMLIxNz
+	c9KElcR5D7RaBwoJpCeWpGanphakFsFsYeLglGpg3OBRpHT+aZH88VTOXUFHpgY5Lg4vDsuv
+	X3eK97Dimssf3BRjIp5+SuOa83tS6O7lD37o3DFJXKkrI8PpacVh1Tsn32CiG7M9+1XfvL1T
+	RKW6anfaGx+9mntCj9klK+7TpfPHZaKk5RN8LDYqrzZfVsHR99PlQN6Two9yXt8nPOdRuSt9
+	M3axEktxRqKhFnNRcSIAUGecA1kDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,32 +59,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch deals with checkpatch complaint as fixing line length
-exceeding 80 characters.
+This patch adds a kernel configuration for VA_BITS.
 
-WARNING: line over 80 characters
+It helps to prevent unnecessary #ifdef statements insertions
+for VA_BITS when implementing different page sizes and level of
+translation tables.
 
 Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
 Reviewed-by: Sungjinn Chung <sungjinn.chung@samsung.com>
 ---
- arch/arm/kvm/mmu.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm64/Kconfig              |    8 ++++++++
+ arch/arm64/include/asm/memory.h |    6 +-----
+ 2 files changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/kvm/mmu.c b/arch/arm/kvm/mmu.c
-index 80bb1e6..e0d4f24 100644
---- a/arch/arm/kvm/mmu.c
-+++ b/arch/arm/kvm/mmu.c
-@@ -563,8 +563,8 @@ void kvm_free_stage2_pgd(struct kvm *kvm)
- 	kvm->arch.pgd = NULL;
- }
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 1a2faf9..431acbc 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -186,6 +186,14 @@ config ARM64_3_LEVELS
  
--static pmd_t *stage2_get_pmd(struct kvm *kvm, struct kvm_mmu_memory_cache *cache,
--			     phys_addr_t addr)
-+static pmd_t *stage2_get_pmd(struct kvm *kvm, struct kvm_mmu_memory_cache
-+			     *cache, phys_addr_t addr)
- {
- 	pgd_t *pgd;
- 	pud_t *pud;
+ endchoice
+ 
++config ARM64_VA_BITS
++	int "Virtual address space size"
++	range 39 39 if ARM64_4K_PAGES && ARM64_3_LEVELS
++	range 42 42 if ARM64_64K_PAGES && ARM64_2_LEVELS
++	help
++	  This feature is determined by a combination of page size and
++	  level of translation tables.
++
+ config CPU_BIG_ENDIAN
+        bool "Build big-endian kernel"
+        help
+diff --git a/arch/arm64/include/asm/memory.h b/arch/arm64/include/asm/memory.h
+index e94f945..f6e7480 100644
+--- a/arch/arm64/include/asm/memory.h
++++ b/arch/arm64/include/asm/memory.h
+@@ -41,11 +41,7 @@
+  * The module space lives between the addresses given by TASK_SIZE
+  * and PAGE_OFFSET - it must be within 128MB of the kernel text.
+  */
+-#ifdef CONFIG_ARM64_64K_PAGES
+-#define VA_BITS			(42)
+-#else
+-#define VA_BITS			(39)
+-#endif
++#define VA_BITS			(CONFIG_ARM64_VA_BITS)
+ #define PAGE_OFFSET		(UL(0xffffffffffffffff) << (VA_BITS - 1))
+ #define MODULES_END		(PAGE_OFFSET)
+ #define MODULES_VADDR		(MODULES_END - SZ_64M)
 -- 
 1.7.10.4
 
