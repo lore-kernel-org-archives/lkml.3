@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953AbaDNQ3p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:29:45 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:62962 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755016AbaDNQ2T convert rfc822-to-8bit (ORCPT
+	id S1755963AbaDNQ3y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:29:54 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:64146 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754711AbaDNQ3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:28:19 -0400
+	Mon, 14 Apr 2014 12:29:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAJhHMCB5_A8xRHAnpQuTTcc4KhXEiS5Uo+oZEih=cci9H+H79w@mail.gmail.com>
-References: <CAJhHMCBVQTpDecjd5sVhCWJk++K_Rne0DfHRoF7aSd7SRYp1WA@mail.gmail.com>
- <20140414160743.GF4496@linux.vnet.ibm.com> <CAJhHMCB5_A8xRHAnpQuTTcc4KhXEiS5Uo+oZEih=cci9H+H79w@mail.gmail.com>
-From: Pranith Kumar <pranith@gatech.edu>
-Date: Mon, 14 Apr 2014 12:27:47 -0400
-X-Google-Sender-Auth: qFXFH8JKjsJuLMB-sOQx1O2DitA
-Message-ID: <CAJhHMCCX=DdCpDsakJVhRat7-iieqT2_65vfxBjy7C-bSPc8VQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] kernel/rcu/tree.c: remove duplicate extern definition
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1397211951-20549-7-git-send-email-miklos@szeredi.hu>
+References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
+	<1397211951-20549-7-git-send-email-miklos@szeredi.hu>
+Date: Mon, 14 Apr 2014 18:29:48 +0200
+X-Google-Sender-Auth: tcbe6JB6CtAnY3aDRXC_3vcthrs
+Message-ID: <CAMuHMdXrH8btyjuT3v=PVR16juob3dD03vNvX2j5+tNo2e_uAw@mail.gmail.com>
+Subject: Re: [PATCH 06/15] m68k: add renameat2 syscall
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 12:19 PM, Pranith Kumar <pranith@gatech.edu> wrote:
-> Hi Paul,
->
-> On Mon, Apr 14, 2014 at 12:07 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
->> On Sun, Apr 13, 2014 at 05:53:53PM -0400, Pranith Kumar wrote:
->>> remove duplicate definition of extern resched_cpu
->>>
->>> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
->>
->> Hello, Pranith,
->>
->> When I apply this patch I get the following:
->>
->> /home/paulmck/public_git/linux-rcu/kernel/rcu/tree.c: In function ‘rcu_implicit_dynticks_qs’:
->> /home/paulmck/public_git/linux-rcu/kernel/rcu/tree.c:895:3: error: implicit declaration of function ‘resched_cpu’ [-Werror=implicit-function-declaration]
->> /home/paulmck/public_git/linux-rcu/kernel/rcu/tree.c: At top level:
->> /home/paulmck/public_git/linux-rcu/kernel/rcu/tree.c:1009:13: warning: conflicting types for ‘resched_cpu’ [enabled by default]
->> /home/paulmck/public_git/linux-rcu/kernel/rcu/tree.c:895:3: note: previous implicit declaration of ‘resched_cpu’ was here
->>
->> This failed in under number of different Kconfig setups, the .config file
->> for one of them is attached.
->>
->> So this declaration really is needed.  Just out of curiosity, what led
->> you to believe that it could be removed?
->>
+Hi Miklos,
 
-Your attached config has the following:
+On Fri, Apr 11, 2014 at 12:25 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> From: Miklos Szeredi <mszeredi@suse.cz>
 
-Linux/x86 3.14.0-rc3 Kernel Configuration
+Thanks!
 
-The patch is against 3.15.0-rc1 (the latest at this time). May be that
-is the reason?
+> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
 
--- 
-Pranith
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
