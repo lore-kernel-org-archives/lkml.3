@@ -1,101 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350AbaDNMlg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 08:41:36 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42872 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaDNMle (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 08:41:34 -0400
-Date: Mon, 14 Apr 2014 13:41:13 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Thomas Hellstrom <thellstrom@vmware.com>
-Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: DRM security flaws and security levels.
-Message-ID: <20140414134113.6c1a488d@alan.etchedpixels.co.uk>
-In-Reply-To: <5347E32B.1080002@vmware.com>
-References: <5347E32B.1080002@vmware.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754320AbaDNMmZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 08:42:25 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:37286 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751519AbaDNMmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 08:42:22 -0400
+Message-ID: <534BD788.3050406@ti.com>
+Date: Mon, 14 Apr 2014 15:41:44 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Sekhar Nori <nsekhar@ti.com>, Vinod Koul <vinod.koul@intel.com>
+CC: <dan.j.williams@intel.com>, <dmaengine@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <joelf@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <mporter@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH v2 05/14] arm: common: edma: Select event queue 1 as default
+ when booted with DT
+References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com> <1396357575-30585-6-git-send-email-peter.ujfalusi@ti.com> <5347A4FD.1030803@ti.com> <5347ACDE.7040407@ti.com> <5347AE49.5020109@ti.com> <5347B7F8.2000508@ti.com> <20140411094217.GA32284@intel.com> <5347D2CC.4030407@ti.com> <20140411113154.GB32284@intel.com> <5347DEDA.2060008@ti.com> <20140411124641.GC32284@intel.com> <534BCCD3.9060805@ti.com> <534BD0B5.5000004@ti.com>
+In-Reply-To: <534BD0B5.5000004@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> throw out all GPU memory on master drop and block ioctls requiring
-> authentication until master becomes active again.
-
-If you have a per driver method then the driver can implement whatever is
-optimal (possibly including throwing it all out). 
-
-> -1: The driver allows an authenticated client to craft command streams
-> that could access any part of system memory. These drivers should be
-> kept in staging until they are fixed.
-
-I am not sure they belong in staging even.
-
-> 0: Drivers that are vulnerable to any of the above scenarios.
-> 1: Drivers that are immune against all above scenarios but allows any
-> authenticated client with *active* master to access all GPU memory. Any
-> enabled render nodes will be insecure, while primary nodes are secure.
-> 2: Drivers that are immune against all above scenarios and can protect
-> clients from accessing eachother's gpu memory:
-> Render nodes will be secure.
+On 04/14/2014 03:12 PM, Sekhar Nori wrote:
+> On Monday 14 April 2014 05:26 PM, Peter Ujfalusi wrote:
+>> Hi Vinod,
+>>
+>> On 04/11/2014 03:46 PM, Vinod Koul wrote:
+>>> I think the number shouldn't be viewed in absolute terms. If we decide that (lets
+>>> say) 0-7, then any controller should map 0 to lowest and 7 to highest.
+>>>
+>>> For your case you can do this and then intermediate numbers would be medium
+>>> priority. Such a system might work well...
+>>>
+>>> Also how would a client driver know which priority to use? Would it come from
+>>> DT?
+>>
+>> I think DT would be the best place.
 > 
-> Thoughts?
+> In the strict sense of what DT is supposed to represent, DT is not the
+> best place for this. Priority is usecase driven rather that hardware
+> description driven.
 
-Another magic number to read, another case to get wrong where the OS
-isn't providing security by default.
+While this is true, the DMA priority - if supported by the DMA engine - is a
+HW feature as well. If it is supported by the HW it can be used to tune and
+partition the system for the anticipated load or purpose.
 
-If the driver can be fixed to handle it by flushing out all GPU memory
-then the driver should be fixed to do so. Adding magic udev nodes is just
-adding complexity that ought to be made to go away before it even becomes
-an API.
+> So on a reasonably less loaded system, I am sure you
+> could run audio even with a lower priority DMA queue.
 
-So I think there are three cases
+Yes, you can. But as soon as you have other devices using the same priority
+(with eDMA3 at least) and asks for a 'long' transfer it can ruin the audio.
+During audio playback/capture you execute a long MMC read for example can
+introduce a glitch.
 
-- insecure junk driver. Shouldn't even be in staging
-- hardware isn't as smart enough, or perhaps has a performance problem so
-  sometimes flushes all buffers away on a switch
-- drivers that behave well
+> Moreover, IMHO, encoding it in DT now will make it an ABI. Without a
+> wide variety of example use cases, I think it is too early to commit to
+> an ABI.
 
-Do you then even need a sysfs node and udev hacks (remembering not
-everyone even deploys udev on their Linux based products)
+True, but we need to start from somewhere?
 
-For the other cases
+I'm fine if we handle this right now as I did in this series (to put only
+cyclic on high priority) for now. With some forward looking changes in the
+implementation of course.
 
-- how prevalent are the problem older user space drivers nowdays ?
+>> Not sure if we should set the range for this either. What I was thinking is to
+>> add an optional new property to be set by the client nodes, using DMA:
+>>
+>> mcasp0: mcasp@48038000 {
+>> 	compatible = "ti,am33xx-mcasp-audio";
+>> 	...
+>> 	dmas =	<&edma 8>,
+>> 		<&edma 9>;
+>> 	dma-names = "tx", "rx";
+>> 	dma-priorities = <2>, <2>;
+>> };
+>>
+>> We could agree that lower number means lower priority, higher is - well -
+>> higher priority.
+>> If the dma-priority is missing we should assume lowest priority (0).
+>> The highest priority depends on the platform. For eDMA3 in AM335x it is three
+>> level. For designware controller you might have the range 0-8 as valid.
+>>
+>> The question is how to get this information into use?
+>> We can take the priority number in the core when the dma channel is requested
+>> and add field to "struct dma_chan" in order to store it and the DMA drivers
+>> could have access to it.
+>> In this way we only need to update the nodes which needs non default priority
+>> for DMA.
+>>
+>> What do you think?
+> 
+> If we are using dma_slave_config, I think it will be easiest to define
+> two levels of priority (HIGH and LOW, as thats all we see a need for
+> right now), and have the audio driver select the HIGH priority. If
+> nothing is set, EDMA can default to LOW.
 
-- the fix for "won't fix" drivers is to move them to staging, and then
-  if they are not fixed or do not acquire a new maintainer who will,
-  delete them.
+But the information on which channel should be high priority should be coming
+form somewhere... We can wire it in the audio stack, but I don't think it is a
+good idea to start with.
+And if we have high/low priority we could as well have an integer to specify
+the desired level.
 
-- if we have 'can't fix drivers' then its a bit different and we need to
-  understand better *why*.
-
-Don't screw the kernel up because there are people who can't be bothered
-to fix bugs. Moving them out of the tree is a great incentive to find
-someone to fix it.
-
-[Rob Clark]
->fwiw, I do think we want security level reporting for drivers that
->don't have per-process pagetables (either the hw doesn't support, or
->simply just not implemented yet)
-
-Agreed - and this is an example of where it can't really be hidden very
-easily. Even better would be if asking for an isolation safe buffer was
-required to be sure you got one. Policy is then in the X server (although
-I'm not sure how you'd map it nicely - Xsecurity or something new ?)
-
-This discussion is missing one other thing. If you have a desktop
-spanning multiple hardware interfaces you need to get the right
-information to the desktop. Do you just refuse to support the secure
-buffer for the banking app, or does it merely get tied into the display
-area rendered by a particular adapter ?
-
-Alan
-
-
+-- 
+Péter
