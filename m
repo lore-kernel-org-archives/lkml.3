@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544AbaDNWXf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 18:23:35 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:44250 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754930AbaDNWXc (ORCPT
+	id S1755711AbaDNWYB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 18:24:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52478 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755336AbaDNWX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 18:23:32 -0400
-Subject: [PATCH] mmc: sdhci-pci: Remove useless check for "slots == 0"
-To: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 14 Apr 2014 16:23:30 -0600
-Message-ID: <20140414222330.14817.81724.stgit@bhelgaas-glaptop.roam.corp.google.com>
-User-Agent: StGit/0.16
+	Mon, 14 Apr 2014 18:23:59 -0400
+Date: Mon, 14 Apr 2014 15:26:58 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, john@johnmccutchan.com, rlove@rlove.org,
+        eparis@parisplace.org, serge.hallyn@ubuntu.com, lennart@poettering.net,
+        kay@vrfy.org, lizefan@huawei.com, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: implement cgroup.populated
+Message-ID: <20140414222658.GA18152@kroah.com>
+References: <1397056052-2829-1-git-send-email-tj@kernel.org>
+ <20140414213100.GA1863@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140414213100.GA1863@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the check for "slots == 0" because it can never be 0 here.
+On Mon, Apr 14, 2014 at 05:31:00PM -0400, Tejun Heo wrote:
+> On Wed, Apr 09, 2014 at 11:07:29AM -0400, Tejun Heo wrote:
+> > This patchset is on top of "cgroup: implement unified hierarchy"
+> > patchset[1] and availalbe in the following git branch.
+> > 
+> >  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-populated
+> 
+> Branch renamed to review-populated-v1.
 
-Found by Coverity (CID 744269).
+Do you want me to pull this branch into my tree for 3.16 now?  I have no
+objection to you taking it, if that's easier for you, which ever is fine
+for me.
 
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- drivers/mmc/host/sdhci-pci.c |    2 --
- 1 file changed, 2 deletions(-)
+thanks,
 
-diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
-index fdc612120362..15edb3f56dae 100644
---- a/drivers/mmc/host/sdhci-pci.c
-+++ b/drivers/mmc/host/sdhci-pci.c
-@@ -1491,8 +1491,6 @@ static int sdhci_pci_probe(struct pci_dev *pdev,
- 
- 	slots = PCI_SLOT_INFO_SLOTS(slots) + 1;
- 	dev_dbg(&pdev->dev, "found %d slot(s)\n", slots);
--	if (slots == 0)
--		return -ENODEV;
- 
- 	BUG_ON(slots > MAX_SLOTS);
- 
-
+greg k-h
