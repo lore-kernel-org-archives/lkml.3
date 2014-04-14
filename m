@@ -1,105 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555AbaDNHkP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 03:40:15 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:58081 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049AbaDNHjx (ORCPT
+	id S1752298AbaDNHkK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 03:40:10 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:35742 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbaDNHjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 03:39:53 -0400
-X-AuditID: cbfee68e-b7f566d000002344-e0-534b90c7f6b4
-From: Jungseok Lee <jays.lee@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        Catalin.Marinas@arm.com, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        sungjinn.chung@samsung.com, Arnd Bergmann <arnd@arndb.de>,
-        kgene.kim@samsung.com, ilho215.lee@samsung.com
-Subject: [PATCH 0/8] Support 4 levels of translation tables for ARM64
-Date: Mon, 14 Apr 2014 16:39:51 +0900
-Message-id: <000001cf57b4$b86facd0$294f0670$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac9XqvDiot5A7T37S4CDj5Fj9VDL6A==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsVy+t8zQ93jE7yDDd4stLb4O+kYu8X7ZT2M
-	Fi9e/2O0OPpvIaNF74KrbBYfTx1nt9j0+BqrxeVdc9gsZpzfx2Tx984/NosPM1YyOnB7rJm3
-	htHj969JjB53ru1h8zi/aQ2zx+Yl9R59W1YxenzeJBfAHsVlk5Kak1mWWqRvl8CVcfTiCcaC
-	2wIVu+bNYW9gfMjdxcjJISFgIvFteQMThC0mceHeerYuRi4OIYFljBKT9uxhhCk6eWYJE0Ri
-	OqNE473jUFV/GCV2dexiBqliE9CUeHS3hx0kISKwg1Fi8tpFrCAOs8AJRomld9ayglQJC7hK
-	tH95D9bBIqAq0TD5FwuIzStgKdF05QY7hC0o8WPyPbA4s4CWxPqdx5kgbHmJzWveMkPcpCCx
-	4+xrsPtEBPQk/v46xw5RIyKx78U7RpDFEgKNHBL3p8xmh1gmIPFt8iGgoRxACVmJTQeg5khK
-	HFxxg2UCo9gsJKtnIVk9C8nqWUhWLGBkWcUomlqQXFCclF5kpFecmFtcmpeul5yfu4kREs99
-	OxhvHrA+xJgMtH4is5Rocj4wHeSVxBsamxlZmJqYGhuZW5qRJqwkzrvoYVKQkEB6Yklqdmpq
-	QWpRfFFpTmrxIUYmDk6pBsZu3otM4sEnw3SMZNYsmhHqYn/dSK3uUO2v99tjc25NPrLx1zIV
-	n+Sp/k9FGpa+OGttLpL2ddryT5udJjtOTM5dNXejvPDeGy8D9q3fsPxpVoHnU9frlvmmLzJv
-	7haJ+/Zau2HS7IsJy55+VSzakbleo/3h6Y3TbVmtuSJeXXZzvtG/9OFhC8liJZbijERDLeai
-	4kQAiN/MqP0CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOKsWRmVeSWpSXmKPExsVy+t9jQd3jE7yDDW7OMbP4O+kYu8X7ZT2M
-	Fi9e/2O0OPpvIaNF74KrbBYfTx1nt9j0+BqrxeVdc9gsZpzfx2Tx984/NosPM1YyOnB7rJm3
-	htHj969JjB53ru1h8zi/aQ2zx+Yl9R59W1YxenzeJBfAHtXAaJORmpiSWqSQmpecn5KZl26r
-	5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDdKSSQlliTilQKCCxuFhJ3w7ThNAQN10L
-	mMYIXd+QILgeIwM0kLCOMePoxROMBbcFKnbNm8PewPiQu4uRk0NCwETi5JklTBC2mMSFe+vZ
-	uhi5OIQEpjNKNN47DuX8YZTY1bGLGaSKTUBT4tHdHnaQhIjADkaJyWsXsYI4zAInGCWW3lnL
-	ClIlLOAq0f7lPVgHi4CqRMPkXywgNq+ApUTTlRvsELagxI/J98DizAJaEut3HmeCsOUlNq95
-	ywxxk4LEjrOvGUFsEQE9ib+/zrFD1IhI7HvxjnECo8AsJKNmIRk1C8moWUhaFjCyrGIUTS1I
-	LihOSs810itOzC0uzUvXS87P3cQIThbPpHcwrmqwOMQowMGoxMObsN0zWIg1say4MvcQowQH
-	s5II77YMr2Ah3pTEyqrUovz4otKc1OJDjMlAn05klhJNzgcmsrySeENjEzMjSyMzCyMTc3PS
-	hJXEeQ+2WgcKCaQnlqRmp6YWpBbBbGHi4JRqYPQRyjT29SjamP9MbtMyo58TVwgcOda1+qym
-	aU3RrklctYvkE+4fcXn3e2dr5LzjNosNlp8qPsH5WVnLsziIzTCwdKXk4WlL5HQFzlx7Hdvr
-	ER6VFPcwR6u86NVD1TuLDt13jm46ddIyLC3wS8LZdWcWpvnmijVs3bC2tWaC/Ec3kcuJbiq6
-	zEosxRmJhlrMRcWJACnPE/JaAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 14 Apr 2014 03:39:17 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, tytso@mit.edu
+References: <87sipmbe8x.fsf@x220.int.ebiederm.org>
+	<20140409175322.GZ18016@ZenIV.linux.org.uk>
+	<20140409182830.GA18016@ZenIV.linux.org.uk>
+	<87txa286fu.fsf@x220.int.ebiederm.org>
+	<87fvlm860e.fsf_-_@x220.int.ebiederm.org>
+	<20140409232423.GB18016@ZenIV.linux.org.uk>
+	<87lhva5h4k.fsf@x220.int.ebiederm.org>
+	<20140413053956.GM18016@ZenIV.linux.org.uk>
+	<87zjjp3e7w.fsf@x220.int.ebiederm.org>
+	<87ppkl1xb7.fsf@x220.int.ebiederm.org>
+	<20140413215242.GP18016@ZenIV.linux.org.uk>
+Date: Mon, 14 Apr 2014 00:38:47 -0700
+In-Reply-To: <20140413215242.GP18016@ZenIV.linux.org.uk> (Al Viro's message of
+	"Sun, 13 Apr 2014 22:52:42 +0100")
+Message-ID: <87y4z8uzqw.fsf_-_@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/dnu0HMSlrKQqPhhlVT0gAqvgeAvKDTfM=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.1642]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Al Viro <viro@ZenIV.linux.org.uk>
+X-Spam-Relay-Country: 
+Subject: [RFC][PATCH 0/4] No I/O from mntput
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
 
-This patchset supports 4 levels of tranlsation tables for ARM64.
+There are a lot of ways we could approach this, and I sat down and wrote
+the simplest variant I could think of, so hopefully there are not silly
+bugs that get overlooked.
 
-Firstly, the patchset decouples page size from level of translation tables
-as taking account into the comment from Catalin Marinas:
-http://www.spinics.net/linux/lists/arm-kernel/msg319552.html
+The code move all cleanup from mntput that would do filesystem I/O into
+work queues.
 
-Then, it implements 4 levels of translation tables for both native, HYP
-and stage2 sides.
+The code waits in mntput for that I/O to complete if we wait today.
 
-This series is validated with Fast Models and kvmtool as platform and guest
-launcher, respectively.
+The code has been tested and it works, and it succeeds in running
+deactivate_super in a stack from with just short of 7500 bytes free.
+7500 bytes should be enough for anybody!
 
-Jungseok Lee (8):
-      arm64: Use pr_* instead of printk
-      arm/arm64: KVM: Fix line length exceeding 80 characters
-      arm64: Decouple page size from level of translation tables
-      arm64: Introduce a kernel configuration option for VA_BITS
-      arm64: Add a description on 48-bit address space with 4KB pages
-      arm64: Add 4 levels of page tables definition with 4KB pages
-      arm64: mm: Implement 4 levels of translation tables
-      arm64: KVM: Implement 4 levels of translation tables for HYP and stage2
+I want to double check that I am using work queues correctly, they used
+to be deadlock prone, and sleep on everything before I commit to a final
+version but this version is probably good enough.
 
-Documentation/arm64/memory.txt                |   59 ++++++++++--
- arch/arm/kvm/mmu.c                            |  100 ++++++++++++++++++---
- arch/arm64/Kconfig                            |   51 ++++++++++-
- arch/arm64/include/asm/kvm_arm.h              |   20 +++++
- arch/arm64/include/asm/kvm_mmu.h              |    1 +
- arch/arm64/include/asm/memory.h               |    6 +-
- arch/arm64/include/asm/page.h                 |    6 +-
- arch/arm64/include/asm/pgalloc.h              |   24 ++++-
- arch/arm64/include/asm/pgtable-4level-hwdef.h |   50 +++++++++++
- arch/arm64/include/asm/pgtable-4level-types.h |   71 +++++++++++++++
- arch/arm64/include/asm/pgtable-hwdef.h        |   10 ++-
- arch/arm64/include/asm/pgtable.h              |   52 +++++++++--
- arch/arm64/include/asm/tlb.h                  |   10 ++-
- arch/arm64/kernel/head.S                      |   45 +++++++++-
- arch/arm64/kernel/traps.c                     |   19 ++--
- arch/arm64/mm/fault.c                         |    1 +
- arch/arm64/mm/mmu.c                           |   14 ++-
- 17 files changed, 488 insertions(+), 51 deletions(-)
+I may be going overboard in the case where we auto close BSD accounting
+files, but at this point I figure better safe than sorry. 
 
+Eric W. Biederman (4):
+      vfs: Remove useless loop in mntput_no_expire
+      vfs: Move autoclose of BSD accounting into a work queue
+      vfs: In mntput run deactivate_super on a shallow stack.
+      vfs: Block intuitively in the case of BSD accounting files
+
+ fs/mount.h     | 14 +++++++++++---
+ fs/namespace.c | 43 +++++++++++++++++++++++++++++++++++--------
+ kernel/acct.c  | 25 ++++++++++++++++++++-----
+ 3 files changed, 66 insertions(+), 16 deletions(-)
 
