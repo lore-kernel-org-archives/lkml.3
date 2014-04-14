@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697AbaDNQpU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:45:20 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46070 "EHLO arroyo.ext.ti.com"
+	id S1756003AbaDNQpz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:45:55 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46068 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755489AbaDNQZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:25:55 -0400
+	id S1755487AbaDNQZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 12:25:54 -0400
 From: Nishanth Menon <nm@ti.com>
 To: Tony Lindgren <tony@atomide.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
@@ -14,9 +14,9 @@ CC: Sekhar Nori <nsekhar@ti.com>, Rajendra Nayak <rnayak@ti.com>,
         Nishanth Menon <nm@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
         <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 15/15] bus: omap_l3_noc: Add AM4372 interconnect error data
-Date: Mon, 14 Apr 2014 11:25:26 -0500
-Message-ID: <1397492726-17203-17-git-send-email-nm@ti.com>
+Subject: [PATCH 04/15] bus: omap_l3_noc: move L3 master data structure out
+Date: Mon, 14 Apr 2014 11:25:15 -0500
+Message-ID: <1397492726-17203-6-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1397492726-17203-1-git-send-email-nm@ti.com>
 References: <1397492726-17203-1-git-send-email-nm@ti.com>
@@ -26,149 +26,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Afzal Mohammed <afzal@ti.com>
+Move the L3 master structure out of the static definition to enable
+reuse for other SoCs.
 
-Add AM4372 information to handle L3 error.
-
-AM4372 has two clk domains 100f and 200s. Provide flagmux and data
-associated with it.
-
-NOTE: Timeout doesn't have STDERRLOG_MAIN register. And per hardware
-team, L3 timeout error cannot be cleared the normal way (by setting
-bit 31 in STDERRLOG_MAIN), instead it may be required to do system
-reset. L3 error handler can't help in such scenarios.
-
-Hence indicate timeout target offset as L3_TARGET_NOT_SUPPORTED as
-done for undocumented bits.
-
-Signed-off-by: Dave Gerlach <d-gerlach@ti.com>
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
-Signed-off-by: Sekhar Nori <nsekhar@ti.com>
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- .../devicetree/bindings/arm/omap/l3-noc.txt        |    1 +
- drivers/bus/omap_l3_noc.c                          |    1 +
- drivers/bus/omap_l3_noc.h                          |   85 ++++++++++++++++++++
- 3 files changed, 87 insertions(+)
+ drivers/bus/omap_l3_noc.h |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/arm/omap/l3-noc.txt b/Documentation/devicetree/bindings/arm/omap/l3-noc.txt
-index 45d0fc2..974624e 100644
---- a/Documentation/devicetree/bindings/arm/omap/l3-noc.txt
-+++ b/Documentation/devicetree/bindings/arm/omap/l3-noc.txt
-@@ -7,6 +7,7 @@ Required properties:
- - compatible : Should be "ti,omap3-l3-smx" for OMAP3 family
-                Should be "ti,omap4-l3-noc" for OMAP4 family
- 	       Should be "ti,dra7-l3-noc" for DRA7 family
-+               Should be "ti,am4372-l3-noc" for AM43 family
- - reg:	Contains L3 register address range for each noc domain.
- - ti,hwmods: "l3_main_1", ... One hwmod for each noc domain.
- 
-diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
-index 9b32e53..9853e1d 100644
---- a/drivers/bus/omap_l3_noc.c
-+++ b/drivers/bus/omap_l3_noc.c
-@@ -177,6 +177,7 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
- static const struct of_device_id l3_noc_match[] = {
- 	{.compatible = "ti,omap4-l3-noc", .data = &omap_l3_data},
- 	{.compatible = "ti,dra7-l3-noc", .data = &dra_l3_data},
-+	{.compatible = "ti,am4372-l3-noc", .data = &am4372_l3_data},
- 	{},
- };
- MODULE_DEVICE_TABLE(of, l3_noc_match);
 diff --git a/drivers/bus/omap_l3_noc.h b/drivers/bus/omap_l3_noc.h
-index 365a33c..91814e0 100644
+index cc4b1b1..26ad279 100644
 --- a/drivers/bus/omap_l3_noc.h
 +++ b/drivers/bus/omap_l3_noc.h
-@@ -339,4 +339,89 @@ static const struct omap_l3 dra_l3_data = {
- 	.num_masters = ARRAY_SIZE(dra_l3_masters),
+@@ -33,6 +33,16 @@
+ 
+ #define NUM_OF_L3_MASTERS	(sizeof(l3_masters)/sizeof(l3_masters[0]))
+ 
++/**
++ * struct l3_masters_data - L3 Master information
++ * @id:		ID of the L3 Master
++ * @name:	master name
++ */
++struct l3_masters_data {
++	u32 id;
++	char *name;
++};
++
+ static u32 l3_flagmux[L3_MODULES] = {
+ 	0x500,
+ 	0x1000,
+@@ -80,10 +90,7 @@ static u32 l3_targ_inst_clk3[] = {
+ 	0x0 /* HOST CLK3 */
  };
  
-+/* AM4372 data */
-+static struct l3_target_data am4372_l3_target_data_200f[] = {
-+	{0xf00,  "EMIF",},
-+	{0x1200, "DES",},
-+	{0x400,  "OCMCRAM",},
-+	{0x700,  "TPTC0",},
-+	{0x800,  "TPTC1",},
-+	{0x900,  "TPTC2"},
-+	{0xb00,  "TPCC",},
-+	{0xd00,  "DEBUGSS",},
-+	{0xdead, L3_TARGET_NOT_SUPPORTED,},
-+	{0x200,  "SHA",},
-+	{0xc00,  "SGX530",},
-+	{0x500,  "AES0",},
-+	{0xa00,  "L4_FAST",},
-+	{0x300,  "MPUSS_L2_RAM",},
-+	{0x100,  "ICSS",},
-+};
-+
-+static struct l3_flagmux_data am4372_l3_flagmux_200f = {
-+	.offset = 0x1000,
-+	.l3_targ = am4372_l3_target_data_200f,
-+	.num_targ_data = ARRAY_SIZE(am4372_l3_target_data_200f),
-+};
-+
-+static struct l3_target_data am4372_l3_target_data_100s[] = {
-+	{0x100, "L4_PER_0",},
-+	{0x200, "L4_PER_1",},
-+	{0x300, "L4_PER_2",},
-+	{0x400, "L4_PER_3",},
-+	{0x800, "McASP0",},
-+	{0x900, "McASP1",},
-+	{0xC00, "MMCHS2",},
-+	{0x700, "GPMC",},
-+	{0xD00, "L4_FW",},
-+	{0xdead, L3_TARGET_NOT_SUPPORTED,},
-+	{0x500, "ADCTSC",},
-+	{0xE00, "L4_WKUP",},
-+	{0xA00, "MAG_CARD",},
-+};
-+
-+static struct l3_flagmux_data am4372_l3_flagmux_100s = {
-+	.offset = 0x600,
-+	.l3_targ = am4372_l3_target_data_100s,
-+	.num_targ_data = ARRAY_SIZE(am4372_l3_target_data_100s),
-+};
-+
-+static struct l3_masters_data am4372_l3_masters[] = {
-+	{ 0x0, "M1 (128-bit)"},
-+	{ 0x0, "M2 (64-bit)"},
-+	{ 0x4, "DAP"},
-+	{ 0x5, "P1500"},
-+	{ 0xC, "ICSS0"},
-+	{ 0xD, "ICSS1"},
-+	{ 0x18, "TPTC0 Read"},
-+	{ 0x19, "TPTC0 Write"},
-+	{ 0x1A, "TPTC1 Read"},
-+	{ 0x1B, "TPTC1 Write"},
-+	{ 0x1C, "TPTC2 Read"},
-+	{ 0x1D, "TPTC2 Write"},
-+	{ 0x20, "SGX530"},
-+	{ 0x25, "DSS"},
-+	{ 0x28, "Crypto DMA RD"},
-+	{ 0x29, "Crypto DMA WR"},
-+	{ 0x2C, "VPFE0"},
-+	{ 0x2D, "VPFE1"},
-+	{ 0x30, "GEMAC"},
-+	{ 0x34, "USB0 RD"},
-+	{ 0x35, "USB0 WR"},
-+	{ 0x36, "USB1 RD"},
-+	{ 0x37, "USB1 WR"},
-+};
-+
-+static struct l3_flagmux_data *am4372_l3_flagmux[] = {
-+	&am4372_l3_flagmux_200f,
-+	&am4372_l3_flagmux_100s,
-+};
-+
-+static const struct omap_l3 am4372_l3_data = {
-+	.l3_flagmux = am4372_l3_flagmux,
-+	.num_modules = ARRAY_SIZE(am4372_l3_flagmux),
-+	.l3_masters = am4372_l3_masters,
-+	.num_masters = ARRAY_SIZE(am4372_l3_masters),
-+};
-+
- #endif	/* __OMAP_L3_NOC_H */
+-static struct l3_masters_data {
+-	u32 id;
+-	char name[10];
+-} l3_masters[] = {
++static struct l3_masters_data l3_masters[] = {
+ 	{ 0x0 , "MPU"},
+ 	{ 0x10, "CS_ADP"},
+ 	{ 0x14, "xxx"},
 -- 
 1.7.9.5
 
