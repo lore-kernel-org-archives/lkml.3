@@ -1,85 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328AbaDNRNA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 13:13:00 -0400
-Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:56375 "EHLO
-	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753061AbaDNRMz (ORCPT
+	id S1755338AbaDNRNd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 13:13:33 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:41405 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754072AbaDNRNa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 13:12:55 -0400
-Date: Mon, 14 Apr 2014 12:12:52 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@nuc
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-cc: linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Ingo Molnar <mingo@kernel.org>, linux-usb@vger.kernel.org
-Subject: Re: [3.15-rc1] a huge number of warnings produced by xhci &
-In-Reply-To: <534C182C.8040206@ti.com>
-Message-ID: <alpine.DEB.2.10.1404141206040.18190@nuc>
-References: <53285FE7.5010203@ti.com> <534C182C.8040206@ti.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 14 Apr 2014 13:13:30 -0400
+From: Konstantin Tokarev <ktokarev@smartlabs.tv>
+Organization: SmartLabs
+To: Matt Fleming <matt.fleming@intel.com>, Paul Mundt <paul.mundt@gmail.com>
+Subject: [PATCH] sh: Implemented syscall_{get|set}_arguments for i != 0
+Date: Mon, 14 Apr 2014 21:13:26 +0400
+User-Agent: KMail/1.13.5 (Linux/3.1.6-desktop-69mib; KDE/4.4.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201404142113.26822.ktokarev@smartlabs.tv>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-n Mon, 14 Apr 2014, Grygorii Strashko wrote:
+>From 5cd11ca62acfcde2757fbcc9bbb55e9449d2d50b Mon Sep 17 00:00:00 2001
+From: Konstantin Tokarev <ktokarev@smartlabs.tv>
+Date: Mon, 14 Apr 2014 20:38:00 +0400
+Subject: [PATCH] sh: Implemented syscall_{get|set}_arguments for i != 0.
 
-> Hi All,
->
-> I'm observing a huge number of warnings produced during the boot of my Keystone 2 board
-> when USB is enabled.
->
-> [    2.496460] BUG: using __this_cpu_read() in preemptible [00000000] code: khubd/202
-> [    2.504030] caller is __mod_zone_page_state+0x20/0xc8
-> [    2.509094] CPU: 1 PID: 202 Comm: khubd Not tainted 3.15.0-rc1-00015-ge521fa3-dirty #55
-> [    2.517122] [<c0013788>] (unwind_backtrace) from [<c001129c>] (show_stack+0x10/0x14)
-> [    2.524854] [<c001129c>] (show_stack) from [<c049f800>] (dump_stack+0x68/0xb8)
-> [    2.532086] [<c049f800>] (dump_stack) from [<c02731c0>] (check_preemption_disabled+0xe8/0x10c)
-> [    2.540708] [<c02731c0>] (check_preemption_disabled) from [<c00bc944>] (__mod_zone_page_state+0x20/0xc8)
-> [    2.550187] [<c00bc944>] (__mod_zone_page_state) from [<c00b50c8>] (reclaim_clean_pages_from_list+0x16c/0x178)
-> [    2.560193] [<c00b50c8>] (reclaim_clean_pages_from_list) from [<c00ac8f0>] (alloc_contig_range+0x10c/0x2d0)
-> [    2.569932] [<c00ac8f0>] (alloc_contig_range) from [<c02b0e58>] (dma_alloc_from_contiguous+0x70/0x118)
-> [    2.579241] [<c02b0e58>] (dma_alloc_from_contiguous) from [<c0017d24>] (__alloc_from_contiguous+0x34/0x160)
-> [    2.588974] [<c0017d24>] (__alloc_from_contiguous) from [<c0018760>] (__dma_alloc+0x18c/0x294)
-> [    2.597582] [<c0018760>] (__dma_alloc) from [<c00189f0>] (arm_dma_alloc+0xac/0xd8)
-> [    2.605140] [<c00189f0>] (arm_dma_alloc) from [<c00d84a8>] (dma_pool_alloc+0xc8/0x1b8)
-> [    2.613067] [<c00d84a8>] (dma_pool_alloc) from [<c0317120>] (xhci_alloc_container_ctx+0x70/0xe0)
-> [    2.621851] [<c0317120>] (xhci_alloc_container_ctx) from [<c03194e8>] (xhci_alloc_virt_device+0x98/0x220)
-> [    2.631418] [<c03194e8>] (xhci_alloc_virt_device) from [<c0315d28>] (xhci_alloc_dev+0x158/0x1f0)
-> [    2.640207] [<c0315d28>] (xhci_alloc_dev) from [<c02f6310>] (usb_alloc_dev+0x1d4/0x27c)
-> [    2.648217] [<c02f6310>] (usb_alloc_dev) from [<c02fb204>] (hub_thread+0x670/0x1204)
-> [    2.655943] [<c02fb204>] (hub_thread) from [<c003d8d8>] (kthread+0xcc/0xe8)
-> [    2.662906] [<c003d8d8>] (kthread) from [<c000e2f8>] (ret_from_fork+0x14/0x3c)
->
-> Anyone else sees the same thing?
+syscall_get_arguments and syscall_set_arguments implementations for SH
+will not call BUG() when invokend with i != 0 anymore.
 
-Either disable interrupts or use mod_zone_page_state instead.
+Signed-off-by: Konstantin Tokarev <ktokarev@smartlabs.tv>
+---
+ arch/sh/include/asm/syscall_32.h |   74 
++++++++++++++++++++++-----------------
+ 1 files changed, 41 insertions(+), 33 deletions(-)
 
-This should fix it:
-
-
-
-
-Subject: vmscan: reclaim_clean_pages_from_list must use mod_zone_page_state
-
-Seems to be called with preemption enabled. Therefore it must use
-mod_zone_page_state instead.
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
-Index: linux/mm/vmscan.c
-===================================================================
---- linux.orig/mm/vmscan.c	2014-04-09 11:35:43.917930976 -0500
-+++ linux/mm/vmscan.c	2014-04-14 12:09:48.070745938 -0500
-@@ -1158,7 +1158,7 @@ unsigned long reclaim_clean_pages_from_l
- 			TTU_UNMAP|TTU_IGNORE_ACCESS,
- 			&dummy1, &dummy2, &dummy3, &dummy4, &dummy5, true);
- 	list_splice(&clean_pages, page_list);
--	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -ret);
-+	mod_zone_page_state(zone, NR_ISOLATED_FILE, -ret);
- 	return ret;
+diff --git a/arch/sh/include/asm/syscall_32.h 
+b/arch/sh/include/asm/syscall_32.h
+index 7d80df4..52fb5ad 100755
+--- a/arch/sh/include/asm/syscall_32.h
++++ b/arch/sh/include/asm/syscall_32.h
+@@ -44,53 +44,61 @@ static inline void syscall_set_return_value(struct 
+task_struct *task,
+ 		regs->regs[0] = val;
  }
+ 
+-static inline void syscall_get_arguments(struct task_struct *task,
+-					 struct pt_regs *regs,
+-					 unsigned int i, unsigned int n,
+-					 unsigned long *args)
++static inline unsigned long sh_get_syscall_arg(struct pt_regs *regs,
++					       unsigned int n)
+ {
+-	/*
+-	 * Do this simply for now. If we need to start supporting
+-	 * fetching arguments from arbitrary indices, this will need some
+-	 * extra logic. Presently there are no in-tree users that depend
+-	 * on this behaviour.
+-	 */
+-	BUG_ON(i);
+-
+ 	/* Argument pattern is: R4, R5, R6, R7, R0, R1 */
+ 	switch (n) {
+-	case 6: args[5] = regs->regs[1];
+-	case 5: args[4] = regs->regs[0];
+-	case 4: args[3] = regs->regs[7];
+-	case 3: args[2] = regs->regs[6];
+-	case 2: args[1] = regs->regs[5];
+-	case 1:	args[0] = regs->regs[4];
++	case 5: return regs->regs[1];
++	case 4: return regs->regs[0];
++	case 3: return regs->regs[7];
++	case 2: return regs->regs[6];
++	case 1: return regs->regs[5];
++	case 0: return regs->regs[4];
++	default:
++		BUG();
++	}
++	return ~0;
++}
++
++static inline void sh_set_syscall_arg(struct pt_regs *regs,
++				      unsigned int n,
++				      unsigned long val)
++{
++	switch (n) {
++	case 5:
++		regs->regs[1] = val;
++	case 4:
++		regs->regs[0] = val;
++	case 3:
++		regs->regs[7] = val;
++	case 2:
++		regs->regs[6] = val;
++	case 1:
++		regs->regs[5] = val;
+ 	case 0:
+-		break;
++		regs->regs[4] = val;
+ 	default:
+ 		BUG();
+ 	}
+ }
+ 
++static inline void syscall_get_arguments(struct task_struct *task,
++					 struct pt_regs *regs,
++					 unsigned int i, unsigned int n,
++					 unsigned long *args)
++{
++	while (n--)
++		*args++ = sh_get_syscall_arg(regs, i++);
++}
++
+ static inline void syscall_set_arguments(struct task_struct *task,
+ 					 struct pt_regs *regs,
+ 					 unsigned int i, unsigned int n,
+ 					 const unsigned long *args)
+ {
+-	/* Same note as above applies */
+-	BUG_ON(i);
+-
+-	switch (n) {
+-	case 6: regs->regs[1] = args[5];
+-	case 5: regs->regs[0] = args[4];
+-	case 4: regs->regs[7] = args[3];
+-	case 3: regs->regs[6] = args[2];
+-	case 2: regs->regs[5] = args[1];
+-	case 1: regs->regs[4] = args[0];
+-		break;
+-	default:
+-		BUG();
+-	}
++	while (n--)
++		sh_set_syscall_arg(regs, i++, *args++);
+ }
+ 
+ #endif /* __ASM_SH_SYSCALL_32_H */
+-- 
+1.7.2.5
 
