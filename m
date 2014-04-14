@@ -1,27 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285AbaDNOxK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 10:53:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46570 "EHLO
+	id S1755374AbaDNOx3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 10:53:29 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46587 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754242AbaDNOxD (ORCPT
+	with ESMTP id S1751030AbaDNOxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 10:53:03 -0400
-Date: Mon, 14 Apr 2014 07:52:47 -0700
-From: tip-bot for Ramkumar Ramachandra <tipbot@zytor.com>
-Message-ID: <tip-2c529e4e6aab405aa52e8627cbd691ed28b56a0b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, jean.pihet@linaro.org, jolsa@redhat.com,
-        tglx@linutronix.de, artagnon@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com,
-        linux-kernel@vger.kernel.org, jean.pihet@linaro.org, jolsa@redhat.com,
-        tglx@linutronix.de, artagnon@gmail.com
-In-Reply-To: <1395873845-466-1-git-send-email-artagnon@gmail.com>
-References: <1395873845-466-1-git-send-email-artagnon@gmail.com>
+	Mon, 14 Apr 2014 10:53:17 -0400
+Date: Mon, 14 Apr 2014 07:52:22 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-e39j1yxanltjx4t0msse63ax@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de, dzickus@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de, dzickus@redhat.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools:
-  Pick up libdw without explicit LIBDW_DIR
-Git-Commit-ID: 2c529e4e6aab405aa52e8627cbd691ed28b56a0b
+Subject: [tip:perf/urgent] perf callchains:
+  Disable unwind libraries when libelf isn't found
+Git-Commit-ID: 945895574873101c72a2d90a8cf1e09922378968
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,47 +36,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2c529e4e6aab405aa52e8627cbd691ed28b56a0b
-Gitweb:     http://git.kernel.org/tip/2c529e4e6aab405aa52e8627cbd691ed28b56a0b
-Author:     Ramkumar Ramachandra <artagnon@gmail.com>
-AuthorDate: Wed, 26 Mar 2014 18:44:05 -0400
+Commit-ID:  945895574873101c72a2d90a8cf1e09922378968
+Gitweb:     http://git.kernel.org/tip/945895574873101c72a2d90a8cf1e09922378968
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Tue, 25 Mar 2014 09:35:11 -0300
 Committer:  Jiri Olsa <jolsa@redhat.com>
-CommitDate: Mon, 14 Apr 2014 12:55:17 +0200
+CommitDate: Mon, 14 Apr 2014 12:55:01 +0200
 
-perf tools: Pick up libdw without explicit LIBDW_DIR
+perf callchains: Disable unwind libraries when libelf isn't found
 
-The Makefile logic sets FEATURE_CHECKS_CFLAGS-libdw-dwarf-unwind and
-FEATURE_CHECKS_LDFLAGS-libdw-dwarf-unwind only if LIBDW_DIR is
-defined. This means that under a normal setup,
+I.e. do the same as when NO_LIBELF is explicitely passed in the 'make'
+command line, fixing this:
 
-  $ make NO_LIBUNWIND=1
+  Auto-detecting system features:
+  ...                         dwarf: [ OFF ]
+  ...                         glibc: [ on  ]
+  ...                          gtk2: [ OFF ]
+  ...                      libaudit: [ OFF ]
+  ...                        libbfd: [ OFF ]
+  ...                        libelf: [ OFF ]
+  ...                     libunwind: [ OFF ]
+  ...            libdw-dwarf-unwind: [ OFF ]
+  ...     DWARF post unwind library: libdw
+<SNIP>
+    CC       /tmp/build/perf/util/symbol-minimal.o
+    CC       /tmp/build/perf/util/unwind-libdw.o
+  arch/x86/util/unwind-libdw.c:1:30: fatal error: elfutils/libdwfl.h: No such file or directory
+  compilation terminated.
+    CC       /tmp/build/perf/tests/keep-tracking.o
+  util/unwind-libdw.c:2:28: fatal error: elfutils/libdw.h: No such file or directory
+  compilation terminated.
 
-won't automatically pick up libdw. Fix this.
-
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Acked-by: Jean Pihet <jean.pihet@linaro.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1395873845-466-1-git-send-email-artagnon@gmail.com
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-e39j1yxanltjx4t0msse63ax@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/config/Makefile | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ tools/perf/config/Makefile | 2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 5a3c452..ee21fa9 100644
+index c234182..5a3c452 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -65,10 +65,9 @@ ifndef NO_LIBELF
-   ifdef LIBDW_DIR
-     LIBDW_CFLAGS  := -I$(LIBDW_DIR)/include
-     LIBDW_LDFLAGS := -L$(LIBDW_DIR)/lib
--
--    FEATURE_CHECK_CFLAGS-libdw-dwarf-unwind := $(LIBDW_CFLAGS)
--    FEATURE_CHECK_LDFLAGS-libdw-dwarf-unwind := $(LIBDW_LDFLAGS) -ldw
-   endif
-+  FEATURE_CHECK_CFLAGS-libdw-dwarf-unwind := $(LIBDW_CFLAGS)
-+  FEATURE_CHECK_LDFLAGS-libdw-dwarf-unwind := $(LIBDW_LDFLAGS) -ldw
- endif
- 
- # include ARCH specific config
+@@ -278,6 +278,8 @@ else
+       NO_LIBELF := 1
+       NO_DWARF := 1
+       NO_DEMANGLE := 1
++      NO_LIBUNWIND := 1
++      NO_LIBDW_DWARF_UNWIND := 1
+     else
+       msg := $(error No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static);
+     endif
