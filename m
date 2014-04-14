@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974AbaDNQaX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:30:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47809 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754383AbaDNQ3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:29:52 -0400
-Message-ID: <534C0CD6.9030602@zytor.com>
-Date: Mon, 14 Apr 2014 09:29:10 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Torsten Duwe <duwe@lst.de>
-CC: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        ingo.tuchscherer@de.ibm.com, linux-kernel@vger.kernel.org,
-        Hans-Georg Markgraf <MGRF@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH v3 00/03]: hwrng: an in-kernel rngd
-References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de> <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com> <20140414160211.GE711@lst.de> <7b22b881-9359-42c9-a632-6a8cbdb13b71@email.android.com> <20140414162451.GE29351@lst.de>
-In-Reply-To: <20140414162451.GE29351@lst.de>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753972AbaDNQbu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:31:50 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:60388 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755236AbaDNQ1q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 12:27:46 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: tglx@linutronix.de
+Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, Arvind.Chauhan@arm.com,
+        linaro-networking@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 32/38] tick-sched: add comment about 'idle_active' in tick_nohz_idle_exit()
+Date: Mon, 14 Apr 2014 21:53:54 +0530
+Message-Id: <d08702a052159ef78eb78ca7292f258f3a6aec59.1397492345.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1397492345.git.viresh.kumar@linaro.org>
+References: <cover.1397492345.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1397492345.git.viresh.kumar@linaro.org>
+References: <cover.1397492345.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2014 09:24 AM, Torsten Duwe wrote:
-> On Mon, Apr 14, 2014 at 09:09:14AM -0700, H. Peter Anvin wrote:
->> I think the default should be zero, so each hwrng driver maintainer would have to consider what guarantees that particular driver can give.  If anything 50% ought to be the maximum.
-> 
-> Repost of v4 just for patch 03/03 is on its way then, defaulting to 0
-> (off), which happens to be the old behaviour, which I think I've also
-> expressed my sympathy for already.
-> 
+The sequence of calls for dynticks CPUs was a bit confusing and so adding a
+comment in tick_nohz_idle_exit() routine to mention it clearly. All information
+required is in commit and this conversation with Frederic.
 
-Sounds good.
+https://lkml.org/lkml/2014/4/10/355
 
-	-hpa
+Suggested-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ kernel/time/tick-sched.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index f1bc258..85a4e90 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -925,6 +925,22 @@ void tick_nohz_idle_exit(void)
+ 
+ 	ts->inidle = 0;
+ 
++	/*
++	 * Can idle_active be false here?
++	 * Ideally this would be the sequence of calls:
++	 * - tick_nohz_idle_enter(), i.e. idle_active = true;
++	 * - local_irq_disable()
++	 * - IDLE
++	 * - wake up due to IPI or other interrupt
++	 * - local_irq_enable()
++	 * - tick_nohz_irq_enter(), i.e. idle_active = false;
++	 * - tick_nohz_irq_exit(), i.e. idle_active = true; This is not called
++	 *   in case of IPI's as need_resched() will prevent that in
++	 *   tick_irq_exit(), as we don't need to account any more for idle time
++	 *   or try to enter dyntics mode (We are going to exit idle state).
++	 *
++	 * - tick_nohz_idle_exit()
++	 */
+ 	if (ts->idle_active || ts->tick_stopped)
+ 		now = ktime_get();
+ 
+-- 
+1.7.12.rc2.18.g61b472e
 
