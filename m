@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760AbaDNMw3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 08:52:29 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:42661 "EHLO extserv.mm-sol.com"
+	id S1754827AbaDNMxK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 08:53:10 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:42732 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751282AbaDNMw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 08:52:27 -0400
+	id S1753030AbaDNMxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 08:53:08 -0400
 From: Stanimir Varbanov <svarbanov@mm-sol.com>
 To: Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
+        "David S. Miller" <davem@davemloft.net>
 Cc: Stanimir Varbanov <svarbanov@mm-sol.com>, linux-arm-msm@vger.kernel.org,
         Mona Hossain <mhossain@codeaurora.org>,
         Hariprasad Dhalinarasimha <hnamgund@codeaurora.org>,
         Zhen Kong <zkong@codeaurora.org>,
         Niranjana Vishwanathapura <nvishwan@codeaurora.org>,
         Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [RFC PATCH v2 1/9] crypto: qce: Add core driver implementation
-Date: Mon, 14 Apr 2014 15:48:37 +0300
-Message-Id: <1397479725-20954-2-git-send-email-svarbanov@mm-sol.com>
+        linux-crypto@vger.kernel.org
+Subject: [RFC PATCH v2 2/9] crypto: qce: Add register defines
+Date: Mon, 14 Apr 2014 15:48:38 +0300
+Message-Id: <1397479725-20954-3-git-send-email-svarbanov@mm-sol.com>
 X-Mailer: git-send-email 1.8.4.4
 In-Reply-To: <1397479725-20954-1-git-send-email-svarbanov@mm-sol.com>
 References: <1397479725-20954-1-git-send-email-svarbanov@mm-sol.com>
@@ -28,28 +26,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds core driver files. The core part is implementing a
-platform driver probe and remove callbaks, the probe enables
-clocks, checks crypto version, initialize and request dma
-channels, create done tasklet and work queue and finally
-register the algorithms into crypto subsystem.
+Here are all register addresses and bit/masks used by the driver.
 
 Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
 ---
- drivers/crypto/qce/core.c | 295 ++++++++++++++++++++++++++++++++++++++++++++++
- drivers/crypto/qce/core.h |  73 ++++++++++++
- 2 files changed, 368 insertions(+)
- create mode 100644 drivers/crypto/qce/core.c
- create mode 100644 drivers/crypto/qce/core.h
+ drivers/crypto/qce/regs-v5.h | 331 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 331 insertions(+)
+ create mode 100644 drivers/crypto/qce/regs-v5.h
 
-diff --git a/drivers/crypto/qce/core.c b/drivers/crypto/qce/core.c
+diff --git a/drivers/crypto/qce/regs-v5.h b/drivers/crypto/qce/regs-v5.h
 new file mode 100644
-index 000000000000..61d08c5ff5b9
+index 000000000000..e74b4bb552a3
 --- /dev/null
-+++ b/drivers/crypto/qce/core.c
-@@ -0,0 +1,295 @@
++++ b/drivers/crypto/qce/regs-v5.h
+@@ -0,0 +1,331 @@
 +/*
-+ * Copyright (c) 2010-2014, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 and
@@ -61,367 +53,324 @@ index 000000000000..61d08c5ff5b9
 + * GNU General Public License for more details.
 + */
 +
-+#include <linux/clk.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/spinlock.h>
-+#include <linux/types.h>
-+#include <crypto/algapi.h>
-+#include <crypto/internal/hash.h>
-+#include <crypto/sha.h>
++#ifndef _REGS_V5_H_
++#define _REGS_V5_H_
 +
-+#include "core.h"
-+#include "cipher.h"
-+#include "sha.h"
++#include <linux/bitops.h>
 +
-+#define QCE_MAJOR_VERSION5	0x05
-+#define QCE_QUEUE_LENGTH	50
++#define REG_VERSION			0x000
++#define REG_STATUS			0x100
++#define REG_STATUS2			0x104
++#define REG_ENGINES_AVAIL		0x108
++#define REG_FIFO_SIZES			0x10c
++#define REG_SEG_SIZE			0x110
++#define REG_GOPROC			0x120
++#define REG_ENCR_SEG_CFG		0x200
++#define REG_ENCR_SEG_SIZE		0x204
++#define REG_ENCR_SEG_START		0x208
++#define REG_CNTR0_IV0			0x20c
++#define REG_CNTR1_IV1			0x210
++#define REG_CNTR2_IV2			0x214
++#define REG_CNTR3_IV3			0x218
++#define REG_CNTR_MASK			0x21C
++#define REG_ENCR_CCM_INT_CNTR0		0x220
++#define REG_ENCR_CCM_INT_CNTR1		0x224
++#define REG_ENCR_CCM_INT_CNTR2		0x228
++#define REG_ENCR_CCM_INT_CNTR3		0x22c
++#define REG_ENCR_XTS_DU_SIZE		0x230
++#define REG_AUTH_SEG_CFG		0x300
++#define REG_AUTH_SEG_SIZE		0x304
++#define REG_AUTH_SEG_START		0x308
++#define REG_AUTH_IV0			0x310
++#define REG_AUTH_IV1			0x314
++#define REG_AUTH_IV2			0x318
++#define REG_AUTH_IV3			0x31c
++#define REG_AUTH_IV4			0x320
++#define REG_AUTH_IV5			0x324
++#define REG_AUTH_IV6			0x328
++#define REG_AUTH_IV7			0x32c
++#define REG_AUTH_IV8			0x330
++#define REG_AUTH_IV9			0x334
++#define REG_AUTH_IV10			0x338
++#define REG_AUTH_IV11			0x33c
++#define REG_AUTH_IV12			0x340
++#define REG_AUTH_IV13			0x344
++#define REG_AUTH_IV14			0x348
++#define REG_AUTH_IV15			0x34c
++#define REG_AUTH_INFO_NONCE0		0x350
++#define REG_AUTH_INFO_NONCE1		0x354
++#define REG_AUTH_INFO_NONCE2		0x358
++#define REG_AUTH_INFO_NONCE3		0x35c
++#define REG_AUTH_BYTECNT0		0x390
++#define REG_AUTH_BYTECNT1		0x394
++#define REG_AUTH_BYTECNT2		0x398
++#define REG_AUTH_BYTECNT3		0x39c
++#define REG_AUTH_EXP_MAC0		0x3a0
++#define REG_AUTH_EXP_MAC1		0x3a4
++#define REG_AUTH_EXP_MAC2		0x3a8
++#define REG_AUTH_EXP_MAC3		0x3ac
++#define REG_AUTH_EXP_MAC4		0x3b0
++#define REG_AUTH_EXP_MAC5		0x3b4
++#define REG_AUTH_EXP_MAC6		0x3b8
++#define REG_AUTH_EXP_MAC7		0x3bc
++#define REG_CONFIG			0x400
++#define REG_GOPROC_QC_KEY		0x1000
++#define REG_GOPROC_OEM_KEY		0x2000
++#define REG_ENCR_KEY0			0x3000
++#define REG_ENCR_KEY1			0x3004
++#define REG_ENCR_KEY2			0x3008
++#define REG_ENCR_KEY3			0x300c
++#define REG_ENCR_KEY4			0x3010
++#define REG_ENCR_KEY5			0x3014
++#define REG_ENCR_KEY6			0x3018
++#define REG_ENCR_KEY7			0x301c
++#define REG_ENCR_XTS_KEY0		0x3020
++#define REG_ENCR_XTS_KEY1		0x3024
++#define REG_ENCR_XTS_KEY2		0x3028
++#define REG_ENCR_XTS_KEY3		0x302c
++#define REG_ENCR_XTS_KEY4		0x3030
++#define REG_ENCR_XTS_KEY5		0x3034
++#define REG_ENCR_XTS_KEY6		0x3038
++#define REG_ENCR_XTS_KEY7		0x303c
++#define REG_AUTH_KEY0			0x3040
++#define REG_AUTH_KEY1			0x3044
++#define REG_AUTH_KEY2			0x3048
++#define REG_AUTH_KEY3			0x304c
++#define REG_AUTH_KEY4			0x3050
++#define REG_AUTH_KEY5			0x3054
++#define REG_AUTH_KEY6			0x3058
++#define REG_AUTH_KEY7			0x305c
++#define REG_AUTH_KEY8			0x3060
++#define REG_AUTH_KEY9			0x3064
++#define REG_AUTH_KEY10			0x3068
++#define REG_AUTH_KEY11			0x306c
++#define REG_AUTH_KEY12			0x3070
++#define REG_AUTH_KEY13			0x3074
++#define REG_AUTH_KEY14			0x3078
++#define REG_AUTH_KEY15			0x307c
 +
-+static int qce_async_request_queue(struct qce_device *qce,
-+				   struct crypto_async_request *req)
-+{
-+	unsigned long flags;
-+	int ret;
++/* Register bits - REG_VERSION */
++#define CORE_STEP_REV_SHIFT		0
++#define CORE_STEP_REV_MASK		GENMASK(15, 0)
++#define CORE_MINOR_REV_SHIFT		16
++#define CORE_MINOR_REV_MASK		GENMASK(23, 16)
++#define CORE_MAJOR_REV_SHIFT		24
++#define CORE_MAJOR_REV_MASK		GENMASK(31, 24)
 +
-+	spin_lock_irqsave(&qce->lock, flags);
-+	ret = crypto_enqueue_request(&qce->queue, req);
-+	spin_unlock_irqrestore(&qce->lock, flags);
++/* Register bits - REG_STATUS */
++#define MAC_FAILED_SHIFT		31
++#define DOUT_SIZE_AVAIL_SHIFT		26
++#define DOUT_SIZE_AVAIL_MASK		GENMASK(30, 26)
++#define DIN_SIZE_AVAIL_SHIFT		21
++#define DIN_SIZE_AVAIL_MASK		GENMASK(25, 21)
++#define HSD_ERR_SHIFT			20
++#define ACCESS_VIOL_SHIFT		19
++#define PIPE_ACTIVE_ERR_SHIFT		18
++#define CFG_CHNG_ERR_SHIFT		17
++#define DOUT_ERR_SHIFT			16
++#define DIN_ERR_SHIFT			15
++#define AXI_ERR_SHIFT			14
++#define CRYPTO_STATE_SHIFT		10
++#define CRYPTO_STATE_MASK		GENMASK(13, 10)
++#define ENCR_BUSY_SHIFT			9
++#define AUTH_BUSY_SHIFT			8
++#define DOUT_INTR_SHIFT			7
++#define DIN_INTR_SHIFT			6
++#define OP_DONE_INTR_SHIFT		5
++#define ERR_INTR_SHIFT			4
++#define DOUT_RDY_SHIFT			3
++#define DIN_RDY_SHIFT			2
++#define OPERATION_DONE_SHIFT		1
++#define SW_ERR_SHIFT			0
 +
-+	queue_work(qce->queue_wq, &qce->queue_work);
++/* Register bits - REG_STATUS2 */
++#define AXI_EXTRA_SHIFT			1
++#define LOCKED_SHIFT			2
 +
-+	return ret;
-+}
++/* Register bits - REG_CONFIG */
++#define REQ_SIZE_SHIFT			17
++#define REQ_SIZE_MASK			GENMASK(20, 17)
++#define REQ_SIZE_ENUM_1_BEAT		0
++#define REQ_SIZE_ENUM_2_BEAT		1
++#define REQ_SIZE_ENUM_3_BEAT		2
++#define REQ_SIZE_ENUM_4_BEAT		3
++#define REQ_SIZE_ENUM_5_BEAT		4
++#define REQ_SIZE_ENUM_6_BEAT		5
++#define REQ_SIZE_ENUM_7_BEAT		6
++#define REQ_SIZE_ENUM_8_BEAT		7
++#define REQ_SIZE_ENUM_9_BEAT		8
++#define REQ_SIZE_ENUM_10_BEAT		9
++#define REQ_SIZE_ENUM_11_BEAT		10
++#define REQ_SIZE_ENUM_12_BEAT		11
++#define REQ_SIZE_ENUM_13_BEAT		12
++#define REQ_SIZE_ENUM_14_BEAT		13
++#define REQ_SIZE_ENUM_15_BEAT		14
++#define REQ_SIZE_ENUM_16_BEAT		15
 +
-+static void qce_async_request_done(struct qce_device *qce, int ret)
-+{
-+	qce->result = ret;
-+	tasklet_schedule(&qce->done_tasklet);
-+}
++#define MAX_QUEUED_REQ_SHIFT		14
++#define MAX_QUEUED_REQ_MASK		GENMASK(24, 16)
++#define ENUM_1_QUEUED_REQS		0
++#define ENUM_2_QUEUED_REQS		1
++#define ENUM_3_QUEUED_REQS		2
 +
-+static struct qce_algo_ops *qce_ops[] = {
-+	&ablkcipher_ops,
-+	&ahash_ops,
-+};
++#define IRQ_ENABLES_SHIFT		10
++#define IRQ_ENABLES_MASK		GENMASK(13, 10)
 +
-+static void qce_unregister_algs(struct qce_device *qce)
-+{
-+	struct qce_algo_ops *ops;
-+	int i;
++#define LITTLE_ENDIAN_MODE_SHIFT	9
++#define PIPE_SET_SELECT_SHIFT		5
++#define PIPE_SET_SELECT_MASK		GENMASK(8, 5)
 +
-+	for (i = 0; i < ARRAY_SIZE(qce_ops); i++) {
-+		ops = qce_ops[i];
-+		ops->unregister_algs(qce);
-+	}
-+}
++#define HIGH_SPD_EN_N_SHIFT		4
++#define MASK_DOUT_INTR_SHIFT		3
++#define MASK_DIN_INTR_SHIFT		2
++#define MASK_OP_DONE_INTR_SHIFT		1
++#define MASK_ERR_INTR_SHIFT		0
 +
-+static int qce_register_algs(struct qce_device *qce)
-+{
-+	struct qce_algo_ops *ops;
-+	int i, ret = -ENODEV;
++/* Register bits - REG_AUTH_SEG_CFG */
++#define COMP_EXP_MAC_SHIFT		24
++#define COMP_EXP_MAC_DISABLED		0
++#define COMP_EXP_MAC_ENABLED		1
 +
-+	qce->async_req_queue = qce_async_request_queue;
-+	qce->async_req_done = qce_async_request_done;
++#define F9_DIRECTION_SHIFT		23
++#define F9_DIRECTION_UPLINK		0
++#define F9_DIRECTION_DOWNLINK		1
 +
-+	for (i = 0; i < ARRAY_SIZE(qce_ops); i++) {
-+		ops = qce_ops[i];
-+		ret = ops->register_algs(qce);
-+		if (ret)
-+			break;
-+	}
++#define AUTH_NONCE_NUM_WORDS_SHIFT	20
++#define AUTH_NONCE_NUM_WORDS_MASK	GENMASK(22, 20);
 +
-+	return ret;
-+}
++#define USE_PIPE_KEY_AUTH_SHIFT		19
++#define USE_HW_KEY_AUTH_SHIFT		18
++#define AUTH_FIRST_SHIFT		17
++#define AUTH_LAST_SHIFT			16
 +
-+static int qce_handle_request(struct crypto_async_request *async_req)
-+{
-+	int ret = -EINVAL, i;
-+	struct qce_algo_ops *ops;
-+	u32 type = crypto_tfm_alg_type(async_req->tfm);
++#define AUTH_POS_SHIFT			14
++#define AUTH_POS_MASK			GENMASK(15, 14)
++#define AUTH_POS_BEFORE			0
++#define AUTH_POS_AFTER			1
 +
-+	for (i = 0; i < ARRAY_SIZE(qce_ops); i++) {
-+		ops = qce_ops[i];
-+		if (type != ops->type)
-+			continue;
-+		ret = ops->async_req_handle(async_req);
-+		break;
-+	}
++#define AUTH_SIZE_SHIFT			9
++#define AUTH_SIZE_MASK			GENMASK(13, 9)
++#define AUTH_SIZE_SHA1			0
++#define AUTH_SIZE_SHA256		1
++#define AUTH_SIZE_ENUM_1_BYTES		0
++#define AUTH_SIZE_ENUM_2_BYTES		1
++#define AUTH_SIZE_ENUM_3_BYTES		2
++#define AUTH_SIZE_ENUM_4_BYTES		3
++#define AUTH_SIZE_ENUM_5_BYTES		4
++#define AUTH_SIZE_ENUM_6_BYTES		5
++#define AUTH_SIZE_ENUM_7_BYTES		6
++#define AUTH_SIZE_ENUM_8_BYTES		7
++#define AUTH_SIZE_ENUM_9_BYTES		8
++#define AUTH_SIZE_ENUM_10_BYTES		9
++#define AUTH_SIZE_ENUM_11_BYTES		10
++#define AUTH_SIZE_ENUM_12_BYTES		11
++#define AUTH_SIZE_ENUM_13_BYTES		12
++#define AUTH_SIZE_ENUM_14_BYTES		13
++#define AUTH_SIZE_ENUM_15_BYTES		14
++#define AUTH_SIZE_ENUM_16_BYTES		15
 +
-+	return ret;
-+}
++#define AUTH_MODE_SHIFT			6
++#define AUTH_MODE_MASK			GENMASK(8, 6)
++#define AUTH_MODE_HASH			0
++#define AUTH_MODE_HMAC			1
++#define AUTH_MODE_CCM			0
++#define AUTH_MODE_CMAC			1
 +
-+static void qce_reqqueue_handler(struct work_struct *work)
-+{
-+	struct qce_device *qce =
-+			container_of(work, struct qce_device, queue_work);
-+	struct crypto_async_request *async_req = NULL, *backlog = NULL;
-+	unsigned long flags;
-+	int ret;
++#define AUTH_KEY_SIZE_SHIFT		3
++#define AUTH_KEY_SIZE_MASK		GENMASK(5, 3)
++#define AUTH_KEY_SZ_AES128		0
++#define AUTH_KEY_SZ_AES256		2
 +
-+	spin_lock_irqsave(&qce->lock, flags);
-+	if (!qce->req) {
-+		backlog = crypto_get_backlog(&qce->queue);
-+		async_req = crypto_dequeue_request(&qce->queue);
-+		qce->req = async_req;
-+	}
-+	spin_unlock_irqrestore(&qce->lock, flags);
++#define AUTH_ALG_SHIFT			0
++#define AUTH_ALG_MASK			GENMASK(2, 0)
++#define AUTH_ALG_NONE			0
++#define AUTH_ALG_SHA			1
++#define AUTH_ALG_AES			2
++#define AUTH_ALG_KASUMI			3
++#define AUTH_ALG_SNOW3G			4
++#define AUTH_ALG_ZUC			5
 +
-+	if (!async_req)
-+		return;
++/* Register bits - REG_ENCR_XTS_DU_SIZE */
++#define ENCR_XTS_DU_SIZE_SHIFT		0
++#define ENCR_XTS_DU_SIZE_MASK		GENMASK(19, 0)
 +
-+	if (backlog)
-+		backlog->complete(backlog, -EINPROGRESS);
++/* Register bits - REG_ENCR_SEG_CFG */
++#define F8_KEYSTREAM_ENABLE_SHIFT	17
++#define F8_KEYSTREAM_DISABLED		0
++#define F8_KEYSTREAM_ENABLED		1
 +
-+	ret = qce_handle_request(async_req);
-+	if (ret) {
-+		spin_lock_irqsave(&qce->lock, flags);
-+		qce->req = NULL;
-+		spin_unlock_irqrestore(&qce->lock, flags);
++#define F8_DIRECTION_SHIFT		16
++#define F8_DIRECTION_UPLINK		0
++#define F8_DIRECTION_DOWNLINK		1
 +
-+		async_req->complete(async_req, ret);
-+	}
-+}
++#define USE_PIPE_KEY_ENCR_SHIFT		15
++#define USE_PIPE_KEY_ENCR_ENABLED	1
++#define USE_KEY_REGISTERS		0
 +
-+static void qce_tasklet_req_done(unsigned long data)
-+{
-+	struct qce_device *qce = (struct qce_device *)data;
-+	struct crypto_async_request *areq;
-+	unsigned long flags;
++#define USE_HW_KEY_ENCR_SHIFT		14
++#define USE_KEY_REG			0
++#define USE_HW_KEY			1
 +
-+	spin_lock_irqsave(&qce->lock, flags);
-+	areq = qce->req;
-+	qce->req = NULL;
-+	spin_unlock_irqrestore(&qce->lock, flags);
++#define LAST_CCM_SHIFT			13
++#define LAST_CCM_XFR			1
++#define INTERM_CCM_XFR			0
 +
-+	if (areq)
-+		areq->complete(areq, qce->result);
++#define CNTR_ALG_SHIFT			11
++#define CNTR_ALG_MASK			GENMASK(12, 11)
++#define CNTR_ALG_NIST			0
 +
-+	queue_work(qce->queue_wq, &qce->queue_work);
-+}
++#define ENCODE_SHIFT			10
 +
-+static int qce_check_version(struct qce_device *qce)
-+{
-+	u32 major, minor, step;
++#define ENCR_MODE_SHIFT			6
++#define ENCR_MODE_MASK			GENMASK(9, 6)
++#define ENCR_MODE_ECB			0
++#define ENCR_MODE_CBC			1
++#define ENCR_MODE_CTR			2
++#define ENCR_MODE_XTS			3
++#define ENCR_MODE_CCM			4
 +
-+	qce_get_version(qce, &major, &minor, &step);
++#define ENCR_KEY_SZ_SHIFT		3
++#define ENCR_KEY_SZ_MASK		GENMASK(5, 3)
++#define ENCR_KEY_SZ_DES			0
++#define ENCR_KEY_SZ_3DES		1
++#define ENCR_KEY_SZ_AES128		0
++#define ENCR_KEY_SZ_AES256		2
 +
-+	/*
-+	 * the driver does not support v5 with minor 0 because it has special
-+	 * alignment requirements.
-+	 */
-+	if (major != QCE_MAJOR_VERSION5 || minor == 0)
-+		return -ENODEV;
++#define ENCR_ALG_SHIFT			0
++#define ENCR_ALG_MASK			GENMASK(2, 0)
++#define ENCR_ALG_NONE			0
++#define ENCR_ALG_DES			1
++#define ENCR_ALG_AES			2
++#define ENCR_ALG_KASUMI			4
++#define ENCR_ALG_SNOW_3G		5
++#define ENCR_ALG_ZUC			6
 +
-+	qce->burst_size = QCE_BAM_BURST_SIZE;
-+	qce->pipe_pair_index = 1;
++/* Register bits - REG_GOPROC */
++#define GO_SHIFT			0
++#define CLR_CNTXT_SHIFT			1
++#define RESULTS_DUMP_SHIFT		2
 +
-+	dev_dbg(qce->dev, "Crypto device found, version %d.%d.%d\n",
-+		major, minor, step);
++/* Register bits - REG_ENGINES_AVAIL */
++#define ENCR_AES_SEL_SHIFT		0
++#define DES_SEL_SHIFT			1
++#define ENCR_SNOW3G_SEL_SHIFT		2
++#define ENCR_KASUMI_SEL_SHIFT		3
++#define SHA_SEL_SHIFT			4
++#define SHA512_SEL_SHIFT		5
++#define AUTH_AES_SEL_SHIFT		6
++#define AUTH_SNOW3G_SEL_SHIFT		7
++#define AUTH_KASUMI_SEL_SHIFT		8
++#define BAM_PIPE_SETS_SHIFT		9
++#define BAM_PIPE_SETS_MASK		GENMASK(12, 9)
++#define AXI_WR_BEATS_SHIFT		13
++#define AXI_WR_BEATS_MASK		GENMASK(18, 13)
++#define AXI_RD_BEATS_SHIFT		19
++#define AXI_RD_BEATS_MASK		GENMASK(24, 19)
++#define ENCR_ZUC_SEL_SHIFT		26
++#define AUTH_ZUC_SEL_SHIFT		27
++#define ZUC_ENABLE_SHIFT		28
 +
-+	return 0;
-+}
-+
-+static int qce_crypto_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct qce_device *qce;
-+	struct resource *res;
-+	int ret;
-+
-+	qce = devm_kzalloc(dev, sizeof(*qce), GFP_KERNEL);
-+	if (!qce)
-+		return -ENOMEM;
-+
-+	qce->dev = dev;
-+	platform_set_drvdata(pdev, qce);
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	qce->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(qce->base))
-+		return PTR_ERR(qce->base);
-+
-+	ret = dma_set_mask_and_coherent(dev, DMA_BIT_MASK(32));
-+	if (ret < 0)
-+		return ret;
-+
-+	qce->core = devm_clk_get(qce->dev, "core");
-+	if (IS_ERR(qce->core))
-+		return PTR_ERR(qce->core);
-+
-+	qce->iface = devm_clk_get(qce->dev, "iface");
-+	if (IS_ERR(qce->iface))
-+		return PTR_ERR(qce->iface);
-+
-+	qce->bus = devm_clk_get(qce->dev, "bus");
-+	if (IS_ERR(qce->bus))
-+		return PTR_ERR(qce->bus);
-+
-+	ret = clk_prepare_enable(qce->core);
-+	if (ret)
-+		return ret;
-+
-+	ret = clk_prepare_enable(qce->iface);
-+	if (ret)
-+		goto err_clks_core;
-+
-+	ret = clk_prepare_enable(qce->bus);
-+	if (ret)
-+		goto err_clks_iface;
-+
-+	ret = qce_dma_request(qce->dev, &qce->dma);
-+	if (ret)
-+		goto err_clks;
-+
-+	ret = qce_check_version(qce);
-+	if (ret)
-+		goto err_clks;
-+
-+	spin_lock_init(&qce->lock);
-+	tasklet_init(&qce->done_tasklet, qce_tasklet_req_done,
-+		     (unsigned long)qce);
-+
-+	qce->queue_wq = alloc_workqueue("qce_wq", WQ_HIGHPRI | WQ_UNBOUND, 1);
-+	if (!qce->queue_wq) {
-+		ret = -ENOMEM;
-+		goto err_dma;
-+	}
-+
-+	INIT_WORK(&qce->queue_work, qce_reqqueue_handler);
-+	crypto_init_queue(&qce->queue, QCE_QUEUE_LENGTH);
-+
-+	ret = qce_register_algs(qce);
-+	if (ret)
-+		goto err_wq;
-+
-+	return 0;
-+err_wq:
-+	destroy_workqueue(qce->queue_wq);
-+err_dma:
-+	qce_dma_release(&qce->dma);
-+err_clks:
-+	clk_disable_unprepare(qce->bus);
-+err_clks_iface:
-+	clk_disable_unprepare(qce->iface);
-+err_clks_core:
-+	clk_disable_unprepare(qce->core);
-+	return ret;
-+}
-+
-+static int qce_crypto_remove(struct platform_device *pdev)
-+{
-+	struct qce_device *qce = platform_get_drvdata(pdev);
-+
-+	cancel_work_sync(&qce->queue_work);
-+	destroy_workqueue(qce->queue_wq);
-+	tasklet_kill(&qce->done_tasklet);
-+	qce_unregister_algs(qce);
-+	qce_dma_release(&qce->dma);
-+	clk_disable_unprepare(qce->bus);
-+	clk_disable_unprepare(qce->iface);
-+	clk_disable_unprepare(qce->core);
-+	return 0;
-+}
-+
-+static const struct of_device_id qce_crypto_of_match[] = {
-+	{ .compatible = "qcom,crypto-v5.1", },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, qce_crypto_of_match);
-+
-+static struct platform_driver qce_crypto_driver = {
-+	.probe = qce_crypto_probe,
-+	.remove = qce_crypto_remove,
-+	.driver = {
-+		.owner = THIS_MODULE,
-+		.name = KBUILD_MODNAME,
-+		.of_match_table = qce_crypto_of_match,
-+	},
-+};
-+module_platform_driver(qce_crypto_driver);
-+
-+MODULE_LICENSE("GPL v2");
-+MODULE_DESCRIPTION("Qualcomm crypto engine driver");
-+MODULE_ALIAS("platform:" KBUILD_MODNAME);
-+MODULE_AUTHOR("The Linux Foundation");
-diff --git a/drivers/crypto/qce/core.h b/drivers/crypto/qce/core.h
-new file mode 100644
-index 000000000000..49107e894a35
---- /dev/null
-+++ b/drivers/crypto/qce/core.h
-@@ -0,0 +1,73 @@
-+/*
-+ * Copyright (c) 2010-2014, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef _CORE_H_
-+#define _CORE_H_
-+
-+#include "dma.h"
-+
-+/**
-+ * struct qce_device - crypto engine device structure
-+ * @alg_list: list of registered algorithms
-+ * @queue: request queue
-+ * @lock: the lock protects queue and req
-+ * @done_tasklet: done tasklet object
-+ * @queue_wq: queue workqueue
-+ * @queue_work: queue work
-+ * @req: current active request
-+ * @result: result of transform
-+ * @base: virtual IO base
-+ * @dev: pointer to device
-+ * @core: core device clock
-+ * @iface: interface clock
-+ * @bus: bus clock
-+ * @dma: pointer to dma data
-+ * @burst_size: the crypto burst size
-+ * @pipe_pair_index: which pipe pair the device using
-+ * @async_req_queue: invoked by every algorithm to enqueue a request
-+ * @async_req_done: invoked by every algorithm to finish its request
-+ */
-+struct qce_device {
-+	struct crypto_queue queue;
-+	spinlock_t lock;
-+	struct tasklet_struct done_tasklet;
-+	struct workqueue_struct *queue_wq;
-+	struct work_struct queue_work;
-+	struct crypto_async_request *req;
-+	int result;
-+	void __iomem *base;
-+	struct device *dev;
-+	struct clk *core, *iface, *bus;
-+	struct qce_dma_data dma;
-+	int burst_size;
-+	unsigned int pipe_pair_index;
-+	int (*async_req_queue)(struct qce_device *qce,
-+			       struct crypto_async_request *req);
-+	void (*async_req_done)(struct qce_device *qce, int ret);
-+};
-+
-+/**
-+ * struct qce_algo_ops - algorithm operations per crypto type
-+ * @type: should be CRYPTO_ALG_TYPE_XXX
-+ * @register_algs: invoked by core to register the algorithms
-+ * @unregister_algs: invoked by core to unregister the algorithms
-+ * @async_req_handle: invoked by core to handle enqueued request
-+ */
-+struct qce_algo_ops {
-+	u32 type;
-+	int (*register_algs)(struct qce_device *qce);
-+	void (*unregister_algs)(struct qce_device *qce);
-+	int (*async_req_handle)(struct crypto_async_request *async_req);
-+};
-+
-+#endif /* _CORE_H_ */
++#endif /* _REGS_V5_H_ */
 -- 
 1.8.4.4
 
