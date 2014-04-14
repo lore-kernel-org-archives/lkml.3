@@ -1,181 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583AbaDNOmi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 10:42:38 -0400
-Received: from mta-out.inet.fi ([195.156.147.13]:48627 "EHLO jenni2.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751151AbaDNOmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 10:42:36 -0400
-Date: Mon, 14 Apr 2014 17:42:18 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>
-Cc: Michel Lespinasse <walken@google.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Bob Liu <lliubbo@gmail.com>
-Subject: Re: mm: kernel BUG at mm/huge_memory.c:1829!
-Message-ID: <20140414144218.GA26515@node.dhcp.inet.fi>
-References: <53440991.9090001@oracle.com>
- <20140410102527.GA24111@node.dhcp.inet.fi>
- <20140410134436.GA25933@node.dhcp.inet.fi>
- <20140410162750.GD2749@redhat.com>
+	id S1754933AbaDNOmo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 10:42:44 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:64447 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751151AbaDNOmk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 10:42:40 -0400
+Date: Mon, 14 Apr 2014 16:42:36 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Ramkumar Ramachandra <artagnon@gmail.com>,
+        Richard Yao <ryao@gentoo.org>, Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        William Cohen <wcohen@redhat.com>
+Subject: Re: [GIT PULL v3 00/17] perf/core fixes
+Message-ID: <20140414144236.GB22659@gmail.com>
+References: <1397485061-17215-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140410162750.GD2749@redhat.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+In-Reply-To: <1397485061-17215-1-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 06:27:50PM +0200, Andrea Arcangeli wrote:
-> Hi,
+
+* Jiri Olsa <jolsa@redhat.com> wrote:
+
+> hi Ingo,
+> please consider pulling.
 > 
-> On Thu, Apr 10, 2014 at 04:44:36PM +0300, Kirill A. Shutemov wrote:
-> > Okay, below is my attempt to fix the bug. I'm not entirely sure it's
-> > correct. Andrea, could you take a look?
+> As requested, sending only fixies for 3.15. I'll send the rest for 3.16.
 > 
-> The possibility the interval tree implicitly broke the walk order of
-> the anon_vma list didn't cross my mind, that's very good catch!
-> Breakage of the rmap walk order definitely can explain that BUG_ON in
-> split_huge_page that signals a pte was missed by the rmap walk.
+> thanks,
+> jirka
+> 
+> 
+> The following changes since commit 538592ff0b008237ae88f5ce5fb1247127dc3ce5:
+> 
+>   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2014-03-19 08:05:47 +0100)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to c12702d9bf3485d1b34c7913430b4e9271126561:
+> 
+>   perf tools: Instead of redirecting flex output, use -o (2014-04-14 13:00:46 +0200)
+> 
+> ----------------------------------------------------------------
+> perf/core fixes:
+> 
+> Documentation:
+> 
+> . Fix documentation of invalid 'perf top -s' option (Namhyung Kim)
+> 
+> . Change e-mail to kernel.org one in MAINTAINERS file (Arnaldo Carvalho de Melo)
+> 
+> . Update bench manpage to mention numa and futex (Ramkumar Ramachandra)
+> 
+> Developer stuff:
+> 
+> . Disable unwind libraries when libelf isn't found (Arnaldo Carvalho de Melo)
+> 
+> . Print event name when showing libtraceevent warnings if possible (Namhyung Kim)
+> 
+> . Pick up libdw without explicit LIBDW_DIR (Ramkumar Ramachandra)
+> 
+> . Fix perf bench all segfault (Ramkumar Ramachandra)
+> 
+> . Set more defaults in the 'numa' suite (Ramkumar Ramachandra)
+> 
+> . Fix double free in perf test 21 (Adrian Hunter)
+> 
+> . Initialize statistics correctly (Andi Kleen)
+> 
+> . Instead of redirecting flex output, use -o (Cody P Schafer)
+> 
+> User visible:
+> 
+> . Assorted perf probe fixies (Namhyung Kim)
+> 
+> . Fix perf probe segfault (Masami Hiramatsu)
+> 
+> . Fix metrics calculation with event qualifiers (Andi Kleen)
+> 
+> . Search for modules in %s/lib/modules/%s (Richard Yao)
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Adrian Hunter (1):
+>       perf tools: Fix double free in perf test 21 (code-reading.c)
+> 
+> Andi Kleen (2):
+>       perf stat: Initialize statistics correctly
+>       perf tools: Fix metrics calculation with event qualifiers
+> 
+> Arnaldo Carvalho de Melo (2):
+>       perf callchains: Disable unwind libraries when libelf isn't found
+>       MAINTAINERS: Change e-mail to kernel.org one
+> 
+> Cody P Schafer (1):
+>       perf tools: Instead of redirecting flex output, use -o
+> 
+> Masami Hiramatsu (1):
+>       perf probe: Fix to handle errors in line_range searching
+> 
+> Namhyung Kim (5):
+>       perf top: Fix documentation of invalid -s option
+>       tools lib traceevent: Print event name when show warning if possible
+>       tools lib traceevent: Do not call warning() directly
+>       perf probe: Fix --line option behavior
+>       perf probe: Use dwarf_getcfi_elf() instead of dwarf_getcfi()
+> 
+> Ramkumar Ramachandra (4):
+>       perf tools: Pick up libdw without explicit LIBDW_DIR
+>       perf bench: Update manpage to mention numa and futex
+>       perf bench: Fix segfault at the end of an 'all' execution
+>       perf bench: Set more defaults in the 'numa' suite
+> 
+> Richard Yao (1):
+>       perf machine: Search for modules in %s/lib/modules/%s
+> 
+>  MAINTAINERS                             |   2 +-
+>  tools/lib/traceevent/event-parse.c      | 109 +++++++++++++++----------
+>  tools/perf/Documentation/perf-bench.txt |  22 +++++
+>  tools/perf/Documentation/perf-top.txt   |   1 -
+>  tools/perf/Makefile.perf                |   4 +-
+>  tools/perf/bench/numa.c                 |   4 +
+>  tools/perf/builtin-bench.c              |   2 +-
+>  tools/perf/builtin-stat.c               | 140 ++++++++++++++++++++------------
+>  tools/perf/config/Makefile              |   7 +-
+>  tools/perf/tests/code-reading.c         |   1 +
+>  tools/perf/util/machine.c               |   2 +-
+>  tools/perf/util/probe-finder.c          |  15 ++--
+>  12 files changed, 197 insertions(+), 112 deletions(-)
 
-I've spent few day trying to understand rmap code. And now I think my
-patch is wrong.
+I've pulled most of the patches, up to patch #13, thanks Jiri!
 
-I actually don't see where walk order requirement comes from. It seems all
-operations (insert, remove, foreach) on anon_vma is serialized with
-anon_vma->root->rwsem. Andrea, could you explain this for me?
+I left out #14 because it seems incomplete to me - see my previous 
+mail.
 
-The actual bug was introduced by me with split PMD page table lock
-patchset. The patch below should fix it. Please review.
+You could rebase #15,16,17 on top of #13 to get the rest to me as 
+well, until #14 is resolved.
 
-It also means it can't be the root cause of other bug report[1] since
-split PMD lock was introduced in v3.13 and bug report is about v3.8.
+Thanks!
 
-[1] https://bugzilla.redhat.com/show_bug.cgi?id=923817
-
->From 8e0095daf2f0fac113c2e98369c7fc9ff4cde484 Mon Sep 17 00:00:00 2001
-From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Date: Mon, 14 Apr 2014 16:05:33 +0300
-Subject: [PATCH] thp: close race between split and zap huge pages
-
-Sasha Levin has reported two THP BUGs[1][2]. I believe both of them have
-the same root cause. Let's look to them one by one.
-
-The first bug[1] is "kernel BUG at mm/huge_memory.c:1829!".
-It's BUG_ON(mapcount != page_mapcount(page)) in __split_huge_page().
->From my testing I see that page_mapcount() is higher than mapcount here.
-
-I think it happens due to race between zap_huge_pmd() and
-page_check_address_pmd(). page_check_address_pmd() misses PMD
-which is under zap:
-
-	CPU0						CPU1
-						zap_huge_pmd()
-						  pmdp_get_and_clear()
-__split_huge_page()
-  anon_vma_interval_tree_foreach()
-    __split_huge_page_splitting()
-      page_check_address_pmd()
-        mm_find_pmd()
-	  /*
-	   * We check if PMD present without taking ptl: no
-	   * serialization against zap_huge_pmd(). We miss this PMD,
-	   * it's not accounted to 'mapcount' in __split_huge_page().
-	   */
-	  pmd_present(pmd) == 0
-
-  BUG_ON(mapcount != page_mapcount(page)) // CRASH!!!
-
-						  page_remove_rmap(page)
-						    atomic_add_negative(-1, &page->_mapcount)
-
-The second bug[2] is "kernel BUG at mm/huge_memory.c:1371!".
-It's VM_BUG_ON_PAGE(!PageHead(page), page) in zap_huge_pmd().
-
-This happens in similar way:
-
-	CPU0						CPU1
-						zap_huge_pmd()
-						  pmdp_get_and_clear()
-						  page_remove_rmap(page)
-						    atomic_add_negative(-1, &page->_mapcount)
-__split_huge_page()
-  anon_vma_interval_tree_foreach()
-    __split_huge_page_splitting()
-      page_check_address_pmd()
-        mm_find_pmd()
-	  pmd_present(pmd) == 0	/* The same comment as above */
-  /*
-   * No crash this time since we already decremented page->_mapcount in
-   * zap_huge_pmd().
-   */
-  BUG_ON(mapcount != page_mapcount(page))
-
-  /*
-   * We split the compound page here into small pages without
-   * serialization against zap_huge_pmd()
-   */
-  __split_huge_page_refcount()
-						VM_BUG_ON_PAGE(!PageHead(page), page); // CRASH!!!
-
-So my understanding the problem is pmd_present() check in mm_find_pmd()
-without taking page table lock.
-
-The bug was introduced by me commit with commit 117b0791ac42. Sorry for
-that. :(
-
-Let's open code mm_find_pmd() in page_check_address_pmd() and do the
-check under page table lock.
-
-Note that __page_check_address() does the same for PTE entires
-if sync != 0.
-
-[1] https://lkml.kernel.org/g/<53440991.9090001@oracle.com>
-[2] https://lkml.kernel.org/g/<5310C56C.60709@oracle.com>
-
-Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: <stable@vger.kernel.org> #3.13+
----
- mm/huge_memory.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 5025709bb3b5..d02a83852ee9 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1536,16 +1536,23 @@ pmd_t *page_check_address_pmd(struct page *page,
- 			      enum page_check_address_pmd_flag flag,
- 			      spinlock_t **ptl)
- {
-+	pgd_t *pgd;
-+	pud_t *pud;
- 	pmd_t *pmd;
- 
- 	if (address & ~HPAGE_PMD_MASK)
- 		return NULL;
- 
--	pmd = mm_find_pmd(mm, address);
--	if (!pmd)
-+	pgd = pgd_offset(mm, address);
-+	if (!pgd_present(*pgd))
- 		return NULL;
-+	pud = pud_offset(pgd, address);
-+	if (!pud_present(*pud))
-+		return NULL;
-+	pmd = pmd_offset(pud, address);
-+
- 	*ptl = pmd_lock(mm, pmd);
--	if (pmd_none(*pmd))
-+	if (!pmd_present(*pmd))
- 		goto unlock;
- 	if (pmd_page(*pmd) != page)
- 		goto unlock;
--- 
- Kirill A. Shutemov
+	Ingo
