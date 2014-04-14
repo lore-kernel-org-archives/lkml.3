@@ -1,446 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526AbaDNOZc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 10:25:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35704 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753566AbaDNOSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 10:18:03 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 02/17] tools lib traceevent: Print event name when show warning if possible
-Date: Mon, 14 Apr 2014 16:17:26 +0200
-Message-Id: <1397485061-17215-3-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1397485061-17215-1-git-send-email-jolsa@redhat.com>
-References: <1397485061-17215-1-git-send-email-jolsa@redhat.com>
+	id S1754668AbaDNOdN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 10:33:13 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:41129 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960AbaDNOdL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 10:33:11 -0400
+Message-ID: <534BF181.6060503@ti.com>
+Date: Mon, 14 Apr 2014 20:02:33 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, Vinod Koul <vinod.koul@intel.com>
+CC: <dan.j.williams@intel.com>, <dmaengine@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <joelf@ti.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>, <mporter@linaro.org>,
+        Mark Brown <broonie@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: Re: [PATCH v2 05/14] arm: common: edma: Select event queue 1 as default
+ when booted with DT
+References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com> <1396357575-30585-6-git-send-email-peter.ujfalusi@ti.com> <5347A4FD.1030803@ti.com> <5347ACDE.7040407@ti.com> <5347AE49.5020109@ti.com> <5347B7F8.2000508@ti.com> <20140411094217.GA32284@intel.com> <5347D2CC.4030407@ti.com> <20140411113154.GB32284@intel.com> <5347DEDA.2060008@ti.com> <20140411124641.GC32284@intel.com> <534BCCD3.9060805@ti.com> <534BD0B5.5000004@ti.com> <534BD788.3050406@ti.com>
+In-Reply-To: <534BD788.3050406@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+On Monday 14 April 2014 06:11 PM, Peter Ujfalusi wrote:
+> On 04/14/2014 03:12 PM, Sekhar Nori wrote:
+>> On Monday 14 April 2014 05:26 PM, Peter Ujfalusi wrote:
+>>> Hi Vinod,
+>>>
+>>> On 04/11/2014 03:46 PM, Vinod Koul wrote:
+>>>> I think the number shouldn't be viewed in absolute terms. If we decide that (lets
+>>>> say) 0-7, then any controller should map 0 to lowest and 7 to highest.
+>>>>
+>>>> For your case you can do this and then intermediate numbers would be medium
+>>>> priority. Such a system might work well...
+>>>>
+>>>> Also how would a client driver know which priority to use? Would it come from
+>>>> DT?
+>>>
+>>> I think DT would be the best place.
+>>
+>> In the strict sense of what DT is supposed to represent, DT is not the
+>> best place for this. Priority is usecase driven rather that hardware
+>> description driven.
+> 
+> While this is true, the DMA priority - if supported by the DMA engine - is a
+> HW feature as well. If it is supported by the HW it can be used to tune and
+> partition the system for the anticipated load or purpose.
+> 
+>> So on a reasonably less loaded system, I am sure you
+>> could run audio even with a lower priority DMA queue.
+> 
+> Yes, you can. But as soon as you have other devices using the same priority
+> (with eDMA3 at least) and asks for a 'long' transfer it can ruin the audio.
+> During audio playback/capture you execute a long MMC read for example can
+> introduce a glitch.
+> 
+>> Moreover, IMHO, encoding it in DT now will make it an ABI. Without a
+>> wide variety of example use cases, I think it is too early to commit to
+>> an ABI.
+> 
+> True, but we need to start from somewhere?
 
-It's sometimes useful to know where the parse failure was occurred.  Add
-do_warning_event() macro to see the failing event.
+Right, and based on our IRC discussion, we are not really fixing up the
+priority value space. That makes me much more comfortable with the idea.
 
-It now shows the messages like below:
+>>> Not sure if we should set the range for this either. What I was thinking is to
+>>> add an optional new property to be set by the client nodes, using DMA:
+>>>
+>>> mcasp0: mcasp@48038000 {
+>>> 	compatible = "ti,am33xx-mcasp-audio";
+>>> 	...
+>>> 	dmas =	<&edma 8>,
+>>> 		<&edma 9>;
+>>> 	dma-names = "tx", "rx";
+>>> 	dma-priorities = <2>, <2>;
+>>> };
+>>>
 
-  $ perf test 5
-   5: parse events tests                                     :  Warning: [kvmmmu:kvm_mmu_get_page] bad op token {
-    Warning: [kvmmmu:kvm_mmu_sync_page] bad op token {
-    Warning: [kvmmmu:kvm_mmu_unsync_page] bad op token {
-    Warning: [kvmmmu:kvm_mmu_prepare_zap_page] bad op token {
-    Warning: [kvmmmu:fast_page_fault] function is_writable_pte not defined
-    Warning: [xen:xen_mmu_ptep_modify_prot_commit] function sizeof not defined
-    Warning: [xen:xen_mmu_ptep_modify_prot_start] function sizeof not defined
-    Warning: [xen:xen_mmu_set_pgd] function sizeof not defined
-    Warning: [xen:xen_mmu_set_pud] function sizeof not defined
-    Warning: [xen:xen_mmu_set_pmd] function sizeof not defined
-    ...
+>>> We could agree that lower number means lower priority, higher is - well -
+>>> higher priority.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/1395192174-26273-1-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/lib/traceevent/event-parse.c | 103 ++++++++++++++++++++++---------------
- 1 file changed, 62 insertions(+), 41 deletions(-)
+Even this does not have to be uniform across, right? The numbers could
+be left to interpretation per-SoC.
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 1587ea39..33803c0b9 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -50,6 +50,18 @@ static int show_warning = 1;
- 			warning(fmt, ##__VA_ARGS__);	\
- 	} while (0)
- 
-+#define do_warning_event(event, fmt, ...)			\
-+	do {							\
-+		if (!show_warning)				\
-+			continue;				\
-+								\
-+		if (event)					\
-+			warning("[%s:%s] " fmt, event->system,	\
-+				event->name, ##__VA_ARGS__);	\
-+		else						\
-+			warning(fmt, ##__VA_ARGS__);		\
-+	} while (0)
-+
- static void init_input_buf(const char *buf, unsigned long long size)
- {
- 	input_buf = buf;
-@@ -1355,7 +1367,7 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 		}
- 
- 		if (!field->type) {
--			do_warning("%s: no type found", __func__);
-+			do_warning_event(event, "%s: no type found", __func__);
- 			goto fail;
- 		}
- 		field->name = last_token;
-@@ -1402,7 +1414,7 @@ static int event_read_fields(struct event_format *event, struct format_field **f
- 				free_token(token);
- 				type = read_token(&token);
- 				if (type == EVENT_NONE) {
--					do_warning("failed to find token");
-+					do_warning_event(event, "failed to find token");
- 					goto fail;
- 				}
- 			}
-@@ -1636,7 +1648,7 @@ process_cond(struct event_format *event, struct print_arg *top, char **tok)
- 	right = alloc_arg();
- 
- 	if (!arg || !left || !right) {
--		do_warning("%s: not enough memory!", __func__);
-+		do_warning_event(event, "%s: not enough memory!", __func__);
- 		/* arg will be freed at out_free */
- 		free_arg(left);
- 		free_arg(right);
-@@ -1686,7 +1698,7 @@ process_array(struct event_format *event, struct print_arg *top, char **tok)
- 
- 	arg = alloc_arg();
- 	if (!arg) {
--		do_warning("%s: not enough memory!", __func__);
-+		do_warning_event(event, "%s: not enough memory!", __func__);
- 		/* '*tok' is set to top->op.op.  No need to free. */
- 		*tok = NULL;
- 		return EVENT_ERROR;
-@@ -1792,7 +1804,7 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
- 	if (arg->type == PRINT_OP && !arg->op.left) {
- 		/* handle single op */
- 		if (token[1]) {
--			do_warning("bad op token %s", token);
-+			do_warning_event(event, "bad op token %s", token);
- 			goto out_free;
- 		}
- 		switch (token[0]) {
-@@ -1802,7 +1814,7 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
- 		case '-':
- 			break;
- 		default:
--			do_warning("bad op token %s", token);
-+			do_warning_event(event, "bad op token %s", token);
- 			goto out_free;
- 
- 		}
-@@ -1888,7 +1900,7 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
- 			char *new_atom;
- 
- 			if (left->type != PRINT_ATOM) {
--				do_warning("bad pointer type");
-+				do_warning_event(event, "bad pointer type");
- 				goto out_free;
- 			}
- 			new_atom = realloc(left->atom.atom,
-@@ -1930,7 +1942,7 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
- 		type = process_array(event, arg, tok);
- 
- 	} else {
--		do_warning("unknown op '%s'", token);
-+		do_warning_event(event, "unknown op '%s'", token);
- 		event->flags |= EVENT_FL_FAILED;
- 		/* the arg is now the left side */
- 		goto out_free;
-@@ -1951,7 +1963,7 @@ process_op(struct event_format *event, struct print_arg *arg, char **tok)
- 	return type;
- 
- out_warn_free:
--	do_warning("%s: not enough memory!", __func__);
-+	do_warning_event(event, "%s: not enough memory!", __func__);
- out_free:
- 	free_token(token);
- 	*tok = NULL;
-@@ -2385,7 +2397,7 @@ process_flags(struct event_format *event, struct print_arg *arg, char **tok)
- 
- 	field = alloc_arg();
- 	if (!field) {
--		do_warning("%s: not enough memory!", __func__);
-+		do_warning_event(event, "%s: not enough memory!", __func__);
- 		goto out_free;
- 	}
- 
-@@ -2438,7 +2450,7 @@ process_symbols(struct event_format *event, struct print_arg *arg, char **tok)
- 
- 	field = alloc_arg();
- 	if (!field) {
--		do_warning("%s: not enough memory!", __func__);
-+		do_warning_event(event, "%s: not enough memory!", __func__);
- 		goto out_free;
- 	}
- 
-@@ -2477,7 +2489,7 @@ process_hex(struct event_format *event, struct print_arg *arg, char **tok)
- 
- 	field = alloc_arg();
- 	if (!field) {
--		do_warning("%s: not enough memory!", __func__);
-+		do_warning_event(event, "%s: not enough memory!", __func__);
- 		goto out_free;
- 	}
- 
-@@ -2492,7 +2504,7 @@ process_hex(struct event_format *event, struct print_arg *arg, char **tok)
- 
- 	field = alloc_arg();
- 	if (!field) {
--		do_warning("%s: not enough memory!", __func__);
-+		do_warning_event(event, "%s: not enough memory!", __func__);
- 		*tok = NULL;
- 		return EVENT_ERROR;
- 	}
-@@ -2555,7 +2567,7 @@ process_dynamic_array(struct event_format *event, struct print_arg *arg, char **
- 	free_token(token);
- 	arg = alloc_arg();
- 	if (!arg) {
--		do_warning("%s: not enough memory!", __func__);
-+		do_warning_event(event, "%s: not enough memory!", __func__);
- 		*tok = NULL;
- 		return EVENT_ERROR;
- 	}
-@@ -2614,13 +2626,14 @@ process_paren(struct event_format *event, struct print_arg *arg, char **tok)
- 
- 		/* prevous must be an atom */
- 		if (arg->type != PRINT_ATOM) {
--			do_warning("previous needed to be PRINT_ATOM");
-+			do_warning_event(event, "previous needed to be PRINT_ATOM");
- 			goto out_free;
- 		}
- 
- 		item_arg = alloc_arg();
- 		if (!item_arg) {
--			do_warning("%s: not enough memory!", __func__);
-+			do_warning_event(event, "%s: not enough memory!",
-+					 __func__);
- 			goto out_free;
- 		}
- 
-@@ -2721,7 +2734,8 @@ process_func_handler(struct event_format *event, struct pevent_function_handler
- 	for (i = 0; i < func->nr_args; i++) {
- 		farg = alloc_arg();
- 		if (!farg) {
--			do_warning("%s: not enough memory!", __func__);
-+			do_warning_event(event, "%s: not enough memory!",
-+					 __func__);
- 			return EVENT_ERROR;
- 		}
- 
-@@ -2792,7 +2806,7 @@ process_function(struct event_format *event, struct print_arg *arg,
- 		return process_func_handler(event, func, arg, tok);
- 	}
- 
--	do_warning("function %s not defined", token);
-+	do_warning_event(event, "function %s not defined", token);
- 	free_token(token);
- 	return EVENT_ERROR;
- }
-@@ -2878,7 +2892,7 @@ process_arg_token(struct event_format *event, struct print_arg *arg,
- 
- 	case EVENT_ERROR ... EVENT_NEWLINE:
- 	default:
--		do_warning("unexpected type %d", type);
-+		do_warning_event(event, "unexpected type %d", type);
- 		return EVENT_ERROR;
- 	}
- 	*tok = token;
-@@ -2901,7 +2915,8 @@ static int event_read_print_args(struct event_format *event, struct print_arg **
- 
- 		arg = alloc_arg();
- 		if (!arg) {
--			do_warning("%s: not enough memory!", __func__);
-+			do_warning_event(event, "%s: not enough memory!",
-+					 __func__);
- 			return -1;
- 		}
- 
-@@ -3481,11 +3496,12 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
- 	return val;
- 
- out_warning_op:
--	do_warning("%s: unknown op '%s'", __func__, arg->op.op);
-+	do_warning_event(event, "%s: unknown op '%s'", __func__, arg->op.op);
- 	return 0;
- 
- out_warning_field:
--	do_warning("%s: field %s not found", __func__, arg->field.name);
-+	do_warning_event(event, "%s: field %s not found",
-+			 __func__, arg->field.name);
- 	return 0;
- }
- 
-@@ -3591,7 +3607,8 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 		}
- 		str = malloc(len + 1);
- 		if (!str) {
--			do_warning("%s: not enough memory!", __func__);
-+			do_warning_event(event, "%s: not enough memory!",
-+					 __func__);
- 			return;
- 		}
- 		memcpy(str, data + field->offset, len);
-@@ -3697,7 +3714,8 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
- 	return;
- 
- out_warning_field:
--	do_warning("%s: field %s not found", __func__, arg->field.name);
-+	do_warning_event(event, "%s: field %s not found",
-+			 __func__, arg->field.name);
- }
- 
- static unsigned long long
-@@ -3742,14 +3760,16 @@ process_defined_func(struct trace_seq *s, void *data, int size,
- 			trace_seq_terminate(&str);
- 			string = malloc(sizeof(*string));
- 			if (!string) {
--				do_warning("%s(%d): malloc str", __func__, __LINE__);
-+				do_warning_event(event, "%s(%d): malloc str",
-+						 __func__, __LINE__);
- 				goto out_free;
- 			}
- 			string->next = strings;
- 			string->str = strdup(str.buffer);
- 			if (!string->str) {
- 				free(string);
--				do_warning("%s(%d): malloc str", __func__, __LINE__);
-+				do_warning_event(event, "%s(%d): malloc str",
-+						 __func__, __LINE__);
- 				goto out_free;
- 			}
- 			args[i] = (uintptr_t)string->str;
-@@ -3761,7 +3781,7 @@ process_defined_func(struct trace_seq *s, void *data, int size,
- 			 * Something went totally wrong, this is not
- 			 * an input error, something in this code broke.
- 			 */
--			do_warning("Unexpected end of arguments\n");
-+			do_warning_event(event, "Unexpected end of arguments\n");
- 			goto out_free;
- 		}
- 		farg = farg->next;
-@@ -3811,12 +3831,12 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
- 	if (!field) {
- 		field = pevent_find_field(event, "buf");
- 		if (!field) {
--			do_warning("can't find buffer field for binary printk");
-+			do_warning_event(event, "can't find buffer field for binary printk");
- 			return NULL;
- 		}
- 		ip_field = pevent_find_field(event, "ip");
- 		if (!ip_field) {
--			do_warning("can't find ip field for binary printk");
-+			do_warning_event(event, "can't find ip field for binary printk");
- 			return NULL;
- 		}
- 		pevent->bprint_buf_field = field;
-@@ -3830,7 +3850,8 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
- 	 */
- 	args = alloc_arg();
- 	if (!args) {
--		do_warning("%s(%d): not enough memory!", __func__, __LINE__);
-+		do_warning_event(event, "%s(%d): not enough memory!",
-+				 __func__, __LINE__);
- 		return NULL;
- 	}
- 	arg = args;
-@@ -3896,7 +3917,7 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
- 				bptr += vsize;
- 				arg = alloc_arg();
- 				if (!arg) {
--					do_warning("%s(%d): not enough memory!",
-+					do_warning_event(event, "%s(%d): not enough memory!",
- 						   __func__, __LINE__);
- 					goto out_free;
- 				}
-@@ -3919,7 +3940,7 @@ static struct print_arg *make_bprint_args(char *fmt, void *data, int size, struc
- 			case 's':
- 				arg = alloc_arg();
- 				if (!arg) {
--					do_warning("%s(%d): not enough memory!",
-+					do_warning_event(event, "%s(%d): not enough memory!",
- 						   __func__, __LINE__);
- 					goto out_free;
- 				}
-@@ -3959,7 +3980,7 @@ get_bprint_format(void *data, int size __maybe_unused,
- 	if (!field) {
- 		field = pevent_find_field(event, "fmt");
- 		if (!field) {
--			do_warning("can't find format field for binary printk");
-+			do_warning_event(event, "can't find format field for binary printk");
- 			return NULL;
- 		}
- 		pevent->bprint_fmt_field = field;
-@@ -4003,8 +4024,8 @@ static void print_mac_arg(struct trace_seq *s, int mac, void *data, int size,
- 		arg->field.field =
- 			pevent_find_any_field(event, arg->field.name);
- 		if (!arg->field.field) {
--			do_warning("%s: field %s not found",
--				   __func__, arg->field.name);
-+			do_warning_event(event, "%s: field %s not found",
-+					 __func__, arg->field.name);
- 			return;
- 		}
- 	}
-@@ -4176,7 +4197,7 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 			case '*':
- 				/* The argument is the length. */
- 				if (!arg) {
--					do_warning("no argument match");
-+					do_warning_event(event, "no argument match");
- 					event->flags |= EVENT_FL_FAILED;
- 					goto out_failed;
- 				}
-@@ -4213,7 +4234,7 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 			case 'X':
- 			case 'u':
- 				if (!arg) {
--					do_warning("no argument match");
-+					do_warning_event(event, "no argument match");
- 					event->flags |= EVENT_FL_FAILED;
- 					goto out_failed;
- 				}
-@@ -4223,7 +4244,7 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 
- 				/* should never happen */
- 				if (len > 31) {
--					do_warning("bad format!");
-+					do_warning_event(event, "bad format!");
- 					event->flags |= EVENT_FL_FAILED;
- 					len = 31;
- 				}
-@@ -4290,13 +4311,13 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 						trace_seq_printf(s, format, (long long)val);
- 					break;
- 				default:
--					do_warning("bad count (%d)", ls);
-+					do_warning_event(event, "bad count (%d)", ls);
- 					event->flags |= EVENT_FL_FAILED;
- 				}
- 				break;
- 			case 's':
- 				if (!arg) {
--					do_warning("no matching argument");
-+					do_warning_event(event, "no matching argument");
- 					event->flags |= EVENT_FL_FAILED;
- 					goto out_failed;
- 				}
-@@ -4306,7 +4327,7 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
- 
- 				/* should never happen */
- 				if (len > 31) {
--					do_warning("bad format!");
-+					do_warning_event(event, "bad format!");
- 					event->flags |= EVENT_FL_FAILED;
- 					len = 31;
- 				}
--- 
-1.8.3.1
+>>> If the dma-priority is missing we should assume lowest priority (0).
+>>> The highest priority depends on the platform. For eDMA3 in AM335x it is three
+>>> level. For designware controller you might have the range 0-8 as valid.
+>>>
+>>> The question is how to get this information into use?
+>>> We can take the priority number in the core when the dma channel is requested
+>>> and add field to "struct dma_chan" in order to store it and the DMA drivers
+>>> could have access to it.
 
+How about Vinod's idea of extending dma_slave_config? Priority is
+similar to rest of the runtime setup dmaengine_slave_config() is meant
+to do.
+
+Thanks,
+Sekhar
