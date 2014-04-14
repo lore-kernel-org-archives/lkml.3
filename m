@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916AbaDNVkv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 17:40:51 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:38787 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754354AbaDNVhU (ORCPT
+	id S1755890AbaDNVks (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 17:40:48 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:54859 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754870AbaDNVhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 17:37:20 -0400
+	Mon, 14 Apr 2014 17:37:25 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 04/12] cgroup: make css_next_child() skip missing csses
-Date: Mon, 14 Apr 2014 17:37:02 -0400
-Message-Id: <1397511430-2673-5-git-send-email-tj@kernel.org>
+Subject: [PATCH 07/12] cgroup: cgroup->subsys[] should be cleared after the css is offlined
+Date: Mon, 14 Apr 2014 17:37:05 -0400
+Message-Id: <1397511430-2673-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1397511430-2673-1-git-send-email-tj@kernel.org>
 References: <1397511430-2673-1-git-send-email-tj@kernel.org>
@@ -21,42 +21,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-css_next_child() walks the children of the specified css.  It does
-this by finding the next cgroup and then returning the requested css.
-On the default unified hierarchy, a cgroup may not have a css
-associated with it even if the hierarchy has the subsystem enabled.
-This patch updates css_next_child() so that it skips children without
-the requested css associated.
+After a css finishes offlining, offline_css() mistakenly performs
+RCU_INIT_POINTER(css->cgroup->subsys[ss->id], css) which just sets the
+cgroup->subsys[] pointer to the current value.  The intention was to
+clear it after offline is complete, not reassign the same value.
+
+Update it to assign NULL instead of the current value.  This makes
+cgroup_css() to return NULL once offline is complete.  All the
+existing users of the function either can handle NULL return already
+or guarantee that the css doesn't get offlined.
+
+While this is a bugfix, as css lifetime is currently tied to the
+cgroup it belongs to, this bug doesn't cause any actual problems.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Li Zefan <lizefan@huawei.com>
 ---
- kernel/cgroup.c | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ kernel/cgroup.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 29e8698..f525578 100644
+index 0318bfc..3de3951 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -2712,10 +2712,19 @@ css_next_child(struct cgroup_subsys_state *pos_css,
- 				break;
- 	}
+@@ -3714,7 +3714,7 @@ static void offline_css(struct cgroup_subsys_state *css)
  
--	if (&next->sibling == &cgrp->children)
--		return NULL;
-+	/*
-+	 * @next, if not pointing to the head, can be dereferenced and is
-+	 * the next sibling; however, it might have @ss disabled.  If so,
-+	 * fast-forward to the next enabled one.
-+	 */
-+	while (&next->sibling != &cgrp->children) {
-+		struct cgroup_subsys_state *next_css = cgroup_css(next, parent_css->ss);
- 
--	return cgroup_css(next, parent_css->ss);
-+		if (next_css)
-+			return next_css;
-+		next = list_entry_rcu(next->sibling.next, struct cgroup, sibling);
-+	}
-+	return NULL;
+ 	css->flags &= ~CSS_ONLINE;
+ 	css->cgroup->nr_css--;
+-	RCU_INIT_POINTER(css->cgroup->subsys[ss->id], css);
++	RCU_INIT_POINTER(css->cgroup->subsys[ss->id], NULL);
  }
  
  /**
