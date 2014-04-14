@@ -1,111 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550AbaDNPZe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 11:25:34 -0400
-Received: from www84.your-server.de ([213.133.104.84]:34735 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaDNPZc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 11:25:32 -0400
-Date: Mon, 14 Apr 2014 17:25:20 +0200
-Message-ID: <20140414172520.Horde.a0pUS344KcjNMpOsLcnEXQ6@webmail.your-server.de>
-From: stefani@seibold.net
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Greg KH <greg@kroah.com>, sarah.a.sharp@linux.intel.com,
-        andreas.brief@rohde-schwarz.com
-Subject: Re: Missing USB XHCI and EHCI reset for kexec
-References: <Pine.LNX.4.44L0.1404141035540.874-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1404141035540.874-100000@iolanthe.rowland.org>
-User-Agent: Internet Messaging Program (IMP) H5 (6.1.7)
-Content-Type: text/plain; charset=UTF-8; format=flowed; DelSp=Yes
+	id S1754894AbaDNPZr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 11:25:47 -0400
+Received: from katalix.com ([82.103.140.233]:50872 "EHLO bert.katalix.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752083AbaDNPZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 11:25:44 -0400
+X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Apr 2014 11:25:44 EDT
+Message-ID: <534BFC69.6080209@katalix.com>
+Date: Mon, 14 Apr 2014 16:19:05 +0100
+From: James Chapman <jchapman@katalix.com>
+Organization: Katalix Systems Ltd
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Disposition: inline
-X-Authenticated-Sender: stefani@seibold.net
+To: Zhan Jianyu <nasa4836@gmail.com>, davem@davemloft.net, edumazet@google.com,
+        joe@perches.com
+CC: LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
+Subject: Re: [BUG] A panic caused by null pointer dereference aftering updating
+ to
+References: <CAHz2CGWs-JH0v3dWAMBDrKqkP6ygb48YZ-qkc=KsFqz5yO7f+Q@mail.gmail.com> <CAHz2CGU5aPA5QJ9ED9g5kahD_jJaeLF+VOotUSBFXDkY+EH8ow@mail.gmail.com>
+In-Reply-To: <CAHz2CGU5aPA5QJ9ED9g5kahD_jJaeLF+VOotUSBFXDkY+EH8ow@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Please send the complete oops message.
 
-Zitat von Alan Stern <stern@rowland.harvard.edu>:
+Is this a regression? If so, do you know what the last kernel version
+was that worked?
 
+Thanks
+James
 
->> <6>[  167.936921] usb 2-2.1: new full-speed USB device number 3  
->> using ohci-pci
->> <6>[  168.067890] usb 2-2.1: New USB device found, idVendor=076b,
->> idProduct=a021
->> <6>[  168.074871] usb 2-2.1: New USB device strings: Mfr=1, Product=2,
->> SerialNumber=0
->> <6>[  168.082226] usb 2-2.1: Product: Smart Card Reader
->> <6>[  168.086963] usb 2-2.1: Manufacturer: USB
->> <6>[  168.172893] usb 2-2.2: new low-speed USB device number 4  
->> using ohci-pci
->> <6>[  168.300839] usb 2-2.2: New USB device found, idVendor=0aad,
->> idProduct=0024
->> <6>[  168.307823] usb 2-2.2: New USB device strings: Mfr=1, Product=2,
->> SerialNumber=0
->> <6>[  168.315180] usb 2-2.2: Product: FrontPanel USB Keyboard
->> <6>[  168.320436] usb 2-2.2: Manufacturer: Rohde&Schwarz
->> <6>[  168.337895] input: Rohde&Schwarz FrontPanel USB Keyboard as
->> /devices/pci0000:00/0000:00:17.0/usb2/2-2/2-2.2/2-2.2:1.0/input/input0
->> <6>[  168.360988] input: Rohde&Schwarz FrontPanel USB Keyboard as
->> /devices/pci0000:00/0000:00:17.0/usb2/2-2/2-2.2/2-2.2:1.1/input/input1
->
-> Since some devices work and some don't, maybe part of the problem lies
-> in the particular devices.
->
-
-The problem lies on the "Bus 001 Device 002: ID 0424:2514 Standard  
-Microsystems Corp. USB 2.0 Hub", which hangs for arround 162 seconds  
-after a kexec.
-
-The "Bus 002 Device 003: ID 076b:a021 OmniKey AG CCID Smart Card  
-Reader" and "Bus 002 Device 004: ID 0aad:0024 Rohde & Schwarz GmbH &  
-Co. KG" are attached to this Hub.
-
-An other PowerPC device which is nearly eactly the same HW but without  
-this USB HUB works perfectly.
-
->> This is the output of lsusb:
->>
->> Bus 001 Device 002: ID 0424:2514 Standard Microsystems Corp. USB 2.0 Hub
->> Bus 001 Device 004: ID 0928:0007 Oxford Semiconductor, Ltd
->> Bus 002 Device 002: ID 0451:2036 Texas Instruments, Inc. TUSB2036 Hub
->> Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
->> Bus 002 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
->> Bus 003 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
->> Bus 002 Device 003: ID 076b:a021 OmniKey AG CCID Smart Card Reader
->> Bus 002 Device 004: ID 0aad:0024 Rohde & Schwarz GmbH & Co. KG
->>
->> My old kernel 3.4 does not show this problem. Since kernel 3.10 i need
->> to reset to ehci-pci device when kexec. But this workaround does not
->> work any longer on kernel 3.14.
->
-> Have you tried bisecting between 3.4 and 3.10 to find which commit
-> caused the behavior to change?
->
-
-I cannot do a besecting run for this PowerPC emebbed device, since  
-there are some other patches like a BSP and older squashfs which are  
-not available. Nearly all of this generated kernels will not boot and  
-work. For X86 this is a easy job, but not for a "out of tree" PowerPC  
-device.
-
-> What about if you just do:
->
-> 	rmmod ehci-pci
-> 	modprobe ehci-pci
->
-
-The kernel is monolitic because the USB HW is needed in a early boot  
-stage. The problem also occurs with ehci-fsl used in by an other  
-PowerPC device, which is a part of the SoC and is not attached to the  
-PCI bus.
-
-One thing is that the "echo 1  
- >/sys/bus/pci/drivers/ehci-pci/0000\:00\:17.2/reset" workaround will  
-no longer work for kernel 3.14.
-
-- Stefani
-
+On 14/04/14 14:33, Zhan Jianyu wrote:
+> When I tried to connect my VPN, I got a panic, saying
+> a NULL poiter dereference at 0x00000000000002c0
+> 
+> I came across this bug twice today, after updateing to
+> Linux-3.15-rc1.
+> 
+> Below are some panic message(hand copy,not complete)
+> =====
+> 
+> Kernel panic - not syncing: Fatal exception in interupt
+> 
+> RIP ip_queue_xmit+0x20/0x3e0
+> Call Trace:
+> l2tp_xmit_skb+0x335/0x6c0 [l2tp_core]
+> ? skb_free_head+0x1e/0x80
+> pppol2tp_xmit+0x141/0x210 [l2tp_ppp]
+> ppp_channel_push+0x50/0xd0 [ppp_generic]
+> ppp_write+0xa3/0xec [ppp_generic]
+> vfs_write
+> Sys_wirte
+> ? __audit_syscall_exit
+> system_call_fastpath
+> 
+> =====
+> 
+> I've tried to figure it out.
+> I disassembled ip_queue_xmit, found that the null
+> dereference is caused by the first argument of
+> ip_queue_xmit(), which is sk_buff pointer became
+> NULL.
+> 
+> This seems some async skb freeing is in progress?
+> 
+> Regards,
+> Jianyu Zhan
+> 
 
