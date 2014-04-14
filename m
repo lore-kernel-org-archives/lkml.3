@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292AbaDNQB7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:01:59 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:22947 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753327AbaDNQB5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:01:57 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-d6-534c067479b3
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Viresh Kumar <viresh.linux@gmail.com>,
-        Shiraz Hashim <shiraz.hashim@st.com>, linux-ide@vger.kernel.org,
-        spear-devel@list.st.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] pata_arasan_cf: fix ata_host_activate() failure handling
-Date: Mon, 14 Apr 2014 18:01:47 +0200
-Message-id: <1706948.xQXQIMFS2B@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGLMWRmVeSWpSXmKPExsVy+t9jAd0SNp9gg+5+TYtNj6+xWhzb8YjJ
-	4vKuOWwWDd097BZzZmxmtfi1/CijxcqLf5kd2D12zrrL7rFpVSebx8kLJ1k8Ni+p93j6Yy+z
-	x+dNcgFsUVw2Kak5mWWpRfp2CVwZU76vZiz4z17RdHAdSwPjI7YuRg4OCQETiR9LeboYOYFM
-	MYkL99azgdhCAosYJRZ+1uxi5AKyW5gkuu9vZgVJsAlYSUxsX8UIYosIyEpcmfaQEaSIWeAs
-	o8S6k7PZQYYKC/hIHD2kDVLDIqAqsevYC2YQm1dAU2Lj6l1MILaogKfEju0r2SDighI/Jt9j
-	AbGZBeQl9u2fygpha0ms33mcaQIj3ywkZbOQlM1CUraAkXkVo2hqQXJBcVJ6rpFecWJucWle
-	ul5yfu4mRnDoPpPewbiqweIQowAHoxIP74R33sFCrIllxZW5hxglOJiVRHhdtwKFeFMSK6tS
-	i/Lji0pzUosPMUpzsCiJ8x5stQ4UEkhPLEnNTk0tSC2CyTJxcEo1MGadevTTqaY37eq8g0V2
-	y36+q3xb1B5orfzScIGrtWf7S5GMI6eNpqx0rpm6xe4l70Q3odmfiu+sZV3IOYXJQS9J4K2q
-	76J5kn55Z/fwyvSFs7+r3snscPz+s7blQjN5eXyb/UrLA+adPCU3Ie5FzqUazpAFU77W/23O
-	UNMu3vvoh89579dv7JRYijMSDbWYi4oTAQOd0z5ZAgAA
+	id S1754566AbaDNQCU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:02:20 -0400
+Received: from verein.lst.de ([213.95.11.211]:49449 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754393AbaDNQCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 12:02:16 -0400
+Date: Mon, 14 Apr 2014 18:02:11 +0200
+From: Torsten Duwe <duwe@lst.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        ingo.tuchscherer@de.ibm.com, linux-kernel@vger.kernel.org,
+        Hans-Georg Markgraf <MGRF@de.ibm.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH v3 00/03]: hwrng: an in-kernel rngd
+Message-ID: <20140414160211.GE711@lst.de>
+References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de> <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add missing cf_exit() and clk_put() calls to ata_host_activate()
-failure path.
+More or less a resend of v2.
 
-Cc: Viresh Kumar <viresh.linux@gmail.com>
-Cc: Shiraz Hashim <shiraz.hashim@st.com>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
----
-v2:
-- re-order code and then drop redundant goto statement
+On Wed, Mar 26, 2014 at 06:03:37PM -0700, H. Peter Anvin wrote:
+> I'm wondering more about the default.  We default to 50% for arch_get_random_seed, and this is supposed to be the default for in effect unverified hwrngs...
 
- drivers/ata/pata_arasan_cf.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+Done. 50% is now the default, that's the only change from v2.
 
-Index: b/drivers/ata/pata_arasan_cf.c
-===================================================================
---- a/drivers/ata/pata_arasan_cf.c	2014-04-14 17:26:27.308294246 +0200
-+++ b/drivers/ata/pata_arasan_cf.c	2014-04-14 17:44:41.868314795 +0200
-@@ -898,9 +898,12 @@ static int arasan_cf_probe(struct platfo
- 
- 	cf_card_detect(acdev, 0);
- 
--	return ata_host_activate(host, acdev->irq, irq_handler, 0,
--			&arasan_cf_sht);
-+	ret = ata_host_activate(host, acdev->irq, irq_handler, 0,
-+				&arasan_cf_sht);
-+	if (!ret)
-+		return 0;
- 
-+	cf_exit(acdev);
- free_clk:
- 	clk_put(acdev->clk);
- 	return ret;
+Andy: the printk you pointed out already limits itself to 1/10s,
+which is half the default rate limit. Also, as Peter already
+wrote, we're dealing with true HWRNGs here; if such a device
+does not produce a single byte within 10 seconds something _is_
+severely broken and, like a dying disk, worth to be logged.
+Here's one of the better circuits I found:
+http://www.maximintegrated.com/app-notes/index.mvp/id/3469
+or offline:
+http://pdfserv.maximintegrated.com/en/an/AN3469.pdf
+Disclaimer: I'm not endorsing Maxim, it's just that paper
+that hits the spot IMHO.
+
+Anything wrong with feeding those bits into the input pool?
+Any other comments on the code?
+
+	Torsten
 
