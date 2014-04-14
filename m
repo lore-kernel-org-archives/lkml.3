@@ -1,90 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755953AbaDNWGP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 18:06:15 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35508 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755566AbaDNWAO (ORCPT
+	id S1756041AbaDNWHR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 18:07:17 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:36789 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755315AbaDNWHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 18:00:14 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Tony Lindgren <tony@atomide.com>, Philipp Zabel <philipp.zabel@gmail.com>,
-        Paul Parsons <lost.distance@yahoo.com>,
-        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Bryan Wu <cooloney@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-pwm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-leds@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv2 02/11] ARM: shmobile: Armadillo 800 EVA: initialize all struct pwm_lookup members
-Date: Mon, 14 Apr 2014 23:59:44 +0200
-Message-Id: <1397512793-10325-3-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1397512793-10325-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1397512793-10325-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Mon, 14 Apr 2014 18:07:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140414213504.GB22607@saruman.home>
+References: <1396186455-3276-1-git-send-email-minipli@googlemail.com>
+	<1396186455-3276-3-git-send-email-minipli@googlemail.com>
+	<20140414213504.GB22607@saruman.home>
+Date: Tue, 15 Apr 2014 00:07:13 +0200
+Message-ID: <CA+rthh__aRaY+DQ7drj_MPB3Gb35RFFUCd50ZN_pQR3OGr2GEw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] pda_power: Unregister USB notifier in pda_power_remove()
+From: Mathias Krause <minipli@googlemail.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        PaX Team <pageexec@freemail.hu>, Anton Vorontsov <anton@enomsg.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initializing all the struct pwm_lookup members allows to get rid of the struct
-tpu_pwm_platform_data as the polarity initialization will be taken care of by
-the PWM core.
+On 14 April 2014 23:35, Felipe Balbi <balbi@ti.com> wrote:
+> On Sun, Mar 30, 2014 at 03:34:15PM +0200, Mathias Krause wrote:
+>> If we've registered a notifier in pda_power_probe() we must deregister
+>> it in pda_power_remove() to not let it work on stale data like, e.g.,
+>> the charger timer.
+>>
+>> Cc: Felipe Balbi <balbi@ti.com>
+>> Cc: Anton Vorontsov <anton@enomsg.org>
+>> Signed-off-by: Mathias Krause <minipli@googlemail.com>
+>> ---
+>>  drivers/power/pda_power.c |    5 +++++
+>>  1 file changed, 5 insertions(+)
+>>
+>> diff --git a/drivers/power/pda_power.c b/drivers/power/pda_power.c
+>> index 87a963d0a8..aba23d6848 100644
+>> --- a/drivers/power/pda_power.c
+>> +++ b/drivers/power/pda_power.c
+>> @@ -430,6 +430,11 @@ static int pda_power_remove(struct platform_device *pdev)
+>>       if (pdata->is_ac_online && ac_irq)
+>>               free_irq(ac_irq->start, &pda_psy_ac);
+>>
+>> +#if IS_ENABLED(CONFIG_USB_PHY)
+>> +     if (!IS_ERR_OR_NULL(transceiver) && pdata->use_otg_notifier)
+>
+> IS_ERR() should be enough here.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/mach-shmobile/board-armadillo800eva.c | 20 +++++++++-----------
- 1 file changed, 9 insertions(+), 11 deletions(-)
+That's true! The usb_get_phy() call in pda_power_probe() will always
+return a valid pointer or an ERR_PTR() -- never NULL. Albeit, looking
+at usb_get_phy(), it contains another bug, returning a valid pointer,
+even when the try_module_get() call fails. *sigh* It should set ptr to
+an ERR_PTR() in this case.
 
-diff --git a/arch/arm/mach-shmobile/board-armadillo800eva.c b/arch/arm/mach-shmobile/board-armadillo800eva.c
-index 2858f380beae..1bf61dad9a35 100644
---- a/arch/arm/mach-shmobile/board-armadillo800eva.c
-+++ b/arch/arm/mach-shmobile/board-armadillo800eva.c
-@@ -31,7 +31,7 @@
- #include <linux/gpio_keys.h>
- #include <linux/regulator/driver.h>
- #include <linux/pinctrl/machine.h>
--#include <linux/platform_data/pwm-renesas-tpu.h>
-+#include <linux/pwm.h>
- #include <linux/pwm_backlight.h>
- #include <linux/regulator/fixed.h>
- #include <linux/regulator/gpio-regulator.h>
-@@ -399,24 +399,22 @@ static struct resource pwm_resources[] = {
- 	},
- };
- 
--static struct tpu_pwm_platform_data pwm_device_data = {
--	.channels[2] = {
--		.polarity = PWM_POLARITY_INVERSED,
--	}
--};
--
- static struct platform_device pwm_device = {
- 	.name = "renesas-tpu-pwm",
- 	.id = -1,
--	.dev = {
--		.platform_data = &pwm_device_data,
--	},
- 	.num_resources = ARRAY_SIZE(pwm_resources),
- 	.resource = pwm_resources,
- };
- 
- static struct pwm_lookup pwm_lookup[] = {
--	PWM_LOOKUP("renesas-tpu-pwm", 2, "pwm-backlight.0", NULL),
-+	{
-+		.provider = "renesas-tpu-pwm",
-+		.index = 2,
-+		.dev_id = "pwm-backlight.0",
-+		.con_id = NULL,
-+		.period = 33333,
-+		.polarity = PWM_POLARITY_INVERSED,
-+	},
- };
- 
- /* LCDC and backlight */
--- 
-1.8.3.2
+Anyway, probably all the transceiver checks in pda_power.c can be
+changed to IS_ERR() checks. The reason I am using IS_ERR_OR_NULL() in
+my patch is that I just copied the test from a few lines below. I'll
+create a follow up patch in case somebody cares about this series in
+the first place.
 
+>
+>> +             usb_unregister_notifier(transceiver, &otg_nb);
+>> +#endif
+>> +
+>>       if (polling)
+>>               del_timer_sync(&polling_timer);
+>>       del_timer_sync(&charger_timer);
+>> --
+>> 1.7.10.4
+>>
+>
+> --
+> balbi
+
+Thanks,
+Mathias
