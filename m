@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595AbaDNQT1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:19:27 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:59464 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752347AbaDNQTY (ORCPT
+	id S1754840AbaDNQTq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:19:46 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47176 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753240AbaDNQT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:19:24 -0400
-Message-ID: <534C0A89.4090907@arm.com>
-Date: Mon, 14 Apr 2014 17:19:21 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Jungseok Lee <jays.lee@samsung.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
+	Mon, 14 Apr 2014 12:19:26 -0400
+Date: Mon, 14 Apr 2014 17:19:06 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "sungjinn.chung@samsung.com" <sungjinn.chung@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "ilho215.lee@samsung.com" <ilho215.lee@samsung.com>
-Subject: Re: [PATCH 2/8] arm/arm64: KVM: Fix line length exceeding 80 characters
-References: <000001cf57b4$d3450780$79cf1680$@samsung.com>
-In-Reply-To: <000001cf57b4$d3450780$79cf1680$@samsung.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 06/31] arch,arm: Convert smp_mb__*
+Message-ID: <20140414161906.GA12916@arm.com>
+References: <20140319064729.660482086@infradead.org>
+ <20140319065204.099395624@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140319065204.099395624@infradead.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/04/14 08:40, Jungseok Lee wrote:
-> This patch deals with checkpatch complaint as fixing line length
-> exceeding 80 characters.
+On Wed, Mar 19, 2014 at 06:47:35AM +0000, Peter Zijlstra wrote:
+> ARM uses ll/sc primitives that do not imply barriers for all regular
+> atomic ops, therefore smp_mb__{before,after} need be a full barrier.
 > 
-> WARNING: line over 80 characters
+> Since ARM doesn't use asm-generic/barrier.h include the required
+> definitions in its asm/barrier.h
 > 
-> Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
-> Reviewed-by: Sungjinn Chung <sungjinn.chung@samsung.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+
+  Acked-by: Will Deacon <will.deacon@arm.com>
+
+Will
+
 > ---
->  arch/arm/kvm/mmu.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+>  arch/arm/include/asm/atomic.h  |    5 -----
+>  arch/arm/include/asm/barrier.h |    3 +++
+>  arch/arm/include/asm/bitops.h  |    4 +---
+>  3 files changed, 4 insertions(+), 8 deletions(-)
 > 
-> diff --git a/arch/arm/kvm/mmu.c b/arch/arm/kvm/mmu.c
-> index 80bb1e6..e0d4f24 100644
-> --- a/arch/arm/kvm/mmu.c
-> +++ b/arch/arm/kvm/mmu.c
-> @@ -563,8 +563,8 @@ void kvm_free_stage2_pgd(struct kvm *kvm)
->  	kvm->arch.pgd = NULL;
->  }
+> --- a/arch/arm/include/asm/atomic.h
+> +++ b/arch/arm/include/asm/atomic.h
+> @@ -211,11 +211,6 @@ static inline int __atomic_add_unless(at
 >  
-> -static pmd_t *stage2_get_pmd(struct kvm *kvm, struct kvm_mmu_memory_cache *cache,
-> -			     phys_addr_t addr)
-> +static pmd_t *stage2_get_pmd(struct kvm *kvm, struct kvm_mmu_memory_cache
-> +			     *cache, phys_addr_t addr)
-
-Please don't. This makes the code unreadable (and no, I don't care about
-checkpatch ;-).
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
+>  #define atomic_add_negative(i,v) (atomic_add_return(i, v) < 0)
+>  
+> -#define smp_mb__before_atomic_dec()	smp_mb()
+> -#define smp_mb__after_atomic_dec()	smp_mb()
+> -#define smp_mb__before_atomic_inc()	smp_mb()
+> -#define smp_mb__after_atomic_inc()	smp_mb()
+> -
+>  #ifndef CONFIG_GENERIC_ATOMIC64
+>  typedef struct {
+>  	long long counter;
+> --- a/arch/arm/include/asm/barrier.h
+> +++ b/arch/arm/include/asm/barrier.h
+> @@ -79,5 +79,8 @@ do {									\
+>  
+>  #define set_mb(var, value)	do { var = value; smp_mb(); } while (0)
+>  
+> +#define smp_mb__before_atomic()	smp_mb()
+> +#define smp_mb__after_atomic()	smp_mb()
+> +
+>  #endif /* !__ASSEMBLY__ */
+>  #endif /* __ASM_BARRIER_H */
+> --- a/arch/arm/include/asm/bitops.h
+> +++ b/arch/arm/include/asm/bitops.h
+> @@ -25,9 +25,7 @@
+>  
+>  #include <linux/compiler.h>
+>  #include <linux/irqflags.h>
+> -
+> -#define smp_mb__before_clear_bit()	smp_mb()
+> -#define smp_mb__after_clear_bit()	smp_mb()
+> +#include <asm/barrier.h>
+>  
+>  /*
+>   * These functions are the basis of our bit ops.
+> 
+> 
+> 
