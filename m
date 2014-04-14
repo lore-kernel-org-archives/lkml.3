@@ -1,158 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705AbaDNNcX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 09:32:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30514 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754077AbaDNNcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 09:32:21 -0400
-Date: Mon, 14 Apr 2014 16:31:11 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Steven Galgano <sgalgano@adjacentlink.com>
-Cc: David Miller <davem@davemloft.net>, jasowang@redhat.com,
-        xemul@parallels.com, wuzhy@linux.vnet.ibm.com, therbert@google.com,
-        yamato@redhat.com, richardcochran@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Brian.Adamson@nrl.navy.mil,
-        jgiovatto@adjacentlink.com
-Subject: Re: [PATCH v3] tuntap: add flow control to support back pressure
-Message-ID: <20140414133111.GA16525@redhat.com>
-References: <534B3A33.9090401@adjacentlink.com>
- <20140413.214004.1087903132047842986.davem@davemloft.net>
- <534B61C2.1080700@adjacentlink.com>
- <20140414.003449.294037863611224523.davem@davemloft.net>
- <534BE0EB.2080409@adjacentlink.com>
+	id S1754851AbaDNNdF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 09:33:05 -0400
+Received: from mail-bl2on0123.outbound.protection.outlook.com ([65.55.169.123]:49929
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754064AbaDNNdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 09:33:03 -0400
+X-Greylist: delayed 891 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Apr 2014 09:33:02 EDT
+From: <dinguyen@altera.com>
+To: <dinh.linux@gmail.com>, <mturquette@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@altera.com>
+Subject: [PATCH] clk: socfpga: fix clock driver for 3.15
+Date: Mon, 14 Apr 2014 08:15:36 -0500
+Message-ID: <1397481336-5592-1-git-send-email-dinguyen@altera.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <534BE0EB.2080409@adjacentlink.com>
+Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(199002)(189002)(164054003)(80022001)(48376002)(33646001)(4396001)(62966002)(20776003)(86362001)(46102001)(47776003)(87286001)(50986999)(6806004)(87936001)(74502001)(31966008)(93916002)(74662001)(80976001)(76482001)(97736001)(86152002)(77156001)(2009001)(92726001)(92566001)(88136002)(44976005)(19580395003)(79102001)(99396002)(36756003)(77982001)(89996001)(81342001)(53416003)(83322001)(19580405001)(50226001)(85852003)(83072002)(81542001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2FFO11HUB015;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:A280F1E6.8ED29D00.32F5154B.E92FCF0.2032A;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-OriginatorOrg: altera.onmicrosoft.com
+X-Forefront-PRVS: 0181F4652A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 09:21:47AM -0400, Steven Galgano wrote:
-> Added optional per queue flow control support using IFF_FLOW_CONTROL. When the 
-> IFF_FLOW_CONTROL TUNSETIFF flag is specified it will set a per queue flag to 
-> indicate that the queue should be stopped using netif_tx_stop_queue(), rather 
-> than discarding frames once full. After reading a frame from the respective 
-> stopped queue, a netif_tx_wake_queue() is issued to signal resource 
-> availability.
-> 
-> The per queue TUN_FLOW_CONTROL flag is stored in struct tun_file. This provides 
-> the flexibility to enable flow control on all, none or some queues when using 
-> IFF_MULTI_QUEUE. When not using IFF_MULTI_QUEUE, IFF_FLOW_CONTROL will apply to 
-> the single queue. No changes were made to the default drop frame policy.
-> 
-> This change adds support for back pressure use cases.
-> 
-> Reported-by: Brian Adamson <brian.adamson@nrl.navy.mil>
-> Tested-by: Joseph Giovatto <jgiovatto@adjacentlink.com>
-> Signed-off-by: Steven Galgano <sgalgano@adjacentlink.com>
-> ---
-> Version 3 patch reformatted commit message to be 80 columns max width. 
->  Corrected Tested-By email address.
-> Version 2 patch added support for individual queues when applying flow
-> control instead of using netif_tx_stop_all_queues()/netif_tx_wake_all_queues().
+From: Dinh Nguyen <dinguyen@altera.com>
 
-Any plans to try and address the more material comments on v2?
+commit [1771b10d6 clk: respect the clock dependencies in of_clk_init]
+exposed a flaw in the socfpga clock driver and prevents the platform
+from booting on 3.15-rc1.
 
->  drivers/net/tun.c           | 32 ++++++++++++++++++++++++++++----
->  include/uapi/linux/if_tun.h |  2 ++
->  2 files changed, 30 insertions(+), 4 deletions(-)
-> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-> index ee328ba..3d09f5a 100644
-> --- a/drivers/net/tun.c
-> +++ b/drivers/net/tun.c
-> @@ -137,7 +137,7 @@ struct tun_file {
->  	struct tun_struct __rcu *tun;
->  	struct net *net;
->  	struct fasync_struct *fasync;
-> -	/* only used for fasnyc */
-> +	/* used for fasnyc and flow control */
->  	unsigned int flags;
->  	union {
->  		u16 queue_index;
-> @@ -783,8 +783,19 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
->  	 * number of queues.
->  	 */
->  	if (skb_queue_len(&tfile->socket.sk->sk_receive_queue) * numqueues
-> -			  >= dev->tx_queue_len)
-> -		goto drop;
-> +			>= dev->tx_queue_len) {
-> +		if (tfile->flags & TUN_FLOW_CONTROL) {
-> +			/* Resources unavailable stop queue */
-> +			netif_tx_stop_queue(netdev_get_tx_queue(dev, txq));
-> +
-> +			/* We won't see all dropped packets individually, so
-> +			 * over run error is more appropriate.
-> +			 */
-> +			dev->stats.tx_fifo_errors++;
-> +		} else {
-> +			goto drop;
-> +		}
-> +	}
->  
->  	if (unlikely(skb_orphan_frags(skb, GFP_ATOMIC)))
->  		goto drop;
-> @@ -1333,6 +1344,7 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
->  	DECLARE_WAITQUEUE(wait, current);
->  	struct sk_buff *skb;
->  	ssize_t ret = 0;
-> +	struct netdev_queue *ntxq;
->  
->  	tun_debug(KERN_INFO, tun, "tun_do_read\n");
->  
-> @@ -1362,6 +1374,12 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
->  			continue;
->  		}
->  
-> +		ntxq = netdev_get_tx_queue(tun->dev, tfile->queue_index);
-> +
-> +		if (tfile->flags & TUN_FLOW_CONTROL &&
-> +		    netif_tx_queue_stopped(ntxq))
-> +			netif_tx_wake_queue(ntxq);
-> +
->  		ret = tun_put_user(tun, tfile, skb, iv, len);
->  		kfree_skb(skb);
->  		break;
-> @@ -1732,6 +1750,11 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
->  	else
->  		tun->flags &= ~TUN_TAP_MQ;
->  
-> +	if (ifr->ifr_flags & IFF_FLOW_CONTROL)
-> +		tfile->flags |= TUN_FLOW_CONTROL;
-> +	else
-> +		tfile->flags &= ~TUN_FLOW_CONTROL;
-> +
->  	/* Make sure persistent devices do not get stuck in
->  	 * xoff state.
->  	 */
-> @@ -1900,7 +1923,8 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
->  		 * This is needed because we never checked for invalid flags on
->  		 * TUNSETIFF. */
->  		return put_user(IFF_TUN | IFF_TAP | IFF_NO_PI | IFF_ONE_QUEUE |
-> -				IFF_VNET_HDR | IFF_MULTI_QUEUE,
-> +				IFF_VNET_HDR | IFF_MULTI_QUEUE |
-> +				IFF_FLOW_CONTROL,
->  				(unsigned int __user*)argp);
->  	} else if (cmd == TUNSETQUEUE)
->  		return tun_set_queue(file, &ifr);
-> diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
-> index e9502dd..bcf2790 100644
-> --- a/include/uapi/linux/if_tun.h
-> +++ b/include/uapi/linux/if_tun.h
-> @@ -36,6 +36,7 @@
->  #define TUN_PERSIST 	0x0100	
->  #define TUN_VNET_HDR 	0x0200
->  #define TUN_TAP_MQ      0x0400
-> +#define TUN_FLOW_CONTROL 0x0800
->  
->  /* Ioctl defines */
->  #define TUNSETNOCSUM  _IOW('T', 200, int) 
-> @@ -70,6 +71,7 @@
->  #define IFF_MULTI_QUEUE 0x0100
->  #define IFF_ATTACH_QUEUE 0x0200
->  #define IFF_DETACH_QUEUE 0x0400
-> +#define IFF_FLOW_CONTROL 0x0010
->  /* read-only flag */
->  #define IFF_PERSIST	0x0800
->  #define IFF_NOFILTER	0x1000
+Because the "altr,clk-mgr" is not really a clock, it should not be using
+CLK_OF_DECLARE, instead we should be mapping the clk-mgr's base address
+one of the functional clock init function. Use the socfpga_pll_init function
+to map the clk_mgr_base_addr as this clock should always be initialized first.
+
+Signed-off-by: Dinh Nguyen <dinguyen@altera.com>
+---
+Hi Mike,
+
+This patch is needed to fix the SOCFPGA platform from booting on 3.15-rc1.
+
+Thanks,
+Dinh
+---
+ drivers/clk/socfpga/clk-pll.c |    7 +++++++
+ drivers/clk/socfpga/clk.c     |   23 +++--------------------
+ 2 files changed, 10 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/clk/socfpga/clk-pll.c b/drivers/clk/socfpga/clk-pll.c
+index 88dafb5..de6da95 100644
+--- a/drivers/clk/socfpga/clk-pll.c
++++ b/drivers/clk/socfpga/clk-pll.c
+@@ -20,6 +20,7 @@
+ #include <linux/clk-provider.h>
+ #include <linux/io.h>
+ #include <linux/of.h>
++#include <linux/of_address.h>
+ 
+ #include "clk.h"
+ 
+@@ -43,6 +44,8 @@
+ 
+ #define to_socfpga_clk(p) container_of(p, struct socfpga_pll, hw.hw)
+ 
++void __iomem *clk_mgr_base_addr;
++
+ static unsigned long clk_pll_recalc_rate(struct clk_hw *hwclk,
+ 					 unsigned long parent_rate)
+ {
+@@ -87,6 +90,7 @@ static __init struct clk *__socfpga_pll_init(struct device_node *node,
+ 	const char *clk_name = node->name;
+ 	const char *parent_name[SOCFPGA_MAX_PARENTS];
+ 	struct clk_init_data init;
++	struct device_node *clkmgr_np;
+ 	int rc;
+ 	int i = 0;
+ 
+@@ -96,6 +100,9 @@ static __init struct clk *__socfpga_pll_init(struct device_node *node,
+ 	if (WARN_ON(!pll_clk))
+ 		return NULL;
+ 
++	clkmgr_np = of_find_compatible_node(NULL, NULL, "altr,clk-mgr");
++	clk_mgr_base_addr = of_iomap(clkmgr_np, 0);
++	BUG_ON(!clk_mgr_base_addr);
+ 	pll_clk->hw.reg = clk_mgr_base_addr + reg;
+ 
+ 	of_property_read_string(node, "clock-output-names", &clk_name);
+diff --git a/drivers/clk/socfpga/clk.c b/drivers/clk/socfpga/clk.c
+index 35a960a..43db947 100644
+--- a/drivers/clk/socfpga/clk.c
++++ b/drivers/clk/socfpga/clk.c
+@@ -17,28 +17,11 @@
+  * You should have received a copy of the GNU General Public License
+  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  */
+-#include <linux/clk.h>
+-#include <linux/clkdev.h>
+-#include <linux/clk-provider.h>
+-#include <linux/io.h>
+ #include <linux/of.h>
+-#include <linux/of_address.h>
+ 
+ #include "clk.h"
+ 
+-void __iomem *clk_mgr_base_addr;
+-
+-static const struct of_device_id socfpga_child_clocks[] __initconst = {
+-	{ .compatible = "altr,socfpga-pll-clock", socfpga_pll_init, },
+-	{ .compatible = "altr,socfpga-perip-clk", socfpga_periph_init, },
+-	{ .compatible = "altr,socfpga-gate-clk", socfpga_gate_init, },
+-	{},
+-};
+-
+-static void __init socfpga_clkmgr_init(struct device_node *node)
+-{
+-	clk_mgr_base_addr = of_iomap(node, 0);
+-	of_clk_init(socfpga_child_clocks);
+-}
+-CLK_OF_DECLARE(socfpga_mgr, "altr,clk-mgr", socfpga_clkmgr_init);
++CLK_OF_DECLARE(socfpga_pll_clk, "altr,socfpga-pll-clock", socfpga_pll_init);
++CLK_OF_DECLARE(socfpga_perip_clk, "altr,socfpga-perip-clk", socfpga_periph_init);
++CLK_OF_DECLARE(socfpga_gate_clk, "altr,socfpga-gate-clk", socfpga_gate_init);
+ 
+-- 
+1.7.9.5
+
