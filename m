@@ -1,38 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418AbaDNRIe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 13:08:34 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48272 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754477AbaDNRIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 13:08:32 -0400
-Message-ID: <534C15F2.105@zytor.com>
-Date: Mon, 14 Apr 2014 10:08:02 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755436AbaDNRJg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 13:09:36 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:53017 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755188AbaDNRJe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 13:09:34 -0400
+Date: Mon, 14 Apr 2014 19:09:32 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, acme@infradead.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, peterz@infradead.org, eranian@google.com,
+        namhyung@kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/2] perf, tools: Support spark lines in perf stat
+Message-ID: <20140414170931.GF22728@two.firstfloor.org>
+References: <1395768699-16060-1-git-send-email-andi@firstfloor.org>
+ <1395768699-16060-2-git-send-email-andi@firstfloor.org>
+ <20140414085028.GA1433@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: "K. Y. Srinivasan" <kys@microsoft.com>, x86@kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com, tglx@linutronix.de, JBeulich@suse.com
-Subject: Re: [PATCH V3 1/1] X86: Probe for PIC and set legacy_pic appropriately
-References: <1397497584-23717-1-git-send-email-kys@microsoft.com>
-In-Reply-To: <1397497584-23717-1-git-send-email-kys@microsoft.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140414085028.GA1433@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2014 10:46 AM, K. Y. Srinivasan wrote:
-> +	new_val = inb(PIC_MASTER_IMR);
-> +	if (probe_val != new_val) {
+> fput could go into print_stat_spark
 
-Nitpick: Linux coding style should have this as:
+I wanted to keep the function generic, so that it can be easily
+used in other places. Adding the space is somewhat specific
+to stat.
 
-	if (new_val != probe_val)
+Also the rest of the stat code has the white space printing 
+centralized in the caller too. I suppose makes it easier to change.
 
-	-hpa
+> > +	len = n;
+> > +	if (len > NUM_SPARK_VALS)
+> > +		len = NUM_SPARK_VALS;
+> > +	if (all_the_same(stat->svals, len))
+> > +		return;
+> > +	print_spark(f, stat->svals, len);
+> > +	if (stat->n > NUM_SPARK_VALS)
+> > +		fputs("..", f);
+> > +}
+> 
+> whats the reason for 'n' in here?  looks like you could do only with 'len'
 
+len is capped to NUM_SPARK_VALS, but the test needs to be on the
+uncapped value. Otherwise exactly NUM_SPARK_VALS entries would
+get a .. incorrectly.
 
+-Andi
