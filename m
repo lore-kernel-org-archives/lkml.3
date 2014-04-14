@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348AbaDNI60 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 04:58:26 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57041 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754292AbaDNI6W (ORCPT
+	id S1754434AbaDNI7Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 04:59:25 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50327 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752562AbaDNI7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 04:58:22 -0400
-Date: Mon, 14 Apr 2014 10:58:09 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Bo Shen <voice.shen@atmel.com>, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] ARM: at91: move sam9n12 SoC to the CCF
-Message-ID: <20140414085809.GN2967@piout.net>
-References: <1397463399-11771-1-git-send-email-boris.brezillon@free-electrons.com>
- <1397463399-11771-5-git-send-email-boris.brezillon@free-electrons.com>
+	Mon, 14 Apr 2014 04:59:24 -0400
+Date: Mon, 14 Apr 2014 10:59:11 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: mingo@kernel.org, tglx@linutronix.de, luto@amacapital.net,
+        daniel.lezcano@linaro.org, umgwanakikbuti@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 8/8] sched,idle: Reflow cpuidle_idle_call()
+Message-ID: <20140414085911.GB11096@twins.programming.kicks-ass.net>
+References: <20140411134243.160989490@infradead.org>
+ <20140411135218.617896630@infradead.org>
+ <alpine.LFD.2.11.1404131734120.980@knanqh.ubzr>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397463399-11771-5-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.11.1404131734120.980@knanqh.ubzr>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/04/2014 at 10:16:39 +0200, Boris Brezillon wrote :
-> This patch removes the selection of AT91_USE_OLD_CLK when selecting
-> sam9n12 SoC support. This will automatically enable COMMON_CLK_AT91 option
-> and add support for at91 common clk implementation.
+On Sun, Apr 13, 2014 at 05:36:46PM -0400, Nicolas Pitre wrote:
+> > @@ -102,90 +102,64 @@ static int cpuidle_idle_call(void)
+> >  	 * Check if the cpuidle framework is ready, otherwise fallback
+> >  	 * to the default arch specific idle method
+> >  	 */
+> > -	ret = cpuidle_enabled(drv, dev);
+> > +	if (cpuidle_enabled(drv, dev))
+> > +		goto use_default;
 > 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->  arch/arm/mach-at91/Kconfig | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-> index b2d2cf4..a1ac430 100644
-> --- a/arch/arm/mach-at91/Kconfig
-> +++ b/arch/arm/mach-at91/Kconfig
-> @@ -183,7 +183,6 @@ config SOC_AT91SAM9N12
->  	select HAVE_AT91_DBGU0
->  	select HAVE_FB_ATMEL
->  	select SOC_AT91SAM9
-> -	select AT91_USE_OLD_CLK
->  	select HAVE_AT91_USB_CLK
->  	help
->  	  Select this if you are using Atmel's AT91SAM9N12 SoC.
-> -- 
-> 1.8.3.2
-> 
+> Why not using braces here and moving the use_default code block inside 
+> it instead?
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+I didn't because there's two goto use_default sites, but sure, I can do
+that.
