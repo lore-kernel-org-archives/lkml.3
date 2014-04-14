@@ -1,149 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931AbaDNTcF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 15:32:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50236 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750819AbaDNTcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 15:32:02 -0400
-Date: Mon, 14 Apr 2014 15:31:53 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Satoru MORIYA <satoru.moriya.br@hitachi.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Takenori Nagano <t-nagano@ah.jp.nec.com>,
-        Eric Biederman <ebiederm@xmission.com>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] kernel/panic: Add "late_kdump" option for kdump in
- unstable condition
-Message-ID: <20140414193153.GC4281@redhat.com>
-References: <20140414045158.10846.35462.stgit@ltc230.yrl.intra.hitachi.co.jp>
+	id S1754923AbaDNTcW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 15:32:22 -0400
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:62610 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754659AbaDNTcS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 15:32:18 -0400
+Date: Mon, 14 Apr 2014 15:32:14 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org
+Subject: Re: [PATCH RFC] blkcg: prepare blkcg knobs for default hierarchy
+Message-ID: <20140414193214.GC16835@htj.dyndns.org>
+References: <20140413013209.GC26252@mtj.dyndns.org>
+ <20140414180824.GB9552@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140414045158.10846.35462.stgit@ltc230.yrl.intra.hitachi.co.jp>
+In-Reply-To: <20140414180824.GB9552@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 01:51:58PM +0900, Masami Hiramatsu wrote:
-> Add a "late_kdump" option to run kdump after running panic
-> notifiers and dump kmsg. This can help rare situations which
-> kdump drops in failure because of unstable crashed kernel
-> or hardware failure (memory corruption on critical data/code),
-> or the 2nd kernel is broken by the 1st kernel (it's a broken
-> behavior, but who can guarantee that the "crashed" kernel
-> works correctly?).
-> 
-> Usage: add "late_kdump" to kernel boot option. That's all.
-> 
-> Note that this actually increases risks of the failure of
-> kdump. This option should be set only if you worry about
-> the rare case of kdump failure rather than increasing the
-> chance of success.
-> 
+Hello,
 
-Masami,
+On Mon, Apr 14, 2014 at 02:08:24PM -0400, Vivek Goyal wrote:
+> Can you please also update Documentation/block/cfq-iosched.txt and
+> Documentation/cgroup/blkio-controller.txt to reflect these new
+> changes.
 
-So what's the alternative to kdump which is more reliable? IOW, what
-action you are planning to take through kmsg_dump() or through
-panic_notifiers?
+Sure thing.
 
-I have seen that many a times developers have tried to make the case 
-to save kernel buffers to NVRAM. Does it work well? Has it been proven
-to be more reliable than kdump?
-
-Thanks
-Vivek
-
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Eric Biederman <ebiederm@xmission.com>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-> Cc: Satoru MORIYA <satoru.moriya.br@hitachi.com>
-> Cc: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>
-> Cc: Takenori Nagano <t-nagano@ah.jp.nec.com>
-> ---
->  Documentation/kernel-parameters.txt |    7 +++++++
->  kernel/panic.c                      |   24 ++++++++++++++++++++++--
->  2 files changed, 29 insertions(+), 2 deletions(-)
+> So now we have tree modes?
 > 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index 03e50b4..1ba58da 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -2339,6 +2339,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->  			timeout < 0: reboot immediately
->  			Format: <timeout>
->  
-> +	late_kdump	Run kdump after running panic-notifiers and dumping
-> +			kmsg. This only for the users who doubt kdump always
-> +			succeeds in any situation.
-> +			Note that this also increases risks of kdump failure,
-> +			because some panic notifiers can make the crashed
-> +			kernel more unstable.
-> +
->  	parkbd.port=	[HW] Parallel port number the keyboard adapter is
->  			connected to, default is 0.
->  			Format: <parport#>
-> diff --git a/kernel/panic.c b/kernel/panic.c
-> index d02fa9f..bba42b5 100644
-> --- a/kernel/panic.c
-> +++ b/kernel/panic.c
-> @@ -32,6 +32,7 @@ static unsigned long tainted_mask;
->  static int pause_on_oops;
->  static int pause_on_oops_flag;
->  static DEFINE_SPINLOCK(pause_on_oops_lock);
-> +static bool late_kdump;
->  
->  int panic_timeout = CONFIG_PANIC_TIMEOUT;
->  EXPORT_SYMBOL_GPL(panic_timeout);
-> @@ -112,9 +113,14 @@ void panic(const char *fmt, ...)
->  	/*
->  	 * If we have crashed and we have a crash kernel loaded let it handle
->  	 * everything else.
-> -	 * Do we want to call this before we try to display a message?
-> +	 * If we want to call this after we try to display a message, pass
-> +	 * the "late_kdump" option to the kernel.
->  	 */
-> -	crash_kexec(NULL);
-> +	if (!late_kdump)
-> +		crash_kexec(NULL);
-> +	else
-> +		pr_emerg("Warning: late_kdump option is set. Please DO NOT "
-> +			"report bugs about kdump failure with this option.\n");
->  
->  	/*
->  	 * Note smp_send_stop is the usual smp shutdown function, which
-> @@ -131,6 +137,13 @@ void panic(const char *fmt, ...)
->  
->  	kmsg_dump(KMSG_DUMP_PANIC);
->  
-> +	/*
-> +	 * If you doubt kdump always works perfectly in any situation,
-> +	 * "late_kdump" offers you to try kdump after running panic_notifier
-> +	 * and dumping kmsg.
-> +	 */
-> +	crash_kexec(NULL);
-> +
->  	bust_spinlocks(0);
->  
->  	if (!panic_blink)
-> @@ -472,6 +485,13 @@ EXPORT_SYMBOL(__stack_chk_fail);
->  core_param(panic, panic_timeout, int, 0644);
->  core_param(pause_on_oops, pause_on_oops, int, 0644);
->  
-> +static int __init setup_late_kdump(char *s)
-> +{
-> +	late_kdump = true;
-> +	return 0;
-> +}
-> +early_param("late_kdump", setup_late_kdump);
-> +
->  static int __init oops_setup(char *s)
->  {
->  	if (!s)
+> - Orignal multi hierachy mode
+> - Multi hierarchy with sane flag
+> 	- Sane flag modifies behavior of throttling.
+> - Unified hierarchy
+> 	- Changes tunables.
+
+No, we don't.  __DEVEL__sane_behavior is a tool to implement unified
+hierarchy.  Once unified hierarchy lands, sane_behavior will be folded
+into unified hierarchy.
+
+> Looks like some of the changes are related to sane flag and others
+> are related to unified hierarchy. Will it make sense to break it down
+> int two patches.
+
+So, they're one and the same.
+
+> > * For cfq, weight[_device] behave inherently differently from the same
+> >   knobs on !root cgroups as root cgroup is treated as parallel to
+> >   immediate children.  Let's omit it for now.
 > 
+> So now root cgroup will not have any cfq, weight[_device] knobs but
+> non root cgroups will have one? What's the harm in providing one for
+> root too for the sake of uniformity. That's a differnt thing thet root
+> does not have a competitor so value in that knob does not matter.
+
+Please see at the end of the mail.
+
+> > * cfq's time stats reports the total time slice consumed but its unit
+> >   is in jiffies and it's not reported per-device like all other stats.
+> >   Omit it for now.  If slice time is actually necessary, let's add it
+> >   in the form consistent with other stats.
+> 
+> To me this knob is also for debugging purposes. CFQ divides disk time
+> proportionally. And if one wants to see how disk time is being divided
+> among cgroups, this knob helps. This is more to verify whether our
+> algorithm is working fine or not and if disk time is being divided
+> in proportion to weights or not.
+> 
+> But again, I am not particular about this knob. Sounds more like
+> debugging stuff.
+
+If it is a debug knob, let's please require it to be enabled
+explicitly - ie. require a boot param which *clearly* indicates that
+this is a debug option; otherwise, we end up leaking internal details
+w/o actually intending or designing for it and userland is likely to
+grow dependency on it.
+
+> Google folks wanted all these knobs. And they said that they have lot
+> of more knobs which they carry internally.
+
+AFAIK, google folks forked cfq a couple years ago, I'm not sure how
+much this will affect them.
+
+> Personally I think io_queued might be a useful knob because it can
+> show current backlog on a particular cgroup and some tool might want
+> to dynamically monitor the queue lenghts of various cgroups and adjust
+> weights dynamically.
+> 
+> So this one might be worth retaining.
+
+Can we do that once we know for sure that this is actually necessary?
+I'm quite skeptical that this sort of snapshot stats are actually
+useful except for debugging.
+
+> > * cfq adds a number of stats knobs if CONFIG_DEBUG_BLK_CGROUP.  If
+> >   these are actually for debugging, they shouldn't show up by default
+> >   (ie. should be gated by kernel param or something).  If userland
+> >   already developed dependency on them, we need to take them out of
+> >   CONFIG_DEBUG_BLK_CGROUP.  Skip them for now.  We can add back the
+> >   relevant ones later.
+> 
+> I am fine with this. Again Google folks intorduced those. Not sure
+> if they still use those. Less stats are better.
+
+The same thing with above.  If these are really for debugging, let's
+please hide them better.
+
+> >   weight_device			-> cfq.weight_device
+> >   weight			-> cfq.weight
+> >   sectors_recursive		-> cfq.sectors
+> >   io_service_bytes_recursive	-> cfq.bytes
+> 
+> throttling has correspnding knob as throttle.io_service_bytes. So either
+> we can change the name of throttling knob to throttle.bytes or
+> chnage keep this one as it is (cfq.io_service_bytes) for the sake of
+> consistency.
+
+Yeah, thought about keeping them consistent but would that really
+matter?  Having internal consistency in cfq seems more important to
+me.
+
+> >   io_serviced_recursive		-> cfq.serviced
+> 
+> throttling layer uses throttle.io_serviced.
+
+Ditto.
+
+> Given the fact that throttling layer counts bios and CFQ counts requests
+> may be we can keep throttle.bio_serviced  and cfq.rq_serviced as names.
+> 
+> Or may be just throttle.bios and cfq.requests respectively.
+
+I'm not sure whether we want to rename throttle knobs.  Renaming cfq
+knobs makes sense as they need to be renamed for cfq. prefix anyway
+but throttle knobs are already mostly fine, so wouldn't it make sense
+to leave them as they are?  It makes things a bit incosistent between
+cfq and throttle but do we really care?
+
+> > @@ -761,6 +761,7 @@ EXPORT_SYMBOL_GPL(blkg_conf_finish);
+> >  struct cftype blkcg_files[] = {
+> >  	{
+> >  		.name = "reset_stats",
+> > +		.flags = CFTYPE_INSANE,
+> >  		.write_u64 = blkcg_reset_stats,
+> 
+> So this knob will not be user visible with unified hierarchy as well as with
+> sane behavior?
+> 
+> So this looks like a cleanup independent of unified hiearchy.
+
+Again, sane_behavior is subset of unified hierarchy and will be
+absorbed into unified hierarchy.  No need to make the distinction.
+
+> > +	/* files for default hierarchy, properly prefixed with cfq */
+> > +	{
+> > +		.name = "cfq.weight_device",
+> > +		.flags = CFTYPE_ONLY_ON_DFL | CFTYPE_NOT_ON_ROOT,
+> > +		.seq_show = cfqg_print_weight_device,
+> > +		.write_string = cfqg_set_weight_device,
+> > +	},
+> > +	{
+> > +		.name = "cfq.weight",
+> > +		.flags = CFTYPE_ONLY_ON_DFL | CFTYPE_NOT_ON_ROOT,
+> > +		.seq_show = cfq_print_weight,
+> > +		.write_u64 = cfq_set_weight,
+> > +	},
+> > +
+> 
+> What't the harm in providing these knobs for root too?
+
+Because I'm not sure about the benefits and it makes cfq behave
+differently from other controllers.  root cgroup behavior probably has
+to be special per controller so there's nothing fundamentally wrong
+with that.  I just am not sure whether this actually adds something
+significantly beneficial and it's kinda silly to commit to things when
+not really necessary.  Adding things later is easy, removing is not,
+so...
+
+Thanks.
+
+-- 
+tejun
