@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754247AbaDNJx3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 05:53:29 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:56872 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142AbaDNJvY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 05:51:24 -0400
+	id S1754660AbaDNJxv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 05:53:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60173 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751301AbaDNJwn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 05:52:43 -0400
+Date: Mon, 14 Apr 2014 11:52:10 +0200
+From: Igor Mammedov <imammedo@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, bp@suse.de,
+        paul.gortmaker@windriver.com, JBeulich@suse.com, prarit@redhat.com,
+        drjones@redhat.com, toshi.kani@hp.com, riel@redhat.com,
+        gong.chen@linux.intel.com, andi@firstfloor.org, lenb@kernel.org,
+        rjw@rjwysocki.net, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v3 1/5] x86: initialize secondary CPU only if master CPU
+ will wait for it
+Message-ID: <20140414115210.51193098@thinkpad>
+In-Reply-To: <20140414091600.GA19771@gmail.com>
+References: <1397150061-29735-1-git-send-email-imammedo@redhat.com>
+	<1397150061-29735-2-git-send-email-imammedo@redhat.com>
+	<20140414091600.GA19771@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAM4v1pOWQFNaoc44b+7=hrYEzwiMMnhVFZnqfJEZiECuiquuEQ@mail.gmail.com>
-References: <CAKohpo=uT0oC+bZVJQPsoGLb-a4y4huYKtd1ayb4_+iH4906nw@mail.gmail.com>
-	<CAKohpom5Ft_XrNTExE9Ukyv1e4car+wicDiPp_Bdhy=PW9Sq8g@mail.gmail.com>
-	<20140410143857.GA27654@localhost.localdomain>
-	<CAKohpomMhpGsYGafr5uZ0QgO0MEndqDA4G=4syhus4sZW3d8cg@mail.gmail.com>
-	<20140411145333.GC3438@localhost.localdomain>
-	<20140411151825.GX11096@twins.programming.kicks-ass.net>
-	<CAKohpomgv-LbUcPxazfJkf0Jq0sSULxT0WjrbFovn0k0O-ORwg@mail.gmail.com>
-	<CAM4v1pOWQFNaoc44b+7=hrYEzwiMMnhVFZnqfJEZiECuiquuEQ@mail.gmail.com>
-Date: Mon, 14 Apr 2014 15:21:24 +0530
-Message-ID: <CAKohponUO5rS2KtwrhV2r2tWeEr4Fq+akVH0=h9=XZ1W4uG8GA@mail.gmail.com>
-Subject: Re: [Query]: tick-sched: why don't we stop tick when we are running
- idle task?
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Preeti Murthy <preeti.lkml@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 April 2014 15:18, Preeti Murthy <preeti.lkml@gmail.com> wrote:
-> I am not too sure about the complexity or the worthiness of this patch but
-> just wanted to add that care must be taken to migrate the tick_sched_timer
-> of all the remote CPUs off a hotplugged out CPU if the latter was keeping
-> their time thus far. In the normal scenario I am guessing the tick_sched_timer
-> dies along with the hotplugged out CPU since there is no need for it any more.
+On Mon, 14 Apr 2014 11:16:00 +0200
+Ingo Molnar <mingo@kernel.org> wrote:
 
-Agreed. Lets see if there is anybody in favor of this work as it is
-very important
-for some real time use cases we have. Like running data plane threads on
-isolated CPUs.
+> 
+> * Igor Mammedov <imammedo@redhat.com> wrote:
+> 
+> >  	/*
+> > +	 * wait for ACK from master CPU before continuing
+> > +	 * with AP initialization
+> > +	 */
+> > +	cpumask_set_cpu(cpu, cpu_initialized_mask);
+> > +	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
+> > +		cpu_relax();
+> 
+> > +	/*
+> > +	 * wait for ACK from master CPU before continuing
+> > +	 * with AP initialization
+> > +	 */
+> > +	cpumask_set_cpu(cpu, cpu_initialized_mask);
+> > +	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
+> > +		cpu_relax();
+> 
+> That repetitive pattern could be stuck into a properly named helper 
+> inline function.
+sure
+
+> (Also, before the cpumask_set_cpu() we should probably do a WARN_ON() 
+> if the bit is already set.)
+The reason why there is no any WARN_ON or likes is that printk is quite
+complicated, takes looks and so on. So it's not safe at this point since
+CPU could be shot down by any time by INIT/SIPI until it's out of 
+cpu_callout_mask loop.
+That said it's possible to add WARN_ON in do_boot_cpu() before
+cpu_initialized_mask is cleared, to achieve the same effect,
+so I'll stick it there.
+
+
+> 
+> Thanks,
+> 
+> 	Ingo
+
+
+-- 
+Regards,
+  Igor
