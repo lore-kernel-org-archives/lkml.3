@@ -1,94 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223AbaDNOSY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 10:18:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24062 "EHLO mx1.redhat.com"
+	id S1755255AbaDNOS2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 10:18:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32376 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750909AbaDNOSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 10:18:18 -0400
+	id S1755222AbaDNOSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 10:18:24 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 08/17] perf probe: Fix to handle errors in line_range searching
-Date: Mon, 14 Apr 2014 16:17:32 +0200
-Message-Id: <1397485061-17215-9-git-send-email-jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 17/17] perf tools: Instead of redirecting flex output, use -o
+Date: Mon, 14 Apr 2014 16:17:41 +0200
+Message-Id: <1397485061-17215-18-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1397485061-17215-1-git-send-email-jolsa@redhat.com>
 References: <1397485061-17215-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
 
-As Namhyung reported(https://lkml.org/lkml/2014/4/1/89),
-current perf-probe -L option doesn't handle errors in line-range
-searching correctly. It causes a SEGV if an error occured in the
-line-range searching.
+This gives us a real filename instead of having '<stdout>' show up all
+over the place when debugging.
 
-  ----
-  $ perf probe -x ./perf -v -L map__load
-  Open Debuginfo file: /home/namhyung/project/linux/tools/perf/perf
-  fname: util/map.c, lineno:153
-  New line range: 153 to 2147483647
-  path: (null)
-  Segmentation fault (core dumped)
-  ----
-
-This is because line_range_inline_cb() ignores errors
-from find_line_range_by_line() which means that lr->path is
-already freed on the error path in find_line_range_by_line().
-As a result, get_real_path() accesses the lr->path and it
-causes a NULL pointer exception.
-
-This fixes line_range_inline_cb() to handle the error correctly,
-and report it to the caller.
-
-Anyway, this just fixes a possible SEGV bug, Namhyung's patch
-is also required.
-
-Reported-by: Namhyung Kim <namhyung@kernel.org>
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20140402054831.19080.27006.stgit@ltc230.yrl.intra.hitachi.co.jp
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/r/1396652539-2416-1-git-send-email-cody@linux.vnet.ibm.com
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/probe-finder.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ tools/perf/Makefile.perf | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 3bf0c8c..fae274e 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -1475,14 +1475,15 @@ static int find_line_range_by_line(Dwarf_Die *sp_die, struct line_finder *lf)
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 50d875d..e969233 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -192,13 +192,13 @@ endif
+ export PERL_PATH
  
- static int line_range_inline_cb(Dwarf_Die *in_die, void *data)
- {
--	find_line_range_by_line(in_die, data);
-+	int ret = find_line_range_by_line(in_die, data);
+ $(OUTPUT)util/parse-events-flex.c: util/parse-events.l $(OUTPUT)util/parse-events-bison.c
+-	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h $(PARSER_DEBUG_FLEX) -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
++	$(QUIET_FLEX)$(FLEX) -o $@ --header-file=$(OUTPUT)util/parse-events-flex.h $(PARSER_DEBUG_FLEX) util/parse-events.l
  
- 	/*
- 	 * We have to check all instances of inlined function, because
- 	 * some execution paths can be optimized out depends on the
--	 * function argument of instances
-+	 * function argument of instances. However, if an error occurs,
-+	 * it should be handled by the caller.
- 	 */
--	return 0;
-+	return ret < 0 ? ret : 0;
- }
+ $(OUTPUT)util/parse-events-bison.c: util/parse-events.y
+ 	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c -p parse_events_
  
- /* Search function definition from function name */
+ $(OUTPUT)util/pmu-flex.c: util/pmu.l $(OUTPUT)util/pmu-bison.c
+-	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
++	$(QUIET_FLEX)$(FLEX) -o $@ --header-file=$(OUTPUT)util/pmu-flex.h util/pmu.l
+ 
+ $(OUTPUT)util/pmu-bison.c: util/pmu.y
+ 	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c -p perf_pmu_
 -- 
 1.8.3.1
 
