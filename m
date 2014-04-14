@@ -1,94 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072AbaDNOv0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 10:51:26 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:60604 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161AbaDNOvY (ORCPT
+	id S1754581AbaDNOwV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 10:52:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46527 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751356AbaDNOwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 10:51:24 -0400
-Date: Mon, 14 Apr 2014 16:51:19 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Igor Mammedov <imammedo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, bp@suse.de,
-        paul.gortmaker@windriver.com, JBeulich@suse.com, prarit@redhat.com,
-        drjones@redhat.com, toshi.kani@hp.com, riel@redhat.com,
-        gong.chen@linux.intel.com, andi@firstfloor.org, lenb@kernel.org,
-        rjw@rjwysocki.net, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v3 1/5] x86: initialize secondary CPU only if master CPU
- will wait for it
-Message-ID: <20140414145119.GA27683@gmail.com>
-References: <1397150061-29735-1-git-send-email-imammedo@redhat.com>
- <1397150061-29735-2-git-send-email-imammedo@redhat.com>
- <20140414091600.GA19771@gmail.com>
- <20140414115210.51193098@thinkpad>
- <20140414100335.GC731@gmail.com>
- <20140414145048.3d7cf907@nial.usersys.redhat.com>
+	Mon, 14 Apr 2014 10:52:20 -0400
+Date: Mon, 14 Apr 2014 07:51:43 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-5e09714b0e877d5d062530aae4061074d864243f@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        namhyung.kim@lge.com, namhyung@kernel.org, jolsa@redhat.com,
+        dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1395193578-27098-1-git-send-email-namhyung@kernel.org>
+References: <1395193578-27098-1-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf top:
+  Fix documentation of invalid -s option
+Git-Commit-ID: 5e09714b0e877d5d062530aae4061074d864243f
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140414145048.3d7cf907@nial.usersys.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  5e09714b0e877d5d062530aae4061074d864243f
+Gitweb:     http://git.kernel.org/tip/5e09714b0e877d5d062530aae4061074d864243f
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Wed, 19 Mar 2014 10:46:18 +0900
+Committer:  Jiri Olsa <jolsa@redhat.com>
+CommitDate: Mon, 14 Apr 2014 12:54:59 +0200
 
-* Igor Mammedov <imammedo@redhat.com> wrote:
+perf top: Fix documentation of invalid -s option
 
-> On Mon, 14 Apr 2014 12:03:35 +0200
-> Ingo Molnar <mingo@kernel.org> wrote:
-> 
-> > 
-> > * Igor Mammedov <imammedo@redhat.com> wrote:
-> > 
-> > > On Mon, 14 Apr 2014 11:16:00 +0200
-> > > Ingo Molnar <mingo@kernel.org> wrote:
-> > > 
-> > > > 
-> > > > * Igor Mammedov <imammedo@redhat.com> wrote:
-> > > > 
-> > > > >  	/*
-> > > > > +	 * wait for ACK from master CPU before continuing
-> > > > > +	 * with AP initialization
-> > > > > +	 */
-> > > > > +	cpumask_set_cpu(cpu, cpu_initialized_mask);
-> > > > > +	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
-> > > > > +		cpu_relax();
-> > > > 
-> > > > > +	/*
-> > > > > +	 * wait for ACK from master CPU before continuing
-> > > > > +	 * with AP initialization
-> > > > > +	 */
-> > > > > +	cpumask_set_cpu(cpu, cpu_initialized_mask);
-> > > > > +	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
-> > > > > +		cpu_relax();
-> > > > 
-> > > > That repetitive pattern could be stuck into a properly named helper 
-> > > > inline function.
-> > > sure
-> > > 
-> > > > (Also, before the cpumask_set_cpu() we should probably do a WARN_ON() 
-> > > > if the bit is already set.)
->
-> WARN_ON will never be triggered here since bit is always cleared by 
-> master CPU before AP gets here. There is no harm keeping WARN_ON 
-> though, do you still want it be here?
+On perf top, the -s option is used for --sort, but the man page
+contains invalid documentation of -s option for --sym-annotate.
 
-The previous code panic()ed on this condition - so it makes sense to 
-at least keep a WARN_ON(). That it won't ever trigger is good:
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1395193578-27098-1-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/Documentation/perf-top.txt | 1 -
+ 1 file changed, 1 deletion(-)
 
-> It could be useful to put WARN_ON in do_boot_cpu() before bit is 
-> cleared, so that user would see that he tries to online AP which has 
-> failed previous time. It's not really necessary since failed to 
-> online attempt reported in logs at ERR level now, see patch 2/5.
-
-WARN_ON()s are not used to communicate with users, they are used to 
-show developers that there's a _bug_ in the code!
-
-So a WARN_ON() not triggering, ever, is a good thing.
-
-Thanks,
-
-	Ingo
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index cdd8d49..976b00c 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -87,7 +87,6 @@ Default is to monitor all CPUS.
+ --realtime=<priority>::
+ 	Collect data with this RT SCHED_FIFO priority.
+ 
+--s <symbol>::
+ --sym-annotate=<symbol>::
+         Annotate this symbol.
+ 
