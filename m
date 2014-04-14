@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963AbaDNQ3y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:29:54 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:64146 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754711AbaDNQ3u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:29:50 -0400
+	id S1755974AbaDNQaX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:30:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47809 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754383AbaDNQ3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 12:29:52 -0400
+Message-ID: <534C0CD6.9030602@zytor.com>
+Date: Mon, 14 Apr 2014 09:29:10 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <1397211951-20549-7-git-send-email-miklos@szeredi.hu>
-References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
-	<1397211951-20549-7-git-send-email-miklos@szeredi.hu>
-Date: Mon, 14 Apr 2014 18:29:48 +0200
-X-Google-Sender-Auth: tcbe6JB6CtAnY3aDRXC_3vcthrs
-Message-ID: <CAMuHMdXrH8btyjuT3v=PVR16juob3dD03vNvX2j5+tNo2e_uAw@mail.gmail.com>
-Subject: Re: [PATCH 06/15] m68k: add renameat2 syscall
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+To: Torsten Duwe <duwe@lst.de>
+CC: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        ingo.tuchscherer@de.ibm.com, linux-kernel@vger.kernel.org,
+        Hans-Georg Markgraf <MGRF@de.ibm.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Joe Perches <joe@perches.com>
+Subject: Re: [PATCH v3 00/03]: hwrng: an in-kernel rngd
+References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de> <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com> <20140414160211.GE711@lst.de> <7b22b881-9359-42c9-a632-6a8cbdb13b71@email.android.com> <20140414162451.GE29351@lst.de>
+In-Reply-To: <20140414162451.GE29351@lst.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Miklos,
+On 04/14/2014 09:24 AM, Torsten Duwe wrote:
+> On Mon, Apr 14, 2014 at 09:09:14AM -0700, H. Peter Anvin wrote:
+>> I think the default should be zero, so each hwrng driver maintainer would have to consider what guarantees that particular driver can give.  If anything 50% ought to be the maximum.
+> 
+> Repost of v4 just for patch 03/03 is on its way then, defaulting to 0
+> (off), which happens to be the old behaviour, which I think I've also
+> expressed my sympathy for already.
+> 
 
-On Fri, Apr 11, 2014 at 12:25 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> From: Miklos Szeredi <mszeredi@suse.cz>
+Sounds good.
 
-Thanks!
+	-hpa
 
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
