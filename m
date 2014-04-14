@@ -1,108 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754388AbaDNPUb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 11:20:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23771 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751369AbaDNPU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 11:20:29 -0400
-Date: Mon, 14 Apr 2014 17:19:59 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, David Woodhouse <dwmw2@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Richard Weinberger <richard@nod.at>,
-        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
+	id S1754992AbaDNPRA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 11:17:00 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60717 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753778AbaDNPK1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 11:10:27 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND 04/11] signals: rename rm_from_queue_full() to
-	flush_sigqueue_mask()
-Message-ID: <20140414151959.GA21995@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140414151929.GA21470@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Subject: [PATCH v7 05/11] ARM: mvebu: Split low level functions to manipulate HW coherency
+Date: Mon, 14 Apr 2014 17:10:08 +0200
+Message-Id: <1397488214-20685-6-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1397488214-20685-1-git-send-email-gregory.clement@free-electrons.com>
+References: <1397488214-20685-1-git-send-email-gregory.clement@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"rm_from_queue_full" looks ugly and misleading, especially now that
-rm_from_queue() has gone away. Rename it to flush_sigqueue_mask(),
-this matches flush_sigqueue() we already have.
+Actually enabling coherency and adding a CPU on a SMP group are two
+different operations which can be done separately. This patch splits
+this in two functions.
 
-Also remove the obsolete comment which explains the difference with
-rm_from_queue() we already killed.
+Moreover as they use common pattern, this patch also creates local low
+level functions (ll_get_coherency_base and ll_get_cpuid) to be used by
+the exposed functions (ll_add_cpu_to_smp_group and
+ll_enable_coherency)
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 ---
- kernel/signal.c |   19 ++++++++-----------
- 1 files changed, 8 insertions(+), 11 deletions(-)
+ arch/arm/mach-mvebu/coherency.c    |  8 ++--
+ arch/arm/mach-mvebu/coherency_ll.S | 92 +++++++++++++++++++++++++-------------
+ arch/arm/mach-mvebu/headsmp.S      |  6 ++-
+ 3 files changed, 71 insertions(+), 35 deletions(-)
 
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 6072efa..c0b7d0c 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -705,11 +705,8 @@ void signal_wake_up_state(struct task_struct *t, unsigned int state)
-  * Returns 1 if any signals were found.
-  *
-  * All callers must be holding the siglock.
-- *
-- * This version takes a sigset mask and looks at all signals,
-- * not just those in the first mask word.
-  */
--static int rm_from_queue_full(sigset_t *mask, struct sigpending *s)
-+static int flush_sigqueue_mask(sigset_t *mask, struct sigpending *s)
+diff --git a/arch/arm/mach-mvebu/coherency.c b/arch/arm/mach-mvebu/coherency.c
+index ad61251f7faf..6718193ebd3f 100644
+--- a/arch/arm/mach-mvebu/coherency.c
++++ b/arch/arm/mach-mvebu/coherency.c
+@@ -43,8 +43,9 @@ static struct of_device_id of_coherency_table[] = {
+ 	{ /* end of list */ },
+ };
+ 
+-/* Function defined in coherency_ll.S */
+-int ll_set_cpu_coherent(void);
++/* Functions defined in coherency_ll.S */
++int ll_enable_coherency(void);
++void ll_add_cpu_to_smp_group(void);
+ 
+ int set_cpu_coherent(void)
  {
- 	struct sigqueue *q, *n;
- 	sigset_t m;
-@@ -851,18 +848,18 @@ static bool prepare_signal(int sig, struct task_struct *p, bool force)
- 		 * This is a stop signal.  Remove SIGCONT from all queues.
- 		 */
- 		siginitset(&flush, sigmask(SIGCONT));
--		rm_from_queue_full(&flush, &signal->shared_pending);
-+		flush_sigqueue_mask(&flush, &signal->shared_pending);
- 		for_each_thread(p, t)
--			rm_from_queue_full(&flush, &t->pending);
-+			flush_sigqueue_mask(&flush, &t->pending);
- 	} else if (sig == SIGCONT) {
- 		unsigned int why;
- 		/*
- 		 * Remove all stop signals from all queues, wake all threads.
- 		 */
- 		siginitset(&flush, SIG_KERNEL_STOP_MASK);
--		rm_from_queue_full(&flush, &signal->shared_pending);
-+		flush_sigqueue_mask(&flush, &signal->shared_pending);
- 		for_each_thread(p, t) {
--			rm_from_queue_full(&flush, &t->pending);
-+			flush_sigqueue_mask(&flush, &t->pending);
- 			task_clear_jobctl_pending(t, JOBCTL_STOP_PENDING);
- 			if (likely(!(t->ptrace & PT_SEIZED)))
- 				wake_up_state(t, __TASK_STOPPED);
-@@ -3101,9 +3098,9 @@ int do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
- 		if (sig_handler_ignored(sig_handler(t, sig), sig)) {
- 			sigemptyset(&mask);
- 			sigaddset(&mask, sig);
--			rm_from_queue_full(&mask, &t->signal->shared_pending);
-+			flush_sigqueue_mask(&mask, &t->signal->shared_pending);
- 			do {
--				rm_from_queue_full(&mask, &t->pending);
-+				flush_sigqueue_mask(&mask, &t->pending);
- 			} while_each_thread(current, t);
- 		}
+@@ -54,7 +55,8 @@ int set_cpu_coherent(void)
+ 		return 1;
  	}
-@@ -3112,7 +3109,7 @@ int do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
- 	return 0;
+ 
+-	return ll_set_cpu_coherent();
++	ll_add_cpu_to_smp_group();
++	return ll_enable_coherency();
  }
  
--static int 
-+static int
- do_sigaltstack (const stack_t __user *uss, stack_t __user *uoss, unsigned long sp)
- {
- 	stack_t oss;
+ static inline void mvebu_hwcc_sync_io_barrier(void)
+diff --git a/arch/arm/mach-mvebu/coherency_ll.S b/arch/arm/mach-mvebu/coherency_ll.S
+index 98a0b73f909b..f2e2e8677c4b 100644
+--- a/arch/arm/mach-mvebu/coherency_ll.S
++++ b/arch/arm/mach-mvebu/coherency_ll.S
+@@ -24,52 +24,84 @@
+ #include <asm/cp15.h>
+ 
+ 	.text
+-
+-ENTRY(ll_set_cpu_coherent)
++/* Returns with the coherency address in r1 (r0 is untouched)*/
++ENTRY(ll_get_coherency_base)
+ 	mrc	p15, 0, r1, c1, c0, 0
+ 	tst	r1, #CR_M @ Check MMU bit enabled
+ 	bne	1f
+ 
+-	/* use physical address of the coherency register*/
+-	adr	r0, 3f
+-	ldr	r3, [r0]
+-	ldr	r0, [r0, r3]
++	/* use physical address of the coherency register */
++	adr	r1, 3f
++	ldr	r3, [r1]
++	ldr	r1, [r1, r3]
+ 	b	2f
+ 1:
+-	/* use virtual address of the coherency register*/
+-	ldr	r0, =coherency_base
+-	ldr	r0, [r0]
++	/* use virtual address of the coherency register */
++	ldr	r1, =coherency_base
++	ldr	r1, [r1]
+ 2:
+-	/* Create bit by cpu index */
+-	mrc	15, 0, r1, cr0, cr0, 5
+-	and	r1, r1, #15
++	mov	pc, lr
++ENDPROC(ll_get_coherency_base)
++
++/* Returns with the CPU ID in r3 (r0 is untouched)*/
++ENTRY(ll_get_cpuid)
++	mrc	15, 0, r3, cr0, cr0, 5
++	and	r3, r3, #15
+ 	mov	r2, #(1 << 24)
+-	lsl	r1, r2, r1
++	lsl	r3, r2, r3
+ ARM_BE8(rev	r1, r1)
++	mov	pc, lr
++ENDPROC(ll_get_cpuid)
+ 
+-	/* Add CPU to SMP group - Atomic */
+-	add	r3, r0, #ARMADA_XP_CFB_CTL_REG_OFFSET
+-1:
+-	ldrex	r2, [r3]
+-	orr	r2, r2, r1
+-	strex 	r0, r2, [r3]
+-	cmp	r0, #0
+-	bne 1b
++/* ll_add_cpu_to_smp_group, ll_enable_coherency and
++ * ll_disable_coherency use strex/ldrex whereas MMU can be off. The
++ * Armada XP SoC has an exclusive monitor that can track transactions
++ * to Device and/or SO and as such also when MMU is disabled the
++ * exclusive transactions will be functional
++ */
+ 
+-	/* Enable coherency on CPU - Atomic */
+-	add	r3, r3, #ARMADA_XP_CFB_CFG_REG_OFFSET
++ENTRY(ll_add_cpu_to_smp_group)
++	/*
++	 * r0 being untouched in ll_get_coherency_base and
++	 * ll_get_cpuid, we can use it to save lr modifing it with the
++	 * following bl
++	 */
++	mov r0, lr
++	bl	ll_get_coherency_base
++	bl	ll_get_cpuid
++	mov lr, r0
++	add	r0, r1, #ARMADA_XP_CFB_CFG_REG_OFFSET
+ 1:
+-	ldrex	r2, [r3]
+-	orr	r2, r2, r1
+-	strex	r0, r2, [r3]
+-	cmp	r0, #0
+-	bne 1b
++	ldrex	r2, [r0]
++	orr	r2, r2, r3
++	strex	r1, r2, [r0]
++	cmp	r1, #0
++	bne	1b
++	mov	pc, lr
++ENDPROC(ll_add_cpu_to_smp_group)
+ 
++ENTRY(ll_enable_coherency)
++	/*
++	 * r0 being untouched in ll_get_coherency_base and
++	 * ll_get_cpuid, we can use it to save lr modifing it with the
++	 * following bl
++	 */
++	mov r0, lr
++	bl	ll_get_coherency_base
++	bl	ll_get_cpuid
++	mov lr, r0
++	add	r0, r1, #ARMADA_XP_CFB_CTL_REG_OFFSET
++1:
++	ldrex	r2, [r0]
++	orr	r2, r2, r3
++	strex	r1, r2, [r0]
++	cmp	r1, #0
++	bne	1b
+ 	dsb
+-
+ 	mov	r0, #0
+ 	mov	pc, lr
+-ENDPROC(ll_set_cpu_coherent)
++ENDPROC(ll_enable_coherency)
++
+ 
+ 	.align 2
+ 3:
+diff --git a/arch/arm/mach-mvebu/headsmp.S b/arch/arm/mach-mvebu/headsmp.S
+index cf7abe6554f7..2c4032e368ba 100644
+--- a/arch/arm/mach-mvebu/headsmp.S
++++ b/arch/arm/mach-mvebu/headsmp.S
+@@ -31,8 +31,10 @@
+ ENTRY(armada_xp_secondary_startup)
+  ARM_BE8(setend	be )			@ go BE8 if entered LE
+ 
+-	/* Add CPU to coherency fabric */
+-	bl	ll_set_cpu_coherent
++	bl	ll_add_cpu_to_smp_group
++
++	bl	ll_enable_coherency
++
+ 	b	secondary_startup
+ 
+ ENDPROC(armada_xp_secondary_startup)
 -- 
-1.5.5.1
+1.8.1.2
 
