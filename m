@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754904AbaDNMxz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 08:53:55 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:45516 "EHLO mail001.aei.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752768AbaDNMxx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 08:53:53 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] 3.14-rc6 problems with an R7 260X
-Date: Mon, 14 Apr 2014 08:53:42 -0400
-Message-ID: <1595649.0SZEcoJpxL@grover>
-Organization: me
-User-Agent: KMail/4.12.4 (Linux/3.15.0-1-git; KDE/4.12.4; x86_64; ; )
-In-Reply-To: <1707205.THdbAVLWUB@grover>
-References: <1825482.79WA6myBva@grover> <33204379.FfpmvHoDUX@grover> <1707205.THdbAVLWUB@grover>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1754967AbaDNMyB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 08:54:01 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:42900 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754915AbaDNMx4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 08:53:56 -0400
+Date: Mon, 14 Apr 2014 13:53:33 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Oliver Neukum <oneukum@suse.de>, Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>, Xiao Jin <jin.xiao@intel.com>,
+        david.a.cohen@linux.intel.com, yanmin.zhang@intel.com
+Subject: Re: [RFC 1/2] n_tty: fix dropped output characters
+Message-ID: <20140414135333.1057aac8@alan.etchedpixels.co.uk>
+In-Reply-To: <1397209285-15471-1-git-send-email-jhovold@gmail.com>
+References: <20140411093715.GA17522@localhost>
+	<1397209285-15471-1-git-send-email-jhovold@gmail.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 23 March 2014 16:08:37 Ed Tomlinson wrote:
-> On Monday 10 March 2014 13:29:41 Ed Tomlinson wrote:
-> > On Monday 10 March 2014 12:38:42 Alex Deucher wrote:
-> > > On Mon, Mar 10, 2014 at 11:47 AM, Ed Tomlinson <edt@aei.ca> wrote:
-> > > > Hi,
-> > > >
-> > > > I recently added a R7 260X to my system.  While the card works with 3.13 its supposed work much better with 14-rc.
-> > > > This is not the case.  My system is unstable without radeon.dpm=0 which was the default in .13.  Here are some extracts
-> > > > from the logs of the latest fun with dpm enabled:
-> > 
-> > omitted
-> > 
-> > > > The above type of errors repeat hundreds of times and eventually the display freezes (this box does not have a serial console and it did not check with ssh)
-> > > >
-> > > > When X started I did notice some corruption.  There are sets of two rectangles about of a height of 2 or 3 mm, width of 25m or so with a second
-> > > > about a cm below.  The often occurs in chomium especially when scrolling.  Runing the  unigine-sanctuary or unigine-tropics demo/benchmark
-> > > > programs also produce the above problems and eventually stall.
-> > > >
-> > > > The problem is reproducible - I am not that familiar with gpu problems though, what else will help debug this?
-> > > >
-> > > 
-> > > Please file a bug at https://bugs.freedesktop.org (Product: DRI,
-> > > Component: DRM/Radeon) and attach your dmesg output and xorg log.
-> > 
-> > Filed as bug 75992
-> > 
-> > Let me know if you want me to test anything or if more info is needed.
+On Fri, 11 Apr 2014 11:41:24 +0200
+Johan Hovold <jhovold@gmail.com> wrote:
+
+> Fix characters being dropped by n_tty_write() due to a failure to
+> check the return value of tty_put_char() in do_output_char().
 > 
-> This still occurrs with rc7.  With dpm enabled X is not usable.  It stalls, sometimes with nasty screen corruption, after a few minute.  With dpm disabled
-> its much better (not perfect though).
+> Characters are currently being dropped by write if a tty driver claims
+> to have write room available, but still fails to buffer any data
 
-This has been solved via a firmware fix and a patch see: https://bugs.freedesktop.org/show_bug.cgi?id=75992
+Your driver is buggy. If you advertise a buffer you must honour it and
+neither shrink nor revoke it. 
 
-Ed Tomlinson
+For an URB based device you almost certainly want internal buffering so
+you can do proper packetisation. USB serial these days gets it right - see
+drivers/usb/serial/generic.c for a fairly simple kfifo based approach.
+Whether applying it to cdc_acm would make sense I don't know but it looks
+like it might be simpler over-all than the current arrangement.
+
+Alan
