@@ -1,576 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303AbaDNAZa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 20:25:30 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:33893 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752300AbaDNAZ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 20:25:29 -0400
-From: Conrad Meyer <cse.cem@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: linux-kernel@vger.kernel.org, Conrad Meyer <cse.cem@gmail.com>
-Subject: [PATCH v6] fs: FAT: Add support for DOS 1.x formatted volumes
-Date: Sun, 13 Apr 2014 17:25:24 -0700
-Message-Id: <1397435124-31482-1-git-send-email-cse.cem@gmail.com>
-X-Mailer: git-send-email 1.9.0
+	id S1752656AbaDNA22 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 20:28:28 -0400
+Received: from mga02.intel.com ([134.134.136.20]:47090 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750784AbaDNA20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 20:28:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,853,1389772800"; 
+   d="p7s'?scan'208";a="492317091"
+From: "Woodhouse, David" <david.woodhouse@intel.com>
+To: "stefani@seibold.net" <stefani@seibold.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>,
+        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
+        "Zanoni, Paulo R" <paulo.r.zanoni@intel.com>,
+        "greg@kroah.com" <greg@kroah.com>
+Subject: Re: X86: kexec issues with i915 in 3.14
+Thread-Topic: X86: kexec issues with i915 in 3.14
+Thread-Index: AQHPV1NW5kAC5Zzcs0OVDxcHMhQdUJsQMWqA
+Date: Mon, 14 Apr 2014 00:28:13 +0000
+Message-ID: <1397435291.19944.176.camel@shinybook.infradead.org>
+References: <1397419299.1407.18.camel@vger.seibold.net>
+In-Reply-To: <1397419299.1407.18.camel@vger.seibold.net>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.252.120.23]
+Content-Type: multipart/signed; micalg=sha-1;
+	protocol="application/x-pkcs7-signature"; boundary="=-FlNHYOjCx9iCmej+BptP"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add structure for parsed BPB information, struct fat_bios_param_block,
-and move all of the deserialization and validation logic from
-fat_fill_super() into fat_read_bpb().
+--=-FlNHYOjCx9iCmej+BptP
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Add a 'dos1xfloppy' mount option to infer DOS 2.x BIOS Parameter Block
-defaults from block device geometry for ancient floppies and floppy
-images, as a fall-back from the default BPB parsing logic.
+On Sun, 2014-04-13 at 22:01 +0200, Stefani Seibold wrote:
+> Rebooting my kernel vanilla kernel 3.14 will fail with tons of kernel
+> log messages:
+>=20
+> [    0.262754] IOMMU: Setting identity map for device 0000:00:1a.0 [0x7c4=
+5f000 - 0x7c46bfff]
+> [    0.262780] IOMMU: Setting identity map for device 0000:00:14.0 [0x7c4=
+5f000 - 0x7c46bfff]
+> [    0.262798] IOMMU: Prepare 0-16MiB unity mapping for LPC
+> [    0.262807] IOMMU: Setting identity map for device 0000:00:1f.0 [0x0 -=
+ 0xffffff]
+> [    0.262948] PCI-DMA: Intel(R) Virtualization Technology for Directed I=
+/O
+> [    0.262948] dmar: DRHD: handling fault status reg 3
+> [    0.262951] dmar: DMAR:[DMA Write] Request device [00:02.0] fault addr=
+ ffffe000=20
+> DMAR:[fault reason 05] PTE Write access is not set
 
-When fat_read_bpb() finds an invalid FAT filesystem and dos1xfloppy is
-set, fall back to fat_read_static_bpb(). fat_read_static_bpb() validates
-that the entire BPB is zero, and that the floppy has a DOS-style 8086
-code bootstrapping header. Then it fills in default BPB values from
-media size and a table.[0]
+I'm inferring from the subject line that you mean kexec, not
+"rebooting"?
 
-Media size is assumed to be static for archaic FAT volumes. See also:
-[1].
+It looks like a peripheral device is being left active and doing DMA by
+the previous kernel, rather than being shut down. So as soon as the new
+kernel resets the IOMMU mappings, that peripheral device is causing
+faults.
 
-Fixes kernel.org bug #42617.
+We really ought to rate-limit the faults and isolate the offending
+device before there are 21,000 of them. As discussed elsewhere recently,
+we could do with a way to tell the PCI layer that it offended us but I
+suppose we could at *least* stop the IOMMU from reporting faults for it.
 
-[0]: https://en.wikipedia.org/wiki/File_Allocation_Table#Exceptions
-[1]: http://www.win.tue.nl/~aeb/linux/fs/fat/fat-1.html
+Is this new behaviour? I'm not sure why this should have changed...
 
-Signed-off-by: Conrad Meyer <cse.cem@gmail.com>
----
-Changes since v5:
-  * Leave the bulk of sbi-> filling logic to the aptly named fat_fill_super()
-  * Create separate structure for deserialized BPB values
-  * fat_read_bpb() deserializes BPB from raw fat_boot_sector and performs
-    validations
-  * fat_read_static_bpb() validates raw fat_boot_sector as dos1x and fills in
-    BPB values from table
+--=20
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
 
-Thanks,
-Conrad
----
- fs/fat/fat.h   |  28 ++++-
- fs/fat/inode.c | 316 +++++++++++++++++++++++++++++++++++++++++++--------------
- 2 files changed, 267 insertions(+), 77 deletions(-)
+--=-FlNHYOjCx9iCmej+BptP
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
 
-diff --git a/fs/fat/fat.h b/fs/fat/fat.h
-index 7270bdb..bcb0d67 100644
---- a/fs/fat/fat.h
-+++ b/fs/fat/fat.h
-@@ -52,7 +52,8 @@ struct fat_mount_options {
- 		 usefree:1,	   /* Use free_clusters for FAT32 */
- 		 tz_set:1,	   /* Filesystem timestamps' offset set */
- 		 rodir:1,	   /* allow ATTR_RO for directory */
--		 discard:1;	   /* Issue discard requests on deletions */
-+		 discard:1,	   /* Issue discard requests on deletions */
-+		 dos1xfloppy:1;	   /* Assume default BPB for DOS 1.x floppies */
- };
- 
- #define FAT_HASH_BITS	8
-@@ -139,6 +140,31 @@ struct fat_slot_info {
- 	struct buffer_head *bh;
- };
- 
-+/*
-+ * A deserialized copy of the on-disk structure laid out in struct
-+ * fat_boot_sector.
-+ */
-+struct fat_bios_param_block {
-+	u16	fat_sector_size;
-+	u8	fat_sec_per_clus;
-+	u16	fat_reserved;
-+	u8	fat_fats;
-+	u16	fat_dir_entries;
-+	u16	fat_sectors;
-+	u16	fat_fat_length;
-+	u32	fat_total_sect;
-+
-+	u8	fat16_state;
-+	u32	fat16_vol_id;
-+
-+	u32	fat32_length;
-+	u32	fat32_root_cluster;
-+	u16	fat32_info_sector;
-+	u8	fat32_state;
-+	u32	fat32_vol_id;
-+
-+};
-+
- static inline struct msdos_sb_info *MSDOS_SB(struct super_block *sb)
- {
- 	return sb->s_fs_info;
-diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index 992e8cb..7727136 100644
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -35,9 +35,47 @@
- #define CONFIG_FAT_DEFAULT_IOCHARSET	""
- #endif
- 
-+#define KB_IN_SECTORS 2
-+
- static int fat_default_codepage = CONFIG_FAT_DEFAULT_CODEPAGE;
- static char fat_default_iocharset[] = CONFIG_FAT_DEFAULT_IOCHARSET;
- 
-+static struct fat_floppy_defaults {
-+	unsigned nr_sectors;
-+	unsigned sec_per_clus;
-+	unsigned dir_entries;
-+	unsigned media;
-+	unsigned fat_length;
-+} floppy_defaults[] = {
-+{
-+	.nr_sectors = 160 * KB_IN_SECTORS,
-+	.sec_per_clus = 1,
-+	.dir_entries = 64,
-+	.media = 0xFE,
-+	.fat_length = 1,
-+},
-+{
-+	.nr_sectors = 180 * KB_IN_SECTORS,
-+	.sec_per_clus = 1,
-+	.dir_entries = 64,
-+	.media = 0xFC,
-+	.fat_length = 2,
-+},
-+{
-+	.nr_sectors = 320 * KB_IN_SECTORS,
-+	.sec_per_clus = 2,
-+	.dir_entries = 112,
-+	.media = 0xFF,
-+	.fat_length = 1,
-+},
-+{
-+	.nr_sectors = 360 * KB_IN_SECTORS,
-+	.sec_per_clus = 2,
-+	.dir_entries = 112,
-+	.media = 0xFD,
-+	.fat_length = 2,
-+},
-+};
- 
- static int fat_add_cluster(struct inode *inode)
- {
-@@ -945,7 +983,7 @@ enum {
- 	Opt_uni_xl_no, Opt_uni_xl_yes, Opt_nonumtail_no, Opt_nonumtail_yes,
- 	Opt_obsolete, Opt_flush, Opt_tz_utc, Opt_rodir, Opt_err_cont,
- 	Opt_err_panic, Opt_err_ro, Opt_discard, Opt_nfs, Opt_time_offset,
--	Opt_nfs_stale_rw, Opt_nfs_nostale_ro, Opt_err,
-+	Opt_nfs_stale_rw, Opt_nfs_nostale_ro, Opt_err, Opt_dos1xfloppy,
- };
- 
- static const match_table_t fat_tokens = {
-@@ -978,6 +1016,7 @@ static const match_table_t fat_tokens = {
- 	{Opt_nfs_stale_rw, "nfs"},
- 	{Opt_nfs_stale_rw, "nfs=stale_rw"},
- 	{Opt_nfs_nostale_ro, "nfs=nostale_ro"},
-+	{Opt_dos1xfloppy, "dos1xfloppy"},
- 	{Opt_obsolete, "conv=binary"},
- 	{Opt_obsolete, "conv=text"},
- 	{Opt_obsolete, "conv=auto"},
-@@ -1180,6 +1219,9 @@ static int parse_options(struct super_block *sb, char *options, int is_vfat,
- 		case Opt_nfs_nostale_ro:
- 			opts->nfs = FAT_NFS_NOSTALE_RO;
- 			break;
-+		case Opt_dos1xfloppy:
-+			opts->dos1xfloppy = 1;
-+			break;
- 
- 		/* msdos specific */
- 		case Opt_dots:
-@@ -1326,6 +1368,169 @@ static unsigned long calc_fat_clusters(struct super_block *sb)
- 	return sbi->fat_length * sb->s_blocksize * 8 / sbi->fat_bits;
- }
- 
-+static bool fat_bpb_is_zero(struct fat_boot_sector *b)
-+{
-+	if (get_unaligned_le16(&b->sector_size))
-+		return false;
-+	if (b->sec_per_clus)
-+		return false;
-+	if (b->reserved)
-+		return false;
-+	if (b->fats)
-+		return false;
-+	if (get_unaligned_le16(&b->dir_entries))
-+		return false;
-+	if (get_unaligned_le16(&b->sectors))
-+		return false;
-+	if (b->media)
-+		return false;
-+	if (b->fat_length)
-+		return false;
-+	if (b->secs_track)
-+		return false;
-+	if (b->heads)
-+		return false;
-+	return true;
-+}
-+
-+static int fat_read_bpb(struct super_block *sb, struct fat_boot_sector *b,
-+	int silent, struct fat_bios_param_block *bpb)
-+{
-+	int error = -EINVAL;
-+
-+	/* Read in BPB ... */
-+	memset(bpb, 0, sizeof(*bpb));
-+	bpb->fat_sector_size = get_unaligned_le16(&b->sector_size);
-+	bpb->fat_sec_per_clus = b->sec_per_clus;
-+	bpb->fat_reserved = le16_to_cpu(b->reserved);
-+	bpb->fat_fats = b->fats;
-+	bpb->fat_dir_entries = get_unaligned_le16(&b->dir_entries);
-+	bpb->fat_sectors = get_unaligned_le16(&b->sectors);
-+	bpb->fat_fat_length = le16_to_cpu(b->fat_length);
-+	bpb->fat_total_sect = le32_to_cpu(b->total_sect);
-+
-+	bpb->fat16_state = b->fat16.state;
-+	bpb->fat16_vol_id = get_unaligned_le32(b->fat16.vol_id);
-+
-+	bpb->fat32_length = le32_to_cpu(b->fat32.length);
-+	bpb->fat32_root_cluster = le32_to_cpu(b->fat32.root_cluster);
-+	bpb->fat32_info_sector = le16_to_cpu(b->fat32.info_sector);
-+	bpb->fat32_state = b->fat32.state;
-+	bpb->fat32_vol_id = get_unaligned_le32(b->fat32.vol_id);
-+
-+	/* Validate this looks like a FAT filesystem BPB */
-+	if (!bpb->fat_reserved) {
-+		if (!silent)
-+			fat_msg(sb, KERN_ERR,
-+				"bogus number of reserved sectors");
-+		goto out;
-+	}
-+	if (!bpb->fat_fats) {
-+		if (!silent)
-+			fat_msg(sb, KERN_ERR, "bogus number of FAT structure");
-+		goto out;
-+	}
-+
-+	/*
-+	 * Earlier we checked here that b->secs_track and b->head are nonzero,
-+	 * but it turns out valid FAT filesystems can have zero there.
-+	 */
-+
-+	if (!fat_valid_media(b->media)) {
-+		if (!silent)
-+			fat_msg(sb, KERN_ERR, "invalid media value (0x%02x)",
-+				(unsigned)b->media);
-+		goto out;
-+	}
-+
-+	if (!is_power_of_2(bpb->fat_sector_size)
-+	    || (bpb->fat_sector_size < 512)
-+	    || (bpb->fat_sector_size > 4096)) {
-+		if (!silent)
-+			fat_msg(sb, KERN_ERR, "bogus logical sector size %u",
-+			       (unsigned)bpb->fat_sector_size);
-+		goto out;
-+	}
-+
-+	if (!is_power_of_2(bpb->fat_sec_per_clus)) {
-+		if (!silent)
-+			fat_msg(sb, KERN_ERR, "bogus sectors per cluster %u",
-+				(unsigned)bpb->fat_sec_per_clus);
-+		goto out;
-+	}
-+
-+	error = 0;
-+
-+out:
-+	return error;
-+}
-+
-+static int fat_read_static_bpb(struct super_block *sb,
-+	struct fat_boot_sector *b, int silent,
-+	struct fat_bios_param_block *bpb)
-+{
-+	static const char *notdos1x = "This doesn't look like a DOS 1.x volume";
-+
-+	struct fat_floppy_defaults *fdefaults = NULL;
-+	int error = -EINVAL;
-+	sector_t bd_sects;
-+	unsigned i;
-+
-+	bd_sects = i_size_read(sb->s_bdev->bd_inode) / SECTOR_SIZE;
-+
-+	/* 16-bit DOS 1.x reliably wrote bootstrap short-jmp code */
-+	if (b->ignored[0] != 0xeb || b->ignored[2] != 0x90) {
-+		if (!silent)
-+			fat_msg(sb, KERN_ERR,
-+				"%s; no bootstrapping code", notdos1x);
-+		goto out;
-+	}
-+
-+	/*
-+	 * If any value in this region is non-zero, it isn't archaic
-+	 * DOS.
-+	 */
-+	if (!fat_bpb_is_zero(b)) {
-+		if (!silent)
-+			fat_msg(sb, KERN_ERR,
-+				"%s; DOS 2.x BPB is non-zero", notdos1x);
-+		goto out;
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(floppy_defaults); i++) {
-+		if (floppy_defaults[i].nr_sectors == bd_sects) {
-+			fdefaults = &floppy_defaults[i];
-+			break;
-+		}
-+	}
-+
-+	if (fdefaults == NULL) {
-+		if (!silent)
-+			fat_msg(sb, KERN_WARNING,
-+				"This looks like a DOS 1.x volume, but isn't a recognized floppy size (%llu sectors)",
-+				(u64)bd_sects);
-+		goto out;
-+	}
-+
-+	if (!silent)
-+		fat_msg(sb, KERN_INFO,
-+			"This looks like a DOS 1.x volume; assuming default BPB values");
-+
-+	memset(bpb, 0, sizeof(*bpb));
-+	bpb->fat_sector_size = SECTOR_SIZE;
-+	bpb->fat_sec_per_clus = fdefaults->sec_per_clus;
-+	bpb->fat_reserved = 1;
-+	bpb->fat_fats = 2;
-+	bpb->fat_dir_entries = fdefaults->dir_entries;
-+	bpb->fat_sectors = fdefaults->nr_sectors;
-+	bpb->fat_fat_length = fdefaults->fat_length;
-+
-+	error = 0;
-+
-+out:
-+	return error;
-+}
-+
- /*
-  * Read the super block of an MS-DOS FS.
-  */
-@@ -1335,12 +1540,11 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
- 	struct inode *root_inode = NULL, *fat_inode = NULL;
- 	struct inode *fsinfo_inode = NULL;
- 	struct buffer_head *bh;
--	struct fat_boot_sector *b;
-+	struct fat_bios_param_block bpb;
- 	struct msdos_sb_info *sbi;
- 	u16 logical_sector_size;
- 	u32 total_sectors, total_clusters, fat_clusters, rootdir_sectors;
- 	int debug;
--	unsigned int media;
- 	long error;
- 	char buf[50];
- 
-@@ -1377,100 +1581,71 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
- 		goto out_fail;
- 	}
- 
--	b = (struct fat_boot_sector *) bh->b_data;
--	if (!b->reserved) {
--		if (!silent)
--			fat_msg(sb, KERN_ERR, "bogus number of reserved sectors");
--		brelse(bh);
--		goto out_invalid;
--	}
--	if (!b->fats) {
--		if (!silent)
--			fat_msg(sb, KERN_ERR, "bogus number of FAT structure");
--		brelse(bh);
--		goto out_invalid;
--	}
--
--	/*
--	 * Earlier we checked here that b->secs_track and b->head are nonzero,
--	 * but it turns out valid FAT filesystems can have zero there.
--	 */
-+	error = fat_read_bpb(sb, (struct fat_boot_sector *)bh->b_data, silent,
-+		&bpb);
-+	if (error == -EINVAL && sbi->options.dos1xfloppy)
-+		error = fat_read_static_bpb(sb,
-+			(struct fat_boot_sector *)bh->b_data, silent, &bpb);
-+	brelse(bh);
- 
--	media = b->media;
--	if (!fat_valid_media(media)) {
--		if (!silent)
--			fat_msg(sb, KERN_ERR, "invalid media value (0x%02x)",
--			       media);
--		brelse(bh);
-+	if (error == -EINVAL)
- 		goto out_invalid;
--	}
--	logical_sector_size = get_unaligned_le16(&b->sector_size);
--	if (!is_power_of_2(logical_sector_size)
--	    || (logical_sector_size < 512)
--	    || (logical_sector_size > 4096)) {
--		if (!silent)
--			fat_msg(sb, KERN_ERR, "bogus logical sector size %u",
--			       logical_sector_size);
--		brelse(bh);
--		goto out_invalid;
--	}
--	sbi->sec_per_clus = b->sec_per_clus;
--	if (!is_power_of_2(sbi->sec_per_clus)) {
--		if (!silent)
--			fat_msg(sb, KERN_ERR, "bogus sectors per cluster %u",
--			       sbi->sec_per_clus);
--		brelse(bh);
--		goto out_invalid;
--	}
-+	else if (error)
-+		goto out_fail;
-+
-+	logical_sector_size = bpb.fat_sector_size;
-+	sbi->sec_per_clus = bpb.fat_sec_per_clus;
- 
- 	if (logical_sector_size < sb->s_blocksize) {
- 		fat_msg(sb, KERN_ERR, "logical sector size too small for device"
- 		       " (logical sector size = %u)", logical_sector_size);
--		brelse(bh);
- 		goto out_fail;
- 	}
-+
- 	if (logical_sector_size > sb->s_blocksize) {
--		brelse(bh);
-+		struct buffer_head *bh_resize;
- 
- 		if (!sb_set_blocksize(sb, logical_sector_size)) {
- 			fat_msg(sb, KERN_ERR, "unable to set blocksize %u",
- 			       logical_sector_size);
- 			goto out_fail;
- 		}
--		bh = sb_bread(sb, 0);
--		if (bh == NULL) {
-+
-+		/* Verify that the larger boot sector is fully readable */
-+		bh_resize = sb_bread(sb, 0);
-+		if (bh_resize == NULL) {
- 			fat_msg(sb, KERN_ERR, "unable to read boot sector"
- 			       " (logical sector size = %lu)",
- 			       sb->s_blocksize);
- 			goto out_fail;
- 		}
--		b = (struct fat_boot_sector *) bh->b_data;
-+		brelse(bh_resize);
- 	}
- 
- 	mutex_init(&sbi->s_lock);
- 	sbi->cluster_size = sb->s_blocksize * sbi->sec_per_clus;
- 	sbi->cluster_bits = ffs(sbi->cluster_size) - 1;
--	sbi->fats = b->fats;
-+	sbi->fats = bpb.fat_fats;
- 	sbi->fat_bits = 0;		/* Don't know yet */
--	sbi->fat_start = le16_to_cpu(b->reserved);
--	sbi->fat_length = le16_to_cpu(b->fat_length);
-+	sbi->fat_start = bpb.fat_reserved;
-+	sbi->fat_length = bpb.fat_fat_length;
- 	sbi->root_cluster = 0;
- 	sbi->free_clusters = -1;	/* Don't know yet */
- 	sbi->free_clus_valid = 0;
- 	sbi->prev_free = FAT_START_ENT;
- 	sb->s_maxbytes = 0xffffffff;
- 
--	if (!sbi->fat_length && b->fat32.length) {
-+	if (!sbi->fat_length && bpb.fat32_length) {
- 		struct fat_boot_fsinfo *fsinfo;
- 		struct buffer_head *fsinfo_bh;
- 
- 		/* Must be FAT32 */
- 		sbi->fat_bits = 32;
--		sbi->fat_length = le32_to_cpu(b->fat32.length);
--		sbi->root_cluster = le32_to_cpu(b->fat32.root_cluster);
-+		sbi->fat_length = bpb.fat32_length;
-+		sbi->root_cluster = bpb.fat32_root_cluster;
- 
- 		/* MC - if info_sector is 0, don't multiply by 0 */
--		sbi->fsinfo_sector = le16_to_cpu(b->fat32.info_sector);
-+		sbi->fsinfo_sector = bpb.fat32_info_sector;
- 		if (sbi->fsinfo_sector == 0)
- 			sbi->fsinfo_sector = 1;
- 
-@@ -1478,7 +1653,6 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
- 		if (fsinfo_bh == NULL) {
- 			fat_msg(sb, KERN_ERR, "bread failed, FSINFO block"
- 			       " (sector = %lu)", sbi->fsinfo_sector);
--			brelse(bh);
- 			goto out_fail;
- 		}
- 
-@@ -1501,35 +1675,28 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
- 
- 	/* interpret volume ID as a little endian 32 bit integer */
- 	if (sbi->fat_bits == 32)
--		sbi->vol_id = (((u32)b->fat32.vol_id[0]) |
--					((u32)b->fat32.vol_id[1] << 8) |
--					((u32)b->fat32.vol_id[2] << 16) |
--					((u32)b->fat32.vol_id[3] << 24));
-+		sbi->vol_id = bpb.fat32_vol_id;
- 	else /* fat 16 or 12 */
--		sbi->vol_id = (((u32)b->fat16.vol_id[0]) |
--					((u32)b->fat16.vol_id[1] << 8) |
--					((u32)b->fat16.vol_id[2] << 16) |
--					((u32)b->fat16.vol_id[3] << 24));
-+		sbi->vol_id = bpb.fat16_vol_id;
- 
- 	sbi->dir_per_block = sb->s_blocksize / sizeof(struct msdos_dir_entry);
- 	sbi->dir_per_block_bits = ffs(sbi->dir_per_block) - 1;
- 
- 	sbi->dir_start = sbi->fat_start + sbi->fats * sbi->fat_length;
--	sbi->dir_entries = get_unaligned_le16(&b->dir_entries);
-+	sbi->dir_entries = bpb.fat_dir_entries;
- 	if (sbi->dir_entries & (sbi->dir_per_block - 1)) {
- 		if (!silent)
- 			fat_msg(sb, KERN_ERR, "bogus directory-entries per block"
- 			       " (%u)", sbi->dir_entries);
--		brelse(bh);
- 		goto out_invalid;
- 	}
- 
- 	rootdir_sectors = sbi->dir_entries
- 		* sizeof(struct msdos_dir_entry) / sb->s_blocksize;
- 	sbi->data_start = sbi->dir_start + rootdir_sectors;
--	total_sectors = get_unaligned_le16(&b->sectors);
-+	total_sectors = bpb.fat_sectors;
- 	if (total_sectors == 0)
--		total_sectors = le32_to_cpu(b->total_sect);
-+		total_sectors = bpb.fat_total_sect;
- 
- 	total_clusters = (total_sectors - sbi->data_start) / sbi->sec_per_clus;
- 
-@@ -1538,9 +1705,9 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
- 
- 	/* some OSes set FAT_STATE_DIRTY and clean it on unmount. */
- 	if (sbi->fat_bits == 32)
--		sbi->dirty = b->fat32.state & FAT_STATE_DIRTY;
-+		sbi->dirty = bpb.fat32_state & FAT_STATE_DIRTY;
- 	else /* fat 16 or 12 */
--		sbi->dirty = b->fat16.state & FAT_STATE_DIRTY;
-+		sbi->dirty = bpb.fat16_state & FAT_STATE_DIRTY;
- 
- 	/* check that FAT table does not overflow */
- 	fat_clusters = calc_fat_clusters(sb);
-@@ -1549,7 +1716,6 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
- 		if (!silent)
- 			fat_msg(sb, KERN_ERR, "count of clusters too big (%u)",
- 			       total_clusters);
--		brelse(bh);
- 		goto out_invalid;
- 	}
- 
-@@ -1562,8 +1728,6 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
- 	if (sbi->prev_free < FAT_START_ENT)
- 		sbi->prev_free = FAT_START_ENT;
- 
--	brelse(bh);
--
- 	/* set up enough so that it can read an inode */
- 	fat_hash_init(sb);
- 	dir_hash_init(sb);
--- 
-1.9.0
+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
+kiW8/Nj6KITQvHqz7x/Es0IRJCc9/zBES7yMeD+fgJKHAEv/uTcFfGM9HIWxPQIDAQABo4IC6jCC
+AuYwHQYDVR0OBBYEFGK1Mey+kPYGHowHJ0YXtQU4NmbSMB8GA1UdIwQYMBaAFB5pKrTcKP5HGE4h
+Cz+8rBEv8Jj1MIHJBgNVHR8EgcEwgb4wgbuggbiggbWGVGh0dHA6Ly93d3cuaW50ZWwuY29tL3Jl
+cG9zaXRvcnkvQ1JML0ludGVsJTIwRXh0ZXJuYWwlMjBCYXNpYyUyMElzc3VpbmclMjBDQSUyMDRB
+LmNybIZdaHR0cDovL2NlcnRpZmljYXRlcy5pbnRlbC5jb20vcmVwb3NpdG9yeS9DUkwvSW50ZWwl
+MjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIwNEEuY3JsMIHvBggrBgEFBQcBAQSB
+4jCB3zBpBggrBgEFBQcwAoZdaHR0cDovL3d3dy5pbnRlbC5jb20vcmVwb3NpdG9yeS9jZXJ0aWZp
+Y2F0ZXMvSW50ZWwlMjBFeHRlcm5hbCUyMEJhc2ljJTIwSXNzdWluZyUyMENBJTIwNEEuY3J0MHIG
+CCsGAQUFBzAChmZodHRwOi8vY2VydGlmaWNhdGVzLmludGVsLmNvbS9yZXBvc2l0b3J5L2NlcnRp
+ZmljYXRlcy9JbnRlbCUyMEV4dGVybmFsJTIwQmFzaWMlMjBJc3N1aW5nJTIwQ0ElMjA0QS5jcnQw
+CwYDVR0PBAQDAgeAMDwGCSsGAQQBgjcVBwQvMC0GJSsGAQQBgjcVCIbDjHWEmeVRg/2BKIWOn1OC
+kcAJZ4HevTmV8EMCAWQCAQgwHwYDVR0lBBgwFgYIKwYBBQUHAwQGCisGAQQBgjcKAwwwKQYJKwYB
+BAGCNxUKBBwwGjAKBggrBgEFBQcDBDAMBgorBgEEAYI3CgMMME8GA1UdEQRIMEagKQYKKwYBBAGC
+NxQCA6AbDBlkYXZpZC53b29kaG91c2VAaW50ZWwuY29tgRlkYXZpZC53b29kaG91c2VAaW50ZWwu
+Y29tMA0GCSqGSIb3DQEBBQUAA4IBAQBCQ4UH3yybC+PzPo7W4PQJQwIDkKfD2i20i/DosQ7+Yeof
+KF7qDASe9eoJGXbINBx1u648uOnaMBsxgUUamJo7pdt1ZnsetRtCQrJIsrsJA3Q2MOsrv7xHkzqn
+DF99KHEbO2yKvyjJVDznHUWh8M1OFmdoziyWE/VPdqTwXwS/UKO81XaTtWUDGO716HHVlfT9yPle
+Ukg2MTcIhhNWmlS8gDUayhteIAlPci71f/oXzXxBiGiO6FVZUEx+rZBQB84Ey0S0Tfm7hiGzoegg
+ra0hfiiMOKMio+n0r4NUn03Z+VRUTbdjHIA6Lkozwpadvs9/uK8dIGqfcgxYgk9qdjFPMYICDjCC
+AgoCAQEwgYcweTELMAkGA1UEBhMCVVMxCzAJBgNVBAgTAkNBMRQwEgYDVQQHEwtTYW50YSBDbGFy
+YTEaMBgGA1UEChMRSW50ZWwgQ29ycG9yYXRpb24xKzApBgNVBAMTIkludGVsIEV4dGVybmFsIEJh
+c2ljIElzc3VpbmcgQ0EgNEECCmJiMmoAAAAATKAwCQYFKw4DAhoFAKBdMBgGCSqGSIb3DQEJAzEL
+BgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTE0MDQxNDAwMjgxMVowIwYJKoZIhvcNAQkEMRYE
+FNjOovGq5uq02tW3lTkyYIec+pksMA0GCSqGSIb3DQEBAQUABIIBALGdT7Ob3DNNOLAXD0nTQQ6H
+KBD5CWfHXlGbil8MNBTOu2jWF9FCxsN3z2wHNZ2nCXWmw9tN/fO2Y4dHJSzTbn2QiuPVCDz+0hEg
+DxLoTPwQvSyNucxETp+ZEJ/e6NC8eEvvICS1uCYtpOaaF7U1w1MZtXCMNUzRICx5Z44vumjz0WUc
+f9omzGk/YnYwgGxPBIqeS/9BYF3OI2aLfr6IjMN4DihXPnzVEVuSvMpVSRalBkoqn3Ea3fsPitcS
+WrtoT9nEkgvR8rzH9nvF7yHU7QtBUzXPwY4kvGeTiTplxosBUM+J6q0SYyQ7ijjYbtrSGcfGBDkX
+XaqeamlWFnKUWXUAAAAAAAA=
 
+
+--=-FlNHYOjCx9iCmej+BptP--
