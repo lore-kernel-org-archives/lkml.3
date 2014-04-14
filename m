@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049AbaDNB4M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 21:56:12 -0400
-Received: from smtprelay0054.hostedemail.com ([216.40.44.54]:32997 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750770AbaDNB4F (ORCPT
+	id S1754944AbaDNCDW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 22:03:22 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:47903 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754859AbaDNCDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 21:56:05 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:968:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3352:3868:3871:4321:5007:6261:10004:10026:10848:11026:11658:11914:12296:12517:12519:12555:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: music85_521d54815ba22
-X-Filterd-Recvd-Size: 1849
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -next 3.16 01/19] arm: Convert use of typedef ctl_table to struct ctl_table
-Date: Sun, 13 Apr 2014 18:55:33 -0700
-Message-Id: <65faf95dca0024f9544f84efecfee3b538fc57f8.1397438826.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1397438826.git.joe@perches.com>
-References: <cover.1397438826.git.joe@perches.com>
+	Sun, 13 Apr 2014 22:03:18 -0400
+Date: Mon, 14 Apr 2014 11:03:15 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Philipp Zabel <philipp.zabel@gmail.com>,
+        Paul Parsons <lost.distance@yahoo.com>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org, linux-sh@vger.kernel.org
+Subject: Re: [PATCH 2/2] pwm: use PWM_LOOKUP to set the period and polarity
+Message-ID: <20140414020315.GF22411@verge.net.au>
+References: <1397066649-3767-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1397066649-3767-3-git-send-email-alexandre.belloni@free-electrons.com>
+ <20140409231549.GD2187@verge.net.au>
+ <20140410073702.GF2879@piout.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140410073702.GF2879@piout.net>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This typedef is unnecessary and should just be removed.
+On Thu, Apr 10, 2014 at 09:37:03AM +0200, Alexandre Belloni wrote:
+> On 10/04/2014 at 08:15:49 +0900, Simon Horman wrote :
+> > On Wed, Apr 09, 2014 at 08:04:09PM +0200, Alexandre Belloni wrote:
+> > > Now that the PWM core is able to set the period and polarity based on
+> > > the lookup table, add those to PWM_LOOKUP to ease their usage.
+> > 
+> > I would prefer if this change was made in a non-atomic manner.
+> > 
+> > 1. Add new infrastructure
+> > 2. Update users individually
+> > 3. Remove old infrastructure
+> > 
+> 
+> I agree this would be better but I'm not sure how you can modify a macro
+> without renaming it or changing it everywhere at once. Like said, I'm
+> open to creating a new macro.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- arch/arm/kernel/isa.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/arm/kernel/isa.c b/arch/arm/kernel/isa.c
-index 3464859..9d1cf71 100644
---- a/arch/arm/kernel/isa.c
-+++ b/arch/arm/kernel/isa.c
-@@ -20,7 +20,7 @@
- 
- static unsigned int isa_membase, isa_portbase, isa_portshift;
- 
--static ctl_table ctl_isa_vars[4] = {
-+static struct ctl_table ctl_isa_vars[4] = {
- 	{
- 		.procname	= "membase",
- 		.data		= &isa_membase, 
-@@ -44,7 +44,7 @@ static ctl_table ctl_isa_vars[4] = {
- 
- static struct ctl_table_header *isa_sysctl_header;
- 
--static ctl_table ctl_isa[2] = {
-+static struct ctl_table ctl_isa[2] = {
- 	{
- 		.procname	= "isa",
- 		.mode		= 0555,
-@@ -52,7 +52,7 @@ static ctl_table ctl_isa[2] = {
- 	}, {}
- };
- 
--static ctl_table ctl_bus[2] = {
-+static struct ctl_table ctl_bus[2] = {
- 	{
- 		.procname	= "bus",
- 		.mode		= 0555,
--- 
-1.8.1.2.459.gbcd45b4.dirty
-
+I for one would prefer the new macro approach.
