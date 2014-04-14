@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466AbaDNJAp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 05:00:45 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57077 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751493AbaDNJAn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 05:00:43 -0400
-Date: Mon, 14 Apr 2014 10:59:35 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] ARM: at91: prepare common clk transition for sam9x5
- SoCs
-Message-ID: <20140414085935.GO2967@piout.net>
-References: <1397464994-27267-1-git-send-email-boris.brezillon@free-electrons.com>
- <1397464994-27267-2-git-send-email-boris.brezillon@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397464994-27267-2-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752004AbaDNJEX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 05:04:23 -0400
+Received: from mga02.intel.com ([134.134.136.20]:58664 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750790AbaDNJEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 05:04:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,856,1389772800"; 
+   d="scan'208";a="492478818"
+From: "Chen, Gong" <gong.chen@linux.intel.com>
+To: hpa@zytor.com, tony.luck@intel.com
+Cc: tglx@linutronix.de, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        linux-tip-commits@vger.kernel.org,
+        "Chen, Gong" <gong.chen@linux.intel.com>
+Subject: [PATCH 1/2] x86, CMCI: Fix a missed put_cpu_var
+Date: Mon, 14 Apr 2014 04:39:36 -0400
+Message-Id: <1397464777-25451-1-git-send-email-gong.chen@linux.intel.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <tip-27f6c573e0f77f7d1cc907c1494c99a61e48b7d8@git.kernel.org>
+References: <tip-27f6c573e0f77f7d1cc907c1494c99a61e48b7d8@git.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/04/2014 at 10:43:11 +0200, Boris Brezillon wrote :
-> This patch encloses sam9x5 old clk registration in
-> "#if defined(CONFIG_OLD_CLK_AT91) #endif" sections.
-> 
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->  arch/arm/mach-at91/at91sam9x5.c | 6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/mach-at91/at91sam9x5.c b/arch/arm/mach-at91/at91sam9x5.c
-> index 9ad781d..e994edd 100644
-> --- a/arch/arm/mach-at91/at91sam9x5.c
-> +++ b/arch/arm/mach-at91/at91sam9x5.c
-> @@ -19,9 +19,10 @@
->  #include "board.h"
->  #include "soc.h"
->  #include "generic.h"
-> -#include "clock.h"
->  #include "sam9_smc.h"
->  
-> +#if defined(CONFIG_OLD_CLK_AT91)
-> +#include "clock.h"
->  /* --------------------------------------------------------------------
->   *  Clocks
->   * -------------------------------------------------------------------- */
-> @@ -313,6 +314,7 @@ static void __init at91sam9x5_register_clocks(void)
->  	clk_register(&pck0);
->  	clk_register(&pck1);
->  }
-> +#endif
->  
->  /* --------------------------------------------------------------------
->   *  AT91SAM9x5 processor initialization
-> @@ -334,6 +336,8 @@ static void __init at91sam9x5_initialize(void)
->  
->  AT91_SOC_START(at91sam9x5)
->  	.map_io = at91sam9x5_map_io,
-> +#if defined(CONFIG_OLD_CLK_AT91)
->  	.register_clocks = at91sam9x5_register_clocks,
-> +#endif
->  	.init = at91sam9x5_initialize,
->  AT91_SOC_END
-> -- 
-> 1.8.3.2
-> 
+This issue is introduced in commit 27f6c573e0. I forget to
+execute put_cpu_var operation after get_cpu_var.
 
+Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index eeee23f..26eaf3b 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -620,6 +620,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ 
+ 		v = &get_cpu_var(mce_polled_error);
+ 		set_bit(0, v);
++		put_cpu_var(mce_polled_error);
+ 		/*
+ 		 * Uncorrected or signalled events are handled by the exception
+ 		 * handler when it is enabled, so don't process those here.
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.9.0
+
