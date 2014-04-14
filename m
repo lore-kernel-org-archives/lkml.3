@@ -1,144 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554AbaDNBiF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 21:38:05 -0400
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:57214 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120AbaDNBiE (ORCPT
+	id S1753846AbaDNBiU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 21:38:20 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:17652 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076AbaDNBiQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 21:38:04 -0400
-Message-ID: <534B3A33.9090401@adjacentlink.com>
-Date: Sun, 13 Apr 2014 21:30:27 -0400
-From: Steven Galgano <sgalgano@adjacentlink.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: davem@davemloft.net, jasowang@redhat.com, xemul@parallels.com,
-        wuzhy@linux.vnet.ibm.com, therbert@google.com, yamato@redhat.com,
-        richardcochran@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Brian Adamson <Brian.Adamson@nrl.navy.mil>,
-        Joseph Giovatto <jgiovatto@adjacentlink.com>
-Subject: [PATCH v2] tuntap: add flow control to support back pressure
-References: <5345FFBC.7020502@adjacentlink.com> <20140410102931.GA12077@redhat.com> <5347487B.4040608@adjacentlink.com> <20140413141745.GB17839@redhat.com>
-In-Reply-To: <20140413141745.GB17839@redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 13 Apr 2014 21:38:16 -0400
+X-AuditID: cbfee691-b7efc6d0000039d3-50-534b3c06d875
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+Message-id: <1397439375.24638.20.camel@kjgkr>
+Subject: Re: [PATCH 1/7] f2fs: put the bio when issue_flush completed
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+Cc: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Mon, 14 Apr 2014 10:36:15 +0900
+In-reply-to: <5347BAAF.9030004@cn.fujitsu.com>
+References: <5347BAAF.9030004@cn.fujitsu.com>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsVy+t8zQ102G+9gg5tdNhbP2w8wW1xa5G6x
+	Z+9JFovLu+awObB4/D84idlj94LPTB6fN8kFMEdx2aSk5mSWpRbp2yVwZbzokC14z13x/3sj
+	awPjZs4uRk4OCQETiW2b7zND2GISF+6tZ+ti5OIQEljGKLFn8002mKKGE4eZQGwhgUWMEleX
+	s4PYvAKCEj8m32MBsZkF1CUmzVvEDGGLSLx5fh7K1pZYtvA1M8TQV4wSd/b/YoFo1pVY8qYN
+	zBYWcJX4sb4VaBkHBxtQw+b9BhC7FCXe7r/LCmKLCKhJPHt3iQlkDrNAN6PE2fWvwI5gEVCV
+	WLDzNZjNKaAn8bX1EgtEs67E6RMPwWx+AVGJwwu3Q32pJLG7vZMdZJCEwDF2iR2TPzFBDBKQ
+	+Db5EAvIERICshKbDkDVS0ocXHGDZQKj5CwkP89C8vMsJD/PQvLzAkaWVYyiqQXJBcVJ6UWm
+	esWJucWleel6yfm5mxghETpxB+P9A9aHGJOB1k9klhJNzgdGeF5JvKGxmZGFqYmpsZG5pRlp
+	wkrivOmPkoKEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MK4wvbX/+dHb69jZnr4qey54q0Kj
+	76pT+bFpOhmvme+/eOyynb3mTJHhlZlh77t9Fk9l9pLOS66S35lkrjjvdiu397or/4sX6Os+
+	X93U/SKiP6X1tdKBlx9f3y+9uemKV77l77/T2sSO/DJ4G/AmvT21Y/etuJjuxR+OfrF2n3LE
+	7ZXKPYWHea+VWIozEg21mIuKEwGnE8Cu5gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOKsWRmVeSWpSXmKPExsVy+t9jAV02G+9gg89vzC2etx9gtri0yN1i
+	z96TLBaXd81hc2Dx+H9wErPH7gWfmTw+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
+	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
+	JAiux8gADSSsY8yYM+cwY8FT7oq/fdOZGxhXcnYxcnJICJhINJw4zARhi0lcuLeeDcQWEljE
+	KHF1OTuIzSsgKPFj8j2WLkYODmYBeYkjl7JBwswC6hKT5i1i7mLkAip/xShxZ/8vFoh6XYkl
+	b9rAbGEBV4kf61vZQHrZBLQlNu83gBivKPF2/11WEFtEQE3i2btLTCBzmAW6GSXOrn8FtpdF
+	QFViwc7XYDangJ7E19ZLLBDNuhKnTzwEs/kFRCUOL9zODHG/ksTu9k72CYxCs5CcPQvh7FlI
+	zl7AyLyKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzian0nvYFzVYHGIUYCDUYmHN2G7Z7AQ
+	a2JZcWXuIUYJDmYlEd5tGV7BQrwpiZVVqUX58UWlOanFhxiTgQ6fyCwlmpwPTDR5JfGGxiZm
+	RpZGZhZGJubmpAkrifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cDo1Ows4+iXezBKh5/9Y2GF
+	5devVwTN0pdOD/n967aekuCDRK2dtqIX1ply3fyjnWPn/Zv1iF7GyYYJE5exLjorrlucylF4
+	wHFaWuGGBVOKDllP9VH8qBObtnxva4RJbCPXAaPDkTdLF5xbPHX5dbuP01glDLavOP1Kym1J
+	Y9bMhwK9p996yNQqsRRnJBpqMRcVJwIAUSffMyoDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added optional per queue flow control support using IFF_FLOW_CONTROL. When the IFF_FLOW_CONTROL TUNSETIFF flag is specified it will set a per queue flag to indicate that the queue should be stopped using netif_tx_stop_queue(), rather than discarding frames once full. After reading a frame from the respective stopped queue, a netif_tx_wake_queue() is issued to signal resource availability.
+Hi Gu,
+Merged.
+thank you. :)
 
-The per queue TUN_FLOW_CONTROL flag is stored in struct tun_file. This provides the flexibility to enable flow control on all, none or some queues when using IFF_MULTI_QUEUE. When not using IFF_MULTI_QUEUE, IFF_FLOW_CONTROL will apply to the single queue. No changes were made to the default drop frame policy.
+2014-04-11 (금), 17:49 +0800, Gu Zheng:
+> Put the bio when the flush cmd issued, it also can fix the following
+> kmemleak:
+> unreferenced object 0xffff8800270c73c0 (size 200):
+>   comm "f2fs_flush-7:0", pid 27161, jiffies 4312127988 (age 988.503s)
+>   hex dump (first 32 bytes):
+>     00 00 00 00 00 00 00 00 40 07 81 19 01 88 ff ff  ........@.......
+>     01 00 00 00 00 00 00 f0 11 14 00 00 00 00 00 00  ................
+>   backtrace:
+>     [<ffffffff81559866>] kmemleak_alloc+0x72/0x96
+>     [<ffffffff81156f7e>] slab_post_alloc_hook+0x28/0x2a
+>     [<ffffffff811595b1>] kmem_cache_alloc+0xec/0x157
+>     [<ffffffff8111924d>] mempool_alloc_slab+0x15/0x17
+>     [<ffffffff81119513>] mempool_alloc+0x71/0x138
+>     [<ffffffff81193548>] bio_alloc_bioset+0x93/0x18c
+>     [<ffffffffa040f857>] issue_flush_thread+0x8d/0x145 [f2fs]
+>     [<ffffffff8107ac16>] kthread+0xba/0xc2
+>     [<ffffffff81571b2c>] ret_from_fork+0x7c/0xb0
+>     [<ffffffffffffffff>] 0xffffffffffffffff
+> 
+> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+> ---
+>  fs/f2fs/segment.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+> index 085f548..524b7ed 100644
+> --- a/fs/f2fs/segment.c
+> +++ b/fs/f2fs/segment.c
+> @@ -226,6 +226,7 @@ repeat:
+>  			next = cmd->next;
+>  			complete(&cmd->wait);
+>  		}
+> +		bio_put(bio);
+>  		sm_i->dispatch_list = NULL;
+>  	}
+>  
 
-This change adds support for back pressure use cases.
+-- 
+Jaegeuk Kim
+Samsung
 
-Reported-by: Brian Adamson <brian.adamson@nrl.navy.mil>
-Tested-by: Joseph Giovatto <jgiovatto@djacentlink.com>
-Signed-off-by: Steven Galgano <sgalgano@adjacentlink.com>
----
-Previous version of patch did not respect individual queues when applying flow control using netif_tx_stop_all_queues()/netif_tx_wake_all_queues().
-
- drivers/net/tun.c           | 32 ++++++++++++++++++++++++++++----
- include/uapi/linux/if_tun.h |  2 ++
- 2 files changed, 30 insertions(+), 4 deletions(-)
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index ee328ba..3d09f5a 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -137,7 +137,7 @@ struct tun_file {
- 	struct tun_struct __rcu *tun;
- 	struct net *net;
- 	struct fasync_struct *fasync;
--	/* only used for fasnyc */
-+	/* used for fasnyc and flow control */
- 	unsigned int flags;
- 	union {
- 		u16 queue_index;
-@@ -783,8 +783,19 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
- 	 * number of queues.
- 	 */
- 	if (skb_queue_len(&tfile->socket.sk->sk_receive_queue) * numqueues
--			  >= dev->tx_queue_len)
--		goto drop;
-+			>= dev->tx_queue_len) {
-+		if (tfile->flags & TUN_FLOW_CONTROL) {
-+			/* Resources unavailable stop queue */
-+			netif_tx_stop_queue(netdev_get_tx_queue(dev, txq));
-+
-+			/* We won't see all dropped packets individually, so
-+			 * over run error is more appropriate.
-+			 */
-+			dev->stats.tx_fifo_errors++;
-+		} else {
-+			goto drop;
-+		}
-+	}
- 
- 	if (unlikely(skb_orphan_frags(skb, GFP_ATOMIC)))
- 		goto drop;
-@@ -1333,6 +1344,7 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
- 	DECLARE_WAITQUEUE(wait, current);
- 	struct sk_buff *skb;
- 	ssize_t ret = 0;
-+	struct netdev_queue *ntxq;
- 
- 	tun_debug(KERN_INFO, tun, "tun_do_read\n");
- 
-@@ -1362,6 +1374,12 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
- 			continue;
- 		}
- 
-+		ntxq = netdev_get_tx_queue(tun->dev, tfile->queue_index);
-+
-+		if (tfile->flags & TUN_FLOW_CONTROL &&
-+		    netif_tx_queue_stopped(ntxq))
-+			netif_tx_wake_queue(ntxq);
-+
- 		ret = tun_put_user(tun, tfile, skb, iv, len);
- 		kfree_skb(skb);
- 		break;
-@@ -1732,6 +1750,11 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 	else
- 		tun->flags &= ~TUN_TAP_MQ;
- 
-+	if (ifr->ifr_flags & IFF_FLOW_CONTROL)
-+		tfile->flags |= TUN_FLOW_CONTROL;
-+	else
-+		tfile->flags &= ~TUN_FLOW_CONTROL;
-+
- 	/* Make sure persistent devices do not get stuck in
- 	 * xoff state.
- 	 */
-@@ -1900,7 +1923,8 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
- 		 * This is needed because we never checked for invalid flags on
- 		 * TUNSETIFF. */
- 		return put_user(IFF_TUN | IFF_TAP | IFF_NO_PI | IFF_ONE_QUEUE |
--				IFF_VNET_HDR | IFF_MULTI_QUEUE,
-+				IFF_VNET_HDR | IFF_MULTI_QUEUE |
-+				IFF_FLOW_CONTROL,
- 				(unsigned int __user*)argp);
- 	} else if (cmd == TUNSETQUEUE)
- 		return tun_set_queue(file, &ifr);
-diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
-index e9502dd..bcf2790 100644
---- a/include/uapi/linux/if_tun.h
-+++ b/include/uapi/linux/if_tun.h
-@@ -36,6 +36,7 @@
- #define TUN_PERSIST 	0x0100	
- #define TUN_VNET_HDR 	0x0200
- #define TUN_TAP_MQ      0x0400
-+#define TUN_FLOW_CONTROL 0x0800
- 
- /* Ioctl defines */
- #define TUNSETNOCSUM  _IOW('T', 200, int) 
-@@ -70,6 +71,7 @@
- #define IFF_MULTI_QUEUE 0x0100
- #define IFF_ATTACH_QUEUE 0x0200
- #define IFF_DETACH_QUEUE 0x0400
-+#define IFF_FLOW_CONTROL 0x0010
- /* read-only flag */
- #define IFF_PERSIST	0x0800
- #define IFF_NOFILTER	0x1000
