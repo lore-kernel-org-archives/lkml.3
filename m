@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996AbaDNQnQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:43:16 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50351 "EHLO comal.ext.ti.com"
+	id S1755901AbaDNQnN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:43:13 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50353 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755491AbaDNQZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755493AbaDNQZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Apr 2014 12:25:55 -0400
 From: Nishanth Menon <nm@ti.com>
 To: Tony Lindgren <tony@atomide.com>,
@@ -14,82 +14,245 @@ CC: Sekhar Nori <nsekhar@ti.com>, Rajendra Nayak <rnayak@ti.com>,
         Nishanth Menon <nm@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
         <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 00/15] bus: omap_l3_noc: driver cleanups and support for DRA7/AM4372
-Date: Mon, 14 Apr 2014 11:25:10 -0500
-Message-ID: <1397492726-17203-1-git-send-email-nm@ti.com>
+Subject: [PATCH 05/15] bus: omap_l3_noc: convert target information into a structure
+Date: Mon, 14 Apr 2014 11:25:16 -0500
+Message-ID: <1397492726-17203-7-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1397492726-17203-1-git-send-email-nm@ti.com>
+References: <1397492726-17203-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-The following series is based on v3.15-rc1 + peter's patch series:
-	patch #1: https://patchwork.kernel.org/patch/3923141/
-	(drivers: bus: omap_l3: Convert to use devm_kzalloc)
+Currently the target instance information is organized indexed by bit
+field offset into multiple arrays.
 
-	patch #2: https://patchwork.kernel.org/patch/3923061/
-	(drivers: bus: omap_l3: Convert to use devm_ioremap_resource() )
+1. We currently have offsets specific to each target associated with each
+clock domains are in seperate arrays:
 
-	patch #3: https://patchwork.kernel.org/patch/3923101/
-	(drivers: bus: omap_l3: Convert to use devm_request_irq())
+l3_targ_inst_clk1
+l3_targ_inst_clk2
+l3_targ_inst_clk3
 
-	patch #4: https://patchwork.kernel.org/patch/3923081/
-	(drivers: bus: omap_l3: Remove the platform driver's remove function)
+2. Then they are organized per master index in l3_targ.
 
-	patch #5: https://patchwork.kernel.org/patch/3923121/
-	(drivers: bus: omap_l3: Change pr_crit() to dev_err() when IRQ request
-	fails)
+3. We have names in l3_targ_inst_name as an array to array of strings
+corresponding to the above with offsets.
 
-This series cleansup omap_l3_noc driver and adds data to support DRA7
-and AM437x SoCs.
+Simplify the same by defining a structure for information containing
+both target offset and name. this is then stored in arrays per domain
+and organized into an array indexed off domain.
 
-Patches(including Peter's) is available here:
-https://github.com/nmenon/linux-2.6-playground/commits/l3noc/driver-fixes
+The array is still indexed based on bit field offset.
 
-DTS patches (once this series is integrated and related DRA7 memory map fixes are done):
-https://github.com/nmenon/linux-2.6-playground/commits/l3noc/dts-fixes
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ drivers/bus/omap_l3_noc.c |    9 ++--
+ drivers/bus/omap_l3_noc.h |  129 ++++++++++++++++++---------------------------
+ 2 files changed, 54 insertions(+), 84 deletions(-)
 
-Testing branch: everything integrated:
-https://github.com/nmenon/linux-2.6-playground/commits/l3noc/testing
-
-Test log:
-	am43xx-epos:  Boot PASS: http://slexy.org/raw/s2GQJIppWp
-	DRA7xx-EVM:  Boot PASS: http://slexy.org/raw/s20OfeDbO6
-	pandaboard-es:  Boot PASS: http://slexy.org/raw/s2AZSmSYcN
-	sdp4430:  Boot PASS: http://slexy.org/raw/s2IfHAbrJA
-	OMAP5432uEVM:  Boot PASS: http://slexy.org/raw/s21CkL8glk
-
-Afzal Mohammed (1):
-  bus: omap_l3_noc: Add AM4372 interconnect error data
-
-Nishanth Menon (10):
-  bus: omap_l3_noc: Fix copyright information
-  bus: omap_l3_noc: switch over to relaxed variants of readl/writel
-  bus: omap_l3_noc: un-obfuscate l3_targ address computation
-  bus: omap_l3_noc: move L3 master data structure out
-  bus: omap_l3_noc: convert target information into a structure
-  bus: omap_l3_noc: make error reporting and handling common.
-  bus: omap_l3_noc: populate l3->dev and use it
-  bus: omap_l3_noc: remove iclk from omap_l3 struct
-  bus: omap_l3_noc: convert flagmux information into a structure
-  bus: omap_l3_noc: introduce concept of submodule
-
-Rajendra Nayak (2):
-  bus: omap_l3_noc: Add support for discountinous flag mux input
-    numbers
-  bus: omap_l3_noc: Add DRA7 interconnect error data
-
-Sricharan R (2):
-  bus: omap_l3_noc: rename functions and data to omap_l3
-  bus: omap_l3_noc: use of_match_data to pick up SoC information
-
- .../devicetree/bindings/arm/omap/l3-noc.txt        |    2 +
- drivers/bus/omap_l3_noc.c                          |  224 +++++----
- drivers/bus/omap_l3_noc.h                          |  495 +++++++++++++++-----
- 3 files changed, 517 insertions(+), 204 deletions(-)
-
+diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+index b39ef93..0ef8b75 100644
+--- a/drivers/bus/omap_l3_noc.c
++++ b/drivers/bus/omap_l3_noc.c
+@@ -57,6 +57,7 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 	void __iomem *base, *l3_targ_base;
+ 	void __iomem *l3_targ_stderr, *l3_targ_slvofslsb, *l3_targ_mstaddr;
+ 	char *target_name, *master_name = "UN IDENTIFIED";
++	struct l3_target_data *l3_targ_inst;
+ 
+ 	/* Get the Type of interrupt */
+ 	inttype = irq == l3->app_irq ? L3_APPLICATION_ERROR : L3_DEBUG_ERROR;
+@@ -74,9 +75,11 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 		if (err_reg) {
+ 			/* Identify the source from control status register */
+ 			err_src = __ffs(err_reg);
++			l3_targ_inst = &l3_targ[i][err_src];
++			target_name = l3_targ_inst->name;
++			l3_targ_base = base + l3_targ_inst->offset;
+ 
+ 			/* Read the stderrlog_main_source from clk domain */
+-			l3_targ_base = base + l3_targ[i][err_src];
+ 			l3_targ_stderr = l3_targ_base + L3_TARG_STDERRLOG_MAIN;
+ 			l3_targ_slvofslsb = l3_targ_base +
+ 					    L3_TARG_STDERRLOG_SLVOFSLSB;
+@@ -88,8 +91,6 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 
+ 			switch (std_err_main & CUSTOM_ERROR) {
+ 			case STANDARD_ERROR:
+-				target_name =
+-					l3_targ_inst_name[i][err_src];
+ 				WARN(true, "L3 standard error: TARGET:%s at address 0x%x\n",
+ 					target_name,
+ 					readl_relaxed(l3_targ_slvofslsb));
+@@ -99,8 +100,6 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 				break;
+ 
+ 			case CUSTOM_ERROR:
+-				target_name =
+-					l3_targ_inst_name[i][err_src];
+ 				for (k = 0; k < NUM_OF_L3_MASTERS; k++) {
+ 					if (masterid == l3_masters[k].id)
+ 						master_name =
+diff --git a/drivers/bus/omap_l3_noc.h b/drivers/bus/omap_l3_noc.h
+index 26ad279..25ba99c 100644
+--- a/drivers/bus/omap_l3_noc.h
++++ b/drivers/bus/omap_l3_noc.h
+@@ -43,51 +43,62 @@ struct l3_masters_data {
+ 	char *name;
+ };
+ 
++/**
++ * struct l3_target_data - L3 Target information
++ * @offset:	Offset from base for L3 Target
++ * @name:	Target name
++ *
++ * Target information is organized indexed by bit field definitions.
++ */
++struct l3_target_data {
++	u32 offset;
++	char *name;
++};
++
+ static u32 l3_flagmux[L3_MODULES] = {
+ 	0x500,
+ 	0x1000,
+ 	0X0200
+ };
+ 
+-/* L3 Target standard Error register offsets */
+-static u32 l3_targ_inst_clk1[] = {
+-	0x100, /* DMM1 */
+-	0x200, /* DMM2 */
+-	0x300, /* ABE */
+-	0x400, /* L4CFG */
+-	0x600,  /* CLK2 PWR DISC */
+-	0x0,	/* Host CLK1 */
+-	0x900	/* L4 Wakeup */
++static struct l3_target_data l3_target_inst_data_clk1[] = {
++	{0x100,	"DMM1",},
++	{0x200,	"DMM2",},
++	{0x300,	"ABE",},
++	{0x400,	"L4CFG",},
++	{0x600,	"CLK2PWRDISC",},
++	{0x0,	"HOSTCLK1",},
++	{0x900,	"L4WAKEUP",},
+ };
+ 
+-static u32 l3_targ_inst_clk2[] = {
+-	0x500, /* CORTEX M3 */
+-	0x300, /* DSS */
+-	0x100, /* GPMC */
+-	0x400, /* ISS */
+-	0x700, /* IVAHD */
+-	0xD00, /* missing in TRM  corresponds to AES1*/
+-	0x900, /* L4 PER0*/
+-	0x200, /* OCMRAM */
+-	0x100, /* missing in TRM corresponds to GPMC sERROR*/
+-	0x600, /* SGX */
+-	0x800, /* SL2 */
+-	0x1600, /* C2C */
+-	0x1100,	/* missing in TRM corresponds PWR DISC CLK1*/
+-	0xF00, /* missing in TRM corrsponds to SHA1*/
+-	0xE00, /* missing in TRM corresponds to AES2*/
+-	0xC00, /* L4 PER3 */
+-	0xA00, /* L4 PER1*/
+-	0xB00, /* L4 PER2*/
+-	0x0, /* HOST CLK2 */
+-	0x1800, /* CAL */
+-	0x1700 /* LLI */
++static struct l3_target_data l3_target_inst_data_clk2[] = {
++	{0x500,	"CORTEXM3",},
++	{0x300,	"DSS",},
++	{0x100,	"GPMC",},
++	{0x400,	"ISS",},
++	{0x700,	"IVAHD",},
++	{0xD00,	"AES1",},
++	{0x900,	"L4PER0",},
++	{0x200,	"OCMRAM",},
++	{0x100,	"GPMCsERROR",},
++	{0x600,	"SGX",},
++	{0x800,	"SL2",},
++	{0x1600, "C2C",},
++	{0x1100, "PWRDISCCLK1",},
++	{0xF00,	"SHA1",},
++	{0xE00,	"AES2",},
++	{0xC00,	"L4PER3",},
++	{0xA00,	"L4PER1",},
++	{0xB00,	"L4PER2",},
++	{0x0,	"HOSTCLK2",},
++	{0x1800, "CAL",},
++	{0x1700, "LLI",},
+ };
+ 
+-static u32 l3_targ_inst_clk3[] = {
+-	0x0100	/* EMUSS */,
+-	0x0300, /* DEBUGSS_CT_TBR */
+-	0x0 /* HOST CLK3 */
++static struct l3_target_data l3_target_inst_data_clk3[] = {
++	{0x0100, "EMUSS",},
++	{0x0300, "DEBUG SOURCE",},
++	{0x0,	"HOST CLK3",},
+ };
+ 
+ static struct l3_masters_data l3_masters[] = {
+@@ -118,50 +129,10 @@ static struct l3_masters_data l3_masters[] = {
+ 	{ 0xC8, "USBHOSTFS"}
+ };
+ 
+-static char *l3_targ_inst_name[L3_MODULES][21] = {
+-	{
+-		"DMM1",
+-		"DMM2",
+-		"ABE",
+-		"L4CFG",
+-		"CLK2 PWR DISC",
+-		"HOST CLK1",
+-		"L4 WAKEUP"
+-	},
+-	{
+-		"CORTEX M3" ,
+-		"DSS ",
+-		"GPMC ",
+-		"ISS ",
+-		"IVAHD ",
+-		"AES1",
+-		"L4 PER0",
+-		"OCMRAM ",
+-		"GPMC sERROR",
+-		"SGX ",
+-		"SL2 ",
+-		"C2C ",
+-		"PWR DISC CLK1",
+-		"SHA1",
+-		"AES2",
+-		"L4 PER3",
+-		"L4 PER1",
+-		"L4 PER2",
+-		"HOST CLK2",
+-		"CAL",
+-		"LLI"
+-	},
+-	{
+-		"EMUSS",
+-		"DEBUG SOURCE",
+-		"HOST CLK3"
+-	},
+-};
+-
+-static u32 *l3_targ[L3_MODULES] = {
+-	l3_targ_inst_clk1,
+-	l3_targ_inst_clk2,
+-	l3_targ_inst_clk3,
++static struct l3_target_data *l3_targ[L3_MODULES] = {
++	l3_target_inst_data_clk1,
++	l3_target_inst_data_clk2,
++	l3_target_inst_data_clk3,
+ };
+ 
+ struct omap4_l3 {
 -- 
 1.7.9.5
 
