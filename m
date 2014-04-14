@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259AbaDNKeV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 06:34:21 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:40461 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750872AbaDNKeT (ORCPT
+	id S1754502AbaDNKhd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 06:37:33 -0400
+Received: from rhcavspool01.kulnet.kuleuven.be ([134.58.240.193]:47849 "EHLO
+	cavspool01.kulnet.kuleuven.be" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751003AbaDNKha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 06:34:19 -0400
-Date: Mon, 14 Apr 2014 12:34:13 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Igor Mammedov <imammedo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, bp@suse.de,
-        paul.gortmaker@windriver.com, JBeulich@suse.com, prarit@redhat.com,
-        drjones@redhat.com, toshi.kani@hp.com, riel@redhat.com,
-        gong.chen@linux.intel.com, andi@firstfloor.org, lenb@kernel.org,
-        rjw@rjwysocki.net, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v3 3/5] x86: fix list corruption on CPU hotplug
-Message-ID: <20140414103413.GB2846@gmail.com>
-References: <1397150061-29735-1-git-send-email-imammedo@redhat.com>
- <1397150061-29735-4-git-send-email-imammedo@redhat.com>
- <20140414091954.GB19771@gmail.com>
- <20140414115600.0d5dbbb5@thinkpad>
- <20140414100457.GD731@gmail.com>
- <20140414122333.0908c2a2@thinkpad>
+	Mon, 14 Apr 2014 06:37:30 -0400
+X-Greylist: delayed 350 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Apr 2014 06:37:30 EDT
+X-KULeuven-Envelope-From: bart.tanghe@thomasmore.be
+X-KULeuven-Scanned: Found to be clean
+X-KULeuven-ID: DD4A4128083.A2CF4
+X-KULeuven-Information: Katholieke Universiteit Leuven
+Message-ID: <534BB90B.7030904@thomasmore.be>
+Date: Mon, 14 Apr 2014 12:31:39 +0200
+X-Kuleuven: This mail passed the K.U.Leuven mailcluster
+From: Bart Tanghe <bart.tanghe@thomasmore.be>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140414122333.0908c2a2@thinkpad>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tim Kryger <tim.kryger@linaro.org>, Stephen Warren <swarren@wwwdotorg.org>
+CC: Thierry Reding <thierry.reding@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux PWM List <linux-pwm@vger.kernel.org>,
+        linux-rpi-kernel@lists.infradead.org
+Subject: Re: [rfc]pwm: add BCM2835 PWM driver
+References: <1396532680-30352-1-git-send-email-bart.tanghe@thomasmore.be>	<CAAYSxhpTV1-k7ROzJnnOhNcrZRUTzAfFc6YtLKLx6oZVUEHNxQ@mail.gmail.com>	<5344A209.7010507@wwwdotorg.org> <CAAYSxhqv_RLfksBE-n8KMg33v6ZfB4B4E8NQUYf8JsPzVrLYzw@mail.gmail.com>
+In-Reply-To: <CAAYSxhqv_RLfksBE-n8KMg33v6ZfB4B4E8NQUYf8JsPzVrLYzw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Is it the responsibility of the pwm driver to handle the pinmux of the 
+io pins? Or is the end user, or a parent driver responsible to handle this?
+Idem for the clock?
 
-* Igor Mammedov <imammedo@redhat.com> wrote:
 
-> On Mon, 14 Apr 2014 12:04:57 +0200
-> Ingo Molnar <mingo@kernel.org> wrote:
-> 
-> > 
-> > * Igor Mammedov <imammedo@redhat.com> wrote:
-> > 
-> > > On Mon, 14 Apr 2014 11:19:54 +0200
-> > > Ingo Molnar <mingo@kernel.org> wrote:
-> > > 
-> > > > 
-> > > > * Igor Mammedov <imammedo@redhat.com> wrote:
-> > > > 
-> > > > > currently if AP wake up is failed, master CPU marks AP as not present
-> > > > > in do_boot_cpu() by calling set_cpu_present(cpu, false).
-> > > > > That leads to following list corruption on the next physical CPU
-> > > > > hotplug:
-> > > > 
-> > > > Shouldn't this fix precede the main change to the smp bootup logic?
-> > > > 
-> > > > Can this bug trigger with current upstream kernels?
-> > > That's not impossible, tests showed that with current kernel there will
-> > > be other problems due wild AP running around.
-> > > 
-> > > I'll reorder patch anyway.
-> > 
-> > So, could you please first make sure that with only the fixes applied 
-> > there's no problems left?
->
-> Sure, I'll retest reordered series.
+On 04/09/2014 05:59 PM, Tim Kryger wrote:
+> On Tue, Apr 8, 2014 at 6:27 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>> On 04/08/2014 05:02 PM, Tim Kryger wrote:
+>>> On Thu, Apr 3, 2014 at 6:44 AM, Bart Tanghe <bart.tanghe@thomasmore.be> wrote:
+>>>> need some recommendation
+>>>> the memory mapped io registers of the bcm2835 pwm hardware are spreaded
+>>>> over the memory mapped io
+>>>> gpio config 0x20200004 - clk config 0x201010A0 - pwm configuration 0x2020C000
+>>>> to handle this, I've used the base address of the memory mapped io
+>>>> so I can use positive offsets
+>>> So the registers for this PWM are located in three distinct memory regions?
+>> ...
+>>>> +struct bcm2835_pwm_chip {
+>>>> +       struct pwm_chip chip;
+>>>> +       struct device *dev;
+>>>> +       int channel;
+>>>> +       void __iomem *mmio;
+>>> One pointer isn't going to be enough.  You need three.
+>>>
+>>> I suggest renaming the first and adding two more:
+>>>
+>>> void __iomem *base_pwm;
+>>> void __iomem *base_clk;
+>>> void __iomem *base_alt;
+>> Sorry, I forgot about this patch. One comment here; the PWM driver can't
+>> touch the clock or alt registers; those should be owned by the clock
+>> driver, and the driver for whatever alt is (pinmux - don't recall what
+>> it's touching there).
+> Absolutely.  If these registers are owned by other drivers, go through them.
 
-Please don't jus test a reodered series, but a 'fixes only' series, 
-which does not include patch #1.
-
-We will apply that patch too, to improve the bootup of virtualized 
-environments, but we first want to know whether the 'baseline' is OK 
-and fixed 100%.
-
-Thanks,
-
-	Ingo
