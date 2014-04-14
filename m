@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853AbaDNWIT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 18:08:19 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3329 "EHLO mga09.intel.com"
+	id S1756091AbaDNWIq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 18:08:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:16802 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755461AbaDNWHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755431AbaDNWHs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 14 Apr 2014 18:07:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,859,1389772800"; 
-   d="scan'208";a="520716165"
+   d="scan'208";a="520716159"
 From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 To: jic23@kernel.org
 Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
         Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Subject: [Patch v5 6/6] iio: Added ABI description for quaternion
-Date: Mon, 14 Apr 2014 15:11:07 -0700
-Message-Id: <1397513467-21397-7-git-send-email-srinivas.pandruvada@linux.intel.com>
+Subject: [Patch v5 4/6] IIO: core: Add quaternion modifier
+Date: Mon, 14 Apr 2014 15:11:05 -0700
+Message-Id: <1397513467-21397-5-git-send-email-srinivas.pandruvada@linux.intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1397513467-21397-1-git-send-email-srinivas.pandruvada@linux.intel.com>
 References: <1397513467-21397-1-git-send-email-srinivas.pandruvada@linux.intel.com>
@@ -23,54 +23,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added documentation for reading quaternion components for 3D rotations.
+Added quaternion in the list of supported modifiers.
 
 Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 ---
- Documentation/ABI/testing/sysfs-bus-iio | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/iio/industrialio-core.c | 1 +
+ include/linux/iio/types.h       | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
-index 6e02c50..d2c59f9 100644
---- a/Documentation/ABI/testing/sysfs-bus-iio
-+++ b/Documentation/ABI/testing/sysfs-bus-iio
-@@ -784,6 +784,7 @@ What:		/sys/.../iio:deviceX/scan_elements/in_incli_x_en
- What:		/sys/.../iio:deviceX/scan_elements/in_incli_y_en
- What:		/sys/.../iio:deviceX/scan_elements/in_pressureY_en
- What:		/sys/.../iio:deviceX/scan_elements/in_pressure_en
-+What:		/sys/.../iio:deviceX/scan_elements/in_rot_quaternion_en
- KernelVersion:	2.6.37
- Contact:	linux-iio@vger.kernel.org
- Description:
-@@ -799,6 +800,7 @@ What:		/sys/.../iio:deviceX/scan_elements/in_voltageY_supply_type
- What:		/sys/.../iio:deviceX/scan_elements/in_timestamp_type
- What:		/sys/.../iio:deviceX/scan_elements/in_pressureY_type
- What:		/sys/.../iio:deviceX/scan_elements/in_pressure_type
-+What:		/sys/.../iio:deviceX/scan_elements/in_rot_quaternion_type
- KernelVersion:	2.6.37
- Contact:	linux-iio@vger.kernel.org
- Description:
-@@ -845,6 +847,7 @@ What:		/sys/.../iio:deviceX/scan_elements/in_incli_y_index
- What:		/sys/.../iio:deviceX/scan_elements/in_timestamp_index
- What:		/sys/.../iio:deviceX/scan_elements/in_pressureY_index
- What:		/sys/.../iio:deviceX/scan_elements/in_pressure_index
-+What:		/sys/.../iio:deviceX/scan_elements/in_rot_quaternion_index
- KernelVersion:	2.6.37
- Contact:	linux-iio@vger.kernel.org
- Description:
-@@ -891,3 +894,12 @@ Contact:	linux-iio@vger.kernel.org
- Description:
- 		This attribute is used to get/set the integration time in
- 		seconds.
-+
-+What:		/sys/bus/iio/devices/iio:deviceX/in_rot_quaternion_raw
-+KernelVersion:	3.15
-+Contact:	linux-iio@vger.kernel.org
-+Description:
-+		Raw value of quaternion components using a format
-+		x y z w. Here x, y, and z component represents the axis about
-+		which a rotation will occur and w component represents the
-+		amount of rotation.
+diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+index e22a984..dcc1849 100644
+--- a/drivers/iio/industrialio-core.c
++++ b/drivers/iio/industrialio-core.c
+@@ -84,6 +84,7 @@ static const char * const iio_modifier_names[] = {
+ 	[IIO_MOD_LIGHT_RED] = "red",
+ 	[IIO_MOD_LIGHT_GREEN] = "green",
+ 	[IIO_MOD_LIGHT_BLUE] = "blue",
++	[IIO_MOD_QUATERNION] = "quaternion",
+ };
+ 
+ /* relies on pairs of these shared then separate */
+diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
+index a13c224..4fdab2e 100644
+--- a/include/linux/iio/types.h
++++ b/include/linux/iio/types.h
+@@ -53,6 +53,7 @@ enum iio_modifier {
+ 	IIO_MOD_LIGHT_RED,
+ 	IIO_MOD_LIGHT_GREEN,
+ 	IIO_MOD_LIGHT_BLUE,
++	IIO_MOD_QUATERNION,
+ };
+ 
+ enum iio_event_type {
 -- 
 1.7.11.7
 
