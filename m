@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913AbaDNQle (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:41:34 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:39005 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755175AbaDNQlb (ORCPT
+	id S1755733AbaDNQmG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:42:06 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:54899 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755538AbaDNQ0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:41:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140414160653.GC29351@lst.de>
-References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de>
- <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com>
- <20140414160211.GE711@lst.de> <20140414160653.GC29351@lst.de>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 14 Apr 2014 09:41:10 -0700
-Message-ID: <CALCETrUmFdrGExKB+tKSMVK1yWAw6KWU1tpgjnoFe=+XhJdtTw@mail.gmail.com>
-Subject: Re: [PATCH v3 03/03]: hwrng: khwrngd derating per device
-To: Torsten Duwe <duwe@lst.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        ingo.tuchscherer@de.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hans-Georg Markgraf <MGRF@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Joe Perches <joe@perches.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 14 Apr 2014 12:26:08 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: tglx@linutronix.de
+Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, Arvind.Chauhan@arm.com,
+        linaro-networking@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 19/38] tick-common: remove local variable 'broadcast' from tick_resume()
+Date: Mon, 14 Apr 2014 21:53:41 +0530
+Message-Id: <bc4cbfc90e50661634992760c1130acaab248e7d.1397492345.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1397492345.git.viresh.kumar@linaro.org>
+References: <cover.1397492345.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1397492345.git.viresh.kumar@linaro.org>
+References: <cover.1397492345.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 9:06 AM, Torsten Duwe <duwe@lst.de> wrote:
->
-> This patch introduces a derating factor to struct hwrng for
-> the random bits going into the kernel input pool, and a common
-> default derating for drivers which do not specify one.
->
-> Signed-off-by: Torsten Duwe <duwe@suse.de>
->
-> ---
->  drivers/char/hw_random/core.c |   11 ++++++++++-
->  include/linux/hw_random.h     |    3 +++
->  2 files changed, 13 insertions(+), 1 deletion(-)
->
-> --- linux/include/linux/hw_random.h.orig
-> +++ linux/include/linux/hw_random.h
-> @@ -29,6 +29,8 @@
->   * @read:              New API. drivers can fill up to max bytes of data
->   *                     into the buffer. The buffer is aligned for any type.
->   * @priv:              Private data, for use by the RNG driver.
-> + * @derating:          Estimation of true entropy in RNG's bitstream
-> + *                     (per mill).
+'broadcast' is used just once and we can easily use tick_resume_broadcast()
+directly instead. Also it changes the code a bit to get rid of extra indentation
+level which was forcing us to break function calls into two lines.
 
-I'll bikeshed again: this is a rating, not a *de*rating.  Higher =
-more confidence, at least assuming the comment is right.
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ kernel/time/tick-common.c | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
---Andy
+diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+index 3954f4d..e1b2947 100644
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -351,17 +351,16 @@ void tick_resume(void)
+ {
+ 	struct tick_device *td = tick_get_cpu_device();
+ 	struct clock_event_device *dev = td->evtdev;
+-	int broadcast = tick_resume_broadcast();
+ 
+ 	clockevents_set_mode(dev, CLOCK_EVT_MODE_RESUME);
+ 
+-	if (!broadcast) {
+-		if (td->mode == TICKDEV_MODE_PERIODIC)
+-			tick_setup_periodic(dev, 0);
+-		else
+-			tick_setup_oneshot(dev, dev->event_handler,
+-					   ktime_get());
+-	}
++	if (tick_resume_broadcast())
++		return;
++
++	if (td->mode == TICKDEV_MODE_PERIODIC)
++		tick_setup_periodic(dev, 0);
++	else
++		tick_setup_oneshot(dev, dev->event_handler, ktime_get());
+ }
+ 
+ /**
+-- 
+1.7.12.rc2.18.g61b472e
+
