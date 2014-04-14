@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354AbaDNOx2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 10:53:28 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:46590 "EHLO
+	id S1754966AbaDNOxZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 10:53:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46592 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123AbaDNOxU (ORCPT
+	with ESMTP id S1750914AbaDNOxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 10:53:20 -0400
-Date: Mon, 14 Apr 2014 07:53:00 -0700
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-202c7c123c96a1c193149b7fa2718d7fb143efb2@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
-        namhyung@kernel.org, jolsa@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
-        namhyung@kernel.org, jolsa@redhat.com
-In-Reply-To: <1396327677-3657-1-git-send-email-namhyung@kernel.org>
-References: <1396327677-3657-1-git-send-email-namhyung@kernel.org>
+	Mon, 14 Apr 2014 10:53:21 -0400
+Date: Mon, 14 Apr 2014 07:52:34 -0700
+From: tip-bot for Arnaldo Carvalho de Melo <tipbot@zytor.com>
+Message-ID: <tip-jott6d40nkjjc3vvh3vw53lp@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, paulus@samba.org,
+        acme@redhat.com, hpa@zytor.com, mingo@kernel.org, peterz@infradead.org,
+        efault@gmx.de, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, adrian.hunter@intel.com, dsahern@gmail.com,
+        tglx@linutronix.de, dzickus@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+        eranian@google.com, linux-kernel@vger.kernel.org, efault@gmx.de,
+        peterz@infradead.org, namhyung@kernel.org, jolsa@redhat.com,
+        fweisbec@gmail.com, dsahern@gmail.com, adrian.hunter@intel.com,
+        tglx@linutronix.de, dzickus@redhat.com
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf probe: Fix --line option behavior
-Git-Commit-ID: 202c7c123c96a1c193149b7fa2718d7fb143efb2
+Subject: [tip:perf/urgent] MAINTAINERS: Change e-mail to kernel.org one
+Git-Commit-ID: f80c539323984257d62f7683b1262ce24c52ce26
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,50 +35,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  202c7c123c96a1c193149b7fa2718d7fb143efb2
-Gitweb:     http://git.kernel.org/tip/202c7c123c96a1c193149b7fa2718d7fb143efb2
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Tue, 1 Apr 2014 13:47:57 +0900
+Commit-ID:  f80c539323984257d62f7683b1262ce24c52ce26
+Gitweb:     http://git.kernel.org/tip/f80c539323984257d62f7683b1262ce24c52ce26
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Thu, 27 Mar 2014 17:36:14 -0300
 Committer:  Jiri Olsa <jolsa@redhat.com>
-CommitDate: Mon, 14 Apr 2014 12:55:39 +0200
+CommitDate: Mon, 14 Apr 2014 12:55:01 +0200
 
-perf probe: Fix --line option behavior
+MAINTAINERS: Change e-mail to kernel.org one
 
-The commit 5a62257a3ddd1 ("perf probe: Replace line_list with
-intlist") replaced line_list to intlist but it has a problem that if a
-same line was added again, it'd return -EEXIST rather than 1.
+Leaving ghostprotocols.net for old networking stuff.
 
-Since line_range_walk_cb() only checks the result being negative, it
-resulted in failure or segfault sometimes.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Link: http://lkml.kernel.org/r/1396327677-3657-1-git-send-email-namhyung@kernel.org
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/n/tip-jott6d40nkjjc3vvh3vw53lp@git.kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/util/probe-finder.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ MAINTAINERS | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index df02386..3bf0c8c 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -1441,13 +1441,15 @@ static int line_range_walk_cb(const char *fname, int lineno,
- 			      void *data)
- {
- 	struct line_finder *lf = data;
-+	int err;
- 
- 	if ((strtailcmp(fname, lf->fname) != 0) ||
- 	    (lf->lno_s > lineno || lf->lno_e < lineno))
- 		return 0;
- 
--	if (line_range_add_line(fname, lineno, lf->lr) < 0)
--		return -EINVAL;
-+	err = line_range_add_line(fname, lineno, lf->lr);
-+	if (err < 0 && err != -EEXIST)
-+		return err;
- 
- 	return 0;
- }
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 1ecfde1..b06a9a8 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6678,7 +6678,7 @@ PERFORMANCE EVENTS SUBSYSTEM
+ M:	Peter Zijlstra <a.p.zijlstra@chello.nl>
+ M:	Paul Mackerras <paulus@samba.org>
+ M:	Ingo Molnar <mingo@redhat.com>
+-M:	Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
++M:	Arnaldo Carvalho de Melo <acme@kernel.org>
+ L:	linux-kernel@vger.kernel.org
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf/core
+ S:	Supported
