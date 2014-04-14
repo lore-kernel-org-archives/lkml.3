@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167AbaDNPK3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 11:10:29 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60692 "EHLO
+	id S1754967AbaDNPQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 11:16:58 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60724 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752312AbaDNPKY (ORCPT
+	with ESMTP id S1751172AbaDNPK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 11:10:24 -0400
+	Mon, 14 Apr 2014 11:10:28 -0400
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: Daniel Lezcano <daniel.lezcano@linaro.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
@@ -18,9 +18,9 @@ Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
         Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v7 02/11] ARM: mvebu: remove the address parameter for ll_set_cpu_coherent
-Date: Mon, 14 Apr 2014 17:10:05 +0200
-Message-Id: <1397488214-20685-3-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH v7 06/11] ARM: mvebu: Low level function to disable HW coherency support
+Date: Mon, 14 Apr 2014 17:10:09 +0200
+Message-Id: <1397488214-20685-7-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1397488214-20685-1-git-send-email-gregory.clement@free-electrons.com>
 References: <1397488214-20685-1-git-send-email-gregory.clement@free-electrons.com>
@@ -28,119 +28,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to be able to deal with the MMU enabled and the MMU disabled
-cases, the base address of the coherency registers was passed to the
-function. The address by itself was not interesting as it can't change
-for a given SoC, the only thing we need is to have a distinction
-between the physical or the virtual address.
-
-This patch add a check of the MMU bit to choose the accurate address,
-then the calling function doesn't have to pass this information.
+When going to deep idle we need to disable the SoC snooping (aka
+hardware coherency support). Playing with the coherency fabric
+requires to use assembly code to be sure that the compiler doesn't
+reorder the instructions nor do wrong optimization.
 
 Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 ---
- arch/arm/mach-mvebu/coherency.c    |  6 +++---
- arch/arm/mach-mvebu/coherency_ll.S | 22 ++++++++++++++++++++--
- arch/arm/mach-mvebu/headsmp.S      |  9 ---------
- 3 files changed, 23 insertions(+), 14 deletions(-)
+ arch/arm/mach-mvebu/coherency_ll.S | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-diff --git a/arch/arm/mach-mvebu/coherency.c b/arch/arm/mach-mvebu/coherency.c
-index 4e9d58148ca7..88dd507221fc 100644
---- a/arch/arm/mach-mvebu/coherency.c
-+++ b/arch/arm/mach-mvebu/coherency.c
-@@ -30,7 +30,7 @@
- #include "coherency.h"
- 
- unsigned long coherency_phys_base;
--static void __iomem *coherency_base;
-+void __iomem *coherency_base;
- static void __iomem *coherency_cpu_base;
- 
- /* Coherency fabric registers */
-@@ -44,7 +44,7 @@ static struct of_device_id of_coherency_table[] = {
- };
- 
- /* Function defined in coherency_ll.S */
--int ll_set_cpu_coherent(void __iomem *base_addr, unsigned int hw_cpu_id);
-+int ll_set_cpu_coherent(unsigned int hw_cpu_id);
- 
- int set_cpu_coherent(unsigned int hw_cpu_id, int smp_group_id)
- {
-@@ -54,7 +54,7 @@ int set_cpu_coherent(unsigned int hw_cpu_id, int smp_group_id)
- 		return 1;
- 	}
- 
--	return ll_set_cpu_coherent(coherency_base, hw_cpu_id);
-+	return ll_set_cpu_coherent(hw_cpu_id);
- }
- 
- static inline void mvebu_hwcc_sync_io_barrier(void)
 diff --git a/arch/arm/mach-mvebu/coherency_ll.S b/arch/arm/mach-mvebu/coherency_ll.S
-index ee7598fe75db..1f2bcd4b5424 100644
+index f2e2e8677c4b..6828f9f157b0 100644
 --- a/arch/arm/mach-mvebu/coherency_ll.S
 +++ b/arch/arm/mach-mvebu/coherency_ll.S
-@@ -21,13 +21,27 @@
- #define ARMADA_XP_CFB_CFG_REG_OFFSET 0x4
- 
- #include <asm/assembler.h>
-+#include <asm/cp15.h>
- 
- 	.text
- /*
-- * r0: Coherency fabric base register address
-- * r1: HW CPU id
-+ * r0: HW CPU id
-  */
- ENTRY(ll_set_cpu_coherent)
-+	mrc	p15, 0, r1, c1, c0, 0
-+	tst	r1, #CR_M @ Check MMU bit enabled
-+	bne	1f
-+
-+	/* use physical address of the coherency register*/
-+	adr	r0, 3f
-+	ldr	r3, [r0]
-+	ldr	r0, [r0, r3]
-+	b	2f
-+1:
-+	/* use virtual address of the coherency register*/
-+	ldr	r0, =coherency_base
-+	ldr	r0, [r0]
-+2:
- 	/* Create bit by cpu index */
- 	mov	r3, #(1 << 24)
- 	lsl	r1, r3, r1
-@@ -56,3 +70,7 @@ ARM_BE8(rev	r1, r1)
- 	mov	r0, #0
+@@ -102,6 +102,26 @@ ENTRY(ll_enable_coherency)
  	mov	pc, lr
- ENDPROC(ll_set_cpu_coherent)
-+
-+	.align 2
-+3:
-+	.long	coherency_phys_base - .
-diff --git a/arch/arm/mach-mvebu/headsmp.S b/arch/arm/mach-mvebu/headsmp.S
-index 3dd80df428f7..f30bc8d78871 100644
---- a/arch/arm/mach-mvebu/headsmp.S
-+++ b/arch/arm/mach-mvebu/headsmp.S
-@@ -31,11 +31,6 @@
- ENTRY(armada_xp_secondary_startup)
-  ARM_BE8(setend	be )			@ go BE8 if entered LE
+ ENDPROC(ll_enable_coherency)
  
--	/* Get coherency fabric base physical address */
--	adr	r0, 1f
--	ldr	r1, [r0]
--	ldr	r0, [r0, r1]
--
- 	/* Read CPU id */
- 	mrc     p15, 0, r1, c0, c0, 5
- 	and     r1, r1, #0xF
-@@ -45,7 +40,3 @@ ENTRY(armada_xp_secondary_startup)
- 	b	secondary_startup
++ENTRY(ll_disable_coherency)
++	/*
++	 * r0 being untouched in ll_get_coherency_base and
++	 * ll_get_cpuid, we can use it to save lr modifing it with the
++	 * following bl
++	 */
++	mov r0, lr
++	bl	ll_get_coherency_base
++	bl	ll_get_cpuid
++	mov lr, r0
++	add	r0, r1, #ARMADA_XP_CFB_CTL_REG_OFFSET
++1:
++	ldrex	r2, [r0]
++	bic	r2, r2, r3
++	strex	r1, r2, [r0]
++	cmp	r1, #0
++	bne	1b
++	dsb
++	mov	pc, lr
++ENDPROC(ll_disable_coherency)
  
- ENDPROC(armada_xp_secondary_startup)
--
--	.align 2
--1:
--	.long	coherency_phys_base - .
+ 	.align 2
+ 3:
 -- 
 1.8.1.2
 
