@@ -1,98 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777AbaDNQ1M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:27:12 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:51518 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755749AbaDNQ1J (ORCPT
+	id S1755924AbaDNQgd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:36:33 -0400
+Received: from www84.your-server.de ([213.133.104.84]:38679 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755726AbaDNQg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:27:09 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de
-Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, Arvind.Chauhan@arm.com,
-        linaro-networking@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 26/38] tick-sched: don't call update_wall_time() when delta is lesser than tick_period
-Date: Mon, 14 Apr 2014 21:53:48 +0530
-Message-Id: <8cf944ba5c78a47f83db9391f423150202816e61.1397492345.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1397492345.git.viresh.kumar@linaro.org>
-References: <cover.1397492345.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1397492345.git.viresh.kumar@linaro.org>
-References: <cover.1397492345.git.viresh.kumar@linaro.org>
+	Mon, 14 Apr 2014 12:36:29 -0400
+Message-ID: <1397493335.1028.4.camel@vger.seibold.net>
+Subject: Re: Missing USB XHCI and EHCI reset for kexec
+From: Stefani Seibold <stefani@seibold.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        Greg KH <greg@kroah.com>, sarah.a.sharp@linux.intel.com,
+        andreas.brief@rohde-schwarz.com
+Date: Mon, 14 Apr 2014 18:35:35 +0200
+In-Reply-To: <Pine.LNX.4.44L0.1404141215240.874-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1404141215240.874-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In tick_do_update_jiffies64() we are processing ticks only if delta is greater
-than tick_period. This is what we are supposed to do here and it broke a bit
-with this patch:
+Am Montag, den 14.04.2014, 12:27 -0400 schrieb Alan Stern:
+> On Mon, 14 Apr 2014 stefani@seibold.net wrote:
+> 
+> > Zitat von Alan Stern <stern@rowland.harvard.edu>:
+> > 
+> > 
+> > >> <6>[  167.936921] usb 2-2.1: new full-speed USB device number 3  
+> > >> using ohci-pci
+> > >> <6>[  168.067890] usb 2-2.1: New USB device found, idVendor=076b,
+> > >> idProduct=a021
+> > >> <6>[  168.074871] usb 2-2.1: New USB device strings: Mfr=1, Product=2,
+> > >> SerialNumber=0
+> > >> <6>[  168.082226] usb 2-2.1: Product: Smart Card Reader
+> > >> <6>[  168.086963] usb 2-2.1: Manufacturer: USB
+> > >> <6>[  168.172893] usb 2-2.2: new low-speed USB device number 4  
+> > >> using ohci-pci
+> > >> <6>[  168.300839] usb 2-2.2: New USB device found, idVendor=0aad,
+> > >> idProduct=0024
+> > >> <6>[  168.307823] usb 2-2.2: New USB device strings: Mfr=1, Product=2,
+> > >> SerialNumber=0
+> > >> <6>[  168.315180] usb 2-2.2: Product: FrontPanel USB Keyboard
+> > >> <6>[  168.320436] usb 2-2.2: Manufacturer: Rohde&Schwarz
+> > >> <6>[  168.337895] input: Rohde&Schwarz FrontPanel USB Keyboard as
+> > >> /devices/pci0000:00/0000:00:17.0/usb2/2-2/2-2.2/2-2.2:1.0/input/input0
+> > >> <6>[  168.360988] input: Rohde&Schwarz FrontPanel USB Keyboard as
+> > >> /devices/pci0000:00/0000:00:17.0/usb2/2-2/2-2.2/2-2.2:1.1/input/input1
+> > >
+> > > Since some devices work and some don't, maybe part of the problem lies
+> > > in the particular devices.
+> > >
+> > 
+> > The problem lies on the "Bus 001 Device 002: ID 0424:2514 Standard  
+> > Microsystems Corp. USB 2.0 Hub", which hangs for arround 162 seconds  
+> > after a kexec.
+> > 
+> > The "Bus 002 Device 003: ID 076b:a021 OmniKey AG CCID Smart Card  
+> > Reader" and "Bus 002 Device 004: ID 0aad:0024 Rohde & Schwarz GmbH &  
+> > Co. KG" are attached to this Hub.
+> 
+> Actually, it looks like they are plugged into the Texas Instruments
+> hub, not the Standard Microsystems hub (because they are on bus 2, not
+> bus 1).  Did you rearrange the USB cables?
+> 
 
-commit 47a1b796306356f358e515149d86baf0cc6bf007
-Author: John Stultz <john.stultz@linaro.org>
-Date:   Thu Dec 12 13:10:55 2013 -0800
+You are right, sorry for the confusion. I can't rearrange the cables
+because the HUB is on board.
 
-    tick/timekeeping: Call update_wall_time outside the jiffies lock
+> > An other PowerPC device which is nearly eactly the same HW but without  
+> > this USB HUB works perfectly.
+> 
+> Maybe you should replace that hub with a different brand.
+> 
 
-With above patch, we might end up calling update_wall_time() even if delta is
-found to be smaller that tick_period. Fix this by reversing the check and
-returning early.
+Thats not possible, because the Hub is soldered on the board. And it is
+also not a HW issue, since the Hub works perfectly which all previous
+kernels including 3.4.
 
-Cc: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- kernel/time/tick-sched.c | 32 +++++++++++++++++---------------
- 1 file changed, 17 insertions(+), 15 deletions(-)
+> > >> This is the output of lsusb:
+> > >>
+> > >> Bus 001 Device 002: ID 0424:2514 Standard Microsystems Corp. USB 2.0 Hub
+> > >> Bus 001 Device 004: ID 0928:0007 Oxford Semiconductor, Ltd
+> > >> Bus 002 Device 002: ID 0451:2036 Texas Instruments, Inc. TUSB2036 Hub
+> > >> Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+> > >> Bus 002 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+> > >> Bus 003 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+> > >> Bus 002 Device 003: ID 076b:a021 OmniKey AG CCID Smart Card Reader
+> > >> Bus 002 Device 004: ID 0aad:0024 Rohde & Schwarz GmbH & Co. KG
+> 
+> Here, the only device that might be plugged into the Standard
+> Microsystems hub is the Oxford Semiconductor thing (whatever it is).
+> 
+> > > What about if you just do:
+> > >
+> > > 	rmmod ehci-pci
+> > > 	modprobe ehci-pci
+> > >
+> > 
+> > The kernel is monolitic because the USB HW is needed in a early boot  
+> > stage. The problem also occurs with ehci-fsl used in by an other  
+> > PowerPC device, which is a part of the SoC and is not attached to the  
+> > PCI bus.
+> > 
+> > One thing is that the "echo 1  
+> >  >/sys/bus/pci/drivers/ehci-pci/0000\:00\:17.2/reset" workaround will  
+> > no longer work for kernel 3.14.
+> 
+> Instead, you could try
+> 
+> 	echo 0000:00:17.2 >/sys/bus/pci/drivers/ehci-pci/unbind
+> 	echo 0000:00:17.2 >/sys/bus/pci/drivers/ehci-pci/bind
+> 
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index b7b09b9..bff7f97 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -65,26 +65,28 @@ static void tick_do_update_jiffies64(ktime_t now)
- 	write_seqlock(&jiffies_lock);
- 
- 	delta = ktime_sub(now, last_jiffies_update);
--	if (delta.tv64 >= tick_period.tv64) {
--
--		delta = ktime_sub(delta, tick_period);
--		last_jiffies_update = ktime_add(last_jiffies_update,
--						tick_period);
-+	if (delta.tv64 < tick_period.tv64) {
-+		write_sequnlock(&jiffies_lock);
-+		return;
-+	}
- 
--		/* Slow path for long timeouts */
--		if (unlikely(delta.tv64 >= tick_period.tv64)) {
--			s64 incr = ktime_to_ns(tick_period);
-+	delta = ktime_sub(delta, tick_period);
-+	last_jiffies_update = ktime_add(last_jiffies_update, tick_period);
- 
--			ticks = ktime_divns(delta, incr);
-+	/* Slow path for long timeouts */
-+	if (unlikely(delta.tv64 >= tick_period.tv64)) {
-+		s64 incr = ktime_to_ns(tick_period);
- 
--			last_jiffies_update = ktime_add_ns(last_jiffies_update,
--							   incr * ticks);
--		}
--		do_timer(++ticks);
-+		ticks = ktime_divns(delta, incr);
- 
--		/* Keep the tick_next_period variable up to date */
--		tick_next_period = ktime_add(last_jiffies_update, tick_period);
-+		last_jiffies_update = ktime_add_ns(last_jiffies_update,
-+						   incr * ticks);
- 	}
-+	do_timer(++ticks);
-+
-+	/* Keep the tick_next_period variable up to date */
-+	tick_next_period = ktime_add(last_jiffies_update, tick_period);
-+
- 	write_sequnlock(&jiffies_lock);
- 	update_wall_time();
- }
--- 
-1.7.12.rc2.18.g61b472e
+I am now at home. I will do this tomorrow. Thanks so much for your
+support.
+
+- Stefani
+
+
 
