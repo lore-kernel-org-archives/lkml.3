@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008AbaDNCTn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 22:19:43 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:56661 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757AbaDNCTl (ORCPT
+	id S1753554AbaDNCUA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 22:20:00 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:63499 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750858AbaDNCT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 22:19:41 -0400
+	Sun, 13 Apr 2014 22:19:56 -0400
 MIME-Version: 1.0
-In-Reply-To: <20540404.Au0OUqzobS@daeseok-laptop.cloud.net>
-References: <20540404.Au0OUqzobS@daeseok-laptop.cloud.net>
-Date: Mon, 14 Apr 2014 11:19:41 +0900
-Message-ID: <CAHb8M2BrbMFL-aUsBz6BjDzqJ1jYRBi557PB1kxcouo3_B8Jpg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] nfc: fix NULL pointer dereference
+In-Reply-To: <31741678.fEkJSmnf5n@daeseok-laptop.cloud.net>
+References: <31741678.fEkJSmnf5n@daeseok-laptop.cloud.net>
+Date: Mon, 14 Apr 2014 11:19:56 +0900
+Message-ID: <CAHb8M2Bt2+MD_ZKmA89j4bSmmJ--ut-uvXCWj1_1Q2xaKvLEkQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] nfc: remove unneeded nfc_put_device() calls
 From: DaeSeok Youn <daeseok.youn@gmail.com>
 To: David Miller <davem@davemloft.net>, lauro.venancio@openbossa.org
 Cc: aloisio.almeida@openbossa.org, sameo@linux.intel.com,
@@ -30,37 +30,28 @@ Can you review this patch?
 Thanks.
 Daeseok Youn
 
-2014-04-02 16:55 GMT+09:00 Daeseok Youn <daeseok.youn@gmail.com>:
+2014-04-02 16:56 GMT+09:00 Daeseok Youn <daeseok.youn@gmail.com>:
 >
-> dev is NULL when nfc_get_device() is failed but
-> dev is used for handling error.
->
-> coccicheck says:
->  net/nfc/netlink.c:1092:21-24: ERROR:
-> dev is NULL but dereferenced.
+> If local is NULL, nfs_put_device() is called twice.
+> So nfs_put_device() in "if (!local)" is removed.
 >
 > Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 > ---
->  net/nfc/netlink.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
+>  net/nfc/netlink.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
 >
 > diff --git a/net/nfc/netlink.c b/net/nfc/netlink.c
-> index 43cb1c1..b2ad570 100644
+> index b2ad570..3e0a676 100644
 > --- a/net/nfc/netlink.c
 > +++ b/net/nfc/netlink.c
-> @@ -1026,10 +1026,8 @@ static int nfc_genl_llc_sdreq(struct sk_buff *skb, struct genl_info *info)
->         idx = nla_get_u32(info->attrs[NFC_ATTR_DEVICE_INDEX]);
+> @@ -1038,7 +1038,6 @@ static int nfc_genl_llc_sdreq(struct sk_buff *skb, struct genl_info *info)
 >
->         dev = nfc_get_device(idx);
-> -       if (!dev) {
-> -               rc = -ENODEV;
-> -               goto exit;
-> -       }
-> +       if (!dev)
-> +               return -ENODEV;
->
->         device_lock(&dev->dev);
->
+>         local = nfc_llcp_find_local(dev);
+>         if (!local) {
+> -               nfc_put_device(dev);
+>                 rc = -ENODEV;
+>                 goto exit;
+>         }
 > --
 > 1.7.4.4
 >
