@@ -1,48 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898AbaDNSsP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 14:48:15 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:55133 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754228AbaDNSsN (ORCPT
+	id S1754998AbaDNSss (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 14:48:48 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:57307 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754154AbaDNSsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 14:48:13 -0400
-Date: Mon, 14 Apr 2014 21:43:53 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: David Miller <davem@davemloft.net>
-Cc: mroos@linux.ee, sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: sparc64 WARNING: at mm/mmap.c:2757 exit_mmap+0x13c/0x160()
-Message-ID: <20140414184353.GA5630@drone.musicnaut.iki.fi>
-References: <20130617055839.GB3073@blackmetal.musicnaut.iki.fi>
- <20130803.134042.2228681844349448961.davem@davemloft.net>
- <20131022174612.GC24448@blackmetal.musicnaut.iki.fi>
- <20131022.135442.1072093301788210177.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20131022.135442.1072093301788210177.davem@davemloft.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Mon, 14 Apr 2014 14:48:46 -0400
+Date: Mon, 14 Apr 2014 14:48:43 -0400 (EDT)
+Message-Id: <20140414.144843.488522666550066271.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: nasa4836@gmail.com, jchapman@katalix.com, edumazet@google.com,
+        joe@perches.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [BUG] A panic caused by null pointer dereference aftering
+ updating to
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1397499566.4222.36.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1397498082.4222.29.camel@edumazet-glaptop2.roam.corp.google.com>
+	<20140414.140253.788885546068554928.davem@davemloft.net>
+	<1397499566.4222.36.camel@edumazet-glaptop2.roam.corp.google.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 14 Apr 2014 11:48:45 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Mon, 14 Apr 2014 11:19:26 -0700
 
-Just for the archives, I got one of these again with 3.14:
+> ip_local_out() doesn't use skb->sk
 
-[68674.536190] ------------[ cut here ]------------
-[68674.590467] WARNING: CPU: 0 PID: 14600 at /home/aaro/los/work/shared/linux-v3.14/mm/mmap.c:2738 exit_mmap+0x138/0x160()
-[68674.719635] Modules linked in:
-[68674.756022] CPU: 0 PID: 14600 Comm: rm Not tainted 3.14.0-ultra-los_0a2b #1
-[68674.839349] Call Trace:
-[68674.868507]  [00000000004b9c78] exit_mmap+0x138/0x160
-[68674.928931]  [00000000004503cc] mmput+0x2c/0xc0
-[68674.983103]  [0000000000452e98] do_exit+0x1b8/0x800
-[68675.041409]  [000000000045406c] do_group_exit+0x2c/0xa0
-[68675.103897]  [00000000004540f4] SyS_exit_group+0x14/0x20
-[68675.167439]  [0000000000406074] linux_sparc_syscall32+0x34/0x60
-[68675.238258] ---[ end trace 8a52741fbdb89d8e ]---
-[68675.293470] BUG: Bad rss-counter state mm:ffffff001df3d900 idx:1 val:1
+It does Eric.
 
-A.
+We had just such a report with this in the backtrace, when AF_PACKET
+sends over vxlan devices.
+
+The problem is ip_mc_output().
