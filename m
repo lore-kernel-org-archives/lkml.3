@@ -1,124 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339AbaDNSlq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 14:41:46 -0400
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:63059 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753695AbaDNSlp (ORCPT
+	id S1754686AbaDNSmF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 14:42:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48575 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754505AbaDNSmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 14:41:45 -0400
-Message-ID: <534C2BE6.3070907@gmail.com>
-Date: Mon, 14 Apr 2014 14:41:42 -0400
-From: Pranith Kumar <bobby.prani@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 14 Apr 2014 14:42:03 -0400
+Date: Mon, 14 Apr 2014 08:04:45 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: David Fries <david@fries.net>
+Cc: Belisko Marek <marek.belisko@gmail.com>,
+        Evgeniy Polyakov <zbr@ioremap.net>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Subject: Re: w1: 3.14-rc7 - possible recursive locking detected
+Message-ID: <20140414150445.GC12482@kroah.com>
+References: <CAAfyv37OPxJkcyYi0ZZe9MSQZ3TMeCuxa8rmWh8ahNF6Bs01Mg@mail.gmail.com>
+ <20140323215041.GB5096@spacedout.fries.net>
+ <698551395662480@web15j.yandex.ru>
+ <CAAfyv352uNgS38ZKjb_r5Luvg=h1=f0G+ZJeZYAUSD1oxWdHxA@mail.gmail.com>
+ <20140413222401.GE5096@spacedout.fries.net>
 MIME-Version: 1.0
-To: catalin.marinas@arm.com, will.deacon@arm.com
-CC: LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>
-Subject: [RFC PATCH 1/1] prefetch result for ARM64 atomic ops
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140413222401.GE5096@spacedout.fries.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prefetch destination as is being done for ARM32
+On Sun, Apr 13, 2014 at 05:24:01PM -0500, David Fries wrote:
+> Belisko Marek,
+> Here is a possible solution, could you give it a try and report back?
+> 
+> Greg Kroah-Hartman,
+> Evgeniy asked me to look into this report.  I don't have the
+> reporter's hardware configuration, but I wouldn't think that would be
+> needed, just some w1 bus master (even W1_MASTER_GPIO might work), then
+> loading the slave device and manually adding a slave device with that
+> family id.  Even then I didn't reproduce the reported recursive
+> locking error.  I saw unrelated locking reports, but not this one.  I
+> wrote up the included patch, but that undoes the notify changes that
+> you added earlier in commit 47eba33a0997fc7, and I wanted to ask about
+> that commit.  Specifically these two lines,
+> 
+>         err = device_register(&sl->dev);
+> 	...
+> +	dev_set_uevent_suppress(&sl->dev, false);
+> +	kobject_uevent(&sl->dev.kobj, KOBJ_ADD);
+> 
+> Wouldn't the default be to not suppress?  Nothing in the W1 system
+> enables suppressing so is that even needed?  (I'm fine with saying
+> it's a good idea).
+> device_register at some point must call device_add and device_add
+> calls kobject_uevent(&dev->kobj, KOBJ_ADD);
+> so doesn't the KOBJ_ADD send the add a second time?  As in it
+> shouldn't be needed?
+> Can the suppress be called before device_register to avoid the
+> automatic notify, then after it returns setup the slave device as this
+> patch does to avoid this problem report, and then call the KOBJ_ADD to
+> make everything happy?
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
----
- arch/arm64/include/asm/atomic.h | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+I really have no idea, if your fix resolves an issue, that's great, I'll
+be glad to take it.  I have no w1 devices to test any of this, and don't
+even remember writing that kernel patch :)
 
-diff --git a/arch/arm64/include/asm/atomic.h b/arch/arm64/include/asm/atomic.h
-index 0237f08..845f9be 100644
---- a/arch/arm64/include/asm/atomic.h
-+++ b/arch/arm64/include/asm/atomic.h
-@@ -48,6 +48,7 @@ static inline void atomic_add(int i, atomic_t *v)
- 	unsigned long tmp;
- 	int result;
- 
-+	prefetchw(&v->counter);
- 	asm volatile("// atomic_add\n"
- "1:	ldxr	%w0, %2\n"
- "	add	%w0, %w0, %w3\n"
-@@ -62,6 +63,7 @@ static inline int atomic_add_return(int i, atomic_t *v)
- 	unsigned long tmp;
- 	int result;
- 
-+	prefetchw(&v->counter);
- 	asm volatile("// atomic_add_return\n"
- "1:	ldxr	%w0, %2\n"
- "	add	%w0, %w0, %w3\n"
-@@ -80,6 +82,7 @@ static inline void atomic_sub(int i, atomic_t *v)
- 	unsigned long tmp;
- 	int result;
- 
-+	prefetchw(&v->counter);
- 	asm volatile("// atomic_sub\n"
- "1:	ldxr	%w0, %2\n"
- "	sub	%w0, %w0, %w3\n"
-@@ -94,6 +97,7 @@ static inline int atomic_sub_return(int i, atomic_t *v)
- 	unsigned long tmp;
- 	int result;
- 
-+	prefetchw(&v->counter);
- 	asm volatile("// atomic_sub_return\n"
- "1:	ldxr	%w0, %2\n"
- "	sub	%w0, %w0, %w3\n"
-@@ -113,6 +117,7 @@ static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
- 	int oldval;
- 
- 	smp_mb();
-+	prefetchw(&ptr->counter);
- 
- 	asm volatile("// atomic_cmpxchg\n"
- "1:	ldxr	%w1, %2\n"
-@@ -170,6 +175,7 @@ static inline void atomic64_add(u64 i, atomic64_t *v)
- 	long result;
- 	unsigned long tmp;
- 
-+	prefetchw(&v->counter);
- 	asm volatile("// atomic64_add\n"
- "1:	ldxr	%0, %2\n"
- "	add	%0, %0, %3\n"
-@@ -184,6 +190,7 @@ static inline long atomic64_add_return(long i, atomic64_t *v)
- 	long result;
- 	unsigned long tmp;
- 
-+	prefetchw(&v->counter);
- 	asm volatile("// atomic64_add_return\n"
- "1:	ldxr	%0, %2\n"
- "	add	%0, %0, %3\n"
-@@ -202,6 +209,7 @@ static inline void atomic64_sub(u64 i, atomic64_t *v)
- 	long result;
- 	unsigned long tmp;
- 
-+	prefetchw(&v->counter);
- 	asm volatile("// atomic64_sub\n"
- "1:	ldxr	%0, %2\n"
- "	sub	%0, %0, %3\n"
-@@ -216,6 +224,7 @@ static inline long atomic64_sub_return(long i, atomic64_t *v)
- 	long result;
- 	unsigned long tmp;
- 
-+	prefetchw(&v->counter);
- 	asm volatile("// atomic64_sub_return\n"
- "1:	ldxr	%0, %2\n"
- "	sub	%0, %0, %3\n"
-@@ -235,6 +244,7 @@ static inline long atomic64_cmpxchg(atomic64_t *ptr, long old, long new)
- 	unsigned long res;
- 
- 	smp_mb();
-+	prefetchw(&v->counter);
- 
- 	asm volatile("// atomic64_cmpxchg\n"
- "1:	ldxr	%1, %2\n"
-@@ -258,6 +268,7 @@ static inline long atomic64_dec_if_positive(atomic64_t *v)
- 	long result;
- 	unsigned long tmp;
- 
-+	prefetchw(&v->counter);
- 	asm volatile("// atomic64_dec_if_positive\n"
- "1:	ldxr	%0, %2\n"
- "	subs	%0, %0, #1\n"
--- 
-1.9.1
+thanks,
+
+greg k-h
