@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031AbaDNPSD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 11:18:03 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60692 "EHLO
+	id S1754922AbaDNPQR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 11:16:17 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60747 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753585AbaDNPK0 (ORCPT
+	with ESMTP id S1754189AbaDNPKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 11:10:26 -0400
+	Mon, 14 Apr 2014 11:10:32 -0400
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: Daniel Lezcano <daniel.lezcano@linaro.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
@@ -18,9 +18,9 @@ Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
         Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v7 04/11] ARM: mvebu: Remove the unused argument of set_cpu_coherent()
-Date: Mon, 14 Apr 2014 17:10:07 +0200
-Message-Id: <1397488214-20685-5-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH v7 09/11] ARM: mvebu: Register notifier callback for the cpuidle transition
+Date: Mon, 14 Apr 2014 17:10:12 +0200
+Message-Id: <1397488214-20685-10-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1397488214-20685-1-git-send-email-gregory.clement@free-electrons.com>
 References: <1397488214-20685-1-git-send-email-gregory.clement@free-electrons.com>
@@ -28,66 +28,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-set_cpu_coherent() took the SMP group ID as parameter. But this
-parameter was never used, and the CPU always uses the SMP group 0. So
-we can remove this parameter.
+In order to have well encapsulated code, we use notifier callbacks for
+CPU_PM_ENTER and CPU_PM_EXIT inside the mvebu power management code.
 
 Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- arch/arm/mach-mvebu/coherency.c | 4 ++--
- arch/arm/mach-mvebu/coherency.h | 2 +-
- arch/arm/mach-mvebu/platsmp.c   | 2 +-
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ arch/arm/mach-mvebu/pmsu.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-diff --git a/arch/arm/mach-mvebu/coherency.c b/arch/arm/mach-mvebu/coherency.c
-index 51010dbbf7e4..ad61251f7faf 100644
---- a/arch/arm/mach-mvebu/coherency.c
-+++ b/arch/arm/mach-mvebu/coherency.c
-@@ -46,7 +46,7 @@ static struct of_device_id of_coherency_table[] = {
- /* Function defined in coherency_ll.S */
- int ll_set_cpu_coherent(void);
+diff --git a/arch/arm/mach-mvebu/pmsu.c b/arch/arm/mach-mvebu/pmsu.c
+index 968c8c02c126..9ea2bb44d573 100644
+--- a/arch/arm/mach-mvebu/pmsu.c
++++ b/arch/arm/mach-mvebu/pmsu.c
+@@ -18,6 +18,7 @@
  
--int set_cpu_coherent(int smp_group_id)
-+int set_cpu_coherent(void)
- {
- 	if (!coherency_base) {
- 		pr_warn("Can't make current CPU cache coherent.\n");
-@@ -140,7 +140,7 @@ int __init coherency_init(void)
- 		sync_cache_w(&coherency_phys_base);
- 		coherency_base = of_iomap(np, 0);
- 		coherency_cpu_base = of_iomap(np, 1);
--		set_cpu_coherent(0);
-+		set_cpu_coherent();
- 		of_node_put(np);
- 	}
+ #define pr_fmt(fmt) "mvebu-pmsu: " fmt
  
-diff --git a/arch/arm/mach-mvebu/coherency.h b/arch/arm/mach-mvebu/coherency.h
-index c7e5df368d98..dff16612dd93 100644
---- a/arch/arm/mach-mvebu/coherency.h
-+++ b/arch/arm/mach-mvebu/coherency.h
-@@ -15,8 +15,8 @@
- #define __MACH_370_XP_COHERENCY_H
++#include <linux/cpu_pm.h>
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/of_address.h>
+@@ -263,4 +264,21 @@ static noinline void armada_370_xp_pmsu_idle_restore(void)
+ 	writel(reg, pmsu_mp_base + PMSU_STATUS_AND_MASK(hw_cpu));
+ }
  
- extern unsigned long coherency_phys_base;
-+int set_cpu_coherent(void);
- 
--int set_cpu_coherent(int smp_group_id);
- int coherency_init(void);
- 
- #endif	/* __MACH_370_XP_COHERENCY_H */
-diff --git a/arch/arm/mach-mvebu/platsmp.c b/arch/arm/mach-mvebu/platsmp.c
-index a99d71a747f0..f2f1830063c8 100644
---- a/arch/arm/mach-mvebu/platsmp.c
-+++ b/arch/arm/mach-mvebu/platsmp.c
-@@ -102,7 +102,7 @@ static void __init armada_xp_smp_prepare_cpus(unsigned int max_cpus)
- 
- 	set_secondary_cpus_clock();
- 	flush_cache_all();
--	set_cpu_coherent(0);
-+	set_cpu_coherent();
- 
- 	/*
- 	 * In order to boot the secondary CPUs we need to ensure
++static int armada_370_xp_cpu_pm_notify(struct notifier_block *self,
++				    unsigned long action, void *hcpu)
++{
++	if (action == CPU_PM_ENTER) {
++		unsigned int hw_cpu = cpu_logical_map(smp_processor_id());
++		mvebu_pmsu_set_cpu_boot_addr(hw_cpu, armada_370_xp_cpu_resume);
++	} else if (action == CPU_PM_EXIT) {
++		armada_370_xp_pmsu_idle_restore();
++	}
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block armada_370_xp_cpu_pm_notifier = {
++	.notifier_call = armada_370_xp_cpu_pm_notify,
++};
++
+ early_initcall(armada_370_xp_pmsu_init);
 -- 
 1.8.1.2
 
