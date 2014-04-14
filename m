@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730AbaDNTNO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 15:13:14 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:58064 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751389AbaDNTNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 15:13:11 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Tony Lindgren <tony@atomide.com>,
-        =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>
-CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Sekhar Nori <nsekhar@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Nishanth Menon <nm@ti.com>
-Subject: [PATCH 0/2] ARM: dts: DRA7/AM4372: add l3_noc information
-Date: Mon, 14 Apr 2014 14:12:44 -0500
-Message-ID: <1397502766-13994-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755410AbaDNTPh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 15:15:37 -0400
+Received: from 3.mo5.mail-out.ovh.net ([46.105.40.108]:58640 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754382AbaDNTPg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 15:15:36 -0400
+X-Greylist: delayed 12600 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Apr 2014 15:15:36 EDT
+From: =?ISO-8859-1?Q?Jo=EBl?= Porquet <joel@porquet.org>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: gregkh@linuxfoundation.org, jg1.han@samsung.com, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: iio: fix coding style
+Date: Mon, 14 Apr 2014 15:59:32 +0200
+Message-ID: <9773833.iVsvHLKPbr@joel-zenbook>
+User-Agent: KMail/4.12.4 (Linux/3.14.0-4-ARCH; KDE/4.12.4; x86_64; ; )
+In-Reply-To: <534977A7.3090100@kernel.org>
+References: <1397066985-2504-1-git-send-email-joel@porquet.org> <534977A7.3090100@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Ovh-Tracer-Id: 16846840306135625811
+X-Ovh-Remote: 184.153.170.46 (cpe-184-153-170-46.maine.res.rr.com)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: 0
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: 0
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrjedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch series based on:
-v3.15-rc1 tag.
 
-Depends on series posted: http://marc.info/?l=linux-omap&m=139749383932575&w=2
 
-DTS Patches is available here:
-https://github.com/nmenon/linux-2.6-playground/commits/l3noc/dts-fixes
+On Saturday, April 12, 2014 06:28:07 PM Jonathan Cameron wrote:
+> 
+> On 09/04/14 19:09, Joel Porquet wrote:
+> > As suggested by checkpatch.pl, use dev_info() instead of
+> > printk(KERN_INFO ...) to print message.
+> >
+> > Signed-off-by: Joel Porquet <joel@porquet.org>
+> > ---
+> > Only tested by compilation.
+> >   drivers/staging/iio/trigger/iio-trig-periodic-rtc.c | 3 ++-
+> >   1 file changed, 2 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/staging/iio/trigger/iio-trig-periodic-rtc.c b/drivers/staging/iio/trigger/iio-trig-periodic-rtc.c
+> > index 48a6afa..38ecb4b 100644
+> > --- a/drivers/staging/iio/trigger/iio-trig-periodic-rtc.c
+> > +++ b/drivers/staging/iio/trigger/iio-trig-periodic-rtc.c
+> > @@ -33,7 +33,8 @@ static int iio_trig_periodic_rtc_set_state(struct iio_trigger *trig, bool state)
+> >   	struct iio_prtc_trigger_info *trig_info = iio_trigger_get_drvdata(trig);
+> >   	if (trig_info->frequency == 0)
+> >   		return -EINVAL;
+> > -	printk(KERN_INFO "trigger frequency is %d\n", trig_info->frequency);
+> > +	dev_info(&trig_info->rtc->dev, "trigger frequency is %d\n",
+> > +			trig_info->frequency);
+> The principle is good, but why make the error message us the underlying rtc device?
+> Going to lead to a rather unhelpful error message.
+> 
+> Perhaps the iio_trigger structures device element would make more sense?
+> Might not be terribly informative, but will at least come from the right
+> subsystem.
+> 
+> Also, I think we will be dropping this driver entirely at some point.
+> It was a dodgy hack that perhaps made sense at the time, but now a high
+> resolution timer is going to give better results.
 
-This just adds the dts information based on driver support provided.
+OK, thanks for the feedback!
 
-Test log:
-1: am43xx-epos:  Boot PASS: http://slexy.org/raw/s2pjavFUYd
-2: DRA7xx-EVM:  Boot PASS: http://slexy.org/raw/s21pdAj0hU
-3: pandaboard-es:  Boot PASS: http://slexy.org/raw/s21Hsq97mt
-4:    sdp4430:  Boot PASS: http://slexy.org/raw/s2ZQJUqjrP
-5: OMAP5432uEVM:  Boot PASS: http://slexy.org/raw/s2hNulLOuX
+Does that still make sense that I resubmit another patch (using iio_trigger-dev instead)?
+Or should I just drop this patch altogether since you seem to say that patching this driver is not really worth it anyway?
 
-Afzal Mohammed (1):
-  ARM: dts: AM4372: add l3-noc information
-
-Rajendra Nayak (1):
-  ARM: dts: DRA7: Use dra7-l3-noc instead of omap4-l3-noc
-
- arch/arm/boot/dts/am4372.dtsi |    6 +++++-
- arch/arm/boot/dts/dra7.dtsi   |    6 +++---
- 2 files changed, 8 insertions(+), 4 deletions(-)
-
--- 
-1.7.9.5
-
+> >   	return rtc_irq_set_state(trig_info->rtc, &trig_info->task, state);
+> >   }
+> >
+> >
+> 
