@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416AbaDNWV2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 18:21:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24161 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751601AbaDNWV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 18:21:27 -0400
-Date: Mon, 14 Apr 2014 18:21:08 -0400
-From: Dave Jones <davej@redhat.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Vegard Nossum <vegard.nossum@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch 2/2] lib/string.c: strlcpy() might read too far
-Message-ID: <20140414222108.GA28206@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Dan Carpenter <dan.carpenter@oracle.com>,
-	Andi Kleen <ak@linux.intel.com>,
-	"H. Peter Anvin" <hpa@linux.intel.com>,
-	linux-kernel@vger.kernel.org,
-	Vegard Nossum <vegard.nossum@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <20140401.161838.1562296825577866979.davem@davemloft.net>
- <20140402084731.GB6018@mwanda>
+	id S1755544AbaDNWXf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 18:23:35 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:44250 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754930AbaDNWXc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 18:23:32 -0400
+Subject: [PATCH] mmc: sdhci-pci: Remove useless check for "slots == 0"
+To: Ulf Hansson <ulf.hansson@linaro.org>, Chris Ball <chris@printf.net>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 14 Apr 2014 16:23:30 -0600
+Message-ID: <20140414222330.14817.81724.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140402084731.GB6018@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 11:47:31AM +0300, Dan Carpenter wrote:
- > Imagine you have a user controlled variable at the end of a struct which
- > is allocated at the end of a page.  The strlen() could read beyond the
- > mapped memory and cause an oops.
- > 
- > Probably there are two reasons why we have never hit this condition in
- > real life.  First you would have to be really unlucky for all the
- > variables to line up so the oops can happen.  Second we don't do a lot
- > of fuzzing with invalid strings.
+Remove the check for "slots == 0" because it can never be 0 here.
 
-The latter isn't necessarily true, trinity does pass all kinds of
-garbage, including malformed ascii of various lengths. But what it
-doesn't do fully is pass pointers to this junk in every struct we have
-in the kernel. (Just the ones it knows about, which for now is mostly
-things like sockaddr_t).
+Found by Coverity (CID 744269).
 
-Do you have an example struct with layout like you describe ?
-It probably wouldn't be much work to teach the fuzzer about it.
-(The tricky part is getting such a malformed struct past the validation
- various syscalls do).
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ drivers/mmc/host/sdhci-pci.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-	Dave
+diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+index fdc612120362..15edb3f56dae 100644
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -1491,8 +1491,6 @@ static int sdhci_pci_probe(struct pci_dev *pdev,
+ 
+ 	slots = PCI_SLOT_INFO_SLOTS(slots) + 1;
+ 	dev_dbg(&pdev->dev, "found %d slot(s)\n", slots);
+-	if (slots == 0)
+-		return -ENODEV;
+ 
+ 	BUG_ON(slots > MAX_SLOTS);
+ 
+
