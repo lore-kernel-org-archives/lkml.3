@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893AbaDNNGU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 09:06:20 -0400
-Received: from vserver.eikelenboom.it ([84.200.39.61]:37305 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754745AbaDNNGQ (ORCPT
+	id S1754932AbaDNNG4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 09:06:56 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:63972 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752992AbaDNNGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 09:06:16 -0400
-Date: Mon, 14 Apr 2014 15:06:11 +0200
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <195733186.20140414150611@eikelenboom.it>
-To: Christoph Hellwig <hch@infradead.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org
-Subject: Re: 3.15-mw:  Oops Workqueue: writeback bdi_writeback_workfn (flush-8:16)  RIP: e030:[<ffffffff814c6bc1>]  [<ffffffff814c6bc1>] kobject_put+0x11/0x70
-In-Reply-To: <20140414113015.GA4765@infradead.org>
-References: <1299097701.20140412133431@eikelenboom.it> <20140414113015.GA4765@infradead.org>
+	Mon, 14 Apr 2014 09:06:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140414145359.48b7337c@endymion.delvare>
+References: <20140414145359.48b7337c@endymion.delvare>
+Date: Mon, 14 Apr 2014 09:06:50 -0400
+X-Google-Sender-Auth: lEZJYrDU9-ZY_poc69osouJlfSI
+Message-ID: <CA+5PVA6aH8ZLQey3QJU9vG6kCrnguZcJ7dSDtntiOLbivt8nAw@mail.gmail.com>
+Subject: Re: Hardware dependencies in Kconfig
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Jean Delvare <jdelvare@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Michal Marek <mmarek@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 14, 2014 at 8:53 AM, Jean Delvare <jdelvare@suse.de> wrote:
+> Hi all,
+>
+> Configuring kernels from scratch has become an incredibly long and
+> tedious task. The reason is that the number of drivers and options has
+> exploded in the past few years. Which in itself is great - Linux is
+> successful, yeah! - but the side effects must be dealt with.
+> 6000-line .config files are no fun.
+>
+> Earlier today, I found that NET_CADENCE is set in my x86-64 kernel
+> configuration. The two ethernet drivers below this menu are for ARM
+> machines. I really shouldn't be asked about that on x86-64. I just sent
+> a patch addressing this specific issue, which follows about 50 similar
+> patches from me for similar issues in various subsystems. But I can't
+> do all of that by myself, this is too much work quantitatively, and I
+> am not always the best person to find out the proper hardware
+> dependencies that should be added.
 
-Monday, April 14, 2014, 1:30:15 PM, you wrote:
+I have much the same problem when I'm doing the config changes for
+Fedora kernel rebases.  I've gotten to the point where I can somewhat
+guess based on the driver name which arch it's for (lately the
+majority are for ARM), but that isn't really a great way to handle
+things.  Only being asked about options for the arch being configured
+is much better than playing guessing games.
 
-> On Sat, Apr 12, 2014 at 01:34:31PM +0200, Sander Eikelenboom wrote:
->> Hi,
->> 
->> I just ran into the oops belowafter some uptime.
+> I would like to call for proper hardware dependencies to become a
+> general trend: every new hardware-specific driver which is added to the
+> kernel should depend on ($hardware || COMPILE_TEST), so as to make it
+> clear right away, which type of hardware is expected to need the driver
+> in question.
+>
+> $hardware can be the top-level architecture (e.g. ARM), but can also go
+> down to sub-architecture/platform (e.g. ARCH_AT91 or PLATFORM_AT32AP) or
+> even machine (e.g. PICOXCELL_PC3X3). The list can always be extended
+> later if needed. Ideally we should restrict as much as possible as long
+> as the result is easy to maintain, not too complex, and not likely to
+> break in a near future.
+>
+> Thanks to COMPILE_TEST, we don't lose the build test coverage, and it
+> also makes it possible for anyone to still build the driver if the
+> dependency is too strict (as a temporary workaround until it gets fixed
+> upstream, that is.)
+>
+> Does anyone object to this?
 
-> Classic use after free introduced by my recent changes, sorry.
+I think this is a great idea.  Thanks for bringing up the suggestion.
 
-> This should fix it:
-
-Thx !
-
-> ---
-> From: Christoph Hellwig <hch@lst.de>
-> Subject: scsi: don't reference freed command in scsi_init_sgtable
-
-> When scsi_init_io fails we have to release our device reference, but
-> we do this trying to reference the just freed command.  Add a local
-> scsi_device pointer to fix this.
-
-> Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-
-> diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
-> index 65a123d..54eff6a 100644
-> --- a/drivers/scsi/scsi_lib.c
-> +++ b/drivers/scsi/scsi_lib.c
-> @@ -1044,6 +1044,7 @@ static int scsi_init_sgtable(struct request *req, struct scsi_data_buffer *sdb,
->   */
->  int scsi_init_io(struct scsi_cmnd *cmd, gfp_t gfp_mask)
->  {
-> +       struct scsi_device *sdev = cmd->device;
->         struct request *rq = cmd->request;
->  
->         int error = scsi_init_sgtable(rq, &cmd->sdb, gfp_mask);
-> @@ -1091,7 +1092,7 @@ err_exit:
->         scsi_release_buffers(cmd);
->         cmd->request->special = NULL;
->         scsi_put_command(cmd);
-> -       put_device(&cmd->device->sdev_gendev);
-> +       put_device(&sdev->sdev_gendev);
->         return error;
->  }
->  EXPORT_SYMBOL(scsi_init_io);
-
-
+josh
