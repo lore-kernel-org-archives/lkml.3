@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754358AbaDNKAF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 06:00:05 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57612 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750968AbaDNKAD (ORCPT
+	id S1753639AbaDNKDn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 06:03:43 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:40998 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790AbaDNKDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 06:00:03 -0400
-Date: Mon, 14 Apr 2014 11:55:53 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Duan Jiong <duanj.fnst@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] PHY: sunxi: replace IS_ERR and PTR_ERR with
- PTR_ERR_OR_ZERO
-Message-ID: <20140414095553.GB28585@lukather>
-References: <1397205483-24395-1-git-send-email-duanj.fnst@cn.fujitsu.com>
+	Mon, 14 Apr 2014 06:03:40 -0400
+Date: Mon, 14 Apr 2014 12:03:35 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, bp@suse.de,
+        paul.gortmaker@windriver.com, JBeulich@suse.com, prarit@redhat.com,
+        drjones@redhat.com, toshi.kani@hp.com, riel@redhat.com,
+        gong.chen@linux.intel.com, andi@firstfloor.org, lenb@kernel.org,
+        rjw@rjwysocki.net, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v3 1/5] x86: initialize secondary CPU only if master CPU
+ will wait for it
+Message-ID: <20140414100335.GC731@gmail.com>
+References: <1397150061-29735-1-git-send-email-imammedo@redhat.com>
+ <1397150061-29735-2-git-send-email-imammedo@redhat.com>
+ <20140414091600.GA19771@gmail.com>
+ <20140414115210.51193098@thinkpad>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ri7MIv52hxsKkbzo"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397205483-24395-1-git-send-email-duanj.fnst@cn.fujitsu.com>
+In-Reply-To: <20140414115210.51193098@thinkpad>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ri7MIv52hxsKkbzo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Igor Mammedov <imammedo@redhat.com> wrote:
 
-On Fri, Apr 11, 2014 at 04:38:03PM +0800, Duan Jiong wrote:
-> This patch fixes coccinelle error regarding usage of IS_ERR and
-> PTR_ERR instead of PTR_ERR_OR_ZERO.
->=20
-> Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+> On Mon, 14 Apr 2014 11:16:00 +0200
+> Ingo Molnar <mingo@kernel.org> wrote:
+> 
+> > 
+> > * Igor Mammedov <imammedo@redhat.com> wrote:
+> > 
+> > >  	/*
+> > > +	 * wait for ACK from master CPU before continuing
+> > > +	 * with AP initialization
+> > > +	 */
+> > > +	cpumask_set_cpu(cpu, cpu_initialized_mask);
+> > > +	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
+> > > +		cpu_relax();
+> > 
+> > > +	/*
+> > > +	 * wait for ACK from master CPU before continuing
+> > > +	 * with AP initialization
+> > > +	 */
+> > > +	cpumask_set_cpu(cpu, cpu_initialized_mask);
+> > > +	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
+> > > +		cpu_relax();
+> > 
+> > That repetitive pattern could be stuck into a properly named helper 
+> > inline function.
+> sure
+> 
+> > (Also, before the cpumask_set_cpu() we should probably do a WARN_ON() 
+> > if the bit is already set.)
+> The reason why there is no any WARN_ON or likes is that printk is quite
+> complicated, takes looks and so on. [...]
 
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+[ Yeah, I too heard that printk(), like a pretty girl, is complicated
+  and makes people look twice. ]
 
-You should probably send it to Kishon so that he can merge it though.
+> [...] So it's not safe at this point since
+> CPU could be shot down by any time by INIT/SIPI until it's out of 
+> cpu_callout_mask loop.
 
-Thanks!
-Maxime
+Not sure where you got that from, but it's not a valid concern really: 
+the only place where we don't want to do a printk() is in printk code 
+itself.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Debug warnings, by definition, should never trigger. If they trigger 
+then they will very likely not cause lockups, but will cause the bug 
+to be fixed.
 
---ri7MIv52hxsKkbzo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTS7CpAAoJEBx+YmzsjxAgGaQQALJqy/RUqsO0gqXnoEa/4wrp
-KYpjmu9kNhaa+JXJyCSDHn9E0erY0KyczIEjM1DlIYOIOyKot6fSHrPIJ3MSk0ZB
-BiXN3h+bBPZ//+9uq/4aYpUebRoJHBrlq/Ji6MuSiP8Yq9J/xBIK3yU9t7jquZ0p
-5Bs1B1r4Q7so5KAkdNcNcN+O0MxBCHB1C+7LnlUFIdYohQYLDls3VdvUZn0BUlWt
-COOzdYSRvYhXG8cTgqO4E6GxP9WhcX3GxWvh7qXfYrzWiBzhTj8jNKA+ROn55iJP
-ndZZsSj5qOuJw28gnYvhSzqCAjRn9RW66uhkYOU1+YtOvhuldXPg2ESsuRC0Q2kO
-eSKl4+h0GtejBF1SPLcSNI/y5CHljrFjT9NT4RG6OtPT2+fMrSw+e0ShkmfPg4ek
-k1TC1h4bSQjuqmkq9GQV26k08dvf+QpsyyKigyQ8bCiK+NuPJVWClsnGzgwmMixw
-9s5aUPwbZBthyuc8q6G1xdKPqPyxQnx+u5EviuojtY0ecYjIpSYTjppbiaI+fUlL
-94HV2g+Hz6oJWtY5wgY+y2cVV3T0fB5IgM8YFhxhuO6WP/Cq6bF6kHwZ2hv5mHY5
-cwUQvss5vEgm9RHK8bGNrFxo5Fk/eiEV8u2b6GCaqD1K+EhdPmgC+KVHMTsneTPK
-JTjF6Phu8yWlrVq1g1NP
-=d0qN
------END PGP SIGNATURE-----
-
---ri7MIv52hxsKkbzo--
+	Ingo
