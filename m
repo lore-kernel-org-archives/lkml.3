@@ -1,94 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172AbaDNKP1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 06:15:27 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:61754 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751529AbaDNKPX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 06:15:23 -0400
+	id S1752344AbaDNKXH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 06:23:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56243 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750898AbaDNKXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 06:23:05 -0400
+Date: Mon, 14 Apr 2014 12:21:39 +0200
+From: Igor Mammedov <imammedo@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, bp@suse.de,
+        paul.gortmaker@windriver.com, JBeulich@suse.com, prarit@redhat.com,
+        drjones@redhat.com, toshi.kani@hp.com, riel@redhat.com,
+        gong.chen@linux.intel.com, andi@firstfloor.org, lenb@kernel.org,
+        rjw@rjwysocki.net, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v3 1/5] x86: initialize secondary CPU only if master CPU
+ will wait for it
+Message-ID: <20140414122139.014c3802@thinkpad>
+In-Reply-To: <20140414100335.GC731@gmail.com>
+References: <1397150061-29735-1-git-send-email-imammedo@redhat.com>
+	<1397150061-29735-2-git-send-email-imammedo@redhat.com>
+	<20140414091600.GA19771@gmail.com>
+	<20140414115210.51193098@thinkpad>
+	<20140414100335.GC731@gmail.com>
 MIME-Version: 1.0
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Mon, 14 Apr 2014 12:15:01 +0200
-X-Google-Sender-Auth: -W5qRTl4uV_P8YWCKjMToywDllY
-Message-ID: <CAHO5Pa0VCzR7oqNXkwELuAsNQnnvF8Xoo=CuCaM64-GzjDuoFA@mail.gmail.com>
-Subject: Documenting prctl() PR_SET_THP_DISABLE and PR_GET_THP_DISABLE
-To: Alex Thorlton <athorlton@sgi.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-mm <linux-mm@kvack.org>, Linux API <linux-api@vger.kernel.org>,
-        linux-man@vger.kernel.org,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alex,
+On Mon, 14 Apr 2014 12:03:35 +0200
+Ingo Molnar <mingo@kernel.org> wrote:
 
-Your commit a0715cc22601e8830ace98366c0c2bd8da52af52 added the prctl()
-PR_SET_THP_DISABLE and PR_GET_THP_DISABLE flags.
+> 
+> * Igor Mammedov <imammedo@redhat.com> wrote:
+> 
+> > On Mon, 14 Apr 2014 11:16:00 +0200
+> > Ingo Molnar <mingo@kernel.org> wrote:
+> > 
+> > > 
+> > > * Igor Mammedov <imammedo@redhat.com> wrote:
+> > > 
+> > > >  	/*
+> > > > +	 * wait for ACK from master CPU before continuing
+> > > > +	 * with AP initialization
+> > > > +	 */
+> > > > +	cpumask_set_cpu(cpu, cpu_initialized_mask);
+> > > > +	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
+> > > > +		cpu_relax();
+> > > 
+> > > > +	/*
+> > > > +	 * wait for ACK from master CPU before continuing
+> > > > +	 * with AP initialization
+> > > > +	 */
+> > > > +	cpumask_set_cpu(cpu, cpu_initialized_mask);
+> > > > +	while (!cpumask_test_cpu(cpu, cpu_callout_mask))
+> > > > +		cpu_relax();
+> > > 
+> > > That repetitive pattern could be stuck into a properly named helper 
+> > > inline function.
+> > sure
+> > 
+> > > (Also, before the cpumask_set_cpu() we should probably do a WARN_ON() 
+> > > if the bit is already set.)
+> > The reason why there is no any WARN_ON or likes is that printk is quite
+> > complicated, takes looks and so on. [...]
+> 
+> [ Yeah, I too heard that printk(), like a pretty girl, is complicated
+>   and makes people look twice. ]
+> 
+> > [...] So it's not safe at this point since
+> > CPU could be shot down by any time by INIT/SIPI until it's out of 
+> > cpu_callout_mask loop.
+> 
+> Not sure where you got that from, but it's not a valid concern really: 
+> the only place where we don't want to do a printk() is in printk code 
+> itself.
+> 
+> Debug warnings, by definition, should never trigger. If they trigger 
+> then they will very likely not cause lockups, but will cause the bug 
+> to be fixed.
+ok, I'll add WARN_ON in cpu_init() as you've suggested.
 
-The text below attempts to document these flags for the prctl(3).
-Could you (and anyone else who is willing) please review the text
-below (one or two p[ieces of which are drawn from your commit message)
-to verify that it accurately reflects reality and your intent, and
-that I have not missed any significant details.
-
-    DESCRIPTION
-    ...
-       PR_SET_THP_DISABLE (since Linux 3.15)
-              Set the state of the "THP disable" flag for the  calling
-              thread.   If  arg2 has a nonzero value, the flag is set,
-              otherwise it is cleared.  Setting this flag  provides  a
-              method  for disabling  transparent  huge  pages for jobs
-              where the code cannot be modified, and  using  a  malloc
-              hook  with madvise(2) is not an option (i.e., statically
-              allocated data).  The setting of the "THP disable"  flag
-              is  inherited by a child created via fork(2) and is pre‐
-              served across execve(2).
-
-       PR_GET_THP_DISABLE (since Linux 3.15)
-              Return (via the function result) the current setting  of
-              the "THP disable" flag for the calling thread: either 1,
-              if the flag is set, or 0, if it is not.
-    ...
-    RETURN VALUE
-       On       success,       PR_GET_DUMPABLE,       PR_GET_KEEPCAPS,
-       PR_GET_NO_NEW_PRIVS,    PR_GET_THP_DISABLE,    PR_CAPBSET_READ,
-       PR_GET_TIMING,       PR_GET_TIMERSLACK,      PR_GET_SECUREBITS,
-       PR_MCE_KILL_GET, and (if it returns) PR_GET_SECCOMP return  the
-       nonnegative  values  described  above.  All other option values
-       return 0 on success.  On error, -1 is returned,  and  errno  is
-       set appropriately.
-    ...
-    ERRORS
-       EINVAL option is PR_SET_THP_DISABLE and arg3, arg4, or arg5  is
-              nonzero.
-
-       EINVAL option  is  PR_GET_THP_DISABLE  and arg2, arg3, arg4, or
-              arg5 is nonzero.
-
-Thanks,
-
-Michael
-
+> Thanks,
+> 
+> 	Ingo
 
 
 -- 
-Michael Kerrisk Linux man-pages maintainer;
-http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface", http://blog.man7.org/
+Regards,
+  Igor
