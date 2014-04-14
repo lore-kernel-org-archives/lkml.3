@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710AbaDNB4m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 21:56:42 -0400
-Received: from smtprelay0253.hostedemail.com ([216.40.44.253]:43909 "EHLO
+	id S1754803AbaDNB4y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 21:56:54 -0400
+Received: from smtprelay0187.hostedemail.com ([216.40.44.187]:48242 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754576AbaDNB4j (ORCPT
+	by vger.kernel.org with ESMTP id S1754576AbaDNB4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 21:56:39 -0400
+	Sun, 13 Apr 2014 21:56:50 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 80,6,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:968:973:988:989:1260:1345:1359:1437:1534:1542:1711:1730:1747:1777:1792:1801:2393:2559:2562:3138:3139:3140:3141:3142:3353:3369:3847:3868:3871:4321:4605:5007:6261:9038:10004:10026:10848:11026:11473:11658:11914:12043:12296:12438:12517:12519:12555:13255,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: maid70_56f113f9bdb58
-X-Filterd-Recvd-Size: 3556
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:966:968:973:988:989:1260:1345:1359:1437:1534:1543:1711:1730:1747:1777:1792:2196:2198:2199:2200:2393:2559:2562:3138:3139:3140:3141:3142:3354:3865:3866:3867:3868:3870:3871:3872:3874:4321:4385:5007:6261:8660:10004:10026:10848:11026:11658:11914:12043:12296:12438:12517:12519:12555:13148:13230:13255,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: fish12_588a431896103
+X-Filterd-Recvd-Size: 4041
 From: Joe Perches <joe@perches.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH -next 3.16 14/19] fs: Convert use of typedef ctl_table to struct ctl_table
-Date: Sun, 13 Apr 2014 18:55:46 -0700
-Message-Id: <4b712661f692bcc3de13c147b1a5dc99fe69763b.1397438826.git.joe@perches.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH -next 3.16 18/19] mm: Convert use of typedef ctl_table to struct ctl_table
+Date: Sun, 13 Apr 2014 18:55:50 -0700
+Message-Id: <ea251e288bc8a4882a55fe5a1ad1f7a09abd5be0.1397438826.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1397438826.git.joe@perches.com>
 References: <cover.1397438826.git.joe@perches.com>
@@ -29,86 +28,81 @@ This typedef is unnecessary and should just be removed.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/dcache.c      | 2 +-
- fs/drop_caches.c | 2 +-
- fs/eventpoll.c   | 2 +-
- fs/file_table.c  | 4 ++--
- fs/inode.c       | 2 +-
- 5 files changed, 6 insertions(+), 6 deletions(-)
+ mm/page-writeback.c |  2 +-
+ mm/page_alloc.c     | 12 ++++++------
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 0407ed4..f9a5b3a 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -150,7 +150,7 @@ static long get_nr_dentry_unused(void)
- 	return sum < 0 ? 0 : sum;
- }
- 
--int proc_nr_dentry(ctl_table *table, int write, void __user *buffer,
-+int proc_nr_dentry(struct ctl_table *table, int write, void __user *buffer,
- 		   size_t *lenp, loff_t *ppos)
- {
- 	dentry_stat.nr_dentry = get_nr_dentry();
-diff --git a/fs/drop_caches.c b/fs/drop_caches.c
-index 9280202..1de7294 100644
---- a/fs/drop_caches.c
-+++ b/fs/drop_caches.c
-@@ -50,7 +50,7 @@ static void drop_slab(void)
- 	} while (nr_objects > 10);
- }
- 
--int drop_caches_sysctl_handler(ctl_table *table, int write,
-+int drop_caches_sysctl_handler(struct ctl_table *table, int write,
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index ef41349..023cf08 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1682,7 +1682,7 @@ void throttle_vm_writeout(gfp_t gfp_mask)
+ /*
+  * sysctl handler for /proc/sys/vm/dirty_writeback_centisecs
+  */
+-int dirty_writeback_centisecs_handler(ctl_table *table, int write,
++int dirty_writeback_centisecs_handler(struct ctl_table *table, int write,
  	void __user *buffer, size_t *length, loff_t *ppos)
  {
- 	int ret;
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index af90312..b73e062 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -293,7 +293,7 @@ static LIST_HEAD(tfile_check_list);
- static long zero;
- static long long_max = LONG_MAX;
- 
--ctl_table epoll_table[] = {
-+struct ctl_table epoll_table[] = {
- 	{
- 		.procname	= "max_user_watches",
- 		.data		= &max_user_watches,
-diff --git a/fs/file_table.c b/fs/file_table.c
-index 01071c4..b19a86f 100644
---- a/fs/file_table.c
-+++ b/fs/file_table.c
-@@ -77,14 +77,14 @@ EXPORT_SYMBOL_GPL(get_max_files);
-  * Handle nr_files sysctl
+ 	proc_dointvec(table, write, buffer, length, ppos);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 5dba293..0128d50 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3351,7 +3351,7 @@ early_param("numa_zonelist_order", setup_numa_zonelist_order);
+ /*
+  * sysctl handler for numa_zonelist_order
   */
- #if defined(CONFIG_SYSCTL) && defined(CONFIG_PROC_FS)
--int proc_nr_files(ctl_table *table, int write,
-+int proc_nr_files(struct ctl_table *table, int write,
-                      void __user *buffer, size_t *lenp, loff_t *ppos)
+-int numa_zonelist_order_handler(ctl_table *table, int write,
++int numa_zonelist_order_handler(struct ctl_table *table, int write,
+ 		void __user *buffer, size_t *length,
+ 		loff_t *ppos)
  {
- 	files_stat.nr_files = get_nr_files();
- 	return proc_doulongvec_minmax(table, write, buffer, lenp, ppos);
+@@ -5774,7 +5774,7 @@ module_init(init_per_zone_wmark_min)
+  *	that we can call two helper functions whenever min_free_kbytes
+  *	changes.
+  */
+-int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
++int min_free_kbytes_sysctl_handler(struct ctl_table *table, int write,
+ 	void __user *buffer, size_t *length, loff_t *ppos)
+ {
+ 	int rc;
+@@ -5791,7 +5791,7 @@ int min_free_kbytes_sysctl_handler(ctl_table *table, int write,
  }
- #else
--int proc_nr_files(ctl_table *table, int write,
-+int proc_nr_files(struct ctl_table *table, int write,
-                      void __user *buffer, size_t *lenp, loff_t *ppos)
+ 
+ #ifdef CONFIG_NUMA
+-int sysctl_min_unmapped_ratio_sysctl_handler(ctl_table *table, int write,
++int sysctl_min_unmapped_ratio_sysctl_handler(struct ctl_table *table, int write,
+ 	void __user *buffer, size_t *length, loff_t *ppos)
  {
- 	return -ENOSYS;
-diff --git a/fs/inode.c b/fs/inode.c
-index f96d2a6..2feb9b6 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -105,7 +105,7 @@ long get_nr_dirty_inodes(void)
-  * Handle nr_inode sysctl
+ 	struct zone *zone;
+@@ -5807,7 +5807,7 @@ int sysctl_min_unmapped_ratio_sysctl_handler(ctl_table *table, int write,
+ 	return 0;
+ }
+ 
+-int sysctl_min_slab_ratio_sysctl_handler(ctl_table *table, int write,
++int sysctl_min_slab_ratio_sysctl_handler(struct ctl_table *table, int write,
+ 	void __user *buffer, size_t *length, loff_t *ppos)
+ {
+ 	struct zone *zone;
+@@ -5833,7 +5833,7 @@ int sysctl_min_slab_ratio_sysctl_handler(ctl_table *table, int write,
+  * minimum watermarks. The lowmem reserve ratio can only make sense
+  * if in function of the boot time zone sizes.
   */
- #ifdef CONFIG_SYSCTL
--int proc_nr_inodes(ctl_table *table, int write,
-+int proc_nr_inodes(struct ctl_table *table, int write,
- 		   void __user *buffer, size_t *lenp, loff_t *ppos)
+-int lowmem_reserve_ratio_sysctl_handler(ctl_table *table, int write,
++int lowmem_reserve_ratio_sysctl_handler(struct ctl_table *table, int write,
+ 	void __user *buffer, size_t *length, loff_t *ppos)
  {
- 	inodes_stat.nr_inodes = get_nr_inodes();
+ 	proc_dointvec_minmax(table, write, buffer, length, ppos);
+@@ -5846,7 +5846,7 @@ int lowmem_reserve_ratio_sysctl_handler(ctl_table *table, int write,
+  * cpu.  It is the fraction of total pages in each zone that a hot per cpu
+  * pagelist can have before it gets flushed back to buddy allocator.
+  */
+-int percpu_pagelist_fraction_sysctl_handler(ctl_table *table, int write,
++int percpu_pagelist_fraction_sysctl_handler(struct ctl_table *table, int write,
+ 	void __user *buffer, size_t *length, loff_t *ppos)
+ {
+ 	struct zone *zone;
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
