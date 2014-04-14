@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227AbaDNLs4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 07:48:56 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:61427 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754880AbaDNLsv (ORCPT
+	id S1755248AbaDNLtT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 07:49:19 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:49871 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754880AbaDNLtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 07:48:51 -0400
-X-AuditID: cbfee61a-b7fb26d00000724f-ab-534bcb21c131
+	Mon, 14 Apr 2014 07:49:11 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-d0-534bcb36c151
 From: Robert Baldyga <r.baldyga@samsung.com>
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
@@ -21,78 +21,171 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         linux-omap@vger.kernel.org, aaro.koskinen@iki.fi,
         m.szyprowski@samsung.com, t.figa@samsung.com,
         Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH v2 07/13] extcon: extcon-class: improve
- get_cable_state_()/set_cable_state_() functions
-Date: Mon, 14 Apr 2014 13:46:18 +0200
-Message-id: <1397475984-28001-8-git-send-email-r.baldyga@samsung.com>
+Subject: [PATCH v2 08/13] extcon: extcon-class: simplify extcon_updata_state()
+ function
+Date: Mon, 14 Apr 2014 13:46:19 +0200
+Message-id: <1397475984-28001-9-git-send-email-r.baldyga@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1397475984-28001-1-git-send-email-r.baldyga@samsung.com>
 References: <1397475984-28001-1-git-send-email-r.baldyga@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAAzXRa0hTYRgH8N6dy46jxWFaHRTEVomKWso+vJWZhMpbEih+q7SmHnTodGwq
-	mYGGmCnq5kzUWuqctzkveL9k5o1ALFMUJ01LSPOagpfMNGtT+vZ7/s8fng8PhQk6cVtKEhvP
-	ymPFMUKSh48cfqPdzo0EBF9+s+QJ65Z8YH+bM+z/mgKN24sEVM9vYLB0aJSAefp8DCrXtARU
-	tvrCvoNOANN0jSQcXdEDmPlxHoNjC9kkrOw14FD7rAKHE90aEr6qUOKwvCodg/PaDxxYPzTL
-	hZXGcQ40Pa0hYfWPvyRUFdbjcG6wiwsblgtxmP52iAt7xw4I2Fi0ivvYo7qSOoAmcnM4qLtL
-	QyCVchOgrpezXKSv3ibR4I4WRy01Lqi5NpNEK4ZiAs1M9ZDo3es6LspJWyfRct4+ibp2U7ko
-	t7UWBFrf5XlFsDGSRFZ+yfshL+rz1AxX1s1/tKV3TQU7vCxgRTG0iMlYmcWPfYYZ+9JIZgEe
-	JaDLAWPYMxLHQwaH2Wqa41haJO3KtO6qgMU2NMaUFXw6MkYvEEzHr+sWW9MSRle0QVqM0xcZ
-	w+YuYTGf9mNy16vMOWW+5sBo1F6W2Ir2Z/qL/2AWC8yVvjQTpgL8MnCiFpxmZeEyRVik1MNd
-	IZYqEmIj3cPjpM3g6J/fbTuBPhUOAJoCwpP855qAYAEhTlQkSQcAQ2FCG75fmzniR4iTHrPy
-	uAfyhBhWMQDsKFx4lt+Xfi1IQEeK49lolpWx8v9bDmVlmwpOaa9aOz4p3VZPru6riAv10zp5
-	UGJTyMjNw3bd/Xs3WsImK0IrOxzWe1LK99xNNfImZ/vsWwU/M0opJ1/P8fc7IXdW7Yed1Icl
-	xOLaGpK8CHJ2dAzV+rcnH8z8VmReSTa6qW8fxO9pzgsaYjt0w9MJNo0SZBJF24kCvWUiU74Q
-	V0SJPVwwuUL8D5RP6kTLAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAAzWRa0hTYRjHe3cuO65Wh2l2tLIYCiZmGSIvZCWV8YIYhoQVlS49zNWmY1PR
+	iFos865TKTMt7/ctydSclM45qNDMsLRSK0utmZmGY5G3nNK33/P7/3meDw+FCVpwZ0oSHcsq
+	okVSIcnDu5e+0rt9uwND9lZV7YDa7/6ws3kX7Px0DQ7OfSNg7tgvDBabegmYU5uHweypUgJm
+	Nx2FhoVWANXlDSTsnawFMPXlGAb7xjNIWNlej8PSmxU47G8rImFhRTYOy6qSMDhW2sOBOtMI
+	F1YOvubAoes1JKz+uUxCTb4Oh5+79Fz4wJyPw6SnJi5s71sgYMOdH7i/C9Le1wLUn5XJQW36
+	IgJpsn8DpL87wkW11XMk6rKU4uhRjQdqrEsl0WR9AYGGB56QqOOelosy1dMkMufMk0hvVXFR
+	VlMdCLY/w/OLZKWSeFax52A4L8rYk4zLh10TrANvSBXo2p4GKIqhfZjZd/w0YLeCjkzfxwYy
+	DfAoAV0GmJL3Kdy1IZnDpFvLga1F0p5Mk1Wzyg40xpTcerXKGD1OMI//HLAttadPMwPTYpvG
+	aTcms76Ka9N8OoBJWQxdO7uTKcr1szXs6GNMZ8EiZmPBSsOgHsI0gF8C1tWBzaw8Qq68IJZ5
+	eylFMmVctNgrIkbWCFa/OeHcCmpV0AhoCgg38FOKAkMEhChemSgzAobChA78gOYVxY8UJV5m
+	FTFhijgpqzSCrRQu3MI3JO0/IaDFolj2EsvKWcX/lEPZOauAozL0WfhxyynToeX0squFqgkL
+	7/jfhI4PLyxRFvXofIT8MOU+5E6byzpzT+7jmfTSxeAw642Z3imXTJ/Z4SuqNsN6AXNE7u5a
+	XPk80rRkbNnog247vTWfPe9UEKSZEaSfI9wcdNIgXUWqpeLiaN7DQF3GF29Pia9s2ya/0RSJ
+	EFdGibw9MIVS9A9PyoaVyQIAAA==
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added check if pointer to edev is not NULL, and updated documentation of index
-parameter. Function extcon_find_cable_index() has been deleted and cannot be
-used to retrieve cable number.
+This patch simplifies extcon_updata_state() function. There is greatly
+simplified kobject_uevent preparation. Also meaning of variable passed
+to raw_notifier_call_chain() (and in effect to _call_per_cable()) has
+changed. Now positions on ones in variable 'val' in _call_per_cable()
+indicates numbers of cables which changed their status. It allowed
+to simplify also _call_per_cable() function.
 
 Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 ---
- drivers/extcon/extcon-class.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/extcon/extcon-class.c |   81 ++++++++++++++++-------------------------
+ include/linux/extcon.h        |    1 -
+ 2 files changed, 31 insertions(+), 51 deletions(-)
 
 diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
-index 40a33e2..e9e5e85 100644
+index e9e5e85..13993c6 100644
 --- a/drivers/extcon/extcon-class.c
 +++ b/drivers/extcon/extcon-class.c
-@@ -285,10 +285,12 @@ EXPORT_SYMBOL_GPL(extcon_set_state);
- /**
-  * extcon_get_cable_state_() - Get the status of a specific cable.
-  * @edev:	the extcon device that has the cable.
-- * @index:	cable index that can be retrieved by extcon_find_cable_index().
-+ * @index:	cable index in extcon device.
-  */
- int extcon_get_cable_state_(struct extcon_dev *edev, int index)
+@@ -206,59 +206,48 @@ int extcon_update_state(struct extcon_dev *edev, u32 mask, u32 state)
  {
-+	if (!edev)
-+		return -ENODEV;
- 	if (index < 0 || (edev->max_supported && edev->max_supported <= index))
- 		return -EINVAL;
+ 	char name_buf[120];
+ 	char state_buf[120];
+-	char *prop_buf;
++	char *tmp;
+ 	char *envp[3];
+ 	int env_offset = 0;
+ 	int length;
+ 	unsigned long flags;
++	u32 change;
  
-@@ -312,8 +314,7 @@ EXPORT_SYMBOL_GPL(extcon_get_cable_state);
- /**
-  * extcon_set_cable_state_() - Set the status of a specific cable.
-  * @edev:		the extcon device that has the cable.
-- * @index:		cable index that can be retrieved by
-- *			extcon_find_cable_index().
-+ * @index:		cable index in extcon device.
-  * @cable_state:	the new cable status. The default semantics is
-  *			true: attached / false: detached.
-  */
-@@ -322,6 +323,8 @@ int extcon_set_cable_state_(struct extcon_dev *edev,
+ 	spin_lock_irqsave(&edev->lock, flags);
+ 
+-	if (edev->state != ((edev->state & ~mask) | (state & mask))) {
+-		u32 old_state = edev->state;
+-
+-		if (check_mutually_exclusive(edev, (edev->state & ~mask) |
+-						   (state & mask))) {
++	change = (edev->state & mask) ^ (state & mask);
++	if (change) {
++		if (check_mutually_exclusive(edev, edev->state ^ change)) {
+ 			spin_unlock_irqrestore(&edev->lock, flags);
+ 			return -EPERM;
+ 		}
+ 
+-		edev->state &= ~mask;
+-		edev->state |= state & mask;
+-
+-		raw_notifier_call_chain(&edev->nh, old_state, edev);
+-		/* This could be in interrupt handler */
+-		prop_buf = (char *)get_zeroed_page(GFP_ATOMIC);
+-		if (prop_buf) {
+-			length = name_show(&edev->dev, NULL, prop_buf);
+-			if (length > 0) {
+-				if (prop_buf[length - 1] == '\n')
+-					prop_buf[length - 1] = 0;
+-				snprintf(name_buf, sizeof(name_buf),
+-					"NAME=%s", prop_buf);
+-				envp[env_offset++] = name_buf;
+-			}
+-			length = state_show(&edev->dev, NULL, prop_buf);
+-			if (length > 0) {
+-				if (prop_buf[length - 1] == '\n')
+-					prop_buf[length - 1] = 0;
+-				snprintf(state_buf, sizeof(state_buf),
+-					"STATE=%s", prop_buf);
+-				envp[env_offset++] = state_buf;
+-			}
+-			envp[env_offset] = NULL;
+-			/* Unlock early before uevent */
+-			spin_unlock_irqrestore(&edev->lock, flags);
++		edev->state ^= change;
+ 
+-			kobject_uevent_env(&edev->dev.kobj, KOBJ_CHANGE, envp);
+-			free_page((unsigned long)prop_buf);
+-		} else {
+-			/* Unlock early before uevent */
+-			spin_unlock_irqrestore(&edev->lock, flags);
++		raw_notifier_call_chain(&edev->nh, change, edev);
++
++		tmp = name_buf + sprintf(name_buf, "NAME=");
++		length = name_show(&edev->dev, NULL, tmp);
++		if (length > 0) {
++			if (tmp[length - 1] == '\n')
++				tmp[length - 1] = 0;
++			envp[env_offset++] = name_buf;
++		}
+ 
+-			dev_err(&edev->dev, "out of memory in extcon_set_state\n");
+-			kobject_uevent(&edev->dev.kobj, KOBJ_CHANGE);
++		tmp = state_buf + sprintf(state_buf, "STATE=");
++		length = state_show(&edev->dev, NULL, tmp);
++		if (length > 0) {
++			if (tmp[length - 1] == '\n')
++				tmp[length - 1] = 0;
++			envp[env_offset++] = state_buf;
+ 		}
++
++		envp[env_offset] = NULL;
++
++		/* Unlock early before uevent */
++		spin_unlock_irqrestore(&edev->lock, flags);
++
++		kobject_uevent_env(&edev->dev.kobj, KOBJ_CHANGE, envp);
+ 	} else {
+ 		/* No changes */
+ 		spin_unlock_irqrestore(&edev->lock, flags);
+@@ -511,18 +500,10 @@ static int _call_per_cable(struct notifier_block *nb, unsigned long val,
  {
- 	u32 state;
+ 	struct extcon_cable_nb *obj = container_of(nb,
+ 			struct extcon_cable_nb, internal_nb);
+-	struct extcon_dev *edev = ptr;
+-
+-	if ((val & (1 << obj->cable->cable_index)) !=
+-			(edev->state & (1 << obj->cable->cable_index))) {
+-		bool cable_state = true;
+-
+-		obj->previous_value = val;
+-
+-		if (val & (1 << obj->cable->cable_index))
+-			cable_state = false;
  
-+	if (!edev)
-+		return -ENODEV;
- 	if (index < 0 || (edev->max_supported && edev->max_supported <= index))
- 		return -EINVAL;
+-		return obj->notifier_function(obj, cable_state);
++	if ((1 << obj->cable->cable_index) & val) {
++		int state = extcon_get_cable_state(obj->cable);
++		return obj->notifier_function(obj, !!state);
+ 	}
  
+ 	return NOTIFY_OK;
+diff --git a/include/linux/extcon.h b/include/linux/extcon.h
+index 28e60fb..8792ca2 100644
+--- a/include/linux/extcon.h
++++ b/include/linux/extcon.h
+@@ -177,7 +177,6 @@ typedef int (*extcon_notifier_fn_t)(struct extcon_cable_nb *cable_nb,
+  */
+ struct extcon_cable_nb {
+ 	struct notifier_block internal_nb;
+-	unsigned long previous_value;
+ 	extcon_notifier_fn_t notifier_function;
+ 	struct extcon_cable *cable;
+ };
 -- 
 1.7.9.5
 
