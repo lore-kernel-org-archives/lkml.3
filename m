@@ -1,115 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393AbaDNIXU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 04:23:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61357 "EHLO mx1.redhat.com"
+	id S1754617AbaDNIXl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 04:23:41 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:50360 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754268AbaDNIEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 04:04:24 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        James Smart <james.smart@emulex.com>, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v2 RESEND 12/23] lpfc: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Mon, 14 Apr 2014 10:05:36 +0200
-Message-Id: <dbaf436ce4c68bfa9cb72c9940287adbe16fc011.1397461652.git.agordeev@redhat.com>
-In-Reply-To: <cover.1397461652.git.agordeev@redhat.com>
-References: <cover.1397461652.git.agordeev@redhat.com>
+	id S1753916AbaDNIXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 04:23:39 -0400
+Message-ID: <534B9B0A.2080602@mm-sol.com>
+Date: Mon, 14 Apr 2014 11:23:38 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 5/9] crypto: qce: Adds sha and hmac transforms
+References: <1396541886-10966-1-git-send-email-svarbanov@mm-sol.com> <1396541886-10966-6-git-send-email-svarbanov@mm-sol.com> <20140409000931.GN9985@codeaurora.org> <5346AD64.1000409@mm-sol.com> <20140411201227.GA20486@codeaurora.org>
+In-Reply-To: <20140411201227.GA20486@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
+Hi Stephen,
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: James Smart <james.smart@emulex.com>
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
----
- drivers/scsi/lpfc/lpfc_init.c |   38 +++++++++++++++++---------------------
- 1 files changed, 17 insertions(+), 21 deletions(-)
+On 04/11/2014 11:12 PM, Stephen Boyd wrote:
+> On 04/10, Stanimir Varbanov wrote:
+>> On 04/09/2014 03:09 AM, Stephen Boyd wrote:
+>>> On 04/03, Stanimir Varbanov wrote:
+>>>
+>>>> +
+>>>> +	return 0;
+>>>> +}
+>>>> +
+>>>> +static int qce_ahash_import(struct ahash_request *req, const void *in)
+>>>> +{
+>>>> +	struct qce_sha_reqctx *rctx = ahash_request_ctx(req);
+>>>> +	u32 flags = rctx->flags;
+>>>> +	bool hmac = IS_SHA_HMAC(flags);
+>>>> +	int ret;
+>>>> +
+>>>> +	if (IS_SHA1(flags) || IS_SHA1_HMAC(flags)) {
+>>>> +		struct sha1_state *state = (struct sha1_state *)in;
+>>>
+>>> Unnecessary cast from void *.
+>>
+>> Nope, "in" is "const void *". Cast is needed to avoid compiler warnings.
+>>
+> 
+> Ouch. Why are we casting away const? It should be possible to
+> make qce_import_common() take const state and buffer arguments?
+> 
 
-diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
-index 7163f37..b109adc 100644
---- a/drivers/scsi/lpfc/lpfc_init.c
-+++ b/drivers/scsi/lpfc/lpfc_init.c
-@@ -8100,9 +8100,9 @@ lpfc_sli4_pci_mem_unset(struct lpfc_hba *phba)
-  * @phba: pointer to lpfc hba data structure.
-  *
-  * This routine is invoked to enable the MSI-X interrupt vectors to device
-- * with SLI-3 interface specs. The kernel function pci_enable_msix() is
-- * called to enable the MSI-X vectors. Note that pci_enable_msix(), once
-- * invoked, enables either all or nothing, depending on the current
-+ * with SLI-3 interface specs. The kernel function pci_enable_msix_exact()
-+ * is called to enable the MSI-X vectors. Note that pci_enable_msix_exact(),
-+ * once invoked, enables either all or nothing, depending on the current
-  * availability of PCI vector resources. The device driver is responsible
-  * for calling the individual request_irq() to register each MSI-X vector
-  * with a interrupt handler, which is done in this function. Note that
-@@ -8126,8 +8126,8 @@ lpfc_sli_enable_msix(struct lpfc_hba *phba)
- 		phba->msix_entries[i].entry = i;
- 
- 	/* Configure MSI-X capability structure */
--	rc = pci_enable_msix(phba->pcidev, phba->msix_entries,
--				ARRAY_SIZE(phba->msix_entries));
-+	rc = pci_enable_msix_exact(phba->pcidev, phba->msix_entries,
-+				   ARRAY_SIZE(phba->msix_entries));
- 	if (rc) {
- 		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
- 				"0420 PCI enable MSI-X failed (%d)\n", rc);
-@@ -8664,15 +8664,13 @@ out:
-  * @phba: pointer to lpfc hba data structure.
-  *
-  * This routine is invoked to enable the MSI-X interrupt vectors to device
-- * with SLI-4 interface spec. The kernel function pci_enable_msix() is called
-- * to enable the MSI-X vectors. Note that pci_enable_msix(), once invoked,
-- * enables either all or nothing, depending on the current availability of
-- * PCI vector resources. The device driver is responsible for calling the
-- * individual request_irq() to register each MSI-X vector with a interrupt
-- * handler, which is done in this function. Note that later when device is
-- * unloading, the driver should always call free_irq() on all MSI-X vectors
-- * it has done request_irq() on before calling pci_disable_msix(). Failure
-- * to do so results in a BUG_ON() and a device will be left with MSI-X
-+ * with SLI-4 interface spec. The kernel function pci_enable_msix_range()
-+ * is called to enable the MSI-X vectors. The device driver is responsible
-+ * for calling the individual request_irq() to register each MSI-X vector
-+ * with a interrupt handler, which is done in this function. Note that later
-+ * when device is unloading, the driver should always call free_irq() on all
-+ * MSI-X vectors it has done request_irq() on before calling pci_disable_msix()
-+ * Failure to do so results in a BUG_ON() and a device will be left with MSI-X
-  * enabled and leaks its vectors.
-  *
-  * Return codes
-@@ -8694,18 +8692,16 @@ lpfc_sli4_enable_msix(struct lpfc_hba *phba)
- 		phba->sli4_hba.msix_entries[index].entry = index;
- 		vectors++;
- 	}
--enable_msix_vectors:
--	rc = pci_enable_msix(phba->pcidev, phba->sli4_hba.msix_entries,
--			     vectors);
--	if (rc > 1) {
--		vectors = rc;
--		goto enable_msix_vectors;
--	} else if (rc) {
-+
-+	rc = pci_enable_msix_range(phba->pcidev, phba->sli4_hba.msix_entries,
-+				   2, vectors);
-+	if (rc < 0) {
- 		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
- 				"0484 PCI enable MSI-X failed (%d)\n", rc);
- 		goto vec_fail_out;
- 	}
- 
-+	vectors = rc;
- 	/* Log MSI-X vector assignment */
- 	for (index = 0; index < vectors; index++)
- 		lpfc_printf_log(phba, KERN_INFO, LOG_INIT,
+Sure, that's possible. Thanks!
+
+
 -- 
-1.7.7.6
-
+regards,
+Stan
