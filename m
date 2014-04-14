@@ -1,62 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753773AbaDNCVT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 22:21:19 -0400
-Received: from nm21-vm2.bullet.mail.ir2.yahoo.com ([212.82.96.253]:27925 "EHLO
-	nm21-vm2.bullet.mail.ir2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752714AbaDNCVQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 22:21:16 -0400
-X-Greylist: delayed 437 seconds by postgrey-1.27 at vger.kernel.org; Sun, 13 Apr 2014 22:21:16 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 817116.41357.bm@omp1001.mail.ir2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.co.uk;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=pCxDgHYO53rhRMssS9N2ueCBmwU9c2gJc7bmJ/A2ZCojc6Vs5ACtcHUTu/ust/ijr5XxY1S9f4Q4EuZjyqNGK6d8Me4olDzlvLbEpZwKaNCwyqQKyJ0tp21SPb2VWVCOFwo2PmJExavAdbgwlRe2FRTNu3c2c5Mi5/CI8clGeHE=;
-X-YMail-OSG: x1CgaocVM1kTBVyERIkXoWhs6BLUenmACp1H.hjU79fMj60
- zV2DYMdC0XtzfF8w3axIUNzUJmqFXkk9z7wp5W7o2cqcVH3vNKwYS9ModMc8
- 8yP5IvV6GUvCd5dYQA.eQS_riukU2r4sfg.ouF1sJFpF4meqCXqyWP_sQQq0
- vSQ_UQdTv3s43WfuiRGthZXS1yJt0tV6_HWF7j7YGOkIRek21aaaK7lXYV0t
- HWl9dbXZ8.Uz028pArfObSHDSyr_jGCMT6qtl8P0fq3ZBimbUBogr0aM5wws
- h7k4tCUgnMNxk27C4KkL0U7EiVdXi.PgF.COWD.Lrr5WLSHv8aKHoMw18XYc
- 8zAB_GBPvwIQjvzUNZCiBM8ozknjn8YYM_fDa8NMQnPCdq8NahXI.YX1Q1Q8
- T2BxQ5mYKebj4LN9F1W3x0.PvRYCX_1U9CO_njigX1.8hXOQNj2MZevxU4ke
- mkC4b3cIEvYevzKqSisepgP_jTtiYwkyYave3TACuKhReOovkeJ5njw.IPh.
- anKMxwsHVQtA7TYFDP97hnijuooU2zr6MIK741S7fWD9BrRGc1fGe53yx1t1
- VbSYj55fUfbydX_oyKuADdyNx1boxSjlI1Dzdnn1pCPtkdZcACc9opw--
-X-Rocket-MIMEInfo: 002.001,CgpoaSBrZXJuZWwtZGV2ZWxvcGVycyBfCgpmcm9tIHJlY2VudCBjb3ZlcmFnZSBvZiB0aGUgTFNGTU0tU3VtbWl0IG9uIExXTi5uZXQsIGkgYWdhaW4gZ290IHRoZSBpbXByZXNzaW9uIHRoYXQgdGhlcmUgYXJlIHBlcmZvcm1hbmNlLSAmIGJlaGF2aW91ciAtIGlzc3VlcywgdGhhdCBwZXJzaXN0ZW50bHkgZG9uwrR0IHNlZW0gdG8gZ2V0IHJlc29sdmVkICYgc3RheSBhcm91bmQgZm9yIHRoZSBuZXh0IHN1bW1pdC4gQWRkaXRpb25hbGx5IG1hbnkgdGhpbmdzIGNvbWUgdG8gbGlnaHQgYXQgc3VjaCBtZWV0aW4BMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.182.648
-Message-ID: <1397441637.79653.YahooMailNeo@web173203.mail.ir2.yahoo.com>
-Date: Mon, 14 Apr 2014 03:13:57 +0100 (BST)
-From: Winston Graeme <wini_g_2003@yahoo.co.uk>
-Reply-To: Winston Graeme <wini_g_2003@yahoo.co.uk>
-Subject: is there a central index of subsystem- & cross-border - issues with progress on these  ?
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753375AbaDNCYE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 22:24:04 -0400
+Received: from mga01.intel.com ([192.55.52.88]:55871 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750770AbaDNCYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 22:24:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,853,1389772800"; 
+   d="scan'208";a="512413818"
+Subject: [PATCH] net: ipv4: current group_info should be put after using.
+From: "Wang, Xiaoming" <xiaoming.wang@intel.com>
+To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mguzik@redhat.com
+Cc: chuansheng.liu@intel.com, dongxing.zhang@intel.com,
+        xiaoming.wang@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 14 Apr 2014 12:30:45 -0400
+Message-ID: <1397493045.2575.8.camel@wxm-ubuntu>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Plug a group_info refcount leak in ping_init.
+group_info is only needed during initialization and 
+the code failed to release the reference on exit.
+While here move grabbing the reference to a place 
+where it is actually needed.
+
+Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
+Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+---
+ net/ipv4/ping.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/net/ipv4/ping.c b/net/ipv4/ping.c
+index f4b19e5..8210964 100644
+--- a/net/ipv4/ping.c
++++ b/net/ipv4/ping.c
+@@ -252,26 +252,33 @@ int ping_init_sock(struct sock *sk)
+ {
+ 	struct net *net = sock_net(sk);
+ 	kgid_t group = current_egid();
+-	struct group_info *group_info = get_current_groups();
+-	int i, j, count = group_info->ngroups;
++	struct group_info *group_info;
++	int i, j, count;
+ 	kgid_t low, high;
++	int ret = 0;
+ 
+ 	inet_get_ping_group_range_net(net, &low, &high);
+ 	if (gid_lte(low, group) && gid_lte(group, high))
+ 		return 0;
+ 
++	group_info = get_current_groups();
++	count = group_info->ngroups;
+ 	for (i = 0; i < group_info->nblocks; i++) {
+ 		int cp_count = min_t(int, NGROUPS_PER_BLOCK, count);
+ 		for (j = 0; j < cp_count; j++) {
+ 			kgid_t gid = group_info->blocks[i][j];
+ 			if (gid_lte(low, gid) && gid_lte(gid, high))
+-				return 0;
++				goto out_release_group;
+ 		}
+ 
+ 		count -= cp_count;
+ 	}
+ 
+-	return -EACCES;
++	ret = -EACCES;
++
++out_release_group:
++	put_group_info(group_info);
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(ping_init_sock);
+ 
+-- 
+1.7.1
 
 
-hi kernel-developers _
-
-from recent coverage of the LSFMM-Summit on LWN.net, i again got the impression that there are performance- & behaviour - issues, that persistently don´t seem to get resolved & stay around for the next summit. Additionally many things come to light at such meetings of different user & development-sections, which often seem to get lost again, as there is no central index, page or wiki, .. of cross-border issues & progress on these . 
-
-
-There are more specific mailiglists for e.g. LF - workgroups or vendor- & distributor - specific kernel - pages, -portals & -wikis, but the only thing similar to a central index, that i could find, is the LWN - kernel-page index ( http://lwn.net/Kernel/Index/ ). Documentation being a weakness of the development process, LWN might be the only place. 
-
-
-
-Additionally there is the issue of, again undocumented, kernel features ; this all seems to me like unnecessarily hindering to coordination & progress.
-
-
-
-or does this kind of place exist somewhere ?
-please cc me as i am not subscribed - thank-you
-
-
-_ vincent . 
