@@ -1,78 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755904AbaDNWK1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 18:10:27 -0400
-Received: from exprod5og105.obsmtp.com ([64.18.0.180]:38041 "HELO
-	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755512AbaDNWJ2 (ORCPT
+	id S1756056AbaDNWKt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 18:10:49 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34275 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755512AbaDNWKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 18:09:28 -0400
+	Mon, 14 Apr 2014 18:10:46 -0400
+Date: Mon, 14 Apr 2014 17:08:05 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Mathias Krause <minipli@googlemail.com>
+CC: Felipe Balbi <balbi@ti.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        PaX Team <pageexec@freemail.hu>, Anton Vorontsov <anton@enomsg.org>
+Subject: Re: [PATCH 2/2] pda_power: Unregister USB notifier in
+ pda_power_remove()
+Message-ID: <20140414220804.GB22800@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1396186455-3276-1-git-send-email-minipli@googlemail.com>
+ <1396186455-3276-3-git-send-email-minipli@googlemail.com>
+ <20140414213504.GB22607@saruman.home>
+ <CA+rthh__aRaY+DQ7drj_MPB3Gb35RFFUCd50ZN_pQR3OGr2GEw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140412.165549.1068958710661824002.davem@davemloft.net>
-References: <1397271984-23405-1-git-send-email-isubramanian@apm.com>
-	<1397271984-23405-5-git-send-email-isubramanian@apm.com>
-	<20140412.165549.1068958710661824002.davem@davemloft.net>
-Date: Mon, 14 Apr 2014 15:09:26 -0700
-Message-ID: <CAKh23Fn2-P3QAntShpjBV027POgYfxmCFh3H3KZ5dSpUpa+4yQ@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] drivers: net: Add APM X-Gene SoC ethernet driver support.
-From: Iyappan Subramanian <isubramanian@apm.com>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, devicetree@vger.kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        "jcm@redhat.com" <jcm@redhat.com>, patches <patches@apm.com>,
-        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xgyAXRrhYN0wYx8y"
+Content-Disposition: inline
+In-Reply-To: <CA+rthh__aRaY+DQ7drj_MPB3Gb35RFFUCd50ZN_pQR3OGr2GEw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+--xgyAXRrhYN0wYx8y
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the review comments.  Please find my responses inline.
+On Tue, Apr 15, 2014 at 12:07:13AM +0200, Mathias Krause wrote:
+> On 14 April 2014 23:35, Felipe Balbi <balbi@ti.com> wrote:
+> > On Sun, Mar 30, 2014 at 03:34:15PM +0200, Mathias Krause wrote:
+> >> If we've registered a notifier in pda_power_probe() we must deregister
+> >> it in pda_power_remove() to not let it work on stale data like, e.g.,
+> >> the charger timer.
+> >>
+> >> Cc: Felipe Balbi <balbi@ti.com>
+> >> Cc: Anton Vorontsov <anton@enomsg.org>
+> >> Signed-off-by: Mathias Krause <minipli@googlemail.com>
+> >> ---
+> >>  drivers/power/pda_power.c |    5 +++++
+> >>  1 file changed, 5 insertions(+)
+> >>
+> >> diff --git a/drivers/power/pda_power.c b/drivers/power/pda_power.c
+> >> index 87a963d0a8..aba23d6848 100644
+> >> --- a/drivers/power/pda_power.c
+> >> +++ b/drivers/power/pda_power.c
+> >> @@ -430,6 +430,11 @@ static int pda_power_remove(struct platform_devic=
+e *pdev)
+> >>       if (pdata->is_ac_online && ac_irq)
+> >>               free_irq(ac_irq->start, &pda_psy_ac);
+> >>
+> >> +#if IS_ENABLED(CONFIG_USB_PHY)
+> >> +     if (!IS_ERR_OR_NULL(transceiver) && pdata->use_otg_notifier)
+> >
+> > IS_ERR() should be enough here.
+>=20
+> That's true! The usb_get_phy() call in pda_power_probe() will always
+> return a valid pointer or an ERR_PTR() -- never NULL. Albeit, looking
+> at usb_get_phy(), it contains another bug, returning a valid pointer,
+> even when the try_module_get() call fails. *sigh* It should set ptr to
+> an ERR_PTR() in this case.
 
-Thanks,
-Iyappan
+good catch, can you send a patch for that ?
 
-On Sat, Apr 12, 2014 at 1:55 PM, David Miller <davem@davemloft.net> wrote:
-> From: Iyappan Subramanian <isubramanian@apm.com>
-> Date: Fri, 11 Apr 2014 20:06:24 -0700
->
->> This patch adds network driver for APM X-Gene SoC ethernet.
->>
->> Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
->> Signed-off-by: Ravi Patel <rapatel@apm.com>
->> Signed-off-by: Keyur Chudgar <kchudgar@apm.com>
->
-> This driver is going to take a long to review and get to the point
-> where it can be integrated upstream, I'm just trying to set your
-> expectations properly.
-Okay.
->
->> +inline void set_desc(struct xgene_enet_desc *desc, enum desc_info_index index,
->> +                  u64 val)
->> +{
->
-> The "inline" tag is not necessary, let the compiler figure it out.
-Okay.  I will remove inline keyword from the code.
->
->> +     u8 word_index = desc_info[index].word_index;
->> +     u8 start_bit = desc_info[index].start_bit;
->> +     u8 len = desc_info[index].len;
->> +
->> +     u64 mask = GENMASK_ULL((start_bit + len - 1), start_bit);
->> +     ((u64 *)desc)[word_index] = (((u64 *)desc)[word_index] & ~mask)
->> +         | (((u64) val << start_bit) & mask);
->
-> This looks horrible for several reasons.
->
-> First of all, do not put empty lines in the middle of a set of
-> local variable declarations.
->
-> But do put a single empty line after the last local variable, and
-> before the actual code of the function starts.
->
-> Get rid of all of this excessive casting.  Tell the compiler what you're
-> actually doing, pass 'desc' in as "void *" and use local "u64 *" pointers
-> (to which 'desc' is assigned to) if you must.
-I will fix this in the next patch.
+> Anyway, probably all the transceiver checks in pda_power.c can be
+> changed to IS_ERR() checks. The reason I am using IS_ERR_OR_NULL() in
+> my patch is that I just copied the test from a few lines below. I'll
+> create a follow up patch in case somebody cares about this series in
+> the first place.
+
+awesome, thanks
+
+--=20
+balbi
+
+--xgyAXRrhYN0wYx8y
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTTFxEAAoJEIaOsuA1yqRE44oQAJec1tjDmLuxI+RnRo2YmbUr
+gCqjEUJmbpdSOuP0iHSw2OjPDF6L7TwZyfvPB6iJTABBCiGC9jbnRgyztGI2i/cX
+9xz3hxGXA607wl+JuPsFWREcvDbXGcObEej6Y0NiPtaLYdOBJfU3q9r5/opxPvQL
+YpCs1ghKWec7IqqsbgY9sKsff8MCpuqtPgS5Bcsdl0Nhp7jiccrD4z48cvK7Ee6h
+ElcX6FocNUKcK21IWqUks+X1RUOj0igpucjWCHXFxrpPBtAh82/zUD+m0OcIfuCD
+rdS4/NhTYpKjWGZVlz3zj8/DKpy1l/DHN+7Adxlw0raD3c2DYF962xNzci6hU7ja
+Qdt3KJBtXMe9DWAuprusGTHnkn4yZ/52aMqFQrs3YaiS/VUfO4NuprMTloo8q8fe
+2CzMDoyWr+t3wQJ+FAvwGh2cKs4p66Mi815CraB0t76NlaLiKB7J99nyb8Yy08bg
+T7o8h/vFw6XS++pjTivEhaMdBUpzKyE7+RGvGyODy+vJexgmK3PjMdMr/S+Gbghg
+UkCvEAuiLX7tCqDFYkcVyJyr+QHbiNYXZzILkd4nv5VqX/Xso2YFerO3DEwwEIRE
+EwlqAIwtk1+RmcLvGJr9DfSXMSh2w9qx26rvrWIne7+/mk1q9vTKMw+8COaWFoIH
+47J7o5DaZMUSwQzjuwx7
+=6WQV
+-----END PGP SIGNATURE-----
+
+--xgyAXRrhYN0wYx8y--
