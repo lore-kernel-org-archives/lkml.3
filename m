@@ -1,98 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642AbaDNViA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 17:38:00 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48783 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755615AbaDNVhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 17:37:50 -0400
-Date: Mon, 14 Apr 2014 16:35:04 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Mathias Krause <minipli@googlemail.com>
-CC: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, <linux-kernel@vger.kernel.org>,
-        PaX Team <pageexec@freemail.hu>, Felipe Balbi <balbi@ti.com>,
-        Anton Vorontsov <anton@enomsg.org>
-Subject: Re: [PATCH 2/2] pda_power: Unregister USB notifier in
- pda_power_remove()
-Message-ID: <20140414213504.GB22607@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1396186455-3276-1-git-send-email-minipli@googlemail.com>
- <1396186455-3276-3-git-send-email-minipli@googlemail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JP+T4n/bALQSJXh8"
-Content-Disposition: inline
-In-Reply-To: <1396186455-3276-3-git-send-email-minipli@googlemail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755586AbaDNVho (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 17:37:44 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:49182 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755517AbaDNVhb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 17:37:31 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 11/12] cgroup: prepare migration path for unified hierarchy
+Date: Mon, 14 Apr 2014 17:37:09 -0400
+Message-Id: <1397511430-2673-12-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1397511430-2673-1-git-send-email-tj@kernel.org>
+References: <1397511430-2673-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---JP+T4n/bALQSJXh8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Unified hierarchy implementation would require re-migrating tasks onto
+the same cgroup on the default hierarchy to reflect updated effective
+csses.  Update cgroup_migrate_prepare_dst() so that it accepts NULL as
+the destination cgrp.  When NULL is specified, the destination is
+considered to be the cgroup on the default hierarchy associated with
+each css_set.
 
-On Sun, Mar 30, 2014 at 03:34:15PM +0200, Mathias Krause wrote:
-> If we've registered a notifier in pda_power_probe() we must deregister
-> it in pda_power_remove() to not let it work on stale data like, e.g.,
-> the charger timer.
->=20
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Anton Vorontsov <anton@enomsg.org>
-> Signed-off-by: Mathias Krause <minipli@googlemail.com>
-> ---
->  drivers/power/pda_power.c |    5 +++++
->  1 file changed, 5 insertions(+)
->=20
-> diff --git a/drivers/power/pda_power.c b/drivers/power/pda_power.c
-> index 87a963d0a8..aba23d6848 100644
-> --- a/drivers/power/pda_power.c
-> +++ b/drivers/power/pda_power.c
-> @@ -430,6 +430,11 @@ static int pda_power_remove(struct platform_device *=
-pdev)
->  	if (pdata->is_ac_online && ac_irq)
->  		free_irq(ac_irq->start, &pda_psy_ac);
-> =20
-> +#if IS_ENABLED(CONFIG_USB_PHY)
-> +	if (!IS_ERR_OR_NULL(transceiver) && pdata->use_otg_notifier)
+After this change, the identity check in cgroup_migrate_add_src()
+isn't sufficient for noop detection as the associated csses may change
+without any cgroup association changing.  The only way to tell whether
+a migration is noop or not is testing whether the source and
+destination csets are identical.  The noop check in
+cgroup_migrate_add_src() is removed and cset identity test is added to
+cgroup_migreate_prepare_dst().  If it's detected that source and
+destination csets are identical, the cset is removed removed from
+@preloaded_csets and all the migration nodes are cleared which makes
+cgroup_migrate() ignore the cset.
 
-IS_ERR() should be enough here.
+Also, make the function append the destination css_sets to
+@preloaded_list so that destination css_sets always come after source
+css_sets.
 
-> +		usb_unregister_notifier(transceiver, &otg_nb);
-> +#endif
-> +
->  	if (polling)
->  		del_timer_sync(&polling_timer);
->  	del_timer_sync(&charger_timer);
-> --=20
-> 1.7.10.4
->=20
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/cgroup.c | 34 +++++++++++++++++++++++-----------
+ 1 file changed, 23 insertions(+), 11 deletions(-)
 
---=20
-balbi
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 888e037..c7b8509 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1902,10 +1902,6 @@ static void cgroup_migrate_add_src(struct css_set *src_cset,
+ 
+ 	src_cgrp = cset_cgroup_from_root(src_cset, dst_cgrp->root);
+ 
+-	/* nothing to do if this cset already belongs to the cgroup */
+-	if (src_cgrp == dst_cgrp)
+-		return;
+-
+ 	if (!list_empty(&src_cset->mg_preload_node))
+ 		return;
+ 
+@@ -1920,13 +1916,14 @@ static void cgroup_migrate_add_src(struct css_set *src_cset,
+ 
+ /**
+  * cgroup_migrate_prepare_dst - prepare destination css_sets for migration
+- * @dst_cgrp: the destination cgroup
++ * @dst_cgrp: the destination cgroup (may be %NULL)
+  * @preloaded_csets: list of preloaded source css_sets
+  *
+  * Tasks are about to be moved to @dst_cgrp and all the source css_sets
+  * have been preloaded to @preloaded_csets.  This function looks up and
+- * pins all destination css_sets, links each to its source, and put them on
+- * @preloaded_csets.
++ * pins all destination css_sets, links each to its source, and append them
++ * to @preloaded_csets.  If @dst_cgrp is %NULL, the destination of each
++ * source css_set is assumed to be its cgroup on the default hierarchy.
+  *
+  * This function must be called after cgroup_migrate_add_src() has been
+  * called on each migration source css_set.  After migration is performed
+@@ -1937,19 +1934,34 @@ static int cgroup_migrate_prepare_dst(struct cgroup *dst_cgrp,
+ 				      struct list_head *preloaded_csets)
+ {
+ 	LIST_HEAD(csets);
+-	struct css_set *src_cset;
++	struct css_set *src_cset, *tmp_cset;
+ 
+ 	lockdep_assert_held(&cgroup_mutex);
+ 
+ 	/* look up the dst cset for each src cset and link it to src */
+-	list_for_each_entry(src_cset, preloaded_csets, mg_preload_node) {
++	list_for_each_entry_safe(src_cset, tmp_cset, preloaded_csets, mg_preload_node) {
+ 		struct css_set *dst_cset;
+ 
+-		dst_cset = find_css_set(src_cset, dst_cgrp);
++		dst_cset = find_css_set(src_cset,
++					dst_cgrp ?: src_cset->dfl_cgrp);
+ 		if (!dst_cset)
+ 			goto err;
+ 
+ 		WARN_ON_ONCE(src_cset->mg_dst_cset || dst_cset->mg_dst_cset);
++
++		/*
++		 * If src cset equals dst, it's noop.  Drop the src.
++		 * cgroup_migrate() will skip the cset too.  Note that we
++		 * can't handle src == dst as some nodes are used by both.
++		 */
++		if (src_cset == dst_cset) {
++			src_cset->mg_src_cgrp = NULL;
++			list_del_init(&src_cset->mg_preload_node);
++			put_css_set(src_cset, false);
++			put_css_set(dst_cset, false);
++			continue;
++		}
++
+ 		src_cset->mg_dst_cset = dst_cset;
+ 
+ 		if (list_empty(&dst_cset->mg_preload_node))
+@@ -1958,7 +1970,7 @@ static int cgroup_migrate_prepare_dst(struct cgroup *dst_cgrp,
+ 			put_css_set(dst_cset, false);
+ 	}
+ 
+-	list_splice(&csets, preloaded_csets);
++	list_splice_tail(&csets, preloaded_csets);
+ 	return 0;
+ err:
+ 	cgroup_migrate_finish(&csets);
+-- 
+1.9.0
 
---JP+T4n/bALQSJXh8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTTFSIAAoJEIaOsuA1yqREiCYP/RUl/FVXFj1dweGckF6X2URT
-zRqSSrNOmV1D4N9hYC6kp8vJ0vrb5kzxM0otLqWRMWutIoF2KdVeEqZEBz/uZ09V
-dDIrnQaNUGb+p3QruNv0tQF7KTkrYsiwYfPLY/PUmPV5ZwRaXyjQAxVNL9eDOYIQ
-0UnYabSNXO+tWVIlrHbx9tyfme5+bt67gZIycOF3FoaN+E/Ut4AQ3jzEqh7g0DPR
-vK8lO2tQVTV7pTF9+/7lYS8y2sKg/FdoMTdixtE2zx72oJf6zNnk264E+xOyvMcu
-RUeQ2J1e3U5c/HnosJ8JHBGhyANJ3uQQ84ZzMpCTthHoc9Qf3pO23EjfUDvIl/us
-uZVnsYIOh2/yZ4OU1C7j3C0ZlYfL0nCaFeXTzYD00Kvyt9OrsXzPj2FeJBaC0QMG
-bThaPSJwqhU56vWHq5LRhiYZhPctCS0AUmMEyX0UiAeeFjXqDrEayBCOH4SLD87j
-hnaD2cKwvWubKD82xy3aQaw+lEG8IlQLX2S/AbR1TZotuTRqfuV8Hbk/E90EU5HS
-JI0CW5cfcNspSAG7COQfXlpNJxQ1ZTl7ufG9Fq+3PnELVTZjT5ExZUojSiZz9929
-tVPsL8591cI1Dd8rUqUFXtL53ePQi7J7Ozgyk0EBWBOuXAHms/vr0Ml9qjeU9onb
-926ud/hf7Y4S/t8ifnfT
-=B92n
------END PGP SIGNATURE-----
-
---JP+T4n/bALQSJXh8--
