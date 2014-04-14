@@ -1,86 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603AbaDNIGg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 04:06:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48169 "EHLO mx1.redhat.com"
+	id S1754078AbaDNIGu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 04:06:50 -0400
+Received: from ozlabs.org ([103.22.144.67]:49115 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753022AbaDNIF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 04:05:29 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        iss_storagedev@hp.com, linux-scsi@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v2 RESEND 10/23] hpsa: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Mon, 14 Apr 2014 10:05:34 +0200
-Message-Id: <6e17ab33b0ddbe49f72bf0d9c5fd3019acf6d6ca.1397461652.git.agordeev@redhat.com>
-In-Reply-To: <cover.1397461652.git.agordeev@redhat.com>
-References: <cover.1397461652.git.agordeev@redhat.com>
+	id S1751381AbaDNIGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 04:06:48 -0400
+Date: Mon, 14 Apr 2014 18:06:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: linus-next stats (Re: Linux 3.15-rc1 out, merge window closed)
+Message-Id: <20140414180629.198f98cadef124a99439b0b1@canb.auug.org.au>
+In-Reply-To: <CA+55aFykrvKAe29pTUqq8Oc2FKtnFWwU7vxbTQXa7ysZ6xxMXw@mail.gmail.com>
+References: <CA+55aFykrvKAe29pTUqq8Oc2FKtnFWwU7vxbTQXa7ysZ6xxMXw@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__14_Apr_2014_18_06_29_+1000_54Xu_0Yg3vfEzOAE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
+--Signature=_Mon__14_Apr_2014_18_06_29_+1000_54Xu_0Yg3vfEzOAE
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: iss_storagedev@hp.com
-Cc: linux-scsi@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
----
- drivers/scsi/hpsa.c |   29 +++++++++++++----------------
- 1 files changed, 13 insertions(+), 16 deletions(-)
+As usual, the executive friendly graph is at
+http://neuling.org/linux-next-size.html :-)
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 3284edb..36bb1e4 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -6144,26 +6144,23 @@ static void hpsa_interrupt_mode(struct ctlr_info *h)
- 		goto default_int_mode;
- 	if (pci_find_capability(h->pdev, PCI_CAP_ID_MSIX)) {
- 		dev_info(&h->pdev->dev, "MSIX\n");
--		h->msix_vector = MAX_REPLY_QUEUES;
--		err = pci_enable_msix(h->pdev, hpsa_msix_entries,
--				      h->msix_vector);
--		if (err > 0) {
-+		err = pci_enable_msix_range(h->pdev, hpsa_msix_entries,
-+					    1, MAX_REPLY_QUEUES);
-+		if (err < 0) {
-+			dev_warn(&h->pdev->dev, "MSI-X init failed %d\n", err);
-+			h->msix_vector = 0;
-+			goto single_msi_mode;
-+		} else if (err < MAX_REPLY_QUEUES) {
- 			dev_warn(&h->pdev->dev, "only %d MSI-X vectors "
- 			       "available\n", err);
--			h->msix_vector = err;
--			err = pci_enable_msix(h->pdev, hpsa_msix_entries,
--					      h->msix_vector);
--		}
--		if (!err) {
--			for (i = 0; i < h->msix_vector; i++)
--				h->intr[i] = hpsa_msix_entries[i].vector;
--			return;
--		} else {
--			dev_warn(&h->pdev->dev, "MSI-X init failed %d\n",
--			       err);
--			h->msix_vector = 0;
- 		}
-+
-+		h->msix_vector = err;
-+		for (i = 0; i < h->msix_vector; i++)
-+			h->intr[i] = hpsa_msix_entries[i].vector;
-+		return;
- 	}
-+single_msi_mode:
- 	if (pci_find_capability(h->pdev, PCI_CAP_ID_MSI)) {
- 		dev_info(&h->pdev->dev, "MSI\n");
- 		if (!pci_enable_msi(h->pdev))
--- 
-1.7.7.6
+(No merge commits counted, next-20140331 was the last linux-next before
+v3.14.  I neglected to publish the stats for v3.14-rc1, but they are
+mentioned below.)
 
+Commits in v3.15-rc1 (relative to v3.14): 12034		(v3.14-rc1:	10622)
+Commits in next-20140331:		  11411		(next-20140121:	 9792)
+Commits with the same SHA1:		  10432		(		 8810)
+Commits with the same patch_id:		    581	(1)	(		  709)
+Commits with the same subject line:	     74	(1)	(		   48)
+
+(1) not counting those in the lines above.
+
+So commits in -rc1 that were in next-20140331:	11087	92.1%	(9567	90.1%)
+
+Some breakdown of the list of extra commits (relative to next-20140331)
+in -rc1:
+
+Top ten first word of commit summary:
+
+    103 drm
+     41 net
+     39 libceph
+     33 ceph
+     30 media
+     25 arm
+     24 btrfs
+     23 powerpc
+     20 alsa
+     19 target
+
+Top ten authors:
+
+     61 viro@zeniv.linux.org.uk
+     47 ilya.dryomov@inktank.com
+     24 zheng.z.yan@intel.com
+     19 thellstrom@vmware.com
+     16 tglx@linutronix.de
+     16 dborkman@redhat.com
+     15 a.hajda@samsung.com
+     13 matthew.d.roper@intel.com
+     12 mszeredi@suse.cz
+     12 dan.carpenter@oracle.com
+
+Top nine commiters:
+
+     90 davem@davemloft.net
+     63 viro@zeniv.linux.org.uk
+     57 torvalds@linux-foundation.org
+     56 sage@inktank.com
+     31 m.chehab@samsung.com
+     27 matthew.garrett@nebula.com
+     26 jeffrey.t.kirsher@intel.com
+     26 benh@kernel.crashing.org
+     24 daniel.vetter@ffwll.ch
+
+There are also 325 commits in next-20140331 that didn't make it into
+v3.15-rc1.
+
+Top nine first word of commit summary:
+
+     73 arm
+     34 mm
+     25 drm
+     23 asoc
+     21 bluetooth
+      8 zram
+      8 kdb
+      8 dm
+      6 ocfs2
+
+Top nine authors:
+
+     41 akpm@linux-foundation.org
+     24 arnd@arndb.de
+     16 n-horiguchi@ah.jp.nec.com
+     15 johan.hedberg@intel.com
+     14 fabio.estevam@freescale.com
+     12 heiko@sntech.de
+     11 bradley.d.volkin@intel.com
+      9 mpatocka@redhat.com
+      8 oder_chiou@realtek.com
+
+Some of Andrew's patches are fixes for other patches in his tree (and
+have been merged into those).
+
+Top nine commiters:
+
+    120 sfr@canb.auug.org.au
+     24 daniel.vetter@ffwll.ch
+     24 arnd@arndb.de
+     23 broonie@linaro.org
+     21 marcel@holtmann.org
+     19 shawn.guo@freescale.com
+     17 shawn.guo@linaro.org
+     12 kgene.kim@samsung.com
+     10 jason.wessel@windriver.com
+
+Those commits by me are from the quilt series (mainly Andrew's mmotm
+tree).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__14_Apr_2014_18_06_29_+1000_54Xu_0Yg3vfEzOAE
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTS5cRAAoJEMDTa8Ir7ZwVhlAP/jsbILAwge/F0Lh+MNATSrtL
+PS3ljTimfw/NqeiEGl1bAdQW6lDoDXihNwU+0M3bPSfyjQ6kzXB7giywmvohNhvC
+tE+UNscGKRnSJuHFc6jKq1t1xUYvCKrOjpewPX+NPg5d5rvHvWp+oZscYsrc9sAe
+uQf362NIecXzVO+gi1zpajjwdxw8fGlTHXgTY1MXAXUZlB1lElCrbgyjwFjqoZJ1
+xGwMYZR9M9OOhmO+BHLuCRjNYikJNbjRR0hTBxprHMIikkKyrerkvHb7sng9vCB/
+mbpFs489Rm+7pnSEepiBbhDAzFvL0yHznug0B3B2R9I+jjJlPgvetCvfiAlJltwf
+g1MR7Bu1OkgrD1+51UGUJ/kToujy6SLX/auH/xRqTUp/H9WPY36xZ9Enx9cCknCf
+Gn95mtzSIc8ODbb8ciJOuhVWxwZt0CKW+sOhzTBHCJMFWMW8fXS6QOEWTwvquPdc
+efFwf7H5UrUOsky4RgiEePWeMSkxpabWE1ModSX/KczHB+u4mOkZaQXN22puXtor
+x8Lulv++FPSSrh40bqPi6bB8GJHOdRjSuV264eHxS0VFiN7F/q0xYd8rHJPKLuah
+zrJD2JgEYXH0UL4obQ+WXQB2Tl7BHzojzw3dDBOpOa7Jne4LwgNVq2fS+ae9uns9
+NNcEFKg+w+s0RPB89DRs
+=DyS+
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__14_Apr_2014_18_06_29_+1000_54Xu_0Yg3vfEzOAE--
