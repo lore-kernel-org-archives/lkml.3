@@ -1,117 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298AbaDNRMe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 13:12:34 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:56511 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754328AbaDNRMc (ORCPT
+	id S1755328AbaDNRNA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 13:13:00 -0400
+Received: from qmta07.emeryville.ca.mail.comcast.net ([76.96.30.64]:56375 "EHLO
+	qmta07.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753061AbaDNRMz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 13:12:32 -0400
-Message-ID: <1397495549.4222.26.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [BUG] A panic caused by null pointer dereference aftering
- updating to
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Zhan Jianyu <nasa4836@gmail.com>
-Cc: James Chapman <jchapman@katalix.com>, davem@davemloft.net,
-        Eric Dumazet <edumazet@google.com>, joe@perches.com,
-        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org
-Date: Mon, 14 Apr 2014 10:12:29 -0700
-In-Reply-To: <CAHz2CGVVx3Fi5Vy0dr7z5r2yerbg9cjux61NM0fVeMAtK_Wf9Q@mail.gmail.com>
-References: <CAHz2CGWs-JH0v3dWAMBDrKqkP6ygb48YZ-qkc=KsFqz5yO7f+Q@mail.gmail.com>
-	 <CAHz2CGU5aPA5QJ9ED9g5kahD_jJaeLF+VOotUSBFXDkY+EH8ow@mail.gmail.com>
-	 <534BFC69.6080209@katalix.com>
-	 <CAHz2CGVVx3Fi5Vy0dr7z5r2yerbg9cjux61NM0fVeMAtK_Wf9Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 14 Apr 2014 13:12:55 -0400
+Date: Mon, 14 Apr 2014 12:12:52 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@nuc
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+cc: linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Ingo Molnar <mingo@kernel.org>, linux-usb@vger.kernel.org
+Subject: Re: [3.15-rc1] a huge number of warnings produced by xhci &
+In-Reply-To: <534C182C.8040206@ti.com>
+Message-ID: <alpine.DEB.2.10.1404141206040.18190@nuc>
+References: <53285FE7.5010203@ti.com> <534C182C.8040206@ti.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-15 at 01:01 +0800, Zhan Jianyu wrote:
-> On Mon, Apr 14, 2014 at 11:19 PM, James Chapman <jchapman@katalix.com> wrote:
-> > Please send the complete oops message.
-> 
-> Hi, complete oops message is :
-> 
-> 
-> [  100.243737] BUG: unable to handle kernel NULL pointer dereference
-> at 00000000000002c0
-> [  100.244985] IP: [<ffffffff815d4cb0>] ip_queue_xmit+0x20/0x3e0
-> [  100.262266] PGD 0
-> [  100.288395] Oops: 0000 [#1] SMP
-> [  100.325955] Modules linked in: l2tp-ppp l2tp-netlink l2tp_core
-> pppoe vmblock vsock vmmemctl vmhgfs acpiphp snd_ens1371 gameport
-> snd_ac97_codec ac97_bus snd_pcm_oss snd_mixer_oss snd_pcm
-> snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event
-> snd_seq snd_timer snd_seq_device ppdev psmouse serio_raw fbcon
-> tileblit font bitblit softcursor snd parport_pc soundcore
-> snd_page_alloc vmci i2c_piix4 vga16fb vgastate intel_agp agpgart
-> shpchp lp parport floppy pcnet32 mii mptspi mptscsih mptbase
-> scsi_transport_spi vmxnet
-> [  1100.472178] CPU: 0 PID: 1849 Comm: pppd Tainted: G        IOE
-> 3.15.0-rc1+ #13
-> [  1100.540018] Hardware name: LENOVO 20216/v2QY041, BIOS
-> 74CN34WW(v2.0k) 07/04/2013
-> [  1100.562844] task: ffff88003ee48000 ti: ffff880257a4e000 task.ti:
-> ffff880257a4e000
-> [  1100.584351] RIP: 0010: [<ffffffff815d4cb0>]  [<ffffffff815d4cb0>]
-> ip_queue_xmit+0x20/0x3e0
-> [  1100.584351] RSP: 0018: ffff880257a4fdd8 EFLAGS: 00010293
-> [  1100.609358] RAX: ffff88003fe48e00 RBX:ffff88003f5ad100 RCX:0000000000000014
-> [  1100.631467] RDX: ffffffff81ccab40   RSI:  ffff88003fe49110
-> RDI:ffff88003f5ad100
-> [  1100.657664] RBP: ffff880257a4fe00 R08:  ffff88807ff06476
-> R09:0000000000000022
-> [  1100.657694] R10:  ffffe90009726600 R11:  ffff88003fe49110
-> R12:0000000000000000
-> [  1100.657694] R13:  ffff88025a087480 R14:  ffff880025b561400
-> R15:ffff88003fe49110
-> [  1100.688994] FS:    00007f8857f8f840(0000)
-> GS:ffff88026f200000(0000) knlGS:000000000000
-> [  1100.697694] CS: 0010 DS: 0000 ES: 0000 CR0:0000000080050033
-> [  1100.697694] CR2:0000000000002c0 CR3: 0000000260190e00 CR4: 00000000001407f0
-> [  1100.706083] Stack:
-> [  1100.731783]  ffff88025cadbe00 ffff88003fe48e00 0000000000000022
-> ffff88025b561400
-> [  1100.759324]  ffff88003f5ad100  ffff880257a4fe68 ffffffffa081a6e5
-> ffff88003f5ad100
-> [  1100.811396]  ffff880257a4fe28  ffffffff8158686e   ffff880257a4fe68
->  ffffffff000000008
-> [  1100.891922] Call Trace:
-> [  1100.916257]  [<ffffffffa081a6e5>] l2tp_xmit_skb+0x335/0x6c0 [l2tp_core]
-> [  1100.943670]  [<ffffffff8158686e>] ? skb_free_head+0x1e/0x80
-> [  1100.970905]  [<ffffffffa0830da1>] pppol2tp_xmit+0x141/0x210 [l2tp_ppp]
-> [  1100.995542]  [<ffffffffa0805230>] ppp_channel_push+0x50/0xd0 [ppp_generic]
-> [  1101.024087]  [<ffffffffa0805523>] ppp_write+0xa3/0xec [ppp_generic]
-> [  1101.133447]  [<ffffffff811c7bfa>] vfs_write+0xba/0x1e0
-> [  1101.228987]  [<ffffffff811c8746>] Sys_wirte+0x46/0xb0
-> [  1101.428494]  [<ffffffff8110aca6>] ? __audit_syscall_exit+0x1f6/0x2a0
-> [  1101.898345]  [<ffffffff816a90e9>] system_call_fastpath+0x16/0x1b
-> [  1102.024087] Code: e9 31 fe ff ff 66 0f 1f 44 00 00 0f 1f 44 00 00
-> 55 48 89 e5 41 57 49 89 f7 41 55 41 54 53 48 89 fb 4c 8b 67 18 4c 8b
-> 67 18 4c 8b 6f 58 <4d> 8b b4 24 c0 02 00 00 49 83 e5 fe 0f 84 3e 02 00
-> 00 4d 85 f6
-> [  1102.879592] RIP: [<ffffffff815d4cb0>] ip_queue_xmit+0x20/0x3e0
-> [  1103.179592]   RsP<FFFF880257A4FDD8>
-> [  1103.834682] CR2: 00000000000002C0
-> [  1104.043682] kernel panic - not syncing: Fatal exception in interrupt
-> [  1104.789539] Offset: 0x0 from 0xffffffff81000000 (relocation range:
-> 0xffffffff80000000-0xffffffff9fffffff)
-> 
-> >Is this a regression? If so, do you know what the last kernel version
-> >was that worked?
-> 
-> I think this is a regression. 3.14 is the good working version. Today,
-> after I updated to 3.15-rc1,  evertime I tried connect my VPN, it
-> always panics.
-> --
+n Mon, 14 Apr 2014, Grygorii Strashko wrote:
 
-Hmm, it seems commit 31c70d5956fc l2tp: keep original skb ownership
-is the problem.
+> Hi All,
+>
+> I'm observing a huge number of warnings produced during the boot of my Keystone 2 board
+> when USB is enabled.
+>
+> [    2.496460] BUG: using __this_cpu_read() in preemptible [00000000] code: khubd/202
+> [    2.504030] caller is __mod_zone_page_state+0x20/0xc8
+> [    2.509094] CPU: 1 PID: 202 Comm: khubd Not tainted 3.15.0-rc1-00015-ge521fa3-dirty #55
+> [    2.517122] [<c0013788>] (unwind_backtrace) from [<c001129c>] (show_stack+0x10/0x14)
+> [    2.524854] [<c001129c>] (show_stack) from [<c049f800>] (dump_stack+0x68/0xb8)
+> [    2.532086] [<c049f800>] (dump_stack) from [<c02731c0>] (check_preemption_disabled+0xe8/0x10c)
+> [    2.540708] [<c02731c0>] (check_preemption_disabled) from [<c00bc944>] (__mod_zone_page_state+0x20/0xc8)
+> [    2.550187] [<c00bc944>] (__mod_zone_page_state) from [<c00b50c8>] (reclaim_clean_pages_from_list+0x16c/0x178)
+> [    2.560193] [<c00b50c8>] (reclaim_clean_pages_from_list) from [<c00ac8f0>] (alloc_contig_range+0x10c/0x2d0)
+> [    2.569932] [<c00ac8f0>] (alloc_contig_range) from [<c02b0e58>] (dma_alloc_from_contiguous+0x70/0x118)
+> [    2.579241] [<c02b0e58>] (dma_alloc_from_contiguous) from [<c0017d24>] (__alloc_from_contiguous+0x34/0x160)
+> [    2.588974] [<c0017d24>] (__alloc_from_contiguous) from [<c0018760>] (__dma_alloc+0x18c/0x294)
+> [    2.597582] [<c0018760>] (__dma_alloc) from [<c00189f0>] (arm_dma_alloc+0xac/0xd8)
+> [    2.605140] [<c00189f0>] (arm_dma_alloc) from [<c00d84a8>] (dma_pool_alloc+0xc8/0x1b8)
+> [    2.613067] [<c00d84a8>] (dma_pool_alloc) from [<c0317120>] (xhci_alloc_container_ctx+0x70/0xe0)
+> [    2.621851] [<c0317120>] (xhci_alloc_container_ctx) from [<c03194e8>] (xhci_alloc_virt_device+0x98/0x220)
+> [    2.631418] [<c03194e8>] (xhci_alloc_virt_device) from [<c0315d28>] (xhci_alloc_dev+0x158/0x1f0)
+> [    2.640207] [<c0315d28>] (xhci_alloc_dev) from [<c02f6310>] (usb_alloc_dev+0x1d4/0x27c)
+> [    2.648217] [<c02f6310>] (usb_alloc_dev) from [<c02fb204>] (hub_thread+0x670/0x1204)
+> [    2.655943] [<c02fb204>] (hub_thread) from [<c003d8d8>] (kthread+0xcc/0xe8)
+> [    2.662906] [<c003d8d8>] (kthread) from [<c000e2f8>] (ret_from_fork+0x14/0x3c)
+>
+> Anyone else sees the same thing?
 
-ip_queue_xmit() assumes the socket attached to skb is an inet socket.
+Either disable interrupts or use mod_zone_page_state instead.
+
+This should fix it:
 
 
+
+
+Subject: vmscan: reclaim_clean_pages_from_list must use mod_zone_page_state
+
+Seems to be called with preemption enabled. Therefore it must use
+mod_zone_page_state instead.
+
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/mm/vmscan.c
+===================================================================
+--- linux.orig/mm/vmscan.c	2014-04-09 11:35:43.917930976 -0500
++++ linux/mm/vmscan.c	2014-04-14 12:09:48.070745938 -0500
+@@ -1158,7 +1158,7 @@ unsigned long reclaim_clean_pages_from_l
+ 			TTU_UNMAP|TTU_IGNORE_ACCESS,
+ 			&dummy1, &dummy2, &dummy3, &dummy4, &dummy5, true);
+ 	list_splice(&clean_pages, page_list);
+-	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -ret);
++	mod_zone_page_state(zone, NR_ISOLATED_FILE, -ret);
+ 	return ret;
+ }
 
