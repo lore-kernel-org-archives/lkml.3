@@ -1,92 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813AbaDNNCh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 09:02:37 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39062 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751282AbaDNNCf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 09:02:35 -0400
-Date: Mon, 14 Apr 2014 14:01:54 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Ding Tianhong <dingtianhong@huawei.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>, Sukie Peng <Sukie.Peng@arm.com>,
-        "huxinwei@huawei.com" <huxinwei@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: Flush the process's mm context TLB entries when
- switching
-Message-ID: <20140414130154.GE3530@arm.com>
-References: <534BCE80.3090406@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <534BCE80.3090406@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754496AbaDNNFy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 09:05:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60919 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752344AbaDNNFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 09:05:52 -0400
+Message-ID: <1397480749.16591.24.camel@linux-fkkt.site>
+Subject: Re: [RFC 1/2] n_tty: fix dropped output characters
+From: Oliver Neukum <oneukum@suse.de>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Johan Hovold <jhovold@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>, Xiao Jin <jin.xiao@intel.com>,
+        david.a.cohen@linux.intel.com, yanmin.zhang@intel.com
+Date: Mon, 14 Apr 2014 15:05:49 +0200
+In-Reply-To: <20140414135333.1057aac8@alan.etchedpixels.co.uk>
+References: <20140411093715.GA17522@localhost>
+	 <1397209285-15471-1-git-send-email-jhovold@gmail.com>
+	 <20140414135333.1057aac8@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ding,
-
-On Mon, Apr 14, 2014 at 01:03:12PM +0100, Ding Tianhong wrote:
-> I met a problem when migrating process by following steps:
+On Mon, 2014-04-14 at 13:53 +0100, One Thousand Gnomes wrote:
+> On Fri, 11 Apr 2014 11:41:24 +0200
+> Johan Hovold <jhovold@gmail.com> wrote:
 > 
-> 1) The process was already running on core 0.
-> 2) Set the CPU affinity of the process to 0x02 and move it to core 1,
->    it could work well.
-> 3) Set the CPU affinity of the process to 0x01 and move it to core 0 again,
->    the problem occurs and the process was killed.
-
-[...]
-
-> It was a very strange problem that the PC and LR are both 0, and the esr is
-> 0x83000006, it means that the used for instruction access generated MMU faults
-> and synchronous external aborts, including synchronous parity errors.
+> > Fix characters being dropped by n_tty_write() due to a failure to
+> > check the return value of tty_put_char() in do_output_char().
+> > 
+> > Characters are currently being dropped by write if a tty driver claims
+> > to have write room available, but still fails to buffer any data
 > 
-> I try to fix the problem by invalidating the process's TLB entries when switching,
-> it will make the context stale and pick new one, and then it could work well.
-> 
-> So I think in some situation that after the process switching, the modification of
-> the TLB entries in the new core didn't inform all other cores to invalidate the old
-> TLB entries which was in the inner shareable caches, and then if the process schedule
-> to another core, the old TLB entries may occur MMU faults.
+> Your driver is buggy. If you advertise a buffer you must honour it and
+> neither shrink nor revoke it.
 
-Yes, it sounds like you don't have your TLBs configured correctly. Can you
-confirm that your EL3 firmware is configuring TLB broadcasting correctly
-please?
+Is that a general rule or does it apply only till the next write?
 
-> Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
-> ---
->  arch/arm64/kernel/process.c | 9 +++++++++
->  1 file changed, 9 insertions(+)
-> 
-> diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
-> index 6391485..d7d8439 100644
-> --- a/arch/arm64/kernel/process.c
-> +++ b/arch/arm64/kernel/process.c
-> @@ -283,6 +283,13 @@ static void tls_thread_switch(struct task_struct *next)
->  	: : "r" (tpidr), "r" (tpidrro));
->  }
->  
-> +static void tlb_flush_thread(struct task_struct *prev)
-> +{
-> +	/* Flush the prev task's TLB entries */
-> +	if (prev->mm)
-> +		flush_tlb_mm(prev->mm);
-> +}
-> +
->  /*
->   * Thread switching.
->   */
-> @@ -296,6 +303,8 @@ struct task_struct *__switch_to(struct task_struct *prev,
->  	hw_breakpoint_thread_switch(next);
->  	contextidr_thread_switch(next);
->  
-> +	tlb_flush_thread(prev);
+	Regards
+		Oliver
 
-NAK to the patch -- the architecture certainly doesn't require this, and
-it's a huge hammer for what is more likely a firmware initialisation issue.
 
-Will
