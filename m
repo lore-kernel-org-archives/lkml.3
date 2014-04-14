@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940AbaDNWA3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 18:00:29 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35540 "EHLO
+	id S1755656AbaDNWAP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 18:00:15 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35493 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755805AbaDNWAU (ORCPT
+	with ESMTP id S1754854AbaDNWAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 18:00:20 -0400
+	Mon, 14 Apr 2014 18:00:10 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Thierry Reding <thierry.reding@gmail.com>
 Cc: Tony Lindgren <tony@atomide.com>, Philipp Zabel <philipp.zabel@gmail.com>,
@@ -20,59 +20,75 @@ Cc: Tony Lindgren <tony@atomide.com>, Philipp Zabel <philipp.zabel@gmail.com>,
         linux-omap@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-leds@vger.kernel.org, linux-fbdev@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv2 06/11] pwm: modify PWM_LOOKUP to initialize all struct pwm_lookup members
-Date: Mon, 14 Apr 2014 23:59:48 +0200
-Message-Id: <1397512793-10325-7-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 00/11] improve PWM lookup support without device tree
+Date: Mon, 14 Apr 2014 23:59:42 +0200
+Message-Id: <1397512793-10325-1-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1397512793-10325-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1397512793-10325-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that PWM_LOOKUP is not used anymore, modify it to initialize all the
-members of struct pwm_lookup.
+Hi,
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- Documentation/pwm.txt | 3 ++-
- include/linux/pwm.h   | 4 +++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+A patch set as suggested by Thierry to make lookup with the lookup table
+instead of device tree behave more like when using device tree.
 
-diff --git a/Documentation/pwm.txt b/Documentation/pwm.txt
-index 93cb97974986..f38f99cda64f 100644
---- a/Documentation/pwm.txt
-+++ b/Documentation/pwm.txt
-@@ -19,7 +19,8 @@ should instead register a static mapping that can be used to match PWM
- consumers to providers, as given in the following example:
- 
- 	static struct pwm_lookup board_pwm_lookup[] = {
--		PWM_LOOKUP("tegra-pwm", 0, "pwm-backlight", NULL),
-+		PWM_LOOKUP("tegra-pwm", 0, "pwm-backlight", NULL,
-+			   50000, PWM_POLARITY_NORMAL),
- 	};
- 
- 	static void __init board_init(void)
-diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-index 2f45e2fe5b93..e90628cac8fa 100644
---- a/include/linux/pwm.h
-+++ b/include/linux/pwm.h
-@@ -278,12 +278,14 @@ struct pwm_lookup {
- 	enum pwm_polarity polarity;
- };
- 
--#define PWM_LOOKUP(_provider, _index, _dev_id, _con_id)	\
-+#define PWM_LOOKUP(_provider, _index, _dev_id, _con_id, _period, _polarity) \
- 	{						\
- 		.provider = _provider,			\
- 		.index = _index,			\
- 		.dev_id = _dev_id,			\
- 		.con_id = _con_id,			\
-+		.period = _period,			\
-+		.polarity = _polarity			\
- 	}
- 
- #if IS_ENABLED(CONFIG_PWM)
+The first patch adds a period and a polarity member to the lookup table and use
+those to set period and polarity.
+
+Patch 2, 4 and 5 are making use of those new members from the board files.
+Patch 3 removes useless code since setting the polarity is now handled by the
+PWM core.
+
+I couldn't decide on a good name for the extended PWM_LOOKUP macro and I believe
+we won't have to add members to that structure soon so:
+Patch 6 modifies the PWM_LOOKUP macro to also initialize period and polarity
+and
+Patch 7-9 are making use of the new PWM_LOOKUP macro in the board files
+
+Patch 10 and 11 are making the leds-pwm and pwm_bl drivers get the period from
+the PWM before using pwm_period_ns if it is not already set.
+
+Patch 10 will obviously conflict with the series of Russell reworking the
+leds-pwm probing. I can rebase if necessary
+
+The final goal would be to get rid of .pwm_period_ns in leds-pwm and pwm_bl
+after moving all the remaining users (still around 25) to pwm_lookup.
+
+Changes in v2:
+ - correctly unlock the pwm_lookup_lock mutex before returning.
+ - don't change PWM_LOOKUP atomically
+ - remove tpu_pwm_platform_data and the associated header file
+ - make the leds-pwm and pwm_bl drivers get the period from the PWM
+
+Alexandre Belloni (11):
+  pwm: add period and polarity to struct pwm_lookup
+  ARM: shmobile: Armadillo 800 EVA: initialize all struct pwm_lookup
+    members
+  pwm: renesas-tpu: remove useless struct tpu_pwm_platform_data
+  ARM: OMAP3: Beagle: initialize all the struct pwm_lookup members
+  ARM: pxa: hx4700: initialize all the struct pwm_lookup members
+  pwm: modify PWM_LOOKUP to initialize all struct pwm_lookup members
+  ARM: OMAP3: Beagle: use PWM_LOOKUP to initialize struct pwm_lookup
+  ARM: shmobile: Armadillo 800 EVA: use PWM_LOOKUP to initialize struct
+    pwm_lookup
+  ARM: pxa: hx4700: use PWM_LOOKUP to initialize struct pwm_lookup
+  leds: leds-pwm: retrieve configured pwm period
+  backlight: pwm_bl: retrieve configured pwm period
+
+ Documentation/pwm.txt                          |  3 ++-
+ arch/arm/mach-omap2/board-omap3beagle.c        |  3 ++-
+ arch/arm/mach-pxa/hx4700.c                     |  3 ++-
+ arch/arm/mach-shmobile/board-armadillo800eva.c | 14 +++-----------
+ drivers/leds/leds-pwm.c                        |  5 ++++-
+ drivers/pwm/core.c                             |  8 +++++++-
+ drivers/pwm/pwm-renesas-tpu.c                  | 19 +++----------------
+ drivers/video/backlight/pwm_bl.c               |  8 +++++---
+ include/linux/platform_data/pwm-renesas-tpu.h  | 16 ----------------
+ include/linux/pwm.h                            |  6 +++++-
+ 10 files changed, 33 insertions(+), 52 deletions(-)
+ delete mode 100644 include/linux/platform_data/pwm-renesas-tpu.h
+
 -- 
 1.8.3.2
 
