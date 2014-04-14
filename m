@@ -1,49 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563AbaDNQ0J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:26:09 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:60056 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755214AbaDNQ0C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:26:02 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de
-Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, Arvind.Chauhan@arm.com,
-        linaro-networking@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 18/38] tick-common: don't set mode to CLOCK_EVT_MODE_UNUSED in tick_shutdown()
-Date: Mon, 14 Apr 2014 21:53:40 +0530
-Message-Id: <25b069afdaa6f28e561caefa74cd62c62974099a.1397492345.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1397492345.git.viresh.kumar@linaro.org>
-References: <cover.1397492345.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1397492345.git.viresh.kumar@linaro.org>
-References: <cover.1397492345.git.viresh.kumar@linaro.org>
+	id S1755973AbaDNQkN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:40:13 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46102 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755552AbaDNQ0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 12:26:08 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>
+CC: Sekhar Nori <nsekhar@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Nishanth Menon <nm@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 06/15] bus: omap_l3_noc: make error reporting and handling common.
+Date: Mon, 14 Apr 2014 11:25:17 -0500
+Message-ID: <1397492726-17203-8-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1397492726-17203-1-git-send-email-nm@ti.com>
+References: <1397492726-17203-1-git-send-email-nm@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tick_shutdown() calls clockevents_exchange_device() which already sets mode to
-CLOCK_EVT_MODE_UNUSED and so tick_shutdown() doesn't need to do it.
+The logic between handling CUSTOM_ERROR and STANDARD_ERROR
+is just the reporting style.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+So make it generic, simplify and standardize the reporting
+with both master and target information printed to log.
+
+While at it, fix a minor formatting error.
+
+Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- kernel/time/tick-common.c | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/bus/omap_l3_noc.c |   47 ++++++++++++++++++++++++++++-----------------
+ 1 file changed, 29 insertions(+), 18 deletions(-)
 
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index bb9a218..3954f4d 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -334,7 +334,6 @@ void tick_shutdown(unsigned int *cpup)
- 		 * Prevent that the clock events layer tries to call
- 		 * the set mode function!
- 		 */
--		dev->mode = CLOCK_EVT_MODE_UNUSED;
- 		clockevents_exchange_device(dev, NULL);
- 		dev->event_handler = clockevents_handle_noop;
- 		td->evtdev = NULL;
+diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+index 0ef8b75..0f0417a 100644
+--- a/drivers/bus/omap_l3_noc.c
++++ b/drivers/bus/omap_l3_noc.c
+@@ -58,6 +58,8 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 	void __iomem *l3_targ_stderr, *l3_targ_slvofslsb, *l3_targ_mstaddr;
+ 	char *target_name, *master_name = "UN IDENTIFIED";
+ 	struct l3_target_data *l3_targ_inst;
++	char *err_description;
++	char err_string[30] = { 0 };
+ 
+ 	/* Get the Type of interrupt */
+ 	inttype = irq == l3->app_irq ? L3_APPLICATION_ERROR : L3_DEBUG_ERROR;
+@@ -73,6 +75,8 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 
+ 		/* Get the corresponding error and analyse */
+ 		if (err_reg) {
++			bool std_err = true;
++
+ 			/* Identify the source from control status register */
+ 			err_src = __ffs(err_reg);
+ 			l3_targ_inst = &l3_targ[i][err_src];
+@@ -89,35 +93,42 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 			std_err_main = readl_relaxed(l3_targ_stderr);
+ 			masterid = readl_relaxed(l3_targ_mstaddr);
+ 
++			for (k = 0; k < NUM_OF_L3_MASTERS; k++) {
++				if (masterid == l3_masters[k].id)
++					master_name = l3_masters[k].name;
++			}
++
+ 			switch (std_err_main & CUSTOM_ERROR) {
+ 			case STANDARD_ERROR:
+-				WARN(true, "L3 standard error: TARGET:%s at address 0x%x\n",
+-					target_name,
+-					readl_relaxed(l3_targ_slvofslsb));
+-				/* clear the std error log*/
+-				clear = std_err_main | CLEAR_STDERR_LOG;
+-				writel_relaxed(clear, l3_targ_stderr);
++				err_description = "Standard";
++				snprintf(err_string, sizeof(err_string),
++					 ": At Address: 0x%08X",
++					 readl_relaxed(l3_targ_slvofslsb));
+ 				break;
+ 
+ 			case CUSTOM_ERROR:
+-				for (k = 0; k < NUM_OF_L3_MASTERS; k++) {
+-					if (masterid == l3_masters[k].id)
+-						master_name =
+-							l3_masters[k].name;
+-				}
+-				WARN(true, "L3 custom error: MASTER:%s TARGET:%s\n",
+-					master_name, target_name);
+-				/* clear the std error log*/
+-				clear = std_err_main | CLEAR_STDERR_LOG;
+-				writel_relaxed(clear, l3_targ_stderr);
++				err_description = "Custom";
+ 				break;
+ 
+ 			default:
++				std_err = false;
+ 				/* Nothing to be handled here as of now */
+ 				break;
+ 			}
+-		/* Error found so break the for loop */
+-		break;
++
++			if (std_err) {
++				WARN(true,
++				     "L3 %s Error: MASTER %s TARGET %s %s\n",
++				     err_description,
++				     master_name, target_name,
++				     err_string);
++				/* clear the std error log*/
++				clear = std_err_main | CLEAR_STDERR_LOG;
++				writel_relaxed(clear, l3_targ_stderr);
++			}
++
++			/* Error found so break the for loop */
++			break;
+ 		}
+ 	}
+ 	return IRQ_HANDLED;
 -- 
-1.7.12.rc2.18.g61b472e
+1.7.9.5
 
