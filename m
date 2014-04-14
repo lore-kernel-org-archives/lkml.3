@@ -1,83 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754729AbaDNQC6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:02:58 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:44539 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754441AbaDNQC4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:02:56 -0400
-From: Masami Ichikawa <masami256@gmail.com>
-To: keescook@chromium.org, davem@davemloft.net, josh@joshtriplett.org,
-        eparis@redhat.com, rashika.kheria@gmail.com, ast@plumgrid.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: masami256@gmail.com
-Subject: [PATCH] seccomp: Release fp pointer when leaving from seccomp_attach_filter().
-Date: Tue, 15 Apr 2014 01:02:13 +0900
-Message-Id: <1397491333-13746-1-git-send-email-masami256@gmail.com>
-X-Mailer: git-send-email 1.9.2
+	id S1754794AbaDNQEo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:04:44 -0400
+Received: from verein.lst.de ([213.95.11.211]:49476 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753503AbaDNQEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 12:04:41 -0400
+Date: Mon, 14 Apr 2014 18:04:38 +0200
+From: Torsten Duwe <duwe@lst.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        ingo.tuchscherer@de.ibm.com, linux-kernel@vger.kernel.org,
+        Hans-Georg Markgraf <MGRF@de.ibm.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH v3 01/03]: hwrng: provide an injection point for pure
+	hardware randomness
+Message-ID: <20140414160438.GA29351@lst.de>
+References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de> <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com> <20140414160211.GE711@lst.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140414160211.GE711@lst.de>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kmemleak reported some memory leak as below.
 
-unreferenced object 0xffff8800d6ea4000 (size 512):
-  comm "sshd", pid 278, jiffies 4294898315 (age 46.653s)
-  hex dump (first 32 bytes):
-    21 00 00 00 04 00 00 00 15 00 01 00 3e 00 00 c0  !...........>...
-    06 00 00 00 00 00 00 00 21 00 00 00 00 00 00 00  ........!.......
-  backtrace:
-    [<ffffffff8151414e>] kmemleak_alloc+0x4e/0xb0
-    [<ffffffff811a3a40>] __kmalloc+0x280/0x320
-    [<ffffffff8110842e>] prctl_set_seccomp+0x11e/0x3b0
-    [<ffffffff8107bb6b>] SyS_prctl+0x3bb/0x4a0
-    [<ffffffff8152ef2d>] system_call_fastpath+0x1a/0x1f
-    [<ffffffffffffffff>] 0xffffffffffffffff
+This patch adds an interface to the random pool for feeding entropy in-kernel.
+It may serve as a destination for dedicated HWRNGs.
 
-This memory leak happend in seccomp_attach_filter().
-The fp pointer was allocated via kzalloc so that it needs to realase memory
-when leaving from function.
+It resembles -- and could be merged with -- the ioctl(RNDADDENTROPY) code, plus 
+a sleep condition for eager writers.
 
-This patch changed two things.
-One is set -ENOMEM to ret, if fp is unable to get memory.
-The other is removes "return 0" statement, and frees fp pointer before
-leaving.
+Signed-off-by: Torsten Duwe <duwe@suse.de>
 
-Signed-off-by: Masami Ichikawa <masami256@gmail.com>
 ---
- kernel/seccomp.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ include/linux/hw_random.h |    2 ++
+ drivers/char/random.c     |   23 +++++++++++++++++++++++
+ 2 files changed, 25 insertions(+)
 
-diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-index d8d046c..a9ce7a9 100644
---- a/kernel/seccomp.c
-+++ b/kernel/seccomp.c
-@@ -259,8 +259,10 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
- 	filter = kzalloc(sizeof(struct seccomp_filter) +
- 			 sizeof(struct sock_filter_int) * new_len,
- 			 GFP_KERNEL|__GFP_NOWARN);
--	if (!filter)
-+	if (!filter) {
-+		ret = -ENOMEM;
- 		goto free_prog;
-+	}
+--- a/include/linux/hw_random.h
++++ b/include/linux/hw_random.h
+@@ -47,5 +47,7 @@ struct hwrng {
+ extern int hwrng_register(struct hwrng *rng);
+ /** Unregister a Hardware Random Number Generator driver. */
+ extern void hwrng_unregister(struct hwrng *rng);
++/** Feed random bits into the pool. */
++extern void add_hwgenerator_randomness(const char *buffer, size_t count, size_t entropy);
  
- 	ret = sk_convert_filter(fp, fprog->len, filter->insnsi, &new_len);
- 	if (ret)
-@@ -275,10 +277,10 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
- 	 */
- 	filter->prev = current->seccomp.filter;
- 	current->seccomp.filter = filter;
--	return 0;
- 
- free_filter:
--	kfree(filter);
-+	if (ret)
-+		kfree(filter);
- free_prog:
- 	kfree(fp);
- 	return ret;
--- 
-1.9.1
-
+ #endif /* LINUX_HWRANDOM_H_ */
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -250,6 +250,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/mm.h>
+ #include <linux/spinlock.h>
++#include <linux/kthread.h>
+ #include <linux/percpu.h>
+ #include <linux/cryptohash.h>
+ #include <linux/fips.h>
+@@ -1347,3 +1347,25 @@ randomize_range(unsigned long start, uns
+ 		return 0;
+ 	return PAGE_ALIGN(get_random_int() % range + start);
+ }
++
++/* Interface for in-kernel drivers of true hardware RNGs.
++ * Those devices may produce endless random bits and will be throttled
++ * when our pool is full.
++ */
++void add_hwgenerator_randomness(const char *buffer, size_t count,
++				 size_t entropy)
++{
++	struct entropy_store *poolp = &input_pool;
++
++	/* Suspend writing if we're above the trickle threshold.
++	 * We'll be woken up again once below random_write_wakeup_thresh,
++	 * or when the calling thread is about to terminate.
++	 */
++	wait_event_interruptible(random_write_wait, kthread_should_stop() ||
++				 input_pool.entropy_count
++					 <= random_write_wakeup_thresh);
++	mix_pool_bytes(poolp, buffer, count, NULL);
++	credit_entropy_bits(poolp, entropy);
++}
++EXPORT_SYMBOL_GPL(add_hwgenerator_randomness);
++
