@@ -1,198 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423AbaDNN07 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 09:26:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4715 "EHLO mx1.redhat.com"
+	id S1754717AbaDNN11 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 09:27:27 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52510 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751644AbaDNN04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 09:26:56 -0400
-Date: Mon, 14 Apr 2014 15:28:35 +0200
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mips@linux-mips.org, linuxppc-dev@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, x86@kernel.org, linux-pci@vger.kernel.org
-Subject: [PATCH 2/2] PCI/MSI: Phase out pci_enable_msi_block()
-Message-ID: <20140414132834.GA9164@dhcp-26-207.brq.redhat.com>
-References: <cover.1397458024.git.agordeev@redhat.com>
- <0b08613dc17cd608c1babc1f42b8919f60e1093f.1397458024.git.agordeev@redhat.com>
- <20140414120921.GA32132@dhcp-26-207.brq.redhat.com>
+	id S1753786AbaDNN06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 09:26:58 -0400
+Message-ID: <534BE200.8080009@ti.com>
+Date: Mon, 14 Apr 2014 18:56:24 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140414120921.GA32132@dhcp-26-207.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vivek Gautam <gautamvivek1987@gmail.com>
+CC: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Kamil Debski <k.debski@samsung.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Subject: Re: [PATCH V4 1/5] phy: Add new Exynos5 USB 3.0 PHY driver
+References: <1396967803-28868-1-git-send-email-gautam.vivek@samsung.com>	<1396967803-28868-2-git-send-email-gautam.vivek@samsung.com>	<534BD447.1080909@ti.com>	<CAFp+6iF=SpEax+5KUhZkmtkwp=Pj7LbAHOoySgOwJx_50u6GZQ@mail.gmail.com>	<534BDBBC.5010701@ti.com> <CAFp+6iFFW8XQg_UtYEZfaiENULZDD8A7_9fr4f2no=qfau7-sQ@mail.gmail.com>
+In-Reply-To: <CAFp+6iFFW8XQg_UtYEZfaiENULZDD8A7_9fr4f2no=qfau7-sQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are no users of pci_enable_msi_block() function have
-left. Obsolete it in favor of pci_enable_msi_range() and
-pci_enable_msi_exact() functions.
 
-Up until now, when enabling MSI mode for a device a single
-successful call to arch_msi_check_device() was followed by
-a single call to arch_setup_msi_irqs() function.
 
-Yet, if arch_msi_check_device() returned success we should be
-able to call arch_setup_msi_irqs() multiple times - while it
-returns a number of MSI vectors that could have been allocated
-(a third state).
+On Monday 14 April 2014 06:50 PM, Vivek Gautam wrote:
+> On Mon, Apr 14, 2014 at 6:29 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>
+>>
+>> On Monday 14 April 2014 06:12 PM, Vivek Gautam wrote:
+>>> Hi,
+>>>
+>>>
+>>> On Mon, Apr 14, 2014 at 5:57 PM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>>>> Hi,
+>>>>
+>>>> On Tuesday 08 April 2014 08:06 PM, Vivek Gautam wrote:
+>>>>> Add a new driver for the USB 3.0 PHY on Exynos5 series of SoCs.
+>>>>> The new driver uses the generic PHY framework and will interact
+>>>>> with DWC3 controller present on Exynos5 series of SoCs.
+>>>>> Thereby, removing old phy-samsung-usb3 driver and related code
+>>>>> used untill now which was based on usb/phy framework.
+>>>>>
+>>>>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>>>>> ---
+>>>>>  .../devicetree/bindings/phy/samsung-phy.txt        |   42 ++
+>>>>>  drivers/phy/Kconfig                                |   11 +
+>>>>>  drivers/phy/Makefile                               |    1 +
+>>>>>  drivers/phy/phy-exynos5-usbdrd.c                   |  668 ++++++++++++++++++++
+>>>>>  4 files changed, 722 insertions(+)
+>>>>>  create mode 100644 drivers/phy/phy-exynos5-usbdrd.c
+>>>>>
+>>>>> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+>>>>> index 28f9edb..6d99ba9 100644
+>>>>> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
+>>>>> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
+>>>>> @@ -74,3 +74,45 @@ phy-consumer@12340000 {
+>>>>>
+>>>>>  Refer to DT bindings documentation of particular PHY consumer devices for more
+>>>>>  information about required PHYs and the way of specification.
+>>>>> +
+>>>>> +Samsung Exynos5 SoC series USB DRD PHY controller
+>>>>> +--------------------------------------------------
+>>>>> +
+>>>>> +Required properties:
+>>>>> +- compatible : Should be set to one of the following supported values:
+>>>>> +     - "samsung,exynos5250-usbdrd-phy" - for exynos5250 SoC,
+>>>>> +     - "samsung,exynos5420-usbdrd-phy" - for exynos5420 SoC.
+>>>>> +- reg : Register offset and length of USB DRD PHY register set;
+>>>>> +- clocks: Clock IDs array as required by the controller
+>>>>> +- clock-names: names of clocks correseponding to IDs in the clock property;
+>>>>> +            Required clocks:
+>>>>> +     - phy: main PHY clock (same as USB DRD controller i.e. DWC3 IP clock),
+>>>>> +            used for register access.
+>>>>> +     - ref: PHY's reference clock (usually crystal clock), associated by
+>>>>> +            phy name, used to determine bit values for clock settings
+>>>>> +            register.
+>>>>> +     Additional clock required for Exynos5420:
+>>>>> +     - usb30_sclk_100m: Additional special clock used for PHY operation
+>>>>> +                        depicted as 'sclk_usbphy30' in CMU of Exynos5420.
+>>>>> +- samsung,syscon-phandle: phandle for syscon interface, which is used to
+>>>>> +                       control pmu registers for power isolation.
+>>>>> +- samsung,pmu-offset: phy power control register offset to pmu-system-controller
+>>>>> +                   base.
+>>>>> +- #phy-cells : from the generic PHY bindings, must be 1;
+>>>>> +
+>>>>> +For "samsung,exynos5250-usbdrd-phy" and "samsung,exynos5420-usbdrd-phy"
+>>>>> +compatible PHYs, the second cell in the PHY specifier identifies the
+>>>>> +PHY id, which is interpreted as follows:
+>>>>> +  0 - UTMI+ type phy,
+>>>>> +  1 - PIPE3 type phy,
+>>>>> +
+>>>>> +Example:
+>>>>> +     usb3_phy: usbphy@12100000 {
+>>>>> +             compatible = "samsung,exynos5250-usbdrd-phy";
+>>>>> +             reg = <0x12100000 0x100>;
+>>>>> +             clocks = <&clock 286>, <&clock 1>;
+>>>>> +             clock-names = "phy", "usb3phy_refclk";
+>>>>> +             samsung,syscon-phandle = <&pmu_syscon>;
+>>>>> +             samsung,pmu-offset = <0x704>;
+>>>>> +             #phy-cells = <1>;
+>>>>> +     };
+>>>>> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+>>>>> index 8d3c49c..d955a05 100644
+>>>>> --- a/drivers/phy/Kconfig
+>>>>> +++ b/drivers/phy/Kconfig
+>>>>> @@ -166,4 +166,15 @@ config PHY_XGENE
+>>>>>       help
+>>>>>         This option enables support for APM X-Gene SoC multi-purpose PHY.
+>>>>>
+>>>>> +config PHY_EXYNOS5_USBDRD
+>>>>> +     tristate "Exynos5 SoC series USB DRD PHY driver"
+>>>>> +     depends on ARCH_EXYNOS5 && OF
+>>>>> +     depends on HAS_IOMEM
+>>>>> +     select GENERIC_PHY
+>>>>> +     select MFD_SYSCON
+>>>>
+>>>> Lets try to avoid select in Kconfig. We've got enough problems with that.
+>>>
+>>> I hope you meant with "select MFD_SYSCON".
+>>> We are referencing the syscon for accessing pmu reg, for which we need
+>>> this config to be selected.
+>>> Other Exynos phy drivers also need this config and for that they have
+>>> selected this.
+>>>
+>>> Do you want me to do it any other way ?
+>>
+>> depends on is one option.
+> 
+> Ok, i can see there are places where depends_on MFD_SYSCON is used.
+> "drivers/gpu/drm/exynos/Kconfig:60"
+> 
+> so, do you want me to fix at other places too ?
+> 
+> But i also have a question here.
+> MFD_SYSCON is a subsystem that's facilitating us in getting our work
+> done here by giving an access to pmu_system_controller.
+> So unless MFD_SYSCON is exposed, the phy driver will not be exposed to us.
+> So is that valid enough really ?
 
-This update makes use of the assumption described above. It
-could have broke things had the architectures done any pre-
-allocations or switch to some state in a call to function
-arch_msi_check_device(). But because arch_msi_check_device()
-is expected stateless and MSI resources are allocated in a
-follow-up call to arch_setup_msi_irqs() we should be fine.
+maybe in the Kconfig for MFD_SYSCON, we can select it if PHY_EXYNOS5_USBDRD is
+enabled?
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-mips@linux-mips.org
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: linux-s390@vger.kernel.org
-Cc: x86@kernel.org
-Cc: linux-pci@vger.kernel.org
----
- drivers/pci/msi.c   |   79 +++++++++++++++++++++-----------------------------
- include/linux/pci.h |    5 +--
- 2 files changed, 34 insertions(+), 50 deletions(-)
+config MFD_SYSCON
+default y if PHY_EXYNOS5_USBDRD
 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 955ab79..fc669ab 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -883,50 +883,6 @@ int pci_msi_vec_count(struct pci_dev *dev)
- }
- EXPORT_SYMBOL(pci_msi_vec_count);
- 
--/**
-- * pci_enable_msi_block - configure device's MSI capability structure
-- * @dev: device to configure
-- * @nvec: number of interrupts to configure
-- *
-- * Allocate IRQs for a device with the MSI capability.
-- * This function returns a negative errno if an error occurs.  If it
-- * is unable to allocate the number of interrupts requested, it returns
-- * the number of interrupts it might be able to allocate.  If it successfully
-- * allocates at least the number of interrupts requested, it returns 0 and
-- * updates the @dev's irq member to the lowest new interrupt number; the
-- * other interrupt numbers allocated to this device are consecutive.
-- */
--int pci_enable_msi_block(struct pci_dev *dev, int nvec)
--{
--	int status, maxvec;
--
--	if (dev->current_state != PCI_D0)
--		return -EINVAL;
--
--	maxvec = pci_msi_vec_count(dev);
--	if (maxvec < 0)
--		return maxvec;
--	if (nvec > maxvec)
--		return maxvec;
--
--	status = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSI);
--	if (status)
--		return status;
--
--	WARN_ON(!!dev->msi_enabled);
--
--	/* Check whether driver already requested MSI-X irqs */
--	if (dev->msix_enabled) {
--		dev_info(&dev->dev, "can't enable MSI "
--			 "(MSI-X already enabled)\n");
--		return -EINVAL;
--	}
--
--	status = msi_capability_init(dev, nvec);
--	return status;
--}
--EXPORT_SYMBOL(pci_enable_msi_block);
--
- void pci_msi_shutdown(struct pci_dev *dev)
- {
- 	struct msi_desc *desc;
-@@ -1132,14 +1088,45 @@ void pci_msi_init_pci_dev(struct pci_dev *dev)
-  **/
- int pci_enable_msi_range(struct pci_dev *dev, int minvec, int maxvec)
- {
--	int nvec = maxvec;
-+	int nvec;
- 	int rc;
- 
-+	if (dev->current_state != PCI_D0)
-+		return -EINVAL;
-+
-+	WARN_ON(!!dev->msi_enabled);
-+
-+	/* Check whether driver already requested MSI-X irqs */
-+	if (dev->msix_enabled) {
-+		dev_info(&dev->dev,
-+			 "can't enable MSI (MSI-X already enabled)\n");
-+		return -EINVAL;
-+	}
-+
- 	if (maxvec < minvec)
- 		return -ERANGE;
- 
-+	nvec = pci_msi_vec_count(dev);
-+	if (nvec < 0)
-+		return nvec;
-+	else if (nvec < minvec)
-+		return -EINVAL;
-+	else if (nvec > maxvec)
-+		nvec = maxvec;
-+
-+	do {
-+		rc = pci_msi_check_device(dev, nvec, PCI_CAP_ID_MSI);
-+		if (rc < 0) {
-+			return rc;
-+		} else if (rc > 0) {
-+			if (rc < minvec)
-+				return -ENOSPC;
-+			nvec = rc;
-+		}
-+	} while (rc);
-+
- 	do {
--		rc = pci_enable_msi_block(dev, nvec);
-+		rc = msi_capability_init(dev, nvec);
- 		if (rc < 0) {
- 			return rc;
- 		} else if (rc > 0) {
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index aab57b4..499755e 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1158,7 +1158,6 @@ struct msix_entry {
- 
- #ifdef CONFIG_PCI_MSI
- int pci_msi_vec_count(struct pci_dev *dev);
--int pci_enable_msi_block(struct pci_dev *dev, int nvec);
- void pci_msi_shutdown(struct pci_dev *dev);
- void pci_disable_msi(struct pci_dev *dev);
- int pci_msix_vec_count(struct pci_dev *dev);
-@@ -1188,8 +1187,6 @@ static inline int pci_enable_msix_exact(struct pci_dev *dev,
- }
- #else
- static inline int pci_msi_vec_count(struct pci_dev *dev) { return -ENOSYS; }
--static inline int pci_enable_msi_block(struct pci_dev *dev, int nvec)
--{ return -ENOSYS; }
- static inline void pci_msi_shutdown(struct pci_dev *dev) { }
- static inline void pci_disable_msi(struct pci_dev *dev) { }
- static inline int pci_msix_vec_count(struct pci_dev *dev) { return -ENOSYS; }
-@@ -1244,7 +1241,7 @@ static inline void pcie_set_ecrc_checking(struct pci_dev *dev) { }
- static inline void pcie_ecrc_get_policy(char *str) { }
- #endif
- 
--#define pci_enable_msi(pdev)	pci_enable_msi_block(pdev, 1)
-+#define pci_enable_msi(pdev)	pci_enable_msi_exact(pdev, 1)
- 
- #ifdef CONFIG_HT_IRQ
- /* The functions a driver should call */
--- 
-1.7.7.6
-
--- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+Thanks
+Kishon
