@@ -1,104 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755743AbaDNQfo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:35:44 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:48724 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755747AbaDNQ1P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:27:15 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de
-Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, Arvind.Chauhan@arm.com,
-        linaro-networking@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 27/38] tick-sched: remove 'regs' parameter of tick_sched_handle()
-Date: Mon, 14 Apr 2014 21:53:49 +0530
-Message-Id: <4e9e4b7fe0a9417777ab1b7543209da5999d7414.1397492345.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1397492345.git.viresh.kumar@linaro.org>
-References: <cover.1397492345.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1397492345.git.viresh.kumar@linaro.org>
-References: <cover.1397492345.git.viresh.kumar@linaro.org>
+	id S1755803AbaDNQ1O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:27:14 -0400
+Received: from verein.lst.de ([213.95.11.211]:49663 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755747AbaDNQ1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 12:27:07 -0400
+Date: Mon, 14 Apr 2014 18:27:03 +0200
+From: Torsten Duwe <duwe@lst.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        ingo.tuchscherer@de.ibm.com, linux-kernel@vger.kernel.org,
+        Hans-Georg Markgraf <MGRF@de.ibm.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Joe Perches <joe@perches.com>
+Subject: [PATCH v4 03/03]: hwrng: khwrngd derating per device
+Message-ID: <20140414162703.GF29351@lst.de>
+References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de> <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com> <20140414160211.GE711@lst.de> <7b22b881-9359-42c9-a632-6a8cbdb13b71@email.android.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7b22b881-9359-42c9-a632-6a8cbdb13b71@email.android.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tick_sched_handle() is called from two places and both pass 'regs' to it almost
-same way. This patch removes this parameter to tick_sched_handle() and updates
-tick_sched_handle() to get that by itself.
 
-The only point of difference in the way this routine was called from its callers
-was, don't call it from process context. To make sure the nohz path doesn't
-suffer from an additional branch instruction, add unlikely to the if()
-statement.
+This patch introduces a derating factor to struct hwrng for
+the random bits going into the kernel input pool, and a common
+default derating for drivers which do not specify one.
 
-Though I still don't understand when will we run tick_sched_timer() from process
-context. I couldn't see a single instance of that happening on my test machine
-for normal boot followed by some userspace operations.
+Signed-off-by: Torsten Duwe <duwe@suse.de>
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- kernel/time/tick-sched.c | 23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
+ drivers/char/hw_random/core.c |   11 ++++++++++-
+ include/linux/hw_random.h     |    3 +++
+ 2 files changed, 13 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index bff7f97..ee0768b 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -129,8 +129,17 @@ static void tick_sched_do_timer(ktime_t now)
- 		tick_do_update_jiffies64(now);
- }
+--- linux/include/linux/hw_random.h.orig
++++ linux/include/linux/hw_random.h
+@@ -29,6 +29,8 @@
+  * @read:		New API. drivers can fill up to max bytes of data
+  *			into the buffer. The buffer is aligned for any type.
+  * @priv:		Private data, for use by the RNG driver.
++ * @derating:		Estimation of true entropy in RNG's bitstream
++ *			(per mill).
+  */
+ struct hwrng {
+ 	const char *name;
+@@ -38,6 +39,7 @@ struct hwrng {
+ 	int (*data_read)(struct hwrng *rng, u32 *data);
+ 	int (*read)(struct hwrng *rng, void *data, size_t max, bool wait);
+ 	unsigned long priv;
++	unsigned short derating;
  
--static void tick_sched_handle(struct tick_sched *ts, struct pt_regs *regs)
-+static void tick_sched_handle(struct tick_sched *ts)
- {
-+	struct pt_regs *regs = get_irq_regs();
+ 	/* internal. */
+ 	struct list_head list;
+--- linux/drivers/char/hw_random/core.c.orig
++++ linux/drivers/char/hw_random/core.c
+@@ -56,11 +56,15 @@ static LIST_HEAD(rng_list);
+ static DEFINE_MUTEX(rng_mutex);
+ static int data_avail;
+ static u8 *rng_buffer, *rng_fillbuf;
+-static unsigned short derating_current = 700; /* an arbitrary 70% */
++static unsigned short derating_current;
++static unsigned short derating_default = 0; /* default to "off" */
+ 
+ module_param(derating_current, ushort, 0644);
+ MODULE_PARM_DESC(derating_current,
+ 		 "current hwrng entropy estimation per mill");
++module_param(derating_default, ushort, 0644);
++MODULE_PARM_DESC(derating_default,
++		 "default entropy content of hwrng per mill");
+ 
+ static void start_khwrngd(void);
+ 
+@@ -79,6 +83,11 @@ static inline int hwrng_init(struct hwrn
+ 	if (err)
+ 		return err;
+ 
++	derating_current = rng->derating ? : derating_default;
++	derating_current &= 1023;
 +
-+	/*
-+	 * Do not call, when we are not in irq context and have
-+	 * no valid regs pointer
-+	 */
-+	if (unlikely(!regs))
-+		return;
-+
- #ifdef CONFIG_NO_HZ_COMMON
- 	/*
- 	 * When we are idle and the tick is stopped, we have to touch
-@@ -942,13 +951,12 @@ static int tick_nohz_reprogram(struct tick_sched *ts, ktime_t now)
- static void tick_nohz_handler(struct clock_event_device *dev)
- {
- 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
--	struct pt_regs *regs = get_irq_regs();
- 	ktime_t now = ktime_get();
++	if (derating_current == 0 && hwrng_fill)
++		kthread_stop(hwrng_fill);
+ 	if (derating_current > 0 && !hwrng_fill)
+ 		start_khwrngd();
  
- 	dev->next_event.tv64 = KTIME_MAX;
- 
- 	tick_sched_do_timer(now);
--	tick_sched_handle(ts, regs);
-+	tick_sched_handle(ts);
- 
- 	while (tick_nohz_reprogram(ts, now)) {
- 		now = ktime_get();
-@@ -1065,17 +1073,10 @@ static enum hrtimer_restart tick_sched_timer(struct hrtimer *timer)
- {
- 	struct tick_sched *ts =
- 		container_of(timer, struct tick_sched, sched_timer);
--	struct pt_regs *regs = get_irq_regs();
- 	ktime_t now = ktime_get();
- 
- 	tick_sched_do_timer(now);
--
--	/*
--	 * Do not call, when we are not in irq context and have
--	 * no valid regs pointer
--	 */
--	if (regs)
--		tick_sched_handle(ts, regs);
-+	tick_sched_handle(ts);
- 
- 	hrtimer_forward(timer, now, tick_period);
- 
--- 
-1.7.12.rc2.18.g61b472e
-
