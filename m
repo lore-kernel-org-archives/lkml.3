@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391AbaDNQTV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:19:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47649 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752347AbaDNQTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:19:15 -0400
-Message-ID: <534C0A74.6030305@zytor.com>
-Date: Mon, 14 Apr 2014 09:19:00 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754595AbaDNQT1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:19:27 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:59464 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752347AbaDNQTY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 12:19:24 -0400
+Message-ID: <534C0A89.4090907@arm.com>
+Date: Mon, 14 Apr 2014 17:19:21 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: "Chen, Gong" <gong.chen@linux.intel.com>, tony.luck@intel.com
-CC: tglx@linutronix.de, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86, MCE: Cleanup macro __get_cpu_var
-References: <tip-27f6c573e0f77f7d1cc907c1494c99a61e48b7d8@git.kernel.org> <1397464777-25451-1-git-send-email-gong.chen@linux.intel.com> <1397464777-25451-2-git-send-email-gong.chen@linux.intel.com>
-In-Reply-To: <1397464777-25451-2-git-send-email-gong.chen@linux.intel.com>
-X-Enigmail-Version: 1.6
+To: Jungseok Lee <jays.lee@samsung.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kvmarm@lists.cs.columbia.edu" <kvmarm@lists.cs.columbia.edu>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "sungjinn.chung@samsung.com" <sungjinn.chung@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        "ilho215.lee@samsung.com" <ilho215.lee@samsung.com>
+Subject: Re: [PATCH 2/8] arm/arm64: KVM: Fix line length exceeding 80 characters
+References: <000001cf57b4$d3450780$79cf1680$@samsung.com>
+In-Reply-To: <000001cf57b4$d3450780$79cf1680$@samsung.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2014 01:39 AM, Chen, Gong wrote:
-> @@ -619,7 +619,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
->  			continue;
+On 14/04/14 08:40, Jungseok Lee wrote:
+> This patch deals with checkpatch complaint as fixing line length
+> exceeding 80 characters.
+> 
+> WARNING: line over 80 characters
+> 
+> Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
+> Reviewed-by: Sungjinn Chung <sungjinn.chung@samsung.com>
+> ---
+>  arch/arm/kvm/mmu.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/kvm/mmu.c b/arch/arm/kvm/mmu.c
+> index 80bb1e6..e0d4f24 100644
+> --- a/arch/arm/kvm/mmu.c
+> +++ b/arch/arm/kvm/mmu.c
+> @@ -563,8 +563,8 @@ void kvm_free_stage2_pgd(struct kvm *kvm)
+>  	kvm->arch.pgd = NULL;
+>  }
 >  
->  		v = &get_cpu_var(mce_polled_error);
-> -		set_bit(0, v);
-> +		*v = 1;
->  		put_cpu_var(mce_polled_error);
->  		/*
->  		 * Uncorrected or signalled events are handled by the exception
+> -static pmd_t *stage2_get_pmd(struct kvm *kvm, struct kvm_mmu_memory_cache *cache,
+> -			     phys_addr_t addr)
+> +static pmd_t *stage2_get_pmd(struct kvm *kvm, struct kvm_mmu_memory_cache
+> +			     *cache, phys_addr_t addr)
 
-The amazing thing is that you managed to miss the one place where you
-could actively elide a pointer.
+Please don't. This makes the code unreadable (and no, I don't care about
+checkpatch ;-).
 
-The above should simply be:
-
-	this_cpu_write(mce_polled_error, 1);
-
-	-hpa
-
+	M.
+-- 
+Jazz is not dead. It just smells funny...
