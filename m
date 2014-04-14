@@ -1,88 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367AbaDMXf2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 19:35:28 -0400
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:52649 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752800AbaDMXf0 (ORCPT
+	id S1752553AbaDNADY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 20:03:24 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:44646 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751094AbaDNADX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 19:35:26 -0400
-X-Google-Original-From: Conrad Meyer <cse.cem@gmail.com>
-Date: Sun, 13 Apr 2014 19:35:23 -0400
-From: Conrad Meyer <cemeyer@uw.edu>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5] fs: FAT: Add support for DOS 1.x formatted volumes
-Message-ID: <20140413193523.02dceabe@m>
-In-Reply-To: <87vbucvpus.fsf@devron.myhome.or.jp>
-References: <1397398200-6510-1-git-send-email-cse.cem@gmail.com>
-	<87vbucvpus.fsf@devron.myhome.or.jp>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Sun, 13 Apr 2014 20:03:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CALCETrWYRmkM3hyYu8WmSd-M=3mNMU2=xF_bSuTfyfkUTys5sg@mail.gmail.com>
+References: <53470E26.2030306@cybernetics.com>
+	<CANq1E4RWf_VbzF+dPYhzHKJvnrh86me5KajmaaB1u9f9FLzftA@mail.gmail.com>
+	<5347451C.4060106@amacapital.net>
+	<5347F188.10408@cybernetics.com>
+	<CANq1E4T=38VLezGH2XUZ9kc=Vtp6Ca++-ATwmEfaXZS6UrTPig@mail.gmail.com>
+	<53486067.6090506@mit.edu>
+	<CANq1E4TBtRcN+tpQW9bozQkRjJ7BJCK+KO0iw5k+8Q3Y3TcUeQ@mail.gmail.com>
+	<CALCETrWYRmkM3hyYu8WmSd-M=3mNMU2=xF_bSuTfyfkUTys5sg@mail.gmail.com>
+Date: Mon, 14 Apr 2014 02:03:22 +0200
+Message-ID: <CANq1E4SU3QfLwBDEwDVGS7HNxOC2m2hjnv=ZuM1i+jCqqDM=sA@mail.gmail.com>
+Subject: Re: [PATCH 2/6] shm: add sealing API
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Tony Battersby <tonyb@cybernetics.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Apr 2014 07:14:51 +0900
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> wrote:
+Hi
 
-> Conrad Meyer <cse.cem@gmail.com> writes:
-> 
-> > +	sbi->sec_per_clus = fdefaults->sec_per_clus;
-> > +	sbi->cluster_size = sb->s_blocksize *
-> > sbi->sec_per_clus;
-> > +	sbi->cluster_bits = ffs(sbi->cluster_size) - 1;
-> > +	sbi->fats = 2;
-> > +	sbi->fat_start = 1;
-> > +	sbi->fat_length = fdefaults->fat_length;
-> > +
-> > +	sbi->dir_per_block = sb->s_blocksize /
-> > sizeof(struct msdos_dir_entry);
-> > +	sbi->dir_per_block_bits =
-> > ffs(sbi->dir_per_block) - 1;
-> > +	sbi->dir_start = sbi->fat_start + sbi->fats *
-> > sbi->fat_length;
-> > +	sbi->dir_entries = fdefaults->dir_entries;
-> > +
-> > +	rootdir_sectors = sbi->dir_entries
-> > +		* sizeof(struct msdos_dir_entry) /
-> > sb->s_blocksize;
-> > +	sbi->data_start = sbi->dir_start +
-> > rootdir_sectors;
-> > +	total_sectors = fdefaults->nr_sectors;
-> > +	total_clusters = (total_sectors -
-> > sbi->data_start) / sbi->sec_per_clus;
-> > +	sbi->fat_bits = (total_clusters > MAX_FAT12) ?
-> > 16 : 12; +
-> > +	/* some OSes set FAT_STATE_DIRTY and clean it on
-> > unmount. */
-> > +	sbi->dirty = b->fat16.state & FAT_STATE_DIRTY;
-> > +
-> > +	/* check that FAT table does not overflow */
-> > +	fat_clusters = calc_fat_clusters(sb);
-> > +	total_clusters = min(total_clusters,
-> > fat_clusters - FAT_START_ENT);
-> 
-> Ah, you meant this duplicated one.
-> 
-> Let's use structure like fat_boot_sector (but more cpu
-> friendly) on stack or something, instead of modify bh
-> (BPB). Modifying bh in bdev is visible via /dev/foo, this
-> is why I want to avoid to modify.
-> 
-> With this, we can share almost all codes on both of
-> read_bpb() and static_bpb(), and avoids to modify bdev
-> buffer? And those 2 helpers only has small chunk of code,
-> and provide the required parameters?
-> 
-> Thanks.
+On Sat, Apr 12, 2014 at 12:07 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> I bet this is missing from lots of places.  For example, I can't find
+> any write_access stuff in the rdma code.
+>
+> I suspect that the VM_DENYWRITE code is just generally racy.
 
-Hi,
+So what does S_IMMUTABLE do to prevent such races? I somehow suspect
+it's broken in that regard, too.
 
-I think I understand the idea, sounds good to me. Working to
-clean up now.
+I really dislike pinning pages like this, but if people want to keep
+it I guess I have to scan all shmem-inode pages before changing seals.
 
-Thanks again,
-Conrad
+Thanks
+David
