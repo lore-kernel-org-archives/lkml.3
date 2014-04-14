@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263AbaDNSEv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 14:04:51 -0400
-Received: from smtprelay0149.hostedemail.com ([216.40.44.149]:36794 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751027AbaDNSEu (ORCPT
+	id S1754836AbaDNSI2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 14:08:28 -0400
+Received: from g6t1526.atlanta.hp.com ([15.193.200.69]:6717 "EHLO
+	g6t1526.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823AbaDNSI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 14:04:50 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1566:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3867:3873:4321:4605:5007:7652:10004:10400:10848:11657:11658:11914:12043:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: road44_607498fd09e0c
-X-Filterd-Recvd-Size: 1276
-Message-ID: <1397498661.2962.5.camel@joe-AO722>
-Subject: Re: [PATCH 1/1] prefetch result for ARM64 atomic ops
-From: Joe Perches <joe@perches.com>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: catalin.marinas@arm.com, will.deacon@arm.com,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 14 Apr 2014 11:04:21 -0700
-In-Reply-To: <CAJhHMCDBPPB4H3Oc1JVd_R_dMaao9cWBj8rjrweFmAp9nn97AQ@mail.gmail.com>
-References: <CAJhHMCDBPPB4H3Oc1JVd_R_dMaao9cWBj8rjrweFmAp9nn97AQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
+	Mon, 14 Apr 2014 14:08:26 -0400
+Message-ID: <1397498902.31076.15.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: hpsa driver bug crack kernel down!
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: "Woodhouse, David" <david.woodhouse@intel.com>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bhe@redhat.com" <bhe@redhat.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "James.Bottomley@hansenpartnership.com" 
+	<James.Bottomley@hansenpartnership.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>,
+        Linda Knippers <linda.knippers@hp.com>, aswin@hp.com
+Date: Mon, 14 Apr 2014 11:08:22 -0700
+In-Reply-To: <534BA30B.5040102@linux.intel.com>
+References: <20140409023935.GE11839@dhcp-16-105.nay.redhat.com>
+	 <1397083799.2608.20.camel@buesod1.americas.hpqcorp.net>
+	 <1397084904.9519.62.camel@dabdike> <1397085044.9519.63.camel@dabdike>
+	 <1397086817.2608.25.camel@buesod1.americas.hpqcorp.net>
+	 <1397087425.9519.67.camel@dabdike>
+	 <1397089180.2608.27.camel@buesod1.americas.hpqcorp.net>
+	 <CAErSpo4H=hcro8sMnt2MzDDVCROpASuUTQWBw37OxodHTyOfyw@mail.gmail.com>
+	 <1397111557.2608.29.camel@buesod1.americas.hpqcorp.net>
+	 <20140410071535.GX13491@8bytes.org>
+	 <1397119587.19944.14.camel@shinybook.infradead.org>
+	 <1397146781.2608.46.camel@buesod1.americas.hpqcorp.net>
+	 <534BA30B.5040102@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-14 at 13:55 -0400, Pranith Kumar wrote:
+On Mon, 2014-04-14 at 16:57 +0800, Jiang Liu wrote:
+> Hi all,
+> 	I guess I found the root cause. It's a bug in matching
+> device scope, variable 'level' should be decreased when walking up PCI
+> topology.
+> 	Could you please help to test following patch?
+> Thanks!
+> Gerry
 
-Are there some benchmark comparison results
-you neglected to attach?
+Worked like a charm -- I no longer see all those DMAR messages and the
+hpsa hard lockup is gone, thanks. Feel free to add my:
 
-> diff --git a/arch/arm64/include/asm/atomic.h b/arch/arm64/include/asm/atomic.h
-[]
-> @@ -235,6 +244,7 @@ static inline long atomic64_cmpxchg(atomic64_t
-> *ptr, long old, long new)
->      unsigned long res;
-> 
->      smp_mb();
-> +    prefetchw(&v->counter);
-
-Does this compile?
-
+Reported-and-tested-by: Davidlohr Bueso <davidlohr@hp.com>
 
