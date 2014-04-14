@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755324AbaDNRgq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 13:36:46 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:65263 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754388AbaDNRgn (ORCPT
+	id S1754781AbaDNRjh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 13:39:37 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:48196 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753692AbaDNRjg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 13:36:43 -0400
-Date: Mon, 14 Apr 2014 13:36:39 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, David Daney <david.daney@cavium.com>,
-        Guenter Roeck <linux@roeck-us.net>, linux-ide@vger.kernel.org,
-        linux-mips@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pata_octeon_cf: use devm_kzalloc() to allocate cf_port
-Message-ID: <20140414173639.GA10416@htj.dyndns.org>
-References: <1927612.nfmGqcZdLy@amdc1032>
+	Mon, 14 Apr 2014 13:39:36 -0400
+From: Kenjiro Nakayama <nakayamakenjiro@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] ipv4: Add option to get TCP_FASTOPEN to getsockopt()
+User-agent: mu4e 0.9.9.5; emacs 24.3.1
+Date: Tue, 15 Apr 2014 02:39:31 +0900
+Message-ID: <87tx9v3j58.fsf@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1927612.nfmGqcZdLy@amdc1032>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 06:28:37PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> As a nice side effect this fixes the cf_port leak on
-> dma_coerce_mask_and_coherent() or ata_host_activate()
-> failure.
-> 
-> Cc: Ralf Baechle <ralf@linux-mips.org>
-> Cc: David Daney <david.daney@cavium.com>
-> Suggested-by: Guenter Roeck <linux@roeck-us.net>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+TCP_FASTOPEN option can be set via setsockopt(), but the value cannot be
+gotten via getsockopt(). This patch adds the option to getsockopt().
 
-Applied to libata/for-3.16.
+Sighned-off-by: Kenjiro Nakayama <nakayamakenjiro@gmail.com>
 
-Thanks.
+ 	Add option to get TCP_FASTOPEN to getsockopt()
+---
+ net/ipv4/tcp.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
--- 
-tejun
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 4bd6d52..6ccdbcc 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -2916,6 +2916,11 @@ static int do_tcp_getsockopt(struct sock *sk, int level,
+ 	case TCP_USER_TIMEOUT:
+ 		val = jiffies_to_msecs(icsk->icsk_user_timeout);
+ 		break;
++
++	case TCP_FASTOPEN:
++		val = sysctl_tcp_fastopen;
++		break;
++
+ 	case TCP_TIMESTAMP:
+ 		val = tcp_time_stamp + tp->tsoffset;
+ 		break;
+--
+1.9.0
