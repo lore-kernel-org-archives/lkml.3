@@ -1,81 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526AbaDNRzs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 13:55:48 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:43862 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755381AbaDNRzp (ORCPT
+	id S1755581AbaDNRzz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 13:55:55 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:64350 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755381AbaDNRzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 13:55:45 -0400
-Message-ID: <534C2114.8030502@oracle.com>
-Date: Mon, 14 Apr 2014 12:55:32 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 14 Apr 2014 13:55:53 -0400
 MIME-Version: 1.0
-To: Fabian Frederick <fabf@skynet.be>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-CC: Tytso <tytso@mit.edu>,
-        JFS Discussion <jfs-discussion@lists.sourceforge.net>
-Subject: Re: [PATCH V2] fs/jfs/jfs_inode.c: atomically set inode->i_flags
-References: <20140414093901.ea2d873d712ca4c8155d7827@skynet.be>
-In-Reply-To: <20140414093901.ea2d873d712ca4c8155d7827@skynet.be>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+From: Pranith Kumar <bobby.prani@gmail.com>
+Date: Mon, 14 Apr 2014 13:55:21 -0400
+Message-ID: <CAJhHMCDBPPB4H3Oc1JVd_R_dMaao9cWBj8rjrweFmAp9nn97AQ@mail.gmail.com>
+Subject: [PATCH 1/1] prefetch result for ARM64 atomic ops
+To: catalin.marinas@arm.com, will.deacon@arm.com
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks good to me. I'll push it upstream.
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+---
+ arch/arm64/include/asm/atomic.h | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-Thanks,
-Dave
+diff --git a/arch/arm64/include/asm/atomic.h b/arch/arm64/include/asm/atomic.h
+index 0237f08..82271ee 100644
+--- a/arch/arm64/include/asm/atomic.h
++++ b/arch/arm64/include/asm/atomic.h
+@@ -48,6 +48,7 @@ static inline void atomic_add(int i, atomic_t *v)
+     unsigned long tmp;
+     int result;
 
-On 04/14/2014 02:39 AM, Fabian Frederick wrote:
-> According to commit 5f16f3225b0624
-> 
-> ext4: atomically set inode->i_flags in ext4_set_inode_flags()
-> 
-> Inspired-by: "Theodore Ts'o" <tytso@mit.edu>
-> Cc: Dave Kleikamp <shaggy@kernel.org>
-> Cc: "Theodore Ts'o" <tytso@mit.edu>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  fs/jfs/jfs_inode.c | 16 ++++++++--------
->  1 file changed, 8 insertions(+), 8 deletions(-)
-> 
-> diff --git a/fs/jfs/jfs_inode.c b/fs/jfs/jfs_inode.c
-> index 7f464c5..6b0f816 100644
-> --- a/fs/jfs/jfs_inode.c
-> +++ b/fs/jfs/jfs_inode.c
-> @@ -29,20 +29,20 @@
->  void jfs_set_inode_flags(struct inode *inode)
->  {
->  	unsigned int flags = JFS_IP(inode)->mode2;
-> -
-> -	inode->i_flags &= ~(S_IMMUTABLE | S_APPEND |
-> -		S_NOATIME | S_DIRSYNC | S_SYNC);
-> +	unsigned int new_fl = 0;
->  
->  	if (flags & JFS_IMMUTABLE_FL)
-> -		inode->i_flags |= S_IMMUTABLE;
-> +		new_fl |= S_IMMUTABLE;
->  	if (flags & JFS_APPEND_FL)
-> -		inode->i_flags |= S_APPEND;
-> +		new_fl |= S_APPEND;
->  	if (flags & JFS_NOATIME_FL)
-> -		inode->i_flags |= S_NOATIME;
-> +		new_fl |= S_NOATIME;
->  	if (flags & JFS_DIRSYNC_FL)
-> -		inode->i_flags |= S_DIRSYNC;
-> +		new_fl |= S_DIRSYNC;
->  	if (flags & JFS_SYNC_FL)
-> -		inode->i_flags |= S_SYNC;
-> +		new_fl |= S_SYNC;
-> +	inode_set_flags(inode, new_fl, S_IMMUTABLE | S_APPEND | S_NOATIME |
-> +			S_DIRSYNC | S_SYNC);
->  }
->  
->  void jfs_get_inode_flags(struct jfs_inode_info *jfs_ip)
-> 
++    prefetchw(&v->counter);
+     asm volatile("// atomic_add\n"
+ "1:    ldxr    %w0, %2\n"
+ "    add    %w0, %w0, %w3\n"
+@@ -62,6 +63,7 @@ static inline int atomic_add_return(int i, atomic_t *v)
+     unsigned long tmp;
+     int result;
+
++    prefetchw(&v->counter);
+     asm volatile("// atomic_add_return\n"
+ "1:    ldxr    %w0, %2\n"
+ "    add    %w0, %w0, %w3\n"
+@@ -80,6 +82,7 @@ static inline void atomic_sub(int i, atomic_t *v)
+     unsigned long tmp;
+     int result;
+
++    prefetchw(&v->counter);
+     asm volatile("// atomic_sub\n"
+ "1:    ldxr    %w0, %2\n"
+ "    sub    %w0, %w0, %w3\n"
+@@ -94,6 +97,7 @@ static inline int atomic_sub_return(int i, atomic_t *v)
+     unsigned long tmp;
+     int result;
+
++    prefetchw(&v->counter);
+     asm volatile("// atomic_sub_return\n"
+ "1:    ldxr    %w0, %2\n"
+ "    sub    %w0, %w0, %w3\n"
+@@ -113,6 +117,7 @@ static inline int atomic_cmpxchg(atomic_t *ptr,
+int old, int new)
+     int oldval;
+
+     smp_mb();
++    prefetchw(&v->counter);
+
+     asm volatile("// atomic_cmpxchg\n"
+ "1:    ldxr    %w1, %2\n"
+@@ -170,6 +175,7 @@ static inline void atomic64_add(u64 i, atomic64_t *v)
+     long result;
+     unsigned long tmp;
+
++    prefetchw(&v->counter);
+     asm volatile("// atomic64_add\n"
+ "1:    ldxr    %0, %2\n"
+ "    add    %0, %0, %3\n"
+@@ -184,6 +190,7 @@ static inline long atomic64_add_return(long i,
+atomic64_t *v)
+     long result;
+     unsigned long tmp;
+
++    prefetchw(&v->counter);
+     asm volatile("// atomic64_add_return\n"
+ "1:    ldxr    %0, %2\n"
+ "    add    %0, %0, %3\n"
+@@ -202,6 +209,7 @@ static inline void atomic64_sub(u64 i, atomic64_t *v)
+     long result;
+     unsigned long tmp;
+
++    prefetchw(&v->counter);
+     asm volatile("// atomic64_sub\n"
+ "1:    ldxr    %0, %2\n"
+ "    sub    %0, %0, %3\n"
+@@ -216,6 +224,7 @@ static inline long atomic64_sub_return(long i,
+atomic64_t *v)
+     long result;
+     unsigned long tmp;
+
++    prefetchw(&v->counter);
+     asm volatile("// atomic64_sub_return\n"
+ "1:    ldxr    %0, %2\n"
+ "    sub    %0, %0, %3\n"
+@@ -235,6 +244,7 @@ static inline long atomic64_cmpxchg(atomic64_t
+*ptr, long old, long new)
+     unsigned long res;
+
+     smp_mb();
++    prefetchw(&v->counter);
+
+     asm volatile("// atomic64_cmpxchg\n"
+ "1:    ldxr    %1, %2\n"
+@@ -258,6 +268,7 @@ static inline long atomic64_dec_if_positive(atomic64_t *v)
+     long result;
+     unsigned long tmp;
+
++    prefetchw(&v->counter);
+     asm volatile("// atomic64_dec_if_positive\n"
+ "1:    ldxr    %0, %2\n"
+ "    subs    %0, %0, #1\n"
+-- 
+1.9.1
+
+
+-- 
+Pranith
