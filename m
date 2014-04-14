@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735AbaDNKKS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 06:10:18 -0400
-Received: from smtp2.digiweb.ie ([83.147.160.14]:45727 "EHLO smtp.digiweb.ie"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754643AbaDNKKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 06:10:16 -0400
-X-Greylist: delayed 1804 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Apr 2014 06:10:15 EDT
-Message-ID: <1397468403.2320.10.camel@dan-Latitude-E5440>
-Subject: Re: [PATCH] staging: iio: fix coding style
-From: "Dan O'Donovan" <dan@emutex.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Joel Porquet <joel@porquet.org>, gregkh@linuxfoundation.org,
-        jg1.han@samsung.com, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Mon, 14 Apr 2014 10:40:03 +0100
-In-Reply-To: <534977A7.3090100@kernel.org>
-References: <1397066985-2504-1-git-send-email-joel@porquet.org>
-	 <534977A7.3090100@kernel.org>
-Organization: Emutex Ltd.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754172AbaDNKP1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 06:15:27 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:61754 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529AbaDNKPX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 06:15:23 -0400
+MIME-Version: 1.0
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Mon, 14 Apr 2014 12:15:01 +0200
+X-Google-Sender-Auth: -W5qRTl4uV_P8YWCKjMToywDllY
+Message-ID: <CAHO5Pa0VCzR7oqNXkwELuAsNQnnvF8Xoo=CuCaM64-GzjDuoFA@mail.gmail.com>
+Subject: Documenting prctl() PR_SET_THP_DISABLE and PR_GET_THP_DISABLE
+To: Alex Thorlton <athorlton@sgi.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-mm <linux-mm@kvack.org>, Linux API <linux-api@vger.kernel.org>,
+        linux-man@vger.kernel.org,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-04-12 at 18:28 +0100, Jonathan Cameron wrote:
-> On 09/04/14 19:09, Joel Porquet wrote:
-> > As suggested by checkpatch.pl, use dev_info() instead of
-> > printk(KERN_INFO ...) to print message.
-> >
-> > Signed-off-by: Joel Porquet <joel@porquet.org>
-> > ---
-> > Only tested by compilation.
-> >   drivers/staging/iio/trigger/iio-trig-periodic-rtc.c | 3 ++-
-> >   1 file changed, 2 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/staging/iio/trigger/iio-trig-periodic-rtc.c b/drivers/staging/iio/trigger/iio-trig-periodic-rtc.c
-> > index 48a6afa..38ecb4b 100644
-> > --- a/drivers/staging/iio/trigger/iio-trig-periodic-rtc.c
-> > +++ b/drivers/staging/iio/trigger/iio-trig-periodic-rtc.c
-> > @@ -33,7 +33,8 @@ static int iio_trig_periodic_rtc_set_state(struct iio_trigger *trig, bool state)
-> >   	struct iio_prtc_trigger_info *trig_info = iio_trigger_get_drvdata(trig);
-> >   	if (trig_info->frequency == 0)
-> >   		return -EINVAL;
-> > -	printk(KERN_INFO "trigger frequency is %d\n", trig_info->frequency);
-> > +	dev_info(&trig_info->rtc->dev, "trigger frequency is %d\n",
-> > +			trig_info->frequency);
-> The principle is good, but why make the error message us the underlying rtc device?
-> Going to lead to a rather unhelpful error message.
-> 
-> Perhaps the iio_trigger structures device element would make more sense?
-> Might not be terribly informative, but will at least come from the right
-> subsystem.
-> 
-> Also, I think we will be dropping this driver entirely at some point.
-> It was a dodgy hack that perhaps made sense at the time, but now a high
-> resolution timer is going to give better results.
+Alex,
 
-I've been using this patch from Denis Ciocca which implements a hr-timer
-trigger, and it has worked well for me:
-http://comments.gmane.org/gmane.linux.kernel.iio/9698
-It would be great to see this added to the kernel.
+Your commit a0715cc22601e8830ace98366c0c2bd8da52af52 added the prctl()
+PR_SET_THP_DISABLE and PR_GET_THP_DISABLE flags.
 
-> >   	return rtc_irq_set_state(trig_info->rtc, &trig_info->task, state);
-> >   }
-> >
-> >
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-iio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The text below attempts to document these flags for the prctl(3).
+Could you (and anyone else who is willing) please review the text
+below (one or two p[ieces of which are drawn from your commit message)
+to verify that it accurately reflects reality and your intent, and
+that I have not missed any significant details.
 
+    DESCRIPTION
+    ...
+       PR_SET_THP_DISABLE (since Linux 3.15)
+              Set the state of the "THP disable" flag for the  calling
+              thread.   If  arg2 has a nonzero value, the flag is set,
+              otherwise it is cleared.  Setting this flag  provides  a
+              method  for disabling  transparent  huge  pages for jobs
+              where the code cannot be modified, and  using  a  malloc
+              hook  with madvise(2) is not an option (i.e., statically
+              allocated data).  The setting of the "THP disable"  flag
+              is  inherited by a child created via fork(2) and is pre‐
+              served across execve(2).
+
+       PR_GET_THP_DISABLE (since Linux 3.15)
+              Return (via the function result) the current setting  of
+              the "THP disable" flag for the calling thread: either 1,
+              if the flag is set, or 0, if it is not.
+    ...
+    RETURN VALUE
+       On       success,       PR_GET_DUMPABLE,       PR_GET_KEEPCAPS,
+       PR_GET_NO_NEW_PRIVS,    PR_GET_THP_DISABLE,    PR_CAPBSET_READ,
+       PR_GET_TIMING,       PR_GET_TIMERSLACK,      PR_GET_SECUREBITS,
+       PR_MCE_KILL_GET, and (if it returns) PR_GET_SECCOMP return  the
+       nonnegative  values  described  above.  All other option values
+       return 0 on success.  On error, -1 is returned,  and  errno  is
+       set appropriately.
+    ...
+    ERRORS
+       EINVAL option is PR_SET_THP_DISABLE and arg3, arg4, or arg5  is
+              nonzero.
+
+       EINVAL option  is  PR_GET_THP_DISABLE  and arg2, arg3, arg4, or
+              arg5 is nonzero.
+
+Thanks,
+
+Michael
+
+
+
+-- 
+Michael Kerrisk Linux man-pages maintainer;
+http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface", http://blog.man7.org/
