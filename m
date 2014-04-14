@@ -1,103 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755847AbaDNQwZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:52:25 -0400
-Received: from michel.telenet-ops.be ([195.130.137.88]:39710 "EHLO
-	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752197AbaDNQwV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:52:21 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Randy Dunlap <rdunlap@infradead.org>, Harry Wei <harryxiyou@gmail.com>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: =?UTF-8?q?=5BPATCH=5D=20Documentation=3A=20Update=20stable=20address=20in=20Chinese=20and=20Japanese=20translations?=
-Date: Mon, 14 Apr 2014 18:52:14 +0200
-Message-Id: <1397494334-22092-1-git-send-email-geert@linux-m68k.org>
+	id S1755961AbaDNQut (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:50:49 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:35196 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754645AbaDNQZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 12:25:52 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>
+CC: Sekhar Nori <nsekhar@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Nishanth Menon <nm@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 01/15] bus: omap_l3_noc: Fix copyright information
+Date: Mon, 14 Apr 2014 11:25:11 -0500
+Message-ID: <1397492726-17203-2-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1397492726-17203-1-git-send-email-nm@ti.com>
+References: <1397492726-17203-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@glider.be>
+This is an embarrassing patch :(.
 
-The English and Korean translations were updated, the Chinese and Japanese
-weren't.
+Texas Corporation does not make OMAP. Texas Instruments Inc does.
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+For that matter I dont seem to be able to find a Texas Corporation on
+the internet either.
+
+While at it, update coverage to the current year and update the template
+to remove redundant information and use the standard boiler plate
+licensing.
+
+Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- Documentation/ja_JP/HOWTO                   |    2 +-
- Documentation/ja_JP/stable_kernel_rules.txt |    6 +++---
- Documentation/zh_CN/HOWTO                   |    2 +-
- Documentation/zh_CN/stable_kernel_rules.txt |    2 +-
- 4 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/bus/omap_l3_noc.c |   18 ++++++------------
+ drivers/bus/omap_l3_noc.h |   18 ++++++------------
+ 2 files changed, 12 insertions(+), 24 deletions(-)
 
-diff --git a/Documentation/ja_JP/HOWTO b/Documentation/ja_JP/HOWTO
-index 0091a8215ac1..b61885c35ce1 100644
---- a/Documentation/ja_JP/HOWTO
-+++ b/Documentation/ja_JP/HOWTO
-@@ -315,7 +315,7 @@ Andrew Morton が Linux-kernel メーリングリストにカーネルリリー
- もし、3.x.y カーネルが存在しない場合には、番号が一番大きい 3.x が
- 最新の安定版カーネルです。
- 
--3.x.y は "stable" チーム <stable@kernel.org> でメンテされており、必
-+3.x.y は "stable" チーム <stable@vger.kernel.org> でメンテされており、必
- 要に応じてリリースされます。通常のリリース期間は 2週間毎ですが、差し迫っ
- た問題がなければもう少し長くなることもあります。セキュリティ関連の問題
- の場合はこれに対してだいたいの場合、すぐにリリースがされます。
-diff --git a/Documentation/ja_JP/stable_kernel_rules.txt b/Documentation/ja_JP/stable_kernel_rules.txt
-index 14265837c4ce..9dbda9b5d21e 100644
---- a/Documentation/ja_JP/stable_kernel_rules.txt
-+++ b/Documentation/ja_JP/stable_kernel_rules.txt
-@@ -50,16 +50,16 @@ linux-2.6.29/Documentation/stable_kernel_rules.txt
- 
- -stable ツリーにパッチを送付する手続き-
- 
-- - 上記の規則に従っているかを確認した後に、stable@kernel.org にパッチ
-+ - 上記の規則に従っているかを確認した後に、stable@vger.kernel.org にパッチ
-    を送る。
-  - 送信者はパッチがキューに受け付けられた際には ACK を、却下された場合
-    には NAK を受け取る。この反応は開発者たちのスケジュールによって、数
-    日かかる場合がある。
-  - もし受け取られたら、パッチは他の開発者たちと関連するサブシステムの
-    メンテナーによるレビューのために -stable キューに追加される。
-- - パッチに stable@kernel.org のアドレスが付加されているときには、それ
-+ - パッチに stable@vger.kernel.org のアドレスが付加されているときには、それ
-    が Linus のツリーに入る時に自動的に stable チームに email される。
-- - セキュリティパッチはこのエイリアス (stable@kernel.org) に送られるべ
-+ - セキュリティパッチはこのエイリアス (stable@vger.kernel.org) に送られるべ
-    きではなく、代わりに security@kernel.org のアドレスに送られる。
- 
- レビューサイクル-
-diff --git a/Documentation/zh_CN/HOWTO b/Documentation/zh_CN/HOWTO
-index 6c914aa87e71..54ea24ff63c7 100644
---- a/Documentation/zh_CN/HOWTO
-+++ b/Documentation/zh_CN/HOWTO
-@@ -237,7 +237,7 @@ kernel.org网站的pub/linux/kernel/v2.6/目录下找到它。它的开发遵循
- 如果没有2.6.x.y版本内核存在，那么最新的2.6.x版本内核就相当于是当前的稳定
- 版内核。
- 
--2.6.x.y版本由“稳定版”小组（邮件地址<stable@kernel.org>）维护，一般隔周发
-+2.6.x.y版本由“稳定版”小组（邮件地址<stable@vger.kernel.org>）维护，一般隔周发
- 布新版本。
- 
- 内核源码中的Documentation/stable_kernel_rules.txt文件具体描述了可被稳定
-diff --git a/Documentation/zh_CN/stable_kernel_rules.txt b/Documentation/zh_CN/stable_kernel_rules.txt
-index b5b9b0ab02fd..26ea5ed7cd9c 100644
---- a/Documentation/zh_CN/stable_kernel_rules.txt
-+++ b/Documentation/zh_CN/stable_kernel_rules.txt
-@@ -42,7 +42,7 @@ Documentation/stable_kernel_rules.txt 的中文翻译
- 
- 向稳定版代码树提交补丁的过程：
- 
--  - 在确认了补丁符合以上的规则后，将补丁发送到stable@kernel.org。
-+  - 在确认了补丁符合以上的规则后，将补丁发送到stable@vger.kernel.org。
-   - 如果补丁被接受到队列里，发送者会收到一个ACK回复，如果没有被接受，收
-     到的是NAK回复。回复需要几天的时间，这取决于开发者的时间安排。
-   - 被接受的补丁会被加到稳定版本队列里，等待其他开发者的审查。
+diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+index 972691a..1eb6d85 100644
+--- a/drivers/bus/omap_l3_noc.c
++++ b/drivers/bus/omap_l3_noc.c
+@@ -1,24 +1,18 @@
+ /*
+  * OMAP4XXX L3 Interconnect error handling driver
+  *
+- * Copyright (C) 2011 Texas Corporation
++ * Copyright (C) 2011-2014 Texas Instruments Incorporated - http://www.ti.com/
+  *	Santosh Shilimkar <santosh.shilimkar@ti.com>
+  *	Sricharan <r.sricharan@ti.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
+  *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+- * USA
+  */
+ #include <linux/module.h>
+ #include <linux/init.h>
+diff --git a/drivers/bus/omap_l3_noc.h b/drivers/bus/omap_l3_noc.h
+index a6ce34d..cc4b1b1 100644
+--- a/drivers/bus/omap_l3_noc.h
++++ b/drivers/bus/omap_l3_noc.h
+@@ -1,24 +1,18 @@
+ /*
+  * OMAP4XXX L3 Interconnect  error handling driver header
+  *
+- * Copyright (C) 2011 Texas Corporation
++ * Copyright (C) 2011-2014 Texas Instruments Incorporated - http://www.ti.com/
+  *	Santosh Shilimkar <santosh.shilimkar@ti.com>
+  *	sricharan <r.sricharan@ti.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
+  *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
++ * kind, whether express or implied; without even the implied warranty
++ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+- * USA
+  */
+ #ifndef __ARCH_ARM_MACH_OMAP2_L3_INTERCONNECT_3XXX_H
+ #define __ARCH_ARM_MACH_OMAP2_L3_INTERCONNECT_3XXX_H
 -- 
 1.7.9.5
 
