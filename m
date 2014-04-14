@@ -1,122 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177AbaDNJfD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 05:35:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58655 "EHLO mx1.redhat.com"
+	id S1754421AbaDNJfs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 05:35:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57761 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751235AbaDNJfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 05:35:01 -0400
+	id S1753892AbaDNJfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 05:35:03 -0400
 From: Gerd Hoffmann <kraxel@redhat.com>
 To: airlied@linux.ie, dri-devel@lists.freedesktop.org
 Cc: Gerd Hoffmann <kraxel@redhat.com>,
         linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH 1/3] drm: cirrus: add power management support
-Date: Mon, 14 Apr 2014 11:34:48 +0200
-Message-Id: <1397468090-25941-2-git-send-email-kraxel@redhat.com>
+Subject: [PATCH 3/3] drm: bochs: drop unused struct fields
+Date: Mon, 14 Apr 2014 11:34:50 +0200
+Message-Id: <1397468090-25941-4-git-send-email-kraxel@redhat.com>
 In-Reply-To: <1397468090-25941-1-git-send-email-kraxel@redhat.com>
 References: <1397468090-25941-1-git-send-email-kraxel@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cirrus kms driver lacks power management support, thus
-the vga display doesn't work any more after S3 resume.
-
-Fix this by adding suspend and resume functions.
-Also make the mode_set function unblank the screen.
-
 Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
 ---
- drivers/gpu/drm/cirrus/cirrus_drv.c  | 42 ++++++++++++++++++++++++++++++++++++
- drivers/gpu/drm/cirrus/cirrus_mode.c |  3 +++
- 2 files changed, 45 insertions(+)
+ drivers/gpu/drm/bochs/bochs.h       | 2 --
+ drivers/gpu/drm/bochs/bochs_fbdev.c | 1 -
+ 2 files changed, 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/cirrus/cirrus_drv.c b/drivers/gpu/drm/cirrus/cirrus_drv.c
-index 953fc8a..08ce520 100644
---- a/drivers/gpu/drm/cirrus/cirrus_drv.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_drv.c
-@@ -11,6 +11,7 @@
- #include <linux/module.h>
- #include <linux/console.h>
- #include <drm/drmP.h>
-+#include <drm/drm_crtc_helper.h>
- 
- #include "cirrus_drv.h"
- 
-@@ -75,6 +76,41 @@ static void cirrus_pci_remove(struct pci_dev *pdev)
- 	drm_put_dev(dev);
- }
- 
-+static int cirrus_pm_suspend(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct drm_device *drm_dev = pci_get_drvdata(pdev);
-+	struct cirrus_device *cdev = drm_dev->dev_private;
-+
-+	drm_kms_helper_poll_disable(drm_dev);
-+
-+	if (cdev->mode_info.gfbdev) {
-+		console_lock();
-+		fb_set_suspend(cdev->mode_info.gfbdev->helper.fbdev, 1);
-+		console_unlock();
-+	}
-+
-+	return 0;
-+}
-+
-+static int cirrus_pm_resume(struct device *dev)
-+{
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	struct drm_device *drm_dev = pci_get_drvdata(pdev);
-+	struct cirrus_device *cdev = drm_dev->dev_private;
-+
-+	drm_helper_resume_force_mode(drm_dev);
-+
-+	if (cdev->mode_info.gfbdev) {
-+		console_lock();
-+		fb_set_suspend(cdev->mode_info.gfbdev->helper.fbdev, 0);
-+		console_unlock();
-+	}
-+
-+	drm_kms_helper_poll_enable(drm_dev);
-+	return 0;
-+}
-+
- static const struct file_operations cirrus_driver_fops = {
- 	.owner = THIS_MODULE,
- 	.open = drm_open,
-@@ -103,11 +139,17 @@ static struct drm_driver driver = {
- 	.dumb_destroy = drm_gem_dumb_destroy,
+diff --git a/drivers/gpu/drm/bochs/bochs.h b/drivers/gpu/drm/bochs/bochs.h
+index 4608205..7eb52dd 100644
+--- a/drivers/gpu/drm/bochs/bochs.h
++++ b/drivers/gpu/drm/bochs/bochs.h
+@@ -88,8 +88,6 @@ struct bochs_device {
+ 		struct bochs_framebuffer gfb;
+ 		struct drm_fb_helper helper;
+ 		int size;
+-		int x1, y1, x2, y2; /* dirty rect */
+-		spinlock_t dirty_lock;
+ 		bool initialized;
+ 	} fb;
  };
+diff --git a/drivers/gpu/drm/bochs/bochs_fbdev.c b/drivers/gpu/drm/bochs/bochs_fbdev.c
+index 4da5206..561b844 100644
+--- a/drivers/gpu/drm/bochs/bochs_fbdev.c
++++ b/drivers/gpu/drm/bochs/bochs_fbdev.c
+@@ -190,7 +190,6 @@ int bochs_fbdev_init(struct bochs_device *bochs)
+ 	int ret;
  
-+static const struct dev_pm_ops cirrus_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(cirrus_pm_suspend,
-+				cirrus_pm_resume)
-+};
-+
- static struct pci_driver cirrus_pci_driver = {
- 	.name = DRIVER_NAME,
- 	.id_table = pciidlist,
- 	.probe = cirrus_pci_probe,
- 	.remove = cirrus_pci_remove,
-+	.driver.pm = &cirrus_pm_ops,
- };
+ 	bochs->fb.helper.funcs = &bochs_fb_helper_funcs;
+-	spin_lock_init(&bochs->fb.dirty_lock);
  
- static int __init cirrus_init(void)
-diff --git a/drivers/gpu/drm/cirrus/cirrus_mode.c b/drivers/gpu/drm/cirrus/cirrus_mode.c
-index 2d64aea..f59433b 100644
---- a/drivers/gpu/drm/cirrus/cirrus_mode.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_mode.c
-@@ -308,6 +308,9 @@ static int cirrus_crtc_mode_set(struct drm_crtc *crtc,
- 
- 	WREG_HDR(hdr);
- 	cirrus_crtc_do_set_base(crtc, old_fb, x, y, 0);
-+
-+	/* Unblank (needed on S3 resume, vgabios doesn't do it then) */
-+	outb(0x20, 0x3c0);
- 	return 0;
- }
- 
+ 	ret = drm_fb_helper_init(bochs->dev, &bochs->fb.helper,
+ 				 1, 1);
 -- 
 1.8.3.1
 
