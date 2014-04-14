@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753772AbaDNIPZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 04:15:25 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:50058 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969AbaDNIPV convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:9:1>);
-	Mon, 14 Apr 2014 04:15:21 -0400
-Message-Id: <534BB5320200007800008463@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.0 
-Date: Mon, 14 Apr 2014 09:15:14 +0100
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: <olaf@aepfle.de>, <apw@canonical.com>, <x86@kernel.org>,
-        <tglx@linutronix.de>, <devel@linuxdriverproject.org>,
-        <gregkh@linuxfoundation.org>, <jasowang@redhat.com>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH V2 1/1] X86: Probe for PIC and set legacy_pic
- appropriately
-References: <1397282200-10143-1-git-send-email-kys@microsoft.com>
-In-Reply-To: <1397282200-10143-1-git-send-email-kys@microsoft.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754370AbaDNIEb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 04:04:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12590 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754320AbaDNIE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 04:04:27 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Neela Syam Kolli <megaraidlinux@lsi.com>, linux-scsi@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: [PATCH v2 RESEND 14/23] megaraid: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Mon, 14 Apr 2014 10:05:38 +0200
+Message-Id: <4c833c2a7120915767c71c3262dada8896723e7b.1397461652.git.agordeev@redhat.com>
+In-Reply-To: <cover.1397461652.git.agordeev@redhat.com>
+References: <cover.1397461652.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 12.04.14 at 07:56, <kys@microsoft.com> wrote:
-> --- a/arch/x86/kernel/i8259.c
-> +++ b/arch/x86/kernel/i8259.c
-> @@ -299,11 +299,30 @@ static void unmask_8259A(void)
->  static void init_8259A(int auto_eoi)
->  {
->  	unsigned long flags;
-> +	unsigned char probe_val = ~(1 << PIC_CASCADE_IR);
-> +	unsigned char new_val;
->  
->  	i8259A_auto_eoi = auto_eoi;
->  
->  	raw_spin_lock_irqsave(&i8259A_lock, flags);
->  
-> +	/*
-> +	 * Check to see if we have a PIC.
-> +	 * Mask all except the cascade and read
-> +	 * back the value we just wrote. If we don't
-> +	 * have a PIC, we will read 0xff as opposed to the
-> +	 * value we wrote.
-> +	 */
-> +	outb(0xff, PIC_SLAVE_IMR);	/* mask all of 8259A-2 */
-> +	outb(probe_val, PIC_MASTER_IMR);
-> +	new_val = inb(PIC_MASTER_IMR);
-> +	if (probe_val != new_val) {
-> +		printk(KERN_INFO "Using NULL legacy PIC\n");
-> +		legacy_pic = &null_legacy_pic;
-> +		raw_spin_unlock_irqrestore(&i8259A_lock, flags);
-> +		return;
-> +	}
-> +
->  	outb(0xff, PIC_MASTER_IMR);	/* mask all of 8259A-1 */
->  	outb(0xff, PIC_SLAVE_IMR);	/* mask all of 8259A-2 */
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range()  or pci_enable_msi_exact()
+and pci_enable_msix_range() or pci_enable_msix_exact()
+interfaces.
 
-And I guess you should delete this last line now that this is already
-being done slightly earlier - having it done twice is possibly going to
-confuse future readers (in that they might ask themselves or others
-whether this really needs to be done twice).
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: Neela Syam Kolli <megaraidlinux@lsi.com>
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-pci@vger.kernel.org
+---
+ drivers/scsi/megaraid/megaraid_sas_base.c |   20 +++++++-------------
+ 1 files changed, 7 insertions(+), 13 deletions(-)
 
-Jan
+diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
+index 2df717c..26f89d4 100644
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -4106,17 +4106,11 @@ static int megasas_init_fw(struct megasas_instance *instance)
+ 					     (unsigned int)num_online_cpus());
+ 		for (i = 0; i < instance->msix_vectors; i++)
+ 			instance->msixentry[i].entry = i;
+-		i = pci_enable_msix(instance->pdev, instance->msixentry,
+-				    instance->msix_vectors);
+-		if (i >= 0) {
+-			if (i) {
+-				if (!pci_enable_msix(instance->pdev,
+-						     instance->msixentry, i))
+-					instance->msix_vectors = i;
+-				else
+-					instance->msix_vectors = 0;
+-			}
+-		} else
++		i = pci_enable_msix_range(instance->pdev, instance->msixentry,
++					  1, instance->msix_vectors);
++		if (i)
++			instance->msix_vectors = i;
++		else
+ 			instance->msix_vectors = 0;
+ 
+ 		dev_info(&instance->pdev->dev, "[scsi%d]: FW supports"
+@@ -5136,8 +5130,8 @@ megasas_resume(struct pci_dev *pdev)
+ 
+ 	/* Now re-enable MSI-X */
+ 	if (instance->msix_vectors &&
+-	    pci_enable_msix(instance->pdev, instance->msixentry,
+-			    instance->msix_vectors))
++	    pci_enable_msix_exact(instance->pdev, instance->msixentry,
++				  instance->msix_vectors))
+ 		goto fail_reenable_msix;
+ 
+ 	switch (instance->pdev->device) {
+-- 
+1.7.7.6
 
