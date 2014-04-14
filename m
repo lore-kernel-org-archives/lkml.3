@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840AbaDNLWs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 07:22:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44564 "EHLO
+	id S1754865AbaDNLXN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 07:23:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44573 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820AbaDNLWq (ORCPT
+	with ESMTP id S1751820AbaDNLXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 07:22:46 -0400
-Date: Mon, 14 Apr 2014 04:22:24 -0700
-From: tip-bot for Masahiro Yamada <tipbot@zytor.com>
-Message-ID: <tip-e6bcd1a8974fab74e9fd679fb64462b2a8deff41@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, pefoley2@pefoley.com, hpa@zytor.com,
-        mingo@kernel.org, yamada.m@jp.panasonic.com, mmarek@suse.cz,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, pefoley2@pefoley.com,
-        linux-kernel@vger.kernel.org, yamada.m@jp.panasonic.com,
-        tglx@linutronix.de, mmarek@suse.cz
-In-Reply-To: <1397093742-11144-1-git-send-email-yamada.m@jp.panasonic.com>
-References: <1397093742-11144-1-git-send-email-yamada.m@jp.panasonic.com>
+	Mon, 14 Apr 2014 07:23:10 -0400
+Date: Mon, 14 Apr 2014 04:22:37 -0700
+From: tip-bot for Ingo Molnar <tipbot@zytor.com>
+Message-ID: <tip-f042310bf8a846bcf21012ffee78d9eb562a7fa4@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, mjg59@srcf.ucam.org,
+        aubrey.li@linux.intel.com, rostedt@goodmis.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, mjg59@srcf.ucam.org,
+        aubrey.li@linux.intel.com, rostedt@goodmis.org, tglx@linutronix.de
+In-Reply-To: <20140404064120.GB11877@gmail.com>
+References: <20140404064120.GB11877@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/build: Supress "Nothing to be done for ..."
-  messages
-Git-Commit-ID: e6bcd1a8974fab74e9fd679fb64462b2a8deff41
+Subject: [tip:x86/urgent] [PATCH] x86:
+  Try the BIOS reboot method before the PCI reboot method
+Git-Commit-ID: f042310bf8a846bcf21012ffee78d9eb562a7fa4
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,63 +34,220 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e6bcd1a8974fab74e9fd679fb64462b2a8deff41
-Gitweb:     http://git.kernel.org/tip/e6bcd1a8974fab74e9fd679fb64462b2a8deff41
-Author:     Masahiro Yamada <yamada.m@jp.panasonic.com>
-AuthorDate: Thu, 10 Apr 2014 10:35:42 +0900
+Commit-ID:  f042310bf8a846bcf21012ffee78d9eb562a7fa4
+Gitweb:     http://git.kernel.org/tip/f042310bf8a846bcf21012ffee78d9eb562a7fa4
+Author:     Ingo Molnar <mingo@kernel.org>
+AuthorDate: Fri, 4 Apr 2014 08:41:26 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Mon, 14 Apr 2014 11:44:36 +0200
+CommitDate: Mon, 14 Apr 2014 13:13:30 +0200
 
-x86/build: Supress "Nothing to be done for ..." messages
+[PATCH] x86: Try the BIOS reboot method before the PCI reboot method
 
-When we build an already built kernel again, arch/x86/syscalls/Makefile
-and arch/x86/tools/Makefile emits "Nothing to be done for ..."
-messages.
+Steve reported a reboot hang and bisected it back to this commit:
 
-Here is the command log:
+  a4f1987e4c54 x86, reboot: Add EFI and CF9 reboot methods into the default list
 
-  $ make defconfig
-     [ snip ]
-  $ make
-     [ snip ]
-  $ make
-  make[1]: Nothing to be done for `all'.            <-----
-  make[1]: Nothing to be done for `relocs'.         <-----
-    CHK     include/config/kernel.release
-    CHK     include/generated/uapi/linux/version.h
+He heroically tested all reboot methods and found the following:
 
-Besides not emitting those, "all" and "relocs" should be added to PHONY as well.
+  reboot=t       # triple fault                  ok
+  reboot=k       # keyboard ctrl                 FAIL
+  reboot=b       # BIOS                          ok
+  reboot=a       # ACPI                          FAIL
+  reboot=e       # EFI                           FAIL   [system has no EFI]
+  reboot=p       # PCI 0xcf9                     FAIL
 
-Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
-Acked-by: Peter Foley <pefoley2@pefoley.com>
-Acked-by: Michal Marek <mmarek@suse.cz>
-Link: http://lkml.kernel.org/r/1397093742-11144-1-git-send-email-yamada.m@jp.panasonic.com
+And I think it's pretty obvious that we should only try 0xcf9 as a
+last resort - if at all.
+
+The other observation is that (on this box) we should never try
+the PCI reboot method, but close with either the 'triple fault'
+or the 'BIOS' (terminal!) reboot methods.
+
+Thirdly, CF9_COND is a total misnomer - it should be something like
+CF9_SAFE or CF9_CAREFUL, and 'CF9' should be 'CF9_FORCE' ...
+
+So this patch fixes the worst problems:
+
+ - it orders the actual reboot logic to follow the reboot ordering
+   pattern - it was in a pretty random order before for no good
+   reason.
+
+ - it fixes the CF9 misnomers and uses BOOT_CF9_FORCE and
+   BOOT_CF9_SAFE flags to make the code more obvious.
+
+ - it tries the BIOS reboot method before the PCI reboot method.
+   (Since 'BIOS' is a terminal reboot method resulting in a hang
+    if it does not work, this is essentially equivalent to removing
+    the PCI reboot method from the default reboot chain.)
+
+ - just for the miraculous possibility of terminal (resulting
+   in hang) reboot methods of triple fault or BIOS returning
+   without having done their job, there's an ordering between
+   them as well.
+
+Reported-and-bisected-and-tested-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Li Aubrey <aubrey.li@linux.intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Link: http://lkml.kernel.org/r/20140404064120.GB11877@gmail.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/syscalls/Makefile | 2 ++
- arch/x86/tools/Makefile    | 2 ++
- 2 files changed, 4 insertions(+)
+ arch/x86/kernel/reboot.c | 72 +++++++++++++++++++++++++-----------------------
+ include/linux/reboot.h   | 14 +++++-----
+ 2 files changed, 44 insertions(+), 42 deletions(-)
 
-diff --git a/arch/x86/syscalls/Makefile b/arch/x86/syscalls/Makefile
-index f325af2..3323c27 100644
---- a/arch/x86/syscalls/Makefile
-+++ b/arch/x86/syscalls/Makefile
-@@ -54,5 +54,7 @@ syshdr-$(CONFIG_X86_64)		+= syscalls_64.h
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 654b465..3399d3a 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -114,8 +114,8 @@ EXPORT_SYMBOL(machine_real_restart);
+  */
+ static int __init set_pci_reboot(const struct dmi_system_id *d)
+ {
+-	if (reboot_type != BOOT_CF9) {
+-		reboot_type = BOOT_CF9;
++	if (reboot_type != BOOT_CF9_FORCE) {
++		reboot_type = BOOT_CF9_FORCE;
+ 		pr_info("%s series board detected. Selecting %s-method for reboots.\n",
+ 			d->ident, "PCI");
+ 	}
+@@ -458,20 +458,23 @@ void __attribute__((weak)) mach_reboot_fixups(void)
+ }
  
- targets	+= $(uapisyshdr-y) $(syshdr-y)
+ /*
+- * Windows compatible x86 hardware expects the following on reboot:
++ * To the best of our knowledge Windows compatible x86 hardware expects
++ * the following on reboot:
+  *
+  * 1) If the FADT has the ACPI reboot register flag set, try it
+  * 2) If still alive, write to the keyboard controller
+  * 3) If still alive, write to the ACPI reboot register again
+  * 4) If still alive, write to the keyboard controller again
+  * 5) If still alive, call the EFI runtime service to reboot
+- * 6) If still alive, write to the PCI IO port 0xCF9 to reboot
+- * 7) If still alive, inform BIOS to do a proper reboot
++ * 6) If no EFI runtime service, call the BIOS to do a reboot
+  *
+- * If the machine is still alive at this stage, it gives up. We default to
+- * following the same pattern, except that if we're still alive after (7) we'll
+- * try to force a triple fault and then cycle between hitting the keyboard
+- * controller and doing that
++ * We default to following the same pattern. We also have
++ * two other reboot methods: 'triple fault' and 'PCI', which
++ * can be triggered via the reboot= kernel boot option or
++ * via quirks.
++ *
++ * This means that this function can never return, it can misbehave
++ * by not rebooting properly and hanging.
+  */
+ static void native_machine_emergency_restart(void)
+ {
+@@ -492,6 +495,11 @@ static void native_machine_emergency_restart(void)
+ 	for (;;) {
+ 		/* Could also try the reset bit in the Hammer NB */
+ 		switch (reboot_type) {
++		case BOOT_ACPI:
++			acpi_reboot();
++			reboot_type = BOOT_KBD;
++			break;
++
+ 		case BOOT_KBD:
+ 			mach_reboot_fixups(); /* For board specific fixups */
  
-+PHONY += all
- all: $(addprefix $(uapi)/,$(uapisyshdr-y))
- all: $(addprefix $(out)/,$(syshdr-y))
-+	@:
-diff --git a/arch/x86/tools/Makefile b/arch/x86/tools/Makefile
-index e812034..604a37e 100644
---- a/arch/x86/tools/Makefile
-+++ b/arch/x86/tools/Makefile
-@@ -40,4 +40,6 @@ $(obj)/insn_sanity.o: $(srctree)/arch/x86/lib/insn.c $(srctree)/arch/x86/lib/ina
- HOST_EXTRACFLAGS += -I$(srctree)/tools/include
- hostprogs-y	+= relocs
- relocs-objs     := relocs_32.o relocs_64.o relocs_common.o
-+PHONY += relocs
- relocs: $(obj)/relocs
-+	@:
+@@ -509,43 +517,29 @@ static void native_machine_emergency_restart(void)
+ 			}
+ 			break;
+ 
+-		case BOOT_TRIPLE:
+-			load_idt(&no_idt);
+-			__asm__ __volatile__("int3");
+-
+-			/* We're probably dead after this, but... */
+-			reboot_type = BOOT_KBD;
+-			break;
+-
+-		case BOOT_BIOS:
+-			machine_real_restart(MRR_BIOS);
+-
+-			/* We're probably dead after this, but... */
+-			reboot_type = BOOT_TRIPLE;
+-			break;
+-
+-		case BOOT_ACPI:
+-			acpi_reboot();
+-			reboot_type = BOOT_KBD;
+-			break;
+-
+ 		case BOOT_EFI:
+ 			if (efi_enabled(EFI_RUNTIME_SERVICES))
+ 				efi.reset_system(reboot_mode == REBOOT_WARM ?
+ 						 EFI_RESET_WARM :
+ 						 EFI_RESET_COLD,
+ 						 EFI_SUCCESS, 0, NULL);
+-			reboot_type = BOOT_CF9_COND;
++			reboot_type = BOOT_BIOS;
++			break;
++
++		case BOOT_BIOS:
++			machine_real_restart(MRR_BIOS);
++
++			/* We're probably dead after this, but... */
++			reboot_type = BOOT_CF9_SAFE;
+ 			break;
+ 
+-		case BOOT_CF9:
++		case BOOT_CF9_FORCE:
+ 			port_cf9_safe = true;
+ 			/* Fall through */
+ 
+-		case BOOT_CF9_COND:
++		case BOOT_CF9_SAFE:
+ 			if (port_cf9_safe) {
+-				u8 reboot_code = reboot_mode == REBOOT_WARM ?
+-					0x06 : 0x0E;
++				u8 reboot_code = reboot_mode == REBOOT_WARM ?  0x06 : 0x0E;
+ 				u8 cf9 = inb(0xcf9) & ~reboot_code;
+ 				outb(cf9|2, 0xcf9); /* Request hard reset */
+ 				udelay(50);
+@@ -553,7 +547,15 @@ static void native_machine_emergency_restart(void)
+ 				outb(cf9|reboot_code, 0xcf9);
+ 				udelay(50);
+ 			}
+-			reboot_type = BOOT_BIOS;
++			reboot_type = BOOT_TRIPLE;
++			break;
++
++		case BOOT_TRIPLE:
++			load_idt(&no_idt);
++			__asm__ __volatile__("int3");
++
++			/* We're probably dead after this, but... */
++			reboot_type = BOOT_KBD;
+ 			break;
+ 		}
+ 	}
+diff --git a/include/linux/reboot.h b/include/linux/reboot.h
+index 9e7db9e..48bf152 100644
+--- a/include/linux/reboot.h
++++ b/include/linux/reboot.h
+@@ -20,13 +20,13 @@ enum reboot_mode {
+ extern enum reboot_mode reboot_mode;
+ 
+ enum reboot_type {
+-	BOOT_TRIPLE = 't',
+-	BOOT_KBD = 'k',
+-	BOOT_BIOS = 'b',
+-	BOOT_ACPI = 'a',
+-	BOOT_EFI = 'e',
+-	BOOT_CF9 = 'p',
+-	BOOT_CF9_COND = 'q',
++	BOOT_TRIPLE	= 't',
++	BOOT_KBD	= 'k',
++	BOOT_BIOS	= 'b',
++	BOOT_ACPI	= 'a',
++	BOOT_EFI	= 'e',
++	BOOT_CF9_FORCE	= 'p',
++	BOOT_CF9_SAFE	= 'q',
+ };
+ extern enum reboot_type reboot_type;
+ 
