@@ -1,166 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355AbaDNVhT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 17:37:19 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:42584 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754354AbaDNVhP (ORCPT
+	id S1755607AbaDNVnO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 17:43:14 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:45111 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754892AbaDNVhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 17:37:15 -0400
+	Mon, 14 Apr 2014 17:37:18 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHSET cgroup/for-3.16] cgroup: implement unified hierarchy, v2
-Date: Mon, 14 Apr 2014 17:36:58 -0400
-Message-Id: <1397511430-2673-1-git-send-email-tj@kernel.org>
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 02/12] cgroup: introduce effective cgroup_subsys_state
+Date: Mon, 14 Apr 2014 17:37:00 -0400
+Message-Id: <1397511430-2673-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1397511430-2673-1-git-send-email-tj@kernel.org>
+References: <1397511430-2673-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+In the planned default unified hierarchy, controllers may get
+dynamically attached to and detached from a cgroup and a cgroup may
+not have csses for all the controllers associated with the hierarchy.
 
-This is v2 of the unified hierarchy patchset.  Changes from v1[1] are,
+When a cgroup doesn't have its own css for a given controller, the css
+of the nearest ancestor with the controller enabled will be used,
+which is called the effective css.  This patch introduces
+cgroup_e_css() and for_each_e_css() to access the effective csses and
+convert compare_css_sets(), find_existing_css_set() and
+cgroup_migrate() to use the effective csses so that they can handle
+cgroups with partial csses correctly.
 
-* Rebased on top of v3.15-rc1
+This means that for two css_sets to be considered identical, they
+should have both matching csses and cgroups.  compare_css_sets()
+already compares both, not for correctness but for optimization.  As
+this now becomes a matter of correctness, update the comments
+accordingly.
 
-* Interface file "cgroup.controllers" which was only available in the
-  root is now available in all cgroups.  This allows, e.g., a
-  sub-manager in charge of a subtree to tell which controllers are
-  available to it.
+For all !default hierarchies, cgroup_e_css() always equals
+cgroup_css(), so this patch doesn't change behavior.
 
-cgroup currently allows creating arbitrary number of hierarchies and
-any number of controllers may be associated with a given tree.  This
-allows for huge amount of variance how tasks are associated with
-various cgroups and controllers; unfortunately, the variance is
-extreme to the extent that it unnecessarily complicates capabilities
-which can otherwise be straight-forward and hinders implementation of
-features which can benefit from coordination among different
-controllers.
+While at it, fix incorrect locking comment for for_each_css().
 
-Here are some of the issues which we're facing with the current
-multiple hierarchies.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/cgroup.c | 83 ++++++++++++++++++++++++++++++++++++++++++++-------------
+ 1 file changed, 64 insertions(+), 19 deletions(-)
 
-* cgroup membership of a task can't be described in finite number of
-  paths.  As there can be arbitrary number of hierarchies, the key
-  describing a task's cgroup membership can be arbitrarily long.  This
-  is painful when userland or other parts of the kernel needs to take
-  cgroup membership into account and leads to proliferation of
-  controllers which are just there to identify membership rather than
-  actually control resources, which in turn exacerbates the problem.
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index dd40679..a6a438f 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -208,6 +208,34 @@ static struct cgroup_subsys_state *cgroup_css(struct cgroup *cgrp,
+ 		return &cgrp->dummy_css;
+ }
+ 
++/**
++ * cgroup_e_css - obtain a cgroup's effective css for the specified subsystem
++ * @cgrp: the cgroup of interest
++ * @ss: the subsystem of interest (%NULL returns the dummy_css)
++ *
++ * Similar to cgroup_css() but returns the effctive css, which is defined
++ * as the matching css of the nearest ancestor including self which has @ss
++ * enabled.  If @ss is associated with the hierarchy @cgrp is on, this
++ * function is guaranteed to return non-NULL css.
++ */
++static struct cgroup_subsys_state *cgroup_e_css(struct cgroup *cgrp,
++						struct cgroup_subsys *ss)
++{
++	lockdep_assert_held(&cgroup_mutex);
++
++	if (!ss)
++		return &cgrp->dummy_css;
++
++	if (!(cgrp->root->subsys_mask & (1 << ss->id)))
++		return NULL;
++
++	while (cgrp->parent &&
++	       !(cgrp->parent->child_subsys_mask & (1 << ss->id)))
++		cgrp = cgrp->parent;
++
++	return cgroup_css(cgrp, ss);
++}
++
+ /* convenient tests for these bits */
+ static inline bool cgroup_is_dead(const struct cgroup *cgrp)
+ {
+@@ -273,7 +301,7 @@ static int notify_on_release(const struct cgroup *cgrp)
+  * @ssid: the index of the subsystem, CGROUP_SUBSYS_COUNT after reaching the end
+  * @cgrp: the target cgroup to iterate css's of
+  *
+- * Should be called under cgroup_mutex.
++ * Should be called under cgroup_[tree_]mutex.
+  */
+ #define for_each_css(css, ssid, cgrp)					\
+ 	for ((ssid) = 0; (ssid) < CGROUP_SUBSYS_COUNT; (ssid)++)	\
+@@ -284,6 +312,20 @@ static int notify_on_release(const struct cgroup *cgrp)
+ 		else
+ 
+ /**
++ * for_each_e_css - iterate all effective css's of a cgroup
++ * @css: the iteration cursor
++ * @ssid: the index of the subsystem, CGROUP_SUBSYS_COUNT after reaching the end
++ * @cgrp: the target cgroup to iterate css's of
++ *
++ * Should be called under cgroup_[tree_]mutex.
++ */
++#define for_each_e_css(css, ssid, cgrp)					\
++	for ((ssid) = 0; (ssid) < CGROUP_SUBSYS_COUNT; (ssid)++)	\
++		if (!((css) = cgroup_e_css(cgrp, cgroup_subsys[(ssid)]))) \
++			;						\
++		else
++
++/**
+  * for_each_subsys - iterate all enabled cgroup subsystems
+  * @ss: the iteration cursor
+  * @ssid: the index of @ss, CGROUP_SUBSYS_COUNT after reaching the end
+@@ -452,20 +494,20 @@ static bool compare_css_sets(struct css_set *cset,
+ {
+ 	struct list_head *l1, *l2;
+ 
+-	if (memcmp(template, cset->subsys, sizeof(cset->subsys))) {
+-		/* Not all subsystems matched */
++	/*
++	 * On the default hierarchy, there can be csets which are
++	 * associated with the same set of cgroups but different csses.
++	 * Let's first ensure that csses match.
++	 */
++	if (memcmp(template, cset->subsys, sizeof(cset->subsys)))
+ 		return false;
+-	}
+ 
+ 	/*
+ 	 * Compare cgroup pointers in order to distinguish between
+-	 * different cgroups in heirarchies with no subsystems. We
+-	 * could get by with just this check alone (and skip the
+-	 * memcmp above) but on most setups the memcmp check will
+-	 * avoid the need for this more expensive check on almost all
+-	 * candidates.
++	 * different cgroups in hierarchies.  As different cgroups may
++	 * share the same effective css, this comparison is always
++	 * necessary.
+ 	 */
+-
+ 	l1 = &cset->cgrp_links;
+ 	l2 = &old_cset->cgrp_links;
+ 	while (1) {
+@@ -530,13 +572,16 @@ static struct css_set *find_existing_css_set(struct css_set *old_cset,
+ 	 */
+ 	for_each_subsys(ss, i) {
+ 		if (root->subsys_mask & (1UL << i)) {
+-			/* Subsystem is in this hierarchy. So we want
+-			 * the subsystem state from the new
+-			 * cgroup */
+-			template[i] = cgroup_css(cgrp, ss);
++			/*
++			 * @ss is in this hierarchy, so we want the
++			 * effective css from @cgrp.
++			 */
++			template[i] = cgroup_e_css(cgrp, ss);
+ 		} else {
+-			/* Subsystem is not in this hierarchy, so we
+-			 * don't want to change the subsystem state */
++			/*
++			 * @ss is not in this hierarchy, so we don't want
++			 * to change the css.
++			 */
+ 			template[i] = old_cset->subsys[i];
+ 		}
+ 	}
+@@ -1969,7 +2014,7 @@ static int cgroup_migrate(struct cgroup *cgrp, struct task_struct *leader,
+ 		return 0;
+ 
+ 	/* check that we can legitimately attach to the cgroup */
+-	for_each_css(css, i, cgrp) {
++	for_each_e_css(css, i, cgrp) {
+ 		if (css->ss->can_attach) {
+ 			ret = css->ss->can_attach(css, &tset);
+ 			if (ret) {
+@@ -1999,7 +2044,7 @@ static int cgroup_migrate(struct cgroup *cgrp, struct task_struct *leader,
+ 	 */
+ 	tset.csets = &tset.dst_csets;
+ 
+-	for_each_css(css, i, cgrp)
++	for_each_e_css(css, i, cgrp)
+ 		if (css->ss->attach)
+ 			css->ss->attach(css, &tset);
+ 
+@@ -2007,7 +2052,7 @@ static int cgroup_migrate(struct cgroup *cgrp, struct task_struct *leader,
+ 	goto out_release_tset;
+ 
+ out_cancel_attach:
+-	for_each_css(css, i, cgrp) {
++	for_each_e_css(css, i, cgrp) {
+ 		if (css == failed_css)
+ 			break;
+ 		if (css->ss->cancel_attach)
+-- 
+1.9.0
 
-* Different controllers may or may not reside on the same hierarchy.
-  Features or optimizations which can benefit from sharing the
-  hierarchical organization either can't be implemented or becomes
-  overly complicated.
-
-* Tasks of a process may belong to different cgroups, which doesn't
-  make any sense for some controllers.  Those controllers end up
-  ignoring such configurations in their own ways leading to
-  inconsistent behavior.  In addition, in-process resource control
-  fundamentally isn't something which belongs to cgroup.  As it has to
-  be visible to the binary for the process, it must be part of the
-  stable programming interface which is easily accessible to the
-  process proper in an easy race-free way.
-
-* The current cgroup allows cgroups which have child cgroups to have
-  tasks in it.  This means that the child cgroups end up competing
-  against the internal tasks.  This introduces inherent ambiguity as
-  the two are separate types of entities and the latter doesn't have
-  the same control knobs assigned to them.
-
-  Different controllers are dealing with the issue in different ways.
-  cpu treats internal tasks and child cgroups as equivalents, which
-  makes giving a child cgroup a given ratio of the parent's cpu time
-  difficult as the number of competing entities may fluctuate without
-  any indication.  blkio, in my misguided attempt to deal with the
-  issue, introduced a whole duplicate set of knobs for internal tasks
-  and deal with them as if they belong to a separate child cgroup
-  making the interface and implementation a mess.  memcg seems
-  somewhat ambiguous on the issue but there are attempts to introduce
-  ad-hoc modifications to tilt the way it's handled to suit specific
-  use cases.
-
-  This is an inherent problem.  All of the solutions that different
-  controllers came up with are unsatisfactory, the different behaviors
-  greatly increases the level of inconsistency and complicates the
-  controller implementations.
-
-This patchset finally implements the default unified hierarchy.  The
-goal is providing enough flexibility while enforcing stricter common
-structure where appropriate to address the above listed issues.
-
-Controllers which aren't bound to other hierarchies are
-automatically attached to the unified hierarchy, which is different in
-that controllers are enabled explicitly for each subtree.
-"cgroup.subtree_control" controls which controllers are enabled on the
-child cgroups.  Let's assume a hierarchy like the following.
-
-  root - A - B - C
-               \ D
-
-root's "cgroup.subtree_control" determines which controllers are
-enabled on A.  A's on B.  B's on C and D.  This coincides with the
-fact that controllers on the immediate sub-level are used to
-distribute the resources of the parent.  In fact, it's natural to
-assume that resource control knobs of a child belong to its parent.
-Enabling a controller in "cgroup.subtree_control" declares that
-distribution of the respective resources of the cgroup will be
-controlled.  Note that this means that controller enable states are
-shared among siblings.
-
-The default hierarchy has an extra restriction - only cgroups which
-don't contain any task may have controllers enabled in
-"cgroup.subtree_control".  Combined with the other properties of the
-default hierarchy, this guarantees that, from the view point of
-controllers, tasks are only on the leaf cgroups.  In other words, only
-leaf csses may contain tasks.  This rules out situations where child
-cgroups compete against internal tasks of the parent.
-
-This patchset contains the following twelve patches.
-
- 0001-cgroup-update-cgroup-subsys_mask-to-child_subsys_mas.patch
- 0002-cgroup-introduce-effective-cgroup_subsys_state.patch
- 0003-cgroup-implement-cgroup-e_csets.patch
- 0004-cgroup-make-css_next_child-skip-missing-csses.patch
- 0005-cgroup-reorganize-css_task_iter.patch
- 0006-cgroup-teach-css_task_iter-about-effective-csses.patch
- 0007-cgroup-cgroup-subsys-should-be-cleared-after-the-css.patch
- 0008-cgroup-allow-cgroup-creation-and-suppress-automatic-.patch
- 0009-cgroup-add-css_set-dfl_cgrp.patch
- 0010-cgroup-update-subsystem-rebind-restrictions.patch
- 0011-cgroup-prepare-migration-path-for-unified-hierarchy.patch
- 0012-cgroup-implement-dynamic-subtree-controller-enable-d.patch
-
-0001 updates subsys_mask handling again to morph cgrp->subsys_mask to
-cgrp->child_subsys_mask.
-
-0002-0003 introduce effective cgroup.  The cgroup on the unified
-hierarchy a task belongs to when viewed from a controller.
-
-0004-0007 update iterators to handle effective cgroup correctly.
-
-0008-0011 prepare various paths for explicit controller
-enable/disable.
-
-0012 implements explicit controller enable/disable.
-
-The patchset is on top of cgroup/for-3.15 01a971406177 ("cgroup: Use
-RCU_INIT_POINTER(x, NULL) in cgroup.c") and also available in the
-following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-unified-v2
-
-diffstat follows.
-
- include/linux/cgroup.h |   44 ++-
- kernel/cgroup.c        |  672 +++++++++++++++++++++++++++++++++++++++++--------
- 2 files changed, 604 insertions(+), 112 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[1] http://lkml.kernel.org/g/1395974461-12735-1-git-send-email-tj@kernel.org
