@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446AbaDNLml (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 07:42:41 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:45678 "EHLO bear.ext.ti.com"
+	id S1755257AbaDNL60 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 07:58:26 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33088 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753162AbaDNLmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 07:42:35 -0400
+	id S1754078AbaDNLmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 07:42:40 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: <dan.j.williams@intel.com>, <vinod.koul@intel.com>, <nsekhar@ti.com>,
         <joelf@ti.com>
 CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
         <davinci-linux-open-source@linux.davincidsp.com>
-Subject: [PATCH v3 00/10] dma: edma: Fixes for cyclic (audio) operation
-Date: Mon, 14 Apr 2014 14:41:55 +0300
-Message-ID: <1397475725-5036-1-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v3 02/10] arm: common: edma: Save the number of event queues/TCs
+Date: Mon, 14 Apr 2014 14:41:57 +0300
+Message-ID: <1397475725-5036-3-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1397475725-5036-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1397475725-5036-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+For later use save the number of queues available for the CC.
 
-Changes since v2:
-- Dropped patch 10 from v2 (simplify direction configuration...)
-- Dropped the channel priority related patches since we are going to go via
-  different route for configuring the priority.
-- Added ACK from Joel for the patches since they are not changed since v2
-
-Changes since v1:
-- ASoC patches removed
-- Comments from Andriy Shevchenko addressed
-- patch added to fix cases when src/dst_maxburst is set to 0
-
-The series contains now only:
-Support for DMA pause/resume in cyclic mode
-device_slave_caps callback and DMA_CYCLIC flag correction.
-While debugging the edma to get things sorted out I noticed that the debug was
-too verbose and the important information was hidden even when the we did not
-asked for verbose dmaengine debug.
-I have included some debug cleanups for the edma dmaengine driver also.
-
-Regards,
-Peter
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Acked-by: Joel Fernandes <joelf@ti.com>
 ---
-Peter Ujfalusi (10):
-  platform_data: edma: Be precise with the paRAM struct
-  arm: common: edma: Save the number of event queues/TCs
-  dmaengine: edma: Correct the handling of src/dst_maxburst == 0
-  dmaengine: edma: Add support for DMA_PAUSE/RESUME operation
-  dmaengine: edma: Set DMA_CYCLIC capability flag
-  dmaengine: edma: Implement device_slave_caps callback
-  dmaengine: edma: Reduce debug print verbosity for non verbose
-    debugging
-  dmaengine: edma: Prefix debug prints where the text were identical in
-    prep callbacks
-  dmaengine: edma: Add channel number to debug prints
-  dmaengine: edma: Print the direction value as well when it is not
-    supported
+ arch/arm/common/edma.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
- arch/arm/common/edma.c             |  4 ++
- drivers/dma/edma.c                 | 87 ++++++++++++++++++++++++++++++--------
- include/linux/platform_data/edma.h | 18 ++++----
- 3 files changed, 83 insertions(+), 26 deletions(-)
-
+diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+index 41bca32409fc..999266bf69b9 100644
+--- a/arch/arm/common/edma.c
++++ b/arch/arm/common/edma.c
+@@ -1768,6 +1768,9 @@ static int edma_probe(struct platform_device *pdev)
+ 			map_queue_tc(j, queue_tc_mapping[i][0],
+ 					queue_tc_mapping[i][1]);
+ 
++		/* Save the number of TCs */
++		edma_cc[j]->num_tc = i;
++
+ 		/* Event queue priority mapping */
+ 		for (i = 0; queue_priority_mapping[i][0] != -1; i++)
+ 			assign_priority_to_queue(j,
 -- 
 1.9.2
 
