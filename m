@@ -1,72 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072AbaDNKYJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 06:24:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25324 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750872AbaDNKYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 06:24:07 -0400
-Date: Mon, 14 Apr 2014 12:23:33 +0200
-From: Igor Mammedov <imammedo@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, bp@suse.de,
-        paul.gortmaker@windriver.com, JBeulich@suse.com, prarit@redhat.com,
-        drjones@redhat.com, toshi.kani@hp.com, riel@redhat.com,
-        gong.chen@linux.intel.com, andi@firstfloor.org, lenb@kernel.org,
-        rjw@rjwysocki.net, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v3 3/5] x86: fix list corruption on CPU hotplug
-Message-ID: <20140414122333.0908c2a2@thinkpad>
-In-Reply-To: <20140414100457.GD731@gmail.com>
-References: <1397150061-29735-1-git-send-email-imammedo@redhat.com>
-	<1397150061-29735-4-git-send-email-imammedo@redhat.com>
-	<20140414091954.GB19771@gmail.com>
-	<20140414115600.0d5dbbb5@thinkpad>
-	<20140414100457.GD731@gmail.com>
+	id S1753456AbaDNKcN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 06:32:13 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:45862 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200AbaDNKcK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 06:32:10 -0400
+Date: Mon, 14 Apr 2014 12:32:05 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Andi Kleen <ak@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>, Michal Marek <mmarek@suse.cz>,
+        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [GIT] kbuild/lto changes for 3.15-rc1
+Message-ID: <20140414103205.GA2846@gmail.com>
+References: <20140407201919.GA15838@sepie.suse.cz>
+ <CA+55aFy8hWqBpF1TXOPvA2rRaZp=H2LTO3wd3AERspmcGZhAeQ@mail.gmail.com>
+ <20140408204906.GA3616@cloud>
+ <CA+55aFzhyvZRPjXy7PkUxQO_AMqLSTehh-GNRP+Dx3yKnv-eCA@mail.gmail.com>
+ <20140409013557.GA32556@tassilo.jf.intel.com>
+ <20140409060133.GA6766@gmail.com>
+ <20140409081709.GA283@x4>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140409081709.GA283@x4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Apr 2014 12:04:57 +0200
-Ingo Molnar <mingo@kernel.org> wrote:
 
-> 
-> * Igor Mammedov <imammedo@redhat.com> wrote:
-> 
-> > On Mon, 14 Apr 2014 11:19:54 +0200
-> > Ingo Molnar <mingo@kernel.org> wrote:
+* Markus Trippelsdorf <markus@trippelsdorf.de> wrote:
+
+> On 2014.04.09 at 08:01 +0200, Ingo Molnar wrote:
 > > 
-> > > 
-> > > * Igor Mammedov <imammedo@redhat.com> wrote:
-> > > 
-> > > > currently if AP wake up is failed, master CPU marks AP as not present
-> > > > in do_boot_cpu() by calling set_cpu_present(cpu, false).
-> > > > That leads to following list corruption on the next physical CPU
-> > > > hotplug:
-> > > 
-> > > Shouldn't this fix precede the main change to the smp bootup logic?
-> > > 
-> > > Can this bug trigger with current upstream kernels?
-> > That's not impossible, tests showed that with current kernel there will
-> > be other problems due wild AP running around.
+> > * Andi Kleen <ak@linux.intel.com> wrote:
 > > 
-> > I'll reorder patch anyway.
+> > > On Tue, Apr 08, 2014 at 03:44:25PM -0700, Linus Torvalds wrote:
+> > > > On Tue, Apr 8, 2014 at 1:49 PM,  <josh@joshtriplett.org> wrote:
+> > > > >
+> > > > > In addition to making the kernel smaller and such (I'll leave the
+> > > > > specific stats there to Andi), here's the key awesomeness of LTO that
+> > > > > you, personally, should find useful and compelling: LTO will eliminate
+> > > > > the need to add many lower-level Kconfig symbols to compile out bits of
+> > > > > the kernel.
+> > > > 
+> > > > Actually that, to me, is a negative right now.
+> > > > 
+> > > > Since there's no way we'll make LTO the default in the foreseeable
+> > > > future, people starting to use it like that is just a bad bad thing.
+> > > > 
+> > > > So really, the main advantage of LTO would be any actual 
+> > > > optimizations it can do. And call me anal, but I want *numbers* 
+> > > > for that before I merge it. Not handwaving. I'm not actually aware 
+> > > > of how well - if at all - code generation actually improves.
+> > > 
+> > > Well it looks very different if you look at the generated code. gcc 
+> > > becomes a lot more aggressive.
+> > > 
+> > > But as I said there's currently no significant performance 
+> > > improvement known, so if your only goal is better performance this 
+> > > patch (as currently) known is not a big winner.  My suspicion is 
+> > > that's mostly because the standard benchmarks we run are not too 
+> > > compiler sensitive.
+> > > 
+> > > However the users seem to care about the other benefits, like code 
+> > > size.
+> > > 
+> > > And there may well be loads that are compiler sensitive. As Honza 
+> > > posted, for non kernel workloads LTO is known to have large 
+> > > benefits.
+> > > 
+> > > Besides at this point it's pretty much just some additions to the 
+> > > Makefiles.
+> > 
+> > So the reason I've been mostly ignoring the LTO patches myself (I only 
+> > took LTO related changes that had other justifications such as 
+> > cleanups) is that I've actually implemented full LTO in a userspace 
+> > project myself, and my experience was:
+> > 
+> >   1) There was very little if any measurable LTO runtime speedup, 
+> >      despite agressive GCC options and despite user-space generally 
+> >      offering more optimizations opportunities than kernel space.
+> > 
+> >   2) LTO with current build tools meant a 1.5x-3x build speed
+> >      slowdown (on a very fast box with tons of CPUs and RAM),
+> >      which made LTO essentially a non-starter for development
+> >      work. (And that was with the Gold linker.)
+> > 
+> > and looking at your characterisation of LTO you only conceded
+> > #1 much after you started pushing LTO and you are clearly trying
+> > to avoid talking about #2 while it's very much relevant...
+> > 
+> > I'm willing to be convinced by actual numbers, and LTO tooling might 
+> > eventually improve, etc., but right now LTO is much ado about very 
+> > little, being pushed in a somewhat dishonest way.
 > 
-> So, could you please first make sure that with only the fixes applied 
-> there's no problems left?
-Sure, I'll retest reordered series.
+> I did some measurements on Andi's lto-3.14 branch:
+> 
+> options    size     build time
+> ------------------------------
+> -O2        4408880  1:56.98
+> -flto -O2  4213072  2:36.22
+> -Os        3833248  1:45.13         
+> -flto -Os  3651504  2:34.51
+> 
+> This was measured on my AMD 4 core machine with a monolithic .config
+> where "CONFIG_MODULES is not set". The compiler is gcc trunk (4.9).
+> So on x86_86 you get 5% size reduction for 25-30% build time slowdown.
 
-> 
-> Only then should we apply the patch that adds/tweaks the timeout/etc.
-> 
-> Thanks,
-> 
-> 	Ingo
+Note that the build slowdowns you measured are more like 30-45%:
 
+   156.22/116.98 == 33.5% slowdown
+   154.51/105.13 == 46.9% slowdown
 
--- 
-Regards,
-  Igor
+not 25-30%.
+
+But yeah, that sounds about right and is obviously relevant data, and 
+goes beyond 'a bit slower' .
+
+Also note that the 5% size reduction due to LTO consists of two big 
+parts:
+
+  - removal of unused facilities in that .config
+  - true optimizations
+
+it would be important to know the proportion of true optimizations, 
+because those are that matter most. Unused facilities will take up a 
+bit of RAM, and perhaps fragment the CPU cache a tiny bit, but aren't 
+nearly as relevant as true optimizations.
+
+So the '[LTO is] not a big winner' characterisation given by Andi is a 
+euphemism AFAICS, a more accurate description would be something like: 
+'LTO does not help kernel performance measurably and it slows down 
+kernel development'.
+
+Thanks,
+
+	Ingo
