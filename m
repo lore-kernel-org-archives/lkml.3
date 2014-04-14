@@ -1,139 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306AbaDNOFb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 10:05:31 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:41172 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754473AbaDNOF1 (ORCPT
+	id S1755318AbaDNOGP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 10:06:15 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:44500 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754913AbaDNOGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 10:05:27 -0400
-Message-ID: <534BEB20.3080501@codethink.co.uk>
-Date: Mon, 14 Apr 2014 15:05:20 +0100
-From: Ben Dooks <ben.dooks@codethink.co.uk>
-Organization: Codethink Limited.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+	Mon, 14 Apr 2014 10:06:09 -0400
+Message-ID: <534BEB47.9030606@hitachi.com>
+Date: Mon, 14 Apr 2014 23:05:59 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Iyappan Subramanian <isubramanian@apm.com>, davem@davemloft.net,
-        netdev@vger.kernel.org, devicetree@vger.kernel.org
-CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
-        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
-Subject: Re: [PATCH v2 4/4] drivers: net: Add APM X-Gene SoC ethernet driver
- support.
-References: <1397271984-23405-1-git-send-email-isubramanian@apm.com> <1397271984-23405-5-git-send-email-isubramanian@apm.com>
-In-Reply-To: <1397271984-23405-5-git-send-email-isubramanian@apm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 4/6] uprobes/x86: Emulate rip-relative call's
+References: <20140406201628.GA507@redhat.com> <20140410141806.GA23997@redhat.com> <5346AB07.4090909@redhat.com> <201404101902.38639.vda.linux@googlemail.com> <534B6EA5.5090302@hitachi.com> <CAK1hOcNM-kDF3QHWLJCAuVi0xM0Cf3OUixowyrEp_JN=L6yS2w@mail.gmail.com>
+In-Reply-To: <CAK1hOcNM-kDF3QHWLJCAuVi0xM0Cf3OUixowyrEp_JN=L6yS2w@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/14 04:06, Iyappan Subramanian wrote:
-> This patch adds network driver for APM X-Gene SoC ethernet.
->
-> Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
-> Signed-off-by: Ravi Patel <rapatel@apm.com>
+(2014/04/14 21:24), Denys Vlasenko wrote:
+> On Mon, Apr 14, 2014 at 7:14 AM, Masami Hiramatsu
+> <masami.hiramatsu.pt@hitachi.com> wrote:
+>>> You can check whether insn had any prefix by checking
+>>> insn->prefixes->nbytes != 0...
+>>
+>> No, since there are other prefixes (and it may be meaningless)
+>> you should find 0x66 in insn->prefixes->bytes[].
+> 
+> What "no"? Is my statement not true? Please reread it.
+> I'm not talking about checking for 0x66 prefix.
+> Here, I am talking about checking that insn has *any* prefix.
 
-[snip]
+Ah, I see now, sorry. That's OK for me.
 
-> +{
-> +	struct xgene_enet_pdata *pdata = netdev_priv(ndev);
-> +	struct phy_device *phydev;
-> +	unsigned char phy_id[MII_BUS_ID_SIZE+3];
-> +	int ret = 0;
-> +
-> +	phydev = phy_find_first(pdata->mdio_bus);
-> +	if (!phydev) {
-> +		netdev_info(ndev, "no PHY found\n");
-> +		ret = -1;
-> +		goto out;
-> +	}
-> +
-> +	/* attach the mac to the phy */
-> +	snprintf(phy_id, sizeof(phy_id), PHY_ID_FMT, pdata->mdio_bus->id,
-> +		 pdata->phy_addr);
-> +	phydev = phy_connect(ndev, phy_id,
-> +			     &xgene_enet_mdio_link_change, pdata->phy_mode);
-> +	if (IS_ERR(phydev)) {
-> +		netdev_err(ndev, "Could not attach to PHY\n");
-> +		ret = PTR_ERR(phydev);
-> +		phydev = NULL;
-> +		goto out;
-> +	}
-> +
-
-You should be using of_phy_connect or similar so that the
-necessary PHY<>OF data is properly initialised
-
-> +	netdev_info(ndev, "phy_id=0x%08x phy_drv=\"%s\"",
-> +		    phydev->phy_id, phydev->drv->name);
-> +out:
-> +	pdata->phy_link = 0;
-> +	pdata->phy_speed = 0;
-> +	pdata->phy_dev = phydev;
-> +
-> +	return ret;
-> +}
-> +
-
-
-[snip]
-
-> +struct xgene_enet_desc {
-> +	u64 m0;
-> +	u64 m1;
-> +	u64 m2;
-> +	u64 m3;
-> +};
-> +
-> +struct xgene_enet_desc16 {
-> +	u64 m0;
-> +	u64 m1;
-> +};
-> +
-> +static inline void xgene_enet_cpu_to_le64(struct xgene_enet_desc *desc,
-> +					  int count)
-> +{
-> +#ifdef CONFIG_CPU_BIG_ENDIAN
-> +	int i;
-> +
-> +	for (i = 0; i < count; i++)
-> +		((u64 *)desc)[i] = cpu_to_le64(((u64 *)desc)[i]);
-> +#endif
-> +}
-> +
-> +static inline void xgene_enet_le64_to_cpu(struct xgene_enet_desc *desc,
-> +					  int count)
-> +{
-> +#ifdef CONFIG_CPU_BIG_ENDIAN
-> +	int i;
-> +
-> +	for (i = 0; i < count; i++)
-> +		((u64 *)desc)[i] = le64_to_cpu(((u64 *)desc)[i]);
-> +#endif
-> +}
-> +
-> +static inline void xgene_enet_desc16_to_le64(struct xgene_enet_desc *desc)
-> +{
-> +#ifdef CONFIG_CPU_BIG_ENDIAN
-> +	((u64 *)desc)[1] = cpu_to_le64(((u64 *)desc)[1]);
-> +#endif
-> +}
-> +
-> +static inline void xgene_enet_le64_to_desc16(struct xgene_enet_desc *desc)
-> +{
-> +#ifdef CONFIG_CPU_BIG_ENDIAN
-> +	((u64 *)desc)[1] = le64_to_cpu(((u64 *)desc)[1]);
-> +#endif
-> +}
-
-With this do you not risk confusing the hardware by swapping the
-format of the descriptors?
-
-Why not use xxx_to_cpu() and cpu_to_xxx() functions when reading or
-writing the descriptors? It would also remove a lot of the #ifdef in
-this code.
+Thank you,
 
 -- 
-Ben Dooks				http://www.codethink.co.uk/
-Senior Engineer				Codethink - Providing Genius
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
