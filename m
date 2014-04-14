@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683AbaDNJrT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 05:47:19 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38728 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754481AbaDNJrL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 05:47:11 -0400
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        Shawn Guo <shawn.guo@freescale.com>, cpufreq@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH RESEND 2/2] cpufreq: imx6q: Remove unused include
-Date: Mon, 14 Apr 2014 11:46:57 +0200
-Message-Id: <1397468817-23266-2-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1397468817-23266-1-git-send-email-p.zabel@pengutronix.de>
-References: <1397468817-23266-1-git-send-email-p.zabel@pengutronix.de>
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1754710AbaDNJrq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 05:47:46 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58589 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751529AbaDNJri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 05:47:38 -0400
+Date: Mon, 14 Apr 2014 11:47:24 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Thomas =?utf-8?Q?B=C3=A4chler?= <thomas@archlinux.org>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] efi: Clarify Kconfig help for EFI_MIXED
+Message-ID: <20140414094724.GA3672@pd.tnic>
+References: <1397239154-30121-1-git-send-email-thomas@archlinux.org>
+ <53482E61.8050606@zytor.com>
+ <20140411184433.GA15344@console-pimps.org>
+ <20140414071534.GA19501@gmail.com>
+ <534B9C12.4050708@archlinux.org>
+ <20140414093332.GA10956@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140414093332.GA10956@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to include delay.h.
+On Mon, Apr 14, 2014 at 10:33:32AM +0100, Matt Fleming wrote:
+> That and the fact that no one has said "We really need support".
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Acked-by: Shawn Guo <shawn.guo@freescale.com>
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- drivers/cpufreq/imx6q-cpufreq.c | 1 -
- 1 file changed, 1 deletion(-)
+Don't be putting words in people's mouths :-)
 
-diff --git a/drivers/cpufreq/imx6q-cpufreq.c b/drivers/cpufreq/imx6q-cpufreq.c
-index 92a82ec..af366c2 100644
---- a/drivers/cpufreq/imx6q-cpufreq.c
-+++ b/drivers/cpufreq/imx6q-cpufreq.c
-@@ -9,7 +9,6 @@
- #include <linux/clk.h>
- #include <linux/cpu.h>
- #include <linux/cpufreq.h>
--#include <linux/delay.h>
- #include <linux/err.h>
- #include <linux/module.h>
- #include <linux/of.h>
 -- 
-1.9.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
