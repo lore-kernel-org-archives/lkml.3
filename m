@@ -1,68 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088AbaDNQKR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:10:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47571 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754700AbaDNQKP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:10:15 -0400
+	id S1753503AbaDNQK5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:10:57 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:56650 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753306AbaDNQKz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 12:10:55 -0400
 User-Agent: K-9 Mail for Android
-In-Reply-To: <20140414160211.GE711@lst.de>
-References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de> <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com> <20140414160211.GE711@lst.de>
+In-Reply-To: <9773833.iVsvHLKPbr@joel-zenbook>
+References: <1397066985-2504-1-git-send-email-joel@porquet.org> <534977A7.3090100@kernel.org> <9773833.iVsvHLKPbr@joel-zenbook>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain;
  charset=UTF-8
-Subject: Re: [PATCH v3 00/03]: hwrng: an in-kernel rngd
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, 14 Apr 2014 09:09:14 -0700
-To: Torsten Duwe <duwe@lst.de>
-CC: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        ingo.tuchscherer@de.ibm.com, linux-kernel@vger.kernel.org,
-        Hans-Georg Markgraf <MGRF@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Joe Perches <joe@perches.com>
-Message-ID: <7b22b881-9359-42c9-a632-6a8cbdb13b71@email.android.com>
+Subject: Re: [PATCH] staging: iio: fix coding style
+From: Jonathan Cameron <jic23@kernel.org>
+Date: Mon, 14 Apr 2014 17:10:46 +0100
+To: =?ISO-8859-1?Q?Jo=EBl_Porquet?= <joel@porquet.org>
+CC: gregkh@linuxfoundation.org, jg1.han@samsung.com, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Message-ID: <d930c33f-3421-4c58-b033-57e99113540c@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think the default should be zero, so each hwrng driver maintainer would have to consider what guarantees that particular driver can give.  If anything 50% ought to be the maximum.
 
-On April 14, 2014 9:02:11 AM PDT, Torsten Duwe <duwe@lst.de> wrote:
->More or less a resend of v2.
+
+On April 14, 2014 2:59:32 PM GMT+01:00, "Joël Porquet" <joel@porquet.org> wrote:
 >
->On Wed, Mar 26, 2014 at 06:03:37PM -0700, H. Peter Anvin wrote:
->> I'm wondering more about the default.  We default to 50% for
->arch_get_random_seed, and this is supposed to be the default for in
->effect unverified hwrngs...
 >
->Done. 50% is now the default, that's the only change from v2.
+>On Saturday, April 12, 2014 06:28:07 PM Jonathan Cameron wrote:
+>> 
+>> On 09/04/14 19:09, Joel Porquet wrote:
+>> > As suggested by checkpatch.pl, use dev_info() instead of
+>> > printk(KERN_INFO ...) to print message.
+>> >
+>> > Signed-off-by: Joel Porquet <joel@porquet.org>
+>> > ---
+>> > Only tested by compilation.
+>> >   drivers/staging/iio/trigger/iio-trig-periodic-rtc.c | 3 ++-
+>> >   1 file changed, 2 insertions(+), 1 deletion(-)
+>> >
+>> > diff --git a/drivers/staging/iio/trigger/iio-trig-periodic-rtc.c
+>b/drivers/staging/iio/trigger/iio-trig-periodic-rtc.c
+>> > index 48a6afa..38ecb4b 100644
+>> > --- a/drivers/staging/iio/trigger/iio-trig-periodic-rtc.c
+>> > +++ b/drivers/staging/iio/trigger/iio-trig-periodic-rtc.c
+>> > @@ -33,7 +33,8 @@ static int iio_trig_periodic_rtc_set_state(struct
+>iio_trigger *trig, bool state)
+>> >   	struct iio_prtc_trigger_info *trig_info =
+>iio_trigger_get_drvdata(trig);
+>> >   	if (trig_info->frequency == 0)
+>> >   		return -EINVAL;
+>> > -	printk(KERN_INFO "trigger frequency is %d\n",
+>trig_info->frequency);
+>> > +	dev_info(&trig_info->rtc->dev, "trigger frequency is %d\n",
+>> > +			trig_info->frequency);
+>> The principle is good, but why make the error message us the
+>underlying rtc device?
+>> Going to lead to a rather unhelpful error message.
+>> 
+>> Perhaps the iio_trigger structures device element would make more
+>sense?
+>> Might not be terribly informative, but will at least come from the
+>right
+>> subsystem.
+>> 
+>> Also, I think we will be dropping this driver entirely at some point.
+>> It was a dodgy hack that perhaps made sense at the time, but now a
+>high
+>> resolution timer is going to give better results.
 >
->Andy: the printk you pointed out already limits itself to 1/10s,
->which is half the default rate limit. Also, as Peter already
->wrote, we're dealing with true HWRNGs here; if such a device
->does not produce a single byte within 10 seconds something _is_
->severely broken and, like a dying disk, worth to be logged.
->Here's one of the better circuits I found:
->http://www.maximintegrated.com/app-notes/index.mvp/id/3469
->or offline:
->http://pdfserv.maximintegrated.com/en/an/AN3469.pdf
->Disclaimer: I'm not endorsing Maxim, it's just that paper
->that hits the spot IMHO.
+>OK, thanks for the feedback!
 >
->Anything wrong with feeding those bits into the input pool?
->Any other comments on the code?
+>Does that still make sense that I resubmit another patch (using
+>iio_trigger-dev instead)?
+>Or should I just drop this patch altogether since you seem to say that
+>patching this driver is not really worth it anyway?
+Up to you. Nothing wrong with setting a good example even in code we aim ultimately
+ drop the code! I doubt we will do it for a cycle or two yet
 >
->	Torsten
+>> >   	return rtc_irq_set_state(trig_info->rtc, &trig_info->task,
+>state);
+>> >   }
+>> >
+>> >
+>> 
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-iio" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
 -- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
