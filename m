@@ -1,108 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433AbaDNVsY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 17:48:24 -0400
-Received: from e24smtp04.br.ibm.com ([32.104.18.25]:36953 "EHLO
-	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754339AbaDNVsV (ORCPT
+	id S1755668AbaDNVxm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 17:53:42 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54420 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751412AbaDNVxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 17:48:21 -0400
-Date: Mon, 14 Apr 2014 18:48:07 -0300
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: stefani@seibold.net
-Cc: Benjamin Herrenschmidt <benh@au1.ibm.com>,
-        linux-usb <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Greg KH <greg@kroah.com>, Alan Stern <stern@rowland.harvard.edu>,
-        sarah.a.sharp@linux.intel.com
-Subject: Re: Missing USB XHCI and EHCI reset for kexec
-Message-ID: <20140414214807.GA32141@oc0268524204.ibm.com>
-References: <1397416959.1555.30.camel@vger.seibold.net>
- <1397468521.9258.28.camel@pasglop>
- <20140414174458.Horde.ieyRX8PcZ0lg3nY1QFE2DA4@webmail.your-server.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140414174458.Horde.ieyRX8PcZ0lg3nY1QFE2DA4@webmail.your-server.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041421-1820-0000-0000-00000058CB72
+	Mon, 14 Apr 2014 17:53:34 -0400
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: devel@driverdev.osuosl.org, Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH v2 5/8] imx-drm: ipu-dp: Split disabling the DP foreground channel from disabling the DP module
+Date: Mon, 14 Apr 2014 23:53:20 +0200
+Message-Id: <1397512403-19622-6-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1397512403-19622-1-git-send-email-p.zabel@pengutronix.de>
+References: <1397512403-19622-1-git-send-email-p.zabel@pengutronix.de>
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 05:44:58PM +0200, stefani@seibold.net wrote:
-> 
-> Zitat von Benjamin Herrenschmidt <benh@au1.ibm.com>:
-> 
-> >On Sun, 2014-04-13 at 21:22 +0200, Stefani Seibold wrote:
-> >>When executing a kexec kernel on a PowerPC board the new started kernel
-> >>will not find already enumerated USB devices due a missing reset on the
-> >>USB bus.
-> >>
-> >>As a work around a
-> >>
-> >>echo 1 >/sys/bus/pci/drivers/[ex]hci-pci/BUS-ADDRESS-OF-THE-HCD/reset
-> >>
-> >>will solve this. But this is far from beauty.
-> >>
-> >>My latest kernel without this issue was for EHCI kernel 2.6.39 and for
-> >>XHCI kernel 3.4, but i have no idea when exactly this behavior was
-> >>introduced.
-> >>
-> >>For X86 all is fine.
-> >
-> >I don't know about EHCI specifically but this is a known issue with
-> >XHCI, I observe similar issues on other powerpc platforms (servers)
-> >and this isn't architecture specific (looks more like actualy xhc
-> >implementation specific).
-> >
-> >Thadeu Cascardo (on CC) has been the one investigating that on our side,
-> >he might have more to add including patches.
-> >
-> 
-> I have now a kernel 3.14 dmesg log of the problem. After a kexec the
-> kexeced 3.14 kernel shows:
-> 
-> [    1.170029] xhci_hcd 0001:03:00.0: xHCI Host Controller
-> [    1.175306] xhci_hcd 0001:03:00.0: new USB bus registered,
-> assigned bus number 1
-> [    1.212561] xhci_hcd 0001:03:00.0: Host not halted after 16000
-> microseconds.
-> [    1.219621] xhci_hcd 0001:03:00.0: can't setup: -110
-> [    1.224597] xhci_hcd 0001:03:00.0: USB bus 1 deregistered
-> [    1.230021] xhci_hcd 0001:03:00.0: init 0001:03:00.0 fail, -110
-> [    1.235955] xhci_hcd: probe of 0001:03:00.0 failed with error -110
-> 
-> Any idea?
-> 
-> - Stefani
-> 
-> 
+The former has to be done before disabling the DMFC, the latter has to be
+done afterwards. Otherwise the DMFC FIFOs never get cleared properly.
 
-What is your controller vendor and device IDs? Is that a TI chip?
-
-Can you check if the patch I sent a month ago fixes it? [1] There's the
-whole story there. In fact, you will also need something like the patch
-below. Can you apply only the first one, verify, and, then, the other
-one as well, and report what worked for you?
-
-[1] http://marc.info/?l=linux-usb&m=139483181809062&w=2
-
-Thanks.
-Cascardo.
+Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 ---
-diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
-index 47390e3..232574f 100644
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -392,7 +392,7 @@ static struct pci_driver xhci_pci_driver = {
- 	.remove =	xhci_pci_remove,
- 	/* suspend and resume implemented later */
+ drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h |  2 +
+ drivers/staging/imx-drm/ipu-v3/ipu-dp.c     | 68 +++++++++++++++++++----------
+ drivers/staging/imx-drm/ipuv3-plane.c       |  4 ++
+ 3 files changed, 51 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h b/drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h
+index 2966e42..8678ad1 100644
+--- a/drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h
++++ b/drivers/staging/imx-drm/ipu-v3/imx-ipu-v3.h
+@@ -153,8 +153,10 @@ void ipu_dmfc_put(struct dmfc_channel *dmfc);
  
--	.shutdown = 	usb_hcd_pci_shutdown,
-+	.shutdown =	xhci_pci_remove,
- #ifdef CONFIG_PM
- 	.driver = {
- 		.pm = &usb_hcd_pci_pm_ops
+ struct ipu_dp *ipu_dp_get(struct ipu_soc *ipu, unsigned int flow);
+ void ipu_dp_put(struct ipu_dp *);
++int ipu_dp_enable(struct ipu_soc *ipu);
+ int ipu_dp_enable_channel(struct ipu_dp *dp);
+ void ipu_dp_disable_channel(struct ipu_dp *dp);
++void ipu_dp_disable(struct ipu_soc *ipu);
+ int ipu_dp_setup_channel(struct ipu_dp *dp,
+ 		enum ipu_color_space in, enum ipu_color_space out);
+ int ipu_dp_set_window_pos(struct ipu_dp *, u16 x_pos, u16 y_pos);
+diff --git a/drivers/staging/imx-drm/ipu-v3/ipu-dp.c b/drivers/staging/imx-drm/ipu-v3/ipu-dp.c
+index 58f87c8..6980fa1 100644
+--- a/drivers/staging/imx-drm/ipu-v3/ipu-dp.c
++++ b/drivers/staging/imx-drm/ipu-v3/ipu-dp.c
+@@ -215,10 +215,9 @@ int ipu_dp_setup_channel(struct ipu_dp *dp,
+ }
+ EXPORT_SYMBOL_GPL(ipu_dp_setup_channel);
+ 
+-int ipu_dp_enable_channel(struct ipu_dp *dp)
++int ipu_dp_enable(struct ipu_soc *ipu)
+ {
+-	struct ipu_flow *flow = to_flow(dp);
+-	struct ipu_dp_priv *priv = flow->priv;
++	struct ipu_dp_priv *priv = ipu->dp_priv;
+ 
+ 	mutex_lock(&priv->mutex);
+ 
+@@ -227,15 +226,28 @@ int ipu_dp_enable_channel(struct ipu_dp *dp)
+ 
+ 	priv->use_count++;
+ 
+-	if (dp->foreground) {
+-		u32 reg;
++	mutex_unlock(&priv->mutex);
+ 
+-		reg = readl(flow->base + DP_COM_CONF);
+-		reg |= DP_COM_CONF_FG_EN;
+-		writel(reg, flow->base + DP_COM_CONF);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(ipu_dp_enable);
+ 
+-		ipu_srm_dp_sync_update(priv->ipu);
+-	}
++int ipu_dp_enable_channel(struct ipu_dp *dp)
++{
++	struct ipu_flow *flow = to_flow(dp);
++	struct ipu_dp_priv *priv = flow->priv;
++	u32 reg;
++
++	if (!dp->foreground)
++		return 0;
++
++	mutex_lock(&priv->mutex);
++
++	reg = readl(flow->base + DP_COM_CONF);
++	reg |= DP_COM_CONF_FG_EN;
++	writel(reg, flow->base + DP_COM_CONF);
++
++	ipu_srm_dp_sync_update(priv->ipu);
+ 
+ 	mutex_unlock(&priv->mutex);
+ 
+@@ -247,25 +259,35 @@ void ipu_dp_disable_channel(struct ipu_dp *dp)
+ {
+ 	struct ipu_flow *flow = to_flow(dp);
+ 	struct ipu_dp_priv *priv = flow->priv;
++	u32 reg, csc;
++
++	if (!dp->foreground)
++		return;
+ 
+ 	mutex_lock(&priv->mutex);
+ 
+-	priv->use_count--;
++	reg = readl(flow->base + DP_COM_CONF);
++	csc = reg & DP_COM_CONF_CSC_DEF_MASK;
++	if (csc == DP_COM_CONF_CSC_DEF_FG)
++		reg &= ~DP_COM_CONF_CSC_DEF_MASK;
+ 
+-	if (dp->foreground) {
+-		u32 reg, csc;
++	reg &= ~DP_COM_CONF_FG_EN;
++	writel(reg, flow->base + DP_COM_CONF);
+ 
+-		reg = readl(flow->base + DP_COM_CONF);
+-		csc = reg & DP_COM_CONF_CSC_DEF_MASK;
+-		if (csc == DP_COM_CONF_CSC_DEF_FG)
+-			reg &= ~DP_COM_CONF_CSC_DEF_MASK;
++	writel(0, flow->base + DP_FG_POS);
++	ipu_srm_dp_sync_update(priv->ipu);
+ 
+-		reg &= ~DP_COM_CONF_FG_EN;
+-		writel(reg, flow->base + DP_COM_CONF);
++	mutex_unlock(&priv->mutex);
++}
++EXPORT_SYMBOL_GPL(ipu_dp_disable_channel);
+ 
+-		writel(0, flow->base + DP_FG_POS);
+-		ipu_srm_dp_sync_update(priv->ipu);
+-	}
++void ipu_dp_disable(struct ipu_soc *ipu)
++{
++	struct ipu_dp_priv *priv = ipu->dp_priv;
++
++	mutex_lock(&priv->mutex);
++
++	priv->use_count--;
+ 
+ 	if (!priv->use_count)
+ 		ipu_module_disable(priv->ipu, IPU_CONF_DP_EN);
+@@ -275,7 +297,7 @@ void ipu_dp_disable_channel(struct ipu_dp *dp)
+ 
+ 	mutex_unlock(&priv->mutex);
+ }
+-EXPORT_SYMBOL_GPL(ipu_dp_disable_channel);
++EXPORT_SYMBOL_GPL(ipu_dp_disable);
+ 
+ struct ipu_dp *ipu_dp_get(struct ipu_soc *ipu, unsigned int flow)
+ {
+diff --git a/drivers/staging/imx-drm/ipuv3-plane.c b/drivers/staging/imx-drm/ipuv3-plane.c
+index 27a8d73..5697e59 100644
+--- a/drivers/staging/imx-drm/ipuv3-plane.c
++++ b/drivers/staging/imx-drm/ipuv3-plane.c
+@@ -239,6 +239,8 @@ err_out:
+ 
+ void ipu_plane_enable(struct ipu_plane *ipu_plane)
+ {
++	if (ipu_plane->dp)
++		ipu_dp_enable(ipu_plane->ipu);
+ 	ipu_dmfc_enable_channel(ipu_plane->dmfc);
+ 	ipu_idmac_enable_channel(ipu_plane->ipu_ch);
+ 	if (ipu_plane->dp)
+@@ -257,6 +259,8 @@ void ipu_plane_disable(struct ipu_plane *ipu_plane)
+ 		ipu_dp_disable_channel(ipu_plane->dp);
+ 	ipu_idmac_disable_channel(ipu_plane->ipu_ch);
+ 	ipu_dmfc_disable_channel(ipu_plane->dmfc);
++	if (ipu_plane->dp)
++		ipu_dp_disable(ipu_plane->ipu);
+ }
+ 
+ static void ipu_plane_dpms(struct ipu_plane *ipu_plane, int mode)
+-- 
+1.9.1
 
