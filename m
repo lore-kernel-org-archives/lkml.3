@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268AbaDNKFF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 06:05:05 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:60572 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751177AbaDNKFD (ORCPT
+	id S1754508AbaDNKGW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 06:06:22 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:58631 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045AbaDNKGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 06:05:03 -0400
-Date: Mon, 14 Apr 2014 12:04:57 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Igor Mammedov <imammedo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, bp@suse.de,
-        paul.gortmaker@windriver.com, JBeulich@suse.com, prarit@redhat.com,
-        drjones@redhat.com, toshi.kani@hp.com, riel@redhat.com,
-        gong.chen@linux.intel.com, andi@firstfloor.org, lenb@kernel.org,
-        rjw@rjwysocki.net, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH v3 3/5] x86: fix list corruption on CPU hotplug
-Message-ID: <20140414100457.GD731@gmail.com>
-References: <1397150061-29735-1-git-send-email-imammedo@redhat.com>
- <1397150061-29735-4-git-send-email-imammedo@redhat.com>
- <20140414091954.GB19771@gmail.com>
- <20140414115600.0d5dbbb5@thinkpad>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140414115600.0d5dbbb5@thinkpad>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 14 Apr 2014 06:06:20 -0400
+Message-ID: <1397468521.9258.28.camel@pasglop>
+Subject: Re: Missing USB XHCI and EHCI reset for kexec
+From: Benjamin Herrenschmidt <benh@au1.ibm.com>
+To: Stefani Seibold <stefani@seibold.net>
+Cc: linux-usb <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <greg@kroah.com>, Alan Stern <stern@rowland.harvard.edu>,
+        sarah.a.sharp@linux.intel.com,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Date: Mon, 14 Apr 2014 19:42:01 +1000
+In-Reply-To: <1397416959.1555.30.camel@vger.seibold.net>
+References: <1397416959.1555.30.camel@vger.seibold.net>
+Organization: IBM Australia
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.90 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041410-0260-0000-0000-000004B8E72B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Igor Mammedov <imammedo@redhat.com> wrote:
-
-> On Mon, 14 Apr 2014 11:19:54 +0200
-> Ingo Molnar <mingo@kernel.org> wrote:
+On Sun, 2014-04-13 at 21:22 +0200, Stefani Seibold wrote:
+> When executing a kexec kernel on a PowerPC board the new started kernel
+> will not find already enumerated USB devices due a missing reset on the
+> USB bus.
 > 
-> > 
-> > * Igor Mammedov <imammedo@redhat.com> wrote:
-> > 
-> > > currently if AP wake up is failed, master CPU marks AP as not present
-> > > in do_boot_cpu() by calling set_cpu_present(cpu, false).
-> > > That leads to following list corruption on the next physical CPU
-> > > hotplug:
-> > 
-> > Shouldn't this fix precede the main change to the smp bootup logic?
-> > 
-> > Can this bug trigger with current upstream kernels?
-> That's not impossible, tests showed that with current kernel there will
-> be other problems due wild AP running around.
+> As a work around a
 > 
-> I'll reorder patch anyway.
+> echo 1 >/sys/bus/pci/drivers/[ex]hci-pci/BUS-ADDRESS-OF-THE-HCD/reset
+> 
+> will solve this. But this is far from beauty.
+> 
+> My latest kernel without this issue was for EHCI kernel 2.6.39 and for
+> XHCI kernel 3.4, but i have no idea when exactly this behavior was
+> introduced.
+> 
+> For X86 all is fine.
 
-So, could you please first make sure that with only the fixes applied 
-there's no problems left?
+I don't know about EHCI specifically but this is a known issue with
+XHCI, I observe similar issues on other powerpc platforms (servers)
+and this isn't architecture specific (looks more like actualy xhc
+implementation specific).
 
-Only then should we apply the patch that adds/tweaks the timeout/etc.
+Thadeu Cascardo (on CC) has been the one investigating that on our side,
+he might have more to add including patches.
 
-Thanks,
+Cheers,
+Ben.
 
-	Ingo
+
