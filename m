@@ -1,50 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857AbaDNXZx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 19:25:53 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:36136 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754221AbaDNXZv (ORCPT
+	id S1755151AbaDNX2I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 19:28:08 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:55059 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085AbaDNX2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 19:25:51 -0400
-Date: Tue, 15 Apr 2014 01:25:48 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Pull request ?
-Message-ID: <20140414232548.GC2967@piout.net>
-References: <20140414081905.GJ2967@piout.net>
- <534C2247.80804@kernel.org>
- <20140414182011.GU2967@piout.net>
- <ce302449-74a1-41e1-a86d-387a4f618d8a@email.android.com>
+	Mon, 14 Apr 2014 19:28:06 -0400
+Date: Tue, 15 Apr 2014 01:28:03 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: tglx@linutronix.de, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org, Arvind.Chauhan@arm.com,
+        linaro-networking@linaro.org
+Subject: Re: [PATCH 30/38] tick-sched: move nohz_full_buf[] inside
+ tick_nohz_init()
+Message-ID: <20140414232801.GF1877@localhost.localdomain>
+References: <cover.1397492345.git.viresh.kumar@linaro.org>
+ <b9bb3a40fc7a973438a54ddab8e1c89c6c66dd8c.1397492345.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <ce302449-74a1-41e1-a86d-387a4f618d8a@email.android.com>
+In-Reply-To: <b9bb3a40fc7a973438a54ddab8e1c89c6c66dd8c.1397492345.git.viresh.kumar@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/04/2014 at 21:56:45 +0100, Jonathan Cameron wrote :
-> >> 
-> >
-> >Yeah, I was asking about the fixes, the fixes-togreg branch ;)
-> >
+On Mon, Apr 14, 2014 at 09:53:52PM +0530, Viresh Kumar wrote:
+> nohz_full_buf[] is used at only one place, i.e. inside tick_nohz_init(). Make it
+> a local variable. Can move it out in case it is used in some other routines in
+> future.
+
+OTOH nohz_full_buf can have a big size and moving it to a local variable
+will result in big increase in kernel stack consumption.
+
+Keeping it static is safer.
+
+Also it's already __initdata so it's released after bootup. No issue of
+concurrent use either, so keeping it as is is fine.
+
 > 
-> Ah. Dozy me. Went to Greg a day or so ago. Up to him when/if he picks it up and sends 
-> on to Linus. Greg is pretty fast though so probably fairly soon if there are no issues.
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  kernel/time/tick-sched.c | 13 ++++++-------
+>  1 file changed, 6 insertions(+), 7 deletions(-)
 > 
-
-I'm actually the one that should apologize, I actually tried to find your
-pull request on Friday, then though that you would sent it over the
-weekend and then I missed it... I was kind of surpised by the fact that
-I didn't get the nice notifications from Greg before 3.15-rc1 was
-released :)
-
-Sorry for the noise !
-
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index d8b9a69..22b9505 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -321,13 +321,6 @@ static int tick_nohz_cpu_down_callback(struct notifier_block *nfb,
+>  	return NOTIFY_OK;
+>  }
+>  
+> -/*
+> - * Worst case string length in chunks of CPU range seems 2 steps
+> - * separations: 0,2,4,6,...
+> - * This is NR_CPUS + sizeof('\0')
+> - */
+> -static char __initdata nohz_full_buf[NR_CPUS + 1];
+> -
+>  static int tick_nohz_init_all(void)
+>  {
+>  	int err = -1;
+> @@ -347,6 +340,12 @@ static int tick_nohz_init_all(void)
+>  
+>  void __init tick_nohz_init(void)
+>  {
+> +	/*
+> +	 * Worst case string length in chunks of CPU range seems 2 steps
+> +	 * separations: 0,2,4,6,...
+> +	 * This is NR_CPUS + sizeof('\0')
+> +	 */
+> +	char nohz_full_buf[NR_CPUS + 1];
+>  	int cpu;
+>  
+>  	if (!tick_nohz_full_running) {
+> -- 
+> 1.7.12.rc2.18.g61b472e
+> 
