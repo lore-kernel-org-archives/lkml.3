@@ -1,137 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892AbaDNHkW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 03:40:22 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:58172 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049AbaDNHkR (ORCPT
+	id S1753188AbaDNHki (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 03:40:38 -0400
+Received: from out03.mta.xmission.com ([166.70.13.233]:55105 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753001AbaDNHk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 03:40:17 -0400
-X-AuditID: cbfee68d-b7fcd6d00000315b-45-534b90dcb68d
-From: Jungseok Lee <jays.lee@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        Catalin.Marinas@arm.com, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        sungjinn.chung@samsung.com, Arnd Bergmann <arnd@arndb.de>,
-        kgene.kim@samsung.com, ilho215.lee@samsung.com
-Subject: [PATCH 1/8] arm64: Use pr_* instead of printk
-Date: Mon, 14 Apr 2014 16:40:12 +0900
-Message-id: <000001cf57b4$c4b52790$4e1f76b0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac9XrNZNznWFc5jwS7C5f4JWswaR2Q==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOIsWRmVeSWpSXmKPExsVy+t8zA907E7yDDd5PU7H4O+kYu8X7ZT2M
-	Fi9e/2O0OPpvIaNF74KrbBYfTx1nt9j0+BqrxeVdc9gsZpzfx2Tx984/NosPM1YyOnB7rJm3
-	htHj969JjB53ru1h8zi/aQ2zx+Yl9R59W1YxenzeJBfAHsVlk5Kak1mWWqRvl8CVsffLc5aC
-	zUIV809cYW9gvM/XxcjBISFgIvFuh3EXIyeQKSZx4d56ti5GLg4hgWWMEvN+PWOHSJhInJr4
-	hQXEFhJYxChxal05RNEfRol/V14wgSTYBDQlHt3tYQdJiAjsYJSYvHYRK4jDLHCCUWLpnbWs
-	IFXCAmYSXd2rwWwWAVWJV/NfgY3lFbCUaJ82hxnCFpT4MfkeWJxZQEti/c7jTBC2vMTmNW+Z
-	IU5SkNhx9jUjyAsiAnoSTT1uECUiEvtevGME2Ssh0Moh8eL7IqhdAhLfJh9igXhZVmLTAagx
-	khIHV9xgmcAoNgvJ5llINs9CsnkWkhULGFlWMYqmFiQXFCelFxnqFSfmFpfmpesl5+duYoRE
-	cu8OxtsHrA8xJgOtn8gsJZqcD0wEeSXxhsZmRhamJqbGRuaWZqQJK4nzJj1MChISSE8sSc1O
-	TS1ILYovKs1JLT7EyMTBKdXAmBEu0Gl2mCHz40fOpqAP7/df3nXLIvBAU4MSn8H61p0K22ZJ
-	uPxZ/7f/fIG97bWU2htfNPTPJ7GZNu55MjVyUfm6W6JJz55nh/dkJWmIqmly3T3McZVjq/RB
-	7cyvxxXXzFyTcmlh7ru/7PKa7KfMws4XLjuf+PW0kuYzC59fireXZ6qZ+ctmKLEUZyQaajEX
-	FScCAFHwS/j6AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKKsWRmVeSWpSXmKPExsVy+t9jAd07E7yDDbZOkLf4O+kYu8X7ZT2M
-	Fi9e/2O0OPpvIaNF74KrbBYfTx1nt9j0+BqrxeVdc9gsZpzfx2Tx984/NosPM1YyOnB7rJm3
-	htHj969JjB53ru1h8zi/aQ2zx+Yl9R59W1YxenzeJBfAHtXAaJORmpiSWqSQmpecn5KZl26r
-	5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDdKSSQlliTilQKCCxuFhJ3w7ThNAQN10L
-	mMYIXd+QILgeIwM0kLCOMWPvl+csBZuFKuafuMLewHifr4uRk0NCwETi1MQvLBC2mMSFe+vZ
-	QGwhgUWMEqfWlXcxcgHZfxgl/l15wQSSYBPQlHh0t4cdJCEisINRYvLaRawgDrPACUaJpXfW
-	soJUCQuYSXR1rwazWQRUJV7NfwW2glfAUqJ92hxmCFtQ4sfke2BxZgEtifU7jzNB2PISm9e8
-	ZYY4SUFix9nXjF2MHEDb9CSaetwgSkQk9r14xziBUWAWkkmzkEyahWTSLCQtCxhZVjGKphYk
-	FxQnpeca6hUn5haX5qXrJefnbmIEJ4pnUjsYVzZYHGIU4GBU4uFN2O4ZLMSaWFZcmXuIUYKD
-	WUmEd1uGV7AQb0piZVVqUX58UWlOavEhxmSgRycyS4km5wOTWF5JvKGxiZmRpZGZhZGJuTlp
-	wkrivAdarQOFBNITS1KzU1MLUotgtjBxcEo1MIoIn3r8P2dVy1PPM3oTrO+bOq3msmibv+k+
-	26Sp757yWN1fFmFdyhv8grG0NvKdPmPEnLQ5WzTYnhz62lM9o0F4/+b8zzdNDC0m2iyzCTzw
-	1kj/FGekjNVF7QO7V3mHWhfOyJ8keqHzpn2AQ+riKVdPGn17uYCdWWLDNxnpZZxmlx5qLWr+
-	xajEUpyRaKjFXFScCACAcku+WAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 14 Apr 2014 03:40:28 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, tytso@mit.edu
+References: <87sipmbe8x.fsf@x220.int.ebiederm.org>
+	<20140409175322.GZ18016@ZenIV.linux.org.uk>
+	<20140409182830.GA18016@ZenIV.linux.org.uk>
+	<87txa286fu.fsf@x220.int.ebiederm.org>
+	<87fvlm860e.fsf_-_@x220.int.ebiederm.org>
+	<20140409232423.GB18016@ZenIV.linux.org.uk>
+	<87lhva5h4k.fsf@x220.int.ebiederm.org>
+	<20140413053956.GM18016@ZenIV.linux.org.uk>
+	<87zjjp3e7w.fsf@x220.int.ebiederm.org>
+	<87ppkl1xb7.fsf@x220.int.ebiederm.org>
+	<20140413215242.GP18016@ZenIV.linux.org.uk>
+	<87y4z8uzqw.fsf_-_@x220.int.ebiederm.org>
+Date: Mon, 14 Apr 2014 00:40:03 -0700
+In-Reply-To: <87y4z8uzqw.fsf_-_@x220.int.ebiederm.org> (Eric W. Biederman's
+	message of "Mon, 14 Apr 2014 00:38:47 -0700")
+Message-ID: <87sipguzos.fsf_-_@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/2q90DK/WvHvuDpFJiiFzggVAOeJdPst0=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
+	*      [score: 0.4919]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Al Viro <viro@ZenIV.linux.org.uk>
+X-Spam-Relay-Country: 
+Subject: [PATCH 1/4] vfs: Remove useless loop in mntput_no_expire
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixed the following checkpatch complaint as using pr_*
-instead of printk.
 
-WARNING: printk() should include KERN_ facility level
+Remove the extra reference added to mnt_count by the mnt_pinned code,
+and stop jumping to the top of mntput_no_expire.
 
-Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
-Reviewed-by: Sungjinn Chung <sungjinn.chung@samsung.com>
+When fput synchronously called mntput that extra reference count and
+the loop ensured that after acct_auto_close_mnt closed all of the
+pinned references mntput_no_expire would then proceed actually
+unmount the filesystem.
+
+As fput is asynchronous today there is no point in looping.
+
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 ---
- arch/arm64/kernel/traps.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ fs/namespace.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm64/kernel/traps.c b/arch/arm64/kernel/traps.c
-index 7ffaddd..0484e81 100644
---- a/arch/arm64/kernel/traps.c
-+++ b/arch/arm64/kernel/traps.c
-@@ -65,7 +65,7 @@ static void dump_mem(const char *lvl, const char *str, unsigned long bottom,
- 	fs = get_fs();
- 	set_fs(KERNEL_DS);
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 9d0eb6b4e7d5..2abd5a2416d0 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -985,7 +985,6 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
  
--	printk("%s%s(0x%016lx to 0x%016lx)\n", lvl, str, bottom, top);
-+	pr_emerg("%s%s(0x%016lx to 0x%016lx)\n", lvl, str, bottom, top);
- 
- 	for (first = bottom & ~31; first < top; first += 32) {
- 		unsigned long p;
-@@ -83,7 +83,7 @@ static void dump_mem(const char *lvl, const char *str, unsigned long bottom,
- 					sprintf(str + i * 9, " ????????");
- 			}
- 		}
--		printk("%s%04lx:%s\n", lvl, first & 0xffff, str);
-+		pr_emerg("%s%04lx:%s\n", lvl, first & 0xffff, str);
- 	}
- 
- 	set_fs(fs);
-@@ -124,7 +124,7 @@ static void dump_instr(const char *lvl, struct pt_regs *regs)
- 			break;
- 		}
- 	}
--	printk("%sCode: %s\n", lvl, str);
-+	pr_emerg("%sCode: %s\n", lvl, str);
- 
- 	set_fs(fs);
- }
-@@ -156,7 +156,7 @@ static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
- 		frame.pc = thread_saved_pc(tsk);
- 	}
- 
--	printk("Call trace:\n");
-+	pr_emerg("Call trace:\n");
- 	while (1) {
- 		unsigned long where = frame.pc;
- 		int ret;
-@@ -328,17 +328,17 @@ asmlinkage void bad_mode(struct pt_regs *regs, int reason, unsigned int esr)
- 
- void __pte_error(const char *file, int line, unsigned long val)
+ static void mntput_no_expire(struct mount *mnt)
  {
--	printk("%s:%d: bad pte %016lx.\n", file, line, val);
-+	pr_crit("%s:%d: bad pte %016lx.\n", file, line, val);
- }
- 
- void __pmd_error(const char *file, int line, unsigned long val)
- {
--	printk("%s:%d: bad pmd %016lx.\n", file, line, val);
-+	pr_crit("%s:%d: bad pmd %016lx.\n", file, line, val);
- }
- 
- void __pgd_error(const char *file, int line, unsigned long val)
- {
--	printk("%s:%d: bad pgd %016lx.\n", file, line, val);
-+	pr_crit("%s:%d: bad pgd %016lx.\n", file, line, val);
- }
- 
- void __init trap_init(void)
+-put_again:
+ 	rcu_read_lock();
+ 	mnt_add_count(mnt, -1);
+ 	if (likely(mnt->mnt_ns)) { /* shouldn't be the last one */
+@@ -999,12 +998,12 @@ put_again:
+ 		return;
+ 	}
+ 	if (unlikely(mnt->mnt_pinned)) {
+-		mnt_add_count(mnt, mnt->mnt_pinned + 1);
++		mnt_add_count(mnt, mnt->mnt_pinned);
+ 		mnt->mnt_pinned = 0;
+ 		rcu_read_unlock();
+ 		unlock_mount_hash();
+ 		acct_auto_close_mnt(&mnt->mnt);
+-		goto put_again;
++		return;
+ 	}
+ 	if (unlikely(mnt->mnt.mnt_flags & MNT_DOOMED)) {
+ 		rcu_read_unlock();
 -- 
-1.7.10.4
-
+1.9.1
 
