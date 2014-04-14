@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781AbaDNRjh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 13:39:37 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:48196 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753692AbaDNRjg (ORCPT
+	id S1754994AbaDNRkE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 13:40:04 -0400
+Received: from xavier.telenet-ops.be ([195.130.132.52]:32887 "EHLO
+	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754571AbaDNRkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 13:39:36 -0400
-From: Kenjiro Nakayama <nakayamakenjiro@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] ipv4: Add option to get TCP_FASTOPEN to getsockopt()
-User-agent: mu4e 0.9.9.5; emacs 24.3.1
-Date: Tue, 15 Apr 2014 02:39:31 +0900
-Message-ID: <87tx9v3j58.fsf@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 14 Apr 2014 13:40:01 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-spi@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH] spi: core: Ignore unsupported Dual/Quad Transfer Mode bits
+Date: Mon, 14 Apr 2014 19:39:53 +0200
+Message-Id: <1397497193-28067-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TCP_FASTOPEN option can be set via setsockopt(), but the value cannot be
-gotten via getsockopt(). This patch adds the option to getsockopt().
+From: Geert Uytterhoeven <geert+renesas@glider.be>
 
-Sighned-off-by: Kenjiro Nakayama <nakayamakenjiro@gmail.com>
+The availability of SPI Dual or Quad Transfer Mode as indicated by the
+"spi-tx-bus-width" and "spi-rx-bus-width" properties in the device tree is
+a hardware property of the SPI master, SPI slave, and board wiring.  Hence
+the SPI core should not reject an SPI slave because an SPI master driver
+doesn't (yet) support Dual or Quad Transfer Mode.
 
- 	Add option to get TCP_FASTOPEN to getsockopt()
+Change the lack of Dual or Quad Transfer Mode support in the SPI master
+driver from an error condition to a warning condition, and ignore the
+unsupported mode bits, falling back to Single Transfer Mode, to avoid
+breakages when running old kernels with new device trees.
+
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 ---
- net/ipv4/tcp.c | 5 +++++
- 1 file changed, 5 insertions(+)
+I think this should be applied to -stable, for all versions containing
+commit f477b7fb13df2b843997559ff34e87d054ba6538 ("spi: DUAL and QUAD
+support"), i.e. v3.12, v3.13, v3.14.
+---
+ drivers/spi/spi.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 4bd6d52..6ccdbcc 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -2916,6 +2916,11 @@ static int do_tcp_getsockopt(struct sock *sk, int level,
- 	case TCP_USER_TIMEOUT:
- 		val = jiffies_to_msecs(icsk->icsk_user_timeout);
- 		break;
-+
-+	case TCP_FASTOPEN:
-+		val = sysctl_tcp_fastopen;
-+		break;
-+
- 	case TCP_TIMESTAMP:
- 		val = tcp_time_stamp + tp->tsoffset;
- 		break;
---
-1.9.0
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 4eb9bf02996c..1534fa1dac34 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -1756,7 +1756,7 @@ EXPORT_SYMBOL_GPL(spi_busnum_to_master);
+  */
+ int spi_setup(struct spi_device *spi)
+ {
+-	unsigned	bad_bits;
++	unsigned	bad_bits, ugly_bits;
+ 	int		status = 0;
+ 
+ 	/* check mode to prevent that DUAL and QUAD set at the same time
+@@ -1776,6 +1776,15 @@ int spi_setup(struct spi_device *spi)
+ 	 * that aren't supported with their current master
+ 	 */
+ 	bad_bits = spi->mode & ~spi->master->mode_bits;
++	ugly_bits = bad_bits &
++		    (SPI_TX_DUAL | SPI_TX_QUAD | SPI_RX_DUAL | SPI_RX_QUAD);
++	if (ugly_bits) {
++		dev_warn(&spi->dev,
++			 "setup: ignoring unsupported mode bits %x\n",
++			 ugly_bits);
++		spi->mode &= ~ugly_bits;
++		bad_bits &= ~ugly_bits;
++	}
+ 	if (bad_bits) {
+ 		dev_err(&spi->dev, "setup: unsupported mode bits %x\n",
+ 			bad_bits);
+-- 
+1.7.9.5
+
