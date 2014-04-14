@@ -1,130 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677AbaDNIMC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 04:12:02 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:49818 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085AbaDNIJ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 04:09:29 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-c1-534b97b4ae7f
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sangbeom Kim <sbkim73@samsung.com>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 1/4] regulator: s2mps11: Move DTS parsing code to separate
- function
-Date: Mon, 14 Apr 2014 10:09:06 +0200
-Message-id: <1397462949-22379-2-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.8.3.2
-In-reply-to: <1397462949-22379-1-git-send-email-k.kozlowski@samsung.com>
-References: <1397462949-22379-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t/xK7pbpnsHG9z8KWaxccZ6VoupD5+w
-	Wcw/co7Vov/NQlaLc69WMlq8fmFocbbpDbvF/a9HGS2+Xelgsri8aw6bxYzz+5gs1h65y26x
-	9PpFJosJ09eyWLTuPcJucbqb1eLiii9MFutnvGZxEPJYM28No8flvl4mj52z7rJ7rFz+hc1j
-	06pONo871/awecw7GejRt2UVo8fnTXIBnFFcNimpOZllqUX6dglcGWtmyBdsFKn4/H41UwPj
-	K4EuRk4OCQETiY65a1ggbDGJC/fWs3UxcnEICSxllDh7bR8zhNPHJNE5bRMjSBWbgLHE5uVL
-	wKpEBG4wS0xctosJJMEs8JxR4un3cBBbWCBUom3tB7A4i4CqxL4LN9lBbF4Bd4knvxezQ6xT
-	kFj2ZS3QBg4OTgEPiTc32UDCQkAlX3/PYprAyLuAkWEVo2hqaXJBcVJ6rqFecWJucWleul5y
-	fu4mRkiQf9nBuPiY1SFGAQ5GJR7ehO2ewUKsiWXFlbmHGCU4mJVEeLdleAUL8aYkVlalFuXH
-	F5XmpBYfYmTi4JRqYNx479b2rHzViczMP9bel3k7d6mp3tKAsKPXpjCsSJ1TF+CfwudxRPrh
-	y4vKz01O1tz79L3t1BXry6yc0/y0YktVLsf08bBcS/FkuTp9Q+CE61O2T2ScNimAt8VkGkPW
-	LjHNxqNP3Lt57Zpj/newFs7Z7zbLUeDrNb9XWq5ZS2b9fP/rf/+dPaVKLMUZiYZazEXFiQCn
-	ytnjUAIAAA==
+	id S1752534AbaDNIOH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 04:14:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12112 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754431AbaDNIEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 04:04:41 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>, qla2xxx-upstream@qlogic.com,
+        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: [PATCH v2 RESEND 21/23] qla2xxx: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Mon, 14 Apr 2014 10:05:45 +0200
+Message-Id: <56843dce951ecc7ee986936d91d69a446946d42f.1397461652.git.agordeev@redhat.com>
+In-Reply-To: <cover.1397461652.git.agordeev@redhat.com>
+References: <cover.1397461652.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refactor code for parsing DTS to increase a little code readability. The
-behaviour should not change.
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range()  or pci_enable_msi_exact()
+and pci_enable_msix_range() or pci_enable_msix_exact()
+interfaces.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Log message code 0x00c6 preserved, although it is reported
+after successful call to pci_enable_msix_range(), not before
+possibly unsuccessful call to pci_enable_msix(). Consumers
+of the error code should not notice the difference.
+
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: qla2xxx-upstream@qlogic.com
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-pci@vger.kernel.org
 ---
- drivers/regulator/s2mps11.c | 35 +++++++++++++++++++++++------------
- 1 file changed, 23 insertions(+), 12 deletions(-)
+ drivers/scsi/qla2xxx/qla_isr.c |   27 +++++++++++----------------
+ 1 files changed, 11 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-index e713c162fbd4..3aba0331fb5d 100644
---- a/drivers/regulator/s2mps11.c
-+++ b/drivers/regulator/s2mps11.c
-@@ -565,12 +565,28 @@ static const struct regulator_desc s2mps14_regulators[] = {
- 	regulator_desc_s2mps14_buck1235(5),
- };
+diff --git a/drivers/scsi/qla2xxx/qla_isr.c b/drivers/scsi/qla2xxx/qla_isr.c
+index 95314ef..41eb0dc 100644
+--- a/drivers/scsi/qla2xxx/qla_isr.c
++++ b/drivers/scsi/qla2xxx/qla_isr.c
+@@ -2918,27 +2918,22 @@ qla24xx_enable_msix(struct qla_hw_data *ha, struct rsp_que *rsp)
+ 	for (i = 0; i < ha->msix_count; i++)
+ 		entries[i].entry = i;
  
-+static int s2mps11_pmic_dt_parse(struct platform_device *pdev,
-+		struct of_regulator_match *rdata, struct s2mps11_info *s2mps11)
-+{
-+	struct device_node *reg_np;
-+
-+	reg_np = of_get_child_by_name(pdev->dev.parent->of_node, "regulators");
-+	if (!reg_np) {
-+		dev_err(&pdev->dev, "could not find regulators sub-node\n");
-+		return -EINVAL;
-+	}
-+
-+	of_regulator_match(&pdev->dev, reg_np, rdata, s2mps11->rdev_num);
-+	of_node_put(reg_np);
-+
-+	return 0;
-+}
-+
- static int s2mps11_pmic_probe(struct platform_device *pdev)
- {
- 	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
--	struct sec_platform_data *pdata = iodev->pdata;
-+	struct sec_platform_data *pdata = NULL;
- 	struct of_regulator_match *rdata = NULL;
--	struct device_node *reg_np = NULL;
- 	struct regulator_config config = { };
- 	struct s2mps11_info *s2mps11;
- 	int i, ret = 0;
-@@ -598,7 +614,8 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
- 	};
- 
- 	if (!iodev->dev->of_node) {
--		if (pdata) {
-+		if (iodev->pdata) {
-+			pdata = iodev->pdata;
- 			goto common_reg;
- 		} else {
- 			dev_err(pdev->dev.parent,
-@@ -614,15 +631,9 @@ static int s2mps11_pmic_probe(struct platform_device *pdev)
- 	for (i = 0; i < s2mps11->rdev_num; i++)
- 		rdata[i].name = regulators[i].name;
- 
--	reg_np = of_get_child_by_name(iodev->dev->of_node, "regulators");
--	if (!reg_np) {
--		dev_err(&pdev->dev, "could not find regulators sub-node\n");
--		ret = -EINVAL;
-+	ret = s2mps11_pmic_dt_parse(pdev, rdata, s2mps11);
-+	if (ret)
- 		goto out;
--	}
+-	ret = pci_enable_msix(ha->pdev, entries, ha->msix_count);
+-	if (ret) {
+-		if (ret < MIN_MSIX_COUNT)
+-			goto msix_failed;
 -
--	of_regulator_match(&pdev->dev, reg_np, rdata, s2mps11->rdev_num);
--	of_node_put(reg_np);
- 
- common_reg:
- 	platform_set_drvdata(pdev, s2mps11);
-@@ -633,7 +644,7 @@ common_reg:
- 	for (i = 0; i < s2mps11->rdev_num; i++) {
- 		struct regulator_dev *regulator;
- 
--		if (!reg_np) {
-+		if (pdata) {
- 			config.init_data = pdata->regulators[i].initdata;
- 			config.of_node = pdata->regulators[i].reg_node;
- 		} else {
++	ret = pci_enable_msix_range(ha->pdev,
++				    entries, MIN_MSIX_COUNT, ha->msix_count);
++	if (ret < 0) {
++		ql_log(ql_log_fatal, vha, 0x00c7,
++		    "MSI-X: Failed to enable support, "
++		    "giving   up -- %d/%d.\n",
++		    ha->msix_count, ret);
++		goto msix_out;
++	} else if (ret < ha->msix_count) {
+ 		ql_log(ql_log_warn, vha, 0x00c6,
+ 		    "MSI-X: Failed to enable support "
+ 		    "-- %d/%d\n Retry with %d vectors.\n",
+ 		    ha->msix_count, ret, ret);
+-		ha->msix_count = ret;
+-		ret = pci_enable_msix(ha->pdev, entries, ha->msix_count);
+-		if (ret) {
+-msix_failed:
+-			ql_log(ql_log_fatal, vha, 0x00c7,
+-			    "MSI-X: Failed to enable support, "
+-			    "giving   up -- %d/%d.\n",
+-			    ha->msix_count, ret);
+-			goto msix_out;
+-		}
+-		ha->max_rsp_queues = ha->msix_count - 1;
+ 	}
++	ha->msix_count = ret;
++	ha->max_rsp_queues = ha->msix_count - 1;
+ 	ha->msix_entries = kzalloc(sizeof(struct qla_msix_entry) *
+ 				ha->msix_count, GFP_KERNEL);
+ 	if (!ha->msix_entries) {
 -- 
-1.8.3.2
+1.7.7.6
 
