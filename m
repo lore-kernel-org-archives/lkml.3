@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555AbaDNB4e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 21:56:34 -0400
-Received: from smtprelay0149.hostedemail.com ([216.40.44.149]:33017 "EHLO
+	id S1754710AbaDNB4m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 21:56:42 -0400
+Received: from smtprelay0253.hostedemail.com ([216.40.44.253]:43909 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754503AbaDNB4b (ORCPT
+	by vger.kernel.org with ESMTP id S1754576AbaDNB4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 21:56:31 -0400
+	Sun, 13 Apr 2014 21:56:39 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:968:973:988:989:1260:1345:1359:1437:1534:1541:1711:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3353:3868:3871:4321:5007:6261:10004:10026:10848:11026:11658:11914:12043:12296:12438:12517:12519:12555:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fact31_55c1a15908c4d
-X-Filterd-Recvd-Size: 2802
+X-Spam-Summary: 80,6,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:968:973:988:989:1260:1345:1359:1437:1534:1542:1711:1730:1747:1777:1792:1801:2393:2559:2562:3138:3139:3140:3141:3142:3353:3369:3847:3868:3871:4321:4605:5007:6261:9038:10004:10026:10848:11026:11473:11658:11914:12043:12296:12438:12517:12519:12555:13255,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: maid70_56f113f9bdb58
+X-Filterd-Recvd-Size: 3556
 From: Joe Perches <joe@perches.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -next 3.16 11/19] nfs: Convert use of typedef ctl_table to struct ctl_table
-Date: Sun, 13 Apr 2014 18:55:43 -0700
-Message-Id: <b1fdb97c4cf51a478a593bf17f6ecb6a9a158c28.1397438826.git.joe@perches.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH -next 3.16 14/19] fs: Convert use of typedef ctl_table to struct ctl_table
+Date: Sun, 13 Apr 2014 18:55:46 -0700
+Message-Id: <4b712661f692bcc3de13c147b1a5dc99fe69763b.1397438826.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1397438826.git.joe@perches.com>
 References: <cover.1397438826.git.joe@perches.com>
@@ -29,72 +29,86 @@ This typedef is unnecessary and should just be removed.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/nfs/nfs4sysctl.c | 6 +++---
- fs/nfs/sysctl.c     | 6 +++---
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ fs/dcache.c      | 2 +-
+ fs/drop_caches.c | 2 +-
+ fs/eventpoll.c   | 2 +-
+ fs/file_table.c  | 4 ++--
+ fs/inode.c       | 2 +-
+ 5 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/fs/nfs/nfs4sysctl.c b/fs/nfs/nfs4sysctl.c
-index 2628d92..b6ebe7e 100644
---- a/fs/nfs/nfs4sysctl.c
-+++ b/fs/nfs/nfs4sysctl.c
-@@ -16,7 +16,7 @@ static const int nfs_set_port_min = 0;
- static const int nfs_set_port_max = 65535;
- static struct ctl_table_header *nfs4_callback_sysctl_table;
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 0407ed4..f9a5b3a 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -150,7 +150,7 @@ static long get_nr_dentry_unused(void)
+ 	return sum < 0 ? 0 : sum;
+ }
  
--static ctl_table nfs4_cb_sysctls[] = {
-+static struct ctl_table nfs4_cb_sysctls[] = {
+-int proc_nr_dentry(ctl_table *table, int write, void __user *buffer,
++int proc_nr_dentry(struct ctl_table *table, int write, void __user *buffer,
+ 		   size_t *lenp, loff_t *ppos)
+ {
+ 	dentry_stat.nr_dentry = get_nr_dentry();
+diff --git a/fs/drop_caches.c b/fs/drop_caches.c
+index 9280202..1de7294 100644
+--- a/fs/drop_caches.c
++++ b/fs/drop_caches.c
+@@ -50,7 +50,7 @@ static void drop_slab(void)
+ 	} while (nr_objects > 10);
+ }
+ 
+-int drop_caches_sysctl_handler(ctl_table *table, int write,
++int drop_caches_sysctl_handler(struct ctl_table *table, int write,
+ 	void __user *buffer, size_t *length, loff_t *ppos)
+ {
+ 	int ret;
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index af90312..b73e062 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -293,7 +293,7 @@ static LIST_HEAD(tfile_check_list);
+ static long zero;
+ static long long_max = LONG_MAX;
+ 
+-ctl_table epoll_table[] = {
++struct ctl_table epoll_table[] = {
  	{
- 		.procname = "nfs_callback_tcpport",
- 		.data = &nfs_callback_set_tcpport,
-@@ -36,7 +36,7 @@ static ctl_table nfs4_cb_sysctls[] = {
- 	{ }
- };
- 
--static ctl_table nfs4_cb_sysctl_dir[] = {
-+static struct ctl_table nfs4_cb_sysctl_dir[] = {
- 	{
- 		.procname = "nfs",
- 		.mode = 0555,
-@@ -45,7 +45,7 @@ static ctl_table nfs4_cb_sysctl_dir[] = {
- 	{ }
- };
- 
--static ctl_table nfs4_cb_sysctl_root[] = {
-+static struct ctl_table nfs4_cb_sysctl_root[] = {
- 	{
- 		.procname = "fs",
- 		.mode = 0555,
-diff --git a/fs/nfs/sysctl.c b/fs/nfs/sysctl.c
-index 6b3f253..bb6ed81 100644
---- a/fs/nfs/sysctl.c
-+++ b/fs/nfs/sysctl.c
-@@ -13,7 +13,7 @@
- 
- static struct ctl_table_header *nfs_callback_sysctl_table;
- 
--static ctl_table nfs_cb_sysctls[] = {
-+static struct ctl_table nfs_cb_sysctls[] = {
- 	{
- 		.procname	= "nfs_mountpoint_timeout",
- 		.data		= &nfs_mountpoint_expiry_timeout,
-@@ -31,7 +31,7 @@ static ctl_table nfs_cb_sysctls[] = {
- 	{ }
- };
- 
--static ctl_table nfs_cb_sysctl_dir[] = {
-+static struct ctl_table nfs_cb_sysctl_dir[] = {
- 	{
- 		.procname = "nfs",
- 		.mode = 0555,
-@@ -40,7 +40,7 @@ static ctl_table nfs_cb_sysctl_dir[] = {
- 	{ }
- };
- 
--static ctl_table nfs_cb_sysctl_root[] = {
-+static struct ctl_table nfs_cb_sysctl_root[] = {
- 	{
- 		.procname = "fs",
- 		.mode = 0555,
+ 		.procname	= "max_user_watches",
+ 		.data		= &max_user_watches,
+diff --git a/fs/file_table.c b/fs/file_table.c
+index 01071c4..b19a86f 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -77,14 +77,14 @@ EXPORT_SYMBOL_GPL(get_max_files);
+  * Handle nr_files sysctl
+  */
+ #if defined(CONFIG_SYSCTL) && defined(CONFIG_PROC_FS)
+-int proc_nr_files(ctl_table *table, int write,
++int proc_nr_files(struct ctl_table *table, int write,
+                      void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+ 	files_stat.nr_files = get_nr_files();
+ 	return proc_doulongvec_minmax(table, write, buffer, lenp, ppos);
+ }
+ #else
+-int proc_nr_files(ctl_table *table, int write,
++int proc_nr_files(struct ctl_table *table, int write,
+                      void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+ 	return -ENOSYS;
+diff --git a/fs/inode.c b/fs/inode.c
+index f96d2a6..2feb9b6 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -105,7 +105,7 @@ long get_nr_dirty_inodes(void)
+  * Handle nr_inode sysctl
+  */
+ #ifdef CONFIG_SYSCTL
+-int proc_nr_inodes(ctl_table *table, int write,
++int proc_nr_inodes(struct ctl_table *table, int write,
+ 		   void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+ 	inodes_stat.nr_inodes = get_nr_inodes();
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
