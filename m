@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754842AbaDNN2J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 09:28:09 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:60644 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753786AbaDNN2G (ORCPT
+	id S1754268AbaDNNbS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 09:31:18 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:56412 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818AbaDNNbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 09:28:06 -0400
-Date: Mon, 14 Apr 2014 15:27:34 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Johan Hovold <jhovold@gmail.com>, Oliver Neukum <oneukum@suse.de>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>, Xiao Jin <jin.xiao@intel.com>,
-        david.a.cohen@linux.intel.com, yanmin.zhang@intel.com
-Subject: Re: [RFC 1/2] n_tty: fix dropped output characters
-Message-ID: <20140414132734.GA27724@localhost>
-References: <20140411093715.GA17522@localhost>
- <1397209285-15471-1-git-send-email-jhovold@gmail.com>
- <20140414135333.1057aac8@alan.etchedpixels.co.uk>
+	Mon, 14 Apr 2014 09:31:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140414135333.1057aac8@alan.etchedpixels.co.uk>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20140413220334.GE22728@two.firstfloor.org>
+References: <1396882237-27608-1-git-send-email-ling.ma@alipay.com>
+	<877g71jdl8.fsf@tassilo.jf.intel.com>
+	<CAOGi=dPOEnNOLfnxTfvsVupRWQZtGs7-9LxDF8g2Kbun2v0hQA@mail.gmail.com>
+	<CAOGi=dMbRv6S+UGthYTCvW=C7hBRwpnZdM-BYYqT1fn=kF2SLg@mail.gmail.com>
+	<20140413220334.GE22728@two.firstfloor.org>
+Date: Mon, 14 Apr 2014 21:31:16 +0800
+Message-ID: <CAOGi=dOoCkU5Ni8r7pyejMuSdkMt2jOPs2J2OEQ9YxABxNYibw@mail.gmail.com>
+Subject: Re: [PATCH RFC] x86:Improve memset with general 64bit instruction
+From: Ling Ma <ling.ma.program@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com, neleai@seznam.cz,
+        linux-kernel@vger.kernel.org, Ling Ma <ling.ml@alibaba-inc.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 01:53:33PM +0100, One Thousand Gnomes wrote:
-> On Fri, 11 Apr 2014 11:41:24 +0200
-> Johan Hovold <jhovold@gmail.com> wrote:
-> 
-> > Fix characters being dropped by n_tty_write() due to a failure to
-> > check the return value of tty_put_char() in do_output_char().
-> > 
-> > Characters are currently being dropped by write if a tty driver claims
-> > to have write room available, but still fails to buffer any data
-> 
-> Your driver is buggy. If you advertise a buffer you must honour it and
-> neither shrink nor revoke it. 
+The kernel version 3.14 shows memcpy, memset occur 19622 and  14189
+times respectively.
+so memset is still important for us, correct?
 
-Very well, that settles the question.
- 
-> For an URB based device you almost certainly want internal buffering so
-> you can do proper packetisation. USB serial these days gets it right - see
-> drivers/usb/serial/generic.c for a fairly simple kfifo based approach.
+Thanks
+Ling
 
-I'm quite aware of the usb-serial approach as I implemented it. ;)
-
-I have considered "porting" it to the ACM driver, and unless anyone is
-against the extra copy the fifo would imply, I'll go ahead and do just
-that (although, I know of at least one buggy ACM device that violates
-the ACM specification and cannot handle merged writes...).
-
-> Whether applying it to cdc_acm would make sense I don't know but it looks
-> like it might be simpler over-all than the current arrangement.
-
-With the current fifo-less implementation, the ACM driver could use the
-approach taken by the usb-wwan and sierra usb-serial drivers, which
-queue up all there write urbs while suspended. That way the available
-buffer space never shrinks.
-
-Thanks,
-Johan
+2014-04-14 6:03 GMT+08:00, Andi Kleen <andi@firstfloor.org>:
+> On Sun, Apr 13, 2014 at 11:11:59PM +0800, Ling Ma wrote:
+>> Any further comments  ?
+>
+> It would be good to test on some more machines that you don't cause
+> regressions.
+>
+> But I'm not aware of any workload that is doing a lot of memset (not
+> counting clear_page).  Copies likely matter much more.
+>
+> -Andi
+>
