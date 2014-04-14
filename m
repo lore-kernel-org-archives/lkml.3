@@ -1,72 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300AbaDNSiu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 14:38:50 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:52143 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148AbaDNSit (ORCPT
+	id S1754339AbaDNSlq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 14:41:46 -0400
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:63059 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753695AbaDNSlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 14:38:49 -0400
-Date: Mon, 14 Apr 2014 20:38:38 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        mingo@redhat.com, fweisbec@gmail.com
-Subject: Re: [PATCH] sched/core: fix formatting issues in
- sched_can_stop_tick()
-Message-ID: <20140414183838.GF11182@twins.programming.kicks-ass.net>
-References: <6c3484ccb8220d0c58db1cbd9c929fc8d83005fd.1397492119.git.viresh.kumar@linaro.org>
+	Mon, 14 Apr 2014 14:41:45 -0400
+Message-ID: <534C2BE6.3070907@gmail.com>
+Date: Mon, 14 Apr 2014 14:41:42 -0400
+From: Pranith Kumar <bobby.prani@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6c3484ccb8220d0c58db1cbd9c929fc8d83005fd.1397492119.git.viresh.kumar@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: catalin.marinas@arm.com, will.deacon@arm.com
+CC: LKML <linux-kernel@vger.kernel.org>, Joe Perches <joe@perches.com>
+Subject: [RFC PATCH 1/1] prefetch result for ARM64 atomic ops
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 09:47:41PM +0530, Viresh Kumar wrote:
-> sched_can_stop_tick() was using 7 spaces instead of 8 spaces or a 'tab' at the
-> beginning of each line. Which doesn't align with the Coding Guidelines.
-> 
-> Also it removes the *rq variable as it was used at only one place and hence we
-> can directly use this_rq() instead.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-> I don't think rq = tihs_rq() has to be done before smp_mb(), in case yes sorry
-> for this patch :(
-> 
->  kernel/sched/core.c | 16 ++++++----------
->  1 file changed, 6 insertions(+), 10 deletions(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 268a45e..13299c5 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -666,18 +666,14 @@ static inline bool got_nohz_idle_kick(void)
->  #ifdef CONFIG_NO_HZ_FULL
->  bool sched_can_stop_tick(void)
->  {
-> +	/* Make sure rq->nr_running update is visible after the IPI */
-> +	smp_rmb();
->  
-> +	/* More than one running task need preemption */
-> +	if (this_rq()->nr_running > 1)
-> +		return false;
->  
-> +	return true;
->  }
->  #endif /* CONFIG_NO_HZ_FULL */
+Prefetch destination as is being done for ARM32
 
-AFAICT the smp_rmb() is entirely spurious, arch interrupts should ensure
-consistency on their own. That is:
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+---
+ arch/arm64/include/asm/atomic.h | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-  CPU 0		  CPU 1
-
-[w] X = 1
-    IPI 1	    <int>
-		[r] r = X
-
-Should act as if there was a full memory barrier, making it so that the
-read on CPU1 observes the write on CPU0.
+diff --git a/arch/arm64/include/asm/atomic.h b/arch/arm64/include/asm/atomic.h
+index 0237f08..845f9be 100644
+--- a/arch/arm64/include/asm/atomic.h
++++ b/arch/arm64/include/asm/atomic.h
+@@ -48,6 +48,7 @@ static inline void atomic_add(int i, atomic_t *v)
+ 	unsigned long tmp;
+ 	int result;
+ 
++	prefetchw(&v->counter);
+ 	asm volatile("// atomic_add\n"
+ "1:	ldxr	%w0, %2\n"
+ "	add	%w0, %w0, %w3\n"
+@@ -62,6 +63,7 @@ static inline int atomic_add_return(int i, atomic_t *v)
+ 	unsigned long tmp;
+ 	int result;
+ 
++	prefetchw(&v->counter);
+ 	asm volatile("// atomic_add_return\n"
+ "1:	ldxr	%w0, %2\n"
+ "	add	%w0, %w0, %w3\n"
+@@ -80,6 +82,7 @@ static inline void atomic_sub(int i, atomic_t *v)
+ 	unsigned long tmp;
+ 	int result;
+ 
++	prefetchw(&v->counter);
+ 	asm volatile("// atomic_sub\n"
+ "1:	ldxr	%w0, %2\n"
+ "	sub	%w0, %w0, %w3\n"
+@@ -94,6 +97,7 @@ static inline int atomic_sub_return(int i, atomic_t *v)
+ 	unsigned long tmp;
+ 	int result;
+ 
++	prefetchw(&v->counter);
+ 	asm volatile("// atomic_sub_return\n"
+ "1:	ldxr	%w0, %2\n"
+ "	sub	%w0, %w0, %w3\n"
+@@ -113,6 +117,7 @@ static inline int atomic_cmpxchg(atomic_t *ptr, int old, int new)
+ 	int oldval;
+ 
+ 	smp_mb();
++	prefetchw(&ptr->counter);
+ 
+ 	asm volatile("// atomic_cmpxchg\n"
+ "1:	ldxr	%w1, %2\n"
+@@ -170,6 +175,7 @@ static inline void atomic64_add(u64 i, atomic64_t *v)
+ 	long result;
+ 	unsigned long tmp;
+ 
++	prefetchw(&v->counter);
+ 	asm volatile("// atomic64_add\n"
+ "1:	ldxr	%0, %2\n"
+ "	add	%0, %0, %3\n"
+@@ -184,6 +190,7 @@ static inline long atomic64_add_return(long i, atomic64_t *v)
+ 	long result;
+ 	unsigned long tmp;
+ 
++	prefetchw(&v->counter);
+ 	asm volatile("// atomic64_add_return\n"
+ "1:	ldxr	%0, %2\n"
+ "	add	%0, %0, %3\n"
+@@ -202,6 +209,7 @@ static inline void atomic64_sub(u64 i, atomic64_t *v)
+ 	long result;
+ 	unsigned long tmp;
+ 
++	prefetchw(&v->counter);
+ 	asm volatile("// atomic64_sub\n"
+ "1:	ldxr	%0, %2\n"
+ "	sub	%0, %0, %3\n"
+@@ -216,6 +224,7 @@ static inline long atomic64_sub_return(long i, atomic64_t *v)
+ 	long result;
+ 	unsigned long tmp;
+ 
++	prefetchw(&v->counter);
+ 	asm volatile("// atomic64_sub_return\n"
+ "1:	ldxr	%0, %2\n"
+ "	sub	%0, %0, %3\n"
+@@ -235,6 +244,7 @@ static inline long atomic64_cmpxchg(atomic64_t *ptr, long old, long new)
+ 	unsigned long res;
+ 
+ 	smp_mb();
++	prefetchw(&v->counter);
+ 
+ 	asm volatile("// atomic64_cmpxchg\n"
+ "1:	ldxr	%1, %2\n"
+@@ -258,6 +268,7 @@ static inline long atomic64_dec_if_positive(atomic64_t *v)
+ 	long result;
+ 	unsigned long tmp;
+ 
++	prefetchw(&v->counter);
+ 	asm volatile("// atomic64_dec_if_positive\n"
+ "1:	ldxr	%0, %2\n"
+ "	subs	%0, %0, #1\n"
+-- 
+1.9.1
