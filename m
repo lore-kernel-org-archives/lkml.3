@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767AbaDNSnl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 14:43:41 -0400
-Received: from home.keithp.com ([63.227.221.253]:42978 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750873AbaDNSnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 14:43:40 -0400
-X-Greylist: delayed 506 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Apr 2014 14:43:40 EDT
-From: Keith Packard <keithp@keithp.com>
-To: Steven Noonan <steven@uplinklabs.net>, linux-kernel@vger.kernel.org,
-        intel-gfx@lists.freedesktop.org, David Airlie <airlied@linux.ie>
-Subject: Re: REGRESSION 3.14 i915 warning & mouse cursor vanishing
-In-Reply-To: <20140414164010.GA1019@falcon>
-References: <20140414164010.GA1019@falcon>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Mon, 14 Apr 2014 11:35:05 -0700
-Message-ID: <867g6ryd2e.fsf@hiro.keithp.com>
+	id S1754890AbaDNSpt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 14:45:49 -0400
+Received: from moutng.kundenserver.de ([212.227.126.130]:63930 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752451AbaDNSpp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 14:45:45 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, dbaryshkov@gmail.com,
+        dwmw2@infradead.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, santosh.shilimkar@ti.com,
+        grant.likely@linaro.org, devicetree@vger.kernel.org,
+        grygorii.strashko@ti.com, linux@arm.linux.org.uk,
+        linux-doc@vger.kernel.org, w-kwok2@ti.com, rdunlap@infradead.org,
+        sboyd@codeaurora.org, linux-kernel@vger.kernel.org, olof@lixom.net
+Subject: Re: [PATCH v2 2/5] Power: reset: add bindings for keystone reset driver
+Date: Mon, 14 Apr 2014 20:44:32 +0200
+Message-ID: <6937937.4J6iI7VpBO@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1397497283-16391-3-git-send-email-ivan.khoronzhuk@ti.com>
+References: <1397497283-16391-1-git-send-email-ivan.khoronzhuk@ti.com> <1397497283-16391-3-git-send-email-ivan.khoronzhuk@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:aZGnq0Ein+V8WXOEGj9/vzl3X0Ji+lOMkZR9zaaN1Yn
+ tZ1ijCvCH9mJ+qVHod9uo+GrIXVS90VUE2fy6PCy1cgE9AjHKz
+ xM83Lc8MoxQo7NjKZS3E73a2rReoaoNIjBFu7nU1CLBQGjZ9Ux
+ U2d6mh5OZAhQaEsUTTRXXRGdsh0yAZEqvyL6clQRj724Nwp1WU
+ s/KZrtMBmhdzC4ie2xilC+MboY2fhxyw0qKCn7aRJZG+LxT1Ox
+ E2dQpBgzn3QVmYcclZZALPRyW2mk9ZP+Yroz/wpRJOGytz6dqC
+ BrodoRdX1Oz9gHMwBlE8/Cz8f/xSmTQYiLMrKSd/+NUK0T7lCC
+ Ndju1b7CdAj1O0Lz54d4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain
-Content-Transfer-Encoding: quoted-printable
+On Monday 14 April 2014 20:41:20 Ivan Khoronzhuk wrote:
+> +Optional properties:
+> +
+> +- ti,soft-reset:       Boolean option indicating soft reset.
+> +                       By default hard reset is used.
+> +
+> +- ti,wdt_list:         WDT list that can cause SoC reset.
+> +                       The list in format: <0>, <2>;
+> +                       Begins from 0 to 3, as keystone can contain up
+> +                       to 4 SoC reset watchdogs.
+> 
 
-Steven Noonan <steven@uplinklabs.net> writes:
+This looks like your binding just describes a subset of the
+watchdog timer registers. If so, don't do a standalone reset
+driver, but instead do a watchdog driver that can also be
+used for reset, and have a binding that properly describes
+the watchdog hardware.
 
-> Was using my machine normally, then my mouse cursor vanished. After switc=
-hing
-> to a VT and back to X11, my cursor came back. But I did notice a nasty tr=
-ace in
-> dmesg (below).
+It is bad to have overlapping register ranges between logical
+devices, and it's also generally wrong to describe devices that
+are not actually there: The hardware contains a watchdog, not
+a system-reset device, so you should not make one up because
+it seems easier given the Linux driver model.
 
-I don't think the trace below is related to the cursor disappearing.
-
-I found a pair of bugs (one in the intel driver, one in the X server)
-which can cause cursor disappearances. I just sent an intel driver patch
-to the intel-gfx list with the subject:
-
-        [PATCH] load_cursor_argb is supposed to return a Bool, not void
-
-I've posted the X server patch once, and will respond to some review
-comments. Either is sufficient to get a cursor back, the intel driver
-one means you get a working hardware cursor again, rather than using a
-software cursor by mistake.
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIVAwUBU0wqWdsiGmkAAAARAQgksw//STLtx9MaoAyKFelY1bfgnC4ZyAYeY4IF
-dnWcRttzqSay16NtyyP0fYEDr7GdV1OQqgWHmQcqAgmO5C0nY5HaFobG2n7r6+B9
-zzdC7MYwgDheUiRb/5uZxm/L6joCdk/H1bvBBdWdNfGTvQ1DY5fmV58mobe72Yv6
-TZfSujFQ0WKYWmBedsrs0JJPLyG5E7QQJY2PhZg6V4mgdocK+o1hgfrW/6MMjkpY
-VTNFr0bKOquZjHz8/wHofHluMm+QU4Ryyu1oyk0cbfhBCHcDcsCs/QMvSvmE9WbV
-Q7SfnvZr8ZYKJqyvYxbHpIYmW9XqtQ9lQKPWnMHxbnntq9kZThimUswNy5Cc+NwU
-VSquOTULGkcqPtueFJEyHN+WZReF/3Bqjgfeflh0gz/lm2IAAhEBPHzKqKb7xLyF
-0xrcubQwcDI+W+aj5fo7HzwU+QL8cUnkPO3vX299jSH1bd2QeEPUtGpqZcVKff1b
-sNDMYFytJOK935deuIfCQ3t2MR28/G8KG41E2IH5m8ii/NrYEphQTaqZYXoQIr/B
-1G0YprgsrWASI3k+NfpExgwQQFBDKDS9BX3+7LOfAKdkRzXsh74SAEAyOI6ymfqt
-nNHiBhuSZU3tCvFn3IdvVNJ3jU9NqrB7T3Ijoxvk0aPMW0Cdv9OwNlcM8NxEeun5
-u4lkloR7tK0=
-=uirL
------END PGP SIGNATURE-----
---=-=-=--
+	Arnd
