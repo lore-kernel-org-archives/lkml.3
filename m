@@ -1,77 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238AbaDNWsh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 18:48:37 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:39900 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754306AbaDNWsW (ORCPT
+	id S1755106AbaDNWv7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 18:51:59 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:59877 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596AbaDNWv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 18:48:22 -0400
-Date: Tue, 15 Apr 2014 00:48:18 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, mingo@redhat.com
-Subject: Re: [PATCH] sched/core: fix formatting issues in
- sched_can_stop_tick()
-Message-ID: <20140414224815.GA1877@localhost.localdomain>
-References: <6c3484ccb8220d0c58db1cbd9c929fc8d83005fd.1397492119.git.viresh.kumar@linaro.org>
- <20140414183838.GF11182@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140414183838.GF11182@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 14 Apr 2014 18:51:56 -0400
+Date: Mon, 14 Apr 2014 18:51:52 -0400 (EDT)
+Message-Id: <20140414.185152.204599887297456936.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: nasa4836@gmail.com, jchapman@katalix.com, edumazet@google.com,
+        joe@perches.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [BUG] A panic caused by null pointer dereference aftering
+ updating to
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1397510604.4222.63.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1397502396.4222.45.camel@edumazet-glaptop2.roam.corp.google.com>
+	<20140414.152225.1983723140136958968.davem@davemloft.net>
+	<1397510604.4222.63.camel@edumazet-glaptop2.roam.corp.google.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 14 Apr 2014 15:51:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 08:38:38PM +0200, Peter Zijlstra wrote:
-> On Mon, Apr 14, 2014 at 09:47:41PM +0530, Viresh Kumar wrote:
-> > sched_can_stop_tick() was using 7 spaces instead of 8 spaces or a 'tab' at the
-> > beginning of each line. Which doesn't align with the Coding Guidelines.
-> > 
-> > Also it removes the *rq variable as it was used at only one place and hence we
-> > can directly use this_rq() instead.
-> > 
-> > Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> > ---
-> > I don't think rq = tihs_rq() has to be done before smp_mb(), in case yes sorry
-> > for this patch :(
-> > 
-> >  kernel/sched/core.c | 16 ++++++----------
-> >  1 file changed, 6 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > index 268a45e..13299c5 100644
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -666,18 +666,14 @@ static inline bool got_nohz_idle_kick(void)
-> >  #ifdef CONFIG_NO_HZ_FULL
-> >  bool sched_can_stop_tick(void)
-> >  {
-> > +	/* Make sure rq->nr_running update is visible after the IPI */
-> > +	smp_rmb();
-> >  
-> > +	/* More than one running task need preemption */
-> > +	if (this_rq()->nr_running > 1)
-> > +		return false;
-> >  
-> > +	return true;
-> >  }
-> >  #endif /* CONFIG_NO_HZ_FULL */
-> 
-> AFAICT the smp_rmb() is entirely spurious, arch interrupts should ensure
-> consistency on their own. That is:
-> 
->   CPU 0		  CPU 1
-> 
-> [w] X = 1
->     IPI 1	    <int>
-> 		[r] r = X
-> 
-> Should act as if there was a full memory barrier, making it so that the
-> read on CPU1 observes the write on CPU0.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Mon, 14 Apr 2014 14:23:24 -0700
 
-Right, I have a pending patch for that:
-https://git.kernel.org/cgit/linux/kernel/git/frederic/linux-dynticks.git/commit/?h=nohz/ipi&id=ca981d9f87fe0f113ad972098cfe181180b3675a
+> I was trying to cook a not too invasive patch.
+> 
+> Changing ip_local_out() means changing dst_output() / nf_hook()  and
+> hundred of call sites.
+> 
+> Unless I misunderstood you ?
+
+You could make ip_local_out(skb) be __ip_local_out(skb, skb->sk) and
+make tunnel output use __ip_local_out().
