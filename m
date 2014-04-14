@@ -1,118 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147AbaDNRfj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 13:35:39 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60951 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754167AbaDNRfi (ORCPT
+	id S1755279AbaDNRfx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 13:35:53 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:42954 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755207AbaDNRfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 13:35:38 -0400
-Date: Mon, 14 Apr 2014 18:35:19 +0100
-From: Mark Brown <broonie@kernel.org>
-To: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>
-Cc: a.zummo@towertech.it, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com
-Message-ID: <20140414173519.GC25182@sirena.org.uk>
-References: <534AA271.5010303@gmail.com>
+	Mon, 14 Apr 2014 13:35:51 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="z4+8/lEcDcG5Ke9S"
-Content-Disposition: inline
-In-Reply-To: <534AA271.5010303@gmail.com>
-X-Cookie: Are we THERE yet?
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [rtc-linux] [PATCH] rtc: add support for maxim dallas rtc ds1343
- and ds1344
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CAGXu5jK6f2HHzLr9SOR3yzr8tCrDJatcT2csy+gRFpc-Lb46pQ@mail.gmail.com>
+References: <20140414171114.GA31384@www.outflux.net>
+	<CAMEtUuzCBXROUE6Nf6B8+vmTaD2xOh5LjkmsVSGuwKo1gO-mNQ@mail.gmail.com>
+	<CAGXu5jK6f2HHzLr9SOR3yzr8tCrDJatcT2csy+gRFpc-Lb46pQ@mail.gmail.com>
+Date: Mon, 14 Apr 2014 10:35:50 -0700
+Message-ID: <CAMEtUuyLLzcoiwLjpC=sOUMxDYL_2umLkuQQBa=8rk_JPC7FGA@mail.gmail.com>
+Subject: Re: [PATCH] seccomp: fix memory leak on filter attach
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: James Morris <james.l.morris@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Masami Ichikawa <masami256@gmail.com>, Will Drewry <wad@chromium.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Paris <eparis@redhat.com>,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 14, 2014 at 10:26 AM, Kees Cook <keescook@chromium.org> wrote:
+> On Mon, Apr 14, 2014 at 10:17 AM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+>> On Mon, Apr 14, 2014 at 10:11 AM, Kees Cook <keescook@chromium.org> wrote:
+>>> This sets the correct error code when final filter memory is unavailable,
+>>> and frees the raw filter no matter what.
+>>>
+>>> unreferenced object 0xffff8800d6ea4000 (size 512):
+>>>   comm "sshd", pid 278, jiffies 4294898315 (age 46.653s)
+>>>   hex dump (first 32 bytes):
+>>>     21 00 00 00 04 00 00 00 15 00 01 00 3e 00 00 c0  !...........>...
+>>>     06 00 00 00 00 00 00 00 21 00 00 00 00 00 00 00  ........!.......
+>>>   backtrace:
+>>>     [<ffffffff8151414e>] kmemleak_alloc+0x4e/0xb0
+>>>     [<ffffffff811a3a40>] __kmalloc+0x280/0x320
+>>>     [<ffffffff8110842e>] prctl_set_seccomp+0x11e/0x3b0
+>>>     [<ffffffff8107bb6b>] SyS_prctl+0x3bb/0x4a0
+>>>     [<ffffffff8152ef2d>] system_call_fastpath+0x1a/0x1f
+>>>     [<ffffffffffffffff>] 0xffffffffffffffff
+>>>
+>>> Reported-by: Masami Ichikawa <masami256@gmail.com>
+>>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>>> Cc: stable@vger.kernel.org
+>>
+>> Acked-by: Alexei Starovoitov <ast@plumgrid.com>
+>>
+>>> ---
+>>>  kernel/seccomp.c |    2 ++
+>>>  1 file changed, 2 insertions(+)
+>>>
+>>> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+>>> index fd609bd9d6dd..2d7dcdfb7422 100644
+>>> --- a/kernel/seccomp.c
+>>> +++ b/kernel/seccomp.c
+>>> @@ -256,6 +256,7 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
+>>>                 goto free_prog;
+>>>
+>>>         /* Allocate a new seccomp_filter */
+>>> +       ret = -ENOMEM;
+>>>         filter = kzalloc(sizeof(struct seccomp_filter) +
+>>>                          sizeof(struct sock_filter_int) * new_len,
+>>>                          GFP_KERNEL|__GFP_NOWARN);
+>>> @@ -265,6 +266,7 @@ static long seccomp_attach_filter(struct sock_fprog *fprog)
+>>>         ret = sk_convert_filter(fp, fprog->len, filter->insnsi, &new_len);
+>>>         if (ret)
+>>>                 goto free_filter;
+>>> +       kfree(fp);
+>>>
+>>>         atomic_set(&filter->usage, 1);
+>>>         filter->len = new_len;
+>>> --
+>>> 1.7.9.5
+>>>
+>>>
+>>> --
+>>> Kees Cook
+>>> Chrome OS Security
+>
+> James (or anyone), can you be sure to pull this soon? I'd like to get
+> it into 3.14 stable ASAP. Under kernel memory pressure, it would be
+> possible for the prctl to return 0 without having attached the seccomp
+> filter.
 
---z4+8/lEcDcG5Ke9S
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I don't think it affects stable.
+Fixes: bd4cf0ed331a ("net: filter: rework/optimize internal BPF
+interpreter's instruction set")
 
-On Sun, Apr 13, 2014 at 08:12:57PM +0530, RAGHAVENDRA GANIGA wrote:
-
-> +static const struct spi_device_id ds1343_id[] = {
-> +	{ "ds1343", 0 },
-> +	{ "ds1344", 1 },
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(spi, ds1343_id);
-
-If the 0 and 1 mean anything there they should have #defines, otherwise
-just omit them.
-
-> +static int ds1343_get_reg(struct device *dev, unsigned char address,
-> +				unsigned char *buf)
-> +{
-> +	struct spi_device *spi = to_spi_device(dev);
-> +
-> +	/* MSB of the spi address                        _
-> +	   in this rtc should be zero for read operation R/W */
-> +	*buf = address;
-> +
-> +	return spi_write_then_read(spi, buf, 1, buf, 1);
-> +}
-
-This and the set_reg() function look like you should be using regmap.
-
-> +static int ds1343_ioctl(struct device *dev, unsigned int cmd, unsigned long arg)
-> +{
-> +	switch (cmd) {
-> +#ifdef RTC_SET_CHARGE
-> +	case RTC_SET_CHARGE:
-> +	{
-> +		int val;
-> +
-> +		if (copy_from_user(&val, (int __user *)arg, sizeof(int)))
-> +			return -EFAULT;
-> +
-> +		return ds1343_set_reg(dev, DS1343_TRICKLE_REG, val);
-> +	}
-> +	break;
-> +#endif
-> +	}
-
-What defines this?  I notice that ds1302 also does this - is this device
-different enouh to need a separate driver?
-
-> +static irqreturn_t ds1343_irq(int irq, void *dev_id)
-> +{
-> +	struct ds1343_priv *priv = dev_id;
-> +
-> +	disable_irq_nosync(irq);
-> +	schedule_work(&priv->work);
-> +	return IRQ_HANDLED;
-> +}
-
-Use request_threaded_irq() rather than open coding it.
-
---z4+8/lEcDcG5Ke9S
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTTBxUAAoJELSic+t+oim96r4P/jRa2MAQfmcT8OwnBqW1vM0O
-QbPpJxEVnbbIOhZIbAv+Q0rNfHdrbBwSXN7YABXsPplDOYMw1PnACpFQEQpKtOzj
-rx47oPFuZSTthInXj44KXfrbegLSXp4NPNcKuDZAo7ivOrx3o72GL+k6pRPP5Nn/
-YcRFLTKrECOrRFsupyEiRNg+juK8HjYKR9XBWB1P8X+rBRMEtLvlbcmbqWPWN5C5
-9f8xeAh8Xv1wqw+SoRV6T9HIKaoURr1IcSO1lnB9GzD2RoUjEB/clY5uG8A4KD+w
-TM7WjGcuacG2JQ9rgk058wGmDG3DYmWEBwQsS+MwSu1QybiMcTq5jr3Kf1Uk6xkN
-WTTiug4/X9MWtQdr82IS0ZPMdZOaQWBVHNzxMi8Brr2rVdJYIoFBEDsJ0Fby7/y5
-Cbc98a4gj51cJTJSsW0omVjA45o6ZDLNS19RUu1mOkXBN4RB/F1kNSOBF0Xjzjex
-wYCIiMv+VFZ16WrnC1tCVLzAYyZxIM5x0I7JtUXRyJ42Yd1gpGAVRK3Od9QaNvDs
-b14HGNg0Yiu2Mz8PwWPLapyYogEgHEac1Tz1T+vFepfkdqPG0q44ZPoUYzTikY8N
-8NmeWHsluLQdSZOOC5X4yqaeuXx7QXdNAI4Q3IJBEenC4Ckt21L+Tfpw2xv6huZ8
-vphMn3eLdNcH6eGknxyD
-=6ENO
------END PGP SIGNATURE-----
-
---z4+8/lEcDcG5Ke9S--
+> Thanks!
+>
+> -Kees
+>
+> --
+> Kees Cook
+> Chrome OS Security
