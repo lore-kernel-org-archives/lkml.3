@@ -1,1428 +1,1482 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734AbaDNH7n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 03:59:43 -0400
-Received: from relay-s04-hub005.domainlocalhost.com ([74.115.207.216]:48917
-	"EHLO relay-S04-HUB005.domainlocalhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750862AbaDNH7h (ORCPT
+	id S1753418AbaDNH7z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 03:59:55 -0400
+Received: from relay-s04-hub004.domainlocalhost.com ([74.115.207.103]:49308
+	"EHLO relay-S04-HUB004.domainlocalhost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753110AbaDNH7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 03:59:37 -0400
+	Mon, 14 Apr 2014 03:59:52 -0400
 Content-Type: multipart/mixed;
-	boundary="_000_77BC725C9062764F874D79F51E1F1A8F40C11432S04MBX0101s04lo_"
+	boundary="_000_77BC725C9062764F874D79F51E1F1A8F40C11452S04MBX0101s04lo_"
 From: Dudley Du <dudl@cypress.com>
 To: "Dmitry Torokhov (dmitry.torokhov@gmail.com)" 
 	<dmitry.torokhov@gmail.com>
 CC: Benson Leung <bleung@google.com>, Daniel Kurtz <djkurtz@google.com>,
         "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/6] input: cyapa: rearchitecture driver to support function
- pointers
-Thread-Topic: [PATCH 1/6] input: cyapa: rearchitecture driver to support
- function pointers
-Thread-Index: Ac9Xtq9L7NojvOgjROesZ4GoflAFFA==
-Date: Mon, 14 Apr 2014 07:53:57 +0000
-Message-ID: <77BC725C9062764F874D79F51E1F1A8F40C11432@S04-MBX01-01.s04.local>
+Subject: [PATCH 5/6] input: cyapa: add sysfs interfaces supported for gen3
+ trackpad device
+Thread-Topic: [PATCH 5/6] input: cyapa: add sysfs interfaces supported for
+ gen3 trackpad device
+Thread-Index: Ac9Xtr6qnuz/5hn7T2ugu4efqp6zCA==
+Date: Mon, 14 Apr 2014 07:54:23 +0000
+Message-ID: <77BC725C9062764F874D79F51E1F1A8F40C11452@S04-MBX01-01.s04.local>
 Accept-Language: zh-CN, en-US
 Content-Language: zh-CN
 X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: <77BC725C9062764F874D79F51E1F1A8F40C11432@S04-MBX01-01.s04.local>
+X-MS-TNEF-Correlator: <77BC725C9062764F874D79F51E1F1A8F40C11452@S04-MBX01-01.s04.local>
 x-originating-ip: [10.30.12.148]
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_000_77BC725C9062764F874D79F51E1F1A8F40C11432S04MBX0101s04lo_
+--_000_77BC725C9062764F874D79F51E1F1A8F40C11452S04MBX0101s04lo_
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: quoted-printable
 
-Re-architecture the driver to support function pointers, so it can
-support and integrate new devices later in one driver. Including use
-async thread in device proble to speed up system boot time.
+Add sysfs interfaces for gen3 trackpad devices that required in production,
+including read and update firmware image, report baselines, sensors calibra=
+te,
+read product id, read firmware version.
 TEST=3Dtest on Chomebooks.
 
 Signed-off-by: Du, Dudley <dudl@cypress.com>
 ---
 diff --git a/drivers/input/mouse/cyapa.c b/drivers/input/mouse/cyapa.c
-index b409c3d..4361ee1 100644
+index da03427..917eabe 100644
 --- a/drivers/input/mouse/cyapa.c
 +++ b/drivers/input/mouse/cyapa.c
-@@ -14,15 +14,19 @@
-  * more details.
+@@ -15,6 +15,7 @@
   */
 
-+#include <linux/async.h>
+ #include <linux/async.h>
++#include <linux/debugfs.h>
  #include <linux/delay.h>
-+#include <linux/firmware.h>
+ #include <linux/firmware.h>
  #include <linux/i2c.h>
- #include <linux/input.h>
- #include <linux/input/mt.h>
- #include <linux/interrupt.h>
- #include <linux/module.h>
-+#include <linux/completion.h>
- #include <linux/slab.h>
+@@ -29,6 +30,7 @@
+ #include <linux/unaligned/access_ok.h>
+ #include <linux/pm_runtime.h>
 
- /* APA trackpad firmware generation */
-+#define CYAPA_GEN_UNKNOWN   0x00   /* unknown protocol. */
- #define CYAPA_GEN3   0x03   /* support MT-protocol B with tracking ID. */
-
- #define CYAPA_NAME   "Cypress APA Trackpad (cyapa)"
-@@ -85,14 +89,19 @@
-  * bit 7: Busy
-  * bit 6 - 5: Reserved
-  * bit 4: Bootloader running
-- * bit 3 - 1: Reserved
-+ * bit 3 - 2: Reserved
-+ * bit 1: Watchdog Reset
-  * bit 0: Checksum valid
-  */
- #define REG_BL_STATUS        0x01
-+#define BL_STATUS_REV_6_5    0x60
- #define BL_STATUS_BUSY       0x80
- #define BL_STATUS_RUNNING    0x10
--#define BL_STATUS_DATA_VALID 0x08
-+#define BL_STATUS_REV_3_2    0x0c
-+#define BL_STATUS_WATCHDOG   0x02
- #define BL_STATUS_CSUM_VALID 0x01
-+#define BL_STATUS_REV_MASK (BL_STATUS_WATCHDOG | BL_STATUS_REV_3_2 | \
-+                           BL_STATUS_REV_6_5)
-
- /*
-  * Bootloader Error Register
-@@ -112,10 +121,14 @@
- #define BL_ERROR_CMD_CSUM    0x10
- #define BL_ERROR_FLASH_PROT  0x08
- #define BL_ERROR_FLASH_CSUM  0x04
-+#define BL_ERROR_RESERVED    0x03
-
- #define BL_STATUS_SIZE  3  /* length of bootloader status registers */
- #define BLK_HEAD_BYTES 32
-
-+/* Macro for register map group offset. */
-+#define CYAPA_REG_MAP_SIZE  256
 +
- #define PRODUCT_ID_SIZE  16
- #define QUERY_DATA_SIZE  27
- #define REG_PROTOCOL_GEN_QUERY_OFFSET  20
-@@ -134,17 +147,27 @@
+ /* APA trackpad firmware generation */
+ #define CYAPA_GEN_UNKNOWN   0x00   /* unknown protocol. */
+ #define CYAPA_GEN3   0x03   /* support MT-protocol B with tracking ID. */
+@@ -50,6 +52,8 @@
+ #define CYAPA_CMD_BL_ALL           0x0a
+ #define CYAPA_CMD_BLK_PRODUCT_ID   0x0b
+ #define CYAPA_CMD_BLK_HEAD         0x0c
++#define CYAPA_CMD_MAX_BASELINE     0x0d
++#define CYAPA_CMD_MIN_BASELINE     0x0e
+
+ /* report data start reg offset address. */
+ #define DATA_REG_START_OFFSET  0x0000
+@@ -150,6 +154,10 @@
+                              CAPABILITY_MIDDLE_BTN_MASK)
+
  #define CYAPA_OFFSET_SOFT_RESET  REG_OFFSET_COMMAND_BASE
++#define OP_RECALIBRATION_MASK    0x80
++#define OP_REPORT_BASELINE_MASK  0x40
++#define REG_OFFSET_MAX_BASELINE  0x0026
++#define REG_OFFSET_MIN_BASELINE  0x0027
 
  #define REG_OFFSET_POWER_MODE (REG_OFFSET_COMMAND_BASE + 1)
-+#define SET_POWER_MODE_DELAY   10000  /* unit: us */
-+#define SET_POWER_MODE_TRIES   5
+ #define SET_POWER_MODE_DELAY   10000  /* unit: us */
+@@ -493,6 +501,7 @@ struct cyapa_tsg_bin_image {
+ /* The main device structure */
+ struct cyapa {
+        enum cyapa_state state;
++       u8 status[BL_STATUS_SIZE];
 
- #define PWR_MODE_MASK   0xfc
- #define PWR_MODE_FULL_ACTIVE (0x3f << 2)
--#define PWR_MODE_IDLE        (0x05 << 2) /* default sleep time is 50 ms. *=
-/
-+#define PWR_MODE_IDLE        (0x03 << 2) /* default rt suspend scanrate: 3=
-0ms */
-+#define PWR_MODE_SLEEP       (0x05 << 2) /* default suspend scanrate: 50ms=
- */
-+#define PWR_MODE_BTN_ONLY    (0x01 << 2)
- #define PWR_MODE_OFF         (0x00 << 2)
+        struct i2c_client *client;
+        struct input_dev *input;
+@@ -569,13 +578,29 @@ struct cyapa {
+        bl_read_fw_func cyapa_read_fw;
+        read_raw_data_func cyapa_read_raw_data;
 
-+#define BTN_ONLY_MODE_NAME   "buttononly"
-+#define OFF_MODE_NAME        "off"
++       size_t read_fw_image_size;
++       size_t tp_raw_data_size;
+        struct cyapa_tsg_bin_image_head fw_img_head;
 +
- #define PWR_STATUS_MASK      0x0c
- #define PWR_STATUS_ACTIVE    (0x03 << 2)
- #define PWR_STATUS_IDLE      (0x02 << 2)
-+#define PWR_STATUS_BTN_ONLY  (0x01 << 2)
- #define PWR_STATUS_OFF       (0x00 << 2)
-
-+#define AUTOSUSPEND_DELAY   2000 /* unit : ms */
++       struct mutex debugfs_mutex;
 +
- /*
-  * CYAPA trackpad device states.
-  * Used in register 0x00, bit1-0, DeviceStatus field.
-@@ -153,6 +176,26 @@
- #define CYAPA_DEV_NORMAL  0x03
- #define CYAPA_DEV_BUSY    0x01
-
-+#define MAX_TMP_BUF_SIZE (CYAPA_REG_MAP_SIZE)
++       /* per-instance debugfs root */
++       struct dentry *dentry_dev;
 +
-+struct cyapa;
-+typedef void (*irq_handler_func)(struct cyapa *);
-+typedef int (*set_power_mode_func)(struct cyapa *, u8, u16);
-+typedef int (*bl_enter_func)(struct cyapa *);
-+typedef int (*bl_activate_func)(struct cyapa *);
-+typedef int (*bl_verify_app_integrity_func)(struct cyapa *);
-+typedef int (*bl_deactivate_func)(struct cyapa *);
-+typedef int (*bl_read_fw_func)(struct cyapa *);
-+typedef int (*check_fw_func)(struct cyapa *, const struct firmware *);
-+typedef int (*bl_initiate_func)(struct cyapa *, const struct firmware *);
-+typedef int (*update_fw_func)(struct cyapa *, const struct firmware *);
-+typedef ssize_t (*show_baseline_func)(
-+       struct device *, struct device_attribute *, char *);
-+typedef ssize_t (*calibrate_store_func)(
-+       struct device *, struct device_attribute *, const char *, size_t);
-+typedef bool (*func_sort)(struct cyapa *, u8 *, int);
-+typedef int (*read_raw_data_func)(struct cyapa *);
-+
- enum cyapa_state {
-        CYAPA_STATE_OP,
-        CYAPA_STATE_BL_IDLE,
-@@ -210,14 +253,41 @@ struct cyapa {
-        bool irq_wake;  /* irq wake is enabled */
-        bool smbus;
-
-+       /* power mode settings */
-+       u8 suspend_power_mode;
-+       u16 suspend_sleep_time;
-+       bool suspended;
-+
-        /* read from query data region. */
-        char product_id[16];
-+       u8 fw_maj_ver;  /* firmware major version. */
-+       u8 fw_min_ver;  /* firmware minor version. */
-        u8 btn_capability;
-        u8 gen;
-        int max_abs_x;
-        int max_abs_y;
-        int physical_size_x;
-        int physical_size_y;
-+
-+       u8 gen_detecting;
-+
-+       atomic_t in_detecting;
-+
-+       u8 tmp_buf[MAX_TMP_BUF_SIZE];
-+
-+       check_fw_func cyapa_check_fw;
-+       bl_enter_func cyapa_bl_enter;
-+       bl_activate_func cyapa_bl_activate;
-+       bl_initiate_func cyapa_bl_initiate;
-+       update_fw_func cyapa_update_fw;
-+       bl_verify_app_integrity_func cyapa_bl_verify_app_integrity;
-+       bl_deactivate_func cyapa_bl_deactivate;
-+       show_baseline_func cyapa_show_baseline;
-+       calibrate_store_func cyapa_calibrate_store;
-+       irq_handler_func cyapa_irq_handler;
-+       set_power_mode_func cyapa_set_power_mode;
-+       bl_read_fw_func cyapa_read_fw;
-+       read_raw_data_func cyapa_read_raw_data;
++       /* Buffer to store firmware read using debugfs */
++       u8 *read_fw_image;
++       /* Buffer to store sensors' raw data */
++       u8 *tp_raw_data;
  };
 
++static const u8 bl_activate[] =3D { 0x00, 0xff, 0x38, 0x00, 0x01, 0x02, 0x=
+03,
++               0x04, 0x05, 0x06, 0x07 };
  static const u8 bl_deactivate[] =3D { 0x00, 0xff, 0x3b, 0x00, 0x01, 0x02, =
 0x03,
-@@ -316,6 +386,12 @@ static const struct cyapa_cmd_len cyapa_smbus_cmds[] =
-=3D {
-        { CYAPA_SMBUS_BLK_HEAD, 16 },
+                0x04, 0x05, 0x06, 0x07 };
+ static const u8 bl_exit[] =3D { 0x00, 0xff, 0xa5, 0x00, 0x01, 0x02, 0x03, =
+0x04,
+                0x05, 0x06, 0x07 };
++/* global root node of the cyapa debugfs directory. */
++static struct dentry *cyapa_debugfs_root;
+
+ struct cyapa_cmd_len {
+        u8 cmd;
+@@ -601,10 +626,14 @@ struct cyapa_cmd_len {
+ #define CMD_RESET 0
+ #define CMD_POWER_MODE 1
+ #define CMD_DEV_STATUS 2
++#define CMD_REPORT_MAX_BASELINE 3
++#define CMD_REPORT_MIN_BASELINE 4
+ #define SMBUS_BYTE_CMD(cmd) (((cmd) & 0x3f) << 1)
+ #define CYAPA_SMBUS_RESET SMBUS_BYTE_CMD(CMD_RESET)
+ #define CYAPA_SMBUS_POWER_MODE SMBUS_BYTE_CMD(CMD_POWER_MODE)
+ #define CYAPA_SMBUS_DEV_STATUS SMBUS_BYTE_CMD(CMD_DEV_STATUS)
++#define CYAPA_SMBUS_MAX_BASELINE SMBUS_BYTE_CMD(CMD_REPORT_MAX_BASELINE)
++#define CYAPA_SMBUS_MIN_BASELINE SMBUS_BYTE_CMD(CMD_REPORT_MIN_BASELINE)
+
+  /* for group registers read/write command */
+ #define REG_GROUP_DATA 0
+@@ -649,7 +678,9 @@ static const struct cyapa_cmd_len cyapa_i2c_cmds[] =3D =
+{
+        { BL_DATA_OFFSET, 16 },
+        { BL_HEAD_OFFSET, 32 },
+        { REG_OFFSET_QUERY_BASE, PRODUCT_ID_SIZE },
+-       { REG_OFFSET_DATA_BASE, 32 }
++       { REG_OFFSET_DATA_BASE, 32 },
++       { REG_OFFSET_MAX_BASELINE, 1 },
++       { REG_OFFSET_MIN_BASELINE, 1 },
  };
 
-+static const char unique_str[] =3D "CYTRA";
+ static const struct cyapa_cmd_len cyapa_smbus_cmds[] =3D {
+@@ -666,10 +697,30 @@ static const struct cyapa_cmd_len cyapa_smbus_cmds[] =
+=3D {
+        { CYAPA_SMBUS_BL_ALL, 32 },
+        { CYAPA_SMBUS_BLK_PRODUCT_ID, PRODUCT_ID_SIZE },
+        { CYAPA_SMBUS_BLK_HEAD, 16 },
++       { CYAPA_SMBUS_MAX_BASELINE, 1 },
++       { CYAPA_SMBUS_MIN_BASELINE, 1 },
+ };
+
+ static const char unique_str[] =3D "CYTRA";
+
++#define CYAPA_DEBUGFS_READ_FW  "read_fw"
++#define CYAPA_DEBUGFS_RAW_DATA "raw_data"
++#define CYAPA_FW_NAME          "cyapa.bin"
++#define CYAPA_FW_BLOCK_SIZE    64
++#define CYAPA_FW_READ_SIZE     16
++#define CYAPA_FW_HDR_START     0x0780
++#define CYAPA_FW_HDR_BLOCK_COUNT  2
++#define CYAPA_FW_HDR_BLOCK_START  (CYAPA_FW_HDR_START / CYAPA_FW_BLOCK_SIZ=
+E)
++#define CYAPA_FW_HDR_SIZE      (CYAPA_FW_HDR_BLOCK_COUNT * \
++                                CYAPA_FW_BLOCK_SIZE)
++#define CYAPA_FW_DATA_START    0x0800
++#define CYAPA_FW_DATA_BLOCK_COUNT  480
++#define CYAPA_FW_DATA_BLOCK_START  (CYAPA_FW_DATA_START / CYAPA_FW_BLOCK_S=
+IZE)
++#define CYAPA_FW_DATA_SIZE     (CYAPA_FW_DATA_BLOCK_COUNT * \
++                                CYAPA_FW_BLOCK_SIZE)
++#define CYAPA_FW_SIZE          (CYAPA_FW_HDR_SIZE + CYAPA_FW_DATA_SIZE)
++#define CYAPA_CMD_LEN          16
 +
-+static int cyapa_poll_state(struct cyapa *cyapa, unsigned int timeout);
-+static void cyapa_detect(struct cyapa *cyapa);
-+static void cyapa_detect_async(void *data, async_cookie_t cookie);
-+
- static ssize_t cyapa_i2c_reg_read_block(struct cyapa *cyapa, u8 reg, size_=
-t len,
-                                        u8 *values)
- {
-@@ -417,88 +493,57 @@ static ssize_t cyapa_read_block(struct cyapa *cyapa, =
-u8 cmd_idx, u8 *values)
+ static int cyapa_poll_state(struct cyapa *cyapa, unsigned int timeout);
+ static void cyapa_detect(struct cyapa *cyapa);
+ static void cyapa_detect_async(void *data, async_cookie_t cookie);
+@@ -890,6 +941,78 @@ static int cyapa_gen3_state_parse(struct cyapa *cyapa,=
+ u8 *reg_data, int len)
+        return -EAGAIN;
  }
 
- /*
-- * Query device for its current operating state.
-+ * Determine the Gen3 trackpad device's current operating state.
-  *
-  */
--static int cyapa_get_state(struct cyapa *cyapa)
-+static int cyapa_gen3_state_parse(struct cyapa *cyapa, u8 *reg_data, int l=
-en)
- {
--       int ret;
--       u8 status[BL_STATUS_SIZE];
--
--       cyapa->state =3D CYAPA_STATE_NO_DEVICE;
--
--       /*
--        * Get trackpad status by reading 3 registers starting from 0.
--        * If the device is in the bootloader, this will be BL_HEAD.
--        * If the device is in operation mode, this will be the DATA regs.
--        *
--        */
--       ret =3D cyapa_i2c_reg_read_block(cyapa, BL_HEAD_OFFSET, BL_STATUS_S=
-IZE,
--                                      status);
--
--       /*
--        * On smbus systems in OP mode, the i2c_reg_read will fail with
--        * -ETIMEDOUT.  In this case, try again using the smbus equivalent
--        * command.  This should return a BL_HEAD indicating CYAPA_STATE_OP=
-.
--        */
--       if (cyapa->smbus && (ret =3D=3D -ETIMEDOUT || ret =3D=3D -ENXIO))
--               ret =3D cyapa_read_block(cyapa, CYAPA_CMD_BL_STATUS, status=
-);
--
--       if (ret !=3D BL_STATUS_SIZE)
--               goto error;
--
--       if ((status[REG_OP_STATUS] & OP_STATUS_SRC) =3D=3D OP_STATUS_SRC) {
--               switch (status[REG_OP_STATUS] & OP_STATUS_DEV) {
--               case CYAPA_DEV_NORMAL:
--               case CYAPA_DEV_BUSY:
-+       /* Parse based on Gen3 characteristic regiters and bits */
-+       if (reg_data[0] =3D=3D 0x00 && reg_data[2] =3D=3D 0x00 &&
-+               (reg_data[1] =3D=3D 0x11 || reg_data[1] =3D=3D 0x10)) {
-+               /* normal state after power on or reset,
-+                * reg_data[1] =3D=3D 0x11, firmware image checksum is vali=
-d.
-+                * reg_data[1] =3D=3D 0x10, firmware image checksum is inva=
-lid. */
-+               cyapa->gen =3D CYAPA_GEN3;
-+               cyapa->state =3D CYAPA_STATE_BL_IDLE;
-+               return 0;
-+       } else if (reg_data[0] =3D=3D 0x00 &&
-+               (reg_data[1] & 0x10) =3D=3D 0x10) {
-+               cyapa->gen =3D CYAPA_GEN3;
-+               if (reg_data[1] & BL_STATUS_BUSY) {
-+                       cyapa->state =3D CYAPA_STATE_BL_BUSY;
-+               } else {
-+                       if ((reg_data[2] & 0x20) =3D=3D 0x00)
-+                               cyapa->state =3D CYAPA_STATE_BL_IDLE;
-+                       else
-+                               cyapa->state =3D CYAPA_STATE_BL_ACTIVE;
-+               }
-+               return 0;
-+       } else if ((reg_data[0] & 0x80) && (reg_data[1] & 0x08)) {
-+               /* normal state when running in operaitonal mode,
-+                * may also not in full power state or
-+                * busying in command process. */
-+               if (((reg_data[1] >> 4) & 0x07) <=3D 5) {
-+                       /* only finger number data is valid. */
-+                       cyapa->gen =3D CYAPA_GEN3;
-                        cyapa->state =3D CYAPA_STATE_OP;
--                       break;
--               default:
--                       ret =3D -EAGAIN;
--                       goto error;
-+                       return 0;
-                }
--       } else {
--               if (status[REG_BL_STATUS] & BL_STATUS_BUSY)
--                       cyapa->state =3D CYAPA_STATE_BL_BUSY;
--               else if (status[REG_BL_ERROR] & BL_ERROR_BOOTLOADING)
--                       cyapa->state =3D CYAPA_STATE_BL_ACTIVE;
--               else
--                       cyapa->state =3D CYAPA_STATE_BL_IDLE;
-+       } else if (reg_data[0] =3D=3D 0x0C && reg_data[1] =3D=3D 0x08) {
-+               /* Op state when first two registers overwritten with 0x00 =
-*/
-+               cyapa->gen =3D CYAPA_GEN3;
-+               cyapa->state =3D CYAPA_STATE_OP;
-+               return 0;
-+       } else if (reg_data[1] & (BL_STATUS_RUNNING | BL_STATUS_BUSY)) {
-+               cyapa->gen =3D CYAPA_GEN3;
-+               cyapa->state =3D CYAPA_STATE_BL_BUSY;
-+               return 0;
-        }
-
--       return 0;
--error:
--       return (ret < 0) ? ret : -EAGAIN;
-+       return -EAGAIN;
- }
-
--/*
-- * Poll device for its status in a loop, waiting up to timeout for a respo=
-nse.
-- *
-- * When the device switches state, it usually takes ~300 ms.
-- * However, when running a new firmware image, the device must calibrate i=
-ts
-- * sensors, which can take as long as 2 seconds.
-- *
-- * Note: The timeout has granularity of the polling rate, which is 100 ms.
-- *
-- * Returns:
-- *   0 when the device eventually responds with a valid non-busy state.
-- *   -ETIMEDOUT if device never responds (too many -EAGAIN)
-- *   < 0    other errors
-- */
--static int cyapa_poll_state(struct cyapa *cyapa, unsigned int timeout)
--{
--       int ret;
--       int tries =3D timeout / 100;
--
--       ret =3D cyapa_get_state(cyapa);
--       while ((ret || cyapa->state >=3D CYAPA_STATE_BL_BUSY) && tries--) {
--               msleep(100);
--               ret =3D cyapa_get_state(cyapa);
--       }
--       return (ret =3D=3D -EAGAIN || ret =3D=3D -ETIMEDOUT) ? -ETIMEDOUT :=
- ret;
--}
--
--static int cyapa_bl_deactivate(struct cyapa *cyapa)
-+static int cyapa_gen3_bl_deactivate(struct cyapa *cyapa)
- {
-        int ret;
-
-@@ -530,7 +575,7 @@ static int cyapa_bl_deactivate(struct cyapa *cyapa)
-  *   -EAGAIN device is stuck in bootloader, b/c it has invalid firmware
-  *   0       device is supported and in operational mode
-  */
--static int cyapa_bl_exit(struct cyapa *cyapa)
-+static int cyapa_gen3_bl_exit(struct cyapa *cyapa)
- {
-        int ret;
-
-@@ -546,9 +591,10 @@ static int cyapa_bl_exit(struct cyapa *cyapa)
-        /*
-         * In addition, when a device boots for the first time after being
-         * updated to new firmware, it must first calibrate its sensors, wh=
-ich
--        * can take up to an additional 2 seconds.
-+        * can take up to an additional 2 seconds. If the device power is
-+        * running low, this may take even longer.
-         */
--       ret =3D cyapa_poll_state(cyapa, 2000);
-+       ret =3D cyapa_poll_state(cyapa, 4000);
-        if (ret < 0)
-                return ret;
-        if (cyapa->state !=3D CYAPA_STATE_OP)
-@@ -557,33 +603,104 @@ static int cyapa_bl_exit(struct cyapa *cyapa)
-        return 0;
- }
-
-+static u16 cyapa_pwr_cmd_to_sleep_time(u8 pwr_mode)
-+{
-+       u8 encoded_time =3D pwr_mode >> 2;
-+       return (encoded_time < 10) ? encoded_time * 10
-+                                  : (encoded_time - 5) * 20;
-+}
-+
 +/*
-+ * cyapa_get_wait_time_for_pwr_cmd
++ * Enter bootloader by soft resetting the device.
 + *
-+ * Compute the amount of time we need to wait after updating the touchpad
-+ * power mode. The touchpad needs to consume the incoming power mode set
-+ * command at the current clock rate.
-+ */
-+
-+static u16 cyapa_get_wait_time_for_pwr_cmd(u8 pwr_mode)
-+{
-+       switch (pwr_mode) {
-+       case PWR_MODE_FULL_ACTIVE: return 20;
-+       case PWR_MODE_BTN_ONLY: return 20;
-+       case PWR_MODE_OFF: return 20;
-+       default: return cyapa_pwr_cmd_to_sleep_time(pwr_mode) + 50;
-+       }
-+}
-+
- /*
-  * Set device power mode
-  *
-+ * Write to the field to configure power state. Power states include :
-+ *   Full : Max scans and report rate.
-+ *   Idle : Report rate set by user specified time.
-+ *   ButtonOnly : No scans for fingers. When the button is triggered,
-+ *     a slave interrupt is asserted to notify host to wake up.
-+ *   Off : Only awake for i2c commands from host. No function for button
-+ *     or touch sensors.
++ * If device is already in the bootloader, the function just returns.
++ * Otherwise, reset the device; after reset, device enters bootloader idle
++ * state immediately.
 + *
-+ * The power_mode command should conform to the following :
-+ *   Full : 0x3f
-+ *   Idle : Configurable from 20 to 1000ms. See note below for
-+ *     cyapa_sleep_time_to_pwr_cmd and cyapa_pwr_cmd_to_sleep_time
-+ *   ButtonOnly : 0x01
-+ *   Off : 0x00
-+ *
-+ * Device power mode can only be set when device is in operational mode.
-  */
--static int cyapa_set_power_mode(struct cyapa *cyapa, u8 power_mode)
-+static int cyapa_gen3_set_power_mode(struct cyapa *cyapa, u8 power_mode,
-+               u16 reverved)
- {
--       struct device *dev =3D &cyapa->client->dev;
-        int ret;
-        u8 power;
-+       int tries =3D SET_POWER_MODE_TRIES;
-+       u16 sleep_time;
-
-+       /* Specific parameter for Gen4 and later trackpad devices.
-+        * Avoid compile warning.
-+        */
-+       reverved =3D 0;
-        if (cyapa->state !=3D CYAPA_STATE_OP)
-                return 0;
-
--       ret =3D cyapa_read_byte(cyapa, CYAPA_CMD_POWER_MODE);
-+       while (true) {
-+               ret =3D cyapa_read_byte(cyapa, CYAPA_CMD_POWER_MODE);
-+               if (ret >=3D 0 || --tries < 1)
-+                       break;
-+               usleep_range(SET_POWER_MODE_DELAY, 2 * SET_POWER_MODE_DELAY=
-);
-+       }
-        if (ret < 0)
-                return ret;
-
--       power =3D ret & ~PWR_MODE_MASK;
-+       /*
-+        * Return early if the power mode to set is the same as the current
-+        * one.
-+        */
-+       if ((ret & PWR_MODE_MASK) =3D=3D power_mode)
-+               return 0;
-+
-+       sleep_time =3D cyapa_get_wait_time_for_pwr_cmd(ret & PWR_MODE_MASK)=
-;
-+       power =3D ret;
-+       power &=3D ~PWR_MODE_MASK;
-        power |=3D power_mode & PWR_MODE_MASK;
--       ret =3D cyapa_write_byte(cyapa, CYAPA_CMD_POWER_MODE, power);
--       if (ret < 0)
--               dev_err(dev, "failed to set power_mode 0x%02x err =3D %d\n"=
-,
--                       power_mode, ret);
-+       while (true) {
-+               ret =3D cyapa_write_byte(cyapa, CYAPA_CMD_POWER_MODE, power=
-);
-+               if (!ret || --tries < 1)
-+                       break;
-+               usleep_range(SET_POWER_MODE_DELAY, 2 * SET_POWER_MODE_DELAY=
-);
-+       }
-+
-+       /*
-+        * Wait for the newly set power command to go in at the previous
-+        * clock speed (scanrate) used by the touchpad firmware. Not
-+        * doing so before issuing the next command may result in errors
-+        * depending on the command's content.
-+        */
-+       msleep(sleep_time);
-        return ret;
- }
-
--static int cyapa_get_query_data(struct cyapa *cyapa)
-+static int cyapa_gen3_get_query_data(struct cyapa *cyapa)
- {
-        u8 query_data[QUERY_DATA_SIZE];
-        int ret;
-@@ -592,10 +709,8 @@ static int cyapa_get_query_data(struct cyapa *cyapa)
-                return -EBUSY;
-
-        ret =3D cyapa_read_block(cyapa, CYAPA_CMD_GROUP_QUERY, query_data);
--       if (ret < 0)
--               return ret;
-        if (ret !=3D QUERY_DATA_SIZE)
--               return -EIO;
-+               return (ret < 0) ? ret : -EIO;
-
-        memcpy(&cyapa->product_id[0], &query_data[0], 5);
-        cyapa->product_id[5] =3D '-';
-@@ -604,6 +719,9 @@ static int cyapa_get_query_data(struct cyapa *cyapa)
-        memcpy(&cyapa->product_id[13], &query_data[11], 2);
-        cyapa->product_id[15] =3D '\0';
-
-+       cyapa->fw_maj_ver =3D query_data[15];
-+       cyapa->fw_min_ver =3D query_data[16];
-+
-        cyapa->btn_capability =3D query_data[19] & CAPABILITY_BTN_MASK;
-
-        cyapa->gen =3D query_data[20] & 0x0f;
-@@ -633,30 +751,38 @@ static int cyapa_get_query_data(struct cyapa *cyapa)
-  *   -EINVAL device is in operational mode, but not supported by this driv=
-er
-  *   0       device is supported
-  */
--static int cyapa_check_is_operational(struct cyapa *cyapa)
-+static int cyapa_gen3_do_operational_check(struct cyapa *cyapa)
- {
-        struct device *dev =3D &cyapa->client->dev;
--       static const char unique_str[] =3D "CYTRA";
-        int ret;
-
--       ret =3D cyapa_poll_state(cyapa, 2000);
--       if (ret < 0)
--               return ret;
-        switch (cyapa->state) {
-        case CYAPA_STATE_BL_ACTIVE:
--               ret =3D cyapa_bl_deactivate(cyapa);
--               if (ret)
-+               ret =3D cyapa_gen3_bl_deactivate(cyapa);
-+               if (ret) {
-+                       dev_err(dev, "failed to bl_deactivate. %d\n", ret);
-                        return ret;
-+               }
-
-        /* Fallthrough state */
-        case CYAPA_STATE_BL_IDLE:
--               ret =3D cyapa_bl_exit(cyapa);
--               if (ret)
-+               ret =3D cyapa_gen3_bl_exit(cyapa);
-+               if (ret) {
-+                       dev_err(dev, "failed to bl_exit. %d\n", ret);
-                        return ret;
-+               }
-
-        /* Fallthrough state */
-        case CYAPA_STATE_OP:
--               ret =3D cyapa_get_query_data(cyapa);
-+               /*
-+                * Reading query data before going back to the full mode
-+                * may cause problems, so we set the power mode first here.
-+                */
-+               ret =3D cyapa_gen3_set_power_mode(cyapa, PWR_MODE_FULL_ACTI=
-VE, 0);
-+               if (ret)
-+                       dev_err(dev, "%s: set full power mode failed, (%d)\=
-n",
-+                               __func__, ret);
-+               ret =3D cyapa_gen3_get_query_data(cyapa);
-                if (ret < 0)
-                        return ret;
-
-@@ -682,27 +808,25 @@ static int cyapa_check_is_operational(struct cyapa *c=
-yapa)
-        return 0;
- }
-
--static irqreturn_t cyapa_irq(int irq, void *dev_id)
-+static void cyapa_gen3_irq_handler(struct cyapa *cyapa)
- {
--       struct cyapa *cyapa =3D dev_id;
--       struct device *dev =3D &cyapa->client->dev;
-        struct input_dev *input =3D cyapa->input;
-        struct cyapa_reg_data data;
-        int i;
-        int ret;
-        int num_fingers;
-
--       if (device_may_wakeup(dev))
--               pm_wakeup_event(dev, 0);
--
-        ret =3D cyapa_read_block(cyapa, CYAPA_CMD_GROUP_DATA, (u8 *)&data);
--       if (ret !=3D sizeof(data))
--               goto out;
-+       if (ret !=3D sizeof(data)) {
-+               async_schedule(cyapa_detect_async, cyapa);
-+               return;
-+       }
-
-        if ((data.device_status & OP_STATUS_SRC) !=3D OP_STATUS_SRC ||
-            (data.device_status & OP_STATUS_DEV) !=3D CYAPA_DEV_NORMAL ||
-            (data.finger_btn & OP_DATA_VALID) !=3D OP_DATA_VALID) {
--               goto out;
-+               async_schedule(cyapa_detect_async, cyapa);
-+               return;
-        }
-
-        num_fingers =3D (data.finger_btn >> 4) & 0x0f;
-@@ -724,22 +848,271 @@ static irqreturn_t cyapa_irq(int irq, void *dev_id)
-
-        if (cyapa->btn_capability & CAPABILITY_LEFT_BTN_MASK)
-                input_report_key(input, BTN_LEFT,
--                                data.finger_btn & OP_DATA_LEFT_BTN);
--
-+                                !!(data.finger_btn & OP_DATA_LEFT_BTN));
-        if (cyapa->btn_capability & CAPABILITY_MIDDLE_BTN_MASK)
-                input_report_key(input, BTN_MIDDLE,
--                                data.finger_btn & OP_DATA_MIDDLE_BTN);
--
-+                                !!(data.finger_btn & OP_DATA_MIDDLE_BTN));
-        if (cyapa->btn_capability & CAPABILITY_RIGHT_BTN_MASK)
-                input_report_key(input, BTN_RIGHT,
--                                data.finger_btn & OP_DATA_RIGHT_BTN);
--
-+                                !!(data.finger_btn & OP_DATA_RIGHT_BTN));
-        input_sync(input);
-+}
-+
-+/* Returns the number of read bytes or a negative errno code. */
-+static ssize_t cyapa_i2c_read(struct cyapa *cyapa, u8 reg, size_t len,
-+                                       u8 *values)
-+{
-+       int ret;
-+       struct i2c_client *client =3D cyapa->client;
-+       struct i2c_msg msgs[] =3D {
-+               {
-+                       .addr =3D client->addr,
-+                       .flags =3D 0,
-+                       .len =3D 1,
-+                       .buf =3D &reg,
-+               },
-+               {
-+                       .addr =3D client->addr,
-+                       .flags =3D I2C_M_RD,
-+                       .len =3D len,
-+                       .buf =3D values,
-+               },
-+       };
-+
-+       ret =3D i2c_transfer(client->adapter, msgs, 2);
-+
-+       return (ret =3D=3D 2) ? len : ((ret < 0) ? ret : -EIO);
-+}
-+
-+/**
-+ * cyapa_i2c_write - execute i2c block data write operation
-+ * @cyapa: Handle to this driver
-+ * @ret: Offset of the data to written in the register map
-+ * @len: the data length of bytes to written.
-+ * @values: Data to be written
-+ *
-+ * This executes returns a negative errno code else zero on success.
-+ */
-+static ssize_t cyapa_i2c_write(struct cyapa *cyapa, u8 reg,
-+                                        size_t len, const u8 *values)
-+{
-+       int ret;
-+       struct i2c_client *client =3D cyapa->client;
-+
-+       cyapa->tmp_buf[0] =3D reg;
-+       memcpy(&cyapa->tmp_buf[1], values, len);
-+       ret =3D i2c_master_send(client, cyapa->tmp_buf, len + 1);
-+
-+       return (ret =3D=3D (len + 1)) ? 0 : ((ret < 0) ? ret : -EIO);
-+}
-+
-+static void cyapa_default_irq_handler(struct cyapa *cyapa)
-+{
-+       async_schedule(cyapa_detect_async, cyapa);
-+}
-+
-+/*
-+ * Check if device is operational.
-+ *
-+ * An operational device is responding, has exited bootloader, and has
-+ * firmware supported by this driver.
++ * Also, if device was unregister device from input core.  Device will
++ * re-register after it is detected following resumption of operational mo=
+de.
 + *
 + * Returns:
-+ *   -EBUSY  no device or in bootloader
-+ *   -EIO    failure while reading from device
-+ *   -EAGAIN device is still in bootloader
-+ *           if ->state =3D CYAPA_STATE_BL_IDLE, device has invalid firmwa=
-re
-+ *   -EINVAL device is in operational mode, but not supported by this driv=
-er
-+ *   0       device is supported
++ *   0 on success
++ *   -EAGAIN  device was reset, but is not now in bootloader idle state
++ *   < 0 if the device never responds within the timeout
 + */
-+static int cyapa_check_is_operational(struct cyapa *cyapa)
++static int cyapa_gen3_bl_enter(struct cyapa *cyapa)
 +{
 +       int ret;
 +
-+       ret =3D cyapa_poll_state(cyapa, 4000);
++       if (cyapa->input) {
++               cyapa_disable_irq(cyapa);
++               input_unregister_device(cyapa->input);
++               cyapa->input =3D NULL;
++       }
++
++       ret =3D cyapa_poll_state(cyapa, 500);
++       if (ret < 0)
++               return ret;
++       if (cyapa->state =3D=3D CYAPA_STATE_BL_IDLE) {
++               /* Already in BL_IDLE. Skipping exit. */
++               return 0;
++       }
++
++       if (cyapa->state !=3D CYAPA_STATE_OP)
++               return -EAGAIN;
++
++       cyapa->state =3D CYAPA_STATE_NO_DEVICE;
++       ret =3D cyapa_write_byte(cyapa, CYAPA_CMD_SOFT_RESET, 0x01);
++       if (ret < 0)
++               return -EIO;
++
++       usleep_range(25000, 50000);
++       ret =3D cyapa_poll_state(cyapa, 500);
++       if (ret < 0)
++               return ret;
++       if ((cyapa->state !=3D CYAPA_STATE_BL_IDLE) ||
++               (cyapa->status[REG_BL_STATUS] & BL_STATUS_WATCHDOG))
++               return -EAGAIN;
++
++       return 0;
++}
++
++static int cyapa_gen3_bl_activate(struct cyapa *cyapa)
++{
++       int ret;
++
++       ret =3D cyapa_i2c_reg_write_block(cyapa, 0, sizeof(bl_activate),
++                                       bl_activate);
++       if (ret < 0)
++               return ret;
++
++       /* Wait for bootloader to activate; takes between 2 and 12 seconds =
+*/
++       msleep(2000);
++       ret =3D cyapa_poll_state(cyapa, 11000);
++       if (ret < 0)
++               return ret;
++       if (cyapa->state !=3D CYAPA_STATE_BL_ACTIVE)
++               return -EAGAIN;
++
++       return 0;
++}
++
+ static int cyapa_gen3_bl_deactivate(struct cyapa *cyapa)
+ {
+        int ret;
+@@ -950,6 +1073,412 @@ static int cyapa_gen3_bl_exit(struct cyapa *cyapa)
+        return 0;
+ }
+
++/* Used in gen3 bootloader commands. */
++static u16 cyapa_gen3_csum(const u8 *buf, size_t count)
++{
++       int i;
++       u16 csum =3D 0;
++
++       for (i =3D 0; i < count; i++)
++               csum +=3D buf[i];
++
++       return csum;
++}
++
++/*
++ * Verify the integrity of a CYAPA firmware image file.
++ *
++ * The firmware image file is 30848 bytes, composed of 482 64-byte blocks.
++ *
++ * The first 2 blocks are the firmware header.
++ * The next 480 blocks are the firmware image.
++ *
++ * The first two bytes of the header hold the header checksum, computed by
++ * summing the other 126 bytes of the header.
++ * The last two bytes of the header hold the firmware image checksum, comp=
+uted
++ * by summing the 30720 bytes of the image modulo 0xffff.
++ *
++ * Both checksums are stored little-endian.
++ */
++static int cyapa_gen3_check_fw(struct cyapa *cyapa, const struct firmware =
+*fw)
++{
++       struct device *dev =3D &cyapa->client->dev;
++       u16 csum;
++       u16 csum_expected;
++
++       /* Firmware must match exact 30848 bytes =3D 482 64-byte blocks. */
++       if (fw->size !=3D CYAPA_FW_SIZE) {
++               dev_err(dev, "invalid firmware size =3D %zu, expected %u.\n=
+",
++                       fw->size, CYAPA_FW_SIZE);
++               return -EINVAL;
++       }
++
++       /* Verify header block */
++       csum_expected =3D (fw->data[0] << 8) | fw->data[1];
++       csum =3D cyapa_gen3_csum(&fw->data[2], CYAPA_FW_HDR_SIZE - 2);
++       if (csum !=3D csum_expected) {
++               dev_err(dev, "%s %04x, expected: %04x\n",
++                       "invalid firmware header checksum =3D ",
++                       csum, csum_expected);
++               return -EINVAL;
++       }
++
++       /* Verify firmware image */
++       csum_expected =3D (fw->data[CYAPA_FW_HDR_SIZE - 2] << 8) |
++                        fw->data[CYAPA_FW_HDR_SIZE - 1];
++       csum =3D cyapa_gen3_csum(&fw->data[CYAPA_FW_HDR_SIZE],
++                       CYAPA_FW_DATA_SIZE);
++       if (csum !=3D csum_expected) {
++               dev_err(dev, "%s %04x, expected: %04x\n",
++                       "invalid firmware header checksum =3D ",
++                       csum, csum_expected);
++               return -EINVAL;
++       }
++       return 0;
++}
++
++/*
++ * Write a |len| byte long buffer |buf| to the device, by chopping it up i=
+nto a
++ * sequence of smaller |CYAPA_CMD_LEN|-length write commands.
++ *
++ * The data bytes for a write command are prepended with the 1-byte offset
++ * of the data relative to the start of |buf|.
++ */
++static int cyapa_gen3_write_buffer(struct cyapa *cyapa,
++               const u8 *buf, size_t len)
++{
++       int ret;
++       size_t i;
++       unsigned char cmd[CYAPA_CMD_LEN + 1];
++       size_t cmd_len;
++
++       for (i =3D 0; i < len; i +=3D CYAPA_CMD_LEN) {
++               const u8 *payload =3D &buf[i];
++               cmd_len =3D (len - i >=3D CYAPA_CMD_LEN) ? CYAPA_CMD_LEN : =
+len - i;
++               cmd[0] =3D i;
++               memcpy(&cmd[1], payload, cmd_len);
++
++               ret =3D cyapa_i2c_reg_write_block(cyapa, 0, cmd_len + 1, cm=
+d);
++               if (ret < 0)
++                       return ret;
++       }
++       return 0;
++}
++
++/*
++ * A firmware block write command writes 64 bytes of data to a single flas=
+h
++ * page in the device.  The 78-byte block write command has the format:
++ *   <0xff> <CMD> <Key> <Start> <Data> <Data-Checksum> <CMD Checksum>
++ *
++ *  <0xff>  - every command starts with 0xff
++ *  <CMD>   - the write command value is 0x39
++ *  <Key>   - write commands include an 8-byte key: { 00 01 02 03 04 05 06=
+ 07 }
++ *  <Block> - Memory Block number (address / 64) (16-bit, big-endian)
++ *  <Data>  - 64 bytes of firmware image data
++ *  <Data Checksum> - sum of 64 <Data> bytes, modulo 0xff
++ *  <CMD Checksum> - sum of 77 bytes, from 0xff to <Data Checksum>
++ *
++ * Each write command is split into 5 i2c write transactions of up to 16 b=
+ytes.
++ * Each transaction starts with an i2c register offset: (00, 10, 20, 30, 4=
+0).
++ */
++static int cyapa_gen3_write_fw_block(struct cyapa *cyapa,
++               u16 block, const u8 *data)
++{
++       int ret;
++       u8 cmd[78];
++       u8 status[BL_STATUS_SIZE];
++       /* Programming for one block can take about 100ms. */
++       int tries =3D 11;
++       u8 bl_status, bl_error;
++
++       /* set write command and security key bytes. */
++       cmd[0] =3D 0xff;
++       cmd[1] =3D 0x39;
++       cmd[2] =3D 0x00;
++       cmd[3] =3D 0x01;
++       cmd[4] =3D 0x02;
++       cmd[5] =3D 0x03;
++       cmd[6] =3D 0x04;
++       cmd[7] =3D 0x05;
++       cmd[8] =3D 0x06;
++       cmd[9] =3D 0x07;
++       cmd[10] =3D block >> 8;
++       cmd[11] =3D block;
++       memcpy(&cmd[12], data, CYAPA_FW_BLOCK_SIZE);
++       cmd[76] =3D cyapa_gen3_csum(data, CYAPA_FW_BLOCK_SIZE);
++       cmd[77] =3D cyapa_gen3_csum(cmd, sizeof(cmd) - 1);
++
++       ret =3D cyapa_gen3_write_buffer(cyapa, cmd, sizeof(cmd));
 +       if (ret)
 +               return ret;
 +
-+       switch (cyapa->gen) {
-+       case CYAPA_GEN3:
-+               cyapa->cyapa_check_fw =3D NULL;
-+               cyapa->cyapa_bl_enter =3D NULL;
-+               cyapa->cyapa_bl_activate =3D NULL;
-+               cyapa->cyapa_bl_initiate =3D NULL;
-+               cyapa->cyapa_update_fw =3D NULL;
-+               cyapa->cyapa_bl_verify_app_integrity =3D NULL;
-+               cyapa->cyapa_bl_deactivate =3D cyapa_gen3_bl_deactivate;
-+               cyapa->cyapa_show_baseline =3D NULL;
-+               cyapa->cyapa_calibrate_store =3D NULL;
-+               cyapa->cyapa_irq_handler =3D cyapa_gen3_irq_handler;
-+               cyapa->cyapa_set_power_mode =3D cyapa_gen3_set_power_mode;
-+               cyapa->cyapa_read_fw =3D NULL;
-+               cyapa->cyapa_read_raw_data =3D NULL;
++       /* wait for write to finish */
++       do {
++               usleep_range(10000, 20000);
 +
-+               ret =3D cyapa_gen3_do_operational_check(cyapa);
-+               break;
-+       default:
-+               cyapa->gen =3D CYAPA_GEN_UNKNOWN;
-+               cyapa->cyapa_check_fw =3D NULL;
-+               cyapa->cyapa_bl_enter =3D NULL;
-+               cyapa->cyapa_bl_activate =3D NULL;
-+               cyapa->cyapa_bl_initiate =3D NULL;
-+               cyapa->cyapa_update_fw =3D NULL;
-+               cyapa->cyapa_bl_verify_app_integrity =3D NULL;
-+               cyapa->cyapa_show_baseline =3D NULL;
-+               cyapa->cyapa_calibrate_store =3D NULL;
-+               cyapa->cyapa_irq_handler =3D cyapa_default_irq_handler;
-+               cyapa->cyapa_set_power_mode =3D NULL;
-+               cyapa->cyapa_read_fw =3D NULL;
-+               cyapa->cyapa_read_raw_data =3D NULL;
++               /* check block write command result status. */
++               ret =3D cyapa_i2c_reg_read_block(cyapa, BL_HEAD_OFFSET,
++                                              BL_STATUS_SIZE, status);
++               if (ret !=3D BL_STATUS_SIZE)
++                       return (ret < 0) ? ret : -EIO;
++       } while ((status[1] & BL_STATUS_BUSY) && --tries);
 +
-+               ret =3D -EAGAIN;
-+               break;
-+       }
++       /* ignore WATCHDOG bit and reserved bits. */
++       bl_status =3D status[1] & ~BL_STATUS_REV_MASK;
++       bl_error =3D status[2] & ~BL_ERROR_RESERVED;
++
++       if (status[1] & BL_STATUS_BUSY)
++               ret =3D -ETIMEDOUT;
++       else if (bl_status !=3D BL_STATUS_RUNNING ||
++               bl_error !=3D BL_ERROR_BOOTLOADING)
++               ret =3D -EIO;
++       else
++               ret =3D 0;
 +
 +       return ret;
 +}
 +
-+static irqreturn_t cyapa_irq(int irq, void *dev_id)
-+{
-+       struct cyapa *cyapa =3D dev_id;
-+       struct device *dev =3D &cyapa->client->dev;
-+       struct input_dev *input =3D cyapa->input;
-+       int length;
-+
-+       if (device_may_wakeup(dev))
-+               pm_wakeup_event(dev, 0);
-+
-+       /*
-+        * Don't read input if input device has not been configured.
-+        * This check solves a race during probe() between irq_request()
-+        * and irq_disable(), since there is no way to request an irq that =
-is
-+        * initially disabled.
-+        */
-+       if (!input || atomic_read(&cyapa->in_detecting))
-+               goto out;
-+
-+       if (cyapa->cyapa_irq_handler)
-+               cyapa->cyapa_irq_handler(cyapa);
-
- out:
-        return IRQ_HANDLED;
- }
-
 +/*
-+ * Query device for its current operating state.
++ * A firmware block read command reads 16 bytes of data from flash startin=
+g
++ * from a given address.  The 12-byte block read command has the format:
++ *   <0xff> <CMD> <Key> <Addr>
 + *
++ *  <0xff>  - every command starts with 0xff
++ *  <CMD>   - the read command value is 0x3c
++ *  <Key>   - read commands include an 8-byte key: { 00 01 02 03 04 05 06 =
+07 }
++ *  <Addr>  - Memory address (16-bit, big-endian)
++ *
++ * The command is followed by an i2c block read to read the 16 bytes of da=
+ta.
 + */
-+static int cyapa_get_state(struct cyapa *cyapa)
++static int cyapa_gen3_read_fw_bytes(struct cyapa *cyapa, u16 addr, u8 *dat=
+a)
 +{
 +       int ret;
-+       u8 status[BL_STATUS_SIZE];
-+       u8 cmd[32];
-+       /* The i2c address of gen4 and gen5 trackpad device must be even. *=
-/
-+       bool even_addr =3D ((cyapa->client->addr & 0x0001) =3D=3D 0);
-+       bool smbus =3D false;
-+       int retires =3D 2;
++       u8 cmd[] =3D { 0xff, 0x3c, 0, 1, 2, 3, 4, 5, 6, 7, addr >> 8, addr =
+};
 +
-+       cyapa->state =3D CYAPA_STATE_NO_DEVICE;
++       ret =3D cyapa_gen3_write_buffer(cyapa, cmd, sizeof(cmd));
++       if (ret)
++               return ret;
 +
-+       /*
-+        * Get trackpad status by reading 3 registers starting from 0.
-+        * If the device is in the bootloader, this will be BL_HEAD.
-+        * If the device is in operation mode, this will be the DATA regs.
-+        *
-+        */
-+       ret =3D cyapa_i2c_reg_read_block(cyapa, BL_HEAD_OFFSET, BL_STATUS_S=
-IZE,
-+                                      status);
++       /* read data buffer starting from offset 16 */
++       ret =3D cyapa_i2c_reg_read_block(cyapa, 16, CYAPA_FW_READ_SIZE, dat=
+a);
++       if (ret !=3D CYAPA_FW_READ_SIZE)
++               return (ret < 0) ? ret : -EIO;
 +
-+       /*
-+        * On smbus systems in OP mode, the i2c_reg_read will fail with
-+        * -ETIMEDOUT.  In this case, try again using the smbus equivalent
-+        * command.  This should return a BL_HEAD indicating CYAPA_STATE_OP=
-.
-+        */
-+       if (cyapa->smbus && (ret =3D=3D -ETIMEDOUT || ret =3D=3D -ENXIO)) {
-+               if (!even_addr)
-+                       ret =3D cyapa_read_block(cyapa,
-+                                       CYAPA_CMD_BL_STATUS, status);
-+               smbus =3D true;
-+       }
-+       if (ret !=3D BL_STATUS_SIZE)
-+               goto error;
-+
-+       /*
-+        * detect trackpad protocol based on characristic registers and bit=
-s.
-+        */
-+       do {
-+               if (cyapa->gen =3D=3D CYAPA_GEN_UNKNOWN ||
-+                               cyapa->gen =3D=3D CYAPA_GEN3) {
-+                       cyapa->gen_detecting =3D CYAPA_GEN3;
-+                       ret =3D cyapa_gen3_state_parse(cyapa,
-+                                       status, BL_STATUS_SIZE);
-+                       if (ret =3D=3D 0)
-+                               goto out_detected;
-+                       cyapa->gen_detecting =3D CYAPA_GEN_UNKNOWN;
-+               }
-+
-+               /*
-+                * cannot detect communication protocol based on current
-+                * charateristic registers and bits.
-+                * So write error command to do further detection.
-+                * this method only valid on I2C bus.
-+                * for smbus interface, it won't have overwrite issue.
-+                */
-+               if (!smbus) {
-+                       cmd[0] =3D 0x00;
-+                       cmd[1] =3D 0x00;
-+                       ret =3D cyapa_i2c_write(cyapa, 0x00, 2, cmd);
-+                       if (ret)
-+                               goto error;
-+
-+                       msleep(50);
-+
-+                       ret =3D cyapa_i2c_read(cyapa, BL_HEAD_OFFSET,
-+                                       BL_STATUS_SIZE, status);
-+                       if (ret !=3D BL_STATUS_SIZE)
-+                               goto error;
-+               }
-+       } while (--retires > 0 && !smbus);
-+
-+       goto error;
-+
-+out_detected:
 +       return 0;
++}
 +
-+error:
-+       return (ret < 0) ? ret : -EAGAIN;
++static int cyapa_gen3_do_fw_update(struct cyapa *cyapa,
++               const struct firmware *fw)
++{
++       struct device *dev =3D &cyapa->client->dev;
++       int ret;
++       int i;
++
++       /* First write data, starting at byte 128  of fw->data */
++       for (i =3D 0; i < CYAPA_FW_DATA_BLOCK_COUNT; i++) {
++               size_t block =3D CYAPA_FW_DATA_BLOCK_START + i;
++               size_t addr =3D (i + CYAPA_FW_HDR_BLOCK_COUNT) *
++                               CYAPA_FW_BLOCK_SIZE;
++               const u8 *data =3D &fw->data[addr];
++               ret =3D cyapa_gen3_write_fw_block(cyapa, block, data);
++               if (ret) {
++                       dev_err(dev, "FW update aborted, %d\n", ret);
++                       return ret;
++               }
++       }
++
++       /* Then write checksum */
++       for (i =3D 0; i < CYAPA_FW_HDR_BLOCK_COUNT; i++) {
++               size_t block =3D CYAPA_FW_HDR_BLOCK_START + i;
++               size_t addr =3D i * CYAPA_FW_BLOCK_SIZE;
++               const u8 *data =3D &fw->data[addr];
++               ret =3D cyapa_gen3_write_fw_block(cyapa, block, data);
++               if (ret) {
++                       dev_err(dev, "FW update aborted, %d\n", ret);
++                       return ret;
++               }
++       }
++
++       return 0;
 +}
 +
 +/*
-+ * Poll device for its status in a loop, waiting up to timeout for a respo=
-nse.
++ * Read the entire firmware image into ->read_fw_image.
++ * If the ->read_fw_image has already been allocated, then this function
++ * doesn't do anything and just returns 0.
++ * If an error occurs while reading the image, ->read_fw_image is freed, a=
+nd
++ * the error is returned.
 + *
-+ * When the device switches state, it usually takes ~300 ms.
-+ * However, when running a new firmware image, the device must calibrate i=
-ts
-+ * sensors, which can take as long as 2 seconds.
-+ *
-+ * Note: The timeout has granularity of the polling rate, which is 100 ms.
-+ *
-+ * Returns:
-+ *   0 when the device eventually responds with a valid non-busy state.
-+ *   -ETIMEDOUT if device never responds (too many -EAGAIN)
-+ *   < 0    other errors
++ * The firmware is a fixed size (CYAPA_FW_SIZE), and is read out in
++ * fixed length (CYAPA_FW_READ_SIZE) chunks.
 + */
-+static int cyapa_poll_state(struct cyapa *cyapa, unsigned int timeout)
++static int cyapa_gen3_read_fw(struct cyapa *cyapa)
 +{
 +       int ret;
-+       int tries =3D timeout / 100;
++       int addr;
 +
-+       ret =3D cyapa_get_state(cyapa);
++       if (cyapa->read_fw_image)
++               return 0;
 +
-+       while ((ret || cyapa->state >=3D CYAPA_STATE_BL_BUSY) && tries--) {
-+               msleep(100);
-+               ret =3D cyapa_get_state(cyapa);
++       ret =3D cyapa_gen3_bl_enter(cyapa);
++       if (ret)
++               goto err_detect;
++
++       cyapa->read_fw_image =3D kmalloc(CYAPA_FW_SIZE, GFP_KERNEL);
++       if (!cyapa->read_fw_image) {
++               ret =3D -ENOMEM;
++               goto err_detect;
 +       }
 +
-+       return (ret =3D=3D -EAGAIN || ret =3D=3D -ETIMEDOUT) ? -ETIMEDOUT :=
- ret;
++       for (addr =3D 0; addr < CYAPA_FW_SIZE; addr +=3D CYAPA_FW_READ_SIZE=
+) {
++               ret =3D cyapa_gen3_read_fw_bytes(cyapa, CYAPA_FW_HDR_START =
++ addr,
++                                         &cyapa->read_fw_image[addr]);
++               if (ret) {
++                       kfree(cyapa->read_fw_image);
++                       cyapa->read_fw_image =3D NULL;
++                       break;
++               }
++       }
++
++err_detect:
++       if (cyapa->read_fw_image)
++               cyapa->read_fw_image_size =3D CYAPA_FW_SIZE;
++       cyapa_detect_async(cyapa, 0);
++       return ret;
 +}
 +
- static u8 cyapa_check_adapter_functionality(struct i2c_client *client)
- {
-        u8 ret =3D CYAPA_ADAPTER_FUNC_NONE;
-@@ -823,6 +1196,62 @@ err_free_device:
-        return ret;
- }
-
-+static void cyapa_detect(struct cyapa *cyapa)
++static ssize_t cyapa_gen3_do_calibrate(struct device *dev,
++                                    struct device_attribute *attr,
++                                    const char *buf, size_t count)
 +{
-+       struct device *dev =3D &cyapa->client->dev;
-+       char *envp[] =3D {"ERROR=3D1", NULL};
++       struct cyapa *cyapa =3D dev_get_drvdata(dev);
++       int tries =3D 20;  /* max recalibration timeout 2s. */
 +       int ret;
 +
-+       ret =3D cyapa_check_is_operational(cyapa);
-+       if (ret =3D=3D -ETIMEDOUT)
-+               dev_err(dev, "no device detected, %d\n", ret);
-+       else if (ret)
-+               dev_err(dev, "device detected, but not operational, %d\n", =
-ret);
++       cyapa_disable_irq(cyapa);
 +
-+       if (ret) {
-+               kobject_uevent_env(&dev->kobj, KOBJ_CHANGE, envp);
-+               return;
++       ret =3D cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
++       if (ret < 0) {
++               dev_err(dev, "Error reading dev status. err =3D %d\n", ret)=
+;
++               goto out;
++       }
++       if ((ret & CYAPA_DEV_NORMAL) !=3D CYAPA_DEV_NORMAL) {
++               dev_warn(dev, "Trackpad device is busy. device state =3D 0x=
+%x\n",
++                        ret);
++               ret =3D -EAGAIN;
++               goto out;
 +       }
 +
-+       if (!cyapa->input) {
-+               ret =3D cyapa_create_input_dev(cyapa);
-+               if (ret)
-+                       dev_err(dev, "create input_dev instance failed, %d\=
++       ret =3D cyapa_write_byte(cyapa, CYAPA_CMD_SOFT_RESET,
++                              OP_RECALIBRATION_MASK);
++       if (ret < 0) {
++               dev_err(dev, "Failed to send calibrate command. ret =3D %d\=
+n",
++                       ret);
++               goto out;
++       }
++
++       do {
++               /*
++                * For this recalibration, the max time will not exceed 2s.
++                * The average time is approximately 500 - 700 ms, and we
++                * will check the status every 100 - 200ms.
++                */
++               usleep_range(100000, 200000);
++
++               ret =3D cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
++               if (ret < 0) {
++                       dev_err(dev, "Error reading dev status. err =3D %d\=
 n",
 +                               ret);
-+
-+               enable_irq(cyapa->irq);
-+               /*
-+                * On some systems, a system crash / warm boot does not res=
-et
-+                * the device's current power mode to FULL_ACTIVE.
-+                * If such an event happens during suspend, after the devic=
-e
-+                * has been put in a low power mode, the device will still =
-be
-+                * in low power mode on a subsequent boot, since there was
-+                * never a matching resume().
-+                * Handle this by always forcing full power here, when a
-+                * device is first detected to be in operational mode.
-+                */
-+               if (cyapa->cyapa_set_power_mode) {
-+                       ret =3D cyapa->cyapa_set_power_mode(cyapa,
-+                                       PWR_MODE_FULL_ACTIVE, 0);
-+                       if (ret)
-+                               dev_warn(dev, "set active power failed, %d\=
-n",
-+                                               ret);
++                       goto out;
 +               }
++               if ((ret & CYAPA_DEV_NORMAL) =3D=3D CYAPA_DEV_NORMAL)
++                       break;
++       } while (--tries);
++
++       if (tries =3D=3D 0) {
++               dev_err(dev, "Failed to calibrate. Timeout.\n");
++               ret =3D -ETIMEDOUT;
++               goto out;
 +       }
++       dev_dbg(dev, "Calibration successful.\n");
++
++out:
++       cyapa_enable_irq(cyapa);
++       return ret < 0 ? ret : count;
 +}
 +
-+static void cyapa_detect_async(void *data, async_cookie_t cookie)
++static ssize_t cyapa_gen3_show_baseline(struct device *dev,
++                                  struct device_attribute *attr, char *buf=
+)
 +{
-+       struct cyapa *cyapa =3D (struct cyapa *)data;
++       struct cyapa *cyapa =3D dev_get_drvdata(dev);
++       int max_baseline, min_baseline;
++       int tries =3D 3;
++       int ret;
 +
-+       if (atomic_read(&cyapa->in_detecting))
-+               return;
++       cyapa_disable_irq(cyapa);
 +
-+       atomic_inc(&cyapa->in_detecting);
-+       cyapa_detect(cyapa);
-+       atomic_dec(&cyapa->in_detecting);
++       ret =3D cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
++       if (ret < 0) {
++               dev_err(dev, "Error reading dev status. err =3D %d\n", ret)=
+;
++               goto out;
++       }
++       if ((ret & CYAPA_DEV_NORMAL) !=3D CYAPA_DEV_NORMAL) {
++               dev_warn(dev, "Trackpad device is busy. device state =3D 0x=
+%x\n",
++                        ret);
++               ret =3D -EAGAIN;
++               goto out;
++       }
++
++       ret =3D cyapa_write_byte(cyapa, CYAPA_CMD_SOFT_RESET,
++                              OP_REPORT_BASELINE_MASK);
++       if (ret < 0) {
++               dev_err(dev, "Failed to send report baseline command. %d\n"=
+,
++                       ret);
++               goto out;
++       }
++
++       do {
++               usleep_range(10000, 20000);
++
++               ret =3D cyapa_read_byte(cyapa, CYAPA_CMD_DEV_STATUS);
++               if (ret < 0) {
++                       dev_err(dev, "Error reading dev status. err =3D %d\=
+n",
++                               ret);
++                       goto out;
++               }
++               if ((ret & CYAPA_DEV_NORMAL) =3D=3D CYAPA_DEV_NORMAL)
++                       break;
++       } while (--tries);
++
++       if (tries =3D=3D 0) {
++               dev_err(dev, "Device timed out going to Normal state.\n");
++               ret =3D -ETIMEDOUT;
++               goto out;
++       }
++
++       ret =3D cyapa_read_byte(cyapa, CYAPA_CMD_MAX_BASELINE);
++       if (ret < 0) {
++               dev_err(dev, "Failed to read max baseline. err =3D %d\n", r=
+et);
++               goto out;
++       }
++       max_baseline =3D ret;
++
++       ret =3D cyapa_read_byte(cyapa, CYAPA_CMD_MIN_BASELINE);
++       if (ret < 0) {
++               dev_err(dev, "Failed to read min baseline. err =3D %d\n", r=
+et);
++               goto out;
++       }
++       min_baseline =3D ret;
++
++       dev_dbg(dev, "Baseline report successful. Max: %d Min: %d\n",
++               max_baseline, min_baseline);
++       ret =3D scnprintf(buf, PAGE_SIZE, "%d %d\n", max_baseline, min_base=
+line);
++
++out:
++       cyapa_enable_irq(cyapa);
++       return ret;
 +}
 +
- static int cyapa_probe(struct i2c_client *client,
-                       const struct i2c_device_id *dev_id)
- {
-@@ -830,6 +1259,7 @@ static int cyapa_probe(struct i2c_client *client,
-        u8 adapter_func;
-        struct cyapa *cyapa;
-        struct device *dev =3D &client->dev;
-+       union i2c_smbus_data dummy;
+ /*
+  * cyapa_sleep_time_to_pwr_cmd and cyapa_pwr_cmd_to_sleep_time
+  *
+@@ -2541,18 +3070,18 @@ static int cyapa_check_is_operational(struct cyapa =
+*cyapa)
 
-        adapter_func =3D cyapa_check_adapter_functionality(client);
-        if (adapter_func =3D=3D CYAPA_ADAPTER_FUNC_NONE) {
-@@ -837,13 +1267,18 @@ static int cyapa_probe(struct i2c_client *client,
-                return -EIO;
-        }
+                break;
+        case CYAPA_GEN3:
+-               cyapa->cyapa_check_fw =3D NULL;
+-               cyapa->cyapa_bl_enter =3D NULL;
+-               cyapa->cyapa_bl_activate =3D NULL;
++               cyapa->cyapa_check_fw =3D cyapa_gen3_check_fw;
++               cyapa->cyapa_bl_enter =3D cyapa_gen3_bl_enter;
++               cyapa->cyapa_bl_activate =3D cyapa_gen3_bl_activate;
+                cyapa->cyapa_bl_initiate =3D NULL;
+-               cyapa->cyapa_update_fw =3D NULL;
++               cyapa->cyapa_update_fw =3D cyapa_gen3_do_fw_update;
+                cyapa->cyapa_bl_verify_app_integrity =3D NULL;
+                cyapa->cyapa_bl_deactivate =3D cyapa_gen3_bl_deactivate;
+-               cyapa->cyapa_show_baseline =3D NULL;
+-               cyapa->cyapa_calibrate_store =3D NULL;
++               cyapa->cyapa_show_baseline =3D cyapa_gen3_show_baseline;
++               cyapa->cyapa_calibrate_store =3D cyapa_gen3_do_calibrate;
+                cyapa->cyapa_irq_handler =3D cyapa_gen3_irq_handler;
+                cyapa->cyapa_set_power_mode =3D cyapa_gen3_set_power_mode;
+-               cyapa->cyapa_read_fw =3D NULL;
++               cyapa->cyapa_read_fw =3D cyapa_gen3_read_fw;
+                cyapa->cyapa_read_raw_data =3D NULL;
 
-+       /* Make sure there is something at this address */
-+       if (dev->of_node && i2c_smbus_xfer(client->adapter, client->addr, 0=
-,
-+                       I2C_SMBUS_READ, 0, I2C_SMBUS_BYTE, &dummy) < 0)
+                ret =3D cyapa_gen3_do_operational_check(cyapa);
+@@ -2713,6 +3242,10 @@ static int cyapa_get_state(struct cyapa *cyapa)
+         * detect trackpad protocol based on characristic registers and bit=
+s.
+         */
+        do {
++               cyapa->status[REG_OP_STATUS] =3D status[REG_OP_STATUS];
++               cyapa->status[REG_BL_STATUS] =3D status[REG_BL_STATUS];
++               cyapa->status[REG_BL_ERROR] =3D status[REG_BL_ERROR];
++
+                if (cyapa->gen =3D=3D CYAPA_GEN_UNKNOWN ||
+                                cyapa->gen =3D=3D CYAPA_GEN3) {
+                        cyapa->gen_detecting =3D CYAPA_GEN3;
+@@ -2964,6 +3497,286 @@ static void cyapa_detect(struct cyapa *cyapa)
+                cyapa_empty_pip_output_data(cyapa, NULL, NULL, NULL);
+ }
+
++static int cyapa_firmware(struct cyapa *cyapa, const char *fw_name)
++{
++       struct device *dev =3D &cyapa->client->dev;
++       int ret;
++       const struct firmware *fw;
++
++       ret =3D request_firmware(&fw, fw_name, dev);
++       if (ret) {
++               dev_err(dev, "Could not load firmware from %s, %d\n",
++                       fw_name, ret);
++               return ret;
++       }
++
++       if (cyapa->cyapa_check_fw) {
++               ret =3D cyapa->cyapa_check_fw(cyapa, fw);
++               if (ret) {
++                       dev_err(dev, "Invalid CYAPA firmware image: %s\n",
++                                       fw_name);
++                       goto done;
++               }
++       } else {
++               dev_err(dev, "Unknown status, operation forbidden, gen=3D%d=
+\n",
++                       cyapa->gen);
++               ret =3D -EPERM;
++               goto done;
++       }
++
++       /*
++        * Resume the potentially suspended device because doing FW
++        * update on a device not in the FULL mode has a chance to
++        * fail.
++        */
++       pm_runtime_get_sync(dev);
++
++       if (cyapa->cyapa_bl_enter) {
++               ret =3D cyapa->cyapa_bl_enter(cyapa);
++               if (ret)
++                       goto err_detect;
++       }
++
++       if (cyapa->cyapa_bl_activate) {
++               ret =3D cyapa->cyapa_bl_activate(cyapa);
++               if (ret)
++                       goto err_detect;
++       }
++
++       if (cyapa->cyapa_bl_initiate) {
++               ret =3D cyapa->cyapa_bl_initiate(cyapa, fw);
++               if (ret)
++                       goto err_detect;
++       }
++
++       if (cyapa->cyapa_update_fw) {
++               ret =3D cyapa->cyapa_update_fw(cyapa, fw);
++               if (ret)
++                       goto err_detect;
++       }
++
++       if (cyapa->cyapa_bl_verify_app_integrity) {
++               ret =3D cyapa->cyapa_bl_verify_app_integrity(cyapa);
++               if (ret)
++                       goto err_detect;
++       }
++
++err_detect:
++       pm_runtime_put_noidle(dev);
++       cyapa_detect_async(cyapa, 0);
++
++done:
++       release_firmware(fw);
++       return ret;
++}
++
++/*
++ **************************************************************
++ * debugfs interface
++ **************************************************************
++*/
++static int cyapa_debugfs_open(struct inode *inode, struct file *file)
++{
++       struct cyapa *cyapa =3D inode->i_private;
++       int ret;
++
++       if (!cyapa)
 +               return -ENODEV;
 +
-        cyapa =3D kzalloc(sizeof(struct cyapa), GFP_KERNEL);
-        if (!cyapa) {
-                dev_err(dev, "allocate memory for cyapa failed\n");
-                return -ENOMEM;
++       ret =3D mutex_lock_interruptible(&cyapa->debugfs_mutex);
++       if (ret)
++               return ret;
++
++       if (!kobject_get(&cyapa->client->dev.kobj)) {
++               ret =3D -ENODEV;
++               goto out;
++       }
++
++       file->private_data =3D cyapa;
++
++       /*
++        * If firmware hasn't been read yet, read it all in one pass.
++        * Subsequent opens will reuse the data in this same buffer.
++        */
++       if (!cyapa->cyapa_read_fw) {
++               ret =3D -EPERM;
++               goto out;
++       }
++       ret =3D cyapa->cyapa_read_fw(cyapa);
++
++out:
++       mutex_unlock(&cyapa->debugfs_mutex);
++       return ret;
++}
++
++static int cyapa_debugfs_release(struct inode *inode, struct file *file)
++{
++       struct cyapa *cyapa =3D file->private_data;
++       int ret;
++
++       if (!cyapa)
++               return 0;
++
++       ret =3D mutex_lock_interruptible(&cyapa->debugfs_mutex);
++       if (ret)
++               return ret;
++       file->private_data =3D NULL;
++       kobject_put(&cyapa->client->dev.kobj);
++       mutex_unlock(&cyapa->debugfs_mutex);
++
++       return 0;
++}
++
++/* Return some bytes from the buffered firmware image, starting from *ppos=
+ */
++static ssize_t cyapa_debugfs_read_fw(struct file *file, char __user *buffe=
+r,
++                                    size_t count, loff_t *ppos)
++{
++       struct cyapa *cyapa =3D file->private_data;
++
++       if (!cyapa->read_fw_image)
++               return -EINVAL;
++
++       if (*ppos >=3D cyapa->read_fw_image_size)
++               return 0;
++
++       if (count + *ppos > cyapa->read_fw_image_size)
++               count =3D cyapa->read_fw_image_size - *ppos;
++
++       if (copy_to_user(buffer, &cyapa->read_fw_image[*ppos], count))
++               return -EFAULT;
++
++       *ppos +=3D count;
++       return count;
++}
++
++static const struct file_operations cyapa_read_fw_fops =3D {
++       .open =3D cyapa_debugfs_open,
++       .release =3D cyapa_debugfs_release,
++       .read =3D cyapa_debugfs_read_fw
++};
++
++static int cyapa_debugfs_raw_data_open(struct inode *inode, struct file *f=
+ile)
++{
++       struct cyapa *cyapa =3D inode->i_private;
++       int ret;
++
++       if (!cyapa)
++               return -ENODEV;
++
++       ret =3D mutex_lock_interruptible(&cyapa->debugfs_mutex);
++       if (ret)
++               return ret;
++
++       if (!kobject_get(&cyapa->client->dev.kobj)) {
++               ret =3D -ENODEV;
++               goto out;
++       }
++
++       file->private_data =3D cyapa;
++
++       if (!cyapa->tp_raw_data) {
++               if (cyapa->state !=3D CYAPA_STATE_GEN5_APP ||
++                       !cyapa->electrodes_x || !cyapa->electrodes_y) {
++                       ret =3D  -EINVAL;
++                       goto out;
++               }
++
++               cyapa->tp_raw_data_size =3D sizeof(s32) * (cyapa->electrode=
+s_x *
++                       cyapa->electrodes_y + cyapa->electrodes_x +
++                       cyapa->electrodes_y) + GEN5_RAW_DATA_HEAD_SIZE;
++               /* This buffer will be hold after used until the driver is
++                * unloaded, the purpose of it is to improve the performace
++                * to avoid frequently allocate and release the buffer. */
++               cyapa->tp_raw_data =3D
++                       kmalloc(cyapa->tp_raw_data_size, GFP_KERNEL);
++               if (!cyapa->tp_raw_data) {
++                       ret =3D  -ENOMEM;
++                       goto out;
++               }
++               memset(cyapa->tp_raw_data, 0, cyapa->tp_raw_data_size);
++       }
++
++       if (!cyapa->cyapa_read_raw_data) {
++               ret =3D -EPERM;
++               goto out;
++       }
++       ret =3D cyapa->cyapa_read_raw_data(cyapa);
++
++out:
++       mutex_unlock(&cyapa->debugfs_mutex);
++       return ret;
++}
++
++static int cyapa_debugfs_raw_data_release(struct inode *inode,
++                               struct file *file)
++{
++       struct cyapa *cyapa =3D file->private_data;
++       int ret;
++
++       if (!cyapa)
++               return 0;
++
++       ret =3D mutex_lock_interruptible(&cyapa->debugfs_mutex);
++       if (ret)
++               return ret;
++       file->private_data =3D NULL;
++       kobject_put(&cyapa->client->dev.kobj);
++       mutex_unlock(&cyapa->debugfs_mutex);
++
++       return 0;
++}
++
++/* Always return the sensors' latest raw data from trackpad device. */
++static ssize_t cyapa_debugfs_read_raw_data(struct file *file,
++                                    char __user *buffer,
++                                    size_t count, loff_t *ppos)
++{
++       struct cyapa *cyapa =3D file->private_data;
++
++       if (!cyapa->tp_raw_data)
++               return -EINVAL;
++
++       if (*ppos >=3D cyapa->tp_raw_data_size)
++               return 0;
++
++       if (count + *ppos > cyapa->tp_raw_data_size)
++               count =3D cyapa->tp_raw_data_size - *ppos;
++
++       if (copy_to_user(buffer, &cyapa->tp_raw_data[*ppos], count))
++               return -EFAULT;
++
++       *ppos +=3D count;
++       return count;
++}
++
++static const struct file_operations cyapa_read_raw_data_fops =3D {
++       .open =3D cyapa_debugfs_raw_data_open,
++       .release =3D cyapa_debugfs_raw_data_release,
++       .read =3D cyapa_debugfs_read_raw_data
++};
++
++static int cyapa_debugfs_init(struct cyapa *cyapa)
++{
++       struct device *dev =3D &cyapa->client->dev;
++
++       if (!cyapa_debugfs_root)
++               return -ENODEV;
++
++       cyapa->dentry_dev =3D debugfs_create_dir(kobject_name(&dev->kobj),
++                                              cyapa_debugfs_root);
++
++       if (!cyapa->dentry_dev)
++               return -ENODEV;
++
++       mutex_init(&cyapa->debugfs_mutex);
++
++       debugfs_create_file(CYAPA_DEBUGFS_READ_FW, S_IRUSR, cyapa->dentry_d=
+ev,
++                           cyapa, &cyapa_read_fw_fops);
++
++       debugfs_create_file(CYAPA_DEBUGFS_RAW_DATA, S_IRUSR, cyapa->dentry_=
+dev,
++                           cyapa, &cyapa_read_raw_data_fops);
++       return 0;
++}
+
+ /*
+  * Sysfs Interface.
+@@ -3110,6 +3923,93 @@ static void cyapa_start_runtime(struct cyapa *cyapa)
+ static void cyapa_start_runtime(struct cyapa *cyapa) {}
+ #endif /* CONFIG_PM_RUNTIME */
+
++static ssize_t cyapa_show_fm_ver(struct device *dev,
++                                struct device_attribute *attr, char *buf)
++{
++       struct cyapa *cyapa =3D dev_get_drvdata(dev);
++       return scnprintf(buf, PAGE_SIZE, "%d.%d\n", cyapa->fw_maj_ver,
++                        cyapa->fw_min_ver);
++}
++
++static ssize_t cyapa_show_product_id(struct device *dev,
++                                    struct device_attribute *attr, char *b=
+uf)
++{
++       struct cyapa *cyapa =3D dev_get_drvdata(dev);
++       return scnprintf(buf, PAGE_SIZE, "%s\n", cyapa->product_id);
++}
++
++static ssize_t cyapa_update_fw_store(struct device *dev,
++                                    struct device_attribute *attr,
++                                    const char *buf, size_t count)
++{
++       struct cyapa *cyapa =3D dev_get_drvdata(dev);
++       const char *fw_name;
++       int ret;
++
++       /* Do not allow paths that step out of /lib/firmware  */
++       if (strstr(buf, "../") !=3D NULL)
++               return -EINVAL;
++
++       fw_name =3D !strncmp(buf, "1", count) ||
++                 !strncmp(buf, "1\n", count) ? CYAPA_FW_NAME : buf;
++
++       ret =3D cyapa_firmware(cyapa, fw_name);
++       if (ret)
++               dev_err(dev, "firmware update failed, %d\n", ret);
++       else
++               dev_dbg(dev, "firmware update succeeded\n");
++
++       return ret ? ret : count;
++}
++
++static ssize_t cyapa_calibrate_store(struct device *dev,
++                                    struct device_attribute *attr,
++                                    const char *buf, size_t count)
++{
++       struct cyapa *cyapa =3D dev_get_drvdata(dev);
++       int ret;
++
++       if (!cyapa->cyapa_calibrate_store) {
++               dev_err(dev, "Calibrate operation not permitted.\n");
++               return -EPERM;
++       }
++
++       ret =3D cyapa->cyapa_calibrate_store(dev, attr, buf, count);
++       return ret < 0 ? ret : count;
++}
++
++static ssize_t cyapa_show_baseline(struct device *dev,
++                                  struct device_attribute *attr, char *buf=
+)
++{
++       struct cyapa *cyapa =3D dev_get_drvdata(dev);
++
++       if (!cyapa->cyapa_show_baseline) {
++               dev_err(dev, "Calibrate operation not permitted.\n");
++               return -EPERM;
++       }
++
++       return cyapa->cyapa_show_baseline(dev, attr, buf);
++}
++
++static DEVICE_ATTR(firmware_version, S_IRUGO, cyapa_show_fm_ver, NULL);
++static DEVICE_ATTR(product_id, S_IRUGO, cyapa_show_product_id, NULL);
++static DEVICE_ATTR(update_fw, S_IWUSR, NULL, cyapa_update_fw_store);
++static DEVICE_ATTR(baseline, S_IRUGO, cyapa_show_baseline, NULL);
++static DEVICE_ATTR(calibrate, S_IWUSR, NULL, cyapa_calibrate_store);
++
++static struct attribute *cyapa_sysfs_entries[] =3D {
++       &dev_attr_firmware_version.attr,
++       &dev_attr_product_id.attr,
++       &dev_attr_update_fw.attr,
++       &dev_attr_baseline.attr,
++       &dev_attr_calibrate.attr,
++       NULL,
++};
++
++static const struct attribute_group cyapa_sysfs_group =3D {
++       .attrs =3D cyapa_sysfs_entries,
++};
++
+
+ /*
+  * We rely on EV_SW and SW_LID bits to identify a LID device, and hook
+@@ -3311,6 +4211,12 @@ static int cyapa_probe(struct i2c_client *client,
         }
+        cyapa_disable_irq(cyapa);
 
--       cyapa->gen =3D CYAPA_GEN3;
-+       cyapa->gen =3D CYAPA_GEN_UNKNOWN;
-        cyapa->client =3D client;
-        i2c_set_clientdata(client, cyapa);
-        sprintf(cyapa->phys, "i2c-%d-%04x/input0", client->adapter->nr,
-@@ -853,23 +1288,7 @@ static int cyapa_probe(struct i2c_client *client,
-        if (adapter_func =3D=3D CYAPA_ADAPTER_FUNC_SMBUS)
-                cyapa->smbus =3D true;
-        cyapa->state =3D CYAPA_STATE_NO_DEVICE;
--       ret =3D cyapa_check_is_operational(cyapa);
--       if (ret) {
--               dev_err(dev, "device not operational, %d\n", ret);
--               goto err_mem_free;
--       }
--
--       ret =3D cyapa_create_input_dev(cyapa);
--       if (ret) {
--               dev_err(dev, "create input_dev instance failed, %d\n", ret)=
-;
--               goto err_mem_free;
--       }
--
--       ret =3D cyapa_set_power_mode(cyapa, PWR_MODE_FULL_ACTIVE);
--       if (ret) {
--               dev_err(dev, "set active power failed, %d\n", ret);
--               goto err_unregister_device;
--       }
-+       cyapa->suspend_power_mode =3D PWR_MODE_SLEEP;
++       if (sysfs_create_group(&client->dev.kobj, &cyapa_sysfs_group))
++               dev_warn(dev, "error creating sysfs entries.\n");
++
++       if (cyapa_debugfs_init(cyapa))
++               dev_warn(dev, "error creating debugfs entries.\n");
++
+ #ifdef CONFIG_PM_SLEEP
+        if (device_can_wakeup(dev) &&
+            sysfs_merge_group(&client->dev.kobj, &cyapa_power_wakeup_group)=
+)
+@@ -3333,6 +4239,7 @@ static int cyapa_remove(struct i2c_client *client)
+        struct cyapa *cyapa =3D i2c_get_clientdata(client);
 
-        cyapa->irq =3D client->irq;
-        ret =3D request_threaded_irq(cyapa->irq,
-@@ -882,12 +1301,14 @@ static int cyapa_probe(struct i2c_client *client,
-                dev_err(dev, "IRQ request failed: %d\n, ", ret);
-                goto err_unregister_device;
-        }
-+       disable_irq(cyapa->irq);
+        pm_runtime_disable(&client->dev);
++       sysfs_remove_group(&client->dev.kobj, &cyapa_sysfs_group);
 
-+       async_schedule(cyapa_detect_async, cyapa);
-        return 0;
+ #ifdef CONFIG_PM_SLEEP
+        sysfs_unmerge_group(&client->dev.kobj, &cyapa_power_wakeup_group);
+@@ -3342,7 +4249,17 @@ static int cyapa_remove(struct i2c_client *client)
+        sysfs_unmerge_group(&client->dev.kobj, &cyapa_power_runtime_group);
+ #endif
 
- err_unregister_device:
-        input_unregister_device(cyapa->input);
--err_mem_free:
-+       i2c_set_clientdata(client, NULL);
-        kfree(cyapa);
-
-        return ret;
-@@ -899,7 +1320,10 @@ static int cyapa_remove(struct i2c_client *client)
-
++       kfree(cyapa->read_fw_image);
++       cyapa->read_fw_image =3D NULL;
++       cyapa->read_fw_image_size =3D 0;
++       kfree(cyapa->tp_raw_data);
++       cyapa->tp_raw_data =3D NULL;
++       cyapa->tp_raw_data_size =3D 0;
         free_irq(cyapa->irq, cyapa);
++
++       debugfs_remove_recursive(cyapa->dentry_dev);
++       mutex_destroy(&cyapa->debugfs_mutex);
++
         input_unregister_device(cyapa->input);
--       cyapa_set_power_mode(cyapa, PWR_MODE_OFF);
-+
-+       if (cyapa->cyapa_set_power_mode)
-+               cyapa->cyapa_set_power_mode(cyapa, PWR_MODE_OFF, 0);
-+       i2c_set_clientdata(client, NULL);
-        kfree(cyapa);
-
-        return 0;
-@@ -913,16 +1337,21 @@ static int cyapa_suspend(struct device *dev)
-        struct cyapa *cyapa =3D dev_get_drvdata(dev);
-
-        disable_irq(cyapa->irq);
-+       cyapa->suspended =3D true;
-
-        /*
-         * Set trackpad device to idle mode if wakeup is allowed,
-         * otherwise turn off.
-         */
--       power_mode =3D device_may_wakeup(dev) ? PWR_MODE_IDLE
-+       power_mode =3D device_may_wakeup(dev) ? cyapa->suspend_power_mode
-                                            : PWR_MODE_OFF;
--       ret =3D cyapa_set_power_mode(cyapa, power_mode);
--       if (ret < 0)
--               dev_err(dev, "set power mode failed, %d\n", ret);
-+       if (cyapa->cyapa_set_power_mode) {
-+               ret =3D cyapa->cyapa_set_power_mode(cyapa, power_mode,
-+                               cyapa->suspend_sleep_time);
-+               if (ret < 0)
-+                       dev_err(dev, "suspend set power mode failed, %d\n",
-+                                       ret);
-+       }
-
-        if (device_may_wakeup(dev))
-                cyapa->irq_wake =3D (enable_irq_wake(cyapa->irq) =3D=3D 0);
-@@ -936,12 +1365,18 @@ static int cyapa_resume(struct device *dev)
-
-        if (device_may_wakeup(dev) && cyapa->irq_wake)
-                disable_irq_wake(cyapa->irq);
-+       enable_irq(cyapa->irq);
-
--       ret =3D cyapa_set_power_mode(cyapa, PWR_MODE_FULL_ACTIVE);
--       if (ret)
--               dev_warn(dev, "resume active power failed, %d\n", ret);
-+       if (cyapa->cyapa_set_power_mode) {
-+               ret =3D cyapa->cyapa_set_power_mode(cyapa, PWR_MODE_FULL_AC=
-TIVE,
-+                               cyapa->suspend_sleep_time);
-+               if (ret)
-+                       dev_warn(dev, "resume active power failed, %d\n", r=
-et);
-+       }
-
--       enable_irq(cyapa->irq);
-+       async_schedule(cyapa_detect_async, cyapa);
-+
-+       cyapa->suspended =3D false;
-        return 0;
- }
- #endif /* CONFIG_PM_SLEEP */
+        lid_event_unregister_handler(cyapa);
+        if (cyapa->cyapa_set_power_mode)
 This message and any attachments may contain Cypress (or its subsidiaries) =
 confidential information. If it has been received in error, please advise t=
 he sender and immediately delete this message.
 
---_000_77BC725C9062764F874D79F51E1F1A8F40C11432S04MBX0101s04lo_
+--_000_77BC725C9062764F874D79F51E1F1A8F40C11452S04MBX0101s04lo_
 Content-Disposition: attachment; filename="winmail.dat"
 Content-Transfer-Encoding: base64
 Content-Type: application/ms-tnef; name="winmail.dat"
 
-eJ8+InkyAQaQCAAEAAAAAAABAAEAAQeQBgAIAAAA5AQAAAAAAADoAAEJgAEAIQAAAEExMjkwMDAx
-ODlCOEE2NDBCMjREMTc1Q0RDOTg1QjU0AAgHAQ2ABAACAAAAAgACAAEFgAMADgAAAN4HBAAOAAcA
-NQA5AAEAbQEBIIADAA4AAADeBwQADgAHADUAOQABAG0BAQiABwAYAAAASVBNLk1pY3Jvc29mdCBN
-YWlsLk5vdGUAMQgBBIABAE0AAABbUEFUQ0ggMS82XSBpbnB1dDogY3lhcGE6IHJlYXJjaGl0ZWN0
-dXJlIGRyaXZlciB0byBzdXBwb3J0IGZ1bmN0aW9uIHBvaW50ZXJzANAbAQOQBgB8QwAASwAAAAIB
-fwABAAAAQgAAADw3N0JDNzI1QzkwNjI3NjRGODc0RDc5RjUxRTFGMUE4RjQwQzExNDMyQFMwNC1N
-QlgwMS0wMS5zMDQubG9jYWw+AAAACwAfDgEAAAACAQkQAQAAAC83AAArNwAAW6oAAExaRnXXXi61
-YQAKZmJpZAQAAGNjwHBnMTI1MgD+A0PwdGV4dAH3AqQD4wIABGNoCsBzZXQwIO8HbQKDAFARTTIK
-gAa0AoCWfQqACMg7CWIxOQ7AvwnDFnIKMhZxAoAVYioJsHMJ8ASQYXQFsg5QA2Bzom8BgCBFeBHB
-bhgwXQZSdgSQF7YCEHIAwHR9CFBuGjEQIAXABaAbZGSaIANSIBAiF7JcdgiQ5HdrC4BkNR1TBPAH
-QA0XcDAKcRfyYmttawZzAZAAICBCTV9C4EVHSU59CvwB8QvxWQfwZS0KwBHAaRAgY6Z0CHAZ4HRo
-GeBkBRADGjEcwG8gc3VwcFMJERxwdW4iQGkCICDnI7ALgBuhcywjcCNgIhDTG9AAcFxsC4BlCoAj
-hv8AcBxgJLIJwBiAGeAYUAfgewEAHWBjB5ELYBuiC4Ag4wIgIsYuIEkkIApADeAZGcAgdRIAJcVh
-c3n3JCAikQlwYSbSJ8UkgANg9wJgIoEjYXAJ4BxgI5AjcNp5H2BlHLAG4G8FQCRABQeALiXFVEVT
-VD1HECAfYCjRIENoA3Bljy3xH1AuhiXFU2lnGFAEZC0ZMGYtYnk6WCBEdSUQMlBkHnB5iCA8ZDKh
-QGN5LFCnB5AwYAWgbT4lxS00kFclxQ3gASAgNJBnJWFhEi8i5HMvC4BwdXTWLwRgKkEvM2BhCrAz
-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
-AGQAAQAAAAoAAABTAE0AVABQAAAAAAACAUEAAQAAAFgAAAAAAAAAgSsfpL6jEBmdbgDdAQ9UAgAA
-AIBEAHUAZABsAGUAeQAgAEQAdQAAAFMATQBUAFAAAABkAHUAZABsAEAAYwB5AHAAcgBlAHMAcwAu
-AGMAbwBtAAAAHwACXQEAAAAiAAAAZAB1AGQAbABAAGMAeQBwAHIAZQBzAHMALgBjAG8AbQAAAAAA
-HwDlXwEAAAAqAAAAcwBpAHAAOgBkAHUAZABsAEAAYwB5AHAAcgBlAHMAcwAuAGMAbwBtAAAAAAAf
-ABoMAQAAABQAAABEAHUAZABsAGUAeQAgAEQAdQAAAB8AHwwBAAAAIgAAAGQAdQBkAGwAQABjAHkA
-cAByAGUAcwBzAC4AYwBvAG0AAAAAAB8AHgwBAAAACgAAAFMATQBUAFAAAAAAAAIBGQwBAAAAWAAA
-AAAAAACBKx+kvqMQGZ1uAN0BD1QCAAAAgEQAdQBkAGwAZQB5ACAARAB1AAAAUwBNAFQAUAAAAGQA
-dQBkAGwAQABjAHkAcAByAGUAcwBzAC4AYwBvAG0AAAAfAAFdAQAAACIAAABkAHUAZABsAEAAYwB5
-AHAAcgBlAHMAcwAuAGMAbwBtAAAAAAAfAPg/AQAAABQAAABEAHUAZABsAGUAeQAgAEQAdQAAAB8A
-I0ABAAAAIgAAAGQAdQBkAGwAQABjAHkAcAByAGUAcwBzAC4AYwBvAG0AAAAAAB8AIkABAAAACgAA
-AFMATQBUAFAAAAAAAAIB+T8BAAAAWAAAAAAAAACBKx+kvqMQGZ1uAN0BD1QCAAAAgEQAdQBkAGwA
-ZQB5ACAARAB1AAAAUwBNAFQAUAAAAGQAdQBkAGwAQABjAHkAcAByAGUAcwBzAC4AYwBvAG0AAAAf
-AAldAQAAACIAAABkAHUAZABsAEAAYwB5AHAAcgBlAHMAcwAuAGMAbwBtAAAAAAAfADFAAQAAAAIA
-AAAAAAAACwBAOgEAAAAfADBAAQAAAAIAAAAAAAAAHwAaAAEAAAASAAAASQBQAE0ALgBOAG8AdABl
-AAAAAAADAPE/BAgAAAsAQDoBAAAAAwD9P6gDAAACAQswAQAAABAAAAChKQABibimQLJNF1zcmFtU
-AwAXAAEAAABAADkAgNhEsLZXzwFAAAgw+Vi+sLZXzwELACkAAAAAAAsAIwAAAAAAHwAAgIYDAgAA
-AAAAwAAAAAAAAEYBAAAAHgAAAGEAYwBjAGUAcAB0AGwAYQBuAGcAdQBhAGcAZQAAAAAAAQAAABoA
-AAB6AGgALQBDAE4ALAAgAGUAbgAtAFUAUwAAAAAACwAAgAggBgAAAAAAwAAAAAAAAEYAAAAABoUA
-AAAAAAAfADcAAQAAAJoAAABbAFAAQQBUAEMASAAgADEALwA2AF0AIABpAG4AcAB1AHQAOgAgAGMA
-eQBhAHAAYQA6ACAAcgBlAGEAcgBjAGgAaQB0AGUAYwB0AHUAcgBlACAAZAByAGkAdgBlAHIAIAB0
-AG8AIABzAHUAcABwAG8AcgB0ACAAZgB1AG4AYwB0AGkAbwBuACAAcABvAGkAbgB0AGUAcgBzAAAA
-AAAfAD0AAQAAAAIAAAAAAAAAAwA2AAAAAAACAXEAAQAAABYAAAABz1e2r0vs2iO86CNE56xngah+
-UAUUAAAfAHAAAQAAAJoAAABbAFAAQQBUAEMASAAgADEALwA2AF0AIABpAG4AcAB1AHQAOgAgAGMA
-eQBhAHAAYQA6ACAAcgBlAGEAcgBjAGgAaQB0AGUAYwB0AHUAcgBlACAAZAByAGkAdgBlAHIAIAB0
-AG8AIABzAHUAcABwAG8AcgB0ACAAZgB1AG4AYwB0AGkAbwBuACAAcABvAGkAbgB0AGUAcgBzAAAA
-AAAfADUQAQAAAIQAAAA8ADcANwBCAEMANwAyADUAQwA5ADAANgAyADcANgA0AEYAOAA3ADQARAA3
-ADkARgA1ADEARQAxAEYAMQBBADgARgA0ADAAQwAxADEANAAzADIAQABTADAANAAtAE0AQgBYADAA
-MQAtADAAMQAuAHMAMAA0AC4AbABvAGMAYQBsAD4AAAADAN4/n04AAAsAAIAIIAYAAAAAAMAAAAAA
-AABGAAAAAAOFAAAAAAAAAwAAgAggBgAAAAAAwAAAAAAAAEYAAAAAAYUAAAAAAAADAACAAyAGAAAA
-AADAAAAAAAAARgAAAAABgQAAAAAAAAMAgBD/////BQAAgAMgBgAAAAAAwAAAAAAAAEYAAAAAAoEA
-AAAAAAAAAAAACwAAgAMgBgAAAAAAwAAAAAAAAEYAAAAAHIEAAAAAAABAAAcwhbLUr7ZXzwELAAIA
-AQAAAAMAJgAAAAAAAgEQMAEAAABGAAAAAAAAALEfoTkwIFFGnbSlcN7Qn9QHAHe8clyQYnZPh015
-9R4fGo8AAACZPBsAALqnPu7L1/dAo3bvNfxhWYkAGIP8wyUAAAAAHwD6PwEAAAAUAAAARAB1AGQA
-bABlAHkAIABEAHUAAAADAAlZAQAAAAMAAIAIIAYAAAAAAMAAAAAAAABGAAAAABCFAAAAAAAAHwAA
-gB+k6zOoei5Cvnt54amOVLMBAAAAOAAAAEMAbwBuAHYAZQByAHMAYQB0AGkAbwBuAEkAbgBkAGUA
-eABUAHIAYQBjAGsAaQBuAGcARQB4AAAAAQAAALoAAABJAEkAPQAwADEAQwBGADUANwBCADYAQQBG
-ADQAQgBFAEMARABBADIAMwBCAEMARQA4ADIAMwA0ADQARQA3AEEAQwA2ADcAOAAxAEEAOAA3AEUA
-NQAwADAANQAxADQAOwBWAGUAcgBzAGkAbwBuAD0AVgBlAHIAcwBpAG8AbgAgADEANAAuADMAIAAo
-AEIAdQBpAGwAZAAgADEANwA0AC4AMAApACwAIABTAHQAYQBnAGUAPQBIADQAAAAAAAMAAIADIAYA
-AAAAAMAAAAAAAABGAAAAABOBAAABAAAAAwAAgAMgBgAAAAAAwAAAAAAAAEYAAAAAI4EAAP///38D
-AACAAyAGAAAAAADAAAAAAAAARgAAAAAQgQAAAAAAAAMAAIADIAYAAAAAAMAAAAAAAABGAAAAABGB
-AAAAAAAACwAAgAMgBgAAAAAAwAAAAAAAAEYAAAAAJIEAAAAAAAALAACAAyAGAAAAAADAAAAAAAAA
-RgAAAAAsgQAAAAAAAAMAAIADIAYAAAAAAMAAAAAAAABGAAAAACmBAAAAAAAAAwAAgAMgBgAAAAAA
-wAAAAAAAAEYAAAAAKoEAAAAAAAAfAACAAyAGAAAAAADAAAAAAAAARgAAAAAngQAAAQAAAAIAAAAA
-AAAAAwAAgAMgBgAAAAAAwAAAAAAAAEYAAAAAEoEAAAEAAAAfAACAAyAGAAAAAADAAAAAAAAARgAA
-AAAhgQAAAQAAAAIAAAAAAAAACwAAgAMgBgAAAAAAwAAAAAAAAEYAAAAAA4EAAAAAAAALAACAAyAG
-AAAAAADAAAAAAAAARgAAAAAmgQAAAAAAAAsAAIAIIAYAAAAAAMAAAAAAAABGAAAAAA6FAAAAAAAA
-AwAAgAggBgAAAAAAwAAAAAAAAEYAAAAAGIUAAAAAAAALAACACCAGAAAAAADAAAAAAAAARgAAAACC
-hQAAAAAAAEAAAIAIIAYAAAAAAMAAAAAAAABGAAAAAL+FAACw2ZWJtVfPAQMADTT9PwAAHwAAgIYD
-AgAAAAAAwAAAAAAAAEYBAAAAIAAAAHgALQBtAHMALQBoAGEAcwAtAGEAdAB0AGEAYwBoAAAAAQAA
-AAIAAAAAAAAAHwAAgIYDAgAAAAAAwAAAAAAAAEYBAAAAIgAAAHgALQBvAHIAaQBnAGkAbgBhAHQA
-aQBuAGcALQBpAHAAAAAAAAEAAAAeAAAAWwAxADAALgAzADAALgAxADIALgAxADQAOABdAAAAAAB/
-fg==
+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
+HwAfDAEAAAAiAAAAZAB1AGQAbABAAGMAeQBwAHIAZQBzAHMALgBjAG8AbQAAAAAAHwAeDAEAAAAK
+AAAAUwBNAFQAUAAAAAAAAgEZDAEAAABYAAAAAAAAAIErH6S+oxAZnW4A3QEPVAIAAACARAB1AGQA
+bABlAHkAIABEAHUAAABTAE0AVABQAAAAZAB1AGQAbABAAGMAeQBwAHIAZQBzAHMALgBjAG8AbQAA
+AB8AAV0BAAAAIgAAAGQAdQBkAGwAQABjAHkAcAByAGUAcwBzAC4AYwBvAG0AAAAAAB8A+D8BAAAA
+FAAAAEQAdQBkAGwAZQB5ACAARAB1AAAAHwAjQAEAAAAiAAAAZAB1AGQAbABAAGMAeQBwAHIAZQBz
+AHMALgBjAG8AbQAAAAAAHwAiQAEAAAAKAAAAUwBNAFQAUAAAAAAAAgH5PwEAAABYAAAAAAAAAIEr
+H6S+oxAZnW4A3QEPVAIAAACARAB1AGQAbABlAHkAIABEAHUAAABTAE0AVABQAAAAZAB1AGQAbABA
+AGMAeQBwAHIAZQBzAHMALgBjAG8AbQAAAB8ACV0BAAAAIgAAAGQAdQBkAGwAQABjAHkAcAByAGUA
+cwBzAC4AYwBvAG0AAAAAAB8AMUABAAAAAgAAAAAAAAALAEA6AQAAAB8AMEABAAAAAgAAAAAAAAAf
+ABoAAQAAABIAAABJAFAATQAuAE4AbwB0AGUAAAAAAAMA8T8ECAAACwBAOgEAAAADAP0/qAMAAAIB
+CzABAAAAEAAAANklbbLgiI9Ogc4nUJdiKMkDABcAAQAAAEAAOQCAIcS/tlfPAUAACDDrejbAtlfP
+AQsAKQAAAAAACwAjAAAAAAAfAACAhgMCAAAAAADAAAAAAAAARgEAAAAeAAAAYQBjAGMAZQBwAHQA
+bABhAG4AZwB1AGEAZwBlAAAAAAABAAAAGgAAAHoAaAAtAEMATgAsACAAZQBuAC0AVQBTAAAAAAAL
+AACACCAGAAAAAADAAAAAAAAARgAAAAAGhQAAAAAAAB8ANwABAAAApAAAAFsAUABBAFQAQwBIACAA
+NQAvADYAXQAgAGkAbgBwAHUAdAA6ACAAYwB5AGEAcABhADoAIABhAGQAZAAgAHMAeQBzAGYAcwAg
+AGkAbgB0AGUAcgBmAGEAYwBlAHMAIABzAHUAcABwAG8AcgB0AGUAZAAgAGYAbwByACAAZwBlAG4A
+MwAgAHQAcgBhAGMAawBwAGEAZAAgAGQAZQB2AGkAYwBlAAAAHwA9AAEAAAACAAAAAAAAAAMANgAA
+AAAAAgFxAAEAAAAWAAAAAc9Xtr6qnuz/5hn7T2ugu4efqp6zCAAAHwBwAAEAAACkAAAAWwBQAEEA
+VABDAEgAIAA1AC8ANgBdACAAaQBuAHAAdQB0ADoAIABjAHkAYQBwAGEAOgAgAGEAZABkACAAcwB5
+AHMAZgBzACAAaQBuAHQAZQByAGYAYQBjAGUAcwAgAHMAdQBwAHAAbwByAHQAZQBkACAAZgBvAHIA
+IABnAGUAbgAzACAAdAByAGEAYwBrAHAAYQBkACAAZABlAHYAaQBjAGUAAAAfADUQAQAAAIQAAAA8
+ADcANwBCAEMANwAyADUAQwA5ADAANgAyADcANgA0AEYAOAA3ADQARAA3ADkARgA1ADEARQAxAEYA
+MQBBADgARgA0ADAAQwAxADEANAA1ADIAQABTADAANAAtAE0AQgBYADAAMQAtADAAMQAuAHMAMAA0
+AC4AbABvAGMAYQBsAD4AAAADAN4/n04AAAsAAIAIIAYAAAAAAMAAAAAAAABGAAAAAAOFAAAAAAAA
+AwAAgAggBgAAAAAAwAAAAAAAAEYAAAAAAYUAAAAAAAADAACAAyAGAAAAAADAAAAAAAAARgAAAAAB
+gQAAAAAAAAMAgBD/////BQAAgAMgBgAAAAAAwAAAAAAAAEYAAAAAAoEAAAAAAAAAAAAACwAAgAMg
+BgAAAAAAwAAAAAAAAEYAAAAAHIEAAAAAAABAAAcwmZoyv7ZXzwELAAIAAQAAAAMAJgAAAAAAAgEQ
+MAEAAABGAAAAAAAAALEfoTkwIFFGnbSlcN7Qn9QHAHe8clyQYnZPh0159R4fGo8AAACZPBsAALqn
+Pu7L1/dAo3bvNfxhWYkAGIP8wykAAAAAHwD6PwEAAAAUAAAARAB1AGQAbABlAHkAIABEAHUAAAAD
+AAlZAQAAAAMAAIAIIAYAAAAAAMAAAAAAAABGAAAAABCFAAAAAAAAHwAAgB+k6zOoei5Cvnt54amO
+VLMBAAAAOAAAAEMAbwBuAHYAZQByAHMAYQB0AGkAbwBuAEkAbgBkAGUAeABUAHIAYQBjAGsAaQBu
+AGcARQB4AAAAAQAAALoAAABJAEkAPQAwADEAQwBGADUANwBCADYAQgBFAEEAQQA5AEUARQBDAEYA
+RgBFADYAMQA5AEYAQgA0AEYANgBCAEEAMABCAEIAOAA3ADkARgBBAEEAOQBFAEIAMwAwADgAOwBW
+AGUAcgBzAGkAbwBuAD0AVgBlAHIAcwBpAG8AbgAgADEANAAuADMAIAAoAEIAdQBpAGwAZAAgADEA
+NwA0AC4AMAApACwAIABTAHQAYQBnAGUAPQBIADQAAAAAAAMAAIADIAYAAAAAAMAAAAAAAABGAAAA
+ABOBAAABAAAAAwAAgAMgBgAAAAAAwAAAAAAAAEYAAAAAI4EAAP///38DAACAAyAGAAAAAADAAAAA
+AAAARgAAAAAQgQAAAAAAAAMAAIADIAYAAAAAAMAAAAAAAABGAAAAABGBAAAAAAAACwAAgAMgBgAA
+AAAAwAAAAAAAAEYAAAAAJIEAAAAAAAALAACAAyAGAAAAAADAAAAAAAAARgAAAAAsgQAAAAAAAAMA
+AIADIAYAAAAAAMAAAAAAAABGAAAAACmBAAAAAAAAAwAAgAMgBgAAAAAAwAAAAAAAAEYAAAAAKoEA
+AAAAAAAfAACAAyAGAAAAAADAAAAAAAAARgAAAAAngQAAAQAAAAIAAAAAAAAAAwAAgAMgBgAAAAAA
+wAAAAAAAAEYAAAAAEoEAAAEAAAAfAACAAyAGAAAAAADAAAAAAAAARgAAAAAhgQAAAQAAAAIAAAAA
+AAAACwAAgAMgBgAAAAAAwAAAAAAAAEYAAAAAA4EAAAAAAAALAACAAyAGAAAAAADAAAAAAAAARgAA
+AAAmgQAAAAAAAAsAAIAIIAYAAAAAAMAAAAAAAABGAAAAAA6FAAAAAAAAAwAAgAggBgAAAAAAwAAA
+AAAAAEYAAAAAGIUAAAAAAAALAACACCAGAAAAAADAAAAAAAAARgAAAACChQAAAAAAAEAAAIAIIAYA
+AAAAAMAAAAAAAABGAAAAAL+FAAAA/JobtlfPAQMADTT9PwAAHwAAgIYDAgAAAAAAwAAAAAAAAEYB
+AAAAIAAAAHgALQBtAHMALQBoAGEAcwAtAGEAdAB0AGEAYwBoAAAAAQAAAAIAAAAAAAAAHwAAgIYD
+AgAAAAAAwAAAAAAAAEYBAAAAIgAAAHgALQBvAHIAaQBnAGkAbgBhAHQAaQBuAGcALQBpAHAAAAAA
+AAEAAAAeAAAAWwAxADAALgAzADAALgAxADIALgAxADQAOABdAAAAAACe9A==
 
---_000_77BC725C9062764F874D79F51E1F1A8F40C11432S04MBX0101s04lo_--
+--_000_77BC725C9062764F874D79F51E1F1A8F40C11452S04MBX0101s04lo_--
