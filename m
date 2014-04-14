@@ -1,191 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340AbaDNGNh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 02:13:37 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:56174 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329AbaDNGNg (ORCPT
+	id S1752768AbaDNGU3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 02:20:29 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:51507 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751519AbaDNGU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 02:13:36 -0400
-Message-ID: <534B7C89.5020602@hitachi.com>
-Date: Mon, 14 Apr 2014 15:13:29 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, Satoru MORIYA <satoru.moriya.br@hitachi.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Takenori Nagano <t-nagano@ah.jp.nec.com>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH] kernel/panic: Add "late_kdump" option for kdump in unstable
- condition
-References: <20140414045158.10846.35462.stgit@ltc230.yrl.intra.hitachi.co.jp> <87d2gkxzkl.fsf@x220.int.ebiederm.org>
-In-Reply-To: <87d2gkxzkl.fsf@x220.int.ebiederm.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Mon, 14 Apr 2014 02:20:26 -0400
+X-AuditID: cbfee68d-b7fcd6d00000315b-ed-534b7e26c466
+Message-id: <534B7E29.5090601@samsung.com>
+Date: Mon, 14 Apr 2014 15:20:25 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>, kgene.kim@samsung.com, t.figa@samsung.com
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        hyunhee.kim@samsung.com, sw0312.kim@samsung.com,
+        linux-kernel@vger.kernel.org, yj44.cho@samsung.com,
+        inki.dae@samsung.com, kyungmin.park@samsung.com
+Subject: Re: [PATCH 01/27] ARM: EXYNOS: Add Exynos3250 SoC ID
+References: <1397122124-15690-1-git-send-email-cw00.choi@samsung.com>
+ <1397122124-15690-2-git-send-email-cw00.choi@samsung.com>
+ <5032959.JQvlxpLHiQ@wuerfel> <534745D9.30604@samsung.com>
+In-reply-to: <534745D9.30604@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDIsWRmVeSWpSXmKPExsWyRsSkSFetzjvY4PB0Lou/k46xW3z+0MJu
+	Men+BBaL3gVX2SzONr1ht9j0+BqrxeVdc9gsZpzfx2QxY/JLNov1M16zWOzdOZnRgdvj969J
+	jB6bl9R79G1ZxejxeZNcAEsUl01Kak5mWWqRvl0CV8b8q+wFx/gq3l+/yNTAeIO7i5GTQ0LA
+	ROLB5ycsELaYxIV769m6GLk4hASWMkqsbNjJDFO06tgrFojEdEaJF482gCWEBF4zSry/aQFi
+	8wpoScz6CFLEwcEioCrxaJ0KSJgNKLz/xQ02EFtUIExi5fQrLBDlghI/Jt8Ds0UEfCQ2P18B
+	tphZ4CmjxJ15+xlBEsICthInb9yHWryXUWLh4x4mkASngKbEt8dNYEXMAjoS+1unsUHY8hKb
+	17xlBmmQEHjJLnFqRSNYgkVAQOLb5ENg10kIyEpsOgD1maTEwRU3WCYwis1CctQsJGNnIRm7
+	gJF5FaNoakFyQXFSepGhXnFibnFpXrpecn7uJkZgTJ7+96x3B+PtA9aHGJOBVk5klhJNzgfG
+	dF5JvKGxmZGFqYmpsZG5pRlpwkrivEkPk4KEBNITS1KzU1MLUovii0pzUosPMTJxcEo1MN7b
+	nGb+2LphxWmBV4ulPbuiMyQvNsVvCbjseXbZWf/l/wQN5adkc9Ssf/pJp+ZpHNuVDwc6H23l
+	X5q9/Occg2veczyYJyo92Jgbkhnkv2PtfX+rFv+i70XhB2cttTXeLjO75ey3zR8PLF4azdQd
+	1b9M/UPS/DlzOheI/co2a7UNKz/KxLXz01olluKMREMt5qLiRABx8XnX3wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJKsWRmVeSWpSXmKPExsVy+t9jQV21Ou9gg1nnGS3+TjrGbvH5Qwu7
+	xaT7E1gsehdcZbM42/SG3WLT42usFpd3zWGzmHF+H5PFjMkv2SzWz3jNYrF352RGB26P378m
+	MXpsXlLv0bdlFaPH501yASxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koK
+	eYm5qbZKLj4Bum6ZOUBXKSmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJaxgz
+	5l9lLzjGV/H++kWmBsYb3F2MnBwSAiYSq469YoGwxSQu3FvP1sXIxSEkMJ1R4sWjDcwgCSGB
+	14wS729agNi8AloSsz6CNHBwsAioSjxapwISZgMK739xgw3EFhUIk1g5/QoLRLmgxI/J98Bs
+	EQEfic3PV4DNZxZ4yihxZ95+RpCEsICtxMkb91kgFu9llFj4uIcJJMEpoCnx7XETWBGzgI7E
+	/tZpbBC2vMTmNW+ZJzAKzEKyZBaSsllIyhYwMq9iFE0tSC4oTkrPNdIrTswtLs1L10vOz93E
+	CI74Z9I7GFc1WBxiFOBgVOLhTdjuGSzEmlhWXJl7iFGCg1lJhHdbhlewEG9KYmVValF+fFFp
+	TmrxIcZkYBBMZJYSTc4HJqO8knhDYxMzI0sjc0MLI2Nz0oSVxHkPtloHCgmkJ5akZqemFqQW
+	wWxh4uCUamC0bN2/rPtLnIrEk6mSLql33b29Qq21LqYfClMIUPRc03Z28iatzW4/fv3ZJD3R
+	NndniNNXJz/VnxP2frt8tnHHvsIHLuvD7t659bZEfpP+CbcrfwuEb++9uEVS9Nce1+nFc3Mv
+	Tn6hqHRyz59dUxSfMnV0MLc93tDb+kci/uM/maL2jBm7Sjq7lFiKMxINtZiLihMB1KdA/zwD	AAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/14 14:14), Eric W. Biederman wrote:
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
+Dear Kukjin and Tomasz,
+
+On 04/11/2014 10:31 AM, Chanwoo Choi wrote:
+> Hi,
 > 
->> Add a "late_kdump" option to run kdump after running panic
->> notifiers and dump kmsg. This can help rare situations which
->> kdump drops in failure because of unstable crashed kernel
->> or hardware failure (memory corruption on critical data/code),
->> or the 2nd kernel is broken by the 1st kernel (it's a broken
->> behavior, but who can guarantee that the "crashed" kernel
->> works correctly?).
+> On 04/10/2014 06:43 PM, Arnd Bergmann wrote:
+>> On Thursday 10 April 2014 18:28:18 Chanwoo Choi wrote:
+>>> This patch add Exynos3250's SoC ID. Exynos 3250 is System-On-Chip(SoC) that
+>>> is based on the 32-bit RISC processor for Smartphone. Exynos3250 uses Cortex-A7
+>>> dual cores and has a target speed of 1.0GHz.
+>>>
+>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>> ---
+>>>  arch/arm/mach-exynos/Kconfig             | 22 ++++++++++++++++++++++
+>>>  arch/arm/mach-exynos/exynos.c            |  1 +
+>>>  arch/arm/plat-samsung/include/plat/cpu.h | 10 ++++++++++
+>>>  3 files changed, 33 insertions(+)
+>>>
+>>> diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
+>>> index fc8bf18..6da8a68 100644
+>>> --- a/arch/arm/mach-exynos/Kconfig
+>>> +++ b/arch/arm/mach-exynos/Kconfig
+>>> @@ -11,6 +11,17 @@ if ARCH_EXYNOS
+>>>  
+>>>  menu "SAMSUNG EXYNOS SoCs Support"
+>>>  
+>>> +config ARCH_EXYNOS3
+>>> +	bool "SAMSUNG EXYNOS3"
+>>> +	select ARM_AMBA
+>>> +	select CLKSRC_OF
+>>> +	select HAVE_ARM_SCU if SMP
+>>> +	select HAVE_SMP
+>>> +	select PINCTRL
+>>> +	select PM_GENERIC_DOMAINS if PM_RUNTIME
+>>> +	help
+>>> +	  Samsung EXYNOS3 SoCs based systems
+>>> +
 >>
->> Usage: add "late_kdump" to kernel boot option. That's all.
->>
->> Note that this actually increases risks of the failure of
->> kdump. This option should be set only if you worry about
->> the rare case of kdump failure rather than increasing the
->> chance of success.
+>> Isn't S5PV210 also called an Exynos3 these days? Are we going to get
+>> any conflicts here when merging that code into Exynos as Tomasz has
+>> suggested in the past?
 > 
-> This is better than some others, but every time I have seen a request
-> to do this it is because someone wants to do something horrible that
-> makes kdump more brittle and generally unsupportable.
-
-I see, with such horrible handlers, kdump should be unreliable. However,
-that is not introduced by this option.
-
-> You seem to in general understand that.
+> I knew. But, S5PV210/S5PC110 has not yet included in Exynos3 category on mainline.
+> Need opinion of Exynos SoC Maintainer to clear this ambiguous stuff.
 > 
-> But how can we support an option to make the kernel flakier?
-
-I think it's user's own risk. We do not need to (individual) support it
-but just give them a chance. And distros decide to provide support on such
-option or not.
-
-For example, some users may choose enabling this without any kdump guarantee
-from distro, or will pay more for them to extra support. OTOH, other users who
-don't enable this, will not pay much for extra support :)
-
-> I suspect it would be more productive to work on the lkcd (spelling?)
-> test module and show that crash dump actually works in the situation
-> people are worried about.
-
-No, I think there are some situation which the kdump/lkcd actually doesn't
-work (e.g. software/hardware memory corruptions involving 2nd kernel image).
-And in those cases, to leave the minimum information on serial console,
-NVM or somewhere safe, this option may give a chance.
-
-Note that those output action can make the situation worse, because some of
-such actions are not well tested and may be immature. Thus I added a warning
-message on the path of "late_kdump" :)
-
-
-> Just thinking about this send shivers up my spine. Ick.
-
-I hope everyone correctly understand the risk of this option, and not sending
-bug reports to you.
-
-Thank you,
-
-> 
-> Eric
-> 
->> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> Cc: Eric Biederman <ebiederm@xmission.com>
->> Cc: Vivek Goyal <vgoyal@redhat.com>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
->> Cc: Satoru MORIYA <satoru.moriya.br@hitachi.com>
->> Cc: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>
->> Cc: Takenori Nagano <t-nagano@ah.jp.nec.com>
->> ---
->>  Documentation/kernel-parameters.txt |    7 +++++++
->>  kernel/panic.c                      |   24 ++++++++++++++++++++++--
->>  2 files changed, 29 insertions(+), 2 deletions(-)
->>
->> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->> index 03e50b4..1ba58da 100644
->> --- a/Documentation/kernel-parameters.txt
->> +++ b/Documentation/kernel-parameters.txt
->> @@ -2339,6 +2339,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>  			timeout < 0: reboot immediately
->>  			Format: <timeout>
->>  
->> +	late_kdump	Run kdump after running panic-notifiers and dumping
->> +			kmsg. This only for the users who doubt kdump always
->> +			succeeds in any situation.
->> +			Note that this also increases risks of kdump failure,
->> +			because some panic notifiers can make the crashed
->> +			kernel more unstable.
->> +
->>  	parkbd.port=	[HW] Parallel port number the keyboard adapter is
->>  			connected to, default is 0.
->>  			Format: <parport#>
->> diff --git a/kernel/panic.c b/kernel/panic.c
->> index d02fa9f..bba42b5 100644
->> --- a/kernel/panic.c
->> +++ b/kernel/panic.c
->> @@ -32,6 +32,7 @@ static unsigned long tainted_mask;
->>  static int pause_on_oops;
->>  static int pause_on_oops_flag;
->>  static DEFINE_SPINLOCK(pause_on_oops_lock);
->> +static bool late_kdump;
->>  
->>  int panic_timeout = CONFIG_PANIC_TIMEOUT;
->>  EXPORT_SYMBOL_GPL(panic_timeout);
->> @@ -112,9 +113,14 @@ void panic(const char *fmt, ...)
->>  	/*
->>  	 * If we have crashed and we have a crash kernel loaded let it handle
->>  	 * everything else.
->> -	 * Do we want to call this before we try to display a message?
->> +	 * If we want to call this after we try to display a message, pass
->> +	 * the "late_kdump" option to the kernel.
->>  	 */
->> -	crash_kexec(NULL);
->> +	if (!late_kdump)
->> +		crash_kexec(NULL);
->> +	else
->> +		pr_emerg("Warning: late_kdump option is set. Please DO NOT "
->> +			"report bugs about kdump failure with this option.\n");
->>  
->>  	/*
->>  	 * Note smp_send_stop is the usual smp shutdown function, which
->> @@ -131,6 +137,13 @@ void panic(const char *fmt, ...)
->>  
->>  	kmsg_dump(KMSG_DUMP_PANIC);
->>  
->> +	/*
->> +	 * If you doubt kdump always works perfectly in any situation,
->> +	 * "late_kdump" offers you to try kdump after running panic_notifier
->> +	 * and dumping kmsg.
->> +	 */
->> +	crash_kexec(NULL);
->> +
->>  	bust_spinlocks(0);
->>  
->>  	if (!panic_blink)
->> @@ -472,6 +485,13 @@ EXPORT_SYMBOL(__stack_chk_fail);
->>  core_param(panic, panic_timeout, int, 0644);
->>  core_param(pause_on_oops, pause_on_oops, int, 0644);
->>  
->> +static int __init setup_late_kdump(char *s)
->> +{
->> +	late_kdump = true;
->> +	return 0;
->> +}
->> +early_param("late_kdump", setup_late_kdump);
->> +
->>  static int __init oops_setup(char *s)
->>  {
->>  	if (!s)
+> Dear Kukjin and Tomasz,
+> I need your opinion about this patch.
 > 
 
+Please review this patch and reply about Arnd's comment.
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Best Regards,
+Chanwoo Choi
 
