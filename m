@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797AbaDNKlr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 06:41:47 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:41495 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754488AbaDNKlp (ORCPT
+	id S1753950AbaDNKo6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 06:44:58 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33381 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751519AbaDNKo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 06:41:45 -0400
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: tj@kernel.org, laijs@cn.fujitsu.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH V2] workqueue: fix double unlock bug
-Date: Mon, 14 Apr 2014 19:41:41 +0900
-Message-ID: <3760742.KPOjd8C4i8@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
+	Mon, 14 Apr 2014 06:44:56 -0400
+Date: Mon, 14 Apr 2014 11:43:00 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Jianguo Wu <wujianguo@huawei.com>
+Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Wang Nan <wangnan0@huawei.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Li Zefan <lizefan@huawei.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        marc.zyngier@arm.com
+Subject: Re: [PATCH v2] ARM: mm: support big-endian page tables
+Message-ID: <20140414104300.GA3530@arm.com>
+References: <5301B4AF.1040305@huawei.com>
+ <5327F75F.1010406@huawei.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5327F75F.1010406@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(catching up on old email)
 
-mutex_unlock() and put_pwq_unlocked() do not need to be called
-when alloc_unbound_pwq() is failed.
+On Tue, Mar 18, 2014 at 07:35:59AM +0000, Jianguo Wu wrote:
+> Cloud you please take a look at this?
 
-And remove "if" condition for whether "pwq" is same as "wq->dfl_pwq"
-when wq_calc_node_cpumask() returns false and just use "goto use_dfl_pwq"
+[...]
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
-V2: replace "if condition" with "goto" as Lai's comment.
+> On 2014/2/17 15:05, Jianguo Wu wrote:
+> > When enable LPAE and big-endian in a hisilicon board, while specify
+> > mem=384M mem=512M@7680M, will get bad page state:
+> > 
+> > Freeing unused kernel memory: 180K (c0466000 - c0493000)
+> > BUG: Bad page state in process init  pfn:fa442
+> > page:c7749840 count:0 mapcount:-1 mapping:  (null) index:0x0
+> > page flags: 0x40000400(reserved)
+> > Modules linked in:
+> > CPU: 0 PID: 1 Comm: init Not tainted 3.10.27+ #66
+> > [<c000f5f0>] (unwind_backtrace+0x0/0x11c) from [<c000cbc4>] (show_stack+0x10/0x14)
+> > [<c000cbc4>] (show_stack+0x10/0x14) from [<c009e448>] (bad_page+0xd4/0x104)
+> > [<c009e448>] (bad_page+0xd4/0x104) from [<c009e520>] (free_pages_prepare+0xa8/0x14c)
+> > [<c009e520>] (free_pages_prepare+0xa8/0x14c) from [<c009f8ec>] (free_hot_cold_page+0x18/0xf0)
+> > [<c009f8ec>] (free_hot_cold_page+0x18/0xf0) from [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8)
+> > [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8) from [<c00b6458>] (handle_mm_fault+0xf4/0x120)
+> > [<c00b6458>] (handle_mm_fault+0xf4/0x120) from [<c0013754>] (do_page_fault+0xfc/0x354)
+> > [<c0013754>] (do_page_fault+0xfc/0x354) from [<c0008400>] (do_DataAbort+0x2c/0x90)
+> > [<c0008400>] (do_DataAbort+0x2c/0x90) from [<c0008fb4>] (__dabt_usr+0x34/0x40)
 
- kernel/workqueue.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+[...]
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 0ee63af..9853067 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -4087,10 +4087,7 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
- 		if (cpumask_equal(cpumask, pwq->pool->attrs->cpumask))
- 			goto out_unlock;
- 	} else {
--		if (pwq == wq->dfl_pwq)
--			goto out_unlock;
--		else
--			goto use_dfl_pwq;
-+		goto use_dfl_pwq;
- 	}
- 
- 	mutex_unlock(&wq->mutex);
-@@ -4100,7 +4097,7 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
- 	if (!pwq) {
- 		pr_warning("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
- 			   wq->name);
--		goto out_unlock;
-+		return;
- 	}
- 
- 	/*
--- 
-1.7.4.4
+> > The bug is happened in cpu_v7_set_pte_ext(ptep, pte):
+> > when pte is 64-bit, for little-endian, will store low 32-bit in r2,
+> > high 32-bit in r3; for big-endian, will store low 32-bit in r3,
+> > high 32-bit in r2, this will cause wrong pfn stored in pte,
+> > so we should exchange r2 and r3 for big-endian.
 
+I believe that Marc (added to CC) has been running LPAE-enabled, big-endian
+KVM guests without any issues, so it seems unlikely that we're storing the
+PTEs backwards. Can you check the configuration of SCTLR.EE?
 
+Will
