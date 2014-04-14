@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755689AbaDNQ0i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 12:26:38 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:48795 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755633AbaDNQ0e (ORCPT
+	id S1755719AbaDNQ0t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 12:26:49 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:52268 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755693AbaDNQ0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:26:34 -0400
+	Mon, 14 Apr 2014 12:26:43 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: tglx@linutronix.de
 Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
         fweisbec@gmail.com, Arvind.Chauhan@arm.com,
         linaro-networking@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 23/38] tick-sched: invert parameter of tick_check_oneshot_change()
-Date: Mon, 14 Apr 2014 21:53:45 +0530
-Message-Id: <b77b07b9ec33231122c90e3888b7dda05e4aef9c.1397492345.git.viresh.kumar@linaro.org>
+Subject: [PATCH 24/38] tick-sched: don't check tick_nohz_full_cpu() in __tick_nohz_task_switch()
+Date: Mon, 14 Apr 2014 21:53:46 +0530
+Message-Id: <ec2173fa3a7e754e45fb9409e44f77fa051610b7.1397492345.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1397492345.git.viresh.kumar@linaro.org>
 References: <cover.1397492345.git.viresh.kumar@linaro.org>
@@ -24,94 +24,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is only one caller of tick_check_oneshot_change(), i.e.
-hrtimer_run_pending(). Firstly hrtimer_run_pending() is calling this routine
-after doing a '!' of its parameter and then tick_check_oneshot_change() is also
-using it after doing a '!' of its parameter.
+__tick_nohz_task_switch() calls tick_nohz_full_kick(), which is already checking
+tick_nohz_full_cpu() and so we don't need to repeat the same check here.
 
-It would be more efficient and readable if we can just invert the meaning of
-this parameter. So, it is hres_enabled instead of allow_nohz now.
+Remove it.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- include/linux/tick.h     |  6 +++---
- kernel/hrtimer.c         |  2 +-
- kernel/time/tick-sched.c | 10 +++++-----
- 3 files changed, 9 insertions(+), 9 deletions(-)
+ kernel/time/tick-sched.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index b8ee6f4..801e844 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -120,7 +120,7 @@ extern struct cpumask *tick_get_broadcast_oneshot_mask(void);
- 
- # ifdef CONFIG_TICK_ONESHOT
- extern void tick_clock_notify(void);
--extern int tick_check_oneshot_change(int allow_nohz);
-+extern int tick_check_oneshot_change(int hres_enabled);
- extern struct tick_sched *tick_get_tick_sched(int cpu);
- extern void tick_irq_enter(void);
- extern int tick_oneshot_mode_active(void);
-@@ -129,7 +129,7 @@ extern int tick_oneshot_mode_active(void);
- #  endif
- # else
- static inline void tick_clock_notify(void) { }
--static inline int tick_check_oneshot_change(int allow_nohz) { return 0; }
-+static inline int tick_check_oneshot_change(int hres_enabled) { return 0; }
- static inline void tick_irq_enter(void) { }
- static inline int tick_oneshot_mode_active(void) { return 0; }
- # endif
-@@ -138,7 +138,7 @@ static inline int tick_oneshot_mode_active(void) { return 0; }
- static inline void tick_init(void) { }
- static inline void tick_cancel_sched_timer(int cpu) { }
- static inline void tick_clock_notify(void) { }
--static inline int tick_check_oneshot_change(int allow_nohz) { return 0; }
-+static inline int tick_check_oneshot_change(int hres_enabled) { return 0; }
- static inline void tick_irq_enter(void) { }
- static inline int tick_oneshot_mode_active(void) { return 0; }
- #endif /* !CONFIG_GENERIC_CLOCKEVENTS */
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 393f422..bfa7811 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1457,7 +1457,7 @@ void hrtimer_run_pending(void)
- 	 * check bit in the tick_oneshot code, otherwise we might
- 	 * deadlock vs. xtime_lock.
- 	 */
--	if (tick_check_oneshot_change(!hrtimer_is_hres_enabled()))
-+	if (tick_check_oneshot_change(hrtimer_is_hres_enabled()))
- 		hrtimer_switch_to_hres();
- }
- 
 diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index c81b6cf..256f4a3 100644
+index 256f4a3..5a99859 100644
 --- a/kernel/time/tick-sched.c
 +++ b/kernel/time/tick-sched.c
-@@ -1177,11 +1177,11 @@ void tick_oneshot_notify(void)
-  * Check, if a change happened, which makes oneshot possible.
-  *
-  * Called cyclic from the hrtimer softirq (driven by the timer
-- * softirq) allow_nohz signals, that we can switch into low-res nohz
-- * mode, because high resolution timers are disabled (either compile
-- * or runtime).
-+ * softirq). If hres_enabled is non zero, it means we can't switch into low-res
-+ * nohz mode, because high resolution timers are enabled(either compile or
-+ * runtime).
-  */
--int tick_check_oneshot_change(int allow_nohz)
-+int tick_check_oneshot_change(int hres_enabled)
- {
- 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
+@@ -261,13 +261,9 @@ void __tick_nohz_task_switch(struct task_struct *tsk)
  
-@@ -1194,7 +1194,7 @@ int tick_check_oneshot_change(int allow_nohz)
- 	if (!timekeeping_valid_for_hres() || !tick_is_oneshot_available())
- 		return 0;
+ 	local_irq_save(flags);
  
--	if (!allow_nohz)
-+	if (hres_enabled)
- 		return 1;
+-	if (!tick_nohz_full_cpu(smp_processor_id()))
+-		goto out;
+-
+ 	if (tick_nohz_tick_stopped() && !can_stop_full_tick())
+ 		tick_nohz_full_kick();
  
- 	tick_nohz_switch_to_nohz();
+-out:
+ 	local_irq_restore(flags);
+ }
+ 
 -- 
 1.7.12.rc2.18.g61b472e
 
