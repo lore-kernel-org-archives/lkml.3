@@ -1,78 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215AbaDNTCH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 15:02:07 -0400
-Received: from g6t1526.atlanta.hp.com ([15.193.200.69]:24772 "EHLO
-	g6t1526.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754255AbaDNTCE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 15:02:04 -0400
-Date: Mon, 14 Apr 2014 14:01:09 -0500
-From: scameron@beardog.cce.hp.com
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Davidlohr Bueso <davidlohr@hp.com>,
-        Baoquan He <bhe@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org,
-        Joerg Roedel <joro@8bytes.org>, iommu@lists.linux-foundation.org,
-        Jiang Liu <jiang.liu@linux.intel.com>, scameron@beardog.cce.hp.com
-Subject: [PATCH] hpsa: fix NULL dereference in hpsa_put_ctlr_into_performant_mode()
-Message-ID: <20140414190109.GD21686@beardog.cce.hp.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S1755345AbaDNTDI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 15:03:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14989 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751601AbaDNTDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 15:03:05 -0400
+From: Daniel Borkmann <dborkman@redhat.com>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, Alexei Starovoitov <ast@plumgrid.com>,
+        Eric Paris <eparis@redhat.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH] seccomp: fix populating a0-a5 syscall args in 32-bit x86 BPF
+Date: Mon, 14 Apr 2014 21:02:59 +0200
+Message-Id: <1397502179-15029-1-git-send-email-dborkman@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus reports that on 32-bit x86 Chromium throws the following seccomp
+resp. audit log messages:
 
-Initialize local variable trans_support before it is used rather
-than after.  It is supposed to contain the value of a register on the
-controller containing bits that describe which transport modes the
-controller supports (e.g. "performant", "ioaccel1",  "ioaccel2").  A
-NULL pointer dereference will almost certainly occur if trans_support
-is not initialized at the right point.  If for example the uninitialized
-trans_support value does not have the bit set for ioaccel2 support when it
-should be, then ioaccel2_alloc_cmds_and_bft() will not get called as it
-should be and the h->ioaccel2_blockFetchTable array will remain NULL
-instead of being allocated.  Too late, trans_support finally gets
-initialized with the correct value with ioaccel2 mode bit set,
-which later causes calc_bucket_map() to be called to fill in
-h->ioaccel2_blockFetchTable[].  However h->ioaccel2_blockFetchTable
-is NULL because it didn't get allocated because earlier trans_support
-wasn't initialized at the right point.
+  audit: type=1326 audit(1397359304.356:28108): auid=500 uid=500
+gid=500 ses=2 subj=unconfined_u:unconfined_r:chrome_sandbox_t:s0-s0:c0.c1023
+pid=3677 comm="chrome" exe="/opt/google/chrome/chrome" sig=0
+syscall=172 compat=0 ip=0xb2dd9852 code=0x30000
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+  audit: type=1326 audit(1397359304.356:28109): auid=500 uid=500
+gid=500 ses=2 subj=unconfined_u:unconfined_r:chrome_sandbox_t:s0-s0:c0.c1023
+pid=3677 comm="chrome" exe="/opt/google/chrome/chrome" sig=0 syscall=5
+compat=0 ip=0xb2dd9852 code=0x50000
+
+These audit messages are being triggered via audit_seccomp() through
+__secure_computing() in seccomp mode (BPF) filter with seccomp return
+codes 0x30000 (== SECCOMP_RET_TRAP) and 0x50000 (== SECCOMP_RET_ERRNO)
+during filter runtime. Moreover, Linus reports that x86_64 Chromium
+seems fine.
+
+The underlying issue that explains this is that the implementation of
+populate_seccomp_data() is wrong. Our seccomp data structure sd that
+is being shared with user ABI is:
+
+  struct seccomp_data {
+    int nr;
+    __u32 arch;
+    __u64 instruction_pointer;
+    __u64 args[6];
+  };
+
+Therefore, a simple cast to 'unsigned long *' for storing the value of
+the syscall argument via syscall_get_arguments() is just wrong as on
+32-bit x86 (or any other 32bit arch), it would result in storing a0-a5
+at wrong offsets in args[] member, and thus i) could leak stack memory
+to user space and ii) tampers with the logic of seccomp BPF programs
+that read out and check for syscall arguments:
+
+  syscall_get_arguments(task, regs, 0, 1, (unsigned long *) &sd->args[0]);
+
+Tested on 32-bit x86 with Google Chrome, unfortunately only via remote
+test machine through slow ssh X forwarding, but it fixes the issue on
+my side. So fix it up by storing args in type correct variables, gcc
+is clever and optimizes the copy away in other cases, e.g. x86_64.
+
+Fixes: bd4cf0ed331a ("net: filter: rework/optimize internal BPF interpreter's instruction set")
+Reported-and-bisected-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Paris <eparis@redhat.com>
+Cc: James Morris <james.l.morris@oracle.com>
+Cc: Kees Cook <keescook@chromium.org>
 ---
- drivers/scsi/hpsa.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ Dave, do you want to pick this up?
 
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 8cf4a0c..9a6e4a2 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -7463,6 +7463,10 @@ static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
- 	if (hpsa_simple_mode)
- 		return;
+ kernel/seccomp.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
+
+diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+index d8d046c..590c379 100644
+--- a/kernel/seccomp.c
++++ b/kernel/seccomp.c
+@@ -69,18 +69,17 @@ static void populate_seccomp_data(struct seccomp_data *sd)
+ {
+ 	struct task_struct *task = current;
+ 	struct pt_regs *regs = task_pt_regs(task);
++	unsigned long args[6];
  
-+	trans_support = readl(&(h->cfgtable->TransportSupport));
-+	if (!(trans_support & PERFORMANT_MODE))
-+		return;
-+
- 	/* Check for I/O accelerator mode support */
- 	if (trans_support & CFGTBL_Trans_io_accel1) {
- 		transMethod |= CFGTBL_Trans_io_accel1 |
-@@ -7479,10 +7483,6 @@ static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
- 	}
- 
- 	/* TODO, check that this next line h->nreply_queues is correct */
--	trans_support = readl(&(h->cfgtable->TransportSupport));
--	if (!(trans_support & PERFORMANT_MODE))
--		return;
+ 	sd->nr = syscall_get_nr(task, regs);
+ 	sd->arch = syscall_get_arch();
 -
- 	h->nreply_queues = h->msix_vector > 0 ? h->msix_vector : 1;
- 	hpsa_get_max_perf_mode_cmds(h);
- 	/* Performant mode ring buffer and supporting data structures */
+-	/* Unroll syscall_get_args to help gcc on arm. */
+-	syscall_get_arguments(task, regs, 0, 1, (unsigned long *) &sd->args[0]);
+-	syscall_get_arguments(task, regs, 1, 1, (unsigned long *) &sd->args[1]);
+-	syscall_get_arguments(task, regs, 2, 1, (unsigned long *) &sd->args[2]);
+-	syscall_get_arguments(task, regs, 3, 1, (unsigned long *) &sd->args[3]);
+-	syscall_get_arguments(task, regs, 4, 1, (unsigned long *) &sd->args[4]);
+-	syscall_get_arguments(task, regs, 5, 1, (unsigned long *) &sd->args[5]);
+-
++	syscall_get_arguments(task, regs, 0, 6, args);
++	sd->args[0] = args[0];
++	sd->args[1] = args[1];
++	sd->args[2] = args[2];
++	sd->args[3] = args[3];
++	sd->args[4] = args[4];
++	sd->args[5] = args[5];
+ 	sd->instruction_pointer = KSTK_EIP(task);
+ }
+ 
 -- 
-1.7.1
+1.7.11.7
 
