@@ -1,126 +1,589 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187AbaDNJID (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 05:08:03 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:61911 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753788AbaDNJHQ (ORCPT
+	id S1754389AbaDNJIj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 05:08:39 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57182 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751314AbaDNJIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 05:07:16 -0400
-X-AuditID: cbfee68e-b7f566d000002344-bc-534ba54283e4
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: jic23@kernel.org, ch.naveen@samsung.com, kgene.kim@samsung.com
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, t.figa@samsung.com, linux-iio@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv2 2/2] iio: devicetree: Add DT binding documentation for
- Exynos3250 ADC
-Date: Mon, 14 Apr 2014 18:07:06 +0900
-Message-id: <1397466426-13870-3-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-In-reply-to: <1397466426-13870-1-git-send-email-cw00.choi@samsung.com>
-References: <1397466426-13870-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsWyRsSkWNdpqXewwd4nnBZ3nx9mtLj+5Tmr
-	xfwj51gt+t8sZLU492olo8WDplVMFr0LrrJZbHp8jdViYdsSFot5R96xWFzeNYfNYsb5fUwW
-	S69fZLKYMH0ti8XbO9NZLFr3HmG3WD/jNYuDoMeaeWsYPS739TJ5rFz+hc1j8wotj02rOoGM
-	JfUefVtWMXp83iQXwBHFZZOSmpNZllqkb5fAlfFp9inGgl3CFb3nJBsY+wS6GDk5JARMJO7N
-	OMcIYYtJXLi3nq2LkYtDSGApo8TB19+AHA6wopWNjBDxRYwSb382sUI4TUwSq36fYwbpZhPQ
-	ktj/4gYbiC0i4CTx89s9sEnMAp3MEv+674MVCQtESsx42cMKYrMIqErMPf4UzOYVcJVYN2Mf
-	1BlyEh/2PGIH2cwp4CZxoF0RJCwEVPLu6R92kJkSAj/ZJU78vQo1R0Di2+RDLBCXykpsOsAM
-	MUZS4uCKGywTGIUXMDKsYhRNLUguKE5KLzLSK07MLS7NS9dLzs/dxAiMsdP/nvXtYLx5wPoQ
-	YzLQuInMUqLJ+cAYzSuJNzQ2M7IwNTE1NjK3NCNNWEmcd9HDpCAhgfTEktTs1NSC1KL4otKc
-	1OJDjEwcnFINjIl3/05YvqZwn6N/c3HwTW7HbY9/mbq1zorrbOmyN9g7d6Xmkycr8rXXv37o
-	Kvn0rLGB8+sHW5UPRDjX1c5eGMP29mn+cW+7+wtmxi7UdXSeyvJ+vUrhwo+WjrEbZ9Q+nNL4
-	Nd9lqzHTvazPt5Q91ZcaBSTt2eK+afKCsI8nl93vPCMoaHd5+VwlluKMREMt5qLiRAA+iAlE
-	xwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIKsWRmVeSWpSXmKPExsVy+t9jAV3Hpd7BBpv/2VjcfX6Y0eL6l+es
-	FvOPnGO16H+zkNXi3KuVjBYPmlYxWfQuuMpmsenxNVaLhW1LWCzmHXnHYnF51xw2ixnn9zFZ
-	LL1+kcliwvS1LBZv70xnsWjde4TdYv2M1ywOgh5r5q1h9Ljc18vksXL5FzaPzSu0PDat6gQy
-	ltR79G1ZxejxeZNcAEdUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJu
-	qq2Si0+ArltmDtAbSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMT7NP
-	MRbsEq7oPSfZwNgn0MXIwSEhYCKxspGxi5ETyBSTuHBvPVsXIxeHkMAiRom3P5tYIZwmJolV
-	v88xg1SxCWhJ7H9xgw3EFhFwkvj57R5YB7NAJ7PEv+77YEXCApESM172sILYLAKqEnOPPwWz
-	eQVcJdbN2Ae1Tk7iw55H7CBXcAq4SRxoVwQJCwGVvHv6h30CI+8CRoZVjKKpBckFxUnpuYZ6
-	xYm5xaV56XrJ+bmbGMER/ExqB+PKBotDjAIcjEo8vB1zvIOFWBPLiitzDzFKcDArifBuy/AK
-	FuJNSaysSi3Kjy8qzUktPsSYDHTURGYp0eR8YHLJK4k3NDYxM7I0Mje0MDI2J01YSZz3QKt1
-	oJBAemJJanZqakFqEcwWJg5OqQZGj4rnExieRcR/WNctJsj9I/1E3N09B3RWniorrRHavUL6
-	mdMErmYJ/6PX6sKDXq1+5DvXbO2S3BfpK18sZHisq/nlM+t3taqr2vL7bpycmKx8I/LtC8Yp
-	2yq6wwvO3jmsPn9/SMZ2tYYr7U6n0xgenWhfcqzVjjN9f9XH/3+Xic7sKjz/e2+ZlhJLcUai
-	oRZzUXEiAAfgM4ckAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 14 Apr 2014 05:08:35 -0400
+Message-ID: <534BA52B.3040906@free-electrons.com>
+Date: Mon, 14 Apr 2014 11:06:51 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Bo Shen <voice.shen@atmel.com>, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] ARM: at91/dt: define sam9n12 clocks
+References: <1397463399-11771-1-git-send-email-boris.brezillon@free-electrons.com> <1397463399-11771-3-git-send-email-boris.brezillon@free-electrons.com> <20140414085643.GK2967@piout.net>
+In-Reply-To: <20140414085643.GK2967@piout.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add DT binding documentation for Exynos3250 ADC IP. Exynos3250 has
-special clock ('sclk_tsadc') for ADC which provide clock to internal ADC.
+Hi Alexandre,
 
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-Cc: Tomasz Figa <t.figa@samsung.com>
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- .../devicetree/bindings/arm/samsung/exynos-adc.txt   | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+On 14/04/2014 10:56, Alexandre Belloni wrote:
+> On 14/04/2014 at 10:16:37 +0200, Boris Brezillon wrote :
+>> Define sam9n12 clocks and make use of them in peripheral definitions.
+>>
+>> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+>> ---
+>>  arch/arm/boot/dts/at91sam9n12.dtsi | 350 ++++++++++++++++++++++++++++++++++++-
+>>  1 file changed, 348 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
+>> index 9f04808..4d036a3 100644
+>> --- a/arch/arm/boot/dts/at91sam9n12.dtsi
+>> +++ b/arch/arm/boot/dts/at91sam9n12.dtsi
+>> @@ -12,6 +12,7 @@
+>>  #include <dt-bindings/pinctrl/at91.h>
+>>  #include <dt-bindings/interrupt-controller/irq.h>
+>>  #include <dt-bindings/gpio/gpio.h>
+>> +#include <dt-bindings/clk/at91.h>
+>>  
+>>  / {
+>>  	model = "Atmel AT91SAM9N12 SoC";
+>> @@ -49,6 +50,20 @@
+>>  		reg = <0x20000000 0x10000000>;
+>>  	};
+>>  
+>> +	clocks {
+>> +		slow_xtal: slow_xtal {
+>> +			compatible = "fixed-clock";
+>> +			#clock-cells = <0>;
+>> +			clock-frequency = <0>;
+>> +		};
+>> +
+>> +		main_xtal: main_xtal {
+>> +			compatible = "fixed-clock";
+>> +			#clock-cells = <0>;
+>> +			clock-frequency = <0>;
+>> +		};
+> You can put those two xtal nodes directly under root, as mentioned by
+> Mark Rutland:
+>
+> "A "clocks" container is non-standard, and not guarantee to probe. The
+> fact these clocks probe currently is an artifact of the current
+> organisation of Linux rather than any conscious decision."
 
-diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
-index 5d49f2b..7532ec3 100644
---- a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
-+++ b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
-@@ -14,6 +14,8 @@ Required properties:
- 				for exynos4412/5250 controllers.
- 			Must be "samsung,exynos-adc-v2" for
- 				future controllers.
-+			Must be "samsung,exynos-adc-v3" for
-+				for exynos3250 controllers.
- - reg:			Contains ADC register address range (base address and
- 			length) and the address of the phy enable register.
- - interrupts: 		Contains the interrupt information for the timer. The
-@@ -21,7 +23,11 @@ Required properties:
- 			the Samsung device uses.
- - #io-channel-cells = <1>; As ADC has multiple outputs
- - clocks		From common clock binding: handle to adc clock.
-+			From common clock binding: handle to sclk_tsadc clock
-+			if using Exynos3250.
- - clock-names		From common clock binding: Shall be "adc".
-+			From common clock binding: Shall be "sclk_tsadc"
-+			if using Exynos3250.
- - vdd-supply		VDD input supply.
- 
- Note: child nodes can be added for auto probing from device tree.
-@@ -41,6 +47,20 @@ adc: adc@12D10000 {
- 	vdd-supply = <&buck5_reg>;
- };
- 
-+If Exynos3250 uses ADC,
-+adc: adc@126C0000 {
-+	compatible = "samsung,exynos-adc-v3";
-+	reg = <0x126C0000 0x100>, <0x10020718 0x4>;
-+	interrupts = <0 137 0>;
-+	#io-channel-cells = <1>;
-+	io-channel-ranges;
-+
-+	clock-names = "adc", "sclk_tsadc";
-+	clocks = <&cmu CLK_TSADC>, <&cmu CLK_SCLK_TSADC>;
-+
-+	vdd-supply = <&buck5_reg>;
-+};
-+
- 
- Example: Adding child nodes in dts file
- 
+Okay, I will fix it for the next version.
+
+Thanks.
+
+Boris
+
+>> +	};
+>> +
+>>  	ahb {
+>>  		compatible = "simple-bus";
+>>  		#address-cells = <1>;
+>> @@ -75,8 +90,280 @@
+>>  			};
+>>  
+>>  			pmc: pmc@fffffc00 {
+>> -				compatible = "atmel,at91rm9200-pmc";
+>> -				reg = <0xfffffc00 0x100>;
+>> +				compatible = "atmel,at91sam9n12-pmc";
+>> +				reg = <0xfffffc00 0x200>;
+>> +				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
+>> +				interrupt-controller;
+>> +				#address-cells = <1>;
+>> +				#size-cells = <0>;
+>> +				#interrupt-cells = <1>;
+>> +
+>> +				main_rc_osc: main_rc_osc {
+>> +					compatible = "atmel,at91sam9x5-clk-main-rc-osc";
+>> +					#clock-cells = <0>;
+>> +					interrupts-extended = <&pmc AT91_PMC_MOSCRCS>;
+>> +					clock-frequency = <12000000>;
+>> +					clock-accuracy = <50000000>;
+>> +				};
+>> +
+>> +				main_osc: main_osc {
+>> +					compatible = "atmel,at91sam9x5-clk-main-osc";
+>> +					#clock-cells = <0>;
+>> +					interrupts-extended = <&pmc AT91_PMC_MOSCS>;
+>> +					clocks = <&main_xtal>;
+>> +				};
+>> +
+>> +				main: mainck {
+>> +					compatible = "atmel,at91sam9x5-clk-main";
+>> +					#clock-cells = <0>;
+>> +					interrupts-extended = <&pmc AT91_PMC_MOSCSELS>;
+>> +					clocks = <&main_rc_osc>, <&main_osc>;
+>> +				};
+>> +
+>> +				plla: pllack {
+>> +					compatible = "atmel,at91rm9200-clk-pll";
+>> +					#clock-cells = <0>;
+>> +					interrupts-extended = <&pmc AT91_PMC_LOCKA>;
+>> +					clocks = <&main>;
+>> +					reg = <0>;
+>> +					atmel,clk-input-range = <2000000 32000000>;
+>> +					#atmel,pll-clk-output-range-cells = <4>;
+>> +					atmel,pll-clk-output-ranges = <745000000 800000000 0 0>,
+>> +								      <695000000 750000000 1 0>,
+>> +								      <645000000 700000000 2 0>,
+>> +								      <595000000 650000000 3 0>,
+>> +								      <545000000 600000000 0 1>,
+>> +								      <495000000 555000000 1 1>,
+>> +								      <445000000 500000000 1 2>,
+>> +								      <400000000 450000000 1 3>;
+>> +				};
+>> +
+>> +				plladiv: plladivck {
+>> +					compatible = "atmel,at91sam9x5-clk-plldiv";
+>> +					#clock-cells = <0>;
+>> +					clocks = <&plla>;
+>> +				};
+>> +
+>> +				pllb: pllbck {
+>> +					compatible = "atmel,at91rm9200-clk-pll";
+>> +					#clock-cells = <0>;
+>> +					interrupts-extended = <&pmc AT91_PMC_LOCKB>;
+>> +					clocks = <&main>;
+>> +					reg = <1>;
+>> +					atmel,clk-input-range = <2000000 32000000>;
+>> +					#atmel,pll-clk-output-range-cells = <3>;
+>> +					atmel,pll-clk-output-ranges = <30000000 100000000 0>;
+>> +				};
+>> +
+>> +				mck: masterck {
+>> +					compatible = "atmel,at91sam9x5-clk-master";
+>> +					#clock-cells = <0>;
+>> +					interrupts-extended = <&pmc AT91_PMC_MCKRDY>;
+>> +					clocks = <&clk32k>, <&main>, <&plladiv>, <&pllb>;
+>> +					atmel,clk-output-range = <0 133333333>;
+>> +					atmel,clk-divisors = <1 2 4 3>;
+>> +					atmel,master-clk-have-div3-pres;
+>> +				};
+>> +
+>> +				usb: usbck {
+>> +					compatible = "atmel,at91sam9n12-clk-usb";
+>> +					#clock-cells = <0>;
+>> +					clocks = <&pllb>;
+>> +				};
+>> +
+>> +				prog: progck {
+>> +					compatible = "atmel,at91sam9x5-clk-programmable";
+>> +					#address-cells = <1>;
+>> +					#size-cells = <0>;
+>> +					interrupt-parent = <&pmc>;
+>> +					clocks = <&clk32k>, <&main>, <&plladiv>, <&pllb>, <&mck>;
+>> +
+>> +					prog0: prog0 {
+>> +						#clock-cells = <0>;
+>> +						reg = <0>;
+>> +						interrupts = <AT91_PMC_PCKRDY(0)>;
+>> +					};
+>> +
+>> +					prog1: prog1 {
+>> +						#clock-cells = <0>;
+>> +						reg = <1>;
+>> +						interrupts = <AT91_PMC_PCKRDY(1)>;
+>> +					};
+>> +				};
+>> +
+>> +				systemck {
+>> +					compatible = "atmel,at91rm9200-clk-system";
+>> +					#address-cells = <1>;
+>> +					#size-cells = <0>;
+>> +
+>> +					ddrck: ddrck {
+>> +						#clock-cells = <0>;
+>> +						reg = <2>;
+>> +						clocks = <&mck>;
+>> +					};
+>> +
+>> +					lcdck: lcdck {
+>> +						#clock-cells = <0>;
+>> +						reg = <3>;
+>> +						clocks = <&mck>;
+>> +					};
+>> +
+>> +					uhpck: uhpck {
+>> +						#clock-cells = <0>;
+>> +						reg = <6>;
+>> +						clocks = <&usb>;
+>> +					};
+>> +
+>> +					udpck: udpck {
+>> +						#clock-cells = <0>;
+>> +						reg = <7>;
+>> +						clocks = <&usb>;
+>> +					};
+>> +
+>> +					pck0: pck0 {
+>> +						#clock-cells = <0>;
+>> +						reg = <8>;
+>> +						clocks = <&prog0>;
+>> +					};
+>> +
+>> +					pck1: pck1 {
+>> +						#clock-cells = <0>;
+>> +						reg = <9>;
+>> +						clocks = <&prog1>;
+>> +					};
+>> +				};
+>> +
+>> +				periphck {
+>> +					compatible = "atmel,at91sam9x5-clk-peripheral";
+>> +					#address-cells = <1>;
+>> +					#size-cells = <0>;
+>> +					clocks = <&mck>;
+>> +
+>> +					pioAB_clk: pioAB_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <2>;
+>> +					};
+>> +
+>> +					pioCD_clk: pioCD_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <3>;
+>> +					};
+>> +
+>> +					fuse_clk: fuse_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <4>;
+>> +					};
+>> +
+>> +					usart0_clk: usart0_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <5>;
+>> +					};
+>> +
+>> +					usart1_clk: usart1_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <6>;
+>> +					};
+>> +
+>> +					usart2_clk: usart2_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <7>;
+>> +					};
+>> +
+>> +					usart3_clk: usart3_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <8>;
+>> +					};
+>> +
+>> +					twi0_clk: twi0_clk {
+>> +						reg = <9>;
+>> +						#clock-cells = <0>;
+>> +					};
+>> +
+>> +					twi1_clk: twi1_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <10>;
+>> +					};
+>> +
+>> +					mci0_clk: mci0_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <12>;
+>> +					};
+>> +
+>> +					spi0_clk: spi0_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <13>;
+>> +					};
+>> +
+>> +					spi1_clk: spi1_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <14>;
+>> +					};
+>> +
+>> +					uart0_clk: uart0_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <15>;
+>> +					};
+>> +
+>> +					uart1_clk: uart1_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <16>;
+>> +					};
+>> +
+>> +					tcb_clk: tcb_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <17>;
+>> +					};
+>> +
+>> +					pwm_clk: pwm_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <18>;
+>> +					};
+>> +
+>> +					adc_clk: adc_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <19>;
+>> +					};
+>> +
+>> +					dma0_clk: dma0_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <20>;
+>> +					};
+>> +
+>> +					uhphs_clk: uhphs_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <22>;
+>> +					};
+>> +
+>> +					udphs_clk: udphs_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <23>;
+>> +					};
+>> +
+>> +					lcdc_clk: lcdc_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <25>;
+>> +					};
+>> +
+>> +					sha_clk: sha_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <27>;
+>> +					};
+>> +
+>> +					ssc0_clk: ssc0_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <28>;
+>> +					};
+>> +
+>> +					aes_clk: aes_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <29>;
+>> +					};
+>> +
+>> +					trng_clk: trng_clk {
+>> +						#clock-cells = <0>;
+>> +						reg = <30>;
+>> +					};
+>> +				};
+>>  			};
+>>  
+>>  			rstc@fffffe00 {
+>> @@ -88,6 +375,7 @@
+>>  				compatible = "atmel,at91sam9260-pit";
+>>  				reg = <0xfffffe30 0xf>;
+>>  				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
+>> +				clocks = <&mck>;
+>>  			};
+>>  
+>>  			shdwc@fffffe10 {
+>> @@ -95,12 +383,38 @@
+>>  				reg = <0xfffffe10 0x10>;
+>>  			};
+>>  
+>> +			sckc@fffffe50 {
+>> +				compatible = "atmel,at91sam9x5-sckc";
+>> +				reg = <0xfffffe50 0x4>;
+>> +
+>> +				slow_osc: slow_osc {
+>> +					compatible = "atmel,at91sam9x5-clk-slow-osc";
+>> +					#clock-cells = <0>;
+>> +					clocks = <&slow_xtal>;
+>> +				};
+>> +
+>> +				slow_rc_osc: slow_rc_osc {
+>> +					compatible = "atmel,at91sam9x5-clk-slow-rc-osc";
+>> +					#clock-cells = <0>;
+>> +					clock-frequency = <32768>;
+>> +					clock-accuracy = <50000000>;
+>> +				};
+>> +
+>> +				clk32k: slck {
+>> +					compatible = "atmel,at91sam9x5-clk-slow";
+>> +					#clock-cells = <0>;
+>> +					clocks = <&slow_rc_osc>, <&slow_osc>;
+>> +				};
+>> +			};
+>> +
+>>  			mmc0: mmc@f0008000 {
+>>  				compatible = "atmel,hsmci";
+>>  				reg = <0xf0008000 0x600>;
+>>  				interrupts = <12 IRQ_TYPE_LEVEL_HIGH 0>;
+>>  				dmas = <&dma 1 AT91_DMA_CFG_PER_ID(0)>;
+>>  				dma-names = "rxtx";
+>> +				clocks = <&mci0_clk>;
+>> +				clock-names = "mci_clk";
+>>  				#address-cells = <1>;
+>>  				#size-cells = <0>;
+>>  				status = "disabled";
+>> @@ -110,12 +424,16 @@
+>>  				compatible = "atmel,at91sam9x5-tcb";
+>>  				reg = <0xf8008000 0x100>;
+>>  				interrupts = <17 IRQ_TYPE_LEVEL_HIGH 0>;
+>> +				clocks = <&tcb_clk>;
+>> +				clock-names = "t0_clk";
+>>  			};
+>>  
+>>  			tcb1: timer@f800c000 {
+>>  				compatible = "atmel,at91sam9x5-tcb";
+>>  				reg = <0xf800c000 0x100>;
+>>  				interrupts = <17 IRQ_TYPE_LEVEL_HIGH 0>;
+>> +				clocks = <&tcb_clk>;
+>> +				clock-names = "t0_clk";
+>>  			};
+>>  
+>>  			dma: dma-controller@ffffec00 {
+>> @@ -123,6 +441,8 @@
+>>  				reg = <0xffffec00 0x200>;
+>>  				interrupts = <20 IRQ_TYPE_LEVEL_HIGH 0>;
+>>  				#dma-cells = <2>;
+>> +				clocks = <&dma0_clk>;
+>> +				clock-names = "dma_clk";
+>>  			};
+>>  
+>>  			pinctrl@fffff400 {
+>> @@ -392,6 +712,7 @@
+>>  					gpio-controller;
+>>  					interrupt-controller;
+>>  					#interrupt-cells = <2>;
+>> +					clocks = <&pioAB_clk>;
+>>  				};
+>>  
+>>  				pioB: gpio@fffff600 {
+>> @@ -402,6 +723,7 @@
+>>  					gpio-controller;
+>>  					interrupt-controller;
+>>  					#interrupt-cells = <2>;
+>> +					clocks = <&pioAB_clk>;
+>>  				};
+>>  
+>>  				pioC: gpio@fffff800 {
+>> @@ -412,6 +734,7 @@
+>>  					gpio-controller;
+>>  					interrupt-controller;
+>>  					#interrupt-cells = <2>;
+>> +					clocks = <&pioCD_clk>;
+>>  				};
+>>  
+>>  				pioD: gpio@fffffa00 {
+>> @@ -422,6 +745,7 @@
+>>  					gpio-controller;
+>>  					interrupt-controller;
+>>  					#interrupt-cells = <2>;
+>> +					clocks = <&pioCD_clk>;
+>>  				};
+>>  			};
+>>  
+>> @@ -431,6 +755,8 @@
+>>  				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
+>>  				pinctrl-names = "default";
+>>  				pinctrl-0 = <&pinctrl_dbgu>;
+>> +				clocks = <&mck>;
+>> +				clock-names = "usart";
+>>  				status = "disabled";
+>>  			};
+>>  
+>> @@ -443,6 +769,8 @@
+>>  				dma-names = "tx", "rx";
+>>  				pinctrl-names = "default";
+>>  				pinctrl-0 = <&pinctrl_ssc0_tx &pinctrl_ssc0_rx>;
+>> +				clocks = <&ssc0_clk>;
+>> +				clock-names = "pclk";
+>>  				status = "disabled";
+>>  			};
+>>  
+>> @@ -452,6 +780,8 @@
+>>  				interrupts = <5 IRQ_TYPE_LEVEL_HIGH 5>;
+>>  				pinctrl-names = "default";
+>>  				pinctrl-0 = <&pinctrl_usart0>;
+>> +				clocks = <&usart0_clk>;
+>> +				clock-names = "usart";
+>>  				status = "disabled";
+>>  			};
+>>  
+>> @@ -461,6 +791,8 @@
+>>  				interrupts = <6 IRQ_TYPE_LEVEL_HIGH 5>;
+>>  				pinctrl-names = "default";
+>>  				pinctrl-0 = <&pinctrl_usart1>;
+>> +				clocks = <&usart1_clk>;
+>> +				clock-names = "usart";
+>>  				status = "disabled";
+>>  			};
+>>  
+>> @@ -470,6 +802,8 @@
+>>  				interrupts = <7 IRQ_TYPE_LEVEL_HIGH 5>;
+>>  				pinctrl-names = "default";
+>>  				pinctrl-0 = <&pinctrl_usart2>;
+>> +				clocks = <&usart2_clk>;
+>> +				clock-names = "usart";
+>>  				status = "disabled";
+>>  			};
+>>  
+>> @@ -479,6 +813,8 @@
+>>  				interrupts = <8 IRQ_TYPE_LEVEL_HIGH 5>;
+>>  				pinctrl-names = "default";
+>>  				pinctrl-0 = <&pinctrl_usart3>;
+>> +				clocks = <&usart3_clk>;
+>> +				clock-names = "usart";
+>>  				status = "disabled";
+>>  			};
+>>  
+>> @@ -493,6 +829,7 @@
+>>  				#size-cells = <0>;
+>>  				pinctrl-names = "default";
+>>  				pinctrl-0 = <&pinctrl_i2c0>;
+>> +				clocks = <&twi0_clk>;
+>>  				status = "disabled";
+>>  			};
+>>  
+>> @@ -507,6 +844,7 @@
+>>  				#size-cells = <0>;
+>>  				pinctrl-names = "default";
+>>  				pinctrl-0 = <&pinctrl_i2c1>;
+>> +				clocks = <&twi1_clk>;
+>>  				status = "disabled";
+>>  			};
+>>  
+>> @@ -521,6 +859,8 @@
+>>  				dma-names = "tx", "rx";
+>>  				pinctrl-names = "default";
+>>  				pinctrl-0 = <&pinctrl_spi0>;
+>> +				clocks = <&spi0_clk>;
+>> +				clock-names = "spi_clk";
+>>  				status = "disabled";
+>>  			};
+>>  
+>> @@ -535,6 +875,8 @@
+>>  				dma-names = "tx", "rx";
+>>  				pinctrl-names = "default";
+>>  				pinctrl-0 = <&pinctrl_spi1>;
+>> +				clocks = <&spi1_clk>;
+>> +				clock-names = "spi_clk";
+>>  				status = "disabled";
+>>  			};
+>>  
+>> @@ -554,6 +896,7 @@
+>>  				reg = <0xf8034000 0x300>;
+>>  				interrupts = <18 IRQ_TYPE_LEVEL_HIGH 4>;
+>>  				#pwm-cells = <3>;
+>> +				clocks = <&pwm_clk>;
+>>  				status = "disabled";
+>>  			};
+>>  		};
+>> @@ -584,6 +927,9 @@
+>>  			compatible = "atmel,at91rm9200-ohci", "usb-ohci";
+>>  			reg = <0x00500000 0x00100000>;
+>>  			interrupts = <22 IRQ_TYPE_LEVEL_HIGH 2>;
+>> +			clocks = <&usb>, <&uhphs_clk>, <&udphs_clk>,
+>> +				 <&uhpck>;
+>> +			clock-names = "usb_clk", "ohci_clk", "hclk", "uhpck";
+>>  			status = "disabled";
+>>  		};
+>>  	};
+>> -- 
+>> 1.8.3.2
+>>
+
 -- 
-1.8.0
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
