@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868AbaDNWDc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 18:03:32 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35569 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755943AbaDNWA3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755940AbaDNWA3 (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 14 Apr 2014 18:00:29 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35540 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755805AbaDNWAU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 18:00:20 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Thierry Reding <thierry.reding@gmail.com>
 Cc: Tony Lindgren <tony@atomide.com>, Philipp Zabel <philipp.zabel@gmail.com>,
@@ -20,9 +20,9 @@ Cc: Tony Lindgren <tony@atomide.com>, Philipp Zabel <philipp.zabel@gmail.com>,
         linux-omap@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-leds@vger.kernel.org, linux-fbdev@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv2 10/11] leds: leds-pwm: retrieve configured pwm period
-Date: Mon, 14 Apr 2014 23:59:52 +0200
-Message-Id: <1397512793-10325-11-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCHv2 06/11] pwm: modify PWM_LOOKUP to initialize all struct pwm_lookup members
+Date: Mon, 14 Apr 2014 23:59:48 +0200
+Message-Id: <1397512793-10325-7-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1397512793-10325-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1397512793-10325-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -30,37 +30,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PWM core is now able to initialize the PWM period. Use it and if it is not
-configured, use the supplied pwm_period_ns.
+Now that PWM_LOOKUP is not used anymore, modify it to initialize all the
+members of struct pwm_lookup.
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- drivers/leds/leds-pwm.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ Documentation/pwm.txt | 3 ++-
+ include/linux/pwm.h   | 4 +++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
-index 7d0aaed1e23a..aa770ec1e892 100644
---- a/drivers/leds/leds-pwm.c
-+++ b/drivers/leds/leds-pwm.c
-@@ -181,7 +181,6 @@ static int led_pwm_probe(struct platform_device *pdev)
- 			led_dat->cdev.name = cur_led->name;
- 			led_dat->cdev.default_trigger = cur_led->default_trigger;
- 			led_dat->active_low = cur_led->active_low;
--			led_dat->period = cur_led->pwm_period_ns;
- 			led_dat->cdev.brightness_set = led_pwm_set;
- 			led_dat->cdev.brightness = LED_OFF;
- 			led_dat->cdev.max_brightness = cur_led->max_brightness;
-@@ -191,6 +190,10 @@ static int led_pwm_probe(struct platform_device *pdev)
- 			if (led_dat->can_sleep)
- 				INIT_WORK(&led_dat->work, led_pwm_work);
+diff --git a/Documentation/pwm.txt b/Documentation/pwm.txt
+index 93cb97974986..f38f99cda64f 100644
+--- a/Documentation/pwm.txt
++++ b/Documentation/pwm.txt
+@@ -19,7 +19,8 @@ should instead register a static mapping that can be used to match PWM
+ consumers to providers, as given in the following example:
  
-+			led_dat->period = pwm_get_period(led_dat->pwm);
-+			if (!led_dat->period && (cur_led->pwm_period_ns > 0))
-+				led_dat->period = cur_led->pwm_period_ns;
-+
- 			ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
- 			if (ret < 0)
- 				goto err;
+ 	static struct pwm_lookup board_pwm_lookup[] = {
+-		PWM_LOOKUP("tegra-pwm", 0, "pwm-backlight", NULL),
++		PWM_LOOKUP("tegra-pwm", 0, "pwm-backlight", NULL,
++			   50000, PWM_POLARITY_NORMAL),
+ 	};
+ 
+ 	static void __init board_init(void)
+diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+index 2f45e2fe5b93..e90628cac8fa 100644
+--- a/include/linux/pwm.h
++++ b/include/linux/pwm.h
+@@ -278,12 +278,14 @@ struct pwm_lookup {
+ 	enum pwm_polarity polarity;
+ };
+ 
+-#define PWM_LOOKUP(_provider, _index, _dev_id, _con_id)	\
++#define PWM_LOOKUP(_provider, _index, _dev_id, _con_id, _period, _polarity) \
+ 	{						\
+ 		.provider = _provider,			\
+ 		.index = _index,			\
+ 		.dev_id = _dev_id,			\
+ 		.con_id = _con_id,			\
++		.period = _period,			\
++		.polarity = _polarity			\
+ 	}
+ 
+ #if IS_ENABLED(CONFIG_PWM)
 -- 
 1.8.3.2
 
