@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187AbaDNBsT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 13 Apr 2014 21:48:19 -0400
-Received: from mga02.intel.com ([134.134.136.20]:34431 "EHLO mga02.intel.com"
+	id S1752540AbaDNBvp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 13 Apr 2014 21:51:45 -0400
+Received: from mga09.intel.com ([134.134.136.24]:62907 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750770AbaDNBsQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 13 Apr 2014 21:48:16 -0400
+	id S1750984AbaDNBvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 13 Apr 2014 21:51:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,853,1389772800"; 
-   d="scan'208";a="520184723"
-Message-ID: <534B3E5D.6090905@linux.intel.com>
-Date: Sun, 13 Apr 2014 18:48:13 -0700
+   d="scan'208";a="520185551"
+Message-ID: <534B3F1A.60003@linux.intel.com>
+Date: Sun, 13 Apr 2014 18:51:22 -0700
 From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
 To: Jonathan Cameron <jic23@kernel.org>
 CC: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [Patch v3 5/6] iio: hid-sensors: Added device rotation support
-References: <1397004988-31550-1-git-send-email-srinivas.pandruvada@linux.intel.com> <1397004988-31550-5-git-send-email-srinivas.pandruvada@linux.intel.com> <53497627.3000903@kernel.org>
-In-Reply-To: <53497627.3000903@kernel.org>
+Subject: Re: [Patch v3 2/6] IIO: core: Introduce read_raw_multi
+References: <1397004988-31550-1-git-send-email-srinivas.pandruvada@linux.intel.com> <1397004988-31550-2-git-send-email-srinivas.pandruvada@linux.intel.com> <53496F52.9040802@kernel.org>
+In-Reply-To: <53496F52.9040802@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,492 +26,303 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On 04/12/2014 10:21 AM, Jonathan Cameron wrote:
+On 04/12/2014 09:52 AM, Jonathan Cameron wrote:
 > On 09/04/14 01:56, Srinivas Pandruvada wrote:
->> Added usage id processing for device rotation. This uses IIO
->> interfaces for triggered buffer to present data to user
->> mode.This uses HID sensor framework for registering callback
->> events from the sensor hub.
->> Data is exported to user space in the form of quaternion rotation
->> format.
+>> This callback is introduced to overcome some limitations of existing
+>> read_raw callback. The functionality of both existing read_raw and
+>> read_raw_multi is similar, both are used to request values from the
+>> device. The current read_raw callback allows only two return values.
+>> The new read_raw_multi allows returning multiple values. Instead of
+>> passing just address of val and val2, it passes length and pointer
+>> to values. Depending on the type and length of passed buffer, iio
+>> client drivers can return multiple values.
 >>
 >> Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-> Very nice.  Happy to take this the moment we have a go ahead on
-> the devm_kmemdup and perhaps those minor tweaks I asked for in the
-> multi value handling patch.
+> Hi Srinivas.
 >
-> Actually, may seem a random question, but what the heck are the scale
-> units you can read for the quaternion?  Firstly it's an integer, so
-> would only make the value bigger, and secondly we are dealing with
-> a quaternion, which is inherently scale free (when used for rotation 
-> anyway).
-> I suppose these units might be meant to transform to a unit quaternion
-> (though this can be easily established form the quaternion itself).
+> This has come together pretty much how I thought it would. Very nice.
+> Only comment inline is that I'd prefer we took care now with possiblity
+> of really long sets of values so that we don't get bitten by it sometime
+> in the future.
 >
-Good point. For quaternion there is no scale exported in channel spec. I 
-have in switch case, which was left over, I will remove it. The offset 
-field mostly will be 0, but as you pointed out below they are unit exponent.
-
-
-> Looking quickly at the other HID drivers, I am a little confused as
-> to what is going on in general. Could you talk me through this stuff?
-> I have a vague recollection we went through this before, but can't
-> recall the result of those discussions.
->
-> At first glance, it looks like scale is being used to indicate the
-> base units (via magic numbers) and offset to contain exponents
-> to be applied also as magic numbers.  Neither of these is anywhere
-> near our ABI which is going to cause issues for any 'standard'
-> userspace library..
->
-We had this discussion long time back. Initially introduced separate 
-attributes for units ans scale but suggestion was to use offset and scale.
-
-Currently these drivers are used only by Android kernel, which has 
-corresponding user space to interpret.
-But now since after Win8, they became available in many devices.
-I have received questions on this from user space developers now, so I 
-have to either document them or make complaint to others. I am working 
-on it. I have many units to convert to standard format. I will submit a 
-change for this.
+I was thinking of using snprintf, but buf had no length passed. If we 
+assume PAGE_SIZE as max length
+then I can do what you suggested below,
 
 Thanks,
 Srinivas
-
-> Thanks.
+> If you want to drop the reference to 0 having special meaning in the
+> comment as well, thats fine by me.
 >
 > Jonathan
 >> ---
->>   drivers/iio/orientation/Kconfig               |  12 +
->>   drivers/iio/orientation/Makefile              |   1 +
->>   drivers/iio/orientation/hid-sensor-rotation.c | 359 
->> ++++++++++++++++++++++++++
->>   include/linux/hid-sensor-ids.h                |   1 +
->>   4 files changed, 373 insertions(+)
->>   create mode 100644 drivers/iio/orientation/hid-sensor-rotation.c
+>>   drivers/iio/iio_core.h           |  2 +-
+>>   drivers/iio/industrialio-core.c  | 65 
+>> ++++++++++++++++++++++++++--------------
+>>   drivers/iio/industrialio-event.c |  6 ++--
+>>   drivers/iio/inkern.c             | 16 ++++++++--
+>>   include/linux/iio/iio.h          | 17 +++++++++++
+>>   include/linux/iio/types.h        |  1 +
+>>   6 files changed, 80 insertions(+), 27 deletions(-)
 >>
->> diff --git a/drivers/iio/orientation/Kconfig 
->> b/drivers/iio/orientation/Kconfig
->> index 58c62c8..e3aa1e5 100644
->> --- a/drivers/iio/orientation/Kconfig
->> +++ b/drivers/iio/orientation/Kconfig
->> @@ -16,4 +16,16 @@ config HID_SENSOR_INCLINOMETER_3D
->>         Say yes here to build support for the HID SENSOR
->>         Inclinometer 3D.
+>> diff --git a/drivers/iio/iio_core.h b/drivers/iio/iio_core.h
+>> index f6db6af..30327ad 100644
+>> --- a/drivers/iio/iio_core.h
+>> +++ b/drivers/iio/iio_core.h
+>> @@ -35,7 +35,7 @@ int __iio_add_chan_devattr(const char *postfix,
+>>                  struct list_head *attr_list);
+>>   void iio_free_chan_devattr_list(struct list_head *attr_list);
 >>
->> +config HID_SENSOR_DEVICE_ROTATION
->> +    depends on HID_SENSOR_HUB
->> +    select IIO_BUFFER
->> +    select IIO_TRIGGERED_BUFFER
->> +    select HID_SENSOR_IIO_COMMON
->> +    select HID_SENSOR_IIO_TRIGGER
->> +    tristate "HID Device Rotation"
->> +    help
->> +      Say yes here to build support for the HID SENSOR
->> +      device rotation. The output of a device rotation sensor
->> +      is presented using quaternion format.
->> +
->>   endmenu
->> diff --git a/drivers/iio/orientation/Makefile 
->> b/drivers/iio/orientation/Makefile
->> index 2c97572..4734dab 100644
->> --- a/drivers/iio/orientation/Makefile
->> +++ b/drivers/iio/orientation/Makefile
->> @@ -4,3 +4,4 @@
+>> -ssize_t iio_format_value(char *buf, unsigned int type, int val, int 
+>> val2);
+>> +ssize_t iio_format_value(char *buf, unsigned int type, int size, int 
+>> *val);
 >>
->>   # When adding new entries keep the list in alphabetical order
->>   obj-$(CONFIG_HID_SENSOR_INCLINOMETER_3D) += hid-sensor-incl-3d.o
->> +obj-$(CONFIG_HID_SENSOR_DEVICE_ROTATION) += hid-sensor-rotation.o
->> diff --git a/drivers/iio/orientation/hid-sensor-rotation.c 
->> b/drivers/iio/orientation/hid-sensor-rotation.c
->> new file mode 100644
->> index 0000000..5c7d558
->> --- /dev/null
->> +++ b/drivers/iio/orientation/hid-sensor-rotation.c
->> @@ -0,0 +1,359 @@
->> +/*
->> + * HID Sensors Driver
->> + * Copyright (c) 2014, Intel Corporation.
->> + *
->> + * This program is free software; you can redistribute it and/or 
->> modify it
->> + * under the terms and conditions of the GNU General Public License,
->> + * version 2, as published by the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope it will be useful, but 
->> WITHOUT
->> + * ANY WARRANTY; without even the implied warranty of 
->> MERCHANTABILITY or
->> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public 
->> License for
->> + * more details.
->> + */
->> +
->> +#include <linux/device.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/module.h>
->> +#include <linux/interrupt.h>
->> +#include <linux/irq.h>
->> +#include <linux/slab.h>
->> +#include <linux/hid-sensor-hub.h>
->> +#include <linux/iio/iio.h>
->> +#include <linux/iio/sysfs.h>
->> +#include <linux/iio/buffer.h>
->> +#include <linux/iio/trigger_consumer.h>
->> +#include <linux/iio/triggered_buffer.h>
->> +#include "../common/hid-sensors/hid-sensor-trigger.h"
->> +
->> +struct dev_rot_state {
->> +    struct hid_sensor_hub_callbacks callbacks;
->> +    struct hid_sensor_common common_attributes;
->> +    struct hid_sensor_hub_attribute_info quaternion;
->> +    u32 sampled_vals[4];
->> +};
->> +
->> +/* Channel definitions */
->> +static const struct iio_chan_spec dev_rot_channels[] = {
+>>   /* Event interface flags */
+>>   #define IIO_BUSY_BIT_POS 1
+>> diff --git a/drivers/iio/industrialio-core.c 
+>> b/drivers/iio/industrialio-core.c
+>> index ede16aec..3bd565c 100644
+>> --- a/drivers/iio/industrialio-core.c
+>> +++ b/drivers/iio/industrialio-core.c
+>> @@ -373,41 +373,53 @@ EXPORT_SYMBOL_GPL(iio_enum_write);
+>>    * @buf: The buffer to which the formated value gets written
+>>    * @type: One of the IIO_VAL_... constants. This decides how the 
+>> val and val2
+>>    *        parameters are formatted.
+>> - * @val: First part of the value, exact meaning depends on the type 
+>> parameter.
+>> - * @val2: Second part of the value, exact meaning depends on the 
+>> type parameter.
+>> + * @vals: pointer to the values, exact meaning depends on the type 
+>> parameter.
+>>    */
+>> -ssize_t iio_format_value(char *buf, unsigned int type, int val, int 
+>> val2)
+>> +ssize_t iio_format_value(char *buf, unsigned int type, int size, int 
+>> *vals)
+>>   {
+>>       unsigned long long tmp;
+>>       bool scale_db = false;
+>>
+>>       switch (type) {
+>>       case IIO_VAL_INT:
+>> -        return sprintf(buf, "%d\n", val);
+>> +        return sprintf(buf, "%d\n", vals[0]);
+>>       case IIO_VAL_INT_PLUS_MICRO_DB:
+>>           scale_db = true;
+>>       case IIO_VAL_INT_PLUS_MICRO:
+>> -        if (val2 < 0)
+>> -            return sprintf(buf, "-%ld.%06u%s\n", abs(val), -val2,
+>> +        if (vals[1] < 0)
+>> +            return sprintf(buf, "-%ld.%06u%s\n", abs(vals[0]),
+>> +                    -vals[1],
+>>                   scale_db ? " dB" : "");
+>>           else
+>> -            return sprintf(buf, "%d.%06u%s\n", val, val2,
+>> +            return sprintf(buf, "%d.%06u%s\n", vals[0], vals[1],
+>>                   scale_db ? " dB" : "");
+>>       case IIO_VAL_INT_PLUS_NANO:
+>> -        if (val2 < 0)
+>> -            return sprintf(buf, "-%ld.%09u\n", abs(val), -val2);
+>> +        if (vals[1] < 0)
+>> +            return sprintf(buf, "-%ld.%09u\n", abs(vals[0]),
+>> +                    -vals[1]);
+>>           else
+>> -            return sprintf(buf, "%d.%09u\n", val, val2);
+>> +            return sprintf(buf, "%d.%09u\n", vals[0], vals[1]);
+>>       case IIO_VAL_FRACTIONAL:
+>> -        tmp = div_s64((s64)val * 1000000000LL, val2);
+>> -        val2 = do_div(tmp, 1000000000LL);
+>> -        val = tmp;
+>> -        return sprintf(buf, "%d.%09u\n", val, val2);
+>> +        tmp = div_s64((s64)vals[0] * 1000000000LL, vals[1]);
+>> +        vals[1] = do_div(tmp, 1000000000LL);
+>> +        vals[0] = tmp;
+>> +        return sprintf(buf, "%d.%09u\n", vals[0], vals[1]);
+>>       case IIO_VAL_FRACTIONAL_LOG2:
+>> -        tmp = (s64)val * 1000000000LL >> val2;
+>> -        val2 = do_div(tmp, 1000000000LL);
+>> -        val = tmp;
+>> -        return sprintf(buf, "%d.%09u\n", val, val2);
+>> +        tmp = (s64)vals[0] * 1000000000LL >> vals[1];
+>> +        vals[1] = do_div(tmp, 1000000000LL);
+>> +        vals[0] = tmp;
+>> +        return sprintf(buf, "%d.%09u\n", vals[0], vals[1]);
+>> +    case IIO_VAL_INT_MULTIPLE:
 >> +    {
->> +        .type = IIO_ROT,
->> +        .modified = 1,
->> +        .channel2 = IIO_MOD_QUATERNION,
->> +        .info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
->> +        .info_mask_shared_by_type = BIT(IIO_CHAN_INFO_OFFSET) |
->> +                    BIT(IIO_CHAN_INFO_SAMP_FREQ) |
->> +                    BIT(IIO_CHAN_INFO_HYSTERESIS) |
->> +                    BIT(IIO_CHAN_INFO_RAW),
+>> +        int i;
+>> +        int len = 0;
+>> +
+>> +        for (i = 0; i < size; ++i)
+>> +            len += sprintf(&buf[len], "%d ", vals[i]);
+>> +        buf[len++] = '\n';
+>> +        buf[len++] = '\0';
+> Whilst we know this is of a fixed maxium length, I think we
+> want to take more care to ensure that we don't overrun the maximum
+> sysfs length. I'd also prefer specific use of snprintf for the new
+> line as well to make sure that doesn't cause trouble. i.e.
+>
+> for (i = 0; i < size; ++i)
+>     len += snprintf(&buf[len], PAGE_SIZE - len, "%d ", vals[i]);
+> len += snprintf(&buf[len], PAGE_SIZE - len, "/n");
+>
+> The reasoning being that we could easily mess something up and hit these
+> limits sometime in the future.  Also not using the explicit character
+> settting, but doing it with snprintf is easier to read (slightly ;)
+>
+>
+>> +        return len;
 >> +    }
->> +};
->> +
->> +/* Adjust channel real bits based on report descriptor */
->> +static void dev_rot_adjust_channel_bit_mask(struct iio_chan_spec *chan,
->> +                        int size)
->> +{
->> +    chan->scan_type.sign = 's';
->> +    /* Real storage bits will change based on the report desc. */
->> +    chan->scan_type.realbits = size * 8;
->> +    /* Maximum size of a sample to capture is u32 */
->> +    chan->scan_type.storagebits = sizeof(u32) * 8;
->> +    chan->scan_type.repeat = 4;
->> +}
->> +
->> +/* Channel read_raw handler */
->> +static int dev_rot_read_raw(struct iio_dev *indio_dev,
->> +                struct iio_chan_spec const *chan,
->> +                int size, int *vals, int *val_len,
->> +                long mask)
->> +{
->> +    struct dev_rot_state *rot_state = iio_priv(indio_dev);
->> +    int ret_type;
->> +    int i;
->> +
->> +    vals[0] = 0;
->> +    vals[1] = 0;
->> +
->> +    switch (mask) {
->> +    case IIO_CHAN_INFO_RAW:
->> +        if (size >= 4) {
->> +            for (i = 0; i < 4; ++i)
->> +                vals[i] = rot_state->sampled_vals[i];
->> +            ret_type = IIO_VAL_INT_MULTIPLE;
->> +            *val_len =  4;
->> +        } else
->> +            ret_type = -EINVAL;
->> +        break;
->> +    case IIO_CHAN_INFO_SCALE:
->> +        vals[0] = rot_state->quaternion.units;
->> +        ret_type = IIO_VAL_INT;
->> +        break;
->> +    case IIO_CHAN_INFO_OFFSET:
->> +        vals[1] = hid_sensor_convert_exponent(
->> +            rot_state->quaternion.unit_expo);
->> +        ret_type = IIO_VAL_INT;
->> +        break;
->> +    case IIO_CHAN_INFO_SAMP_FREQ:
->> +        ret_type = hid_sensor_read_samp_freq_value(
->> +            &rot_state->common_attributes, &vals[0], &vals[1]);
->> +        break;
->> +    case IIO_CHAN_INFO_HYSTERESIS:
->> +        ret_type = hid_sensor_read_raw_hyst_value(
->> +            &rot_state->common_attributes, &vals[0], &vals[1]);
->> +        break;
->> +    default:
->> +        ret_type = -EINVAL;
->> +        break;
->> +    }
->> +
->> +    return ret_type;
->> +}
->> +
->> +/* Channel write_raw handler */
->> +static int dev_rot_write_raw(struct iio_dev *indio_dev,
->> +                   struct iio_chan_spec const *chan,
->> +                   int val,
->> +                   int val2,
->> +                   long mask)
->> +{
->> +    struct dev_rot_state *rot_state = iio_priv(indio_dev);
+>>       default:
+>>           return 0;
+>>       }
+>> @@ -419,14 +431,23 @@ static ssize_t iio_read_channel_info(struct 
+>> device *dev,
+>>   {
+>>       struct iio_dev *indio_dev = dev_to_iio_dev(dev);
+>>       struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
+>> -    int val, val2;
+>> -    int ret = indio_dev->info->read_raw(indio_dev, this_attr->c,
+>> -                        &val, &val2, this_attr->address);
+>> +    int vals[INDIO_MAX_RAW_ELEMENTS];
 >> +    int ret;
+>> +    int val_len = 2;
 >> +
->> +    switch (mask) {
->> +    case IIO_CHAN_INFO_SAMP_FREQ:
->> +        ret = hid_sensor_write_samp_freq_value(
->> +                &rot_state->common_attributes, val, val2);
->> +        break;
->> +    case IIO_CHAN_INFO_HYSTERESIS:
->> +        ret = hid_sensor_write_raw_hyst_value(
->> +                &rot_state->common_attributes, val, val2);
->> +        break;
->> +    default:
->> +        ret = -EINVAL;
->> +    }
+>> +    if (indio_dev->info->read_raw_multi)
+>> +        ret = indio_dev->info->read_raw_multi(indio_dev, this_attr->c,
+>> +                            INDIO_MAX_RAW_ELEMENTS,
+>> +                            vals, &val_len,
+>> +                            this_attr->address);
+>> +    else
+>> +        ret = indio_dev->info->read_raw(indio_dev, this_attr->c,
+>> +                    &vals[0], &vals[1], this_attr->address);
+>>
+>>       if (ret < 0)
+>>           return ret;
+>>
+>> -    return iio_format_value(buf, ret, val, val2);
+>> +    return iio_format_value(buf, ret, val_len, vals);
+>>   }
+>>
+>>   /**
+>> diff --git a/drivers/iio/industrialio-event.c 
+>> b/drivers/iio/industrialio-event.c
+>> index ea6e06b..1b4f31b 100644
+>> --- a/drivers/iio/industrialio-event.c
+>> +++ b/drivers/iio/industrialio-event.c
+>> @@ -270,7 +270,7 @@ static ssize_t iio_ev_value_show(struct device *dev,
+>>   {
+>>       struct iio_dev *indio_dev = dev_to_iio_dev(dev);
+>>       struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
+>> -    int val, val2;
+>> +    int val, val2, val_arr[2];
+>>       int ret;
+>>
+>>       ret = indio_dev->info->read_event_value(indio_dev,
+>> @@ -279,7 +279,9 @@ static ssize_t iio_ev_value_show(struct device *dev,
+>>           &val, &val2);
+>>       if (ret < 0)
+>>           return ret;
+>> -    return iio_format_value(buf, ret, val, val2);
+>> +    val_arr[0] = val;
+>> +    val_arr[1] = val2;
+>> +    return iio_format_value(buf, ret, 2, val_arr);
+>>   }
+>>
+>>   static ssize_t iio_ev_value_store(struct device *dev,
+>> diff --git a/drivers/iio/inkern.c b/drivers/iio/inkern.c
+>> index 0cf5f8e..75e5386 100644
+>> --- a/drivers/iio/inkern.c
+>> +++ b/drivers/iio/inkern.c
+>> @@ -417,12 +417,24 @@ static int iio_channel_read(struct iio_channel 
+>> *chan, int *val, int *val2,
+>>       enum iio_chan_info_enum info)
+>>   {
+>>       int unused;
+>> +    int vals[INDIO_MAX_RAW_ELEMENTS];
+>> +    int ret;
+>> +    int val_len = 2;
+>>
+>>       if (val2 == NULL)
+>>           val2 = &unused;
+>>
+>> -    return chan->indio_dev->info->read_raw(chan->indio_dev, 
+>> chan->channel,
+>> -                        val, val2, info);
+>> +    if (chan->indio_dev->info->read_raw_multi) {
+>> +        ret = chan->indio_dev->info->read_raw_multi(chan->indio_dev,
+>> +                    chan->channel, INDIO_MAX_RAW_ELEMENTS,
+>> +                    vals, &val_len, info);
+>> +        *val = vals[0];
+>> +        *val2 = vals[1];
+>> +    } else
+>> +        ret = chan->indio_dev->info->read_raw(chan->indio_dev,
+>> +                    chan->channel, val, val2, info);
 >> +
 >> +    return ret;
->> +}
->> +
->> +static const struct iio_info dev_rot_info = {
->> +    .driver_module = THIS_MODULE,
->> +    .read_raw_multi = &dev_rot_read_raw,
->> +    .write_raw = &dev_rot_write_raw,
->> +};
->> +
->> +/* Function to push data to buffer */
->> +static void hid_sensor_push_data(struct iio_dev *indio_dev, u8 
->> *data, int len)
->> +{
->> +    dev_dbg(&indio_dev->dev, "hid_sensor_push_data >>\n");
->> +    iio_push_to_buffers(indio_dev, (u8 *)data);
->> +    dev_dbg(&indio_dev->dev, "hid_sensor_push_data <<\n");
->> +
->> +}
->> +
->> +/* Callback handler to send event after all samples are received and 
->> captured */
->> +static int dev_rot_proc_event(struct hid_sensor_hub_device *hsdev,
->> +                unsigned usage_id,
->> +                void *priv)
->> +{
->> +    struct iio_dev *indio_dev = platform_get_drvdata(priv);
->> +    struct dev_rot_state *rot_state = iio_priv(indio_dev);
->> +
->> +    dev_dbg(&indio_dev->dev, "dev_rot_proc_event [%d]\n",
->> +                rot_state->common_attributes.data_ready);
->> +
->> +    if (rot_state->common_attributes.data_ready)
->> +        hid_sensor_push_data(indio_dev,
->> +                (u8 *)rot_state->sampled_vals,
->> +                sizeof(rot_state->sampled_vals));
->> +
->> +    return 0;
->> +}
->> +
->> +/* Capture samples in local storage */
->> +static int dev_rot_capture_sample(struct hid_sensor_hub_device *hsdev,
->> +                unsigned usage_id,
->> +                size_t raw_len, char *raw_data,
->> +                void *priv)
->> +{
->> +    struct iio_dev *indio_dev = platform_get_drvdata(priv);
->> +    struct dev_rot_state *rot_state = iio_priv(indio_dev);
->> +
->> +    if (usage_id == HID_USAGE_SENSOR_ORIENT_QUATERNION) {
->> +        memcpy(rot_state->sampled_vals, raw_data,
->> +                    sizeof(rot_state->sampled_vals));
->> +        dev_dbg(&indio_dev->dev, "Recd Quat len:%zu::%zu\n", raw_len,
->> +                    sizeof(rot_state->sampled_vals));
->> +    }
->> +
->> +    return 0;
->> +}
->> +
->> +/* Parse report which is specific to an usage id*/
->> +static int dev_rot_parse_report(struct platform_device *pdev,
->> +                struct hid_sensor_hub_device *hsdev,
->> +                struct iio_chan_spec *channels,
->> +                unsigned usage_id,
->> +                struct dev_rot_state *st)
->> +{
->> +    int ret;
->> +
->> +    ret = sensor_hub_input_get_attribute_info(hsdev,
->> +                HID_INPUT_REPORT,
->> +                usage_id,
->> +                HID_USAGE_SENSOR_ORIENT_QUATERNION,
->> +                &st->quaternion);
->> +    if (ret)
->> +        return ret;
->> +
->> +    dev_rot_adjust_channel_bit_mask(&channels[0],
->> +        st->quaternion.size / 4);
->> +
->> +    dev_dbg(&pdev->dev, "dev_rot %x:%x\n", st->quaternion.index,
->> +        st->quaternion.report_id);
->> +
->> +    dev_dbg(&pdev->dev, "dev_rot: attrib size %d\n",
->> +                st->quaternion.size);
->> +
->> +    /* Set Sensitivity field ids, when there is no individual 
->> modifier */
->> +    if (st->common_attributes.sensitivity.index < 0) {
->> +        sensor_hub_input_get_attribute_info(hsdev,
->> +            HID_FEATURE_REPORT, usage_id,
->> +            HID_USAGE_SENSOR_DATA_MOD_CHANGE_SENSITIVITY_ABS |
->> +            HID_USAGE_SENSOR_DATA_ORIENTATION,
->> +            &st->common_attributes.sensitivity);
->> +        dev_dbg(&pdev->dev, "Sensitivity index:report %d:%d\n",
->> +            st->common_attributes.sensitivity.index,
->> +            st->common_attributes.sensitivity.report_id);
->> +    }
->> +
->> +    return 0;
->> +}
->> +
->> +/* Function to initialize the processing for usage id */
->> +static int hid_dev_rot_probe(struct platform_device *pdev)
->> +{
->> +    int ret;
->> +    static char *name = "dev_rotation";
->> +    struct iio_dev *indio_dev;
->> +    struct dev_rot_state *rot_state;
->> +    struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
->> +    struct iio_chan_spec *channels;
->> +
->> +    indio_dev = devm_iio_device_alloc(&pdev->dev,
->> +                      sizeof(struct dev_rot_state));
->> +    if (indio_dev == NULL)
->> +        return -ENOMEM;
->> +
->> +    platform_set_drvdata(pdev, indio_dev);
->> +
->> +    rot_state = iio_priv(indio_dev);
->> +    rot_state->common_attributes.hsdev = hsdev;
->> +    rot_state->common_attributes.pdev = pdev;
->> +
->> +    ret = hid_sensor_parse_common_attributes(hsdev,
->> +                HID_USAGE_SENSOR_DEVICE_ORIENTATION,
->> +                &rot_state->common_attributes);
->> +    if (ret) {
->> +        dev_err(&pdev->dev, "failed to setup common attributes\n");
->> +        return ret;
->> +    }
->> +
->> +    channels = devm_kmemdup(&pdev->dev, dev_rot_channels, 
->> sizeof(dev_rot_channels),
->> +               GFP_KERNEL);
->> +    if (!channels) {
->> +        dev_err(&pdev->dev, "failed to duplicate channels\n");
->> +        return -ENOMEM;
->> +    }
->> +
->> +    ret = dev_rot_parse_report(pdev, hsdev, channels,
->> +            HID_USAGE_SENSOR_DEVICE_ORIENTATION, rot_state);
->> +    if (ret) {
->> +        dev_err(&pdev->dev, "failed to setup attributes\n");
->> +        return ret;
->> +    }
->> +
->> +    indio_dev->channels = channels;
->> +    indio_dev->num_channels = ARRAY_SIZE(dev_rot_channels);
->> +    indio_dev->dev.parent = &pdev->dev;
->> +    indio_dev->info = &dev_rot_info;
->> +    indio_dev->name = name;
->> +    indio_dev->modes = INDIO_DIRECT_MODE;
->> +
->> +    ret = iio_triggered_buffer_setup(indio_dev, 
->> &iio_pollfunc_store_time,
->> +        NULL, NULL);
->> +    if (ret) {
->> +        dev_err(&pdev->dev, "failed to initialize trigger buffer\n");
->> +        return ret;
->> +    }
->> +    rot_state->common_attributes.data_ready = false;
->> +    ret = hid_sensor_setup_trigger(indio_dev, name,
->> +                    &rot_state->common_attributes);
->> +    if (ret) {
->> +        dev_err(&pdev->dev, "trigger setup failed\n");
->> +        goto error_unreg_buffer_funcs;
->> +    }
->> +
->> +    ret = iio_device_register(indio_dev);
->> +    if (ret) {
->> +        dev_err(&pdev->dev, "device register failed\n");
->> +        goto error_remove_trigger;
->> +    }
->> +
->> +    rot_state->callbacks.send_event = dev_rot_proc_event;
->> +    rot_state->callbacks.capture_sample = dev_rot_capture_sample;
->> +    rot_state->callbacks.pdev = pdev;
->> +    ret = sensor_hub_register_callback(hsdev,
->> +                    HID_USAGE_SENSOR_DEVICE_ORIENTATION,
->> +                    &rot_state->callbacks);
->> +    if (ret) {
->> +        dev_err(&pdev->dev, "callback reg failed\n");
->> +        goto error_iio_unreg;
->> +    }
->> +
->> +    return 0;
->> +
->> +error_iio_unreg:
->> +    iio_device_unregister(indio_dev);
->> +error_remove_trigger:
->> + hid_sensor_remove_trigger(&rot_state->common_attributes);
->> +error_unreg_buffer_funcs:
->> +    iio_triggered_buffer_cleanup(indio_dev);
->> +    return ret;
->> +}
->> +
->> +/* Function to deinitialize the processing for usage id */
->> +static int hid_dev_rot_remove(struct platform_device *pdev)
->> +{
->> +    struct hid_sensor_hub_device *hsdev = pdev->dev.platform_data;
->> +    struct iio_dev *indio_dev = platform_get_drvdata(pdev);
->> +    struct dev_rot_state *rot_state = iio_priv(indio_dev);
->> +
->> +    sensor_hub_remove_callback(hsdev, 
->> HID_USAGE_SENSOR_DEVICE_ORIENTATION);
->> +    iio_device_unregister(indio_dev);
->> + hid_sensor_remove_trigger(&rot_state->common_attributes);
->> +    iio_triggered_buffer_cleanup(indio_dev);
->> +
->> +    return 0;
->> +}
->> +
->> +static struct platform_device_id hid_dev_rot_ids[] = {
->> +    {
->> +        /* Format: HID-SENSOR-usage_id_in_hex_lowercase */
->> +        .name = "HID-SENSOR-20008a",
->> +    },
->> +    { /* sentinel */ }
->> +};
->> +MODULE_DEVICE_TABLE(platform, hid_dev_rot_ids);
->> +
->> +static struct platform_driver hid_dev_rot_platform_driver = {
->> +    .id_table = hid_dev_rot_ids,
->> +    .driver = {
->> +        .name    = KBUILD_MODNAME,
->> +        .owner    = THIS_MODULE,
->> +    },
->> +    .probe        = hid_dev_rot_probe,
->> +    .remove        = hid_dev_rot_remove,
->> +};
->> +module_platform_driver(hid_dev_rot_platform_driver);
->> +
->> +MODULE_DESCRIPTION("HID Sensor Device Rotation");
->> +MODULE_AUTHOR("Srinivas Pandruvada 
->> <srinivas.pandruvada@linux.intel.com>");
->> +MODULE_LICENSE("GPL");
->> diff --git a/include/linux/hid-sensor-ids.h 
->> b/include/linux/hid-sensor-ids.h
->> index 14ead9e..109f0e6 100644
->> --- a/include/linux/hid-sensor-ids.h
->> +++ b/include/linux/hid-sensor-ids.h
->> @@ -76,6 +76,7 @@
->>   #define HID_USAGE_SENSOR_ORIENT_TILT_Y                0x200480
->>   #define HID_USAGE_SENSOR_ORIENT_TILT_Z                0x200481
+>>   }
 >>
->> +#define HID_USAGE_SENSOR_DEVICE_ORIENTATION            0x20008A
->>   #define HID_USAGE_SENSOR_ORIENT_ROTATION_MATRIX 0x200482
->>   #define HID_USAGE_SENSOR_ORIENT_QUATERNION            0x200483
->>   #define HID_USAGE_SENSOR_ORIENT_MAGN_FLUX            0x200484
+>>   int iio_read_channel_raw(struct iio_channel *chan, int *val)
+>> diff --git a/include/linux/iio/iio.h b/include/linux/iio/iio.h
+>> index 5f2d00e..5629c92 100644
+>> --- a/include/linux/iio/iio.h
+>> +++ b/include/linux/iio/iio.h
+>> @@ -288,6 +288,8 @@ static inline s64 iio_get_time_ns(void)
+>>   #define INDIO_ALL_BUFFER_MODES                    \
+>>       (INDIO_BUFFER_TRIGGERED | INDIO_BUFFER_HARDWARE)
+>>
+>> +#define INDIO_MAX_RAW_ELEMENTS        4
+>> +
+>>   struct iio_trigger; /* forward declaration */
+>>   struct iio_dev;
+>>
+>> @@ -302,6 +304,14 @@ struct iio_dev;
+>>    *            the channel in question.  Return value will specify the
+>>    *            type of value returned by the device. val and val2 will
+>>    *            contain the elements making up the returned value.
+>> + * @read_raw_multi:    function to return values from the device.
+>> + *            mask specifies which value. Note 0 means a reading of
+> This note 0 bit wants to go now it is much more explicit in the way 
+> the code
+> works, but leave it here for now and we can tidy up both this and the 
+> read_raw
+> callback at the same time.
+>> + *            the channel in question. Return value will specify the
+>> + *            type of value returned by the device. vals pointer
+>> + *            contain the elements making up the returned value.
+>> + *            max_len specifies maximum number of elements
+>> + *            vals pointer can contain. val_len is used to return
+>> + *            length of valid elements in vals.
+>>    * @write_raw:        function to write a value to the device.
+>>    *            Parameters are the same as for read_raw.
+>>    * @write_raw_get_fmt:    callback function to query the expected
+>> @@ -328,6 +338,13 @@ struct iio_info {
+>>               int *val2,
+>>               long mask);
+>>
+>> +    int (*read_raw_multi)(struct iio_dev *indio_dev,
+>> +            struct iio_chan_spec const *chan,
+>> +            int max_len,
+>> +            int *vals,
+>> +            int *val_len,
+>> +            long mask);
+>> +
+>>       int (*write_raw)(struct iio_dev *indio_dev,
+>>                struct iio_chan_spec const *chan,
+>>                int val,
+>> diff --git a/include/linux/iio/types.h b/include/linux/iio/types.h
+>> index 084d882..a13c224 100644
+>> --- a/include/linux/iio/types.h
+>> +++ b/include/linux/iio/types.h
+>> @@ -79,6 +79,7 @@ enum iio_event_direction {
+>>   #define IIO_VAL_INT_PLUS_MICRO 2
+>>   #define IIO_VAL_INT_PLUS_NANO 3
+>>   #define IIO_VAL_INT_PLUS_MICRO_DB 4
+>> +#define IIO_VAL_INT_MULTIPLE 5
+>>   #define IIO_VAL_FRACTIONAL 10
+>>   #define IIO_VAL_FRACTIONAL_LOG2 11
+>>
 >>
 >
 > -- 
