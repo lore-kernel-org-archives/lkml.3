@@ -1,37 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751038AbaDOEJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 00:09:28 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33136 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873AbaDOEJ0 (ORCPT
+	id S1750982AbaDOERL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 00:17:11 -0400
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:58993 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823AbaDOERH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 00:09:26 -0400
-Date: Tue, 15 Apr 2014 00:09:25 -0400 (EDT)
-Message-Id: <20140415.000925.88207717430881624.davem@davemloft.net>
-To: zhen-hual@hp.com
-Cc: kas@fi.muni.cz, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] driver/net: cosa driver uses udelay incorrectly
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1397526791-4015-1-git-send-email-zhen-hual@hp.com>
-References: <1397526791-4015-1-git-send-email-zhen-hual@hp.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 14 Apr 2014 21:09:26 -0700 (PDT)
+	Tue, 15 Apr 2014 00:17:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140414200121.GS25182@sirena.org.uk>
+References: <1397466414-18368-1-git-send-email-harinik@xilinx.com>
+	<20140414200121.GS25182@sirena.org.uk>
+Date: Tue, 15 Apr 2014 09:47:06 +0530
+Message-ID: <CAFcVECKECc0Xu057HEgqNOUd2xvW88UHVh06NSE3JX-=LuozDQ@mail.gmail.com>
+Subject: Re: [PATCH v4 1/2] SPI: Add driver for Cadence SPI controller
+From: Harini Katakam <harinikatakamlinux@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, linux-spi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        michals@xilinx.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-Date: Tue, 15 Apr 2014 09:53:11 +0800
+Hi Mark,
 
-> From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-> 
-> In cosa driver, udelay with more than 20000 may cause __bad_udelay.
-> Use msleep for instead.
-> 
-> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+On Tue, Apr 15, 2014 at 1:31 AM, Mark Brown <broonie@kernel.org> wrote:
+> On Mon, Apr 14, 2014 at 02:36:53PM +0530, Harini Katakam wrote:
+>> Add driver for Cadence SPI controller. This is used in Xilinx Zynq.
+>
+> Applied both, thanks.  Please use subject lines consistent with the
+> style for the subsystem.
 
-Applied, thank you.
+Thanks! I'll keep that in mind.
+
+Regards,
+Harini
