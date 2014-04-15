@@ -1,295 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750970AbaDOXov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 19:44:51 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:43250 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838AbaDOXot (ORCPT
+	id S1751208AbaDOXrd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 19:47:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56230 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969AbaDOXr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 19:44:49 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Pekka Enberg <penberg@iki.fi>
-Cc: Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <js1304@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH] slab: fix oops when reading /proc/slab_allocators
-Date: Wed, 16 Apr 2014 08:45:11 +0900
-Message-Id: <1397605511-17101-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 15 Apr 2014 19:47:29 -0400
+Message-ID: <534DC507.3010507@infradead.org>
+Date: Tue, 15 Apr 2014 16:47:19 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Stratos Karafotis <stratosk@semaphore.gr>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>, linux-doc@vger.kernel.org,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        linux-pm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/8] cpufreq: Introduce macros for cpufreq_frequency_table
+ iteration
+References: <534DB1DF.80506@semaphore.gr>
+In-Reply-To: <534DB1DF.80506@semaphore.gr>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 'b1cb098: change the management method of free objects of the slab'
-introduces bug on slab leak detector('/proc/slab_allocators'). This
-detector works like as following decription.
+On 04/15/2014 03:25 PM, Stratos Karafotis wrote:
+> Many cpufreq drivers need to iterate over the cpufreq_frequency_table
+> for various tasks.
+> 
+> This patch introduces two macros which can be used for iteration over
+> cpufreq_frequency_table keeping a common coding style across drivers:
+> 
+> - cpufreq_for_each_entry: iterate over each entry of the table
+> - cpufreq_for_each_valid_entry: iterate over each entry that contains
+> a valid frequency.
+> 
+> It should have no functional changes.
+> 
+> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+> ---
+>  Documentation/cpu-freq/cpu-drivers.txt | 16 ++++++++++++++++
+>  drivers/cpufreq/cpufreq.c              | 11 +++++++++++
+>  include/linux/cpufreq.h                | 21 +++++++++++++++++++++
+>  3 files changed, 48 insertions(+)
+> 
+> diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
+> index 48da5fd..2c9156a 100644
+> --- a/Documentation/cpu-freq/cpu-drivers.txt
+> +++ b/Documentation/cpu-freq/cpu-drivers.txt
+> @@ -228,3 +228,19 @@ is the corresponding frequency table helper for the ->target
+>  stage. Just pass the values to this function, and the unsigned int
+>  index returns the number of the frequency table entry which contains
+>  the frequency the CPU shall be set to.
+> +
+> +The following macros can be used as iterators over cpufreq_frequency_table:
 
-1. traverse all objects on all the slabs.
-2. determine whether it is active or not.
-3. if active, print who allocate this object.
+<insert blank line>
 
-commit 'b1cb098' changes the way how to manage free objects, so logic
-determining whether it is active or not is also changed. In before, we
-regard object in cpu caches as inactive one, but, with this commit, we
-mistakenly regard object in cpu caches as active one.
+> +cpufreq_for_each_entry(pos, table) - iterates over all entries of frequency
+> +table.
 
-This intoduces kernel oops if DEBUG_PAGEALLOC is enabled.
-If DEBUG_PAGEALLOC is enabled, kernel_map_pages() is used to detect
-who corrupt free memory in the slab. It unmaps page table mapping if
-object is free and map it if object is active. When slab leak detector
-check object in cpu caches, it mistakenly think this object active so
-try to access object memory to retrieve caller of allocation. At this
-point, page table mapping to this object doesn't exist, so oops occurs.
+<insert blank line>
 
-Following is oops message reported from Dave.
-https://lkml.org/lkml/2014/3/6/626
+> +cpufreq-for_each_valid_entry(pos, table) - iterates over all entries,
+> +excluding CPUFREQ_ENTRY_INVALID frequencies.
+> +Use arguments "pos" - a cpufreq_frequency_table * as a loop cursor and
+> +"table" - the cpufreq_frequency_table * you want to iterate over.
 
-It blew up when something tried to read /proc/slab_allocators
-(Just cat it, and you should see the oops below)
+<insert blank line>
 
-  Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-  Modules linked in:
-  [snip...]
-  CPU: 1 PID: 9386 Comm: trinity-c33 Not tainted 3.14.0-rc5+ #131
-  task: ffff8801aa46e890 ti: ffff880076924000 task.ti: ffff880076924000
-  RIP: 0010:[<ffffffffaa1a8f4a>]  [<ffffffffaa1a8f4a>] handle_slab+0x8a/0x180
-  RSP: 0018:ffff880076925de0  EFLAGS: 00010002
-  RAX: 0000000000001000 RBX: 0000000000000000 RCX: 000000005ce85ce7
-  RDX: ffffea00079be100 RSI: 0000000000001000 RDI: ffff880107458000
-  RBP: ffff880076925e18 R08: 0000000000000001 R09: 0000000000000000
-  R10: 0000000000000000 R11: 000000000000000f R12: ffff8801e6f84000
-  R13: ffffea00079be100 R14: ffff880107458000 R15: ffff88022bb8d2c0
-  FS:  00007fb769e45740(0000) GS:ffff88024d040000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-  CR2: ffff8801e6f84ff8 CR3: 00000000a22db000 CR4: 00000000001407e0
-  DR0: 0000000002695000 DR1: 0000000002695000 DR2: 0000000000000000
-  DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000070602
-  Stack:
-   ffff8802339dcfc0 ffff88022bb8d2c0 ffff880107458000 ffff88022bb8d2c0
-   ffff8802339dd008 ffff8802339dcfc0 ffffea00079be100 ffff880076925e68
-   ffffffffaa1ad9be ffff880203fe4f00 ffff88022bb8d318 0000000076925e98
-  Call Trace:
-   [<ffffffffaa1ad9be>] leaks_show+0xce/0x240
-   [<ffffffffaa1e6c0e>] seq_read+0x28e/0x490
-   [<ffffffffaa23008d>] proc_reg_read+0x3d/0x80
-   [<ffffffffaa1c026b>] vfs_read+0x9b/0x160
-   [<ffffffffaa1c0d88>] SyS_read+0x58/0xb0
-   [<ffffffffaa7420aa>] tracesys+0xd4/0xd9
-  Code: f5 00 00 00 0f 1f 44 00 00 48 63 c8 44 3b 0c 8a 0f 84 e3 00 00 00 83 c0 01 44 39 c0 72 eb 41 f6 47 1a 01 0f 84 e9 00 00 00 89 f0 <4d> 8b 4c 04 f8 4d 85 c9 0f 84 88 00 00 00 49 8b 7e 08 4d 8d 46
-  RIP  [<ffffffffaa1a8f4a>] handle_slab+0x8a/0x180
-   RSP <ffff880076925de0>
-  CR2: ffff8801e6f84ff8
+> +For example:
+> +
+> +	struct cpufreq_frequency_table *pos, *driver_freq_table;
+> +
+> +	cpufreq_for_each_entry(pos, driver_freq_table) {
+> +		/* Do something with pos */
+> +		pos->frequency = ...
+> +	}
 
-To fix the problem, I introduces object status buffer on each slab.
-With this, we can track object status precisely, so slab leak detector
-would not access active object and no kernel oops would occur.
-Memory overhead caused by this fix is only imposed to
-CONFIG_DEBUG_SLAB_DELAK which is mainly used for debugging, so memory
-overhead isn't big problem.
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index 5ae5100..4f913b5 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -468,6 +468,27 @@ struct cpufreq_frequency_table {
+>  				    * order */
+>  };
+>  
+> +bool cpufreq_next_valid(struct cpufreq_frequency_table **pos);
+> +
+> +/*
+> + * cpufreq_for_each_entry -	iterate over a cpufreq_frequency_table
+> + * @pos:	the cpufreq_frequency_table * to use as a loop cursor.
+> + * @table:	the cpufreq_frequency_table * to iterate over.
+> + */
+> +
+> +#define cpufreq_for_each_entry(pos, table)	\
+> +	for (pos = table; pos->frequency != CPUFREQ_TABLE_END; pos++)
+> +
+> +/*
+> + * cpufreq_for_each_valid_entry -     iterate over a cpufreq_frequency_table
+> + *	exluding CPUFREQ_ENTRY_INVALID frequencies.
 
-Reported-by: Dave Jones <davej@redhat.com>
-Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
----
-This patch is based on v3.15-rc1.
+        excluding
 
-diff --git a/mm/slab.c b/mm/slab.c
-index 388cb1a..101eae4 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -386,6 +386,41 @@ static void **dbg_userword(struct kmem_cache *cachep, void *objp)
- 
- #endif
- 
-+#define OBJECT_FREE (0)
-+#define OBJECT_ACTIVE (1)
-+
-+#ifdef CONFIG_DEBUG_SLAB_LEAK
-+
-+static void set_obj_status(struct page *page, int idx, int val)
-+{
-+	int freelist_size;
-+	int *status;
-+	struct kmem_cache *cachep = page->slab_cache;
-+
-+	freelist_size = ALIGN(cachep->num * sizeof(freelist_idx_t),
-+							sizeof(int));
-+	status = (int *)page->freelist + (freelist_size / sizeof(int));
-+	status[idx] = val;
-+}
-+
-+static inline unsigned int get_obj_status(struct page *page, int idx)
-+{
-+	int freelist_size;
-+	int *status;
-+	struct kmem_cache *cachep = page->slab_cache;
-+
-+	freelist_size = ALIGN(cachep->num * sizeof(freelist_idx_t),
-+							sizeof(int));
-+	status = (int *)page->freelist + (freelist_size / sizeof(int));
-+
-+	return status[idx];
-+}
-+
-+#else
-+static inline void set_obj_status(struct page *page, int idx, int val) {}
-+
-+#endif
-+
- /*
-  * Do not go above this order unless 0 objects fit into the slab or
-  * overridden on the command line.
-@@ -581,7 +616,10 @@ static int calculate_nr_objs(size_t slab_size, size_t buffer_size,
- {
- 	int nr_objs;
- 	size_t freelist_size;
-+	int extra_space = 0;
- 
-+	if (IS_ENABLED(CONFIG_DEBUG_SLAB_LEAK))
-+		extra_space = sizeof(int);
- 	/*
- 	 * Ignore padding for the initial guess. The padding
- 	 * is at most @align-1 bytes, and @buffer_size is at
-@@ -590,15 +628,23 @@ static int calculate_nr_objs(size_t slab_size, size_t buffer_size,
- 	 * into the memory allocation when taking the padding
- 	 * into account.
- 	 */
--	nr_objs = slab_size / (buffer_size + idx_size);
-+	nr_objs = slab_size / (buffer_size + idx_size + extra_space);
- 
- 	/*
- 	 * This calculated number will be either the right
- 	 * amount, or one greater than what we want.
- 	 */
--	freelist_size = slab_size - nr_objs * buffer_size;
--	if (freelist_size < ALIGN(nr_objs * idx_size, align))
-+	while (nr_objs) {
-+		int aligned_size;
-+
-+		freelist_size = slab_size - nr_objs * buffer_size;
-+		aligned_size = nr_objs * (idx_size + extra_space);
-+		aligned_size = ALIGN(ALIGN(aligned_size, sizeof(int)), align);
-+		if (freelist_size >= aligned_size)
-+			break;
-+
- 		nr_objs--;
-+	}
- 
- 	return nr_objs;
- }
-@@ -611,6 +657,8 @@ static void cache_estimate(unsigned long gfporder, size_t buffer_size,
- 			   unsigned int *num)
- {
- 	int nr_objs;
-+	int idx_size = sizeof(freelist_idx_t);
-+	int extra_space = 0;
- 	size_t mgmt_size;
- 	size_t slab_size = PAGE_SIZE << gfporder;
- 
-@@ -634,8 +682,13 @@ static void cache_estimate(unsigned long gfporder, size_t buffer_size,
- 
- 	} else {
- 		nr_objs = calculate_nr_objs(slab_size, buffer_size,
--					sizeof(freelist_idx_t), align);
--		mgmt_size = ALIGN(nr_objs * sizeof(freelist_idx_t), align);
-+					idx_size, align);
-+
-+		if (IS_ENABLED(CONFIG_DEBUG_SLAB_LEAK))
-+			extra_space = sizeof(int);
-+		mgmt_size =
-+			ALIGN(nr_objs * (idx_size + extra_space), sizeof(int));
-+		mgmt_size = ALIGN(mgmt_size, align);
- 	}
- 	*num = nr_objs;
- 	*left_over = slab_size - nr_objs*buffer_size - mgmt_size;
-@@ -2285,8 +2338,13 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
- 	if (!cachep->num)
- 		return -E2BIG;
- 
--	freelist_size =
--		ALIGN(cachep->num * sizeof(freelist_idx_t), cachep->align);
-+	freelist_size = cachep->num * sizeof(freelist_idx_t);
-+	/* extra space to store alloc/free status of object */
-+	if (IS_ENABLED(CONFIG_DEBUG_SLAB_LEAK)) {
-+		freelist_size += cachep->num * sizeof(int);
-+		freelist_size = ALIGN(freelist_size, sizeof(int));
-+	}
-+	freelist_size = ALIGN(freelist_size, cachep->align);
- 
- 	/*
- 	 * If the slab has been placed off-slab, and we have enough space then
-@@ -2300,6 +2358,10 @@ __kmem_cache_create (struct kmem_cache *cachep, unsigned long flags)
- 	if (flags & CFLGS_OFF_SLAB) {
- 		/* really off slab. No need for manual alignment */
- 		freelist_size = cachep->num * sizeof(freelist_idx_t);
-+		if (IS_ENABLED(CONFIG_DEBUG_SLAB_LEAK)) {
-+			freelist_size += cachep->num * sizeof(int);
-+			freelist_size = ALIGN(freelist_size, sizeof(int));
-+		}
- 
- #ifdef CONFIG_PAGE_POISONING
- 		/* If we're going to use the generic kernel_map_pages()
-@@ -2625,6 +2687,7 @@ static void cache_init_objs(struct kmem_cache *cachep,
- 		if (cachep->ctor)
- 			cachep->ctor(objp);
- #endif
-+		set_obj_status(page, i, OBJECT_FREE);
- 		set_free_obj(page, i, i);
- 	}
- }
-@@ -2833,6 +2896,7 @@ static void *cache_free_debugcheck(struct kmem_cache *cachep, void *objp,
- 	BUG_ON(objnr >= cachep->num);
- 	BUG_ON(objp != index_to_obj(cachep, page, objnr));
- 
-+	set_obj_status(page, objnr, OBJECT_FREE);
- 	if (cachep->flags & SLAB_POISON) {
- #ifdef CONFIG_DEBUG_PAGEALLOC
- 		if ((cachep->size % PAGE_SIZE)==0 && OFF_SLAB(cachep)) {
-@@ -2966,6 +3030,8 @@ static inline void cache_alloc_debugcheck_before(struct kmem_cache *cachep,
- static void *cache_alloc_debugcheck_after(struct kmem_cache *cachep,
- 				gfp_t flags, void *objp, unsigned long caller)
- {
-+	struct page *page;
-+
- 	if (!objp)
- 		return objp;
- 	if (cachep->flags & SLAB_POISON) {
-@@ -2996,6 +3062,9 @@ static void *cache_alloc_debugcheck_after(struct kmem_cache *cachep,
- 		*dbg_redzone1(cachep, objp) = RED_ACTIVE;
- 		*dbg_redzone2(cachep, objp) = RED_ACTIVE;
- 	}
-+
-+	page = virt_to_head_page(objp);
-+	set_obj_status(page, obj_to_index(cachep, page, objp), OBJECT_ACTIVE);
- 	objp += obj_offset(cachep);
- 	if (cachep->ctor && cachep->flags & SLAB_POISON)
- 		cachep->ctor(objp);
-@@ -4232,21 +4301,12 @@ static void handle_slab(unsigned long *n, struct kmem_cache *c,
- 						struct page *page)
- {
- 	void *p;
--	int i, j;
-+	int i;
- 
- 	if (n[0] == n[1])
- 		return;
- 	for (i = 0, p = page->s_mem; i < c->num; i++, p += c->size) {
--		bool active = true;
--
--		for (j = page->active; j < c->num; j++) {
--			/* Skip freed item */
--			if (get_free_obj(page, j) == i) {
--				active = false;
--				break;
--			}
--		}
--		if (!active)
-+		if (get_obj_status(page, i) != OBJECT_ACTIVE)
- 			continue;
- 
- 		if (!add_caller(n, (unsigned long)*dbg_userword(c, p)))
+> + * @pos:        the cpufreq_frequency_table * to use as a loop cursor.
+> + * @table:      the cpufreq_frequency_table * to iterate over.
+> + */
+> +
+> +#define cpufreq_for_each_valid_entry(pos, table)	\
+> +	for (pos = table; cpufreq_next_valid(&pos); pos++)
+> +
+>  int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
+>  				    struct cpufreq_frequency_table *table);
+>  
+> 
+
+
 -- 
-1.7.9.5
-
+~Randy
