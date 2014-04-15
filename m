@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818AbaDOAmi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 20:42:38 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:43715 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853AbaDOAmh (ORCPT
+	id S1752357AbaDOAn3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 20:43:29 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:41976 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750969AbaDOAn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 20:42:37 -0400
-Message-ID: <534C8073.3060607@gmail.com>
-Date: Tue, 15 Apr 2014 08:42:27 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 14 Apr 2014 20:43:27 -0400
 MIME-Version: 1.0
-To: =?UTF-8?B?566h6Zuq5rab?= <gxt@pku.edu.cn>
-CC: Guan Xuetao <gxt@mprc.pku.edu.cn>, akpm@linux-foundation.org,
-        liuj97@gmail.com, rientjes@google.com, dhowells@redhat.com,
-        mhocko@suse.cz, mgorman@suse.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] arch:unicore32:mm: add devmem_is_allowed() to support
- STRICT_DEVMEM
-References: <629583968.18592.1396927216694.JavaMail.root@bj-mail03.pku.edu.cn> <534380F6.7090703@gmail.com> <534C79EE.3030505@gmail.com> <534C7D46.6040602@gmail.com>
-In-Reply-To: <534C7D46.6040602@gmail.com>
+In-Reply-To: <87tx9v3j58.fsf@gmail.com>
+References: <87tx9v3j58.fsf@gmail.com>
+Date: Mon, 14 Apr 2014 20:43:26 -0400
+Message-ID: <CADVnQykADoaDAnO+JaXos_Zto-rdP4j3pKw_Uv7JBM6T9Y=JCw@mail.gmail.com>
+Subject: Re: [PATCH] ipv4: Add option to get TCP_FASTOPEN to getsockopt()
+From: Neal Cardwell <ncardwell@google.com>
+To: Kenjiro Nakayama <nakayamakenjiro@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Netdev <netdev@vger.kernel.org>,
+        Yuchung Cheng <ycheng@google.com>, Eric Dumazet <edumazet@google.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Oh, sorry, it is my careless, it even can not pass compiling, I
-will/should send patch v3.
-
-Thanks.
-
-On 04/15/2014 08:28 AM, Chen Gang wrote:
-> unicore32 supports STRICT_DEVMEM, so it needs devmem_is_allowed(), like
-> some of other architectures have done (e.g. arm, powerpc, x86 ...).
-> 
-> The related error with allmodconfig:
-> 
->     CC      drivers/char/mem.o
->   drivers/char/mem.c: In function ‘range_is_allowed’:
->   drivers/char/mem.c:69: error: implicit declaration of function ‘devmem_is_allowed’
->   make[2]: *** [drivers/char/mem.o] Error 1
->   make[1]: *** [drivers/char] Error 2
->   make: *** [drivers] Error 2
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+On Mon, Apr 14, 2014 at 1:39 PM, Kenjiro Nakayama
+<nakayamakenjiro@gmail.com> wrote:
+> TCP_FASTOPEN option can be set via setsockopt(), but the value cannot be
+> gotten via getsockopt(). This patch adds the option to getsockopt().
+>
+> Sighned-off-by: Kenjiro Nakayama <nakayamakenjiro@gmail.com>
+>
+>         Add option to get TCP_FASTOPEN to getsockopt()
 > ---
->  arch/unicore32/include/asm/io.h |   18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
-> 
-> diff --git a/arch/unicore32/include/asm/io.h b/arch/unicore32/include/asm/io.h
-> index 39decb6..839c2ea 100644
-> --- a/arch/unicore32/include/asm/io.h
-> +++ b/arch/unicore32/include/asm/io.h
-> @@ -44,5 +44,23 @@ extern void __uc32_iounmap(volatile void __iomem *addr);
->  #define PIO_MASK		(unsigned int)(IO_SPACE_LIMIT)
->  #define PIO_RESERVED		(PIO_OFFSET + PIO_MASK + 1)
->  
-> +#ifdef CONFIG_STRICT_DEVMEM
-> +/*
-> + * devmem_is_allowed() checks to see if /dev/mem access to a certain
-> + * address is valid. The argument is a physical page number.
-> + * We mimic x86 here by disallowing access to system RAM as well as
-> + * device-exclusive MMIO regions. This effectively disable read()/write()
-> + * on /dev/mem.
-> + */
-> +static inline int devmem_is_allowed(unsigned long pfn)
-> +{
-> +	if (iomem_is_exclusive(pfn << PAGE_SHIFT))
-> +		return 0;
-> +	if (!page_is_ram(pfn))
-> +		return 1;
-> +	return 0;
-> +}
-> +#endif /* CONFIG_STRICT_DEVMEM */
+>  net/ipv4/tcp.c | 5 +++++
+>  1 file changed, 5 insertions(+)
+>
+> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+> index 4bd6d52..6ccdbcc 100644
+> --- a/net/ipv4/tcp.c
+> +++ b/net/ipv4/tcp.c
+> @@ -2916,6 +2916,11 @@ static int do_tcp_getsockopt(struct sock *sk, int level,
+>         case TCP_USER_TIMEOUT:
+>                 val = jiffies_to_msecs(icsk->icsk_user_timeout);
+>                 break;
 > +
->  #endif	/* __KERNEL__ */
->  #endif	/* __UNICORE_IO_H__ */
-> 
+> +       case TCP_FASTOPEN:
+> +               val = sysctl_tcp_fastopen;
+> +               break;
+> +
+>         case TCP_TIMESTAMP:
+>                 val = tcp_time_stamp + tp->tsoffset;
+>                 break;
+> --
+> 1.9.0
 
--- 
-Chen Gang
+Hi,
 
-Open, share, and attitude like air, water, and life which God blessed
+Please cc the Linux network development mailing list at
+netdev@vger.kernel.org (cc-ed) for Linux networking patches like this.
+
+I don't think this is the implementation we'd want for a getsockopt()
+for TCP_FASTOPEN. I imagine that since the setsockopt(TCP_FASTOPEN)
+enables Fast Open on a listening socket with a given backlog, if we
+add a corresponding getsockopt() then it should return that Fast Open
+backlog if Fast Open is enabled on the listening socket, or 0
+otherwise. That is, basically it would be querying whether
+fastopen_init_queue() has been run and returning fastopenq->max_qlen
+if so. That way setsockopt(TCP_FASTOPEN, getsockopt(TCP_FASTOPEN))
+will be a NOP in most cases, as one would expect.
+
+neal
