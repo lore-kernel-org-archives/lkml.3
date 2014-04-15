@@ -1,100 +1,367 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322AbaDOOTm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 10:19:42 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:58075 "EHLO SMTP.CITRIX.COM"
+	id S1752760AbaDOOZB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 10:25:01 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:39448 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751441AbaDOOQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 10:16:07 -0400
-X-IronPort-AV: E=Sophos;i="4.97,864,1389744000"; 
-   d="scan'208";a="121257945"
-From: David Vrabel <david.vrabel@citrix.com>
-To: <xen-devel@lists.xenproject.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 1/9] x86/xen: rename early_p2m_alloc() and early_p2m_alloc_middle()
-Date: Tue, 15 Apr 2014 15:15:29 +0100
-Message-ID: <1397571337-20409-2-git-send-email-david.vrabel@citrix.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1397571337-20409-1-git-send-email-david.vrabel@citrix.com>
-References: <1397571337-20409-1-git-send-email-david.vrabel@citrix.com>
+	id S1751037AbaDOOY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 10:24:59 -0400
+Date: Tue, 15 Apr 2014 16:24:54 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Christian =?utf-8?B?S8O2bmln?= <christian.koenig@amd.com>
+Cc: Alex Deucher <alexdeucher@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>
+Subject: Re: 15-rc1: radeon modesetting fails
+Message-ID: <20140415142454.GA4826@pd.tnic>
+References: <20140415070204.GA4806@pd.tnic>
+ <534CFBD7.3070604@amd.com>
+ <20140415120740.GA8306@nazgul.tnic>
+ <CADnq5_PpPa_fbm=1KH__q-W2OuvfoHr2wquimQ8TCq=xwwYq_Q@mail.gmail.com>
+ <534D2F6E.1020608@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <534D2F6E.1020608@amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-early_p2m_alloc_middle() allocates a new leaf page and
-early_p2m_alloc() allocates a new middle page.  This is confusing.
+On Tue, Apr 15, 2014 at 03:09:02PM +0200, Christian König wrote:
+> >Does reverting:
+> >http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=32167016076f714f0e35e287fbead7de0f1fb179
+> >fix the issue?  We may need to tweak the pll parameters for older asics.
+> 
+> Yeah, indeed the most likely cause. Please provide dmesg outputs created
+> with drm.ebug=0xe for the old and the new kernel.
 
-Swap the names so they match what the functions actually do.
+Hey, I finally haz 15-rc1+ running here. And I can even see something!
 
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+:-)
+
+Ok, so I reverted 32167016076f ontop of Christian's drm-fixes-3.15-wip
+branch which didn't apply cleanly. So I ended up fixing the conflicts
+and got the revert below.
+
+With it, the machine booted fine, so it looks like the revert worked.
+
+Christian, I'm sending dmesg outputs in another private mail to you
+guys.
+
+Thanks.
+
 ---
- arch/x86/xen/p2m.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+From: Borislav Petkov <bp@suse.de>
+Date: Tue, 15 Apr 2014 16:00:58 +0200
+Subject: [PATCH] Revert "drm/radeon: rework finding display PLL numbers v2"
 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 85e5d78..4fc71cc 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -596,7 +596,7 @@ static bool alloc_p2m(unsigned long pfn)
- 	return true;
+This reverts commit 32167016076f714f0e35e287fbead7de0f1fb179.
+
+Conflicts:
+	drivers/gpu/drm/radeon/radeon_display.c
+---
+ drivers/gpu/drm/radeon/radeon_display.c | 246 ++++++++++++--------------------
+ 1 file changed, 90 insertions(+), 156 deletions(-)
+
+diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
+index 2f42912031ac..83891923ac2d 100644
+--- a/drivers/gpu/drm/radeon/radeon_display.c
++++ b/drivers/gpu/drm/radeon/radeon_display.c
+@@ -34,8 +34,6 @@
+ #include <drm/drm_crtc_helper.h>
+ #include <drm/drm_edid.h>
+ 
+-#include <linux/gcd.h>
+-
+ static void avivo_crtc_load_lut(struct drm_crtc *crtc)
+ {
+ 	struct radeon_crtc *radeon_crtc = to_radeon_crtc(crtc);
+@@ -802,57 +800,66 @@ int radeon_ddc_get_modes(struct radeon_connector *radeon_connector)
  }
  
--static bool __init early_alloc_p2m_middle(unsigned long pfn, bool check_boundary)
-+static bool __init early_alloc_p2m(unsigned long pfn, bool check_boundary)
- {
- 	unsigned topidx, mididx, idx;
- 	unsigned long *p2m;
-@@ -638,7 +638,7 @@ static bool __init early_alloc_p2m_middle(unsigned long pfn, bool check_boundary
- 	return true;
- }
+ /* avivo */
++static void avivo_get_fb_div(struct radeon_pll *pll,
++			     u32 target_clock,
++			     u32 post_div,
++			     u32 ref_div,
++			     u32 *fb_div,
++			     u32 *frac_fb_div)
++{
++	u32 tmp = post_div * ref_div;
  
--static bool __init early_alloc_p2m(unsigned long pfn)
-+static bool __init early_alloc_p2m_middle(unsigned long pfn)
+-/**
+- * avivo_reduce_ratio - fractional number reduction
+- *
+- * @nom: nominator
+- * @den: denominator
+- * @nom_min: minimum value for nominator
+- * @den_min: minimum value for denominator
+- *
+- * Find the greatest common divisor and apply it on both nominator and
+- * denominator, but make nominator and denominator are at least as large
+- * as their minimum values.
+- */
+-static void avivo_reduce_ratio(unsigned *nom, unsigned *den,
+-			       unsigned nom_min, unsigned den_min)
++	tmp *= target_clock;
++	*fb_div = tmp / pll->reference_freq;
++	*frac_fb_div = tmp % pll->reference_freq;
++
++        if (*fb_div > pll->max_feedback_div)
++		*fb_div = pll->max_feedback_div;
++        else if (*fb_div < pll->min_feedback_div)
++                *fb_div = pll->min_feedback_div;
++}
++
++static u32 avivo_get_post_div(struct radeon_pll *pll,
++			      u32 target_clock)
  {
- 	unsigned topidx = p2m_top_index(pfn);
- 	unsigned long *mid_mfn_p;
-@@ -663,7 +663,7 @@ static bool __init early_alloc_p2m(unsigned long pfn)
- 		p2m_top_mfn_p[topidx] = mid_mfn_p;
- 		p2m_top_mfn[topidx] = virt_to_mfn(mid_mfn_p);
- 		/* Note: we don't set mid_mfn_p[midix] here,
--		 * look in early_alloc_p2m_middle */
-+		 * look in early_alloc_p2m() */
+-	unsigned tmp;
+-
+-	/* reduce the numbers to a simpler ratio */
+-	tmp = gcd(*nom, *den);
+-	*nom /= tmp;
+-	*den /= tmp;
+-
+-	/* make sure nominator is large enough */
+-        if (*nom < nom_min) {
+-		tmp = (nom_min + *nom - 1) / *nom;
+-		*nom *= tmp;
+-		*den *= tmp;
++	u32 vco, post_div, tmp;
++
++	if (pll->flags & RADEON_PLL_USE_POST_DIV)
++		return pll->post_div;
++
++	if (pll->flags & RADEON_PLL_PREFER_MINM_OVER_MAXP) {
++		if (pll->flags & RADEON_PLL_IS_LCD)
++			vco = pll->lcd_pll_out_min;
++		else
++			vco = pll->pll_out_min;
++	} else {
++		if (pll->flags & RADEON_PLL_IS_LCD)
++			vco = pll->lcd_pll_out_max;
++		else
++			vco = pll->pll_out_max;
  	}
- 	return true;
+ 
+-	/* make sure the denominator is large enough */
+-	if (*den < den_min) {
+-		tmp = (den_min + *den - 1) / *den;
+-		*nom *= tmp;
+-		*den *= tmp;
++	post_div = vco / target_clock;
++	tmp = vco % target_clock;
++
++	if (pll->flags & RADEON_PLL_PREFER_MINM_OVER_MAXP) {
++		if (tmp)
++			post_div++;
++	} else {
++		if (!tmp)
++			post_div--;
+ 	}
++
++	if (post_div > pll->max_post_div)
++		post_div = pll->max_post_div;
++	else if (post_div < pll->min_post_div)
++		post_div = pll->min_post_div;
++
++	return post_div;
  }
-@@ -739,7 +739,7 @@ found:
  
- 	/* This shouldn't happen */
- 	if (WARN_ON(p2m_top[topidx] == p2m_mid_missing))
--		early_alloc_p2m(set_pfn);
-+		early_alloc_p2m_middle(set_pfn);
- 
- 	if (WARN_ON(p2m_top[topidx][mididx] != p2m_missing))
- 		return false;
-@@ -754,13 +754,13 @@ found:
- bool __init early_set_phys_to_machine(unsigned long pfn, unsigned long mfn)
+-/**
+- * radeon_compute_pll_avivo - compute PLL paramaters
+- *
+- * @pll: information about the PLL
+- * @dot_clock_p: resulting pixel clock
+- * fb_div_p: resulting feedback divider
+- * frac_fb_div_p: fractional part of the feedback divider
+- * ref_div_p: resulting reference divider
+- * post_div_p: resulting reference divider
+- *
+- * Try to calculate the PLL parameters to generate the given frequency:
+- * dot_clock = (ref_freq * feedback_div) / (ref_div * post_div)
+- */
++#define MAX_TOLERANCE 10
++
+ void radeon_compute_pll_avivo(struct radeon_pll *pll,
+ 			      u32 freq,
+ 			      u32 *dot_clock_p,
+@@ -861,126 +868,53 @@ void radeon_compute_pll_avivo(struct radeon_pll *pll,
+ 			      u32 *ref_div_p,
+ 			      u32 *post_div_p)
  {
- 	if (unlikely(!__set_phys_to_machine(pfn, mfn)))  {
--		if (!early_alloc_p2m(pfn))
-+		if (!early_alloc_p2m_middle(pfn))
- 			return false;
+-	unsigned fb_div_min, fb_div_max, fb_div;
+-	unsigned post_div_min, post_div_max, post_div;
+-	unsigned ref_div_min, ref_div_max, ref_div;
+-	unsigned post_div_best, diff_best;
+-	unsigned nom, den, tmp;
+-
+-	/* determine allowed feedback divider range */
+-	fb_div_min = pll->min_feedback_div;
+-	fb_div_max = pll->max_feedback_div;
++	u32 target_clock = freq / 10;
++	u32 post_div = avivo_get_post_div(pll, target_clock);
++	u32 ref_div = pll->min_ref_div;
++	u32 fb_div = 0, frac_fb_div = 0, tmp;
  
- 		if (early_can_reuse_p2m_middle(pfn, mfn))
- 			return __set_phys_to_machine(pfn, mfn);
+-	if (pll->flags & RADEON_PLL_USE_FRAC_FB_DIV) {
+-		fb_div_min *= 10;
+-		fb_div_max *= 10;
+-	}
+-
+-	/* determine allowed ref divider range */
+ 	if (pll->flags & RADEON_PLL_USE_REF_DIV)
+-		ref_div_min = pll->reference_div;
+-	else
+-		ref_div_min = pll->min_ref_div;
+-	ref_div_max = pll->max_ref_div;
++		ref_div = pll->reference_div;
  
--		if (!early_alloc_p2m_middle(pfn, false /* boundary crossover OK!*/))
-+		if (!early_alloc_p2m(pfn, false /* boundary crossover OK!*/))
- 			return false;
+-	/* determine allowed post divider range */
+-	if (pll->flags & RADEON_PLL_USE_POST_DIV) {
+-		post_div_min = pll->post_div;
+-		post_div_max = pll->post_div;
+-	} else {
+-		unsigned target_clock = freq / 10;
+-		unsigned vco_min, vco_max;
+-
+-		if (pll->flags & RADEON_PLL_IS_LCD) {
+-			vco_min = pll->lcd_pll_out_min;
+-			vco_max = pll->lcd_pll_out_max;
+-		} else {
+-			vco_min = pll->pll_out_min;
+-			vco_max = pll->pll_out_max;
++	if (pll->flags & RADEON_PLL_USE_FRAC_FB_DIV) {
++		avivo_get_fb_div(pll, target_clock, post_div, ref_div, &fb_div, &frac_fb_div);
++		frac_fb_div = (100 * frac_fb_div) / pll->reference_freq;
++		if (frac_fb_div >= 5) {
++			frac_fb_div -= 5;
++			frac_fb_div = frac_fb_div / 10;
++			frac_fb_div++;
+ 		}
+-
+-		post_div_min = vco_min / target_clock;
+-		if ((target_clock * post_div_min) < vco_min)
+-			++post_div_min;
+-		if (post_div_min < pll->min_post_div)
+-			post_div_min = pll->min_post_div;
+-
+-		post_div_max = vco_max / target_clock;
+-		if ((target_clock * post_div_max) > vco_max)
+-			--post_div_max;
+-		if (post_div_max > pll->max_post_div)
+-			post_div_max = pll->max_post_div;
+-	}
+-
+-	/* represent the searched ratio as fractional number */
+-	nom = pll->flags & RADEON_PLL_USE_FRAC_FB_DIV ? freq : freq / 10;
+-	den = pll->reference_freq;
+-
+-	/* reduce the numbers to a simpler ratio */
+-	avivo_reduce_ratio(&nom, &den, fb_div_min, post_div_min);
+-
+-	/* now search for a post divider */
+-	if (pll->flags & RADEON_PLL_PREFER_MINM_OVER_MAXP)
+-		post_div_best = post_div_min;
+-	else
+-		post_div_best = post_div_max;
+-	diff_best = ~0;
+-
+-	for (post_div = post_div_min; post_div <= post_div_max; ++post_div) {
+-		unsigned diff = abs(den - den / post_div * post_div);
+-		if (diff < diff_best || (diff == diff_best &&
+-		    !(pll->flags & RADEON_PLL_PREFER_MINM_OVER_MAXP))) {
+-
+-			post_div_best = post_div;
+-			diff_best = diff;
++		if (frac_fb_div >= 10) {
++			fb_div++;
++			frac_fb_div = 0;
+ 		}
+-	}
+-	post_div = post_div_best;
+-
+-	/* limit reference * post divider to a maximum */
+-	ref_div_max = min(210 / post_div, ref_div_max);
+-
+-	/* get matching reference and feedback divider */
+-	ref_div = max(den / post_div, 1u);
+-	fb_div = nom;
+-
+-	/* we're almost done, but reference and feedback
+-	   divider might be to large now */
+-
+-	tmp = ref_div;
+-
+-        if (fb_div > fb_div_max) {
+-		ref_div = ref_div * fb_div_max / fb_div;
+-		fb_div = fb_div_max;
+-	}
+-
+-	if (ref_div > ref_div_max) {
+-		ref_div = ref_div_max;
+-		fb_div = nom * ref_div_max / tmp;
+-	}
+-
+-	/* reduce the numbers to a simpler ratio once more */
+-	/* this also makes sure that the reference divider is large enough */
+-	avivo_reduce_ratio(&fb_div, &ref_div, fb_div_min, ref_div_min);
+-
+-	/* and finally save the result */
+-	if (pll->flags & RADEON_PLL_USE_FRAC_FB_DIV) {
+-		*fb_div_p = fb_div / 10;
+-		*frac_fb_div_p = fb_div % 10;
+ 	} else {
+-		*fb_div_p = fb_div;
+-		*frac_fb_div_p = 0;
++		while (ref_div <= pll->max_ref_div) {
++			avivo_get_fb_div(pll, target_clock, post_div, ref_div,
++					 &fb_div, &frac_fb_div);
++			if (frac_fb_div >= (pll->reference_freq / 2))
++				fb_div++;
++			frac_fb_div = 0;
++			tmp = (pll->reference_freq * fb_div) / (post_div * ref_div);
++			tmp = (tmp * 10000) / target_clock;
++
++			if (tmp > (10000 + MAX_TOLERANCE))
++				ref_div++;
++			else if (tmp >= (10000 - MAX_TOLERANCE))
++				break;
++			else
++				ref_div++;
++		}
+ 	}
  
- 		if (!__set_phys_to_machine(pfn, mfn))
+-	*dot_clock_p = ((pll->reference_freq * *fb_div_p * 10) +
+-			(pll->reference_freq * *frac_fb_div_p)) /
+-		       (ref_div * post_div * 10);
++	*dot_clock_p = ((pll->reference_freq * fb_div * 10) + (pll->reference_freq * frac_fb_div)) /
++		(ref_div * post_div * 10);
++	*fb_div_p = fb_div;
++	*frac_fb_div_p = frac_fb_div;
+ 	*ref_div_p = ref_div;
+ 	*post_div_p = post_div;
+-
+-	DRM_DEBUG_KMS("%d - %d, pll dividers - fb: %d.%d ref: %d, post %d\n",
+-		      freq, *dot_clock_p, *fb_div_p, *frac_fb_div_p,
+-		      ref_div, post_div);
++	DRM_DEBUG_KMS("%d, pll dividers - fb: %d.%d ref: %d, post %d\n",
++		      *dot_clock_p, fb_div, frac_fb_div, ref_div, post_div);
+ }
+ 
+ /* pre-avivo */
 -- 
-1.7.2.5
+1.9.0
 
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
