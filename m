@@ -1,116 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751183AbaDOHCJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 03:02:09 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:34437 "EHLO mail.skyhub.de"
+	id S1752008AbaDOHCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 03:02:41 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:56129 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750865AbaDOHCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 03:02:07 -0400
-Date: Tue, 15 Apr 2014 09:02:04 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: dri-devel@lists.freedesktop.org
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Christian =?utf-8?B?S8O2bmln?= <christian.koenig@amd.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: 15-rc1: radeon modesetting fails
-Message-ID: <20140415070204.GA4806@pd.tnic>
+	id S1751224AbaDOHCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 03:02:23 -0400
+Message-ID: <534CD958.4000303@ti.com>
+Date: Tue, 15 Apr 2014 10:01:44 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Thierry Reding <thierry.reding@gmail.com>
+CC: Tony Lindgren <tony@atomide.com>, Philipp Zabel <philipp.zabel@gmail.com>,
+        Paul Parsons <lost.distance@yahoo.com>,
+        Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Jingoo Han <jg1.han@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, <linux-pwm@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-sh@vger.kernel.org>,
+        <linux-leds@vger.kernel.org>, <linux-fbdev@vger.kernel.org>
+Subject: Re: [PATCHv2 07/11] ARM: OMAP3: Beagle: use PWM_LOOKUP to initialize
+ struct pwm_lookup
+References: <1397512793-10325-1-git-send-email-alexandre.belloni@free-electrons.com> <1397512793-10325-8-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1397512793-10325-8-git-send-email-alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On 04/15/2014 12:59 AM, Alexandre Belloni wrote:
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>  arch/arm/mach-omap2/board-omap3beagle.c | 10 ++--------
+>  1 file changed, 2 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/arm/mach-omap2/board-omap3beagle.c b/arch/arm/mach-omap2/board-omap3beagle.c
+> index f27e1ec90b5e..54c135a5b4f7 100644
+> --- a/arch/arm/mach-omap2/board-omap3beagle.c
+> +++ b/arch/arm/mach-omap2/board-omap3beagle.c
+> @@ -61,14 +61,8 @@
+>  
+>  static struct pwm_lookup pwm_lookup[] = {
+>  	/* LEDB -> PMU_STAT */
+> -	{
+> -		.provider = "twl-pwmled",
+> -		.index = 1,
+> -		.dev_id = "leds_pwm",
+> -		.con_id = "beagleboard::pmu_stat",
+> -		.period = 7812500,
+> -		.polarity = PWM_POLARITY_NORMAL,
+> -	},
+> +	PWM_LOOKUP("twl-pwmled", 1, "leds_pwm", "beagleboard::pmu_stat",
+> +		   7812500, PWM_POLARITY_NORMAL),
 
-so I'm booting 15-rc1 + tip/master and around the time modesetting gets
-initialized, the screen blanks and on it appears a message from the
-monitors:
+Why do you need to do this in two steps?
+In patch 4 you removed the existing PWM_LOOKUP() and now you are adding it back.
+Would not be simpler if you just add the two new parameters in patch 4 (the
+812500, PWM_POLARITY_NORMAL)?
 
-"The current input timing is not supported by the monitor display.
-Please change your input timing to 1920x1200@60Hz or any other monitor
-listed timing as per the monitor specifications."
+>  };
+>  
+>  static struct led_pwm pwm_leds[] = {
+> 
 
-The box is still responsive, I can reboot it with Ctrl-Alt-Del but
-screens are blank.
-
-If I boot with radeon.modeset=0, I see the normal nomodeset big letters
-on the console and not very optimal screen resolution.
-
-Diffing drm init chatter from dmesg shows only this:
-
---- /tmp/working        2014-04-15 08:40:21.979985352 +0200
-+++ /tmp/b0rked 2014-04-15 08:40:11.983985364 +0200
-@@ -44,4 +44,5 @@
- [drm]    pitch is 7680
- fbcon: radeondrmfb (fb0) is primary device
- radeon 0000:01:00.0: fb0: radeondrmfb frame buffer device
--[drm] Initialized radeon 2.37.0 20080528 for 0000:01:00.0 on minor 0
-+[drm] Initialized radeon 2.38.0 20080528 for 0000:01:00.0 on minor 0
-+
-
-Below is the whole thing, btw.
-
-Anyway, if you guys have any ideas, I'm all ears. Otherwise, would a quick
-bisect on the 59 patches touching drivers/gpu/drm/radeon/ make sense?
-
-git log --oneline v3.14.. drivers/gpu/drm/radeon/ | wc -l
-59
-
-Thanks.
-
-[drm] Initialized drm 1.1.0 20060810
-[drm] radeon kernel modesetting enabled.
-[drm] initializing kernel modesetting (RV635 0x1002:0x9598 0x1043:0x01DA).
-[drm] register mmio base: 0xFEA20000
-[drm] register mmio size: 65536
-[drm] Detected VRAM RAM=512M, BAR=256M
-[drm] RAM width 128bits DDR
-[drm] radeon: 512M of VRAM memory ready
-[drm] radeon: 512M of GTT memory ready.
-[drm] Loading RV635 Microcode
-[drm] Internal thermal controller without fan control
-[drm] radeon: power management initialized
-[drm] GART: num cpu pages 131072, num gpu pages 131072
-[drm] enabling PCIE gen 2 link speeds, disable with radeon.pcie_gen2=0
-[drm] PCIE GART of 512M enabled (table at 0x0000000000040000).
-[drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
-[drm] Driver supports precise vblank timestamp query.
-[drm] radeon: irq initialized.
-[drm] ring test on 0 succeeded in 0 usecs
-[drm] ib test on ring 0 succeeded in 0 usecs
-[drm] Radeon Display Connectors
-[drm] Connector 0:
-[drm]   DVI-I-1
-[drm]   HPD1
-[drm]   DDC: 0x7e50 0x7e50 0x7e54 0x7e54 0x7e58 0x7e58 0x7e5c 0x7e5c
-[drm]   Encoders:
-[drm]     DFP1: INTERNAL_UNIPHY
-[drm]     CRT2: INTERNAL_KLDSCP_DAC2
-[drm] Connector 1:
-[drm]   DIN-1
-[drm]   Encoders:
-[drm]     TV1: INTERNAL_KLDSCP_DAC2
-[drm] Connector 2:
-[drm]   DVI-I-2
-[drm]   HPD2
-[drm]   DDC: 0x7e40 0x7e40 0x7e44 0x7e44 0x7e48 0x7e48 0x7e4c 0x7e4c
-[drm]   Encoders:
-[drm]     CRT1: INTERNAL_KLDSCP_DAC1
-[drm]     DFP2: INTERNAL_KLDSCP_LVTMA
-[drm] fb mappable at 0xC0141000
-[drm] vram apper at 0xC0000000
-[drm] size 9216000
-[drm] fb depth is 24
-[drm]    pitch is 7680
-fbcon: radeondrmfb (fb0) is primary device
-radeon 0000:01:00.0: fb0: radeondrmfb frame buffer device
-[drm] Initialized radeon 2.38.0 20080528 for 0000:01:00.0 on minor 0
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Péter
