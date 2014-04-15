@@ -1,343 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312AbaDOTCA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 15:02:00 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:45662 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938AbaDOTB4 (ORCPT
+	id S1753823AbaDOTCO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 15:02:14 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42672 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753011AbaDOTCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 15:01:56 -0400
-Date: Tue, 15 Apr 2014 12:01:49 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: wim@iguana.be, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, gnomes@lxorguk.ukuu.org.uk,
-        Eric Ernst <eric.ernst@intel.com>
-Subject: Re: [PATCH v3 1/2] watchdog: add Intel MID watchdog driver support
-Message-ID: <20140415190149.GA7940@roeck-us.net>
-References: <1397249407-5417-1-git-send-email-david.a.cohen@linux.intel.com>
- <1397587272-31152-1-git-send-email-david.a.cohen@linux.intel.com>
- <1397587272-31152-2-git-send-email-david.a.cohen@linux.intel.com>
+	Tue, 15 Apr 2014 15:02:09 -0400
+Date: Tue, 15 Apr 2014 15:02:07 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Stefani Seibold <stefani@seibold.net>
+cc: linux-usb <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Greg KH <greg@kroah.com>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        <andreas.brief@rohde-schwarz.com>
+Subject: Re: Missing USB XHCI and EHCI reset for kexec
+In-Reply-To: <1397586616.20840.4.camel@vger.seibold.net>
+Message-ID: <Pine.LNX.4.44L0.1404151448390.1310-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397587272-31152-2-git-send-email-david.a.cohen@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 11:41:11AM -0700, David Cohen wrote:
-> Add initial Intel MID watchdog driver support.
+On Tue, 15 Apr 2014, Stefani Seibold wrote:
+
+> I did a unbind and bind of the ehci-pci and ohci-pci, after this i got
+> the following dmesg log:
 > 
-> This driver is an initial implementation of generic Intel MID watchdog
-> driver. Currently it supports Intel Merrifield platform.
+> ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+> ehci-pci: EHCI PCI platform driver
+> ehci-pci 0000:00:17.2: EHCI Host Controller
+> ehci-pci 0000:00:17.2: new USB bus registered, assigned bus number 1
+> ehci-pci 0000:00:17.2: irq 22, io mem 0xc0006800
+> ehci-pci 0000:00:17.2: USB 2.0 started, EHCI 1.00
+> hub 1-0:1.0: USB hub found
+> hub 1-0:1.0: 5 ports detected
+> ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+> ohci_hcd 0000:00:17.0: OHCI Host Controller
+> ohci_hcd 0000:00:17.0: new USB bus registered, assigned bus number 2
+> ohci_hcd 0000:00:17.0: irq 20, io mem 0xc0004000
+> hub 2-0:1.0: USB hub found
+> hub 2-0:1.0: 3 ports detected
+> ohci_hcd 0000:00:17.1: OHCI Host Controller
+> ohci_hcd 0000:00:17.1: new USB bus registered, assigned bus number 3
+> ohci_hcd 0000:00:17.1: irq 21, io mem 0xc0005000
+> hub 3-0:1.0: USB hub found
+> hub 3-0:1.0: 2 ports detected
+...
+> usbcore: registered new interface driver USB-SATA-storage
+> USB SATA Mass Storage support registered.
+> usb 1-4: new high-speed USB device number 4 using ehci-pci
+> xxxx: ports detected
+
+What driver is this?  I've never heard of USB-SATA-storage.
+
+> ohci_hcd 0000:00:17.0: remove, state 1
+> usb usb2: USB disconnect, device number 1
+> usb 2-2: USB disconnect, device number 2
+> usb 2-2.1: USB disconnect, device number 3
+> usb 2-2.2: USB disconnect, device number 4
+> ohci_hcd 0000:00:17.0: USB bus 2 deregistered
+> ohci_hcd 0000:00:17.1: remove, state 1
+> usb usb3: USB disconnect, device number 1
+> ohci_hcd 0000:00:17.1: USB bus 3 deregistered
+> ehci-pci 0000:00:17.2: remove, state 1
+> usb usb1: USB disconnect, device number 1
+> usb 1-2: USB disconnect, device number 2
+> usb 1-4: USB disconnect, device number 4
+> ehci-pci 0000:00:17.2: USB bus 1 deregistered
+> ohci_hcd 0000:00:17.0: OHCI Host Controller
+> ohci_hcd 0000:00:17.0: new USB bus registered, assigned bus number 1
+> ohci_hcd 0000:00:17.0: irq 20, io mem 0xc0004000
+> hub 1-0:1.0: USB hub found
+> hub 1-0:1.0: 3 ports detected
+> ohci_hcd 0000:00:17.1: OHCI Host Controller
+> ohci_hcd 0000:00:17.1: new USB bus registered, assigned bus number 2
+> ohci_hcd 0000:00:17.1: irq 21, io mem 0xc0005000
+> hub 2-0:1.0: USB hub found
+> hub 2-0:1.0: 2 ports detected
+> ehci-pci 0000:00:17.2: EHCI Host Controller
+> ehci-pci 0000:00:17.2: new USB bus registered, assigned bus number 3
+> ehci-pci 0000:00:17.2: irq 22, io mem 0xc0006800
+> ehci-pci 0000:00:17.2: USB 2.0 started, EHCI 1.00
+> hub 3-0:1.0: USB hub found
+> hub 3-0:1.0: 5 ports detected
+> hub 1-0:1.0: USB hub found
+> hub 1-0:1.0: 3 ports detected
+> hub 2-0:1.0: USB hub found
+> hub 2-0:1.0: 2 ports detected
+> usb 3-2: new high-speed USB device number 2 using ehci-pci
+> hub 3-2:1.0: USB hub found
+> hub 3-2:1.0: 4 ports detected
+> usb 3-4: new high-speed USB device number 4 using ehci-pci
+> usb 3-4: device descriptor read/64, error -110
+> usb 3-4: device descriptor read/64, error -110
+> usb 3-4: new high-speed USB device number 5 using ehci-pci
+> usb 3-4: device descriptor read/64, error -110
+> usb 3-4: device descriptor read/64, error -110
+> usb 3-4: new high-speed USB device number 6 using ehci-pci
+> usb 3-4: device descriptor read/8, error -110
+> usb 3-4: device descriptor read/8, error -110
+> usb 3-4: new high-speed USB device number 7 using ehci-pci
+> usb 3-4: device descriptor read/8, error -110
+> usb 3-4: device descriptor read/8, error -110
+> hub 3-0:1.0: unable to enumerate USB device on port 4
+> usb 1-2: new full-speed USB device number 2 using ohci_hcd
+> hub 1-2:1.0: USB hub found
+> hub 1-2:1.0: 2 ports detected
+> usb 2-2: new full-speed USB device number 2 using ohci_hcd
+> usb 2-2: device descriptor read/64, error -110
+> usb 2-2: device descriptor read/64, error -110
+> usb 2-2: new full-speed USB device number 3 using ohci_hcd
+> usb 2-2: device descriptor read/64, error -110
+> usb 2-2: device descriptor read/64, error -110
+> usb 2-2: new full-speed USB device number 4 using ohci_hcd
+> usb 2-2: device descriptor read/8, error -110
+> usb 2-2: device descriptor read/8, error -110
+> usb 2-2: new full-speed USB device number 5 using ohci_hcd
+> usb 2-2: device descriptor read/8, error -110
+> usb 2-2: device descriptor read/8, error -110
+> hub 2-0:1.0: unable to enumerate USB device on port 2
+> usb 1-2.1: new full-speed USB device number 3 using ohci_hcd
+> usb 1-2.2: new low-speed USB device number 4 using ohci_hcd
+> input: Rohde&Schwarz FrontPanel USB Keyboard as /devices/pci0000:00/0000:00:17.0/usb1/1-2/1-2.2/1-2.2:1.0/input/input2
+> input: Rohde&Schwarz FrontPanel USB Keyboard as /devices/pci0000:00/0000:00:17.0/usb1/1-2/1-2.2/1-2.2:1.1/input/input3
+
+So two devices failed to initialize after the drivers were rebound: 3-4 
+and 2-2.  We know that 3-4 was the mass-storage device, but I can't 
+tell from this log what 2-2 was.  
+
+> As you can see there is a difference between the USB port detected
+> during the boot phase and after the unbind/bind:
 > 
-> Signed-off-by: Eric Ernst <eric.ernst@intel.com>
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> ---
->  drivers/watchdog/Kconfig         |  13 +++
->  drivers/watchdog/Makefile        |   1 +
->  drivers/watchdog/intel-mid_wdt.c | 187 +++++++++++++++++++++++++++++++++++++++
->  include/linux/intel-mid_wdt.h    |  20 +++++
-
-include/linux/platform_data/intel-mid_wdt.h ?
-
->  4 files changed, 221 insertions(+)
->  create mode 100644 drivers/watchdog/intel-mid_wdt.c
->  create mode 100644 include/linux/intel-mid_wdt.h
+> hub 1-0:1.0: 5 ports detected
+> hub 2-0:1.0: 3 ports detected
+> hub 3-0:1.0: 2 ports detected
+> hub 1-2:1.0: 4 ports detected
+> hub 2-2:1.0: 2 ports detected
 > 
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index 79d25894343a..0e110c37aa5c 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -643,6 +643,19 @@ config INTEL_SCU_WATCHDOG
->  
->  	  To compile this driver as a module, choose M here.
->  
-> +config INTEL_MID_WATCHDOG
-> +	tristate "Intel MID Watchdog Timer"
-> +	depends on X86_INTEL_MID
-> +	select WATCHDOG_CORE
-> +	---help---
-> +	  Watchdog timer driver built into the Intel SCU for Intel MID
-> +	  Platforms.
-> +
-> +	  This driver currently supports only the watchdog evolution
-> +	  implementation in SCU, available for Merrifield generation.
-> +
-> +	  To compile this driver as a module, choose M here.
-> +
->  config ITCO_WDT
->  	tristate "Intel TCO Timer/Watchdog"
->  	depends on (X86 || IA64) && PCI
-> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-> index 985a66cda76f..b927e7496eb4 100644
-> --- a/drivers/watchdog/Makefile
-> +++ b/drivers/watchdog/Makefile
-> @@ -113,6 +113,7 @@ obj-$(CONFIG_W83977F_WDT) += w83977f_wdt.o
->  obj-$(CONFIG_MACHZ_WDT) += machzwd.o
->  obj-$(CONFIG_SBC_EPX_C3_WATCHDOG) += sbc_epx_c3.o
->  obj-$(CONFIG_INTEL_SCU_WATCHDOG) += intel_scu_watchdog.o
-> +obj-$(CONFIG_INTEL_MID_WATCHDOG) += intel-mid_wdt.o
->  
->  # M32R Architecture
->  
-> diff --git a/drivers/watchdog/intel-mid_wdt.c b/drivers/watchdog/intel-mid_wdt.c
-> new file mode 100644
-> index 000000000000..d8bf3c3cd2b7
-> --- /dev/null
-> +++ b/drivers/watchdog/intel-mid_wdt.c
-> @@ -0,0 +1,187 @@
-> +/*
-> + *      intel-mid_wdt: generic Intel MID SCU watchdog driver
-> + *
-> + *      Platforms supported so far:
-> + *      - Merrifield only
-> + *
-> + *      Copyright (C) 2014 Intel Corporation. All rights reserved.
-> + *      Contact: David Cohen <david.a.cohen@linux.intel.com>
-> + *
-> + *      This program is free software; you can redistribute it and/or
-> + *      modify it under the terms of version 2 of the GNU General
-> + *      Public License as published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/intel-mid_wdt.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/module.h>
-> +#include <linux/nmi.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/watchdog.h>
-> +
-> +#include <asm/intel_scu_ipc.h>
-> +#include <asm/intel-mid.h>
-> +
-> +#define IPC_WATCHDOG 0xf8
-> +
-> +#define MID_WDT_PRETIMEOUT		15
-> +#define MID_WDT_TIMEOUT_MIN		(1 + MID_WDT_PRETIMEOUT)
-> +#define MID_WDT_TIMEOUT_MAX		170
-> +#define MID_WDT_DEFAULT_TIMEOUT		90
-> +
-> +/* SCU watchdog messages */
-> +enum {
-> +	SCU_WATCHDOG_START = 0,
-> +	SCU_WATCHDOG_STOP,
-> +	SCU_WATCHDOG_KEEPALIVE,
-> +};
-> +
-> +static inline int wdt_command(int sub, u32 *in, int inlen)
-> +{
-> +	return intel_scu_ipc_command(IPC_WATCHDOG, sub, in, inlen, NULL, 0);
-> +}
-> +
-> +static int wdt_start(struct watchdog_device *wd)
-> +{
-> +	int ret, in_size;
-> +	int timeout = wd->timeout;
-> +	struct ipc_wd_start {
-> +		u32 pretimeout;
-> +		u32 timeout;
-> +	} ipc_wd_start = { timeout - MID_WDT_PRETIMEOUT, timeout };
-> +
-> +	/*
-> +	 * SCU expects the input size for watchdog IPC to
-> +	 * be based on double-word
-> +	 */
-> +	in_size = (sizeof(ipc_wd_start) + 3) / 4;
-> +
-DIV_ROUND_UP ?
-
-Not sure how "double-word" matches the calculation. What is a "double-word" ?
-4 bytes ?
-
-> +	ret = wdt_command(SCU_WATCHDOG_START, (u32 *)&ipc_wd_start, in_size);
-> +	if (ret) {
-> +		struct device *dev = watchdog_get_drvdata(wd);
-> +		dev_crit(dev, "error starting watchdog: %d\n", ret);
-> +		return -EIO;
-
-I am quite sure sparse is going to complain about this ...
-Why not just return ret ? This would result in a more detailed
-error code/reason.
-
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int wdt_ping(struct watchdog_device *wd)
-> +{
-> +	int ret;
-> +
-> +	ret = wdt_command(SCU_WATCHDOG_KEEPALIVE, NULL, 0);
-> +	if (ret) {
-> +		struct device *dev = watchdog_get_drvdata(wd);
-> +		dev_crit(dev, "Error executing keepalive: 0x%x\n", ret);
-> +		return -EIO;
-
-Same here.
-
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int wdt_stop(struct watchdog_device *wd)
-> +{
-> +	int ret;
-> +
-> +	ret = wdt_command(SCU_WATCHDOG_STOP, NULL, 0);
-> +	if (ret) {
-> +		struct device *dev = watchdog_get_drvdata(wd);
-> +		dev_crit(dev, "Error stopping watchdog: 0x%x\n", ret);
-> +		return -EIO;
-
-Same here.
-
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static irqreturn_t mid_wdt_warning_irq(int irq, void *dev_id)
-
-This isn't really a warning, so the function name is a bit misleading.
-
-> +{
-> +	panic("Kernel Watchdog");
-> +
-> +	/* This code should not be reached */
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static const struct watchdog_info mid_wdt_info = {
-> +	.identity = "Intel MID SCU watchdog",
-> +	.options = WDIOF_KEEPALIVEPING | WDIOF_SETTIMEOUT,
-> +};
-> +
-> +static const struct watchdog_ops mid_wdt_ops = {
-> +	.owner = THIS_MODULE,
-> +	.start = wdt_start,
-> +	.stop = wdt_stop,
-> +	.ping = wdt_ping,
-> +};
-> +
-> +static int mid_wdt_probe(struct platform_device *pdev)
-> +{
-> +	struct watchdog_device *wdt_dev;
-> +	struct intel_mid_wdt_pdata *pdata = pdev->dev.platform_data;
-> +	int ret;
-> +
-> +	if (!pdata) {
-> +		dev_err(&pdev->dev, "missing platform data\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	if (pdata->probe) {
-> +		ret = pdata->probe();
-
-Sure you don't want to pass the platform device as parameter ?
-May not be needed today, but it might be better than to rely on the assumption
-that the called code gets it from a static variable or structure (if needed).
-
-This would enable you, for example, to use dev_warn() instead of pr_warn()
-in the platform code.
-
-> +		if (ret)
-> +			return ret;
-> +	}
-> +
-> +	wdt_dev = devm_kzalloc(&pdev->dev, sizeof(*wdt_dev), GFP_KERNEL);
-> +	if (!wdt_dev)
-> +		return -ENOMEM;
-> +
-> +	wdt_dev->info = &mid_wdt_info;
-> +	wdt_dev->ops = &mid_wdt_ops;
-> +	wdt_dev->min_timeout = MID_WDT_TIMEOUT_MIN;
-> +	wdt_dev->max_timeout = MID_WDT_TIMEOUT_MAX;
-> +	wdt_dev->timeout = MID_WDT_DEFAULT_TIMEOUT;
-> +
-> +	watchdog_set_drvdata(wdt_dev, &pdev->dev);
-> +	platform_set_drvdata(pdev, wdt_dev);
-> +
-> +	ret = devm_request_irq(&pdev->dev, pdata->irq, mid_wdt_warning_irq,
-> +			       IRQF_SHARED | IRQF_NO_SUSPEND, "watchdog",
-> +			       wdt_dev);
-
-If irq is mandatory, it might make sense to check if it is valid.
-
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "error requesting warning irq %d\n",
-> +			pdata->irq);
-> +		return ret;
-> +	}
-> +
-> +	ret = watchdog_register_device(wdt_dev);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "error registering watchdog device\n");
-> +		return ret;
-> +	}
-> +
-> +	dev_info(&pdev->dev, "Intel MID watchdog device probed\n");
-> +
-> +	return 0;
-> +}
-> +
-> +static int mid_wdt_remove(struct platform_device *pdev)
-> +{
-> +	struct watchdog_device *wd = platform_get_drvdata(pdev);
-> +	watchdog_unregister_device(wd);
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver mid_wdt_driver = {
-> +	.probe		= mid_wdt_probe,
-> +	.remove		= mid_wdt_remove,
-> +	.driver		= {
-> +		.owner	= THIS_MODULE,
-> +		.name	= "intel_mid_wdt",
-> +	},
-> +};
-> +
-> +module_platform_driver(mid_wdt_driver);
-> +
-> +MODULE_AUTHOR("David Cohen <david.a.cohen@linux.intel.com>");
-> +MODULE_DESCRIPTION("Watchdog Driver for Intel MID platform");
-> +MODULE_LICENSE("GPL");
-> diff --git a/include/linux/intel-mid_wdt.h b/include/linux/intel-mid_wdt.h
-> new file mode 100644
-> index 000000000000..705dff1c62f8
-> --- /dev/null
-> +++ b/include/linux/intel-mid_wdt.h
-> @@ -0,0 +1,20 @@
-> +/*
-> + *      intel-mid_wdt: generic Intel MID SCU watchdog driver
-> + *
-> + *      Copyright (C) 2014 Intel Corporation. All rights reserved.
-> + *      Contact: David Cohen <david.a.cohen@linux.intel.com>
-> + *
-> + *      This program is free software; you can redistribute it and/or
-> + *      modify it under the terms of version 2 of the GNU General
-> + *      Public License as published by the Free Software Foundation.
-> + */
-> +
-> +#ifndef __INTEL_MID_WDT_H__
-> +#define __INTEL_MID_WDT_H__
-> +
-> +struct intel_mid_wdt_pdata {
-> +	int irq;
-> +	int (*probe)(void);
-> +};
-> +
-> +#endif /*__INTEL_MID_WDT_H__*/
-> -- 
-> 1.9.1
+> echo 0000:00:17.0 >/sys/bus/pci/drivers/ohci-pci/unbind
+> echo 0000:00:17.1 >/sys/bus/pci/drivers/ohci-pci/unbind
+> echo 0000:00:17.2 >/sys/bus/pci/drivers/ehci-pci/unbind
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> echo 0000:00:17.0 >/sys/bus/pci/drivers/ohci-pci/bind
+> echo 0000:00:17.1 >/sys/bus/pci/drivers/ohci-pci/bind
+> echo 0000:00:17.2 >/sys/bus/pci/drivers/ehci-pci/bind
 > 
+> hub 1-0:1.0: 3 ports detected
+> hub 2-0:1.0: 2 ports detected
+> hub 3-0:1.0: 5 ports detected
+> hub 1-0:1.0: 3 ports detected
+> hub 2-0:1.0: 2 ports detected
+> hub 3-2:1.0: 4 ports detected
+> hub 1-2:1.0: 2 ports detected
+> 
+> This was kernel 3.10, but i get similar results for 3.14
+
+Of course.  This is because you rebound the drivers in a different 
+order from the binding during boot.  During boot, the EHCI controller 
+(17.2) was assigned to bus 1, and the two OHCI controllers (17.0 and 
+17.2) were assigned to buses 2 and 3.
+
+But when you rebound the drivers, you did 17.0 and 17.1 first, so they 
+were assigned to buses 1 and 2.  Then 17.2 was assigned to bus 3.  If 
+you had bound 17.2 and then 17.0 and 17.1, you would have gotten the 
+same results as during boot.
+
+I can't tell why the two devices failed to initialize.  Can you plug
+either of them into an x86-based computer and see if it shows the same
+behavior there?
+
+Alan Stern
+
