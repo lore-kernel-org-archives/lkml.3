@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947AbaDOORU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 10:17:20 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:58095 "EHLO SMTP.CITRIX.COM"
+	id S1754906AbaDOORS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 10:17:18 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:58075 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753259AbaDOOQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753617AbaDOOQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Apr 2014 10:16:08 -0400
 X-IronPort-AV: E=Sophos;i="4.97,864,1389744000"; 
-   d="scan'208";a="121257958"
+   d="scan'208";a="121257955"
 From: David Vrabel <david.vrabel@citrix.com>
 To: <xen-devel@lists.xenproject.org>
 CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
@@ -16,9 +16,9 @@ CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Thomas Gleixner <tglx@linutronix.de>, "Ingo Molnar" <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 9/9] x86: remove the Xen-specific _PAGE_IOMAP PTE flag
-Date: Tue, 15 Apr 2014 15:15:37 +0100
-Message-ID: <1397571337-20409-10-git-send-email-david.vrabel@citrix.com>
+Subject: [PATCH 6/9] x86/xen: do not use _PAGE_IOMAP in xen_remap_domain_mfn_range()
+Date: Tue, 15 Apr 2014 15:15:34 +0100
+Message-ID: <1397571337-20409-7-git-send-email-david.vrabel@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1397571337-20409-1-git-send-email-david.vrabel@citrix.com>
 References: <1397571337-20409-1-git-send-email-david.vrabel@citrix.com>
@@ -29,123 +29,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The _PAGE_IO_MAP PTE flag was only used by Xen PV guests to mark PTEs
-that were used to map I/O regions that are 1:1 in the p2m.  This
-allowed Xen to obtain the correct PFN when converting the MFNs read
-from a PTE back to their PFN.
-
-Xen guests no longer use _PAGE_IOMAP for this. Instead mfn_to_pfn()
-returns the correct PFN by using a combination of the m2p and p2m to
-determine if an MFN corresponds to a 1:1 mapping in the the p2m.
-
-Remove _PAGE_IOMAP, replacing it with _PAGE_UNUSED2 to allow for
-future uses of the PTE flag.
+_PAGE_IOMAP is used in xen_remap_domain_mfn_range() to prevent the
+pfn_pte() call in remap_area_mfn_pte_fn() from using the p2m to translate
+the MFN.  If mfn_pte() is used instead, the p2m look up is avoided and
+the use of _PAGE_IOMAP is no longer needed.
 
 Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Acked-by: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: x86@kernel.org
 ---
-This depends on the preceeding Xen changes, so this will be merged via
-the Xen tree.
----
- arch/x86/include/asm/pgtable_types.h |   12 ++++++------
- arch/x86/mm/init_32.c                |    2 +-
- arch/x86/mm/init_64.c                |    2 +-
- arch/x86/pci/i386.c                  |    2 --
- arch/x86/xen/enlighten.c             |    2 --
- 5 files changed, 8 insertions(+), 12 deletions(-)
+ arch/x86/xen/mmu.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index eb3d449..ead3cb7 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -17,7 +17,7 @@
- #define _PAGE_BIT_PAT		7	/* on 4KB pages */
- #define _PAGE_BIT_GLOBAL	8	/* Global TLB entry PPro+ */
- #define _PAGE_BIT_UNUSED1	9	/* available for programmer */
--#define _PAGE_BIT_IOMAP		10	/* flag used to indicate IO mapping */
-+#define _PAGE_BIT_UNUSED2	10	/* available for programmer */
- #define _PAGE_BIT_HIDDEN	11	/* hidden by kmemcheck */
- #define _PAGE_BIT_PAT_LARGE	12	/* On 2MB or 1GB pages */
- #define _PAGE_BIT_SPECIAL	_PAGE_BIT_UNUSED1
-@@ -41,7 +41,7 @@
- #define _PAGE_PSE	(_AT(pteval_t, 1) << _PAGE_BIT_PSE)
- #define _PAGE_GLOBAL	(_AT(pteval_t, 1) << _PAGE_BIT_GLOBAL)
- #define _PAGE_UNUSED1	(_AT(pteval_t, 1) << _PAGE_BIT_UNUSED1)
--#define _PAGE_IOMAP	(_AT(pteval_t, 1) << _PAGE_BIT_IOMAP)
-+#define _PAGE_UNUSED2	(_AT(pteval_t, 1) << _PAGE_BIT_UNUSED2)
- #define _PAGE_PAT	(_AT(pteval_t, 1) << _PAGE_BIT_PAT)
- #define _PAGE_PAT_LARGE (_AT(pteval_t, 1) << _PAGE_BIT_PAT_LARGE)
- #define _PAGE_SPECIAL	(_AT(pteval_t, 1) << _PAGE_BIT_SPECIAL)
-@@ -164,10 +164,10 @@
- #define __PAGE_KERNEL_LARGE_NOCACHE	(__PAGE_KERNEL | _PAGE_CACHE_UC | _PAGE_PSE)
- #define __PAGE_KERNEL_LARGE_EXEC	(__PAGE_KERNEL_EXEC | _PAGE_PSE)
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 86e02ea..d916024 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2522,7 +2522,7 @@ static int remap_area_mfn_pte_fn(pte_t *ptep, pgtable_t token,
+ 				 unsigned long addr, void *data)
+ {
+ 	struct remap_data *rmd = data;
+-	pte_t pte = pte_mkspecial(pfn_pte(rmd->mfn++, rmd->prot));
++	pte_t pte = pte_mkspecial(mfn_pte(rmd->mfn++, rmd->prot));
  
--#define __PAGE_KERNEL_IO		(__PAGE_KERNEL | _PAGE_IOMAP)
--#define __PAGE_KERNEL_IO_NOCACHE	(__PAGE_KERNEL_NOCACHE | _PAGE_IOMAP)
--#define __PAGE_KERNEL_IO_UC_MINUS	(__PAGE_KERNEL_UC_MINUS | _PAGE_IOMAP)
--#define __PAGE_KERNEL_IO_WC		(__PAGE_KERNEL_WC | _PAGE_IOMAP)
-+#define __PAGE_KERNEL_IO		(__PAGE_KERNEL)
-+#define __PAGE_KERNEL_IO_NOCACHE	(__PAGE_KERNEL_NOCACHE)
-+#define __PAGE_KERNEL_IO_UC_MINUS	(__PAGE_KERNEL_UC_MINUS)
-+#define __PAGE_KERNEL_IO_WC		(__PAGE_KERNEL_WC)
+ 	rmd->mmu_update->ptr = virt_to_machine(ptep).maddr;
+ 	rmd->mmu_update->val = pte_val_ma(pte);
+@@ -2547,8 +2547,6 @@ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+ 	if (xen_feature(XENFEAT_auto_translated_physmap))
+ 		return -EINVAL;
  
- #define PAGE_KERNEL			__pgprot(__PAGE_KERNEL)
- #define PAGE_KERNEL_RO			__pgprot(__PAGE_KERNEL_RO)
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index e395048..af7259c 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -537,7 +537,7 @@ static void __init pagetable_init(void)
- 	permanent_kmaps_init(pgd_base);
- }
- 
--pteval_t __supported_pte_mask __read_mostly = ~(_PAGE_NX | _PAGE_GLOBAL | _PAGE_IOMAP);
-+pteval_t __supported_pte_mask __read_mostly = ~(_PAGE_NX | _PAGE_GLOBAL);
- EXPORT_SYMBOL_GPL(__supported_pte_mask);
- 
- /* user-defined highmem size */
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index f35c66c..9e6fa6d 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -151,7 +151,7 @@ early_param("gbpages", parse_direct_gbpages_on);
-  * around without checking the pgd every time.
-  */
- 
--pteval_t __supported_pte_mask __read_mostly = ~_PAGE_IOMAP;
-+pteval_t __supported_pte_mask __read_mostly = ~0;
- EXPORT_SYMBOL_GPL(__supported_pte_mask);
- 
- int force_personality32;
-diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-index db6b1ab..1f642d6 100644
---- a/arch/x86/pci/i386.c
-+++ b/arch/x86/pci/i386.c
-@@ -433,8 +433,6 @@ int pci_mmap_page_range(struct pci_dev *dev, struct vm_area_struct *vma,
- 		 */
- 		prot |= _PAGE_CACHE_UC_MINUS;
- 
--	prot |= _PAGE_IOMAP;	/* creating a mapping for IO */
+-	prot = __pgprot(pgprot_val(prot) | _PAGE_IOMAP);
 -
- 	vma->vm_page_prot = __pgprot(prot);
+ 	BUG_ON(!((vma->vm_flags & (VM_PFNMAP | VM_IO)) == (VM_PFNMAP | VM_IO)));
  
- 	if (io_remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 201d09a..c5e21e3 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1555,8 +1555,6 @@ asmlinkage void __init xen_start_kernel(void)
- #endif
- 		__supported_pte_mask &= ~(_PAGE_PWT | _PAGE_PCD);
- 
--	__supported_pte_mask |= _PAGE_IOMAP;
--
- 	/*
- 	 * Prevent page tables from being allocated in highmem, even
- 	 * if CONFIG_HIGHPTE is enabled.
+ 	rmd.mfn = mfn;
 -- 
 1.7.2.5
 
