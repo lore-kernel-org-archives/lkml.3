@@ -1,87 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711AbaDOJRe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 05:17:34 -0400
-Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:2575
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750911AbaDOJRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 05:17:30 -0400
-X-WSS-ID: 0N42F4X-08-64S-02
-X-M-MSG: 
-Message-ID: <534CF922.8010204@amd.com>
-Date: Tue, 15 Apr 2014 11:17:22 +0200
-From: =?ISO-8859-1?Q?Christian_K=F6nig?= <christian.koenig@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "Deucher, Alexander" <Alexander.Deucher@amd.com>,
-        Christoph Jaeger <christophjaeger@linux.com>,
-        "airlied@linux.ie" <airlied@linux.ie>
-CC: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drm/radeon: fix VCE fence command
-References: <1397513422-1566-1-git-send-email-christophjaeger@linux.com>
- <A3397C8B8B789E45844E7EC5DEAD89D03ECB19EF@satlexdag05.amd.com>
-In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D03ECB19EF@satlexdag05.amd.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.224.152.106]
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(377454003)(199002)(189002)(51704005)(164054003)(13464003)(83072002)(85852003)(77982001)(20776003)(47776003)(59896001)(84676001)(87936001)(92566001)(65956001)(80022001)(92726001)(50466002)(86362001)(2009001)(74502001)(74662001)(50986999)(31966008)(64126003)(77096999)(54356999)(76176999)(99396002)(97736001)(65816999)(83322001)(23756003)(44976005)(19580405001)(19580395003)(4396001)(80976001)(81342001)(76482001)(33656001)(65806001)(83506001)(81542001)(46102001)(36756003);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR02MB115;H:atltwp02.amd.com;FPR:1A7E41A1.80F30542.F0E0AB87.B2EC7ACA.2021C;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Forefront-PRVS: 0182DBBB05
-X-OriginatorOrg: amd4.onmicrosoft.com
+	id S1753389AbaDOJTB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 05:19:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50684 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750855AbaDOJSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 05:18:55 -0400
+From: Vlastimil Babka <vbabka@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Heesub Shin <heesub.shin@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Dongjun Shin <d.j.shin@samsung.com>,
+        Sunghwan Yun <sunghwan.yun@samsung.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: [PATCH 1/2] mm/compaction: make isolate_freepages start at pageblock boundary
+Date: Tue, 15 Apr 2014 11:18:26 +0200
+Message-Id: <1397553507-15330-1-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <5342BA34.8050006@suse.cz>
+References: <5342BA34.8050006@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 15.04.2014 00:13, schrieb Deucher, Alexander:
->> -----Original Message-----
->> From: Christoph Jaeger [mailto:christophjaeger@linux.com]
->> Sent: Monday, April 14, 2014 6:10 PM
->> To: Deucher, Alexander; Koenig, Christian; airlied@linux.ie
->> Cc: dri-devel@lists.freedesktop.org; linux-kernel@vger.kernel.org; Christoph
->> Jaeger
->> Subject: [PATCH] drm/radeon: fix VCE fence command
->>
->> Due to a type mismatch that causes an implicit type conversion, the
->> upper 32 bits of the GPU address have been zeroed out when adding to the
->> command buffer.
->>
->> Picked up by Coverity - CID 1198624.
->>
->> Signed-off-by: Christoph Jaeger <christophjaeger@linux.com>
-> Good catch!
+The compaction freepage scanner implementation in isolate_freepages() starts
+by taking the current cc->free_pfn value as the first pfn. In a for loop, it
+scans from this first pfn to the end of the pageblock, and then subtracts
+pageblock_nr_pages from the first pfn to obtain the first pfn for the next
+for loop iteration.
 
-Indeed.
+This means that when cc->free_pfn starts at offset X rather than being aligned
+on pageblock boundary, the scanner will start at offset X in all scanned
+pageblock, ignoring potentially many free pages. Currently this can happen when
+a) zone's end pfn is not pageblock aligned, or
+b) through zone->compact_cached_free_pfn with CONFIG_HOLES_IN_ZONE enabled and
+   a hole spanning the beginning of a pageblock
 
->
-> Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+This patch fixes the problem by aligning the initial pfn in isolate_freepages()
+to pageblock boundary. This also allows to replace the end-of-pageblock
+alignment within the for loop with a simple pageblock_nr_pages increment.
 
-Added to my 3.15 fixes queue.
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Reported-by: Heesub Shin <heesub.shin@samsung.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+---
+ mm/compaction.c | 22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
 
-Thanks,
-Christian.
-
->
->> ---
->>   drivers/gpu/drm/radeon/radeon_vce.c | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/gpu/drm/radeon/radeon_vce.c
->> b/drivers/gpu/drm/radeon/radeon_vce.c
->> index 76e9904..ced53dd 100644
->> --- a/drivers/gpu/drm/radeon/radeon_vce.c
->> +++ b/drivers/gpu/drm/radeon/radeon_vce.c
->> @@ -613,7 +613,7 @@ void radeon_vce_fence_emit(struct radeon_device
->> *rdev,
->>   			   struct radeon_fence *fence)
->>   {
->>   	struct radeon_ring *ring = &rdev->ring[fence->ring];
->> -	uint32_t addr = rdev->fence_drv[fence->ring].gpu_addr;
->> +	uint64_t addr = rdev->fence_drv[fence->ring].gpu_addr;
->>
->>   	radeon_ring_write(ring, VCE_CMD_FENCE);
->>   	radeon_ring_write(ring, addr);
->> --
->> 1.9.0
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 37f9762..627dc2e 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -671,16 +671,20 @@ static void isolate_freepages(struct zone *zone,
+ 				struct compact_control *cc)
+ {
+ 	struct page *page;
+-	unsigned long high_pfn, low_pfn, pfn, z_end_pfn, end_pfn;
++	unsigned long high_pfn, low_pfn, pfn, z_end_pfn;
+ 	int nr_freepages = cc->nr_freepages;
+ 	struct list_head *freelist = &cc->freepages;
+ 
+ 	/*
+ 	 * Initialise the free scanner. The starting point is where we last
+-	 * scanned from (or the end of the zone if starting). The low point
+-	 * is the end of the pageblock the migration scanner is using.
++	 * successfully isolated from, zone-cached value, or the end of the
++	 * zone when isolating for the first time. We need this aligned to
++	 * the pageblock boundary, because we do pfn -= pageblock_nr_pages
++	 * in the for loop.
++	 * The low boundary is the end of the pageblock the migration scanner
++	 * is using.
+ 	 */
+-	pfn = cc->free_pfn;
++	pfn = cc->free_pfn & ~(pageblock_nr_pages-1);
+ 	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
+ 
+ 	/*
+@@ -700,6 +704,7 @@ static void isolate_freepages(struct zone *zone,
+ 	for (; pfn >= low_pfn && cc->nr_migratepages > nr_freepages;
+ 					pfn -= pageblock_nr_pages) {
+ 		unsigned long isolated;
++		unsigned long end_pfn;
+ 
+ 		/*
+ 		 * This can iterate a massively long zone without finding any
+@@ -734,13 +739,10 @@ static void isolate_freepages(struct zone *zone,
+ 		isolated = 0;
+ 
+ 		/*
+-		 * As pfn may not start aligned, pfn+pageblock_nr_page
+-		 * may cross a MAX_ORDER_NR_PAGES boundary and miss
+-		 * a pfn_valid check. Ensure isolate_freepages_block()
+-		 * only scans within a pageblock
++		 * Take care when isolating in last pageblock of a zone which
++		 * ends in the middle of a pageblock.
+ 		 */
+-		end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
+-		end_pfn = min(end_pfn, z_end_pfn);
++		end_pfn = min(pfn + pageblock_nr_pages, z_end_pfn);
+ 		isolated = isolate_freepages_block(cc, pfn, end_pfn,
+ 						   freelist, false);
+ 		nr_freepages += isolated;
+-- 
+1.8.4.5
 
