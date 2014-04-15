@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033AbaDOL2O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 07:28:14 -0400
-Received: from relay.parallels.com ([195.214.232.42]:54428 "EHLO
+	id S1754235AbaDOL2z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 07:28:55 -0400
+Received: from relay.parallels.com ([195.214.232.42]:54542 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241AbaDOL2L (ORCPT
+	with ESMTP id S1754112AbaDOL2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 07:28:11 -0400
-Subject: [PATCH 1/7] fuse: do not use uninitialized i_mode
+	Tue, 15 Apr 2014 07:28:53 -0400
+Subject: [PATCH 2/7] fuse: update mtime on truncate(2)
 To: miklos@szeredi.hu
 From: Maxim Patlasov <MPatlasov@parallels.com>
 Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         devel@openvz.org
-Date: Tue, 15 Apr 2014 15:28:10 +0400
-Message-ID: <20140415112756.11860.43431.stgit@dhcp-10-30-30-94.sw.ru>
+Date: Tue, 15 Apr 2014 15:28:52 +0400
+Message-ID: <20140415112815.11860.25738.stgit@dhcp-10-30-30-94.sw.ru>
 In-Reply-To: <20140415112413.11860.1451.stgit@dhcp-10-30-30-94.sw.ru>
 References: <20140415112413.11860.1451.stgit@dhcp-10-30-30-94.sw.ru>
 User-Agent: StGit/0.16
@@ -24,25 +24,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When inode is in I_NEW state, inode->i_mode is not initialized yet. Do not
-use it before fuse_init_inode() is called.
+Handling truncate(2), VFS doesn't set ATTR_MTIME bit in iattr structure; only
+ATTR_SIZE bit is set. In-kernel fuse must handle the case by setting mtime
+fields of struct fuse_setattr_in to "now" and set FATTR_MTIME bit even
+though ATTR_MTIME was not set.
 
 Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
 ---
- fs/fuse/inode.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/fuse/dir.c |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
-index 8d61169..299e553 100644
---- a/fs/fuse/inode.c
-+++ b/fs/fuse/inode.c
-@@ -303,7 +303,7 @@ struct inode *fuse_iget(struct super_block *sb, u64 nodeid,
+diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
+index 5b4e035..c7cb41c 100644
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -1503,10 +1503,11 @@ static bool update_mtime(unsigned ivalid, bool trust_local_mtime)
+ 	return true;
+ }
  
- 	if ((inode->i_state & I_NEW)) {
- 		inode->i_flags |= S_NOATIME;
--		if (!fc->writeback_cache || !S_ISREG(inode->i_mode))
-+		if (!fc->writeback_cache || !S_ISREG(attr->mode))
- 			inode->i_flags |= S_NOCMTIME;
- 		inode->i_generation = generation;
- 		inode->i_data.backing_dev_info = &fc->bdi;
+-static void iattr_to_fattr(struct iattr *iattr, struct fuse_setattr_in *arg,
+-			   bool trust_local_mtime)
++static void iattr_to_fattr(struct inode *inode, struct iattr *iattr,
++			   struct fuse_setattr_in *arg, bool trust_local_mtime)
+ {
+ 	unsigned ivalid = iattr->ia_valid;
++	struct timespec now = current_fs_time(inode->i_sb);
+ 
+ 	if (ivalid & ATTR_MODE)
+ 		arg->valid |= FATTR_MODE,   arg->mode = iattr->ia_mode;
+@@ -1529,6 +1530,10 @@ static void iattr_to_fattr(struct iattr *iattr, struct fuse_setattr_in *arg,
+ 		arg->mtimensec = iattr->ia_mtime.tv_nsec;
+ 		if (!(ivalid & ATTR_MTIME_SET) && !trust_local_mtime)
+ 			arg->valid |= FATTR_MTIME_NOW;
++	} else if ((ivalid & ATTR_SIZE) && trust_local_mtime) {
++		arg->valid |= FATTR_MTIME;
++		arg->mtime = now.tv_sec;
++		arg->mtimensec = now.tv_nsec;
+ 	}
+ }
+ 
+@@ -1682,7 +1687,7 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
+ 
+ 	memset(&inarg, 0, sizeof(inarg));
+ 	memset(&outarg, 0, sizeof(outarg));
+-	iattr_to_fattr(attr, &inarg, trust_local_mtime);
++	iattr_to_fattr(inode, attr, &inarg, trust_local_mtime);
+ 	if (file) {
+ 		struct fuse_file *ff = file->private_data;
+ 		inarg.valid |= FATTR_FH;
+@@ -1711,8 +1716,9 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
+ 
+ 	spin_lock(&fc->lock);
+ 	/* the kernel maintains i_mtime locally */
+-	if (trust_local_mtime && (attr->ia_valid & ATTR_MTIME)) {
+-		inode->i_mtime = attr->ia_mtime;
++	if (trust_local_mtime && (attr->ia_valid & (ATTR_MTIME | ATTR_SIZE))) {
++		inode->i_mtime.tv_sec = inarg.mtime;
++		inode->i_mtime.tv_nsec = inarg.mtimensec;
+ 		clear_bit(FUSE_I_MTIME_DIRTY, &fi->state);
+ 	}
+ 
 
