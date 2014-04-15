@@ -1,94 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689AbaDOMh5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 08:37:57 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:33505 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754357AbaDOMhv (ORCPT
+	id S1754792AbaDOMiT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 08:38:19 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:40303 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754713AbaDOMiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 08:37:51 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>
-Date: Tue, 15 Apr 2014 05:37:17 -0700
-Subject: RE: [PATCH v2] ARM: perf: save/restore pmu registers in pm notifier
-Thread-Topic: [PATCH v2] ARM: perf: save/restore pmu registers in pm notifier
-Thread-Index: Ac9Yh21art0x/TvoSBiDNoPfiamkyQAH3EDg
-Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE55075F1873@SC-VEXCH4.marvell.com>
-References: <1397439742-28337-1-git-send-email-zhangwm@marvell.com>
- <20140415084749.GG17408@arm.com>
-In-Reply-To: <20140415084749.GG17408@arm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-14_01:2014-04-14,2014-04-14,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1404150210
+	Tue, 15 Apr 2014 08:38:07 -0400
+From: Rostislav Lisovy <lisovy@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
+        jan-niklas.meier@volkswagen.de,
+        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
+Subject: [PATCH 2/2] cfg80211: Use 5MHz bandwidth by default when checking usable channels
+Date: Tue, 15 Apr 2014 14:37:56 +0200
+Message-Id: <1397565476-4348-3-git-send-email-rostislav.lisovy@fel.cvut.cz>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1397565476-4348-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
+References: <1397565476-4348-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3FCc9Hd027033
 
-Will,
-Thanks for the comments!
+Current code checks if the 20MHz bandwidth is allowed for
+particular channel -- if it is not, the channel is disabled.
+Since we need to use 5/10 MHz channels, this code is modified in
+the way that the default bandwidth to check is 5MHz. If the
+maximum bandwidth allowed by the channel is smaller than 5MHz,
+the channel is disabled. Otherwise the channel is used and the
+flags are set according to the bandwidth allowed by the channel.
 
-> -----Original Message-----
-> From: Will Deacon [mailto:will.deacon@arm.com]
-> Sent: 2014Äê4ÔÂ15ÈÕ 16:48
-> To: Neil Zhang
-> Cc: linux@arm.linux.org.uk; linux-arm-kernel@lists.infradead.org;
-> linux-kernel@vger.kernel.org; Sudeep Holla
-> Subject: Re: [PATCH v2] ARM: perf: save/restore pmu registers in pm notifier
-> 
-> Hello,
-> 
-> On Mon, Apr 14, 2014 at 02:42:22AM +0100, Neil Zhang wrote:
-> > From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> >
-> > This adds core support for saving and restoring CPU PMU registers for
-> > suspend/resume support i.e. deeper C-states in cpuidle terms.
-> > This patch adds support only to ARMv7 PMU registers save/restore.
-> > It needs to be extended to xscale and ARMv6 if needed.
-> >
-> > [Neil] We found that DS-5 not work on our CA7 based SoCs.
-> > After debuging, found PMU registers were lost because of core power down.
-> > Then i found Sudeep had a patch to fix it about two years ago but not
-> > in the mainline, just port it.
-> 
-> What I don't like about this patch is that we're introducing significant
-> overhead for SoCs that don't require save/restore of the PMU state. I'd much
-> rather see core power down disabled whilst the PMU is in use but, if that's not
-> possible, then I think we need to:
-> 
->  (1) Make this conditional for cores that really need it
-> 
->  (2) Only save/restore if the PMU is in use (even better, just save/restore
->      the live registers, but that's probably not worth the effort
->      initially).
-> 
+Signed-off-by: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
+---
+ net/wireless/reg.c | 22 +++++++++++++++-------
+ 1 file changed, 15 insertions(+), 7 deletions(-)
 
-The patch has check the ARMV7_PMNC_E bit when save / restore, 
-so suppose only the core's that use PMU will do the save / restore work.
+diff --git a/net/wireless/reg.c b/net/wireless/reg.c
+index 9d32633..3f3bc2e 100644
+--- a/net/wireless/reg.c
++++ b/net/wireless/reg.c
+@@ -927,7 +927,7 @@ freq_reg_info_regd(struct wiphy *wiphy, u32 center_freq,
+ 		if (!band_rule_found)
+ 			band_rule_found = freq_in_rule_band(fr, center_freq);
+ 
+-		bw_fits = reg_does_bw_fit(fr, center_freq, MHZ_TO_KHZ(20));
++		bw_fits = reg_does_bw_fit(fr, center_freq, MHZ_TO_KHZ(5));
+ 
+ 		if (band_rule_found && bw_fits)
+ 			return rr;
+@@ -1011,10 +1011,10 @@ static void chan_reg_rule_print_dbg(const struct ieee80211_regdomain *regd,
+ }
+ #endif
+ 
+-/*
+- * Note that right now we assume the desired channel bandwidth
+- * is always 20 MHz for each individual channel (HT40 uses 20 MHz
+- * per channel, the primary and the extension channel).
++/* Find an ieee80211_reg_rule such that a 5MHz channel with frequency
++ * @chan->center_freq fits there.
++ * If there is no such reg_rule, disable the channel, otherwise set the
++ * flags corresponding to the bandwidths allowed in the particular reg_rule
+  */
+ static void handle_channel(struct wiphy *wiphy,
+ 			   enum nl80211_reg_initiator initiator,
+@@ -1075,8 +1075,12 @@ static void handle_channel(struct wiphy *wiphy,
+ 	if (reg_rule->flags & NL80211_RRF_AUTO_BW)
+ 		max_bandwidth_khz = reg_get_max_bandwidth(regd, reg_rule);
+ 
++	if (max_bandwidth_khz < MHZ_TO_KHZ(10))
++		bw_flags = IEEE80211_CHAN_NO_10MHZ;
++	if (max_bandwidth_khz < MHZ_TO_KHZ(20))
++		bw_flags |= IEEE80211_CHAN_NO_20MHZ;
+ 	if (max_bandwidth_khz < MHZ_TO_KHZ(40))
+-		bw_flags = IEEE80211_CHAN_NO_HT40;
++		bw_flags |= IEEE80211_CHAN_NO_HT40;
+ 	if (max_bandwidth_khz < MHZ_TO_KHZ(80))
+ 		bw_flags |= IEEE80211_CHAN_NO_80MHZ;
+ 	if (max_bandwidth_khz < MHZ_TO_KHZ(160))
+@@ -1510,8 +1514,12 @@ static void handle_channel_custom(struct wiphy *wiphy,
+ 	if (reg_rule->flags & NL80211_RRF_AUTO_BW)
+ 		max_bandwidth_khz = reg_get_max_bandwidth(regd, reg_rule);
+ 
++	if (max_bandwidth_khz < MHZ_TO_KHZ(10))
++		bw_flags = IEEE80211_CHAN_NO_10MHZ;
++	if (max_bandwidth_khz < MHZ_TO_KHZ(20))
++		bw_flags |= IEEE80211_CHAN_NO_20MHZ;
+ 	if (max_bandwidth_khz < MHZ_TO_KHZ(40))
+-		bw_flags = IEEE80211_CHAN_NO_HT40;
++		bw_flags |= IEEE80211_CHAN_NO_HT40;
+ 	if (max_bandwidth_khz < MHZ_TO_KHZ(80))
+ 		bw_flags |= IEEE80211_CHAN_NO_80MHZ;
+ 	if (max_bandwidth_khz < MHZ_TO_KHZ(160))
+-- 
+1.9.2
 
->  (3) Ensure we ->reset the PMU before doing the restore
-
-Ok, I can add it in the next version.
-
-> 
-> Will
-
-Best Regards,
-Neil Zhang
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
