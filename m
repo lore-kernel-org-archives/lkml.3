@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570AbaDOACD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 20:02:03 -0400
-Received: from [207.46.163.204] ([207.46.163.204]:44040 "EHLO
-	na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754353AbaDOAB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 20:01:59 -0400
-Date: Mon, 14 Apr 2014 17:00:59 -0700
-From: Insop Song <insop.song@gainspeed.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Jane Wan <Jane.Wan@gainspeed.com>, <grant.likely@secretlab.ca>,
-        <Emilian.Medve@Freescale.com>, <kenth.eriksson@transmode.com>,
-        <thomas.de.schampheleire@gmail.com>, <b48286@Freescale.com>,
-        <jg1.han@samsung.com>, <sr@denx.de>,
-        <spi-devel-general@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] Configure FSL eSPI CSBEF, CSAFT, and whether to send all
- received data to user
-Message-ID: <20140415000059.GB16287@neon.local.cohere.net>
-References: <1397328516-13260-1-git-send-email-Jane.Wan@gainspeed.com>
- <20140414205151.GH25182@sirena.org.uk>
- <20140414213853.GF14129@neon.local.cohere.net>
- <20140414234949.GH12304@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20140414234949.GH12304@sirena.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Originating-IP: [157.56.236.5]
-X-ClientProxiedBy: BY2PR07CA027.namprd07.prod.outlook.com (10.141.216.42) To
- BY2PR07MB009.namprd07.prod.outlook.com (10.255.241.35)
-X-Forefront-PRVS: 0182DBBB05
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(24454002)(51704005)(46406003)(97756001)(42186004)(33656001)(81342001)(19580395003)(83322001)(83072002)(85852003)(87976001)(74502001)(74662001)(31966008)(80976001)(4396001)(23726002)(83506001)(46102001)(66066001)(80022001)(20776003)(47776003)(99396002)(50466002)(86362001)(92726001)(92566001)(79102001)(77982001)(76176999)(54356999)(50986999)(81542001)(98436001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR07MB009;H:BY2PRD0310HT001.namprd03.prod.outlook.com;FPR:EBD6E4A1.A465D7A1.71DCA7EC.4EDFCA.20142;MLV:nov;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: gainspeed.com
+	id S1755707AbaDOACR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 20:02:17 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:30434 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755628AbaDOACQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 20:02:16 -0400
+Message-ID: <1397520133.31076.24.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 3/3] mm,vmacache: optimize overflow system-wide flushing
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: akpm@linux-foundation.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, aswin@hp.com,
+        Oleg Nesterov <oleg@redhat.com>
+Date: Mon, 14 Apr 2014 17:02:13 -0700
+In-Reply-To: <1397519841-24847-4-git-send-email-davidlohr@hp.com>
+References: <1397519841-24847-1-git-send-email-davidlohr@hp.com>
+	 <1397519841-24847-4-git-send-email-davidlohr@hp.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 12:49:49AM +0100, Mark Brown wrote:
-> On Mon, Apr 14, 2014 at 02:38:53PM -0700, Insop Song wrote:
-> > On Mon, Apr 14, 2014 at 09:51:51PM +0100, Mark Brown wrote:
-> 
-> > > Please also be sure to CC the mailing list on patches, the sourceforge
-> > > list has been unused for quite some time now.
-> 
-> > We use scripts/get_maintainer.pl to get the mailing addresses.
-> > We will double check the mailing list from MAINTAINER file.
-> 
-> This will be part of not using a current kernel - if you're using a v3.8
-> kernel to check then that's over a year out of date.
+Stupid script... Cc'ing Oleg.
 
-I think I sent too soon, you meant for the get_maintainer.pl script.
+On Mon, 2014-04-14 at 16:57 -0700, Davidlohr Bueso wrote:
+> For single threaded workloads, we can avoid flushing
+> and iterating through the entire list of tasks, making
+> the whole function a lot faster, requiring only a single
+> atomic read for the mm_users.
+> 
+> Suggested-by: Oleg Nesterov <oleg@redhat.com>
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> ---
+>  mm/vmacache.c | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+> 
+> diff --git a/mm/vmacache.c b/mm/vmacache.c
+> index e167da2..61c38ae 100644
+> --- a/mm/vmacache.c
+> +++ b/mm/vmacache.c
+> @@ -17,6 +17,16 @@ void vmacache_flush_all(struct mm_struct *mm)
+>  {
+>  	struct task_struct *g, *p;
+>  
+> +	/*
+> +	 * Single threaded tasks need not iterate the entire
+> +	 * list of process. We can avoid the flushing as well
+> +	 * since the mm's seqnum was increased and don't have
+> +	 * to worry about other threads' seqnum. Current's
+> +	 * flush will occur upon the next lookup.
+> +	 */
+> +	if (atomic_read(&mm->mm_users) == 1)
+> +		return;
+> +
+>  	rcu_read_lock();
+>  	for_each_process_thread(g, p) {
+>  		/*
 
-Regards,
 
