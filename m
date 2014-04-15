@@ -1,95 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710AbaDOMRI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 08:17:08 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:55572 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754544AbaDOMRD (ORCPT
+	id S1754544AbaDOMRr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 08:17:47 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33867 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558AbaDOMPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 08:17:03 -0400
+	Tue, 15 Apr 2014 08:15:00 -0400
+Date: Tue, 15 Apr 2014 13:14:32 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: Sebastian Reichel <sre@ring0.de>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        alsa-devel@alsa-project.org, Pavel Machek <pavel@ucw.cz>
+Message-ID: <20140415121432.GY12304@sirena.org.uk>
+References: <1396733753-9820-1-git-send-email-sre@kernel.org>
+ <1396733753-9820-3-git-send-email-sre@kernel.org>
 MIME-Version: 1.0
-Date: Tue, 15 Apr 2014 08:17:01 -0400
-X-Google-Sender-Auth: Bd6ZdB6EBHwhUKM68xP23G9dg5c
-Message-ID: <CA+5PVA6C7W3wd9t0CVrVDo+qGvHOZGTL_Z8LFe84BMXjwOmn_w@mail.gmail.com>
-Subject: 3.15 drivers/net/ethernet/broadcom/cnic.c:576 suspicious
- rcu_dereference_check() usage!
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: "David S. Miller" <davem@davemloft.net>, Michael Chan <mchan@broadcom.com>,
-        Eddie Wai <eddie.wai@broadcom.com>
-Cc: netdev <netdev@vger.kernel.org>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="apSYfA7d5AHMku3c"
+Content-Disposition: inline
+In-Reply-To: <1396733753-9820-3-git-send-email-sre@kernel.org>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/5] ASoC: Allow Aux Codecs to be specified using DT
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
 
-We've had a report [1] of the bnx2i/cnic driver(s) throwing suspicious
-RCU usage with 3.15 merge window kernels on an i686 machine.  This
-corresponds to Linux v3.14-12812-g321d03c86732.  I've included the
-dump below.
+--apSYfA7d5AHMku3c
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Has anyone seen this issue before?
+On Sat, Apr 05, 2014 at 11:35:50PM +0200, Sebastian Reichel wrote:
+> This patch adds support for specifying auxiliary codecs and
+> codec configuration via device tree phandles.
+>=20
+> This change adds new fields to snd_soc_aux_dev and snd_soc_codec_conf
+> and adds support for the changes to SoC core methods.
 
-josh
+What binding is supposed to be implemented by this?
 
-[1] https://bugzilla.redhat.com/show_bug.cgi?id=1087813
+--apSYfA7d5AHMku3c
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-[   90.432418] ===============================
-[   90.511920] [ INFO: suspicious RCU usage. ]
-[   90.511922] 3.15.0-0.rc0.git13.1.fc21.i686 #1 Not tainted
-[   90.511922] -------------------------------
-[   90.511923] drivers/net/ethernet/broadcom/cnic.c:576 suspicious
-rcu_dereference_check() usage!
-[   90.511923]
-[   90.511923] other info that might help us debug this:
-[   90.511923]
-[   90.511924]
-[   90.511924] rcu_scheduler_active = 1, debug_locks = 0
-[   90.511925] 3 locks held by anaconda/1320:
-[   90.511932]  #0:  (rtnl_mutex){+.+.+.}, at: [<c09c6474>] rtnl_lock+0x14/0x20
-[   90.511937]  #1:  (&bnx2i_dev_lock){+.+...}, at: [<f80d45df>]
-bnx2i_ulp_init+0x2f/0x140 [bnx2i]
-[   90.511940]  #2:  (cnic_lock){+.+...}, at: [<f80c8328>]
-cnic_register_device+0x38/0x2d0 [cnic]
-[   90.511941]
-[   90.511941] stack backtrace:
-[   90.511942] CPU: 3 PID: 1320 Comm: anaconda Not tainted
-3.15.0-0.rc0.git13.1.fc21.i686 #1
-[   90.511943] Hardware name: HP ProLiant DL360 G7, BIOS P68 01/28/2011
-[   90.511946]  00000000 2cd0aecd 00000000 dc0d3cf4 c0ae271d 00000001
-dc0d3d1c c04ac226
-[   90.511948]  c0cb548e c0cdb161 00000001 00000000 dc160000 00000001
-ec75a2c0 ec75a32c
-[   90.511950]  dc0d3d90 f80c8442 00000003 f80d45df 00000001 df49393c
-00000000 ec75a330
-[   90.511951] Call Trace:
-[   90.511956]  [<c0ae271d>] dump_stack+0x48/0x60
-[   90.511959]  [<c04ac226>] lockdep_rcu_suspicious+0xd6/0x100
-[   90.511961]  [<f80c8442>] cnic_register_device+0x152/0x2d0 [cnic]
-[   90.511967]  [<f80d45df>] ? bnx2i_ulp_init+0x2f/0x140 [bnx2i]
-[   90.511969]  [<c04add2b>] ? trace_hardirqs_on+0xb/0x10
-[   90.511972]  [<f80d45df>] ? bnx2i_ulp_init+0x2f/0x140 [bnx2i]
-[   90.511974]  [<f80d45df>] ? bnx2i_ulp_init+0x2f/0x140 [bnx2i]
-[   90.511977]  [<f80d45f9>] bnx2i_ulp_init+0x49/0x140 [bnx2i]
-[   90.511979]  [<f80c65e1>] cnic_register_driver+0xe1/0x180 [cnic]
-[   90.511982]  [<f7d93000>] ? 0xf7d92fff
-[   90.511984]  [<f7d9308b>] bnx2i_mod_init+0x8b/0x1000 [bnx2i]
-[   90.511986]  [<f7d93000>] ? 0xf7d92fff
-[   90.511988]  [<c040049a>] do_one_initcall+0xca/0x1a0
-[   90.511990]  [<f7d93000>] ? 0xf7d92fff
-[   90.511992]  [<c0445777>] ? set_memory_ro+0x37/0x40
-[   90.511995]  [<c04e3b96>] load_module+0x1fe6/0x2480
-[   90.511999]  [<c04dfb99>] ? copy_module_from_fd.isra.45+0x109/0x1a0
-[   90.512001]  [<c04e41ed>] SyS_finit_module+0x8d/0xd0
-[   90.512003]  [<c04a97ab>] ? up_write+0x1b/0x30
-[   90.512005]  [<c056defb>] ? vm_mmap_pgoff+0x9b/0xc0
-[   90.512010]  [<c0af39df>] sysenter_do_call+0x12/0x38
-[   90.512012]  [<c0ae0000>] ? mtrr_check.part.2+0x32/0x57
-[   90.512304] bnx2i [04:00.01]: ISCSI_INIT passed
-[  155.484180] INFO: rcu_sched detected stalls on CPUs/tasks: {}
-(detected by 7, t=65099 jiffies, g=4371, c=4370, q=172)
-[  155.634698] INFO: Stall ended before state dump start
-[-- MARK -- Tue Apr 15 09:30:01 2014]
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTTSKkAAoJELSic+t+oim9/WsQAJbb5rAEXw99PNcgkQGDmK6p
+OepYpcpMf8RO85qL3no2x8C+YjW7w44sljpozlFf8px/SDuee8FCjKUm9HN26htl
+bcSX9DN80S/zMOcO3h74sdTLZrNYIrAgiEPzNs/IbMH67lLTHm23BjTlfUdFlldz
+3H/FlXvJ86Hux5fwMcrhz5JSgCngQ8tnDAAA5C5/mbPLVchKpsm4/l4eiAf35YQe
+bf33rMxLqDH9l97aTrjguDSRefnqI4PZmyMxg0VQONnLb5vadDo93ucYQyITbU7W
+Rxf8HJvrJte41xbcZovltF9xtmGZ+yE+MMrruwaqLKUrIAz6tKUQXm+NHO27irUL
+Jq+nZr0vyHg03uRTdJBrRWVq3yOmmQUCCjHlAQJ0CfZeK/sASbzouNXyK5JuL8SU
+IRbANr4GqXBOEM3Tnmvoq/pktQgdVcNL2pJsJ/R8D6Y+nZTiqHCCT/djRQblQe5n
+SOh8ExBeRVSoyyNGOs4+OEYZiYYol01dgU0cm7S5fJ3/IlvyuxZXnLBvf1v5NEC1
+eX/fKR7/CVK3dz4/1bihW/2QYgX7XkUq+UmwIsaaYPTGZVAPPIJJWfq4N0DYdQ3J
+NupACShR9v+iq8YPQAgZvb9JzzXhucQvXm21xQVdQtF5VFen18/t893q7IbpNsIO
+FrdPDQeJAspFbSZd1nS5
+=tQs2
+-----END PGP SIGNATURE-----
+
+--apSYfA7d5AHMku3c--
