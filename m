@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113AbaDOJdN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 05:33:13 -0400
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:33018 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751037AbaDOJdK (ORCPT
+	id S1754182AbaDOJd0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 05:33:26 -0400
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:61964 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752745AbaDOJdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 05:33:10 -0400
-Date: Tue, 15 Apr 2014 12:33:06 +0300
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: m.chehab@samsung.com, linux-dev@sensoray.com, hans.verkuil@cisco.com,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [media] s2255drv: fix memory leak s2255_probe()
-Message-ID: <20140415093305.GE8753@valkosipuli.retiisi.org.uk>
-References: <1408657.25U3i1DfG3@daeseok-laptop.cloud.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1408657.25U3i1DfG3@daeseok-laptop.cloud.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 15 Apr 2014 05:33:19 -0400
+Message-ID: <1397554396.1985.31.camel@x220>
+Subject: Re: [PATCH 04/28] Remove EXYNOS_DEV_SYSMMU
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Sachin Kamat <sachin.kamat@linaro.org>, Olof Johansson <olof@lixom.net>
+Cc: Richard Weinberger <richard@nod.at>, Joerg Roedel <joro@8bytes.org>,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Date: Tue, 15 Apr 2014 11:33:16 +0200
+In-Reply-To: <CAK9yfHzP0ekboc-yi6FHvR3_rRiqcLC18pE2UynpxGYO0mUOsw@mail.gmail.com>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+	 <1391971686-9517-5-git-send-email-richard@nod.at>
+	 <1391976496.25855.19.camel@x220>
+	 <CAK9yfHzP0ekboc-yi6FHvR3_rRiqcLC18pE2UynpxGYO0mUOsw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Apr 2014 09:33:16.0764 (UTC) FILETIME=[BAFA69C0:01CF588D]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daeseok,
-
-On Tue, Apr 15, 2014 at 01:49:34PM +0900, Daeseok Youn wrote:
+On Mon, 2014-02-10 at 10:02 +0530, Sachin Kamat wrote:
+> +cc linux-samsung-soc list
 > 
-> smatch says:
->  drivers/media/usb/s2255/s2255drv.c:2246 s2255_probe() warn:
-> possible memory leak of 'dev'
+> On 10 February 2014 01:38, Paul Bolle <pebolle@tiscali.nl> wrote:
+> > I noted this one about a year ago (see
+> > https://lkml.org/lkml/2013/3/5/401 ). By now I wonder whether
+> > EXYNOS_IOMMU (and everything depending on it) shouldn't be removed. That
+> > code has been unbuildable for at least a year now  (I have not checked
+> > how much code is involved).
 > 
-> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
-> ---
->  drivers/media/usb/s2255/s2255drv.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/media/usb/s2255/s2255drv.c b/drivers/media/usb/s2255/s2255drv.c
-> index 1d4ba2b..8aca3ef 100644
-> --- a/drivers/media/usb/s2255/s2255drv.c
-> +++ b/drivers/media/usb/s2255/s2255drv.c
-> @@ -2243,6 +2243,7 @@ static int s2255_probe(struct usb_interface *interface,
->  	dev->cmdbuf = kzalloc(S2255_CMDBUF_SIZE, GFP_KERNEL);
->  	if (dev->cmdbuf == NULL) {
->  		s2255_dev_err(&interface->dev, "out of memory\n");
-> +		kfree(dev);
->  		return -ENOMEM;
->  	}
->  
+> Please refer to some on-going discussion about it at [1].
+> 
+> [1] http://thread.gmane.org/gmane.linux.kernel.samsung-soc/26842
 
-The rest of the function already uses goto and labels for error handling. I
-think it'd take adding one more. dev is correctly released in other error
-cases.
+It's not clear to me whether an actual decision was eventually made.
+Olof, does it make sense to rebase the patch (that Sachin linked to) on
+onto v3.15-rc1 and resubmit?
 
-What do you think?
 
--- 
-Kind regards,
+Paul Bolle
 
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
