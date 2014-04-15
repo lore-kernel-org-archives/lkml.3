@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192AbaDOLxo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 07:53:44 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:57077 "EHLO
+	id S1754083AbaDOLxn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 07:53:43 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:57079 "EHLO
 	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752074AbaDOLuq (ORCPT
+	by vger.kernel.org with ESMTP id S1752166AbaDOLuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Apr 2014 07:50:46 -0400
 From: Mohit Kumar <mohit.kumar@st.com>
@@ -12,10 +12,10 @@ To: <spear-devel@list.st.com>, <linux-kernel@vger.kernel.org>,
         <devicetree@vger.kernel.org>, <linux-pci@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
 Cc: Pratyush Anand <pratyush.anand@st.com>, Mohit Kumar <mohit.kumar@st.com>,
-        <stable@vger.kernel.org>
-Subject: [PATCH V8 2/9] SPEAr13XX: Fix static mapping table
-Date: Tue, 15 Apr 2014 17:19:44 +0530
-Message-ID: <d6886e0f97dff12932cf89cb33721ac86c3a8e8b.1397555158.git.mohit.kumar@st.com>
+        Viresh Kumar <viresh.linux@gmail.com>
+Subject: [PATCH V8 4/9] SPEAr: misc: Add binding information
+Date: Tue, 15 Apr 2014 17:19:46 +0530
+Message-ID: <4a1155798bd63b0ac0b731e9808496d038af596d.1397555158.git.mohit.kumar@st.com>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <cover.1397555158.git.mohit.kumar@st.com>
 References: <cover.1397555158.git.mohit.kumar@st.com>
@@ -30,52 +30,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Pratyush Anand <pratyush.anand@st.com>
 
-SPEAr13XX was using virtual address space 0xFE000000 to map physical address
-space 0xB3000000. pci_remap_io uses 0xFEE00000 as virtual address. So
-change 0xFE000000 to 0xF9000000.
+SPEAr SOCs have some miscellaneous registers which are used to configure
+few properties of different peripheral controllers.
 
 Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
-Signed-off-by: Mohit Kumar <mohit.kumar@st.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 Acked-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Mohit Kumar <mohit.kumar@st.com>
+Cc: Viresh Kumar <viresh.linux@gmail.com>
 Cc: spear-devel@list.st.com
-Cc: stable@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
+Cc: devicetree@vger.kernel.org
 ---
- arch/arm/mach-spear/include/mach/spear.h |    4 ++--
- arch/arm/mach-spear/spear13xx.c          |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ .../devicetree/bindings/arm/spear-misc.txt         |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/spear-misc.txt
 
-diff --git a/arch/arm/mach-spear/include/mach/spear.h b/arch/arm/mach-spear/include/mach/spear.h
-index 5cdc53d..f2d6a01 100644
---- a/arch/arm/mach-spear/include/mach/spear.h
-+++ b/arch/arm/mach-spear/include/mach/spear.h
-@@ -52,10 +52,10 @@
- #ifdef CONFIG_ARCH_SPEAR13XX
- 
- #define PERIP_GRP2_BASE				UL(0xB3000000)
--#define VA_PERIP_GRP2_BASE			IOMEM(0xFE000000)
-+#define VA_PERIP_GRP2_BASE			IOMEM(0xF9000000)
- #define MCIF_SDHCI_BASE				UL(0xB3000000)
- #define SYSRAM0_BASE				UL(0xB3800000)
--#define VA_SYSRAM0_BASE				IOMEM(0xFE800000)
-+#define VA_SYSRAM0_BASE				IOMEM(0xF9800000)
- #define SYS_LOCATION				(VA_SYSRAM0_BASE + 0x600)
- 
- #define PERIP_GRP1_BASE				UL(0xE0000000)
-diff --git a/arch/arm/mach-spear/spear13xx.c b/arch/arm/mach-spear/spear13xx.c
-index 7aa6e8c..89212ff 100644
---- a/arch/arm/mach-spear/spear13xx.c
-+++ b/arch/arm/mach-spear/spear13xx.c
-@@ -52,7 +52,7 @@ void __init spear13xx_l2x0_init(void)
- /*
-  * Following will create 16MB static virtual/physical mappings
-  * PHYSICAL		VIRTUAL
-- * 0xB3000000		0xFE000000
-+ * 0xB3000000		0xF9000000
-  * 0xE0000000		0xFD000000
-  * 0xEC000000		0xFC000000
-  * 0xED000000		0xFB000000
+diff --git a/Documentation/devicetree/bindings/arm/spear-misc.txt b/Documentation/devicetree/bindings/arm/spear-misc.txt
+new file mode 100644
+index 0000000..cf64982
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/spear-misc.txt
+@@ -0,0 +1,9 @@
++SPEAr Misc configuration
++===========================
++SPEAr SOCs have some miscellaneous registers which are used to configure
++few properties of different peripheral controllers.
++
++misc node required properties:
++
++- compatible Should be	"st,spear1340-misc", "syscon".
++- reg: Address range of misc space upto 8K
 -- 
 1.7.0.1
 
