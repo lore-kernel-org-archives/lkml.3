@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751185AbaDOIHW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 04:07:22 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37906 "EHLO
+	id S1751360AbaDOIHm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 04:07:42 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37912 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750885AbaDOIG5 (ORCPT
+	with ESMTP id S1750885AbaDOIH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 04:06:57 -0400
-From: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-To: sfrench@samba.org, linux-cifs@vger.kernel.org, viro@zeniv.linux.org.uk
-Cc: geert@linux-m68k.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Subject: [PATCH] cif: fix dead code
-Date: Tue, 15 Apr 2014 10:06:50 +0200
-Message-Id: <1397549210-29445-1-git-send-email-michael.opdenacker@free-electrons.com>
+	Tue, 15 Apr 2014 04:07:29 -0400
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/2] ARM: berlin: add GPIO support for the BG2Q
+Date: Tue, 15 Apr 2014 10:07:23 +0200
+Message-Id: <1397549245-3338-1-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This issue was found by Coverity (CID 1202536)
+This series add the support for the GPIOs of the Berlin BG2Q. We use the
+newly integrated dwapb GPIO driver here.
 
-This proposes a fix for a statement that creates dead code.
-The "rc < 0" statement is within code that is run
-with "rc > 0".
+This applies on top of Alexandre's BG2Q symbol introduction[1] and the dwapb
+gpio patch fixing IRQ initialization[2].
 
-It seems like "err < 0" was meant to be used here.
-This way, the error code is returned by the function.
+[1] https://patchwork.kernel.org/patch/3876141/
+[2] https://lkml.org/lkml/2014/4/7/96
 
-Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.com>
----
- fs/cifs/file.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Antoine Ténart (2):
+  ARM: berlin: add the LIBGPIO as a dependency for the BG2Q
+  ARM: dts: berlin: add GPIO nodes for the BG2Q
 
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index 8add25538a3b..b6e78632fa97 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -2599,7 +2599,7 @@ cifs_writev(struct kiocb *iocb, const struct iovec *iov,
- 			ssize_t err;
- 
- 			err = generic_write_sync(file, iocb->ki_pos - rc, rc);
--			if (rc < 0)
-+			if (err < 0)
- 				rc = err;
- 		}
- 	} else {
+ arch/arm/boot/dts/berlin2q.dtsi | 102 ++++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-berlin/Kconfig    |   1 +
+ 2 files changed, 103 insertions(+)
+
 -- 
 1.8.3.2
 
