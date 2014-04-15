@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268AbaDOK0T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 06:26:19 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:58271 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaDOK0R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 06:26:17 -0400
-Message-ID: <534D0943.2050100@gmail.com>
-Date: Tue, 15 Apr 2014 12:26:11 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-To: Jisheng Zhang <jszhang@marvell.com>
-CC: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        Jimmy Xu <zmxu@marvell.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ARM: dts: berlin: add GPIO nodes for the BG2Q
-References: <1397549245-3338-1-git-send-email-antoine.tenart@free-electrons.com> <1397549245-3338-3-git-send-email-antoine.tenart@free-electrons.com> <534CFA77.9030108@gmail.com> <20140415180058.2fefca78@xhacker>
-In-Reply-To: <20140415180058.2fefca78@xhacker>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1754328AbaDOK0u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 06:26:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52205 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751210AbaDOK0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 06:26:49 -0400
+Message-ID: <534D0966.201@suse.cz>
+Date: Tue, 15 Apr 2014 12:26:46 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>, Jean Delvare <jdelvare@suse.de>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Josh Boyer <jwboyer@fedoraproject.org>
+Subject: Re: Hardware dependencies in Kconfig
+References: <20140414145359.48b7337c@endymion.delvare> <20140414191143.GA26864@kroah.com> <20140414231254.392c0df8@endymion.delvare> <20140415045214.GA32541@kroah.com>
+In-Reply-To: <20140415045214.GA32541@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2014 12:00 PM, Jisheng Zhang wrote:
-> On Tue, 15 Apr 2014 02:23:03 -0700
-> Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
->> On 04/15/2014 10:07 AM, Antoine Ténart wrote:
->>> The Marvell Berlin BG2Q has 6 GPIO ports compatible with the
->>> snps,dw-apb-gpio driver. This patch add the corresponding device tree
->>> nodes.
->>>
->>> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
->>> ---
->>>    arch/arm/boot/dts/berlin2q.dtsi | 102
->>> ++++++++++++++++++++++++++++++++++++++++ 1 file changed, 102 insertions(+)
->>>
->>> diff --git a/arch/arm/boot/dts/berlin2q.dtsi
->>> b/arch/arm/boot/dts/berlin2q.dtsi index e6e556055dfc..b2625f896bc5 100644
->>> --- a/arch/arm/boot/dts/berlin2q.dtsi
->>> +++ b/arch/arm/boot/dts/berlin2q.dtsi
-[...]
->>> +					compatible =
->>> "snps,dw-apb-gpio-port";
->>> +					gpio-controller;
->>> +					#gpio-cells = <2>;
->>> +					snps,nr-gpios = <32>;
->>
->> 32 gpio pins for each of the 6 GPIO controllers? Either BG2Q is a GPIO
->
-> Yes, BG2Q support 32 pins every port
+On 2014-04-15 06:52, Greg KH wrote:
+> On Mon, Apr 14, 2014 at 11:12:54PM +0200, Jean Delvare wrote:
+>> I'm very fine with USB drivers being architecture-agnostic. They really
+>> are. But in practice a lot of PCI and platform drivers are only useful
+>> of one architecture, of a few ones at best.
+> 
+> Why would PCI devices only be useful on one architecture?  PCI works on
+> almost all arches that Linux supports, if it's a PCI card, it could be
+> on any of those processors.  If it's a mini-pci, the chances are less,
+> but still quite possible.
 
-Wow. Thanks for confirming this!
+"PCI device" does not necessarily imply any of the PCI/PCIe form
+factors. Looking at my desktop machine, neither the integrated graphics
+core nor the Intel Management Engine thing are cards that I could plug
+into an ARM router with a PCI slot. So the i915 and mei drivers are
+properly annotated with 'depends on X86' and one is not bothered with
+the prompts when building a kernel for an ARM router.
 
->> I am fine with using nr-gpios property now, but I guess BG2Q also
->> has that CONFIG[1,2] registers to actually read out the features
->> synthesized in? If I find some time, I'll prepare a patch for
->> dw-apb-gpio to exploit that (optional) information instead of
->> using nr-gpios.
->
-> The problem is CONFIG1/2 registers don't exist on some versions.
-> For example, the version used in BG2/BG2CD. So nr-gpio is necessary
-> if we want to support these versions.
 
-Hmm, are you sure about BG2? I remember reading it and it contains
-sane values. Anyway, a proper patch for dw-apb-gpio would include
-checking for sane (e.g. non-zero) values. And nr-gpios will always
-stay as fall-back just because e.g. sunxi does not have the CONFIG
-registers.
+> Yes, it's a pain for distros, and yes, it would be nice if people wrote
+> better Kconfig help text.  Pushing back on that is the key here.  If you
+> see new drivers show up that you don't know where they work on, ask the
+> developers and make up patches.
 
-Sebastian
+Better help texts would be nice, but what would really help is some
+machine-readable annotation. 'depends on <arch/mach> || COMPILE_TEST' is
+already available, so why not use it.
 
+Michal
