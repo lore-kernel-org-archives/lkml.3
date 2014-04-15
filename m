@@ -1,93 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391AbaDOStt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 14:49:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10228 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754870AbaDOShY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 14:37:24 -0400
-Date: Tue, 15 Apr 2014 20:36:52 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, David Woodhouse <dwmw2@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Richard Weinberger <richard@nod.at>,
-        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND2 05/11] signals: cleanup the usage of t/current in
-	do_sigaction()
-Message-ID: <20140415183652.GA13409@redhat.com>
+	id S1755409AbaDOSty (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 14:49:54 -0400
+Received: from e24smtp03.br.ibm.com ([32.104.18.24]:58974 "EHLO
+	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755387AbaDOStu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 14:49:50 -0400
+Date: Tue, 15 Apr 2014 15:49:41 -0300
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: Stefani Seibold <stefani@seibold.net>
+Cc: Benjamin Herrenschmidt <benh@au1.ibm.com>,
+        linux-usb <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        Greg KH <greg@kroah.com>, Alan Stern <stern@rowland.harvard.edu>,
+        sarah.a.sharp@linux.intel.com
+Subject: Re: Missing USB XHCI and EHCI reset for kexec
+Message-ID: <20140415184941.GD21101@oc0268524204.ibm.com>
+References: <1397416959.1555.30.camel@vger.seibold.net>
+ <1397468521.9258.28.camel@pasglop>
+ <20140414174458.Horde.ieyRX8PcZ0lg3nY1QFE2DA4@webmail.your-server.de>
+ <20140414214807.GA32141@oc0268524204.ibm.com>
+ <20140415120417.Horde.2gdC8Woe64OQXOq_cVqtkg6@webmail.your-server.de>
+ <20140415122013.GA21101@oc0268524204.ibm.com>
+ <20140415170028.Horde.ojJX1pFPqNqnig4r08hUkg1@webmail.your-server.de>
+ <20140415183345.GC21101@oc0268524204.ibm.com>
+ <1397587378.21321.2.camel@vger.seibold.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140415183625.GA13371@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1397587378.21321.2.camel@vger.seibold.net>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041518-9564-0000-0000-000000978595
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The usage of "task_struct *t" and "current" in do_sigaction() looks
-really annoying and chaotic. Initially "t" is used as a cached value
-of current but not consistently, then it is reused as a loop variable
-and we have to use "current" again.
+On Tue, Apr 15, 2014 at 08:42:58PM +0200, Stefani Seibold wrote:
+> Am Dienstag, den 15.04.2014, 15:33 -0300 schrieb Thadeu Lima de Souza
+> Cascardo:
+> > On Tue, Apr 15, 2014 at 05:00:28PM +0200, stefani@seibold.net wrote:
+> > > 
+> > > Zitat von Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>:
+> > > 
+> > > >On Tue, Apr 15, 2014 at 12:04:17PM +0200, stefani@seibold.net wrote:
+> > > >>
+> > > >>Zitat von Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>:
+> > > >>
+> > > >>>On Mon, Apr 14, 2014 at 05:44:58PM +0200, stefani@seibold.net wrote:
+> > > >>>>
+> > > >>>>Zitat von Benjamin Herrenschmidt <benh@au1.ibm.com>:
+> > > >>>>
+> > > >>>>>I don't know about EHCI specifically but this is a known issue with
+> > > >>>>>XHCI, I observe similar issues on other powerpc platforms (servers)
+> > > >>>>>and this isn't architecture specific (looks more like actualy xhc
+> > > >>>>>implementation specific).
+> > > >>>>>
+> > > >>>>>Thadeu Cascardo (on CC) has been the one investigating that on our side,
+> > > >>>>>he might have more to add including patches.
+> > > >>>>>
+> > > >>>>
+> > > >>>>I have now a kernel 3.14 dmesg log of the problem. After a kexec the
+> > > >>>>kexeced 3.14 kernel shows:
+> > > >>>>
+> > > >>>>[    1.170029] xhci_hcd 0001:03:00.0: xHCI Host Controller
+> > > >>>>[    1.175306] xhci_hcd 0001:03:00.0: new USB bus registered,
+> > > >>>>assigned bus number 1
+> > > >>>>[    1.212561] xhci_hcd 0001:03:00.0: Host not halted after 16000
+> > > >>>>microseconds.
+> > > >>>>[    1.219621] xhci_hcd 0001:03:00.0: can't setup: -110
+> > > >>>>[    1.224597] xhci_hcd 0001:03:00.0: USB bus 1 deregistered
+> > > >>>>[    1.230021] xhci_hcd 0001:03:00.0: init 0001:03:00.0 fail, -110
+> > > >>>>[    1.235955] xhci_hcd: probe of 0001:03:00.0 failed with error -110
+> > > >>>>
+> > > >>>
+> > > >>>What is your controller vendor and device IDs? Is that a TI chip?
+> > > >>>
+> > > >>
+> > > >>Yes it is a TI chip, vendor ID 104c and product ID 8241.
+> > > >>
+> > > >>>Can you check if the patch I sent a month ago fixes it? [1] There's the
+> > > >>>whole story there. In fact, you will also need something like the patch
+> > > >>>below. Can you apply only the first one, verify, and, then, the other
+> > > >>>one as well, and report what worked for you?
+> > > >>>
+> > > >>>[1] http://marc.info/?l=linux-usb&m=139483181809062&w=2
+> > > >>>
+> > > >>
+> > > >>I tried the attach patch and it did not help. This is what i
+> > > >>expected because this is a fix in the shutdown path, which will
+> > > >>never called when doing a forced kexec.
+> > > >
+> > > >Hi, Stefani.
+> > > >
+> > > >Did you try with both patches applied? How do you evoke the forced
+> > > >kexec? Is that a kexec on panic? Does it really need to be forced? With
+> > > >no clean shutdown, platform and drivers would need to issue resets, like
+> > > >you mentioned below, to get the system into a clean state.
+> > > >
+> > > 
+> > > Yes, i applied both patches. But without success.
+> > > 
+> > > IMHO i think it is necessary to bring the device i a clean state
+> > > when the driver use the HW.
+> > > 
+> > > >>
+> > > >>I have a running a 3.10.23 kernel. This kernel do a kexec for a
+> > > >>kernel 3.14. Since the kernel 3.10.23 did not performe a clean
+> > > >>shutdown, the state of the XHCI Controller is undefined. So when
+> > > >
+> > > >And the clean shutdown requires both of my patches, for TI chips, as far
+> > > >as I know. It looks like the problem is issuing a halt when there are
+> > > >pending URBs.
+> > > >
+> > > >>kernel 3.14 will probe XHCI it will find a XHCI controller which was
+> > > >>not performed a reset.
+> > > >>
+> > > >
+> > > >The problem is not that a reset hasn't been issued. A PCI function reset
+> > > >should fix most of the problems with a bad device state, when the reset
+> > > >works. However, the problem is that it was not cleanly shut down. URBs
+> > > >should have been canceled and removed from the controller queue, and it
+> > > >should have halted after that.
+> > > 
+> > > Again, i think it is the job of the driver to bring the chip in a clean state
+> > > before using them. A driver should never expect a reset state of a chip.
+> > > 
+> > > >
+> > > >>So i think it is necessary to reset the XHCI controller and all
+> > > >>devices on this bus. This is what i do with a "echo 1
+> > > >>>/sys/bus/pci/drivers/xhci_hcd/0001:03:00.0/reset" before the kexec.
+> > > >>
+> > > >
+> > > >One way to look at that is making the PCI code issue resets to all buses
+> > > >before doing any other access. That will make booting more slow, and
+> > > >there are a lot of other corner cases where this might not be enough.
+> > > >It's probably more sane to try to get the 3.10.23 kernel to do a clean
+> > > >shutdown, if possible.
+> > > >
+> > > 
+> > > With this driver design the kexec functionality is usesless on PowerPC.
+> > > X86 looks a little bit better.
+> > > 
+> > > - Stefani
+> > > 
+> > > 
+> > 
+> > What is the vendor and device ID you are using on your X86 system? This
+> > is not a matter of what architecture you are using, it's the XHCI
+> > controller which does not behave as well as the one you are using on
+> > X86, which is likely an Intel one.
+> > 
+> 
+> It is an Intel 8086:8c31. But this was only a side note. We need a
+> generic solution not a vendor specific one. Otherwise kexec is useless
+> on other architectures.
+> 
+> - Stefani
+> 
+> 
 
-Cleanup this mess and also convert the code to use for_each_thread().
+It's probably "useless" on X86 with a TI XHCI board. I just don't have
+such an environment to test. Can you arrange to test that? If that shows
+me wrong, we certainly need to investigate this even further.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/signal.c |   15 +++++++--------
- 1 files changed, 7 insertions(+), 8 deletions(-)
-
-diff --git a/kernel/signal.c b/kernel/signal.c
-index c0b7d0c..a58b0db 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -3067,16 +3067,16 @@ COMPAT_SYSCALL_DEFINE4(rt_tgsigqueueinfo,
- 
- int do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
- {
--	struct task_struct *t = current;
-+	struct task_struct *p = current, *t;
- 	struct k_sigaction *k;
- 	sigset_t mask;
- 
- 	if (!valid_signal(sig) || sig < 1 || (act && sig_kernel_only(sig)))
- 		return -EINVAL;
- 
--	k = &t->sighand->action[sig-1];
-+	k = &p->sighand->action[sig-1];
- 
--	spin_lock_irq(&current->sighand->siglock);
-+	spin_lock_irq(&p->sighand->siglock);
- 	if (oact)
- 		*oact = *k;
- 
-@@ -3095,17 +3095,16 @@ int do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
- 		 *   (for example, SIGCHLD), shall cause the pending signal to
- 		 *   be discarded, whether or not it is blocked"
- 		 */
--		if (sig_handler_ignored(sig_handler(t, sig), sig)) {
-+		if (sig_handler_ignored(sig_handler(p, sig), sig)) {
- 			sigemptyset(&mask);
- 			sigaddset(&mask, sig);
--			flush_sigqueue_mask(&mask, &t->signal->shared_pending);
--			do {
-+			flush_sigqueue_mask(&mask, &p->signal->shared_pending);
-+			for_each_thread(p, t)
- 				flush_sigqueue_mask(&mask, &t->pending);
--			} while_each_thread(current, t);
- 		}
- 	}
- 
--	spin_unlock_irq(&current->sighand->siglock);
-+	spin_unlock_irq(&p->sighand->siglock);
- 	return 0;
- }
- 
--- 
-1.5.5.1
+Thanks.
+Cascardo.
 
