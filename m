@@ -1,132 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbaDOWUk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 18:20:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14917 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751305AbaDOWUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 18:20:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,867,1389772800"; 
-   d="scan'208";a="521616893"
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: wim@iguana.be, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org
-Cc: david.a.cohen@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, gnomes@lxorguk.ukuu.org.uk,
-        linux@roeck-us.net
-Subject: [PATCH v4.1 2/2] x86: intel-mid: add watchdog platform code for Merrifield
-Date: Tue, 15 Apr 2014 15:20:32 -0700
-Message-Id: <1397600432-7243-1-git-send-email-david.a.cohen@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1397592366-3899-3-git-send-email-david.a.cohen@linux.intel.com>
-References: <1397592366-3899-3-git-send-email-david.a.cohen@linux.intel.com>
+	id S1751200AbaDOWZY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 18:25:24 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:57945 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750971AbaDOWZV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 18:25:21 -0400
+Message-ID: <534DB1CC.60407@semaphore.gr>
+Date: Wed, 16 Apr 2014 01:25:16 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: Jesper Nilsson <jesper.nilsson@axis.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>, linux-doc@vger.kernel.org,
+        cpufreq@vger.kernel.org,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH v2 0/8] Introduce new cpufreq helper macros
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds platform code for Intel Merrifield.
-Since the watchdog is not part of SFI table, we have no other option but
-to manually register watchdog's platform device (argh!).
+Hi all,
 
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
----
+This patch set introduces two freq_table helper macros which
+can be used for iteration over cpufreq_frequency_table and
+makes the necessary changes to cpufreq core and drivers that
+use such an iteration procedure.
 
-changes from v4 to v4.1:
- - dropped hardcoded irq value on mrfl_probe() function in favor or pdata's irq
-   value.
---
- arch/x86/platform/intel-mid/device_libs/Makefile   |  1 +
- .../platform/intel-mid/device_libs/platform_wdt.c  | 71 ++++++++++++++++++++++
- 2 files changed, 72 insertions(+)
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_wdt.c
+The motivation was a usage of common procedure to iterate over
+cpufreq_frequency_table across all drivers and cpufreq core.
 
-diff --git a/arch/x86/platform/intel-mid/device_libs/Makefile b/arch/x86/platform/intel-mid/device_libs/Makefile
-index 097e7a7940d8..af9307f2cc28 100644
---- a/arch/x86/platform/intel-mid/device_libs/Makefile
-+++ b/arch/x86/platform/intel-mid/device_libs/Makefile
-@@ -20,3 +20,4 @@ obj-$(subst m,y,$(CONFIG_DRM_MEDFIELD)) += platform_tc35876x.o
- obj-$(subst m,y,$(CONFIG_SERIAL_MRST_MAX3110)) += platform_max3111.o
- # MISC Devices
- obj-$(subst m,y,$(CONFIG_KEYBOARD_GPIO)) += platform_gpio_keys.o
-+obj-$(subst m,y,$(CONFIG_INTEL_MID_WATCHDOG)) += platform_wdt.o
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_wdt.c b/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
-new file mode 100644
-index 000000000000..a05315eb052d
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
-@@ -0,0 +1,71 @@
-+/*
-+ * platform_wdt.c: Watchdog platform library file
-+ *
-+ * (C) Copyright 2014 Intel Corporation
-+ * Author: David Cohen <david.a.cohen@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/platform_device.h>
-+#include <linux/platform_data/intel-mid_wdt.h>
-+#include <asm/intel-mid.h>
-+
-+#define TANGIER_EXT_TIMER0_MSI 15
-+
-+static struct platform_device wdt_dev = {
-+	.name = "intel_mid_wdt",
-+	.id = -1,
-+};
-+
-+static int tangier_probe(struct platform_device *pdev)
-+{
-+	int ioapic;
-+	int irq;
-+	struct intel_mid_wdt_pdata *pdata = pdev->dev.platform_data;
-+	struct io_apic_irq_attr irq_attr = { 0 };
-+
-+	if (!pdata)
-+		return -EINVAL;
-+
-+	irq = pdata->irq;
-+	ioapic = mp_find_ioapic(irq);
-+	if (ioapic >= 0) {
-+		int ret;
-+		irq_attr.ioapic = ioapic;
-+		irq_attr.ioapic_pin = irq;
-+		irq_attr.trigger = 1;
-+		/* irq_attr.polarity = 0; -> Active high */
-+		ret = io_apic_set_pci_routing(NULL, irq, &irq_attr);
-+		if (ret)
-+			return ret;
-+	} else {
-+		dev_warn(&pdev->dev, "cannot find interrupt %d in ioapic\n",
-+			 irq);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static struct intel_mid_wdt_pdata tangier_pdata = {
-+	.irq = TANGIER_EXT_TIMER0_MSI,
-+	.probe = tangier_probe,
-+};
-+
-+static int __init register_mid_wdt(void)
-+{
-+	if (intel_mid_identify_cpu() == INTEL_MID_CPU_CHIP_TANGIER) {
-+		wdt_dev.dev.platform_data = &tangier_pdata;
-+		return platform_device_register(&wdt_dev);
-+	}
-+
-+	return -ENODEV;
-+}
-+
-+rootfs_initcall(register_mid_wdt);
+This was tested on a x86_64 platform.
+Most files compiled successfully but unfortunately I was not
+able to compile sh_sir.c pasemi_cpufreq.c and ppc_cbe_cpufreq.c 
+due to lack of cross compiler.
+
+Changes v1 -> v2
+	- Rearrange patches
+	- Remove redundant braces
+	- Fix a newly introduced bug in exynos5440
+	- Use cpufreq_for_each_valid_entry instead of
+cpufreq_for_each_entry in cpufreq_frequency_table_get_index()
+	- Drop redundant double ! operator in longhaul and change
+the pos loop cursor variable to freq_pos.
+	- Declare pos variable on a separate line
+
+Stratos Karafotis (8):
+  cpufreq: Introduce macros for cpufreq_frequency_table iteration
+  cpufreq: Use cpufreq_for_each_* macros for frequency table iteration
+  davinci: da850: Use cpufreq_for_each_entry macro for iteration
+  mips: lemote 2f: se cpufreq_for_each_entry macro for iteration
+  mfd: db8500-prcmu: Use cpufreq_for_each_entry macro for iteration
+  thermal: cpu_cooling: Use cpufreq_for_each_valid_entry macro for
+    iteration
+  irda: sh_sir: Use cpufreq_for_each_valid_entry macro for iteration
+  sh: clk: Use cpufreq_for_each_valid_entry macro for iteration
+
+ Documentation/cpu-freq/cpu-drivers.txt | 16 ++++++++++
+ arch/arm/mach-davinci/da850.c          |  9 +++---
+ arch/mips/loongson/lemote-2f/clock.c   | 16 +++-------
+ drivers/cpufreq/acpi-cpufreq.c         |  9 +++---
+ drivers/cpufreq/arm_big_little.c       | 16 +++++-----
+ drivers/cpufreq/cpufreq.c              | 11 +++++++
+ drivers/cpufreq/cpufreq_stats.c        | 24 +++++----------
+ drivers/cpufreq/dbx500-cpufreq.c       |  8 ++---
+ drivers/cpufreq/elanfreq.c             |  9 +++---
+ drivers/cpufreq/exynos-cpufreq.c       | 11 +++----
+ drivers/cpufreq/exynos5440-cpufreq.c   | 30 +++++++++---------
+ drivers/cpufreq/freq_table.c           | 56 +++++++++++++++-------------------
+ drivers/cpufreq/longhaul.c             | 13 ++++----
+ drivers/cpufreq/pasemi-cpufreq.c       | 10 +++---
+ drivers/cpufreq/powernow-k6.c          | 14 ++++-----
+ drivers/cpufreq/ppc_cbe_cpufreq.c      |  9 +++---
+ drivers/cpufreq/s3c2416-cpufreq.c      | 40 +++++++++++-------------
+ drivers/cpufreq/s3c64xx-cpufreq.c      | 15 +++------
+ drivers/mfd/db8500-prcmu.c             | 19 +++++-------
+ drivers/net/irda/sh_sir.c              | 14 +++------
+ drivers/sh/clk/core.c                  | 20 +++---------
+ drivers/thermal/cpu_cooling.c          | 33 ++++++++------------
+ include/linux/cpufreq.h                | 21 +++++++++++++
+ 23 files changed, 206 insertions(+), 217 deletions(-)
+
 -- 
-1.9.1
-
+1.9.0
