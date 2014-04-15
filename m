@@ -1,94 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586AbaDOKT3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 06:19:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54357 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838AbaDOKT0 (ORCPT
+	id S1753639AbaDOKVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 06:21:15 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:11591 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071AbaDOKVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 06:19:26 -0400
-Date: Tue, 15 Apr 2014 12:19:10 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>, stable@vger.kernel.org
-Subject: Re: [PATCH 2/2] nohz: use delayed iowait accounting to avoid race on
- idle time stats
-Message-ID: <20140415101910.GN11096@twins.programming.kicks-ass.net>
-References: <53465F54.708@jp.fujitsu.com>
- <534660D2.1080505@jp.fujitsu.com>
+	Tue, 15 Apr 2014 06:21:13 -0400
+Message-ID: <534D07D0.1090807@huawei.com>
+Date: Tue, 15 Apr 2014 18:20:00 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <534660D2.1080505@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Will Deacon <will.deacon@arm.com>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>, Sukie Peng <Sukie.Peng@arm.com>,
+        "huxinwei@huawei.com" <huxinwei@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] arm64: Flush the process's mm context TLB entries when
+ switching
+References: <534BCE80.3090406@huawei.com> <20140414130154.GE3530@arm.com> <534C92B8.30408@huawei.com> <20140415080217.GD17408@arm.com>
+In-Reply-To: <20140415080217.GD17408@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.177.22.246]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 06:13:54PM +0900, Hidetoshi Seto wrote:
-> [WHAT THIS PATCH PROPOSED]:
+On 2014/4/15 16:02, Will Deacon wrote:
+> On Tue, Apr 15, 2014 at 03:00:24AM +0100, Ding Tianhong wrote:
+>> On 2014/4/14 21:01, Will Deacon wrote:
+>>> Hi Ding,
+>>>
+>>> On Mon, Apr 14, 2014 at 01:03:12PM +0100, Ding Tianhong wrote:
+>>>> I met a problem when migrating process by following steps:
+>>>>
+>>>> 1) The process was already running on core 0.
+>>>> 2) Set the CPU affinity of the process to 0x02 and move it to core 1,
+>>>>    it could work well.
+>>>> 3) Set the CPU affinity of the process to 0x01 and move it to core 0 again,
+>>>>    the problem occurs and the process was killed.
+>>>
+>>> [...]
+>>>
+>>>> It was a very strange problem that the PC and LR are both 0, and the esr is
+>>>> 0x83000006, it means that the used for instruction access generated MMU faults
+>>>> and synchronous external aborts, including synchronous parity errors.
+>>>>
+>>>> I try to fix the problem by invalidating the process's TLB entries when switching,
+>>>> it will make the context stale and pick new one, and then it could work well.
+>>>>
+>>>> So I think in some situation that after the process switching, the modification of
+>>>> the TLB entries in the new core didn't inform all other cores to invalidate the old
+>>>> TLB entries which was in the inner shareable caches, and then if the process schedule
+>>>> to another core, the old TLB entries may occur MMU faults.
+>>>
+>>> Yes, it sounds like you don't have your TLBs configured correctly. Can you
+>>> confirm that your EL3 firmware is configuring TLB broadcasting correctly
+>>> please?
+>>>
+>>
+>> Hi will:
+>>
+>> Do you mean the SCR_EL3.NS?
 > 
-> To fix problem 1, this patch adds seqcount for NO_HZ idle
-> accounting to avoid possible races between reader/writer.
+> No, there's usually a CPU-specific register (called something like actlr or
+> ectlr) which contains bit(s) to enable TLB broadcasting in hardware. Which
+> CPU are you using?
 > 
-> And to cope with problem 2, I introduced delayed iowait
-> accounting to get approximate value without making observers
-> to writers. Refer comment in patch for the detail.
+> Will
+> 
+Yes，I set the CPUECTLR.SMP to 1 and enable the core to receive TLB broadcast, then fix the problem,
+thanks for your help, And I use arm64-A57.
 
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -407,15 +407,42 @@ static void tick_nohz_stop_idle(struct tick_sched *ts, ktime_t now)
->  {
->  	ktime_t delta;
->  
-> +	write_seqcount_begin(&ts->idle_sleeptime_seq);
-> +
->  	/* Updates the per cpu time idle statistics counters */
->  	delta = ktime_sub(now, ts->idle_entrytime);
-> +
-> +	/*
-> +	 * Perform delayed iowait accounting:
-> +	 *
-> +	 * We account sleep time as iowait when nr_iowait of cpu indicates
-> +	 * there are taskes blocked by io, at the end of idle (=here).
-> +	 * It means we can not determine whether the sleep time will be idle
-> +	 * or iowait on the fly.
-> +	 * Therefore introduce a new rule:
-> +	 * - basically observers assign delta to idle
-> +	 * - if cpu find nr_iowait>0 at idle exit, accumulate delta as missed
-> +	 *   iowait, and account it in next turn of sleep instead.
-> +	 * - if observer find accumulated iowait while cpu is in sleep, it
-> +	 *   can calculate proper value to be accounted.
-> +	 */
-> +	if (ktime_compare(ts->iowait_pending, delta) > 0) {
->  		ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
-> +		ts->iowait_pending = ktime_sub(ts->iowait_pending, delta);
-> +	} else {
-> +		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime,
-> +					ktime_sub(delta, ts->iowait_pending));
-> +		ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime,
-> +						 ts->iowait_pending);
-> +		ts->iowait_pending = ktime_set(0, 0);
-> +	}
-> +	if (nr_iowait_cpu(smp_processor_id()) > 0)
-> +		ts->iowait_pending = ktime_add(ts->iowait_pending, delta);
-> +
->  	ts->idle_active = 0;
->  
-> +	write_seqcount_end(&ts->idle_sleeptime_seq);
-> +
->  	sched_clock_idle_wakeup_event(0);
->  }
+Regards
+Ding
+> .
+> 
 
-Why!? Both changelog and comment are silent on this. This doesn't appear
-to make any sense nor really solve anything.
 
