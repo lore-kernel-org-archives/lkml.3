@@ -1,47 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748AbaDOOy6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 10:54:58 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:45434 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770AbaDOOyz (ORCPT
+	id S1752562AbaDOOzn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 10:55:43 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:44906 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390AbaDOOz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 10:54:55 -0400
-Date: Tue, 15 Apr 2014 10:54:50 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, john@johnmccutchan.com, rlove@rlove.org,
-        eparis@parisplace.org, gregkh@linuxfoundation.org,
-        serge.hallyn@ubuntu.com, lennart@poettering.net, kay@vrfy.org
-Subject: Re: [PATCH 3/3] cgroup: implement cgroup.subtree_populated for the
- default hierarchy
-Message-ID: <20140415145450.GL1863@htj.dyndns.org>
-References: <1397511846-2904-1-git-send-email-tj@kernel.org>
- <1397511846-2904-4-git-send-email-tj@kernel.org>
- <534C83F1.9020106@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <534C83F1.9020106@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 15 Apr 2014 10:55:26 -0400
+Date: Tue, 15 Apr 2014 15:55:16 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Emmanuel Colbus <ecolbus@manux.info>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC][2/11][MANUX] Kernel compatibility : uname(2)
+Message-ID: <20140415155516.5efcac25@alan.etchedpixels.co.uk>
+In-Reply-To: <534D3757.3040800@manux.info>
+References: <534D3757.3040800@manux.info>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Tue, Apr 15, 2014 at 08:57:21AM +0800, Li Zefan wrote:
-> Is cgroup.tree_populated a better name?
+> Thus, I decided to fake a Linux-like answer on this syscall, and
+> implement another syscall where I could put what I wanted. In practice,
+> I currently identify myself as "Linux 2.6.35" through uname(2), but
+> "Manux 0.0.5" through my uname_vect(2) syscall.
 > 
-> cgroup.subtree_control controls child cgroups only, but .subtree_populated
-> shows 1 if there're tasks in the cgroup or its children, so the two
-> are a bit inconsistent to me.
+> Is it okay to do this? Do you have any objections or remarks?
 
-Yes, good catch.  subtree_control affects subtree proper.
-subtree_populated covers self too.  The difference is subtle and the
-trade off between shared pattern in names and clarifying the subtlety
-didn't seem clear-cut to me.  Hmmm....
+If you are trying to be ABI compatible then replying with a "Linux"
+version that it is compatible with might actually be extraordinarily
+sensible.
 
--- 
-tejun
+Alan
