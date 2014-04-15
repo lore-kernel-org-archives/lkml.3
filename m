@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362AbaDOJKb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 05:10:31 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:59365 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752312AbaDOJK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 05:10:26 -0400
-Message-ID: <534CF77C.9090906@mev.co.uk>
-Date: Tue, 15 Apr 2014 10:10:20 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Chase Southwood <chase.southwood@yahoo.com>, <gregkh@linuxfoundation.org>
-CC: <hsweeten@visionengravers.com>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] staging: comedi: addi_apci_1564: remove use of devpriv->iobase
-References: <1397541235-2574-1-git-send-email-chase.southwood@yahoo.com>
-In-Reply-To: <1397541235-2574-1-git-send-email-chase.southwood@yahoo.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
+	id S1752862AbaDOJNS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 05:13:18 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:63881 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751123AbaDOJNQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 05:13:16 -0400
+Message-ID: <1397553194.1985.23.camel@x220>
+Subject: Re: [PATCH 18/28] Remove MN10300_PROC_MN2WS0038
+From: Paul Bolle <pebolle@tiscali.nl>
+To: David Howells <dhowells@redhat.com>
+Cc: Richard Weinberger <richard@nod.at>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        linux-am33-list@redhat.com, linux-kernel@vger.kernel.org
+Date: Tue, 15 Apr 2014 11:13:14 +0200
+In-Reply-To: <1098.1392044308@warthog.procyon.org.uk>
+References: <1391971686-9517-19-git-send-email-richard@nod.at>
+	 <1391971686-9517-1-git-send-email-richard@nod.at>
+	 <1098.1392044308@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
- (10.0.0.4)
+X-OriginalArrivalTime: 15 Apr 2014 09:13:14.0786 (UTC) FILETIME=[EE8B2020:01CF588A]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-15 06:53, Chase Southwood wrote:
-> devpriv->iobase is currently being used to hold the iobase address used to
-> read/write the board's registers.  The same address is stored in the
-> comedi_device dev->iobase.  We use that instead.  The eventual goal is to
-> decrease the driver's use of the struct addi_private, so that it may
-> eventually use a much slimmer specialized private struct instead, as the
-> other addi_apci_* drivers do.
->
-> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
-> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
-> ---
-> This is a (small) first patchset for my more complete cleanup of
-> addi_apci_1564 driver.  Hartley, I'd appreciate any review you have
-> wrt these specific patches, but also whether I have chosen a good place
-> to start.
+On Mon, 2014-02-10 at 14:58 +0000, David Howells wrote:
+> Richard Weinberger <richard@nod.at> wrote:
+> 
+> > The symbol is an orphan, get rid of it.
+> > 
+> > Signed-off-by: Richard Weinberger <richard@nod.at>
+> 
+> Acked-by: David Howells <dhowells@redhat.com>
 
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+I don't think this oneliner is queued somewhere. David, you're listed as
+one of the mn10300 maintainers: could you perhaps queue this patch?
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+
+Paul Bolle
+
