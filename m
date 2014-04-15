@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862AbaDOAoV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 20:44:21 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:57861 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942AbaDOAoT convert rfc822-to-8bit (ORCPT
+	id S1753030AbaDOAp3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 20:45:29 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:33693 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751272AbaDOAp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 20:44:19 -0400
-X-AuditID: cbfee691-b7efc6d0000039d3-9a-534c80e1fdf7
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Pascal COMBES'" <pascom@orange.fr>, "'Paul Bolle'" <pebolle@tiscali.nl>
-Cc: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org,
-        "'Peter P Waskiewicz Jr'" <peter.p.waskiewicz.jr@intel.com>,
-        "'Jarod Wilson'" <jarod@wilsonet.com>,
-        "'Valentina Manea'" <valentina.manea.m@gmail.com>,
-        linux-kernel@vger.kernel.org, "'Naren Sankar'" <nsankar@broadcom.com>,
-        "'Monam Agarwal'" <monamagarwal123@gmail.com>,
-        "'Scott Davilla'" <davilla@4pi.com>,
-        "'Amarjargal Gundjalam'" <amarjargal16@gmail.com>,
-        "'Dan Carpenter'" <dan.carpenter@oracle.com>,
-        "'Robert Foss'" <dev@robertfoss.se>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <534AAED2.7050205@orange.fr> <20140413154859.GA18189@kroah.com>
- <534AE1D6.1040304@orange.fr> <1397424990.31896.10.camel@x220>
- <534C0EE3.6080308@orange.fr>
-In-reply-to: <534C0EE3.6080308@orange.fr>
-Subject: Re: [PATCH v2 2/3] Fix coding style problem (cast with space) in
- drivers/staging/crystalhd/crystalhd_lnx.c
-Date: Tue, 15 Apr 2014 09:44:17 +0900
-Message-id: <008401cf5843$d4ce80b0$7e6b8210$%han@samsung.com>
+	Mon, 14 Apr 2014 20:45:27 -0400
+X-AuditID: cbfee691-b7efc6d0000039d3-f8-534c81259037
+From: Jungseok Lee <jays.lee@samsung.com>
+To: "'Marc Zyngier'" <marc.zyngier@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        "'Catalin Marinas'" <Catalin.Marinas@arm.com>,
+        "'Christoffer Dall'" <christoffer.dall@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
+        sungjinn.chung@samsung.com, "'Arnd Bergmann'" <arnd@arndb.de>,
+        kgene.kim@samsung.com, ilho215.lee@samsung.com
+References: <000601cf57b4$e93b9680$bbb2c380$@samsung.com>
+ <534C08C3.1080705@arm.com>
+In-reply-to: <534C08C3.1080705@arm.com>
+Subject: Re: [PATCH 8/8] arm64: KVM: Implement 4 levels of translation tables
+ for HYP and stage2
+Date: Tue, 15 Apr 2014 09:45:25 +0900
+Message-id: <001801cf5843$fd7a7d70$f86f7850$@samsung.com>
 MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac9X/+i87oRtc3U0T4uK0o1AXJTVVQAQ44Gg
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQDLAW24GdkrUCMIH0Mtm7MYM4QxeQGcBYQBnQ2jOOA=
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAKsWRmVeSWpSXmKPExsVy+t8zY92HDT7BBn+fG1pMenaVyeL1v+ks
-	FrNerWK02HdtHrPFnjO/2C2aF69ns7j64gSTxeWFl1gtLu+aw2bR/HsDo8XRU7vZLJ49PMhq
-	sejWGWaLN/t2sli8uzSX3YHfY8Gz8+wes+6fZfO4t+8wi8fOWXfZPRbvecnksX/uGnaPj09v
-	sXg8X7yExePqokdMHn1bVjF6bNz+hMnj8yY5j6kn+1gDeKO4bFJSczLLUov07RK4MvrPfGMt
-	2MBb8endHpYGxptcXYycHBICJhIHOx+zQ9hiEhfurWfrYuTiEBJYxigx5fBRdpiivzNvMEMk
-	pjNKTN67Esr5zSix8OYkJpAqNgE1iS9fDgN1cHCICHhKfPnmABJmFljPItE1SQmifhWjxJ8d
-	x9hAEpwCmhJrP3Qwg9jCAqUSfz5+BJvDIqAqse9MKwuIzStgK/HxwFNWCFtQ4sfkeywQQ3Uk
-	9rdOY4OwtSWevLvACrJXQkBd4tFfXYgTjCTurhCAqBCR2PfiHSPEL084JLYvdIHYJCDxbfIh
-	FohOWYlNB5ghSiQlDq64wTKBUWIWkr2zkOydhWTvLCQbFjCyrGIUTS1ILihOSi8y1StOzC0u
-	zUvXS87P3cQISS0TdzDeP2B9iDEZaP1EZinR5HxgasoriTc0NjOyMDUxNTYytzQjTVhJnDf9
-	UVKQkEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBkbFaVEO87mffZtl3CXae+n/qt+Zm9zrnZ5X
-	uWpXbLXbzMTWKHr+5xHOTYwW0qL107+nTYno/XfY0n9n0IbzafMqYk1iRGIDMy9P05jje4HL
-	8K7dHAW7fAGPe1PO7f5a6fgqZNJj37d3n9xx8TdZPXnJFRPpFRLyM1TKrgf1LzlybYqXRcbD
-	cHklluKMREMt5qLiRAB77XqsQwMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjk+LIzCtJLcpLzFFi42I5/e+xoO7DBp9gg0erdCwmPbvKZPH633QW
-	i1mvVjFa7Ls2j9liz5lf7BbNi9ezWVx9cYLJ4vLCS6wWl3fNYbNo/r2B0eLoqd1sFs8eHmS1
-	WHTrDLPFm307WSzeXZrL7sDvseDZeXaPWffPsnnc23eYxWPnrLvsHov3vGTy2D93DbvHx6e3
-	WDyeL17C4nF10SMmj74tqxg9Nm5/wuTxeZOcx9STfawBvFENjDYZqYkpqUUKqXnJ+SmZeem2
-	St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QH8pKZQl5pQChQISi4uV9O0wTQgNcdO1
-	gGmM0PUNCYLrMTJAAwnrGDP6z3xjLdjAW/Hp3R6WBsabXF2MnBwSAiYSf2feYIawxSQu3FvP
-	1sXIxSEkMJ1RYvLelcwQzm9GiYU3JzGBVLEJqEl8+XKYvYuRg0NEwFPiyzcHkDCzwHoWia5J
-	ShD1qxgl/uw4xgaS4BTQlFj7oQNsg7BAqcSfjx/B5rAIqErsO9PKAmLzCthKfDzwlBXCFpT4
-	MfkeC8RQHYn9rdPYIGxtiSfvLrCC7JUQUJd49FcX4gQjibsrBCAqRCT2vXjHOIFRaBaSQbOQ
-	DJqFZNAsJC0LGFlWMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgSnrmdSOxhXNlgcYhTgYFTi
-	4Z3wzjtYiDWxrLgy9xCjBAezkgjv62SfYCHelMTKqtSi/Pii0pzU4kOMyUB/TmSWEk3OB6bV
-	vJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7RaBwoJpCeWpGanphakFsFsYeLglGpglN99TN/Oc/86
-	50MLVA1EpFdP+hp52iTR7gHDBPbMz5Wf3W3Y6gze2Xy/1nI/XKa+Yuf7XhbnJy/3syz8+bMo
-	vEp8+w/pqyVRCXsfBO66q97uP6cqfW7429aLx+ZtmB/4lU83t8jiEvPzd0rf/fnXXfK1s7kX
-	WrbkZsuWJVZyRtMflgka/rtYrcRSnJFoqMVcVJwIAOvcPEGhAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrHIsWRmVeSWpSXmKPExsVy+t8zI13VRp9gg6tfjSz+TjrGbvF+WQ+j
+	xYvX/xgtjv5byGjRu+Aqm8XHU8fZLTY9vsZqcXnXHDaLGef3MVn8vfOPzeLDjJWMDtwea+at
+	YfT4/WsSo8eda3vYPM5vWsPssXlJvUffllWMHp83yQWwR3HZpKTmZJalFunbJXBlnH95h6Xg
+	lEPFzi2dbA2MGw27GDk4JARMJD5e8+xi5AQyxSQu3FvP1sXIxSEksIxR4t7cz2wQCROJlXPu
+	MUMkFjFK/Hg/gx3C+cMosX1ZExNIFZuApsSjuz3sILYIkP2x5ynYKGaBr0wSN37tBBslJBAm
+	se17GyuIzSmgLtE35QcLiC0skCRx6dJ7JpCTWARUJdZs0QQJ8wpYSsxrncgOYQtK/Jh8D6yc
+	WUBLYv3O40wQtrzE5jVvmSEuVZDYcfY1I8QNVhLTLm9gh6gRkdj34h0jRM1MDokZ/2xAbBYB
+	AYlvkw+xQEJCVmLTAagxkhIHV9xgmcAoMQvJ5llINs9CsnkWkg0LGFlWMYqmFiQXFCelF5nq
+	FSfmFpfmpesl5+duYoTE/cQdjPcPWB9iTAZaP5FZSjQ5H5g28kriDY3NjCxMTUyNjcwtzUgT
+	VhLnTX+UFCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBUWXtDn6mn/1sb1ey2c599LQnw/Wa
+	iEZgNpuJh8iL3qM7lcT95nQ9Ubz5sOfumaOOK5UZth0tzdMsWu+fEbHCLX8b9701uQlqf1el
+	dnSdvRV04f3Wh1cnTG0+qzLr8AXF9xmpCq4/TBu7J+6V+LWr5Ii/ediBiRkbXPd90Xkkmbt7
+	4r8GXafsL0osxRmJhlrMRcWJAG9jhqgRAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLKsWRmVeSWpSXmKPExsVy+t9jAV3VRp9ggzk/dCz+TjrGbvF+WQ+j
+	xYvX/xgtjv5byGjRu+Aqm8XHU8fZLTY9vsZqcXnXHDaLGef3MVn8vfOPzeLDjJWMDtwea+at
+	YfT4/WsSo8eda3vYPM5vWsPssXlJvUffllWMHp83yQWwRzUw2mSkJqakFimk5iXnp2Tmpdsq
+	eQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAHamkUJaYUwoUCkgsLlbSt8M0ITTETdcC
+	pjFC1zckCK7HyAANJKxjzDj/8g5LwSmHip1bOtkaGDcadjFyckgImEisnHOPGcIWk7hwbz1b
+	FyMXh5DAIkaJH+9nsEM4fxglti9rYgKpYhPQlHh0t4cdxBYBsj/2PAXrYBb4yiRx49dONpCE
+	kECYxLbvbawgNqeAukTflB8sILawQJLEpUvvgQZxcLAIqEqs2aIJEuYVsJSY1zqRHcIWlPgx
+	+R5YObOAlsT6nceZIGx5ic1r3kJdqiCx4+xrRogbrCSmXd7ADlEjIrHvxTvGCYxCs5CMmoVk
+	1Cwko2YhaVnAyLKKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzixPJPawbiyweIQowAHoxIP
+	74R33sFCrIllxZW5hxglOJiVRHhfJ/sEC/GmJFZWpRblxxeV5qQWH2JMBnp0IrOUaHI+MOnl
+	lcQbGpuYGVkamVkYmZibkyasJM57oNU6UEggPbEkNTs1tSC1CGYLEwenVANj4bQH3YylwmUu
+	m/WSKvMvSvcu1+SZJG71Se/M/9vbJpydcvFYgXb4pP0hMdfS1Cad+c4s9L/0Y39l9qUuw/Xm
+	Oz9nLrz04pyD0Y7PPouLoyc6z33/brPkKed/ecbcOprGFaWnuyQVzi/kZjGatTHCgqXA9MXu
+	1431ez4/uLtl1ZyJ81Nnfc4vUmIpzkg01GIuKk4EAPntLmFwAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -72,56 +64,260 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 15, 2014 1:38 AM, Pascal COMBES wrote:
+On Tuesday, April 15, 2014 1:12 AM, Marc Zyngier wrote:
+> On 14/04/14 08:41, Jungseok Lee wrote:
+> > This patch adds 4 levels of translation tables implementation for both
+> > HYP and stage2. A combination of 4KB + 4 levels host and 4KB + 4
+> > levels guest can run on ARMv8 architecture as introducing this feature.
+> >
+> > Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
+> > Reviewed-by: Sungjinn Chung <sungjinn.chung@samsung.com>
+> > ---
+> >  arch/arm/kvm/mmu.c               |   96 +++++++++++++++++++++++++++++++++-----
+> >  arch/arm64/include/asm/kvm_arm.h |   20 ++++++++
+> >  arch/arm64/include/asm/kvm_mmu.h |    1 +
+> >  3 files changed, 106 insertions(+), 11 deletions(-)
+> >
+> > diff --git a/arch/arm/kvm/mmu.c b/arch/arm/kvm/mmu.c index
+> > e0d4f24..6cf89ad 100644
+> > --- a/arch/arm/kvm/mmu.c
+> > +++ b/arch/arm/kvm/mmu.c
+> > @@ -388,13 +388,46 @@ static int create_hyp_pmd_mappings(pud_t *pud, unsigned long start,
+> >  	return 0;
+> >  }
+> >
+> > +static int create_hyp_pud_mappings(pgd_t *pgd, unsigned long start,
+> > +				   unsigned long end, unsigned long pfn,
+> > +				   pgprot_t prot)
+> > +{
+> > +	pud_t *pud;
+> > +	pmd_t *pmd;
+> > +	unsigned long addr, next;
+> > +
+> > +	addr = start;
+> > +	do {
+> > +		pud = pud_offset(pgd, addr);
+> > +
+> > +		if (pud_none_or_clear_bad(pud)) {
+> > +			pmd = pmd_alloc_one(NULL, addr);
+> > +			if (!pmd) {
+> > +				kvm_err("Cannot allocate Hyp pmd\n");
+> > +				return -ENOMEM;
+> > +			}
+> > +			pud_populate(NULL, pud, pmd);
+> > +			get_page(virt_to_page(pud));
+> > +			kvm_flush_dcache_to_poc(pud, sizeof(*pud));
+> > +		}
+> > +
+> > +		next = pud_addr_end(addr, end);
+> > +
+> > +		create_hyp_pmd_mappings(pud, addr, next, pfn, prot);
+> > +		pfn += (next - addr) >> PAGE_SHIFT;
+> > +	} while (addr = next, addr != end);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> >  static int __create_hyp_mappings(pgd_t *pgdp,
+> >  				 unsigned long start, unsigned long end,
+> >  				 unsigned long pfn, pgprot_t prot)  {
+> >  	pgd_t *pgd;
+> > +#ifdef CONFIG_ARM64_4_LEVELS
+> >  	pud_t *pud;
+> > -	pmd_t *pmd;
+> > +#endif
+> >  	unsigned long addr, next;
+> >  	int err = 0;
+> >
+> > @@ -403,22 +436,25 @@ static int __create_hyp_mappings(pgd_t *pgdp,
+> >  	end = PAGE_ALIGN(end);
+> >  	do {
+> >  		pgd = pgdp + pgd_index(addr);
+> > -		pud = pud_offset(pgd, addr);
+> >
+> > -		if (pud_none_or_clear_bad(pud)) {
+> > -			pmd = pmd_alloc_one(NULL, addr);
+> > -			if (!pmd) {
+> > -				kvm_err("Cannot allocate Hyp pmd\n");
+> > +#ifdef CONFIG_ARM64_4_LEVELS
+> > +		if (pgd_none(*pgd)) {
+> > +			pud = pud_alloc_one(NULL, addr);
+> > +			if (!pud) {
+> > +				kvm_err("Cannot allocate Hyp pud\n");
+> >  				err = -ENOMEM;
+> >  				goto out;
+> >  			}
+> > -			pud_populate(NULL, pud, pmd);
+> > -			get_page(virt_to_page(pud));
+> > -			kvm_flush_dcache_to_poc(pud, sizeof(*pud));
+> > +			pgd_populate(NULL, pgd, pud);
+> > +			get_page(virt_to_page(pgd));
+> > +			kvm_flush_dcache_to_poc(pgd, sizeof(*pgd));
+> >  		}
+> > +#endif
 > 
-> Le 13/04/2014 23:36, Paul Bolle a écrit :
-> > On Sun, 2014-04-13 at 21:13 +0200, Pascal COMBES wrote:
-> >> From: Pascal COMBES <pascom@orange.fr>
-> >>
-> >> Fix coding style problem in drivers/staging/crystalhd/crystalhd_lnx.c:
-> >> No space needed before a cast.
-> >>
-> >> Signed-off-by: Pascal COMBES <pascom@orange.fr>
-> >> ---
-> >> diff --git a/drivers/staging/crystalhd/crystalhd_lnx.c b/drivers/staging/crystalhd/crystalhd_lnx.c
-> >> index fd7f08a..15e8f02 100644
-> >> --- a/drivers/staging/crystalhd/crystalhd_lnx.c
-> >> +++ b/drivers/staging/crystalhd/crystalhd_lnx.c
-> >> @@ -28,7 +28,7 @@ static struct crystalhd_adp *g_adp_info;
-> >>
-> >>  static irqreturn_t chd_dec_isr(int irq, void *arg)
-> >>  {
-> >> -	struct crystalhd_adp *adp = (struct crystalhd_adp *) arg;
-> >> +	struct crystalhd_adp *adp = (struct crystalhd_adp *)arg;
+> Why do you need all these #ifdefs? The page table code should be able to cope with all the variations
+> of presence/absence of pud/pmd (see how there is no code difference between 4kB (3 levels) and 64kB (2
+> levels)).
+
+Okay, I will remove it.
+
+> >  		next = pgd_addr_end(addr, end);
+> > -		err = create_hyp_pmd_mappings(pud, addr, next, pfn, prot);
+> > +
+> > +		err = create_hyp_pud_mappings(pgd, addr, next, pfn, prot);
+> > +
+> >  		if (err)
+> >  			goto out;
+> >  		pfn += (next - addr) >> PAGE_SHIFT; @@ -563,6 +599,26 @@ void
+> > kvm_free_stage2_pgd(struct kvm *kvm)
+> >  	kvm->arch.pgd = NULL;
+> >  }
 > >
-> > Shouldn't this cast just be dropped instead?
+> > +#ifdef CONFIG_ARM64_4_LEVELS
+> > +static pud_t *stage2_get_pud(struct kvm *kvm, struct kvm_mmu_memory_cache
+> > +			     *cache, phys_addr_t addr)
+> > +{
+> > +	pgd_t *pgd;
+> > +	pud_t *pud;
+> > +
+> > +	pgd = kvm->arch.pgd + pgd_index(addr);
+> > +	if (pgd_none(*pgd)) {
+> > +		if (!cache)
+> > +			return NULL;
+> > +		pud = mmu_memory_cache_alloc(cache);
+> > +		pgd_populate(NULL, pgd, pud);
+> > +		get_page(virt_to_page(pgd));
+> > +	}
+> > +
+> > +	return pud_offset(pgd, addr);
+> > +}
+> > +#endif
 > 
-> I think as you and was wondering why it was there but I didn't dare
-> removing it. I considered it was not really coding style.
-> But after second thought, I will remove it when I resend tomrorrow.
+> Same here.
 
-Please, remove unnecessary void cast as below.
+Okay.
 
- -	struct crystalhd_adp *adp = (struct crystalhd_adp *) arg;
- +	struct crystalhd_adp *adp = arg;
+> >  static pmd_t *stage2_get_pmd(struct kvm *kvm, struct kvm_mmu_memory_cache
+> >  			     *cache, phys_addr_t addr)
+> >  {
+> > @@ -617,6 +673,24 @@ static int stage2_set_pte(struct kvm *kvm, struct kvm_mmu_memory_cache *cache,
+> >  	pmd_t *pmd;
+> >  	pte_t *pte, old_pte;
+> >
+> > +#ifdef CONFIG_ARM64_4_LEVELS
+> > +	pud_t *pud;
+> > +
+> > +	/* Create stage-2 page table mapping - Level 0 */
+> > +	pud = stage2_get_pud(kvm, cache, addr);
+> > +	if (!pud)
+> > +		return 0;
+> > +
+> > +	if (pud_none(*pud)) {
+> > +		if (!cache)
+> > +			return 0;
+> > +		pmd = mmu_memory_cache_alloc(cache);
+> > +		kvm_clean_pmd(pmd);
+> > +		pud_populate(NULL, pud, pmd);
+> > +		get_page(virt_to_page(pud));
+> > +	}
+> > +#endif
+> > +
+> 
+> And here.
 
-This is because the conversion from void pointer to any other
-pointer type is guaranteed by the C programming language.
-So, void cast is unnecessary.
+Okay.
 
-Best regards,
-Jingoo Han
+> >  	/* Create stage-2 page table mapping - Level 1 */
+> >  	pmd = stage2_get_pmd(kvm, cache, addr);
+> >  	if (!pmd) {
+> > @@ -675,7 +749,7 @@ int kvm_phys_addr_ioremap(struct kvm *kvm, phys_addr_t guest_ipa,
+> >  	for (addr = guest_ipa; addr < end; addr += PAGE_SIZE) {
+> >  		pte_t pte = pfn_pte(pfn, PAGE_S2_DEVICE);
+> >
+> > -		ret = mmu_topup_memory_cache(&cache, 2, 2);
+> > +		ret = mmu_topup_memory_cache(&cache, 3, 3);
+> 
+> It would be good to make this depend of the number of levels we're actually using (2, 3 or 4).
 
-> 	Regards,
-> Pascal COMBES.
+I will fix it in the next version.
+
+> >  		if (ret)
+> >  			goto out;
+> >  		spin_lock(&kvm->mmu_lock);
+> > diff --git a/arch/arm64/include/asm/kvm_arm.h
+> > b/arch/arm64/include/asm/kvm_arm.h
+> > index 3d69030..295eda6 100644
+> > --- a/arch/arm64/include/asm/kvm_arm.h
+> > +++ b/arch/arm64/include/asm/kvm_arm.h
+> > @@ -117,9 +117,11 @@
+> >  #define VTCR_EL2_IRGN0_MASK	(3 << 8)
+> >  #define VTCR_EL2_IRGN0_WBWA	(1 << 8)
+> >  #define VTCR_EL2_SL0_MASK	(3 << 6)
+> > +#define VTCR_EL2_SL0_LVL0	(2 << 6)
+> >  #define VTCR_EL2_SL0_LVL1	(1 << 6)
+> >  #define VTCR_EL2_T0SZ_MASK	0x3f
+> >  #define VTCR_EL2_T0SZ_40B	24
+> > +#define VTCR_EL2_T0SZ_48B	16
 > >
-> >>  	int rc = 0;
-> >>  	if (adp)
-> >>  		rc = crystalhd_cmd_interrupt(&adp->cmds);
-> >>
+> >  #ifdef CONFIG_ARM64_64K_PAGES
+> >  /*
+> > @@ -134,6 +136,7 @@
+> >  				 VTCR_EL2_SL0_LVL1 | VTCR_EL2_T0SZ_40B)
+> >  #define VTTBR_X		(38 - VTCR_EL2_T0SZ_40B)
+> >  #else
+> > +#ifndef CONFIG_ARM64_4_LEVELS
+> >  /*
+> >   * Stage2 translation configuration:
+> >   * 40bits output (PS = 2)
+> > @@ -145,10 +148,27 @@
+> >  				 VTCR_EL2_ORGN0_WBWA | VTCR_EL2_IRGN0_WBWA | \
+> >  				 VTCR_EL2_SL0_LVL1 | VTCR_EL2_T0SZ_40B)
+> >  #define VTTBR_X		(37 - VTCR_EL2_T0SZ_40B)
+> > +#else
+> > +/*
+> > + * Stage2 translation configuration:
+> > + * 40bits output (PS = 2)
+> > + * 48bits input  (T0SZ = 16)
+> > + * 4kB pages (TG0 = 0)
+> > + * 4 level page tables (SL = 2)
+> > + */
+> > +#define VTCR_EL2_FLAGS		(VTCR_EL2_TG0_4K | VTCR_EL2_SH0_INNER | \
+> > +				 VTCR_EL2_ORGN0_WBWA | VTCR_EL2_IRGN0_WBWA | \
+> > +				 VTCR_EL2_SL0_LVL0 | VTCR_EL2_T0SZ_48B)
+> > +#define VTTBR_X		(29 - VTCR_EL2_T0SZ_48B)
+> > +#endif
+> >  #endif
 > >
+> >  #define VTTBR_BADDR_SHIFT (VTTBR_X - 1)
+> > +#ifndef CONFIG_ARM64_4_LEVELS
+> >  #define VTTBR_BADDR_MASK  (((1LLU << (40 - VTTBR_X)) - 1) <<
+> > VTTBR_BADDR_SHIFT)
+> > +#else
+> > +#define VTTBR_BADDR_MASK  (((1LLU << (48 - VTTBR_X)) - 1) <<
+> > +VTTBR_BADDR_SHIFT) #endif
+> >  #define VTTBR_VMID_SHIFT  (48LLU)
+> >  #define VTTBR_VMID_MASK	  (0xffLLU << VTTBR_VMID_SHIFT)
 > >
-> > Paul Bolle
+> > diff --git a/arch/arm64/include/asm/kvm_mmu.h
+> > b/arch/arm64/include/asm/kvm_mmu.h
+> > index 7d29847..ec76cf3 100644
+> > --- a/arch/arm64/include/asm/kvm_mmu.h
+> > +++ b/arch/arm64/include/asm/kvm_mmu.h
+> > @@ -107,6 +107,7 @@ static inline bool kvm_is_write_fault(unsigned
+> > long esr)  }
 > >
+> >  static inline void kvm_clean_pgd(pgd_t *pgd) {}
+> > +static inline void kvm_clean_pmd(pud_t *pud) {}
+> >  static inline void kvm_clean_pmd_entry(pmd_t *pmd) {}  static inline
+> > void kvm_clean_pte(pte_t *pte) {}  static inline void
+> > kvm_clean_pte_entry(pte_t *pte) {}
 > >
+> 
+> You'll need to add the 32bit ARM equivalent once you've removed the #ifdefs.
+
+Okay.
+
+Best Regards
+Jungseok Lee
 
