@@ -1,94 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751200AbaDOWZY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 18:25:24 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:57945 "EHLO
+	id S1751462AbaDOWZm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 18:25:42 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:57958 "EHLO
 	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750971AbaDOWZV (ORCPT
+	with ESMTP id S1751141AbaDOWZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 18:25:21 -0400
-Message-ID: <534DB1CC.60407@semaphore.gr>
-Date: Wed, 16 Apr 2014 01:25:16 +0300
+	Tue, 15 Apr 2014 18:25:38 -0400
+Message-ID: <534DB1DF.80506@semaphore.gr>
+Date: Wed, 16 Apr 2014 01:25:35 +0300
 From: Stratos Karafotis <stratosk@semaphore.gr>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
 To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Viresh Kumar <viresh.kumar@linaro.org>
-CC: Jesper Nilsson <jesper.nilsson@axis.com>,
+CC: Randy Dunlap <rdunlap@infradead.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Hans-Christian Egtvedt <egtvedt@samfundet.no>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Dirk Brandewie <dirk.j.brandewie@intel.com>, linux-doc@vger.kernel.org,
-        cpufreq@vger.kernel.org,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH v2 0/8] Introduce new cpufreq helper macros
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        linux-pm@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 1/8] cpufreq: Introduce macros for cpufreq_frequency_table
+ iteration
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Many cpufreq drivers need to iterate over the cpufreq_frequency_table
+for various tasks.
 
-This patch set introduces two freq_table helper macros which
-can be used for iteration over cpufreq_frequency_table and
-makes the necessary changes to cpufreq core and drivers that
-use such an iteration procedure.
+This patch introduces two macros which can be used for iteration over
+cpufreq_frequency_table keeping a common coding style across drivers:
 
-The motivation was a usage of common procedure to iterate over
-cpufreq_frequency_table across all drivers and cpufreq core.
+- cpufreq_for_each_entry: iterate over each entry of the table
+- cpufreq_for_each_valid_entry: iterate over each entry that contains
+a valid frequency.
 
-This was tested on a x86_64 platform.
-Most files compiled successfully but unfortunately I was not
-able to compile sh_sir.c pasemi_cpufreq.c and ppc_cbe_cpufreq.c 
-due to lack of cross compiler.
+It should have no functional changes.
 
-Changes v1 -> v2
-	- Rearrange patches
-	- Remove redundant braces
-	- Fix a newly introduced bug in exynos5440
-	- Use cpufreq_for_each_valid_entry instead of
-cpufreq_for_each_entry in cpufreq_frequency_table_get_index()
-	- Drop redundant double ! operator in longhaul and change
-the pos loop cursor variable to freq_pos.
-	- Declare pos variable on a separate line
+Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+---
+ Documentation/cpu-freq/cpu-drivers.txt | 16 ++++++++++++++++
+ drivers/cpufreq/cpufreq.c              | 11 +++++++++++
+ include/linux/cpufreq.h                | 21 +++++++++++++++++++++
+ 3 files changed, 48 insertions(+)
 
-Stratos Karafotis (8):
-  cpufreq: Introduce macros for cpufreq_frequency_table iteration
-  cpufreq: Use cpufreq_for_each_* macros for frequency table iteration
-  davinci: da850: Use cpufreq_for_each_entry macro for iteration
-  mips: lemote 2f: se cpufreq_for_each_entry macro for iteration
-  mfd: db8500-prcmu: Use cpufreq_for_each_entry macro for iteration
-  thermal: cpu_cooling: Use cpufreq_for_each_valid_entry macro for
-    iteration
-  irda: sh_sir: Use cpufreq_for_each_valid_entry macro for iteration
-  sh: clk: Use cpufreq_for_each_valid_entry macro for iteration
-
- Documentation/cpu-freq/cpu-drivers.txt | 16 ++++++++++
- arch/arm/mach-davinci/da850.c          |  9 +++---
- arch/mips/loongson/lemote-2f/clock.c   | 16 +++-------
- drivers/cpufreq/acpi-cpufreq.c         |  9 +++---
- drivers/cpufreq/arm_big_little.c       | 16 +++++-----
- drivers/cpufreq/cpufreq.c              | 11 +++++++
- drivers/cpufreq/cpufreq_stats.c        | 24 +++++----------
- drivers/cpufreq/dbx500-cpufreq.c       |  8 ++---
- drivers/cpufreq/elanfreq.c             |  9 +++---
- drivers/cpufreq/exynos-cpufreq.c       | 11 +++----
- drivers/cpufreq/exynos5440-cpufreq.c   | 30 +++++++++---------
- drivers/cpufreq/freq_table.c           | 56 +++++++++++++++-------------------
- drivers/cpufreq/longhaul.c             | 13 ++++----
- drivers/cpufreq/pasemi-cpufreq.c       | 10 +++---
- drivers/cpufreq/powernow-k6.c          | 14 ++++-----
- drivers/cpufreq/ppc_cbe_cpufreq.c      |  9 +++---
- drivers/cpufreq/s3c2416-cpufreq.c      | 40 +++++++++++-------------
- drivers/cpufreq/s3c64xx-cpufreq.c      | 15 +++------
- drivers/mfd/db8500-prcmu.c             | 19 +++++-------
- drivers/net/irda/sh_sir.c              | 14 +++------
- drivers/sh/clk/core.c                  | 20 +++---------
- drivers/thermal/cpu_cooling.c          | 33 ++++++++------------
- include/linux/cpufreq.h                | 21 +++++++++++++
- 23 files changed, 206 insertions(+), 217 deletions(-)
-
+diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
+index 48da5fd..2c9156a 100644
+--- a/Documentation/cpu-freq/cpu-drivers.txt
++++ b/Documentation/cpu-freq/cpu-drivers.txt
+@@ -228,3 +228,19 @@ is the corresponding frequency table helper for the ->target
+ stage. Just pass the values to this function, and the unsigned int
+ index returns the number of the frequency table entry which contains
+ the frequency the CPU shall be set to.
++
++The following macros can be used as iterators over cpufreq_frequency_table:
++cpufreq_for_each_entry(pos, table) - iterates over all entries of frequency
++table.
++cpufreq-for_each_valid_entry(pos, table) - iterates over all entries,
++excluding CPUFREQ_ENTRY_INVALID frequencies.
++Use arguments "pos" - a cpufreq_frequency_table * as a loop cursor and
++"table" - the cpufreq_frequency_table * you want to iterate over.
++For example:
++
++	struct cpufreq_frequency_table *pos, *driver_freq_table;
++
++	cpufreq_for_each_entry(pos, driver_freq_table) {
++		/* Do something with pos */
++		pos->frequency = ...
++	}
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index abda660..a517da9 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -237,6 +237,17 @@ void cpufreq_cpu_put(struct cpufreq_policy *policy)
+ }
+ EXPORT_SYMBOL_GPL(cpufreq_cpu_put);
+ 
++bool cpufreq_next_valid(struct cpufreq_frequency_table **pos)
++{
++	while ((*pos)->frequency != CPUFREQ_TABLE_END)
++		if ((*pos)->frequency != CPUFREQ_ENTRY_INVALID)
++			return true;
++		else
++			(*pos)++;
++	return false;
++}
++EXPORT_SYMBOL_GPL(cpufreq_next_valid);
++
+ /*********************************************************************
+  *            EXTERNALLY AFFECTING FREQUENCY CHANGES                 *
+  *********************************************************************/
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 5ae5100..4f913b5 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -468,6 +468,27 @@ struct cpufreq_frequency_table {
+ 				    * order */
+ };
+ 
++bool cpufreq_next_valid(struct cpufreq_frequency_table **pos);
++
++/*
++ * cpufreq_for_each_entry -	iterate over a cpufreq_frequency_table
++ * @pos:	the cpufreq_frequency_table * to use as a loop cursor.
++ * @table:	the cpufreq_frequency_table * to iterate over.
++ */
++
++#define cpufreq_for_each_entry(pos, table)	\
++	for (pos = table; pos->frequency != CPUFREQ_TABLE_END; pos++)
++
++/*
++ * cpufreq_for_each_valid_entry -     iterate over a cpufreq_frequency_table
++ *	exluding CPUFREQ_ENTRY_INVALID frequencies.
++ * @pos:        the cpufreq_frequency_table * to use as a loop cursor.
++ * @table:      the cpufreq_frequency_table * to iterate over.
++ */
++
++#define cpufreq_for_each_valid_entry(pos, table)	\
++	for (pos = table; cpufreq_next_valid(&pos); pos++)
++
+ int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
+ 				    struct cpufreq_frequency_table *table);
+ 
 -- 
 1.9.0
