@@ -1,66 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754717AbaDOPmT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 11:42:19 -0400
-Received: from mano-163-23-shared.jabatus.fr ([109.234.163.23]:43149 "EHLO
-	mano-163-23-shared.jabatus.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750885AbaDOPmQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 11:42:16 -0400
-X-Greylist: delayed 6734 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Apr 2014 11:42:16 EDT
-X-MailPropre-MailScanner-From: ecolbus@manux.info
-X-MailPropre-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=0, required 5, autolearn=not spam)
-X-MailPropre-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
-X-MailPropre-MailScanner-ID: EB13291CDF50.A1B16
-X-MailPropre-MailScanner-Information: Message sortant - Serveurs o2switch
-Message-ID: <534D5356.6080605@manux.info>
-Date: Tue, 15 Apr 2014 17:42:14 +0200
-From: Emmanuel Colbus <ecolbus@manux.info>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131104 Icedove/17.0.10
+	id S1751446AbaDOPwx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 11:52:53 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33375 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750761AbaDOPwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 11:52:50 -0400
+Date: Tue, 15 Apr 2014 10:50:31 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Nishanth Menon <nm@ti.com>
+CC: Joel Fernandes <joelf@ti.com>, Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        <linux-crypto@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Joachim Eastwood <manabian@gmail.com>
+Subject: Re: [PATCH] crypto: omap-des - handle error of pm_runtime_get_sync
+Message-ID: <20140415155031.GA14623@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1397575982-24866-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [RFC][7/11][MANUX] Kernel compatibility : capset(2)
-References: <534D3769.9070309@manux.info> <20140415161049.721f44c1@alan.etchedpixels.co.uk>
-In-Reply-To: <20140415161049.721f44c1@alan.etchedpixels.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tKW2IUtsqtDRztdT"
+Content-Disposition: inline
+In-Reply-To: <1397575982-24866-1-git-send-email-nm@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 15/04/2014 17:10, One Thousand Gnomes a écrit :
->> Also, for your information, I decided to use 64-bit capabilities, in
->> order to give a possibility to reduce the rights of an unprivileged
->> software (for example, if a process lacks CAP_USR_CHMOD, it won't be
->> able to perform a chmod on an existing file). This means I'm not using
->> the same data structure as you; do you have any objection to it?
-> 
-> Save yourself the effort. The Linux old style capble() model is basically
-> broken. It's vaguely useful if you combine it with SELinux to repair some
-> of the awkward cases.
-> 
-> The world has moved on to MAC/DAC and is heading now for real
-> "capability" based security which is nothing to do with having a bunch of
-> bit flags.
-> 
-> Alan
-> 
+--tKW2IUtsqtDRztdT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Oh, I know. In fact, this is just a bit of icing on the cake, as I
-already use true capability-based security. But I considered it, and I
-decided this shouldn't be harmful (save for the very small slowdown at
-each syscall), and that there could be cases where this little added
-security could be useful, so since I needed the syscall for Linux
-compatibility anyways, I decided to add it.
+Hi,
 
-(As an example, if you've two processes that run in the same chroot, but
-only one of them that can have a valid reason to call execve(2),
-removing CAP_USR_EXECVE to the second one ensures it can't perform an
-exec on the binaries used by the first one. In my OS, this would
-actually improve security, because most binaries are actually wrappers
-used to jump across chroots, so a true execve(2) is quite different from
-a manual ELF loading.)
+On Tue, Apr 15, 2014 at 10:33:02AM -0500, Nishanth Menon wrote:
+> pm_runtime_get_sync may not always succeed depending on SoC involved. So
+> handle the error appropriately.
+>=20
+> Reported-by: Joachim Eastwood <manabian@gmail.com>
+> Signed-off-by: Nishanth Menon <nm@ti.com>
+> ---
+>=20
+> based on v3.15-rc1
+>=20
+> Report-thread: http://marc.info/?t=3D139750330400002&r=3D1&w=3D2
+>=20
+> omap2plus_defconfig + CONFIG_CRYPTO_DEV_OMAP_DES=3Dy
+>=20
+> pandaboard-es-before: http://slexy.org/raw/s21rGPFnKl
+> pandaboard-es-after:  http://slexy.org/raw/s2A4UFQVna
+>=20
+>  drivers/crypto/omap-des.c |   18 ++++++++++++++----
+>  1 file changed, 14 insertions(+), 4 deletions(-)
+>=20
+> diff --git a/drivers/crypto/omap-des.c b/drivers/crypto/omap-des.c
+> index ec5f131..c2d362f 100644
+> --- a/drivers/crypto/omap-des.c
+> +++ b/drivers/crypto/omap-des.c
+> @@ -223,12 +223,18 @@ static void omap_des_write_n(struct omap_des_dev *d=
+d, u32 offset,
+> =20
+>  static int omap_des_hw_init(struct omap_des_dev *dd)
+>  {
+> +	int err;
+> +
+>  	/*
+>  	 * clocks are enabled when request starts and disabled when finished.
+>  	 * It may be long delays between requests.
+>  	 * Device might go to off mode to save power.
+>  	 */
+> -	pm_runtime_get_sync(dd->dev);
+> +	err =3D pm_runtime_get_sync(dd->dev);
+> +	if (err < 0) {
+> +		dev_err(dd->dev, "failed to get_sync(%d)\n", err);
+> +		return err;
 
-Emmanuel
+even when get() fails, you must put().
+
+> +	}
+> =20
+>  	if (!(dd->flags & FLAGS_INIT)) {
+>  		dd->flags |=3D FLAGS_INIT;
+> @@ -1083,7 +1089,11 @@ static int omap_des_probe(struct platform_device *=
+pdev)
+>  	dd->phys_base =3D res->start;
+> =20
+>  	pm_runtime_enable(dev);
+> -	pm_runtime_get_sync(dev);
+> +	err =3D pm_runtime_get_sync(dev);
+> +	if (err < 0) {
+> +		dev_err(dd->dev, "failed to get_sync(%d)\n", err);
+> +		goto err_get;
+
+this leaves usage_count incremented, needs a put() here too.
+
+--=20
+balbi
+
+--tKW2IUtsqtDRztdT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTTVVHAAoJEIaOsuA1yqREmL0P/3a9sO75yi3MROr/hCkuXFT/
+MN43QrSa++nhMScNUMYO+lWNXWFcDrsTBD0qDDOlnlv95rcDJDPn0Inz3dZr9wO6
+P55vlvoZQKBZmY4sfKu2iv5aT9fZTWZN37x4L4H/h92I+PPXx7XDtghd/r++t/Pz
+2/bshxwKy12XtwwoiczRhuBZVQgRQMMn1SOEnewCg6I9SPZVPgYYmmx20owfOrzE
+Ba6i/JHSKi/ZqVJp54TlaQqZzlIMHjdrpjTEEA4cz7qnUtOxlNJXzHdJ6SO5Z1C8
+pL07MkzmzO994PLX8VLXiM69CLjCIFt5g8rZal4RWZmdsYBEw8duaqEdXxreIKRv
+wDdRGUVfacPKt+S1kkVssujPfeexrb4fUuCa+jWgBATgTAoCWR8ZgLpJ49YLb981
+kP49l9uqDZjXpGtJSROvfrAqyUkwRz4ngUKsqhfhjPMON1ybzh5HbZf+uGwArtl+
+fykbJex4RyugOuHH/Mhtw+wkaBXX/rzbngTO0DajdoHAL0o/MIrsnC3w7jEl49U7
+mqgSiP5Oel3jsv58uY7T+DlRenHrUaj5zPDldmIUGWJJWHZw82nLFqjPmTaJ2A2S
+iljfS6dY4EhVLKVdY6DP/tuMSJPqHqvmxXoC18qc9K7J95gQMcz5HE7z6eXfFISF
+4ZEerdCaw2RTOQTgfO2g
+=xXm8
+-----END PGP SIGNATURE-----
+
+--tKW2IUtsqtDRztdT--
