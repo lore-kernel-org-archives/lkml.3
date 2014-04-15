@@ -1,129 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023AbaDOI6j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 04:58:39 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51891 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752308AbaDOI6h (ORCPT
+	id S1751341AbaDOJAe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 05:00:34 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:53668 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908AbaDOJA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 04:58:37 -0400
-Message-ID: <534CF4B7.9070907@hitachi.com>
-Date: Tue, 15 Apr 2014 17:58:31 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 15 Apr 2014 05:00:29 -0400
+Date: Tue, 15 Apr 2014 11:00:25 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Feng Tang <feng.tang@intel.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, linux-kernel@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [PATCH v2] x86: hpet: Don't default CONFIG_HPET_TIMER to be y
+ for X86_64
+Message-ID: <20140415090025.GA31244@gmail.com>
+References: <1395975316-4795-1-git-send-email-feng.tang@intel.com>
+ <20140328071716.GC30107@gmail.com>
+ <20140328073718.GA12762@feng-snb>
+ <53352DE5.2090600@ladisch.de>
+ <20140328081117.GA32308@gmail.com>
+ <20140415074443.GA10911@feng-snb>
 MIME-Version: 1.0
-To: Jianyu Zhan <nasa4836@gmail.com>
-Cc: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, davem@davemloft.net,
-        rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH] kprobes: be more permissive when user specifies both
- symbol name and address
-References: <1397549446-849-1-git-send-email-nasa4836@gmail.com>
-In-Reply-To: <1397549446-849-1-git-send-email-nasa4836@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140415074443.GA10911@feng-snb>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for resending...
 
-(2014/04/15 17:10), Jianyu Zhan wrote:
-> Currently, if user specifies both symbol name and address, we just
-> bail out.
+* Feng Tang <feng.tang@intel.com> wrote:
+
+> Hi Ingo,
 > 
-> This might be too rude. This patch makes it give more tolerance.
-> If both are specified, check address first, if the symbol found
-> does not match the one user specify, print a waring. If not found,
-> return -ENOENT, because some symbols might have muplitple instances,
-> we don't bother to check symbol name.
+> On Fri, Mar 28, 2014 at 09:11:17AM +0100, Ingo Molnar wrote:
+> > 
+> > * Clemens Ladisch <clemens@ladisch.de> wrote:
+> > 
+> > > Feng Tang wrote:
+> > > > On Fri, Mar 28, 2014 at 08:17:16AM +0100, Ingo Molnar wrote:
+> > > >> * Feng Tang <feng.tang@intel.com> wrote:
+> > > >>  - or the kernel should have a quirk to reliably disable it. Why
+> > > >>    should we crash or misbehave if a driver is built into the
+> > > >>    kernel?
+> > > >
+> > > > I thought about this before, HPET doesn't have PCI ID like stuff,
+> > > 
+> > > HPET does have the PCI vendor ID in the first register.
+> > > 
+> > > > only thing I can think of to identify them may be the CPU family/ID.
+> > > 
+> > > The HPET is implemented by some actual chip, and that chip also has lots
+> > > of PCI devices.  (In the case of a SoC, the CPU ID would work, too).
+> > 
+> > Correct. See arch/x86/kernel/hpet.c, which has a large number of HPET 
+> > quirks keyed off chipset PCI IDs:
+> > 
+> >   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ESB2_0,
+> >                            ich_force_enable_hpet);
+> >   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH6_0,
+> >                            ich_force_enable_hpet);
+> >   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH6_1,
+> >                            ich_force_enable_hpet);
+> >   [...]
 > 
-> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
-> ---
->  Documentation/kprobes.txt |  4 +++-
->  kernel/kprobes.c          | 30 ++++++++++++++++++++++++++----
->  2 files changed, 29 insertions(+), 5 deletions(-)
+> I just gave it another thought, that the HPET on our platform 
+> currently do have some problem to be used as clocksource/clockevent, 
+> but it may get fixed in future version (by Silicon or BIOS).
 > 
-> diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
-> index 0cfb00f..217f976 100644
-> --- a/Documentation/kprobes.txt
-> +++ b/Documentation/kprobes.txt
-> @@ -344,7 +344,9 @@ to install a probepoint is known. This field is used to calculate the
->  probepoint.
->  
->  3. Specify either the kprobe "symbol_name" OR the "addr". If both are
-> -specified, kprobe registration will fail with -EINVAL.
-> +specified, only check "addr", because some symbols might have muplitple
-> +instances. If neither is specified, kprobe registration will fail
-> +with -EINVAL.
->  
->  4. With CISC architectures (such as i386 and x86_64), the kprobes code
->  does not validate if the kprobe.addr is at an instruction boundary.
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index ceeadfc..ac910f4 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -1354,17 +1354,39 @@ static int __kprobes in_kprobes_functions(unsigned long addr)
->  static kprobe_opcode_t __kprobes *kprobe_addr(struct kprobe *p)
->  {
->  	kprobe_opcode_t *addr = p->addr;
-> +	char namebuf[KSYM_NAME_LEN];
-> +	const char *sym_name = NULL;
-> +	unsigned long offset;
->  
-> -	if ((p->symbol_name && p->addr) ||
-> -	    (!p->symbol_name && !p->addr))
-> +	if (!p->symbol_name && !p->addr)
->  		goto invalid;
->  
-> -	if (p->symbol_name) {
-> +	/* Some symbols might have muplitple instances,
-> +	 * so if both specified, only check address. */
+> If I add quirk to block it now, I may revert this code in future 
+> when it get fixed, same problem applis for the future generation of 
+> platform.
 
-Could you fix the comment style as same as others?
-If we have multiple lines of comment, it should be
+If the hardware or BIOS gets fixed then that will be visible in the 
+revision level of the hardware, right?
 
-/*
- * aaaaaa
- * bbbbbb
- */
+Such kind of revision level, once it is known, can then be used to 
+turn the quirk on/off precisely.
 
-> +	if (unlikely(p->addr && p->symbol_name)) {
-> +		sym_name = kallsyms_lookup((unsigned long)(p->addr),
-> +				NULL, &offset, NULL, namebuf);
-> +		if (!sym_name)
-> +			return ERR_PTR(-ENOENT);
-> +
-> +		if (strncmp(sym_name, p->symbol_name, KSYM_NAME_LEN)
-> +				|| offset != p->offset) {
-> +			pr_err("Incorrect symbol or offset, should be "
-> +				"symbol=%s, offset=%ld.\n", sym_name, offset);
-> +			goto invalid;
-> +		}
-> +	} else if (p->symbol_name) {
-> +		/* only symbol case */
->  		kprobe_lookup_name(p->symbol_name, addr);
->  		if (!addr)
->  			return ERR_PTR(-ENOENT);
-> +	} else {
-> +		/* only address case */
-> +		sym_name = kallsyms_lookup((unsigned long)(p->addr),
-> +				NULL, &offset, NULL, namebuf);
-> +		if (!sym_name)
-> +			return ERR_PTR(-ENOENT);
+Thanks,
 
-Since we've already have a sanity check of the address range (in kernel_text)
-in check_kprobe_address_safe(), you don't need to lookup kallsyms.
-
-Thank you,
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+	Ingo
