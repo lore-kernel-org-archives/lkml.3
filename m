@@ -1,97 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358AbaDOJHG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 05:07:06 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9776 "EHLO mga09.intel.com"
+	id S1751290AbaDOJJT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 05:09:19 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:32768 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750954AbaDOJHD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 05:07:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="521020595"
-From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: Thierry Reding <thierry.reding@gmail.com>, Alan Cox <alan@linux.intel.com>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] pwm_lpss: Add support for PCI devices
-Thread-Topic: [PATCH] pwm_lpss: Add support for PCI devices
-Thread-Index: AQHPVhP1bci2OBKO+kqYMQwhKouSaZsQQdqAgAIV6mD//4keAIAAhl3A
-Date: Tue, 15 Apr 2014 09:06:23 +0000
-Message-ID: <604BF5F4C5D71041942BC7E84ED659EA01570E5F@PGSMSX103.gar.corp.intel.com>
-References: <1397311131-13371-1-git-send-email-chiau.ee.chew@intel.com>
- <20140414081805.GI19349@intel.com>
- <604BF5F4C5D71041942BC7E84ED659EA01570E28@PGSMSX103.gar.corp.intel.com>
- <20140415090332.GO19349@intel.com>
-In-Reply-To: <20140415090332.GO19349@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.205]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750865AbaDOJJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 05:09:16 -0400
+Message-ID: <534D0333.3060103@ti.com>
+Date: Tue, 15 Apr 2014 13:00:19 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Ingo Molnar <mingo@kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [3.15-rc1] a huge number of warnings produced by xhci &
+References: <53285FE7.5010203@ti.com> <534C182C.8040206@ti.com> <alpine.DEB.2.10.1404141206040.18190@nuc>
+In-Reply-To: <alpine.DEB.2.10.1404141206040.18190@nuc>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, Apr 15, 2014 at 08:41:02AM +0000, Chew, Chiau Ee wrote:
-> >
-> >
-> > > > +static struct pwm_lpss_chip *pwm_lpss_probe(struct device *dev,
-> > > > +			struct resource *r, struct pwm_lpss_boardinfo *info)
-> > > >  {
-> > > >  	struct pwm_lpss_chip *lpwm;
-> > > > -	struct resource *r;
-> > > >  	int ret;
-> > > >
-> > > > -	lpwm = devm_kzalloc(&pdev->dev, sizeof(*lpwm), GFP_KERNEL);
-> > > > +	lpwm = devm_kzalloc(dev, sizeof(*lpwm), GFP_KERNEL);
-> > > >  	if (!lpwm)
-> > > > -		return -ENOMEM;
-> > > > -
-> > > > -	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > > > +		return ERR_PTR(-ENOMEM);
-> > > >
-> > > > -	lpwm->regs = devm_ioremap_resource(&pdev->dev, r);
-> > > > +	lpwm->regs = devm_ioremap_resource(dev, r);
-> > > >  	if (IS_ERR(lpwm->regs))
-> > > > -		return PTR_ERR(lpwm->regs);
-> > > > -
-> > > > -	lpwm->clk = devm_clk_get(&pdev->dev, NULL);
-> > > > -	if (IS_ERR(lpwm->clk)) {
-> > > > -		dev_err(&pdev->dev, "failed to get PWM clock\n");
-> > > > -		return PTR_ERR(lpwm->clk);
-> > > > +		return lpwm->regs;
-> > > > +
-> > > > +	if (info) {
-> > > > +		lpwm->clk_rate = info->clk_rate;
-> > > > +	} else {
-> > > > +		lpwm->clk = devm_clk_get(dev, NULL);
-> > > > +		if (IS_ERR(lpwm->clk)) {
-> > > > +			dev_err(dev, "failed to get PWM clock\n");
-> > > > +			return (void *)lpwm->clk;
-> > >
-> > > Why the cast here?
-> >
-> > Alan, please do correct me if I describe wrongly on the purpose that you add
-> the cast here.
-> >
-> > As you can see, pwm_lpss_probe() is expected to return a pointer of type
-> struct pwm_lpss_chip.  On the other hand,
-> > the return of devm_clk_get() would be a pointer of type struct clk. So
-> > if were to use lpwm->clk as the return value of pwm_lpss_probe() , a cast
-> would be needed since the pointer type is different from the expected one. The
-> compiler would complain on " warning: return from incompatible pointer type"
-> > if without the cast.
-> 
-> I think you can use ERR_CAST() here.
+On 04/14/2014 08:12 PM, Christoph Lameter wrote:
+> n Mon, 14 Apr 2014, Grygorii Strashko wrote:
+>
+>> Hi All,
+>>
+>> I'm observing a huge number of warnings produced during the boot of my Keystone 2 board
+>> when USB is enabled.
+>>
+>> [    2.496460] BUG: using __this_cpu_read() in preemptible [00000000] code: khubd/202
+>> [    2.504030] caller is __mod_zone_page_state+0x20/0xc8
+>> [    2.509094] CPU: 1 PID: 202 Comm: khubd Not tainted 3.15.0-rc1-00015-ge521fa3-dirty #55
+>> [    2.517122] [<c0013788>] (unwind_backtrace) from [<c001129c>] (show_stack+0x10/0x14)
+>> [    2.524854] [<c001129c>] (show_stack) from [<c049f800>] (dump_stack+0x68/0xb8)
+>> [    2.532086] [<c049f800>] (dump_stack) from [<c02731c0>] (check_preemption_disabled+0xe8/0x10c)
+>> [    2.540708] [<c02731c0>] (check_preemption_disabled) from [<c00bc944>] (__mod_zone_page_state+0x20/0xc8)
+>> [    2.550187] [<c00bc944>] (__mod_zone_page_state) from [<c00b50c8>] (reclaim_clean_pages_from_list+0x16c/0x178)
+>> [    2.560193] [<c00b50c8>] (reclaim_clean_pages_from_list) from [<c00ac8f0>] (alloc_contig_range+0x10c/0x2d0)
+>> [    2.569932] [<c00ac8f0>] (alloc_contig_range) from [<c02b0e58>] (dma_alloc_from_contiguous+0x70/0x118)
+>> [    2.579241] [<c02b0e58>] (dma_alloc_from_contiguous) from [<c0017d24>] (__alloc_from_contiguous+0x34/0x160)
+>> [    2.588974] [<c0017d24>] (__alloc_from_contiguous) from [<c0018760>] (__dma_alloc+0x18c/0x294)
+>> [    2.597582] [<c0018760>] (__dma_alloc) from [<c00189f0>] (arm_dma_alloc+0xac/0xd8)
+>> [    2.605140] [<c00189f0>] (arm_dma_alloc) from [<c00d84a8>] (dma_pool_alloc+0xc8/0x1b8)
+>> [    2.613067] [<c00d84a8>] (dma_pool_alloc) from [<c0317120>] (xhci_alloc_container_ctx+0x70/0xe0)
+>> [    2.621851] [<c0317120>] (xhci_alloc_container_ctx) from [<c03194e8>] (xhci_alloc_virt_device+0x98/0x220)
+>> [    2.631418] [<c03194e8>] (xhci_alloc_virt_device) from [<c0315d28>] (xhci_alloc_dev+0x158/0x1f0)
+>> [    2.640207] [<c0315d28>] (xhci_alloc_dev) from [<c02f6310>] (usb_alloc_dev+0x1d4/0x27c)
+>> [    2.648217] [<c02f6310>] (usb_alloc_dev) from [<c02fb204>] (hub_thread+0x670/0x1204)
+>> [    2.655943] [<c02fb204>] (hub_thread) from [<c003d8d8>] (kthread+0xcc/0xe8)
+>> [    2.662906] [<c003d8d8>] (kthread) from [<c000e2f8>] (ret_from_fork+0x14/0x3c)
+>>
+>> Anyone else sees the same thing?
+>
+> Either disable interrupts or use mod_zone_page_state instead.
+>
+> This should fix it:
+>
+>
+>
+>
+> Subject: vmscan: reclaim_clean_pages_from_list must use mod_zone_page_state
+>
+> Seems to be called with preemption enabled. Therefore it must use
+> mod_zone_page_state instead.
+>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-You are right....ERR_CAST() can be used. 
+This patch fixes issue for me on Keystone 2, thanks.
+Tested-by: Grygorii Strashko <grygorii.strashko@ti.com>
 
-Ok...i will clean up the patch and resend a v2 version.
-
-Thanks for the review and feedback.
+>
+> Index: linux/mm/vmscan.c
+> ===================================================================
+> --- linux.orig/mm/vmscan.c	2014-04-09 11:35:43.917930976 -0500
+> +++ linux/mm/vmscan.c	2014-04-14 12:09:48.070745938 -0500
+> @@ -1158,7 +1158,7 @@ unsigned long reclaim_clean_pages_from_l
+>   			TTU_UNMAP|TTU_IGNORE_ACCESS,
+>   			&dummy1, &dummy2, &dummy3, &dummy4, &dummy5, true);
+>   	list_splice(&clean_pages, page_list);
+> -	__mod_zone_page_state(zone, NR_ISOLATED_FILE, -ret);
+> +	mod_zone_page_state(zone, NR_ISOLATED_FILE, -ret);
+>   	return ret;
+>   }
+>
 
