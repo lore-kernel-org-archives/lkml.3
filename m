@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922AbaDOBuE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 21:50:04 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:44963 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131AbaDOBuC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 21:50:02 -0400
-Message-ID: <534C903C.6050904@gmail.com>
-Date: Tue, 15 Apr 2014 09:49:48 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1753943AbaDOBwi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 21:52:38 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:58851 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751192AbaDOBwf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 21:52:35 -0400
+Date: Mon, 14 Apr 2014 21:52:24 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Jianyu Zhan <nasa4836@gmail.com>
+Cc: mhocko@suse.cz, bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com,
+        akpm@linux-foundation.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm/memcontrol.c: make mem_cgroup_read_stat() read all
+ interested stat item in one go
+Message-ID: <20140415015224.GB7969@cmpxchg.org>
+References: <1397149868-30401-1-git-send-email-nasa4836@gmail.com>
 MIME-Version: 1.0
-To: Guan Xuetao <gxt@mprc.pku.edu.cn>, viro@zeniv.linux.org.uk
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] unicore32: include: asm: add missing ')' for PAGE_* macros
- in pgtable.h
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397149868-30401-1-git-send-email-nasa4836@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Missing related ')', the related compiling error:
+Hi Jianyu,
 
-    CC [M]  drivers/gpu/drm/udl/udl_fb.o
-  drivers/gpu/drm/udl/udl_fb.c: In function ‘udl_fb_mmap’:
-  drivers/gpu/drm/udl/udl_fb.c:273: error: expected ‘)’ before ‘return’
-  drivers/gpu/drm/udl/udl_fb.c:281: error: expected expression before ‘}’ token
-  make[4]: *** [drivers/gpu/drm/udl/udl_fb.o] Error 1
-  make[3]: *** [drivers/gpu/drm/udl] Error 2
-  make[2]: *** [drivers/gpu/drm] Error 2
-  make[1]: *** [drivers/gpu] Error 2
-  make: *** [drivers] Error 2
+On Fri, Apr 11, 2014 at 01:11:08AM +0800, Jianyu Zhan wrote:
+> Currently, mem_cgroup_read_stat() is used for user interface. The
+> user accounts memory usage by memory cgroup and he _always_ requires
+> exact value because he accounts memory. So we don't use quick-and-fuzzy
+> -read-and-do-periodic-synchronization way. Thus, we iterate all cpus
+> for one read.
+> 
+> And we mem_cgroup_usage() and mem_cgroup_recursive_stat() both finally
+> call into mem_cgroup_read_stat().
+> 
+> However, these *stat snapshot* operations are implemented in a quite
+> coarse way: it takes M*N iteration for each stat item(M=nr_memcgs,
+> N=nr_possible_cpus). There are two deficiencies:
+> 
+> 1. for every stat item, we have to iterate over all percpu value, which
+>    is not so cache friendly.
+> 2. for every stat item, we call mem_cgroup_read_stat() once, which
+>    increase the probablity of contending on pcp_counter_lock.
+> 
+> So, this patch improve this a bit. Concretely, for all interested stat
+> items, mark them in a bitmap, and then make mem_cgroup_read_stat() read
+> them all in one go.
+> 
+> This is more efficient, and to some degree make it more like *stat snapshot*.
+> 
+> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+> ---
+>  mm/memcontrol.c | 91 +++++++++++++++++++++++++++++++++++++++------------------
+>  1 file changed, 62 insertions(+), 29 deletions(-)
 
-
-Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
----
- arch/unicore32/include/asm/pgtable.h |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/arch/unicore32/include/asm/pgtable.h b/arch/unicore32/include/asm/pgtable.h
-index 233c258..ed6f7d0 100644
---- a/arch/unicore32/include/asm/pgtable.h
-+++ b/arch/unicore32/include/asm/pgtable.h
-@@ -87,16 +87,16 @@ extern pgprot_t pgprot_kernel;
- 
- #define PAGE_NONE		pgprot_user
- #define PAGE_SHARED		__pgprot(pgprot_val(pgprot_user | PTE_READ \
--								| PTE_WRITE)
-+								| PTE_WRITE))
- #define PAGE_SHARED_EXEC	__pgprot(pgprot_val(pgprot_user | PTE_READ \
- 								| PTE_WRITE \
--								| PTE_EXEC)
-+								| PTE_EXEC))
- #define PAGE_COPY		__pgprot(pgprot_val(pgprot_user | PTE_READ)
- #define PAGE_COPY_EXEC		__pgprot(pgprot_val(pgprot_user | PTE_READ \
--								| PTE_EXEC)
--#define PAGE_READONLY		__pgprot(pgprot_val(pgprot_user | PTE_READ)
-+								| PTE_EXEC))
-+#define PAGE_READONLY		__pgprot(pgprot_val(pgprot_user | PTE_READ))
- #define PAGE_READONLY_EXEC	__pgprot(pgprot_val(pgprot_user | PTE_READ \
--								| PTE_EXEC)
-+								| PTE_EXEC))
- #define PAGE_KERNEL		pgprot_kernel
- #define PAGE_KERNEL_EXEC	__pgprot(pgprot_val(pgprot_kernel | PTE_EXEC))
- 
--- 
-1.7.9.5
+This is when the user reads statistics or when OOM happens, neither of
+which I would consider fast paths.  I don't think it's worth the extra
+code, which looks more cumbersome than what we have.
