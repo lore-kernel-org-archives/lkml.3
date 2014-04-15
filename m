@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754350AbaDOKx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 06:53:27 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:51508 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919AbaDOKx0 (ORCPT
+	id S1754491AbaDOKxl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 06:53:41 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54439 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754367AbaDOKxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 06:53:26 -0400
-From: asnast@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: rostedt@goodmis.org, Alex Snast <alexsn@il.ibm.com>
-Subject: [PATCH 0/2] ftrace: draw_funcgraph.py: Fix regex handling
-Date: Tue, 15 Apr 2014 13:53:18 +0300
-Message-Id: <1397559200-15520-1-git-send-email-alexsn@il.ibm.com>
-X-Mailer: git-send-email 1.9.2
+	Tue, 15 Apr 2014 06:53:36 -0400
+Date: Tue, 15 Apr 2014 12:53:32 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: Re: [Query]: tick-sched: why don't we stop tick when we are running
+ idle task?
+Message-ID: <20140415105332.GM13658@twins.programming.kicks-ass.net>
+References: <20140411145333.GC3438@localhost.localdomain>
+ <20140411151825.GX11096@twins.programming.kicks-ass.net>
+ <CAKohpomgv-LbUcPxazfJkf0Jq0sSULxT0WjrbFovn0k0O-ORwg@mail.gmail.com>
+ <20140414110245.GG11096@twins.programming.kicks-ass.net>
+ <CAKohpo==1=K0=gZz_Z_Y0zO2PtyvA-Q67_+VKTJN7kbQgbiHTg@mail.gmail.com>
+ <20140414114744.GI11096@twins.programming.kicks-ass.net>
+ <CAKohpon=_ZR+QbfacGT+G_atgcc21KMYG3YxPf0nkSDLBH8Q2A@mail.gmail.com>
+ <20140414120600.GJ11096@twins.programming.kicks-ass.net>
+ <20140415093002.GL1877@localhost.localdomain>
+ <20140415105226.GP11096@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140415105226.GP11096@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Snast <alexsn@il.ibm.com>
+On Tue, Apr 15, 2014 at 12:52:26PM +0200, Peter Zijlstra wrote:
+> On Tue, Apr 15, 2014 at 11:30:04AM +0200, Frederic Weisbecker wrote:
+> > There is probably a few things that assume local calls but last time
+> > I checked I had the impression that it was fairly possible to call sched_class::task_tick()
+> > remotely. rq is locked, no reference to "current", use rq accessors...
+> > 
+> > OTOH scheduler_tick() itself definetly requires local calls.
+> 
+> possible isn't the problem, its completely insane to do that.
 
-Hi,
-
-This patch set fixes a small regex handling bug I've encountered while
-using draw_funcgraph.py tool.
-
-In addition I've found it more convenient to pass raw function trace input
-from files as opposed to stdin only so I've added support for that.
-
-Alex Snast (2):
-  ftrace: draw_funcgraph.py: Handle dots in function names
-  ftrace: draw_funcgraph.py: Allow reading input from files in addition
-    to stdin
-
- scripts/tracing/draw_functrace.py | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
---
-1.9.2
-
+What's more, I'm still waiting to hear why we're wanting to do any of
+this.
