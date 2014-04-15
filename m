@@ -1,127 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750AbaDOMUl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 08:20:41 -0400
-Received: from e24smtp03.br.ibm.com ([32.104.18.24]:59227 "EHLO
-	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227AbaDOMUj (ORCPT
+	id S1754767AbaDOMVN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 08:21:13 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33883 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775AbaDOMVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 08:20:39 -0400
-Date: Tue, 15 Apr 2014 09:20:14 -0300
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: stefani@seibold.net
-Cc: Benjamin Herrenschmidt <benh@au1.ibm.com>,
-        linux-usb <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Greg KH <greg@kroah.com>, Alan Stern <stern@rowland.harvard.edu>,
-        sarah.a.sharp@linux.intel.com
-Subject: Re: Missing USB XHCI and EHCI reset for kexec
-Message-ID: <20140415122013.GA21101@oc0268524204.ibm.com>
-References: <1397416959.1555.30.camel@vger.seibold.net>
- <1397468521.9258.28.camel@pasglop>
- <20140414174458.Horde.ieyRX8PcZ0lg3nY1QFE2DA4@webmail.your-server.de>
- <20140414214807.GA32141@oc0268524204.ibm.com>
- <20140415120417.Horde.2gdC8Woe64OQXOq_cVqtkg6@webmail.your-server.de>
+	Tue, 15 Apr 2014 08:21:10 -0400
+Date: Tue, 15 Apr 2014 13:20:44 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: Sebastian Reichel <sre@ring0.de>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Jarkko Nikula <jarkko.nikula@bitmer.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        alsa-devel@alsa-project.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Message-ID: <20140415122044.GZ12304@sirena.org.uk>
+References: <1396733753-9820-1-git-send-email-sre@kernel.org>
+ <1396733753-9820-2-git-send-email-sre@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8M+BMcg+0CmQ2H7L"
 Content-Disposition: inline
-In-Reply-To: <20140415120417.Horde.2gdC8Woe64OQXOq_cVqtkg6@webmail.your-server.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041512-9564-0000-0000-000000967446
+In-Reply-To: <1396733753-9820-2-git-send-email-sre@kernel.org>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/5] ASoC: omap: rx51: Use devm_snd_soc_register_card
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 12:04:17PM +0200, stefani@seibold.net wrote:
-> 
-> Zitat von Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>:
-> 
-> >On Mon, Apr 14, 2014 at 05:44:58PM +0200, stefani@seibold.net wrote:
-> >>
-> >>Zitat von Benjamin Herrenschmidt <benh@au1.ibm.com>:
-> >>
-> >>>I don't know about EHCI specifically but this is a known issue with
-> >>>XHCI, I observe similar issues on other powerpc platforms (servers)
-> >>>and this isn't architecture specific (looks more like actualy xhc
-> >>>implementation specific).
-> >>>
-> >>>Thadeu Cascardo (on CC) has been the one investigating that on our side,
-> >>>he might have more to add including patches.
-> >>>
-> >>
-> >>I have now a kernel 3.14 dmesg log of the problem. After a kexec the
-> >>kexeced 3.14 kernel shows:
-> >>
-> >>[    1.170029] xhci_hcd 0001:03:00.0: xHCI Host Controller
-> >>[    1.175306] xhci_hcd 0001:03:00.0: new USB bus registered,
-> >>assigned bus number 1
-> >>[    1.212561] xhci_hcd 0001:03:00.0: Host not halted after 16000
-> >>microseconds.
-> >>[    1.219621] xhci_hcd 0001:03:00.0: can't setup: -110
-> >>[    1.224597] xhci_hcd 0001:03:00.0: USB bus 1 deregistered
-> >>[    1.230021] xhci_hcd 0001:03:00.0: init 0001:03:00.0 fail, -110
-> >>[    1.235955] xhci_hcd: probe of 0001:03:00.0 failed with error -110
-> >>
-> >
-> >What is your controller vendor and device IDs? Is that a TI chip?
-> >
-> 
-> Yes it is a TI chip, vendor ID 104c and product ID 8241.
-> 
-> >Can you check if the patch I sent a month ago fixes it? [1] There's the
-> >whole story there. In fact, you will also need something like the patch
-> >below. Can you apply only the first one, verify, and, then, the other
-> >one as well, and report what worked for you?
-> >
-> >[1] http://marc.info/?l=linux-usb&m=139483181809062&w=2
-> >
-> 
-> I tried the attach patch and it did not help. This is what i
-> expected because this is a fix in the shutdown path, which will
-> never called when doing a forced kexec.
 
-Hi, Stefani.
+--8M+BMcg+0CmQ2H7L
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Did you try with both patches applied? How do you evoke the forced
-kexec? Is that a kexec on panic? Does it really need to be forced? With
-no clean shutdown, platform and drivers would need to issue resets, like
-you mentioned below, to get the system into a clean state.
+On Sat, Apr 05, 2014 at 11:35:49PM +0200, Sebastian Reichel wrote:
+> From: Pali Roh=E1r <pali.rohar@gmail.com>
+>=20
+> This patch converts the rx51 ASoC module to use
+> devm_snd_soc_register_card. It also adds module alias
+> to support driver autoloading.
 
-> 
-> I have a running a 3.10.23 kernel. This kernel do a kexec for a
-> kernel 3.14. Since the kernel 3.10.23 did not performe a clean
-> shutdown, the state of the XHCI Controller is undefined. So when
+This doesn't apply against current code and since it does multiple
+things it should be multiple patches.
 
-And the clean shutdown requires both of my patches, for TI chips, as far
-as I know. It looks like the problem is issuing a halt when there are
-pending URBs.
+> +static int rx51_soc_remove(struct platform_device *pdev)
+>  {
+> +	struct snd_soc_card *card =3D platform_get_drvdata(pdev);
+> +
+>  	snd_soc_jack_free_gpios(&rx51_av_jack, ARRAY_SIZE(rx51_av_jack_gpios),
+>  				rx51_av_jack_gpios);
+> =20
+> -	platform_device_unregister(rx51_snd_device);
+> +	card->dev =3D NULL;
+> +
 
-> kernel 3.14 will probe XHCI it will find a XHCI controller which was
-> not performed a reset.
-> 
+Why is this assignment being done?
 
-The problem is not that a reset hasn't been issued. A PCI function reset
-should fix most of the problems with a bad device state, when the reset
-works. However, the problem is that it was not cleanly shut down. URBs
-should have been canceled and removed from the controller queue, and it
-should have halted after that.
+--8M+BMcg+0CmQ2H7L
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> So i think it is necessary to reset the XHCI controller and all
-> devices on this bus. This is what i do with a "echo 1
-> >/sys/bus/pci/drivers/xhci_hcd/0001:03:00.0/reset" before the kexec.
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-One way to look at that is making the PCI code issue resets to all buses
-before doing any other access. That will make booting more slow, and
-there are a lot of other corner cases where this might not be enough.
-It's probably more sane to try to get the 3.10.23 kernel to do a clean
-shutdown, if possible.
+iQIcBAEBAgAGBQJTTSQZAAoJELSic+t+oim9axwQAJ1bebnpbDkFMA4qfqZKGDA7
+ljaUPSVyscdB5l7cOIiyNLM+DQmYZFVZs2HxqOj4mQNljQ44NQu5+0T2U202zQRl
+hR2MaCatZvroDw8RsPadpNnazyetECHUeL0DMOGvAl7kmodRpx70EKf4CIlCqSfF
+HHc4ZECRUQcpG6v6iZgCBIGJafJrSi4cboQRmlgDl69WMFyBaLtwB0i+T2T30wpM
+Nas4Z5UTg8co9KG/UAW81+63BpJ5U7hXRSb/+37U4W0i602ZZmOM/eZyxQ2cdMm8
+EVdIm4p/H0CQ++LLBlagIEvWSvnBrUea7X+Fbm50M8R9NEBPJrP66u9Aq3K7MuCM
+0FQscvzNHRAU2KD0yyRQebXBE5yr/dZwx535qk49Ws4TaZVo+oCf6G50us0Obt9D
+6iotTBbPFnCoIUAGwXbBpKIGY7W5qbgdg2GIpFkKgCiMY8PacipWwa32Oab2jDLB
+J8Shb6E9H/3o6/FOq0NfuLw48b0Xpc7geFT2iaJ1pn989G/+tf2MgyR8ISC6oyqm
+SVBcp93HshzvpvvjkHNpD6kY5zjvVpI4QifY6xEIx6s/WAlnaiF4tjNMO9ejYd0s
+0jZnxp9ZZ6Y2BveDZirVLErEyS8/kHKLpGbmg2TPXUmE0rlfZ748JVV+IPc2XNah
++83a88+8UGp9v9BjANtx
+=QCJN
+-----END PGP SIGNATURE-----
 
-Regards.
-Cascardo.
-
-> - Stefani
-> 
-> 
-
+--8M+BMcg+0CmQ2H7L--
