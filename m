@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917AbaDOSHj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 14:07:39 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:49510 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751012AbaDOSHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 14:07:37 -0400
-Date: Tue, 15 Apr 2014 20:07:35 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Kertesz Laszlo <laszlo.kertesz@gmail.com>
-Cc: Alex Deucher <alexdeucher@gmail.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Christian =?utf-8?B?S8O2bmln?= <christian.koenig@amd.com>,
-        Maling list - DRI developers 
-	<dri-devel@lists.freedesktop.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: 15-rc1: radeon modesetting fails
-Message-ID: <20140415180735.GG4826@pd.tnic>
-References: <20140415070204.GA4806@pd.tnic>
- <534CFBD7.3070604@amd.com>
- <20140415120740.GA8306@nazgul.tnic>
- <CADnq5_PpPa_fbm=1KH__q-W2OuvfoHr2wquimQ8TCq=xwwYq_Q@mail.gmail.com>
- <534D677C.6080407@gmail.com>
- <20140415172702.GC4826@pd.tnic>
- <534D743B.8010705@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <534D743B.8010705@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753845AbaDOSIg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 14:08:36 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:54166 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751369AbaDOSIe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 14:08:34 -0400
+Message-ID: <1397585312.8212.13.camel@x220>
+Subject: Re: [PATCH] usb: phy: mv_u3d: Remove usb phy driver for mv_u3d
+From: Paul Bolle <pebolle@tiscali.nl>
+To: balbi@ti.com
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Date: Tue, 15 Apr 2014 20:08:32 +0200
+In-Reply-To: <20140415172310.GD16002@saruman.home>
+References: <1397561783.1985.55.camel@x220>
+	 <20140415172310.GD16002@saruman.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Apr 2014 18:08:32.0729 (UTC) FILETIME=[B6544C90:01CF58D5]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 09:02:35PM +0300, Kertesz Laszlo wrote:
-> Honestly didnt try that but i assume yes, since the screens go black
-> when it should change resolution.
+On Tue, 2014-04-15 at 12:23 -0500, Felipe Balbi wrote:
+> so this means that drivers/usb/gadget/mv_u3d_core.c isn't used either ?
 
-Pls try it and let us know whether you see the machine booting further,
-albeit without modesetting.
+Why should it? There's no dependency on CPU_MMP3 for USB_MV_U3D anymore,
+is there?
 
-Thanks.
+> Instead of deleting this and introducing a new driver, why don't you
+> just help fix what's already in-tree ?
 
--- 
-Regards/Gruss,
-    Boris.
+Were any of the reasons I gave for removing this driver incorrect? Has
+it actually ever been possible to build it?
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+
+Paul Bolle
+
