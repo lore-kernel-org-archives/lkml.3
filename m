@@ -1,122 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735AbaDOUIN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 16:08:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:1596 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754252AbaDOUGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 16:06:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,866,1389772800"; 
-   d="scan'208";a="521555428"
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: wim@iguana.be, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        gnomes@lxorguk.ukuu.org.uk, david.a.cohen@linux.intel.com
-Subject: [PATCH v4 2/2] x86: intel-mid: add watchdog platform code for Merrifield
-Date: Tue, 15 Apr 2014 13:06:06 -0700
-Message-Id: <1397592366-3899-3-git-send-email-david.a.cohen@linux.intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1397592366-3899-1-git-send-email-david.a.cohen@linux.intel.com>
-References: <1397587272-31152-1-git-send-email-david.a.cohen@linux.intel.com>
- <1397592366-3899-1-git-send-email-david.a.cohen@linux.intel.com>
+	id S1754768AbaDOUJO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 16:09:14 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:55351 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040AbaDOUJL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 16:09:11 -0400
+MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <1389277387-18530-1-git-send-email-jlayton@redhat.com>
+References: <1389277387-18530-1-git-send-email-jlayton@redhat.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Tue, 15 Apr 2014 22:08:50 +0200
+Message-ID: <CAKgNAkjAdXber8SZ2EPtUSw2vE=EXpWSC2Q2NQ5S3hcF1GfQBQ@mail.gmail.com>
+Subject: Re: [PATCH RFC] fcntl.2: update manpage with verbiage about
+ file-private locks
+To: Jeff Layton <jlayton@redhat.com>
+Cc: linux-man <linux-man@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
+        samba-technical@lists.samba.org, lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds platform code for Intel Merrifield.
-Since the watchdog is not part of SFI table, we have no other option but
-to manually register watchdog's platform device (argh!).
+Hello Jeff,
 
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
----
- arch/x86/platform/intel-mid/device_libs/Makefile   |  1 +
- .../platform/intel-mid/device_libs/platform_wdt.c  | 66 ++++++++++++++++++++++
- 2 files changed, 67 insertions(+)
- create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_wdt.c
+On Thu, Jan 9, 2014 at 3:23 PM, Jeff Layton <jlayton@redhat.com> wrote:
+> Please don't merge this yet, as the kernel patches are still a work in
+> progress...
 
-diff --git a/arch/x86/platform/intel-mid/device_libs/Makefile b/arch/x86/platform/intel-mid/device_libs/Makefile
-index 097e7a7940d8..af9307f2cc28 100644
---- a/arch/x86/platform/intel-mid/device_libs/Makefile
-+++ b/arch/x86/platform/intel-mid/device_libs/Makefile
-@@ -20,3 +20,4 @@ obj-$(subst m,y,$(CONFIG_DRM_MEDFIELD)) += platform_tc35876x.o
- obj-$(subst m,y,$(CONFIG_SERIAL_MRST_MAX3110)) += platform_max3111.o
- # MISC Devices
- obj-$(subst m,y,$(CONFIG_KEYBOARD_GPIO)) += platform_gpio_keys.o
-+obj-$(subst m,y,$(CONFIG_INTEL_MID_WATCHDOG)) += platform_wdt.o
-diff --git a/arch/x86/platform/intel-mid/device_libs/platform_wdt.c b/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
-new file mode 100644
-index 000000000000..4b0434b54aff
---- /dev/null
-+++ b/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
-@@ -0,0 +1,66 @@
-+/*
-+ * platform_wdt.c: Watchdog platform library file
-+ *
-+ * (C) Copyright 2014 Intel Corporation
-+ * Author: David Cohen <david.a.cohen@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/platform_device.h>
-+#include <linux/platform_data/intel-mid_wdt.h>
-+#include <asm/intel-mid.h>
-+
-+#define TANGIER_EXT_TIMER0_MSI 15
-+
-+static struct platform_device wdt_dev = {
-+	.name = "intel_mid_wdt",
-+	.id = -1,
-+};
-+
-+static int tangier_probe(struct platform_device *pdev)
-+{
-+	int ioapic;
-+	struct io_apic_irq_attr irq_attr = { 0 };
-+
-+	ioapic = mp_find_ioapic(TANGIER_EXT_TIMER0_MSI);
-+	if (ioapic >= 0) {
-+		int ret;
-+		irq_attr.ioapic = ioapic;
-+		irq_attr.ioapic_pin = TANGIER_EXT_TIMER0_MSI;
-+		irq_attr.trigger = 1;
-+		irq_attr.polarity = 0; /* Active high */
-+		ret = io_apic_set_pci_routing(NULL, TANGIER_EXT_TIMER0_MSI,
-+					      &irq_attr);
-+		if (ret)
-+			return ret;
-+	} else {
-+		dev_warn(&pdev->dev, "cannot find interrupt %d in ioapic\n",
-+			 TANGIER_EXT_TIMER0_MSI);
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static struct intel_mid_wdt_pdata tangier_pdata = {
-+	.irq = TANGIER_EXT_TIMER0_MSI,
-+	.probe = tangier_probe,
-+};
-+
-+static int __init register_mid_wdt(void)
-+{
-+	if (intel_mid_identify_cpu() == INTEL_MID_CPU_CHIP_TANGIER) {
-+		wdt_dev.dev.platform_data = &tangier_pdata;
-+		return platform_device_register(&wdt_dev);
-+	}
-+
-+	return -ENODEV;
-+}
-+
-+rootfs_initcall(register_mid_wdt);
+Now that this has hit mainline, is this man page patch still current?
+
+Cheers,
+
+Michael
+
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> ---
+>  man2/fcntl.2 | 97 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 94 insertions(+), 3 deletions(-)
+>
+> diff --git a/man2/fcntl.2 b/man2/fcntl.2
+> index 72dcd7b..74c67b6 100644
+> --- a/man2/fcntl.2
+> +++ b/man2/fcntl.2
+> @@ -208,7 +208,7 @@ struct flock {
+>      off_t l_start;   /* Starting offset for lock */
+>      off_t l_len;     /* Number of bytes to lock */
+>      pid_t l_pid;     /* PID of process blocking our lock
+> -                        (F_GETLK only) */
+> +                        (F_GETLK and F_GETLKP only) */
+>      ...
+>  };
+>  .fi
+> @@ -344,9 +344,13 @@ returns details about one of these locks in the
+>  .IR l_type ", " l_whence ", " l_start ", and " l_len
+>  fields of
+>  .I lock
+> -and sets
+> +.
+> +If the conflicting lock is a traditional POSIX lock, then the
+>  .I l_pid
+> -to be the PID of the process holding that lock.
+> +will be set to the PID of the process holding that lock. If the
+> +conflicting lock is a file-private lock, then the
+> +.I l_pid
+> +will be set to -1.
+>  .P
+>  In order to place a read lock,
+>  .I fd
+> @@ -386,6 +390,93 @@ should be avoided; use
+>  and
+>  .BR write (2)
+>  instead.
+> +.SS File-private locking
+> +(Currently non-POSIX, but being proposed)
+> +.PP
+> +.BR F_GETLKP ", " F_SETLKP " and  " F_SETLKPW
+> +are used to acquire, release and test file-private record locks. These
+> +are byte-range locks that work identically to the traditional advisory
+> +record locks described above, but are associated with the open file on
+> +which they were acquired rather than the process, much like locks
+> +acquired with
+> +.BR flock (2)
+> +.
+> +.PP
+> +Unlike traditional advisory record locks, these locks are inherited
+> +across
+> +.BR fork (2) ", " dup (2) " and " dup2 (2)
+> +and are only released on the last close of the open file instead of being
+> +released on any close of the file.
+> +.PP
+> +File-private locks always conflict with traditional record locks, even
+> +when they are acquired by the same process on the same file descriptor.
+> +They only conflict with each other when they are acquired on different
+> +open file descriptors.
+> +.TP
+> +.BR F_SETLKP " (\fIstruct flock *\fP)"
+> +Acquire a lock (when
+> +.I l_type
+> +is
+> +.B F_RDLCK
+> +or
+> +.BR F_WRLCK )
+> +or release a lock (when
+> +.I l_type
+> +is
+> +.BR F_UNLCK )
+> +on the bytes specified by the
+> +.IR l_whence ", " l_start ", and " l_len
+> +fields of
+> +.IR lock .
+> +If a conflicting lock is held by another process,
+> +this call returns \-1 and sets
+> +.I errno
+> +to
+> +.B EACCES
+> +or
+> +.BR EAGAIN .
+> +.TP
+> +.BR F_SETLKPW " (\fIstruct flock *\fP)"
+> +As for
+> +.BR F_SETLKP ,
+> +but if a conflicting lock is held on the file, then wait for that
+> +lock to be released.
+> +If a signal is caught while waiting, then the call is interrupted
+> +and (after the signal handler has returned)
+> +returns immediately (with return value \-1 and
+> +.I errno
+> +set to
+> +.BR EINTR ;
+> +see
+> +.BR signal (7)).
+> +.TP
+> +.BR F_GETLKP " (\fIstruct flock *\fP)"
+> +On input to this call,
+> +.I lock
+> +describes a lock we would like to place on the file.
+> +If the lock could be placed,
+> +.BR fcntl ()
+> +does not actually place it, but returns
+> +.B F_UNLCK
+> +in the
+> +.I l_type
+> +field of
+> +.I lock
+> +and leaves the other fields of the structure unchanged.
+> +If one or more incompatible locks would prevent
+> +this lock being placed, then
+> +.BR fcntl ()
+> +returns details about one of these locks in the
+> +.IR l_type ", " l_whence ", " l_start ", and " l_len
+> +fields of
+> +.I lock
+> +.
+> +If the conflicting lock is a traditional POSIX lock, then the
+> +.I l_pid
+> +will be set to the PID of the process holding that lock. If the
+> +conflicting lock is a file-private lock, then the
+> +.I l_pid
+> +will be set to -1.
+>  .SS Mandatory locking
+>  (Non-POSIX.)
+>  The above record locks may be either advisory or mandatory,
+> --
+> 1.8.4.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-man" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+
 -- 
-1.9.1
-
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
