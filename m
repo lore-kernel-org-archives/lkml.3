@@ -1,38 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754701AbaDOMML (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 08:12:11 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33839 "EHLO
+	id S1754611AbaDOMN7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 08:13:59 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33851 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751295AbaDOMMI (ORCPT
+	with ESMTP id S1750790AbaDOMN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 08:12:08 -0400
-Date: Tue, 15 Apr 2014 13:11:43 +0100
+	Tue, 15 Apr 2014 08:13:56 -0400
+Date: Tue, 15 Apr 2014 13:13:25 +0100
 From: Mark Brown <broonie@kernel.org>
-To: Insop Song <insop.song@gainspeed.com>
-Cc: Jane Wan <Jane.Wan@gainspeed.com>, grant.likely@secretlab.ca,
-        Emilian.Medve@Freescale.com, kenth.eriksson@transmode.com,
-        thomas.de.schampheleire@gmail.com, b48286@Freescale.com,
-        jg1.han@samsung.com, sr@denx.de,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Message-ID: <20140415121143.GW12304@sirena.org.uk>
-References: <1397328516-13260-1-git-send-email-Jane.Wan@gainspeed.com>
- <20140414205151.GH25182@sirena.org.uk>
- <20140414213853.GF14129@neon.local.cohere.net>
- <20140414234949.GH12304@sirena.org.uk>
- <20140415000059.GB16287@neon.local.cohere.net>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        sameo@linux.intel.com, lgirdwood@gmail.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20140415121325.GX12304@sirena.org.uk>
+References: <1396340845-24060-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1396340845-24060-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <20140415101200.GC27091@lee--X1>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UTjKcilERHWBCdCp"
+	protocol="application/pgp-signature"; boundary="OtXN0xDA1zr/oUEL"
 Content-Disposition: inline
-In-Reply-To: <20140415000059.GB16287@neon.local.cohere.net>
+In-Reply-To: <20140415101200.GC27091@lee--X1>
 X-Cookie: You will be successful in your work.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 94.175.94.161
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] Configure FSL eSPI CSBEF, CSAFT, and whether to send all
- received data to user
+Subject: Re: [PATCH 2/6] regulator: arizona-ldo1: Move setup processing from
+ arizona-core
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -40,44 +37,40 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---UTjKcilERHWBCdCp
+--OtXN0xDA1zr/oUEL
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Mon, Apr 14, 2014 at 05:00:59PM -0700, Insop Song wrote:
-> On Tue, Apr 15, 2014 at 12:49:49AM +0100, Mark Brown wrote:
+On Tue, Apr 15, 2014 at 11:12:00AM +0100, Lee Jones wrote:
+> On Tue, 01 Apr 2014, Charles Keepax wrote:
 
-> > > We use scripts/get_maintainer.pl to get the mailing addresses.
-> > > We will double check the mailing list from MAINTAINER file.
+> > +#ifdef CONFIG_OF
 
-> > This will be part of not using a current kernel - if you're using a v3.8
-> > kernel to check then that's over a year out of date.
+> I think "if (IS_ENABLED(CONFIG_OF))" is preferred now, but I guess
+> that's up to Mark.
 
-> I think I sent too soon, you meant for the get_maintainer.pl script.
+Yes, it doesn't matter for booleans though.
 
-Yup, and for the MAINTAINERS file which it looks things up in - your
-copies will be out of date if you're running them from the v3.8 kernel.
-
---UTjKcilERHWBCdCp
+--OtXN0xDA1zr/oUEL
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTTSH8AAoJELSic+t+oim9TFwP/Aqs5JvZAIJwjEG+bc+fhb/m
-kO3DUBy5blk07qV90C+KqmFp33IdvJaf33TCdFC/WgAcs0PDE+3TCtUbEfZICbNu
-NurxefCs2yMckKqnSZfoLjQocOy37iD0CFZw1bxvFdFpouQb3gSPwEbFU7wPq+1V
-UDY/r+GGUovoFByZpV6F4cEm6jz9bSyMxGJr2mbNlCOwWYTiVvbNi2+/405e8leI
-ZftJfHoMd8MpkyII94ZmkW+rVV6NtTxJNGPVNAsIgRSqVUndnRxy+2Q+i1UnjkDB
-ao40q/WoKYbDTyZn3zJ7yXSVQhL9u0rgRzIZLaLJk1jXEowPxRxwNPKdAgZFWxhO
-sixZ4zUqsvOzqlB6SmhaGI5l9hKkKJkMcSyh30vhc6ToWfAtt9gNaPdtA62iNiyM
-/lYkNmg9M/J2tYABiEeN6DHf8JtG6TCYr4kzpL36LGtcjvvrpVP5EQaEfZUeyhXb
-S/PgDSLLQZGYmZ0DNcxtG4Df82HKMIygjRNI0ulWo0Mu1KsxJ7ZjZun3AA0Q7XW3
-jPmET8uTgrLdJi8vzEfvO194LppPqnmmHxNhXao9GHIbhWiR8AgqzHsAFrf4OB56
-oWgFv42uZXKkdCprabSuLrNfo0nObwlRwVQ8CzxggHdRg8BkhKEUzJK/kn2HHoAK
-EVgMFrQBEjyk/FJ83+Ka
-=1vg7
+iQIcBAEBAgAGBQJTTSJiAAoJELSic+t+oim9Me0QAJTrUpGzSbRISrS+gCHNkSPl
+6WLtN6Zi2MbdvAwvDtfZhbUse1aw7SvZNU3uLUhDDs4EdXLsrJNzyo3V6TH2sbF2
+l2JXTKUbkZu4Dsc8Y2RCBkASEI5CA2ngmjEqReU0sr5zAqx0+9pext/u3PbPJAWo
+pwo35aWk+jV6CHiDhgoMerQmOgg7dkkJvgyd8iSx5ViNl2QRq6OX1oFjIL8RJP/+
+VglJZiMI9VOOFPTqklTwOiJ1Y0DDVg+k3RM5KkleUhLslSpukh7z65Rhfl2hS9uu
+TJfJiPL9VYsb5pdWnH9sDi2Ry3i9gOZDnSHKhMsAcbsLgwTzDwgg8vskzj0UDceo
+QRA4S89dQjH1bsmB2O6+UDqZAicpcCvuMJeXuGau0ioFLU0UYjGekdHHxJ/TKknz
+UZ618SB5VS0giQMlF2uqUW150Nj3fV6KqkfVYKNf+Km40MRjAITcROI1NGY3B+yE
+J3SfwPgvXj2YxYROuvMquvel7+6AjwsH9eFJcoWQe9TYhm51u7Jul+OR/zeY0uNE
+iSZSMDccu0mVfQW9BY2MEFgtmOHfWF7frJawmM2/nb1aVjBrNcOaS+PxzyHN8phQ
+mh5zZEBPmNxO3RvmDFZ5Iq+OY/6QmRTGha79/UT+Jw5x5+NZu+Ql0nQ7eCw7sB1I
+lpqa5aBvwEr3BhaBjFC8
+=+lY2
 -----END PGP SIGNATURE-----
 
---UTjKcilERHWBCdCp--
+--OtXN0xDA1zr/oUEL--
