@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640AbaDOOmc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 10:42:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57091 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751428AbaDOOlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 10:41:22 -0400
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>, Peter Anvin <hpa@zytor.com>
-Cc: Fengguang Wu <fengguang.wu@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Noonan <steven@uplinklabs.net>, Rik van Riel <riel@redhat.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/3] x86: Require x86-64 for automatic NUMA balancing
-Date: Tue, 15 Apr 2014 15:41:15 +0100
-Message-Id: <1397572876-1610-3-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <1397572876-1610-1-git-send-email-mgorman@suse.de>
-References: <1397572876-1610-1-git-send-email-mgorman@suse.de>
+	id S1751428AbaDOOna (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 10:43:30 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:51910 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaDOOn3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 10:43:29 -0400
+Date: Tue, 15 Apr 2014 10:43:24 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3] workqueue: fix double unlock bug
+Message-ID: <20140415144324.GJ1863@htj.dyndns.org>
+References: <1798086.IHnGGWGxmu@daeseok-laptop.cloud.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1798086.IHnGGWGxmu@daeseok-laptop.cloud.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-32-bit support for NUMA is an oddity on its own but with automatic NUMA
-balancing on top there is a reasonable risk that the CPUPID information
-cannot be stored in the page flags. This patch removes support for
-automatic NUMA support on 32-bit x86.
+On Tue, Apr 15, 2014 at 08:17:43AM +0900, Daeseok Youn wrote:
+> 
+> Use default pwq when alloc_unbound_pwq() is failed.
+> 
+> And remove "if" condition for whether "pwq" is same as "wq->dfl_pwq"
+> when wq_calc_node_cpumask() returns false and just use "goto use_dfl_pwq"
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- arch/x86/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This is an awfully inadequate patch description.  Can you change it to
+something like the following?
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 0af5250..084b1c1 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -26,7 +26,7 @@ config X86
- 	select ARCH_MIGHT_HAVE_PC_SERIO
- 	select HAVE_AOUT if X86_32
- 	select HAVE_UNSTABLE_SCHED_CLOCK
--	select ARCH_SUPPORTS_NUMA_BALANCING
-+	select ARCH_SUPPORTS_NUMA_BALANCING if X86_64
- 	select ARCH_SUPPORTS_INT128 if X86_64
- 	select ARCH_WANTS_PROT_NUMA_PROT_NONE
- 	select HAVE_IDE
+  workqueue: fix bugs in wq_update_unbound_numa() failure path
+
+  wq_update_unbound_numa() failure path has the following two bugs.
+
+  * alloc_unbound_pwq() is called without holding wq->mutex; however, if
+    the allocation fails, it jumps to out_unlock which tries to unlock
+    wq->mutex.
+
+  * The function should switch to dfl_pwq on failure but didn't do so
+    after alloc_unbound_pwq() failure.
+
+  Fix it by regrabbing wq->mutex and jumping to use_dfl_pwq on
+  alloc_unbound_pwq() failure.
+      
+
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 0ee63af..0679854 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -4087,10 +4087,7 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
+>  		if (cpumask_equal(cpumask, pwq->pool->attrs->cpumask))
+>  			goto out_unlock;
+>  	} else {
+> -		if (pwq == wq->dfl_pwq)
+> -			goto out_unlock;
+> -		else
+> -			goto use_dfl_pwq;
+> +		goto use_dfl_pwq;
+
+And please put this in a separate patch.  Patches which are to be
+backported through -stable should be minimal.  Also, please update the
+comment above to reflect the change.
+
+Thanks.
+
 -- 
-1.8.4.5
-
+tejun
