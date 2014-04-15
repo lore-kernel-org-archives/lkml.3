@@ -1,107 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908AbaDOTSU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 15:18:20 -0400
-Received: from smtp-out-049.synserver.de ([212.40.185.49]:1048 "EHLO
-	smtp-out-027.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754298AbaDOTSQ (ORCPT
+	id S1753422AbaDOTVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 15:21:15 -0400
+Received: from smtp11.smtpout.orange.fr ([80.12.242.133]:60344 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988AbaDOTVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 15:18:16 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 10161
-Message-ID: <534D85F3.5050009@metafoo.de>
-Date: Tue, 15 Apr 2014 21:18:11 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Tue, 15 Apr 2014 15:21:13 -0400
+X-ME-Helo: PCombes.localdomain
+X-ME-Auth: cGFzY29tQHdhbmFkb28uZnI=
+X-ME-Date: Tue, 15 Apr 2014 21:21:11 +0200
+X-ME-IP: 82.124.119.218
+Message-ID: <534D86A3.3020709@orange.fr>
+Date: Tue, 15 Apr 2014 21:21:07 +0200
+From: Pascal COMBES <pascom@orange.fr>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Chen-Yu Tsai <wens@csie.org>, Hans de Goede <hdegoede@redhat.com>,
-        Carlo Caione <carlo@caione.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Subject: Re: [RFC PATCH v2] regmap: smbus: add support for regmap over smbus
-References: <1397292335-5516-1-git-send-email-boris.brezillon@free-electrons.com> <1397480885-11962-1-git-send-email-boris.brezillon@free-electrons.com> <20140414210429.GJ25182@sirena.org.uk> <534CE16D.8010508@free-electrons.com> <20140415100922.GN12304@sirena.org.uk> <534D1DDA.40207@free-electrons.com> <534D252B.8060009@metafoo.de> <20140415125654.GD12304@sirena.org.uk> <534D357F.9040906@metafoo.de> <20140415164613.GF12304@sirena.org.uk>
-In-Reply-To: <20140415164613.GF12304@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: devel@driverdev.osuosl.org,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Jarod Wilson <jarod@wilsonet.com>, Jingoo Han <jg1.han@samsung.com>,
+        Valentina Manea <valentina.manea.m@gmail.com>,
+        linux-kernel@vger.kernel.org, Naren Sankar <nsankar@broadcom.com>,
+        Monam Agarwal <monamagarwal123@gmail.com>,
+        Scott Davilla <davilla@4pi.com>,
+        Amarjargal Gundjalam <amarjargal16@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Robert Foss <dev@robertfoss.se>
+Subject: [PATCH v3 1/3] Staging: crystalhd: Fix alignement in crystalhd_lnx.c
+References: <534AAED2.7050205@orange.fr> <20140413154859.GA18189@kroah.com>
+In-Reply-To: <20140413154859.GA18189@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2014 06:46 PM, Mark Brown wrote:
-> On Tue, Apr 15, 2014 at 03:34:55PM +0200, Lars-Peter Clausen wrote:
->> On 04/15/2014 02:56 PM, Mark Brown wrote:
->
->>>   - Providing APIs for registering actual smbus devices as a convenience
->>>     for devices with that constraint, regardless of how that is done
->>>     behind the scenes.
->
->>>   - Having the I2C implementation automatically use the smbus APIs if
->>>     it can and either the controller is smbus only or it makes sense to
->>>     do so for optimisation.
->
->> I don't think it makes sense to expose smbus explicitly. We can already
->> describe smbus restricted devices just fine with the current regmap_config
->> and already support them with the current I2C regmap implementation. Using
->
-> Please note what I said about convenience - if lots of devices have
-> exactly the same set of constraints to set up it's possible sensible to
-> have a standard way of specifying them.  It's going to be a bit easier
-> to just say it's smbus than to remember exactly what that means.
+Signed-off-by: Pascal COMBES <pascom@orange.fr>
+---
+Description in subject.
 
-Maybe, but the only shared constraint is reg_bits = 8 (and if it is pure 
-smbus use_single_rw = true).
+diff --git a/drivers/staging/crystalhd/crystalhd_lnx.c b/drivers/staging/crystalhd/crystalhd_lnx.c
+index 20be957..fd7f08a 100644
+--- a/drivers/staging/crystalhd/crystalhd_lnx.c
++++ b/drivers/staging/crystalhd/crystalhd_lnx.c
+@@ -112,7 +112,7 @@ static void chd_dec_free_iodata(struct crystalhd_adp *adp,
+ }
+ 
+ static inline int crystalhd_user_data(void __user *ud, void *dr,
+-			 int size, int set)
++				      int size, int set)
+ {
+ 	int rc;
+ 
+@@ -135,7 +135,8 @@ static inline int crystalhd_user_data(void __user *ud, void *dr,
+ }
+ 
+ static int chd_dec_fetch_cdata(struct crystalhd_adp *adp,
+-	 struct crystalhd_ioctl_data *io, uint32_t m_sz, unsigned long ua)
++			       struct crystalhd_ioctl_data *io, uint32_t m_sz,
++			       unsigned long ua)
+ {
+ 	unsigned long ua_off;
+ 	int rc = 0;
+@@ -154,7 +155,7 @@ static int chd_dec_fetch_cdata(struct crystalhd_adp *adp,
+ 	io->add_cdata_sz = m_sz;
+ 	ua_off = ua + sizeof(io->udata);
+ 	rc = crystalhd_user_data((void __user *)ua_off, io->add_cdata,
+-			io->add_cdata_sz, 0);
++				 io->add_cdata_sz, 0);
+ 	if (rc) {
+ 		BCMLOG_ERR("failed to pull add_cdata sz:%x ua_off:%x\n",
+ 			   io->add_cdata_sz, (unsigned int)ua_off);
+@@ -167,7 +168,8 @@ static int chd_dec_fetch_cdata(struct crystalhd_adp *adp,
+ }
+ 
+ static int chd_dec_release_cdata(struct crystalhd_adp *adp,
+-			 struct crystalhd_ioctl_data *io, unsigned long ua)
++				 struct crystalhd_ioctl_data *io,
++				 unsigned long ua)
+ {
+ 	unsigned long ua_off;
+ 	int rc;
+@@ -180,7 +182,7 @@ static int chd_dec_release_cdata(struct crystalhd_adp *adp,
+ 	if (io->cmd != BCM_IOC_FW_DOWNLOAD) {
+ 		ua_off = ua + sizeof(io->udata);
+ 		rc = crystalhd_user_data((void __user *)ua_off, io->add_cdata,
+-					io->add_cdata_sz, 1);
++					 io->add_cdata_sz, 1);
+ 		if (rc) {
+ 			BCMLOG_ERR(
+ 				"failed to push add_cdata sz:%x ua_off:%x\n",
+@@ -210,7 +212,7 @@ static int chd_dec_proc_user_data(struct crystalhd_adp *adp,
+ 	}
+ 
+ 	rc = crystalhd_user_data((void __user *)ua, &io->udata,
+-			sizeof(io->udata), set);
++				 sizeof(io->udata), set);
+ 	if (rc) {
+ 		BCMLOG_ERR("failed to %s iodata\n", (set ? "set" : "get"));
+ 		return rc;
+@@ -382,7 +384,7 @@ static int chd_dec_init_chdev(struct crystalhd_adp *adp)
+ 	}
+ 
+ 	dev = device_create(crystalhd_class, NULL,
+-			 MKDEV(adp->chd_dec_major, 0), NULL, "crystalhd");
++			    MKDEV(adp->chd_dec_major, 0), NULL, "crystalhd");
+ 	if (IS_ERR(dev)) {
+ 		rc = PTR_ERR(dev);
+ 		BCMLOG_ERR("failed to create device\n");
+@@ -398,7 +400,7 @@ static int chd_dec_init_chdev(struct crystalhd_adp *adp)
+ 	/* Allocate general purpose ioctl pool. */
+ 	for (i = 0; i < CHD_IODATA_POOL_SZ; i++) {
+ 		temp = kzalloc(sizeof(struct crystalhd_ioctl_data),
+-					 GFP_KERNEL);
++			       GFP_KERNEL);
+ 		if (!temp) {
+ 			BCMLOG_ERR("ioctl data pool kzalloc failed\n");
+ 			rc = -ENOMEM;
+@@ -549,9 +551,9 @@ static int chd_dec_pci_probe(struct pci_dev *pdev,
+ 	enum BC_STATUS sts = BC_STS_SUCCESS;
+ 
+ 	BCMLOG(BCMLOG_DBG,
+-		"PCI_INFO: Vendor:0x%04x Device:0x%04x s_vendor:0x%04x s_device: 0x%04x\n",
+-		pdev->vendor, pdev->device, pdev->subsystem_vendor,
+-		pdev->subsystem_device);
++	       "PCI_INFO: Vendor:0x%04x Device:0x%04x s_vendor:0x%04x s_device: 0x%04x\n",
++	       pdev->vendor, pdev->device, pdev->subsystem_vendor,
++	       pdev->subsystem_device);
+ 
+ 	pinfo = kzalloc(sizeof(struct crystalhd_adp), GFP_KERNEL);
+ 	if (!pinfo) {
 
->
->> native I2C to access these devices will be more efficient than going through
->> the smbus emulation layer. The smbus emulation layer essentially does the
->> same as we do in regmap, so using the smbus emulation layer through regmap
->> means doing the same thing twice.
->
-> Right, that's why I said it's probably only worth it if the controller
-> does smbus natively.
->
->> As I see it there are currently 3 cases:
->
->> 1) Device is strictly smbus only and the controller supports native smbus
->>     => Use smbus
->> 2) The device is smbus compatible but has extensions (e.g. support for multi
->> register writes) and the controller supports only smbus.
->>     => Use smbus
->> 3) For every other case
->>     => Use native I2C.
->
-> It's not clear to me that if the controller supports smbus we shouldn't
-> use it; presumably it's adding some value to have written the code to
-> take advantage of it.  That would mean another case for device is smbus
-> only and controller has explicit smbus support.
-
-Potentially yes, but not necessarily in the first version of the driver. 
-It's a bit of an exotic case, there seem to be only two I2C controller 
-drivers in the Linux kernel that have support for both raw I2C and native 
-SMBus and neither of them don't seem to be fairly recent (i2c-powermac.c and 
-i2c-pasemi.c). And on the other hand most devices are SMBus compatible have 
-extensions like being able to write/read multiple register in one transfer 
-if raw I2C access is available, which is something we want to make use of if 
-available.
-
-And the other thing to consider is that a client driver currently has no way 
-to query whether the controller driver supports native SMBus or only 
-emulated SMBus. This is surely something that can be added to the I2C core, 
-but this is necessarily something that we require before any SMBus support 
-is added to regmap.
-
-So in conclusion I think the best way forward is to create a patch that 
-checks if native I2C is available, and if not falls back to either 
-SMBUS_{WRITE,READ}_BYTE or SMBUS_{WRITE,READ}_WORD operations (Depending on 
-whether val_bits is 8 or 16). Such a patch, I think, has the most effect for 
-the least amount of work since it is rather simple and self contained and 
-allows all devices which are SMBus compatible to be used with SMBus-only 
-controllers. Everything else discussed in this thread (optimizations for 
-special cases, convince helpers) can then be implemented on top of that.
-
-- Lars
