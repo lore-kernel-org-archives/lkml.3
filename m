@@ -1,130 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043AbaDOIH5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 04:07:57 -0400
-Received: from cmexedge2.ext.emulex.com ([138.239.224.100]:22766 "EHLO
-	CMEXEDGE2.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622AbaDOIHv convert rfc822-to-8bit (ORCPT
+	id S1752308AbaDOIIk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 04:08:40 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:49855 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750998AbaDOIIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 04:07:51 -0400
-From: Sathya Perla <Sathya.Perla@Emulex.Com>
-To: "Li, Zhen-Hua" <zhen-hual@hp.com>,
-        Subramanian Seetharaman <subbu.seetharaman@Emulex.Com>,
-        Ajit Khaparde <Ajit.Khaparde@Emulex.Com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/1] driver/net: add missing rtnl lock/unlock for benet
-Thread-Topic: [PATCH 1/1] driver/net: add missing rtnl lock/unlock for benet
-Thread-Index: AQHPWHZ0bsT8dc/t9U2+WUWO6psh85sSUZaA
-Date: Tue, 15 Apr 2014 08:07:49 +0000
-Message-ID: <b4855c2a-5a63-47a5-ba61-f9ce736f6401@CMEXHTCAS1.ad.emulex.com>
-References: <1397544352-28841-1-git-send-email-zhen-hual@hp.com>
-In-Reply-To: <1397544352-28841-1-git-send-email-zhen-hual@hp.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [138.239.141.147]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 15 Apr 2014 04:08:36 -0400
+Message-ID: <1397549314.1985.7.camel@x220>
+Subject: Re: [PATCH] [TRIVIAL] Kconfig: Remove useless "default N" lines
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Martin Walch <walch.martin@web.de>, Richard Weinberger <richard@nod.at>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 15 Apr 2014 10:08:34 +0200
+In-Reply-To: <1392122327.13064.14.camel@x220>
+References: <1392122327.13064.14.camel@x220>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Apr 2014 08:08:35.0136 (UTC) FILETIME=[E6178400:01CF5881]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Li, Zhen-Hua [mailto:zhen-hual@hp.com]
+Jiri,
+
+On Tue, 2014-02-11 at 13:38 +0100, Paul Bolle wrote:
+> A number of Kconfig entries default to (uppercase) "N". It was clearly
+> intended to use "default n". But since (lowercase) "n" is the default
+> anyway, these lines might as well be removed.
 > 
-> In benet driver, netif_device_detach and netif_device_attach should be
-> called between rtnl_lock and rtnl_unlock.
-
-Zhen, it's not clear to me why rtnl_lock is needed around netif_device_attach().
-Can you pls explain what exact data-structure you are protecting with the lock?
-
-Are you see warning stack trace? I don't see ASSERT_RTNL() called anywhere from netif_device_attach/detach()?
-
-thanks!
-
-> 
-> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
 > ---
->  drivers/net/ethernet/emulex/benet/be_main.c |   17 ++++++++++++++---
->  1 file changed, 14 insertions(+), 3 deletions(-)
+>[...]
 > 
-> diff --git a/drivers/net/ethernet/emulex/benet/be_main.c
-> b/drivers/net/ethernet/emulex/benet/be_main.c
-> index 3e6df47..9c44b3f 100644
-> --- a/drivers/net/ethernet/emulex/benet/be_main.c
-> +++ b/drivers/net/ethernet/emulex/benet/be_main.c
-> @@ -4555,8 +4555,11 @@ static void be_func_recovery_task(struct work_struct *work)
->  		rtnl_unlock();
+>  arch/arc/Kconfig                          | 1 -
+>  arch/cris/arch-v32/drivers/Kconfig        | 2 --
+>  drivers/misc/mic/Kconfig                  | 2 --
+>  drivers/staging/android/Kconfig           | 2 --
+>  drivers/staging/bcm/Kconfig               | 1 -
+>  drivers/staging/frontier/Kconfig          | 1 -
+>  drivers/staging/media/go7007/Kconfig      | 3 ---
+>  drivers/staging/rtl8187se/Kconfig         | 1 -
+>  drivers/staging/rtl8188eu/Kconfig         | 1 -
+>  drivers/staging/rtl8192e/rtl8192e/Kconfig | 1 -
+>  drivers/staging/rtl8192u/Kconfig          | 1 -
+>  drivers/staging/rtl8712/Kconfig           | 2 --
+>  drivers/staging/rtl8821ae/Kconfig         | 1 -
+
+This file wasn't touched by our commit c7dcec7dd463 ("Kconfig: Remove
+useless "default N" lines"). Any idea why?
+
+>  drivers/staging/usbip/Kconfig             | 4 ----
+>  drivers/usb/core/Kconfig                  | 1 -
+>  drivers/usb/host/Kconfig                  | 3 ---
+>  16 files changed, 27 deletions(-)
 > 
->  		status = lancer_recover_func(adapter);
-> -		if (!status)
-> +		if (!status) {
-> +			rtnl_lock();
->  			netif_device_attach(adapter->netdev);
-> +			rtnl_unlock();
-> +		}
->  	}
-> 
->  	/* In Lancer, for all errors other than provisioning error (-EAGAIN),
-> @@ -4784,12 +4787,12 @@ static int be_suspend(struct pci_dev *pdev, pm_message_t
-> state)
->  	be_intr_set(adapter, false);
->  	cancel_delayed_work_sync(&adapter->func_recovery_work);
-> 
-> +	rtnl_lock();
->  	netif_device_detach(netdev);
->  	if (netif_running(netdev)) {
-> -		rtnl_lock();
->  		be_close(netdev);
-> -		rtnl_unlock();
->  	}
-> +	rtnl_unlock();
->  	be_clear(adapter);
-> 
->  	pci_save_state(pdev);
-> @@ -4804,7 +4807,9 @@ static int be_resume(struct pci_dev *pdev)
->  	struct be_adapter *adapter = pci_get_drvdata(pdev);
->  	struct net_device *netdev =  adapter->netdev;
-> 
-> +	rtnl_lock();
->  	netif_device_detach(netdev);
-> +	rtnl_unlock();
-> 
->  	status = pci_enable_device(pdev);
->  	if (status)
-> @@ -4832,7 +4837,9 @@ static int be_resume(struct pci_dev *pdev)
-> 
->  	schedule_delayed_work(&adapter->func_recovery_work,
->  			      msecs_to_jiffies(1000));
-> +	rtnl_lock();
->  	netif_device_attach(netdev);
-> +	rtnl_unlock();
-> 
->  	if (adapter->wol_en)
->  		be_setup_wol(adapter, false);
-> @@ -4853,7 +4860,9 @@ static void be_shutdown(struct pci_dev *pdev)
->  	cancel_delayed_work_sync(&adapter->work);
->  	cancel_delayed_work_sync(&adapter->func_recovery_work);
-> 
-> +	rtnl_lock();
->  	netif_device_detach(adapter->netdev);
-> +	rtnl_unlock();
-> 
->  	be_cmd_reset_function(adapter);
-> 
-> @@ -4957,7 +4966,9 @@ static void be_eeh_resume(struct pci_dev *pdev)
-> 
->  	schedule_delayed_work(&adapter->func_recovery_work,
->  			      msecs_to_jiffies(1000));
-> +	rtnl_lock();
->  	netif_device_attach(netdev);
-> +	rtnl_unlock();
->  	return;
->  err:
->  	dev_err(&adapter->pdev->dev, "EEH resume failed\n");
-> --
-> 1.7.10.4
+> [...]
+>
+> diff --git a/drivers/staging/rtl8821ae/Kconfig b/drivers/staging/rtl8821ae/Kconfig
+> index 2aa5dac..4679fd8 100644
+> --- a/drivers/staging/rtl8821ae/Kconfig
+> +++ b/drivers/staging/rtl8821ae/Kconfig
+> @@ -6,6 +6,5 @@ config R8821AE
+>  	select WEXT_PRIV
+>  	select EEPROM_93CX6
+>  	select CRYPTO
+> -	default N
+>  	---help---
+>  	  If built as a module, it will be called r8821ae.ko.
+
+So this "default N" statement is still present in v3.15-rc1.
+
+Paul Bolle
 
