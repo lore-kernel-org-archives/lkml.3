@@ -1,101 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751256AbaDOAii (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 20:38:38 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:32211 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831AbaDOAif (ORCPT
+	id S1751818AbaDOAmi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 20:42:38 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:43715 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853AbaDOAmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 20:38:35 -0400
-X-AuditID: cbfee68f-b7f156d00000276c-52-534c7f89edd3
-From: Jungseok Lee <jays.lee@samsung.com>
-To: "'Marc Zyngier'" <marc.zyngier@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        "'Catalin Marinas'" <Catalin.Marinas@arm.com>,
-        "'Christoffer Dall'" <christoffer.dall@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
-        sungjinn.chung@samsung.com, "'Arnd Bergmann'" <arnd@arndb.de>,
-        kgene.kim@samsung.com, ilho215.lee@samsung.com
-References: <000001cf57b4$d3450780$79cf1680$@samsung.com>
- <534C0A89.4090907@arm.com>
-In-reply-to: <534C0A89.4090907@arm.com>
-Subject: Re: [PATCH 2/8] arm/arm64: KVM: Fix line length exceeding 80 characters
-Date: Tue, 15 Apr 2014 09:38:33 +0900
-Message-id: <001601cf5843$07c38160$174a8420$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQGLmoMFdN20WDBNcOw5kS98Jw2hKQDLK8SQm5L17AA=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgleLIzCtJLcpLzFFi42I5/e+ZsW5nvU+wwckHxhZ/Jx1jt3i/rIfR
-	4sXrf4wWR/8tZLToXXCVzeLjqePsFpseX2O1uLxrDpvFjPP7mCz+3vnHZvFhxkpGB26PNfPW
-	MHr8/jWJ0ePOtT1sHuc3rWH22Lyk3qNvyypGj8+b5ALYo7hsUlJzMstSi/TtErgy/rz4xV7w
-	mbOiae5J9gbGz+xdjJwcEgImEm+3roeyxSQu3FvPBmILCSxjlLj8Qhum5vH5s6xdjFxA8UWM
-	Et/mfGOGcP4wSix6MJURpIpNQFPi0d0esEkiQPbHnqdsIEXMAl+ZJG782gk1Nkzi6bPtTCA2
-	p4C6xN75rcwgtrBAgETPw71gNouAqsS5OxNZQWxeAUuJe6ves0PYghI/Jt9jAbGZBbQk1u88
-	zgRhy0tsXvOWGeJUBYkdZ18zQhxhJXFi3iaoehGJfS/eMYIcJCEwlUNixtodUMsEJL5NPgRU
-	xAGUkJXYdABqjqTEwRU3WCYwSsxCsnoWktWzkKyehWTFAkaWVYyiqQXJBcVJ6UXGesWJucWl
-	eel6yfm5mxghsd+/g/HuAetDjMlA6ycyS4km5wNTR15JvKGxmZGFqYmpsZG5pRlpwkrivPcf
-	JgUJCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYFzPHH/65/S9d/dtvXzFpsjNKTtEJz5578G3
-	XUKMa8oZdlz7zSx5LuSMD0OnyJVvTrMvPVpzwc+yuftA++ttcVdnZH1f2/NngoXnq577T7ct
-	aAmu/fIo8tskyyaG2r6v99PctCMOZ51qSlnBk/3SjKvmhd/PuiDXw3KBzVs35WSdEfF5JHMz
-	cLMSS3FGoqEWc1FxIgB0qLfXEwMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHKsWRmVeSWpSXmKPExsVy+t9jAd3Oep9ggw339Sz+TjrGbvF+WQ+j
-	xYvX/xgtjv5byGjRu+Aqm8XHU8fZLTY9vsZqcXnXHDaLGef3MVn8vfOPzeLDjJWMDtwea+at
-	YfT4/WsSo8eda3vYPM5vWsPssXlJvUffllWMHp83yQWwRzUw2mSkJqakFimk5iXnp2Tmpdsq
-	eQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAHamkUJaYUwoUCkgsLlbSt8M0ITTETdcC
-	pjFC1zckCK7HyAANJKxjzPjz4hd7wWfOiqa5J9kbGD+zdzFyckgImEg8Pn+WFcIWk7hwbz1b
-	FyMXh5DAIkaJb3O+MUM4fxglFj2YyghSxSagKfHobg9YtwiQ/bHnKVgHs8BXJokbv3aygSSE
-	BMIknj7bzgRicwqoS+yd38oMYgsLBEj0PNwLZrMIqEqcuzMRbDWvgKXEvVXv2SFsQYkfk++x
-	gNjMAloS63ceZ4Kw5SU2r3nLDHGqgsSOs68ZIY6wkjgxbxNUvYjEvhfvGCcwCs1CMmoWklGz
-	kIyahaRlASPLKkbR1ILkguKk9FxDveLE3OLSvHS95PzcTYzg1PJMagfjygaLQ4wCHIxKPLwT
-	3nkHC7EmlhVX5h5ilOBgVhLhfZ3sEyzEm5JYWZValB9fVJqTWnyIMRno04nMUqLJ+cC0l1cS
-	b2hsYmZkaWRmYWRibk6asJI474FW60AhgfTEktTs1NSC1CKYLUwcnFINjGlTfT4bnptkI/3i
-	ypsIQ2NH/ZtWh1WeW1iEvhQvbwnSmiyz8bj8PZmFP1fWzVgskWK7MK6xRk/7hUbW6wk7F5VM
-	TWr91j17k3WX127RZ5HnfzQvub2tYlugtVxhbKXALSkH3xOn/yX/jcipErOK/HT2/qtnshte
-	SUd+fVwl+qQ40s9dctGDh0osxRmJhlrMRcWJAA63fPlxAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 14 Apr 2014 20:42:37 -0400
+Message-ID: <534C8073.3060607@gmail.com>
+Date: Tue, 15 Apr 2014 08:42:27 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: =?UTF-8?B?566h6Zuq5rab?= <gxt@pku.edu.cn>
+CC: Guan Xuetao <gxt@mprc.pku.edu.cn>, akpm@linux-foundation.org,
+        liuj97@gmail.com, rientjes@google.com, dhowells@redhat.com,
+        mhocko@suse.cz, mgorman@suse.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] arch:unicore32:mm: add devmem_is_allowed() to support
+ STRICT_DEVMEM
+References: <629583968.18592.1396927216694.JavaMail.root@bj-mail03.pku.edu.cn> <534380F6.7090703@gmail.com> <534C79EE.3030505@gmail.com> <534C7D46.6040602@gmail.com>
+In-Reply-To: <534C7D46.6040602@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 15, 2014 1:19 AM, Marc Zyngier wrote:
-> On 14/04/14 08:40, Jungseok Lee wrote:
-> > This patch deals with checkpatch complaint as fixing line length
-> > exceeding 80 characters.
-> >
-> > WARNING: line over 80 characters
-> >
-> > Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
-> > Reviewed-by: Sungjinn Chung <sungjinn.chung@samsung.com>
-> > ---
-> >  arch/arm/kvm/mmu.c |    4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/arch/arm/kvm/mmu.c b/arch/arm/kvm/mmu.c index
-> > 80bb1e6..e0d4f24 100644
-> > --- a/arch/arm/kvm/mmu.c
-> > +++ b/arch/arm/kvm/mmu.c
-> > @@ -563,8 +563,8 @@ void kvm_free_stage2_pgd(struct kvm *kvm)
-> >  	kvm->arch.pgd = NULL;
-> >  }
-> >
-> > -static pmd_t *stage2_get_pmd(struct kvm *kvm, struct kvm_mmu_memory_cache *cache,
-> > -			     phys_addr_t addr)
-> > +static pmd_t *stage2_get_pmd(struct kvm *kvm, struct kvm_mmu_memory_cache
-> > +			     *cache, phys_addr_t addr)
+
+Oh, sorry, it is my careless, it even can not pass compiling, I
+will/should send patch v3.
+
+Thanks.
+
+On 04/15/2014 08:28 AM, Chen Gang wrote:
+> unicore32 supports STRICT_DEVMEM, so it needs devmem_is_allowed(), like
+> some of other architectures have done (e.g. arm, powerpc, x86 ...).
 > 
-> Please don't. This makes the code unreadable (and no, I don't care about checkpatch ;-).
+> The related error with allmodconfig:
+> 
+>     CC      drivers/char/mem.o
+>   drivers/char/mem.c: In function ‘range_is_allowed’:
+>   drivers/char/mem.c:69: error: implicit declaration of function ‘devmem_is_allowed’
+>   make[2]: *** [drivers/char/mem.o] Error 1
+>   make[1]: *** [drivers/char] Error 2
+>   make: *** [drivers] Error 2
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> ---
+>  arch/unicore32/include/asm/io.h |   18 ++++++++++++++++++
+>  1 file changed, 18 insertions(+)
+> 
+> diff --git a/arch/unicore32/include/asm/io.h b/arch/unicore32/include/asm/io.h
+> index 39decb6..839c2ea 100644
+> --- a/arch/unicore32/include/asm/io.h
+> +++ b/arch/unicore32/include/asm/io.h
+> @@ -44,5 +44,23 @@ extern void __uc32_iounmap(volatile void __iomem *addr);
+>  #define PIO_MASK		(unsigned int)(IO_SPACE_LIMIT)
+>  #define PIO_RESERVED		(PIO_OFFSET + PIO_MASK + 1)
+>  
+> +#ifdef CONFIG_STRICT_DEVMEM
+> +/*
+> + * devmem_is_allowed() checks to see if /dev/mem access to a certain
+> + * address is valid. The argument is a physical page number.
+> + * We mimic x86 here by disallowing access to system RAM as well as
+> + * device-exclusive MMIO regions. This effectively disable read()/write()
+> + * on /dev/mem.
+> + */
+> +static inline int devmem_is_allowed(unsigned long pfn)
+> +{
+> +	if (iomem_is_exclusive(pfn << PAGE_SHIFT))
+> +		return 0;
+> +	if (!page_is_ram(pfn))
+> +		return 1;
+> +	return 0;
+> +}
+> +#endif /* CONFIG_STRICT_DEVMEM */
+> +
+>  #endif	/* __KERNEL__ */
+>  #endif	/* __UNICORE_IO_H__ */
+> 
 
-Okay. I will drop this patch from the next version.
+-- 
+Chen Gang
 
-It would be good to change stage2_set_pmd_huge function for readability
-if you don't care about checkpatch.
-
-Best Regards
-Jungseok Lee
-
+Open, share, and attitude like air, water, and life which God blessed
