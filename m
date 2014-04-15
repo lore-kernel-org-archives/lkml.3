@@ -1,193 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752349AbaDOPRA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 11:17:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44841 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751141AbaDOPQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 11:16:55 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Josh Boyer <jwboyer@fedoraproject.org>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-doc@vger.kernel.org
-Subject: [PATCH] Add initcall_blacklist kernel parameter [v5]
-Date: Tue, 15 Apr 2014 11:15:58 -0400
-Message-Id: <1397574958-7446-1-git-send-email-prarit@redhat.com>
-In-Reply-To: <20140414142914.57110976dd96134875b63639@linux-foundation.org>
-References: <20140414142914.57110976dd96134875b63639@linux-foundation.org>
+	id S1754223AbaDOPRN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 11:17:13 -0400
+Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:37788
+	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752798AbaDOPRI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 11:17:08 -0400
+Date: Tue, 15 Apr 2014 10:17:04 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Vladimir Davydov <vdavydov@parallels.com>
+cc: Johannes Weiner <hannes@cmpxchg.org>, akpm@linux-foundation.org,
+        mhocko@suse.cz, glommer@gmail.com, penberg@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, devel@openvz.org
+Subject: Re: [PATCH -mm 1/4] memcg, slab: do not schedule cache destruction
+ when last page goes away
+In-Reply-To: <534CD08F.30702@parallels.com>
+Message-ID: <alpine.DEB.2.10.1404151016400.11231@gentwo.org>
+References: <cover.1397054470.git.vdavydov@parallels.com> <8ea8b57d5264f16ee33497a4317240648645704a.1397054470.git.vdavydov@parallels.com> <20140415021614.GC7969@cmpxchg.org> <534CD08F.30702@parallels.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a module is built into the kernel the module_init() function becomes
-an initcall.  Sometimes debugging through dynamic debug can help,
-however, debugging built in kernel modules is typically done by changing
-the .config, recompiling, and booting the new kernel in an effort to
-determine exactly which module caused a problem.
+On Tue, 15 Apr 2014, Vladimir Davydov wrote:
 
-This patchset can be useful stand-alone or combined with initcall_debug.
-There are cases where some initcalls can hang the machine before the
-console can be flushed, which can make initcall_debug output
-inaccurate.  Having the ability to skip initcalls can help further
-debugging of these scenarios.
+> 2) When freeing an object of a dead memcg cache, initiate thorough check
+> if the cache is really empty and destroy it then. That could be
+> implemented by poking the reaping thread on kfree, and actually does not
+> require the schedule_work in memcg_release_pages IMO.
 
-Usage: initcall_blacklist=<list of comma separated initcalls>
-
-ex) added "initcall_blacklist=sgi_uv_sysfs_init" as a kernel parameter and
-the log contains:
-
-	blacklisted initcall sgi_uv_sysfs_init
-	...
-	...
-	function sgi_uv_sysfs_init returning without executing
-
-ex) added "initcall_blacklist=foo_bar,sgi_uv_sysfs_init" as a kernel parameter
-and the log contains:
-
-	initcall blacklisted foo_bar
-	initcall blacklisted sgi_uv_sysfs_init
-	...
-	...
-	function sgi_uv_sysfs_init returning without executing
-
-Cc: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Rob Landley <rob@landley.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-doc@vger.kernel.org
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-
-[v2]: A few people recommended that I add code to allow for a list of
-initcalls as there maybe dependencies between initcalls such that one cannot
-be made without the other.  I also updated the patch description.
-[v3]: Andi Kleen - don't worry about free'ing the small amount of memory.
-[v4]: Richard Weinberger - add CONFIG_KALLSYMS dependency.
-[v5]: Andrew Morton - reorganized code, minor fixes, add initcall_blacklisted(),
-use kasprintf().
----
- Documentation/kernel-parameters.txt |    4 +++
- init/main.c                         |   68 +++++++++++++++++++++++++++++++++++
- 2 files changed, 72 insertions(+)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 03e50b4..7e1ee0c 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1294,6 +1294,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			for working out where the kernel is dying during
- 			startup.
- 
-+	initcall_blacklist=  [KNL] Do not execute a comma-separated list of
-+			initcall functions.  Useful for debugging built-in
-+			modules and initcalls.
-+
- 	initrd=		[BOOT] Specify the location of the initial ramdisk
- 
- 	inport.irq=	[HW] Inport (ATI XL and Microsoft) busmouse driver
-diff --git a/init/main.c b/init/main.c
-index 9c7fd4c..475ee09 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -77,6 +77,7 @@
- #include <linux/sched_clock.h>
- #include <linux/context_tracking.h>
- #include <linux/random.h>
-+#include <linux/list.h>
- 
- #include <asm/io.h>
- #include <asm/bugs.h>
-@@ -666,6 +667,70 @@ static void __init do_ctors(void)
- bool initcall_debug;
- core_param(initcall_debug, initcall_debug, bool, 0644);
- 
-+#ifdef CONFIG_KALLSYMS
-+struct blacklist_entry {
-+	struct list_head next;
-+	char *buf;
-+};
-+
-+static __initdata_or_module LIST_HEAD(blacklisted_initcalls);
-+
-+static int __init initcall_blacklist(char *str)
-+{
-+	char *str_entry;
-+	struct blacklist_entry *entry;
-+
-+	/* str argument is a comma-separated list of functions */
-+	do {
-+		str_entry = strsep(&str, ",");
-+		if (str_entry) {
-+			pr_debug("initcall blacklisted %s\n", str_entry);
-+			entry = alloc_bootmem(sizeof(*entry));
-+			entry->buf = alloc_bootmem(strlen(str_entry) + 1);
-+			strcpy(entry->buf, str_entry);
-+			list_add(&entry->next, &blacklisted_initcalls);
-+		}
-+	} while (str_entry);
-+
-+	return 0;
-+}
-+
-+static bool __init_or_module initcall_blacklisted(initcall_t fn)
-+{
-+	struct list_head *tmp;
-+	struct blacklist_entry *entry;
-+	char *fn_name;
-+
-+	fn_name = kasprintf(GFP_KERNEL, "%pf", fn);
-+	if (!fn_name)
-+		return false;
-+
-+	list_for_each(tmp, &blacklisted_initcalls) {
-+		entry = list_entry(tmp, struct blacklist_entry, next);
-+		if (!strcmp(fn_name, entry->buf)) {
-+			pr_debug("initcall %s blacklisted\n", fn_name);
-+			kfree(fn_name);
-+			return true;
-+		}
-+	}
-+
-+	kfree(fn_name);
-+	return false;
-+}
-+#else
-+static int __init initcall_blacklist(char *str)
-+{
-+	pr_warn("initcall_blacklist requires CONFIG_KALLSYMS\n");
-+	return 0;
-+}
-+
-+static bool __init_or_module initcall_blacklisted(initcall_t fn)
-+{
-+	return false;
-+}
-+#endif
-+__setup("initcall_blacklist=", initcall_blacklist);
-+
- static int __init_or_module do_one_initcall_debug(initcall_t fn)
- {
- 	ktime_t calltime, delta, rettime;
-@@ -690,6 +755,9 @@ int __init_or_module do_one_initcall(initcall_t fn)
- 	int ret;
- 	char msgbuf[64];
- 
-+	if (initcall_blacklisted(fn))
-+		return -EPERM;
-+
- 	if (initcall_debug)
- 		ret = do_one_initcall_debug(fn);
- 	else
--- 
-1.7.9.3
+There is already logic in both slub and slab that does that on cache
+close.
 
