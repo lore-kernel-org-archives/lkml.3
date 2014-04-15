@@ -1,103 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754357AbaDOKmM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 06:42:12 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:48366 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241AbaDOKmK (ORCPT
+	id S1751445AbaDOKtl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 06:49:41 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:58654 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972AbaDOKtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 06:42:10 -0400
-Date: Tue, 15 Apr 2014 12:42:06 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Feng Tang <feng.tang@intel.com>
-Cc: Clemens Ladisch <clemens@ladisch.de>, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, linux-kernel@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [PATCH v2] x86: hpet: Don't default CONFIG_HPET_TIMER to be y
- for X86_64
-Message-ID: <20140415104206.GA31656@gmail.com>
-References: <1395975316-4795-1-git-send-email-feng.tang@intel.com>
- <20140328071716.GC30107@gmail.com>
- <20140328073718.GA12762@feng-snb>
- <53352DE5.2090600@ladisch.de>
- <20140328081117.GA32308@gmail.com>
- <20140415074443.GA10911@feng-snb>
- <20140415090025.GA31244@gmail.com>
- <20140415095539.GA19271@feng-snb>
+	Tue, 15 Apr 2014 06:49:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140415095539.GA19271@feng-snb>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <534c5757.VydWMxxcqkXGiwNa%akpm@linux-foundation.org>
+References: <534c5757.VydWMxxcqkXGiwNa%akpm@linux-foundation.org>
+Date: Tue, 15 Apr 2014 13:49:38 +0300
+Message-ID: <CACVxJT-f+K_z-XxqjDVU_QK-VJPqnCEbWuMJF1fyTL0V0xiTgA@mail.gmail.com>
+Subject: Re: + lib-stringc-strlcpy-might-read-too-far.patch added to -mm tree
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Vegard Nossum <vegard.nossum@gmail.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 15, 2014 at 12:47 AM,  <akpm@linux-foundation.org> wrote:
+> Subject: lib/string.c: strlcpy() might read too far
+>
+> Imagine you have a user controlled variable at the end of a struct which
+> is allocated at the end of a page.  The strlen() could read beyond the
+> mapped memory and cause an oops.
+>
+> Probably there are two reasons why we have never hit this condition in
+> real life.  First you would have to be really unlucky for all the
+> variables to line up so the oops can happen.  Second we don't do a lot of
+> fuzzing with invalid strings.
+>
+> The strnlen() call is obviously a little bit slower than strlen() but I
+> have tested it and I think it's probably ok.
 
-* Feng Tang <feng.tang@intel.com> wrote:
+> --- a/lib/string.c~lib-stringc-strlcpy-might-read-too-far
+> +++ a/lib/string.c
+> @@ -148,10 +148,10 @@ EXPORT_SYMBOL(strncpy);
+>   */
+>  size_t strlcpy(char *dest, const char *src, size_t size)
+>  {
+> -       size_t ret = strlen(src);
+> +       size_t ret = strnlen(src, size);
+>
+>         if (size) {
+> -               size_t len = (ret >= size) ? size - 1 : ret;
+> +               size_t len = (ret < size) ? ret : ret - 1;
+>                 memcpy(dest, src, len);
+>                 dest[len] = '\0';
+>         }
 
-> On Tue, Apr 15, 2014 at 11:00:25AM +0200, Ingo Molnar wrote:
-> > 
-> > * Feng Tang <feng.tang@intel.com> wrote:
-> > 
-> > > Hi Ingo,
-> > > 
-> > > On Fri, Mar 28, 2014 at 09:11:17AM +0100, Ingo Molnar wrote:
-> > > > 
-> > > > * Clemens Ladisch <clemens@ladisch.de> wrote:
-> > > > 
-> > > > > Feng Tang wrote:
-> > > > > > On Fri, Mar 28, 2014 at 08:17:16AM +0100, Ingo Molnar wrote:
-> > > > > >> * Feng Tang <feng.tang@intel.com> wrote:
-> > > > > >>  - or the kernel should have a quirk to reliably disable it. Why
-> > > > > >>    should we crash or misbehave if a driver is built into the
-> > > > > >>    kernel?
-> > > > > >
-> > > > > > I thought about this before, HPET doesn't have PCI ID like stuff,
-> > > > > 
-> > > > > HPET does have the PCI vendor ID in the first register.
-> > > > > 
-> > > > > > only thing I can think of to identify them may be the CPU family/ID.
-> > > > > 
-> > > > > The HPET is implemented by some actual chip, and that chip also has lots
-> > > > > of PCI devices.  (In the case of a SoC, the CPU ID would work, too).
-> > > > 
-> > > > Correct. See arch/x86/kernel/hpet.c, which has a large number of HPET 
-> > > > quirks keyed off chipset PCI IDs:
-> > > > 
-> > > >   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ESB2_0,
-> > > >                            ich_force_enable_hpet);
-> > > >   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH6_0,
-> > > >                            ich_force_enable_hpet);
-> > > >   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH6_1,
-> > > >                            ich_force_enable_hpet);
-> > > >   [...]
-> > > 
-> > > I just gave it another thought, that the HPET on our platform 
-> > > currently do have some problem to be used as clocksource/clockevent, 
-> > > but it may get fixed in future version (by Silicon or BIOS).
-> > > 
-> > > If I add quirk to block it now, I may revert this code in future 
-> > > when it get fixed, same problem applis for the future generation of 
-> > > platform.
-> > 
-> > If the hardware or BIOS gets fixed then that will be visible in the 
-> > revision level of the hardware, right?
-> 
-> AFAIK, if it is fixed in a new silicon version, we should be able to 
-> detect it by the "stepping", but the PCI DEV ID is not likely to 
-> change.
-> 
-> If it is fixed by BIOS or PUNIT FW, then we may go through the DMI 
-> info to check the BIOS version, One problem is there is some 
-> Baytrail tablet platforms that doesn't provide DMI info as its FW is 
-> not UEFI/Legacy BIOS compatible version.
+Return value matters. It may not matter for kernel, because kernel is
+not heavy string user.
+But it is better to not diverge from master code:
+http://www.openbsd.org/cgi-bin/cvsweb/src/lib/libc/string/strlcpy.c?rev=1.11
 
-So just turn it off for the current hardware, via PCI ID. When you get 
-a fix, you can turn it back on again by refining the quirk check, for 
-that specific hardware.
-
-Thanks,
-
-	Ingo
+Counter-rationale:
+* strlcpy() accepts strings, so if you're giving raw buffer you're
+doing it wrong.
+* last byte of last page argument is bogus because kernel copies data
+from userspace first.
