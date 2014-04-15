@@ -1,111 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951AbaDONJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 09:09:27 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:40965 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751427AbaDONJU (ORCPT
+	id S1754981AbaDONJi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 09:09:38 -0400
+Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:56922
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752933AbaDONJd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 09:09:20 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, iommu@lists.linux-foundation.org
-Subject: [PATCH v3 4/5] memblock: introduce memblock_alloc_range()
-Date: Tue, 15 Apr 2014 22:08:48 +0900
-Message-Id: <1397567329-3771-5-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com>
-References: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com>
+	Tue, 15 Apr 2014 09:09:33 -0400
+X-WSS-ID: 0N42PV4-07-GR1-02
+X-M-MSG: 
+Message-ID: <534D2F6E.1020608@amd.com>
+Date: Tue, 15 Apr 2014 15:09:02 +0200
+From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Alex Deucher <alexdeucher@gmail.com>, Borislav Petkov <bp@alien8.de>
+CC: Alex Deucher <alexander.deucher@amd.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>
+Subject: Re: 15-rc1: radeon modesetting fails
+References: <20140415070204.GA4806@pd.tnic>	<534CFBD7.3070604@amd.com>
+	<20140415120740.GA8306@nazgul.tnic>
+ <CADnq5_PpPa_fbm=1KH__q-W2OuvfoHr2wquimQ8TCq=xwwYq_Q@mail.gmail.com>
+In-Reply-To: <CADnq5_PpPa_fbm=1KH__q-W2OuvfoHr2wquimQ8TCq=xwwYq_Q@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+X-Originating-IP: [10.224.152.106]
+Content-Transfer-Encoding: 8BIT
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(24454002)(51704005)(377454003)(20776003)(4396001)(47776003)(76482001)(23676002)(15202345003)(85852003)(83072002)(81542001)(83506001)(99396002)(81342001)(575784001)(80976001)(84676001)(64126003)(59896001)(50466002)(36756003)(19580405001)(97736001)(2009001)(85202002)(74502001)(92726001)(85182001)(54356999)(87266999)(76176999)(83322001)(19580395003)(86362001)(77982001)(46102001)(44976005)(50986999)(87936001)(65806001)(15975445006)(65956001)(77096999)(79102001)(65816999)(74662001)(80022001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR02MB114;H:atltwp01.amd.com;FPR:BC61F0F4.AB52D450.FAF39377.89FC09BF.202EB;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-PRVS: 0182DBBB05
+X-OriginatorOrg: amd4.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This introduces memblock_alloc_range() which allocates memblock from
-the specified range of physical address.  I would like to use this
-function to specify the location of CMA.
+> Does reverting:
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=32167016076f714f0e35e287fbead7de0f1fb179
+> fix the issue?  We may need to tweak the pll parameters for older asics.
 
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Don Dutile <ddutile@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org
-Cc: iommu@lists.linux-foundation.org
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
----
-* Change from v2
-- Rebased on current Linus tree
+Yeah, indeed the most likely cause. Please provide dmesg outputs created 
+with drm.ebug=0xe for the old and the new kernel.
 
- include/linux/memblock.h |  2 ++
- mm/memblock.c            | 21 +++++++++++++++++----
- 2 files changed, 19 insertions(+), 4 deletions(-)
+Christian.
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 8a20a51..c5a61d9 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -221,6 +221,8 @@ static inline bool memblock_bottom_up(void) { return false; }
- #define MEMBLOCK_ALLOC_ANYWHERE	(~(phys_addr_t)0)
- #define MEMBLOCK_ALLOC_ACCESSIBLE	0
- 
-+phys_addr_t __init memblock_alloc_range(phys_addr_t size, phys_addr_t align,
-+					phys_addr_t start, phys_addr_t end);
- phys_addr_t memblock_alloc_base(phys_addr_t size, phys_addr_t align,
- 				phys_addr_t max_addr);
- phys_addr_t __memblock_alloc_base(phys_addr_t size, phys_addr_t align,
-diff --git a/mm/memblock.c b/mm/memblock.c
-index e9d6ca9..9a3bed0 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -975,22 +975,35 @@ int __init_memblock memblock_set_node(phys_addr_t base, phys_addr_t size,
- }
- #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
- 
--static phys_addr_t __init memblock_alloc_base_nid(phys_addr_t size,
--					phys_addr_t align, phys_addr_t max_addr,
--					int nid)
-+static phys_addr_t __init memblock_alloc_range_nid(phys_addr_t size,
-+					phys_addr_t align, phys_addr_t start,
-+					phys_addr_t end, int nid)
- {
- 	phys_addr_t found;
- 
- 	if (!align)
- 		align = SMP_CACHE_BYTES;
- 
--	found = memblock_find_in_range_node(size, align, 0, max_addr, nid);
-+	found = memblock_find_in_range_node(size, align, start, end, nid);
- 	if (found && !memblock_reserve(found, size))
- 		return found;
- 
- 	return 0;
- }
- 
-+phys_addr_t __init memblock_alloc_range(phys_addr_t size, phys_addr_t align,
-+					phys_addr_t start, phys_addr_t end)
-+{
-+	return memblock_alloc_range_nid(size, align, start, end, NUMA_NO_NODE);
-+}
-+
-+static phys_addr_t __init memblock_alloc_base_nid(phys_addr_t size,
-+					phys_addr_t align, phys_addr_t max_addr,
-+					int nid)
-+{
-+	return memblock_alloc_range_nid(size, align, 0, max_addr, nid);
-+}
-+
- phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int nid)
- {
- 	return memblock_alloc_base_nid(size, align, MEMBLOCK_ALLOC_ACCESSIBLE, nid);
--- 
-1.8.3.2
+Am 15.04.2014 15:06, schrieb Alex Deucher:
+> On Tue, Apr 15, 2014 at 8:07 AM, Borislav Petkov <bp@alien8.de> wrote:
+>> Hi Christian,
+>>
+>> On Tue, Apr 15, 2014 at 11:28:55AM +0200, Christian König wrote:
+>>> Hi Borislav,
+>>>
+>>> that's a known issue and should be fixed in the next rc, see this
+>>> bugreport: https://bugs.freedesktop.org/show_bug.cgi?id=77009
+>>>
+>>> You might also want to try my branch with 3.15 fixes which includes
+>>> the necessary patch for this: http://cgit.freedesktop.org/~deathsimple/linux/log/?h=drm-fixes-3.15-wip
+>>>
+>>> Let me know if that branch works for you or not.
+>> so I went and merged your branch as you suggested. Btw, on its tip it
+>> has:
+>>
+>> commit ec02666dd0791312b5820e1a9a023681d99d07ec
+>> Author: Quentin Casasnovas <quentin.casasnovas@oracle.com>
+>> Date:   Tue Mar 18 17:16:52 2014 +0100
+>>
+>>      drm/radeon: memory leak on bo reservation failure. v2
+>>
+>> (just checking whether I got the right one)
+>>
+>> and, unfortunately, no change - same problem. Let me know if I should
+>> bisect the subset of 59 radeon patches which went in during the merge
+>> window...
+>>
+>> Btw, just in case, I went and updated radeon firmware in
+>> /lib/firmware/radeon/ from upstream but it didn't change anything.
+> Does reverting:
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=32167016076f714f0e35e287fbead7de0f1fb179
+> fix the issue?  We may need to tweak the pll parameters for older asics.
+>
+> Alex
+>
+>> Thanks.
+>> _______________________________________________
+>> dri-devel mailing list
+>> dri-devel@lists.freedesktop.org
+>> http://lists.freedesktop.org/mailman/listinfo/dri-devel
 
