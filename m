@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753639AbaDOKVP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 06:21:15 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:11591 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071AbaDOKVN (ORCPT
+	id S1754231AbaDOKWP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 06:22:15 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:64886 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753732AbaDOKWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 06:21:13 -0400
-Message-ID: <534D07D0.1090807@huawei.com>
-Date: Tue, 15 Apr 2014 18:20:00 +0800
-From: Ding Tianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: Catalin Marinas <Catalin.Marinas@arm.com>, Sukie Peng <Sukie.Peng@arm.com>,
-        "huxinwei@huawei.com" <huxinwei@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm64: Flush the process's mm context TLB entries when
- switching
-References: <534BCE80.3090406@huawei.com> <20140414130154.GE3530@arm.com> <534C92B8.30408@huawei.com> <20140415080217.GD17408@arm.com>
-In-Reply-To: <20140415080217.GD17408@arm.com>
+	Tue, 15 Apr 2014 06:22:13 -0400
+Message-ID: <1397557331.1985.36.camel@x220>
+Subject: Re: [PATCH v2] spi: cadence: Add dependency on ARCH_ARM
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Harini Katakam <harinik@xilinx.com>
+Cc: broonie@kernel.org, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, michals@xilinx.com
+Date: Tue, 15 Apr 2014 12:22:11 +0200
+In-Reply-To: <1397556735-2536-1-git-send-email-harinik@xilinx.com>
+References: <1397556735-2536-1-git-send-email-harinik@xilinx.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.177.22.246]
-X-CFilter-Loop: Reflected
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Apr 2014 10:22:11.0726 (UTC) FILETIME=[905A12E0:01CF5894]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/4/15 16:02, Will Deacon wrote:
-> On Tue, Apr 15, 2014 at 03:00:24AM +0100, Ding Tianhong wrote:
->> On 2014/4/14 21:01, Will Deacon wrote:
->>> Hi Ding,
->>>
->>> On Mon, Apr 14, 2014 at 01:03:12PM +0100, Ding Tianhong wrote:
->>>> I met a problem when migrating process by following steps:
->>>>
->>>> 1) The process was already running on core 0.
->>>> 2) Set the CPU affinity of the process to 0x02 and move it to core 1,
->>>>    it could work well.
->>>> 3) Set the CPU affinity of the process to 0x01 and move it to core 0 again,
->>>>    the problem occurs and the process was killed.
->>>
->>> [...]
->>>
->>>> It was a very strange problem that the PC and LR are both 0, and the esr is
->>>> 0x83000006, it means that the used for instruction access generated MMU faults
->>>> and synchronous external aborts, including synchronous parity errors.
->>>>
->>>> I try to fix the problem by invalidating the process's TLB entries when switching,
->>>> it will make the context stale and pick new one, and then it could work well.
->>>>
->>>> So I think in some situation that after the process switching, the modification of
->>>> the TLB entries in the new core didn't inform all other cores to invalidate the old
->>>> TLB entries which was in the inner shareable caches, and then if the process schedule
->>>> to another core, the old TLB entries may occur MMU faults.
->>>
->>> Yes, it sounds like you don't have your TLBs configured correctly. Can you
->>> confirm that your EL3 firmware is configuring TLB broadcasting correctly
->>> please?
->>>
->>
->> Hi will:
->>
->> Do you mean the SCR_EL3.NS?
+On Tue, 2014-04-15 at 15:42 +0530, Harini Katakam wrote:
+> Add dependency on ARCH_ARM in Kconfig.
+> This is to fix the build error related to _relaxed IO.
 > 
-> No, there's usually a CPU-specific register (called something like actlr or
-> ectlr) which contains bit(s) to enable TLB broadcasting in hardware. Which
-> CPU are you using?
+> Signed-off-by: Harini Katakam <harinik@xilinx.com>
+> ---
 > 
-> Will
+> v2 changes:
+> Dependency on ARCH_ARM instead of restricting to ARCH_ZYNQ.
 > 
-Yes，I set the CPUECTLR.SMP to 1 and enable the core to receive TLB broadcast, then fix the problem,
-thanks for your help, And I use arm64-A57.
+> ---
+>  drivers/spi/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+> index b0f091b..32c27dd 100644
+> --- a/drivers/spi/Kconfig
+> +++ b/drivers/spi/Kconfig
+> @@ -150,6 +150,7 @@ config SPI_BUTTERFLY
+>  
+>  config SPI_CADENCE
+>  	tristate "Cadence SPI controller"
+> +	depends on ARCH_ARM
 
-Regards
-Ding
-> .
-> 
+Did you mean just ARM?
 
+>  	depends on SPI_MASTER
+>  	help
+>  	  This selects the Cadence SPI controller master driver
+
+
+Paul Bolle
 
