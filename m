@@ -1,50 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751159AbaDOVeE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 17:34:04 -0400
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:39904 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104AbaDOVdt (ORCPT
+	id S1751217AbaDOVgH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 17:36:07 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:44927 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975AbaDOVgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 17:33:49 -0400
-Date: Tue, 15 Apr 2014 17:37:01 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: linux-kernel@vger.kernel.org
-cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Subject: [perf] more perf_fuzzer memory corruption
-Message-ID: <alpine.DEB.2.10.1404151729230.17264@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Tue, 15 Apr 2014 17:36:05 -0400
+Date: Tue, 15 Apr 2014 14:35:51 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: David Cohen <david.a.cohen@linux.intel.com>
+Cc: wim@iguana.be, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, gnomes@lxorguk.ukuu.org.uk
+Subject: Re: [PATCH v4 2/2] x86: intel-mid: add watchdog platform code for
+ Merrifield
+Message-ID: <20140415213551.GA10569@roeck-us.net>
+References: <1397587272-31152-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1397592366-3899-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1397592366-3899-3-git-send-email-david.a.cohen@linux.intel.com>
+ <20140415200900.GJ5986@psi-dev26.jf.intel.com>
+ <20140415211349.GA10245@roeck-us.net>
+ <20140415211722.GA4420@psi-dev26.jf.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140415211722.GA4420@psi-dev26.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 15, 2014 at 02:17:22PM -0700, David Cohen wrote:
+> On Tue, Apr 15, 2014 at 02:13:49PM -0700, Guenter Roeck wrote:
+> > On Tue, Apr 15, 2014 at 01:09:00PM -0700, David Cohen wrote:
+> > > On Tue, Apr 15, 2014 at 01:06:06PM -0700, David Cohen wrote:
+> > > > This patch adds platform code for Intel Merrifield.
+> > > > Since the watchdog is not part of SFI table, we have no other option but
+> > > > to manually register watchdog's platform device (argh!).
+> > > > 
+> > > > Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> > > > ---
+> > > >  arch/x86/platform/intel-mid/device_libs/Makefile   |  1 +
+> > > >  .../platform/intel-mid/device_libs/platform_wdt.c  | 66 ++++++++++++++++++++++
+> > > >  2 files changed, 67 insertions(+)
+> > > >  create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_wdt.c
+> > > > 
+> > > > diff --git a/arch/x86/platform/intel-mid/device_libs/Makefile b/arch/x86/platform/intel-mid/device_libs/Makefile
+> > > > index 097e7a7940d8..af9307f2cc28 100644
+> > > > --- a/arch/x86/platform/intel-mid/device_libs/Makefile
+> > > > +++ b/arch/x86/platform/intel-mid/device_libs/Makefile
+> > > > @@ -20,3 +20,4 @@ obj-$(subst m,y,$(CONFIG_DRM_MEDFIELD)) += platform_tc35876x.o
+> > > >  obj-$(subst m,y,$(CONFIG_SERIAL_MRST_MAX3110)) += platform_max3111.o
+> > > >  # MISC Devices
+> > > >  obj-$(subst m,y,$(CONFIG_KEYBOARD_GPIO)) += platform_gpio_keys.o
+> > > > +obj-$(subst m,y,$(CONFIG_INTEL_MID_WATCHDOG)) += platform_wdt.o
+> > > > diff --git a/arch/x86/platform/intel-mid/device_libs/platform_wdt.c b/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
+> > > > new file mode 100644
+> > > > index 000000000000..4b0434b54aff
+> > > > --- /dev/null
+> > > > +++ b/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
+> > > > @@ -0,0 +1,66 @@
+> > > > +/*
+> > > > + * platform_wdt.c: Watchdog platform library file
+> > > > + *
+> > > > + * (C) Copyright 2014 Intel Corporation
+> > > > + * Author: David Cohen <david.a.cohen@linux.intel.com>
+> > > > + *
+> > > > + * This program is free software; you can redistribute it and/or
+> > > > + * modify it under the terms of the GNU General Public License
+> > > > + * as published by the Free Software Foundation; version 2
+> > > > + * of the License.
+> > > > + */
+> > > > +
+> > > > +#include <linux/init.h>
+> > > > +#include <linux/interrupt.h>
+> > > > +#include <linux/platform_device.h>
+> > > > +#include <linux/platform_data/intel-mid_wdt.h>
+> > > > +#include <asm/intel-mid.h>
+> > > > +
+> > > > +#define TANGIER_EXT_TIMER0_MSI 15
+> > > > +
+> > > > +static struct platform_device wdt_dev = {
+> > > > +	.name = "intel_mid_wdt",
+> > > > +	.id = -1,
+> > > > +};
+> > > > +
+> > > > +static int tangier_probe(struct platform_device *pdev)
+> > > > +{
+> > > > +	int ioapic;
+> > > > +	struct io_apic_irq_attr irq_attr = { 0 };
+> > > > +
+> > > > +	ioapic = mp_find_ioapic(TANGIER_EXT_TIMER0_MSI);
+> > > 
+> > > Forgot remove this hardcoded irq number. I'll send v4.1 of this patch.
+> > > 
+> > > BR, David
+> > > 
+> > > > +	if (ioapic >= 0) {
+> > > > +		int ret;
+> > > > +		irq_attr.ioapic = ioapic;
+> > > > +		irq_attr.ioapic_pin = TANGIER_EXT_TIMER0_MSI;
+> > > > +		irq_attr.trigger = 1;
+> > > > +		irq_attr.polarity = 0; /* Active high */
+> > > > +		ret = io_apic_set_pci_routing(NULL, TANGIER_EXT_TIMER0_MSI,
+> > > > +					      &irq_attr);
+> > 
+> > Here is another one, just in case you missed it.
+> 
+> This one I didn't miss. I checked and it returns dummy error code (-1).
+> Better to keep the hardcoded value.
+> 
+Thanks for letting me know (guess the idea is for mp_find_ioapic to return
+"invalid irq"), but I meant the second hard-coded irq....
 
-Still tracking memory corruption bugs found by the perf_fuzzer, I have 
-about 10 different log splats that I think might all be related to the 
-same underlying problem.
-
-Anyway I managed to trigger this using the perf_fuzzer:
-
-[  221.065278] Slab corruption (Not tainted): kmalloc-2048 start=ffff8800cd15e800, len=2048
-[  221.074062] 040: 6b 6b 6b 6b 6b 6b 6b 6b 98 72 57 cd 00 88 ff ff  kkkkkkkk.rW.....
-[  221.082321] Prev obj: start=ffff8800cd15e000, len=2048
-[  221.087933] 000: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-[  221.096224] 010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
-
-And luckily I had ftrace running at the time.
-
-The allocation of this block is by perf_event
-
-perf_fuzzer-2520  [001]   182.980563: kmalloc:              (perf_event_alloc+0x55) call_site=ffffffff811399b5 ptr=0xffff8800cd15e800 bytes_req=1272 bytes_alloc=2048 gfp_flags=GFP_KERNEL|GFP_ZERO
-perf_fuzzer-2520  [000]   183.628515: kmalloc:              (perf_event_alloc+0x55) call_site=ffffffff811399b5 ptr=0xffff8800cd15e800 bytes_req=1272 bytes_alloc=2048 gfp_flags=GFP_KERNEL|GFP_ZERO
-perf_fuzzer-2520  [000]   183.628521: kfree:                (perf_event_alloc+0x2f7) call_site=ffffffff81139c57 ptr=0xffff8800cd15e800
-perf_fuzzer-2520  [000]   183.628844: kmalloc:              (perf_event_alloc+0x55) call_site=ffffffff811399b5 ptr=0xffff8800cd15e800 bytes_req=1272 bytes_alloc=2048 gfp_flags=GFP_KERNEL|GFP_ZERO
-...(thousands of times of kmalloc/kfree)
-
-Is it worth wading through this mess to try to track down what happened?
-
-Vince
-
+Guenter
