@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563AbaDOR45 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 13:56:57 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:39118 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162AbaDOR4y (ORCPT
+	id S1753388AbaDOR5I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 13:57:08 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41659 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753162AbaDOR5B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 13:56:54 -0400
-Message-ID: <534D72E5.1000805@codeaurora.org>
-Date: Tue, 15 Apr 2014 10:56:53 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 15 Apr 2014 13:57:01 -0400
+Date: Tue, 15 Apr 2014 19:56:53 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, Wolfram Sang <wsa@the-dreams.de>
+Subject: Re: [PATCH v2] clocksource: efm32: use $vendor,$device scheme for
+ compatible string
+Message-ID: <20140415175653.GL5969@pengutronix.de>
+References: <1395757522-6431-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <1395759044-10700-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <534D63D7.8000803@linaro.org>
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>, Mark Brown <broonie@kernel.org>
-CC: Saravana Kannan <skannan@codeaurora.org>, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matt Wagantall <mattw@codeaurora.org>,
-        Kumar Gala <galak@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/4] Support qcom GDSC hardware
-References: <1396637136-29974-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1396637136-29974-1-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <534D63D7.8000803@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/04/14 11:45, Stephen Boyd wrote:
-> These patches add support for the multimedia GDSCs on the
-> apq8074 dragonboard. The first two patches (and potentially the last)
-> should go through Mike's tree and the DTS patch should go through
-> the qcom tree. Patches are based on v3.14. The probe will conflict with
-> patches I sent to consolidate things. I'll rework these patches on top of
-> that if the gdsc.c file is acked/reviewed.
+Hello Daniel,
 
-Any comments?
+On Tue, Apr 15, 2014 at 06:52:39PM +0200, Daniel Lezcano wrote:
+> On 03/25/2014 03:50 PM, Uwe Kleine-König wrote:
+> >Wolfgang Sang pointed out that "efm32,$device" is non-standard. So use the
+> >common scheme and prefix device with "efm32-". The old compatible string
+> >is left in place until arch/arm/boot/dts/efm32* is fixed.
+> >
+> >Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de
+> 
+> Applied for 3.16 (and fixed Wolfgang => Wolfram)
+thanks for the s/gang/ram/ fix. I'm still mortified.
+
+Best regards
+Uwe
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
