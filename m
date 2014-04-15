@@ -1,148 +1,58 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851AbaDNQkL (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Mon, 14 Apr 2014 12:40:11 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50384 "EHLO comal.ext.ti.com"
+	id S1752947AbaDOD7f (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Mon, 14 Apr 2014 23:59:35 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:43364 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755553AbaDNQ0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 12:26:08 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sricharan R <r.sricharan@ti.com>
-CC: Sekhar Nori <nsekhar@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Nishanth Menon <nm@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 08/15] bus: omap_l3_noc: Add support for discountinous flag mux input numbers
-Date: Mon, 14 Apr 2014 11:25:19 -0500
-Message-ID: <1397492726-17203-10-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1397492726-17203-1-git-send-email-nm@ti.com>
-References: <1397492726-17203-1-git-send-email-nm@ti.com>
+	id S1752291AbaDOD7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 23:59:33 -0400
+From: "Gupta, Pekon" <pekon@ti.com>
+To: Jingoo Han <jg1.han@samsung.com>,
+        "'Christian Engelmayer'" <cengelma@gmx.at>,
+        "'Brian Norris'" <computersforpeace@gmail.com>
+CC: "'David Woodhouse'" <dwmw2@infradead.org>,
+        "'Artem Bityutskiy'" <artem.bityutskiy@linux.intel.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: =?utf-8?B?UkU6IFtQQVRDSF0gbXRkOiBuYW5kOiBvbWFwOiBmaXggY29tcGlsZSB3YXJu?=
+ =?utf-8?B?aW5nIG9uIOKAmGVyYXNlZF9zZWN0b3JfYml0ZmxpcHPigJk=?=
+Thread-Topic: =?utf-8?B?W1BBVENIXSBtdGQ6IG5hbmQ6IG9tYXA6IGZpeCBjb21waWxlIHdhcm5pbmcg?=
+ =?utf-8?B?b24g4oCYZXJhc2VkX3NlY3Rvcl9iaXRmbGlwc+KAmQ==?=
+Thread-Index: AQHPWDFq9uuDOOe8hUmJN9Bj3cgtEZsRd++AgACVVuA=
+Date: Tue, 15 Apr 2014 03:58:56 +0000
+Message-ID: <20980858CB6D3A4BAE95CA194937D5E73EAC301C@DBDE04.ent.ti.com>
+References: <20140415003205.0bb2cf44@spike>
+ <007d01cf5842$435dcba0$ca1962e0$%han@samsung.com>
+In-Reply-To: <007d01cf5842$435dcba0$ca1962e0$%han@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by spinics.net id s3F3xkBP010138
 
-From: Rajendra Nayak <rnayak@ti.com>
+>From: Jingoo Han [mailto:jg1.han@samsung.com]
+>>On Tuesday, April 15, 2014 7:32 AM, Christian Engelmayer wrote:
+>>
+>> Commit 2c9f2365 (mtd: nand: omap: ecc.calculate: merge omap3_calculate_ecc_bch4
+>> in omap_calculate_ecc_bch) introduced minor compile warning
+>> "â€˜erased_sector_bitflipsâ€™ defined but not used [-Wunused-function]" when
+>> compiling without CONFIG_MTD_NAND_OMAP_BCH. Move function
+>> erased_sector_bitflips() into the same ifdef section as the only caller.
+>>
+>> Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
+>
+>Reviewed-by: Jingoo Han <jg1.han@samsung.com>
+>
+Thanks for the patch..
+Acked-by: Pekon Gupta <pekon@ti.com>
 
-On DRA7, unlike on OMAP4 and OMAP5, the flag mux input numbers used
-to indicate the source of errors are not continous. Have a way in the
-driver to catch these and WARN the user of the flag mux input thats
-either undocumented or wrong.
 
-In the similar vein, Timeout errors in AM43x can't be cleared per h/w
-team, neither does it have a STDERRLOG_MAIN to clear the error.
+With regards, pekon
 
-Further, the mux bit offset might not even be indexed into our array
-of known mux input description, in which case we'd have a abort.
-
-So, define a static range check for bit description and any definition
-which has target_name set to NULL (the ones that are not populated or
-ones that are specifically marked in the case of discontinous input
-numbers), can handle the same gracefully. Upon occurance of error from
-such sources, mask it. Otherwise, we'd have an infinite interrupt
-source without any means to clear it.
-
-[nm@ti.com: rebase, squash and improve]
-Signed-off-by: Rajendra Nayak <rnayak@ti.com>
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- drivers/bus/omap_l3_noc.c |   31 +++++++++++++++++++++++++++++++
- drivers/bus/omap_l3_noc.h |   11 ++++++++---
- 2 files changed, 39 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
-index da4e27c..c2b0cc3 100644
---- a/drivers/bus/omap_l3_noc.c
-+++ b/drivers/bus/omap_l3_noc.c
-@@ -79,10 +79,41 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
- 
- 			/* Identify the source from control status register */
- 			err_src = __ffs(err_reg);
-+
-+			/* We DONOT expect err_src to go out of bounds */
-+			BUG_ON(err_src >= MAX_CLKDM_TARGETS);
-+
- 			l3_targ_inst = &l3_targ[i][err_src];
- 			target_name = l3_targ_inst->name;
- 			l3_targ_base = base + l3_targ_inst->offset;
- 
-+			/*
-+			 * If we do not know of a register offset to decode
-+			 * and clear, then mask.
-+			 */
-+			if (target_name == L3_TARGET_NOT_SUPPORTED) {
-+				u32 mask_val;
-+				void __iomem *mask_reg;
-+
-+				/*
-+				 * Certain plaforms may have "undocumented"
-+				 * status pending on boot.. So dont generate
-+				 * a severe warning here.
-+				 */
-+				dev_err(l3->dev,
-+					"L3 %s error: target %d mod:%d %s\n",
-+					inttype ? "debug" : "application",
-+					err_src, i, "(unclearable)");
-+
-+				mask_reg = base + l3_flagmux[i] +
-+					   L3_FLAGMUX_MASK0 + (inttype << 3);
-+				mask_val = readl(mask_reg);
-+				mask_val &= ~(1 << err_src);
-+				writel(mask_val, mask_reg);
-+
-+				break;
-+			}
-+
- 			/* Read the stderrlog_main_source from clk domain */
- 			l3_targ_stderr = l3_targ_base + L3_TARG_STDERRLOG_MAIN;
- 			l3_targ_slvofslsb = l3_targ_base +
-diff --git a/drivers/bus/omap_l3_noc.h b/drivers/bus/omap_l3_noc.h
-index 25ba99c..c4a1760 100644
---- a/drivers/bus/omap_l3_noc.h
-+++ b/drivers/bus/omap_l3_noc.h
-@@ -30,6 +30,11 @@
- #define L3_TARG_STDERRLOG_SLVOFSLSB	0x5c
- #define L3_TARG_STDERRLOG_MSTADDR	0x68
- #define L3_FLAGMUX_REGERR0		0xc
-+#define L3_FLAGMUX_MASK0		0x8
-+
-+#define L3_TARGET_NOT_SUPPORTED		NULL
-+
-+#define MAX_CLKDM_TARGETS		30
- 
- #define NUM_OF_L3_MASTERS	(sizeof(l3_masters)/sizeof(l3_masters[0]))
- 
-@@ -61,7 +66,7 @@ static u32 l3_flagmux[L3_MODULES] = {
- 	0X0200
- };
- 
--static struct l3_target_data l3_target_inst_data_clk1[] = {
-+static struct l3_target_data l3_target_inst_data_clk1[MAX_CLKDM_TARGETS] = {
- 	{0x100,	"DMM1",},
- 	{0x200,	"DMM2",},
- 	{0x300,	"ABE",},
-@@ -71,7 +76,7 @@ static struct l3_target_data l3_target_inst_data_clk1[] = {
- 	{0x900,	"L4WAKEUP",},
- };
- 
--static struct l3_target_data l3_target_inst_data_clk2[] = {
-+static struct l3_target_data l3_target_inst_data_clk2[MAX_CLKDM_TARGETS] = {
- 	{0x500,	"CORTEXM3",},
- 	{0x300,	"DSS",},
- 	{0x100,	"GPMC",},
-@@ -95,7 +100,7 @@ static struct l3_target_data l3_target_inst_data_clk2[] = {
- 	{0x1700, "LLI",},
- };
- 
--static struct l3_target_data l3_target_inst_data_clk3[] = {
-+static struct l3_target_data l3_target_inst_data_clk3[MAX_CLKDM_TARGETS] = {
- 	{0x0100, "EMUSS",},
- 	{0x0300, "DEBUG SOURCE",},
- 	{0x0,	"HOST CLK3",},
--- 
-1.7.9.5
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
