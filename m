@@ -1,74 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398AbaDONM6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 09:12:58 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:33483 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751586AbaDONM4 (ORCPT
+	id S1755094AbaDONOz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 09:14:55 -0400
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:40700 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753831AbaDONM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 09:12:56 -0400
+	Tue, 15 Apr 2014 09:12:57 -0400
 From: Alex Elder <elder@linaro.org>
 To: mporter@linaro.org, bcm@fixthebug.org, linux@arm.linux.org.uk,
         devicetree@vger.kernel.org, arnd@arndb.de, sboyd@codeaurora.org
 Cc: bcm-kernel-feedback-list@broadcom.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/5] ARM: SMP: support Broadcom mobile SoCs
-Date: Tue, 15 Apr 2014 08:12:49 -0500
-Message-Id: <1397567574-31599-1-git-send-email-elder@linaro.org>
+Subject: [PATCH v2 1/5] ARM: introduce CPU_METHOD_OF_DECLARE_SETUP()
+Date: Tue, 15 Apr 2014 08:12:50 -0500
+Message-Id: <1397567574-31599-2-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1397567574-31599-1-git-send-email-elder@linaro.org>
+References: <1397567574-31599-1-git-send-email-elder@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds SMP support for two Broadcom mobile SoC families.
-It uses CPU_METHOD_OF_DECLARE() (or rather a new variant of that)
-so that SMP operations are assigned using device tree rather than
-adding it to a machine definition in a board file.
+The CPU_METHOD_OF_DECLARE() macro allows methods for assigning
+SMP/hotplug operations to CPUS to be defined using device tree,
+without the need for machine-dependent code.
 
-The first patch adds the ability to extract information from device
-tree nodes having a matching "enable-method" value.  This allows
-additional parameters to be associated with the enable method.  This
-is used for the Broadcom SoCs to efficiently determine the location
-of a special register used in coordinating the start of secondary
-CPUs.
+And although it allows the *method* to be specified, it does *not*
+allow any parameterization of that method.  For example, there is no
+efficient way to define a machine-specific address or other
+property one might want to define for secondary CPUs.
 
-I have not included a device tree document update here; I would like
-suggestions on where the new enable method and its parameter should
-be documented.  (I presume in .../arm/cpus.txt, but that could get
-out of hand as more boards define new enable methods.)
+Define a new of_cpu_method->setup() function, which (if defined) is
+called for nodes found having a matching "enable-method" property.
+The matching node is supplied as the function's argument, allowing
+additional required information to be extracted from that node.
+A new macro CPU_METHOD_OF_DECLARE_SETUP() allows a setup method
+to be supplied when a method is declared.
 
-					-Alex
+Extend the interface for set_smp_ops_by_method() so that it can
+return a negative error code to allow DT parsing errors to be
+reported by the setup function.
 
-Note:
-This series is based on v3.15-rc1, plus one more recently-posted patch:
-    http://permalink.gmane.org/gmane.linux.kernel/1683693
+(Note that only the first "cpu" (or "cpus") node having a matching
+method is used by set_smp_ops_by_method(); this logic is not
+changed.)
 
-History
-v2: - Fixed a Makefile error (:= should have been +=)
-    - No longer set CONFIG_NR_CPUS in bcm_defconfig
-    - Rebased onto v3.15-rc1
+Signed-off-by: Alex Elder <elder@linaro.org>
+---
+ arch/arm/include/asm/smp.h |   10 ++++++++--
+ arch/arm/kernel/devtree.c  |   31 +++++++++++++++++++++++++------
+ 2 files changed, 33 insertions(+), 8 deletions(-)
 
-This series is available here:
-    http://git.linaro.org/landing-teams/working/broadcom/kernel.git
-    Branch review/bcm-smp-v2
-
-Alex Elder (5):
-  ARM: introduce CPU_METHOD_OF_DECLARE_SETUP()
-  ARM: add SMP support for Broadcom mobile SoCs
-  ARM: configs: enable SMP in bcm_defconfig
-  ARM: dts: enable SMP support for bcm28155
-  ARM: dts: enable SMP support for bcm21664
-
- arch/arm/boot/dts/bcm11351.dtsi |   19 ++++
- arch/arm/boot/dts/bcm21664.dtsi |   19 ++++
- arch/arm/configs/bcm_defconfig  |    1 +
- arch/arm/include/asm/smp.h      |   10 +-
- arch/arm/kernel/devtree.c       |   31 +++++--
- arch/arm/mach-bcm/Kconfig       |   18 +++-
- arch/arm/mach-bcm/Makefile      |    3 +
- arch/arm/mach-bcm/platsmp.c     |  194 +++++++++++++++++++++++++++++++++++++++
- 8 files changed, 284 insertions(+), 11 deletions(-)
- create mode 100644 arch/arm/mach-bcm/platsmp.c
-
+diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
+index 2ec765c..ab4a5a9 100644
+--- a/arch/arm/include/asm/smp.h
++++ b/arch/arm/include/asm/smp.h
+@@ -115,15 +115,21 @@ struct smp_operations {
+ #endif
+ };
+ 
++struct device_node;
+ struct of_cpu_method {
+ 	const char *method;
++	int (*setup)(struct device_node *node);
+ 	struct smp_operations *ops;
+ };
+ 
+-#define CPU_METHOD_OF_DECLARE(name, _method, _ops)			\
++#define CPU_METHOD_OF_DECLARE_SETUP(name, _method, _setup, _ops)	\
+ 	static const struct of_cpu_method __cpu_method_of_table_##name	\
+ 		__used __section(__cpu_method_of_table)			\
+-		= { .method = _method, .ops = _ops }
++		= { .method = _method, .setup = _setup, .ops = _ops }
++
++#define CPU_METHOD_OF_DECLARE(name, _method, _ops)			\
++	CPU_METHOD_OF_DECLARE_SETUP(name, _method, NULL, _ops)
++
+ /*
+  * set platform specific SMP operations
+  */
+diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
+index c7419a5..1a0cca3 100644
+--- a/arch/arm/kernel/devtree.c
++++ b/arch/arm/kernel/devtree.c
+@@ -76,11 +76,18 @@ static int __init set_smp_ops_by_method(struct device_node *node)
+ 	if (of_property_read_string(node, "enable-method", &method))
+ 		return 0;
+ 
+-	for (; m < __cpu_method_of_table_end; m++)
++	for (; m < __cpu_method_of_table_end; m++) {
+ 		if (!strcmp(m->method, method)) {
+-			smp_set_ops(m->ops);
+-			return 1;
++			int ret = 0;
++
++			if (m->setup)
++				ret = m->setup(node);
++			if (!ret)
++				smp_set_ops(m->ops);
++
++			return ret ? ret : 1;
+ 		}
++	}
+ 
+ 	return 0;
+ }
+@@ -181,16 +188,28 @@ void __init arm_dt_init_cpu_maps(void)
+ 
+ 		tmp_map[i] = hwid;
+ 
+-		if (!found_method)
++		if (!found_method) {
+ 			found_method = set_smp_ops_by_method(cpu);
++			if (WARN(found_method < 0,
++					"error %d getting enable-method for "
++					"DT /cpu %u\n", found_method, cpuidx)) {
++				return;
++			}
++		}
+ 	}
+ 
+ 	/*
+ 	 * Fallback to an enable-method in the cpus node if nothing found in
+ 	 * a cpu node.
+ 	 */
+-	if (!found_method)
+-		set_smp_ops_by_method(cpus);
++	if (!found_method) {
++		found_method = set_smp_ops_by_method(cpus);
++		if (WARN(found_method < 0,
++				"error %d getting enable-method for "
++				"DT /cpus node\n", found_method)) {
++			return;
++		}
++	}
+ 
+ 	if (!bootcpu_valid) {
+ 		pr_warn("DT missing boot CPU MPIDR[23:0], fall back to default cpu_logical_map\n");
 -- 
 1.7.9.5
+
