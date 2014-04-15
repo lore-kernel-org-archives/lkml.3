@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751526AbaDONct (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 09:32:49 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:61961 "EHLO
+	id S1754033AbaDONc5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 09:32:57 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:1774 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750930AbaDONcs (ORCPT
+	with ESMTP id S1751317AbaDONcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 09:32:48 -0400
+	Tue, 15 Apr 2014 09:32:53 -0400
 X-IronPort-AV: E=Sophos;i="4.97,863,1389715200"; 
-   d="scan'208";a="29292482"
+   d="scan'208";a="29292488"
 From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
 To: <rostedt@goodmis.org>, <fweisbec@gmail.com>, <mingo@redhat.com>,
         <peterz@infradead.org>, <acme@ghostprotocols.net>
-CC: <linux-kernel@vger.kernel.org>,
-        Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Subject: [PATCH 0/8] perf sched: Add trace event for sched wait.
-Date: Tue, 15 Apr 2014 21:32:49 +0900
-Message-ID: <cover.1397562542.git.yangds.fnst@cn.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, Dongsheng <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH 5/8] perf tools: record and process sched:sched_wait event.
+Date: Tue, 15 Apr 2014 21:32:54 +0900
+Message-ID: <3728a8252d0d33315931c11f078b865368896cae.1397562542.git.yangds.fnst@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <cover.1397562542.git.yangds.fnst@cn.fujitsu.com>
+References: <cover.1397562542.git.yangds.fnst@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.167.226.49]
@@ -25,71 +26,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all:
-	This is to solve the bug message shown in perf sched latency.
+From: Dongsheng <yangds.fnst@cn.fujitsu.com>
 
-	# perf sched latency|tail
-	  ksoftirqd/0:3         |      0.597 ms |       57 | avg:    0.004 ms | max:    0.054 ms | max at: 19681.546204 s
-	  ksoftirqd/1:14        |      0.637 ms |       58 | avg:    0.004 ms | max:    0.066 ms | max at: 19674.687734 s
-	  irqbalance:349        |      0.429 ms |        1 | avg:    0.004 ms | max:    0.004 ms | max at: 19675.791528 s
-	  ksoftirqd/3:24        |      0.527 ms |       67 | avg:    0.003 ms | max:    0.011 ms | max at: 19673.285019 s
-	  migration/3:23        |      0.000 ms |        1 | avg:    0.002 ms | max:    0.002 ms | max at: 19672.055354 s
-	 -----------------------------------------------------------------------------------------
-	  TOTAL:                |   4384.616 ms |    36879 |
-	 ---------------------------------------------------
-	  INFO: 0.030% state machine bugs (11 out of 36684)
+Currently, perf sched tool does not cover any trace event when
+a task from TASK_RINNING to TASK_{UN}INTERRUPTIBLE. Then if
+a thread changed to TASK_{UN}INTERRUPTIBLE, but we did not
+capture a event for it, so the state of atom is still TASK_RUNNING,
+at this time, when we process a sched_wakeup event, we will see
+the thread state is not TASK_SLEEP, and record a state_bug.
 
-	After some investigation, there are two reasons cause this problem.
+This patch make it record and process sched_wait event, to solve
+this problem.
 
-	(1). Sometimes, scheduler will wake up a running task, it is not necessary,
-	     then I skip the wakeup if task->state is TASK_RUNNING. [4/8]
+Signed-off-by: Dongsheng <yangds.fnst@cn.fujitsu.com>
+---
+ tools/perf/builtin-sched.c | 62 ++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 62 insertions(+)
 
-	(2). No tracing for sched wait.
-	This is a simple graph for task state changing.
-
-	----------------		1		----------------
-	| TASK_RUNNING | ------------------------------>| TASK_RUNNING |
-	|   (running)  |<------------------------------ |  (wait cpu)  |
-	----------------		2		----------------
-		^						|
-		|4	-------------------------	3	|
-		|-------|TASK_{UN}INTERRUPTABLE	|<--------------|
-			|	in wait_rq	|
-			-------------------------
-
-	As the graph shown above, there are four event in scheduling, and
-we currently are tracing 3 of them.
-
-	1 & 2: sched:sched_switch
-	    4: sched:sched_wakeup|sched:sched_wakeup_new
-
-But about 3, we have no trace event for it.
-
-This patchset add a new trace event for sched wait, and add a trace point
-before any task added into wait queue. [1/8] & [3/8]
-
-	BTW, other patchs in this thread are about some little fix and enhancement
-in the development, please help to review at the same time. 
-
-Thanx
-
-Dongsheng (8):
-  sched & trace: Add a trace event for wait.
-  sched/wait: Add trace point before add task into wait queue.
-  sched/wait: Use __add_wait_queue{_tail}_exclusive() as possible.
-  sched/core: Skip wakeup when task is already running.
-  perf tools: record and process sched:sched_wait event.
-  perf tools: add missing event for perf sched record.
-  perf tools: Adapt the TASK_STATE_TO_CHAR_STR to new value in kernel
-    space.
-  perf tools: Clarify the output of perf sched map.
-
- include/trace/events/sched.h |  20 +++++++++
- kernel/sched/core.c          |   3 ++
- kernel/sched/wait.c          |  13 ++++--
- tools/perf/builtin-sched.c   | 100 +++++++++++++++++++++++++++++++++++--------
- 4 files changed, 115 insertions(+), 21 deletions(-)
-
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 9ac0a49..a32af4e 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -117,6 +117,10 @@ struct trace_sched_handler {
+ 				  struct perf_evsel *evsel,
+ 				  struct perf_sample *sample,
+ 				  struct machine *machine);
++
++	int (*wait_event)(struct perf_sched *sched, struct perf_evsel *evsel,
++			  struct perf_sample *sample, struct machine *machine);
++
+ };
+ 
+ struct perf_sched {
+@@ -863,6 +867,22 @@ add_sched_out_event(struct work_atoms *atoms,
+ 	return 0;
+ }
+ 
++static int
++add_sched_wait_event(struct work_atoms *atoms,
++		     u64 timestamp)
++{
++	struct work_atom *atom = zalloc(sizeof(*atom));
++	if (!atom) {
++		pr_err("Non memory at %s", __func__);
++		return -1;
++	}
++
++	atom->sched_out_time = timestamp;
++
++	list_add_tail(&atom->list, &atoms->work_list);
++	return 0;
++}
++
+ static void
+ add_runtime_event(struct work_atoms *atoms, u64 delta,
+ 		  u64 timestamp __maybe_unused)
+@@ -1100,6 +1120,32 @@ static int latency_migrate_task_event(struct perf_sched *sched,
+ 	return 0;
+ }
+ 
++static int latency_wait_event(struct perf_sched *sched,
++			      struct perf_evsel *evsel,
++			      struct perf_sample *sample,
++			      struct machine *machine)
++{
++	const u32 pid = perf_evsel__intval(evsel, sample, "pid");
++	struct work_atoms *atoms;
++	struct thread *wakee;
++	u64 timestamp = sample->time;
++
++	wakee = machine__findnew_thread(machine, 0, pid);
++	atoms = thread_atoms_search(&sched->atom_root, wakee, &sched->cmp_pid);
++	if (!atoms) {
++		if (thread_atoms_insert(sched, wakee))
++			return -1;
++		atoms = thread_atoms_search(&sched->atom_root, wakee, &sched->cmp_pid);
++		if (!atoms) {
++			pr_err("wakeup-event: Internal tree error");
++			return -1;
++		}
++	}
++
++	add_sched_wait_event(atoms, timestamp);
++	return 0;
++}
++
+ static void output_lat_thread(struct perf_sched *sched, struct work_atoms *work_list)
+ {
+ 	int i;
+@@ -1250,6 +1296,19 @@ static void perf_sched__sort_lat(struct perf_sched *sched)
+ 	}
+ }
+ 
++static int process_sched_wait(struct perf_tool *tool,
++			      struct perf_evsel *evsel,
++			      struct perf_sample *sample,
++			      struct machine *machine)
++{
++	struct perf_sched *sched = container_of(tool, struct perf_sched, tool);
++
++	if (sched->tp_handler->wait_event)
++		return sched->tp_handler->wait_event(sched, evsel, sample, machine);
++
++	return 0;
++}
++
+ static int process_sched_wakeup_event(struct perf_tool *tool,
+ 				      struct perf_evsel *evsel,
+ 				      struct perf_sample *sample,
+@@ -1444,6 +1503,7 @@ static int perf_sched__read_events(struct perf_sched *sched,
+ 		{ "sched:sched_wakeup",	      process_sched_wakeup_event, },
+ 		{ "sched:sched_wakeup_new",   process_sched_wakeup_event, },
+ 		{ "sched:sched_migrate_task", process_sched_migrate_task_event, },
++		{ "sched:sched_wait",	      process_sched_wait, },
+ 	};
+ 	struct perf_session *session;
+ 	struct perf_data_file file = {
+@@ -1636,6 +1696,7 @@ static int __cmd_record(int argc, const char **argv)
+ 		"-e", "sched:sched_process_fork",
+ 		"-e", "sched:sched_wakeup",
+ 		"-e", "sched:sched_migrate_task",
++		"-e", "sched:sched_wait",
+ 	};
+ 
+ 	rec_argc = ARRAY_SIZE(record_args) + argc - 1;
+@@ -1722,6 +1783,7 @@ int cmd_sched(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		.switch_event	    = latency_switch_event,
+ 		.runtime_event	    = latency_runtime_event,
+ 		.migrate_task_event = latency_migrate_task_event,
++		.wait_event	    = latency_wait_event,
+ 	};
+ 	struct trace_sched_handler map_ops  = {
+ 		.switch_event	    = map_switch_event,
 -- 
 1.8.2.1
 
