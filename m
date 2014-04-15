@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807AbaDOJKV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 05:10:21 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:50450 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752263AbaDOJKQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 05:10:16 -0400
-Date: Tue, 15 Apr 2014 17:07:50 +0800
-From: Jisheng Zhang <jszhang@marvell.com>
-To: Antoine =?UTF-8?B?VMOpbmFydA==?= 
-	<antoine.tenart@free-electrons.com>
-CC: "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        Jimmy Xu <zmxu@marvell.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ARM: berlin: add the LIBGPIO as a dependency for
- the BG2Q
-Message-ID: <20140415170750.7721e907@xhacker>
-In-Reply-To: <1397549245-3338-2-git-send-email-antoine.tenart@free-electrons.com>
-References: <1397549245-3338-1-git-send-email-antoine.tenart@free-electrons.com>
-	<1397549245-3338-2-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1753362AbaDOJKb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 05:10:31 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:59365 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752312AbaDOJK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 05:10:26 -0400
+Message-ID: <534CF77C.9090906@mev.co.uk>
+Date: Tue, 15 Apr 2014 10:10:20 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-14_01:2014-04-14,2014-04-14,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1404150155
+To: Chase Southwood <chase.southwood@yahoo.com>, <gregkh@linuxfoundation.org>
+CC: <hsweeten@visionengravers.com>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] staging: comedi: addi_apci_1564: remove use of devpriv->iobase
+References: <1397541235-2574-1-git-send-email-chase.southwood@yahoo.com>
+In-Reply-To: <1397541235-2574-1-git-send-email-chase.southwood@yahoo.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
+ (10.0.0.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Antoine,
-
-On Tue, 15 Apr 2014 01:07:24 -0700
-Antoine Ténart <antoine.tenart@free-electrons.com> wrote:
-
-> The BG2Q has GPIOs driven by the dwapb GPIO driver. Add the LIBGPIO as a
-> dependency to be able to support them.
-> 
-> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+On 2014-04-15 06:53, Chase Southwood wrote:
+> devpriv->iobase is currently being used to hold the iobase address used to
+> read/write the board's registers.  The same address is stored in the
+> comedi_device dev->iobase.  We use that instead.  The eventual goal is to
+> decrease the driver's use of the struct addi_private, so that it may
+> eventually use a much slimmer specialized private struct instead, as the
+> other addi_apci_* drivers do.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
 > ---
->  arch/arm/mach-berlin/Kconfig | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
-> index 291f1cac6c3d..c31968712095 100644
-> --- a/arch/arm/mach-berlin/Kconfig
-> +++ b/arch/arm/mach-berlin/Kconfig
-> @@ -28,6 +28,7 @@ config MACH_BERLIN_BG2Q
->  	select CPU_V7
->  	select HAVE_ARM_TWD if SMP
->  	select HAVE_SMP
-> +	select ARCH_REQUIRE_GPIOLIB
+> This is a (small) first patchset for my more complete cleanup of
+> addi_apci_1564 driver.  Hartley, I'd appreciate any review you have
+> wrt these specific patches, but also whether I have chosen a good place
+> to start.
 
-alphabetically sort.
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
-Others looks good ;)
-
-Thanks,
-Jisheng
-
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
