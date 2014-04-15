@@ -1,67 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851AbaDOSUV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 14:20:21 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:64006 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751849AbaDOSUS (ORCPT
+	id S1754788AbaDOSUp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 14:20:45 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:62944 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972AbaDOSUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 14:20:18 -0400
-Message-ID: <534D785D.50704@gmail.com>
-Date: Tue, 15 Apr 2014 20:20:13 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org,
-        Chris Ball <chris@printf.net>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 4/5] mmc: dove: prepare new Dove DT Kconfig variable
-References: <1393536486-3827-3-git-send-email-sebastian.hesselbarth@gmail.com> <1393662801-17950-4-git-send-email-sebastian.hesselbarth@gmail.com> <20140304040357.GH1872@titan.lakedaemon.net> <533442B9.80900@gmail.com>
-In-Reply-To: <533442B9.80900@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Apr 2014 14:20:41 -0400
+Date: Tue, 15 Apr 2014 14:20:38 -0400
+From: Tejun Heo <htejun@gmail.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Subject: Re: block: Replace __this_cpu_ptr with raw_cpu_ptr
+Message-ID: <20140415182038.GG30990@htj.dyndns.org>
+References: <alpine.DEB.2.10.1404151236390.27497@gentwo.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1404151236390.27497@gentwo.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/27/2014 04:24 PM, Sebastian Hesselbarth wrote:
-> On 03/04/2014 05:03 AM, Jason Cooper wrote:
->> On Sat, Mar 01, 2014 at 09:33:20AM +0100, Sebastian Hesselbarth wrote:
->>> DT-enabled Dove will move over from ARCH_DOVE in mach-dove to
->>> MACH_DOVE in
->>> mach-mvebu. As non-DT ARCH_DOVE will stay to rot for a while, add a new
->>> DT-only MACH_DOVE Kconfig.
->>>
->>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->>> ---
->>> Chris,
->>>
->>> Mark Brown requested to take the corresponding ASoC patch through
->>> his tree. Therefore, I have split the former patch into individual
->>> subsystem
->>> patches.
->>>
->>> Cc: Chris Ball <chris@printf.net>
->>> Cc: Jason Cooper <jason@lakedaemon.net>
->>> Cc: Andrew Lunn <andrew@lunn.ch>
->>> Cc: Gregory Clement <gregory.clement@free-electrons.com>
->>> Cc: linux-arm-kernel@lists.infradead.org
->>> Cc: linux-kernel@vger.kernel.org
->>> ---
->>>   drivers/mmc/host/Kconfig | 2 +-
->>>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> Acked-by: Jason Cooper <jason@lakedaemon.net>
+On Tue, Apr 15, 2014 at 12:38:05PM -0500, Christoph Lameter wrote:
+> __this_cpu_ptr is being phased out use raw_cpu_ptr instead which was
+> introduced in 3.15-rc1.
 > 
-> Ping. Chris, can you please take it in for v3.15-rc1?
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 
-Ping again.
+Acked-by: Tejun Heo <tj@kernel.org>
 
-Chris, anything wrong with this one? It still applies to
-v3.15-rc1 and is required to get sdhci working again on
-MULTI_V7 Dove.
-
-Sebastian
-
+-- 
+tejun
