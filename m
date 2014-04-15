@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367AbaDONkc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 09:40:32 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:63133 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209AbaDONka (ORCPT
+	id S1751358AbaDONtc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 09:49:32 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54970 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893AbaDONtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 09:40:30 -0400
-Date: Tue, 15 Apr 2014 09:43:40 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: linux-kernel@vger.kernel.org
-cc: Jason Cooper <jason@lakedaemon.net>,
-        Grant Likely <grant.likely@linaro.org>, Michal Marek <mmarek@suse.cz>,
-        Russell King <linux@arm.linux.org.uk>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: [bisected] broken make-kpkg kernel build in 3.15-rc1
-Message-ID: <alpine.DEB.2.10.1404150940250.14106@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Tue, 15 Apr 2014 09:49:31 -0400
+Date: Tue, 15 Apr 2014 15:49:16 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        acme@ghostprotocols.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/8] sched & trace: Add a trace event for wait.
+Message-ID: <20140415134916.GT11096@twins.programming.kicks-ass.net>
+References: <cover.1397562542.git.yangds.fnst@cn.fujitsu.com>
+ <6d3aa5da995cfdb74b1d1c349c74a8c01ba9cdf6.1397562542.git.yangds.fnst@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6d3aa5da995cfdb74b1d1c349c74a8c01ba9cdf6.1397562542.git.yangds.fnst@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 15, 2014 at 09:32:50PM +0900, Dongsheng Yang wrote:
+> From: Dongsheng <yangds.fnst@cn.fujitsu.com>
+> 
 
-The following commit breaks building the kernel using the debian
-make-kpkg command
+No changelog, and the tracepoint seems useless to me.
 
-commit f4d4ffc03efc864645b990e1d579bbe1b8e358a4
-Author: Jason Cooper <jason@lakedaemon.net>
-Date:   Sun Dec 1 23:56:28 2013 +0000
-
-    kbuild: dtbs_install: new make target
-
-
-If I run this:
-	make-kpkg --initrd --rootcmd fakeroot kernel_image
-
-After this commit it fails with:
-
-make[2]: Entering directory `/home/vince/research/linux-kernel/linux-git'
-sh /home/vince/research/linux-kernel/linux-git/arch/x86/boot/install.sh 
-3.14.0-rc6+ arch/x86/boot/bzImage \
-		System.map 
-"/home/vince/research/linux-kernel/linux-git/debian/linux-image-3.14.0-rc6+//boot"
-run-parts: executing /etc/kernel/postinst.d/apt-auto-removal 3.14.0-rc6+ 
-/home/vince/research/linux-kernel/linux-git/debian/linux-image-3.14.0-rc6+//boot/vmlinuz-3.14.0-rc6+
-/etc/kernel/postinst.d/apt-auto-removal: 84: 
-/etc/kernel/postinst.d/apt-auto-removal: cannot create 
-/etc/apt/apt.conf.d//01autoremove-kernels.dpkg-new: Permission denied
-run-parts: /etc/kernel/postinst.d/apt-auto-removal exited with return code 
-2
-make[3]: *** [install] Error 1
-make[2]: *** [install] Error 2
-make[2]: Leaving directory `/home/vince/research/linux-kernel/linux-git'
-make[1]: *** [debian/stamp/install/linux-image-3.14.0-rc6+] Error 2
-make[1]: Leaving directory `/home/vince/research/linux-kernel/linux-git'
-make: *** [kernel_image] Error 2
-
-Wasted a whole day tracking this down, thought it was a problem with a new 
-version of apt.
-
-Vince
+> Signed-off-by: Dongsheng <yangds.fnst@cn.fujitsu.com>
+> ---
+>  include/trace/events/sched.h | 20 ++++++++++++++++++++
+>  1 file changed, 20 insertions(+)
+> 
+> diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+> index 67e1bbf..7aa7d43a 100644
+> --- a/include/trace/events/sched.h
+> +++ b/include/trace/events/sched.h
+> @@ -51,6 +51,26 @@ TRACE_EVENT(sched_kthread_stop_ret,
+>  );
+>  
+>  /*
+> + * Tracepoint for wait:
+> + */
+> +TRACE_EVENT(sched_wait,
+> +
+> +	TP_PROTO(struct task_struct *p),
+> +
+> +	TP_ARGS(p),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	pid_t,	pid	)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->pid	= p->pid;
+> +	),
+> +
+> +	TP_printk("pid=%d", __entry->pid)
+> +);
+> +
+> +/*
+>   * Tracepoint for waking up a task:
+>   */
+>  DECLARE_EVENT_CLASS(sched_wakeup_template,
+> -- 
+> 1.8.2.1
+> 
