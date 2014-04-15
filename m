@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823AbaDOQwa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 12:52:30 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:58359 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551AbaDOQwZ (ORCPT
+	id S1754049AbaDOQyR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 12:54:17 -0400
+Received: from mail-la0-f52.google.com ([209.85.215.52]:44706 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902AbaDOQyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 12:52:25 -0400
-Date: Tue, 15 Apr 2014 12:52:21 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, john@johnmccutchan.com, rlove@rlove.org,
-        eparis@parisplace.org, gregkh@linuxfoundation.org,
-        serge.hallyn@ubuntu.com, lennart@poettering.net, kay@vrfy.org
-Subject: Re: [PATCH 3/3] cgroup: implement cgroup.subtree_populated for the
- default hierarchy
-Message-ID: <20140415165221.GD30990@htj.dyndns.org>
-References: <1397511846-2904-1-git-send-email-tj@kernel.org>
- <1397511846-2904-4-git-send-email-tj@kernel.org>
- <534C83F1.9020106@huawei.com>
- <20140415145450.GL1863@htj.dyndns.org>
+	Tue, 15 Apr 2014 12:54:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140415145450.GL1863@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140415085126.GA17327@lst.de>
+References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de>
+ <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com>
+ <20140414160211.GE711@lst.de> <20140414160653.GC29351@lst.de>
+ <CALCETrUmFdrGExKB+tKSMVK1yWAw6KWU1tpgjnoFe=+XhJdtTw@mail.gmail.com> <20140415085126.GA17327@lst.de>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 15 Apr 2014 09:53:53 -0700
+Message-ID: <CALCETrXrHOJkEvYv8VGaNNJSFarAaD7E7G7myOvWo5SG4m4qKg@mail.gmail.com>
+Subject: Re: [PATCH v3 03/03]: hwrng: khwrngd derating per device
+To: Torsten Duwe <duwe@lst.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        ingo.tuchscherer@de.ibm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hans-Georg Markgraf <MGRF@de.ibm.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Joe Perches <joe@perches.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 10:54:50AM -0400, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Apr 15, 2014 at 08:57:21AM +0800, Li Zefan wrote:
-> > Is cgroup.tree_populated a better name?
-> > 
-> > cgroup.subtree_control controls child cgroups only, but .subtree_populated
-> > shows 1 if there're tasks in the cgroup or its children, so the two
-> > are a bit inconsistent to me.
-> 
-> Yes, good catch.  subtree_control affects subtree proper.
-> subtree_populated covers self too.  The difference is subtle and the
-> trade off between shared pattern in names and clarifying the subtlety
-> didn't seem clear-cut to me.  Hmmm....
+On Tue, Apr 15, 2014 at 1:51 AM, Torsten Duwe <duwe@lst.de> wrote:
+> On Mon, Apr 14, 2014 at 09:41:10AM -0700, Andy Lutomirski wrote:
+>> On Mon, Apr 14, 2014 at 9:06 AM, Torsten Duwe <duwe@lst.de> wrote:
+>> >
+>> > This patch introduces a derating factor to struct hwrng for
+>> > the random bits going into the kernel input pool, and a common
+>> > default derating for drivers which do not specify one.
+>> >
+>> > Signed-off-by: Torsten Duwe <duwe@suse.de>
+>> >
+>> > ---
+>> >  drivers/char/hw_random/core.c |   11 ++++++++++-
+>> >  include/linux/hw_random.h     |    3 +++
+>> >  2 files changed, 13 insertions(+), 1 deletion(-)
+>> >
+>> > --- linux/include/linux/hw_random.h.orig
+>> > +++ linux/include/linux/hw_random.h
+>> > @@ -29,6 +29,8 @@
+>> >   * @read:              New API. drivers can fill up to max bytes of data
+>> >   *                     into the buffer. The buffer is aligned for any type.
+>> >   * @priv:              Private data, for use by the RNG driver.
+>> > + * @derating:          Estimation of true entropy in RNG's bitstream
+>> > + *                     (per mill).
+>>
+>> I'll bikeshed again: this is a rating, not a *de*rating.  Higher =
+>> more confidence, at least assuming the comment is right.
+>>
+> You're right. Would anyone object to call it "quality", as in RX signal quality?
+> In context of a random source that is pretty accurate, I'd say. Other opinions?
 
-How about cgroup.populated?
+I'm okay with "quality", although I'm still partial to "entropy_per_1000bits".
 
--- 
-tejun
+--Andy
