@@ -1,125 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878AbaDONKx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 09:10:53 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:47893 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754900AbaDONJQ (ORCPT
+	id S1754230AbaDONK7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 09:10:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54174 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750960AbaDONKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 09:09:16 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, iommu@lists.linux-foundation.org
-Subject: [PATCH v3 3/5] intel-iommu: integrate DMA CMA
-Date: Tue, 15 Apr 2014 22:08:47 +0900
-Message-Id: <1397567329-3771-4-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com>
-References: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com>
+	Tue, 15 Apr 2014 09:10:55 -0400
+Date: Tue, 15 Apr 2014 14:10:54 +0100
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: broonie@kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rob@landley.net, sameo@linux.intel.com,
+        lgirdwood@gmail.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/6] regulator: arizona-ldo1: Move setup processing
+	from arizona-core
+Message-ID: <20140415131054.GB27294@opensource.wolfsonmicro.com>
+References: <1396340845-24060-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <1396340845-24060-3-git-send-email-ckeepax@opensource.wolfsonmicro.com> <20140415101200.GC27091@lee--X1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140415101200.GC27091@lee--X1>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support for the DMA Contiguous Memory Allocator for intel-iommu.
-This change enables dma_alloc_coherent() to allocate big contiguous
-memory.
+On Tue, Apr 15, 2014 at 11:12:00AM +0100, Lee Jones wrote:
+> On Tue, 01 Apr 2014, Charles Keepax wrote:
+> 
+> > It is more idiomatic to process things relating to the regulator in its
+> > driver. This patch moves both processing of device tree relating to the
+> > regulator and checking if the regulator is external from arizona-core
+> > into the regulator driver.
+> > 
+> > Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> > ---
+> >  drivers/mfd/arizona-core.c       |   12 +++---------
+> >  drivers/regulator/arizona-ldo1.c |   32 ++++++++++++++++++++++++++++++++
+> >  2 files changed, 35 insertions(+), 9 deletions(-)
+> 
+> [...]
+> 
+> > diff --git a/drivers/regulator/arizona-ldo1.c b/drivers/regulator/arizona-ldo1.c
+> > index b1033d3..211af83 100644
+> > --- a/drivers/regulator/arizona-ldo1.c
+> > +++ b/drivers/regulator/arizona-ldo1.c
+> > @@ -178,6 +178,22 @@ static const struct regulator_init_data arizona_ldo1_default = {
+> >  	.num_consumer_supplies = 1,
+> >  };
+> >  
+> > +#ifdef CONFIG_OF
+> > +static int arizona_ldo1_of_get_pdata(struct arizona *arizona)
+> > +{
+> > +	struct arizona_pdata *pdata = &arizona->pdata;
+> > +
+> > +	arizona_of_get_named_gpio(arizona, "wlf,ldoena", true, &pdata->ldoena);
+> > +
+> > +	return 0;
+> > +}
+> > +#else
+> > +static inline int arizona_ldo1_of_get_pdata(struct arizona *arizona)
+> > +{
+> > +	return 0;
+> > +}
+> > +#endif
+> > +
+> 
+> I think "if (IS_ENABLED(CONFIG_OF))" is preferred now, but I guess
+> that's up to Mark.
 
-It is achieved in the same way as nommu_dma_ops currently does, i.e.
-trying to allocate memory by dma_alloc_from_contiguous() and alloc_pages()
-is used as a fallback.
+I am happy to respin if this is preferred.
 
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Don Dutile <ddutile@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org
-Cc: iommu@lists.linux-foundation.org
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
----
-* Changes from v2
-- Fix gfp flags check for __GFP_ATOMIC, reported by Marek Szyprowski
-- Rebased on current Linus tree
-
- drivers/iommu/intel-iommu.c | 32 ++++++++++++++++++++++++--------
- 1 file changed, 24 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index cdb97c4..78c68cb 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -3185,7 +3185,7 @@ static void *intel_alloc_coherent(struct device *dev, size_t size,
- 				  dma_addr_t *dma_handle, gfp_t flags,
- 				  struct dma_attrs *attrs)
- {
--	void *vaddr;
-+	struct page *page = NULL;
- 	int order;
- 
- 	size = PAGE_ALIGN(size);
-@@ -3200,17 +3200,31 @@ static void *intel_alloc_coherent(struct device *dev, size_t size,
- 			flags |= GFP_DMA32;
- 	}
- 
--	vaddr = (void *)__get_free_pages(flags, order);
--	if (!vaddr)
-+	if (flags & __GFP_WAIT) {
-+		unsigned int count = size >> PAGE_SHIFT;
-+
-+		page = dma_alloc_from_contiguous(dev, count, order);
-+		if (page && iommu_no_mapping(dev) &&
-+		    page_to_phys(page) + size > dev->coherent_dma_mask) {
-+			dma_release_from_contiguous(dev, page, count);
-+			page = NULL;
-+		}
-+	}
-+
-+	if (!page)
-+		page = alloc_pages(flags, order);
-+	if (!page)
- 		return NULL;
--	memset(vaddr, 0, size);
-+	memset(page_address(page), 0, size);
- 
--	*dma_handle = __intel_map_single(dev, virt_to_bus(vaddr), size,
-+	*dma_handle = __intel_map_single(dev, page_to_phys(page), size,
- 					 DMA_BIDIRECTIONAL,
- 					 dev->coherent_dma_mask);
- 	if (*dma_handle)
--		return vaddr;
--	free_pages((unsigned long)vaddr, order);
-+		return page_address(page);
-+	if (!dma_release_from_contiguous(dev, page, size >> PAGE_SHIFT))
-+		__free_pages(page, order);
-+
- 	return NULL;
- }
- 
-@@ -3218,12 +3232,14 @@ static void intel_free_coherent(struct device *dev, size_t size, void *vaddr,
- 				dma_addr_t dma_handle, struct dma_attrs *attrs)
- {
- 	int order;
-+	struct page *page = virt_to_page(vaddr);
- 
- 	size = PAGE_ALIGN(size);
- 	order = get_order(size);
- 
- 	intel_unmap_page(dev, dma_handle, size, DMA_BIDIRECTIONAL, NULL);
--	free_pages((unsigned long)vaddr, order);
-+	if (!dma_release_from_contiguous(dev, page, size >> PAGE_SHIFT))
-+		__free_pages(page, order);
- }
- 
- static void intel_unmap_sg(struct device *dev, struct scatterlist *sglist,
--- 
-1.8.3.2
-
+Thanks,
+Charles
