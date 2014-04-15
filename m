@@ -1,83 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572AbaDOLuI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 07:50:08 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:39827 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838AbaDOLuG (ORCPT
+	id S1752546AbaDOLur (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 07:50:47 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:53048 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751123AbaDOLum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 07:50:06 -0400
+	Tue, 15 Apr 2014 07:50:42 -0400
+From: Mohit Kumar <mohit.kumar@st.com>
+To: <spear-devel@list.st.com>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: Mohit Kumar <mohit.kumar@st.com>
+Subject: [PATCH V8 0/9] PCI: Add SPEAr13xx PCie support
+Date: Tue, 15 Apr 2014 17:19:42 +0530
+Message-ID: <cover.1397555158.git.mohit.kumar@st.com>
+X-Mailer: git-send-email 1.7.0.1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-In-Reply-To: <20140415045214.GA32541@kroah.com>
-References: <20140414145359.48b7337c@endymion.delvare>
-	<20140414191143.GA26864@kroah.com>
-	<20140414231254.392c0df8@endymion.delvare>
-	<20140415045214.GA32541@kroah.com>
-Date: Tue, 15 Apr 2014 07:50:05 -0400
-X-Google-Sender-Auth: QMH58KH06N-qCIorq2-xWStQbfc
-Message-ID: <CA+5PVA4-8CDT1Mfw_t6WKu6zmo1Ugn4ssTXPCS-W-bPnKtH=5g@mail.gmail.com>
-Subject: Re: Hardware dependencies in Kconfig
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Jean Delvare <jdelvare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>, Josh Boyer <jwboyer@fedoraproject.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-04-14_01:2014-04-14,2014-04-14,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 12:52 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Mon, Apr 14, 2014 at 11:12:54PM +0200, Jean Delvare wrote:
->> And it's not going to get any better over time. As others have already
->> mentioned, most new drivers these days are NOT for x86, they are for
->> ARM, AVR32 and other fancy embedded architectures.
->>
->> "Just say m to everything" is just so wrong today that at SUSE we are
->> very close to switching our policy to "just say no to everything and
->> wait for people to complain about missing drivers." This may not sound
->> too appealing but this is the only way to keep the kernel package at a
->> reasonable size (and build time), as long as upstream doesn't help us
->> make smarter decisions. Useless modules aren't free, they aren't even
->> cheap.
+Patch# 1 and 2: Improvement and fixes for SPEAr13xx support.
+Patch# 3,4 and 6: Add DT bindings for spear1310/40-miphy, misc and pcie node
+Patch# 5: Add spear1310/40-miphy driver and support for spear1310/40 
+miphy wrapper.
+Patch# 7-9: Add SPEAr13xx PCIe driver and dt support.
 
-FWIW, we did that policy changed in Fedora a while ago.  Not
-wholesale, but if it looks niche, it's disabled by default and enabled
-only on request.
+These pathes are tested with linux-3.15 tag of arm-soc tree.
+Tested with SPEAr1310 evaluation board with:
+	- INTEL PRO 100/100 EP card
+	- USB xhci gen2 card
+ 	- Above cards connected through LeCROY PTC switch
 
-> I'd argue that your build systems need to get faster, the laptop I'm
-> typing this on can do a full modconfig build, with over 3000 modules, in
-> around 20 minutes.  My build server in the cloud can do that in less
-> than 5 minutes, and that's not a very fast machine these days.
+Modifications for SATA are tested with SPEAr1340-evb board
 
-Is that literally 'make modconfig && make bzImage && make modules' in
-those setups?  I'm curious if the distros have some options enabled
-that significantly impact build time.  Perhaps CONFIG_DEBUG_INFO or
-something else like that.  Could you send me whatever config results
-from what you're building in 5min?
+Changes since v7:
+- Rebase over for-linus-3.15 tag of arm-soc tree so that complete patch series
+ can be applied cleanly.
+- Incorporated few comments on comment style and superfluous comments
+Changes since v6:
+- Split miphy driver for SPEAr1310 and SPEAr1340
+- Some cleanup and incorporated other minor comments
+Changes since v5:
+- Split DT bindings for misc, miphy-40lp and pcie node into sepearte patches
+- Merge config options PCIE_SPEAR13XX and PCI_MSI into defconfig patch 
+- Incorporated other minor comments
+Changes since v4:
+- Uses per device function pointers passed from .data field to
+  the of_device_id instead of of_device_is_compatible.
+- Incorporated other minor comments from v4
 
-It takes my desktop machine about 30-45min to build an x86_64 kernel
-RPM with the current configs.  Now granted, that's a bit more than
-just building a kernel in a local git tree, but it's nowhere near
-5min.  Our official build servers show similar timings for x86_64.
+Changes since v3:
+- Phy driver renamed to phy-miphy40lp
+- ahci phy hook patch used as suggested by Arnd
+- Incorporated other minor comments from v3
 
-For ARM kernels, it takes about 3.5-4 hours.  That's due to policy
-decisions on now allowing cross-builds in the distro (sigh), so all of
-the kernels are built on native ARM machines.
+Changes since v2:
+- Incorporated comments to move SPEAr13xx PCIe and SATA phy specific routines to
+  the phy framework
+- Modify ahci driver to include phy hooks
+- phy-core driver modifications for subsys_initcall() 
+ 
+Changes since v1:
+- Few patches of the series are already accepted and applied to mainline e.g.
+ pcie designware driver improvements,fixes for IO translation bug, PCIe dw
+ driver maintainer. So dropped these from v2.
+- Incorporated comment to move the common/reset PCIe code to the seperate driver
+- PCIe and SATA share common PHY configuration registers, so move SATA
+ platform code to the system config driver
+Fourth patch is improves pcie designware driver and fixes the IO
+translation bug. IO translation bug fix leads to the working of PCIe EP devices
+connected to RC through switch.
 
->> Ideally I would like to be able to run "make oldconfig" on a new kernel
->> version and only be asked about things I should really care about. And
->> I'm sure every distro kernel package maintainer and most kernel
->> developers and advanced users feel the same.
->
-> I agree, but partitioning all new drivers off to a single arch might be
-> hard to do.  It's not a simple problem, I'd suggest getting a faster
-> build box to start with :)
+Mohit Kumar (1):
+  SPEAr13xx: defconfig: Update
 
-In some cases, that literally isn't possible.  As far as I'm aware,
-Fedora is using the fastest available ARM server boxes from Calxeda.
-In the future, AArch64 machines will help but that doesn't solve the
-problem of bloat anyway.
+Pratyush Anand (8):
+  clk: SPEAr13XX: Fix pcie clock name
+  SPEAr13XX: Fix static mapping table
+  phy: SPEAr1310/40-miphy: Add binding information
+  SPEAr: misc: Add binding information
+  phy: SPEAr1310/40-miphy: Add phy driver for PCIe and SATA
+  SPEAr13XX: Add binding information for PCIe controller
+  SPEAr13XX: dts: Add PCIe node information
+  pcie: SPEAr13xx: Add designware wrapper support
 
-josh
+ .../devicetree/bindings/arm/spear-misc.txt         |    9 +
+ .../devicetree/bindings/pci/spear13xx-pcie.txt     |   14 +
+ .../devicetree/bindings/phy/st-spear1310-miphy.txt |   12 +
+ .../devicetree/bindings/phy/st-spear1340-miphy.txt |   11 +
+ MAINTAINERS                                        |    6 +
+ arch/arm/boot/dts/spear1310-evb.dts                |    4 +
+ arch/arm/boot/dts/spear1310.dtsi                   |   93 +++++-
+ arch/arm/boot/dts/spear1340-evb.dts                |    4 +
+ arch/arm/boot/dts/spear1340.dtsi                   |   30 ++-
+ arch/arm/boot/dts/spear13xx.dtsi                   |    9 +-
+ arch/arm/configs/spear13xx_defconfig               |   16 +
+ arch/arm/mach-spear/Kconfig                        |    4 +
+ arch/arm/mach-spear/include/mach/spear.h           |    4 +-
+ arch/arm/mach-spear/spear1340.c                    |  127 +------
+ arch/arm/mach-spear/spear13xx.c                    |    2 +-
+ drivers/clk/spear/spear1310_clock.c                |    6 +-
+ drivers/clk/spear/spear1340_clock.c                |    2 +-
+ drivers/pci/host/Kconfig                           |    8 +
+ drivers/pci/host/Makefile                          |    1 +
+ drivers/pci/host/pcie-spear13xx.c                  |  407 ++++++++++++++++++++
+ drivers/phy/Kconfig                                |   12 +
+ drivers/phy/Makefile                               |    2 +
+ drivers/phy/phy-spear1310-miphy.c                  |  274 +++++++++++++
+ drivers/phy/phy-spear1340-miphy.c                  |  300 ++++++++++++++
+ 24 files changed, 1218 insertions(+), 139 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/spear-misc.txt
+ create mode 100644 Documentation/devicetree/bindings/pci/spear13xx-pcie.txt
+ create mode 100644 Documentation/devicetree/bindings/phy/st-spear1310-miphy.txt
+ create mode 100644 Documentation/devicetree/bindings/phy/st-spear1340-miphy.txt
+ create mode 100644 drivers/pci/host/pcie-spear13xx.c
+ create mode 100644 drivers/phy/phy-spear1310-miphy.c
+ create mode 100644 drivers/phy/phy-spear1340-miphy.c
+
