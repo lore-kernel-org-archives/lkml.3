@@ -1,161 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578AbaDOIHq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 04:07:46 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37922 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751088AbaDOIHb (ORCPT
+	id S1752043AbaDOIH5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 04:07:57 -0400
+Received: from cmexedge2.ext.emulex.com ([138.239.224.100]:22766 "EHLO
+	CMEXEDGE2.ext.emulex.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622AbaDOIHv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 04:07:31 -0400
-From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] ARM: dts: berlin: add GPIO nodes for the BG2Q
-Date: Tue, 15 Apr 2014 10:07:25 +0200
-Message-Id: <1397549245-3338-3-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1397549245-3338-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1397549245-3338-1-git-send-email-antoine.tenart@free-electrons.com>
+	Tue, 15 Apr 2014 04:07:51 -0400
+From: Sathya Perla <Sathya.Perla@Emulex.Com>
+To: "Li, Zhen-Hua" <zhen-hual@hp.com>,
+        Subramanian Seetharaman <subbu.seetharaman@Emulex.Com>,
+        Ajit Khaparde <Ajit.Khaparde@Emulex.Com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/1] driver/net: add missing rtnl lock/unlock for benet
+Thread-Topic: [PATCH 1/1] driver/net: add missing rtnl lock/unlock for benet
+Thread-Index: AQHPWHZ0bsT8dc/t9U2+WUWO6psh85sSUZaA
+Date: Tue, 15 Apr 2014 08:07:49 +0000
+Message-ID: <b4855c2a-5a63-47a5-ba61-f9ce736f6401@CMEXHTCAS1.ad.emulex.com>
+References: <1397544352-28841-1-git-send-email-zhen-hual@hp.com>
+In-Reply-To: <1397544352-28841-1-git-send-email-zhen-hual@hp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [138.239.141.147]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Marvell Berlin BG2Q has 6 GPIO ports compatible with the snps,dw-apb-gpio
-driver. This patch add the corresponding device tree nodes.
+> -----Original Message-----
+> From: Li, Zhen-Hua [mailto:zhen-hual@hp.com]
+> 
+> In benet driver, netif_device_detach and netif_device_attach should be
+> called between rtnl_lock and rtnl_unlock.
 
-Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
----
- arch/arm/boot/dts/berlin2q.dtsi | 102 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 102 insertions(+)
+Zhen, it's not clear to me why rtnl_lock is needed around netif_device_attach().
+Can you pls explain what exact data-structure you are protecting with the lock?
 
-diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-index e6e556055dfc..b2625f896bc5 100644
---- a/arch/arm/boot/dts/berlin2q.dtsi
-+++ b/arch/arm/boot/dts/berlin2q.dtsi
-@@ -109,6 +109,78 @@
- 			ranges = <0 0xe80000 0x10000>;
- 			interrupt-parent = <&aic>;
- 
-+			gpio0: gpio@0400 {
-+				compatible = "snps,dw-apb-gpio";
-+				reg = <0x0400 0x400>;
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+
-+				porta: gpio-controller@0 {
-+					compatible = "snps,dw-apb-gpio-port";
-+					gpio-controller;
-+					#gpio-cells = <2>;
-+					snps,nr-gpios = <32>;
-+					reg = <0>;
-+					interrupt-controller;
-+					#interrupt-cells = <2>;
-+					interrupts = <0>;
-+				};
-+			};
-+
-+			gpio1: gpio@0800 {
-+				compatible = "snps,dw-apb-gpio";
-+				reg = <0x0800 0x400>;
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+
-+				portb: gpio-controller@1 {
-+					compatible = "snps,dw-apb-gpio-port";
-+					gpio-controller;
-+					#gpio-cells = <2>;
-+					snps,nr-gpios = <32>;
-+					reg = <0>;
-+					interrupt-controller;
-+					#interrupt-cells = <2>;
-+					interrupts = <1>;
-+				};
-+			};
-+
-+			gpio2: gpio@0c00 {
-+				compatible = "snps,dw-apb-gpio";
-+				reg = <0x0c00 0x400>;
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+
-+				portc: gpio-controller@2 {
-+					compatible = "snps,dw-apb-gpio-port";
-+					gpio-controller;
-+					#gpio-cells = <2>;
-+					snps,nr-gpios = <32>;
-+					reg = <0>;
-+					interrupt-controller;
-+					#interrupt-cells = <2>;
-+					interrupts = <2>;
-+				};
-+			};
-+
-+			gpio3: gpio@1000 {
-+				compatible = "snps,dw-apb-gpio";
-+				reg = <0x1000 0x400>;
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+
-+				portd: gpio-controller@3 {
-+					compatible = "snps,dw-apb-gpio-port";
-+					gpio-controller;
-+					#gpio-cells = <2>;
-+					snps,nr-gpios = <32>;
-+					reg = <0>;
-+					interrupt-controller;
-+					#interrupt-cells = <2>;
-+					interrupts = <3>;
-+				};
-+			};
-+
- 			timer0: timer@2c00 {
- 				compatible = "snps,dw-apb-timer";
- 				reg = <0x2c00 0x14>;
-@@ -181,6 +253,36 @@
- 				interrupt-parent = <&gic>;
- 				interrupts = <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>;
- 			};
-+
-+			gpio4: gpio@5000 {
-+				compatible = "snps,dw-apb-gpio";
-+				reg = <0x5000 0x400>;
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+
-+				porte: gpio-controller@4 {
-+					compatible = "snps,dw-apb-gpio-port";
-+					gpio-controller;
-+					#gpio-cells = <2>;
-+					snps,nr-gpios = <32>;
-+					reg = <0>;
-+				};
-+			};
-+
-+			gpio5: gpio@c000 {
-+				compatible = "snps,dw-apb-gpio";
-+				reg = <0xc000 0x400>;
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+
-+				portf: gpio-controller@5 {
-+					compatible = "snps,dw-apb-gpio-port";
-+					gpio-controller;
-+					#gpio-cells = <2>;
-+					snps,nr-gpios = <32>;
-+					reg = <0>;
-+				};
-+			};
- 		};
- 
- 		pinctrl: pinctrl@0 {
--- 
-1.8.3.2
+Are you see warning stack trace? I don't see ASSERT_RTNL() called anywhere from netif_device_attach/detach()?
+
+thanks!
+
+> 
+> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+> ---
+>  drivers/net/ethernet/emulex/benet/be_main.c |   17 ++++++++++++++---
+>  1 file changed, 14 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/emulex/benet/be_main.c
+> b/drivers/net/ethernet/emulex/benet/be_main.c
+> index 3e6df47..9c44b3f 100644
+> --- a/drivers/net/ethernet/emulex/benet/be_main.c
+> +++ b/drivers/net/ethernet/emulex/benet/be_main.c
+> @@ -4555,8 +4555,11 @@ static void be_func_recovery_task(struct work_struct *work)
+>  		rtnl_unlock();
+> 
+>  		status = lancer_recover_func(adapter);
+> -		if (!status)
+> +		if (!status) {
+> +			rtnl_lock();
+>  			netif_device_attach(adapter->netdev);
+> +			rtnl_unlock();
+> +		}
+>  	}
+> 
+>  	/* In Lancer, for all errors other than provisioning error (-EAGAIN),
+> @@ -4784,12 +4787,12 @@ static int be_suspend(struct pci_dev *pdev, pm_message_t
+> state)
+>  	be_intr_set(adapter, false);
+>  	cancel_delayed_work_sync(&adapter->func_recovery_work);
+> 
+> +	rtnl_lock();
+>  	netif_device_detach(netdev);
+>  	if (netif_running(netdev)) {
+> -		rtnl_lock();
+>  		be_close(netdev);
+> -		rtnl_unlock();
+>  	}
+> +	rtnl_unlock();
+>  	be_clear(adapter);
+> 
+>  	pci_save_state(pdev);
+> @@ -4804,7 +4807,9 @@ static int be_resume(struct pci_dev *pdev)
+>  	struct be_adapter *adapter = pci_get_drvdata(pdev);
+>  	struct net_device *netdev =  adapter->netdev;
+> 
+> +	rtnl_lock();
+>  	netif_device_detach(netdev);
+> +	rtnl_unlock();
+> 
+>  	status = pci_enable_device(pdev);
+>  	if (status)
+> @@ -4832,7 +4837,9 @@ static int be_resume(struct pci_dev *pdev)
+> 
+>  	schedule_delayed_work(&adapter->func_recovery_work,
+>  			      msecs_to_jiffies(1000));
+> +	rtnl_lock();
+>  	netif_device_attach(netdev);
+> +	rtnl_unlock();
+> 
+>  	if (adapter->wol_en)
+>  		be_setup_wol(adapter, false);
+> @@ -4853,7 +4860,9 @@ static void be_shutdown(struct pci_dev *pdev)
+>  	cancel_delayed_work_sync(&adapter->work);
+>  	cancel_delayed_work_sync(&adapter->func_recovery_work);
+> 
+> +	rtnl_lock();
+>  	netif_device_detach(adapter->netdev);
+> +	rtnl_unlock();
+> 
+>  	be_cmd_reset_function(adapter);
+> 
+> @@ -4957,7 +4966,9 @@ static void be_eeh_resume(struct pci_dev *pdev)
+> 
+>  	schedule_delayed_work(&adapter->func_recovery_work,
+>  			      msecs_to_jiffies(1000));
+> +	rtnl_lock();
+>  	netif_device_attach(netdev);
+> +	rtnl_unlock();
+>  	return;
+>  err:
+>  	dev_err(&adapter->pdev->dev, "EEH resume failed\n");
+> --
+> 1.7.10.4
 
