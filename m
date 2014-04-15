@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800AbaDOT1E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 15:27:04 -0400
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:36806 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750998AbaDOT1B (ORCPT
+	id S1754456AbaDOT1f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 15:27:35 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:60524 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753085AbaDOT1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 15:27:01 -0400
-Date: Tue, 15 Apr 2014 15:30:15 -0400 (EDT)
+	Tue, 15 Apr 2014 15:27:33 -0400
+Date: Tue, 15 Apr 2014 15:28:56 -0400 (EDT)
 From: Vince Weaver <vincent.weaver@maine.edu>
 To: Vince Weaver <vincent.weaver@maine.edu>
 cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
@@ -17,7 +17,7 @@ cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
         Rob Herring <robh+dt@kernel.org>
 Subject: Re: [bisected] broken make-kpkg kernel build in 3.15-rc1
 In-Reply-To: <alpine.DEB.2.10.1404151507290.15528@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.10.1404151530050.15528@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.10.1404151525240.15528@vincent-weaver-1.um.maine.edu>
 References: <alpine.DEB.2.10.1404150940250.14106@vincent-weaver-1.um.maine.edu> <534D4A59.6080401@suse.cz> <alpine.DEB.2.10.1404151146530.26562@gentwo.org> <534D6510.3070509@suse.cz> <alpine.DEB.2.10.1404151221360.26992@gentwo.org> <20140415182653.GR24070@n2100.arm.linux.org.uk>
  <alpine.DEB.2.10.1404151507290.15528@vincent-weaver-1.um.maine.edu>
 User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
