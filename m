@@ -1,69 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121AbaDOIuD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 04:50:03 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54124 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752862AbaDOIt7 (ORCPT
+	id S1753323AbaDOIvV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 04:51:21 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:64723 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750911AbaDOIvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 04:49:59 -0400
-Date: Tue, 15 Apr 2014 10:49:44 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>, stable@vger.kernel.org
-Subject: Re: [PATCH 1/2] nohz: stop updating sleep stats from
- get_cpu_{idle,iowait}_time_us()
-Message-ID: <20140415084944.GK13658@twins.programming.kicks-ass.net>
-References: <53465F54.708@jp.fujitsu.com>
- <53466027.3040705@jp.fujitsu.com>
- <20140415084854.GL11096@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140415084854.GL11096@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 15 Apr 2014 04:51:18 -0400
+X-AuditID: cbfee68d-b7fcd6d00000315b-5b-534cf300dbd5
+Message-id: <534CF303.6050100@samsung.com>
+Date: Tue, 15 Apr 2014 17:51:15 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, ben-linux@fluff.org,
+        kgene.kim@samsung.com, t.figa@samsung.com, thomas.abraham@linaro.org,
+        kyungmin.park@samsung.com, sw0312.kim@samsung.com,
+        hyunhee.kim@samsung.com, yj44.cho@samsung.com,
+        chanho61.park@samsung.com, olof@lixom.net, marc.zyngier@arm.com,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Subject: Re: [PATCHv2 3/8] ARM: EXYNOS: Add IO mapping for PMU of Exynos3250
+References: <1397527192-21988-1-git-send-email-cw00.choi@samsung.com>
+ <4788081.xvaJfdGTMu@wuerfel> <534CEEA8.6020800@samsung.com>
+ <5677551.At1Foxml9e@wuerfel>
+In-reply-to: <5677551.At1Foxml9e@wuerfel>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphleLIzCtJLcpLzFFi42JZI2JSrMvw2SfYYNttbYu/k46xW0xad4DJ
+	4vJ+bYv5R86xWnz+0MJu0bvgKpvF2aY37BabHl9jtbi8aw6bxYzz+5gsbl/mtfh75x+bxanr
+	n4FCk1+yWayf8ZrF4tiMJYwWe3dOZnQQ9Fgzbw2jR0tzD5vH71+TGD3+rnrB7HHn2h42j81L
+	6j2unGhi9ejbsorR4/MmuQDOKC6blNSczLLUIn27BK6M1c/2sxQc5Kg48v0eUwPjE7YuRk4O
+	CQETiY5zHxkhbDGJC/fWA8W5OIQEljJKfJz5Cq5o6b6fjBCJRYwSn7cdY4dwXjNK/H/RBVbF
+	K6AlsXXFPmYQm0VAVeLXnL3sIDYbUHz/ixtgNaICYRIrp19hgagXlPgx+R6YLSKgKDH1xTNm
+	kKHMAkuZJeYu/AN2k7CAj8TLq+vY4VYvO9YA1sEpoCnxZ1IvWBGzgI7E/tZpbBC2vMTmNW/B
+	JkkIrOSQ2N5+kBXiJAGJb5MPATVzACVkJTYdYIb4TVLi4IobLBMYxWYhOWoWkrGzkIxdwMi8
+	ilE0tSC5oDgpvchQrzgxt7g0L10vOT93EyMwBZz+96x3B+PtA9aHGJOBVk5klhJNzgemkLyS
+	eENjMyMLUxNTYyNzSzPShJXEeZMeJgUJCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYDT9bVZ0
+	5JqmYnih9VIDE88O1sllLTaVO6f7PmHTMur11v+qMTPVX/HK719ZQYcTsl5yPW9fkhZbO8tm
+	U2SkR8me27O3RLy/LtutF/K+ne9T3be1yus2X/zhcvTWdAXBXe3iG03vB/wInrQnjHlmQED0
+	/XTegycmljTpKe9fLTNB2uOX77qPGUosxRmJhlrMRcWJAPnyRYMXAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIKsWRmVeSWpSXmKPExsVy+t9jAV2Gzz7BBsfnKln8nXSM3WLSugNM
+	Fpf3a1vMP3KO1eLzhxZ2i94FV9kszja9YbfY9Pgaq8XlXXPYLGac38dkcfsyr8XfO//YLE5d
+	/wwUmvySzWL9jNcsFsdmLGG02LtzMqODoMeaeWsYPVqae9g8fv+axOjxd9ULZo871/aweWxe
+	Uu9x5UQTq0ffllWMHp83yQVwRjUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgr
+	KeQl5qbaKrn4BOi6ZeYAvaKkUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxh
+	zFj9bD9LwUGOiiPf7zE1MD5h62Lk5JAQMJFYuu8nI4QtJnHh3nqgOBeHkMAiRonP246xQziv
+	GSX+v+gC6+AV0JLYumIfM4jNIqAq8WvOXnYQmw0ovv/FDbAaUYEwiZXTr7BA1AtK/Jh8D8wW
+	EVCUmPriGTPIUGaBpcwScxf+AVstLOAj8fLqOna41cuONYB1cApoSvyZ1AtWxCygI7G/dRob
+	hC0vsXnNW+YJjAKzkCyZhaRsFpKyBYzMqxhFUwuSC4qT0nON9IoTc4tL89L1kvNzNzGCE8wz
+	6R2MqxosDjEKcDAq8fBOeOcdLMSaWFZcmXuIUYKDWUmE98tLn2Ah3pTEyqrUovz4otKc1OJD
+	jMnAMJjILCWanA9Mfnkl8YbGJmZGlkbmhhZGxuakCSuJ8x5stQ4UEkhPLEnNTk0tSC2C2cLE
+	wSnVwOhvO5tXhDc/2JVVdWsJr/bhgg33nygKK2+esahU14TrserznDnT16i4JzW+vL1Fx0dr
+	9uNZIRrhbl7rRFbmt1QE26ZYJt5inhVk1/NFZ/69v65G/A77t4TvSznOsOGXysNpLW+jLsQG
+	nXie/l6lqjT54a+T8jz3JTLiFpovWXw8tCbkb+fhGCWW4oxEQy3mouJEAJZvMuN0AwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 10:48:54AM +0200, Peter Zijlstra wrote:
-> On Thu, Apr 10, 2014 at 06:11:03PM +0900, Hidetoshi Seto wrote:
-> > -	if (ts->idle_active) {
-> > -		delta = ktime_sub(now, ts->idle_entrytime);
-> > -		if (nr_iowait_cpu(cpu) > 0)
-> > -			ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
-> > -		else
-> > -			ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
-> > -		ts->idle_entrytime = now;
-> > -	}
-> > -
-> > -	if (last_update_time)
-> > -		*last_update_time = ktime_to_us(now);
-> > -
-> > -}
-> > -
-> > -static void tick_nohz_stop_idle(struct tick_sched *ts, ktime_t now)
-> > -{
-> > -	update_ts_time_stats(smp_processor_id(), ts, now, NULL);
-> > +	/* Updates the per cpu time idle statistics counters */
-> > +	delta = ktime_sub(now, ts->idle_entrytime);
-> > +	if (nr_iowait_cpu(smp_processor_id()) > 0)
+On 04/15/2014 05:46 PM, Arnd Bergmann wrote:
+> On Tuesday 15 April 2014 17:32:40 Chanwoo Choi wrote:
+>> On 04/15/2014 05:11 PM, Arnd Bergmann wrote:
+>>> On Tuesday 15 April 2014 10:59:47 Chanwoo Choi wrote:
+>>
+>>> I don't think we have a patch for the PMU yet, Sachin was looking at the SYSRAM
+>>> only.
+>>
+>> You are right. Sachin's patch only included the solution of SYSRAM memory mapping.
+>> I set out the plan that I would implment proper driver for PMU memory mapping
+>> instead of static method after merged Sachin's patch for SYSRAM.
+>>
+>> But,
+>> If you'd like me to implment PMU memory mapping instead of static mapping right now,
+>> I'll implement it for PMU such as Sachin's patch on next posting(v3).
 > 
-> Now I know the old code also uses nr_iowait_cpu(), but that function is
-> crackbrained. This cannot possibly be right.
+> I don't really want to merge a new SoC type until these are resolved, so
+> it would definitely be better to implement this for v3.
 > 
-> Anything using nr_iowait_cpu() is broken beyond repair.
 
-Argh, still need to wake up.. so it uses the old rq to decrement
-against.
+OK,
+I'll rebase this patch on following patch which support PMU memory mapping through DT.
 
-never mind, I'll go stare at it more
+[1] http://www.spinics.net/lists/arm-kernel/msg316013.html
+
+Thanks for your review.
+
+Best Regards,
+Chanwoo Choi
+
