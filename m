@@ -1,39 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065AbaDORjR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 13:39:17 -0400
-Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:35245 "EHLO
-	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750866AbaDORjQ (ORCPT
+	id S1754388AbaDORj3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 13:39:29 -0400
+Received: from mano-163-33-shared.jabatus.fr ([109.234.163.33]:43404 "EHLO
+	mano-163-33-shared.jabatus.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753388AbaDORj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 13:39:16 -0400
-Date: Tue, 15 Apr 2014 12:39:14 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Tejun Heo <htejun@gmail.com>
-cc: linux-kernel@vger.kernel.org
-Subject: percpu: Replace __get_cpu_var with this_cpu_ptr
-Message-ID: <alpine.DEB.2.10.1404151238340.27545@gentwo.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 15 Apr 2014 13:39:26 -0400
+X-MailPropre-MailScanner-From: ecolbus@manux.info
+X-MailPropre-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=0, required 5, autolearn=not spam)
+X-MailPropre-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
+X-MailPropre-MailScanner-ID: 02642950969E.AEBC0
+X-MailPropre-MailScanner-Information: Message sortant - Serveurs o2switch
+Message-ID: <534D6ECC.7080405@manux.info>
+Date: Tue, 15 Apr 2014 19:39:24 +0200
+From: Emmanuel Colbus <ecolbus@manux.info>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131104 Icedove/17.0.10
+MIME-Version: 1.0
+To: Austin S Hemmelgarn <ahferroin7@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [RFC][5/11][MANUX] Kernel compatibility : major/minor numbers
+References: <534D3762.4010905@manux.info> <534D4A1B.30002@gmail.com>
+In-Reply-To: <534D4A1B.30002@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One case of using __get_cpu_var in the get_cpu_var macro
-for address calculation.
+Le 15/04/2014 17:02, Austin S Hemmelgarn a écrit :
+> On 2014-04-15 09:42, Emmanuel Colbus wrote:
+>> Now, back to the filesystem...
+>>
+>> In order to associate devices to their files, the Linux kernel uses
+>> their major and minor numbers. However, mine doesn't; instead, I've
+>> attributed myself a single group of values (major=0, minor=0, for both
+>> character-mode and block-mode special files), with the meaning (for the
+>> userspace) "you cannot identify the content of this file based on its
+>> major and minor numbers".
+>>
+>> As for my kernel, there is a syscall to associate such files with their
+>> proper peripherals (asper(2)), after which it internally identifies them
+>> using their inode and partition numbers; as for userspace, it has no
+>> choice but to use their names, as usual.
+>>
+>> Do you have any objection to my taking of these values?
+>>
+> 
+> According to Documentation/devices.txt:
+> 	0		Unnamed devices (e.g. non-device mounts)
+> 			0 = reserved as null device number
+> 
+> Based on this, I would say that you are probably better off using one of
+> the local use numbers (60-63 and 250-254 are reserved for local and
+> experimental use)
+> 
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
+I see... Well, I think I'm going to take 254/0 for this then.
 
-Index: linux/include/linux/percpu.h
-===================================================================
---- linux.orig/include/linux/percpu.h	2014-04-14 13:24:54.669364001 -0500
-+++ linux/include/linux/percpu.h	2014-04-14 13:24:54.661364156 -0500
-@@ -29,7 +29,7 @@
-  */
- #define get_cpu_var(var) (*({				\
- 	preempt_disable();				\
--	&__get_cpu_var(var); }))
-+	this_cpu_ptr(&var); }))
+Thank you!
 
- /*
-  * The weird & is necessary because sparse considers (void)(var) to be
+Emmanuel
