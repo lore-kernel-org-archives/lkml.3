@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751493AbaDOHw7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 03:52:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23840 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750918AbaDOHw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 03:52:57 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Tom Lendacky <thomas.lendacky@amd.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH] crypto/ccp: Use pci_enable_msix_range() instead of pci_enable_msix()
-Date: Tue, 15 Apr 2014 09:54:31 +0200
-Message-Id: <1397548471-24441-1-git-send-email-agordeev@redhat.com>
+	id S1751519AbaDOHxn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 03:53:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53990 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750990AbaDOHxk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 03:53:40 -0400
+Date: Tue, 15 Apr 2014 09:53:10 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dietmar Eggemann <dietmar.eggemann@arm.com>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH v4 0/5] rework sched_domain topology description
+Message-ID: <20140415075310.GI11182@twins.programming.kicks-ass.net>
+References: <1397209481-28542-1-git-send-email-vincent.guittot@linaro.org>
+ <534937F0.3020702@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <534937F0.3020702@arm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As result of deprecation of MSI-X/MSI enablement functions
-pci_enable_msix() and pci_enable_msi_block() all drivers
-using these two interfaces need to be updated to use the
-new pci_enable_msi_range()  or pci_enable_msi_exact()
-and pci_enable_msix_range() or pci_enable_msix_exact()
-interfaces.
+On Sat, Apr 12, 2014 at 01:56:16PM +0100, Dietmar Eggemann wrote:
+> On 11/04/14 10:44, Vincent Guittot wrote:
+> >This patchset was previously part of the larger tasks packing patchset [1].
+> >I have splitted the latter in 3 different patchsets (at least) to make the
+> >thing easier.
+> >-configuration of sched_domain topology (this patchset)
+> >-update and consolidation of cpu_power
+> >-tasks packing algorithm
+> >
+> >Based on Peter Z's proposal [2][3], this patchset modifies the way to configure
+> >the sched_domain level in order to let architectures to add specific level like
+> >the current BOOK level or the proposed power gating level for ARM architecture.
+> >
+> >[1] https://lkml.org/lkml/2013/10/18/121
+> >[2] https://lkml.org/lkml/2013/11/5/239
+> >[3] https://lkml.org/lkml/2013/11/5/449
+> 
+> Hi Vincent,
+> 
+> given the discussion we had for v1-v3 and a short boot test of v4:
+> 
+> For patch 1/5, 4/5, 5/5 on ARM TC2 (heterogeneous dual socket w/o SMT
+> machine):
+> 
+> Reviewed-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
+> Tested-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Tom Lendacky <thomas.lendacky@amd.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: linux-crypto@vger.kernel.org
-Cc: linux-pci@vger.kernel.org
----
- drivers/crypto/ccp/ccp-pci.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/crypto/ccp/ccp-pci.c b/drivers/crypto/ccp/ccp-pci.c
-index 93319f9..0d74623 100644
---- a/drivers/crypto/ccp/ccp-pci.c
-+++ b/drivers/crypto/ccp/ccp-pci.c
-@@ -48,12 +48,11 @@ static int ccp_get_msix_irqs(struct ccp_device *ccp)
- 	for (v = 0; v < ARRAY_SIZE(msix_entry); v++)
- 		msix_entry[v].entry = v;
- 
--	while ((ret = pci_enable_msix(pdev, msix_entry, v)) > 0)
--		v = ret;
--	if (ret)
-+	ret = pci_enable_msix_range(pdev, msix_entry, 1, v);
-+	if (ret < 0)
- 		return ret;
- 
--	ccp_pci->msix_count = v;
-+	ccp_pci->msix_count = ret;
- 	for (v = 0; v < ccp_pci->msix_count; v++) {
- 		/* Set the interrupt names and request the irqs */
- 		snprintf(ccp_pci->msix[v].name, name_len, "ccp-%u", v);
--- 
-1.7.7.6
-
+Thanks guys!
