@@ -1,73 +1,527 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143AbaDOWdT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 18:33:19 -0400
-Received: from mail-bl2lp0205.outbound.protection.outlook.com ([207.46.163.205]:32679
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751460AbaDOWdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 18:33:16 -0400
-X-WSS-ID: 0N43FYX-08-3S7-02
-X-M-MSG: 
-From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
-To: Kertesz Laszlo <laszlo.kertesz@gmail.com>, Borislav Petkov <bp@alien8.de>
-CC: Alex Deucher <alexdeucher@gmail.com>,
-        "Koenig, Christian" <Christian.Koenig@amd.com>,
-        Maling list - DRI developers 
-	<dri-devel@lists.freedesktop.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: RE: 15-rc1: radeon modesetting fails
-Thread-Topic: 15-rc1: radeon modesetting fails
-Thread-Index: AQHPWHihIP37Wi43pkSMNlSSm4CgNZsSrFqAgAAsWwCAABBxgIAAQ4cAgAAFRICAAAnugIAAAWWAgAA+GQD//8jRgA==
-Date: Tue, 15 Apr 2014 22:32:56 +0000
-Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D03ECB1D65@satlexdag05.amd.com>
-References: <20140415070204.GA4806@pd.tnic> <534CFBD7.3070604@amd.com>
- <20140415120740.GA8306@nazgul.tnic>
- <CADnq5_PpPa_fbm=1KH__q-W2OuvfoHr2wquimQ8TCq=xwwYq_Q@mail.gmail.com>
- <534D677C.6080407@gmail.com> <20140415172702.GC4826@pd.tnic>
- <534D743B.8010705@gmail.com> <20140415180735.GG4826@pd.tnic>
- <534DA97E.8070505@gmail.com>
-In-Reply-To: <534DA97E.8070505@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.180.168.240]
-Content-Type: text/plain; charset="utf-8"
+	id S1751179AbaDOWgo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 18:36:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56144 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007AbaDOWgk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 18:36:40 -0400
+Message-ID: <534DB46D.7090207@infradead.org>
+Date: Tue, 15 Apr 2014 15:36:29 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(13464003)(377454003)(24454002)(51704005)(44976005)(55846006)(81342001)(50466002)(99396002)(79102001)(92566001)(80022001)(76482001)(20776003)(33656001)(2009001)(47776003)(81542001)(54356999)(76176999)(74662001)(4396001)(87936001)(85852003)(92726001)(74502001)(50986999)(84676001)(23676002)(83072002)(2656002)(80976001)(31966008)(77982001)(83322001)(97736001)(46102001)(19580405001)(19580395003)(86362001)(53416003);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR02MB121;H:atltwp02.amd.com;FPR:262EF291.8A035C42.BA53B3CF.C76CCB6A.20194;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Forefront-PRVS: 0182DBBB05
-X-OriginatorOrg: amd4.onmicrosoft.com
+To: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
+CC: cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Daniel Borkmann <dborkman@redhat.com>, Thomas Graf <tgraf@suug.ch>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>, Rohit Jnagal <jnagal@google.com>,
+        Brandon Philips <brandon.philips@coreos.com>
+Subject: Re: [PATCH cgroup/for-3.16] cgroup: add documentation about unified
+ hierarchy
+References: <20140414220917.GD1863@htj.dyndns.org>
+In-Reply-To: <20140414220917.GD1863@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3FMXSDj030942
 
-> -----Original Message-----
-> From: Kertesz Laszlo [mailto:laszlo.kertesz@gmail.com]
-> Sent: Tuesday, April 15, 2014 5:50 PM
-> To: Borislav Petkov
-> Cc: Alex Deucher; Deucher, Alexander; Koenig, Christian; Maling list - DRI
-> developers; lkml
-> Subject: Re: 15-rc1: radeon modesetting fails
+On 04/14/2014 03:09 PM, Tejun Heo wrote:
+> Hello,
 > 
-> Borislav Petkov wrote:
-> > On Tue, Apr 15, 2014 at 09:02:35PM +0300, Kertesz Laszlo wrote:
-> >> Honestly didnt try that but i assume yes, since the screens go black
-> >> when it should change resolution.
-> >
-> > Pls try it and let us know whether you see the machine booting further,
-> > albeit without modesetting.
-> >
-> > Thanks.
-> >
+> Unified hierarchy is finally out for review [1][2].  This patch adds
+> the documentation which describes the design and rationales.  If you
+> can think of more people to cc, please go ahead.
 > 
-> Yes, it is working that way. But no X, i assume this is expected.
+> If you have any comments and/or questions, please don't hesitate.
+> 
+> Thanks.
+> 
+> [1] http://lkml.kernel.org/g/1397511430-2673-1-git-send-email-tj@kernel.org
+> [2] http://lkml.kernel.org/g/1397511846-2904-1-git-send-email-tj@kernel.org
+> 
+> ------ 8< ------
+> From 68eb841c53bb26a7b49f8f244ebd68f2530d8d0b Mon Sep 17 00:00:00 2001
+> From: Tejun Heo <tj@kernel.org>
+> Date: Mon, 14 Apr 2014 17:29:39 -0400
+> 
+> Unified hierarchy will be the new version of cgroup interface.  This
+> patch adds Documentation/cgroups/unified-hierarchy.txt which describes
+> the design and rationales of unified hierarchy.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> ---
+>  Documentation/cgroups/unified-hierarchy.txt | 359 ++++++++++++++++++++++++++++
+>  1 file changed, 359 insertions(+)
+>  create mode 100644 Documentation/cgroups/unified-hierarchy.txt
+> 
+> diff --git a/Documentation/cgroups/unified-hierarchy.txt b/Documentation/cgroups/unified-hierarchy.txt
+> new file mode 100644
+> index 0000000..41386c3
+> --- /dev/null
+> +++ b/Documentation/cgroups/unified-hierarchy.txt
+> @@ -0,0 +1,359 @@
+> +
+> +Cgroup unified hierarchy
+> +
+> +April, 2014		Tejun Heo <tj@kernel.org>
+> +
+> +This document describes the changes made by unified hierarchy and
+> +their rationales.  It will eventually be merged into the main cgroup
+> +documentation.
+> +
+> +CONTENTS
+> +
+> +1. Background
+> +2. Basic Operation
+> +  2-1. Mounting
+> +  2-2. cgroup.subtree_control
+> +  2-3. cgroup.controllers
+> +3. Structural Constraints
+> +  3-1. Top-down
+> +  3-2. No internal tasks
+> +4. Other Changes
+> +  4-1. [Un]populated Notification
+> +  4-2. Other Core Changes
+> +  4-3. Per-Controller Changes
+> +    4-3-1. blkio
+> +    4-3-2. cpuset
+> +    4-3-3. memory
+> +5. Planned Changes
+> +  5-1. CAP for resource control
+> +
+> +
+> +1. Background
+> +
+> +cgroup allows arbitrary number of hierarchies and each hierarchy can
 
-Turning off modesetting basically disables the driver.
+          allows an arbitrary
 
-Alex
+> +host any number of controllers.  While this seems to provide high
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+                                                        provide a high
+
+> +level of flexibility, it isn't quite useful in practice.
+> +
+> +For example, as there is only one instance of each controller, utility
+> +type controllers such as freezer which can be useful in all
+> +hierarchies can only be used in one.  The issue is exacerbated by the
+> +fact that controllers can't be moved around once hierarchies are
+> +populated.  Another issue is that all controllers bound to a hierarchy
+> +are forced to have exactly the same view of the hierarchy.  It isn't
+> +possible to vary the granularity depending on the specific controller.
+> +
+> +In practice, these issues heavily limit which controllers can be put
+> +on the same hierarchy and most configurations resort to putting each
+> +controller on its own hierarchy.  Only closely related ones, such as
+> +cpu and cpuacct, make sense to put on the same hierarchy.  This often
+> +means that userland ends up managing multiple similar hierarchies
+> +repeating the same steps on each hierarchy whenever a hierarchy
+> +management operation is necessary.
+> +
+> +Unfortunately, support for multiple hierarchies comes at a steep cost.
+> +Internal implementation in cgroup core proper is dazzlingly
+> +complicated but more importantly the support for multiple hierarchies
+> +restricts how cgroup is used in general and what controllers can do.
+> +
+> +There's no limit on how many hierarchies there may be, which means
+> +that a task's cgroup membership can't be described in finite length.
+> +The key may contain any varying number of entries and is unlimited in
+> +length, which makes it highly awkward to handle and leads to addition
+> +of controllers which exist only to identify membership, which in turn
+> +exacerbates the original problem.
+> +
+> +Also, as a controller can't have any expectation regarding what shape
+> +of hierarchies other controllers would be on, each controller has to
+> +assume that all other controllers are operating on completely
+> +orthogonal hierarchies.  This makes it impossible, or at least very
+> +cumbersome, for controllers to cooperate with each other.
+> +
+> +In most use cases, putting controllers on hierarchies which are
+> +completely orthogonal to each other isn't necessary.  What usually is
+> +called for is the ability to have differing levels of granularity
+> +depending on the specific controller.  IOW, hierarchy may be collapsed
+
+please spell out IOW
+
+> +from leaf towards root when viewed from specific controllers.  For
+> +example, a given configuration might not care about how memory is
+> +distributed beyond certain level while still want to control how cpu
+
+               beyond a certain level while still wanting to control
+
+I would prefer to see CPU instead of cpu (except when it refers to a
+task or function).
+
+> +cycles are distributed.
+> +
+> +Unified hierarchy is the next version of cgroup interface.  It aims to
+
+                                         of the cgroup interface.
+
+> +address the aforementioned issues by having more structure while
+> +retaining enough flexibility for most use cases.  Various other
+> +general and controller-specific interface issues are also addressed in
+> +the process.
+> +
+> +
+> +2. Basic Operation
+> +
+> +2-1. Mounting
+> +
+> +Currently, unified hierarchy can be mounted with the following mount
+> +command.  Note that this is still under development and scheduled to
+> +change soon.
+> +
+> + mount -t cgroup -o __DEVEL__sane_behavior cgroup $MOUNT_POINT
+> +
+> +All controllers which are not bound to other hierarchies are
+> +automatically bound to unified hierarchy and show up at the root of
+> +it.  Controllers which are enabled only in the root of unified
+> +hierarchy can be bound to other hierarchies at any time.  This allows
+> +mixing unified hierarchy with the traditional multiple hierarchies in
+> +fully backward compatible way.
+
+   a fully backward
+
+> +
+> +
+> +2-2. cgroup.subtree_control
+> +
+> +All cgroups on unified hierarchy have "cgroup.subtree_control" which
+> +governs which controllers are enabled on the children of the cgroup.
+> +Let's assume a hierarchy like the following.
+> +
+> +  root - A - B - C
+> +               \ D
+> +
+> +root's "cgroup.subtree_control" determines which controllers are
+> +enabled on A.  A's on B.  B's on C and D.  This coincides with the
+> +fact that controllers on the immediate sub-level are used to
+> +distribute the resources of the parent.  In fact, it's natural to
+> +assume that resource control knobs of a child belong to its parent.
+> +Enabling a controller in "cgroup.subtree_control" declares that
+> +distribution of the respective resources of the cgroup will be
+> +controlled.  Note that this means that controller enable states are
+> +shared among siblings.
+> +
+> +When read, the file contains space-separated list of currently enabled
+
+                       contains a space-separated
+
+> +controllers.  A write to the file should contain spaced-separated list
+
+                                            contain a space-separated
+
+> +of controllers with '+' or '-' prefixed (without the quotes).
+> +Controllers prefixed with '+' are enabled and '-' disabled.  If a
+> +controller is listed multiple times, the last entry wins.  The
+> +specific operations are executed atomically - either all succeed or
+> +fail.
+> +
+> +
+> +2-3. cgroup.controllers
+> +
+> +Read-only "cgroup.controllers" contains space-separated list of
+
+                                  contains a space-separated
+
+> +controllers which can be enabled in the cgroup's
+> +"cgroup.subtree_control".
+> +
+> +In the root cgroup, this lists controllers which are not bound to
+> +other hierarchies and the content changes as controllers are bound to
+> +and unbound from other hierarchies.
+> +
+> +In non-root cgroups, the content of this file equals that of the
+> +parent's "cgroup.subtree_control" as only controllers enabled from the
+> +parent can be used in its children.
+> +
+> +
+> +3. Structural Constraints
+> +
+> +3-1. Top-down
+> +
+> +As it doesn't make sense to nest control of an uncontrolled resource,
+> +all non-root "cgroup.subtree_control" can only contain controllers
+> +which are enabled in the parent's "cgroup.subtree_control".  A
+> +controller can be enabled only if the parent has the controller
+> +enabled and a controller can't be disabled if one or more children
+> +have it enabled.
+> +
+> +
+> +3-2. No internal tasks
+> +
+> +One long-standing issue that cgroup faces is the competition between
+> +tasks belonging to the parent cgroup and its children cgroups.  This
+> +is inherently nasty as two different types of entities compete and
+> +there is no agreed-upon obvious way to handle it.  Different
+> +controllers are doing different things.
+> +
+> +cpu considers tasks and cgroups as equivalents and maps nice level to
+> +cgroup weights.  This works for some cases but falls flat when
+> +children should be allocated specific ratios of cpu cycles and the
+> +number of internal tasks fluctuates - the ratios constantly change as
+> +the number of competing entities fluctuates.  There also are other
+> +issues.  The mapping from nice level to weight isn't obvious or
+> +universal, and there are various other knobs which simply aren't
+> +available for tasks.
+> +
+> +blkio implicitly creates a hidden leaf node for each cgroup to host
+> +the tasks.  The hidden leaf has its own copies of all the knobs with
+> +"leaf_" prefixed.  While this allows equivalent control over internal
+> +tasks, it's with serious drawbacks.  It always adds an extra layer of
+> +nesting which may not be necessary, makes the interface messy and
+> +significantly complicates the implementation.
+> +
+> +memory currently doesn't have a way to control what happens between
+> +internal tasks and child cgroups and the behavior is not clearly
+> +defined.  There have been attempts to add ad-hoc behaviors and knobs
+> +to tailor the behavior to specific workloads.  Continuing this
+> +direction will lead to problems which will be extremely difficult to
+> +resolve in the long term.
+> +
+> +Multiple controllers struggle with internal tasks and came up with
+> +different ways to deal with it; unfortunately, all the approaches in
+> +use now are severely flawed and, furthermore, the widely different
+> +behaviors make cgroup as whole highly inconsistent.
+> +
+> +It is clear that this is something which needs to be addressed from
+> +cgroup core proper in a uniform way so that controllers don't need to
+> +worry about it and cgroup as a whole shows a consistent and logical
+> +behavior.  To achieve that, unified hierarchy enforces the following
+> +structural constraint.
+
+   structural constraint:
+
+> +
+> + Except for the root, only cgroups which don't contain any task may
+> + have controllers enabled in "cgroup.subtree_control".
+> +
+> +Combined with other properties, this guarantees that, when a
+> +controller is looking at the part of the hierarchy which has it
+> +enabled, tasks are always only on the leaves.  This rules out
+> +situations where child cgroups compete against internal tasks of the
+> +parent.
+> +
+> +There are two things to note.  Firstly, the root cgroup is exempt from
+> +the restriction.  Root contains tasks and anonymous resource
+> +consumption which can't be associated with any other cgroup and
+> +requires special treatment from most controllers.  How resource
+> +consumption in the root cgroup is governed is upto each controller.
+
+                                                 up to
+
+> +
+> +Secondly, the restriction doesn't take effect if there is no enabled
+> +controller in the cgroup's "cgroup.subtree_control".  This is
+> +important as otherwise it wouldn't be possible to create children of a
+> +populated cgroup.  To control resource distribution of a cgroup, the
+> +cgroup must create children and transfer all its tasks to the children
+> +before enabling controllers in its "cgroup.subtree_control".
+> +
+> +
+> +4. Other Changes
+> +
+> +4-1. [Un]populated Notification
+> +
+> +cgroup users often need a way to determine when a cgroup's
+> +subhierarchy becomes empty so that it can be cleaned up.  cgroup
+> +currently provides release_agent for it; unfortunately, this mechanism
+> +is riddled with issues.
+> +
+> +- It delivers events by forking and execing a userland binary
+> +  specified as the release_agent.  This is a long deprecated method of
+> +  notification delivery.  It's extremely heavy, slow and cumbersome to
+> +  integrate with larger infrastructure.
+> +
+> +- There is single monitoring point at the root.  There's no way to
+> +  delegate management of subtree.
+
+"of subtree" seems incomplete...
+At a minimum it should be "of a subtree."
+
+> +
+> +- The event isn't recursive.  It triggers when a cgroup doesn't have
+> +  any tasks or child cgroups.  Events for internal nodes trigger only
+> +  after all children are removed.  This again makes it impossible to
+> +  delegate management of subtree.
+
+                         of a subtree.
+
+> +
+> +- Events are filtered from the kernel side.  "notify_on_release" file
+
+                                                A "notify_on_release" file
+
+> +  is used to subscribe to or suppress release event.  This is
+
+                                         release events.
+
+> +  unnecessarily complicated and probably done this way because event
+> +  delivery itself was expensive.
+> +
+> +Unified hierarchy implements interface file "cgroup.subtree_populated"
+
+                     implements an interface file
+
+> +which can be used to monitor whether the cgroup's subhierarchy has
+> +tasks in it or not.  Its value is 0 if there is no task in the cgroup
+> +and its descendants; otherwise, 1.  poll and [id]notify events are
+> +triggered when the value changes.
+> +
+> +This is significantly lighter and simpler and trivially allows
+> +delegating management of subhierarchy - subhierarchy monitoring can
+> +block further propagation simply by putting itself or another process
+> +in the root of the subhierarchy and monitor events that it's
+> +interested in from there without interfering with monitoring higher in
+> +the tree.
+> +
+> +In unified hierarchy, release_agent mechanism is no longer supported
+
+                         the release_agent mechanism
+
+> +and the interface files "release_agent" and "notify_on_release" do not
+> +exist.
+> +
+> +
+> +4-2. Other Core Changes
+> +
+> +- None of the mount options is allowed.
+> +
+> +- remount is disallowed.
+> +
+> +- rename(2) is disallowed.
+> +
+> +- "tasks" is removed.  Everything should at process granularity.  Use
+> +  "cgroup.procs" instead.
+> +
+> +- "cgroup.procs" is not sorted.  pids will be unique unless they got
+> +  recycled in-between reads.
+> +
+> +- "cgroup.clone_children" is removed.
+> +
+> +
+> +4-3. Per-Controller Changes
+> +
+> +4-3-1. blkio
+> +
+> +- blk-throttle becomes properly hierarchical.
+> +
+> +
+> +4-3-2. cpuset
+> +
+> +- Tasks are kept in empty cpusets after hotplug and take on the masks
+> +  of the nearest non-empty ancestor, instead of being moved to it.
+> +
+> +- A task can be moved into an empty cpuset, and again it takes on the
+> +  masks of the nearest non-empty ancestor.
+> +
+> +
+> +4-3-3. memory
+> +
+> +- use_hierarchy is on by default and the cgroup file for the flag is
+> +  not created.
+> +
+> +
+> +5. Planned Changes
+> +
+> +5-1. CAP for resource control
+> +
+> +Unified hierarchy will require one of the capabilities(7), which is
+> +yet to be decided, for all resource control related knobs.  Process
+> +organization operations - creation of sub-cgroups and migration of
+> +processes in sub-hierarchies may be delegated by changing the
+> +ownership and/or permissions on the cgroup directory and
+> +"cgroup.procs" interface file; however, all operations which affect
+> +resource control - writes to "cgroup.subtree_control" or any
+> +controller-specific knobs - will require an explicit CAP privilege.
+> +
+> +This, in part, is to prevent cgroup interface from being inadvertently
+
+                        prevent the cgroup interface
+
+> +promoted to programmable API used by non-privileged binaries.  cgroup
+> +exposes various aspects of the system in ways which aren't properly
+> +abstracted for direct consumption by regular programs.  This is an
+> +administration interface much closer to sysctl knobs than system
+> +calls.  Even the basic access model, being filesystem path based,
+> +isn't suitable for direct consumption.  There's no way to access "my
+> +cgroup" in race-free way or make multiple operations atomic against
+
+           in a race-free way
+
+> +migration to another cgroup.
+> +
+> +Another aspect is that, for better or for worse, cgroup interface goes
+
+                                                    the cgroup interface goes
+
+> +through far less scrutiny than regular interfaces for unprivileged
+> +userland.  The upside is that cgroup is able to expose useful features
+> +which may not be suitable for general consumption in reasonable time
+
+                                                     in a reasonable time
+
+> +frame.  It provides a relatively short path between internal details
+> +and userland-visible interface.  Of course, this shortcut comes with
+> +high risk.  We go through what we go through for general kernel APIs
+> +for good reasons.  It may end up leaking internal details in a way
+> +which can exert significant pain by locking the kernel into a contract
+> +that can't be maintained in a reasonable manner.
+
+so the cgroup interface is not stable and won't be?
+
+> +
+> +Also, due to the specific nature, cgroup and its controllers don't
+> +tend to attract attention from wide-scope of developers.  cgroup's
+
+                             from a wide scope of developers.
+
+> +short history is already fraught with severely mis-designed
+> +interfaces, unnecessary commitment to and exposing of internal
+> +details, broken and dangerous implementations of various features.
+> +
+> +Keeping cgroup as an administration interface is both advantageous for
+> +its role and an imperative given its nature.  Some of the cgroup
+
+            and imperative given
+
+> +features may make sense for unprivileged access.  If deemed justified,
+> +those must be further abstracted and implemented as a different
+> +interface, be it a system call or process-private filesystem, and
+> +survive through the scrutiny that any interface for general
+> +consumption is required to go through.
+> +
+> +Requiring CAP is not a complete solution but should serve as a
+> +significant deterrent against spraying cgroup usages in non-privileged
+> +programs.
+> 
+
+Two comments that apply in multiple places:
+
+a.  Call cgroup's interface files "files".  E.g.:
+
+  root's "cgroup.subtree_control" determines ...
+
+becomes:
+
+  root's "cgroup.subtree_control" file determines
+
+b.  Call cgroup controllers "controllers" or "controller".  E.g.:
+
+  memory currently doesn't have a way to control what happens between
+
+becomes:
+
+  The memory controller currently doesn't have a way to control what happens between
+
+
+-- 
+~Randy
