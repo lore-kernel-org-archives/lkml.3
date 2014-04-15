@@ -1,86 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751430AbaDOIiR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 04:38:17 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:42341 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaDOIiN (ORCPT
+	id S1752482AbaDOIj2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 04:39:28 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:60958 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262AbaDOIjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 04:38:13 -0400
-Message-ID: <534CEFF2.7090207@gopivotal.com>
-Date: Tue, 15 Apr 2014 09:38:10 +0100
-From: Glyn Normington <gnormington@gopivotal.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 15 Apr 2014 04:39:25 -0400
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Michal Hocko <mhocko@suse.cz>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: Kernel scanning/freeing to relieve cgroup memory pressure
-References: <533C0BB4.4070009@gopivotal.com> <20140402180019.GL16631@htj.dyndns.org> <534B982D.8060106@gopivotal.com> <20140414205034.GA6443@cmpxchg.org>
-In-Reply-To: <20140414205034.GA6443@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <534CEEA8.6020800@samsung.com>
+References: <1397527192-21988-1-git-send-email-cw00.choi@samsung.com>
+	<1397527192-21988-4-git-send-email-cw00.choi@samsung.com>
+	<4788081.xvaJfdGTMu@wuerfel>
+	<534CEEA8.6020800@samsung.com>
+Date: Tue, 15 Apr 2014 14:09:24 +0530
+Message-ID: <CAGm_ybhGBVmUu9PgppgWfH8b8=3JVhqK0v=ZR_yE8Cs42+VUOg@mail.gmail.com>
+Subject: Re: [PATCHv2 3/8] ARM: EXYNOS: Add IO mapping for PMU of Exynos3250
+From: Vikas Sajjan <sajjan.linux@gmail.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk, ben-linux@fluff.org,
+        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, sw0312.kim@samsung.com,
+        hyunhee.kim@samsung.com, yj44.cho@samsung.com,
+        chanho61.park@samsung.com, Olof Johansson <olof@lixom.net>,
+        marc.zyngier@arm.com,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        devicetree@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/04/2014 21:50, Johannes Weiner wrote:
-> On Mon, Apr 14, 2014 at 09:11:25AM +0100, Glyn Normington wrote:
->> Johannes/Michal
->>
->> What are your thoughts on this matter? Do you see this as a valid
->> requirement?
-> As Tejun said, memory cgroups *do* respond to internal pressure and
-> enter targetted reclaim before invoking the OOM killer.  So I'm not
-> exactly sure what you are asking.
-We are repeatedly seeing a situation where a memory cgroup with a given 
-memory limit results in an application process in the cgroup being 
-killed oom during application initialisation. One theory is that dirty 
-file cache pages are not being written to disk to reduce memory 
-consumption before the oom killer is invoked. Should memory cgroups' 
-response to internal pressure include writing dirty file cache pages to 
-disk?
->
->> On 02/04/2014 19:00, Tejun Heo wrote:
->>> (cc'ing memcg maintainers and cgroup ML)
->>>
->>> On Wed, Apr 02, 2014 at 02:08:04PM +0100, Glyn Normington wrote:
->>>> Currently, a memory cgroup can hit its oom limit when pages could, in
->>>> principle, be reclaimed by the kernel except that the kernel does not
->>>> respond directly to cgroup-local memory pressure.
->>> So, ummm, it does.
->>>
->>>> A use case where this is important is running a moderately large Java
->>>> application in a memory cgroup in a PaaS environment where cost to the
->>>> user depends on the memory limit ([1]). Users need to tune the memory
->>>> limit to reduce their costs. During application initialisation large
->>>> numbers of JAR files are opened (read-only) and read while loading the
->>>> application code and its dependencies. This is reflected in a peak of
->>>> file cache usage which can push the memory cgroup memory usage
->>>> significantly higher than the value actually needed to run the application.
->>>>
->>>> Possible approaches include (1) automatic response to cgroup-local
->>>> memory pressure in the kernel, and (2) a kernel API for reclaiming
->>>> memory from a cgroup which could be driven under oom notification (with
->>>> the oom killer disabled for the cgroup - it would be enabled if the
->>>> cgroup was still oom after calling the kernel to reclaim memory).
->>>>
->>>> Clearly (1) is the preferred approach. The closest facility in the
->>>> kernel to (2) is to ask the kernel to free pagecache using `echo 1 >
->>>> /proc/sys/vms/drop_caches`, but that is too wide-ranging, especially in
->>>> a PaaS environment hosting multiple applications. A similar facility
->>>> could be provided for a cgroup via a cgroup pseudo-file
->>>> `memory.drop_caches`.
->>>>
->>>> Other approaches include a mempressure cgroup ([2]) which would not be
->>>> suitable for PaaS applications. See [3] for Andrew Morton's response. A
->>>> related workaround ([4]) was included in the 3.6 kernel.
->>>>
->>>> Related discussions:
->>>> [1] https://groups.google.com/a/cloudfoundry.org/d/topic/vcap-dev/6M8BDV_tq7w/discussion
->>>> [2]https://lwn.net/Articles/531077/ <https://lwn.net/Articles/531077/>
->>>> [3]https://lwn.net/Articles/531138/ <https://lwn.net/Articles/531138/>
->>>> [4]https://lkml.org/lkml/2013/6/6/462 <https://lkml.org/lkml/2013/6/6/462>&
->>>> https://github.com/torvalds/linux/commit/e62e384e
->>>> <https://github.com/torvalds/linux/commit/e62e384e>.
+Hi,
 
+On Tue, Apr 15, 2014 at 2:02 PM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+> Hi,
+>
+> On 04/15/2014 05:11 PM, Arnd Bergmann wrote:
+>> On Tuesday 15 April 2014 10:59:47 Chanwoo Choi wrote:
+>>> This patch add memory mapping for PMU (Power Management Unit) which is used
+>>> for power control of Exynos3250.
+>>>
+>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>> ---
+>>> Arnd Bergmann suggested that need proper driver instead of static memory mapping.
+>>> As Chanho Park reply[2], Sachin Kamat already posted the DT support patch[1]
+>>> for memory mapping for SYSRAM.
+>>> [1] http://www.spinics.net/lists/linux-samsung-soc/msg27647.html
+>>> [2] https://lkml.org/lkml/2014/4/10/161
+>>>
+>>> So, I'm going to re-implement following patch related to static memory mapping
+>>> after merged Sachin Kamat patch[1].
+>>>   ARM: EXYNOS: Add IO mapping for PMU of Exynos3250
+>>
+>> I don't think we have a patch for the PMU yet, Sachin was looking at the SYSRAM
+>> only.
+>
+> You are right. Sachin's patch only included the solution of SYSRAM memory mapping.
+> I set out the plan that I would implment proper driver for PMU memory mapping
+> instead of static method after merged Sachin's patch for SYSRAM.
+>
+> But,
+> If you'd like me to implment PMU memory mapping instead of static mapping right now,
+> I'll implement it for PMU such as Sachin's patch on next posting(v3).
+>
+
+I have already posted patch[1] for mapping PMU through DT as part of
+my PMU series for exynos5260.
+You can rebase on the same.
+
+
+[1] http://www.spinics.net/lists/arm-kernel/msg316013.html
+
+
+> Thanks for your review.
+>
+> Best Regards,
+> Chanwoo Choi
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
