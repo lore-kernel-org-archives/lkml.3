@@ -1,31 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177AbaDORnl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 13:43:41 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:39490 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124AbaDORnj (ORCPT
+	id S1753332AbaDORqx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 13:46:53 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:64801 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997AbaDORqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 13:43:39 -0400
-Date: Tue, 15 Apr 2014 13:43:38 -0400 (EDT)
-Message-Id: <20140415.134338.2055573754009780666.davem@davemloft.net>
-To: jan.glauber@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: use SYSCALL_DEFINEx for sys_recv
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1397569801-10485-1-git-send-email-jan.glauber@gmail.com>
-References: <1397569801-10485-1-git-send-email-jan.glauber@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 15 Apr 2014 10:43:39 -0700 (PDT)
+	Tue, 15 Apr 2014 13:46:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAMEtUux-ekQdx2M0e=py81zvAGWo4r6Upxmwfvcrv739kSH_oQ@mail.gmail.com>
+References: <1397502179-15029-1-git-send-email-dborkman@redhat.com>
+ <534C4179.7070704@amacapital.net> <20140414.162452.1169041476405438694.davem@davemloft.net>
+ <CALCETrUu4zmawcn+U+ppDjK-hPGDff15jOhe5ojJU5ppEw4AzQ@mail.gmail.com> <CAMEtUux-ekQdx2M0e=py81zvAGWo4r6Upxmwfvcrv739kSH_oQ@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 15 Apr 2014 10:46:29 -0700
+Message-ID: <CALCETrUwC1ufd8ud5SgS1MyFpqgHse2-poSxjcx7hBSraPYA0Q@mail.gmail.com>
+Subject: Re: [PATCH] seccomp: fix populating a0-a5 syscall args in 32-bit x86 BPF
+To: Alexei Starovoitov <ast@plumgrid.com>
+Cc: David Miller <davem@davemloft.net>, Daniel Borkmann <dborkman@redhat.com>,
+        Network Development <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Paris <eparis@redhat.com>,
+        James Morris <james.l.morris@oracle.com>,
+        Kees Cook <keescook@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Apr 14, 2014 at 11:31 PM, Alexei Starovoitov <ast@plumgrid.com> wrote:
+> On Mon, Apr 14, 2014 at 1:28 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Mon, Apr 14, 2014 at 1:24 PM, David Miller <davem@davemloft.net> wrote:
+>>> From: Andy Lutomirski <luto@amacapital.net>
+>>> Date: Mon, 14 Apr 2014 13:13:45 -0700
+>>>
+>>>> I think this description is wrong.  (unsigned long *) &sd->args[1] is
+>>>> the right location, at least on 32-bit little-endian architectures.
+>>>
+>>> It absolutely is not.
+>>
+>> Huh?  It's a pointer to the right address, but the type is wrong.
+>>
+>> The changelog says "on 32-bit x86 (or any other 32bit arch), it would
+>> result in storing a0-a5 at wrong offsets in args[] member".  Unless
+>> I'm mistaken, this is incorrect: a0-a5 are are the correct offsets,
+>> but they are stored with the wrong type, so the other bits in there
+>> are garbage.
+>
+> agree. your above description is more correct than the log.
+> We were focusing on the bug itself and the log came a bit misleading
+> as a result of multiple iterations back and forth between me and Daniel.
+>
+> also the log says:
+> "gcc is clever and optimizes the copy away in other cases, e.g. x86_64"
+> since we actually checked assembler, so the fix doesn't pessimize
+> 64-bit architectures :)
+> This function is in critical path for seccomp, so performance definitely
+> matters.
 
-Networking patches should be sent to netdev@vger.kernel.org so that they
-are properly queued up in patchwork.
+Yeah, I'm not entirely sure what I was thinking when I wrote that
+part.  The new code should actually be much better than the old code
+for weird architectures like ia-64.
 
-Thank you.
+For reference, ia-64 uses the unwinder (!) to look up arguments, so
+the fewer times it gets invoked, the better.
+
+--Andy
