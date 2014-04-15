@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049AbaDOQyR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 12:54:17 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:44706 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902AbaDOQyP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 12:54:15 -0400
+	id S1753011AbaDOQ5z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 12:57:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59466 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750932AbaDOQ5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 12:57:54 -0400
+Message-ID: <534D6510.3070509@suse.cz>
+Date: Tue, 15 Apr 2014 18:57:52 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140415085126.GA17327@lst.de>
-References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de>
- <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com>
- <20140414160211.GE711@lst.de> <20140414160653.GC29351@lst.de>
- <CALCETrUmFdrGExKB+tKSMVK1yWAw6KWU1tpgjnoFe=+XhJdtTw@mail.gmail.com> <20140415085126.GA17327@lst.de>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 15 Apr 2014 09:53:53 -0700
-Message-ID: <CALCETrXrHOJkEvYv8VGaNNJSFarAaD7E7G7myOvWo5SG4m4qKg@mail.gmail.com>
-Subject: Re: [PATCH v3 03/03]: hwrng: khwrngd derating per device
-To: Torsten Duwe <duwe@lst.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        ingo.tuchscherer@de.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hans-Georg Markgraf <MGRF@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Joe Perches <joe@perches.com>
-Content-Type: text/plain; charset=UTF-8
+To: Christoph Lameter <cl@linux.com>
+CC: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [bisected] broken make-kpkg kernel build in 3.15-rc1
+References: <alpine.DEB.2.10.1404150940250.14106@vincent-weaver-1.um.maine.edu> <534D4A59.6080401@suse.cz> <alpine.DEB.2.10.1404151146530.26562@gentwo.org>
+In-Reply-To: <alpine.DEB.2.10.1404151146530.26562@gentwo.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 1:51 AM, Torsten Duwe <duwe@lst.de> wrote:
-> On Mon, Apr 14, 2014 at 09:41:10AM -0700, Andy Lutomirski wrote:
->> On Mon, Apr 14, 2014 at 9:06 AM, Torsten Duwe <duwe@lst.de> wrote:
->> >
->> > This patch introduces a derating factor to struct hwrng for
->> > the random bits going into the kernel input pool, and a common
->> > default derating for drivers which do not specify one.
->> >
->> > Signed-off-by: Torsten Duwe <duwe@suse.de>
->> >
->> > ---
->> >  drivers/char/hw_random/core.c |   11 ++++++++++-
->> >  include/linux/hw_random.h     |    3 +++
->> >  2 files changed, 13 insertions(+), 1 deletion(-)
->> >
->> > --- linux/include/linux/hw_random.h.orig
->> > +++ linux/include/linux/hw_random.h
->> > @@ -29,6 +29,8 @@
->> >   * @read:              New API. drivers can fill up to max bytes of data
->> >   *                     into the buffer. The buffer is aligned for any type.
->> >   * @priv:              Private data, for use by the RNG driver.
->> > + * @derating:          Estimation of true entropy in RNG's bitstream
->> > + *                     (per mill).
->>
->> I'll bikeshed again: this is a rating, not a *de*rating.  Higher =
->> more confidence, at least assuming the comment is right.
->>
-> You're right. Would anyone object to call it "quality", as in RX signal quality?
-> In context of a random source that is pretty accurate, I'd say. Other opinions?
+On 2014-04-15 18:49, Christoph Lameter wrote:
+> On Tue, 15 Apr 2014, Michal Marek wrote:
+> 
+>> I fail to see how the above commit is responsible for this. make install
+>> starts /sbin/installkernel and the rest is the job of this script. To
+>> me, it looks more like a fakeroot failure than a bug in make install.
+> 
+> The problem is that the kernel build process should not write to anything
+> in the /etc/apt directory.
 
-I'm okay with "quality", although I'm still partial to "entropy_per_1000bits".
+Again: make install starts /sbin/installkernel and the rest is the job
+of this script. Which means you need to debug Debian's
+/sbin/installkernel why it suddenly wants to modify files in /etc/apt.
 
---Andy
+Michal
