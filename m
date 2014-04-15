@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaDOL1y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 07:27:54 -0400
-Received: from relay.parallels.com ([195.214.232.42]:54190 "EHLO
+	id S1754033AbaDOL2O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 07:28:14 -0400
+Received: from relay.parallels.com ([195.214.232.42]:54428 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaDOL1w (ORCPT
+	with ESMTP id S1751241AbaDOL2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 07:27:52 -0400
-Subject: [PATCH 0/7] fuse: fix handling mtime and cmtime in writeback_cache
- mode
+	Tue, 15 Apr 2014 07:28:11 -0400
+Subject: [PATCH 1/7] fuse: do not use uninitialized i_mode
 To: miklos@szeredi.hu
 From: Maxim Patlasov <MPatlasov@parallels.com>
 Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         devel@openvz.org
-Date: Tue, 15 Apr 2014 15:27:51 +0400
-Message-ID: <20140415112413.11860.1451.stgit@dhcp-10-30-30-94.sw.ru>
+Date: Tue, 15 Apr 2014 15:28:10 +0400
+Message-ID: <20140415112756.11860.43431.stgit@dhcp-10-30-30-94.sw.ru>
+In-Reply-To: <20140415112413.11860.1451.stgit@dhcp-10-30-30-94.sw.ru>
+References: <20140415112413.11860.1451.stgit@dhcp-10-30-30-94.sw.ru>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,39 +24,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+When inode is in I_NEW state, inode->i_mode is not initialized yet. Do not
+use it before fuse_init_inode() is called.
 
-The patch-set fixes a few issues introduced by writeback_cache feature:
-
- - fuse_iget() used inode->i_mode before its initialization
- - in course of truncate(2), inode->i_mtime was not updated at all
- - the same for open(O_TRUNC) in case of fc->atomic_o_trunc is set
- - we cannot trust ctime from server anymore because we doesn't 
-   flush all data changes to the server immediately
- - to maintain ctime locally, we have to update it in proper places
-   (fuse_update_time, fallocate, setxattr, etc.)
- - locally updated ctime must be flushed to the server eventually.
-
-Maxim
+Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
 ---
+ fs/fuse/inode.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Maxim Patlasov (7):
-      fuse: do not use uninitialized i_mode
-      fuse: update mtime on truncate(2)
-      fuse: update mtime on open(O_TRUNC) in atomic_o_trunc mode
-      fuse: introduce FUSE_I_CTIME_DIRTY flag
-      fuse: trust kernel i_ctime only
-      fuse: clear FUSE_I_CTIME_DIRTY flag on setattr
-      fuse: flush ctime in FUSE_FORGET requests
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index 8d61169..299e553 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -303,7 +303,7 @@ struct inode *fuse_iget(struct super_block *sb, u64 nodeid,
+ 
+ 	if ((inode->i_state & I_NEW)) {
+ 		inode->i_flags |= S_NOATIME;
+-		if (!fc->writeback_cache || !S_ISREG(inode->i_mode))
++		if (!fc->writeback_cache || !S_ISREG(attr->mode))
+ 			inode->i_flags |= S_NOCMTIME;
+ 		inode->i_generation = generation;
+ 		inode->i_data.backing_dev_info = &fc->bdi;
 
-
- fs/fuse/dev.c             |   30 ++++++++++++---
- fs/fuse/dir.c             |   88 +++++++++++++++++++++++++++++++++++++++------
- fs/fuse/file.c            |   37 +++++++++++++------
- fs/fuse/fuse_i.h          |    6 ++-
- fs/fuse/inode.c           |   14 ++++++-
- include/uapi/linux/fuse.h |   29 +++++++++++++--
- 6 files changed, 165 insertions(+), 39 deletions(-)
-
--- 
-Signature
