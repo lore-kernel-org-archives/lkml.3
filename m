@@ -1,147 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751262AbaDOWig (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 18:38:36 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:41453 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784AbaDOWid (ORCPT
+	id S1751818AbaDOWje (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 18:39:34 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34349 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaDOWjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 18:38:33 -0400
+	Tue, 15 Apr 2014 18:39:33 -0400
+Date: Tue, 15 Apr 2014 23:38:50 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
+        Chen-Yu Tsai <wens@csie.org>, Hans de Goede <hdegoede@redhat.com>,
+        Carlo Caione <carlo@caione.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
+Message-ID: <20140415223849.GJ12304@sirena.org.uk>
+References: <1397480885-11962-1-git-send-email-boris.brezillon@free-electrons.com>
+ <20140414210429.GJ25182@sirena.org.uk>
+ <534CE16D.8010508@free-electrons.com>
+ <20140415100922.GN12304@sirena.org.uk>
+ <534D1DDA.40207@free-electrons.com>
+ <534D252B.8060009@metafoo.de>
+ <20140415125654.GD12304@sirena.org.uk>
+ <534D357F.9040906@metafoo.de>
+ <20140415164613.GF12304@sirena.org.uk>
+ <534D85F3.5050009@metafoo.de>
 MIME-Version: 1.0
-In-Reply-To: <1396538615-9128-1-git-send-email-jon@ringle.org>
-References: <1396538615-9128-1-git-send-email-jon@ringle.org>
-Date: Tue, 15 Apr 2014 18:38:31 -0400
-X-Google-Sender-Auth: I5s5Ctbtd_wIFJ2ue4v2FEK4GtU
-Message-ID: <CAMwGMjxnVhGanbG-2NNr5ekA489qJsc+J6hyLv+zyMCq+o=LVg@mail.gmail.com>
-Subject: Re: [PATCH v5 1/2] serial: sc16is7xx
-From: Jon Ringle <jon@ringle.org>
-To: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Cc: Jon Ringle <jringle@gridpoint.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Or8LRHETumScJgaM"
+Content-Disposition: inline
+In-Reply-To: <534D85F3.5050009@metafoo.de>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC PATCH v2] regmap: smbus: add support for regmap over smbus
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 3, 2014 at 11:23 AM,  <jon@ringle.org> wrote:
-> From: Jon Ringle <jringle@gridpoint.com>
->
-> The SC16IS7xx is a slave I2C-bus/SPI interface to a single-channel
-> high performance UART. The SC16IS7xx's internal register set is
-> backward-compatible with the widely used and widely popular 16C450.
->
-> The SC16IS7xx also provides additional advanced features such as
-> auto hardware and software flow control, automatic RS-485 support, and
-> software reset.
->
-> Signed-off-by: Jon Ringle <jringle@gridpoint.com>
-> ---
->  drivers/tty/serial/Kconfig       |    9 +
->  drivers/tty/serial/Makefile      |    1 +
->  drivers/tty/serial/sc16is7xx.c   | 1302 ++++++++++++++++++++++++++++++++++++++
->  include/uapi/linux/serial_core.h |    3 +
->  4 files changed, 1315 insertions(+)
->  create mode 100644 drivers/tty/serial/sc16is7xx.c
->
-[snip]
 
-> diff --git a/drivers/tty/serial/sc16is7xx.c b/drivers/tty/serial/sc16is7xx.c
-> new file mode 100644
-> index 0000000..20d96cc
-> --- /dev/null
-> +++ b/drivers/tty/serial/sc16is7xx.c
-[snip]
+--Or8LRHETumScJgaM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> +static bool sc16is7xx_regmap_writeable(struct device *dev, unsigned int reg)
-> +{
-> +       switch (reg >> SC16IS7XX_REG_SHIFT) {
-> +       case SC16IS7XX_THR_REG:
-> +       case SC16IS7XX_IER_REG:
-> +       case SC16IS7XX_FCR_REG:
-> +       case SC16IS7XX_LCR_REG:
-> +       case SC16IS7XX_MCR_REG:
-> +       case SC16IS7XX_SPR_REG:
-> +       case SC16IS7XX_IODIR_REG:
-> +       case SC16IS7XX_IOSTATE_REG:
-> +       case SC16IS7XX_IOINTENA_REG:
-> +       case SC16IS7XX_IOCONTROL_REG:
-> +       case SC16IS7XX_EFCR_REG:
-> +               return true;
-> +       default:
-> +               break;
-> +       }
-> +
-> +       return false;
-> +}
+On Tue, Apr 15, 2014 at 09:18:11PM +0200, Lars-Peter Clausen wrote:
+> On 04/15/2014 06:46 PM, Mark Brown wrote:
 
-Having the above regmap_writeable callback causes problem with the
-bulk I2C write (via regmap_raw_write()) that is done in
-sc16is7xx_handle_tx(). Removing this callback fixes the issue.
+> >Please note what I said about convenience - if lots of devices have
+> >exactly the same set of constraints to set up it's possible sensible to
+> >have a standard way of specifying them.  It's going to be a bit easier
+> >to just say it's smbus than to remember exactly what that means.
 
+> Maybe, but the only shared constraint is reg_bits = 8 (and if it is pure
+> smbus use_single_rw = true).
 
-[snip]
-> +static void sc16is7xx_handle_tx(struct uart_port *port)
-> +{
-> +       struct sc16is7xx_port *s = dev_get_drvdata(port->dev);
-> +       struct circ_buf *xmit = &port->state->xmit;
-> +       unsigned int txlen, to_send, i;
-> +       u8 buf[port->fifosize];
-> +
-> +       if (unlikely(port->x_char)) {
-> +               sc16is7xx_port_write(port, SC16IS7XX_THR_REG, port->x_char);
-> +               port->icount.tx++;
-> +               port->x_char = 0;
-> +               return;
-> +       }
-> +
-> +       if (uart_circ_empty(xmit) || uart_tx_stopped(port))
-> +               return;
-> +
-> +       /* Get length of data pending in circular buffer */
-> +       to_send = uart_circ_chars_pending(xmit);
-> +       if (likely(to_send)) {
-> +               /* Limit to size of TX FIFO */
-> +               txlen = sc16is7xx_port_read(port, SC16IS7XX_TXLVL_REG);
-> +               to_send = (to_send > txlen) ? txlen : to_send;
-> +
-> +               /* Add data to send */
-> +               port->icount.tx += to_send;
-> +
-> +               /* Convert to linear buffer */
-> +               for (i = 0; i < to_send; ++i) {
-> +                       buf[i] = xmit->buf[xmit->tail];
-> +                       xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
-> +               }
-> +               regcache_cache_bypass(s->regmap, true);
-> +               regmap_raw_write(s->regmap, SC16IS7XX_THR_REG, buf, to_send);
+I thought there was some other stuff at the edge of the protocol, though
+perhaps I misremember.  We do also have the thing with implementing the
+bulk write differently.
 
-This call fails with -EINVAL if to_send is > 20 because it assumes
-that we are writing to consecutive registers rather than writing to a
-single register over and over.
+> It's a bit of an exotic case, there seem to be only two I2C controller
+> drivers in the Linux kernel that have support for both raw I2C and native
+> SMBus and neither of them don't seem to be fairly recent (i2c-powermac.c and
+> i2c-pasemi.c). And on the other hand most devices are SMBus compatible have
 
-> +               regcache_cache_bypass(s->regmap, false);
-> +       }
-> +
-> +       if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
-> +               uart_write_wakeup(port);
-> +}
+Blackfin was another - I didn't look that far to be honest since the
+first few that I found did it.
 
-[snip]
+> extensions like being able to write/read multiple register in one transfer
+> if raw I2C access is available, which is something we want to make use of if
+> available.
 
-> +static struct regmap_config regcfg = {
-> +       .reg_bits = 7,
-> +       .pad_bits = 1,
-> +       .val_bits = 8,
-> +       .cache_type = REGCACHE_RBTREE,
-> +       .writeable_reg = sc16is7xx_regmap_writeable,
-Removing writeable_reg
+Sure, if the device supports it.
 
-New patch forthcoming that removes the regmap writeable_reg callback.
-But, I also wonder if there is a way to keep it, but teach regcache
-that regmap_raw_write/read() done necessariy increment the register
-being written to or read from. Then I probably wouldn't have to do the
-regcach_cache_bypass business I am doing either.
+> And the other thing to consider is that a client driver currently has no way
+> to query whether the controller driver supports native SMBus or only
+> emulated SMBus. This is surely something that can be added to the I2C core,
+> but this is necessarily something that we require before any SMBus support
+> is added to regmap.
 
-Jon
+Right, that'll take a couple of minutes though.
+
+> So in conclusion I think the best way forward is to create a patch that
+> checks if native I2C is available, and if not falls back to either
+> SMBUS_{WRITE,READ}_BYTE or SMBUS_{WRITE,READ}_WORD operations (Depending on
+> whether val_bits is 8 or 16). Such a patch, I think, has the most effect for
+> the least amount of work since it is rather simple and self contained and
+> allows all devices which are SMBus compatible to be used with SMBus-only
+> controllers. Everything else discussed in this thread (optimizations for
+> special cases, convince helpers) can then be implemented on top of that.
+
+Indeed, like I've been saying there's several orthogonal things going on
+here and that's one of them.
+
+--Or8LRHETumScJgaM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTTbT2AAoJELSic+t+oim9jekQAI277Xlh7oy6XOUp9Grhsit/
+sL6P4HqwZHEGt7OJAHjY2khk5fJJHkpIIt5DKFZWp5gXOLJDM0YODikRohua55bb
+SLwpZ/khblP3OI43Eq0gziInNpaFz8LmJjplvIqIvhQ3gys5HIjxzYkyykRxnvm/
+8XltisnpkiO0Rr84YHCNMh7kqQ/bRDYEIFV399YCHsAyTTExc4uikkqiacAJgh06
+K9M1IvKpBkiRn/sePE+CcwF1WfcO5DN8TcVBJmBzK9Nsd41UuLed8PqOsZA76RFk
+hjOxJWxEefqbB5jpY98ooZ/t8gOi/RG/sqJhILYl1bMNjJuF9iNChCU742egnjWu
+HsdU9/LAF5CnMJCLbiFFOeAcqIy2eggnFZSyDpIhW/z6nXlQzYrFZ0V9xwb3FIjO
++GQaZolqk2cvkzQ1QDCpYDpWl9ZedimB8o9UpjM1NqdJjYpx7U+MwnIjd1DE1luJ
+R1nEbtSNvmDSbvUt7XtQIlXnWZqmze9OrDu4GF92FQWAa7xfc904we6VB+bxpUgx
+qoj4/K+QuuUvnlLekhpvNBoqlbj+/ej0U0D2qwrVlxn7Ws801EIE4zg4m98fzNgy
+fglaor5VAtVkn5r93+S2JPcDasyMa7C4PHPEHxKTOEtmV+rnxXQhrOQj6t6dp7SK
+2tQX8i4g8SHf/FdXL9Pb
+=JSVB
+-----END PGP SIGNATURE-----
+
+--Or8LRHETumScJgaM--
