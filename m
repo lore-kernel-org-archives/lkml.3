@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414AbaDOMfg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 08:35:36 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:54328 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491AbaDOMf3 (ORCPT
+	id S1754625AbaDOMgK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 08:36:10 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:48211 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007AbaDOMfe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 08:35:29 -0400
-From: Kenjiro Nakayama <nakayamakenjiro@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Neal Cardwell <ncardwell@google.com>, Netdev <netdev@vger.kernel.org>,
-        Yuchung Cheng <ycheng@google.com>, Eric Dumazet <edumazet@google.com>
-Subject: [PATCH v2] ipv4: Add option to get TCP_FASTOPEN to getsockopt()
-User-agent: mu4e 0.9.9.5; emacs 24.3.1
-Date: Tue, 15 Apr 2014 21:35:11 +0900
-Message-ID: <87r44yixds.fsf@gmail.com>
+	Tue, 15 Apr 2014 08:35:34 -0400
+Message-ID: <534D27AB.7070109@linaro.org>
+Date: Tue, 15 Apr 2014 14:35:55 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Xiubo Li <Li.Xiubo@freescale.com>, tglx@linutronix.de,
+        shawn.guo@linaro.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clocksource: vf_pit_timer: fix pit_read_sched_clock
+References: <1397558929-12123-1-git-send-email-Li.Xiubo@freescale.com>
+In-Reply-To: <1397558929-12123-1-git-send-email-Li.Xiubo@freescale.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 04/15/2014 12:48 PM, Xiubo Li wrote:
+> The pit_read_sched_clock mean to getting the current counter value,
+> and the vf pit timer is a down count timer, this should return
+> the counter value or the cycles elapsed.
+>
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+>   drivers/clocksource/vf_pit_timer.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/clocksource/vf_pit_timer.c b/drivers/clocksource/vf_pit_timer.c
+> index 02821b0..a918bc4 100644
+> --- a/drivers/clocksource/vf_pit_timer.c
+> +++ b/drivers/clocksource/vf_pit_timer.c
+> @@ -54,7 +54,7 @@ static inline void pit_irq_acknowledge(void)
+>
+>   static u64 pit_read_sched_clock(void)
+>   {
+> -	return __raw_readl(clksrc_base + PITCVAL);
+> +	return ~__raw_readl(clksrc_base + PITCVAL);
+>   }
+>
+>   static int __init pit_clocksource_init(unsigned long rate)
+>
 
-TCP_FASTOPEN option can be set via setsockopt(), but the value cannot be
-gotten via getsockopt(). This patch adds the option to getsockopt().
+Hi Xiubo,
 
-Sighned-off-by: Kenjiro Nakayama <nakayamakenjiro@gmail.com>
+thanks for the patch but this has already been fixed [1] and is 
+available in the timers/urgent branch.
 
- 	Add option to get TCP_FASTOPEN to getsockopt()
----
- net/ipv4/tcp.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+Thanks
 
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 4bd6d52..86186f4 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -2916,6 +2916,13 @@ static int do_tcp_getsockopt(struct sock *sk, int level,
- 	case TCP_USER_TIMEOUT:
- 		val = jiffies_to_msecs(icsk->icsk_user_timeout);
- 		break;
-+
-+	case TCP_FASTOPEN:
-+		val = icsk->icsk_accept_queue.fastopenq ?
-+		    icsk->icsk_accept_queue.fastopenq->max_qlen
-+		    : sysctl_tcp_fastopen;
-+		break;
-+
- 	case TCP_TIMESTAMP:
- 		val = tcp_time_stamp + tp->tsoffset;
- 		break;
---
-1.9.0
+   -- Daniel
+
+[1] 
+https://git.kernel.org/cgit/linux/kernel/git/tip/tip.git/commit/?h=timers/urgent&id=224aa3ed45c8735ae02bb2ecca002409fa6aa772
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
