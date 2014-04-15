@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680AbaDOTer (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 15:34:47 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42701 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751335AbaDOTep (ORCPT
+	id S1754751AbaDOTgR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 15:36:17 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:55902 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340AbaDOTgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 15:34:45 -0400
-Date: Tue, 15 Apr 2014 15:34:44 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Stefani Seibold <stefani@seibold.net>
-cc: linux-usb <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Greg KH <greg@kroah.com>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        <andreas.brief@rohde-schwarz.com>
-Subject: Re: Missing USB XHCI and EHCI reset for kexec
-In-Reply-To: <1397589265.21892.11.camel@vger.seibold.net>
-Message-ID: <Pine.LNX.4.44L0.1404151521200.1310-100000@iolanthe.rowland.org>
+	Tue, 15 Apr 2014 15:36:09 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <534D797D.7030201@wwwdotorg.org>
+References: <1397526163-20126-1-git-send-email-abrestic@chromium.org>
+	<1397526163-20126-3-git-send-email-abrestic@chromium.org>
+	<534D797D.7030201@wwwdotorg.org>
+Date: Tue, 15 Apr 2014 12:36:07 -0700
+X-Google-Sender-Auth: _Z-YUkNG4P5KYNEntkET7cYThDw
+Message-ID: <CAL1qeaFoQd1sZkTHSJnnVcYgLDLSP_Hr6VHd3s8aKfnAz-iyNw@mail.gmail.com>
+Subject: Re: [PATCH 2/4] mmc: tegra: fix reporting of base clock frequency
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Thierry Reding <thierry.reding@gmail.com>, Chris Ball <chris@printf.net>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        linux-tegra@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Apr 2014, Stefani Seibold wrote:
+On Tue, Apr 15, 2014 at 11:25 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 04/14/2014 07:42 PM, Andrew Bresticker wrote:
+>> Tegra SDHCI controllers, by default, report a base clock frequency
+>> of 208Mhz in SDHCI_CAPABILTIES which may or may not be equal to the
+>> actual base clock frequency.
+>
+> Some explanation of why this "may or may not be equal to the actual base
+> clock frequency" would be nice.
+>
+> Presumably, it's because the clock frequency is supplied by the clock
+> controller module, and configuring that happens externally to the SD
+> controller, so the SD HW has no knowledge of the actual frequency, and
+> hence simply reports a hard-coded maximum possible clock frequency?
 
-> > So two devices failed to initialize after the drivers were rebound: 3-4 
-> > and 2-2.  We know that 3-4 was the mass-storage device, but I can't 
-> > tell from this log what 2-2 was.  
-> > 
-> 
-> 2-2 is a custom HID device which handles the front panel and the rotary
-> knop.
+Correct.  I'll fix up the commit message.
 
-A custom device?  Maybe it's not behaving the way it should.
-
-> Both of this devices are connect thru a HUB.
-
-No.  You can tell from the device paths.  3-4 is the device plugged
-directly into port 4 of the host controller for bus 3.  Similarly, 2-2
-is the device plugged directly into port 2 of the host controller for
-bus 2.
-
-A good example of a device connected through a hub is the Rohde&Schwarz 
-FrontPanel USB Keyboard, 1-2.2.  This means it is plugged into port 2 
-of the hub that is plugged into port 2 of the host controller for bus 
-1.
-
-Also, the fact that these two devices are on different buses means that 
-they can't be connected to the same hub.  If they were, they would both 
-be on the same bus as that hub.
-
-> An other PPC board which
-> nearly the same HW does not have this HUB and this can handle the USB
-> bus without any problem.
-> 
-> So i think the HUB is the reason.
-
-Under the circumstances, I don't see how it could be.
-
-> Sorry, the HW is soldered on the board.
-
-If you think there is a bad hub, can you remove it and re-solder the 
-other components?
-
-Unfortunately, your environment isn't very suitable for testing.  You 
-can't attach the hardware to a different computer, you can't use any 
-test equipment, and you can't even try out different kernel versions.
-
-All together, the odds of solving this problem aren't good.
-
-> Right, but i would prefer a solution for this. Since it works perfectly
-> in kernel 3.4 i don't think it is a hardware issue.
-
-Maybe yes, maybe no.  Without the ability to perform detailed tests, we 
-can't tell.
-
-What happens if you run the unbind/rebind test under 3.4?
-
-Alan Stern
-
+>
+>> While this can be overridden by setting
+>> BASE_CLK_FREQ in VENDOR_CLOCK_CTRL on Tegra30 and later SoCs, just
+>> set SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN and supply a get_max_clock()
+>> callback to get the actual rate of the base clock.
+>
+> It's not clear to me from the function name that
+> sdhci_pltfm_clk_get_max_clock() simply calls clk_get() on the actual
+> clock. It might be nice to mention that in the commit description.
