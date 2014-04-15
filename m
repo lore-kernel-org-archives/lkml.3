@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284AbaDOSog (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 14:44:36 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59521 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754551AbaDOSod (ORCPT
+	id S1755306AbaDOSo4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 14:44:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33513 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754551AbaDOSow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 14:44:33 -0400
-Date: Tue, 15 Apr 2014 20:44:45 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-cc: linaro-kernel@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Arvind.Chauhan@arm.com,
-        linaro-networking@linaro.org, John Stultz <john.stultz@linaro.org>
-Subject: Re: [PATCH V1 Resend 4/5] tick-sched: don't call update_wall_time()
- when delta is lesser than tick_period
-In-Reply-To: <80afb18a494b0bd9710975bcc4de134ae323c74f.1397537987.git.viresh.kumar@linaro.org>
-Message-ID: <alpine.DEB.2.02.1404152042480.22697@ionos.tec.linutronix.de>
-References: <cover.1397537986.git.viresh.kumar@linaro.org> <80afb18a494b0bd9710975bcc4de134ae323c74f.1397537987.git.viresh.kumar@linaro.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 15 Apr 2014 14:44:52 -0400
+Date: Tue, 15 Apr 2014 11:44:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
+        xemul@parallels.com, Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: Re: [patch 4/4] mm: Clear VM_SOFTDIRTY flag inside clear_refs_write
+ instead of clear_soft_dirty
+Message-Id: <20140415114449.c8732a56f9974c2819e4541a@linux-foundation.org>
+In-Reply-To: <20140415182935.GR23983@moon>
+References: <20140324122838.490106581@openvz.org>
+	<20140324125926.204897920@openvz.org>
+	<20140415110654.4dd9a97c216e2689316fa448@linux-foundation.org>
+	<20140415182935.GR23983@moon>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 15 Apr 2014 22:29:35 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
 
-
-On Tue, 15 Apr 2014, Viresh Kumar wrote:
-
-> In tick_do_update_jiffies64() we are processing ticks only if delta is greater
-> than tick_period. This is what we are supposed to do here and it broke a bit
-> with this patch:
+> On Tue, Apr 15, 2014 at 11:06:54AM -0700, Andrew Morton wrote:
+> > 
+> > I resolved this by merging
+> > mm-softdirty-clear-vm_softdirty-flag-inside-clear_refs_write-instead-of-clear_soft_dirty.patch
+> > on top of the pagewalk patches as below - please carefully review.
 > 
-> commit 47a1b796306356f358e515149d86baf0cc6bf007
-> Author: John Stultz <john.stultz@linaro.org>
-> Date:   Thu Dec 12 13:10:55 2013 -0800
-> 
->     tick/timekeeping: Call update_wall_time outside the jiffies lock
+> Thanks a lot, Andrew! I've updated the patches and were planning to send them to you
+> tonightm but because you applied it on top of pagewal patches, I think i rather need to
+> fetch -next repo and review this patch and update the rest of the series on top (hope
+> i'll do that in 3-4 hours).
 
-Please look how I massaged the change log. There is no point in
-copying the whole gunk.
- 
-> With above patch, we might end up calling update_wall_time() even if delta is
-> found to be smaller that tick_period. Fix this by reversing the check and
-> returning early.
-
-Well.
-
-> Cc: <stable@vger.kernel.org> # v3.14+
-> Cc: John Stultz <john.stultz@linaro.org>
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  kernel/time/tick-sched.c | 32 +++++++++++++++++---------------
->  1 file changed, 17 insertions(+), 15 deletions(-)
-
-That's not how we do bug fixes if they can be done with 3 lines of
-change. See the commit.
-
-Thanks,
-
-	tglx
-
-
+-mm isn't in -next at present.  I'll get a release done later today for
+tomorrow's -next.
