@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870AbaDOOpN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 10:45:13 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41131 "EHLO
+	id S1754745AbaDOOpI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 10:45:08 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:41116 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751029AbaDOOpF (ORCPT
+	with ESMTP id S1750924AbaDOOpE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 10:45:05 -0400
-Date: Tue, 15 Apr 2014 16:44:16 +0200
+	Tue, 15 Apr 2014 10:45:04 -0400
+Date: Tue, 15 Apr 2014 16:42:15 +0200
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Chen-Yu Tsai <wens@csie.org>
 Cc: Linus Walleij <linus.walleij@linaro.org>,
@@ -21,36 +21,99 @@ Cc: Linus Walleij <linus.walleij@linaro.org>,
         linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com
-Subject: Re: [PATCH 6/7] net: rfkill: gpio: add clock-frequency device tree
- property
-Message-ID: <20140415144416.GH3207@lukather>
+Subject: Re: [PATCH 7/7] ARM: sun7i: cubietruck: enable bluetooth module
+Message-ID: <20140415144215.GG3207@lukather>
 References: <1397544101-18135-1-git-send-email-wens@csie.org>
- <1397544101-18135-7-git-send-email-wens@csie.org>
+ <1397544101-18135-8-git-send-email-wens@csie.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4LFBTxd4L5NLO6ly"
+	protocol="application/pgp-signature"; boundary="Wtrm9ATX0sn6fFKv"
 Content-Disposition: inline
-In-Reply-To: <1397544101-18135-7-git-send-email-wens@csie.org>
+In-Reply-To: <1397544101-18135-8-git-send-email-wens@csie.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---4LFBTxd4L5NLO6ly
+--Wtrm9ATX0sn6fFKv
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Apr 15, 2014 at 02:41:40PM +0800, Chen-Yu Tsai wrote:
-> Some devices, such as Broadcom Bluetooth devices, require a specific
-> clock rate for the clock tied to the rfkill device. Add a clock-frequency
-> property so we can specify this from the device tree.
+On Tue, Apr 15, 2014 at 02:41:41PM +0800, Chen-Yu Tsai wrote:
+> The CubieTruck has an AMPAK AP6210 WiFi+Bluetooth module. The Bluetooth
+> part is a BCM20710 device connected to UART2 in the A20 SoC.
+>=20
+> The IC requires a 32.768 KHz low power clock input for proper
+> auto-detection of the main clock, and an enable signal via GPIO.
 >=20
 > Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+> ---
+>  arch/arm/boot/dts/sun7i-a20-cubietruck.dts | 25 +++++++++++++++++++++++++
+>  1 file changed, 25 insertions(+)
+>=20
+> diff --git a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts b/arch/arm/boot/d=
+ts/sun7i-a20-cubietruck.dts
+> index cb25d3c..767c8e1 100644
+> --- a/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+> +++ b/arch/arm/boot/dts/sun7i-a20-cubietruck.dts
+> @@ -61,6 +61,13 @@
+>  				allwinner,drive =3D <0>;
+>  				allwinner,pull =3D <0>;
+>  			};
+> +
+> +			bt_pwr_pin_cubietruck: bt_pwr_pin@0 {
+> +				allwinner,pins =3D "PH18";
+> +				allwinner,function =3D "gpio_out";
+> +				allwinner,drive =3D <0>;
+> +				allwinner,pull =3D <0>;
+> +			};
+>  		};
+> =20
+>  		uart0: serial@01c28000 {
+> @@ -69,6 +76,12 @@
+>  			status =3D "okay";
+>  		};
+> =20
+> +		uart2: serial@01c28800 {
+> +			pinctrl-names =3D "default";
+> +			pinctrl-0 =3D <&uart2_pins_a>;
+> +			status =3D "okay";
+> +		};
+> +
 
-I think such a property belongs to the device that requires it, and
-not to the rfkill that controls it.
+Please make this a separate patch.
+
+>  		i2c0: i2c@01c2ac00 {
+>  			pinctrl-names =3D "default";
+>  			pinctrl-0 =3D <&i2c0_pins_a>;
+> @@ -139,4 +152,16 @@
+>  	reg_usb2_vbus: usb2-vbus {
+>  		status =3D "okay";
+>  	};
+> +
+> +	rfkill_bt {
+> +		compatible =3D "rfkill-gpio";
+> +		pinctrl-names =3D "default";
+> +		pinctrl-0 =3D <&bt_pwr_pin_cubietruck>, <&clk_out_a_pins_a>;
+> +		clocks =3D <&clk_out_a>;
+> +		clock-frequency =3D <32768>;
+> +		gpios =3D <&pio 7 18 0>; /* PH18 */
+> +		gpio-names =3D "reset";
+> +		rfkill-name =3D "bt";
+> +		rfkill-type =3D <2>;
+> +	};
+
+Hmmm, I don't think that's actually right.
+
+If you have such a device, then I'd expect it to be represented as a
+full device in the DT, probably with one part for the WiFi, one part
+for the Bluetooth, and here the definition of the rfkill device that
+controls it.
+
+But tying parts of the device to the rfkill that controls it, such as
+the clocks, or the frequency it runs at seems just wrong.
 
 Maxime
 
@@ -59,26 +122,26 @@ Maxime Ripard, Free Electrons
 Embedded Linux, Kernel and Android engineering
 http://free-electrons.com
 
---4LFBTxd4L5NLO6ly
+--Wtrm9ATX0sn6fFKv
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.14 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTTUXAAAoJEBx+YmzsjxAgsCUP/iA4SYjm+jYyJMCgApwwXNKw
-w/VFkZpJUOm3raQQ/L+Xi2KSm4+xkXr7G3MbsIX1hkst2uuuOFUjSTsejkFrHbj2
-hhH5cgZyag3qYI5ZYFxqF9kKpe0x7TdyWWGM9MMH3Gi2DgkwtnoA537XxSK8DRK7
-mfczf7sIuimy/sqZugnYFntFw+r61jBz0NyG6C34tXYkyUHQwqVVKkCP+ev7d5j+
-vgNXAgMNutArLpTVJtQcTDrRXgAmjx2jCVekk2+N4Xiv1Whil9uIZ93i99cMBJSR
-72sDpenoaXYsBH5MZAusnxHwft/TFq/xlEVXvIwKHb3pn9JinbRNkMrN0rAFOCVM
-MOIau7s1R2DrEjMEQGxrxQayjXbZWDsZu5Xv/OkRCSNK69dpL9Wpz/WHvwIhsvSy
-EhW7DAztAiUMeYuc137Re68gU4VLCNrtRTe4UuZKwkW25ps9DJtrz4b6bqA/Ct/X
-I4Fnuk/v0uY6VYW03gmJTF8Oa0bztz4tRcgirfZVzFvYjUBc0VQp9l6DcuBohi7k
-DXZyQmCHq0x0AcVvxuiDi7GJ+sIJHbq8TBiaK2NbpzTJADlG0XN2vojfb0Jyr6jk
-zv1qLqTCv40qt8xqiOoSolLcsYQZTjpd4t9y4oIyjKU8g874WpSDHlb7EXT01UYS
-iA+4sA6cuZ/t/O3VwhpC
-=ksvN
+iQIcBAEBAgAGBQJTTUVHAAoJEBx+YmzsjxAg6TMP/0G0r2/dNXOxOM8l6eWhk4VH
+gQq6tk1gX+Bkb9YfFFWl4GtPcRVD7lTeX6NoVhQtTLGGSctuVaojsOJ6UvIPg3K/
+JYTNf2QBk4b0pmzpST+l2pDzbGr+SzByKjL85eKZdZvmbm9LJJit8SxEGVKHFhAz
+ztDfUlmotR7nZtculXRkxAow7uNsoRmVWVGWpifVJGtIqqYD+TAaSc+2W7xaLFF8
+bRh7Ri0jdtBQeaegVVTm/COEdAGmBH32exW4d0v2edvdDdnKTI/PLzkvk5YI1vhm
+6S5Vm/sL644ZeGCH6/9A84zrRoqsceJuGVIxc5BkG2mm88UPh0Nx1mAheO5jvh3A
+VjaKT0hNAvDEF7FKRUDbhK+cLPyWpfkc+vDaKJgJtZ6fBlj3nrB4pxHwYbIGGfPv
+VCAJSQBhplGYTbERO4S4UHQwMZ74N1RRVDs4mM+2hGrv8wryYkE/FlTX75bd64Py
++HMdcJIOo2xsvF4DmHk0NvKWgkJUT1yAmaCnoWzrbykza/Kwisn4Goj6QQfQJCFT
+9New/zkrYOXTy7jTnSRfNFb7ItkaD19MFDR4vLzd416PdJkRX8U5H6OLCqVrUdtj
+S67EIjvS/kPOV4QYcyrrpGwGm4Sy+hBEgn82mZmZ6SjVz/ou5aW9uD1PXh2DBoSi
+6wvwNOvHBcutEks+WwlF
+=071c
 -----END PGP SIGNATURE-----
 
---4LFBTxd4L5NLO6ly--
+--Wtrm9ATX0sn6fFKv--
