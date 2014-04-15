@@ -1,110 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022AbaDONIe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 09:08:34 -0400
-Received: from smtp-out-049.synserver.de ([212.40.185.49]:1061 "EHLO
-	smtp-out-027.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750790AbaDONIb (ORCPT
+	id S1754670AbaDONJJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 09:09:09 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:42443 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752745AbaDONJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 09:08:31 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 30987
-Message-ID: <534D2F4B.7050404@metafoo.de>
-Date: Tue, 15 Apr 2014 15:08:27 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
-MIME-Version: 1.0
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-CC: Mark Brown <broonie@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Chen-Yu Tsai <wens@csie.org>, Hans de Goede <hdegoede@redhat.com>,
-        Carlo Caione <carlo@caione.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Subject: Re: [RFC PATCH v2] regmap: smbus: add support for regmap over SMBus
-References: <1397292335-5516-1-git-send-email-boris.brezillon@free-electrons.com> <1397480885-11962-1-git-send-email-boris.brezillon@free-electrons.com> <20140414210429.GJ25182@sirena.org.uk> <534CE16D.8010508@free-electrons.com> <20140415100922.GN12304@sirena.org.uk> <534D1DDA.40207@free-electrons.com> <534D252B.8060009@metafoo.de> <534D28CE.8020006@free-electrons.com>
-In-Reply-To: <534D28CE.8020006@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Apr 2014 09:09:07 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        x86@kernel.org, iommu@lists.linux-foundation.org
+Subject: [PATCH v3 0/5] enhance DMA CMA on x86 
+Date: Tue, 15 Apr 2014 22:08:44 +0900
+Message-Id: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2014 02:40 PM, Boris BREZILLON wrote:
->
-> On 15/04/2014 14:25, Lars-Peter Clausen wrote:
->> On 04/15/2014 01:54 PM, Boris BREZILLON wrote:
->>>
->>>
->>> On 15/04/2014 12:09, Mark Brown wrote:
->>>> On Tue, Apr 15, 2014 at 09:36:13AM +0200, Boris BREZILLON wrote:
->>>>> On 14/04/2014 23:04, Mark Brown wrote:
->>>
->>>>>> The transfer type gets set once per device at init time so why not
->>>>>> just parameterise based on val_bytes?
->>>
->>>>> Actually, you may want to transfer 1 byte registers using the block
->>>>> method (if your device only support block transfers). This depends on
->>>>> the device being accessed and what it supports, but I'm not sure we
->>>>> can
->>>>> assume 1 byte registers will always be transferred using SMBUS byte
->>>>> transfers.
->>>
->>>> OK, so if this a realistic issue then it seems like it's better to
->>>> implement three different buses - there is not really any common code
->>>> between the various paths.
->>>
->>> Okay, I'll create 4 different busses (one for each access type).
->>> BTW, should I keep these implementations in the same source file
->>> (regmap-smbus.c) ?
->>> And, should I keep one method to register an smbus regmap or should I
->>> provide one method per access type and get rid of the
->>> regmap_smbus_transfer_type enum ?
->>
->> I don't think we should leave the decision which bus to use to the
->> driver. Neither should the driver have to choose whether to use smbus
->> or native I2C. We want to use native I2C when available, because it is
->> more efficient than going through the smbus emulation layer. On the
->> other hand we want to automatically switch to smbus when native I2C is
->> not available and the device can work fine with smbus. Also I'm afraid
->> that we'll otherwise soon see code popping up like:
->>
->> if (of_property_read_bool(np, "use-smbus-regmap"))
->>      regmap = regmap_init_smbus(...)
->> else
->>      regmap = regmap_init_i2c(...)
->>
->> My suggestion is that in regmap_init_i2c() you check the capabilities
->> of the I2C adapter. If it supports native I2C you setup the regmap
->> with the regmap_i2c struct just as it does right now. If the adapter
->> does not support native I2C, check if the device can be supported by
->> smbus (reg_bytes == 8 && val_bytes % 8 == 0). For each type of smbus
->> operations have one regmap_bus struct, and if you can fallback to
->> smbus choose the bus depending on the config's val_bytes.
->>
->
-> What if the device only support SMBus block transfers, but the adapter
-> support both regular I2C and SMBus block transfers (don't know if such a
-> device exist :-)) ?
+This patch set enhances the DMA Contiguous Memory Allocator on x86.
 
-SMBus block transfers prefix the transfer with the number of bytes that are 
-in this transfer. We do not support this currently in the I2C backend (but 
-we could). If there should ever be a driver that needs support for SMBus 
-block transfers this could easily be added. For now I think it is safe to 
-ignore this.
+Currently the DMA CMA is only supported with pci-nommu dma_map_ops
+and furthermore it can't be enabled on x86_64.  But I would like to
+allocate big contiguous memory with dma_alloc_coherent() and tell it
+to the device that requires it, regardless of which dma mapping
+implementation is actually used in the system.
 
->
-> My point is that I'm not sure the core remap-i2c code can decide whether
-> to use SMBus or I2C transfer only from val_bytes value, but I might be
-> wrong.
+So this makes it work with swiotlb and intel-iommu dma_map_ops, too.
+And this also extends "cma=" kernel parameter to specify placement
+constraint by the physical address range of memory allocations.  For
+example, CMA allocates memory below 4GB by "cma=64M@0-4G", it is
+required for the devices only supporting 32-bit addressing on 64-bit
+systems without iommu.
 
-It must be able to figure out what to do based on the config. If it is not 
-we probably need to extend the config. E.g. if we should ever need to 
-support devices which require SMBus block transfers we could add a flag that 
-tells regmap that this device want's all messages prefixed with the length 
-of the message.
+* Changes from v2
+- Rebased on current Linus tree
+- Add Acked-by line
+- Fix gfp flags check for __GFP_ATOMIC, reported by Marek Szyprowski
+- Avoid CMA area on highmem with cma= option, reported by Marek Szyprowski
 
-- Lars
+* Changes from v1
+- fix dma_alloc_coherent() with __GFP_ZERO
+- add placement specifier for "cma=" kernel parameter
+
+Akinobu Mita (5):
+  x86: make dma_alloc_coherent() return zeroed memory if CMA is enabled
+  x86: enable DMA CMA with swiotlb
+  intel-iommu: integrate DMA CMA
+  memblock: introduce memblock_alloc_range()
+  cma: add placement specifier for "cma=" kernel parameter
+
+ Documentation/kernel-parameters.txt |  7 +++++--
+ arch/x86/Kconfig                    |  2 +-
+ arch/x86/include/asm/swiotlb.h      |  7 +++++++
+ arch/x86/kernel/amd_gart_64.c       |  2 +-
+ arch/x86/kernel/pci-dma.c           |  3 +--
+ arch/x86/kernel/pci-swiotlb.c       |  9 +++++---
+ arch/x86/kernel/setup.c             |  2 +-
+ arch/x86/pci/sta2x11-fixup.c        |  6 ++----
+ drivers/base/dma-contiguous.c       | 42 ++++++++++++++++++++++++++++---------
+ drivers/iommu/intel-iommu.c         | 32 +++++++++++++++++++++-------
+ include/linux/dma-contiguous.h      |  9 +++++---
+ include/linux/memblock.h            |  2 ++
+ include/linux/swiotlb.h             |  2 ++
+ lib/swiotlb.c                       |  2 +-
+ mm/memblock.c                       | 21 +++++++++++++++----
+ 15 files changed, 108 insertions(+), 40 deletions(-)
+
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Don Dutile <ddutile@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org
+Cc: iommu@lists.linux-foundation.org
+-- 
+1.8.3.2
 
