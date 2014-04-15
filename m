@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188AbaDOCRU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 22:17:20 -0400
-Received: from ozlabs.org ([103.22.144.67]:39310 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752482AbaDOCRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 22:17:19 -0400
-Date: Tue, 15 Apr 2014 12:17:03 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Harini Katakam <harinik@xilinx.com>
-Subject: linux-next: build failure after merge of the spi tree
-Message-Id: <20140415121703.055d54d52e9d2d325e9987f0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__15_Apr_2014_12_17_03_+1000_NemglzSVjaurFHGH"
+	id S1751460AbaDOCYQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 22:24:16 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:15039 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770AbaDOCYN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 22:24:13 -0400
+Message-ID: <534C983B.7080701@huawei.com>
+Date: Tue, 15 Apr 2014 10:23:55 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: implement unified hierarchy,
+ v2
+References: <1397511430-2673-1-git-send-email-tj@kernel.org>
+In-Reply-To: <1397511430-2673-1-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__15_Apr_2014_12_17_03_+1000_NemglzSVjaurFHGH
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> This patchset finally implements the default unified hierarchy.  The
+> goal is providing enough flexibility while enforcing stricter common
+> structure where appropriate to address the above listed issues.
+> 
+> Controllers which aren't bound to other hierarchies are
+> automatically attached to the unified hierarchy, which is different in
+> that controllers are enabled explicitly for each subtree.
+> "cgroup.subtree_control" controls which controllers are enabled on the
+> child cgroups.  Let's assume a hierarchy like the following.
+> 
+>   root - A - B - C
+>                \ D
+> 
+> root's "cgroup.subtree_control" determines which controllers are
+> enabled on A.  A's on B.  B's on C and D.  This coincides with the
+> fact that controllers on the immediate sub-level are used to
+> distribute the resources of the parent.  In fact, it's natural to
+> assume that resource control knobs of a child belong to its parent.
+> Enabling a controller in "cgroup.subtree_control" declares that
+> distribution of the respective resources of the cgroup will be
+> controlled.  Note that this means that controller enable states are
+> shared among siblings.
+> 
+> The default hierarchy has an extra restriction - only cgroups which
+> don't contain any task may have controllers enabled in
+> "cgroup.subtree_control".  Combined with the other properties of the
+> default hierarchy, this guarantees that, from the view point of
+> controllers, tasks are only on the leaf cgroups.  In other words, only
+> leaf csses may contain tasks.  This rules out situations where child
+> cgroups compete against internal tasks of the parent.
+> 
 
-Hi Mark,
+Right after bootup:
 
-After merging the spi tree, today's linux-next build (x86_64_allmodconfig)
-failed like this:
+# mount -t cgroup -o __DEVEL__sane_behavior xxx /mnt
+# ls /mnt
+cgroup.controllers  cgroup.procs  cgroup.sane_behavior  cgroup.subtree_control
+# cat /mnt/cgroup.controllers
+cpuset cpu cpuacct memory devices freezer net_cls blkio perf_event hugetlb
 
-drivers/spi/spi-cadence.c: In function 'cdns_spi_write':
-drivers/spi/spi-cadence.c:135:2: error: implicit declaration of function 'w=
-ritel_relaxed' [-Werror=3Dimplicit-function-declaration]
-  writel_relaxed(val, xspi->regs + offset);
-  ^
+I don't see any controller knobs...
 
-Caused by commit c474b3866546 ("spi: Add driver for Cadence SPI controller"=
-).
-
-I have used the spi tree from next-20140414 for today.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__15_Apr_2014_12_17_03_+1000_NemglzSVjaurFHGH
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTTJakAAoJEMDTa8Ir7ZwV0KgQAIQSwGTbztxHFdzGJx0PYqla
-TAvYQEs77nzxP1a7kaoATDxTz7+zlZdcIXl5+R/AIIHtoBNBgJvFUI8y548TX5ET
-1j0lXxrn31JB3yz6Av7ueP68uZcbfsTOkOXCc3iySWvV9a/TRBbXnugYgvQEFhI2
-johPUc9NneyhA4GaRF0uWk0zuskEuIHp7KBS72BXUkEJq0Pm03wL+mflTFK1xYRt
-tgPdzV/YJ8Uz8wuZ4VulbaFCCjY9Rk5XuRwCz/8CnnHMOpRW2fEFncq/vJcZwx6/
-JAJzQKcgCCYXdq2O6IQ4sF0X6hjeqEeuwJqvC6pBkCiJB+xoJI4rHLBJBIEjzcoo
-Hvu5FxVm34ry0LYRRfm1HSxQhuKaQF90KLmNcf7T12hzUoIG/DAVGZ3HomXyw+lg
-ntRMOUWjaigY/Tdnay1GtA9T5FjdRaueKoy2S9u1LVkZzBe4UPVJQlirLUOjfJEO
-lxLU/aWs5TghhK8V80pUqoP67gCPq+jCVIUjWsyFHJmh96lMJe+E+p+XpFl2pIyT
-ra941d4DEIS5MlkdVh7UFB9HUFeeEIiiP04vtNVnpF91yJbUGWU+Wy2vXmuvJzLs
-SImwG8FFsPLKTI0fJSy8dsADgfmilRZMaiJDFqpRqzQUdZssDVr1jLXqLmff2wbj
-jdHQ79gGrb76G8dRrB6u
-=vkFH
------END PGP SIGNATURE-----
-
---Signature=_Tue__15_Apr_2014_12_17_03_+1000_NemglzSVjaurFHGH--
