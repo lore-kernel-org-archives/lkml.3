@@ -1,129 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751045AbaDOVj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 17:39:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:62414 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750902AbaDOVj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 17:39:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,866,1389772800"; 
-   d="scan'208";a="493772442"
-Date: Tue, 15 Apr 2014 14:39:22 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: wim@iguana.be, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, gnomes@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH v4 2/2] x86: intel-mid: add watchdog platform code for
- Merrifield
-Message-ID: <20140415213922.GA4590@psi-dev26.jf.intel.com>
-References: <1397587272-31152-1-git-send-email-david.a.cohen@linux.intel.com>
- <1397592366-3899-1-git-send-email-david.a.cohen@linux.intel.com>
- <1397592366-3899-3-git-send-email-david.a.cohen@linux.intel.com>
- <20140415200900.GJ5986@psi-dev26.jf.intel.com>
- <20140415211349.GA10245@roeck-us.net>
- <20140415211722.GA4420@psi-dev26.jf.intel.com>
- <20140415213551.GA10569@roeck-us.net>
+	id S1751176AbaDOVlQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 17:41:16 -0400
+Received: from mail-la0-f45.google.com ([209.85.215.45]:36030 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829AbaDOVlO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 17:41:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140415213551.GA10569@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAPDyKFp=DikkmXnyHsTJF6W_FpTDJZYiSk9n7Nh+RwY=r=P4-Q@mail.gmail.com>
+References: <534C7D36.9090008@linaro.org> <CAPDyKFp=DikkmXnyHsTJF6W_FpTDJZYiSk9n7Nh+RwY=r=P4-Q@mail.gmail.com>
+From: Peter Maydell <peter.maydell@linaro.org>
+Date: Tue, 15 Apr 2014 22:40:52 +0100
+Message-ID: <CAFEAcA_qr5O-Zf8OxMU7JmeonSsJFE9soVArPay4GDkL8TK1uQ@mail.gmail.com>
+Subject: Re: [Regression?] qemu-system-arm flooding "sd_write_data: not in
+ Receiving-Data state"
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: John Stultz <john.stultz@linaro.org>, Chris Ball <chris@printf.net>,
+        Johan Rudholm <jrudholm@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 02:35:51PM -0700, Guenter Roeck wrote:
-> On Tue, Apr 15, 2014 at 02:17:22PM -0700, David Cohen wrote:
-> > On Tue, Apr 15, 2014 at 02:13:49PM -0700, Guenter Roeck wrote:
-> > > On Tue, Apr 15, 2014 at 01:09:00PM -0700, David Cohen wrote:
-> > > > On Tue, Apr 15, 2014 at 01:06:06PM -0700, David Cohen wrote:
-> > > > > This patch adds platform code for Intel Merrifield.
-> > > > > Since the watchdog is not part of SFI table, we have no other option but
-> > > > > to manually register watchdog's platform device (argh!).
-> > > > > 
-> > > > > Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> > > > > ---
-> > > > >  arch/x86/platform/intel-mid/device_libs/Makefile   |  1 +
-> > > > >  .../platform/intel-mid/device_libs/platform_wdt.c  | 66 ++++++++++++++++++++++
-> > > > >  2 files changed, 67 insertions(+)
-> > > > >  create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_wdt.c
-> > > > > 
-> > > > > diff --git a/arch/x86/platform/intel-mid/device_libs/Makefile b/arch/x86/platform/intel-mid/device_libs/Makefile
-> > > > > index 097e7a7940d8..af9307f2cc28 100644
-> > > > > --- a/arch/x86/platform/intel-mid/device_libs/Makefile
-> > > > > +++ b/arch/x86/platform/intel-mid/device_libs/Makefile
-> > > > > @@ -20,3 +20,4 @@ obj-$(subst m,y,$(CONFIG_DRM_MEDFIELD)) += platform_tc35876x.o
-> > > > >  obj-$(subst m,y,$(CONFIG_SERIAL_MRST_MAX3110)) += platform_max3111.o
-> > > > >  # MISC Devices
-> > > > >  obj-$(subst m,y,$(CONFIG_KEYBOARD_GPIO)) += platform_gpio_keys.o
-> > > > > +obj-$(subst m,y,$(CONFIG_INTEL_MID_WATCHDOG)) += platform_wdt.o
-> > > > > diff --git a/arch/x86/platform/intel-mid/device_libs/platform_wdt.c b/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
-> > > > > new file mode 100644
-> > > > > index 000000000000..4b0434b54aff
-> > > > > --- /dev/null
-> > > > > +++ b/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
-> > > > > @@ -0,0 +1,66 @@
-> > > > > +/*
-> > > > > + * platform_wdt.c: Watchdog platform library file
-> > > > > + *
-> > > > > + * (C) Copyright 2014 Intel Corporation
-> > > > > + * Author: David Cohen <david.a.cohen@linux.intel.com>
-> > > > > + *
-> > > > > + * This program is free software; you can redistribute it and/or
-> > > > > + * modify it under the terms of the GNU General Public License
-> > > > > + * as published by the Free Software Foundation; version 2
-> > > > > + * of the License.
-> > > > > + */
-> > > > > +
-> > > > > +#include <linux/init.h>
-> > > > > +#include <linux/interrupt.h>
-> > > > > +#include <linux/platform_device.h>
-> > > > > +#include <linux/platform_data/intel-mid_wdt.h>
-> > > > > +#include <asm/intel-mid.h>
-> > > > > +
-> > > > > +#define TANGIER_EXT_TIMER0_MSI 15
-> > > > > +
-> > > > > +static struct platform_device wdt_dev = {
-> > > > > +	.name = "intel_mid_wdt",
-> > > > > +	.id = -1,
-> > > > > +};
-> > > > > +
-> > > > > +static int tangier_probe(struct platform_device *pdev)
-> > > > > +{
-> > > > > +	int ioapic;
-> > > > > +	struct io_apic_irq_attr irq_attr = { 0 };
-> > > > > +
-> > > > > +	ioapic = mp_find_ioapic(TANGIER_EXT_TIMER0_MSI);
-> > > > 
-> > > > Forgot remove this hardcoded irq number. I'll send v4.1 of this patch.
-> > > > 
-> > > > BR, David
-> > > > 
-> > > > > +	if (ioapic >= 0) {
-> > > > > +		int ret;
-> > > > > +		irq_attr.ioapic = ioapic;
-> > > > > +		irq_attr.ioapic_pin = TANGIER_EXT_TIMER0_MSI;
-> > > > > +		irq_attr.trigger = 1;
-> > > > > +		irq_attr.polarity = 0; /* Active high */
-> > > > > +		ret = io_apic_set_pci_routing(NULL, TANGIER_EXT_TIMER0_MSI,
-> > > > > +					      &irq_attr);
-> > > 
-> > > Here is another one, just in case you missed it.
-> > 
-> > This one I didn't miss. I checked and it returns dummy error code (-1).
-> > Better to keep the hardcoded value.
-> > 
-> Thanks for letting me know (guess the idea is for mp_find_ioapic to return
-> "invalid irq"), but I meant the second hard-coded irq....
+On 15 April 2014 08:26, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> Though, maybe you can provide me with some information about the qemu
+> environment you are using?
+>
+> 1. Especially, what variant of the ARM primcell pl180 is being
+> modelled/used here? The mmci driver handles a handful of different
+> variants.
 
-Hm :)
-I am aware about that one. I just tried to be a bit lazy when replying.
+QEMU's device modelling is not generally sufficiently accurate
+to make this a very meaningful question :-) We model a PL181,
+but we will inevitably behave differently from h/w one way or another.
+(Most notably, data read/write operations will complete instantaneously,
+whereas on real h/w there's always some delay. There's also a hack
+in the pl181 model working around a Linux 2.6.x driver bug:
+    /* The linux 2.6.21 driver is buggy, and misbehaves if new data arrives
+       while it is reading the FIFO.  We hack around this be defering
+       subsequent transfers until after the driver polls the status word.
+       http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=4446/1
+     */
+I hate those, because once they get into QEMU it's very hard
+to get them back out again...)
 
-Thanks,
+> 2. What type of mmc/sd card is being modelled/used here?
 
-David
+The comment at the top of the source file says "as defined in the
+"SD Memory Card Physical layer specification, Version 1.10."
+It might even still be accurate...
 
-> 
-> Guenter
+The message from QEMU indicates that the SD card model's
+state machine thinks that it should not be receiving data but
+it has just got a pile of data from the pl181. The obvious guess
+is that what you did in the CMD irq handling has moved it from
+"ok for data" to something else.
+
+Beyond that, somebody would need to reproduce with a newer
+QEMU than 1.5.0 and enable debugging printfs in the kernel
+and the model to figure out what the interaction is here.
+Chances are quite high that this is a QEMU model bug, but it's
+not 100% :-)
+
+thanks
+-- PMM
