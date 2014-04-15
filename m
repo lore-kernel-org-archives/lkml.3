@@ -1,134 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387AbaDOMmm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 08:42:42 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47329 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750919AbaDOMml (ORCPT
+	id S1754816AbaDOMnG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 08:43:06 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:12133 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751951AbaDOMnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 08:42:41 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com
-Subject: [PATCH] regulator: core: Use devres for releasing of_regulator_match of_nodes
-Date: Tue, 15 Apr 2014 13:34:36 +0100
-Message-Id: <1397565276-31288-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
+	Tue, 15 Apr 2014 08:43:03 -0400
+Message-ID: <534D294D.7000201@arm.com>
+Date: Tue, 15 Apr 2014 13:42:53 +0100
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Anders Berg <anders.berg@lsi.com>
+CC: "arnd@arndb.de" <arnd@arndb.de>, "olof@lixom.net" <olof@lixom.net>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "dbaryshkov@gmail.com" <dbaryshkov@gmail.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/5] ARM: dts: Device tree for AXM55xx.
+References: <cover.1397552154.git.anders.berg@lsi.com> <02c006a6fc64131df82981abbc1c71c7af52254e.1397552154.git.anders.berg@lsi.com>
+In-Reply-To: <02c006a6fc64131df82981abbc1c71c7af52254e.1397552154.git.anders.berg@lsi.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rather than requiring individual drivers to put the of_nodes returned
-from of_regulator_match use devres to put them. This also has the
-benefit it makes the life-time of the of_nodes match the lifetime of
-the init data also contained in the of_regulator_match structure, which
-seems more consistent.
+Hi Anders,
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/regulator/of_regulator.c       |   47 +++++++++++++++++--------------
- include/linux/regulator/of_regulator.h |    7 -----
- 2 files changed, 26 insertions(+), 28 deletions(-)
+On 15/04/14 13:06, Anders Berg wrote:
+> Add device tree for the Amarillo validation board with an AXM5516 SoC.
+> 
+> Signed-off-by: Anders Berg <anders.berg@lsi.com>
+> ---
+>  arch/arm/boot/dts/Makefile             |   1 +
+>  arch/arm/boot/dts/axm5516-amarillo.dts |  51 ++++++
+>  arch/arm/boot/dts/axm5516-cpus.dtsi    | 204 ++++++++++++++++++++++
+>  arch/arm/boot/dts/axm55xx.dtsi         | 306 +++++++++++++++++++++++++++++++++
+>  4 files changed, 562 insertions(+)
+>  create mode 100644 arch/arm/boot/dts/axm5516-amarillo.dts
+>  create mode 100644 arch/arm/boot/dts/axm5516-cpus.dtsi
+>  create mode 100644 arch/arm/boot/dts/axm55xx.dtsi
+> 
 
-diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
-index 188e0cb..4672cd2 100644
---- a/drivers/regulator/of_regulator.c
-+++ b/drivers/regulator/of_regulator.c
-@@ -106,6 +106,20 @@ struct regulator_init_data *of_get_regulator_init_data(struct device *dev,
- }
- EXPORT_SYMBOL_GPL(of_get_regulator_init_data);
- 
-+struct devm_of_regulator_matches {
-+	struct of_regulator_match *matches;
-+	unsigned int num_matches;
-+};
-+
-+static void devm_of_regulator_put_matches(struct device *dev, void *res)
-+{
-+	struct devm_of_regulator_matches *devm_matches = res;
-+	int i;
-+
-+	for (i = 0; i < devm_matches->num_matches; i++)
-+		of_node_put(devm_matches->matches[i].of_node);
-+}
-+
- /**
-  * of_regulator_match - extract multiple regulator init data from device tree.
-  * @dev: device requesting the data
-@@ -132,10 +146,22 @@ int of_regulator_match(struct device *dev, struct device_node *node,
- 	unsigned int i;
- 	const char *name;
- 	struct device_node *child;
-+	struct devm_of_regulator_matches *devm_matches;
- 
- 	if (!dev || !node)
- 		return -EINVAL;
- 
-+	devm_matches = devres_alloc(devm_of_regulator_put_matches,
-+				    sizeof(struct devm_of_regulator_matches),
-+				    GFP_KERNEL);
-+	if (!devm_matches)
-+		return -ENOMEM;
-+
-+	devm_matches->matches = matches;
-+	devm_matches->num_matches = num_matches;
-+
-+	devres_add(dev, devm_matches);
-+
- 	for (i = 0; i < num_matches; i++) {
- 		struct of_regulator_match *match = &matches[i];
- 		match->init_data = NULL;
-@@ -172,24 +198,3 @@ int of_regulator_match(struct device *dev, struct device_node *node,
- 	return count;
- }
- EXPORT_SYMBOL_GPL(of_regulator_match);
--
--/**
-- * of_regulator_put_match - put the of_node references from an
-- *                          of_regulator_match structure
-- * @matches: match table for the regulators
-- * @num_matches: number of entries in match table
-- *
-- * This function goes through a match table and calls of_node_put on each
-- * of_node.
-- */
--int of_regulator_put_match(struct of_regulator_match *matches,
--			   unsigned int num_matches)
--{
--	int i;
--
--	for (i = 0; i < num_matches; i++)
--		of_node_put(matches[i].of_node);
--
--	return 0;
--}
--EXPORT_SYMBOL_GPL(of_regulator_put_match);
-diff --git a/include/linux/regulator/of_regulator.h b/include/linux/regulator/of_regulator.h
-index a5abd83..f921796 100644
---- a/include/linux/regulator/of_regulator.h
-+++ b/include/linux/regulator/of_regulator.h
-@@ -20,8 +20,6 @@ extern struct regulator_init_data
- extern int of_regulator_match(struct device *dev, struct device_node *node,
- 			      struct of_regulator_match *matches,
- 			      unsigned int num_matches);
--extern int of_regulator_put_match(struct of_regulator_match *matches,
--				  unsigned int num_matches);
- #else
- static inline struct regulator_init_data
- 	*of_get_regulator_init_data(struct device *dev,
-@@ -37,11 +35,6 @@ static inline int of_regulator_match(struct device *dev,
- {
- 	return 0;
- }
--static inline int of_regulator_put_match(struct of_regulator_match *matches,
--					 unsigned int num_matches)
--{
--	return 0;
--}
- #endif /* CONFIG_OF */
- 
- #endif /* __LINUX_OF_REG_H */
+[...]
+
+> +       gic: interrupt-controller@2001001000 {
+> +               compatible = "arm,cortex-a15-gic";
+> +               #interrupt-cells = <3>;
+> +               #address-cells = <0>;
+> +               interrupt-controller;
+> +               reg = <0x20 0x01001000 0 0x1000>,
+> +                     <0x20 0x01002000 0 0x1000>,
+> +                     <0x20 0x01004000 0 0x2000>,
+> +                     <0x20 0x01006000 0 0x2000>;
+> +               interrupts = <GIC_PPI 9 (GIC_CPU_MASK_SIMPLE(4) |
+> +                               IRQ_TYPE_LEVEL_HIGH)>;
+> +       };
+
+Given how many CPUs this system has, what's the catch regarding the GIC?
+Is there a second one shadowing this one at the same address for another
+set of 8 CPUs? Is there an additional mechanism to IPI the other CPUs?
+
+Thanks,
+
+	M.
 -- 
-1.7.2.5
-
+Jazz is not dead. It just smells funny...
