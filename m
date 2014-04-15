@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358AbaDOI1P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 04:27:15 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:45064 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751209AbaDOI1N (ORCPT
+	id S1752068AbaDOI2Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 04:28:16 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:45624 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750761AbaDOI2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 04:27:13 -0400
-Message-ID: <534CED5B.2090100@hitachi.com>
-Date: Tue, 15 Apr 2014 17:27:07 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Zhan Jianyu <nasa4836@gmail.com>
-Cc: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, davem@davemloft.net,
-        rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH] kprobes: be more permissive when user specifies both
- symbol name and address
-References: <1397472050-19947-1-git-send-email-nasa4836@gmail.com> <534BF7FE.6050603@hitachi.com> <CAHz2CGV_WA_bMwYCg1QCyFpCv0PKgPhBQUf_pFQbNn-guLL+Ag@mail.gmail.com>
-In-Reply-To: <CAHz2CGV_WA_bMwYCg1QCyFpCv0PKgPhBQUf_pFQbNn-guLL+Ag@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Apr 2014 04:28:14 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] irqchip: vic: properly chain the cascaded IRQs
+Date: Tue, 15 Apr 2014 10:28:04 +0200
+Message-Id: <1397550484-7119-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/15 17:11), Zhan Jianyu wrote:
-> On Mon, Apr 14, 2014 at 11:00 PM, Masami Hiramatsu
-> <masami.hiramatsu.pt@hitachi.com> wrote:
->> if (p->addr) {
->>   if (p->symbol) {
->>     sym = kallsyms_lookup(p->addr, ... &offs ...);
->>     if (strcmp(sym,p->symbol) != 0 || offs != p->offset) {
->>       pr_warning("Error! ...");
->>       goto fail;
->>     }
->>   }
->> } else if (p->symbol) {
->>   kprobe_lookup_name(p->symbol_name, addr);
->>   if (!addr)
->>     goto fail;
->> } else
->>   goto fail;
-> 
-> 
-> Hmm, let's clasify all conditions.
-> 
-> 1. Only symbol, check it, if not found, fail.
-> 2. Only address, check it, if not found, fail.
-> 3. Both, check address,
->     3.1 not found, fail, because some symbols might have muplitple instances,
->           we don't bother to check symbol name.
->     3.2 found, check if symbol mismatch, if yes, fail.
+We are flagging the parent IRQ as chained, then we must also
+make sure to call the chained_irq_[enter|exit] functions for
+things to work smoothly.
 
-  Plus, if the p->offset and offs are different, fail too.
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+Hi Thomas, please pick this fix for v3.15-rc:s if it's OK.
+---
+ drivers/irqchip/irq-vic.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-> Is this reasonable?  Next mail is a renewed patch following this priciple.
-
-OK, let me see. :)
-
-Thank you,
-
-
+diff --git a/drivers/irqchip/irq-vic.c b/drivers/irqchip/irq-vic.c
+index 37dab0b472cd..7d35287f9e90 100644
+--- a/drivers/irqchip/irq-vic.c
++++ b/drivers/irqchip/irq-vic.c
+@@ -24,6 +24,7 @@
+ #include <linux/list.h>
+ #include <linux/io.h>
+ #include <linux/irq.h>
++#include <linux/irqchip/chained_irq.h>
+ #include <linux/irqdomain.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+@@ -228,12 +229,17 @@ static int handle_one_vic(struct vic_device *vic, struct pt_regs *regs)
+ static void vic_handle_irq_cascaded(unsigned int irq, struct irq_desc *desc)
+ {
+ 	u32 stat, hwirq;
++	struct irq_chip *host_chip = irq_desc_get_chip(desc);
+ 	struct vic_device *vic = irq_desc_get_handler_data(desc);
+ 
++	chained_irq_enter(host_chip, desc);
++
+ 	while ((stat = readl_relaxed(vic->base + VIC_IRQ_STATUS))) {
+ 		hwirq = ffs(stat) - 1;
+ 		generic_handle_irq(irq_find_mapping(vic->domain, hwirq));
+ 	}
++
++	chained_irq_exit(host_chip, desc);
+ }
+ 
+ /*
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.9.0
 
