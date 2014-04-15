@@ -1,149 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742AbaDOMiP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 08:38:15 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:47413 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754712AbaDOMiF (ORCPT
+	id S1754344AbaDOMku (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 08:40:50 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:40248 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750951AbaDOMks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 08:38:05 -0400
-From: Rostislav Lisovy <lisovy@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
-        jan-niklas.meier@volkswagen.de,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Subject: [PATCH 1/2] cfg80211: Add attributes describing prohibited channel bandwidth
-Date: Tue, 15 Apr 2014 14:37:55 +0200
-Message-Id: <1397565476-4348-2-git-send-email-rostislav.lisovy@fel.cvut.cz>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1397565476-4348-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
-References: <1397565476-4348-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
+	Tue, 15 Apr 2014 08:40:48 -0400
+Message-ID: <534D28CE.8020006@free-electrons.com>
+Date: Tue, 15 Apr 2014 14:40:46 +0200
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Mark Brown <broonie@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
+        Chen-Yu Tsai <wens@csie.org>, Hans de Goede <hdegoede@redhat.com>,
+        Carlo Caione <carlo@caione.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
+Subject: Re: [RFC PATCH v2] regmap: smbus: add support for regmap over SMBus
+References: <1397292335-5516-1-git-send-email-boris.brezillon@free-electrons.com> <1397480885-11962-1-git-send-email-boris.brezillon@free-electrons.com> <20140414210429.GJ25182@sirena.org.uk> <534CE16D.8010508@free-electrons.com> <20140415100922.GN12304@sirena.org.uk> <534D1DDA.40207@free-electrons.com> <534D252B.8060009@metafoo.de>
+In-Reply-To: <534D252B.8060009@metafoo.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since there are frequency bands (e.g. 5.9GHz) allowing channels
-with only 10 or 5 MHz bandwidth, this patch adds attributes that
-allow keeping track about this information.
 
-When channel attributes are reported to user-space, make sure to
-not break old tools, i.e. if the 'split wiphy dump' is enabled,
-report the extra attributes (if present) describing the bandwidth
-restrictions.  If the 'split wiphy dump' is not enabled,
-completely omit those channels that have flags set to either
-IEEE80211_CHAN_NO_10MHZ or IEEE80211_CHAN_NO_20MHZ.
+On 15/04/2014 14:25, Lars-Peter Clausen wrote:
+> On 04/15/2014 01:54 PM, Boris BREZILLON wrote:
+>>
+>>
+>> On 15/04/2014 12:09, Mark Brown wrote:
+>>> On Tue, Apr 15, 2014 at 09:36:13AM +0200, Boris BREZILLON wrote:
+>>>> On 14/04/2014 23:04, Mark Brown wrote:
+>>
+>>>>> The transfer type gets set once per device at init time so why not
+>>>>> just parameterise based on val_bytes?
+>>
+>>>> Actually, you may want to transfer 1 byte registers using the block
+>>>> method (if your device only support block transfers). This depends on
+>>>> the device being accessed and what it supports, but I'm not sure we
+>>>> can
+>>>> assume 1 byte registers will always be transferred using SMBUS byte
+>>>> transfers.
+>>
+>>> OK, so if this a realistic issue then it seems like it's better to
+>>> implement three different buses - there is not really any common code
+>>> between the various paths.
+>>
+>> Okay, I'll create 4 different busses (one for each access type).
+>> BTW, should I keep these implementations in the same source file
+>> (regmap-smbus.c) ?
+>> And, should I keep one method to register an smbus regmap or should I
+>> provide one method per access type and get rid of the
+>> regmap_smbus_transfer_type enum ?
+>
+> I don't think we should leave the decision which bus to use to the
+> driver. Neither should the driver have to choose whether to use smbus
+> or native I2C. We want to use native I2C when available, because it is
+> more efficient than going through the smbus emulation layer. On the
+> other hand we want to automatically switch to smbus when native I2C is
+> not available and the device can work fine with smbus. Also I'm afraid
+> that we'll otherwise soon see code popping up like:
+>
+> if (of_property_read_bool(np, "use-smbus-regmap"))
+>     regmap = regmap_init_smbus(...)
+> else
+>     regmap = regmap_init_i2c(...)
+>
+> My suggestion is that in regmap_init_i2c() you check the capabilities
+> of the I2C adapter. If it supports native I2C you setup the regmap
+> with the regmap_i2c struct just as it does right now. If the adapter
+> does not support native I2C, check if the device can be supported by
+> smbus (reg_bytes == 8 && val_bytes % 8 == 0). For each type of smbus
+> operations have one regmap_bus struct, and if you can fallback to
+> smbus choose the bus depending on the config's val_bytes.
+>
 
-Add the check for new bandwidth restriction flags in
-cfg80211_chandef_usable() to comply with the restrictions.
+What if the device only support SMBus block transfers, but the adapter
+support both regular I2C and SMBus block transfers (don't know if such a
+device exist :-)) ?
 
-Signed-off-by: Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
----
- include/net/cfg80211.h       |  6 ++++++
- include/uapi/linux/nl80211.h |  6 ++++++
- net/wireless/chan.c          |  2 ++
- net/wireless/nl80211.c       | 13 +++++++++++++
- 4 files changed, 27 insertions(+)
+My point is that I'm not sure the core remap-i2c code can decide whether
+to use SMBus or I2C transfer only from val_bytes value, but I might be
+wrong.
 
-diff --git a/include/net/cfg80211.h b/include/net/cfg80211.h
-index 9496fe5..4e9016d 100644
---- a/include/net/cfg80211.h
-+++ b/include/net/cfg80211.h
-@@ -111,6 +111,10 @@ enum ieee80211_band {
-  *	restrictions.
-  * @IEEE80211_CHAN_INDOOR_ONLY: see %NL80211_FREQUENCY_ATTR_INDOOR_ONLY
-  * @IEEE80211_CHAN_GO_CONCURRENT: see %NL80211_FREQUENCY_ATTR_GO_CONCURRENT
-+ * @IEEE80211_CHAN_NO_20MHZ: 20 MHz bandwidth is not permitted
-+ *	on this channel.
-+ * @IEEE80211_CHAN_NO_10MHZ: 10 MHz bandwidth is not permitted
-+ *	on this channel.
-  *
-  */
- enum ieee80211_channel_flags {
-@@ -125,6 +129,8 @@ enum ieee80211_channel_flags {
- 	IEEE80211_CHAN_NO_160MHZ	= 1<<8,
- 	IEEE80211_CHAN_INDOOR_ONLY	= 1<<9,
- 	IEEE80211_CHAN_GO_CONCURRENT	= 1<<10,
-+	IEEE80211_CHAN_NO_20MHZ		= 1<<11,
-+	IEEE80211_CHAN_NO_10MHZ		= 1<<12,
- };
- 
- #define IEEE80211_CHAN_NO_HT40 \
-diff --git a/include/uapi/linux/nl80211.h b/include/uapi/linux/nl80211.h
-index 513bfd7..0592032 100644
---- a/include/uapi/linux/nl80211.h
-+++ b/include/uapi/linux/nl80211.h
-@@ -2358,6 +2358,10 @@ enum nl80211_band_attr {
-  *	connected to an AP with DFS and radar detection on the UNII band (it is
-  *	up to user-space, i.e., wpa_supplicant to perform the required
-  *	verifications)
-+ * @NL80211_FREQUENCY_ATTR_NO_20MHZ: 20 MHz operation is not allowed
-+ *	on this channel in current regulatory domain.
-+ * @NL80211_FREQUENCY_ATTR_NO_10MHZ: 10 MHz operation is not allowed
-+ *	on this channel in current regulatory domain.
-  * @NL80211_FREQUENCY_ATTR_MAX: highest frequency attribute number
-  *	currently defined
-  * @__NL80211_FREQUENCY_ATTR_AFTER_LAST: internal use
-@@ -2384,6 +2388,8 @@ enum nl80211_frequency_attr {
- 	NL80211_FREQUENCY_ATTR_DFS_CAC_TIME,
- 	NL80211_FREQUENCY_ATTR_INDOOR_ONLY,
- 	NL80211_FREQUENCY_ATTR_GO_CONCURRENT,
-+	NL80211_FREQUENCY_ATTR_NO_20MHZ,
-+	NL80211_FREQUENCY_ATTR_NO_10MHZ,
- 
- 	/* keep last */
- 	__NL80211_FREQUENCY_ATTR_AFTER_LAST,
-diff --git a/net/wireless/chan.c b/net/wireless/chan.c
-index c61bcdd..aee2dc2 100644
---- a/net/wireless/chan.c
-+++ b/net/wireless/chan.c
-@@ -616,12 +616,14 @@ bool cfg80211_chandef_usable(struct wiphy *wiphy,
- 		width = 5;
- 		break;
- 	case NL80211_CHAN_WIDTH_10:
-+		prohibited_flags |= IEEE80211_CHAN_NO_10MHZ;
- 		width = 10;
- 		break;
- 	case NL80211_CHAN_WIDTH_20:
- 		if (!ht_cap->ht_supported)
- 			return false;
- 	case NL80211_CHAN_WIDTH_20_NOHT:
-+		prohibited_flags |= IEEE80211_CHAN_NO_20MHZ;
- 		width = 20;
- 		break;
- 	case NL80211_CHAN_WIDTH_40:
-diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
-index 232d15c..2f0a1b1 100644
---- a/net/wireless/nl80211.c
-+++ b/net/wireless/nl80211.c
-@@ -567,6 +567,13 @@ static int nl80211_msg_put_channel(struct sk_buff *msg,
- 				   struct ieee80211_channel *chan,
- 				   bool large)
- {
-+	/* Some channels must be completely excluded from the
-+	 * list to protect old user-space tools from breaking
-+	 */
-+	if (!large && chan->flags &
-+	    (IEEE80211_CHAN_NO_10MHZ | IEEE80211_CHAN_NO_20MHZ))
-+		return 0;
-+
- 	if (nla_put_u32(msg, NL80211_FREQUENCY_ATTR_FREQ,
- 			chan->center_freq))
- 		goto nla_put_failure;
-@@ -620,6 +627,12 @@ static int nl80211_msg_put_channel(struct sk_buff *msg,
- 		if ((chan->flags & IEEE80211_CHAN_GO_CONCURRENT) &&
- 		    nla_put_flag(msg, NL80211_FREQUENCY_ATTR_GO_CONCURRENT))
- 			goto nla_put_failure;
-+		if ((chan->flags & IEEE80211_CHAN_NO_20MHZ) &&
-+		    nla_put_flag(msg, NL80211_FREQUENCY_ATTR_NO_20MHZ))
-+			goto nla_put_failure;
-+		if ((chan->flags & IEEE80211_CHAN_NO_10MHZ) &&
-+		    nla_put_flag(msg, NL80211_FREQUENCY_ATTR_NO_10MHZ))
-+			goto nla_put_failure;
- 	}
- 
- 	if (nla_put_u32(msg, NL80211_FREQUENCY_ATTR_MAX_TX_POWER,
+Best Regards,
+
+Boris
+
+> - Lars
+
 -- 
-1.9.2
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
 
