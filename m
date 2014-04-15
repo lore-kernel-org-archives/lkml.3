@@ -1,94 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867AbaDOJjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 05:39:12 -0400
-Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:54753 "EHLO
-	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750934AbaDOJjJ (ORCPT
+	id S1753274AbaDOJl6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 05:41:58 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:38736 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750899AbaDOJly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 05:39:09 -0400
-Message-ID: <1397554747.1985.35.camel@x220>
-Subject: Re: [PATCH 21/28] Remove CPU_SUBTYPE_SH7764
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 15 Apr 2014 11:39:07 +0200
-In-Reply-To: <1391981761.25855.58.camel@x220>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
-	 <1391971686-9517-22-git-send-email-richard@nod.at>
-	 <1391981761.25855.58.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Apr 2014 09:39:07.0856 (UTC) FILETIME=[8C3ECD00:01CF588E]
-X-RcptDomain: vger.kernel.org
+	Tue, 15 Apr 2014 05:41:54 -0400
+Date: Tue, 15 Apr 2014 11:35:49 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: alexandre.belloni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: dts: berlin: add GPIO nodes for the BG2Q
+Message-ID: <20140415093549.GD4584@kwain>
+References: <1397549245-3338-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1397549245-3338-3-git-send-email-antoine.tenart@free-electrons.com>
+ <534CFA77.9030108@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <534CFA77.9030108@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-02-09 at 22:36 +0100, Paul Bolle wrote:
-> On Sun, 2014-02-09 at 19:47 +0100, Richard Weinberger wrote:
-> > The symbol is an orphan, get rid of it.
-> > 
-> > Signed-off-by: Richard Weinberger <richard@nod.at>
+Sebastian,
+
+On Tue, Apr 15, 2014 at 11:23:03AM +0200, Sebastian Hesselbarth wrote:
+> On 04/15/2014 10:07 AM, Antoine Ténart wrote:
+
+[…]
+
+> >diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+> >index e6e556055dfc..b2625f896bc5 100644
+> >--- a/arch/arm/boot/dts/berlin2q.dtsi
+> >+++ b/arch/arm/boot/dts/berlin2q.dtsi
+> >@@ -109,6 +109,78 @@
+> >  			ranges = <0 0xe80000 0x10000>;
+> >  			interrupt-parent = <&aic>;
+> >
+> >+			gpio0: gpio@0400 {
+> >+				compatible = "snps,dw-apb-gpio";
+> >+				reg = <0x0400 0x400>;
+> >+				#address-cells = <1>;
+> >+				#size-cells = <0>;
+> >+
+> >+				porta: gpio-controller@0 {
 > 
-> Paul Mundt had something similar queued a year ago:
-> https://lkml.org/lkml/2013/3/11/211 . What happened?
+> ePAPR recommended name is even more generic, i.e. "gpio". If
+> that clashed in any way with other numbered names, I suggest
+> to rename to "gpio-port" as actually the controller is the
+> parent node and this represents one port (in the nomenclature
+> of DW-APB-GPIO).
 
-By now the SuperH port has been orphaned. So what's the current
-procedure for small SuperH fixes like this one?
+I followed the dwapb GPIO binding documentation, but I think this is a good
+idea. I'll update.
+
+> >+					compatible = "snps,dw-apb-gpio-port";
+> >+					gpio-controller;
+> >+					#gpio-cells = <2>;
+> >+					snps,nr-gpios = <32>;
+> 
+> 32 gpio pins for each of the 6 GPIO controllers? Either BG2Q is a GPIO
+> beast or it is a mistake :P
+> 
+> Can you please double-check?
+
+Maybe Jisheng can confirm this.
+
+> I am fine with using nr-gpios property now, but I guess BG2Q also
+> has that CONFIG[1,2] registers to actually read out the features
+> synthesized in? If I find some time, I'll prepare a patch for
+> dw-apb-gpio to exploit that (optional) information instead of
+> using nr-gpios.
+
+Maybe, that would be nice.
 
 
-Paul Bolle
+Antoine
 
-> >  arch/sh/drivers/dma/Kconfig                | 5 ++---
-> >  arch/sh/include/cpu-sh4/cpu/dma-register.h | 1 -
-> >  arch/sh/include/cpu-sh4a/cpu/dma.h         | 3 +--
-> >  3 files changed, 3 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/arch/sh/drivers/dma/Kconfig b/arch/sh/drivers/dma/Kconfig
-> > index cfd5b90..e07afe8 100644
-> > --- a/arch/sh/drivers/dma/Kconfig
-> > +++ b/arch/sh/drivers/dma/Kconfig
-> > @@ -12,9 +12,8 @@ config SH_DMA_IRQ_MULTI
-> >  	default y if CPU_SUBTYPE_SH7750  || CPU_SUBTYPE_SH7751  || \
-> >  		     CPU_SUBTYPE_SH7750S || CPU_SUBTYPE_SH7750R || \
-> >  		     CPU_SUBTYPE_SH7751R || CPU_SUBTYPE_SH7091  || \
-> > -		     CPU_SUBTYPE_SH7763  || CPU_SUBTYPE_SH7764  || \
-> > -		     CPU_SUBTYPE_SH7780  || CPU_SUBTYPE_SH7785  || \
-> > -		     CPU_SUBTYPE_SH7760
-> > +		     CPU_SUBTYPE_SH7763  || CPU_SUBTYPE_SH7780  || \
-> > +		     CPU_SUBTYPE_SH7785  CPU_SUBTYPE_SH7760
-> >  
-> >  config SH_DMA_API
-> >  	depends on SH_DMA
-> > diff --git a/arch/sh/include/cpu-sh4/cpu/dma-register.h b/arch/sh/include/cpu-sh4/cpu/dma-register.h
-> > index 02788b6..9cd81e5 100644
-> > --- a/arch/sh/include/cpu-sh4/cpu/dma-register.h
-> > +++ b/arch/sh/include/cpu-sh4/cpu/dma-register.h
-> > @@ -32,7 +32,6 @@
-> >  #define CHCR_TS_HIGH_SHIFT	(20 - 2)	/* 2 bits for shifted low TS */
-> >  #elif defined(CONFIG_CPU_SUBTYPE_SH7757) || \
-> >  	defined(CONFIG_CPU_SUBTYPE_SH7763) || \
-> > -	defined(CONFIG_CPU_SUBTYPE_SH7764) || \
-> >  	defined(CONFIG_CPU_SUBTYPE_SH7780) || \
-> >  	defined(CONFIG_CPU_SUBTYPE_SH7785)
-> >  #define CHCR_TS_LOW_MASK	0x00000018
-> > diff --git a/arch/sh/include/cpu-sh4a/cpu/dma.h b/arch/sh/include/cpu-sh4a/cpu/dma.h
-> > index 89afb65..8ceccce 100644
-> > --- a/arch/sh/include/cpu-sh4a/cpu/dma.h
-> > +++ b/arch/sh/include/cpu-sh4a/cpu/dma.h
-> > @@ -14,8 +14,7 @@
-> >  #define DMTE4_IRQ	evt2irq(0xb80)
-> >  #define DMAE0_IRQ	evt2irq(0xbc0)	/* DMA Error IRQ*/
-> >  #define SH_DMAC_BASE0	0xFE008020
-> > -#elif defined(CONFIG_CPU_SUBTYPE_SH7763) || \
-> > -	defined(CONFIG_CPU_SUBTYPE_SH7764)
-> > +#elif defined(CONFIG_CPU_SUBTYPE_SH7763)
-> >  #define DMTE0_IRQ	evt2irq(0x640)
-> >  #define DMTE4_IRQ	evt2irq(0x780)
-> >  #define DMAE0_IRQ	evt2irq(0x6c0)
+> Otherwise,
+> 
+> Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> 
+> >+					reg = <0>;
+> >+					interrupt-controller;
+> >+					#interrupt-cells = <2>;
+> >+					interrupts = <0>;
+> >+				};
+> >+			};
+> >+
+> >+			gpio1: gpio@0800 {
+> >+				compatible = "snps,dw-apb-gpio";
+> >+				reg = <0x0800 0x400>;
+> >+				#address-cells = <1>;
+> >+				#size-cells = <0>;
+> >+
+> >+				portb: gpio-controller@1 {
+> >+					compatible = "snps,dw-apb-gpio-port";
+> >+					gpio-controller;
+> >+					#gpio-cells = <2>;
+> >+					snps,nr-gpios = <32>;
+> >+					reg = <0>;
+> >+					interrupt-controller;
+> >+					#interrupt-cells = <2>;
+> >+					interrupts = <1>;
+> >+				};
+> >+			};
+> >+
+> >+			gpio2: gpio@0c00 {
+> >+				compatible = "snps,dw-apb-gpio";
+> >+				reg = <0x0c00 0x400>;
+> >+				#address-cells = <1>;
+> >+				#size-cells = <0>;
+> >+
+> >+				portc: gpio-controller@2 {
+> >+					compatible = "snps,dw-apb-gpio-port";
+> >+					gpio-controller;
+> >+					#gpio-cells = <2>;
+> >+					snps,nr-gpios = <32>;
+> >+					reg = <0>;
+> >+					interrupt-controller;
+> >+					#interrupt-cells = <2>;
+> >+					interrupts = <2>;
+> >+				};
+> >+			};
+> >+
+> >+			gpio3: gpio@1000 {
+> >+				compatible = "snps,dw-apb-gpio";
+> >+				reg = <0x1000 0x400>;
+> >+				#address-cells = <1>;
+> >+				#size-cells = <0>;
+> >+
+> >+				portd: gpio-controller@3 {
+> >+					compatible = "snps,dw-apb-gpio-port";
+> >+					gpio-controller;
+> >+					#gpio-cells = <2>;
+> >+					snps,nr-gpios = <32>;
+> >+					reg = <0>;
+> >+					interrupt-controller;
+> >+					#interrupt-cells = <2>;
+> >+					interrupts = <3>;
+> >+				};
+> >+			};
+> >+
+> >  			timer0: timer@2c00 {
+> >  				compatible = "snps,dw-apb-timer";
+> >  				reg = <0x2c00 0x14>;
+> >@@ -181,6 +253,36 @@
+> >  				interrupt-parent = <&gic>;
+> >  				interrupts = <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>;
+> >  			};
+> >+
+> >+			gpio4: gpio@5000 {
+> >+				compatible = "snps,dw-apb-gpio";
+> >+				reg = <0x5000 0x400>;
+> >+				#address-cells = <1>;
+> >+				#size-cells = <0>;
+> >+
+> >+				porte: gpio-controller@4 {
+> >+					compatible = "snps,dw-apb-gpio-port";
+> >+					gpio-controller;
+> >+					#gpio-cells = <2>;
+> >+					snps,nr-gpios = <32>;
+> >+					reg = <0>;
+> >+				};
+> >+			};
+> >+
+> >+			gpio5: gpio@c000 {
+> >+				compatible = "snps,dw-apb-gpio";
+> >+				reg = <0xc000 0x400>;
+> >+				#address-cells = <1>;
+> >+				#size-cells = <0>;
+> >+
+> >+				portf: gpio-controller@5 {
+> >+					compatible = "snps,dw-apb-gpio-port";
+> >+					gpio-controller;
+> >+					#gpio-cells = <2>;
+> >+					snps,nr-gpios = <32>;
+> >+					reg = <0>;
+> >+				};
+> >+			};
+> >  		};
+> >
+> >  		pinctrl: pinctrl@0 {
+> >
 > 
 
-
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
