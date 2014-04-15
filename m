@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862AbaDONDO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 09:03:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54834 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988AbaDONDM (ORCPT
+	id S1754717AbaDONDd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 09:03:33 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:38650 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988AbaDONDa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 09:03:12 -0400
-Date: Tue, 15 Apr 2014 15:03:01 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, rjw@rjwysocki.net,
-        nicolas.pitre@linaro.org, linux-pm@vger.kernel.org,
-        alex.shi@linaro.org, vincent.guittot@linaro.org,
-        morten.rasmussen@arm.com
-Subject: Re: [RFC PATCHC 3/3] sched/fair: use the idle state info to choose
- the idlest cpu
-Message-ID: <20140415130301.GL11182@twins.programming.kicks-ass.net>
-References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org>
- <1396009796-31598-4-git-send-email-daniel.lezcano@linaro.org>
+	Tue, 15 Apr 2014 09:03:30 -0400
+Date: Tue, 15 Apr 2014 09:03:19 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xenproject.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xen/pci: Remove unused dev_err() string
+Message-ID: <20140415130319.GC29540@phenom.dumpdata.com>
+References: <20140414222523.15032.99127.stgit@bhelgaas-glaptop.roam.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1396009796-31598-4-git-send-email-daniel.lezcano@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140414222523.15032.99127.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 28, 2014 at 01:29:56PM +0100, Daniel Lezcano wrote:
-> @@ -4336,20 +4337,53 @@ static int
->  find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
->  {
->  	unsigned long load, min_load = ULONG_MAX;
-> -	int idlest = -1;
-> +	unsigned int min_exit_latency = UINT_MAX;
-> +	u64 idle_stamp, min_idle_stamp = ULONG_MAX;
-> +
-> +	struct rq *rq;
-> +	struct cpuidle_power *power;
-> +
-> +	int cpu_idle = -1;
-> +	int cpu_busy = -1;
->  	int i;
->  
->  	/* Traverse only the allowed CPUs */
->  	for_each_cpu_and(i, sched_group_cpus(group), tsk_cpus_allowed(p)) {
-> -		load = weighted_cpuload(i);
->  
-> -		if (load < min_load || (load == min_load && i == this_cpu)) {
-> -			min_load = load;
-> -			idlest = i;
-> +		if (idle_cpu(i)) {
-> +
-> +			rq = cpu_rq(i);
-> +			power = rq->power;
-> +			idle_stamp = rq->idle_stamp;
-> +
-> +			/* The cpu is idle since a shorter time */
-> +			if (idle_stamp < min_idle_stamp) {
-> +				min_idle_stamp = idle_stamp;
-> +				cpu_idle = i;
-> +				continue;
-> +			}
-> +
-> +			/* The cpu is idle but the exit_latency is shorter */
-> +			if (power && power->exit_latency < min_exit_latency) {
-> +				min_exit_latency = power->exit_latency;
-> +				cpu_idle = i;
-> +				continue;
-> +			}
+On Mon, Apr 14, 2014 at 04:25:23PM -0600, Bjorn Helgaas wrote:
+> We previously verified that "action" is either BUS_NOTIFY_ADD_DEVICE or
+> BUS_NOTIFY_DEL_DEVICE, so there's no need for the default "?" case.
+> 
+> Found by Coverity (CID 146520).
 
-Aside from the arguments made by Nico (which I agree with), depending on
-the life time rules of the power object we might need
-smp_read_barrier_depends() between reading and using.
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-If all these objects are static and never change content we do not, if
-there's dynamic objects involved we probably should.
+David, are you OK pushing this in 'devel/for-linus-3.14'?
+
+Thanks!
+> 
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> ---
+>  drivers/xen/pci.c |    3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/xen/pci.c b/drivers/xen/pci.c
+> index dd9c249ea311..59a25f937bd7 100644
+> --- a/drivers/xen/pci.c
+> +++ b/drivers/xen/pci.c
+> @@ -177,8 +177,7 @@ static int xen_pci_notifier(struct notifier_block *nb,
+>  	}
+>  	if (r)
+>  		dev_err(dev, "Failed to %s - passthrough or MSI/MSI-X might fail!\n",
+> -			action == BUS_NOTIFY_ADD_DEVICE ? "add" :
+> -			(action == BUS_NOTIFY_DEL_DEVICE ? "delete" : "?"));
+> +			action == BUS_NOTIFY_ADD_DEVICE ? "add" : "del");
+>  	return NOTIFY_OK;
+>  }
+>  
+> 
