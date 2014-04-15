@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754821AbaDOSez (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 14:34:55 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:59747 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753244AbaDOSey (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 14:34:54 -0400
+	id S1753004AbaDOSg4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 14:36:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26532 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750913AbaDOSgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 14:36:54 -0400
+Date: Tue, 15 Apr 2014 20:36:25 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, David Woodhouse <dwmw2@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Richard Weinberger <richard@nod.at>,
+        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH RESEND2 00/11] cleanup/fix allow_signal/disallow_signal
+Message-ID: <20140415183625.GA13371@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CADHgK6sh6TUc4jBQFQHTQuhze9=r2FBzF6aULUc_c+bbWYjp5w@mail.gmail.com>
-References: <1395348795-8554-1-git-send-email-sebastian.capella@linaro.org>
-	<1395348795-8554-2-git-send-email-sebastian.capella@linaro.org>
-	<20140320212336.GA17368@amd.pavel.ucw.cz>
-	<20140320213502.795a5d3c@alan.etchedpixels.co.uk>
-	<CADHgK6uXg0CXZC5s5Z5Kpy6dYH58UChL-p9ozCCcoUU=-0KJYw@mail.gmail.com>
-	<CADHgK6sh6TUc4jBQFQHTQuhze9=r2FBzF6aULUc_c+bbWYjp5w@mail.gmail.com>
-Date: Tue, 15 Apr 2014 11:34:52 -0700
-Message-ID: <CADHgK6sCmPVZ--eyEnqnjfs_4C_PfHTgAUQ_Nb4oJP0mBDnQUw@mail.gmail.com>
-Subject: Re: [PATCH RFC] PM / Hibernate: no kernel_power_off when pm_power_off NULL
-From: Sebastian Capella <sebastian.capella@linaro.org>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Pavel Machek <pavel@ucw.cz>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping..
+I added RESEND2 to avoid the confusion, sorry to all for spam.
 
-There appears to be disagreement on the correct path to take on this.
+To remind, this doesn't depend on (or conflict with) the previous patch
+"kill CLONE_KERNEL, change kernel_thread(kernel_init) to avoid CLONE_SIGHAND"
+I sent.
 
-Pavel and Alan recommend that arm's machine_power_off shall never return
+Oleg.
 
-Russell suggests hibernation be modified to handle machine_power_off
-returning; that x86 architecture (and others as well) can have
-machine_power_off returning.
+ arch/m68k/include/asm/signal.h |    9 ----
+ arch/x86/include/asm/signal.h  |    6 ---
+ fs/jffs2/background.c          |   12 +++--
+ include/linux/sched.h          |    3 -
+ include/linux/signal.h         |   21 +++++++--
+ kernel/exit.c                  |   39 -----------------
+ kernel/kmod.c                  |    5 +--
+ kernel/signal.c                |   90 ++++++++++++++++++---------------------
+ 8 files changed, 66 insertions(+), 119 deletions(-)
 
-Discussions available at the links below:
-https://lkml.org/lkml/2014/3/25/554  -- linux-arm discussion
-https://lkml.org/lkml/2014/3/20/649  -- linux-pm discussion
 
-Should I continue with the original hibernation patch from the
-linux-pm discussion?
-
-Does anyone have any response to Russel's commentsl?
-
-Thanks!
-
-Sebastian
