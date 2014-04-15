@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096AbaDOKix (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 06:38:53 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:43174 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919AbaDOKiv (ORCPT
+	id S1753827AbaDOKk6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 06:40:58 -0400
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:38357 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071AbaDOKk4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 06:38:51 -0400
-Date: Tue, 15 Apr 2014 13:38:37 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        linux-kernel@vger.kernel.org, Vegard Nossum <vegard.nossum@gmail.com>
-Subject: Re: [patch 2/2] lib/string.c: strlcpy() might read too far
-Message-ID: <20140415103837.GV4963@mwanda>
-References: <20140401.161838.1562296825577866979.davem@davemloft.net>
- <20140402084731.GB6018@mwanda>
- <20140414144615.8fd678c78389c19df4343049@linux-foundation.org>
+	Tue, 15 Apr 2014 06:40:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140414144615.8fd678c78389c19df4343049@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <1397557331.1985.36.camel@x220>
+References: <1397556735-2536-1-git-send-email-harinik@xilinx.com>
+	<1397557331.1985.36.camel@x220>
+Date: Tue, 15 Apr 2014 16:10:55 +0530
+Message-ID: <CAFcVECJ+DADKdUdqSz8VHWTOYyphEjCJd9s-fVeC3uR7XfyjgQ@mail.gmail.com>
+Subject: Re: [PATCH v2] spi: cadence: Add dependency on ARCH_ARM
+From: Harini Katakam <harinikatakamlinux@gmail.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Mark Brown <broonie@kernel.org>, linux-spi@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        michals@xilinx.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 02:46:15PM -0700, Andrew Morton wrote:
-> On Wed, 2 Apr 2014 11:47:31 +0300 Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> 
-> > Imagine you have a user controlled variable at the end of a struct which
-> > is allocated at the end of a page.  The strlen() could read beyond the
-> > mapped memory and cause an oops.
-> 
-> Well, it's hard to conceive of a situation where anything like this
-> could happen.  Code which copies a string from userspace should
-> immediately ensure that the kernel copy is null-terminated.  But...  I
-> guess it's defense in depth.
+Hi,
 
+On Tue, Apr 15, 2014 at 3:52 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> On Tue, 2014-04-15 at 15:42 +0530, Harini Katakam wrote:
+>> Add dependency on ARCH_ARM in Kconfig.
+>> This is to fix the build error related to _relaxed IO.
+>>
+>> Signed-off-by: Harini Katakam <harinik@xilinx.com>
+>> ---
+>>
+>> v2 changes:
+>> Dependency on ARCH_ARM instead of restricting to ARCH_ZYNQ.
+>>
+>> ---
+>>  drivers/spi/Kconfig |    1 +
+>>  1 file changed, 1 insertion(+)
+>>
+>> diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+>> index b0f091b..32c27dd 100644
+>> --- a/drivers/spi/Kconfig
+>> +++ b/drivers/spi/Kconfig
+>> @@ -150,6 +150,7 @@ config SPI_BUTTERFLY
+>>
+>>  config SPI_CADENCE
+>>       tristate "Cadence SPI controller"
+>> +     depends on ARCH_ARM
+>
+> Did you mean just ARM?
 
-The code which prompted this is in isdnloop_start().  I did a:
+Please ignore patch, I will resend it.
 
--	strcpy(card->s0num[0], sdef.num[0]);
-+	strlcpy(card->s0num[0], sdef.num[0], sizeof(card->s0num[0]));
-
-So that we wouldn't corrupt memory.  But the debate was whether that was
-enough to solve the problem or it was better to null-terminate
-sdef.num[0] before doing the strlcpy().  In the end, we decided to
-reject input if it wasn't null terminated.
-
-In this case sdef is declared on the stack so there lots NUL characters
-so reading too far in the strlen() is not a problem.
-
-regards,
-dan carpenter
-
+Regards,
+Harini
