@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992AbaDOSYS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 14:24:18 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:47956 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754502AbaDOSYQ (ORCPT
+	id S1754772AbaDOSZI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 14:25:08 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:50937 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340AbaDOSZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 14:24:16 -0400
-Date: Tue, 15 Apr 2014 14:24:12 -0400
-From: Tejun Heo <htejun@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] percpu: Replace __get_cpu_var with this_cpu_ptr
-Message-ID: <20140415182412.GH30990@htj.dyndns.org>
-References: <alpine.DEB.2.10.1404151238340.27545@gentwo.org>
+	Tue, 15 Apr 2014 14:25:04 -0400
+Message-ID: <534D797D.7030201@wwwdotorg.org>
+Date: Tue, 15 Apr 2014 12:25:01 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1404151238340.27545@gentwo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Bresticker <abrestic@chromium.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
+CC: linux-mmc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] mmc: tegra: fix reporting of base clock frequency
+References: <1397526163-20126-1-git-send-email-abrestic@chromium.org> <1397526163-20126-3-git-send-email-abrestic@chromium.org>
+In-Reply-To: <1397526163-20126-3-git-send-email-abrestic@chromium.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied to percpu/for-3.16 with patch description updated.
+On 04/14/2014 07:42 PM, Andrew Bresticker wrote:
+> Tegra SDHCI controllers, by default, report a base clock frequency
+> of 208Mhz in SDHCI_CAPABILTIES which may or may not be equal to the
+> actual base clock frequency.
 
-Thanks.
+Some explanation of why this "may or may not be equal to the actual base
+clock frequency" would be nice.
 
---------- 8< ---------
->From fdb9c293decf7e06795f7d9ae409df907c7ae1b6 Mon Sep 17 00:00:00 2001
-From: Christoph Lameter <cl@linux.com>
-Date: Tue, 15 Apr 2014 12:39:14 -0500
+Presumably, it's because the clock frequency is supplied by the clock
+controller module, and configuring that happens externally to the SD
+controller, so the SD HW has no knowledge of the actual frequency, and
+hence simply reports a hard-coded maximum possible clock frequency?
 
-__this_cpu_ptr is being phased out.  Use raw_cpu_ptr instead which was
-introduced in 3.15-rc1.  One case of using __get_cpu_var in the
-get_cpu_var macro for address calculation was remaining in
-include/linux/percpu.h.
+> While this can be overridden by setting
+> BASE_CLK_FREQ in VENDOR_CLOCK_CTRL on Tegra30 and later SoCs, just
+> set SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN and supply a get_max_clock()
+> callback to get the actual rate of the base clock.
 
-tj: Updated patch description.
-
-Signed-off-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- include/linux/percpu.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/include/linux/percpu.h b/include/linux/percpu.h
-index e7a0b95..539b3ca 100644
---- a/include/linux/percpu.h
-+++ b/include/linux/percpu.h
-@@ -29,7 +29,7 @@
-  */
- #define get_cpu_var(var) (*({				\
- 	preempt_disable();				\
--	&__get_cpu_var(var); }))
-+	this_cpu_ptr(&var); }))
- 
- /*
-  * The weird & is necessary because sparse considers (void)(var) to be
--- 
-1.9.0
-
+It's not clear to me from the function name that
+sdhci_pltfm_clk_get_max_clock() simply calls clk_get() on the actual
+clock. It might be nice to mention that in the commit description.
