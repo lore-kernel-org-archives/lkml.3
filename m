@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751210AbaDOUzj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 16:55:39 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35651 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750931AbaDOUzi (ORCPT
+	id S1751105AbaDOU6Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 16:58:16 -0400
+Received: from mano-163-54-shared.jabatus.fr ([109.234.163.54]:44178 "EHLO
+	mano-163-54-shared.jabatus.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750784AbaDOU6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 16:55:38 -0400
-Date: Tue, 15 Apr 2014 21:54:53 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Pavel Machek <pavel@ucw.cz>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Subject: Re: [PATCH RFC] PM / Hibernate: no kernel_power_off when
-	pm_power_off NULL
-Message-ID: <20140415205453.GX24070@n2100.arm.linux.org.uk>
-References: <1395348795-8554-1-git-send-email-sebastian.capella@linaro.org> <1395348795-8554-2-git-send-email-sebastian.capella@linaro.org> <20140320212336.GA17368@amd.pavel.ucw.cz> <20140320213502.795a5d3c@alan.etchedpixels.co.uk> <CADHgK6uXg0CXZC5s5Z5Kpy6dYH58UChL-p9ozCCcoUU=-0KJYw@mail.gmail.com> <CADHgK6sh6TUc4jBQFQHTQuhze9=r2FBzF6aULUc_c+bbWYjp5w@mail.gmail.com> <CADHgK6sCmPVZ--eyEnqnjfs_4C_PfHTgAUQ_Nb4oJP0mBDnQUw@mail.gmail.com>
+	Tue, 15 Apr 2014 16:58:14 -0400
+X-Greylist: delayed 25091 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Apr 2014 16:58:14 EDT
+X-MailPropre-MailScanner-From: ecolbus@manux.info
+X-MailPropre-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=0, required 5, autolearn=not spam)
+X-MailPropre-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
+X-MailPropre-MailScanner-ID: EDDE0989060E.A30AF
+X-MailPropre-MailScanner-Information: Message sortant - Serveurs o2switch
+Message-ID: <534D9D63.2050608@manux.info>
+Date: Tue, 15 Apr 2014 22:58:11 +0200
+From: Emmanuel Colbus <ecolbus@manux.info>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131104 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADHgK6sCmPVZ--eyEnqnjfs_4C_PfHTgAUQ_Nb4oJP0mBDnQUw@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][5/11][MANUX] Kernel compatibility : major/minor numbers
+References: <534D3762.4010905@manux.info> <20140415160626.322e24ee@alan.etchedpixels.co.uk> <534D5119.8050701@manux.info> <20140415201914.GK4456@thunk.org>
+In-Reply-To: <20140415201914.GK4456@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 11:34:52AM -0700, Sebastian Capella wrote:
-> Ping..
+Le 15/04/2014 22:19, Theodore Ts'o a écrit :
+> On Tue, Apr 15, 2014 at 05:32:41PM +0200, Emmanuel Colbus wrote:
+>>> In addition the
+>>> standards and common sense together pretty much imply that you need each
+>>> device to at least have a unique identifier.
+>>>
+>>
+>> Why is it? I mean, as far as userspace is concerned, they do have a
+>> unique identifier : their name. How would it be problematic that the
+>> software is unable to confirm that /dev/null is actually connected to
+>> the usual /dev/null kernel driver? I mean, it's supposed to trust the OS
+>> and its admin to have done their job properly, not second-guess them!
 > 
-> There appears to be disagreement on the correct path to take on this.
+> Backup programs will very often assume that if after two files, if
+> stat(2)'ed, have the same st_ino and st_dev (which is a major/minor
+> pair), then they are both hard links to the same underlying files.
 > 
-> Pavel and Alan recommend that arm's machine_power_off shall never return
-> 
-> Russell suggests hibernation be modified to handle machine_power_off
-> returning; that x86 architecture (and others as well) can have
-> machine_power_off returning.
-> 
-> Discussions available at the links below:
-> https://lkml.org/lkml/2014/3/25/554  -- linux-arm discussion
-> https://lkml.org/lkml/2014/3/20/649  -- linux-pm discussion
-> 
-> Should I continue with the original hibernation patch from the
-> linux-pm discussion?
-> 
-> Does anyone have any response to Russel's commentsl?
+> There are also programs that will relying on st_dev for the purpose of
+> honoring find -xdev, and there are also programs that may try to do
+> intelligent things by assuming that st_dev and st_ino togehter will
+> uniquely name the same content.  This gets tricky for remote file
+> systems to get right, but file systems that don't at least try to get
+> this right can end up triggering some very hard to debug userspace
+> bugs.  Transarc's Andrew File System (AFS) would occasionally break
+> this property, back in the late 1990's, and it was the cause of Much
+> Hilarity (except on the part of the programmers who had to figure out
+> why certain programs were stuck looping forever while trying to
+> analyze a long AFS pathname...)
 
-What I'm basically saying is that I see no reason for ARM to do something
-different to what x86 does.
+Yes, in fact, I do respect the unicity of the st_dev field, so all these
+assumptions work. The only thing I'm doing is violating the assumption
+that, if a file has a certain major and minor numbers according to its
+st_dev field, then there is a special block file in /dev that has the
+same major and minor numbers and that corresponds to the storage
+peripheral where this file is stored.
 
-What is pretty clear to me is that ARM is compatible with x86, which is
-compatible with kernel/reboot.c, and it's the hibernate code which is
-the odd one out.
-
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+Emmanuel
