@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbaDOW0I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 18:26:08 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:57977 "EHLO
+	id S1752196AbaDOW0V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 18:26:21 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:57981 "EHLO
 	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751686AbaDOW0F (ORCPT
+	with ESMTP id S1751744AbaDOW0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 18:26:05 -0400
-Message-ID: <534DB1F9.8020105@semaphore.gr>
-Date: Wed, 16 Apr 2014 01:26:01 +0300
+	Tue, 15 Apr 2014 18:26:18 -0400
+Message-ID: <534DB206.1080004@semaphore.gr>
+Date: Wed, 16 Apr 2014 01:26:14 +0300
 From: Stratos Karafotis <stratosk@semaphore.gr>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@deeprootsystems.com>,
-        Russell King <linux@arm.linux.org.uk>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 3/8] davinci: da850: Use cpufreq_for_each_entry macro for
- iteration
+To: Ralf Baechle <ralf@linux-mips.org>, Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+CC: John Crispin <blogic@openwrt.org>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-mips@linux-mips.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 4/8] mips: lemote 2f: Use cpufreq_for_each_entry macro
+ for iteration
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -35,38 +33,50 @@ It should have no functional changes.
 
 Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
 ---
- arch/arm/mach-davinci/da850.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ arch/mips/loongson/lemote-2f/clock.c | 16 +++++-----------
+ 1 file changed, 5 insertions(+), 11 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
-index 85399c9..45ce065 100644
---- a/arch/arm/mach-davinci/da850.c
-+++ b/arch/arm/mach-davinci/da850.c
-@@ -1092,20 +1092,21 @@ int da850_register_cpufreq(char *async_clk)
+diff --git a/arch/mips/loongson/lemote-2f/clock.c b/arch/mips/loongson/lemote-2f/clock.c
+index e1f427f..1eed38e 100644
+--- a/arch/mips/loongson/lemote-2f/clock.c
++++ b/arch/mips/loongson/lemote-2f/clock.c
+@@ -91,9 +91,9 @@ EXPORT_SYMBOL(clk_put);
  
- static int da850_round_armrate(struct clk *clk, unsigned long rate)
+ int clk_set_rate(struct clk *clk, unsigned long rate)
  {
--	int i, ret = 0, diff;
-+	int ret = 0, diff;
- 	unsigned int best = (unsigned int) -1;
- 	struct cpufreq_frequency_table *table = cpufreq_info.freq_table;
 +	struct cpufreq_frequency_table *pos;
+ 	int ret = 0;
+ 	int regval;
+-	int i;
  
- 	rate /= 1000; /* convert to kHz */
+ 	if (likely(clk->ops && clk->ops->set_rate)) {
+ 		unsigned long flags;
+@@ -106,22 +106,16 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
+ 	if (unlikely(clk->flags & CLK_RATE_PROPAGATES))
+ 		propagate_rate(clk);
  
--	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
--		diff = table[i].frequency - rate;
-+	cpufreq_for_each_entry(pos, table) {
-+		diff = pos->frequency - rate;
- 		if (diff < 0)
- 			diff = -diff;
+-	for (i = 0; loongson2_clockmod_table[i].frequency != CPUFREQ_TABLE_END;
+-	     i++) {
+-		if (loongson2_clockmod_table[i].frequency ==
+-		    CPUFREQ_ENTRY_INVALID)
+-			continue;
+-		if (rate == loongson2_clockmod_table[i].frequency)
++	cpufreq_for_each_valid_entry(pos, loongson2_clockmod_table)
++		if (rate == pos->frequency)
+ 			break;
+-	}
+-	if (rate != loongson2_clockmod_table[i].frequency)
++	if (rate != pos->frequency)
+ 		return -ENOTSUPP;
  
- 		if (diff < best) {
- 			best = diff;
--			ret = table[i].frequency;
-+			ret = pos->frequency;
- 		}
- 	}
+ 	clk->rate = rate;
  
+ 	regval = LOONGSON_CHIPCFG0;
+-	regval = (regval & ~0x7) |
+-		(loongson2_clockmod_table[i].driver_data - 1);
++	regval = (regval & ~0x7) | (pos->driver_data - 1);
+ 	LOONGSON_CHIPCFG0 = regval;
+ 
+ 	return ret;
 -- 
 1.9.0
