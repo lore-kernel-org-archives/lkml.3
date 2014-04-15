@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241AbaDOK7N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 06:59:13 -0400
+	id S1754367AbaDOLAG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 07:00:06 -0400
 Received: from mailout3.samsung.com ([203.254.224.33]:55973 "EHLO
 	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972AbaDOK7J (ORCPT
+	with ESMTP id S1751185AbaDOK7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 06:59:09 -0400
-X-AuditID: cbfee68f-b7f156d00000276c-79-534d10fa2dd8
+	Tue, 15 Apr 2014 06:59:11 -0400
+X-AuditID: cbfee691-b7efc6d0000039d3-1f-534d10faa32d
 From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH 1/3] f2fs: remove costly dirty_dir_inode operations
-Date: Tue, 15 Apr 2014 19:57:01 +0900
-Message-id: <1397559423-27411-1-git-send-email-jaegeuk.kim@samsung.com>
+Subject: [PATCH 2/3] f2fs: fix to decrease the number of dirty dentry page
+Date: Tue, 15 Apr 2014 19:57:02 +0900
+Message-id: <1397559423-27411-2-git-send-email-jaegeuk.kim@samsung.com>
 X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zQ91fAr7BBq2rTSyu7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgytj78gNLwVOtiq7v
-	f9kaGDcpdzFyckgImEi8fN7FAmGLSVy4t56ti5GLQ0hgGaPEoQ0HWLsYOcCKZj4WhIhPZ5Q4
-	v7mbCcLpZJKYfuo1I0gRm4C2xOb9BiCDRASYJRZMPc8IUsMsMIFR4v+i92AbhAWcJd4/7GYE
-	sVkEVCW+t0wHi/MKuEv8av4BdYW2xLbnE8GaJQQes0ncOPsIqkFA4tvkQywQF8lKbDrADFEv
-	KXFwxQ2WCYyCCxgZVjGKphYkFxQnpRcZ6xUn5haX5qXrJefnbmKEhGD/Dsa7B6wPMSYDjZvI
-	LCWanA8M4bySeENjMyMLUxNTYyNzSzPShJXEee8/TAoSEkhPLEnNTk0tSC2KLyrNSS0+xMjE
-	wSnVwFjuqaM/w/TPP/1bX6KPT5lzsWPpxzvBO8QP1P6UXSTVllCTMSd5XwPDupt/VnZ47Lqy
-	ykeXceKNYpGgELGrvD4xXrP33ZcVT9It/Fs+j8F78zelJcYp7H6fFcJXrHE22Z6sc7H9wyJb
-	l9ZrIi82RuhYffSMWfcvULxN7vGGUCGe1J27Wdgnv1BiKc5INNRiLipOBADxtqVjVwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jQd1fAr7BBjN26ltc3/WXyeLSIneL
+In-reply-to: <1397559423-27411-1-git-send-email-jaegeuk.kim@samsung.com>
+References: <1397559423-27411-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t8zQ91fAr7BBtfarSyu7/rLZHFpkbvF
+	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgyvg8YQlzwRHOik2t
+	11gbGM+wdzFyckgImEh0PPwIZYtJXLi3nq2LkYtDSGAZo8SJq29YYYrWHvrNDJGYzigxZe0/
+	Fgink0li+qnXjF2MHBxsAtoSm/cbgDSICDBLLJh6nhGkhllgAqPE/0XvWUASwgJeEre6joGt
+	YxFQlfgwZTpYnFfAXWJTTxfUGdoS255PZASxOQU8JHYcfQBWIwRU0/l/G9h5EgLf2SRal/1k
+	hhgkIPFt8iEWkCMkBGQlNh1ghpgjKXFwxQ2WCYzCCxgZVjGKphYkFxQnpReZ6hUn5haX5qXr
+	JefnbmKEBO3EHYz3D1gfYkwGGjeRWUo0OR8Y9Hkl8YbGZkYWpiamxkbmlmakCSuJ86Y/SgoS
+	EkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwGitwpfmoWapHH+y8lrWT2Vut3frEpLmrTzTlvRw
+	etTZwN16IsZ+531qr2XvD9ixaPb5kgcpbCK/di440ue2Wyevb/9df6WPHKsfZF0tOLib88GN
+	2rBF1yafMc39bypn6CAh5Baw26tCoGznztqZ/WtbbA7f1v3H/uTkA+0G2bMKXknXpuot/KTE
+	UpyRaKjFXFScCAB9GCdGcAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t9jQd1fAr7BBidvm1lc3/WXyeLSIneL
 	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8c
 	b2pmYKhraGlhrqSQl5ibaqvk4hOg65aZA7RNSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5v
-	SBBcj5EBGkhYx5ix9+UHloKnWhVd3/+yNTBuUu5i5OCQEDCRmPlYsIuRE8gUk7hwbz1bFyMX
-	h5DAdEaJ85u7mSCcTiaJ6adeM4I0sAloS2zebwDSICLALLFg6nlGkBpmgQmMEv8XvWcBSQgL
-	OEu8f9jNCGKzCKhKfG+ZDhbnFXCX+NX8gwVim7bEtucTGScwci9gZFjFKJpakFxQnJSea6RX
-	nJhbXJqXrpecn7uJERzgz6R3MK5qsDjEKMDBqMTDO+Gdd7AQa2JZcWXuIUYJDmYlEd6P3L7B
-	QrwpiZVVqUX58UWlOanFhxiTgbZPZJYSTc4HRl9eSbyhsYmZkaWRmYWRibk5acJK4rwHW60D
-	hQTSE0tSs1NTC1KLYLYwcXBKNTCaaadtOTZd+Y1VfFUCc4OOurLLvJsz1y0xi4jkzc/zufhL
-	VPFJCv/fg2t2PFx95Ov6XdoqF941372dv/PTq6/rL/oJBDSWGnxyV5aombu+frXLvaRd63/e
-	nLF057nl/NcvsbrtlLV4E8Ov5nJ6vQw7j3+V5neNZ7zP+b2TdeaXJ1dJbzn0d+17JZbijERD
-	Leai4kQA0M8HxrQCAAA=
+	SBBcj5EBGkhYx5jxecIS5oIjnBWbWq+xNjCeYe9i5OSQEDCRWHvoNzOELSZx4d56ti5GLg4h
+	gemMElPW/mOBcDqZJKafes3YxcjBwSagLbF5vwFIg4gAs8SCqecZQWqYBSYwSvxf9J4FJCEs
+	4CVxq+sY2AYWAVWJD1Omg8V5BdwlNvV0QW3Wltj2fCIjiM0p4CGx4+gDsBohoJrO/9vYJjDy
+	LmBkWMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHBPPpHcwrmqwOMQowMGoxMM74Z13sBBr
+	YllxZe4hRgkOZiUR3o/cvsFCvCmJlVWpRfnxRaU5qcWHGJOBrprILCWanA+M17ySeENjEzMj
+	SyMzCyMTc3PShJXEeQ+2WgcKCaQnlqRmp6YWpBbBbGHi4JRqYIy4FmE9a8Fn+4urT/n+kD8o
+	9KvrjFC51ePTi+xClJ+dEnLl5Z+R0G95Rmz7ic+7/mik+vl+73nHu62900CEsXBj2+P/f0/x
+	szRznL3j+f+/q96u0JMlh6Ii9vJnHzFw9Une2vYwZVkHf2ssT+cPj1alE6ITIv+/nMC5Qj9f
+	tnJq5kYeMVGTnUosxRmJhlrMRcWJALL2GSjNAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -45,170 +48,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes list opeations in handling dirty dir inodes.
-Previously, F2FS traverses whole the list of dirty dir inodes to check whether
-there is an existing inode or not, resulting in heavy CPU overheads.
-
-So this patch removes such the traverse operations by adding FI_DIRTY_DIR to
-indicate the inode lies on the list or not.
-Through this simple flag, we can remove redundant operations gracefully.
+The f2fs_write_data_page should decrease the number of dirty dentry page
+all the time.
 
 Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
 ---
- fs/f2fs/checkpoint.c | 52 +++++++++++++---------------------------------------
- fs/f2fs/f2fs.h       |  3 ++-
- fs/f2fs/recovery.c   | 18 ++++++++++--------
- 3 files changed, 25 insertions(+), 48 deletions(-)
+ fs/f2fs/data.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index 890e23d..5133aec 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -555,14 +555,13 @@ fail_no_cp:
- static int __add_dirty_inode(struct inode *inode, struct dir_inode_entry *new)
- {
- 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
--	struct list_head *head = &sbi->dir_inode_list;
--	struct dir_inode_entry *entry;
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index 45abd60..9a3fa38 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -790,6 +790,8 @@ static int f2fs_write_data_page(struct page *page,
+ 		.rw = (wbc->sync_mode == WB_SYNC_ALL) ? WRITE_SYNC : WRITE,
+ 	};
  
--	list_for_each_entry(entry, head, list)
--		if (unlikely(entry->inode == inode))
--			return -EEXIST;
-+	if (is_inode_flag_set(F2FS_I(inode), FI_DIRTY_DIR))
-+		return -EEXIST;
- 
--	list_add_tail(&new->list, head);
-+	set_inode_flag(F2FS_I(inode), FI_DIRTY_DIR);
-+	F2FS_I(inode)->dirty_dir = new;
-+	list_add_tail(&new->list, &sbi->dir_inode_list);
- 	stat_inc_dirty_dir(sbi);
- 	return 0;
- }
-@@ -611,31 +610,26 @@ void add_dirty_dir_inode(struct inode *inode)
- void remove_dirty_dir_inode(struct inode *inode)
- {
- 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
--	struct list_head *head;
- 	struct dir_inode_entry *entry;
- 
- 	if (!S_ISDIR(inode->i_mode))
- 		return;
- 
- 	spin_lock(&sbi->dir_inode_lock);
--	if (get_dirty_dents(inode)) {
-+	if (get_dirty_dents(inode) ||
-+			!is_inode_flag_set(F2FS_I(inode), FI_DIRTY_DIR)) {
- 		spin_unlock(&sbi->dir_inode_lock);
- 		return;
- 	}
- 
--	head = &sbi->dir_inode_list;
--	list_for_each_entry(entry, head, list) {
--		if (entry->inode == inode) {
--			list_del(&entry->list);
--			stat_dec_dirty_dir(sbi);
--			spin_unlock(&sbi->dir_inode_lock);
--			kmem_cache_free(inode_entry_slab, entry);
--			goto done;
--		}
--	}
-+	entry = F2FS_I(inode)->dirty_dir;
-+	list_del(&entry->list);
-+	F2FS_I(inode)->dirty_dir = NULL;
-+	clear_inode_flag(F2FS_I(inode), FI_DIRTY_DIR);
-+	stat_dec_dirty_dir(sbi);
- 	spin_unlock(&sbi->dir_inode_lock);
-+	kmem_cache_free(inode_entry_slab, entry);
- 
--done:
- 	/* Only from the recovery routine */
- 	if (is_inode_flag_set(F2FS_I(inode), FI_DELAY_IPUT)) {
- 		clear_inode_flag(F2FS_I(inode), FI_DELAY_IPUT);
-@@ -643,26 +637,6 @@ done:
- 	}
- }
- 
--struct inode *check_dirty_dir_inode(struct f2fs_sb_info *sbi, nid_t ino)
--{
--
--	struct list_head *head;
--	struct inode *inode = NULL;
--	struct dir_inode_entry *entry;
--
--	spin_lock(&sbi->dir_inode_lock);
--
--	head = &sbi->dir_inode_list;
--	list_for_each_entry(entry, head, list) {
--		if (entry->inode->i_ino == ino) {
--			inode = entry->inode;
--			break;
--		}
--	}
--	spin_unlock(&sbi->dir_inode_lock);
--	return inode;
--}
--
- void sync_dirty_dir_inodes(struct f2fs_sb_info *sbi)
- {
- 	struct list_head *head;
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 2c5a5da..d3180f8 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -218,6 +218,7 @@ struct f2fs_inode_info {
- 	nid_t i_xattr_nid;		/* node id that contains xattrs */
- 	unsigned long long xattr_ver;	/* cp version of xattr modification */
- 	struct extent_info ext;		/* in-memory extent cache entry */
-+	struct dir_inode_entry *dirty_dir;	/* the pointer of dirty dir */
- };
- 
- static inline void get_extent_info(struct extent_info *ext,
-@@ -958,6 +959,7 @@ static inline int f2fs_clear_bit(unsigned int nr, char *addr)
- enum {
- 	FI_NEW_INODE,		/* indicate newly allocated inode */
- 	FI_DIRTY_INODE,		/* indicate inode is dirty or not */
-+	FI_DIRTY_DIR,		/* indicate directory has dirty pages */
- 	FI_INC_LINK,		/* need to increment i_nlink */
- 	FI_ACL_MODE,		/* indicate acl mode */
- 	FI_NO_ALLOC,		/* should not allocate any blocks */
-@@ -1222,7 +1224,6 @@ int get_valid_checkpoint(struct f2fs_sb_info *);
- void set_dirty_dir_page(struct inode *, struct page *);
- void add_dirty_dir_inode(struct inode *);
- void remove_dirty_dir_inode(struct inode *);
--struct inode *check_dirty_dir_inode(struct f2fs_sb_info *, nid_t);
- void sync_dirty_dir_inodes(struct f2fs_sb_info *);
- void write_checkpoint(struct f2fs_sb_info *, bool);
- void init_orphan_info(struct f2fs_sb_info *);
-diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-index b1ae89f..9eb6487 100644
---- a/fs/f2fs/recovery.c
-+++ b/fs/f2fs/recovery.c
-@@ -46,15 +46,17 @@ static int recover_dentry(struct page *ipage, struct inode *inode)
- 	struct inode *dir, *einode;
- 	int err = 0;
- 
--	dir = check_dirty_dir_inode(F2FS_SB(inode->i_sb), pino);
--	if (!dir) {
--		dir = f2fs_iget(inode->i_sb, pino);
--		if (IS_ERR(dir)) {
--			err = PTR_ERR(dir);
--			goto out;
--		}
--		set_inode_flag(F2FS_I(dir), FI_DELAY_IPUT);
-+	dir = f2fs_iget(inode->i_sb, pino);
-+	if (IS_ERR(dir)) {
-+		err = PTR_ERR(dir);
-+		goto out;
-+	}
++	inode_dec_dirty_dents(inode);
 +
-+	if (is_inode_flag_set(F2FS_I(dir), FI_DIRTY_DIR)) {
-+		iput(dir);
-+	} else {
- 		add_dirty_dir_inode(dir);
-+		set_inode_flag(F2FS_I(dir), FI_DELAY_IPUT);
- 	}
+ 	if (page->index < end_index)
+ 		goto write;
  
- 	name.len = le32_to_cpu(raw_inode->i_namelen);
+@@ -798,10 +800,8 @@ static int f2fs_write_data_page(struct page *page,
+ 	 * this page does not have to be written to disk.
+ 	 */
+ 	offset = i_size & (PAGE_CACHE_SIZE - 1);
+-	if ((page->index >= end_index + 1) || !offset) {
+-		inode_dec_dirty_dents(inode);
++	if ((page->index >= end_index + 1) || !offset)
+ 		goto out;
+-	}
+ 
+ 	zero_user_segment(page, offset, PAGE_CACHE_SIZE);
+ write:
+@@ -810,7 +810,6 @@ write:
+ 
+ 	/* Dentry blocks are controlled by checkpoint */
+ 	if (S_ISDIR(inode->i_mode)) {
+-		inode_dec_dirty_dents(inode);
+ 		err = do_write_data_page(page, &fio);
+ 		goto done;
+ 	}
 -- 
 1.8.4.474.g128a96c
 
