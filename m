@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043AbaDOIsK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 04:48:10 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47991 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751105AbaDOIsG (ORCPT
+	id S1752478AbaDOItY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 04:49:24 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54106 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908AbaDOItV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 04:48:06 -0400
-Date: Tue, 15 Apr 2014 09:47:50 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Neil Zhang <zhangwm@marvell.com>
-Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>
-Subject: Re: [PATCH v2] ARM: perf: save/restore pmu registers in pm notifier
-Message-ID: <20140415084749.GG17408@arm.com>
-References: <1397439742-28337-1-git-send-email-zhangwm@marvell.com>
+	Tue, 15 Apr 2014 04:49:21 -0400
+Date: Tue, 15 Apr 2014 10:48:54 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Denys Vlasenko <vda.linux@googlemail.com>, stable@vger.kernel.org
+Subject: Re: [PATCH 1/2] nohz: stop updating sleep stats from
+ get_cpu_{idle,iowait}_time_us()
+Message-ID: <20140415084854.GL11096@twins.programming.kicks-ass.net>
+References: <53465F54.708@jp.fujitsu.com>
+ <53466027.3040705@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397439742-28337-1-git-send-email-zhangwm@marvell.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53466027.3040705@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Apr 10, 2014 at 06:11:03PM +0900, Hidetoshi Seto wrote:
+> -	if (ts->idle_active) {
+> -		delta = ktime_sub(now, ts->idle_entrytime);
+> -		if (nr_iowait_cpu(cpu) > 0)
+> -			ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
+> -		else
+> -			ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
+> -		ts->idle_entrytime = now;
+> -	}
+> -
+> -	if (last_update_time)
+> -		*last_update_time = ktime_to_us(now);
+> -
+> -}
+> -
+> -static void tick_nohz_stop_idle(struct tick_sched *ts, ktime_t now)
+> -{
+> -	update_ts_time_stats(smp_processor_id(), ts, now, NULL);
+> +	/* Updates the per cpu time idle statistics counters */
+> +	delta = ktime_sub(now, ts->idle_entrytime);
+> +	if (nr_iowait_cpu(smp_processor_id()) > 0)
 
-On Mon, Apr 14, 2014 at 02:42:22AM +0100, Neil Zhang wrote:
-> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-> 
-> This adds core support for saving and restoring CPU PMU registers
-> for suspend/resume support i.e. deeper C-states in cpuidle terms.
-> This patch adds support only to ARMv7 PMU registers save/restore.
-> It needs to be extended to xscale and ARMv6 if needed.
-> 
-> [Neil] We found that DS-5 not work on our CA7 based SoCs.
-> After debuging, found PMU registers were lost because of core power down.
-> Then i found Sudeep had a patch to fix it about two years ago but not in
-> the mainline, just port it.
+Now I know the old code also uses nr_iowait_cpu(), but that function is
+crackbrained. This cannot possibly be right.
 
-What I don't like about this patch is that we're introducing significant
-overhead for SoCs that don't require save/restore of the PMU state. I'd much
-rather see core power down disabled whilst the PMU is in use but, if that's
-not possible, then I think we need to:
-
- (1) Make this conditional for cores that really need it
-
- (2) Only save/restore if the PMU is in use (even better, just save/restore
-     the live registers, but that's probably not worth the effort
-     initially).
-
- (3) Ensure we ->reset the PMU before doing the restore
-
-Will
+Anything using nr_iowait_cpu() is broken beyond repair.
