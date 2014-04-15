@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754470AbaDOSwW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 14:52:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33528 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751818AbaDOSwU (ORCPT
+	id S1755014AbaDOSwr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 14:52:47 -0400
+Received: from www84.your-server.de ([213.133.104.84]:53505 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751920AbaDOSwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 14:52:20 -0400
-Date: Tue, 15 Apr 2014 11:52:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
-        xemul@parallels.com, Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: Re: [patch 4/4] mm: Clear VM_SOFTDIRTY flag inside clear_refs_write
- instead of clear_soft_dirty
-Message-Id: <20140415115219.2676d2107b3f6b0dd5573062@linux-foundation.org>
-In-Reply-To: <20140415184851.GS23983@moon>
-References: <20140324122838.490106581@openvz.org>
-	<20140324125926.204897920@openvz.org>
-	<20140415110654.4dd9a97c216e2689316fa448@linux-foundation.org>
-	<20140415182935.GR23983@moon>
-	<20140415114449.c8732a56f9974c2819e4541a@linux-foundation.org>
-	<20140415184851.GS23983@moon>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Tue, 15 Apr 2014 14:52:45 -0400
+Message-ID: <1397587915.21321.9.camel@vger.seibold.net>
+Subject: Re: X86: kexec issues with i915 in 3.14
+From: Stefani Seibold <stefani@seibold.net>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: "Woodhouse, David" <david.woodhouse@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
+        "Zanoni, Paulo R" <paulo.r.zanoni@intel.com>,
+        "greg@kroah.com" <greg@kroah.com>
+Date: Tue, 15 Apr 2014 20:51:55 +0200
+In-Reply-To: <534CF3B1.7020508@linux.intel.com>
+References: <1397419299.1407.18.camel@vger.seibold.net>
+	 <1397435291.19944.176.camel@shinybook.infradead.org>
+	 <1397504974.1059.5.camel@vger.seibold.net>
+	 <534CF3B1.7020508@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Apr 2014 22:48:51 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-
-> On Tue, Apr 15, 2014 at 11:44:49AM -0700, Andrew Morton wrote:
-> > On Tue, 15 Apr 2014 22:29:35 +0400 Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> > 
-> > > On Tue, Apr 15, 2014 at 11:06:54AM -0700, Andrew Morton wrote:
-> > > > 
-> > > > I resolved this by merging
-> > > > mm-softdirty-clear-vm_softdirty-flag-inside-clear_refs_write-instead-of-clear_soft_dirty.patch
-> > > > on top of the pagewalk patches as below - please carefully review.
-> > > 
-> > > Thanks a lot, Andrew! I've updated the patches and were planning to send them to you
-> > > tonightm but because you applied it on top of pagewal patches, I think i rather need to
-> > > fetch -next repo and review this patch and update the rest of the series on top (hope
-> > > i'll do that in 3-4 hours).
-> > 
-> > -mm isn't in -next at present.  I'll get a release done later today for
-> > tomorrow's -next.
+On Tuesday, 15.04.2014, 16:54 +0800 wrote Jiang Liu:
+> Hi Stefanin,
+> 	As David has mentioned, the warning messages indicates the VGA
+> controller hasn't been shut down correctly during reboot and keeps doing
+> DMA write operations after loading the new kernel. Do you have found
+> any older kernel without this issue?
+> 	There is a patch set to solve similar issue for crashdump,
+> please refer to https://lkml.org/lkml/2014/1/10/518.
 > 
-> OK. Could you please remind me the place I could fetch the patchwalk series from?
+> Thanks!
+> Gerry
+> 
 
-http://ozlabs.org/~akpm/mmots/
+I still understand. 
 
-> (or better to wait until -mm get merged into -next?)
+Maybe the above patch will cure the symptoms but i will not heal the
+cause.
 
-That's probably simpler.
+But the driver for the intel VGA must not assume the current state of
+the device. It is necessary to setup the whole VGA device during the
+probe phase. 
+
+Otherwise when kexec a kernel there are tons of log entries or in many
+cases a garbaged screen output and the whole kernels will hang.
+
+- Stefani
+
+
