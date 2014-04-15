@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaDONt7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 09:49:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54976 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988AbaDONt6 (ORCPT
+	id S1753695AbaDONuO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 09:50:14 -0400
+Received: from mano-163-35-shared.jabatus.fr ([109.234.163.35]:37991 "EHLO
+	mano-163-35-shared.jabatus.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750898AbaDONuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 09:49:58 -0400
-Date: Tue, 15 Apr 2014 15:49:49 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/8] sched/wait: Use __add_wait_queue{_tail}_exclusive()
- as possible.
-Message-ID: <20140415134949.GU11096@twins.programming.kicks-ass.net>
-References: <cover.1397562542.git.yangds.fnst@cn.fujitsu.com>
- <c232d92d5d70daf9b2c58486dc5a182f95edd951.1397562542.git.yangds.fnst@cn.fujitsu.com>
+	Tue, 15 Apr 2014 09:50:07 -0400
+X-Greylist: delayed 424 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Apr 2014 09:50:07 EDT
+X-MailPropre-MailScanner-From: ecolbus@manux.info
+X-MailPropre-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=0, required 5, autolearn=not spam)
+X-MailPropre-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
+X-MailPropre-MailScanner-ID: 21CA58F61EFC.A43FC
+X-MailPropre-MailScanner-Information: Message sortant - Serveurs o2switch
+Message-ID: <534D3762.4010905@manux.info>
+Date: Tue, 15 Apr 2014 15:42:58 +0200
+From: Emmanuel Colbus <ecolbus@manux.info>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131104 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <c232d92d5d70daf9b2c58486dc5a182f95edd951.1397562542.git.yangds.fnst@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: linux-kernel@vger.kernel.org
+Subject: [RFC][5/11][MANUX] Kernel compatibility : major/minor numbers
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 09:32:52PM +0900, Dongsheng Yang wrote:
-> From: Dongsheng <yangds.fnst@cn.fujitsu.com>
-> 
-> There is already a function in include/linux/wait.h to cover the
-> 'exclusive' usage. So we can use it in sched/wait.c to replace
-> the opened implementation of it.
-> 
-> Signed-off-by: Dongsheng <yangds.fnst@cn.fujitsu.com>
-> ---
->  kernel/sched/wait.c | 6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
-> index 283750e..b04827e 100644
-> --- a/kernel/sched/wait.c
-> +++ b/kernel/sched/wait.c
-> @@ -38,9 +38,8 @@ void add_wait_queue_exclusive(wait_queue_head_t *q, wait_queue_t *wait)
->  	unsigned long flags;
->  
->  	trace_sched_wait(current);
-> -	wait->flags |= WQ_FLAG_EXCLUSIVE;
->  	spin_lock_irqsave(&q->lock, flags);
-> -	__add_wait_queue_tail(q, wait);
-> +	__add_wait_queue_tail_exclusive(q, wait);
->  	spin_unlock_irqrestore(&q->lock, flags);
->  }
->  EXPORT_SYMBOL(add_wait_queue_exclusive);
-> @@ -192,10 +191,9 @@ prepare_to_wait_exclusive(wait_queue_head_t *q, wait_queue_t *wait, int state)
->  	unsigned long flags;
->  
->  	trace_sched_wait(current);
-> -	wait->flags |= WQ_FLAG_EXCLUSIVE;
->  	spin_lock_irqsave(&q->lock, flags);
->  	if (list_empty(&wait->task_list))
-> -		__add_wait_queue_tail(q, wait);
-> +		__add_wait_queue_tail_exclusive(q, wait);
->  	set_current_state(state);
->  	spin_unlock_irqrestore(&q->lock, flags);
+Now, back to the filesystem...
 
-That is not a no-op, if !list_empty() we loose the WQ_flag
+In order to associate devices to their files, the Linux kernel uses
+their major and minor numbers. However, mine doesn't; instead, I've
+attributed myself a single group of values (major=0, minor=0, for both
+character-mode and block-mode special files), with the meaning (for the
+userspace) "you cannot identify the content of this file based on its
+major and minor numbers".
+
+As for my kernel, there is a syscall to associate such files with their
+proper peripherals (asper(2)), after which it internally identifies them
+using their inode and partition numbers; as for userspace, it has no
+choice but to use their names, as usual.
+
+Do you have any objection to my taking of these values?
+
+Emmanuel
