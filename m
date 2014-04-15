@@ -1,30 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319AbaDOUPA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 16:15:00 -0400
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:57934 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149AbaDOUOy (ORCPT
+	id S1754051AbaDOUO6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 16:14:58 -0400
+Received: from mail-qa0-f73.google.com ([209.85.216.73]:39696 "EHLO
+	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752239AbaDOUOy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Apr 2014 16:14:54 -0400
 From: Doug Anderson <dianders@chromium.org>
 To: Anton Vorontsov <anton@enomsg.org>
 Cc: Olof Johansson <olof@lixom.net>, Sachin Kamat <sachin.kamat@linaro.org>,
         ajaykumar.rs@samsung.com, linux-samsung-soc@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>, Simon Glass <sjg@chromium.org>,
-        Michael Spang <spang@chromium.org>, Sean Paul <seanpaul@chromium.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Doug Anderson <dianders@chromium.org>,
         Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] regulator: tps65090: Make FETs more reliable
-Date: Tue, 15 Apr 2014 13:14:36 -0700
-Message-Id: <1397592876-5741-4-git-send-email-dianders@chromium.org>
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] mfd: tps65090: Allow charger module to be used when no irq
+Date: Tue, 15 Apr 2014 13:14:34 -0700
+Message-Id: <1397592876-5741-2-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 1.9.1.423.g4596e3a
 In-Reply-To: <1397592876-5741-1-git-send-email-dianders@chromium.org>
 References: <1397592876-5741-1-git-send-email-dianders@chromium.org>
@@ -32,318 +25,226 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An issue was discovered with tps65090 where sometimes the FETs
-wouldn't actually turn on when requested.  The most problematic FET
-was the one use for the LCD backlight on the Samsung ARM Chromebook
-(FET1).  Problems were especially prevalent when the device was
-plugged in to AC power, making the backlight voltage higher.
+On the ARM Chromebook tps65090 has two masters: the AP (the main
+processor running linux) and the EC (the embedded controller).  The AP
+is allowed to mess with FETs but the EC is in charge of charge control.
 
-Mitigate the problem by:
-* Allow setting the overcurrent wait time so devices with this problem
-  can set it to the max.
-* Add retry logic on enables of FETs.
+The tps65090 interupt line is routed to both the AP and the EC, which
+can cause quite a headache.  Having two people adjusting masks and
+acking interrupts is a recipe for disaster.
+
+In the shipping kernel we had a hack to have the AP pay attention to
+the IRQ but not to ack it.  It also wasn't supposed to configure the
+IRQ in any way.  That hack allowed us to detect when the device was
+charging without messing with the EC's state.
+
+The current tps65090 infrastructure makes the above difficult, and it
+was a bit of a hack to begin with.  Rather than uglify the driver to
+support it, just extend the driver's existing notion of "no irq" to
+the charger.  This makes the charger code poll every 2 seconds for AC
+detect, which is sufficient.
 
 Signed-off-by: Doug Anderson <dianders@chromium.org>
-Signed-off-by: Simon Glass <sjg@chromium.org>
-Signed-off-by: Michael Spang <spang@chromium.org>
-Signed-off-by: Sean Paul <seanpaul@chromium.org>
 ---
- .../devicetree/bindings/regulator/tps65090.txt     |   4 +
- drivers/regulator/tps65090-regulator.c             | 197 +++++++++++++++++++--
- include/linux/mfd/tps65090.h                       |   5 +
- 3 files changed, 194 insertions(+), 12 deletions(-)
+ drivers/mfd/tps65090.c           | 14 ++++++--
+ drivers/power/tps65090-charger.c | 76 +++++++++++++++++++++++++++++++---------
+ 2 files changed, 70 insertions(+), 20 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/regulator/tps65090.txt b/Documentation/devicetree/bindings/regulator/tps65090.txt
-index 313a60b..34098023 100644
---- a/Documentation/devicetree/bindings/regulator/tps65090.txt
-+++ b/Documentation/devicetree/bindings/regulator/tps65090.txt
-@@ -21,6 +21,10 @@ Optional properties:
-   number should be provided. If it is externally controlled and no GPIO
-   entry then driver will just configure this rails as external control
-   and will not provide any enable/disable APIs.
-+- ti,overcurrent-wait: This is applicable to FET registers, which have a
-+  poorly defined "overcurrent wait" field.  If this property is present it
-+  should be between 0 - 3.  If this property isn't present we won't touch the
-+  "overcurrent wait" field and we'll leave it to the BIOS/EC to deal with.
- 
- Each regulator is defined using the standard binding for regulators.
- 
-diff --git a/drivers/regulator/tps65090-regulator.c b/drivers/regulator/tps65090-regulator.c
-index 2e92ef6..e8d1c62 100644
---- a/drivers/regulator/tps65090-regulator.c
-+++ b/drivers/regulator/tps65090-regulator.c
-@@ -17,6 +17,7 @@
-  */
- 
- #include <linux/module.h>
-+#include <linux/delay.h>
- #include <linux/init.h>
- #include <linux/gpio.h>
- #include <linux/of_gpio.h>
-@@ -28,21 +29,186 @@
- #include <linux/regulator/of_regulator.h>
- #include <linux/mfd/tps65090.h>
- 
-+#define MAX_CTRL_READ_TRIES	5
-+#define MAX_FET_ENABLE_TRIES	1000
-+
-+#define CTRL_EN_BIT		0 /* Regulator enable bit, active high */
-+#define CTRL_WT_BIT		2 /* Regulator wait time 0 bit */
-+#define CTRL_PG_BIT		4 /* Regulator power good bit, 1=good */
-+#define CTRL_TO_BIT		7 /* Regulator timeout bit, 1=wait */
-+
-+#define MAX_OVERCURRENT_WAIT	3 /* Overcurrent wait must be less than this */
-+
-+/**
-+ * struct tps65090_regulator - Per-regulator data for a tps65090 regulator
-+ *
-+ * @dev: Pointer to our device.
-+ * @desc: The struct regulator_desc for the regulator.
-+ * @rdev: The struct regulator_dev for the regulator.
-+ * @overcurrent_wait_valid: True if overcurrent_wait is valid.
-+ * @overcurrent_wait: For FETs, the value to put in the WTFET bitfield.
-+ */
-+
- struct tps65090_regulator {
- 	struct device		*dev;
- 	struct regulator_desc	*desc;
- 	struct regulator_dev	*rdev;
-+	bool			overcurrent_wait_valid;
-+	int			overcurrent_wait;
+diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
+index ba1a25d..c3cddb4 100644
+--- a/drivers/mfd/tps65090.c
++++ b/drivers/mfd/tps65090.c
+@@ -64,11 +64,16 @@ static struct resource charger_resources[] = {
+ 	}
  };
  
- static struct regulator_ops tps65090_ext_control_ops = {
- };
- 
--static struct regulator_ops tps65090_reg_contol_ops = {
-+/**
-+ * tps65090_fet_is_enabled - Tell if a fet is enabled
-+ *
-+ * @rdev:	Regulator device
-+ * @return true if the fet is enabled and its power is good; false otherwise.
-+ */
-+static int tps65090_fet_is_enabled(struct regulator_dev *rdev)
-+{
-+	unsigned int control;
-+	unsigned int expected = rdev->desc->enable_mask | BIT(CTRL_PG_BIT);
-+	int ret;
-+
-+	ret = regmap_read(rdev->regmap, rdev->desc->enable_reg, &control);
-+	if (ret != 0)
-+		return ret;
-+
-+	return (control & expected) == expected;
-+}
-+
-+/**
-+ * tps65090_reg_set_overcurrent_wait - Setup overcurrent wait
-+ *
-+ * This will set the overcurrent wait time based on what's in the regulator
-+ * info.
-+ *
-+ * @rdev:	Regulator device
-+ * @return 0 if no error, non-zero if there was an error writing the register.
-+ */
-+static int tps65090_reg_set_overcurrent_wait(struct regulator_dev *rdev)
-+{
-+	struct tps65090_regulator *ri = rdev_get_drvdata(rdev);
-+	int ret;
-+
-+	if (!ri->overcurrent_wait_valid)
-+		return 0;
-+
-+	ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
-+				 MAX_OVERCURRENT_WAIT << CTRL_WT_BIT,
-+				 ri->overcurrent_wait << CTRL_WT_BIT);
-+	if (ret) {
-+		dev_err(&rdev->dev, "Error updating overcurrent wait %#x\n",
-+			rdev->desc->enable_reg);
-+	}
-+
-+	return ret;
-+}
-+
-+/**
-+ * tps6090_try_enable_fet - Try to enable a FET
-+ *
-+ * @rdev:	Regulator device
-+ * @return 0 if ok, -ENOTRECOVERABLE if the FET power good bit did not get set,
-+ * or some other -ve value if another error occurred (e.g. i2c error)
-+ */
-+static int tps6090_try_enable_fet(struct regulator_dev *rdev)
-+{
-+	unsigned int control;
-+	int ret, i;
-+
-+	ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
-+				 rdev->desc->enable_mask,
-+				 rdev->desc->enable_mask);
-+	if (ret < 0) {
-+		dev_err(&rdev->dev, "Error in updating reg %#x\n",
-+			rdev->desc->enable_reg);
-+		return ret;
-+	}
-+
-+	for (i = 0; i < MAX_CTRL_READ_TRIES; i++) {
-+		ret = regmap_read(rdev->regmap, rdev->desc->enable_reg,
-+				  &control);
-+		if (ret < 0)
-+			return ret;
-+
-+		if (!(control & BIT(CTRL_TO_BIT)))
-+			break;
-+
-+		usleep_range(1000, 1500);
-+	}
-+	if (!(control & BIT(CTRL_PG_BIT)))
-+		return -ENOTRECOVERABLE;
-+
-+	return 0;
-+}
-+
-+/**
-+ * tps65090_fet_enable - Enable a FET, trying a few times if it fails
-+ *
-+ * Some versions of the tps65090 have issues when turning on the FETs.
-+ * This function goes through several steps to ensure the best chance of the
-+ * FET going on.  Specifically:
-+ * - We'll make sure that we bump the "overcurrent wait" to the maximum, which
-+ *   increases the chances that we'll turn on properly.
-+ * - We'll retry turning the FET on multiple times (turning off in between).
-+ *
-+ * @rdev:	Regulator device
-+ * @return 0 if ok, non-zero if it fails.
-+ */
-+static int tps65090_fet_enable(struct regulator_dev *rdev)
-+{
-+	int ret, tries;
-+
-+	ret = tps65090_reg_set_overcurrent_wait(rdev);
-+	if (ret)
-+		goto err;
-+
-+	/*
-+	 * Try enabling multiple times until we succeed since sometimes the
-+	 * first try times out.
-+	 */
-+	for (tries = 0; ; tries++) {
-+		ret = tps6090_try_enable_fet(rdev);
-+		if (!ret)
-+			break;
-+		if (ret != -ENOTRECOVERABLE || tries == MAX_FET_ENABLE_TRIES)
-+			goto err;
-+
-+		/* Try turning the FET off (and then on again) */
-+		ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
-+					 rdev->desc->enable_mask, 0);
-+		if (ret)
-+			goto err;
-+	}
-+
-+	if (tries) {
-+		dev_warn(&rdev->dev, "reg %#x enable ok after %d tries\n",
-+			 rdev->desc->enable_reg, tries);
-+	}
-+
-+	return 0;
-+err:
-+	dev_warn(&rdev->dev, "reg %#x enable failed\n", rdev->desc->enable_reg);
-+	WARN_ON(1);
-+
-+	return ret;
-+}
-+
-+static struct regulator_ops tps65090_reg_control_ops = {
- 	.enable		= regulator_enable_regmap,
- 	.disable	= regulator_disable_regmap,
- 	.is_enabled	= regulator_is_enabled_regmap,
- };
- 
-+static struct regulator_ops tps65090_fet_control_ops = {
-+	.enable		= tps65090_fet_enable,
-+	.disable	= regulator_disable_regmap,
-+	.is_enabled	= tps65090_fet_is_enabled,
+-static const struct mfd_cell tps65090s[] = {
+-	{
++enum tps65090_cells {
++	PMIC = 0,
++	CHARGER = 1,
 +};
 +
- static struct regulator_ops tps65090_ldo_ops = {
- };
++static struct mfd_cell tps65090s[] = {
++	[PMIC] = {
+ 		.name = "tps65090-pmic",
+ 	},
+-	{
++	[CHARGER] = {
+ 		.name = "tps65090-charger",
+ 		.num_resources = ARRAY_SIZE(charger_resources),
+ 		.resources = &charger_resources[0],
+@@ -211,6 +216,9 @@ static int tps65090_i2c_probe(struct i2c_client *client,
+ 					"IRQ init failed with err: %d\n", ret);
+ 			return ret;
+ 		}
++	} else {
++		/* Don't tell children they have an IRQ that'll never fire */
++		tps65090s[CHARGER].num_resources = 0;
+ 	}
  
-@@ -53,22 +219,22 @@ static struct regulator_ops tps65090_ldo_ops = {
- 	.id = TPS65090_REGULATOR_##_id,			\
- 	.ops = &_ops,					\
- 	.enable_reg = _en_reg,				\
--	.enable_mask = BIT(0),				\
-+	.enable_mask = BIT(CTRL_EN_BIT),		\
- 	.type = REGULATOR_VOLTAGE,			\
- 	.owner = THIS_MODULE,				\
+ 	ret = mfd_add_devices(tps65090->dev, -1, tps65090s,
+diff --git a/drivers/power/tps65090-charger.c b/drivers/power/tps65090-charger.c
+index 8fc9d6d..cc26c12 100644
+--- a/drivers/power/tps65090-charger.c
++++ b/drivers/power/tps65090-charger.c
+@@ -17,9 +17,11 @@
+  */
+ #include <linux/delay.h>
+ #include <linux/err.h>
++#include <linux/freezer.h>
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/kernel.h>
++#include <linux/kthread.h>
+ #include <linux/module.h>
+ #include <linux/of_device.h>
+ #include <linux/platform_device.h>
+@@ -43,11 +45,15 @@
+ #define TPS65090_VACG		BIT(1)
+ #define TPS65090_NOITERM	BIT(5)
+ 
++#define POLL_INTERVAL		(HZ * 2)	/* Used when no irq */
++
+ struct tps65090_charger {
+ 	struct	device	*dev;
+ 	int	ac_online;
+ 	int	prev_ac_online;
+ 	int	irq;
++	struct task_struct	*poll_task;
++	bool			passive_mode;
+ 	struct power_supply	ac;
+ 	struct tps65090_platform_data *pdata;
+ };
+@@ -60,6 +66,9 @@ static int tps65090_low_chrg_current(struct tps65090_charger *charger)
+ {
+ 	int ret;
+ 
++	if (charger->passive_mode)
++		return 0;
++
+ 	ret = tps65090_write(charger->dev->parent, TPS65090_REG_CG_CTRL5,
+ 			TPS65090_NOITERM);
+ 	if (ret < 0) {
+@@ -75,6 +84,9 @@ static int tps65090_enable_charging(struct tps65090_charger *charger)
+ 	int ret;
+ 	uint8_t ctrl0 = 0;
+ 
++	if (charger->passive_mode)
++		return 0;
++
+ 	ret = tps65090_read(charger->dev->parent, TPS65090_REG_CG_CTRL0,
+ 			    &ctrl0);
+ 	if (ret < 0) {
+@@ -98,6 +110,9 @@ static int tps65090_config_charger(struct tps65090_charger *charger)
+ 	uint8_t intrmask = 0;
+ 	int ret;
+ 
++	if (charger->passive_mode)
++		return 0;
++
+ 	if (charger->pdata->enable_low_current_chrg) {
+ 		ret = tps65090_low_chrg_current(charger);
+ 		if (ret < 0) {
+@@ -175,10 +190,14 @@ static irqreturn_t tps65090_charger_isr(int irq, void *dev_id)
+ 	}
+ 
+ 	/* Clear interrupts. */
+-	ret = tps65090_write(charger->dev->parent, TPS65090_REG_INTR_STS, 0x00);
+-	if (ret < 0) {
+-		dev_err(charger->dev, "%s(): Error in writing reg 0x%x\n",
++	if (!charger->passive_mode) {
++		ret = tps65090_write(charger->dev->parent,
++				     TPS65090_REG_INTR_STS, 0x00);
++		if (ret < 0) {
++			dev_err(charger->dev,
++				"%s(): Error in writing reg 0x%x\n",
+ 				__func__, TPS65090_REG_INTR_STS);
++		}
+ 	}
+ 
+ 	if (charger->prev_ac_online != charger->ac_online)
+@@ -209,6 +228,18 @@ static struct tps65090_platform_data *
+ 
  }
  
- static struct regulator_desc tps65090_regulator_desc[] = {
--	tps65090_REG_DESC(DCDC1, "vsys1",   0x0C, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(DCDC2, "vsys2",   0x0D, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(DCDC3, "vsys3",   0x0E, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(FET1,  "infet1",  0x0F, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(FET2,  "infet2",  0x10, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(FET3,  "infet3",  0x11, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(FET4,  "infet4",  0x12, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(FET5,  "infet5",  0x13, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(FET6,  "infet6",  0x14, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(FET7,  "infet7",  0x15, tps65090_reg_contol_ops),
-+	tps65090_REG_DESC(DCDC1, "vsys1",   0x0C, tps65090_reg_control_ops),
-+	tps65090_REG_DESC(DCDC2, "vsys2",   0x0D, tps65090_reg_control_ops),
-+	tps65090_REG_DESC(DCDC3, "vsys3",   0x0E, tps65090_reg_control_ops),
-+	tps65090_REG_DESC(FET1,  "infet1",  0x0F, tps65090_fet_control_ops),
-+	tps65090_REG_DESC(FET2,  "infet2",  0x10, tps65090_fet_control_ops),
-+	tps65090_REG_DESC(FET3,  "infet3",  0x11, tps65090_fet_control_ops),
-+	tps65090_REG_DESC(FET4,  "infet4",  0x12, tps65090_fet_control_ops),
-+	tps65090_REG_DESC(FET5,  "infet5",  0x13, tps65090_fet_control_ops),
-+	tps65090_REG_DESC(FET6,  "infet6",  0x14, tps65090_fet_control_ops),
-+	tps65090_REG_DESC(FET7,  "infet7",  0x15, tps65090_fet_control_ops),
- 	tps65090_REG_DESC(LDO1,  "vsys-l1", 0,    tps65090_ldo_ops),
- 	tps65090_REG_DESC(LDO2,  "vsys-l2", 0,    tps65090_ldo_ops),
- };
-@@ -209,6 +375,11 @@ static struct tps65090_platform_data *tps65090_parse_dt_reg_data(
- 			rpdata->gpio = of_get_named_gpio(np,
- 					"dcdc-ext-control-gpios", 0);
- 
-+		if (of_property_read_u32(tps65090_matches[idx].of_node,
-+					 "ti,overcurrent-wait",
-+					 &rpdata->overcurrent_wait) == 0)
-+			rpdata->overcurrent_wait_valid = true;
++static int tps65090_charger_poll_task(void *data)
++{
++	set_freezable();
 +
- 		tps65090_pdata->reg_pdata[idx] = rpdata;
++	while (!kthread_should_stop()) {
++		schedule_timeout_interruptible(POLL_INTERVAL);
++		try_to_freeze();
++		tps65090_charger_isr(-1, data);
++	}
++	return 0;
++}
++
+ static int tps65090_charger_probe(struct platform_device *pdev)
+ {
+ 	struct tps65090_charger *cdata;
+@@ -255,22 +286,10 @@ static int tps65090_charger_probe(struct platform_device *pdev)
  	}
- 	return tps65090_pdata;
-@@ -258,6 +429,8 @@ static int tps65090_regulator_probe(struct platform_device *pdev)
- 		ri = &pmic[num];
- 		ri->dev = &pdev->dev;
- 		ri->desc = &tps65090_regulator_desc[num];
-+		ri->overcurrent_wait_valid = tps_pdata->overcurrent_wait_valid;
-+		ri->overcurrent_wait = tps_pdata->overcurrent_wait;
  
- 		/*
- 		 * TPS5090 DCDC support the control from external digital input.
-diff --git a/include/linux/mfd/tps65090.h b/include/linux/mfd/tps65090.h
-index 3f43069..f25adfa 100644
---- a/include/linux/mfd/tps65090.h
-+++ b/include/linux/mfd/tps65090.h
-@@ -78,11 +78,16 @@ struct tps65090 {
-  *     DCDC1, DCDC2 and DCDC3.
-  * @gpio: Gpio number if external control is enabled and controlled through
-  *     gpio.
-+ * @overcurrent_wait_valid: True if the overcurrent_wait should be applied.
-+ * @overcurrent_wait: Value to set as the overcurrent wait time.  This is the
-+ *     actual bitfield value, not a time in ms (valid value are 0 - 3).
-  */
- struct tps65090_regulator_plat_data {
- 	struct regulator_init_data *reg_init_data;
- 	bool enable_ext_control;
- 	int gpio;
-+	bool overcurrent_wait_valid;
-+	int overcurrent_wait;
- };
+ 	irq = platform_get_irq(pdev, 0);
+-	if (irq <= 0) {
+-		dev_warn(&pdev->dev, "Unable to get charger irq = %d\n", irq);
+-		ret = irq;
+-		goto fail_unregister_supply;
+-	}
+-
++	if (irq < 0)
++		irq = NO_IRQ;
+ 	cdata->irq = irq;
  
- struct tps65090_platform_data {
+-	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
+-		tps65090_charger_isr, 0, "tps65090-charger", cdata);
+-	if (ret) {
+-		dev_err(cdata->dev, "Unable to register irq %d err %d\n", irq,
+-			ret);
+-		goto fail_unregister_supply;
+-	}
+-
+ 	ret = tps65090_config_charger(cdata);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "charger config failed, err %d\n", ret);
+@@ -296,6 +315,27 @@ static int tps65090_charger_probe(struct platform_device *pdev)
+ 		power_supply_changed(&cdata->ac);
+ 	}
+ 
++	if (irq != NO_IRQ) {
++		ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
++			tps65090_charger_isr, 0, "tps65090-charger", cdata);
++		if (ret) {
++			dev_err(cdata->dev,
++				"Unable to register irq %d err %d\n", irq,
++				ret);
++			goto fail_unregister_supply;
++		}
++	} else {
++		cdata->poll_task = kthread_run(tps65090_charger_poll_task,
++					      cdata, "ktps65090charger");
++		cdata->passive_mode = true;
++		if (IS_ERR(cdata->poll_task)) {
++			ret = PTR_ERR(cdata->poll_task);
++			dev_err(cdata->dev,
++				"Unable to run kthread err %d\n", ret);
++			goto fail_unregister_supply;
++		}
++	}
++
+ 	return 0;
+ 
+ fail_unregister_supply:
+@@ -308,6 +348,8 @@ static int tps65090_charger_remove(struct platform_device *pdev)
+ {
+ 	struct tps65090_charger *cdata = platform_get_drvdata(pdev);
+ 
++	if (cdata->irq == NO_IRQ)
++		kthread_stop(cdata->poll_task);
+ 	power_supply_unregister(&cdata->ac);
+ 
+ 	return 0;
 -- 
 1.9.1.423.g4596e3a
 
