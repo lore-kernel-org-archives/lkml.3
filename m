@@ -1,118 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935AbaDOKZg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 06:25:36 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:55089 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200AbaDOKZe (ORCPT
+	id S1754268AbaDOK0T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 06:26:19 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:58271 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaDOK0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 06:25:34 -0400
-Date: Tue, 15 Apr 2014 11:25:27 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: broonie@kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rob@landley.net, sameo@linux.intel.com,
-        lgirdwood@gmail.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] mfd: arizona: Factor out read of device tree GPIOs
-Message-ID: <20140415102527.GD27091@lee--X1>
-References: <1396340845-24060-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <1396340845-24060-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+	Tue, 15 Apr 2014 06:26:17 -0400
+Message-ID: <534D0943.2050100@gmail.com>
+Date: Tue, 15 Apr 2014 12:26:11 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+To: Jisheng Zhang <jszhang@marvell.com>
+CC: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        Jimmy Xu <zmxu@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] ARM: dts: berlin: add GPIO nodes for the BG2Q
+References: <1397549245-3338-1-git-send-email-antoine.tenart@free-electrons.com> <1397549245-3338-3-git-send-email-antoine.tenart@free-electrons.com> <534CFA77.9030108@gmail.com> <20140415180058.2fefca78@xhacker>
+In-Reply-To: <20140415180058.2fefca78@xhacker>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1396340845-24060-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 01 Apr 2014, Charles Keepax wrote:
+On 04/15/2014 12:00 PM, Jisheng Zhang wrote:
+> On Tue, 15 Apr 2014 02:23:03 -0700
+> Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
+>> On 04/15/2014 10:07 AM, Antoine Ténart wrote:
+>>> The Marvell Berlin BG2Q has 6 GPIO ports compatible with the
+>>> snps,dw-apb-gpio driver. This patch add the corresponding device tree
+>>> nodes.
+>>>
+>>> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+>>> ---
+>>>    arch/arm/boot/dts/berlin2q.dtsi | 102
+>>> ++++++++++++++++++++++++++++++++++++++++ 1 file changed, 102 insertions(+)
+>>>
+>>> diff --git a/arch/arm/boot/dts/berlin2q.dtsi
+>>> b/arch/arm/boot/dts/berlin2q.dtsi index e6e556055dfc..b2625f896bc5 100644
+>>> --- a/arch/arm/boot/dts/berlin2q.dtsi
+>>> +++ b/arch/arm/boot/dts/berlin2q.dtsi
+[...]
+>>> +					compatible =
+>>> "snps,dw-apb-gpio-port";
+>>> +					gpio-controller;
+>>> +					#gpio-cells = <2>;
+>>> +					snps,nr-gpios = <32>;
+>>
+>> 32 gpio pins for each of the 6 GPIO controllers? Either BG2Q is a GPIO
+>
+> Yes, BG2Q support 32 pins every port
 
-> This patch factors out the reading of GPIOs for the Arizona devices
-> into a helper function.
-> 
-> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-> ---
->  drivers/mfd/arizona-core.c       |   33 ++++++++++++++++++++++++---------
->  include/linux/mfd/arizona/core.h |    3 +++
->  2 files changed, 27 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-> index a45aab9..8ad4373 100644
-> --- a/drivers/mfd/arizona-core.c
-> +++ b/drivers/mfd/arizona-core.c
-> @@ -512,19 +512,34 @@ int arizona_of_get_type(struct device *dev)
->  }
->  EXPORT_SYMBOL_GPL(arizona_of_get_type);
->  
-> +int arizona_of_get_named_gpio(struct arizona *arizona, const char *prop,
-> +			      bool mandatory, int *gpio)
-> +{
-> +	int ret;
-> +
-> +	ret = of_get_named_gpio(arizona->dev->of_node, prop, 0);
-> +	*gpio = ret;
-> +	if (ret >= 0)
-> +		return ret;
-> +
-> +	*gpio = 0;
-> +
-> +	if (mandatory)
-> +		dev_err(arizona->dev,
-> +			"Mandatory DT gpio %s missing/malformed: %d\n",
-> +			prop, ret);
-> +
-> +	return ret;
-> +}
+Wow. Thanks for confirming this!
 
-Hmm.. me no likey!
+>> I am fine with using nr-gpios property now, but I guess BG2Q also
+>> has that CONFIG[1,2] registers to actually read out the features
+>> synthesized in? If I find some time, I'll prepare a patch for
+>> dw-apb-gpio to exploit that (optional) information instead of
+>> using nr-gpios.
+>
+> The problem is CONFIG1/2 registers don't exist on some versions.
+> For example, the version used in BG2/BG2CD. So nr-gpio is necessary
+> if we want to support these versions.
 
-How about:
+Hmm, are you sure about BG2? I remember reading it and it contains
+sane values. Anyway, a proper patch for dw-apb-gpio would include
+checking for sane (e.g. non-zero) values. And nr-gpios will always
+stay as fall-back just because e.g. sunxi does not have the CONFIG
+registers.
 
-+void arizona_of_get_named_gpio(struct arizona *arizona, const char *prop,
-+				bool mandatory, int *gpio)
-+{
-+	*gpio = of_get_named_gpio(arizona->dev->of_node, prop, 0);
-+	if (*gpio < 0) {
-+	 	if (mandatory)
-+			dev_err(arizona->dev,
-+				"Mandatory DT gpio %s missing/malformed: %d\n",
-+				prop, *gpio);
-+		*gpio = 0;
-+	}
-+}
+Sebastian
 
-> +EXPORT_SYMBOL_GPL(arizona_of_get_named_gpio);
-> +
-
-Are you sure you're going to use this externally?
-
-NB: I haven't looked at the remainder of the set yet.
-
->  static int arizona_of_get_core_pdata(struct arizona *arizona)
->  {
-> +	struct arizona_pdata *pdata = &arizona->pdata;
->  	int ret, i;
->  
-> -	arizona->pdata.reset = of_get_named_gpio(arizona->dev->of_node,
-> -						 "wlf,reset", 0);
-> -	if (arizona->pdata.reset < 0)
-> -		arizona->pdata.reset = 0;
-> -
-> -	arizona->pdata.ldoena = of_get_named_gpio(arizona->dev->of_node,
-> -						  "wlf,ldoena", 0);
-> -	if (arizona->pdata.ldoena < 0)
-> -		arizona->pdata.ldoena = 0;
-> +	arizona_of_get_named_gpio(arizona, "wlf,reset", true, &pdata->reset);
-> +	arizona_of_get_named_gpio(arizona, "wlf,ldoena", true, &pdata->ldoena);
-
-I guess this pdata is populated by DT?
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
