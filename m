@@ -1,59 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827AbaDOKk6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 06:40:58 -0400
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:38357 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071AbaDOKk4 (ORCPT
+	id S1754357AbaDOKmM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 06:42:12 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:48366 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752241AbaDOKmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 06:40:56 -0400
+	Tue, 15 Apr 2014 06:42:10 -0400
+Date: Tue, 15 Apr 2014 12:42:06 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Feng Tang <feng.tang@intel.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, linux-kernel@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [PATCH v2] x86: hpet: Don't default CONFIG_HPET_TIMER to be y
+ for X86_64
+Message-ID: <20140415104206.GA31656@gmail.com>
+References: <1395975316-4795-1-git-send-email-feng.tang@intel.com>
+ <20140328071716.GC30107@gmail.com>
+ <20140328073718.GA12762@feng-snb>
+ <53352DE5.2090600@ladisch.de>
+ <20140328081117.GA32308@gmail.com>
+ <20140415074443.GA10911@feng-snb>
+ <20140415090025.GA31244@gmail.com>
+ <20140415095539.GA19271@feng-snb>
 MIME-Version: 1.0
-In-Reply-To: <1397557331.1985.36.camel@x220>
-References: <1397556735-2536-1-git-send-email-harinik@xilinx.com>
-	<1397557331.1985.36.camel@x220>
-Date: Tue, 15 Apr 2014 16:10:55 +0530
-Message-ID: <CAFcVECJ+DADKdUdqSz8VHWTOYyphEjCJd9s-fVeC3uR7XfyjgQ@mail.gmail.com>
-Subject: Re: [PATCH v2] spi: cadence: Add dependency on ARCH_ARM
-From: Harini Katakam <harinikatakamlinux@gmail.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Mark Brown <broonie@kernel.org>, linux-spi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        michals@xilinx.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140415095539.GA19271@feng-snb>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Tue, Apr 15, 2014 at 3:52 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
-> On Tue, 2014-04-15 at 15:42 +0530, Harini Katakam wrote:
->> Add dependency on ARCH_ARM in Kconfig.
->> This is to fix the build error related to _relaxed IO.
->>
->> Signed-off-by: Harini Katakam <harinik@xilinx.com>
->> ---
->>
->> v2 changes:
->> Dependency on ARCH_ARM instead of restricting to ARCH_ZYNQ.
->>
->> ---
->>  drivers/spi/Kconfig |    1 +
->>  1 file changed, 1 insertion(+)
->>
->> diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
->> index b0f091b..32c27dd 100644
->> --- a/drivers/spi/Kconfig
->> +++ b/drivers/spi/Kconfig
->> @@ -150,6 +150,7 @@ config SPI_BUTTERFLY
->>
->>  config SPI_CADENCE
->>       tristate "Cadence SPI controller"
->> +     depends on ARCH_ARM
->
-> Did you mean just ARM?
+* Feng Tang <feng.tang@intel.com> wrote:
 
-Please ignore patch, I will resend it.
+> On Tue, Apr 15, 2014 at 11:00:25AM +0200, Ingo Molnar wrote:
+> > 
+> > * Feng Tang <feng.tang@intel.com> wrote:
+> > 
+> > > Hi Ingo,
+> > > 
+> > > On Fri, Mar 28, 2014 at 09:11:17AM +0100, Ingo Molnar wrote:
+> > > > 
+> > > > * Clemens Ladisch <clemens@ladisch.de> wrote:
+> > > > 
+> > > > > Feng Tang wrote:
+> > > > > > On Fri, Mar 28, 2014 at 08:17:16AM +0100, Ingo Molnar wrote:
+> > > > > >> * Feng Tang <feng.tang@intel.com> wrote:
+> > > > > >>  - or the kernel should have a quirk to reliably disable it. Why
+> > > > > >>    should we crash or misbehave if a driver is built into the
+> > > > > >>    kernel?
+> > > > > >
+> > > > > > I thought about this before, HPET doesn't have PCI ID like stuff,
+> > > > > 
+> > > > > HPET does have the PCI vendor ID in the first register.
+> > > > > 
+> > > > > > only thing I can think of to identify them may be the CPU family/ID.
+> > > > > 
+> > > > > The HPET is implemented by some actual chip, and that chip also has lots
+> > > > > of PCI devices.  (In the case of a SoC, the CPU ID would work, too).
+> > > > 
+> > > > Correct. See arch/x86/kernel/hpet.c, which has a large number of HPET 
+> > > > quirks keyed off chipset PCI IDs:
+> > > > 
+> > > >   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ESB2_0,
+> > > >                            ich_force_enable_hpet);
+> > > >   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH6_0,
+> > > >                            ich_force_enable_hpet);
+> > > >   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH6_1,
+> > > >                            ich_force_enable_hpet);
+> > > >   [...]
+> > > 
+> > > I just gave it another thought, that the HPET on our platform 
+> > > currently do have some problem to be used as clocksource/clockevent, 
+> > > but it may get fixed in future version (by Silicon or BIOS).
+> > > 
+> > > If I add quirk to block it now, I may revert this code in future 
+> > > when it get fixed, same problem applis for the future generation of 
+> > > platform.
+> > 
+> > If the hardware or BIOS gets fixed then that will be visible in the 
+> > revision level of the hardware, right?
+> 
+> AFAIK, if it is fixed in a new silicon version, we should be able to 
+> detect it by the "stepping", but the PCI DEV ID is not likely to 
+> change.
+> 
+> If it is fixed by BIOS or PUNIT FW, then we may go through the DMI 
+> info to check the BIOS version, One problem is there is some 
+> Baytrail tablet platforms that doesn't provide DMI info as its FW is 
+> not UEFI/Legacy BIOS compatible version.
 
-Regards,
-Harini
+So just turn it off for the current hardware, via PCI ID. When you get 
+a fix, you can turn it back on again by refining the quirk check, for 
+that specific hardware.
+
+Thanks,
+
+	Ingo
