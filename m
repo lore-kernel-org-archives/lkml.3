@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323AbaDOIMx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 04:12:53 -0400
-Received: from moutng.kundenserver.de ([212.227.17.13]:52010 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751475AbaDOIMq (ORCPT
+	id S1753121AbaDOIM2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 04:12:28 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:37156 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753019AbaDOIMW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 04:12:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, ben-linux@fluff.org,
-        kgene.kim@samsung.com, t.figa@samsung.com, thomas.abraham@linaro.org,
-        kyungmin.park@samsung.com, sw0312.kim@samsung.com,
-        hyunhee.kim@samsung.com, yj44.cho@samsung.com,
-        chanho61.park@samsung.com, olof@lixom.net, marc.zyngier@arm.com,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Subject: Re: [PATCHv2 3/8] ARM: EXYNOS: Add IO mapping for PMU of Exynos3250
-Date: Tue, 15 Apr 2014 10:11:57 +0200
-Message-ID: <4788081.xvaJfdGTMu@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1397527192-21988-4-git-send-email-cw00.choi@samsung.com>
-References: <1397527192-21988-1-git-send-email-cw00.choi@samsung.com> <1397527192-21988-4-git-send-email-cw00.choi@samsung.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:uYO46ASPj4w1MLZyWhx1TiszDMf0fZg7UTg9Xa+0jeb
- KJPZECtwlzTXyxxk9awPsds5obE7EUAFJZGCoUY2jFyf2H4v5h
- gbsiYgKMgnA1HsUenHNQ8LVyJ945t0QJX53LxHWMTFTdHiNSP6
- vU6ptcWVAc0Pq8zjLleSJtulK8LPPJlaiNpEOxjXoxP89+k6jF
- +9Ksgvx/0d5nWBU7RnyH4IeXEo7G1PA9tKOAoETl4ChuKF1sqx
- JRvoSfysCnVbgrzCsh33qZ+snWqCgiW1z0uePhTPLKQ8sOX7Ce
- 6B7Z7PvoGzjXbeQt84LRqbN3q0ycZl5EXKDeif66OsqbVJK1ZS
- hFcmA5bIE+TZe/I+j5gw=
+	Tue, 15 Apr 2014 04:12:22 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-ee-534ce9e3f35d
+Message-id: <1397549539.29169.2.camel@AMDC1943>
+Subject: Re: [PATCH 4/4] regulator: s5m8767: Use same binding for external
+ control as in s2mps11
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Mark Brown <broonie@kernel.org>, Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Date: Tue, 15 Apr 2014 10:12:19 +0200
+In-reply-to: <CAK9yfHwL4o7-7Q03dw9JdD1UDsP_v2=we1kadRXaGAuaN1de_g@mail.gmail.com>
+References: <1397462949-22379-1-git-send-email-k.kozlowski@samsung.com>
+ <1397462949-22379-5-git-send-email-k.kozlowski@samsung.com>
+ <20140414211106.GC12304@sirena.org.uk>
+ <CAK9yfHwL4o7-7Q03dw9JdD1UDsP_v2=we1kadRXaGAuaN1de_g@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.8.4-0ubuntu1
+MIME-version: 1.0
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42I5/e/4Zd3HL32CDQ7fMrHYOGM9q8XUh0/Y
+	LOYfOcdq0f9mIavFuVcrGS3ONr1ht7j/9SijxbcrHUwWl3fNYbOYcX4fk8XaI3fZLZZev8hk
+	MWH6WhaL1r1H2C1O/ulltDjdzWpxccUXJov1M16zOAh5rJm3htHjcl8vk8fOWXfZPVYu/8Lm
+	sWlVJ5vHnWt72DzmnQz06NuyitHj8ya5AM4oLpuU1JzMstQifbsErozba5azFvSyV3R0/GBq
+	YNzO2sXIySEhYCLR090DZYtJXLi3nq2LkYtDSGApo0TLoc/MIAkhgc+MEh1tgSA2r4C+RMfx
+	0ywgtrBAksTiO2vBatgEjCU2L1/CBmKLCGhJvOxezgQyiFngDKvEgVtLGLsYOThYBFQlpu7l
+	BKnhFAiWONI/jR1i2VdGiZvnZ7KDJJgF1CUmzVvEDHGRksS5dWsYIRYLSvyYfI8FokZeYvOa
+	t8wTGAVmIWmZhaRsFpKyBYzMqxhFU0uTC4qT0nON9IoTc4tL89L1kvNzNzFCIu/rDsalx6wO
+	MQpwMCrx8E545x0sxJpYVlyZe4hRgoNZSYT3dbJPsBBvSmJlVWpRfnxRaU5q8SFGJg5OKWBI
+	bja1u5x2cxfv67wcBtN3TmucjlYtDT5UNT0qVXB1bJZPv/o1lajlKtImYSnx918HXvhl+9lc
+	2u1D/tuLLVL/pTk+5jM13XezPu/1N9Kd62ppAdOPeV1bL6XU/qiZnKfN12F9qGmzUKJxhc1G
+	6S/7LtxJD54iZf7ujaHo77k938tDTe6e91BiKc5INNRiLipOBABankyAmgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 15 April 2014 10:59:47 Chanwoo Choi wrote:
-> This patch add memory mapping for PMU (Power Management Unit) which is used
-> for power control of Exynos3250.
+On wto, 2014-04-15 at 13:26 +0530, Sachin Kamat wrote:
+> On 15 April 2014 02:41, Mark Brown <broonie@kernel.org> wrote:
+> > On Mon, Apr 14, 2014 at 10:09:09AM +0200, Krzysztof Kozlowski wrote:
+> >
+> >> -     - s5m8767,pmic-ext-control-gpios: (optional) GPIO specifier for one
+> >> +     - samsung,ext-control-gpios: (optional) GPIO specifier for one
+> >>               GPIO controlling this regulator (enable/disable); This is
+> >>               valid only for buck9.
+> >
+> > This is an incompatible change.  It's OK to deprecate the old property
+> > but it's bad form to just remove it.
 > 
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-> Arnd Bergmann suggested that need proper driver instead of static memory mapping.
-> As Chanho Park reply[2], Sachin Kamat already posted the DT support patch[1]
-> for memory mapping for SYSRAM.
-> [1] http://www.spinics.net/lists/linux-samsung-soc/msg27647.html
-> [2] https://lkml.org/lkml/2014/4/10/161
-> 
-> So, I'm going to re-implement following patch related to static memory mapping
-> after merged Sachin Kamat patch[1].
->   ARM: EXYNOS: Add IO mapping for PMU of Exynos3250
+> I agree with Mark. Also, there is no need to make it generic.
 
-I don't think we have a patch for the PMU yet, Sachin was looking at the SYSRAM
-only.
+I thought it would be good to make it consistent and to reduce the
+number of bindings with same meaning on similar drivers. However I don't
+mind skipping this patch.
 
-	Arnd
+Thanks for applying rest of patches.
+
+Best regards,
+Krzysztof
+
