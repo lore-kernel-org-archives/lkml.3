@@ -1,90 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751046AbaDOECS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 00:02:18 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:49552 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750982AbaDOECR (ORCPT
+	id S1751038AbaDOEJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 00:09:28 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33136 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873AbaDOEJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 00:02:17 -0400
-Message-ID: <1397534528.23871.1.camel@phoenix>
-Subject: [PATCH] regulator: pbias: Convert to use
- regulator_[enable|is_enabled]_regmap
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Balaji T K <balajitk@ti.com>,
-        Florian Vaussard <florian.vaussard@epfl.ch>, Stefan Roese <sr@denx.de>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 15 Apr 2014 12:02:08 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
+	Tue, 15 Apr 2014 00:09:26 -0400
+Date: Tue, 15 Apr 2014 00:09:25 -0400 (EDT)
+Message-Id: <20140415.000925.88207717430881624.davem@davemloft.net>
+To: zhen-hual@hp.com
+Cc: kas@fi.muni.cz, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] driver/net: cosa driver uses udelay incorrectly
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1397526791-4015-1-git-send-email-zhen-hual@hp.com>
+References: <1397526791-4015-1-git-send-email-zhen-hual@hp.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 14 Apr 2014 21:09:26 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit ca5d1b3524b4d
-"regulator: helpers: Modify helpers enabling multi-bit control",
-we can set enable_val setting for device that use multiple bits for control
-when using regmap enable/disable/bypass ops.
+From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+Date: Tue, 15 Apr 2014 09:53:11 +0800
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Tested-by: Balaji T K <balajitk@ti.com>
----
- drivers/regulator/pbias-regulator.c | 25 +++----------------------
- 1 file changed, 3 insertions(+), 22 deletions(-)
+> From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+> 
+> In cosa driver, udelay with more than 20000 may cause __bad_udelay.
+> Use msleep for instead.
+> 
+> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
 
-diff --git a/drivers/regulator/pbias-regulator.c b/drivers/regulator/pbias-regulator.c
-index 6d38be3..708ddbb 100644
---- a/drivers/regulator/pbias-regulator.c
-+++ b/drivers/regulator/pbias-regulator.c
-@@ -49,33 +49,13 @@ static const unsigned int pbias_volt_table[] = {
- 	3000000
- };
- 
--static int pbias_regulator_enable(struct regulator_dev *rdev)
--{
--	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
--	const struct pbias_reg_info *info = data->info;
--
--	return regmap_update_bits(data->syscon, rdev->desc->enable_reg,
--				  info->enable_mask, info->enable);
--}
--
--static int pbias_regulator_is_enable(struct regulator_dev *rdev)
--{
--	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
--	const struct pbias_reg_info *info = data->info;
--	int value;
--
--	regmap_read(data->syscon, rdev->desc->enable_reg, &value);
--
--	return (value & info->enable_mask) == info->enable;
--}
--
- static struct regulator_ops pbias_regulator_voltage_ops = {
- 	.list_voltage = regulator_list_voltage_table,
- 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
- 	.set_voltage_sel = regulator_set_voltage_sel_regmap,
--	.enable = pbias_regulator_enable,
-+	.enable = regulator_enable_regmap,
- 	.disable = regulator_disable_regmap,
--	.is_enabled = pbias_regulator_is_enable,
-+	.is_enabled = regulator_is_enabled_regmap,
- };
- 
- static const struct pbias_reg_info pbias_mmc_omap2430 = {
-@@ -180,6 +160,7 @@ static int pbias_regulator_probe(struct platform_device *pdev)
- 		drvdata[data_idx].desc.vsel_mask = info->vmode;
- 		drvdata[data_idx].desc.enable_reg = res->start;
- 		drvdata[data_idx].desc.enable_mask = info->enable_mask;
-+		drvdata[data_idx].desc.enable_val = info->enable;
- 
- 		cfg.init_data = pbias_matches[idx].init_data;
- 		cfg.driver_data = &drvdata[data_idx];
--- 
-1.8.1.2
-
-
-
+Applied, thank you.
