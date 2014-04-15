@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751558AbaDOVxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 17:53:38 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:34385 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751177AbaDOVxe (ORCPT
+	id S1751748AbaDOVy0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 17:54:26 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:58449 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbaDOVyY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 17:53:34 -0400
+	Tue, 15 Apr 2014 17:54:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <1397596546-10153-3-git-send-email-vgoyal@redhat.com>
-References: <1397596546-10153-1-git-send-email-vgoyal@redhat.com> <1397596546-10153-3-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1397596546-10153-2-git-send-email-vgoyal@redhat.com>
+References: <1397596546-10153-1-git-send-email-vgoyal@redhat.com> <1397596546-10153-2-git-send-email-vgoyal@redhat.com>
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 15 Apr 2014 14:53:13 -0700
-Message-ID: <CALCETrURHNmLyccRiF_W8o2ozRMR4AaCjUE=_PU8z1+Pq6X2jQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing cgroup path
+Date: Tue, 15 Apr 2014 14:54:02 -0700
+Message-ID: <CALCETrV7ZwWtCJQ2uF3WmctTj0qBkh2MRQS4uy9vPhP0zKPYrQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] net: Implement SO_PEERCGROUP
 To: Vivek Goyal <vgoyal@redhat.com>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         cgroups@vger.kernel.org, Network Development <netdev@vger.kernel.org>,
@@ -26,25 +26,13 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, Apr 15, 2014 at 2:15 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> This patch implements socket option SO_PASSCGROUP along the lines of
-> SO_PASSCRED.
+> Implement SO_PEERCGROUP along the lines of SO_PEERCRED. This returns the
+> cgroup of first mounted hierarchy of the task. For the case of client,
+> it represents the cgroup of client at the time of opening the connection.
+> After that client cgroup might change.
 >
-> If SO_PASSCGROUP is set, then recvmsg() will get a control message
-> SCM_CGROUP which will contain the cgroup path of sender. This cgroup
-> belongs to first mounted hierarchy in the sytem.
->
-> SCM_CGROUP control message can only be received and sender can not send
-> a SCM_CGROUP message. Kernel automatically generates one if receiver
-> chooses to receive one.
->
-> This works both for unix stream and datagram sockets.
->
-> cgroup information is passed only if either the sender or receiver has
-> SO_PASSCGROUP option set. This means for existing workloads they should
-> not see any significant performance impact of this change.
+> This works only for unix stream sockets.
 
-This is odd.  Shouldn't an SCM_CGROUP cmsg be generated when the
-receiver has SO_PASSCGROUP set and the sender passes SCM_CGROUP to
-sendmsg?
+I still don't understand why this is useful when SCM_CGROUP exists.
 
 --Andy
