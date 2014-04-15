@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008AbaDOCQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 22:16:26 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58861 "EHLO zene.cmpxchg.org"
+	id S1753188AbaDOCRU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 22:17:20 -0400
+Received: from ozlabs.org ([103.22.144.67]:39310 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751192AbaDOCQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 22:16:25 -0400
-Date: Mon, 14 Apr 2014 22:16:14 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: akpm@linux-foundation.org, mhocko@suse.cz, glommer@gmail.com,
-        cl@linux-foundation.org, penberg@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, devel@openvz.org
-Subject: Re: [PATCH -mm 1/4] memcg, slab: do not schedule cache destruction
- when last page goes away
-Message-ID: <20140415021614.GC7969@cmpxchg.org>
-References: <cover.1397054470.git.vdavydov@parallels.com>
- <8ea8b57d5264f16ee33497a4317240648645704a.1397054470.git.vdavydov@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8ea8b57d5264f16ee33497a4317240648645704a.1397054470.git.vdavydov@parallels.com>
+	id S1752482AbaDOCRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 22:17:19 -0400
+Date: Tue, 15 Apr 2014 12:17:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Harini Katakam <harinik@xilinx.com>
+Subject: linux-next: build failure after merge of the spi tree
+Message-Id: <20140415121703.055d54d52e9d2d325e9987f0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__15_Apr_2014_12_17_03_+1000_NemglzSVjaurFHGH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 07:02:30PM +0400, Vladimir Davydov wrote:
-> After the memcg is offlined, we mark its kmem caches that cannot be
-> deleted right now due to pending objects as dead by setting the
-> memcg_cache_params::dead flag, so that memcg_release_pages will schedule
-> cache destruction (memcg_cache_params::destroy) as soon as the last slab
-> of the cache is freed (memcg_cache_params::nr_pages drops to zero).
-> 
-> I guess the idea was to destroy the caches as soon as possible, i.e.
-> immediately after freeing the last object. However, it just doesn't work
-> that way, because kmem caches always preserve some pages for the sake of
-> performance, so that nr_pages never gets to zero unless the cache is
-> shrunk explicitly using kmem_cache_shrink. Of course, we could account
-> the total number of objects on the cache or check if all the slabs
-> allocated for the cache are empty on kmem_cache_free and schedule
-> destruction if so, but that would be too costly.
-> 
-> Thus we have a piece of code that works only when we explicitly call
-> kmem_cache_shrink, but complicates the whole picture a lot. Moreover,
-> it's racy in fact. For instance, kmem_cache_shrink may free the last
-> slab and thus schedule cache destruction before it finishes checking
-> that the cache is empty, which can lead to use-after-free.
-> 
-> So I propose to remove this async cache destruction from
-> memcg_release_pages, and check if the cache is empty explicitly after
-> calling kmem_cache_shrink instead. This will simplify things a lot w/o
-> introducing any functional changes.
-> 
-> And regarding dead memcg caches (i.e. those that are left hanging around
-> after memcg offline for they have objects), I suppose we should reap
-> them either periodically or on vmpressure as Glauber suggested
-> initially. I'm going to implement this later.
+--Signature=_Tue__15_Apr_2014_12_17_03_+1000_NemglzSVjaurFHGH
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-memcg_release_pages() can be called after cgroup destruction, and thus
-it *must* ensure that the now-empty cache is destroyed - or we'll leak
-it.
+Hi Mark,
 
-There is no excuse to downgrade to periodic reaping when we already
-directly hook into the event that makes the cache empty.  If slab
-needs to hold on to the cache for slightly longer than the final
-memcg_release_pages(), then it should grab a refcount to it.
+After merging the spi tree, today's linux-next build (x86_64_allmodconfig)
+failed like this:
+
+drivers/spi/spi-cadence.c: In function 'cdns_spi_write':
+drivers/spi/spi-cadence.c:135:2: error: implicit declaration of function 'w=
+ritel_relaxed' [-Werror=3Dimplicit-function-declaration]
+  writel_relaxed(val, xspi->regs + offset);
+  ^
+
+Caused by commit c474b3866546 ("spi: Add driver for Cadence SPI controller"=
+).
+
+I have used the spi tree from next-20140414 for today.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__15_Apr_2014_12_17_03_+1000_NemglzSVjaurFHGH
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTTJakAAoJEMDTa8Ir7ZwV0KgQAIQSwGTbztxHFdzGJx0PYqla
+TAvYQEs77nzxP1a7kaoATDxTz7+zlZdcIXl5+R/AIIHtoBNBgJvFUI8y548TX5ET
+1j0lXxrn31JB3yz6Av7ueP68uZcbfsTOkOXCc3iySWvV9a/TRBbXnugYgvQEFhI2
+johPUc9NneyhA4GaRF0uWk0zuskEuIHp7KBS72BXUkEJq0Pm03wL+mflTFK1xYRt
+tgPdzV/YJ8Uz8wuZ4VulbaFCCjY9Rk5XuRwCz/8CnnHMOpRW2fEFncq/vJcZwx6/
+JAJzQKcgCCYXdq2O6IQ4sF0X6hjeqEeuwJqvC6pBkCiJB+xoJI4rHLBJBIEjzcoo
+Hvu5FxVm34ry0LYRRfm1HSxQhuKaQF90KLmNcf7T12hzUoIG/DAVGZ3HomXyw+lg
+ntRMOUWjaigY/Tdnay1GtA9T5FjdRaueKoy2S9u1LVkZzBe4UPVJQlirLUOjfJEO
+lxLU/aWs5TghhK8V80pUqoP67gCPq+jCVIUjWsyFHJmh96lMJe+E+p+XpFl2pIyT
+ra941d4DEIS5MlkdVh7UFB9HUFeeEIiiP04vtNVnpF91yJbUGWU+Wy2vXmuvJzLs
+SImwG8FFsPLKTI0fJSy8dsADgfmilRZMaiJDFqpRqzQUdZssDVr1jLXqLmff2wbj
+jdHQ79gGrb76G8dRrB6u
+=vkFH
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__15_Apr_2014_12_17_03_+1000_NemglzSVjaurFHGH--
