@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077AbaDOJty (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 05:49:54 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33654 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751148AbaDOJtu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 05:49:50 -0400
-Date: Tue, 15 Apr 2014 10:49:38 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Harini Katakam <harinik@xilinx.com>
-Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        michals@xilinx.com
-Message-ID: <20140415094938.GM12304@sirena.org.uk>
-References: <1397537392-3709-1-git-send-email-harinik@xilinx.com>
+	id S1754187AbaDOJuJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 05:50:09 -0400
+Received: from mga02.intel.com ([134.134.136.20]:24967 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751381AbaDOJuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 05:50:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,863,1389772800"; 
+   d="scan'208";a="521051970"
+Message-ID: <534D0370.50108@linux.intel.com>
+Date: Tue, 15 Apr 2014 13:01:20 +0300
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vdqwC0msT4ilQ2it"
-Content-Disposition: inline
-In-Reply-To: <1397537392-3709-1-git-send-email-harinik@xilinx.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi: cadence: Add dependency on ARCH_ZYNQ
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Timur Tabi <timur@codeaurora.org>
+CC: Linus <linus.walleij@linaro.org>, Grant Likely <grant.likely@secretlab.ca>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
+References: <1371555182-12418-1-git-send-email-mathias.nyman@linux.intel.com>	<1371555182-12418-2-git-send-email-mathias.nyman@linux.intel.com> <CAOZdJXU2hN+9TE=XN55TZF_W-0hxHZmK5330i6hwrhOERKFetw@mail.gmail.com> <534B93BA.6020406@linux.intel.com> <534BFAAF.3070805@codeaurora.org>
+In-Reply-To: <534BFAAF.3070805@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/14/2014 06:11 PM, Timur Tabi wrote:
+> On 04/14/2014 02:52 AM, Mathias Nyman wrote:
+>>>
+>>
+>> This was the conclusion we reached after some discussion with Linus W.
+>> Initially this was just a GPIO driver, but Linus correctly spotted that
+>> Baytrail has many pinctrl-like features (like pin muxing, etc) that we
+>> might need to address in the future.
+>>
+>> threads where this was discussed:
+>>
+>> http://marc.info/?l=linux-kernel&m=136994203308585&w=2
+>> http://marc.info/?l=linux-kernel&m=137113578604763&w=2
+>
+> So this is the interesting part:
+>
+>> We expect BIOS to set all pin configurations correctly.
+>
+> This device will only be used on an ACPI system, right?  And isn't ACPI
+> supposed to hide all the pinctrl programming from the OS?  I thought
+> that was the whole point behind ACPI and the reason why ARM64 isn't
+> going to use device trees.
+>
 
---vdqwC0msT4ilQ2it
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This was my starting point as well, and the driver was initially 
+submitted as a GPIO driver. But Linus W. suggested pinctrl instead, and 
+as he's the maintainer of both those subsystem I trust his judgment.
 
-On Tue, Apr 15, 2014 at 10:19:52AM +0530, Harini Katakam wrote:
-> Add dependency on ARCH_ZYNQ in Kconfig.
-> This is to fix the build error.
 
-This is too strict - ARCH_ARM would be fine (PowerPC also defines the
-_relaxed() operaton if you want to include that too).
-
---vdqwC0msT4ilQ2it
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTTQCuAAoJELSic+t+oim9xMUQAIAgImDb/5NYjFQA3ARXw8h/
-GFhsamaB7LYHt7KcjOArIKzLlfaOsBntxQDYojW7+NRTeoVTyJ3vWwfuUJgQxi1i
-yiUzv7Dl1/4lpHpQi56hNuMZv7TyURTzaY12IW1AYPBmft4udApCI4k9jJhrIx+e
-J9sr+7HGtbY4WcY3zfWp1Eaz5sewVSD9aRK7EEN5VFzfU/w/EOSodwK8EK1W5bQn
-z7ySbytBhbLOOtqY5JIDGeOgFIV8ULrgvD3pMMSkv6mE7HJnAYWHZi9zGQh0dNoO
-HkB95j38gqtkfBBMtjetZL5AiR//zzicSKbhBAbdaw0H86EY3yCMtvr2fc/eRUa9
-MwvAaox8C3f8mHGfnVBh+YBey3Q4sVR6ndTYhN8l7hfOhidOUZd0DtoztwWi4Hm+
-xnldiOF4p1/sKBbxDiKgTLBnGTXINCdcLAk4Qz9xek9WNHY3IOgqqKe4kO0IK7v8
-KUh2ygrf9f5MeZFfe8Ms1HrlXuILMkB2lHRNLpXGrQsNuO9s+7r3IXbE7tsv5xoL
-w2sm7NC9F/g18HzvoeLCcyX0d9epFnv+FiKrrfzjoLfX2K60pbLaoIz02p2SpjCu
-ND+wiVU8DxZElA8UJtpL8W6rAvoZzirKp4lUpawWjLMK1Jn07S3F82nwCuLQ50Zs
-zXSim0ymrIld1YhijeVJ
-=V7IL
------END PGP SIGNATURE-----
-
---vdqwC0msT4ilQ2it--
+-Mathias
