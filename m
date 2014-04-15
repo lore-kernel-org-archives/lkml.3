@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902AbaDOPVw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 11:21:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59933 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241AbaDOPVu (ORCPT
+	id S1753702AbaDOPYI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 11:24:08 -0400
+Received: from moutng.kundenserver.de ([212.227.17.13]:65329 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750930AbaDOPYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 11:21:50 -0400
-Date: Tue, 15 Apr 2014 08:24:52 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Jean Delvare <jdelvare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: Hardware dependencies in Kconfig
-Message-ID: <20140415152452.GC7311@kroah.com>
-References: <20140414145359.48b7337c@endymion.delvare>
- <20140414191143.GA26864@kroah.com>
- <20140414231254.392c0df8@endymion.delvare>
- <20140415045214.GA32541@kroah.com>
- <CA+5PVA4-8CDT1Mfw_t6WKu6zmo1Ugn4ssTXPCS-W-bPnKtH=5g@mail.gmail.com>
+	Tue, 15 Apr 2014 11:24:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Anders Berg <anders.berg@lsi.com>
+Cc: linux-arm-kernel@lists.infradead.org, olof@lixom.net,
+        mturquette@linaro.org, mark.rutland@arm.com, dbaryshkov@gmail.com,
+        linus.walleij@linaro.org, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] ARM: dts: Device tree for AXM55xx.
+Date: Tue, 15 Apr 2014 17:23:28 +0200
+Message-ID: <11327885.Oem0QkHdqf@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140415152047.GB32285@swsaberg01>
+References: <cover.1397552154.git.anders.berg@lsi.com> <8344066.GP0Bf5lvlE@wuerfel> <20140415152047.GB32285@swsaberg01>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+5PVA4-8CDT1Mfw_t6WKu6zmo1Ugn4ssTXPCS-W-bPnKtH=5g@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:dOQjiHIVhiYSjsVra//rqrjg1BACmSLN4/Bh4Xijxfc
+ xNSCd/XJFqVuycxcJkH0xKRu3x8kquTGsWrLyR+mYzIlMl8QKj
+ u23iQDPmUoTTXF60cEzIy2Qh3ueiSKC7k7b2IO5nitKtDl1ZA9
+ h5ylpu2hGQHDThnltiyByXEVhAEz9oHznk+izRa07Q6eE7McoV
+ 5qO4/CRvzxd6jl1neXXlLsmV7EF77/4jFIaEZE0n0mVqillRaM
+ sE4vmYdX1YSOzlUmm4jB1cP8SqvPXrU2ePdgU5//QKSkzQbFhl
+ 7fvvpiuNj7oK1gr1FANI+DoaZkVyvnsOPqhPs60GXYy6xOu0+1
+ yOWKw9/Kyr120ridEwgo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 07:50:05AM -0400, Josh Boyer wrote:
-> On Tue, Apr 15, 2014 at 12:52 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Apr 14, 2014 at 11:12:54PM +0200, Jean Delvare wrote:
-> >> And it's not going to get any better over time. As others have already
-> >> mentioned, most new drivers these days are NOT for x86, they are for
-> >> ARM, AVR32 and other fancy embedded architectures.
-> >>
-> >> "Just say m to everything" is just so wrong today that at SUSE we are
-> >> very close to switching our policy to "just say no to everything and
-> >> wait for people to complain about missing drivers." This may not sound
-> >> too appealing but this is the only way to keep the kernel package at a
-> >> reasonable size (and build time), as long as upstream doesn't help us
-> >> make smarter decisions. Useless modules aren't free, they aren't even
-> >> cheap.
+On Tuesday 15 April 2014 17:20:47 Anders Berg wrote:
+> > > +                   gpio0: gpio@2010092000 {
+> > > +                           #gpio-cells = <2>;
+> > > +                           compatible = "arm,pl061", "arm,primecell";
+> > > +                           gpio-controller;
+> > > +                           reg = <0x20 0x10092000 0x00 0x1000>;
+> > > +                           interrupts = <GIC_SPI 10 IRQ_TYPE_LEVEL_HIGH>,
+> > > +                                        <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>,
+> > > +                                        <GIC_SPI 12 IRQ_TYPE_LEVEL_HIGH>,
+> > > +                                        <GIC_SPI 13 IRQ_TYPE_LEVEL_HIGH>,
+> > > +                                        <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>,
+> > > +                                        <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>,
+> > > +                                        <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>,
+> > > +                                        <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
+> > > +                           clocks = <&clk_per>;
+> > > +                           clock-names = "apb_pclk";
+> > > +                           status = "disabled";
+> > 
+> > The pl061 binding does not specify any clocks at all. Do we need to update
+> > that?
 > 
-> FWIW, we did that policy changed in Fedora a while ago.  Not
-> wholesale, but if it looks niche, it's disabled by default and enabled
-> only on request.
-> 
-> > I'd argue that your build systems need to get faster, the laptop I'm
-> > typing this on can do a full modconfig build, with over 3000 modules, in
-> > around 20 minutes.  My build server in the cloud can do that in less
-> > than 5 minutes, and that's not a very fast machine these days.
-> 
-> Is that literally 'make modconfig && make bzImage && make modules' in
-> those setups?
+> Doesn't all AMBA devices need at least one apb_pclk since the bus driver does
+> clk_get(...,"apb_pclk") before calling probe()?
 
-Yes, I use ktest with the allmodconfig option.
+Yes, I was mostly wondering whether we had a policy about whether this clock
+should also be listed in the binding or not. My feeling is that it's better
+to make that explicit.
 
-> I'm curious if the distros have some options enabled
-> that significantly impact build time.  Perhaps CONFIG_DEBUG_INFO or
-> something else like that.  Could you send me whatever config results
-> from what you're building in 5min?
-
-You can use ktest with the BUILD_TYPE set to allmodconfig and it will
-reproduce the same options.
-
-> It takes my desktop machine about 30-45min to build an x86_64 kernel
-> RPM with the current configs.  Now granted, that's a bit more than
-> just building a kernel in a local git tree, but it's nowhere near
-> 5min.  Our official build servers show similar timings for x86_64.
-> 
-> For ARM kernels, it takes about 3.5-4 hours.  That's due to policy
-> decisions on now allowing cross-builds in the distro (sigh), so all of
-> the kernels are built on native ARM machines.
-
-That's really crazy to do that, there is this wonderful tool called
-qemu... :)
-
-good luck,
-
-greg k-h
+	Arnd
