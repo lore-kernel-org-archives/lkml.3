@@ -1,158 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488AbaDOSn4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 14:43:56 -0400
-Received: from www84.your-server.de ([213.133.104.84]:53146 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006AbaDOSny (ORCPT
+	id S1755284AbaDOSog (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 14:44:36 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59521 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754551AbaDOSod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 14:43:54 -0400
-Message-ID: <1397587378.21321.2.camel@vger.seibold.net>
-Subject: Re: Missing USB XHCI and EHCI reset for kexec
-From: Stefani Seibold <stefani@seibold.net>
-To: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@au1.ibm.com>,
-        linux-usb <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        Greg KH <greg@kroah.com>, Alan Stern <stern@rowland.harvard.edu>,
-        sarah.a.sharp@linux.intel.com
-Date: Tue, 15 Apr 2014 20:42:58 +0200
-In-Reply-To: <20140415183345.GC21101@oc0268524204.ibm.com>
-References: <1397416959.1555.30.camel@vger.seibold.net>
-	 <1397468521.9258.28.camel@pasglop>
-	 <20140414174458.Horde.ieyRX8PcZ0lg3nY1QFE2DA4@webmail.your-server.de>
-	 <20140414214807.GA32141@oc0268524204.ibm.com>
-	 <20140415120417.Horde.2gdC8Woe64OQXOq_cVqtkg6@webmail.your-server.de>
-	 <20140415122013.GA21101@oc0268524204.ibm.com>
-	 <20140415170028.Horde.ojJX1pFPqNqnig4r08hUkg1@webmail.your-server.de>
-	 <20140415183345.GC21101@oc0268524204.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Tue, 15 Apr 2014 14:44:33 -0400
+Date: Tue, 15 Apr 2014 20:44:45 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+cc: linaro-kernel@lists.linaro.org, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Arvind.Chauhan@arm.com,
+        linaro-networking@linaro.org, John Stultz <john.stultz@linaro.org>
+Subject: Re: [PATCH V1 Resend 4/5] tick-sched: don't call update_wall_time()
+ when delta is lesser than tick_period
+In-Reply-To: <80afb18a494b0bd9710975bcc4de134ae323c74f.1397537987.git.viresh.kumar@linaro.org>
+Message-ID: <alpine.DEB.2.02.1404152042480.22697@ionos.tec.linutronix.de>
+References: <cover.1397537986.git.viresh.kumar@linaro.org> <80afb18a494b0bd9710975bcc4de134ae323c74f.1397537987.git.viresh.kumar@linaro.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, den 15.04.2014, 15:33 -0300 schrieb Thadeu Lima de Souza
-Cascardo:
-> On Tue, Apr 15, 2014 at 05:00:28PM +0200, stefani@seibold.net wrote:
-> > 
-> > Zitat von Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>:
-> > 
-> > >On Tue, Apr 15, 2014 at 12:04:17PM +0200, stefani@seibold.net wrote:
-> > >>
-> > >>Zitat von Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>:
-> > >>
-> > >>>On Mon, Apr 14, 2014 at 05:44:58PM +0200, stefani@seibold.net wrote:
-> > >>>>
-> > >>>>Zitat von Benjamin Herrenschmidt <benh@au1.ibm.com>:
-> > >>>>
-> > >>>>>I don't know about EHCI specifically but this is a known issue with
-> > >>>>>XHCI, I observe similar issues on other powerpc platforms (servers)
-> > >>>>>and this isn't architecture specific (looks more like actualy xhc
-> > >>>>>implementation specific).
-> > >>>>>
-> > >>>>>Thadeu Cascardo (on CC) has been the one investigating that on our side,
-> > >>>>>he might have more to add including patches.
-> > >>>>>
-> > >>>>
-> > >>>>I have now a kernel 3.14 dmesg log of the problem. After a kexec the
-> > >>>>kexeced 3.14 kernel shows:
-> > >>>>
-> > >>>>[    1.170029] xhci_hcd 0001:03:00.0: xHCI Host Controller
-> > >>>>[    1.175306] xhci_hcd 0001:03:00.0: new USB bus registered,
-> > >>>>assigned bus number 1
-> > >>>>[    1.212561] xhci_hcd 0001:03:00.0: Host not halted after 16000
-> > >>>>microseconds.
-> > >>>>[    1.219621] xhci_hcd 0001:03:00.0: can't setup: -110
-> > >>>>[    1.224597] xhci_hcd 0001:03:00.0: USB bus 1 deregistered
-> > >>>>[    1.230021] xhci_hcd 0001:03:00.0: init 0001:03:00.0 fail, -110
-> > >>>>[    1.235955] xhci_hcd: probe of 0001:03:00.0 failed with error -110
-> > >>>>
-> > >>>
-> > >>>What is your controller vendor and device IDs? Is that a TI chip?
-> > >>>
-> > >>
-> > >>Yes it is a TI chip, vendor ID 104c and product ID 8241.
-> > >>
-> > >>>Can you check if the patch I sent a month ago fixes it? [1] There's the
-> > >>>whole story there. In fact, you will also need something like the patch
-> > >>>below. Can you apply only the first one, verify, and, then, the other
-> > >>>one as well, and report what worked for you?
-> > >>>
-> > >>>[1] http://marc.info/?l=linux-usb&m=139483181809062&w=2
-> > >>>
-> > >>
-> > >>I tried the attach patch and it did not help. This is what i
-> > >>expected because this is a fix in the shutdown path, which will
-> > >>never called when doing a forced kexec.
-> > >
-> > >Hi, Stefani.
-> > >
-> > >Did you try with both patches applied? How do you evoke the forced
-> > >kexec? Is that a kexec on panic? Does it really need to be forced? With
-> > >no clean shutdown, platform and drivers would need to issue resets, like
-> > >you mentioned below, to get the system into a clean state.
-> > >
-> > 
-> > Yes, i applied both patches. But without success.
-> > 
-> > IMHO i think it is necessary to bring the device i a clean state
-> > when the driver use the HW.
-> > 
-> > >>
-> > >>I have a running a 3.10.23 kernel. This kernel do a kexec for a
-> > >>kernel 3.14. Since the kernel 3.10.23 did not performe a clean
-> > >>shutdown, the state of the XHCI Controller is undefined. So when
-> > >
-> > >And the clean shutdown requires both of my patches, for TI chips, as far
-> > >as I know. It looks like the problem is issuing a halt when there are
-> > >pending URBs.
-> > >
-> > >>kernel 3.14 will probe XHCI it will find a XHCI controller which was
-> > >>not performed a reset.
-> > >>
-> > >
-> > >The problem is not that a reset hasn't been issued. A PCI function reset
-> > >should fix most of the problems with a bad device state, when the reset
-> > >works. However, the problem is that it was not cleanly shut down. URBs
-> > >should have been canceled and removed from the controller queue, and it
-> > >should have halted after that.
-> > 
-> > Again, i think it is the job of the driver to bring the chip in a clean state
-> > before using them. A driver should never expect a reset state of a chip.
-> > 
-> > >
-> > >>So i think it is necessary to reset the XHCI controller and all
-> > >>devices on this bus. This is what i do with a "echo 1
-> > >>>/sys/bus/pci/drivers/xhci_hcd/0001:03:00.0/reset" before the kexec.
-> > >>
-> > >
-> > >One way to look at that is making the PCI code issue resets to all buses
-> > >before doing any other access. That will make booting more slow, and
-> > >there are a lot of other corner cases where this might not be enough.
-> > >It's probably more sane to try to get the 3.10.23 kernel to do a clean
-> > >shutdown, if possible.
-> > >
-> > 
-> > With this driver design the kexec functionality is usesless on PowerPC.
-> > X86 looks a little bit better.
-> > 
-> > - Stefani
-> > 
-> > 
-> 
-> What is the vendor and device ID you are using on your X86 system? This
-> is not a matter of what architecture you are using, it's the XHCI
-> controller which does not behave as well as the one you are using on
-> X86, which is likely an Intel one.
-> 
 
-It is an Intel 8086:8c31. But this was only a side note. We need a
-generic solution not a vendor specific one. Otherwise kexec is useless
-on other architectures.
 
-- Stefani
+On Tue, 15 Apr 2014, Viresh Kumar wrote:
+
+> In tick_do_update_jiffies64() we are processing ticks only if delta is greater
+> than tick_period. This is what we are supposed to do here and it broke a bit
+> with this patch:
+> 
+> commit 47a1b796306356f358e515149d86baf0cc6bf007
+> Author: John Stultz <john.stultz@linaro.org>
+> Date:   Thu Dec 12 13:10:55 2013 -0800
+> 
+>     tick/timekeeping: Call update_wall_time outside the jiffies lock
+
+Please look how I massaged the change log. There is no point in
+copying the whole gunk.
+ 
+> With above patch, we might end up calling update_wall_time() even if delta is
+> found to be smaller that tick_period. Fix this by reversing the check and
+> returning early.
+
+Well.
+
+> Cc: <stable@vger.kernel.org> # v3.14+
+> Cc: John Stultz <john.stultz@linaro.org>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  kernel/time/tick-sched.c | 32 +++++++++++++++++---------------
+>  1 file changed, 17 insertions(+), 15 deletions(-)
+
+That's not how we do bug fixes if they can be done with 3 lines of
+change. See the commit.
+
+Thanks,
+
+	tglx
 
 
