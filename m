@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996AbaDOAOv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 20:14:51 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:40757 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754211AbaDOAOu (ORCPT
+	id S1751295AbaDOAZe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 20:25:34 -0400
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:45196 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750884AbaDOAZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 20:14:50 -0400
-Message-ID: <534C79EE.3030505@gmail.com>
-Date: Tue, 15 Apr 2014 08:14:38 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 14 Apr 2014 20:25:32 -0400
+Date: Mon, 14 Apr 2014 18:25:29 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>, linux-pci@vger.kernel.org
+Subject: Re: [PATCH 1/1] drivers/pci/pcie/portdrv_pci.c: coding style fixes
+Message-ID: <20140415002529.GF16058@google.com>
+References: <20140413094934.423504a748c16f48bdd7fd70@skynet.be>
 MIME-Version: 1.0
-To: =?UTF-8?B?566h6Zuq5rab?= <gxt@pku.edu.cn>
-CC: Guan Xuetao <gxt@mprc.pku.edu.cn>, akpm@linux-foundation.org,
-        liuj97@gmail.com, rientjes@google.com, dhowells@redhat.com,
-        mhocko@suse.cz, mgorman@suse.de, linux-kernel@vger.kernel.org
-Subject: Re: =?UTF-8?B?5Zue5aSN77yaIFtQQVRDSF0gYXJjaDp1bmljb3JlMzI6bW06IGE=?=
- =?UTF-8?B?ZGQgZGV2bWVtX2lzX2FsbG93ZWQoKSB0byBzdXBwb3J0IFNUUklDVF9ERVZNRU0=?=
-References: <629583968.18592.1396927216694.JavaMail.root@bj-mail03.pku.edu.cn> <534380F6.7090703@gmail.com>
-In-Reply-To: <534380F6.7090703@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140413094934.423504a748c16f48bdd7fd70@skynet.be>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Apr 13, 2014 at 09:49:34AM +0200, Fabian Frederick wrote:
+> Move __initdata before equal sign
+> printk(KERN_WARNING converted to pr_warn
+> 
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: linux-pci@vger.kernel.org
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
+> ---
+>  drivers/pci/pcie/portdrv_pci.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
+> index 0d8fdc4..14eb431 100644
+> --- a/drivers/pci/pcie/portdrv_pci.c
+> +++ b/drivers/pci/pcie/portdrv_pci.c
+> @@ -402,7 +402,7 @@ static int __init dmi_pcie_pme_disable_msi(const struct dmi_system_id *d)
+>  	return 0;
+>  }
+>  
+> -static struct dmi_system_id __initdata pcie_portdrv_dmi_table[] = {
+> +static struct dmi_system_id pcie_portdrv_dmi_table[] __initdata = {
+>  	/*
+>  	 * Boxes that should not use MSI for PCIe PME signaling.
+>  	 */
+> @@ -429,7 +429,7 @@ static int __init pcie_portdrv_init(void)
+>  
+>  	retval = pcie_port_bus_register();
+>  	if (retval) {
+> -		printk(KERN_WARNING "PCIE: bus_register error: %d\n", retval);
+> +		pr_warn("PCIE: bus_register error: %d\n", retval);
 
-We got no-reply almost a week, so we can assume "can put the code into
-"asm/io.h" as static inline function".
+Hi Fabian,
 
-I will/should send patch v2 for it.
+Can you do similar printk conversions for everything in drivers/pci,
+so we do it all at once?  I think there are a few left that could be
+converted to dev_info() or similar, so watch for those, too.
 
-Thanks.
+Bjorn
 
-On 04/08/2014 12:54 PM, Chen Gang wrote:
-> 
-> On 04/08/2014 11:20 AM, 管雪涛 wrote:
->> I'd like to put the code into asm/io.h, and make it static.
->>
-> 
-> It sounds OK to me, but I don't know why the other architectures (e.g.
-> arm, powerpc, x86) put them into ".c".
-> 
-> iomem_is_exclusive() and page_is_ram() are all extern functions, so for
-> me, devmem_is_allowed() is shot enough to be as inline function.
-> 
->>> +#ifdef CONFIG_STRICT_DEVMEM
->>> +/*
->>> + * devmem_is_allowed() checks to see if /dev/mem access to a certain
->>> + * address is valid. The argument is a physical page number.
->>> + * We mimic x86 here by disallowing access to system RAM as well as
->>> + * device-exclusive MMIO regions. This effectively disable read()/write()
->>> + * on /dev/mem.
->>> + */
->>> +static int devmem_is_allowed(unsigned long pfn)
-> 
-> How about "static inline int devmem_is_allowed(unsigned long pfn)"?
-> 
->>> +{
->>> +	if (iomem_is_exclusive(pfn << PAGE_SHIFT))
->>> +		return 0;
->>> +	if (!page_is_ram(pfn))
->>> +		return 1;
->>> +	return 0;
->>> +}
->>> +#endif /* CONFIG_STRICT_DEVMEM */
->>
->> Thanks,
->>
->> Acked-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
->>
-> 
-> [...]
-> 
-> Thanks.
-> 
-
--- 
-Chen Gang
-
-Open, share, and attitude like air, water, and life which God blessed
+>  		goto out;
+>  	}
+>  	retval = pci_register_driver(&pcie_portdriver);
+> -- 
+> 1.8.3.2
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
