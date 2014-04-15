@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753566AbaDOQwT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 12:52:19 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:50408 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227AbaDOQwR (ORCPT
+	id S1753823AbaDOQwa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 12:52:30 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:58359 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752551AbaDOQwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 12:52:17 -0400
-Message-ID: <534D63D7.8000803@linaro.org>
-Date: Tue, 15 Apr 2014 18:52:39 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 15 Apr 2014 12:52:25 -0400
+Date: Tue, 15 Apr 2014 12:52:21 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, john@johnmccutchan.com, rlove@rlove.org,
+        eparis@parisplace.org, gregkh@linuxfoundation.org,
+        serge.hallyn@ubuntu.com, lennart@poettering.net, kay@vrfy.org
+Subject: Re: [PATCH 3/3] cgroup: implement cgroup.subtree_populated for the
+ default hierarchy
+Message-ID: <20140415165221.GD30990@htj.dyndns.org>
+References: <1397511846-2904-1-git-send-email-tj@kernel.org>
+ <1397511846-2904-4-git-send-email-tj@kernel.org>
+ <534C83F1.9020106@huawei.com>
+ <20140415145450.GL1863@htj.dyndns.org>
 MIME-Version: 1.0
-To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        Wolfram Sang <wsa@the-dreams.de>
-Subject: Re: [PATCH v2] clocksource: efm32: use $vendor,$device scheme for
- compatible string
-References: <1395757522-6431-1-git-send-email-u.kleine-koenig@pengutronix.de> <1395759044-10700-1-git-send-email-u.kleine-koenig@pengutronix.de>
-In-Reply-To: <1395759044-10700-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140415145450.GL1863@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2014 03:50 PM, Uwe Kleine-König wrote:
-> Wolfgang Sang pointed out that "efm32,$device" is non-standard. So use the
-> common scheme and prefix device with "efm32-". The old compatible string
-> is left in place until arch/arm/boot/dts/efm32* is fixed.
->
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de
+On Tue, Apr 15, 2014 at 10:54:50AM -0400, Tejun Heo wrote:
+> Hello,
+> 
+> On Tue, Apr 15, 2014 at 08:57:21AM +0800, Li Zefan wrote:
+> > Is cgroup.tree_populated a better name?
+> > 
+> > cgroup.subtree_control controls child cgroups only, but .subtree_populated
+> > shows 1 if there're tasks in the cgroup or its children, so the two
+> > are a bit inconsistent to me.
+> 
+> Yes, good catch.  subtree_control affects subtree proper.
+> subtree_populated covers self too.  The difference is subtle and the
+> trade off between shared pattern in names and clarifying the subtlety
+> didn't seem clear-cut to me.  Hmmm....
 
-Applied for 3.16 (and fixed Wolfgang => Wolfram)
-
-Thanks !
-
-   -- Daniel
+How about cgroup.populated?
 
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+tejun
