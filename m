@@ -1,88 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077AbaDOJCR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 05:02:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50322 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751373AbaDOJCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 05:02:13 -0400
-Date: Tue, 15 Apr 2014 11:02:08 +0200
-From: Petr Tesarik <ptesarik@suse.cz>
-To: Petr Tesarik <ptesarik@suse.cz>
-Cc: Eric Biederman <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Shaohua Li <shli@kernel.org>, Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Sasha Levin <sasha.levin@oracle.com>, kexec@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Save PG_head_mask in VMCOREINFO
-Message-ID: <20140415110208.453a95f7@hananiah.suse.cz>
-In-Reply-To: <20140411175039.00fa75ea@hananiah.suse.cz>
-References: <20140411175039.00fa75ea@hananiah.suse.cz>
-Organization: SUSE Linux, s.r.o.
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753665AbaDOJDT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 05:03:19 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:1677 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751094AbaDOJDR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 05:03:17 -0400
+Message-ID: <534CF596.3010609@hp.com>
+Date: Tue, 15 Apr 2014 17:02:14 +0800
+From: "Li, ZhenHua" <zhen-hual@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Sathya Perla <Sathya.Perla@Emulex.Com>
+CC: Subramanian Seetharaman <subbu.seetharaman@Emulex.Com>,
+        Ajit Khaparde <Ajit.Khaparde@Emulex.Com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Li, ZhenHua" <zhen-hual@hp.com>
+Subject: Re: [PATCH 1/1] driver/net: add missing rtnl lock/unlock for benet
+References: <1397544352-28841-1-git-send-email-zhen-hual@hp.com> <b4855c2a-5a63-47a5-ba61-f9ce736f6401@CMEXHTCAS1.ad.emulex.com>
+In-Reply-To: <b4855c2a-5a63-47a5-ba61-f9ce736f6401@CMEXHTCAS1.ad.emulex.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Apr 2014 17:50:39 +0200
-Petr Tesarik <ptesarik@suse.cz> wrote:
+Because netif_running() is called in netif_device_detach and 
+netif_device_attach. To avoid dev status changed while 
+netif_device_detach/attach is not finished, I think a rtnl_lock and 
+unlock should be called to avoid this.
 
-> To allow filtering of huge pages, makedumpfile must be able to
-> identify them in the dump. This can be done by checking the
-> appropriate page flag, so communicate its value to makedumpfile
-> through the VMCOREINFO interface.
-> 
-> There's only one small catch. Depending on how many page flags
-> are available on a given architecture, this bit can be called
-> PG_head or PG_compound.
-> 
-> I sent a similar patch back in 2012, but Eric Biederman did not
-> like using an #ifdef. So, this time I'm adding a common symbol
-> (PG_head_mask) instead.
+Thanks
+Zhenhua
 
-Any opinion on this patch?
-
-TIA,
-Petr T
-
-> See https://lkml.org/lkml/2012/11/28/91 for the previous version.
-> 
-> Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
-> ---
->  include/linux/page-flags.h | 3 +++
->  kernel/kexec.c             | 1 +
->  2 files changed, 4 insertions(+)
-> 
-> diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
-> index d1fe1a7..bc2007e 100644
-> --- a/include/linux/page-flags.h
-> +++ b/include/linux/page-flags.h
-> @@ -348,6 +348,9 @@ static inline void ClearPageCompound(struct page
-> *page) ClearPageHead(page);
->  }
->  #endif
-> +
-> +#define PG_head_mask ((1L << PG_head))
-> +
->  #else
->  /*
->   * Reduce page flag use as much as possible by overlapping
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index c8380ad..e6f3aec 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -1622,6 +1622,7 @@ static int __init crash_save_vmcoreinfo_init(void)
->  #ifdef CONFIG_MEMORY_FAILURE
->  	VMCOREINFO_NUMBER(PG_hwpoison);
->  #endif
-> +	VMCOREINFO_NUMBER(PG_head_mask);
->  	VMCOREINFO_NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE);
->  
->  	arch_crash_save_vmcoreinfo();
+On 04/15/2014 04:07 PM, Sathya Perla wrote:
+>> -----Original Message-----
+>> From: Li, Zhen-Hua [mailto:zhen-hual@hp.com]
+>>
+>> In benet driver, netif_device_detach and netif_device_attach should be
+>> called between rtnl_lock and rtnl_unlock.
+>
+> Zhen, it's not clear to me why rtnl_lock is needed around netif_device_attach().
+> Can you pls explain what exact data-structure you are protecting with the lock?
+>
+> Are you see warning stack trace? I don't see ASSERT_RTNL() called anywhere from netif_device_attach/detach()?
+>
+> thanks!
+>
+>>
+>> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+>> ---
+>>   drivers/net/ethernet/emulex/benet/be_main.c |   17 ++++++++++++++---
+>>   1 file changed, 14 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/net/ethernet/emulex/benet/be_main.c
+>> b/drivers/net/ethernet/emulex/benet/be_main.c
+>> index 3e6df47..9c44b3f 100644
+>> --- a/drivers/net/ethernet/emulex/benet/be_main.c
+>> +++ b/drivers/net/ethernet/emulex/benet/be_main.c
+>> @@ -4555,8 +4555,11 @@ static void be_func_recovery_task(struct work_struct *work)
+>>   		rtnl_unlock();
+>>
+>>   		status = lancer_recover_func(adapter);
+>> -		if (!status)
+>> +		if (!status) {
+>> +			rtnl_lock();
+>>   			netif_device_attach(adapter->netdev);
+>> +			rtnl_unlock();
+>> +		}
+>>   	}
+>>
+>>   	/* In Lancer, for all errors other than provisioning error (-EAGAIN),
+>> @@ -4784,12 +4787,12 @@ static int be_suspend(struct pci_dev *pdev, pm_message_t
+>> state)
+>>   	be_intr_set(adapter, false);
+>>   	cancel_delayed_work_sync(&adapter->func_recovery_work);
+>>
+>> +	rtnl_lock();
+>>   	netif_device_detach(netdev);
+>>   	if (netif_running(netdev)) {
+>> -		rtnl_lock();
+>>   		be_close(netdev);
+>> -		rtnl_unlock();
+>>   	}
+>> +	rtnl_unlock();
+>>   	be_clear(adapter);
+>>
+>>   	pci_save_state(pdev);
+>> @@ -4804,7 +4807,9 @@ static int be_resume(struct pci_dev *pdev)
+>>   	struct be_adapter *adapter = pci_get_drvdata(pdev);
+>>   	struct net_device *netdev =  adapter->netdev;
+>>
+>> +	rtnl_lock();
+>>   	netif_device_detach(netdev);
+>> +	rtnl_unlock();
+>>
+>>   	status = pci_enable_device(pdev);
+>>   	if (status)
+>> @@ -4832,7 +4837,9 @@ static int be_resume(struct pci_dev *pdev)
+>>
+>>   	schedule_delayed_work(&adapter->func_recovery_work,
+>>   			      msecs_to_jiffies(1000));
+>> +	rtnl_lock();
+>>   	netif_device_attach(netdev);
+>> +	rtnl_unlock();
+>>
+>>   	if (adapter->wol_en)
+>>   		be_setup_wol(adapter, false);
+>> @@ -4853,7 +4860,9 @@ static void be_shutdown(struct pci_dev *pdev)
+>>   	cancel_delayed_work_sync(&adapter->work);
+>>   	cancel_delayed_work_sync(&adapter->func_recovery_work);
+>>
+>> +	rtnl_lock();
+>>   	netif_device_detach(adapter->netdev);
+>> +	rtnl_unlock();
+>>
+>>   	be_cmd_reset_function(adapter);
+>>
+>> @@ -4957,7 +4966,9 @@ static void be_eeh_resume(struct pci_dev *pdev)
+>>
+>>   	schedule_delayed_work(&adapter->func_recovery_work,
+>>   			      msecs_to_jiffies(1000));
+>> +	rtnl_lock();
+>>   	netif_device_attach(netdev);
+>> +	rtnl_unlock();
+>>   	return;
+>>   err:
+>>   	dev_err(&adapter->pdev->dev, "EEH resume failed\n");
+>> --
+>> 1.7.10.4
+>
 
