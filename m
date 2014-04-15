@@ -1,46 +1,545 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751045AbaDOLgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 07:36:21 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:33993 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964AbaDOLgN (ORCPT
+	id S1751161AbaDOLg3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 07:36:29 -0400
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:51417 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751076AbaDOLg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 07:36:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140415094015.GB1700@krava.brq.redhat.com>
-References: <1397160661-33395-1-git-send-email-dzickus@redhat.com>
- <878ur7thwh.fsf@sejong.aot.lge.com> <20140415094015.GB1700@krava.brq.redhat.com>
-From: Namhyung Kim <namhyung@gmail.com>
-Date: Tue, 15 Apr 2014 20:35:52 +0900
-Message-ID: <CAM9d7cjJchw2ocEwv5a3tn5_GMfXNS8-sJcBiS8zd1oCSDprkw@mail.gmail.com>
-Subject: Re: [RFC 0/5] perf: Create hist_entry groups
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Don Zickus <dzickus@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 15 Apr 2014 07:36:26 -0400
+Message-ID: <1397561783.1985.55.camel@x220>
+Subject: [PATCH] usb: phy: mv_u3d: Remove usb phy driver for mv_u3d
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Richard Weinberger <richard@nod.at>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Date: Tue, 15 Apr 2014 13:36:23 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Apr 2014 11:36:24.0075 (UTC) FILETIME=[EE289DB0:01CF589E]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+The usb phy driver for mv_u3d got added in v3.7 through commit
+a67e76ac904c ("usb: phy: mv_u3d: Add usb phy driver for mv_u3d"). It
+then depended on USB_MV_U3D. And that symbol depended
+on CPU_MMP3 at that time. But CPU_MMP3 has never been part of the tree.
+This means that this drive was unbuildable when it was added.
 
-On Tue, Apr 15, 2014 at 6:40 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Tue, Apr 15, 2014 at 12:01:50PM +0900, Namhyung Kim wrote:
->> Another one I'd like to introduce is somewhat similar to your work.
->> It's called hierarchy view and groups each entries according to sort
->> keys [2].  But it only supported --gtk output at that time (in order not
->> to make the hands dirty unnecessarily ;-) and (thus?) didn't get much
->> review.  But I think the idea is same and requires less change by just
->> adding few fields (rb_root) to hist_entry instead of new data structure.
->
-> hi,
-> I dont recall seeing that [2], but it's one year back ;-) it looks like
-> what Don is talking about, do you have it in branch?
+In commit 60630c2eabd4 ("usb: gadget: mv_u3d: drop ARCH dependency")
+MV_U3D_PHY was made depended directly on CPU_MMP3. That kept it
+unbuildable, of course.
 
-Yep, it's perf/hierarchy-v1.
+Remove this driver. It can be re-added once its dependencies are part of
+the tree.
 
-Thanks,
-Namhyung
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Tested with git grep.
+
+This was triggered by Richard's "[PATCH 01/28] Remove CPU_MMP3" of two
+months ago, which I acked to eagerly. See
+https://lkml.org/lkml/2014/2/11/714 for the details.
+
+ drivers/usb/phy/Kconfig          |   8 -
+ drivers/usb/phy/Makefile         |   1 -
+ drivers/usb/phy/phy-mv-u3d-usb.c | 338 ---------------------------------------
+ drivers/usb/phy/phy-mv-u3d-usb.h | 105 ------------
+ 4 files changed, 452 deletions(-)
+ delete mode 100644 drivers/usb/phy/phy-mv-u3d-usb.c
+ delete mode 100644 drivers/usb/phy/phy-mv-u3d-usb.h
+
+diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+index 416e0c8cf6ff..33dd6a6c320a 100644
+--- a/drivers/usb/phy/Kconfig
++++ b/drivers/usb/phy/Kconfig
+@@ -59,14 +59,6 @@ config KEYSTONE_USB_PHY
+ 	  interface to interact with USB 2.0 and USB 3.0 PHY that is part
+ 	  of the Keystone SOC.
+ 
+-config MV_U3D_PHY
+-	bool "Marvell USB 3.0 PHY controller Driver"
+-	depends on CPU_MMP3
+-	select USB_PHY
+-	help
+-	  Enable this to support Marvell USB 3.0 phy controller for Marvell
+-	  SoC.
+-
+ config NOP_USB_XCEIV
+ 	tristate "NOP USB Transceiver Driver"
+ 	select USB_PHY
+diff --git a/drivers/usb/phy/Makefile b/drivers/usb/phy/Makefile
+index f8fa719a31b9..a2d05690d925 100644
+--- a/drivers/usb/phy/Makefile
++++ b/drivers/usb/phy/Makefile
+@@ -10,7 +10,6 @@ obj-$(CONFIG_USB_OTG_FSM)		+= phy-fsm-usb.o
+ obj-$(CONFIG_AB8500_USB)		+= phy-ab8500-usb.o
+ obj-$(CONFIG_FSL_USB2_OTG)		+= phy-fsl-usb.o
+ obj-$(CONFIG_ISP1301_OMAP)		+= phy-isp1301-omap.o
+-obj-$(CONFIG_MV_U3D_PHY)		+= phy-mv-u3d-usb.o
+ obj-$(CONFIG_NOP_USB_XCEIV)		+= phy-generic.o
+ obj-$(CONFIG_TAHVO_USB)			+= phy-tahvo.o
+ obj-$(CONFIG_AM335X_CONTROL_USB)	+= phy-am335x-control.o
+diff --git a/drivers/usb/phy/phy-mv-u3d-usb.c b/drivers/usb/phy/phy-mv-u3d-usb.c
+deleted file mode 100644
+index d317903022bf..000000000000
+--- a/drivers/usb/phy/phy-mv-u3d-usb.c
++++ /dev/null
+@@ -1,338 +0,0 @@
+-/*
+- * Copyright (C) 2011 Marvell International Ltd. All rights reserved.
+- *
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms and conditions of the GNU General Public License,
+- * version 2, as published by the Free Software Foundation.
+- */
+-
+-#include <linux/module.h>
+-#include <linux/platform_device.h>
+-#include <linux/clk.h>
+-#include <linux/delay.h>
+-#include <linux/err.h>
+-#include <linux/io.h>
+-#include <linux/usb/otg.h>
+-#include <linux/platform_data/mv_usb.h>
+-
+-#include "phy-mv-u3d-usb.h"
+-
+-/*
+- * struct mv_u3d_phy - transceiver driver state
+- * @phy: transceiver structure
+- * @dev: The parent device supplied to the probe function
+- * @clk: usb phy clock
+- * @base: usb phy register memory base
+- */
+-struct mv_u3d_phy {
+-	struct usb_phy	phy;
+-	struct mv_usb_platform_data *plat;
+-	struct device	*dev;
+-	struct clk	*clk;
+-	void __iomem	*base;
+-};
+-
+-static u32 mv_u3d_phy_read(void __iomem *base, u32 reg)
+-{
+-	void __iomem *addr, *data;
+-
+-	addr = base;
+-	data = base + 0x4;
+-
+-	writel_relaxed(reg, addr);
+-	return readl_relaxed(data);
+-}
+-
+-static void mv_u3d_phy_set(void __iomem *base, u32 reg, u32 value)
+-{
+-	void __iomem *addr, *data;
+-	u32 tmp;
+-
+-	addr = base;
+-	data = base + 0x4;
+-
+-	writel_relaxed(reg, addr);
+-	tmp = readl_relaxed(data);
+-	tmp |= value;
+-	writel_relaxed(tmp, data);
+-}
+-
+-static void mv_u3d_phy_clear(void __iomem *base, u32 reg, u32 value)
+-{
+-	void __iomem *addr, *data;
+-	u32 tmp;
+-
+-	addr = base;
+-	data = base + 0x4;
+-
+-	writel_relaxed(reg, addr);
+-	tmp = readl_relaxed(data);
+-	tmp &= ~value;
+-	writel_relaxed(tmp, data);
+-}
+-
+-static void mv_u3d_phy_write(void __iomem *base, u32 reg, u32 value)
+-{
+-	void __iomem *addr, *data;
+-
+-	addr = base;
+-	data = base + 0x4;
+-
+-	writel_relaxed(reg, addr);
+-	writel_relaxed(value, data);
+-}
+-
+-static void mv_u3d_phy_shutdown(struct usb_phy *phy)
+-{
+-	struct mv_u3d_phy *mv_u3d_phy;
+-	void __iomem *base;
+-	u32 val;
+-
+-	mv_u3d_phy = container_of(phy, struct mv_u3d_phy, phy);
+-	base = mv_u3d_phy->base;
+-
+-	/* Power down Reference Analog current, bit 15
+-	 * Power down PLL, bit 14
+-	 * Power down Receiver, bit 13
+-	 * Power down Transmitter, bit 12
+-	 * of USB3_POWER_PLL_CONTROL register
+-	 */
+-	val = mv_u3d_phy_read(base, USB3_POWER_PLL_CONTROL);
+-	val &= ~(USB3_POWER_PLL_CONTROL_PU);
+-	mv_u3d_phy_write(base, USB3_POWER_PLL_CONTROL, val);
+-
+-	if (mv_u3d_phy->clk)
+-		clk_disable(mv_u3d_phy->clk);
+-}
+-
+-static int mv_u3d_phy_init(struct usb_phy *phy)
+-{
+-	struct mv_u3d_phy *mv_u3d_phy;
+-	void __iomem *base;
+-	u32 val, count;
+-
+-	/* enable usb3 phy */
+-	mv_u3d_phy = container_of(phy, struct mv_u3d_phy, phy);
+-
+-	if (mv_u3d_phy->clk)
+-		clk_enable(mv_u3d_phy->clk);
+-
+-	base = mv_u3d_phy->base;
+-
+-	val = mv_u3d_phy_read(base, USB3_POWER_PLL_CONTROL);
+-	val &= ~(USB3_POWER_PLL_CONTROL_PU_MASK);
+-	val |= 0xF << USB3_POWER_PLL_CONTROL_PU_SHIFT;
+-	mv_u3d_phy_write(base, USB3_POWER_PLL_CONTROL, val);
+-	udelay(100);
+-
+-	mv_u3d_phy_write(base, USB3_RESET_CONTROL,
+-			USB3_RESET_CONTROL_RESET_PIPE);
+-	udelay(100);
+-
+-	mv_u3d_phy_write(base, USB3_RESET_CONTROL,
+-			USB3_RESET_CONTROL_RESET_PIPE
+-			| USB3_RESET_CONTROL_RESET_PHY);
+-	udelay(100);
+-
+-	val = mv_u3d_phy_read(base, USB3_POWER_PLL_CONTROL);
+-	val &= ~(USB3_POWER_PLL_CONTROL_REF_FREF_SEL_MASK
+-		| USB3_POWER_PLL_CONTROL_PHY_MODE_MASK);
+-	val |=  (USB3_PLL_25MHZ << USB3_POWER_PLL_CONTROL_REF_FREF_SEL_SHIFT)
+-		| (0x5 << USB3_POWER_PLL_CONTROL_PHY_MODE_SHIFT);
+-	mv_u3d_phy_write(base, USB3_POWER_PLL_CONTROL, val);
+-	udelay(100);
+-
+-	mv_u3d_phy_clear(base, USB3_KVCO_CALI_CONTROL,
+-		USB3_KVCO_CALI_CONTROL_USE_MAX_PLL_RATE_MASK);
+-	udelay(100);
+-
+-	val = mv_u3d_phy_read(base, USB3_SQUELCH_FFE);
+-	val &= ~(USB3_SQUELCH_FFE_FFE_CAP_SEL_MASK
+-		| USB3_SQUELCH_FFE_FFE_RES_SEL_MASK
+-		| USB3_SQUELCH_FFE_SQ_THRESH_IN_MASK);
+-	val |= ((0xD << USB3_SQUELCH_FFE_FFE_CAP_SEL_SHIFT)
+-		| (0x7 << USB3_SQUELCH_FFE_FFE_RES_SEL_SHIFT)
+-		| (0x8 << USB3_SQUELCH_FFE_SQ_THRESH_IN_SHIFT));
+-	mv_u3d_phy_write(base, USB3_SQUELCH_FFE, val);
+-	udelay(100);
+-
+-	val = mv_u3d_phy_read(base, USB3_GEN1_SET0);
+-	val &= ~USB3_GEN1_SET0_G1_TX_SLEW_CTRL_EN_MASK;
+-	val |= 1 << USB3_GEN1_SET0_G1_TX_EMPH_EN_SHIFT;
+-	mv_u3d_phy_write(base, USB3_GEN1_SET0, val);
+-	udelay(100);
+-
+-	val = mv_u3d_phy_read(base, USB3_GEN2_SET0);
+-	val &= ~(USB3_GEN2_SET0_G2_TX_AMP_MASK
+-		| USB3_GEN2_SET0_G2_TX_EMPH_AMP_MASK
+-		| USB3_GEN2_SET0_G2_TX_SLEW_CTRL_EN_MASK);
+-	val |= ((0x14 << USB3_GEN2_SET0_G2_TX_AMP_SHIFT)
+-		| (1 << USB3_GEN2_SET0_G2_TX_AMP_ADJ_SHIFT)
+-		| (0xA << USB3_GEN2_SET0_G2_TX_EMPH_AMP_SHIFT)
+-		| (1 << USB3_GEN2_SET0_G2_TX_EMPH_EN_SHIFT));
+-	mv_u3d_phy_write(base, USB3_GEN2_SET0, val);
+-	udelay(100);
+-
+-	mv_u3d_phy_read(base, USB3_TX_EMPPH);
+-	val &= ~(USB3_TX_EMPPH_AMP_MASK
+-		| USB3_TX_EMPPH_EN_MASK
+-		| USB3_TX_EMPPH_AMP_FORCE_MASK
+-		| USB3_TX_EMPPH_PAR1_MASK
+-		| USB3_TX_EMPPH_PAR2_MASK);
+-	val |= ((0xB << USB3_TX_EMPPH_AMP_SHIFT)
+-		| (1 << USB3_TX_EMPPH_EN_SHIFT)
+-		| (1 << USB3_TX_EMPPH_AMP_FORCE_SHIFT)
+-		| (0x1C << USB3_TX_EMPPH_PAR1_SHIFT)
+-		| (1 << USB3_TX_EMPPH_PAR2_SHIFT));
+-
+-	mv_u3d_phy_write(base, USB3_TX_EMPPH, val);
+-	udelay(100);
+-
+-	val = mv_u3d_phy_read(base, USB3_GEN2_SET1);
+-	val &= ~(USB3_GEN2_SET1_G2_RX_SELMUPI_MASK
+-		| USB3_GEN2_SET1_G2_RX_SELMUPF_MASK
+-		| USB3_GEN2_SET1_G2_RX_SELMUFI_MASK
+-		| USB3_GEN2_SET1_G2_RX_SELMUFF_MASK);
+-	val |= ((1 << USB3_GEN2_SET1_G2_RX_SELMUPI_SHIFT)
+-		| (1 << USB3_GEN2_SET1_G2_RX_SELMUPF_SHIFT)
+-		| (1 << USB3_GEN2_SET1_G2_RX_SELMUFI_SHIFT)
+-		| (1 << USB3_GEN2_SET1_G2_RX_SELMUFF_SHIFT));
+-	mv_u3d_phy_write(base, USB3_GEN2_SET1, val);
+-	udelay(100);
+-
+-	val = mv_u3d_phy_read(base, USB3_DIGITAL_LOOPBACK_EN);
+-	val &= ~USB3_DIGITAL_LOOPBACK_EN_SEL_BITS_MASK;
+-	val |= 1 << USB3_DIGITAL_LOOPBACK_EN_SEL_BITS_SHIFT;
+-	mv_u3d_phy_write(base, USB3_DIGITAL_LOOPBACK_EN, val);
+-	udelay(100);
+-
+-	val = mv_u3d_phy_read(base, USB3_IMPEDANCE_TX_SSC);
+-	val &= ~USB3_IMPEDANCE_TX_SSC_SSC_AMP_MASK;
+-	val |= 0xC << USB3_IMPEDANCE_TX_SSC_SSC_AMP_SHIFT;
+-	mv_u3d_phy_write(base, USB3_IMPEDANCE_TX_SSC, val);
+-	udelay(100);
+-
+-	val = mv_u3d_phy_read(base, USB3_IMPEDANCE_CALI_CTRL);
+-	val &= ~USB3_IMPEDANCE_CALI_CTRL_IMP_CAL_THR_MASK;
+-	val |= 0x4 << USB3_IMPEDANCE_CALI_CTRL_IMP_CAL_THR_SHIFT;
+-	mv_u3d_phy_write(base, USB3_IMPEDANCE_CALI_CTRL, val);
+-	udelay(100);
+-
+-	val = mv_u3d_phy_read(base, USB3_PHY_ISOLATION_MODE);
+-	val &= ~(USB3_PHY_ISOLATION_MODE_PHY_GEN_RX_MASK
+-		| USB3_PHY_ISOLATION_MODE_PHY_GEN_TX_MASK
+-		| USB3_PHY_ISOLATION_MODE_TX_DRV_IDLE_MASK);
+-	val |= ((1 << USB3_PHY_ISOLATION_MODE_PHY_GEN_RX_SHIFT)
+-		| (1 << USB3_PHY_ISOLATION_MODE_PHY_GEN_TX_SHIFT));
+-	mv_u3d_phy_write(base, USB3_PHY_ISOLATION_MODE, val);
+-	udelay(100);
+-
+-	val = mv_u3d_phy_read(base, USB3_TXDETRX);
+-	val &= ~(USB3_TXDETRX_VTHSEL_MASK);
+-	val |= 0x1 << USB3_TXDETRX_VTHSEL_SHIFT;
+-	mv_u3d_phy_write(base, USB3_TXDETRX, val);
+-	udelay(100);
+-
+-	dev_dbg(mv_u3d_phy->dev, "start calibration\n");
+-
+-calstart:
+-	/* Perform Manual Calibration */
+-	mv_u3d_phy_set(base, USB3_KVCO_CALI_CONTROL,
+-		1 << USB3_KVCO_CALI_CONTROL_CAL_START_SHIFT);
+-
+-	mdelay(1);
+-
+-	count = 0;
+-	while (1) {
+-		val = mv_u3d_phy_read(base, USB3_KVCO_CALI_CONTROL);
+-		if (val & (1 << USB3_KVCO_CALI_CONTROL_CAL_DONE_SHIFT))
+-			break;
+-		else if (count > 50) {
+-			dev_dbg(mv_u3d_phy->dev, "calibration failure, retry...\n");
+-			goto calstart;
+-		}
+-		count++;
+-		mdelay(1);
+-	}
+-
+-	/* active PIPE interface */
+-	mv_u3d_phy_write(base, USB3_PIPE_SM_CTRL,
+-		1 << USB3_PIPE_SM_CTRL_PHY_INIT_DONE);
+-
+-	return 0;
+-}
+-
+-static int mv_u3d_phy_probe(struct platform_device *pdev)
+-{
+-	struct mv_u3d_phy *mv_u3d_phy;
+-	struct mv_usb_platform_data *pdata;
+-	struct device *dev = &pdev->dev;
+-	struct resource *res;
+-	void __iomem	*phy_base;
+-	int	ret;
+-
+-	pdata = dev_get_platdata(&pdev->dev);
+-	if (!pdata) {
+-		dev_err(&pdev->dev, "%s: no platform data defined\n", __func__);
+-		return -EINVAL;
+-	}
+-
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	phy_base = devm_ioremap_resource(dev, res);
+-	if (IS_ERR(phy_base))
+-		return PTR_ERR(phy_base);
+-
+-	mv_u3d_phy = devm_kzalloc(dev, sizeof(*mv_u3d_phy), GFP_KERNEL);
+-	if (!mv_u3d_phy)
+-		return -ENOMEM;
+-
+-	mv_u3d_phy->dev			= &pdev->dev;
+-	mv_u3d_phy->plat		= pdata;
+-	mv_u3d_phy->base		= phy_base;
+-	mv_u3d_phy->phy.dev		= mv_u3d_phy->dev;
+-	mv_u3d_phy->phy.label		= "mv-u3d-phy";
+-	mv_u3d_phy->phy.init		= mv_u3d_phy_init;
+-	mv_u3d_phy->phy.shutdown	= mv_u3d_phy_shutdown;
+-
+-	ret = usb_add_phy(&mv_u3d_phy->phy, USB_PHY_TYPE_USB3);
+-	if (ret)
+-		goto err;
+-
+-	if (!mv_u3d_phy->clk)
+-		mv_u3d_phy->clk = clk_get(mv_u3d_phy->dev, "u3dphy");
+-
+-	platform_set_drvdata(pdev, mv_u3d_phy);
+-
+-	dev_info(&pdev->dev, "Initialized Marvell USB 3.0 PHY\n");
+-err:
+-	return ret;
+-}
+-
+-static int mv_u3d_phy_remove(struct platform_device *pdev)
+-{
+-	struct mv_u3d_phy *mv_u3d_phy = platform_get_drvdata(pdev);
+-
+-	usb_remove_phy(&mv_u3d_phy->phy);
+-
+-	if (mv_u3d_phy->clk) {
+-		clk_put(mv_u3d_phy->clk);
+-		mv_u3d_phy->clk = NULL;
+-	}
+-
+-	return 0;
+-}
+-
+-static struct platform_driver mv_u3d_phy_driver = {
+-	.probe		= mv_u3d_phy_probe,
+-	.remove		= mv_u3d_phy_remove,
+-	.driver		= {
+-		.name	= "mv-u3d-phy",
+-		.owner	= THIS_MODULE,
+-	},
+-};
+-
+-module_platform_driver(mv_u3d_phy_driver);
+-MODULE_DESCRIPTION("Marvell USB 3.0 PHY controller");
+-MODULE_AUTHOR("Yu Xu <yuxu@marvell.com>");
+-MODULE_LICENSE("GPL");
+-MODULE_ALIAS("platform:mv-u3d-phy");
+diff --git a/drivers/usb/phy/phy-mv-u3d-usb.h b/drivers/usb/phy/phy-mv-u3d-usb.h
+deleted file mode 100644
+index 2a658cb9a527..000000000000
+--- a/drivers/usb/phy/phy-mv-u3d-usb.h
++++ /dev/null
+@@ -1,105 +0,0 @@
+-/*
+- * Copyright (C) 2011 Marvell International Ltd. All rights reserved.
+- *
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms and conditions of the GNU General Public License,
+- * version 2, as published by the Free Software Foundation.
+- */
+-
+-#ifndef __MV_U3D_PHY_H
+-#define __MV_U3D_PHY_H
+-
+-#define USB3_POWER_PLL_CONTROL		0x1
+-#define USB3_KVCO_CALI_CONTROL		0x2
+-#define USB3_IMPEDANCE_CALI_CTRL	0x3
+-#define USB3_IMPEDANCE_TX_SSC		0x4
+-#define USB3_SQUELCH_FFE		0x6
+-#define USB3_GEN1_SET0			0xD
+-#define USB3_GEN2_SET0			0xF
+-#define USB3_GEN2_SET1			0x10
+-#define USB3_DIGITAL_LOOPBACK_EN	0x23
+-#define USB3_PHY_ISOLATION_MODE		0x26
+-#define USB3_TXDETRX			0x48
+-#define USB3_TX_EMPPH			0x5E
+-#define USB3_RESET_CONTROL		0x90
+-#define USB3_PIPE_SM_CTRL		0x91
+-
+-#define USB3_RESET_CONTROL_RESET_PIPE			0x1
+-#define USB3_RESET_CONTROL_RESET_PHY			0x2
+-
+-#define USB3_POWER_PLL_CONTROL_REF_FREF_SEL_MASK	(0x1F << 0)
+-#define USB3_POWER_PLL_CONTROL_REF_FREF_SEL_SHIFT	0
+-#define USB3_PLL_25MHZ					0x2
+-#define USB3_PLL_26MHZ					0x5
+-#define USB3_POWER_PLL_CONTROL_PHY_MODE_MASK		(0x7 << 5)
+-#define USB3_POWER_PLL_CONTROL_PHY_MODE_SHIFT		5
+-#define USB3_POWER_PLL_CONTROL_PU_MASK			(0xF << 12)
+-#define USB3_POWER_PLL_CONTROL_PU_SHIFT			12
+-#define USB3_POWER_PLL_CONTROL_PU			(0xF << 12)
+-
+-#define USB3_KVCO_CALI_CONTROL_USE_MAX_PLL_RATE_MASK	(0x1 << 12)
+-#define USB3_KVCO_CALI_CONTROL_USE_MAX_PLL_RATE_SHIFT	12
+-#define USB3_KVCO_CALI_CONTROL_CAL_DONE_SHIFT		14
+-#define USB3_KVCO_CALI_CONTROL_CAL_START_SHIFT		15
+-
+-#define USB3_SQUELCH_FFE_FFE_CAP_SEL_MASK		0xF
+-#define USB3_SQUELCH_FFE_FFE_CAP_SEL_SHIFT		0
+-#define USB3_SQUELCH_FFE_FFE_RES_SEL_MASK		(0x7 << 4)
+-#define USB3_SQUELCH_FFE_FFE_RES_SEL_SHIFT		4
+-#define USB3_SQUELCH_FFE_SQ_THRESH_IN_MASK		(0x1F << 8)
+-#define USB3_SQUELCH_FFE_SQ_THRESH_IN_SHIFT		8
+-
+-#define USB3_GEN1_SET0_G1_TX_SLEW_CTRL_EN_MASK		(0x1 << 15)
+-#define USB3_GEN1_SET0_G1_TX_EMPH_EN_SHIFT		11
+-
+-#define USB3_GEN2_SET0_G2_TX_AMP_MASK			(0x1F << 1)
+-#define USB3_GEN2_SET0_G2_TX_AMP_SHIFT			1
+-#define USB3_GEN2_SET0_G2_TX_AMP_ADJ_SHIFT		6
+-#define USB3_GEN2_SET0_G2_TX_EMPH_AMP_MASK		(0xF << 7)
+-#define USB3_GEN2_SET0_G2_TX_EMPH_AMP_SHIFT		7
+-#define USB3_GEN2_SET0_G2_TX_EMPH_EN_MASK		(0x1 << 11)
+-#define USB3_GEN2_SET0_G2_TX_EMPH_EN_SHIFT		11
+-#define USB3_GEN2_SET0_G2_TX_SLEW_CTRL_EN_MASK		(0x1 << 15)
+-#define USB3_GEN2_SET0_G2_TX_SLEW_CTRL_EN_SHIFT		15
+-
+-#define USB3_GEN2_SET1_G2_RX_SELMUPI_MASK		(0x7 << 0)
+-#define USB3_GEN2_SET1_G2_RX_SELMUPI_SHIFT		0
+-#define USB3_GEN2_SET1_G2_RX_SELMUPF_MASK		(0x7 << 3)
+-#define USB3_GEN2_SET1_G2_RX_SELMUPF_SHIFT		3
+-#define USB3_GEN2_SET1_G2_RX_SELMUFI_MASK		(0x3 << 6)
+-#define USB3_GEN2_SET1_G2_RX_SELMUFI_SHIFT		6
+-#define USB3_GEN2_SET1_G2_RX_SELMUFF_MASK		(0x3 << 8)
+-#define USB3_GEN2_SET1_G2_RX_SELMUFF_SHIFT		8
+-
+-#define USB3_DIGITAL_LOOPBACK_EN_SEL_BITS_MASK		(0x3 << 10)
+-#define USB3_DIGITAL_LOOPBACK_EN_SEL_BITS_SHIFT		10
+-
+-#define USB3_IMPEDANCE_CALI_CTRL_IMP_CAL_THR_MASK	(0x7 << 12)
+-#define USB3_IMPEDANCE_CALI_CTRL_IMP_CAL_THR_SHIFT	12
+-
+-#define USB3_IMPEDANCE_TX_SSC_SSC_AMP_MASK		(0x3F << 0)
+-#define USB3_IMPEDANCE_TX_SSC_SSC_AMP_SHIFT		0
+-
+-#define USB3_PHY_ISOLATION_MODE_PHY_GEN_RX_MASK		0xF
+-#define USB3_PHY_ISOLATION_MODE_PHY_GEN_RX_SHIFT	0
+-#define USB3_PHY_ISOLATION_MODE_PHY_GEN_TX_MASK		(0xF << 4)
+-#define USB3_PHY_ISOLATION_MODE_PHY_GEN_TX_SHIFT	4
+-#define USB3_PHY_ISOLATION_MODE_TX_DRV_IDLE_MASK	(0x1 << 8)
+-
+-#define USB3_TXDETRX_VTHSEL_MASK			(0x3 << 4)
+-#define USB3_TXDETRX_VTHSEL_SHIFT			4
+-
+-#define USB3_TX_EMPPH_AMP_MASK				(0xF << 0)
+-#define USB3_TX_EMPPH_AMP_SHIFT				0
+-#define USB3_TX_EMPPH_EN_MASK				(0x1 << 6)
+-#define USB3_TX_EMPPH_EN_SHIFT				6
+-#define USB3_TX_EMPPH_AMP_FORCE_MASK			(0x1 << 7)
+-#define USB3_TX_EMPPH_AMP_FORCE_SHIFT			7
+-#define USB3_TX_EMPPH_PAR1_MASK				(0x1F << 8)
+-#define USB3_TX_EMPPH_PAR1_SHIFT			8
+-#define USB3_TX_EMPPH_PAR2_MASK				(0x1 << 13)
+-#define USB3_TX_EMPPH_PAR2_SHIFT			13
+-
+-#define USB3_PIPE_SM_CTRL_PHY_INIT_DONE			15
+-
+-#endif /* __MV_U3D_PHY_H */
+-- 
+1.9.0
+
