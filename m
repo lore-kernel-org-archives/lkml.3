@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049AbaDORZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 13:25:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60033 "EHLO mx2.suse.de"
+	id S1754145AbaDORZi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 13:25:38 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55147 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750866AbaDORZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 13:25:25 -0400
-Date: Tue, 15 Apr 2014 19:25:22 +0200
-From: Jan Kara <jack@suse.cz>
-To: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-Cc: Jan Kara <jack@suse.cz>, T Makphaibulchoke <tmac@hp.com>, tytso@mit.edu,
-        adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, aswin@hp.com
-Subject: Re: [PATCH v2] fs/ext4: increase parallelism in updating ext4 orphan
- list
-Message-ID: <20140415172522.GA13276@quack.suse.cz>
-References: <1380728283-61038-1-git-send-email-tmac@hp.com>
- <1396456148-20455-1-git-send-email-tmac@hp.com>
- <20140402174109.GD8657@quack.suse.cz>
- <534C135A.9010803@hp.com>
- <20140414174024.GC13860@quack.suse.cz>
- <534D5E02.6030500@hp.com>
+	id S1753486AbaDORZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 13:25:34 -0400
+Date: Tue, 15 Apr 2014 12:23:10 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Richard Weinberger <richard@nod.at>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH] usb: phy: mv_u3d: Remove usb phy driver for mv_u3d
+Message-ID: <20140415172310.GD16002@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1397561783.1985.55.camel@x220>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="M38YqGLZlgb6RLPS"
 Content-Disposition: inline
-In-Reply-To: <534D5E02.6030500@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1397561783.1985.55.camel@x220>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 15-04-14 10:27:46, Thavatchai Makphaibulchoke wrote:
-> On 04/14/2014 11:40 AM, Jan Kara wrote:
-> >   Thanks for trying that out! Can you please send me a patch you have been
-> > testing? Because it doesn't quite make sense to me why using i_mutex should
-> > be worse than using hashed locks...
-> >
-> 
-> Thanks again for the comments.
-> 
-> Since i_mutex is also used for serialization in other operations on an
-> inode, in the case that the i_mutex is not held  using it for
-> serialization could cause contention with other operations on the inode.
-> As the number shows substantial instances of orphan add or delete calls
-> without holding the i_mutex, I presume the performance degradation is due
-> to the contention.
-  I have checked the source and I didn't find many places where i_mutex was
-not held. But maybe I'm wrong. That's why I wanted to see the patch where
-you are using i_mutex instead of hashed mutexes and which didn't perform
-good enough.
+--M38YqGLZlgb6RLPS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> As for the patch, could you please let me know if you need the patch
-> using i_mutex or the patch I'm planning to submit.  If it's the latter,
-> I'm thinking of go ahead and resubmit it.
+On Tue, Apr 15, 2014 at 01:36:23PM +0200, Paul Bolle wrote:
+> The usb phy driver for mv_u3d got added in v3.7 through commit
+> a67e76ac904c ("usb: phy: mv_u3d: Add usb phy driver for mv_u3d"). It
+> then depended on USB_MV_U3D. And that symbol depended
+> on CPU_MMP3 at that time. But CPU_MMP3 has never been part of the tree.
+> This means that this drive was unbuildable when it was added.
+>=20
+> In commit 60630c2eabd4 ("usb: gadget: mv_u3d: drop ARCH dependency")
+> MV_U3D_PHY was made depended directly on CPU_MMP3. That kept it
+> unbuildable, of course.
+>=20
+> Remove this driver. It can be re-added once its dependencies are part of
+> the tree.
+>=20
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Tested with git grep.
+>=20
+> This was triggered by Richard's "[PATCH 01/28] Remove CPU_MMP3" of two
+> months ago, which I acked to eagerly. See
+> https://lkml.org/lkml/2014/2/11/714 for the details.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+so this means that drivers/usb/gadget/mv_u3d_core.c isn't used either ?
+Instead of deleting this and introducing a new driver, why don't you
+just help fix what's already in-tree ?
+
+--=20
+balbi
+
+--M38YqGLZlgb6RLPS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTTWr+AAoJEIaOsuA1yqRE/WwP/2u20E+79bULtjuN3x0PbKDU
+wfCtDO3Rt/cuuz+h/JcjuIba6cEe4TGuYQxcH0H85AVrB9VvNjdJrJsZWbESuuIM
+vAjxcBEWACG1F/aHWuU5ai/4kx4DyDyfHuPOT6TRJxzh42UVpLwuPMAzapbaHL/O
+Iqd26XLfOWim0bvCRKWorK/szR/1+IErDFJCo86xpqQBlJY2Ud0Iod4hExZEpdL/
+woM90b7fyY1R2hRuHj8jSTjDjzhKOtNR1VkilI3xlwhpLByrBM+9ofnHCsYonnGt
+lsZ1s/ygO2/FJqvVN97YmFdlO+qafTIH2mSBV2SMxokv0948rPiz7dJi+g6V+SdM
+HTchboNkkzw2HU3ljZCcDd4CSIUEMOelzTtODNd33XqZoUjNTSSK/xFS//I8CUfe
+5UIAxE2c6EUk5k8VVjRQeFHUcnyTvw3fRiVT03SEag8xjGrzDxdoDZL6/8czaHFO
+p332NW69hyvY1pOrYcptrFy6mHlZfRW4/KG/3NLbOYo7GKtv9ZqXKzcx/E9WqckQ
+Zvh/ueY6QrgPy25qrSIszgMXjKzLf2QOUVkLWVrc76neCpC1dneVsB5Upp+Rw7V6
+NLPMaZHpYGpC5XcNh7vc5174Tm1mc4YtDmZ6/Irq+vUIOUyoHxPPkrwt26iCX5J3
+b/VFX8tu2ESTkJnI5gs8
+=iOHv
+-----END PGP SIGNATURE-----
+
+--M38YqGLZlgb6RLPS--
