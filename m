@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbaDORvd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 13:51:33 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:49221 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040AbaDORvb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 13:51:31 -0400
-From: Peter Foley <pefoley2@pefoley.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Foley <pefoley2@pefoley.com>, tj@kernel.org,
-        linux-ide@vger.kernel.org
-Subject: [PATCH] ata: fix kconfig selection warning
-Date: Tue, 15 Apr 2014 13:50:55 -0400
-Message-Id: <1397584255-15038-1-git-send-email-pefoley2@pefoley.com>
-X-Mailer: git-send-email 1.9.2
+	id S1754239AbaDORvv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 13:51:51 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38758 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753177AbaDORvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 13:51:49 -0400
+Message-ID: <534D71AF.2090808@ti.com>
+Date: Tue, 15 Apr 2014 12:51:43 -0500
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+MIME-Version: 1.0
+To: Nishanth Menon <nm@ti.com>, Joachim Eastwood <manabian@gmail.com>
+CC: Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        <linux-crypto@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <balbi@ti.com>
+Subject: Re: [PATCH V2] crypto: omap-des - handle error of pm_runtime_get_sync
+References: <534D61DF.9090203@ti.com>	<1397581111-21148-1-git-send-email-nm@ti.com> <CAGhQ9Vxv682wD982sNDtc5-Zk4y7H2eULWcm8CJ2SiG=s7V=Pg@mail.gmail.com> <534D69D0.207@ti.com>
+In-Reply-To: <534D69D0.207@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When building with COMPILE_TEST, AHCI_XGENE is enabled even though
-PHY_XGENE (which it selects) requires OF to be enabled.
-Fix this by adding a dependency on OF to AHCI_XGENE.
+On 04/15/2014 12:18 PM, Nishanth Menon wrote:
+> On 04/15/2014 12:06 PM, Joachim Eastwood wrote:
+>> On 15 April 2014 18:58, Nishanth Menon <nm@ti.com> wrote:
+>>> pm_runtime_get_sync may not always succeed depending on SoC involved.
+>>> So handle the error appropriately ensuring usage_count is accurate in
+>>> case of failure.
+>>>
+>>> Signed-off-by: Nishanth Menon <nm@ti.com>
+>>> ---
+>>> V2:
+>>>         - review fixes, print function names in error log as well.
+>>>
+>>> V1: https://patchwork.kernel.org/patch/3993861/
+>>>  drivers/crypto/omap-des.c |   26 +++++++++++++++++++++++---
+>>>  1 file changed, 23 insertions(+), 3 deletions(-)
+>>>
+>>
+>> Fixes the runtime warning from omap_l3_noc when omap-des is built-in
+>> on my VAR-SOM-OM44 (OMAP4460) board.
+>>
+>> Tested-by: Joachim Eastwood <manabian@gmail.com>
+> 
+> Thanks Joachim. Looks like in my hurry, I missed proper
+> acknowledgement of your report. adding the following for patchworks to
+> pickup.
+> 
+> Reported-by: Joachim Eastwood <manabian@gmail.com>
+> 
 
-warning: (AHCI_XGENE) selects PHY_XGENE which has unmet direct
-dependencies (HAS_IOMEM && OF && (ARM64 || COMPILE_TEST))
+Acked-by: Joel Fernandes <joelf@ti.com>
 
-Signed-off-by: Peter Foley <pefoley2@pefoley.com>
----
- drivers/ata/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-index 20e03a7..071f399 100644
---- a/drivers/ata/Kconfig
-+++ b/drivers/ata/Kconfig
-@@ -134,7 +134,7 @@ config AHCI_SUNXI
- 
- config AHCI_XGENE
- 	tristate "APM X-Gene 6.0Gbps AHCI SATA host controller support"
--	depends on ARM64 || COMPILE_TEST
-+	depends on OF && (ARM64 || COMPILE_TEST)
- 	select PHY_XGENE
- 	help
- 	 This option enables support for APM X-Gene SoC SATA host controller.
--- 
-1.9.2
-
+Regards,
+-Joel
