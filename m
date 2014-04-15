@@ -1,76 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754904AbaDOSVz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 14:21:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:36497 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754550AbaDOSRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 14:17:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,865,1389772800"; 
-   d="scan'208";a="493683479"
-From: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-To: jic23@kernel.org
-Cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
-Subject: [Patch v6 6/6] iio: Added ABI description for quaternion
-Date: Tue, 15 Apr 2014 11:21:13 -0700
-Message-Id: <1397586073-31507-7-git-send-email-srinivas.pandruvada@linux.intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1397586073-31507-1-git-send-email-srinivas.pandruvada@linux.intel.com>
-References: <1397586073-31507-1-git-send-email-srinivas.pandruvada@linux.intel.com>
+	id S1752379AbaDOSQP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 14:16:15 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:48999 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111AbaDOSQN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 14:16:13 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Kevin Hilman <khilman@linaro.org>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Chao Xie <xiechao.mail@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/5] ARM: iwmmxt: explicitly check for supported architectures
+Date: Tue, 15 Apr 2014 20:15:59 +0200
+Message-Id: <1397585763-23482-2-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1397585763-23482-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <20140414151236.75f8816d@skate>
+ <1397585763-23482-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added documentation for reading quaternion components for 3D rotations.
+iwmmxt.S requires special treatment of coprocessor access registers
+for PJ4 and XScale-based CPUs. It only checks for CPU_PJ4 and drops
+down to XScale-based treatment on all other architectures.
 
-Signed-off-by: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>
+As some PJ4B also come with iWMMXt and also need PJ4 treatment,
+rework the corresponding preprocessor directives to explicitly
+check for supported architectures and fail on unsupported ones.
+
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
- Documentation/ABI/testing/sysfs-bus-iio | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Chao Xie <xiechao.mail@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/kernel/iwmmxt.S | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-iio b/Documentation/ABI/testing/sysfs-bus-iio
-index 6e02c50..d2c59f9 100644
---- a/Documentation/ABI/testing/sysfs-bus-iio
-+++ b/Documentation/ABI/testing/sysfs-bus-iio
-@@ -784,6 +784,7 @@ What:		/sys/.../iio:deviceX/scan_elements/in_incli_x_en
- What:		/sys/.../iio:deviceX/scan_elements/in_incli_y_en
- What:		/sys/.../iio:deviceX/scan_elements/in_pressureY_en
- What:		/sys/.../iio:deviceX/scan_elements/in_pressure_en
-+What:		/sys/.../iio:deviceX/scan_elements/in_rot_quaternion_en
- KernelVersion:	2.6.37
- Contact:	linux-iio@vger.kernel.org
- Description:
-@@ -799,6 +800,7 @@ What:		/sys/.../iio:deviceX/scan_elements/in_voltageY_supply_type
- What:		/sys/.../iio:deviceX/scan_elements/in_timestamp_type
- What:		/sys/.../iio:deviceX/scan_elements/in_pressureY_type
- What:		/sys/.../iio:deviceX/scan_elements/in_pressure_type
-+What:		/sys/.../iio:deviceX/scan_elements/in_rot_quaternion_type
- KernelVersion:	2.6.37
- Contact:	linux-iio@vger.kernel.org
- Description:
-@@ -845,6 +847,7 @@ What:		/sys/.../iio:deviceX/scan_elements/in_incli_y_index
- What:		/sys/.../iio:deviceX/scan_elements/in_timestamp_index
- What:		/sys/.../iio:deviceX/scan_elements/in_pressureY_index
- What:		/sys/.../iio:deviceX/scan_elements/in_pressure_index
-+What:		/sys/.../iio:deviceX/scan_elements/in_rot_quaternion_index
- KernelVersion:	2.6.37
- Contact:	linux-iio@vger.kernel.org
- Description:
-@@ -891,3 +894,12 @@ Contact:	linux-iio@vger.kernel.org
- Description:
- 		This attribute is used to get/set the integration time in
- 		seconds.
-+
-+What:		/sys/bus/iio/devices/iio:deviceX/in_rot_quaternion_raw
-+KernelVersion:	3.15
-+Contact:	linux-iio@vger.kernel.org
-+Description:
-+		Raw value of quaternion components using a format
-+		x y z w. Here x, y, and z component represents the axis about
-+		which a rotation will occur and w component represents the
-+		amount of rotation.
+diff --git a/arch/arm/kernel/iwmmxt.S b/arch/arm/kernel/iwmmxt.S
+index a08783823b32..2452dd1bef53 100644
+--- a/arch/arm/kernel/iwmmxt.S
++++ b/arch/arm/kernel/iwmmxt.S
+@@ -19,12 +19,16 @@
+ #include <asm/thread_info.h>
+ #include <asm/asm-offsets.h>
+ 
+-#if defined(CONFIG_CPU_PJ4)
++#if defined(CONFIG_CPU_PJ4) || defined(CONFIG_CPU_PJ4B)
+ #define PJ4(code...)		code
+ #define XSC(code...)
+-#else
++#elif defined(CONFIG_CPU_MOHAWK) || \
++	defined(CONFIG_CPU_XSC3) || \
++	defined(CONFIG_CPU_XSCALE)
+ #define PJ4(code...)
+ #define XSC(code...)		code
++#else
++#error "Unsupported iWMMXt architecture"
+ #endif
+ 
+ #define MMX_WR0		 	(0x00)
 -- 
-1.7.11.7
+1.9.1
 
