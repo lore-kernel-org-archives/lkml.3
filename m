@@ -1,68 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486AbaDOIvf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 04:51:35 -0400
-Received: from verein.lst.de ([213.95.11.211]:52612 "EHLO newverein.lst.de"
+	id S1751883AbaDOIyQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 04:54:16 -0400
+Received: from mga03.intel.com ([143.182.124.21]:21488 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751019AbaDOIvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 04:51:31 -0400
-Date: Tue, 15 Apr 2014 10:51:26 +0200
-From: Torsten Duwe <duwe@lst.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        ingo.tuchscherer@de.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hans-Georg Markgraf <MGRF@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH v3 03/03]: hwrng: khwrngd derating per device
-Message-ID: <20140415085126.GA17327@lst.de>
-References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de> <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com> <20140414160211.GE711@lst.de> <20140414160653.GC29351@lst.de> <CALCETrUmFdrGExKB+tKSMVK1yWAw6KWU1tpgjnoFe=+XhJdtTw@mail.gmail.com>
+	id S1750898AbaDOIyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 04:54:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="513185057"
+Message-ID: <534CF3B1.7020508@linux.intel.com>
+Date: Tue, 15 Apr 2014 16:54:09 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUmFdrGExKB+tKSMVK1yWAw6KWU1tpgjnoFe=+XhJdtTw@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Stefani Seibold <stefani@seibold.net>,
+        "Woodhouse, David" <david.woodhouse@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
+        "Zanoni, Paulo R" <paulo.r.zanoni@intel.com>,
+        "greg@kroah.com" <greg@kroah.com>
+Subject: Re: X86: kexec issues with i915 in 3.14
+References: <1397419299.1407.18.camel@vger.seibold.net>	 <1397435291.19944.176.camel@shinybook.infradead.org> <1397504974.1059.5.camel@vger.seibold.net>
+In-Reply-To: <1397504974.1059.5.camel@vger.seibold.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 09:41:10AM -0700, Andy Lutomirski wrote:
-> On Mon, Apr 14, 2014 at 9:06 AM, Torsten Duwe <duwe@lst.de> wrote:
-> >
-> > This patch introduces a derating factor to struct hwrng for
-> > the random bits going into the kernel input pool, and a common
-> > default derating for drivers which do not specify one.
-> >
-> > Signed-off-by: Torsten Duwe <duwe@suse.de>
-> >
-> > ---
-> >  drivers/char/hw_random/core.c |   11 ++++++++++-
-> >  include/linux/hw_random.h     |    3 +++
-> >  2 files changed, 13 insertions(+), 1 deletion(-)
-> >
-> > --- linux/include/linux/hw_random.h.orig
-> > +++ linux/include/linux/hw_random.h
-> > @@ -29,6 +29,8 @@
-> >   * @read:              New API. drivers can fill up to max bytes of data
-> >   *                     into the buffer. The buffer is aligned for any type.
-> >   * @priv:              Private data, for use by the RNG driver.
-> > + * @derating:          Estimation of true entropy in RNG's bitstream
-> > + *                     (per mill).
-> 
-> I'll bikeshed again: this is a rating, not a *de*rating.  Higher =
-> more confidence, at least assuming the comment is right.
-> 
-You're right. Would anyone object to call it "quality", as in RX signal quality?
-In context of a random source that is pretty accurate, I'd say. Other opinions?
+Hi Stefanin,
+	As David has mentioned, the warning messages indicates the VGA
+controller hasn't been shut down correctly during reboot and keeps doing
+DMA write operations after loading the new kernel. Do you have found
+any older kernel without this issue?
+	There is a patch set to solve similar issue for crashdump,
+please refer to https://lkml.org/lkml/2014/1/10/518.
 
-	Torsten
+Thanks!
+Gerry
 
+On 2014/4/15 3:49, Stefani Seibold wrote:
+> Am Montag, den 14.04.2014, 00:28 +0000 schrieb Woodhouse, David:
+>> On Sun, 2014-04-13 at 22:01 +0200, Stefani Seibold wrote:
+>>> Rebooting my kernel vanilla kernel 3.14 will fail with tons of kernel
+>>> log messages:
+>>>
+>>> [    0.262754] IOMMU: Setting identity map for device 0000:00:1a.0 [0x7c45f000 - 0x7c46bfff]
+>>> [    0.262780] IOMMU: Setting identity map for device 0000:00:14.0 [0x7c45f000 - 0x7c46bfff]
+>>> [    0.262798] IOMMU: Prepare 0-16MiB unity mapping for LPC
+>>> [    0.262807] IOMMU: Setting identity map for device 0000:00:1f.0 [0x0 - 0xffffff]
+>>> [    0.262948] PCI-DMA: Intel(R) Virtualization Technology for Directed I/O
+>>> [    0.262948] dmar: DRHD: handling fault status reg 3
+>>> [    0.262951] dmar: DMAR:[DMA Write] Request device [00:02.0] fault addr ffffe000 
+>>> DMAR:[fault reason 05] PTE Write access is not set
+>>
+>> I'm inferring from the subject line that you mean kexec, not
+>> "rebooting"?
+>>
+> 
+> Rebooting via BIOS works, but booting via kexec will result the message
+> storm or hang kernel with a corrupted display.
+> 
+>> It looks like a peripheral device is being left active and doing DMA by
+>> the previous kernel, rather than being shut down. So as soon as the new
+>> kernel resets the IOMMU mappings, that peripheral device is causing
+>> faults.
+>>
+>> We really ought to rate-limit the faults and isolate the offending
+>> device before there are 21,000 of them. As discussed elsewhere recently,
+>> we could do with a way to tell the PCI layer that it offended us but I
+>> suppose we could at *least* stop the IOMMU from reporting faults for it.
+>>
+>> Is this new behaviour? I'm not sure why this should have changed...
+>>
+> 
+> I can reproduce the behaviour also with a 3.13.7 kernel.
+> 
+> One thing i found after the end of the 21.000 messages was a GPU crash:
+> 
+> [    5.002484] r8169 0000:03:00.0 eth0: link up
+> [    5.002489] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
+> [    6.745051] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... blitter ring idle
+> [   11.743768] [drm] stuck on render ring
+> [   11.743773] [drm] GPU crash dump saved to /sys/class/drm/card0/error
+> [   11.743774] [drm] GPU hangs can indicate a bug anywhere in the entire gfx stack, including userspace.
+> [   11.743775] [drm] Please file a _new_ bug report on bugs.freedesktop.org against DRI -> DRM/Intel
+> [   11.743777] [drm] drm/i915 developers can then reassign to the right component if it's not a kernel issue.
+> [   11.743778] [drm] The gpu crash dump is required to analyze gpu hangs, so please always attach it.
+> [   14.240743] systemd-journald[158]: File /var/log/journal/bb613621feef82d686edde0046e9bcea/user-1000.journal corrupted or uncleanly shut down, renaming and replacing.
+> 
+> - Stefani
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
