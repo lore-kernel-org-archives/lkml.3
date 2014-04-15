@@ -1,106 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459AbaDNX5Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 19:57:25 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:57279 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753822AbaDNX5X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 19:57:23 -0400
-Date: Tue, 15 Apr 2014 01:57:20 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH v2 1/3] tracing: fix syscall_*regfunc() vs copy_process()
- race
-Message-ID: <20140414235718.GH1877@localhost.localdomain>
-References: <360091921.1294.1397060915052.JavaMail.zimbra@efficios.com>
- <20140409124249.4081e665@gandalf.local.home>
- <20140409170505.GA27638@redhat.com>
- <20140409170542.GB27638@redhat.com>
- <20140410090643.46ca2226@gandalf.local.home>
- <20140410133435.GB12228@redhat.com>
- <20140411112259.79f0a0ba@gandalf.local.home>
- <20140411155845.GA30199@redhat.com>
- <20140413185828.GA20668@redhat.com>
- <20140413185854.GB20668@redhat.com>
+	id S1755570AbaDOACD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 20:02:03 -0400
+Received: from [207.46.163.204] ([207.46.163.204]:44040 "EHLO
+	na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754353AbaDOAB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 20:01:59 -0400
+Date: Mon, 14 Apr 2014 17:00:59 -0700
+From: Insop Song <insop.song@gainspeed.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Jane Wan <Jane.Wan@gainspeed.com>, <grant.likely@secretlab.ca>,
+        <Emilian.Medve@Freescale.com>, <kenth.eriksson@transmode.com>,
+        <thomas.de.schampheleire@gmail.com>, <b48286@Freescale.com>,
+        <jg1.han@samsung.com>, <sr@denx.de>,
+        <spi-devel-general@lists.sourceforge.net>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] Configure FSL eSPI CSBEF, CSAFT, and whether to send all
+ received data to user
+Message-ID: <20140415000059.GB16287@neon.local.cohere.net>
+References: <1397328516-13260-1-git-send-email-Jane.Wan@gainspeed.com>
+ <20140414205151.GH25182@sirena.org.uk>
+ <20140414213853.GF14129@neon.local.cohere.net>
+ <20140414234949.GH12304@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20140413185854.GB20668@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140414234949.GH12304@sirena.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [157.56.236.5]
+X-ClientProxiedBy: BY2PR07CA027.namprd07.prod.outlook.com (10.141.216.42) To
+ BY2PR07MB009.namprd07.prod.outlook.com (10.255.241.35)
+X-Forefront-PRVS: 0182DBBB05
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(24454002)(51704005)(46406003)(97756001)(42186004)(33656001)(81342001)(19580395003)(83322001)(83072002)(85852003)(87976001)(74502001)(74662001)(31966008)(80976001)(4396001)(23726002)(83506001)(46102001)(66066001)(80022001)(20776003)(47776003)(99396002)(50466002)(86362001)(92726001)(92566001)(79102001)(77982001)(76176999)(54356999)(50986999)(81542001)(98436001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR07MB009;H:BY2PRD0310HT001.namprd03.prod.outlook.com;FPR:EBD6E4A1.A465D7A1.71DCA7EC.4EDFCA.20142;MLV:nov;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: gainspeed.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 13, 2014 at 08:58:54PM +0200, Oleg Nesterov wrote:
-> syscall_regfunc() and syscall_unregfunc() should set/clear
-> TIF_SYSCALL_TRACEPOINT system-wide, but do_each_thread() can race
-> with copy_process() and miss the new child which was not added to
-> the process/thread lists yet.
+On Tue, Apr 15, 2014 at 12:49:49AM +0100, Mark Brown wrote:
+> On Mon, Apr 14, 2014 at 02:38:53PM -0700, Insop Song wrote:
+> > On Mon, Apr 14, 2014 at 09:51:51PM +0100, Mark Brown wrote:
 > 
-> Change copy_process() to update the child's TIF_SYSCALL_TRACEPOINT
-> under tasklist.
+> > > Please also be sure to CC the mailing list on patches, the sourceforge
+> > > list has been unused for quite some time now.
 > 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> > We use scripts/get_maintainer.pl to get the mailing addresses.
+> > We will double check the mailing list from MAINTAINER file.
+> 
+> This will be part of not using a current kernel - if you're using a v3.8
+> kernel to check then that's over a year out of date.
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+I think I sent too soon, you meant for the get_maintainer.pl script.
 
-> ---
->  include/trace/syscall.h |   15 +++++++++++++++
->  kernel/fork.c           |    2 ++
->  2 files changed, 17 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/trace/syscall.h b/include/trace/syscall.h
-> index fed853f..291c282 100644
-> --- a/include/trace/syscall.h
-> +++ b/include/trace/syscall.h
-> @@ -4,6 +4,7 @@
->  #include <linux/tracepoint.h>
->  #include <linux/unistd.h>
->  #include <linux/ftrace_event.h>
-> +#include <linux/thread_info.h>
->  
->  #include <asm/ptrace.h>
->  
-> @@ -32,4 +33,18 @@ struct syscall_metadata {
->  	struct ftrace_event_call *exit_event;
->  };
->  
-> +#ifdef CONFIG_TRACEPOINTS
-> +static inline void syscall_tracepoint_update(struct task_struct *p)
-> +{
-> +	if (test_thread_flag(TIF_SYSCALL_TRACEPOINT))
-> +		set_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-> +	else
-> +		clear_tsk_thread_flag(p, TIF_SYSCALL_TRACEPOINT);
-> +}
-> +#else
-> +static inline void syscall_tracepoint_update(struct task_struct *p)
-> +{
-> +}
-> +#endif
-> +
->  #endif /* _TRACE_SYSCALL_H */
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index a17621c..2d55a47 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -1484,7 +1484,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->  
->  	total_forks++;
->  	spin_unlock(&current->sighand->siglock);
-> +	syscall_tracepoint_update(p);
->  	write_unlock_irq(&tasklist_lock);
-> +
->  	proc_fork_connector(p);
->  	cgroup_post_fork(p);
->  	if (clone_flags & CLONE_THREAD)
-> -- 
-> 1.5.5.1
-> 
-> 
+Regards,
+
