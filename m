@@ -1,44 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750982AbaDOERL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 00:17:11 -0400
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:58993 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823AbaDOERH (ORCPT
+	id S1751115AbaDOEZy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 00:25:54 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:51530 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838AbaDOEZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 00:17:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140414200121.GS25182@sirena.org.uk>
-References: <1397466414-18368-1-git-send-email-harinik@xilinx.com>
-	<20140414200121.GS25182@sirena.org.uk>
-Date: Tue, 15 Apr 2014 09:47:06 +0530
-Message-ID: <CAFcVECKECc0Xu057HEgqNOUd2xvW88UHVh06NSE3JX-=LuozDQ@mail.gmail.com>
-Subject: Re: [PATCH v4 1/2] SPI: Add driver for Cadence SPI controller
-From: Harini Katakam <harinikatakamlinux@gmail.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, linux-spi@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        michals@xilinx.com
-Content-Type: text/plain; charset=UTF-8
+	Tue, 15 Apr 2014 00:25:52 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: peterz@infradead.org
+Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, fweisbec@gmail.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V2] sched/core: fix formatting issues in sched_can_stop_tick()
+Date: Tue, 15 Apr 2014 09:55:40 +0530
+Message-Id: <dd818d296fd51c3fc5fb24c5decf048e9b6eba1e.1397535766.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+sched_can_stop_tick() was using 7 spaces instead of 8 spaces or a 'tab' at the
+beginning of each line. Which doesn't align with the Coding Guidelines.
 
-On Tue, Apr 15, 2014 at 1:31 AM, Mark Brown <broonie@kernel.org> wrote:
-> On Mon, Apr 14, 2014 at 02:36:53PM +0530, Harini Katakam wrote:
->> Add driver for Cadence SPI controller. This is used in Xilinx Zynq.
->
-> Applied both, thanks.  Please use subject lines consistent with the
-> style for the subsystem.
+Also it removes the *rq variable as it was used at only one place and hence we
+can directly use this_rq() instead.
 
-Thanks! I'll keep that in mind.
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+V1->V2: Rebased over:
 
-Regards,
-Harini
+https://lkml.org/lkml/2014/3/19/456
+
+ kernel/sched/core.c | 20 ++++++++------------
+ 1 file changed, 8 insertions(+), 12 deletions(-)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 1fadf61..3a4bb63 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -666,19 +666,15 @@ static inline bool got_nohz_idle_kick(void)
+ #ifdef CONFIG_NO_HZ_FULL
+ bool sched_can_stop_tick(void)
+ {
+-       struct rq *rq;
+-
+-       rq = this_rq();
+-
+-       /*
+-	* More than one running task need preemption.
+-	* nr_running update is assumed to be visible
+-	* after IPI is sent from wakers.
+-	*/
+-       if (rq->nr_running > 1)
+-               return false;
++	/*
++	 * More than one running task need preemption.
++	 * nr_running update is assumed to be visible
++	 * after IPI is sent from wakers.
++	 */
++	if (this_rq()->nr_running > 1)
++		return false;
+ 
+-       return true;
++	return true;
+ }
+ #endif /* CONFIG_NO_HZ_FULL */
+ 
+-- 
+1.7.12.rc2.18.g61b472e
+
