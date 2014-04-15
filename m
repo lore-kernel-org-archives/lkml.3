@@ -1,91 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590AbaDOPed (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 11:34:33 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:43197 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbaDOPeb (ORCPT
+	id S1754189AbaDOPfK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 11:35:10 -0400
+Received: from mano-163-24-shared.jabatus.fr ([109.234.163.24]:39873 "EHLO
+	mano-163-24-shared.jabatus.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751261AbaDOPfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 11:34:31 -0400
+	Tue, 15 Apr 2014 11:35:08 -0400
+X-Greylist: delayed 6295 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Apr 2014 11:35:08 EDT
+X-MailPropre-MailScanner-From: ecolbus@manux.info
+X-MailPropre-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=0, required 5, autolearn=not spam)
+X-MailPropre-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
+X-MailPropre-MailScanner-ID: DAC5391A29AB.A3A8D
+X-MailPropre-MailScanner-Information: Message sortant - Serveurs o2switch
+Message-ID: <534D5119.8050701@manux.info>
+Date: Tue, 15 Apr 2014 17:32:41 +0200
+From: Emmanuel Colbus <ecolbus@manux.info>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131104 Icedove/17.0.10
 MIME-Version: 1.0
-In-Reply-To: <20140415152452.GC7311@kroah.com>
-References: <20140414145359.48b7337c@endymion.delvare>
-	<20140414191143.GA26864@kroah.com>
-	<20140414231254.392c0df8@endymion.delvare>
-	<20140415045214.GA32541@kroah.com>
-	<CA+5PVA4-8CDT1Mfw_t6WKu6zmo1Ugn4ssTXPCS-W-bPnKtH=5g@mail.gmail.com>
-	<20140415152452.GC7311@kroah.com>
-Date: Tue, 15 Apr 2014 11:34:30 -0400
-X-Google-Sender-Auth: 0ImzAz89Mkcoxeeo6-bzeB9H2Hc
-Message-ID: <CA+5PVA76jrcZqRgHwy+p50p_fBukuaMFQK1tUF_3oWxbtDtzxA@mail.gmail.com>
-Subject: Re: Hardware dependencies in Kconfig
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Jean Delvare <jdelvare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [RFC][5/11][MANUX] Kernel compatibility : major/minor numbers
+References: <534D3762.4010905@manux.info> <20140415160626.322e24ee@alan.etchedpixels.co.uk>
+In-Reply-To: <20140415160626.322e24ee@alan.etchedpixels.co.uk>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 11:24 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Tue, Apr 15, 2014 at 07:50:05AM -0400, Josh Boyer wrote:
->> On Tue, Apr 15, 2014 at 12:52 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> > On Mon, Apr 14, 2014 at 11:12:54PM +0200, Jean Delvare wrote:
->> >> And it's not going to get any better over time. As others have already
->> >> mentioned, most new drivers these days are NOT for x86, they are for
->> >> ARM, AVR32 and other fancy embedded architectures.
->> >>
->> >> "Just say m to everything" is just so wrong today that at SUSE we are
->> >> very close to switching our policy to "just say no to everything and
->> >> wait for people to complain about missing drivers." This may not sound
->> >> too appealing but this is the only way to keep the kernel package at a
->> >> reasonable size (and build time), as long as upstream doesn't help us
->> >> make smarter decisions. Useless modules aren't free, they aren't even
->> >> cheap.
->>
->> FWIW, we did that policy changed in Fedora a while ago.  Not
->> wholesale, but if it looks niche, it's disabled by default and enabled
->> only on request.
->>
->> > I'd argue that your build systems need to get faster, the laptop I'm
->> > typing this on can do a full modconfig build, with over 3000 modules, in
->> > around 20 minutes.  My build server in the cloud can do that in less
->> > than 5 minutes, and that's not a very fast machine these days.
->>
->> Is that literally 'make modconfig && make bzImage && make modules' in
->> those setups?
+Le 15/04/2014 17:06, One Thousand Gnomes a écrit :
+>> In order to associate devices to their files, the Linux kernel uses
+>> their major and minor numbers. However, mine doesn't; instead, I've
+>> attributed myself a single group of values (major=0, minor=0, for both
+>> character-mode and block-mode special files), with the meaning (for the
+>> userspace) "you cannot identify the content of this file based on its
+>> major and minor numbers".
+> 
+> If you are using the Linux ABI then you'll hit cases (in particular tty
+> cases) where the ABI/API knows about major/minor numbers. 
+
+Well, in fact, my kernel *can* handle major and minor numbers. That is,
+if you tell it "mknod /dev/efjkb c 8 6" , you'll actually get a device
+file with major/minor numbers 8/6. But then, the kernel simply
+disregards these values and waits for userspace to specify it what this
+device means. So it's completely possible to emulate Linux's behaviour
+with it.
+
+> In addition the
+> standards and common sense together pretty much imply that you need each
+> device to at least have a unique identifier.
 >
-> Yes, I use ktest with the allmodconfig option.
->
->> I'm curious if the distros have some options enabled
->> that significantly impact build time.  Perhaps CONFIG_DEBUG_INFO or
->> something else like that.  Could you send me whatever config results
->> from what you're building in 5min?
->
-> You can use ktest with the BUILD_TYPE set to allmodconfig and it will
-> reproduce the same options.
 
-OK, I'll look at what it produces.  Thanks.
+Why is it? I mean, as far as userspace is concerned, they do have a
+unique identifier : their name. How would it be problematic that the
+software is unable to confirm that /dev/null is actually connected to
+the usual /dev/null kernel driver? I mean, it's supposed to trust the OS
+and its admin to have done their job properly, not second-guess them!
 
-I still agree with Jean that this isn't a solution to the actual problem though.
+(My idea behind this is to allow lying, for example by allowing the
+sysadmin to fake the content of, say, /dev/random, to an application he
+wants to test, or even deliberately sabotage. So, in my OS's logic,
+there's nothing wrong with emulating Linux's major/minor device
+identifiers, but of course, their reliability will be in the sysadmin's
+hands, so I thought I could simply make this clear by using explicitely
+unreliable identifiers.)
 
->> It takes my desktop machine about 30-45min to build an x86_64 kernel
->> RPM with the current configs.  Now granted, that's a bit more than
->> just building a kernel in a local git tree, but it's nowhere near
->> 5min.  Our official build servers show similar timings for x86_64.
->>
->> For ARM kernels, it takes about 3.5-4 hours.  That's due to policy
->> decisions on now allowing cross-builds in the distro (sigh), so all of
->> the kernels are built on native ARM machines.
->
-> That's really crazy to do that, there is this wonderful tool called
-> qemu... :)
+> Finally you need major/minor numbers to NFS serve to a diskless client.
 
-Yes, well... I don't get to set the policy.  This particular brand of
-crazy does have some benefits, but I'm not sure they outweigh the
-negatives.
+Not a problem, but of course, the distant client will have the ability
+to connect anything it wants to any device it wants.
 
-josh
+> 
+> Most Linux device numbering beyond that is basically dynamic so it
+> probably does't matter that much for things you concoct - providing in
+> som cases your /proc table of major numbers is right.
+> 
+
+Ah... Uhhh... I've not implemented any such table, so I guess it's
+currently not. Whoops...
+
+Emmanuel
