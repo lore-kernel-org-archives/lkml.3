@@ -1,94 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625AbaDOS1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 14:27:41 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35502 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751203AbaDOS1k (ORCPT
+	id S1754422AbaDOS2v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 14:28:51 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59764 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751161AbaDOS2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 14:27:40 -0400
-Date: Tue, 15 Apr 2014 19:26:53 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Christoph Lameter <cl@linux.com>
-Cc: Michal Marek <mmarek@suse.cz>, Vince Weaver <vincent.weaver@maine.edu>,
-        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [bisected] broken make-kpkg kernel build in 3.15-rc1
-Message-ID: <20140415182653.GR24070@n2100.arm.linux.org.uk>
-References: <alpine.DEB.2.10.1404150940250.14106@vincent-weaver-1.um.maine.edu> <534D4A59.6080401@suse.cz> <alpine.DEB.2.10.1404151146530.26562@gentwo.org> <534D6510.3070509@suse.cz> <alpine.DEB.2.10.1404151221360.26992@gentwo.org>
+	Tue, 15 Apr 2014 14:28:48 -0400
+Message-ID: <534D7A5D.9090707@wwwdotorg.org>
+Date: Tue, 15 Apr 2014 12:28:45 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1404151221360.26992@gentwo.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Andrew Bresticker <abrestic@chromium.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
+CC: linux-mmc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] mmc: sdhci: defer probing on regulator_get_optional()
+ failures
+References: <1397526163-20126-1-git-send-email-abrestic@chromium.org> <1397526163-20126-4-git-send-email-abrestic@chromium.org>
+In-Reply-To: <1397526163-20126-4-git-send-email-abrestic@chromium.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 12:22:51PM -0500, Christoph Lameter wrote:
-> On Tue, 15 Apr 2014, Michal Marek wrote:
-> 
-> > > The problem is that the kernel build process should not write to anything
-> > > in the /etc/apt directory.
-> >
-> > Again: make install starts /sbin/installkernel and the rest is the job
-> > of this script. Which means you need to debug Debian's
-> > /sbin/installkernel why it suddenly wants to modify files in /etc/apt.
-> 
-> Why then does reverting the patch fix the issue?
-> 
-> Something in the patch causes install process to not divert correctly to
-> the install directory. It tries to go to the / directory instead.
+On 04/14/2014 07:42 PM, Andrew Bresticker wrote:
+> If regulator_get_optional() returns EPROBE_DEFER, it indicates
+> that the regulator may show up later (e.g. the DT property is
+> present but the corresponding regulator may not have probed).
+> Instead of continuing without the regulator, return EPROBE_DEFER
+> from sdhci_add_host().  Also, fix regulator leaks in the error
+> paths in sdhci_add_host().
 
-Right, so the thing to do is to run a build with the commit applied,
-without any -j arguments and V=1, logging the output (so that predictable
-output can be generated).
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
 
-Then run the same thing with the commit reverted, again logging it.  Then
-diff the two and see what's different.
+>  	if (IS_ERR_OR_NULL(host->vqmmc)) {
 
-I, too, can't see anything in that commit which would cause this regression.
+This is a pre-existing condition, but ick: Why doesn't this test either
+IS_ERR() /or/ == NULL, but not both. On error, the regulator API should
+either return and error-point or return NULL, so that client code
+shouldn't need to check for both.
 
-Looking at arch/x86/boot/install.sh, it contains these lines:
+> +put_vmmc:
+> +	if (host->vmmc)
+> +		regulator_put(host->vmmc);
+> +put_vqmmc:
+> +	if (host->vqmmc)
+> +		regulator_put(host->vqmmc);
 
-if [ -x ~/bin/${INSTALLKERNEL} ]; then exec ~/bin/${INSTALLKERNEL} "$@"; fi
-if [ -x /sbin/${INSTALLKERNEL} ]; then exec /sbin/${INSTALLKERNEL} "$@"; fi
+If IS_ERR_OR_NULL() really is required above, it should be used here
+too. More likely, I hope you need to replace if (host->vmmc) with if
+(!IS_ERR(host->vmmc)).
 
-which will have the effect of running /sbin/installkernel.
-
-The Ubuntu /sbin/installkernel (which I assume is closely related to
-Debian's version) installs the kernel in the specified directory
-(indicated by $dir in the script), and then does this:
-
-run-parts --verbose --exit-on-error --arg="$ver" --arg="$dir/$img_dest-$ver" \
-  /etc/kernel/postinst.d
-
-which has the effect of running all hooks in /etc/kernel/postinst.d.
-One such hook is /etc/kernel/postinst.d/apt-auto-removal, which does
-this:
-
-eval $(apt-config shell APT_CONF_D Dir::Etc::parts/d)
-test -n "${APT_CONF_D}" || APT_CONF_D="/etc/apt/apt.conf.d"
-config_file=${APT_CONF_D}/01autoremove-kernels
-...
-cat > "$config_file".dpkg-new <<EOF
-// File autogenerated by $0, do not edit
-APT
-{
-...
-};
-EOF
-mv "$config_file".dpkg-new "$config_file"
-
-Now, the only additional thing that could affect any of debian's scripts
-is the addition of INSTALL_DTBS_PATH in the enfironment.  So, I've tested
-running "apt-config shell APT_CONF_D Dir::Etc::parts/d" with that set, and
-it has no effect here.
-
-So... like I say above, I think we need to see a diff between two build
-attempts, one with the commit in place, and one without.
-
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+I wonder if fixing this would help solve the crashes that Alex saw?
