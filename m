@@ -1,66 +1,371 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292AbaDOTVm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 15:21:42 -0400
-Received: from smtp11.smtpout.orange.fr ([80.12.242.133]:35849 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068AbaDOTVj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 15:21:39 -0400
-X-ME-Helo: PCombes.localdomain
-X-ME-Auth: cGFzY29tQHdhbmFkb28uZnI=
-X-ME-Date: Tue, 15 Apr 2014 21:21:38 +0200
-X-ME-IP: 82.124.119.218
-Message-ID: <534D86C1.80606@orange.fr>
-Date: Tue, 15 Apr 2014 21:21:37 +0200
-From: Pascal COMBES <pascom@orange.fr>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754542AbaDOTYW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 15:24:22 -0400
+Received: from mga01.intel.com ([192.55.52.88]:49876 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750988AbaDOTYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 15:24:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,865,1389772800"; 
+   d="scan'208";a="521204440"
+Date: Tue, 15 Apr 2014 12:24:03 -0700
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: wim@iguana.be, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, gnomes@lxorguk.ukuu.org.uk,
+        Eric Ernst <eric.ernst@intel.com>
+Subject: Re: [PATCH v3 1/2] watchdog: add Intel MID watchdog driver support
+Message-ID: <20140415192403.GH5986@psi-dev26.jf.intel.com>
+References: <1397249407-5417-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1397587272-31152-1-git-send-email-david.a.cohen@linux.intel.com>
+ <1397587272-31152-2-git-send-email-david.a.cohen@linux.intel.com>
+ <20140415190149.GA7940@roeck-us.net>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: devel@driverdev.osuosl.org,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Jarod Wilson <jarod@wilsonet.com>, Jingoo Han <jg1.han@samsung.com>,
-        Valentina Manea <valentina.manea.m@gmail.com>,
-        linux-kernel@vger.kernel.org, Naren Sankar <nsankar@broadcom.com>,
-        Monam Agarwal <monamagarwal123@gmail.com>,
-        Scott Davilla <davilla@4pi.com>,
-        Amarjargal Gundjalam <amarjargal16@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Robert Foss <dev@robertfoss.se>
-Subject: [PATCH v3 3/3] Staging: crystalhd: Improve kzalloc calls in crystalhd_lnx.c
-References: <534AAED2.7050205@orange.fr> <20140413154859.GA18189@kroah.com>
-In-Reply-To: <20140413154859.GA18189@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140415190149.GA7940@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace sizeof(type) by sizeof(variable) in crystalhd_lnx.c.
+On Tue, Apr 15, 2014 at 12:01:49PM -0700, Guenter Roeck wrote:
+> On Tue, Apr 15, 2014 at 11:41:11AM -0700, David Cohen wrote:
+> > Add initial Intel MID watchdog driver support.
+> > 
+> > This driver is an initial implementation of generic Intel MID watchdog
+> > driver. Currently it supports Intel Merrifield platform.
+> > 
+> > Signed-off-by: Eric Ernst <eric.ernst@intel.com>
+> > Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+> > ---
+> >  drivers/watchdog/Kconfig         |  13 +++
+> >  drivers/watchdog/Makefile        |   1 +
+> >  drivers/watchdog/intel-mid_wdt.c | 187 +++++++++++++++++++++++++++++++++++++++
+> >  include/linux/intel-mid_wdt.h    |  20 +++++
+> 
+> include/linux/platform_data/intel-mid_wdt.h ?
 
-Signed-off-by: Pascal COMBES <pascom@orange.fr>
----
-diff --git a/drivers/staging/crystalhd/crystalhd_lnx.c b/drivers/staging/crystalhd/crystalhd_lnx.c
-index 0e432bc..e6fb331 100644
---- a/drivers/staging/crystalhd/crystalhd_lnx.c
-+++ b/drivers/staging/crystalhd/crystalhd_lnx.c
-@@ -399,8 +399,7 @@ static int chd_dec_init_chdev(struct crystalhd_adp *adp)
- 
- 	/* Allocate general purpose ioctl pool. */
- 	for (i = 0; i < CHD_IODATA_POOL_SZ; i++) {
--		temp = kzalloc(sizeof(struct crystalhd_ioctl_data),
--			       GFP_KERNEL);
-+		temp = kzalloc(sizeof(*temp), GFP_KERNEL);
- 		if (!temp) {
- 			BCMLOG_ERR("ioctl data pool kzalloc failed\n");
- 			rc = -ENOMEM;
-@@ -555,7 +554,7 @@ static int chd_dec_pci_probe(struct pci_dev *pdev,
- 	       pdev->vendor, pdev->device, pdev->subsystem_vendor,
- 	       pdev->subsystem_device);
- 
--	pinfo = kzalloc(sizeof(struct crystalhd_adp), GFP_KERNEL);
-+	pinfo = kzalloc(sizeof(*pinfo), GFP_KERNEL);
- 	if (!pinfo) {
- 		BCMLOG_ERR("Failed to allocate memory\n");
- 		return -ENOMEM;
+Ack
 
+> 
+> >  4 files changed, 221 insertions(+)
+> >  create mode 100644 drivers/watchdog/intel-mid_wdt.c
+> >  create mode 100644 include/linux/intel-mid_wdt.h
+> > 
+> > diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> > index 79d25894343a..0e110c37aa5c 100644
+> > --- a/drivers/watchdog/Kconfig
+> > +++ b/drivers/watchdog/Kconfig
+> > @@ -643,6 +643,19 @@ config INTEL_SCU_WATCHDOG
+> >  
+> >  	  To compile this driver as a module, choose M here.
+> >  
+> > +config INTEL_MID_WATCHDOG
+> > +	tristate "Intel MID Watchdog Timer"
+> > +	depends on X86_INTEL_MID
+> > +	select WATCHDOG_CORE
+> > +	---help---
+> > +	  Watchdog timer driver built into the Intel SCU for Intel MID
+> > +	  Platforms.
+> > +
+> > +	  This driver currently supports only the watchdog evolution
+> > +	  implementation in SCU, available for Merrifield generation.
+> > +
+> > +	  To compile this driver as a module, choose M here.
+> > +
+> >  config ITCO_WDT
+> >  	tristate "Intel TCO Timer/Watchdog"
+> >  	depends on (X86 || IA64) && PCI
+> > diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+> > index 985a66cda76f..b927e7496eb4 100644
+> > --- a/drivers/watchdog/Makefile
+> > +++ b/drivers/watchdog/Makefile
+> > @@ -113,6 +113,7 @@ obj-$(CONFIG_W83977F_WDT) += w83977f_wdt.o
+> >  obj-$(CONFIG_MACHZ_WDT) += machzwd.o
+> >  obj-$(CONFIG_SBC_EPX_C3_WATCHDOG) += sbc_epx_c3.o
+> >  obj-$(CONFIG_INTEL_SCU_WATCHDOG) += intel_scu_watchdog.o
+> > +obj-$(CONFIG_INTEL_MID_WATCHDOG) += intel-mid_wdt.o
+> >  
+> >  # M32R Architecture
+> >  
+> > diff --git a/drivers/watchdog/intel-mid_wdt.c b/drivers/watchdog/intel-mid_wdt.c
+> > new file mode 100644
+> > index 000000000000..d8bf3c3cd2b7
+> > --- /dev/null
+> > +++ b/drivers/watchdog/intel-mid_wdt.c
+> > @@ -0,0 +1,187 @@
+> > +/*
+> > + *      intel-mid_wdt: generic Intel MID SCU watchdog driver
+> > + *
+> > + *      Platforms supported so far:
+> > + *      - Merrifield only
+> > + *
+> > + *      Copyright (C) 2014 Intel Corporation. All rights reserved.
+> > + *      Contact: David Cohen <david.a.cohen@linux.intel.com>
+> > + *
+> > + *      This program is free software; you can redistribute it and/or
+> > + *      modify it under the terms of version 2 of the GNU General
+> > + *      Public License as published by the Free Software Foundation.
+> > + */
+> > +
+> > +#include <linux/intel-mid_wdt.h>
+> > +#include <linux/interrupt.h>
+> > +#include <linux/module.h>
+> > +#include <linux/nmi.h>
+> > +#include <linux/platform_device.h>
+> > +#include <linux/watchdog.h>
+> > +
+> > +#include <asm/intel_scu_ipc.h>
+> > +#include <asm/intel-mid.h>
+> > +
+> > +#define IPC_WATCHDOG 0xf8
+> > +
+> > +#define MID_WDT_PRETIMEOUT		15
+> > +#define MID_WDT_TIMEOUT_MIN		(1 + MID_WDT_PRETIMEOUT)
+> > +#define MID_WDT_TIMEOUT_MAX		170
+> > +#define MID_WDT_DEFAULT_TIMEOUT		90
+> > +
+> > +/* SCU watchdog messages */
+> > +enum {
+> > +	SCU_WATCHDOG_START = 0,
+> > +	SCU_WATCHDOG_STOP,
+> > +	SCU_WATCHDOG_KEEPALIVE,
+> > +};
+> > +
+> > +static inline int wdt_command(int sub, u32 *in, int inlen)
+> > +{
+> > +	return intel_scu_ipc_command(IPC_WATCHDOG, sub, in, inlen, NULL, 0);
+> > +}
+> > +
+> > +static int wdt_start(struct watchdog_device *wd)
+> > +{
+> > +	int ret, in_size;
+> > +	int timeout = wd->timeout;
+> > +	struct ipc_wd_start {
+> > +		u32 pretimeout;
+> > +		u32 timeout;
+> > +	} ipc_wd_start = { timeout - MID_WDT_PRETIMEOUT, timeout };
+> > +
+> > +	/*
+> > +	 * SCU expects the input size for watchdog IPC to
+> > +	 * be based on double-word
+> > +	 */
+> > +	in_size = (sizeof(ipc_wd_start) + 3) / 4;
+> > +
+> DIV_ROUND_UP ?
+
+Ack
+
+> 
+> Not sure how "double-word" matches the calculation. What is a "double-word" ?
+> 4 bytes ?
+> 
+> > +	ret = wdt_command(SCU_WATCHDOG_START, (u32 *)&ipc_wd_start, in_size);
+> > +	if (ret) {
+> > +		struct device *dev = watchdog_get_drvdata(wd);
+> > +		dev_crit(dev, "error starting watchdog: %d\n", ret);
+> > +		return -EIO;
+> 
+> I am quite sure sparse is going to complain about this ...
+> Why not just return ret ? This would result in a more detailed
+> error code/reason.
+
+wdt_command() may return errors != -EIO. But IMHO -EIO makes more sense
+whatever is the issue regarding to IPC in this scenario.
+But I can return ret as per request. Same to cases below.
+
+> 
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int wdt_ping(struct watchdog_device *wd)
+> > +{
+> > +	int ret;
+> > +
+> > +	ret = wdt_command(SCU_WATCHDOG_KEEPALIVE, NULL, 0);
+> > +	if (ret) {
+> > +		struct device *dev = watchdog_get_drvdata(wd);
+> > +		dev_crit(dev, "Error executing keepalive: 0x%x\n", ret);
+> > +		return -EIO;
+> 
+> Same here.
+> 
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int wdt_stop(struct watchdog_device *wd)
+> > +{
+> > +	int ret;
+> > +
+> > +	ret = wdt_command(SCU_WATCHDOG_STOP, NULL, 0);
+> > +	if (ret) {
+> > +		struct device *dev = watchdog_get_drvdata(wd);
+> > +		dev_crit(dev, "Error stopping watchdog: 0x%x\n", ret);
+> > +		return -EIO;
+> 
+> Same here.
+> 
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static irqreturn_t mid_wdt_warning_irq(int irq, void *dev_id)
+> 
+> This isn't really a warning, so the function name is a bit misleading.
+
+Ack
+
+> 
+> > +{
+> > +	panic("Kernel Watchdog");
+> > +
+> > +	/* This code should not be reached */
+> > +	return IRQ_HANDLED;
+> > +}
+> > +
+> > +static const struct watchdog_info mid_wdt_info = {
+> > +	.identity = "Intel MID SCU watchdog",
+> > +	.options = WDIOF_KEEPALIVEPING | WDIOF_SETTIMEOUT,
+> > +};
+> > +
+> > +static const struct watchdog_ops mid_wdt_ops = {
+> > +	.owner = THIS_MODULE,
+> > +	.start = wdt_start,
+> > +	.stop = wdt_stop,
+> > +	.ping = wdt_ping,
+> > +};
+> > +
+> > +static int mid_wdt_probe(struct platform_device *pdev)
+> > +{
+> > +	struct watchdog_device *wdt_dev;
+> > +	struct intel_mid_wdt_pdata *pdata = pdev->dev.platform_data;
+> > +	int ret;
+> > +
+> > +	if (!pdata) {
+> > +		dev_err(&pdev->dev, "missing platform data\n");
+> > +		return -EINVAL;
+> > +	}
+> > +
+> > +	if (pdata->probe) {
+> > +		ret = pdata->probe();
+> 
+> Sure you don't want to pass the platform device as parameter ?
+> May not be needed today, but it might be better than to rely on the assumption
+> that the called code gets it from a static variable or structure (if needed).
+> 
+> This would enable you, for example, to use dev_warn() instead of pr_warn()
+> in the platform code.
+
+Ack.
+
+> 
+> > +		if (ret)
+> > +			return ret;
+> > +	}
+> > +
+> > +	wdt_dev = devm_kzalloc(&pdev->dev, sizeof(*wdt_dev), GFP_KERNEL);
+> > +	if (!wdt_dev)
+> > +		return -ENOMEM;
+> > +
+> > +	wdt_dev->info = &mid_wdt_info;
+> > +	wdt_dev->ops = &mid_wdt_ops;
+> > +	wdt_dev->min_timeout = MID_WDT_TIMEOUT_MIN;
+> > +	wdt_dev->max_timeout = MID_WDT_TIMEOUT_MAX;
+> > +	wdt_dev->timeout = MID_WDT_DEFAULT_TIMEOUT;
+> > +
+> > +	watchdog_set_drvdata(wdt_dev, &pdev->dev);
+> > +	platform_set_drvdata(pdev, wdt_dev);
+> > +
+> > +	ret = devm_request_irq(&pdev->dev, pdata->irq, mid_wdt_warning_irq,
+> > +			       IRQF_SHARED | IRQF_NO_SUSPEND, "watchdog",
+> > +			       wdt_dev);
+> 
+> If irq is mandatory, it might make sense to check if it is valid.
+
+I can add this extra sanity check.
+
+Thanks for your review.
+
+BR, David
+
+> 
+> > +	if (ret) {
+> > +		dev_err(&pdev->dev, "error requesting warning irq %d\n",
+> > +			pdata->irq);
+> > +		return ret;
+> > +	}
+> > +
+> > +	ret = watchdog_register_device(wdt_dev);
+> > +	if (ret) {
+> > +		dev_err(&pdev->dev, "error registering watchdog device\n");
+> > +		return ret;
+> > +	}
+> > +
+> > +	dev_info(&pdev->dev, "Intel MID watchdog device probed\n");
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int mid_wdt_remove(struct platform_device *pdev)
+> > +{
+> > +	struct watchdog_device *wd = platform_get_drvdata(pdev);
+> > +	watchdog_unregister_device(wd);
+> > +	return 0;
+> > +}
+> > +
+> > +static struct platform_driver mid_wdt_driver = {
+> > +	.probe		= mid_wdt_probe,
+> > +	.remove		= mid_wdt_remove,
+> > +	.driver		= {
+> > +		.owner	= THIS_MODULE,
+> > +		.name	= "intel_mid_wdt",
+> > +	},
+> > +};
+> > +
+> > +module_platform_driver(mid_wdt_driver);
+> > +
+> > +MODULE_AUTHOR("David Cohen <david.a.cohen@linux.intel.com>");
+> > +MODULE_DESCRIPTION("Watchdog Driver for Intel MID platform");
+> > +MODULE_LICENSE("GPL");
+> > diff --git a/include/linux/intel-mid_wdt.h b/include/linux/intel-mid_wdt.h
+> > new file mode 100644
+> > index 000000000000..705dff1c62f8
+> > --- /dev/null
+> > +++ b/include/linux/intel-mid_wdt.h
+> > @@ -0,0 +1,20 @@
+> > +/*
+> > + *      intel-mid_wdt: generic Intel MID SCU watchdog driver
+> > + *
+> > + *      Copyright (C) 2014 Intel Corporation. All rights reserved.
+> > + *      Contact: David Cohen <david.a.cohen@linux.intel.com>
+> > + *
+> > + *      This program is free software; you can redistribute it and/or
+> > + *      modify it under the terms of version 2 of the GNU General
+> > + *      Public License as published by the Free Software Foundation.
+> > + */
+> > +
+> > +#ifndef __INTEL_MID_WDT_H__
+> > +#define __INTEL_MID_WDT_H__
+> > +
+> > +struct intel_mid_wdt_pdata {
+> > +	int irq;
+> > +	int (*probe)(void);
+> > +};
+> > +
+> > +#endif /*__INTEL_MID_WDT_H__*/
+> > -- 
+> > 1.9.1
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
