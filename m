@@ -1,83 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751849AbaDOQA6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 12:00:58 -0400
-Received: from mano-163-20-shared.jabatus.fr ([109.234.163.20]:42906 "EHLO
-	mano-163-20-shared.jabatus.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751104AbaDOQAf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 12:00:35 -0400
-X-Greylist: delayed 7528 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Apr 2014 12:00:35 EDT
-X-MailPropre-MailScanner-From: ecolbus@manux.info
-X-MailPropre-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
-	score=0, required 5, autolearn=not spam)
-X-MailPropre-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
-X-MailPropre-MailScanner-ID: D6CAB9231405.A0C8B
-X-MailPropre-MailScanner-Information: Message sortant - Serveurs o2switch
-Message-ID: <534D5795.8080100@manux.info>
-Date: Tue, 15 Apr 2014 18:00:21 +0200
-From: Emmanuel Colbus <ecolbus@manux.info>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131104 Icedove/17.0.10
+	id S1751360AbaDOQAc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 12:00:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:59864 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751104AbaDOQAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 12:00:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,864,1389772800"; 
+   d="scan'208";a="521430536"
+Message-ID: <534D5787.8040403@linux.intel.com>
+Date: Tue, 15 Apr 2014 09:00:07 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [RFC][4/11][MANUX] Kernel compatibility : ioctl(2)
-References: <534D375E.7070308@manux.info> <20140415160035.3135dda7@alan.etchedpixels.co.uk>
-In-Reply-To: <20140415160035.3135dda7@alan.etchedpixels.co.uk>
+To: Pranith Kumar <bobby.prani@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] remove duplicate definition
+References: <534C6286.4040600@gmail.com>
+In-Reply-To: <534C6286.4040600@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 15/04/2014 17:00, One Thousand Gnomes a écrit :
-> On Tue, 15 Apr 2014 15:42:54 +0200
-> Emmanuel Colbus <ecolbus@manux.info> wrote:
-> 
->> Continuing with syscalls, I would like to indicate you a modification
->> I've done with regards to ioctl's. The thing is, I have had the need for
->> ioctl's that return *file descriptors*, instead of standard return codes.
-> 
-> You probably only think you have ;-)
-> 
-> The return from an ioctl on 32bit is going to be an unsigned 32bit value,
-> as is a Linux file handle. So if you do
-> 
-> 	fd = ioctl(foo);
-> 
-> then not only have you got an interface that isn't compliant with
-> POSIX/SuS you also have no error reporting capability.
+On 04/14/2014 03:34 PM, Pranith Kumar wrote:
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 
-Wait, on 32 bits, no process can have 2^32 file handles, or even 2^31.
-Thus, since the error code is a negative value, userspace will simply do :
+Please add an detailed description of the patch.
 
-fd = _sys_ioctl(foo);
-if (fd < 0)
-	errno = -fd;
+	-hpa
 
-Which the libc is going to do for them anyways if they call ioctl()
-directly.
 
-> 
-> The expectation of ioctl is
-> 
-> 	err = ioctl(fd, FDIOWIBBLE, &result);
-> 
-> now if result is a pointer to where to store one or more file handles you
-> are sorted.
-
-Also feasible.
-
-> 
-> If you are going to use SuS/POSIX naming I'd really suggest sticking to
-> the expected behaviour in the standards.
-
-I think this is an unproblematic extension, especially since these
-ioctls are only supposed to be called by low-level software shipped with
-the OS.
-
-> 
-> Alan
-> 
-
-Emmanuel
