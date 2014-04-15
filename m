@@ -1,297 +1,1153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751418AbaDOLhG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 07:37:06 -0400
-Received: from albert.telenet-ops.be ([195.130.137.90]:34572 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094AbaDOLg7 (ORCPT
+	id S1751712AbaDOLin (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 07:38:43 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:62798 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750784AbaDOLik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 07:36:59 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-kernel@vger.kernel.org
-Subject: Build regressions/improvements in v3.15-rc1
-Date: Tue, 15 Apr 2014 13:36:56 +0200
-Message-Id: <1397561816-9289-1-git-send-email-geert@linux-m68k.org>
+	Tue, 15 Apr 2014 07:38:40 -0400
+From: Srikanth Thokala <sthokal@xilinx.com>
+To: bhelgaas@google.com, michal.simek@xilinx.com, grant.likely@linaro.org,
+        robh+dt@kernel.org
+Cc: jgunthorpe@obsidianresearch.com, linux-pci@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Srikanth Thokala <sthokal@xilinx.com>
+Subject: [PATCH v3] pcie: Add Xilinx PCIe Host Bridge IP driver
+Date: Tue, 15 Apr 2014 17:08:31 +0530
+Message-Id: <1397561911-11647-1-git-send-email-sthokal@xilinx.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Below is the list of build error/warning regressions/improvements in
-v3.15-rc1[1] compared to v3.14[2].
+This is the driver for Xilinx AXI PCIe Host Bridge Soft IP
 
-Summarized:
-  - build errors: +30/-3
-  - build warnings: +106/-98
+Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
+---
+Changes in v3:
+- Rebased on v3.15.0-rc1
+- Added support for interrupt-map DT functionality.
+- Removed map_irq() wrapper, instead using of_irq_parse_and_map_pci().
+- Modified resource mapping logic as per the series
+  "PCI: ARM: add support for generic PCI host controller"
+- Modified devicetree binding documentation to update with interrupt-
+  map properties.
+- Use devm calls wherever applicable.
+- Fixed minor comments from Jason
+- Thanks Jason for the review and suggestions.
 
-As I haven't mastered kup yet, there's no verbose summary at
-http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v3.15-rc1.summary.gz
+Changes in v2:
+- Rebased on v3.14.0-rc8
+- Removed IP specific DT properties like include-rc, axibar-num etc.,
+  as suggested by Jason and Bjorn, Thanks
+---
+ .../devicetree/bindings/pci/xilinx-pcie.txt        |   62 ++
+ drivers/pci/host/Kconfig                           |    7 +
+ drivers/pci/host/Makefile                          |    1 +
+ drivers/pci/host/pci-xilinx.c                      |  999 ++++++++++++++++++++
+ 4 files changed, 1069 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pci/xilinx-pcie.txt
+ create mode 100644 drivers/pci/host/pci-xilinx.c
 
-Happy fixing! ;-)
+diff --git a/Documentation/devicetree/bindings/pci/xilinx-pcie.txt b/Documentation/devicetree/bindings/pci/xilinx-pcie.txt
+new file mode 100644
+index 0000000..2fb28e0
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pci/xilinx-pcie.txt
+@@ -0,0 +1,62 @@
++* Xilinx AXI PCIe Root Port Bridge DT description
++
++Required properties:
++- #address-cells: Address representation for root ports, set to <3>
++- #size-cells: Size representation for root ports, set to <2>
++- #interrupt-cells: specifies the number of cells needed to encode an
++	interrupt source. The value must be 1.
++- compatible: Should contain "xlnx,axi-pcie-host-1.00.a"
++- reg: Should contain AXI PCIe registers location and length
++- device_type: must be "pci"
++- interrupts: Should contain AXI PCIe interrupt
++- interrupt-map-mask,
++  interrupt-map: standard PCI properties to define the mapping of the
++	PCI interface to interrupt numbers.
++- ranges: ranges for the PCI memory regions (I/O space region is noti
++	supported by hardware)
++	Please refer to the standard PCI bus binding document for a more
++	detailed explanation
++
++Optional properties:
++- bus-range: PCI bus numbers covered
++
++Interrupt controller child node
+++++++++++++++++++++++++++++++++
++Required properties:
++- interrupt-controller: identifies the node as an interrupt controller
++- #address-cells: specifies the number of cells needed to encode an
++	address. The value must be 0.
++- #interrupt-cells: specifies the number of cells needed to encode an
++	interrupt source. The value must be 1.
++
++NOTE:
++The core provides a single interrupt for both INTx/MSI messages. So,
++created a interrupt controller node to support 'interrupt-map' DT
++functionality.  The driver will create an IRQ domain for this map, decode
++the four INTx interrupts in ISR and route them to this domain.
++
++
++Example:
++++++++++
++
++	pci_express: axi-pcie@50000000 {
++		#address-cells = <3>;
++		#size-cells = <2>;
++		#interrupt-cells = <1>;
++		compatible = "xlnx,axi-pcie-host-1.00.a";
++		reg = < 0x50000000 0x10000000 >;
++		device_type = "pci";
++		interrupts = < 0 52 4 >;
++		interrupt-map-mask = <0 0 0 7>;
++		interrupt-map = <0 0 0 1 &pcie_intc 1>,
++				<0 0 0 2 &pcie_intc 2>,
++				<0 0 0 3 &pcie_intc 3>,
++				<0 0 0 4 &pcie_intc 4>;
++		ranges = < 0x02000000 0 0x60000000 0x60000000 0 0x10000000 >;
++
++		pcie_intc: interrupt-controller {
++			interrupt-controller;
++			#address-cells = <0>;
++			#interrupt-cells = <1>;
++		}
++	};
+diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig
+index a6f67ec..71afdcd 100644
+--- a/drivers/pci/host/Kconfig
++++ b/drivers/pci/host/Kconfig
+@@ -33,4 +33,11 @@ config PCI_RCAR_GEN2
+ 	  There are 3 internal PCI controllers available with a single
+ 	  built-in EHCI/OHCI host controller present on each one.
+ 
++config PCI_XILINX
++	bool "Xilinx AXI PCIe host bridge support"
++	depends on ARCH_ZYNQ
++	help
++	  Say 'Y' here if you want kernel to support the Xilinx AXI PCIe
++	  Host Bridge driver.
++
+ endmenu
+diff --git a/drivers/pci/host/Makefile b/drivers/pci/host/Makefile
+index 13fb333..4e9c843 100644
+--- a/drivers/pci/host/Makefile
++++ b/drivers/pci/host/Makefile
+@@ -4,3 +4,4 @@ obj-$(CONFIG_PCI_IMX6) += pci-imx6.o
+ obj-$(CONFIG_PCI_MVEBU) += pci-mvebu.o
+ obj-$(CONFIG_PCI_TEGRA) += pci-tegra.o
+ obj-$(CONFIG_PCI_RCAR_GEN2) += pci-rcar-gen2.o
++obj-$(CONFIG_PCI_XILINX) += pci-xilinx.o
+diff --git a/drivers/pci/host/pci-xilinx.c b/drivers/pci/host/pci-xilinx.c
+new file mode 100644
+index 0000000..d9afe66
+--- /dev/null
++++ b/drivers/pci/host/pci-xilinx.c
+@@ -0,0 +1,999 @@
++/*
++ * PCIe host controller driver for Xilinx AXI PCIe Bridge
++ *
++ * Copyright (c) 2012 - 2014 Xilinx, Inc.
++ *
++ * Based on the Tegra PCIe driver
++ *
++ * Bits taken from Synopsys Designware Host controller driver and
++ * ARM PCI Host generic driver.
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/irqdomain.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/msi.h>
++#include <linux/of_address.h>
++#include <linux/of_pci.h>
++#include <linux/of_platform.h>
++#include <linux/of_irq.h>
++#include <linux/pci.h>
++#include <linux/platform_device.h>
++
++/* Register definitions */
++#define XILINX_PCIE_REG_VSECC		0x00000128
++#define XILINX_PCIE_REG_VSECH		0x0000012c
++#define XILINX_PCIE_REG_BIR		0x00000130
++#define XILINX_PCIE_REG_BSCR		0x00000134
++#define XILINX_PCIE_REG_IDR		0x00000138
++#define XILINX_PCIE_REG_IMR		0x0000013c
++#define XILINX_PCIE_REG_BLR		0x00000140
++#define XILINX_PCIE_REG_PSCR		0x00000144
++#define XILINX_PCIE_REG_RPSC		0x00000148
++#define XILINX_PCIE_REG_MSIBASE1	0x0000014c
++#define XILINX_PCIE_REG_MSIBASE2	0x00000150
++#define XILINX_PCIE_REG_RPEFR		0x00000154
++#define XILINX_PCIE_REG_RPIFR1		0x00000158
++#define XILINX_PCIE_REG_RPIFR2		0x0000015c
++#define XILINX_PCIE_REG_VSECC2		0x00000200
++#define XILINX_PCIE_REG_VSECH2		0x00000204
++
++/* Interrupt registers definitions */
++#define XILINX_PCIE_INTR_LINK_DOWN	BIT(0)
++#define XILINX_PCIE_INTR_ECRC_ERR	BIT(1)
++#define XILINX_PCIE_INTR_STR_ERR	BIT(2)
++#define XILINX_PCIE_INTR_HOT_RESET	BIT(3)
++#define XILINX_PCIE_INTR_CFG_COMPL	GENMASK(7, 5)
++#define XILINX_PCIE_INTR_CFG_TIMEOUT	BIT(8)
++#define XILINX_PCIE_INTR_CORRECTABLE	BIT(9)
++#define XILINX_PCIE_INTR_NONFATAL	BIT(10)
++#define XILINX_PCIE_INTR_FATAL		BIT(11)
++#define XILINX_PCIE_INTR_INTX		BIT(16)
++#define XILINX_PCIE_INTR_MSI		BIT(17)
++#define XILINX_PCIE_INTR_SLV_UNSUPP	BIT(20)
++#define XILINX_PCIE_INTR_SLV_UNEXP	BIT(21)
++#define XILINX_PCIE_INTR_SLV_COMPL	BIT(22)
++#define XILINX_PCIE_INTR_SLV_ERRP	BIT(23)
++#define XILINX_PCIE_INTR_SLV_CMPABT	BIT(24)
++#define XILINX_PCIE_INTR_SLV_ILLBUR	BIT(25)
++#define XILINX_PCIE_INTR_MST_DECERR	BIT(26)
++#define XILINX_PCIE_INTR_MST_SLVERR	BIT(27)
++#define XILINX_PCIE_INTR_MST_ERRP	BIT(28)
++#define XILINX_PCIE_IMR_ALL_MASK	0x1FF30FED
++#define XILINX_PCIE_IDR_ALL_MASK	0xFFFFFFFF
++
++/* Root Port Error FIFO Read Register definitions */
++#define XILINX_PCIE_RPEFR_ERR_VALID	BIT(18)
++#define XILINX_PCIE_RPEFR_REQ_ID	GENMASK(15, 0)
++#define XILINX_PCIE_RPEFR_ALL_MASK	0xFFFFFFFF
++
++/* Root Port Interrupt FIFO Read Register 1 definitions */
++#define XILINX_PCIE_RPIFR1_INTR_VALID	BIT(31)
++#define XILINX_PCIE_RPIFR1_MSI_INTR	BIT(30)
++#define XILINX_PCIE_RPIFR1_INTR_ASSRT	BIT(29)
++#define XILINX_PCIE_RPIFR1_INTR_MASK	GENMASK(28, 27)
++#define XILINX_PCIE_RPIFR1_MSI_ADR_MASK	GENMASK(26, 16)
++#define XILINX_PCIE_RPIFR1_ALL_MASK	0xFFFFFFFF
++#define XILINX_PCIE_RPIFR1_INTR_SHIFT		27
++#define XILINX_PCIE_RPIFR1_MSI_ADR_SHIFT	16
++
++/* Bridge Info Register definitions */
++#define XILINX_PCIE_BIR_ECAM_SZ_MASK	GENMASK(18, 16)
++#define XILINX_PCIE_BIR_ECAM_SZ_SHIFT	16
++
++/* Root Port Interrupt FIFO Read Register 2 definitions */
++#define XILINX_PCIE_RPIFR2_MSG_DATA	GENMASK(15, 0)
++
++/* Root Port Status/control Register definitions */
++#define XILINX_PCIE_REG_RPSC_BEN	BIT(0)
++
++/* Phy Status/Control Register definitions */
++#define XILINX_PCIE_REG_PSCR_LNKUP	BIT(11)
++
++/* ECAM definitions */
++#define ECAM_BUS_NUM_SHIFT		20
++#define ECAM_DEV_NUM_SHIFT		12
++
++/* PCI Configuration space Bus Number Register definitions */
++#define PCI_SECONDARY_BUS_NUM_SHIFT	8
++#define PCI_SUBORDINATE_BUS_NUM_SHIFT	16
++#define PCI_LATENCY_TIMER_MASK		GENMASK(31, 24)
++
++/* Number of MSI IRQs */
++#define XILINX_NUM_MSI_IRQS		128
++
++/* Number of Memory Resources */
++#define XILINX_MAX_NUM_RESOURCES	3
++
++/**
++ * struct xilinx_pcie_port - PCIe port information
++ * @reg_base: IO Mapped Register Base
++ * @irq: Interrupt number
++ * @msg_addr: MSI message address
++ * @root_busno: Root Bus number
++ * @link_up: Link status flag
++ * @dev: Device pointer
++ * @irq_domain: IRQ domain pointer
++ */
++struct xilinx_pcie_port {
++	void __iomem *reg_base;
++	u32 irq;
++	unsigned long msg_addr;
++	u8 root_busno;
++	bool link_up;
++	struct device *dev;
++	struct irq_domain *irq_domain;
++};
++
++static DECLARE_BITMAP(msi_irq_in_use, XILINX_NUM_MSI_IRQS);
++
++static inline struct xilinx_pcie_port *sys_to_pcie(struct pci_sys_data *sys)
++{
++	return sys->private_data;
++}
++
++static inline u32 pcie_read(struct xilinx_pcie_port *port, u32 reg)
++{
++	return readl(port->reg_base + reg);
++}
++
++static inline void pcie_write(struct xilinx_pcie_port *port,
++			      u32 val, u32 reg)
++{
++	writel(val, port->reg_base + reg);
++}
++
++static inline bool xilinx_pcie_is_link_up(struct xilinx_pcie_port *port)
++{
++	return (pcie_read(port, XILINX_PCIE_REG_PSCR) &
++		XILINX_PCIE_REG_PSCR_LNKUP) ? 1 : 0;
++}
++
++/**
++ * xilinx_pcie_clear_err_interrupts - Clear Error Interrupts
++ * @port: PCIe port information
++ */
++static inline void
++xilinx_pcie_clear_err_interrupts(struct xilinx_pcie_port *port)
++{
++	u32 val = pcie_read(port, XILINX_PCIE_REG_RPEFR);
++
++	if (val & XILINX_PCIE_RPEFR_ERR_VALID) {
++		dev_dbg(port->dev, "Requester ID %d\n",
++			val & XILINX_PCIE_RPEFR_REQ_ID);
++		pcie_write(port, XILINX_PCIE_RPEFR_ALL_MASK,
++			   XILINX_PCIE_REG_RPEFR);
++	}
++}
++
++/**
++ * xilinx_pcie_verify_config - Verify configuration
++ * @bus: Bus structure of current bus
++ * @devfn: device/function
++ *
++ * Return: 0 on success and PCIBIOS_DEVICE_NOT_FOUND on error
++ */
++static int xilinx_pcie_verify_config(struct pci_bus *bus,
++				     unsigned int devfn)
++{
++	struct xilinx_pcie_port *port = sys_to_pcie(bus->sysdata);
++
++	/* Check if link is up when trying to access downstream ports */
++	if (bus->number != port->root_busno)
++		if (!xilinx_pcie_is_link_up(port))
++			return 0;
++
++	/* Only one device down on each root port */
++	if (bus->number == port->root_busno && devfn > 0)
++		return 0;
++
++	/*
++	 * Do not read more than one device on the bus directly attached
++	 * to RC.
++	 */
++	if (bus->primary == port->root_busno && devfn > 0)
++		return 0;
++
++	return 1;
++}
++
++/**
++ * xilinx_pcie_get_config_base - Get configuration base
++ * @bus: Bus structure of current bus
++ * @devfn: Device/function
++ * @where: Offset from base
++ *
++ * Return: Base address of the configuration space needed to be
++ *	   accessed.
++ */
++static void __iomem *xilinx_pcie_get_config_base(struct pci_bus *bus,
++						 unsigned int devfn,
++						 int where)
++{
++	struct xilinx_pcie_port *port = sys_to_pcie(bus->sysdata);
++	int relbus;
++
++	relbus = (bus->number << ECAM_BUS_NUM_SHIFT) |
++		 (devfn << ECAM_DEV_NUM_SHIFT);
++
++	return port->reg_base + relbus + where;
++}
++
++/**
++ * xilinx_pcie_read_config - Read configuration space
++ * @bus: Bus structure of current bus
++ * @devfn: Device/function
++ * @where: Offset from base
++ * @size: Byte/word/dword
++ * @val: Value to be read
++ *
++ * Return: PCIBIOS_SUCCESSFUL on success
++ *	   EINVAL/PCIBIOS_DEVICE_NOT_FOUND/PCIBIOS_BAD_REGISTER_NUMBER
++ *	   on failure.
++ */
++static int xilinx_pcie_read_config(struct pci_bus *bus,
++				   unsigned int devfn, int where,
++				   int size, u32 *val)
++{
++	struct xilinx_pcie_port *port = sys_to_pcie(bus->sysdata);
++	void __iomem *addr;
++
++	if (!port) {
++		BUG();
++		return -EINVAL;
++	}
++
++	if (!xilinx_pcie_verify_config(bus, devfn)) {
++		*val = 0xFFFFFFFF;
++		return PCIBIOS_DEVICE_NOT_FOUND;
++	}
++
++	addr = xilinx_pcie_get_config_base(bus, devfn, where);
++
++	switch (size) {
++	case 1:
++		*val = readb(addr);
++		break;
++	case 2:
++		*val = readw(addr);
++		break;
++	default:
++		*val = readl(addr);
++		break;
++	}
++
++	return PCIBIOS_SUCCESSFUL;
++}
++
++/**
++ * xilinx_pcie_write_config - Write configuration space
++ * @bus: Bus structure of current bus
++ * @devfn: Device/function
++ * @where: Offset from base
++ * @size: Byte/word/dword
++ * @val: Value to be written to device
++ *
++ * Return: PCIBIOS_SUCCESSFUL on success,
++ *	   EINVAL/PCIBIOS_DEVICE_NOT_FOUND/PCIBIOS_BAD_REGISTER_NUMBER
++ *	   on failure.
++ */
++static int xilinx_pcie_write_config(struct pci_bus *bus,
++				    unsigned int devfn, int where,
++				    int size, u32 val)
++{
++	struct xilinx_pcie_port *port = sys_to_pcie(bus->sysdata);
++	void __iomem *addr;
++
++	if (!port) {
++		BUG();
++		return -EINVAL;
++	}
++
++	if (!xilinx_pcie_verify_config(bus, devfn))
++		return PCIBIOS_DEVICE_NOT_FOUND;
++
++	addr = xilinx_pcie_get_config_base(bus, devfn, where);
++
++	switch (size) {
++	case 1:
++		writeb(val, addr);
++		break;
++	case 2:
++		writew(val, addr);
++		break;
++	default:
++		writel(val, addr);
++		break;
++	}
++
++	return PCIBIOS_SUCCESSFUL;
++}
++
++/* PCIe operations */
++static struct pci_ops xilinx_pcie_ops = {
++	.read  = xilinx_pcie_read_config,
++	.write = xilinx_pcie_write_config,
++};
++
++/* MSI functions */
++
++/**
++ * xilinx_pcie_destroy_msi - Free MSI number
++ * @irq: IRQ to be freed
++ */
++static void xilinx_pcie_destroy_msi(unsigned int irq)
++{
++	struct irq_desc *desc;
++	struct msi_desc *msi;
++	struct xilinx_pcie_port *port;
++
++	desc = irq_to_desc(irq);
++	msi = irq_desc_get_msi_desc(desc);
++	port = sys_to_pcie(msi->dev->bus->sysdata);
++	if (!port) {
++		BUG();
++		return;
++	}
++
++	if (!test_bit(irq, msi_irq_in_use))
++		dev_err(port->dev, "Trying to free unused MSI#%d\n", irq);
++	else
++		clear_bit(irq, msi_irq_in_use);
++}
++
++/**
++ * xilinx_pcie_assign_msi - Allocate MSI number
++ * @port: PCIe port structure
++ *
++ * Return: A valid IRQ on success and error value on failure.
++ */
++static int xilinx_pcie_assign_msi(struct xilinx_pcie_port *port)
++{
++	int pos;
++
++	pos = find_first_zero_bit(msi_irq_in_use, XILINX_NUM_MSI_IRQS);
++	if (pos < XILINX_NUM_MSI_IRQS)
++		set_bit(pos, msi_irq_in_use);
++	else
++		return -ENOSPC;
++
++	return irq_find_mapping(port->irq_domain, pos);
++}
++
++/**
++ * xilinx_msi_teardown_irq - Destroy the MSI
++ * @chip: MSI Chip descriptor
++ * @irq: MSI IRQ to destroy
++ */
++static void xilinx_msi_teardown_irq(struct msi_chip *chip, unsigned int irq)
++{
++	xilinx_pcie_destroy_msi(irq);
++}
++
++/**
++ * xilinx_pcie_msi_setup_irq - Setup MSI request
++ * @chip: MSI chip pointer
++ * @pdev: PCIe device pointer
++ * @desc: MSI descriptor pointer
++ *
++ * Return: '0' on success and error value on failure
++ */
++static int xilinx_pcie_msi_setup_irq(struct msi_chip *chip,
++				     struct pci_dev *pdev,
++				     struct msi_desc *desc)
++{
++	struct xilinx_pcie_port *port = sys_to_pcie(pdev->bus->sysdata);
++	int irq;
++	struct msi_msg msg;
++
++	if (!port) {
++		BUG();
++		return -EINVAL;
++	}
++
++	irq = xilinx_pcie_assign_msi(port);
++	if (irq < 0)
++		return irq;
++
++	irq_set_msi_desc(irq, desc);
++
++	msg.address_hi = 0;
++	msg.address_lo = virt_to_phys((void *)port->msg_addr);
++	msg.data = irq;
++
++	write_msi_msg(irq, &msg);
++
++	return 0;
++}
++
++/* MSI Chip Descriptor */
++static struct msi_chip xilinx_pcie_msi_chip = {
++	.setup_irq = xilinx_pcie_msi_setup_irq,
++	.teardown_irq = xilinx_msi_teardown_irq,
++};
++
++/* HW Interrupt Chip Descriptor */
++static struct irq_chip xilinx_msi_irq_chip = {
++	.name = "Xilinx PCIe MSI",
++	.irq_enable = unmask_msi_irq,
++	.irq_disable = mask_msi_irq,
++	.irq_mask = mask_msi_irq,
++	.irq_unmask = unmask_msi_irq,
++};
++
++/**
++ * xilinx_pcie_msi_map - Set the handler for the MSI and mark IRQ as valid
++ * @domain: IRQ domain
++ * @irq: Virtual IRQ number
++ * @hwirq: HW interrupt number
++ *
++ * Return: Always returns 0.
++ */
++static int xilinx_pcie_msi_map(struct irq_domain *domain, unsigned int irq,
++			       irq_hw_number_t hwirq)
++{
++	irq_set_chip_and_handler(irq, &xilinx_msi_irq_chip, handle_simple_irq);
++	irq_set_chip_data(irq, domain->host_data);
++	set_irq_flags(irq, IRQF_VALID);
++
++	return 0;
++}
++
++/* IRQ Domain operations */
++static const struct irq_domain_ops msi_domain_ops = {
++	.map = xilinx_pcie_msi_map,
++};
++
++/**
++ * xilinx_pcie_enable_msi - Enable MSI support
++ * @port: PCIe port information
++ */
++static void xilinx_pcie_enable_msi(struct xilinx_pcie_port *port)
++{
++	port->msg_addr = __get_free_pages(GFP_KERNEL, 0);
++
++	pcie_write(port, 0x0, XILINX_PCIE_REG_MSIBASE1);
++	pcie_write(port, virt_to_phys((void *)port->msg_addr),
++		   XILINX_PCIE_REG_MSIBASE2);
++}
++
++/**
++ * xilinx_pcie_add_bus - Add MSI chip info to PCIe bus
++ * @bus: PCIe bus
++ */
++static void xilinx_pcie_add_bus(struct pci_bus *bus)
++{
++	if (IS_ENABLED(CONFIG_PCI_MSI)) {
++		struct xilinx_pcie_port *port = sys_to_pcie(bus->sysdata);
++
++		if (!port)
++			return;
++
++		xilinx_pcie_msi_chip.dev = port->dev;
++		bus->msi = &xilinx_pcie_msi_chip;
++	}
++}
++
++/* INTx Functions */
++
++/**
++ * xilinx_pcie_intx_map - Set the handler for the INTx and mark IRQ as valid
++ * @domain: IRQ domain
++ * @irq: Virtual IRQ number
++ * @hwirq: HW interrupt number
++ *
++ * Return: Always returns 0.
++ */
++static int xilinx_pcie_intx_map(struct irq_domain *domain, unsigned int irq,
++				irq_hw_number_t hwirq)
++{
++	irq_set_chip_and_handler(irq, &dummy_irq_chip, handle_simple_irq);
++	irq_set_chip_data(irq, domain->host_data);
++	set_irq_flags(irq, IRQF_VALID);
++
++	return 0;
++}
++
++/* INTx IRQ Domain operations */
++static const struct irq_domain_ops intx_domain_ops = {
++	.map = xilinx_pcie_intx_map,
++};
++
++/* PCIe HW Functions */
++
++/**
++ * xilinx_pcie_intr_handler - Interrupt Service Handler
++ * @irq: IRQ number
++ * @data: PCIe port information
++ *
++ * Return: IRQ_HANDLED on success and IRQ_NONE on failure
++ */
++static irqreturn_t xilinx_pcie_intr_handler(int irq, void *data)
++{
++	struct xilinx_pcie_port *port = (struct xilinx_pcie_port *)data;
++	u32 val, mask, status, msi_data;
++
++	/* Read interrupt decode and mask registers */
++	val = pcie_read(port, XILINX_PCIE_REG_IDR);
++	mask = pcie_read(port, XILINX_PCIE_REG_IMR);
++
++	status = val & mask;
++	if (!status)
++		return IRQ_NONE;
++
++	if (status & XILINX_PCIE_INTR_LINK_DOWN)
++		dev_warn(port->dev, "Link Down\n");
++
++	if (status & XILINX_PCIE_INTR_ECRC_ERR)
++		dev_warn(port->dev, "ECRC failed\n");
++
++	if (status & XILINX_PCIE_INTR_STR_ERR)
++		dev_warn(port->dev, "Streaming error\n");
++
++	if (status & XILINX_PCIE_INTR_HOT_RESET)
++		dev_info(port->dev, "Hot reset\n");
++
++	if (status & XILINX_PCIE_INTR_CFG_TIMEOUT)
++		dev_warn(port->dev, "ECAM access timeout\n");
++
++	if (status & XILINX_PCIE_INTR_CORRECTABLE) {
++		dev_warn(port->dev, "Correctable error message\n");
++		xilinx_pcie_clear_err_interrupts(port);
++	}
++
++	if (status & XILINX_PCIE_INTR_NONFATAL) {
++		dev_warn(port->dev, "Non fatal error message\n");
++		xilinx_pcie_clear_err_interrupts(port);
++	}
++
++	if (status & XILINX_PCIE_INTR_FATAL) {
++		dev_warn(port->dev, "Fatal error message\n");
++		xilinx_pcie_clear_err_interrupts(port);
++	}
++
++	if (status & XILINX_PCIE_INTR_INTX) {
++		/* INTx interrupt received */
++		val = pcie_read(port, XILINX_PCIE_REG_RPIFR1);
++
++		/* Check whether interrupt valid */
++		if (!(val & XILINX_PCIE_RPIFR1_INTR_VALID)) {
++			dev_warn(port->dev, "RP Intr FIFO1 read error\n");
++			return IRQ_HANDLED;
++		}
++
++		/* Clear interrupt FIFO register 1 */
++		pcie_write(port, XILINX_PCIE_RPIFR1_ALL_MASK,
++			   XILINX_PCIE_REG_RPIFR1);
++
++		/* Handle INTx Interrupt */
++		val = ((val & XILINX_PCIE_RPIFR1_INTR_MASK) >>
++			XILINX_PCIE_RPIFR1_INTR_SHIFT) + 1;
++		generic_handle_irq(irq_find_mapping(port->irq_domain, val));
++	}
++
++	if (status & XILINX_PCIE_INTR_MSI) {
++		/* MSI Interrupt */
++		val = pcie_read(port, XILINX_PCIE_REG_RPIFR1);
++
++		if (!(val & XILINX_PCIE_RPIFR1_INTR_VALID)) {
++			dev_warn(port->dev, "RP Intr FIFO1 read error\n");
++			return IRQ_HANDLED;
++		}
++
++		if (val & XILINX_PCIE_RPIFR1_MSI_INTR) {
++			msi_data = pcie_read(port, XILINX_PCIE_REG_RPIFR2) &
++				   XILINX_PCIE_RPIFR2_MSG_DATA;
++
++			/* Clear interrupt FIFO register 1 */
++			pcie_write(port, XILINX_PCIE_RPIFR1_ALL_MASK,
++				   XILINX_PCIE_REG_RPIFR1);
++
++			if (IS_ENABLED(CONFIG_PCI_MSI)) {
++				/* Handle MSI Interrupt */
++				generic_handle_irq(msi_data);
++			}
++		}
++	}
++
++	if (status & XILINX_PCIE_INTR_SLV_UNSUPP)
++		dev_warn(port->dev, "Slave unsupported request\n");
++
++	if (status & XILINX_PCIE_INTR_SLV_UNEXP)
++		dev_warn(port->dev, "Slave unexpected completion\n");
++
++	if (status & XILINX_PCIE_INTR_SLV_COMPL)
++		dev_warn(port->dev, "Slave completion timeout\n");
++
++	if (status & XILINX_PCIE_INTR_SLV_ERRP)
++		dev_warn(port->dev, "Slave Error Poison\n");
++
++	if (status & XILINX_PCIE_INTR_SLV_CMPABT)
++		dev_warn(port->dev, "Slave Completer Abort\n");
++
++	if (status & XILINX_PCIE_INTR_SLV_ILLBUR)
++		dev_warn(port->dev, "Slave Illegal Burst\n");
++
++	if (status & XILINX_PCIE_INTR_MST_DECERR)
++		dev_warn(port->dev, "Master decode error\n");
++
++	if (status & XILINX_PCIE_INTR_MST_SLVERR)
++		dev_warn(port->dev, "Master slave error\n");
++
++	if (status & XILINX_PCIE_INTR_MST_ERRP)
++		dev_warn(port->dev, "Master error poison\n");
++
++	/* Clear the Interrupt Decode register */
++	pcie_write(port, status, XILINX_PCIE_REG_IDR);
++
++	return IRQ_HANDLED;
++}
++
++/**
++ * xilinx_pcie_free_irq_domain - Free IRQ domain
++ * @port: PCIe port information
++ */
++static void xilinx_pcie_free_irq_domain(struct xilinx_pcie_port *port)
++{
++	int i;
++	u32 irq, num_irqs;
++
++	/* Free IRQ Domain */
++	if (IS_ENABLED(CONFIG_PCI_MSI)) {
++		free_pages(port->msg_addr, 0);
++
++		num_irqs = XILINX_NUM_MSI_IRQS;
++	} else {
++		/* INTx */
++		num_irqs = 4;
++	}
++
++	for (i = 0; i < num_irqs; i++) {
++		irq = irq_find_mapping(port->irq_domain, i);
++		if (irq > 0)
++			irq_dispose_mapping(irq);
++	}
++
++	irq_domain_remove(port->irq_domain);
++}
++
++/**
++ * xilinx_pcie_init_irq_domain - Initialize IRQ domain
++ * @port: PCIe port information
++ *
++ * Return: '0' on success and error value on failure
++ */
++static int xilinx_pcie_init_irq_domain(struct xilinx_pcie_port *port)
++{
++	struct device *dev = port->dev;
++	struct device_node *node = dev->of_node;
++
++	if (IS_ENABLED(CONFIG_PCI_MSI)) {
++		/* Setup MSI */
++		int i;
++
++		port->irq_domain = irq_domain_add_linear(node,
++							 XILINX_NUM_MSI_IRQS,
++							 &msi_domain_ops,
++							 &xilinx_pcie_msi_chip);
++		if (!port->irq_domain) {
++			dev_err(dev, "Failed to get a MSI IRQ domain\n");
++			return PTR_ERR(port->irq_domain);
++		}
++
++		for (i = 0; i < XILINX_NUM_MSI_IRQS; i++)
++			irq_create_mapping(port->irq_domain, i);
++
++		xilinx_pcie_enable_msi(port);
++	} else {
++		/* Setup INTx */
++		struct device_node *pcie_intc_node =
++				 of_get_next_child(node, NULL);
++
++		if (!pcie_intc_node) {
++			dev_err(dev, "No PCIe Intc node found\n");
++			return PTR_ERR(pcie_intc_node);
++		}
++
++		port->irq_domain = irq_domain_add_linear(pcie_intc_node, 4,
++							 &intx_domain_ops,
++							 port);
++		if (!port->irq_domain) {
++			dev_err(dev, "Failed to get a INTx IRQ domain\n");
++			return PTR_ERR(port->irq_domain);
++		}
++	}
++
++	return 0;
++}
++
++/**
++ * xilinx_pcie_init_port - Initialize hardware
++ * @port: PCIe port information
++ */
++static void xilinx_pcie_init_port(struct xilinx_pcie_port *port)
++{
++	/* Check if PCIe link is up? */
++	port->link_up = xilinx_pcie_is_link_up(port);
++	if (!port->link_up)
++		dev_info(port->dev, "PCIe Link is DOWN\n");
++	else
++		dev_info(port->dev, "PCIe Link is UP\n");
++
++	/* Disable all interrupts*/
++	pcie_write(port, ~XILINX_PCIE_IDR_ALL_MASK,
++		   XILINX_PCIE_REG_IMR);
++
++	/* Clear pending interrupts */
++	pcie_write(port, pcie_read(port, XILINX_PCIE_REG_IDR) &
++			 XILINX_PCIE_IMR_ALL_MASK,
++		   XILINX_PCIE_REG_IDR);
++
++	/* Enable all interrupts*/
++	pcie_write(port, XILINX_PCIE_IMR_ALL_MASK, XILINX_PCIE_REG_IMR);
++
++	/* Enable the Bridge enable bit */
++	pcie_write(port, pcie_read(port, XILINX_PCIE_REG_RPSC) |
++			 XILINX_PCIE_REG_RPSC_BEN,
++		   XILINX_PCIE_REG_RPSC);
++}
++
++/**
++ * xilinx_pcie_setup - Setup memory resources
++ * @nr: Bus number
++ * @sys: Per controller structure
++ *
++ * Return: '1' on success and error value on failure
++ */
++static int xilinx_pcie_setup(int nr, struct pci_sys_data *sys)
++{
++	struct xilinx_pcie_port *port = sys_to_pcie(sys);
++	struct device *dev = port->dev;
++	struct device_node *node = dev->of_node;
++	struct resource *mem;
++	resource_size_t offset;
++	struct of_pci_range_parser parser;
++	struct of_pci_range range;
++	struct pci_host_bridge_window *win;
++	int err = 0, mem_resno = 0;
++
++	/* Get the ranges */
++	if (of_pci_range_parser_init(&parser, node)) {
++		dev_err(dev, "missing \"ranges\" property\n");
++		return -EINVAL;
++	}
++
++	/* Parse the ranges and add the resources found to the list */
++	for_each_of_pci_range(&parser, &range) {
++
++		if (mem_resno >= XILINX_MAX_NUM_RESOURCES) {
++			dev_err(dev, "Maximum memory resources exceeded\n");
++			return -EINVAL;
++		}
++
++		mem = devm_kmalloc(dev, sizeof(*mem), GFP_KERNEL);
++		if (!mem) {
++			err = -ENOMEM;
++			goto free_resources;
++		}
++
++		of_pci_range_to_resource(&range, node, mem);
++
++		switch (mem->flags & IORESOURCE_TYPE_BITS) {
++		case IORESOURCE_MEM:
++			offset = range.cpu_addr - range.pci_addr;
++			mem_resno++;
++			break;
++		default:
++			err = -EINVAL;
++			break;
++		}
++
++		if (err < 0) {
++			dev_warn(dev, "Invalid resource found\n");
++			continue;
++		}
++
++		err = request_resource(&iomem_resource, mem);
++		if (err)
++			goto free_resources;
++
++		pci_add_resource_offset(&sys->resources, mem, offset);
++	}
++
++	return 1;
++
++free_resources:
++	release_child_resources(&iomem_resource);
++	list_for_each_entry(win, &sys->resources, list)
++		devm_kfree(dev, win->res);
++	pci_free_resource_list(&sys->resources);
++
++	return err;
++}
++
++/**
++ * xilinx_pcie_scan_bus - Scan PCIe bus for devices
++ * @nr: Bus number
++ * @sys: Per controller structure
++ *
++ * Return: Valid Bus pointer on success and NULL on failure
++ */
++static struct pci_bus __init *xilinx_pcie_scan_bus(int nr,
++						   struct pci_sys_data *sys)
++{
++	struct xilinx_pcie_port *port = sys_to_pcie(sys);
++	struct pci_bus *bus;
++
++	if (port) {
++		port->root_busno = sys->busnr;
++		bus = pci_scan_root_bus(port->dev, sys->busnr, &xilinx_pcie_ops,
++					sys, &sys->resources);
++	} else {
++		bus = NULL;
++		BUG();
++	}
++
++	return bus;
++}
++
++/**
++ * xilinx_pcie_parse_dt - Parse Device tree
++ * @port: PCIe port information
++ *
++ * Return: '0' on success and error value on failure
++ */
++static int xilinx_pcie_parse_dt(struct xilinx_pcie_port *port)
++{
++	struct device *dev = port->dev;
++	struct device_node *node = dev->of_node;
++	struct resource regs, busn;
++	const char *type;
++	int err;
++
++	/* Check for device type */
++	type = of_get_property(node, "device_type", NULL);
++	if (!type || strcmp(type, "pci")) {
++		dev_err(dev, "invalid \"device_type\" %s\n", type);
++		return -EINVAL;
++	}
++
++	/* Map the register space */
++	err = of_address_to_resource(node, 0, &regs);
++	if (err) {
++		dev_err(dev, "missing \"reg\" property\n");
++		return err;
++	}
++
++	port->reg_base = devm_ioremap_resource(dev, &regs);
++	if (IS_ERR(port->reg_base))
++		return PTR_ERR(port->reg_base);
++
++	/* Map IRQ */
++	port->irq = irq_of_parse_and_map(node, 0);
++	err = devm_request_irq(dev, port->irq, xilinx_pcie_intr_handler,
++			       IRQF_SHARED, "xilinx-pcie", port);
++	if (err) {
++		dev_err(dev, "unable to request irq %d\n", port->irq);
++		return err;
++	}
++
++	/* Get the bus range */
++	if (of_pci_parse_bus_range(node, &busn)) {
++		u32 val = pcie_read(port, XILINX_PCIE_REG_BIR);
++		u8 last;
++
++		last = (val & XILINX_PCIE_BIR_ECAM_SZ_MASK) >>
++			XILINX_PCIE_BIR_ECAM_SZ_SHIFT;
++
++		busn = (struct resource) {
++			.name	= node->name,
++			.start	= 0,
++			.end	= last,
++			.flags	= IORESOURCE_BUS,
++		};
++	}
++
++	return 0;
++}
++
++/**
++ * xilinx_pcie_probe - Probe function
++ * @pdev: Platform device pointer
++ *
++ * Return: '0' on success and error value on failure
++ */
++static int xilinx_pcie_probe(struct platform_device *pdev)
++{
++	struct xilinx_pcie_port *port;
++	struct hw_pci hw;
++	struct device *dev = &pdev->dev;
++	int err;
++
++	if (!dev->of_node)
++		return -ENODEV;
++
++	port = devm_kzalloc(dev, sizeof(*port), GFP_KERNEL);
++	if (!port)
++		return -ENOMEM;
++
++	port->dev = dev;
++
++	/* Parse the device tree */
++	err = xilinx_pcie_parse_dt(port);
++	if (err) {
++		dev_err(dev, "Parsing DT failed\n");
++		return err;
++	}
++
++	/* Initialize the hardware */
++	xilinx_pcie_init_port(port);
++
++	/* Setup IRQ Domain */
++	err = xilinx_pcie_init_irq_domain(port);
++	if (err) {
++		dev_err(dev, "Failed creating IRQ Dommain\n");
++		return err;
++	}
++
++	/* Initialize hw_pci structure */
++	memset(&hw, 0, sizeof(hw));
++	hw = (struct hw_pci) {
++		.nr_controllers	= 1,
++		.private_data	= (void **)&port,
++		.setup		= xilinx_pcie_setup,
++		.map_irq	= of_irq_parse_and_map_pci,
++		.add_bus	= xilinx_pcie_add_bus,
++		.scan		= xilinx_pcie_scan_bus,
++		.ops		= &xilinx_pcie_ops,
++	};
++
++	/* Register the device */
++	pci_common_init_dev(dev, &hw);
++
++	platform_set_drvdata(pdev, port);
++
++	return 0;
++}
++
++/**
++ * xilinx_pcie_remove - Remove function
++ * @pdev: Platform device pointer
++ *
++ * Return: '0' always
++ */
++static int xilinx_pcie_remove(struct platform_device *pdev)
++{
++	struct xilinx_pcie_port *port = platform_get_drvdata(pdev);
++
++	xilinx_pcie_free_irq_domain(port);
++
++	return 0;
++}
++
++static struct of_device_id xilinx_pcie_of_match[] = {
++	{ .compatible = "xlnx,axi-pcie-host-1.00.a" ,},
++	{}
++};
++
++static struct platform_driver xilinx_pcie_driver = {
++	.driver = {
++		.name = "xilinx-pcie",
++		.owner = THIS_MODULE,
++		.of_match_table = xilinx_pcie_of_match,
++		.suppress_bind_attrs = true,
++	},
++	.probe = xilinx_pcie_probe,
++	.remove = xilinx_pcie_remove,
++};
++module_platform_driver(xilinx_pcie_driver);
++
++MODULE_AUTHOR("Xilinx Inc");
++MODULE_DESCRIPTION("Xilinx AXI PCIe driver");
++MODULE_LICENSE("GPLv2");
+-- 
+1.7.9.5
 
-Thanks to the linux-next team for providing the build service.
-
-[1] http://kisskb.ellerman.id.au/kisskb/head/7375/ (all 119 configs)
-[2] http://kisskb.ellerman.id.au/kisskb/head/7320/ (all 119 configs)
-
-
-*** ERRORS ***
-
-30 regressions:
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_ANDCOND' undeclared (first use in this function):  => 178:17, 100:16
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_AVPN' undeclared (first use in this function):  => 213:16, 99:16, 177:17
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_BULK_REMOVE' undeclared (first use in this function):  => 268:7
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_CEDE' undeclared (first use in this function):  => 272:7
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_CPPR' undeclared (first use in this function):  => 279:7
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_ENTER' undeclared (first use in this function):  => 262:7
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_EOI' undeclared (first use in this function):  => 280:7
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_EXACT' undeclared (first use in this function):  => 56:6
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_IPI' undeclared (first use in this function):  => 281:7
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_IPOLL' undeclared (first use in this function):  => 282:7
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_NOT_FOUND' undeclared (first use in this function):  => 211:8, 97:8
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PARAMETER' undeclared (first use in this function):  => 155:10
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PROTECT' undeclared (first use in this function):  => 266:7
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PTEG_FULL' undeclared (first use in this function):  => 55:8
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PUT_TCE' undeclared (first use in this function):  => 270:7
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_REMOVE' undeclared (first use in this function):  => 264:7
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_RTAS' undeclared (first use in this function):  => 287:7
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_SUCCESS' undeclared (first use in this function):  => 108:8, 229:8, 141:12, 75:8
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_TOO_HARD' undeclared (first use in this function):  => 246:12
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_XIRR' undeclared (first use in this function):  => 278:7
-  + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_XIRR_X' undeclared (first use in this function):  => 283:7
-  + /scratch/kisskb/src/drivers/cpufreq/powernv-cpufreq.c: error: implicit declaration of function 'cpu_sibling_mask' [-Werror=implicit-function-declaration]:  => 241:2
-  + /scratch/kisskb/src/drivers/spi/spi-bfin5xx.c: error: implicit declaration of function 'gpio_direction_output' [-Werror=implicit-function-declaration]:  => 1102:4
-  + /scratch/kisskb/src/drivers/spi/spi-bfin5xx.c: error: implicit declaration of function 'gpio_free' [-Werror=implicit-function-declaration]:  => 1130:3
-  + /scratch/kisskb/src/drivers/spi/spi-bfin5xx.c: error: implicit declaration of function 'gpio_request' [-Werror=implicit-function-declaration]:  => 1097:4
-  + /scratch/kisskb/src/drivers/spi/spi-bfin5xx.c: error: implicit declaration of function 'gpio_set_value' [-Werror=implicit-function-declaration]:  => 169:3
-  + /scratch/kisskb/src/include/linux/kvm_host.h: error: array subscript is above array bounds [-Werror=array-bounds]:  => 436:19
-  + error: "__invalidate_icache_range" [drivers/misc/lkdtm.ko] undefined!:  => N/A
-  + error: "flush_icache_range" [drivers/misc/lkdtm.ko] undefined!:  => N/A
-  + error: No rule to make target drivers/scsi/aic7xxx/aicasm/*.[chyl]:  => N/A
-
-3 improvements:
-  - error: No rule to make target include/config/auto.conf: N/A => 
-  - error: initramfs.c: undefined reference to `__stack_chk_guard': .init.text+0x1067) => 
-  - error: vsprintf.c: relocation truncated to fit: R_AVR32_9UW_PCREL against `.text'+bc8: (.text+0x9c2) => 
-
-
-*** WARNINGS ***
-
-106 regressions:
-  + /scratch/kisskb/src/arch/sh/kernel/cpu/sh3/../../entry-common.S: Warning: overflow in branch to syscall_exit_work; converted into longer instruction sequence: 376 => 383, 380
-  + /scratch/kisskb/src/arch/sh/kernel/cpu/sh4/../sh3/../../entry-common.S: Warning: overflow in branch to syscall_exit_work; converted into longer instruction sequence: 376 => 383, 380
-  + /scratch/kisskb/src/arch/sh/math-emu/math.c: warning: 'ieee_fpe_handler' defined but not used [-Wunused-function]:  => 505:12
-  + /scratch/kisskb/src/arch/x86/crypto/sha1_ssse3_glue.c: warning: 'externally_visible' attribute have effect only on public objects [-Wattributes]:  => 50:1
-  + /scratch/kisskb/src/arch/x86/crypto/sha256_ssse3_glue.c: warning: 'externally_visible' attribute have effect only on public objects [-Wattributes]:  => 56:1
-  + /scratch/kisskb/src/arch/x86/crypto/sha512_ssse3_glue.c: warning: 'externally_visible' attribute have effect only on public objects [-Wattributes]:  => 55:1
-  + /scratch/kisskb/src/arch/x86/kernel/machine_kexec_32.c: warning: 'externally_visible' attribute have effect only on public objects [-Wattributes]:  => 191:12
-  + /scratch/kisskb/src/arch/x86/kernel/syscall_32.c: warning: 'externally_visible' attribute ignored [-Wattributes]:  => 14:1
-  + /scratch/kisskb/src/drivers/char/random.c: warning: 'arch_random_refill' uses dynamic stack allocation [enabled by default]:  => 1326:1
-  + /scratch/kisskb/src/drivers/cpufreq/powernv-cpufreq.c: warning: passing argument 1 of 'smp_call_function_any' makes pointer from integer without a cast [enabled by default]:  => 242:4
-  + /scratch/kisskb/src/drivers/gpu/drm/i915/i915_cmd_parser.c: warning: format '%td' expects argument of type 'ptrdiff_t', but argument 5 has type 'long unsigned int' [-Wformat]:  => 405:4
-  + /scratch/kisskb/src/drivers/gpu/drm/radeon/r100.c: warning: 'crit_point_ff.full' may be used uninitialized in this function [-Wuninitialized]:  => 3577:47
-  + /scratch/kisskb/src/drivers/gpu/drm/radeon/r100.c: warning: 'disp_drain_rate.full' may be used uninitialized in this function [-Wuninitialized]:  => 3576:42
-  + /scratch/kisskb/src/drivers/infiniband/hw/cxgb4/cq.c: warning: 'hw_cqe' may be used uninitialized in this function [-Wuninitialized]:  => 309:21
-  + /scratch/kisskb/src/drivers/infiniband/hw/ehca/ehca_mrmw.c: warning: 'prev_pgaddr' may be used uninitialized in this function [-Wuninitialized]:  => 1907:6
-  + /scratch/kisskb/src/drivers/input/keyboard/tca8418_keypad.c: warning: 'reg' may be used uninitialized in this function [-Wuninitialized]:  => 172:9
-  + /scratch/kisskb/src/drivers/input/misc/max8997_haptic.c: warning: ignoring return value of 'regulator_enable', declared with attribute warn_unused_result [-Wunused-result]:  => 185:19
-  + /scratch/kisskb/src/drivers/message/fusion/mptbase.c: warning: 'seq_mpt_print_ioc_summary' defined but not used [-Wunused-function]:  => 6884:13
-  + /scratch/kisskb/src/drivers/net/ethernet/chelsio/cxgb4/sge.c: warning: 'buf_size' may be used uninitialized in this function [-Wuninitialized]:  => 1854:11, 509:17, 482:18
-  + /scratch/kisskb/src/drivers/net/wireless/rsi/rsi_91x_core.c: warning: 'ii' may be used uninitialized in this function [-Wuninitialized]:  => 109:23
-  + /scratch/kisskb/src/drivers/net/wireless/ti/wlcore/spi.c: warning: the frame size of 1168 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 317:1
-  + /scratch/kisskb/src/drivers/of/fdt.c: warning: format '%llx' expects argument of type 'long long unsigned int', but argument 2 has type 'phys_addr_t' [-Wformat]:  => 1006:2
-  + /scratch/kisskb/src/drivers/of/fdt.c: warning: format '%llx' expects argument of type 'long long unsigned int', but argument 3 has type 'phys_addr_t' [-Wformat]:  => 1006:2
-  + /scratch/kisskb/src/drivers/scsi/hpsa.c: warning: 'rc' may be used uninitialized in this function [-Wuninitialized]:  => 6628:5
-  + /scratch/kisskb/src/drivers/scsi/hpsa.c: warning: 'trans_support' may be used uninitialized in this function [-Wuninitialized]:  => 7467:20
-  + /scratch/kisskb/src/drivers/sh/clk/cpg.c: warning: passing argument 1 of 'ioread16' discards 'const' qualifier from pointer target type [enabled by default]:  => 46:2
-  + /scratch/kisskb/src/drivers/sh/clk/cpg.c: warning: passing argument 1 of 'ioread32' discards 'const' qualifier from pointer target type [enabled by default]:  => 51:2
-  + /scratch/kisskb/src/drivers/sh/clk/cpg.c: warning: passing argument 1 of 'ioread8' discards 'const' qualifier from pointer target type [enabled by default]:  => 41:2
-  + /scratch/kisskb/src/drivers/spi/spi-fsl-lib.c: warning: unused variable 'ret' [-Wunused-variable]:  => 201:6
-  + /scratch/kisskb/src/drivers/staging/comedi/drivers/das6402.c: warning: statement with no effect [-Wunused-value]:  => 369:2, 430:2
-  + /scratch/kisskb/src/drivers/staging/comedi/drivers/pcl818.c: warning: 'last_chan' may be used uninitialized in this function [-Wuninitialized]:  => 412:6
-  + /scratch/kisskb/src/drivers/staging/dgap/dgap.c: warning: format '%ld' expects argument of type 'long int', but argument 4 has type '__kernel_suseconds_t' [-Wformat]:  => 1563:2
-  + /scratch/kisskb/src/drivers/staging/dgap/dgap.c: warning: format '%x' expects argument of type 'unsigned int', but argument 4 has type 'tcflag_t' [-Wformat]:  => 6258:2, 6232:2, 6310:2, 6284:2
-  + /scratch/kisskb/src/drivers/staging/dgap/dgap.c: warning: format '%x' expects argument of type 'unsigned int', but argument 5 has type 'tcflag_t' [-Wformat]:  => 6004:7, 5964:7, 5984:7, 6024:7
-  + /scratch/kisskb/src/drivers/staging/dgap/dgap.c: warning: the frame size of 1040 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 1653:1
-  + /scratch/kisskb/src/drivers/staging/dgap/dgap.c: warning: the frame size of 1044 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 1653:1
-  + /scratch/kisskb/src/drivers/staging/dgap/dgap.c: warning: the frame size of 1048 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 1653:1
-  + /scratch/kisskb/src/drivers/staging/dgap/dgap.c: warning: the frame size of 1056 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 1653:1
-  + /scratch/kisskb/src/drivers/staging/dgap/dgap.c: warning: the frame size of 1072 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 1653:1
-  + /scratch/kisskb/src/drivers/staging/dgap/dgap.h: warning: "IO_FIELD" redefined [enabled by default]:  => 447:0
-  + /scratch/kisskb/src/drivers/staging/rts5139/rts51x_transport.c: warning: 'invalid_cmd_field' defined but not used [-Wunused-variable]:  => 651:11
-  + /scratch/kisskb/src/drivers/staging/rts5139/rts51x_transport.c: warning: 'media_not_present' defined but not used [-Wunused-variable]:  => 649:11
-  + /scratch/kisskb/src/drivers/staging/silicom/bpctl_mod.c: warning: 'bp_proc_create' defined but not used [-Wunused-function]:  => 6786:12
-  + /scratch/kisskb/src/drivers/staging/usbip/stub_dev.c: warning: 'stub_table' defined but not used [-Wunused-variable]:  => 33:29
-  + /scratch/kisskb/src/drivers/tty/serial/crisv10.c: warning: 'ser_interrupt' defined but not used [-Wunused-function]  CC      drivers/tty/vt/vt_ioctl.o:  => 2506:1
-  + /scratch/kisskb/src/drivers/video/backlight/adp8860_bl.c: warning: 'reg_val' may be used uninitialized in this function [-Wuninitialized]:  => 441:16, 622:11, 566:10, 596:32
-  + /scratch/kisskb/src/drivers/video/backlight/adp8870_bl.c: warning: 'reg_val' may be used uninitialized in this function [-Wuninitialized]: 809:11 => 561:16, 807:11, 781:32
-  + /scratch/kisskb/src/fs/compat_binfmt_elf.c: warning: 'cputime_to_compat_timeval' defined but not used [-Wunused-function]:  => 58:13
-  + /scratch/kisskb/src/fs/ext4/extents_status.c: warning: integer constant is too large for 'long' type:  => 813
-  + /scratch/kisskb/src/fs/f2fs/checkpoint.c: warning: control reaches end of non-void function [-Wreturn-type]:  => 89:1
-  + /scratch/kisskb/src/fs/f2fs/super.c: warning: 'raw_super' may be used uninitialized in this function [-Wuninitialized]:  => 919:21
-  + /scratch/kisskb/src/fs/ncpfs/dir.c: warning: unused variable 'sb' [-Wunused-variable]:  => 134:23
-  + /scratch/kisskb/src/include/drm/drm_fixed.h: warning: 'crit_point_ff.full' may be used uninitialized in this function [-Wuninitialized]:  => 64:13
-  + /scratch/kisskb/src/include/linux/ceph/osdmap.h: warning: control reaches end of non-void function [-Wreturn-type]  CC [M]  drivers/hwmon/ad7414.o:  => 54:1
-  + /scratch/kisskb/src/include/linux/ceph/osdmap.h: warning: control reaches end of non-void function [-Wreturn-type]:  => 54:1
-  + /scratch/kisskb/src/include/linux/pagemap.h: warning: 'blk_addr' may be used uninitialized in this function [-Wuninitialized]:  => 287:2
-  + /scratch/kisskb/src/include/math-emu/double.h: warning: "__LITTLE_ENDIAN" is not defined [-Wundef]:  => 59:5
-  + /scratch/kisskb/src/include/math-emu/single.h: warning: "__LITTLE_ENDIAN" is not defined [-Wundef]:  => 50:5
-  + /scratch/kisskb/src/include/net/ipv6.h: warning: '*((void *)&daddr+8)' may be used uninitialized in this function [-Wuninitialized]:  => 419:38
-  + /scratch/kisskb/src/include/net/ipv6.h: warning: '*((void *)&saddr+8)' may be used uninitialized in this function [-Wuninitialized]:  => 419:38
-  + /scratch/kisskb/src/kernel/cgroup.c: warning: 'root' may be used uninitialized in this function [-Wuninitialized]:  => 1609:13
-  + /scratch/kisskb/src/kernel/cgroup.c: warning: 'root' may be used uninitialized in this function:  => 1486
-  + /scratch/kisskb/src/kernel/profile.c: warning: 'profile_cpu_callback' defined but not used [-Wunused-function]:  => 334:12
-  + /scratch/kisskb/src/kernel/profile.c: warning: 'profile_discard_flip_buffers' defined but not used [-Wunused-function]:  => 270:13
-  + /scratch/kisskb/src/kernel/profile.c: warning: 'profile_flip_buffers' defined but not used [-Wunused-function]:  => 247:13
-  + /scratch/kisskb/src/mm/slab_common.c: warning: 's' may be used uninitialized in this function [-Wuninitialized]:  => 203:21
-  + /scratch/kisskb/src/net/ipv4/ipconfig.c: warning: 'ic_proto_used' defined but not used [-Wunused-variable]:  => 153:12
-  + /scratch/kisskb/src/security/integrity/ima/ima_crypto.c: warning: 'ima_calc_field_array_hash_tfm' uses dynamic stack allocation [enabled by default]:  => 194:1
-  + /scratch/kisskb/src/sound/soc/codecs/adau1977.c: warning: large integer implicitly truncated to unsigned type [-Woverflow]:  => 971:3
-  + /scratch/kisskb/src/sound/soc/codecs/pcm512x.c: warning: 'pcm512x_resume' defined but not used [-Wunused-function]:  => 545:12
-  + /scratch/kisskb/src/sound/soc/codecs/pcm512x.c: warning: 'pcm512x_suspend' defined but not used [-Wunused-function]:  => 520:12
-  + warning: (AHCI_XGENE) selects PHY_XGENE which has unmet direct dependencies (HAS_IOMEM && OF && (ARM64 || COMPILE_TEST)):  => N/A
-  + warning: (IXP4XX_ETH && PTP_1588_CLOCK) selects NET_PTP_CLASSIFY which has unmet direct dependencies (NET):  => N/A
-  + warning: (PPC_CELL_NATIVE && 440EPX && 440GRX && 440GX && 440SPe && 460EX && 460SX && APM821xx && 405EX) selects IBM_EMAC_EMAC4 which has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM):  => N/A
-  + warning: (PPC_CELL_NATIVE && 440GX && 460EX && 460SX && APM821xx) selects IBM_EMAC_TAH which has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM):  => N/A
-  + warning: (PPC_CELL_NATIVE && BLUESTONE && CANYONLANDS && GLACIER && EIGER && 440EPX && 440GRX && 440GX && 460SX && 405EX) selects IBM_EMAC_RGMII which has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM):  => N/A
-  + warning: (PPC_CELL_NATIVE && CANYONLANDS && GLACIER && 440EP && 440EPX && 440GRX && 440GP && 440GX && 460SX && 405GP) selects IBM_EMAC_ZMII which has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM):  => N/A
-  + warning: drivers/built-in.o(.data+0x107c): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe():  => N/A
-  + warning: drivers/built-in.o(.data+0xa70): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe():  => N/A
-  + warning: drivers/built-in.o(.data+0xb10): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe():  => N/A
-  + warning: drivers/built-in.o(.data+0xc74): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe():  => N/A
-  + warning: drivers/built-in.o(.data+0xd84): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip():  => N/A
-  + warning: drivers/built-in.o(.data+0xde4): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip():  => N/A
-  + warning: drivers/built-in.o(.data+0xe44): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip():  => N/A
-  + warning: drivers/built-in.o(.data+0xeac): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe():  => N/A
-  + warning: drivers/built-in.o(.text+0x2c30a4): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
-  + warning: drivers/built-in.o(.text+0x513fc): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
-  + warning: drivers/net/built-in.o(.text+0x1d54): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
-  + warning: drivers/net/built-in.o(.text+0x3fe50): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
-  + warning: drivers/net/cris/built-in.o(.text+0x1360): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
-  + warning: drivers/parisc/built-in.o(.data+0x170): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe():  => N/A
-  + warning: drivers/parisc/built-in.o(.data+0x210): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe():  => N/A
-  + warning: drivers/parisc/built-in.o(.data+0x374): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe():  => N/A
-  + warning: drivers/parisc/built-in.o(.data+0x484): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip():  => N/A
-  + warning: drivers/parisc/built-in.o(.data+0x4e4): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip():  => N/A
-  + warning: drivers/parisc/built-in.o(.data+0x544): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip():  => N/A
-  + warning: drivers/parisc/built-in.o(.data+0x5ac): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe():  => N/A
-  + warning: drivers/parisc/built-in.o(.data+0x77c): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe():  => N/A
-  + warning: vmlinux.o(.data+0x41490): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe():  => N/A
-  + warning: vmlinux.o(.data+0x41530): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe():  => N/A
-  + warning: vmlinux.o(.data+0x41694): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe():  => N/A
-  + warning: vmlinux.o(.data+0x417a4): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip():  => N/A
-  + warning: vmlinux.o(.data+0x41804): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip():  => N/A
-  + warning: vmlinux.o(.data+0x41864): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip():  => N/A
-  + warning: vmlinux.o(.data+0x418cc): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe():  => N/A
-  + warning: vmlinux.o(.data+0x41a9c): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe():  => N/A
-
-98 improvements:
-  - /scratch/kisskb/src/arch/powerpc/net/bpf_jit_comp.c: warning: the frame size of 2064 bytes is larger than 2048 bytes [-Wframe-larger-than=]: 573:1 => 
-  - /scratch/kisskb/src/drivers/block/nvme-core.c: warning: 'nvme_resume' defined but not used [-Wunused-function]: 2550:12 => 
-  - /scratch/kisskb/src/drivers/block/nvme-core.c: warning: 'nvme_suspend' defined but not used [-Wunused-function]: 2541:12 => 
-  - /scratch/kisskb/src/drivers/gpio/gpio-intel-mid.c: warning: 'intel_gpio_runtime_idle' defined but not used [-Wunused-function]: 395:12 => 
-  - /scratch/kisskb/src/drivers/gpio/gpiolib.c: warning: unused variable 'gpio': 204 => 
-  - /scratch/kisskb/src/drivers/i2c/busses/i2c-designware-pcidrv.c: warning: 'i2c_dw_pci_runtime_idle' defined but not used [-Wunused-function]: 188:12 => 
-  - /scratch/kisskb/src/drivers/leds/leds-mc13783.c: warning: 'mask' may be used uninitialized in this function [-Wuninitialized]: 120:41 => 
-  - /scratch/kisskb/src/drivers/leds/leds-mc13783.c: warning: 'value' may be used uninitialized in this function [-Wuninitialized]: 120:57 => 
-  - /scratch/kisskb/src/drivers/md/bcache/bset.c: warning: format '%li' expects argument of type 'long int', but argument 3 has type 'int' [-Wformat]: 27:10 => 
-  - /scratch/kisskb/src/drivers/md/md.c: warning: large integer implicitly truncated to unsigned type [-Woverflow]: 1351:3, 1056:3 => 
-  - /scratch/kisskb/src/drivers/media/usb/pwc/pwc-if.c: warning: label 'err_video_unreg' defined but not used [-Wunused-label]: 1105:1 => 
-  - /scratch/kisskb/src/drivers/mfd/sec-core.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 190:10 => 
-  - /scratch/kisskb/src/drivers/net/wireless/iwlwifi/mvm/nvm.c: warning: 'ret' may be used uninitialized in this function [-Wuninitialized]: 471:6 => 
-  - /scratch/kisskb/src/drivers/platform/x86/acer-wmi.c: warning: 'acer_resume' defined but not used [-Wunused-function]: 2060:12 => 
-  - /scratch/kisskb/src/drivers/platform/x86/acer-wmi.c: warning: 'acer_suspend' defined but not used [-Wunused-function]: 2038:12 => 
-  - /scratch/kisskb/src/drivers/spi/spi-atmel.c: warning: format '%x' expects argument of type 'unsigned int', but argument 7 has type 'dma_addr_t' [-Wformat]: 1246:3 => 
-  - /scratch/kisskb/src/drivers/spi/spi-atmel.c: warning: format '%x' expects argument of type 'unsigned int', but argument 9 has type 'dma_addr_t' [-Wformat]: 1246:3 => 
-  - /scratch/kisskb/src/drivers/spi/spi-bfin5xx.c: warning: 'cr_width' may be used uninitialized in this function [-Wuninitialized]: 698:6 => 
-  - /scratch/kisskb/src/drivers/spi/spi-gpio.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 253:8 => 
-  - /scratch/kisskb/src/drivers/staging/cxt1e1/functions.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 268:21 => 
-  - /scratch/kisskb/src/drivers/staging/dgap/dgap_conf.h: warning: "IO_FIELD" redefined [enabled by default]  LD [M]  net/sunrpc/sunrpc.o: 165:0 => 
-  - /scratch/kisskb/src/drivers/staging/dgap/dgap_conf.h: warning: "IO_FIELD" redefined [enabled by default]: 165:0 => 
-  - /scratch/kisskb/src/drivers/staging/dgap/dgap_driver.c: warning: the frame size of 1028 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 961:1 => 
-  - /scratch/kisskb/src/drivers/staging/dgap/dgap_driver.c: warning: the frame size of 1032 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 961:1 => 
-  - /scratch/kisskb/src/drivers/staging/dgap/dgap_driver.c: warning: the frame size of 1040 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 961:1 => 
-  - /scratch/kisskb/src/drivers/staging/dgap/dgap_driver.c: warning: the frame size of 1072 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 961:1 => 
-  - /scratch/kisskb/src/drivers/staging/dgap/dgap_fep5.c: warning: the frame size of 1028 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 103:1 => 
-  - /scratch/kisskb/src/drivers/staging/dgap/dgap_fep5.c: warning: the frame size of 1032 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 164:1, 103:1 => 
-  - /scratch/kisskb/src/drivers/staging/dgap/dgap_fep5.c: warning: the frame size of 1036 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 103:1 => 
-  - /scratch/kisskb/src/drivers/staging/dgap/dgap_fep5.c: warning: the frame size of 1040 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 164:1, 103:1 => 
-  - /scratch/kisskb/src/drivers/staging/dgap/dgap_sysfs.c: warning: format '%x' expects argument of type 'unsigned int', but argument 4 has type 'tcflag_t' [-Wformat]: 494:2, 519:2, 569:2, 544:2 => 
-  - /scratch/kisskb/src/drivers/staging/dgap/dgap_sysfs.c: warning: format '%x' expects argument of type 'unsigned int', but argument 5 has type 'tcflag_t' [-Wformat]: 292:4, 258:4, 275:4, 241:4 => 
-  - /scratch/kisskb/src/drivers/staging/dgap/dgap_tty.c: warning: format '%ld' expects argument of type 'long int', but argument 4 has type '__kernel_suseconds_t' [-Wformat]: 570:2 => 
-  - /scratch/kisskb/src/drivers/staging/dgap/dgap_tty.c: warning: the frame size of 1040 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 658:1 => 
-  - /scratch/kisskb/src/drivers/staging/dgap/dgap_tty.c: warning: the frame size of 1044 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 658:1 => 
-  - /scratch/kisskb/src/drivers/staging/dgap/dgap_tty.c: warning: the frame size of 1048 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 658:1 => 
-  - /scratch/kisskb/src/drivers/staging/dgap/dgap_tty.c: warning: the frame size of 1064 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 658:1 => 
-  - /scratch/kisskb/src/drivers/staging/dgap/dgap_tty.c: warning: the frame size of 1072 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 658:1 => 
-  - /scratch/kisskb/src/drivers/staging/line6/midi.c: warning: 'line6_midi_transmit' uses dynamic stack allocation [enabled by default]: 76:1 => 
-  - /scratch/kisskb/src/drivers/staging/sm7xxfb/sm7xxfb.c: warning: 'sm7xx_vga_setup' defined but not used [-Wunused-function]: 117:19 => 
-  - /scratch/kisskb/src/drivers/target/target_core_alua.c: warning: 'alua_ascq' may be used uninitialized in this function [-Wuninitialized]: 773:18 => 
-  - /scratch/kisskb/src/drivers/usb/gadget/f_fs.c: warning: 'data_len' may be used uninitialized in this function [-Wuninitialized]: 670:17 => 
-  - /scratch/kisskb/src/drivers/video/arkfb.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]: 1019:23 => 
-  - /scratch/kisskb/src/drivers/video/intelfb/intelfbdrv.c: warning: passing argument 3 of 'get_opt_bool' from incompatible pointer type [enabled by default]: 367:3, 361:3, 357:3, 363:3, 365:3 => 
-  - /scratch/kisskb/src/drivers/video/intelfb/intelfbhw.c: warning: 'm1' may be used uninitialized in this function [-Wuninitialized]: 1015:2 => 
-  - /scratch/kisskb/src/drivers/video/intelfb/intelfbhw.c: warning: 'm2' may be used uninitialized in this function [-Wuninitialized]: 1015:2 => 
-  - /scratch/kisskb/src/drivers/video/s3fb.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]: 1185:23 => 
-  - /scratch/kisskb/src/drivers/video/sis/sis_main.c: warning: #warning Neither CONFIG_FB_SIS_300 nor CONFIG_FB_SIS_315 is set [-Wcpp]: 64:2 => 
-  - /scratch/kisskb/src/drivers/video/sis/sis_main.c: warning: #warning sisfb will not work! [-Wcpp]: 65:2 => 
-  - /scratch/kisskb/src/drivers/video/sis/sis_main.c: warning: 'sisfb_post_map_vram' defined but not used [-Wunused-function]: 4131:13 => 
-  - /scratch/kisskb/src/drivers/watchdog/shwdt.c: warning: unused variable 'wdt' [-Wunused-variable]: 296:17 => 
-  - /scratch/kisskb/src/fs/btrfs/send.c: warning: 'cb' may be used uninitialized in this function [-Wuninitialized]: 3644:7 => 
-  - /scratch/kisskb/src/fs/btrfs/send.c: warning: 'root' may be used uninitialized in this function [-Wuninitialized]: 3629:7 => 
-  - /scratch/kisskb/src/fs/file.c: warning: comparison of distinct pointer types lacks a cast [enabled by default]: 434:23 => 
-  - /scratch/kisskb/src/fs/lockd/svc.c: warning: label 'err_sysctl' defined but not used [-Wunused-label]: 625:1 => 
-  - /scratch/kisskb/src/fs/ncpfs/ncp_fs_sb.h: warning: 'packed' attribute ignored for field of type '__u32' [-Wattributes]  CC [M]  net/sunrpc/auth_unix.o: 124:4 => 
-  - /scratch/kisskb/src/include/linux/rbtree.h: warning: 'parent' may be used uninitialized in this function [-Wuninitialized]: 82:28 => 
-  - /scratch/kisskb/src/kernel/sched/core.c: warning: control reaches end of non-void function: 2613 => 
-  - /scratch/kisskb/src/kernel/trace/ftrace.c: warning: 'control_ops_free' defined but not used [-Wunused-function]: 240:13 => 
-  - /scratch/kisskb/src/mm/bootmem.c: warning: control reaches end of non-void function: 379 => 
-  - /scratch/kisskb/src/net/ceph/osdmap.c: warning: 'crush_do_rule_ary' uses dynamic stack allocation [enabled by default]: 1153:1 => 
-  - /scratch/kisskb/src/net/core/dev.c: warning: unused variable 'null_features' [-Wunused-variable]: 2223:33 => 
-  - /scratch/kisskb/src/net/sunrpc/xprtrdma/verbs.c: warning: the frame size of 1044 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 1774:1 => 
-  - /scratch/kisskb/src/security/integrity/ima/ima_crypto.c: warning: 'ima_calc_field_array_hash_tfm.isra.0' uses dynamic stack allocation [enabled by default]: 181:1 => 
-  - /scratch/kisskb/src/sound/soc/codecs/wm8993.c: warning: unused variable 'wm8993' [-Wunused-variable]: 1562:22 => 
-  - arch/ia64/configs/generic_defconfig: warning: symbol value 'm' invalid for ACPI_CONTAINER: 33 => 
-  - arch/ia64/configs/generic_defconfig: warning: symbol value 'm' invalid for HOTPLUG_PCI_ACPI: 35 => 
-  - warning: (BRIDGE_NF_EBTABLES) selects NETFILTER_XTABLES which has unmet direct dependencies (NET && INET && NETFILTER): N/A => 
-  - warning: (SPU_FS) selects MEMORY_HOTPLUG which has unmet direct dependencies ((SPARSEMEM || X86_64_ACPI_NUMA) && ARCH_ENABLE_MEMORY_HOTPLUG && (IA64 || X86 || PPC_BOOK3S_64 || SUPERH || S390)): N/A => 
-  - warning: drivers/built-in.o(.data+0x1034): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe(): N/A => 
-  - warning: drivers/built-in.o(.data+0xa68): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe(): N/A => 
-  - warning: drivers/built-in.o(.data+0xb08): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe(): N/A => 
-  - warning: drivers/built-in.o(.data+0xc64): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe(): N/A => 
-  - warning: drivers/built-in.o(.data+0xd6c): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip(): N/A => 
-  - warning: drivers/built-in.o(.data+0xdcc): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip(): N/A => 
-  - warning: drivers/built-in.o(.data+0xe2c): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip(): N/A => 
-  - warning: drivers/built-in.o(.data+0xe8c): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe(): N/A => 
-  - warning: drivers/built-in.o(.text+0x2b4db0): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init(): N/A => 
-  - warning: drivers/built-in.o(.text+0x54668): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init(): N/A => 
-  - warning: drivers/net/built-in.o(.text+0x1d8c): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init(): N/A => 
-  - warning: drivers/net/built-in.o(.text+0x3f6a4): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init(): N/A => 
-  - warning: drivers/net/cris/built-in.o(.text+0x1378): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init(): N/A => 
-  - warning: drivers/parisc/built-in.o(.data+0x168): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe(): N/A => 
-  - warning: drivers/parisc/built-in.o(.data+0x208): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe(): N/A => 
-  - warning: drivers/parisc/built-in.o(.data+0x364): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe(): N/A => 
-  - warning: drivers/parisc/built-in.o(.data+0x46c): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip(): N/A => 
-  - warning: drivers/parisc/built-in.o(.data+0x4cc): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip(): N/A => 
-  - warning: drivers/parisc/built-in.o(.data+0x52c): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip(): N/A => 
-  - warning: drivers/parisc/built-in.o(.data+0x58c): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe(): N/A => 
-  - warning: drivers/parisc/built-in.o(.data+0x734): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe(): N/A => 
-  - warning: vmlinux.o(.data+0x40008): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe(): N/A => 
-  - warning: vmlinux.o(.data+0x400a8): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe(): N/A => 
-  - warning: vmlinux.o(.data+0x40204): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe(): N/A => 
-  - warning: vmlinux.o(.data+0x4030c): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip(): N/A => 
-  - warning: vmlinux.o(.data+0x4036c): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip(): N/A => 
-  - warning: vmlinux.o(.data+0x403cc): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip(): N/A => 
-  - warning: vmlinux.o(.data+0x4042c): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe(): N/A => 
-  - warning: vmlinux.o(.data+0x405d4): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe(): N/A => 
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
