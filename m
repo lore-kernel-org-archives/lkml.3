@@ -1,133 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096AbaDOImM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 04:42:12 -0400
-Received: from mga02.intel.com ([134.134.136.20]:27774 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751030AbaDOImE convert rfc822-to-8bit (ORCPT
+	id S1751403AbaDOIrw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 04:47:52 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:52256 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750849AbaDOIrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 04:42:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="520997421"
-From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: Thierry Reding <thierry.reding@gmail.com>, Alan Cox <alan@linux.intel.com>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] pwm_lpss: Add support for PCI devices
-Thread-Topic: [PATCH] pwm_lpss: Add support for PCI devices
-Thread-Index: AQHPVhP1bci2OBKO+kqYMQwhKouSaZsQQdqAgAIV6mA=
-Date: Tue, 15 Apr 2014 08:41:02 +0000
-Message-ID: <604BF5F4C5D71041942BC7E84ED659EA01570E28@PGSMSX103.gar.corp.intel.com>
-References: <1397311131-13371-1-git-send-email-chiau.ee.chew@intel.com>
- <20140414081805.GI19349@intel.com>
-In-Reply-To: <20140414081805.GI19349@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.30.20.205]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 15 Apr 2014 04:47:49 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, ben-linux@fluff.org,
+        kgene.kim@samsung.com, t.figa@samsung.com, thomas.abraham@linaro.org,
+        kyungmin.park@samsung.com, sw0312.kim@samsung.com,
+        hyunhee.kim@samsung.com, yj44.cho@samsung.com,
+        chanho61.park@samsung.com, olof@lixom.net, marc.zyngier@arm.com,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Subject: Re: [PATCHv2 3/8] ARM: EXYNOS: Add IO mapping for PMU of Exynos3250
+Date: Tue, 15 Apr 2014 10:46:56 +0200
+Message-ID: <5677551.At1Foxml9e@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <534CEEA8.6020800@samsung.com>
+References: <1397527192-21988-1-git-send-email-cw00.choi@samsung.com> <4788081.xvaJfdGTMu@wuerfel> <534CEEA8.6020800@samsung.com>
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:yxl2RYn7KigO2l3Mejts9px1lRd6D10rrwz1OxPbSE5
+ hGlSuJ3mbElOUnuCc6E/kCcBtwm0b4X6inG1POyJWuM+fN0N13
+ nMBMFAoS/ovb1EtIT48umBJ3whYpxHaimzkV4kYnQT8wnPGzQw
+ omMi5rMk7+KvZEFWyBcjBYqNrND8DbO3kCuAlsTW+JypJtHZdD
+ uwQZPdRid7Q8nyebP3+hJad+6EAM/cYQMR4R2HtQDrtNU+OOK0
+ 0punb/r2Y1L12A8mg+iu3spku5k7mkCJ2CDmzIXQCFpgVaK4UT
+ duerd157W7PKXnB3b+jeLCv1hb/Ns+SRl7uxGrZybnTNlnaaxW
+ EylD7c088pla5y4ON8rU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> > +static struct pwm_lpss_chip *pwm_lpss_probe(struct device *dev,
-> > +			struct resource *r, struct pwm_lpss_boardinfo *info)
-> >  {
-> >  	struct pwm_lpss_chip *lpwm;
-> > -	struct resource *r;
-> >  	int ret;
-> >
-> > -	lpwm = devm_kzalloc(&pdev->dev, sizeof(*lpwm), GFP_KERNEL);
-> > +	lpwm = devm_kzalloc(dev, sizeof(*lpwm), GFP_KERNEL);
-> >  	if (!lpwm)
-> > -		return -ENOMEM;
-> > -
-> > -	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > +		return ERR_PTR(-ENOMEM);
-> >
-> > -	lpwm->regs = devm_ioremap_resource(&pdev->dev, r);
-> > +	lpwm->regs = devm_ioremap_resource(dev, r);
-> >  	if (IS_ERR(lpwm->regs))
-> > -		return PTR_ERR(lpwm->regs);
-> > -
-> > -	lpwm->clk = devm_clk_get(&pdev->dev, NULL);
-> > -	if (IS_ERR(lpwm->clk)) {
-> > -		dev_err(&pdev->dev, "failed to get PWM clock\n");
-> > -		return PTR_ERR(lpwm->clk);
-> > +		return lpwm->regs;
-> > +
-> > +	if (info) {
-> > +		lpwm->clk_rate = info->clk_rate;
-> > +	} else {
-> > +		lpwm->clk = devm_clk_get(dev, NULL);
-> > +		if (IS_ERR(lpwm->clk)) {
-> > +			dev_err(dev, "failed to get PWM clock\n");
-> > +			return (void *)lpwm->clk;
+On Tuesday 15 April 2014 17:32:40 Chanwoo Choi wrote:
+> On 04/15/2014 05:11 PM, Arnd Bergmann wrote:
+> > On Tuesday 15 April 2014 10:59:47 Chanwoo Choi wrote:
+>
+> > I don't think we have a patch for the PMU yet, Sachin was looking at the SYSRAM
+> > only.
 > 
-> Why the cast here?
-
-Alan, please do correct me if I describe wrongly on the purpose that you add the cast here.
-
-As you can see, pwm_lpss_probe() is expected to return a pointer of type struct pwm_lpss_chip.  On the other hand,   
-the return of devm_clk_get() would be a pointer of type struct clk. So if were to use lpwm->clk as the return value of pwm_lpss_probe() , 
-a cast would be needed since the pointer type is different from the expected one. The compiler would complain on " warning: return from incompatible pointer type"
-if without the cast.
-
-> > +
-> > +static struct pci_device_id pwm_lpss_pci_ids[] = {
-> > +	{ PCI_VDEVICE(INTEL, 0x0F08), (unsigned long)&byt_info},
-> > +	{ PCI_VDEVICE(INTEL, 0x0F09), (unsigned long)&byt_info},
+> You are right. Sachin's patch only included the solution of SYSRAM memory mapping.
+> I set out the plan that I would implment proper driver for PMU memory mapping
+> instead of static method after merged Sachin's patch for SYSRAM.
 > 
-> I think non-capital letters for hex numbers are more consistent. I.e 0x0f08.
-> 
+> But,
+> If you'd like me to implment PMU memory mapping instead of static mapping right now,
+> I'll implement it for PMU such as Sachin's patch on next posting(v3).
 
-Ok. Noted.
+I don't really want to merge a new SoC type until these are resolved, so
+it would definitely be better to implement this for v3.
 
-> > +	{ 0,}
-> 
-> { },
-> 
-> as in the platform part looks better, IMO.
-
-Ok. Noted.
-
-> 
-> > +};
-> > +MODULE_DEVICE_TABLE(pci, pwm_lpss_pci_ids);
-> > +
-> > +static struct pci_driver pwm_lpss_driver_pci = {
-> > +	.name	= "pwm-lpss",
-> > +	.id_table	= pwm_lpss_pci_ids,
-> 
-> The platform part doesn't use tabs, so I think you should follow the style here.
-> 
-
-Ok. Noted
-
-> >
-> >  MODULE_DESCRIPTION("PWM driver for Intel LPSS");
-> MODULE_AUTHOR("Mika
-> > Westerberg <mika.westerberg@linux.intel.com>");
-> >  MODULE_LICENSE("GPL v2");
-> >  MODULE_ALIAS("platform:pwm-lpss");
-> > +
-> > +module_init(pwm_init);
-> > +module_exit(pwm_exit);
-> 
-> Maybe move these to follow the function defitions, like:
-> 
-> pwm_init()
-> {
-> }
-> module_init(pwm_init);
-> 
-> and so on.
-
-Ok. Noted.
+	Arnd
