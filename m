@@ -1,83 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818AbaDOQ1u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 12:27:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60230 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaDOQ1r (ORCPT
+	id S1752453AbaDOQaj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 12:30:39 -0400
+Received: from g2t2352.austin.hp.com ([15.217.128.51]:38635 "EHLO
+	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019AbaDOQai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 12:27:47 -0400
-Date: Tue, 15 Apr 2014 09:27:33 -0700
-From: tip-bot for Linus Walleij <tipbot@zytor.com>
-Message-ID: <tip-f6da9fe45c3074b909084ae9da5f55034ebffeb4@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, linus.walleij@linaro.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, linus.walleij@linaro.org
-In-Reply-To: <1397550484-7119-1-git-send-email-linus.walleij@linaro.org>
-References: <1397550484-7119-1-git-send-email-linus.walleij@linaro.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/urgent] irqchip: vic: Properly chain the cascaded IRQs
-Git-Commit-ID: f6da9fe45c3074b909084ae9da5f55034ebffeb4
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 15 Apr 2014 12:30:38 -0400
+X-Greylist: delayed 84651 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Apr 2014 12:30:38 EDT
+Message-ID: <534D5E02.6030500@hp.com>
+Date: Tue, 15 Apr 2014 10:27:46 -0600
+From: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Jan Kara <jack@suse.cz>
+CC: T Makphaibulchoke <tmac@hp.com>, tytso@mit.edu, adilger.kernel@dilger.ca,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org, aswin@hp.com
+Subject: Re: [PATCH v2] fs/ext4: increase parallelism in updating ext4 orphan
+ list
+References: <1380728283-61038-1-git-send-email-tmac@hp.com> <1396456148-20455-1-git-send-email-tmac@hp.com> <20140402174109.GD8657@quack.suse.cz> <534C135A.9010803@hp.com> <20140414174024.GC13860@quack.suse.cz>
+In-Reply-To: <20140414174024.GC13860@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f6da9fe45c3074b909084ae9da5f55034ebffeb4
-Gitweb:     http://git.kernel.org/tip/f6da9fe45c3074b909084ae9da5f55034ebffeb4
-Author:     Linus Walleij <linus.walleij@linaro.org>
-AuthorDate: Tue, 15 Apr 2014 10:28:04 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 15 Apr 2014 18:24:24 +0200
+On 04/14/2014 11:40 AM, Jan Kara wrote:
+>   Thanks for trying that out! Can you please send me a patch you have been
+> testing? Because it doesn't quite make sense to me why using i_mutex should
+> be worse than using hashed locks...
+>
 
-irqchip: vic: Properly chain the cascaded IRQs
+Thanks again for the comments.
 
-We are flagging the parent IRQ as chained, then we must also
-make sure to call the chained_irq_[enter|exit] functions for
-things to work smoothly.
+Since i_mutex is also used for serialization in other operations on an inode, in the case that the i_mutex is not held  using it for serialization could cause contention with other operations on the inode.  As the number shows substantial instances of orphan add or delete calls without holding the i_mutex, I presume the performance degradation is due to the contention.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Link: http://lkml.kernel.org/r/1397550484-7119-1-git-send-email-linus.walleij@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- drivers/irqchip/irq-vic.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+As for the patch, could you please let me know if you need the patch using i_mutex or the patch I'm planning to submit.  If it's the latter, I'm thinking of go ahead and resubmit it.
 
-diff --git a/drivers/irqchip/irq-vic.c b/drivers/irqchip/irq-vic.c
-index 37dab0b..7d35287 100644
---- a/drivers/irqchip/irq-vic.c
-+++ b/drivers/irqchip/irq-vic.c
-@@ -24,6 +24,7 @@
- #include <linux/list.h>
- #include <linux/io.h>
- #include <linux/irq.h>
-+#include <linux/irqchip/chained_irq.h>
- #include <linux/irqdomain.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-@@ -228,12 +229,17 @@ static int handle_one_vic(struct vic_device *vic, struct pt_regs *regs)
- static void vic_handle_irq_cascaded(unsigned int irq, struct irq_desc *desc)
- {
- 	u32 stat, hwirq;
-+	struct irq_chip *host_chip = irq_desc_get_chip(desc);
- 	struct vic_device *vic = irq_desc_get_handler_data(desc);
- 
-+	chained_irq_enter(host_chip, desc);
-+
- 	while ((stat = readl_relaxed(vic->base + VIC_IRQ_STATUS))) {
- 		hwirq = ffs(stat) - 1;
- 		generic_handle_irq(irq_find_mapping(vic->domain, hwirq));
- 	}
-+
-+	chained_irq_exit(host_chip, desc);
- }
- 
- /*
+Thanks,
+Mak.
+
+>   OK, at least that makes sense.
+> 
+> 								Honza
+> 
+
