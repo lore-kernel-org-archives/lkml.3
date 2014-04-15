@@ -1,67 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751037AbaDOHWO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 03:22:14 -0400
-Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:36232 "EHLO
-	mirror2.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865AbaDOHWM (ORCPT
+	id S1752308AbaDOH0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 03:26:36 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:42982 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129AbaDOH0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 03:22:12 -0400
-X-Greylist: delayed 2393 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Apr 2014 03:22:12 EDT
-From: Chen-Yu Tsai <wens@csie.org>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Chen-Yu Tsai <wens@csie.org>, Arnd Bergmann <arnd@arndb.de>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-gpio@vger.kernel.org,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com
-Subject: [PATCH 2/7] gpiolib: Support purely name based gpiod lookup in device trees
-Date: Tue, 15 Apr 2014 14:41:36 +0800
-Message-Id: <1397544101-18135-3-git-send-email-wens@csie.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1397544101-18135-1-git-send-email-wens@csie.org>
-References: <1397544101-18135-1-git-send-email-wens@csie.org>
+	Tue, 15 Apr 2014 03:26:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <534C7D36.9090008@linaro.org>
+References: <534C7D36.9090008@linaro.org>
+Date: Tue, 15 Apr 2014 09:26:33 +0200
+Message-ID: <CAPDyKFp=DikkmXnyHsTJF6W_FpTDJZYiSk9n7Nh+RwY=r=P4-Q@mail.gmail.com>
+Subject: Re: [Regression?] qemu-system-arm flooding "sd_write_data: not in
+ Receiving-Data state"
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Peter Maydell <peter.maydell@linaro.org>, Chris Ball <chris@printf.net>,
+        Johan Rudholm <jrudholm@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables gpio-names based gpiod lookup in device tree usage,
-which ignores the index passed to gpiod_get_index. If this fails, fall
-back to the original function-index ("con_id"-gpios) based lookup scheme,
-for backward compatibility and any drivers needing more than one GPIO
-for any function.
+On 15 April 2014 02:28, John Stultz <john.stultz@linaro.org> wrote:
+> (Forgive the duplicate, I forgot to cc lkml)
+>
+> I was testing v3.15-rc1 in my qemu-system-arm environment and noticed a
+> flood of the following messages:
+>     sd_write_data: not in Receiving-Data state
+>
+> After looking around in the kernel and not finding such a message, I
+> realized this was actually a message from qemu, not the kernel.
+>
+> The system seems to boot normally, but is just very noisy w/ the qemu
+> messages.
+>
+> Not sure if this is really a problem with qemu-system-arm, but this
+> doesn't occur w/ 3.14 and previous kernels.
+>
+> Bisecting it down pointed to:
+>
+> commit e7f3d22289e4307b3071cc18b1d8ecc6598c0be4
+> Author: Ulf Hansson <ulf.hansson@linaro.org>
+> Date:   Fri Jan 10 14:51:42 2014 +0100
+>
+>     mmc: mmci: Handle CMD irq before DATA irq
+>         In case of a read operation both MCI_CMDRESPEND and MCI_DATAEND
+> can be
+>     set in the status register when entering the interrupt handler. This is
+>     due to that the card start sending data before the host has
+>     acknowledged the command response.
+>         To resolve the issue for this scenario, we must start by
+> handling the
+>     CMD irq instead of the DATA irq. The reason is beacuse the completion
+>     of the DATA irq will not respect the current command and then causing
+>     it to be garbled.
+>         Cc: Russell King <linux@arm.linux.org.uk>
+>     Cc: Johan Rudholm <jrudholm@gmail.com>
+>     Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+>     Signed-off-by: Chris Ball <chris@printf.net>
+>
 
-Signed-off-by: Chen-Yu Tsai <wens@csie.org>
----
- drivers/gpio/gpiolib.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+Hi John,
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 761013f..956f01e 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -2585,8 +2585,13 @@ static struct gpio_desc *of_find_gpio(struct device *dev, const char *con_id,
- 	else
- 		snprintf(prop_name, 32, "gpios");
- 
--	desc = of_get_named_gpiod_flags(dev->of_node, prop_name, idx,
--					&of_flags);
-+	/* try gpio-names based lookup first */
-+	desc = of_get_gpiod_flags_by_name(dev->of_node, con_id, &of_flags);
-+
-+	/* fallback to function based lookup */
-+	if (IS_ERR(desc))
-+		desc = of_get_named_gpiod_flags(dev->of_node, prop_name, idx,
-+				&of_flags);
- 
- 	if (IS_ERR(desc))
- 		return desc;
--- 
-1.9.1
+Just some more background to the patch; it resolves a race condition
+in the IRQ handler for the mmci driver. A quite simple patch which
+thus seems to trigger an issue for the qemu-system-arm model. I
+haven't seen this on real hardware, at least yet. :-)
 
+>
+>
+> $ qemu-system-arm -version
+> QEMU emulator version 1.5.0 (Debian 1.5.0+dfsg-3ubuntu5.3), Copyright
+> (c) 2003-2008 Fabrice Bellard
+>
+> Booting w/:
+> qemu-system-arm -kernel zImage-arm -M vexpress-a9 -cpu cortex-a9
+> -nographic -m 1024  -append 'root=/dev/mmcblk0p2 rw mem=1024M
+> raid=noautodetect console=ttyAMA0,38400n8 rootwait vmalloc=256MB
+> devtmpfs.mount=0' -sd test-arm.img -redir tcp:4300::22
+>
+> Let me know if you have any other questions or need any other info to
+> help trouble-shoot this.
+
+I am quite new to the qemu-system-arm model, I will need to spend some
+time with it to be able to help out more.
+
+Though, maybe you can provide me with some information about the qemu
+environment you are using?
+
+1. Especially, what variant of the ARM primcell pl180 is being
+modelled/used here? The mmci driver handles a handful of different
+variants.
+2. What type of mmc/sd card is being modelled/used here?
+
+Kind regards
+Ulf Hansson
+
+>
+> thanks
+> -john
