@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808AbaDOB7z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 21:59:55 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:28212 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229AbaDOB7w (ORCPT
+	id S1754181AbaDOCAA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 22:00:00 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:20238 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308AbaDOB7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 21:59:52 -0400
-X-AuditID: cbfee68d-b7fcd6d00000315b-8d-534c92963718
+	Mon, 14 Apr 2014 21:59:55 -0400
+X-AuditID: cbfee68d-b7fcd6d00000315b-c3-534c92999f6e
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux@arm.linux.org.uk, ben-linux@fluff.org, kgene.kim@samsung.com,
@@ -17,35 +17,39 @@ Cc: linux@arm.linux.org.uk, ben-linux@fluff.org, kgene.kim@samsung.com,
         chanho61.park@samsung.com, arnd@arndb.de, olof@lixom.net,
         marc.zyngier@arm.com, linux-samsung-soc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Subject: [PATCHv2 0/8] Support new Exynos3250 SoC based on Cortex-A7 dual core
-Date: Tue, 15 Apr 2014 10:59:44 +0900
-Message-id: <1397527192-21988-1-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv2 4/8] ARM: EXYNOS: Support secondary CPU boot of Exynos4212
+Date: Tue, 15 Apr 2014 10:59:48 +0900
+Message-id: <1397527192-21988-5-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBIsWRmVeSWpSXmKPExsWyRsSkUHfaJJ9gg7YJShZ/Jx1jt5i07gCT
+In-reply-to: <1397527192-21988-1-git-send-email-cw00.choi@samsung.com>
+References: <1397527192-21988-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDIsWRmVeSWpSXmKPExsWyRsSkRHfWJJ9gg7ZFLBZ/Jx1jt5i07gCT
 	xeX92hbXvzxntZh/5ByrxecPLewWvQuuslmcbXrDbrHp8TVWi8u75rBZzDi/j8ni9mVei793
 	/rFZnLr+GSg0+SWbxfoZr1ksjs1Ywmixd+dkRgchjzXz1jB6tDT3sHn8/jWJ0ePvqhfMHneu
-	7WHz2Lyk3uPKiSZWj74tqxg9Pm+SC+CM4rJJSc3JLEst0rdL4MpYeG0CW8FlqYqpr9exNDC+
-	Fu1i5OSQEDCROLR+ATuELSZx4d56ti5GLg4hgaWMEl/m7mCDKXq1uBEqsYhR4nP3aRYIp4lJ
-	4vmRw0wgVWwCWhL7X9wA6xARUJDY3PuMFaSIWWAts8TFSY1gCWEBP4mFq3aB7WMRUJV4vOkr
-	WDOvgKvE33c/odbJSXzY84gdpFlC4CW7xP7da5kgGgQkvk0+BLSaAyghK7HpADNEvaTEwRU3
-	WCYwCi5gZFjFKJpakFxQnJReZKhXnJhbXJqXrpecn7uJERhLp/89693BePuA9SHGZKBxE5ml
-	RJPzgbGYVxJvaGxmZGFqYmpsZG5pRpqwkjhv0sOkICGB9MSS1OzU1ILUovii0pzU4kOMTByc
-	Ug2MnnlP7P7XSV1fsWLNp7QvKi3vLrW4PtSMsTz4Luep+JOM/KI191bYTF5T8Ok9q1zrkwbL
-	j593zPgRd1SXKWBqKvcCkWMB3HI2rEdf7ViYriHvMvPnjfu3rB7sTFeUvO5feykznvVoAsO8
-	wlfXd4pbznxnIbGO75kOi8nOVZHhKy2Dn8/0Cf99TYmlOCPRUIu5qDgRAJ/NG2m7AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplleLIzCtJLcpLzFFi42I5/e+xgO60ST7BBm+nSVj8nXSM3WLSugNM
-	Fpf3a1tc//Kc1WL+kXOsFp8/tLBb9C64ymZxtukNu8Wmx9dYLS7vmsNmMeP8PiaL25d5Lf7e
-	+cdmcer6Z6DQ5JdsFutnvGaxODZjCaPF3p2TGR2EPNbMW8Po0dLcw+bx+9ckRo+/q14we9y5
-	tofNY/OSeo8rJ5pYPfq2rGL0+LxJLoAzqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ
-	19DSwlxJIS8xN9VWycUnQNctMwfoHyWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1G
-	BmggYQ1jxsJrE9gKLktVTH29jqWB8bVoFyMnh4SAicSrxY1sELaYxIV764FsLg4hgUWMEp+7
-	T7NAOE1MEs+PHGYCqWIT0JLY/+IGWIeIgILE5t5nrCBFzAJrmSUuToIYJSzgJ7Fw1S52EJtF
-	QFXi8aavYM28Aq4Sf9/9hFonJ/FhzyP2CYzcCxgZVjGKphYkFxQnpeca6hUn5haX5qXrJefn
-	bmIER+ozqR2MKxssDjEKcDAq8fB6TPAJFmJNLCuuzD3EKMHBrCTC+zoZKMSbklhZlVqUH19U
-	mpNafIgxGWj7RGYp0eR8YBLJK4k3NDYxM7I0Mje0MDI2J01YSZz3QKt1oJBAemJJanZqakFq
-	EcwWJg5OqQZGpm9TrGqMl26Lj2BY2dD5el1RrXfyNTfJle8VNuqKNDBVNu6a2j/lSStnuKSz
-	yp7mM+LSYVltfEpv4o3FCwqO/n3aUMtaO2HZNWZL+ZVaX4667quI95HZu8f5avnjPKHZKmpd
-	Ov5bDBwDbu33M68/Ff7byT38yRsWvsNSmizbWevyj79YaajEUpyRaKjFXFScCACjhXmSGAMA	AA==
+	7WHz2Lyk3uPKiSZWj74tqxg9Pm+SC+CM4rJJSc3JLEst0rdL4MpobFrIWLCWu+JBxyTmBsaF
+	nF2MHBwSAiYSmzpzuxg5gUwxiQv31rOB2EICSxklVl1whIibSEz5e4K9i5ELKL6IUWLaqVvM
+	EE4Tk8TpfUvYQarYBLQk9r+4AdYtIqAgsbn3GStIEbPAWmaJi5Ma2UC2CQv4SEycxANSwyKg
+	KvH/2FomkDCvgKvE/PkuEMvkJD7seQQ2klPATWLv/b/MEAe5SqzfP5sJZKSEQCeHxParS1kh
+	5ghIfJt8iAXiGVmJTQeYIeZIShxccYNlAqPwAkaGVYyiqQXJBcVJ6UWGesWJucWleel6yfm5
+	mxiBMXf637PeHYy3D1gfYkwGGjeRWUo0OR8Ys3kl8YbGZkYWpiamxkbmlmakCSuJ8yY9TAoS
+	EkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwCiU+i5Z90uPgff7o/NnpeUmmk1hYXqp2T6rtiV8
+	/ymWjxOkXpnpNegxnGGflLx1g2T16U9LHP7UHQ1h//4+dqP5SQ/XOzsj7SJuFUT2m3zidvi1
+	77cbe4zE7VVeMx6KVpU59PKJaLR4Cr14evrK09zwJ5e2dn29tDTh+68y2+1u7Dus1C/FHlVi
+	Kc5INNRiLipOBAD75coYzwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNKsWRmVeSWpSXmKPExsVy+t9jAd2Zk3yCDXbcMLP4O+kYu8WkdQeY
+	LC7v17a4/uU5q8X8I+dYLT5/aGG36F1wlc3ibNMbdotNj6+xWlzeNYfNYsb5fUwWty/zWvy9
+	84/N4tT1z0ChyS/ZLNbPeM1icWzGEkaLvTsnMzoIeayZt4bRo6W5h83j969JjB5/V71g9rhz
+	bQ+bx+Yl9R5XTjSxevRtWcXo8XmTXABnVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGh
+	rqGlhbmSQl5ibqqtkotPgK5bZg7QP0oKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqM
+	DNBAwhrGjMamhYwFa7krHnRMYm5gXMjZxcjJISFgIjHl7wl2CFtM4sK99WxdjFwcQgKLGCWm
+	nbrFDOE0MUmc3rcErIpNQEti/4sbbCC2iICCxObeZ6wgRcwCa5klLk5qBEpwcAgL+EhMnMQD
+	UsMioCrx/9haJpAwr4CrxPz5LhDL5CQ+7HkENpJTwE1i7/2/zCC2EFDJ+v2zmSYw8i5gZFjF
+	KJpakFxQnJSea6hXnJhbXJqXrpecn7uJERzVz6R2MK5ssDjEKMDBqMTD6zHBJ1iINbGsuDL3
+	EKMEB7OSCO/rZKAQb0piZVVqUX58UWlOavEhxmSgoyYyS4km5wMTTl5JvKGxiZmRpZG5oYWR
+	sTlpwkrivAdarQOFBNITS1KzU1MLUotgtjBxcEo1MOarfzCd/pL/sM3sc6Zp9Y3PZn2KtlG2
+	2nvJq4TlnOGDBoUAsd+TGd48+3Cw8sZE9q2KKwL/rZFteXVgyf0Jm5v/z7whLr3n8LXSDTPn
+	B1v2mgYfvTRzy/4JO3b+kfhq/arepVhl78mqq+IO68xedTq9mPDhl+nSy9HiD9SvpIotvbvr
+	+POObaEMSizFGYmGWsxFxYkAJfz2fS4DAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,76 +57,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset support new Exynos3250 Samsung SoC based on Cortex-A7 dual core.
-Exynos3250 is a System-On-Chip (SoC) that is based on 32-bit RISC processor
-for Smartphone. It is desigend with the 28nm low-power high-K metal gate process
-and provides the best performance features.
+From: Kyungmin Park <kyungmin.park@samsung.com>
 
-This patchset include some patches such as:
-- Support secondary CPU of Exynos3250 (cpu up/down)
-- Supoort uart/mct/adc/gic/i2c/spi/power-domain/pmu/mshc/pwm/amba
-- Support the clock control for Exynos3250 using common clk framework
+This patch fix the offset of CPU boot address and change parameter of smc call
+of SMC_CMD_CPU1BOOT command for Exynos4212.
 
-This patchset is completely tested and is based on following git repo/branch.
-- git repo : git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
-- branch   : for-next (Linux 3.15-rc1)
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+---
+ arch/arm/mach-exynos/firmware.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
-Additional patch description about static memory mapping:
-Arnd Bergmann suggested that need proper driver instead of static memory mapping.
-As Chanho Park reply[2], Sachin Kamat already posted the DT support patch[1]
-for memory mapping for SYSRAM.
-[1] http://www.spinics.net/lists/linux-samsung-soc/msg27647.html
-[2] https://lkml.org/lkml/2014/4/10/161
-
-So, I'm going to re-implement following patches related to static memory mapping
-after merged Sachin Kamat patch[1].
-  ARM: EXYNOS: Add IO mapping for non-secure SYSRAM of Exynos3250
-  ARM: EXYNOS: Add IO mapping for PMU of Exynos3250
-
-Changes from v1:
-- Add new "samsung,exynos3" compatible name
-- Add comment about exynos_cpu_boot in Exynos4212
-- Remove unnecessary 'goto' statement in firmware.c
-- Use read_cpuid_part_number() function instead of assembler directly
-- Post separated pinctrl patch from this patchset
-  : https://lkml.org/lkml/2014/4/13/156
-- Remove unused pmu interrupts due to Exynos3250 dual-core
-- Cosolidate all the patches related to exynos3250.dtsi into one patch
-- Fix gic compatible name to "cortex-a15-gic" because Cortex-A7 GIC is same
-- Add sign-off of sender to all this patches
-- Fix minor typo
-
-Chanwoo Choi (5):
-  ARM: EXYNOS: Add Exynos3250 SoC ID
-  ARM: EXYNOS: Add IO mapping for non-secure SYSRAM of Exynos3250
-  ARM: EXYNOS: Add IO mapping for PMU of Exynos3250
-  ARM: EXYNOS: Support secondary CPU boot of Exynos3250
-  ARM: EXYNOS: Enter a15 lowpower mode for Exynos3250 based on Cortex-a7
-
-Kyungmin Park (1):
-  ARM: EXYNOS: Support secondary CPU boot of Exynos4212
-
-Tomasz Figa (2):
-  clk: samsung: exynos3250: Add clocks using common clock framework
-  ARM: dts: Add device tree sources for Exynos3250
-
- arch/arm/boot/dts/exynos3250-pinctrl.dtsi | 477 ++++++++++++++++++
- arch/arm/boot/dts/exynos3250.dtsi         | 410 ++++++++++++++++
- arch/arm/mach-exynos/Kconfig              |  22 +
- arch/arm/mach-exynos/exynos.c             |  19 +
- arch/arm/mach-exynos/firmware.c           |  18 +-
- arch/arm/mach-exynos/hotplug.c            |  16 +-
- arch/arm/mach-exynos/include/mach/map.h   |   2 +
- arch/arm/plat-samsung/include/plat/cpu.h  |  10 +
- drivers/clk/samsung/Makefile              |   1 +
- drivers/clk/samsung/clk-exynos3250.c      | 785 ++++++++++++++++++++++++++++++
- include/dt-bindings/clock/exynos3250.h    | 256 ++++++++++
- 11 files changed, 2010 insertions(+), 6 deletions(-)
- create mode 100644 arch/arm/boot/dts/exynos3250-pinctrl.dtsi
- create mode 100644 arch/arm/boot/dts/exynos3250.dtsi
- create mode 100644 drivers/clk/samsung/clk-exynos3250.c
- create mode 100644 include/dt-bindings/clock/exynos3250.h
-
+diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
+index 932129e..aa01c42 100644
+--- a/arch/arm/mach-exynos/firmware.c
++++ b/arch/arm/mach-exynos/firmware.c
+@@ -18,6 +18,8 @@
+ 
+ #include <mach/map.h>
+ 
++#include <plat/cpu.h>
++
+ #include "smc.h"
+ 
+ static int exynos_do_idle(void)
+@@ -28,13 +30,24 @@ static int exynos_do_idle(void)
+ 
+ static int exynos_cpu_boot(int cpu)
+ {
++	/*
++	 * The second parameter of SMC_CMD_CPU1BOOT command means CPU id.
++	 * But, Exynos4212 has only one secondary CPU so second parameter
++	 * isn't used for informing secure firmware about CPU id.
++	 */
++	if (soc_is_exynos4212())
++		cpu = 0;
++
+ 	exynos_smc(SMC_CMD_CPU1BOOT, cpu, 0, 0);
+ 	return 0;
+ }
+ 
+ static int exynos_set_cpu_boot_addr(int cpu, unsigned long boot_addr)
+ {
+-	void __iomem *boot_reg = S5P_VA_SYSRAM_NS + 0x1c + 4*cpu;
++	void __iomem *boot_reg = S5P_VA_SYSRAM_NS + 0x1c;
++
++	if (!soc_is_exynos4212())
++		boot_reg += 4*cpu;
+ 
+ 	__raw_writel(boot_addr, boot_reg);
+ 	return 0;
 -- 
 1.8.0
 
