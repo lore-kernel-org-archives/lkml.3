@@ -1,155 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947AbaDOBgH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 21:36:07 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:22375 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340AbaDOBgD (ORCPT
+	id S1753244AbaDOBhR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 21:37:17 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:14537 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828AbaDOBhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 21:36:03 -0400
-X-AuditID: cbfee690-b7f266d00000287c-e3-534c8d01d807
-Date: Tue, 15 Apr 2014 01:36:01 +0000 (GMT)
-From: =?euc-kr?B?x9S47cHW?= <myungjoo.ham@samsung.com>
-Subject: Re: Re: [PATCH] PM / devfreq: Use freq_table for available_frequencies
-To: Saravana Kannan <skannan@codeaurora.org>
-Cc: =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Reply-to: myungjoo.ham@samsung.com
+	Mon, 14 Apr 2014 21:37:15 -0400
+X-AuditID: cbfee68f-b7f156d00000276c-47-534c8d47028a
+From: Jungseok Lee <jays.lee@samsung.com>
+To: "'Steve Capper'" <steve.capper@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        Catalin.Marinas@arm.com, "'Marc Zyngier'" <Marc.Zyngier@arm.com>,
+        "'Christoffer Dall'" <christoffer.dall@linaro.org>,
+        kgene.kim@samsung.com, "'Arnd Bergmann'" <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, ilho215.lee@samsung.com,
+        "'linux-samsung-soc'" <linux-samsung-soc@vger.kernel.org>,
+        sungjinn.chung@samsung.com
+References: <000501cf57b4$e57e8e80$b07bab80$@samsung.com>
+ <20140414151333.GA29654@linaro.org>
+In-reply-to: <20140414151333.GA29654@linaro.org>
+Subject: Re: [PATCH 7/8] arm64: mm: Implement 4 levels of translation tables
+Date: Tue, 15 Apr 2014 10:37:11 +0900
+Message-id: <001a01cf584b$38945370$a9bcfa50$@samsung.com>
 MIME-version: 1.0
-X-MTR: 20140415012012184@myungjoo.ham
-Msgkey: 20140415012012184@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20140415012012184@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <8568895.444151397525760132.JavaMail.weblogic@epml02>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42JZI2JSqMvY6xNsMPW8pMXlXXPYHBg9Pm+S
-	C2CM4rJJSc3JLEst0rdL4Mr4sPkia0GPRMXCb3PZGhh3iHcxcnIICahLLFpykg3ElhAwkVi7
-	5wGULSZx4d56IJsLqGYpo8SfnutMMEWnjk2BSsxnlFj8fwIrSIJFQFVi17If7F2MHBxsAuYS
-	92cEgYSFBfwljvYfZgexRQT0JI40rWAF6WUWOM8kcbHrFBPEFUoSa/a9YgGxeQUEJU7OfMIC
-	sUxV4nLjKqi4mkTrobWsEHEJiVnTL0DZvBIz2p9C1ctJTPu6hhnClpY4P2sDI8w3i78/horz
-	Sxy7vYMJ5E6Q3if3g2HG7N78Bep5AYmpZw5CtWpJrFx/Hcrmk1iz8C0LzJhdp5Yzw/Te3zIX
-	7BVmAUWJKd0P2SFsLYkvP/axoXuLV8BR4s/MPpYJjMqzkKRmIWmfhaQdWc0CRpZVjKKpBckF
-	xUnpRSZ6xYm5xaV56XrJ+bmbGIGJ4fS/ZxN2MN47YH2IMRkYJROZpUST84GJJa8k3tDYzMjC
-	1MTU2Mjc0ow0YSVxXrVHSUFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGKedFtjwY/P0Tw05
-	Bn/PKr84dfta74WqBEllbjvLVRuUU2brxGVE5fIxZVq9Mqnsuuh01td6xr+tM09O7RVd+Onk
-	2wuCHcu71zE757gniz4P36m/e/UqtRVLDjyPN3+RxMecxsnXnP+mSWL5/OnrWlSm7OnO2lD6
-	elPDv6prOx35sjaVP/3tvUaJpTgj0VCLuag4EQCfIsDrIgMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e/2DF3GXp9gg6srhSwu75rD5sDo8XmT
-	XABjVJpNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtBQ
-	JYWyxJxSoFBAYnGxkr6dTVF+aUmqQkZ+cYmtUrShuZGekYGeqZGeoXGslaGBgZEpUE1CWsaH
-	zRdZC3okKhZ+m8vWwLhDvIuRk0NIQF1i0ZKTbCC2hICJxKljU6BsMYkL99YD2VxANfMZJRb/
-	n8AKkmARUJXYtewHexcjBwebgLnE/RlBIGFhAX+Jo/2H2UFsEQE9iSNNK1hBepkFzjNJXOw6
-	xQSxTElizb5XLCA2r4CgxMmZT1gglqlKXG5cBRVXk2g9tJYVIi4hMWv6BSibV2JG+1OoejmJ
-	aV/XMEPY0hLnZ21ghDl68ffHUHF+iWO3dzCB3AnS++R+MMyY3Zu/QP0oIDH1zEGoVi2Jleuv
-	Q9l8EmsWvmWBGbPr1HJmmN77W+aCvcIsoCgxpfshO4StJfHlxz42dG/xCjhK/JnZxzKBUW4W
-	ktQsJO2zkLQjq1nAyLKKUTS1ILmgOCm9wkivODG3uDQvXS85P3cTIzg9PVu0g/HfeetDjAIc
-	jEo8vBPeeQcLsSaWFVfmHmKU4GBWEuF9newTLMSbklhZlVqUH19UmpNafIgxGRiBE5mlRJPz
-	gakzryTe0NjYxMzE1NLEwsDUnDRhJXFe+VtJQUIC6YklqdmpqQWpRTBbmDg4pRoYX8bxitq/
-	22LbNDn0Q9k0pk9LkruPclUsXDXxS21i+4Ecnjd/bydc067a+0D/Ueh3oW9Gx0sCrM9n9ryS
-	bj6gIety7ef1r1ZHfZQCPT6sWOHQ+LTJXmrXtnsbVDtqZ5wxN/zwf1W1ferT/DNbao5n2a5X
-	qT97sEMxxfJ0w/lfq0O6N2m73J7yWYmlOCPRUIu5qDgRAP6WVvGTAwAA
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQILdni68u70DkxPk4mJeDBA1L/NRAGceXZlmozCy2A=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplleLIzCtJLcpLzFFi42I5/e+Zga57r0+wwdM58hZ/Jx1jt3i/rIfR
+	4sXrf4wWR/8tZLToXXCVzeLjqePsFpseX2O1uLxrDpvFjPP7mCz+3vnHZrFi3jI2iw8zVjI6
+	8HismbeG0eP3r0mMHneu7WHzOL9pDbPH5iX1Hn1bVjF6fN4kF8AexWWTkpqTWZZapG+XwJXx
+	cNk2poKdQhUbfz1mb2A8ztfFyMkhIWAi8fzyeTYIW0ziwr31QDYXh5DAMkaJvsnvGGGK1nde
+	ZYFITGeUmLn5EFhCSOAPo8SUr+wgNpuApsSjuz1gtoiAjsTJa22sIA3MAh3MEjf6ljJBNMRL
+	rPh3B8zmFDCQmDHlJpgtLOAjcXP5F7BmFgFViY/fV7CA2LwClhING5azQdiCEj8m3wOLMwto
+	SazfeZwJwpaX2LzmLTPEpQoSO86+ZoQ4wkrixLKPjBA1IhL7XoB8wwVUM5dDYsm+b1DLBCS+
+	TT4ENJQDKCErsekA1BxJiYMrbrBMYJSYhWT1LCSrZyFZPQvJigWMLKsYRVMLkguKk9KLjPWK
+	E3OLS/PS9ZLzczcxQpJA/w7GuwesDzEmA62fyCwlmpwPTCJ5JfGGxmZGFqYmpsZG5pZmpAkr
+	ifPef5gUJCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoExy7tsxpZfk/qajnTFdHkonCu/l+62
+	xK58ceMm1murMiNWVF6wmK+6eP/2xVW5OsK6+3SsD+1OOWxqeyn1a077AuOIY9L2uvyBW2rT
+	NeeF7v7L/Xl157341MMBXqfX3vB/FnfY7fH/X8fZ7u/blZlV2lA0Zcs39UfHVRaH2Oia5kUs
+	mf3xQP8EJZbijERDLeai4kQA7OI6GhgDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEKsWRmVeSWpSXmKPExsVy+t9jQV33Xp9gg5VtUhZ/Jx1jt3i/rIfR
+	4sXrf4wWR/8tZLToXXCVzeLjqePsFpseX2O1uLxrDpvFjPP7mCz+3vnHZrFi3jI2iw8zVjI6
+	8HismbeG0eP3r0mMHneu7WHzOL9pDbPH5iX1Hn1bVjF6fN4kF8Ae1cBok5GamJJapJCal5yf
+	kpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0qZJCWWJOKVAoILG4WEnfDtOE
+	0BA3XQuYxghd35AguB4jAzSQsI4x4+GybUwFO4UqNv56zN7AeJyvi5GTQ0LARGJ951UWCFtM
+	4sK99WxdjFwcQgLTGSVmbj7ECJIQEvjDKDHlKzuIzSagKfHobg+YLSKgI3HyWhsrSAOzQAez
+	xI2+pUwQDfESK/7dAbM5BQwkZky5CWYLC/hI3Fz+BayZRUBV4uP3FWCbeQUsJRo2LGeDsAUl
+	fky+BxZnFtCSWL/zOBOELS+xec1bZohLFSR2nH3NCHGElcSJZR8ZIWpEJPa9eMc4gVFoFpJR
+	s5CMmoVk1CwkLQsYWVYxiqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBKeYZ9I7GFc1WBxiFOBg
+	VOLhnfDOO1iINbGsuDL3EKMEB7OSCO/rZJ9gId6UxMqq1KL8+KLSnNTiQ4zJQJ9OZJYSTc4H
+	pr+8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamBs2sCxoGJC
+	2RUGTkUFJh61d/6xD1ZabmNmkBcNi1tze90bm0vrd5/r21Rd3hvYrHnsoltCiNYsjt9m78oy
+	lRkeult/774lc73jh+ceK9HpDe+9FmTXrlXc7Zz0Z2v7f4cdk3VVF+Rtuzd/V+0kGYey1TJP
+	7wbf41+j3ZZ56eettRv3yG/j5bivxFKckWioxVxUnAgAFrRtKHUDAAA=
 DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3F1aHsW022941
 
-> MyungJoo/Kyungmin,
-> 
-> Bump. Can we accept this patch please?
-> 
-> -Saravana
-
-Nack.
-
-Please note that freq_table is also an optional value, which may
-be null.
-
-Besides, please be aware that your code is under rcu_read_lock().
-
-
-Cheers,
-MyungJoo.
-
-ps. I'll send a related patch (avoid accessing null but not-an-error
-pointer at other sysfs nodes). Thank you for letting me catch such bugs anyway.
-
-> 
-> 
-> On 04/10/2014 07:54 PM, Saravana Kannan wrote:
-> > Some devices use freq_table instead of OPP. For those devices, the
-> > available_frequencies file shows up empty. Fix that by using freq_table to
-> > generate the available_frequencies data when OPP is not present.
+On Tuesday, April 15, 2014 12:14 AM, Steve Capper wrote:
+> On Mon, Apr 14, 2014 at 04:41:07PM +0900, Jungseok Lee wrote:
+> > This patch implements 4 levels of translation tables since 3 levels of
+> > page tables with 4KB pages cannot support 40-bit physical address
+> > space described in [1] due to the following issue.
 > >
-> > Signed-off-by: Saravana Kannan <skannan@codeaurora.org>
-> > ---
-> >   drivers/devfreq/devfreq.c | 15 +++++++++++----
-> >   1 file changed, 11 insertions(+), 4 deletions(-)
+> > It is a restriction that kernel logical memory map with 4KB + 3 levels
+> > (0xffffffc000000000-0xffffffffffffffff) cannot cover RAM region from
+> > 544GB to 1024GB in [1]. Specifically, ARM64 kernel fails to create
+> > mapping for this region in map_mem function since __phys_to_virt for
+> > this region reaches to address overflow.
 > >
-> > diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-> > index 2042ec3..a715d15 100644
-> > --- a/drivers/devfreq/devfreq.c
-> > +++ b/drivers/devfreq/devfreq.c
-> > @@ -912,19 +912,26 @@ static ssize_t available_frequencies_show(struct device *d,
-> >   	struct devfreq *df = to_devfreq(d);
-> >   	struct device *dev = df->dev.parent;
-> >   	struct dev_pm_opp *opp;
-> > +	unsigned int i = 0, max_state = df->profile->max_state;
-> > +	bool use_opp;
-> >   	ssize_t count = 0;
-> >   	unsigned long freq = 0;
+> > If SoC design follows the document, [1], over 32GB RAM would be placed
+> > from 544GB. Even 64GB system is supposed to use the region from 544GB
+> > to 576GB for only 32GB RAM. Naturally, it would reach to enable 4
+> > levels of page tables to avoid hacking __virt_to_phys and __phys_to_virt.
 > >
-> >   	rcu_read_lock();
-> > +	use_opp = dev_pm_opp_get_opp_count(dev) > 0;
-> >   	do {
-> > -		opp = dev_pm_opp_find_freq_ceil(dev, &freq);
-> > -		if (IS_ERR(opp))
-> > -			break;
-> > +		if (use_opp) {
-> > +			opp = dev_pm_opp_find_freq_ceil(dev, &freq);
-> > +			if (IS_ERR(opp))
-> > +				break;
-> > +		} else {
-> > +			freq = df->profile->freq_table[i++];
-> > +		}
+> > However, it is recommended 4 levels of page table should be only
+> > enabled if memory map is too sparse or there is about 512GB RAM.
 > >
-> >   		count += scnprintf(&buf[count], (PAGE_SIZE - count - 2),
-> >   				   "%lu ", freq);
-> >   		freq++;
-> > -	} while (1);
-> > +	} while (use_opp || (!use_opp && i < max_state));
-> >   	rcu_read_unlock();
+> > References
+> > ----------
+> > [1]: Principle of ARM Memory Maps, White Paper, Issue C
 > >
-> >   	/* Truncate the trailing space */
+
+[ ... ]
+
+> > diff --git a/arch/arm64/mm/mmu.c b/arch/arm64/mm/mmu.c index
+> > 6b7e895..321f569 100644
+> > --- a/arch/arm64/mm/mmu.c
+> > +++ b/arch/arm64/mm/mmu.c
+> > @@ -222,9 +222,17 @@ static void __init alloc_init_pmd(pud_t *pud,
+> > unsigned long addr,  static void __init alloc_init_pud(pgd_t *pgd, unsigned long addr,
+> >  				  unsigned long end, unsigned long phys)  {
+> > -	pud_t *pud = pud_offset(pgd, addr);
+> > +	pud_t *pud;
+> >  	unsigned long next;
 > >
+> > +#ifdef CONFIG_ARM64_4_LEVELS
+> > +	if (pgd_none(*pgd) || pgd_bad(*pgd)) {
+> > +		pud = early_alloc(PTRS_PER_PUD * sizeof(pud_t));
+> > +		pgd_populate(&init_mm, pgd, pud);
+> > +	}
+> > +#endif
 > 
-> 
-> -- 
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-> hosted by The Linux Foundation
-> 
-> 
-> 
->        
->   
->          
-> 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> We don't need this #ifdef block, as pgd_none and pgd_bad should be zero when we have fewer than 4
+> levels.
+
+This block is needed to cover the third RAM region from 544GB to 1024GB
+described in the document [1].
+
+A single PGD can cover only up to 512GB with 4KB+4Level. In other words,
+kernel would reach to panic if a system has RAM over 512GB memory map space.
+That is why pgd_none should be handled.
+
+Best Regards
+Jungseok Lee
+
