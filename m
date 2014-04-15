@@ -1,88 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaDOLup (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 07:50:45 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:53047 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751051AbaDOLum (ORCPT
+	id S1754222AbaDOLzX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 07:55:23 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:39804 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001AbaDOLzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 07:50:42 -0400
-From: Mohit Kumar <mohit.kumar@st.com>
-To: <spear-devel@list.st.com>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: Pratyush Anand <pratyush.anand@st.com>, Mohit Kumar <mohit.kumar@st.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH V8 1/9] clk: SPEAr13XX: Fix pcie clock name
-Date: Tue, 15 Apr 2014 17:19:43 +0530
-Message-ID: <378dc5a17716db13553ae05257b9b0e9722d29b8.1397555158.git.mohit.kumar@st.com>
-X-Mailer: git-send-email 1.7.0.1
-In-Reply-To: <cover.1397555158.git.mohit.kumar@st.com>
-References: <cover.1397555158.git.mohit.kumar@st.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+	Tue, 15 Apr 2014 07:55:21 -0400
+Date: Tue, 15 Apr 2014 14:54:55 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Mathieu Maret <mathieu.maret@gmail.com>
+Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org,
+        serban.constantinescu@arm.com, linux-kernel@vger.kernel.org,
+        arve@android.com, joe@perches.com, prtvar.b@gmail.com
+Subject: Re: [PATCH RESEND 1/2] staging: binder: add __user annotation in
+ binder.c
+Message-ID: <20140415115455.GM26890@mwanda>
+References: <1397556186-5465-1-git-send-email-mathieu.maret@gmail.com>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-14_01:2014-04-14,2014-04-14,1970-01-01 signatures=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397556186-5465-1-git-send-email-mathieu.maret@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pratyush Anand <pratyush.anand@st.com>
+This is the first time you have sent it to the list, it's not a RESEND.
 
-Follow dt clock naming convention for PCIe clocks.
+Patch looks ok.
 
-Signed-off-by: Pratyush Anand <pratyush.anand@st.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Mohit Kumar <mohit.kumar@st.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: spear-devel@list.st.com
-Cc: linux-arm-kernel@lists.infradead.org
----
- drivers/clk/spear/spear1310_clock.c |    6 +++---
- drivers/clk/spear/spear1340_clock.c |    2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/clk/spear/spear1310_clock.c b/drivers/clk/spear/spear1310_clock.c
-index 65894f7..4daa597 100644
---- a/drivers/clk/spear/spear1310_clock.c
-+++ b/drivers/clk/spear/spear1310_clock.c
-@@ -742,19 +742,19 @@ void __init spear1310_clk_init(void __iomem *misc_base, void __iomem *ras_base)
- 	clk = clk_register_gate(NULL, "pcie_sata_0_clk", "ahb_clk", 0,
- 			SPEAR1310_PERIP1_CLK_ENB, SPEAR1310_PCIE_SATA_0_CLK_ENB,
- 			0, &_lock);
--	clk_register_clkdev(clk, NULL, "dw_pcie.0");
-+	clk_register_clkdev(clk, NULL, "b1000000.pcie");
- 	clk_register_clkdev(clk, NULL, "b1000000.ahci");
- 
- 	clk = clk_register_gate(NULL, "pcie_sata_1_clk", "ahb_clk", 0,
- 			SPEAR1310_PERIP1_CLK_ENB, SPEAR1310_PCIE_SATA_1_CLK_ENB,
- 			0, &_lock);
--	clk_register_clkdev(clk, NULL, "dw_pcie.1");
-+	clk_register_clkdev(clk, NULL, "b1800000.pcie");
- 	clk_register_clkdev(clk, NULL, "b1800000.ahci");
- 
- 	clk = clk_register_gate(NULL, "pcie_sata_2_clk", "ahb_clk", 0,
- 			SPEAR1310_PERIP1_CLK_ENB, SPEAR1310_PCIE_SATA_2_CLK_ENB,
- 			0, &_lock);
--	clk_register_clkdev(clk, NULL, "dw_pcie.2");
-+	clk_register_clkdev(clk, NULL, "b4000000.pcie");
- 	clk_register_clkdev(clk, NULL, "b4000000.ahci");
- 
- 	clk = clk_register_gate(NULL, "sysram0_clk", "ahb_clk", 0,
-diff --git a/drivers/clk/spear/spear1340_clock.c b/drivers/clk/spear/spear1340_clock.c
-index fe835c1..5a5c664 100644
---- a/drivers/clk/spear/spear1340_clock.c
-+++ b/drivers/clk/spear/spear1340_clock.c
-@@ -839,7 +839,7 @@ void __init spear1340_clk_init(void __iomem *misc_base)
- 	clk = clk_register_gate(NULL, "pcie_sata_clk", "ahb_clk", 0,
- 			SPEAR1340_PERIP1_CLK_ENB, SPEAR1340_PCIE_SATA_CLK_ENB,
- 			0, &_lock);
--	clk_register_clkdev(clk, NULL, "dw_pcie");
-+	clk_register_clkdev(clk, NULL, "b1000000.pcie");
- 	clk_register_clkdev(clk, NULL, "b1000000.ahci");
- 
- 	clk = clk_register_gate(NULL, "sysram0_clk", "ahb_clk", 0,
--- 
-1.7.0.1
+regards,
+dan carpenter
 
