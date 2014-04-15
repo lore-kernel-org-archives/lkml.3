@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755000AbaDOORX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 10:17:23 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:58085 "EHLO SMTP.CITRIX.COM"
+	id S1754947AbaDOORU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 10:17:20 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:58095 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751352AbaDOOQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753259AbaDOOQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Apr 2014 10:16:08 -0400
 X-IronPort-AV: E=Sophos;i="4.97,864,1389744000"; 
-   d="scan'208";a="121257954"
+   d="scan'208";a="121257958"
 From: David Vrabel <david.vrabel@citrix.com>
 To: <xen-devel@lists.xenproject.org>
 CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
@@ -16,9 +16,9 @@ CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Thomas Gleixner <tglx@linutronix.de>, "Ingo Molnar" <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 3/9] x86/xen: compactly store large identity ranges in the p2m
-Date: Tue, 15 Apr 2014 15:15:31 +0100
-Message-ID: <1397571337-20409-4-git-send-email-david.vrabel@citrix.com>
+Subject: [PATCH 9/9] x86: remove the Xen-specific _PAGE_IOMAP PTE flag
+Date: Tue, 15 Apr 2014 15:15:37 +0100
+Message-ID: <1397571337-20409-10-git-send-email-david.vrabel@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1397571337-20409-1-git-send-email-david.vrabel@citrix.com>
 References: <1397571337-20409-1-git-send-email-david.vrabel@citrix.com>
@@ -29,355 +29,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Large (multi-GB) identity ranges currently require a unique middle page
-(filled with p2m_identity entries) per 1 GB region.
+The _PAGE_IO_MAP PTE flag was only used by Xen PV guests to mark PTEs
+that were used to map I/O regions that are 1:1 in the p2m.  This
+allowed Xen to obtain the correct PFN when converting the MFNs read
+from a PTE back to their PFN.
 
-Similar to the common p2m_mid_missing middle page for large missing
-regions, introduce a p2m_mid_identity page (filled with p2m_identity
-entries) which can be used instead.
+Xen guests no longer use _PAGE_IOMAP for this. Instead mfn_to_pfn()
+returns the correct PFN by using a combination of the m2p and p2m to
+determine if an MFN corresponds to a 1:1 mapping in the the p2m.
 
-set_phys_range_identity() thus only needs to allocate new middle pages
-at the beginning and end of the range.
+Remove _PAGE_IOMAP, replacing it with _PAGE_UNUSED2 to allow for
+future uses of the PTE flag.
 
 Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: x86@kernel.org
 ---
- arch/x86/xen/p2m.c |  155 +++++++++++++++++++++++++++++++++++-----------------
- 1 files changed, 105 insertions(+), 50 deletions(-)
+This depends on the preceeding Xen changes, so this will be merged via
+the Xen tree.
+---
+ arch/x86/include/asm/pgtable_types.h |   12 ++++++------
+ arch/x86/mm/init_32.c                |    2 +-
+ arch/x86/mm/init_64.c                |    2 +-
+ arch/x86/pci/i386.c                  |    2 --
+ arch/x86/xen/enlighten.c             |    2 --
+ 5 files changed, 8 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 82c8c93..5d716f7 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -36,7 +36,7 @@
-  *  pfn_to_mfn(0xc0000)=0xc0000
-  *
-  * The benefit of this is, that we can assume for non-RAM regions (think
-- * PCI BARs, or ACPI spaces), we can create mappings easily b/c we
-+ * PCI BARs, or ACPI spaces), we can create mappings easily because we
-  * get the PFN value to match the MFN.
-  *
-  * For this to work efficiently we have one new page p2m_identity and
-@@ -60,7 +60,7 @@
-  * There is also a digram of the P2M at the end that can help.
-  * Imagine your E820 looking as so:
-  *
-- *                    1GB                                           2GB
-+ *                    1GB                                           2GB    4GB
-  * /-------------------+---------\/----\         /----------\    /---+-----\
-  * | System RAM        | Sys RAM ||ACPI|         | reserved |    | Sys RAM |
-  * \-------------------+---------/\----/         \----------/    \---+-----/
-@@ -77,9 +77,8 @@
-  * of the PFN and the end PFN (263424 and 512256 respectively). The first step
-  * is to reserve_brk a top leaf page if the p2m[1] is missing. The top leaf page
-  * covers 512^2 of page estate (1GB) and in case the start or end PFN is not
-- * aligned on 512^2*PAGE_SIZE (1GB) we loop on aligned 1GB PFNs from start pfn
-- * to end pfn.  We reserve_brk top leaf pages if they are missing (means they
-- * point to p2m_mid_missing).
-+ * aligned on 512^2*PAGE_SIZE (1GB) we reserve_brk new middle and leaf pages as
-+ * required to split any existing p2m_mid_missing middle pages.
-  *
-  * With the E820 example above, 263424 is not 1GB aligned so we allocate a
-  * reserve_brk page which will cover the PFNs estate from 0x40000 to 0x80000.
-@@ -88,7 +87,7 @@
-  * Next stage is to determine if we need to do a more granular boundary check
-  * on the 4MB (or 2MB depending on architecture) off the start and end pfn's.
-  * We check if the start pfn and end pfn violate that boundary check, and if
-- * so reserve_brk a middle (p2m[x][y]) leaf page. This way we have a much finer
-+ * so reserve_brk a (p2m[x][y]) leaf page. This way we have a much finer
-  * granularity of setting which PFNs are missing and which ones are identity.
-  * In our example 263424 and 512256 both fail the check so we reserve_brk two
-  * pages. Populate them with INVALID_P2M_ENTRY (so they both have "missing"
-@@ -102,9 +101,10 @@
-  *
-  * The next step is to walk from the start pfn to the end pfn setting
-  * the IDENTITY_FRAME_BIT on each PFN. This is done in set_phys_range_identity.
-- * If we find that the middle leaf is pointing to p2m_missing we can swap it
-- * over to p2m_identity - this way covering 4MB (or 2MB) PFN space.  At this
-- * point we do not need to worry about boundary aligment (so no need to
-+ * If we find that the middle entry is pointing to p2m_missing we can swap it
-+ * over to p2m_identity - this way covering 4MB (or 2MB) PFN space (and
-+ * similarly swapping p2m_mid_missing for p2m_mid_identity for larger regions).
-+ * At this point we do not need to worry about boundary aligment (so no need to
-  * reserve_brk a middle page, figure out which PFNs are "missing" and which
-  * ones are identity), as that has been done earlier.  If we find that the
-  * middle leaf is not occupied by p2m_identity or p2m_missing, we dereference
-@@ -118,6 +118,9 @@
-  * considered missing). In our case, p2m[1][2][0->255] and p2m[1][488][257->511]
-  * contain the INVALID_P2M_ENTRY value and are considered "missing."
-  *
-+ * Finally, the region beyond the end of of the E820 (4 GB in this example)
-+ * is set to be identity (in case there are MMIO regions placed here).
-+ *
-  * This is what the p2m ends up looking (for the E820 above) with this
-  * fabulous drawing:
-  *
-@@ -129,21 +132,27 @@
-  *  |-----|    \                      | [p2m_identity]+\\    | ....            |
-  *  |  2  |--\  \-------------------->|  ...          | \\   \----------------/
-  *  |-----|   \                       \---------------/  \\
-- *  |  3  |\   \                                          \\  p2m_identity
-- *  |-----| \   \-------------------->/---------------\   /-----------------\
-- *  | ..  +->+                        | [p2m_identity]+-->| ~0, ~0, ~0, ... |
-- *  \-----/ /                         | [p2m_identity]+-->| ..., ~0         |
-- *         / /---------------\        | ....          |   \-----------------/
-- *        /  | IDENTITY[@0]  |      /-+-[x], ~0, ~0.. |
-- *       /   | IDENTITY[@256]|<----/  \---------------/
-- *      /    | ~0, ~0, ....  |
-- *     |     \---------------/
-- *     |
-- *   p2m_mid_missing           p2m_missing
-- * /-----------------\     /------------\
-- * | [p2m_missing]   +---->| ~0, ~0, ~0 |
-- * | [p2m_missing]   +---->| ..., ~0    |
-- * \-----------------/     \------------/
-+ *  |  3  |-\  \                                          \\  p2m_identity [1]
-+ *  |-----|  \  \-------------------->/---------------\   /-----------------\
-+ *  | ..  |\  |                       | [p2m_identity]+-->| ~0, ~0, ~0, ... |
-+ *  \-----/ | |                       | [p2m_identity]+-->| ..., ~0         |
-+ *          | |                       | ....          |   \-----------------/
-+ *          | |                       +-[x], ~0, ~0.. +\
-+ *          | |                       \---------------/ \
-+ *          | |                                          \-> /---------------\
-+ *          | V  p2m_mid_missing       p2m_missing           | IDENTITY[@0]  |
-+ *          | /-----------------\     /------------\         | IDENTITY[@256]|
-+ *          | | [p2m_missing]   +---->| ~0, ~0, ...|         | ~0, ~0, ....  |
-+ *          | | [p2m_missing]   +---->| ..., ~0    |         \---------------/
-+ *          | | ...             |     \------------/
-+ *          | \-----------------/
-+ *          |
-+ *          |     p2m_mid_identity 
-+ *          |   /-----------------\     
-+ *          \-->| [p2m_identity]  +---->[1]
-+ *              | [p2m_identity]  +---->[1]
-+ *              | ...             |
-+ *              \-----------------/
-  *
-  * where ~0 is INVALID_P2M_ENTRY. IDENTITY is (PFN | IDENTITY_BIT)
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index eb3d449..ead3cb7 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -17,7 +17,7 @@
+ #define _PAGE_BIT_PAT		7	/* on 4KB pages */
+ #define _PAGE_BIT_GLOBAL	8	/* Global TLB entry PPro+ */
+ #define _PAGE_BIT_UNUSED1	9	/* available for programmer */
+-#define _PAGE_BIT_IOMAP		10	/* flag used to indicate IO mapping */
++#define _PAGE_BIT_UNUSED2	10	/* available for programmer */
+ #define _PAGE_BIT_HIDDEN	11	/* hidden by kmemcheck */
+ #define _PAGE_BIT_PAT_LARGE	12	/* On 2MB or 1GB pages */
+ #define _PAGE_BIT_SPECIAL	_PAGE_BIT_UNUSED1
+@@ -41,7 +41,7 @@
+ #define _PAGE_PSE	(_AT(pteval_t, 1) << _PAGE_BIT_PSE)
+ #define _PAGE_GLOBAL	(_AT(pteval_t, 1) << _PAGE_BIT_GLOBAL)
+ #define _PAGE_UNUSED1	(_AT(pteval_t, 1) << _PAGE_BIT_UNUSED1)
+-#define _PAGE_IOMAP	(_AT(pteval_t, 1) << _PAGE_BIT_IOMAP)
++#define _PAGE_UNUSED2	(_AT(pteval_t, 1) << _PAGE_BIT_UNUSED2)
+ #define _PAGE_PAT	(_AT(pteval_t, 1) << _PAGE_BIT_PAT)
+ #define _PAGE_PAT_LARGE (_AT(pteval_t, 1) << _PAGE_BIT_PAT_LARGE)
+ #define _PAGE_SPECIAL	(_AT(pteval_t, 1) << _PAGE_BIT_SPECIAL)
+@@ -164,10 +164,10 @@
+ #define __PAGE_KERNEL_LARGE_NOCACHE	(__PAGE_KERNEL | _PAGE_CACHE_UC | _PAGE_PSE)
+ #define __PAGE_KERNEL_LARGE_EXEC	(__PAGE_KERNEL_EXEC | _PAGE_PSE)
+ 
+-#define __PAGE_KERNEL_IO		(__PAGE_KERNEL | _PAGE_IOMAP)
+-#define __PAGE_KERNEL_IO_NOCACHE	(__PAGE_KERNEL_NOCACHE | _PAGE_IOMAP)
+-#define __PAGE_KERNEL_IO_UC_MINUS	(__PAGE_KERNEL_UC_MINUS | _PAGE_IOMAP)
+-#define __PAGE_KERNEL_IO_WC		(__PAGE_KERNEL_WC | _PAGE_IOMAP)
++#define __PAGE_KERNEL_IO		(__PAGE_KERNEL)
++#define __PAGE_KERNEL_IO_NOCACHE	(__PAGE_KERNEL_NOCACHE)
++#define __PAGE_KERNEL_IO_UC_MINUS	(__PAGE_KERNEL_UC_MINUS)
++#define __PAGE_KERNEL_IO_WC		(__PAGE_KERNEL_WC)
+ 
+ #define PAGE_KERNEL			__pgprot(__PAGE_KERNEL)
+ #define PAGE_KERNEL_RO			__pgprot(__PAGE_KERNEL_RO)
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index e395048..af7259c 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -537,7 +537,7 @@ static void __init pagetable_init(void)
+ 	permanent_kmaps_init(pgd_base);
+ }
+ 
+-pteval_t __supported_pte_mask __read_mostly = ~(_PAGE_NX | _PAGE_GLOBAL | _PAGE_IOMAP);
++pteval_t __supported_pte_mask __read_mostly = ~(_PAGE_NX | _PAGE_GLOBAL);
+ EXPORT_SYMBOL_GPL(__supported_pte_mask);
+ 
+ /* user-defined highmem size */
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index f35c66c..9e6fa6d 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -151,7 +151,7 @@ early_param("gbpages", parse_direct_gbpages_on);
+  * around without checking the pgd every time.
   */
-@@ -187,13 +196,15 @@ static RESERVE_BRK_ARRAY(unsigned long, p2m_top_mfn, P2M_TOP_PER_PAGE);
- static RESERVE_BRK_ARRAY(unsigned long *, p2m_top_mfn_p, P2M_TOP_PER_PAGE);
  
- static RESERVE_BRK_ARRAY(unsigned long, p2m_identity, P2M_PER_PAGE);
-+static RESERVE_BRK_ARRAY(unsigned long *, p2m_mid_identity, P2M_MID_PER_PAGE);
-+static RESERVE_BRK_ARRAY(unsigned long, p2m_mid_identity_mfn, P2M_MID_PER_PAGE);
+-pteval_t __supported_pte_mask __read_mostly = ~_PAGE_IOMAP;
++pteval_t __supported_pte_mask __read_mostly = ~0;
+ EXPORT_SYMBOL_GPL(__supported_pte_mask);
  
- RESERVE_BRK(p2m_mid, PAGE_SIZE * (MAX_DOMAIN_PAGES / (P2M_PER_PAGE * P2M_MID_PER_PAGE)));
- RESERVE_BRK(p2m_mid_mfn, PAGE_SIZE * (MAX_DOMAIN_PAGES / (P2M_PER_PAGE * P2M_MID_PER_PAGE)));
+ int force_personality32;
+diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
+index db6b1ab..1f642d6 100644
+--- a/arch/x86/pci/i386.c
++++ b/arch/x86/pci/i386.c
+@@ -433,8 +433,6 @@ int pci_mmap_page_range(struct pci_dev *dev, struct vm_area_struct *vma,
+ 		 */
+ 		prot |= _PAGE_CACHE_UC_MINUS;
  
- /* We might hit two boundary violations at the start and end, at max each
-  * boundary violation will require three middle nodes. */
--RESERVE_BRK(p2m_mid_identity, PAGE_SIZE * 2 * 3);
-+RESERVE_BRK(p2m_mid_extra, PAGE_SIZE * 2 * 3);
+-	prot |= _PAGE_IOMAP;	/* creating a mapping for IO */
+-
+ 	vma->vm_page_prot = __pgprot(prot);
  
- /* When we populate back during bootup, the amount of pages can vary. The
-  * max we have is seen is 395979, but that does not mean it can't be more.
-@@ -242,20 +253,20 @@ static void p2m_top_mfn_p_init(unsigned long **top)
- 		top[i] = p2m_mid_missing_mfn;
- }
+ 	if (io_remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 201d09a..c5e21e3 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1555,8 +1555,6 @@ asmlinkage void __init xen_start_kernel(void)
+ #endif
+ 		__supported_pte_mask &= ~(_PAGE_PWT | _PAGE_PCD);
  
--static void p2m_mid_init(unsigned long **mid)
-+static void p2m_mid_init(unsigned long **mid, unsigned long *leaf)
- {
- 	unsigned i;
- 
- 	for (i = 0; i < P2M_MID_PER_PAGE; i++)
--		mid[i] = p2m_missing;
-+		mid[i] = leaf;
- }
- 
--static void p2m_mid_mfn_init(unsigned long *mid)
-+static void p2m_mid_mfn_init(unsigned long *mid, unsigned long *leaf)
- {
- 	unsigned i;
- 
- 	for (i = 0; i < P2M_MID_PER_PAGE; i++)
--		mid[i] = virt_to_mfn(p2m_missing);
-+		mid[i] = virt_to_mfn(leaf);
- }
- 
- static void p2m_init(unsigned long *p2m)
-@@ -286,7 +297,9 @@ void __ref xen_build_mfn_list_list(void)
- 	/* Pre-initialize p2m_top_mfn to be completely missing */
- 	if (p2m_top_mfn == NULL) {
- 		p2m_mid_missing_mfn = extend_brk(PAGE_SIZE, PAGE_SIZE);
--		p2m_mid_mfn_init(p2m_mid_missing_mfn);
-+		p2m_mid_mfn_init(p2m_mid_missing_mfn, p2m_missing);
-+		p2m_mid_identity_mfn = extend_brk(PAGE_SIZE, PAGE_SIZE);
-+		p2m_mid_mfn_init(p2m_mid_identity_mfn, p2m_identity);
- 
- 		p2m_top_mfn_p = extend_brk(PAGE_SIZE, PAGE_SIZE);
- 		p2m_top_mfn_p_init(p2m_top_mfn_p);
-@@ -295,7 +308,8 @@ void __ref xen_build_mfn_list_list(void)
- 		p2m_top_mfn_init(p2m_top_mfn);
- 	} else {
- 		/* Reinitialise, mfn's all change after migration */
--		p2m_mid_mfn_init(p2m_mid_missing_mfn);
-+		p2m_mid_mfn_init(p2m_mid_missing_mfn, p2m_missing);
-+		p2m_mid_mfn_init(p2m_mid_identity_mfn, p2m_identity);
- 	}
- 
- 	for (pfn = 0; pfn < xen_max_p2m_pfn; pfn += P2M_PER_PAGE) {
-@@ -327,7 +341,7 @@ void __ref xen_build_mfn_list_list(void)
- 			 * it too late.
- 			 */
- 			mid_mfn_p = extend_brk(PAGE_SIZE, PAGE_SIZE);
--			p2m_mid_mfn_init(mid_mfn_p);
-+			p2m_mid_mfn_init(mid_mfn_p, p2m_missing);
- 
- 			p2m_top_mfn_p[topidx] = mid_mfn_p;
- 		}
-@@ -365,16 +379,17 @@ void __init xen_build_dynamic_phys_to_machine(void)
- 
- 	p2m_missing = extend_brk(PAGE_SIZE, PAGE_SIZE);
- 	p2m_init(p2m_missing);
-+	p2m_identity = extend_brk(PAGE_SIZE, PAGE_SIZE);
-+	p2m_init(p2m_identity);
- 
- 	p2m_mid_missing = extend_brk(PAGE_SIZE, PAGE_SIZE);
--	p2m_mid_init(p2m_mid_missing);
-+	p2m_mid_init(p2m_mid_missing, p2m_missing);
-+	p2m_mid_identity = extend_brk(PAGE_SIZE, PAGE_SIZE);
-+	p2m_mid_init(p2m_mid_identity, p2m_identity);
- 
- 	p2m_top = extend_brk(PAGE_SIZE, PAGE_SIZE);
- 	p2m_top_init(p2m_top);
- 
--	p2m_identity = extend_brk(PAGE_SIZE, PAGE_SIZE);
--	p2m_init(p2m_identity);
+-	__supported_pte_mask |= _PAGE_IOMAP;
 -
  	/*
- 	 * The domain builder gives us a pre-constructed p2m array in
- 	 * mfn_list for all the pages initially given to us, so we just
-@@ -386,7 +401,7 @@ void __init xen_build_dynamic_phys_to_machine(void)
- 
- 		if (p2m_top[topidx] == p2m_mid_missing) {
- 			unsigned long **mid = extend_brk(PAGE_SIZE, PAGE_SIZE);
--			p2m_mid_init(mid);
-+			p2m_mid_init(mid, p2m_missing);
- 
- 			p2m_top[topidx] = mid;
- 		}
-@@ -545,7 +560,7 @@ static bool alloc_p2m(unsigned long pfn)
- 		if (!mid)
- 			return false;
- 
--		p2m_mid_init(mid);
-+		p2m_mid_init(mid, p2m_missing);
- 
- 		if (cmpxchg(top_p, p2m_mid_missing, mid) != p2m_mid_missing)
- 			free_p2m_page(mid);
-@@ -565,7 +580,7 @@ static bool alloc_p2m(unsigned long pfn)
- 		if (!mid_mfn)
- 			return false;
- 
--		p2m_mid_mfn_init(mid_mfn);
-+		p2m_mid_mfn_init(mid_mfn, p2m_missing);
- 
- 		missing_mfn = virt_to_mfn(p2m_mid_missing_mfn);
- 		mid_mfn_mfn = virt_to_mfn(mid_mfn);
-@@ -649,7 +664,7 @@ static bool __init early_alloc_p2m_middle(unsigned long pfn)
- 	if (mid == p2m_mid_missing) {
- 		mid = extend_brk(PAGE_SIZE, PAGE_SIZE);
- 
--		p2m_mid_init(mid);
-+		p2m_mid_init(mid, p2m_missing);
- 
- 		p2m_top[topidx] = mid;
- 
-@@ -658,7 +673,7 @@ static bool __init early_alloc_p2m_middle(unsigned long pfn)
- 	/* And the save/restore P2M tables.. */
- 	if (mid_mfn_p == p2m_mid_missing_mfn) {
- 		mid_mfn_p = extend_brk(PAGE_SIZE, PAGE_SIZE);
--		p2m_mid_mfn_init(mid_mfn_p);
-+		p2m_mid_mfn_init(mid_mfn_p, p2m_missing);
- 
- 		p2m_top_mfn_p[topidx] = mid_mfn_p;
- 		p2m_top_mfn[topidx] = virt_to_mfn(mid_mfn_p);
-@@ -769,6 +784,24 @@ bool __init early_set_phys_to_machine(unsigned long pfn, unsigned long mfn)
- 
- 	return true;
- }
-+
-+static void __init early_split_p2m(unsigned long pfn)
-+{
-+	unsigned long mididx, idx;
-+
-+	mididx = p2m_mid_index(pfn);
-+	idx = p2m_index(pfn);
-+
-+	/*
-+	 * Allocate new middle and leaf pages if this pfn lies in the
-+	 * middle of one.
-+	 */
-+	if (mididx || idx)
-+		early_alloc_p2m_middle(pfn);
-+	if (idx)
-+		early_alloc_p2m(pfn, false);
-+}
-+
- unsigned long __init set_phys_range_identity(unsigned long pfn_s,
- 				      unsigned long pfn_e)
- {
-@@ -786,19 +819,27 @@ unsigned long __init set_phys_range_identity(unsigned long pfn_s,
- 	if (pfn_e > MAX_P2M_PFN)
- 		pfn_e = MAX_P2M_PFN;
- 
--	for (pfn = (pfn_s & ~(P2M_MID_PER_PAGE * P2M_PER_PAGE - 1));
--		pfn < ALIGN(pfn_e, (P2M_MID_PER_PAGE * P2M_PER_PAGE));
--		pfn += P2M_MID_PER_PAGE * P2M_PER_PAGE)
--	{
--		WARN_ON(!early_alloc_p2m(pfn));
--	}
-+	early_split_p2m(pfn_s);
-+	early_split_p2m(pfn_e);
- 
--	early_alloc_p2m_middle(pfn_s, true);
--	early_alloc_p2m_middle(pfn_e, true);
-+	for (pfn = pfn_s; pfn < pfn_e;) {
-+		unsigned topidx = p2m_top_index(pfn);
-+		unsigned mididx = p2m_mid_index(pfn);
- 
--	for (pfn = pfn_s; pfn < pfn_e; pfn++)
- 		if (!__set_phys_to_machine(pfn, IDENTITY_FRAME(pfn)))
- 			break;
-+		pfn++;
-+
-+		/*
-+		 * If the PFN was set to a middle or leaf identity
-+		 * page the remainder must also be identity, so skip
-+		 * ahead to the next middle or leaf entry.
-+		 */
-+		if (p2m_top[topidx] == p2m_mid_identity)
-+			pfn = ALIGN(pfn, P2M_MID_PER_PAGE * P2M_PER_PAGE);
-+		else if (p2m_top[topidx][mididx] == p2m_identity)
-+			pfn = ALIGN(pfn, P2M_PER_PAGE);
-+	}
- 
- 	if (!WARN((pfn - pfn_s) != (pfn_e - pfn_s),
- 		"Identity mapping failed. We are %ld short of 1-1 mappings!\n",
-@@ -828,8 +869,22 @@ bool __set_phys_to_machine(unsigned long pfn, unsigned long mfn)
- 
- 	/* For sparse holes were the p2m leaf has real PFN along with
- 	 * PCI holes, stick in the PFN as the MFN value.
-+	 *
-+	 * set_phys_range_identity() will have allocated new middle
-+	 * and leaf pages as required so an existing p2m_mid_missing
-+	 * or p2m_missing mean that whole range will be identity so
-+	 * these can be switched to p2m_mid_identity or p2m_identity.
- 	 */
- 	if (mfn != INVALID_P2M_ENTRY && (mfn & IDENTITY_FRAME_BIT)) {
-+		if (p2m_top[topidx] == p2m_mid_identity)
-+			return true;
-+
-+		if (p2m_top[topidx] == p2m_mid_missing) {
-+			WARN_ON(cmpxchg(&p2m_top[topidx], p2m_mid_missing,
-+					p2m_mid_identity) != p2m_mid_missing);
-+			return true;
-+		}
-+
- 		if (p2m_top[topidx][mididx] == p2m_identity)
- 			return true;
- 
+ 	 * Prevent page tables from being allocated in highmem, even
+ 	 * if CONFIG_HIGHPTE is enabled.
 -- 
 1.7.2.5
 
