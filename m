@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927AbaDONJR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 09:09:17 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:39516 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751427AbaDONJN (ORCPT
+	id S1754951AbaDONJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 09:09:27 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:40965 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751427AbaDONJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 09:09:13 -0400
+	Tue, 15 Apr 2014 09:09:20 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
 Cc: Akinobu Mita <akinobu.mita@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Akinobu Mita <akinobu.mita@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
         x86@kernel.org, iommu@lists.linux-foundation.org
-Subject: [PATCH v3 2/5] x86: enable DMA CMA with swiotlb
-Date: Tue, 15 Apr 2014 22:08:46 +0900
-Message-Id: <1397567329-3771-3-git-send-email-akinobu.mita@gmail.com>
+Subject: [PATCH v3 4/5] memblock: introduce memblock_alloc_range()
+Date: Tue, 15 Apr 2014 22:08:48 +0900
+Message-Id: <1397567329-3771-5-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com>
 References: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com>
@@ -26,29 +26,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DMA Contiguous Memory Allocator support on x86 is disabled when
-swiotlb config option is enabled.  So DMA CMA is always disabled on
-x86_64 because swiotlb is always enabled.  This attempts to support
-for DMA CMA with enabling swiotlb config option.
-
-The contiguous memory allocator on x86 is integrated in the function
-dma_generic_alloc_coherent() which is .alloc callback in nommu_dma_ops
-for dma_alloc_coherent().
-
-x86_swiotlb_alloc_coherent() which is .alloc callback in swiotlb_dma_ops
-tries to allocate with dma_generic_alloc_coherent() firstly and then
-swiotlb_alloc_coherent() is called as a fallback.
-
-The main part of supporting DMA CMA with swiotlb is that changing
-x86_swiotlb_free_coherent() which is .free callback in swiotlb_dma_ops
-for dma_free_coherent() so that it can distinguish memory allocated by
-dma_generic_alloc_coherent() from one allocated by swiotlb_alloc_coherent()
-and release it with dma_generic_free_coherent() which can handle contiguous
-memory.  This change requires making is_swiotlb_buffer() global function.
-
-This also needs to change .free callback in the dma_map_ops for amd_gart
-and sta2x11, because these dma_ops are also using
-dma_generic_alloc_coherent().
+This introduces memblock_alloc_range() which allocates memblock from
+the specified range of physical address.  I would like to use this
+function to specify the location of CMA.
 
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -61,141 +41,71 @@ Cc: Andi Kleen <andi@firstfloor.org>
 Cc: x86@kernel.org
 Cc: iommu@lists.linux-foundation.org
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Acked-by: Marek Szyprowski <m.szyprowski@samsung.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
 * Change from v2
-- Add Acked-by line
+- Rebased on current Linus tree
 
- arch/x86/Kconfig               | 2 +-
- arch/x86/include/asm/swiotlb.h | 7 +++++++
- arch/x86/kernel/amd_gart_64.c  | 2 +-
- arch/x86/kernel/pci-swiotlb.c  | 9 ++++++---
- arch/x86/pci/sta2x11-fixup.c   | 6 ++----
- include/linux/swiotlb.h        | 2 ++
- lib/swiotlb.c                  | 2 +-
- 7 files changed, 20 insertions(+), 10 deletions(-)
+ include/linux/memblock.h |  2 ++
+ mm/memblock.c            | 21 +++++++++++++++++----
+ 2 files changed, 19 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 25d2c6f..7fa3f83 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -41,7 +41,7 @@ config X86
- 	select ARCH_WANT_OPTIONAL_GPIOLIB
- 	select ARCH_WANT_FRAME_POINTERS
- 	select HAVE_DMA_ATTRS
--	select HAVE_DMA_CONTIGUOUS if !SWIOTLB
-+	select HAVE_DMA_CONTIGUOUS
- 	select HAVE_KRETPROBES
- 	select GENERIC_EARLY_IOREMAP
- 	select HAVE_OPTPROBES
-diff --git a/arch/x86/include/asm/swiotlb.h b/arch/x86/include/asm/swiotlb.h
-index 977f176..ab05d73 100644
---- a/arch/x86/include/asm/swiotlb.h
-+++ b/arch/x86/include/asm/swiotlb.h
-@@ -29,4 +29,11 @@ static inline void pci_swiotlb_late_init(void)
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 8a20a51..c5a61d9 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -221,6 +221,8 @@ static inline bool memblock_bottom_up(void) { return false; }
+ #define MEMBLOCK_ALLOC_ANYWHERE	(~(phys_addr_t)0)
+ #define MEMBLOCK_ALLOC_ACCESSIBLE	0
  
- static inline void dma_mark_clean(void *addr, size_t size) {}
++phys_addr_t __init memblock_alloc_range(phys_addr_t size, phys_addr_t align,
++					phys_addr_t start, phys_addr_t end);
+ phys_addr_t memblock_alloc_base(phys_addr_t size, phys_addr_t align,
+ 				phys_addr_t max_addr);
+ phys_addr_t __memblock_alloc_base(phys_addr_t size, phys_addr_t align,
+diff --git a/mm/memblock.c b/mm/memblock.c
+index e9d6ca9..9a3bed0 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -975,22 +975,35 @@ int __init_memblock memblock_set_node(phys_addr_t base, phys_addr_t size,
+ }
+ #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
  
-+extern void *x86_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
-+					dma_addr_t *dma_handle, gfp_t flags,
-+					struct dma_attrs *attrs);
-+extern void x86_swiotlb_free_coherent(struct device *dev, size_t size,
-+					void *vaddr, dma_addr_t dma_addr,
-+					struct dma_attrs *attrs);
+-static phys_addr_t __init memblock_alloc_base_nid(phys_addr_t size,
+-					phys_addr_t align, phys_addr_t max_addr,
+-					int nid)
++static phys_addr_t __init memblock_alloc_range_nid(phys_addr_t size,
++					phys_addr_t align, phys_addr_t start,
++					phys_addr_t end, int nid)
+ {
+ 	phys_addr_t found;
+ 
+ 	if (!align)
+ 		align = SMP_CACHE_BYTES;
+ 
+-	found = memblock_find_in_range_node(size, align, 0, max_addr, nid);
++	found = memblock_find_in_range_node(size, align, start, end, nid);
+ 	if (found && !memblock_reserve(found, size))
+ 		return found;
+ 
+ 	return 0;
+ }
+ 
++phys_addr_t __init memblock_alloc_range(phys_addr_t size, phys_addr_t align,
++					phys_addr_t start, phys_addr_t end)
++{
++	return memblock_alloc_range_nid(size, align, start, end, NUMA_NO_NODE);
++}
 +
- #endif /* _ASM_X86_SWIOTLB_H */
-diff --git a/arch/x86/kernel/amd_gart_64.c b/arch/x86/kernel/amd_gart_64.c
-index b574b29..8e3842f 100644
---- a/arch/x86/kernel/amd_gart_64.c
-+++ b/arch/x86/kernel/amd_gart_64.c
-@@ -512,7 +512,7 @@ gart_free_coherent(struct device *dev, size_t size, void *vaddr,
- 		   dma_addr_t dma_addr, struct dma_attrs *attrs)
- {
- 	gart_unmap_page(dev, dma_addr, size, DMA_BIDIRECTIONAL, NULL);
--	free_pages((unsigned long)vaddr, get_order(size));
-+	dma_generic_free_coherent(dev, size, vaddr, dma_addr, attrs);
- }
- 
- static int gart_mapping_error(struct device *dev, dma_addr_t dma_addr)
-diff --git a/arch/x86/kernel/pci-swiotlb.c b/arch/x86/kernel/pci-swiotlb.c
-index 6c483ba..77dd0ad 100644
---- a/arch/x86/kernel/pci-swiotlb.c
-+++ b/arch/x86/kernel/pci-swiotlb.c
-@@ -14,7 +14,7 @@
- #include <asm/iommu_table.h>
- int swiotlb __read_mostly;
- 
--static void *x86_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
-+void *x86_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 					dma_addr_t *dma_handle, gfp_t flags,
- 					struct dma_attrs *attrs)
- {
-@@ -28,11 +28,14 @@ static void *x86_swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 	return swiotlb_alloc_coherent(hwdev, size, dma_handle, flags);
- }
- 
--static void x86_swiotlb_free_coherent(struct device *dev, size_t size,
-+void x86_swiotlb_free_coherent(struct device *dev, size_t size,
- 				      void *vaddr, dma_addr_t dma_addr,
- 				      struct dma_attrs *attrs)
- {
--	swiotlb_free_coherent(dev, size, vaddr, dma_addr);
-+	if (is_swiotlb_buffer(dma_to_phys(dev, dma_addr)))
-+		swiotlb_free_coherent(dev, size, vaddr, dma_addr);
-+	else
-+		dma_generic_free_coherent(dev, size, vaddr, dma_addr, attrs);
- }
- 
- static struct dma_map_ops swiotlb_dma_ops = {
-diff --git a/arch/x86/pci/sta2x11-fixup.c b/arch/x86/pci/sta2x11-fixup.c
-index 9d8a509..5ceda85 100644
---- a/arch/x86/pci/sta2x11-fixup.c
-+++ b/arch/x86/pci/sta2x11-fixup.c
-@@ -173,9 +173,7 @@ static void *sta2x11_swiotlb_alloc_coherent(struct device *dev,
- {
- 	void *vaddr;
- 
--	vaddr = dma_generic_alloc_coherent(dev, size, dma_handle, flags, attrs);
--	if (!vaddr)
--		vaddr = swiotlb_alloc_coherent(dev, size, dma_handle, flags);
-+	vaddr = x86_swiotlb_alloc_coherent(dev, size, dma_handle, flags, attrs);
- 	*dma_handle = p2a(*dma_handle, to_pci_dev(dev));
- 	return vaddr;
- }
-@@ -183,7 +181,7 @@ static void *sta2x11_swiotlb_alloc_coherent(struct device *dev,
- /* We have our own dma_ops: the same as swiotlb but from alloc (above) */
- static struct dma_map_ops sta2x11_dma_ops = {
- 	.alloc = sta2x11_swiotlb_alloc_coherent,
--	.free = swiotlb_free_coherent,
-+	.free = x86_swiotlb_free_coherent,
- 	.map_page = swiotlb_map_page,
- 	.unmap_page = swiotlb_unmap_page,
- 	.map_sg = swiotlb_map_sg_attrs,
-diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
-index a5ffd32..e7a018e 100644
---- a/include/linux/swiotlb.h
-+++ b/include/linux/swiotlb.h
-@@ -116,4 +116,6 @@ static inline void swiotlb_free(void) { }
- #endif
- 
- extern void swiotlb_print_info(void);
-+extern int is_swiotlb_buffer(phys_addr_t paddr);
++static phys_addr_t __init memblock_alloc_base_nid(phys_addr_t size,
++					phys_addr_t align, phys_addr_t max_addr,
++					int nid)
++{
++	return memblock_alloc_range_nid(size, align, 0, max_addr, nid);
++}
 +
- #endif /* __LINUX_SWIOTLB_H */
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index 7f57f24..caaab5d 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -374,7 +374,7 @@ void __init swiotlb_free(void)
- 	io_tlb_nslabs = 0;
- }
- 
--static int is_swiotlb_buffer(phys_addr_t paddr)
-+int is_swiotlb_buffer(phys_addr_t paddr)
+ phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int nid)
  {
- 	return paddr >= io_tlb_start && paddr < io_tlb_end;
- }
+ 	return memblock_alloc_base_nid(size, align, MEMBLOCK_ALLOC_ACCESSIBLE, nid);
 -- 
 1.8.3.2
 
