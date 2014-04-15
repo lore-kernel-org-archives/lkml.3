@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751224AbaDOHug (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 03:50:36 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750898AbaDOHue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 03:50:34 -0400
-Message-ID: <534CE4C1.9010507@nod.at>
-Date: Tue, 15 Apr 2014 09:50:25 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751121AbaDOHwP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 03:52:15 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46099 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750770AbaDOHwO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 03:52:14 -0400
+Date: Tue, 15 Apr 2014 08:52:20 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>, Joe Perches <joe@perches.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 1/1] prefetch result in 64 bit atomic ops
+Message-ID: <20140415075220.GC17408@arm.com>
+References: <534C2CC2.9050706@gmail.com>
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        FRAMEBUFFER LAYER <linux-fbdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 07/28] Remove CPU_PXA988
-References: <1391971686-9517-1-git-send-email-richard@nod.at>		 <1391971686-9517-8-git-send-email-richard@nod.at>	 <1391984646.25855.79.camel@x220> <52F800B2.6010702@nod.at> <1397548054.1985.3.camel@x220>
-In-Reply-To: <1397548054.1985.3.camel@x220>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <534C2CC2.9050706@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 15.04.2014 09:47, schrieb Paul Bolle:
-> Richard,
+Hi Pranith,
+
+On Mon, Apr 14, 2014 at 07:45:22PM +0100, Pranith Kumar wrote:
+> Please disregard previous patches. This is the correct one. 
 > 
-> On Sun, 2014-02-09 at 23:26 +0100, Richard Weinberger wrote:
->> Am 09.02.2014 23:24, schrieb Paul Bolle:
->>> On Sun, 2014-02-09 at 19:47 +0100, Richard Weinberger wrote:
->>>> The symbol is an orphan, get rid of it.
->>>>
->>>> Signed-off-by: Richard Weinberger <richard@nod.at>
->>>
->>> This one first entered the tree in v3.9, with commit 59393bb94c10
->>> ("video: mmp display subsystem"). The Kconfig symbol has not yet been
->>> added.
->>
->> Thanks a lot for digging out the background info!
->> I'll add them to the commit message.
-> 
-> Did you ever find the time to update the commit message? If not, should
-> I submit an updated version of this patch?
+> prefetch destination as is being done in ARM32 atomic ops
 
-Sadly not.
+Whilst this looks like a potentially sensible optimisation (based on the
+results I saw on AArch32), I don't think we can take this patch without some
+benchmarks on real silicon. The interaction between the half-barrier atomic
+instructions and prfm isn't immediately obvious to me, and we should also
+consider looking at streaming preload vs the l1keep option.
 
-Feel free to take this (and other related) patches over.
-Thanks a lot for caring!
+Did you write this patch as a basic port of the arch/arm/ patches I wrote,
+or was it based on performance figures from real hardware?
 
-Thanks,
-//richard
+Will
