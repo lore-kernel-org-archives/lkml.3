@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834AbaDOOZH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 10:25:07 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:22662 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975AbaDOOZE (ORCPT
+	id S1754867AbaDOOaL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 10:30:11 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:41013 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751116AbaDOOaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 10:25:04 -0400
-Message-ID: <534D412A.30504@oracle.com>
-Date: Tue, 15 Apr 2014 10:24:42 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 15 Apr 2014 10:30:05 -0400
+Date: Tue, 15 Apr 2014 16:27:00 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>, linux-gpio@vger.kernel.org,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com
+Subject: Re: [PATCH 4/7] net: rfkill: gpio: fix reversed clock enable state
+Message-ID: <20140415142700.GF3207@lukather>
+References: <1397544101-18135-1-git-send-email-wens@csie.org>
+ <1397544101-18135-5-git-send-email-wens@csie.org>
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: vegard.nossum@oracle.com, penberg@kernel.org, jamie.iles@oracle.com,
-        hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] x86: Move instruction decoder data into header
-References: <1397497450-6440-1-git-send-email-sasha.levin@oracle.com> <1397497450-6440-2-git-send-email-sasha.levin@oracle.com> <534C8E2D.9020506@hitachi.com> <534C995F.9040101@oracle.com> <534CA33B.3040203@hitachi.com>
-In-Reply-To: <534CA33B.3040203@hitachi.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2FkSFaIQeDFoAt0B"
+Content-Disposition: inline
+In-Reply-To: <1397544101-18135-5-git-send-email-wens@csie.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2014 11:10 PM, Masami Hiramatsu wrote:
-> (2014/04/15 11:28), Sasha Levin wrote:
->> On 04/14/2014 09:41 PM, Masami Hiramatsu wrote:
->>> (2014/04/15 2:44), Sasha Levin wrote:
->>>>> Right now we generate data for the instruction decoder and place it
->>>>> as a code file which gets #included directly (yuck).
->>>>>
->>>>> Instead, make it a header which will also be usable by other code
->>>>> that wants to use the data in there.
->>> Hmm, making the generated data into a header file may clone
->>> the data table instances for each object file. Since the inat
->>> table is not so small, I think we'd better just export the tables.
->>
->> The tables are defined as static, so the compiler drops them
->> once it detects they are not used.
-> 
-> No, I meant that if the table is used in the different object files,
-> will the copies of the tables be compiled in several different
-> instances?
 
-That's true, but there was and after this patchset there will still
-be only one user that touches the table. I also doubt that more users
-will appear since users of the table should be going through the API
-and not touching it directly, so I don't think it should be a concern
-at this point.
+--2FkSFaIQeDFoAt0B
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> And I can't see the part which makes the tables static in this patch...
+On Tue, Apr 15, 2014 at 02:41:38PM +0800, Chen-Yu Tsai wrote:
+> rfkill-gpio has clk_enabled =3D blocked, which is true when rfkill
+> blocks the device. This results in calling clock enable/disable at
+> the wrong time. Reversing the value fixes this.
+>=20
+> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 
-Right, it sneaked to the next patch in this patchset. I'll pull it
-into this one in the next version.
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
->> I feel it would be easier to let the compiler do it's job rather
->> than do optimizations we don't need to do and which will complicate
->> the code quite a bit.
-> 
-> I haven't tend to optimize it, but just encapsulate it, to hide from other parts.
+Thanks!
+Maxime
 
-We could hide it under #ifdef, but that wouldn't change anything for
-the user or for the generated code itself.
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-Splitting code generation into two different files would complicate
-everything IMO.
+--2FkSFaIQeDFoAt0B
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
 
-Thanks,
-Sasha
+iQIbBAEBAgAGBQJTTUG0AAoJEBx+YmzsjxAg6CEP93OnZUrmCgxusnW1kCg8OUN3
+OJXIJEg+vKvI3AkFuKDN5l5CVmWngT1TnaRj4TvPOza1YaL+TorEIKIxZUEhj+QV
+AP1ViZW+xUJhC6Ky6dYKp3UI7s3xh28Vev6tuPI+G26B+FfAwTp0nVmujXyBT0cD
+CL3CgLCCS5SBBaZonIIL9roHdhBoZJUseFyXNSCmYDBnp0keMxpz3CBs5WnFaE0o
+3vE+KUWoYy90WzbxiZjxaqxAiHOHL2gkev0XQFusvr31ZeZ15KkdZILfo9YXVhTT
+/u0XkQXh1D16QKZWnoW072pNwZSm/XezbSLUp+XJRVETa3X6PI7GNyhba0U7i8J6
+Q0gqZAUC2chIRBzcR0P9rYqAQztDjxFRwSJIiYB+z470Igw0t3VSFg4VQY3NKpP0
+g1XIM320KquxHsDxY0jNw7ITTxYDIEzj+mbJYPgvO4coommUbuTfVInp/+a6jlXi
+byiALmU4Ol8qv9vhU7FTaeQiC/TbVcwp8PF4rKGojb1CRg10vTDDFbZNkUCrZcSI
+noZSGdzKgOymtUN/SQFnA83m19lAUJkjJnVfZ32JGCNq97oBiL9DmGDSHpCnhsl7
+4eA9srwBuZmbS9cTJTCoMhKUpUq6DXI8yZ487jikrmtZTSrUD1reC27PK9heh/rE
+DhFHwxwBAR3+gTbpBdU=
+=7eiL
+-----END PGP SIGNATURE-----
+
+--2FkSFaIQeDFoAt0B--
