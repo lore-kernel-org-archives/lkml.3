@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753939AbaDORbK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 13:31:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60980 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaDORbE (ORCPT
+	id S1753946AbaDORfS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 13:35:18 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:50148 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751016AbaDORfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 13:31:04 -0400
-Date: Tue, 15 Apr 2014 10:30:44 -0700
-From: tip-bot for Cody P Schafer <tipbot@zytor.com>
-Message-ID: <tip-c9e87a472594fd237b2d19dcbe4a3424297f0b1a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        cody@linux.vnet.ibm.com, tglx@linutronix.de, jolsa@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        cody@linux.vnet.ibm.com, tglx@linutronix.de, jolsa@redhat.com
-In-Reply-To: <1396652539-2416-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1396652539-2416-1-git-send-email-cody@linux.vnet.ibm.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools: Instead of redirecting flex output,
-  use -o
-Git-Commit-ID: c9e87a472594fd237b2d19dcbe4a3424297f0b1a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Tue, 15 Apr 2014 13:35:15 -0400
+Date: Tue, 15 Apr 2014 12:35:13 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: linux-kernel@vger.kernel.org
+Subject: rcu: Replace __this_cpu_ptr uses with raw_cpu_ptr
+Message-ID: <alpine.DEB.2.10.1404151234030.27440@gentwo.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c9e87a472594fd237b2d19dcbe4a3424297f0b1a
-Gitweb:     http://git.kernel.org/tip/c9e87a472594fd237b2d19dcbe4a3424297f0b1a
-Author:     Cody P Schafer <cody@linux.vnet.ibm.com>
-AuthorDate: Mon, 14 Apr 2014 12:47:01 +0200
-Committer:  Jiri Olsa <jolsa@redhat.com>
-CommitDate: Tue, 15 Apr 2014 13:57:21 +0200
+3.15-rc1 has raw_cpu operations. So this patch that you acked before will
+now apply.
 
-perf tools: Instead of redirecting flex output, use -o
 
-This gives us a real filename instead of having '<stdout>' show up all
-over the place when debugging.
+Subject: rcu: Replace __this_cpu_ptr uses with raw_cpu_ptr
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/r/1396652539-2416-1-git-send-email-cody@linux.vnet.ibm.com
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/Makefile.perf | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+__this_cpu_ptr is being phased out.
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 50d875d..e969233 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -192,13 +192,13 @@ endif
- export PERL_PATH
- 
- $(OUTPUT)util/parse-events-flex.c: util/parse-events.l $(OUTPUT)util/parse-events-bison.c
--	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/parse-events-flex.h $(PARSER_DEBUG_FLEX) -t util/parse-events.l > $(OUTPUT)util/parse-events-flex.c
-+	$(QUIET_FLEX)$(FLEX) -o $@ --header-file=$(OUTPUT)util/parse-events-flex.h $(PARSER_DEBUG_FLEX) util/parse-events.l
- 
- $(OUTPUT)util/parse-events-bison.c: util/parse-events.y
- 	$(QUIET_BISON)$(BISON) -v util/parse-events.y -d $(PARSER_DEBUG_BISON) -o $(OUTPUT)util/parse-events-bison.c -p parse_events_
- 
- $(OUTPUT)util/pmu-flex.c: util/pmu.l $(OUTPUT)util/pmu-bison.c
--	$(QUIET_FLEX)$(FLEX) --header-file=$(OUTPUT)util/pmu-flex.h -t util/pmu.l > $(OUTPUT)util/pmu-flex.c
-+	$(QUIET_FLEX)$(FLEX) -o $@ --header-file=$(OUTPUT)util/pmu-flex.h util/pmu.l
- 
- $(OUTPUT)util/pmu-bison.c: util/pmu.y
- 	$(QUIET_BISON)$(BISON) -v util/pmu.y -d -o $(OUTPUT)util/pmu-bison.c -p perf_pmu_
+One special case is increment_cpu_stall_ticks().
+A per cpu variable is incremented so use raw_cpu_inc().
+
+Cc: Dipankar Sarma <dipankar@in.ibm.com>
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Christoph Lameter <cl@linux.com>
+
+Index: linux/kernel/rcu/tree.c
+===================================================================
+--- linux.orig/kernel/rcu/tree.c	2014-04-14 13:24:55.189353922 -0500
++++ linux/kernel/rcu/tree.c	2014-04-14 13:24:55.185354000 -0500
+@@ -1951,7 +1951,7 @@
+ static void rcu_adopt_orphan_cbs(struct rcu_state *rsp, unsigned long flags)
+ {
+ 	int i;
+-	struct rcu_data *rdp = __this_cpu_ptr(rsp->rda);
++	struct rcu_data *rdp = raw_cpu_ptr(rsp->rda);
+
+ 	/* No-CBs CPUs are handled specially. */
+ 	if (rcu_nocb_adopt_orphan_cbs(rsp, rdp, flags))
+@@ -2334,7 +2334,7 @@
+ __rcu_process_callbacks(struct rcu_state *rsp)
+ {
+ 	unsigned long flags;
+-	struct rcu_data *rdp = __this_cpu_ptr(rsp->rda);
++	struct rcu_data *rdp = raw_cpu_ptr(rsp->rda);
+
+ 	WARN_ON_ONCE(rdp->beenonline == 0);
+
+@@ -2988,7 +2988,7 @@
+ static void rcu_barrier_func(void *type)
+ {
+ 	struct rcu_state *rsp = type;
+-	struct rcu_data *rdp = __this_cpu_ptr(rsp->rda);
++	struct rcu_data *rdp = raw_cpu_ptr(rsp->rda);
+
+ 	_rcu_barrier_trace(rsp, "IRQ", -1, rsp->n_barrier_done);
+ 	atomic_inc(&rsp->barrier_cpu_count);
+Index: linux/kernel/rcu/tree_plugin.h
+===================================================================
+--- linux.orig/kernel/rcu/tree_plugin.h	2014-04-14 13:24:55.189353922 -0500
++++ linux/kernel/rcu/tree_plugin.h	2014-04-14 13:24:55.185354000 -0500
+@@ -1855,7 +1855,7 @@
+ 	struct rcu_data *rdp;
+
+ 	for_each_rcu_flavor(rsp) {
+-		rdp = __this_cpu_ptr(rsp->rda);
++		rdp = raw_cpu_ptr(rsp->rda);
+ 		if (rdp->qlen_lazy != 0) {
+ 			atomic_inc(&oom_callback_count);
+ 			rsp->call(&rdp->oom_head, rcu_oom_callback);
+@@ -1997,7 +1997,7 @@
+ 	struct rcu_state *rsp;
+
+ 	for_each_rcu_flavor(rsp)
+-		__this_cpu_ptr(rsp->rda)->ticks_this_gp++;
++		raw_cpu_inc(rsp->rda->ticks_this_gp);
+ }
+
+ #else /* #ifdef CONFIG_RCU_CPU_STALL_INFO */
