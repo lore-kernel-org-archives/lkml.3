@@ -1,90 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981AbaDONJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 09:09:38 -0400
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:56922
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752933AbaDONJd convert rfc822-to-8bit (ORCPT
+	id S1755052AbaDONKR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 09:10:17 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:36349 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754511AbaDONJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 09:09:33 -0400
-X-WSS-ID: 0N42PV4-07-GR1-02
-X-M-MSG: 
-Message-ID: <534D2F6E.1020608@amd.com>
-Date: Tue, 15 Apr 2014 15:09:02 +0200
-From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <christian.koenig@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Alex Deucher <alexdeucher@gmail.com>, Borislav Petkov <bp@alien8.de>
-CC: Alex Deucher <alexander.deucher@amd.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Maling list - DRI developers 
-	<dri-devel@lists.freedesktop.org>
-Subject: Re: 15-rc1: radeon modesetting fails
-References: <20140415070204.GA4806@pd.tnic>	<534CFBD7.3070604@amd.com>
-	<20140415120740.GA8306@nazgul.tnic>
- <CADnq5_PpPa_fbm=1KH__q-W2OuvfoHr2wquimQ8TCq=xwwYq_Q@mail.gmail.com>
-In-Reply-To: <CADnq5_PpPa_fbm=1KH__q-W2OuvfoHr2wquimQ8TCq=xwwYq_Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-X-Originating-IP: [10.224.152.106]
-Content-Transfer-Encoding: 8BIT
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(24454002)(51704005)(377454003)(20776003)(4396001)(47776003)(76482001)(23676002)(15202345003)(85852003)(83072002)(81542001)(83506001)(99396002)(81342001)(575784001)(80976001)(84676001)(64126003)(59896001)(50466002)(36756003)(19580405001)(97736001)(2009001)(85202002)(74502001)(92726001)(85182001)(54356999)(87266999)(76176999)(83322001)(19580395003)(86362001)(77982001)(46102001)(44976005)(50986999)(87936001)(65806001)(15975445006)(65956001)(77096999)(79102001)(65816999)(74662001)(80022001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR02MB114;H:atltwp01.amd.com;FPR:BC61F0F4.AB52D450.FAF39377.89FC09BF.202EB;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-Forefront-PRVS: 0182DBBB05
-X-OriginatorOrg: amd4.onmicrosoft.com
+	Tue, 15 Apr 2014 09:09:23 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        x86@kernel.org, iommu@lists.linux-foundation.org
+Subject: [PATCH v3 5/5] cma: add placement specifier for "cma=" kernel parameter
+Date: Tue, 15 Apr 2014 22:08:49 +0900
+Message-Id: <1397567329-3771-6-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com>
+References: <1397567329-3771-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Does reverting:
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=32167016076f714f0e35e287fbead7de0f1fb179
-> fix the issue?  We may need to tweak the pll parameters for older asics.
+Currently, "cma=" kernel parameter is used to specify the size of CMA,
+but we can't specify where it is located.  We want to locate CMA below
+4GB for devices only supporting 32-bit addressing on 64-bit systems
+without iommu.
 
-Yeah, indeed the most likely cause. Please provide dmesg outputs created 
-with drm.ebug=0xe for the old and the new kernel.
+This enables to specify the placement of CMA by extending "cma=" kernel
+parameter.
 
-Christian.
+Examples:
+1. locate 64MB CMA below 4GB by "cma=64M@0-4G"
+2. locate 64MB CMA exact at 512MB by "cma=64M@512M"
 
-Am 15.04.2014 15:06, schrieb Alex Deucher:
-> On Tue, Apr 15, 2014 at 8:07 AM, Borislav Petkov <bp@alien8.de> wrote:
->> Hi Christian,
->>
->> On Tue, Apr 15, 2014 at 11:28:55AM +0200, Christian König wrote:
->>> Hi Borislav,
->>>
->>> that's a known issue and should be fixed in the next rc, see this
->>> bugreport: https://bugs.freedesktop.org/show_bug.cgi?id=77009
->>>
->>> You might also want to try my branch with 3.15 fixes which includes
->>> the necessary patch for this: http://cgit.freedesktop.org/~deathsimple/linux/log/?h=drm-fixes-3.15-wip
->>>
->>> Let me know if that branch works for you or not.
->> so I went and merged your branch as you suggested. Btw, on its tip it
->> has:
->>
->> commit ec02666dd0791312b5820e1a9a023681d99d07ec
->> Author: Quentin Casasnovas <quentin.casasnovas@oracle.com>
->> Date:   Tue Mar 18 17:16:52 2014 +0100
->>
->>      drm/radeon: memory leak on bo reservation failure. v2
->>
->> (just checking whether I got the right one)
->>
->> and, unfortunately, no change - same problem. Let me know if I should
->> bisect the subset of 59 radeon patches which went in during the merge
->> window...
->>
->> Btw, just in case, I went and updated radeon firmware in
->> /lib/firmware/radeon/ from upstream but it didn't change anything.
-> Does reverting:
-> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=32167016076f714f0e35e287fbead7de0f1fb179
-> fix the issue?  We may need to tweak the pll parameters for older asics.
->
-> Alex
->
->> Thanks.
->> _______________________________________________
->> dri-devel mailing list
->> dri-devel@lists.freedesktop.org
->> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+Note that the DMA contiguous memory allocator on x86 assumes that
+page_address() works for the pages to allocate.  So this change requires
+to limit end address of contiguous memory area upto max_pfn_mapped to
+prevent from locating it on highmem area by the argument of
+dma_contiguous_reserve().
+
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Don Dutile <ddutile@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org
+Cc: iommu@lists.linux-foundation.org
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+---
+* Change from v2
+- Avoid CMA area on highmem with cma= option, reported by Marek Szyprowski
+
+ Documentation/kernel-parameters.txt |  7 +++++--
+ arch/x86/kernel/setup.c             |  2 +-
+ drivers/base/dma-contiguous.c       | 42 ++++++++++++++++++++++++++++---------
+ include/linux/dma-contiguous.h      |  9 +++++---
+ 4 files changed, 44 insertions(+), 16 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 03e50b4..8488e68 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -617,8 +617,11 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			Also note the kernel might malfunction if you disable
+ 			some critical bits.
+ 
+-	cma=nn[MG]	[ARM,KNL]
+-			Sets the size of kernel global memory area for contiguous
++	cma=nn[MG]@[start[MG][-end[MG]]]
++			[ARM,X86,KNL]
++			Sets the size of kernel global memory area for
++			contiguous memory allocations and optionally the
++			placement constraint by the physical address range of
+ 			memory allocations. For more information, see
+ 			include/linux/dma-contiguous.h
+ 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 09c76d2..78a0e62 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1119,7 +1119,7 @@ void __init setup_arch(char **cmdline_p)
+ 	setup_real_mode();
+ 
+ 	memblock_set_current_limit(get_max_mapped());
+-	dma_contiguous_reserve(0);
++	dma_contiguous_reserve(max_pfn_mapped << PAGE_SHIFT);
+ 
+ 	/*
+ 	 * NOTE: On x86-32, only from this point on, fixmaps are ready for use.
+diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
+index 165c2c2..b056661 100644
+--- a/drivers/base/dma-contiguous.c
++++ b/drivers/base/dma-contiguous.c
+@@ -59,11 +59,22 @@ struct cma *dma_contiguous_default_area;
+  */
+ static const phys_addr_t size_bytes = CMA_SIZE_MBYTES * SZ_1M;
+ static phys_addr_t size_cmdline = -1;
++static phys_addr_t base_cmdline;
++static phys_addr_t limit_cmdline;
+ 
+ static int __init early_cma(char *p)
+ {
+ 	pr_debug("%s(%s)\n", __func__, p);
+ 	size_cmdline = memparse(p, &p);
++	if (*p != '@')
++		return 0;
++	base_cmdline = memparse(p + 1, &p);
++	if (*p != '-') {
++		limit_cmdline = base_cmdline + size_cmdline;
++		return 0;
++	}
++	limit_cmdline = memparse(p + 1, &p);
++
+ 	return 0;
+ }
+ early_param("cma", early_cma);
+@@ -107,11 +118,18 @@ static inline __maybe_unused phys_addr_t cma_early_percent_memory(void)
+ void __init dma_contiguous_reserve(phys_addr_t limit)
+ {
+ 	phys_addr_t selected_size = 0;
++	phys_addr_t selected_base = 0;
++	phys_addr_t selected_limit = limit;
++	bool fixed = false;
+ 
+ 	pr_debug("%s(limit %08lx)\n", __func__, (unsigned long)limit);
+ 
+ 	if (size_cmdline != -1) {
+ 		selected_size = size_cmdline;
++		selected_base = base_cmdline;
++		selected_limit = min_not_zero(limit_cmdline, limit);
++		if (base_cmdline + size_cmdline == limit_cmdline)
++			fixed = true;
+ 	} else {
+ #ifdef CONFIG_CMA_SIZE_SEL_MBYTES
+ 		selected_size = size_bytes;
+@@ -128,10 +146,12 @@ void __init dma_contiguous_reserve(phys_addr_t limit)
+ 		pr_debug("%s: reserving %ld MiB for global area\n", __func__,
+ 			 (unsigned long)selected_size / SZ_1M);
+ 
+-		dma_contiguous_reserve_area(selected_size, 0, limit,
+-					    &dma_contiguous_default_area);
++		dma_contiguous_reserve_area(selected_size, selected_base,
++					    selected_limit,
++					    &dma_contiguous_default_area,
++					    fixed);
+ 	}
+-};
++}
+ 
+ static DEFINE_MUTEX(cma_mutex);
+ 
+@@ -187,15 +207,20 @@ core_initcall(cma_init_reserved_areas);
+  * @base: Base address of the reserved area optional, use 0 for any
+  * @limit: End address of the reserved memory (optional, 0 for any).
+  * @res_cma: Pointer to store the created cma region.
++ * @fixed: hint about where to place the reserved area
+  *
+  * This function reserves memory from early allocator. It should be
+  * called by arch specific code once the early allocator (memblock or bootmem)
+  * has been activated and all other subsystems have already allocated/reserved
+  * memory. This function allows to create custom reserved areas for specific
+  * devices.
++ *
++ * If @fixed is true, reserve contiguous area at exactly @base.  If false,
++ * reserve in range from @base to @limit.
+  */
+ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+-				       phys_addr_t limit, struct cma **res_cma)
++				       phys_addr_t limit, struct cma **res_cma,
++				       bool fixed)
+ {
+ 	struct cma *cma = &cma_areas[cma_area_count];
+ 	phys_addr_t alignment;
+@@ -221,18 +246,15 @@ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+ 	limit &= ~(alignment - 1);
+ 
+ 	/* Reserve memory */
+-	if (base) {
++	if (base && fixed) {
+ 		if (memblock_is_region_reserved(base, size) ||
+ 		    memblock_reserve(base, size) < 0) {
+ 			ret = -EBUSY;
+ 			goto err;
+ 		}
+ 	} else {
+-		/*
+-		 * Use __memblock_alloc_base() since
+-		 * memblock_alloc_base() panic()s.
+-		 */
+-		phys_addr_t addr = __memblock_alloc_base(size, alignment, limit);
++		phys_addr_t addr = memblock_alloc_range(size, alignment, base,
++							limit);
+ 		if (!addr) {
+ 			ret = -ENOMEM;
+ 			goto err;
+diff --git a/include/linux/dma-contiguous.h b/include/linux/dma-contiguous.h
+index 3b28f93..772eab5 100644
+--- a/include/linux/dma-contiguous.h
++++ b/include/linux/dma-contiguous.h
+@@ -88,7 +88,8 @@ static inline void dma_contiguous_set_default(struct cma *cma)
+ void dma_contiguous_reserve(phys_addr_t addr_limit);
+ 
+ int __init dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+-				       phys_addr_t limit, struct cma **res_cma);
++				       phys_addr_t limit, struct cma **res_cma,
++				       bool fixed);
+ 
+ /**
+  * dma_declare_contiguous() - reserve area for contiguous memory handling
+@@ -108,7 +109,7 @@ static inline int dma_declare_contiguous(struct device *dev, phys_addr_t size,
+ {
+ 	struct cma *cma;
+ 	int ret;
+-	ret = dma_contiguous_reserve_area(size, base, limit, &cma);
++	ret = dma_contiguous_reserve_area(size, base, limit, &cma, true);
+ 	if (ret == 0)
+ 		dev_set_cma_area(dev, cma);
+ 
+@@ -136,7 +137,9 @@ static inline void dma_contiguous_set_default(struct cma *cma) { }
+ static inline void dma_contiguous_reserve(phys_addr_t limit) { }
+ 
+ static inline int dma_contiguous_reserve_area(phys_addr_t size, phys_addr_t base,
+-				       phys_addr_t limit, struct cma **res_cma) {
++				       phys_addr_t limit, struct cma **res_cma,
++				       bool fixed)
++{
+ 	return -ENOSYS;
+ }
+ 
+-- 
+1.8.3.2
 
