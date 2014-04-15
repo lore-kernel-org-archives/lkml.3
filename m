@@ -1,49 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751172AbaDOAw2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 20:52:28 -0400
-Received: from smtp106.biz.mail.ne1.yahoo.com ([98.138.207.13]:29943 "HELO
-	smtp106.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750909AbaDOAw1 (ORCPT
+	id S1751952AbaDOA6A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 20:58:00 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:28162 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909AbaDOA56 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 20:52:27 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Mon, 14 Apr 2014 20:52:26 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 6d73oHEVM1m6IAvdiYk_L78lTgS.qz9woqYLyQQ68cf8xFD
- FIYL8p.w5aJISwqK8F8npkh_jHC7NBnoNqQkbS3QvJKFzm3Jrap1PflSEyZN
- YxFGofcA8yrU4Kqe1Ml.GgItJqYldfHoFqzpWwGhB3QXLxlmm9WcL17Kef04
- fWe9cUUoYI2bW7.6_66MZr7tBwS_GFpyj93OfnQbR6NN6ZN5psRViSWcrYBh
- nowEQPT0aoqCq5LiA4cczOLyndF1bCZqyRrlzhy3M1nkzX0_JAZGweKuXlF7
- UpfW3jZmfQis5GebsMBTpZZ_zUWu1lm6cEJ9xkMC3d_obCIqxSM7XY5P9eAP
- TsulZXzJhm5uEwJw9czNkEBrp5nxTfC4IrK3pELdjXCf4VQGM1dZCNGSE32L
- JDlNtp0x0hYd5A0bobsjNEkq9HfNkRXOcbwReq2hZvI_JRmHQ05F4uo9XTEG
- u1j6ojXIcEcbgiQujIfF6N_VMCIZd6ejg4Ud3rqz8mipptfO2QwwDDjOV.9k
- Swx7dUxgwsdGiXQ--
-X-Yahoo-SMTP: qGLgp.mswBDSnFfWmYVMF5Rmg6NJ
-X-Rocket-Received: from fdwdc.com (sfking@67.139.206.186 with plain [98.138.105.25])
-        by smtp106.biz.mail.ne1.yahoo.com with SMTP; 14 Apr 2014 17:45:45 -0700 PDT
-From: Steven King <sfking@fdwdc.com>
-Organization: fdwdc
-To: linux-kernel@vger.kernel.org
-Subject: v3.15-rc1 slab allocator broken on m68knommu (coldfire)
-Date: Mon, 14 Apr 2014 17:45:43 -0700
-User-Agent: KMail/1.9.9
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        uClinux development list <uclinux-dev@uclinux.org>
+	Mon, 14 Apr 2014 20:57:58 -0400
+Message-ID: <534C83F1.9020106@huawei.com>
+Date: Tue, 15 Apr 2014 08:57:21 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
+To: Tejun Heo <tj@kernel.org>
+CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <john@johnmccutchan.com>,
+        <rlove@rlove.org>, <eparis@parisplace.org>,
+        <gregkh@linuxfoundation.org>, <serge.hallyn@ubuntu.com>,
+        <lennart@poettering.net>, <kay@vrfy.org>
+Subject: Re: [PATCH 3/3] cgroup: implement cgroup.subtree_populated for the
+ default hierarchy
+References: <1397511846-2904-1-git-send-email-tj@kernel.org> <1397511846-2904-4-git-send-email-tj@kernel.org>
+In-Reply-To: <1397511846-2904-4-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201404141745.44279.sfking@fdwdc.com>
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-git bisect suggests it starts somewhere around commit 
-f315e3fa1cf5b3317fc948708645fff889ce1e63 slab: restrict the number of objects 
-in a slab
+On 2014/4/15 5:44, Tejun Heo wrote:
+> cgroup users often need a way to determine when a cgroup's
+> subhierarchy becomes empty so that it can be cleaned up.  cgroup
+> currently provides release_agent for it; unfortunately, this mechanism
+> is riddled with issues.
+> 
+> * It delivers events by forking and execing a userland binary
+>   specified as the release_agent.  This is a long deprecated method of
+>   notification delivery.  It's extremely heavy, slow and cumbersome to
+>   integrate with larger infrastructure.
+> 
+> * There is single monitoring point at the root.  There's no way to
+>   delegate management of subtree.
+> 
+> * The event isn't recursive.  It triggers when a cgroup doesn't have
+>   any tasks or child cgroups.  Events for internal nodes trigger only
+>   after all children are removed.  This again makes it impossible to
+>   delegate management of subtree.
+> 
+> * Events are filtered from the kernel side.  "notify_on_release" file
+>   is used to subscribe to or suppress release event.  This is
+>   unnecessarily complicated and probably done this way because event
+>   delivery itself was expensive.
+> 
+> This patch implements interface file "cgroup.subtree_populated" which
+> can be used to monitor whether the cgroup's subhierarchy has tasks in
+> it or not.  Its value is 0 if there is no task in the cgroup and its
+> descendants; otherwise, 1, 
 
-but its kinda hard to tell as there is some compile breakage in there as well.
+Is cgroup.tree_populated a better name?
 
-slub and slob seem to still work okay for m68knommu.
+cgroup.subtree_control controls child cgroups only, but .subtree_populated
+shows 1 if there're tasks in the cgroup or its children, so the two
+are a bit inconsistent to me.
+
+> and kernfs_notify() notificaiton is
+> triggers when the value changes, which can be monitored through poll
+> and [di]notify.
+> 
+> This is a lot ligther and simpler and trivially allows delegating
+> management of subhierarchy - subhierarchy monitoring can block further
+> propgation simply by putting itself or another process in the root of
+> the subhierarchy and monitor events that it's interested in from there
+> without interfering with monitoring higher in the tree.
+> 
+> v2: Patch description updated as per Serge.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Acked-by: Serge Hallyn <serge.hallyn@ubuntu.com>
+> Cc: Lennart Poettering <lennart@poettering.net>
+
