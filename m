@@ -1,141 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751183AbaDOI36 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 04:29:58 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:47464 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988AbaDOI34 (ORCPT
+	id S1751460AbaDOIcK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 04:32:10 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:50273 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901AbaDOIcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 04:29:56 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] clk: impd1: add pclk clocks
-Date: Tue, 15 Apr 2014 10:29:45 +0200
-Message-Id: <1397550585-7248-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.9.0
+	Tue, 15 Apr 2014 04:32:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <1397549539.29169.2.camel@AMDC1943>
+References: <1397462949-22379-1-git-send-email-k.kozlowski@samsung.com>
+	<1397462949-22379-5-git-send-email-k.kozlowski@samsung.com>
+	<20140414211106.GC12304@sirena.org.uk>
+	<CAK9yfHwL4o7-7Q03dw9JdD1UDsP_v2=we1kadRXaGAuaN1de_g@mail.gmail.com>
+	<1397549539.29169.2.camel@AMDC1943>
+Date: Tue, 15 Apr 2014 14:02:02 +0530
+Message-ID: <CAK9yfHwUwjMEXisi5Jf+nAkS7CLnAUt-REkekns9JrRTAGQ=WQ@mail.gmail.com>
+Subject: Re: [PATCH 4/4] regulator: s5m8767: Use same binding for external
+ control as in s2mps11
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Mark Brown <broonie@kernel.org>, Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The IM-PD1 PrimeCells all have pclk assignments though this clock
-cannot be controlled, and we need to provide this as a dummy
-clock for the PL061 GPIO driver to probe, so let's assign it to
-all the cells on the board.
+On 15 April 2014 13:42, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
+> On wto, 2014-04-15 at 13:26 +0530, Sachin Kamat wrote:
+>> On 15 April 2014 02:41, Mark Brown <broonie@kernel.org> wrote:
+>> > On Mon, Apr 14, 2014 at 10:09:09AM +0200, Krzysztof Kozlowski wrote:
+>> >
+>> >> -     - s5m8767,pmic-ext-control-gpios: (optional) GPIO specifier for one
+>> >> +     - samsung,ext-control-gpios: (optional) GPIO specifier for one
+>> >>               GPIO controlling this regulator (enable/disable); This is
+>> >>               valid only for buck9.
+>> >
+>> > This is an incompatible change.  It's OK to deprecate the old property
+>> > but it's bad form to just remove it.
+>>
+>> I agree with Mark. Also, there is no need to make it generic.
+>
+> I thought it would be good to make it consistent and to reduce the
+> number of bindings with same meaning on similar drivers.
 
-Cc: Mike Turquette <mturquette@linaro.org>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/clk/versatile/clk-impd1.c | 36 +++++++++++++++++++++++++++++-------
- 1 file changed, 29 insertions(+), 7 deletions(-)
+How about making the other one use "s5m8767,pmic-ext-control-gpios"
+compatible instead of introducing a new one?
 
-diff --git a/drivers/clk/versatile/clk-impd1.c b/drivers/clk/versatile/clk-impd1.c
-index 31b44f025f9e..8d7d4d5a514c 100644
---- a/drivers/clk/versatile/clk-impd1.c
-+++ b/drivers/clk/versatile/clk-impd1.c
-@@ -20,6 +20,8 @@
- #define IMPD1_LOCK	0x08
- 
- struct impd1_clk {
-+	char *pclkname;
-+	struct clk *pclk;
- 	char *vco1name;
- 	struct clk *vco1clk;
- 	char *vco2name;
-@@ -31,7 +33,7 @@ struct impd1_clk {
- 	struct clk *spiclk;
- 	char *scname;
- 	struct clk *scclk;
--	struct clk_lookup *clks[6];
-+	struct clk_lookup *clks[15];
- };
- 
- /* One entry for each connected IM-PD1 LM */
-@@ -86,6 +88,7 @@ void integrator_impd1_clk_init(void __iomem *base, unsigned int id)
- {
- 	struct impd1_clk *imc;
- 	struct clk *clk;
-+	struct clk *pclk;
- 	int i;
- 
- 	if (id > 3) {
-@@ -94,11 +97,18 @@ void integrator_impd1_clk_init(void __iomem *base, unsigned int id)
- 	}
- 	imc = &impd1_clks[id];
- 
-+	/* Register the fixed rate PCLK */
-+	imc->pclkname = kasprintf(GFP_KERNEL, "lm%x-pclk", id);
-+	pclk = clk_register_fixed_rate(NULL, imc->pclkname, NULL,
-+				      CLK_IS_ROOT, 0);
-+	imc->pclk = pclk;
-+
- 	imc->vco1name = kasprintf(GFP_KERNEL, "lm%x-vco1", id);
- 	clk = icst_clk_register(NULL, &impd1_icst1_desc, imc->vco1name, NULL,
- 				base);
- 	imc->vco1clk = clk;
--	imc->clks[0] = clkdev_alloc(clk, NULL, "lm%x:01000", id);
-+	imc->clks[0] = clkdev_alloc(pclk, "apb_pclk", "lm%x:01000", id);
-+	imc->clks[1] = clkdev_alloc(clk, NULL, "lm%x:01000", id);
- 
- 	/* VCO2 is also called "CLK2" */
- 	imc->vco2name = kasprintf(GFP_KERNEL, "lm%x-vco2", id);
-@@ -107,28 +117,38 @@ void integrator_impd1_clk_init(void __iomem *base, unsigned int id)
- 	imc->vco2clk = clk;
- 
- 	/* MMCI uses CLK2 right off */
--	imc->clks[1] = clkdev_alloc(clk, NULL, "lm%x:00700", id);
-+	imc->clks[2] = clkdev_alloc(pclk, "apb_pclk", "lm%x:00700", id);
-+	imc->clks[3] = clkdev_alloc(clk, NULL, "lm%x:00700", id);
- 
- 	/* UART reference clock divides CLK2 by a fixed factor 4 */
- 	imc->uartname = kasprintf(GFP_KERNEL, "lm%x-uartclk", id);
- 	clk = clk_register_fixed_factor(NULL, imc->uartname, imc->vco2name,
- 				   CLK_IGNORE_UNUSED, 1, 4);
- 	imc->uartclk = clk;
--	imc->clks[2] = clkdev_alloc(clk, NULL, "lm%x:00100", id);
--	imc->clks[3] = clkdev_alloc(clk, NULL, "lm%x:00200", id);
-+	imc->clks[4] = clkdev_alloc(pclk, "apb_pclk", "lm%x:00100", id);
-+	imc->clks[5] = clkdev_alloc(clk, NULL, "lm%x:00100", id);
-+	imc->clks[6] = clkdev_alloc(pclk, "apb_pclk", "lm%x:00200", id);
-+	imc->clks[7] = clkdev_alloc(clk, NULL, "lm%x:00200", id);
- 
- 	/* SPI PL022 clock divides CLK2 by a fixed factor 64 */
- 	imc->spiname = kasprintf(GFP_KERNEL, "lm%x-spiclk", id);
- 	clk = clk_register_fixed_factor(NULL, imc->spiname, imc->vco2name,
- 				   CLK_IGNORE_UNUSED, 1, 64);
--	imc->clks[4] = clkdev_alloc(clk, NULL, "lm%x:00300", id);
-+	imc->clks[8] = clkdev_alloc(pclk, "apb_pclk", "lm%x:00300", id);
-+	imc->clks[9] = clkdev_alloc(clk, NULL, "lm%x:00300", id);
-+
-+	/* The GPIO blocks and AACI have only PCLK */
-+	imc->clks[10] = clkdev_alloc(pclk, "apb_pclk", "lm%x:00400", id);
-+	imc->clks[11] = clkdev_alloc(pclk, "apb_pclk", "lm%x:00500", id);
-+	imc->clks[12] = clkdev_alloc(pclk, "apb_pclk", "lm%x:00800", id);
- 
- 	/* Smart Card clock divides CLK2 by a fixed factor 4 */
- 	imc->scname = kasprintf(GFP_KERNEL, "lm%x-scclk", id);
- 	clk = clk_register_fixed_factor(NULL, imc->scname, imc->vco2name,
- 				   CLK_IGNORE_UNUSED, 1, 4);
- 	imc->scclk = clk;
--	imc->clks[5] = clkdev_alloc(clk, NULL, "lm%x:00600", id);
-+	imc->clks[13] = clkdev_alloc(pclk, "apb_pclk", "lm%x:00600", id);
-+	imc->clks[14] = clkdev_alloc(clk, NULL, "lm%x:00600", id);
- 
- 	for (i = 0; i < ARRAY_SIZE(imc->clks); i++)
- 		clkdev_add(imc->clks[i]);
-@@ -149,9 +169,11 @@ void integrator_impd1_clk_exit(unsigned int id)
- 	clk_unregister(imc->uartclk);
- 	clk_unregister(imc->vco2clk);
- 	clk_unregister(imc->vco1clk);
-+	clk_unregister(imc->pclk);
- 	kfree(imc->scname);
- 	kfree(imc->spiname);
- 	kfree(imc->uartname);
- 	kfree(imc->vco2name);
- 	kfree(imc->vco1name);
-+	kfree(imc->pclkname);
- }
 -- 
-1.9.0
-
+With warm regards,
+Sachin
