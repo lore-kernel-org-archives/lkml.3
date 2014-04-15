@@ -1,126 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647AbaDOSG4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 14:06:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33354 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930AbaDOSGz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 14:06:55 -0400
-Date: Tue, 15 Apr 2014 11:06:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
-        xemul@parallels.com, Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: Re: [patch 4/4] mm: Clear VM_SOFTDIRTY flag inside clear_refs_write
- instead of clear_soft_dirty
-Message-Id: <20140415110654.4dd9a97c216e2689316fa448@linux-foundation.org>
-In-Reply-To: <20140324125926.204897920@openvz.org>
-References: <20140324122838.490106581@openvz.org>
-	<20140324125926.204897920@openvz.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752917AbaDOSHj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 14:07:39 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49510 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751012AbaDOSHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 14:07:37 -0400
+Date: Tue, 15 Apr 2014 20:07:35 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Kertesz Laszlo <laszlo.kertesz@gmail.com>
+Cc: Alex Deucher <alexdeucher@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Christian =?utf-8?B?S8O2bmln?= <christian.koenig@amd.com>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: 15-rc1: radeon modesetting fails
+Message-ID: <20140415180735.GG4826@pd.tnic>
+References: <20140415070204.GA4806@pd.tnic>
+ <534CFBD7.3070604@amd.com>
+ <20140415120740.GA8306@nazgul.tnic>
+ <CADnq5_PpPa_fbm=1KH__q-W2OuvfoHr2wquimQ8TCq=xwwYq_Q@mail.gmail.com>
+ <534D677C.6080407@gmail.com>
+ <20140415172702.GC4826@pd.tnic>
+ <534D743B.8010705@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <534D743B.8010705@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Mar 2014 16:28:42 +0400 Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+On Tue, Apr 15, 2014 at 09:02:35PM +0300, Kertesz Laszlo wrote:
+> Honestly didnt try that but i assume yes, since the screens go black
+> when it should change resolution.
 
-> The clear_refs_write is called earlier than clear_soft_dirty and it is
-> more natural to clear VM_SOFTDIRTY (which belongs to VMA entry but not
-> PTEs) that early instead of clearing it a way deeper inside call chain.
+Pls try it and let us know whether you see the machine booting further,
+albeit without modesetting.
 
-This patch had some significant conflicts with the pagewalk patches:
+Thanks.
 
-mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff.patch
-mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff-v2.patch
-mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff-v3.patch
-mm-hugetlbfs-fix-rmapping-for-anonymous-hugepages-with-page_pgoff-v3-fix.patch
-pagewalk-update-page-table-walker-core.patch
-pagewalk-update-page-table-walker-core-fix-end-address-calculation-in-walk_page_range.patch
-pagewalk-update-page-table-walker-core-fix-end-address-calculation-in-walk_page_range-fix.patch
-pagewalk-add-walk_page_vma.patch
-smaps-redefine-callback-functions-for-page-table-walker.patch
-clear_refs-redefine-callback-functions-for-page-table-walker.patch
-pagemap-redefine-callback-functions-for-page-table-walker.patch
-pagemap-redefine-callback-functions-for-page-table-walker-fix.patch
-numa_maps-redefine-callback-functions-for-page-table-walker.patch
-memcg-redefine-callback-functions-for-page-table-walker.patch
-arch-powerpc-mm-subpage-protc-use-walk_page_vma-instead-of-walk_page_range.patch
-pagewalk-remove-argument-hmask-from-hugetlb_entry.patch
-pagewalk-remove-argument-hmask-from-hugetlb_entry-fix.patch
-pagewalk-remove-argument-hmask-from-hugetlb_entry-fix-fix.patch
-mempolicy-apply-page-table-walker-on-queue_pages_range.patch
-mm-add-pte_present-check-on-existing-hugetlb_entry-callbacks.patch
-mm-pagewalkc-move-pte-null-check.patch
+-- 
+Regards/Gruss,
+    Boris.
 
-I resolved this by merging
-mm-softdirty-clear-vm_softdirty-flag-inside-clear_refs_write-instead-of-clear_soft_dirty.patch
-on top of the pagewalk patches as below - please carefully review.
-
-I'm hoping we'll be able to get the pagewalk patches merged in 3.16-rc1
-- we'll see what happens when the testing gets underway again.
-
-
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: mm: softdirty: clear VM_SOFTDIRTY flag inside clear_refs_write() instead of clear_soft_dirty()
-
-clear_refs_write() is called earlier than clear_soft_dirty() and it is
-more natural to clear VM_SOFTDIRTY (which belongs to VMA entry but not
-PTEs) that early instead of clearing it a way deeper inside call chain.
-
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- fs/proc/task_mmu.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
-
-diff -puN fs/proc/task_mmu.c~mm-softdirty-clear-vm_softdirty-flag-inside-clear_refs_write-instead-of-clear_soft_dirty fs/proc/task_mmu.c
---- a/fs/proc/task_mmu.c~mm-softdirty-clear-vm_softdirty-flag-inside-clear_refs_write-instead-of-clear_soft_dirty
-+++ a/fs/proc/task_mmu.c
-@@ -723,9 +723,6 @@ static inline void clear_soft_dirty(stru
- 		ptent = pte_file_clear_soft_dirty(ptent);
- 	}
- 
--	if (vma->vm_flags & VM_SOFTDIRTY)
--		vma->vm_flags &= ~VM_SOFTDIRTY;
--
- 	set_pte_at(vma->vm_mm, addr, pte, ptent);
- #endif
- }
-@@ -762,11 +759,16 @@ static int clear_refs_test_walk(unsigned
- 	 * Writing 1 to /proc/pid/clear_refs affects all pages.
- 	 * Writing 2 to /proc/pid/clear_refs only affects anonymous pages.
- 	 * Writing 3 to /proc/pid/clear_refs only affects file mapped pages.
-+	 * Writing 4 to /proc/pid/clear_refs affects all pages.
- 	 */
- 	if (cp->type == CLEAR_REFS_ANON && vma->vm_file)
- 		walk->skip = 1;
- 	if (cp->type == CLEAR_REFS_MAPPED && !vma->vm_file)
- 		walk->skip = 1;
-+	if (cp->type == CLEAR_REFS_SOFT_DIRTY) {
-+		if (vma->vm_flags & VM_SOFTDIRTY)
-+			vma->vm_flags &= ~VM_SOFTDIRTY;
-+	}
- 	return 0;
- }
- 
-@@ -795,8 +797,9 @@ static ssize_t clear_refs_write(struct f
- 
- 	if (type == CLEAR_REFS_SOFT_DIRTY) {
- 		soft_dirty_cleared = true;
--		pr_warn_once("The pagemap bits 55-60 has changed their meaning! "
--				"See the linux/Documentation/vm/pagemap.txt for details.\n");
-+		pr_warn_once("The pagemap bits 55-60 has changed their meaning!"
-+			     " See the linux/Documentation/vm/pagemap.txt for "
-+			     "details.\n");
- 	}
- 
- 	task = get_proc_task(file_inode(file));
-_
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
