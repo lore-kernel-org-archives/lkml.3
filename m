@@ -1,76 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827AbaDOJTR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 05:19:17 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:58276 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753800AbaDOJTJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 05:19:09 -0400
-Message-ID: <1397553547.1985.25.camel@x220>
-Subject: Re: [PATCH 16/28] Remove GENERIC_HAS_IOMAP
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Lennox Wu <lennox.wu@gmail.com>
-Cc: Richard Weinberger <richard@nod.at>, Chen Liqin <liqin.linux@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 15 Apr 2014 11:19:07 +0200
-In-Reply-To: <CAF0htA5xWQwkMqdp0_zz05DLJvyCOJZf-v1Rso20de5VWFmPTA@mail.gmail.com>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
-	 <1391971686-9517-17-git-send-email-richard@nod.at>
-	 <CAF0htA5xWQwkMqdp0_zz05DLJvyCOJZf-v1Rso20de5VWFmPTA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Apr 2014 09:19:07.0498 (UTC) FILETIME=[C0C6B4A0:01CF588B]
-X-RcptDomain: vger.kernel.org
+	id S1751427AbaDOJS7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 05:18:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50682 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750969AbaDOJSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 05:18:55 -0400
+From: Vlastimil Babka <vbabka@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Heesub Shin <heesub.shin@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Dongjun Shin <d.j.shin@samsung.com>,
+        Sunghwan Yun <sunghwan.yun@samsung.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: [PATCH 2/2] mm/compaction: cleanup isolate_freepages()
+Date: Tue, 15 Apr 2014 11:18:27 +0200
+Message-Id: <1397553507-15330-2-git-send-email-vbabka@suse.cz>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1397553507-15330-1-git-send-email-vbabka@suse.cz>
+References: <5342BA34.8050006@suse.cz>
+ <1397553507-15330-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-02-10 at 10:24 +0800, Lennox Wu wrote:
-> Thanks.
-> 
-> Acked-by: Lennox Wu <lennox.wu@gmail.com>
+isolate_freepages() is currently somewhat hard to follow thanks to many
+different pfn variables. Especially misleading is the name 'high_pfn' which
+looks like it is related to the 'low_pfn' variable, but in fact it is not.
 
-I don't think this oneliner is queued somewhere. Lennox, you're listed
-as one of the score maintainers: could you perhaps queue this patch?
+This patch renames the 'high_pfn' variable to a hopefully less confusing name,
+and slightly changes its handling without a functional change. A comment made
+obsolete by recent changes is also updated.
 
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+---
+ mm/compaction.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
-Paul Bolle
-
-> 2014-02-10 2:47 GMT+08:00 Richard Weinberger <richard@nod.at>:
-> > The symbol is an orphan, get rid of it.
-> >
-> > Signed-off-by: Richard Weinberger <richard@nod.at>
-> > ---
-> >  arch/score/Kconfig | 3 ---
-> >  1 file changed, 3 deletions(-)
-> >
-> > diff --git a/arch/score/Kconfig b/arch/score/Kconfig
-> > index c75d06a..c7a7b65 100644
-> > --- a/arch/score/Kconfig
-> > +++ b/arch/score/Kconfig
-> > @@ -23,19 +23,16 @@ config ARCH_SCORE7
-> >         bool "SCORE7 processor"
-> >         select SYS_SUPPORTS_32BIT_KERNEL
-> >         select CPU_SCORE7
-> > -       select GENERIC_HAS_IOMAP
-> >
-> >  config MACH_SPCT6600
-> >         bool "SPCT6600 series based machines"
-> >         select SYS_SUPPORTS_32BIT_KERNEL
-> >         select CPU_SCORE7
-> > -       select GENERIC_HAS_IOMAP
-> >
-> >  config SCORE_SIM
-> >         bool "Score simulator"
-> >         select SYS_SUPPORTS_32BIT_KERNEL
-> >         select CPU_SCORE7
-> > -       select GENERIC_HAS_IOMAP
-> >  endchoice
-> >
-> >  endmenu
-> > --
-> > 1.8.4.2
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 627dc2e..169c7b2 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -671,7 +671,7 @@ static void isolate_freepages(struct zone *zone,
+ 				struct compact_control *cc)
+ {
+ 	struct page *page;
+-	unsigned long high_pfn, low_pfn, pfn, z_end_pfn;
++	unsigned long pfn, low_pfn, next_free_pfn, z_end_pfn;
+ 	int nr_freepages = cc->nr_freepages;
+ 	struct list_head *freelist = &cc->freepages;
+ 
+@@ -688,11 +688,10 @@ static void isolate_freepages(struct zone *zone,
+ 	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
+ 
+ 	/*
+-	 * Take care that if the migration scanner is at the end of the zone
+-	 * that the free scanner does not accidentally move to the next zone
+-	 * in the next isolation cycle.
++	 * Seed the value for max(next_free_pfn, pfn) updates. If there are
++	 * none, the pfn < low_pfn check will kick in.
+ 	 */
+-	high_pfn = min(low_pfn, pfn);
++	next_free_pfn = 0;
+ 
+ 	z_end_pfn = zone_end_pfn(zone);
+ 
+@@ -754,7 +753,7 @@ static void isolate_freepages(struct zone *zone,
+ 		 */
+ 		if (isolated) {
+ 			cc->finished_update_free = true;
+-			high_pfn = max(high_pfn, pfn);
++			next_free_pfn = max(next_free_pfn, pfn);
+ 		}
+ 	}
+ 
+@@ -766,9 +765,9 @@ static void isolate_freepages(struct zone *zone,
+ 	 * so that compact_finished() may detect this
+ 	 */
+ 	if (pfn < low_pfn)
+-		cc->free_pfn = max(pfn, zone->zone_start_pfn);
+-	else
+-		cc->free_pfn = high_pfn;
++		next_free_pfn = max(pfn, zone->zone_start_pfn);
++
++	cc->free_pfn = next_free_pfn;
+ 	cc->nr_freepages = nr_freepages;
+ }
+ 
+-- 
+1.8.4.5
 
