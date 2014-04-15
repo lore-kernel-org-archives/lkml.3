@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668AbaDOJNz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 05:13:55 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:49004 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862AbaDOJNr (ORCPT
+	id S1751040AbaDOJPY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 05:15:24 -0400
+Received: from mail-yk0-f178.google.com ([209.85.160.178]:60556 "EHLO
+	mail-yk0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154AbaDOJPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 05:13:47 -0400
-Date: Tue, 15 Apr 2014 11:13:17 +0200
-From: Johan Hovold <jhovold@gmail.com>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Xiao Jin <jin.xiao@intel.com>, david.a.cohen@linux.intel.com,
-        yanmin.zhang@intel.com
-Subject: Re: [PATCH] USB: cdc-acm: fix broken runtime suspend
-Message-ID: <20140415091317.GB24422@localhost>
-References: <20140411093715.GA17522@localhost>
- <1397505492-10018-1-git-send-email-jhovold@gmail.com>
- <1397550919.3307.39.camel@linux-fkkt.site>
+	Tue, 15 Apr 2014 05:15:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397550919.3307.39.camel@linux-fkkt.site>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1876072135.7241792.1397545235729.JavaMail.zimbra@redhat.com>
+References: <3009531.aHrQhHYAOc@daeseok-laptop.cloud.net>
+	<1876072135.7241792.1397545235729.JavaMail.zimbra@redhat.com>
+Date: Tue, 15 Apr 2014 18:15:17 +0900
+Message-ID: <CAHb8M2ACqHVwLZRhJ9xkBH6Q4g70FX0aH6WRR0qdqpmbRzKwjg@mail.gmail.com>
+Subject: Re: [PATCH] drm/nouveau/clk: fix possible NULL pointer dereference
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Ben Skeggs <bskeggs@redhat.com>
+Cc: airlied@linux.ie, dri-devel@lists.freedesktop.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 10:35:19AM +0200, Oliver Neukum wrote:
-> On Mon, 2014-04-14 at 21:58 +0200, Johan Hovold wrote:
-> 
-> > Fix this by implementing a delayed-write queue using urb anchors and
-> > making sure to discard the queue properly at shutdown.
-> 
-> Looks very good, with one exception: acm_tty_close() must
-> synchronously resume the device so that the anchor is emptied
-> before ASYNCB is cleared.
+2014-04-15 16:00 GMT+09:00 Ben Skeggs <bskeggs@redhat.com>:
+> ----- Original Message -----
+>> From: "Daeseok Youn" <daeseok.youn@gmail.com>
+>> To: airlied@linux.ie
+>> Cc: bskeggs@redhat.com, dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+>> Sent: Tuesday, 15 April, 2014 11:56:49 AM
+>> Subject: [PATCH] drm/nouveau/clk: fix possible NULL pointer dereference
+>>
+>>
+>> It need to be checking NULL before dereferencing.
+> There's no dereference here.  It's an address calculation only.
+Oh.. You're right.
+But the address calculation doesn't need when "pstate" is NULL.
+Can I re-send this patch after modifying subject and comment of this
+patch properly?
+Or drop this patch.
 
-That isn't necessary as the device is already about to be resumed and
-the initialised flag will not be cleared until chars_in_buffer() returns
-0 or closing wait times out.
+Thanks for review.
 
-In the first case, the queue has been emptied as the urbs are submitted
-at resume(), and in the second case the queue is discarded at
-shutdown().
-
-Johan
+Regards,
+Daeseok Youn.
+>
+>>
+>> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>> ---
+>>  drivers/gpu/drm/nouveau/core/subdev/clock/base.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/gpu/drm/nouveau/core/subdev/clock/base.c
+>> b/drivers/gpu/drm/nouveau/core/subdev/clock/base.c
+>> index dd62bae..a586d030 100644
+>> --- a/drivers/gpu/drm/nouveau/core/subdev/clock/base.c
+>> +++ b/drivers/gpu/drm/nouveau/core/subdev/clock/base.c
+>> @@ -290,9 +290,9 @@ nouveau_pstate_new(struct nouveau_clock *clk, int idx)
+>>               return 0;
+>>
+>>       pstate = kzalloc(sizeof(*pstate), GFP_KERNEL);
+>> -     cstate = &pstate->base;
+>>       if (!pstate)
+>>               return -ENOMEM;
+>> +     cstate = &pstate->base;
+>>
+>>       INIT_LIST_HEAD(&pstate->list);
+>>
+>> --
+>> 1.7.4.4
+>>
+>>
+>>
