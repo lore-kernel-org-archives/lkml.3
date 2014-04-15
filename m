@@ -1,90 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618AbaDONwj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 09:52:39 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:48657 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210AbaDONwg (ORCPT
+	id S1754659AbaDONxT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 09:53:19 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:49418 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750919AbaDONxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 09:52:36 -0400
-Message-ID: <1397569954.4222.76.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH v2] ipv4: Add option to get TCP_FASTOPEN to getsockopt()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Kenjiro Nakayama <nakayamakenjiro@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Neal Cardwell <ncardwell@google.com>,
-        Netdev <netdev@vger.kernel.org>, Yuchung Cheng <ycheng@google.com>,
-        Eric Dumazet <edumazet@google.com>
-Date: Tue, 15 Apr 2014 06:52:34 -0700
-In-Reply-To: <87r44yixds.fsf@gmail.com>
-References: <87r44yixds.fsf@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Tue, 15 Apr 2014 09:53:17 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <534D39C9.4090604@roeck-us.net>
+Date: Tue, 15 Apr 2014 06:53:13 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org
+Subject: Re: Build regressions/improvements in v3.15-rc1
+References: <1397561816-9289-1-git-send-email-geert@linux-m68k.org>
+In-Reply-To: <1397561816-9289-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-15 at 21:35 +0900, Kenjiro Nakayama wrote:
-> Hi,
-> 
-> TCP_FASTOPEN option can be set via setsockopt(), but the value cannot be
-> gotten via getsockopt(). This patch adds the option to getsockopt().
-> 
-> Sighned-off-by: Kenjiro Nakayama <nakayamakenjiro@gmail.com>
-> 
->  	Add option to get TCP_FASTOPEN to getsockopt()
-> ---
->  net/ipv4/tcp.c | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-> index 4bd6d52..86186f4 100644
-> --- a/net/ipv4/tcp.c
-> +++ b/net/ipv4/tcp.c
-> @@ -2916,6 +2916,13 @@ static int do_tcp_getsockopt(struct sock *sk, int level,
->  	case TCP_USER_TIMEOUT:
->  		val = jiffies_to_msecs(icsk->icsk_user_timeout);
->  		break;
-> +
-> +	case TCP_FASTOPEN:
-> +		val = icsk->icsk_accept_queue.fastopenq ?
-> +		    icsk->icsk_accept_queue.fastopenq->max_qlen
-> +		    : sysctl_tcp_fastopen;
-> +		break;
-> +
->  	case TCP_TIMESTAMP:
->  		val = tcp_time_stamp + tp->tsoffset;
->  		break;
-> --
-> 1.9.0
+On 04/15/2014 04:36 AM, Geert Uytterhoeven wrote:
+> Below is the list of build error/warning regressions/improvements in
+> v3.15-rc1[1] compared to v3.14[2].
+>
+> Summarized:
+>    - build errors: +30/-3
+>    - build warnings: +106/-98
+>
+> As I haven't mastered kup yet, there's no verbose summary at
+> http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v3.15-rc1.summary.gz
+>
+> Happy fixing! ;-)
+>
+> Thanks to the linux-next team for providing the build service.
+>
+> [1] http://kisskb.ellerman.id.au/kisskb/head/7375/ (all 119 configs)
+> [2] http://kisskb.ellerman.id.au/kisskb/head/7320/ (all 119 configs)
+>
+>
+> *** ERRORS ***
+>
+> 30 regressions:
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_ANDCOND' undeclared (first use in this function):  => 178:17, 100:16
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_AVPN' undeclared (first use in this function):  => 213:16, 99:16, 177:17
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_BULK_REMOVE' undeclared (first use in this function):  => 268:7
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_CEDE' undeclared (first use in this function):  => 272:7
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_CPPR' undeclared (first use in this function):  => 279:7
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_ENTER' undeclared (first use in this function):  => 262:7
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_EOI' undeclared (first use in this function):  => 280:7
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_EXACT' undeclared (first use in this function):  => 56:6
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_IPI' undeclared (first use in this function):  => 281:7
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_IPOLL' undeclared (first use in this function):  => 282:7
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_NOT_FOUND' undeclared (first use in this function):  => 211:8, 97:8
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PARAMETER' undeclared (first use in this function):  => 155:10
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PROTECT' undeclared (first use in this function):  => 266:7
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PTEG_FULL' undeclared (first use in this function):  => 55:8
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PUT_TCE' undeclared (first use in this function):  => 270:7
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_REMOVE' undeclared (first use in this function):  => 264:7
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_RTAS' undeclared (first use in this function):  => 287:7
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_SUCCESS' undeclared (first use in this function):  => 108:8, 229:8, 141:12, 75:8
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_TOO_HARD' undeclared (first use in this function):  => 246:12
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_XIRR' undeclared (first use in this function):  => 278:7
+>    + /scratch/kisskb/src/arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_XIRR_X' undeclared (first use in this function):  => 283:7
+>    + /scratch/kisskb/src/drivers/cpufreq/powernv-cpufreq.c: error: implicit declaration of function 'cpu_sibling_mask' [-Werror=implicit-function-declaration]:  => 241:2
+>    + /scratch/kisskb/src/drivers/spi/spi-bfin5xx.c: error: implicit declaration of function 'gpio_direction_output' [-Werror=implicit-function-declaration]:  => 1102:4
+>    + /scratch/kisskb/src/drivers/spi/spi-bfin5xx.c: error: implicit declaration of function 'gpio_free' [-Werror=implicit-function-declaration]:  => 1130:3
+>    + /scratch/kisskb/src/drivers/spi/spi-bfin5xx.c: error: implicit declaration of function 'gpio_request' [-Werror=implicit-function-declaration]:  => 1097:4
+>    + /scratch/kisskb/src/drivers/spi/spi-bfin5xx.c: error: implicit declaration of function 'gpio_set_value' [-Werror=implicit-function-declaration]:  => 169:3
+>    + /scratch/kisskb/src/include/linux/kvm_host.h: error: array subscript is above array bounds [-Werror=array-bounds]:  => 436:19
+>    + error: "__invalidate_icache_range" [drivers/misc/lkdtm.ko] undefined!:  => N/A
+>    + error: "flush_icache_range" [drivers/misc/lkdtm.ko] undefined!:  => N/A
+>    + error: No rule to make target drivers/scsi/aic7xxx/aicasm/*.[chyl]:  => N/A
+>
+Also:
 
-I have no idea why you keep using sysctl_tcp_fastopen in your patches.
+arc:defconfig, arc:tb10x_defconfig, hexagon:defconfig:
 
-It seems you only want your application to
-read /proc/sys/net/ipv4/tcp_fastopen ?
+include/linux/rculist.h:54: error: implicit declaration of function 'smp_store_release'
 
-And you don't have CONFIG_PROC_FS maybe, and you add a workaround ?
-
-As already mentioned, even if sysctl_tcp_fastopen is set to one, it does
-not mean this socket is fastopen enabled.
-
-setsockopt()/getsockopt() for a given key should be symmetrical.
-
-ie :
-
-getsockopt(fd, SOL_TCP, TCP_FASTOPEN, &val, &len);
-setsockopt(fd, SOL_TCP, TCP_FASTOPEN, &val, sizeof(val));
-
-should be a no operation. Its obviously not the case with your proposal.
-
-Please address Neal concerns, and add in the changelog what is this
-option supposed to do _exactly_.
-
-hint : max_qlen and sysctl_tcp_fastopen do not have the same units,
-its like comparing apples and oranges.
-
-Thanks
-
-
+Guenter
 
