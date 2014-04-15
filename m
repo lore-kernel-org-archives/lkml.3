@@ -1,45 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548AbaDONwX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 09:52:23 -0400
-Received: from pindarots.xs4all.nl ([82.161.210.87]:54783 "EHLO
-	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852AbaDONwW (ORCPT
+	id S1754618AbaDONwj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 09:52:39 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:48657 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210AbaDONwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 09:52:22 -0400
-X-Greylist: delayed 2034 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Apr 2014 09:52:22 EDT
-Message-ID: <534D31A0.6020906@xs4all.nl>
-Date: Tue, 15 Apr 2014 15:18:24 +0200
-From: Udo van den Heuvel <udovdh@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: 3.13.9: ethernet connectivity issue
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 15 Apr 2014 09:52:36 -0400
+Message-ID: <1397569954.4222.76.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH v2] ipv4: Add option to get TCP_FASTOPEN to getsockopt()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Kenjiro Nakayama <nakayamakenjiro@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Neal Cardwell <ncardwell@google.com>,
+        Netdev <netdev@vger.kernel.org>, Yuchung Cheng <ycheng@google.com>,
+        Eric Dumazet <edumazet@google.com>
+Date: Tue, 15 Apr 2014 06:52:34 -0700
+In-Reply-To: <87r44yixds.fsf@gmail.com>
+References: <87r44yixds.fsf@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-People,
+On Tue, 2014-04-15 at 21:35 +0900, Kenjiro Nakayama wrote:
+> Hi,
+> 
+> TCP_FASTOPEN option can be set via setsockopt(), but the value cannot be
+> gotten via getsockopt(). This patch adds the option to getsockopt().
+> 
+> Sighned-off-by: Kenjiro Nakayama <nakayamakenjiro@gmail.com>
+> 
+>  	Add option to get TCP_FASTOPEN to getsockopt()
+> ---
+>  net/ipv4/tcp.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+> index 4bd6d52..86186f4 100644
+> --- a/net/ipv4/tcp.c
+> +++ b/net/ipv4/tcp.c
+> @@ -2916,6 +2916,13 @@ static int do_tcp_getsockopt(struct sock *sk, int level,
+>  	case TCP_USER_TIMEOUT:
+>  		val = jiffies_to_msecs(icsk->icsk_user_timeout);
+>  		break;
+> +
+> +	case TCP_FASTOPEN:
+> +		val = icsk->icsk_accept_queue.fastopenq ?
+> +		    icsk->icsk_accept_queue.fastopenq->max_qlen
+> +		    : sysctl_tcp_fastopen;
+> +		break;
+> +
+>  	case TCP_TIMESTAMP:
+>  		val = tcp_time_stamp + tp->tsoffset;
+>  		break;
+> --
+> 1.9.0
 
-Here's an issue with ethernet connectivity that stops working but is
-resurrected with an `ifdown eth0; ifup eth0`.
+I have no idea why you keep using sysctl_tcp_fastopen in your patches.
 
-The board is a Jetway JNC84E-LF with AMD Athlon(tm) II X2 235e Processor.
-Network chip: 02:00.0 Ethernet controller: Realtek Semiconductor Co.,
-Ltd. RTL8111/8168/8411 PCI Express Gigabit Ethernet Controller (rev 03
-is handled by r8169 driver.
-After a while (less than 24 hours typical) I discover that this machine
-is not reachable anymore and solve it with ifdown/ifup.
-I find no related messages in dmesg nor /var/log/messages.
-I tried to continuously ping this box but that did not help.
+It seems you only want your application to
+read /proc/sys/net/ipv4/tcp_fastopen ?
 
-How could I find the cause of this issue that started occurring after
-booting into 3.13.9?
-Before this kernel it ran 3.12.5 since just before Christmas 2013
-without this issue.
+And you don't have CONFIG_PROC_FS maybe, and you add a workaround ?
 
-Kind regards,
-Udo
+As already mentioned, even if sysctl_tcp_fastopen is set to one, it does
+not mean this socket is fastopen enabled.
+
+setsockopt()/getsockopt() for a given key should be symmetrical.
+
+ie :
+
+getsockopt(fd, SOL_TCP, TCP_FASTOPEN, &val, &len);
+setsockopt(fd, SOL_TCP, TCP_FASTOPEN, &val, sizeof(val));
+
+should be a no operation. Its obviously not the case with your proposal.
+
+Please address Neal concerns, and add in the changelog what is this
+option supposed to do _exactly_.
+
+hint : max_qlen and sysctl_tcp_fastopen do not have the same units,
+its like comparing apples and oranges.
+
+Thanks
+
+
+
