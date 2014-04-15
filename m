@@ -1,138 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933AbaDOXM3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 19:12:29 -0400
-Received: from g4t3427.houston.hp.com ([15.201.208.55]:49995 "EHLO
-	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748AbaDOXJd (ORCPT
+	id S1753696AbaDOXM7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 19:12:59 -0400
+Received: from mano-163-44-shared.jabatus.fr ([109.234.163.44]:57282 "EHLO
+	mano-163-44-shared.jabatus.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752960AbaDOXM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 19:09:33 -0400
-From: Bill Sumner <bill.sumner@hp.com>
-To: dwmw2@infradead.org, indou.takao@jp.fujitsu.com, bhe@redhat.com,
-        joro@8bytes.org
-Cc: iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
-        alex.williamson@redhat.com, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ddutile@redhat.com,
-        ishii.hironobu@jp.fujitsu.com, bhelgaas@google.com, bill.sumner@hp.com,
-        doug.hatch@hp.com, zhenhua@hp.com
-Subject: [PATCH 5/8] Add new definitions & prototypes to intel-iommu-private.h
-Date: Tue, 15 Apr 2014 17:09:06 -0600
-Message-Id: <1397603349-30930-6-git-send-email-bill.sumner@hp.com>
-X-Mailer: git-send-email 1.7.11.3
-In-Reply-To: <1397603349-30930-1-git-send-email-bill.sumner@hp.com>
-References: <1397603349-30930-1-git-send-email-bill.sumner@hp.com>
+	Tue, 15 Apr 2014 19:12:57 -0400
+X-Greylist: delayed 34196 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Apr 2014 19:12:56 EDT
+X-MailPropre-MailScanner-From: ecolbus@manux.info
+X-MailPropre-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=0, required 5, autolearn=not spam)
+X-MailPropre-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
+X-MailPropre-MailScanner-ID: 619AC9ABB304.A155A
+X-MailPropre-MailScanner-Information: Message sortant - Serveurs o2switch
+Message-ID: <534DBCF5.7070209@manux.info>
+Date: Wed, 16 Apr 2014 01:12:53 +0200
+From: Emmanuel Colbus <ecolbus@manux.info>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131104 Icedove/17.0.10
+MIME-Version: 1.0
+To: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][6/11][MANUX] Kernel compatibility : directory hardlinks
+References: <534D3765.4090403@manux.info> <20140415200629.GI4456@thunk.org> <534D9C44.1050505@manux.info> <20140415220119.GM4456@thunk.org>
+In-Reply-To: <20140415220119.GM4456@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Items needed for fixing crashdump.
+Le 16/04/2014 00:01, Theodore Ts'o a écrit :
+> On Tue, Apr 15, 2014 at 10:53:24PM +0200, Emmanuel Colbus wrote:
 
+> 
+>> The value means that the file is not a true directory, but a directory
+>> hardlink. Directory hardlinks, which only appear in my ro-compatible
+>> ext2l partitions, are special files that have no content, and simply
+>> point to a directory inode by using its inode number. 
+> 
+> I'm not sure what's the value of having a directory hard link given
+> the existence of symlinks.  I undersatnd what the difference is, but
+> what value does it give to an end user?  It's confusing, and if there
+> is a directory hard link to a directory, you won't be able to delete
+> the directory, lest you leave a dangling reference (and you can't just
+> remove the primary link to the directory, since then the ".." entry in
+> the directory will be pointing to the old parent directory).  That
+> makes hard links of files fundamentally different from a directory
+> hard link, which will be even more confusing to users.
 
-Signed-off-by: Bill Sumner <bill.sumner@hp.com>
----
- drivers/iommu/intel-iommu-private.h | 92 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 92 insertions(+)
+As for the end users, they aren't supposed to create any : this is a
+privileged operation. However, for the operating system, this is very
+useful.
 
-diff --git a/drivers/iommu/intel-iommu-private.h b/drivers/iommu/intel-iommu-private.h
-index 73dabec..b436cd8 100644
---- a/drivers/iommu/intel-iommu-private.h
-+++ b/drivers/iommu/intel-iommu-private.h
-@@ -349,3 +349,95 @@ static inline void free_pgtable_page(void *vaddr)
- 	free_page((unsigned long)vaddr);
- }
- 
-+#ifdef CONFIG_CRASH_DUMP
-+/*
-+ * Fix Crashdump failure caused by leftover DMA through a hardware IOMMU
-+ *
-+ * Fixes the crashdump kernel to deal with an active iommu and legacy
-+ * DMA from the (old) panicked kernel in a manner similar to how legacy
-+ * DMA is handled when no hardware iommu was in use by the old kernel --
-+ * allow the legacy DMA to continue into its current buffers.
-+ *
-+ * In the crashdump kernel, this code:
-+ * 1. skips disabling the IOMMU's translating of IO Virtual Addresses (IOVA)
-+ * 2. leaves the current translations in-place so that legacy DMA will
-+ *    continue to use its current buffers,
-+ * 3. allocates to the device drivers in the crashdump kernel
-+ *    portions of the iova address ranges that are different
-+ *    from the iova address ranges that were being used by the old kernel
-+ *    at the time of the panic.
-+ *
-+ */
-+
-+struct domain_values_entry {
-+	struct list_head link;		/* link entries into a list */
-+	struct iova_domain iovad;	/* iova's that belong to this domain */
-+	struct dma_pte	*pgd;		/* virtual address */
-+	int    did;			/* domain id */
-+	int    gaw;			/* max guest address width */
-+	int    iommu_superpage;		/* Level of superpages supported:
-+					   0 == 4KiB (no superpages), 1 == 2MiB,
-+					   2 == 1GiB, 3 == 512GiB, 4 == 1TiB */
-+};
-+
-+
-+
-+/* ------------------------------------------------------------------------
-+ * Prototypes of interface functions
-+ * ------------------------------------------------------------------------
-+ */
-+
-+extern int
-+intel_iommu_copy_translation_tables(struct dmar_drhd_unit *drhd,
-+	struct root_entry **root_old_p, struct root_entry **root_new_p,
-+	int g_num_of_iommus);
-+
-+extern int
-+intel_iommu_get_dids_from_old_kernel(struct intel_iommu *iommu);
-+
-+extern struct domain_values_entry *
-+intel_iommu_did_to_domain_values_entry(int did, struct intel_iommu *iommu);
-+
-+
-+/* ------------------------------------------------------------------------
-+ * Utility functions for accessing the iommu Translation Tables
-+ * ------------------------------------------------------------------------
-+ */
-+
-+static inline struct context_entry *
-+get_context_phys_from_root(struct root_entry *root)
-+{
-+	return (struct context_entry *)
-+		(root_present(root) ? (void *) (root->val & VTD_PAGE_MASK)
-+				    : NULL);
-+}
-+
-+static inline int
-+context_get_p(struct context_entry *c)    {return((c->lo >> 0) & 0x1); }
-+
-+static inline int
-+context_get_fpdi(struct context_entry *c) {return((c->lo >> 1) & 0x1); }
-+
-+static inline int
-+context_get_t(struct context_entry *c)    {return((c->lo >> 2) & 0x3); }
-+
-+static inline u64
-+context_get_asr(struct context_entry *c)  {return((c->lo >> 12));      }
-+
-+static inline int
-+context_get_aw(struct context_entry *c)   {return((c->hi >> 0) & 0x7); }
-+
-+static inline int
-+context_get_aval(struct context_entry *c) {return((c->hi >> 3) & 0xf); }
-+
-+static inline int
-+context_get_did(struct context_entry *c)  {return((c->hi >> 8) & 0xffff); }
-+
-+static inline void
-+context_put_asr(struct context_entry *c, unsigned long asr)
-+{
-+	c->lo &= (~VTD_PAGE_MASK);
-+	c->lo |= (asr << VTD_PAGE_SHIFT);
-+}
-+
-+#endif	/* CONFIG_CRASH_DUMP */
--- 
-Bill Sumner <bill.sumner@hp.com>
+Consider for example a program that stores some data within its /tmp. In
+my OS, every process is chrooted, so he needs to have its own /tmp. But
+then, this raises several issues :
+1) Some applications use /tmp as a means of communication between each
+other. POSIX explicitely allows this. So how is this supposed to work if
+two applications, in two different chroots, try to communicate in this way?
+2) How is this /tmp directory supposed to be cleaned when the system
+shuts down?
 
+The solution is to use directory hardlinks. This way :
+ - applications that want to communicate through /tmp can simply specify
+that they have a dependancy on a package that provides a /tmp directory
+for them; this way, the package manager will create a directory hardlink
+named "/tmp" towards it in their chroot, and they will be able to do
+their thing;
+- as for the cleaning of /tmp, it is done by having all the /tmp
+directories of all the applications hardlinked within the chroot of the
+script tasked with cleaning them.
+
+Symlinks, of course, wouldn't work, as they would require giving at
+least one application access to the other's root.
+
+> 
+> But if I were going to do such an insane thing, instead of trying to
+> do it by repurposing an inode field and using an inode, I'd probably
+> do it by using a bit in the file_type field of the directory entry to
+> indicate that it's this special "directory hard link" thing.
+
+Well, I'm using the underlying file as a mount point, so not having any
+file seems tricky. And I'm considering using the file's *content* to
+allow turning them into automatic cross-partition hardlinks. (Which
+would certainly not be very *hard* -links anymore, but I think I
+wouldn't be the first OS to implement not-so-hard hardlinks).
+
+ This
+> doesn't solve the semantic questions of what happens if you want to
+> delete a directory that has one or more hard links to it, though.
+
+Deleting a directory that has one or more hardlinks towards it simply
+fails. (In my ext2l partitions, in the case of directories, I have used
+the fragment address field as a counter of hardlinks). My directory
+hardlinks are fundamentally different from other hardlinks, both in
+their implementation (an additional inode type instead of an additional
+directory entry) and in their behaviour (the first hardlink is different
+from the other ones).
+
+Regards,
+
+Emmanuel
