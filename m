@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149AbaDOFZO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 01:25:14 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:61044 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751278AbaDOFZJ (ORCPT
+	id S1752459AbaDOF0z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 01:26:55 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:57563 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750930AbaDOF0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 01:25:09 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de
-Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, Arvind.Chauhan@arm.com,
-        linaro-networking@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V1 Resend 3/5] tick-common: do additional checks in tick_check_preferred()
-Date: Tue, 15 Apr 2014 10:54:39 +0530
-Message-Id: <6fee05309c65f68120bfaed6c68a952157b5da5e.1397537987.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1397537986.git.viresh.kumar@linaro.org>
-References: <cover.1397537986.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1397537986.git.viresh.kumar@linaro.org>
-References: <cover.1397537986.git.viresh.kumar@linaro.org>
+	Tue, 15 Apr 2014 01:26:53 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Igor Mammedov <imammedo@redhat.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, bp@suse.de,
+        paul.gortmaker@windriver.com, JBeulich@suse.com, prarit@redhat.com,
+        drjones@redhat.com, toshi.kani@hp.com, riel@redhat.com,
+        gong.chen@linux.intel.com, andi@firstfloor.org, lenb@kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH v3 5/5] acpi_processor: do not mark present at boot but not onlined CPU as onlined
+Date: Tue, 15 Apr 2014 07:43 +0200
+Message-ID: <3026804.eniy6FZ71k@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1397150061-29735-6-git-send-email-imammedo@redhat.com>
+References: <1397150061-29735-1-git-send-email-imammedo@redhat.com> <1397150061-29735-6-git-send-email-imammedo@redhat.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We return false from tick_check_preferred() if newdev doesn't have ONESHOT
-feature but curdev has, but we don't return true when newdev has ONESHOT and
-curdev doesn't. Instead we go on, check ratings and other things in that case.
+On Thursday, April 10, 2014 07:14:21 PM Igor Mammedov wrote:
+> acpi_processor_add() assumes that present at boot CPUs
+> are always onlined, it is not so if a CPU failed to become
+> onlined.
 
-This patch tries to fix this by rewriting some portion of this code and adds
-sufficient comments to make logic clear.
+What do you mean by that?  What *exactly* is the failure scenario?
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- kernel/time/tick-common.c | 25 ++++++++++++++++++-------
- 1 file changed, 18 insertions(+), 7 deletions(-)
+> As result acpi_processor_add() will mark such CPU
+> device as onlined in sysfs and following attempts to
+> online/offline it using /sys/device/system/cpu/cpuX/online
+> attribute will fail.
+> 
+> Do not poke into device internals in acpi_processor_add()
+> and touch "struct device { .offline }" attribute, since
+> for CPUs onlined at boot it's set by:
+>   topology_init() -> arch_register_cpu() -> register_cpu()
+> before ACPI device tree is parsed, and for hotplugged
+> CPUs it's set when userspace onlines CPU via sysfs.
+> 
+> Signed-off-by: Igor Mammedov <imammedo@redhat.com>
+> ---
+>  drivers/acpi/acpi_processor.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+> index c29c2c3..d56e4b4 100644
+> --- a/drivers/acpi/acpi_processor.c
+> +++ b/drivers/acpi/acpi_processor.c
+> @@ -403,9 +403,6 @@ static int acpi_processor_add(struct acpi_device *device,
+>  	if (result)
+>  		goto err;
+>  
+> -	pr->dev = dev;
 
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index 69cab28..2f13889 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -252,18 +252,29 @@ static bool tick_check_percpu(struct clock_event_device *curdev,
- static bool tick_check_preferred(struct clock_event_device *curdev,
- 				 struct clock_event_device *newdev)
- {
--	/* Prefer oneshot capable device */
--	if (!(newdev->features & CLOCK_EVT_FEAT_ONESHOT)) {
--		if (curdev && (curdev->features & CLOCK_EVT_FEAT_ONESHOT))
--			return false;
--	}
-+	if (!curdev)
-+		return true;
-+
-+	/*
-+	 * Prefer oneshot capable device.
-+	 * return values based on if ONESHOT is available or not:
-+	 *
-+	 * curdev	newdev		operation
-+	 * 0		0		check priority
-+	 * 0		1		return true
-+	 * 1		0		return false
-+	 * 1		1		check priority
-+	 */
-+
-+	if ((newdev->features & CLOCK_EVT_FEAT_ONESHOT) ^
-+		(curdev->features & CLOCK_EVT_FEAT_ONESHOT))
-+		return newdev->features & CLOCK_EVT_FEAT_ONESHOT;
- 
- 	/*
- 	 * Use the higher rated one, but prefer a CPU local device with a lower
- 	 * rating than a non-CPU local device
- 	 */
--	return !curdev ||
--		newdev->rating > curdev->rating ||
-+	return newdev->rating > curdev->rating ||
- 	       !cpumask_equal(curdev->cpumask, newdev->cpumask);
- }
- 
+The line above has to stay as is.
+
+> -	dev->offline = pr->flags.need_hotplug_init;
+> -
+>  	/* Trigger the processor driver's .probe() if present. */
+>  	if (device_attach(dev) >= 0)
+>  		return 1;
+> 
+
 -- 
-1.7.12.rc2.18.g61b472e
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
