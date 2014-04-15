@@ -1,298 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305AbaDOMQj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 08:16:39 -0400
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:57359
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751782AbaDOMPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 08:15:00 -0400
-From: Anders Berg <anders.berg@lsi.com>
-To: <arnd@arndb.de>, <olof@lixom.net>, <mturquette@linaro.org>,
-        <mark.rutland@arm.com>, <dbaryshkov@gmail.com>
-CC: <linus.walleij@linaro.org>, <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Anders Berg <anders.berg@lsi.com>
-Subject: [PATCH 3/5] ARM: axxia: Adding defconfig for AXM55xx
-Date: Tue, 15 Apr 2014 14:06:12 +0200
-Message-ID: <636bb0ab3fef72bc1b193b756ec76bdfdb331623.1397552154.git.anders.berg@lsi.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <cover.1397552154.git.anders.berg@lsi.com>
-References: <cover.1397552154.git.anders.berg@lsi.com>
+	id S1754710AbaDOMRI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 08:17:08 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:55572 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754544AbaDOMRD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 08:17:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [213.121.150.226]
-X-ClientProxiedBy: BY2PR07CA048.namprd07.prod.outlook.com (10.141.251.23) To
- BLUPR07MB370.namprd07.prod.outlook.com (10.141.26.147)
-X-Forefront-PRVS: 0182DBBB05
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019001)(6009001)(428001)(199002)(189002)(19580395003)(89996001)(80976001)(81542001)(2201001)(87976001)(62966002)(87286001)(36756003)(76176999)(80022001)(20776003)(66066001)(47776003)(79102001)(50986999)(46102001)(77982001)(99396002)(53416003)(92726001)(74502001)(81342001)(76482001)(48376002)(83072002)(33646001)(4396001)(85852003)(83322001)(19580405001)(50466002)(86362001)(77156001)(93916002)(88136002)(50226001)(42186004)(74662001)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR07MB370;H:swsaberg01.lsi.com;FPR:1A3C778F.CFE959D.3EFAF1CA.72B67480.205E3;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:;
-X-OriginatorOrg: lsi.com
+Date: Tue, 15 Apr 2014 08:17:01 -0400
+X-Google-Sender-Auth: Bd6ZdB6EBHwhUKM68xP23G9dg5c
+Message-ID: <CA+5PVA6C7W3wd9t0CVrVDo+qGvHOZGTL_Z8LFe84BMXjwOmn_w@mail.gmail.com>
+Subject: 3.15 drivers/net/ethernet/broadcom/cnic.c:576 suspicious
+ rcu_dereference_check() usage!
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: "David S. Miller" <davem@davemloft.net>, Michael Chan <mchan@broadcom.com>,
+        Eddie Wai <eddie.wai@broadcom.com>
+Cc: netdev <netdev@vger.kernel.org>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a defconfig file for the LSI Axxia family of devices (CONFIG_ARCH_AXXIA).
+Hi All,
 
-Signed-off-by: Anders Berg <anders.berg@lsi.com>
----
- arch/arm/configs/axm55xx_defconfig | 248 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 248 insertions(+)
- create mode 100644 arch/arm/configs/axm55xx_defconfig
+We've had a report [1] of the bnx2i/cnic driver(s) throwing suspicious
+RCU usage with 3.15 merge window kernels on an i686 machine.  This
+corresponds to Linux v3.14-12812-g321d03c86732.  I've included the
+dump below.
 
-diff --git a/arch/arm/configs/axm55xx_defconfig b/arch/arm/configs/axm55xx_defconfig
-new file mode 100644
-index 0000000..d3260d7
---- /dev/null
-+++ b/arch/arm/configs/axm55xx_defconfig
-@@ -0,0 +1,248 @@
-+CONFIG_SYSVIPC=y
-+CONFIG_POSIX_MQUEUE=y
-+CONFIG_FHANDLE=y
-+CONFIG_AUDIT=y
-+CONFIG_HIGH_RES_TIMERS=y
-+CONFIG_BSD_PROCESS_ACCT=y
-+CONFIG_BSD_PROCESS_ACCT_V3=y
-+CONFIG_TASKSTATS=y
-+CONFIG_TASK_DELAY_ACCT=y
-+CONFIG_TASK_XACCT=y
-+CONFIG_TASK_IO_ACCOUNTING=y
-+CONFIG_IKCONFIG=y
-+CONFIG_IKCONFIG_PROC=y
-+CONFIG_LOG_BUF_SHIFT=16
-+CONFIG_NAMESPACES=y
-+# CONFIG_UTS_NS is not set
-+# CONFIG_IPC_NS is not set
-+# CONFIG_PID_NS is not set
-+# CONFIG_NET_NS is not set
-+CONFIG_SCHED_AUTOGROUP=y
-+CONFIG_RELAY=y
-+CONFIG_BLK_DEV_INITRD=y
-+CONFIG_SYSCTL_SYSCALL=y
-+CONFIG_EMBEDDED=y
-+# CONFIG_COMPAT_BRK is not set
-+CONFIG_PROFILING=y
-+CONFIG_MODULES=y
-+CONFIG_MODULE_UNLOAD=y
-+# CONFIG_IOSCHED_DEADLINE is not set
-+CONFIG_ARCH_AXXIA=y
-+CONFIG_GPIO_PCA953X=y
-+CONFIG_ARM_LPAE=y
-+CONFIG_ARM_THUMBEE=y
-+CONFIG_ARM_ERRATA_430973=y
-+CONFIG_ARM_ERRATA_643719=y
-+CONFIG_ARM_ERRATA_720789=y
-+CONFIG_ARM_ERRATA_754322=y
-+CONFIG_ARM_ERRATA_754327=y
-+CONFIG_ARM_ERRATA_764369=y
-+CONFIG_ARM_ERRATA_775420=y
-+CONFIG_ARM_ERRATA_798181=y
-+CONFIG_PCI=y
-+CONFIG_PCI_MSI=y
-+CONFIG_PCIE_AXXIA=y
-+CONFIG_SMP=y
-+CONFIG_NR_CPUS=16
-+CONFIG_HOTPLUG_CPU=y
-+CONFIG_PREEMPT=y
-+CONFIG_AEABI=y
-+CONFIG_OABI_COMPAT=y
-+CONFIG_HIGHMEM=y
-+CONFIG_KSM=y
-+CONFIG_ZBOOT_ROM_TEXT=0x0
-+CONFIG_ZBOOT_ROM_BSS=0x0
-+CONFIG_ARM_APPENDED_DTB=y
-+CONFIG_ARM_ATAG_DTB_COMPAT=y
-+CONFIG_VFP=y
-+CONFIG_NEON=y
-+# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
-+CONFIG_BINFMT_MISC=y
-+# CONFIG_SUSPEND is not set
-+CONFIG_NET=y
-+CONFIG_PACKET=y
-+CONFIG_UNIX=y
-+CONFIG_XFRM_USER=y
-+CONFIG_XFRM_SUB_POLICY=y
-+CONFIG_XFRM_MIGRATE=y
-+CONFIG_XFRM_STATISTICS=y
-+CONFIG_NET_KEY=y
-+CONFIG_INET=y
-+CONFIG_IP_PNP=y
-+CONFIG_IP_PNP_DHCP=y
-+CONFIG_IP_PNP_BOOTP=y
-+CONFIG_INET_AH=y
-+CONFIG_INET_ESP=y
-+CONFIG_INET_IPCOMP=y
-+# CONFIG_INET_LRO is not set
-+# CONFIG_IPV6 is not set
-+CONFIG_NETWORK_PHY_TIMESTAMPING=y
-+CONFIG_BRIDGE=y
-+# CONFIG_WIRELESS is not set
-+CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
-+CONFIG_DEVTMPFS=y
-+CONFIG_DEVTMPFS_MOUNT=y
-+CONFIG_MTD=y
-+CONFIG_MTD_CMDLINE_PARTS=y
-+CONFIG_MTD_AFS_PARTS=y
-+CONFIG_MTD_BLOCK=y
-+CONFIG_MTD_CFI=y
-+CONFIG_MTD_CFI_INTELEXT=y
-+CONFIG_MTD_CFI_AMDSTD=y
-+CONFIG_MTD_CFI_STAA=y
-+CONFIG_MTD_PHYSMAP=y
-+CONFIG_MTD_PHYSMAP_OF=y
-+CONFIG_MTD_M25P80=y
-+CONFIG_PROC_DEVICETREE=y
-+CONFIG_BLK_DEV_LOOP=y
-+CONFIG_BLK_DEV_RAM=y
-+CONFIG_EEPROM_AT24=y
-+CONFIG_EEPROM_AT25=y
-+CONFIG_BLK_DEV_SD=y
-+CONFIG_CHR_DEV_SG=y
-+CONFIG_ATA=y
-+CONFIG_PATA_PLATFORM=y
-+CONFIG_PATA_OF_PLATFORM=y
-+CONFIG_MD=y
-+CONFIG_BLK_DEV_DM=y
-+CONFIG_DM_UEVENT=y
-+CONFIG_NETDEVICES=y
-+CONFIG_TUN=y
-+CONFIG_VETH=y
-+CONFIG_VIRTIO_NET=y
-+# CONFIG_NET_CADENCE is not set
-+# CONFIG_NET_VENDOR_BROADCOM is not set
-+# CONFIG_NET_VENDOR_CIRRUS is not set
-+# CONFIG_NET_VENDOR_FARADAY is not set
-+# CONFIG_NET_VENDOR_INTEL is not set
-+# CONFIG_NET_VENDOR_MARVELL is not set
-+# CONFIG_NET_VENDOR_MICREL is not set
-+# CONFIG_NET_VENDOR_NATSEMI is not set
-+# CONFIG_NET_VENDOR_SEEQ is not set
-+# CONFIG_NET_VENDOR_SMSC is not set
-+# CONFIG_NET_VENDOR_STMICRO is not set
-+# CONFIG_NET_VENDOR_VIA is not set
-+# CONFIG_NET_VENDOR_WIZNET is not set
-+CONFIG_BROADCOM_PHY=y
-+# CONFIG_WLAN is not set
-+# CONFIG_MOUSE_PS2_ALPS is not set
-+# CONFIG_MOUSE_PS2_LOGIPS2PP is not set
-+# CONFIG_MOUSE_PS2_SYNAPTICS is not set
-+# CONFIG_MOUSE_PS2_TRACKPOINT is not set
-+# CONFIG_SERIO_SERPORT is not set
-+CONFIG_SERIO_AMBAKMI=y
-+CONFIG_LEGACY_PTY_COUNT=16
-+CONFIG_SERIAL_AMBA_PL011=y
-+CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
-+CONFIG_VIRTIO_CONSOLE=y
-+# CONFIG_HW_RANDOM is not set
-+CONFIG_I2C=y
-+CONFIG_I2C_CHARDEV=y
-+CONFIG_I2C_MUX=y
-+CONFIG_I2C_AXXIA=y
-+CONFIG_SPI=y
-+CONFIG_SPI_PL022=y
-+CONFIG_DP83640_PHY=y
-+CONFIG_GPIOLIB=y
-+CONFIG_GPIO_SYSFS=y
-+CONFIG_GPIO_PL061=y
-+CONFIG_POWER_SUPPLY=y
-+CONFIG_POWER_RESET=y
-+CONFIG_POWER_RESET_AXXIA=y
-+CONFIG_SENSORS_ADT7475=y
-+CONFIG_SENSORS_JC42=y
-+CONFIG_SENSORS_LM75=y
-+CONFIG_PMBUS=y
-+CONFIG_SENSORS_LTC2978=y
-+CONFIG_WATCHDOG=y
-+CONFIG_ARM_SP805_WATCHDOG=y
-+CONFIG_FB=y
-+CONFIG_FB_ARMCLCD=y
-+CONFIG_FRAMEBUFFER_CONSOLE=y
-+CONFIG_LOGO=y
-+# CONFIG_LOGO_LINUX_MONO is not set
-+# CONFIG_LOGO_LINUX_VGA16 is not set
-+CONFIG_HID_A4TECH=y
-+CONFIG_HID_APPLE=y
-+CONFIG_HID_BELKIN=y
-+CONFIG_HID_CHERRY=y
-+CONFIG_HID_CHICONY=y
-+CONFIG_HID_CYPRESS=y
-+CONFIG_HID_DRAGONRISE=y
-+CONFIG_HID_EZKEY=y
-+CONFIG_HID_KYE=y
-+CONFIG_HID_GYRATION=y
-+CONFIG_HID_TWINHAN=y
-+CONFIG_HID_KENSINGTON=y
-+CONFIG_HID_LOGITECH=y
-+CONFIG_HID_MICROSOFT=y
-+CONFIG_HID_MONTEREY=y
-+CONFIG_HID_NTRIG=y
-+CONFIG_HID_ORTEK=y
-+CONFIG_HID_PANTHERLORD=y
-+CONFIG_HID_PETALYNX=y
-+CONFIG_HID_SAMSUNG=y
-+CONFIG_HID_SUNPLUS=y
-+CONFIG_HID_GREENASIA=y
-+CONFIG_HID_SMARTJOYPLUS=y
-+CONFIG_HID_TOPSEED=y
-+CONFIG_HID_THRUSTMASTER=y
-+CONFIG_HID_ZEROPLUS=y
-+CONFIG_USB=y
-+CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
-+CONFIG_USB_EHCI_HCD=y
-+# CONFIG_USB_EHCI_TT_NEWSCHED is not set
-+CONFIG_USB_EHCI_HCD_AXXIA=y
-+CONFIG_USB_STORAGE=y
-+CONFIG_MMC=y
-+CONFIG_MMC_ARMMMCI=y
-+CONFIG_DMADEVICES=y
-+CONFIG_PL330_DMA=y
-+CONFIG_VIRT_DRIVERS=y
-+CONFIG_VIRTIO_MMIO=y
-+CONFIG_MAILBOX=y
-+CONFIG_PL320_MBOX=y
-+# CONFIG_IOMMU_SUPPORT is not set
-+CONFIG_EXT2_FS=y
-+CONFIG_EXT3_FS=y
-+# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
-+CONFIG_EXT4_FS=y
-+CONFIG_AUTOFS4_FS=y
-+CONFIG_FUSE_FS=y
-+CONFIG_CUSE=y
-+CONFIG_FSCACHE=y
-+CONFIG_FSCACHE_STATS=y
-+CONFIG_FSCACHE_HISTOGRAM=y
-+CONFIG_FSCACHE_DEBUG=y
-+CONFIG_FSCACHE_OBJECT_LIST=y
-+CONFIG_CACHEFILES=y
-+CONFIG_CACHEFILES_HISTOGRAM=y
-+CONFIG_ISO9660_FS=y
-+CONFIG_UDF_FS=y
-+CONFIG_MSDOS_FS=y
-+CONFIG_VFAT_FS=y
-+CONFIG_NTFS_FS=y
-+CONFIG_TMPFS=y
-+CONFIG_JFFS2_FS=y
-+CONFIG_CRAMFS=y
-+CONFIG_NFS_FS=y
-+CONFIG_NFS_V4=y
-+CONFIG_ROOT_NFS=y
-+CONFIG_NFS_FSCACHE=y
-+CONFIG_SUNRPC_DEBUG=y
-+CONFIG_NLS_CODEPAGE_437=y
-+CONFIG_NLS_ISO8859_1=y
-+CONFIG_PRINTK_TIME=y
-+CONFIG_DEBUG_INFO=y
-+CONFIG_DEBUG_FS=y
-+CONFIG_MAGIC_SYSRQ=y
-+# CONFIG_SCHED_DEBUG is not set
-+CONFIG_RCU_CPU_STALL_TIMEOUT=60
-+# CONFIG_FTRACE is not set
-+CONFIG_DEBUG_USER=y
-+CONFIG_CRYPTO_GCM=y
-+CONFIG_CRYPTO_XCBC=y
-+CONFIG_CRYPTO_SHA256=y
-+# CONFIG_CRYPTO_ANSI_CPRNG is not set
-+CONFIG_VIRTUALIZATION=y
-+CONFIG_KVM=y
--- 
-1.8.3.2
+Has anyone seen this issue before?
 
+josh
+
+[1] https://bugzilla.redhat.com/show_bug.cgi?id=1087813
+
+[   90.432418] ===============================
+[   90.511920] [ INFO: suspicious RCU usage. ]
+[   90.511922] 3.15.0-0.rc0.git13.1.fc21.i686 #1 Not tainted
+[   90.511922] -------------------------------
+[   90.511923] drivers/net/ethernet/broadcom/cnic.c:576 suspicious
+rcu_dereference_check() usage!
+[   90.511923]
+[   90.511923] other info that might help us debug this:
+[   90.511923]
+[   90.511924]
+[   90.511924] rcu_scheduler_active = 1, debug_locks = 0
+[   90.511925] 3 locks held by anaconda/1320:
+[   90.511932]  #0:  (rtnl_mutex){+.+.+.}, at: [<c09c6474>] rtnl_lock+0x14/0x20
+[   90.511937]  #1:  (&bnx2i_dev_lock){+.+...}, at: [<f80d45df>]
+bnx2i_ulp_init+0x2f/0x140 [bnx2i]
+[   90.511940]  #2:  (cnic_lock){+.+...}, at: [<f80c8328>]
+cnic_register_device+0x38/0x2d0 [cnic]
+[   90.511941]
+[   90.511941] stack backtrace:
+[   90.511942] CPU: 3 PID: 1320 Comm: anaconda Not tainted
+3.15.0-0.rc0.git13.1.fc21.i686 #1
+[   90.511943] Hardware name: HP ProLiant DL360 G7, BIOS P68 01/28/2011
+[   90.511946]  00000000 2cd0aecd 00000000 dc0d3cf4 c0ae271d 00000001
+dc0d3d1c c04ac226
+[   90.511948]  c0cb548e c0cdb161 00000001 00000000 dc160000 00000001
+ec75a2c0 ec75a32c
+[   90.511950]  dc0d3d90 f80c8442 00000003 f80d45df 00000001 df49393c
+00000000 ec75a330
+[   90.511951] Call Trace:
+[   90.511956]  [<c0ae271d>] dump_stack+0x48/0x60
+[   90.511959]  [<c04ac226>] lockdep_rcu_suspicious+0xd6/0x100
+[   90.511961]  [<f80c8442>] cnic_register_device+0x152/0x2d0 [cnic]
+[   90.511967]  [<f80d45df>] ? bnx2i_ulp_init+0x2f/0x140 [bnx2i]
+[   90.511969]  [<c04add2b>] ? trace_hardirqs_on+0xb/0x10
+[   90.511972]  [<f80d45df>] ? bnx2i_ulp_init+0x2f/0x140 [bnx2i]
+[   90.511974]  [<f80d45df>] ? bnx2i_ulp_init+0x2f/0x140 [bnx2i]
+[   90.511977]  [<f80d45f9>] bnx2i_ulp_init+0x49/0x140 [bnx2i]
+[   90.511979]  [<f80c65e1>] cnic_register_driver+0xe1/0x180 [cnic]
+[   90.511982]  [<f7d93000>] ? 0xf7d92fff
+[   90.511984]  [<f7d9308b>] bnx2i_mod_init+0x8b/0x1000 [bnx2i]
+[   90.511986]  [<f7d93000>] ? 0xf7d92fff
+[   90.511988]  [<c040049a>] do_one_initcall+0xca/0x1a0
+[   90.511990]  [<f7d93000>] ? 0xf7d92fff
+[   90.511992]  [<c0445777>] ? set_memory_ro+0x37/0x40
+[   90.511995]  [<c04e3b96>] load_module+0x1fe6/0x2480
+[   90.511999]  [<c04dfb99>] ? copy_module_from_fd.isra.45+0x109/0x1a0
+[   90.512001]  [<c04e41ed>] SyS_finit_module+0x8d/0xd0
+[   90.512003]  [<c04a97ab>] ? up_write+0x1b/0x30
+[   90.512005]  [<c056defb>] ? vm_mmap_pgoff+0x9b/0xc0
+[   90.512010]  [<c0af39df>] sysenter_do_call+0x12/0x38
+[   90.512012]  [<c0ae0000>] ? mtrr_check.part.2+0x32/0x57
+[   90.512304] bnx2i [04:00.01]: ISCSI_INIT passed
+[  155.484180] INFO: rcu_sched detected stalls on CPUs/tasks: {}
+(detected by 7, t=65099 jiffies, g=4371, c=4370, q=172)
+[  155.634698] INFO: Stall ended before state dump start
+[-- MARK -- Tue Apr 15 09:30:01 2014]
