@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533AbaDOOZW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 10:25:22 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:62704 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754358AbaDOOZP (ORCPT
+	id S1753834AbaDOOZH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 10:25:07 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:22662 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975AbaDOOZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 10:25:15 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-0d-534d4147d59f
-Message-id: <534D4143.3050801@samsung.com>
-Date: Tue, 15 Apr 2014 16:25:07 +0200
-From: Tomasz Stanislawski <t.stanislaws@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-To: =?UTF-8?B?6rmA6rWt7KeE?= <kgene.kim@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'Ben Dooks'" <ben-linux@fluff.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        linux@arm.linux.org.uk,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        j.anaszewski@samsung.com,
-        =?UTF-8?B?J+uwleqyveuvvCc=?= <kyungmin.park@samsung.com>
-Subject: [PATCH] arm: dts: exynos4412-trats2: rename alias for i2c_ak8975 label
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsVy+t/xq7rujr7BBm33FS02zljPajFp3QEm
-	i/lHzrFa9L9ZyGpx7tVKRoveq8+BxIKrbBZnm96wW2x6fI3V4vKuOWwWM87vY7K4fZnXYun1
-	i0wWE6avZbFo3XuE3YHfY828NYweLc09bB6X+3qZPP6uesHssXL5FzaPTas62Tw2L6n36Nuy
-	itHj8ya5AM4oLpuU1JzMstQifbsErox9Z5cyF/xlrbh0bhZrA2MLaxcjJ4eEgInEkiP72CFs
-	MYkL99azgdhCAksZJc7Oze1i5AKyPzNKbGrZyAyS4BXQkujpvQ9mswioShz/shlsEBvQoGNL
-	PjOC2KICERJzJ25mg6gXlPgx+R4LiC0CVPOgtRcsziywj0Vi3zSwxcIC/hINu8+wQMTVJSbN
-	W8QMYctLbF7zlnkCI98sJKNmISmbhaRsASPzKkbR1NLkguKk9FwjveLE3OLSvHS95PzcTYyQ
-	SPm6g3HpMatDjAIcjEo8vBPeeQcLsSaWFVfmHmKU4GBWEuH9yO0bLMSbklhZlVqUH19UmpNa
-	fIiRiYNTqoFRTmX2IoOSvQ8Vfzv8/Xs0d7KeaHuw6a1vSgniWgYG7ltFHktefnn1gIfmHbG6
-	b4frHQWe7m1ubsqr9z12g4ntHMufL607/qQv7duStVt2eWx5qeMOK8v026tPPjg89dD5/L9B
-	jH9bVvo80L0ttYKXPdZ+5usNR5qeeSfZblXcs1WVoy/T2EtRiaU4I9FQi7moOBEAlHETJ3IC	AAA=
+	Tue, 15 Apr 2014 10:25:04 -0400
+Message-ID: <534D412A.30504@oracle.com>
+Date: Tue, 15 Apr 2014 10:24:42 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: vegard.nossum@oracle.com, penberg@kernel.org, jamie.iles@oracle.com,
+        hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] x86: Move instruction decoder data into header
+References: <1397497450-6440-1-git-send-email-sasha.levin@oracle.com> <1397497450-6440-2-git-send-email-sasha.levin@oracle.com> <534C8E2D.9020506@hitachi.com> <534C995F.9040101@oracle.com> <534CA33B.3040203@hitachi.com>
+In-Reply-To: <534CA33B.3040203@hitachi.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i2c_ak8975 controler uses label i2c8.
-This alias is already used for I2C controller 8 defined
-in file arch/arm/boot/dts/exynos4.dtsi.
+On 04/14/2014 11:10 PM, Masami Hiramatsu wrote:
+> (2014/04/15 11:28), Sasha Levin wrote:
+>> On 04/14/2014 09:41 PM, Masami Hiramatsu wrote:
+>>> (2014/04/15 2:44), Sasha Levin wrote:
+>>>>> Right now we generate data for the instruction decoder and place it
+>>>>> as a code file which gets #included directly (yuck).
+>>>>>
+>>>>> Instead, make it a header which will also be usable by other code
+>>>>> that wants to use the data in there.
+>>> Hmm, making the generated data into a header file may clone
+>>> the data table instances for each object file. Since the inat
+>>> table is not so small, I think we'd better just export the tables.
+>>
+>> The tables are defined as static, so the compiler drops them
+>> once it detects they are not used.
+> 
+> No, I meant that if the table is used in the different object files,
+> will the copies of the tables be compiled in several different
+> instances?
 
-This patch renames a label for i2c_ak8975 to i2c9.
+That's true, but there was and after this patchset there will still
+be only one user that touches the table. I also doubt that more users
+will appear since users of the table should be going through the API
+and not touching it directly, so I don't think it should be a concern
+at this point.
 
-Signed-off-by: Tomasz Stanislawski <t.stanislaws@samsung.com>
----
- arch/arm/boot/dts/exynos4412-trats2.dts |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> And I can't see the part which makes the tables static in this patch...
 
-diff --git a/arch/arm/boot/dts/exynos4412-trats2.dts b/arch/arm/boot/dts/exynos4412-trats2.dts
-index c16b315..5add765 100644
---- a/arch/arm/boot/dts/exynos4412-trats2.dts
-+++ b/arch/arm/boot/dts/exynos4412-trats2.dts
-@@ -20,7 +20,7 @@
- 	compatible = "samsung,trats2", "samsung,exynos4412", "samsung,exynos4";
+Right, it sneaked to the next patch in this patchset. I'll pull it
+into this one in the next version.
 
- 	aliases {
--		i2c8 = &i2c_ak8975;
-+		i2c9 = &i2c_ak8975;
- 	};
+>> I feel it would be easier to let the compiler do it's job rather
+>> than do optimizations we don't need to do and which will complicate
+>> the code quite a bit.
+> 
+> I haven't tend to optimize it, but just encapsulate it, to hide from other parts.
 
- 	memory {
+We could hide it under #ifdef, but that wouldn't change anything for
+the user or for the generated code itself.
+
+Splitting code generation into two different files would complicate
+everything IMO.
+
+
+Thanks,
+Sasha
