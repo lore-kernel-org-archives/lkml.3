@@ -1,153 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763AbaDOTJS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 15:09:18 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:43209 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852AbaDOTJL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 15:09:11 -0400
-Date: Tue, 15 Apr 2014 12:09:02 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: David Cohen <david.a.cohen@linux.intel.com>
-Cc: wim@iguana.be, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, gnomes@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH v3 2/2] x86: intel-mid: add watchdog platform code for
- Merrifield
-Message-ID: <20140415190902.GB7940@roeck-us.net>
-References: <1397249407-5417-1-git-send-email-david.a.cohen@linux.intel.com>
- <1397587272-31152-1-git-send-email-david.a.cohen@linux.intel.com>
- <1397587272-31152-3-git-send-email-david.a.cohen@linux.intel.com>
+	id S1754822AbaDOTJt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 15:09:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52194 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751051AbaDOTJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 15:09:46 -0400
+Date: Tue, 15 Apr 2014 15:09:36 -0400
+From: Dave Jones <davej@redhat.com>
+To: linux-mm@kvack.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [3.15rc1] BUG at mm/filemap.c:202!
+Message-ID: <20140415190936.GA24654@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
+	Linux Kernel <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397587272-31152-3-git-send-email-david.a.cohen@linux.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 11:41:12AM -0700, David Cohen wrote:
-> This patch adds platform code for Intel Merrifield.
-> Since the watchdog is not part of SFI table, we have no other option but
-> to manually register watchdog's platform device (argh!).
-> 
-argh ... does this really belong into the commit log ?
+kernel BUG at mm/filemap.c:202!
+invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+Modules linked in: tun fuse bnep rfcomm nfnetlink llc2 af_key ipt_ULOG can_raw can_bcm scsi_transport_iscsi nfc caif_socket caif af_802154 ieee802154 phonet af_r
+xrpc can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm
+ xfs libcrc32c snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_codec_generic crct10dif_pclmul crc32c_intel ghash_clmulni_intel snd_hda_intel snd_hda_controller snd_hda_codec e
+1000e btusb bluetooth microcode pcspkr serio_raw snd_hwdep snd_seq snd_seq_device snd_pcm 6lowpan_iphc usb_debug rfkill ptp pps_core shpchp snd_timer snd soundcore
+CPU: 3 PID: 14244 Comm: trinity-main Not tainted 3.15.0-rc1+ #188
+task: ffff8801be2c50a0 ti: ffff8801d6830000 task.ti: ffff8801d6830000
+RIP: 0010:[<ffffffff9915b4d5>]  [<ffffffff9915b4d5>] __delete_from_page_cache+0x315/0x320
+RSP: 0018:ffff8801d6831b10  EFLAGS: 00010046
+RAX: 0000000000000000 RBX: 0000000000000003 RCX: 000000000000001d
+RDX: 000000000000012a RSI: ffffffff99a9a1c0 RDI: ffffffff99a6dad5
+RBP: ffff8801d6831b60 R08: 000000000000005d R09: ffff8801b0361530
+R10: ffff8801d6831b28 R11: 0000000000000000 R12: ffffea000734d440
+R13: ffff880241235008 R14: 0000000000000000 R15: ffff880241235010
+FS:  00007f81925cf740(0000) GS:ffff880244600000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000630058 CR3: 0000000019c0e000 CR4: 00000000001407e0
+DR0: 0000000000df3000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+Stack:
+ ffff880241235020 ffff880241235038 ffff8801b0361530 ffff8801b0361640
+ 000000001da16adc ffffea000734d440 ffff880241235020 0000000000000000
+ 0000000000000000 000000000000005d ffff8801d6831b88 ffffffff9915b51d
+Call Trace:
+ [<ffffffff9915b51d>] delete_from_page_cache+0x3d/0x70
+ [<ffffffff9916ab7b>] truncate_inode_page+0x5b/0x90
+ [<ffffffff991759ab>] shmem_undo_range+0x30b/0x780
+ [<ffffffff990a99e5>] ? local_clock+0x25/0x30
+ [<ffffffff99175e34>] shmem_truncate_range+0x14/0x30
+ [<ffffffff99175f1d>] shmem_evict_inode+0xcd/0x150
+ [<ffffffff991e46e7>] evict+0xa7/0x170
+ [<ffffffff991e5005>] iput+0xf5/0x180
+ [<ffffffff991df390>] dentry_kill+0x210/0x250
+ [<ffffffff991df43c>] dput+0x6c/0x110
+ [<ffffffff991c8c19>] __fput+0x189/0x200
+ [<ffffffff991c8cde>] ____fput+0xe/0x10
+ [<ffffffff990900b4>] task_work_run+0xb4/0xe0
+ [<ffffffff9906ea92>] do_exit+0x302/0xb80
+ [<ffffffff99349843>] ? __this_cpu_preempt_check+0x13/0x20
+ [<ffffffff9907038c>] do_group_exit+0x4c/0xc0
+ [<ffffffff99070414>] SyS_exit_group+0x14/0x20
+ [<ffffffff9975a964>] tracesys+0xdd/0xe2
+Code: 4c 89 30 e9 80 fe ff ff 48 8b 75 c0 4c 89 ff e8 e2 8e 1c 00 84 c0 0f 85 6c fe ff ff e9 4f fe ff ff 0f 1f 44 00 00 e8 4e 85 5e 00 <0f> 0b e8 84 1d f1 ff 0f :
 
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> ---
->  arch/x86/platform/intel-mid/device_libs/Makefile   |  1 +
->  .../platform/intel-mid/device_libs/platform_wdt.c  | 63 ++++++++++++++++++++++
->  2 files changed, 64 insertions(+)
->  create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_wdt.c
-> 
-> diff --git a/arch/x86/platform/intel-mid/device_libs/Makefile b/arch/x86/platform/intel-mid/device_libs/Makefile
-> index 097e7a7940d8..af9307f2cc28 100644
-> --- a/arch/x86/platform/intel-mid/device_libs/Makefile
-> +++ b/arch/x86/platform/intel-mid/device_libs/Makefile
-> @@ -20,3 +20,4 @@ obj-$(subst m,y,$(CONFIG_DRM_MEDFIELD)) += platform_tc35876x.o
->  obj-$(subst m,y,$(CONFIG_SERIAL_MRST_MAX3110)) += platform_max3111.o
->  # MISC Devices
->  obj-$(subst m,y,$(CONFIG_KEYBOARD_GPIO)) += platform_gpio_keys.o
-> +obj-$(subst m,y,$(CONFIG_INTEL_MID_WATCHDOG)) += platform_wdt.o
-> diff --git a/arch/x86/platform/intel-mid/device_libs/platform_wdt.c b/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
-> new file mode 100644
-> index 000000000000..653242110d57
-> --- /dev/null
-> +++ b/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
-> @@ -0,0 +1,63 @@
-> +/*
-> + * platform_wdt.c: Watchdog platform library file
-> + *
-> + * (C) Copyright 2014 Intel Corporation
-> + * Author: David Cohen <david.a.cohen@linux.intel.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; version 2
-> + * of the License.
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/intel-mid_wdt.h>
 
-	/platform_data/...
+ 202         BUG_ON(page_mapped(page));
 
-> +#include <linux/interrupt.h>
-> +#include <linux/platform_device.h>
-> +#include <asm/intel-mid.h>
-> +
-> +#define TANGIER_EXT_TIMER0_MSI 15
-> +
-> +static struct platform_device wdt_dev = {
-> +	.name = "intel_mid_wdt",
-> +	.id = -1,
-> +};
-> +
-> +static int tangier_probe(void)
-> +{
-> +	int ioapic;
-> +	struct io_apic_irq_attr irq_attr;
-> +
-				= { };
-would ensure that there are no un-initialized variables
-if the structure definition ever changes.
 
-Or just pre-initialize the entire structure as much as possible.
-
-> +	ioapic = mp_find_ioapic(TANGIER_EXT_TIMER0_MSI);
-> +	if (ioapic >= 0) {
-> +		irq_attr.ioapic = ioapic;
-> +		irq_attr.ioapic_pin = TANGIER_EXT_TIMER0_MSI;
-> +		irq_attr.trigger = 1;
-> +		irq_attr.polarity = 0; /* Active high */
-> +		io_apic_set_pci_routing(NULL, TANGIER_EXT_TIMER0_MSI,
-> +					&irq_attr);
-
-No need for an error check ? I understand no one else does,
-but why does the function return an error if no one cares about it ?
-
-> +	} else {
-> +		pr_warn("intel_mid_wdt: can not find interrupt %d in ioapic\n",
-> +			TANGIER_EXT_TIMER0_MSI);
-
-As mentioned earlier, I think it would pake sense to pass
-struct platform_device * as argument and use dev_warn.
-
-It would also enable you to use the irq passed from the parameter
-instead of checking for the hard-coded define.
-
-> +		return -EINVAL;
-
-Why not return the error returned by mp_find_ioapic() ?
-
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static struct intel_mid_wdt_pdata tangier_pdata = {
-> +	.irq = TANGIER_EXT_TIMER0_MSI,
-> +	.probe = tangier_probe,
-> +};
-> +
-> +static int __init register_mid_wdt(void)
-> +{
-> +	if (intel_mid_identify_cpu() == INTEL_MID_CPU_CHIP_TANGIER) {
-> +		wdt_dev.dev.platform_data = &tangier_pdata;
-> +		return platform_device_register(&wdt_dev);
-> +	}
-> +
-> +	return -ENODEV;
-> +}
-> +
-> +rootfs_initcall(register_mid_wdt);
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
