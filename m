@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751428AbaDOOna (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 10:43:30 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:51910 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770AbaDOOn3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 10:43:29 -0400
-Date: Tue, 15 Apr 2014 10:43:24 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3] workqueue: fix double unlock bug
-Message-ID: <20140415144324.GJ1863@htj.dyndns.org>
-References: <1798086.IHnGGWGxmu@daeseok-laptop.cloud.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1798086.IHnGGWGxmu@daeseok-laptop.cloud.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753456AbaDOOn7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 10:43:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15550 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751161AbaDOOn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 10:43:56 -0400
+Message-ID: <1397573032.2471.0.camel@flatline.rdu.redhat.com>
+Subject: Re: [PATCH] gpio: ich: set regs and reglen for i3100 and ich6
+ chipset
+From: Eric Paris <eparis@redhat.com>
+To: Vincent Donnefort <vdonnefort@gmail.com>
+Cc: linux-kernel@vger.kernel.org, ptyser@xes-inc.com, linus.walleij@linaro.org,
+        gnurou@gmail.com, linux-gpio@vger.kernel.org
+Date: Tue, 15 Apr 2014 10:43:52 -0400
+In-Reply-To: <1397564503-5175-1-git-send-email-vincent.donnefort@seagate.com>
+References: <20140415084056.GA26578@ks3318809.kimsufi.com>
+	 <1397564503-5175-1-git-send-email-vincent.donnefort@seagate.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 08:17:43AM +0900, Daeseok Youn wrote:
+On Tue, 2014-04-15 at 14:21 +0200, Vincent Donnefort wrote:
+> From: Vincent Donnefort <vdonnefort@gmail.com>
 > 
-> Use default pwq when alloc_unbound_pwq() is failed.
+> This patch fixes kernel NULL pointer BUG introduced by the following commit:
+> b667cf488aa9476b0ab64acd91f2a96f188cfd21
+> gpio: ich: Add support for multiple register addresses.
 > 
-> And remove "if" condition for whether "pwq" is same as "wq->dfl_pwq"
-> when wq_calc_node_cpumask() returns false and just use "goto use_dfl_pwq"
+> Signed-off-by: Vincent Donnefort <vdonnefort@gmail.com>
+
+Things seem much happier now!  Thank you sir!
+
+Tested-by: Eric Paris <eparis@redhat.com>
+
 > 
-> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> diff --git a/drivers/gpio/gpio-ich.c b/drivers/gpio/gpio-ich.c
+> index e73c675..7030422 100644
+> --- a/drivers/gpio/gpio-ich.c
+> +++ b/drivers/gpio/gpio-ich.c
+> @@ -305,6 +305,8 @@ static struct ichx_desc ich6_desc = {
+>  
+>  	.ngpio = 50,
+>  	.have_blink = true,
+> +	.regs = ichx_regs,
+> +	.reglen = ichx_reglen,
+>  };
+>  
+>  /* Intel 3100 */
+> @@ -324,6 +326,8 @@ static struct ichx_desc i3100_desc = {
+>  	.uses_gpe0 = true,
+>  
+>  	.ngpio = 50,
+> +	.regs = ichx_regs,
+> +	.reglen = ichx_reglen,
+>  };
+>  
+>  /* ICH7 and ICH8-based */
 
-This is an awfully inadequate patch description.  Can you change it to
-something like the following?
 
-  workqueue: fix bugs in wq_update_unbound_numa() failure path
-
-  wq_update_unbound_numa() failure path has the following two bugs.
-
-  * alloc_unbound_pwq() is called without holding wq->mutex; however, if
-    the allocation fails, it jumps to out_unlock which tries to unlock
-    wq->mutex.
-
-  * The function should switch to dfl_pwq on failure but didn't do so
-    after alloc_unbound_pwq() failure.
-
-  Fix it by regrabbing wq->mutex and jumping to use_dfl_pwq on
-  alloc_unbound_pwq() failure.
-      
-
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 0ee63af..0679854 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -4087,10 +4087,7 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
->  		if (cpumask_equal(cpumask, pwq->pool->attrs->cpumask))
->  			goto out_unlock;
->  	} else {
-> -		if (pwq == wq->dfl_pwq)
-> -			goto out_unlock;
-> -		else
-> -			goto use_dfl_pwq;
-> +		goto use_dfl_pwq;
-
-And please put this in a separate patch.  Patches which are to be
-backported through -stable should be minimal.  Also, please update the
-comment above to reflect the change.
-
-Thanks.
-
--- 
-tejun
