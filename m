@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751304AbaDOHW1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 03:22:27 -0400
-Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:36240 "EHLO
+	id S1751107AbaDOHXp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 03:23:45 -0400
+Received: from mirror2.csie.ntu.edu.tw ([140.112.30.76]:36241 "EHLO
 	mirror2.csie.ntu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770AbaDOHWX (ORCPT
+	with ESMTP id S1750853AbaDOHW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 03:22:23 -0400
+	Tue, 15 Apr 2014 03:22:26 -0400
 From: Chen-Yu Tsai <wens@csie.org>
 To: Linus Walleij <linus.walleij@linaro.org>,
         Johannes Berg <johannes@sipsolutions.net>,
@@ -20,9 +20,9 @@ Cc: Chen-Yu Tsai <wens@csie.org>, Arnd Bergmann <arnd@arndb.de>,
         linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com
-Subject: [PATCH 5/7] net: rfkill: gpio: add device tree support
-Date: Tue, 15 Apr 2014 14:41:39 +0800
-Message-Id: <1397544101-18135-6-git-send-email-wens@csie.org>
+Subject: [PATCH 1/7] gpiolib: gpiolib-of: Implement device tree gpio-names based lookup
+Date: Tue, 15 Apr 2014 14:41:35 +0800
+Message-Id: <1397544101-18135-2-git-send-email-wens@csie.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397544101-18135-1-git-send-email-wens@csie.org>
 References: <1397544101-18135-1-git-send-email-wens@csie.org>
@@ -30,104 +30,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch provides of_get_gpiod_flags_by_name(), which looks up GPIO
+phandles by name only, through gpios/gpio-names, and not by index.
+
 Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 ---
- .../devicetree/bindings/rfkill/rfkill-gpio.txt     | 24 ++++++++++++++++++++++
- net/rfkill/rfkill-gpio.c                           | 23 +++++++++++++++++++++
- 2 files changed, 47 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/rfkill/rfkill-gpio.txt
+ drivers/gpio/gpiolib-of.c | 48 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/of_gpio.h   |  3 +++
+ 2 files changed, 51 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/rfkill/rfkill-gpio.txt b/Documentation/devicetree/bindings/rfkill/rfkill-gpio.txt
-new file mode 100644
-index 0000000..a23da65
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rfkill/rfkill-gpio.txt
-@@ -0,0 +1,24 @@
-+GPIO controlled RFKILL devices
-+
-+Required properties:
-+- compatible	: Must be "rfkill-gpio".
-+- rfkill-name	: Name of RFKILL device
-+- rfkill-type	: Type of RFKILL device: 1 for WiFi, 2 for BlueTooth, etc.
-+		  See include/uapi/linux/rfkill.h for all valid values
-+- gpios		: At most two GPIO phandles
-+- gpio-names	: Shall be "reset" or "shutdown", matching gpios.
-+		  If both are provided, the "reset" GPIO is toggled first.
-+
-+Optional properties:
-+- clocks		: phandle to clock to enable/disable
-+
-+Example:
-+
-+	rfkill_bt {
-+		compatible = "rfkill-gpio";
-+		rfkill-name = "bluetooth";
-+		rfkill-type = <2>;
-+		gpios = <&pio 7 18 0>;
-+		gpio-names = "reset";
-+		clocks = <&clk_out_a>;
-+	};
-diff --git a/net/rfkill/rfkill-gpio.c b/net/rfkill/rfkill-gpio.c
-index f46ddf7..a174359 100644
---- a/net/rfkill/rfkill-gpio.c
-+++ b/net/rfkill/rfkill-gpio.c
-@@ -26,6 +26,7 @@
- #include <linux/slab.h>
- #include <linux/acpi.h>
- #include <linux/gpio/consumer.h>
-+#include <linux/of_gpio.h>
+diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
+index 2024d45..5c586fa 100644
+--- a/drivers/gpio/gpiolib-of.c
++++ b/drivers/gpio/gpiolib-of.c
+@@ -97,6 +97,54 @@ struct gpio_desc *of_get_named_gpiod_flags(struct device_node *np,
+ EXPORT_SYMBOL(of_get_named_gpiod_flags);
  
- #include <linux/rfkill-gpio.h>
- 
-@@ -81,6 +82,18 @@ static int rfkill_gpio_acpi_probe(struct device *dev,
- 	return 0;
- }
- 
-+static int rfkill_gpio_dt_probe(struct device *dev,
-+				struct rfkill_gpio_data *rfkill)
+ /**
++ * of_get_gpiod_flags_by_name() - Get a GPIO descriptor and flags by name
++ * @np:		device node to get GPIO from
++ * @name:	matching name of gpio phandle
++ * @flags:	a flags pointer to fill in
++ *
++ * Returns GPIO descriptor to use with Linux GPIO API, or one of the errno
++ * value on the error condition. If @flags is not NULL the function also fills
++ * in flags for the GPIO.
++ */
++struct gpio_desc *of_get_gpiod_flags_by_name(struct device_node *np,
++		const char *name, enum of_gpio_flags *flags)
 +{
-+	struct device_node * np = dev->of_node;
++	/* Return -EPROBE_DEFER to support probe() functions to be called
++	 * later when the GPIO actually becomes available
++	 */
++	struct gg_data gg_data = {
++		.flags = flags,
++		.out_gpio = ERR_PTR(-EPROBE_DEFER)
++	};
++	int index = 0;
++	int ret;
 +
-+	rfkill->name = np->name;
-+	of_property_read_string(np, "rfkill-name", &rfkill->name);
-+	of_property_read_u32(np, "rfkill-type", &rfkill->type);
++	/* exit if no name given */
++	if (!name)
++		return ERR_PTR(-EINVAL);
 +
-+	return 0;
++	/* .of_xlate might decide to not fill in the flags, so clear it. */
++	if (flags)
++		*flags = 0;
++
++	if (name)
++		index = of_property_match_string(np, "gpio-names", name);
++
++	ret = of_parse_phandle_with_args(np, "gpios", "#gpio-cells", index,
++					 &gg_data.gpiospec);
++
++	if (ret)
++		return ERR_PTR(ret);
++
++	gpiochip_find(&gg_data, of_gpiochip_find_and_xlate);
++
++	of_node_put(gg_data.gpiospec.np);
++
++	return gg_data.out_gpio;
 +}
++EXPORT_SYMBOL(of_get_gpiod_flags_by_names);
 +
- static int rfkill_gpio_probe(struct platform_device *pdev)
- {
- 	struct rfkill_gpio_platform_data *pdata = pdev->dev.platform_data;
-@@ -96,6 +109,10 @@ static int rfkill_gpio_probe(struct platform_device *pdev)
- 		ret = rfkill_gpio_acpi_probe(&pdev->dev, rfkill);
- 		if (ret)
- 			return ret;
-+	} else if (&pdev->dev.of_node) {
-+		ret = rfkill_gpio_dt_probe(&pdev->dev, rfkill);
-+		if (ret)
-+			return ret;
- 	} else if (pdata) {
- 		rfkill->name = pdata->name;
- 		rfkill->type = pdata->type;
-@@ -167,6 +184,11 @@ static const struct acpi_device_id rfkill_acpi_match[] = {
- };
- #endif
++/**
+  * of_gpio_simple_xlate - translate gpio_spec to the GPIO number and flags
+  * @gc:		pointer to the gpio_chip structure
+  * @np:		device node of the GPIO chip
+diff --git a/include/linux/of_gpio.h b/include/linux/of_gpio.h
+index f14123a..134331f 100644
+--- a/include/linux/of_gpio.h
++++ b/include/linux/of_gpio.h
+@@ -51,6 +51,9 @@ static inline struct of_mm_gpio_chip *to_of_mm_gpio_chip(struct gpio_chip *gc)
+ extern struct gpio_desc *of_get_named_gpiod_flags(struct device_node *np,
+ 		const char *list_name, int index, enum of_gpio_flags *flags);
  
-+static const struct of_device_id rfkill_of_match[] = {
-+	{ .compatible = "rfkill-gpio", },
-+	{},
-+};
++extern struct gpio_desc *of_get_gpiod_flags_by_name(struct device_node *np,
++		const char *name, enum of_gpio_flags *flags);
 +
- static struct platform_driver rfkill_gpio_driver = {
- 	.probe = rfkill_gpio_probe,
- 	.remove = rfkill_gpio_remove,
-@@ -174,6 +196,7 @@ static struct platform_driver rfkill_gpio_driver = {
- 		.name = "rfkill_gpio",
- 		.owner = THIS_MODULE,
- 		.acpi_match_table = ACPI_PTR(rfkill_acpi_match),
-+		.of_match_table = of_match_ptr(rfkill_of_match),
- 	},
- };
+ extern int of_mm_gpiochip_add(struct device_node *np,
+ 			      struct of_mm_gpio_chip *mm_gc);
  
 -- 
 1.9.1
