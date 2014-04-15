@@ -1,102 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883AbaDOIyQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 04:54:16 -0400
-Received: from mga03.intel.com ([143.182.124.21]:21488 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750898AbaDOIyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 04:54:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="513185057"
-Message-ID: <534CF3B1.7020508@linux.intel.com>
-Date: Tue, 15 Apr 2014 16:54:09 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1753585AbaDOIyc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 04:54:32 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:51055 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975AbaDOIyZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 04:54:25 -0400
+Message-ID: <534CF3BB.20500@hitachi.com>
+Date: Tue, 15 Apr 2014 17:54:19 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Stefani Seibold <stefani@seibold.net>,
-        "Woodhouse, David" <david.woodhouse@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "daniel.vetter@ffwll.ch" <daniel.vetter@ffwll.ch>,
-        "Zanoni, Paulo R" <paulo.r.zanoni@intel.com>,
-        "greg@kroah.com" <greg@kroah.com>
-Subject: Re: X86: kexec issues with i915 in 3.14
-References: <1397419299.1407.18.camel@vger.seibold.net>	 <1397435291.19944.176.camel@shinybook.infradead.org> <1397504974.1059.5.camel@vger.seibold.net>
-In-Reply-To: <1397504974.1059.5.camel@vger.seibold.net>
-Content-Type: text/plain; charset=UTF-8
+To: Jianyu Zhan <nasa4836@gmail.com>
+Cc: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, davem@davemloft.net,
+        rdunlap@infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kprobes: be more permissive when user specifies both
+ symbol name and address
+References: <1397549446-849-1-git-send-email-nasa4836@gmail.com>
+In-Reply-To: <1397549446-849-1-git-send-email-nasa4836@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefanin,
-	As David has mentioned, the warning messages indicates the VGA
-controller hasn't been shut down correctly during reboot and keeps doing
-DMA write operations after loading the new kernel. Do you have found
-any older kernel without this issue?
-	There is a patch set to solve similar issue for crashdump,
-please refer to https://lkml.org/lkml/2014/1/10/518.
+(2014/04/15 17:10), Jianyu Zhan wrote:
+> Currently, if user specifies both symbol name and address, we just
+> bail out.
+> 
+> This might be too rude. This patch makes it give more tolerance.
+> If both are specified, check address first, if the symbol found
+> does not match the one user specify, print a waring. If not found,
+> return -ENOENT, because some symbols might have muplitple instances,
+> we don't bother to check symbol name.
+> 
+> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+> ---
+>  Documentation/kprobes.txt |  4 +++-
+>  kernel/kprobes.c          | 30 ++++++++++++++++++++++++++----
+>  2 files changed, 29 insertions(+), 5 deletions(-)
+> 
+> diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
+> index 0cfb00f..217f976 100644
+> --- a/Documentation/kprobes.txt
+> +++ b/Documentation/kprobes.txt
+> @@ -344,7 +344,9 @@ to install a probepoint is known. This field is used to calculate the
+>  probepoint.
+>  
+>  3. Specify either the kprobe "symbol_name" OR the "addr". If both are
+> -specified, kprobe registration will fail with -EINVAL.
+> +specified, only check "addr", because some symbols might have muplitple
+> +instances. If neither is specified, kprobe registration will fail
+> +with -EINVAL.
+>  
+>  4. With CISC architectures (such as i386 and x86_64), the kprobes code
+>  does not validate if the kprobe.addr is at an instruction boundary.
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index ceeadfc..ac910f4 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -1354,17 +1354,39 @@ static int __kprobes in_kprobes_functions(unsigned long addr)
+>  static kprobe_opcode_t __kprobes *kprobe_addr(struct kprobe *p)
+>  {
+>  	kprobe_opcode_t *addr = p->addr;
+> +	char namebuf[KSYM_NAME_LEN];
+> +	const char *sym_name = NULL;
+> +	unsigned long offset;
+>  
+> -	if ((p->symbol_name && p->addr) ||
+> -	    (!p->symbol_name && !p->addr))
+> +	if (!p->symbol_name && !p->addr)
+>  		goto invalid;
+>  
+> -	if (p->symbol_name) {
+> +	/* Some symbols might have muplitple instances,
+> +	 * so if both specified, only check address. */
 
-Thanks!
-Gerry
+Could you fix the comment style as same as others?
+If we have multiple lines of comment, it should be
 
-On 2014/4/15 3:49, Stefani Seibold wrote:
-> Am Montag, den 14.04.2014, 00:28 +0000 schrieb Woodhouse, David:
->> On Sun, 2014-04-13 at 22:01 +0200, Stefani Seibold wrote:
->>> Rebooting my kernel vanilla kernel 3.14 will fail with tons of kernel
->>> log messages:
->>>
->>> [    0.262754] IOMMU: Setting identity map for device 0000:00:1a.0 [0x7c45f000 - 0x7c46bfff]
->>> [    0.262780] IOMMU: Setting identity map for device 0000:00:14.0 [0x7c45f000 - 0x7c46bfff]
->>> [    0.262798] IOMMU: Prepare 0-16MiB unity mapping for LPC
->>> [    0.262807] IOMMU: Setting identity map for device 0000:00:1f.0 [0x0 - 0xffffff]
->>> [    0.262948] PCI-DMA: Intel(R) Virtualization Technology for Directed I/O
->>> [    0.262948] dmar: DRHD: handling fault status reg 3
->>> [    0.262951] dmar: DMAR:[DMA Write] Request device [00:02.0] fault addr ffffe000 
->>> DMAR:[fault reason 05] PTE Write access is not set
->>
->> I'm inferring from the subject line that you mean kexec, not
->> "rebooting"?
->>
-> 
-> Rebooting via BIOS works, but booting via kexec will result the message
-> storm or hang kernel with a corrupted display.
-> 
->> It looks like a peripheral device is being left active and doing DMA by
->> the previous kernel, rather than being shut down. So as soon as the new
->> kernel resets the IOMMU mappings, that peripheral device is causing
->> faults.
->>
->> We really ought to rate-limit the faults and isolate the offending
->> device before there are 21,000 of them. As discussed elsewhere recently,
->> we could do with a way to tell the PCI layer that it offended us but I
->> suppose we could at *least* stop the IOMMU from reporting faults for it.
->>
->> Is this new behaviour? I'm not sure why this should have changed...
->>
-> 
-> I can reproduce the behaviour also with a 3.13.7 kernel.
-> 
-> One thing i found after the end of the 21.000 messages was a GPU crash:
-> 
-> [    5.002484] r8169 0000:03:00.0 eth0: link up
-> [    5.002489] IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-> [    6.745051] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... blitter ring idle
-> [   11.743768] [drm] stuck on render ring
-> [   11.743773] [drm] GPU crash dump saved to /sys/class/drm/card0/error
-> [   11.743774] [drm] GPU hangs can indicate a bug anywhere in the entire gfx stack, including userspace.
-> [   11.743775] [drm] Please file a _new_ bug report on bugs.freedesktop.org against DRI -> DRM/Intel
-> [   11.743777] [drm] drm/i915 developers can then reassign to the right component if it's not a kernel issue.
-> [   11.743778] [drm] The gpu crash dump is required to analyze gpu hangs, so please always attach it.
-> [   14.240743] systemd-journald[158]: File /var/log/journal/bb613621feef82d686edde0046e9bcea/user-1000.journal corrupted or uncleanly shut down, renaming and replacing.
-> 
-> - Stefani
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+/*
+ * aaaaaa
+ * bbbbbb
+ */
+
+> +	if (unlikely(p->addr && p->symbol_name)) {
+> +		sym_name = kallsyms_lookup((unsigned long)(p->addr),
+> +				NULL, &offset, NULL, namebuf);
+> +		if (!sym_name)
+> +			return ERR_PTR(-ENOENT);
+> +
+> +		if (strncmp(sym_name, p->symbol_name, KSYM_NAME_LEN)
+> +				|| offset != p->offset) {
+> +			pr_err("Incorrect symbol or offset, should be "
+> +				"symbol=%s, offset=%ld.\n", sym_name, offset);
+> +			goto invalid;
+> +		}
+> +	} else if (p->symbol_name) {
+> +		/* only symbol case */
+>  		kprobe_lookup_name(p->symbol_name, addr);
+>  		if (!addr)
+>  			return ERR_PTR(-ENOENT);
+> +	} else {
+> +		/* only address case */
+> +		sym_name = kallsyms_lookup((unsigned long)(p->addr),
+> +				NULL, &offset, NULL, namebuf);
+> +		if (!sym_name)
+> +			return ERR_PTR(-ENOENT);
+
+Since we've already have a sanity check of the address range (in kernel_text)
+in check_kprobe_address_safe(), you don't need to lookup kallsyms.
+
+Thank you,
+
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
