@@ -1,45 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925AbaDOJtx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 05:49:53 -0400
-Received: from gate.crashing.org ([63.228.1.57]:43389 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750924AbaDOJtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 05:49:49 -0400
-Message-ID: <1397555363.14218.6.camel@pasglop>
-Subject: Re: [PATCH 1/1] powerpc: Increase COMMAND_LINE_SIZE to 2048 from
- 512.
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org,
-        linuxppc-dev@lists.ozlabs.org, stable@vger.kernel.org, anton@samba.org
-Date: Tue, 15 Apr 2014 19:49:23 +1000
-In-Reply-To: <534C2FEB.2000803@canonical.com>
-References: <cover.1397260361.git.joseph.salisbury@canonical.com>
-	 <84356b1cb9452226d54641a71e4b1363e78d4417.1397260362.git.joseph.salisbury@canonical.com>
-	 <534C2FEB.2000803@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752553AbaDOJwA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 05:52:00 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:46674 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750972AbaDOJv4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 05:51:56 -0400
+MIME-Version: 1.0
+In-Reply-To: <1397552145.29169.17.camel@AMDC1943>
+References: <1397462949-22379-1-git-send-email-k.kozlowski@samsung.com>
+	<1397462949-22379-5-git-send-email-k.kozlowski@samsung.com>
+	<20140414211106.GC12304@sirena.org.uk>
+	<CAK9yfHwL4o7-7Q03dw9JdD1UDsP_v2=we1kadRXaGAuaN1de_g@mail.gmail.com>
+	<1397549539.29169.2.camel@AMDC1943>
+	<CAK9yfHwUwjMEXisi5Jf+nAkS7CLnAUt-REkekns9JrRTAGQ=WQ@mail.gmail.com>
+	<1397552145.29169.17.camel@AMDC1943>
+Date: Tue, 15 Apr 2014 15:21:55 +0530
+Message-ID: <CAK9yfHzgH-4C5agpu9SFckp1BcB6s9jeviDVZBokhS+aRh9RUA@mail.gmail.com>
+Subject: Re: [PATCH 4/4] regulator: s5m8767: Use same binding for external
+ control as in s2mps11
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Mark Brown <broonie@kernel.org>, Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-14 at 14:58 -0400, Joseph Salisbury wrote:
-> 
-> After further review, it appears ppc does not actually use the define
-> in
-> the ppc headers but uses the common generic
-> default(include/uapi/asm-generic/setup.h).  COMMAND_LINE_SIZE should
-> probably become a kernel config option.  Do folks agree that is the
-> correct thing to do?  If so, I can re-work the patch.
+On 15 April 2014 14:25, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
+> On wto, 2014-04-15 at 14:02 +0530, Sachin Kamat wrote:
+>> On 15 April 2014 13:42, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
+>> > On wto, 2014-04-15 at 13:26 +0530, Sachin Kamat wrote:
+>> >> On 15 April 2014 02:41, Mark Brown <broonie@kernel.org> wrote:
+>> >> > On Mon, Apr 14, 2014 at 10:09:09AM +0200, Krzysztof Kozlowski wrote:
+>> >> >
+>> >> >> -     - s5m8767,pmic-ext-control-gpios: (optional) GPIO specifier for one
+>> >> >> +     - samsung,ext-control-gpios: (optional) GPIO specifier for one
+>> >> >>               GPIO controlling this regulator (enable/disable); This is
+>> >> >>               valid only for buck9.
+>> >> >
+>> >> > This is an incompatible change.  It's OK to deprecate the old property
+>> >> > but it's bad form to just remove it.
+>> >>
+>> >> I agree with Mark. Also, there is no need to make it generic.
+>> >
+>> > I thought it would be good to make it consistent and to reduce the
+>> > number of bindings with same meaning on similar drivers.
+>>
+>> How about making the other one use "s5m8767,pmic-ext-control-gpios"
+>> compatible instead of introducing a new one?
+>
+> But then we would introduce semi-generic binding with a driver-specific
+> name.
 
-No objection on my side.
+We can have a IP specific name (first IP to have this property) common
+across family of IPs.
 
-Make sure you remove any unused arch define while at it.
+>
+> Anyway more drivers seem to use this kind of binding (tps65090, max8952,
+> da9055, arizona) so maybe there is a point in making this generic?
 
-Cheers,
-Ben.
+In that case we could but probably not with samsung prefix.
 
-
+-- 
+With warm regards,
+Sachin
