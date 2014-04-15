@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307AbaDOUTV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 16:19:21 -0400
-Received: from imap.thunk.org ([74.207.234.97]:54761 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124AbaDOUTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 16:19:20 -0400
-Date: Tue, 15 Apr 2014 16:19:14 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Emmanuel Colbus <ecolbus@manux.info>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][5/11][MANUX] Kernel compatibility : major/minor numbers
-Message-ID: <20140415201914.GK4456@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Emmanuel Colbus <ecolbus@manux.info>,
-	One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-	linux-kernel@vger.kernel.org
-References: <534D3762.4010905@manux.info>
- <20140415160626.322e24ee@alan.etchedpixels.co.uk>
- <534D5119.8050701@manux.info>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <534D5119.8050701@manux.info>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1754284AbaDOUV3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 16:21:29 -0400
+Received: from mail-ie0-f201.google.com ([209.85.223.201]:39574 "EHLO
+	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752462AbaDOUV2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 16:21:28 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Anton Vorontsov <anton@enomsg.org>
+Cc: Olof Johansson <olof@lixom.net>, Sachin Kamat <sachin.kamat@linaro.org>,
+        ajaykumar.rs@samsung.com, linux-samsung-soc@vger.kernel.org,
+        Doug Anderson <dianders@chromium.org>, devicetree@vger.kernel.org,
+        Randy Dunlap <rdunlap@infradead.org>, Mark Brown <broonie@kernel.org>,
+        Simon Glass <sjg@chromium.org>, linux-doc@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Kumar Gala <galak@codeaurora.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>, Pawel Moll <pawel.moll@arm.com>,
+        Lee Jones <lee.jones@linaro.org>, Mark Rutland <mark.rutland@arm.com>,
+        Sean Paul <seanpaul@chromium.org>, Michael Spang <spang@chromium.org>
+Subject: [PATCH 0/3] Fixes for tps65090 for Samsung ARM Chromebook
+Date: Tue, 15 Apr 2014 13:14:33 -0700
+Message-Id: <1397592876-5741-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 05:32:41PM +0200, Emmanuel Colbus wrote:
-> > In addition the
-> > standards and common sense together pretty much imply that you need each
-> > device to at least have a unique identifier.
-> >
-> 
-> Why is it? I mean, as far as userspace is concerned, they do have a
-> unique identifier : their name. How would it be problematic that the
-> software is unable to confirm that /dev/null is actually connected to
-> the usual /dev/null kernel driver? I mean, it's supposed to trust the OS
-> and its admin to have done their job properly, not second-guess them!
+These three patches bring tps65090 up to speed with what's currently
+in the Chromium OS kernel 3.8 tree and running on the Samsung ARM
+Chromebook.  Changes were tested atop the current linux tree
+(v3.15-rc1).  FET retries were tested on a machine with a known flaky
+tps65090.  Since display isn't working on pure upstream, I augmented
+the code to turn FET1 (vcd_led) on/off 500 times at bootup.  When
+testing I included <https://patchwork.kernel.org/patch/3980731/> to
+make sure tps65090 was in exynos5250-snow's device tree.
 
-Backup programs will very often assume that if after two files, if
-stat(2)'ed, have the same st_ino and st_dev (which is a major/minor
-pair), then they are both hard links to the same underlying files.
 
-There are also programs that will relying on st_dev for the purpose of
-honoring find -xdev, and there are also programs that may try to do
-intelligent things by assuming that st_dev and st_ino togehter will
-uniquely name the same content.  This gets tricky for remote file
-systems to get right, but file systems that don't at least try to get
-this right can end up triggering some very hard to debug userspace
-bugs.  Transarc's Andrew File System (AFS) would occasionally break
-this property, back in the late 1990's, and it was the cause of Much
-Hilarity (except on the part of the programmers who had to figure out
-why certain programs were stuck looping forever while trying to
-analyze a long AFS pathname...)
+Doug Anderson (3):
+  mfd: tps65090: Allow charger module to be used when no irq
+  mfd: tps65090: Stop caching registers
+  regulator: tps65090: Make FETs more reliable
 
-					- Ted
+ .../devicetree/bindings/regulator/tps65090.txt     |   4 +
+ drivers/mfd/tps65090.c                             |  24 ++-
+ drivers/power/tps65090-charger.c                   |  76 ++++++--
+ drivers/regulator/tps65090-regulator.c             | 197 +++++++++++++++++++--
+ include/linux/mfd/tps65090.h                       |   5 +
+ 5 files changed, 264 insertions(+), 42 deletions(-)
+
+-- 
+1.9.1.423.g4596e3a
+
