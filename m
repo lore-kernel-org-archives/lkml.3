@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752142AbaDOLkS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 07:40:18 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:65116 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951AbaDOLkR (ORCPT
+	id S1751209AbaDOLmj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 07:42:39 -0400
+Received: from vsp-authed02.binero.net ([195.74.38.226]:40351 "EHLO
+	vsp-authed-03-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750838AbaDOLmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 07:40:17 -0400
-Message-ID: <1397562009.24265.1.camel@phoenix>
-Subject: [PATCH] mfd: tps65218: Remove unused *rdev[] from struct tps65218
-From: Axel Lin <axel.lin@ingics.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Keerthy <j-keerthy@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 15 Apr 2014 19:40:09 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Tue, 15 Apr 2014 07:42:37 -0400
+Message-ID: <534D1B02.2020804@gaisler.com>
+Date: Tue, 15 Apr 2014 13:41:54 +0200
+From: Andreas Larsson <andreas@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Mark Rutland <mark.rutland@arm.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        software@gaisler.com
+Subject: Re: [PATCH v2 0/7] usb: gadget: gr_udc: OF and ep.maxpacket_limit
+ improvements and fix of GFP_KERNEL in atomic context
+References: <1395933359-7109-1-git-send-email-andreas@gaisler.com>
+In-Reply-To: <1395933359-7109-1-git-send-email-andreas@gaisler.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The *rdev[] is not used since commit 413be59e2f333
-"regulator: tps65218: Remove unnecessary regulator_unregister call".
+On 2014-03-27 16:15, Andreas Larsson wrote:
+> This patchset:
+>   - Adds some OF related improvements suggested by Mark
+>     Rutland.
+>   - Adds ep.maxpacket_limit to the debugfs file and adds a check if
+>     gr_ep_enable is called with a maxpacket value greater than
+>     ep.maxpacket_limit.
+>   - Fixes a bug where GFP_KERNEL was used in atomic context
+>
+> Andreas Larsson (7):
+>    usb: gadget: gr_udc: Make struct platform_device variable name
+>      clearer and use platform_set/get_drvdata
+>    usb: gadget: gr_udc: Expand devicetree documentation
+>    usb: gadget: gr_udc: Use platform_get_irq instead of
+>      irq_of_parse_and_map
+>    usb: gadget: gr_udc: Use of_property_read_u32_index to access arrays
+>    usb: gadget: gr_udc: Add ep.maxpacket_limit to debugfs information
+>    usb: gadget: gr_udc: Return error code when trying to set
+>      ep.maxpacket > ep.maxpacket_limit
+>    usb: gadget: gr_udc: Use GFP_ATOMIC when allocating under help
+>      spinlock
+>
+>   Documentation/devicetree/bindings/usb/gr-udc.txt |   22 +++++----
+>   drivers/usb/gadget/gr_udc.c                      |   53 ++++++++++++----------
+>   2 files changed, 42 insertions(+), 33 deletions(-)
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- include/linux/mfd/tps65218.h | 1 -
- 1 file changed, 1 deletion(-)
 
-diff --git a/include/linux/mfd/tps65218.h b/include/linux/mfd/tps65218.h
-index d2e357d..2f9b593 100644
---- a/include/linux/mfd/tps65218.h
-+++ b/include/linux/mfd/tps65218.h
-@@ -267,7 +267,6 @@ struct tps65218 {
- 	u32 irq_mask;
- 	struct regmap_irq_chip_data *irq_data;
- 	struct regulator_desc desc[TPS65218_NUM_REGULATOR];
--	struct regulator_dev *rdev[TPS65218_NUM_REGULATOR];
- 	struct tps_info *info[TPS65218_NUM_REGULATOR];
- 	struct regmap *regmap;
- };
--- 
-1.8.3.2
+Anyone got feedback or reasons this cannot be accepted?
 
-
-
+Best regards,
+Andreas Larsson
