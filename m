@@ -1,192 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583AbaDOUZu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 16:25:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13959 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124AbaDOUZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 16:25:46 -0400
-Date: Tue, 15 Apr 2014 16:25:32 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: mtk.manpages@gmail.com
-Cc: linux-man <linux-man@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
-        samba-technical@lists.samba.org, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] fcntl.2: update manpage with verbiage about
- file-private locks
-Message-ID: <20140415162532.11257c8a@tlielax.poochiereds.net>
-In-Reply-To: <CAKgNAkjAdXber8SZ2EPtUSw2vE=EXpWSC2Q2NQ5S3hcF1GfQBQ@mail.gmail.com>
-References: <1389277387-18530-1-git-send-email-jlayton@redhat.com>
-	<CAKgNAkjAdXber8SZ2EPtUSw2vE=EXpWSC2Q2NQ5S3hcF1GfQBQ@mail.gmail.com>
+	id S1754622AbaDOU1Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 16:27:16 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:54971 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998AbaDOU1P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 16:27:15 -0400
+Message-ID: <534D962B.9010304@cit-ec.uni-bielefeld.de>
+Date: Tue, 15 Apr 2014 22:27:23 +0200
+From: Robert ABEL <rabel@cit-ec.uni-bielefeld.de>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+To: Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] SYSFS: fix attribute_group bin file path on removal
+Content-Type: multipart/mixed;
+ boundary="------------040209060505090507070500"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Apr 2014 22:08:50 +0200
-"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> wrote:
+This is a multi-part message in MIME format.
+--------------040209060505090507070500
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-> Hello Jeff,
-> 
-> On Thu, Jan 9, 2014 at 3:23 PM, Jeff Layton <jlayton@redhat.com> wrote:
-> > Please don't merge this yet, as the kernel patches are still a work in
-> > progress...
-> 
-> Now that this has hit mainline, is this man page patch still current?
-> 
-> Cheers,
-> 
-> Michael
-> 
+Cody Schafer already fixed binary file creation for attribute groups, 
+see [1].
+This patch makes the appropriate changes for binary file removal
+of attribute groups.
+[1]: http://lkml.org/lkml/2014/2/27/832
 
-No, it needs a bit of a revision. I'm sorting through the glibc patches
-now, and will plan to send a respin of this once that's complete.
+Signed-off-by: Robert ABEL <rabel@cit-ec.uni-bielefeld.de>
 
-Thanks!
+--------------040209060505090507070500
+Content-Type: text/plain; charset=windows-1252;
+ name="0001-SYSFS-fix-attribute_group-bin-file-path-on-removal.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename*0="0001-SYSFS-fix-attribute_group-bin-file-path-on-removal.patc";
+ filename*1="h"
 
-
-> > Signed-off-by: Jeff Layton <jlayton@redhat.com>
-> > ---
-> >  man2/fcntl.2 | 97 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--
-> >  1 file changed, 94 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/man2/fcntl.2 b/man2/fcntl.2
-> > index 72dcd7b..74c67b6 100644
-> > --- a/man2/fcntl.2
-> > +++ b/man2/fcntl.2
-> > @@ -208,7 +208,7 @@ struct flock {
-> >      off_t l_start;   /* Starting offset for lock */
-> >      off_t l_len;     /* Number of bytes to lock */
-> >      pid_t l_pid;     /* PID of process blocking our lock
-> > -                        (F_GETLK only) */
-> > +                        (F_GETLK and F_GETLKP only) */
-> >      ...
-> >  };
-> >  .fi
-> > @@ -344,9 +344,13 @@ returns details about one of these locks in the
-> >  .IR l_type ", " l_whence ", " l_start ", and " l_len
-> >  fields of
-> >  .I lock
-> > -and sets
-> > +.
-> > +If the conflicting lock is a traditional POSIX lock, then the
-> >  .I l_pid
-> > -to be the PID of the process holding that lock.
-> > +will be set to the PID of the process holding that lock. If the
-> > +conflicting lock is a file-private lock, then the
-> > +.I l_pid
-> > +will be set to -1.
-> >  .P
-> >  In order to place a read lock,
-> >  .I fd
-> > @@ -386,6 +390,93 @@ should be avoided; use
-> >  and
-> >  .BR write (2)
-> >  instead.
-> > +.SS File-private locking
-> > +(Currently non-POSIX, but being proposed)
-> > +.PP
-> > +.BR F_GETLKP ", " F_SETLKP " and  " F_SETLKPW
-> > +are used to acquire, release and test file-private record locks. These
-> > +are byte-range locks that work identically to the traditional advisory
-> > +record locks described above, but are associated with the open file on
-> > +which they were acquired rather than the process, much like locks
-> > +acquired with
-> > +.BR flock (2)
-> > +.
-> > +.PP
-> > +Unlike traditional advisory record locks, these locks are inherited
-> > +across
-> > +.BR fork (2) ", " dup (2) " and " dup2 (2)
-> > +and are only released on the last close of the open file instead of being
-> > +released on any close of the file.
-> > +.PP
-> > +File-private locks always conflict with traditional record locks, even
-> > +when they are acquired by the same process on the same file descriptor.
-> > +They only conflict with each other when they are acquired on different
-> > +open file descriptors.
-> > +.TP
-> > +.BR F_SETLKP " (\fIstruct flock *\fP)"
-> > +Acquire a lock (when
-> > +.I l_type
-> > +is
-> > +.B F_RDLCK
-> > +or
-> > +.BR F_WRLCK )
-> > +or release a lock (when
-> > +.I l_type
-> > +is
-> > +.BR F_UNLCK )
-> > +on the bytes specified by the
-> > +.IR l_whence ", " l_start ", and " l_len
-> > +fields of
-> > +.IR lock .
-> > +If a conflicting lock is held by another process,
-> > +this call returns \-1 and sets
-> > +.I errno
-> > +to
-> > +.B EACCES
-> > +or
-> > +.BR EAGAIN .
-> > +.TP
-> > +.BR F_SETLKPW " (\fIstruct flock *\fP)"
-> > +As for
-> > +.BR F_SETLKP ,
-> > +but if a conflicting lock is held on the file, then wait for that
-> > +lock to be released.
-> > +If a signal is caught while waiting, then the call is interrupted
-> > +and (after the signal handler has returned)
-> > +returns immediately (with return value \-1 and
-> > +.I errno
-> > +set to
-> > +.BR EINTR ;
-> > +see
-> > +.BR signal (7)).
-> > +.TP
-> > +.BR F_GETLKP " (\fIstruct flock *\fP)"
-> > +On input to this call,
-> > +.I lock
-> > +describes a lock we would like to place on the file.
-> > +If the lock could be placed,
-> > +.BR fcntl ()
-> > +does not actually place it, but returns
-> > +.B F_UNLCK
-> > +in the
-> > +.I l_type
-> > +field of
-> > +.I lock
-> > +and leaves the other fields of the structure unchanged.
-> > +If one or more incompatible locks would prevent
-> > +this lock being placed, then
-> > +.BR fcntl ()
-> > +returns details about one of these locks in the
-> > +.IR l_type ", " l_whence ", " l_start ", and " l_len
-> > +fields of
-> > +.I lock
-> > +.
-> > +If the conflicting lock is a traditional POSIX lock, then the
-> > +.I l_pid
-> > +will be set to the PID of the process holding that lock. If the
-> > +conflicting lock is a file-private lock, then the
-> > +.I l_pid
-> > +will be set to -1.
-> >  .SS Mandatory locking
-> >  (Non-POSIX.)
-> >  The above record locks may be either advisory or mandatory,
-> > --
-> > 1.8.4.2
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-man" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
-> 
-
-
--- 
-Jeff Layton <jlayton@redhat.com>
+RnJvbSA3MDZhNjUyZDM2NTM0NzBhNWNhYWU1ODlmNjk0NTQ5ODAyNmM5NGMxIE1vbiBTZXAg
+MTcgMDA6MDA6MDAgMjAwMQpGcm9tOiBSb2JlcnQgQUJFTCA8cmFiZWxAY2l0LWVjLnVuaS1i
+aWVsZWZlbGQuZGU+CkRhdGU6IFR1ZSwgMTUgQXByIDIwMTQgMjI6MDE6MzUgKzAyMDAKU3Vi
+amVjdDogW1BBVENIXSBTWVNGUzogZml4IGF0dHJpYnV0ZV9ncm91cCBiaW4gZmlsZSBwYXRo
+IG9uIHJlbW92YWwKCkNvZHkgU2NoYWZlciBhbHJlYWR5IGZpeGVkIGJpbmFyeSBmaWxlIGNy
+ZWF0aW9uIGZvciBhdHRyaWJ1dGUgZ3JvdXBzLCBzZWUgWzFdLgpUaGlzIHBhdGNoIG1ha2Vz
+IHRoZSBhcHByb3ByaWF0ZSBjaGFuZ2VzIGZvciBiaW5hcnkgZmlsZSByZW1vdmFsCm9mIGF0
+dHJpYnV0ZSBncm91cHMuClsxXTogaHR0cDovL2xrbWwub3JnL2xrbWwvMjAxNC8yLzI3Lzgz
+MgoKU2lnbmVkLW9mZi1ieTogUm9iZXJ0IEFCRUwgPHJhYmVsQGNpdC1lYy51bmktYmllbGVm
+ZWxkLmRlPgotLS0KIGZzL3N5c2ZzL2dyb3VwLmMgfCAgIDEwICsrKysrLS0tLS0KIDEgZmls
+ZSBjaGFuZ2VkLCA1IGluc2VydGlvbnMoKyksIDUgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0
+IGEvZnMvc3lzZnMvZ3JvdXAuYyBiL2ZzL3N5c2ZzL2dyb3VwLmMKaW5kZXggYWEwNDA2OC4u
+N2QyYTg2MCAxMDA2NDQKLS0tIGEvZnMvc3lzZnMvZ3JvdXAuYworKysgYi9mcy9zeXNmcy9n
+cm91cC5jCkBAIC0xOCw3ICsxOCw3IEBACiAjaW5jbHVkZSAic3lzZnMuaCIKIAogCi1zdGF0
+aWMgdm9pZCByZW1vdmVfZmlsZXMoc3RydWN0IGtlcm5mc19ub2RlICpwYXJlbnQsIHN0cnVj
+dCBrb2JqZWN0ICprb2JqLAorc3RhdGljIHZvaWQgcmVtb3ZlX2ZpbGVzKHN0cnVjdCBrZXJu
+ZnNfbm9kZSAqcGFyZW50LAogCQkJIGNvbnN0IHN0cnVjdCBhdHRyaWJ1dGVfZ3JvdXAgKmdy
+cCkKIHsKIAlzdHJ1Y3QgYXR0cmlidXRlICpjb25zdCAqYXR0cjsKQEAgLTI5LDcgKzI5LDcg
+QEAgc3RhdGljIHZvaWQgcmVtb3ZlX2ZpbGVzKHN0cnVjdCBrZXJuZnNfbm9kZSAqcGFyZW50
+LCBzdHJ1Y3Qga29iamVjdCAqa29iaiwKIAkJCWtlcm5mc19yZW1vdmVfYnlfbmFtZShwYXJl
+bnQsICgqYXR0ciktPm5hbWUpOwogCWlmIChncnAtPmJpbl9hdHRycykKIAkJZm9yIChiaW5f
+YXR0ciA9IGdycC0+YmluX2F0dHJzOyAqYmluX2F0dHI7IGJpbl9hdHRyKyspCi0JCQlzeXNm
+c19yZW1vdmVfYmluX2ZpbGUoa29iaiwgKmJpbl9hdHRyKTsKKwkJCWtlcm5mc19yZW1vdmVf
+YnlfbmFtZShwYXJlbnQsICgqYmluX2F0dHIpLT5hdHRyLm5hbWUpOwogfQogCiBzdGF0aWMg
+aW50IGNyZWF0ZV9maWxlcyhzdHJ1Y3Qga2VybmZzX25vZGUgKnBhcmVudCwgc3RydWN0IGtv
+YmplY3QgKmtvYmosCkBAIC02Miw3ICs2Miw3IEBAIHN0YXRpYyBpbnQgY3JlYXRlX2ZpbGVz
+KHN0cnVjdCBrZXJuZnNfbm9kZSAqcGFyZW50LCBzdHJ1Y3Qga29iamVjdCAqa29iaiwKIAkJ
+CQlicmVhazsKIAkJfQogCQlpZiAoZXJyb3IpIHsKLQkJCXJlbW92ZV9maWxlcyhwYXJlbnQs
+IGtvYmosIGdycCk7CisJCQlyZW1vdmVfZmlsZXMocGFyZW50LCBncnApOwogCQkJZ290byBl
+eGl0OwogCQl9CiAJfQpAQCAtNzksNyArNzksNyBAQCBzdGF0aWMgaW50IGNyZWF0ZV9maWxl
+cyhzdHJ1Y3Qga2VybmZzX25vZGUgKnBhcmVudCwgc3RydWN0IGtvYmplY3QgKmtvYmosCiAJ
+CQkJYnJlYWs7CiAJCX0KIAkJaWYgKGVycm9yKQotCQkJcmVtb3ZlX2ZpbGVzKHBhcmVudCwg
+a29iaiwgZ3JwKTsKKwkJCXJlbW92ZV9maWxlcyhwYXJlbnQsIGdycCk7CiAJfQogZXhpdDoK
+IAlyZXR1cm4gZXJyb3I7CkBAIC0yMjQsNyArMjI0LDcgQEAgdm9pZCBzeXNmc19yZW1vdmVf
+Z3JvdXAoc3RydWN0IGtvYmplY3QgKmtvYmosCiAJCWtlcm5mc19nZXQoa24pOwogCX0KIAot
+CXJlbW92ZV9maWxlcyhrbiwga29iaiwgZ3JwKTsKKwlyZW1vdmVfZmlsZXMoa24sIGdycCk7
+CiAJaWYgKGdycC0+bmFtZSkKIAkJa2VybmZzX3JlbW92ZShrbik7CiAKLS0gCjEuNy45LjUK
+Cg==
+--------------040209060505090507070500--
