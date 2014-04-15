@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110AbaDOOJH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 10:09:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15279 "EHLO mx1.redhat.com"
+	id S1752033AbaDOOL5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 10:11:57 -0400
+Received: from mga02.intel.com ([134.134.136.20]:45149 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751241AbaDOOJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 10:09:04 -0400
-Message-ID: <534D3D4E.9080408@redhat.com>
-Date: Tue, 15 Apr 2014 10:08:14 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+	id S1750784AbaDOOL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 10:11:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,864,1389772800"; 
+   d="scan'208";a="513544273"
+Date: Tue, 15 Apr 2014 07:11:43 -0700
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org,
+        kpreempt-tech@lists.sourceforge.net
+Subject: Re: Soft lockup regression since kernel 3.13
+Message-ID: <20140415141143.GA10589@psi-dev26.jf.intel.com>
+References: <20140402232948.GA4725@psi-dev26.jf.intel.com>
+ <20140408084935.GM11096@twins.programming.kicks-ass.net>
+ <20140408201304.GC5332@psi-dev26.jf.intel.com>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>, Rob Landley <rob@landley.net>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] Add initcall_blacklist kernel parameter [v4]
-References: <1396365545-12279-1-git-send-email-prarit@redhat.com> <20140414142914.57110976dd96134875b63639@linux-foundation.org> <20140414224042.GG22728@two.firstfloor.org>
-In-Reply-To: <20140414224042.GG22728@two.firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140408201304.GC5332@psi-dev26.jf.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 04/14/2014 06:40 PM, Andi Kleen wrote:
->> Let's not leak all those blacklist entries when we're finished?
+On Tue, Apr 08, 2014 at 01:13:04PM -0700, David Cohen wrote:
+> On Tue, Apr 08, 2014 at 10:49:35AM +0200, Peter Zijlstra wrote:
+> > On Wed, Apr 02, 2014 at 04:29:48PM -0700, David Cohen wrote:
+> > > Is this a known issue being worked currently?
+> > 
+> > Yah; could you try current linus.git ? Others report that that tree now
+> > works and I think I know what it the root cause of all this.
 > 
-> It's difficult, because you cannot free bootmem after bootmem is
-> finished.
+> Looks like this issue went away on currentl Linus' tree.
 > 
-> For the rare debug case some leaking should be acceptable.
+> > 
+> > All I need to do is figure out a sane patch for .13 and .14 :/
 > 
+> I can help with the tests.
 
-Andrew, FWIW I agree with Andi on this.  It is a minor leak in a debug
-situation.  I'd also like to know in a kdump situation what was specified as
-blacklisted so keeping this memory around is IMO a good idea.
+Just for the records, this thread's issue was solved by the same
+solution in here:
+https://lkml.org/lkml/2014/4/8/236
 
-P.
-
-> -Andi
-> 
+Br, David
