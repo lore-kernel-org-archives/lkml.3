@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752379AbaDOSQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 14:16:15 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:48999 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111AbaDOSQN (ORCPT
+	id S1754940AbaDOSWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 14:22:45 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:57640 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370AbaDOSQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 14:16:13 -0400
+	Tue, 15 Apr 2014 14:16:15 -0400
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
@@ -18,9 +18,9 @@ Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
         Haojian Zhuang <haojian.zhuang@gmail.com>,
         Chao Xie <xiechao.mail@gmail.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] ARM: iwmmxt: explicitly check for supported architectures
-Date: Tue, 15 Apr 2014 20:15:59 +0200
-Message-Id: <1397585763-23482-2-git-send-email-sebastian.hesselbarth@gmail.com>
+Subject: [PATCH 4/5] ARM: pj4: fix cpu_is_pj4 check
+Date: Tue, 15 Apr 2014 20:16:02 +0200
+Message-Id: <1397585763-23482-5-git-send-email-sebastian.hesselbarth@gmail.com>
 In-Reply-To: <1397585763-23482-1-git-send-email-sebastian.hesselbarth@gmail.com>
 References: <20140414151236.75f8816d@skate>
  <1397585763-23482-1-git-send-email-sebastian.hesselbarth@gmail.com>
@@ -28,13 +28,20 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-iwmmxt.S requires special treatment of coprocessor access registers
-for PJ4 and XScale-based CPUs. It only checks for CPU_PJ4 and drops
-down to XScale-based treatment on all other architectures.
+Commit fdb487f5c961b94486a78fa61fa28b8eff1954ab
+  ("ARM: 8015/1: Add cpu_is_pj4 to distinguish PJ4 because it
+    has some differences with V7")
+introduced a cpuid check for Marvell PJ4 processors to fix a
+regression caused by adding PJ4 based Marvell Dove into
+multi_v7.
 
-As some PJ4B also come with iWMMXt and also need PJ4 treatment,
-rework the corresponding preprocessor directives to explicitly
-check for supported architectures and fail on unsupported ones.
+Unfortunately, this check is too narrow to catch PJ4 used on
+Dove itself and breaks iWMMXt support.
+
+This patch therefore relaxes the cpuid mask to match both PJ4
+and PJ4B. Also, rework the given comment about PJ4/PJ4B
+modifications to be a little bit more specific about the
+differences.
 
 Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 ---
@@ -52,32 +59,43 @@ Cc: Chao Xie <xiechao.mail@gmail.com>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 ---
- arch/arm/kernel/iwmmxt.S | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ arch/arm/include/asm/cputype.h | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm/kernel/iwmmxt.S b/arch/arm/kernel/iwmmxt.S
-index a08783823b32..2452dd1bef53 100644
---- a/arch/arm/kernel/iwmmxt.S
-+++ b/arch/arm/kernel/iwmmxt.S
-@@ -19,12 +19,16 @@
- #include <asm/thread_info.h>
- #include <asm/asm-offsets.h>
- 
--#if defined(CONFIG_CPU_PJ4)
-+#if defined(CONFIG_CPU_PJ4) || defined(CONFIG_CPU_PJ4B)
- #define PJ4(code...)		code
- #define XSC(code...)
--#else
-+#elif defined(CONFIG_CPU_MOHAWK) || \
-+	defined(CONFIG_CPU_XSC3) || \
-+	defined(CONFIG_CPU_XSCALE)
- #define PJ4(code...)
- #define XSC(code...)		code
-+#else
-+#error "Unsupported iWMMXt architecture"
+diff --git a/arch/arm/include/asm/cputype.h b/arch/arm/include/asm/cputype.h
+index c651e3b26ec7..4764344367d4 100644
+--- a/arch/arm/include/asm/cputype.h
++++ b/arch/arm/include/asm/cputype.h
+@@ -222,22 +222,22 @@ static inline int cpu_is_xsc3(void)
  #endif
  
- #define MMX_WR0		 	(0x00)
+ /*
+- * Marvell's PJ4 core is based on V7 version. It has some modification
+- * for coprocessor setting. For this reason, we need a way to distinguish
+- * it.
++ * Marvell's PJ4 and PJ4B cores are based on V7 version,
++ * but require a specical sequence for enabling coprocessors.
++ * For this reason, we need a way to distinguish them.
+  */
+-#ifndef CONFIG_CPU_PJ4
+-#define cpu_is_pj4()	0
+-#else
++#if defined(CONFIG_CPU_PJ4) || defined(CONFIG_CPU_PJ4B)
+ static inline int cpu_is_pj4(void)
+ {
+ 	unsigned int id;
+ 
+ 	id = read_cpuid_id();
+-	if ((id & 0xfffffff0) == 0x562f5840)
++	if ((id & 0xff0fff00) == 0x560f5800)
+ 		return 1;
+ 
+ 	return 0;
+ }
++#else
++#define cpu_is_pj4()	0
+ #endif
+ #endif
 -- 
 1.9.1
 
