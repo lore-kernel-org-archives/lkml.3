@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389AbaDOUE6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 16:04:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:33971 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040AbaDOUE4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 16:04:56 -0400
-Date: Tue, 15 Apr 2014 13:04:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard.weinberger@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Josh Boyer <jwboyer@fedoraproject.org>, Rob Landley <rob@landley.net>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH] Add initcall_blacklist kernel parameter [v5]
-Message-Id: <20140415130454.94306f499f9064a1382b7b5c@linux-foundation.org>
-In-Reply-To: <1397574958-7446-1-git-send-email-prarit@redhat.com>
-References: <20140414142914.57110976dd96134875b63639@linux-foundation.org>
-	<1397574958-7446-1-git-send-email-prarit@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754208AbaDOUFG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 16:05:06 -0400
+Received: from imap.thunk.org ([74.207.234.97]:54748 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752124AbaDOUFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 16:05:00 -0400
+Date: Tue, 15 Apr 2014 16:04:57 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Emmanuel Colbus <ecolbus@manux.info>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC][1/11][MANUX] Kernel compatibility : ext2
+Message-ID: <20140415200457.GH4456@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Emmanuel Colbus <ecolbus@manux.info>, linux-kernel@vger.kernel.org
+References: <534D3753.6080601@manux.info>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <534D3753.6080601@manux.info>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Apr 2014 11:15:58 -0400 Prarit Bhargava <prarit@redhat.com> wrote:
-
-> When a module is built into the kernel the module_init() function becomes
-> an initcall.  Sometimes debugging through dynamic debug can help,
-> however, debugging built in kernel modules is typically done by changing
-> the .config, recompiling, and booting the new kernel in an effort to
-> determine exactly which module caused a problem.
+On Tue, Apr 15, 2014 at 03:42:43PM +0200, Emmanuel Colbus wrote:
+> The issue is that I also needed it in other
+> partitions, including linux-created ext2 ones. Thus, I have used the
+> osd1 field for this, including in cases where I'm *not* the creator OS.
 > 
-> This patchset can be useful stand-alone or combined with initcall_debug.
-> There are cases where some initcalls can hang the machine before the
-> console can be flushed, which can make initcall_debug output
-> inaccurate.  Having the ability to skip initcalls can help further
-> debugging of these scenarios.
-> 
-> Usage: initcall_blacklist=<list of comma separated initcalls>
-> 
-> ex) added "initcall_blacklist=sgi_uv_sysfs_init" as a kernel parameter and
-> the log contains:
-> 
-> 	blacklisted initcall sgi_uv_sysfs_init
+> Well, at this point, you're likely to say : "Hey, you can't do that,
+> this isn't allowed!"......
 
-I think "blacklisting initcall sgi_uv_sysfs_init" makes more sense here.
+It seems really strange to you are asking for permission here.  You're
+doing your own operating system, so you don't need to ask permission.
+You can do whatever you want.  The flip side is that even if it's "ok"
+for now, we could make changes in the future that might break
+assumptions that you are making today.  And if that happens, you
+shouldn't expect that we will do anything for your convenience, just
+because someone in the past said, "I give you my permission".  
 
-> 	...
-> 	...
-> 	function sgi_uv_sysfs_init returning without executing
+> 1) Except for the Hurd, no OS has ever made use of this field in 20
+> years or so;
 
-And this should be "blacklisted sgi_uv_sysfs_init initcall" or
-"initcall sgi_uv_sysfs_init blacklisted" (isn't English weird).
+In this specific case, the osd1 field is in fact used by ext4, as the
+i_version field, which is required for NFSv4 support.  The ext4 file
+system is a superset of ext2, and in fact some distributions have
+started shipping with a configuration which allows the ext4 file
+system code to mount ext2 and ext3 file systems. 
 
-I did the below and fixed up the changelog to suit:
+> (By the way, if you have issues with it, I can propose a solution.
+> Initially, I simply thought I could take a new bit in the read-write
+> compatible functions, and then mark all the filesystems I would use this
+> way with this bit. However, I noticed this wouldn't work, because if
+> Linux suddenly decided to make use of this field, it would need a way to
+> tell my kernel about this, so we would also need to choose a second bit
+> to mean "This filesystem actually uses the osd1 field, don't touch it".
+> However, once this is done, since I don't care that my own data in this
+> field be preserved, the first bit would become useless... Thus, the
+> solution would simply be that you choose an unused bit in the read-write
+> compatible functions to mean "leave the osd1 field alone!", so that you
+> can set it if you ever decide to make use of this field; and that I
+> simply test it and refuse to mount these partitions.)
 
---- a/init/main.c~init-mainc-add-initcall_blacklist-kernel-parameter-fix
-+++ a/init/main.c
-@@ -684,7 +684,7 @@ static int __init initcall_blacklist(cha
- 	do {
- 		str_entry = strsep(&str, ",");
- 		if (str_entry) {
--			pr_debug("initcall blacklisted %s\n", str_entry);
-+			pr_debug("blacklisting initcall %s\n", str_entry);
- 			entry = alloc_bootmem(sizeof(*entry));
- 			entry->buf = alloc_bootmem(strlen(str_entry) + 1);
- 			strcpy(entry->buf, str_entry);
-_
+Um, no.  The Linux implementation gets to use any unclaimed fields in
+the inode or the superblock, and we're not necessarily going to go out
+of the way and extra complexity into the ext4 kernel, just to
+accomodate every single random OS developer who decides they want to
+go off and do their own thing.  This is a strategy which simply
+doesn't scale.  Can you imagine what might happen if people start
+coming out of the woodwork demanding special accomodation for Tomix,
+Dikux, and Harrix?
 
+If you want to start off by cloning our code or our design, you're
+completely free to do that.  That's what an open source license is all
+about.  But you don't get to dictate to the upstream that they make
+changes to accomodate MANUX extensions.  If you want to try to
+negotiate with us --- maybe, although there is some fields such as
+inode fields which are extremely precious where it would have to be a
+really, really good reason.  So you'll need to tell us what it is that
+you want the extra field for, and why it would be to the benefit of
+the greater ext4 community that we accomodate you.
+
+Best regards,
+
+						- Ted
