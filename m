@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145AbaDORZi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 13:25:38 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55147 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753486AbaDORZe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 13:25:34 -0400
-Date: Tue, 15 Apr 2014 12:23:10 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Richard Weinberger <richard@nod.at>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] usb: phy: mv_u3d: Remove usb phy driver for mv_u3d
-Message-ID: <20140415172310.GD16002@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1397561783.1985.55.camel@x220>
+	id S1754220AbaDOR0X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 13:26:23 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:39623 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169AbaDOR0W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 13:26:22 -0400
+Date: Tue, 15 Apr 2014 19:26:17 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: [GIT PULL 0/2] perf/urgent fixes
+Message-ID: <20140415172616.GA707@gmail.com>
+References: <1397567226-27516-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="M38YqGLZlgb6RLPS"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397561783.1985.55.camel@x220>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1397567226-27516-1-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---M38YqGLZlgb6RLPS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Tue, Apr 15, 2014 at 01:36:23PM +0200, Paul Bolle wrote:
-> The usb phy driver for mv_u3d got added in v3.7 through commit
-> a67e76ac904c ("usb: phy: mv_u3d: Add usb phy driver for mv_u3d"). It
-> then depended on USB_MV_U3D. And that symbol depended
-> on CPU_MMP3 at that time. But CPU_MMP3 has never been part of the tree.
-> This means that this drive was unbuildable when it was added.
->=20
-> In commit 60630c2eabd4 ("usb: gadget: mv_u3d: drop ARCH dependency")
-> MV_U3D_PHY was made depended directly on CPU_MMP3. That kept it
-> unbuildable, of course.
->=20
-> Remove this driver. It can be re-added once its dependencies are part of
-> the tree.
->=20
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Tested with git grep.
->=20
-> This was triggered by Richard's "[PATCH 01/28] Remove CPU_MMP3" of two
-> months ago, which I acked to eagerly. See
-> https://lkml.org/lkml/2014/2/11/714 for the details.
+* Jiri Olsa <jolsa@redhat.com> wrote:
 
-so this means that drivers/usb/gadget/mv_u3d_core.c isn't used either ?
-Instead of deleting this and introducing a new driver, why don't you
-just help fix what's already in-tree ?
+> hi Ingo,
+> please consider pulling
+> 
+> thanks,
+> jirka
+> 
+> 
+> The following changes since commit fbdd17ec5ce2e5e4027356fcfde769b88d15702f:
+> 
+>   Merge branch 'perf-core-for-mingo' into perf/urgent (2014-04-14 16:45:39 +0200)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-urgent-for-mingo
+> 
+> for you to fetch changes up to c9e87a472594fd237b2d19dcbe4a3424297f0b1a:
+> 
+>   perf tools: Instead of redirecting flex output, use -o (2014-04-15 13:57:21 +0200)
+> 
+> ----------------------------------------------------------------
+> perf/urgent fixes:
+> 
+> Developer stuff:
+> . Instead of redirecting flex output, use -o (Cody P Schafer)
+> 
+> . Fix double free in perf test 21 (Adrian Hunter)
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Adrian Hunter (1):
+>       perf tools: Fix double free in perf test 21 (code-reading.c)
+> 
+> Cody P Schafer (1):
+>       perf tools: Instead of redirecting flex output, use -o
+> 
+>  tools/perf/Makefile.perf        | 4 ++--
+>  tools/perf/tests/code-reading.c | 1 +
+>  2 files changed, 3 insertions(+), 2 deletions(-)
 
---=20
-balbi
+Pulled, thanks a lot Jiri!
 
---M38YqGLZlgb6RLPS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTTWr+AAoJEIaOsuA1yqRE/WwP/2u20E+79bULtjuN3x0PbKDU
-wfCtDO3Rt/cuuz+h/JcjuIba6cEe4TGuYQxcH0H85AVrB9VvNjdJrJsZWbESuuIM
-vAjxcBEWACG1F/aHWuU5ai/4kx4DyDyfHuPOT6TRJxzh42UVpLwuPMAzapbaHL/O
-Iqd26XLfOWim0bvCRKWorK/szR/1+IErDFJCo86xpqQBlJY2Ud0Iod4hExZEpdL/
-woM90b7fyY1R2hRuHj8jSTjDjzhKOtNR1VkilI3xlwhpLByrBM+9ofnHCsYonnGt
-lsZ1s/ygO2/FJqvVN97YmFdlO+qafTIH2mSBV2SMxokv0948rPiz7dJi+g6V+SdM
-HTchboNkkzw2HU3ljZCcDd4CSIUEMOelzTtODNd33XqZoUjNTSSK/xFS//I8CUfe
-5UIAxE2c6EUk5k8VVjRQeFHUcnyTvw3fRiVT03SEag8xjGrzDxdoDZL6/8czaHFO
-p332NW69hyvY1pOrYcptrFy6mHlZfRW4/KG/3NLbOYo7GKtv9ZqXKzcx/E9WqckQ
-Zvh/ueY6QrgPy25qrSIszgMXjKzLf2QOUVkLWVrc76neCpC1dneVsB5Upp+Rw7V6
-NLPMaZHpYGpC5XcNh7vc5174Tm1mc4YtDmZ6/Irq+vUIOUyoHxPPkrwt26iCX5J3
-b/VFX8tu2ESTkJnI5gs8
-=iOHv
------END PGP SIGNATURE-----
-
---M38YqGLZlgb6RLPS--
+	Ingo
