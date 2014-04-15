@@ -1,103 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227AbaDOJ4U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 05:56:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:58047 "EHLO mga09.intel.com"
+	id S1754107AbaDOJ5h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 05:57:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23017 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750838AbaDOJ4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 05:56:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,863,1389772800"; 
-   d="scan'208";a="521054217"
-Date: Tue, 15 Apr 2014 17:55:39 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Clemens Ladisch <clemens@ladisch.de>, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, linux-kernel@vger.kernel.org,
-        John Stultz <john.stultz@linaro.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [PATCH v2] x86: hpet: Don't default CONFIG_HPET_TIMER to be y
- for X86_64
-Message-ID: <20140415095539.GA19271@feng-snb>
-References: <1395975316-4795-1-git-send-email-feng.tang@intel.com>
- <20140328071716.GC30107@gmail.com>
- <20140328073718.GA12762@feng-snb>
- <53352DE5.2090600@ladisch.de>
- <20140328081117.GA32308@gmail.com>
- <20140415074443.GA10911@feng-snb>
- <20140415090025.GA31244@gmail.com>
+	id S1750938AbaDOJ5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 05:57:35 -0400
+Date: Tue, 15 Apr 2014 11:56:58 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 3/5] perf tools: Reference count map_groups objects
+Message-ID: <20140415095657.GC1700@krava.brq.redhat.com>
+References: <1397490723-1992-1-git-send-email-jolsa@redhat.com>
+ <1397490723-1992-4-git-send-email-jolsa@redhat.com>
+ <534C193A.2000806@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140415090025.GA31244@gmail.com>
+In-Reply-To: <534C193A.2000806@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 11:00:25AM +0200, Ingo Molnar wrote:
-> 
-> * Feng Tang <feng.tang@intel.com> wrote:
-> 
-> > Hi Ingo,
-> > 
-> > On Fri, Mar 28, 2014 at 09:11:17AM +0100, Ingo Molnar wrote:
-> > > 
-> > > * Clemens Ladisch <clemens@ladisch.de> wrote:
-> > > 
-> > > > Feng Tang wrote:
-> > > > > On Fri, Mar 28, 2014 at 08:17:16AM +0100, Ingo Molnar wrote:
-> > > > >> * Feng Tang <feng.tang@intel.com> wrote:
-> > > > >>  - or the kernel should have a quirk to reliably disable it. Why
-> > > > >>    should we crash or misbehave if a driver is built into the
-> > > > >>    kernel?
-> > > > >
-> > > > > I thought about this before, HPET doesn't have PCI ID like stuff,
-> > > > 
-> > > > HPET does have the PCI vendor ID in the first register.
-> > > > 
-> > > > > only thing I can think of to identify them may be the CPU family/ID.
-> > > > 
-> > > > The HPET is implemented by some actual chip, and that chip also has lots
-> > > > of PCI devices.  (In the case of a SoC, the CPU ID would work, too).
-> > > 
-> > > Correct. See arch/x86/kernel/hpet.c, which has a large number of HPET 
-> > > quirks keyed off chipset PCI IDs:
-> > > 
-> > >   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ESB2_0,
-> > >                            ich_force_enable_hpet);
-> > >   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH6_0,
-> > >                            ich_force_enable_hpet);
-> > >   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH6_1,
-> > >                            ich_force_enable_hpet);
-> > >   [...]
-> > 
-> > I just gave it another thought, that the HPET on our platform 
-> > currently do have some problem to be used as clocksource/clockevent, 
-> > but it may get fixed in future version (by Silicon or BIOS).
-> > 
-> > If I add quirk to block it now, I may revert this code in future 
-> > when it get fixed, same problem applis for the future generation of 
-> > platform.
-> 
-> If the hardware or BIOS gets fixed then that will be visible in the 
-> revision level of the hardware, right?
+On Mon, Apr 14, 2014 at 11:22:02AM -0600, David Ahern wrote:
+> On 4/14/14, 9:52 AM, Jiri Olsa wrote:
 
-AFAIK, if it is fixed in a new silicon version, we should be able to
-detect it by the "stepping", but the PCI DEV ID is not likely to change. 
+SNIP
 
-If it is fixed by BIOS or PUNIT FW, then we may go through the DMI
-info to check the BIOS version, One problem is there is some Baytrail
-tablet platforms that doesn't provide DMI info as its FW is not
-UEFI/Legacy BIOS compatible version.
+> >
+> >+void map_groups__put(struct map_groups *mg)
+> >+{
+> >+	if (--mg->refcnt == 0)
+> >+		map_groups__delete(mg);
+> >+}
+> >+
+> >  void map_groups__flush(struct map_groups *mg)
+> >  {
+> >  	int type;
+> >diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+> >index 1073e2d..d6445b2 100644
+> >--- a/tools/perf/util/map.h
+> >+++ b/tools/perf/util/map.h
+> >@@ -59,11 +59,20 @@ struct map_groups {
+> >  	struct rb_root	 maps[MAP__NR_TYPES];
+> >  	struct list_head removed_maps[MAP__NR_TYPES];
+> >  	struct machine	 *machine;
+> >+	int		 refcnt;
+> >  };
+> 
+> 
+> atomic for refcnt? This is part of a libperf; would be good to
+> support multithreaded users.
 
-Thanks,
-Feng
+hum.. I think using atomic type is not enough, we'd need
+to make map_groups__put/get atomic as well
 
-> 
-> Such kind of revision level, once it is known, can then be used to 
-> turn the quirk on/off precisely.
-> 
-> Thanks,
-> 
-> 	Ingo
+not sure what's the support in user space for that.. will check
+
+also not to be negative, but libperf is not thread safe anyway, right? ;-)
+
+thanks,
+jirka
