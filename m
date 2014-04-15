@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727AbaDORyW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 13:54:22 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:40373 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012AbaDORyV (ORCPT
+	id S1754357AbaDORy7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 13:54:59 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:49002 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753877AbaDORy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 13:54:21 -0400
-X-IronPort-AV: E=Sophos;i="4.97,865,1389744000"; 
-   d="scan'208";a="120213057"
-Message-ID: <534D7244.5000002@citrix.com>
-Date: Tue, 15 Apr 2014 18:54:12 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
-MIME-Version: 1.0
-To: Vincenzo Maffione <v.maffione@gmail.com>
-CC: <konrad.wilk@oracle.com>, <boris.ostrovsky@oracle.com>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers: net: xen-netfront: remove unused arrays
-References: <1397583579-32162-1-git-send-email-v.maffione@gmail.com>
-In-Reply-To: <1397583579-32162-1-git-send-email-v.maffione@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+	Tue, 15 Apr 2014 13:54:58 -0400
+From: Peter Foley <pefoley2@pefoley.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Foley <pefoley2@pefoley.com>, akpm@linux-foundation.org
+Subject: [PATCH] init: move the trusted keyring config option to general setup.
+Date: Tue, 15 Apr 2014 13:54:50 -0400
+Message-Id: <1397584490-15775-1-git-send-email-pefoley2@pefoley.com>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/04/14 18:39, Vincenzo Maffione wrote:
-> This patch removes some unused arrays from the netfront
-> private data structure.
-> Also removes an unused address variable.
-> 
-> Signed-off-by: Vincenzo Maffione <v.maffione@gmail.com>
+The SYSTEM_TRUSTED_KEYRING config option is not in any menu,
+causing it to show up in the toplevel of the kernel configuration.
+Fix this by moving it under the General Setup menu.
 
-Huh. I wonder what they were for.
+Signed-off-by: Peter Foley <pefoley2@pefoley.com>
+---
+ init/Kconfig | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-Acked-by: David Vrabel <david.vrabel@citrix.com>
+diff --git a/init/Kconfig b/init/Kconfig
+index 765018c..9d3585b 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1646,6 +1646,18 @@ config MMAP_ALLOW_UNINITIALIZED
+ 
+ 	  See Documentation/nommu-mmap.txt for more information.
+ 
++config SYSTEM_TRUSTED_KEYRING
++	bool "Provide system-wide ring of trusted keys"
++	depends on KEYS
++	help
++	  Provide a system keyring to which trusted keys can be added.  Keys in
++	  the keyring are considered to be trusted.  Keys may be added at will
++	  by the kernel from compiled-in data and from hardware key stores, but
++	  userspace may only add extra keys if those keys can be verified by
++	  keys already in the keyring.
++
++	  Keys in this keyring are used by module signature checking.
++
+ config PROFILING
+ 	bool "Profiling support"
+ 	help
+@@ -1681,18 +1693,6 @@ config BASE_SMALL
+ 	default 0 if BASE_FULL
+ 	default 1 if !BASE_FULL
+ 
+-config SYSTEM_TRUSTED_KEYRING
+-	bool "Provide system-wide ring of trusted keys"
+-	depends on KEYS
+-	help
+-	  Provide a system keyring to which trusted keys can be added.  Keys in
+-	  the keyring are considered to be trusted.  Keys may be added at will
+-	  by the kernel from compiled-in data and from hardware key stores, but
+-	  userspace may only add extra keys if those keys can be verified by
+-	  keys already in the keyring.
+-
+-	  Keys in this keyring are used by module signature checking.
+-
+ menuconfig MODULES
+ 	bool "Enable loadable module support"
+ 	option modules
+-- 
+1.9.2
 
-For net related patches please say whether they're for the net (current
-RCs) or net-next branch.  e.g.,
-
-[PATCH net-next] xen-netfront: removed unused arrays.
-
-Thanks.
-
-David
