@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962AbaDOIMA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 04:12:00 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:40266 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173AbaDOIL4 (ORCPT
+	id S1753259AbaDOIM3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 04:12:29 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:8208 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753011AbaDOIMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 04:11:56 -0400
+	Tue, 15 Apr 2014 04:12:21 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtZeAGfpTFN5LEcvPGdsb2JhbABYgwaDUIULu1+BHxcDAQEBATg1giUBAQEEOhwVDhAIAxgJJQ8FJQMHLYd7zDIXFo5NBxaEIgSYYYpmiyMr
+Date: Tue, 15 Apr 2014 18:11:59 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: linux-kernel@vger.kernel.org
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [regression, 3.15-rc1] vdso_gettimeofday hogs all my CPU
+Message-ID: <20140415081158.GK15995@dastard>
+References: <20140415075335.GE31578@dastard>
 MIME-Version: 1.0
-In-Reply-To: <534BF7FE.6050603@hitachi.com>
-References: <1397472050-19947-1-git-send-email-nasa4836@gmail.com> <534BF7FE.6050603@hitachi.com>
-From: Zhan Jianyu <nasa4836@gmail.com>
-Date: Tue, 15 Apr 2014 16:11:14 +0800
-Message-ID: <CAHz2CGV_WA_bMwYCg1QCyFpCv0PKgPhBQUf_pFQbNn-guLL+Ag@mail.gmail.com>
-Subject: Re: [PATCH] kprobes: be more permissive when user specifies both
- symbol name and address
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, davem@davemloft.net,
-        rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140415075335.GE31578@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 11:00 PM, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
-> if (p->addr) {
->   if (p->symbol) {
->     sym = kallsyms_lookup(p->addr, ... &offs ...);
->     if (strcmp(sym,p->symbol) != 0 || offs != p->offset) {
->       pr_warning("Error! ...");
->       goto fail;
->     }
->   }
-> } else if (p->symbol) {
->   kprobe_lookup_name(p->symbol_name, addr);
->   if (!addr)
->     goto fail;
-> } else
->   goto fail;
+On Tue, Apr 15, 2014 at 05:53:36PM +1000, Dave Chinner wrote:
+> Hi Peter,
+> 
+> I'm guessing that x86 vdso problems are in your area of expertise,
+> if not can you point me at the right person to bug?
 
+And you can ignore it. The VM wasn't running the kernel I thought it
+was - it was an old kernel from half way through last week. A
+3.15-rc1 kernel, which I'm now testing, doesn't show the regression:
 
-Hmm, let's clasify all conditions.
+FSUse%        Count         Size    Files/sec     App Overhead
+     0      1600000            0     281779.0          9964735
+     0      3200000            0     280343.0         10174512
+     0      4800000            0     268615.2         11330160
+     0      6400000            0     264782.4         11072193
+.....
 
-1. Only symbol, check it, if not found, fail.
-2. Only address, check it, if not found, fail.
-3. Both, check address,
-    3.1 not found, fail, because some symbols might have muplitple instances,
-          we don't bother to check symbol name.
-    3.2 found, check if symbol mismatch, if yes, fail.
+It shows all sorts of interesting new inode cache reclaim imbalances,
+but other than that the peak performance is back to normal...
 
+Sorry for the noise.
 
-Is this reasonable?  Next mail is a renewed patch following this priciple.
+Cheers,
 
-
-Regards,
-Jianyu Zhan
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
