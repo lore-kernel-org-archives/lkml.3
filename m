@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751203AbaDODPY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 23:15:24 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56421 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796AbaDODPV (ORCPT
+	id S1751037AbaDOD1a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 23:27:30 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:41103 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750828AbaDOD13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 23:15:21 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <534CA36D.7050708@jp.fujitsu.com>
-Date: Tue, 15 Apr 2014 12:11:41 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+	Mon, 14 Apr 2014 23:27:29 -0400
+Message-ID: <1397532444.4223.1.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [tip:x86/urgent] x86 idle: Repair large-server 50-watt
+ idle-power regression
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: "Brown, Len" <len.brown@intel.com>
+Cc: "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@linux.intel.com" <hpa@linux.intel.com>,
         Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>, stable@vger.kernel.org
-Subject: Re: [PATCH v3 0/2] nohz: fix idle accounting in NO_HZ kernels
-References: <53465F54.708@jp.fujitsu.com>
-In-Reply-To: <53465F54.708@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Date: Mon, 14 Apr 2014 20:27:24 -0700
+In-Reply-To: <1A7043D5F58CCB44A599DFD55ED4C94845CA12EC@fmsmsx115.amr.corp.intel.com>
+References: <CAJvTdK=+aNN66mYpCGgbHGCHhYQAKx-vB0kJSWjVpsNb_hOAtQ@mail.gmail.com>
+	 <baff264285f6e585df757d58b17788feabc68918.1387403066.git.len.brown@intel.com>
+	 <tip-40e2d7f9b5dae048789c64672bf3027fbb663ffa@git.kernel.org>
+	 <1395102010.2474.21.camel@buesod1.americas.hpqcorp.net>
+	 <1A7043D5F58CCB44A599DFD55ED4C94845CA12EC@fmsmsx115.amr.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping?
+On Tue, 2014-04-08 at 21:43 +0000, Brown, Len wrote:
+> Davidlohr,
+> 
+> Thanks for the note.
+> 
+> Ideally (on Linux in general, and on servers, in particular) we strive
+> for the performance impact of power saving features to be small enough
+> to be considered in "measurement noise".
+> 
+> Your report for 160 core Westmere AIM numbers being hit at 10-25%
+> shows 15% measurement noise?  But even if true, this looks bad.
+> 
+> Any chance you can re-run, with the following two tweaks,
+> one at a time?
+> 
+> I'd be curious if you can wrap the invocation in turbostat -v
+> and capture that output to how what states we are seeing
+> during the benchmark run.
 
-(2014/04/10 18:07), Hidetoshi Seto wrote:
-> Hi all,
-> 
-> This patch set (rebased on v3.14) is my 3rd try to fix an issue
-> that idle/iowait of /proc/stat can go backward. Originally reported
-> by Tetsuo and Fernando at last year, Mar 2013.
-> 
-> This v3 takes new approach to fix the problem, and now use seqcount
-> while v1 and v2 uses seqlock.
-> 
-> Of course still reviews are welcome!
-> 
-> Thanks,
-> H.Seto
-> 
-> Hidetoshi Seto (2):
->       nohz: stop updating sleep stats from get_cpu_{idle,iowait}_time_us()
->       nohz: use delayed iowait accounting to avoid race on idle time stats
-> 
->  include/linux/tick.h     |    6 ++-
->  kernel/time/tick-sched.c |  116 ++++++++++++++++++++++++++++------------------
->  2 files changed, 74 insertions(+), 48 deletions(-)
-
+Hi Len, apologies for the delay, I've been having to use my machine for
+other things and haven't gotten time to get around to this yet. I'll get
+you the requested information sometime this week.
 
