@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435AbaDOBwh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 21:52:37 -0400
-Received: from mga02.intel.com ([134.134.136.20]:41003 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751174AbaDOBwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 21:52:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,861,1389772800"; 
-   d="scan'208";a="492932243"
-Date: Mon, 14 Apr 2014 18:52:33 -0700
-From: Andi Kleen <ak@linux.intel.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>,
-        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [GIT] kbuild/lto changes for 3.15-rc1
-Message-ID: <20140415015233.GE32556@tassilo.jf.intel.com>
-References: <20140407201919.GA15838@sepie.suse.cz>
- <CA+55aFy8hWqBpF1TXOPvA2rRaZp=H2LTO3wd3AERspmcGZhAeQ@mail.gmail.com>
- <20140408204906.GA3616@cloud>
- <CA+55aFzhyvZRPjXy7PkUxQO_AMqLSTehh-GNRP+Dx3yKnv-eCA@mail.gmail.com>
- <20140409013557.GA32556@tassilo.jf.intel.com>
- <20140409060133.GA6766@gmail.com>
- <20140409081709.GA283@x4>
- <20140414103205.GA2846@gmail.com>
- <20140415010003.GA2765@jtriplet-mobl1>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140415010003.GA2765@jtriplet-mobl1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754142AbaDOByO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 21:54:14 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:56235 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457AbaDOByM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 21:54:12 -0400
+From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+To: <kas@fi.muni.cz>, <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: "Li, Zhen-Hua" <zhen-hual@hp.com>
+Subject: [PATCH 1/1] driver/net: cosa driver uses udelay incorrectly
+Date: Tue, 15 Apr 2014 09:53:11 +0800
+Message-Id: <1397526791-4015-1-git-send-email-zhen-hual@hp.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > and it slows down 
-> > kernel development'.
-> 
-> No, it doesn't slow down development builds; it makes kernel builds
-> slower if and only if LTO is turned on, which most kernel developers
-> won't need to do.  On the other hand, distro and embedded kernels can do
-> so for final builds, and developers pushing to minimize the kernel can
-> turn it on for their own work as needed.
+From: "Li, Zhen-Hua" <zhen-hual@hp.com>
 
-Yes and the patch even takes special care that you will not enable
-it by mistake.
+In cosa driver, udelay with more than 20000 may cause __bad_udelay.
+Use msleep for instead.
 
--Andi
+Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+---
+ drivers/net/wan/cosa.c |    4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/drivers/net/wan/cosa.c b/drivers/net/wan/cosa.c
+index 84734a8..83c39e2 100644
+--- a/drivers/net/wan/cosa.c
++++ b/drivers/net/wan/cosa.c
+@@ -1521,11 +1521,7 @@ static int cosa_reset_and_read_id(struct cosa_data *cosa, char *idstring)
+ 	cosa_putstatus(cosa, 0);
+ 	cosa_getdata8(cosa);
+ 	cosa_putstatus(cosa, SR_RST);
+-#ifdef MODULE
+ 	msleep(500);
+-#else
+-	udelay(5*100000);
+-#endif
+ 	/* Disable all IRQs from the card */
+ 	cosa_putstatus(cosa, 0);
+ 
+-- 
+1.7.10.4
+
