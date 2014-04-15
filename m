@@ -1,102 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751335AbaDOX0O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 19:26:14 -0400
-Received: from [157.56.111.144] ([157.56.111.144]:46579 "EHLO
-	na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750901AbaDOXZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 19:25:12 -0400
-From: <tthayer@altera.com>
-To: <robherring2@gmail.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org>, <galak@codeaurora.org>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>, <dinguyen@altera.com>,
-        <dougthompson@xmission.com>, <grant.likely@linaro.org>
-CC: <tthayer.linux@gmail.com>, Thor Thayer <tthayer@altera.com>,
-        "Borislav Petkov" <bp@alien8.de>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-edac@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCHv2 2/3] dts: socfpga: Add bindings for Altera SoC SDRAM EDAC
-Date: Tue, 15 Apr 2014 18:30:09 -0500
-Message-ID: <1397604610-20931-4-git-send-email-tthayer@altera.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1397604610-20931-1-git-send-email-tthayer@altera.com>
-References: <1397604610-20931-1-git-send-email-tthayer@altera.com>
+	id S1751107AbaDOXbm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 19:31:42 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:41293 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901AbaDOXbj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 19:31:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(199002)(189002)(19580395003)(97736001)(79102001)(36756003)(99396002)(84676001)(2009001)(86152002)(77156001)(44976005)(77982001)(89996001)(2201001)(92726001)(81342001)(92566001)(88136002)(85852003)(50226001)(83322001)(19580405001)(81542001)(83072002)(76482001)(4396001)(16796002)(76176999)(48376002)(80022001)(42186004)(33646001)(93916002)(31966008)(74502001)(62966002)(575784001)(6806004)(87936001)(74662001)(80976001)(50466002)(47776003)(86362001)(50986999)(20776003)(87286001)(46102001)(1121002)(921003)(83996005)(2101003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2FFO11HUB008;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:5AB2E4ED.A8DCA408.7AE3BF07.5CD26AF8.2027F;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-OriginatorOrg: altera.onmicrosoft.com
-X-Forefront-PRVS: 0182DBBB05
+In-Reply-To: <20140415173758.GG16058@google.com>
+References: <1397175901-4023-1-git-send-email-andreas.noever@gmail.com>
+ <1397175901-4023-13-git-send-email-andreas.noever@gmail.com> <20140415173758.GG16058@google.com>
+From: Andreas Noever <andreas.noever@gmail.com>
+Date: Wed, 16 Apr 2014 01:31:17 +0200
+Message-ID: <CAMxnaaXCKd-8C1KpPDBSeqDJjhLyswxA=TuAKrF78oMCaO2VFg@mail.gmail.com>
+Subject: Re: [PATCH v2 12/14] pci: Suspend/resume support for appel thunderbolt
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Daniel J Blueman <daniel@quora.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thor Thayer <tthayer@altera.com>
+On Tue, Apr 15, 2014 at 7:37 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> [+cc Rafael]
+>
+> On Fri, Apr 11, 2014 at 02:24:59AM +0200, Andreas Noever wrote:
+>> This patch makes changes to the pcieport driver to support thunderbolt
+>> suspend/resume on apple systems. We need to perform two different
+>> actions during suspend and resume:
+>>
+>> The whole controller has to be powered down before suspend. If this is
+>> not done then the NHI device will be gone after resume if a thunderbolt
+>> device was plugged in while suspending. The controller represents itself
+>> as multiple PCI devices/bridges. To power it down we hook into the
+>> upstream bridge of the controller and call the magic ACPI methods. Power
+>> will be restored automatically during resume (by the firmware
+>> presumably).
+>>
+>> During resume we have to wait for the NHI do reestablish all pci
+>> tunnels. Since there is no parent-child relationship between the NHI
+>> and the bridges we have to explicitly wait for them using
+>> device_pm_wait_for_dev. We do this in the resume_noirq phase of the
+>> downstream bridges of the controller (which lead into the thunderbolt
+>> tunnels).
+>>
+>> Signed-off-by: Andreas Noever <andreas.noever@gmail.com>
+>> ---
+>>  drivers/pci/pcie/portdrv_pci.c | 117 +++++++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 117 insertions(+)
+>>
+>> diff --git a/drivers/pci/pcie/portdrv_pci.c b/drivers/pci/pcie/portdrv_pci.c
+>> index 0d8fdc4..6d33666 100644
+>> --- a/drivers/pci/pcie/portdrv_pci.c
+>> +++ b/drivers/pci/pcie/portdrv_pci.c
+>> @@ -17,6 +17,9 @@
+>>  #include <linux/aer.h>
+>>  #include <linux/dmi.h>
+>>  #include <linux/pci-aspm.h>
+>> +#include <linux/delay.h>
+>> +#include <linux/dmi.h>
+>> +#include <linux/acpi.h>
+>>
+>>  #include "portdrv.h"
+>>  #include "aer/aerdrv.h"
+>> @@ -79,6 +82,114 @@ static int pcie_portdrv_restore_config(struct pci_dev *dev)
+>>  }
+>>
+>>  #ifdef CONFIG_PM
+>> +
+>> +#if defined(CONFIG_THUNDERBOLT) || defined(CONFIG_THUNDERBOLT_MODULE)
+>> +
+>> +bool is_thunderbolt(struct pci_dev *pdev)
+>> +{
+>> +     if (!dmi_match(DMI_PRODUCT_NAME, "MacBookPro10,1"))
+>> +             return false;
+>> +     return pdev->vendor == PCI_VENDOR_ID_INTEL && pdev->device == 0x1547;
+>> +}
+>> +
+>> +static void shutdown_thunderbolt_controller(struct pci_dev *pdev)
+>> +{
+>> +     /*
+>> +      * The thunderbolt controller consists of a pcie switch with downstream
+>> +      * bridges leading to the NHI (native host interface) and to the tunnel
+>> +      * pci bridges.
+>> +      *
+>> +      * Without the following quirk the NHI will not resume if a tb device was
+>> +      * plugged in before suspend.
+>> +      *
+>> +      * This quirk cuts power to the whole chip. Therefore we have to apply it
+>> +      * during suspend_noirq of the upstream bridge.
+>> +      *
+>> +      * Power is automagically restored before resume. No action is needed.
+>> +      */
+>> +     acpi_handle bridge, SXIO, SXFP, SXLV;
+>> +     if (!is_thunderbolt(pdev))
+>> +             return;
+>> +     if (pci_pcie_type(pdev) != PCI_EXP_TYPE_UPSTREAM)
+>> +             return;
+>> +     bridge = ACPI_HANDLE(&pdev->dev);
+>> +     if (!bridge)
+>> +             return;
+>> +     /*
+>> +      * TB bridges in external devices might have the same device id as those
+>> +      * on the host, but they will not have the associated ACPI methods. This
+>> +      * implicitly checks that we are at the right bridge.
+>> +      */
+>> +     if (ACPI_FAILURE(acpi_get_handle(bridge, "DSB0.NHI0.SXIO", &SXIO))
+>> +             || ACPI_FAILURE(acpi_get_handle(bridge, "DSB0.NHI0.SXFP", &SXFP))
+>> +             || ACPI_FAILURE(acpi_get_handle(bridge, "DSB0.NHI0.SXLV", &SXLV)))
+>> +             return;
+>
+> Hmm, this is pretty ugly because the ACPI names are up to the BIOS writer
+> so we can't really rely on them.
+These methods just write to the ACPI GPIO area. I guess I could do the
+same directly and hardcode the pins, but that would tie it to the
+specific MacBook model (different models use different GPIOs, the
+MacPro even has 3 controllers, all using diferent GPIOs). The Apple
+driver uses these methods as well, so I think that we can assume that
+they are stable. Worst case is that they go away and the device will
+not resume (which is what happens now).
 
-Addition of the Altera SDRAM EDAC bindings and device
-tree changes to the Altera SoC project.
+There is also an XRPE method (TRPE on newer machine) which is used for
+runtime power management (setting up out of band hp notifications,
+power on/off and pcie link retraining). That one is much more complex
+and I would rather not replicate that code (If I get to the point
+where I want to implement runtime power management for the
+controller).
 
----
-v2: Update the mailing list to include the EDAC mailing list.
 
-Signed-off-by: Thor Thayer <tthayer@altera.com>
-To: Rob Herring <robherring2@gmail.com>
-To: Pawel Moll <pawel.moll@arm.com>
-To: Mark Rutland <mark.rutland@arm.com>
-To: Ian Campbell <ijc+devicetree@hellion.org.uk>
-To: Kumar Gala <galak@codeaurora.org>
-To: Rob Landley <rob@landley.net>
-To: Russell King <linux@arm.linux.org.uk>
-To: Dinh Nguyen <dinguyen@altera.com>
-To: Doug Thompson <dougthompson@xmission.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: devicetree@vger.kernel.org
-Cc: linux-doc@vger.kernel.org
-Cc: linux-edac@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
----
- .../bindings/arm/altera/socfpga-sdram-edac.txt     |   12 ++++++++++++
- arch/arm/boot/dts/socfpga.dtsi                     |    5 +++++
- 2 files changed, 17 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
+> You could put this sort of thing in a quirk, but I wouldn't be happy
+> about putting it in a generic place like this.  Same with the magic
+> sequence below.
+>
+> Maybe a quirk that sets function pointers that we could call here?
+Hm, I did not realize that there where resume/suspend pci quirks. I
+just checked and which point they are called and at least for resume
+we are fine. pci_fixup_resume_early gets called just before the
+dev->pm->resume_noirq callback. But there seems to be no corresponding
+fixup phase for suspend_late/poweroff_late? I have to check again
+whether poweroff_late is even necessary. Can we add a quirks section
+for suspend_late?
 
-diff --git a/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
-new file mode 100644
-index 0000000..9348c53
---- /dev/null
-+++ b/Documentation/devicetree/bindings/arm/altera/socfpga-sdram-edac.txt
-@@ -0,0 +1,12 @@
-+Altera SOCFPGA SDRAM Error Detection & Correction [EDAC]
-+
-+Required properties:
-+- compatible : should contain "altr,sdr-edac";
-+- interrupts : Should contain the SDRAM ECC IRQ in the
-+	appropriate format for the IRQ controller.
-+
-+Example:
-+	sdramedac@0 {
-+		compatible = "altr,sdram-edac";
-+		interrupts = <0 39 4>;
-+	};
-diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
-index 6ce912e..a0ea69b 100644
---- a/arch/arm/boot/dts/socfpga.dtsi
-+++ b/arch/arm/boot/dts/socfpga.dtsi
-@@ -681,6 +681,11 @@
- 			reg = <0xffc25000 0x1000>;
- 		};
- 
-+		sdramedac@0 {
-+			compatible = "altr,sdram-edac";
-+			interrupts = <0 39 4>;
-+		};
-+
- 		rstmgr@ffd05000 {
- 			compatible = "altr,rst-mgr";
- 			reg = <0xffd05000 0x1000>;
--- 
-1.7.9.5
 
+>> +     dev_info(&pdev->dev, "cutting power to thunderbolt controller...\n");
+>> +
+>> +     /* save registers manually, the pci core won't be able to do later */
+>> +     pci_save_state(pdev);
+>> +     pci_prepare_to_sleep(pdev);
+>> +
+>> +     /* magic sequence */
+>> +     acpi_execute_simple_method(SXIO, NULL, 1);
+>> +     acpi_execute_simple_method(SXFP, NULL, 0);
+>> +     msleep(300);
+>> +     acpi_execute_simple_method(SXLV, NULL, 0);
+>> +     acpi_execute_simple_method(SXIO, NULL, 0);
+>> +     acpi_execute_simple_method(SXLV, NULL, 0);
+>> +}
+>> +
+>> +static void wait_for_thunderbolt_controller(struct pci_dev *pdev)
+>> +{
+>> +     struct pci_dev *sibling = NULL;
+>> +     struct pci_dev *nhi = NULL;
+>> +     /*
+>> +      * During suspend the thunderbolt controller is reset and all pci
+>> +      * tunnels are lost. The NHI driver will try to reestablish all tunnels
+>> +      * during resume. We have to manually wait for the NHI since there is
+>> +      * no parent child relationship between the NHI and the tunneled
+>> +      * bridges.
+>> +      */
+>> +     if (!is_thunderbolt(pdev))
+>> +             return;
+>> +     if (pci_pcie_type(pdev) != PCI_EXP_TYPE_DOWNSTREAM)
+>> +             return;
+>> +     /*
+>> +      * Find the NHI and confirm that we are a bridge on the tb host
+>> +      * controller and not on a tb endpoint.
+>> +      */
+>> +     sibling = pci_get_slot(pdev->bus, 0x0);
+>> +     if (sibling == pdev)
+>> +             goto out; /* we are the downstream bridge to the NHI */
+>> +     if (!sibling || !sibling->subordinate)
+>> +             goto out;
+>> +     nhi = pci_get_slot(sibling->subordinate, 0x0);
+>> +     if (!nhi)
+>> +             goto out;
+>> +     if (nhi->vendor != PCI_VENDOR_ID_INTEL || nhi->device != 0x1547
+>> +                     || nhi->subsystem_vendor != 0x2222
+>> +                     || nhi->subsystem_device != 0x1111)
+>> +             goto out;
+>> +     dev_info(&pdev->dev, "wating for thunderbolt to reestablish pci tunnels...\n");
+>> +     device_pm_wait_for_dev(&pdev->dev, &nhi->dev);
+>> +out:
+>> +     pci_dev_put(sibling);
+>> +     pci_dev_put(nhi);
+>> +}
+>> +
+>> +#else
+>> +
+>> +static void shutdown_thunderbolt_controller(struct pci_dev *pdev) { }
+>> +static void wait_for_thunderbolt_controller(struct pci_dev *pdev) { }
+>> +
+>> +#endif
+>> +
+>> +int pcie_port_suspend_noirq(struct device *dev)
+>> +{
+>> +     shutdown_thunderbolt_controller(to_pci_dev(dev));
+>> +     return 0;
+>> +}
+>> +
+>>  static int pcie_port_resume_noirq(struct device *dev)
+>>  {
+>>       struct pci_dev *pdev = to_pci_dev(dev);
+>> @@ -90,6 +201,9 @@ static int pcie_port_resume_noirq(struct device *dev)
+>>        */
+>>       if (pci_pcie_type(pdev) == PCI_EXP_TYPE_ROOT_PORT)
+>>               pcie_clear_root_pme_status(pdev);
+>> +
+>> +     wait_for_thunderbolt_controller(pdev);
+>> +
+>>       return 0;
+>>  }
+>>
+>> @@ -171,7 +285,10 @@ static const struct dev_pm_ops pcie_portdrv_pm_ops = {
+>>       .thaw           = pcie_port_device_resume,
+>>       .poweroff       = pcie_port_device_suspend,
+>>       .restore        = pcie_port_device_resume,
+>> +     .suspend_noirq  = pcie_port_suspend_noirq,
+>>       .resume_noirq   = pcie_port_resume_noirq,
+>> +     .poweroff_noirq = pcie_port_suspend_noirq,
+>> +     .restore_noirq  = pcie_port_resume_noirq,
+>>       .runtime_suspend = pcie_port_runtime_suspend,
+>>       .runtime_resume = pcie_port_runtime_resume,
+>>       .runtime_idle   = pcie_port_runtime_idle,
+>> --
+>> 1.9.2
+>>
