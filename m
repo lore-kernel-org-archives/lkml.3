@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751AbaDOTgR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 15:36:17 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:55902 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340AbaDOTgJ (ORCPT
+	id S1754794AbaDOTgf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 15:36:35 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:46442 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998AbaDOTgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 15:36:09 -0400
+	Tue, 15 Apr 2014 15:36:32 -0400
+Date: Tue, 15 Apr 2014 15:39:47 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Vince Weaver <vincent.weaver@maine.edu>, Christoph Lameter <cl@linux.com>,
+        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [bisected] broken make-kpkg kernel build in 3.15-rc1
+In-Reply-To: <20140415193116.GU24070@n2100.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.10.1404151539110.15528@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1404150940250.14106@vincent-weaver-1.um.maine.edu> <534D4A59.6080401@suse.cz> <alpine.DEB.2.10.1404151146530.26562@gentwo.org> <534D6510.3070509@suse.cz> <alpine.DEB.2.10.1404151221360.26992@gentwo.org> <20140415182653.GR24070@n2100.arm.linux.org.uk>
+ <alpine.DEB.2.10.1404151507290.15528@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1404151530050.15528@vincent-weaver-1.um.maine.edu> <20140415193116.GU24070@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <534D797D.7030201@wwwdotorg.org>
-References: <1397526163-20126-1-git-send-email-abrestic@chromium.org>
-	<1397526163-20126-3-git-send-email-abrestic@chromium.org>
-	<534D797D.7030201@wwwdotorg.org>
-Date: Tue, 15 Apr 2014 12:36:07 -0700
-X-Google-Sender-Auth: _Z-YUkNG4P5KYNEntkET7cYThDw
-Message-ID: <CAL1qeaFoQd1sZkTHSJnnVcYgLDLSP_Hr6VHd3s8aKfnAz-iyNw@mail.gmail.com>
-Subject: Re: [PATCH 2/4] mmc: tegra: fix reporting of base clock frequency
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        linux-tegra@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 11:25 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 04/14/2014 07:42 PM, Andrew Bresticker wrote:
->> Tegra SDHCI controllers, by default, report a base clock frequency
->> of 208Mhz in SDHCI_CAPABILTIES which may or may not be equal to the
->> actual base clock frequency.
->
-> Some explanation of why this "may or may not be equal to the actual base
-> clock frequency" would be nice.
->
-> Presumably, it's because the clock frequency is supplied by the clock
-> controller module, and configuring that happens externally to the SD
-> controller, so the SD HW has no knowledge of the actual frequency, and
-> hence simply reports a hard-coded maximum possible clock frequency?
+On Tue, 15 Apr 2014, Russell King - ARM Linux wrote:
+> 
+> Hmm, any ideas what HAVE_INST_PATH is set to?  It would be good to have
+> the complete picture on this bug. :)
 
-Correct.  I'll fix up the commit message.
+In debian/ruleset/misc/version_vars.mk
 
->
->> While this can be overridden by setting
->> BASE_CLK_FREQ in VENDOR_CLOCK_CTRL on Tegra30 and later SoCs, just
->> set SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN and supply a get_max_clock()
->> callback to get the actual rate of the base clock.
->
-> It's not clear to me from the function name that
-> sdhci_pltfm_clk_get_max_clock() simply calls clk_get() on the actual
-> clock. It might be nice to mention that in the commit description.
+HAVE_INST_PATH  =$(call doit,grep -E '\(INSTALL_PATH\)' Makefile 2>/dev/null )
+
+
+Vince
