@@ -1,122 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745AbaDOImB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 04:42:01 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:62769 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030AbaDOIl5 (ORCPT
+	id S1753096AbaDOImM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 04:42:12 -0400
+Received: from mga02.intel.com ([134.134.136.20]:27774 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751030AbaDOImE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 04:41:57 -0400
-X-AuditID: cbfee690-b7f266d00000287c-98-534cf0d36707
-Message-id: <534CF0D6.5030400@samsung.com>
-Date: Tue, 15 Apr 2014 17:41:58 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Vikas Sajjan <sajjan.linux@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, ben-linux@fluff.org,
-        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>, sw0312.kim@samsung.com,
-        hyunhee.kim@samsung.com, yj44.cho@samsung.com,
-        chanho61.park@samsung.com, Olof Johansson <olof@lixom.net>,
-        marc.zyngier@arm.com,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCHv2 3/8] ARM: EXYNOS: Add IO mapping for PMU of Exynos3250
-References: <1397527192-21988-1-git-send-email-cw00.choi@samsung.com>
- <1397527192-21988-4-git-send-email-cw00.choi@samsung.com>
- <4788081.xvaJfdGTMu@wuerfel> <534CEEA8.6020800@samsung.com>
- <CAGm_ybhGBVmUu9PgppgWfH8b8=3JVhqK0v=ZR_yE8Cs42+VUOg@mail.gmail.com>
-In-reply-to: <CAGm_ybhGBVmUu9PgppgWfH8b8=3JVhqK0v=ZR_yE8Cs42+VUOg@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42JZI2JSoHv5g0+wQU+TqMXfScfYLSatO8Bk
-	cXm/tsX8I+dYLT5/aGG36F1wlc3ibNMbdotNj6+xWlzeNYfNYsb5fUwWty/zWvy984/N4tT1
-	z2wWTw5/ZLWYMfklm8X6Ga9ZLI7NWMJosXfnZEYHIY8189YwerQ097B5/P41idHj76oXzB47
-	Z91l97hzbQ+bx+Yl9R5XTjSxevRtWcXo8XmTXABXFJdNSmpOZllqkb5dAlfG9HOxBTv5Kiav
-	3sjawHiPu4uRk0NCwERiSe8+VghbTOLCvfVsXYxcHEICSxklni7YxwRT9LylgQkisYhR4vPs
-	PnYI5zWjxM7ru4AyHBy8AloSG06CTWIRUJXoXrCYDcRmAwrvf3EDzBYVCJNYOf0KC4jNKyAo
-	8WPyPRaQVhEBTYmHH21ARjILXGOR+H72OSNIjbCAj8TLq+ugdrUxSaz/3geW4BQIljg/fyIz
-	iM0soC4xad4iKFteYvOat8wQVx/hkHi9jA/iIAGJb5MPgS2TEJCV2HQAqkRS4uCKGywTGMVm
-	ITlpFpKps5BMXcDIvIpRNLUguaA4Kb3IRK84Mbe4NC9dLzk/dxMjMB2c/vdswg7GewesDzEm
-	A62cyCwlmpwPTCd5JfGGxmZGFqYmpsZG5pZmpAkrifOqPUoKEhJITyxJzU5NLUgtii8qzUkt
-	PsTIxMEp1cBo9XjLxjleB5uXW/+USHtqoWrhd830yL+aR0uF177iiwtZc/eH6LILR0Ju9G/m
-	6d3vLzJdzCpYTOn6+ZyOpFV3dwrzHClMM5m8r8VBpSF/T39S+MusxqrevO47a/96yu16aekV
-	xB658T/fRde/m25fibv4NyKk5+jVdUdC3pq+lz7NLLbGVfKUEktxRqKhFnNRcSIACSV6Tx0D	AAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBKsWRmVeSWpSXmKPExsVy+t9jAd3LH3yCDd43cVv8nXSM3WLSugNM
-	Fpf3a1vMP3KO1eLzhxZ2i94FV9kszja9YbfY9Pgaq8XlXXPYLGac38dkcfsyr8XfO//YLE5d
-	/8xm8eTwR1aLGZNfslmsn/GaxeLYjCWMFnt3TmZ0EPJYM28No0dLcw+bx+9fkxg9/q56weyx
-	c9Zddo871/aweWxeUu9x5UQTq0ffllWMHp83yQVwRTUw2mSkJqakFimk5iXnp2TmpdsqeQfH
-	O8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAPaWkUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC
-	1zckCK7HyAANJKxhzJh+LrZgJ1/F5NUbWRsY73F3MXJySAiYSDxvaWCCsMUkLtxbz9bFyMUh
-	JLCIUeLz7D52COc1o8TO67uAqjg4eAW0JDacZAVpYBFQlehesJgNxGYDCu9/cQPMFhUIk1g5
-	/QoLiM0rICjxY/I9FpBWEQFNiYcfbUBGMgtcY5H4fvY5I0iNsICPxMur66B2tTFJrP/eB5bg
-	FAiWOD9/IjOIzSygLjFp3iIoW15i85q3zBMYBWYh2TELSdksJGULGJlXMYqmFiQXFCel5xrp
-	FSfmFpfmpesl5+duYgSnm2fSOxhXNVgcYhTgYFTi4Z3wzjtYiDWxrLgy9xCjBAezkgjvl5c+
-	wUK8KYmVValF+fFFpTmpxYcYk4FBMJFZSjQ5H5gK80riDY1NzIwsjcwNLYyMzUkTVhLnPdhq
-	HSgkkJ5YkpqdmlqQWgSzhYmDU6qBUU5wlYOH+ElHG5FtL86K8ReeXyAhaOitcyD5Rt/sjZPf
-	KHzalGqztdber6CCU3FtzPop5ju3xu4/d8n9qpHKk/2LX+Xr1rwo2m3PHPq9wOj//Iwtk0/P
-	Ui2YH8mR6Bx32fprwDOXc3fLw7ZefqUqtIv5r9AEu4W+4UWef7c5VpvI5bItkVXfrsRSnJFo
-	qMVcVJwIAJAV40J7AwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 15 Apr 2014 04:42:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="520997421"
+From: "Chew, Chiau Ee" <chiau.ee.chew@intel.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: Thierry Reding <thierry.reding@gmail.com>, Alan Cox <alan@linux.intel.com>,
+        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] pwm_lpss: Add support for PCI devices
+Thread-Topic: [PATCH] pwm_lpss: Add support for PCI devices
+Thread-Index: AQHPVhP1bci2OBKO+kqYMQwhKouSaZsQQdqAgAIV6mA=
+Date: Tue, 15 Apr 2014 08:41:02 +0000
+Message-ID: <604BF5F4C5D71041942BC7E84ED659EA01570E28@PGSMSX103.gar.corp.intel.com>
+References: <1397311131-13371-1-git-send-email-chiau.ee.chew@intel.com>
+ <20140414081805.GI19349@intel.com>
+In-Reply-To: <20140414081805.GI19349@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.30.20.205]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On 04/15/2014 05:39 PM, Vikas Sajjan wrote:
-> Hi,
-> 
-> On Tue, Apr 15, 2014 at 2:02 PM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->> Hi,
->>
->> On 04/15/2014 05:11 PM, Arnd Bergmann wrote:
->>> On Tuesday 15 April 2014 10:59:47 Chanwoo Choi wrote:
->>>> This patch add memory mapping for PMU (Power Management Unit) which is used
->>>> for power control of Exynos3250.
->>>>
->>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->>>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->>>> ---
->>>> Arnd Bergmann suggested that need proper driver instead of static memory mapping.
->>>> As Chanho Park reply[2], Sachin Kamat already posted the DT support patch[1]
->>>> for memory mapping for SYSRAM.
->>>> [1] http://www.spinics.net/lists/linux-samsung-soc/msg27647.html
->>>> [2] https://lkml.org/lkml/2014/4/10/161
->>>>
->>>> So, I'm going to re-implement following patch related to static memory mapping
->>>> after merged Sachin Kamat patch[1].
->>>>   ARM: EXYNOS: Add IO mapping for PMU of Exynos3250
->>>
->>> I don't think we have a patch for the PMU yet, Sachin was looking at the SYSRAM
->>> only.
->>
->> You are right. Sachin's patch only included the solution of SYSRAM memory mapping.
->> I set out the plan that I would implment proper driver for PMU memory mapping
->> instead of static method after merged Sachin's patch for SYSRAM.
->>
->> But,
->> If you'd like me to implment PMU memory mapping instead of static mapping right now,
->> I'll implement it for PMU such as Sachin's patch on next posting(v3).
->>
-> 
-> I have already posted patch[1] for mapping PMU through DT as part of
-> my PMU series for exynos5260.
-> You can rebase on the same.
-> 
-> 
-> [1] http://www.spinics.net/lists/arm-kernel/msg316013.html
 
-OK, I'll rebase it after merged PMU mapping patch[1].
+> > +static struct pwm_lpss_chip *pwm_lpss_probe(struct device *dev,
+> > +			struct resource *r, struct pwm_lpss_boardinfo *info)
+> >  {
+> >  	struct pwm_lpss_chip *lpwm;
+> > -	struct resource *r;
+> >  	int ret;
+> >
+> > -	lpwm = devm_kzalloc(&pdev->dev, sizeof(*lpwm), GFP_KERNEL);
+> > +	lpwm = devm_kzalloc(dev, sizeof(*lpwm), GFP_KERNEL);
+> >  	if (!lpwm)
+> > -		return -ENOMEM;
+> > -
+> > -	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > +		return ERR_PTR(-ENOMEM);
+> >
+> > -	lpwm->regs = devm_ioremap_resource(&pdev->dev, r);
+> > +	lpwm->regs = devm_ioremap_resource(dev, r);
+> >  	if (IS_ERR(lpwm->regs))
+> > -		return PTR_ERR(lpwm->regs);
+> > -
+> > -	lpwm->clk = devm_clk_get(&pdev->dev, NULL);
+> > -	if (IS_ERR(lpwm->clk)) {
+> > -		dev_err(&pdev->dev, "failed to get PWM clock\n");
+> > -		return PTR_ERR(lpwm->clk);
+> > +		return lpwm->regs;
+> > +
+> > +	if (info) {
+> > +		lpwm->clk_rate = info->clk_rate;
+> > +	} else {
+> > +		lpwm->clk = devm_clk_get(dev, NULL);
+> > +		if (IS_ERR(lpwm->clk)) {
+> > +			dev_err(dev, "failed to get PWM clock\n");
+> > +			return (void *)lpwm->clk;
+> 
+> Why the cast here?
 
-Thanks,
-Chanwoo Choi
+Alan, please do correct me if I describe wrongly on the purpose that you add the cast here.
 
+As you can see, pwm_lpss_probe() is expected to return a pointer of type struct pwm_lpss_chip.  On the other hand,   
+the return of devm_clk_get() would be a pointer of type struct clk. So if were to use lpwm->clk as the return value of pwm_lpss_probe() , 
+a cast would be needed since the pointer type is different from the expected one. The compiler would complain on " warning: return from incompatible pointer type"
+if without the cast.
+
+> > +
+> > +static struct pci_device_id pwm_lpss_pci_ids[] = {
+> > +	{ PCI_VDEVICE(INTEL, 0x0F08), (unsigned long)&byt_info},
+> > +	{ PCI_VDEVICE(INTEL, 0x0F09), (unsigned long)&byt_info},
+> 
+> I think non-capital letters for hex numbers are more consistent. I.e 0x0f08.
+> 
+
+Ok. Noted.
+
+> > +	{ 0,}
+> 
+> { },
+> 
+> as in the platform part looks better, IMO.
+
+Ok. Noted.
+
+> 
+> > +};
+> > +MODULE_DEVICE_TABLE(pci, pwm_lpss_pci_ids);
+> > +
+> > +static struct pci_driver pwm_lpss_driver_pci = {
+> > +	.name	= "pwm-lpss",
+> > +	.id_table	= pwm_lpss_pci_ids,
+> 
+> The platform part doesn't use tabs, so I think you should follow the style here.
+> 
+
+Ok. Noted
+
+> >
+> >  MODULE_DESCRIPTION("PWM driver for Intel LPSS");
+> MODULE_AUTHOR("Mika
+> > Westerberg <mika.westerberg@linux.intel.com>");
+> >  MODULE_LICENSE("GPL v2");
+> >  MODULE_ALIAS("platform:pwm-lpss");
+> > +
+> > +module_init(pwm_init);
+> > +module_exit(pwm_exit);
+> 
+> Maybe move these to follow the function defitions, like:
+> 
+> pwm_init()
+> {
+> }
+> module_init(pwm_init);
+> 
+> and so on.
+
+Ok. Noted.
