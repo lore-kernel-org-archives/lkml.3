@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751154AbaDOWnV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 18:43:21 -0400
-Received: from mail-yk0-f172.google.com ([209.85.160.172]:39524 "EHLO
-	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838AbaDOWnT (ORCPT
+	id S1751229AbaDOWrc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 18:47:32 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:36615 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899AbaDOWrb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 18:43:19 -0400
-From: Fabio Estevam <festevam@gmail.com>
-To: sameo@linux.intel.com
-Cc: lee.jones@linaro.org, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] mfd: mc13xxx-core: Initialize the lock prior to using it
-Date: Tue, 15 Apr 2014 19:43:10 -0300
-Message-Id: <1397601790-27916-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Tue, 15 Apr 2014 18:47:31 -0400
+Date: Tue, 15 Apr 2014 15:47:26 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Jones <davej@redhat.com>, cl@linux.com, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, tj@kernel.org, grygorii.strashko@ti.com,
+        peterz@infradead.org
+Subject: Re: How do I increment a per-CPU variable without warning?
+Message-ID: <20140415224725.GS4496@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140415221755.GA27188@linux.vnet.ibm.com>
+ <20140415222951.GA742@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140415222951.GA742@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041522-7164-0000-0000-000001123537
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+On Tue, Apr 15, 2014 at 06:29:51PM -0400, Dave Jones wrote:
+> On Tue, Apr 15, 2014 at 03:17:55PM -0700, Paul E. McKenney wrote:
+> 
+>  > My current admittedly crude workaround is as follows:
+>  > 
+>  > 	static inline bool rcu_should_resched(void)
+>  > 	{
+>  > 		int t;
+>  > 
+>  > 	#ifdef CONFIG_DEBUG_PREEMPT
+>  > 		preempt_disable();
+>  > 	#endif /* #ifdef CONFIG_DEBUG_PREEMPT */
+>  > 		t = __this_cpu_read(rcu_cond_resched_count) + 1;
+>  > 		if (t < RCU_COND_RESCHED_LIM) {
+>  > 			__this_cpu_write(rcu_cond_resched_count, t);
+>  > 	#ifdef CONFIG_DEBUG_PREEMPT
+>  > 			preempt_enable();
+>  > 	#endif /* #ifdef CONFIG_DEBUG_PREEMPT */
+>  > 			return false;
+>  > 		}
+>  > 	#ifdef CONFIG_DEBUG_PREEMPT
+>  > 		preempt_enable();
+>  > 	#endif /* #ifdef CONFIG_DEBUG_PREEMPT */
+>  > 		return true;
+>  > 	}
+> 
+> Won't using DEBUG_PREEMPT instead of just CONFIG_PREEMPT here make this
+> silently do the wrong thing if preemption is enabled, but debugging isn't ?
 
-After request_threaded_irq() is called there is a chance that an interrupt
-may occur before the 'mc13xxx->lock' is initialized, which will trigger a kernel
-warning.
+If preemption is enabled, but debugging is not, then yes, the above code
+might force an unnecessary schedule() if the above code was preempted
+between the __this_cpu_read() and the __this_cpu_write().  Which does
+not cause a problem, especially given that it won't happen very often.
 
-In order to prevent that, move the initialization of 'mc13xxx->lock' prior to
-requesting the interrupts.
+> I'm not seeing why you need the ifdefs at all, unless the implied
+> barrier() is a problem ?
 
-Suggested-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/mfd/mc13xxx-core.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I don't think that Peter Zijlstra would be too happy about an extra
+unneeded preempt_disable()/preempt_enable() pair in the cond_resched()
+fastpath.  Not that I necessarily expect him to be particularly happy
+with the above, but perhaps someone has a better approach.
 
-diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-index 06e64b6..9e296c4 100644
---- a/drivers/mfd/mc13xxx-core.c
-+++ b/drivers/mfd/mc13xxx-core.c
-@@ -660,13 +660,13 @@ int mc13xxx_common_init(struct device *dev)
- 	if (ret)
- 		return ret;
- 
-+	mutex_init(&mc13xxx->lock);
-+
- 	ret = request_threaded_irq(mc13xxx->irq, NULL, mc13xxx_irq_thread,
- 			IRQF_ONESHOT | IRQF_TRIGGER_HIGH, "mc13xxx", mc13xxx);
- 	if (ret)
- 		return ret;
- 
--	mutex_init(&mc13xxx->lock);
--
- 	if (mc13xxx_probe_flags_dt(mc13xxx) < 0 && pdata)
- 		mc13xxx->flags = pdata->flags;
- 
--- 
-1.8.3.2
+							Thanx, Paul
 
