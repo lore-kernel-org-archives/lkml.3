@@ -1,39 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750908AbaDOEBQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 00:01:16 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:37243 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761AbaDOEBP (ORCPT
+	id S1751046AbaDOECS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 00:02:18 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:49552 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982AbaDOECR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 00:01:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140414232801.GF1877@localhost.localdomain>
-References: <cover.1397492345.git.viresh.kumar@linaro.org>
-	<b9bb3a40fc7a973438a54ddab8e1c89c6c66dd8c.1397492345.git.viresh.kumar@linaro.org>
-	<20140414232801.GF1877@localhost.localdomain>
-Date: Tue, 15 Apr 2014 09:31:14 +0530
-Message-ID: <CAKohponWNXadiF0fKXMfx8MgSPh_T_odKVm-raGXuQPP7Nk5jA@mail.gmail.com>
-Subject: Re: [PATCH 30/38] tick-sched: move nohz_full_buf[] inside tick_nohz_init()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arvind Chauhan <Arvind.Chauhan@arm.com>,
-        Linaro Networking <linaro-networking@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 15 Apr 2014 00:02:17 -0400
+Message-ID: <1397534528.23871.1.camel@phoenix>
+Subject: [PATCH] regulator: pbias: Convert to use
+ regulator_[enable|is_enabled]_regmap
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Balaji T K <balajitk@ti.com>,
+        Florian Vaussard <florian.vaussard@epfl.ch>, Stefan Roese <sr@denx.de>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 15 Apr 2014 12:02:08 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 April 2014 04:58, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> OTOH nohz_full_buf can have a big size and moving it to a local variable
-> will result in big increase in kernel stack consumption.
->
-> Keeping it static is safer.
->
-> Also it's already __initdata so it's released after bootup. No issue of
-> concurrent use either, so keeping it as is is fine.
+Since commit ca5d1b3524b4d
+"regulator: helpers: Modify helpers enabling multi-bit control",
+we can set enable_val setting for device that use multiple bits for control
+when using regmap enable/disable/bypass ops.
 
-Okay, this patch is dropped.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Tested-by: Balaji T K <balajitk@ti.com>
+---
+ drivers/regulator/pbias-regulator.c | 25 +++----------------------
+ 1 file changed, 3 insertions(+), 22 deletions(-)
+
+diff --git a/drivers/regulator/pbias-regulator.c b/drivers/regulator/pbias-regulator.c
+index 6d38be3..708ddbb 100644
+--- a/drivers/regulator/pbias-regulator.c
++++ b/drivers/regulator/pbias-regulator.c
+@@ -49,33 +49,13 @@ static const unsigned int pbias_volt_table[] = {
+ 	3000000
+ };
+ 
+-static int pbias_regulator_enable(struct regulator_dev *rdev)
+-{
+-	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
+-	const struct pbias_reg_info *info = data->info;
+-
+-	return regmap_update_bits(data->syscon, rdev->desc->enable_reg,
+-				  info->enable_mask, info->enable);
+-}
+-
+-static int pbias_regulator_is_enable(struct regulator_dev *rdev)
+-{
+-	struct pbias_regulator_data *data = rdev_get_drvdata(rdev);
+-	const struct pbias_reg_info *info = data->info;
+-	int value;
+-
+-	regmap_read(data->syscon, rdev->desc->enable_reg, &value);
+-
+-	return (value & info->enable_mask) == info->enable;
+-}
+-
+ static struct regulator_ops pbias_regulator_voltage_ops = {
+ 	.list_voltage = regulator_list_voltage_table,
+ 	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+ 	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+-	.enable = pbias_regulator_enable,
++	.enable = regulator_enable_regmap,
+ 	.disable = regulator_disable_regmap,
+-	.is_enabled = pbias_regulator_is_enable,
++	.is_enabled = regulator_is_enabled_regmap,
+ };
+ 
+ static const struct pbias_reg_info pbias_mmc_omap2430 = {
+@@ -180,6 +160,7 @@ static int pbias_regulator_probe(struct platform_device *pdev)
+ 		drvdata[data_idx].desc.vsel_mask = info->vmode;
+ 		drvdata[data_idx].desc.enable_reg = res->start;
+ 		drvdata[data_idx].desc.enable_mask = info->enable_mask;
++		drvdata[data_idx].desc.enable_val = info->enable;
+ 
+ 		cfg.init_data = pbias_matches[idx].init_data;
+ 		cfg.driver_data = &drvdata[data_idx];
+-- 
+1.8.1.2
+
+
+
