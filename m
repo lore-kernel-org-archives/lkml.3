@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984AbaDOTmy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 15:42:54 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:57790 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006AbaDOTmw (ORCPT
+	id S1754258AbaDOTnO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 15:43:14 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:58098 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750938AbaDOTnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 15:42:52 -0400
+	Tue, 15 Apr 2014 15:43:08 -0400
+Date: Tue, 15 Apr 2014 21:43:03 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Steven Noonan <steven@uplinklabs.net>
+Cc: Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [Intel-gfx] REGRESSION 3.14 i915 warning & mouse cursor vanishing
+Message-ID: <20140415194303.GH1023@phenom.ffwll.local>
+Mail-Followup-To: Steven Noonan <steven@uplinklabs.net>,
+	Keith Packard <keithp@keithp.com>, David Airlie <airlied@linux.ie>,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <20140414164010.GA1019@falcon>
+ <867g6ryd2e.fsf@hiro.keithp.com>
+ <20140414185602.GA892@falcon>
 MIME-Version: 1.0
-In-Reply-To: <534D2899.3030503@linux.intel.com>
-References: <1392959535-29654-1-git-send-email-jwerner@chromium.org>
-	<20140228205358.GA5340@xanatos>
-	<CAODwPW9ziqrT2THof7D6Y6_AVbk9Mvo9YteLJp7-KstAKoSzSA@mail.gmail.com>
-	<534D2899.3030503@linux.intel.com>
-Date: Tue, 15 Apr 2014 12:42:51 -0700
-X-Google-Sender-Auth: _nYC209C-DfpEd1RdUyR-MkbFlw
-Message-ID: <CAODwPW-RK9Un-ou-fwZJw6iP=dNF0_D4vA0Wmx8meQNocfo69w@mail.gmail.com>
-Subject: Re: [PATCH] usb: xhci: Prefer endpoint context dequeue pointer over stopped_trb
-From: Julius Werner <jwerner@chromium.org>
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-Cc: Julius Werner <jwerner@chromium.org>,
-        "Nyman, Mathias" <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Luigi Semenzato <semenzato@chromium.org>,
-        Hans de Goede <hdegoede@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140414185602.GA892@falcon>
+X-Operating-System: Linux phenom 3.14.0+ 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+hdegoede
+On Mon, Apr 14, 2014 at 11:56:03AM -0700, Steven Noonan wrote:
+> On Mon, Apr 14, 2014 at 11:35:05AM -0700, Keith Packard wrote:
+> > Steven Noonan <steven@uplinklabs.net> writes:
+> > 
+> > > Was using my machine normally, then my mouse cursor vanished. After switching
+> > > to a VT and back to X11, my cursor came back. But I did notice a nasty trace in
+> > > dmesg (below).
+> > 
+> > I don't think the trace below is related to the cursor disappearing.
+> 
+> Any idea what the trace is all about then? Seems it has something to do
+> with runtime power management (maybe my aggressive kernel command-line
+> options are triggering it).
 
-> I tried to apply this patch on top of 3.15-rc1, but it fails because of the
-> streams support added to xhci_find_new_dequeue_state()
->
-> After some manual editing the interesting parts of
-> xhci_find_new_dequeue_state() looks like this:
->
-> @@ -577,46 +568,57 @@ void xhci_find_new_dequeue_state(struct xhci_hcd
-> *xhci,
->         if (ep->ep_state & EP_HAS_STREAMS) {
->                 struct xhci_stream_ctx *ctx =
->                         &ep->stream_info->stream_ctx_array[stream_id];
-> -               state->new_cycle_state = 0x1 &
-> le64_to_cpu(ctx->stream_ring);
-> +               hw_dequeue = le64_to_cpu(ctx->stream_ring);
->         } else {
->                 struct xhci_ep_ctx *ep_ctx
->
->                         = xhci_get_ep_ctx(xhci, dev->out_ctx, ep_index);
-> -               state->new_cycle_state = 0x1 & le64_to_cpu(ep_ctx->deq);
-> +               hw_dequeue = le64_to_cpu(ep_ctx->deq);
->         }
->
-> +       /* Find virtual address and segment of hardware dequeue pointer */
->
-> +       state->new_deq_seg = ep_ring->deq_seg;
-> +       state->new_deq_ptr = ep_ring->dequeue;
-> +       while (xhci_trb_virt_to_dma(state->new_deq_seg, state->new_deq_ptr)
-> +                       != (dma_addr_t)(hw_dequeue & ~0x1)) {
-> +               next_trb(xhci, ep_ring, &state->new_deq_seg,
-> +                                       &state->new_deq_ptr);
-> +               if (state->new_deq_ptr == ep_ring->dequeue) {
-> +                       WARN_ON(1);
-> +                       return;
-> +               }
-> +       }
->
-> Also the comparison of the dequeue pointers, using (hw_dequeue & ~0x1) might
-> have some troubles with streams. Endpoint context TR dequeue pointer LO
-> field has bits 3:1 reserved (probably zero) but stream context uses those
-> bits. Would it make sense to use (hw_dequeue & ~0xf) here instead?
+Please test without them. Currently runtime pm should be disabled still on
+vlv (since it's incomplete in 3.14). If you've force-enabled that then you
+get to keep all pieces ;-)
 
-Ah, yes, looks like that patch wasn't in Linus' tree yet back when I
-wrote this. I think your merge looks pretty good... just use
-(hw_dequeue & ~0xf) instead of (hw_dequeue & ~0x1) to get the pointer
-as you said, and this should work fine.
-
-> But I'm still concerned about the dequeue pointer in the streams case.
-> streams may be nested, we might be pointing at another stream context
-> instead of the dequeue pointer.
->
-> So there's still some work needed. Are you interested in re-working this to
-> fit on top of 3.15-rc1 or should I add it to my todo list?
-
-Hmmm... maybe the stream_id parameter is already pointing to the
-correct secondary stream (if applicable) so you can rely on having a
-normal dequeue pointer there? The xhci_triad_to_transfer_ring()
-function seems to make the same assumption... At any rate, if there is
-a problem here it would also be in the original c4bedb77e ("xhci: For
-streams the css flag most be read from the stream-ctx on ep stop")
-already, so I think you should follow up with that patch's author and
-fix it in a separate commit if necessary.
-
-I unfortunately don't have a device using streams to test with, so I
-couldn't do more for this patch than you've already done. I think if
-you change the hw_dequeue masking as you said that should guarantee
-that the patch at least won't make things worse for streams, and that
-should be good enough.
+In general don't set any i915 options if you're not a developer or someone
+else who _really_ knows what's going on.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
