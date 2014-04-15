@@ -1,133 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809AbaDOUKH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 16:10:07 -0400
-Received: from mga09.intel.com ([134.134.136.24]:10263 "EHLO mga09.intel.com"
+	id S1754841AbaDOUKe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 16:10:34 -0400
+Received: from imap.thunk.org ([74.207.234.97]:54755 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753322AbaDOUKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 16:10:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,866,1389772800"; 
-   d="scan'208";a="521557067"
-Date: Tue, 15 Apr 2014 13:09:00 -0700
-From: David Cohen <david.a.cohen@linux.intel.com>
-To: wim@iguana.be, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        gnomes@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH v4 2/2] x86: intel-mid: add watchdog platform code for
- Merrifield
-Message-ID: <20140415200900.GJ5986@psi-dev26.jf.intel.com>
-References: <1397587272-31152-1-git-send-email-david.a.cohen@linux.intel.com>
- <1397592366-3899-1-git-send-email-david.a.cohen@linux.intel.com>
- <1397592366-3899-3-git-send-email-david.a.cohen@linux.intel.com>
+	id S1751818AbaDOUK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 16:10:28 -0400
+Date: Tue, 15 Apr 2014 16:10:26 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Emmanuel Colbus <ecolbus@manux.info>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC][9/11][MANUX] Kernel compatibility : ext2's dtime field?
+Message-ID: <20140415201026.GJ4456@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Emmanuel Colbus <ecolbus@manux.info>, linux-kernel@vger.kernel.org
+References: <534D3770.7010806@manux.info>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397592366-3899-3-git-send-email-david.a.cohen@linux.intel.com>
+In-Reply-To: <534D3770.7010806@manux.info>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 01:06:06PM -0700, David Cohen wrote:
-> This patch adds platform code for Intel Merrifield.
-> Since the watchdog is not part of SFI table, we have no other option but
-> to manually register watchdog's platform device (argh!).
-> 
-> Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-> ---
->  arch/x86/platform/intel-mid/device_libs/Makefile   |  1 +
->  .../platform/intel-mid/device_libs/platform_wdt.c  | 66 ++++++++++++++++++++++
->  2 files changed, 67 insertions(+)
->  create mode 100644 arch/x86/platform/intel-mid/device_libs/platform_wdt.c
-> 
-> diff --git a/arch/x86/platform/intel-mid/device_libs/Makefile b/arch/x86/platform/intel-mid/device_libs/Makefile
-> index 097e7a7940d8..af9307f2cc28 100644
-> --- a/arch/x86/platform/intel-mid/device_libs/Makefile
-> +++ b/arch/x86/platform/intel-mid/device_libs/Makefile
-> @@ -20,3 +20,4 @@ obj-$(subst m,y,$(CONFIG_DRM_MEDFIELD)) += platform_tc35876x.o
->  obj-$(subst m,y,$(CONFIG_SERIAL_MRST_MAX3110)) += platform_max3111.o
->  # MISC Devices
->  obj-$(subst m,y,$(CONFIG_KEYBOARD_GPIO)) += platform_gpio_keys.o
-> +obj-$(subst m,y,$(CONFIG_INTEL_MID_WATCHDOG)) += platform_wdt.o
-> diff --git a/arch/x86/platform/intel-mid/device_libs/platform_wdt.c b/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
-> new file mode 100644
-> index 000000000000..4b0434b54aff
-> --- /dev/null
-> +++ b/arch/x86/platform/intel-mid/device_libs/platform_wdt.c
-> @@ -0,0 +1,66 @@
-> +/*
-> + * platform_wdt.c: Watchdog platform library file
-> + *
-> + * (C) Copyright 2014 Intel Corporation
-> + * Author: David Cohen <david.a.cohen@linux.intel.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; version 2
-> + * of the License.
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/platform_data/intel-mid_wdt.h>
-> +#include <asm/intel-mid.h>
-> +
-> +#define TANGIER_EXT_TIMER0_MSI 15
-> +
-> +static struct platform_device wdt_dev = {
-> +	.name = "intel_mid_wdt",
-> +	.id = -1,
-> +};
-> +
-> +static int tangier_probe(struct platform_device *pdev)
-> +{
-> +	int ioapic;
-> +	struct io_apic_irq_attr irq_attr = { 0 };
-> +
-> +	ioapic = mp_find_ioapic(TANGIER_EXT_TIMER0_MSI);
+On Tue, Apr 15, 2014 at 03:43:12PM +0200, Emmanuel Colbus wrote:
+> Now, another question. In ext2, what is the point of the dtime field?
+> Personaly, I'm never setting it, because, well, if an inode is removed,
+> it's removed, and nobody is supposed to access it again; and anyways,
+> since no syscall allows seeing it, the dtime seems to me like nothing
+> but an information leakage. But I doubt you would have put a useless
+> data in the filesystem, so I'm likely overlooking something; if so, what
+> is it?
 
-Forgot remove this hardcoded irq number. I'll send v4.1 of this patch.
+For ext2, it was useful as a way of being able to do some emergency
+undelete operations on a file system.  These days, it's mostly for
+debugging purposes.
 
-BR, David
+This field is also used as a linked list in ext3 and ext4 for "orphan
+inodes" and inodes which are in the process of being truncated or for
+which should be truncated after a crash (to avoid leaking stale data,
+for example).
 
-> +	if (ioapic >= 0) {
-> +		int ret;
-> +		irq_attr.ioapic = ioapic;
-> +		irq_attr.ioapic_pin = TANGIER_EXT_TIMER0_MSI;
-> +		irq_attr.trigger = 1;
-> +		irq_attr.polarity = 0; /* Active high */
-> +		ret = io_apic_set_pci_routing(NULL, TANGIER_EXT_TIMER0_MSI,
-> +					      &irq_attr);
-> +		if (ret)
-> +			return ret;
-> +	} else {
-> +		dev_warn(&pdev->dev, "cannot find interrupt %d in ioapic\n",
-> +			 TANGIER_EXT_TIMER0_MSI);
-> +		return -EINVAL;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static struct intel_mid_wdt_pdata tangier_pdata = {
-> +	.irq = TANGIER_EXT_TIMER0_MSI,
-> +	.probe = tangier_probe,
-> +};
-> +
-> +static int __init register_mid_wdt(void)
-> +{
-> +	if (intel_mid_identify_cpu() == INTEL_MID_CPU_CHIP_TANGIER) {
-> +		wdt_dev.dev.platform_data = &tangier_pdata;
-> +		return platform_device_register(&wdt_dev);
-> +	}
-> +
-> +	return -ENODEV;
-> +}
-> +
-> +rootfs_initcall(register_mid_wdt);
-> -- 
-> 1.9.1
-> 
+						- Ted
