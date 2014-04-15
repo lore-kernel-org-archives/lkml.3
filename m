@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751261AbaDOVAK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 17:00:10 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33924 "EHLO
+	id S1751356AbaDOVCH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 17:02:07 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38578 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbaDOVAH (ORCPT
+	with ESMTP id S1750784AbaDOVCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 17:00:07 -0400
-Message-ID: <534D9DD1.2070004@wwwdotorg.org>
-Date: Tue, 15 Apr 2014 15:00:01 -0600
+	Tue, 15 Apr 2014 17:02:05 -0400
+Message-ID: <534D9E47.30708@wwwdotorg.org>
+Date: Tue, 15 Apr 2014 15:01:59 -0600
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
@@ -36,42 +36,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 04/15/2014 12:41 AM, Chen-Yu Tsai wrote:
 
-Patch description?
-
 > diff --git a/Documentation/devicetree/bindings/rfkill/rfkill-gpio.txt b/Documentation/devicetree/bindings/rfkill/rfkill-gpio.txt
 
-> +Required properties:
+> +Optional properties:
+> +- clocks		: phandle to clock to enable/disable
 
-> +- gpios		: At most two GPIO phandles
-> +- gpio-names	: Shall be "reset" or "shutdown", matching gpios.
-> +		  If both are provided, the "reset" GPIO is toggled first.
+Oh, and can't we use clock-names here too, with wording like:
 
-As Maxime mentioned, this is an unusual way of defining GPIOs. If this
-new way is acceptable, then I'd suggest more precise wording, e.g.:
-
-- gpios: Must contain an entry for each entry in gpio-names.
-  See ../gpio/gpio.txt for details.
-- gpio-names: May contain any or all of the following entries:
-  - reset
-  - shutdown
-
-> +- rfkill-type	: Type of RFKILL device: 1 for WiFi, 2 for BlueTooth, etc.
-> +		  See include/uapi/linux/rfkill.h for all valid values
-
-It would be nice if include/dt-bindings/rfkill-gpio.h existed and
-contained e.g.:
-
-#define RFKILL_TYPE_BLUETOOTH 2
-
-So that:
-
-> +Example:
-> +
-> +	rfkill_bt {
-...
-> +		rfkill-type = <2>;
-
-Could be written as:
-
-		rfkill-type = <RFKILL_TYPE_BLUETOOTH>;
+- clocks: Must contain an entry for each entry in clock-names.
+  See ../clocks/clock-bindings.txt for details.
+- clock-names: May contain any of the following entries:
+  - module
 
