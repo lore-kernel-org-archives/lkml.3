@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235AbaDOL2z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 07:28:55 -0400
-Received: from relay.parallels.com ([195.214.232.42]:54542 "EHLO
+	id S1754296AbaDOL3f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 07:29:35 -0400
+Received: from relay.parallels.com ([195.214.232.42]:54619 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754112AbaDOL2x (ORCPT
+	with ESMTP id S1750919AbaDOL3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 07:28:53 -0400
-Subject: [PATCH 2/7] fuse: update mtime on truncate(2)
+	Tue, 15 Apr 2014 07:29:34 -0400
+Subject: [PATCH 3/7] fuse: update mtime on open(O_TRUNC) in atomic_o_trunc
+ mode
 To: miklos@szeredi.hu
 From: Maxim Patlasov <MPatlasov@parallels.com>
 Cc: fuse-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         devel@openvz.org
-Date: Tue, 15 Apr 2014 15:28:52 +0400
-Message-ID: <20140415112815.11860.25738.stgit@dhcp-10-30-30-94.sw.ru>
+Date: Tue, 15 Apr 2014 15:29:33 +0400
+Message-ID: <20140415112857.11860.18769.stgit@dhcp-10-30-30-94.sw.ru>
 In-Reply-To: <20140415112413.11860.1451.stgit@dhcp-10-30-30-94.sw.ru>
 References: <20140415112413.11860.1451.stgit@dhcp-10-30-30-94.sw.ru>
 User-Agent: StGit/0.16
@@ -24,64 +25,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Handling truncate(2), VFS doesn't set ATTR_MTIME bit in iattr structure; only
-ATTR_SIZE bit is set. In-kernel fuse must handle the case by setting mtime
-fields of struct fuse_setattr_in to "now" and set FATTR_MTIME bit even
-though ATTR_MTIME was not set.
+In case of fc->atomic_o_trunc is set, fuse does nothing in fuse_do_setattr()
+while handling open(O_TRUNC). Hence, i_mtime must be updated explicitly in
+fuse_finish_open(). The patch also adds extra locking encompassing
+open(O_TRUNC) operation to avoid races between updating i_mtime and setting
+FUSE_I_MTIME_DIRTY flag.
 
 Signed-off-by: Maxim Patlasov <MPatlasov@parallels.com>
 ---
- fs/fuse/dir.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ fs/fuse/file.c |   20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
-diff --git a/fs/fuse/dir.c b/fs/fuse/dir.c
-index 5b4e035..c7cb41c 100644
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -1503,10 +1503,11 @@ static bool update_mtime(unsigned ivalid, bool trust_local_mtime)
- 	return true;
- }
- 
--static void iattr_to_fattr(struct iattr *iattr, struct fuse_setattr_in *arg,
--			   bool trust_local_mtime)
-+static void iattr_to_fattr(struct inode *inode, struct iattr *iattr,
-+			   struct fuse_setattr_in *arg, bool trust_local_mtime)
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 13f8bde..c2c6df7 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -223,6 +223,10 @@ void fuse_finish_open(struct inode *inode, struct file *file)
+ 		i_size_write(inode, 0);
+ 		spin_unlock(&fc->lock);
+ 		fuse_invalidate_attr(inode);
++		if (fc->writeback_cache) {
++			inode->i_mtime = current_fs_time(inode->i_sb);
++			set_bit(FUSE_I_MTIME_DIRTY, &fi->state);
++		}
+ 	}
+ 	if ((file->f_mode & FMODE_WRITE) && fc->writeback_cache)
+ 		fuse_link_write_file(file);
+@@ -232,18 +236,26 @@ int fuse_open_common(struct inode *inode, struct file *file, bool isdir)
  {
- 	unsigned ivalid = iattr->ia_valid;
-+	struct timespec now = current_fs_time(inode->i_sb);
+ 	struct fuse_conn *fc = get_fuse_conn(inode);
+ 	int err;
++	bool lock_inode = (file->f_flags & O_TRUNC) &&
++			  fc->atomic_o_trunc &&
++			  fc->writeback_cache;
  
- 	if (ivalid & ATTR_MODE)
- 		arg->valid |= FATTR_MODE,   arg->mode = iattr->ia_mode;
-@@ -1529,6 +1530,10 @@ static void iattr_to_fattr(struct iattr *iattr, struct fuse_setattr_in *arg,
- 		arg->mtimensec = iattr->ia_mtime.tv_nsec;
- 		if (!(ivalid & ATTR_MTIME_SET) && !trust_local_mtime)
- 			arg->valid |= FATTR_MTIME_NOW;
-+	} else if ((ivalid & ATTR_SIZE) && trust_local_mtime) {
-+		arg->valid |= FATTR_MTIME;
-+		arg->mtime = now.tv_sec;
-+		arg->mtimensec = now.tv_nsec;
- 	}
+ 	err = generic_file_open(inode, file);
+ 	if (err)
+ 		return err;
+ 
++	if (lock_inode)
++		mutex_lock(&inode->i_mutex);
++
+ 	err = fuse_do_open(fc, get_node_id(inode), file, isdir);
+-	if (err)
+-		return err;
+ 
+-	fuse_finish_open(inode, file);
++	if (!err)
++		fuse_finish_open(inode, file);
+ 
+-	return 0;
++	if (lock_inode)
++		mutex_unlock(&inode->i_mutex);
++
++	return err;
  }
  
-@@ -1682,7 +1687,7 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
- 
- 	memset(&inarg, 0, sizeof(inarg));
- 	memset(&outarg, 0, sizeof(outarg));
--	iattr_to_fattr(attr, &inarg, trust_local_mtime);
-+	iattr_to_fattr(inode, attr, &inarg, trust_local_mtime);
- 	if (file) {
- 		struct fuse_file *ff = file->private_data;
- 		inarg.valid |= FATTR_FH;
-@@ -1711,8 +1716,9 @@ int fuse_do_setattr(struct inode *inode, struct iattr *attr,
- 
- 	spin_lock(&fc->lock);
- 	/* the kernel maintains i_mtime locally */
--	if (trust_local_mtime && (attr->ia_valid & ATTR_MTIME)) {
--		inode->i_mtime = attr->ia_mtime;
-+	if (trust_local_mtime && (attr->ia_valid & (ATTR_MTIME | ATTR_SIZE))) {
-+		inode->i_mtime.tv_sec = inarg.mtime;
-+		inode->i_mtime.tv_nsec = inarg.mtimensec;
- 		clear_bit(FUSE_I_MTIME_DIRTY, &fi->state);
- 	}
- 
+ static void fuse_prepare_release(struct fuse_file *ff, int flags, int opcode)
 
