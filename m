@@ -1,76 +1,286 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681AbaDOHyA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 03:54:00 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:52472 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751038AbaDOHxl (ORCPT
+	id S1751997AbaDOHyb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 03:54:31 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:52798 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998AbaDOHy2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 03:53:41 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Al9gALzkTFN5LEcvPGdsb2JhbABYgwaDUIULoi2ZMoEfFwMBAQEBODWCZhwVDhgkNAUlAwcth3vMQRaOTR2DDoEUBJhhimaLIys
-Date: Tue, 15 Apr 2014 17:53:36 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: linux-kernel@vger.kernel.org
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Subject: [regression, 3.15-rc1] vdso_gettimeofday hogs all my CPU
-Message-ID: <20140415075335.GE31578@dastard>
+	Tue, 15 Apr 2014 03:54:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 15 Apr 2014 13:24:26 +0530
+Message-ID: <CADDb1s2RvN_S+abFXCe4ZhZPKZgP_PiocJdpiLzRC_Se5sgVVg@mail.gmail.com>
+Subject: Ext4: deadlock occurs when running fsstress and ENOSPC errors are seen.
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
+To: Jan Kara <jack@suse.cz>, "Theodore Ts'o" <tytso@mit.edu>,
+        darrick.wong@oracle.com, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Namjae Jeon <linkinjeon@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+Initially in normal write path, when the disk was almost full – we got
+hung for the ‘sync’ because the flusher (which is busy in the
+writepages is not responding). Before the hung task, we also found the
+logs like:
 
-I'm guessing that x86 vdso problems are in your area of expertise,
-if not can you point me at the right person to bug?
+EXT4-fs error (device sda1): ext4_mb_generate_buddy:742: group 1493, 0
+clusters in bitmap, 58339 in gd
+EXT4-fs error (device sda1): ext4_mb_generate_buddy:742: group 1000, 0
+clusters in bitmap, 3 in gd
+EXT4-fs error (device sda1): ext4_mb_generate_buddy:742: group 1425, 0
+clusters in bitmap, 1 in gd
+JBD2: Spotted dirty metadata buffer (dev = sda1, blocknr = 0). There's
+a risk of filesystem corruption in case of system crash.
+JBD2: Spotted dirty metadata buffer (dev = sda1, blocknr = 0). There's
+a risk of filesystem corruption in case of system crash.
 
-I just spun up my XFS performance tests on 3.15-rc1, the first of
-which runs a concurrent fsmark workload. fsmark uses gettimeofday to
-do per-operation timing and performance is horrendous. 3.14.0 on this
-workload does around 300,000 file creates per second. 3.15-rc1
-does:
+EXT4-fs (sda1): error count: 58
+EXT4-fs (sda1): initial error at 607: ext4_mb_generate_buddy:742
+EXT4-fs (sda1): last error at 58: ext4_mb_generate_buddy:742
 
-#  ./fs_mark  -D  10000  -S0  -n  100000  -s  0  -L  32  -d  /mnt/scratch/0  -d  /mnt/scratch/1  -d  /mnt/scratch/2  -d  /mnt/scratch/3  -d  /mnt/scratch/4  -d  /mnt/scratch/5  -d  /mnt/scratch/6  -d  /mnt/scratch/7  -d  /mnt/scratch/8  -d  /mnt/scratch/9  -d  /mnt/scratch/10  -d  /mnt/scratch/11  -d  /mnt/scratch/12  -d  /mnt/scratch/13  -d  /mnt/scratch/14  -d  /mnt/scratch/15
-#       Version 3.3, 16 thread(s) starting at Tue Apr 15 17:37:20 2014
-#       Sync method: NO SYNC: Test does not issue sync() or fsync() calls.
-#       Directories:  Time based hash between directories across 10000 subdirectories with 180 seconds per subdirectory.
-#       File names: 40 bytes long, (16 initial bytes of time stamp with 24 random bytes at end of name)
-#       Files info: size 0 bytes, written with an IO size of 16384 bytes per write
-#       App overhead is time in microseconds spent in the test not doing file writing related system calls.
+When we analysed the problem, it occurred from the writepages path in ext4.
+This is because of the difference in the free blocks reported by
+cluster bitmap and the number of free blocks reported by group
+descriptor.
+During ext4_fill_super, ext4 calculates the number of free blocks by
+reading all the descriptors in function ext4_count_free_clusters and
+store it in percpu counter s_freeclusters_counter.
+ext4_count_free_clusters:
+desc_count = 0;
+for (i = 0; i < ngroups; i++) {
+gdp = ext4_get_group_desc(sb, i, NULL);
+if (!gdp)
+continue;
+desc_count += ext4_free_group_clusters(sb, gdp);
+}
+return desc_count;
 
-FSUse%        Count         Size    Files/sec     App Overhead
-     0      1600000            0      70950.5        155219877
-     0      3200000            0      71832.4        150138649
-     0      4800000            0      71195.5        150935842
-     0      6400000            0      71215.4        150906768
-     0      8000000            0      63707.7        166569461
-.....
+During writebegin call, ext4 checks this s_freeclusters_counter
+counter to know if there are free blocks present or not.
+When the free blocks reported by group descriptor are greater than the
+actual free blocks reported by bitmap, a call to writebegin could
+still succeed even if the free blocks represented by bitmaps are 0.
 
-about 70,000 files/sec, so it's way, way down on 3.14. The load has
-pegged all 16 CPUs in the VM, and perf top tells me:
+This situation was seen from our logs above:
+EXT4-fs error (device sda1): ext4_mb_generate_buddy:742: group 1493, 0
+clusters in bitmap, 58339 in gd
+EXT4-fs error (device sda1): ext4_mb_generate_buddy:742: group 1000, 0
+clusters in bitmap, 3 in gd
+EXT4-fs error (device sda1): ext4_mb_generate_buddy:742: group 1425, 0
+clusters in bitmap, 1 in gd
 
--  63.11%  [vdso]              [.] __vdso_gettimeofday
-   - __vdso_gettimeofday
-        44.24% stop
-        28.18% do_run
-        13.98% write_file
-        13.60% setup_file_name
+In this situation, during writeback, block allocation fails as
+actually there are no free blocks available and ext4 revolves in
+unbreakable loop in function ext4_da_writepages.
+Due to this looping, sync thread which is waiting for completion for
+the flusher thread, which initiated the ext4 writeback, is never
+completed and hung task occur for sync thread.
 
-that it's the gettimeofday calls that are causing the excessive CPU
-load.
+When searching for the relevant problem which occurs in this path. We
+got the patch-set from ‘Darrick’ which revolves around this problem.
+ext4: error out if verifying the block bitmap fails
+ext4: fix type declaration of ext4_validate_block_bitmap
+ext4: mark block group as corrupt on block bitmap error
+ext4: mark block group as corrupt on inode bitmap error
+ext4: mark group corrupt on group descriptor checksum
+ext4: don't count free clusters from a corrupt block group
 
-I haven't changed anything in userspace for the past couple of
-months, the only thing that has changed is the kernel. I haven't
-looked at this any further and have no idea what to do to debug it
-further, so let me know if you need more information....
 
-Cheers,
+After adopting the patch-set and performing verification on the
+similar setup, we ran ‘fsstress’. But now it is resulting in hang at
+different points.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+In the current logs we got:
+EXT4-fs error (device sdb1): ext4_mb_generate_buddy:743: group 1,
+20480 clusters in bitmap, 25443 in gd; block bitmap corrupt.
+JBD2: Spotted dirty metadata buffer (dev = sdb1, blocknr = 0). There's
+a risk of filesystem corruption in case of system crash.
+
+Hinting at the corruption in the filesystem for block bitmap
+
+And then logs like:
+EXT4-fs (sdb1): delayed block allocation failed for inode 241 at
+logical offset 17 with max blocks 22 with error -28
+EXT4-fs (sdb1): This should not happen!! Data will be lost
+
+EXT4-fs (sdb1): Total free blocks count 0
+EXT4-fs (sdb1): Free/Dirty block details
+EXT4-fs (sdb1): free_blocks=25443
+EXT4-fs (sdb1): dirty_blocks=7847
+EXT4-fs (sdb1): Block reservation details
+EXT4-fs (sdb1): i_reserved_data_blocks=22
+EXT4-fs (sdb1): i_reserved_meta_blocks=1
+EXT4-fs (sdb1): delayed block allocation failed for inode 218 at
+logical offset 82 with max blocks 17 with error -28
+EXT4-fs (sdb1): This should not happen!! Data will be lost
+
+EXT4-fs (sdb1): Total free blocks count 0
+EXT4-fs (sdb1): Free/Dirty block details
+EXT4-fs (sdb1): delayed block allocation failed for inode 196 at
+logical offset 527 with max blocks 7 with error -28
+EXT4-fs (sdb1): This should not happen!! Data will be lost
+
+EXT4-fs (sdb1): Total free blocks count 0
+EXT4-fs (sdb1): Free/Dirty block details
+EXT4-fs (sdb1): free_blocks=25443
+EXT4-fs (sdb1): dirty_blocks=7874
+EXT4-fs (sdb1): Block reservation details
+EXT4-fs (sdb1): i_reserved_data_blocks=106
+EXT4-fs (sdb1): i_reserved_meta_blocks=5
+EXT4-fs (sdb1): free_blocks=25443
+EXT4-fs (sdb1): dirty_blocks=7874
+EXT4-fs (sdb1): Block reservation details
+EXT4-fs (sdb1): i_reserved_data_blocks=17
+EXT4-fs (sdb1): i_reserved_meta_blocks=1
+EXT4-fs (sdb1): delayed block allocation failed for inode 251 at
+logical offset 197 with max blocks 14 with error -28
+EXT4-fs (sdb1): This should not happen!! Data will be lost
+
+EXT4-fs (sdb1): Total free blocks count 0
+EXT4-fs (sdb1): Free/Dirty block details
+EXT4-fs (sdb1): free_blocks=25443
+EXT4-fs (sdb1): dirty_blocks=7874
+EXT4-fs (sdb1): Block reservation details
+EXT4-fs (sdb1): i_reserved_data_blocks=44
+EXT4-fs (sdb1): i_reserved_meta_blocks=2
+EXT4-fs (sdb1): delayed block allocation failed for inode 251 at
+logical offset 364 with max blocks 30 with error -28
+EXT4-fs (sdb1): This should not happen!! Data will be lost
+
+EXT4-fs (sdb1): Total free blocks count 0
+EXT4-fs (sdb1): Free/Dirty block details
+EXT4-fs (sdb1): free_blocks=25443
+EXT4-fs (sdb1): dirty_blocks=7874
+EXT4-fs (sdb1): Block reservation details
+EXT4-fs (sdb1): i_reserved_data_blocks=44
+EXT4-fs (sdb1): i_reserved_meta_blocks=2
+EXT4-fs (sdb1): delayed block allocation failed for inode 243 at
+logical offset 23 with max blocks 14 with error -28
+EXT4-fs (sdb1): This should not happen!! Data will be lost
+
+EXT4-fs (sdb1): Total free blocks count 0
+EXT4-fs (sdb1): Free/Dirty block details
+EXT4-fs (sdb1): free_blocks=25443
+EXT4-fs (sdb1): dirty_blocks=7874
+EXT4-fs (sdb1): Block reservation details
+EXT4-fs (sdb1): i_reserved_data_blocks=14
+EXT4-fs (sdb1): i_reserved_meta_blocks=1
+EXT4-fs (sdb1): delayed block allocation failed for inode 249 at
+logical offset 62 with max blocks 15 with error -28
+EXT4-fs (sdb1): This should not happen!! Data will be lost
+
+EXT4-fs (sdb1): Total free blocks count 0
+EXT4-fs (sdb1): Free/Dirty block details
+EXT4-fs (sdb1): free_blocks=25443
+EXT4-fs (sdb1): dirty_blocks=7874
+EXT4-fs (sdb1): Block reservation details
+EXT4-fs (sdb1): i_reserved_data_blocks=48
+EXT4-fs (sdb1): i_reserved_meta_blocks=3
+EXT4-fs (sdb1): delayed block allocation failed for inode 249 at
+logical offset 155 with max blocks 6 with error -28
+EXT4-fs (sdb1): This should not happen!! Data will be lost
+
+EXT4-fs (sdb1): Total free blocks count 0
+EXT4-fs (sdb1): Free/Dirty block details
+EXT4-fs (sdb1): free_blocks=25443
+EXT4-fs (sdb1): dirty_blocks=7874
+EXT4-fs (sdb1): Block reservation details
+EXT4-fs (sdb1): i_reserved_data_blocks=48
+EXT4-fs (sdb1): i_reserved_meta_blocks=3
+EXT4-fs (sdb1): delayed block allocation failed for inode 249 at
+logical offset 225 with max blocks 27 with error -28
+EXT4-fs (sdb1): This should not happen!! Data will be lost
+
+EXT4-fs (sdb1): Total free blocks count 12
+EXT4-fs (sdb1): Free/Dirty block details
+EXT4-fs (sdb1): free_blocks=25455
+EXT4-fs (sdb1): dirty_blocks=7874
+EXT4-fs (sdb1): Block reservation details
+EXT4-fs (sdb1): i_reserved_data_blocks=48
+EXT4-fs (sdb1): i_reserved_meta_blocks=3
+EXT4-fs (sdb1): delayed block allocation failed for inode 221 at
+logical offset 1 with max blocks 2 with error -28
+EXT4-fs (sdb1): This should not happen!! Data will be lost
+
+EXT4-fs (sdb1): Total free blocks count 0
+EXT4-fs (sdb1): Free/Dirty block details
+EXT4-fs (sdb1): free_blocks=25455
+EXT4-fs (sdb1): dirty_blocks=7901
+EXT4-fs (sdb1): Block reservation details
+EXT4-fs (sdb1): i_reserved_data_blocks=2
+EXT4-fs (sdb1): i_reserved_meta_blocks=1
+EXT4-fs (sdb1): delayed block allocation failed for inode 250 at
+logical offset 140 with max blocks 13 with error -28
+EXT4-fs (sdb1): This should not happen!! Data will be lost
+
+EXT4-fs (sdb1): Total free blocks count 0
+EXT4-fs (sdb1): Free/Dirty block details
+EXT4-fs (sdb1): free_blocks=25455
+EXT4-fs (sdb1): dirty_blocks=7901
+EXT4-fs (sdb1): Block reservation details
+EXT4-fs (sdb1): i_reserved_data_blocks=13
+EXT4-fs (sdb1): i_reserved_meta_blocks=1
+
+Followed by the hungtask traces for:
+Pid: 662, comm:          jbd2/sdb1-8
+jbd2/sdb1-8     [2] D [e5354840] c03e910c     0   662 0x00000000
+2            663     635      (kernel thread)
+Backtrace:
+[<c03e8f00>] (__schedule+0x0/0x5f4) from [<c03e9590>] (schedule+0x40/0x80)
+[<c03e9550>] (schedule+0x0/0x80) from [<c03e9644>] (io_schedule+0x74/0xa0)
+[<c03e95d0>] (io_schedule+0x0/0xa0) from [<c01737c0>]
+(sleep_on_buffer+0x18/0x20)
+ r6:e5921dd4 r5:002ecac6 r4:e5921dcc r3:00000002
+[<c01737a8>] (sleep_on_buffer+0x0/0x20) from [<c03e7a54>]
+(__wait_on_bit+0x8c/0xc4)
+[<c03e79c8>] (__wait_on_bit+0x0/0xc4) from [<c03e7b04>]
+(out_of_line_wait_on_bit+0x78/0x80)
+[<c03e7a8c>] (out_of_line_wait_on_bit+0x0/0x80) from [<c01737a0>]
+(__wait_on_buffer+0x30/0x38)
+ r8:e5343e68 r7:e5343c00 r6:00000000 r5:e5677680 r4:00000000
+[<c0173770>] (__wait_on_buffer+0x0/0x38) from [<c01f449c>]
+(jbd2_journal_commit_transaction+0xbe8/0x1830)
+[<c01f38b4>] (jbd2_journal_commit_transaction+0x0/0x1830) from
+[<c01f9768>] (kjournald2+0xb8/0x24c)
+[<c01f96b0>] (kjournald2+0x0/0x24c) from [<c005c700>] (kthread+0xb4/0xc0)
+[<c005c64c>] (kthread+0x0/0xc0) from [<c0013188>] (ret_from_fork+0x14/0x20)
+ r7:00000000 r6:00000000 r5:c005c64c r4:e4cf5c04
+
+
+Pid: 635, comm:           flush-8:16
+flush-8:16      [1] D [e5357b40] c03e910c     0   635 0x00000000
+2            662     628      (kernel thread)
+Backtrace:
+[<c03e8f00>] (__schedule+0x0/0x5f4) from [<c03e9590>] (schedule+0x40/0x80)
+[<c03e9550>] (schedule+0x0/0x80) from [<c01f93e8>]
+(jbd2_log_wait_commit+0xa8/0x120)
+[<c01f9340>] (jbd2_log_wait_commit+0x0/0x120) from [<c01fb3c0>]
+(jbd2_journal_force_commit_nested+0x70/0xb4)
+[<c01fb350>] (jbd2_journal_force_commit_nested+0x0/0xb4) from
+[<c01afc48>] (ext4_da_writepages+0x450/0x5ec)
+ r6:e588e000 r5:e5433660 r4:00000001 r3:ffffffe4
+[<c01af7f8>] (ext4_da_writepages+0x0/0x5ec) from [<c0110178>]
+(do_writepages+0x34/0x48)
+[<c0110144>] (do_writepages+0x0/0x48) from [<c016b15c>]
+(__writeback_single_inode+0x3c/0x17c)
+[<c016b120>] (__writeback_single_inode+0x0/0x17c) from [<c016cc54>]
+(writeback_sb_inodes+0x1fc/0x39c)
+[<c016ca58>] (writeback_sb_inodes+0x0/0x39c) from [<c016d82c>]
+(wb_writeback+0xf8/0x334)
+[<c016d734>] (wb_writeback+0x0/0x334) from [<c016db18>]
+(wb_do_writeback+0xb0/0x280)
+[<c016da68>] (wb_do_writeback+0x0/0x280) from [<c016dd68>]
+(bdi_writeback_thread+0x80/0x27c)
+[<c016dce8>] (bdi_writeback_thread+0x0/0x27c) from [<c005c700>]
+(kthread+0xb4/0xc0)
+[<c005c64c>] (kthread+0x0/0xc0) from [<c0013188>] (ret_from_fork+0x14/0x20)
+ r7:00000000 r6:00000000 r5:c005c64c r4:e5923e9c
+
+
+Kernel Version: 3.8
+Test command:
+fsstress -p 10 -n 100 -l 100 -d /mnt/test_dir
