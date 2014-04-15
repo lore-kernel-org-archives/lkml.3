@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068AbaDOWxg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 18:53:36 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35736 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751733AbaDOWxd (ORCPT
+	id S1751441AbaDOWy5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 18:54:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35305 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235AbaDOWyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 18:53:33 -0400
-Date: Tue, 15 Apr 2014 23:52:51 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: sameo@linux.intel.com, lee.jones@linaro.org, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] mfd: mc13xxx-core: Initialize the lock prior to using
-	it
-Message-ID: <20140415225250.GB24070@n2100.arm.linux.org.uk>
-References: <1397601790-27916-1-git-send-email-festevam@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397601790-27916-1-git-send-email-festevam@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 15 Apr 2014 18:54:55 -0400
+Date: Tue, 15 Apr 2014 15:54:53 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: Eric Piel <eric.piel@tremplin-utc.net>,
+        Robert Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>
+Subject: Re: BUG: using __this_cpu_write() in preemptible [00000000] code:
+ systemd-udevd/497
+Message-Id: <20140415155453.54d0ca97ca88905594b5100f@linux-foundation.org>
+In-Reply-To: <87mwfn4gah.fsf@canonical.com>
+References: <87mwfn4gah.fsf@canonical.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 07:43:10PM -0300, Fabio Estevam wrote:
-> From: Fabio Estevam <fabio.estevam@freescale.com>
+On Tue, 15 Apr 2014 00:55:50 +0100 Luis Henriques <luis.henriques@canonical.com> wrote:
+
+> (Cc'ing both lis3lv02d and ACPI maintainers)
 > 
-> After request_threaded_irq() is called there is a chance that an interrupt
-> may occur before the 'mc13xxx->lock' is initialized, which will trigger a kernel
-> warning.
-
-I'd suggest... "which will trigger a kernel oops" because that's what
-you got - it killed the IRQ thread, which then caused a few other
-problems along the way.
-
-> In order to prevent that, move the initialization of 'mc13xxx->lock' prior to
-> requesting the interrupts.
+> Since commit 188a81409ff7de1c5aae947a96356ddd8ff4aaa3 ("percpu: add
+> preemption checks to __this_cpu ops") I've been seeing the following:
 > 
-> Suggested-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+> [   10.485588] hp_accel: hardware type HPB64xx found
+> [   10.485772] BUG: using __this_cpu_write() in preemptible [00000000] code: systemd-udevd/497
+> [   10.485777] caller is __this_cpu_preempt_check+0x13/0x20
+> [   10.485781] CPU: 3 PID: 497 Comm: systemd-udevd Tainted: G        W     3.15.0-rc1 #9
+> [   10.485783] Hardware name: Hewlett-Packard HP EliteBook 8470p/179B, BIOS 68ICF Ver. F.02 04/27/2012
+> [   10.485785]  ffffffff81a14db5 ffff88022c80b8e0 ffffffff81604ba4 0000000000000003
+> [   10.485789]  ffff88022c80b908 ffffffff81313431 0000000000000000 0000000000000032
+> [   10.485793]  00000000000003e8 ffff88022c80b918 ffffffff81313473 ffff88022c80b928
+> [   10.485796] Call Trace:
+> [   10.485802]  [<ffffffff81604ba4>] dump_stack+0x4e/0x7a
+> [   10.485805]  [<ffffffff81313431>] check_preemption_disabled+0xe1/0xf0
+> [   10.485808]  [<ffffffff81313473>] __this_cpu_preempt_check+0x13/0x20
+> [   10.485813]  [<ffffffff810e4eb8>] touch_nmi_watchdog+0x28/0x40
 
-Patch looks good, and should fix the reported issue... so with the above
-description fixed,
+Presumably touch_softlockup_watchdog() being called with preemption
+enabled.  Which is a legitimate thing to do and there's no point in
+disabling preemption just to squish a runtime warning.
 
-Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
-
-Thanks.
-
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+Christoph, this thing has iirc caught a couple of very minor bugs but
+it is being quite a pain in the rear.   I'm inclined to revert?
