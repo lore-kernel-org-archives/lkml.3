@@ -1,54 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777AbaDOGKa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 02:10:30 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:48046 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104AbaDOGK3 (ORCPT
+	id S1753897AbaDOGLF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 02:11:05 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:55663 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152AbaDOGLB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 02:10:29 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org, nasa4836@gmail.com
-Subject: Re: [PATCH] block/blk-core.c: print readable string instead of values.
-Date: Tue, 15 Apr 2014 14:10:20 +0800
-Message-Id: <1397542220-32690-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 1.9.0.GIT
+	Tue, 15 Apr 2014 02:11:01 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACAvsv7gsRrXAk-=M08hjvhrRWvi80wrgRAp1M5T66zMa5ydtA@mail.gmail.com>
+References: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
+ <1395650554-31925-3-git-send-email-acourbot@nvidia.com> <20140324215408.GB17218@mithrandir>
+ <CACAvsv54BF3cD6y59=kQ=1j-S9tGixTz_J3gx2mbOEkB2eQ4cA@mail.gmail.com>
+ <CAAVeFuK-6RAfmZ8Zi3+bX_ibmPxPKEy7oT9YiLJWXpLMx3PsFw@mail.gmail.com>
+ <CACAvsv7Z7OfEx89FYm1F_+Lpb2q33Ay3zph3nRdNCj3PO=vR8w@mail.gmail.com>
+ <53479B08.80104@nvidia.com> <CACAvsv7gsRrXAk-=M08hjvhrRWvi80wrgRAp1M5T66zMa5ydtA@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Tue, 15 Apr 2014 15:10:39 +0900
+Message-ID: <CAAVeFu+pOQq=4nZs_ShVtJrmzhp_TuwNtYxOxGp-1_a2vyNnxQ@mail.gmail.com>
+Subject: Re: [PATCH 02/12] drm/nouveau/timer: skip calibration on GK20A
+To: Ben Skeggs <skeggsb@gmail.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Joe Perches, I think your suggestion is more desirable. The message is 
-too long, I broke it into two lines. Thanks.
+On Mon, Apr 14, 2014 at 5:35 PM, Ben Skeggs <skeggsb@gmail.com> wrote:
+> On Fri, Apr 11, 2014 at 5:34 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>> On 04/11/2014 04:31 PM, Ben Skeggs wrote:
+>>>
+>>> On Fri, Apr 11, 2014 at 12:46 PM, Alexandre Courbot <gnurou@gmail.com>
+>>> wrote:
+>>>>
+>>>> On Wed, Mar 26, 2014 at 1:19 PM, Ben Skeggs <skeggsb@gmail.com> wrote:
+>>>>>
+>>>>> On Tue, Mar 25, 2014 at 7:54 AM, Thierry Reding
+>>>>> <thierry.reding@gmail.com> wrote:
+>>>>>>
+>>>>>> On Mon, Mar 24, 2014 at 05:42:24PM +0900, Alexandre Courbot wrote:
+>>>>>>>
+>>>>>>> GK20A's timer is directly attached to the system timer and cannot be
+>>>>>>> calibrated. Skip the calibration phase on that chip since the
+>>>>>>> corresponding registers do not exist.
+>>>>>>>
+>>>>>>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>>>>>>> ---
+>>>>>>>   drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c | 19
+>>>>>>> +++++++++++++------
+>>>>>>>   1 file changed, 13 insertions(+), 6 deletions(-)
+>>>>>>>
+>>>>>>> diff --git a/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
+>>>>>>> b/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
+>>>>>>> index c0bdd10358d7..822fe0d8a871 100644
+>>>>>>> --- a/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
+>>>>>>> +++ b/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
+>>>>>>> @@ -185,6 +185,10 @@ nv04_timer_init(struct nouveau_object *object)
+>>>>>>>        if (ret)
+>>>>>>>                return ret;
+>>>>>>>
+>>>>>>> +     /* gk20a does not have the calibration registers */
+>>>>>>> +     if (device->chipset == 0xea)
+>>>>>>> +             goto skip_clk_init;
+>>>>>>
+>>>>>>
+>>>>>> I'm concerned that this won't scale in the future. Perhaps a better
+>>>>>> solution would be to add a "flags" or "features" field to struct
+>>>>>> nouveau_device along with feature bits such as HAS_CALIBRATION or
+>>>>>> similar.
+>>>>>>
+>>>>>> That way we don't have to touch this code for every new future Tegra
+>>>>>> chip. Unless perhaps if there's a reason to expect things to change in
+>>>>>> newer generations.
+>>>>>
+>>>>> I've already handled this in a slightly different way in the tree I'd
+>>>>> previously pointed Alex at (I think!), as I needed to do the same for
+>>>>> GM107.
+>>>>>
+>>>>> Should just be able to use that implementation (so, just change the
+>>>>> probe patch) here too.
+>>>>
+>>>>
+>>>> I will skip this patch and use your implementation then. Btw,
+>>>> shouldn't the source file for the GK20A implementation be named nvea.c
+>>>> instead of gk20a.c?
+>>>
+>>> For the Maxwell stuff I've been using "gm107" now too.  Since we're
+>>> working with you guys these days it seems better to use the same names
+>>> for things ;)
+>>
+>>
+>> So would you like us to use the same naming scheme as well? So far all my
+>> patches use "nvea.c" whenever I need to add code.
+> If it's not too much of a problem at this point, then that'd be good.
+> Right before I send -next for the next merge window I'll likely do a
+> mass rename anyway, so if we can get your patches merged before then
+> (which would be really good!), it doesn't matter much.
 
----<8---
- 
-Also print the r/w direction string instead of only internal values.
+No problem, I will update the naming to follow what you did with the
+timer driver and gm107.
 
-Suggested-by: Joe Perches <joe@perches.com>
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- block/blk-core.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index a0e3096..f8170c7 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1624,10 +1624,10 @@ static void handle_bad_sector(struct bio *bio)
- {
- 	char b[BDEVNAME_SIZE];
- 
--	printk(KERN_INFO "attempt to access beyond end of device\n");
--	printk(KERN_INFO "%s: rw=%ld, want=%Lu, limit=%Lu\n",
-+	printk(KERN_INFO "%s: attempt to access beyond end of device - "
-+			"rw=%s(%lx), want=%Lu, limit=%Lu\n",
- 			bdevname(bio->bi_bdev, b),
--			bio->bi_rw,
-+			bio->bi_rw & WRITE ? "WRITE" : "READ", bio->bi_rw,
- 			(unsigned long long)bio_end_sector(bio),
- 			(long long)(i_size_read(bio->bi_bdev->bd_inode) >> 9));
- 
--- 
-1.9.0.GIT
-
+Hopefully I will soon manage to carve out some time to rebase these
+patches and send v2.
