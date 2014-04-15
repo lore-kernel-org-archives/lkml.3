@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471AbaDOT7l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 15:59:41 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:43263 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022AbaDOT7i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 15:59:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <534D7A5D.9090707@wwwdotorg.org>
-References: <1397526163-20126-1-git-send-email-abrestic@chromium.org>
-	<1397526163-20126-4-git-send-email-abrestic@chromium.org>
-	<534D7A5D.9090707@wwwdotorg.org>
-Date: Tue, 15 Apr 2014 12:59:37 -0700
-X-Google-Sender-Auth: oLHDrdnUBvD6Gz8UEwaAWqInk2k
-Message-ID: <CAL1qeaEGpz-9rOtp4fAHFz8KG2fCscFsqu1tbi2d9mxTM8yHQQ@mail.gmail.com>
-Subject: Re: [PATCH 3/4] mmc: sdhci: defer probing on regulator_get_optional() failures
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        linux-tegra@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1753846AbaDOUBv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 16:01:51 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6691 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751123AbaDOUBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 16:01:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,866,1389772800"; 
+   d="scan'208";a="521220279"
+Message-ID: <1397591989.2715.18.camel@ideak-mobl>
+Subject: Re: [Intel-gfx] REGRESSION 3.14 i915 warning & mouse cursor
+ vanishing
+From: Imre Deak <imre.deak@intel.com>
+Reply-To: imre.deak@intel.com
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Steven Noonan <steven@uplinklabs.net>, David Airlie <airlied@linux.ie>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Date: Tue, 15 Apr 2014 22:59:49 +0300
+In-Reply-To: <20140415194303.GH1023@phenom.ffwll.local>
+References: <20140414164010.GA1019@falcon> <867g6ryd2e.fsf@hiro.keithp.com>
+	 <20140414185602.GA892@falcon> <20140415194303.GH1023@phenom.ffwll.local>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 11:28 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 04/14/2014 07:42 PM, Andrew Bresticker wrote:
->> If regulator_get_optional() returns EPROBE_DEFER, it indicates
->> that the regulator may show up later (e.g. the DT property is
->> present but the corresponding regulator may not have probed).
->> Instead of continuing without the regulator, return EPROBE_DEFER
->> from sdhci_add_host().  Also, fix regulator leaks in the error
->> paths in sdhci_add_host().
->
->> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
->
->>       if (IS_ERR_OR_NULL(host->vqmmc)) {
->
-> This is a pre-existing condition, but ick: Why doesn't this test either
-> IS_ERR() /or/ == NULL, but not both. On error, the regulator API should
-> either return and error-point or return NULL, so that client code
-> shouldn't need to check for both.
+On Tue, 2014-04-15 at 21:43 +0200, Daniel Vetter wrote:
+> On Mon, Apr 14, 2014 at 11:56:03AM -0700, Steven Noonan wrote:
+> > On Mon, Apr 14, 2014 at 11:35:05AM -0700, Keith Packard wrote:
+> > > Steven Noonan <steven@uplinklabs.net> writes:
+> > > 
+> > > > Was using my machine normally, then my mouse cursor vanished. After switching
+> > > > to a VT and back to X11, my cursor came back. But I did notice a nasty trace in
+> > > > dmesg (below).
+> > > 
+> > > I don't think the trace below is related to the cursor disappearing.
+> > 
+> > Any idea what the trace is all about then? Seems it has something to do
+> > with runtime power management (maybe my aggressive kernel command-line
+> > options are triggering it).
+> 
+> Please test without them. Currently runtime pm should be disabled still on
+> vlv (since it's incomplete in 3.14). If you've force-enabled that then you
+> get to keep all pieces ;-)
+> 
+> In general don't set any i915 options if you're not a developer or someone
+> else who _really_ knows what's going on.
 
-Unfortunately, this is necessary.  regulator_get() returns NULL if
-!CONFIG_REGULATOR and we do not want to call
-regulator_is_supported_voltage() in this case since it will always
-return false, causing sdhci_add_host() to disable UHS modes.
-Alternatively, we could put the regulator_is_supported_voltage() check
-wihin an #ifdef CONFIG_REGULATOR, as is done when checking supported
-vmmc voltages below.
+Note that the lspci output and the
 
->
->> +put_vmmc:
->> +     if (host->vmmc)
->> +             regulator_put(host->vmmc);
->> +put_vqmmc:
->> +     if (host->vqmmc)
->> +             regulator_put(host->vqmmc);
->
-> If IS_ERR_OR_NULL() really is required above, it should be used here
-> too. More likely, I hope you need to replace if (host->vmmc) with if
-> (!IS_ERR(host->vmmc)).
+[ 1795.275026] [drm:hsw_unclaimed_reg_clear] *ERROR* Unknown unclaimed
+register before writing to 70084
 
-host->vmmc and host->vqmmc are set to NULL in the case of IS_ERR(), so
-the IS_ERR() check here isn't necessary.
+line suggests HSW and the specs for ThinkPad Yoga suggests the same. But
+I don't know how the vlv_* functions can possible end up in those traces
+then, perhaps just a coincidence, random data on stack?
 
->
-> I wonder if fixing this would help solve the crashes that Alex saw?
+For HSW the rc6 kernel option shouldn't make a difference.
 
-I believe the crash Alex is seeing is due to a race between tearing
-down the sdhci driver on probe deferral and the card-detect IRQ.
-Looking at it now.
+--Imre  
+
+
