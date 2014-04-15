@@ -1,143 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755094AbaDONOz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 09:14:55 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:40700 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753831AbaDONM5 (ORCPT
+	id S1751905AbaDONR5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 09:17:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54906 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932AbaDONRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 09:12:57 -0400
-From: Alex Elder <elder@linaro.org>
-To: mporter@linaro.org, bcm@fixthebug.org, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, arnd@arndb.de, sboyd@codeaurora.org
-Cc: bcm-kernel-feedback-list@broadcom.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/5] ARM: introduce CPU_METHOD_OF_DECLARE_SETUP()
-Date: Tue, 15 Apr 2014 08:12:50 -0500
-Message-Id: <1397567574-31599-2-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1397567574-31599-1-git-send-email-elder@linaro.org>
-References: <1397567574-31599-1-git-send-email-elder@linaro.org>
+	Tue, 15 Apr 2014 09:17:55 -0400
+Date: Tue, 15 Apr 2014 15:17:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, linux-pm@vger.kernel.org,
+        alex.shi@linaro.org, vincent.guittot@linaro.org,
+        morten.rasmussen@arm.com
+Subject: Re: [RFC PATCHC 0/3] sched/idle : find the idlest cpu with cpuidle
+ info
+Message-ID: <20140415131745.GN11182@twins.programming.kicks-ass.net>
+References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org>
+ <22904760.5rGZuP5nsx@vostro.rjw.lan>
+ <alpine.LFD.2.11.1404012141580.1571@knanqh.ubzr>
+ <1930679.LtC4HPqI3x@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1930679.LtC4HPqI3x@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The CPU_METHOD_OF_DECLARE() macro allows methods for assigning
-SMP/hotplug operations to CPUS to be defined using device tree,
-without the need for machine-dependent code.
+On Fri, Apr 04, 2014 at 01:43:00PM +0200, Rafael J. Wysocki wrote:
+> > We need to ensure the cpuidle data structure is not going away (e.g. 
+> > cpuidle driver module removal) while another CPU looks at it though.  
+> > The timing would have to be awfully weird for this to happen but still.
+> 
+> Well, I'm not sure if that is a real concern.  Only a couple of drivers try
+> to implement module unloading and I guess this isn't tested too much, so
+> perhaps we should just make it impossible to unload a cpuidle driver?
 
-And although it allows the *method* to be specified, it does *not*
-allow any parameterization of that method.  For example, there is no
-efficient way to define a machine-specific address or other
-property one might want to define for secondary CPUs.
-
-Define a new of_cpu_method->setup() function, which (if defined) is
-called for nodes found having a matching "enable-method" property.
-The matching node is supplied as the function's argument, allowing
-additional required information to be extracted from that node.
-A new macro CPU_METHOD_OF_DECLARE_SETUP() allows a setup method
-to be supplied when a method is declared.
-
-Extend the interface for set_smp_ops_by_method() so that it can
-return a negative error code to allow DT parsing errors to be
-reported by the setup function.
-
-(Note that only the first "cpu" (or "cpus") node having a matching
-method is used by set_smp_ops_by_method(); this logic is not
-changed.)
-
-Signed-off-by: Alex Elder <elder@linaro.org>
----
- arch/arm/include/asm/smp.h |   10 ++++++++--
- arch/arm/kernel/devtree.c  |   31 +++++++++++++++++++++++++------
- 2 files changed, 33 insertions(+), 8 deletions(-)
-
-diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
-index 2ec765c..ab4a5a9 100644
---- a/arch/arm/include/asm/smp.h
-+++ b/arch/arm/include/asm/smp.h
-@@ -115,15 +115,21 @@ struct smp_operations {
- #endif
- };
- 
-+struct device_node;
- struct of_cpu_method {
- 	const char *method;
-+	int (*setup)(struct device_node *node);
- 	struct smp_operations *ops;
- };
- 
--#define CPU_METHOD_OF_DECLARE(name, _method, _ops)			\
-+#define CPU_METHOD_OF_DECLARE_SETUP(name, _method, _setup, _ops)	\
- 	static const struct of_cpu_method __cpu_method_of_table_##name	\
- 		__used __section(__cpu_method_of_table)			\
--		= { .method = _method, .ops = _ops }
-+		= { .method = _method, .setup = _setup, .ops = _ops }
-+
-+#define CPU_METHOD_OF_DECLARE(name, _method, _ops)			\
-+	CPU_METHOD_OF_DECLARE_SETUP(name, _method, NULL, _ops)
-+
- /*
-  * set platform specific SMP operations
-  */
-diff --git a/arch/arm/kernel/devtree.c b/arch/arm/kernel/devtree.c
-index c7419a5..1a0cca3 100644
---- a/arch/arm/kernel/devtree.c
-+++ b/arch/arm/kernel/devtree.c
-@@ -76,11 +76,18 @@ static int __init set_smp_ops_by_method(struct device_node *node)
- 	if (of_property_read_string(node, "enable-method", &method))
- 		return 0;
- 
--	for (; m < __cpu_method_of_table_end; m++)
-+	for (; m < __cpu_method_of_table_end; m++) {
- 		if (!strcmp(m->method, method)) {
--			smp_set_ops(m->ops);
--			return 1;
-+			int ret = 0;
-+
-+			if (m->setup)
-+				ret = m->setup(node);
-+			if (!ret)
-+				smp_set_ops(m->ops);
-+
-+			return ret ? ret : 1;
- 		}
-+	}
- 
- 	return 0;
- }
-@@ -181,16 +188,28 @@ void __init arm_dt_init_cpu_maps(void)
- 
- 		tmp_map[i] = hwid;
- 
--		if (!found_method)
-+		if (!found_method) {
- 			found_method = set_smp_ops_by_method(cpu);
-+			if (WARN(found_method < 0,
-+					"error %d getting enable-method for "
-+					"DT /cpu %u\n", found_method, cpuidx)) {
-+				return;
-+			}
-+		}
- 	}
- 
- 	/*
- 	 * Fallback to an enable-method in the cpus node if nothing found in
- 	 * a cpu node.
- 	 */
--	if (!found_method)
--		set_smp_ops_by_method(cpus);
-+	if (!found_method) {
-+		found_method = set_smp_ops_by_method(cpus);
-+		if (WARN(found_method < 0,
-+				"error %d getting enable-method for "
-+				"DT /cpus node\n", found_method)) {
-+			return;
-+		}
-+	}
- 
- 	if (!bootcpu_valid) {
- 		pr_warn("DT missing boot CPU MPIDR[23:0], fall back to default cpu_logical_map\n");
--- 
-1.7.9.5
-
+The 'easy' solution is to mandate the use of rcu_read_lock() around the
+dereference and make all cpuidle drivers put an rcu_barrier() in their
+module unload path.
