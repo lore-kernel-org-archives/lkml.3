@@ -1,121 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668AbaDOMhm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 08:37:42 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:45290 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbaDOMhl (ORCPT
+	id S1754689AbaDOMh5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 08:37:57 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:33505 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754357AbaDOMhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 08:37:41 -0400
-From: Alex Elder <elder@linaro.org>
-To: bcm@fixthebug.org, mporter@linaro.org
-Cc: bcm-kernel-feedback-list@broadcom.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4] mach-bcm: clean up config and build targets
-Date: Tue, 15 Apr 2014 07:37:19 -0500
-Message-Id: <1397565439-29735-1-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 15 Apr 2014 08:37:51 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>
+Date: Tue, 15 Apr 2014 05:37:17 -0700
+Subject: RE: [PATCH v2] ARM: perf: save/restore pmu registers in pm notifier
+Thread-Topic: [PATCH v2] ARM: perf: save/restore pmu registers in pm notifier
+Thread-Index: Ac9Yh21art0x/TvoSBiDNoPfiamkyQAH3EDg
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE55075F1873@SC-VEXCH4.marvell.com>
+References: <1397439742-28337-1-git-send-email-zhangwm@marvell.com>
+ <20140415084749.GG17408@arm.com>
+In-Reply-To: <20140415084749.GG17408@arm.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-04-14_01:2014-04-14,2014-04-14,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1404150210
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3FCc9Hd027033
 
-Currently CONFIG_ARCH_BCM_MOBILE is used to select all (both)
-Broadcom mobile SoC families.  Instead, use that only as a config
-menu switch, and define specific symbols like ARCH_BCM_281XX to
-select a particular SoC family.  If ARCH_BCM_MOBILE is selected, all
-of the SoCs will be selected by default, but this way each can be
-disabled individually as well.
+Will,
+Thanks for the comments!
 
-Note that BCM281xx and BCM21664 both require the SMC and L2 cache
-control code, so that code will be built based on ARCH_BCM_MOBILE.
+> -----Original Message-----
+> From: Will Deacon [mailto:will.deacon@arm.com]
+> Sent: 2014Äê4ÔÂ15ÈÕ 16:48
+> To: Neil Zhang
+> Cc: linux@arm.linux.org.uk; linux-arm-kernel@lists.infradead.org;
+> linux-kernel@vger.kernel.org; Sudeep Holla
+> Subject: Re: [PATCH v2] ARM: perf: save/restore pmu registers in pm notifier
+> 
+> Hello,
+> 
+> On Mon, Apr 14, 2014 at 02:42:22AM +0100, Neil Zhang wrote:
+> > From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> >
+> > This adds core support for saving and restoring CPU PMU registers for
+> > suspend/resume support i.e. deeper C-states in cpuidle terms.
+> > This patch adds support only to ARMv7 PMU registers save/restore.
+> > It needs to be extended to xscale and ARMv6 if needed.
+> >
+> > [Neil] We found that DS-5 not work on our CA7 based SoCs.
+> > After debuging, found PMU registers were lost because of core power down.
+> > Then i found Sudeep had a patch to fix it about two years ago but not
+> > in the mainline, just port it.
+> 
+> What I don't like about this patch is that we're introducing significant
+> overhead for SoCs that don't require save/restore of the PMU state. I'd much
+> rather see core power down disabled whilst the PMU is in use but, if that's not
+> possible, then I think we need to:
+> 
+>  (1) Make this conditional for cores that really need it
+> 
+>  (2) Only save/restore if the PMU is in use (even better, just save/restore
+>      the live registers, but that's probably not worth the effort
+>      initially).
+> 
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
-v4:  Rebased on to of v3.15-rc1.  Small tweak in Makefile.
-v3:  SMC and L2 cache code is needed by both SoC families.
-v2:  No longer uses Kbuild's $(<modulename>-y) variable mechanism.
+The patch has check the ARMV7_PMNC_E bit when save / restore, 
+so suppose only the core's that use PMU will do the save / restore work.
 
-The patch is available here:
-    http://git.linaro.org/landing-teams/working/broadcom/kernel.git
-    Branch review/mach-bcm-cleanup-v4
+>  (3) Ensure we ->reset the PMU before doing the restore
 
- arch/arm/mach-bcm/Kconfig  |   28 ++++++++++++++++++++++++----
- arch/arm/mach-bcm/Makefile |   15 ++++++++++++---
- 2 files changed, 36 insertions(+), 7 deletions(-)
+Ok, I can add it in the next version.
 
-diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-index 49c914c..5f5740f 100644
---- a/arch/arm/mach-bcm/Kconfig
-+++ b/arch/arm/mach-bcm/Kconfig
-@@ -10,7 +10,7 @@ if ARCH_BCM
- menu "Broadcom SoC Selection"
- 
- config ARCH_BCM_MOBILE
--	bool "Broadcom Mobile SoC" if ARCH_MULTI_V7
-+	bool "Broadcom Mobile SoC Support" if ARCH_MULTI_V7
- 	depends on MMU
- 	select ARCH_REQUIRE_GPIOLIB
- 	select ARM_ERRATA_754322
-@@ -23,9 +23,29 @@ config ARCH_BCM_MOBILE
- 	select PINCTRL
- 	help
- 	  This enables support for systems based on Broadcom mobile SoCs.
--	  It currently supports the 'BCM281XX' family, which includes
--	  BCM11130, BCM11140, BCM11351, BCM28145 and
--	  BCM28155 variants.
-+
-+if ARCH_BCM_MOBILE
-+
-+menu "Broadcom Mobile SoC Selection"
-+
-+config ARCH_BCM_281XX
-+	bool "Broadcom BCM281XX SoC family"
-+	default y
-+	help
-+	  Enable support for the the BCM281XX family, which includes
-+	  BCM11130, BCM11140, BCM11351, BCM28145 and BCM28155
-+	  variants.
-+
-+config ARCH_BCM_21664
-+	bool "Broadcom BCM21664 SoC family"
-+	default y
-+	help
-+	  Enable support for the the BCM21664 family, which includes
-+	  BCM21663 and BCM21664 variants.
-+
-+endmenu
-+
-+endif
- 
- config ARCH_BCM2835
- 	bool "Broadcom BCM2835 family" if ARCH_MULTI_V6
-diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
-index a326b28..7fb9b04 100644
---- a/arch/arm/mach-bcm/Makefile
-+++ b/arch/arm/mach-bcm/Makefile
-@@ -10,10 +10,19 @@
- # of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- # GNU General Public License for more details.
- 
--obj-$(CONFIG_ARCH_BCM_MOBILE)	:= board_bcm281xx.o board_bcm21664.o \
--				bcm_kona_smc.o bcm_kona_smc_asm.o kona.o
--obj-$(CONFIG_ARCH_BCM2835)	+= board_bcm2835.o
-+# BCM281XX
-+obj-$(CONFIG_ARCH_BCM_281XX)	+= board_bcm281xx.o
- 
-+# BCM21664
-+obj-$(CONFIG_ARCH_BCM_21664)	+= board_bcm21664.o
-+
-+# BCM281XX and BCM21664 L2 cache control
-+obj-$(CONFIG_ARCH_BCM_MOBILE)	+= bcm_kona_smc.o bcm_kona_smc_asm.o kona.o
- plus_sec := $(call as-instr,.arch_extension sec,+sec)
- AFLAGS_bcm_kona_smc_asm.o	:=-Wa,-march=armv7-a$(plus_sec)
-+
-+# BCM2835
-+obj-$(CONFIG_ARCH_BCM2835)	+= board_bcm2835.o
-+
-+# BCM5301X
- obj-$(CONFIG_ARCH_BCM_5301X)	+= bcm_5301x.o
--- 
-1.7.9.5
+> 
+> Will
 
+Best Regards,
+Neil Zhang
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
