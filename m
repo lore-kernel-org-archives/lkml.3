@@ -1,134 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846AbaDOJsi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 05:48:38 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:33210 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753489AbaDOJsf (ORCPT
+	id S1754077AbaDOJty (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 05:49:54 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:33654 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751148AbaDOJtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 05:48:35 -0400
-Message-ID: <534D006C.3000703@hitachi.com>
-Date: Tue, 15 Apr 2014 18:48:28 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 15 Apr 2014 05:49:50 -0400
+Date: Tue, 15 Apr 2014 10:49:38 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Harini Katakam <harinik@xilinx.com>
+Cc: linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        michals@xilinx.com
+Message-ID: <20140415094938.GM12304@sirena.org.uk>
+References: <1397537392-3709-1-git-send-email-harinik@xilinx.com>
 MIME-Version: 1.0
-To: Jianyu Zhan <nasa4836@gmail.com>
-Cc: ananth@in.ibm.com, anil.s.keshavamurthy@intel.com, davem@davemloft.net,
-        rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: Re: [PATCH] kprobes: be more permissive when user specifies
- both symbol name and address
-References: <1397553360-27970-1-git-send-email-nasa4836@gmail.com>
-In-Reply-To: <1397553360-27970-1-git-send-email-nasa4836@gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vdqwC0msT4ilQ2it"
+Content-Disposition: inline
+In-Reply-To: <1397537392-3709-1-git-send-email-harinik@xilinx.com>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: cadence: Add dependency on ARCH_ZYNQ
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/15 18:16), Jianyu Zhan wrote:
-> Ok, I've followed your suggestion. Thanks :-)
-> 
-> Currently, if user specifies both symbol name and address, we just
-> bail out.
-> 
-> This might be too rude. This patch makes it give more tolerance.
-> If both are specified, check address first, if the symbol found
-> does not match the one user specify, print a waring. If not found,
-> return -ENOENT, because some symbols might have muplitple instances,
-> we don't bother to check symbol name.
-> 
-> Suggested-by: Masami Hiramatsu masami.hiramatsu.pt@hitachi.com>
 
-Here, you missed "<" in front of my address ;)
+--vdqwC0msT4ilQ2it
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Anyway,
+On Tue, Apr 15, 2014 at 10:19:52AM +0530, Harini Katakam wrote:
+> Add dependency on ARCH_ZYNQ in Kconfig.
+> This is to fix the build error.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+This is too strict - ARCH_ARM would be fine (PowerPC also defines the
+_relaxed() operaton if you want to include that too).
 
-Thank you!
+--vdqwC0msT4ilQ2it
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
-> ---
->  Documentation/kprobes.txt |  4 +++-
->  kernel/kprobes.c          | 33 +++++++++++++++++++++++++++++----
->  2 files changed, 32 insertions(+), 5 deletions(-)
-> 
-> diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
-> index 0cfb00f..217f976 100644
-> --- a/Documentation/kprobes.txt
-> +++ b/Documentation/kprobes.txt
-> @@ -344,7 +344,9 @@ to install a probepoint is known. This field is used to calculate the
->  probepoint.
->  
->  3. Specify either the kprobe "symbol_name" OR the "addr". If both are
-> -specified, kprobe registration will fail with -EINVAL.
-> +specified, only check "addr", because some symbols might have muplitple
-> +instances. If neither is specified, kprobe registration will fail
-> +with -EINVAL.
->  
->  4. With CISC architectures (such as i386 and x86_64), the kprobes code
->  does not validate if the kprobe.addr is at an instruction boundary.
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index ceeadfc..6ebd456 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -1354,17 +1354,42 @@ static int __kprobes in_kprobes_functions(unsigned long addr)
->  static kprobe_opcode_t __kprobes *kprobe_addr(struct kprobe *p)
->  {
->  	kprobe_opcode_t *addr = p->addr;
-> +	char namebuf[KSYM_NAME_LEN];
-> +	const char *sym_name = NULL;
-> +	unsigned long offset;
->  
-> -	if ((p->symbol_name && p->addr) ||
-> -	    (!p->symbol_name && !p->addr))
-> +	if (!p->symbol_name && !p->addr)
->  		goto invalid;
->  
-> -	if (p->symbol_name) {
-> +	/*
-> +	 * Some symbols might have muplitple instances,
-> +	 * so if both specified, only check address.
-> +	 */
-> +	if (unlikely(p->addr && p->symbol_name)) {
-> +		sym_name = kallsyms_lookup((unsigned long)(p->addr),
-> +				NULL, &offset, NULL, namebuf);
-> +		if (!sym_name)
-> +			return ERR_PTR(-ENOENT);
-> +
-> +		if (strncmp(sym_name, p->symbol_name, KSYM_NAME_LEN)
-> +				|| offset != p->offset) {
-> +			pr_err("Incorrect symbol or offset, should be "
-> +				"symbol=%s, offset=%ld.\n", sym_name, offset);
-> +			goto invalid;
-> +		}
-> +	} else if (p->symbol_name) {
-> +		/* Only symbol case */
->  		kprobe_lookup_name(p->symbol_name, addr);
->  		if (!addr)
->  			return ERR_PTR(-ENOENT);
-> +	} else {
-> +		/*
-> +		 * Only address case.
-> +		 * Since we later will do sanity check of the
-> +		 * address range in check_kprobe_address_safe(),
-> +		 * do nothing here.
-> +		 */
->  	}
-> -
->  	addr = (kprobe_opcode_t *)(((char *)addr) + p->offset);
->  	if (addr)
->  		return addr;
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBAgAGBQJTTQCuAAoJELSic+t+oim9xMUQAIAgImDb/5NYjFQA3ARXw8h/
+GFhsamaB7LYHt7KcjOArIKzLlfaOsBntxQDYojW7+NRTeoVTyJ3vWwfuUJgQxi1i
+yiUzv7Dl1/4lpHpQi56hNuMZv7TyURTzaY12IW1AYPBmft4udApCI4k9jJhrIx+e
+J9sr+7HGtbY4WcY3zfWp1Eaz5sewVSD9aRK7EEN5VFzfU/w/EOSodwK8EK1W5bQn
+z7ySbytBhbLOOtqY5JIDGeOgFIV8ULrgvD3pMMSkv6mE7HJnAYWHZi9zGQh0dNoO
+HkB95j38gqtkfBBMtjetZL5AiR//zzicSKbhBAbdaw0H86EY3yCMtvr2fc/eRUa9
+MwvAaox8C3f8mHGfnVBh+YBey3Q4sVR6ndTYhN8l7hfOhidOUZd0DtoztwWi4Hm+
+xnldiOF4p1/sKBbxDiKgTLBnGTXINCdcLAk4Qz9xek9WNHY3IOgqqKe4kO0IK7v8
+KUh2ygrf9f5MeZFfe8Ms1HrlXuILMkB2lHRNLpXGrQsNuO9s+7r3IXbE7tsv5xoL
+w2sm7NC9F/g18HzvoeLCcyX0d9epFnv+FiKrrfzjoLfX2K60pbLaoIz02p2SpjCu
+ND+wiVU8DxZElA8UJtpL8W6rAvoZzirKp4lUpawWjLMK1Jn07S3F82nwCuLQ50Zs
+zXSim0ymrIld1YhijeVJ
+=V7IL
+-----END PGP SIGNATURE-----
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+--vdqwC0msT4ilQ2it--
