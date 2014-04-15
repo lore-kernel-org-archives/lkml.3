@@ -1,99 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752734AbaDOCL1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 22:11:27 -0400
-Received: from mail-pb0-f74.google.com ([209.85.160.74]:55600 "EHLO
-	mail-pb0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838AbaDOCLZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 22:11:25 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
-Cc: linux-mmc@vger.kernel.org, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH 3/4] mmc: sdhci: defer probing on regulator_get_optional() failures
-Date: Mon, 14 Apr 2014 18:42:42 -0700
-Message-Id: <1397526163-20126-4-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
-In-Reply-To: <1397526163-20126-1-git-send-email-abrestic@chromium.org>
-References: <1397526163-20126-1-git-send-email-abrestic@chromium.org>
+	id S1752008AbaDOCQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 22:16:26 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:58861 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751192AbaDOCQZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 22:16:25 -0400
+Date: Mon, 14 Apr 2014 22:16:14 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: akpm@linux-foundation.org, mhocko@suse.cz, glommer@gmail.com,
+        cl@linux-foundation.org, penberg@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, devel@openvz.org
+Subject: Re: [PATCH -mm 1/4] memcg, slab: do not schedule cache destruction
+ when last page goes away
+Message-ID: <20140415021614.GC7969@cmpxchg.org>
+References: <cover.1397054470.git.vdavydov@parallels.com>
+ <8ea8b57d5264f16ee33497a4317240648645704a.1397054470.git.vdavydov@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8ea8b57d5264f16ee33497a4317240648645704a.1397054470.git.vdavydov@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If regulator_get_optional() returns EPROBE_DEFER, it indicates
-that the regulator may show up later (e.g. the DT property is
-present but the corresponding regulator may not have probed).
-Instead of continuing without the regulator, return EPROBE_DEFER
-from sdhci_add_host().  Also, fix regulator leaks in the error
-paths in sdhci_add_host().
+On Wed, Apr 09, 2014 at 07:02:30PM +0400, Vladimir Davydov wrote:
+> After the memcg is offlined, we mark its kmem caches that cannot be
+> deleted right now due to pending objects as dead by setting the
+> memcg_cache_params::dead flag, so that memcg_release_pages will schedule
+> cache destruction (memcg_cache_params::destroy) as soon as the last slab
+> of the cache is freed (memcg_cache_params::nr_pages drops to zero).
+> 
+> I guess the idea was to destroy the caches as soon as possible, i.e.
+> immediately after freeing the last object. However, it just doesn't work
+> that way, because kmem caches always preserve some pages for the sake of
+> performance, so that nr_pages never gets to zero unless the cache is
+> shrunk explicitly using kmem_cache_shrink. Of course, we could account
+> the total number of objects on the cache or check if all the slabs
+> allocated for the cache are empty on kmem_cache_free and schedule
+> destruction if so, but that would be too costly.
+> 
+> Thus we have a piece of code that works only when we explicitly call
+> kmem_cache_shrink, but complicates the whole picture a lot. Moreover,
+> it's racy in fact. For instance, kmem_cache_shrink may free the last
+> slab and thus schedule cache destruction before it finishes checking
+> that the cache is empty, which can lead to use-after-free.
+> 
+> So I propose to remove this async cache destruction from
+> memcg_release_pages, and check if the cache is empty explicitly after
+> calling kmem_cache_shrink instead. This will simplify things a lot w/o
+> introducing any functional changes.
+> 
+> And regarding dead memcg caches (i.e. those that are left hanging around
+> after memcg offline for they have objects), I suppose we should reap
+> them either periodically or on vmpressure as Glauber suggested
+> initially. I'm going to implement this later.
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
- drivers/mmc/host/sdhci.c | 19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
+memcg_release_pages() can be called after cgroup destruction, and thus
+it *must* ensure that the now-empty cache is destroyed - or we'll leak
+it.
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 9a79fc4..e87c5d3 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -2978,7 +2978,9 @@ int sdhci_add_host(struct sdhci_host *host)
- 	/* If vqmmc regulator and no 1.8V signalling, then there's no UHS */
- 	host->vqmmc = regulator_get_optional(mmc_dev(mmc), "vqmmc");
- 	if (IS_ERR_OR_NULL(host->vqmmc)) {
--		if (PTR_ERR(host->vqmmc) < 0) {
-+		if (PTR_ERR(host->vqmmc) == -EPROBE_DEFER) {
-+			return PTR_ERR(host->vqmmc);
-+		} else if (PTR_ERR(host->vqmmc) < 0) {
- 			pr_info("%s: no vqmmc regulator found\n",
- 				mmc_hostname(mmc));
- 			host->vqmmc = NULL;
-@@ -2993,6 +2995,7 @@ int sdhci_add_host(struct sdhci_host *host)
- 		if (ret) {
- 			pr_warn("%s: Failed to enable vqmmc regulator: %d\n",
- 				mmc_hostname(mmc), ret);
-+			regulator_put(host->vqmmc);
- 			host->vqmmc = NULL;
- 		}
- 	}
-@@ -3056,7 +3059,10 @@ int sdhci_add_host(struct sdhci_host *host)
- 
- 	host->vmmc = regulator_get_optional(mmc_dev(mmc), "vmmc");
- 	if (IS_ERR_OR_NULL(host->vmmc)) {
--		if (PTR_ERR(host->vmmc) < 0) {
-+		if (PTR_ERR(host->vmmc) == -EPROBE_DEFER) {
-+			ret = PTR_ERR(host->vmmc);
-+			goto put_vqmmc;
-+		} else if (PTR_ERR(host->vmmc) < 0) {
- 			pr_info("%s: no vmmc regulator found\n",
- 				mmc_hostname(mmc));
- 			host->vmmc = NULL;
-@@ -3150,7 +3156,8 @@ int sdhci_add_host(struct sdhci_host *host)
- 	if (mmc->ocr_avail == 0) {
- 		pr_err("%s: Hardware doesn't report any "
- 			"support voltages.\n", mmc_hostname(mmc));
--		return -ENODEV;
-+		ret = -ENODEV;
-+		goto put_vmmc;
- 	}
- 
- 	spin_lock_init(&host->lock);
-@@ -3280,6 +3287,12 @@ reset:
- untasklet:
- 	tasklet_kill(&host->card_tasklet);
- 	tasklet_kill(&host->finish_tasklet);
-+put_vmmc:
-+	if (host->vmmc)
-+		regulator_put(host->vmmc);
-+put_vqmmc:
-+	if (host->vqmmc)
-+		regulator_put(host->vqmmc);
- 
- 	return ret;
- }
--- 
-1.9.1.423.g4596e3a
-
+There is no excuse to downgrade to periodic reaping when we already
+directly hook into the event that makes the cache empty.  If slab
+needs to hold on to the cache for slightly longer than the final
+memcg_release_pages(), then it should grab a refcount to it.
