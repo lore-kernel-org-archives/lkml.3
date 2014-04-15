@@ -1,65 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301AbaDOHpn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 03:45:43 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:55233 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750898AbaDOHpk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751067AbaDOHpl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 03:45:41 -0400
+Received: from mga02.intel.com ([134.134.136.20]:24769 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750873AbaDOHpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Apr 2014 03:45:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="520969288"
+Date: Tue, 15 Apr 2014 15:44:43 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Clemens Ladisch <clemens@ladisch.de>, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, linux-kernel@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [PATCH v2] x86: hpet: Don't default CONFIG_HPET_TIMER to be y
+ for X86_64
+Message-ID: <20140415074443.GA10911@feng-snb>
+References: <1395975316-4795-1-git-send-email-feng.tang@intel.com>
+ <20140328071716.GC30107@gmail.com>
+ <20140328073718.GA12762@feng-snb>
+ <53352DE5.2090600@ladisch.de>
+ <20140328081117.GA32308@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAJfpeguwO_vkqHzk-UDooDdanGZoB3sr0pmJD5hGh2VAW1S5Dw@mail.gmail.com>
-References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
-	<CAMuHMdVRUyo+PAQ8XUXuhZn1jk7T645aC=E274OjUOgNktBEJw@mail.gmail.com>
-	<CAJfpeguwO_vkqHzk-UDooDdanGZoB3sr0pmJD5hGh2VAW1S5Dw@mail.gmail.com>
-Date: Tue, 15 Apr 2014 09:45:38 +0200
-X-Google-Sender-Auth: AlHZhU6loIoZArAD6Y4vtKb-bJY
-Message-ID: <CAMuHMdVAR5he=PkMSQwSgJtT_u0XPP4j0dBeJxF-buFFhfv9iw@mail.gmail.com>
-Subject: Re: [PATCH 00/15] wire up renameat2 syscall for various archs
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140328081117.GA32308@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Miklos,
+Hi Ingo,
 
-On Mon, Apr 14, 2014 at 10:11 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Mon, Apr 14, 2014 at 6:32 PM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
->> On Fri, Apr 11, 2014 at 12:25 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->>> This series wires up the recently added renameat2 syscall for archs that are
->>> up-to-date in the sense that they appear to support the latest syscalls.  I
->>> haven't touched the rest of them..
->>>
->>> Plus three NR_syscalls miscalculation fixes.
->>
->> Do you plan to collect acks, and ask Linus to pull this series later, or
->> do you want each arch maintainer to take the patches for his/her pet
->> architecture?
->
-> Whichever works best for you.
->
->> Note that I don't plan to send another pull request for 3.15 for m68k,
->> unless Something Really Bad happens.
->
-> So, if that's okay, I'll send it off to Linus sometime later.
+On Fri, Mar 28, 2014 at 09:11:17AM +0100, Ingo Molnar wrote:
+> 
+> * Clemens Ladisch <clemens@ladisch.de> wrote:
+> 
+> > Feng Tang wrote:
+> > > On Fri, Mar 28, 2014 at 08:17:16AM +0100, Ingo Molnar wrote:
+> > >> * Feng Tang <feng.tang@intel.com> wrote:
+> > >>  - or the kernel should have a quirk to reliably disable it. Why
+> > >>    should we crash or misbehave if a driver is built into the
+> > >>    kernel?
+> > >
+> > > I thought about this before, HPET doesn't have PCI ID like stuff,
+> > 
+> > HPET does have the PCI vendor ID in the first register.
+> > 
+> > > only thing I can think of to identify them may be the CPU family/ID.
+> > 
+> > The HPET is implemented by some actual chip, and that chip also has lots
+> > of PCI devices.  (In the case of a SoC, the CPU ID would work, too).
+> 
+> Correct. See arch/x86/kernel/hpet.c, which has a large number of HPET 
+> quirks keyed off chipset PCI IDs:
+> 
+>   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ESB2_0,
+>                            ich_force_enable_hpet);
+>   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH6_0,
+>                            ich_force_enable_hpet);
+>   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH6_1,
+>                            ich_force_enable_hpet);
+>   [...]
 
-That's fine for me!
+I just gave it another thought, that the HPET on our platform currently
+do have some problem to be used as clocksource/clockevent, but it may
+get fixed in future version (by Silicon or BIOS). 
 
-Thanks, it's been a while someone went through the hard work of adding
-a syscall to all architectures ;-)
+If I add quirk to block it now, I may revert this code in future when
+it get fixed, same problem applis for the future generation of platform.
 
-Gr{oetje,eeting}s,
+So can we do a small change like below, so that we are able to disable
+the HPET_TIMER in our own x86_64 .config, while all exising distributions
+are not affected as it is still default "y" .
 
-                        Geert
+---
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index f67e839..a1027a5 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -711,7 +711,7 @@ source "arch/x86/Kconfig.cpu"
+ 
+ config HPET_TIMER
+ 	def_bool X86_64
+-	prompt "HPET Timer Support" if X86_32
++	prompt "HPET Timer Support"
+ 	---help---
+ 	  Use the IA-PC HPET (High Precision Event Timer) to manage
+ 	  time in preference to the PIT and RTC, if a HPET is
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Thanks,
+Feng
+
