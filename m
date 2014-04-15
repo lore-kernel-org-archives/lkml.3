@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724AbaDONNG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 09:13:06 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:63907 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754454AbaDONNA (ORCPT
+	id S1754852AbaDONNX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 09:13:23 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54900 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754454AbaDONNU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 09:13:00 -0400
-From: Alex Elder <elder@linaro.org>
-To: mporter@linaro.org, bcm@fixthebug.org, linux@arm.linux.org.uk,
-        devicetree@vger.kernel.org, arnd@arndb.de, sboyd@codeaurora.org
-Cc: bcm-kernel-feedback-list@broadcom.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/5] ARM: configs: enable SMP in bcm_defconfig
-Date: Tue, 15 Apr 2014 08:12:52 -0500
-Message-Id: <1397567574-31599-4-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1397567574-31599-1-git-send-email-elder@linaro.org>
-References: <1397567574-31599-1-git-send-email-elder@linaro.org>
+	Tue, 15 Apr 2014 09:13:20 -0400
+Date: Tue, 15 Apr 2014 15:13:11 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Alex Shi <alex.shi@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>
+Subject: Re: [RFC PATCHC 0/3] sched/idle : find the idlest cpu with cpuidle
+ info
+Message-ID: <20140415131311.GM11182@twins.programming.kicks-ass.net>
+References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org>
+ <CAKfTPtC4E=7DxnXZy8bSpeAqyLwsr-oXodXBod2aMc_x4VyqGg@mail.gmail.com>
+ <53398FE6.1090203@linaro.org>
+ <CAKfTPtBiFUM90igrhz=VnvSkt9MQ2E-xxnzDf=wSKdK+qA4EQA@mail.gmail.com>
+ <533A6E3D.4040002@linaro.org>
+ <CAKfTPtCH0AhxM8TUeqjnnFVmpLd1D39B4gV2SaWmHX21iLNVuA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKfTPtCH0AhxM8TUeqjnnFVmpLd1D39B4gV2SaWmHX21iLNVuA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also explicitly set CONFIG_NR_CPUS to 2, limiting it to the most we
-currently need.
+On Tue, Apr 01, 2014 at 11:05:16AM +0200, Vincent Guittot wrote:
+> >> We are working on a bench which can generate middle load pattern with
+> >> idle CPUs but it's not available yet. In the mean time, one bench that
+> >> plays with idle time is cyclictest, it will not give you performance
+> >> results but only scheduling latency which might be what you are
+> >> looking for.
+> >
+> >
+> > Yeah, thanks. I believe I know what is in the rt-tests package :)
+> >
+> > What I meant is what kind of values would you like to see with this patchset
+> > ?
+> 
+> IIUC, you patch tries to improve the wake up latency of a task by
+> selecting the CPUs with the shallowest C-state, so this metrics seems
+> to be a good candidate
 
-Signed-off-by: Ray Jui <rjui@broadcom.com>
-Signed-off-by: Alex Elder <elder@linaro.org>
----
- arch/arm/configs/bcm_defconfig |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
-index 0100464..65fcc58 100644
---- a/arch/arm/configs/bcm_defconfig
-+++ b/arch/arm/configs/bcm_defconfig
-@@ -24,6 +24,7 @@ CONFIG_MODULES=y
- CONFIG_MODULE_UNLOAD=y
- # CONFIG_BLK_DEV_BSG is not set
- CONFIG_PARTITION_ADVANCED=y
-+CONFIG_SMP=y
- CONFIG_ARCH_BCM=y
- CONFIG_ARCH_BCM_MOBILE=y
- CONFIG_ARM_THUMBEE=y
--- 
-1.7.9.5
-
+cyclic-test might be too regular to really measure anything though.
