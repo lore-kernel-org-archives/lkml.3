@@ -1,75 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751642AbaDOQT0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 12:19:26 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45021 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbaDOQTX (ORCPT
+	id S1752428AbaDOQUg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 12:20:36 -0400
+Received: from www.linutronix.de ([62.245.132.108]:58051 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920AbaDOQUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 12:19:23 -0400
-Date: Tue, 15 Apr 2014 17:18:08 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: linux-sunxi <linux-sunxi@googlegroups.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-gpio@vger.kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        devicetree <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-sunxi] Re: [PATCH 7/7] ARM: sun7i: cubietruck: enable
- bluetooth module
-Message-ID: <20140415171808.6d60d134@alan.etchedpixels.co.uk>
-In-Reply-To: <CAGb2v643HyvFdhQ0znreB8ENXHWpcx6tFwdeU7VuU8KYWcT4ZA@mail.gmail.com>
-References: <1397544101-18135-1-git-send-email-wens@csie.org>
-	<1397544101-18135-8-git-send-email-wens@csie.org>
-	<20140415144215.GG3207@lukather>
-	<CAGb2v643HyvFdhQ0znreB8ENXHWpcx6tFwdeU7VuU8KYWcT4ZA@mail.gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 15 Apr 2014 12:20:33 -0400
+Date: Tue, 15 Apr 2014 18:20:39 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, stable@vger.kernel.org
+Subject: Re: [PATCH 1/3] clocksource: exynos_mct: Fix stall after CPU
+ hotplugging
+In-Reply-To: <1397576515.752.5.camel@AMDC1943>
+Message-ID: <alpine.DEB.2.02.1404151753090.22697@ionos.tec.linutronix.de>
+References: <1396011962-4467-1-git-send-email-k.kozlowski@samsung.com> <1397554445.29169.21.camel@AMDC1943> <534D25DC.4050400@linaro.org> <1397566023.29169.31.camel@AMDC1943> <alpine.DEB.2.02.1404151711250.22697@ionos.tec.linutronix.de>
+ <1397576515.752.5.camel@AMDC1943>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-942035999-1397578841=:22697"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> For our use case here, which is a bluetooth chip connected on the UART,
-> there is no in kernel representation or driver to tie them to. Same goes
-> for UART based GPS chips. They just so happen to require toggling a GPIO,
-> and maybe enabling a specific clock, to get it running. Afterwards,
-> accessing it is done solely from userspace. For our Broadcom chips, the
-> user has to upload its firmware first, then designate the tty as a Bluetooth
-> HCI using hciattach.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Somewhat similar on some ordinary PC systems. ACPI describes the
-properties there but the same things apply - its a device mostly
-controlled by a blob of userspace and having a bunch of GPIO lines that
-do stuff like turn it on and off.
+--8323329-942035999-1397578841=:22697
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-Is there any reason for not describing it properly and letting the
-userspace code fish it out of the devicetree ?
+B1;3202;0cOn Tue, 15 Apr 2014, Krzysztof Kozlowski wrote:
+> On wto, 2014-04-15 at 17:20 +0200, Thomas Gleixner wrote:
+> > On Tue, 15 Apr 2014, Krzysztof Kozlowski wrote:
+> > 
+> > > On wto, 2014-04-15 at 14:28 +0200, Daniel Lezcano wrote:
+> > > > On 04/15/2014 11:34 AM, Krzysztof Kozlowski wrote:
+> > > > > On pią, 2014-03-28 at 14:06 +0100, Krzysztof Kozlowski wrote:
+> > > > >> Fix stall after hotplugging CPU1. Affected are SoCs where Multi Core Timer
+> > > > >> interrupts are shared (SPI), e.g. Exynos 4210. The stall was a result of
+> > > > >> starting the CPU1 local timer not in L1 timer but in L0 (which is used
+> > > > >> by CPU0).
+> > > > >
+> > > > > Hi,
+> > > > >
+> > > > > Do you have any comments on these 3 patches? They fix the CPU stall on
+> > > > > Exynos4210 and also on Exynos3250 (Chanwoo Choi sent patches for it
+> > > > > recently).
+> > > > 
+> > > > You describe this issue as impacting different SoC not only the exynos, 
+> > > > right ?
+> > > >
+> > > > Do you know what other SoCs are impacted by this ?
+> > > 
+> > > No, affected are only Exynos SoC-s. It was confirmed on Exynos4210
+> > > (Trats board) and Exynos3250 (new SoC, patches for it were recently
+> > > posted by Chanwoo).
+> > > 
+> > > Other Exynos SoC-s where MCT local timers use shared interrupts (SPI)
+> > > can also be affected. Candidates are Exynos 5250 and 5420 but I haven't
+> > > tested them.
+> > > 
+> > > > I guess this issue is not reproducible just with the line below, we need 
+> > > > a timer to expire right at the moment CPU1 is hotplugged, right ?
+> > > 
+> > > Right. The timer must fire in short time between enabling local timer
+> > > for CPU1 and setting the affinity for IRQ.
+> > 
+> > Why do you set the affinity in the CPU_ONLINE hotplug callback and not
+> > right away when the interrupt is requested?
+> 
+> Hi,
+> 
+> I think the problem in such code is in GIC. The gic_set_affinity() uses
+> cpu_online_mask:
+> 	unsigned int cpu = cpumask_any_and(mask_val, cpu_online_mask);
+> In that time this CPU is not present in that mask so -EINVAL would be
+> returned.
 
-There's no fundamental reason that it's magically different because of
-the location of the driver. Given in a few cases we have a choice of
-kernel or user space devices for the same hardware thats even more true ?
+Hmm, indeed. Stupid me.
 
-Failing that we have a long standing proposal never implemented for
-adding GPIO awareness to the tty layer. There are a few other use
-cases for it including gpio widgets with serial and either some of the
-modem lines hacked in via GPIO or with additional control lines for
-stuff like smartcard reading interfaces.
+Here is a complete solution to the problem. We really want the drivers
+to be fast and clean and not work around such issues.
 
-https://lkml.org/lkml/2012/5/16/288
+I'm quite happy that I kept the 'force' argument of set_affinity
+callbacks. I knew that I'd need it at some point.
 
-In hindsight I'd do it slightly differently and make each "gpio" a pair
-of values (purpose,number).
+So with the flag set we can disable the online mask check and force
+the interrupt to the proper cpu.
+ 
+Thanks,
 
-Alan
+	tglx
+
+Index: linux-2.6/drivers/clocksource/exynos_mct.c
+===================================================================
+--- linux-2.6.orig/drivers/clocksource/exynos_mct.c
++++ linux-2.6/drivers/clocksource/exynos_mct.c
+@@ -430,6 +430,7 @@ static int exynos4_local_timer_setup(str
+ 				evt->irq);
+ 			return -EIO;
+ 		}
++		irq_force_affinity(mct_irqs[MCT_L0_IRQ + cpu], cpumask_of(cpu));
+ 	} else {
+ 		enable_percpu_irq(mct_irqs[MCT_L0_IRQ], 0);
+ 	}
+@@ -461,12 +462,6 @@ static int exynos4_mct_cpu_notify(struct
+ 		mevt = this_cpu_ptr(&percpu_mct_tick);
+ 		exynos4_local_timer_setup(&mevt->evt);
+ 		break;
+-	case CPU_ONLINE:
+-		cpu = (unsigned long)hcpu;
+-		if (mct_int_type == MCT_INT_SPI)
+-			irq_set_affinity(mct_irqs[MCT_L0_IRQ + cpu],
+-						cpumask_of(cpu));
+-		break;
+ 	case CPU_DYING:
+ 		mevt = this_cpu_ptr(&percpu_mct_tick);
+ 		exynos4_local_timer_stop(&mevt->evt);
+Index: linux-2.6/drivers/irqchip/irq-gic.c
+===================================================================
+--- linux-2.6.orig/drivers/irqchip/irq-gic.c
++++ linux-2.6/drivers/irqchip/irq-gic.c
+@@ -246,10 +246,14 @@ static int gic_set_affinity(struct irq_d
+ 			    bool force)
+ {
+ 	void __iomem *reg = gic_dist_base(d) + GIC_DIST_TARGET + (gic_irq(d) & ~3);
+-	unsigned int shift = (gic_irq(d) % 4) * 8;
+-	unsigned int cpu = cpumask_any_and(mask_val, cpu_online_mask);
++	unsigned int cpu, shift = (gic_irq(d) % 4) * 8;
+ 	u32 val, mask, bit;
+ 
++	if (!force)
++		cpu = cpumask_any_and(mask_val, cpu_online_mask);
++	else
++		cpu = cpumask_first(mask_val);
++
+ 	if (cpu >= NR_GIC_CPU_IF || cpu >= nr_cpu_ids)
+ 		return -EINVAL;
+ 
+Index: linux-2.6/include/linux/interrupt.h
+===================================================================
+--- linux-2.6.orig/include/linux/interrupt.h
++++ linux-2.6/include/linux/interrupt.h
+@@ -204,6 +204,7 @@ static inline int check_wakeup_irqs(void
+ extern cpumask_var_t irq_default_affinity;
+ 
+ extern int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask);
++extern int irq_force_affinity(unsigned int irq, const struct cpumask *cpumask);
+ extern int irq_can_set_affinity(unsigned int irq);
+ extern int irq_select_affinity(unsigned int irq);
+ 
+Index: linux-2.6/kernel/irq/manage.c
+===================================================================
+--- linux-2.6.orig/kernel/irq/manage.c
++++ linux-2.6/kernel/irq/manage.c
+@@ -180,7 +180,7 @@ int irq_do_set_affinity(struct irq_data
+ 	struct irq_chip *chip = irq_data_get_irq_chip(data);
+ 	int ret;
+ 
+-	ret = chip->irq_set_affinity(data, mask, false);
++	ret = chip->irq_set_affinity(data, mask, force);
+ 	switch (ret) {
+ 	case IRQ_SET_MASK_OK:
+ 		cpumask_copy(data->affinity, mask);
+@@ -192,7 +192,8 @@ int irq_do_set_affinity(struct irq_data
+ 	return ret;
+ }
+ 
+-int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
++static int irq_do_set_affinity_locked(struct irq_data *data,
++				      const struct cpumask *mask, bool force)
+ {
+ 	struct irq_chip *chip = irq_data_get_irq_chip(data);
+ 	struct irq_desc *desc = irq_data_to_desc(data);
+@@ -202,7 +203,7 @@ int __irq_set_affinity_locked(struct irq
+ 		return -EINVAL;
+ 
+ 	if (irq_can_move_pcntxt(data)) {
+-		ret = irq_do_set_affinity(data, mask, false);
++		ret = irq_do_set_affinity(data, mask, force);
+ 	} else {
+ 		irqd_set_move_pending(data);
+ 		irq_copy_pending(desc, mask);
+@@ -217,13 +218,13 @@ int __irq_set_affinity_locked(struct irq
+ 	return ret;
+ }
+ 
+-/**
+- *	irq_set_affinity - Set the irq affinity of a given irq
+- *	@irq:		Interrupt to set affinity
+- *	@mask:		cpumask
+- *
+- */
+-int irq_set_affinity(unsigned int irq, const struct cpumask *mask)
++int __irq_set_affinity_locked(struct irq_data *data,const struct cpumask *mask)
++{
++	return irq_do_set_affinity_locked(data, mask, false);
++}
++
++static int __irq_set_affinity(unsigned int irq, const struct cpumask *mask,
++			      bool force)
+ {
+ 	struct irq_desc *desc = irq_to_desc(irq);
+ 	unsigned long flags;
+@@ -233,11 +234,33 @@ int irq_set_affinity(unsigned int irq, c
+ 		return -EINVAL;
+ 
+ 	raw_spin_lock_irqsave(&desc->lock, flags);
+-	ret =  __irq_set_affinity_locked(irq_desc_get_irq_data(desc), mask);
++	ret = irq_do_set_affinity_locked(irq_desc_get_irq_data(desc), mask,
++					 force);
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	return ret;
+ }
+ 
++/**
++ *	irq_force_affinity - Force the irq affinity of a given irq
++ *	@irq:		Interrupt to set affinity
++ *	@mask:		cpumask
++ */
++int irq_force_affinity(unsigned int irq, const struct cpumask *mask)
++{
++	return __irq_set_affinity(irq, mask, true);
++}
++
++/**
++ *	irq_set_affinity - Set the irq affinity of a given irq
++ *	@irq:		Interrupt to set affinity
++ *	@mask:		cpumask
++ *
++ */
++int irq_set_affinity(unsigned int irq, const struct cpumask *mask)
++{
++	return __irq_set_affinity(irq, mask, false);
++}
++
+ int irq_set_affinity_hint(unsigned int irq, const struct cpumask *m)
+ {
+ 	unsigned long flags;
+--8323329-942035999-1397578841=:22697--
