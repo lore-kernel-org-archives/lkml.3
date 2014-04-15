@@ -1,60 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187AbaDOUfE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 16:35:04 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:50689 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753367AbaDOUe7 (ORCPT
+	id S1754433AbaDOUgr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 16:36:47 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:18886 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006AbaDOUgq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 16:34:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <1395949317-8738-1-git-send-email-robherring2@gmail.com>
-References: <1395949317-8738-1-git-send-email-robherring2@gmail.com>
-Date: Tue, 15 Apr 2014 15:34:58 -0500
-Message-ID: <CAL_JsqKn_erNnGwdXwg6C08pHHQuQn-4fpmp70agvH5ok=P9-g@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/4] vmlinux.lds.h clean-ups
-From: Rob Herring <robherring2@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Rob Herring <robh@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 15 Apr 2014 16:36:46 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [PATCH v2] nfs-rdma: Fix for FMR leaks
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <20140415203434.5492.31538.stgit@bilbo>
+Date: Tue, 15 Apr 2014 16:36:33 -0400
+Cc: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <2649FF57-84A2-4848-BEAD-DCA7129E90D3@oracle.com>
+References: <20140415203434.5492.31538.stgit@bilbo>
+To: Allen Andrews <allen.andrews@emulex.com>
+X-Mailer: Apple Mail (2.1874)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 27, 2014 at 2:41 PM, Rob Herring <robherring2@gmail.com> wrote:
-> From: Rob Herring <robh@kernel.org>
->
-> Several DeviceTree related sections have been added recently to enable
-> early DT initialization calls. I have the need to add yet another one
-> in order to do a DT based earlycon. Since each section follows the same
-> pattern, this seemed like a good opportunity for some clean-up. So
-> this series creates a common macro to define these sections. with this
-> adding any new OF table section is a 2 line change.
->
-> Each section ends with a zeroed struct of_device_id (except cpu_method).
-> Right now there is an end section and a dummy variable to create the end
-> marker. Really, we just need padding here, but I haven't come up with a
-> way for the linker script to get the struct size.
->
-> The last patch extends the same concept to another common pattern for
-> section definitons. There's still others which could be easily converted
-> also, but I'm looking for feedback on this approach before proceeding
-> any further.
->
-> Rob
->
-> Rob Herring (4):
->   irqchip: align irqchip OF match table section naming
->   ARM: align cpu_method_of_table naming
->   vmlinuz.lds: define OF table sections with macros
->   vmlinux.lds: define conditional sections with macros
->
->  arch/arm/kernel/devtree.c         |  11 +--
->  drivers/irqchip/irqchip.c         |   6 +-
->  include/asm-generic/vmlinux.lds.h | 142 +++++++++++---------------------------
 
-Arnd, Any comments on this series?
+On Apr 15, 2014, at 4:34 PM, Allen Andrews <allen.andrews@emulex.com> wrote:
 
-Rob
+> Two memory region leaks were found during testing:
+> 
+> 1. rpcrdma_buffer_create: While allocating RPCRDMA_FRMR's
+> ib_alloc_fast_reg_mr is called and then ib_alloc_fast_reg_page_list is
+> called.  If ib_alloc_fast_reg_page_list returns an error it bails out of
+> the routine dropping the last ib_alloc_fast_reg_mr frmr region creating a
+> memory leak.  Added code to dereg the last frmr if
+> ib_alloc_fast_reg_page_list fails.
+> 
+> 2. rpcrdma_buffer_destroy: While cleaning up, the routine will only free
+> the MR's on the rb_mws list if there are rb_send_bufs present.  However, in
+> rpcrdma_buffer_create while the rb_mws list is being built if one of the MR
+> allocation requests fail after some MR's have been allocated on the rb_mws
+> list the routine never gets to create any rb_send_bufs but instead jumps to
+> the rpcrdma_buffer_destroy routine which will never free the MR's on rb_mws
+> list because the rb_send_bufs were never created.   This leaks all the MR's
+> on the rb_mws list that were created prior to one of the MR allocations
+> failing.
+> 
+> Issue(2) was seen during testing. Our adapter had a finite number of MR's
+> available and we created enough connections to where we saw an MR
+> allocation failure on our Nth NFS connection request. After the kernel
+> cleaned up the resources it had allocated for the Nth connection we noticed
+> that FMR's had been leaked due to the coding error described above.
+> 
+> Issue(1) was seen during a code review while debugging issue(2).
+> 
+> Signed-off-by: Allen Andrews <allen.andrews@emulex.com>
+
+Reviewed-by: Chuck Lever <chuck.lever@oracle.com>
+
+> ---
+> 
+> net/sunrpc/xprtrdma/verbs.c |   73 ++++++++++++++++++++++---------------------
+> 1 files changed, 38 insertions(+), 35 deletions(-)
+> 
+> diff --git a/net/sunrpc/xprtrdma/verbs.c b/net/sunrpc/xprtrdma/verbs.c
+> index 9372656..1683e05 100644
+> --- a/net/sunrpc/xprtrdma/verbs.c
+> +++ b/net/sunrpc/xprtrdma/verbs.c
+> @@ -1058,6 +1058,8 @@ rpcrdma_buffer_create(struct rpcrdma_buffer *buf, struct rpcrdma_ep *ep,
+> 				dprintk("RPC:       %s: "
+> 					"ib_alloc_fast_reg_page_list "
+> 					"failed %i\n", __func__, rc);
+> +
+> +				ib_dereg_mr(r->r.frmr.fr_mr);
+> 				goto out;
+> 			}
+> 			list_add(&r->mw_list, &buf->rb_mws);
+> @@ -1194,41 +1196,6 @@ rpcrdma_buffer_destroy(struct rpcrdma_buffer *buf)
+> 			kfree(buf->rb_recv_bufs[i]);
+> 		}
+> 		if (buf->rb_send_bufs && buf->rb_send_bufs[i]) {
+> -			while (!list_empty(&buf->rb_mws)) {
+> -				r = list_entry(buf->rb_mws.next,
+> -					struct rpcrdma_mw, mw_list);
+> -				list_del(&r->mw_list);
+> -				switch (ia->ri_memreg_strategy) {
+> -				case RPCRDMA_FRMR:
+> -					rc = ib_dereg_mr(r->r.frmr.fr_mr);
+> -					if (rc)
+> -						dprintk("RPC:       %s:"
+> -							" ib_dereg_mr"
+> -							" failed %i\n",
+> -							__func__, rc);
+> -					ib_free_fast_reg_page_list(r->r.frmr.fr_pgl);
+> -					break;
+> -				case RPCRDMA_MTHCAFMR:
+> -					rc = ib_dealloc_fmr(r->r.fmr);
+> -					if (rc)
+> -						dprintk("RPC:       %s:"
+> -							" ib_dealloc_fmr"
+> -							" failed %i\n",
+> -							__func__, rc);
+> -					break;
+> -				case RPCRDMA_MEMWINDOWS_ASYNC:
+> -				case RPCRDMA_MEMWINDOWS:
+> -					rc = ib_dealloc_mw(r->r.mw);
+> -					if (rc)
+> -						dprintk("RPC:       %s:"
+> -							" ib_dealloc_mw"
+> -							" failed %i\n",
+> -							__func__, rc);
+> -					break;
+> -				default:
+> -					break;
+> -				}
+> -			}
+> 			rpcrdma_deregister_internal(ia,
+> 					buf->rb_send_bufs[i]->rl_handle,
+> 					&buf->rb_send_bufs[i]->rl_iov);
+> @@ -1236,6 +1203,42 @@ rpcrdma_buffer_destroy(struct rpcrdma_buffer *buf)
+> 		}
+> 	}
+> 
+> +	while (!list_empty(&buf->rb_mws)) {
+> +		r = list_entry(buf->rb_mws.next,
+> +			struct rpcrdma_mw, mw_list);
+> +		list_del(&r->mw_list);
+> +		switch (ia->ri_memreg_strategy) {
+> +		case RPCRDMA_FRMR:
+> +			rc = ib_dereg_mr(r->r.frmr.fr_mr);
+> +			if (rc)
+> +				dprintk("RPC:       %s:"
+> +					" ib_dereg_mr"
+> +					" failed %i\n",
+> +					__func__, rc);
+> +			ib_free_fast_reg_page_list(r->r.frmr.fr_pgl);
+> +			break;
+> +		case RPCRDMA_MTHCAFMR:
+> +			rc = ib_dealloc_fmr(r->r.fmr);
+> +			if (rc)
+> +				dprintk("RPC:       %s:"
+> +					" ib_dealloc_fmr"
+> +					" failed %i\n",
+> +					__func__, rc);
+> +			break;
+> +		case RPCRDMA_MEMWINDOWS_ASYNC:
+> +		case RPCRDMA_MEMWINDOWS:
+> +			rc = ib_dealloc_mw(r->r.mw);
+> +			if (rc)
+> +				dprintk("RPC:       %s:"
+> +					" ib_dealloc_mw"
+> +					" failed %i\n",
+> +					__func__, rc);
+> +			break;
+> +		default:
+> +			break;
+> +		}
+> +	}
+> +
+> 	kfree(buf->rb_pool);
+> }
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rdma" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+--
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
+
