@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751229AbaDOWrc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 18:47:32 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:36615 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899AbaDOWrb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 18:47:31 -0400
-Date: Tue, 15 Apr 2014 15:47:26 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Dave Jones <davej@redhat.com>, cl@linux.com, linux-kernel@vger.kernel.org,
-        mingo@kernel.org, tj@kernel.org, grygorii.strashko@ti.com,
-        peterz@infradead.org
-Subject: Re: How do I increment a per-CPU variable without warning?
-Message-ID: <20140415224725.GS4496@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140415221755.GA27188@linux.vnet.ibm.com>
- <20140415222951.GA742@redhat.com>
+	id S1751403AbaDOWsz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 18:48:55 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45555 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750920AbaDOWsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 18:48:53 -0400
+Date: Wed, 16 Apr 2014 00:48:51 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+Cc: Kertesz Laszlo <laszlo.kertesz@gmail.com>,
+        Alex Deucher <alexdeucher@gmail.com>,
+        "Koenig, Christian" <Christian.Koenig@amd.com>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: 15-rc1: radeon modesetting fails
+Message-ID: <20140415224850.GA12892@pd.tnic>
+References: <20140415070204.GA4806@pd.tnic>
+ <534CFBD7.3070604@amd.com>
+ <20140415120740.GA8306@nazgul.tnic>
+ <CADnq5_PpPa_fbm=1KH__q-W2OuvfoHr2wquimQ8TCq=xwwYq_Q@mail.gmail.com>
+ <534D677C.6080407@gmail.com>
+ <20140415172702.GC4826@pd.tnic>
+ <534D743B.8010705@gmail.com>
+ <20140415180735.GG4826@pd.tnic>
+ <534DA97E.8070505@gmail.com>
+ <A3397C8B8B789E45844E7EC5DEAD89D03ECB1D65@satlexdag05.amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140415222951.GA742@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041522-7164-0000-0000-000001123537
+In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D03ECB1D65@satlexdag05.amd.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 06:29:51PM -0400, Dave Jones wrote:
-> On Tue, Apr 15, 2014 at 03:17:55PM -0700, Paul E. McKenney wrote:
-> 
->  > My current admittedly crude workaround is as follows:
->  > 
->  > 	static inline bool rcu_should_resched(void)
->  > 	{
->  > 		int t;
->  > 
->  > 	#ifdef CONFIG_DEBUG_PREEMPT
->  > 		preempt_disable();
->  > 	#endif /* #ifdef CONFIG_DEBUG_PREEMPT */
->  > 		t = __this_cpu_read(rcu_cond_resched_count) + 1;
->  > 		if (t < RCU_COND_RESCHED_LIM) {
->  > 			__this_cpu_write(rcu_cond_resched_count, t);
->  > 	#ifdef CONFIG_DEBUG_PREEMPT
->  > 			preempt_enable();
->  > 	#endif /* #ifdef CONFIG_DEBUG_PREEMPT */
->  > 			return false;
->  > 		}
->  > 	#ifdef CONFIG_DEBUG_PREEMPT
->  > 		preempt_enable();
->  > 	#endif /* #ifdef CONFIG_DEBUG_PREEMPT */
->  > 		return true;
->  > 	}
-> 
-> Won't using DEBUG_PREEMPT instead of just CONFIG_PREEMPT here make this
-> silently do the wrong thing if preemption is enabled, but debugging isn't ?
+On Tue, Apr 15, 2014 at 10:32:56PM +0000, Deucher, Alexander wrote:
+> Turning off modesetting basically disables the driver.
 
-If preemption is enabled, but debugging is not, then yes, the above code
-might force an unnecessary schedule() if the above code was preempted
-between the __this_cpu_read() and the __this_cpu_write().  Which does
-not cause a problem, especially given that it won't happen very often.
+Well, in my case, I was using the radeon.modeset=0 variant to rule out
+issues in x.org. And in my case x.org did start still, albeit with a
+jacked-up resolution.
 
-> I'm not seeing why you need the ifdefs at all, unless the implied
-> barrier() is a problem ?
+But in Laszlo's case, x.org gets "puzzled" too.
 
-I don't think that Peter Zijlstra would be too happy about an extra
-unneeded preempt_disable()/preempt_enable() pair in the cond_resched()
-fastpath.  Not that I necessarily expect him to be particularly happy
-with the above, but perhaps someone has a better approach.
+-- 
+Regards/Gruss,
+    Boris.
 
-							Thanx, Paul
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
