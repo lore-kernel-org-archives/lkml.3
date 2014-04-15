@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751272AbaDOF4J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 01:56:09 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:40224 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875AbaDOF4G (ORCPT
+	id S1751258AbaDOGAo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 02:00:44 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:39468 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790AbaDOGAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 01:56:06 -0400
+	Tue, 15 Apr 2014 02:00:42 -0400
+Date: Tue, 15 Apr 2014 08:00:38 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Andi Kleen <ak@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>,
+        Linux Kbuild mailing list <linux-kbuild@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [GIT] kbuild/lto changes for 3.15-rc1
+Message-ID: <20140415060038.GA29649@gmail.com>
+References: <20140407201919.GA15838@sepie.suse.cz>
+ <CA+55aFy8hWqBpF1TXOPvA2rRaZp=H2LTO3wd3AERspmcGZhAeQ@mail.gmail.com>
+ <20140408204906.GA3616@cloud>
+ <CA+55aFzhyvZRPjXy7PkUxQO_AMqLSTehh-GNRP+Dx3yKnv-eCA@mail.gmail.com>
+ <20140409013557.GA32556@tassilo.jf.intel.com>
+ <20140409060133.GA6766@gmail.com>
+ <20140409081709.GA283@x4>
+ <20140414103205.GA2846@gmail.com>
+ <20140415010003.GA2765@jtriplet-mobl1>
 MIME-Version: 1.0
-In-Reply-To: <534C4EC2.5080008@semaphore.gr>
-References: <534C4EC2.5080008@semaphore.gr>
-Date: Tue, 15 Apr 2014 11:26:06 +0530
-Message-ID: <CAKohpon0twCA1gNdOQ1FyUO3wmtxZsddv+Y3Xmo9Me07PXEa-A@mail.gmail.com>
-Subject: Re: [PATCH 14/20] thermal: cpu_cooling: Use cpufreq_for_each_valid_entry
- macro for iteration
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140415010003.GA2765@jtriplet-mobl1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 April 2014 02:40, Stratos Karafotis <stratosk@semaphore.gr> wrote:
-> The cpufreq core supports the cpufreq_for_each_valid_entry macro
-> helper for iteration over the cpufreq_frequency_table, so use it.
->
-> It should have no functional changes.
->
-> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> ---
->  drivers/thermal/cpu_cooling.c | 33 +++++++++++++--------------------
->  1 file changed, 13 insertions(+), 20 deletions(-)
->
-> diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
-> index 4246262..3040629 100644
-> --- a/drivers/thermal/cpu_cooling.c
-> +++ b/drivers/thermal/cpu_cooling.c
-> @@ -144,11 +144,11 @@ static int get_property(unsigned int cpu, unsigned long input,
->                         unsigned int *output,
->                         enum cpufreq_cooling_property property)
->  {
-> -       int i, j;
-> +       int i;
->         unsigned long max_level = 0, level = 0;
->         unsigned int freq = CPUFREQ_ENTRY_INVALID;
->         int descend = -1;
-> -       struct cpufreq_frequency_table *table =
-> +       struct cpufreq_frequency_table *pos, *table =
->                                         cpufreq_frequency_get_table(cpu);
->
->         if (!output)
-> @@ -157,20 +157,16 @@ static int get_property(unsigned int cpu, unsigned long input,
->         if (!table)
->                 return -EINVAL;
->
-> -       for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
-> -               /* ignore invalid entries */
-> -               if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
-> -                       continue;
-> -
-> +       cpufreq_for_each_valid_entry(pos, table) {
->                 /* ignore duplicate entry */
-> -               if (freq == table[i].frequency)
-> +               if (freq == pos->frequency)
->                         continue;
->
->                 /* get the frequency order */
->                 if (freq != CPUFREQ_ENTRY_INVALID && descend == -1)
-> -                       descend = !!(freq > table[i].frequency);
-> +                       descend = !!(freq > pos->frequency);
 
-drop !! as well, its not required here. Mention that in log.
+* Josh Triplett <josh@joshtriplett.org> wrote:
+
+> > and it slows down kernel development'.
+>
+> No, it doesn't slow down development builds; it makes kernel builds 
+> slower if and only if LTO is turned on, which most kernel developers 
+> won't need to do.
+>
+> On the other hand, distro and embedded kernels can do so for final 
+> builds, and developers pushing to minimize the kernel can turn it on 
+> for their own work as needed.
+
+1)
+
+If LTO will be as fragile for the kernel as it is for user space, then 
+low level developers will be advised to enable it during testing.
+
+2)
+
+Developers and testers tend to clone distro configs to get to a 
+working .config: via 'make localconfig' and similar methods. This 
+means that options like this tend to spread into development 
+environments.
+
+I saw that with DEBUG_INFO frequently: I detest the option with a 
+passion because it's such a drag on build time (but not as slow as 
+LTO), still time and time again it shows up in a .config of mine.
+
+So the "it does not slow down development" argument is simply not 
+true. It clearly has such a cost.
+
+LTO might still be a net win in the end, if the upsides are strong 
+enough, but I am wary of arguments that try to ignore or underestimate 
+the weak points.
+
+Thanks,
+
+	Ingo
