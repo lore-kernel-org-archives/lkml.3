@@ -1,149 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332AbaDOKFS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 06:05:18 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54320 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751160AbaDOKFL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 06:05:11 -0400
-Date: Tue, 15 Apr 2014 12:04:48 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>, stable@vger.kernel.org
-Subject: Re: [PATCH 2/2] nohz: use delayed iowait accounting to avoid race on
- idle time stats
-Message-ID: <20140415100448.GM11096@twins.programming.kicks-ass.net>
-References: <53465F54.708@jp.fujitsu.com>
- <534660D2.1080505@jp.fujitsu.com>
+	id S1754393AbaDOKGX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 06:06:23 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:59477 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752551AbaDOKDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 06:03:36 -0400
+Message-ID: <534D03F2.5070502@mev.co.uk>
+Date: Tue, 15 Apr 2014 11:03:30 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <534660D2.1080505@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Chase Southwood <chase.southwood@yahoo.com>, <gregkh@linuxfoundation.org>
+CC: <hsweeten@visionengravers.com>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] staging: comedi: addi_apci_1564: fixup and absorb
+ apci1564_reset()
+References: <1397541235-2574-1-git-send-email-chase.southwood@yahoo.com> <1397541284-2774-1-git-send-email-chase.southwood@yahoo.com>
+In-Reply-To: <1397541284-2774-1-git-send-email-chase.southwood@yahoo.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
+ (10.0.0.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 10, 2014 at 06:13:54PM +0900, Hidetoshi Seto wrote:
-> This patch is v3 of patch set to fix an issue that idle/iowait
-> of /proc/stat can go backward. Originally reported by Tetsuo and
-> Fernando at last year, Mar 2013.
-> 
-> [BACKGROUNDS]: idle accounting on NO_HZ
-> 
-> If NO_HZ is enabled, cpu stops tick interrupt for itself before
-> go sleep to be idle. It means that time stats of the sleeping cpu
-> will not be updated in tick interrupt. Instead when cpu wakes up,
-> it updates time stats by calculating idle duration time from
-> timestamp at entering idle and current time as exiting idle.
-> 
-> OTOH, it can happen that there are some kind of observer who want
-> to know how long the sleeping cpu have been idle. Imagine that
-> userland runs top command or application who read /proc/stats.
-> Therefore kernel provides get_cpu_{idle,iowait}_time_us() function
-> for user to obtain current idle time stats of such sleeping cpu.
-> This function reads time stats and timestamp at entering idle,
-> and then return current idle time by adding duration calculated
-> from timestamp and current time.
-> 
-> There are 2 problems:
-> 
-> [PROBLEM 1]: there is no exclusive control.
-> 
-> It is easy to understand that there are 2 different cpu - an
-> observing cpu where running a program observing idle cpu's stat
-> and an observed cpu where performing idle. It means race can
-> happen if observed cpu wakes up while it is observed. Observer
-> can accidentally add calculated duration time (say delta) to
-> time stats which is just updated by woken cpu. Soon correct
-> idle time is returned in next turn, so it will result in
-> backward time. Therefore readers must be excluded by writer.
-> 
-> My former patch happily changes get_cpu_{idle,iowait}_time_us()
-> not to update sleeping cpu's time stats from observing cpu.
-> It makes time stats to be updated by woken cpu only, so there
-> are only one writer now!
-> 
-> In summary there are races between one writer and multiple
-> reader but no exclusive control on this idle time stats dataset.
+On 2014-04-15 06:54, Chase Southwood wrote:
+> We can remove this function from the boardinfo and move the code from
+> hwdrv_apci1564.c into addi_apci_1564.c since it is the only reset function
+> used by the driver.  The function was also messy and failed to reset a few
+> registers, these issues were fixed on the move.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+> ---
+> Hartley,
+> Could you take a look at the fixes I have done to this reset function?
+> The old version was awfully disorganized and seemingly didn't clear all
+> of the required registers, and I believe that it is better now.  But, as I
+> can only compile test, I'd appreciate it if you could make sure the function
+> works as intended now.  Thanks, Chase.
+>
+>   .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 28 ---------------
+>   drivers/staging/comedi/drivers/addi_apci_1564.c    | 41 +++++++++++++++++++++-
+>   2 files changed, 40 insertions(+), 29 deletions(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+> index 4db3bea..45617cf 100644
+> --- a/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+> +++ b/drivers/staging/comedi/drivers/addi-data/hwdrv_apci1564.c
+> @@ -576,31 +576,3 @@ static void apci1564_interrupt(int irq, void *d)
+>   	}
+>   	return;
+>   }
+> -
+> -static int apci1564_reset(struct comedi_device *dev)
+> -{
+> -	struct addi_private *devpriv = dev->private;
+> -
+> -	/* disable the interrupts */
+> -	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DI_IRQ_REG);
+> -	/* Reset the interrupt status register */
+> -	inl(devpriv->i_IobaseAmcc + APCI1564_DI_INT_STATUS_REG);
+> -	/* Disable the and/or interrupt */
+> -	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DI_INT_MODE1_REG);
+> -	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DI_INT_MODE2_REG);
+> -	devpriv->b_DigitalOutputRegister = 0;
+> -	ui_Type = 0;
+> -	/* Resets the output channels */
+> -	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DO_REG);
+> -	/* Disables the interrupt. */
+> -	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DO_INT_CTRL_REG);
+> -	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_WDOG_RELOAD_REG);
+> -	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_TIMER_REG);
+> -	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_TIMER_CTRL_REG);
+> -
+> -	outl(0x0, dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER1));
+> -	outl(0x0, dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER2));
+> -	outl(0x0, dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER3));
+> -	outl(0x0, dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER4));
+> -	return 0;
+> -}
+> diff --git a/drivers/staging/comedi/drivers/addi_apci_1564.c b/drivers/staging/comedi/drivers/addi_apci_1564.c
+> index 11aa0bd..c1b2260 100644
+> --- a/drivers/staging/comedi/drivers/addi_apci_1564.c
+> +++ b/drivers/staging/comedi/drivers/addi_apci_1564.c
+> @@ -4,6 +4,7 @@
+>   #include "../comedidev.h"
+>   #include "comedi_fc.h"
+>   #include "amcc_s5933.h"
+> +#include "addi_watchdog.h"
+>
+>   #include "addi-data/addi_common.h"
+>
+> @@ -22,7 +23,6 @@ static const struct addi_board apci1564_boardtypes[] = {
+>   		.i_DoMaxdata		= 0xffffffff,
+>   		.i_Timer		= 1,
+>   		.interrupt		= apci1564_interrupt,
+> -		.reset			= apci1564_reset,
+>   		.di_config		= apci1564_di_config,
+>   		.di_bits		= apci1564_di_insn_bits,
+>   		.do_config		= apci1564_do_config,
+> @@ -34,6 +34,45 @@ static const struct addi_board apci1564_boardtypes[] = {
+>   	},
+>   };
+>
+> +static int apci1564_reset(struct comedi_device *dev)
+> +{
+> +	struct addi_private *devpriv = dev->private;
+> +
+> +	ui_Type = 0;
+> +
+> +	/* Disable the input interrupts and reset status register */
+> +	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DI_INT_MODE1_REG);
+> +	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DI_INT_MODE2_REG);
+> +	inl(devpriv->i_IobaseAmcc + APCI1564_DI_INT_STATUS_REG);
+> +	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DI_IRQ_REG);
 
-This should've gone in the previous patch; as it describes what that
-does.
+I'm not sure how much the ordering of those register accesses matters, 
+but I'd be inclined to use the original ordering if there's no reason to 
+change it:
 
-> 
-> [PROBLEM 2]: broken iowait accounting.
-> 
-> As historical nature, cpu's idle time was accounted as either
-> idle or iowait depending on the presence of tasks blocked by
-> I/O. No one complain about it for a long time. However:
-> 
->   > Still trying to wrap my head around it, but conceptually
->   > get_cpu_iowait_time_us() doesn't make any kind of sense.
->   > iowait isn't per cpu since effectively tasks that aren't
->   > running aren't assigned a cpu (as Oleg already pointed out).
->   -- Peter Zijlstra
-> 
-> Now some kernel folks realized that accounting iowait as per-cpu
-> does not make sense in SMP world. When we were in traditional
-> UP era, cpu is considered to be waiting I/O if it is idle while
-> nr_iowait > 0. But in these days with SMP systems, tasks easily
-> migrate from a cpu where they issued an I/O to another cpu where
-> they are queued after I/O completion.
-> 
-> Back to NO_HZ mechanism. Totally terrible thing here is that
-> observer need to handle duration "delta" without knowing that
-> nr_iowait of sleeping cpu can be changed easily by migration
-> even if cpu is sleeping. So it can happen that:
-> 
->   given:
->     idle time stats: idle=1000, iowait=100
->     stamp at idle entry: entry=50
->     nr tasks waiting io: nr_iowait=1
-> 
->   observer temporary assigns delta as iowait at 1st place,
->   (but does not do update (=account delta to time stats)):
->     1st reader's query @ now = 60:
->       idle=1000
->       iowait=110 (=100+(60-50))
-> 
->   then blocked tasks are migrated all:
->     nr_iowait=0
-> 
->   and at last in 2nd turn observer assign delta as idle:
->     2nd reader's query @ now = 70:
->       idle=1020 (=1000+(70-50))
->       iowait=100
-> 
-> You will see that iowait is decreased from 110 to 100.
-> 
-> In summary iowait accounting has fundamental problem and needs
-> to be precisely reworked. It implies that some user interfaces
-> might be replaced completely. It will take long time to be
-> solved, so workaround for compatibility will be appreciated.
+write APCI1564_DI_IRQ_REG
+read APCI1564_DI_INT_STATUS_REG
+write APCI1564_DI_INT_MODE1_REG
+write APCI1564_DI_INT_MODE2_REG
 
-This isn't actually true. The way the current ->nr_iowait accounting
-works is that we inc/dec against the cpu the task went to sleep on. So
-task migration won't actually affect nr_iowait. The only way to
-decrement nr_iowait is to wake a task.
+A register-level programming manual would be handy, but I haven't 
+managed to find one.
 
-That's of course still complete crap, imagine a task going into iowait
-sleep on CPU1 at t0. At t1 it wakes on CPU0, but CPU1 stays in nohz
-sleep. Then at t2 CPU1 wakes and updates its sleep times.
+> +
+> +	/* Reset the output channels and disable interrupts */
+> +	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DO_REG);
+> +	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DO_INT_CTRL_REG);
+> +	inl(devpriv->i_IobaseAmcc + APCI1564_DO_INT_STATUS_REG);
+> +	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_DO_IRQ_REG);
 
-Between t0 and t1 a reader will observe iowait on CPU1 and report iowait
-+ x; x < t1 - t0. However a reader at >=t1 will observe no iowait and
-report the old iowait time again but an increased idle time. Furthermore
-when at t2 CPU1 wakes it will observe no iowait and account the entire
-duration as idle, the iowait never happened.
+I'm really not sure about the "correct" order of accesses to 
+APCI1564_DO_INT_CTRL_REG, APCI1564_DO_INT_STATUS_REG and 
+APCI1564_DO_IRQ_REG or even which ones are needed.  (I'm guessing that 
+reading APCI1564_DO_INT_STATUS_REG wouldn't change the internal state of 
+the card, so would be inclined to omit that, but it should be harmless.)
+
+> +
+> +	/* Reset the watchdog registers */
+> +	addi_watchdog_reset(devpriv->i_IobaseAmcc + APCI1564_WDOG_REG);
+> +
+> +	/* Reset the timer registers */
+> +	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_TIMER_RELOAD_REG);
+> +	outl(0x0, devpriv->i_IobaseAmcc + APCI1564_TIMER_CTRL_REG);
+> +
+> +	/* Reset the counter registers */
+> +	outl(0x0, dev->iobase + APCI1564_TCW_RELOAD_REG(APCI1564_COUNTER1));
+> +	outl(0x0, dev->iobase + APCI1564_TCW_RELOAD_REG(APCI1564_COUNTER1));
+> +	outl(0x0, dev->iobase + APCI1564_TCW_RELOAD_REG(APCI1564_COUNTER1));
+> +	outl(0x0, dev->iobase + APCI1564_TCW_RELOAD_REG(APCI1564_COUNTER1));
+
+I think you forgot to edit those four lines to access different counters.
+
+> +
+> +	outl(0x0, dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER1));
+> +	outl(0x0, dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER2));
+> +	outl(0x0, dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER3));
+> +	outl(0x0, dev->iobase + APCI1564_TCW_CTRL_REG(APCI1564_COUNTER4));
+> +
+> +	return 0;
+> +}
+> +
+>   static int apci1564_auto_attach(struct comedi_device *dev,
+>   				unsigned long context)
+>   {
+>
 
 
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
