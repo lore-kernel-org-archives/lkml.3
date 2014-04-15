@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751460AbaDOCYQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 22:24:16 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:15039 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770AbaDOCYN (ORCPT
+	id S1751622AbaDOC3I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 22:29:08 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:34942 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993AbaDOC3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 22:24:13 -0400
-Message-ID: <534C983B.7080701@huawei.com>
-Date: Tue, 15 Apr 2014 10:23:55 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Mon, 14 Apr 2014 22:29:07 -0400
+Message-ID: <534C995F.9040101@oracle.com>
+Date: Mon, 14 Apr 2014 22:28:47 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: implement unified hierarchy,
- v2
-References: <1397511430-2673-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1397511430-2673-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="GB2312"
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: vegard.nossum@oracle.com, penberg@kernel.org, jamie.iles@oracle.com,
+        hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] x86: Move instruction decoder data into header
+References: <1397497450-6440-1-git-send-email-sasha.levin@oracle.com> <1397497450-6440-2-git-send-email-sasha.levin@oracle.com> <534C8E2D.9020506@hitachi.com>
+In-Reply-To: <534C8E2D.9020506@hitachi.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patchset finally implements the default unified hierarchy.  The
-> goal is providing enough flexibility while enforcing stricter common
-> structure where appropriate to address the above listed issues.
-> 
-> Controllers which aren't bound to other hierarchies are
-> automatically attached to the unified hierarchy, which is different in
-> that controllers are enabled explicitly for each subtree.
-> "cgroup.subtree_control" controls which controllers are enabled on the
-> child cgroups.  Let's assume a hierarchy like the following.
-> 
->   root - A - B - C
->                \ D
-> 
-> root's "cgroup.subtree_control" determines which controllers are
-> enabled on A.  A's on B.  B's on C and D.  This coincides with the
-> fact that controllers on the immediate sub-level are used to
-> distribute the resources of the parent.  In fact, it's natural to
-> assume that resource control knobs of a child belong to its parent.
-> Enabling a controller in "cgroup.subtree_control" declares that
-> distribution of the respective resources of the cgroup will be
-> controlled.  Note that this means that controller enable states are
-> shared among siblings.
-> 
-> The default hierarchy has an extra restriction - only cgroups which
-> don't contain any task may have controllers enabled in
-> "cgroup.subtree_control".  Combined with the other properties of the
-> default hierarchy, this guarantees that, from the view point of
-> controllers, tasks are only on the leaf cgroups.  In other words, only
-> leaf csses may contain tasks.  This rules out situations where child
-> cgroups compete against internal tasks of the parent.
-> 
+On 04/14/2014 09:41 PM, Masami Hiramatsu wrote:
+> (2014/04/15 2:44), Sasha Levin wrote:
+>> > Right now we generate data for the instruction decoder and place it
+>> > as a code file which gets #included directly (yuck).
+>> > 
+>> > Instead, make it a header which will also be usable by other code
+>> > that wants to use the data in there.
+> Hmm, making the generated data into a header file may clone
+> the data table instances for each object file. Since the inat
+> table is not so small, I think we'd better just export the tables.
 
-Right after bootup:
+The tables are defined as static, so the compiler drops them
+once it detects they are not used.
 
-# mount -t cgroup -o __DEVEL__sane_behavior xxx /mnt
-# ls /mnt
-cgroup.controllers  cgroup.procs  cgroup.sane_behavior  cgroup.subtree_control
-# cat /mnt/cgroup.controllers
-cpuset cpu cpuacct memory devices freezer net_cls blkio perf_event hugetlb
+I feel it would be easier to let the compiler do it's job rather
+than do optimizations we don't need to do and which will complicate
+the code quite a bit.
 
-I don't see any controller knobs...
 
+Thanks,
+Sasha
