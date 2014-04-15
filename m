@@ -1,56 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751AbaDONxk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 09:53:40 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:54992 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754679AbaDONxj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 09:53:39 -0400
-Date: Tue, 15 Apr 2014 15:53:26 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/8] sched/core: Skip wakeup when task is already running.
-Message-ID: <20140415135326.GV11096@twins.programming.kicks-ass.net>
-References: <cover.1397562542.git.yangds.fnst@cn.fujitsu.com>
- <51238bf1648b1f4c66d3547a49cf949d1679d068.1397562542.git.yangds.fnst@cn.fujitsu.com>
+	id S1752462AbaDONym (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 09:54:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57615 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750930AbaDONyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 09:54:39 -0400
+Date: Tue, 15 Apr 2014 09:53:59 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org
+Subject: Re: [PATCH RFC] blkcg: prepare blkcg knobs for default hierarchy
+Message-ID: <20140415135359.GA13033@redhat.com>
+References: <20140413013209.GC26252@mtj.dyndns.org>
+ <20140414180824.GB9552@redhat.com>
+ <20140414193214.GC16835@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51238bf1648b1f4c66d3547a49cf949d1679d068.1397562542.git.yangds.fnst@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140414193214.GC16835@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 09:32:53PM +0900, Dongsheng Yang wrote:
-> From: Dongsheng <yangds.fnst@cn.fujitsu.com>
-> 
-> It is pointless to wake up a running task. Currently, we can
-> see it in perf sched latency.
-> 
-> Signed-off-by: Dongsheng <yangds.fnst@cn.fujitsu.com>
-> ---
->  kernel/sched/core.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 268a45e..fc6b644 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -1416,6 +1416,9 @@ static void ttwu_activate(struct rq *rq, struct task_struct *p, int en_flags)
->  static void
->  ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
->  {
-> +	if (p->state == TASK_RUNNING)
-> +		return;
-> +
->  	check_preempt_curr(rq, p, wake_flags);
->  	trace_sched_wakeup(p, true);
->  
+On Mon, Apr 14, 2014 at 03:32:14PM -0400, Tejun Heo wrote:
 
+[..]
+> > So now we have tree modes?
+> > 
+> > - Orignal multi hierachy mode
+> > - Multi hierarchy with sane flag
+> > 	- Sane flag modifies behavior of throttling.
+> > - Unified hierarchy
+> > 	- Changes tunables.
+> 
+> No, we don't.  __DEVEL__sane_behavior is a tool to implement unified
+> hierarchy.  Once unified hierarchy lands, sane_behavior will be folded
+> into unified hierarchy.
 
-How can you get there with ->state == RUNNING? try_to_wake_up*() bail
-when !(->state & state).
+Ok, got it. So unified hierarchy will co-exist with other hierarchies
+in the system.
+
+I somehow had the impression that either one will have unified hierarchy
+or will be multiple hierarchies. But one can't have both.
+
+But looks like that you are targetting that one can have multiple
+hierarchies. One of those will be unified hierarchy with new contstraints.
+Other hierarchies can be old type hierarchies. Do I understand it right?
+
+> 
+> > Looks like some of the changes are related to sane flag and others
+> > are related to unified hierarchy. Will it make sense to break it down
+> > int two patches.
+> 
+> So, they're one and the same.
+> 
+> > > * For cfq, weight[_device] behave inherently differently from the same
+> > >   knobs on !root cgroups as root cgroup is treated as parallel to
+> > >   immediate children.  Let's omit it for now.
+> > 
+> > So now root cgroup will not have any cfq, weight[_device] knobs but
+> > non root cgroups will have one? What's the harm in providing one for
+> > root too for the sake of uniformity. That's a differnt thing thet root
+> > does not have a competitor so value in that knob does not matter.
+> 
+> Please see at the end of the mail.
+> 
+> > > * cfq's time stats reports the total time slice consumed but its unit
+> > >   is in jiffies and it's not reported per-device like all other stats.
+> > >   Omit it for now.  If slice time is actually necessary, let's add it
+> > >   in the form consistent with other stats.
+> > 
+> > To me this knob is also for debugging purposes. CFQ divides disk time
+> > proportionally. And if one wants to see how disk time is being divided
+> > among cgroups, this knob helps. This is more to verify whether our
+> > algorithm is working fine or not and if disk time is being divided
+> > in proportion to weights or not.
+> > 
+> > But again, I am not particular about this knob. Sounds more like
+> > debugging stuff.
+> 
+> If it is a debug knob, let's please require it to be enabled
+> explicitly - ie. require a boot param which *clearly* indicates that
+> this is a debug option; otherwise, we end up leaking internal details
+> w/o actually intending or designing for it and userland is likely to
+> grow dependency on it.
+
+So you want all the debug knobs to be enabled by  DEBUG_BLK_CGROUP option as
+well as using a kernel command line? But I thought that in general
+people are not supposed to set CONFIG_DEBUG_BLK_CGROUP=y. It brings in
+unnecessary overhead. Those who are doing development and trying to debug
+things only those can enable above config option.
+
+But anyway, I am fine with hiding these files behind a command line
+parameter too.
+
+> 
+> > Google folks wanted all these knobs. And they said that they have lot
+> > of more knobs which they carry internally.
+> 
+> AFAIK, google folks forked cfq a couple years ago, I'm not sure how
+> much this will affect them.
+> 
+> > Personally I think io_queued might be a useful knob because it can
+> > show current backlog on a particular cgroup and some tool might want
+> > to dynamically monitor the queue lenghts of various cgroups and adjust
+> > weights dynamically.
+> > 
+> > So this one might be worth retaining.
+> 
+> Can we do that once we know for sure that this is actually necessary?
+> I'm quite skeptical that this sort of snapshot stats are actually
+> useful except for debugging.
+
+Ok, that's fine. We can introduce it once somebody really needs it.
+
+> 
+> > > * cfq adds a number of stats knobs if CONFIG_DEBUG_BLK_CGROUP.  If
+> > >   these are actually for debugging, they shouldn't show up by default
+> > >   (ie. should be gated by kernel param or something).  If userland
+> > >   already developed dependency on them, we need to take them out of
+> > >   CONFIG_DEBUG_BLK_CGROUP.  Skip them for now.  We can add back the
+> > >   relevant ones later.
+> > 
+> > I am fine with this. Again Google folks intorduced those. Not sure
+> > if they still use those. Less stats are better.
+> 
+> The same thing with above.  If these are really for debugging, let's
+> please hide them better.
+> 
+> > >   weight_device			-> cfq.weight_device
+> > >   weight			-> cfq.weight
+> > >   sectors_recursive		-> cfq.sectors
+> > >   io_service_bytes_recursive	-> cfq.bytes
+> > 
+> > throttling has correspnding knob as throttle.io_service_bytes. So either
+> > we can change the name of throttling knob to throttle.bytes or
+> > chnage keep this one as it is (cfq.io_service_bytes) for the sake of
+> > consistency.
+> 
+> Yeah, thought about keeping them consistent but would that really
+> matter?  Having internal consistency in cfq seems more important to
+> me.
+
+I think from a user's perspective it really matters. If I see two knobs
+in a cgroup, say throttle.io_service_bytes and cfq.io_service_bytes, it
+is much more intuitive.
+
+So I feel that we should aim for having consistent names in CFQ and
+throttling. If one understands one knob at one layer, it is intuitive
+to figure out what same knob means at other layer.
+
+And, thankfully, we have only two stats at throttling layer.
+
+blkio.throttle.io_serviced
+blkio.throttle.io_service_bytes
+
+Though names are little longer, but they look fine to me. They are
+intuitive. So I can't see a strong reason to change those names
+at CFQ layer.
+
+blkio.cfq.io_serviced
+blkio.cfq.io_service_bytes
+
+> 
+> > >   io_serviced_recursive		-> cfq.serviced
+> > 
+> > throttling layer uses throttle.io_serviced.
+> 
+> Ditto.
+> 
+> > Given the fact that throttling layer counts bios and CFQ counts requests
+> > may be we can keep throttle.bio_serviced  and cfq.rq_serviced as names.
+> > 
+> > Or may be just throttle.bios and cfq.requests respectively.
+> 
+> I'm not sure whether we want to rename throttle knobs.  Renaming cfq
+> knobs makes sense as they need to be renamed for cfq. prefix anyway
+> but throttle knobs are already mostly fine, so wouldn't it make sense
+> to leave them as they are?  It makes things a bit incosistent between
+> cfq and throttle but do we really care?
+
+Instead of renaming throttling knob, I will prefer to keep new CFQ knob
+names consistent with throttling names.
+
+Thanks
+Vivek
