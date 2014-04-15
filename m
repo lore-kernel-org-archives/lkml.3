@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403AbaDOHqR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 03:46:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56238 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352AbaDOHqN (ORCPT
+	id S1751242AbaDOHri (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 03:47:38 -0400
+Received: from cpsmtpb-ews10.kpnxchange.com ([213.75.39.15]:58266 "EHLO
+	cpsmtpb-ews10.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750975AbaDOHrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 03:46:13 -0400
-Date: Tue, 15 Apr 2014 00:45:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Richard Weinberger <richard@nod.at>,
-        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 04/11] signals: rename rm_from_queue_full() to
- flush_sigqueue_mask()
-Message-Id: <20140415004554.296ef4f4.akpm@linux-foundation.org>
-In-Reply-To: <20140415074040.GH11182@twins.programming.kicks-ass.net>
-References: <20140414151929.GA21470@redhat.com>
-	<20140414151959.GA21995@redhat.com>
-	<20140414150221.b62ccb9fb9056527c565872f@linux-foundation.org>
-	<20140415074040.GH11182@twins.programming.kicks-ass.net>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Tue, 15 Apr 2014 03:47:37 -0400
+Message-ID: <1397548054.1985.3.camel@x220>
+Subject: Re: [PATCH 07/28] Remove CPU_PXA988
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Richard Weinberger <richard@nod.at>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        FRAMEBUFFER LAYER <linux-fbdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Tue, 15 Apr 2014 09:47:34 +0200
+In-Reply-To: <52F800B2.6010702@nod.at>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+		 <1391971686-9517-8-git-send-email-richard@nod.at>
+	 <1391984646.25855.79.camel@x220> <52F800B2.6010702@nod.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Apr 2014 07:47:34.0746 (UTC) FILETIME=[F6D743A0:01CF587E]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 15 Apr 2014 09:40:40 +0200 Peter Zijlstra <peterz@infradead.org> wrote:
+Richard,
 
-> On Mon, Apr 14, 2014 at 03:02:21PM -0700, Andrew Morton wrote:
-> > Anyway, emails are cheap and nobody reads lkml so please just resend
-> > everything ;)
+On Sun, 2014-02-09 at 23:26 +0100, Richard Weinberger wrote:
+> Am 09.02.2014 23:24, schrieb Paul Bolle:
+> > On Sun, 2014-02-09 at 19:47 +0100, Richard Weinberger wrote:
+> >> The symbol is an orphan, get rid of it.
+> >>
+> >> Signed-off-by: Richard Weinberger <richard@nod.at>
+> > 
+> > This one first entered the tree in v3.9, with commit 59393bb94c10
+> > ("video: mmp display subsystem"). The Kconfig symbol has not yet been
+> > added.
 > 
-> You're nobody right? ;-) At least the rumour went you actually read
-> lkml.
+> Thanks a lot for digging out the background info!
+> I'll add them to the commit message.
 
-I scan them all to pick out neglected patches and interesting bug
-reports, but my days of reading all the message bodies ended long
-ago.
+Did you ever find the time to update the commit message? If not, should
+I submit an updated version of this patch?
+
+
+Paul Bolle
+
