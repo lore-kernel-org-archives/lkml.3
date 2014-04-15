@@ -1,191 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415AbaDOLGq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 07:06:46 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:26485 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040AbaDOLG0 (ORCPT
+	id S1751803AbaDOLHt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 07:07:49 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:39400 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751007AbaDOLHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 07:06:26 -0400
-X-AuditID: cbfee68e-b7f566d000002344-fe-534d12b10816
-Message-id: <1397559864.7727.5.camel@kjgkr>
-Subject: Re: f2fs: BUG_ON() is triggered when mount valid f2fs filesystem
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Andrey Tsyvarev <tsyvarev@ispras.ru>
-Cc: linux-f2fs-devel@lists.sourceforge.net,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Alexey Khoroshilov <khoroshilov@ispras.ru>
-Date: Tue, 15 Apr 2014 20:04:24 +0900
-In-reply-to: <534BC29B.3020408@ispras.ru>
-References: <52F320FC.50803@ispras.ru> <534BC29B.3020408@ispras.ru>
-Organization: Samsung
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t8zfd2NQr7BBgcOyVnsWLeT3eLSIneL
-	y7vmsFksvxznwOIx499URo/dCz4zeXzeJBfAHMVlk5Kak1mWWqRvl8CVsX7xKZaCd6oV9562
-	szUwzlToYuTkkBAwkVh7+wEbhC0mceHeejBbSGAZo0TPfkGYmvu/XwLFuYDi0xklGqcuYoRw
-	XjFKbNuzhR2kildAW+LO6n8sILawgKfExqlXmLoYOTjYgOKb9xtADFWUeLv/LiuILSKgIbF6
-	5k8mkDnMAu2MEiv3LwZLsAioSjyc/pgZxOYU0JRYfXcV1EXOEj0LP4LZ/AKiEocXbgerYRZQ
-	l5g0bxEzxKVKErvbO9kh4vISm9e8ZYa4TVDix+R7LCDLJASOsUvcbLnJCLFMQOLb5EMsIIdK
-	CMhKbDoANUdS4uCKGywTGCVmIVkxC8nYWUjGLmBkXsUomlqQXFCclF5kpFecmFtcmpeul5yf
-	u4kREnF9OxhvHrA+xJgMtHIis5Rocj4wYvNK4g2NzYwsTE1MjY3MLc1IE1YS5130MClISCA9
-	sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6PimZjfh2767a4qSlPt0rVtSpLZt/ZPjsr3I3nLZj2U
-	/13pZbN9+pblHc7Rmd+u2z/v0dv/VPP+FGXX4tOn1WRZ9hksOs75Isy+frI2J9uBenG+9sVc
-	SdlyGzMe1TIyrm8+fUy0mMlKZr/V1GlWqtvOGqkdutT6qGVBXNiOROHaGw/k7sbEdSqxFGck
-	GmoxFxUnAgB8PXS8zgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsVy+t9jQd2NQr7BBj//SVrsWLeT3eLSIneL
-	y7vmsFksvxznwOIx499URo/dCz4zeXzeJBfAHNXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxv
-	amZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtExJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9I
-	EFyPkQEaSFjHmLF+8SmWgneqFfeetrM1MM5U6GLk5JAQMJG4//slG4QtJnHh3nogm4tDSGA6
-	o0Tj1EWMEM4rRolte7awg1TxCmhL3Fn9jwXEFhbwlNg49QpTFyMHBxtQfPN+A5CwkICixNv9
-	d1lBbBEBDYnVM38ygcxhFmhnlFi5fzFYgkVAVeLh9MfMIDangKbE6rur2CCanSV6Fn4Es/kF
-	RCUOL9wOVsMsoC4xad4iZohLlSR2t3eyQ8TlJTavecsMcZugxI/J91gmMArNQtIyC0nZLCRl
-	CxiZVzGKphYkFxQnpeca6hUn5haX5qXrJefnbmIER/QzqR2MKxssDjEKcDAq8fB6TPAJFmJN
-	LCuuzD3EKMHBrCTC+5HbN1iINyWxsiq1KD++qDQntfgQYzLQdxOZpUST84HJJq8k3tDYxMzI
-	0sjMwsjE3Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGC9xSJ+SUD63XyDgr47RN67m
-	z+HZPw4HPnb4eyCBJfl/v3abx5r9MdO6k2qPFljePnvALbV+kk6U9wxZqcqwGRdnN4q7qMrL
-	Xglg1tv8/Lb3anPxDT3njN1tF2Zuff6u/NjJ0ke/3tltPFaZfOVw1IFla+/ti5qetnINb+rL
-	tVaKr8PWHLM06lBiKc5INNRiLipOBADPVHEMLAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 15 Apr 2014 07:07:47 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 0/2] Add more peripherals to the sam9rlek
+Date: Tue, 15 Apr 2014 13:07:41 +0200
+Message-Id: <1397560063-7439-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi, this patch set adds support for SPI, LCD, i2c, ADC and touchscreen, USB
+gadget and PWM on the at91sam9rlek.
 
-Thank you for the report.
-I retrieved the fault image and found out that previous garbage data
-wreak such the wrong behaviors.
-So, I wrote the following patch that fills one zero-block at the
-checkpoint procedure.
-If the underlying device supports discard, I expect that it mostly
-doesn't incur any performance regression significantly.
+The only missing piece is now audio/ac97 support, then the SoC will be entirely
+supported using DT.
 
-Could you test this patch?
+Alexandre Belloni (2):
+  ARM: at91/dt: sam9rl: add lcd, adc, usb gadget and pwm support
+  ARM: at91/dt: add peripherals to the at91sam9rlek board
 
->From 60588ceb7277aae2a79e7f67f5217d1256720d78 Mon Sep 17 00:00:00 2001
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Date: Tue, 15 Apr 2014 13:57:55 +0900
-Subject: [PATCH] f2fs: avoid to conduct roll-forward due to the remained
- garbage blocks
-
-The f2fs always scans the next chain of direct node blocks.
-But some garbage blocks are able to be remained due to no discard
-support or
-SSR triggers.
-This occasionally wreaks recovering wrong inodes that were used or
-BUG_ONs
-due to reallocating node ids as follows.
-
-When mount this f2fs image:
-http://linuxtesting.org/downloads/f2fs_fault_image.zip
-BUG_ON is triggered in f2fs driver (messages below are generated on
-kernel 3.13.2; for other kernels output is similar):
-
-kernel BUG at fs/f2fs/node.c:215!
- Call Trace:
- [<ffffffffa032ebad>] recover_inode_page+0x1fd/0x3e0 [f2fs]
- [<ffffffff811446e7>] ? __lock_page+0x67/0x70
- [<ffffffff81089990>] ? autoremove_wake_function+0x50/0x50
- [<ffffffffa0337788>] recover_fsync_data+0x1398/0x15d0 [f2fs]
- [<ffffffff812b9e5c>] ? selinux_d_instantiate+0x1c/0x20
- [<ffffffff811cb20b>] ? d_instantiate+0x5b/0x80
- [<ffffffffa0321044>] f2fs_fill_super+0xb04/0xbf0 [f2fs]
- [<ffffffff811b861e>] ? mount_bdev+0x7e/0x210
- [<ffffffff811b8769>] mount_bdev+0x1c9/0x210
- [<ffffffffa0320540>] ? validate_superblock+0x210/0x210 [f2fs]
- [<ffffffffa031cf8d>] f2fs_mount+0x1d/0x30 [f2fs]
- [<ffffffff811b9497>] mount_fs+0x47/0x1c0
- [<ffffffff81166e00>] ? __alloc_percpu+0x10/0x20
- [<ffffffff811d4032>] vfs_kern_mount+0x72/0x110
- [<ffffffff811d6763>] do_mount+0x493/0x910
- [<ffffffff811615cb>] ? strndup_user+0x5b/0x80
- [<ffffffff811d6c70>] SyS_mount+0x90/0xe0
- [<ffffffff8166f8d9>] system_call_fastpath+0x16/0x1b
-
-Found by Linux File System Verification project (linuxtesting.org).
-
-Reported-by: Andrey Tsyvarev <tsyvarev@ispras.ru>
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/checkpoint.c |  6 ++++++
- fs/f2fs/f2fs.h       |  1 +
- fs/f2fs/segment.c    | 17 +++++++++++++++--
- 3 files changed, 22 insertions(+), 2 deletions(-)
-
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index 4aa521a..890e23d 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -762,6 +762,12 @@ static void do_checkpoint(struct f2fs_sb_info *sbi,
-bool is_umount)
- 	void *kaddr;
- 	int i;
- 
-+	/*
-+	 * This avoids to conduct wrong roll-forward operations and uses
-+	 * metapages, so should be called prior to sync_meta_pages below.
-+	 */
-+	discard_next_dnode(sbi);
-+
- 	/* Flush all the NAT/SIT pages */
- 	while (get_pages(sbi, F2FS_DIRTY_META))
- 		sync_meta_pages(sbi, META, LONG_MAX);
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 2ecac83..2c5a5da 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -1179,6 +1179,7 @@ int f2fs_issue_flush(struct f2fs_sb_info *);
- void invalidate_blocks(struct f2fs_sb_info *, block_t);
- void refresh_sit_entry(struct f2fs_sb_info *, block_t, block_t);
- void clear_prefree_segments(struct f2fs_sb_info *);
-+void discard_next_dnode(struct f2fs_sb_info *);
- int npages_for_summary_flush(struct f2fs_sb_info *);
- void allocate_new_segments(struct f2fs_sb_info *);
- struct page *get_sum_page(struct f2fs_sb_info *, unsigned int);
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index 1e264e7..9993f94 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -335,13 +335,26 @@ static void locate_dirty_segment(struct
-f2fs_sb_info *sbi, unsigned int segno)
- 	mutex_unlock(&dirty_i->seglist_lock);
- }
- 
--static void f2fs_issue_discard(struct f2fs_sb_info *sbi,
-+static int f2fs_issue_discard(struct f2fs_sb_info *sbi,
- 				block_t blkstart, block_t blklen)
- {
- 	sector_t start = SECTOR_FROM_BLOCK(sbi, blkstart);
- 	sector_t len = SECTOR_FROM_BLOCK(sbi, blklen);
--	blkdev_issue_discard(sbi->sb->s_bdev, start, len, GFP_NOFS, 0);
- 	trace_f2fs_issue_discard(sbi->sb, blkstart, blklen);
-+	return blkdev_issue_discard(sbi->sb->s_bdev, start, len, GFP_NOFS, 0);
-+}
-+
-+void discard_next_dnode(struct f2fs_sb_info *sbi)
-+{
-+	struct curseg_info *curseg = CURSEG_I(sbi, CURSEG_WARM_NODE);
-+	block_t blkaddr = NEXT_FREE_BLKADDR(sbi, curseg);
-+
-+	if (f2fs_issue_discard(sbi, blkaddr, 1)) {
-+		struct page *page = grab_meta_page(sbi, blkaddr);
-+		/* zero-filled page */
-+		set_page_dirty(page);
-+		f2fs_put_page(page, 1);
-+	}
- }
- 
- static void add_discard_addrs(struct f2fs_sb_info *sbi,
--- 
-1.8.4.474.g128a96c
+ arch/arm/boot/dts/at91sam9rl.dtsi  | 265 +++++++++++++++++++++++++++++++++++--
+ arch/arm/boot/dts/at91sam9rlek.dts |  90 ++++++++++++-
+ 2 files changed, 342 insertions(+), 13 deletions(-)
 
 -- 
-Jaegeuk Kim
-Samsung
+1.8.3.2
 
