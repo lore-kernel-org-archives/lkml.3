@@ -1,118 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389AbaDOJTB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 05:19:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50684 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750855AbaDOJSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 05:18:55 -0400
-From: Vlastimil Babka <vbabka@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Heesub Shin <heesub.shin@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Dongjun Shin <d.j.shin@samsung.com>,
-        Sunghwan Yun <sunghwan.yun@samsung.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Minchan Kim <minchan@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: [PATCH 1/2] mm/compaction: make isolate_freepages start at pageblock boundary
-Date: Tue, 15 Apr 2014 11:18:26 +0200
-Message-Id: <1397553507-15330-1-git-send-email-vbabka@suse.cz>
-X-Mailer: git-send-email 1.8.4.5
-In-Reply-To: <5342BA34.8050006@suse.cz>
-References: <5342BA34.8050006@suse.cz>
+	id S1753827AbaDOJTR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 05:19:17 -0400
+Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:58276 "EHLO
+	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753800AbaDOJTJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 05:19:09 -0400
+Message-ID: <1397553547.1985.25.camel@x220>
+Subject: Re: [PATCH 16/28] Remove GENERIC_HAS_IOMAP
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Lennox Wu <lennox.wu@gmail.com>
+Cc: Richard Weinberger <richard@nod.at>, Chen Liqin <liqin.linux@gmail.com>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 15 Apr 2014 11:19:07 +0200
+In-Reply-To: <CAF0htA5xWQwkMqdp0_zz05DLJvyCOJZf-v1Rso20de5VWFmPTA@mail.gmail.com>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+	 <1391971686-9517-17-git-send-email-richard@nod.at>
+	 <CAF0htA5xWQwkMqdp0_zz05DLJvyCOJZf-v1Rso20de5VWFmPTA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Apr 2014 09:19:07.0498 (UTC) FILETIME=[C0C6B4A0:01CF588B]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The compaction freepage scanner implementation in isolate_freepages() starts
-by taking the current cc->free_pfn value as the first pfn. In a for loop, it
-scans from this first pfn to the end of the pageblock, and then subtracts
-pageblock_nr_pages from the first pfn to obtain the first pfn for the next
-for loop iteration.
+On Mon, 2014-02-10 at 10:24 +0800, Lennox Wu wrote:
+> Thanks.
+> 
+> Acked-by: Lennox Wu <lennox.wu@gmail.com>
 
-This means that when cc->free_pfn starts at offset X rather than being aligned
-on pageblock boundary, the scanner will start at offset X in all scanned
-pageblock, ignoring potentially many free pages. Currently this can happen when
-a) zone's end pfn is not pageblock aligned, or
-b) through zone->compact_cached_free_pfn with CONFIG_HOLES_IN_ZONE enabled and
-   a hole spanning the beginning of a pageblock
+I don't think this oneliner is queued somewhere. Lennox, you're listed
+as one of the score maintainers: could you perhaps queue this patch?
 
-This patch fixes the problem by aligning the initial pfn in isolate_freepages()
-to pageblock boundary. This also allows to replace the end-of-pageblock
-alignment within the for loop with a simple pageblock_nr_pages increment.
 
-Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-Reported-by: Heesub Shin <heesub.shin@samsung.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Michal Nazarewicz <mina86@mina86.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
----
- mm/compaction.c | 22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+Paul Bolle
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 37f9762..627dc2e 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -671,16 +671,20 @@ static void isolate_freepages(struct zone *zone,
- 				struct compact_control *cc)
- {
- 	struct page *page;
--	unsigned long high_pfn, low_pfn, pfn, z_end_pfn, end_pfn;
-+	unsigned long high_pfn, low_pfn, pfn, z_end_pfn;
- 	int nr_freepages = cc->nr_freepages;
- 	struct list_head *freelist = &cc->freepages;
- 
- 	/*
- 	 * Initialise the free scanner. The starting point is where we last
--	 * scanned from (or the end of the zone if starting). The low point
--	 * is the end of the pageblock the migration scanner is using.
-+	 * successfully isolated from, zone-cached value, or the end of the
-+	 * zone when isolating for the first time. We need this aligned to
-+	 * the pageblock boundary, because we do pfn -= pageblock_nr_pages
-+	 * in the for loop.
-+	 * The low boundary is the end of the pageblock the migration scanner
-+	 * is using.
- 	 */
--	pfn = cc->free_pfn;
-+	pfn = cc->free_pfn & ~(pageblock_nr_pages-1);
- 	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
- 
- 	/*
-@@ -700,6 +704,7 @@ static void isolate_freepages(struct zone *zone,
- 	for (; pfn >= low_pfn && cc->nr_migratepages > nr_freepages;
- 					pfn -= pageblock_nr_pages) {
- 		unsigned long isolated;
-+		unsigned long end_pfn;
- 
- 		/*
- 		 * This can iterate a massively long zone without finding any
-@@ -734,13 +739,10 @@ static void isolate_freepages(struct zone *zone,
- 		isolated = 0;
- 
- 		/*
--		 * As pfn may not start aligned, pfn+pageblock_nr_page
--		 * may cross a MAX_ORDER_NR_PAGES boundary and miss
--		 * a pfn_valid check. Ensure isolate_freepages_block()
--		 * only scans within a pageblock
-+		 * Take care when isolating in last pageblock of a zone which
-+		 * ends in the middle of a pageblock.
- 		 */
--		end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
--		end_pfn = min(end_pfn, z_end_pfn);
-+		end_pfn = min(pfn + pageblock_nr_pages, z_end_pfn);
- 		isolated = isolate_freepages_block(cc, pfn, end_pfn,
- 						   freelist, false);
- 		nr_freepages += isolated;
--- 
-1.8.4.5
+> 2014-02-10 2:47 GMT+08:00 Richard Weinberger <richard@nod.at>:
+> > The symbol is an orphan, get rid of it.
+> >
+> > Signed-off-by: Richard Weinberger <richard@nod.at>
+> > ---
+> >  arch/score/Kconfig | 3 ---
+> >  1 file changed, 3 deletions(-)
+> >
+> > diff --git a/arch/score/Kconfig b/arch/score/Kconfig
+> > index c75d06a..c7a7b65 100644
+> > --- a/arch/score/Kconfig
+> > +++ b/arch/score/Kconfig
+> > @@ -23,19 +23,16 @@ config ARCH_SCORE7
+> >         bool "SCORE7 processor"
+> >         select SYS_SUPPORTS_32BIT_KERNEL
+> >         select CPU_SCORE7
+> > -       select GENERIC_HAS_IOMAP
+> >
+> >  config MACH_SPCT6600
+> >         bool "SPCT6600 series based machines"
+> >         select SYS_SUPPORTS_32BIT_KERNEL
+> >         select CPU_SCORE7
+> > -       select GENERIC_HAS_IOMAP
+> >
+> >  config SCORE_SIM
+> >         bool "Score simulator"
+> >         select SYS_SUPPORTS_32BIT_KERNEL
+> >         select CPU_SCORE7
+> > -       select GENERIC_HAS_IOMAP
+> >  endchoice
+> >
+> >  endmenu
+> > --
+> > 1.8.4.2
 
