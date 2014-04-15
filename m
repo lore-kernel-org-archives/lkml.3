@@ -1,95 +1,359 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083AbaDOOir (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 10:38:47 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:47060 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784AbaDOOip (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 10:38:45 -0400
-Message-ID: <534D448A.8040002@linaro.org>
-Date: Tue, 15 Apr 2014 16:39:06 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, rjw@rjwysocki.net,
-        nicolas.pitre@linaro.org, linux-pm@vger.kernel.org,
-        alex.shi@linaro.org, vincent.guittot@linaro.org,
-        morten.rasmussen@arm.com
-Subject: Re: [RFC PATCHC 2/3] idle: store the idle state the cpu is
-References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org> <1396009796-31598-3-git-send-email-daniel.lezcano@linaro.org> <20140415124330.GK11182@twins.programming.kicks-ass.net> <20140415124437.GO13658@twins.programming.kicks-ass.net> <534D3F80.9010902@linaro.org> <20140415143343.GX11096@twins.programming.kicks-ass.net>
-In-Reply-To: <20140415143343.GX11096@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1754346AbaDOOl0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 10:41:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57098 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754228AbaDOOlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 10:41:24 -0400
+From: Mel Gorman <mgorman@suse.de>
+To: Ingo Molnar <mingo@kernel.org>, Peter Anvin <hpa@zytor.com>
+Cc: Fengguang Wu <fengguang.wu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Noonan <steven@uplinklabs.net>, Rik van Riel <riel@redhat.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        Linux-X86 <x86@kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/3] x86: Define _PAGE_NUMA by reusing software bits on the PMD and PTE levels
+Date: Tue, 15 Apr 2014 15:41:16 +0100
+Message-Id: <1397572876-1610-4-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.8.4.5
+In-Reply-To: <1397572876-1610-1-git-send-email-mgorman@suse.de>
+References: <1397572876-1610-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2014 04:33 PM, Peter Zijlstra wrote:
-> On Tue, Apr 15, 2014 at 04:17:36PM +0200, Daniel Lezcano wrote:
->> On 04/15/2014 02:44 PM, Peter Zijlstra wrote:
->>> On Tue, Apr 15, 2014 at 02:43:30PM +0200, Peter Zijlstra wrote:
->>>> On Fri, Mar 28, 2014 at 01:29:55PM +0100, Daniel Lezcano wrote:
->>>>> @@ -143,6 +145,10 @@ static int cpuidle_idle_call(void)
->>>>>   			if (!ret) {
->>>>>   				trace_cpu_idle_rcuidle(next_state, dev->cpu);
->>>>>
->>>>> +				*power = &drv->states[next_state].power;
->>>>> +
->>>>> +				wmb();
->>>>> +
->>>>
->>>> I very much suspect you meant: smp_wmb(), as I don't see the hardware
->>>> reading that pointer, therefore UP wouldn't care. Also, any and all
->>>> barriers should come with a comment that describes the data ordering and
->>>> points to the matchin barriers.
->>>
->>> Furthermore, this patch fails to describe the life-time rules of the
->>> object placed there. Can the objected pointed to ever disappear?
->>
->> Hi Peter,
->>
->> thanks for reviewing the patches.
->>
->> There are a couple of situations where a cpuidle state can disappear:
->>
->> 1. For x86/acpi with dynamic c-states, when a laptop switches from battery
->> to AC that could result on removing the deeper idle state. The acpi driver
->> triggers:
->>
->> 'acpi_processor_cst_has_changed' which will call 'cpuidle_pause_and_lock'.
->> This one will call 'cpuidle_uninstall_idle_handler' which in turn calls
->> 'kick_all_cpus_sync'.
->>
->> All cpus will exit their idle state and the pointed object will be set to
->> NULL again.
->>
->> 2. The cpuidle driver is unloaded. Logically that could happen but not in
->> practice because the drivers are always compiled in and 95% of the drivers
->> are not coded to unregister the driver. Anyway ...
->>
->> The unloading code must call 'cpuidle_unregister_device', that calls
->> 'cpuidle_pause_and_lock' leading to 'kick_all_cpus_sync'.
->>
->> IIUC, the race can happen if we take the pointer and then one of these two
->> situation occurs at the same moment.
->>
->> As the function 'find_idlest_cpu' is inside a rcu_read_lock may be a
->> rcu_barrier in 'cpuidle_pause_and_lock' or 'cpuidle_uninstall_idle_handler'
->> should suffice, no ?
->
-> Indeed. But be sure to document this.
+_PAGE_NUMA is currently an alias of _PROT_PROTNONE to trap NUMA hinting
+faults on x86. Care is taken such that _PAGE_NUMA is used only in situations
+where the VMA flags distinguish between NUMA hinting faults and prot_none
+faults. This decision was x86-specific and conceptually it is difficult
+requiring special casing to distinguish between PROTNONE and NUMA ptes
+based on context.
 
-Yes, sure. Thanks for pointing this.
+Fundamentally, we only need the _PAGE_NUMA bit to tell the difference between
+an entry that is really unmapped and a page that is protected for NUMA
+hinting faults as if the PTE is not present then a fault will be trapped.
 
-   -- Daniel
+Swap PTEs on x86-64 use the bits after _PAGE_GLOBAL for the offset. This
+patch shrinks the maximum possible swap size and uses the bit to uniquely
+distinguish between NUMA hinting ptes and swap ptes.
 
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ arch/powerpc/include/asm/pgtable.h   |  5 +++
+ arch/x86/include/asm/pgtable.h       | 14 +++++---
+ arch/x86/include/asm/pgtable_64.h    |  8 +++++
+ arch/x86/include/asm/pgtable_types.h | 66 +++++++++++++++++++-----------------
+ arch/x86/mm/pageattr-test.c          |  2 +-
+ include/asm-generic/pgtable.h        |  4 +--
+ include/linux/swapops.h              |  2 +-
+ mm/memory.c                          | 17 ++++------
+ 8 files changed, 69 insertions(+), 49 deletions(-)
 
+diff --git a/arch/powerpc/include/asm/pgtable.h b/arch/powerpc/include/asm/pgtable.h
+index 3ebb188..cdf6679 100644
+--- a/arch/powerpc/include/asm/pgtable.h
++++ b/arch/powerpc/include/asm/pgtable.h
+@@ -44,6 +44,11 @@ static inline int pte_present(pte_t pte)
+ 	return pte_val(pte) & (_PAGE_PRESENT | _PAGE_NUMA);
+ }
+ 
++static inline int pte_present_nonuma(pte_t pte)
++{
++	return pte_val(pte) & (_PAGE_PRESENT);
++}
++
+ #define pte_numa pte_numa
+ static inline int pte_numa(pte_t pte)
+ {
+diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+index bbc8b12..611dd32 100644
+--- a/arch/x86/include/asm/pgtable.h
++++ b/arch/x86/include/asm/pgtable.h
+@@ -130,7 +130,8 @@ static inline int pte_exec(pte_t pte)
+ 
+ static inline int pte_special(pte_t pte)
+ {
+-	return pte_flags(pte) & _PAGE_SPECIAL;
++	return (pte_flags(pte) & (_PAGE_PRESENT|_PAGE_SPECIAL)) ==
++				 (_PAGE_PRESENT|_PAGE_SPECIAL);
+ }
+ 
+ static inline unsigned long pte_pfn(pte_t pte)
+@@ -451,6 +452,11 @@ static inline int pte_present(pte_t a)
+ 			       _PAGE_NUMA);
+ }
+ 
++static inline int pte_present_nonuma(pte_t a)
++{
++	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE);
++}
++
+ #define pte_accessible pte_accessible
+ static inline bool pte_accessible(struct mm_struct *mm, pte_t a)
+ {
+@@ -859,19 +865,19 @@ static inline void update_mmu_cache_pmd(struct vm_area_struct *vma,
+ 
+ static inline pte_t pte_swp_mksoft_dirty(pte_t pte)
+ {
+-	VM_BUG_ON(pte_present(pte));
++	VM_BUG_ON(pte_present_nonuma(pte));
+ 	return pte_set_flags(pte, _PAGE_SWP_SOFT_DIRTY);
+ }
+ 
+ static inline int pte_swp_soft_dirty(pte_t pte)
+ {
+-	VM_BUG_ON(pte_present(pte));
++	VM_BUG_ON(pte_present_nonuma(pte));
+ 	return pte_flags(pte) & _PAGE_SWP_SOFT_DIRTY;
+ }
+ 
+ static inline pte_t pte_swp_clear_soft_dirty(pte_t pte)
+ {
+-	VM_BUG_ON(pte_present(pte));
++	VM_BUG_ON(pte_present_nonuma(pte));
+ 	return pte_clear_flags(pte, _PAGE_SWP_SOFT_DIRTY);
+ }
+ 
+diff --git a/arch/x86/include/asm/pgtable_64.h b/arch/x86/include/asm/pgtable_64.h
+index e22c1db..6d6ecd0 100644
+--- a/arch/x86/include/asm/pgtable_64.h
++++ b/arch/x86/include/asm/pgtable_64.h
+@@ -145,8 +145,16 @@ static inline int pgd_large(pgd_t pgd) { return 0; }
+ /* Encode and de-code a swap entry */
+ #if _PAGE_BIT_FILE < _PAGE_BIT_PROTNONE
+ #define SWP_TYPE_BITS (_PAGE_BIT_FILE - _PAGE_BIT_PRESENT - 1)
++#ifdef CONFIG_NUMA_BALANCING
++/* Automatic NUMA balancing needs to be distinguishable from swap entries */
++#define SWP_OFFSET_SHIFT (_PAGE_BIT_PROTNONE + 2)
++#else
+ #define SWP_OFFSET_SHIFT (_PAGE_BIT_PROTNONE + 1)
++#endif
+ #else
++#ifdef CONFIG_NUMA_BALANCING
++#error Incompatible format for automatic NUMA balancing
++#endif
+ #define SWP_TYPE_BITS (_PAGE_BIT_PROTNONE - _PAGE_BIT_PRESENT - 1)
+ #define SWP_OFFSET_SHIFT (_PAGE_BIT_FILE + 1)
+ #endif
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index 1aa9ccd..f95ee23 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -16,15 +16,26 @@
+ #define _PAGE_BIT_PSE		7	/* 4 MB (or 2MB) page */
+ #define _PAGE_BIT_PAT		7	/* on 4KB pages */
+ #define _PAGE_BIT_GLOBAL	8	/* Global TLB entry PPro+ */
+-#define _PAGE_BIT_UNUSED1	9	/* available for programmer */
+-#define _PAGE_BIT_IOMAP		10	/* flag used to indicate IO mapping */
+-#define _PAGE_BIT_HIDDEN	11	/* hidden by kmemcheck */
++#define _PAGE_BIT_SOFTW1	9	/* available for programmer */
++#define _PAGE_BIT_SOFTW2	10	/* " */
++#define _PAGE_BIT_SOFTW3	11	/* " */
+ #define _PAGE_BIT_PAT_LARGE	12	/* On 2MB or 1GB pages */
+-#define _PAGE_BIT_SPECIAL	_PAGE_BIT_UNUSED1
+-#define _PAGE_BIT_CPA_TEST	_PAGE_BIT_UNUSED1
+-#define _PAGE_BIT_SPLITTING	_PAGE_BIT_UNUSED1 /* only valid on a PSE pmd */
++#define _PAGE_BIT_SPECIAL	_PAGE_BIT_SOFTW1
++#define _PAGE_BIT_CPA_TEST	_PAGE_BIT_SOFTW1
++#define _PAGE_BIT_SPLITTING	_PAGE_BIT_SOFTW2 /* only valid on a PSE pmd */
++#define _PAGE_BIT_IOMAP		_PAGE_BIT_SOFTW2 /* flag used to indicate IO mapping */
++#define _PAGE_BIT_HIDDEN	_PAGE_BIT_SOFTW3 /* hidden by kmemcheck */
++#define _PAGE_BIT_SOFT_DIRTY	_PAGE_BIT_SOFTW3 /* software dirty tracking */
+ #define _PAGE_BIT_NX           63       /* No execute: only valid after cpuid check */
+ 
++/*
++ * Swap offsets on configurations that allow automatic NUMA balancing use the
++ * bits after _PAGE_BIT_GLOBAL. To uniquely distinguish NUMA hinting PTEs from
++ * swap entries, we use the first bit after _PAGE_BIT_GLOBAL and shrink the
++ * maximum possible swap space from 16TB to 8TB.
++ */
++#define _PAGE_BIT_NUMA		(_PAGE_BIT_GLOBAL+1)
++
+ /* If _PAGE_BIT_PRESENT is clear, we use these: */
+ /* - if the user mapped it with PROT_NONE; pte_present gives true */
+ #define _PAGE_BIT_PROTNONE	_PAGE_BIT_GLOBAL
+@@ -40,7 +51,7 @@
+ #define _PAGE_DIRTY	(_AT(pteval_t, 1) << _PAGE_BIT_DIRTY)
+ #define _PAGE_PSE	(_AT(pteval_t, 1) << _PAGE_BIT_PSE)
+ #define _PAGE_GLOBAL	(_AT(pteval_t, 1) << _PAGE_BIT_GLOBAL)
+-#define _PAGE_UNUSED1	(_AT(pteval_t, 1) << _PAGE_BIT_UNUSED1)
++#define _PAGE_SOFTW1	(_AT(pteval_t, 1) << _PAGE_BIT_SOFTW1)
+ #define _PAGE_IOMAP	(_AT(pteval_t, 1) << _PAGE_BIT_IOMAP)
+ #define _PAGE_PAT	(_AT(pteval_t, 1) << _PAGE_BIT_PAT)
+ #define _PAGE_PAT_LARGE (_AT(pteval_t, 1) << _PAGE_BIT_PAT_LARGE)
+@@ -61,8 +72,6 @@
+  * they do not conflict with each other.
+  */
+ 
+-#define _PAGE_BIT_SOFT_DIRTY	_PAGE_BIT_HIDDEN
+-
+ #ifdef CONFIG_MEM_SOFT_DIRTY
+ #define _PAGE_SOFT_DIRTY	(_AT(pteval_t, 1) << _PAGE_BIT_SOFT_DIRTY)
+ #else
+@@ -70,6 +79,21 @@
+ #endif
+ 
+ /*
++ * _PAGE_NUMA distinguishes between a numa hinting minor fault and a page
++ * that is not present. The hinting fault gathers numa placement statistics
++ * (see pte_numa()). The bit is always zero when the PTE is not present.
++ *
++ * The bit picked must be always zero when the pmd is present and not
++ * present, so that we don't lose information when we set it while
++ * atomically clearing the present bit.
++ */
++#ifdef CONFIG_NUMA_BALANCING
++#define _PAGE_NUMA	(_AT(pteval_t, 1) << _PAGE_BIT_NUMA)
++#else
++#define _PAGE_NUMA	(_AT(pteval_t, 0))
++#endif
++
++/*
+  * Tracking soft dirty bit when a page goes to a swap is tricky.
+  * We need a bit which can be stored in pte _and_ not conflict
+  * with swap entry format. On x86 bits 6 and 7 are *not* involved
+@@ -94,26 +118,6 @@
+ #define _PAGE_FILE	(_AT(pteval_t, 1) << _PAGE_BIT_FILE)
+ #define _PAGE_PROTNONE	(_AT(pteval_t, 1) << _PAGE_BIT_PROTNONE)
+ 
+-/*
+- * _PAGE_NUMA indicates that this page will trigger a numa hinting
+- * minor page fault to gather numa placement statistics (see
+- * pte_numa()). The bit picked (8) is within the range between
+- * _PAGE_FILE (6) and _PAGE_PROTNONE (8) bits. Therefore, it doesn't
+- * require changes to the swp entry format because that bit is always
+- * zero when the pte is not present.
+- *
+- * The bit picked must be always zero when the pmd is present and not
+- * present, so that we don't lose information when we set it while
+- * atomically clearing the present bit.
+- *
+- * Because we shared the same bit (8) with _PAGE_PROTNONE this can be
+- * interpreted as _PAGE_NUMA only in places that _PAGE_PROTNONE
+- * couldn't reach, like handle_mm_fault() (see access_error in
+- * arch/x86/mm/fault.c, the vma protection must not be PROT_NONE for
+- * handle_mm_fault() to be invoked).
+- */
+-#define _PAGE_NUMA	_PAGE_PROTNONE
+-
+ #define _PAGE_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_USER |	\
+ 			 _PAGE_ACCESSED | _PAGE_DIRTY)
+ #define _KERNPG_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_ACCESSED |	\
+@@ -122,8 +126,8 @@
+ /* Set of bits not changed in pte_modify */
+ #define _PAGE_CHG_MASK	(PTE_PFN_MASK | _PAGE_PCD | _PAGE_PWT |		\
+ 			 _PAGE_SPECIAL | _PAGE_ACCESSED | _PAGE_DIRTY |	\
+-			 _PAGE_SOFT_DIRTY)
+-#define _HPAGE_CHG_MASK (_PAGE_CHG_MASK | _PAGE_PSE)
++			 _PAGE_SOFT_DIRTY | _PAGE_NUMA)
++#define _HPAGE_CHG_MASK (_PAGE_CHG_MASK | _PAGE_PSE | _PAGE_NUMA)
+ 
+ #define _PAGE_CACHE_MASK	(_PAGE_PCD | _PAGE_PWT)
+ #define _PAGE_CACHE_WB		(0)
+diff --git a/arch/x86/mm/pageattr-test.c b/arch/x86/mm/pageattr-test.c
+index 461bc82..6629f39 100644
+--- a/arch/x86/mm/pageattr-test.c
++++ b/arch/x86/mm/pageattr-test.c
+@@ -35,7 +35,7 @@ enum {
+ 
+ static int pte_testbit(pte_t pte)
+ {
+-	return pte_flags(pte) & _PAGE_UNUSED1;
++	return pte_flags(pte) & _PAGE_SOFTW1;
+ }
+ 
+ struct split_state {
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index 38a7437..d2b92be 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -657,7 +657,7 @@ static inline int pmd_trans_unstable(pmd_t *pmd)
+ static inline int pte_numa(pte_t pte)
+ {
+ 	return (pte_flags(pte) &
+-		(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
++		(_PAGE_NUMA|_PAGE_PROTNONE|_PAGE_PRESENT)) == _PAGE_NUMA;
+ }
+ #endif
+ 
+@@ -665,7 +665,7 @@ static inline int pte_numa(pte_t pte)
+ static inline int pmd_numa(pmd_t pmd)
+ {
+ 	return (pmd_flags(pmd) &
+-		(_PAGE_NUMA|_PAGE_PRESENT)) == _PAGE_NUMA;
++		(_PAGE_NUMA|_PAGE_PROTNONE|_PAGE_PRESENT)) == _PAGE_NUMA;
+ }
+ #endif
+ 
+diff --git a/include/linux/swapops.h b/include/linux/swapops.h
+index c0f7526..6adfb7b 100644
+--- a/include/linux/swapops.h
++++ b/include/linux/swapops.h
+@@ -54,7 +54,7 @@ static inline pgoff_t swp_offset(swp_entry_t entry)
+ /* check whether a pte points to a swap entry */
+ static inline int is_swap_pte(pte_t pte)
+ {
+-	return !pte_none(pte) && !pte_present(pte) && !pte_file(pte);
++	return !pte_none(pte) && !pte_present_nonuma(pte) && !pte_file(pte);
+ }
+ #endif
+ 
+diff --git a/mm/memory.c b/mm/memory.c
+index 22dfa61..f1639a2 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -746,7 +746,7 @@ struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
+ 	unsigned long pfn = pte_pfn(pte);
+ 
+ 	if (HAVE_PTE_SPECIAL) {
+-		if (likely(!pte_special(pte)))
++		if (likely(!pte_special(pte) || pte_numa(pte)))
+ 			goto check_pfn;
+ 		if (vma->vm_flags & (VM_PFNMAP | VM_MIXEDMAP))
+ 			return NULL;
+@@ -772,14 +772,15 @@ struct page *vm_normal_page(struct vm_area_struct *vma, unsigned long addr,
+ 		}
+ 	}
+ 
+-	if (is_zero_pfn(pfn))
+-		return NULL;
+ check_pfn:
+ 	if (unlikely(pfn > highest_memmap_pfn)) {
+ 		print_bad_pte(vma, addr, pte, NULL);
+ 		return NULL;
+ 	}
+ 
++	if (is_zero_pfn(pfn))
++		return NULL;
++
+ 	/*
+ 	 * NOTE! We still have PageReserved() pages in the page tables.
+ 	 * eg. VDSO mappings can cause them to exist.
+@@ -1715,13 +1716,9 @@ long __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 			(VM_MAYREAD | VM_MAYWRITE) : (VM_READ | VM_WRITE);
+ 
+ 	/*
+-	 * If FOLL_FORCE and FOLL_NUMA are both set, handle_mm_fault
+-	 * would be called on PROT_NONE ranges. We must never invoke
+-	 * handle_mm_fault on PROT_NONE ranges or the NUMA hinting
+-	 * page faults would unprotect the PROT_NONE ranges if
+-	 * _PAGE_NUMA and _PAGE_PROTNONE are sharing the same pte/pmd
+-	 * bitflag. So to avoid that, don't set FOLL_NUMA if
+-	 * FOLL_FORCE is set.
++	 * If FOLL_FORCE is set then do not force a full fault as the hinting
++	 * fault information is unrelated to the reference behaviour of a task
++	 * using the address space
+ 	 */
+ 	if (!(gup_flags & FOLL_FORCE))
+ 		gup_flags |= FOLL_NUMA;
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+1.8.4.5
 
