@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751356AbaDOCxO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 14 Apr 2014 22:53:14 -0400
-Received: from mga02.intel.com ([134.134.136.20]:47767 "EHLO mga02.intel.com"
+	id S1752451AbaDOCz0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 14 Apr 2014 22:55:26 -0400
+Received: from mga09.intel.com ([134.134.136.24]:48665 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932AbaDOCxM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 14 Apr 2014 22:53:12 -0400
+	id S1750998AbaDOCzY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 14 Apr 2014 22:55:24 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,861,1389772800"; 
-   d="asc'?scan'208";a="492977177"
-Date: Mon, 14 Apr 2014 22:28:07 -0400
-From: "Chen, Gong" <gong.chen@linux.intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: tony.luck@intel.com, tglx@linutronix.de, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, linux-tip-commits@vger.kernel.org
-Subject: Re: [PATCH 2/2] x86, MCE: Cleanup macro __get_cpu_var
-Message-ID: <20140415022807.GA29868@gchen.bj.intel.com>
-References: <tip-27f6c573e0f77f7d1cc907c1494c99a61e48b7d8@git.kernel.org>
- <1397464777-25451-1-git-send-email-gong.chen@linux.intel.com>
- <1397464777-25451-2-git-send-email-gong.chen@linux.intel.com>
- <534C0B6C.8070109@zytor.com>
+   d="scan'208";a="492977848"
+From: "Liu, Chuansheng" <chuansheng.liu@intel.com>
+To: "Chen, Tingjie" <tingjie.chen@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Jiri Slaby <jslaby@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhang, Jun" <jun.zhang@intel.com>,
+        "One Thousand Gnomes" <gnomes@lxorguk.ukuu.org.uk>
+Subject: RE: [PATCH] [PATCH V2] tty: memleak in alloc_pid
+Thread-Topic: [PATCH] [PATCH V2] tty: memleak in alloc_pid
+Thread-Index: AQHPV7JyCUamM6iyGUeFZWzTAGRct5sQeQEAgAFsfSCAABa7cA==
+Date: Tue, 15 Apr 2014 02:54:21 +0000
+Message-ID: <27240C0AC20F114CBF8149A2696CBE4A01CF1F24@SHSMSX101.ccr.corp.intel.com>
+References: <1397460675-17983-1-git-send-email-tingjie.chen@intel.com>
+ <20140414114704.GB19027@kroah.com>
+ <BA0C77F83D4255479F53DBBC4C4BAFC55FF699@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <BA0C77F83D4255479F53DBBC4C4BAFC55FF699@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="T4sUOijqQbZv57TR"
-Content-Disposition: inline
-In-Reply-To: <534C0B6C.8070109@zytor.com>
-X-PGP-Key-ID: A43922C7
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > Change-Id: Ic960dda039c8f99aad3e0f4d176489a966c62f6a
+> 
+> Why is this line here?
 
---T4sUOijqQbZv57TR
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Tingjie, Greg is asking you the sentence of "Change-Id", which is not
+needed, please remove it with one new patch.
 
-On Mon, Apr 14, 2014 at 09:23:08AM -0700, H. Peter Anvin wrote:
-> Please read Documentation/this_cpu_ops.txt for reference for how to use
-> these functions.  However, you want to avoid forming a pointer if you
-> can; it is relatively expensive to do so.
->=20
-:-). I just found your comment yesterday so that I was eager to finish it.
-I should do more homework as you told and send it again. Thanks very much
-for your patience.
 
---T4sUOijqQbZv57TR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTTJk3AAoJEI01n1+kOSLH9twP/i/T8lqxE+NpQ/SwXZtf7vtB
-HYxnC61DZNqpFq3VNEV3R3i2h3RQ8VWB+ukDDRBTJCsgjyThHLvyaNTM6U9VuTFh
-ASNzBpU0z7OC1CtYa08lKnWM7/x5oWcnFfrwGneOOCOUQvUOEaH4DOeyE2TQV4cx
-1ezWuOEZXP6C1Pt/FRQEcTXFfpaXZ+XY3GVXVfwUxEhPd8bpdngQ3uxVVNgYAqWj
-24jVhswXA0UvUR39b95jbFHLW4I0nPe/fsOx0OzTF41o+yjsyr576qDG1NCdQJmO
-uqIqXNVUdZueRUuTJ8vXNJVMS4P/zVwsBuCvGj3mnNBd1Yt3egHqE4T1TIxh7od3
-HS1I1pAYc3BELHZxH1LPx6BAZx+goP1vQUkcnDJzUhw98Kh+baJ2tM1bYKWsKalE
-Sb3o2zEq7s1YwwiJv1Ve4TRjnFHWNbRu9l1zy2NYoOdeLCdAblN5J/Xc1w2d6jwq
-YkTGo7gR8uyjFw7IReBXDetzRxM09xEy2XhQdBCW8CfwlrZlSXSxBAtPl4E6DfLX
-Q6swg3mTTP5fAIT8PDWjvLBvLVktI3PyPmLtn6sIRxHMolfjkGh8X2WSTVrmOnuP
-X3FYpPPMYpGLHk7ybd0ZYMhFhl4NKdRl/mLsa6BLrpWjw5dLp7XYaAburpZPF3GL
-uX3darWeW1FpiuE6CjVV
-=2EIE
------END PGP SIGNATURE-----
-
---T4sUOijqQbZv57TR--
