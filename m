@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754609AbaDOTIf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 15:08:35 -0400
-Received: from relay.parallels.com ([195.214.232.42]:38848 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754550AbaDOTIe (ORCPT
+	id S1754697AbaDOTJF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 15:09:05 -0400
+Received: from www84.your-server.de ([213.133.104.84]:54434 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852AbaDOTJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 15:08:34 -0400
-Message-ID: <534D83AB.6040107@parallels.com>
-Date: Tue, 15 Apr 2014 23:08:27 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>, <akpm@linux-foundation.org>,
-        <mhocko@suse.cz>, <glommer@gmail.com>, <penberg@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <devel@openvz.org>
-Subject: Re: [PATCH -mm 1/4] memcg, slab: do not schedule cache destruction
- when last page goes away
-References: <cover.1397054470.git.vdavydov@parallels.com> <8ea8b57d5264f16ee33497a4317240648645704a.1397054470.git.vdavydov@parallels.com> <20140415021614.GC7969@cmpxchg.org> <534CD08F.30702@parallels.com> <alpine.DEB.2.10.1404151016400.11231@gentwo.org>
-In-Reply-To: <alpine.DEB.2.10.1404151016400.11231@gentwo.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Tue, 15 Apr 2014 15:09:03 -0400
+Message-ID: <1397588892.21892.6.camel@vger.seibold.net>
+Subject: Re: Missing USB XHCI and EHCI reset for kexec
+From: Stefani Seibold <stefani@seibold.net>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org,
+        Greg KH <greg@kroah.com>, sarah.a.sharp@linux.intel.com,
+        andreas.brief@rohde-schwarz.com
+Date: Tue, 15 Apr 2014 21:08:12 +0200
+In-Reply-To: <Pine.LNX.4.44L0.1404151502160.1310-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1404151502160.1310-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.24.24.253]
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
+Am Dienstag, den 15.04.2014, 15:05 -0400 schrieb Alan Stern:
+> On Tue, 15 Apr 2014, Stefani Seibold wrote:
+> 
+> > > One other thing you can try is to increase the reset timeout in 
+> > > drivers/usb/host/ehci-hub.c.  This is under the USB_PORT_FEAT_RESET 
+> > > case in ehci_hub_control(), around line 1225:
+> > > 
+> > > 				/*
+> > > 				 * caller must wait, then call GetPortStatus
+> > > 				 * usb 2.0 spec says 50 ms resets on root
+> > > 				 */
+> > > 				ehci->reset_done [wIndex] = jiffies
+> > > 						+ msecs_to_jiffies (50);
+> > > 
+> > > Increasing the 50 to 100 or more might help.
+> > > 
+> > > Alan Stern
+> > > 
+> > 
+> > I tried this, when i increase the value to 1000, the reset and
+> > enumeration process will be faster after a kexec: 28 Seconds vs. 162
+> > Seconds.
+> 
+> Even 28 seconds is much longer than it should be.  And a 1000-ms long 
+> reset signal is a lot longer than any device should need.
+> 
+> Anyway, since you saw the same problem after unbind and rebind, you 
+> don't have to perform a kexec for testing.
+> 
 
-15.04.2014 19:17, Christoph Lameter:
-> On Tue, 15 Apr 2014, Vladimir Davydov wrote:
->
->> 2) When freeing an object of a dead memcg cache, initiate thorough check
->> if the cache is really empty and destroy it then. That could be
->> implemented by poking the reaping thread on kfree, and actually does not
->> require the schedule_work in memcg_release_pages IMO.
->
-> There is already logic in both slub and slab that does that on cache
-> close.
+Right, but i would prefer a solution for this. Since it works perfectly
+in kernel 3.4 i don't think it is a hardware issue.
 
-Yeah, but here the question is when we should close caches left after 
-memcg offline. Obviously we should do it after all objects of such a 
-cache have gone, but when exactly? Do it immediately after the last 
-kfree (have to count objects per cache then AFAIU) or may be check 
-periodically (or on vmpressure) that the cache is empty by issuing 
-kmem_cache_shrink and looking if memcg_params::nr_pages = 0?
+- Stefani
 
-Thanks.
+
