@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476AbaDOK2S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 06:28:18 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:39014 "EHLO
+	id S1754567AbaDOKeh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 06:34:37 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:39034 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754442AbaDOK2P (ORCPT
+	with ESMTP id S1754451AbaDOK2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 06:28:15 -0400
+	Tue, 15 Apr 2014 06:28:17 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jonathan Cameron <jic23@kernel.org>,
@@ -15,87 +15,106 @@ Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCHv3 00/15] iio: adc: at91 cleanups and atmel_tsadcc removal
-Date: Tue, 15 Apr 2014 12:27:55 +0200
-Message-Id: <1397557690-5650-1-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCHv3 03/15] iio: adc: at91: cleanup platform_data
+Date: Tue, 15 Apr 2014 12:27:58 +0200
+Message-Id: <1397557690-5650-4-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1397557690-5650-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1397557690-5650-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set is a followup of my previous series: iio: adc: at91 fixes
+num_channels and registers are not used anymore since they are defined inside
+the driver and assigned by matching the id_table.
 
-1-3) The first 3 patches are cleaning up the patform_data used for at91_adc.
+Also, struct at91_adc_reg_desc is now only used inside the driver.
 
-4-5) Then touchscreen support for older ADCs is added, this allows to use that
-     for the sam9m10g45ek.
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Acked-by: Jonathan Cameron <jic23@kernel.org>
+---
+ drivers/iio/adc/at91_adc.c             | 19 +++++++++++++++++++
+ include/linux/platform_data/at91_adc.h | 23 -----------------------
+ 2 files changed, 19 insertions(+), 23 deletions(-)
 
-6) Following those modifications, the mach/at91_adc.h is not used anywhere but
-   in the at91_adc driver so it is remove and its content (register definitions)
-   placed directly in the driver.
-
-7-9) at91sam9rl support is added to at91_adc and is used for the at91sam9rl
-     based boards.
-
-10-11) Prepare the atmel_tsadcc removal by switching sam9rl and sam9g45 to use
-       only at91_adc instead of atmel_tsadcc.
-
-12-15) atmel_tsadcc removal
-
-This patch set depends on a few patches that should be included soon in 3.15.
-
-Changes in v3:
- - rebased on v3.15-rc1
- - reordered patch 12
- - collected acks
-
-Changes in v2:
- - reworked the IRQ handlers in patch 4 as suggested by Dmitry and Thomas
- - ts_bufferedmeasure is now a bool
- - the multiline comment is now correctly formatted
- - improved commit log for patch 5
-
-Alexandre Belloni (15):
-  ARM: at91: sam9g45: remove unused platform_data
-  ARM: at91: sam9260: remove unused platform_data
-  iio: adc: at91: cleanup platform_data
-  iio: adc: at91_adc: Add support for touchscreens without TSMR
-  ARM: at91: sam9m10g45ek: Add touchscreen support through at91_adc
-  iio: adc: at91: remove unused include from include/mach
-  iio: adc: at91: add sam9rl support
-  ARM: at91: sam9rl: add at91_adc to support adc and touchscreen
-  ARM: at91: sam9rlek add touchscreen support through at91_adc
-  ARM: at91: sam9g45: switch from atmel_tsadcc to at91_adc
-  ARM: at91: sam9rl: switch from atmel_tsadcc to at91_adc
-  ARM: at91: remove atmel_tsadcc from sama5_defconfig
-  Input: atmel_tsadcc: remove driver
-  ARM: at91: remove atmel_tsadcc platform_data
-  ARM: at91/dt: at91-cosino_mega2560 remove useless tsadcc node
-
- MAINTAINERS                                |   6 -
- arch/arm/boot/dts/at91-cosino_mega2560.dts |   5 -
- arch/arm/configs/at91sam9g45_defconfig     |   3 +-
- arch/arm/configs/at91sam9rl_defconfig      |   3 +-
- arch/arm/configs/sama5_defconfig           |   1 -
- arch/arm/mach-at91/at91sam9260_devices.c   |  10 -
- arch/arm/mach-at91/at91sam9g45.c           |   2 +-
- arch/arm/mach-at91/at91sam9g45_devices.c   |  63 +----
- arch/arm/mach-at91/at91sam9rl.c            |   7 +
- arch/arm/mach-at91/at91sam9rl_devices.c    |  83 +++++--
- arch/arm/mach-at91/board-sam9m10g45ek.c    |  16 +-
- arch/arm/mach-at91/board-sam9rlek.c        |  16 +-
- arch/arm/mach-at91/board.h                 |   3 -
- arch/arm/mach-at91/include/mach/at91_adc.h | 107 ---------
- drivers/iio/adc/at91_adc.c                 | 340 +++++++++++++++++++++++----
- drivers/input/touchscreen/Kconfig          |  12 -
- drivers/input/touchscreen/Makefile         |   1 -
- drivers/input/touchscreen/atmel_tsadcc.c   | 358 -----------------------------
- include/linux/platform_data/at91_adc.h     |  27 +--
- include/linux/platform_data/atmel.h        |   7 -
- 20 files changed, 382 insertions(+), 688 deletions(-)
- delete mode 100644 arch/arm/mach-at91/include/mach/at91_adc.h
- delete mode 100644 drivers/input/touchscreen/atmel_tsadcc.c
-
+diff --git a/drivers/iio/adc/at91_adc.c b/drivers/iio/adc/at91_adc.c
+index 89777ed9abd8..1beae65aef2c 100644
+--- a/drivers/iio/adc/at91_adc.c
++++ b/drivers/iio/adc/at91_adc.c
+@@ -46,6 +46,25 @@
+ #define TOUCH_SAMPLE_PERIOD_US		2000	/* 2ms */
+ #define TOUCH_PEN_DETECT_DEBOUNCE_US	200
+ 
++/**
++ * struct at91_adc_reg_desc - Various informations relative to registers
++ * @channel_base:	Base offset for the channel data registers
++ * @drdy_mask:		Mask of the DRDY field in the relevant registers
++			(Interruptions registers mostly)
++ * @status_register:	Offset of the Interrupt Status Register
++ * @trigger_register:	Offset of the Trigger setup register
++ * @mr_prescal_mask:	Mask of the PRESCAL field in the adc MR register
++ * @mr_startup_mask:	Mask of the STARTUP field in the adc MR register
++ */
++struct at91_adc_reg_desc {
++	u8	channel_base;
++	u32	drdy_mask;
++	u8	status_register;
++	u8	trigger_register;
++	u32	mr_prescal_mask;
++	u32	mr_startup_mask;
++};
++
+ struct at91_adc_caps {
+ 	bool	has_ts;		/* Support touch screen */
+ 	bool	has_tsmr;	/* only at91sam9x5, sama5d3 have TSMR reg */
+diff --git a/include/linux/platform_data/at91_adc.h b/include/linux/platform_data/at91_adc.h
+index b3ca1e94e0c8..fcf73879dbfe 100644
+--- a/include/linux/platform_data/at91_adc.h
++++ b/include/linux/platform_data/at91_adc.h
+@@ -8,25 +8,6 @@
+ #define _AT91_ADC_H_
+ 
+ /**
+- * struct at91_adc_reg_desc - Various informations relative to registers
+- * @channel_base:	Base offset for the channel data registers
+- * @drdy_mask:		Mask of the DRDY field in the relevant registers
+-			(Interruptions registers mostly)
+- * @status_register:	Offset of the Interrupt Status Register
+- * @trigger_register:	Offset of the Trigger setup register
+- * @mr_prescal_mask:	Mask of the PRESCAL field in the adc MR register
+- * @mr_startup_mask:	Mask of the STARTUP field in the adc MR register
+- */
+-struct at91_adc_reg_desc {
+-	u8	channel_base;
+-	u32	drdy_mask;
+-	u8	status_register;
+-	u8	trigger_register;
+-	u32	mr_prescal_mask;
+-	u32	mr_startup_mask;
+-};
+-
+-/**
+  * struct at91_adc_trigger - description of triggers
+  * @name:		name of the trigger advertised to the user
+  * @value:		value to set in the ADC's trigger setup register
+@@ -42,8 +23,6 @@ struct at91_adc_trigger {
+ /**
+  * struct at91_adc_data - platform data for ADC driver
+  * @channels_used:		channels in use on the board as a bitmask
+- * @num_channels:		global number of channels available on the board
+- * @registers:			Registers definition on the board
+  * @startup_time:		startup time of the ADC in microseconds
+  * @trigger_list:		Triggers available in the ADC
+  * @trigger_number:		Number of triggers available in the ADC
+@@ -52,8 +31,6 @@ struct at91_adc_trigger {
+  */
+ struct at91_adc_data {
+ 	unsigned long			channels_used;
+-	u8				num_channels;
+-	struct at91_adc_reg_desc	*registers;
+ 	u8				startup_time;
+ 	struct at91_adc_trigger		*trigger_list;
+ 	u8				trigger_number;
 -- 
 1.8.3.2
 
