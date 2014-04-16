@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755760AbaDPLYG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 07:24:06 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:41808 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755678AbaDPLXZ (ORCPT
+	id S1755721AbaDPLYE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 07:24:04 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:7457 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755667AbaDPLXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 07:23:25 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f5-b7fc96d000004885-b1-534e682a78fd
-Content-transfer-encoding: 8BIT
-Message-id: <1397647403.6147.20.camel@AMDC1943>
-Subject: Re: [PATCH 6/8] extcon: max8997: Use devm_extcon_dev_register()
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sangjung Woo <sangjung.woo@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org
-Date: Wed, 16 Apr 2014 13:23:23 +0200
-In-reply-to: <1397644023-32516-7-git-send-email-sangjung.woo@samsung.com>
-References: <1397644023-32516-1-git-send-email-sangjung.woo@samsung.com>
- <1397644023-32516-7-git-send-email-sangjung.woo@samsung.com>
-X-Mailer: Evolution 3.8.4-0ubuntu1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprNLMWRmVeSWpSXmKPExsVy+t/xq7paGX7BBtdeqlpc//Kc1eLyrjls
-	FrcbV7BZLNhT4sDi0bdlFaPH501yAUxRXDYpqTmZZalF+nYJXBl/7vIW7OWumHD7K1sD4znO
-	LkZODgkBE4kHTXNZIWwxiQv31rN1MXJxCAksZZRYd3kRE0iCV0BQ4sfkeyxdjBwczALyEkcu
-	ZYOEmQXUJSbNW8QMUf+ZUeLy9bssEPX6Eu8OLwSrFxbwkNjbywgSZhMwlti8fAkbiC0ioC1x
-	f8JnqJGFEgeuBoOEWQRUJbbcPQlWwingKdG84AgTxPh2Rol3za+h7lSSOLduDeMERoFZSK6b
-	hXDdLCTXLWBkXsUomlqaXFCclJ5rpFecmFtcmpeul5yfu4kREqBfdzAuPWZ1iFGAg1GJh3dG
-	jm+wEGtiWXFl7iFGCQ5mJRFepVS/YCHelMTKqtSi/Pii0pzU4kOMTBycUg2MxQ3XBP4KXhY6
-	eYh3Ir99T/2LTT0iCy/yGqcrlsYfqs9nW3L5ffyx+Fy3FPbw/hrr3r0aaRp3eva0mE/dXsGn
-	8fvjLnPZUFs7mbzfS46ZHDH//myL8ruVrxY0rFtdwbUj1HuX1fyNa2wVd1w4a5D4eZ3FlXfH
-	f384xrcpxCbm6+373093nP52VImlOCPRUIu5qDgRAK7+JfMuAgAA
+	Wed, 16 Apr 2014 07:23:24 -0400
+X-IronPort-AV: E=Sophos;i="4.97,871,1389715200"; 
+   d="scan'208";a="29340618"
+Message-ID: <534E59FC.2090001@cn.fujitsu.com>
+Date: Wed, 16 Apr 2014 19:22:52 +0900
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: <rostedt@goodmis.org>, <fweisbec@gmail.com>, <mingo@redhat.com>,
+        <acme@ghostprotocols.net>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/8] sched/core: Skip wakeup when task is already running.
+References: <cover.1397562542.git.yangds.fnst@cn.fujitsu.com> <51238bf1648b1f4c66d3547a49cf949d1679d068.1397562542.git.yangds.fnst@cn.fujitsu.com> <20140415135326.GV11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140415135326.GV11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.49]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On śro, 2014-04-16 at 19:27 +0900, Sangjung Woo wrote:
-> Use the resource-managed extcon device register function (i.e.
-> devm_extcon_dev_register()) instead of extcon_dev_register(). If extcon device
-> is attached with this function, that extcon device is automatically unregistered
-> on driver detach. That reduces tiresome managing code.
-> 
-> Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
-> ---
->  drivers/extcon/extcon-max8997.c |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
+On 04/15/2014 10:53 PM, Peter Zijlstra wrote:
+> On Tue, Apr 15, 2014 at 09:32:53PM +0900, Dongsheng Yang wrote:
+>
+> How can you get there with ->state == RUNNING? try_to_wake_up*() bail
+> when !(->state & state).
+Yes, try_to_wake_up() did this check. But other callers would miss it.
 
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+With the following code ,I can get the actual message of waking up
+a running task
 
-Best regards,
-Krzysztof
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 9f63275..1369cae 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1418,8 +1418,10 @@ static void ttwu_activate(struct rq *rq, struct 
+task_stru
+  static void
+  ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
+  {
+-       if (p->state == TASK_RUNNING)
++       if (p->state == TASK_RUNNING) {
++               printk("Wakeup a running task.");
+                 return;
++       }
 
-> diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
-> index 223e6b0..804a446 100644
-> --- a/drivers/extcon/extcon-max8997.c
-> +++ b/drivers/extcon/extcon-max8997.c
-> @@ -709,7 +709,7 @@ static int max8997_muic_probe(struct platform_device *pdev)
->  	info->edev->name = DEV_NAME;
->  	info->edev->dev.parent = &pdev->dev;
->  	info->edev->supported_cable = max8997_extcon_cable;
-> -	ret = extcon_dev_register(info->edev);
-> +	ret = devm_extcon_dev_register(&pdev->dev, info->edev);
->  	if (ret) {
->  		dev_err(&pdev->dev, "failed to register extcon device\n");
->  		goto err_irq;
-> @@ -790,8 +790,6 @@ static int max8997_muic_remove(struct platform_device *pdev)
->  		free_irq(muic_irqs[i].virq, info);
->  	cancel_work_sync(&info->irq_work);
->  
-> -	extcon_dev_unregister(info->edev);
-> -
->  	return 0;
->  }
->  
+         check_preempt_curr(rq, p, wake_flags);
+         trace_sched_wakeup(p, true);
+
+
+# grep "Wakeup" /var/log/messages
+Apr 15 20:16:21 localhost kernel: [    5.436505] Wakeup a running task.
+Apr 15 20:16:21 localhost kernel: [    7.776042] Wakeup a running task.
+Apr 15 20:16:21 localhost kernel: [    9.324274] Wakeup a running task.
+
+So, I think there are some caller of ttwu_do_wakeup() is attempt to wake
+up a running task.
+> .
+>
 
