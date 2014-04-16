@@ -1,114 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751163AbaDPDqU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 23:46:20 -0400
-Received: from mail-bl2lp0205.outbound.protection.outlook.com ([207.46.163.205]:59293
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750864AbaDPDqR convert rfc822-to-8bit (ORCPT
+	id S1751403AbaDPDsH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 23:48:07 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:38165 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750998AbaDPDsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 23:46:17 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: "Dongsheng.Wang@freescale.com" <Dongsheng.Wang@freescale.com>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        Jingchang Lu <jingchang.lu@freescale.com>,
-        "Jason.Jin@freescale.com" <Jason.Jin@freescale.com>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC][PATCH 3/3] clocksource: Add Freescale FlexTimer Module
- (FTM) timer support
-Thread-Topic: [RFC][PATCH 3/3] clocksource: Add Freescale FlexTimer Module
- (FTM) timer support
-Thread-Index: AQHPWSBc9k7OgjbNkEijY/VC8/wPu5sTkuOAgAAGLJA=
-Date: Wed, 16 Apr 2014 03:45:56 +0000
-Message-ID: <0f09e4ff3a4e42e6818bc2ab8a622b26@DM2PR03MB509.namprd03.prod.outlook.com>
-References: <1397614787-8300-1-git-send-email-Li.Xiubo@freescale.com>
- <1397614787-8300-4-git-send-email-Li.Xiubo@freescale.com>
- <d4863b3b92ef4aebbc05ca5e6cb9aede@BN1PR03MB188.namprd03.prod.outlook.com>
-In-Reply-To: <d4863b3b92ef4aebbc05ca5e6cb9aede@BN1PR03MB188.namprd03.prod.outlook.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 01834E39B7
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(164054003)(51704005)(33646001)(74316001)(76482001)(81342001)(31966008)(2656002)(83322001)(19580405001)(83072002)(85852003)(74502001)(87936001)(74662001)(4396001)(80976001)(46102001)(20776003)(66066001)(80022001)(76576001)(99396002)(86362001)(76176999)(79102001)(2201001)(92566001)(77982001)(54356999)(77096999)(81542001)(99286001)(50986999)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB479;H:DM2PR03MB509.namprd03.prod.outlook.com;FPR:C049E709.30E0FFDB.F1C323BC.10DE05BB.2017C;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 15 Apr 2014 23:48:05 -0400
+Message-ID: <534DFD61.4070700@oracle.com>
+Date: Tue, 15 Apr 2014 23:47:45 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: vegard.nossum@oracle.com, penberg@kernel.org, jamie.iles@oracle.com,
+        mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@vger.kernel.org
+Subject: Re: [PATCH 3/4] x86/insn: Extract more information about instructions
+References: <1397497450-6440-1-git-send-email-sasha.levin@oracle.com> <1397497450-6440-3-git-send-email-sasha.levin@oracle.com> <534CA38C.80501@hitachi.com> <534D4BF3.3020102@oracle.com> <534DF868.2020901@zytor.com>
+In-Reply-To: <534DF868.2020901@zytor.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
-> > +static void ftm_set_mode(enum clock_event_mode mode,
-> > +				struct clock_event_device *evt)
-> > +{
-> > +	switch (mode) {
-> > +	case CLOCK_EVT_MODE_PERIODIC:
-> > +		ftm_set_next_event(peroidic_cyc, evt);
-> > +		break;
-> > +	default:
-> > +		break;
+On 04/15/2014 11:26 PM, H. Peter Anvin wrote:
+> On 04/15/2014 08:10 AM, Sasha Levin wrote:
+>>
+>> Mnemonics don't have 1:1 relationship with opcodes. So, for example,
+>> if kmemcheck needs to check (and it does) whether a given instruction
+>> is an "ADD", it would need to compare it to 9 different opcodes.
+>>
 > 
-> Remove this break;
+> Excuse me, but on what planet does, for example, it makes sense if a
+> particular instruction is a "MOV", for example?  The trend in x86
+> opcodes have varied over the years and at some points it seems to have
+> been trendy to have very general mnemonics (consider MOV CR, MOV DR) and
+> at some points quite the opposite (hence MOVD, MOVQ, MOVDQA, MOVDQU,
+> MOVAPS, MOVUPS, MOVAPD, MOVUPD, VMOVxxx).
 > 
+> So it is not at all clear that this makes any kind of sense whatsoever,
+> and is more likely just going to be abused.
 
-I'll revise this.
+Looking at kmemcheck, and "AND" vs "MOV" for example, we need to know if a
+given instruction is AND because AND may operate on only part of the memory
+it's accessing to. So some accesses to what kmemcheck sees as "uninitialized
+memory" are actually valid ones because we don't touch the uninitialized
+part.
 
+So for kmemcheck, AND and MOV (for example) are different because ANDing
+a value and MOVing a value mean different things wrt to uninitialized memory.
 
-> > +	}
-> > +}
+Yes, if kmemcheck for some reason needs to figure out if an instruction
+is a MOV variant we'll need to list quite a few mnemonics, but that list
+will be much shorter and more readable than a corresponding list of opcodes.
 
-
-[...]
-> > +static void __init ftm_timer_init(struct device_node *np)
-> > +{
-> > +	struct clk *ftm_clk;
-> > +	void __iomem *timer_base;
-> > +	unsigned long freq;
-> > +	int irq;
-> > +
-> > +	timer_base = of_iomap(np, 0);
-> > +	BUG_ON(!timer_base);
-> > +
-> > +	clksrc_base = timer_base + FTM_OFFSET(1);
-> > +	clkevt_base = timer_base + FTM_OFFSET(0);
-> > +
-> > +	irq = irq_of_parse_and_map(np, 0);
-> > +	BUG_ON(irq <= 0);
-> > +
-> > +	ftm_clk = of_clk_get_by_name(np, "ftm0_counter_en");
-> > +	BUG_ON(IS_ERR(ftm_clk));
-> > +	BUG_ON(clk_prepare_enable(ftm_clk));
-> > +
-> > +	ftm_clk = of_clk_get_by_name(np, "ftm1_counter_en");
-> > +	BUG_ON(IS_ERR(ftm_clk));
-> > +	BUG_ON(clk_prepare_enable(ftm_clk));
-> > +
-> > +	ftm_clk = of_clk_get_by_name(np, "ftm0");
-> > +	BUG_ON(IS_ERR(ftm_clk));
-> > +	BUG_ON(clk_prepare_enable(ftm_clk));
-> > +
-> > +	ftm_clk = of_clk_get_by_name(np, "ftm1");
-> 
-> Why dts is not have ftm1 node?
-> 
-
-Because the 'ftm0: ftm@40038000' node is used to ftm0
-and ftm1 device nodes at the same time.
-
-May using 'ftm: ftm@40038000' will be much better ?
 
 Thanks,
-
-BRs
-Xiubo
-
-
-
+Sasha
