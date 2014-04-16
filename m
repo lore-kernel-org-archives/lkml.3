@@ -1,102 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161239AbaDPVN3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 17:13:29 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58961 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756552AbaDPVN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 17:13:26 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [patch] mm: memcontrol: remove hierarchy restrictions for swappiness and oom_control
-Date: Wed, 16 Apr 2014 17:13:18 -0400
-Message-Id: <1397682798-22906-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.9.2
+	id S1161272AbaDPVON (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 17:14:13 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:42358 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756552AbaDPVOL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 17:14:11 -0400
+Date: Wed, 16 Apr 2014 14:14:07 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <pranith@gatech.edu>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] kernel/rcu/rcutorture.c: use macro to define module
+ parameter
+Message-ID: <20140416211407.GA4496@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <534EEC6B.8030500@gatech.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <534EEC6B.8030500@gatech.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041621-1542-0000-0000-00000123B19D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Per-memcg swappiness and oom killing can currently not be tweaked on a
-memcg that is part of a hierarchy, but not the root of that hierarchy.
-Users have complained that they can't configure this when they turned
-on hierarchy mode.  In fact, with hierarchy mode becoming the default,
-this restriction disables the tunables entirely.
+On Wed, Apr 16, 2014 at 04:47:39PM -0400, Pranith Kumar wrote:
+> use the defined macro for module parameter definition
+> 
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 
-But there is no good reason for this restriction.  The settings for
-swappiness and OOM killing are taken from whatever memcg whose limit
-triggered reclaim and OOM invocation, regardless of its position in
-the hierarchy tree.
+This fails for me.  The problem is that the defined macro makes everything
+static, and rcutorture_runnable is used in kernel/sysctl.c.  :-/
 
-Allow setting swappiness on any group.  The knob on the root memcg
-already reads the global VM swappiness, make it writable as well.
+In theory, it would be possible to make torture_param() take "static"
+as a parameter, but this adds more characters than it removes.
 
-Allow disabling the OOM killer on any non-root memcg.
+							Thanx, Paul
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/memcontrol.c | 29 +++++++----------------------
- 1 file changed, 7 insertions(+), 22 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index e2a0d3986c74..edcc9513b419 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -5548,22 +5548,14 @@ static int mem_cgroup_swappiness_write(struct cgroup_subsys_state *css,
- 				       struct cftype *cft, u64 val)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
--	struct mem_cgroup *parent = mem_cgroup_from_css(css_parent(&memcg->css));
- 
--	if (val > 100 || !parent)
-+	if (val > 100)
- 		return -EINVAL;
- 
--	mutex_lock(&memcg_create_mutex);
--
--	/* If under hierarchy, only empty-root can set this value */
--	if ((parent->use_hierarchy) || memcg_has_children(memcg)) {
--		mutex_unlock(&memcg_create_mutex);
--		return -EINVAL;
--	}
--
--	memcg->swappiness = val;
--
--	mutex_unlock(&memcg_create_mutex);
-+	if (css_parent(css))
-+		memcg->swappiness = val;
-+	else
-+		vm_swappiness = val;
- 
- 	return 0;
- }
-@@ -5895,22 +5887,15 @@ static int mem_cgroup_oom_control_write(struct cgroup_subsys_state *css,
- 	struct cftype *cft, u64 val)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
--	struct mem_cgroup *parent = mem_cgroup_from_css(css_parent(&memcg->css));
- 
- 	/* cannot set to root cgroup and only 0 and 1 are allowed */
--	if (!parent || !((val == 0) || (val == 1)))
-+	if (!css_parent(css) || !((val == 0) || (val == 1)))
- 		return -EINVAL;
- 
--	mutex_lock(&memcg_create_mutex);
--	/* oom-kill-disable is a flag for subhierarchy. */
--	if ((parent->use_hierarchy) || memcg_has_children(memcg)) {
--		mutex_unlock(&memcg_create_mutex);
--		return -EINVAL;
--	}
- 	memcg->oom_kill_disable = val;
- 	if (!val)
- 		memcg_oom_recover(memcg);
--	mutex_unlock(&memcg_create_mutex);
-+
- 	return 0;
- }
- 
--- 
-1.9.2
+> ---
+>  kernel/rcu/rcutorture.c |    5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/rcu/rcutorture.c b/kernel/rcu/rcutorture.c
+> index bd30bc6..1a0298c 100644
+> --- a/kernel/rcu/rcutorture.c
+> +++ b/kernel/rcu/rcutorture.c
+> @@ -143,9 +143,8 @@ static struct list_head rcu_torture_removed;
+>  #else
+>  #define RCUTORTURE_RUNNABLE_INIT 0
+>  #endif
+> -int rcutorture_runnable = RCUTORTURE_RUNNABLE_INIT;
+> -module_param(rcutorture_runnable, int, 0444);
+> -MODULE_PARM_DESC(rcutorture_runnable, "Start rcutorture at boot");
+> +torture_param(int, rcutorture_runnable, RCUTORTURE_RUNNABLE_INIT,
+> +		"Start rcutorture at boot");
+> 
+>  #if defined(CONFIG_RCU_BOOST) && !defined(CONFIG_HOTPLUG_CPU)
+>  #define rcu_can_boost() 1
+> -- 
+> 1.7.9.5
+> 
 
