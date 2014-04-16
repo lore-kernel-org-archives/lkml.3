@@ -1,88 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422AbaDPEUk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 00:20:40 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:54242 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754396AbaDPEUh (ORCPT
+	id S1754491AbaDPEWW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 00:22:22 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:39724 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361AbaDPEWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 00:20:37 -0400
+	Wed, 16 Apr 2014 00:22:18 -0400
+Message-ID: <534E04F1.4070104@huawei.com>
+Date: Wed, 16 Apr 2014 12:20:01 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1404152042480.22697@ionos.tec.linutronix.de>
-References: <cover.1397537986.git.viresh.kumar@linaro.org>
-	<80afb18a494b0bd9710975bcc4de134ae323c74f.1397537987.git.viresh.kumar@linaro.org>
-	<alpine.DEB.2.02.1404152042480.22697@ionos.tec.linutronix.de>
-Date: Wed, 16 Apr 2014 09:50:36 +0530
-Message-ID: <CAKohponkb+FovSTLuQ0cxEdVMU7JTHYPauhU07=20otAoDiAZA@mail.gmail.com>
-Subject: Re: [PATCH V1 Resend 4/5] tick-sched: don't call update_wall_time()
- when delta is lesser than tick_period
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Kay Sievers <kay@vrfy.org>, <rlove@rlove.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <containers@lists.linux-foundation.org>, <serge.hallyn@ubuntu.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arvind Chauhan <Arvind.Chauhan@arm.com>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        John Stultz <john.stultz@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+        "Lennart Poettering" <lennart@poettering.net>, <eparis@parisplace.org>,
+        Tejun Heo <tj@kernel.org>, <cgroups@vger.kernel.org>,
+        <john@johnmccutchan.com>
+Subject: Re: [PATCH 3/3] cgroup: implement cgroup.subtree_populated for the
+ default hierarchy
+References: <1397511846-2904-1-git-send-email-tj@kernel.org> <1397511846-2904-4-git-send-email-tj@kernel.org> <534DEF62.4090900@huawei.com> <CAPXgP12kvPdX0QExwN2JphDfEW=d+7K2c_Y8DbomGd=YVy=VGQ@mail.gmail.com> <87tx9uhr0j.fsf@x220.int.ebiederm.org>
+In-Reply-To: <87tx9uhr0j.fsf@x220.int.ebiederm.org>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 April 2014 00:14, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Tue, 15 Apr 2014, Viresh Kumar wrote:
->
->> In tick_do_update_jiffies64() we are processing ticks only if delta is greater
->> than tick_period. This is what we are supposed to do here and it broke a bit
->> with this patch:
+On 2014/4/16 11:50, Eric W. Biederman wrote:
+> Kay Sievers <kay@vrfy.org> writes:
+> 
+>> On Tue, Apr 15, 2014 at 7:48 PM, Li Zefan <lizefan@huawei.com> wrote:
+>>> On 2014/4/15 5:44, Tejun Heo wrote:
+>>>> cgroup users often need a way to determine when a cgroup's
+>>>> subhierarchy becomes empty so that it can be cleaned up.  cgroup
+>>>> currently provides release_agent for it; unfortunately, this mechanism
+>>>> is riddled with issues.
+>>>>
+>>>> * It delivers events by forking and execing a userland binary
+>>>>   specified as the release_agent.  This is a long deprecated method of
+>>>>   notification delivery.  It's extremely heavy, slow and cumbersome to
+>>>>   integrate with larger infrastructure.
+>>>>
+>>>> * There is single monitoring point at the root.  There's no way to
+>>>>   delegate management of subtree.
+>>>>
+>>>> * The event isn't recursive.  It triggers when a cgroup doesn't have
+>>>>   any tasks or child cgroups.  Events for internal nodes trigger only
+>>>>   after all children are removed.  This again makes it impossible to
+>>>>   delegate management of subtree.
+>>>>
+>>>> * Events are filtered from the kernel side.  "notify_on_release" file
+>>>>   is used to subscribe to or suppress release event.  This is
+>>>>   unnecessarily complicated and probably done this way because event
+>>>>   delivery itself was expensive.
+>>>>
+>>>> This patch implements interface file "cgroup.subtree_populated" which
+>>>> can be used to monitor whether the cgroup's subhierarchy has tasks in
+>>>> it or not.  Its value is 0 if there is no task in the cgroup and its
+>>>> descendants; otherwise, 1, and kernfs_notify() notificaiton is
+>>>> triggers when the value changes, which can be monitored through poll
+>>>> and [di]notify.
+>>>>
+>>>
+>>> For the old notification mechanism, the path of the cgroup that becomes
+>>> empty will be passed to the user specified release agent. Like this:
+>>>
+>>> # cat /sbin/cpuset_release_agent
+>>> #!/bin/sh
+>>> rmdir /dev/cpuset/$1
+>>>
+>>> How do we achieve this using inotify?
+>>>
+>>> - monitor all the cgroups, or
+>>> - monitor all the leaf cgroups, and travel cgrp->parent to delete all
+>>>   empty cgroups.
+>>> - monitor root cgroup only, and travel the whole hierarchy to find
+>>>   empy cgroups when it gets an fs event.
+>>>
+>>> Seems none of them is scalible.
 >>
->> commit 47a1b796306356f358e515149d86baf0cc6bf007
->> Author: John Stultz <john.stultz@linaro.org>
->> Date:   Thu Dec 12 13:10:55 2013 -0800
->>
->>     tick/timekeeping: Call update_wall_time outside the jiffies lock
->
-> Please look how I massaged the change log. There is no point in
-> copying the whole gunk.
+>> The manager would add all cgroups as watches to one inotify file
+>> descriptor, it should not be problem to do that.
+> 
+> inotify won't work on cgroupfs.
+> 
 
-I see.. Nice.
+Tejun's working on inotify support for cgroupfs, and I believe this patchset
+has been tested, so it works.
 
->> With above patch, we might end up calling update_wall_time() even if delta is
->> found to be smaller that tick_period. Fix this by reversing the check and
->> returning early.
->
-> Well.
->
->> Cc: <stable@vger.kernel.org> # v3.14+
->> Cc: John Stultz <john.stultz@linaro.org>
->> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
->> ---
->>  kernel/time/tick-sched.c | 32 +++++++++++++++++---------------
->>  1 file changed, 17 insertions(+), 15 deletions(-)
->
-> That's not how we do bug fixes if they can be done with 3 lines of
-> change. See the commit.
+So what do you mean by saying it won't work? Could you be more specific?
 
-I tried that initially but with these changes as well (which must
-be done now ??), which probably makes it more clear ?:
-
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 3cafe7d..0e70b1c 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -84,12 +84,12 @@ static void tick_do_update_jiffies64(ktime_t now)
-
-                /* Keep the tick_next_period variable up to date */
-                tick_next_period = ktime_add(last_jiffies_update, tick_period);
-+
-+               write_sequnlock(&jiffies_lock);
-+               update_wall_time();
-        } else {
-                write_sequnlock(&jiffies_lock);
--               return;
-        }
--       write_sequnlock(&jiffies_lock);
--       update_wall_time();
- }
-
- /*
