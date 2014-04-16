@@ -1,180 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790AbaDPW4I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 18:56:08 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:38463 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459AbaDPW4E (ORCPT
+	id S1756920AbaDPW7O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 18:59:14 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:65390 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755031AbaDPW7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 18:56:04 -0400
-Date: Wed, 16 Apr 2014 16:56:00 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Dave Jones <davej@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Zhang, Rui" <rui.zhang@intel.com>, "Lu, Aaron" <aaron.lu@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Stephane Eranian <eranian@google.com>,
-        "Yan, Zheng Z" <zheng.z.yan@intel.com>
-Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
-Message-ID: <20140416225600.GA23781@google.com>
-References: <20140224162400.GE16457@pd.tnic>
- <744357E9AAD1214791ACBA4B0B9092630121F201@SHSMSX101.ccr.corp.intel.com>
- <CAErSpo55DjkGQB=7ksow34BpCObnY+o3eNnt0n5oQEh6Lfw1pw@mail.gmail.com>
- <1558044.S1G2VU7srO@vostro.rjw.lan>
- <CAErSpo4pDYMhHo6e-1TN6XDRO0xy0u8H+=oucFnrEK+kbjZvzw@mail.gmail.com>
- <20140416190404.GA7070@pd.tnic>
- <20140416203138.GA17661@google.com>
- <20140416223122.GA2767@redhat.com>
+	Wed, 16 Apr 2014 18:59:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140416223122.GA2767@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140416215450.GF12304@sirena.org.uk>
+References: <1397592876-5741-1-git-send-email-dianders@chromium.org>
+	<1397672724-9063-1-git-send-email-dianders@chromium.org>
+	<1397672724-9063-6-git-send-email-dianders@chromium.org>
+	<20140416205136.GZ12304@sirena.org.uk>
+	<CAD=FV=Wf=hdggX-Z1gtiVJdwr7jwjY1owCVZDq_BrWOyj-3m3A@mail.gmail.com>
+	<20140416215450.GF12304@sirena.org.uk>
+Date: Wed, 16 Apr 2014 15:59:10 -0700
+X-Google-Sender-Auth: tubu-s0qQEzSYa_00ZGWFrhhFUY
+Message-ID: <CAD=FV=V-2OLVV_H+3HoRAq788tjKSCag9Wydam-bJCdL6VmCDA@mail.gmail.com>
+Subject: Re: [PATCH v2 5/5] regulator: tps65090: Make FETs more reliable by
+ adding retries
+From: Doug Anderson <dianders@chromium.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Anton Vorontsov <anton@enomsg.org>, Olof Johansson <olof@lixom.net>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        AJAY KUMAR RAMAKRISHNA SHYMALAMMA <ajaykumar.rs@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Simon Glass <sjg@chromium.org>, Michael Spang <spang@chromium.org>,
+        Sean Paul <seanpaul@chromium.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 06:31:22PM -0400, Dave Jones wrote:
-> On Wed, Apr 16, 2014 at 02:31:38PM -0600, Bjorn Helgaas wrote:
->  > On Wed, Apr 16, 2014 at 09:04:04PM +0200, Borislav Petkov wrote:
->  > > On Thu, Mar 20, 2014 at 02:48:30PM -0600, Bjorn Helgaas wrote:
->  > > > Right.  Even if we had this long-term solution, we'd still have
->  > > > Stephane's current problem, because the PNP0C02 _CRS is still wrong.
->  > > > 
->  > > > We do have a drivers/pnp/quirks.c where we could conceivably adjust
->  > > > the PNP resource if we found the matching PCI device and MCHBAR.  That
->  > > > should solve Stephane's problem even with the current
->  > > > drivers/pnp/system.c.
->  > > 
->  > > Guys, this still triggers in -rc1. Do we have a fix or something
->  > > testable at least?
->  > 
->  > Hi Boris,
->  > 
->  > Can you try the patch below?
-> 
-> I'm seeing the exact same message on my thinkpad t430s.
-> When I try your patch, modesetting no longer works. When it tries
-> to change to the framebuffer I get a black screen and lockup.
-> If I boot with nomodeset it locks up when it gets to X.
-> It all scrolls by too fast to read, but it looks like there's still
-> a backtrace present.
+Mark,
 
-Ouch, sorry about that.  I do see a bug in my patch (fixed below), but I
-don't see how that could cause what you're seeing.  Maybe I could figure
-out something from this info (this can be from a kernel without my patch):
+On Wed, Apr 16, 2014 at 2:54 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Wed, Apr 16, 2014 at 02:34:47PM -0700, Doug Anderson wrote:
+>> On Wed, Apr 16, 2014 at 1:51 PM, Mark Brown <broonie@kernel.org> wrote:
+>
+>> > Please don't send new patches as replies in the middle of threads, it
+>> > makes it confusing trying to work out which versions of things should be
+>> > applied.
+>
+>> I'm a little confused about what I did wrong.  Can you give more details?
+>
+> I'm seeing a reply which looks like it was sent as a followup to Randy's
+> comment, although now I look at everything together I think that's due
+> to you sending your new thread in reply to the old thread (that can also
+> be a problem due to threading either burying the new mail or putting
+> things in odd places) and my mailer trying to tie the one mail from your
+> first series that I'd not deleted into the thread.
 
-    - dmesg log
-    - output of "find /sys/devices/pnp0 -name id -o -name resources | xargs grep ."
-    - output of "sudo lspci -s00:00.0 -xxx"
+OK, I'm about to send my v3 of the thread taking Randy's comments
+about kernel-doc into account.  I'll explicitly not mark it as
+"in-reply-to" the previous thread and hope that solves the problems
+you were seeing.
 
-
-
-PNP: Work around Haswell BIOS defect in MCH area reporting
-
-From: Bjorn Helgaas <bhelgaas@google.com>
-
-Work around a Haswell BIOS defect that causes part of the MCH area to be
-unreported.
-
-MCHBAR is not an architected PCI BAR, so MCH space is usually reported as a
-PNP0C02 resource.  The MCH space was 16KB prior to Haswell, but it is 32KB
-in Haswell.  Some Haswell BIOSes still report a PNP0C02 resource that is
-only 16KB, which means the rest of the MCH space is consumed but
-unreported.
-
-This can cause resource map sanity check warnings or (theoretically) a
-device conflict if we assigned the unreported space to another device.
-
-The Intel perf event uncore driver tripped over this when it claimed the
-MCH region:
-
-  resource map sanity check conflict: 0xfed10000 0xfed15fff 0xfed10000 0xfed13fff pnp 00:01
-  Info: mapping multiple BARs. Your kernel is fine.
-
-To prevent this, if we find a PNP0C02 resource that covers part of the MCH
-space, extend it to cover the entire space.
-
-Link: http://lkml.kernel.org/r/20140224162400.GE16457@pd.tnic
-Reported-by: Borislav Petkov <bp@alien8.de>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
----
- drivers/pnp/quirks.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 55 insertions(+)
-
-diff --git a/drivers/pnp/quirks.c b/drivers/pnp/quirks.c
-index 258fef272ea7..8402088d4145 100644
---- a/drivers/pnp/quirks.c
-+++ b/drivers/pnp/quirks.c
-@@ -334,6 +334,60 @@ static void quirk_amd_mmconfig_area(struct pnp_dev *dev)
- }
- #endif
- 
-+static void quirk_intel_haswell_mch(struct pnp_dev *dev)
-+{
-+	struct pci_dev *host;
-+	u32 addr_lo, addr_hi;
-+	struct pci_bus_region region;
-+	struct resource mch;
-+	struct pnp_resource *pnp_res;
-+	struct resource *res;
-+
-+	host = pci_get_device(PCI_VENDOR_ID_INTEL, 0x0c00, NULL);
-+	if (!host)
-+		return;
-+
-+	/*
-+	 * MCHBAR is not an architected PCI BAR, so MCH space is usually
-+	 * reported as a PNP0C02 resource.  The MCH space was 16KB prior to
-+	 * Haswell, but it is 32KB in Haswell.  Some Haswell BIOSes still
-+	 * report a PNP0C02 resource that is only 16KB, which means the
-+	 * rest of the MCH space is consumed but unreported.
-+	 */
-+
-+	/*
-+	 * Read MCHBAR for Host Member Mapped Register Range Base
-+	 * https://www-ssl.intel.com/content/www/us/en/processors/core/4th-gen-core-family-desktop-vol-2-datasheet
-+	 * Sec 3.1.12.
-+	 */
-+	pci_read_config_dword(host, 0x48, &addr_lo);
-+	region.start = addr_lo & ~0x7fff;
-+	pci_read_config_dword(host, 0x4c, &addr_hi);
-+	region.start |= (dma_addr_t) addr_hi << 32;
-+	region.end = region.start + 32*1024 - 1 ;
-+
-+	memset(&mch, 0, sizeof(mch));
-+	mch.flags = IORESOURCE_MEM;
-+	pcibios_bus_to_resource(host->bus, &mch, &region);
-+
-+	list_for_each_entry(pnp_res, &dev->resources, list) {
-+		res = &pnp_res->res;
-+		if (res->end < mch.start || res->start > mch.end)
-+			continue;	/* no overlap */
-+		if (res->start == mch.start && res->end == mch.end)
-+			continue;	/* exact match */
-+
-+		dev_info(&dev->dev, FW_BUG
-+			 "%pR covers only part of Intel Haswell MCH; extending to %pR\n",
-+			 res, &mch);
-+		res->start = mch.start;
-+		res->end = mch.end;
-+		break;
-+	}
-+
-+	pci_dev_put(host);
-+}
-+
- /*
-  *  PnP Quirks
-  *  Cards or devices that need some tweaking due to incomplete resource info
-@@ -364,6 +418,7 @@ static struct pnp_fixup pnp_fixups[] = {
- #ifdef CONFIG_AMD_NB
- 	{"PNP0c01", quirk_amd_mmconfig_area},
- #endif
-+	{"PNP0c02", quirk_intel_haswell_mch},
- 	{""}
- };
- 
+-Doug
