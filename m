@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756335AbaDPN2c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 09:28:32 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:43399 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756202AbaDPN23 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 09:28:29 -0400
-Message-ID: <534E8576.3060907@de.ibm.com>
-Date: Wed, 16 Apr 2014 15:28:22 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Ingo Molnar <mingo@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        linux-kernel@vger.kernel.org, KVM <kvm@vger.kernel.org>,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Subject: Re: [PULL 1/2] perf/tool: Fix usage of trace events with '-' in trace
- system name.
-References: <1397053319-2130-1-git-send-email-borntraeger@de.ibm.com> <1397053319-2130-2-git-send-email-borntraeger@de.ibm.com> <20140416130008.GA6087@krava.brq.redhat.com>
-In-Reply-To: <20140416130008.GA6087@krava.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041613-1948-0000-0000-0000087CE722
+	id S1161148AbaDPN0I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 09:26:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:52439 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161128AbaDPN0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 09:26:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,872,1389772800"; 
+   d="scan'208";a="521995142"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: wsa@the-dreams.de, rjw@rjwysocki.net, lenb@kernel.org,
+        mika.westerberg@linux.intel.com, awilliam@redhat.com,
+        tianyu.lan@intel.com, rui.zhang@intel.com
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [PATCH 4/9] ACPI/Thermal: Use acpi_bus_attach_private_data() to attach private data
+Date: Wed, 16 Apr 2014 21:24:37 +0800
+Message-Id: <1397654682-7094-5-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com>
+References: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/04/14 15:00, Jiri Olsa wrote:
-> On Wed, Apr 09, 2014 at 04:21:58PM +0200, Christian Borntraeger wrote:
->> From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
->>
->> Trace events potentially can have a '-' in their trace system name,
->> e.g. kvm on s390 defines kvm-s390:* tracepoints.
->> tools/perf could not parse them, because there was no rule for this:
->> $ sudo ./perf top -e "kvm-s390:*"
->> invalid or unsupported event: 'kvm-s390:*'
->>
->> This patch allows '-' to be a part of PE_NAME token, so tracepoints
->> with '-' can be parsed by the event_legacy_tracepoint rule.
->> Without the patch, perf will not accept such tracepoints in the -e
->> option.
->>
->> Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
->> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
->> ---
->>  tools/perf/util/parse-events.l |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
->> index 3432995..ca20da7 100644
->> --- a/tools/perf/util/parse-events.l
->> +++ b/tools/perf/util/parse-events.l
->> @@ -199,7 +199,7 @@ r{num_raw_hex}		{ return raw(yyscanner); }
->>  {num_hex}		{ return value(yyscanner, 16); }
->>  
->>  {modifier_event}	{ return str(yyscanner, PE_MODIFIER_EVENT); }
->> -{name}			{ return str(yyscanner, PE_NAME); }
->> +{name_minus}			{ return str(yyscanner, PE_NAME); }
->>  "/"			{ BEGIN(config); return '/'; }
->>  -			{ return '-'; }
->>  ,			{ BEGIN(event); return ','; }
-> 
-> this breaks parsing of cache events like:
-> 
->   $ perf record -e 'L1-dcache-loads' ls
-> 
-> also test 10 (same issue):
->   $ ./perf test 10
->   10: roundtrip evsel->name check                            : FAILED!
-> 
-> 
-> it might be little tricky to fix, let me know if you
-> have any troubles with that, I could look on it
+Use acpi_bus_attach_private_data() to attach private data
+instead of acpi_attach_data().
 
-Hmm, so do you prefer tackling this problem directly at  event_legacy_tracepoint, e.g.
-like in
-https://lkml.org/lkml/2014/3/24/364
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+ drivers/acpi/thermal.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-Christian
-
+diff --git a/drivers/acpi/thermal.c b/drivers/acpi/thermal.c
+index c1e31a4..7ab9392 100644
+--- a/drivers/acpi/thermal.c
++++ b/drivers/acpi/thermal.c
+@@ -925,13 +925,10 @@ static int acpi_thermal_register_thermal_zone(struct acpi_thermal *tz)
+ 	if (result)
+ 		return result;
+ 
+-	status = acpi_attach_data(tz->device->handle,
+-				  acpi_bus_private_data_handler,
+-				  tz->thermal_zone);
+-	if (ACPI_FAILURE(status)) {
+-		pr_err(PREFIX "Error attaching device data\n");
++	status =  acpi_bus_attach_private_data(tz->device->handle,
++					       tz->thermal_zone);
++	if (ACPI_FAILURE(status))
+ 		return -ENODEV;
+-	}
+ 
+ 	tz->tz_enabled = 1;
+ 
+-- 
+1.8.4.rc0.1.g8f6a3e5.dirty
 
