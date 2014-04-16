@@ -1,60 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687AbaDPHIn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 03:08:43 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:61657 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752573AbaDPHIl (ORCPT
+	id S1754828AbaDPHI4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 03:08:56 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:20721 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752573AbaDPHIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 03:08:41 -0400
-Date: Wed, 16 Apr 2014 00:08:33 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Cc: dwmw2@infradead.org, Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        galak@codeaurora.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk, rob@landley.net,
-        linux@arm.linux.org.uk, grygorii.strashko@ti.com,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-mtd@lists.infradead.org,
-        m-karicheri2@ti.com, Warner Losh <imp@bsdimp.com>
-Subject: Re: [PATCH v2] mtd: davinci-nand: disable subpage write for
- keystone-nand
-Message-ID: <20140416070833.GA5512@norris-Latitude-E6410>
-References: <1395346112-13350-1-git-send-email-ivan.khoronzhuk@ti.com>
- <532B4C36.8060405@ti.com>
- <5343F0D6.2010804@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5343F0D6.2010804@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 Apr 2014 03:08:54 -0400
+From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Veaceslav Falico <vfalico@redhat.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Jiri Pirko <jiri@resnulli.us>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Jerry Chu <hkchu@google.com>, Sathya Perla <sathya.perla@emulex.com>,
+        Subbu Seetharaman <subbu.seetharaman@emulex.com>,
+        Ajit Khaparde <ajit.khaparde@emulex.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: "Li, Zhen-Hua" <zhen-hual@hp.com>
+Subject: [PATCH 1/1] net: Add rtnl_lock for netif_device_attach/detach
+Date: Wed, 16 Apr 2014 15:08:02 +0800
+Message-Id: <1397632082-18453-1-git-send-email-zhen-hual@hp.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 03:51:34PM +0300, Ivan Khoronzhuk wrote:
-> On 03/20/2014 10:14 PM, Santosh Shilimkar wrote:
-> >On Thursday 20 March 2014 04:08 PM, Ivan Khoronzhuk wrote:
-> >>From: Murali Karicheri <m-karicheri2@ti.com>
-> >>Sub page write doesn't work because of hw issue in controller found on
-> >>Keystone SOCs. AEMIF controller is also used on DaVinci SOCs which
-> >>don't seems to have any issue. So add "ti,keysone-nand" compatible
-> >>to nand driver in order to set NAND_NO_SUBPAGE_WRITE option.
-> >>
-> >>Cc: Brian Norris <computersforpeace@gmail.com>
-> >>Cc: Warner Losh <imp@bsdimp.com>
-> >>Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> >>
-> >>Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> >>Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-> >>---
-> >>
-> >Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> 
-> Brian,
-> Could you pick up subj patch?
+From: "Li, Zhen-Hua" <zhen-hual@hp.com>
 
-Pushed to l2-mtd.git. Is it critical this goes in for 3.15? It's
-currently queued for -next (3.16).
+As netif_running is called in netif_device_attach/detach. There should be
+rtnl_lock/unlock called, to avoid dev stat change during netif_device_attach
+and detach being called.
+I checked NIC some drivers,  some of them have netif_device_attach/detach
+called between rtnl_lock/unlock, while some drivers do not.
 
-Brian
+This patch is tring to find a generic way to fix this for all NIC drivers.
+
+Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+---
+ net/core/dev.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 5b3042e..795bbc5 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2190,10 +2190,19 @@ EXPORT_SYMBOL(__dev_kfree_skb_any);
+  */
+ void netif_device_detach(struct net_device *dev)
+ {
++	/**
++	 * As netif_running is called , rtnl_lock and unlock are needed to
++	 * avoid __LINK_STATE_START bit changes during this function call.
++	 */
++	int need_unlock;
++
++	need_unlock = rtnl_trylock();
+ 	if (test_and_clear_bit(__LINK_STATE_PRESENT, &dev->state) &&
+ 	    netif_running(dev)) {
+ 		netif_tx_stop_all_queues(dev);
+ 	}
++	if (need_unlock)
++		rtnl_unlock();
+ }
+ EXPORT_SYMBOL(netif_device_detach);
+ 
+@@ -2205,11 +2214,20 @@ EXPORT_SYMBOL(netif_device_detach);
+  */
+ void netif_device_attach(struct net_device *dev)
+ {
++	/**
++	 * As netif_running is called , rtnl_lock and unlock are needed to
++	 * avoid __LINK_STATE_START bit changes during this function call.
++	 */
++	int need_unlock;
++
++	need_unlock = rtnl_trylock();
+ 	if (!test_and_set_bit(__LINK_STATE_PRESENT, &dev->state) &&
+ 	    netif_running(dev)) {
+ 		netif_tx_wake_all_queues(dev);
+ 		__netdev_watchdog_up(dev);
+ 	}
++	if (need_unlock)
++		rtnl_unlock();
+ }
+ EXPORT_SYMBOL(netif_device_attach);
+ 
+-- 
+1.7.10.4
+
