@@ -1,464 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756517AbaDPSu2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 14:50:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:33985 "EHLO mga09.intel.com"
+	id S1161149AbaDPSuL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 14:50:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:27799 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756132AbaDPSuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 14:50:24 -0400
+	id S1754600AbaDPSuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 14:50:04 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,873,1389772800"; 
-   d="scan'208";a="522180900"
+   d="scan'208";a="494327693"
 From: Andi Kleen <andi@firstfloor.org>
 To: jolsa@redhat.com
 Cc: acme@infradead.org, linux-kernel@vger.kernel.org, namhyung@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 01/10] perf, tools: Add jsmn `jasmine' JSON parser
-Date: Wed, 16 Apr 2014 11:49:23 -0700
-Message-Id: <1397674172-30959-1-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 04/10] perf, tools: Add support for reading JSON event files
+Date: Wed, 16 Apr 2014 11:49:26 -0700
+Message-Id: <1397674172-30959-4-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1397674172-30959-1-git-send-email-andi@firstfloor.org>
+References: <1397674172-30959-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
-I need a JSON parser. This adds the simplest JSON
-parser I could find -- Serge Zaitsev's jsmn `jasmine' --
-to the perf library. I merely converted it to (mostly)
-Linux style and added support for non 0 terminated input.
+Add a parser for Intel style JSON event files. This allows
+to use an Intel event list directly with perf. The Intel
+event lists can be quite large and are too big to store
+in unswappable kernel memory.
 
-The parser is quite straight forward and does not
-copy any data, just returns tokens with offsets
-into the input buffer. So it's relatively efficient
-and simple to use.
+The parser code knows how to convert the JSON fields
+to perf fields. The conversion code is straight forward.
+It knows (very little) Intel specific information, and can be easily
+extended to handle fields for other CPUs.
 
-The code is not fully checkpatch clean, but I didn't
-want to completely fork the upstream code.
+The parser code is partially shared with an independent parsing
+library, which is 2-clause BSD licenced. To avoid any conflicts I marked
+those files as BSD licenced too. As part of perf they become GPLv2.
 
-Original source: http://zserge.bitbucket.org/jsmn.html
+The events are handled using the existing alias machinery.
 
-In addition I added a simple wrapper that mmaps a json
-file and provides some straight forward access functions.
+We output the BriefDescription in perf list.
 
-Used in follow-on patches to parse event files.
+Right now the json file can be specified as an argument
+to perf stat/record/list. Followon patches will automate this.
 
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- tools/perf/Makefile.perf |   4 +
- tools/perf/util/jsmn.c   | 297 +++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/jsmn.h   |  65 +++++++++++
- tools/perf/util/json.c   | 155 +++++++++++++++++++++++++
- tools/perf/util/json.h   |  13 +++
- 5 files changed, 534 insertions(+)
- create mode 100644 tools/perf/util/jsmn.c
- create mode 100644 tools/perf/util/jsmn.h
- create mode 100644 tools/perf/util/json.c
- create mode 100644 tools/perf/util/json.h
+ tools/perf/Documentation/perf-list.txt   |   6 +
+ tools/perf/Documentation/perf-record.txt |   3 +
+ tools/perf/Documentation/perf-stat.txt   |   3 +
+ tools/perf/Makefile.perf                 |   2 +
+ tools/perf/builtin-list.c                |   2 +
+ tools/perf/builtin-record.c              |   3 +
+ tools/perf/builtin-stat.c                |   2 +
+ tools/perf/util/jevents.c                | 248 +++++++++++++++++++++++++++++++
+ tools/perf/util/jevents.h                |   3 +
+ tools/perf/util/pmu.c                    |  14 ++
+ tools/perf/util/pmu.h                    |   2 +
+ 11 files changed, 288 insertions(+)
+ create mode 100644 tools/perf/util/jevents.c
+ create mode 100644 tools/perf/util/jevents.h
 
+diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
+index 6fce6a6..d399e04 100644
+--- a/tools/perf/Documentation/perf-list.txt
++++ b/tools/perf/Documentation/perf-list.txt
+@@ -15,6 +15,12 @@ DESCRIPTION
+ This command displays the symbolic event types which can be selected in the
+ various perf commands with the -e option.
+ 
++OPTIONS
++-------
++--json-file=::
++Specify JSON event list file to use for parsing events.
++
++
+ [[EVENT_MODIFIERS]]
+ EVENT MODIFIERS
+ ---------------
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index c71b0f3..8a1e0d9 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -213,6 +213,9 @@ if combined with -a or -C options.
+ After starting the program, wait msecs before measuring. This is useful to
+ filter out the startup phase of the program, which is often very different.
+ 
++--json-file=::
++Specify JSON event list file to use for parsing events.
++
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-list[1]
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index 29ee857..a946283 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -142,6 +142,9 @@ filter out the startup phase of the program, which is often very different.
+ 
+ Print statistics of transactional execution if supported.
+ 
++--json-file=::
++Specify JSON event list file to use for parsing events.
++
+ EXAMPLES
+ --------
+ 
 diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 50d875d..8381a64 100644
+index 8381a64..fdea4cb 100644
 --- a/tools/perf/Makefile.perf
 +++ b/tools/perf/Makefile.perf
-@@ -301,6 +301,8 @@ LIB_H += ui/progress.h
- LIB_H += ui/util.h
- LIB_H += ui/ui.h
+@@ -303,6 +303,7 @@ LIB_H += ui/ui.h
  LIB_H += util/data.h
-+LIB_H += util/jsmn.h
-+LIB_H += util/json.h
+ LIB_H += util/jsmn.h
+ LIB_H += util/json.h
++LIB_H += util/jevents.h
  
  LIB_OBJS += $(OUTPUT)util/abspath.o
  LIB_OBJS += $(OUTPUT)util/alias.o
-@@ -374,6 +376,8 @@ LIB_OBJS += $(OUTPUT)util/stat.o
- LIB_OBJS += $(OUTPUT)util/record.o
- LIB_OBJS += $(OUTPUT)util/srcline.o
+@@ -378,6 +379,7 @@ LIB_OBJS += $(OUTPUT)util/srcline.o
  LIB_OBJS += $(OUTPUT)util/data.o
-+LIB_OBJS += $(OUTPUT)util/jsmn.o
-+LIB_OBJS += $(OUTPUT)util/json.o
+ LIB_OBJS += $(OUTPUT)util/jsmn.o
+ LIB_OBJS += $(OUTPUT)util/json.o
++LIB_OBJS += $(OUTPUT)util/jevents.o
  
  LIB_OBJS += $(OUTPUT)ui/setup.o
  LIB_OBJS += $(OUTPUT)ui/helpline.o
-diff --git a/tools/perf/util/jsmn.c b/tools/perf/util/jsmn.c
+diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
+index 011195e..ca3dd18 100644
+--- a/tools/perf/builtin-list.c
++++ b/tools/perf/builtin-list.c
+@@ -20,6 +20,8 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	int i;
+ 	const struct option list_options[] = {
++		OPT_STRING(0, "json-file", &json_file, "json file",
++			   "Read event json file"),
+ 		OPT_END()
+ 	};
+ 	const char * const list_usage[] = {
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index eb524f9..b0cf944 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -25,6 +25,7 @@
+ #include "util/cpumap.h"
+ #include "util/thread_map.h"
+ #include "util/data.h"
++#include "util/pmu.h"
+ 
+ #include <unistd.h>
+ #include <sched.h>
+@@ -910,6 +911,8 @@ const struct option record_options[] = {
+ 		    "sample transaction flags (special events only)"),
+ 	OPT_BOOLEAN(0, "per-thread", &record.opts.target.per_thread,
+ 		    "use per-thread mmaps"),
++	OPT_STRING(0, "json-file", &json_file, "json file",
++		   "Read event json file"),
+ 	OPT_END()
+ };
+ 
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 8b0e1c9..e521ba0 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -1661,6 +1661,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		     "aggregate counts per physical processor core", AGGR_CORE),
+ 	OPT_UINTEGER('D', "delay", &initial_delay,
+ 		     "ms to wait before starting measurement after program start"),
++	OPT_STRING(0, "json-file", &json_file, "json file",
++		   "Read event json file"),
+ 	OPT_END()
+ 	};
+ 	const char * const stat_usage[] = {
+diff --git a/tools/perf/util/jevents.c b/tools/perf/util/jevents.c
 new file mode 100644
-index 0000000..3e4b711
+index 0000000..0173b68
 --- /dev/null
-+++ b/tools/perf/util/jsmn.c
-@@ -0,0 +1,297 @@
-+/*
-+ * Copyright (c) 2010 Serge A. Zaitsev
-+ *
-+ * Permission is hereby granted, free of charge, to any person obtaining a copy
-+ * of this software and associated documentation files (the "Software"), to deal
-+ * in the Software without restriction, including without limitation the rights
-+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-+ * copies of the Software, and to permit persons to whom the Software is
-+ * furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-+ * THE SOFTWARE.
-+ *
-+ * Slightly modified by AK to not assume 0 terminated input.
-+ */
-+
-+#include <stdlib.h>
-+#include "jsmn.h"
-+
-+/*
-+ * Allocates a fresh unused token from the token pull.
-+ */
-+static jsmntok_t *jsmn_alloc_token(jsmn_parser *parser,
-+				   jsmntok_t *tokens, size_t num_tokens)
-+{
-+	jsmntok_t *tok;
-+
-+	if ((unsigned)parser->toknext >= num_tokens)
-+		return NULL;
-+	tok = &tokens[parser->toknext++];
-+	tok->start = tok->end = -1;
-+	tok->size = 0;
-+	return tok;
-+}
-+
-+/*
-+ * Fills token type and boundaries.
-+ */
-+static void jsmn_fill_token(jsmntok_t *token, jsmntype_t type,
-+			    int start, int end)
-+{
-+	token->type = type;
-+	token->start = start;
-+	token->end = end;
-+	token->size = 0;
-+}
-+
-+/*
-+ * Fills next available token with JSON primitive.
-+ */
-+static jsmnerr_t jsmn_parse_primitive(jsmn_parser *parser, const char *js,
-+				      size_t len,
-+				      jsmntok_t *tokens, size_t num_tokens)
-+{
-+	jsmntok_t *token;
-+	int start;
-+
-+	start = parser->pos;
-+
-+	for (; parser->pos < len; parser->pos++) {
-+		switch (js[parser->pos]) {
-+#ifndef JSMN_STRICT
-+		/*
-+		 * In strict mode primitive must be followed by ","
-+		 * or "}" or "]"
-+		 */
-+		case ':':
-+#endif
-+		case '\t':
-+		case '\r':
-+		case '\n':
-+		case ' ':
-+		case ',':
-+		case ']':
-+		case '}':
-+			goto found;
-+		default:
-+			break;
-+		}
-+		if (js[parser->pos] < 32 || js[parser->pos] >= 127) {
-+			parser->pos = start;
-+			return JSMN_ERROR_INVAL;
-+		}
-+	}
-+#ifdef JSMN_STRICT
-+	/*
-+	 * In strict mode primitive must be followed by a
-+	 * comma/object/array.
-+	 */
-+	parser->pos = start;
-+	return JSMN_ERROR_PART;
-+#endif
-+
-+found:
-+	token = jsmn_alloc_token(parser, tokens, num_tokens);
-+	if (token == NULL) {
-+		parser->pos = start;
-+		return JSMN_ERROR_NOMEM;
-+	}
-+	jsmn_fill_token(token, JSMN_PRIMITIVE, start, parser->pos);
-+	parser->pos--;
-+	return JSMN_SUCCESS;
-+}
-+
-+/*
-+ * Fills next token with JSON string.
-+ */
-+static jsmnerr_t jsmn_parse_string(jsmn_parser *parser, const char *js,
-+				   size_t len,
-+				   jsmntok_t *tokens, size_t num_tokens)
-+{
-+	jsmntok_t *token;
-+	int start = parser->pos;
-+
-+	parser->pos++;
-+
-+	/* Skip starting quote */
-+	for (; parser->pos < len; parser->pos++) {
-+		char c = js[parser->pos];
-+
-+		/* Quote: end of string */
-+		if (c == '\"') {
-+			token = jsmn_alloc_token(parser, tokens, num_tokens);
-+			if (token == NULL) {
-+				parser->pos = start;
-+				return JSMN_ERROR_NOMEM;
-+			}
-+			jsmn_fill_token(token, JSMN_STRING, start+1,
-+					parser->pos);
-+			return JSMN_SUCCESS;
-+		}
-+
-+		/* Backslash: Quoted symbol expected */
-+		if (c == '\\') {
-+			parser->pos++;
-+			switch (js[parser->pos]) {
-+				/* Allowed escaped symbols */
-+			case '\"':
-+			case '/':
-+			case '\\':
-+			case 'b':
-+			case 'f':
-+			case 'r':
-+			case 'n':
-+			case 't':
-+				break;
-+				/* Allows escaped symbol \uXXXX */
-+			case 'u':
-+				/* TODO */
-+				break;
-+				/* Unexpected symbol */
-+			default:
-+				parser->pos = start;
-+				return JSMN_ERROR_INVAL;
-+			}
-+		}
-+	}
-+	parser->pos = start;
-+	return JSMN_ERROR_PART;
-+}
-+
-+/*
-+ * Parse JSON string and fill tokens.
-+ */
-+jsmnerr_t jsmn_parse(jsmn_parser *parser, const char *js, size_t len,
-+		     jsmntok_t *tokens,
-+		     unsigned int num_tokens)
-+{
-+	jsmnerr_t r;
-+	int i;
-+	jsmntok_t *token;
-+
-+	for (; parser->pos < len; parser->pos++) {
-+		char c;
-+		jsmntype_t type;
-+
-+		c = js[parser->pos];
-+		switch (c) {
-+		case '{':
-+		case '[':
-+			token = jsmn_alloc_token(parser, tokens, num_tokens);
-+			if (token == NULL)
-+				return JSMN_ERROR_NOMEM;
-+			if (parser->toksuper != -1)
-+				tokens[parser->toksuper].size++;
-+			token->type = (c == '{' ? JSMN_OBJECT : JSMN_ARRAY);
-+			token->start = parser->pos;
-+			parser->toksuper = parser->toknext - 1;
-+			break;
-+		case '}':
-+		case ']':
-+			type = (c == '}' ? JSMN_OBJECT : JSMN_ARRAY);
-+			for (i = parser->toknext - 1; i >= 0; i--) {
-+				token = &tokens[i];
-+				if (token->start != -1 && token->end == -1) {
-+					if (token->type != type)
-+						return JSMN_ERROR_INVAL;
-+					parser->toksuper = -1;
-+					token->end = parser->pos + 1;
-+					break;
-+				}
-+			}
-+			/* Error if unmatched closing bracket */
-+			if (i == -1)
-+				return JSMN_ERROR_INVAL;
-+			for (; i >= 0; i--) {
-+				token = &tokens[i];
-+				if (token->start != -1 && token->end == -1) {
-+					parser->toksuper = i;
-+					break;
-+				}
-+			}
-+			break;
-+		case '\"':
-+			r = jsmn_parse_string(parser, js, len, tokens,
-+					      num_tokens);
-+			if (r < 0)
-+				return r;
-+			if (parser->toksuper != -1)
-+				tokens[parser->toksuper].size++;
-+			break;
-+		case '\t':
-+		case '\r':
-+		case '\n':
-+		case ':':
-+		case ',':
-+		case ' ':
-+			break;
-+#ifdef JSMN_STRICT
-+			/*
-+			 * In strict mode primitives are:
-+			 * numbers and booleans.
-+			 */
-+		case '-':
-+		case '0':
-+		case '1':
-+		case '2':
-+		case '3':
-+		case '4':
-+		case '5':
-+		case '6':
-+		case '7':
-+		case '8':
-+		case '9':
-+		case 't':
-+		case 'f':
-+		case 'n':
-+#else
-+			/*
-+			 * In non-strict mode every unquoted value
-+			 * is a primitive.
-+			 */
-+		default:
-+#endif
-+			r = jsmn_parse_primitive(parser, js, len, tokens,
-+						 num_tokens);
-+			if (r < 0)
-+				return r;
-+			if (parser->toksuper != -1)
-+				tokens[parser->toksuper].size++;
-+			break;
-+
-+#ifdef JSMN_STRICT
-+			/* Unexpected char in strict mode */
-+		default:
-+			return JSMN_ERROR_INVAL;
-+#endif
-+		}
-+	}
-+
-+	for (i = parser->toknext - 1; i >= 0; i--) {
-+		/* Unmatched opened object or array */
-+		if (tokens[i].start != -1 && tokens[i].end == -1)
-+			return JSMN_ERROR_PART;
-+	}
-+
-+	return JSMN_SUCCESS;
-+}
-+
-+/*
-+ * Creates a new parser based over a given  buffer with an array of tokens
-+ * available.
-+ */
-+void jsmn_init(jsmn_parser *parser)
-+{
-+	parser->pos = 0;
-+	parser->toknext = 0;
-+	parser->toksuper = -1;
-+}
-diff --git a/tools/perf/util/jsmn.h b/tools/perf/util/jsmn.h
-new file mode 100644
-index 0000000..8f432b0
---- /dev/null
-+++ b/tools/perf/util/jsmn.h
-@@ -0,0 +1,65 @@
-+#ifndef __JSMN_H_
-+#define __JSMN_H_
-+
-+/*
-+ * JSON type identifier. Basic types are:
-+ *	o Object
-+ *	o Array
-+ *	o String
-+ *	o Other primitive: number, boolean (true/false) or null
-+ */
-+typedef enum {
-+	JSMN_PRIMITIVE = 0,
-+	JSMN_OBJECT = 1,
-+	JSMN_ARRAY = 2,
-+	JSMN_STRING = 3
-+} jsmntype_t;
-+
-+typedef enum {
-+	/* Not enough tokens were provided */
-+	JSMN_ERROR_NOMEM = -1,
-+	/* Invalid character inside JSON string */
-+	JSMN_ERROR_INVAL = -2,
-+	/* The string is not a full JSON packet, more bytes expected */
-+	JSMN_ERROR_PART = -3,
-+	/* Everything was fine */
-+	JSMN_SUCCESS = 0
-+} jsmnerr_t;
-+
-+/*
-+ * JSON token description.
-+ * @param		type	type (object, array, string etc.)
-+ * @param		start	start position in JSON data string
-+ * @param		end		end position in JSON data string
-+ */
-+typedef struct {
-+	jsmntype_t type;
-+	int start;
-+	int end;
-+	int size;
-+} jsmntok_t;
-+
-+/*
-+ * JSON parser. Contains an array of token blocks available. Also stores
-+ * the string being parsed now and current position in that string
-+ */
-+typedef struct {
-+	unsigned int pos; /* offset in the JSON string */
-+	int toknext; /* next token to allocate */
-+	int toksuper; /* superior token node, e.g parent object or array */
-+} jsmn_parser;
-+
-+/*
-+ * Create JSON parser over an array of tokens
-+ */
-+void jsmn_init(jsmn_parser *parser);
-+
-+/*
-+ * Run JSON parser. It parses a JSON data string into and array of tokens,
-+ * each describing a single JSON object.
-+ */
-+jsmnerr_t jsmn_parse(jsmn_parser *parser, const char *js,
-+		     size_t len,
-+		     jsmntok_t *tokens, unsigned int num_tokens);
-+
-+#endif /* __JSMN_H_ */
-diff --git a/tools/perf/util/json.c b/tools/perf/util/json.c
-new file mode 100644
-index 0000000..e505da9
---- /dev/null
-+++ b/tools/perf/util/json.c
-@@ -0,0 +1,155 @@
-+/* Parse JSON files using the JSMN parser. */
++++ b/tools/perf/util/jevents.c
+@@ -0,0 +1,248 @@
++/* Parse event JSON files */
 +
 +/*
 + * Copyright (c) 2014, Intel Corporation
@@ -488,150 +211,283 @@ index 0000000..e505da9
 + * OF THE POSSIBILITY OF SUCH DAMAGE.
 +*/
 +
-+#include <stdlib.h>
-+#include <string.h>
-+#include <sys/mman.h>
-+#include <sys/stat.h>
-+#include <sys/fcntl.h>
 +#include <stdio.h>
-+#include <unistd.h>
++#include <stdlib.h>
++#include <errno.h>
++#include <string.h>
++#include <ctype.h>
 +#include "jsmn.h"
 +#include "json.h"
-+#include <linux/kernel.h>
++#include "jevents.h"
 +
-+static char *mapfile(const char *fn, size_t *size)
++static void addfield(char *map, char **dst, const char *sep,
++		     const char *a, jsmntok_t *bt)
 +{
-+	unsigned ps = sysconf(_SC_PAGESIZE);
-+	struct stat st;
-+	char *map = NULL;
-+	int err;
-+	int fd = open(fn, O_RDONLY);
++	unsigned len = strlen(a) + 1 + strlen(sep);
++	int olen = *dst ? strlen(*dst) : 0;
++	int blen = bt ? json_len(bt) : 0;
 +
-+	if (fd < 0)
-+		return NULL;
-+	err = fstat(fd, &st);
-+	if (err < 0)
-+		goto out;
-+	*size = st.st_size;
-+	map = mmap(NULL,
-+		   (st.st_size + ps - 1) & ~(ps -1),
-+		   PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
-+	if (map == (char *)MAP_FAILED)
-+		map = NULL;
-+out:
-+	close(fd);
-+	return map;
++	*dst = realloc(*dst, len + olen + blen);
++	if (!*dst)
++		exit(ENOMEM);
++	if (!olen)
++		*(*dst) = 0;
++	else
++		strcat(*dst, sep);
++	strcat(*dst, a);
++	if (bt)
++		strncat(*dst, map + bt->start, blen);
 +}
 +
-+static void unmapfile(char *map, size_t size)
++static void fixname(char *s)
 +{
-+	unsigned ps = sysconf(_SC_PAGESIZE);
-+	munmap(map, roundup(size, ps));
-+}
-+
-+/*
-+ * Parse json file using jsmn. Return array of tokens,
-+ * and mapped file. Caller needs to free array.
-+ */
-+jsmntok_t *parse_json(const char *fn, char **map, size_t *size, int *len)
-+{
-+	jsmn_parser parser;
-+	jsmntok_t *tokens;
-+	jsmnerr_t res;
-+	unsigned sz;
-+
-+	*map = mapfile(fn, size);
-+	if (!*map)
-+		return NULL;
-+	/* Heuristic */
-+	sz = *size * 16;
-+	tokens = malloc(sz);
-+	if (!tokens)
-+		goto error;
-+	jsmn_init(&parser);
-+	res = jsmn_parse(&parser, *map, *size, tokens,
-+			 sz / sizeof(jsmntok_t));
-+	if (res != JSMN_SUCCESS) {
-+		pr_err("%s: json error %d\n", fn, res);
-+		goto error_free;
++	for (; *s; s++) {
++		*s = tolower(*s);
++		/*
++		 * Remove '.' for now, until the parser
++		 * can deal with it.
++		 */
++		if (*s == '.')
++			*s = '_';
 +	}
-+	if (len)
-+		*len = parser.toknext;
-+	return tokens;
-+error_free:
-+	free(tokens);
-+error:
-+	unmapfile(*map, *size);
++}
++
++static void fixdesc(char *s)
++{
++	char *e = s + strlen(s);
++
++	/* Remove trailing dots that look ugly in perf list */
++	--e;
++	while (e >= s && isspace(*e))
++		--e;
++	if (*e == '.')
++		*e = 0;
++}
++
++#define EXPECT(e, t, m) do { if (!(e)) {			\
++	jsmntok_t *loc = (t);					\
++	if (!(t)->start && (t) > tokens)			\
++		loc = (t) - 1;					\
++	fprintf(stderr, "%s:%d: " m ", got %s\n", fn,		\
++		json_line(map, loc),				\
++		json_name(t));					\
++	goto out_free;						\
++} } while (0)
++
++static struct msrmap {
++	const char *num;
++	const char *pname;
++} msrmap[] = {
++	{ "0x3F6", "ldlat=" },
++	{ "0x1A6", "offcore_rsp=" },
++	{ "0x1A7", "offcore_rsp=" },
++	{ NULL, NULL }
++};
++
++static struct field {
++	const char *field;
++	const char *kernel;
++} fields[] = {
++	{ "EventCode",	"event=" },
++	{ "UMask",	"umask=" },
++	{ "CounterMask", "cmask=" },
++	{ "Invert",	"inv=" },
++	{ "AnyThread",	"any=" },
++	{ "EdgeDetect",	"edge=" },
++	{ "SampleAfterValue", "period=" },
++	{ NULL, NULL }
++};
++
++static void cut_comma(char *map, jsmntok_t *newval)
++{
++	int i;
++
++	/* Cut off everything after comma */
++	for (i = newval->start; i < newval->end; i++) {
++		if (map[i] == ',')
++			newval->end = i;
++	}
++}
++
++static int match_field(char *map, jsmntok_t *field, int nz,
++		       char **event, jsmntok_t *val)
++{
++	struct field *f;
++	jsmntok_t newval = *val;
++
++	for (f = fields; f->field; f++)
++		if (json_streq(map, field, f->field) && nz) {
++			cut_comma(map, &newval);
++			addfield(map, event, ",", f->kernel, &newval);
++			return 1;
++		}
++	return 0;
++}
++
++static struct msrmap *lookup_msr(char *map, jsmntok_t *val)
++{
++	jsmntok_t newval = *val;
++	static bool warned;
++	int i;
++
++	cut_comma(map, &newval);
++	for (i = 0; msrmap[i].num; i++)
++		if (json_streq(map, &newval, msrmap[i].num))
++			return &msrmap[i];
++	if (!warned) {
++		warned = true;
++		pr_err("Unknown MSR in event file %.*s\n",
++			json_len(val), map + val->start);
++	}
 +	return NULL;
 +}
 +
-+void free_json(char *map, size_t size, jsmntok_t *tokens)
++/* Call func with each event in the json file */
++
++int json_events(const char *fn,
++	  int (*func)(void *data, char *name, char *event, char *desc),
++	  void *data)
 +{
-+	free(tokens);
-+	unmapfile(map, size);
++	int err = -EIO;
++	size_t size;
++	jsmntok_t *tokens, *tok;
++	int i, j, len;
++	char *map;
++
++	tokens = parse_json(fn, &map, &size, &len);
++	if (!tokens)
++		return -EIO;
++	EXPECT(tokens->type == JSMN_ARRAY, tokens, "expected top level array");
++	tok = tokens + 1;
++	for (i = 0; i < tokens->size; i++) {
++		char *event = NULL, *desc = NULL, *name = NULL;
++		struct msrmap *msr = NULL;
++		jsmntok_t *msrval = NULL;
++		jsmntok_t *precise = NULL;
++		jsmntok_t *obj = tok++;
++
++		EXPECT(obj->type == JSMN_OBJECT, obj, "expected object");
++		for (j = 0; j < obj->size; j += 2) {
++			jsmntok_t *field, *val;
++			int nz;
++
++			field = tok + j;
++			EXPECT(field->type == JSMN_STRING, tok + j,
++			       "Expected field name");
++			val = tok + j + 1;
++			EXPECT(val->type == JSMN_STRING, tok + j + 1,
++			       "Expected string value");
++
++			nz = !json_streq(map, val, "0");
++			if (match_field(map, field, nz, &event, val)) {
++				/* ok */
++			} else if (json_streq(map, field, "EventName")) {
++				addfield(map, &name, "", "", val);
++			} else if (json_streq(map, field, "BriefDescription")) {
++				addfield(map, &desc, "", "", val);
++				fixdesc(desc);
++			} else if (json_streq(map, field, "PEBS") && nz &&
++				   !strstr(desc, "(Precise Event)")) {
++				precise = val;
++			} else if (json_streq(map, field, "MSRIndex") && nz) {
++				msr = lookup_msr(map, val);
++			} else if (json_streq(map, field, "MSRValue")) {
++				msrval = val;
++			} else if (json_streq(map, field, "Errata") &&
++				   !json_streq(map, val, "null")) {
++				addfield(map, &desc, ". ",
++					" Spec update: ", val);
++			} else if (json_streq(map, field, "Data_LA") && nz) {
++				addfield(map, &desc, ". ",
++					" Supports address when precise",
++					NULL);
++			}
++			/* ignore unknown fields */
++		}
++		if (precise) {
++			if (json_streq(map, precise, "2"))
++				addfield(map, &desc, " ", "(Must be precise)",
++						NULL);
++			else
++				addfield(map, &desc, " ",
++						"(Precise event)", NULL);
++		}
++		if (msr != NULL)
++			addfield(map, &event, ",", msr->pname, msrval);
++		fixname(name);
++		err = func(data, name, event, desc);
++		free(event);
++		free(desc);
++		free(name);
++		if (err)
++			break;
++		tok += j;
++	}
++	EXPECT(tok - tokens == len, tok, "unexpected objects at end");
++	err = 0;
++out_free:
++	free_json(map, size, tokens);
++	return err;
 +}
-+
-+static int countchar(char *map, char c, int end)
-+{
-+	int i;
-+	int count = 0;
-+	for (i = 0; i < end; i++)
-+		if (map[i] == c)
-+			count++;
-+	return count;
-+}
-+
-+/* Return line number of a jsmn token */
-+int json_line(char *map, jsmntok_t *t)
-+{
-+	return countchar(map, '\n', t->start) + 1;
-+}
-+
-+static const char *jsmn_types[] = {
-+	[JSMN_PRIMITIVE] = "primitive",
-+	[JSMN_ARRAY] = "array",
-+	[JSMN_OBJECT] = "object",
-+	[JSMN_STRING] = "string"
-+};
-+
-+#define LOOKUP(a, i) ((i) < (sizeof(a)/sizeof(*(a))) ? ((a)[i]) : "?")
-+
-+/* Return type name of a jsmn token */
-+const char *json_name(jsmntok_t *t)
-+{
-+	return LOOKUP(jsmn_types, t->type);
-+}
-+
-+int json_len(jsmntok_t *t)
-+{
-+	return t->end - t->start;
-+}
-+
-+/* Is string t equal to s? */
-+int json_streq(char *map, jsmntok_t *t, const char *s)
-+{
-+	unsigned len = t->end - t->start;
-+	return len == strlen(s) && !strncasecmp(map + t->start, s, len);
-+}
-diff --git a/tools/perf/util/json.h b/tools/perf/util/json.h
+diff --git a/tools/perf/util/jevents.h b/tools/perf/util/jevents.h
 new file mode 100644
-index 0000000..37dd9e9
+index 0000000..4c2b879
 --- /dev/null
-+++ b/tools/perf/util/json.h
-@@ -0,0 +1,13 @@
-+#ifndef JSON_H
-+#define JSON_H 1
++++ b/tools/perf/util/jevents.h
+@@ -0,0 +1,3 @@
++int json_events(const char *fn,
++		int (*func)(void *data, char *name, char *event, char *desc),
++		void *data);
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 26311d9..831f525 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -9,6 +9,9 @@
+ #include "pmu.h"
+ #include "parse-events.h"
+ #include "cpumap.h"
++#include "jevents.h"
 +
-+#include "jsmn.h"
++const char *json_file;
+ 
+ #define UNIT_MAX_LEN	31 /* max length for event unit name */
+ 
+@@ -273,6 +276,14 @@ static int pmu_aliases_parse(char *dir, struct list_head *head)
+ 	return ret;
+ }
+ 
++static int add_alias(void *data, char *name, char *event, char *desc)
++{
++	struct list_head *head = (struct list_head *)data;
 +
-+jsmntok_t *parse_json(const char *fn, char **map, size_t *size, int *len);
-+void free_json(char *map, size_t size, jsmntok_t *tokens);
-+int json_line(char *map, jsmntok_t *t);
-+const char *json_name(jsmntok_t *t);
-+int json_streq(char *map, jsmntok_t *t, const char *s);
-+int json_len(jsmntok_t *t);
++	__perf_pmu__new_alias(head, name, NULL, desc, event);
++	return 0;
++}
 +
-+#endif
+ /*
+  * Reading the pmu event aliases definition, which should be located at:
+  * /sys/bus/event_source/devices/<dev>/events as sysfs group attributes.
+@@ -422,6 +433,9 @@ static struct perf_pmu *pmu_lookup(const char *name)
+ 	if (pmu_aliases(name, &aliases))
+ 		return NULL;
+ 
++	if (!strcmp(name, "cpu") && json_file)
++		json_events(json_file, add_alias, &aliases);
++
+ 	if (pmu_type(name, &type))
+ 		return NULL;
+ 
+diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
+index 8b64125..62255bb 100644
+--- a/tools/perf/util/pmu.h
++++ b/tools/perf/util/pmu.h
+@@ -46,4 +46,6 @@ void print_pmu_events(const char *event_glob, bool name_only);
+ bool pmu_have_event(const char *pname, const char *name);
+ 
+ int perf_pmu__test(void);
++
++extern const char *json_file;
+ #endif /* __PMU_H */
 -- 
 1.8.5.3
 
