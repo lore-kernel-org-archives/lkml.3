@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756657AbaDPUoi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 16:44:38 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:35855 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754577AbaDPUoh (ORCPT
+	id S1756668AbaDPUpn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 16:45:43 -0400
+Received: from mxip4-inbound.gatech.edu ([130.207.182.13]:21226 "EHLO
+	mxip4-inbound.gatech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753917AbaDPUpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 16:44:37 -0400
-Date: Wed, 16 Apr 2014 13:44:33 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pranith Kumar <pranith@gatech.edu>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] kernel/torture.c: unmark torture_init_*  as __inline
-Message-ID: <20140416204433.GZ4496@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <534EDBF4.6030702@gatech.edu>
- <534EDCC7.1040701@gatech.edu>
+	Wed, 16 Apr 2014 16:45:42 -0400
+X-RemoteIP: 130.207.185.166
+X-Group: ZimbraSenderGroup
+X-Policy: $ZIMBRA
+X-MID: 79245098
+X-SBRS: None
+X-IronPort-AV: E=Sophos;i="4.97,874,1389762000"; 
+   d="scan'208";a="79245098"
+X-GT-Spam-Rating: (0%)
+Message-ID: <534EEC09.7010300@gatech.edu>
+Date: Wed, 16 Apr 2014 16:46:01 -0400
+From: Pranith Kumar <pranith@gatech.edu>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <534EDCC7.1040701@gatech.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041620-0928-0000-0000-00000135C26D
+To: paulmck@linux.vnet.ibm.com
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] include/linux/torture.h: remove unused duplicate definition
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 03:40:55PM -0400, Pranith Kumar wrote:
-> The subject should be: 
-> 
-> [PATCH 1/1] kernel/torture.c: unmark torture_init_begin/end as __init
+remove an unused duplicate definition of torture_param
 
-Actually "torture: Remove __init from torture_init_begin/end".
+Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+---
+ include/linux/torture.h |    6 ------
+ 1 file changed, 6 deletions(-)
 
-Good catch, queued for 3.16!  I missed it because of my habit of building
-the torture tests directly into the kernel rather than loading them
-as modules.  So thank you both for the patch and for your testing efforts!
-
-Just out of curiosity, what are you thinking of using this for?
-
-							Thanx, Paul
-
+diff --git a/include/linux/torture.h b/include/linux/torture.h
+index b2e2b46..88a84a2 100644
+--- a/include/linux/torture.h
++++ b/include/linux/torture.h
+@@ -49,12 +49,6 @@
+ #define VERBOSE_TOROUT_ERRSTRING(s) \
+ 	do { if (verbose) pr_alert("%s" TORTURE_FLAG "!!! %s\n", torture_type, s); } while (0)
+ 
+-/* Definitions for a non-string torture-test module parameter. */
+-#define torture_parm(type, name, init, msg) \
+-	static type name = init; \
+-	module_param(name, type, 0444); \
+-	MODULE_PARM_DESC(name, msg);
+-
+ /* Definitions for online/offline exerciser. */
+ int torture_onoff_init(long ooholdoff, long oointerval);
+ char *torture_onoff_stats(char *page);
+-- 
+1.7.9.5
