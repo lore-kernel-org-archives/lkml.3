@@ -1,162 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320AbaDPJQR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 05:16:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:25995 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755218AbaDPJQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 05:16:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,871,1389772800"; 
-   d="scan'208";a="494034856"
-Date: Wed, 16 Apr 2014 14:36:05 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Srikanth Thokala <sthokal@xilinx.com>
-Cc: dan.j.williams@intel.com, michal.simek@xilinx.com, grant.likely@linaro.org,
-        robh+dt@kernel.org, levex@linux.com, lars@metafoo.de,
-        andriy.shevchenko@linux.jf.intel.com, jaswinder.singh@linaro.org,
-        dmaengine@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 2/2] dma: Add Xilinx AXI Video Direct Memory Access
- Engine driver support
-Message-ID: <20140416090605.GP32284@intel.com>
-References: <1396008222-7058-1-git-send-email-sthokal@xilinx.com>
- <1396008222-7058-3-git-send-email-sthokal@xilinx.com>
+	id S1755223AbaDPJUh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 05:20:37 -0400
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:43922 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755134AbaDPJUb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 05:20:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396008222-7058-3-git-send-email-sthokal@xilinx.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1397581703.8212.5.camel@x220>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+ <1391971686-9517-10-git-send-email-richard@nod.at> <52F7D480.1050106@hauke-m.de>
+ <52F7DF21.70207@nod.at> <CAHNKnsS7Mv4ZhBWZa53go9L9nZimJ7_FG5HFJ9C3kkGMAEz-mA@mail.gmail.com>
+ <52F8C373.9060108@rempel-privat.de> <CAHNKnsQF5Hdf3JT91moPraRQzn4kMpdD2NSiJ7b30wQhS1W4MA@mail.gmail.com>
+ <CAGVrzcYnECx5Q=i+m6qZn29y4JALDpw5SWoUNP-S6HgPR3_ygQ@mail.gmail.com>
+ <CAHNKnsRACSo=DfOyiHxqV3acv_wfZmz4tMnYAW0wo4OCibwdfA@mail.gmail.com>
+ <CAHNKnsRQp7WLSJNAXEYPTd=qs1DquOfNgKtHES-Utvcy1=FEgQ@mail.gmail.com>
+ <20140213201421.GJ22203@tuxdriver.com> <1397581703.8212.5.camel@x220>
+From: Sergey Ryazanov <ryazanov.s.a@gmail.com>
+Date: Wed, 16 Apr 2014 13:20:10 +0400
+Message-ID: <CAHNKnsQQ42-XnXrubHAy4PF3H2ynbGDdSMP7MvDS_1aRozYF=A@mail.gmail.com>
+Subject: Re: [PATCH 09/28] Remove ATHEROS_AR231X
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        Oleksij Rempel <linux@rempel-privat.de>,
+        Richard Weinberger <richard@nod.at>,
+        Jonathan Bither <jonbither@gmail.com>,
+        OpenWrt Development List <openwrt-devel@lists.openwrt.org>,
+        Hauke Mehrtens <hauke@hauke-m.de>, Jiri Slaby <jirislaby@gmail.com>,
+        Nick Kossifidis <mickflemm@gmail.com>,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        ath5k-devel@venema.h4ckr.net, open@hauke-m.de,
+        "list@hauke-m.de:NETWORKING DRIVERS" <list@hauke-m.de>,
+        "list@hauke-m.de:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
+        Florian Fainelli <florian@openwrt.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 28, 2014 at 05:33:42PM +0530, Srikanth Thokala wrote:
-> This is the driver for the AXI Video Direct Memory Access (AXI
-> VDMA) core, which is a soft Xilinx IP core that provides high-
-> bandwidth direct memory access between memory and AXI4-Stream
-> type video target peripherals. The core provides efficient two
-> dimensional DMA operations with independent asynchronous read
-> and write channel operation.
-> 
-> This module works on Zynq (ARM Based SoC) and Microblaze platforms.
+2014-04-15 21:08 GMT+04:00 Paul Bolle <pebolle@tiscali.nl>:
+> On Thu, 2014-02-13 at 15:14 -0500, John W. Linville wrote:
+>> On Wed, Feb 12, 2014 at 02:50:30PM +0400, Sergey Ryazanov wrote:
+>> > John, can you delay the merging of this patch for a few months, I will
+>> > try to prepare the necessary patches to add AR231x architecture to the
+>> > kernel and send them to linux-mips.
+>>
+>> OK -- looking forward to your patches.
+>
+> So am I. Is there any news on this front?
+>
 
-Okay the series is fine and was going to apply it BUT
-1) need ack on DT patch..
-2) issues below on managing the descriptor and resetting the cookie :(
-
-> +
-> +/**
-> + * xilinx_vdma_tx_descriptor - Allocate transaction descriptor
-> + * @chan: Driver specific VDMA channel
-> + *
-> + * Return: The allocated descriptor on success and NULL on failure.
-> + */
-> +static struct xilinx_vdma_tx_descriptor *
-> +xilinx_vdma_alloc_tx_descriptor(struct xilinx_vdma_chan *chan)
-> +{
-> +	struct xilinx_vdma_tx_descriptor *desc;
-> +	unsigned long flags;
-> +
-> +	if (chan->allocated_desc)
-> +		return chan->allocated_desc;
-??
-
-> +
-> +	desc = kzalloc(sizeof(*desc), GFP_KERNEL);
-> +	if (!desc)
-> +		return NULL;
-> +
-> +	spin_lock_irqsave(&chan->lock, flags);
-> +	chan->allocated_desc = desc;
-ah why do you need this? 
-
-So this essentailly prevents you from preparing two trasactions at same time as
-you would overwrite??
-
-You should maintain a list for pending and submitted.
-
-> +	spin_unlock_irqrestore(&chan->lock, flags);
-> +
-> +	INIT_LIST_HEAD(&desc->segments);
-> +
-> +	return desc;
-> +}
-> +
-
-> +/**
-> + * xilinx_vdma_tx_submit - Submit DMA transaction
-> + * @tx: Async transaction descriptor
-> + *
-> + * Return: cookie value on success and failure value on error
-> + */
-> +static dma_cookie_t xilinx_vdma_tx_submit(struct dma_async_tx_descriptor *tx)
-> +{
-> +	struct xilinx_vdma_tx_descriptor *desc = to_vdma_tx_descriptor(tx);
-> +	struct xilinx_vdma_chan *chan = to_xilinx_chan(tx->chan);
-> +	dma_cookie_t cookie;
-> +	unsigned long flags;
-> +	int err;
-> +
-> +	if (chan->err) {
-> +		/*
-> +		 * If reset fails, need to hard reset the system.
-> +		 * Channel is no longer functional
-> +		 */
-> +		err = xilinx_vdma_chan_reset(chan);
-> +		if (err < 0)
-> +			return err;
-> +	}
-> +
-> +	spin_lock_irqsave(&chan->lock, flags);
-> +
-> +	cookie = dma_cookie_assign(tx);
-> +
-> +	/* Append the transaction to the pending transactions queue. */
-> +	list_add_tail(&desc->node, &chan->pending_list);
-> +
-> +	/* Free the allocated desc */
-> +	chan->allocated_desc = NULL;
-> +
-> +	spin_unlock_irqrestore(&chan->lock, flags);
-> +
-> +	return cookie;
-> +}
-> +
-> +/**
-> + * xilinx_vdma_dma_prep_interleaved - prepare a descriptor for a
-> + *	DMA_SLAVE transaction
-> + * @dchan: DMA channel
-> + * @xt: Interleaved template pointer
-> + * @flags: transfer ack flags
-> + *
-> + * Return: Async transaction descriptor on success and NULL on failure
-> + */
-> +static struct dma_async_tx_descriptor *
-> +xilinx_vdma_dma_prep_interleaved(struct dma_chan *dchan,
-> +				 struct dma_interleaved_template *xt,
-> +				 unsigned long flags)
-> +{
-> +	struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
-> +	struct xilinx_vdma_tx_descriptor *desc;
-> +	struct xilinx_vdma_tx_segment *segment, *prev = NULL;
-> +	struct xilinx_vdma_desc_hw *hw;
-> +
-> +	if (!is_slave_direction(xt->dir))
-> +		return NULL;
-> +
-> +	if (!xt->numf || !xt->sgl[0].size)
-> +		return NULL;
-> +
-> +	/* Allocate a transaction descriptor. */
-> +	desc = xilinx_vdma_alloc_tx_descriptor(chan);
-> +	if (!desc)
-> +		return NULL;
-> +
-> +	dma_async_tx_descriptor_init(&desc->async_tx, &chan->common);
-> +	desc->async_tx.tx_submit = xilinx_vdma_tx_submit;
-> +	desc->async_tx.cookie = 0;
-why this is initialized in submit.. when you call dma_cookie_assign()
+Work still in progress :(
 
 -- 
-~Vinod
+BR,
+Sergey
