@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700AbaDPGIu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 02:08:50 -0400
-Received: from mail-by2lp0239.outbound.protection.outlook.com ([207.46.163.239]:5445
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754447AbaDPGIs convert rfc822-to-8bit (ORCPT
+	id S1754624AbaDPGMv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 02:12:51 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:59813 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754399AbaDPGMs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 02:08:48 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: "Dongsheng.Wang@freescale.com" <Dongsheng.Wang@freescale.com>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        Jingchang Lu <jingchang.lu@freescale.com>,
-        "Jason.Jin@freescale.com" <Jason.Jin@freescale.com>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Wed, 16 Apr 2014 02:12:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140415142024.GD3207@lukather>
+References: <1397544101-18135-1-git-send-email-wens@csie.org>
+ <1397544101-18135-2-git-send-email-wens@csie.org> <20140415142024.GD3207@lukather>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Wed, 16 Apr 2014 15:12:26 +0900
+Message-ID: <CAAVeFuLDhTVGDnmYtnxEY8hhn6HE6tU9OB24WDPtmxEHjiRiuQ@mail.gmail.com>
+Subject: Re: [PATCH 1/7] gpiolib: gpiolib-of: Implement device tree gpio-names
+ based lookup
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Chen-Yu Tsai <wens@csie.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC][PATCH 1/3] ARM: dts: vf610: Add Freescale FlexTimer
- Module timer node.
-Thread-Topic: [RFC][PATCH 1/3] ARM: dts: vf610: Add Freescale FlexTimer
- Module timer node.
-Thread-Index: AQHPWSBaHNmWFeafwkKQ+QxFukJEhZsTnrKAgAAinaA=
-Date: Wed, 16 Apr 2014 06:08:45 +0000
-Message-ID: <42acfcd1b83143d38bda219a7854838d@DM2PR03MB509.namprd03.prod.outlook.com>
-References: <1397614787-8300-1-git-send-email-Li.Xiubo@freescale.com>
- <1397614787-8300-2-git-send-email-Li.Xiubo@freescale.com>
- <a7aeb70fae2c480198b413f581f76846@BN1PR03MB188.namprd03.prod.outlook.com>
-In-Reply-To: <a7aeb70fae2c480198b413f581f76846@BN1PR03MB188.namprd03.prod.outlook.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 01834E39B7
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(189002)(199002)(164054003)(80022001)(66066001)(20776003)(76576001)(99396002)(46102001)(81542001)(77096999)(54356999)(50986999)(99286001)(86362001)(2201001)(77982001)(92566001)(76176999)(79102001)(31966008)(81342001)(33646001)(74316001)(76482001)(4396001)(74662001)(80976001)(2656002)(74502001)(87936001)(83322001)(85852003)(19580395003)(19580405001)(83072002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB479;H:DM2PR03MB509.namprd03.prod.outlook.com;FPR:E8597776.B8A086DB.AEEC2CC6.D4EEF59E.2015E;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > --- a/arch/arm/boot/dts/vf610.dtsi
-> > +++ b/arch/arm/boot/dts/vf610.dtsi
-> > @@ -153,6 +153,19 @@
-> >  				clock-names = "pit";
-> >  			};
-> >
-> > +			ftm0: ftm@40038000 {
-> > +				compatible = "fsl,vf610-ftm-timer";
-> > +				reg = <0x40038000 0x2000>;
-> > +				interrupts = <0 42 IRQ_TYPE_LEVEL_HIGH>;
-> > +				clock-names = "ftm0", "ftm1",
-> > +					"ftm0_counter_en", "ftm1_counter_en";
-> > +				clocks = <&clks VF610_CLK_FTM0>,
-> > +					<&clks VF610_CLK_FTM1>,
-> > +					<&clks VF610_CLK_FTM0_EXT_FIX_EN>,
-> > +					<&clks VF610_CLK_FTM1_EXT_FIX_EN>;
-> > +				status = "disabled";
-> > +			};
-> > +
-> 
-> They need to be separated. ftm0, ftm1.
-> 
+On Tue, Apr 15, 2014 at 11:20 PM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+> Hi Chen-Yu,
+>
+> On Tue, Apr 15, 2014 at 02:41:35PM +0800, Chen-Yu Tsai wrote:
+>> This patch provides of_get_gpiod_flags_by_name(), which looks up GPIO
+>> phandles by name only, through gpios/gpio-names, and not by index.
+>
+> IIRC, gpios only uses the *-gpios properties, and not gpios/gpio-names
+> pattern seen on various other things.
+>
+> Is it some new property you introduce? If so, please add it to the
+> documentation.
+>
+> Now, I'm not sure that having two distinct representations of GPIOs in
+> the DT is a good thing. Yes, it's looking odd compared to other
+> similar bindings, but it's what we have to deal with.
 
-Well, if so the driver will adjust much more to and I do think one dts
-Node is okey.
-
-The dts patches of this series are just for testing and reference for
-The timer driver on Vybrid-twr.
-
-Thanks,
-
-BRs
-Xiubo
-
-> >  			wdog@4003e000 {
-> >  				compatible = "fsl,vf610-wdt", "fsl,imx21-wdt";
-> >  				reg = <0x4003e000 0x1000>;
-> > --
-> > 1.8.4
-> >
-
+Mmmm I *think* I somehow remember a discussion about this topic
+recently, but I cannot find it. Maybe Chen-yu could point us to the
+conclusion of this discussion and the rationale for (re)implementing
+named GPIOs this way?
