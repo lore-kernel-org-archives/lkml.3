@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916AbaDPKdu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:33:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51845 "EHLO
+	id S1755542AbaDPKei (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:34:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51824 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755871AbaDPKdP (ORCPT
+	with ESMTP id S1755436AbaDPKdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:33:15 -0400
+	Wed, 16 Apr 2014 06:33:09 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Florian Westphal <fw@strlen.de>, Thomas Graf <tgraf@suug.ch>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
+Cc: "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 45/46] netfilter: Can't fail and free after table replacement
-Date: Wed, 16 Apr 2014 11:32:01 +0100
-Message-Id: <1397644322-13905-46-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 43/46] sparc64: Make sure %pil interrupts are enabled during hypervisor yield.
+Date: Wed, 16 Apr 2014 11:31:59 +0100
+Message-Id: <1397644322-13905-44-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
 References: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
@@ -28,99 +27,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Graf <tgraf@suug.ch>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit c58dd2dd443c26d856a168db108a0cd11c285bf3 upstream.
+commit cb3042d609e30e6144024801c89be3925106752b upstream.
 
-All xtables variants suffer from the defect that the copy_to_user()
-to copy the counters to user memory may fail after the table has
-already been exchanged and thus exposed. Return an error at this
-point will result in freeing the already exposed table. Any
-subsequent packet processing will result in a kernel panic.
+In arch_cpu_idle() we must enable %pil based interrupts before
+potentially invoking the hypervisor cpu yield call.
 
-We can't copy the counters before exposing the new tables as we
-want provide the counter state after the old table has been
-unhooked. Therefore convert this into a silent error.
+As per the Hypervisor API documentation for cpu_yield:
 
-Cc: Florian Westphal <fw@strlen.de>
-Signed-off-by: Thomas Graf <tgraf@suug.ch>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+	Interrupts which are blocked by some mechanism other that
+	pstate.ie (for example %pil) are not guaranteed to cause
+	a return from this service.
+
+It seems that only first generation Niagara chips are hit by this
+bug.  My best guess is that later chips implement this in hardware
+and wake up anyways from %pil events, whereas in first generation
+chips the yield is implemented completely in hypervisor code and
+requires %pil to be enabled in order to wake properly from this
+call.
+
+Fixes: 87fa05aeb3a5 ("sparc: Use generic idle loop")
+Reported-by: Fabio M. Di Nitto <fabbione@fabbione.net>
+Reported-by: Jan Engelhardt <jengelh@inai.de>
+Tested-by: Jan Engelhardt <jengelh@inai.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/bridge/netfilter/ebtables.c | 5 ++---
- net/ipv4/netfilter/arp_tables.c | 6 ++++--
- net/ipv4/netfilter/ip_tables.c  | 6 ++++--
- net/ipv6/netfilter/ip6_tables.c | 6 ++++--
- 4 files changed, 14 insertions(+), 9 deletions(-)
+ arch/sparc/kernel/process_64.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/net/bridge/netfilter/ebtables.c b/net/bridge/netfilter/ebtables.c
-index ac78024..b166fc2 100644
---- a/net/bridge/netfilter/ebtables.c
-+++ b/net/bridge/netfilter/ebtables.c
-@@ -1044,10 +1044,9 @@ static int do_replace_finish(struct net *net, struct ebt_replace *repl,
- 	if (repl->num_counters &&
- 	   copy_to_user(repl->counters, counterstmp,
- 	   repl->num_counters * sizeof(struct ebt_counter))) {
--		ret = -EFAULT;
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("ebtables: counters copy to user failed while replacing table\n");
+diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
+index baebab2..b9cc976 100644
+--- a/arch/sparc/kernel/process_64.c
++++ b/arch/sparc/kernel/process_64.c
+@@ -57,9 +57,12 @@ void arch_cpu_idle(void)
+ {
+ 	if (tlb_type != hypervisor) {
+ 		touch_nmi_watchdog();
++		local_irq_enable();
+ 	} else {
+ 		unsigned long pstate;
+ 
++		local_irq_enable();
++
+                 /* The sun4v sleeping code requires that we have PSTATE.IE cleared over
+                  * the cpu sleep hypervisor call.
+                  */
+@@ -81,7 +84,6 @@ void arch_cpu_idle(void)
+ 			: "=&r" (pstate)
+ 			: "i" (PSTATE_IE));
  	}
--	else
--		ret = 0;
+-	local_irq_enable();
+ }
  
- 	/* decrease module count and free resources */
- 	EBT_ENTRY_ITERATE(table->entries, table->entries_size,
-diff --git a/net/ipv4/netfilter/arp_tables.c b/net/ipv4/netfilter/arp_tables.c
-index 85a4f21..c8abe31 100644
---- a/net/ipv4/netfilter/arp_tables.c
-+++ b/net/ipv4/netfilter/arp_tables.c
-@@ -1039,8 +1039,10 @@ static int __do_replace(struct net *net, const char *name,
- 
- 	xt_free_table_info(oldinfo);
- 	if (copy_to_user(counters_ptr, counters,
--			 sizeof(struct xt_counters) * num_counters) != 0)
--		ret = -EFAULT;
-+			 sizeof(struct xt_counters) * num_counters) != 0) {
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("arptables: counters copy to user failed while replacing table\n");
-+	}
- 	vfree(counters);
- 	xt_table_unlock(t);
- 	return ret;
-diff --git a/net/ipv4/netfilter/ip_tables.c b/net/ipv4/netfilter/ip_tables.c
-index d23118d..651c107 100644
---- a/net/ipv4/netfilter/ip_tables.c
-+++ b/net/ipv4/netfilter/ip_tables.c
-@@ -1226,8 +1226,10 @@ __do_replace(struct net *net, const char *name, unsigned int valid_hooks,
- 
- 	xt_free_table_info(oldinfo);
- 	if (copy_to_user(counters_ptr, counters,
--			 sizeof(struct xt_counters) * num_counters) != 0)
--		ret = -EFAULT;
-+			 sizeof(struct xt_counters) * num_counters) != 0) {
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("iptables: counters copy to user failed while replacing table\n");
-+	}
- 	vfree(counters);
- 	xt_table_unlock(t);
- 	return ret;
-diff --git a/net/ipv6/netfilter/ip6_tables.c b/net/ipv6/netfilter/ip6_tables.c
-index 44400c2..89a4e4d 100644
---- a/net/ipv6/netfilter/ip6_tables.c
-+++ b/net/ipv6/netfilter/ip6_tables.c
-@@ -1236,8 +1236,10 @@ __do_replace(struct net *net, const char *name, unsigned int valid_hooks,
- 
- 	xt_free_table_info(oldinfo);
- 	if (copy_to_user(counters_ptr, counters,
--			 sizeof(struct xt_counters) * num_counters) != 0)
--		ret = -EFAULT;
-+			 sizeof(struct xt_counters) * num_counters) != 0) {
-+		/* Silent error, can't fail, new table is already in place */
-+		net_warn_ratelimited("ip6tables: counters copy to user failed while replacing table\n");
-+	}
- 	vfree(counters);
- 	xt_table_unlock(t);
- 	return ret;
+ #ifdef CONFIG_HOTPLUG_CPU
 -- 
 1.9.1
 
