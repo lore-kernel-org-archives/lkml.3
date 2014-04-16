@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703AbaDPGNm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 02:13:42 -0400
-Received: from smtp32.i.mail.ru ([94.100.177.92]:56337 "EHLO smtp32.i.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754619AbaDPGNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 02:13:41 -0400
-From: Alexander Shiyan <shc_work@mail.ru>
-To: linux-kernel@vger.kernel.org
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Alexander Shiyan <shc_work@mail.ru>
-Subject: [PATCH RESEND] mfd: mc13xxx: Move definitions out of structures
-Date: Wed, 16 Apr 2014 10:13:33 +0400
-Message-Id: <1397628813-17012-1-git-send-email-shc_work@mail.ru>
-X-Mailer: git-send-email 1.8.3.2
-X-Spam: Not detected
-X-Mras: Ok
+	id S1754723AbaDPGNv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 02:13:51 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:40427
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754655AbaDPGNq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 02:13:46 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zcb8kz98dI1432Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh26d3h1155h)
+Date: Wed, 16 Apr 2014 14:13:36 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Philipp Zabel <philipp.zabel@gmail.com>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: dts: imx6q-gk802: Enable HDMI
+Message-ID: <20140416061334.GE2523@dragon>
+References: <1397499353-6116-1-git-send-email-philipp.zabel@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1397499353-6116-1-git-send-email-philipp.zabel@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
----
- include/linux/mfd/mc13xxx.h | 22 ++++++++++++----------
- 1 file changed, 12 insertions(+), 10 deletions(-)
+On Mon, Apr 14, 2014 at 08:15:53PM +0200, Philipp Zabel wrote:
+> This patch enables HDMI output on GK802 HDMI dongles.
+> 
+> Signed-off-by: Philipp Zabel <philipp.zabel@gmail.com>
+> ---
+>  arch/arm/boot/dts/imx6q-gk802.dts | 5 +++++
+>  1 file changed, 5 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/imx6q-gk802.dts b/arch/arm/boot/dts/imx6q-gk802.dts
+> index 4a9b4dc..16d3491 100644
+> --- a/arch/arm/boot/dts/imx6q-gk802.dts
+> +++ b/arch/arm/boot/dts/imx6q-gk802.dts
+> @@ -48,6 +48,11 @@
+>  	};
+>  };
+>  
+> +&hdmi {
+> +	status = "okay";
 
-diff --git a/include/linux/mfd/mc13xxx.h b/include/linux/mfd/mc13xxx.h
-index a326c85..d63b1d3 100644
---- a/include/linux/mfd/mc13xxx.h
-+++ b/include/linux/mfd/mc13xxx.h
-@@ -117,10 +117,6 @@ struct mc13xxx_led_platform_data {
- 
- #define MAX_LED_CONTROL_REGS	6
- 
--struct mc13xxx_leds_platform_data {
--	struct mc13xxx_led_platform_data *led;
--	int num_leds;
--
- /* MC13783 LED Control 0 */
- #define MC13783_LED_C0_ENABLE		(1 << 0)
- #define MC13783_LED_C0_TRIODE_MD	(1 << 7)
-@@ -169,10 +165,13 @@ struct mc13xxx_leds_platform_data {
- /* MC34708 LED Control 0 */
- #define MC34708_LED_C0_CURRENT_R(x)	(((x) & 0x3) << 9)
- #define MC34708_LED_C0_CURRENT_G(x)	(((x) & 0x3) << 21)
-+
-+struct mc13xxx_leds_platform_data {
-+	struct mc13xxx_led_platform_data *led;
-+	int num_leds;
- 	u32 led_control[MAX_LED_CONTROL_REGS];
- };
- 
--struct mc13xxx_buttons_platform_data {
- #define MC13783_BUTTON_DBNC_0MS		0
- #define MC13783_BUTTON_DBNC_30MS	1
- #define MC13783_BUTTON_DBNC_150MS	2
-@@ -180,6 +179,8 @@ struct mc13xxx_buttons_platform_data {
- #define MC13783_BUTTON_ENABLE		(1 << 2)
- #define MC13783_BUTTON_POL_INVERT	(1 << 3)
- #define MC13783_BUTTON_RESET_EN		(1 << 4)
-+
-+struct mc13xxx_buttons_platform_data {
- 	int b1on_flags;
- 	unsigned short b1on_key;
- 	int b2on_flags;
-@@ -188,14 +189,14 @@ struct mc13xxx_buttons_platform_data {
- 	unsigned short b3on_key;
- };
- 
-+#define MC13783_TS_ATO_FIRST	false
-+#define MC13783_TS_ATO_EACH	true
-+
- struct mc13xxx_ts_platform_data {
- 	/* Delay between Touchscreen polarization and ADC Conversion.
- 	 * Given in clock ticks of a 32 kHz clock which gives a granularity of
- 	 * about 30.5ms */
- 	u8 ato;
--
--#define MC13783_TS_ATO_FIRST false
--#define MC13783_TS_ATO_EACH  true
- 	/* Use the ATO delay only for the first conversion or for each one */
- 	bool atox;
- };
-@@ -210,11 +211,12 @@ struct mc13xxx_codec_platform_data {
- 	enum mc13783_ssi_port dac_ssi_port;
- };
- 
--struct mc13xxx_platform_data {
--#define MC13XXX_USE_TOUCHSCREEN (1 << 0)
-+#define MC13XXX_USE_TOUCHSCREEN	(1 << 0)
- #define MC13XXX_USE_CODEC	(1 << 1)
- #define MC13XXX_USE_ADC		(1 << 2)
- #define MC13XXX_USE_RTC		(1 << 3)
-+
-+struct mc13xxx_platform_data {
- 	unsigned int flags;
- 
- 	struct mc13xxx_regulator_platform_data regulators;
--- 
-1.8.3.2
+I prefer to put 'status' at the bottom of the property list.
+
+Shawn
+
+> +	ddc-i2c-bus = <&i2c3>;
+> +};
+> +
+>  /* Internal I2C */
+>  &i2c2 {
+>  	pinctrl-names = "default";
+> -- 
+> 1.9.1
+> 
+> 
+> 
 
