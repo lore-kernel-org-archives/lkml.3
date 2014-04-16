@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756073AbaDPM3w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 08:29:52 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:34153 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756016AbaDPM3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 08:29:50 -0400
-Message-ID: <534E778F.5090007@mev.co.uk>
-Date: Wed, 16 Apr 2014 13:29:03 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1756124AbaDPMan (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 08:30:43 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:33275 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754369AbaDPMam (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 08:30:42 -0400
+X-Auth-Info: jDkiKqNcwNYNCes7buuhMIAWNxkXufkqb2o80pwbEAU=
+From: Marek Vasut <marex@denx.de>
+To: Austin Boyle <boyle.austin@gmail.com>
+Subject: Re: [PATCH v2] mtd: m25p80: Calculate flash block protect bits based on number of sectors
+Date: Wed, 16 Apr 2014 14:30:39 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
+Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <alpine.DEB.2.02.1404062115570.19515@austin-Satellite-L510> <201404131924.03967.marex@denx.de> <alpine.DEB.2.02.1404162216160.3848@austin-Satellite-L510>
+In-Reply-To: <alpine.DEB.2.02.1404162216160.3848@austin-Satellite-L510>
 MIME-Version: 1.0
-To: Chase Southwood <chase.southwood@yahoo.com>, <gregkh@linuxfoundation.org>
-CC: <hsweeten@visionengravers.com>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2 v2] staging: comedi: addi_apci_1564: fixup and absorb
- apci1564_reset()
-References: <1397631465-13169-1-git-send-email-chase.southwood@yahoo.com>
-In-Reply-To: <1397631465-13169-1-git-send-email-chase.southwood@yahoo.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
- (10.0.0.4)
+Message-Id: <201404161430.39384.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-16 07:57, Chase Southwood wrote:
-> We can remove this function from the boardinfo and move the code from
-> hwdrv_apci1564.c into addi_apci_1564.c since it is the only reset function
-> used by the driver. The function was also messy and failed to reset a few
-> registers, these issues were fixed on the move.
->
-> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
-> ---
-> 2: *Changed order of register accesses for digital input registers back to
-> original ordering.
-> *Removed read of digital output status register and reordered the accesses
-> of digital output registers to agree with the order found in addi_apci_2032.
-> *Fixed copy/paste error in the counter register reset lines.
->
-> Ian, I addressed your comments as above.
-> Chase
+On Wednesday, April 16, 2014 at 02:26:41 PM, Austin Boyle wrote:
+> On Sun, 13 Apr 2014, Marek Vasut wrote:
+> > This portion of code looks like a duplicate of ...
+> > 
+> > > +	for (lock_bits = 1; lock_bits < 7; lock_bits++) {
+> > > +		protected_area_start = flash->mtd.size -
+> > > +					get_protected_area(flash, lock_bits);
+> > > +		if (offset+len >= protected_area_start)
+> > > +			break;
+> > > +	}
+> > > +	lock_bits--;
+> > > +
+> > > +	status_new = (status_old & ~SR_BP_BIT_MASK) |
+> > > +			((lock_bits << SR_BP_BIT_OFFSET) & SR_BP_BIT_MASK);
+> > 
+> > ... this here (if you don't consider the lock_bits--) . Why don't we move
+> > this into a separate function to avoid the duplication?
+> 
+> Thanks for reviewing this patch Marek, your suggestions were very
+> helpful. I am about to post another version that
+> hopefully addresses the issues raised, I would appreciate if you can take
+> another look at it.
 
-Looks good.
+Actually, thank _you_ for working on this :)
 
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
-
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+Best regards,
+Marek Vasut
