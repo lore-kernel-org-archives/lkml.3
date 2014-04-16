@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161301AbaDPVQK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 17:16:10 -0400
-Received: from www.linutronix.de ([62.245.132.108]:43413 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756689AbaDPVQD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 17:16:03 -0400
-Date: Wed, 16 Apr 2014 23:16:12 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, stable@vger.kernel.org
-Subject: Re: [patch 0/4] genirq/exynos timers: Fix the CPU hotplug wreckage
- sanely
-In-Reply-To: <1397663995.19782.4.camel@AMDC1943>
-Message-ID: <alpine.DEB.2.02.1404162315270.22697@ionos.tec.linutronix.de>
-References: <20140416142106.537575971@linutronix.de> <1397663995.19782.4.camel@AMDC1943>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756755AbaDPVRk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 17:17:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46377 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756596AbaDPVRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 17:17:38 -0400
+Message-ID: <534EF354.3090204@zytor.com>
+Date: Wed, 16 Apr 2014 14:17:08 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-224216975-1397682973=:22697"
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Marcelo Tosatti <mtosatti@redhat.com>,
+        Nadav Amit <namit@cs.technion.ac.il>
+CC: gleb@kernel.org, pbonzini@redhat.com, tglx@linutronix.de, mingo@redhat.com,
+        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: Fix page-tables reserved bits
+References: <1396582264-9864-1-git-send-email-namit@cs.technion.ac.il> <20140416190329.GB8773@amt.cnet>
+In-Reply-To: <20140416190329.GB8773@amt.cnet>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323329-224216975-1397682973=:22697
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-
-On Wed, 16 Apr 2014, Krzysztof Kozlowski wrote:
-> On śro, 2014-04-16 at 14:36 +0000, Thomas Gleixner wrote:
-> > @Krzysztof: Can you please retest the series? I've changed the core
-> > implementation versus the first attempt to make it less intrusive.
+On 04/16/2014 12:03 PM, Marcelo Tosatti wrote:
+>> @@ -3550,9 +3550,9 @@ static void reset_rsvds_bits_mask(struct kvm_vcpu *vcpu,
+>>  		break;
+>>  	case PT64_ROOT_LEVEL:
+>>  		context->rsvd_bits_mask[0][3] = exb_bit_rsvd |
+>> -			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 8);
+>> +			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 7);
+>>  		context->rsvd_bits_mask[0][2] = exb_bit_rsvd |
+>> -			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 8);
+>> +			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 7);
 > 
-> Works fine. Tested whole patchset on board with Exynos 3250.
+> Bit 7 is not reserved either, for the PDPTE (its PageSize bit).
+> 
 
-Great! Now I just need to sell it :)
---8323329-224216975-1397682973=:22697--
+In long mode (IA-32e), bit 7 is definitely reserved.
+
+	-hpa
+
