@@ -1,139 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846AbaDPH2M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 03:28:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56570 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648AbaDPH2K (ORCPT
+	id S1754714AbaDPHhP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 03:37:15 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:35813 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404AbaDPHhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 03:28:10 -0400
-Date: Wed, 16 Apr 2014 09:28:03 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 06/19] nfsd: set PF_FSTRANS for nfsd threads.
-Message-ID: <20140416072803.GN26782@laptop.programming.kicks-ass.net>
-References: <20140416033623.10604.69237.stgit@notabene.brown>
- <20140416040336.10604.60493.stgit@notabene.brown>
+	Wed, 16 Apr 2014 03:37:13 -0400
+Date: Wed, 16 Apr 2014 09:37:08 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@fb.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [GIT PULL v2] nohz: Move nohz kick out of scheduler IPI
+Message-ID: <20140416073708.GA5636@gmail.com>
+References: <1396541832-459-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140416040336.10604.60493.stgit@notabene.brown>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1396541832-459-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 02:03:36PM +1000, NeilBrown wrote:
-> If a localhost mount is present, then it is easy to deadlock NFS by
-> nfsd entering direct reclaim and calling nfs_release_page() which
-> requires nfsd to perform an fsync() (which it cannot do because it is
-> reclaiming memory).
+
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> Ingo, Thomas,
 > 
-> By setting PF_FSTRANS we stop the memory allocator from ever
-> attempting any FS operation would could deadlock.
+> Please pull the timers/nohz-ipi-for-tip-v3 branch that can be found at:
 > 
-> We need this flag set for any thread which is handling a request from
-> the local host, but we also need to always have it for at least 1 or 2
-> threads so that we don't end up with all threads blocked in allocation.
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+> 	timers/nohz-ipi-for-tip-v3
 > 
-> When we set PF_FSTRANS we also tell lockdep that we are handling
-> reclaim so that it can detect deadlocks for us.
+> It is based on 7a48837732f87a574ee3e1855927dc250117f565 
+> ("Merge branch 'for-3.15/core' of git://git.kernel.dk/linux-block")
+> due to dependencies on the block tree containing IPI core changes.
 > 
-> Signed-off-by: NeilBrown <neilb@suse.de>
+> This v2 addresses Paul review and add his reviewed-by tags.
+> 
+> I'm trying to get these 2 patches in before the merge window ends
+> otherwise we'll have to do tricky branch split on the next cycle.
+> 
 > ---
->  fs/nfsd/nfssvc.c           |   18 ++++++++++++++++++
->  include/linux/sunrpc/svc.h |    1 +
->  net/sunrpc/svc.c           |    6 ++++++
->  3 files changed, 25 insertions(+)
+> When a full dynticks CPU runs in single task mode then a new task gets
+> enqueued, we notify it through an IPI such that it restarts its tick.
 > 
-> diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-> index 9a4a5f9e7468..6af8bc2daf7d 100644
-> --- a/fs/nfsd/nfssvc.c
-> +++ b/fs/nfsd/nfssvc.c
-> @@ -565,6 +565,8 @@ nfsd(void *vrqstp)
->  	struct svc_xprt *perm_sock = list_entry(rqstp->rq_server->sv_permsocks.next, typeof(struct svc_xprt), xpt_list);
->  	struct net *net = perm_sock->xpt_net;
->  	int err;
-> +	unsigned int pflags = 0;
-> +	gfp_t reclaim_state = 0;
->  
->  	/* Lock module and set up kernel thread */
->  	mutex_lock(&nfsd_mutex);
-> @@ -611,14 +613,30 @@ nfsd(void *vrqstp)
->  			;
->  		if (err == -EINTR)
->  			break;
-> +		if (rqstp->rq_local && !current_test_flags(PF_FSTRANS)) {
-> +			current_set_flags_nested(&pflags, PF_FSTRANS);
-> +			atomic_inc(&rqstp->rq_pool->sp_nr_fstrans);
-> +			reclaim_state = lockdep_set_current_reclaim_state(GFP_KERNEL);
-> +		}
->  		validate_process_creds();
->  		svc_process(rqstp);
->  		validate_process_creds();
-> +		if (current_test_flags(PF_FSTRANS) &&
-> +		    atomic_dec_if_positive(&rqstp->rq_pool->sp_nr_fstrans) >= 0) {
-
-Yuck, that function has horrible semantics :/ Not your fault though.
-
-> +			current_restore_flags_nested(&pflags, PF_FSTRANS);
-> +			lockdep_restore_current_reclaim_state(reclaim_state);
-> +		}
-
-
-Not really knowing much about NFS anymore (all I did know seems to have
-bitrotten) the above looks ok I suppose. Refcounting that task state in
-something !task_struct feels weird though.
-
->  	}
->  
->  	/* Clear signals before calling svc_exit_thread() */
->  	flush_signals(current);
->  
-> +	if (current_test_flags(PF_FSTRANS)) {
-> +		current_restore_flags_nested(&pflags, PF_FSTRANS);
-> +		lockdep_restore_current_reclaim_state(reclaim_state);
-> +		atomic_dec(&rqstp->rq_pool->sp_nr_fstrans);
-> +	}
-> +
->  	mutex_lock(&nfsd_mutex);
->  	nfsdstats.th_cnt --;
->  
-> diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
-> index a0dbbd1e00e9..4b274aba51dd 100644
-> --- a/include/linux/sunrpc/svc.h
-> +++ b/include/linux/sunrpc/svc.h
-> @@ -48,6 +48,7 @@ struct svc_pool {
->  	struct list_head	sp_threads;	/* idle server threads */
->  	struct list_head	sp_sockets;	/* pending sockets */
->  	unsigned int		sp_nrthreads;	/* # of threads in pool */
-> +	atomic_t		sp_nr_fstrans;	/* # threads with PF_FSTRANS */
->  	struct list_head	sp_all_threads;	/* all server threads */
->  	struct svc_pool_stats	sp_stats;	/* statistics on pool operation */
->  	int			sp_task_pending;/* has pending task */
-> diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-> index 5de6801cd924..8b13f35b6cbb 100644
-> --- a/net/sunrpc/svc.c
-> +++ b/net/sunrpc/svc.c
-> @@ -477,6 +477,12 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
->  		INIT_LIST_HEAD(&pool->sp_threads);
->  		INIT_LIST_HEAD(&pool->sp_sockets);
->  		INIT_LIST_HEAD(&pool->sp_all_threads);
-> +		/* The number of threads with PF_FSTRANS set
-> +		 * should never be reduced below 2, except when
-> +		 * threads exit.  So we use atomic_dec_if_positive()
-> +		 * on this value.
-> +		 */
-> +		atomic_set(&pool->sp_nr_fstrans, -2);
-
-Its not my code, but that's not the recommended multi-line comment
-style.
-
->  		spin_lock_init(&pool->sp_lock);
->  	}
->  
+> The IPI used here is the scheduler IPI. There are a few reasons for that:
+> it can be called when interrupts are disabled, it can be called
+> concurrently... These convenient properties altogether aren't yet offered
+> by the IPI subsystem.
+> 
+> Meanwhile, bloating that way the scheduler IPI with scheduler unrelated
+> code is an abuse of this fast path. We certainly don't want to start a
+> big kernel IPI.
+> 
+> So this patchset adds a small helper to the IPI subsystem that allows
+> to queue an IPI from interrupt disabled code while handling concurrent
+> callers as well. Eventually the nohz kick gets converted to this new facility.
+> 
+> Partly inspired by a suggestion from Peter Zijlstra.
+> 
+> * Patch 1/2 brings the IPI infrastructure to support this
+> * Patch 2/2 does the nohz IPI conversion
 > 
 > 
+> Thanks,
+> 	Frederic
+> ---
+> 
+> Frederic Weisbecker (2):
+>       smp: Non busy-waiting IPI queue
+>       nohz: Move full nohz kick to its own IPI
+> 
+> 
+>  include/linux/smp.h      | 11 +++++++++++
+>  include/linux/tick.h     |  2 ++
+>  kernel/sched/core.c      |  5 +----
+>  kernel/sched/sched.h     |  2 +-
+>  kernel/smp.c             | 42 ++++++++++++++++++++++++++++++++++++++++++
+>  kernel/time/tick-sched.c | 21 +++++++++++++++++++++
+>  6 files changed, 78 insertions(+), 5 deletions(-)
+
+Pulled into tip:timers/nohz, thanks a lot Frederic!
+
+	Ingo
