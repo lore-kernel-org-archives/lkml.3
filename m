@@ -1,57 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757AbaDPUun (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 16:50:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46181 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754529AbaDPUuj (ORCPT
+	id S1756776AbaDPUu5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 16:50:57 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:62640 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754529AbaDPUuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 16:50:39 -0400
-Date: Wed, 16 Apr 2014 13:50:37 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Yogesh Gaur <yogeshgaur.83@gmail.com>
-Cc: "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Dead code removal in madvise_willneed
-Message-Id: <20140416135037.c7e458897286271aa133555f@linux-foundation.org>
-In-Reply-To: <CAG6enPx4WLM+q_bNupPewAd3-QoxOPEDNRdeeTEhOEWp3a1NzA@mail.gmail.com>
-References: <CAG6enPx4WLM+q_bNupPewAd3-QoxOPEDNRdeeTEhOEWp3a1NzA@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Apr 2014 16:50:51 -0400
+Date: Wed, 16 Apr 2014 16:50:48 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] workqueue: add __WQ_FREEZING and remove POOL_FREEZING
+Message-ID: <20140416205048.GD26632@htj.dyndns.org>
+References: <20130421012925.GA19097@mtj.dyndns.org>
+ <1395741364-19489-1-git-send-email-laijs@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395741364-19489-1-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Apr 2014 13:16:18 +0530 Yogesh Gaur <yogeshgaur.83@gmail.com> wrote:
+On Tue, Mar 25, 2014 at 05:56:04PM +0800, Lai Jiangshan wrote:
+> +	__WQ_FREEZING		= 1 << 15, /* internel: workqueue is freezing */
+>  	__WQ_DRAINING		= 1 << 16, /* internal: workqueue is draining */
+>  	__WQ_ORDERED		= 1 << 17, /* internal: workqueue is ordered */
 
-> Dead code removal in func madvise_willneed().
-> When file is NULL i.e. !file true
-> 	case CONFIG_SWAP returns 0.
-> 	else returns -EBADF.
-> Signed-off-by: Yogesh Gaur <yogeshgaur.83@gmail.com>
-> ---
->  mm/madvise.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/madvise.c b/mm/madvise.c
-> index 7055883..be24987 100644
-> --- a/mm/madvise.c
-> +++ b/mm/madvise.c
-> @@ -231,10 +231,10 @@ static long madvise_willneed(struct vm_area_struct * vma,
->  						file->f_mapping);
->  		return 0;
->  	}
-> -#endif
-> -
-> +#else
->  	if (!file)
->  		return -EBADF;
-> +#endif
+Ooh, and please use bit 18, not 15.  The intention here is using bits
+>= 16 for internal flags.
 
-The compiler should have no trouble making this optimisation for us.  I
-don't see that it is necessary to add more ugly-looking ifdefs for
-this.
+Thanks.
 
+-- 
+tejun
