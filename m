@@ -1,559 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750969AbaDPCpO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 22:45:14 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:62116 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232AbaDPCoS (ORCPT
+	id S1753202AbaDPCrk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 22:47:40 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:59575 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750864AbaDPCri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 22:44:18 -0400
-From: Alex Shi <alex.shi@linaro.org>
-To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com,
-        vincent.guittot@linaro.org, daniel.lezcano@linaro.org, efault@gmx.de
-Cc: wangyun@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, mgorman@suse.de
-Subject: [PATCH V5 2/8] sched: remove rq->cpu_load[load_idx] array
-Date: Wed, 16 Apr 2014 10:43:23 +0800
-Message-Id: <1397616209-27275-3-git-send-email-alex.shi@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1397616209-27275-1-git-send-email-alex.shi@linaro.org>
-References: <1397616209-27275-1-git-send-email-alex.shi@linaro.org>
+	Tue, 15 Apr 2014 22:47:38 -0400
+Message-ID: <534DEEDD.5030203@huawei.com>
+Date: Wed, 16 Apr 2014 10:45:49 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Marc Zyngier <marc.zyngier@arm.com>
+CC: Will Deacon <will.deacon@arm.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Wang Nan <wangnan0@huawei.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Li Zefan <lizefan@huawei.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] ARM: mm: support big-endian page tables
+References: <5301B4AF.1040305@huawei.com> <5327F75F.1010406@huawei.com> <20140414104300.GA3530@arm.com> <534BC31A.7060705@arm.com>
+In-Reply-To: <534BC31A.7060705@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.24.155]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since load_idx effect removed in load balance, we don't need the
-load_idx decays in scheduler. that will save some process in sched_tick
-and others places.
+On 2014/4/14 19:14, Marc Zyngier wrote:
 
-Signed-off-by: Alex Shi <alex.shi@linaro.org>
----
- arch/ia64/include/asm/topology.h |  5 ---
- arch/tile/include/asm/topology.h |  6 ---
- include/linux/sched.h            |  5 ---
- include/linux/topology.h         |  8 ----
- kernel/sched/core.c              | 58 +++++++------------------
- kernel/sched/debug.c             |  6 +--
- kernel/sched/fair.c              | 51 +++++++++-------------
- kernel/sched/proc.c              | 92 ++--------------------------------------
- kernel/sched/sched.h             |  3 +-
- 9 files changed, 42 insertions(+), 192 deletions(-)
+> On 14/04/14 11:43, Will Deacon wrote:
+>> (catching up on old email)
+>>
+>> On Tue, Mar 18, 2014 at 07:35:59AM +0000, Jianguo Wu wrote:
+>>> Cloud you please take a look at this?
+>>
+>> [...]
+>>
+>>> On 2014/2/17 15:05, Jianguo Wu wrote:
+>>>> When enable LPAE and big-endian in a hisilicon board, while specify
+>>>> mem=384M mem=512M@7680M, will get bad page state:
+>>>>
+>>>> Freeing unused kernel memory: 180K (c0466000 - c0493000)
+>>>> BUG: Bad page state in process init  pfn:fa442
+>>>> page:c7749840 count:0 mapcount:-1 mapping:  (null) index:0x0
+>>>> page flags: 0x40000400(reserved)
+>>>> Modules linked in:
+>>>> CPU: 0 PID: 1 Comm: init Not tainted 3.10.27+ #66
+>>>> [<c000f5f0>] (unwind_backtrace+0x0/0x11c) from [<c000cbc4>] (show_stack+0x10/0x14)
+>>>> [<c000cbc4>] (show_stack+0x10/0x14) from [<c009e448>] (bad_page+0xd4/0x104)
+>>>> [<c009e448>] (bad_page+0xd4/0x104) from [<c009e520>] (free_pages_prepare+0xa8/0x14c)
+>>>> [<c009e520>] (free_pages_prepare+0xa8/0x14c) from [<c009f8ec>] (free_hot_cold_page+0x18/0xf0)
+>>>> [<c009f8ec>] (free_hot_cold_page+0x18/0xf0) from [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8)
+>>>> [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8) from [<c00b6458>] (handle_mm_fault+0xf4/0x120)
+>>>> [<c00b6458>] (handle_mm_fault+0xf4/0x120) from [<c0013754>] (do_page_fault+0xfc/0x354)
+>>>> [<c0013754>] (do_page_fault+0xfc/0x354) from [<c0008400>] (do_DataAbort+0x2c/0x90)
+>>>> [<c0008400>] (do_DataAbort+0x2c/0x90) from [<c0008fb4>] (__dabt_usr+0x34/0x40)
+>>
+>> [...]
+>>
+>>>> The bug is happened in cpu_v7_set_pte_ext(ptep, pte):
+>>>> when pte is 64-bit, for little-endian, will store low 32-bit in r2,
+>>>> high 32-bit in r3; for big-endian, will store low 32-bit in r3,
+>>>> high 32-bit in r2, this will cause wrong pfn stored in pte,
+>>>> so we should exchange r2 and r3 for big-endian.
+>>
 
-diff --git a/arch/ia64/include/asm/topology.h b/arch/ia64/include/asm/topology.h
-index 5cb55a1..e7c2188 100644
---- a/arch/ia64/include/asm/topology.h
-+++ b/arch/ia64/include/asm/topology.h
-@@ -55,11 +55,6 @@ void build_cpu_to_node_map(void);
- 	.busy_factor		= 64,			\
- 	.imbalance_pct		= 125,			\
- 	.cache_nice_tries	= 2,			\
--	.busy_idx		= 2,			\
--	.idle_idx		= 1,			\
--	.newidle_idx		= 0,			\
--	.wake_idx		= 0,			\
--	.forkexec_idx		= 0,			\
- 	.flags			= SD_LOAD_BALANCE	\
- 				| SD_BALANCE_NEWIDLE	\
- 				| SD_BALANCE_EXEC	\
-diff --git a/arch/tile/include/asm/topology.h b/arch/tile/include/asm/topology.h
-index d15c0d8..05f6ffe 100644
---- a/arch/tile/include/asm/topology.h
-+++ b/arch/tile/include/asm/topology.h
-@@ -57,12 +57,6 @@ static inline const struct cpumask *cpumask_of_node(int node)
- 	.busy_factor		= 64,					\
- 	.imbalance_pct		= 125,					\
- 	.cache_nice_tries	= 1,					\
--	.busy_idx		= 2,					\
--	.idle_idx		= 1,					\
--	.newidle_idx		= 0,					\
--	.wake_idx		= 0,					\
--	.forkexec_idx		= 0,					\
--									\
- 	.flags			= 1*SD_LOAD_BALANCE			\
- 				| 1*SD_BALANCE_NEWIDLE			\
- 				| 1*SD_BALANCE_EXEC			\
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 25f54c7..3b08d7b 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -901,11 +901,6 @@ struct sched_domain {
- 	unsigned int busy_factor;	/* less balancing by factor if busy */
- 	unsigned int imbalance_pct;	/* No balance until over watermark */
- 	unsigned int cache_nice_tries;	/* Leave cache hot tasks for # tries */
--	unsigned int busy_idx;
--	unsigned int idle_idx;
--	unsigned int newidle_idx;
--	unsigned int wake_idx;
--	unsigned int forkexec_idx;
- 	unsigned int smt_gain;
- 
- 	int nohz_idle;			/* NOHZ IDLE status */
-diff --git a/include/linux/topology.h b/include/linux/topology.h
-index 7062330..7e9a3e0 100644
---- a/include/linux/topology.h
-+++ b/include/linux/topology.h
-@@ -121,9 +121,6 @@ int arch_update_cpu_topology(void);
- 	.busy_factor		= 64,					\
- 	.imbalance_pct		= 125,					\
- 	.cache_nice_tries	= 1,					\
--	.busy_idx		= 2,					\
--	.wake_idx		= 0,					\
--	.forkexec_idx		= 0,					\
- 									\
- 	.flags			= 1*SD_LOAD_BALANCE			\
- 				| 1*SD_BALANCE_NEWIDLE			\
-@@ -151,11 +148,6 @@ int arch_update_cpu_topology(void);
- 	.busy_factor		= 64,					\
- 	.imbalance_pct		= 125,					\
- 	.cache_nice_tries	= 1,					\
--	.busy_idx		= 2,					\
--	.idle_idx		= 1,					\
--	.newidle_idx		= 0,					\
--	.wake_idx		= 0,					\
--	.forkexec_idx		= 0,					\
- 									\
- 	.flags			= 1*SD_LOAD_BALANCE			\
- 				| 1*SD_BALANCE_NEWIDLE			\
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 268a45e..33fd59b 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -4816,64 +4816,45 @@ static void sd_free_ctl_entry(struct ctl_table **tablep)
- 	*tablep = NULL;
- }
- 
--static int min_load_idx = 0;
--static int max_load_idx = CPU_LOAD_IDX_MAX-1;
--
- static void
- set_table_entry(struct ctl_table *entry,
- 		const char *procname, void *data, int maxlen,
--		umode_t mode, proc_handler *proc_handler,
--		bool load_idx)
-+		umode_t mode, proc_handler *proc_handler)
- {
- 	entry->procname = procname;
- 	entry->data = data;
- 	entry->maxlen = maxlen;
- 	entry->mode = mode;
- 	entry->proc_handler = proc_handler;
--
--	if (load_idx) {
--		entry->extra1 = &min_load_idx;
--		entry->extra2 = &max_load_idx;
--	}
- }
- 
- static struct ctl_table *
- sd_alloc_ctl_domain_table(struct sched_domain *sd)
- {
--	struct ctl_table *table = sd_alloc_ctl_entry(14);
-+	struct ctl_table *table = sd_alloc_ctl_entry(9);
- 
- 	if (table == NULL)
- 		return NULL;
- 
- 	set_table_entry(&table[0], "min_interval", &sd->min_interval,
--		sizeof(long), 0644, proc_doulongvec_minmax, false);
-+		sizeof(long), 0644, proc_doulongvec_minmax);
- 	set_table_entry(&table[1], "max_interval", &sd->max_interval,
--		sizeof(long), 0644, proc_doulongvec_minmax, false);
--	set_table_entry(&table[2], "busy_idx", &sd->busy_idx,
--		sizeof(int), 0644, proc_dointvec_minmax, true);
--	set_table_entry(&table[3], "idle_idx", &sd->idle_idx,
--		sizeof(int), 0644, proc_dointvec_minmax, true);
--	set_table_entry(&table[4], "newidle_idx", &sd->newidle_idx,
--		sizeof(int), 0644, proc_dointvec_minmax, true);
--	set_table_entry(&table[5], "wake_idx", &sd->wake_idx,
--		sizeof(int), 0644, proc_dointvec_minmax, true);
--	set_table_entry(&table[6], "forkexec_idx", &sd->forkexec_idx,
--		sizeof(int), 0644, proc_dointvec_minmax, true);
--	set_table_entry(&table[7], "busy_factor", &sd->busy_factor,
--		sizeof(int), 0644, proc_dointvec_minmax, false);
--	set_table_entry(&table[8], "imbalance_pct", &sd->imbalance_pct,
--		sizeof(int), 0644, proc_dointvec_minmax, false);
--	set_table_entry(&table[9], "cache_nice_tries",
-+		sizeof(long), 0644, proc_doulongvec_minmax);
-+	set_table_entry(&table[2], "busy_factor", &sd->busy_factor,
-+		sizeof(int), 0644, proc_dointvec_minmax);
-+	set_table_entry(&table[3], "imbalance_pct", &sd->imbalance_pct,
-+		sizeof(int), 0644, proc_dointvec_minmax);
-+	set_table_entry(&table[4], "cache_nice_tries",
- 		&sd->cache_nice_tries,
--		sizeof(int), 0644, proc_dointvec_minmax, false);
-+		sizeof(int), 0644, proc_dointvec_minmax);
- 	set_table_entry(&table[10], "flags", &sd->flags,
--		sizeof(int), 0644, proc_dointvec_minmax, false);
-+		sizeof(int), 0644, proc_dointvec_minmax);
- 	set_table_entry(&table[11], "max_newidle_lb_cost",
- 		&sd->max_newidle_lb_cost,
--		sizeof(long), 0644, proc_doulongvec_minmax, false);
-+		sizeof(long), 0644, proc_doulongvec_minmax);
- 	set_table_entry(&table[12], "name", sd->name,
--		CORENAME_MAX_SIZE, 0444, proc_dostring, false);
--	/* &table[13] is terminator */
-+		CORENAME_MAX_SIZE, 0444, proc_dostring);
-+	/* &table[8] is terminator */
- 
- 	return table;
- }
-@@ -5996,11 +5977,6 @@ sd_numa_init(struct sched_domain_topology_level *tl, int cpu)
- 		.busy_factor		= 32,
- 		.imbalance_pct		= 125,
- 		.cache_nice_tries	= 2,
--		.busy_idx		= 3,
--		.idle_idx		= 2,
--		.newidle_idx		= 0,
--		.wake_idx		= 0,
--		.forkexec_idx		= 0,
- 
- 		.flags			= 1*SD_LOAD_BALANCE
- 					| 1*SD_BALANCE_NEWIDLE
-@@ -6750,7 +6726,7 @@ DECLARE_PER_CPU(cpumask_var_t, load_balance_mask);
- 
- void __init sched_init(void)
- {
--	int i, j;
-+	int i;
- 	unsigned long alloc_size = 0, ptr;
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
-@@ -6853,9 +6829,7 @@ void __init sched_init(void)
- 		init_tg_rt_entry(&root_task_group, &rq->rt, NULL, i, NULL);
- #endif
- 
--		for (j = 0; j < CPU_LOAD_IDX_MAX; j++)
--			rq->cpu_load[j] = 0;
--
-+		rq->cpu_load = 0;
- 		rq->last_load_update_tick = jiffies;
- 
- #ifdef CONFIG_SMP
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index 695f977..0e48e98 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -302,11 +302,7 @@ do {									\
- 	PN(next_balance);
- 	SEQ_printf(m, "  .%-30s: %ld\n", "curr->pid", (long)(task_pid_nr(rq->curr)));
- 	PN(clock);
--	P(cpu_load[0]);
--	P(cpu_load[1]);
--	P(cpu_load[2]);
--	P(cpu_load[3]);
--	P(cpu_load[4]);
-+	P(cpu_load);
- #undef P
- #undef PN
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index ddff32a..12a35ea 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1015,8 +1015,8 @@ bool should_numa_migrate_memory(struct task_struct *p, struct page * page,
- }
- 
- static unsigned long weighted_cpuload(const int cpu);
--static unsigned long source_load(int cpu, int type);
--static unsigned long target_load(int cpu, int type);
-+static unsigned long source_load(int cpu);
-+static unsigned long target_load(int cpu);
- static unsigned long power_of(int cpu);
- static long effective_load(struct task_group *tg, int cpu, long wl, long wg);
- 
-@@ -3964,30 +3964,30 @@ static unsigned long weighted_cpuload(const int cpu)
-  * We want to under-estimate the load of migration sources, to
-  * balance conservatively.
-  */
--static unsigned long source_load(int cpu, int type)
-+static unsigned long source_load(int cpu)
- {
- 	struct rq *rq = cpu_rq(cpu);
- 	unsigned long total = weighted_cpuload(cpu);
- 
--	if (type == 0 || !sched_feat(LB_BIAS))
-+	if (!sched_feat(LB_BIAS))
- 		return total;
- 
--	return min(rq->cpu_load[type-1], total);
-+	return min(rq->cpu_load, total);
- }
- 
- /*
-  * Return a high guess at the load of a migration-target cpu weighted
-  * according to the scheduling class and "nice" value.
-  */
--static unsigned long target_load(int cpu, int type)
-+static unsigned long target_load(int cpu)
- {
- 	struct rq *rq = cpu_rq(cpu);
- 	unsigned long total = weighted_cpuload(cpu);
- 
--	if (type == 0 || !sched_feat(LB_BIAS))
-+	if (!sched_feat(LB_BIAS))
- 		return total;
- 
--	return max(rq->cpu_load[type-1], total);
-+	return max(rq->cpu_load, total);
- }
- 
- static unsigned long power_of(int cpu)
-@@ -4187,7 +4187,7 @@ static int wake_wide(struct task_struct *p)
- static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- {
- 	s64 this_load, load;
--	int idx, this_cpu, prev_cpu;
-+	int this_cpu, prev_cpu;
- 	unsigned long tl_per_task;
- 	struct task_group *tg;
- 	unsigned long weight;
-@@ -4200,11 +4200,10 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 	if (wake_wide(p))
- 		return 0;
- 
--	idx	  = sd->wake_idx;
- 	this_cpu  = smp_processor_id();
- 	prev_cpu  = task_cpu(p);
--	load	  = source_load(prev_cpu, idx);
--	this_load = target_load(this_cpu, idx);
-+	load	  = source_load(prev_cpu);
-+	this_load = target_load(this_cpu);
- 
- 	/*
- 	 * If sync wakeup then subtract the (maximum possible)
-@@ -4260,7 +4259,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 
- 	if (balanced ||
- 	    (this_load <= load &&
--	     this_load + target_load(prev_cpu, idx) <= tl_per_task)) {
-+	     this_load + target_load(prev_cpu) <= tl_per_task)) {
- 		/*
- 		 * This domain has SD_WAKE_AFFINE and
- 		 * p is cache cold in this domain, and
-@@ -4279,17 +4278,12 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
-  * domain.
-  */
- static struct sched_group *
--find_idlest_group(struct sched_domain *sd, struct task_struct *p,
--		  int this_cpu, int sd_flag)
-+find_idlest_group(struct sched_domain *sd, struct task_struct *p, int this_cpu)
- {
- 	struct sched_group *idlest = NULL, *group = sd->groups;
- 	unsigned long min_load = ULONG_MAX, this_load = 0;
--	int load_idx = sd->forkexec_idx;
- 	int imbalance = 100 + (sd->imbalance_pct-100)/2;
- 
--	if (sd_flag & SD_BALANCE_WAKE)
--		load_idx = sd->wake_idx;
--
- 	do {
- 		unsigned long load, avg_load;
- 		int local_group;
-@@ -4309,9 +4303,9 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
- 		for_each_cpu(i, sched_group_cpus(group)) {
- 			/* Bias balancing toward cpus of our domain */
- 			if (local_group)
--				load = source_load(i, load_idx);
-+				load = source_load(i);
- 			else
--				load = target_load(i, load_idx);
-+				load = target_load(i);
- 
- 			avg_load += load;
- 		}
-@@ -4466,7 +4460,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
- 			continue;
- 		}
- 
--		group = find_idlest_group(sd, p, cpu, sd_flag);
-+		group = find_idlest_group(sd, p, cpu);
- 		if (!group) {
- 			sd = sd->child;
- 			continue;
-@@ -5754,12 +5748,11 @@ static inline int sg_capacity(struct lb_env *env, struct sched_group *group)
-  * update_sg_lb_stats - Update sched_group's statistics for load balancing.
-  * @env: The load balancing environment.
-  * @group: sched_group whose statistics are to be updated.
-- * @load_idx: Load index of sched_domain of this_cpu for load calc.
-  * @local_group: Does group contain this_cpu.
-  * @sgs: variable to hold the statistics for this group.
-  */
- static inline void update_sg_lb_stats(struct lb_env *env,
--			struct sched_group *group, int load_idx,
-+			struct sched_group *group,
- 			int local_group, struct sg_lb_stats *sgs)
- {
- 	unsigned long load;
-@@ -5772,9 +5765,9 @@ static inline void update_sg_lb_stats(struct lb_env *env,
- 
- 		/* Bias balancing toward cpus of our domain */
- 		if (local_group)
--			load = target_load(i, load_idx);
-+			load = target_load(i);
- 		else
--			load = source_load(i, load_idx);
-+			load = source_load(i);
- 
- 		sgs->group_load += load;
- 		sgs->sum_nr_running += rq->nr_running;
-@@ -5887,13 +5880,11 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
- 	struct sched_domain *child = env->sd->child;
- 	struct sched_group *sg = env->sd->groups;
- 	struct sg_lb_stats tmp_sgs;
--	int load_idx, prefer_sibling = 0;
-+	int prefer_sibling = 0;
- 
- 	if (child && child->flags & SD_PREFER_SIBLING)
- 		prefer_sibling = 1;
- 
--	load_idx = 0;
--
- 	do {
- 		struct sg_lb_stats *sgs = &tmp_sgs;
- 		int local_group;
-@@ -5908,7 +5899,7 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
- 				update_group_power(env->sd, env->dst_cpu);
- 		}
- 
--		update_sg_lb_stats(env, sg, load_idx, local_group, sgs);
-+		update_sg_lb_stats(env, sg, local_group, sgs);
- 
- 		if (local_group)
- 			goto next_group;
-diff --git a/kernel/sched/proc.c b/kernel/sched/proc.c
-index 16f5a30..a2435c5 100644
---- a/kernel/sched/proc.c
-+++ b/kernel/sched/proc.c
-@@ -11,7 +11,7 @@
- unsigned long this_cpu_load(void)
- {
- 	struct rq *this = this_rq();
--	return this->cpu_load[0];
-+	return this->cpu_load;
- }
- 
- 
-@@ -398,105 +398,19 @@ static void calc_load_account_active(struct rq *this_rq)
-  * End of global load-average stuff
-  */
- 
--/*
-- * The exact cpuload at various idx values, calculated at every tick would be
-- * load = (2^idx - 1) / 2^idx * load + 1 / 2^idx * cur_load
-- *
-- * If a cpu misses updates for n-1 ticks (as it was idle) and update gets called
-- * on nth tick when cpu may be busy, then we have:
-- * load = ((2^idx - 1) / 2^idx)^(n-1) * load
-- * load = (2^idx - 1) / 2^idx) * load + 1 / 2^idx * cur_load
-- *
-- * decay_load_missed() below does efficient calculation of
-- * load = ((2^idx - 1) / 2^idx)^(n-1) * load
-- * avoiding 0..n-1 loop doing load = ((2^idx - 1) / 2^idx) * load
-- *
-- * The calculation is approximated on a 128 point scale.
-- * degrade_zero_ticks is the number of ticks after which load at any
-- * particular idx is approximated to be zero.
-- * degrade_factor is a precomputed table, a row for each load idx.
-- * Each column corresponds to degradation factor for a power of two ticks,
-- * based on 128 point scale.
-- * Example:
-- * row 2, col 3 (=12) says that the degradation at load idx 2 after
-- * 8 ticks is 12/128 (which is an approximation of exact factor 3^8/4^8).
-- *
-- * With this power of 2 load factors, we can degrade the load n times
-- * by looking at 1 bits in n and doing as many mult/shift instead of
-- * n mult/shifts needed by the exact degradation.
-- */
--#define DEGRADE_SHIFT		7
--static const unsigned char
--		degrade_zero_ticks[CPU_LOAD_IDX_MAX] = {0, 8, 32, 64, 128};
--static const unsigned char
--		degrade_factor[CPU_LOAD_IDX_MAX][DEGRADE_SHIFT + 1] = {
--					{0, 0, 0, 0, 0, 0, 0, 0},
--					{64, 32, 8, 0, 0, 0, 0, 0},
--					{96, 72, 40, 12, 1, 0, 0},
--					{112, 98, 75, 43, 15, 1, 0},
--					{120, 112, 98, 76, 45, 16, 2} };
- 
- /*
-- * Update cpu_load for any missed ticks, due to tickless idle. The backlog
-- * would be when CPU is idle and so we just decay the old load without
-- * adding any new load.
-- */
--static unsigned long
--decay_load_missed(unsigned long load, unsigned long missed_updates, int idx)
--{
--	int j = 0;
--
--	if (!missed_updates)
--		return load;
--
--	if (missed_updates >= degrade_zero_ticks[idx])
--		return 0;
--
--	if (idx == 1)
--		return load >> missed_updates;
--
--	while (missed_updates) {
--		if (missed_updates % 2)
--			load = (load * degrade_factor[idx][j]) >> DEGRADE_SHIFT;
--
--		missed_updates >>= 1;
--		j++;
--	}
--	return load;
--}
--
--/*
-- * Update rq->cpu_load[] statistics. This function is usually called every
-+ * Update rq->cpu_load statistics. This function is usually called every
-  * scheduler tick (TICK_NSEC). With tickless idle this will not be called
-  * every tick. We fix it up based on jiffies.
-  */
- static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
- 			      unsigned long pending_updates)
- {
--	int i, scale;
--
- 	this_rq->nr_load_updates++;
- 
- 	/* Update our load: */
--	this_rq->cpu_load[0] = this_load; /* Fasttrack for idx 0 */
--	for (i = 1, scale = 2; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
--		unsigned long old_load, new_load;
--
--		/* scale is effectively 1 << i now, and >> i divides by scale */
--
--		old_load = this_rq->cpu_load[i];
--		old_load = decay_load_missed(old_load, pending_updates - 1, i);
--		new_load = this_load;
--		/*
--		 * Round up the averaging division if load is increasing. This
--		 * prevents us from getting stuck on 9 if the load is 10, for
--		 * example.
--		 */
--		if (new_load > old_load)
--			new_load += scale - 1;
--
--		this_rq->cpu_load[i] = (old_load * (scale - 1) + new_load) >> i;
--	}
-+	this_rq->cpu_load = this_load; /* Fasttrack for idx 0 */
- 
- 	sched_avg_update(this_rq);
- }
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 456e492..1f144e8 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -528,8 +528,7 @@ struct rq {
- 	unsigned int nr_numa_running;
- 	unsigned int nr_preferred_running;
- #endif
--	#define CPU_LOAD_IDX_MAX 5
--	unsigned long cpu_load[CPU_LOAD_IDX_MAX];
-+	unsigned long cpu_load;
- 	unsigned long last_load_update_tick;
- #ifdef CONFIG_NO_HZ_COMMON
- 	u64 nohz_stamp;
--- 
-1.8.3.2
+Hi Marc,
+How about this:
+
+The bug is happened in cpu_v7_set_pte_ext(ptep, pte):
+- It tests the L_PTE_NONE in one word on the other, and possibly clear L_PTE_VALID
+  tst	r3, #1 << (57 - 32)		@ L_PTE_NONE
+  bicne	r2, #L_PTE_VALID
+- Same for L_PTE_DIRTY, respectively setting L_PTE_RDONLY
+
+As for LPAE, the pte is 64-bits, and the value of r2/r3 is depending on the endianness,
+for little-endian, will store low 32-bit in r2, high 32-bit in r3,
+for big-endian, will store low 32-bit in r3, high 32-bit in r2, 
+this will cause wrong bit is cleared or set, and get wrong pfn.
+So we should exchange r2 and r3 for big-endian.
+
+Thanks,
+Jianguo Wu.
+
+>> I believe that Marc (added to CC) has been running LPAE-enabled, big-endian
+>> KVM guests without any issues, so it seems unlikely that we're storing the
+>> PTEs backwards. Can you check the configuration of SCTLR.EE?
+> 
+> So, for the record:
+> 
+> root@when-the-lie-s-so-big:~# cat /proc/cpuinfo 
+> processor	: 0
+> model name	: ARMv7 Processor rev 4 (v7b)
+> Features	: swp half thumb fastmult vfp edsp thumbee neon vfpv3 tls vfpv4 idiva idivt vfpd32 lpae evtstrm 
+> CPU implementer	: 0x41
+> CPU architecture: 7
+> CPU variant	: 0x0
+> CPU part	: 0xc07
+> CPU revision	: 4
+> 
+> processor	: 1
+> model name	: ARMv7 Processor rev 4 (v7b)
+> Features	: swp half thumb fastmult vfp edsp thumbee neon vfpv3 tls vfpv4 idiva idivt vfpd32 lpae evtstrm 
+> CPU implementer	: 0x41
+> CPU architecture: 7
+> CPU variant	: 0x0
+> CPU part	: 0xc07
+> CPU revision	: 4
+> 
+> Hardware	: Dummy Virtual Machine
+> Revision	: 0000
+> Serial		: 0000000000000000
+> root@when-the-lie-s-so-big:~# uname -a
+> Linux when-the-lie-s-so-big 3.14.0+ #2465 SMP PREEMPT Tue Apr 8 13:05:11 BST 2014 armv7b GNU/Linux
+> 
+> Now, looking at the patch, I think it makes some sense:
+> - Depending on the endianness, we have to test the L_PTE_NONE in one 
+> word on the other, and possibly clear L_PTE_VALID
+> - Same for L_PTE_DIRTY, respectively setting L_PTE_RDONLY
+> 
+> The commit message looks wrong though, as it mention the PTE storage in 
+> memory (which looks completely fine to me, and explain why I was able to
+> boot a guest). As none of my guest RAM is above 4GB IPA, I didn't see 
+> the corruption of bit 32 in the PTE (which should have been bit 0,
+> corresponding to L_PTE_VALID).
+> 
+> So, provided that the commit message is rewritten to match the what it does,
+> I'm fine with that patch.
+> 
+> Thanks,
+> 
+> 	M.
+
+
 
