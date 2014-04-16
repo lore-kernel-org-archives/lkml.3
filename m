@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161201AbaDPN0d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 09:26:33 -0400
-Received: from mga11.intel.com ([192.55.52.93]:17985 "EHLO mga11.intel.com"
+	id S1161222AbaDPN0m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 09:26:42 -0400
+Received: from mga09.intel.com ([134.134.136.24]:52522 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161169AbaDPN0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 09:26:31 -0400
+	id S1161204AbaDPN0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 09:26:37 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,872,1389772800"; 
-   d="scan'208";a="521624861"
+   d="scan'208";a="521995503"
 From: Lan Tianyu <tianyu.lan@intel.com>
 To: wsa@the-dreams.de, rjw@rjwysocki.net, lenb@kernel.org,
         mika.westerberg@linux.intel.com, awilliam@redhat.com,
         tianyu.lan@intel.com
 Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/9] I2C: Add smbus quick read/write helper function
-Date: Wed, 16 Apr 2014 21:24:38 +0800
-Message-Id: <1397654682-7094-6-git-send-email-tianyu.lan@intel.com>
+Subject: [PATCH 9/9] I2C/ACPI: Add CONFIG_I2C_ACPI config
+Date: Wed, 16 Apr 2014 21:24:42 +0800
+Message-Id: <1397654682-7094-10-git-send-email-tianyu.lan@intel.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com>
 References: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com>
@@ -24,69 +24,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add i2c_smbus_quick_write/read() helper function. These will be used
-in the implementation of i2c ACPI address space handler.
+This patch is to add CONFIG_I2C_ACPI. Current there is a race between
+removing I2C ACPI operation region and ACPI AML code accessing.
+So make i2c core built-in if CONFIG_I2C_ACPI is set. The race will
+be fixed later in the ACPICA.
 
 Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 ---
- drivers/i2c/i2c-core.c | 30 ++++++++++++++++++++++++++++++
- include/linux/i2c.h    |  2 ++
- 2 files changed, 32 insertions(+)
+ drivers/i2c/Kconfig  | 16 +++++++++++++++-
+ drivers/i2c/Makefile |  2 +-
+ include/linux/i2c.h  |  2 +-
+ 3 files changed, 17 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 7c7f4b8..3bf0048 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -2162,6 +2162,36 @@ static int i2c_smbus_check_pec(u8 cpec, struct i2c_msg *msg)
- }
+diff --git a/drivers/i2c/Kconfig b/drivers/i2c/Kconfig
+index 7b7ea32..15d782e 100644
+--- a/drivers/i2c/Kconfig
++++ b/drivers/i2c/Kconfig
+@@ -2,7 +2,9 @@
+ # I2C subsystem configuration
+ #
  
- /**
-+ * i2c_smbus_quick_write - SMBus "quick write" protocol
-+ * @client: Handle to slave device
-+ *
-+ * This executes the SMBus "quick write" protocol, returning negative errno
-+ * else zero on success.
-+ */
-+s32 i2c_smbus_quick_write(const struct i2c_client *client)
-+{
-+	return i2c_smbus_xfer(client->adapter, client->addr, client->flags,
-+				I2C_SMBUS_WRITE, 0,
-+				I2C_SMBUS_QUICK, NULL);
-+}
-+EXPORT_SYMBOL_GPL(i2c_smbus_quick_write);
+-menuconfig I2C
++menu "I2C support"
 +
-+/**
-+ * i2c_smbus_quick_read - SMBus "quick read" protocol
-+ * @client: Handle to slave device
-+ *
-+ * This executes the SMBus "quick read" protocol, returning negative errno
-+ * else zero on success.
-+ */
-+s32 i2c_smbus_quick_read(const struct i2c_client *client)
-+{
-+	return i2c_smbus_xfer(client->adapter, client->addr, client->flags,
-+				I2C_SMBUS_READ, 0,
-+				I2C_SMBUS_QUICK, NULL);
-+}
-+EXPORT_SYMBOL_GPL(i2c_smbus_quick_read);
++config I2C
+ 	tristate "I2C support"
+ 	select RT_MUTEXES
+ 	---help---
+@@ -21,6 +23,16 @@ menuconfig I2C
+ 	  This I2C support can also be built as a module.  If so, the module
+ 	  will be called i2c-core.
+ 
++config I2C_ACPI
++	bool "I2C ACPI support"
++	select I2C
++	depends on ACPI
++	help
++	  Say Y here if you want to enable I2C ACPI function. ACPI table
++	  provides I2C slave devices' information to enumerate these devices.
++	  This option also allows ACPI AML code to access I2C slave devices
++	  via I2C ACPI operation region to fulfill ACPI method.
 +
-+/**
-  * i2c_smbus_read_byte - SMBus "receive byte" protocol
-  * @client: Handle to slave device
-  *
+ if I2C
+ 
+ config I2C_BOARDINFO
+@@ -124,3 +136,5 @@ config I2C_DEBUG_BUS
+ 	  on.
+ 
+ endif # I2C
++
++endmenu
+diff --git a/drivers/i2c/Makefile b/drivers/i2c/Makefile
+index 80db307..37464ee 100644
+--- a/drivers/i2c/Makefile
++++ b/drivers/i2c/Makefile
+@@ -3,7 +3,7 @@
+ #
+ 
+ i2ccore-y := i2c-core.o
+-i2ccore-$(CONFIG_ACPI)		+= i2c-acpi.o
++i2ccore-$(CONFIG_I2C_ACPI)		+= i2c-acpi.o
+ 
+ obj-$(CONFIG_I2C_BOARDINFO)	+= i2c-boardinfo.o
+ obj-$(CONFIG_I2C)		+= i2ccore.o
 diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-index b556e0a..3e6ea90 100644
+index fc1ef42..d0ece9f 100644
 --- a/include/linux/i2c.h
 +++ b/include/linux/i2c.h
-@@ -82,6 +82,8 @@ extern s32 i2c_smbus_xfer(struct i2c_adapter *adapter, u16 addr,
- /* Now follow the 'nice' access routines. These also document the calling
-    conventions of i2c_smbus_xfer. */
+@@ -583,7 +583,7 @@ static inline struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node
+ }
+ #endif /* CONFIG_OF */
  
-+extern s32 i2c_smbus_quick_write(const struct i2c_client *client);
-+extern s32 i2c_smbus_quick_read(const struct i2c_client *client);
- extern s32 i2c_smbus_read_byte(const struct i2c_client *client);
- extern s32 i2c_smbus_write_byte(const struct i2c_client *client, u8 value);
- extern s32 i2c_smbus_read_byte_data(const struct i2c_client *client,
+-#ifdef CONFIG_ACPI
++#ifdef CONFIG_I2C_ACPI
+ int acpi_i2c_install_space_handler(struct i2c_adapter *adapter);
+ void acpi_i2c_remove_space_handler(struct i2c_adapter *adapter);
+ void acpi_i2c_register_devices(struct i2c_adapter *adap);
 -- 
 1.8.4.rc0.1.g8f6a3e5.dirty
 
