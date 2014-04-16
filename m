@@ -1,125 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaDPRGl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 13:06:41 -0400
-Received: from dliviu.plus.com ([80.229.23.120]:56755 "EHLO smtp.dudau.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751111AbaDPRGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 13:06:40 -0400
-From: "Liviu Dudau" <liviu@dudau.co.uk>
-Date: Wed, 16 Apr 2014 18:05:45 +0100
-To: Rob Herring <robherring2@gmail.com>
-Cc: Tanmay Inamdar <tinamdar@apm.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@apm.com" <patches@apm.com>, "jcm@redhat.com" <jcm@redhat.com>
-Subject: Re: [PATCH v5 2/4] arm64: dts: APM X-Gene PCIe device tree nodes
-Message-ID: <20140416170545.GD4858@bart>
-Mail-Followup-To: Rob Herring <robherring2@gmail.com>,
-	Tanmay Inamdar <tinamdar@apm.com>,
-	Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
-	Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-	Grant Likely <grant.likely@linaro.org>,
-	Rob Herring <robh+dt@kernel.org>,
-	Catalin Marinas <catalin.marinas@arm.com>,
-	Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>,
-	"linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
-	"linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"patches@apm.com" <patches@apm.com>,
-	"jcm@redhat.com" <jcm@redhat.com>
-References: <1395270762-6055-1-git-send-email-tinamdar@apm.com>
- <1395270762-6055-3-git-send-email-tinamdar@apm.com>
- <CAL_Jsq+XxAtUeNKFi0hH=ehb_fhFvkM0U1Zm_j1LdtQZbvSzfA@mail.gmail.com>
+	id S1753913AbaDPRHa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 13:07:30 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35233 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029AbaDPRH0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 13:07:26 -0400
+Date: Wed, 16 Apr 2014 18:06:39 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
+        Chen-Yu Tsai <wens@csie.org>, Hans de Goede <hdegoede@redhat.com>,
+        Carlo Caione <carlo@caione.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
+Message-ID: <20140416170638.GT12304@sirena.org.uk>
+References: <20140415223849.GJ12304@sirena.org.uk>
+ <1397636170-664-1-git-send-email-boris.brezillon@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="HL+2C3YiDdBCOf2R"
 Content-Disposition: inline
-In-Reply-To: <CAL_Jsq+XxAtUeNKFi0hH=ehb_fhFvkM0U1Zm_j1LdtQZbvSzfA@mail.gmail.com>
+In-Reply-To: <1397636170-664-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Cookie: You will be successful in your work.
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Wed Apr 16 18:06:39 2014
-X-DSPAM-Confidence: 1.0000
-X-DSPAM-Probability: 0.0023
-X-DSPAM-Signature: 13,534eb89e2988058717537
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regmap: i2c: fallback to SMBus if the adapter does not
+ support standard I2C
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 09:28:42AM -0500, Rob Herring wrote:
-> On Wed, Mar 19, 2014 at 6:12 PM, Tanmay Inamdar <tinamdar@apm.com> wrote:
-> > This patch adds the device tree nodes for APM X-Gene PCIe controller and
-> > PCIe clock interface. Since X-Gene SOC supports maximum 5 ports, 5 dts
-> > nodes are added.
-> 
-> [snip]
-> 
-> > +               pcie0: pcie@1f2b0000 {
-> > +                       status = "disabled";
-> > +                       device_type = "pci";
-> > +                       compatible = "apm,xgene-storm-pcie", "apm,xgene-pcie";
-> > +                       #interrupt-cells = <1>;
-> > +                       #size-cells = <2>;
-> > +                       #address-cells = <3>;
-> > +                       reg = < 0x00 0x1f2b0000 0x0 0x00010000   /* Controller registers */
-> > +                               0xe0 0xd0000000 0x0 0x00200000>; /* PCI config space */
-> 
 
-Resurecting an old thread as this is relevant to what I'm doing at the moment:
+--HL+2C3YiDdBCOf2R
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Where is the right place for config space? This binding has it here
-> and others have it in ranges. Given that config space type is defined
-> for ranges, I would think that is the right place. But Liviu's patches
-> do not process config space entries in ranges. Perhaps we need a
-> config space resource populated in the bridge struct.
+On Wed, Apr 16, 2014 at 10:16:10AM +0200, Boris BREZILLON wrote:
 
-I have found out that we cannot pasd the config ranges from the DT into the
-pci_host_bridge structure as the PCI framework doesn't have a resource type
-for config resources. Leaving the translation between range flags and
-resource type as is (filtered through the IORESOURCE_TYPE_BITS) will lead
-to a resource type of value zero, which is not recognised by any resource
-handling API so bridge configuration and bus scanning will barf.
+> +	if (i2c_check_functionality(i2c->adapter, I2C_FUNC_I2C)) {
+> +		return &regmap_i2c;
+> +	} else if (config->val_bits == 16 &&
+> +		   i2c_check_functionality(i2c->adapter,
+> +					   I2C_FUNC_SMBUS_WORD_DATA)) {
+> +                config->reg_read = regmap_smbus_word_reg_read;
+> +                config->reg_write = regmap_smbus_word_reg_write;
+> +		return NULL;
 
-I'm looking for suggestions here, as Jason Gunthorpe suggested that we
-should be able to parse config ranges if they conform to the ECAM part
-of the PCI standard.
+This all looks good to me except we shouldn't be modifying the config
+struct (it's supposed to be const).  We should instead add the ability
+for the bus to set these ops - that'll also be useful for things like
+AC'97.
 
-Best regards,
-Liviu
+--HL+2C3YiDdBCOf2R
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> 
-> Rob
-> 
-> 
-> > +                       reg-names = "csr", "cfg";
-> > +                       ranges = <0x01000000 0x00 0x00000000 0xe0 0x00000000 0x00 0x00010000   /* io */
-> > +                                 0x02000000 0x00 0x10000000 0xe0 0x10000000 0x00 0x80000000>; /* mem */
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
--- 
--------------------
-   .oooO
-   (   )
-    \ (  Oooo.
-     \_) (   )
-          ) /
-         (_/
+iQIcBAEBAgAGBQJTTribAAoJELSic+t+oim9yDgQAJViSM+NIbZRXB90eCTbZ/8Q
+Dm0fn8vsZRzliPmp/BIBrfhYJPn7817gxiwOpiCO1D1+UJYUTBywrMmXr3RYYufS
+USrkMfz8ME4IUrI2ZJ/61b2Vy3AIl8/EmvW+Uuz/q4a4V+LYZ3j5F1HU0huxYbda
+m6dbAxW3KDMuVp727jYp7UQNQct9/KBUU/+xFDW1+H9wX1Adi/GDugSPVnSMBNfG
+JSdQOJoxbz0VosemoTKoMymkSb8naIucTP21SQSnZaFj5YMMAQo1FF28q+aoXcsL
+RYLX3Win9vkIL+gBKBZdf43JsUX5IWLubYYdPgTax5Y+RtvLHnE9qF0891z4/jXs
+YkRr29VX3Dx/swgfvXEoMFTRZcb7dmcAkQdFpoB5dcztWTLODJ/imQ32ZKDUZUxV
+QJSlG0B2w7cAHaMhjig5+0lvYP3f1KO8Rip9HG2c8wAgoQyCiNWBwrNDgKPq3wCh
+sJqg/+iv+YJSe+E40UdLg/+vaX8PyqZjTm+TFufPAgOHBvXsAKRjPQRT6qbrLA9I
+B/o9/6gE2y7h3j5K1DVMBhJpjASMeLdx1iPc844VF4OWBDF0sj9vZp7BxyElllUS
+CvIngmIBO0CiBi9H+BLlVCC0GfW14JWouiykSdXJk0CSZnmg02RSTJQFwoSfRQMm
+aR6xf/inPyVVhQuEdaiA
+=XB/3
+-----END PGP SIGNATURE-----
 
- One small step
-   for me ...
-
+--HL+2C3YiDdBCOf2R--
