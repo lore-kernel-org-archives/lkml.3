@@ -1,148 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866AbaDPS3F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 14:29:05 -0400
-Received: from mail-yh0-f73.google.com ([209.85.213.73]:49484 "EHLO
-	mail-yh0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755252AbaDPSZe (ORCPT
+	id S1755952AbaDPSaO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 14:30:14 -0400
+Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:61990 "EHLO
+	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753810AbaDPSaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 14:25:34 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: Olof Johansson <olof@lixom.net>, Sachin Kamat <sachin.kamat@linaro.org>,
-        ajaykumar.rs@samsung.com, linux-samsung-soc@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/5] mfd: tps65090: Stop caching most registers
-Date: Wed, 16 Apr 2014 11:25:22 -0700
-Message-Id: <1397672724-9063-4-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
-In-Reply-To: <1397672724-9063-1-git-send-email-dianders@chromium.org>
-References: <1397592876-5741-1-git-send-email-dianders@chromium.org>
- <1397672724-9063-1-git-send-email-dianders@chromium.org>
+	Wed, 16 Apr 2014 14:30:10 -0400
+Message-ID: <1397673008.6361.0.camel@x220>
+Subject: Re: [PATCH 16/28] Remove GENERIC_HAS_IOMAP
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Lennox Wu <lennox.wu@gmail.com>
+Cc: Richard Weinberger <richard@nod.at>, Chen Liqin <liqin.linux@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>
+Date: Wed, 16 Apr 2014 20:30:08 +0200
+In-Reply-To: <CAF0htA403PKyAgQjrMpYgawNZWKZm06UYrgV-7N_9tbas=SniA@mail.gmail.com>
+References: <1391971686-9517-1-git-send-email-richard@nod.at>
+	 <1391971686-9517-17-git-send-email-richard@nod.at>
+	 <CAF0htA5xWQwkMqdp0_zz05DLJvyCOJZf-v1Rso20de5VWFmPTA@mail.gmail.com>
+	 <1397553547.1985.25.camel@x220>
+	 <CAF0htA403PKyAgQjrMpYgawNZWKZm06UYrgV-7N_9tbas=SniA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Apr 2014 18:30:08.0614 (UTC) FILETIME=[E5266860:01CF59A1]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nearly all of the registers in tps65090 combine control bits and
-status bits.  Turn off caching of all registers except the select few
-that can be cached.
+On Thu, 2014-04-17 at 01:29 +0800, Lennox Wu wrote:
+> OK, we will merge it into our tree.
 
-In order to avoid adding more duplicate #defines, we also move some
-register offset definitions to the mfd driver (and resolve
-inconsistent names).
+Thanks!
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Changes in v2:
-- Leave cache on for the registers that can be cached.
-- Move register offsets to mfd header file.
 
- drivers/mfd/tps65090.c           | 27 ++++++++++++++-------------
- drivers/power/tps65090-charger.c | 11 -----------
- include/linux/mfd/tps65090.h     | 14 ++++++++++++++
- 3 files changed, 28 insertions(+), 24 deletions(-)
-
-diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
-index c3cddb4..1c3e6e2 100644
---- a/drivers/mfd/tps65090.c
-+++ b/drivers/mfd/tps65090.c
-@@ -32,14 +32,6 @@
- #define NUM_INT_REG 2
- #define TOTAL_NUM_REG 0x18
- 
--/* interrupt status registers */
--#define TPS65090_INT_STS	0x0
--#define TPS65090_INT_STS2	0x1
--
--/* interrupt mask registers */
--#define TPS65090_INT_MSK	0x2
--#define TPS65090_INT_MSK2	0x3
--
- #define TPS65090_INT1_MASK_VAC_STATUS_CHANGE		1
- #define TPS65090_INT1_MASK_VSYS_STATUS_CHANGE		2
- #define TPS65090_INT1_MASK_BAT_STATUS_CHANGE		3
-@@ -144,17 +136,26 @@ static struct regmap_irq_chip tps65090_irq_chip = {
- 	.irqs = tps65090_irqs,
- 	.num_irqs = ARRAY_SIZE(tps65090_irqs),
- 	.num_regs = NUM_INT_REG,
--	.status_base = TPS65090_INT_STS,
--	.mask_base = TPS65090_INT_MSK,
-+	.status_base = TPS65090_REG_INTR_STS,
-+	.mask_base = TPS65090_REG_INTR_MASK,
- 	.mask_invert = true,
- };
- 
- static bool is_volatile_reg(struct device *dev, unsigned int reg)
- {
--	if ((reg == TPS65090_INT_STS) || (reg == TPS65090_INT_STS2))
--		return true;
--	else
-+	/* Nearly all registers have status bits mixed in, except a few */
-+	switch (reg) {
-+	case TPS65090_REG_INTR_MASK:
-+	case TPS65090_REG_INTR_MASK2:
-+	case TPS65090_REG_CG_CTRL0:
-+	case TPS65090_REG_CG_CTRL1:
-+	case TPS65090_REG_CG_CTRL2:
-+	case TPS65090_REG_CG_CTRL3:
-+	case TPS65090_REG_CG_CTRL4:
-+	case TPS65090_REG_CG_CTRL5:
- 		return false;
-+	}
-+	return true;
- }
- 
- static const struct regmap_config tps65090_regmap_config = {
-diff --git a/drivers/power/tps65090-charger.c b/drivers/power/tps65090-charger.c
-index cc26c12..31a3ba4 100644
---- a/drivers/power/tps65090-charger.c
-+++ b/drivers/power/tps65090-charger.c
-@@ -30,17 +30,6 @@
- 
- #include <linux/mfd/tps65090.h>
- 
--#define TPS65090_REG_INTR_STS	0x00
--#define TPS65090_REG_INTR_MASK	0x02
--#define TPS65090_REG_CG_CTRL0	0x04
--#define TPS65090_REG_CG_CTRL1	0x05
--#define TPS65090_REG_CG_CTRL2	0x06
--#define TPS65090_REG_CG_CTRL3	0x07
--#define TPS65090_REG_CG_CTRL4	0x08
--#define TPS65090_REG_CG_CTRL5	0x09
--#define TPS65090_REG_CG_STATUS1	0x0a
--#define TPS65090_REG_CG_STATUS2	0x0b
--
- #define TPS65090_CHARGER_ENABLE	BIT(0)
- #define TPS65090_VACG		BIT(1)
- #define TPS65090_NOITERM	BIT(5)
-diff --git a/include/linux/mfd/tps65090.h b/include/linux/mfd/tps65090.h
-index 3f43069..45f0f9d 100644
---- a/include/linux/mfd/tps65090.h
-+++ b/include/linux/mfd/tps65090.h
-@@ -64,6 +64,20 @@ enum {
- 	TPS65090_REGULATOR_MAX,
- };
- 
-+/* Register addresses */
-+#define TPS65090_REG_INTR_STS	0x00
-+#define TPS65090_REG_INTR_STS2	0x01
-+#define TPS65090_REG_INTR_MASK	0x02
-+#define TPS65090_REG_INTR_MASK2	0x03
-+#define TPS65090_REG_CG_CTRL0	0x04
-+#define TPS65090_REG_CG_CTRL1	0x05
-+#define TPS65090_REG_CG_CTRL2	0x06
-+#define TPS65090_REG_CG_CTRL3	0x07
-+#define TPS65090_REG_CG_CTRL4	0x08
-+#define TPS65090_REG_CG_CTRL5	0x09
-+#define TPS65090_REG_CG_STATUS1	0x0a
-+#define TPS65090_REG_CG_STATUS2	0x0b
-+
- struct tps65090 {
- 	struct device		*dev;
- 	struct regmap		*rmap;
--- 
-1.9.1.423.g4596e3a
+Paul Bolle
 
