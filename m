@@ -1,283 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161698AbaDPOyC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 10:54:02 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:52298 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161306AbaDPOyA (ORCPT
+	id S1161548AbaDPO6D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 10:58:03 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.174]:13859 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1161089AbaDPO6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 10:54:00 -0400
-Date: Wed, 16 Apr 2014 17:53:53 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv9 0/7] add compressing abstraction and multi stream
- support
-Message-ID: <20140416145353.GC944@swordfish.minsk.epam.com>
-References: <1393609927-22090-1-git-send-email-sergey.senozhatsky@gmail.com>
- <20140306081137.GA14287@bbox>
- <1555642.jW49oRcvBj@amdc1032>
+	Wed, 16 Apr 2014 10:58:01 -0400
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-3.tower-39.messagelabs.com!1397660278!17611386!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.1; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Wed, 16 Apr 2014 16:57:59 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: <linux-kernel@vger.kernel.org>
+CC: Johannes Thumshirn <Johannes.Thumshirn@men.de>,
+        Thomas Schnuerer <thomas.schnuerer@men.de>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>
+Subject: [PATCH] mcb: Add support for shared PCI IRQs
+Date: Wed, 16 Apr 2014 16:57:47 +0200
+Message-ID: <1397660267-23198-1-git-send-email-johannes.thumshirn@men.de>
+X-Mailer: git-send-email 1.9.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1555642.jW49oRcvBj@amdc1032>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [192.1.1.31]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (04/16/14 15:53), Bartlomiej Zolnierkiewicz wrote:
-> Hi,
-> 
-> I'm a bit late on this patch series (sorry for that) but why are we not
-> using Crypto API for compression algorithm selection and multi stream
-> support?  Compared to the earlier patches for zram like the ones we did
-> in July 2013 [1] this patch series requires us to:
-> 
-> - implement compression algorithm support for each algorithm separately
->   (when using Crypto API all compression algorithms supported by Crypto
->   API are supported automatically)
-> 
-> - manually set the number of maximum active compression streams (earlier
->   patches using Crypto API needed a lot less code and automatically scaled
->   number of compression streams to number of online CPUs)
+Add support for shared PCI IRQs to mcb and mcb-pci.
 
-Hello Bartlomiej,
+Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+---
+ drivers/mcb/mcb-core.c | 20 +++++++++++++++-----
+ drivers/mcb/mcb-pci.c  | 17 ++++++++++++++++-
+ include/linux/mcb.h    |  6 +++++-
+ 3 files changed, 36 insertions(+), 7 deletions(-)
 
-there was a short discussion of `custom solution' vs `crypto API'.
-personally, I was not impressed by Crypto API. basically it requires
-	a) locking of transformation context (if we have only one tfm
-	for everyone)
-or
-	b) having some sort of a list of tfms
-or
-	c) storing tfm in a per_cpu area.
+diff --git a/drivers/mcb/mcb-core.c b/drivers/mcb/mcb-core.c
+index bbe1293..9018ab8 100644
+--- a/drivers/mcb/mcb-core.c
++++ b/drivers/mcb/mcb-core.c
+@@ -183,14 +183,14 @@ EXPORT_SYMBOL_GPL(mcb_device_register);
+  *
+  * Allocate a new @mcb_bus.
+  */
+-struct mcb_bus *mcb_alloc_bus(void)
++struct mcb_bus *mcb_alloc_bus(struct device *carrier)
+ {
+ 	struct mcb_bus *bus;
+ 	int bus_nr;
+ 
+ 	bus = kzalloc(sizeof(struct mcb_bus), GFP_KERNEL);
+ 	if (!bus)
+-		return NULL;
++		return ERR_PTR(-ENOMEM);
+ 
+ 	bus_nr = ida_simple_get(&mcb_ida, 0, 0, GFP_KERNEL);
+ 	if (bus_nr < 0) {
+@@ -200,7 +200,7 @@ struct mcb_bus *mcb_alloc_bus(void)
+ 
+ 	INIT_LIST_HEAD(&bus->children);
+ 	bus->bus_nr = bus_nr;
+-
++	bus->carrier = carrier;
+ 	return bus;
+ }
+ EXPORT_SYMBOL_GPL(mcb_alloc_bus);
+@@ -378,6 +378,13 @@ void mcb_release_mem(struct resource *mem)
+ }
+ EXPORT_SYMBOL_GPL(mcb_release_mem);
+ 
++static int __mcb_get_irq(struct mcb_device *dev)
++{
++	struct resource *irq = &dev->irq;
++
++	return irq->start;
++}
++
+ /**
+  * mcb_get_irq() - Get device's IRQ number
+  * @dev: The @mcb_device the IRQ is for
+@@ -386,9 +393,12 @@ EXPORT_SYMBOL_GPL(mcb_release_mem);
+  */
+ int mcb_get_irq(struct mcb_device *dev)
+ {
+-	struct resource *irq = &dev->irq;
++	struct mcb_bus *bus = dev->bus;
+ 
+-	return irq->start;
++	if (bus->get_irq)
++		return bus->get_irq(dev);
++
++	return __mcb_get_irq(dev);
+ }
+ EXPORT_SYMBOL_GPL(mcb_get_irq);
+ 
+diff --git a/drivers/mcb/mcb-pci.c b/drivers/mcb/mcb-pci.c
+index 99c742c..b591819 100644
+--- a/drivers/mcb/mcb-pci.c
++++ b/drivers/mcb/mcb-pci.c
+@@ -20,6 +20,15 @@ struct priv {
+ 	void __iomem *base;
+ };
+ 
++static int mcb_pci_get_irq(struct mcb_device *mdev)
++{
++	struct mcb_bus *mbus = mdev->bus;
++	struct device *dev = mbus->carrier;
++	struct pci_dev *pdev = to_pci_dev(dev);
++
++	return pdev->irq;
++}
++
+ static int mcb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ {
+ 	struct priv *priv;
+@@ -67,7 +76,13 @@ static int mcb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 
+ 	pci_set_drvdata(pdev, priv);
+ 
+-	priv->bus = mcb_alloc_bus();
++	priv->bus = mcb_alloc_bus(&pdev->dev);
++	if (IS_ERR(priv->bus)) {
++		ret = PTR_ERR(priv->bus);
++		goto err_drvdata;
++	}
++
++	priv->bus->get_irq = mcb_pci_get_irq;
+ 
+ 	ret = chameleon_parse_cells(priv->bus, mapbase, priv->base);
+ 	if (ret < 0)
+diff --git a/include/linux/mcb.h b/include/linux/mcb.h
+index 2db284d..ed06e15 100644
+--- a/include/linux/mcb.h
++++ b/include/linux/mcb.h
+@@ -16,6 +16,7 @@
+ #include <linux/irqreturn.h>
+ 
+ struct mcb_driver;
++struct mcb_device;
+ 
+ /**
+  * struct mcb_bus - MEN Chameleon Bus
+@@ -23,11 +24,14 @@ struct mcb_driver;
+  * @dev: pointer to carrier device
+  * @children: the child busses
+  * @bus_nr: mcb bus number
++ * @get_irq: callback to get IRQ number
+  */
+ struct mcb_bus {
+ 	struct list_head children;
+ 	struct device dev;
++	struct device *carrier;
+ 	int bus_nr;
++	int (*get_irq)(struct mcb_device *dev);
+ };
+ #define to_mcb_bus(b) container_of((b), struct mcb_bus, dev)
+ 
+@@ -105,7 +109,7 @@ extern void mcb_unregister_driver(struct mcb_driver *driver);
+ 	module_driver(__mcb_driver, mcb_register_driver, mcb_unregister_driver);
+ extern void mcb_bus_add_devices(const struct mcb_bus *bus);
+ extern int mcb_device_register(struct mcb_bus *bus, struct mcb_device *dev);
+-extern struct mcb_bus *mcb_alloc_bus(void);
++extern struct mcb_bus *mcb_alloc_bus(struct device *carrier);
+ extern struct mcb_bus *mcb_bus_get(struct mcb_bus *bus);
+ extern void mcb_bus_put(struct mcb_bus *bus);
+ extern struct mcb_device *mcb_alloc_dev(struct mcb_bus *bus);
+-- 
+1.9.2
 
-c) requires ZRAM block device to become CPU hotplug aware and to begin
-reacting on onlining/offlining of a CPU by allocating/deallocating of
-transformation context. allocating new tfm potentially could a problem
-if system is under memory pressure and ZRAM is used as a swap device.
-besides, c) also requires additional locking via get_cpu()/put_cpu()
-around every comp op.
-
-in overall, that was something that I wanted to avoid. current solution
-does not depend on CPU notifier (which is a good thing for a block device
-driver, imho) and, thus, looks simpler in some ways. yet we still have
-ability to scale.
-
-there was a patch that was letting ZRAM to automatically scale number of
-compression streams to number of online CPUs, but Minchan wanted explicit
-one-stream-only option for swap device use-case.
-
-the other thing to mention is that CPU offlining API was under rework at
-that time by Srivatsa S. Bhat (cpu_notifier_register_begin(),
-cpu_notifier_register_done()) due to discovered races, which resulted in
-a patchset of 50+ patches (every existing CPU notifier user, including
-zsmalloc) and that played as additional factor.
-
-
-	-ss
-
-> From what I see the pros of the current patch series are:
-> 
-> - dynamic selection of the compression algorithm
-> 
-> - ability to limit number of active streams below tha number of online CPUs
-> 
-> However I believe that both above features can be also implemented on top of
-> the code using Crypto API.  What am I missing?
-> 
-> [1] https://lkml.org/lkml/2013/7/30/365
-> 
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
-> 
-> On Thursday, March 06, 2014 05:11:37 PM Minchan Kim wrote:
-> > Hello Sergey,
-> > 
-> > Sorry for the late.
-> > 
-> > Today, I tested this patch and confirm that it's really good.
-> > I send result for the record.
-> > 
-> > In x86(4core and x2 hyper threading, i7, 2.8GHz), I did parallel 4 dd
-> > test with 200m file like below
-> > 
-> > dd if=./test200m.file of=mnt/file1 bs=512k count=1024 oflag=direct &
-> > dd if=./test200m.file of=mnt/file2 bs=512k count=1024 oflag=direct &
-> > dd if=./test200m.file of=mnt/file3 bs=512k count=1024 oflag=direct &
-> > dd if=./test200m.file of=mnt/file4 bs=512k count=1024 oflag=direct &
-> > wait all backgroud job
-> > 
-> > The result is 
-> > 
-> > When 1 max_comp_streams, elapsed time is 36.26s
-> > When 8 max_comp_streams, elapsed time is 4.09s
-> > 
-> > In ARM(4core, ARMv7, 1.5GHz), I did iozone test.
-> > 
-> >       1 max_comp_streams,      8 max_comp_streams
-> > ==Initial  write      ==Initial  write
-> > records:   10         records:   10
-> > avg:       141964.05  avg:       239632.54
-> > std:       3532.11    (2.49%)    std:       43863.53  (18.30%)
-> > max:       147900.45  max:       319046.62
-> > min:       135363.73  min:       178929.40
-> > ==Rewrite  ==Rewrite
-> > records:   10         records:   10
-> > avg:       144757.46  avg:       247410.80
-> > std:       4019.19    (2.78%)    std:       37378.42  (15.11%)
-> > max:       150757.72  max:       293284.84
-> > min:       135127.55  min:       188984.27
-> > ==Read     ==Read
-> > records:   10         records:   10
-> > avg:       208325.22  avg:       202894.24
-> > std:       57072.62   (27.40%)   std:       41099.56  (20.26%)
-> > max:       293428.96  max:       289581.12
-> > min:       79445.37   min:       157478.27
-> > ==Re-read  ==Re-read
-> > records:   10         records:   10
-> > avg:       204750.36  avg:       237406.96
-> > std:       36959.99   (18.05%)   std:       41518.36  (17.49%)
-> > max:       268399.89  max:       286898.13
-> > min:       154831.28  min:       160326.88
-> > ==Reverse  Read       ==Reverse  Read
-> > records:   10         records:   10
-> > avg:       215043.10  avg:       208946.35
-> > std:       31239.60   (14.53%)   std:       38859.74  (18.60%)
-> > max:       251564.57  max:       284481.31
-> > min:       154719.20  min:       155024.33
-> > ==Stride   read       ==Stride   read
-> > records:   10         records:   10
-> > avg:       227246.54  avg:       198925.10
-> > std:       31105.89   (13.69%)   std:       30721.86  (15.44%)
-> > max:       290020.34  max:       227178.70
-> > min:       157399.46  min:       153592.91
-> > ==Random   read       ==Random   read
-> > records:   10         records:   10
-> > avg:       238239.81  avg:       216298.41
-> > std:       37276.91   (15.65%)   std:       38194.73  (17.66%)
-> > max:       291416.20  max:       286345.37
-> > min:       152734.23  min:       151871.52
-> > ==Mixed    workload   ==Mixed    workload
-> > records:   10         records:   10
-> > avg:       208434.11  avg:       234355.66
-> > std:       31385.40   (15.06%)   std:       22064.02  (9.41%)
-> > max:       253990.11  max:       270412.58
-> > min:       162041.47  min:       186052.12
-> > ==Random   write      ==Random   write
-> > records:   10         records:   10
-> > avg:       142172.54  avg:       290231.28
-> > std:       6233.67    (4.38%)    std:       46462.35  (16.01%)
-> > max:       150652.40  max:       338096.54
-> > min:       130584.14  min:       183253.25
-> > ==Pwrite   ==Pwrite
-> > records:   10         records:   10
-> > avg:       141247.91  avg:       267085.70
-> > std:       6756.08    (4.78%)    std:       40019.39  (14.98%)
-> > max:       150239.13  max:       335512.33
-> > min:       130456.98  min:       180832.45
-> > ==Pread    ==Pread
-> > records:   10         records:   10
-> > avg:       214990.26  avg:       208730.94
-> > std:       40701.79   (18.93%)   std:       50797.78  (24.34%)
-> > max:       287060.54  max:       300675.25
-> > min:       157642.17  min:       156763.98
-> > 
-> > So, all write test both x86 and ARM is really huge win
-> > and I couldn't find any regression!
-> > 
-> > Thanks for nice work.
-> > 
-> > For all patchset,
-> > 
-> > Acked-by: Minchan Kim <minchan@kernel.org>
-> > 
-> > On Fri, Feb 28, 2014 at 08:52:00PM +0300, Sergey Senozhatsky wrote:
-> > > This patchset introduces zcomp compression backend abstraction
-> > > adding ability to support compression algorithms other than LZO;
-> > > support for multi compression streams, making parallel compressions
-> > > possible; adds support for LZ4 compression algorithm.
-> > > 
-> > > v8->v9 (reviewed by Andrew Morton):
-> > > -- add LZ4 backend (+iozone test vs LZO)
-> > > -- merge patches 'zram: document max_comp_streams' and 'zram: add multi
-> > >    stream functionality'
-> > > -- do not extern backend struct from source file
-> > > -- use find()/release() naming instead of get()/put()
-> > > -- minor code, commit messages and code comments `nitpicks'
-> > > -- removed Acked-by Minchan Kim from first two patches, because I've
-> > >    changed them a bit.
-> > > 
-> > > v7->v8 (reviewed by Minchan Kim):
-> > > -- merge patches 'add multi stream functionality' and 'enable multi
-> > >    stream compression support in zram'
-> > > -- return status code from set_max_streams knob and print message on
-> > >    error
-> > > -- do not use atomic type for ->avail_strm
-> > > -- return back: allocate by default only one stream for multi stream backend
-> > > -- wake sleeping write in zcomp_strm_multi_put() only if we put stream
-> > >    to idle list
-> > > -- minor code `nitpicks'
-> > > 
-> > > v6->v7 (reviewed by Minchan Kim):
-> > > -- enable multi and single stream support out of the box (drop
-> > >    ZRAM_MULTI_STREAM config option)
-> > > -- add set_max_stream knob, so we can adjust max number of compression
-> > >    streams in runtime (for multi stream backend at the moment)
-> > > -- minor code `nitpicks'
-> > > 
-> > > v5->v6 (reviewed by Minchan Kim):
-> > > -- handle single compression stream case separately, using mutex locking,
-> > >    to address perfomance regression
-> > > -- handle multi compression stream using spin lock and wait_event()/wake_up()
-> > > -- make multi compression stream support configurable (ZRAM_MULTI_STREAM
-> > >    config option)
-> > > 
-> > > v4->v5 (reviewed by Minchan Kim):
-> > > -- renamed zcomp buffer_lock; removed src len and dst len from
-> > >    compress() and decompress(); not using term `buffer' and
-> > >    `workmem' in code and documentation; define compress() and
-> > >    decompress() functions for LZO backend; not using goto's;
-> > >    do not put idle zcomp_strm to idle list tail.
-> > > 
-> > > v3->v4 (reviewed by Minchan Kim):
-> > > -- renamed compression backend and working memory structs as requested
-> > >    by Minchan Kim; fixed several issues noted by Minchan Kim.
-> > > 
-> > > Sergey Senozhatsky (7):
-> > >   zram: introduce compressing backend abstraction
-> > >   zram: use zcomp compressing backends
-> > >   zram: factor out single stream compression
-> > >   zram: add multi stream functionality
-> > >   zram: add set_max_streams knob
-> > >   zram: make compression algorithm selection possible
-> > >   zram: add lz4 algorithm backend
-> > > 
-> > >  Documentation/ABI/testing/sysfs-block-zram |  17 +-
-> > >  Documentation/blockdev/zram.txt            |  45 +++-
-> > >  drivers/block/zram/Kconfig                 |  10 +
-> > >  drivers/block/zram/Makefile                |   4 +-
-> > >  drivers/block/zram/zcomp.c                 | 349 +++++++++++++++++++++++++++++
-> > >  drivers/block/zram/zcomp.h                 |  68 ++++++
-> > >  drivers/block/zram/zcomp_lz4.c             |  47 ++++
-> > >  drivers/block/zram/zcomp_lz4.h             |  17 ++
-> > >  drivers/block/zram/zcomp_lzo.c             |  47 ++++
-> > >  drivers/block/zram/zcomp_lzo.h             |  17 ++
-> > >  drivers/block/zram/zram_drv.c              | 131 ++++++++---
-> > >  drivers/block/zram/zram_drv.h              |  11 +-
-> > >  12 files changed, 715 insertions(+), 48 deletions(-)
-> > >  create mode 100644 drivers/block/zram/zcomp.c
-> > >  create mode 100644 drivers/block/zram/zcomp.h
-> > >  create mode 100644 drivers/block/zram/zcomp_lz4.c
-> > >  create mode 100644 drivers/block/zram/zcomp_lz4.h
-> > >  create mode 100644 drivers/block/zram/zcomp_lzo.c
-> > >  create mode 100644 drivers/block/zram/zcomp_lzo.h
-> 
