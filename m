@@ -1,127 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112AbaDPKzw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:55:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51622 "EHLO
+	id S1755588AbaDPKcO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:32:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51588 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755592AbaDPKcP (ORCPT
+	with ESMTP id S1755095AbaDPKcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:32:15 -0400
+	Wed, 16 Apr 2014 06:32:07 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 03/46] cpufreq: Fix timer/workqueue corruption due to double queueing
-Date: Wed, 16 Apr 2014 11:31:19 +0100
-Message-Id: <1397644322-13905-4-git-send-email-luis.henriques@canonical.com>
+Cc: Luis Henriques <luis.henriques@canonical.com>
+Subject: [3.11.y.z extended stable] Linux 3.11.10.8 stable review
+Date: Wed, 16 Apr 2014 11:31:16 +0100
+Message-Id: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
-References: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
 X-Extended-Stable: 3.11
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.8 -stable review patch.  If anyone has any objections, please let me know.
+This is the start of the review cycle for the Linux 3.11.10.8 stable kernel.
 
-------------------
+This version contains 46 new patches, summarized below.  The new patches are
+posted as replies to this message and also available in this git branch:
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=linux-3.11.y-review;a=shortlog
 
-commit 3617f2ca6d0eba48114308532945a7f1577816a4 upstream.
+git://kernel.ubuntu.com/ubuntu/linux.git  linux-3.11.y-review
 
-When a CPU is hot removed we'll cancel all the delayed work items
-via gov_cancel_work(). Normally this will just cancels a delayed
-timer on each CPU that the policy is managing and the work won't
-run, but if the work is already running the workqueue code will
-wait for the work to finish before continuing to prevent the
-work items from re-queuing themselves like they normally do. This
-scheme will work most of the time, except for the case where the
-work function determines that it should adjust the delay for all
-other CPUs that the policy is managing. If this scenario occurs,
-the canceling CPU will cancel its own work but queue up the other
-CPUs works to run. For example:
+The review period for version 3.11.10.8 will be open for the next three days.
+To report a problem, please reply to the relevant follow-up patch message.
 
- CPU0                                        CPU1
- ----                                        ----
- cpu_down()
-  ...
-  __cpufreq_remove_dev()
-   cpufreq_governor_dbs()
-    case CPUFREQ_GOV_STOP:
-     gov_cancel_work(dbs_data, policy);
-      cpu0 work is canceled
-       timer is canceled
-       cpu1 work is canceled                    <work runs>
-       <waits for cpu1>                         od_dbs_timer()
-                                                 gov_queue_work(*, *, true);
- 						  cpu0 work queued
- 						  cpu1 work queued
-						  cpu2 work queued
-						  ...
-       cpu1 work is canceled
-       cpu2 work is canceled
-       ...
+For more information about the Linux 3.11.y.z extended stable kernel version,
+see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable .
 
-At the end of the GOV_STOP case cpu0 still has a work queued to
-run although the code is expecting all of the works to be
-canceled. __cpufreq_remove_dev() will then proceed to
-re-initialize all the other CPUs works except for the CPU that is
-going down. The CPUFREQ_GOV_START case in cpufreq_governor_dbs()
-will trample over the queued work and debugobjects will spit out
-a warning:
+ -Luis
 
-WARNING: at lib/debugobjects.c:260 debug_print_object+0x94/0xbc()
-ODEBUG: init active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x10
-Modules linked in:
-CPU: 0 PID: 1491 Comm: sh Tainted: G        W    3.10.0 #19
-[<c010c178>] (unwind_backtrace+0x0/0x11c) from [<c0109dec>] (show_stack+0x10/0x14)
-[<c0109dec>] (show_stack+0x10/0x14) from [<c01904cc>] (warn_slowpath_common+0x4c/0x6c)
-[<c01904cc>] (warn_slowpath_common+0x4c/0x6c) from [<c019056c>] (warn_slowpath_fmt+0x2c/0x3c)
-[<c019056c>] (warn_slowpath_fmt+0x2c/0x3c) from [<c0388a7c>] (debug_print_object+0x94/0xbc)
-[<c0388a7c>] (debug_print_object+0x94/0xbc) from [<c0388e34>] (__debug_object_init+0x2d0/0x340)
-[<c0388e34>] (__debug_object_init+0x2d0/0x340) from [<c019e3b0>] (init_timer_key+0x14/0xb0)
-[<c019e3b0>] (init_timer_key+0x14/0xb0) from [<c0635f78>] (cpufreq_governor_dbs+0x3e8/0x5f8)
-[<c0635f78>] (cpufreq_governor_dbs+0x3e8/0x5f8) from [<c06325a0>] (__cpufreq_governor+0xdc/0x1a4)
-[<c06325a0>] (__cpufreq_governor+0xdc/0x1a4) from [<c0633704>] (__cpufreq_remove_dev.isra.10+0x3b4/0x434)
-[<c0633704>] (__cpufreq_remove_dev.isra.10+0x3b4/0x434) from [<c08989f4>] (cpufreq_cpu_callback+0x60/0x80)
-[<c08989f4>] (cpufreq_cpu_callback+0x60/0x80) from [<c08a43c0>] (notifier_call_chain+0x38/0x68)
-[<c08a43c0>] (notifier_call_chain+0x38/0x68) from [<c01938e0>] (__cpu_notify+0x28/0x40)
-[<c01938e0>] (__cpu_notify+0x28/0x40) from [<c0892ad4>] (_cpu_down+0x7c/0x2c0)
-[<c0892ad4>] (_cpu_down+0x7c/0x2c0) from [<c0892d3c>] (cpu_down+0x24/0x40)
-[<c0892d3c>] (cpu_down+0x24/0x40) from [<c0893ea8>] (store_online+0x2c/0x74)
-[<c0893ea8>] (store_online+0x2c/0x74) from [<c04519d8>] (dev_attr_store+0x18/0x24)
-[<c04519d8>] (dev_attr_store+0x18/0x24) from [<c02a69d4>] (sysfs_write_file+0x100/0x148)
-[<c02a69d4>] (sysfs_write_file+0x100/0x148) from [<c0255c18>] (vfs_write+0xcc/0x174)
-[<c0255c18>] (vfs_write+0xcc/0x174) from [<c0255f70>] (SyS_write+0x38/0x64)
-[<c0255f70>] (SyS_write+0x38/0x64) from [<c0106120>] (ret_fast_syscall+0x0/0x30)
+--
+ arch/m68k/Kconfig                           |   1 +
+ arch/s390/Kconfig                           |   1 +
+ arch/sparc/Kconfig                          |   2 +-
+ arch/sparc/include/asm/uaccess_64.h         |   4 +-
+ arch/sparc/kernel/pci.c                     |   4 +-
+ arch/sparc/kernel/process_64.c              |   4 +-
+ arch/sparc/kernel/syscalls.S                |   4 +-
+ arch/x86/crypto/ghash-clmulni-intel_asm.S   |  29 ------
+ arch/x86/crypto/ghash-clmulni-intel_glue.c  |  14 ++-
+ drivers/cpufreq/cpufreq_governor.c          |   3 +
+ drivers/cpufreq/powernow-k6.c               | 147 +++++++++++++++++++++++-----
+ drivers/cpuidle/driver.c                    |   3 +-
+ drivers/input/mouse/cypress_ps2.c           |   1 -
+ drivers/isdn/isdnloop/isdnloop.c            |  23 +++--
+ drivers/net/ethernet/broadcom/tg3.c         |   5 +-
+ drivers/net/usb/usbnet.c                    |  33 ++++---
+ drivers/net/vxlan.c                         |   3 +
+ drivers/net/xen-netback/netback.c           |   4 +-
+ drivers/vhost/net.c                         |  20 +++-
+ include/linux/futex.h                       |   4 +
+ include/linux/usb/usbnet.h                  |   2 +-
+ include/net/netfilter/nf_conntrack_extend.h |   4 +-
+ include/net/sock.h                          |   5 +
+ init/Kconfig                                |   7 ++
+ kernel/futex.c                              |  14 ++-
+ lib/nlattr.c                                |  10 +-
+ net/8021q/vlan.c                            |   4 +-
+ net/8021q/vlan_dev.c                        |   6 +-
+ net/bridge/br_multicast.c                   |   6 ++
+ net/bridge/netfilter/ebtables.c             |   5 +-
+ net/core/netpoll.c                          |   2 +-
+ net/core/rtnetlink.c                        |  10 +-
+ net/core/sock.c                             |   5 +-
+ net/ipv4/inet_fragment.c                    |   5 +-
+ net/ipv4/ipmr.c                             |  13 ++-
+ net/ipv4/netfilter/arp_tables.c             |   6 +-
+ net/ipv4/netfilter/ip_tables.c              |   6 +-
+ net/ipv4/tcp_output.c                       |  11 +++
+ net/ipv6/addrconf.c                         |   5 +-
+ net/ipv6/exthdrs_offload.c                  |   4 +-
+ net/ipv6/icmp.c                             |   2 +-
+ net/ipv6/ip6_output.c                       |  18 ++--
+ net/ipv6/ip6mr.c                            |  13 ++-
+ net/ipv6/mcast.c                            |  11 ++-
+ net/ipv6/netfilter/ip6_tables.c             |   6 +-
+ net/ipv6/ping.c                             |   4 +-
+ net/ipv6/route.c                            |   2 +-
+ net/netfilter/nf_conntrack_proto_dccp.c     |   6 +-
+ net/rds/iw.c                                |   3 +-
+ net/sctp/sm_make_chunk.c                    |   4 +-
+ net/sctp/sm_statefuns.c                     |   5 -
+ net/socket.c                                |   4 +
+ net/unix/af_unix.c                          |  17 +++-
+ security/selinux/hooks.c                    |  36 +++++--
+ 54 files changed, 390 insertions(+), 180 deletions(-)
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/cpufreq/cpufreq_governor.c | 3 +++
- 1 file changed, 3 insertions(+)
+Andrey Vagin (1):
+      netfilter: nf_conntrack: reserve two bytes for nf_ct_ext->len
 
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index e59afaa..38f2da4 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -133,6 +133,9 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
- {
- 	int i;
- 
-+	if (!policy->governor_enabled)
-+		return;
-+
- 	if (!all_cpus) {
- 		__gov_queue_work(smp_processor_id(), dbs_data, delay);
- 	} else {
--- 
-1.9.1
+Anton Nayshtut (1):
+      ipv6: Fix exthdrs offload registration.
 
+Ard Biesheuvel (1):
+      crypto: ghash-clmulni-intel - use C implementation for setkey()
+
+Dan Carpenter (1):
+      isdnloop: several buffer overflows
+
+Daniel Borkmann (2):
+      netfilter: nf_conntrack_dccp: fix skb_header_pointer API usages
+      net: sctp: fix skb leakage in COOKIE ECHO path of chunk->auth_chunk
+
+Daniel Fu (1):
+      cpuidle: Check the result of cpuidle_get_driver() against NULL
+
+Dave Kleikamp (2):
+      Revert "sparc64: Fix __copy_{to,from}_user_inatomic defines."
+      sparc64: don't treat 64-bit syscall return codes as 32-bit
+
+David S. Miller (1):
+      sparc64: Make sure %pil interrupts are enabled during hypervisor yield.
+
+David Stevens (1):
+      vxlan: fix potential NULL dereference in arp_reduce()
+
+Eric Dumazet (2):
+      net: unix: non blocking recvmsg() should not return -EINTR
+      tcp: tcp_release_cb() should release socket ownership
+
+Finn Thain (1):
+      m68k: Skip futex_atomic_cmpxchg_inatomic() test
+
+Florian Westphal (1):
+      inet: frag: make sure forced eviction removes all frags
+
+Hannes Frederic Sowa (1):
+      ipv6: some ipv6 statistic counters failed to disable bh
+
+Hans de Goede (1):
+      Input: cypress_ps2 - don't report as a button pads
+
+Heiko Carstens (1):
+      futex: Allow architectures to skip futex_atomic_cmpxchg_inatomic() test
+
+Heiner Kallweit (1):
+      ipv6: Avoid unnecessary temporary addresses being generated
+
+Li RongQing (1):
+      netpoll: fix the skb check in pkt_is_ns
+
+Linus Lüssing (1):
+      bridge: multicast: add sanity check for query source addresses
+
+Matthew Leach (1):
+      net: socket: error on a negative msg_namelen
+
+Michael S. Tsirkin (2):
+      vhost: fix total length when packets are too short
+      vhost: validate vhost_get_vq_desc return value
+
+Mikulas Patocka (3):
+      powernow-k6: disable cache when changing frequency
+      powernow-k6: correctly initialize default parameters
+      powernow-k6: reorder frequencies
+
+Nicolas Dichtel (3):
+      rtnetlink: fix fdb notification flags
+      ipmr: fix mfc notification flags
+      ip6mr: fix mfc notification flags
+
+Nikolay Aleksandrov (1):
+      net: fix for a race condition in the inet frag code
+
+Oliver Neukum (1):
+      usbnet: include wait queue head in device structure
+
+Pablo Neira (1):
+      netlink: don't compare the nul-termination in nla_strcmp
+
+Paul Durrant (1):
+      xen-netback: remove pointless clause from if statement
+
+Paul Gortmaker (1):
+      sparc32: fix build failure for arch_jump_label_transform
+
+Paul Moore (1):
+      selinux: correctly label /proc inodes in use before the policy is loaded
+
+Peter Boström (1):
+      vlan: Set correct source MAC address with TX VLAN offload enabled
+
+Sabrina Dubroca (1):
+      ipv6: don't set DST_NOCOUNT for remotely added routes
+
+Sasha Levin (1):
+      rds: prevent dereference of a NULL device in rds_iw_laddr_check
+
+Stephen Boyd (1):
+      cpufreq: Fix timer/workqueue corruption due to double queueing
+
+Thomas Graf (1):
+      netfilter: Can't fail and free after table replacement
+
+Vlad Yasevich (2):
+      tg3: Do not include vlan acceleration features in vlan_features
+      vlan: Set hard_header_len according to available acceleration
+
+YOSHIFUJI Hideaki / 吉藤英明 (1):
+      isdnloop: Validate NUL-terminated strings from user.
+
+lucien (1):
+      ipv6: ip6_append_data_mtu do not handle the mtu of the second fragment properly
+
+oftedal (1):
+      sparc: PCI: Fix incorrect address calculation of PCI Bridge windows on Simba-bridges
