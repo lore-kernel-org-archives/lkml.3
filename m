@@ -1,104 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048AbaDPUk2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 16:40:28 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:53233 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751925AbaDPUk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 16:40:27 -0400
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>, Borislav Petkov <bp@suse.de>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>, Jiri Olsa <jolsa@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] tools/perf: allow overriding sysfs and proc finding with env var
-Date: Wed, 16 Apr 2014 13:39:46 -0700
-Message-Id: <1397680812-21588-1-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.9.2
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041620-5806-0000-0000-000024A6FC66
+	id S1756573AbaDPUlX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 16:41:23 -0400
+Received: from mail-qa0-f73.google.com ([209.85.216.73]:64144 "EHLO
+	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756439AbaDPUlO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 16:41:14 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH v2] pinctrl: as3722: fix handling of GPIO invert bit
+Date: Wed, 16 Apr 2014 13:40:17 -0700
+Message-Id: <1397680817-28470-1-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
+In-Reply-To: <1397611505-17917-1-git-send-email-abrestic@chromium.org>
+References: <1397611505-17917-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SYSFS_PATH and PROC_PATH environment variables now let the user override
-the detection of sysfs and proc locations for testing purposes.
+The AS3722_GPIO_INV bit will always be blindly overwritten by
+as3722_pinctrl_gpio_set_direction() and will be ignored when
+setting the value of the GPIO in as3722_gpio_set() since the
+enable_gpio_invert flag is never set.  This will cause an
+initially inverted GPIO to toggle when requested as an output,
+which could be problematic if, for example, the GPIO controls
+a critical regulator.
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+Instead of setting up the enable_gpio_invert flag, just leave
+the invert bit alone and check it before setting the GPIO value.
+
+Cc: <stable@vger.kernel.org> # v3.14+
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+Tested-by: Stephen Warren <swarren@nvidia.com>
 ---
-Since v1: rebased onto acme's perf/core
+Changes from v1:
+ - fixed typo
+---
+ drivers/pinctrl/pinctrl-as3722.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
- tools/lib/api/fs/fs.c | 43 ++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 42 insertions(+), 1 deletion(-)
-
-diff --git a/tools/lib/api/fs/fs.c b/tools/lib/api/fs/fs.c
-index 5b5eb78..10783a6 100644
---- a/tools/lib/api/fs/fs.c
-+++ b/tools/lib/api/fs/fs.c
-@@ -1,8 +1,10 @@
- /* TODO merge/factor in debugfs.c here */
+diff --git a/drivers/pinctrl/pinctrl-as3722.c b/drivers/pinctrl/pinctrl-as3722.c
+index 92ed4b2..c862f9c0 100644
+--- a/drivers/pinctrl/pinctrl-as3722.c
++++ b/drivers/pinctrl/pinctrl-as3722.c
+@@ -64,7 +64,6 @@ struct as3722_pin_function {
+ };
  
-+#include <ctype.h>
- #include <errno.h>
- #include <stdbool.h>
- #include <stdio.h>
-+#include <stdlib.h>
- #include <string.h>
- #include <sys/vfs.h>
+ struct as3722_gpio_pin_control {
+-	bool enable_gpio_invert;
+ 	unsigned mode_prop;
+ 	int io_function;
+ };
+@@ -320,10 +319,8 @@ static int as3722_pinctrl_gpio_set_direction(struct pinctrl_dev *pctldev,
+ 		return mode;
+ 	}
  
-@@ -96,12 +98,51 @@ static bool fs__check_mounts(struct fs *fs)
- 	return false;
+-	if (as_pci->gpio_control[offset].enable_gpio_invert)
+-		mode |= AS3722_GPIO_INV;
+-
+-	return as3722_write(as3722, AS3722_GPIOn_CONTROL_REG(offset), mode);
++	return as3722_update_bits(as3722, AS3722_GPIOn_CONTROL_REG(offset),
++				AS3722_GPIO_MODE_MASK, mode);
  }
  
-+static void mem_toupper(char *f, size_t len)
-+{
-+	while (len) {
-+		*f = toupper(*f);
-+		f++;
-+		len--;
-+	}
-+}
-+
-+/*
-+ * Check for "NAME_PATH" environment variable to override fs location (for
-+ * testing). This matches the recommendation in Documentation/sysfs-rules.txt
-+ * for SYSFS_PATH.
-+ */
-+static bool fs__env_override(struct fs *fs)
-+{
-+	char *override_path;
-+	size_t name_len = strlen(fs->name);
-+	/* name + "_PATH" + '\0' */
-+	char upper_name[name_len + 5 + 1];
-+	memcpy(upper_name, fs->name, name_len);
-+	mem_toupper(upper_name, name_len);
-+	strcpy(&upper_name[name_len], "_PATH");
-+
-+	override_path = getenv(upper_name);
-+	if (!override_path)
-+		return false;
-+
-+	fs->found = true;
-+	strcpy(fs->path, override_path);
-+	return true;
-+}
-+
- static const char *fs__get_mountpoint(struct fs *fs)
+ static const struct pinmux_ops as3722_pinmux_ops = {
+@@ -496,10 +493,18 @@ static void as3722_gpio_set(struct gpio_chip *chip, unsigned offset,
  {
-+	if (fs__env_override(fs))
-+		return fs->path;
-+
- 	if (fs__check_mounts(fs))
- 		return fs->path;
+ 	struct as3722_pctrl_info *as_pci = to_as_pci(chip);
+ 	struct as3722 *as3722 = as_pci->as3722;
+-	int en_invert = as_pci->gpio_control[offset].enable_gpio_invert;
++	int en_invert;
+ 	u32 val;
+ 	int ret;
  
--	return fs__read_mounts(fs) ? fs->path : NULL;
-+	if (fs__read_mounts(fs))
-+		return fs->path;
++	ret = as3722_read(as3722, AS3722_GPIOn_CONTROL_REG(offset), &val);
++	if (ret < 0) {
++		dev_err(as_pci->dev,
++			"GPIO_CONTROL%d_REG read failed: %d\n", offset, ret);
++		return;
++	}
++	en_invert = !!(val & AS3722_GPIO_INV);
 +
-+	return NULL;
- }
- 
- static const char *fs__mountpoint(int idx)
+ 	if (value)
+ 		val = (en_invert) ? 0 : AS3722_GPIOn_SIGNAL(offset);
+ 	else
 -- 
-1.9.2
+1.9.1.423.g4596e3a
 
