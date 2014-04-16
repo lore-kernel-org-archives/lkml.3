@@ -1,111 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713AbaDPR3A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 13:29:00 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35260 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360AbaDPR26 (ORCPT
+	id S1755043AbaDPR3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 13:29:33 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:63674 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754308AbaDPR3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 13:28:58 -0400
-Date: Wed, 16 Apr 2014 18:28:30 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Jane Wan <Jane.Wan@gainspeed.com>
-Cc: "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "Emilian.Medve@Freescale.com" <Emilian.Medve@Freescale.com>,
-        "kenth.eriksson@transmode.com" <kenth.eriksson@transmode.com>,
-        "thomas.de.schampheleire@gmail.com" 
-	<thomas.de.schampheleire@gmail.com>,
-        "b48286@freescale.com" <b48286@Freescale.com>,
-        "jg1.han@samsung.com" <jg1.han@samsung.com>, "sr@denx.de" <sr@denx.de>,
-        Insop Song <Insop.Song@gainspeed.com>,
-        "linux-spi@vger.kernel.org" <linux-spi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Message-ID: <20140416172830.GV12304@sirena.org.uk>
-References: <1397328516-13260-1-git-send-email-Jane.Wan@gainspeed.com>
- <1397328516-13260-2-git-send-email-Jane.Wan@gainspeed.com>
- <20140414205547.GI25182@sirena.org.uk>
- <6f2c800fbba74470a6a49903b34e7796@SN2PR07MB064.namprd07.prod.outlook.com>
+	Wed, 16 Apr 2014 13:29:30 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="grb+5QKeMfpTKipq"
-Content-Disposition: inline
-In-Reply-To: <6f2c800fbba74470a6a49903b34e7796@SN2PR07MB064.namprd07.prod.outlook.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] Configure FSL eSPI CSBEF, CSAFT, and whether to send all
- received data to user
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1397667766.19767.440.camel@willson.li.ssimo.org>
+References: <CALCETrURHNmLyccRiF_W8o2ozRMR4AaCjUE=_PU8z1+Pq6X2jQ@mail.gmail.com>
+ <20140416002010.GA5035@redhat.com> <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com>
+ <20140416.085743.1614257692560892039.davem@davemloft.net> <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com>
+ <1397664837.19767.410.camel@willson.li.ssimo.org> <CALCETrXn7b6UuALpGUVoyQYfR2uzk5tj2ABV=dkvtFNgqM5sxQ@mail.gmail.com>
+ <1397667766.19767.440.camel@willson.li.ssimo.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 16 Apr 2014 10:29:08 -0700
+Message-ID: <CALCETrU_yKQVZyVug25cxwQFjWJ7Zf20FY-6ht+RJifXtDdDWg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing cgroup path
+To: Simo Sorce <ssorce@redhat.com>
+Cc: David Miller <davem@davemloft.net>, Vivek Goyal <vgoyal@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 16, 2014 at 10:02 AM, Simo Sorce <ssorce@redhat.com> wrote:
+> On Wed, 2014-04-16 at 09:31 -0700, Andy Lutomirski wrote:
+>> On Wed, Apr 16, 2014 at 9:13 AM, Simo Sorce <ssorce@redhat.com> wrote:
+>> > On Wed, 2014-04-16 at 07:37 -0700, Andy Lutomirski wrote:
+>> >> On Wed, Apr 16, 2014 at 5:57 AM, David Miller <davem@davemloft.net> wrote:
+>> >> >
+>> >> > Please, just stop.
+>> >>
+>> >> No.
+>> >>
+>> >> This thread is proposing an ABI.  This means that, if the ABI ends up
+>> >> in Linus's kernel, then it has to be supported forever.  Now is the
+>> >> time to find and fix any issues with it before they become much harder
+>> >> to fix.
+>> >
+>> > Ok, but so far I haven't seen a single objection from you that has solid
+>> > grounds.
+>>
+>> CVE-2013-1959 was caused by a new kernel feature causing a call to
+>> write(2) to behave as though the caller was authenticating itself to
+>> something else where, in previous kernels, write(2) did not
+>> authenticate.
+>>
+>> Admittedly cgroups aren't currently as important as uid, but if this
+>> changes, then SO_PASSCGROUP, as currently written, will have *exactly*
+>> the same problem.
+>
+> Which is easy to foil by using SO_PEERCGROUP and find out who originally
+> opened the socket, which is why that is also available!
 
---grb+5QKeMfpTKipq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Then please remove SO_PASSCGROUP.
 
-On Wed, Apr 16, 2014 at 04:39:47PM +0000, Jane Wan wrote:
-> On Mon, Apr 14, 2014 at 09:51:56PM +0100, Mark Brown wrote:
+>> The issue here is that the receiver sets SO_(PASS|PEER)CGROUP, forcing
+>> the sender to identify or authenticate itself.  The sender might not
+>> want to identify itself.
+>
+> You need to explain, why, on a host, when an application connects to
+> another, it is ok to make it anonymous. If you do not want to expose
+> yourself, do not talk to other applications in the first place.
 
-> > > +		if (spi_raw_rxdata_to_user[m->spi->chip_select])
-> > > +			espi_trans->len =3D n_tx;
-> > > +		else
-> > > +			espi_trans->len =3D trans_len + n_tx;
+Why is anonymity harmful here?  I don't have a great argument off the
+top of my head for why it's necessary, but neither do I see why it's
+bad.  And I think a lack of anonymity is asking for trouble (see
+below).
 
-> > Why is there even an option for the buggy behaviour?
+>
+>> the sender might not intend to authenticate.  Certainly no existing
+>> callers of connect or write intend to authenticate using their cgroup,
+>> since current kernels don't have those semantics.
+>
+> This is a passive check, it's the receiver that wants to make decisions
+> about who is connecting, again if you do not want to "disclose"
+> information do not connect in the first place ?
+>
 
-> We have three devices attached to the FSL eSPI interface, with chip selec=
-t (CS)=20
-> 0-2. The device driver for the device at CS #2 requires to know all the d=
-ata that=20
-> the slave device put on MISO.  But the device drivers for the other two d=
-evices=20
-> (at CS #0 and #1) work with the existing FSL eSPI driver.  The device at =
-CS #0 is=20
-> Micron n25q512a compatible.
+Let's say I have a receiver.  I'll call it journald, since I think
+that's one of the eventual use cases.
 
-> We make the FSL eSPI driver configurable through device tree.  If we make=
- a fix=20
-> without the DT option, the fix will break other device drivers working wi=
-th the=20
-> existing FSL eSPI driver.
+Let's also say I some random program on my box.  It is willing to
+answer requests on behalf of anyone else with the same uid, and it
+will happily open a given unix socket and send the requester the file
+descriptor.  Such a program is a bit odd, but it's perfectly safe
+right now.
 
-> Could this still be considered as a solution?  If this is ok, I can send =
-it as a separate=20
-> patch.  Otherwise, we will look if this driver can be modified without DT=
- option.
+Now add a malicious program into the mix.  It asks the daemon to open
+/run/systemd/journal/socket.  Then it starts writing to the fd.
 
-No, this is completely unaceptable.  The drivers relying on the buggy
-behaviour are broken and must be fixed.  The whole point of DT is to
-describe the hardware, not to allow the OS to implement workarounds for
-itself.
+Whoops, now the malicious program can impersonate the helper.  This
+happens because SO_PEERCGROUP (and journald's use of SO_PEERCGROUP)
+caused connect(2) to produce a descriptor that carries a permission
+that the descriptor did not carry in the past, and because the caller
+of connect(2) did not need to opt in to the new behavior.
 
---grb+5QKeMfpTKipq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I still haven't seen any explanation for what's wrong with requiring
+senders to ask the kernel to transmit their cgroup.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTTr27AAoJELSic+t+oim94mcP/3nnTHvDU/iRSANZlP3KN5El
-d4Eof9WtT8Pe/3qv2JSGT8yU9rO9NtVT8SsGJcRanP/Rh3tOoDZQdR6rR6Zo26v/
-bt1TXsdG/C75iEtkF417f3ZaxvGQXDNGkSV6osUjpXXbD6VTuXOSaPIz+oi3BlH3
-TD7EfjW4y7IEENEsRisLrA/mHak3oapQCnyvMUE13//G/U1R1wjJrBcqDh7r8nhG
-/cS1MmrKmr9p55u/CBHtgNsibpTD7OD/ujg8l3u2dZmfPKkA/pohi9pxOLfMYkQ7
-2+RKUHZARV/AHrBRlMuK15wQ0gYmo12AVVdQkErdh6S0cBXKSDF2wFa6wNaInljj
-rtuqVHKlHu37JWdpyXCz+QRrmEl4ZjOTJxelxK/m71mAf4lhSqtyJRmNR7QWZOaR
-+RgXtj7KTN91WgOlFcL911L7CbaVGcEPNgP8IfC+nJ5kZ96piSsYIYQET3uSgI7Z
-i2uv4/7gs7GCJwnOWDrCRq4UenTpio2desY03YTiR27IHeE0rr7BEFE5xUeqetE2
-YEVjalnZ7kxKOuEsnk5Ftwai1Yy0D4QIPxUQDFjuBqkxqk3LgDrpi6ZOVIp8ma+v
-n7Yo3irZd4KqTakHwjStd5rocp6AEthu1WWfkjDsltU6tYn0NeqW+TFMoqMxdK/X
-oqjZXZpDiGLSaQww3IiK
-=FQSI
------END PGP SIGNATURE-----
-
---grb+5QKeMfpTKipq--
+--Andy
