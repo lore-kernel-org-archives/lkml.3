@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751446AbaDPBwu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 21:52:50 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:43127 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751242AbaDPBwt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 21:52:49 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Wed, 16 Apr 2014 10:53:15 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Heesub Shin <heesub.shin@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dongjun Shin <d.j.shin@samsung.com>,
-        Sunghwan Yun <sunghwan.yun@samsung.com>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 2/2] mm/compaction: cleanup isolate_freepages()
-Message-ID: <20140416015314.GB17841@js1304-P5Q-DELUXE>
-References: <5342BA34.8050006@suse.cz>
- <1397553507-15330-1-git-send-email-vbabka@suse.cz>
- <1397553507-15330-2-git-send-email-vbabka@suse.cz>
+	id S1751104AbaDPCAT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 22:00:19 -0400
+Received: from mga09.intel.com ([134.134.136.24]:31200 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750918AbaDPCAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 22:00:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,868,1389772800"; 
+   d="asc'?scan'208";a="521724082"
+Date: Tue, 15 Apr 2014 21:34:59 -0400
+From: "Chen, Gong" <gong.chen@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: hpa@zytor.com, tony.luck@intel.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, linux-tip-commits@vger.kernel.org
+Subject: Re: [PATCH] x86, MCE: Clean get_cpu_xxx with this_cpu_xxx
+Message-ID: <20140416013459.GA4399@gchen.bj.intel.com>
+References: <1397546035-6384-1-git-send-email-gong.chen@linux.intel.com>
+ <20140415090347.GA31409@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bg08WKrSYDhXBjb5"
 Content-Disposition: inline
-In-Reply-To: <1397553507-15330-2-git-send-email-vbabka@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140415090347.GA31409@gmail.com>
+X-PGP-Key-ID: A43922C7
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 11:18:27AM +0200, Vlastimil Babka wrote:
-> isolate_freepages() is currently somewhat hard to follow thanks to many
-> different pfn variables. Especially misleading is the name 'high_pfn' which
-> looks like it is related to the 'low_pfn' variable, but in fact it is not.
-> 
-> This patch renames the 'high_pfn' variable to a hopefully less confusing name,
-> and slightly changes its handling without a functional change. A comment made
-> obsolete by recent changes is also updated.
-> 
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> ---
->  mm/compaction.c | 17 ++++++++---------
->  1 file changed, 8 insertions(+), 9 deletions(-)
 
-Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+--bg08WKrSYDhXBjb5
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, Apr 15, 2014 at 11:03:48AM +0200, Ingo Molnar wrote:
+> Date: Tue, 15 Apr 2014 11:03:48 +0200
+> From: Ingo Molnar <mingo@kernel.org>
+> To: "Chen, Gong" <gong.chen@linux.intel.com>
+> Cc: hpa@zytor.com, tony.luck@intel.com, tglx@linutronix.de,
+>  linux-kernel@vger.kernel.org, linux-tip-commits@vger.kernel.org
+> Subject: Re: [PATCH] x86, MCE: Clean get_cpu_xxx with this_cpu_xxx
+> User-Agent: Mutt/1.5.21 (2010-09-15)
+>=20
+>=20
+> * Chen, Gong <gong.chen@linux.intel.com> wrote:
+>=20
+> > This is a cleanup patch suggested by Peter. Use new
+> > this_cpu_xxx to improve operation speed. Meanwhile,
+> > it fixes an issue introduced in commit 27f6c573e0. I
+> > forget to execute put_cpu_var operation after get_cpu_var.
+>=20
+> What 'issue'? Is it a bug? If yes, what are the symptoms to the user?
+I forget put_cpu_var after get_cpu_var.
+
+>=20
+> Also, fixes must be separate from cleanups.
+OK, I will.
+
+--bg08WKrSYDhXBjb5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTTd5DAAoJEI01n1+kOSLHrdwQALbf4P7rVq3zKRYS8OIgV9Y5
+hiKJas5+U5K8kRWSDQFOp3u+PrRidyBH71YfgFtu/wRBckvc02UNYhRKO7Ni/z3g
+REWaDA645lTE5CaRNKi9Qe7om7Icp+aBrAT264ZyVCTuV+JdXeXDU6sn/2WFSUx/
+rM0Tc5a9UDuFCwpxO/G1yqkX2V2wTzaEFSPqIyoWgJJUkWQDfhszVpZOXFibZwj1
+cohGsdwTXfnKhB0fpuYD/EWRw+WUB3R/kVTr33ypk5TOgYv8yXjNCkJsNKr5YwqD
+fYJdw5YmNPy4aXbcBfH4V/e8Z2GAcu7oOU/jymncGdRfzOZ+MO8fdeZ7nRYbWt/x
+cp2LloaOs/8NO35F7pX1flDqpk0vRd7AU5Qg7tqK8XdvlFdY8EfamJOWR6vOB4kl
+wCN3RBQnaQwpxnhhK2E/5aTGLKOQKw/cE+KqyueCI8uq86coWFbCDjQfLCqqZ96e
+c/a0uI/IdxNxNAk87K6PupQ3NbHDCrYLrK5oew9Tq2fDCaXCKT+yvCjmJvlo86NM
+YeTHZc3HnuxEtCawhYdBPKpvrzj1oZketn9Dox6yJzH8gFvhXhAibMVUJRJ+xeJE
+lMdtftKrLBtuaP8yzwlvVTtb18CJPifl85I6V2TDWq1BfYMBsxl8oqulMV/wYh8I
+fd2ruImh6DcwcfBwjaQJ
+=3kW4
+-----END PGP SIGNATURE-----
+
+--bg08WKrSYDhXBjb5--
