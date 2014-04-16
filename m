@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161477AbaDPXau (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 19:30:50 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:15625 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756908AbaDPXam (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 19:30:42 -0400
-X-IronPort-AV: E=Sophos;i="4.97,875,1389715200"; 
-   d="scan'208";a="29364838"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>
-Subject: [PATCH 2/2] workqueue: fix possible race condition when rescuer VS  pwq-release
-Date: Thu, 17 Apr 2014 07:34:09 +0800
-Message-ID: <1397691258-11639-2-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1397691258-11639-1-git-send-email-laijs@cn.fujitsu.com>
-References: <20140416165052.GK1257@htj.dyndns.org>
- <1397691258-11639-1-git-send-email-laijs@cn.fujitsu.com>
+	id S1756169AbaDPXgr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 19:36:47 -0400
+Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:50396
+	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753294AbaDPXgq convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 19:36:46 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Chase Southwood <chase.southwood@yahoo.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/2 v3] staging: comedi: addi_apci_1564: fixup and
+ absorb apci1564_reset()
+Thread-Topic: [PATCH 2/2 v3] staging: comedi: addi_apci_1564: fixup and
+ absorb apci1564_reset()
+Thread-Index: AQHPWcx5E3JVTEoAsUqndpNUltkYo5sU5Pww
+Date: Wed, 16 Apr 2014 23:36:44 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825E05116@P3PWEX4MB008.ex4.secureserver.net>
+References: <1397691269-24940-1-git-send-email-chase.southwood@yahoo.com>
+In-Reply-To: <1397691269-24940-1-git-send-email-chase.southwood@yahoo.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a race condition between rescuer_thread() and
-pwq_unbound_release_workfn().
+On Wednesday, April 16, 2014 4:34 PM, Chase Southwood wrote:
+>
+> Move apci1564_reset() from hwdrv_apci1564.c to addi_apci_1564.c.  The
+> function was very messy and failed to reset a couple registers, these
+> issues were fixed on the move.
 
-The works of the @pwq may be processed by some other workers,
-and @pwq is scheduled to release(due to its wq's attr is changed)
-before the rescuer starts to process. In this case
-pwq_unbound_release_workfn() will corrupt wq->maydays list,
-and rescuer_thead() will access to corrupted data.
+The commit message needs updated. You are no longer moving the function.
 
-Using get_pwq() pin it until rescuer is done with it.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- kernel/workqueue.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 832125f..77c29b7 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1916,6 +1916,16 @@ static void send_mayday(struct work_struct *work)
- 
- 	/* mayday mayday mayday */
- 	if (list_empty(&pwq->mayday_node)) {
-+		/*
-+		 * pwqs might go away at any time, pin it until
-+		 * rescuer is done with it.
-+		 *
-+		 * Especially a pwq of an unbound wq may be released
-+		 * before wq's destruction when the wq's attr is changed.
-+		 * In this case, pwq_unbound_release_workfn() may execute
-+		 * earlier before rescuer_thread() and corrupt wq->maydays.
-+		 */
-+		get_pwq(pwq);
- 		list_add_tail(&pwq->mayday_node, &wq->maydays);
- 		wake_up_process(wq->rescuer->task);
- 	}
-@@ -2438,6 +2448,9 @@ repeat:
- 
- 		process_scheduled_works(rescuer);
- 
-+		/* put the reference grabbed by send_mayday(). */
-+		put_pwq(pwq);
-+
- 		/*
- 		 * Leave this pool.  If keep_working() is %true, notify a
- 		 * regular worker; otherwise, we end up with 0 concurrency
--- 
-1.7.4.4
+Regards,
+Hartley
 
