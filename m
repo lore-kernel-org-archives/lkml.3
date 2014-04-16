@@ -1,107 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425AbaDPS7u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 14:59:50 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:61833 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756296AbaDPS7q (ORCPT
+	id S1161051AbaDPTAB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 15:00:01 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:43915 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756446AbaDPS74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 14:59:46 -0400
+	Wed, 16 Apr 2014 14:59:56 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20140416193532.0782f045@alan.etchedpixels.co.uk>
+References: <1397668411-27162-7-git-send-email-ynvich@gmail.com> <1397668667-27328-1-git-send-email-ynvich@gmail.com> <1397668667-27328-6-git-send-email-ynvich@gmail.com> <20140416193532.0782f045@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
-In-Reply-To: <20140416185153.GI31074@redhat.com>
-References: <20140416002010.GA5035@redhat.com> <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com>
- <20140416.085743.1614257692560892039.davem@davemloft.net> <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com>
- <1397664837.19767.410.camel@willson.li.ssimo.org> <CALCETrXn7b6UuALpGUVoyQYfR2uzk5tj2ABV=dkvtFNgqM5sxQ@mail.gmail.com>
- <1397667766.19767.440.camel@willson.li.ssimo.org> <CALCETrU_yKQVZyVug25cxwQFjWJ7Zf20FY-6ht+RJifXtDdDWg@mail.gmail.com>
- <20140416183614.GH31074@redhat.com> <CALCETrURhBXQaYYJiHq2svPqB3-K7kmgD2QUTT9LCjry=fukWA@mail.gmail.com>
- <20140416185153.GI31074@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 16 Apr 2014 11:59:24 -0700
-Message-ID: <CALCETrUKqqh_ktavHtcBQSWYKPtqWdvvDV8KEmzLYcs6rkzTew@mail.gmail.com>
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing cgroup path
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Simo Sorce <ssorce@redhat.com>, David Miller <davem@davemloft.net>,
-        Tejun Heo <tj@kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v4 12/21] serial: support for 16550A serial ports on LP-8x4x
+From: Sergei Ianovich <ynvich@gmail.com>
+Date: Wed, 16 Apr 2014 23:01:47 +0400
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Grant Likely <grant.likely@linaro.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Paul Bolle <pebolle@tiscali.nl>,
+        Stefan Seyfried <seife+kernel@b1-systems.com>,
+        James Cameron <quozl@laptop.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-serial@vger.kernel.org
+Message-ID: <c4533da6-30bd-4ea4-9011-a7e3b7258e62@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 11:51 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Wed, Apr 16, 2014 at 11:40:44AM -0700, Andy Lutomirski wrote:
->> On Wed, Apr 16, 2014 at 11:36 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> > On Wed, Apr 16, 2014 at 10:29:08AM -0700, Andy Lutomirski wrote:
->> >
->> > [..]
->> >> >> Admittedly cgroups aren't currently as important as uid, but if this
->> >> >> changes, then SO_PASSCGROUP, as currently written, will have *exactly*
->> >> >> the same problem.
->> >> >
->> >> > Which is easy to foil by using SO_PEERCGROUP and find out who originally
->> >> > opened the socket, which is why that is also available!
->> >>
->> >> Then please remove SO_PASSCGROUP.
->> >
->> > SO_PASSCGROUP is important because SO_PEERCGROUP does not work with unix
->> > datagram sockets.
->>
->> Right.  I forgot about that.
->>
->> >
->> > Again going back to logging example, if some clients are logging to unix
->> > datagram sockets, SO_PASSCGROUP is the only option to figure out cgroup
->> > of client.
->>
->> Hmm.  I think that, in your patch, the cgroup that is sent is the
->> cgroup of the caller of write/send/sendmsg.  What if you changed it to
->> use the same cgroup that SO_PEERCRED would use?  Would that still
->> work?
+One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> wrote:
+>> +	baud = uart_get_baud_rate(port, termios, old,
+>> +				  port->uartclk / 16 / 0xffff,
+>> +				  port->uartclk / 16);
+>> +	switch (baud) {
+>> +	case 2400:
+>> +		len |= 1;
+>> +		break;
+>> +	case 4800:
+>> +		len |= 2;
+>> +		break;
+>> +	case 19200:
+>> +		len |= 4;
+>> +		break;
+>> +	case 38400:
+>> +		len |= 5;
+>> +		break;
+>> +	case 57600:
+>> +		len |= 6;
+>> +		break;
+>> +	case 115200:
+>> +		len |= 7;
+>> +		break;
+>> +	case 9600:
+>> +	default:
+>> +		len |= 3;
+>> +		break;
+>> +	};
 >
-> No. SO_PEERCRED stores the cgroup information once at the time of
-> connect(). After that it never changes.
->
-> What if sender changes the cgroup. That information will not be captured.
-> Also what if multiple client use the same socket fd to writer to logger?
-> In that case too storing cgroup info in socket will not help.
+>Some explanation of this would be useful - eg why is it set to 7 for
+>115200 baud and 3 for 115201 baud ?
 
+I am not related to the device vendor in any way, so please take my answers for what they are worth.
 
-What is the use case of SO_PEERCRED, then?
+It seems that there is not enough pins to properly connect the chips to the memory bus and just you the standard 8250 UART driver. Instead, clock divisor is set using this register.
 
-Why can't clients that change cgroup reopen the socket?  They're
-already cgroup-aware.  As far as I know, there is probably exactly one
-client that actually changes cgroups and then tries to log without
-execing first: systemd (or journald as used by systemd).  And this is
-exactly the component that needs to change to use any new socket
-option, no matter what.
+So, if you know you're asking for (115200) you get it. If you don't or guess (115201), you get the default 9600.
 
+This is a policy, it may not be the right way to write a driver, but it is cheap and it works.
 
->> > How would it work in logging example? Every time logger receives a
->> > message, is it supposed to send another message to client to send
->> > SCM_CGROUP? That does not sound right.
->>
->> No -- just have the logger send the cgroup with every message.  Yes,
->> it seems silly, but it's probably barely more expensive than with the
->> code in your patch.
->
-> So receiver gets the cgroup messages even if it might not want to. There
-> is no way to say "Hey don't send me SCM_CGROUP's messages".
-
-The receiver would only get SCM_CGROUP messages if it set SO_PASSCGROUP.
-
->
-> Now all loggers need to be modifed to always send SCM_CGROUP messages. And
-> all other more complicated cases might need a different consideration and
-> clients and servers will need to be modified accordingly.
->
-> I think it is much simpler to allow passing of cgroup information and
-> once we figure out some concrete cases where passing of that info is
-> not desirabe, implement SO_NOPASSCGROUP and modify those *selected few
-> corner cases* to set this flag on sockets.
-
-The problem with SO_NOPASSCGROUP is that the programs that would need
-to set it are probably already written and don't care about cgroups.
-
---Andy
