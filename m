@@ -1,28 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002AbaDPRTH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 13:19:07 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:51255 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754928AbaDPRTB (ORCPT
+	id S1754467AbaDPRTZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 13:19:25 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:47533 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755010AbaDPRTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 13:19:01 -0400
+	Wed, 16 Apr 2014 13:19:15 -0400
 From: Sergei Ianovich <ynvich@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Sergei Ianovich <ynvich@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
+Cc: Sergei Ianovich <ynvich@gmail.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
         Randy Dunlap <rdunlap@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Grant Likely <grant.likely@linaro.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Paul Bolle <pebolle@tiscali.nl>,
+        Stefan Seyfried <seife+kernel@b1-systems.com>,
+        James Cameron <quozl@laptop.org>,
         devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION)
-Subject: [PATCH v4 11/21] ARM: pxa: support ICP DAS LP-8x4x FPGA irq
-Date: Wed, 16 Apr 2014 21:17:16 +0400
-Message-Id: <1397668667-27328-5-git-send-email-ynvich@gmail.com>
+        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
+        linux-serial@vger.kernel.org (open list:SERIAL DRIVERS)
+Subject: [PATCH v4 12/21] serial: support for 16550A serial ports on LP-8x4x
+Date: Wed, 16 Apr 2014 21:17:17 +0400
+Message-Id: <1397668667-27328-6-git-send-email-ynvich@gmail.com>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1397668667-27328-1-git-send-email-ynvich@gmail.com>
 References: <1397668411-27162-7-git-send-email-ynvich@gmail.com>
@@ -31,373 +35,297 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ICP DAS LP-8x4x contains FPGA chip. The chip functions as an interrupt
-source providing 16 additional interrupts among other things. The
-interrupt lines are muxed to a GPIO pin of a 2nd level PXA-GPIO
-interrupt controller. GPIO pins of the 2nd level controller are in turn
-muxed to a CPU interrupt line.
+The patch adds support for 3 additional LP-8x4x built-in serial
+ports.
 
-Until pxa is completely converted to device tree, it is impossible
-to use IRQCHIP_DECLARE() and the irqdomain needs to added manually.
-Drivers for the on-CPU IRQs and GPIO-IRQs are loaded using
-postcore_initcall(). We need to have all irq domain drivers loaded prior
-to DT parsing in order to allow normal initialization of IRQ resources
-with DT.
+The device can also host up to 8 extension cards with 4 serial ports
+on each card for a total of 35 ports. However, I don't have
+the hardware to test extension cards, so they are not supported, yet.
 
 Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
-Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-CC: Arnd Bergmann <arnd@arndb.de>
+Reviewed-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 ---
-   v3.2..v4
-   * move DTS binding to a different patch (8/21)
-
-   v3.1..v3.2
-   fixes to apply Linus Walleij's "Reviewed-by":
-   * add kerneldoc comment for state container struct
-   * rename irq -> hwirq for clarity
-   * drop overzealous error checks from the hotpaths
-
-   v3..v3.1
-   fixes according to Linus Walleij review comments:
-   * update commit message
-   * use state container instead of global variables
-   * get hardware irq nums from irq_data, don't calculate them
-   * use BIT() macro
-   * add defines for system irq register masks
-   * replace cycle control variable with break
-   * use better names for resource variables
-   * add a linear domain instead of a legacy one
-   * use irq_create_mapping() instead of irq_alloc_desc()
+   v3..v4
+   * move DTS bindings to a different patch (8/21) as suggested by
+     Heikki Krogerus
 
    v2..v3
-   * no changes (except number 09/16 -> 11/21)
+   * no changes (except number 10/16 -> 12/21)
 
    v0..v2
-   * extract irqchip and move to drivers/irqchip/
+   * register platform driver instead of platform device
    * use device tree
    * use devm helpers where possible
 
- .../bindings/interrupt-controller/irq-lp8x4x.txt   |  49 +++++
- drivers/irqchip/Kconfig                            |   5 +
- drivers/irqchip/Makefile                           |   1 +
- drivers/irqchip/irq-lp8x4x.c                       | 227 +++++++++++++++++++++
- 4 files changed, 282 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/interrupt-controller/irq-lp8x4x.txt
- create mode 100644 drivers/irqchip/irq-lp8x4x.c
+ .../devicetree/bindings/serial/lp8x4x-serial.txt   |  35 +++++
+ arch/arm/configs/lp8x4x_defconfig                  |   1 +
+ drivers/tty/serial/8250/8250_lp8x4x.c              | 169 +++++++++++++++++++++
+ drivers/tty/serial/8250/Kconfig                    |  12 ++
+ drivers/tty/serial/8250/Makefile                   |   1 +
+ 5 files changed, 218 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/serial/lp8x4x-serial.txt
+ create mode 100644 drivers/tty/serial/8250/8250_lp8x4x.c
 
-diff --git a/Documentation/devicetree/bindings/interrupt-controller/irq-lp8x4x.txt b/Documentation/devicetree/bindings/interrupt-controller/irq-lp8x4x.txt
+diff --git a/Documentation/devicetree/bindings/serial/lp8x4x-serial.txt b/Documentation/devicetree/bindings/serial/lp8x4x-serial.txt
 new file mode 100644
-index 0000000..c8940d2
+index 0000000..5f9a4c1
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/interrupt-controller/irq-lp8x4x.txt
-@@ -0,0 +1,49 @@
-+ICP DAS LP-8x4x FPGA Interrupt Controller
++++ b/Documentation/devicetree/bindings/serial/lp8x4x-serial.txt
+@@ -0,0 +1,35 @@
++UART ports on ICP DAS LP-8x4x
 +
-+ICP DAS LP-8x4x contains FPGA chip. The chip functions as a interrupt
-+source providing 16 additional interrupts among other things.
++ICP DAS LP-8x4x contains three additional serial ports interfaced via
++Analog Devices ADM213EA chips in addition to 3 serial ports on PXA CPU.
 +
 +Required properties:
-+- compatible : should be "icpdas,irq-lp8x4x"
++- compatible : should be "icpdas,uart-lp8x4x"
 +
-+- reg: physical base address of the controller and length of memory mapped
-+  region.
-+
-+- interrupt-controller : identifies the node as an interrupt controller
-+
-+- #interrupt-cells : should be 1
++- reg : should provide 16 byte man IO memory region and 1 byte region for
++	termios
 +
 +- interrupts : should provide interrupt
 +
 +- interrupt-parent : should provide a link to interrupt controller either
-+		     explicitly and implicitly from a parent node
++		     explicitly or implicitly from a parent node
 +
-+Example:
++Examples (from pxa27x-lp8x4x.dts):
 +
-+	fpga: fpga@17000006 {
-+		compatible = "icpdas,irq-lp8x4x";
-+		reg = <0x17000006 0x16>;
-+		interrupt-parent = <&gpio>;
-+		interrupts = <3 IRQ_TYPE_EDGE_RISING>;
-+		#interrupt-cells = <1>;
-+		interrupt-controller;
-+		status = "okay";
-+	};
++		uart@9050 {
++			compatible = "icpdas,uart-lp8x4x";
++			reg = <0x9050 0x10
++			       0x9030 0x02>;
++			interrupt-parent = <&fpgairg>;
++			interrupts = <13>;
++			status = "okay";
++		};
 +
-+	uart@17009050 {
-+		compatible = "icpdas,uart-lp8x4x";
-+		reg = <0x17009050 0x10
-+		       0x17009030 0x02>;
-+		interrupt-parent = <&fpga>;
-+		interrupts = <13>;
-+		status = "okay";
-+	};
-+
-+	uart@17009060 {
-+		compatible = "icpdas,uart-lp8x4x";
-+		reg = <0x17009060 0x10
-+		       0x17009032 0x02>;
-+		interrupt-parent = <&fpga>;
-+		interrupts = <14>;
-+		status = "okay";
-+	};
-diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-index d770f74..ede3237 100644
---- a/drivers/irqchip/Kconfig
-+++ b/drivers/irqchip/Kconfig
-@@ -47,6 +47,11 @@ config CLPS711X_IRQCHIP
- 	select SPARSE_IRQ
- 	default y
- 
-+config LP8X4X_IRQ
-+	bool
-+	depends on OF && ARCH_PXA
-+	select IRQ_DOMAIN
-+
- config ORION_IRQCHIP
- 	bool
- 	select IRQ_DOMAIN
-diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index f180f8d..94f82c7 100644
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@ -29,3 +29,4 @@ obj-$(CONFIG_TB10X_IRQC)		+= irq-tb10x.o
- obj-$(CONFIG_XTENSA)			+= irq-xtensa-pic.o
- obj-$(CONFIG_XTENSA_MX)			+= irq-xtensa-mx.o
- obj-$(CONFIG_IRQ_CROSSBAR)		+= irq-crossbar.o
-+obj-$(CONFIG_LP8X4X_IRQ)		+= irq-lp8x4x.o
-diff --git a/drivers/irqchip/irq-lp8x4x.c b/drivers/irqchip/irq-lp8x4x.c
++		uart@9060 {
++			compatible = "icpdas,uart-lp8x4x";
++			reg = <0x9060 0x10
++			       0x9032 0x02>;
++			interrupt-parent = <&fpgairg>;
++			interrupts = <14>;
++			status = "okay";
++		};
+diff --git a/arch/arm/configs/lp8x4x_defconfig b/arch/arm/configs/lp8x4x_defconfig
+index 17a4e6f..9116ce1 100644
+--- a/arch/arm/configs/lp8x4x_defconfig
++++ b/arch/arm/configs/lp8x4x_defconfig
+@@ -112,6 +112,7 @@ CONFIG_SERIAL_8250_EXTENDED=y
+ CONFIG_SERIAL_8250_MANY_PORTS=y
+ CONFIG_SERIAL_8250_SHARE_IRQ=y
+ CONFIG_SERIAL_PXA=y
++CONFIG_SERIAL_8250_LP8X4X=m
+ CONFIG_HW_RANDOM=y
+ CONFIG_I2C=m
+ # CONFIG_I2C_COMPAT is not set
+diff --git a/drivers/tty/serial/8250/8250_lp8x4x.c b/drivers/tty/serial/8250/8250_lp8x4x.c
 new file mode 100644
-index 0000000..12ccbb03
+index 0000000..93e0f59
 --- /dev/null
-+++ b/drivers/irqchip/irq-lp8x4x.c
-@@ -0,0 +1,227 @@
-+/*
-+ *  linux/drivers/irqchip/irq-lp8x4x.c
++++ b/drivers/tty/serial/8250/8250_lp8x4x.c
+@@ -0,0 +1,169 @@
++/*  linux/drivers/tty/serial/8250/8250_lp8x4x.c
 + *
-+ *  Support for ICP DAS LP-8x4x FPGA irq
++ *  Support for 16550A serial ports on ICP DAS LP-8x4x
++ *
 + *  Copyright (C) 2013 Sergei Ianovich <ynvich@gmail.com>
 + *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation or any later version.
++ *  published by the Free Software Foundation.
 + */
-+#include <linux/interrupt.h>
++#include <linux/init.h>
 +#include <linux/io.h>
 +#include <linux/irq.h>
-+#include <linux/irqdomain.h>
-+#include <linux/irqchip/chained_irq.h>
++#include <linux/module.h>
++#include <linux/serial_8250.h>
 +#include <linux/of.h>
 +#include <linux/platform_device.h>
 +
-+#define EOI			0x00000000
-+#define INSINT			0x00000002
-+#define ENSYSINT		0x00000004
-+#define PRIMINT			0x00000006
-+#define PRIMINT_MASK		0xe0
-+#define SECOINT			0x00000008
-+#define SECOINT_MASK		0x1f
-+#define ENRISEINT		0x0000000A
-+#define CLRRISEINT		0x0000000C
-+#define ENHILVINT		0x0000000E
-+#define CLRHILVINT		0x00000010
-+#define ENFALLINT		0x00000012
-+#define CLRFALLINT		0x00000014
-+#define IRQ_MEM_SIZE		0x00000016
-+#define LP8X4X_NUM_IRQ_DEFAULT	16
-+
-+/**
-+ * struct lp8x4x_irq_data - LP8X4X custom irq controller state container
-+ * @base:               base IO memory address
-+ * @irq_domain:         Interrupt translation domain; responsible for mapping
-+ *                      between hwirq number and linux irq number
-+ * @irq_sys_enabled:    mask keeping track of interrupts enabled in the
-+ *                      register which vendor calls 'system'
-+ * @irq_high_enabled:   mask keeping track of interrupts enabled in the
-+ *                      register which vendor calls 'high'
-+ *
-+ * The structure implements State Container from
-+ * Documentation/driver-model/design-patterns.txt
-+ */
-+
-+struct lp8x4x_irq_data {
-+	void			*base;
-+	struct irq_domain	*domain;
-+	unsigned char		irq_sys_enabled;
-+	unsigned char		irq_high_enabled;
++struct lp8x4x_serial_data {
++	int			line;
++	void			*ios_mem;
 +};
 +
-+static void lp8x4x_mask_irq(struct irq_data *d)
++static void lp8x4x_serial_set_termios(struct uart_port *port,
++		struct ktermios *termios, struct ktermios *old)
 +{
-+	unsigned mask;
-+	unsigned long hwirq = d->hwirq;
-+	struct lp8x4x_irq_data *host = irq_data_get_irq_chip_data(d);
++	unsigned int len;
++	unsigned int baud;
++	struct lp8x4x_serial_data *data = port->private_data;
 +
-+	if (hwirq < 8) {
-+		host->irq_high_enabled &= ~BIT(hwirq);
-+
-+		mask = ioread8(host->base + ENHILVINT);
-+		mask &= ~BIT(hwirq);
-+		iowrite8(mask, host->base + ENHILVINT);
-+	} else {
-+		hwirq -= 8;
-+		host->irq_sys_enabled &= ~BIT(hwirq);
-+
-+		mask = ioread8(host->base + ENSYSINT);
-+		mask &= ~BIT(hwirq);
-+		iowrite8(mask, host->base + ENSYSINT);
-+	}
-+}
-+
-+static void lp8x4x_unmask_irq(struct irq_data *d)
-+{
-+	unsigned mask;
-+	unsigned long hwirq = d->hwirq;
-+	struct lp8x4x_irq_data *host = irq_data_get_irq_chip_data(d);
-+
-+	if (hwirq < 8) {
-+		host->irq_high_enabled |= BIT(hwirq);
-+		mask = ioread8(host->base + CLRHILVINT);
-+		mask |= BIT(hwirq);
-+		iowrite8(mask, host->base + CLRHILVINT);
-+
-+		mask = ioread8(host->base + ENHILVINT);
-+		mask |= BIT(hwirq);
-+		iowrite8(mask, host->base + ENHILVINT);
-+	} else {
-+		hwirq -= 8;
-+		host->irq_sys_enabled |= BIT(hwirq);
-+
-+		mask = ioread8(host->base + SECOINT);
-+		mask |= BIT(hwirq);
-+		iowrite8(mask, host->base + SECOINT);
-+
-+		mask = ioread8(host->base + ENSYSINT);
-+		mask |= BIT(hwirq);
-+		iowrite8(mask, host->base + ENSYSINT);
-+	}
-+}
-+
-+static struct irq_chip lp8x4x_irq_chip = {
-+	.name			= "FPGA",
-+	.irq_ack		= lp8x4x_mask_irq,
-+	.irq_mask		= lp8x4x_mask_irq,
-+	.irq_mask_ack		= lp8x4x_mask_irq,
-+	.irq_unmask		= lp8x4x_unmask_irq,
-+};
-+
-+static void lp8x4x_irq_handler(unsigned int irq, struct irq_desc *desc)
-+{
-+	int n;
-+	unsigned long mask;
-+	struct irq_chip *chip = irq_desc_get_chip(desc);
-+	struct lp8x4x_irq_data *host = irq_desc_get_handler_data(desc);
-+
-+	chained_irq_enter(chip, desc);
-+
-+	for (;;) {
-+		mask = ioread8(host->base + CLRHILVINT) & 0xff;
-+		mask |= (ioread8(host->base + SECOINT) & SECOINT_MASK) << 8;
-+		mask |= (ioread8(host->base + PRIMINT) & PRIMINT_MASK) << 8;
-+		mask &= host->irq_high_enabled | (host->irq_sys_enabled << 8);
-+		if (mask == 0)
-+			break;
-+		for_each_set_bit(n, &mask, BITS_PER_LONG)
-+			generic_handle_irq(irq_find_mapping(host->domain, n));
++	switch (termios->c_cflag & CSIZE) {
++	case CS5:
++		len = 7;
++		break;
++	case CS6:
++		len = 8;
++		break;
++	case CS7:
++		len = 9;
++		break;
++	default:
++	case CS8:
++		len = 10;
++		break;
 +	}
 +
-+	iowrite8(0, host->base + EOI);
-+	chained_irq_exit(chip, desc);
++	if (termios->c_cflag & CSTOPB)
++		len++;
++	if (termios->c_cflag & PARENB)
++		len++;
++	if (!(termios->c_cflag & PARODD))
++		len++;
++#ifdef CMSPAR
++	if (termios->c_cflag & CMSPAR)
++		len++;
++#endif
++
++	len -= 9;
++	len &= 3;
++	len <<= 3;
++	/*
++	 * Ask the core to calculate the divisor for us.
++	 */
++	baud = uart_get_baud_rate(port, termios, old,
++				  port->uartclk / 16 / 0xffff,
++				  port->uartclk / 16);
++	switch (baud) {
++	case 2400:
++		len |= 1;
++		break;
++	case 4800:
++		len |= 2;
++		break;
++	case 19200:
++		len |= 4;
++		break;
++	case 38400:
++		len |= 5;
++		break;
++	case 57600:
++		len |= 6;
++		break;
++	case 115200:
++		len |= 7;
++		break;
++	case 9600:
++	default:
++		len |= 3;
++		break;
++	};
++	iowrite8(len, data->ios_mem);
++
++	serial8250_do_set_termios(port, termios, old);
 +}
 +
-+static int lp8x4x_irq_domain_map(struct irq_domain *d, unsigned int irq,
-+				 irq_hw_number_t hw)
-+{
-+	struct lp8x4x_irq_data *host = d->host_data;
-+	int err;
-+
-+	err = irq_set_chip_data(irq, host);
-+	if (err < 0)
-+		return err;
-+
-+	irq_set_chip_and_handler(irq, &lp8x4x_irq_chip, handle_level_irq);
-+	set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
-+	return 0;
-+}
-+
-+const struct irq_domain_ops lp8x4x_irq_domain_ops = {
-+	.map	= lp8x4x_irq_domain_map,
-+	.xlate	= irq_domain_xlate_onecell,
-+};
-+
-+static struct of_device_id lp8x4x_irq_dt_ids[] = {
-+	{ .compatible = "icpdas,irq-lp8x4x", },
++static struct of_device_id lp8x4x_serial_dt_ids[] = {
++	{ .compatible = "icpdas,uart-lp8x4x", },
 +	{}
 +};
++MODULE_DEVICE_TABLE(of, lp8x4x_serial_dt_ids);
 +
-+static int lp8x4x_irq_probe(struct platform_device *pdev)
++static int lp8x4x_serial_probe(struct platform_device *pdev)
 +{
-+	struct resource *res_mem, *res_irq;
-+	struct device_node *np = pdev->dev.of_node;
-+	struct lp8x4x_irq_data *host;
-+	int i, err;
++	struct uart_8250_port uart = {};
++	struct lp8x4x_serial_data *data;
++	struct resource *mmres, *mires, *irqres;
++	int ret;
 +
-+	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	res_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-+	if (!res_mem || !res_irq || resource_size(res_mem) < IRQ_MEM_SIZE)
++	mmres = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	mires = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++	irqres = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	if (!mmres || !mires || !irqres)
 +		return -ENODEV;
 +
-+	host = devm_kzalloc(&pdev->dev, sizeof(*host), GFP_KERNEL);
-+	if (!host)
-+		return -ENODEV;
-+
-+	host->base = devm_ioremap_resource(&pdev->dev, res_mem);
-+	if (!host->base) {
-+		dev_err(&pdev->dev, "Failed to ioremap %p\n", host->base);
-+		return -EFAULT;
-+	}
-+
-+	host->domain = irq_domain_add_linear(np, LP8X4X_NUM_IRQ_DEFAULT,
-+				       &lp8x4x_irq_domain_ops, host);
-+	if (!host->domain) {
-+		dev_err(&pdev->dev, "Failed to add IRQ domain\n");
++	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
++	if (!data)
 +		return -ENOMEM;
-+	}
 +
-+	for (i = 0; i < LP8X4X_NUM_IRQ_DEFAULT; i++) {
-+		err = irq_create_mapping(host->domain, i);
-+		if (err < 0)
-+			dev_err(&pdev->dev, "Failed to map IRQ %i\n", i);
-+	}
++	data->ios_mem = devm_ioremap_resource(&pdev->dev, mires);
++	if (!data->ios_mem)
++		return -EFAULT;
 +
-+	/* Initialize chip registers */
-+	iowrite8(0, host->base + CLRRISEINT);
-+	iowrite8(0, host->base + ENRISEINT);
-+	iowrite8(0, host->base + CLRFALLINT);
-+	iowrite8(0, host->base + ENFALLINT);
-+	iowrite8(0, host->base + CLRHILVINT);
-+	iowrite8(0, host->base + ENHILVINT);
-+	iowrite8(0, host->base + ENSYSINT);
-+	iowrite8(0, host->base + SECOINT);
++	uart.port.iotype = UPIO_MEM;
++	uart.port.mapbase = mmres->start;
++	uart.port.iobase = mmres->start;
++	uart.port.regshift = 1;
++	uart.port.irq = irqres->start;
++	uart.port.flags = UPF_IOREMAP;
++	uart.port.dev = &pdev->dev;
++	uart.port.uartclk = 14745600;
++	uart.port.set_termios = lp8x4x_serial_set_termios;
++	uart.port.private_data = data;
 +
-+	irq_set_handler_data(res_irq->start, host);
-+	irq_set_chained_handler(res_irq->start, lp8x4x_irq_handler);
++	ret = serial8250_register_8250_port(&uart);
++	if (ret < 0)
++		return ret;
++
++	data->line = ret;
++
++	platform_set_drvdata(pdev, data);
 +
 +	return 0;
 +}
 +
-+static struct platform_driver lp8x4x_irq_driver = {
-+	.probe		= lp8x4x_irq_probe,
++static int lp8x4x_serial_remove(struct platform_device *pdev)
++{
++	struct lp8x4x_serial_data *data = platform_get_drvdata(pdev);
++
++	serial8250_unregister_port(data->line);
++
++	return 0;
++}
++
++static struct platform_driver lp8x4x_serial_driver = {
++	.probe          = lp8x4x_serial_probe,
++	.remove         = lp8x4x_serial_remove,
++
 +	.driver		= {
-+		.name	= "irq-lp8x4x",
-+		.of_match_table = lp8x4x_irq_dt_ids,
++		.name	= "uart-lp8x4x",
++		.owner	= THIS_MODULE,
++		.of_match_table = lp8x4x_serial_dt_ids,
 +	},
 +};
 +
-+static int __init lp8x4x_irq_init(void)
-+{
-+	return platform_driver_register(&lp8x4x_irq_driver);
-+}
-+postcore_initcall(lp8x4x_irq_init);
++module_platform_driver(lp8x4x_serial_driver);
++
++MODULE_AUTHOR("Sergei Ianovich");
++MODULE_DESCRIPTION("8250 serial port module for LP-8x4x");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/tty/serial/8250/Kconfig b/drivers/tty/serial/8250/Kconfig
+index 81bd7c9..9fb0fbb 100644
+--- a/drivers/tty/serial/8250/Kconfig
++++ b/drivers/tty/serial/8250/Kconfig
+@@ -311,3 +311,15 @@ config SERIAL_PXA
+ 	  can enable its onboard serial ports by enabling this option.
+ 
+ 	  If you choose M here, the module name will be 8250_pxa.
++
++config SERIAL_8250_LP8X4X
++	tristate "Support 16550A ports on ICP DAS LP-8x4x"
++	depends on OF && SERIAL_8250 && SERIAL_8250_MANY_PORTS && ARCH_PXA
++	select LP8X4X_IRQ
++	help
++	  In addition to serial ports on PXA270 SoC, LP-8x4x has 1 dual
++	  RS232/RS485 port, 1 RS485 port and 1 RS232 port.
++
++	  Say N here, unless you plan to run this kernel on a LP-8x4x system.
++
++	  If you choose M here, the module name will be 8250_lp8x4x.
+diff --git a/drivers/tty/serial/8250/Makefile b/drivers/tty/serial/8250/Makefile
+index b7d1b61..7370bfb 100644
+--- a/drivers/tty/serial/8250/Makefile
++++ b/drivers/tty/serial/8250/Makefile
+@@ -17,6 +17,7 @@ obj-$(CONFIG_SERIAL_8250_ACCENT)	+= 8250_accent.o
+ obj-$(CONFIG_SERIAL_8250_BOCA)		+= 8250_boca.o
+ obj-$(CONFIG_SERIAL_8250_EXAR_ST16C554)	+= 8250_exar_st16c554.o
+ obj-$(CONFIG_SERIAL_8250_HUB6)		+= 8250_hub6.o
++obj-$(CONFIG_SERIAL_8250_LP8X4X)	+= 8250_lp8x4x.o
+ obj-$(CONFIG_SERIAL_8250_FSL)		+= 8250_fsl.o
+ obj-$(CONFIG_SERIAL_8250_DW)		+= 8250_dw.o
+ obj-$(CONFIG_SERIAL_8250_EM)		+= 8250_em.o
 -- 
 1.8.4.2
 
