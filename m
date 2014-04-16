@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755173AbaDPJwj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 05:52:39 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:41825 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007AbaDPJwf (ORCPT
+	id S1755219AbaDPJx4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 05:53:56 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:44846 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751691AbaDPJxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 05:52:35 -0400
-Date: Wed, 16 Apr 2014 10:52:29 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Anton Vorontsov <anton@enomsg.org>, Olof Johansson <olof@lixom.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>, ajaykumar.rs@samsung.com,
-        linux-samsung-soc@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] mfd: tps65090: Allow charger module to be used when
- no irq
-Message-ID: <20140416095229.GF4754@lee--X1>
-References: <1397592876-5741-1-git-send-email-dianders@chromium.org>
- <1397592876-5741-2-git-send-email-dianders@chromium.org>
+	Wed, 16 Apr 2014 05:53:53 -0400
+Date: Wed, 16 Apr 2014 05:53:50 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        ak@linux.intel.com, Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: CPU: 2 PID: 1857 at arch/x86/kernel/smp.c:124
+Message-ID: <20140416055350.5301cb7e@gandalf.local.home>
+In-Reply-To: <534E4D48.5050002@nod.at>
+References: <534E49C8.7050206@nod.at>
+	<20140416092146.GQ11182@twins.programming.kicks-ass.net>
+	<534E4D48.5050002@nod.at>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1397592876-5741-2-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On the ARM Chromebook tps65090 has two masters: the AP (the main
-> processor running linux) and the EC (the embedded controller).  The AP
-> is allowed to mess with FETs but the EC is in charge of charge control.
-> 
-> The tps65090 interupt line is routed to both the AP and the EC, which
-> can cause quite a headache.  Having two people adjusting masks and
-> acking interrupts is a recipe for disaster.
-> 
-> In the shipping kernel we had a hack to have the AP pay attention to
-> the IRQ but not to ack it.  It also wasn't supposed to configure the
-> IRQ in any way.  That hack allowed us to detect when the device was
-> charging without messing with the EC's state.
-> 
-> The current tps65090 infrastructure makes the above difficult, and it
-> was a bit of a hack to begin with.  Rather than uglify the driver to
-> support it, just extend the driver's existing notion of "no irq" to
-> the charger.  This makes the charger code poll every 2 seconds for AC
-> detect, which is sufficient.
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
->  drivers/mfd/tps65090.c           | 14 ++++++--
->  drivers/power/tps65090-charger.c | 76 +++++++++++++++++++++++++++++++---------
->  2 files changed, 70 insertions(+), 20 deletions(-)
+On Wed, 16 Apr 2014 11:28:40 +0200
+Richard Weinberger <richard@nod.at> wrote:
 
-For the MFD part:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+> Am 16.04.2014 11:21, schrieb Peter Zijlstra:
+> > On Wed, Apr 16, 2014 at 11:13:44AM +0200, Richard Weinberger wrote:
+> >> Hi!
+> >>
+> >> On a new 8 core server I'm facing the following issue.
+> >> After an oops a warning triggers.
+> > 
+> > I think its fair to ignore everything _after_ an OOPS ;-)
+> 
+> The problem here is that I'm using pstore with the erst backend (ACPI APEI).
+> But it can only store a few KiB. So upon every oops it captures only the bogus
+> warning and the original one is lost.
 
-Anton,
-  If you are okay with this patch I'd be happy to create an immutable
-branch for you to pull from?
+You should change that so the recording to pstore is disabled after the
+first oops.
 
-Doug,
-  What is the relationship (dependencies) between this and the other
-patches in the set?
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+-- Steve
