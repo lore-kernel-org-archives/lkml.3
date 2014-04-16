@@ -1,58 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756234AbaDPMmV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 08:42:21 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47892 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755877AbaDPMkR (ORCPT
+	id S1755871AbaDPMwX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 08:52:23 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:16068 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753240AbaDPMwW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 08:40:17 -0400
-From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com, chris@printf.net, anton@enomsg.org
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] ARM: dts: berlin: enable SD card reader and eMMC for the BG2Q DMP
-Date: Wed, 16 Apr 2014 14:40:11 +0200
-Message-Id: <1397652011-21284-5-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1397652011-21284-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1397652011-21284-1-git-send-email-antoine.tenart@free-electrons.com>
+	Wed, 16 Apr 2014 08:52:22 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 16 Apr 2014 05:47:10 -0700
+From: Peter Chiang <pchiang@nvidia.com>
+To: "ccross@android.com" <ccross@android.com>,
+        "lizefan@huawei.com" <lizefan@huawei.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "oleg@redhat.com" <oleg@redhat.com>, "tj@kernel.org" <tj@kernel.org>,
+        "pavel@ucw.cz" <pavel@ucw.cz>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "guillaume@morinfr.org" <guillaume@morinfr.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 16 Apr 2014 20:52:17 +0800
+Subject: RE: [PATCH] mm : Avoid candidate task is equal to current task
+Thread-Topic: [PATCH] mm : Avoid candidate task is equal to current task
+Thread-Index: Ac9ZIMLavZdg8yEMSayjZQY6ZEC6ywATQPhgAAEj8GA=
+Message-ID: <80341664FB79C2419999599F48F738410227327888@HKMAIL01.nvidia.com>
+References: <1397617379-26895-1-git-send-email-pchiang@nvidia.com>
+ <80341664FB79C2419999599F48F738410227327881@HKMAIL01.nvidia.com>
+In-Reply-To: <80341664FB79C2419999599F48F738410227327881@HKMAIL01.nvidia.com>
+Accept-Language: zh-TW, en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: zh-TW, en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable the SD Card reader and the internal eMMC on the Berlin BG2Q DMP
-using two of the SDHCI nodes of the Berlin BG2Q.
+Is it possible  before exit_mm() set tsk->mm to NULL, tsk->mm has already been NULL ?
 
-Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+-----Original Message-----
+From: Peter Chiang 
+Sent: Wednesday, April 16, 2014 8:31 PM
+To: Peter Chiang; ccross@android.com; lizefan@huawei.com; akpm@linux-foundation.org; oleg@redhat.com; tj@kernel.org; pavel@ucw.cz; ebiederm@xmission.com; guillaume@morinfr.org
+Cc: linux-kernel@vger.kernel.org
+Subject: RE: [PATCH] mm : Avoid candidate task is equal to current task
+
+mm_update_next_owner() call from exit_mm() , and exit_mm()  change tsk->mm to NULL If p==c , It seems to be  impossible that mm == c->mm  (tsk->mm) . Because mm is non-NULL and  c->mm is NULL . 
+
+
+-----Original Message-----
+From: Peter Chiang [mailto:pchiang@nvidia.com]
+Sent: Wednesday, April 16, 2014 11:03 AM
+To: ccross@android.com; Peter Chiang; lizefan@huawei.com; akpm@linux-foundation.org; oleg@redhat.com; tj@kernel.org; pavel@ucw.cz; ebiederm@xmission.com; guillaume@morinfr.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] mm : Avoid candidate task is equal to current task
+
+From: pchiang <pchiang@nvidia.com>
+
+Fix kernel panic when finding a new owner for the mm and the new owner is equal to current onwer
+
+Signed-off-by: pchiang <pchiang@nvidia.com>
 ---
- arch/arm/boot/dts/berlin2q-marvell-dmp.dts | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ kernel/exit.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-index 2da9c41e29d8..671ed4d055ed 100644
---- a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-+++ b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-@@ -26,3 +26,11 @@
- &uart0 {
- 	status = "okay";
- };
-+
-+&sdhci1 {
-+	status = "okay";
-+};
-+
-+&sdhci2 {
-+	status = "okay";
-+};
--- 
-1.8.3.2
+diff --git a/kernel/exit.c b/kernel/exit.c index 6ed6a1d..aa98422 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -399,7 +399,7 @@ retry:
+ 	 * here often
+ 	 */
+ 	do_each_thread(g, c) {
+-		if (c->mm == mm)
++		if ((c != p) && (c->mm == mm))
+ 			goto assign_new_owner;
+ 	} while_each_thread(g, c);
+ 
+--
+1.8.1.5
 
