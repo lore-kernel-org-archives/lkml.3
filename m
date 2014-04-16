@@ -1,60 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751185AbaDPBCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 21:02:31 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:41931 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918AbaDPBCa (ORCPT
+	id S1751428AbaDPBG0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 21:06:26 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:49475 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358AbaDPBGR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 21:02:30 -0400
+	Tue, 15 Apr 2014 21:06:17 -0400
+X-AuditID: 85900ec0-d1d29b9000001514-08-534dd786f79f
+Message-ID: <534DD786.7090702@hitachi.com>
+Date: Wed, 16 Apr 2014 10:06:14 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
-In-Reply-To: <20140407174617.GA12379@alberich>
-References: <1396563423-30893-1-git-send-email-robherring2@gmail.com>
-	<1396563423-30893-2-git-send-email-robherring2@gmail.com>
-	<20140407174617.GA12379@alberich>
-Date: Tue, 15 Apr 2014 20:02:29 -0500
-Message-ID: <CAL_JsqL7Of9_NofFd2ym47PNPtYWSMmshe+sJSGTwKmOa5C50Q@mail.gmail.com>
-Subject: Re: [PATCH 01/20] mips: octeon: convert to use unflatten_and_copy_device_tree
-From: Rob Herring <robherring2@gmail.com>
-To: Andreas Herrmann <herrmann.der.user@googlemail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        David Daney <ddaney.cavm@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Stephen Warren <swarren@nvidia.com>, Jingoo Han <jg1.han@samsung.com>,
+        linux-kernel@vger.kernel.org,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        linux-serial@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Aaron Sierra <asierra@xes-inc.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Re: [PATCH V5.1] serial/uart/8250: Add tunable RX interrupt
+ trigger I/F of FIFO buffers
+References: <20140415055216.14660.18270.stgit@yunodevel> <20140415080649.19209.60645.stgit@yunodevel> <20140415111033.102bc5af@alan.etchedpixels.co.uk>
+In-Reply-To: <20140415111033.102bc5af@alan.etchedpixels.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 7, 2014 at 12:46 PM, Andreas Herrmann
-<herrmann.der.user@googlemail.com> wrote:
-> On Thu, Apr 03, 2014 at 05:16:44PM -0500, Rob Herring wrote:
->> From: Rob Herring <robh@kernel.org>
->>
->> The octeon FDT code can be simplified by using
->> unflatten_and_copy_device_tree function. This removes all accesses to
->> FDT header data by the arch code.
+Hi Alan,
+
+Thank you for your review.
+
+(2014/04/15 19:10), One Thousand Gnomes wrote:
 >
-> Hi Rob,
+>> +static int convert_val2rxtrig(struct uart_8250_port *up, unsigned char val)
+>> +{
+>> +	const struct serial8250_config *conf_type = &uart_config[up->port.type];
+>> +	int i;
+>> +
+>> +	if (!conf_type->rx_trig_byte[FCR_RX_TRIG_BITS(UART_FCR_R_TRIG_00)]) {
+>> +		pr_info("Not support RX-trigger setting for this serial %s\n",
+>> +			conf_type->name);
+>> +		return -EOPNOTSUPP;
 >
-> I think (in general) this modification is ok. But I suggest to use
-> following (slightly modified) version.
+> We don't want the pr_info here - otherwise users can flood the logs. The
+> err code is sufficient.
 
-Having to compile each platform on MIPS sure is annoying. Reminds me
-of ARM a few years ago. We need a good rant from Linus about MIPS. ;)
+OK, I'll delete this pr_info().
 
+>> +	for (i = 1; i < FCR_RX_TRIG_MAX_STATE; i++) {
+>> +		if (val < conf_type->rx_trig_byte[i])
+>> +			/* Use the nearest lower value */
+>> +			return (--i) << FCR_RX_TRIG_OFFSET;
 >
-> -       /* Copy the default tree from init memory. */
-> -       initial_boot_params = early_init_dt_alloc_memory_arch(dt_size, 8);
-> -       if (initial_boot_params == NULL)
-> -               panic("Could not allocate initial_boot_params");
-> -       memcpy(initial_boot_params, fdt, dt_size);
-> +       initial_boot_params = (void *)fdt;
+> Odd case here - your 16654 entry has a minimum of 8 so if I pass 1 then
+> it'll return -1 ? I guess for that case the best we can do is to set 8.
 
-Does calling early_init_devtree here work instead. This will add
-parsing memory, initrd and command line. If you don't have those then
-it should be a nop other than setting initial_boot_params. It should
-only matter if your DT has these things and you want/need to ignore
-them. Do this would get things more inline with other arches.
+No, in that case, this function returns 0.
 
-Rob
+Note that the "i" starts from 1, so the minimal value is 0.
+Actually convert_val2rxtrig() returns the index of rx_trig_byte, and
+when val == 1, it returns 0 and caller gets rx_trig_byte[0] == 8.
+
+> Other trivial thing to tweak - you have "uaser" in spot instead of "user".
+
+Oops, I'll fix it.
+
+Thanks,
+Yoshihiro YUNOMAE
+
+> With those two fixed it looks good to me.
+>
+> Alan
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
+
+
