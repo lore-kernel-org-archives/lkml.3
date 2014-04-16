@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640AbaDPRew (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 13:34:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40146 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751198AbaDPReu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 13:34:50 -0400
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
- cgroup path
-From: Simo Sorce <ssorce@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: David Miller <davem@davemloft.net>, Vivek Goyal <vgoyal@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
-        Network Development <netdev@vger.kernel.org>
-In-Reply-To: <CALCETrU_yKQVZyVug25cxwQFjWJ7Zf20FY-6ht+RJifXtDdDWg@mail.gmail.com>
-References: <CALCETrURHNmLyccRiF_W8o2ozRMR4AaCjUE=_PU8z1+Pq6X2jQ@mail.gmail.com>
-	 <20140416002010.GA5035@redhat.com>
-	 <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com>
-	 <20140416.085743.1614257692560892039.davem@davemloft.net>
-	 <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com>
-	 <1397664837.19767.410.camel@willson.li.ssimo.org>
-	 <CALCETrXn7b6UuALpGUVoyQYfR2uzk5tj2ABV=dkvtFNgqM5sxQ@mail.gmail.com>
-	 <1397667766.19767.440.camel@willson.li.ssimo.org>
-	 <CALCETrU_yKQVZyVug25cxwQFjWJ7Zf20FY-6ht+RJifXtDdDWg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Apr 2014 13:34:45 -0400
-Message-ID: <1397669685.19767.450.camel@willson.li.ssimo.org>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753418AbaDPRil (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 13:38:41 -0400
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:33888 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111AbaDPRik (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 13:38:40 -0400
+Date: Wed, 16 Apr 2014 13:38:37 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] workqueue: jumps to use_dfl_pwq if the target
+ cpumask is equal wq's
+Message-ID: <20140416173837.GO1257@htj.dyndns.org>
+References: <4114063.RkqNFBsH49@daeseok-laptop.cloud.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4114063.RkqNFBsH49@daeseok-laptop.cloud.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-16 at 10:29 -0700, Andy Lutomirski wrote:
-> Then please remove SO_PASSCGROUP.
+Hello,
 
-Can you stop demanding changes while demonstrating you haven't well
-understood the needs, let alone the consequences ?
+On Wed, Apr 16, 2014 at 02:33:27PM +0900, Daeseok Youn wrote:
+> 
+> Replace blocks of code which checks whether pwq is defalut with
+> jump to use_dfl_pwq. It is same as before.
 
-Take a day or 2, put your thoughts together and come back with a clear
-description of your concerns if you still have any, please.
+A better wording would be sth like
 
-You clearly do not like this proposal, but you can't really articulate
-why, all I hear at this point are the scratches of nails on the glass
-wall you are trying to climb.
+ wq_update_unbound_numa(), when it's decided that the newly updated
+ cpumask equals the default, looks at whether the current pwq is
+ already the default one and skips setting pwq to the default one.
+ This extra step is unnecessary and we can always jump to use_dfl_pwq
+ instead.  Simplify the code by removing the conditional.  This
+ doesn't make any functional difference.
 
-Seriously, if there are reasonable objections we all want to hear them,
-but they need to be clear and circumstanced.
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+>  kernel/workqueue.c |    5 +----
+>  1 files changed, 1 insertions(+), 4 deletions(-)
+> 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 3150b21..0679854 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -4087,10 +4087,7 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
+>  		if (cpumask_equal(cpumask, pwq->pool->attrs->cpumask))
+>  			goto out_unlock;
+>  	} else {
+> -		if (pwq == wq->dfl_pwq)
+> -			goto out_unlock;
+> -		else
+> -			goto use_dfl_pwq;
+> +		goto use_dfl_pwq;
 
-Simo.
+As I said before, please update the comment above to match the new
+code.
 
+Thanks.
 
+-- 
+tejun
