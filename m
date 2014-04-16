@@ -1,175 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161548AbaDPO6D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 10:58:03 -0400
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.174]:13859 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161089AbaDPO6B (ORCPT
+	id S1161620AbaDPO7e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 10:59:34 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:48906 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161089AbaDPO7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 10:58:01 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-3.tower-39.messagelabs.com!1397660278!17611386!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.1; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Wed, 16 Apr 2014 16:57:59 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: <linux-kernel@vger.kernel.org>
-CC: Johannes Thumshirn <Johannes.Thumshirn@men.de>,
-        Thomas Schnuerer <thomas.schnuerer@men.de>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>
-Subject: [PATCH] mcb: Add support for shared PCI IRQs
-Date: Wed, 16 Apr 2014 16:57:47 +0200
-Message-ID: <1397660267-23198-1-git-send-email-johannes.thumshirn@men.de>
-X-Mailer: git-send-email 1.9.2
+	Wed, 16 Apr 2014 10:59:32 -0400
+Message-ID: <534E9ACA.2090008@oracle.com>
+Date: Wed, 16 Apr 2014 10:59:22 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.1.1.31]
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+CC: Hugh Dickins <hughd@google.com>, Christoph Lameter <cl@gentwo.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: mm: NULL ptr deref in remove_migration_pte
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for shared PCI IRQs to mcb and mcb-pci.
+Hi all,
 
-Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
----
- drivers/mcb/mcb-core.c | 20 +++++++++++++++-----
- drivers/mcb/mcb-pci.c  | 17 ++++++++++++++++-
- include/linux/mcb.h    |  6 +++++-
- 3 files changed, 36 insertions(+), 7 deletions(-)
+While fuzzing with trinity inside a KVM tools guest running latest -next
+kernel I've stumbled on the following:
 
-diff --git a/drivers/mcb/mcb-core.c b/drivers/mcb/mcb-core.c
-index bbe1293..9018ab8 100644
---- a/drivers/mcb/mcb-core.c
-+++ b/drivers/mcb/mcb-core.c
-@@ -183,14 +183,14 @@ EXPORT_SYMBOL_GPL(mcb_device_register);
-  *
-  * Allocate a new @mcb_bus.
-  */
--struct mcb_bus *mcb_alloc_bus(void)
-+struct mcb_bus *mcb_alloc_bus(struct device *carrier)
- {
- 	struct mcb_bus *bus;
- 	int bus_nr;
- 
- 	bus = kzalloc(sizeof(struct mcb_bus), GFP_KERNEL);
- 	if (!bus)
--		return NULL;
-+		return ERR_PTR(-ENOMEM);
- 
- 	bus_nr = ida_simple_get(&mcb_ida, 0, 0, GFP_KERNEL);
- 	if (bus_nr < 0) {
-@@ -200,7 +200,7 @@ struct mcb_bus *mcb_alloc_bus(void)
- 
- 	INIT_LIST_HEAD(&bus->children);
- 	bus->bus_nr = bus_nr;
--
-+	bus->carrier = carrier;
- 	return bus;
- }
- EXPORT_SYMBOL_GPL(mcb_alloc_bus);
-@@ -378,6 +378,13 @@ void mcb_release_mem(struct resource *mem)
- }
- EXPORT_SYMBOL_GPL(mcb_release_mem);
- 
-+static int __mcb_get_irq(struct mcb_device *dev)
-+{
-+	struct resource *irq = &dev->irq;
-+
-+	return irq->start;
-+}
-+
- /**
-  * mcb_get_irq() - Get device's IRQ number
-  * @dev: The @mcb_device the IRQ is for
-@@ -386,9 +393,12 @@ EXPORT_SYMBOL_GPL(mcb_release_mem);
-  */
- int mcb_get_irq(struct mcb_device *dev)
- {
--	struct resource *irq = &dev->irq;
-+	struct mcb_bus *bus = dev->bus;
- 
--	return irq->start;
-+	if (bus->get_irq)
-+		return bus->get_irq(dev);
-+
-+	return __mcb_get_irq(dev);
- }
- EXPORT_SYMBOL_GPL(mcb_get_irq);
- 
-diff --git a/drivers/mcb/mcb-pci.c b/drivers/mcb/mcb-pci.c
-index 99c742c..b591819 100644
---- a/drivers/mcb/mcb-pci.c
-+++ b/drivers/mcb/mcb-pci.c
-@@ -20,6 +20,15 @@ struct priv {
- 	void __iomem *base;
- };
- 
-+static int mcb_pci_get_irq(struct mcb_device *mdev)
-+{
-+	struct mcb_bus *mbus = mdev->bus;
-+	struct device *dev = mbus->carrier;
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+
-+	return pdev->irq;
-+}
-+
- static int mcb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- {
- 	struct priv *priv;
-@@ -67,7 +76,13 @@ static int mcb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 
- 	pci_set_drvdata(pdev, priv);
- 
--	priv->bus = mcb_alloc_bus();
-+	priv->bus = mcb_alloc_bus(&pdev->dev);
-+	if (IS_ERR(priv->bus)) {
-+		ret = PTR_ERR(priv->bus);
-+		goto err_drvdata;
-+	}
-+
-+	priv->bus->get_irq = mcb_pci_get_irq;
- 
- 	ret = chameleon_parse_cells(priv->bus, mapbase, priv->base);
- 	if (ret < 0)
-diff --git a/include/linux/mcb.h b/include/linux/mcb.h
-index 2db284d..ed06e15 100644
---- a/include/linux/mcb.h
-+++ b/include/linux/mcb.h
-@@ -16,6 +16,7 @@
- #include <linux/irqreturn.h>
- 
- struct mcb_driver;
-+struct mcb_device;
- 
- /**
-  * struct mcb_bus - MEN Chameleon Bus
-@@ -23,11 +24,14 @@ struct mcb_driver;
-  * @dev: pointer to carrier device
-  * @children: the child busses
-  * @bus_nr: mcb bus number
-+ * @get_irq: callback to get IRQ number
-  */
- struct mcb_bus {
- 	struct list_head children;
- 	struct device dev;
-+	struct device *carrier;
- 	int bus_nr;
-+	int (*get_irq)(struct mcb_device *dev);
- };
- #define to_mcb_bus(b) container_of((b), struct mcb_bus, dev)
- 
-@@ -105,7 +109,7 @@ extern void mcb_unregister_driver(struct mcb_driver *driver);
- 	module_driver(__mcb_driver, mcb_register_driver, mcb_unregister_driver);
- extern void mcb_bus_add_devices(const struct mcb_bus *bus);
- extern int mcb_device_register(struct mcb_bus *bus, struct mcb_device *dev);
--extern struct mcb_bus *mcb_alloc_bus(void);
-+extern struct mcb_bus *mcb_alloc_bus(struct device *carrier);
- extern struct mcb_bus *mcb_bus_get(struct mcb_bus *bus);
- extern void mcb_bus_put(struct mcb_bus *bus);
- extern struct mcb_device *mcb_alloc_dev(struct mcb_bus *bus);
--- 
-1.9.2
+[ 2552.313602] BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
+[ 2552.315878] IP: __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
+[ 2552.315878] PGD 465836067 PUD 465837067 PMD 0
+[ 2552.315878] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 2552.315878] Dumping ftrace buffer:
+[ 2552.315878]    (ftrace buffer empty)
+[ 2552.315878] Modules linked in:
+[ 2552.315878] CPU: 6 PID: 16173 Comm: trinity-c364 Tainted: G        W     3.15.0-rc1-next-20140415-sasha-00020-gaa90d09 #398
+[ 2552.315878] task: ffff88046548b000 ti: ffff88044e532000 task.ti: ffff88044e532000
+[ 2552.320286] RIP: __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
+[ 2552.320286] RSP: 0018:ffff88044e5339c8  EFLAGS: 00010002
+[ 2552.320286] RAX: 0000000000000082 RBX: ffff88046548b000 RCX: 0000000000000000
+[ 2552.320286] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000018
+[ 2552.320286] RBP: ffff88044e533ab8 R08: 0000000000000001 R09: 0000000000000000
+[ 2552.320286] R10: ffff88046548b000 R11: 0000000000000001 R12: 0000000000000000
+[ 2552.320286] R13: 0000000000000018 R14: 0000000000000000 R15: 0000000000000000
+[ 2552.320286] FS:  00007fd286a9a700(0000) GS:ffff88018b000000(0000) knlGS:0000000000000000
+[ 2552.320286] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 2552.320286] CR2: 0000000000000018 CR3: 0000000442c17000 CR4: 00000000000006a0
+[ 2552.320286] DR0: 0000000000695000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 2552.320286] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
+[ 2552.320286] Stack:
+[ 2552.320286]  ffff88044e5339e8 ffffffff9f56e761 0000000000000000 ffff880315c13000
+[ 2552.320286]  ffff88044e533a38 ffffffff9c193f0d ffffffff9c193e34 ffff8804654e8000
+[ 2552.320286]  ffff8804654e8000 0000000000000001 ffff88046548b000 0000000000000007
+[ 2552.320286] Call Trace:
+[ 2552.320286] ? _raw_spin_unlock_irq (arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:169 kernel/locking/spinlock.c:199)
+[ 2552.320286] ? finish_task_switch (include/linux/tick.h:206 kernel/sched/core.c:2163)
+[ 2552.320286] ? finish_task_switch (arch/x86/include/asm/current.h:14 kernel/sched/sched.h:993 kernel/sched/core.c:2145)
+[ 2552.320286] ? retint_restore_args (arch/x86/kernel/entry_64.S:1040)
+[ 2552.320286] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
+[ 2552.320286] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
+[ 2552.320286] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+[ 2552.320286] ? remove_migration_pte (mm/migrate.c:137)
+[ 2552.320286] ? retint_restore_args (arch/x86/kernel/entry_64.S:1040)
+[ 2552.320286] _raw_spin_lock (include/linux/spinlock_api_smp.h:143 kernel/locking/spinlock.c:151)
+[ 2552.320286] ? remove_migration_pte (mm/migrate.c:137)
+[ 2552.320286] remove_migration_pte (mm/migrate.c:137)
+[ 2552.320286] rmap_walk (mm/rmap.c:1628 mm/rmap.c:1699)
+[ 2552.320286] remove_migration_ptes (mm/migrate.c:224)
+[ 2552.320286] ? new_page_node (mm/migrate.c:107)
+[ 2552.320286] ? remove_migration_pte (mm/migrate.c:195)
+[ 2552.320286] migrate_pages (mm/migrate.c:922 mm/migrate.c:960 mm/migrate.c:1126)
+[ 2552.320286] ? perf_trace_mm_numa_migrate_ratelimit (mm/migrate.c:1574)
+[ 2552.320286] migrate_misplaced_page (mm/migrate.c:1733)
+[ 2552.320286] __handle_mm_fault (mm/memory.c:3762 mm/memory.c:3812 mm/memory.c:3925)
+[ 2552.320286] ? __const_udelay (arch/x86/lib/delay.c:126)
+[ 2552.320286] ? __rcu_read_unlock (kernel/rcu/update.c:97)
+[ 2552.320286] handle_mm_fault (mm/memory.c:3948)
+[ 2552.320286] __get_user_pages (mm/memory.c:1851)
+[ 2552.320286] ? preempt_count_sub (kernel/sched/core.c:2527)
+[ 2552.320286] __mlock_vma_pages_range (mm/mlock.c:255)
+[ 2552.320286] __mm_populate (mm/mlock.c:711)
+[ 2552.320286] SyS_mlockall (include/linux/mm.h:1799 mm/mlock.c:817 mm/mlock.c:791)
+[ 2552.320286] tracesys (arch/x86/kernel/entry_64.S:749)
+[ 2552.320286] Code: 85 2d 1e 00 00 48 c7 c1 d7 68 6c a0 48 c7 c2 47 11 6c a0 31 c0 be fa 0b 00 00 48 c7 c7 91 68 6c a0 e8 1c 6d f9 ff e9 07 1e 00 00 <49> 81 7d 00 80 31 76 a2 b8 00 00 00 00 44 0f 44 c0 eb 07 0f 1f
+[ 2552.320286] RIP __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
+[ 2552.320286]  RSP <ffff88044e5339c8>
+[ 2552.320286] CR2: 0000000000000018
 
+
+Thanks,
+Sasha
