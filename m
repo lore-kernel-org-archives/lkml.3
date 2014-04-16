@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384AbaDPEUI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 00:20:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38894 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754327AbaDPEUF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 00:20:05 -0400
-From: NeilBrown <neilb@suse.de>
-To: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 16 Apr 2014 14:03:37 +1000
-Subject: [PATCH 19/19] XFS: set PF_FSTRANS while ilock is held in
- xfs_free_eofblocks
-Cc: xfs@oss.sgi.com
-Message-ID: <20140416040337.10604.7488.stgit@notabene.brown>
-In-Reply-To: <20140416033623.10604.69237.stgit@notabene.brown>
-References: <20140416033623.10604.69237.stgit@notabene.brown>
-User-Agent: StGit/0.16
+	id S1754422AbaDPEUk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 00:20:40 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:54242 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754396AbaDPEUh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 00:20:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.02.1404152042480.22697@ionos.tec.linutronix.de>
+References: <cover.1397537986.git.viresh.kumar@linaro.org>
+	<80afb18a494b0bd9710975bcc4de134ae323c74f.1397537987.git.viresh.kumar@linaro.org>
+	<alpine.DEB.2.02.1404152042480.22697@ionos.tec.linutronix.de>
+Date: Wed, 16 Apr 2014 09:50:36 +0530
+Message-ID: <CAKohponkb+FovSTLuQ0cxEdVMU7JTHYPauhU07=20otAoDiAZA@mail.gmail.com>
+Subject: Re: [PATCH V1 Resend 4/5] tick-sched: don't call update_wall_time()
+ when delta is lesser than tick_period
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arvind Chauhan <Arvind.Chauhan@arm.com>,
+        Linaro Networking <linaro-networking@linaro.org>,
+        John Stultz <john.stultz@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memory allocates can happen while the xfs ilock is held in
-xfs_free_eofblocks, particularly
+On 16 April 2014 00:14, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Tue, 15 Apr 2014, Viresh Kumar wrote:
+>
+>> In tick_do_update_jiffies64() we are processing ticks only if delta is greater
+>> than tick_period. This is what we are supposed to do here and it broke a bit
+>> with this patch:
+>>
+>> commit 47a1b796306356f358e515149d86baf0cc6bf007
+>> Author: John Stultz <john.stultz@linaro.org>
+>> Date:   Thu Dec 12 13:10:55 2013 -0800
+>>
+>>     tick/timekeeping: Call update_wall_time outside the jiffies lock
+>
+> Please look how I massaged the change log. There is no point in
+> copying the whole gunk.
 
-  [<ffffffff813e6667>] kmem_zone_alloc+0x67/0xc0
-  [<ffffffff813e5945>] xfs_trans_add_item+0x25/0x50
-  [<ffffffff8143d64c>] xfs_trans_ijoin+0x2c/0x60
-  [<ffffffff8142275e>] xfs_itruncate_extents+0xbe/0x400
-  [<ffffffff813c72f4>] xfs_free_eofblocks+0x1c4/0x240
+I see.. Nice.
 
-So set PF_FSTRANS to avoid this causing a deadlock.
+>> With above patch, we might end up calling update_wall_time() even if delta is
+>> found to be smaller that tick_period. Fix this by reversing the check and
+>> returning early.
+>
+> Well.
+>
+>> Cc: <stable@vger.kernel.org> # v3.14+
+>> Cc: John Stultz <john.stultz@linaro.org>
+>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+>> ---
+>>  kernel/time/tick-sched.c | 32 +++++++++++++++++---------------
+>>  1 file changed, 17 insertions(+), 15 deletions(-)
+>
+> That's not how we do bug fixes if they can be done with 3 lines of
+> change. See the commit.
 
-Care is needed here as xfs_trans_reserve() also sets PF_FSTRANS, while
-xfs_trans_cancel and xfs_trans_commit will clear it.
-So our extra setting must fully nest these calls.
+I tried that initially but with these changes as well (which must
+be done now ??), which probably makes it more clear ?:
 
-Signed-off-by: NeilBrown <neilb@suse.de>
----
- fs/xfs/xfs_bmap_util.c |    4 ++++
- 1 file changed, 4 insertions(+)
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 3cafe7d..0e70b1c 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -84,12 +84,12 @@ static void tick_do_update_jiffies64(ktime_t now)
 
-diff --git a/fs/xfs/xfs_bmap_util.c b/fs/xfs/xfs_bmap_util.c
-index f264616080ca..53761fe4fada 100644
---- a/fs/xfs/xfs_bmap_util.c
-+++ b/fs/xfs/xfs_bmap_util.c
-@@ -889,6 +889,7 @@ xfs_free_eofblocks(
- 	xfs_filblks_t	map_len;
- 	int		nimaps;
- 	xfs_bmbt_irec_t	imap;
-+	unsigned int pflags;
- 
- 	/*
- 	 * Figure out if there are any blocks beyond the end
-@@ -929,12 +930,14 @@ xfs_free_eofblocks(
- 			}
- 		}
- 
-+		current_set_flags_nested(&pflags, PF_FSTRANS);
- 		error = xfs_trans_reserve(tp, &M_RES(mp)->tr_itruncate, 0, 0);
- 		if (error) {
- 			ASSERT(XFS_FORCED_SHUTDOWN(mp));
- 			xfs_trans_cancel(tp, 0);
- 			if (need_iolock)
- 				xfs_iunlock(ip, XFS_IOLOCK_EXCL);
-+			current_restore_flags_nested(&pflags, PF_FSTRANS);
- 			return error;
- 		}
- 
-@@ -964,6 +967,7 @@ xfs_free_eofblocks(
- 				xfs_inode_clear_eofblocks_tag(ip);
- 		}
- 
-+		current_restore_flags_nested(&pflags, PF_FSTRANS);
- 		xfs_iunlock(ip, XFS_ILOCK_EXCL);
- 		if (need_iolock)
- 			xfs_iunlock(ip, XFS_IOLOCK_EXCL);
+                /* Keep the tick_next_period variable up to date */
+                tick_next_period = ktime_add(last_jiffies_update, tick_period);
++
++               write_sequnlock(&jiffies_lock);
++               update_wall_time();
+        } else {
+                write_sequnlock(&jiffies_lock);
+-               return;
+        }
+-       write_sequnlock(&jiffies_lock);
+-       update_wall_time();
+ }
 
-
+ /*
