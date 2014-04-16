@@ -1,118 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161667AbaDPPKe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 11:10:34 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:50139 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756279AbaDPPKc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 11:10:32 -0400
+	id S1161722AbaDPPLG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 11:11:06 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:45499 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161528AbaDPPK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 11:10:59 -0400
+Message-ID: <534E9D80.9050801@mm-sol.com>
+Date: Wed, 16 Apr 2014 18:10:56 +0300
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <20140415203510.GA17037@node.dhcp.inet.fi>
-References: <20140311235329.GA28624@quad>
-	<20140415203510.GA17037@node.dhcp.inet.fi>
-Date: Wed, 16 Apr 2014 08:10:31 -0700
-Message-ID: <CABPqkBS92QX_xkMDPAQN3FBUc8ykdWKiMBMmNUiU15z6fCOw+Q@mail.gmail.com>
-Subject: Re: [PATCH v2] perf/x86/uncore: fix compilation warning in snb_uncore_imc_init_box()
-From: Stephane Eranian <eranian@google.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+To: Herbert Xu <herbert@gondor.apana.org.au>
+CC: Stanimir Varbanov <svarbanov@mm-sol.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Grant Likely <grant.likely@linaro.org>, linux-arm-msm@vger.kernel.org,
+        Mona Hossain <mhossain@codeaurora.org>,
+        Hariprasad Dhalinarasimha <hnamgund@codeaurora.org>,
+        Zhen Kong <zkong@codeaurora.org>,
+        Niranjana Vishwanathapura <nvishwan@codeaurora.org>,
+        Rohit Vaswani <rvaswani@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org
+Subject: Re: [RFC PATCH v2 0/9] Add Qualcomm crypto driver
+References: <1397479725-20954-1-git-send-email-svarbanov@mm-sol.com>
+In-Reply-To: <1397479725-20954-1-git-send-email-svarbanov@mm-sol.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 1:35 PM, Kirill A. Shutemov
-<kirill@shutemov.name> wrote:
-> On Wed, Mar 12, 2014 at 12:53:30AM +0100, Stephane Eranian wrote:
->>
->> This patch fixes a compilation problem (unused variable) with the
->> new SNB/IVB/HSW uncore IMC code.
->>
->> In V2, we simplify the fix as suggested by Peter Zjilstra.
->>
->> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
->> Signed-off-by: Stephane Eranian <eranian@google.com>
->> --
->>
->> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> index 3e5b240..d614f6b 100644
->> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> @@ -1722,15 +1722,16 @@ static struct attribute_group snb_uncore_imc_format_group = {
->>  static void snb_uncore_imc_init_box(struct intel_uncore_box *box)
->>  {
->>       struct pci_dev *pdev = box->pci_dev;
->> -     u32 addr_lo, addr_hi;
->> +     int where = SNB_UNCORE_PCI_IMC_BAR_OFFSET;
->> +     u32 pci_dword;
->>       resource_size_t addr;
->>
->> -     pci_read_config_dword(pdev, SNB_UNCORE_PCI_IMC_BAR_OFFSET, &addr_lo);
->> -     addr = addr_lo;
->> +     pci_read_config_dword(pdev, where, &pci_dword);
->> +     addr = pci_dword;
->>
->>  #ifdef CONFIG_PHYS_ADDR_T_64BIT
->> -     pci_read_config_dword(pdev, SNB_UNCORE_PCI_IMC_BAR_OFFSET+4, &addr_hi);
->> -     addr = ((resource_size_t)addr_hi << 32) | addr_lo;
->> +       pci_read_config_dword(pdev, where + 4, &pci_dword);
->> +       addr |= ((resource_size_t)pci_dword << 32);
->>  #endif
->>
->>       addr &= ~(PAGE_SIZE - 1);
->
-> I see the warning on my laptop (X1 Carbon), which probably related to the commit:
->
-> [    0.559204] ------------[ cut here ]------------
-> [    0.559216] WARNING: CPU: 2 PID: 1 at /home/kas/git/public/linux/arch/x86/mm/ioremap.c:171 __ioremap_caller+0x2e3/0x390()
-> [    0.559225] Info: mapping multiple BARs. Your kernel is fine.
-> [    0.559230] Modules linked in:
->
-Yes, this is the same warning.
-No solution at this point. It seems to affect only Lenovo laptops.
+Hi Herbert, crypto folks
 
-> [    0.559238] CPU: 2 PID: 1 Comm: swapper/0 Not tainted 3.15.0-rc1-00012-g55101e2d6ce1 #38
-> [    0.559246] Hardware name: LENOVO 3460CC6/3460CC6, BIOS G6ET93WW (2.53 ) 02/04/2013
-> [    0.559254]  0000000000000009 ffff8801182f3b60 ffffffff81a2274e ffff8801182f3ba8
-> [    0.559264]  ffff8801182f3b98 ffffffff810db97d ffffc90000658000 00000000fed16000
-> [    0.559274]  ffffc90000658000 ffffc90000658000 0000000000006000 ffff8801182f3bf8
-> [    0.559284] Call Trace:
-> [    0.559293]  [<ffffffff81a2274e>] dump_stack+0x4d/0x6f
-> [    0.559300]  [<ffffffff810db97d>] warn_slowpath_common+0x7d/0xa0
-> [    0.559307]  [<ffffffff810db9ec>] warn_slowpath_fmt+0x4c/0x50
-> [    0.559316]  [<ffffffff810e39dc>] ? iomem_map_sanity_check+0xac/0xe0
-> [    0.559324]  [<ffffffff810a8823>] __ioremap_caller+0x2e3/0x390
-> [    0.559332]  [<ffffffff810a88e7>] ioremap_nocache+0x17/0x20
-> [    0.559339]  [<ffffffff81083845>] snb_uncore_imc_init_box+0x65/0x90
-> [    0.559348]  [<ffffffff810827c8>] uncore_pci_probe+0xd8/0x1b0
-> [    0.559356]  [<ffffffff8140f255>] local_pci_probe+0x45/0xa0
-> [    0.559364]  [<ffffffff8140e9c5>] ? pci_match_device+0xc5/0xd0
-> [    0.559371]  [<ffffffff8140f389>] pci_device_probe+0xd9/0x130
-> [    0.559379]  [<ffffffff81598987>] driver_probe_device+0x87/0x390
-> [    0.559385]  [<ffffffff81598d63>] __driver_attach+0x93/0xa0
-> [    0.559392]  [<ffffffff81598cd0>] ? __device_attach+0x40/0x40
-> [    0.559401]  [<ffffffff815968bb>] bus_for_each_dev+0x6b/0xb0
-> [    0.559408]  [<ffffffff815983ae>] driver_attach+0x1e/0x20
-> [    0.559415]  [<ffffffff81597f88>] bus_add_driver+0x188/0x260
-> [    0.559425]  [<ffffffff8237e179>] ? uncore_pmu_register+0xdb/0xdb
-> [    0.559432]  [<ffffffff815993c4>] driver_register+0x64/0xf0
-> [    0.559439]  [<ffffffff8237e179>] ? uncore_pmu_register+0xdb/0xdb
-> [    0.559446]  [<ffffffff8140eb30>] __pci_register_driver+0x60/0x70
-> [    0.559454]  [<ffffffff8237e2ee>] intel_uncore_init+0x175/0x42b
-> [    0.559461]  [<ffffffff8237e179>] ? uncore_pmu_register+0xdb/0xdb
-> [    0.559470]  [<ffffffff8100216a>] do_one_initcall+0xfa/0x1b0
-> [    0.559479]  [<ffffffff811035e5>] ? parse_args+0x225/0x3f0
-> [    0.559487]  [<ffffffff8236e17c>] kernel_init_freeable+0x1da/0x25f
-> [    0.559495]  [<ffffffff8236d8e5>] ? do_early_param+0x88/0x88
-> [    0.559504]  [<ffffffff81a13060>] ? rest_init+0x140/0x140
-> [    0.559511]  [<ffffffff81a1306e>] kernel_init+0xe/0xf0
-> [    0.559519]  [<ffffffff81a380bc>] ret_from_fork+0x7c/0xb0
-> [    0.559526]  [<ffffffff81a13060>] ? rest_init+0x140/0x140
-> [    0.559538] ---[ end trace 2d7d94a103087769 ]---
->
-> --
->  Kirill A. Shutemov
+I would like to know your opinions on the state of this driver. How far
+it is from the others crypto drivers in kernel. If you have some
+comments, criticisms etc. I will be glad to hear them and correct the
+potential issues.
+
+Thanks for your time.
+
+regards,
+Stan
+
+On 04/14/2014 03:48 PM, Stanimir Varbanov wrote:
+> Hi,
+> 
+> Here is the second version of the patch set. This time tagged
+> as an RFC to avoid confusions. The driver is splitted by files
+> and is buildable at the last patch. When the review has finished
+> 1/9 to 7/9 could be squashed in one patch.
+> 
+> Any comments appreciated!
+> 
+> Changes since v1:
+> 
+> core
+>  - added MODULE_DEVICE_TABLE
+>  - reorganise includes
+>  - kernel doc comments
+>  - fix probe error path, forgot to destroy workqueue
+>  - rework clocks and kill loops for enabling
+>  - restructure the interfaces between core part of the driver
+>    and crypto type algorithms. Now struct qce_algo_ops has
+>    .unregister_algs operation and it is implemented by every
+>    algorithm type (unregister_algs was common in v1).
+>    Also async_req_queue/done are now part of core structure
+>    qce_device
+> 
+> regs-v5
+>  - use GENMASK and include bitops.h
+> 
+> dma-sg helpers
+>  - do not check !IS_ERR on error path
+>  - various fixes as per review comments
+>  - reorganise includes
+>  - return error on qce_dma_terminate_all
+> 
+> ablkcipher
+>  - use queue and done callbacks from struct qce_device
+>  - reorganise includes
+>  - kernel doc notation
+> 
+> sha-hmac
+>  - use queue and done callbacks from struct qce_device
+>  - make byte_count __be32
+>  - kernel doc notation
+>  - make rctx flags member unsigned long
+>  - cleanup qce_ahash_update function
+>  - make const * input args of qce_import_common
+> 
+> common
+>  - rename bits/masks to use _SHIFT suffix
+>  - reorganise includes and add qce_get_version function
+>  - make rctx flags unsigned long
+>  - move blocksize boundary check on function begging and
+>    clear BYTECOUNT registers on first processing block
+> 
+> This driver is based on Codeaurora's driver found at [1]
+> 
+> regards,
+> Stan
+> 
+> [1] https://www.codeaurora.org/cgit/quic/la/kernel/msm-3.10/tree/drivers
+> /crypto/msm?h=msm-3.10
+> ------------------------------------------------------------
+> v1.
+> 
+> The following patch set implements support for Qualcomm
+> crypto hardware accelerator driver. It registers itself
+> to the crypto subsystem and adds the following operations
+> for encryption/decription - AES with ECB CBC CTR XTS modes,
+> DES with ECB CBC modes, and 3DES ECB CBC modes.
+> For hashing and MAC it adds support for sha1 sha256,
+> hmac(sha1) hmac(sha256).
+> 
+> The version of the driver is reworked by me and it is based
+> on Codeaurora's qcrypto driver. The proposed version has many
+> coding style fixes, re-factored files, separated by
+> functionality. I wanted to make the driver more readable and
+> easier for review, hope I done well. I'll appreciate any review
+> comments which will help me to make this code clear and ready
+> for mainline kernel.
+> 
+> Stanimir Varbanov (9):
+>   crypto: qce: Add core driver implementation
+>   crypto: qce: Add register defines
+>   crypto: qce: Add dma and sg helpers
+>   crypto: qce: Add ablkcipher algorithms
+>   crypto: qce: Adds sha and hmac transforms
+>   crypto: qce: Adds infrastructure to setup the crypto block
+>   crypto: qce: Adds Makefile to build the driver
+>   crypto: qce: Build Qualcomm qce driver
+>   ARM: DT: qcom: Add Qualcomm crypto driver binding document
+> 
+>  .../devicetree/bindings/crypto/qcom-qce.txt        |  25 +
+>  drivers/crypto/Kconfig                             |  10 +
+>  drivers/crypto/Makefile                            |   1 +
+>  drivers/crypto/qce/Makefile                        |   6 +
+>  drivers/crypto/qce/ablkcipher.c                    | 403 ++++++++++++++
+>  drivers/crypto/qce/cipher.h                        |  67 +++
+>  drivers/crypto/qce/common.c                        | 438 +++++++++++++++
+>  drivers/crypto/qce/common.h                        | 104 ++++
+>  drivers/crypto/qce/core.c                          | 295 ++++++++++
+>  drivers/crypto/qce/core.h                          |  73 +++
+>  drivers/crypto/qce/dma.c                           | 188 +++++++
+>  drivers/crypto/qce/dma.h                           |  58 ++
+>  drivers/crypto/qce/regs-v5.h                       | 331 ++++++++++++
+>  drivers/crypto/qce/sha.c                           | 591 +++++++++++++++++++++
+>  drivers/crypto/qce/sha.h                           |  81 +++
+>  15 files changed, 2671 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/crypto/qcom-qce.txt
+>  create mode 100644 drivers/crypto/qce/Makefile
+>  create mode 100644 drivers/crypto/qce/ablkcipher.c
+>  create mode 100644 drivers/crypto/qce/cipher.h
+>  create mode 100644 drivers/crypto/qce/common.c
+>  create mode 100644 drivers/crypto/qce/common.h
+>  create mode 100644 drivers/crypto/qce/core.c
+>  create mode 100644 drivers/crypto/qce/core.h
+>  create mode 100644 drivers/crypto/qce/dma.c
+>  create mode 100644 drivers/crypto/qce/dma.h
+>  create mode 100644 drivers/crypto/qce/regs-v5.h
+>  create mode 100644 drivers/crypto/qce/sha.c
+>  create mode 100644 drivers/crypto/qce/sha.h
+> 
+
+
+-- 
+regards,
+Stan
