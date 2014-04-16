@@ -1,160 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161430AbaDPXId (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 19:08:33 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:42282 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161134AbaDPXIa (ORCPT
+	id S964783AbaDPXI5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 19:08:57 -0400
+Received: from mail-ve0-f201.google.com ([209.85.128.201]:39145 "EHLO
+	mail-ve0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964769AbaDPXIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 19:08:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140416203138.GA17661@google.com>
-References: <20140224162400.GE16457@pd.tnic>
-	<744357E9AAD1214791ACBA4B0B9092630121F201@SHSMSX101.ccr.corp.intel.com>
-	<CAErSpo55DjkGQB=7ksow34BpCObnY+o3eNnt0n5oQEh6Lfw1pw@mail.gmail.com>
-	<1558044.S1G2VU7srO@vostro.rjw.lan>
-	<CAErSpo4pDYMhHo6e-1TN6XDRO0xy0u8H+=oucFnrEK+kbjZvzw@mail.gmail.com>
-	<20140416190404.GA7070@pd.tnic>
-	<20140416203138.GA17661@google.com>
-Date: Wed, 16 Apr 2014 16:08:29 -0700
-Message-ID: <CABPqkBRAYHghJjfcG3aJK4LUEmUmr2w_y8qLodfgALrxX+-Bgw@mail.gmail.com>
-Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
-From: Stephane Eranian <eranian@google.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Zhang, Rui" <rui.zhang@intel.com>, "Lu, Aaron" <aaron.lu@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Yan, Zheng Z" <zheng.z.yan@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 16 Apr 2014 19:08:55 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
+Cc: linux-mmc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH v2 1/3] mmc: tegra: disable UHS modes
+Date: Wed, 16 Apr 2014 16:08:37 -0700
+Message-Id: <1397689719-28882-2-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
+In-Reply-To: <1397689719-28882-1-git-send-email-abrestic@chromium.org>
+References: <1397526163-20126-1-git-send-email-abrestic@chromium.org>
+ <1397689719-28882-1-git-send-email-abrestic@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 1:31 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Wed, Apr 16, 2014 at 09:04:04PM +0200, Borislav Petkov wrote:
->> On Thu, Mar 20, 2014 at 02:48:30PM -0600, Bjorn Helgaas wrote:
->> > Right.  Even if we had this long-term solution, we'd still have
->> > Stephane's current problem, because the PNP0C02 _CRS is still wrong.
->> >
->> > We do have a drivers/pnp/quirks.c where we could conceivably adjust
->> > the PNP resource if we found the matching PCI device and MCHBAR.  That
->> > should solve Stephane's problem even with the current
->> > drivers/pnp/system.c.
->>
->> Guys, this still triggers in -rc1. Do we have a fix or something
->> testable at least?
->
-> Hi Boris,
->
-> Can you try the patch below?
->
->
->
-> PNP: Work around Haswell BIOS defect in MCH area reporting
->
-> From: Bjorn Helgaas <bhelgaas@google.com>
->
-> Work around a Haswell BIOS defect that causes part of the MCH area to be
-> unreported.
->
-> MCHBAR is not an architected PCI BAR, so MCH space is usually reported as a
-> PNP0C02 resource.  The MCH space was 16KB prior to Haswell, but it is 32KB
-> in Haswell.  Some Haswell BIOSes still report a PNP0C02 resource that is
-> only 16KB, which means the rest of the MCH space is consumed but
-> unreported.
->
-Why are you saying this is Haswell vs. others. I see the problem on my
-IvyBridge laptop, like Boris.
+Program TEGRA_SDHCI_VENDOR_MISC_CTRL so that UHS modes aren't advertised
+in SDHCI_CAPABILITIES_1.  While the Tegra SDHCI controller does support
+these modes, they require Tegra-specific tuning and calibration routines
+which the driver does not support yet.
 
-> This can cause resource map sanity check warnings or (theoretically) a
-> device conflict if we assigned the unreported space to another device.
->
-> The Intel perf event uncore driver tripped over this when it claimed the
-> MCH region:
->
->   resource map sanity check conflict: 0xfed10000 0xfed15fff 0xfed10000 0xfed13fff pnp 00:01
->   Info: mapping multiple BARs. Your kernel is fine.
->
-> To prevent this, if we find a PNP0C02 resource that covers part of the MCH
-> space, extend it to cover the entire space.
->
-> Link: http://lkml.kernel.org/r/20140224162400.GE16457@pd.tnic
-> Reported-by: Borislav Petkov <bp@alien8.de>
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> ---
->  drivers/pnp/quirks.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 52 insertions(+)
->
-> diff --git a/drivers/pnp/quirks.c b/drivers/pnp/quirks.c
-> index 258fef272ea7..023edf592371 100644
-> --- a/drivers/pnp/quirks.c
-> +++ b/drivers/pnp/quirks.c
-> @@ -334,6 +334,57 @@ static void quirk_amd_mmconfig_area(struct pnp_dev *dev)
->  }
->  #endif
->
-> +static void quirk_intel_haswell_mch(struct pnp_dev *dev)
-> +{
-> +       struct pci_dev *host;
-> +       u32 addr_lo, addr_hi;
-> +       struct pci_bus_region region;
-> +       struct resource mch;
-> +       struct pnp_resource *pnp_res;
-> +       struct resource *res;
-> +
-> +       host = pci_get_device(PCI_VENDOR_ID_INTEL, 0x0c00, NULL);
-> +       if (!host)
-> +               return;
-> +
-> +       /*
-> +        * MCHBAR is not an architected PCI BAR, so MCH space is usually
-> +        * reported as a PNP0C02 resource.  The MCH space was 16KB prior to
-> +        * Haswell, but it is 32KB in Haswell.  Some Haswell BIOSes still
-> +        * report a PNP0C02 resource that is only 16KB, which means the
-> +        * rest of the MCH space is consumed but unreported.
-> +        */
-> +
-> +       /*
-> +        * Read MCHBAR for Host Member Mapped Register Range Base
-> +        * https://www-ssl.intel.com/content/www/us/en/processors/core/4th-gen-core-family-desktop-vol-2-datasheet
-> +        * Sec 3.1.12.
-> +        */
-> +       pci_read_config_dword(host, 0x48, &addr_lo);
-> +       region.start = addr_lo & ~0x7fff;
-> +       pci_read_config_dword(host, 0x4c, &addr_hi);
-> +       region.start |= (dma_addr_t) addr_hi << 32;
-> +       region.end = region.start + 32*1024 - 1 ;
-> +       pcibios_bus_to_resource(host->bus, &mch, &region);
-> +
-> +       list_for_each_entry(pnp_res, &dev->resources, list) {
-> +               res = &pnp_res->res;
-> +               if (res->end < mch.start || res->start > mch.end)
-> +                       continue;       /* no overlap */
-> +               if (res->start == mch.start && res->end == mch.end)
-> +                       continue;       /* exact match */
-> +
-> +               dev_info(&dev->dev, FW_BUG
-> +                        "%pR covers only part of Intel Haswell MCH; extending to %pR\n",
-> +                        res, &mch);
-> +               res->start = mch.start;
-> +               res->end = mch.end;
-> +               break;
-> +       }
-> +
-> +       pci_dev_put(host);
-> +}
-> +
->  /*
->   *  PnP Quirks
->   *  Cards or devices that need some tweaking due to incomplete resource info
-> @@ -364,6 +415,7 @@ static struct pnp_fixup pnp_fixups[] = {
->  #ifdef CONFIG_AMD_NB
->         {"PNP0c01", quirk_amd_mmconfig_area},
->  #endif
-> +       {"PNP0c02", quirk_intel_haswell_mch},
->         {""}
->  };
->
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+---
+No changes from v1
+---
+ drivers/mmc/host/sdhci-tegra.c | 30 +++++++++++++++++++++++-------
+ 1 file changed, 23 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/mmc/host/sdhci-tegra.c b/drivers/mmc/host/sdhci-tegra.c
+index a835898..3cadd9c 100644
+--- a/drivers/mmc/host/sdhci-tegra.c
++++ b/drivers/mmc/host/sdhci-tegra.c
+@@ -32,11 +32,17 @@
+ 
+ /* Tegra SDHOST controller vendor register definitions */
+ #define SDHCI_TEGRA_VENDOR_MISC_CTRL		0x120
++#define SDHCI_MISC_CTRL_ENABLE_SDR104		0x8
++#define SDHCI_MISC_CTRL_ENABLE_SDR50		0x10
+ #define SDHCI_MISC_CTRL_ENABLE_SDHCI_SPEC_300	0x20
++#define SDHCI_MISC_CTRL_ENABLE_DDR50		0x200
+ 
+ #define NVQUIRK_FORCE_SDHCI_SPEC_200	BIT(0)
+ #define NVQUIRK_ENABLE_BLOCK_GAP_DET	BIT(1)
+ #define NVQUIRK_ENABLE_SDHCI_SPEC_300	BIT(2)
++#define NVQUIRK_DISABLE_SDR50		BIT(3)
++#define NVQUIRK_DISABLE_SDR104		BIT(4)
++#define NVQUIRK_DISABLE_DDR50		BIT(5)
+ 
+ struct sdhci_tegra_soc_data {
+ 	const struct sdhci_pltfm_data *pdata;
+@@ -113,18 +119,23 @@ static void tegra_sdhci_reset_exit(struct sdhci_host *host, u8 mask)
+ 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+ 	struct sdhci_tegra *tegra_host = pltfm_host->priv;
+ 	const struct sdhci_tegra_soc_data *soc_data = tegra_host->soc_data;
++	u32 misc_ctrl;
+ 
+ 	if (!(mask & SDHCI_RESET_ALL))
+ 		return;
+ 
++	misc_ctrl = sdhci_readw(host, SDHCI_TEGRA_VENDOR_MISC_CTRL);
+ 	/* Erratum: Enable SDHCI spec v3.00 support */
+-	if (soc_data->nvquirks & NVQUIRK_ENABLE_SDHCI_SPEC_300) {
+-		u32 misc_ctrl;
+-
+-		misc_ctrl = sdhci_readb(host, SDHCI_TEGRA_VENDOR_MISC_CTRL);
++	if (soc_data->nvquirks & NVQUIRK_ENABLE_SDHCI_SPEC_300)
+ 		misc_ctrl |= SDHCI_MISC_CTRL_ENABLE_SDHCI_SPEC_300;
+-		sdhci_writeb(host, misc_ctrl, SDHCI_TEGRA_VENDOR_MISC_CTRL);
+-	}
++	/* Don't advertise UHS modes which aren't supported yet */
++	if (soc_data->nvquirks & NVQUIRK_DISABLE_SDR50)
++		misc_ctrl &= ~SDHCI_MISC_CTRL_ENABLE_SDR50;
++	if (soc_data->nvquirks & NVQUIRK_DISABLE_DDR50)
++		misc_ctrl &= ~SDHCI_MISC_CTRL_ENABLE_DDR50;
++	if (soc_data->nvquirks & NVQUIRK_DISABLE_SDR104)
++		misc_ctrl &= ~SDHCI_MISC_CTRL_ENABLE_SDR104;
++	sdhci_writew(host, misc_ctrl, SDHCI_TEGRA_VENDOR_MISC_CTRL);
+ }
+ 
+ static int tegra_sdhci_buswidth(struct sdhci_host *host, int bus_width)
+@@ -181,7 +192,9 @@ static const struct sdhci_pltfm_data sdhci_tegra30_pdata = {
+ 
+ static struct sdhci_tegra_soc_data soc_data_tegra30 = {
+ 	.pdata = &sdhci_tegra30_pdata,
+-	.nvquirks = NVQUIRK_ENABLE_SDHCI_SPEC_300,
++	.nvquirks = NVQUIRK_ENABLE_SDHCI_SPEC_300 |
++		    NVQUIRK_DISABLE_SDR50 |
++		    NVQUIRK_DISABLE_SDR104,
+ };
+ 
+ static const struct sdhci_pltfm_data sdhci_tegra114_pdata = {
+@@ -195,6 +208,9 @@ static const struct sdhci_pltfm_data sdhci_tegra114_pdata = {
+ 
+ static struct sdhci_tegra_soc_data soc_data_tegra114 = {
+ 	.pdata = &sdhci_tegra114_pdata,
++	.nvquirks = NVQUIRK_DISABLE_SDR50 |
++		    NVQUIRK_DISABLE_DDR50 |
++		    NVQUIRK_DISABLE_SDR104,
+ };
+ 
+ static const struct of_device_id sdhci_tegra_dt_match[] = {
+-- 
+1.9.1.423.g4596e3a
+
