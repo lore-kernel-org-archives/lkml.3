@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542AbaDPU5Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 16:57:16 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:34597 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754920AbaDPU5O (ORCPT
+	id S1756654AbaDPU5p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 16:57:45 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:47190 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756582AbaDPU5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 16:57:14 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <534EC04F.9010408@gmail.com>
-References: <1387309071-22382-1-git-send-email-ynvich@gmail.com> <1397668411-27162-1-git-send-email-ynvich@gmail.com> <534EC04F.9010408@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v4 00/21] ARM: support for ICP DAS LP-8x4x (with dts)
-From: Sergei Ianovich <ynvich@gmail.com>
-Date: Thu, 17 Apr 2014 00:59:08 +0400
-To: Daniel Mack <zonque@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-CC: Arnd Bergmann <arnd@arndb.de>, Haojian Zhuang <haojian.zhuang@gmail.com>
-Message-ID: <610ed273-1e54-4d44-b523-cbe0d042cf48@email.android.com>
+	Wed, 16 Apr 2014 16:57:43 -0400
+Date: Wed, 16 Apr 2014 21:57:18 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Sebastian Capella <sebastian.capella@linaro.org>,
+        Pavel Machek <pavel@ucw.cz>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Subject: Re: [PATCH RFC] PM / Hibernate: no kernel_power_off when
+ pm_power_off NULL
+Message-ID: <20140416215718.7f58efd8@alan.etchedpixels.co.uk>
+In-Reply-To: <20140416204119.GJ24070@n2100.arm.linux.org.uk>
+References: <1395348795-8554-1-git-send-email-sebastian.capella@linaro.org>
+	<1395348795-8554-2-git-send-email-sebastian.capella@linaro.org>
+	<20140320212336.GA17368@amd.pavel.ucw.cz>
+	<20140320213502.795a5d3c@alan.etchedpixels.co.uk>
+	<CADHgK6uXg0CXZC5s5Z5Kpy6dYH58UChL-p9ozCCcoUU=-0KJYw@mail.gmail.com>
+	<CADHgK6sh6TUc4jBQFQHTQuhze9=r2FBzF6aULUc_c+bbWYjp5w@mail.gmail.com>
+	<CADHgK6sCmPVZ--eyEnqnjfs_4C_PfHTgAUQ_Nb4oJP0mBDnQUw@mail.gmail.com>
+	<20140415205453.GX24070@n2100.arm.linux.org.uk>
+	<20140415211832.GA32213@amd.pavel.ucw.cz>
+	<CADHgK6vzagyELYGnVoHvfnK9G57-NSycOaKsNQ53rnU1pOwn=Q@mail.gmail.com>
+	<20140416204119.GJ24070@n2100.arm.linux.org.uk>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Mack <zonque@gmail.com> wrote:
->Hi,
->
->On 04/16/2014 07:13 PM, Sergei Ianovich wrote:
->> We had an intensive discussion of the series in the beginning of
->> December 2013 [1]. The discussion resulted in 3 versions of the
->series
->> in less than 3 weeks. Then there was a decision to block this series
->> until Daniel Mack's DMA-engine-for-PXA series is ready.
->
->For whatever reason, I only received patches 1-8 out of 21 in this
->series.
+> I'd say scrap (a) _unless_ we're going to add while (1) loops to all
+> the architectures.  Alternatively, we could just accept that
+> machine_power_off() may return and deal with that case (iow, not
+> crash) in generic code.
 
-The rest is related to exotic parts of the tree and 'scripts/get_maintainer.pl' decided not to spam you. The whole series is sent to both lkml and arm lists. I can add you to cc by hand if you are interested. 
+What would the right behaviour be
 
->> Unfortunately Daniel neigther agrees to review my trivial temporary
->> solution to the DMA-in-device-tree (patch 7 of 21), nor he is active
->> in DMA series development. There is no progress for 3 months.
->
->Well, IIRC, I asked you to look into the MMC performance regressions
->that you reported and see what we can do about them. I currently don't
->have hardware to reproduce this, so I can't do it myself.
+while(1);
 
-I hate to point fingers, but you promissed to refresh the code on several occasions. It is from 3.8 tree at the moment. The regression may be introduced by an error in my merging of your patches. I published the one I tested in one piece with the results. 
+isn't really nice behaviour on a modern device 
 
->My impression is that the transisiton will only be painless if the
->mmp_pdma driver provides comparable performance to the existing
->implementation. I also still think that adding hacks to the drivers to
->manually parse the dma properties (as in #8) brings us further away
->from
->a proper solution, not closer
-
-No doubt about that. But the regression is not the only problem. Driver for video capture requires an extensive rewrite as well. The result is that a working pxa DT device is kept out of the tree and there is no supported DT devices in tree. So no proper examples for new devices and no drive-by improvements. All of this prevents rather than facilitates eventual DT migration of tha PXA platform.
-
+ 
