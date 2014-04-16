@@ -1,100 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755640AbaDPWm1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 18:42:27 -0400
-Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.180]:15069 "EHLO
-	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239AbaDPWmZ (ORCPT
+	id S1754651AbaDPWqe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 18:46:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46869 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783AbaDPWqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 18:42:25 -0400
-X-RZG-AUTH: :IWkQb0WIdvqIIwNfJfyiKBgoQwjwJ7eL6yL6M6h8JCY7ENneaJ7jDRa2
-X-RZG-CLASS-ID: mo05
-Message-ID: <534F0745.70705@samba.org>
-Date: Thu, 17 Apr 2014 00:42:13 +0200
-From: "Stefan (metze) Metzmacher" <metze@samba.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: mtk.manpages@gmail.com, Jeff Layton <jlayton@redhat.com>
-CC: libc-alpha <libc-alpha@sourceware.org>,
-        Michael Kerrisk-manpages <mtk.manpages@googlemail.com>,
-        "Carlos O'Donell" <carlos@redhat.com>, samba-technical@lists.samba.org,
-        lkml <linux-kernel@vger.kernel.org>, Jeremy Allison <jra@google.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>
-Subject: Re: should we change the name/macros of file-private locks?
-References: <20140416145746.66b7441c@tlielax.poochiereds.net> <CAKgNAkgqZDcT0jda8XS+4HrJzXjzwehqciHbkNuAVY3fNkH4zQ@mail.gmail.com>
-In-Reply-To: <CAKgNAkgqZDcT0jda8XS+4HrJzXjzwehqciHbkNuAVY3fNkH4zQ@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-OpenPGP: id=0E53083F
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 16 Apr 2014 18:46:32 -0400
+Date: Wed, 16 Apr 2014 15:46:31 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
+Message-Id: <20140416154631.6d0173498c60619d454ae651@linux-foundation.org>
+In-Reply-To: <534AD1EE.3050705@colorfullife.com>
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
+	<20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
+	<1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>
+	<20140331170546.3b3e72f0.akpm@linux-foundation.org>
+	<1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
+	<CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
+	<1396377083.25314.17.camel@buesod1.americas.hpqcorp.net>
+	<CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
+	<1396386062.25314.24.camel@buesod1.americas.hpqcorp.net>
+	<CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
+	<20140401142947.927642a408d84df27d581e36@linux-foundation.org>
+	<CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com>
+	<20140401144801.603c288674ab8f417b42a043@linux-foundation.org>
+	<1396389751.25314.26.camel@buesod1.americas.hpqcorp.net>
+	<20140401150843.13da3743554ad541629c936d@linux-foundation.org>
+	<534AD1EE.3050705@colorfullife.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 16.04.2014 22:00, schrieb Michael Kerrisk (man-pages):
-> [CC += Jeremy Allison]
-> 
-> On Wed, Apr 16, 2014 at 8:57 PM, Jeff Layton <jlayton@redhat.com> wrote:
->> Sorry to spam so many lists, but I think this needs widespread
->> distribution and consensus.
->>
->> File-private locks have been merged into Linux for v3.15, and *now*
->> people are commenting that the name and macro definitions for the new
->> file-private locks suck.
->>
->> ...and I can't even disagree. They do suck.
->>
->> We're going to have to live with these for a long time, so it's
->> important that we be happy with the names before we're stuck with them.
-> 
-> So, to add my perspective: The existing byte-range locking system has
-> persisted (despite egregious faults) for well over two decades. One
-> supposes that Jeff's new improved version might be around
-> at least as long. With that in mind, and before setting in stone (and
-> pushing into POSIX) a model of thinking that thousands of programmers
-> will live with for a long time, it's worth thinking about names.
-> 
->> Michael Kerrisk suggested several names but I think the only one that
->> doesn't have other issues is "file-associated locks", which can be
->> distinguished against "process-associated" locks (aka classic POSIX
->> locks).
-> 
-> The names I have suggested are:
-> 
->     file-associated locks
-> 
-> or
-> 
->    file-handle locks
-> 
-> or (using POSIX terminology)
-> 
->     file-description locks
+On Sun, 13 Apr 2014 20:05:34 +0200 Manfred Spraul <manfred@colorfullife.com> wrote:
 
-I'd use file-handle, file-description or at least something that's
-not associated to the "file" itself.
-
-file-handle-associated or file-description-associated would also work.
-
-> but that last might be a bit confusing to people who are not
-> standards-aware. (The POSIX standard defines the thing that a "file
-> descriptor" refers to as a "file description"; other people often call
-> that thing a "file handle" or an "open file table entry" or a "struct
-> file". The POSIX term is precise and unambiguous, but, unfortunately,
-> the term is not common outside the standard and is also easily
-> mistaken for "file descriptor".)
+> Hi Andrew,
 > 
->> At the same time, he suggested that we rename the command macros since
->> the 'P' suffix would no longer be relevant. He suggested something like
->> this:
->>
->>     F_FA_GETLK
->>     F_FA_SETLK
->>     F_FA_SETLKW
+> On 04/02/2014 12:08 AM, Andrew Morton wrote:
+> > Well, I'm assuming 64GB==infinity. It *was* infinity in the RHEL5 
+> > timeframe, but infinity has since become larger so pickanumber. 
+> 
+> I think infinity is the right solution:
+> The only common case where infinity is wrong would be Android - and 
+> Android disables sysv shm entirely.
+> 
+> There are two patches:
+> http://marc.info/?l=linux-kernel&m=139730332306185&q=raw
+> http://marc.info/?l=linux-kernel&m=139727299800644&q=raw
+> 
+> Could you apply one of them?
+> I wrote the first one, thus I'm biased which one is better.
 
-With file-description-associated this could be
+I like your patch because applying it might encourage you to send more
+kernel patches - I miss the old days ;)
 
-F_FDA_*
+But I do worry about disrupting existing systems so I like Davidlohr's
+idea of making the change a no-op for people who are currently
+explicitly setting shmmax and shmall.
 
-metze
+In an ideal world, system administrators would review this change,
+would remove their explicit limit-setting and would retest everything
+then roll it out.  But in the real world with Davidlohr's patch, they
+just won't know that we did this and they'll still be manually
+configuring shmmax/shmall ten years from now.  I almost wonder if we
+should drop a printk_once("hey, you don't need to do that any more")
+when shmmax/shmall are altered?
+
+
+I think the changelogs for both patches could afford to spend much more
+time talking about *why* we're making this change.  What problem is
+the current code causing?  This is a somewhat risky change and we
+should demonstrate good reasons for making it.  If people end up taking
+damage because of this change, they are going to be looking at that
+changelog trying to work out why we did this to them, so let's explain
+it carefully.
+
