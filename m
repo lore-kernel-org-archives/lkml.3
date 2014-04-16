@@ -1,169 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161456AbaDPOfH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 10:35:07 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:51486 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161145AbaDPOfE (ORCPT
+	id S1161472AbaDPOgG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 10:36:06 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:53491 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161439AbaDPOfH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 10:35:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140416101709.GA14131@redhat.com>
-References: <1397596546-10153-1-git-send-email-vgoyal@redhat.com>
- <1397596546-10153-3-git-send-email-vgoyal@redhat.com> <CALCETrURHNmLyccRiF_W8o2ozRMR4AaCjUE=_PU8z1+Pq6X2jQ@mail.gmail.com>
- <20140416002010.GA5035@redhat.com> <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com>
- <20140416101709.GA14131@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 16 Apr 2014 07:34:41 -0700
-Message-ID: <CALCETrUTMSpd=NYn9QuO5Y3WY0uBhjNEHO0jCwZu0L59CpeDew@mail.gmail.com>
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing cgroup path
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lpoetter@redhat.com, Simo Sorce <ssorce@redhat.com>,
-        cgroups@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        kay@redhat.com, Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 16 Apr 2014 10:35:07 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-3d-534e951918b8
+Message-id: <534E9517.2040409@samsung.com>
+Date: Wed, 16 Apr 2014 16:35:03 +0200
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.4.0
+MIME-version: 1.0
+To: Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org
+Cc: linux@arm.linux.org.uk, ben-linux@fluff.org, kgene.kim@samsung.com,
+        thomas.abraham@linaro.org, kyungmin.park@samsung.com,
+        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
+        chanho61.park@samsung.com, arnd@arndb.de, olof@lixom.net,
+        marc.zyngier@arm.com, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Subject: Re: [PATCHv2 6/8] ARM: EXYNOS: Enter a15 lowpower mode for Exynos3250
+ based on Cortex-a7
+References: <1397527192-21988-1-git-send-email-cw00.choi@samsung.com>
+ <1397527192-21988-7-git-send-email-cw00.choi@samsung.com>
+In-reply-to: <1397527192-21988-7-git-send-email-cw00.choi@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e/4NV3JqX7BBrevclv8nXSM3WLSugNM
+	Fpf3a1tc//Kc1WL+kXOsFp8/tLBb9C64ymZxtukNu8Wmx9dYLS7vmsNmMeP8PiaL25d5Lf7e
+	+cdmcer6Z6DQ5JdsFsdmLGG02LtzMqODoMeaeWsYPVqae9g8fv+axOjxd9ULZo871/aweWxe
+	Uu9x5UQTq0ffllWMHp83yQVwRnHZpKTmZJalFunbJXBl7Pj0n6mgnbuie8p/xgbGxxxdjJwc
+	EgImEvd+/mSFsMUkLtxbz9bFyMUhJLCUUWLOyX9QzmdGiSMrrjODVPEKaEncapvA2MXIwcEi
+	oCpxZkYYSJhNQE3ic8MjNhCbH6hkTdN1FhBbVCBC4l7jYVaIVkGJH5PvgcVFBNwkvn36wwwy
+	n1mgiVniwqfXYPOFBZIl9u94BbW4kVHiRcMfsGWcQB3LGi1BapgFrCVWTtrGCGHLS2xe85Z5
+	AqPgLCQ7ZiEpm4WkbAEj8ypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkCj8uoNx6TGrQ4wC
+	HIxKPLwzcnyDhVgTy4orcw8xSnAwK4nwXmjzCxbiTUmsrEotyo8vKs1JLT7EyMTBKdXA6Ct4
+	+Ju+8+MzKieOTLwUft1s/cyJHhNjf/tM5dPhv2zwulZKdGkZm65t5IufhuV7TJ/GvlM5a37l
+	Ps8F1R6pY3fT1GK0Wi+GLueJvuKc2ZT5ZEaFfGW/zvaAjekmF1aKOz075yy2z/zv4cPH1kdv
+	mvCsb8Xk84Wth3f0OS6Z0WCtF/VbWY11vxJLcUaioRZzUXEiAPLRVzegAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 3:17 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Tue, Apr 15, 2014 at 08:47:54PM -0700, Andy Lutomirski wrote:
->> On Apr 15, 2014 5:20 PM, "Vivek Goyal" <vgoyal@redhat.com> wrote:
->> >
->> > On Tue, Apr 15, 2014 at 02:53:13PM -0700, Andy Lutomirski wrote:
->> > > On Tue, Apr 15, 2014 at 2:15 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> > > > This patch implements socket option SO_PASSCGROUP along the lines of
->> > > > SO_PASSCRED.
->> > > >
->> > > > If SO_PASSCGROUP is set, then recvmsg() will get a control message
->> > > > SCM_CGROUP which will contain the cgroup path of sender. This cgroup
->> > > > belongs to first mounted hierarchy in the sytem.
->> > > >
->> > > > SCM_CGROUP control message can only be received and sender can not send
->> > > > a SCM_CGROUP message. Kernel automatically generates one if receiver
->> > > > chooses to receive one.
->> > > >
->> > > > This works both for unix stream and datagram sockets.
->> > > >
->> > > > cgroup information is passed only if either the sender or receiver has
->> > > > SO_PASSCGROUP option set. This means for existing workloads they should
->> > > > not see any significant performance impact of this change.
->> > >
->> > > This is odd.  Shouldn't an SCM_CGROUP cmsg be generated when the
->> > > receiver has SO_PASSCGROUP set and the sender passes SCM_CGROUP to
->> > > sendmsg?
->> >
->> > How can receiver trust the cgroup info generated by sender. It needs to
->> > be generated by kernel so that receiver can trust it.
->> >
->> > And if receiver needs to know cgroup of sender, receiver can just set
->> > SO_PASSCGROUP on socket and receiver should get one SCM_CGROUP message
->> > with each message received.
->>
->> I think the kernel should validate the data.
->>
->> Here's an attack against SO_PEERCGROUP: if you create a container with
->> a super secret name, then every time you connect to any unix socket,
->> you leak the name.
+Hi Chanwoo,
+
+On 15.04.2014 03:59, Chanwoo Choi wrote:
+> This patch decide proper lowpower mode of either a15 or a9 according to own ID
+> from Main ID register.
 >
-> One should be able to do that already today with SO_PASSCRED option and
-> then map pid to cgroup. Or if one is using user namespaces then go
-> through uid mappings and  figure out which container sent message.
-
-Not if you've locked down proc, perhaps by using hidepid.
-
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>   arch/arm/mach-exynos/hotplug.c | 16 +++++++++++-----
+>   1 file changed, 11 insertions(+), 5 deletions(-)
 >
->>
->> Here's an attack against SO_PASSCGROUP, as you implemented it: connect
->> a socket and get someone else to write(2) to it.  This isn't very
->> hard.  Now you've impersonated.
+> diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
+> index 5eead53..99e54e0 100644
+> --- a/arch/arm/mach-exynos/hotplug.c
+> +++ b/arch/arm/mach-exynos/hotplug.c
+> @@ -135,16 +135,22 @@ void __ref exynos_cpu_die(unsigned int cpu)
+>   	int primary_part = 0;
 >
-> If you can get another process to write to your socket and impersonate,
-> then what will stop from that process to also send SCM_CGROUP message
-> also? So I don't see how SCM_CGROUP from client will solve this problem.
->
+>   	/*
+> -	 * we're ready for shutdown now, so do it.
+> -	 * Exynos4 is A9 based while Exynos5 is A15; check the CPU part
+> +	 * we're ready for shutdown now, so do it. Exynos4 is A9 based
+> +	 * while Exynos5 is A15/Exynos3 is A7; check the CPU part
+>   	 * number by reading the Main ID register and then perform the
+>   	 * appropriate sequence for entering low power.
 
-I can easily get other processed to write to my socket.  Passing that
-socket as stderr to a setuid program is probably the easiest way.
-Finding a service that accepts a socket using SCM_RIGHTS and writes to
-it is another.  It is supposed to be safe to write(2) to an untrusted
-file descriptor, or, at the very least, it is supposed to be a DoS at
-worst.  In this case, it's also either an information leak.
+If changing this comment anyway, I'd suggest removing particular SoC 
+series from it and also correct writing style. My suggestion is:
 
-It's true that SO_PASSCRED has the same problem.  I consider that to
-be a mistake, and I suspect that there are a large number of
-longstanding security problems caused by it.  Regardless, we shouldn't
-exacerbate this problem.  There is no legacy code using SCM_CGROUP at
-all right now, because the option has never been in a released kernel.
- So let's get the interface right the first time around.
+/*
+  * Prepare the CPU for shutting down. The required sequence of
+  * operations depends on core type. CPUID part number can be used to
+  * determine the right way.
+  */
 
-If I find some time later today, I can try to write a variant of the
-patch that only sends SCM_CGROUP when the sender requests it.
-
-On an unrelated note, what happens when there are multiple cgroup hierarchies?
-
-> Kernel cgroup verification will also not help in this case as sender
-> is sending his own cgroup.
-
-Sure it will -- the sender sticks a string into SCM_CGROUP and the
-kernel checks it.
-
->
->>
->> I advocate for the following semantics: if sendmsg is passed a
->> SCM_CGROUP cmsg, and that cmsg has the right cgroup, and the receiver
->> has SO_PASSCGROUP set, then the receiver gets SCM_CGROUP.  If you try
->> to lie using SCM_CGROUP, you get -EPERM.  If you set SO_PASSCGROUP,
->> but your peer doesn't sent SCM_CREDS, you get nothing.
->>
->> This is immune to both attacks.  It should be cheaper, too, since
->> there's no overhead for people who don't use it.
->
-> I think you seem to be saying that a client's credentials should not be
-> visible to receiver until and unless client himself wants to reveal
-> those. IOW, it kind of looks like an anonymous mode of operation where
-> client connects to a socket but receiver client not want to reveal any of
-> the information about itself to receiver.
->
-> I am not sure how useful that mode really is. If it is really useful, I
-> think one could implement another socket option on client side to
-> deny passing cgroup information to receiver. Say SO_NOPASSCGROUP.
-
-This won't help -- an attacker will simply not set that option, and
-the program being attacked is certainly not going to set
-SO_NOPASSCGROUP right before calling write.
-
->
-> Before we even get there, I will question that what's so secret about
-> cgroup information that one would like to hide it from receiver. We don't
-> hide uid, pid, gid.
->
-
-I think we should hide uid, gid, and pid too, but that ship has sailed.
-
-The bigger issue isn't hiding so much as accidental assertions of
-authority.  If a program accidentally leaks its uid, that's one thing.
- If a program, by accidentally leaking its uid, causes another program
-to think that the sender wants some action to be taken on behalf of
-its uid, then there's a real security problem.
-
-> Secondly, how would client know when to send SCM_CGROUP to receiver. For
-> the use case I mentioned that init wants to log cgroup of every message
-> going into journal. How would client know that every message needs to
-> have SCM_CGROUP. By automatically getting client information when receiver
-> needs it, simplifies the things a lot without any client modificaiton.
-
-I think that the client *should* be modified.  What if there's an
-existing program that runs as a container's root but does not intend
-to sign off on a message with its cgroup?
-
-In any event, I still think that the journald case has no need for any
-kernel changes at all.  From a very cursory inspection, the journal
-code expects to find a socket in /run/systemd/journal/socket.  It
-should be enough to stick a different socket into that location in
-each container.  This will work on all kernels and may even work
-without modifying any code in the container.
-
---Andy
+Best regards,
+Tomasz
