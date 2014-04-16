@@ -1,312 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523AbaDPTFp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 15:05:45 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:39444 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755650AbaDPTFm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 15:05:42 -0400
-Message-ID: <534ED481.1020909@gmail.com>
-Date: Wed, 16 Apr 2014 21:05:37 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-CC: Russell King <linux@arm.linux.org.uk>,
-        Antoine Tenart <antoine.tenart@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: berlin: add SMP support
-References: <1395347986-30203-1-git-send-email-sebastian.hesselbarth@gmail.com> <1395347986-30203-3-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1395347986-30203-3-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+	id S1160999AbaDPTHG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 15:07:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43923 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754741AbaDPTHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 15:07:01 -0400
+Date: Wed, 16 Apr 2014 15:06:57 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Simo Sorce <ssorce@redhat.com>, David Miller <davem@davemloft.net>,
+        Tejun Heo <tj@kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
+        Network Development <netdev@vger.kernel.org>
+Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
+ cgroup path
+Message-ID: <20140416190657.GK31074@redhat.com>
+References: <20140416002010.GA5035@redhat.com>
+ <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com>
+ <20140416.085743.1614257692560892039.davem@davemloft.net>
+ <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com>
+ <1397664837.19767.410.camel@willson.li.ssimo.org>
+ <CALCETrXn7b6UuALpGUVoyQYfR2uzk5tj2ABV=dkvtFNgqM5sxQ@mail.gmail.com>
+ <20140416180642.GG31074@redhat.com>
+ <CALCETrVUw5+vCCONy1VTXpskbY_eZFo2CtbehwV5Mhj4d4+icw@mail.gmail.com>
+ <20140416182530.GB550@redhat.com>
+ <CALCETrUs1js3Br81ZkiQnsuWduzOiqDe3aV0K_z_zw0znSuiag@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrUs1js3Br81ZkiQnsuWduzOiqDe3aV0K_z_zw0znSuiag@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2014 09:39 PM, Sebastian Hesselbarth wrote:
-> This adds SMP support to Marvell Berlin2 SoCs. Secondary CPUs boot into
-> BootROM, wait for interrupt, and read SW generic register 1 with actual
-> boot code address. Synchronization by holding pen is copied from
-> plat-versatile and mach-prima2.
+On Wed, Apr 16, 2014 at 11:35:13AM -0700, Andy Lutomirski wrote:
+> On Wed, Apr 16, 2014 at 11:25 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Wed, Apr 16, 2014 at 11:13:31AM -0700, Andy Lutomirski wrote:
+> >
+> > [..]
+> >> > Ok, so passing cgroup information is not necessarily a problem as long
+> >> > as it is not used for authentication. So say somebody is just logging
+> >> > all the client request and which cgroup client was in, that should not
+> >> > be a problem.
+> >>
+> >> Do you consider correct attribution of logging messages to be
+> >> important?  If so, then this is a kind of authentication, albeit one
+> >> where the impact of screwing it up is a bit lower.
+> >
+> > So not passing cgroup information makes attribution more correct. Just
+> > logging of information is authentication how? Both kernel and user space
+> > log message into /var/log/messages and kernel messages are prefixed with
+> > "kernel". So this somehow becomes are sort of authentication. I don't
+> > get it.
 > 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-
-I'll postpone this one until we are clear how to proceed with
-non-holding pen SMP.
-
-Sebastian
-
-> ---
->  arch/arm/mach-berlin/Kconfig   |   1 +
->  arch/arm/mach-berlin/Makefile  |   1 +
->  arch/arm/mach-berlin/berlin.c  |   3 +
->  arch/arm/mach-berlin/common.h  |  18 ++++++
->  arch/arm/mach-berlin/headsmp.S |  43 +++++++++++++
->  arch/arm/mach-berlin/platsmp.c | 139 +++++++++++++++++++++++++++++++++++++++++
->  6 files changed, 205 insertions(+)
->  create mode 100644 arch/arm/mach-berlin/common.h
->  create mode 100644 arch/arm/mach-berlin/headsmp.S
->  create mode 100644 arch/arm/mach-berlin/platsmp.c
+> I did a bad job of explaining what I meant.
 > 
-> diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
-> index 7a02d222c378..eecec99c3096 100644
-> --- a/arch/arm/mach-berlin/Kconfig
-> +++ b/arch/arm/mach-berlin/Kconfig
-> @@ -15,6 +15,7 @@ config MACH_BERLIN_BG2
->  	bool "Marvell Armada 1500 (BG2)"
->  	select CACHE_L2X0
->  	select CPU_PJ4B
-> +	select HAVE_ARM_SCU if SMP
->  	select HAVE_ARM_TWD if SMP
->  	select HAVE_SMP
->  
-> diff --git a/arch/arm/mach-berlin/Makefile b/arch/arm/mach-berlin/Makefile
-> index ab69fe956f49..e11b1b0be4dd 100644
-> --- a/arch/arm/mach-berlin/Makefile
-> +++ b/arch/arm/mach-berlin/Makefile
-> @@ -1 +1,2 @@
->  obj-y += berlin.o
-> +obj-$(CONFIG_SMP)	+= platsmp.o headsmp.o
-> diff --git a/arch/arm/mach-berlin/berlin.c b/arch/arm/mach-berlin/berlin.c
-> index 025bcb5473eb..1bbca793174d 100644
-> --- a/arch/arm/mach-berlin/berlin.c
-> +++ b/arch/arm/mach-berlin/berlin.c
-> @@ -18,6 +18,8 @@
->  #include <asm/hardware/cache-l2x0.h>
->  #include <asm/mach/arch.h>
->  
-> +#include "common.h"
-> +
->  static void __init berlin_init_machine(void)
->  {
->  	/*
-> @@ -36,4 +38,5 @@ static const char * const berlin_dt_compat[] = {
->  DT_MACHINE_START(BERLIN_DT, "Marvell Berlin")
->  	.dt_compat	= berlin_dt_compat,
->  	.init_machine	= berlin_init_machine,
-> +	.smp		= smp_ops(berlin_smp_ops),
->  MACHINE_END
-> diff --git a/arch/arm/mach-berlin/common.h b/arch/arm/mach-berlin/common.h
-> new file mode 100644
-> index 000000000000..57c97669af0a
-> --- /dev/null
-> +++ b/arch/arm/mach-berlin/common.h
-> @@ -0,0 +1,18 @@
-> +/*
-> + * Marvell Berlin SoCs common include.
-> + *
-> + * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2.  This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + */
-> +
-> +#ifndef __ARCH_BERLIN_COMMON_H
-> +#define __ARCH_BERLIN_COMMON_H
-> +
-> +extern void berlin_secondary_startup(void);
-> +
-> +extern struct smp_operations berlin_smp_ops;
-> +
-> +#endif
-> diff --git a/arch/arm/mach-berlin/headsmp.S b/arch/arm/mach-berlin/headsmp.S
-> new file mode 100644
-> index 000000000000..bd187257fefd
-> --- /dev/null
-> +++ b/arch/arm/mach-berlin/headsmp.S
-> @@ -0,0 +1,43 @@
-> +/*
-> + * linux/arch/arm/mach-berlin/headsmp.S
-> + *
-> + * Based on linux/arch/arm/mach-prima2/headsmp.S
-> + *
-> + * Copyright (c) 2003 ARM Limited
-> + * All Rights Reserved
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +#include <linux/linkage.h>
-> +#include <linux/init.h>
-> +#include <asm/assembler.h>
-> +
-> +/*
-> + * Entry point for secondary CPUs, this provides a "holding pen" into which
-> + * all secondary cores are held until we're ready for them to initialise.
-> + */
-> +ENTRY(berlin_secondary_startup)
-> + ARM_BE8(setend be)
-> +	bl	v7_invalidate_l1
-> +	mrc	p15, 0, r0, c0, c0, 5
-> +	and	r0, r0, #15
-> +	adr	r4, 1f
-> +	ldmia	r4, {r5, r6}
-> +	sub	r4, r4, r5
-> +	add	r6, r6, r4
-> +pen:	ldr	r7, [r6]
-> +	cmp	r7, r0
-> +	bne	pen
-> +
-> +	/*
-> +	 * we've been released from the holding pen: secondary_stack
-> +	 * should now contain the SVC stack for this core
-> +	 */
-> +	b	secondary_startup
-> +ENDPROC(berlin_secondary_startup)
-> +
-> +	.align
-> +1:	.long	.
-> +	.long	pen_release
-> diff --git a/arch/arm/mach-berlin/platsmp.c b/arch/arm/mach-berlin/platsmp.c
-> new file mode 100644
-> index 000000000000..5c83941b0918
-> --- /dev/null
-> +++ b/arch/arm/mach-berlin/platsmp.c
-> @@ -0,0 +1,139 @@
-> +/*
-> + * linux/arch/arm/mach-berlin/platsmp.c
-> + *
-> + * Based on linux/arch/arm/plat-versatile/platsmp.c
-> + *
-> + * Copyright (C) 2002 ARM Ltd.
-> + * All Rights Reserved
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> +*/
-> +
-> +#include <linux/init.h>
-> +#include <linux/delay.h>
-> +#include <linux/errno.h>
-> +#include <linux/io.h>
-> +#include <linux/jiffies.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/smp.h>
-> +
-> +#include <asm/cacheflush.h>
-> +#include <asm/smp_plat.h>
-> +#include <asm/smp_scu.h>
-> +
-> +#include "common.h"
-> +
-> +/*
-> + * Write pen_release in a way that is guaranteed to be visible to all
-> + * observers, irrespective of whether they're taking part in coherency
-> + * or not.  This is necessary for the hotplug code to work reliably.
-> + */
-> +static void write_pen_release(int val)
-> +{
-> +	pen_release = val;
-> +	/* write and flush pen_release to memory */
-> +	smp_wmb();
-> +	sync_cache_w(&pen_release);
-> +}
-> +
-> +static DEFINE_SPINLOCK(boot_lock);
-> +
-> +static void berlin_secondary_init(unsigned int cpu)
-> +{
-> +	/*
-> +	 * let the primary processor know we're out of the
-> +	 * pen, then head off into the C entry point
-> +	 */
-> +	write_pen_release(-1);
-> +
-> +	/*
-> +	 * Synchronise with the boot thread.
-> +	 */
-> +	spin_lock(&boot_lock);
-> +	spin_unlock(&boot_lock);
-> +}
-> +
-> +static int berlin_boot_secondary(unsigned int cpu, struct task_struct *idle)
-> +{
-> +	unsigned long timeout;
-> +
-> +	/*
-> +	 * Set synchronisation state between this boot processor
-> +	 * and the secondary one
-> +	 */
-> +	spin_lock(&boot_lock);
-> +
-> +	/*
-> +	 * This is really belt and braces; we hold unintended secondary
-> +	 * CPUs in the holding pen until we're ready for them.  However,
-> +	 * since we haven't sent them a soft interrupt, they shouldn't
-> +	 * be there.
-> +	 */
-> +	write_pen_release(cpu_logical_map(cpu));
-> +
-> +	/*
-> +	 * Send the secondary CPU a soft interrupt, thereby causing
-> +	 * the boot monitor to read the system wide flags register,
-> +	 * and branch to the address found there.
-> +	 */
-> +	arch_send_wakeup_ipi_mask(cpumask_of(cpu));
-> +
-> +	timeout = jiffies + (1 * HZ);
-> +	while (time_before(jiffies, timeout)) {
-> +		/* pen_release SMP read barrier */
-> +		smp_rmb();
-> +		if (pen_release == -1)
-> +			break;
-> +
-> +		udelay(10);
-> +	}
-> +
-> +	/*
-> +	 * now the secondary core is starting up let it run its
-> +	 * calibrations, then wait for it to finish
-> +	 */
-> +	spin_unlock(&boot_lock);
-> +
-> +	return pen_release != -1 ? -ENOSYS : 0;
-> +}
-> +
-> +static void __init berlin_smp_prepare_cpus(unsigned int max_cpus)
-> +{
-> +	struct device_node *np;
-> +	void __iomem *scu_base;
-> +	void __iomem *gpr_base;
-> +
-> +	np = of_find_compatible_node(NULL, NULL, "arm,cortex-a9-scu");
-> +	scu_base = of_iomap(np, 0);
-> +	of_node_put(np);
-> +	if (!scu_base)
-> +		return;
-> +
-> +	np = of_find_compatible_node(NULL, NULL, "marvell,berlin-generic-regs");
-> +	gpr_base = of_iomap(np, 0);
-> +	of_node_put(np);
-> +	if (!gpr_base) {
-> +		iounmap(scu_base);
-> +		return;
-> +	}
-> +
-> +	/*
-> +	 * Enable SCU and write the address of secondary startup into the
-> +	 * global SW generic register 1. The secondary CPU waits for an
-> +	 * interrupt and then branches to the address stored in the SW
-> +	 * generic register 1.
-> +	 */
-> +	scu_enable(scu_base);
-> +	writel(virt_to_phys(berlin_secondary_startup), gpr_base + 0x04);
-> +	iounmap(scu_base);
-> +	iounmap(gpr_base);
-> +}
-> +
-> +struct smp_operations berlin_smp_ops __initdata = {
-> +	.smp_prepare_cpus	= berlin_smp_prepare_cpus,
-> +	.smp_secondary_init	= berlin_secondary_init,
-> +	.smp_boot_secondary	= berlin_boot_secondary,
-> +};
-> 
+> I think that, currently, log lines can be correctly attributed to the
+> kernel or to userspace, but determining where in userspace a log line
+> came from is a bit flaky.  One of the goals of these patches is to
+> make log attribution less flaky.  But if you want log attribution to
+> be completely correct, even in the presence of malicious programs,
+> then I think that the current patches aren't quite there.
 
+Why do you think that current patches are not there yet in the presence of 
+malicious program. In your example, one program opened the socket and
+passed it to malicious program. And all the future messages are coming
+from malicious program. As long as receiver checks for SO_PASSCGROUP, 
+it covers your example.
+
+How a malicious program will fake cgroup information?
+
+And we want to take care of pid related races too.
+
+> 
+> Is the reason that you don't want to modify the senders because you
+> want users of syslog(3) to get the new behavior?  If so, I think it
+> would be nice to update glibc to fix that, but maybe the kernel should
+> cooperate, and maybe SO_PEERCGROUP is a decent way to handle this.
+
+Modifying every user of unix sockets to start passing cgroup information
+will make sense only if it was deemed that passing cgroup information
+is risky inherently and should be done only in selected cases.
+
+I think so far our understanding is that we can't find anything 
+inherently wrong with passing cgroup information, though there might
+be some corner cases we can run into and which are not obivious right
+now.
+
+In this case, it does not make sense to force opt-in on clients. It
+is more convinient to default to *opt-in* and implement *opt-out* when
+need be.
+
+> 
+> I still think that SO_PASSCGROUP, as currently designed, is problematic.
+
+And I still do not get why it is problematic.
+
+Thanks
+Vivek
