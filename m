@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090AbaDPKzN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:55:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51624 "EHLO
+	id S1756171AbaDPKzx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:55:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51616 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755596AbaDPKcQ (ORCPT
+	with ESMTP id S1755095AbaDPKcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:32:16 -0400
+	Wed, 16 Apr 2014 06:32:15 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Finn Thain <fthain@telegraphics.com.au>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 06/46] powernow-k6: disable cache when changing frequency
-Date: Wed, 16 Apr 2014 11:31:22 +0100
-Message-Id: <1397644322-13905-7-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 04/46] futex: Allow architectures to skip futex_atomic_cmpxchg_inatomic() test
+Date: Wed, 16 Apr 2014 11:31:20 +0100
+Message-Id: <1397644322-13905-5-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
 References: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
@@ -28,146 +30,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit e20e1d0ac02308e2211306fc67abcd0b2668fb8b upstream.
+commit 03b8c7b623c80af264c4c8d6111e5c6289933666 upstream.
 
-I found out that a system with k6-3+ processor is unstable during network
-server load. The system locks up or the network card stops receiving. The
-reason for the instability is the CPU frequency scaling.
+If an architecture has futex_atomic_cmpxchg_inatomic() implemented and there
+is no runtime check necessary, allow to skip the test within futex_init().
 
-During frequency transition the processor is in "EPM Stop Grant" state.
-The documentation says that the processor doesn't respond to inquiry
-requests in this state. Consequently, coherency of processor caches and
-bus master devices is not maintained, causing the system instability.
+This allows to get rid of some code which would always give the same result,
+and also allows the compiler to optimize a couple of if statements away.
 
-This patch flushes the cache during frequency transition. It fixes the
-instability.
-
-Other minor changes:
-* u64 invalue changed to unsigned long because the variable is 32-bit
-* move the logic to set the multiplier to a separate function
-  powernow_k6_set_cpu_multiplier
-* preserve lower 5 bits of the powernow port instead of 4 (the voltage
-  field has 5 bits)
-* mask interrupts when reading the multiplier, so that the port is not
-  open during other activity (running other kernel code with the port open
-  shouldn't cause any misbehavior, but we should better be safe and keep
-  the port closed)
-
-This patch should be backported to all stable kernels. If it doesn't
-apply cleanly, change it, or ask me to change it.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Finn Thain <fthain@telegraphics.com.au>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Link: http://lkml.kernel.org/r/20140302120947.GA3641@osiris
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[ Geert: backported version for v3.10..v3.13 ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/cpufreq/powernow-k6.c | 56 ++++++++++++++++++++++++++++++-------------
- 1 file changed, 39 insertions(+), 17 deletions(-)
+ arch/s390/Kconfig     |  1 +
+ include/linux/futex.h |  4 ++++
+ init/Kconfig          |  7 +++++++
+ kernel/futex.c        | 14 ++++++++++++--
+ 4 files changed, 24 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/cpufreq/powernow-k6.c b/drivers/cpufreq/powernow-k6.c
-index ea8e103..ff3bb8f 100644
---- a/drivers/cpufreq/powernow-k6.c
-+++ b/drivers/cpufreq/powernow-k6.c
-@@ -44,23 +44,58 @@ static struct cpufreq_frequency_table clock_ratio[] = {
- /**
-  * powernow_k6_get_cpu_multiplier - returns the current FSB multiplier
-  *
-- *   Returns the current setting of the frequency multiplier. Core clock
-+ * Returns the current setting of the frequency multiplier. Core clock
-  * speed is frequency of the Front-Side Bus multiplied with this value.
-  */
- static int powernow_k6_get_cpu_multiplier(void)
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index 8a4cae7..f443713 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -116,6 +116,7 @@ config S390
+ 	select HAVE_FUNCTION_GRAPH_TRACER
+ 	select HAVE_FUNCTION_TRACER
+ 	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
++	select HAVE_FUTEX_CMPXCHG if FUTEX
+ 	select HAVE_KERNEL_BZIP2
+ 	select HAVE_KERNEL_GZIP
+ 	select HAVE_KERNEL_LZ4
+diff --git a/include/linux/futex.h b/include/linux/futex.h
+index b0d95ca..6435f46 100644
+--- a/include/linux/futex.h
++++ b/include/linux/futex.h
+@@ -55,7 +55,11 @@ union futex_key {
+ #ifdef CONFIG_FUTEX
+ extern void exit_robust_list(struct task_struct *curr);
+ extern void exit_pi_state_list(struct task_struct *curr);
++#ifdef CONFIG_HAVE_FUTEX_CMPXCHG
++#define futex_cmpxchg_enabled 1
++#else
+ extern int futex_cmpxchg_enabled;
++#endif
+ #else
+ static inline void exit_robust_list(struct task_struct *curr)
  {
--	u64 invalue = 0;
-+	unsigned long invalue = 0;
- 	u32 msrval;
+diff --git a/init/Kconfig b/init/Kconfig
+index fed81b5..390ff19 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1402,6 +1402,13 @@ config FUTEX
+ 	  support for "fast userspace mutexes".  The resulting kernel may not
+ 	  run glibc-based applications correctly.
  
-+	local_irq_disable();
++config HAVE_FUTEX_CMPXCHG
++	bool
++	help
++	  Architectures should select this if futex_atomic_cmpxchg_inatomic()
++	  is implemented and always working. This removes a couple of runtime
++	  checks.
 +
- 	msrval = POWERNOW_IOPORT + 0x1;
- 	wrmsr(MSR_K6_EPMR, msrval, 0); /* enable the PowerNow port */
- 	invalue = inl(POWERNOW_IOPORT + 0x8);
- 	msrval = POWERNOW_IOPORT + 0x0;
- 	wrmsr(MSR_K6_EPMR, msrval, 0); /* disable it again */
+ config EPOLL
+ 	bool "Enable eventpoll support" if EXPERT
+ 	default y
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 221a58f..15a7d724 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -68,7 +68,9 @@
  
-+	local_irq_enable();
-+
- 	return clock_ratio[(invalue >> 5)&7].driver_data;
+ #include "rtmutex_common.h"
+ 
++#ifndef CONFIG_HAVE_FUTEX_CMPXCHG
+ int __read_mostly futex_cmpxchg_enabled;
++#endif
+ 
+ #define FUTEX_HASHBITS (CONFIG_BASE_SMALL ? 4 : 8)
+ 
+@@ -2730,10 +2732,10 @@ SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
+ 	return do_futex(uaddr, op, val, tp, uaddr2, val2, val3);
  }
  
-+static void powernow_k6_set_cpu_multiplier(unsigned int best_i)
-+{
-+	unsigned long outvalue, invalue;
-+	unsigned long msrval;
-+	unsigned long cr0;
-+
-+	/* we now need to transform best_i to the BVC format, see AMD#23446 */
-+
-+	/*
-+	 * The processor doesn't respond to inquiry cycles while changing the
-+	 * frequency, so we must disable cache.
-+	 */
-+	local_irq_disable();
-+	cr0 = read_cr0();
-+	write_cr0(cr0 | X86_CR0_CD);
-+	wbinvd();
-+
-+	outvalue = (1<<12) | (1<<10) | (1<<9) | (best_i<<5);
-+
-+	msrval = POWERNOW_IOPORT + 0x1;
-+	wrmsr(MSR_K6_EPMR, msrval, 0); /* enable the PowerNow port */
-+	invalue = inl(POWERNOW_IOPORT + 0x8);
-+	invalue = invalue & 0x1f;
-+	outvalue = outvalue | invalue;
-+	outl(outvalue, (POWERNOW_IOPORT + 0x8));
-+	msrval = POWERNOW_IOPORT + 0x0;
-+	wrmsr(MSR_K6_EPMR, msrval, 0); /* disable it again */
-+
-+	write_cr0(cr0);
-+	local_irq_enable();
-+}
- 
- /**
-  * powernow_k6_set_state - set the PowerNow! multiplier
-@@ -71,8 +106,6 @@ static int powernow_k6_get_cpu_multiplier(void)
- static void powernow_k6_set_state(struct cpufreq_policy *policy,
- 		unsigned int best_i)
+-static int __init futex_init(void)
++static void __init futex_detect_cmpxchg(void)
  {
--	unsigned long outvalue = 0, invalue = 0;
--	unsigned long msrval;
- 	struct cpufreq_freqs freqs;
++#ifndef CONFIG_HAVE_FUTEX_CMPXCHG
+ 	u32 curval;
+-	int i;
  
- 	if (clock_ratio[best_i].driver_data > max_multiplier) {
-@@ -85,18 +118,7 @@ static void powernow_k6_set_state(struct cpufreq_policy *policy,
+ 	/*
+ 	 * This will fail and we want it. Some arch implementations do
+@@ -2747,6 +2749,14 @@ static int __init futex_init(void)
+ 	 */
+ 	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
+ 		futex_cmpxchg_enabled = 1;
++#endif
++}
++
++static int __init futex_init(void)
++{
++	int i;
++
++	futex_detect_cmpxchg();
  
- 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
- 
--	/* we now need to transform best_i to the BVC format, see AMD#23446 */
--
--	outvalue = (1<<12) | (1<<10) | (1<<9) | (best_i<<5);
--
--	msrval = POWERNOW_IOPORT + 0x1;
--	wrmsr(MSR_K6_EPMR, msrval, 0); /* enable the PowerNow port */
--	invalue = inl(POWERNOW_IOPORT + 0x8);
--	invalue = invalue & 0xf;
--	outvalue = outvalue | invalue;
--	outl(outvalue , (POWERNOW_IOPORT + 0x8));
--	msrval = POWERNOW_IOPORT + 0x0;
--	wrmsr(MSR_K6_EPMR, msrval, 0); /* disable it again */
-+	powernow_k6_set_cpu_multiplier(best_i);
- 
- 	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
- 
-@@ -164,7 +186,7 @@ static int powernow_k6_cpu_init(struct cpufreq_policy *policy)
- 	}
- 
- 	/* cpuinfo and default policy values */
--	policy->cpuinfo.transition_latency = 200000;
-+	policy->cpuinfo.transition_latency = 500000;
- 	policy->cur = busfreq * max_multiplier;
- 
- 	result = cpufreq_frequency_table_cpuinfo(policy, clock_ratio);
+ 	for (i = 0; i < ARRAY_SIZE(futex_queues); i++) {
+ 		plist_head_init(&futex_queues[i].chain);
 -- 
 1.9.1
 
