@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706AbaDPIof (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 04:44:35 -0400
-Received: from mta-out.inet.fi ([195.156.147.13]:56304 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751441AbaDPIoc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 04:44:32 -0400
-Date: Wed, 16 Apr 2014 11:42:36 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Bob Liu <lliubbo@gmail.com>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michel Lespinasse <walken@google.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] thp: close race between split and zap huge pages
-Message-ID: <20140416084236.GA23247@node.dhcp.inet.fi>
-References: <1397598536-25074-1-git-send-email-kirill.shutemov@linux.intel.com>
- <CAA_GA1ecVD2GuxvPqBhGKdUfMeBJU+m-i5XeSzMmDXy=QncLqA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAA_GA1ecVD2GuxvPqBhGKdUfMeBJU+m-i5XeSzMmDXy=QncLqA@mail.gmail.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+	id S1754899AbaDPIpr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 04:45:47 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46500 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751239AbaDPIpm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 04:45:42 -0400
+Date: Wed, 16 Apr 2014 10:44:53 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Kevin Hilman <khilman@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Chao Xie <xiechao.mail@gmail.com>, linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Olof Johansson <olof@lixom.net>, Eric Miao <eric.y.miao@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/5] fixing regressions caused by Dove in MULTI_V7
+Message-ID: <20140416104453.571c8d10@skate>
+In-Reply-To: <1397585763-23482-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <20140414151236.75f8816d@skate>
+	<1397585763-23482-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 07:52:29AM +0800, Bob Liu wrote:
-> >         *ptl = pmd_lock(mm, pmd);
-> > -       if (pmd_none(*pmd))
-> > +       if (!pmd_present(*pmd))
-> >                 goto unlock;
-> 
-> But I didn't get the idea why pmd_none() was removed?
+Dear Sebastian Hesselbarth,
 
-!pmd_present(*pmd) is weaker check then pmd_none(*pmd). I mean if
-pmd_none(*pmd) is true then pmd_present(*pmd) is always false.
-Correct me if I'm wrong.
+On Tue, 15 Apr 2014 20:15:58 +0200, Sebastian Hesselbarth wrote:
 
+> Sebastian Hesselbarth (5):
+>   ARM: iwmmxt: explicitly check for supported architectures
+>   ARM: pj4: enable iWMMXt only if CONFIG_IWMMXT is set
+>   ARM: pj4: properly detect existence of iWMMXt coprocessor
+>   ARM: pj4: fix cpu_is_pj4 check
+>   ARM: iwmmxt: allow to build iWMMXt on Marvell PJ4B
+
+Tested-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>.
+
+It does fix the boot on PJ4B-MP based processors that don't have iWMMXt
+extensions such as the Armada XP. I've tested the following cases:
+
+ * Armada XP (PJ4B-MP), with CONFIG_MACH_DOVE disabled and enabled
+ * Armada 370 (PJ4B), with CONFIG_MACH_DOVE disabled and enabled
+
+and all of them boot, while before your patch series, 3.15-rc1 fails to
+boot on Armada XP with CONFIG_MACH_DOVE enabled.
+
+Thanks!
+
+Thomas
 -- 
- Kirill A. Shutemov
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
