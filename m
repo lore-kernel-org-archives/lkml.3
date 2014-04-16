@@ -1,15 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600AbaDPLIN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 07:08:13 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:39660 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755560AbaDPLIM (ORCPT
+	id S1755598AbaDPLNJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 07:13:09 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:47375 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372AbaDPLNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 07:08:12 -0400
-Date: Wed, 16 Apr 2014 12:08:06 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+	Wed, 16 Apr 2014 07:13:07 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f5-b7fc96d000004885-27-534e65bfd2f0
+Content-transfer-encoding: 8BIT
+Message-id: <1397646784.6147.18.camel@AMDC1943>
+Subject: Re: [PATCH v5 0/9] mfd: max14577: Add support for MAX77836
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Lee Jones <lee.jones@linaro.org>
 Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>,
         Samuel Ortiz <sameo@linux.intel.com>,
@@ -18,146 +23,69 @@ Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v5 0/9] mfd: max14577: Add support for MAX77836
-Message-ID: <20140416110806.GB19671@lee--X1>
+Date: Wed, 16 Apr 2014 13:13:04 +0200
+In-reply-to: <20140416110806.GB19671@lee--X1>
 References: <1397467040-30502-1-git-send-email-k.kozlowski@samsung.com>
- <20140416102846.GL4754@lee--X1>
- <1397645078.6147.11.camel@AMDC1943>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1397645078.6147.11.camel@AMDC1943>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+ <20140416102846.GL4754@lee--X1> <1397645078.6147.11.camel@AMDC1943>
+ <20140416110806.GB19671@lee--X1>
+X-Mailer: Evolution 3.8.4-0ubuntu1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHLMWRmVeSWpSXmKPExsVy+t/xq7r7U/2CDdYsN7fYOGM9q8XUh0/Y
+	LK5/ec5qcbbpDbvF/a9HGS2+Xelgsri8aw6bxdojd9ktbjeuYLM43c3qwOWxc9Zddo9NqzrZ
+	PO5c28PmMe9koEffllWMHp83yQWwRXHZpKTmZJalFunbJXBlzP+9nLlgH39F56pDLA2Mk3m6
+	GDk4JARMJHofZnUxcgKZYhIX7q1n62Lk4hASWMoosbFhEztIgldAUOLH5HssIPXMAvISRy5l
+	g4SZBdQlJs1bxAxR/5lR4saRq0wQ9foST3dcAOsVFnCWWHHuK1icTcBYYvPyJWwgc0QEVCTO
+	vTEH6WUW+MwksfPjTBaQGhYBVYlFh66A1XMK6ErMf/KHFWLBBkaJ/iUT2SEuVZI4t24N4wRG
+	gVlI7puFcN8sJPctYGRexSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRESB193MC49ZnWIUYCD
+	UYmHd0aOb7AQa2JZcWXuIUYJDmYlEd7GSL9gId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYzFU3UN
+	RHtjhE6z1Zf5SX3ddu+TvNfMC3m/z2kUBDaZH/FTTRI4US65dN+ES1tj/SOVPv/fI5PsuM9u
+	Xv8du/kb/3d5/Hz73VjvT/1jxWgrMckOAbtb9a+ecmvyW4tXlC2dcnpbvO2UnnxZxTlPFr+U
+	ee0hmPz0VOujc2fWSn/cNy3/2/KiRkUlluKMREMt5qLiRAA+TutOYQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Apr 2014, Krzysztof Kozlowski wrote:
-
-> On śro, 2014-04-16 at 11:28 +0100, Lee Jones wrote:
-> > > This is first part of fifth version of patchset adding support for
-> > > MAX77836 device to the max14577 driver.
+On śro, 2014-04-16 at 12:08 +0100, Lee Jones wrote:
+> On Wed, 16 Apr 2014, Krzysztof Kozlowski wrote:
+> 
+> > On śro, 2014-04-16 at 11:28 +0100, Lee Jones wrote:
+> > > > This is first part of fifth version of patchset adding support for
+> > > > MAX77836 device to the max14577 driver.
+> > > > 
+> > > > I decided to split the patchset into smaller parts. I hope this would
+> > > > help in getting necessary review/acks from maintainers.
+> > > > 
+> > > > The first part introduces changes in max14577 driver and adds support
+> > > > for MAX77836 in MFD, extcon and regulator drivers. Most of these
+> > > > patches already have required acks from maintainers.
+> > > > Full v4 patchset can be found here:
+> > > > http://thread.gmane.org/gmane.linux.kernel/1654267
 > > > 
-> > > I decided to split the patchset into smaller parts. I hope this would
-> > > help in getting necessary review/acks from maintainers.
-> > > 
-> > > The first part introduces changes in max14577 driver and adds support
-> > > for MAX77836 in MFD, extcon and regulator drivers. Most of these
-> > > patches already have required acks from maintainers.
-> > > Full v4 patchset can be found here:
-> > > http://thread.gmane.org/gmane.linux.kernel/1654267
+> > > So what's the plan for this driver now? What's missing? Do you have
+> > > all the Acks you need? If so, I'm happy to apply this patch-set and
+> > > supply a pull-request to the other maintainers.
 > > 
-> > So what's the plan for this driver now? What's missing? Do you have
-> > all the Acks you need? If so, I'm happy to apply this patch-set and
-> > supply a pull-request to the other maintainers.
-> 
-> Next patches (part 2):
-> 1. charger: max14577: Add support for MAX77836 charger
-> 2. power: max17040: Add ID for MAX77836 Fuel Gauge block
-> 3. regulator/mfd: max14577: Export symbols for calculating charger 
->    current
-> 4. charger: max14577: Configure battery-dependent settings from DTS
-> 5. Documentation: mfd: max14577: Add device tree bindings document
-> 6. regulator: max14577: Implement SUSPEND mode for MAX77836 LDO-s
-> 
-> They are quite independent from each other so I think it would be the
-> best if you could prepare an immutable branch with first part of
-> patches.
-
-I'm only concerned with the patches in this set at the moment.
-
-Do all of the patches in _this_ set have all of the required Acks, or
-are you still waiting on some maintainers?
-
-> > > Changes since v4
-> > > ================
-> > > 1. Updated Kconfig entries mentioning MAX77836.
-> > > 2. Removed rename-like patches:
-> > >    [PATCH v4 02/16] mfd: max14577: Rename and add MAX14577 symbols
-> > >    [PATCH v4 03/16] mfd: max14577: Rename state container to maxim_core
-> > > 3. Added new patches (not yet reviewed):
-> > >    [PATCH v5 2/9] mfd: max14577: Add muic prefix to regmap config
-> > >    [PATCH v5 6/9] mfd: max14577: Add MAX14577 prefix to IRQ defines
-> > > 4. Rebased on 3.15-rc1.
-> > > 
-> > > Changes since v3
-> > > ================
-> > > 1. Applied minor fixes (pointed by Lee Jones).
-> > > 2. Added one ACK (Lee Jones) and Review-by (Tomasz Figa).
-> > > 3. Patch 14/charger: Minor change in parsing EOC value from DTS.
-> > > 4. Rebased on next-20140224.
-> > > 
-> > > Changes since v2
-> > > ================
-> > > 1. Added ACK-s.
-> > > 2. Applied minor checkpatch fixes (pointed by Lee Jones).
-> > > 3. Rebased on next-20140217.
-> > > 
-> > > Changes since v1
-> > > ================
-> > > 1. Added ACK-s, reviews and tested-by tags.
-> > > 2. Removed applied patches (they were merged to the linux-next tree).
-> > > 3. Applied comments from review (Lee Jones) to 5/15 (detection of device type)
-> > >    and 8/15 (add max77836 support to max14577).
-> > > 4. Rebased on next tree.
-> > > 5. Added patch 13 and 14 (pointed by Jenny Tc):
-> > >    - regulator/mfd: max14577: Export symbols for calculating charger current
-> > >    - charger: max14577: Configure battery-dependent settings from DTS
-> > > 6. Updated bindings documentation with new charger bindings.
-> > > Previous thread:
-> > >  - [PATCH 00/18] mfd: max14577: Add support for MAX77836
-> > >    http://thread.gmane.org/gmane.linux.kernel/1636654/focus=1636674
-> > > 
-> > > 
-> > > Description
-> > > ===========
-> > > The MAX77836 is almost the same as MAX14577. Basically it is an extended
-> > > version of MAX14577. The chipsets have same MUIC component so the extcon,
-> > > charger and regulators require only little adjustments. More changes were
-> > > needed in the charger (because it uses lower charging current) and regulator
-> > > drivers (because mentioned different charing current and additional
-> > > regulators). The MAX77836 has also PMIC and Fuel Gauge (which is the same
-> > > as MAX17040/17048 Fuel Gauge).
-> > > 
-> > > The MAX77836 uses three I2C slave addresses and has additional interrupts
-> > > (related to PMIC and Fuel Gauge). It has also Interrupt Source register,
-> > > just like MAX77686 and MAX77693.
-> > > 
-> > > 
-> > > Best regards,
-> > > Krzysztof Kozlowski
-> > > 
-> > > 
-> > > Chanwoo Choi (1):
-> > >   extcon: max14577: Change extcon name instead of static name according
-> > >     to device type
-> > > 
-> > > Krzysztof Kozlowski (8):
-> > >   mfd: max14577: Add muic prefix to regmap config
-> > >   mfd: max14577: Add detection of device type
-> > >   extcon: max14577: Add max14577 prefix to muic_irqs
-> > >   extcon: max14577: Choose muic_irqs according to device type
-> > >   mfd: max14577: Add MAX14577 prefix to IRQ defines
-> > >   mfd: max77836: Add MAX77836 support to max14577 driver
-> > >   extcon: max14577: Add support for MAX77836
-> > >   regulator: max14577: Add support for MAX77836 regulators
-> > > 
-> > >  drivers/extcon/Kconfig               |   4 +-
-> > >  drivers/extcon/extcon-max14577.c     | 174 +++++++++++++------
-> > >  drivers/mfd/Kconfig                  |   6 +-
-> > >  drivers/mfd/max14577.c               | 315 ++++++++++++++++++++++++++++++-----
-> > >  drivers/regulator/Kconfig            |   7 +-
-> > >  drivers/regulator/max14577.c         | 277 ++++++++++++++++++++++++++----
-> > >  include/linux/mfd/max14577-private.h | 222 ++++++++++++++++++------
-> > >  include/linux/mfd/max14577.h         |  19 ++-
-> > >  8 files changed, 836 insertions(+), 188 deletions(-)
-> > > 
+> > Next patches (part 2):
+> > 1. charger: max14577: Add support for MAX77836 charger
+> > 2. power: max17040: Add ID for MAX77836 Fuel Gauge block
+> > 3. regulator/mfd: max14577: Export symbols for calculating charger 
+> >    current
+> > 4. charger: max14577: Configure battery-dependent settings from DTS
+> > 5. Documentation: mfd: max14577: Add device tree bindings document
+> > 6. regulator: max14577: Implement SUSPEND mode for MAX77836 LDO-s
 > > 
+> > They are quite independent from each other so I think it would be the
+> > best if you could prepare an immutable branch with first part of
+> > patches.
 > 
+> I'm only concerned with the patches in this set at the moment.
+> 
+> Do all of the patches in _this_ set have all of the required Acks, or
+> are you still waiting on some maintainers?
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I have all necessary Acks for this patchset.
+One exception: patch 9/9 (regulator) was only reviewed by Mark Brown,
+not acked:
+https://lkml.org/lkml/2014/1/28/252
+
+
+
