@@ -1,64 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637AbaDPUde (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 16:33:34 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57438 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753114AbaDPUdc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 16:33:32 -0400
-Message-ID: <534EE90A.7070602@infradead.org>
-Date: Wed, 16 Apr 2014 13:33:14 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>, Anton Vorontsov <anton@enomsg.org>
-CC: Olof Johansson <olof@lixom.net>, Sachin Kamat <sachin.kamat@linaro.org>,
-        ajaykumar.rs@samsung.com, linux-samsung-soc@vger.kernel.org,
-        Simon Glass <sjg@chromium.org>, Michael Spang <spang@chromium.org>,
-        Sean Paul <seanpaul@chromium.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/5] regulator: tps65090: Allow setting the overcurrent
- wait time
-References: <1397592876-5741-1-git-send-email-dianders@chromium.org> <1397672724-9063-1-git-send-email-dianders@chromium.org> <1397672724-9063-5-git-send-email-dianders@chromium.org>
-In-Reply-To: <1397672724-9063-5-git-send-email-dianders@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755048AbaDPUk2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 16:40:28 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:53233 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751925AbaDPUk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 16:40:27 -0400
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>, Borislav Petkov <bp@suse.de>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>, Jiri Olsa <jolsa@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] tools/perf: allow overriding sysfs and proc finding with env var
+Date: Wed, 16 Apr 2014 13:39:46 -0700
+Message-Id: <1397680812-21588-1-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.9.2
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041620-5806-0000-0000-000024A6FC66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2014 11:25 AM, Doug Anderson wrote:
-> diff --git a/drivers/regulator/tps65090-regulator.c b/drivers/regulator/tps65090-regulator.c
-> index 2e92ef6..ca13a1a 100644
-> --- a/drivers/regulator/tps65090-regulator.c
-> +++ b/drivers/regulator/tps65090-regulator.c
-> @@ -28,15 +28,57 @@
+SYSFS_PATH and PROC_PATH environment variables now let the user override
+the detection of sysfs and proc locations for testing purposes.
 
-> +/**
-> + * tps65090_reg_set_overcurrent_wait - Setup overcurrent wait
-> + *
-> + * This will set the overcurrent wait time based on what's in the regulator
-> + * info.
-> + *
-> + * @ri:		Overall regulator data
-> + * @rdev:	Regulator device
-> + * @return 0 if no error, non-zero if there was an error writing the register.
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+---
+Since v1: rebased onto acme's perf/core
 
-kernel-doc notation here should be:
+ tools/lib/api/fs/fs.c | 43 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 42 insertions(+), 1 deletion(-)
 
- * Return: 0 if no error, non-zero if there was an error writing the register.
-
-> + */
-> +static int tps65090_reg_set_overcurrent_wait(struct tps65090_regulator *ri,
-> +					     struct regulator_dev *rdev)
-> +{
-
-
+diff --git a/tools/lib/api/fs/fs.c b/tools/lib/api/fs/fs.c
+index 5b5eb78..10783a6 100644
+--- a/tools/lib/api/fs/fs.c
++++ b/tools/lib/api/fs/fs.c
+@@ -1,8 +1,10 @@
+ /* TODO merge/factor in debugfs.c here */
+ 
++#include <ctype.h>
+ #include <errno.h>
+ #include <stdbool.h>
+ #include <stdio.h>
++#include <stdlib.h>
+ #include <string.h>
+ #include <sys/vfs.h>
+ 
+@@ -96,12 +98,51 @@ static bool fs__check_mounts(struct fs *fs)
+ 	return false;
+ }
+ 
++static void mem_toupper(char *f, size_t len)
++{
++	while (len) {
++		*f = toupper(*f);
++		f++;
++		len--;
++	}
++}
++
++/*
++ * Check for "NAME_PATH" environment variable to override fs location (for
++ * testing). This matches the recommendation in Documentation/sysfs-rules.txt
++ * for SYSFS_PATH.
++ */
++static bool fs__env_override(struct fs *fs)
++{
++	char *override_path;
++	size_t name_len = strlen(fs->name);
++	/* name + "_PATH" + '\0' */
++	char upper_name[name_len + 5 + 1];
++	memcpy(upper_name, fs->name, name_len);
++	mem_toupper(upper_name, name_len);
++	strcpy(&upper_name[name_len], "_PATH");
++
++	override_path = getenv(upper_name);
++	if (!override_path)
++		return false;
++
++	fs->found = true;
++	strcpy(fs->path, override_path);
++	return true;
++}
++
+ static const char *fs__get_mountpoint(struct fs *fs)
+ {
++	if (fs__env_override(fs))
++		return fs->path;
++
+ 	if (fs__check_mounts(fs))
+ 		return fs->path;
+ 
+-	return fs__read_mounts(fs) ? fs->path : NULL;
++	if (fs__read_mounts(fs))
++		return fs->path;
++
++	return NULL;
+ }
+ 
+ static const char *fs__mountpoint(int idx)
 -- 
-~Randy
+1.9.2
+
