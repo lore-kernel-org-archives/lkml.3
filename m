@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422645AbaDPPRr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 11:17:47 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34536 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161613AbaDPPRq (ORCPT
+	id S1422665AbaDPPRy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 11:17:54 -0400
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:57564 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161469AbaDPPRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 11:17:46 -0400
-From: Felipe Balbi <balbi@ti.com>
-To: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>
-CC: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH] power: twl4030_charger: clear IRQs after handling them
-Date: Wed, 16 Apr 2014 10:14:59 -0500
-Message-ID: <1397661299-31342-1-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 1.9.1.286.g5172cb3
+	Wed, 16 Apr 2014 11:17:53 -0400
+Date: Wed, 16 Apr 2014 11:17:49 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
+        rafael.j.wysocki@intel.com, toshi.kani@hp.com
+Subject: Re: [RFC PATCH v3] Use kernfs_break_active_protection() for device
+ online store callbacks
+Message-ID: <20140416151749.GE1257@htj.dyndns.org>
+References: <1397121514.25199.91.camel@ThinkPad-T5421.cn.ibm.com>
+ <20140410133116.GB25308@htj.dyndns.org>
+ <1397189445.3649.14.camel@ThinkPad-T5421>
+ <20140411102649.GB26252@mtj.dyndns.org>
+ <1397461649.12943.1.camel@ThinkPad-T5421.cn.ibm.com>
+ <20140414201315.GD16835@htj.dyndns.org>
+ <1397529877.13188.68.camel@ThinkPad-T5421.cn.ibm.com>
+ <20140415145017.GK1863@htj.dyndns.org>
+ <1397612500.13188.83.camel@ThinkPad-T5421.cn.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397612500.13188.83.camel@ThinkPad-T5421.cn.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TRM says we *must* write 1 to each bit we're handling
-in order to clear the IRQ status and bring IRQ line
-low. This patch implements that.
+Hello,
 
-Signed-off-by: Felipe Balbi <balbi@ti.com>
----
+On Wed, Apr 16, 2014 at 09:41:40AM +0800, Li Zhong wrote:
+> > If so, that is
+> > an actually possible deadlock, no?
+> 
+> Yes, but it seems to me that it is solved in commit 5e33bc41, which uses
+> lock_device_hotplug_sysfs() to return a restart syscall error if not
+> able to try lock the device_hotplug_lock. That also requires the device
+> removing code path to take the device_hotplug_lock. 
 
-Russell, I don't have HW to test, but this should
-solve the problem you saw when not using battery
-with Zoom board. Let me know if it doesn't.
+But that patch only takes out device_hotplug_lock out of the
+dependency graph and does nothing for cpu_add_remove_lock.  It seems
+to be that there still is a deadlock condition involving s_active and
+cpu_add_remove_lock.  Am I missing something here?
 
-cheers
+Now that kernfs has a proper mechanism to deal with it, wouldn't it
+make more sense to replace 5e33bc41 with prper s_active protection
+breaking?
 
- drivers/power/twl4030_charger.c | 16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+Thanks.
 
-diff --git a/drivers/power/twl4030_charger.c b/drivers/power/twl4030_charger.c
-index f141088..b090842 100644
---- a/drivers/power/twl4030_charger.c
-+++ b/drivers/power/twl4030_charger.c
-@@ -301,12 +301,24 @@ static irqreturn_t twl4030_bci_interrupt(int irq, void *arg)
- 	ret = twl_i2c_read_u8(TWL4030_MODULE_INTERRUPTS, &irqs1,
- 			      TWL4030_INTERRUPTS_BCIISR1A);
- 	if (ret < 0)
--		return IRQ_HANDLED;
-+		return IRQ_NONE;
-+
-+	/* clear IRQs early */
-+	ret = twl_i2c_write_u8(TWL4030_MODULE_INTERRUPTS, irqs1,
-+			TWL4030_INTERRUPTS_BCIISR1A);
-+	if (ret < 0)
-+		return IRQ_NONE;
- 
- 	ret = twl_i2c_read_u8(TWL4030_MODULE_INTERRUPTS, &irqs2,
- 			      TWL4030_INTERRUPTS_BCIISR2A);
- 	if (ret < 0)
--		return IRQ_HANDLED;
-+		return IRQ_NONE;
-+
-+	/* clear IRQs early */
-+	ret = twl_i2c_write_u8(TWL4030_MODULE_INTERRUPTS, irqs2,
-+			      TWL4030_INTERRUPTS_BCIISR2A);
-+	if (ret < 0)
-+		return IRQ_NONE;
- 
- 	dev_dbg(bci->dev, "BCI irq %02x %02x\n", irqs2, irqs1);
- 
 -- 
-1.9.1.286.g5172cb3
-
+tejun
