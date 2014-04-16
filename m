@@ -1,78 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422689AbaDPQUK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 12:20:10 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:48133 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422648AbaDPQUG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 12:20:06 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: herbert@gondor.apana.org.au, davem@davemloft.net, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com
-Cc: x86@kernel.org, linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nasa4836@gmail.com
-Subject: [PATCH] crypto: sha{256,512}_ssse3 - remove asmlinkage from static functions
-Date: Thu, 17 Apr 2014 00:19:50 +0800
-Message-Id: <1397665190-12491-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 1.9.0.GIT
+	id S1422721AbaDPQUp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 12:20:45 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53255 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422648AbaDPQUl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 12:20:41 -0400
+Date: Wed, 16 Apr 2014 11:16:19 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Roger Quadros <rogerq@ti.com>
+CC: Kishon Vijay Abraham I <kishon@ti.com>, <bcousson@baylibre.com>,
+        <tony@atomide.com>, <rob.herring@calxeda.com>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
+        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
+        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        George Cherian <george.cherian@ti.com>
+Subject: Re: [PATCH 2/2] ARM: dts: omap5: Add dr_mode for dwc3
+Message-ID: <20140416161619.GH28035@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1381402195-29257-1-git-send-email-kishon@ti.com>
+ <1381402195-29257-2-git-send-email-kishon@ti.com>
+ <52580F34.8030809@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wZdghQXYJzyo6AGC"
+Content-Disposition: inline
+In-Reply-To: <52580F34.8030809@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 128ea04a9885("lto: Make asmlinkage __visible") restricts
-asmlinkage to externally_visible, this causes compilation warnings:
+--wZdghQXYJzyo6AGC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-    arch/x86/crypto/sha256_ssse3_glue.c:56:1:
-    warning: ‘externally_visible’ attribute have effect only on public objects [-Wattributes]
+On Fri, Oct 11, 2013 at 05:46:12PM +0300, Roger Quadros wrote:
+> Hi,
+>=20
+> On 10/10/2013 01:49 PM, Kishon Vijay Abraham I wrote:
+> > From: George Cherian <george.cherian@ti.com>
+> >=20
+> > Added dr_mode property in dwc3 and set its default mode to device.
+>=20
+> If there is a specific reason why this is not set to "otg", we need
+> to explain it here.
+>=20
+> AFAIK the port is meant to be used as OTG port.
 
-    static asmlinkage void (*sha256_transform_asm)(const char *, u32 *, u64);
-    ^
+we still don't have the workaround for dual role ports, I've been
+working on it but still need to retest and make sure it's working fine
+before merging upstream.
 
-    arch/x86/crypto/sha512_ssse3_glue.c:55:1:
-    warning: ‘externally_visible’ attribute have effect only on public objects [-Wattributes]
-    static asmlinkage void (*sha512_transform_asm)(const char *, u64 *,
-    ^
+--=20
+balbi
 
-Drop asmlinkage here to avoid such warnings.
+--wZdghQXYJzyo6AGC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Also see Commit 8783dd3a37a5853689e1("irqchip: Remove asmlinkage from static functions")
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- arch/x86/crypto/sha256_ssse3_glue.c | 2 +-
- arch/x86/crypto/sha512_ssse3_glue.c | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+iQIcBAEBAgAGBQJTTqzTAAoJEIaOsuA1yqREfaEP/RoDpVwvbrhix7yIKYOE55F3
+IR3oD0L+SqVgBqcZnQGIzD20C8GqDnPBdk8YpG4v08hlvx1pLWChzup97E/Dc2A1
+UfZTteVJRSnARflOkAH7ck/Jrqdp6lVTK2BWMKEkiHyvZmg3RGeteWdmambPeZhs
+GIR2k58mSJguHEt9tRHzttvSSmZSk4lNoE14m/aGp1OqP1pQ/llWIJmNP/Up1iF1
+WT1zB+8Zfj5QJx6mJK4kwDM3uYNAvMM7NkWWyz2qvuj3t+jvMM+6elIAu6pDt8XA
+TtO3LqlVjOWYcyFCBPzoX3ZNPLEzKvklACUsecOJsSQ8bAFVyfTaco/Qa61wbR6b
+sSwl00Qj9FEYN9KVdlCgbWWpxJ9oLGF1qD+uwwzuF59rD2c/AZspOiZu/pIy7519
+ooLT9p5ENah0FkumSDPlTKbkB7EXhCl43uGqpB0Ae+D5fKvRnt3vBnOKE7YhNKob
+m7wqRtgJN9FzGs9EuHrxkmH7YRMSdqMzQ//3+V9jWAVFCrfFgOjpfRU+v8IhfRx4
+w4FEpKqW1j5A8nlQrx016gVaQ3rhgm0b7zUu7D9srAywYyv/jFp4YoMGVfFx9oCo
+1vZ6frG1ex9/OzKzKmwqu7I8UJCs6vvXLDp6NkobkzflSXLtZNbyZ3TyxzvGkOxX
+vyHH+G2aPh+Q9aOgMoEb
+=XF8Y
+-----END PGP SIGNATURE-----
 
-diff --git a/arch/x86/crypto/sha256_ssse3_glue.c b/arch/x86/crypto/sha256_ssse3_glue.c
-index f248546..be35c31 100644
---- a/arch/x86/crypto/sha256_ssse3_glue.c
-+++ b/arch/x86/crypto/sha256_ssse3_glue.c
-@@ -53,7 +53,7 @@ asmlinkage void sha256_transform_rorx(const char *data, u32 *digest,
- 				     u64 rounds);
- #endif
- 
--static asmlinkage void (*sha256_transform_asm)(const char *, u32 *, u64);
-+static void (*sha256_transform_asm)(const char *, u32 *, u64);
- 
- 
- static int sha256_ssse3_init(struct shash_desc *desc)
-diff --git a/arch/x86/crypto/sha512_ssse3_glue.c b/arch/x86/crypto/sha512_ssse3_glue.c
-index f30cd10..ddbc242 100644
---- a/arch/x86/crypto/sha512_ssse3_glue.c
-+++ b/arch/x86/crypto/sha512_ssse3_glue.c
-@@ -52,7 +52,7 @@ asmlinkage void sha512_transform_rorx(const char *data, u64 *digest,
- 				     u64 rounds);
- #endif
- 
--static asmlinkage void (*sha512_transform_asm)(const char *, u64 *, u64);
-+static void (*sha512_transform_asm)(const char *, u64 *, u64);
- 
- 
- static int sha512_ssse3_init(struct shash_desc *desc)
--- 
-1.9.0.GIT
-
+--wZdghQXYJzyo6AGC--
