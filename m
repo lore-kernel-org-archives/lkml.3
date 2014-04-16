@@ -1,95 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756426AbaDPX3x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 19:29:53 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:21421 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754282AbaDPX3v (ORCPT
+	id S1161420AbaDPXam (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 19:30:42 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:15625 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753294AbaDPXak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 19:29:51 -0400
-X-AuditID: cbfee691-b7efc6d0000039d3-a3-534f126d08d2
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
-Subject: [PATCH] f2fs: fix to unlock f2fs_lock at the omitted error case
-Date: Thu, 17 Apr 2014 08:27:46 +0900
-Message-id: <1397690866-25379-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.4.474.g128a96c
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t8zA91cIf9gg66b2hbXd/1lsri0yN1i
-	z96TLBaXd81hc2Dx2L3gM5NH35ZVjB6fN8kFMEdx2aSk5mSWpRbp2yVwZWx+sJmt4C5nxYer
-	Lg2Mb9i7GDk5JARMJG5f3swEYYtJXLi3nq2LkYtDSGAZo8S6fSfgitq+HGCFSCxilGju64Ry
-	OpkkftyczdjFyMHBJqAtsXm/AUiDiACzxIKp5xlBapgFJjBK/F/0ngUkISzgIfH83VZmEJtF
-	QFXi3Ow5YHFeAXeJOW9amSG2aUtsez4RrFlC4D6bxKvzm9khGgQkvk0+xAKyTEJAVmLTAah6
-	SYmDK26wTGAUXMDIsIpRNLUguaA4Kb3IVK84Mbe4NC9dLzk/dxMjJAQn7mC8f8D6EGMy0LiJ
-	zFKiyfnAEM4riTc0NjOyMDUxNTYytzQjTVhJnDf9UVKQkEB6YklqdmpqQWpRfFFpTmrxIUYm
-	Dk6pBkZVvxlOAvqrdQ/sYJoQOitwre4BqWdxTxqKAubXiQfpXrdyWv1F6e+XhJ/HVcUyHlw8
-	fu2pH/fdW0kejc9OCB/foFshzDql7qhqyFel0jcV/IV/DronbJ4bXH5H4PiR7TGJLHOeeu/j
-	Y50x2UvyYd/KD582SU/P//vg2IWY2nUsq53MK1XqpMKUWIozEg21mIuKEwG7Q5YaVwIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrIIsWRmVeSWpSXmKPExsVy+t9jAd1cIf9gg7Nf1C2u7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
-	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
-	JAiux8gADSSsY8zY/GAzW8FdzooPV10aGN+wdzFyckgImEi0fTnACmGLSVy4t56ti5GLQ0hg
-	EaNEc18nK4TTySTx4+Zsxi5GDg42AW2JzfsNQBpEBJglFkw9zwhSwywwgVHi/6L3LCAJYQEP
-	iefvtjKD2CwCqhLnZs8Bi/MKuEvMedPKDLFNW2Lb84mMExi5FzAyrGIUTS1ILihOSs810itO
-	zC0uzUvXS87P3cQIDvBn0jsYVzVYHGIU4GBU4uHl/O0XLMSaWFZcmXuIUYKDWUmEN/MsUIg3
-	JbGyKrUoP76oNCe1+BBjMtD2icxSosn5wOjLK4k3NDYxM7I0MrMwMjE3J01YSZz3YKt1oJBA
-	emJJanZqakFqEcwWJg5OqQZG3e+sM/PExDh6KtKeLKxYNPuQIHdb9MrDE68sO7Do7PvedW55
-	VxaE39Se6FEsqP2MNfbtmo93prDNMMnbdiln26XX79zPrw8SXr9LnKNW+WRO3Kt2hzfbnf5u
-	/SNXXfYgwD1RoIL93IwjoQbyL0rf75HwPHP3kLL1BL0eLmuNJLN90/k5Vt35rcRSnJFoqMVc
-	VJwIAO5C6TO0AgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
-To: unlisted-recipients:; (no To-header on input)
+	Wed, 16 Apr 2014 19:30:40 -0400
+X-IronPort-AV: E=Sophos;i="4.97,875,1389715200"; 
+   d="scan'208";a="29364837"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH 1/2] workqueue: rescuer_thread() processes all pwqs before exit
+Date: Thu, 17 Apr 2014 07:34:08 +0800
+Message-ID: <1397691258-11639-1-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <20140416165052.GK1257@htj.dyndns.org>
+References: <20140416165052.GK1257@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If it occurs an error, we should call f2fs_unlock_op.
+Before the rescuer is picked to running, the works of the @pwq
+may be processed by some other workers, and destroy_workqueue()
+may called at the same time. This may result a nasty situation
+that rescuer may exit with non-empty mayday list.
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+It is no harm currently, destroy_workqueue() can safely to free
+them all(workqueue&pwqs) togerther, since the rescuer is stopped.
+No rescuer nor mayday-timer can access the mayday list.
+
+But it is nasty and error-prone in future develop. Fix it.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- fs/f2fs/inline.c | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ kernel/workqueue.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
-index 383db1f..3258c7c 100644
---- a/fs/f2fs/inline.c
-+++ b/fs/f2fs/inline.c
-@@ -81,8 +81,10 @@ static int __f2fs_convert_inline_data(struct inode *inode, struct page *page)
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 0ee63af..832125f 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2409,12 +2409,6 @@ static int rescuer_thread(void *__rescuer)
+ repeat:
+ 	set_current_state(TASK_INTERRUPTIBLE);
  
- 	f2fs_lock_op(sbi);
- 	ipage = get_node_page(sbi, inode->i_ino);
--	if (IS_ERR(ipage))
--		return PTR_ERR(ipage);
-+	if (IS_ERR(ipage)) {
-+		err = PTR_ERR(ipage);
-+		goto out;
-+	}
- 
- 	/*
- 	 * i_addr[0] is not used for inline data,
-@@ -90,10 +92,8 @@ static int __f2fs_convert_inline_data(struct inode *inode, struct page *page)
- 	 */
- 	set_new_dnode(&dn, inode, ipage, NULL, 0);
- 	err = f2fs_reserve_block(&dn, 0);
--	if (err) {
--		f2fs_unlock_op(sbi);
--		return err;
+-	if (kthread_should_stop()) {
+-		__set_current_state(TASK_RUNNING);
+-		rescuer->task->flags &= ~PF_WQ_WORKER;
+-		return 0;
 -	}
-+	if (err)
-+		goto out;
+-
+ 	/* see whether any pwq is asking for help */
+ 	spin_lock_irq(&wq_mayday_lock);
  
- 	zero_user_segment(page, MAX_INLINE_DATA, PAGE_CACHE_SIZE);
+@@ -2459,6 +2453,12 @@ repeat:
  
-@@ -118,6 +118,7 @@ static int __f2fs_convert_inline_data(struct inode *inode, struct page *page)
+ 	spin_unlock_irq(&wq_mayday_lock);
  
- 	sync_inode_page(&dn);
- 	f2fs_put_dnode(&dn);
-+out:
- 	f2fs_unlock_op(sbi);
- 	return err;
- }
++	if (kthread_should_stop()) {
++		__set_current_state(TASK_RUNNING);
++		rescuer->task->flags &= ~PF_WQ_WORKER;
++		return 0;
++	}
++
+ 	/* rescuers should never participate in concurrency management */
+ 	WARN_ON_ONCE(!(rescuer->flags & WORKER_NOT_RUNNING));
+ 	schedule();
 -- 
-1.8.4.474.g128a96c
+1.7.4.4
 
