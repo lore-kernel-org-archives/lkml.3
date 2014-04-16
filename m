@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346AbaDPT5c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 15:57:32 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:47086 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119AbaDPT5a (ORCPT
+	id S1755058AbaDPUAT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 16:00:19 -0400
+Received: from www.meduna.org ([92.240.244.38]:55772 "EHLO meduna.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751301AbaDPUAQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 15:57:30 -0400
-Date: Wed, 16 Apr 2014 20:56:44 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Sergei Ianovich <ynvich@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Randy Dunlap <rdunlap@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v4 21/21] misc: support for I-8024 in LP-8x4x
-Message-ID: <20140416205644.396709aa@alan.etchedpixels.co.uk>
-In-Reply-To: <9eb6a7ac-e8c0-4c05-8f8a-e047d2614cba@email.android.com>
-References: <1397668411-27162-7-git-send-email-ynvich@gmail.com>
-	<1397668667-27328-1-git-send-email-ynvich@gmail.com>
-	<1397668667-27328-15-git-send-email-ynvich@gmail.com>
-	<20140416193949.47f4ea68@alan.etchedpixels.co.uk>
-	<9eb6a7ac-e8c0-4c05-8f8a-e047d2614cba@email.android.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Apr 2014 16:00:16 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <534ED833.6020303@windriver.com>
+References: <534E97C8.5090407@meduna.org> <534ED833.6020303@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Subject: Re: w1-gpio: sleeping function called from invalid context
+From: Stanislav Meduna <stano@meduna.org>
+Date: Wed, 16 Apr 2014 21:58:48 +0200
+To: Paul Gortmaker <paul.gortmaker@windriver.com>, zbr@ioremap.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>
+Message-ID: <0e38dfcf-df54-4b72-abf1-9b424af3f98b@email.android.com>
+X-Authenticated-User: stano@meduna.org
+X-Authenticator: dovecot_plain
+X-Spam-Score: -6.9
+X-Spam-Score-Int: -68
+X-Exim-Version: 4.72 (build at 25-Oct-2012 18:35:58)
+X-Date: 2014-04-16 22:00:08
+X-Connected-IP: 85.162.195.204:42930
+X-Message-Linecount: 27
+X-Body-Linecount: 14
+X-Message-Size: 1093
+X-Body-Size: 424
+X-Received-Count: 1
+X-Recipient-Count: 4
+X-Local-Recipient-Count: 4
+X-Local-Recipient-Defer-Count: 0
+X-Local-Recipient-Fail-Count: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I've closely examined a dozen or two of drivers, but of them was close enough for I-8024 in terms of speed. Its channel takes 0.1 us to set up from kernel. Real user space programs can setup all for channels in 1 us with interface provided by this patch. That's said I don't have data on time that it takes for output to stabilize at the desired levels.
-> 
-> I've chosen drivers/misc as a location that looked to provide the shortest path for my driver to land. The driver needs support for the bus, and here it can be in one driver.
-> 
-> It would be great to have some more detailed input on this issue.
+On April 16, 2014 9:21:23 PM CEST, Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
 
-IIO is where we are trying to standardise all the industrial control
-devices. There is stuff in places like misc for historical reasons.
+>  static int w1_disable_irqs = 0;
+>  module_param_named(disable_irqs, w1_disable_irqs, int, 0);
+...
+>I've no idea why that module parameter exists.  Why do you set it?
 
+Hm... I do not, at least not knowingly. I'll try to trace what exactly happens.
+
+Thanks
+-- 
+                                     Stano
