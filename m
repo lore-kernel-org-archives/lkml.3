@@ -1,154 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142AbaDPDGa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 23:06:30 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:60053 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933AbaDPDF6 (ORCPT
+	id S1754160AbaDPDGp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 23:06:45 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:51986 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242AbaDPDGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 23:05:58 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Don Zickus <dzickus@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 09/17] perf tools: Consolidate management of default sort orders
-Date: Wed, 16 Apr 2014 12:05:46 +0900
-Message-Id: <1397617554-26319-10-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1397617554-26319-1-git-send-email-namhyung@kernel.org>
-References: <1397617554-26319-1-git-send-email-namhyung@kernel.org>
+	Tue, 15 Apr 2014 23:06:42 -0400
+Message-ID: <534DF3BC.8050803@hitachi.com>
+Date: Wed, 16 Apr 2014 12:06:36 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: vegard.nossum@oracle.com, penberg@kernel.org, jamie.iles@oracle.com,
+        hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] x86: Move instruction decoder data into header
+References: <1397497450-6440-1-git-send-email-sasha.levin@oracle.com> <1397497450-6440-2-git-send-email-sasha.levin@oracle.com> <534C8E2D.9020506@hitachi.com> <534C995F.9040101@oracle.com> <534CA33B.3040203@hitachi.com> <534D412A.30504@oracle.com>
+In-Reply-To: <534D412A.30504@oracle.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The perf uses different default sort orders for different use-cases,
-and this was scattered throughout the code.  Add get_default_sort_
-order() function to handle this and change initial value of sort_order
-to NULL to distinguish it from user-given one.
+(2014/04/15 23:24), Sasha Levin wrote:
+> On 04/14/2014 11:10 PM, Masami Hiramatsu wrote:
+>> (2014/04/15 11:28), Sasha Levin wrote:
+>>> On 04/14/2014 09:41 PM, Masami Hiramatsu wrote:
+>>>> (2014/04/15 2:44), Sasha Levin wrote:
+>>>>>> Right now we generate data for the instruction decoder and place it
+>>>>>> as a code file which gets #included directly (yuck).
+>>>>>>
+>>>>>> Instead, make it a header which will also be usable by other code
+>>>>>> that wants to use the data in there.
+>>>> Hmm, making the generated data into a header file may clone
+>>>> the data table instances for each object file. Since the inat
+>>>> table is not so small, I think we'd better just export the tables.
+>>>
+>>> The tables are defined as static, so the compiler drops them
+>>> once it detects they are not used.
+>>
+>> No, I meant that if the table is used in the different object files,
+>> will the copies of the tables be compiled in several different
+>> instances?
+> 
+> That's true, but there was and after this patchset there will still
+> be only one user that touches the table. I also doubt that more users
+> will appear since users of the table should be going through the API
+> and not touching it directly, so I don't think it should be a concern
+> at this point.
 
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-report.c | 18 ------------------
- tools/perf/builtin-top.c    |  3 +--
- tools/perf/util/sort.c      | 25 +++++++++++++++++++++++--
- tools/perf/util/sort.h      |  1 +
- 4 files changed, 25 insertions(+), 22 deletions(-)
+Agreed, so I don't like to expose it. If no one need them, then give
+it to the owner. That must be the safest.
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 76e2bb6cf571..26de5c14369b 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -809,30 +809,12 @@ repeat:
- 	if (branch_mode == -1 && has_br_stack)
- 		sort__mode = SORT_MODE__BRANCH;
- 
--	/* sort__mode could be NORMAL if --no-branch-stack */
--	if (sort__mode == SORT_MODE__BRANCH) {
--		/*
--		 * if no sort_order is provided, then specify
--		 * branch-mode specific order
--		 */
--		if (sort_order == default_sort_order)
--			sort_order = "comm,dso_from,symbol_from,"
--				     "dso_to,symbol_to";
--
--	}
- 	if (report.mem_mode) {
- 		if (sort__mode == SORT_MODE__BRANCH) {
- 			pr_err("branch and mem mode incompatible\n");
- 			goto error;
- 		}
- 		sort__mode = SORT_MODE__MEMORY;
--
--		/*
--		 * if no sort_order is provided, then specify
--		 * branch-mode specific order
--		 */
--		if (sort_order == default_sort_order)
--			sort_order = "local_weight,mem,sym,dso,symbol_daddr,dso_daddr,snoop,tlb,locked";
- 	}
- 
- 	if (setup_sorting() < 0) {
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 37d30460bada..bb2aa6645a7e 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1137,8 +1137,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (argc)
- 		usage_with_options(top_usage, options);
- 
--	if (sort_order == default_sort_order)
--		sort_order = "dso,symbol";
-+	sort__mode = SORT_MODE__TOP;
- 
- 	if (setup_sorting() < 0) {
- 		parse_options_usage(top_usage, options, "s", 1);
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 916652af8304..2f83965ab2c0 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -8,7 +8,10 @@ regex_t		parent_regex;
- const char	default_parent_pattern[] = "^sys_|^do_page_fault";
- const char	*parent_pattern = default_parent_pattern;
- const char	default_sort_order[] = "comm,dso,symbol";
--const char	*sort_order = default_sort_order;
-+const char	default_branch_sort_order[] = "comm,dso_from,symbol_from,dso_to,symbol_to";
-+const char	default_mem_sort_order[] = "local_weight,mem,sym,dso,symbol_daddr,dso_daddr,snoop,tlb,locked";
-+const char	default_top_sort_order[] = "dso,symbol";
-+const char	*sort_order;
- regex_t		ignore_callees_regex;
- int		have_ignore_callees = 0;
- int		sort__need_collapse = 0;
-@@ -1218,11 +1221,29 @@ int sort_dimension__add(const char *tok)
- 	return -ESRCH;
- }
- 
-+static const char *get_default_sort_order(void)
-+{
-+	const char *default_sort_orders[] = {
-+		default_sort_order,
-+		default_branch_sort_order,
-+		default_mem_sort_order,
-+		default_top_sort_order,
-+	};
-+
-+	BUG_ON(sort__mode > ARRAY_SIZE(default_sort_orders));
-+
-+	return default_sort_orders[sort__mode];
-+}
-+
- int setup_sorting(void)
- {
--	char *tmp, *tok, *str = strdup(sort_order);
-+	char *tmp, *tok, *str;
- 	int ret = 0;
- 
-+	if (sort_order == NULL)
-+		sort_order = get_default_sort_order();
-+
-+	str = strdup(sort_order);
- 	if (str == NULL) {
- 		error("Not enough memory to setup sort keys");
- 		return -ENOMEM;
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 43e5ff42a609..35b53cc56feb 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -133,6 +133,7 @@ enum sort_mode {
- 	SORT_MODE__NORMAL,
- 	SORT_MODE__BRANCH,
- 	SORT_MODE__MEMORY,
-+	SORT_MODE__TOP,
- };
- 
- enum sort_type {
+>> And I can't see the part which makes the tables static in this patch...
+> 
+> Right, it sneaked to the next patch in this patchset. I'll pull it
+> into this one in the next version.
+> 
+>>> I feel it would be easier to let the compiler do it's job rather
+>>> than do optimizations we don't need to do and which will complicate
+>>> the code quite a bit.
+>>
+>> I haven't tend to optimize it, but just encapsulate it, to hide from other parts.
+> 
+> We could hide it under #ifdef, but that wouldn't change anything for
+> the user or for the generated code itself.
+> 
+> Splitting code generation into two different files would complicate
+> everything IMO.
+
+No, mixing data (definitions) and declarations on one header should be
+avoided, especially that is generated in the build path. I'd like to ask
+you to split them into header and body. I know it will be harder to
+implement, but worth to maintain.
+
+Thank you,
+
 -- 
-1.9.2
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
