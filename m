@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422672AbaDPQGa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 12:06:30 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:48792 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422635AbaDPQG0 (ORCPT
+	id S1422693AbaDPQGg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 12:06:36 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:44398 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422635AbaDPQGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 12:06:26 -0400
-Date: Wed, 16 Apr 2014 09:06:21 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tj@kernel.org,
-        grygorii.strashko@ti.com, peterz@infradead.org
-Subject: Re: How do I increment a per-CPU variable without warning?
-Message-ID: <20140416160621.GX4496@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140415221755.GA27188@linux.vnet.ibm.com>
- <alpine.DEB.2.10.1404161007080.9945@gentwo.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1404161007080.9945@gentwo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041616-8236-0000-0000-0000019342A8
+	Wed, 16 Apr 2014 12:06:32 -0400
+Message-ID: <1397664384.4222.124.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: [PATCH] softirq: a single rcu_bh_qs() call is enough
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Miller <davem@davemloft.net>
+Cc: netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 16 Apr 2014 09:06:24 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 10:08:03AM -0500, Christoph Lameter wrote:
-> On Tue, 15 Apr 2014, Paul E. McKenney wrote:
-> 
-> > Hello, Christoph,
-> >
-> > I have a patch that currently uses __this_cpu_inc_return() to increment a
-> > per-CPU variable, but without preemption disabled.  Of course, given that
-> > preemption is enabled, it might well end up picking up one CPU's counter,
-> > adding one to it, then storing the result into some other CPU's counter.
-> > But this is OK, the test can be probabilistic.  And when I run this
-> > against v3.14 and earlier, it works fine.
-> 
-> We introduced raw_cpu_inc_return to squish these warnings.
+From: Eric Dumazet <edumazet@google.com>
 
-Cool, this is a good short-term fix.
+Calling rcu_bh_qs() after every softirq action is not really needed.
 
-> > This is arguably better than the original __this_cpu_read() because it
-> > avoids overflow, but I thought I should check to see if there was some
-> > better way to do this.
-> 
-> If this is supposed to be totally race safe then you must disable
-> preemption.
+What RCU needs is at least one rcu_bh_qs() per softirq round to note a
+quiescent state was passed for rcu_bh
 
-Understood!
+Note for Paul and myself : this could be inlined as a single instruction
+and avoid smp_processor_id()
+(sone this_cpu_write(rcu_bh_data.passed_quiesce, 1))
 
-							Thanx, Paul
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+---
+ kernel/softirq.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index b50990a5bea0..b9b2d4906848 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -232,7 +232,6 @@ asmlinkage void __do_softirq(void)
+ 	bool in_hardirq;
+ 	__u32 pending;
+ 	int softirq_bit;
+-	int cpu;
+ 
+ 	/*
+ 	 * Mask out PF_MEMALLOC s current task context is borrowed for the
+@@ -247,7 +246,6 @@ asmlinkage void __do_softirq(void)
+ 	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_OFFSET);
+ 	in_hardirq = lockdep_softirq_start();
+ 
+-	cpu = smp_processor_id();
+ restart:
+ 	/* Reset the pending bitmask before enabling irqs */
+ 	set_softirq_pending(0);
+@@ -276,11 +274,11 @@ restart:
+ 			       prev_count, preempt_count());
+ 			preempt_count_set(prev_count);
+ 		}
+-		rcu_bh_qs(cpu);
+ 		h++;
+ 		pending >>= softirq_bit;
+ 	}
+ 
++	rcu_bh_qs(smp_processor_id());
+ 	local_irq_disable();
+ 
+ 	pending = local_softirq_pending();
+
 
