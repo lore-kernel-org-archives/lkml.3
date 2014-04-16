@@ -1,151 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751474AbaDPGVx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 02:21:53 -0400
-Received: from SpacedOut.fries.net ([67.64.210.234]:55023 "EHLO
-	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750993AbaDPGVw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 02:21:52 -0400
-Date: Wed, 16 Apr 2014 01:21:21 -0500
-From: David Fries <david@fries.net>
-To: Evgeniy Polyakov <zbr@ioremap.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Belisko Marek <marek.belisko@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Subject: [PATCH] w1: avoid recursive device_add
-Message-ID: <20140416062121.GF5096@spacedout.fries.net>
-References: <CAAfyv37OPxJkcyYi0ZZe9MSQZ3TMeCuxa8rmWh8ahNF6Bs01Mg@mail.gmail.com>
- <20140323215041.GB5096@spacedout.fries.net>
- <698551395662480@web15j.yandex.ru>
- <CAAfyv352uNgS38ZKjb_r5Luvg=h1=f0G+ZJeZYAUSD1oxWdHxA@mail.gmail.com>
- <20140413222401.GE5096@spacedout.fries.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140413222401.GE5096@spacedout.fries.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Wed, 16 Apr 2014 01:21:24 -0500 (CDT)
+	id S1752016AbaDPGWN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 02:22:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40014 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751232AbaDPGWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 02:22:11 -0400
+Date: Wed, 16 Apr 2014 16:22:01 +1000
+From: NeilBrown <neilb@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 13/19] MM: set PF_FSTRANS while allocating per-cpu
+ memory to avoid deadlock.
+Message-ID: <20140416162201.5dc9ff5c@notabene.brown>
+In-Reply-To: <20140416054942.GD15995@dastard>
+References: <20140416033623.10604.69237.stgit@notabene.brown>
+	<20140416040336.10604.67456.stgit@notabene.brown>
+	<20140416054942.GD15995@dastard>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/TpJzKIhGobsDEwUger9I.iQ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__w1_attach_slave_device calls device_add which calls w1_bus_notify
-which calls the w1_bq27000 slave driver, which calls
-platform_device_add and device_add and deadlocks on getting
-&(&priv->bus_notifier)->rwsem as it is still held in the previous
-device_add.  This avoids the problem by processing the family
-add/remove outside of the slave device_add call.
+--Sig_/TpJzKIhGobsDEwUger9I.iQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Commit 47eba33a0997fc7362a introduced this deadlock and added
-a KOBJ_ADD, as the add was already reported in device_register two add
-events were being sent.  This change suppresses the device_register
-add so that any slave device sysfs entries are setup before the add
-goes out.
+On Wed, 16 Apr 2014 15:49:42 +1000 Dave Chinner <david@fromorbit.com> wrote:
 
-Belisko Marek reported this change fixed the deadlock he was seeing on
-ARM device tree, while testing on my x86-64 system never saw the
-deadlock.
+> On Wed, Apr 16, 2014 at 02:03:36PM +1000, NeilBrown wrote:
+> > lockdep reports a locking chain
+> >=20
+> >   sk_lock-AF_INET --> rtnl_mutex --> pcpu_alloc_mutex
+> >=20
+> > As sk_lock may be needed to reclaim memory, allowing that
+> > reclaim while pcu_alloc_mutex is held can lead to deadlock.
+> > So set PF_FSTRANS while it is help to avoid the FS reclaim.
+> >=20
+> > pcpu_alloc_mutex can be taken when rtnl_mutex is held:
+> >=20
+> >     [<ffffffff8117f979>] pcpu_alloc+0x49/0x960
+> >     [<ffffffff8118029b>] __alloc_percpu+0xb/0x10
+> >     [<ffffffff8193b9f7>] loopback_dev_init+0x17/0x60
+> >     [<ffffffff81aaf30c>] register_netdevice+0xec/0x550
+> >     [<ffffffff81aaf785>] register_netdev+0x15/0x30
+> >=20
+> > Signed-off-by: NeilBrown <neilb@suse.de>
+>=20
+> This looks like a workaround to avoid passing a gfp mask around to
+> describe the context in which the allocation is taking place.
+> Whether or not that's the right solution, I can't say, but spreading
+> this "we can turn off all reclaim of filesystem objects" mechanism
+> all around the kernel doesn't sit well with me...
 
-Reported-by: Belisko Marek <marek.belisko@gmail.com>
-Signed-off-by: David Fries <David@Fries.net>
----
-Evgeniy any comments?  The patch looks good to me.
-Dr. H. Nikolaus Schaller, Can you give this patch another test?  I
-don't expect any problems, but it is now only sending one add instead
-of two which is a change.
-I verified two KOBJ_ADD notifications were going out prior to this
-change, and only one after.  There should only be one, also verified
-that the w1_bq27000 add notification went out before the slave device
-id, showing the suppression was working.  Used
-udevadm monitor --kernel --property
-for notification monitoring.
+We are (effectively) passing a gfp mask around, except that it lives in
+'current' rather than lots of other places.
+I actually like the idea of discarding PF_MEMALLOC, PF_FSTRANS and
+PF_MEMALLOC_NOIO, and just having current->gfp_allowed_mask (to match the
+global variable of the same name).
 
- drivers/w1/w1.c |   32 ++++++--------------------------
- 1 file changed, 6 insertions(+), 26 deletions(-)
+>=20
+> And, again, PF_FSTRANS looks plainly wrong in this code - it sure
+> isn't a fs transaction context we are worried about here...
 
-diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
-index b96f61b..ff52618 100644
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -614,27 +614,11 @@ end:
- 	return err;
- }
- 
--/*
-- * Handle sysfs file creation and removal here, before userspace is told that
-- * the device is added / removed from the system
-- */
--static int w1_bus_notify(struct notifier_block *nb, unsigned long action,
--			 void *data)
-+static int w1_family_notify(unsigned long action, struct w1_slave *sl)
- {
--	struct device *dev = data;
--	struct w1_slave *sl;
- 	struct w1_family_ops *fops;
- 	int err;
- 
--	/*
--	 * Only care about slave devices at the moment.  Yes, we should use a
--	 * separate "type" for this, but for now, look at the release function
--	 * to know which type it is...
--	 */
--	if (dev->release != w1_slave_release)
--		return 0;
--
--	sl = dev_to_w1_slave(dev);
- 	fops = sl->family->fops;
- 
- 	if (!fops)
-@@ -673,10 +657,6 @@ static int w1_bus_notify(struct notifier_block *nb, unsigned long action,
- 	return 0;
- }
- 
--static struct notifier_block w1_bus_nb = {
--	.notifier_call = w1_bus_notify,
--};
--
- static int __w1_attach_slave_device(struct w1_slave *sl)
- {
- 	int err;
-@@ -698,6 +678,9 @@ static int __w1_attach_slave_device(struct w1_slave *sl)
- 	dev_dbg(&sl->dev, "%s: registering %s as %p.\n", __func__,
- 		dev_name(&sl->dev), sl);
- 
-+	/* suppress for w1_family_notify before sending KOBJ_ADD */
-+	dev_set_uevent_suppress(&sl->dev, true);
-+
- 	err = device_register(&sl->dev);
- 	if (err < 0) {
- 		dev_err(&sl->dev,
-@@ -705,7 +688,7 @@ static int __w1_attach_slave_device(struct w1_slave *sl)
- 			dev_name(&sl->dev), err);
- 		return err;
- 	}
--
-+	w1_family_notify(BUS_NOTIFY_ADD_DEVICE, sl);
- 
- 	dev_set_uevent_suppress(&sl->dev, false);
- 	kobject_uevent(&sl->dev.kobj, KOBJ_ADD);
-@@ -799,6 +782,7 @@ int w1_unref_slave(struct w1_slave *sl)
- 		msg.type = W1_SLAVE_REMOVE;
- 		w1_netlink_send(sl->master, &msg);
- 
-+		w1_family_notify(BUS_NOTIFY_DEL_DEVICE, sl);
- 		device_unregister(&sl->dev);
- 		#ifdef DEBUG
- 		memset(sl, 0, sizeof(*sl));
-@@ -1186,10 +1170,6 @@ static int __init w1_init(void)
- 		goto err_out_exit_init;
- 	}
- 
--	retval = bus_register_notifier(&w1_bus_type, &w1_bus_nb);
--	if (retval)
--		goto err_out_bus_unregister;
--
- 	retval = driver_register(&w1_master_driver);
- 	if (retval) {
- 		printk(KERN_ERR
--- 
-1.7.10.4
+So would PF_MEMALLOC_NOFS work for you?
+
+NeilBrown
+
+
+--Sig_/TpJzKIhGobsDEwUger9I.iQ
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBU04hijnsnt1WYoG5AQKhaw//Yc1D4fJSwJa8YNO+4NafUYk50u9cMoRi
+WQjcopF1cKZmSifPbH/r5M3SKqOKf4kQklPb1pccCc6Nw2oPCD98rrpu2dePn6NM
+9FaxI6xOkkT0z7VpDjeP4VA1C7ekhxqqDGOLi1ezu0aWmqu4sBsHxGAojmA8y7IX
+A+VHECsFBgrz4sjLqfV0U/jml9sfGNoutZVzftRHpZJXCn1+vzMHKKp+6TdlriUZ
+anJHOj+URUenE6hv6/4JDkSAb0F0awvjyjXvblLMzvLWagF9KpGwMPP94fxOp+kI
+si2uP7CtQkhACfBPxhmuUXXB2k0Ueb20GIzguqGMp9Qj+mToGqcyBqmaBaP4NxKr
+x+jKgmq5l7OfJO2ERlBD+j/AnKKGZXeGyxh7ed2DhYR03nc2f6Lx6sMKzXlUrOc6
+a5GzSslT1EA/fmEPJ/D1oyoVnSXuPYGGC91DuDzV4SP13w6xdQoqMsShs+RxIKUr
+dRsfkuuDw3Euef4VE6y0G7Ird/kmS1pvLN/A4ZqRVmpgKAHD8wPJiPKd6TqgAUfX
+tq4usUTitBM1NRqHxagj+/MksyqC1sNZv0F8xlsicqM0/ygslKSUq6vpJlVLjk68
+43QZbKAAQIkXaZ/yxOvYKPrUOUejOQGUbrjIuISGcu8M78KKxaIXSxCnLlYwsomj
+YJ9hOBTRuiE=
+=Ofmb
+-----END PGP SIGNATURE-----
+
+--Sig_/TpJzKIhGobsDEwUger9I.iQ--
