@@ -1,103 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919AbaDPTDp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 15:03:45 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:53482 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307AbaDPTDn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 15:03:43 -0400
-Date: Wed, 16 Apr 2014 20:03:36 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Anton Vorontsov <anton@enomsg.org>, Olof Johansson <olof@lixom.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        AJAY KUMAR RAMAKRISHNA SHYMALAMMA <ajaykumar.rs@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] mfd: tps65090: Allow charger module to be used when
- no irq
-Message-ID: <20140416190336.GB28725@lee--X1>
-References: <1397592876-5741-1-git-send-email-dianders@chromium.org>
- <1397592876-5741-2-git-send-email-dianders@chromium.org>
- <20140416095229.GF4754@lee--X1>
- <CAD=FV=VjmXGjDHTcm=E2eEPtkOa5DxKG70jXj22RbbN1VfeGjw@mail.gmail.com>
- <20140416162621.GA28725@lee--X1>
- <CAD=FV=Vh=Ej3znMmQDfWyLbhhzZh424Kx8BA=86qcwp+AmMqBw@mail.gmail.com>
+	id S1756481AbaDPTEN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 15:04:13 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52914 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756428AbaDPTEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 15:04:06 -0400
+Date: Wed, 16 Apr 2014 21:04:04 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: "Zhang, Rui" <rui.zhang@intel.com>, "Lu, Aaron" <aaron.lu@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng Z" <zheng.z.yan@intel.com>
+Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+Message-ID: <20140416190404.GA7070@pd.tnic>
+References: <20140224162400.GE16457@pd.tnic>
+ <744357E9AAD1214791ACBA4B0B9092630121F201@SHSMSX101.ccr.corp.intel.com>
+ <CAErSpo55DjkGQB=7ksow34BpCObnY+o3eNnt0n5oQEh6Lfw1pw@mail.gmail.com>
+ <1558044.S1G2VU7srO@vostro.rjw.lan>
+ <CAErSpo4pDYMhHo6e-1TN6XDRO0xy0u8H+=oucFnrEK+kbjZvzw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAD=FV=Vh=Ej3znMmQDfWyLbhhzZh424Kx8BA=86qcwp+AmMqBw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo4pDYMhHo6e-1TN6XDRO0xy0u8H+=oucFnrEK+kbjZvzw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 20, 2014 at 02:48:30PM -0600, Bjorn Helgaas wrote:
+> Right.  Even if we had this long-term solution, we'd still have
+> Stephane's current problem, because the PNP0C02 _CRS is still wrong.
+> 
+> We do have a drivers/pnp/quirks.c where we could conceivably adjust
+> the PNP resource if we found the matching PCI device and MCHBAR.  That
+> should solve Stephane's problem even with the current
+> drivers/pnp/system.c.
 
-> >> >> On the ARM Chromebook tps65090 has two masters: the AP (the main
-> >> >> processor running linux) and the EC (the embedded controller).  The AP
-> >> >> is allowed to mess with FETs but the EC is in charge of charge control.
-> >> >>
-> >> >> The tps65090 interupt line is routed to both the AP and the EC, which
-> >> >> can cause quite a headache.  Having two people adjusting masks and
-> >> >> acking interrupts is a recipe for disaster.
-> >> >>
-> >> >> In the shipping kernel we had a hack to have the AP pay attention to
-> >> >> the IRQ but not to ack it.  It also wasn't supposed to configure the
-> >> >> IRQ in any way.  That hack allowed us to detect when the device was
-> >> >> charging without messing with the EC's state.
-> >> >>
-> >> >> The current tps65090 infrastructure makes the above difficult, and it
-> >> >> was a bit of a hack to begin with.  Rather than uglify the driver to
-> >> >> support it, just extend the driver's existing notion of "no irq" to
-> >> >> the charger.  This makes the charger code poll every 2 seconds for AC
-> >> >> detect, which is sufficient.
-> >> >>
-> >> >> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> >> >> ---
-> >> >>  drivers/mfd/tps65090.c           | 14 ++++++--
-> >> >>  drivers/power/tps65090-charger.c | 76 +++++++++++++++++++++++++++++++---------
-> >> >>  2 files changed, 70 insertions(+), 20 deletions(-)
-> >> >
-> >> > For the MFD part:
-> >> >   Acked-by: Lee Jones <lee.jones@linaro.org>
-> >> >
-> >> > Anton,
-> >> >   If you are okay with this patch I'd be happy to create an immutable
-> >> > branch for you to pull from?
-> >> >
-> >> > Doug,
-> >> >   What is the relationship (dependencies) between this and the other
-> >> > patches in the set?
-> >>
-> >> This patch can be applied irrespective of other others in the series.
-> >
-> > What about the files in the patch? Could you make two separate patches
-> > from this one patch and it would still compile okay? I'm _guessing_
-> > the answer is yes?
-> 
-> Yes, they'll compile and even boot on their own.  I just tested it.
-> 
-> If I put only the MFD part in, then at boot I see:
->   tps65090-charger tps65090-charger: Unable to get charger irq = -6
-> ...but otherwise the system functions.
-> 
-> If I put only the charger part in, then at boot:
->   tps65090-charger tps65090-charger: Unable to register irq 1 err -22
->   tps65090-charger: probe of tps65090-charger failed with error -22
-> 
-> ...so you need both patches in order to make things function, but they
-> can be applied separately.  I'll assume it will make your life easier
-> if I split this into two patches so I'll do that.
+Guys, this still triggers in -rc1. Do we have a fix or something
+testable at least?
 
-Yes please.
+Thanks.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
