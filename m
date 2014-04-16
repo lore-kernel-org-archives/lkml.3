@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751556AbaDPEBi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 00:01:38 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:45796 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357AbaDPEBf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 00:01:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <534DB1CC.60407@semaphore.gr>
-References: <534DB1CC.60407@semaphore.gr>
-Date: Wed, 16 Apr 2014 09:31:34 +0530
-Message-ID: <CAKohpomvmpiYkQAP7Yb=TNxNsXMVh1_MLuK7KQrdEkf15MyvMg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/8] Introduce new cpufreq helper macros
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>, linux-doc@vger.kernel.org,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+	id S1751646AbaDPECw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 00:02:52 -0400
+Received: from ozlabs.org ([103.22.144.67]:56470 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750918AbaDPECt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 00:02:49 -0400
+Date: Wed, 16 Apr 2014 14:02:40 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>
+Subject: linux-next: manual merge of the audit tree with Linus' tree
+Message-Id: <20140416140240.dd99f42196991edcb73a969d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__16_Apr_2014_14_02_40_+1000_RSdjxG+9Sbl3Rk/N"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 April 2014 03:55, Stratos Karafotis <stratosk@semaphore.gr> wrote:
-> Hi all,
->
-> This patch set introduces two freq_table helper macros which
-> can be used for iteration over cpufreq_frequency_table and
-> makes the necessary changes to cpufreq core and drivers that
-> use such an iteration procedure.
->
-> The motivation was a usage of common procedure to iterate over
-> cpufreq_frequency_table across all drivers and cpufreq core.
->
-> This was tested on a x86_64 platform.
-> Most files compiled successfully but unfortunately I was not
-> able to compile sh_sir.c pasemi_cpufreq.c and ppc_cbe_cpufreq.c
-> due to lack of cross compiler.
->
-> Changes v1 -> v2
->         - Rearrange patches
->         - Remove redundant braces
->         - Fix a newly introduced bug in exynos5440
->         - Use cpufreq_for_each_valid_entry instead of
-> cpufreq_for_each_entry in cpufreq_frequency_table_get_index()
->         - Drop redundant double ! operator in longhaul and change
+--Signature=_Wed__16_Apr_2014_14_02_40_+1000_RSdjxG+9Sbl3Rk/N
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You dropped this !! in thermal stuff and not longhaul :)
+Hi Eric,
 
-> the pos loop cursor variable to freq_pos.
->         - Declare pos variable on a separate line
->
-> Stratos Karafotis (8):
->   cpufreq: Introduce macros for cpufreq_frequency_table iteration
->   cpufreq: Use cpufreq_for_each_* macros for frequency table iteration
->   davinci: da850: Use cpufreq_for_each_entry macro for iteration
->   mips: lemote 2f: se cpufreq_for_each_entry macro for iteration
->   mfd: db8500-prcmu: Use cpufreq_for_each_entry macro for iteration
->   thermal: cpu_cooling: Use cpufreq_for_each_valid_entry macro for
->     iteration
->   irda: sh_sir: Use cpufreq_for_each_valid_entry macro for iteration
->   sh: clk: Use cpufreq_for_each_valid_entry macro for iteration
+Today's linux-next merge of the audit tree got conflicts in
+arch/mips/include/asm/syscall.h, arch/x86/Kconfig and kernel/audit.c
+between commits from Linus' tree and commit 596b0569084b ("Merge tag
+'v3.14' into mergeing") from the audit tree.
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+This happened because you merged Linus' tag v3.14 into your tree.  In
+this case, that merge had conflicts that you resolved differently to the
+way Linus had resolved them when he merged your tree for v3.15-rc1.  I
+fixed it up (by using Linus' version) and can carry the fix as necessary
+(no action is required).
+
+You could have avoided this by doing a fast forward merge of v3.15-rc1
+instead of the v3.14 merge (since everything in your tree before that
+merge was also in Linus' tree by v3.15-rc1).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__16_Apr_2014_14_02_40_+1000_RSdjxG+9Sbl3Rk/N
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTTgDkAAoJEMDTa8Ir7ZwV2bcP/jtWk6ipR0Kh2G2rmeqRd0G9
+g6TGBPqC6XEumCdIZY3Y5RYfwpXPyncvqiHlK/EeMi1Mu3FCo2NH6Z8pZp0U84d9
+0sRbNZn6XGa7S6UGT7YGy2MBqsQuDP7+53Zv+a4rE5Efm3htd89FrB7rHY/mULD/
+GboVzJb8fPligycbrrmWJ1I2KaGcxOdFsB1NafDBGPnWXLTPvP4EmpO9LULzaoqW
+mnb+6mafwhdR2/om3LDjSK9cl+T4BTMNrX9za9yOghXcQQxYomV4gGQrEzWPjGdr
++zHKPQqBUBEXPrCysZHQDej45t39IdyrzBPz9ovJ0zLeIkOHSPd6tou33vXU2vLB
+YVmVEWua6rObRJk0LV9sggh/7W6XwMJPAUm1f5qSewDcjL32HZmWUtTx5OSFQVUx
+1Npu5MevgjiMK4XvTVwvy29ioKkUQLZ63n8Na+VEEJ3yWi23G1YlOLvH4pv9QwVG
+1tkQ3opNklkIQus++7bGInSe66bW5KxZ1GAyH3JOg5i+oC6BdTNtQ3o5XD/3+y16
+CwpIctx1ilIMQEsZxHzGMXogSXveozOpX+ggSObYTi/D02CtCEWImForp6M36724
+i1IRy7M1il654gYNf7OMbH2gk7VxhuyICKO977RgEr41NrE2R+ayHNYxD2U8Feju
+yj/j3FPtuE8o3h3F2Ajp
+=je24
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__16_Apr_2014_14_02_40_+1000_RSdjxG+9Sbl3Rk/N--
