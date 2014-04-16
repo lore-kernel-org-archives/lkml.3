@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756107AbaDPKsT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:48:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51703 "EHLO
+	id S1756119AbaDPKso (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:48:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51688 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755696AbaDPKch (ORCPT
+	with ESMTP id S1755686AbaDPKcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:32:37 -0400
+	Wed, 16 Apr 2014 06:32:33 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Xin Long <lucien.xin@gmail.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 21/46] ipv6: ip6_append_data_mtu do not handle the mtu of the second fragment properly
-Date: Wed, 16 Apr 2014 11:31:37 +0100
-Message-Id: <1397644322-13905-22-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 18/46] tcp: tcp_release_cb() should release socket ownership
+Date: Wed, 16 Apr 2014 11:31:34 +0100
+Message-Id: <1397644322-13905-19-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
 References: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
@@ -27,100 +28,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: lucien <lucien.xin@gmail.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-commit e367c2d03dba4c9bcafad24688fadb79dd95b218 upstream.
+commit c3f9b01849ef3bc69024990092b9f42e20df7797 upstream.
 
-In ip6_append_data_mtu(), when the xfrm mode is not tunnel(such as
-transport),the ipsec header need to be added in the first fragment, so the mtu
-will decrease to reserve space for it, then the second fragment come, the mtu
-should be turn back, as the commit 0c1833797a5a6ec23ea9261d979aa18078720b74
-said.  however, in the commit a493e60ac4bbe2e977e7129d6d8cbb0dd236be, it use
-*mtu = min(*mtu, ...) to change the mtu, which lead to the new mtu is alway
-equal with the first fragment's. and cannot turn back.
+Lars Persson reported following deadlock :
 
-when I test through  ping6 -c1 -s5000 $ip (mtu=1280):
-...frag (0|1232) ESP(spi=0x00002000,seq=0xb), length 1232
-...frag (1232|1216)
-...frag (2448|1216)
-...frag (3664|1216)
-...frag (4880|164)
+-000 |M:0x0:0x802B6AF8(asm) <-- arch_spin_lock
+-001 |tcp_v4_rcv(skb = 0x8BD527A0) <-- sk = 0x8BE6B2A0
+-002 |ip_local_deliver_finish(skb = 0x8BD527A0)
+-003 |__netif_receive_skb_core(skb = 0x8BD527A0, ?)
+-004 |netif_receive_skb(skb = 0x8BD527A0)
+-005 |elk_poll(napi = 0x8C770500, budget = 64)
+-006 |net_rx_action(?)
+-007 |__do_softirq()
+-008 |do_softirq()
+-009 |local_bh_enable()
+-010 |tcp_rcv_established(sk = 0x8BE6B2A0, skb = 0x87D3A9E0, th = 0x814EBE14, ?)
+-011 |tcp_v4_do_rcv(sk = 0x8BE6B2A0, skb = 0x87D3A9E0)
+-012 |tcp_delack_timer_handler(sk = 0x8BE6B2A0)
+-013 |tcp_release_cb(sk = 0x8BE6B2A0)
+-014 |release_sock(sk = 0x8BE6B2A0)
+-015 |tcp_sendmsg(?, sk = 0x8BE6B2A0, ?, ?)
+-016 |sock_sendmsg(sock = 0x8518C4C0, msg = 0x87D8DAA8, size = 4096)
+-017 |kernel_sendmsg(?, ?, ?, ?, size = 4096)
+-018 |smb_send_kvec()
+-019 |smb_send_rqst(server = 0x87C4D400, rqst = 0x87D8DBA0)
+-020 |cifs_call_async()
+-021 |cifs_async_writev(wdata = 0x87FD6580)
+-022 |cifs_writepages(mapping = 0x852096E4, wbc = 0x87D8DC88)
+-023 |__writeback_single_inode(inode = 0x852095D0, wbc = 0x87D8DC88)
+-024 |writeback_sb_inodes(sb = 0x87D6D800, wb = 0x87E4A9C0, work = 0x87D8DD88)
+-025 |__writeback_inodes_wb(wb = 0x87E4A9C0, work = 0x87D8DD88)
+-026 |wb_writeback(wb = 0x87E4A9C0, work = 0x87D8DD88)
+-027 |wb_do_writeback(wb = 0x87E4A9C0, force_wait = 0)
+-028 |bdi_writeback_workfn(work = 0x87E4A9CC)
+-029 |process_one_work(worker = 0x8B045880, work = 0x87E4A9CC)
+-030 |worker_thread(__worker = 0x8B045880)
+-031 |kthread(_create = 0x87CADD90)
+-032 |ret_from_kernel_thread(asm)
 
-which should be:
-...frag (0|1232) ESP(spi=0x00001000,seq=0x1), length 1232
-...frag (1232|1232)
-...frag (2464|1232)
-...frag (3696|1232)
-...frag (4928|116)
+Bug occurs because __tcp_checksum_complete_user() enables BH, assuming
+it is running from softirq context.
 
-so delete the min() when change back the mtu.
+Lars trace involved a NIC without RX checksum support but other points
+are problematic as well, like the prequeue stuff.
 
-Signed-off-by: Xin Long <lucien.xin@gmail.com>
-Fixes: 75a493e60ac4bb ("ipv6: ip6_append_data_mtu did not care about pmtudisc and frag_size")
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Problem is triggered by a timer, that found socket being owned by user.
+
+tcp_release_cb() should call tcp_write_timer_handler() or
+tcp_delack_timer_handler() in the appropriate context :
+
+BH disabled and socket lock held, but 'owned' field cleared,
+as if they were running from timer handlers.
+
+Fixes: 6f458dfb4092 ("tcp: improve latencies of timer triggered events")
+Reported-by: Lars Persson <lars.persson@axis.com>
+Tested-by: Lars Persson <lars.persson@axis.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv6/ip6_output.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ include/net/sock.h    |  5 +++++
+ net/core/sock.c       |  5 ++++-
+ net/ipv4/tcp_output.c | 11 +++++++++++
+ 3 files changed, 20 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 554eb0d..b878dd6 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1110,21 +1110,19 @@ static void ip6_append_data_mtu(unsigned int *mtu,
- 				unsigned int fragheaderlen,
- 				struct sk_buff *skb,
- 				struct rt6_info *rt,
--				bool pmtuprobe)
-+				unsigned int orig_mtu)
- {
- 	if (!(rt->dst.flags & DST_XFRM_TUNNEL)) {
- 		if (skb == NULL) {
- 			/* first fragment, reserve header_len */
--			*mtu = *mtu - rt->dst.header_len;
-+			*mtu = orig_mtu - rt->dst.header_len;
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 04e148f..643f92e 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1443,6 +1443,11 @@ static inline void sk_wmem_free_skb(struct sock *sk, struct sk_buff *skb)
+  */
+ #define sock_owned_by_user(sk)	((sk)->sk_lock.owned)
  
- 		} else {
- 			/*
- 			 * this fragment is not first, the headers
- 			 * space is regarded as data space.
- 			 */
--			*mtu = min(*mtu, pmtuprobe ?
--				   rt->dst.dev->mtu :
--				   dst_mtu(rt->dst.path));
-+			*mtu = orig_mtu;
- 		}
- 		*maxfraglen = ((*mtu - fragheaderlen) & ~7)
- 			      + fragheaderlen - sizeof(struct frag_hdr);
-@@ -1141,7 +1139,7 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
- 	struct ipv6_pinfo *np = inet6_sk(sk);
- 	struct inet_cork *cork;
- 	struct sk_buff *skb, *skb_prev = NULL;
--	unsigned int maxfraglen, fragheaderlen, mtu;
-+	unsigned int maxfraglen, fragheaderlen, mtu, orig_mtu;
- 	int exthdrlen;
- 	int dst_exthdrlen;
- 	int hh_len;
-@@ -1223,6 +1221,7 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
- 		dst_exthdrlen = 0;
- 		mtu = cork->fragsize;
- 	}
-+	orig_mtu = mtu;
++static inline void sock_release_ownership(struct sock *sk)
++{
++	sk->sk_lock.owned = 0;
++}
++
+ /*
+  * Macro so as to not evaluate some arguments when
+  * lockdep is not enabled.
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 2d92ff8..0e2b67e 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -2335,10 +2335,13 @@ void release_sock(struct sock *sk)
+ 	if (sk->sk_backlog.tail)
+ 		__release_sock(sk);
  
- 	hh_len = LL_RESERVED_SPACE(rt->dst.dev);
++	/* Warning : release_cb() might need to release sk ownership,
++	 * ie call sock_release_ownership(sk) before us.
++	 */
+ 	if (sk->sk_prot->release_cb)
+ 		sk->sk_prot->release_cb(sk);
  
-@@ -1302,8 +1301,7 @@ alloc_new_skb:
- 			if (skb == NULL || skb_prev == NULL)
- 				ip6_append_data_mtu(&mtu, &maxfraglen,
- 						    fragheaderlen, skb, rt,
--						    np->pmtudisc ==
--						    IPV6_PMTUDISC_PROBE);
-+						    orig_mtu);
+-	sk->sk_lock.owned = 0;
++	sock_release_ownership(sk);
+ 	if (waitqueue_active(&sk->sk_lock.wq))
+ 		wake_up(&sk->sk_lock.wq);
+ 	spin_unlock_bh(&sk->sk_lock.slock);
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 24b88d5..acc001e 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -760,6 +760,17 @@ void tcp_release_cb(struct sock *sk)
+ 	if (flags & (1UL << TCP_TSQ_DEFERRED))
+ 		tcp_tsq_handler(sk);
  
- 			skb_prev = skb;
- 
++	/* Here begins the tricky part :
++	 * We are called from release_sock() with :
++	 * 1) BH disabled
++	 * 2) sk_lock.slock spinlock held
++	 * 3) socket owned by us (sk->sk_lock.owned == 1)
++	 *
++	 * But following code is meant to be called from BH handlers,
++	 * so we should keep BH disabled, but early release socket ownership
++	 */
++	sock_release_ownership(sk);
++
+ 	if (flags & (1UL << TCP_WRITE_TIMER_DEFERRED)) {
+ 		tcp_write_timer_handler(sk);
+ 		__sock_put(sk);
 -- 
 1.9.1
 
