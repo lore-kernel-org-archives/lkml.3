@@ -1,106 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161034AbaDPSwG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 14:52:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37900 "EHLO mx1.redhat.com"
+	id S1756490AbaDPSt4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 14:49:56 -0400
+Received: from mga03.intel.com ([143.182.124.21]:26481 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755982AbaDPSwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 14:52:01 -0400
-Date: Wed, 16 Apr 2014 14:51:54 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Simo Sorce <ssorce@redhat.com>, David Miller <davem@davemloft.net>,
-        Tejun Heo <tj@kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
-        Network Development <netdev@vger.kernel.org>
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
- cgroup path
-Message-ID: <20140416185153.GI31074@redhat.com>
-References: <20140416002010.GA5035@redhat.com>
- <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com>
- <20140416.085743.1614257692560892039.davem@davemloft.net>
- <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com>
- <1397664837.19767.410.camel@willson.li.ssimo.org>
- <CALCETrXn7b6UuALpGUVoyQYfR2uzk5tj2ABV=dkvtFNgqM5sxQ@mail.gmail.com>
- <1397667766.19767.440.camel@willson.li.ssimo.org>
- <CALCETrU_yKQVZyVug25cxwQFjWJ7Zf20FY-6ht+RJifXtDdDWg@mail.gmail.com>
- <20140416183614.GH31074@redhat.com>
- <CALCETrURhBXQaYYJiHq2svPqB3-K7kmgD2QUTT9LCjry=fukWA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrURhBXQaYYJiHq2svPqB3-K7kmgD2QUTT9LCjry=fukWA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755907AbaDPStw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 14:49:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,873,1389772800"; 
+   d="scan'208";a="419947017"
+From: Andi Kleen <andi@firstfloor.org>
+To: jolsa@redhat.com
+Cc: acme@infradead.org, linux-kernel@vger.kernel.org, namhyung@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 08/10] perf, tools: Query terminal width and use in perf list
+Date: Wed, 16 Apr 2014 11:49:30 -0700
+Message-Id: <1397674172-30959-8-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1397674172-30959-1-git-send-email-andi@firstfloor.org>
+References: <1397674172-30959-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 11:40:44AM -0700, Andy Lutomirski wrote:
-> On Wed, Apr 16, 2014 at 11:36 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Wed, Apr 16, 2014 at 10:29:08AM -0700, Andy Lutomirski wrote:
-> >
-> > [..]
-> >> >> Admittedly cgroups aren't currently as important as uid, but if this
-> >> >> changes, then SO_PASSCGROUP, as currently written, will have *exactly*
-> >> >> the same problem.
-> >> >
-> >> > Which is easy to foil by using SO_PEERCGROUP and find out who originally
-> >> > opened the socket, which is why that is also available!
-> >>
-> >> Then please remove SO_PASSCGROUP.
-> >
-> > SO_PASSCGROUP is important because SO_PEERCGROUP does not work with unix
-> > datagram sockets.
-> 
-> Right.  I forgot about that.
-> 
-> >
-> > Again going back to logging example, if some clients are logging to unix
-> > datagram sockets, SO_PASSCGROUP is the only option to figure out cgroup
-> > of client.
-> 
-> Hmm.  I think that, in your patch, the cgroup that is sent is the
-> cgroup of the caller of write/send/sendmsg.  What if you changed it to
-> use the same cgroup that SO_PEERCRED would use?  Would that still
-> work?
+From: Andi Kleen <ak@linux.intel.com>
 
-No. SO_PEERCRED stores the cgroup information once at the time of
-connect(). After that it never changes.
+Automatically adapt the now wider and word wrapped perf list
+output to wider terminals. This requires querying the terminal
+before the auto pager takes over, and exporting this
+information from the pager subsystem.
 
-What if sender changes the cgroup. That information will not be captured.
-Also what if multiple client use the same socket fd to writer to logger?
-In that case too storing cgroup info in socket will not help.
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/util/cache.h |  1 +
+ tools/perf/util/pager.c | 15 +++++++++++++++
+ tools/perf/util/pmu.c   | 12 ++----------
+ 3 files changed, 18 insertions(+), 10 deletions(-)
 
-Cgroup is sender task's property and not client side socket's property. 
+diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
+index 7b176dd..07527d6 100644
+--- a/tools/perf/util/cache.h
++++ b/tools/perf/util/cache.h
+@@ -31,6 +31,7 @@ extern void setup_pager(void);
+ extern const char *pager_program;
+ extern int pager_in_use(void);
+ extern int pager_use_color;
++int pager_get_columns(void);
+ 
+ char *alias_lookup(const char *alias);
+ int split_cmdline(char *cmdline, const char ***argv);
+diff --git a/tools/perf/util/pager.c b/tools/perf/util/pager.c
+index 3322b84..60fa3fe 100644
+--- a/tools/perf/util/pager.c
++++ b/tools/perf/util/pager.c
+@@ -1,6 +1,7 @@
+ #include "cache.h"
+ #include "run-command.h"
+ #include "sigchain.h"
++#include <sys/ioctl.h>
+ 
+ /*
+  * This is split up from the rest of git so that we can do
+@@ -8,6 +9,7 @@
+  */
+ 
+ static int spawned_pager;
++static int pager_columns;
+ 
+ static void pager_preexec(void)
+ {
+@@ -47,9 +49,12 @@ static void wait_for_pager_signal(int signo)
+ void setup_pager(void)
+ {
+ 	const char *pager = getenv("PERF_PAGER");
++	struct winsize sz;
+ 
+ 	if (!isatty(1))
+ 		return;
++	if (ioctl(1, TIOCGWINSZ, &sz) == 0)
++		pager_columns = sz.ws_col;
+ 	if (!pager) {
+ 		if (!pager_program)
+ 			perf_config(perf_default_config, NULL);
+@@ -98,3 +103,13 @@ int pager_in_use(void)
+ 	env = getenv("PERF_PAGER_IN_USE");
+ 	return env ? perf_config_bool("PERF_PAGER_IN_USE", env) : 0;
+ }
++
++int pager_get_columns(void)
++{
++	char *s;
++
++	s = getenv("COLUMNS");
++	if (s)
++		return atoi(s);
++	return (pager_columns ? pager_columns : 80) - 2;
++}
+diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
+index 5d69c29..8ae168c 100644
+--- a/tools/perf/util/pmu.c
++++ b/tools/perf/util/pmu.c
+@@ -9,6 +9,7 @@
+ #include "pmu.h"
+ #include "parse-events.h"
+ #include "cpumap.h"
++#include "cache.h"
+ #include "jevents.h"
+ 
+ const char *json_file;
+@@ -789,15 +790,6 @@ static void wordwrap(char *s, int start, int max, int corr)
+ 	}
+ }
+ 
+-static int get_columns(void)
+-{
+-	/*
+-	 * Should ask the terminal with TIOCGWINSZ here, but we
+-	 * need the original fd before the pager.
+-	 */
+-	return 79;
+-}
+-
+ void print_pmu_events(const char *event_glob, bool name_only)
+ {
+ 	struct perf_pmu *pmu;
+@@ -807,7 +799,7 @@ void print_pmu_events(const char *event_glob, bool name_only)
+ 	int len, j;
+ 	struct pair *aliases;
+ 	int numdesc = 0;
+-	int columns = get_columns();
++	int columns = pager_get_columns();
+ 
+ 	pmu = NULL;
+ 	len = 0;
+-- 
+1.8.5.3
 
-> 
-> >>
-> >> I still haven't seen any explanation for what's wrong with requiring
-> >> senders to ask the kernel to transmit their cgroup.
-> >
-> > If nothing else, additional complexity and ovhead. Extra pair of messages
-> > need to be exchanged to request and then provide the information.
-> >
-> > How would it work in logging example? Every time logger receives a
-> > message, is it supposed to send another message to client to send
-> > SCM_CGROUP? That does not sound right.
-> 
-> No -- just have the logger send the cgroup with every message.  Yes,
-> it seems silly, but it's probably barely more expensive than with the
-> code in your patch.
-
-So receiver gets the cgroup messages even if it might not want to. There
-is no way to say "Hey don't send me SCM_CGROUP's messages".
-
-Now all loggers need to be modifed to always send SCM_CGROUP messages. And
-all other more complicated cases might need a different consideration and
-clients and servers will need to be modified accordingly.
-
-I think it is much simpler to allow passing of cgroup information and
-once we figure out some concrete cases where passing of that info is
-not desirabe, implement SO_NOPASSCGROUP and modify those *selected few
-corner cases* to set this flag on sockets.
-
-Thanks
-Vivek
