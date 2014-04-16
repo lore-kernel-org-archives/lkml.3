@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801AbaDPHFZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 03:05:25 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:52813 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754267AbaDPHFX (ORCPT
+	id S1754821AbaDPHHY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 03:07:24 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:63626 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753489AbaDPHHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 03:05:23 -0400
-Date: Wed, 16 Apr 2014 11:05:20 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, hughd@google.com,
-        xemul@parallels.com, Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: Re: [patch 4/4] mm: Clear VM_SOFTDIRTY flag inside clear_refs_write
- instead of clear_soft_dirty
-Message-ID: <20140416070520.GX23983@moon>
-References: <20140324122838.490106581@openvz.org>
- <20140324125926.204897920@openvz.org>
- <20140415110654.4dd9a97c216e2689316fa448@linux-foundation.org>
- <20140415182935.GR23983@moon>
- <20140415114449.c8732a56f9974c2819e4541a@linux-foundation.org>
- <20140415184851.GS23983@moon>
- <20140415115219.2676d2107b3f6b0dd5573062@linux-foundation.org>
+	Wed, 16 Apr 2014 03:07:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140415115219.2676d2107b3f6b0dd5573062@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAVeFuLDhTVGDnmYtnxEY8hhn6HE6tU9OB24WDPtmxEHjiRiuQ@mail.gmail.com>
+References: <1397544101-18135-1-git-send-email-wens@csie.org>
+ <1397544101-18135-2-git-send-email-wens@csie.org> <20140415142024.GD3207@lukather>
+ <CAAVeFuLDhTVGDnmYtnxEY8hhn6HE6tU9OB24WDPtmxEHjiRiuQ@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Wed, 16 Apr 2014 16:06:59 +0900
+Message-ID: <CAAVeFu+rJXH=Uat5_qWPu6OfmDAFxHj2b+n=OSmwtSw4s+fv6w@mail.gmail.com>
+Subject: Re: [PATCH 1/7] gpiolib: gpiolib-of: Implement device tree gpio-names
+ based lookup
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Chen-Yu Tsai <wens@csie.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 11:52:19AM -0700, Andrew Morton wrote:
-> > > 
-> > > -mm isn't in -next at present.  I'll get a release done later today for
-> > > tomorrow's -next.
-> > 
-> > OK. Could you please remind me the place I could fetch the patchwalk series from?
-> 
-> http://ozlabs.org/~akpm/mmots/
-> 
-> > (or better to wait until -mm get merged into -next?)
-> 
-> That's probably simpler.
+On Wed, Apr 16, 2014 at 3:12 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
+> On Tue, Apr 15, 2014 at 11:20 PM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
+>> Hi Chen-Yu,
+>>
+>> On Tue, Apr 15, 2014 at 02:41:35PM +0800, Chen-Yu Tsai wrote:
+>>> This patch provides of_get_gpiod_flags_by_name(), which looks up GPIO
+>>> phandles by name only, through gpios/gpio-names, and not by index.
+>>
+>> IIRC, gpios only uses the *-gpios properties, and not gpios/gpio-names
+>> pattern seen on various other things.
+>>
+>> Is it some new property you introduce? If so, please add it to the
+>> documentation.
+>>
+>> Now, I'm not sure that having two distinct representations of GPIOs in
+>> the DT is a good thing. Yes, it's looking odd compared to other
+>> similar bindings, but it's what we have to deal with.
+>
+> Mmmm I *think* I somehow remember a discussion about this topic
+> recently, but I cannot find it. Maybe Chen-yu could point us to the
+> conclusion of this discussion and the rationale for (re)implementing
+> named GPIOs this way?
 
-I've fetched -next tree and updated patch looks good, thanks Andrew!
+Aha, here maybe:
+
+https://lkml.org/lkml/2014/1/21/164
+
+However I don't see a clear conclusion that we should implement that
+scheme. Not that I am strongly against it, but I'd like to see a
+practical purpose for it.
