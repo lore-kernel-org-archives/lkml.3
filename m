@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756378AbaDPSnX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 14:43:23 -0400
-Received: from moutng.kundenserver.de ([212.227.126.130]:49533 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755472AbaDPSnU (ORCPT
+	id S1161007AbaDPSnz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 14:43:55 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:63433 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756425AbaDPSnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 14:43:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Sergei Ianovich <ynvich@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        "open list:DOCUMENTATION" <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v4 13/21] misc: support for LP-8x4x custom parallel bus
-Date: Wed, 16 Apr 2014 20:42:39 +0200
-Message-ID: <6356054.sn5XpK65Cm@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140416194109.3ef914d2@alan.etchedpixels.co.uk>
-References: <1397668411-27162-7-git-send-email-ynvich@gmail.com> <1397668667-27328-7-git-send-email-ynvich@gmail.com> <20140416194109.3ef914d2@alan.etchedpixels.co.uk>
+	Wed, 16 Apr 2014 14:43:51 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:W4WnsSmAxCcvOduGJCov+dF9RwKYnualMM9nRTrQMiP
- MDVDhI9O2wL8rzrzq5m+Hl9QmXyyd8jmydlfEoXRj17fUed+KQ
- xbmeWCn2o9hJAODKijpowIjT+ZDhumbpEu6QYfUl5K+rpyM6Kn
- b8xRfGwTeMnYogoOF8RqMWGJlfCNmpavVEkjo3ICCqUUMfg6Qd
- f031uC+Akq5PeU2ICN5lbsc7GUcF0haJvzx6PINcJnZ+yziN5n
- ZNRFglE1OSAled4Cp3eLST4AHeJNPYDVESyUinQJgJjQxECB+I
- N9S+bnb19G29Tvg2ihph4dU0Kj94yU6JSXI1SaTNCuM7qhlkaa
- y5DpYQmqMq4xrvks5WNw=
+In-Reply-To: <20140414025150.GC30991@bbox>
+References: <1397247340-3365-1-git-send-email-john.stultz@linaro.org>
+	<1397247340-3365-5-git-send-email-john.stultz@linaro.org>
+	<20140414025150.GC30991@bbox>
+Date: Wed, 16 Apr 2014 11:43:50 -0700
+Message-ID: <CALAqxLXqEhBDdzbq4iNa81w1fzTudL3o3ny4nGOOQdoM-DK=qA@mail.gmail.com>
+Subject: Re: [PATCH 4/4] mvolatile: Add page purging logic & SIGBUS trap
+From: John Stultz <john.stultz@linaro.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Keith Packard <keithp@keithp.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 16 April 2014 19:41:09 One Thousand Gnomes wrote:
-> On Wed, 16 Apr 2014 21:17:18 +0400
-> Sergei Ianovich <ynvich@gmail.com> wrote:
-> 
-> > This patch implements probing for the bus and reporting the number
-> > of available expansion slots.
-> 
-> This appears to be a bus not a misc device. I don't think it belongs in
-> misc. As you've got devices on this bus (or nailed into the 'bus' driver)
-> perhaps this belongs as drivers/platform/lp8x4x or similar with any
-> specific drivers split out - or even drivers/lp8x4x if there will be more
-> of them and more than one platform using it ?
+On Sun, Apr 13, 2014 at 7:51 PM, Minchan Kim <minchan@kernel.org> wrote:
+> On Fri, Apr 11, 2014 at 01:15:40PM -0700, John Stultz wrote:
+>> @@ -3643,6 +3644,8 @@ static int handle_pte_fault(struct mm_struct *mm,
+>>
+>>       entry = *pte;
+>>       if (!pte_present(entry)) {
+>> +             swp_entry_t mvolatile_entry;
+>> +
+>>               if (pte_none(entry)) {
+>>                       if (vma->vm_ops) {
+>>                               if (likely(vma->vm_ops->fault))
+>> @@ -3652,6 +3655,11 @@ static int handle_pte_fault(struct mm_struct *mm,
+>>                       return do_anonymous_page(mm, vma, address,
+>>                                                pte, pmd, flags);
+>>               }
+>> +
+>> +             mvolatile_entry = pte_to_swp_entry(entry);
+>> +             if (unlikely(is_purged_entry(mvolatile_entry)))
+>> +                     return VM_FAULT_SIGBUS;
+>> +
+>
+> There is no pte lock so that is_purged_entry isn't safe so if race happens,
+> do_swap_page could have a problem so it would be better to handle it
+> do_swap_page with pte lock because we used swp_pte to indicate purged pte.
+>
+> I tried to solve it while we were in Napa(you could remember I sent
+> crap patchset to you privately but failed to fix and I still didn't get
+> a time to fix it :( ) but I'd like to inform this problem.
 
-We have drivers/bus now, I think it could fit well in there.
+Thanks for the review and the reminder! I'll move the check appropriately.
 
-	Arnd
+thanks
+-john
