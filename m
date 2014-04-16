@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171AbaDPKzx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:55:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51616 "EHLO
+	id S1756112AbaDPKzw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:55:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51622 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755095AbaDPKcP (ORCPT
+	with ESMTP id S1755592AbaDPKcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Apr 2014 06:32:15 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Finn Thain <fthain@telegraphics.com.au>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 04/46] futex: Allow architectures to skip futex_atomic_cmpxchg_inatomic() test
-Date: Wed, 16 Apr 2014 11:31:20 +0100
-Message-Id: <1397644322-13905-5-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 03/46] cpufreq: Fix timer/workqueue corruption due to double queueing
+Date: Wed, 16 Apr 2014 11:31:19 +0100
+Message-Id: <1397644322-13905-4-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
 References: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
@@ -30,118 +29,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-commit 03b8c7b623c80af264c4c8d6111e5c6289933666 upstream.
+commit 3617f2ca6d0eba48114308532945a7f1577816a4 upstream.
 
-If an architecture has futex_atomic_cmpxchg_inatomic() implemented and there
-is no runtime check necessary, allow to skip the test within futex_init().
+When a CPU is hot removed we'll cancel all the delayed work items
+via gov_cancel_work(). Normally this will just cancels a delayed
+timer on each CPU that the policy is managing and the work won't
+run, but if the work is already running the workqueue code will
+wait for the work to finish before continuing to prevent the
+work items from re-queuing themselves like they normally do. This
+scheme will work most of the time, except for the case where the
+work function determines that it should adjust the delay for all
+other CPUs that the policy is managing. If this scenario occurs,
+the canceling CPU will cancel its own work but queue up the other
+CPUs works to run. For example:
 
-This allows to get rid of some code which would always give the same result,
-and also allows the compiler to optimize a couple of if statements away.
+ CPU0                                        CPU1
+ ----                                        ----
+ cpu_down()
+  ...
+  __cpufreq_remove_dev()
+   cpufreq_governor_dbs()
+    case CPUFREQ_GOV_STOP:
+     gov_cancel_work(dbs_data, policy);
+      cpu0 work is canceled
+       timer is canceled
+       cpu1 work is canceled                    <work runs>
+       <waits for cpu1>                         od_dbs_timer()
+                                                 gov_queue_work(*, *, true);
+ 						  cpu0 work queued
+ 						  cpu1 work queued
+						  cpu2 work queued
+						  ...
+       cpu1 work is canceled
+       cpu2 work is canceled
+       ...
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Finn Thain <fthain@telegraphics.com.au>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-Link: http://lkml.kernel.org/r/20140302120947.GA3641@osiris
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-[ Geert: backported version for v3.10..v3.13 ]
+At the end of the GOV_STOP case cpu0 still has a work queued to
+run although the code is expecting all of the works to be
+canceled. __cpufreq_remove_dev() will then proceed to
+re-initialize all the other CPUs works except for the CPU that is
+going down. The CPUFREQ_GOV_START case in cpufreq_governor_dbs()
+will trample over the queued work and debugobjects will spit out
+a warning:
+
+WARNING: at lib/debugobjects.c:260 debug_print_object+0x94/0xbc()
+ODEBUG: init active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x10
+Modules linked in:
+CPU: 0 PID: 1491 Comm: sh Tainted: G        W    3.10.0 #19
+[<c010c178>] (unwind_backtrace+0x0/0x11c) from [<c0109dec>] (show_stack+0x10/0x14)
+[<c0109dec>] (show_stack+0x10/0x14) from [<c01904cc>] (warn_slowpath_common+0x4c/0x6c)
+[<c01904cc>] (warn_slowpath_common+0x4c/0x6c) from [<c019056c>] (warn_slowpath_fmt+0x2c/0x3c)
+[<c019056c>] (warn_slowpath_fmt+0x2c/0x3c) from [<c0388a7c>] (debug_print_object+0x94/0xbc)
+[<c0388a7c>] (debug_print_object+0x94/0xbc) from [<c0388e34>] (__debug_object_init+0x2d0/0x340)
+[<c0388e34>] (__debug_object_init+0x2d0/0x340) from [<c019e3b0>] (init_timer_key+0x14/0xb0)
+[<c019e3b0>] (init_timer_key+0x14/0xb0) from [<c0635f78>] (cpufreq_governor_dbs+0x3e8/0x5f8)
+[<c0635f78>] (cpufreq_governor_dbs+0x3e8/0x5f8) from [<c06325a0>] (__cpufreq_governor+0xdc/0x1a4)
+[<c06325a0>] (__cpufreq_governor+0xdc/0x1a4) from [<c0633704>] (__cpufreq_remove_dev.isra.10+0x3b4/0x434)
+[<c0633704>] (__cpufreq_remove_dev.isra.10+0x3b4/0x434) from [<c08989f4>] (cpufreq_cpu_callback+0x60/0x80)
+[<c08989f4>] (cpufreq_cpu_callback+0x60/0x80) from [<c08a43c0>] (notifier_call_chain+0x38/0x68)
+[<c08a43c0>] (notifier_call_chain+0x38/0x68) from [<c01938e0>] (__cpu_notify+0x28/0x40)
+[<c01938e0>] (__cpu_notify+0x28/0x40) from [<c0892ad4>] (_cpu_down+0x7c/0x2c0)
+[<c0892ad4>] (_cpu_down+0x7c/0x2c0) from [<c0892d3c>] (cpu_down+0x24/0x40)
+[<c0892d3c>] (cpu_down+0x24/0x40) from [<c0893ea8>] (store_online+0x2c/0x74)
+[<c0893ea8>] (store_online+0x2c/0x74) from [<c04519d8>] (dev_attr_store+0x18/0x24)
+[<c04519d8>] (dev_attr_store+0x18/0x24) from [<c02a69d4>] (sysfs_write_file+0x100/0x148)
+[<c02a69d4>] (sysfs_write_file+0x100/0x148) from [<c0255c18>] (vfs_write+0xcc/0x174)
+[<c0255c18>] (vfs_write+0xcc/0x174) from [<c0255f70>] (SyS_write+0x38/0x64)
+[<c0255f70>] (SyS_write+0x38/0x64) from [<c0106120>] (ret_fast_syscall+0x0/0x30)
+
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/s390/Kconfig     |  1 +
- include/linux/futex.h |  4 ++++
- init/Kconfig          |  7 +++++++
- kernel/futex.c        | 14 ++++++++++++--
- 4 files changed, 24 insertions(+), 2 deletions(-)
+ drivers/cpufreq/cpufreq_governor.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
-index 8a4cae7..f443713 100644
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -116,6 +116,7 @@ config S390
- 	select HAVE_FUNCTION_GRAPH_TRACER
- 	select HAVE_FUNCTION_TRACER
- 	select HAVE_FUNCTION_TRACE_MCOUNT_TEST
-+	select HAVE_FUTEX_CMPXCHG if FUTEX
- 	select HAVE_KERNEL_BZIP2
- 	select HAVE_KERNEL_GZIP
- 	select HAVE_KERNEL_LZ4
-diff --git a/include/linux/futex.h b/include/linux/futex.h
-index b0d95ca..6435f46 100644
---- a/include/linux/futex.h
-+++ b/include/linux/futex.h
-@@ -55,7 +55,11 @@ union futex_key {
- #ifdef CONFIG_FUTEX
- extern void exit_robust_list(struct task_struct *curr);
- extern void exit_pi_state_list(struct task_struct *curr);
-+#ifdef CONFIG_HAVE_FUTEX_CMPXCHG
-+#define futex_cmpxchg_enabled 1
-+#else
- extern int futex_cmpxchg_enabled;
-+#endif
- #else
- static inline void exit_robust_list(struct task_struct *curr)
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index e59afaa..38f2da4 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -133,6 +133,9 @@ void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
  {
-diff --git a/init/Kconfig b/init/Kconfig
-index fed81b5..390ff19 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -1402,6 +1402,13 @@ config FUTEX
- 	  support for "fast userspace mutexes".  The resulting kernel may not
- 	  run glibc-based applications correctly.
+ 	int i;
  
-+config HAVE_FUTEX_CMPXCHG
-+	bool
-+	help
-+	  Architectures should select this if futex_atomic_cmpxchg_inatomic()
-+	  is implemented and always working. This removes a couple of runtime
-+	  checks.
++	if (!policy->governor_enabled)
++		return;
 +
- config EPOLL
- 	bool "Enable eventpoll support" if EXPERT
- 	default y
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 221a58f..15a7d724 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -68,7 +68,9 @@
- 
- #include "rtmutex_common.h"
- 
-+#ifndef CONFIG_HAVE_FUTEX_CMPXCHG
- int __read_mostly futex_cmpxchg_enabled;
-+#endif
- 
- #define FUTEX_HASHBITS (CONFIG_BASE_SMALL ? 4 : 8)
- 
-@@ -2730,10 +2732,10 @@ SYSCALL_DEFINE6(futex, u32 __user *, uaddr, int, op, u32, val,
- 	return do_futex(uaddr, op, val, tp, uaddr2, val2, val3);
- }
- 
--static int __init futex_init(void)
-+static void __init futex_detect_cmpxchg(void)
- {
-+#ifndef CONFIG_HAVE_FUTEX_CMPXCHG
- 	u32 curval;
--	int i;
- 
- 	/*
- 	 * This will fail and we want it. Some arch implementations do
-@@ -2747,6 +2749,14 @@ static int __init futex_init(void)
- 	 */
- 	if (cmpxchg_futex_value_locked(&curval, NULL, 0, 0) == -EFAULT)
- 		futex_cmpxchg_enabled = 1;
-+#endif
-+}
-+
-+static int __init futex_init(void)
-+{
-+	int i;
-+
-+	futex_detect_cmpxchg();
- 
- 	for (i = 0; i < ARRAY_SIZE(futex_queues); i++) {
- 		plist_head_init(&futex_queues[i].chain);
+ 	if (!all_cpus) {
+ 		__gov_queue_work(smp_processor_id(), dbs_data, delay);
+ 	} else {
 -- 
 1.9.1
 
