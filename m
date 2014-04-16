@@ -1,93 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161617AbaDPOjf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 10:39:35 -0400
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:33330 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161446AbaDPOjc (ORCPT
+	id S1161631AbaDPOj5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 10:39:57 -0400
+Received: from smtprelay0224.hostedemail.com ([216.40.44.224]:35401 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1161426AbaDPOjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 10:39:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <534E9517.2040409@samsung.com>
-References: <1397527192-21988-1-git-send-email-cw00.choi@samsung.com>
-	<1397527192-21988-7-git-send-email-cw00.choi@samsung.com>
-	<534E9517.2040409@samsung.com>
-Date: Wed, 16 Apr 2014 23:39:32 +0900
-Message-ID: <CAGTfZH1Dc0YctmGjhS93GpF3aRmw9t4cOBSakO3C3gEKRE9mSg@mail.gmail.com>
-Subject: Re: [PATCHv2 6/8] ARM: EXYNOS: Enter a15 lowpower mode for Exynos3250
- based on Cortex-a7
-From: Chanwoo Choi <cwchoi00@gmail.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>, ben-linux@fluff.org,
-        Kukjin Kim <kgene.kim@samsung.com>, thomas.abraham@linaro.org,
-        Kyungmin Park <kyungmin.park@samsung.com>, sw0312.kim@samsung.com,
-        hyunhee.kim@samsung.com, yj44.cho@samsung.com,
-        chanho61.park@samsung.com, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, marc.zyngier@arm.com,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        devicetree <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 16 Apr 2014 10:39:55 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3865:3866:3867:3868:3871:3872:3874:4321:5007:7652:10004:10400:10848:11026:11232:11657:11658:11914:12043:12438:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: wax12_1c08f6837e844
+X-Filterd-Recvd-Size: 1571
+Message-ID: <1397659190.32088.4.camel@joe-AO722>
+Subject: Re: [PATCH] staging : android : uapi : fix coding style
+From: Joe Perches <joe@perches.com>
+To: Seunghun Lee <waydi1@gmail.com>, John Stultz <john.stultz@linaro.org>
+Cc: greg@kroah.com, swetland@google.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 16 Apr 2014 07:39:50 -0700
+In-Reply-To: <1397658459-4357-1-git-send-email-waydi1@gmail.com>
+References: <1397658459-4357-1-git-send-email-waydi1@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomasz,
+(adding John Stultz)
 
-On Wed, Apr 16, 2014 at 11:35 PM, Tomasz Figa <t.figa@samsung.com> wrote:
-> Hi Chanwoo,
->
->
-> On 15.04.2014 03:59, Chanwoo Choi wrote:
->>
->> This patch decide proper lowpower mode of either a15 or a9 according to
->> own ID
->> from Main ID register.
->>
->> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->>   arch/arm/mach-exynos/hotplug.c | 16 +++++++++++-----
->>   1 file changed, 11 insertions(+), 5 deletions(-)
->>
->> diff --git a/arch/arm/mach-exynos/hotplug.c
->> b/arch/arm/mach-exynos/hotplug.c
->> index 5eead53..99e54e0 100644
->> --- a/arch/arm/mach-exynos/hotplug.c
->> +++ b/arch/arm/mach-exynos/hotplug.c
->> @@ -135,16 +135,22 @@ void __ref exynos_cpu_die(unsigned int cpu)
->>         int primary_part = 0;
->>
->>         /*
->> -        * we're ready for shutdown now, so do it.
->> -        * Exynos4 is A9 based while Exynos5 is A15; check the CPU part
->> +        * we're ready for shutdown now, so do it. Exynos4 is A9 based
->> +        * while Exynos5 is A15/Exynos3 is A7; check the CPU part
->>          * number by reading the Main ID register and then perform the
->>          * appropriate sequence for entering low power.
->
->
-> If changing this comment anyway, I'd suggest removing particular SoC series
-> from it and also correct writing style. My suggestion is:
+On Wed, 2014-04-16 at 23:27 +0900, Seunghun Lee wrote:
+> This patch fix checkpatch.pl warnings and errors.
+[]
+> diff --git a/drivers/staging/android/uapi/binder.h b/drivers/staging/android/uapi/binder.h
+[]
+> @@ -169,7 +169,7 @@ struct binder_ptr_cookie {
+>  struct binder_handle_cookie {
+>  	__u32 handle;
+>  	binder_uintptr_t cookie;
+> -} __attribute__((packed));
+> +} __packed;
 
-OK, I'll fix it.
+If this .h file is meant to be a user-space #include,
+then it should not use the kernel specific __packed
+but keep the __attribute__((packed))
 
-Best regards,
-Chanwoo Choi
+It does use __u32 though and that's generally
+kernel specific.
 
->
-> /*
->  * Prepare the CPU for shutting down. The required sequence of
->  * operations depends on core type. CPUID part number can be used to
->  * determine the right way.
->  */
->
-> Best regards,
-> Tomasz
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+John?  Does any of these binder uapi files need a
+bit more sorting out?
+
