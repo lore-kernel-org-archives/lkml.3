@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754757AbaDPRQX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 13:16:23 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:50665 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754727AbaDPRQP (ORCPT
+	id S1754836AbaDPRQ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 13:16:59 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:34282 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754238AbaDPROY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 13:16:15 -0400
-Message-ID: <534EBADE.1000608@free-electrons.com>
-Date: Wed, 16 Apr 2014 19:16:14 +0200
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Chen-Yu Tsai <wens@csie.org>, Hans de Goede <hdegoede@redhat.com>,
-        Carlo Caione <carlo@caione.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Subject: Re: [PATCH] regmap: i2c: fallback to SMBus if the adapter does not
- support standard I2C
-References: <20140415223849.GJ12304@sirena.org.uk> <1397636170-664-1-git-send-email-boris.brezillon@free-electrons.com> <20140416170638.GT12304@sirena.org.uk>
-In-Reply-To: <20140416170638.GT12304@sirena.org.uk>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Apr 2014 13:14:24 -0400
+From: Sergei Ianovich <ynvich@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Sergei Ianovich <ynvich@gmail.com>, Daniel Mack <zonque@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH v4 04/21] ARM: dts: pxa3xx: move declaration to header
+Date: Wed, 16 Apr 2014 21:13:14 +0400
+Message-Id: <1397668411-27162-5-git-send-email-ynvich@gmail.com>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1397668411-27162-1-git-send-email-ynvich@gmail.com>
+References: <1387309071-22382-1-git-send-email-ynvich@gmail.com>
+ <1397668411-27162-1-git-send-email-ynvich@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mark,
+This way it will be more difficult to change the declaration in one
+place, but not the other.
 
-On 16/04/2014 19:06, Mark Brown wrote:
-> On Wed, Apr 16, 2014 at 10:16:10AM +0200, Boris BREZILLON wrote:
->
->> +	if (i2c_check_functionality(i2c->adapter, I2C_FUNC_I2C)) {
->> +		return &regmap_i2c;
->> +	} else if (config->val_bits == 16 &&
->> +		   i2c_check_functionality(i2c->adapter,
->> +					   I2C_FUNC_SMBUS_WORD_DATA)) {
->> +                config->reg_read = regmap_smbus_word_reg_read;
->> +                config->reg_write = regmap_smbus_word_reg_write;
->> +		return NULL;
-> This all looks good to me except we shouldn't be modifying the config
-> struct (it's supposed to be const).  We should instead add the ability
-> for the bus to set these ops - that'll also be useful for things like
-> AC'97.
+In addition, the change allows to use the binding for pxa-gpio on
+other PXA CPUs.
 
-Actually I do not modify the passed config struct, I copy the config
-values into a local instance and then modify this local instance
-appropriately.
-But I agree that having a proper way to overload config parameters would
-be better.
-Any suggestion on how this should be done ?
+Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
+CC: Daniel Mack <zonque@gmail.com>
+CC: Haojian Zhuang <haojian.zhuang@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>
+---
+   v3..v4
+   v2..v3
+   * no changes
 
-Best Regards,
+   v1..v2
+   * drop #ifdef in header file
+   * number changed from 6 to 4 (dropped patches)
 
-Boris
+ arch/arm/mach-pxa/include/mach/irqs.h | 2 ++
+ arch/arm/mach-pxa/pxa3xx.c            | 2 --
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/arch/arm/mach-pxa/include/mach/irqs.h b/arch/arm/mach-pxa/include/mach/irqs.h
+index 48c2fd8..732315d 100644
+--- a/arch/arm/mach-pxa/include/mach/irqs.h
++++ b/arch/arm/mach-pxa/include/mach/irqs.h
+@@ -113,4 +113,6 @@ void ichp_handle_irq(struct pt_regs *);
+ void pxa_init_irq(int irq_nr, int (*set_wake)(struct irq_data *, unsigned int));
+ #endif
+ 
++extern void __init pxa_dt_irq_init(int (*fn)(struct irq_data *, unsigned int));
++
+ #endif /* __ASM_MACH_IRQS_H */
+diff --git a/arch/arm/mach-pxa/pxa3xx.c b/arch/arm/mach-pxa/pxa3xx.c
+index 87011f3..2397dec 100644
+--- a/arch/arm/mach-pxa/pxa3xx.c
++++ b/arch/arm/mach-pxa/pxa3xx.c
+@@ -42,8 +42,6 @@
+ #define PECR_IE(n)	((1 << ((n) * 2)) << 28)
+ #define PECR_IS(n)	((1 << ((n) * 2)) << 29)
+ 
+-extern void __init pxa_dt_irq_init(int (*fn)(struct irq_data *, unsigned int));
+-
+ static DEFINE_PXA3_CKEN(pxa3xx_ffuart, FFUART, 14857000, 1);
+ static DEFINE_PXA3_CKEN(pxa3xx_btuart, BTUART, 14857000, 1);
+ static DEFINE_PXA3_CKEN(pxa3xx_stuart, STUART, 14857000, 1);
 -- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+1.8.4.2
 
