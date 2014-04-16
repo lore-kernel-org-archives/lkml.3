@@ -1,119 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417AbaDPUP5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 16:15:57 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:55956 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461AbaDPUPy (ORCPT
+	id S1755954AbaDPUQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 16:16:29 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57403 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753931AbaDPUQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 16:15:54 -0400
+	Wed, 16 Apr 2014 16:16:27 -0400
+Message-ID: <534EE512.5090905@infradead.org>
+Date: Wed, 16 Apr 2014 13:16:18 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <5342A3F5.606@topic.nl>
-References: <1395991817-3503-1-git-send-email-mike.looijmans@topic.nl>
-	<10471336.Pb8zVvW3Hp@wuerfel>
-	<53429AD4.7030508@topic.nl>
-	<4902841.krZFXFDZqb@wuerfel>
-	<5342A3F5.606@topic.nl>
-Date: Wed, 16 Apr 2014 13:15:53 -0700
-X-Google-Sender-Auth: X75ru3wynCJKYdLlgvypB-4jizQ
-Message-ID: <CAL1qeaET+cy19EtB_TbtQ40Lb9r9hrO4H5vjG5YmCTpYoOmcog@mail.gmail.com>
-Subject: Re: [PATCH] sdhci: Forward EPROBE_DEFER on vmmc and vqmmc regulators
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Mike Looijmans <mike.looijmans@topic.nl>
-Cc: Arnd Bergmann <arnd@arndb.de>, Ben Dooks <ben.dooks@codethink.co.uk>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cjb@laptop.org, gdjakov@mm-sol.com,
-        "broonie@kernel.org" <broonie@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Serge Hallyn <serge.hallyn@ubuntu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Aristeu Rozanski <arozansk@redhat.com>,
+        Daniel Borkmann <dborkman@redhat.com>, Thomas Graf <tgraf@suug.ch>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>, Rohit Jnagal <jnagal@google.com>,
+        Brandon Philips <brandon.philips@coreos.com>
+Subject: Re: [PATCH cgroup/for-3.16] cgroup: add documentation about unified
+ hierarchy
+References: <20140414220917.GD1863@htj.dyndns.org> <534DB46D.7090207@infradead.org> <20140416135120.GI30990@htj.dyndns.org>
+In-Reply-To: <20140416135120.GI30990@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
-
-On Mon, Apr 7, 2014 at 6:11 AM, Mike Looijmans <mike.looijmans@topic.nl> wrote:
-> On 04/07/2014 02:51 PM, Arnd Bergmann wrote:
+On 04/16/2014 06:51 AM, Tejun Heo wrote:
+> Hello,
+> 
+> On Tue, Apr 15, 2014 at 03:36:29PM -0700, Randy Dunlap wrote:
+>>> +depending on the specific controller.  IOW, hierarchy may be collapsed
 >>
->> On Monday 07 April 2014 14:32:20 Mike Looijmans wrote:
->>>
->>> On 04/07/2014 02:25 PM, Arnd Bergmann wrote:
->>>
->>> Judging from the kernel output, regulator_get_optional returns -ENODEV if
->>> the
->>> supply wasn't found.
->>>
->>> Maybe the API is confusing (or wrong?) here.
->>>
->>> If you change the code as per your suggestion, the SD will not work
->>> unless you
->>> explicitly assign supplies. And judging from what I've seen so far, I am
->>> the
->>> first to have ever attached a power supply to this controller...
->>
->>
->> It's certainly not very "optional" if it returns an error here.
->>
->> You could try to special-case the "-ENODEV" return here, but I think it
->> would be better to change the regulator interface to be less confusing.
->>
->
-> Judging from the code:
-> http://lxr.free-electrons.com/source/drivers/regulator/core.c#L1476
->
-> The behaviour is supposed to be something like "regulator_get_optional" will
-> return an error if the supply wasn't found, but "regulator_get" will create
-> a dummy supply for you instead of returning an error code.
->
-> So "regulator_get_optional" means: "I handle my own problems, just gimme the
-> bad news". But "regulator_get" appears to imply: "I will shoot the
-> messenger, so do whatever you can to get me something to say 'enable' to".
->
-> In this case, the IS_NULL part is wrong indeed, it will never return NULL.
+>> please spell out IOW
+> 
+> Updated, but is this really necessary?
 
-Not true.  If !CONFIG_REGULATOR, regulator_get() and co. will return
-NULL.  Normally it is ok to ignore this case, but the sdhci driver
-will call regulator_is_supported_voltage() on vqmmc to determine
-whether 1.8V signalling is supported.  With !CONFIG_REGULATOR,
-regulator_is_supported_voltage() will always return false, causing the
-sdhci driver to disable all UHS modes.  So we still need to handle the
-NULL (!CONFIG_REGULATOR) case.  One possibility is to guard the
-voltage check with #ifdef CONFIG_REGULATOR, as is done later with
-vmmc.
+It depends on who your audience is.  I probably think that the audience
+is larger than you think it is.
 
-BTW, I was working on a similar patch at:
-https://patchwork.kernel.org/patch/3988271/.
+>> I would prefer to see CPU instead of cpu (except when it refers to a
+>> task or function).
+> 
+> cpu sometimes refer to the cpu controller.  Will use CPU when it's
+> actually referring to the CPU.
 
-Thanks,
-Andrew
+OK, thanks.
 
->
-> I still think it's unrelated to my patch and should be submitted separately.
->
->
-> Mike.
->
->
-> Met vriendelijke groet / kind regards,
->
-> Mike Looijmans
->
-> TOPIC Embedded Systems
-> Eindhovenseweg 32-C, NL-5683 KH Best
-> Postbus 440, NL-5680 AK Best
-> Telefoon: (+31) (0) 499 33 69 79
-> Telefax:  (+31) (0) 499 33 69 70
-> E-mail: mike.looijmans@topic.nl
-> Website: www.topic.nl
->
-> Please consider the environment before printing this e-mail
->
-> Visit us at the Hannover Messe 7 - 11 April 2014 - Hall 002/D10 (Dutch
-> Pavillion)
-> http://www.hannovermesse.de/exhibitor/topic-embedded-products/V229623
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+~Randy
