@@ -1,88 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756475AbaDPUTq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 16:19:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45786 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460AbaDPUTp (ORCPT
+	id S1756518AbaDPUWW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 16:22:22 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:36215 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357AbaDPUWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 16:19:45 -0400
-Date: Wed, 16 Apr 2014 13:19:42 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Bob Liu <lliubbo@gmail.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        <stable@vger.kernel.org>
-Subject: Re: [PATCH] thp: close race between split and zap huge pages
-Message-Id: <20140416131942.aaf8e560e45062c9857a2648@linux-foundation.org>
-In-Reply-To: <1397598515-25017-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1397598515-25017-1-git-send-email-kirill.shutemov@linux.intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Apr 2014 16:22:20 -0400
+Date: Wed, 16 Apr 2014 13:22:16 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+To: Chris Healy <chealy@imsco-us.com>
+Cc: Florian Fainelli <f.fainelli@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH 1/3] net: mdio-gpio: Use devm_ functions where possible
+Message-ID: <20140416202216.GA27629@roeck-us.net>
+References: <1397614602-29694-1-git-send-email-linux@roeck-us.net>
+ <1397614602-29694-2-git-send-email-linux@roeck-us.net>
+ <724F6C6CDC8C86478473775085778C4E09E86BC3@ImsEx1.ims.dom>
+ <724F6C6CDC8C86478473775085778C4E09E86BE0@ImsEx1.ims.dom>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <724F6C6CDC8C86478473775085778C4E09E86BE0@ImsEx1.ims.dom>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Apr 2014 00:48:35 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
-
-> Sasha Levin has reported two THP BUGs[1][2]. I believe both of them have
-> the same root cause. Let's look to them one by one.
+On Wed, Apr 16, 2014 at 06:50:56PM +0000, Chris Healy wrote:
+> OK, I just sent it.  Hopefully, I didn't mess it up again!
 > 
-> The first bug[1] is "kernel BUG at mm/huge_memory.c:1829!".
-> It's BUG_ON(mapcount != page_mapcount(page)) in __split_huge_page().
-> >From my testing I see that page_mapcount() is higher than mapcount here.
-> 
-> I think it happens due to race between zap_huge_pmd() and
-> page_check_address_pmd(). page_check_address_pmd() misses PMD
-> which is under zap:
+> Do I need to do the same for 2/3 and 3/3?
 
-Why did this bug happen?
+Hi Chris,
 
-In other words, what earlier mistakes had we made which led to you
-getting this locking wrong?  
+David just sent an e-mail that he accepted the series, so the answer is no.
 
-Based on that knowledge, what can we do to reduce the likelihood of
-such mistakes being made in the future?  (Hint: the answer to this
-will involve making changes to this patch).
-
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -1536,16 +1536,23 @@ pmd_t *page_check_address_pmd(struct page *page,
->  			      enum page_check_address_pmd_flag flag,
->  			      spinlock_t **ptl)
->  {
-> +	pgd_t *pgd;
-> +	pud_t *pud;
->  	pmd_t *pmd;
->  
->  	if (address & ~HPAGE_PMD_MASK)
->  		return NULL;
->  
-> -	pmd = mm_find_pmd(mm, address);
-> -	if (!pmd)
-> +	pgd = pgd_offset(mm, address);
-> +	if (!pgd_present(*pgd))
->  		return NULL;
-> +	pud = pud_offset(pgd, address);
-> +	if (!pud_present(*pud))
-> +		return NULL;
-> +	pmd = pmd_offset(pud, address);
-> +
->  	*ptl = pmd_lock(mm, pmd);
-> -	if (pmd_none(*pmd))
-> +	if (!pmd_present(*pmd))
->  		goto unlock;
->  	if (pmd_page(*pmd) != page)
->  		goto unlock;
-
-So how do other callers of mm_find_pmd() manage to avoid this race, or
-are they all buggy?
-
-Is mm_find_pmd() really so simple and obvious that we can afford to
-leave it undocumented?
-
+Guenter
