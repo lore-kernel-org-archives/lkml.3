@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161710AbaDPOpt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 10:45:49 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:33154 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161519AbaDPOpo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 10:45:44 -0400
+	id S1422660AbaDPOqn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 10:46:43 -0400
+Received: from www.meduna.org ([92.240.244.38]:46810 "EHLO meduna.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161422AbaDPOql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 10:46:41 -0400
+Message-ID: <534E97C8.5090407@meduna.org>
+Date: Wed, 16 Apr 2014 16:46:32 +0200
+From: Stanislav Meduna <stano@meduna.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <1397658125.3407.84.camel@hornet>
-References: <1392138636-29240-1-git-send-email-pawel.moll@arm.com>
-	<1392138636-29240-5-git-send-email-pawel.moll@arm.com>
-	<CAL_JsqLiFE_D+PSFg62sVm3wO0uvZT+pwAVyn7Lwn2ma3+3DoA@mail.gmail.com>
-	<1397658125.3407.84.camel@hornet>
-Date: Wed, 16 Apr 2014 09:45:43 -0500
-Message-ID: <CAL_JsqLp5o9OnW5kk33BwdnOP97bjgfpMrR=PKEVH4nP4Tnrfg@mail.gmail.com>
-Subject: Re: [PATCH 04/12] clocksource: Sched clock source for Versatile Express
-From: Rob Herring <robherring2@gmail.com>
-To: Pawel Moll <pawel.moll@arm.com>
-Cc: "arm@kernel.org" <arm@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+To: zbr@ioremap.net,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>
+Subject: w1-gpio: sleeping function called from invalid context
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: stano@meduna.org
+X-Authenticator: dovecot_plain
+X-Spam-Score: -6.9
+X-Spam-Score-Int: -68
+X-Exim-Version: 4.72 (build at 25-Oct-2012 18:35:58)
+X-Date: 2014-04-16 16:46:37
+X-Connected-IP: 95.105.163.217:18759
+X-Message-Linecount: 46
+X-Body-Linecount: 33
+X-Message-Size: 2618
+X-Body-Size: 2068
+X-Received-Count: 1
+X-Recipient-Count: 3
+X-Local-Recipient-Count: 3
+X-Local-Recipient-Defer-Count: 0
+X-Local-Recipient-Fail-Count: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 9:22 AM, Pawel Moll <pawel.moll@arm.com> wrote:
-> Hi Rob,
->
-> Thanks for reminding me about this stuff. I'll get around and re-spin
-> the series this week.
->
+Hi,
 
-[snip]
+trying 1-wire with rt-patched Linux 3.12.15-rt25+ and lock debugging:
 
->> > +       setup_sched_clock(vexpress_sys_24mhz_read, 32, 24000000);
->>
->> This frequency should come from a DT clock binding. You will have to
->> fallback to 24MHz for backwards compatibility though.
->
-> I don't see why would it go to the binding. You may have noticed the
-> register is called "SYS_24MHZ", not "SYS_RANDOMCLOCK". The driver
-> *knows* what the frequency is.
+[   12.055550] BUG: sleeping function called from invalid context at /home/stano/Kernels/linux-3.12-rt/kernel/rtmutex.c:673
+[   12.055573] in_atomic(): 0, irqs_disabled(): 128, pid: 92, name: w1_bus_master1
+[   12.055588] 2 locks held by w1_bus_master1/92:
+[   12.055675]  #0:  (&dev->mutex){+.+...}, at: [<c0233560>] w1_process+0xbc/0xe0
+[   12.055729]  #1:  (&dev->bus_mutex){+.+...}, at: [<c0232a50>] w1_search+0x78/0x1e8
+[   12.055741] irq event stamp: 374
+[   12.055787] hardirqs last  enabled at (373): [<c02e04cc>] _raw_spin_unlock_irqrestore+0x6c/0x74
+[   12.055815] hardirqs last disabled at (374): [<c0234598>] w1_touch_bit+0x50/0xc4
+[   12.055860] softirqs last  enabled at (0): [<c001bacc>] copy_process+0x37c/0x1178
+[   12.055876] softirqs last disabled at (0): [<  (null)>]   (null)
+[   12.055899] CPU: 0 PID: 92 Comm: w1_bus_master1 Not tainted 3.12.15-rt25+ #66
+[   12.055973] [<c00151bc>] (unwind_backtrace+0x0/0xf4) from [<c0012c00>] (show_stack+0x10/0x14)
+[   12.056020] [<c0012c00>] (show_stack+0x10/0x14) from [<c02df920>] (rt_spin_lock+0x20/0x60)
+[   12.056080] [<c02df920>] (rt_spin_lock+0x20/0x60) from [<c01bc98c>] (gpiod_direction_output+0x50/0x2fc)
+[   12.056122] [<c01bc98c>] (gpiod_direction_output+0x50/0x2fc) from [<c02345ac>] (w1_touch_bit+0x64/0xc4)
+[   12.056156] [<c02345ac>] (w1_touch_bit+0x64/0xc4) from [<c0234794>] (w1_write_8+0x54/0x7c)
+[   12.056196] [<c0234794>] (w1_write_8+0x54/0x7c) from [<c0232a78>] (w1_search+0xa0/0x1e8)
+[   12.056239] [<c0232a78>] (w1_search+0xa0/0x1e8) from [<c0233414>] (w1_search_process_cb+0x50/0xe0)
+[   12.056280] [<c0233414>] (w1_search_process_cb+0x50/0xe0) from [<c0233570>] (w1_process+0xcc/0xe0)
+[   12.056334] [<c0233570>] (w1_process+0xcc/0xe0) from [<c003cf24>] (kthread+0xa0/0xa8)
+[   12.056379] [<c003cf24>] (kthread+0xa0/0xa8) from [<c000f3e0>] (ret_from_fork+0x14/0x34)
 
-A 24MHz clock is fed to this h/w block to be used by the counter in
-the block. The DT should describe that.
+This happens reproducibly on any access.
 
->
->> > +}
->>
->> Wouldn't this code work for Versatile and Realview ARM reference
->> boards? Even the register offset is the same.
->>
->> > +CLOCKSOURCE_OF_DECLARE(vexpress, "arm,vexpress-sysreg",
->> > +               vexpress_sched_clock_init);
->
-> I guess it would, yes. The sysregs are annoyingly similar and different
-> at the same time.
->
-> One could of course try to come up with a "generic mmio clock source"
-> binding, taking the frequency as a property, but don't count on me doing
-> this... ;-)
+Please Cc: me when replying
 
-I'm not asking for that. Just take care of all ARM Ltd boards which
-have the exact same 24MHz counter at offset 0x5C.
-
-Rob
+Thanks
+-- 
+                                                 Stano
