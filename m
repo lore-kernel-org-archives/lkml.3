@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161596AbaDPOoW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 10:44:22 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:24890 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161145AbaDPOoV (ORCPT
+	id S1161640AbaDPOob (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 10:44:31 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:46484 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161145AbaDPOo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 10:44:21 -0400
-Date: Wed, 16 Apr 2014 17:44:05 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Seunghun Lee <waydi1@gmail.com>
-Cc: greg@kroah.com, devel@driverdev.osuosl.org, swetland@google.com,
+	Wed, 16 Apr 2014 10:44:27 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging : android : uapi : fix coding style
-Message-ID: <20140416144404.GR26890@mwanda>
-References: <1397658459-4357-1-git-send-email-waydi1@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397658459-4357-1-git-send-email-waydi1@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Cc: Silvio F <silvio.fricke@gmail.com>, Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>, spear-devel@list.st.com,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 0/6] mfd/gpio: cleanup of STMPE driver
+Date: Wed, 16 Apr 2014 16:44:09 +0200
+Message-Id: <1397659455-13638-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject is not correct format.  Should be:
+This cleans up the STMPE driver a bit:
 
-[PATCH] staging: android: uapi: fix coding style
+- Remove all static GPIO and IRQ number assignments as all platforms
+  with this hardware use device tree now.
+- Add optional regulators.
+- Add proper device tree probe path using compatible strings.
+- Block mask fix for STMPE1601.
+- Switch GPIO portions to use the gpiolib irqchip helpers.
 
-On Wed, Apr 16, 2014 at 11:27:39PM +0900, Seunghun Lee wrote:
-> This patch fix checkpatch.pl warnings and errors.
-> 
+This branch is available here if you want to test it:
 
-Patch does too many things at once.  Split it up.
+git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-stericsson.git stmpe
 
-> Signed-off-by: Seunghun Lee <waydi1@gmail.com>
-> ---
->  drivers/staging/android/uapi/binder.h |    2 +-
->  drivers/staging/android/uapi/ion.h    |   20 +++++++++-----------
->  2 files changed, 10 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/staging/android/uapi/binder.h b/drivers/staging/android/uapi/binder.h
-> index 904adb7..dba4cef 100644
-> --- a/drivers/staging/android/uapi/binder.h
-> +++ b/drivers/staging/android/uapi/binder.h
-> @@ -169,7 +169,7 @@ struct binder_ptr_cookie {
->  struct binder_handle_cookie {
->  	__u32 handle;
->  	binder_uintptr_t cookie;
-> -} __attribute__((packed));
-> +} __packed;
->  
->  struct binder_pri_desc {
->  	__s32 priority;
-> diff --git a/drivers/staging/android/uapi/ion.h b/drivers/staging/android/uapi/ion.h
-> index f09e7c1..36332dc 100644
-> --- a/drivers/staging/android/uapi/ion.h
-> +++ b/drivers/staging/android/uapi/ion.h
-> @@ -20,19 +20,17 @@
->  #include <linux/ioctl.h>
->  #include <linux/types.h>
->  
-> -typedef int ion_user_handle_t;
+It'd be great if someone with the i.MX 53 or 6q platforms using
+this could test it, the same goes for the SPEAr people.
 
-This typedef is probably a valid use.  Plus it looks to be part of the
-user space API.  Just leave it alone.
+The last patch need to be merged in the GPIO tree, but patches
+1 thru 4 can be merged directly to MFD (as I am GPIO maintainer
+take the few hunks on the GPIO driver as ACKed). If that goes
+well I can pull an immutable branch into the GPIO tree to apply
+the last patch there, and the Ux500 DT patch should go through
+the Ux500 tree.
 
-regards,
-dan carpenter
+Linus Walleij (6):
+  mfd: stmpe: root out static GPIO and IRQ assignments
+  mfd: stmpe: add optional regulators
+  mfd: stmpe: prope properly from the device tree
+  mfd: stmpe: mask off unused blocks properly
+  ARM: ux500: add VCC and VIO regulators to STMPE IC
+  gpio: stmpe: switch to use gpiolib irqchip helpers
+
+ arch/arm/boot/dts/ste-href-stuib.dtsi |   2 +
+ drivers/gpio/Kconfig                  |   1 +
+ drivers/gpio/gpio-stmpe.c             | 127 +++++++++-------------------------
+ drivers/mfd/stmpe-i2c.c               |  60 +++++++++++++++-
+ drivers/mfd/stmpe.c                   |  30 +++++++-
+ drivers/mfd/stmpe.h                   |   2 +-
+ include/linux/mfd/stmpe.h             |  19 ++---
+ 7 files changed, 127 insertions(+), 114 deletions(-)
+
+-- 
+1.9.0
 
