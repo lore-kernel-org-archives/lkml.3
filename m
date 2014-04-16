@@ -1,277 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246AbaDPJWv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 05:22:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43016 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755062AbaDPJWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 05:22:47 -0400
-Date: Wed, 16 Apr 2014 11:22:45 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Jianyu Zhan <nasa4836@gmail.com>
-Cc: hannes@cmpxchg.org, bsingharora@gmail.com, kamezawa.hiroyu@jp.fujitsu.com,
-        akpm@linux-foundation.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+	id S1755130AbaDPJZu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 05:25:50 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:38715 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752555AbaDPJZq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 05:25:46 -0400
+Date: Wed, 16 Apr 2014 10:25:40 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: broonie@kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rob@landley.net, sameo@linux.intel.com,
+        lgirdwood@gmail.com, devicetree@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/memcontrol.c: make mem_cgroup_read_stat() read all
- interested stat item in one go
-Message-ID: <20140416092245.GD12866@dhcp22.suse.cz>
-References: <1397149868-30401-1-git-send-email-nasa4836@gmail.com>
+Subject: Re: [PATCH 1/6] mfd: arizona: Factor out read of device tree GPIOs
+Message-ID: <20140416092540.GE4754@lee--X1>
+References: <1396340845-24060-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1396340845-24060-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <20140415102527.GD27091@lee--X1>
+ <20140415130140.GA27294@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1397149868-30401-1-git-send-email-nasa4836@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140415130140.GA27294@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 11-04-14 01:11:08, Jianyu Zhan wrote:
-> Currently, mem_cgroup_read_stat() is used for user interface. The
-> user accounts memory usage by memory cgroup and he _always_ requires
-> exact value because he accounts memory. So we don't use quick-and-fuzzy
-> -read-and-do-periodic-synchronization way. Thus, we iterate all cpus
-> for one read.
-> 
-> And we mem_cgroup_usage() and mem_cgroup_recursive_stat() both finally
-> call into mem_cgroup_read_stat().
-> 
-> However, these *stat snapshot* operations are implemented in a quite
-> coarse way: it takes M*N iteration for each stat item(M=nr_memcgs,
-> N=nr_possible_cpus). There are two deficiencies:
-> 
-> 1. for every stat item, we have to iterate over all percpu value, which
->    is not so cache friendly.
-> 2. for every stat item, we call mem_cgroup_read_stat() once, which
->    increase the probablity of contending on pcp_counter_lock.
-> 
-> So, this patch improve this a bit.
+> > > This patch factors out the reading of GPIOs for the Arizona devices
+> > > into a helper function.
+> > > 
+> > > Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> > > ---
+> > >  drivers/mfd/arizona-core.c       |   33 ++++++++++++++++++++++++---------
+> > >  include/linux/mfd/arizona/core.h |    3 +++
+> > >  2 files changed, 27 insertions(+), 9 deletions(-)
 
-How much and under what kind of load?
+[...]
 
-> Concretely, for all interested stat
-> items, mark them in a bitmap, and then make mem_cgroup_read_stat() read
-> them all in one go.
+> > > +EXPORT_SYMBOL_GPL(arizona_of_get_named_gpio);
+> > > +
+> > 
+> > Are you sure you're going to use this externally?
+> > 
+> > NB: I haven't looked at the remainder of the set yet.
 > 
-> This is more efficient, and to some degree make it more like *stat snapshot*.
-> 
-> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
-> ---
->  mm/memcontrol.c | 91 +++++++++++++++++++++++++++++++++++++++------------------
->  1 file changed, 62 insertions(+), 29 deletions(-)
+> Yeah we move the ldoena gpio into the LDO driver, and later we
+> will be adding a polarity GPIO into the extcon driver.
 
-I cannot say I like the new code much more than the previous one and
-I've never seen the old one being a bottleneck. So I am not entirely
-fond of optimization without a good reason. (Hint, if you are optimizing
-something always show us numbers which support the optimization)
+Okay, just checking.
 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 29501f0..009357e 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -347,7 +347,7 @@ struct mem_cgroup {
->  	struct mem_cgroup_stat_cpu __percpu *stat;
->  	/*
->  	 * used when a cpu is offlined or other synchronizations
-> -	 * See mem_cgroup_read_stat().
-> +	 * See mem_cgroup_read_stat_vec().
->  	 */
->  	struct mem_cgroup_stat_cpu nocpu_base;
->  	spinlock_t pcp_counter_lock;
-> @@ -855,7 +855,13 @@ mem_cgroup_largest_soft_limit_node(struct mem_cgroup_tree_per_zone *mctz)
->  	return mz;
->  }
->  
-> -/*
-> +/**
-> + * @memcg: the mem_cgroup to account for.
-> + * @stat_bitmask: a bitmap record which stat items to read,
-> + *		each mem_cgroup_stat_index has its corresponding bit.
-> + * @stat_vec: a stat vector to hold the stat value for returing, caller
-> + *		shall take care of initializing it.
-> + *
->   * Implementation Note: reading percpu statistics for memcg.
->   *
->   * Both of vmstat[] and percpu_counter has threshold and do periodic
-> @@ -874,22 +880,25 @@ mem_cgroup_largest_soft_limit_node(struct mem_cgroup_tree_per_zone *mctz)
->   * common workload, threashold and synchonization as vmstat[] should be
->   * implemented.
->   */
-> -static long mem_cgroup_read_stat(struct mem_cgroup *memcg,
-> -				 enum mem_cgroup_stat_index idx)
-> +static void mem_cgroup_read_stat_vec(struct mem_cgroup *memcg,
-> +				 unsigned long *stat_bitmask,
-> +				 long long *stat_vec)
->  {
-> -	long val = 0;
->  	int cpu;
-> +	int i;
->  
->  	get_online_cpus();
->  	for_each_online_cpu(cpu)
-> -		val += per_cpu(memcg->stat->count[idx], cpu);
-> +		for_each_set_bit(i, stat_bitmask, MEM_CGROUP_STAT_NSTATS)
-> +			stat_vec[i] += per_cpu(memcg->stat->count[i], cpu);
-> +
->  #ifdef CONFIG_HOTPLUG_CPU
->  	spin_lock(&memcg->pcp_counter_lock);
-> -	val += memcg->nocpu_base.count[idx];
-> +	for_each_set_bit(i, stat_bitmask, MEM_CGROUP_STAT_NSTATS)
-> +		stat_vec[i] += memcg->nocpu_base.count[i];
->  	spin_unlock(&memcg->pcp_counter_lock);
->  #endif
->  	put_online_cpus();
-> -	return val;
->  }
->  
->  static void mem_cgroup_swap_statistics(struct mem_cgroup *memcg,
-> @@ -1674,6 +1683,7 @@ void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
->  	static DEFINE_MUTEX(oom_info_lock);
->  	struct mem_cgroup *iter;
->  	unsigned int i;
-> +	DECLARE_BITMAP(stat_bitmask, MEM_CGROUP_STAT_NSTATS);
->  
->  	if (!p)
->  		return;
-> @@ -1702,16 +1712,22 @@ void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
->  		res_counter_read_u64(&memcg->kmem, RES_LIMIT) >> 10,
->  		res_counter_read_u64(&memcg->kmem, RES_FAILCNT));
->  
-> +	bitmap_fill(stat_bitmask, MEM_CGROUP_STAT_NSTATS);
-> +	if (!do_swap_account)
-> +		clear_bit(MEM_CGROUP_STAT_SWAP, stat_bitmask);
->  	for_each_mem_cgroup_tree(iter, memcg) {
-> +		long long stat_vec[MEM_CGROUP_STAT_NSTATS] = {0};
-> +
->  		pr_info("Memory cgroup stats for ");
->  		pr_cont_cgroup_path(iter->css.cgroup);
->  		pr_cont(":");
->  
-> +		mem_cgroup_read_stat_vec(iter, stat_bitmask, stat_vec);
->  		for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
->  			if (i == MEM_CGROUP_STAT_SWAP && !do_swap_account)
->  				continue;
-> -			pr_cont(" %s:%ldKB", mem_cgroup_stat_names[i],
-> -				K(mem_cgroup_read_stat(iter, i)));
-> +			pr_cont(" %s:%lldKB", mem_cgroup_stat_names[i],
-> +				K(stat_vec[i]));
->  		}
->  
->  		for (i = 0; i < NR_LRU_LISTS; i++)
-> @@ -4940,25 +4956,28 @@ out:
->  	return retval;
->  }
->  
-> -
-> -static unsigned long mem_cgroup_recursive_stat(struct mem_cgroup *memcg,
-> -					       enum mem_cgroup_stat_index idx)
-> +/* Callers should take care of initialize stat_vec array */
-> +static void mem_cgroup_recursive_stat(struct mem_cgroup *memcg,
-> +					unsigned long *stat_bitmask,
-> +					long long *stat_vec)
->  {
->  	struct mem_cgroup *iter;
-> -	long val = 0;
-> +	int idx;
->  
->  	/* Per-cpu values can be negative, use a signed accumulator */
->  	for_each_mem_cgroup_tree(iter, memcg)
-> -		val += mem_cgroup_read_stat(iter, idx);
-> +		mem_cgroup_read_stat_vec(iter, stat_bitmask, stat_vec);
->  
-> -	if (val < 0) /* race ? */
-> -		val = 0;
-> -	return val;
-> +	for_each_set_bit(idx, stat_bitmask, MEM_CGROUP_STAT_NSTATS)
-> +		if (stat_vec[idx] < 0) /* race ? */
-> +			stat_vec[idx] = 0;
->  }
->  
->  static inline u64 mem_cgroup_usage(struct mem_cgroup *memcg, bool swap)
->  {
->  	u64 val;
-> +	DECLARE_BITMAP(stat_bitmask, MEM_CGROUP_STAT_NSTATS);
-> +	long long stat_vec[MEM_CGROUP_STAT_NSTATS] = {0};
->  
->  	if (!mem_cgroup_is_root(memcg)) {
->  		if (!swap)
-> @@ -4967,15 +4986,21 @@ static inline u64 mem_cgroup_usage(struct mem_cgroup *memcg, bool swap)
->  			return res_counter_read_u64(&memcg->memsw, RES_USAGE);
->  	}
->  
-> +
->  	/*
->  	 * Transparent hugepages are still accounted for in MEM_CGROUP_STAT_RSS
->  	 * as well as in MEM_CGROUP_STAT_RSS_HUGE.
->  	 */
-> -	val = mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_CACHE);
-> -	val += mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_RSS);
-> -
-> +	bitmap_zero(stat_bitmask, MEM_CGROUP_STAT_NSTATS);
-> +	set_bit(MEM_CGROUP_STAT_CACHE, stat_bitmask);
-> +	set_bit(MEM_CGROUP_STAT_RSS, stat_bitmask);
->  	if (swap)
-> -		val += mem_cgroup_recursive_stat(memcg, MEM_CGROUP_STAT_SWAP);
-> +		set_bit(MEM_CGROUP_STAT_SWAP, stat_bitmask);
-> +
-> +	mem_cgroup_recursive_stat(memcg, stat_bitmask, stat_vec);
-> +
-> +	val = stat_vec[MEM_CGROUP_STAT_CACHE] + stat_vec[MEM_CGROUP_STAT_RSS] +
-> +	      (swap ? stat_vec[MEM_CGROUP_STAT_SWAP] : 0);
->  
->  	return val << PAGE_SHIFT;
->  }
-> @@ -5349,12 +5374,19 @@ static int memcg_stat_show(struct seq_file *m, void *v)
->  	struct mem_cgroup *memcg = mem_cgroup_from_css(seq_css(m));
->  	struct mem_cgroup *mi;
->  	unsigned int i;
-> +	DECLARE_BITMAP(stat_bitmask, MEM_CGROUP_STAT_NSTATS);
-> +	long long stat_vec[MEM_CGROUP_STAT_NSTATS] = {0};
-> +
-> +	bitmap_fill(stat_bitmask, MEM_CGROUP_STAT_NSTATS);
-> +	if (!do_swap_account)
-> +		clear_bit(MEM_CGROUP_STAT_SWAP, stat_bitmask);
-> +	mem_cgroup_read_stat_vec(memcg, stat_bitmask, stat_vec);
->  
->  	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
->  		if (i == MEM_CGROUP_STAT_SWAP && !do_swap_account)
->  			continue;
-> -		seq_printf(m, "%s %ld\n", mem_cgroup_stat_names[i],
-> -			   mem_cgroup_read_stat(memcg, i) * PAGE_SIZE);
-> +		seq_printf(m, "%s %lld\n", mem_cgroup_stat_names[i],
-> +			   stat_vec[i] * PAGE_SIZE);
->  	}
->  
->  	for (i = 0; i < MEM_CGROUP_EVENTS_NSTATS; i++)
-> @@ -5375,14 +5407,15 @@ static int memcg_stat_show(struct seq_file *m, void *v)
->  				   memsw_limit);
->  	}
->  
-> +	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++)
-> +		stat_vec[i] = 0;
-> +	mem_cgroup_recursive_stat(memcg, stat_bitmask, stat_vec);
->  	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
-> -		long long val = 0;
-> -
->  		if (i == MEM_CGROUP_STAT_SWAP && !do_swap_account)
->  			continue;
-> -		for_each_mem_cgroup_tree(mi, memcg)
-> -			val += mem_cgroup_read_stat(mi, i) * PAGE_SIZE;
-> -		seq_printf(m, "total_%s %lld\n", mem_cgroup_stat_names[i], val);
-> +
-> +		seq_printf(m, "total_%s %lld\n", mem_cgroup_stat_names[i],
-> +				stat_vec[i] * PAGE_SIZE);
->  	}
->  
->  	for (i = 0; i < MEM_CGROUP_EVENTS_NSTATS; i++) {
-> -- 
-> 1.9.0.GIT
+> > >  static int arizona_of_get_core_pdata(struct arizona *arizona)
+> > >  {
+> > > +	struct arizona_pdata *pdata = &arizona->pdata;
+> > >  	int ret, i;
+> > >  
+> > > -	arizona->pdata.reset = of_get_named_gpio(arizona->dev->of_node,
+> > > -						 "wlf,reset", 0);
+> > > -	if (arizona->pdata.reset < 0)
+> > > -		arizona->pdata.reset = 0;
+> > > -
+> > > -	arizona->pdata.ldoena = of_get_named_gpio(arizona->dev->of_node,
+> > > -						  "wlf,ldoena", 0);
+> > > -	if (arizona->pdata.ldoena < 0)
+> > > -		arizona->pdata.ldoena = 0;
+> > > +	arizona_of_get_named_gpio(arizona, "wlf,reset", true, &pdata->reset);
+> > > +	arizona_of_get_named_gpio(arizona, "wlf,ldoena", true, &pdata->ldoena);
+> > 
+> > I guess this pdata is populated by DT?
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Yeah that is correct, the Arizona driver populates the pdata from
+> the DT then the rest of the driver just uses the pdata in both DT
+> and pdata cases.
+
+Sounds ugly when you put it like that, but I know that a _lot_ of
+other drivers do the same thing.
 
 -- 
-Michal Hocko
-SUSE Labs
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
