@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751173AbaDPBfV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 21:35:21 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:45585 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919AbaDPBfU (ORCPT
+	id S1751390AbaDPBkR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 21:40:17 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:42094 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027AbaDPBkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 21:35:20 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s3G1YkLA002303, This message is accepted by code: ctloc85258
-From: <micky_ching@realsil.com.cn>
-To: <chris@printf.net>, <sameo@linux.intel.com>
-CC: <gregkh@linuxfoundation.org>, <dan.carpenter@oracle.com>,
-        <ulf.hansson@linaro.org>, <devel@linuxdriverproject.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        <rogerable@realtek.com>, <wei_wang@realsil.com.cn>,
-        Micky Ching <micky_ching@realsil.com.cn>
-Subject: [PATCH] mmc: rtsx: fix possible circular locking dependency
-Date: Wed, 16 Apr 2014 09:38:44 +0800
-Message-ID: <1397612325-4968-1-git-send-email-micky_ching@realsil.com.cn>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.29.41.103]
+	Tue, 15 Apr 2014 21:40:10 -0400
+From: jon@ringle.org
+To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, shc_work@mail.ru,
+        Jon Ringle <jringle@gridpoint.com>
+Subject: [PATCH v6 2/2] serial: sc16is7xx: Add bindings documentation for the SC16IS7XX UARTs
+Date: Tue, 15 Apr 2014 21:39:53 -0400
+Message-Id: <1397612393-31855-2-git-send-email-jon@ringle.org>
+X-Mailer: git-send-email 1.8.5.4
+In-Reply-To: <1397612393-31855-1-git-send-email-jon@ringle.org>
+References: <1397612393-31855-1-git-send-email-jon@ringle.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Micky Ching <micky_ching@realsil.com.cn>
+From: Jon Ringle <jringle@gridpoint.com>
 
-To avoid dead lock, we need make sure host->lock is always acquire
-before pcr->lock. But in irq handler, we acquired pcr->lock in rtsx mfd
-driver, and sd_isr_done_transfer() is called during pcr->lock already
-acquired. Since in sd_isr_done_transfer() the only work we do is schdule
-tasklet, the cmd_tasklet and data_tasklet never conflict, so it is safe
-to remove spin_lock() here.
+This patch adds the devicetree documentation for the NXP SC16IS7XX UARTs.
 
-Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+Signed-off-by: Jon Ringle <jringle@gridpoint.com>
 ---
- drivers/mmc/host/rtsx_pci_sdmmc.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ .../devicetree/bindings/serial/nxp,sc16is7xx.txt   | 33 ++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
 
-diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
-index 453e1d4..40695e0 100644
---- a/drivers/mmc/host/rtsx_pci_sdmmc.c
-+++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-@@ -108,12 +108,10 @@ static void sd_isr_done_transfer(struct platform_device *pdev)
- {
- 	struct realtek_pci_sdmmc *host = platform_get_drvdata(pdev);
- 
--	spin_lock(&host->lock);
- 	if (host->cmd)
- 		tasklet_schedule(&host->cmd_tasklet);
--	if (host->data)
-+	else if (host->data)
- 		tasklet_schedule(&host->data_tasklet);
--	spin_unlock(&host->lock);
- }
- 
- static void sd_request_timeout(unsigned long host_addr)
+diff --git a/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt b/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
+new file mode 100644
+index 0000000..246c795
+--- /dev/null
++++ b/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
+@@ -0,0 +1,33 @@
++* NXP SC16IS7xx advanced Universal Asynchronous Receiver-Transmitter (UART)
++
++Required properties:
++- compatible: Should be one of the following:
++  - "nxp,sc16is740" for NXP SC16IS740,
++  - "nxp,sc16is741" for NXP SC16IS741,
++  - "nxp,sc16is750" for NXP SC16IS750,
++  - "nxp,sc16is752" for NXP SC16IS752,
++  - "nxp,sc16is760" for NXP SC16IS760,
++  - "nxp,sc16is762" for NXP SC16IS762.
++- reg: I2C address of the SC16IS7xx device.
++- interrupt-parent: The phandle for the interrupt controller that
++  services interrupts for this IC.
++- interrupts: Should contain the UART interrupt
++- clocks: Reference to the IC source clock.
++
++Optional properties:
++- gpio-controller: Marks the device node as a GPIO controller.
++- #gpio-cells: Should be two. The first cell is the GPIO number and
++  the second cell is used to specify the GPIO polarity:
++    0 = active high,
++    1 = active low.
++
++Example:
++        sc16is750: sc16is750@51 {
++                compatible = "nxp,sc16is750";
++                reg = <0x51>;
++                clocks = <&clk20m>;
++                interrupt-parent = <&gpio3>;
++                interrupts = <7 IRQ_TYPE_EDGE_FALLING>;
++                gpio-controller;
++                #gpio-cells = <2>;
++        };
 -- 
-1.7.9.5
+1.8.5.4
 
