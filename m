@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254AbaDPStl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 14:49:41 -0400
-Received: from mga03.intel.com ([143.182.124.21]:25563 "EHLO mga03.intel.com"
+	id S1161127AbaDPSt5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 14:49:57 -0400
+Received: from mga11.intel.com ([192.55.52.93]:61854 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752460AbaDPStk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 14:49:40 -0400
+	id S1756330AbaDPStw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 14:49:52 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,873,1389772800"; 
-   d="scan'208";a="419946967"
+   d="scan'208";a="521807596"
 From: Andi Kleen <andi@firstfloor.org>
 To: jolsa@redhat.com
 Cc: acme@infradead.org, linux-kernel@vger.kernel.org, namhyung@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 03/10] fixup! perf, tools: Add support for text descriptions of events and alias add
-Date: Wed, 16 Apr 2014 11:49:25 -0700
-Message-Id: <1397674172-30959-3-git-send-email-andi@firstfloor.org>
+Subject: [PATCH 07/10] perf, tools: Allow events with dot
+Date: Wed, 16 Apr 2014 11:49:29 -0700
+Message-Id: <1397674172-30959-7-git-send-email-andi@firstfloor.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1397674172-30959-1-git-send-email-andi@firstfloor.org>
 References: <1397674172-30959-1-git-send-email-andi@firstfloor.org>
@@ -25,70 +25,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andi Kleen <ak@linux.intel.com>
 
----
- tools/perf/util/pmu.c | 48 ++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 44 insertions(+), 4 deletions(-)
+The Intel events use a dot to separate event name and unit mask.
+Allow dot in names in the scanner, and remove special handling
+of dot as EOF. Also remove the hack in jevents to replace dot
+with underscore. This way dotted events can be specified
+directly by the user.
 
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index cc888d9..26311d9 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -737,11 +737,51 @@ static char *format_alias_or(char *buf, int len, struct perf_pmu *pmu,
- 	return buf;
- }
+I'm not fully sure this change to the scanner is correct
+(what was the dot special case good for?), but I haven't
+found anything that breaks with it so far at least.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/util/jevents.c      | 9 +--------
+ tools/perf/util/parse-events.l | 3 +--
+ 2 files changed, 2 insertions(+), 10 deletions(-)
+
+diff --git a/tools/perf/util/jevents.c b/tools/perf/util/jevents.c
+index 89dada6..f86e510 100644
+--- a/tools/perf/util/jevents.c
++++ b/tools/perf/util/jevents.c
+@@ -87,15 +87,8 @@ static void addfield(char *map, char **dst, const char *sep,
  
--static int cmp_string(const void *a, const void *b)
-+struct pair {
-+	char *name;
-+	char *desc;
-+};
-+
-+static int cmp_pair(const void *a, const void *b)
-+{
-+	const struct pair *as = a;
-+	const struct pair *bs = b;
-+
-+	/* Put downloaded event list last */
-+	if (!!as->desc != !!bs->desc)
-+		return !!as->desc - !!bs->desc;
-+	return strcmp(as->name, bs->name);
-+}
-+
-+static void wordwrap(char *s, int start, int max, int corr)
-+{
-+	int column = start;
-+	int n;
-+
-+	while (*s) {
-+		int wlen = strcspn(s, " \t");
-+
-+		if (column + wlen >= max && column > start) {
-+			printf("\n%*s", start, "");
-+			column = start + corr;
-+		}
-+		n = printf("%s%.*s", column > start ? " " : "", wlen, s);
-+		if (n <= 0)
-+			break;
-+		s += wlen;
-+		column += n;
-+		while (isspace(*s))
-+			s++;
-+	}
-+}
-+
-+static int get_columns(void)
+ static void fixname(char *s)
  {
--	const char * const *as = a;
--	const char * const *bs = b;
--	return strcmp(*as, *bs);
-+	/*
-+	 * Should ask the terminal with TIOCGWINSZ here, but we
-+	 * need the original fd before the pager.
-+	 */
-+	return 79;
+-	for (; *s; s++) {
++	for (; *s; s++)
+ 		*s = tolower(*s);
+-		/*
+-		 * Remove '.' for now, until the parser
+-		 * can deal with it.
+-		 */
+-		if (*s == '.')
+-			*s = '_';
+-	}
  }
  
- void print_pmu_events(const char *event_glob, bool name_only)
+ static void fixdesc(char *s)
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index 3432995..709fa3b 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -81,7 +81,7 @@ num_dec		[0-9]+
+ num_hex		0x[a-fA-F0-9]+
+ num_raw_hex	[a-fA-F0-9]+
+ name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
+-name_minus	[a-zA-Z_*?][a-zA-Z0-9\-_*?]*
++name_minus	[a-zA-Z_*?][a-zA-Z0-9\-_*?.]*
+ /* If you add a modifier you need to update check_modifier() */
+ modifier_event	[ukhpGHSD]+
+ modifier_bp	[rwx]{1,3}
+@@ -119,7 +119,6 @@ modifier_bp	[rwx]{1,3}
+ 			return PE_EVENT_NAME;
+ 		}
+ 
+-.		|
+ <<EOF>>		{
+ 			BEGIN(INITIAL); yyless(0);
+ 		}
 -- 
 1.8.5.3
 
