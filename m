@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370AbaDPUQj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 16:16:39 -0400
-Received: from fn.samba.org ([216.83.154.106]:44446 "EHLO mail.samba.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751357AbaDPUQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 16:16:36 -0400
-Date: Wed, 16 Apr 2014 13:16:33 -0700
-From: Jeremy Allison <jra@samba.org>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Jeff Layton <jlayton@redhat.com>, libc-alpha <libc-alpha@sourceware.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Carlos O'Donell" <carlos@redhat.com>,
-        Michael Kerrisk-manpages <mtk.manpages@googlemail.com>,
-        samba-technical@lists.samba.org,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
-        Jeremy Allison <jra@google.com>
-Subject: Re: should we change the name/macros of file-private locks?
-Message-ID: <20140416201633.GQ22791@samba2>
-Reply-To: Jeremy Allison <jra@samba.org>
-References: <20140416145746.66b7441c@tlielax.poochiereds.net>
- <CAKgNAkgqZDcT0jda8XS+4HrJzXjzwehqciHbkNuAVY3fNkH4zQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKgNAkgqZDcT0jda8XS+4HrJzXjzwehqciHbkNuAVY3fNkH4zQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756475AbaDPUTq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 16:19:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45786 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752460AbaDPUTp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 16:19:45 -0400
+Date: Wed, 16 Apr 2014 13:19:42 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michel Lespinasse <walken@google.com>,
+        Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Bob Liu <lliubbo@gmail.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        <stable@vger.kernel.org>
+Subject: Re: [PATCH] thp: close race between split and zap huge pages
+Message-Id: <20140416131942.aaf8e560e45062c9857a2648@linux-foundation.org>
+In-Reply-To: <1397598515-25017-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1397598515-25017-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 10:00:46PM +0200, Michael Kerrisk (man-pages) wrote:
-> [CC += Jeremy Allison]
-> 
-> On Wed, Apr 16, 2014 at 8:57 PM, Jeff Layton <jlayton@redhat.com> wrote:
-> > Sorry to spam so many lists, but I think this needs widespread
-> > distribution and consensus.
-> >
-> > File-private locks have been merged into Linux for v3.15, and *now*
-> > people are commenting that the name and macro definitions for the new
-> > file-private locks suck.
-> >
-> > ...and I can't even disagree. They do suck.
-> >
-> > We're going to have to live with these for a long time, so it's
-> > important that we be happy with the names before we're stuck with them.
-> 
-> So, to add my perspective: The existing byte-range locking system has
-> persisted (despite egregious faults) for well over two decades. One
-> supposes that Jeff's new improved version might be around
-> at least as long. With that in mind, and before setting in stone (and
-> pushing into POSIX) a model of thinking that thousands of programmers
-> will live with for a long time, it's worth thinking about names.
-> 
-> > Michael Kerrisk suggested several names but I think the only one that
-> > doesn't have other issues is "file-associated locks", which can be
-> > distinguished against "process-associated" locks (aka classic POSIX
-> > locks).
-> 
-> The names I have suggested are:
-> 
->     file-associated locks
-> 
-> or
-> 
->    file-handle locks
-> 
-> or (using POSIX terminology)
-> 
->     file-description locks
+On Wed, 16 Apr 2014 00:48:35 +0300 "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com> wrote:
 
-Thanks for the CC: Michael, but to be honest
-I don't really care what the name is, I just
-want the functionality. I can change our build
-system to cope with detecting it under any name
-you guys choose :-).
+> Sasha Levin has reported two THP BUGs[1][2]. I believe both of them have
+> the same root cause. Let's look to them one by one.
+> 
+> The first bug[1] is "kernel BUG at mm/huge_memory.c:1829!".
+> It's BUG_ON(mapcount != page_mapcount(page)) in __split_huge_page().
+> >From my testing I see that page_mapcount() is higher than mapcount here.
+> 
+> I think it happens due to race between zap_huge_pmd() and
+> page_check_address_pmd(). page_check_address_pmd() misses PMD
+> which is under zap:
 
-Cheers,
+Why did this bug happen?
 
-	Jeremy.
+In other words, what earlier mistakes had we made which led to you
+getting this locking wrong?  
+
+Based on that knowledge, what can we do to reduce the likelihood of
+such mistakes being made in the future?  (Hint: the answer to this
+will involve making changes to this patch).
+
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -1536,16 +1536,23 @@ pmd_t *page_check_address_pmd(struct page *page,
+>  			      enum page_check_address_pmd_flag flag,
+>  			      spinlock_t **ptl)
+>  {
+> +	pgd_t *pgd;
+> +	pud_t *pud;
+>  	pmd_t *pmd;
+>  
+>  	if (address & ~HPAGE_PMD_MASK)
+>  		return NULL;
+>  
+> -	pmd = mm_find_pmd(mm, address);
+> -	if (!pmd)
+> +	pgd = pgd_offset(mm, address);
+> +	if (!pgd_present(*pgd))
+>  		return NULL;
+> +	pud = pud_offset(pgd, address);
+> +	if (!pud_present(*pud))
+> +		return NULL;
+> +	pmd = pmd_offset(pud, address);
+> +
+>  	*ptl = pmd_lock(mm, pmd);
+> -	if (pmd_none(*pmd))
+> +	if (!pmd_present(*pmd))
+>  		goto unlock;
+>  	if (pmd_page(*pmd) != page)
+>  		goto unlock;
+
+So how do other callers of mm_find_pmd() manage to avoid this race, or
+are they all buggy?
+
+Is mm_find_pmd() really so simple and obvious that we can afford to
+leave it undocumented?
+
