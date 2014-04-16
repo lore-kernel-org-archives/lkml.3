@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161604AbaDPOhu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 10:37:50 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:57381 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161487AbaDPOhr (ORCPT
+	id S1161539AbaDPOgf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 10:36:35 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39619 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161485AbaDPOgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 10:37:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140416.085743.1614257692560892039.davem@davemloft.net>
-References: <CALCETrURHNmLyccRiF_W8o2ozRMR4AaCjUE=_PU8z1+Pq6X2jQ@mail.gmail.com>
- <20140416002010.GA5035@redhat.com> <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com>
- <20140416.085743.1614257692560892039.davem@davemloft.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 16 Apr 2014 07:37:26 -0700
-Message-ID: <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com>
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing cgroup path
-To: David Miller <davem@davemloft.net>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Daniel Walsh <dwalsh@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lpoetter@redhat.com, Simo Sorce <ssorce@redhat.com>,
-        cgroups@vger.kernel.org, kay@redhat.com,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 16 Apr 2014 10:36:31 -0400
+Message-Id: <20140416143315.916984416@linutronix.de>
+User-Agent: quilt/0.60-1
+Date: Wed, 16 Apr 2014 14:36:44 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: stable@vger.kernel.org
+Subject: [patch 2/4] irqchip: gic: Support forced affinity setting
+References: <20140416142106.537575971@linutronix.de>
+Content-Disposition: inline; filename=irqchip-gic-allow-force-affinity.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 5:57 AM, David Miller <davem@davemloft.net> wrote:
->
-> Please, just stop.
+To support the affinity setting of per cpu timers in the early startup
+of a not yet online cpu, implement the force logic, which disables the
+cpu online check.
 
-No.
+Tagged for stable to allow a simple fix of the affected SoC clock
+event drivers.
 
-This thread is proposing an ABI.  This means that, if the ABI ends up
-in Linus's kernel, then it has to be supported forever.  Now is the
-time to find and fix any issues with it before they become much harder
-to fix.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ drivers/irqchip/irq-gic.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-This ABI is especially tricky because programs will use it even if
-they don't explicitly try to.  So just adding the ABI may break
-existing assumptions that are relevant to security or correctness.
+Index: tip/drivers/irqchip/irq-gic.c
+===================================================================
+--- tip.orig/drivers/irqchip/irq-gic.c
++++ tip/drivers/irqchip/irq-gic.c
+@@ -246,10 +246,14 @@ static int gic_set_affinity(struct irq_d
+ 			    bool force)
+ {
+ 	void __iomem *reg = gic_dist_base(d) + GIC_DIST_TARGET + (gic_irq(d) & ~3);
+-	unsigned int shift = (gic_irq(d) % 4) * 8;
+-	unsigned int cpu = cpumask_any_and(mask_val, cpu_online_mask);
++	unsigned int cpu, shift = (gic_irq(d) % 4) * 8;
+ 	u32 val, mask, bit;
+ 
++	if (!force)
++		cpu = cpumask_any_and(mask_val, cpu_online_mask);
++	else
++		cpu = cpumask_first(mask_val);
++
+ 	if (cpu >= NR_GIC_CPU_IF || cpu >= nr_cpu_ids)
+ 		return -EINVAL;
+ 
 
---Andy
+
