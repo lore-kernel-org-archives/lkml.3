@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769AbaDPVpp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 17:45:45 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:43911 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756664AbaDPVpo (ORCPT
+	id S1161262AbaDPVri (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 17:47:38 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:43953 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756596AbaDPVrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 17:45:44 -0400
-Date: Wed, 16 Apr 2014 14:45:41 -0700
+	Wed, 16 Apr 2014 17:47:35 -0400
+Date: Wed, 16 Apr 2014 14:47:30 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Pranith Kumar <pranith@gatech.edu>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] include/linux/torture.h: remove unused duplicate
- definition
-Message-ID: <20140416214541.GB4496@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] kernel/torture.c: unmark torture_init_* as __inline
+Message-ID: <20140416214730.GC4496@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <534EEC09.7010300@gatech.edu>
+References: <534EDBF4.6030702@gatech.edu>
+ <534EDCC7.1040701@gatech.edu>
+ <20140416204433.GZ4496@linux.vnet.ibm.com>
+ <CAJhHMCD9rcyp07pWn7L1ojpv57ducYezCh-g25J3LfvuubJ_gQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <534EEC09.7010300@gatech.edu>
+In-Reply-To: <CAJhHMCD9rcyp07pWn7L1ojpv57ducYezCh-g25J3LfvuubJ_gQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041621-7164-0000-0000-000001185529
+x-cbid: 14041621-6688-0000-0000-00000125F2B3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 04:46:01PM -0400, Pranith Kumar wrote:
-> remove an unused duplicate definition of torture_param
+On Wed, Apr 16, 2014 at 05:34:26PM -0400, Pranith Kumar wrote:
+> On Wed, Apr 16, 2014 at 4:44 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > Good catch, queued for 3.16!  I missed it because of my habit of building
+> > the torture tests directly into the kernel rather than loading them
+> > as modules.  So thank you both for the patch and for your testing efforts!
 > 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
+> You are welcome!
+> 
+> > Just out of curiosity, what are you thinking of using this for?
+> >
+> 
+> I am exploring RCU in my research, looking for ways to apply the ideas
+> to GPGPU and was studying the source code in the kernel. I will
+> hopefully be using this in the future.
 
-This one confused me at first because I could only find one torture_param().
-I applied the patch anyway, and it built without errors.  I looked more
-closely and realized that the names aren't quite the same.  The one you
-removed has only one "a" in the name, and the one remaining has two "a"s
-in its name.  ;-)
+Nice!  Please let me know how it goes!
 
-Good eyes!  I updated the title and commit log and queued for 3.16.
+> (I should probably stick to userspace rcu :)
+
+It might be better suited to your needs, but by all means continue
+testing and inspecting the Linux-kernel RCU!  It does feel good to
+get rid of some of the cruft, and I probably would never spot it.
+
+Thank you again!
 
 							Thanx, Paul
-
-> ---
->  include/linux/torture.h |    6 ------
->  1 file changed, 6 deletions(-)
-> 
-> diff --git a/include/linux/torture.h b/include/linux/torture.h
-> index b2e2b46..88a84a2 100644
-> --- a/include/linux/torture.h
-> +++ b/include/linux/torture.h
-> @@ -49,12 +49,6 @@
->  #define VERBOSE_TOROUT_ERRSTRING(s) \
->  	do { if (verbose) pr_alert("%s" TORTURE_FLAG "!!! %s\n", torture_type, s); } while (0)
-> 
-> -/* Definitions for a non-string torture-test module parameter. */
-> -#define torture_parm(type, name, init, msg) \
-> -	static type name = init; \
-> -	module_param(name, type, 0444); \
-> -	MODULE_PARM_DESC(name, msg);
-> -
->  /* Definitions for online/offline exerciser. */
->  int torture_onoff_init(long ooholdoff, long oointerval);
->  char *torture_onoff_stats(char *page);
-> -- 
-> 1.7.9.5
-> 
 
