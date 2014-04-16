@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108AbaDPJGO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 05:06:14 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:38080 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754921AbaDPJGK (ORCPT
+	id S1755137AbaDPJHp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 05:07:45 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:45837 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752745AbaDPJHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 05:06:10 -0400
-Date: Wed, 16 Apr 2014 10:06:05 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Michael Brunner <mibru@gmx.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Kevin Strasser <strassek@engr.orst.edu>,
-        Michael Brunner <Michael.Brunner@kontron.com>,
-        Chris Healy <chealy@imsco-us.com>,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: Re: [PATCH] mfd: Add sysfs attributes for Kontron PLD firmware
- revision
-Message-ID: <20140416090604.GB4754@lee--X1>
-References: <20140408082106.2bb49571@hyperion>
+	Wed, 16 Apr 2014 05:07:41 -0400
+Message-ID: <534E4873.5070308@linaro.org>
+Date: Wed, 16 Apr 2014 11:08:03 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Xiubo Li <Li.Xiubo@freescale.com>, tglx@linutronix.de,
+        shawn.guo@linaro.org, b35083@freescale.com, r64188@freescale.com,
+        b40534@freescale.com
+CC: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 1/3] ARM: dts: vf610: Add Freescale FlexTimer Module
+ timer node.
+References: <1397614787-8300-1-git-send-email-Li.Xiubo@freescale.com> <1397614787-8300-2-git-send-email-Li.Xiubo@freescale.com>
+In-Reply-To: <1397614787-8300-2-git-send-email-Li.Xiubo@freescale.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140408082106.2bb49571@hyperion>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch adds attributes to the Kontron PLD driver to allow
-> applications to retrieve firmware information.
-> Additionally the format has been changed to conform with the
-> representation in other Kontron software.
-> 
-> Signed-off-by: Michael Brunner <michael.brunner@kontron.com>
-> Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-> ---
->  drivers/mfd/kempld-core.c  | 127 +++++++++++++++++++++++++++++++++++++--------
->  include/linux/mfd/kempld.h |   4 ++
->  2 files changed, 110 insertions(+), 21 deletions(-)
+On 04/16/2014 04:19 AM, Xiubo Li wrote:
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> Cc: Shawn Guo <shawn.guo@linaro.org>
+> Cc: Jingchang Lu <b35083@freescale.com>
 
-Looks mostly sane and has Guenter's support so, applied thanks.
+That deserves a patch description and an update of the documentation.
+
+Thanks
+   -- Daniel
+
+> ---
+>   arch/arm/boot/dts/vf610.dtsi | 13 +++++++++++++
+>   1 file changed, 13 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
+> index 107e2c0..c3a276f 100644
+> --- a/arch/arm/boot/dts/vf610.dtsi
+> +++ b/arch/arm/boot/dts/vf610.dtsi
+> @@ -153,6 +153,19 @@
+>   				clock-names = "pit";
+>   			};
+>
+> +			ftm0: ftm@40038000 {
+> +				compatible = "fsl,vf610-ftm-timer";
+> +				reg = <0x40038000 0x2000>;
+> +				interrupts = <0 42 IRQ_TYPE_LEVEL_HIGH>;
+> +				clock-names = "ftm0", "ftm1",
+> +					"ftm0_counter_en", "ftm1_counter_en";
+> +				clocks = <&clks VF610_CLK_FTM0>,
+> +					<&clks VF610_CLK_FTM1>,
+> +					<&clks VF610_CLK_FTM0_EXT_FIX_EN>,
+> +					<&clks VF610_CLK_FTM1_EXT_FIX_EN>;
+> +				status = "disabled";
+> +			};
+> +
+>   			wdog@4003e000 {
+>   				compatible = "fsl,vf610-wdt", "fsl,imx21-wdt";
+>   				reg = <0x4003e000 0x1000>;
+>
+
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
