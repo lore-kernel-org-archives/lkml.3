@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755628AbaDPKcU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:32:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51629 "EHLO
+	id S1756057AbaDPKyI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:54:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51637 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755471AbaDPKcS (ORCPT
+	with ESMTP id S1755619AbaDPKcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:32:18 -0400
+	Wed, 16 Apr 2014 06:32:20 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Mikulas Patocka <mpatocka@redhat.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 07/46] powernow-k6: correctly initialize default parameters
-Date: Wed, 16 Apr 2014 11:31:23 +0100
-Message-Id: <1397644322-13905-8-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 08/46] powernow-k6: reorder frequencies
+Date: Wed, 16 Apr 2014 11:31:24 +0100
+Message-Id: <1397644322-13905-9-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
 References: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
@@ -30,152 +30,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit d82b922a4acc1781d368aceac2f9da43b038cab2 upstream.
+commit 22c73795b101597051924556dce019385a1e2fa0 upstream.
 
-The powernow-k6 driver used to read the initial multiplier from the
-powernow register. However, there is a problem with this:
-
-* If there was a frequency transition before, the multiplier read from the
-  register corresponds to the current multiplier.
-* If there was no frequency transition since reset, the field in the
-  register always reads as zero, regardless of the current multiplier that
-  is set using switches on the mainboard and that the CPU is running at.
-
-The zero value corresponds to multiplier 4.5, so as a consequence, the
-powernow-k6 driver always assumes multiplier 4.5.
-
-For example, if we have 550MHz CPU with bus frequency 100MHz and
-multiplier 5.5, the powernow-k6 driver thinks that the multiplier is 4.5
-and bus frequency is 122MHz. The powernow-k6 driver then sets the
-multiplier to 4.5, underclocking the CPU to 450MHz, but reports the
-current frequency as 550MHz.
-
-There is no reliable way how to read the initial multiplier. I modified
-the driver so that it contains a table of known frequencies (based on
-parameters of existing CPUs and some common overclocking schemes) and sets
-the multiplier according to the frequency. If the frequency is unknown
-(because of unusual overclocking or underclocking), the user must supply
-the bus speed and maximum multiplier as module parameters.
-
-This patch should be backported to all stable kernels. If it doesn't
-apply cleanly, change it, or ask me to change it.
+This patch reorders reported frequencies from the highest to the lowest,
+just like in other frequency drivers.
 
 Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/cpufreq/powernow-k6.c | 76 ++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 72 insertions(+), 4 deletions(-)
+ drivers/cpufreq/powernow-k6.c | 17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/cpufreq/powernow-k6.c b/drivers/cpufreq/powernow-k6.c
-index ff3bb8f..656c135 100644
+index 656c135..396f357 100644
 --- a/drivers/cpufreq/powernow-k6.c
 +++ b/drivers/cpufreq/powernow-k6.c
-@@ -26,6 +26,14 @@
- static unsigned int                     busfreq;   /* FSB, in 10 kHz */
- static unsigned int                     max_multiplier;
- 
-+static unsigned int			param_busfreq = 0;
-+static unsigned int			param_max_multiplier = 0;
-+
-+module_param_named(max_multiplier, param_max_multiplier, uint, S_IRUGO);
-+MODULE_PARM_DESC(max_multiplier, "Maximum multiplier (allowed values: 20 30 35 40 45 50 55 60)");
-+
-+module_param_named(bus_frequency, param_busfreq, uint, S_IRUGO);
-+MODULE_PARM_DESC(bus_frequency, "Bus frequency in kHz");
+@@ -37,17 +37,20 @@ MODULE_PARM_DESC(bus_frequency, "Bus frequency in kHz");
  
  /* Clock ratio multiplied by 10 - see table 27 in AMD#23446 */
  static struct cpufreq_frequency_table clock_ratio[] = {
-@@ -40,6 +48,27 @@ static struct cpufreq_frequency_table clock_ratio[] = {
+-	{45,  /* 000 -> 4.5x */ 0},
++	{60,  /* 110 -> 6.0x */ 0},
++	{55,  /* 011 -> 5.5x */ 0},
+ 	{50,  /* 001 -> 5.0x */ 0},
++	{45,  /* 000 -> 4.5x */ 0},
+ 	{40,  /* 010 -> 4.0x */ 0},
+-	{55,  /* 011 -> 5.5x */ 0},
+-	{20,  /* 100 -> 2.0x */ 0},
+-	{30,  /* 101 -> 3.0x */ 0},
+-	{60,  /* 110 -> 6.0x */ 0},
+ 	{35,  /* 111 -> 3.5x */ 0},
++	{30,  /* 101 -> 3.0x */ 0},
++	{20,  /* 100 -> 2.0x */ 0},
  	{0, CPUFREQ_TABLE_END}
  };
  
-+static const struct {
-+	unsigned freq;
-+	unsigned mult;
-+} usual_frequency_table[] = {
-+	{ 400000, 40 },	// 100   * 4
-+	{ 450000, 45 }, // 100   * 4.5
-+	{ 475000, 50 }, //  95   * 5
-+	{ 500000, 50 }, // 100   * 5
-+	{ 506250, 45 }, // 112.5 * 4.5
-+	{ 533500, 55 }, //  97   * 5.5
-+	{ 550000, 55 }, // 100   * 5.5
-+	{ 562500, 50 }, // 112.5 * 5
-+	{ 570000, 60 }, //  95   * 6
-+	{ 600000, 60 }, // 100   * 6
-+	{ 618750, 55 }, // 112.5 * 5.5
-+	{ 660000, 55 }, // 120   * 5.5
-+	{ 675000, 60 }, // 112.5 * 6
-+	{ 720000, 60 }, // 120   * 6
-+};
++static const u8 index_to_register[8] = { 6, 3, 1, 0, 2, 7, 5, 4 };
++static const u8 register_to_index[8] = { 3, 2, 4, 1, 7, 6, 0, 5 };
 +
-+#define FREQ_RANGE		3000
+ static const struct {
+ 	unsigned freq;
+ 	unsigned mult;
+@@ -91,7 +94,7 @@ static int powernow_k6_get_cpu_multiplier(void)
  
- /**
-  * powernow_k6_get_cpu_multiplier - returns the current FSB multiplier
-@@ -163,18 +192,57 @@ static int powernow_k6_target(struct cpufreq_policy *policy,
- 	return 0;
+ 	local_irq_enable();
+ 
+-	return clock_ratio[(invalue >> 5)&7].driver_data;
++	return clock_ratio[register_to_index[(invalue >> 5)&7]].driver_data;
  }
  
--
- static int powernow_k6_cpu_init(struct cpufreq_policy *policy)
- {
- 	unsigned int i, f;
- 	int result;
-+	unsigned khz;
+ static void powernow_k6_set_cpu_multiplier(unsigned int best_i)
+@@ -111,7 +114,7 @@ static void powernow_k6_set_cpu_multiplier(unsigned int best_i)
+ 	write_cr0(cr0 | X86_CR0_CD);
+ 	wbinvd();
  
- 	if (policy->cpu != 0)
- 		return -ENODEV;
+-	outvalue = (1<<12) | (1<<10) | (1<<9) | (best_i<<5);
++	outvalue = (1<<12) | (1<<10) | (1<<9) | (index_to_register[best_i]<<5);
  
--	/* get frequencies */
--	max_multiplier = powernow_k6_get_cpu_multiplier();
--	busfreq = cpu_khz / max_multiplier;
-+	max_multiplier = 0;
-+	khz = cpu_khz;
-+	for (i = 0; i < ARRAY_SIZE(usual_frequency_table); i++) {
-+		if (khz >= usual_frequency_table[i].freq - FREQ_RANGE &&
-+		    khz <= usual_frequency_table[i].freq + FREQ_RANGE) {
-+			khz = usual_frequency_table[i].freq;
-+			max_multiplier = usual_frequency_table[i].mult;
-+			break;
-+		}
-+	}
-+	if (param_max_multiplier) {
-+		for (i = 0; (clock_ratio[i].frequency != CPUFREQ_TABLE_END); i++) {
-+			if (clock_ratio[i].driver_data == param_max_multiplier) {
-+				max_multiplier = param_max_multiplier;
-+				goto have_max_multiplier;
-+			}
-+		}
-+		printk(KERN_ERR "powernow-k6: invalid max_multiplier parameter, valid parameters 20, 30, 35, 40, 45, 50, 55, 60\n");
-+		return -EINVAL;
-+	}
-+
-+	if (!max_multiplier) {
-+		printk(KERN_WARNING "powernow-k6: unknown frequency %u, cannot determine current multiplier\n", khz);
-+		printk(KERN_WARNING "powernow-k6: use module parameters max_multiplier and bus_frequency\n");
-+		return -EOPNOTSUPP;
-+	}
-+
-+have_max_multiplier:
-+	param_max_multiplier = max_multiplier;
-+
-+	if (param_busfreq) {
-+		if (param_busfreq >= 50000 && param_busfreq <= 150000) {
-+			busfreq = param_busfreq / 10;
-+			goto have_busfreq;
-+		}
-+		printk(KERN_ERR "powernow-k6: invalid bus_frequency parameter, allowed range 50000 - 150000 kHz\n");
-+		return -EINVAL;
-+	}
-+
-+	busfreq = khz / max_multiplier;
-+have_busfreq:
-+	param_busfreq = busfreq * 10;
- 
- 	/* table init */
- 	for (i = 0; (clock_ratio[i].frequency != CPUFREQ_TABLE_END); i++) {
+ 	msrval = POWERNOW_IOPORT + 0x1;
+ 	wrmsr(MSR_K6_EPMR, msrval, 0); /* enable the PowerNow port */
 -- 
 1.9.1
 
