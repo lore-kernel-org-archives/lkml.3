@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161463AbaDPOWj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 10:22:39 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:35851 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161180AbaDPOWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 10:22:37 -0400
-Date: Wed, 16 Apr 2014 16:22:32 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Matthias Graf <matthias.graf@st.ovgu.de>
-Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>
-Subject: Re: PROBLEM: Fatal Machine Check >= 3.13.5-101.fc19.x86_64
-Message-ID: <20140416142232.GF16741@pd.tnic>
-References: <532C727F.1080803@st.ovgu.de>
- <20140321172742.GA2846@pd.tnic>
- <532C97DF.9010201@st.ovgu.de>
- <20140321201352.GC1338@pd.tnic>
- <533069E4.10002@st.ovgu.de>
- <533C1B47.8080709@st.ovgu.de>
+	id S1161476AbaDPOXT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 10:23:19 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:60522 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1161109AbaDPOXR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 10:23:17 -0400
+Date: Wed, 16 Apr 2014 10:23:10 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, fweisbec@gmail.com,
+        mingo@redhat.com, acme@ghostprotocols.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/8] sched & trace: Add a trace event for wait.
+Message-ID: <20140416102310.356dd692@gandalf.local.home>
+In-Reply-To: <20140415134916.GT11096@twins.programming.kicks-ass.net>
+References: <cover.1397562542.git.yangds.fnst@cn.fujitsu.com>
+	<6d3aa5da995cfdb74b1d1c349c74a8c01ba9cdf6.1397562542.git.yangds.fnst@cn.fujitsu.com>
+	<20140415134916.GT11096@twins.programming.kicks-ass.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <533C1B47.8080709@st.ovgu.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 02, 2014 at 04:14:31PM +0200, Matthias Graf wrote:
-> I now tried booting with a different graphics card (on the same
-> machine), and it resolved the problem. Therefore, it definitely has
-> something to do with graphics.
+On Tue, 15 Apr 2014 15:49:16 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Tue, Apr 15, 2014 at 09:32:50PM +0900, Dongsheng Yang wrote:
+> > From: Dongsheng <yangds.fnst@cn.fujitsu.com>
+> > 
 > 
-> It is a Sapphire ATI Radeon HD 4830 (RV770 chip).
+> No changelog, and the tracepoint seems useless to me.
+> 
 
-As Tony said, you might want to try a stock 3.14 kernel with the old GPU
-which causes the MCEs and see whether if it still triggers. If you still
-want to hunt this down, that is.
+At least patch 1 and 2 need to be combined.
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+-- Steve
