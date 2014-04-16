@@ -1,119 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755743AbaDPLgt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 07:36:49 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:21163 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755563AbaDPLgs (ORCPT
+	id S1756020AbaDPLjr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 07:39:47 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:39857 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755625AbaDPLjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 07:36:48 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee68f-b7f156d00000276c-b2-534e6b4ed8ae
-Content-transfer-encoding: 8BIT
-Message-id: <534E6B52.9080706@samsung.com>
-Date: Wed, 16 Apr 2014 20:36:50 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Lee Jones <lee.jones@linaro.org>, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v5 0/9] mfd: max14577: Add support for MAX77836
-References: <1397467040-30502-1-git-send-email-k.kozlowski@samsung.com>
- <20140416102846.GL4754@lee--X1> <1397645078.6147.11.camel@AMDC1943>
- <534E60C6.4080005@samsung.com> <1397646165.6147.16.camel@AMDC1943>
-In-reply-to: <1397646165.6147.16.camel@AMDC1943>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsWyRsSkQNcv2y/YoPuEoMXGGetZLaY+fMJm
-	8fqFocXZpjfsFve/HmW0+Halg8ni8q45bBZrj9xlt7jduILN4nQ3qwOXx85Zd9k9Nq3qZPO4
-	c20Pm8e8k4EefVtWMXp83iQXwBbFZZOSmpNZllqkb5fAlfHwy1nGgpPCFT9fH2FtYPzB38XI
-	ySEhYCLxtWMxI4QtJnHh3nq2LkYuDiGBpYwScx/sZ4Mp2vnpFVRiOqPEzL0tLCAJXgFBiR+T
-	7wHZHBzMAvISRy5lg4SZBdQlJs1bxAxR/5pR4vHTd4wQ9VoSG/dvZgexWQRUJfYfvQu2gA0o
-	vv/FDTBbVCBMYuX0K2DzRQQMJQ7u3s4EMohZ4D2TxLM195lAEsICzhIrzn1lgthwiVHiRvNa
-	VpAEp4CBxIFbp8BWSwh8ZJeYfGgvC8Q6AYlvkw+BnSohICux6QAzxGuSEgdX3GCZwCg2C8lD
-	sxAemoXkoQWMzKsYRVMLkguKk9KLjPWKE3OLS/PS9ZLzczcxAmPz9L9n/TsY7x6wPsSYDLRx
-	IrOUaHI+MLbzSuINjc2MLExNTI2NzC3NSBNWEue9/zApSEggPbEkNTs1tSC1KL6oNCe1+BAj
-	EwenVANj/f4rsY1HtRLiP06f8XvSqV6Jysl+InaBa+9FrRR4te7Hh8OB9yvyUnMSFtYU8YvU
-	FaiGX2tJ7Co99qtCgTknmZvhzjW7gKC3/ju8LP821ayOcPvf89w969n74hedMyO/5/E7Xpue
-	1Xz5t9uiyh9HJnDf8K9eqpw7oT7YXScm4ILu2lXnf71TYinOSDTUYi4qTgQAmaAWwuMCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLKsWRmVeSWpSXmKPExsVy+t9jQV2/bL9gg5ajHBYbZ6xntZj68Amb
-	xesXhhZnm96wW9z/epTR4tuVDiaLy7vmsFmsPXKX3eJ24wo2i9PdrA5cHjtn3WX32LSqk83j
-	zrU9bB7zTgZ69G1ZxejxeZNcAFtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWF
-	uZJCXmJuqq2Si0+ArltmDtBhSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDC
-	GsaMh1/OMhacFK74+foIawPjD/4uRk4OCQETiZ2fXrFB2GISF+6tB7K5OIQEpjNKzNzbwgKS
-	4BUQlPgx+R6QzcHBLCAvceRSNkiYWUBdYtK8RcwQ9a8ZJR4/fccIUa8lsXH/ZnYQm0VAVWL/
-	0btgC9iA4vtf3ACzRQXCJFZOvwI2X0TAUOLg7u1MIIOYBd4zSTxbc58JJCEs4Cyx4txXJogN
-	lxglbjSvZQVJcAoYSBy4dYp5AqPALCQHzkI4cBaSAxcwMq9iFE0tSC4oTkrPNdQrTswtLs1L
-	10vOz93ECI78Z1I7GFc2WBxiFOBgVOLhnZHjGyzEmlhWXJl7iFGCg1lJhFcp1S9YiDclsbIq
-	tSg/vqg0J7X4EGMy0HsTmaVEk/OBSSmvJN7Q2MTMyNLI3NDCyNicNGElcd4DrdaBQgLpiSWp
-	2ampBalFMFuYODilGhj5tIOS+ETU93Q8LozeNKfsoOKSjisHEt78jOyd8fHX2rSDExdZXrr/
-	OuBgkNrU2Ls8d1q2Lspp/3VrxkZPhbxrR3Q+zTnALcm1Vm72tTCOQ2qmRT0/LQUvzvEJj0o9
-	80p7n2irS9hixpeuZmuPr/xadMPlXckzM2GLta8tu+oWiii87nh2/EqWEktxRqKhFnNRcSIA
-	vXwDNEADAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 16 Apr 2014 07:39:46 -0400
+Date: Wed, 16 Apr 2014 13:39:39 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] locking fixes
+Message-ID: <20140416113939.GA11159@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2014 08:02 PM, Krzysztof Kozlowski wrote:
-> On śro, 2014-04-16 at 19:51 +0900, Chanwoo Choi wrote:
->> Hi Krzysztof,
->>
->> On 04/16/2014 07:44 PM, Krzysztof Kozlowski wrote:
->>> On śro, 2014-04-16 at 11:28 +0100, Lee Jones wrote:
->>>>> This is first part of fifth version of patchset adding support for
->>>>> MAX77836 device to the max14577 driver.
->>>>>
->>>>> I decided to split the patchset into smaller parts. I hope this would
->>>>> help in getting necessary review/acks from maintainers.
->>>>>
->>>>> The first part introduces changes in max14577 driver and adds support
->>>>> for MAX77836 in MFD, extcon and regulator drivers. Most of these
->>>>> patches already have required acks from maintainers.
->>>>> Full v4 patchset can be found here:
->>>>> http://thread.gmane.org/gmane.linux.kernel/1654267
->>>>
->>>> So what's the plan for this driver now? What's missing? Do you have
->>>> all the Acks you need? If so, I'm happy to apply this patch-set and
->>>> supply a pull-request to the other maintainers.
->>>
->>> Next patches (part 2):
->>> 1. charger: max14577: Add support for MAX77836 charger
->>> 2. power: max17040: Add ID for MAX77836 Fuel Gauge block
->>> 3. regulator/mfd: max14577: Export symbols for calculating charger 
->>>    current
->>> 4. charger: max14577: Configure battery-dependent settings from DTS
->>> 5. Documentation: mfd: max14577: Add device tree bindings document
->>> 6. regulator: max14577: Implement SUSPEND mode for MAX77836 LDO-s
->>>
->>> They are quite independent from each other so I think it would be the
->>> best if you could prepare an immutable branch with first part of
->>> patches.
->>
->> I have to modify all extcon device drivers for some reason,
->> If your patchset including extcon patch apply other git repository,
->> this patchset may have potential merge conflict.
->>
->> If you possible, following patchset would divide two patchset for each mfd/extcon
->> to remove potential merge conflict in 3.15 merge window.
->> - [PATCH v5 0/9] mfd: max14577: Add support for MAX77836
-> 
-> I think we can resolve this after preparing by Lee the immutable branch
-> with this patches. You could pull it so your changes to extcon-max14577
-> would be on newest version.
+Linus,
 
-I'm reluctant for your suggestion.
-IMO, If Lee agree, I'd like to apply this patchset on extcon git
-after getting ack for all patchset from maintainer.
-And you would send your patchset (part 2) after 3.15 merge window.
+Please pull the latest core-urgent-for-linus git tree from:
 
-Thanks,
-Chanwoo Choi
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git core-urgent-for-linus
 
+   # HEAD: 65063ced73077b9add610b413d87bc6a51e40bab Merge branch 'liblockdep-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/sashal/linux into core/urgent
+
+liblockdep fixes and mutex debugging fixes.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Peter Zijlstra (1):
+      locking/mutex: Fix debug_mutexes
+
+Sasha Levin (2):
+      tools/liblockdep: Ignore asmlinkage and visible
+      tools/liblockdep: Add proper versioning to the shared obj
+
+
+ kernel/locking/mutex-debug.c               | 19 +++++++++----------
+ tools/lib/lockdep/Makefile                 | 15 ++++-----------
+ tools/lib/lockdep/uinclude/linux/lockdep.h |  3 +++
+ 3 files changed, 16 insertions(+), 21 deletions(-)
+
+diff --git a/kernel/locking/mutex-debug.c b/kernel/locking/mutex-debug.c
+index e1191c9..5cf6731 100644
+--- a/kernel/locking/mutex-debug.c
++++ b/kernel/locking/mutex-debug.c
+@@ -71,18 +71,17 @@ void mutex_remove_waiter(struct mutex *lock, struct mutex_waiter *waiter,
+ 
+ void debug_mutex_unlock(struct mutex *lock)
+ {
+-	if (unlikely(!debug_locks))
+-		return;
++	if (likely(debug_locks)) {
++		DEBUG_LOCKS_WARN_ON(lock->magic != lock);
+ 
+-	DEBUG_LOCKS_WARN_ON(lock->magic != lock);
++		if (!lock->owner)
++			DEBUG_LOCKS_WARN_ON(!lock->owner);
++		else
++			DEBUG_LOCKS_WARN_ON(lock->owner != current);
+ 
+-	if (!lock->owner)
+-		DEBUG_LOCKS_WARN_ON(!lock->owner);
+-	else
+-		DEBUG_LOCKS_WARN_ON(lock->owner != current);
+-
+-	DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
+-	mutex_clear_owner(lock);
++		DEBUG_LOCKS_WARN_ON(!lock->wait_list.prev && !lock->wait_list.next);
++		mutex_clear_owner(lock);
++	}
+ 
+ 	/*
+ 	 * __mutex_slowpath_needs_to_unlock() is explicitly 0 for debug
+diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
+index 07b0b75..cb09d3f 100644
+--- a/tools/lib/lockdep/Makefile
++++ b/tools/lib/lockdep/Makefile
+@@ -1,13 +1,8 @@
+-# liblockdep version
+-LL_VERSION = 0
+-LL_PATCHLEVEL = 0
+-LL_EXTRAVERSION = 1
+-
+ # file format version
+ FILE_VERSION = 1
+ 
+ MAKEFLAGS += --no-print-directory
+-
++LIBLOCKDEP_VERSION=$(shell make -sC ../../.. kernelversion)
+ 
+ # Makefiles suck: This macro sets a default value of $(2) for the
+ # variable named by $(1), unless the variable has been set by
+@@ -98,7 +93,7 @@ export prefix libdir bindir src obj
+ libdir_SQ = $(subst ','\'',$(libdir))
+ bindir_SQ = $(subst ','\'',$(bindir))
+ 
+-LIB_FILE = liblockdep.a liblockdep.so
++LIB_FILE = liblockdep.a liblockdep.so.$(LIBLOCKDEP_VERSION)
+ BIN_FILE = lockdep
+ 
+ CONFIG_INCLUDES =
+@@ -110,8 +105,6 @@ N		=
+ 
+ export Q VERBOSE
+ 
+-LIBLOCKDEP_VERSION = $(LL_VERSION).$(LL_PATCHLEVEL).$(LL_EXTRAVERSION)
+-
+ INCLUDES = -I. -I/usr/local/include -I./uinclude -I./include $(CONFIG_INCLUDES)
+ 
+ # Set compile option CFLAGS if not set elsewhere
+@@ -146,7 +139,7 @@ do_app_build =						\
+ 
+ do_compile_shared_library =			\
+ 	($(print_shared_lib_compile)		\
+-	$(CC) --shared $^ -o $@ -lpthread -ldl)
++	$(CC) --shared $^ -o $@ -lpthread -ldl -Wl,-soname='"$@"';$(shell ln -s $@ liblockdep.so))
+ 
+ do_build_static_lib =				\
+ 	($(print_static_lib_build)		\
+@@ -177,7 +170,7 @@ all: all_cmd
+ 
+ all_cmd: $(CMD_TARGETS)
+ 
+-liblockdep.so: $(PEVENT_LIB_OBJS)
++liblockdep.so.$(LIBLOCKDEP_VERSION): $(PEVENT_LIB_OBJS)
+ 	$(Q)$(do_compile_shared_library)
+ 
+ liblockdep.a: $(PEVENT_LIB_OBJS)
+diff --git a/tools/lib/lockdep/uinclude/linux/lockdep.h b/tools/lib/lockdep/uinclude/linux/lockdep.h
+index d0f5d6e..c1552c2 100644
+--- a/tools/lib/lockdep/uinclude/linux/lockdep.h
++++ b/tools/lib/lockdep/uinclude/linux/lockdep.h
+@@ -10,6 +10,9 @@
+ 
+ #define MAX_LOCK_DEPTH 2000UL
+ 
++#define asmlinkage
++#define __visible
++
+ #include "../../../include/linux/lockdep.h"
+ 
+ struct task_struct {
