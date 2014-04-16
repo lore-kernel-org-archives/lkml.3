@@ -1,34 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947AbaDPRTA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 13:19:00 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:43890 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754160AbaDPRS4 (ORCPT
+	id S1755002AbaDPRTH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 13:19:07 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:51255 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754928AbaDPRTB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 13:18:56 -0400
+	Wed, 16 Apr 2014 13:19:01 -0400
 From: Sergei Ianovich <ynvich@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Sergei Ianovich <ynvich@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+Cc: Sergei Ianovich <ynvich@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
         Randy Dunlap <rdunlap@infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Grant Likely <grant.likely@linaro.org>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Robert Jarzmik <robert.jarzmik@free.fr>,
-        Michael Opdenacker <michael.opdenacker@free-electrons.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
         devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
-        linux-mtd@lists.infradead.org (open list:MEMORY TECHNOLOGY...)
-Subject: [PATCH v4 10/21] mtd: support BB SRAM on ICP DAS LP-8x4x
-Date: Wed, 16 Apr 2014 21:17:15 +0400
-Message-Id: <1397668667-27328-4-git-send-email-ynvich@gmail.com>
+        linux-doc@vger.kernel.org (open list:DOCUMENTATION)
+Subject: [PATCH v4 11/21] ARM: pxa: support ICP DAS LP-8x4x FPGA irq
+Date: Wed, 16 Apr 2014 21:17:16 +0400
+Message-Id: <1397668667-27328-5-git-send-email-ynvich@gmail.com>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1397668667-27328-1-git-send-email-ynvich@gmail.com>
 References: <1397668411-27162-7-git-send-email-ynvich@gmail.com>
@@ -37,331 +31,373 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This provides an MTD device driver for 512kB of battery backed up SRAM
-on ICPDAS LP-8X4X programmable automation controllers.
+ICP DAS LP-8x4x contains FPGA chip. The chip functions as an interrupt
+source providing 16 additional interrupts among other things. The
+interrupt lines are muxed to a GPIO pin of a 2nd level PXA-GPIO
+interrupt controller. GPIO pins of the 2nd level controller are in turn
+muxed to a CPU interrupt line.
 
-SRAM chip is connected via FPGA and is not accessible without a driver,
-unlike flash memory which is wired to CPU MMU.
-
-This SRAM becomes an excellent persisent storage of volatile process
-data like counter values and sensor statuses. Storing those data in
-flash or mmc card is not a viable solution.
+Until pxa is completely converted to device tree, it is impossible
+to use IRQCHIP_DECLARE() and the irqdomain needs to added manually.
+Drivers for the on-CPU IRQs and GPIO-IRQs are loaded using
+postcore_initcall(). We need to have all irq domain drivers loaded prior
+to DT parsing in order to allow normal initialization of IRQ resources
+with DT.
 
 Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
-Reviewed-by: Brian Norris <computersforpeace@gmail.com>
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+CC: Arnd Bergmann <arnd@arndb.de>
 ---
-   v3..v4 for Brian Norris 'Reviewed-by'
-   * add doc file for DT binding
+   v3.2..v4
    * move DTS binding to a different patch (8/21)
-   * drop unused include directive
-   * drop safely unused callback
-   * drop non-default partion probe types
-   * drop duplicate error checks
-   * drop duplicate error reporting
-   * fixed error message on MTD registeration
-   * fixed module removal routine
+
+   v3.1..v3.2
+   fixes to apply Linus Walleij's "Reviewed-by":
+   * add kerneldoc comment for state container struct
+   * rename irq -> hwirq for clarity
+   * drop overzealous error checks from the hotpaths
+
+   v3..v3.1
+   fixes according to Linus Walleij review comments:
+   * update commit message
+   * use state container instead of global variables
+   * get hardware irq nums from irq_data, don't calculate them
+   * use BIT() macro
+   * add defines for system irq register masks
+   * replace cycle control variable with break
+   * use better names for resource variables
+   * add a linear domain instead of a legacy one
+   * use irq_create_mapping() instead of irq_alloc_desc()
 
    v2..v3
-   * no changes (except number 08/16 -> 10/21)
+   * no changes (except number 09/16 -> 11/21)
 
    v0..v2
+   * extract irqchip and move to drivers/irqchip/
    * use device tree
    * use devm helpers where possible
 
- .../devicetree/bindings/mtd/sram-lp8x4x.txt        |  22 +++
- arch/arm/configs/lp8x4x_defconfig                  |   1 +
- drivers/mtd/devices/Kconfig                        |  14 ++
- drivers/mtd/devices/Makefile                       |   1 +
- drivers/mtd/devices/sram_lp8x4x.c                  | 204 +++++++++++++++++++++
- 5 files changed, 242 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mtd/sram-lp8x4x.txt
- create mode 100644 drivers/mtd/devices/sram_lp8x4x.c
+ .../bindings/interrupt-controller/irq-lp8x4x.txt   |  49 +++++
+ drivers/irqchip/Kconfig                            |   5 +
+ drivers/irqchip/Makefile                           |   1 +
+ drivers/irqchip/irq-lp8x4x.c                       | 227 +++++++++++++++++++++
+ 4 files changed, 282 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/irq-lp8x4x.txt
+ create mode 100644 drivers/irqchip/irq-lp8x4x.c
 
-diff --git a/Documentation/devicetree/bindings/mtd/sram-lp8x4x.txt b/Documentation/devicetree/bindings/mtd/sram-lp8x4x.txt
+diff --git a/Documentation/devicetree/bindings/interrupt-controller/irq-lp8x4x.txt b/Documentation/devicetree/bindings/interrupt-controller/irq-lp8x4x.txt
 new file mode 100644
-index 0000000..8b1e864
+index 0000000..c8940d2
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/mtd/sram-lp8x4x.txt
-@@ -0,0 +1,22 @@
-+512kB battery backed up SRAM on LP-8x4x industrial computers
++++ b/Documentation/devicetree/bindings/interrupt-controller/irq-lp8x4x.txt
+@@ -0,0 +1,49 @@
++ICP DAS LP-8x4x FPGA Interrupt Controller
++
++ICP DAS LP-8x4x contains FPGA chip. The chip functions as a interrupt
++source providing 16 additional interrupts among other things.
 +
 +Required properties:
-+- compatible : should be "icpdas,sram-lp8x4x"
++- compatible : should be "icpdas,irq-lp8x4x"
 +
-+- reg: physical base addresses and region lengths of
-+       * IO memory range
-+       * SRAM page selector
++- reg: physical base address of the controller and length of memory mapped
++  region.
 +
-+- eeprom-gpios : should point to active-low write enable GPIO
++- interrupt-controller : identifies the node as an interrupt controller
 +
-+SRAM chip is connected via FPGA and is not accessible without a driver,
-+unlike flash memory which is wired to CPU MMU. Driver is essentially
-+an address translation routine.
++- #interrupt-cells : should be 1
++
++- interrupts : should provide interrupt
++
++- interrupt-parent : should provide a link to interrupt controller either
++		     explicitly and implicitly from a parent node
 +
 +Example:
 +
-+	sram@a000 {
-+		compatible = "icpdas,sram-lp8x4x";
-+		reg = <0xa000 0x1000
-+		       0x901e 0x1>;
++	fpga: fpga@17000006 {
++		compatible = "icpdas,irq-lp8x4x";
++		reg = <0x17000006 0x16>;
++		interrupt-parent = <&gpio>;
++		interrupts = <3 IRQ_TYPE_EDGE_RISING>;
++		#interrupt-cells = <1>;
++		interrupt-controller;
++		status = "okay";
 +	};
-diff --git a/arch/arm/configs/lp8x4x_defconfig b/arch/arm/configs/lp8x4x_defconfig
-index d60e37a..17a4e6f 100644
---- a/arch/arm/configs/lp8x4x_defconfig
-+++ b/arch/arm/configs/lp8x4x_defconfig
-@@ -57,6 +57,7 @@ CONFIG_MTD_CFI_ADV_OPTIONS=y
- CONFIG_MTD_CFI_GEOMETRY=y
- CONFIG_MTD_CFI_INTELEXT=y
- CONFIG_MTD_PHYSMAP_OF=y
-+CONFIG_MTD_SRAM_LP8X4X=y
- CONFIG_PROC_DEVICETREE=y
- CONFIG_BLK_DEV_LOOP=y
- CONFIG_BLK_DEV_LOOP_MIN_COUNT=2
-diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
-index 1210bc2..fc8552b 100644
---- a/drivers/mtd/devices/Kconfig
-+++ b/drivers/mtd/devices/Kconfig
-@@ -225,4 +225,18 @@ config BCH_CONST_T
- 	default 4
- endif
++
++	uart@17009050 {
++		compatible = "icpdas,uart-lp8x4x";
++		reg = <0x17009050 0x10
++		       0x17009030 0x02>;
++		interrupt-parent = <&fpga>;
++		interrupts = <13>;
++		status = "okay";
++	};
++
++	uart@17009060 {
++		compatible = "icpdas,uart-lp8x4x";
++		reg = <0x17009060 0x10
++		       0x17009032 0x02>;
++		interrupt-parent = <&fpga>;
++		interrupts = <14>;
++		status = "okay";
++	};
+diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
+index d770f74..ede3237 100644
+--- a/drivers/irqchip/Kconfig
++++ b/drivers/irqchip/Kconfig
+@@ -47,6 +47,11 @@ config CLPS711X_IRQCHIP
+ 	select SPARSE_IRQ
+ 	default y
  
-+config MTD_SRAM_LP8X4X
-+	tristate "SRAM on ICPDAS LP-8X4X"
++config LP8X4X_IRQ
++	bool
 +	depends on OF && ARCH_PXA
-+       ---help---
-+	 This provides an MTD device driver for 512kiB of battery backed up SRAM
-+	 on ICPDAS LP-8X4X programmable automation controllers.
++	select IRQ_DOMAIN
 +
-+	 SRAM chip is connected via FPGA and is not accessible without a driver,
-+	 unlike flash memory which is wired to CPU MMU.
-+
-+	 Say N, unless you plan to run this kernel on LP-8X4X.
-+
-+	 If you say M, the module will be called sram_lp8x4x.
-+
- endmenu
-diff --git a/drivers/mtd/devices/Makefile b/drivers/mtd/devices/Makefile
-index c68868f..a7d86e2 100644
---- a/drivers/mtd/devices/Makefile
-+++ b/drivers/mtd/devices/Makefile
-@@ -17,6 +17,7 @@ obj-$(CONFIG_MTD_SPEAR_SMI)	+= spear_smi.o
- obj-$(CONFIG_MTD_SST25L)	+= sst25l.o
- obj-$(CONFIG_MTD_BCM47XXSFLASH)	+= bcm47xxsflash.o
- obj-$(CONFIG_MTD_ST_SPI_FSM)    += st_spi_fsm.o
-+obj-$(CONFIG_MTD_SRAM_LP8X4X)	+= sram_lp8x4x.o
- 
- 
- CFLAGS_docg3.o			+= -I$(src)
-diff --git a/drivers/mtd/devices/sram_lp8x4x.c b/drivers/mtd/devices/sram_lp8x4x.c
+ config ORION_IRQCHIP
+ 	bool
+ 	select IRQ_DOMAIN
+diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
+index f180f8d..94f82c7 100644
+--- a/drivers/irqchip/Makefile
++++ b/drivers/irqchip/Makefile
+@@ -29,3 +29,4 @@ obj-$(CONFIG_TB10X_IRQC)		+= irq-tb10x.o
+ obj-$(CONFIG_XTENSA)			+= irq-xtensa-pic.o
+ obj-$(CONFIG_XTENSA_MX)			+= irq-xtensa-mx.o
+ obj-$(CONFIG_IRQ_CROSSBAR)		+= irq-crossbar.o
++obj-$(CONFIG_LP8X4X_IRQ)		+= irq-lp8x4x.o
+diff --git a/drivers/irqchip/irq-lp8x4x.c b/drivers/irqchip/irq-lp8x4x.c
 new file mode 100644
-index 0000000..4cfa70b
+index 0000000..12ccbb03
 --- /dev/null
-+++ b/drivers/mtd/devices/sram_lp8x4x.c
-@@ -0,0 +1,204 @@
++++ b/drivers/irqchip/irq-lp8x4x.c
+@@ -0,0 +1,227 @@
 +/*
-+ *  linux/drivers/mtd/devices/lp8x4x_sram.c
++ *  linux/drivers/irqchip/irq-lp8x4x.c
 + *
-+ *  MTD Driver for SRAM on ICPDAS LP-8x4x
++ *  Support for ICP DAS LP-8x4x FPGA irq
 + *  Copyright (C) 2013 Sergei Ianovich <ynvich@gmail.com>
 + *
 + *  This program is free software; you can redistribute it and/or modify
 + *  it under the terms of the GNU General Public License version 2 as
 + *  published by the Free Software Foundation or any later version.
 + */
-+
-+#include <linux/init.h>
++#include <linux/interrupt.h>
 +#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/mtd/map.h>
-+#include <linux/mtd/mtd.h>
-+#include <linux/mtd/partitions.h>
++#include <linux/irq.h>
++#include <linux/irqdomain.h>
++#include <linux/irqchip/chained_irq.h>
++#include <linux/of.h>
 +#include <linux/platform_device.h>
-+#include <linux/of_device.h>
-+#include <linux/slab.h>
-+#include <linux/string_helpers.h>
-+#include <linux/types.h>
 +
-+struct lp8x4x_sram_info {
-+	void __iomem	*bank;
-+	void __iomem	*virt;
-+	struct mutex	lock;
-+	unsigned	active_bank;
-+	struct mtd_info	mtd;
++#define EOI			0x00000000
++#define INSINT			0x00000002
++#define ENSYSINT		0x00000004
++#define PRIMINT			0x00000006
++#define PRIMINT_MASK		0xe0
++#define SECOINT			0x00000008
++#define SECOINT_MASK		0x1f
++#define ENRISEINT		0x0000000A
++#define CLRRISEINT		0x0000000C
++#define ENHILVINT		0x0000000E
++#define CLRHILVINT		0x00000010
++#define ENFALLINT		0x00000012
++#define CLRFALLINT		0x00000014
++#define IRQ_MEM_SIZE		0x00000016
++#define LP8X4X_NUM_IRQ_DEFAULT	16
++
++/**
++ * struct lp8x4x_irq_data - LP8X4X custom irq controller state container
++ * @base:               base IO memory address
++ * @irq_domain:         Interrupt translation domain; responsible for mapping
++ *                      between hwirq number and linux irq number
++ * @irq_sys_enabled:    mask keeping track of interrupts enabled in the
++ *                      register which vendor calls 'system'
++ * @irq_high_enabled:   mask keeping track of interrupts enabled in the
++ *                      register which vendor calls 'high'
++ *
++ * The structure implements State Container from
++ * Documentation/driver-model/design-patterns.txt
++ */
++
++struct lp8x4x_irq_data {
++	void			*base;
++	struct irq_domain	*domain;
++	unsigned char		irq_sys_enabled;
++	unsigned char		irq_high_enabled;
 +};
 +
-+static int
-+lp8x4x_sram_erase(struct mtd_info *mtd, struct erase_info *instr)
++static void lp8x4x_mask_irq(struct irq_data *d)
 +{
-+	struct lp8x4x_sram_info *info = mtd->priv;
-+	unsigned bank = instr->addr >> 11;
-+	unsigned offset = (instr->addr & 0x7ff) << 1;
-+	loff_t i;
++	unsigned mask;
++	unsigned long hwirq = d->hwirq;
++	struct lp8x4x_irq_data *host = irq_data_get_irq_chip_data(d);
 +
-+	mutex_lock(&info->lock);
-+	if (unlikely(bank != info->active_bank)) {
-+		info->active_bank = bank;
-+		iowrite8(bank, info->bank);
-+	}
-+	for (i = 0; i < instr->len; i++) {
-+		iowrite8(0xff, info->virt + offset);
-+		offset += 2;
-+		if (unlikely(offset == 0)) {
-+			info->active_bank++;
-+			iowrite8(info->active_bank, info->bank);
-+		}
-+	}
-+	mutex_unlock(&info->lock);
-+	instr->state = MTD_ERASE_DONE;
-+	mtd_erase_callback(instr);
++	if (hwirq < 8) {
++		host->irq_high_enabled &= ~BIT(hwirq);
 +
-+	return 0;
++		mask = ioread8(host->base + ENHILVINT);
++		mask &= ~BIT(hwirq);
++		iowrite8(mask, host->base + ENHILVINT);
++	} else {
++		hwirq -= 8;
++		host->irq_sys_enabled &= ~BIT(hwirq);
++
++		mask = ioread8(host->base + ENSYSINT);
++		mask &= ~BIT(hwirq);
++		iowrite8(mask, host->base + ENSYSINT);
++	}
 +}
 +
-+static int
-+lp8x4x_sram_write(struct mtd_info *mtd, loff_t to, size_t len,
-+		size_t *retlen, const u_char *b)
++static void lp8x4x_unmask_irq(struct irq_data *d)
 +{
-+	struct lp8x4x_sram_info *info = mtd->priv;
-+	unsigned bank = to >> 11;
-+	unsigned offset = (to & 0x7ff) << 1;
-+	loff_t i;
++	unsigned mask;
++	unsigned long hwirq = d->hwirq;
++	struct lp8x4x_irq_data *host = irq_data_get_irq_chip_data(d);
 +
-+	mutex_lock(&info->lock);
-+	if (unlikely(bank != info->active_bank)) {
-+		info->active_bank = bank;
-+		iowrite8(bank, info->bank);
++	if (hwirq < 8) {
++		host->irq_high_enabled |= BIT(hwirq);
++		mask = ioread8(host->base + CLRHILVINT);
++		mask |= BIT(hwirq);
++		iowrite8(mask, host->base + CLRHILVINT);
++
++		mask = ioread8(host->base + ENHILVINT);
++		mask |= BIT(hwirq);
++		iowrite8(mask, host->base + ENHILVINT);
++	} else {
++		hwirq -= 8;
++		host->irq_sys_enabled |= BIT(hwirq);
++
++		mask = ioread8(host->base + SECOINT);
++		mask |= BIT(hwirq);
++		iowrite8(mask, host->base + SECOINT);
++
++		mask = ioread8(host->base + ENSYSINT);
++		mask |= BIT(hwirq);
++		iowrite8(mask, host->base + ENSYSINT);
 +	}
-+	for (i = 0; i < len; i++) {
-+		iowrite8(b[i], info->virt + offset);
-+		offset += 2;
-+		if (unlikely(offset == 0)) {
-+			info->active_bank++;
-+			iowrite8(info->active_bank, info->bank);
-+		}
-+	}
-+	mutex_unlock(&info->lock);
-+	*retlen = len;
-+	return 0;
 +}
 +
-+static int
-+lp8x4x_sram_read(struct mtd_info *mtd, loff_t from, size_t len,
-+		size_t *retlen, u_char *b)
-+{
-+	struct lp8x4x_sram_info *info = mtd->priv;
-+	unsigned bank = from >> 11;
-+	unsigned offset = (from & 0x7ff) << 1;
-+	loff_t i;
-+
-+	mutex_lock(&info->lock);
-+	if (unlikely(bank != info->active_bank)) {
-+		info->active_bank = bank;
-+		iowrite8(bank, info->bank);
-+	}
-+	for (i = 0; i < len; i++) {
-+		b[i] = ioread8(info->virt + offset);
-+		offset += 2;
-+		if (unlikely(offset == 0)) {
-+			info->active_bank++;
-+			iowrite8(info->active_bank, info->bank);
-+		}
-+	}
-+	mutex_unlock(&info->lock);
-+	*retlen = len;
-+	return 0;
-+}
-+
-+static struct of_device_id of_flash_match[] = {
-+	{
-+		.compatible	= "icpdas,sram-lp8x4x",
-+	},
-+	{ },
++static struct irq_chip lp8x4x_irq_chip = {
++	.name			= "FPGA",
++	.irq_ack		= lp8x4x_mask_irq,
++	.irq_mask		= lp8x4x_mask_irq,
++	.irq_mask_ack		= lp8x4x_mask_irq,
++	.irq_unmask		= lp8x4x_unmask_irq,
 +};
-+MODULE_DEVICE_TABLE(of, of_flash_match);
 +
-+static int
-+lp8x4x_sram_probe(struct platform_device *pdev)
++static void lp8x4x_irq_handler(unsigned int irq, struct irq_desc *desc)
 +{
-+	const struct of_device_id *match;
-+	struct lp8x4x_sram_info *info;
-+	struct resource *res_virt, *res_bank;
-+	char sz_str[16];
-+	struct mtd_part_parser_data ppdata;
-+	int err = 0;
++	int n;
++	unsigned long mask;
++	struct irq_chip *chip = irq_desc_get_chip(desc);
++	struct lp8x4x_irq_data *host = irq_desc_get_handler_data(desc);
 +
-+	match = of_match_device(of_flash_match, &pdev->dev);
-+	if (!match)
-+		return -EINVAL;
++	chained_irq_enter(chip, desc);
 +
-+	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
-+	if (!info)
-+		return -ENOMEM;
++	for (;;) {
++		mask = ioread8(host->base + CLRHILVINT) & 0xff;
++		mask |= (ioread8(host->base + SECOINT) & SECOINT_MASK) << 8;
++		mask |= (ioread8(host->base + PRIMINT) & PRIMINT_MASK) << 8;
++		mask &= host->irq_high_enabled | (host->irq_sys_enabled << 8);
++		if (mask == 0)
++			break;
++		for_each_set_bit(n, &mask, BITS_PER_LONG)
++			generic_handle_irq(irq_find_mapping(host->domain, n));
++	}
 +
-+	res_virt = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	info->virt =  devm_ioremap_resource(&pdev->dev, res_virt);
-+	if (IS_ERR(info->virt))
-+		return PTR_ERR(info->virt);
++	iowrite8(0, host->base + EOI);
++	chained_irq_exit(chip, desc);
++}
 +
-+	res_bank = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	info->bank = devm_ioremap_resource(&pdev->dev, res_bank);
-+	if (IS_ERR(info->bank))
-+		return PTR_ERR(info->bank);
++static int lp8x4x_irq_domain_map(struct irq_domain *d, unsigned int irq,
++				 irq_hw_number_t hw)
++{
++	struct lp8x4x_irq_data *host = d->host_data;
++	int err;
 +
-+	info->mtd.priv = info;
-+	info->mtd.name = "SRAM";
-+	info->mtd.type = MTD_RAM;
-+	info->mtd.flags = MTD_CAP_RAM;
-+	info->mtd.size = resource_size(res_virt) << 7;
-+	info->mtd.erasesize = 512;
-+	info->mtd.writesize = 4;
-+	info->mtd._erase = lp8x4x_sram_erase;
-+	info->mtd._write = lp8x4x_sram_write;
-+	info->mtd._read = lp8x4x_sram_read;
-+	info->mtd.owner = THIS_MODULE;
-+
-+	mutex_init(&info->lock);
-+	iowrite8(info->active_bank, info->bank);
-+	platform_set_drvdata(pdev, info);
-+
-+	ppdata.of_node = pdev->dev.of_node;
-+	err = mtd_device_parse_register(&info->mtd, NULL, &ppdata,
-+			NULL, 0);
-+
-+	if (err < 0) {
-+		dev_err(&pdev->dev, "failed to register MTD\n");
++	err = irq_set_chip_data(irq, host);
++	if (err < 0)
 +		return err;
-+	}
 +
-+	string_get_size(info->mtd.size, STRING_UNITS_2, sz_str,
-+			sizeof(sz_str));
-+	dev_info(&pdev->dev, "using %s SRAM on LP-8X4X as %s\n", sz_str,
-+			dev_name(&info->mtd.dev));
++	irq_set_chip_and_handler(irq, &lp8x4x_irq_chip, handle_level_irq);
++	set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
 +	return 0;
 +}
 +
-+static int
-+lp8x4x_sram_remove(struct platform_device *dev)
-+{
-+	struct lp8x4x_sram_info *info = platform_get_drvdata(dev);
-+	return mtd_device_unregister(&info->mtd);
-+}
-+
-+static struct platform_driver lp8x4x_sram_driver = {
-+	.driver = {
-+		.name		= "sram-lp8x4x",
-+		.owner		= THIS_MODULE,
-+		.of_match_table = of_flash_match,
-+	},
-+	.probe		= lp8x4x_sram_probe,
-+	.remove		= lp8x4x_sram_remove,
++const struct irq_domain_ops lp8x4x_irq_domain_ops = {
++	.map	= lp8x4x_irq_domain_map,
++	.xlate	= irq_domain_xlate_onecell,
 +};
 +
-+module_platform_driver(lp8x4x_sram_driver);
++static struct of_device_id lp8x4x_irq_dt_ids[] = {
++	{ .compatible = "icpdas,irq-lp8x4x", },
++	{}
++};
 +
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Sergei Ianovich <ynvich@gmail.com>");
-+MODULE_DESCRIPTION("MTD driver for SRAM on ICPDAS LP-8x4x");
++static int lp8x4x_irq_probe(struct platform_device *pdev)
++{
++	struct resource *res_mem, *res_irq;
++	struct device_node *np = pdev->dev.of_node;
++	struct lp8x4x_irq_data *host;
++	int i, err;
++
++	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	res_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	if (!res_mem || !res_irq || resource_size(res_mem) < IRQ_MEM_SIZE)
++		return -ENODEV;
++
++	host = devm_kzalloc(&pdev->dev, sizeof(*host), GFP_KERNEL);
++	if (!host)
++		return -ENODEV;
++
++	host->base = devm_ioremap_resource(&pdev->dev, res_mem);
++	if (!host->base) {
++		dev_err(&pdev->dev, "Failed to ioremap %p\n", host->base);
++		return -EFAULT;
++	}
++
++	host->domain = irq_domain_add_linear(np, LP8X4X_NUM_IRQ_DEFAULT,
++				       &lp8x4x_irq_domain_ops, host);
++	if (!host->domain) {
++		dev_err(&pdev->dev, "Failed to add IRQ domain\n");
++		return -ENOMEM;
++	}
++
++	for (i = 0; i < LP8X4X_NUM_IRQ_DEFAULT; i++) {
++		err = irq_create_mapping(host->domain, i);
++		if (err < 0)
++			dev_err(&pdev->dev, "Failed to map IRQ %i\n", i);
++	}
++
++	/* Initialize chip registers */
++	iowrite8(0, host->base + CLRRISEINT);
++	iowrite8(0, host->base + ENRISEINT);
++	iowrite8(0, host->base + CLRFALLINT);
++	iowrite8(0, host->base + ENFALLINT);
++	iowrite8(0, host->base + CLRHILVINT);
++	iowrite8(0, host->base + ENHILVINT);
++	iowrite8(0, host->base + ENSYSINT);
++	iowrite8(0, host->base + SECOINT);
++
++	irq_set_handler_data(res_irq->start, host);
++	irq_set_chained_handler(res_irq->start, lp8x4x_irq_handler);
++
++	return 0;
++}
++
++static struct platform_driver lp8x4x_irq_driver = {
++	.probe		= lp8x4x_irq_probe,
++	.driver		= {
++		.name	= "irq-lp8x4x",
++		.of_match_table = lp8x4x_irq_dt_ids,
++	},
++};
++
++static int __init lp8x4x_irq_init(void)
++{
++	return platform_driver_register(&lp8x4x_irq_driver);
++}
++postcore_initcall(lp8x4x_irq_init);
 -- 
 1.8.4.2
 
