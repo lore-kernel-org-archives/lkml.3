@@ -1,408 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161691AbaDPOw4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 10:52:56 -0400
-Received: from mail-qa0-f52.google.com ([209.85.216.52]:38738 "EHLO
-	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161524AbaDPOwx (ORCPT
+	id S1161698AbaDPOyC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 10:54:02 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:52298 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161306AbaDPOyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 10:52:53 -0400
-Date: Wed, 16 Apr 2014 10:52:48 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Daniel Borkmann <dborkman@redhat.com>, Thomas Graf <tgraf@suug.ch>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay@vrfy.org>, Rohit Jnagal <jnagal@google.com>,
-        Brandon Philips <brandon.philips@coreos.com>
-Subject: [PATCH v2 cgroup/for-3.16] cgroup: add documentation about unified
- hierarchy
-Message-ID: <20140416145248.GD1257@htj.dyndns.org>
-References: <20140414220917.GD1863@htj.dyndns.org>
+	Wed, 16 Apr 2014 10:54:00 -0400
+Date: Wed, 16 Apr 2014 17:53:53 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Minchan Kim <minchan@kernel.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jerome Marchand <jmarchan@redhat.com>, Nitin Gupta <ngupta@vflare.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv9 0/7] add compressing abstraction and multi stream
+ support
+Message-ID: <20140416145353.GC944@swordfish.minsk.epam.com>
+References: <1393609927-22090-1-git-send-email-sergey.senozhatsky@gmail.com>
+ <20140306081137.GA14287@bbox>
+ <1555642.jW49oRcvBj@amdc1032>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140414220917.GD1863@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1555642.jW49oRcvBj@amdc1032>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unified hierarchy will be the new version of cgroup interface.  This
-patch adds Documentation/cgroups/unified-hierarchy.txt which describes
-the design and rationales of unified hierarchy.
+On (04/16/14 15:53), Bartlomiej Zolnierkiewicz wrote:
+> Hi,
+> 
+> I'm a bit late on this patch series (sorry for that) but why are we not
+> using Crypto API for compression algorithm selection and multi stream
+> support?  Compared to the earlier patches for zram like the ones we did
+> in July 2013 [1] this patch series requires us to:
+> 
+> - implement compression algorithm support for each algorithm separately
+>   (when using Crypto API all compression algorithms supported by Crypto
+>   API are supported automatically)
+> 
+> - manually set the number of maximum active compression streams (earlier
+>   patches using Crypto API needed a lot less code and automatically scaled
+>   number of compression streams to number of online CPUs)
 
-v2: Grammatical updates as per Randy Dunlap's review.
+Hello Bartlomiej,
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>
----
- Documentation/cgroups/unified-hierarchy.txt |  359 ++++++++++++++++++++++++++++
- 1 file changed, 359 insertions(+)
+there was a short discussion of `custom solution' vs `crypto API'.
+personally, I was not impressed by Crypto API. basically it requires
+	a) locking of transformation context (if we have only one tfm
+	for everyone)
+or
+	b) having some sort of a list of tfms
+or
+	c) storing tfm in a per_cpu area.
 
---- /dev/null
-+++ b/Documentation/cgroups/unified-hierarchy.txt
-@@ -0,0 +1,359 @@
-+
-+Cgroup unified hierarchy
-+
-+April, 2014		Tejun Heo <tj@kernel.org>
-+
-+This document describes the changes made by unified hierarchy and
-+their rationales.  It will eventually be merged into the main cgroup
-+documentation.
-+
-+CONTENTS
-+
-+1. Background
-+2. Basic Operation
-+  2-1. Mounting
-+  2-2. cgroup.subtree_control
-+  2-3. cgroup.controllers
-+3. Structural Constraints
-+  3-1. Top-down
-+  3-2. No internal tasks
-+4. Other Changes
-+  4-1. [Un]populated Notification
-+  4-2. Other Core Changes
-+  4-3. Per-Controller Changes
-+    4-3-1. blkio
-+    4-3-2. cpuset
-+    4-3-3. memory
-+5. Planned Changes
-+  5-1. CAP for resource control
-+
-+
-+1. Background
-+
-+cgroup allows an arbitrary number of hierarchies and each hierarchy
-+can host any number of controllers.  While this seems to provide a
-+high level of flexibility, it isn't quite useful in practice.
-+
-+For example, as there is only one instance of each controller, utility
-+type controllers such as freezer which can be useful in all
-+hierarchies can only be used in one.  The issue is exacerbated by the
-+fact that controllers can't be moved around once hierarchies are
-+populated.  Another issue is that all controllers bound to a hierarchy
-+are forced to have exactly the same view of the hierarchy.  It isn't
-+possible to vary the granularity depending on the specific controller.
-+
-+In practice, these issues heavily limit which controllers can be put
-+on the same hierarchy and most configurations resort to putting each
-+controller on its own hierarchy.  Only closely related ones, such as
-+the cpu and cpuacct controllers, make sense to put on the same
-+hierarchy.  This often means that userland ends up managing multiple
-+similar hierarchies repeating the same steps on each hierarchy
-+whenever a hierarchy management operation is necessary.
-+
-+Unfortunately, support for multiple hierarchies comes at a steep cost.
-+Internal implementation in cgroup core proper is dazzlingly
-+complicated but more importantly the support for multiple hierarchies
-+restricts how cgroup is used in general and what controllers can do.
-+
-+There's no limit on how many hierarchies there may be, which means
-+that a task's cgroup membership can't be described in finite length.
-+The key may contain any varying number of entries and is unlimited in
-+length, which makes it highly awkward to handle and leads to addition
-+of controllers which exist only to identify membership, which in turn
-+exacerbates the original problem.
-+
-+Also, as a controller can't have any expectation regarding what shape
-+of hierarchies other controllers would be on, each controller has to
-+assume that all other controllers are operating on completely
-+orthogonal hierarchies.  This makes it impossible, or at least very
-+cumbersome, for controllers to cooperate with each other.
-+
-+In most use cases, putting controllers on hierarchies which are
-+completely orthogonal to each other isn't necessary.  What usually is
-+called for is the ability to have differing levels of granularity
-+depending on the specific controller.  In other words, hierarchy may
-+be collapsed from leaf towards root when viewed from specific
-+controllers.  For example, a given configuration might not care about
-+how memory is distributed beyond a certain level while still wanting
-+to control how CPU cycles are distributed.
-+
-+Unified hierarchy is the next version of cgroup interface.  It aims to
-+address the aforementioned issues by having more structure while
-+retaining enough flexibility for most use cases.  Various other
-+general and controller-specific interface issues are also addressed in
-+the process.
-+
-+
-+2. Basic Operation
-+
-+2-1. Mounting
-+
-+Currently, unified hierarchy can be mounted with the following mount
-+command.  Note that this is still under development and scheduled to
-+change soon.
-+
-+ mount -t cgroup -o __DEVEL__sane_behavior cgroup $MOUNT_POINT
-+
-+All controllers which are not bound to other hierarchies are
-+automatically bound to unified hierarchy and show up at the root of
-+it.  Controllers which are enabled only in the root of unified
-+hierarchy can be bound to other hierarchies at any time.  This allows
-+mixing unified hierarchy with the traditional multiple hierarchies in
-+a fully backward compatible way.
-+
-+
-+2-2. cgroup.subtree_control
-+
-+All cgroups on unified hierarchy have a "cgroup.subtree_control" file
-+which governs which controllers are enabled on the children of the
-+cgroup.  Let's assume a hierarchy like the following.
-+
-+  root - A - B - C
-+               \ D
-+
-+root's "cgroup.subtree_control" file determines which controllers are
-+enabled on A.  A's on B.  B's on C and D.  This coincides with the
-+fact that controllers on the immediate sub-level are used to
-+distribute the resources of the parent.  In fact, it's natural to
-+assume that resource control knobs of a child belong to its parent.
-+Enabling a controller in a "cgroup.subtree_control" file declares that
-+distribution of the respective resources of the cgroup will be
-+controlled.  Note that this means that controller enable states are
-+shared among siblings.
-+
-+When read, the file contains a space-separated list of currently
-+enabled controllers.  A write to the file should contain a
-+space-separated list of controllers with '+' or '-' prefixed (without
-+the quotes).  Controllers prefixed with '+' are enabled and '-'
-+disabled.  If a controller is listed multiple times, the last entry
-+wins.  The specific operations are executed atomically - either all
-+succeed or fail.
-+
-+
-+2-3. cgroup.controllers
-+
-+Read-only "cgroup.controllers" file contains a space-separated list of
-+controllers which can be enabled in the cgroup's
-+"cgroup.subtree_control" file.
-+
-+In the root cgroup, this lists controllers which are not bound to
-+other hierarchies and the content changes as controllers are bound to
-+and unbound from other hierarchies.
-+
-+In non-root cgroups, the content of this file equals that of the
-+parent's "cgroup.subtree_control" file as only controllers enabled
-+from the parent can be used in its children.
-+
-+
-+3. Structural Constraints
-+
-+3-1. Top-down
-+
-+As it doesn't make sense to nest control of an uncontrolled resource,
-+all non-root "cgroup.subtree_control" files can only contain
-+controllers which are enabled in the parent's "cgroup.subtree_control"
-+file.  A controller can be enabled only if the parent has the
-+controller enabled and a controller can't be disabled if one or more
-+children have it enabled.
-+
-+
-+3-2. No internal tasks
-+
-+One long-standing issue that cgroup faces is the competition between
-+tasks belonging to the parent cgroup and its children cgroups.  This
-+is inherently nasty as two different types of entities compete and
-+there is no agreed-upon obvious way to handle it.  Different
-+controllers are doing different things.
-+
-+The cpu controller considers tasks and cgroups as equivalents and maps
-+nice levels to cgroup weights.  This works for some cases but falls
-+flat when children should be allocated specific ratios of CPU cycles
-+and the number of internal tasks fluctuates - the ratios constantly
-+change as the number of competing entities fluctuates.  There also are
-+other issues.  The mapping from nice level to weight isn't obvious or
-+universal, and there are various other knobs which simply aren't
-+available for tasks.
-+
-+The blkio controller implicitly creates a hidden leaf node for each
-+cgroup to host the tasks.  The hidden leaf has its own copies of all
-+the knobs with "leaf_" prefixed.  While this allows equivalent control
-+over internal tasks, it's with serious drawbacks.  It always adds an
-+extra layer of nesting which may not be necessary, makes the interface
-+messy and significantly complicates the implementation.
-+
-+The memory controller currently doesn't have a way to control what
-+happens between internal tasks and child cgroups and the behavior is
-+not clearly defined.  There have been attempts to add ad-hoc behaviors
-+and knobs to tailor the behavior to specific workloads.  Continuing
-+this direction will lead to problems which will be extremely difficult
-+to resolve in the long term.
-+
-+Multiple controllers struggle with internal tasks and came up with
-+different ways to deal with it; unfortunately, all the approaches in
-+use now are severely flawed and, furthermore, the widely different
-+behaviors make cgroup as whole highly inconsistent.
-+
-+It is clear that this is something which needs to be addressed from
-+cgroup core proper in a uniform way so that controllers don't need to
-+worry about it and cgroup as a whole shows a consistent and logical
-+behavior.  To achieve that, unified hierarchy enforces the following
-+structural constraint:
-+
-+ Except for the root, only cgroups which don't contain any task may
-+ have controllers enabled in their "cgroup.subtree_control" files.
-+
-+Combined with other properties, this guarantees that, when a
-+controller is looking at the part of the hierarchy which has it
-+enabled, tasks are always only on the leaves.  This rules out
-+situations where child cgroups compete against internal tasks of the
-+parent.
-+
-+There are two things to note.  Firstly, the root cgroup is exempt from
-+the restriction.  Root contains tasks and anonymous resource
-+consumption which can't be associated with any other cgroup and
-+requires special treatment from most controllers.  How resource
-+consumption in the root cgroup is governed is up to each controller.
-+
-+Secondly, the restriction doesn't take effect if there is no enabled
-+controller in the cgroup's "cgroup.subtree_control" file.  This is
-+important as otherwise it wouldn't be possible to create children of a
-+populated cgroup.  To control resource distribution of a cgroup, the
-+cgroup must create children and transfer all its tasks to the children
-+before enabling controllers in its "cgroup.subtree_control" file.
-+
-+
-+4. Other Changes
-+
-+4-1. [Un]populated Notification
-+
-+cgroup users often need a way to determine when a cgroup's
-+subhierarchy becomes empty so that it can be cleaned up.  cgroup
-+currently provides release_agent for it; unfortunately, this mechanism
-+is riddled with issues.
-+
-+- It delivers events by forking and execing a userland binary
-+  specified as the release_agent.  This is a long deprecated method of
-+  notification delivery.  It's extremely heavy, slow and cumbersome to
-+  integrate with larger infrastructure.
-+
-+- There is single monitoring point at the root.  There's no way to
-+  delegate management of a subtree.
-+
-+- The event isn't recursive.  It triggers when a cgroup doesn't have
-+  any tasks or child cgroups.  Events for internal nodes trigger only
-+  after all children are removed.  This again makes it impossible to
-+  delegate management of a subtree.
-+
-+- Events are filtered from the kernel side.  A "notify_on_release"
-+  file is used to subscribe to or suppress release events.  This is
-+  unnecessarily complicated and probably done this way because event
-+  delivery itself was expensive.
-+
-+Unified hierarchy implements an interface file "cgroup.populated"
-+which can be used to monitor whether the cgroup's subhierarchy has
-+tasks in it or not.  Its value is 0 if there is no task in the cgroup
-+and its descendants; otherwise, 1.  poll and [id]notify events are
-+triggered when the value changes.
-+
-+This is significantly lighter and simpler and trivially allows
-+delegating management of subhierarchy - subhierarchy monitoring can
-+block further propagation simply by putting itself or another process
-+in the subhierarchy and monitor events that it's interested in from
-+there without interfering with monitoring higher in the tree.
-+
-+In unified hierarchy, the release_agent mechanism is no longer
-+supported and the interface files "release_agent" and
-+"notify_on_release" do not exist.
-+
-+
-+4-2. Other Core Changes
-+
-+- None of the mount options is allowed.
-+
-+- remount is disallowed.
-+
-+- rename(2) is disallowed.
-+
-+- The "tasks" file is removed.  Everything should at process
-+  granularity.  Use the "cgroup.procs" file instead.
-+
-+- The "cgroup.procs" file is not sorted.  pids will be unique unless
-+  they got recycled in-between reads.
-+
-+- The "cgroup.clone_children" file is removed.
-+
-+
-+4-3. Per-Controller Changes
-+
-+4-3-1. blkio
-+
-+- blk-throttle becomes properly hierarchical.
-+
-+
-+4-3-2. cpuset
-+
-+- Tasks are kept in empty cpusets after hotplug and take on the masks
-+  of the nearest non-empty ancestor, instead of being moved to it.
-+
-+- A task can be moved into an empty cpuset, and again it takes on the
-+  masks of the nearest non-empty ancestor.
-+
-+
-+4-3-3. memory
-+
-+- use_hierarchy is on by default and the cgroup file for the flag is
-+  not created.
-+
-+
-+5. Planned Changes
-+
-+5-1. CAP for resource control
-+
-+Unified hierarchy will require one of the capabilities(7), which is
-+yet to be decided, for all resource control related knobs.  Process
-+organization operations - creation of sub-cgroups and migration of
-+processes in sub-hierarchies may be delegated by changing the
-+ownership and/or permissions on the cgroup directory and
-+"cgroup.procs" interface file; however, all operations which affect
-+resource control - writes to a "cgroup.subtree_control" file or any
-+controller-specific knobs - will require an explicit CAP privilege.
-+
-+This, in part, is to prevent the cgroup interface from being
-+inadvertently promoted to programmable API used by non-privileged
-+binaries.  cgroup exposes various aspects of the system in ways which
-+aren't properly abstracted for direct consumption by regular programs.
-+This is an administration interface much closer to sysctl knobs than
-+system calls.  Even the basic access model, being filesystem path
-+based, isn't suitable for direct consumption.  There's no way to
-+access "my cgroup" in a race-free way or make multiple operations
-+atomic against migration to another cgroup.
-+
-+Another aspect is that, for better or for worse, the cgroup interface
-+goes through far less scrutiny than regular interfaces for
-+unprivileged userland.  The upside is that cgroup is able to expose
-+useful features which may not be suitable for general consumption in a
-+reasonable time frame.  It provides a relatively short path between
-+internal details and userland-visible interface.  Of course, this
-+shortcut comes with high risk.  We go through what we go through for
-+general kernel APIs for good reasons.  It may end up leaking internal
-+details in a way which can exert significant pain by locking the
-+kernel into a contract that can't be maintained in a reasonable
-+manner.
-+
-+Also, due to the specific nature, cgroup and its controllers don't
-+tend to attract attention from a wide scope of developers.  cgroup's
-+short history is already fraught with severely mis-designed
-+interfaces, unnecessary commitments to and exposing of internal
-+details, broken and dangerous implementations of various features.
-+
-+Keeping cgroup as an administration interface is both advantageous for
-+its role and imperative given its nature.  Some of the cgroup features
-+may make sense for unprivileged access.  If deemed justified, those
-+must be further abstracted and implemented as a different interface,
-+be it a system call or process-private filesystem, and survive through
-+the scrutiny that any interface for general consumption is required to
-+go through.
-+
-+Requiring CAP is not a complete solution but should serve as a
-+significant deterrent against spraying cgroup usages in non-privileged
-+programs.
+c) requires ZRAM block device to become CPU hotplug aware and to begin
+reacting on onlining/offlining of a CPU by allocating/deallocating of
+transformation context. allocating new tfm potentially could a problem
+if system is under memory pressure and ZRAM is used as a swap device.
+besides, c) also requires additional locking via get_cpu()/put_cpu()
+around every comp op.
+
+in overall, that was something that I wanted to avoid. current solution
+does not depend on CPU notifier (which is a good thing for a block device
+driver, imho) and, thus, looks simpler in some ways. yet we still have
+ability to scale.
+
+there was a patch that was letting ZRAM to automatically scale number of
+compression streams to number of online CPUs, but Minchan wanted explicit
+one-stream-only option for swap device use-case.
+
+the other thing to mention is that CPU offlining API was under rework at
+that time by Srivatsa S. Bhat (cpu_notifier_register_begin(),
+cpu_notifier_register_done()) due to discovered races, which resulted in
+a patchset of 50+ patches (every existing CPU notifier user, including
+zsmalloc) and that played as additional factor.
+
+
+	-ss
+
+> From what I see the pros of the current patch series are:
+> 
+> - dynamic selection of the compression algorithm
+> 
+> - ability to limit number of active streams below tha number of online CPUs
+> 
+> However I believe that both above features can be also implemented on top of
+> the code using Crypto API.  What am I missing?
+> 
+> [1] https://lkml.org/lkml/2013/7/30/365
+> 
+> Best regards,
+> --
+> Bartlomiej Zolnierkiewicz
+> Samsung R&D Institute Poland
+> Samsung Electronics
+> 
+> On Thursday, March 06, 2014 05:11:37 PM Minchan Kim wrote:
+> > Hello Sergey,
+> > 
+> > Sorry for the late.
+> > 
+> > Today, I tested this patch and confirm that it's really good.
+> > I send result for the record.
+> > 
+> > In x86(4core and x2 hyper threading, i7, 2.8GHz), I did parallel 4 dd
+> > test with 200m file like below
+> > 
+> > dd if=./test200m.file of=mnt/file1 bs=512k count=1024 oflag=direct &
+> > dd if=./test200m.file of=mnt/file2 bs=512k count=1024 oflag=direct &
+> > dd if=./test200m.file of=mnt/file3 bs=512k count=1024 oflag=direct &
+> > dd if=./test200m.file of=mnt/file4 bs=512k count=1024 oflag=direct &
+> > wait all backgroud job
+> > 
+> > The result is 
+> > 
+> > When 1 max_comp_streams, elapsed time is 36.26s
+> > When 8 max_comp_streams, elapsed time is 4.09s
+> > 
+> > In ARM(4core, ARMv7, 1.5GHz), I did iozone test.
+> > 
+> >       1 max_comp_streams,      8 max_comp_streams
+> > ==Initial  write      ==Initial  write
+> > records:   10         records:   10
+> > avg:       141964.05  avg:       239632.54
+> > std:       3532.11    (2.49%)    std:       43863.53  (18.30%)
+> > max:       147900.45  max:       319046.62
+> > min:       135363.73  min:       178929.40
+> > ==Rewrite  ==Rewrite
+> > records:   10         records:   10
+> > avg:       144757.46  avg:       247410.80
+> > std:       4019.19    (2.78%)    std:       37378.42  (15.11%)
+> > max:       150757.72  max:       293284.84
+> > min:       135127.55  min:       188984.27
+> > ==Read     ==Read
+> > records:   10         records:   10
+> > avg:       208325.22  avg:       202894.24
+> > std:       57072.62   (27.40%)   std:       41099.56  (20.26%)
+> > max:       293428.96  max:       289581.12
+> > min:       79445.37   min:       157478.27
+> > ==Re-read  ==Re-read
+> > records:   10         records:   10
+> > avg:       204750.36  avg:       237406.96
+> > std:       36959.99   (18.05%)   std:       41518.36  (17.49%)
+> > max:       268399.89  max:       286898.13
+> > min:       154831.28  min:       160326.88
+> > ==Reverse  Read       ==Reverse  Read
+> > records:   10         records:   10
+> > avg:       215043.10  avg:       208946.35
+> > std:       31239.60   (14.53%)   std:       38859.74  (18.60%)
+> > max:       251564.57  max:       284481.31
+> > min:       154719.20  min:       155024.33
+> > ==Stride   read       ==Stride   read
+> > records:   10         records:   10
+> > avg:       227246.54  avg:       198925.10
+> > std:       31105.89   (13.69%)   std:       30721.86  (15.44%)
+> > max:       290020.34  max:       227178.70
+> > min:       157399.46  min:       153592.91
+> > ==Random   read       ==Random   read
+> > records:   10         records:   10
+> > avg:       238239.81  avg:       216298.41
+> > std:       37276.91   (15.65%)   std:       38194.73  (17.66%)
+> > max:       291416.20  max:       286345.37
+> > min:       152734.23  min:       151871.52
+> > ==Mixed    workload   ==Mixed    workload
+> > records:   10         records:   10
+> > avg:       208434.11  avg:       234355.66
+> > std:       31385.40   (15.06%)   std:       22064.02  (9.41%)
+> > max:       253990.11  max:       270412.58
+> > min:       162041.47  min:       186052.12
+> > ==Random   write      ==Random   write
+> > records:   10         records:   10
+> > avg:       142172.54  avg:       290231.28
+> > std:       6233.67    (4.38%)    std:       46462.35  (16.01%)
+> > max:       150652.40  max:       338096.54
+> > min:       130584.14  min:       183253.25
+> > ==Pwrite   ==Pwrite
+> > records:   10         records:   10
+> > avg:       141247.91  avg:       267085.70
+> > std:       6756.08    (4.78%)    std:       40019.39  (14.98%)
+> > max:       150239.13  max:       335512.33
+> > min:       130456.98  min:       180832.45
+> > ==Pread    ==Pread
+> > records:   10         records:   10
+> > avg:       214990.26  avg:       208730.94
+> > std:       40701.79   (18.93%)   std:       50797.78  (24.34%)
+> > max:       287060.54  max:       300675.25
+> > min:       157642.17  min:       156763.98
+> > 
+> > So, all write test both x86 and ARM is really huge win
+> > and I couldn't find any regression!
+> > 
+> > Thanks for nice work.
+> > 
+> > For all patchset,
+> > 
+> > Acked-by: Minchan Kim <minchan@kernel.org>
+> > 
+> > On Fri, Feb 28, 2014 at 08:52:00PM +0300, Sergey Senozhatsky wrote:
+> > > This patchset introduces zcomp compression backend abstraction
+> > > adding ability to support compression algorithms other than LZO;
+> > > support for multi compression streams, making parallel compressions
+> > > possible; adds support for LZ4 compression algorithm.
+> > > 
+> > > v8->v9 (reviewed by Andrew Morton):
+> > > -- add LZ4 backend (+iozone test vs LZO)
+> > > -- merge patches 'zram: document max_comp_streams' and 'zram: add multi
+> > >    stream functionality'
+> > > -- do not extern backend struct from source file
+> > > -- use find()/release() naming instead of get()/put()
+> > > -- minor code, commit messages and code comments `nitpicks'
+> > > -- removed Acked-by Minchan Kim from first two patches, because I've
+> > >    changed them a bit.
+> > > 
+> > > v7->v8 (reviewed by Minchan Kim):
+> > > -- merge patches 'add multi stream functionality' and 'enable multi
+> > >    stream compression support in zram'
+> > > -- return status code from set_max_streams knob and print message on
+> > >    error
+> > > -- do not use atomic type for ->avail_strm
+> > > -- return back: allocate by default only one stream for multi stream backend
+> > > -- wake sleeping write in zcomp_strm_multi_put() only if we put stream
+> > >    to idle list
+> > > -- minor code `nitpicks'
+> > > 
+> > > v6->v7 (reviewed by Minchan Kim):
+> > > -- enable multi and single stream support out of the box (drop
+> > >    ZRAM_MULTI_STREAM config option)
+> > > -- add set_max_stream knob, so we can adjust max number of compression
+> > >    streams in runtime (for multi stream backend at the moment)
+> > > -- minor code `nitpicks'
+> > > 
+> > > v5->v6 (reviewed by Minchan Kim):
+> > > -- handle single compression stream case separately, using mutex locking,
+> > >    to address perfomance regression
+> > > -- handle multi compression stream using spin lock and wait_event()/wake_up()
+> > > -- make multi compression stream support configurable (ZRAM_MULTI_STREAM
+> > >    config option)
+> > > 
+> > > v4->v5 (reviewed by Minchan Kim):
+> > > -- renamed zcomp buffer_lock; removed src len and dst len from
+> > >    compress() and decompress(); not using term `buffer' and
+> > >    `workmem' in code and documentation; define compress() and
+> > >    decompress() functions for LZO backend; not using goto's;
+> > >    do not put idle zcomp_strm to idle list tail.
+> > > 
+> > > v3->v4 (reviewed by Minchan Kim):
+> > > -- renamed compression backend and working memory structs as requested
+> > >    by Minchan Kim; fixed several issues noted by Minchan Kim.
+> > > 
+> > > Sergey Senozhatsky (7):
+> > >   zram: introduce compressing backend abstraction
+> > >   zram: use zcomp compressing backends
+> > >   zram: factor out single stream compression
+> > >   zram: add multi stream functionality
+> > >   zram: add set_max_streams knob
+> > >   zram: make compression algorithm selection possible
+> > >   zram: add lz4 algorithm backend
+> > > 
+> > >  Documentation/ABI/testing/sysfs-block-zram |  17 +-
+> > >  Documentation/blockdev/zram.txt            |  45 +++-
+> > >  drivers/block/zram/Kconfig                 |  10 +
+> > >  drivers/block/zram/Makefile                |   4 +-
+> > >  drivers/block/zram/zcomp.c                 | 349 +++++++++++++++++++++++++++++
+> > >  drivers/block/zram/zcomp.h                 |  68 ++++++
+> > >  drivers/block/zram/zcomp_lz4.c             |  47 ++++
+> > >  drivers/block/zram/zcomp_lz4.h             |  17 ++
+> > >  drivers/block/zram/zcomp_lzo.c             |  47 ++++
+> > >  drivers/block/zram/zcomp_lzo.h             |  17 ++
+> > >  drivers/block/zram/zram_drv.c              | 131 ++++++++---
+> > >  drivers/block/zram/zram_drv.h              |  11 +-
+> > >  12 files changed, 715 insertions(+), 48 deletions(-)
+> > >  create mode 100644 drivers/block/zram/zcomp.c
+> > >  create mode 100644 drivers/block/zram/zcomp.h
+> > >  create mode 100644 drivers/block/zram/zcomp_lz4.c
+> > >  create mode 100644 drivers/block/zram/zcomp_lz4.h
+> > >  create mode 100644 drivers/block/zram/zcomp_lzo.c
+> > >  create mode 100644 drivers/block/zram/zcomp_lzo.h
+> 
