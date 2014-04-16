@@ -1,327 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998AbaDPIDn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 04:03:43 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:1385
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754560AbaDPIDh (ORCPT
+	id S1754865AbaDPIJd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 04:09:33 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:53291 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754706AbaDPIJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 04:03:37 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dIe0eah1432Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz8275ch1de098h17326ah8275bh1de097h186068hz2dh87h2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh26d3h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 16 Apr 2014 16:03:25 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Hubert Chaumette <hchaumette@adeneo-embedded.com>
-CC: <linux-kernel@vger.kernel.org>, <kernel@pengutronix.de>,
-        <linux@arm.linux.org.uk>, <f.fainelli@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>, <netdev@vger.kernel.org>,
-        <agust@denx.de>
-Subject: Re: [PATCH] ARM: i.MX6: Add OF configuration support for ksz9031
-Message-ID: <20140416080322.GA11602@dragon>
-References: <1397466496-24750-1-git-send-email-hchaumette@adeneo-embedded.com>
+	Wed, 16 Apr 2014 04:09:20 -0400
+Date: Wed, 16 Apr 2014 09:09:14 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Roger <rogerable@realtek.com>
+Cc: Oliver Neukum <oneukum@suse.de>, Samuel Ortiz <sameo@linux.intel.com>,
+        Chris Ball <chris@printf.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org, wei_wang@realsil.com.cn,
+        micky_ching@realsil.com.cn
+Subject: Re: [PATCH v7 0/4] Add modules for realtek USB card reader
+Message-ID: <20140416080914.GA18122@lee--X1>
+References: <1397199203-2235-1-git-send-email-rogerable@realtek.com>
+ <1397201514.1589.0.camel@linux-fkkt.site>
+ <20140411102846.GB9801@lee--X1>
+ <1397212602.4632.2.camel@linux-fkkt.site>
+ <534DF6B1.30609@realtek.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1397466496-24750-1-git-send-email-hchaumette@adeneo-embedded.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <534DF6B1.30609@realtek.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 11:08:16AM +0200, Hubert Chaumette wrote:
-> - Adds support for ksz9031 PAD skew configuration over devicetree
-> - Removes hard-coded pad skew configuration for imx6q-sabrelite, now redundant
->   with arch/arm/boot/dts/imx6qdl-sabrelite.dtsi
+> >>>>From: Roger Tseng <rogerable@realtek.com>
+> >>>>
+> >>>>This patchset adds modules to support Realtek USB vendor specific class flash
+> >>>>card reader: one base module in MFD subsystem and two host modules in both mmc
+> >>>>and memstick subsystems. The architecture is similar to rtsx_pci.
+> >>>>
+> >>>>This work is done primarily to replace the staging driver: staging/rts5139,
+> >>>>which doesn't utilize mmc nor memstick subsystems. Once the patchset or its
+> >>>>revision is applied, we may need Greg's help to remove the staging one.
+> >>>
+> >>>Looks good to me.
+> >>
+> >>Is that an Ack?
+> >Acked-by: Oliver <oneukum@suse.de>
+> >
+> >	Sorry
+> >		Oliver
+> >
+> Lee,
 > 
-> Tested on congatec conga-QEVAL board with conga-QMX6 module.
-> 
-> This patch is based on Anatolij Gustschin's patch from
-> http://www.spinics.net/lists/arm-kernel/msg319771.html
-> 
-> Signed-off-by: Hubert Chaumette <hchaumette@adeneo-embedded.com>
-> ---
->  arch/arm/mach-imx/mach-imx6q.c |  45 ----------
->  drivers/net/phy/micrel.c       | 185 ++++++++++++++++++++++++++++++++++++++++-
+> Would you apply all of these patches?
 
-You should probably leave mach-imx6q.c unchanged, because dropping the
-phy fix-up from there may break old DTBs.  And the changes on micrel.c
-should be submitted to net maintainer.
+In time. I'm still catching up after the merge-window.
 
-Shawn
-
->  2 files changed, 184 insertions(+), 46 deletions(-)
-> 
-> diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
-> index 76e5db4..21ad961 100644
-> --- a/arch/arm/mach-imx/mach-imx6q.c
-> +++ b/arch/arm/mach-imx/mach-imx6q.c
-> @@ -39,47 +39,6 @@
->  #include "cpuidle.h"
->  #include "hardware.h"
->  
-> -/* For imx6q sabrelite board: set KSZ9021RN RGMII pad skew */
-> -static int ksz9021rn_phy_fixup(struct phy_device *phydev)
-> -{
-> -	if (IS_BUILTIN(CONFIG_PHYLIB)) {
-> -		/* min rx data delay */
-> -		phy_write(phydev, MICREL_KSZ9021_EXTREG_CTRL,
-> -			0x8000 | MICREL_KSZ9021_RGMII_RX_DATA_PAD_SCEW);
-> -		phy_write(phydev, MICREL_KSZ9021_EXTREG_DATA_WRITE, 0x0000);
-> -
-> -		/* max rx/tx clock delay, min rx/tx control delay */
-> -		phy_write(phydev, MICREL_KSZ9021_EXTREG_CTRL,
-> -			0x8000 | MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SCEW);
-> -		phy_write(phydev, MICREL_KSZ9021_EXTREG_DATA_WRITE, 0xf0f0);
-> -		phy_write(phydev, MICREL_KSZ9021_EXTREG_CTRL,
-> -			MICREL_KSZ9021_RGMII_CLK_CTRL_PAD_SCEW);
-> -	}
-> -
-> -	return 0;
-> -}
-> -
-> -static void mmd_write_reg(struct phy_device *dev, int device, int reg, int val)
-> -{
-> -	phy_write(dev, 0x0d, device);
-> -	phy_write(dev, 0x0e, reg);
-> -	phy_write(dev, 0x0d, (1 << 14) | device);
-> -	phy_write(dev, 0x0e, val);
-> -}
-> -
-> -static int ksz9031rn_phy_fixup(struct phy_device *dev)
-> -{
-> -	/*
-> -	 * min rx data delay, max rx/tx clock delay,
-> -	 * min rx/tx control delay
-> -	 */
-> -	mmd_write_reg(dev, 2, 4, 0);
-> -	mmd_write_reg(dev, 2, 5, 0);
-> -	mmd_write_reg(dev, 2, 8, 0x003ff);
-> -
-> -	return 0;
-> -}
-> -
->  /*
->   * fixup for PLX PEX8909 bridge to configure GPIO1-7 as output High
->   * as they are used for slots1-7 PERST#
-> @@ -169,10 +128,6 @@ static int ar8035_phy_fixup(struct phy_device *dev)
->  static void __init imx6q_enet_phy_init(void)
->  {
->  	if (IS_BUILTIN(CONFIG_PHYLIB)) {
-> -		phy_register_fixup_for_uid(PHY_ID_KSZ9021, MICREL_PHY_ID_MASK,
-> -				ksz9021rn_phy_fixup);
-> -		phy_register_fixup_for_uid(PHY_ID_KSZ9031, MICREL_PHY_ID_MASK,
-> -				ksz9031rn_phy_fixup);
->  		phy_register_fixup_for_uid(PHY_ID_AR8031, 0xffffffff,
->  				ar8031_phy_fixup);
->  		phy_register_fixup_for_uid(PHY_ID_AR8035, 0xffffffef,
-> diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
-> index 5a8993b..df56b26 100644
-> --- a/drivers/net/phy/micrel.c
-> +++ b/drivers/net/phy/micrel.c
-> @@ -242,6 +242,189 @@ static int ksz9021_config_init(struct phy_device *phydev)
->  	return 0;
->  }
->  
-> +#define MII_KSZ9031RN_MMD_CTRL_REG	0x0d
-> +#define MII_KSZ9031RN_MMD_REGDATA_REG	0x0e
-> +#define OP_DATA				1
-> +#define KSZ9031_PS_TO_REG		60
-> +
-> +/* Extended registers */
-> +#define MII_KSZ9031RN_CONTROL_PAD_SKEW	4
-> +#define MII_KSZ9031RN_RX_DATA_PAD_SKEW	5
-> +#define MII_KSZ9031RN_TX_DATA_PAD_SKEW	6
-> +#define MII_KSZ9031RN_CLK_PAD_SKEW	8
-> +
-> +static int ksz9031_extended_write(struct phy_device *phydev,
-> +				  u8 mode, u32 dev_addr, u32 regnum, u16 val)
-> +{
-> +	phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, dev_addr);
-> +	phy_write(phydev, MII_KSZ9031RN_MMD_REGDATA_REG, regnum);
-> +	phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, (mode << 14) | dev_addr);
-> +	return phy_write(phydev, MII_KSZ9031RN_MMD_REGDATA_REG, val);
-> +}
-> +
-> +static int ksz9031_extended_read(struct phy_device *phydev,
-> +				 u8 mode, u32 dev_addr, u32 regnum)
-> +{
-> +	phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, dev_addr);
-> +	phy_write(phydev, MII_KSZ9031RN_MMD_REGDATA_REG, regnum);
-> +	phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, (mode << 14) | dev_addr);
-> +	return phy_read(phydev, MII_KSZ9031RN_MMD_REGDATA_REG);
-> +}
-> +
-> +/* Two 5-bit fields register */
-> +static int ksz9031_load_clk_skew_values(struct phy_device *phydev,
-> +					struct device_node *of_node,
-> +					char *field1, char *field2)
-> +{
-> +	int val1 = -1;
-> +	int val2 = -2;
-> +	int newval;
-> +	int matches = 0;
-> +
-> +	if (!of_property_read_u32(of_node, field1, &val1))
-> +		matches++;
-> +
-> +	if (!of_property_read_u32(of_node, field2, &val2))
-> +		matches++;
-> +
-> +	if (!matches)
-> +		return 0;
-> +
-> +	if (matches < 2)
-> +		newval = ksz9031_extended_read(phydev, OP_DATA, 2,
-> +				MII_KSZ9031RN_CLK_PAD_SKEW);
-> +	else
-> +		newval = 0;
-> +
-> +	if (val1 != -1)
-> +		newval = (newval & 0xffe0) |
-> +			 ((val1 / KSZ9031_PS_TO_REG) & 0x1f);
-> +
-> +	if (val2 != -2)
-> +		newval = (newval & 0xfc1f) |
-> +			 (((val2 / KSZ9031_PS_TO_REG) & 0x1f) << 5);
-> +
-> +	return ksz9031_extended_write(phydev, OP_DATA, 2,
-> +			MII_KSZ9031RN_CLK_PAD_SKEW, newval);
-> +}
-> +
-> +/* Four 4-bit fields register */
-> +static int ksz9031_load_data_skew_values(struct phy_device *phydev,
-> +					 struct device_node *of_node, u16 reg,
-> +					 char *field1, char *field2,
-> +					 char *field3, char *field4)
-> +{
-> +	int val1 = -1;
-> +	int val2 = -2;
-> +	int val3 = -3;
-> +	int val4 = -4;
-> +	int newval;
-> +	int matches = 0;
-> +
-> +	if (!of_property_read_u32(of_node, field1, &val1))
-> +		matches++;
-> +
-> +	if (!of_property_read_u32(of_node, field2, &val2))
-> +		matches++;
-> +
-> +	if (!of_property_read_u32(of_node, field3, &val3))
-> +		matches++;
-> +
-> +	if (!of_property_read_u32(of_node, field4, &val4))
-> +		matches++;
-> +
-> +	if (!matches)
-> +		return 0;
-> +
-> +	if (matches < 4)
-> +		newval = ksz9031_extended_read(phydev, OP_DATA, 2, reg);
-> +	else
-> +		newval = 0;
-> +
-> +	if (val1 != -1)
-> +		newval = (newval & 0xfff0) |
-> +			 (((val1 / KSZ9031_PS_TO_REG) & 0xf) << 0);
-> +
-> +	if (val2 != -2)
-> +		newval = (newval & 0xff0f) |
-> +			 (((val2 / KSZ9031_PS_TO_REG) & 0xf) << 4);
-> +
-> +	if (val3 != -3)
-> +		newval = (newval & 0xf0ff) |
-> +			 (((val3 / KSZ9031_PS_TO_REG) & 0xf) << 8);
-> +
-> +	if (val4 != -4)
-> +		newval = (newval & 0x0fff) |
-> +			 (((val4 / KSZ9031_PS_TO_REG) & 0xf) << 12);
-> +
-> +	return ksz9031_extended_write(phydev, OP_DATA, 2, reg, newval);
-> +}
-> +
-> +/* Two 4-bit fields register */
-> +static int ksz9031_load_ctrl_skew_values(struct phy_device *phydev,
-> +					 struct device_node *of_node,
-> +					 char *field1, char *field2)
-> +{
-> +	int val1 = -1;
-> +	int val2 = -2;
-> +	int newval;
-> +	int matches = 0;
-> +
-> +	if (!of_property_read_u32(of_node, field1, &val1))
-> +		matches++;
-> +
-> +	if (!of_property_read_u32(of_node, field2, &val2))
-> +		matches++;
-> +
-> +	if (!matches)
-> +		return 0;
-> +
-> +	if (matches < 2)
-> +		newval = ksz9031_extended_read(phydev, OP_DATA, 2,
-> +				MII_KSZ9031RN_CONTROL_PAD_SKEW);
-> +	else
-> +		newval = 0;
-> +
-> +	if (val1 != -1)
-> +		newval = (newval & 0xfff0) |
-> +			 (((val1 / KSZ9031_PS_TO_REG) & 0xf) << 0);
-> +
-> +	if (val2 != -2)
-> +		newval = (newval & 0xff0f) |
-> +			 (((val2 / KSZ9031_PS_TO_REG) & 0xf) << 4);
-> +
-> +	return ksz9031_extended_write(phydev, OP_DATA, 2,
-> +			MII_KSZ9031RN_CONTROL_PAD_SKEW, newval);
-> +}
-> +
-> +static int ksz9031_config_init(struct phy_device *phydev)
-> +{
-> +	struct device *dev = &phydev->dev;
-> +	struct device_node *of_node = dev->of_node;
-> +
-> +	if (!of_node && dev->parent->of_node)
-> +		of_node = dev->parent->of_node;
-> +
-> +	if (of_node) {
-> +		ksz9031_load_clk_skew_values(phydev, of_node,
-> +				"rxc-skew-ps", "txc-skew-ps");
-> +
-> +		ksz9031_load_data_skew_values(phydev, of_node,
-> +				MII_KSZ9031RN_RX_DATA_PAD_SKEW,
-> +				"rxd0-skew-ps", "rxd1-skew-ps",
-> +				"rxd2-skew-ps", "rxd3-skew-ps");
-> +
-> +		ksz9031_load_data_skew_values(phydev, of_node,
-> +				MII_KSZ9031RN_TX_DATA_PAD_SKEW,
-> +				"txd0-skew-ps", "txd1-skew-ps",
-> +				"txd2-skew-ps", "txd3-skew-ps");
-> +
-> +		ksz9031_load_ctrl_skew_values(phydev, of_node,
-> +				"txen-skew-ps", "rxdv-skew-ps");
-> +	}
-> +	return 0;
-> +}
-> +
->  #define KSZ8873MLL_GLOBAL_CONTROL_4	0x06
->  #define KSZ8873MLL_GLOBAL_CONTROL_4_DUPLEX	(1 << 6)
->  #define KSZ8873MLL_GLOBAL_CONTROL_4_SPEED	(1 << 4)
-> @@ -428,7 +611,7 @@ static struct phy_driver ksphy_driver[] = {
->  	.features	= (PHY_GBIT_FEATURES | SUPPORTED_Pause
->  				| SUPPORTED_Asym_Pause),
->  	.flags		= PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
-> -	.config_init	= kszphy_config_init,
-> +	.config_init	= ksz9031_config_init,
->  	.config_aneg	= genphy_config_aneg,
->  	.read_status	= genphy_read_status,
->  	.ack_interrupt	= kszphy_ack_interrupt,
-> -- 
-> 1.9.1
-> 
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
