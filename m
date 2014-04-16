@@ -1,84 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911AbaDPS3H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 14:29:07 -0400
-Received: from mail-qc0-f201.google.com ([209.85.216.201]:51547 "EHLO
-	mail-qc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755151AbaDPSZe (ORCPT
+	id S1755948AbaDPS30 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 14:29:26 -0400
+Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:38835
+	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755151AbaDPS3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 14:25:34 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: Olof Johansson <olof@lixom.net>, Sachin Kamat <sachin.kamat@linaro.org>,
-        ajaykumar.rs@samsung.com, linux-samsung-soc@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>, devicetree@vger.kernel.org,
-        Randy Dunlap <rdunlap@infradead.org>, Mark Brown <broonie@kernel.org>,
-        Simon Glass <sjg@chromium.org>, linux-doc@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Kumar Gala <galak@codeaurora.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>, Pawel Moll <pawel.moll@arm.com>,
-        Lee Jones <lee.jones@linaro.org>, Mark Rutland <mark.rutland@arm.com>,
-        Sean Paul <seanpaul@chromium.org>, Michael Spang <spang@chromium.org>
-Subject: [PATCH v2 0/5] Fixes for tps65090 for Samsung ARM Chromebook
-Date: Wed, 16 Apr 2014 11:25:19 -0700
-Message-Id: <1397672724-9063-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
-In-Reply-To: <1397592876-5741-1-git-send-email-dianders@chromium.org>
-References: <1397592876-5741-1-git-send-email-dianders@chromium.org>
+	Wed, 16 Apr 2014 14:29:24 -0400
+Date: Wed, 16 Apr 2014 13:29:21 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tj@kernel.org,
+        grygorii.strashko@ti.com, peterz@infradead.org
+Subject: Re: How do I increment a per-CPU variable without warning?
+In-Reply-To: <20140416171230.GA8788@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.10.1404161328410.21030@gentwo.org>
+References: <20140415221755.GA27188@linux.vnet.ibm.com> <alpine.DEB.2.10.1404161007080.9945@gentwo.org> <20140416160621.GX4496@linux.vnet.ibm.com> <20140416171230.GA8788@linux.vnet.ibm.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These five patches bring tps65090 up to speed with what's currently
-in the Chromium OS kernel 3.8 tree and running on the Samsung ARM
-Chromebook.  Changes were tested atop the current linux tree
-(v3.15-rc1).  FET retries were tested on a machine with a known flaky
-tps65090.  Since display isn't working on pure upstream, I augmented
-the code to turn FET1 (vcd_led) on/off 500 times at bootup.  When
-testing I included <https://patchwork.kernel.org/patch/3980731/> to
-make sure tps65090 was in exynos5250-snow's device tree.
+On Wed, 16 Apr 2014, Paul E. McKenney wrote:
 
-Dependencies:
-- Patch #1 (mfd no irq) has no dependencies, though patch #2 won't
-  work without it.
-- Patch #2 (charger polling) can be applied without patch #1 but won't
-  actually make charger polling work without it.
-- Patch #3 (caching) can be applied before retries patch but not
-  after.
-- Patch #4 (overcurrent wait time) can be applied before retries patch
-  but not after (just due to merge conflicts, no other reason).
-- Patch #5 (retries) absolutely requires patch #3 (caching).
+> On Wed, Apr 16, 2014 at 09:06:21AM -0700, Paul E. McKenney wrote:
+> > On Wed, Apr 16, 2014 at 10:08:03AM -0500, Christoph Lameter wrote:
+> > > On Tue, 15 Apr 2014, Paul E. McKenney wrote:
+> > >
+> > > > Hello, Christoph,
+> > > >
+> > > > I have a patch that currently uses __this_cpu_inc_return() to increment a
+> > > > per-CPU variable, but without preemption disabled.  Of course, given that
+> > > > preemption is enabled, it might well end up picking up one CPU's counter,
+> > > > adding one to it, then storing the result into some other CPU's counter.
+> > > > But this is OK, the test can be probabilistic.  And when I run this
+> > > > against v3.14 and earlier, it works fine.
+> > >
+> > > We introduced raw_cpu_inc_return to squish these warnings.
+> >
+> > Cool, this is a good short-term fix.
+>
+> Or at least it is given the following patch.  Was this the intent?
 
-Changes in v2:
-- Split noirq (polling mode) changes into MFD and charger
-- Leave cache on for the registers that can be cached.
-- Move register offsets to mfd header file.
-- Separated the overcurrent and retries changes into two patches.
-- Now set overcurrent at probe time since it doesn't change.
-- Separated the overcurrent and retries changes into two patches.
-- No longer open code fet_is_enabled().
-- Fixed tps6090 typo.
-- For loop => "while true".
-- Removed a set of braces.
+Correct. Thanks for the fix.
 
-Doug Anderson (5):
-  mfd: tps65090: Don't tell child devices we have an IRQ if we don't
-  charger: tps65090: Allow charger module to be used when no irq
-  mfd: tps65090: Stop caching most registers
-  regulator: tps65090: Allow setting the overcurrent wait time
-  regulator: tps65090: Make FETs more reliable by adding retries
+Acked-by: Christoph Lameter <cl@linux.com>
 
- .../devicetree/bindings/regulator/tps65090.txt     |   4 +
- drivers/mfd/tps65090.c                             |  41 ++--
- drivers/power/tps65090-charger.c                   |  87 ++++++---
- drivers/regulator/tps65090-regulator.c             | 208 +++++++++++++++++++--
- include/linux/mfd/tps65090.h                       |  19 ++
- 5 files changed, 300 insertions(+), 59 deletions(-)
 
--- 
-1.9.1.423.g4596e3a
-
+> 							Thanx, Paul
+>
+> ------------------------------------------------------------------------
+>
+> percpu: Fix raw_cpu_inc_return()
+>
+> The definition for raw_cpu_add_return() uses the operation prefix
+> "raw_add_return_", but the definitions in the various percpu.h files
+> expect "raw_cpu_add_return_".  This commit therefore appropriately
+> adjusts the definition of raw_cpu_add_return().
+>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Christoph Lameter <cl@linux.com>
+>
+> diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+> index e7a0b95ed527..495c6543a8f2 100644
+> --- a/include/linux/percpu.h
+> +++ b/include/linux/percpu.h
+> @@ -639,7 +639,7 @@ do {									\
+>  #  define raw_cpu_add_return_8(pcp, val)	raw_cpu_generic_add_return(pcp, val)
+>  # endif
+>  # define raw_cpu_add_return(pcp, val)	\
+> -	__pcpu_size_call_return2(raw_add_return_, pcp, val)
+> +	__pcpu_size_call_return2(raw_cpu_add_return_, pcp, val)
+>  #endif
+>
+>  #define raw_cpu_sub_return(pcp, val)	raw_cpu_add_return(pcp, -(typeof(pcp))(val))
+>
