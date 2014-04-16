@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364AbaDPKMF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:12:05 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:9716 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754823AbaDPKL5 (ORCPT
+	id S1755397AbaDPKNH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:13:07 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:34590 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755339AbaDPKL6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:11:57 -0400
-X-AuditID: cbfee691-b7efc6d0000039d3-80-534e576b32ca
+	Wed, 16 Apr 2014 06:11:58 -0400
+X-AuditID: cbfee68f-b7f156d00000276c-bd-534e576c0760
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: jic23@kernel.org, ch.naveen@samsung.com, kgene.kim@samsung.com
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
@@ -17,36 +17,40 @@ Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv3 0/2] iio: adc: exynos_adc: Support Exynos3250 ADC
-Date: Wed, 16 Apr 2014 19:11:56 +0900
-Message-id: <1397643118-6934-1-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv3 2/2] iio: devicetree: Add DT binding documentation for
+ Exynos3250 ADC
+Date: Wed, 16 Apr 2014 19:11:58 +0900
+Message-id: <1397643118-6934-3-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrJIsWRmVeSWpSXmKPExsWyRsSkQDc73C/Y4P42KYu7zw8zWlz/8pzV
-	Yv6Rc6wW/W8Wslqce7WS0eJB0yomi94FV9ksNj2+xmqxsG0Ji8W8I+9YLC7vmsNmMeP8PiaL
-	pdcvMllMmL6WxeLtneksFq17j7BbnPzTy2ixfsZrFgchjzXz1jB6XO7rZfJYufwLm8fmFVoe
-	m1Z1snncubYHyFtS79G3ZRWjx+dNcgGcUVw2Kak5mWWpRfp2CVwZZx/eYyyYzFYxf8E8xgbG
-	LyxdjJwcEgImEvdu3mSGsMUkLtxbz9bFyMUhJLCUUWLlj2usMEV7bnezQiSmM0q8f9rGDuE0
-	MUlc3rWJEaSKTUBLYv+LG2wgtoiAk8TPb/fARjELLGKWmL36HFhCWMBZ4svOT2D7WARUJVZ9
-	uwG2glfARWJr2w82iHVyEh/2PALbICHwkV3i4OlfTBANAhLfJh8COpwDKCErsekA1N2SEgdX
-	3GCZwCi4gJFhFaNoakFyQXFSepGpXnFibnFpXrpecn7uJkZgNJ3+92ziDsb7B6wPMSYDjZvI
-	LCWanA+MxrySeENjMyMLUxNTYyNzSzPShJXEedMfJQUJCaQnlqRmp6YWpBbFF5XmpBYfYmTi
-	4JRqYAyd8N9eOVyMe4LX4QDXdfHC7lvvZMtrrt/PzfJs7iKnjaVpvIe//+aXFWH85CMaUXx5
-	ToEF6+RPWmLql2XdzguIWPyuS9pWziu2N6M4RW5efmfUJJ0VuXFeHvvmCG5b9//lXJ+5+SUl
-	+SKef+Sbg4p0d/rN4wx2Ofne5o7uRP1Zss5hTIzXlViKMxINtZiLihMB49FCybwCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjleLIzCtJLcpLzFFi42I5/e+xoG52uF+wwf6jAhZ3nx9mtLj+5Tmr
-	xfwj51gt+t8sZLU492olo8WDplVMFr0LrrJZbHp8jdViYdsSFot5R96xWFzeNYfNYsb5fUwW
-	S69fZLKYMH0ti8XbO9NZLFr3HmG3OPmnl9Fi/YzXLA5CHmvmrWH0uNzXy+SxcvkXNo/NK7Q8
-	Nq3qZPO4c20PkLek3qNvyypGj8+b5AI4oxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwM
-	dQ0tLcyVFPISc1NtlVx8AnTdMnOAHlJSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdj
-	ZIAGEtYwZpx9eI+xYDJbxfwF8xgbGL+wdDFyckgImEjsud3NCmGLSVy4t56ti5GLQ0hgOqPE
-	+6dt7BBOE5PE5V2bGEGq2AS0JPa/uMEGYosIOEn8/HYPrINZYBGzxOzV58ASwgLOEl92fmIG
-	sVkEVCVWfbsBtoJXwEVia9sPNoh1chIf9jxin8DIvYCRYRWjaGpBckFxUnqukV5xYm5xaV66
-	XnJ+7iZGcKw+k97BuKrB4hCjAAejEg/vzBzfYCHWxLLiytxDjBIczEoivH9C/YKFeFMSK6tS
-	i/Lji0pzUosPMSYDbZ/ILCWanA9MI3kl8YbGJmZGlkbmhhZGxuakCSuJ8x5stQ4UEkhPLEnN
-	Tk0tSC2C2cLEwSnVwGgRzXBmUplJePuUDaF+z68t7GuSzQ1LDDwtpb2u9/HyGKMzFovfeE0s
-	X5phY7e36JH05JvnecXiN/5flinw5Tz/vG1vYo88jj77+6JHBoPobObzAldCzy26IST4guPM
-	XSk5cb4L5Rtz1+/0//b5zY4J2zK9GAOfvDG5rloRathfsMpwybGCiEYlluKMREMt5qLiRAAU
-	LF5JGQMAAA==
+In-reply-to: <1397643118-6934-1-git-send-email-cw00.choi@samsung.com>
+References: <1397643118-6934-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsWyRsSkWDc33C/YYFoDs8Xd54cZLa5/ec5q
+	Mf/IOVaL/jcLWS3OvVrJaPGgaRWTRe+Cq2wWmx5fY7VY2LaExWLekXcsFpd3zWGzmHF+H5PF
+	0usXmSwmTF/LYvH2znQWi9a9R9gtTv7pZbRYP+M1i4OQx5p5axg9Lvf1MnmsXP6FzWPzCi2P
+	Tas62TzuXNsD5C2p9+jbsorR4/MmuQDOKC6blNSczLLUIn27BK6MT7NPMRbsEq7oPSfZwNgn
+	0MXIySEhYCIxf80JFghbTOLCvfVsXYxcHEICSxklzvWtYIcperj5ChNEYjqjxOqpk1ggnCYm
+	iVU3l4NVsQloSex/cYMNxBYRcJL4+e0e2ChmgUXMErNXnwNLCAtESqz7sIsVxGYRUJX4tGkm
+	M4jNK+Ai8eDLbzaIdXISH/Y8AhvKKeAq0XDqJFi9EFDN+Yf/GEGGSgh0ckgsv/SIGWKQgMS3
+	yYeATuIASshKbDrADDFHUuLgihssExiFFzAyrGIUTS1ILihOSi8y1itOzC0uzUvXS87P3cQI
+	jL3T/57172C8e8D6EGMy0LiJzFKiyfnA2M0riTc0NjOyMDUxNTYytzQjTVhJnPf+w6QgIYH0
+	xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYz2um67Zs17do7HtetekpftmqSKE9KS7LFXP2VHhzhH
+	N17qfetTYRY3I3Pe2SUXjr8W+uT5infjhujJ9y+78H946Lj987wsjxvcoUGu7pePLmsXmyB/
+	oT58u+fbUy9+cYcppv54meVx36Juvqyu3QlVn+iVqTX3/ncf8lkio+tx7a5xyg3LDROVWIoz
+	Eg21mIuKEwE6tf2W0wIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLKsWRmVeSWpSXmKPExsVy+t9jQd2ccL9gg0NPzCzuPj/MaHH9y3NW
+	i/lHzrFa9L9ZyGpx7tVKRosHTauYLHoXXGWz2PT4GqvFwrYlLBbzjrxjsbi8aw6bxYzz+5gs
+	ll6/yGQxYfpaFou3d6azWLTuPcJucfJPL6PF+hmvWRyEPNbMW8Pocbmvl8lj5fIvbB6bV2h5
+	bFrVyeZx59oeIG9JvUffllWMHp83yQVwRjUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY
+	6hpaWpgrKeQl5qbaKrn4BOi6ZeYAPaSkUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7H
+	yAANJKxhzPg0+xRjwS7hit5zkg2MfQJdjJwcEgImEg83X2GCsMUkLtxbz9bFyMUhJDCdUWL1
+	1EksEE4Tk8Sqm8vZQarYBLQk9r+4wQZiiwg4Sfz8dg+sg1lgEbPE7NXnwBLCApES6z7sYgWx
+	WQRUJT5tmskMYvMKuEg8+PKbDWKdnMSHPY/AhnIKuEo0nDoJVi8EVHP+4T/GCYy8CxgZVjGK
+	phYkFxQnpeca6hUn5haX5qXrJefnbmIER/YzqR2MKxssDjEKcDAq8fDOyPENFmJNLCuuzD3E
+	KMHBrCTCuzDQL1iINyWxsiq1KD++qDQntfgQYzLQVROZpUST84FJJ68k3tDYxMzI0sjc0MLI
+	2Jw0YSVx3gOt1oFCAumJJanZqakFqUUwW5g4OKUaGI9e/LIhVcX10I+TjatOZpyti5/sOyE1
+	/euEsCVGP2Sf8er2Pn/NUih9W0B1Jm/AMk7nF2q3Y9dztmzKXXGXo+DyyUnsR26ram6yX3tI
+	333B49R3FXkTmDYEbN+R6rPZcqPeqRCBUv7sGPsvd48+eZJaPJ3v/Dq56kr3aVVPH8Su3r5P
+	KPSAc7oSS3FGoqEWc1FxIgC2fPlHMAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -54,25 +58,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset support Exynos3250 ADC (Analog Digital Converter) because
-Exynos3250 has additional special clock for ADC IP.
+This patch add DT binding documentation for Exynos3250 ADC IP. Exynos3250 has
+special clock ('sclk_tsadc') for ADC which provide clock to internal ADC.
 
-Changes from v2:
-- Check return value of clock function to deal with error exception
-- Fix minor coding style to improve readability
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ .../devicetree/bindings/arm/samsung/exynos-adc.txt   | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-Changes from v1:
-- Add new "samsung,exynos-adc-v3" compatible to support Exynos3250 ADC
-- Add a patch about DT binding documentation
-
-Chanwoo Choi (2):
-  iio: adc: exynos_adc: Control special clock of ADC to support Exynos3250 ADC
-  iio: devicetree: Add DT binding documentation for Exynos3250 ADC
-
- .../devicetree/bindings/arm/samsung/exynos-adc.txt | 20 +++++
- drivers/iio/adc/exynos_adc.c                       | 86 ++++++++++++++++++----
- 2 files changed, 93 insertions(+), 13 deletions(-)
-
+diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+index 5d49f2b..7532ec3 100644
+--- a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
++++ b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
+@@ -14,6 +14,8 @@ Required properties:
+ 				for exynos4412/5250 controllers.
+ 			Must be "samsung,exynos-adc-v2" for
+ 				future controllers.
++			Must be "samsung,exynos-adc-v3" for
++				for exynos3250 controllers.
+ - reg:			Contains ADC register address range (base address and
+ 			length) and the address of the phy enable register.
+ - interrupts: 		Contains the interrupt information for the timer. The
+@@ -21,7 +23,11 @@ Required properties:
+ 			the Samsung device uses.
+ - #io-channel-cells = <1>; As ADC has multiple outputs
+ - clocks		From common clock binding: handle to adc clock.
++			From common clock binding: handle to sclk_tsadc clock
++			if using Exynos3250.
+ - clock-names		From common clock binding: Shall be "adc".
++			From common clock binding: Shall be "sclk_tsadc"
++			if using Exynos3250.
+ - vdd-supply		VDD input supply.
+ 
+ Note: child nodes can be added for auto probing from device tree.
+@@ -41,6 +47,20 @@ adc: adc@12D10000 {
+ 	vdd-supply = <&buck5_reg>;
+ };
+ 
++If Exynos3250 uses ADC,
++adc: adc@126C0000 {
++	compatible = "samsung,exynos-adc-v3";
++	reg = <0x126C0000 0x100>, <0x10020718 0x4>;
++	interrupts = <0 137 0>;
++	#io-channel-cells = <1>;
++	io-channel-ranges;
++
++	clock-names = "adc", "sclk_tsadc";
++	clocks = <&cmu CLK_TSADC>, <&cmu CLK_SCLK_TSADC>;
++
++	vdd-supply = <&buck5_reg>;
++};
++
+ 
+ Example: Adding child nodes in dts file
+ 
 -- 
 1.8.0
 
