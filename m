@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360AbaDPQt5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 12:49:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11715 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752496AbaDPQqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 12:46:30 -0400
-From: Bandan Das <bsd@redhat.com>
-To: kvm@vger.kernel.org
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        Gleb Natapov <gleb@kernel.org>, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH v3 3/6] KVM: emulate: cleanup decode_modrm
-Date: Wed, 16 Apr 2014 12:46:11 -0400
-Message-Id: <1397666774-24713-4-git-send-email-bsd@redhat.com>
-In-Reply-To: <1397666774-24713-1-git-send-email-bsd@redhat.com>
-References: <1397666774-24713-1-git-send-email-bsd@redhat.com>
+	id S1754452AbaDPQvA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 12:51:00 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:47609 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753389AbaDPQu5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 12:50:57 -0400
+Date: Wed, 16 Apr 2014 12:50:52 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] workqueue: fix possible race condition when rescuer
+ VS pwq-release
+Message-ID: <20140416165052.GK1257@htj.dyndns.org>
+References: <1395937212-4103-1-git-send-email-laijs@cn.fujitsu.com>
+ <5335661E.7030408@cn.fujitsu.com>
+ <20140415164752.GC30990@htj.dyndns.org>
+ <534DDBFC.9060803@cn.fujitsu.com>
+ <20140416152326.GG1257@htj.dyndns.org>
+ <CACvQF532wtmegbNixch2zTGDmYoGoB4TFTHikw3dTNQPo7Gg2w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACvQF532wtmegbNixch2zTGDmYoGoB4TFTHikw3dTNQPo7Gg2w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the if conditional - that will help us avoid
-an "else initialize to 0" Also, rearrange operators
-for slightly better code.
+Hello, Lai.
 
-Signed-off-by: Bandan Das <bsd@redhat.com>
----
- arch/x86/kvm/emulate.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+On Thu, Apr 17, 2014 at 12:21:21AM +0800, Lai Jiangshan wrote:
+> OK. It is better to use get_pwq(). I will also change the above comments to:
+> 
+>   The base ref and the possible ref from rerscuer(stopped) are never
+> dropped on per-cpu pwqs.
+>   Directly free the pwqs and wq.
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index a6d9892..e12ac87 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -1064,19 +1064,17 @@ static int decode_modrm(struct x86_emulate_ctxt *ctxt,
- 			struct operand *op)
- {
- 	u8 sib;
--	int index_reg = 0, base_reg = 0, scale;
-+	int index_reg, base_reg, scale;
- 	int rc = X86EMUL_CONTINUE;
- 	ulong modrm_ea = 0;
- 
--	if (ctxt->rex_prefix) {
--		ctxt->modrm_reg = (ctxt->rex_prefix & 4) << 1;	/* REX.R */
--		index_reg = (ctxt->rex_prefix & 2) << 2; /* REX.X */
--		ctxt->modrm_rm = base_reg = (ctxt->rex_prefix & 1) << 3; /* REG.B */
--	}
-+	ctxt->modrm_reg = ((ctxt->rex_prefix << 1) & 8); /* REX.R */
-+	index_reg = (ctxt->rex_prefix << 2) & 8; /* REX.X */
-+	base_reg = (ctxt->rex_prefix << 3) & 8; /* REX.B */
- 
--	ctxt->modrm_mod |= (ctxt->modrm & 0xc0) >> 6;
-+	ctxt->modrm_mod = (ctxt->modrm & 0xc0) >> 6;
- 	ctxt->modrm_reg |= (ctxt->modrm & 0x38) >> 3;
--	ctxt->modrm_rm |= (ctxt->modrm & 0x07);
-+	ctxt->modrm_rm = base_reg | (ctxt->modrm & 0x07);
- 	ctxt->modrm_seg = VCPU_SREG_DS;
- 
- 	if (ctxt->modrm_mod == 3) {
+Hmmm, why does that matter?  The base ref is the business of
+create/destroy path and as long as base ref is never put other refs
+just don't matter.
+
+> The reason I quickly dropped V1 and wrote the V2 is that I saw this comment.
+> "The base ref" is precise after I used get_pwq() in V1.
+> 
+> Or to avoid to change to this comments.
+> I can also move the following code down to the bottom of the rescuer_thread().
+> 
+> if (kthread_should_stop()) {
+> __set_current_state(TASK_RUNNING);
+> rescuer->task->flags &= ~PF_WQ_WORKER;
+> return 0;
+> }
+> 
+> (I reply this email on browser, never mind the syntax).
+> Maybe the second choice are better.
+
+Hmmm... yeah, regardlesss of the above, it's a bit nasty that rescuer
+may exit with non-empty mayday list.
+
+Thanks.
+
 -- 
-1.8.3.1
-
+tejun
