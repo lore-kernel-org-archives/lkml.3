@@ -1,50 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751352AbaDPBZA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 21:25:00 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:59795 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045AbaDPBY6 (ORCPT
+	id S1751468AbaDPBZP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 21:25:15 -0400
+Received: from mail-qa0-f73.google.com ([209.85.216.73]:36051 "EHLO
+	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751045AbaDPBZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 21:24:58 -0400
-Date: Wed, 16 Apr 2014 10:24:55 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Stratos Karafotis <stratosk@semaphore.gr>
-Cc: Magnus Damm <magnus.damm@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>, linux-sh@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 8/8] sh: clk: Use cpufreq_for_each_valid_entry macro
- for iteration
-Message-ID: <20140416012454.GA3941@verge.net.au>
-References: <534DB238.5030201@semaphore.gr>
- <20140416011120.GC8833@verge.net.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140416011120.GC8833@verge.net.au>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 15 Apr 2014 21:25:08 -0400
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Bresticker <abrestic@chromium.org>
+Subject: [PATCH] pinctrl: as3722: fix handling of GPIO invert bit
+Date: Tue, 15 Apr 2014 18:25:05 -0700
+Message-Id: <1397611505-17917-1-git-send-email-abrestic@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 10:11:20AM +0900, Simon Horman wrote:
-> On Wed, Apr 16, 2014 at 01:27:04AM +0300, Stratos Karafotis wrote:
-> > The cpufreq core now supports the cpufreq_for_each_valid_entry macro
-> > helper for iteration over the cpufreq_frequency_table, so use it.
-> > 
-> > It should have no functional changes.
-> > 
-> > Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> 
-> Thanks, I have queued this up.
+The AS3722_GPIO_INV bit will always be blindly overwritten by
+as3722_pinctrl_gpio_set_direction() and will be ignored when
+setting the value of the GPIO in as3722_gpio_set() since the
+enable_gpio_invert flag is never set.  This will cause an
+initially inverted GPIO to toggle when requested as an output,
+which could be problematic if, for example, the GPIO controls
+a critical regulator.
 
-I have dropped this patch.
+Instead of setting up the enable_gpio_invert flag, uust leave
+the invert bit alone and check it before setting the GPIO value.
 
-Please let me know if there is a stable branch which
-includes cpufreq_frequency_table which I can use as a base to apply
-this patch.
+Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+---
+ drivers/pinctrl/pinctrl-as3722.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
-Alternatively, I would be happy to Ack this patch and let someone
-else pick up this patch, but I'm entirely unclear on who that would be.
+diff --git a/drivers/pinctrl/pinctrl-as3722.c b/drivers/pinctrl/pinctrl-as3722.c
+index 92ed4b2..c862f9c0 100644
+--- a/drivers/pinctrl/pinctrl-as3722.c
++++ b/drivers/pinctrl/pinctrl-as3722.c
+@@ -64,7 +64,6 @@ struct as3722_pin_function {
+ };
+ 
+ struct as3722_gpio_pin_control {
+-	bool enable_gpio_invert;
+ 	unsigned mode_prop;
+ 	int io_function;
+ };
+@@ -320,10 +319,8 @@ static int as3722_pinctrl_gpio_set_direction(struct pinctrl_dev *pctldev,
+ 		return mode;
+ 	}
+ 
+-	if (as_pci->gpio_control[offset].enable_gpio_invert)
+-		mode |= AS3722_GPIO_INV;
+-
+-	return as3722_write(as3722, AS3722_GPIOn_CONTROL_REG(offset), mode);
++	return as3722_update_bits(as3722, AS3722_GPIOn_CONTROL_REG(offset),
++				AS3722_GPIO_MODE_MASK, mode);
+ }
+ 
+ static const struct pinmux_ops as3722_pinmux_ops = {
+@@ -496,10 +493,18 @@ static void as3722_gpio_set(struct gpio_chip *chip, unsigned offset,
+ {
+ 	struct as3722_pctrl_info *as_pci = to_as_pci(chip);
+ 	struct as3722 *as3722 = as_pci->as3722;
+-	int en_invert = as_pci->gpio_control[offset].enable_gpio_invert;
++	int en_invert;
+ 	u32 val;
+ 	int ret;
+ 
++	ret = as3722_read(as3722, AS3722_GPIOn_CONTROL_REG(offset), &val);
++	if (ret < 0) {
++		dev_err(as_pci->dev,
++			"GPIO_CONTROL%d_REG read failed: %d\n", offset, ret);
++		return;
++	}
++	en_invert = !!(val & AS3722_GPIO_INV);
++
+ 	if (value)
+ 		val = (en_invert) ? 0 : AS3722_GPIOn_SIGNAL(offset);
+ 	else
+-- 
+1.9.1.423.g4596e3a
+
