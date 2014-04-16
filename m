@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221AbaDPRNp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 13:13:45 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:44337 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803AbaDPRNo (ORCPT
+	id S1754564AbaDPROd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 13:14:33 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:52480 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753786AbaDPROW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 13:13:44 -0400
+	Wed, 16 Apr 2014 13:14:22 -0400
 From: Sergei Ianovich <ynvich@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Sergei Ianovich <ynvich@gmail.com>, Daniel Mack <zonque@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>
-Subject: [PATCH v4 00/21] ARM: support for ICP DAS LP-8x4x (with dts)
-Date: Wed, 16 Apr 2014 21:13:10 +0400
-Message-Id: <1397668411-27162-1-git-send-email-ynvich@gmail.com>
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...)
+Subject: [PATCH v4 03/21] ARM: dts: fix pxa27x-gpio interrupts
+Date: Wed, 16 Apr 2014 21:13:13 +0400
+Message-Id: <1397668411-27162-4-git-send-email-ynvich@gmail.com>
 X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1387309071-22382-1-git-send-email-ynvich@gmail.com>
+In-Reply-To: <1397668411-27162-1-git-send-email-ynvich@gmail.com>
 References: <1387309071-22382-1-git-send-email-ynvich@gmail.com>
+ <1397668411-27162-1-git-send-email-ynvich@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
+CC: Daniel Mack <zonque@gmail.com>
+CC: Haojian Zhuang <haojian.zhuang@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>
+---
+   v3..v4
+   v2..v3
+   v1..v2
+   * no changes
 
-We had an intensive discussion of the series in the beginning of
-December 2013 [1]. The discussion resulted in 3 versions of the series
-in less than 3 weeks. Then there was a decision to block this series
-until Daniel Mack's DMA-engine-for-PXA series is ready.
+ arch/arm/boot/dts/pxa27x.dtsi | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Unfortunately Daniel neigther agrees to review my trivial temporary
-solution to the DMA-in-device-tree (patch 7 of 21), nor he is active
-in DMA series development. There is no progress for 3 months.
+diff --git a/arch/arm/boot/dts/pxa27x.dtsi b/arch/arm/boot/dts/pxa27x.dtsi
+index a705469..39bed5e 100644
+--- a/arch/arm/boot/dts/pxa27x.dtsi
++++ b/arch/arm/boot/dts/pxa27x.dtsi
+@@ -34,5 +34,11 @@
+ 			reg = <0x40c00010 0x10>;
+ 			#pwm-cells = <1>;
+ 		};
++
++		gpio: gpio@40e00000 {
++			compatible = "intel,pxa27x-gpio";
++			interrupts = <8>, <9>, <10>;
++			interrupt-names = "gpio0", "gpio1", "gpio_mux";
++		};
+ 	};
+ };
+-- 
+1.8.4.2
 
-As with any big out of tree series, its support is painful. It requires
-extensive merging when doing bisects, on each step.
-
-It would great if the decision to block could be reconsidered, and we could
-move forward.
-
-Best,
-
-Sergei Ianovich
-
-1. http://linux-kernel.2935.n7.nabble.com/PATCH-00-11-ARM-support-for-ICP-DAS-LP-8x4x-td761919.html
