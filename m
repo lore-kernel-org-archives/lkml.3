@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215AbaDPESn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 00:18:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38809 "EHLO mx2.suse.de"
+	id S1753367AbaDPESu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 00:18:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38816 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751181AbaDPESk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 00:18:40 -0400
+	id S1751554AbaDPESr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 00:18:47 -0400
 From: NeilBrown <neilb@suse.de>
 To: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Date: Wed, 16 Apr 2014 14:03:36 +1000
-Subject: [PATCH 07/19] nfsd and VM: use PF_LESS_THROTTLE to avoid throttle
- in shrink_inactive_list.
+Subject: [PATCH 08/19] Set PF_FSTRANS while write_cache_pages calls
+ ->writepage
 Cc: xfs@oss.sgi.com
-Message-ID: <20140416040336.10604.55772.stgit@notabene.brown>
+Message-ID: <20140416040336.10604.34673.stgit@notabene.brown>
 In-Reply-To: <20140416033623.10604.69237.stgit@notabene.brown>
 References: <20140416033623.10604.69237.stgit@notabene.brown>
 User-Agent: StGit/0.16
@@ -24,86 +24,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nfsd already uses PF_LESS_THROTTLE (and is the only user) to avoid
-throttling while dirtying pages.  Use it also to avoid throttling while
-doing direct reclaim as this can stall nfsd in the same way.
+It is normally safe for direct reclaim to enter filesystems
+even when a page is locked - as can happen if ->writepage
+allocates memory with GFP_KERNEL (which xfs does).
 
-Also only set PF_LESS_THROTTLE when handling a 'write' request for a
-local connection.  This is the only time when the throttling can cause
-a problem.  In other cases we should throttle if the system is busy.
+However if a localhost NFS mount is present, then a flush-*
+thread might hold a page locked and then in direct reclaim,
+ask nfs to commit an inode (nfs_release_page).  When nfsd
+performs the fsync it might try to lock the same page, which leads to
+a deadlock.
 
-Signed-off-by: NeilBrown <neilb@suse.de>
+A ->writepage should not allocate much memory, or do so very often, so
+it is safe to set PF_FSTRANS, and this removes the possible deadlock.
+
+This was not detected by lockdep as it doesn't monitor the page lock.
+It was found as a real deadlock in testing.
+
+Signed-off-by: NeilBrown  <neilb@suse.de>
 ---
- fs/nfsd/nfssvc.c |    6 ------
- fs/nfsd/vfs.c    |    6 ++++++
- mm/vmscan.c      |    7 +++++--
- 3 files changed, 11 insertions(+), 8 deletions(-)
+ mm/page-writeback.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index 6af8bc2daf7d..cd24aa76e58d 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -593,12 +593,6 @@ nfsd(void *vrqstp)
- 	nfsdstats.th_cnt++;
- 	mutex_unlock(&nfsd_mutex);
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 7106cb1aca8e..572e70b9a3f7 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1909,6 +1909,7 @@ retry:
  
--	/*
--	 * We want less throttling in balance_dirty_pages() so that nfs to
--	 * localhost doesn't cause nfsd to lock up due to all the client's
--	 * dirty pages.
--	 */
--	current->flags |= PF_LESS_THROTTLE;
- 	set_freezable();
+ 		for (i = 0; i < nr_pages; i++) {
+ 			struct page *page = pvec.pages[i];
++			unsigned int pflags;
  
- 	/*
-diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
-index 6d7be3f80356..be2d7af3beee 100644
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -913,6 +913,10 @@ nfsd_vfs_write(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file *file,
- 	int			stable = *stablep;
- 	int			use_wgather;
- 	loff_t			pos = offset;
-+	unsigned int		pflags;
-+
-+	if (rqstp->rq_local)
-+		current_set_flags_nested(&pflags, PF_LESS_THROTTLE);
+ 			/*
+ 			 * At this point, the page may be truncated or
+@@ -1960,8 +1961,10 @@ continue_unlock:
+ 			if (!clear_page_dirty_for_io(page))
+ 				goto continue_unlock;
  
- 	dentry = file->f_path.dentry;
- 	inode = dentry->d_inode;
-@@ -950,6 +954,8 @@ out_nfserr:
- 		err = 0;
- 	else
- 		err = nfserrno(host_err);
-+	if (rqstp->rq_local)
-+		current_restore_flags_nested(&pflags, PF_LESS_THROTTLE);
- 	return err;
- }
- 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 05de3289d031..1b7c4e44f0a1 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1552,7 +1552,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 		 * implies that pages are cycling through the LRU faster than
- 		 * they are written so also forcibly stall.
- 		 */
--		if (nr_unqueued_dirty == nr_taken || nr_immediate)
-+		if ((nr_unqueued_dirty == nr_taken || nr_immediate)
-+		    && !current_test_flags(PF_LESS_THROTTLE))
- 			congestion_wait(BLK_RW_ASYNC, HZ/10);
- 	}
- 
-@@ -1561,7 +1562,9 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
- 	 * is congested. Allow kswapd to continue until it starts encountering
- 	 * unqueued dirty pages or cycling through the LRU too quickly.
- 	 */
--	if (!sc->hibernation_mode && !current_is_kswapd())
-+	if (!sc->hibernation_mode &&
-+	    !current_is_kswapd() &&
-+	    !current_test_flags(PF_LESS_THROTTLE))
- 		wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
- 
- 	trace_mm_vmscan_lru_shrink_inactive(zone->zone_pgdat->node_id,
++			current_set_flags_nested(&pflags, PF_FSTRANS);
+ 			trace_wbc_writepage(wbc, mapping->backing_dev_info);
+ 			ret = (*writepage)(page, wbc, data);
++			current_restore_flags_nested(&pflags, PF_FSTRANS);
+ 			if (unlikely(ret)) {
+ 				if (ret == AOP_WRITEPAGE_ACTIVATE) {
+ 					unlock_page(page);
 
 
