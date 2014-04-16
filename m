@@ -1,865 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037AbaDPIth (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 04:49:37 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:51829 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239AbaDPItb (ORCPT
+	id S1754839AbaDPIvK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 04:51:10 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:31392 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752282AbaDPIvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 04:49:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140413051050.GA7267@core.coreip.homeip.net>
-References: <1397228856-9218-1-git-send-email-gabriel.fernandez@linaro.org>
-	<1397228856-9218-2-git-send-email-gabriel.fernandez@linaro.org>
-	<20140413051050.GA7267@core.coreip.homeip.net>
-Date: Wed, 16 Apr 2014 10:49:29 +0200
-Message-ID: <CAG374jCT78wkxwzn9qMsBD2bGiEXr=spu+cF7C45+nr8C6gRRQ@mail.gmail.com>
-Subject: Re: [PATCH v4 1/7] drivers: input: keyboard: st-keyscan: add keyscan driver
-From: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 16 Apr 2014 04:51:06 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f5-b7fc96d000004885-ed-534e4476136a
+Content-transfer-encoding: 8BIT
+Message-id: <1397638263.6147.7.camel@AMDC1943>
+Subject: Re: [PATCH 1/3] clocksource: exynos_mct: Fix stall after CPU
+ hotplugging
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, stable@vger.kernel.org
+Date: Wed, 16 Apr 2014 10:51:03 +0200
+In-reply-to: <alpine.DEB.2.02.1404151753090.22697@ionos.tec.linutronix.de>
+References: <1396011962-4467-1-git-send-email-k.kozlowski@samsung.com>
+ <1397554445.29169.21.camel@AMDC1943> <534D25DC.4050400@linaro.org>
+ <1397566023.29169.31.camel@AMDC1943>
+ <alpine.DEB.2.02.1404151711250.22697@ionos.tec.linutronix.de>
+ <1397576515.752.5.camel@AMDC1943>
+ <alpine.DEB.2.02.1404151753090.22697@ionos.tec.linutronix.de>
+X-Mailer: Evolution 3.8.4-0ubuntu1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t/xK7plLn7BBv2vTS02zljPajHvs6xF
+	74KrbBZnm96wW2x6fI3V4vKuOWwWM87vY7JYe+Quu8WCjY8YLdbPeM1isXnTVGYHbo871/aw
+	ebw7d47dY/OSeo++LasYPT5vkgtgjeKySUnNySxLLdK3S+DKOLbxEEvBbOeK4//3MTYwLjXt
+	YuTkkBAwkeg7cJodwhaTuHBvPVsXIxeHkMBSRomL766zgiR4BQQlfky+x9LFyMHBLCAvceRS
+	NkiYWUBdYtK8RcwQ9Z8ZJfo/r2KBqNeTWNR8nQnEFhYIlvh7eiPYAjYBY4nNy5ewgdgiAhoS
+	Gy/dAmtmFuhllnh59QQjSIJFQFXiVutCMJtTwEvi98sTYA1CAteYJBrfWkFcqiRxbt0axgmM
+	ArOQ3DcL4b5ZSO5bwMi8ilE0tTS5oDgpPddIrzgxt7g0L10vOT93EyMkEr7uYFx6zOoQowAH
+	oxIP74wc32Ah1sSy4srcQ4wSHMxKIrwKRn7BQrwpiZVVqUX58UWlOanFhxiZODilGhh7txqt
+	sXJc/nPV6cbHpjdeu8a9X3Rieujng1dcFlhxPt5z2e7GlReKbItubjZJVVo1TcDK+Z7TN/Uw
+	Tb8XHwqyr3FPf748gmV++evIL/GB1/RsajfuNzXhjOd86qppbTG1PD36pNIN7vXh2lnPuyzs
+	ztktOHZpnfASl1UH5K37bmxbJLkw4ekXJZbijERDLeai4kQAxiaLgGICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 April 2014 07:10, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> Hi Gabriel,
->
-> On Fri, Apr 11, 2014 at 05:07:30PM +0200, Gabriel FERNANDEZ wrote:
->> This patch adds ST Keyscan driver to use the keypad hw a subset
->> of ST boards provide. Specific board setup will be put in the
->> given dt.
->>
->> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
->> Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
->> ---
->>  .../devicetree/bindings/input/st-keyscan.txt       |  60 +++++
->>  drivers/input/keyboard/Kconfig                     |  12 +
->>  drivers/input/keyboard/Makefile                    |   1 +
->>  drivers/input/keyboard/st-keyscan.c                | 260 +++++++++++++++++++++
->>  4 files changed, 333 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/input/st-keyscan.txt
->>  create mode 100644 drivers/input/keyboard/st-keyscan.c
->>
->> diff --git a/Documentation/devicetree/bindings/input/st-keyscan.txt b/Documentation/devicetree/bindings/input/st-keyscan.txt
->> new file mode 100644
->> index 0000000..51eb428
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/input/st-keyscan.txt
->> @@ -0,0 +1,60 @@
->> +* ST Keyscan controller Device Tree bindings
->> +
->> +The ST keyscan controller Device Tree binding is based on the
->> +matrix-keymap.
->> +
->> +Required properties:
->> +- compatible: "st,sti-keyscan"
->> +
->> +- reg: Register base address and size of st-keyscan controller.
->> +
->> +- interrupts: Interrupt number for the st-keyscan controller.
->> +
->> +- clocks: Must contain one entry, for the module clock.
->> +  See ../clocks/clock-bindings.txt for details.
->> +
->> +- pinctrl: Should specify pin control groups used for this controller.
->> +  See ../pinctrl/pinctrl-bindings.txt for details.
->> +
->> +- linux,keymap: The keymap for keys as described in the binding document
->> +  devicetree/bindings/input/matrix-keymap.txt.
->> +
->> +- keypad,num-rows: Number of row lines connected to the keypad controller.
->> +
->> +- keypad,num-columns: Number of column lines connected to the keypad
->> +  controller.
->> +
->> +Optional property:
->> +- st,debounce_us: Debouncing interval time in microseconds
->> +
->> +Example:
->> +
->> +keyscan: keyscan@fe4b0000 {
->> +     compatible = "st,sti-keyscan";
->> +     reg = <0xfe4b0000 0x2000>;
->> +     interrupts = <GIC_SPI 212 IRQ_TYPE_NONE>;
->> +     clocks  = <&CLK_SYSIN>;
->> +     pinctrl-names = "default";
->> +     pinctrl-0 = <&pinctrl_keyscan>;
->> +
->> +     keypad,num-rows = <4>;
->> +     keypad,num-columns = <4>;
->> +     st,debounce_us = <5000>;
->> +
->> +     linux,keymap = < MATRIX_KEY(0x00, 0x00, KEY_F13)
->> +                      MATRIX_KEY(0x00, 0x01, KEY_F9)
->> +                      MATRIX_KEY(0x00, 0x02, KEY_F5)
->> +                      MATRIX_KEY(0x00, 0x03, KEY_F1)
->> +                      MATRIX_KEY(0x01, 0x00, KEY_F14)
->> +                      MATRIX_KEY(0x01, 0x01, KEY_F10)
->> +                      MATRIX_KEY(0x01, 0x02, KEY_F6)
->> +                      MATRIX_KEY(0x01, 0x03, KEY_F2)
->> +                      MATRIX_KEY(0x02, 0x00, KEY_F15)
->> +                      MATRIX_KEY(0x02, 0x01, KEY_F11)
->> +                      MATRIX_KEY(0x02, 0x02, KEY_F7)
->> +                      MATRIX_KEY(0x02, 0x03, KEY_F3)
->> +                      MATRIX_KEY(0x03, 0x00, KEY_F16)
->> +                      MATRIX_KEY(0x03, 0x01, KEY_F12)
->> +                      MATRIX_KEY(0x03, 0x02, KEY_F8)
->> +                      MATRIX_KEY(0x03, 0x03, KEY_F4) >;
->> +     };
->> diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
->> index 76842d7..40a377c 100644
->> --- a/drivers/input/keyboard/Kconfig
->> +++ b/drivers/input/keyboard/Kconfig
->> @@ -524,6 +524,18 @@ config KEYBOARD_STOWAWAY
->>         To compile this driver as a module, choose M here: the
->>         module will be called stowaway.
->>
->> +config KEYBOARD_ST_KEYSCAN
->> +     tristate "STMicroelectronics keyscan support"
->> +     depends on ARCH_STI
->> +     select INPUT_EVDEV
->
-> Why are you selecting evdev? Its presence is not essential for the
-> driver.
-it's historic..
-i agree no reason to keep it.
+On wto, 2014-04-15 at 18:20 +0200, Thomas Gleixner wrote:
+> B1;3202;0cOn Tue, 15 Apr 2014, Krzysztof Kozlowski wrote:
+> > On wto, 2014-04-15 at 17:20 +0200, Thomas Gleixner wrote:
+> > > On Tue, 15 Apr 2014, Krzysztof Kozlowski wrote:
+> > > 
+> > > > On wto, 2014-04-15 at 14:28 +0200, Daniel Lezcano wrote:
+> > > > > On 04/15/2014 11:34 AM, Krzysztof Kozlowski wrote:
+> > > > > > On pią, 2014-03-28 at 14:06 +0100, Krzysztof Kozlowski wrote:
+> > > > > >> Fix stall after hotplugging CPU1. Affected are SoCs where Multi Core Timer
+> > > > > >> interrupts are shared (SPI), e.g. Exynos 4210. The stall was a result of
+> > > > > >> starting the CPU1 local timer not in L1 timer but in L0 (which is used
+> > > > > >> by CPU0).
+> > > > > >
+> > > > > > Hi,
+> > > > > >
+> > > > > > Do you have any comments on these 3 patches? They fix the CPU stall on
+> > > > > > Exynos4210 and also on Exynos3250 (Chanwoo Choi sent patches for it
+> > > > > > recently).
+> > > > > 
+> > > > > You describe this issue as impacting different SoC not only the exynos, 
+> > > > > right ?
+> > > > >
+> > > > > Do you know what other SoCs are impacted by this ?
+> > > > 
+> > > > No, affected are only Exynos SoC-s. It was confirmed on Exynos4210
+> > > > (Trats board) and Exynos3250 (new SoC, patches for it were recently
+> > > > posted by Chanwoo).
+> > > > 
+> > > > Other Exynos SoC-s where MCT local timers use shared interrupts (SPI)
+> > > > can also be affected. Candidates are Exynos 5250 and 5420 but I haven't
+> > > > tested them.
+> > > > 
+> > > > > I guess this issue is not reproducible just with the line below, we need 
+> > > > > a timer to expire right at the moment CPU1 is hotplugged, right ?
+> > > > 
+> > > > Right. The timer must fire in short time between enabling local timer
+> > > > for CPU1 and setting the affinity for IRQ.
+> > > 
+> > > Why do you set the affinity in the CPU_ONLINE hotplug callback and not
+> > > right away when the interrupt is requested?
+> > 
+> > Hi,
+> > 
+> > I think the problem in such code is in GIC. The gic_set_affinity() uses
+> > cpu_online_mask:
+> > 	unsigned int cpu = cpumask_any_and(mask_val, cpu_online_mask);
+> > In that time this CPU is not present in that mask so -EINVAL would be
+> > returned.
+> 
+> Hmm, indeed. Stupid me.
+> 
+> Here is a complete solution to the problem. We really want the drivers
+> to be fast and clean and not work around such issues.
+> 
+> I'm quite happy that I kept the 'force' argument of set_affinity
+> callbacks. I knew that I'd need it at some point.
+> 
+> So with the flag set we can disable the online mask check and force
+> the interrupt to the proper cpu.
 
->
->> +     select INPUT_MATRIXKMAP
->> +     help
->> +       Say Y here if you want to use a keypad attached to the keyscan block
->> +       on some STMicroelectronics SoC devices.
->> +
->> +       To compile this driver as a module, choose M here: the
->> +       module will be called st-keyscan.
->> +
->>  config KEYBOARD_SUNKBD
->>       tristate "Sun Type 4 and Type 5 keyboard"
->>       select SERIO
->> diff --git a/drivers/input/keyboard/Makefile b/drivers/input/keyboard/Makefile
->> index 11cff7b..7504ae1 100644
->> --- a/drivers/input/keyboard/Makefile
->> +++ b/drivers/input/keyboard/Makefile
->> @@ -51,6 +51,7 @@ obj-$(CONFIG_KEYBOARD_SH_KEYSC)             += sh_keysc.o
->>  obj-$(CONFIG_KEYBOARD_SPEAR)         += spear-keyboard.o
->>  obj-$(CONFIG_KEYBOARD_STMPE)         += stmpe-keypad.o
->>  obj-$(CONFIG_KEYBOARD_STOWAWAY)              += stowaway.o
->> +obj-$(CONFIG_KEYBOARD_ST_KEYSCAN)    += st-keyscan.o
->>  obj-$(CONFIG_KEYBOARD_SUNKBD)                += sunkbd.o
->>  obj-$(CONFIG_KEYBOARD_TC3589X)               += tc3589x-keypad.o
->>  obj-$(CONFIG_KEYBOARD_TEGRA)         += tegra-kbc.o
->> diff --git a/drivers/input/keyboard/st-keyscan.c b/drivers/input/keyboard/st-keyscan.c
->> new file mode 100644
->> index 0000000..7ed3b3e
->> --- /dev/null
->> +++ b/drivers/input/keyboard/st-keyscan.c
->> @@ -0,0 +1,260 @@
->> +/*
->> + * STMicroelectronics Key Scanning driver
->> + *
->> + * Copyright (c) 2014 STMicroelectonics Ltd.
->> + * Author: Stuart Menefy <stuart.menefy@st.com>
->> + *
->> + * Based on sh_keysc.c, copyright 2008 Magnus Damm
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +
->> +#include <linux/module.h>
->> +#include <linux/interrupt.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/clk.h>
->> +#include <linux/io.h>
->> +#include <linux/input/matrix_keypad.h>
->> +
->> +#define ST_KEYSCAN_MAXKEYS 16
->> +
->> +#define KEYSCAN_CONFIG_OFF           0x0
->> +#define KEYSCAN_CONFIG_ENABLE                0x1
->> +#define KEYSCAN_DEBOUNCE_TIME_OFF    0x4
->> +#define KEYSCAN_MATRIX_STATE_OFF     0x8
->> +#define KEYSCAN_MATRIX_DIM_OFF               0xc
->> +#define KEYSCAN_MATRIX_DIM_X_SHIFT   0x0
->> +#define KEYSCAN_MATRIX_DIM_Y_SHIFT   0x2
->> +
->> +struct st_keyscan {
->> +     void __iomem *base;
->> +     int irq;
->> +     struct clk *clk;
->> +     struct input_dev *input_dev;
->> +     unsigned int last_state;
->> +     unsigned int n_rows;
->> +     unsigned int n_cols;
->> +     unsigned int debounce_us;
->> +};
->> +
->> +static irqreturn_t keyscan_isr(int irq, void *dev_id)
->> +{
->> +     struct platform_device *pdev = dev_id;
->> +     struct st_keyscan *keypad = platform_get_drvdata(pdev);
->
-> This is not safe, you are assigning platform data at the very end of
-> probe; input device may get opened before probe is completed and IRS
-> may come early causing OOPS.
->
->> +     unsigned short *keycode = keypad->input_dev->keycode;
->> +     int state;
->> +     int change;
->> +
->> +     state = readl(keypad->base + KEYSCAN_MATRIX_STATE_OFF) & 0xffff;
->> +     change = keypad->last_state ^ state;
->> +
->> +     while (change) {
->> +             int scancode = __ffs(change);
->> +             int down = state & BIT(scancode);
->> +
->> +             input_report_key(keypad->input_dev, keycode[scancode], down);
->> +
->> +             change ^= BIT(scancode);
->> +     };
->> +     input_sync(keypad->input_dev);
->> +
->> +     keypad->last_state = state;
->> +
->> +     return IRQ_HANDLED;
->> +}
->> +
->> +static int keyscan_start(struct st_keyscan *keypad)
->> +{
->> +     clk_enable(keypad->clk);
->
-> Should handle clk_enable() failures.
->
-ok
+Thanks for the solution.
 
->> +
->> +     writel(keypad->debounce_us * (clk_get_rate(keypad->clk) / 1000000),
->> +            keypad->base + KEYSCAN_DEBOUNCE_TIME_OFF);
->> +
->> +     writel(((keypad->n_cols - 1) << KEYSCAN_MATRIX_DIM_X_SHIFT) |
->> +            ((keypad->n_rows - 1) << KEYSCAN_MATRIX_DIM_Y_SHIFT),
->> +            keypad->base + KEYSCAN_MATRIX_DIM_OFF);
->> +
->> +     writel(KEYSCAN_CONFIG_ENABLE, keypad->base + KEYSCAN_CONFIG_OFF);
->> +
->> +     return 0;
->> +}
->> +
->> +static void keyscan_stop(struct st_keyscan *keypad)
->> +{
->> +     writel(0, keypad->base + KEYSCAN_CONFIG_OFF);
->> +
->> +     clk_disable(keypad->clk);
->> +}
->> +
->> +static int keyscan_open(struct input_dev *dev)
->> +{
->> +     struct st_keyscan *keypad = input_get_drvdata(dev);
->> +
->> +     return keyscan_start(keypad);
->> +}
->> +
->> +static void keyscan_close(struct input_dev *dev)
->> +{
->> +     struct st_keyscan *keypad = input_get_drvdata(dev);
->> +
->> +     keyscan_stop(keypad);
->> +}
->> +
->> +static int keypad_matrix_key_parse_dt(struct st_keyscan *keypad_data)
->> +{
->> +     struct device *dev = keypad_data->input_dev->dev.parent;
->> +     struct device_node *np = dev->of_node;
->> +     int error;
->> +
->> +     error = matrix_keypad_parse_of_params(dev, &keypad_data->n_rows,
->> +                     &keypad_data->n_cols);
->> +     if (error) {
->> +             dev_err(dev, "failed to parse keypad params\n");
->> +             return error;
->> +     }
->> +
->> +     of_property_read_u32(np, "st,debounce-us", &keypad_data->debounce_us);
->> +
->> +     dev_info(dev, "n_rows=%d n_col=%d debounce=%d\n",
->> +                     keypad_data->n_rows,
->> +                     keypad_data->n_cols,
->> +                     keypad_data->debounce_us);
->> +
->> +     return 0;
->> +}
->> +
->> +static int __init keyscan_probe(struct platform_device *pdev)
->
-> keyscan_probe() should not be marked __init as it may be needed again if
-> one were to unbind and rebind the driver to the device through sysfs.
->
-ok
+I tested your patch on Exynos 3250 and it is still not sufficient. After
+hotplugging CPU1 ~10 times the stall happens (set_next_event is called
+on wrong CPU).
 
->> +{
->> +     struct st_keyscan *keypad_data;
->> +     struct input_dev *input_dev;
->> +     struct resource *res;
->> +     int error;
->> +
->> +     if (!pdev->dev.of_node) {
->> +             dev_err(&pdev->dev, "no keymap defined\n");
->> +             return -EINVAL;
->> +     }
->> +
->> +     keypad_data = devm_kzalloc(&pdev->dev,
->> +                     sizeof(*keypad_data), GFP_KERNEL);
->> +     if (!keypad_data)
->> +             return -ENOMEM;
->> +
->> +     res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->> +     keypad_data->base = devm_ioremap_resource(&pdev->dev, res);
->> +     if (IS_ERR(keypad_data->base))
->> +             return PTR_ERR(keypad_data->base);
->> +
->> +     keypad_data->irq = platform_get_irq(pdev, 0);
->> +     if (keypad_data->irq < 0) {
->> +             dev_err(&pdev->dev, "no IRQ specified\n");
->> +             return -EINVAL;
->> +     }
->> +
->> +     error = devm_request_irq(&pdev->dev, keypad_data->irq, keyscan_isr, 0,
->> +                              pdev->name, pdev);
->> +     if (error) {
->> +             dev_err(&pdev->dev, "failed to request IRQ\n");
->> +             return error;
->> +     }
->> +
->> +     input_dev = devm_input_allocate_device(&pdev->dev);
->> +
->> +     if (!input_dev) {
->> +             dev_err(&pdev->dev, "failed to allocate the input device\n");
->> +             return -ENOMEM;
->> +     }
->> +
->> +     keypad_data->clk = devm_clk_get(&pdev->dev, NULL);
->> +     if (IS_ERR(keypad_data->clk)) {
->> +             dev_err(&pdev->dev, "cannot get clock");
->> +             return PTR_ERR(keypad_data->clk);
->> +     }
->> +
->> +     keypad_data->input_dev = input_dev;
->> +
->> +     input_dev->name = pdev->name;
->> +     input_dev->phys = "keyscan-keys/input0";
->> +     input_dev->dev.parent = &pdev->dev;
->> +     input_dev->open = keyscan_open;
->> +     input_dev->close = keyscan_close;
->> +
->> +     input_dev->id.bustype = BUS_HOST;
->> +
->> +     error = keypad_matrix_key_parse_dt(keypad_data);
->> +     if (error)
->> +             return error;
->> +
->> +     error = matrix_keypad_build_keymap(NULL, NULL,
->> +                     keypad_data->n_rows, keypad_data->n_cols,
->> +                     NULL, input_dev);
->> +     if (error) {
->> +             dev_err(&pdev->dev, "failed to build keymap\n");
->> +             return error;
->> +     }
->> +
->> +     input_set_drvdata(input_dev, keypad_data);
->> +
->> +     error = input_register_device(input_dev);
->> +     if (error) {
->> +             dev_err(&pdev->dev, "failed to register input device\n");
->> +             return error;
->> +     }
->> +
->> +     platform_set_drvdata(pdev, keypad_data);
->> +
->> +     device_set_wakeup_capable(&pdev->dev, 1);
->> +
->> +     return 0;
->> +}
->> +
->> +static int keyscan_suspend(struct device *dev)
->> +{
->> +     struct platform_device *pdev = to_platform_device(dev);
->> +     struct st_keyscan *keypad = platform_get_drvdata(pdev);
->> +
->> +     if (device_may_wakeup(dev))
->> +             enable_irq_wake(keypad->irq);
->> +     else
->> +             keyscan_stop(keypad);
->> +
->> +     return 0;
->> +}
->> +
->> +static int keyscan_resume(struct device *dev)
->> +{
->> +     struct platform_device *pdev = to_platform_device(dev);
->> +     struct st_keyscan *keypad = platform_get_drvdata(pdev);
->> +
->> +     if (device_may_wakeup(dev))
->> +             disable_irq_wake(keypad->irq);
->> +     else
->> +             keyscan_start(keypad);
->
-> If devoice has not been opened you should not try to stop it otherwise
-> clk counter will be imbalanced.
->
-Right
+The patch 3/3 ("clocksource: exynos_mct: Fix too early ISR fire up on
+wrong CPU") is needed as the clockevents_config_and_register should be
+called a little later.
 
->> +
->> +     return 0;
->> +}
->> +
->> +static SIMPLE_DEV_PM_OPS(keyscan_dev_pm_ops, keyscan_suspend, keyscan_resume);
->> +
->> +static const struct of_device_id keyscan_of_match[] = {
->> +     { .compatible = "st,sti-keyscan" },
->> +     { },
->> +};
->> +MODULE_DEVICE_TABLE(of, keyscan_of_match);
->> +
->> +struct platform_driver keyscan_device_driver = {
->> +     .probe          = keyscan_probe,
->> +     .driver         = {
->> +             .name   = "st-keyscan",
->> +             .pm     = &keyscan_dev_pm_ops,
->> +             .of_match_table = of_match_ptr(keyscan_of_match),
->> +     }
->> +};
->> +
->> +module_platform_driver(keyscan_device_driver);
->> +
->> +MODULE_AUTHOR("Stuart Menefy <stuart.menefy@st.com>");
->> +MODULE_DESCRIPTION("STMicroelectronics keyscan device driver");
->> +MODULE_LICENSE("GPL");
->> --
->> 1.9.1
->>
->
-> Does the version of the patch below still work for you?
->
-Yes it's was tested on b2000 and b2089 sti boards.
+Do you have rest of patches (2/3 and 3/3) or should I resend them?
 
-> Thanks.
->
-> --
-> Dmitry
->
-Thanks for yours remarks, i will prepare a v5 versions.
-Regards
+And one minor nit in your patch: 'cpu' local variable in
+exynos4_mct_cpu_notify() is no longer used so it can be removed.
 
-> Input: add st-keyscan driver
->
-> From: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
->
-> This patch adds ST Keyscan driver to use the keypad hw a subset of ST
-> boards provide. Specific board setup will be put in the given dt.
->
-> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-> Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> ---
->  .../devicetree/bindings/input/st-keyscan.txt       |   60 ++++
->  drivers/input/keyboard/Kconfig                     |   11 +
->  drivers/input/keyboard/Makefile                    |    1
->  drivers/input/keyboard/st-keyscan.c                |  274 ++++++++++++++++++++
->  4 files changed, 346 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/input/st-keyscan.txt
->  create mode 100644 drivers/input/keyboard/st-keyscan.c
->
-> diff --git a/Documentation/devicetree/bindings/input/st-keyscan.txt b/Documentation/devicetree/bindings/input/st-keyscan.txt
-> new file mode 100644
-> index 0000000..51eb428
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/input/st-keyscan.txt
-> @@ -0,0 +1,60 @@
-> +* ST Keyscan controller Device Tree bindings
+Best regards,
+Krzysztof
+
+
+> Thanks,
+> 
+> 	tglx
+> 
+> Index: linux-2.6/drivers/clocksource/exynos_mct.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/clocksource/exynos_mct.c
+> +++ linux-2.6/drivers/clocksource/exynos_mct.c
+> @@ -430,6 +430,7 @@ static int exynos4_local_timer_setup(str
+>  				evt->irq);
+>  			return -EIO;
+>  		}
+> +		irq_force_affinity(mct_irqs[MCT_L0_IRQ + cpu], cpumask_of(cpu));
+>  	} else {
+>  		enable_percpu_irq(mct_irqs[MCT_L0_IRQ], 0);
+>  	}
+> @@ -461,12 +462,6 @@ static int exynos4_mct_cpu_notify(struct
+>  		mevt = this_cpu_ptr(&percpu_mct_tick);
+>  		exynos4_local_timer_setup(&mevt->evt);
+>  		break;
+> -	case CPU_ONLINE:
+> -		cpu = (unsigned long)hcpu;
+> -		if (mct_int_type == MCT_INT_SPI)
+> -			irq_set_affinity(mct_irqs[MCT_L0_IRQ + cpu],
+> -						cpumask_of(cpu));
+> -		break;
+>  	case CPU_DYING:
+>  		mevt = this_cpu_ptr(&percpu_mct_tick);
+>  		exynos4_local_timer_stop(&mevt->evt);
+> Index: linux-2.6/drivers/irqchip/irq-gic.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/irqchip/irq-gic.c
+> +++ linux-2.6/drivers/irqchip/irq-gic.c
+> @@ -246,10 +246,14 @@ static int gic_set_affinity(struct irq_d
+>  			    bool force)
+>  {
+>  	void __iomem *reg = gic_dist_base(d) + GIC_DIST_TARGET + (gic_irq(d) & ~3);
+> -	unsigned int shift = (gic_irq(d) % 4) * 8;
+> -	unsigned int cpu = cpumask_any_and(mask_val, cpu_online_mask);
+> +	unsigned int cpu, shift = (gic_irq(d) % 4) * 8;
+>  	u32 val, mask, bit;
+>  
+> +	if (!force)
+> +		cpu = cpumask_any_and(mask_val, cpu_online_mask);
+> +	else
+> +		cpu = cpumask_first(mask_val);
 > +
-> +The ST keyscan controller Device Tree binding is based on the
-> +matrix-keymap.
+>  	if (cpu >= NR_GIC_CPU_IF || cpu >= nr_cpu_ids)
+>  		return -EINVAL;
+>  
+> Index: linux-2.6/include/linux/interrupt.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/interrupt.h
+> +++ linux-2.6/include/linux/interrupt.h
+> @@ -204,6 +204,7 @@ static inline int check_wakeup_irqs(void
+>  extern cpumask_var_t irq_default_affinity;
+>  
+>  extern int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask);
+> +extern int irq_force_affinity(unsigned int irq, const struct cpumask *cpumask);
+>  extern int irq_can_set_affinity(unsigned int irq);
+>  extern int irq_select_affinity(unsigned int irq);
+>  
+> Index: linux-2.6/kernel/irq/manage.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/irq/manage.c
+> +++ linux-2.6/kernel/irq/manage.c
+> @@ -180,7 +180,7 @@ int irq_do_set_affinity(struct irq_data
+>  	struct irq_chip *chip = irq_data_get_irq_chip(data);
+>  	int ret;
+>  
+> -	ret = chip->irq_set_affinity(data, mask, false);
+> +	ret = chip->irq_set_affinity(data, mask, force);
+>  	switch (ret) {
+>  	case IRQ_SET_MASK_OK:
+>  		cpumask_copy(data->affinity, mask);
+> @@ -192,7 +192,8 @@ int irq_do_set_affinity(struct irq_data
+>  	return ret;
+>  }
+>  
+> -int __irq_set_affinity_locked(struct irq_data *data, const struct cpumask *mask)
+> +static int irq_do_set_affinity_locked(struct irq_data *data,
+> +				      const struct cpumask *mask, bool force)
+>  {
+>  	struct irq_chip *chip = irq_data_get_irq_chip(data);
+>  	struct irq_desc *desc = irq_data_to_desc(data);
+> @@ -202,7 +203,7 @@ int __irq_set_affinity_locked(struct irq
+>  		return -EINVAL;
+>  
+>  	if (irq_can_move_pcntxt(data)) {
+> -		ret = irq_do_set_affinity(data, mask, false);
+> +		ret = irq_do_set_affinity(data, mask, force);
+>  	} else {
+>  		irqd_set_move_pending(data);
+>  		irq_copy_pending(desc, mask);
+> @@ -217,13 +218,13 @@ int __irq_set_affinity_locked(struct irq
+>  	return ret;
+>  }
+>  
+> -/**
+> - *	irq_set_affinity - Set the irq affinity of a given irq
+> - *	@irq:		Interrupt to set affinity
+> - *	@mask:		cpumask
+> - *
+> - */
+> -int irq_set_affinity(unsigned int irq, const struct cpumask *mask)
+> +int __irq_set_affinity_locked(struct irq_data *data,const struct cpumask *mask)
+> +{
+> +	return irq_do_set_affinity_locked(data, mask, false);
+> +}
 > +
-> +Required properties:
-> +- compatible: "st,sti-keyscan"
-> +
-> +- reg: Register base address and size of st-keyscan controller.
-> +
-> +- interrupts: Interrupt number for the st-keyscan controller.
-> +
-> +- clocks: Must contain one entry, for the module clock.
-> +  See ../clocks/clock-bindings.txt for details.
-> +
-> +- pinctrl: Should specify pin control groups used for this controller.
-> +  See ../pinctrl/pinctrl-bindings.txt for details.
-> +
-> +- linux,keymap: The keymap for keys as described in the binding document
-> +  devicetree/bindings/input/matrix-keymap.txt.
-> +
-> +- keypad,num-rows: Number of row lines connected to the keypad controller.
-> +
-> +- keypad,num-columns: Number of column lines connected to the keypad
-> +  controller.
-> +
-> +Optional property:
-> +- st,debounce_us: Debouncing interval time in microseconds
-> +
-> +Example:
-> +
-> +keyscan: keyscan@fe4b0000 {
-> +       compatible = "st,sti-keyscan";
-> +       reg = <0xfe4b0000 0x2000>;
-> +       interrupts = <GIC_SPI 212 IRQ_TYPE_NONE>;
-> +       clocks  = <&CLK_SYSIN>;
-> +       pinctrl-names = "default";
-> +       pinctrl-0 = <&pinctrl_keyscan>;
-> +
-> +       keypad,num-rows = <4>;
-> +       keypad,num-columns = <4>;
-> +       st,debounce_us = <5000>;
-> +
-> +       linux,keymap = < MATRIX_KEY(0x00, 0x00, KEY_F13)
-> +                        MATRIX_KEY(0x00, 0x01, KEY_F9)
-> +                        MATRIX_KEY(0x00, 0x02, KEY_F5)
-> +                        MATRIX_KEY(0x00, 0x03, KEY_F1)
-> +                        MATRIX_KEY(0x01, 0x00, KEY_F14)
-> +                        MATRIX_KEY(0x01, 0x01, KEY_F10)
-> +                        MATRIX_KEY(0x01, 0x02, KEY_F6)
-> +                        MATRIX_KEY(0x01, 0x03, KEY_F2)
-> +                        MATRIX_KEY(0x02, 0x00, KEY_F15)
-> +                        MATRIX_KEY(0x02, 0x01, KEY_F11)
-> +                        MATRIX_KEY(0x02, 0x02, KEY_F7)
-> +                        MATRIX_KEY(0x02, 0x03, KEY_F3)
-> +                        MATRIX_KEY(0x03, 0x00, KEY_F16)
-> +                        MATRIX_KEY(0x03, 0x01, KEY_F12)
-> +                        MATRIX_KEY(0x03, 0x02, KEY_F8)
-> +                        MATRIX_KEY(0x03, 0x03, KEY_F4) >;
-> +       };
-> diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-> index 76842d7..948a303 100644
-> --- a/drivers/input/keyboard/Kconfig
-> +++ b/drivers/input/keyboard/Kconfig
-> @@ -524,6 +524,17 @@ config KEYBOARD_STOWAWAY
->           To compile this driver as a module, choose M here: the
->           module will be called stowaway.
->
-> +config KEYBOARD_ST_KEYSCAN
-> +       tristate "STMicroelectronics keyscan support"
-> +       depends on ARCH_STI || COMPILE_TEST
-> +       select INPUT_MATRIXKMAP
-> +       help
-> +         Say Y here if you want to use a keypad attached to the keyscan block
-> +         on some STMicroelectronics SoC devices.
-> +
-> +         To compile this driver as a module, choose M here: the
-> +         module will be called st-keyscan.
-> +
->  config KEYBOARD_SUNKBD
->         tristate "Sun Type 4 and Type 5 keyboard"
->         select SERIO
-> diff --git a/drivers/input/keyboard/Makefile b/drivers/input/keyboard/Makefile
-> index 11cff7b..7504ae1 100644
-> --- a/drivers/input/keyboard/Makefile
-> +++ b/drivers/input/keyboard/Makefile
-> @@ -51,6 +51,7 @@ obj-$(CONFIG_KEYBOARD_SH_KEYSC)               += sh_keysc.o
->  obj-$(CONFIG_KEYBOARD_SPEAR)           += spear-keyboard.o
->  obj-$(CONFIG_KEYBOARD_STMPE)           += stmpe-keypad.o
->  obj-$(CONFIG_KEYBOARD_STOWAWAY)                += stowaway.o
-> +obj-$(CONFIG_KEYBOARD_ST_KEYSCAN)      += st-keyscan.o
->  obj-$(CONFIG_KEYBOARD_SUNKBD)          += sunkbd.o
->  obj-$(CONFIG_KEYBOARD_TC3589X)         += tc3589x-keypad.o
->  obj-$(CONFIG_KEYBOARD_TEGRA)           += tegra-kbc.o
-> diff --git a/drivers/input/keyboard/st-keyscan.c b/drivers/input/keyboard/st-keyscan.c
-> new file mode 100644
-> index 0000000..758b487
-> --- /dev/null
-> +++ b/drivers/input/keyboard/st-keyscan.c
-> @@ -0,0 +1,274 @@
-> +/*
-> + * STMicroelectronics Key Scanning driver
-> + *
-> + * Copyright (c) 2014 STMicroelectonics Ltd.
-> + * Author: Stuart Menefy <stuart.menefy@st.com>
-> + *
-> + * Based on sh_keysc.c, copyright 2008 Magnus Damm
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
+> +static int __irq_set_affinity(unsigned int irq, const struct cpumask *mask,
+> +			      bool force)
+>  {
+>  	struct irq_desc *desc = irq_to_desc(irq);
+>  	unsigned long flags;
+> @@ -233,11 +234,33 @@ int irq_set_affinity(unsigned int irq, c
+>  		return -EINVAL;
+>  
+>  	raw_spin_lock_irqsave(&desc->lock, flags);
+> -	ret =  __irq_set_affinity_locked(irq_desc_get_irq_data(desc), mask);
+> +	ret = irq_do_set_affinity_locked(irq_desc_get_irq_data(desc), mask,
+> +					 force);
+>  	raw_spin_unlock_irqrestore(&desc->lock, flags);
+>  	return ret;
+>  }
+>  
+> +/**
+> + *	irq_force_affinity - Force the irq affinity of a given irq
+> + *	@irq:		Interrupt to set affinity
+> + *	@mask:		cpumask
 > + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/clk.h>
-> +#include <linux/io.h>
-> +#include <linux/input/matrix_keypad.h>
-> +
-> +#define ST_KEYSCAN_MAXKEYS 16
-> +
-> +#define KEYSCAN_CONFIG_OFF             0x0
-> +#define KEYSCAN_CONFIG_ENABLE          0x1
-> +#define KEYSCAN_DEBOUNCE_TIME_OFF      0x4
-> +#define KEYSCAN_MATRIX_STATE_OFF       0x8
-> +#define KEYSCAN_MATRIX_DIM_OFF         0xc
-> +#define KEYSCAN_MATRIX_DIM_X_SHIFT     0x0
-> +#define KEYSCAN_MATRIX_DIM_Y_SHIFT     0x2
-> +
-> +struct st_keyscan {
-> +       void __iomem *base;
-> +       int irq;
-> +       struct clk *clk;
-> +       struct input_dev *input_dev;
-> +       unsigned long last_state;
-> +       unsigned int n_rows;
-> +       unsigned int n_cols;
-> +       unsigned int debounce_us;
-> +};
-> +
-> +static irqreturn_t keyscan_isr(int irq, void *dev_id)
+> +int irq_force_affinity(unsigned int irq, const struct cpumask *mask)
 > +{
-> +       struct st_keyscan *keypad = dev_id;
-> +       unsigned short *keycode = keypad->input_dev->keycode;
-> +       unsigned long state, change;
-> +       int bit_nr;
-> +
-> +       state = readl(keypad->base + KEYSCAN_MATRIX_STATE_OFF) & 0xffff;
-> +       change = keypad->last_state ^ state;
-> +       keypad->last_state = state;
-> +
-> +       for_each_set_bit(bit_nr, &change, BITS_PER_LONG)
-> +               input_report_key(keypad->input_dev,
-> +                                keycode[bit_nr], state & BIT(bit_nr));
-> +
-> +       input_sync(keypad->input_dev);
-> +
-> +       return IRQ_HANDLED;
+> +	return __irq_set_affinity(irq, mask, true);
 > +}
 > +
-> +static int keyscan_start(struct st_keyscan *keypad)
+> +/**
+> + *	irq_set_affinity - Set the irq affinity of a given irq
+> + *	@irq:		Interrupt to set affinity
+> + *	@mask:		cpumask
+> + *
+> + */
+> +int irq_set_affinity(unsigned int irq, const struct cpumask *mask)
 > +{
-> +       int error;
-> +
-> +       error = clk_enable(keypad->clk);
-> +       if (error)
-> +               return error;
-> +
-> +       writel(keypad->debounce_us * (clk_get_rate(keypad->clk) / 1000000),
-> +              keypad->base + KEYSCAN_DEBOUNCE_TIME_OFF);
-> +
-> +       writel(((keypad->n_cols - 1) << KEYSCAN_MATRIX_DIM_X_SHIFT) |
-> +              ((keypad->n_rows - 1) << KEYSCAN_MATRIX_DIM_Y_SHIFT),
-> +              keypad->base + KEYSCAN_MATRIX_DIM_OFF);
-> +
-> +       writel(KEYSCAN_CONFIG_ENABLE, keypad->base + KEYSCAN_CONFIG_OFF);
-> +
-> +       return 0;
+> +	return __irq_set_affinity(irq, mask, false);
 > +}
 > +
-> +static void keyscan_stop(struct st_keyscan *keypad)
-> +{
-> +       writel(0, keypad->base + KEYSCAN_CONFIG_OFF);
-> +
-> +       clk_disable(keypad->clk);
-> +}
-> +
-> +static int keyscan_open(struct input_dev *dev)
-> +{
-> +       struct st_keyscan *keypad = input_get_drvdata(dev);
-> +
-> +       return keyscan_start(keypad);
-> +}
-> +
-> +static void keyscan_close(struct input_dev *dev)
-> +{
-> +       struct st_keyscan *keypad = input_get_drvdata(dev);
-> +
-> +       keyscan_stop(keypad);
-> +}
-> +
-> +static int keypad_matrix_key_parse_dt(struct st_keyscan *keypad_data)
-> +{
-> +       struct device *dev = keypad_data->input_dev->dev.parent;
-> +       struct device_node *np = dev->of_node;
-> +       int error;
-> +
-> +       error = matrix_keypad_parse_of_params(dev, &keypad_data->n_rows,
-> +                                             &keypad_data->n_cols);
-> +       if (error) {
-> +               dev_err(dev, "failed to parse keypad params\n");
-> +               return error;
-> +       }
-> +
-> +       of_property_read_u32(np, "st,debounce-us", &keypad_data->debounce_us);
-> +
-> +       dev_dbg(dev, "n_rows=%d n_col=%d debounce=%d\n",
-> +               keypad_data->n_rows, keypad_data->n_cols,
-> +               keypad_data->debounce_us);
-> +
-> +       return 0;
-> +}
-> +
-> +static int keyscan_probe(struct platform_device *pdev)
-> +{
-> +       struct st_keyscan *keypad_data;
-> +       struct input_dev *input_dev;
-> +       struct resource *res;
-> +       int error;
-> +
-> +       if (!pdev->dev.of_node) {
-> +               dev_err(&pdev->dev, "no DT data present\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       keypad_data = devm_kzalloc(&pdev->dev, sizeof(*keypad_data),
-> +                                  GFP_KERNEL);
-> +       if (!keypad_data)
-> +               return -ENOMEM;
-> +
-> +       input_dev = devm_input_allocate_device(&pdev->dev);
-> +       if (!input_dev) {
-> +               dev_err(&pdev->dev, "failed to allocate the input device\n");
-> +               return -ENOMEM;
-> +       }
-> +
-> +       input_dev->name = pdev->name;
-> +       input_dev->phys = "keyscan-keys/input0";
-> +       input_dev->dev.parent = &pdev->dev;
-> +       input_dev->open = keyscan_open;
-> +       input_dev->close = keyscan_close;
-> +
-> +       input_dev->id.bustype = BUS_HOST;
-> +
-> +       error = keypad_matrix_key_parse_dt(keypad_data);
-> +       if (error)
-> +               return error;
-> +
-> +       error = matrix_keypad_build_keymap(NULL, NULL,
-> +                                          keypad_data->n_rows,
-> +                                          keypad_data->n_cols,
-> +                                          NULL, input_dev);
-> +       if (error) {
-> +               dev_err(&pdev->dev, "failed to build keymap\n");
-> +               return error;
-> +       }
-> +
-> +       input_set_drvdata(input_dev, keypad_data);
-> +
-> +       keypad_data->input_dev = input_dev;
-> +
-> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +       keypad_data->base = devm_ioremap_resource(&pdev->dev, res);
-> +       if (IS_ERR(keypad_data->base))
-> +               return PTR_ERR(keypad_data->base);
-> +
-> +       keypad_data->clk = devm_clk_get(&pdev->dev, NULL);
-> +       if (IS_ERR(keypad_data->clk)) {
-> +               dev_err(&pdev->dev, "cannot get clock\n");
-> +               return PTR_ERR(keypad_data->clk);
-> +       }
-> +
-> +       error = clk_enable(keypad_data->clk);
-> +       if (error) {
-> +               dev_err(&pdev->dev, "failed to enable clock\n");
-> +               return error;
-> +       }
-> +
-> +       keyscan_stop(keypad_data);
-> +
-> +       keypad_data->irq = platform_get_irq(pdev, 0);
-> +       if (keypad_data->irq < 0) {
-> +               dev_err(&pdev->dev, "no IRQ specified\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       error = devm_request_irq(&pdev->dev, keypad_data->irq, keyscan_isr, 0,
-> +                                pdev->name, keypad_data);
-> +       if (error) {
-> +               dev_err(&pdev->dev, "failed to request IRQ\n");
-> +               return error;
-> +       }
-> +
-> +       error = input_register_device(input_dev);
-> +       if (error) {
-> +               dev_err(&pdev->dev, "failed to register input device\n");
-> +               return error;
-> +       }
-> +
-> +       platform_set_drvdata(pdev, keypad_data);
-> +
-> +       device_set_wakeup_capable(&pdev->dev, 1);
-> +
-> +       return 0;
-> +}
-> +
-> +static int keyscan_suspend(struct device *dev)
-> +{
-> +       struct platform_device *pdev = to_platform_device(dev);
-> +       struct st_keyscan *keypad = platform_get_drvdata(pdev);
-> +       struct input_dev *input = keypad->input_dev;
-> +
-> +       mutex_lock(&input->mutex);
-> +
-> +       if (device_may_wakeup(dev))
-> +               enable_irq_wake(keypad->irq);
-> +       else if (input->users)
-> +               keyscan_stop(keypad);
-> +
-> +       mutex_unlock(&input->mutex);
-> +       return 0;
-> +}
-> +
-> +static int keyscan_resume(struct device *dev)
-> +{
-> +       struct platform_device *pdev = to_platform_device(dev);
-> +       struct st_keyscan *keypad = platform_get_drvdata(pdev);
-> +       struct input_dev *input = keypad->input_dev;
-> +       int retval = 0;
-> +
-> +       mutex_lock(&input->mutex);
-> +
-> +       if (device_may_wakeup(dev))
-> +               disable_irq_wake(keypad->irq);
-> +       else if (input->users)
-> +               retval = keyscan_start(keypad);
-> +
-> +       mutex_unlock(&input->mutex);
-> +       return retval;
-> +}
-> +
-> +static SIMPLE_DEV_PM_OPS(keyscan_dev_pm_ops, keyscan_suspend, keyscan_resume);
-> +
-> +static const struct of_device_id keyscan_of_match[] = {
-> +       { .compatible = "st,sti-keyscan" },
-> +       { },
-> +};
-> +MODULE_DEVICE_TABLE(of, keyscan_of_match);
-> +
-> +static struct platform_driver keyscan_device_driver = {
-> +       .probe          = keyscan_probe,
-> +       .driver         = {
-> +               .name   = "st-keyscan",
-> +               .pm     = &keyscan_dev_pm_ops,
-> +               .of_match_table = of_match_ptr(keyscan_of_match),
-> +       }
-> +};
-> +
-> +module_platform_driver(keyscan_device_driver);
-> +
-> +MODULE_AUTHOR("Stuart Menefy <stuart.menefy@st.com>");
-> +MODULE_DESCRIPTION("STMicroelectronics keyscan device driver");
-> +MODULE_LICENSE("GPL");
+>  int irq_set_affinity_hint(unsigned int irq, const struct cpumask *m)
+>  {
+>  	unsigned long flags;
+
