@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651AbaDPWqe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 18:46:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46869 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783AbaDPWqc (ORCPT
+	id S1756132AbaDPWsA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 18:48:00 -0400
+Received: from smtprelay0207.hostedemail.com ([216.40.44.207]:40522 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754206AbaDPWr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 18:46:32 -0400
-Date: Wed, 16 Apr 2014 15:46:31 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
-Message-Id: <20140416154631.6d0173498c60619d454ae651@linux-foundation.org>
-In-Reply-To: <534AD1EE.3050705@colorfullife.com>
-References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
-	<20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
-	<1396308332.18499.25.camel@buesod1.americas.hpqcorp.net>
-	<20140331170546.3b3e72f0.akpm@linux-foundation.org>
-	<1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
-	<CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
-	<1396377083.25314.17.camel@buesod1.americas.hpqcorp.net>
-	<CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
-	<1396386062.25314.24.camel@buesod1.americas.hpqcorp.net>
-	<CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
-	<20140401142947.927642a408d84df27d581e36@linux-foundation.org>
-	<CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com>
-	<20140401144801.603c288674ab8f417b42a043@linux-foundation.org>
-	<1396389751.25314.26.camel@buesod1.americas.hpqcorp.net>
-	<20140401150843.13da3743554ad541629c936d@linux-foundation.org>
-	<534AD1EE.3050705@colorfullife.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Wed, 16 Apr 2014 18:47:59 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3871:3872:3874:4321:5007:7652:8957:10004:10400:10848:10967:11232:11658:11914:12517:12519:12740:13069:13095:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: bit73_4579b93572363
+X-Filterd-Recvd-Size: 1756
+Message-ID: <1397688476.3105.13.camel@joe-AO725>
+Subject: Re: [PATCH 1/1] fs/xfs/xfs_log.c: Fix comparison to bool
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>, hch <hch@infradead.org>
+Date: Wed, 16 Apr 2014 15:47:56 -0700
+In-Reply-To: <20140416151557.ac032e9621027faa8fc7f86d@linux-foundation.org>
+References: <20140413220917.a566d048eb0cc55b5ec9f7be@skynet.be>
+	 <20140416151557.ac032e9621027faa8fc7f86d@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 13 Apr 2014 20:05:34 +0200 Manfred Spraul <manfred@colorfullife.com> wrote:
+On Wed, 2014-04-16 at 15:15 -0700, Andrew Morton wrote:
+> On Sun, 13 Apr 2014 22:09:17 +0200 Fabian Frederick <fabf@skynet.be> wrote:
+> > Fixing coccinelle warning
+[]
+> > @@ -2376,7 +2376,7 @@ next_lv:
+[]
+> > -			if (record_cnt == 0 && ordered == false) {
+> > +			if (record_cnt == 0 && !ordered) {
+[]
+> There was nothing wrong with that code.  I suspect coccinelle bustage.
 
-> Hi Andrew,
-> 
-> On 04/02/2014 12:08 AM, Andrew Morton wrote:
-> > Well, I'm assuming 64GB==infinity. It *was* infinity in the RHEL5 
-> > timeframe, but infinity has since become larger so pickanumber. 
-> 
-> I think infinity is the right solution:
-> The only common case where infinity is wrong would be Android - and 
-> Android disables sysv shm entirely.
-> 
-> There are two patches:
-> http://marc.info/?l=linux-kernel&m=139730332306185&q=raw
-> http://marc.info/?l=linux-kernel&m=139727299800644&q=raw
-> 
-> Could you apply one of them?
-> I wrote the first one, thus I'm biased which one is better.
+Not really.
 
-I like your patch because applying it might encourage you to send more
-kernel patches - I miss the old days ;)
+It's more a conceit that consistent uses of direct
+boolean variable tests are less likely to be error
+prone than variable comparisons to boolean literals.
 
-But I do worry about disrupting existing systems so I like Davidlohr's
-idea of making the change a no-op for people who are currently
-explicitly setting shmmax and shmall.
+Many style guides, CodingStyle not included, suggest
+avoiding comparisons to boolean literals.
 
-In an ideal world, system administrators would review this change,
-would remove their explicit limit-setting and would retest everything
-then roll it out.  But in the real world with Davidlohr's patch, they
-just won't know that we did this and they'll still be manually
-configuring shmmax/shmall ten years from now.  I almost wonder if we
-should drop a printk_once("hey, you don't need to do that any more")
-when shmmax/shmall are altered?
+There is a checkpatch --strict message when comparing
+a literal true/false.
 
-
-I think the changelogs for both patches could afford to spend much more
-time talking about *why* we're making this change.  What problem is
-the current code causing?  This is a somewhat risky change and we
-should demonstrate good reasons for making it.  If people end up taking
-damage because of this change, they are going to be looking at that
-changelog trying to work out why we did this to them, so let's explain
-it carefully.
+I tend not to change these unless there are multiple
+styles in the same subsystem/file.
 
