@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422639AbaDPOoq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 10:44:46 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:43162 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161145AbaDPOoo (ORCPT
+	id S1161504AbaDPOou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 10:44:50 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:49274 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161145AbaDPOos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 10:44:44 -0400
+	Wed, 16 Apr 2014 10:44:48 -0400
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         linux-kernel@vger.kernel.org
@@ -16,9 +16,9 @@ Cc: Silvio F <silvio.fricke@gmail.com>, Philipp Zabel <p.zabel@pengutronix.de>,
         Viresh Kumar <viresh.linux@gmail.com>,
         Shiraz Hashim <shiraz.hashim@st.com>, spear-devel@list.st.com,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3/6] mfd: stmpe: prope properly from the device tree
-Date: Wed, 16 Apr 2014 16:44:12 +0200
-Message-Id: <1397659455-13638-4-git-send-email-linus.walleij@linaro.org>
+Subject: [PATCH 4/6] mfd: stmpe: mask off unused blocks properly
+Date: Wed, 16 Apr 2014 16:44:13 +0200
+Message-Id: <1397659455-13638-5-git-send-email-linus.walleij@linaro.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1397659455-13638-1-git-send-email-linus.walleij@linaro.org>
 References: <1397659455-13638-1-git-send-email-linus.walleij@linaro.org>
@@ -26,109 +26,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current STMPE I2C probing code does not really match the
-compatible strings - it matches node names happening to give
-the right device name. Instead, let's introduce some real
-compatible matching, more complex, more accurate.
+The STMPE driver would just read/modify/write the system control
+register on the STMPE1601, meaning it would not properly mask off
+the PWM block, which remained active if it was on at boot time.
+This makes sure the blocks are always masked off if they were
+active on boot, saving some power. Also rename the inconsistenty
+named STMPE1601 define for the PWM block activation.
 
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mfd/stmpe-i2c.c | 60 ++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 59 insertions(+), 1 deletion(-)
+ drivers/mfd/stmpe.c | 9 +++++++++
+ drivers/mfd/stmpe.h | 2 +-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/stmpe-i2c.c b/drivers/mfd/stmpe-i2c.c
-index 0da02e11d58e..8902a600d978 100644
---- a/drivers/mfd/stmpe-i2c.c
-+++ b/drivers/mfd/stmpe-i2c.c
-@@ -14,6 +14,7 @@
- #include <linux/kernel.h>
- #include <linux/module.h>
- #include <linux/types.h>
-+#include <linux/of_device.h>
- #include "stmpe.h"
+diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+index 692452442ead..065c923cb2a9 100644
+--- a/drivers/mfd/stmpe.c
++++ b/drivers/mfd/stmpe.c
+@@ -606,9 +606,18 @@ static int stmpe1601_enable(struct stmpe *stmpe, unsigned int blocks,
  
- static int i2c_reg_read(struct stmpe *stmpe, u8 reg)
-@@ -52,15 +53,71 @@ static struct stmpe_client_info i2c_ci = {
- 	.write_block = i2c_block_write,
- };
+ 	if (blocks & STMPE_BLOCK_GPIO)
+ 		mask |= STMPE1601_SYS_CTRL_ENABLE_GPIO;
++	else
++		mask &= ~STMPE1601_SYS_CTRL_ENABLE_GPIO;
  
-+#ifdef CONFIG_OF
-+static const struct of_device_id stmpe_of_match[] = {
-+	{
-+		.compatible = "st,stmpe610",
-+		.data = (void *)STMPE610,
-+	},
-+	{
-+		.compatible = "st,stmpe801",
-+		.data = (void *)STMPE801,
-+	},
-+	{
-+		.compatible = "st,stmpe811",
-+		.data = (void *)STMPE811,
-+	},
-+	{
-+		.compatible = "st,stmpe1601",
-+		.data = (void *)STMPE1601,
-+	},
-+	{
-+		.compatible = "st,stmpe1801",
-+		.data = (void *)STMPE1801,
-+	},
-+	{
-+		.compatible = "st,stmpe2401",
-+		.data = (void *)STMPE2401,
-+	},
-+	{
-+		.compatible = "st,stmpe2403",
-+		.data = (void *)STMPE2403,
-+	},
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, stmpe_of_match);
+ 	if (blocks & STMPE_BLOCK_KEYPAD)
+ 		mask |= STMPE1601_SYS_CTRL_ENABLE_KPC;
++	else
++		mask &= ~STMPE1601_SYS_CTRL_ENABLE_KPC;
 +
-+int stmpe_i2c_of_probe(struct i2c_client *i2c)
-+{
-+	const struct of_device_id *of_id;
-+
-+	of_id = of_match_device(stmpe_of_match, &i2c->dev);
-+	if (!of_id)
-+		return -EINVAL;
-+	return (int)of_id->data;
-+}
-+#else
-+int stmpe_i2c_of_probe(struct i2c_client *i2c)
-+{
-+	return -EINVAL;
-+}
-+#endif
-+
- static int
- stmpe_i2c_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
- {
-+	int partnum;
-+
- 	i2c_ci.data = (void *)id;
- 	i2c_ci.irq = i2c->irq;
- 	i2c_ci.client = i2c;
- 	i2c_ci.dev = &i2c->dev;
++	if (blocks & STMPE_BLOCK_PWM)
++		mask |= STMPE1601_SYS_CTRL_ENABLE_SPWM;
++	else
++		mask &= ~STMPE1601_SYS_CTRL_ENABLE_SPWM;
  
--	return stmpe_probe(&i2c_ci, id->driver_data);
-+	partnum = stmpe_i2c_of_probe(i2c);
-+	if (partnum < 0)
-+		partnum = id->driver_data;
-+
-+	return stmpe_probe(&i2c_ci, partnum);
- }
+ 	return __stmpe_set_bits(stmpe, STMPE1601_REG_SYS_CTRL, mask,
+ 				enable ? mask : 0);
+diff --git a/drivers/mfd/stmpe.h b/drivers/mfd/stmpe.h
+index 6639f1b0fef5..9e4d21d37a11 100644
+--- a/drivers/mfd/stmpe.h
++++ b/drivers/mfd/stmpe.h
+@@ -192,7 +192,7 @@ int stmpe_remove(struct stmpe *stmpe);
  
- static int stmpe_i2c_remove(struct i2c_client *i2c)
-@@ -89,6 +146,7 @@ static struct i2c_driver stmpe_i2c_driver = {
- #ifdef CONFIG_PM
- 		.pm = &stmpe_dev_pm_ops,
- #endif
-+		.of_match_table = of_match_ptr(stmpe_of_match),
- 	},
- 	.probe		= stmpe_i2c_probe,
- 	.remove		= stmpe_i2c_remove,
+ #define STMPE1601_SYS_CTRL_ENABLE_GPIO		(1 << 3)
+ #define STMPE1601_SYS_CTRL_ENABLE_KPC		(1 << 1)
+-#define STMPE1601_SYSCON_ENABLE_SPWM		(1 << 0)
++#define STMPE1601_SYS_CTRL_ENABLE_SPWM		(1 << 0)
+ 
+ /* The 1601/2403 share the same masks */
+ #define STMPE1601_AUTOSLEEP_TIMEOUT_MASK	(0x7)
 -- 
 1.9.0
 
