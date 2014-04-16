@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161144AbaDPNhq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 09:37:46 -0400
-Received: from 8bytes.org ([85.214.48.195]:33011 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755512AbaDPNho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 09:37:44 -0400
-Date: Wed, 16 Apr 2014 15:37:40 +0200
-From: "joro@8bytes.org" <joro@8bytes.org>
-To: "Woodhouse, David" <david.woodhouse@intel.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, Jiang Liu <jiang.liu@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "bhe@redhat.com" <bhe@redhat.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "James.Bottomley@hansenpartnership.com" 
-	<James.Bottomley@hansenpartnership.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>
-Subject: Re: hpsa driver bug crack kernel down!
-Message-ID: <20140416133739.GB3577@8bytes.org>
-References: <1397111557.2608.29.camel@buesod1.americas.hpqcorp.net>
- <20140410071535.GX13491@8bytes.org>
- <1397119587.19944.14.camel@shinybook.infradead.org>
- <1397146781.2608.46.camel@buesod1.americas.hpqcorp.net>
- <1397207932.19944.58.camel@shinybook.infradead.org>
- <1397490358.31076.6.camel@buesod1.americas.hpqcorp.net>
- <534C0AA9.5080909@linux.intel.com>
- <1397493858.31076.8.camel@buesod1.americas.hpqcorp.net>
- <1397494069.31076.9.camel@buesod1.americas.hpqcorp.net>
- <1397495030.19944.198.camel@shinybook.infradead.org>
+	id S1161194AbaDPNi0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 09:38:26 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36393 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756203AbaDPNiY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 09:38:24 -0400
+Date: Wed, 16 Apr 2014 14:31:45 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
+        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7 3/7] ftrace: Add arm64 support to recordmcount
+Message-ID: <20140416133145.GC1001@arm.com>
+References: <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org>
+ <1394862048-28758-1-git-send-email-takahiro.akashi@linaro.org>
+ <1394862048-28758-4-git-send-email-takahiro.akashi@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397495030.19944.198.camel@shinybook.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Apr 16 15:37:43 2014
-X-DSPAM-Confidence: 0.9991
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 534e87a720865533113978
+In-Reply-To: <1394862048-28758-4-git-send-email-takahiro.akashi@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey David,
+On Sat, Mar 15, 2014 at 05:40:44AM +0000, AKASHI Takahiro wrote:
+> Recordmcount utility under scripts is run, after compiling each object,
+> to find out all the locations of calling _mcount() and put them into
+> specific seciton named __mcount_loc.
+> Then linker collects all such information into a table in the kernel image
+> (between __start_mcount_loc and __stop_mcount_loc) for later use by ftrace.
+> 
+> This patch adds arm64 specific definitions to identify such locations.
+> There are two types of implementation, C and Perl. On arm64, only C version
+> is used to build the kernel now that CONFIG_HAVE_C_RECORDMCOUNT is on.
+> But Perl version is also maintained.
+> 
+> This patch also contains a workaround just in case where a header file,
+> elf.h, on host machine doesn't have definitions of EM_AARCH64 nor
+> R_AARCH64_ABS64. Without them, compiling C version of recordmcount will
+> fail.
+> 
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
 
-On Mon, Apr 14, 2014 at 05:03:51PM +0000, Woodhouse, David wrote:
-> Jiang, if you can then let me have a copy with a signed-off-by I'll
-> shepherd it upstream along with your other patch which is already in my
-> iommu-2.6.git tree.
+  Acked-by: Will Deacon <will.deacon@arm.com>
 
-What is the state of these fixes? I plan to send out a pull-request
-before easter and hoped to include these fixes as well.
-
-Thanks,
-
-	Joerg
-
-
+Will
