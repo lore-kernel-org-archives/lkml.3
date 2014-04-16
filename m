@@ -1,57 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161209AbaDPVKH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 17:10:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46384 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030183AbaDPVKF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 17:10:05 -0400
-Date: Wed, 16 Apr 2014 14:10:07 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jet Chen <jet.chen@intel.com>
-Cc: Alessandro Rubini <rubini@gnudd.com>,
-        Fengguang Wu <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH] FMC: misc_register should not be called while atomic
-Message-ID: <20140416211007.GA31451@kroah.com>
-References: <5344BF60.5050300@intel.com>
- <1397016815-74608-1-git-send-email-jet.chen@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397016815-74608-1-git-send-email-jet.chen@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1161239AbaDPVN3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 17:13:29 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:58961 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756552AbaDPVN0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 17:13:26 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Tejun Heo <tj@kernel.org>,
+        linux-mm@kvack.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch] mm: memcontrol: remove hierarchy restrictions for swappiness and oom_control
+Date: Wed, 16 Apr 2014 17:13:18 -0400
+Message-Id: <1397682798-22906-1-git-send-email-hannes@cmpxchg.org>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 12:13:35PM +0800, Jet Chen wrote:
-> Signed-off-by: Jet Chen <jet.chen@intel.com>
-> ---
->  drivers/fmc/fmc-chardev.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/fmc/fmc-chardev.c b/drivers/fmc/fmc-chardev.c
-> index b071039..08c4549 100644
-> --- a/drivers/fmc/fmc-chardev.c
-> +++ b/drivers/fmc/fmc-chardev.c
-> @@ -141,8 +141,8 @@ static int fc_probe(struct fmc_device *fmc)
->  	fc->misc.fops = &fc_fops;
->  	fc->misc.name = kstrdup(dev_name(&fmc->dev), GFP_KERNEL);
->  
-> -	spin_lock(&fc_lock);
->  	ret = misc_register(&fc->misc);
-> +	spin_lock(&fc_lock);
->  	if (ret < 0) {
->  		kfree(fc->misc.name);
->  		kfree(fc);
-> -- 
-> 1.9.1
+Per-memcg swappiness and oom killing can currently not be tweaked on a
+memcg that is part of a hierarchy, but not the root of that hierarchy.
+Users have complained that they can't configure this when they turned
+on hierarchy mode.  In fact, with hierarchy mode becoming the default,
+this restriction disables the tunables entirely.
 
-This patch doesn't apply at all, can you please redo it against 3.15-rc1
-and resend it so that I can apply it?
+But there is no good reason for this restriction.  The settings for
+swappiness and OOM killing are taken from whatever memcg whose limit
+triggered reclaim and OOM invocation, regardless of its position in
+the hierarchy tree.
 
-thanks,
+Allow setting swappiness on any group.  The knob on the root memcg
+already reads the global VM swappiness, make it writable as well.
 
-greg k-h
+Allow disabling the OOM killer on any non-root memcg.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/memcontrol.c | 29 +++++++----------------------
+ 1 file changed, 7 insertions(+), 22 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index e2a0d3986c74..edcc9513b419 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -5548,22 +5548,14 @@ static int mem_cgroup_swappiness_write(struct cgroup_subsys_state *css,
+ 				       struct cftype *cft, u64 val)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+-	struct mem_cgroup *parent = mem_cgroup_from_css(css_parent(&memcg->css));
+ 
+-	if (val > 100 || !parent)
++	if (val > 100)
+ 		return -EINVAL;
+ 
+-	mutex_lock(&memcg_create_mutex);
+-
+-	/* If under hierarchy, only empty-root can set this value */
+-	if ((parent->use_hierarchy) || memcg_has_children(memcg)) {
+-		mutex_unlock(&memcg_create_mutex);
+-		return -EINVAL;
+-	}
+-
+-	memcg->swappiness = val;
+-
+-	mutex_unlock(&memcg_create_mutex);
++	if (css_parent(css))
++		memcg->swappiness = val;
++	else
++		vm_swappiness = val;
+ 
+ 	return 0;
+ }
+@@ -5895,22 +5887,15 @@ static int mem_cgroup_oom_control_write(struct cgroup_subsys_state *css,
+ 	struct cftype *cft, u64 val)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+-	struct mem_cgroup *parent = mem_cgroup_from_css(css_parent(&memcg->css));
+ 
+ 	/* cannot set to root cgroup and only 0 and 1 are allowed */
+-	if (!parent || !((val == 0) || (val == 1)))
++	if (!css_parent(css) || !((val == 0) || (val == 1)))
+ 		return -EINVAL;
+ 
+-	mutex_lock(&memcg_create_mutex);
+-	/* oom-kill-disable is a flag for subhierarchy. */
+-	if ((parent->use_hierarchy) || memcg_has_children(memcg)) {
+-		mutex_unlock(&memcg_create_mutex);
+-		return -EINVAL;
+-	}
+ 	memcg->oom_kill_disable = val;
+ 	if (!val)
+ 		memcg_oom_recover(memcg);
+-	mutex_unlock(&memcg_create_mutex);
++
+ 	return 0;
+ }
+ 
+-- 
+1.9.2
+
