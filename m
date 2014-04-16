@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161310AbaDPVfB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 17:35:01 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:33040 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756811AbaDPVe6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 17:34:58 -0400
+	id S1030183AbaDPVnH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 17:43:07 -0400
+Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:36174
+	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751925AbaDPVnF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 17:43:05 -0400
+X-Greylist: delayed 337 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Apr 2014 17:43:05 EDT
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Chase Southwood <chase.southwood@yahoo.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/2] staging: comedi: addi_apci_1564: remove use of
+ devpriv->iobase
+Thread-Topic: [PATCH 1/2] staging: comedi: addi_apci_1564: remove use of
+ devpriv->iobase
+Thread-Index: AQHPWG8envwKX4sejUiqm/rn7+qTkJsUxSUA
+Date: Wed, 16 Apr 2014 21:37:26 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825E04E64@P3PWEX4MB008.ex4.secureserver.net>
+References: <1397541235-2574-1-git-send-email-chase.southwood@yahoo.com>
+In-Reply-To: <1397541235-2574-1-git-send-email-chase.southwood@yahoo.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140416204433.GZ4496@linux.vnet.ibm.com>
-References: <534EDBF4.6030702@gatech.edu> <534EDCC7.1040701@gatech.edu> <20140416204433.GZ4496@linux.vnet.ibm.com>
-From: Pranith Kumar <pranith@gatech.edu>
-Date: Wed, 16 Apr 2014 17:34:26 -0400
-X-Google-Sender-Auth: CbW5Ox64qLu_OEXFXXP4FO8ebcc
-Message-ID: <CAJhHMCD9rcyp07pWn7L1ojpv57ducYezCh-g25J3LfvuubJ_gQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] kernel/torture.c: unmark torture_init_* as __inline
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 4:44 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> Good catch, queued for 3.16!  I missed it because of my habit of building
-> the torture tests directly into the kernel rather than loading them
-> as modules.  So thank you both for the patch and for your testing efforts!
+On Monday, April 14, 2014 10:54 PM, Chase Southwood wrote:
+> devpriv->iobase is currently being used to hold the iobase address used to
+> read/write the board's registers.  The same address is stored in the
+> comedi_device dev->iobase.  We use that instead.  The eventual goal is to
+> decrease the driver's use of the struct addi_private, so that it may
+> eventually use a much slimmer specialized private struct instead, as the
+> other addi_apci_* drivers do.
 >
+> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+> ---
+> This is a (small) first patchset for my more complete cleanup of
+> addi_apci_1564 driver.  Hartley, I'd appreciate any review you have
+> wrt these specific patches, but also whether I have chosen a good place
+> to start.
 
-You are welcome!
+As good a place as any to start...
 
-> Just out of curiosity, what are you thinking of using this for?
->
-
-I am exploring RCU in my research, looking for ways to apply the ideas
-to GPGPU and was studying the source code in the kernel. I will
-hopefully be using this in the future.
-
-(I should probably stick to userspace rcu :)
-
--- 
-Pranith
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
