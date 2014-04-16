@@ -1,493 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161149AbaDPSuL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 14:50:11 -0400
-Received: from mga02.intel.com ([134.134.136.20]:27799 "EHLO mga02.intel.com"
+	id S1161034AbaDPSwG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 14:52:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37900 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754600AbaDPSuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 14:50:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,873,1389772800"; 
-   d="scan'208";a="494327693"
-From: Andi Kleen <andi@firstfloor.org>
-To: jolsa@redhat.com
-Cc: acme@infradead.org, linux-kernel@vger.kernel.org, namhyung@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 04/10] perf, tools: Add support for reading JSON event files
-Date: Wed, 16 Apr 2014 11:49:26 -0700
-Message-Id: <1397674172-30959-4-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1397674172-30959-1-git-send-email-andi@firstfloor.org>
-References: <1397674172-30959-1-git-send-email-andi@firstfloor.org>
+	id S1755982AbaDPSwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 14:52:01 -0400
+Date: Wed, 16 Apr 2014 14:51:54 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Simo Sorce <ssorce@redhat.com>, David Miller <davem@davemloft.net>,
+        Tejun Heo <tj@kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
+        Network Development <netdev@vger.kernel.org>
+Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
+ cgroup path
+Message-ID: <20140416185153.GI31074@redhat.com>
+References: <20140416002010.GA5035@redhat.com>
+ <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com>
+ <20140416.085743.1614257692560892039.davem@davemloft.net>
+ <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com>
+ <1397664837.19767.410.camel@willson.li.ssimo.org>
+ <CALCETrXn7b6UuALpGUVoyQYfR2uzk5tj2ABV=dkvtFNgqM5sxQ@mail.gmail.com>
+ <1397667766.19767.440.camel@willson.li.ssimo.org>
+ <CALCETrU_yKQVZyVug25cxwQFjWJ7Zf20FY-6ht+RJifXtDdDWg@mail.gmail.com>
+ <20140416183614.GH31074@redhat.com>
+ <CALCETrURhBXQaYYJiHq2svPqB3-K7kmgD2QUTT9LCjry=fukWA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrURhBXQaYYJiHq2svPqB3-K7kmgD2QUTT9LCjry=fukWA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Wed, Apr 16, 2014 at 11:40:44AM -0700, Andy Lutomirski wrote:
+> On Wed, Apr 16, 2014 at 11:36 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Wed, Apr 16, 2014 at 10:29:08AM -0700, Andy Lutomirski wrote:
+> >
+> > [..]
+> >> >> Admittedly cgroups aren't currently as important as uid, but if this
+> >> >> changes, then SO_PASSCGROUP, as currently written, will have *exactly*
+> >> >> the same problem.
+> >> >
+> >> > Which is easy to foil by using SO_PEERCGROUP and find out who originally
+> >> > opened the socket, which is why that is also available!
+> >>
+> >> Then please remove SO_PASSCGROUP.
+> >
+> > SO_PASSCGROUP is important because SO_PEERCGROUP does not work with unix
+> > datagram sockets.
+> 
+> Right.  I forgot about that.
+> 
+> >
+> > Again going back to logging example, if some clients are logging to unix
+> > datagram sockets, SO_PASSCGROUP is the only option to figure out cgroup
+> > of client.
+> 
+> Hmm.  I think that, in your patch, the cgroup that is sent is the
+> cgroup of the caller of write/send/sendmsg.  What if you changed it to
+> use the same cgroup that SO_PEERCRED would use?  Would that still
+> work?
 
-Add a parser for Intel style JSON event files. This allows
-to use an Intel event list directly with perf. The Intel
-event lists can be quite large and are too big to store
-in unswappable kernel memory.
+No. SO_PEERCRED stores the cgroup information once at the time of
+connect(). After that it never changes.
 
-The parser code knows how to convert the JSON fields
-to perf fields. The conversion code is straight forward.
-It knows (very little) Intel specific information, and can be easily
-extended to handle fields for other CPUs.
+What if sender changes the cgroup. That information will not be captured.
+Also what if multiple client use the same socket fd to writer to logger?
+In that case too storing cgroup info in socket will not help.
 
-The parser code is partially shared with an independent parsing
-library, which is 2-clause BSD licenced. To avoid any conflicts I marked
-those files as BSD licenced too. As part of perf they become GPLv2.
+Cgroup is sender task's property and not client side socket's property. 
 
-The events are handled using the existing alias machinery.
+> 
+> >>
+> >> I still haven't seen any explanation for what's wrong with requiring
+> >> senders to ask the kernel to transmit their cgroup.
+> >
+> > If nothing else, additional complexity and ovhead. Extra pair of messages
+> > need to be exchanged to request and then provide the information.
+> >
+> > How would it work in logging example? Every time logger receives a
+> > message, is it supposed to send another message to client to send
+> > SCM_CGROUP? That does not sound right.
+> 
+> No -- just have the logger send the cgroup with every message.  Yes,
+> it seems silly, but it's probably barely more expensive than with the
+> code in your patch.
 
-We output the BriefDescription in perf list.
+So receiver gets the cgroup messages even if it might not want to. There
+is no way to say "Hey don't send me SCM_CGROUP's messages".
 
-Right now the json file can be specified as an argument
-to perf stat/record/list. Followon patches will automate this.
+Now all loggers need to be modifed to always send SCM_CGROUP messages. And
+all other more complicated cases might need a different consideration and
+clients and servers will need to be modified accordingly.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/Documentation/perf-list.txt   |   6 +
- tools/perf/Documentation/perf-record.txt |   3 +
- tools/perf/Documentation/perf-stat.txt   |   3 +
- tools/perf/Makefile.perf                 |   2 +
- tools/perf/builtin-list.c                |   2 +
- tools/perf/builtin-record.c              |   3 +
- tools/perf/builtin-stat.c                |   2 +
- tools/perf/util/jevents.c                | 248 +++++++++++++++++++++++++++++++
- tools/perf/util/jevents.h                |   3 +
- tools/perf/util/pmu.c                    |  14 ++
- tools/perf/util/pmu.h                    |   2 +
- 11 files changed, 288 insertions(+)
- create mode 100644 tools/perf/util/jevents.c
- create mode 100644 tools/perf/util/jevents.h
+I think it is much simpler to allow passing of cgroup information and
+once we figure out some concrete cases where passing of that info is
+not desirabe, implement SO_NOPASSCGROUP and modify those *selected few
+corner cases* to set this flag on sockets.
 
-diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
-index 6fce6a6..d399e04 100644
---- a/tools/perf/Documentation/perf-list.txt
-+++ b/tools/perf/Documentation/perf-list.txt
-@@ -15,6 +15,12 @@ DESCRIPTION
- This command displays the symbolic event types which can be selected in the
- various perf commands with the -e option.
- 
-+OPTIONS
-+-------
-+--json-file=::
-+Specify JSON event list file to use for parsing events.
-+
-+
- [[EVENT_MODIFIERS]]
- EVENT MODIFIERS
- ---------------
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index c71b0f3..8a1e0d9 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -213,6 +213,9 @@ if combined with -a or -C options.
- After starting the program, wait msecs before measuring. This is useful to
- filter out the startup phase of the program, which is often very different.
- 
-+--json-file=::
-+Specify JSON event list file to use for parsing events.
-+
- SEE ALSO
- --------
- linkperf:perf-stat[1], linkperf:perf-list[1]
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index 29ee857..a946283 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -142,6 +142,9 @@ filter out the startup phase of the program, which is often very different.
- 
- Print statistics of transactional execution if supported.
- 
-+--json-file=::
-+Specify JSON event list file to use for parsing events.
-+
- EXAMPLES
- --------
- 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 8381a64..fdea4cb 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -303,6 +303,7 @@ LIB_H += ui/ui.h
- LIB_H += util/data.h
- LIB_H += util/jsmn.h
- LIB_H += util/json.h
-+LIB_H += util/jevents.h
- 
- LIB_OBJS += $(OUTPUT)util/abspath.o
- LIB_OBJS += $(OUTPUT)util/alias.o
-@@ -378,6 +379,7 @@ LIB_OBJS += $(OUTPUT)util/srcline.o
- LIB_OBJS += $(OUTPUT)util/data.o
- LIB_OBJS += $(OUTPUT)util/jsmn.o
- LIB_OBJS += $(OUTPUT)util/json.o
-+LIB_OBJS += $(OUTPUT)util/jevents.o
- 
- LIB_OBJS += $(OUTPUT)ui/setup.o
- LIB_OBJS += $(OUTPUT)ui/helpline.o
-diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
-index 011195e..ca3dd18 100644
---- a/tools/perf/builtin-list.c
-+++ b/tools/perf/builtin-list.c
-@@ -20,6 +20,8 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
- {
- 	int i;
- 	const struct option list_options[] = {
-+		OPT_STRING(0, "json-file", &json_file, "json file",
-+			   "Read event json file"),
- 		OPT_END()
- 	};
- 	const char * const list_usage[] = {
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index eb524f9..b0cf944 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -25,6 +25,7 @@
- #include "util/cpumap.h"
- #include "util/thread_map.h"
- #include "util/data.h"
-+#include "util/pmu.h"
- 
- #include <unistd.h>
- #include <sched.h>
-@@ -910,6 +911,8 @@ const struct option record_options[] = {
- 		    "sample transaction flags (special events only)"),
- 	OPT_BOOLEAN(0, "per-thread", &record.opts.target.per_thread,
- 		    "use per-thread mmaps"),
-+	OPT_STRING(0, "json-file", &json_file, "json file",
-+		   "Read event json file"),
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 8b0e1c9..e521ba0 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -1661,6 +1661,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __maybe_unused)
- 		     "aggregate counts per physical processor core", AGGR_CORE),
- 	OPT_UINTEGER('D', "delay", &initial_delay,
- 		     "ms to wait before starting measurement after program start"),
-+	OPT_STRING(0, "json-file", &json_file, "json file",
-+		   "Read event json file"),
- 	OPT_END()
- 	};
- 	const char * const stat_usage[] = {
-diff --git a/tools/perf/util/jevents.c b/tools/perf/util/jevents.c
-new file mode 100644
-index 0000000..0173b68
---- /dev/null
-+++ b/tools/perf/util/jevents.c
-@@ -0,0 +1,248 @@
-+/* Parse event JSON files */
-+
-+/*
-+ * Copyright (c) 2014, Intel Corporation
-+ * All rights reserved.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions are met:
-+ *
-+ * 1. Redistributions of source code must retain the above copyright notice,
-+ * this list of conditions and the following disclaimer.
-+ *
-+ * 2. Redistributions in binary form must reproduce the above copyright
-+ * notice, this list of conditions and the following disclaimer in the
-+ * documentation and/or other materials provided with the distribution.
-+ *
-+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-+ * COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
-+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
-+ * OF THE POSSIBILITY OF SUCH DAMAGE.
-+*/
-+
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <errno.h>
-+#include <string.h>
-+#include <ctype.h>
-+#include "jsmn.h"
-+#include "json.h"
-+#include "jevents.h"
-+
-+static void addfield(char *map, char **dst, const char *sep,
-+		     const char *a, jsmntok_t *bt)
-+{
-+	unsigned len = strlen(a) + 1 + strlen(sep);
-+	int olen = *dst ? strlen(*dst) : 0;
-+	int blen = bt ? json_len(bt) : 0;
-+
-+	*dst = realloc(*dst, len + olen + blen);
-+	if (!*dst)
-+		exit(ENOMEM);
-+	if (!olen)
-+		*(*dst) = 0;
-+	else
-+		strcat(*dst, sep);
-+	strcat(*dst, a);
-+	if (bt)
-+		strncat(*dst, map + bt->start, blen);
-+}
-+
-+static void fixname(char *s)
-+{
-+	for (; *s; s++) {
-+		*s = tolower(*s);
-+		/*
-+		 * Remove '.' for now, until the parser
-+		 * can deal with it.
-+		 */
-+		if (*s == '.')
-+			*s = '_';
-+	}
-+}
-+
-+static void fixdesc(char *s)
-+{
-+	char *e = s + strlen(s);
-+
-+	/* Remove trailing dots that look ugly in perf list */
-+	--e;
-+	while (e >= s && isspace(*e))
-+		--e;
-+	if (*e == '.')
-+		*e = 0;
-+}
-+
-+#define EXPECT(e, t, m) do { if (!(e)) {			\
-+	jsmntok_t *loc = (t);					\
-+	if (!(t)->start && (t) > tokens)			\
-+		loc = (t) - 1;					\
-+	fprintf(stderr, "%s:%d: " m ", got %s\n", fn,		\
-+		json_line(map, loc),				\
-+		json_name(t));					\
-+	goto out_free;						\
-+} } while (0)
-+
-+static struct msrmap {
-+	const char *num;
-+	const char *pname;
-+} msrmap[] = {
-+	{ "0x3F6", "ldlat=" },
-+	{ "0x1A6", "offcore_rsp=" },
-+	{ "0x1A7", "offcore_rsp=" },
-+	{ NULL, NULL }
-+};
-+
-+static struct field {
-+	const char *field;
-+	const char *kernel;
-+} fields[] = {
-+	{ "EventCode",	"event=" },
-+	{ "UMask",	"umask=" },
-+	{ "CounterMask", "cmask=" },
-+	{ "Invert",	"inv=" },
-+	{ "AnyThread",	"any=" },
-+	{ "EdgeDetect",	"edge=" },
-+	{ "SampleAfterValue", "period=" },
-+	{ NULL, NULL }
-+};
-+
-+static void cut_comma(char *map, jsmntok_t *newval)
-+{
-+	int i;
-+
-+	/* Cut off everything after comma */
-+	for (i = newval->start; i < newval->end; i++) {
-+		if (map[i] == ',')
-+			newval->end = i;
-+	}
-+}
-+
-+static int match_field(char *map, jsmntok_t *field, int nz,
-+		       char **event, jsmntok_t *val)
-+{
-+	struct field *f;
-+	jsmntok_t newval = *val;
-+
-+	for (f = fields; f->field; f++)
-+		if (json_streq(map, field, f->field) && nz) {
-+			cut_comma(map, &newval);
-+			addfield(map, event, ",", f->kernel, &newval);
-+			return 1;
-+		}
-+	return 0;
-+}
-+
-+static struct msrmap *lookup_msr(char *map, jsmntok_t *val)
-+{
-+	jsmntok_t newval = *val;
-+	static bool warned;
-+	int i;
-+
-+	cut_comma(map, &newval);
-+	for (i = 0; msrmap[i].num; i++)
-+		if (json_streq(map, &newval, msrmap[i].num))
-+			return &msrmap[i];
-+	if (!warned) {
-+		warned = true;
-+		pr_err("Unknown MSR in event file %.*s\n",
-+			json_len(val), map + val->start);
-+	}
-+	return NULL;
-+}
-+
-+/* Call func with each event in the json file */
-+
-+int json_events(const char *fn,
-+	  int (*func)(void *data, char *name, char *event, char *desc),
-+	  void *data)
-+{
-+	int err = -EIO;
-+	size_t size;
-+	jsmntok_t *tokens, *tok;
-+	int i, j, len;
-+	char *map;
-+
-+	tokens = parse_json(fn, &map, &size, &len);
-+	if (!tokens)
-+		return -EIO;
-+	EXPECT(tokens->type == JSMN_ARRAY, tokens, "expected top level array");
-+	tok = tokens + 1;
-+	for (i = 0; i < tokens->size; i++) {
-+		char *event = NULL, *desc = NULL, *name = NULL;
-+		struct msrmap *msr = NULL;
-+		jsmntok_t *msrval = NULL;
-+		jsmntok_t *precise = NULL;
-+		jsmntok_t *obj = tok++;
-+
-+		EXPECT(obj->type == JSMN_OBJECT, obj, "expected object");
-+		for (j = 0; j < obj->size; j += 2) {
-+			jsmntok_t *field, *val;
-+			int nz;
-+
-+			field = tok + j;
-+			EXPECT(field->type == JSMN_STRING, tok + j,
-+			       "Expected field name");
-+			val = tok + j + 1;
-+			EXPECT(val->type == JSMN_STRING, tok + j + 1,
-+			       "Expected string value");
-+
-+			nz = !json_streq(map, val, "0");
-+			if (match_field(map, field, nz, &event, val)) {
-+				/* ok */
-+			} else if (json_streq(map, field, "EventName")) {
-+				addfield(map, &name, "", "", val);
-+			} else if (json_streq(map, field, "BriefDescription")) {
-+				addfield(map, &desc, "", "", val);
-+				fixdesc(desc);
-+			} else if (json_streq(map, field, "PEBS") && nz &&
-+				   !strstr(desc, "(Precise Event)")) {
-+				precise = val;
-+			} else if (json_streq(map, field, "MSRIndex") && nz) {
-+				msr = lookup_msr(map, val);
-+			} else if (json_streq(map, field, "MSRValue")) {
-+				msrval = val;
-+			} else if (json_streq(map, field, "Errata") &&
-+				   !json_streq(map, val, "null")) {
-+				addfield(map, &desc, ". ",
-+					" Spec update: ", val);
-+			} else if (json_streq(map, field, "Data_LA") && nz) {
-+				addfield(map, &desc, ". ",
-+					" Supports address when precise",
-+					NULL);
-+			}
-+			/* ignore unknown fields */
-+		}
-+		if (precise) {
-+			if (json_streq(map, precise, "2"))
-+				addfield(map, &desc, " ", "(Must be precise)",
-+						NULL);
-+			else
-+				addfield(map, &desc, " ",
-+						"(Precise event)", NULL);
-+		}
-+		if (msr != NULL)
-+			addfield(map, &event, ",", msr->pname, msrval);
-+		fixname(name);
-+		err = func(data, name, event, desc);
-+		free(event);
-+		free(desc);
-+		free(name);
-+		if (err)
-+			break;
-+		tok += j;
-+	}
-+	EXPECT(tok - tokens == len, tok, "unexpected objects at end");
-+	err = 0;
-+out_free:
-+	free_json(map, size, tokens);
-+	return err;
-+}
-diff --git a/tools/perf/util/jevents.h b/tools/perf/util/jevents.h
-new file mode 100644
-index 0000000..4c2b879
---- /dev/null
-+++ b/tools/perf/util/jevents.h
-@@ -0,0 +1,3 @@
-+int json_events(const char *fn,
-+		int (*func)(void *data, char *name, char *event, char *desc),
-+		void *data);
-diff --git a/tools/perf/util/pmu.c b/tools/perf/util/pmu.c
-index 26311d9..831f525 100644
---- a/tools/perf/util/pmu.c
-+++ b/tools/perf/util/pmu.c
-@@ -9,6 +9,9 @@
- #include "pmu.h"
- #include "parse-events.h"
- #include "cpumap.h"
-+#include "jevents.h"
-+
-+const char *json_file;
- 
- #define UNIT_MAX_LEN	31 /* max length for event unit name */
- 
-@@ -273,6 +276,14 @@ static int pmu_aliases_parse(char *dir, struct list_head *head)
- 	return ret;
- }
- 
-+static int add_alias(void *data, char *name, char *event, char *desc)
-+{
-+	struct list_head *head = (struct list_head *)data;
-+
-+	__perf_pmu__new_alias(head, name, NULL, desc, event);
-+	return 0;
-+}
-+
- /*
-  * Reading the pmu event aliases definition, which should be located at:
-  * /sys/bus/event_source/devices/<dev>/events as sysfs group attributes.
-@@ -422,6 +433,9 @@ static struct perf_pmu *pmu_lookup(const char *name)
- 	if (pmu_aliases(name, &aliases))
- 		return NULL;
- 
-+	if (!strcmp(name, "cpu") && json_file)
-+		json_events(json_file, add_alias, &aliases);
-+
- 	if (pmu_type(name, &type))
- 		return NULL;
- 
-diff --git a/tools/perf/util/pmu.h b/tools/perf/util/pmu.h
-index 8b64125..62255bb 100644
---- a/tools/perf/util/pmu.h
-+++ b/tools/perf/util/pmu.h
-@@ -46,4 +46,6 @@ void print_pmu_events(const char *event_glob, bool name_only);
- bool pmu_have_event(const char *pname, const char *name);
- 
- int perf_pmu__test(void);
-+
-+extern const char *json_file;
- #endif /* __PMU_H */
--- 
-1.8.5.3
-
+Thanks
+Vivek
