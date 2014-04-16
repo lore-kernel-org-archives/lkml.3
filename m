@@ -1,48 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801AbaDPVXz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 17:23:55 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:57079 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756459AbaDPVXx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 17:23:53 -0400
-From: Philipp Zabel <philipp.zabel@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Shawn Guo <shawn.guo@freescale.com>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-Subject: [PATCH v2] ARM: dts: imx6q-gk802: Enable HDMI
-Date: Wed, 16 Apr 2014 23:23:50 +0200
-Message-Id: <1397683430-3931-1-git-send-email-philipp.zabel@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	id S1756818AbaDPVYM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 17:24:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55177 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756459AbaDPVYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 17:24:09 -0400
+Message-ID: <534EF4F6.8000900@suse.cz>
+Date: Wed, 16 Apr 2014 23:24:06 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Jianyu Zhan <nasa4836@gmail.com>
+CC: akpm@linux-foundation.org, michael.opdenacker@free-electrons.com,
+        tkhai@yandex.ru, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
+Subject: Re: [PATCH] scripts/tags.sh: add regular expression replacement pattern
+ for memcg
+References: <1397134732-29106-1-git-send-email-nasa4836@gmail.com>
+In-Reply-To: <1397134732-29106-1-git-send-email-nasa4836@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Philipp Zabel <philipp.zabel@gmail.com>
----
-Changes since v1:
- - Reordered ddc-i2c-bus and status properties
----
- arch/arm/boot/dts/imx6q-gk802.dts | 5 +++++
- 1 file changed, 5 insertions(+)
+Dne 10.4.2014 14:58, Jianyu Zhan napsal(a):
+> Sorry, the comment in previous patch is somewhat misguiding, this patch
+> replaces that one.
+>  
+> Currently, no regular expression replacement patterns for PageCgroup*
+> flag-ops are defined, which causes quite a few pain while reading code. 
+> Just get rid of it.
+> 
+> Also, add a comment to inform people to add pattern for whatever new
+> flag-ops they add.
+> 
+> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+> ---
+>  include/linux/page_cgroup.h | 6 ++++++
+>  scripts/tags.sh             | 8 ++++++++
+>  2 files changed, 14 insertions(+)
+> 
+> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+> index 777a524..9c60b77 100644
+> --- a/include/linux/page_cgroup.h
+> +++ b/include/linux/page_cgroup.h
+> @@ -44,6 +44,12 @@ static inline void __init page_cgroup_init(void)
+>  struct page_cgroup *lookup_page_cgroup(struct page *page);
+>  struct page *lookup_cgroup_page(struct page_cgroup *pc);
+>  
+> +/*
+> + * Note, whenever you add a *PCGFLAG operation here, please add a
+> + * regular expression replacement pattern in scripts/tags.sh
+> + * to inform our friendly and smart tags generator.
+> + */
+> +
+>  #define TESTPCGFLAG(uname, lname)			\
 
-diff --git a/arch/arm/boot/dts/imx6q-gk802.dts b/arch/arm/boot/dts/imx6q-gk802.dts
-index 4a9b4dc..0f0c50b 100644
---- a/arch/arm/boot/dts/imx6q-gk802.dts
-+++ b/arch/arm/boot/dts/imx6q-gk802.dts
-@@ -48,6 +48,11 @@
- 	};
- };
- 
-+&hdmi {
-+	ddc-i2c-bus = <&i2c3>;
-+	status = "okay";
-+};
-+
- /* Internal I2C */
- &i2c2 {
- 	pinctrl-names = "default";
--- 
-1.9.1
+Cgroup hackers - OK to add the above comment? It does not look like new
+macros are being defined here on a weekly basis...
+
+
+>  static inline int PageCgroup##uname(struct page_cgroup *pc)	\
+>  	{ return test_bit(PCG_##lname, &pc->flags); }
+> diff --git a/scripts/tags.sh b/scripts/tags.sh
+> index 58c4559..c0d52d1 100755
+> --- a/scripts/tags.sh
+> +++ b/scripts/tags.sh
+> @@ -171,12 +171,16 @@ exuberant()
+>  	--regex-c++='/PAGEFLAG\(([^,)]*).*/ClearPage\1/'		\
+>  	--regex-c++='/TESTSETFLAG\(([^,)]*).*/TestSetPage\1/'		\
+>  	--regex-c++='/TESTPAGEFLAG\(([^,)]*).*/Page\1/'			\
+> +	--regex-c++='/TESTPCGFLAG\(([^,)]*).*/PageCgroup\1/'		\
+>  	--regex-c++='/SETPAGEFLAG\(([^,)]*).*/SetPage\1/'		\
+>  	--regex-c++='/__SETPAGEFLAG\(([^,)]*).*/__SetPage\1/'		\
+> +	--regex-c++='/SETPCGFLAG\(([^,)]*).*/SetPageCgroup\1/'		\
+>  	--regex-c++='/TESTCLEARFLAG\(([^,)]*).*/TestClearPage\1/'	\
+>  	--regex-c++='/__TESTCLEARFLAG\(([^,)]*).*/TestClearPage\1/'	\
+> +	--regex-c++='/TESTCLEARPCGFLAG\(([^,)]*).*/TestClearPageCgroup\1/' \
+>  	--regex-c++='/CLEARPAGEFLAG\(([^,)]*).*/ClearPage\1/'		\
+>  	--regex-c++='/__CLEARPAGEFLAG\(([^,)]*).*/__ClearPage\1/'	\
+> +	--regex-c++='/CLEARPCGFLAG\(([^,)]*).*/ClearPageCgroup\1/'	\
+>  	--regex-c++='/__PAGEFLAG\(([^,)]*).*/__SetPage\1/'		\
+>  	--regex-c++='/__PAGEFLAG\(([^,)]*).*/__ClearPage\1/'		\
+>  	--regex-c++='/PAGEFLAG_FALSE\(([^,)]*).*/Page\1/'		\
+
+Please do not interleave the new defines with the <linux/page-flags.h>
+defines.
+
+Michal
+
+> @@ -229,12 +233,16 @@ emacs()
+>  	--regex='/PAGEFLAG(\([^,)]*\).*/ClearPage\1/'		\
+>  	--regex='/TESTSETFLAG(\([^,)]*\).*/TestSetPage\1/'	\
+>  	--regex='/TESTPAGEFLAG(\([^,)]*\).*/Page\1/'		\
+> +	--regex='/TESTPCGFLAG\(([^,)]*).*/PageCgroup\1/'	\
+>  	--regex='/SETPAGEFLAG(\([^,)]*\).*/SetPage\1/'		\
+>  	--regex='/__SETPAGEFLAG(\([^,)]*\).*/__SetPage\1/'	\
+> +	--regex='/SETPCGFLAG\(([^,)]*).*/SetPageCgroup\1/'	\
+>  	--regex='/TESTCLEARFLAG(\([^,)]*\).*/TestClearPage\1/'	\
+>  	--regex='/__TESTCLEARFLAG(\([^,)]*\).*/TestClearPage\1/'	\
+> +	--regex='/TESTCLEARPCGFLAG\(([^,)]*).*/TestClearPageCgroup\1/' \
+>  	--regex='/CLEARPAGEFLAG(\([^,)]*\).*/ClearPage\1/'	\
+>  	--regex='/__CLEARPAGEFLAG(\([^,)]*\).*/__ClearPage\1/'	\
+> +	--regex='/CLEARPCGFLAG\(([^,)]*).*/ClearPageCgroup\1/'	\
+>  	--regex='/__PAGEFLAG(\([^,)]*\).*/__SetPage\1/'		\
+>  	--regex='/__PAGEFLAG(\([^,)]*\).*/__ClearPage\1/'	\
+>  	--regex='/PAGEFLAG_FALSE(\([^,)]*\).*/Page\1/'		\
+> 
 
