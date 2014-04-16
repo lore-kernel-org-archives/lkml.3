@@ -1,98 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045AbaDPREM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 13:04:12 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41926 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752221AbaDPREJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 13:04:09 -0400
-Message-ID: <534EB803.5030101@wwwdotorg.org>
-Date: Wed, 16 Apr 2014 11:04:03 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1753489AbaDPRGl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 13:06:41 -0400
+Received: from dliviu.plus.com ([80.229.23.120]:56755 "EHLO smtp.dudau.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751111AbaDPRGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 13:06:40 -0400
+From: "Liviu Dudau" <liviu@dudau.co.uk>
+Date: Wed, 16 Apr 2014 18:05:45 +0100
+To: Rob Herring <robherring2@gmail.com>
+Cc: Tanmay Inamdar <tinamdar@apm.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@apm.com" <patches@apm.com>, "jcm@redhat.com" <jcm@redhat.com>
+Subject: Re: [PATCH v5 2/4] arm64: dts: APM X-Gene PCIe device tree nodes
+Message-ID: <20140416170545.GD4858@bart>
+Mail-Followup-To: Rob Herring <robherring2@gmail.com>,
+	Tanmay Inamdar <tinamdar@apm.com>,
+	Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+	Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+	Grant Likely <grant.likely@linaro.org>,
+	Rob Herring <robh+dt@kernel.org>,
+	Catalin Marinas <catalin.marinas@arm.com>,
+	Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>,
+	"linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
+	"linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"patches@apm.com" <patches@apm.com>,
+	"jcm@redhat.com" <jcm@redhat.com>
+References: <1395270762-6055-1-git-send-email-tinamdar@apm.com>
+ <1395270762-6055-3-git-send-email-tinamdar@apm.com>
+ <CAL_Jsq+XxAtUeNKFi0hH=ehb_fhFvkM0U1Zm_j1LdtQZbvSzfA@mail.gmail.com>
 MIME-Version: 1.0
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Stephen Warren <swarren@nvidia.com>, Alan <gnomes@lxorguk.ukuu.org.uk>,
-        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        linux-serial@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Aaron Sierra <asierra@xes-inc.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH V5.1] serial/uart/8250: Add tunable RX interrupt trigger
- I/F of FIFO buffers
-References: <20140415055216.14660.18270.stgit@yunodevel> <20140415080649.19209.60645.stgit@yunodevel> <534D6EED.8000905@wwwdotorg.org> <534DE62C.3090300@hitachi.com>
-In-Reply-To: <534DE62C.3090300@hitachi.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAL_Jsq+XxAtUeNKFi0hH=ehb_fhFvkM0U1Zm_j1LdtQZbvSzfA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Wed Apr 16 18:06:39 2014
+X-DSPAM-Confidence: 1.0000
+X-DSPAM-Probability: 0.0023
+X-DSPAM-Signature: 13,534eb89e2988058717537
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2014 08:08 PM, Yoshihiro YUNOMAE wrote:
-> Hi Stephen,
+On Wed, Mar 26, 2014 at 09:28:42AM -0500, Rob Herring wrote:
+> On Wed, Mar 19, 2014 at 6:12 PM, Tanmay Inamdar <tinamdar@apm.com> wrote:
+> > This patch adds the device tree nodes for APM X-Gene PCIe controller and
+> > PCIe clock interface. Since X-Gene SOC supports maximum 5 ports, 5 dts
+> > nodes are added.
 > 
-> Thank you for your review.
+> [snip]
 > 
-> (2014/04/16 2:39), Stephen Warren wrote:
->> On 04/15/2014 02:06 AM, Yoshihiro YUNOMAE wrote:
->>> /* I found a bug in V5, so I resend this as V5.1. Please do not
->>> review V5. */
->>>
->>> Add tunable RX interrupt trigger I/F of FIFO buffers.
->>> Serial devices are used as not only message communication devices but
->>> control
->>> or sending communication devices. For the latter uses, normally small
->>> data
->>> will be exchanged, so user applications want to receive data unit as
->>> soon as
->>> possible for real-time tendency. If we have a sensor which sends a 1
->>> byte data
->>> each time and must control a device based on the sensor feedback, the RX
->>> interrupt should be triggered for each data.
->>>
->>> According to HW specification of serial UART devices, RX interrupt
->>> trigger
->>> can be changed, but the trigger is hard-coded. For example, RX
->>> interrupt trigger
->>> in 16550A can be set to 1, 4, 8, or 14 bytes for HW, but current
->>> driver sets
->>> the trigger to only 8bytes.
+> > +               pcie0: pcie@1f2b0000 {
+> > +                       status = "disabled";
+> > +                       device_type = "pci";
+> > +                       compatible = "apm,xgene-storm-pcie", "apm,xgene-pcie";
+> > +                       #interrupt-cells = <1>;
+> > +                       #size-cells = <2>;
+> > +                       #address-cells = <3>;
+> > +                       reg = < 0x00 0x1f2b0000 0x0 0x00010000   /* Controller registers */
+> > +                               0xe0 0xd0000000 0x0 0x00200000>; /* PCI config space */
+> 
 
->>> diff --git a/drivers/tty/serial/8250/8250_core.c
->>> b/drivers/tty/serial/8250/8250_core.c
->>
->>> @@ -2275,10 +2276,9 @@ serial8250_do_set_termios(struct uart_port
->>> *port, struct ktermios *termios,
->>
->>>       if (up->capabilities & UART_CAP_FIFO && port->fifosize > 1) {
->>> -        fcr = uart_config[port->type].fcr;
->>> -        if ((baud < 2400 && !up->dma) || fifo_bug) {
->>> -            fcr &= ~UART_FCR_TRIGGER_MASK;
->>> -            fcr |= UART_FCR_TRIGGER_1;
->>> +        /* NOTE: If fifo_bug is not set, a uaser can set RX_trigger. */
->>> +        if ((baud < 2400 && !up->dma &&
->>> +            (up->fcr == uart_config[port->type].fcr)) ||
->>> up->fifo_bug) {
->>> +            up->fcr &= ~UART_FCR_TRIGGER_MASK;
->>> +            up->fcr |= UART_FCR_TRIGGER_1;
->>>           }
->>>       }
->>
->> Does the "(up->fcr == uart_config[port->type].fcr)" term prevent the
->> user from changing the trigger level multiple times? Perhaps this is
->> intended?
-> 
-> No, this means that if a user changed FCR value before setting termios,
-> use the changed value because the user think changed value is always
-> set. But, I thought this is not straightforward and it cannot help
-> when the user want to use default FCR value.
-> Could I add FCR changed flag(user_changed_fcr) in uart_8250_port
-> structure and check the flag here?
-> Or shouldn't the driver check the user changing?
+Resurecting an old thread as this is relevant to what I'm doing at the moment:
 
-Oh, I wasn't aware that the user could change FCR directly. To be
-honest, I'm not sure of the best way to resolve that kind of conflict...
+> Where is the right place for config space? This binding has it here
+> and others have it in ranges. Given that config space type is defined
+> for ranges, I would think that is the right place. But Liviu's patches
+> do not process config space entries in ranges. Perhaps we need a
+> config space resource populated in the bridge struct.
+
+I have found out that we cannot pasd the config ranges from the DT into the
+pci_host_bridge structure as the PCI framework doesn't have a resource type
+for config resources. Leaving the translation between range flags and
+resource type as is (filtered through the IORESOURCE_TYPE_BITS) will lead
+to a resource type of value zero, which is not recognised by any resource
+handling API so bridge configuration and bus scanning will barf.
+
+I'm looking for suggestions here, as Jason Gunthorpe suggested that we
+should be able to parse config ranges if they conform to the ECAM part
+of the PCI standard.
+
+Best regards,
+Liviu
+
+> 
+> Rob
+> 
+> 
+> > +                       reg-names = "csr", "cfg";
+> > +                       ranges = <0x01000000 0x00 0x00000000 0xe0 0x00000000 0x00 0x00010000   /* io */
+> > +                                 0x02000000 0x00 0x10000000 0xe0 0x10000000 0x00 0x80000000>; /* mem */
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+-- 
+-------------------
+   .oooO
+   (   )
+    \ (  Oooo.
+     \_) (   )
+          ) /
+         (_/
+
+ One small step
+   for me ...
+
