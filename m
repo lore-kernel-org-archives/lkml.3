@@ -1,103 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229AbaDPJLC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 05:11:02 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58368 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755189AbaDPJJu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 05:09:50 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: broonie@kernel.org
-Cc: lgirdwood@gmail.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rdunlap@infradead.org, sameo@linux.intel.com,
-        lee.jones@linaro.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, ckeepax@opensource.wolfsonmicro.com
-Subject: [PATCH 5/6] regulator: arizona-micsupp: Add processing of init_data from device tree
-Date: Wed, 16 Apr 2014 10:01:41 +0100
-Message-Id: <1397638902-7576-6-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1397638902-7576-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-References: <1397638902-7576-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	id S1755256AbaDPJLc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 05:11:32 -0400
+Received: from smtp.ispras.ru ([83.149.199.79]:43613 "EHLO smtp.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755036AbaDPJLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 05:11:25 -0400
+Message-ID: <534E494C.7050909@ispras.ru>
+Date: Wed, 16 Apr 2014 13:11:40 +0400
+From: Andrey Tsyvarev <tsyvarev@ispras.ru>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: jaegeuk.kim@samsung.com
+CC: linux-f2fs-devel@lists.sourceforge.net,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Alexey Khoroshilov <khoroshilov@ispras.ru>
+Subject: Re: f2fs: BUG_ON() is triggered when mount valid f2fs filesystem
+References: <52F320FC.50803@ispras.ru> <534BC29B.3020408@ispras.ru> <1397559864.7727.5.camel@kjgkr>
+In-Reply-To: <1397559864.7727.5.camel@kjgkr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/regulator/arizona-micsupp.c |   37 +++++++++++++++++++++++++++++++++++
- 1 files changed, 37 insertions(+), 0 deletions(-)
+Hi,
 
-diff --git a/drivers/regulator/arizona-micsupp.c b/drivers/regulator/arizona-micsupp.c
-index 6fdd9bf..b80ebbe 100644
---- a/drivers/regulator/arizona-micsupp.c
-+++ b/drivers/regulator/arizona-micsupp.c
-@@ -19,6 +19,7 @@
- #include <linux/platform_device.h>
- #include <linux/regulator/driver.h>
- #include <linux/regulator/machine.h>
-+#include <linux/regulator/of_regulator.h>
- #include <linux/gpio.h>
- #include <linux/slab.h>
- #include <linux/workqueue.h>
-@@ -195,6 +196,32 @@ static const struct regulator_init_data arizona_micsupp_ext_default = {
- 	.num_consumer_supplies = 1,
- };
- 
-+static int arizona_micsupp_of_get_pdata(struct arizona *arizona,
-+					struct regulator_config *config)
-+{
-+	struct arizona_pdata *pdata = &arizona->pdata;
-+	struct arizona_micsupp *micsupp = config->driver_data;
-+	struct device_node *np;
-+	struct regulator_init_data *init_data;
-+
-+	np = of_get_child_by_name(arizona->dev->of_node, "micvdd");
-+
-+	if (np) {
-+		config->of_node = np;
-+
-+		init_data = of_get_regulator_init_data(arizona->dev, np);
-+
-+		if (init_data) {
-+			init_data->consumer_supplies = &micsupp->supply;
-+			init_data->num_consumer_supplies = 1;
-+
-+			pdata->micvdd = init_data;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- static int arizona_micsupp_probe(struct platform_device *pdev)
- {
- 	struct arizona *arizona = dev_get_drvdata(pdev->dev.parent);
-@@ -234,6 +261,14 @@ static int arizona_micsupp_probe(struct platform_device *pdev)
- 	config.driver_data = micsupp;
- 	config.regmap = arizona->regmap;
- 
-+	if (IS_ENABLED(CONFIG_OF)) {
-+		if (!dev_get_platdata(arizona->dev)) {
-+			ret = arizona_micsupp_of_get_pdata(arizona, &config);
-+			if (ret < 0)
-+				return ret;
-+		}
-+	}
-+
- 	if (arizona->pdata.micvdd)
- 		config.init_data = arizona->pdata.micvdd;
- 	else
-@@ -253,6 +288,8 @@ static int arizona_micsupp_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
-+	of_node_put(config.of_node);
-+
- 	platform_set_drvdata(pdev, micsupp);
- 
- 	return 0;
+With this patch mounting of the image continues to fail (with similar 
+BUG_ON).
+But when image is formatted again (and steps mentioned in the previous 
+message are performed),
+mounting of it is now succeed.
+
+Is this is a true purpose of the patch?
+
+15.04.2014 15:04, Jaegeuk Kim пишет:
+> Hi,
+>
+> Thank you for the report.
+> I retrieved the fault image and found out that previous garbage data
+> wreak such the wrong behaviors.
+> So, I wrote the following patch that fills one zero-block at the
+> checkpoint procedure.
+> If the underlying device supports discard, I expect that it mostly
+> doesn't incur any performance regression significantly.
+>
+> Could you test this patch?
+>
+> >From 60588ceb7277aae2a79e7f67f5217d1256720d78 Mon Sep 17 00:00:00 2001
+> From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> Date: Tue, 15 Apr 2014 13:57:55 +0900
+> Subject: [PATCH] f2fs: avoid to conduct roll-forward due to the remained
+>   garbage blocks
+>
+> The f2fs always scans the next chain of direct node blocks.
+> But some garbage blocks are able to be remained due to no discard
+> support or
+> SSR triggers.
+> This occasionally wreaks recovering wrong inodes that were used or
+> BUG_ONs
+> due to reallocating node ids as follows.
+>
+> When mount this f2fs image:
+> http://linuxtesting.org/downloads/f2fs_fault_image.zip
+> BUG_ON is triggered in f2fs driver (messages below are generated on
+> kernel 3.13.2; for other kernels output is similar):
+>
+> kernel BUG at fs/f2fs/node.c:215!
+>   Call Trace:
+>   [<ffffffffa032ebad>] recover_inode_page+0x1fd/0x3e0 [f2fs]
+>   [<ffffffff811446e7>] ? __lock_page+0x67/0x70
+>   [<ffffffff81089990>] ? autoremove_wake_function+0x50/0x50
+>   [<ffffffffa0337788>] recover_fsync_data+0x1398/0x15d0 [f2fs]
+>   [<ffffffff812b9e5c>] ? selinux_d_instantiate+0x1c/0x20
+>   [<ffffffff811cb20b>] ? d_instantiate+0x5b/0x80
+>   [<ffffffffa0321044>] f2fs_fill_super+0xb04/0xbf0 [f2fs]
+>   [<ffffffff811b861e>] ? mount_bdev+0x7e/0x210
+>   [<ffffffff811b8769>] mount_bdev+0x1c9/0x210
+>   [<ffffffffa0320540>] ? validate_superblock+0x210/0x210 [f2fs]
+>   [<ffffffffa031cf8d>] f2fs_mount+0x1d/0x30 [f2fs]
+>   [<ffffffff811b9497>] mount_fs+0x47/0x1c0
+>   [<ffffffff81166e00>] ? __alloc_percpu+0x10/0x20
+>   [<ffffffff811d4032>] vfs_kern_mount+0x72/0x110
+>   [<ffffffff811d6763>] do_mount+0x493/0x910
+>   [<ffffffff811615cb>] ? strndup_user+0x5b/0x80
+>   [<ffffffff811d6c70>] SyS_mount+0x90/0xe0
+>   [<ffffffff8166f8d9>] system_call_fastpath+0x16/0x1b
+>
+> Found by Linux File System Verification project (linuxtesting.org).
+>
+> Reported-by: Andrey Tsyvarev <tsyvarev@ispras.ru>
+> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> ---
+>   fs/f2fs/checkpoint.c |  6 ++++++
+>   fs/f2fs/f2fs.h       |  1 +
+>   fs/f2fs/segment.c    | 17 +++++++++++++++--
+>   3 files changed, 22 insertions(+), 2 deletions(-)
+>
+> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+> index 4aa521a..890e23d 100644
+> --- a/fs/f2fs/checkpoint.c
+> +++ b/fs/f2fs/checkpoint.c
+> @@ -762,6 +762,12 @@ static void do_checkpoint(struct f2fs_sb_info *sbi,
+> bool is_umount)
+>   	void *kaddr;
+>   	int i;
+>   
+> +	/*
+> +	 * This avoids to conduct wrong roll-forward operations and uses
+> +	 * metapages, so should be called prior to sync_meta_pages below.
+> +	 */
+> +	discard_next_dnode(sbi);
+> +
+>   	/* Flush all the NAT/SIT pages */
+>   	while (get_pages(sbi, F2FS_DIRTY_META))
+>   		sync_meta_pages(sbi, META, LONG_MAX);
+> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> index 2ecac83..2c5a5da 100644
+> --- a/fs/f2fs/f2fs.h
+> +++ b/fs/f2fs/f2fs.h
+> @@ -1179,6 +1179,7 @@ int f2fs_issue_flush(struct f2fs_sb_info *);
+>   void invalidate_blocks(struct f2fs_sb_info *, block_t);
+>   void refresh_sit_entry(struct f2fs_sb_info *, block_t, block_t);
+>   void clear_prefree_segments(struct f2fs_sb_info *);
+> +void discard_next_dnode(struct f2fs_sb_info *);
+>   int npages_for_summary_flush(struct f2fs_sb_info *);
+>   void allocate_new_segments(struct f2fs_sb_info *);
+>   struct page *get_sum_page(struct f2fs_sb_info *, unsigned int);
+> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+> index 1e264e7..9993f94 100644
+> --- a/fs/f2fs/segment.c
+> +++ b/fs/f2fs/segment.c
+> @@ -335,13 +335,26 @@ static void locate_dirty_segment(struct
+> f2fs_sb_info *sbi, unsigned int segno)
+>   	mutex_unlock(&dirty_i->seglist_lock);
+>   }
+>   
+> -static void f2fs_issue_discard(struct f2fs_sb_info *sbi,
+> +static int f2fs_issue_discard(struct f2fs_sb_info *sbi,
+>   				block_t blkstart, block_t blklen)
+>   {
+>   	sector_t start = SECTOR_FROM_BLOCK(sbi, blkstart);
+>   	sector_t len = SECTOR_FROM_BLOCK(sbi, blklen);
+> -	blkdev_issue_discard(sbi->sb->s_bdev, start, len, GFP_NOFS, 0);
+>   	trace_f2fs_issue_discard(sbi->sb, blkstart, blklen);
+> +	return blkdev_issue_discard(sbi->sb->s_bdev, start, len, GFP_NOFS, 0);
+> +}
+> +
+> +void discard_next_dnode(struct f2fs_sb_info *sbi)
+> +{
+> +	struct curseg_info *curseg = CURSEG_I(sbi, CURSEG_WARM_NODE);
+> +	block_t blkaddr = NEXT_FREE_BLKADDR(sbi, curseg);
+> +
+> +	if (f2fs_issue_discard(sbi, blkaddr, 1)) {
+> +		struct page *page = grab_meta_page(sbi, blkaddr);
+> +		/* zero-filled page */
+> +		set_page_dirty(page);
+> +		f2fs_put_page(page, 1);
+> +	}
+>   }
+>   
+>   static void add_discard_addrs(struct f2fs_sb_info *sbi,
+
 -- 
-1.7.2.5
+Andrey Tsyvarev  <tsyvarev@ispras.ru>
 
