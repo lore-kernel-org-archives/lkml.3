@@ -1,69 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161096AbaDPNZQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 09:25:16 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42040 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756193AbaDPNZO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 09:25:14 -0400
-Date: Wed, 16 Apr 2014 06:24:46 -0700
-From: tip-bot for Peter Foley <tipbot@zytor.com>
-Message-ID: <tip-a9358bc3531901a15e2f7cd48550c9555fc0288f@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, pefoley2@pefoley.com, hpa@zytor.com,
-        mingo@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, pefoley2@pefoley.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-In-Reply-To: <1397584693-15902-1-git-send-email-pefoley2@pefoley.com>
-References: <1397584693-15902-1-git-send-email-pefoley2@pefoley.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/build] x86/build:
-  Supress realmode.bin is up to date message
-Git-Commit-ID: a9358bc3531901a15e2f7cd48550c9555fc0288f
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	id S1161116AbaDPNZr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 09:25:47 -0400
+Received: from mga03.intel.com ([143.182.124.21]:20129 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756326AbaDPNZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 09:25:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,872,1389772800"; 
+   d="scan'208";a="419791888"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: wsa@the-dreams.de, rjw@rjwysocki.net, lenb@kernel.org,
+        mika.westerberg@linux.intel.com, awilliam@redhat.com,
+        tianyu.lan@intel.com, robert.moore@intel.com, lv.zheng@intel.com,
+        rafael.j.wysocki@intel.com
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, devel@acpica.org
+Subject: [PATCH 1/9] ACPICA: Executer: Fix buffer allocation issue for generic_serial_bus region field accesses.
+Date: Wed, 16 Apr 2014 21:24:34 +0800
+Message-Id: <1397654682-7094-2-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com>
+References: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a9358bc3531901a15e2f7cd48550c9555fc0288f
-Gitweb:     http://git.kernel.org/tip/a9358bc3531901a15e2f7cd48550c9555fc0288f
-Author:     Peter Foley <pefoley2@pefoley.com>
-AuthorDate: Tue, 15 Apr 2014 13:58:13 -0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 16 Apr 2014 15:17:24 +0200
+From: Lv Zheng <lv.zheng@intel.com>
 
-x86/build: Supress realmode.bin is up to date message
+The size of the buffer allocated for generic_serial_bus region access
+is not correct.  This patch introduces acpi_ex_get_serial_access_length()
+to be invoked to obtain correct data buffer length.  Reported by
+Lan Tianyu, Fixed by Lv Zheng.
 
-Supress this unnecessary message during kernel re-build:
-
-   make[3]: 'arch/x86/realmode/rm/realmode.bin' is up to date.
-
-Signed-off-by: Peter Foley <pefoley2@pefoley.com>
-Link: http://lkml.kernel.org/r/1397584693-15902-1-git-send-email-pefoley2@pefoley.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 ---
- arch/x86/realmode/rm/Makefile | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/acpi/acpica/exfield.c | 104 +++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 97 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
-index 3497f14..7c0d7be 100644
---- a/arch/x86/realmode/rm/Makefile
-+++ b/arch/x86/realmode/rm/Makefile
-@@ -52,8 +52,9 @@ $(obj)/realmode.elf: $(obj)/realmode.lds $(REALMODE_OBJS) FORCE
- OBJCOPYFLAGS_realmode.bin := -O binary
+diff --git a/drivers/acpi/acpica/exfield.c b/drivers/acpi/acpica/exfield.c
+index 68d9744..12878e1 100644
+--- a/drivers/acpi/acpica/exfield.c
++++ b/drivers/acpi/acpica/exfield.c
+@@ -45,10 +45,71 @@
+ #include "accommon.h"
+ #include "acdispat.h"
+ #include "acinterp.h"
++#include "amlcode.h"
  
- targets += realmode.bin
--$(obj)/realmode.bin: $(obj)/realmode.elf $(obj)/realmode.relocs
-+$(obj)/realmode.bin: $(obj)/realmode.elf $(obj)/realmode.relocs FORCE
- 	$(call if_changed,objcopy)
-+	@:
+ #define _COMPONENT          ACPI_EXECUTER
+ ACPI_MODULE_NAME("exfield")
  
- quiet_cmd_relocs = RELOCS  $@
-       cmd_relocs = arch/x86/tools/relocs --realmode $< > $@
++/* Local prototypes */
++static u32
++acpi_ex_get_serial_access_length(u32 accessor_type, u32 access_length);
++
++/*******************************************************************************
++ *
++ * FUNCTION:    acpi_get_serial_access_bytes
++ *
++ * PARAMETERS:  accessor_type   - The type of the protocol indicated by region
++ *                                field access attributes
++ *              access_length   - The access length of the region field
++ *
++ * RETURN:      Decoded access length
++ *
++ * DESCRIPTION: This routine returns the length of the generic_serial_bus
++ *              protocol bytes
++ *
++ ******************************************************************************/
++
++static u32
++acpi_ex_get_serial_access_length(u32 accessor_type, u32 access_length)
++{
++	u32 length;
++
++	switch (accessor_type) {
++	case AML_FIELD_ATTRIB_QUICK:
++
++		length = 0;
++		break;
++
++	case AML_FIELD_ATTRIB_SEND_RCV:
++	case AML_FIELD_ATTRIB_BYTE:
++
++		length = 1;
++		break;
++
++	case AML_FIELD_ATTRIB_WORD:
++	case AML_FIELD_ATTRIB_WORD_CALL:
++
++		length = 2;
++		break;
++
++	case AML_FIELD_ATTRIB_MULTIBYTE:
++	case AML_FIELD_ATTRIB_RAW_BYTES:
++	case AML_FIELD_ATTRIB_RAW_PROCESS:
++
++		length = access_length;
++		break;
++
++	case AML_FIELD_ATTRIB_BLOCK:
++	case AML_FIELD_ATTRIB_BLOCK_CALL:
++	default:
++
++		length = ACPI_GSBUS_BUFFER_SIZE;
++		break;
++	}
++
++	return (length);
++}
++
+ /*******************************************************************************
+  *
+  * FUNCTION:    acpi_ex_read_data_from_field
+@@ -63,8 +124,9 @@ ACPI_MODULE_NAME("exfield")
+  *              Buffer, depending on the size of the field.
+  *
+  ******************************************************************************/
++
+ acpi_status
+-acpi_ex_read_data_from_field(struct acpi_walk_state *walk_state,
++acpi_ex_read_data_from_field(struct acpi_walk_state * walk_state,
+ 			     union acpi_operand_object *obj_desc,
+ 			     union acpi_operand_object **ret_buffer_desc)
+ {
+@@ -73,6 +135,7 @@ acpi_ex_read_data_from_field(struct acpi_walk_state *walk_state,
+ 	acpi_size length;
+ 	void *buffer;
+ 	u32 function;
++	u16 accessor_type;
+ 
+ 	ACPI_FUNCTION_TRACE_PTR(ex_read_data_from_field, obj_desc);
+ 
+@@ -116,9 +179,22 @@ acpi_ex_read_data_from_field(struct acpi_walk_state *walk_state,
+ 			    ACPI_READ | (obj_desc->field.attribute << 16);
+ 		} else if (obj_desc->field.region_obj->region.space_id ==
+ 			   ACPI_ADR_SPACE_GSBUS) {
+-			length = ACPI_GSBUS_BUFFER_SIZE;
+-			function =
+-			    ACPI_READ | (obj_desc->field.attribute << 16);
++			accessor_type = obj_desc->field.attribute;
++			length = acpi_ex_get_serial_access_length(accessor_type,
++								  obj_desc->
++								  field.
++								  access_length);
++
++			/*
++			 * Add additional 2 bytes for modeled generic_serial_bus data buffer:
++			 * typedef struct {
++			 *     BYTEStatus; // Byte 0 of the data buffer
++			 *     BYTELength; // Byte 1 of the data buffer
++			 *     BYTE[x-1]Data; // Bytes 2-x of the arbitrary length data buffer,
++			 * }
++			 */
++			length += 2;
++			function = ACPI_READ | (accessor_type << 16);
+ 		} else {	/* IPMI */
+ 
+ 			length = ACPI_IPMI_BUFFER_SIZE;
+@@ -231,6 +307,7 @@ acpi_ex_write_data_to_field(union acpi_operand_object *source_desc,
+ 	void *buffer;
+ 	union acpi_operand_object *buffer_desc;
+ 	u32 function;
++	u16 accessor_type;
+ 
+ 	ACPI_FUNCTION_TRACE_PTR(ex_write_data_to_field, obj_desc);
+ 
+@@ -284,9 +361,22 @@ acpi_ex_write_data_to_field(union acpi_operand_object *source_desc,
+ 			    ACPI_WRITE | (obj_desc->field.attribute << 16);
+ 		} else if (obj_desc->field.region_obj->region.space_id ==
+ 			   ACPI_ADR_SPACE_GSBUS) {
+-			length = ACPI_GSBUS_BUFFER_SIZE;
+-			function =
+-			    ACPI_WRITE | (obj_desc->field.attribute << 16);
++			accessor_type = obj_desc->field.attribute;
++			length = acpi_ex_get_serial_access_length(accessor_type,
++								  obj_desc->
++								  field.
++								  access_length);
++
++			/*
++			 * Add additional 2 bytes for modeled generic_serial_bus data buffer:
++			 * typedef struct {
++			 *     BYTEStatus; // Byte 0 of the data buffer
++			 *     BYTELength; // Byte 1 of the data buffer
++			 *     BYTE[x-1]Data; // Bytes 2-x of the arbitrary length data buffer,
++			 * }
++			 */
++			length += 2;
++			function = ACPI_WRITE | (accessor_type << 16);
+ 		} else {	/* IPMI */
+ 
+ 			length = ACPI_IPMI_BUFFER_SIZE;
+-- 
+1.8.4.rc0.1.g8f6a3e5.dirty
+
