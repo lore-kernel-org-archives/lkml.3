@@ -1,108 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113AbaDPSGs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 14:06:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17563 "EHLO mx1.redhat.com"
+	id S1754927AbaDPSMX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 14:12:23 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49269 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753870AbaDPSGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 14:06:46 -0400
-Date: Wed, 16 Apr 2014 14:06:42 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Simo Sorce <ssorce@redhat.com>, David Miller <davem@davemloft.net>,
-        Tejun Heo <tj@kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
-        Network Development <netdev@vger.kernel.org>
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
- cgroup path
-Message-ID: <20140416180642.GG31074@redhat.com>
-References: <CALCETrURHNmLyccRiF_W8o2ozRMR4AaCjUE=_PU8z1+Pq6X2jQ@mail.gmail.com>
- <20140416002010.GA5035@redhat.com>
- <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com>
- <20140416.085743.1614257692560892039.davem@davemloft.net>
- <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com>
- <1397664837.19767.410.camel@willson.li.ssimo.org>
- <CALCETrXn7b6UuALpGUVoyQYfR2uzk5tj2ABV=dkvtFNgqM5sxQ@mail.gmail.com>
+	id S1752749AbaDPSMV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 14:12:21 -0400
+Message-ID: <534EC7EB.8030602@ti.com>
+Date: Wed, 16 Apr 2014 13:11:55 -0500
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrXn7b6UuALpGUVoyQYfR2uzk5tj2ABV=dkvtFNgqM5sxQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, <dan.j.williams@intel.com>,
+        <vinod.koul@intel.com>, <nsekhar@ti.com>
+CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+Subject: Re: [PATCH v3 00/10] dma: edma: Fixes for cyclic (audio) operation
+References: <1397475725-5036-1-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1397475725-5036-1-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 09:31:25AM -0700, Andy Lutomirski wrote:
-> On Wed, Apr 16, 2014 at 9:13 AM, Simo Sorce <ssorce@redhat.com> wrote:
-> > On Wed, 2014-04-16 at 07:37 -0700, Andy Lutomirski wrote:
-> >> On Wed, Apr 16, 2014 at 5:57 AM, David Miller <davem@davemloft.net> wrote:
-> >> >
-> >> > Please, just stop.
-> >>
-> >> No.
-> >>
-> >> This thread is proposing an ABI.  This means that, if the ABI ends up
-> >> in Linus's kernel, then it has to be supported forever.  Now is the
-> >> time to find and fix any issues with it before they become much harder
-> >> to fix.
-> >
-> > Ok, but so far I haven't seen a single objection from you that has solid
-> > grounds.
+On 04/14/2014 06:41 AM, Peter Ujfalusi wrote:
+> Hi,
 > 
-> CVE-2013-1959 was caused by a new kernel feature causing a call to
-> write(2) to behave as though the caller was authenticating itself to
-> something else where, in previous kernels, write(2) did not
-> authenticate.
+> Changes since v2:
+> - Dropped patch 10 from v2 (simplify direction configuration...)
+> - Dropped the channel priority related patches since we are going to go via
+>   different route for configuring the priority.
+> - Added ACK from Joel for the patches since they are not changed since v2
 > 
-> Admittedly cgroups aren't currently as important as uid, but if this
-> changes, then SO_PASSCGROUP, as currently written, will have *exactly*
-> the same problem.
-
-I am not sure how same issue with happen with cgroups. In the case of
-socket example, you are forcing a setuid program to write to standard
-output and that setuid program will run in same cgroup as caller and
-will have same cgroup as caller. So even if somebody was using cgroup
-information for authentication, atleast in this particular case it
-will not be a problem. Both unpriviliged and priviliged programs has
-same cgroups.
-
+> Changes since v1:
+> - ASoC patches removed
+> - Comments from Andriy Shevchenko addressed
+> - patch added to fix cases when src/dst_maxburst is set to 0
 > 
-> >
-> > The only one that *may* be reasonable is the "secret" cgroup name one,
-> > however nobody seem to come up with a reason why it is legitimate to
-> > allow to keep cgroup names secret.
-> >
-> > And if you can come up with such a good reason the SO_NOPASSCGROUP
-> > option seem the right solution.
-> >
-> >> This ABI is especially tricky because programs will use it even if
-> >> they don't explicitly try to.  So just adding the ABI may break
-> >> existing assumptions that are relevant to security or correctness.
-> >
-> > It's not clear to me what you mean by this, either you explicitly use
-> > SO_PASSCGROUP or not, it's not like you can involuntarily add a flag ...
-> >
+> The series contains now only:
+> Support for DMA pause/resume in cyclic mode
+> device_slave_caps callback and DMA_CYCLIC flag correction.
+> While debugging the edma to get things sorted out I noticed that the debug was
+> too verbose and the important information was hidden even when the we did not
+> asked for verbose dmaengine debug.
+> I have included some debug cleanups for the edma dmaengine driver also.
 > 
-> The issue here is that the receiver sets SO_(PASS|PEER)CGROUP, forcing
-> the sender to identify or authenticate itself.  The sender might not
-> want to identify itself.  Even if you don't buy any secrecy arguments,
-> the sender might not intend to authenticate.  Certainly no existing
-> callers of connect or write intend to authenticate using their cgroup,
-> since current kernels don't have those semantics.
+> Regards,
+> Peter
+> ---
+> Peter Ujfalusi (10):
+>   platform_data: edma: Be precise with the paRAM struct
+>   arm: common: edma: Save the number of event queues/TCs
+>   dmaengine: edma: Correct the handling of src/dst_maxburst == 0
+>   dmaengine: edma: Add support for DMA_PAUSE/RESUME operation
+>   dmaengine: edma: Set DMA_CYCLIC capability flag
+>   dmaengine: edma: Implement device_slave_caps callback
+>   dmaengine: edma: Reduce debug print verbosity for non verbose
+>     debugging
+>   dmaengine: edma: Prefix debug prints where the text were identical in
+>     prep callbacks
+>   dmaengine: edma: Add channel number to debug prints
+>   dmaengine: edma: Print the direction value as well when it is not
+>     supported
+> 
+>  arch/arm/common/edma.c             |  4 ++
+>  drivers/dma/edma.c                 | 87 ++++++++++++++++++++++++++++++--------
+>  include/linux/platform_data/edma.h | 18 ++++----
+>  3 files changed, 83 insertions(+), 26 deletions(-)
+> 
 
-Ok, so passing cgroup information is not necessarily a problem as long
-as it is not used for authentication. So say somebody is just logging
-all the client request and which cgroup client was in, that should not
-be a problem.
+I reviewed and tested all the patches in the new series to make sure it
+doesn't break anything with non-cyclic users (MMC and Crypto).
 
-I agree that before somebody uses cgroup information for authentication
-purposes, may be there needs to be a bigger debate whether this info
-can be used safely for authentication purposes or not and in what
-circumstances it is safe to use for authentication.
+Reviewed-and-Tested-by: Joel Fernandes <joelf@ti.com>
 
-But that does not mean that API to pass the cgroup information around is
-wrong.
 
-Thanks
-Vivek
+regards,
+-Joel
