@@ -1,193 +1,355 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711AbaDPEz3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 00:55:29 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:42790 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055AbaDPEzZ (ORCPT
+	id S1754027AbaDPFAQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 01:00:16 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:51877 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751046AbaDPFAM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 00:55:25 -0400
-X-AuditID: cbfee690-b7f266d00000287c-f5-534e0d320b67
-Message-id: <534E0D35.4060506@samsung.com>
-Date: Wed, 16 Apr 2014 13:55:17 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Jonathan Cameron <jic23@kernel.org>,
-        naveen krishna <ch.naveen@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, rdunlap@infradead.org,
-        Tomasz Figa <t.figa@samsung.com>, linux-iio@vger.kernel.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+	Wed, 16 Apr 2014 01:00:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140415124743.GD3403@thunk.org>
+References: <CADDb1s2RvN_S+abFXCe4ZhZPKZgP_PiocJdpiLzRC_Se5sgVVg@mail.gmail.com>
+	<20140415124743.GD3403@thunk.org>
+Date: Wed, 16 Apr 2014 10:30:10 +0530
+Message-ID: <CADDb1s3HYDvb51Ngrwk82gkpbUWg1bRo7kaUmbGRmb0g_9JKgw@mail.gmail.com>
+Subject: Re: Ext4: deadlock occurs when running fsstress and ENOSPC errors are seen.
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Amit Sahrawat <amit.sahrawat83@gmail.com>,
+        Jan Kara <jack@suse.cz>, darrick.wong@oracle.com,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
         LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCHv2 1/2] iio: adc: exynos_adc: Control special clock of ADC
- to support Exynos3250 ADC
-References: <1397466426-13870-1-git-send-email-cw00.choi@samsung.com>
- <1397466426-13870-2-git-send-email-cw00.choi@samsung.com>
- <CAK9yfHzdPu67JKrww-VFjFvKni7S_y_hvLKKUdeQe-_pxjoBAQ@mail.gmail.com>
- <534E0AA0.6010207@samsung.com>
-In-reply-to: <534E0AA0.6010207@samsung.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphleLIzCtJLcpLzFFi42JZI2JSqGvE6xdssHGvqMXd54cZLeYfOcdq
-	0f9mIavFuVcrGS0eNK1isuhdcJXNYtPja6wWC9uWsFjMO/KOxeLyrjlsFjPO72OyWHr9IpPF
-	hOlrWSze3pnOYtG69wi7xck/vYwW62e8ZnEQ9Fgzbw2jx+W+XiaPlcu/sHlsXqHlsWlVJ5vH
-	nWt7gLwl9R59W1YxenzeJBfAGcVlk5Kak1mWWqRvl8CV8ej/J6aCXSoVB+fOZm1g3CLdxcjJ
-	ISFgItHa9oIJwhaTuHBvPVsXIxeHkMBSRomrRw4xwxQt+febESIxnVFi0+tHrBDOa0aJtd9X
-	sINU8QpoSbycuhOog4ODRUBV4vfDVJAwG1B4/4sbbCC2qECYxMrpV1ggygUlfky+B2aLgLR2
-	L2cCmcks0MUqcbqhEywhLJAp8f37VqjNLxkluh91gyU4BbQlHu49DmYzC6hLTJq3iBnClpfY
-	vOYtM0iDhMAWDom+ua/AnmMREJD4NvkQC8h1EgKyEpsOQL0mKXFwxQ2WCYxis5AcNQvJ2FlI
-	xi5gZF7FKJpakFxQnJReZKJXnJhbXJqXrpecn7uJEZgCTv97NmEH470D1ocYk4FWTmSWEk3O
-	B6aQvJJ4Q2MzIwtTE1NjI3NLM9KElcR51R4lBQkJpCeWpGanphakFsUXleakFh9iZOLglGpg
-	FO2qKahd/4qhLYObZx1H4axCcUbGR26K87J4WpzEe3/51/5gUPz88cQlm965ZyUVA8sfzGlu
-	2OyU/UTi4ne7hGWHWfc8UZbeueGZy2aOlb/P3uVYbGy24PLhjf07Q3y3ebtsSpvGurfwjfNi
-	lbOTmSKmMT+b8MHvzaED7z14112SP3R3EXtWrRJLcUaioRZzUXEiAGHGvVMXAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIKsWRmVeSWpSXmKPExsVy+t9jQV0jXr9gg3s3uSzuPj/MaDH/yDlW
-	i/43C1ktzr1ayWjxoGkVk0XvgqtsFpseX2O1WNi2hMVi3pF3LBaXd81hs5hxfh+TxdLrF5ks
-	Jkxfy2Lx9s50FovWvUfYLU7+6WW0WD/jNYuDoMeaeWsYPS739TJ5rFz+hc1j8wotj02rOtk8
-	7lzbA+Qtqffo27KK0ePzJrkAzqgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtz
-	JYW8xNxUWyUXnwBdt8wcoF+UFMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYQ1
-	jBmP/n9iKtilUnFw7mzWBsYt0l2MnBwSAiYSS/79ZoSwxSQu3FvP1sXIxSEkMJ1RYtPrR6wQ
-	zmtGibXfV7CDVPEKaEm8nLqTuYuRg4NFQFXi98NUkDAbUHj/ixtsILaoQJjEyulXWCDKBSV+
-	TL4HZouAtHYvZwKZySzQxSpxuqETLCEskCnx/ftWRohlLxkluh91gyU4BbQlHu49DmYzC6hL
-	TJq3iBnClpfYvOYt8wRGgVlIlsxCUjYLSdkCRuZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmb
-	GMEJ5pnUDsaVDRaHGAU4GJV4eGfk+AYLsSaWFVfmHmKU4GBWEuH98gUoxJuSWFmVWpQfX1Sa
-	k1p8iDEZGAQTmaVEk/OByS+vJN7Q2MTMyNLI3NDCyNicNGElcd4DrdaBQgLpiSWp2ampBalF
-	MFuYODilGhin9d60OjS7YeLft8KROd6F7+dfMp0zeZb5Rwthu32tl//d9BJ8vbpDbOFyzuN5
-	1sd+T7M1m3N5q+/F1K06UrMP7bk+MUt5a/ASSTP2w/VS83JWKGs8uL5X4JSyw5kdTq39arGP
-	ekRd8iVknzmsauFkv1nB897S369a7vSTI1yqIvXfN3FsNDJQYinOSDTUYi4qTgQAuwx7rXQD	AAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+        Namjae Jeon <linkinjeon@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sachin,
+Thanks Ted, for the detailed reply.
 
-On 04/16/2014 01:44 PM, Chanwoo Choi wrote:
-> Hi Sachin,
-> 
-> On 04/16/2014 12:48 PM, Sachin Kamat wrote:
->> Hi Chanwoo,
->>
->> On 14 April 2014 14:37, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->>> This patch control special clock for ADC in Exynos series's FSYS block.
->>> If special clock of ADC is registerd on clock list of common clk framework,
->>> Exynos ADC drvier have to control this clock.
->>>
->>> Exynos3250/Exynos4/Exynos5 has 'adc' clock as following:
->>> - 'adc' clock: bus clock for ADC
->>>
->>> Exynos3250 has additional 'sclk_tsadc' clock as following:
->>> - 'sclk_tsadc' clock: special clock for ADC which provide clock to internal ADC
->>>
->>> Exynos 4210/4212/4412 and Exynos5250/5420 has not included 'sclk_tsadc' clock
->>> in FSYS_BLK. But, Exynos3250 based on Cortex-A7 has only included 'sclk_tsadc'
->>> clock in FSYS_BLK.
->>>
->>> Cc: Jonathan Cameron <jic23@kernel.org>
->>> Cc: Kukjin Kim <kgene.kim@samsung.com>
->>> Cc: Naveen Krishna Chatradhi
->>> Cc: linux-iio@vger.kernel.org
->>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->>> ---
->>>  drivers/iio/adc/exynos_adc.c | 54 +++++++++++++++++++++++++++++++++-----------
->>>  1 file changed, 41 insertions(+), 13 deletions(-)
->>>
->>> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
->>> index d25b262..3c99243 100644
->>> --- a/drivers/iio/adc/exynos_adc.c
->>> +++ b/drivers/iio/adc/exynos_adc.c
->>> @@ -40,8 +40,9 @@
->>>  #include <linux/iio/driver.h>
->>>
->>>  enum adc_version {
->>> -       ADC_V1,
->>> -       ADC_V2
->>> +       ADC_V1 = 0x1,
->>> +       ADC_V2 = 0x2,
->>> +       ADC_V3 = (ADC_V1 | ADC_V2),
->>
->> Can't this be simply 0x3? Or is this not really a h/w version?
-> 
-> Even thought ADC_V3 isn't h/w revision, ADC_V3 include all featues of ADC_V2
-> and only one difference of clock(sclk_tsadc) from ADC_V2.
-> I want to describethat ADC_V3 include ADC_V2 feature So, I add as following:
-> 	>> +       ADC_V3 = (ADC_V1 | ADC_V2),
-> 
->>
->>>  };
->>>
->>>  /* EXYNOS4412/5250 ADC_V1 registers definitions */
->>> @@ -88,6 +89,7 @@ struct exynos_adc {
->>>         void __iomem            *regs;
->>>         void __iomem            *enable_reg;
->>>         struct clk              *clk;
->>> +       struct clk              *sclk;
->>>         unsigned int            irq;
->>>         struct regulator        *vdd;
->>>
->>> @@ -100,6 +102,7 @@ struct exynos_adc {
->>>  static const struct of_device_id exynos_adc_match[] = {
->>>         { .compatible = "samsung,exynos-adc-v1", .data = (void *)ADC_V1 },
->>>         { .compatible = "samsung,exynos-adc-v2", .data = (void *)ADC_V2 },
->>> +       { .compatible = "samsung,exynos-adc-v3", .data = (void *)ADC_V3 },
->>>         {},
->>>  };
->>>  MODULE_DEVICE_TABLE(of, exynos_adc_match);
->>> @@ -128,7 +131,7 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
->>>         mutex_lock(&indio_dev->mlock);
->>>
->>>         /* Select the channel to be used and Trigger conversion */
->>> -       if (info->version == ADC_V2) {
->>> +       if (info->version & ADC_V2) {
->>
->> So, now this would be applicable for ADC_V3 too, right?
+We could not retain the original HDD – on which we got the issue. In
+order to replicate the problem we did steps like this:
+1)	Make 250MB partition
+2)	Format the partition with blocksize ‘4K’
+3)	Using dumpe2fs – get the block group information
+Group 0: (Blocks 0-32767)
+  Checksum 0x89ae, unused inodes 29109
+  Primary superblock at 0, Group descriptors at 1-1
+  Reserved GDT blocks at 2-15
+  Block bitmap at 16 (+16), Inode bitmap at 32 (+32)
+  Inode table at 48-957 (+48)
+  26826 free blocks, 29109 free inodes, 2 directories, 29109 unused inodes
+  Free blocks: 5942-32767
+  Free inodes: 12-29120
+Group 1: (Blocks 32768-58226) [INODE_UNINIT]
+  Checksum 0xb43a, unused inodes 29120
+  Backup superblock at 32768, Group descriptors at 32769-32769
+  Reserved GDT blocks at 32770-32783
+  Block bitmap at 17 (bg #0 + 17), Inode bitmap at 33 (bg #0 + 33)
+  Inode table at 958-1867 (bg #0 + 958)
+  25443 free blocks, 29120 free inodes, 0 directories, 29120 unused inodes
+  Free blocks: 32784-58226
+  Free inodes: 29121-58240
+4)	Corrupt the block group ‘1’  by writing all ‘1’, we had one file
+with all 1’s, so using ‘dd’ –
+dd if=i_file of=/dev/sdb1 bs=4096 seek=17 count=1
+After this mount the partition – create few random size files and then
+ran ‘fsstress,
 
-ADC_V3 isn't h/w version. So, I think this code is proper instead of using ADC_V3 direclty.
-I want to use ADC_V3 version on checking clock(sclk_tsadc).
+fsstress -p 10 -n 100 -l 100 -d /mnt/test_dir
 
->>
->>
->>>                 con2 = readl(ADC_V2_CON2(info->regs));
->>>                 con2 &= ~ADC_V2_CON2_ACH_MASK;
->>>                 con2 |= ADC_V2_CON2_ACH_SEL(chan->address);
->>> @@ -165,7 +168,7 @@ static irqreturn_t exynos_adc_isr(int irq, void *dev_id)
->>>         info->value = readl(ADC_V1_DATX(info->regs)) &
->>>                                                 ADC_DATX_MASK;
->>>         /* clear irq */
->>> -       if (info->version == ADC_V2)
->>> +       if (info->version & ADC_V2)
->>>                 writel(1, ADC_V2_INT_ST(info->regs));
->>>         else
->>>                 writel(1, ADC_V1_INTCLR(info->regs));
->>> @@ -226,11 +229,25 @@ static int exynos_adc_remove_devices(struct device *dev, void *c)
->>>         return 0;
->>>  }
->>>
->>> +static void exynos_adc_enable_clock(struct exynos_adc *info, bool enable)
->>> +{
->>> +       if (enable) {
->>> +               clk_prepare_enable(info->clk);
->>
->> This could fail. Is it OK without any checks?
-> 
-> OK, I'll check return value.
+and we get logs like before the hang:
+#fsstress -p 10 -n 100 -l 100 -d /mnt/test_dir
+seed = 582332
+EXT4-fs error (device sdb1): ext4_mb_generate_buddy:743: group 1,
+20480 clusters in bitmap, 25443 in gd; block bitmap corrupt.
+JBD2: Spotted dirty metadata buffer (dev = sdb1, blocknr = 0). There's
+a risk of filesystem corruption in case of system crash.
 
-Do you want to check return value always?
-I think again, Some device drivers in mainline would not check
-return value of clock function. If maintainer confirm this modification,
-I'll fix it as your comment.
+EXT4-fs (sdb1): delayed block allocation failed for inode 26 at
+logical offset 181 with max blocks 2 with error -28
+EXT4-fs (sdb1): This should not happen!! Data will be lost
 
-Best Regards,
-Chanwoo Choi
+EXT4-fs (sdb1): Total free blocks count 0
+EXT4-fs (sdb1): Free/Dirty block details
+EXT4-fs (sdb1): free_blocks=25443
+EXT4-fs (sdb1): dirty_blocks=51
+EXT4-fs (sdb1): Block reservation details
+EXT4-fs (sdb1): i_reserved_data_blocks=9
+EXT4-fs (sdb1): i_reserved_meta_blocks=1
+
+EXT4-fs (sdb1): delayed block allocation failed for inode 101 at
+logical offset 198 with max blocks 1 with error -28
+EXT4-fs (sdb1): This should not happen!! Data will be lost
+
+EXT4-fs (sdb1): Total free blocks count 0
+EXT4-fs (sdb1): Free/Dirty block details
+EXT4-fs (sdb1): free_blocks=25443
+EXT4-fs (sdb1): dirty_blocks=43
+EXT4-fs (sdb1): Block reservation details
+EXT4-fs (sdb1): i_reserved_data_blocks=1
+EXT4-fs (sdb1): i_reserved_meta_blocks=1
+
+EXT4-fs (sdb1): delayed block allocation failed for inode 94 at
+logical offset 450 with max blocks 1 with error -28
+EXT4-fs (sdb1): This should not happen!! Data will be lost
+
+EXT4-fs (sdb1): Total free blocks count 0
+EXT4-fs (sdb1): Free/Dirty block details
+EXT4-fs (sdb1): free_blocks=25443
+EXT4-fs (sdb1): dirty_blocks=36
+EXT4-fs (sdb1): Block reservation details
+EXT4-fs (sdb1): i_reserved_data_blocks=12
+EXT4-fs (sdb1): i_reserved_meta_blocks=2
+
+
+…
+EXT4-fs (sdb1): error count: 3
+EXT4-fs (sdb1): initial error at 545: ext4_mb_generate_buddy:743
+EXT4-fs (sdb1): last error at 42: ext4_mb_generate_buddy:743
+…
+Yes, we are running this on ARM target and we did not set the time
+before running these operations. So, the time actually corresponds to
+date -d @545
+Thu Jan  1 05:39:05 IST 1970
+date -d @42
+Thu Jan  1 05:30:42 IST 1970
+
+
+Yes, we are running kernel version 3.8 and applied the patches from
+‘Darrick’ to fix the first looping around in ext4_da_writepages.
+
+As you suggested, we also made change to mark the FS READ ONLY in case
+of corruption. The changes are;
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index c0fbd96..04f3a66 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -1641,8 +1641,10 @@ static void mpage_da_map_and_submit(struct
+mpage_da_data *mpd)
+                                 mpd->b_size >> mpd->inode->i_blkbits, err);
+                        ext4_msg(sb, KERN_CRIT,
+                                "This should not happen!! Data will be lost\n");
+-                       if (err == -ENOSPC)
++                       if (err == -ENOSPC) {
+                                ext4_print_free_blocks(mpd->inode);
++                               mpd->inode->i_sb->s_flags |= MS_RDONLY;
++                       }
+                }
+                /* invalidate all the pages */
+                ext4_da_block_invalidatepages(mpd);
+@@ -2303,6 +2305,36 @@ out:
+        return ret;
+ }
+
++static void ext4_invalidate_mapping(struct  address_space *mapping)
++{
++       struct pagevec pvec;
++       unsigned int i;
++       pgoff_t index = 0;
++       struct inode* inode = mapping->host;
++
++       pagevec_init(&pvec, 0);
++       while (pagevec_lookup_tag(&pvec, mapping, &index, PAGECACHE_TAG_DIRTY,
++                                 PAGEVEC_SIZE)) {
++               for (i = 0; i < pagevec_count(&pvec); i++) {
++                       struct page *page = pvec.pages[i];
++                       lock_page(page);
++                       spin_lock_irq(&mapping->tree_lock);
++                       if (test_bit(PG_dirty, &page->flags)) {
++                               printk(KERN_ERR"INO[%lu], i(%d)\n",
+inode->i_ino, i);
++                               radix_tree_tag_clear(&mapping->page_tree,
++                               page_index(page),
++                               PAGECACHE_TAG_DIRTY);
++                               spin_unlock_irq(&mapping->tree_lock);
++                               clear_page_dirty_for_io(page);
++                               goto unlock_page;
++                       }
++                       spin_unlock_irq(&mapping->tree_lock);
++unlock_page:
++                       unlock_page(page);
++               }
++               pagevec_release(&pvec);
++       }
++}
+static int ext4_da_writepages(struct address_space *mapping,
+                              struct writeback_control *wbc)
+@@ -2419,6 +2451,14 @@ retry:
+                        ext4_msg(inode->i_sb, KERN_CRIT, "%s: jbd2_start: "
+                               "%ld pages, ino %lu; err %d", __func__,
+                                wbc->nr_to_write, inode->i_ino, ret);
++
++                       if(ret == -EROFS) {
++                               ext4_msg(inode->i_sb, KERN_CRIT,"This
+is probably result of corruption"
++                                                "that FS is marked RO
+in between writepages\n");
++                               /*Invalidate mapping if RO encountered
+during writepages */
++                                ext4_invalidate_mapping(mapping);
++                                invalidate_inode_pages2(mapping);
++                       }
+                        blk_finish_plug(&plug);
+                        goto out_writepages;
+                }
+
+After making these changes, as soon as there is corruption – the FS is
+marked RO and all pending DIRTY writes are cleared. So, the hang is
+not seen.
+
+But we have a doubt about the possible side-effects of this code. Can
+you please provide your inputs on this? It will be of immense help.
+
+Thanks & Regards,
+Amit Sahrawat
+
+
+On Tue, Apr 15, 2014 at 6:17 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Tue, Apr 15, 2014 at 01:24:26PM +0530, Amit Sahrawat wrote:
+>> Initially in normal write path, when the disk was almost full – we got
+>> hung for the ‘sync’ because the flusher (which is busy in the
+>> writepages is not responding). Before the hung task, we also found the
+>> logs like:
+>>
+>> EXT4-fs error (device sda1): ext4_mb_generate_buddy:742: group 1493, 0
+>> clusters in bitmap, 58339 in gd
+>> EXT4-fs error (device sda1): ext4_mb_generate_buddy:742: group 1000, 0
+>> clusters in bitmap, 3 in gd
+>> EXT4-fs error (device sda1): ext4_mb_generate_buddy:742: group 1425, 0
+>> clusters in bitmap, 1 in gd
+>
+> These errors indicate that the several block groups contain have
+> corrupt block bitmap: block group #1493, #1000, and #1425.  The fact
+> that there are 0 free blocks/clusters in the bitmap indicate that the
+> bitmap was all zero's, which could be the potential cause of the
+> corruption.
+>
+> The other thing which is funny is the number of free blocks/clusters
+> being greater than 32768 in block group #1493.  Assuming a 4k page
+> size, that shouldn't be possible.  Can you send the output of
+> "dumpe2fs -h /dev/sdXX" so we can take a look at the file system parameters?
+>
+> How much before the hung task did you see these messages?  I normally
+> recommend that the file system be set up to either panic the system,
+> or force the file system to be remounted read/only when EXT4-fs error
+> messages are reported, since that means that the file system is
+> corrupted, and further operaion can cause more data to be lost.
+>
+>> JBD2: Spotted dirty metadata buffer (dev = sda1, blocknr = 0). There's
+>> a risk of filesystem corruption in case of system crash.
+>> JBD2: Spotted dirty metadata buffer (dev = sda1, blocknr = 0). There's
+>> a risk of filesystem corruption in case of system crash.
+>>
+>> EXT4-fs (sda1): error count: 58
+>> EXT4-fs (sda1): initial error at 607: ext4_mb_generate_buddy:742
+>> EXT4-fs (sda1): last error at 58: ext4_mb_generate_buddy:742
+>
+> The "607" and "58" in the "at 607" and "at 58" are normally supposed
+> to be a unix time_t value.  That is, it's normally a number like:
+> 1397564866, and it can be decoded via:
+>
+> % date -d @1397564866
+> Tue Apr 15 08:27:46 EDT 2014
+>
+> The fact that these numbers are numerically so small means that the
+> time wasn't set correctly on your system.  Was this a test system
+> running under kvm without a proper real-time clock?
+>
+>> When we analysed the problem, it occurred from the writepages path in ext4.
+>> This is because of the difference in the free blocks reported by
+>> cluster bitmap and the number of free blocks reported by group
+>> descriptor.
+>
+> Yes, indicating that the file system was corrupt.
+>
+>> During ext4_fill_super, ext4 calculates the number of free blocks by
+>> reading all the descriptors in function ext4_count_free_clusters and
+>> store it in percpu counter s_freeclusters_counter.
+>> ext4_count_free_clusters:
+>> desc_count = 0;
+>> for (i = 0; i < ngroups; i++) {
+>> gdp = ext4_get_group_desc(sb, i, NULL);
+>> if (!gdp)
+>> continue;
+>> desc_count += ext4_free_group_clusters(sb, gdp);
+>> }
+>> return desc_count;
+>>
+>> During writebegin call, ext4 checks this s_freeclusters_counter
+>> counter to know if there are free blocks present or not.
+>> When the free blocks reported by group descriptor are greater than the
+>> actual free blocks reported by bitmap, a call to writebegin could
+>> still succeed even if the free blocks represented by bitmaps are 0.
+>
+> Yes.  We used to have code that would optionally read every single
+> bitmap, and verify that the descriptor counts match the values in the
+> bitmap.  However, that was expensive, and wasn't a full check of all
+> possible file system inconsistencies that could lead to data loss.  So
+> we ultimately removed this code.  If the file system is potentially
+> corrupt, it is the system administrator's responsibility to force an
+> fsck run to make sure the file system data structures are consistent.
+>
+>> When searching for the relevant problem which occurs in this path. We
+>> got the patch-set from ‘Darrick’ which revolves around this problem.
+>> ext4: error out if verifying the block bitmap fails
+>> ext4: fix type declaration of ext4_validate_block_bitmap
+>> ext4: mark block group as corrupt on block bitmap error
+>> ext4: mark block group as corrupt on inode bitmap error
+>> ext4: mark group corrupt on group descriptor checksum
+>> ext4: don't count free clusters from a corrupt block group
+>>
+>> After adopting the patch-set and performing verification on the
+>> similar setup, we ran ‘fsstress’. But now it is resulting in hang at
+>> different points.
+>>
+>> In the current logs we got:
+>> EXT4-fs error (device sdb1): ext4_mb_generate_buddy:743: group 1,
+>> 20480 clusters in bitmap, 25443 in gd; block bitmap corrupt.
+>> JBD2: Spotted dirty metadata buffer (dev = sdb1, blocknr = 0). There's
+>> a risk of filesystem corruption in case of system crash.
+>
+> OK, what version of the kernel are you using?  The patches that you
+> reference above have been in the upstream kernel since 3.12, so I'm
+> assuming you're not using the latest upstream kernel, but rather an
+> older kernel with some patches applied.  Hmmm, skipping ahead:
+>
+>> Kernel Version: 3.8
+>> Test command:
+>> fsstress -p 10 -n 100 -l 100 -d /mnt/test_dir
+>
+> There is clearly either some kernel bug or hardware problem which is
+> causing the file system corruption.  Given that you are using a much
+> older kernel, it's quite likely that there is some bug that has been
+> fixed in a later version of the kernel (although we can't really rule
+> out a hardware problem without know much more about your setup).
+>
+> Unfortunately, there has been a *large* number of changes since
+> version 3.8, and I can't remember all of the changes and bug fixes
+> that we might have made in the past year or more (v3.8 dates from
+> March 2013).
+>
+> Something that might be helpful is for you to use xfstests.  That's a
+> much more thorough set of tests which we've been using so if you must
+> use an antique version of the kernel, that will probably be a much
+> better set of tests.  It includes fsstress, and much more besides.
+> More importantly, there are times when fixes are identified by the
+> xfstest failure that has gotten fixed up in the commit logs.  So that
+> might help you find the bug fix that you need to backport.
+>
+> For your convenience, there is a simple test framework that makes it
+> relatively easy to build and run xfstests under KVM.  You can find it
+> here:
+>
+>         git://git.kernel.org/pub/scm/fs/ext2/xfstests-bld.git
+>
+> See the documentation found at:
+>
+>         https://git.kernel.org/cgit/fs/ext2/xfstests-bld.git/tree/README
+>
+> for more details.
+>
+> I hope this helps,
+>
+>                                                 - Ted
