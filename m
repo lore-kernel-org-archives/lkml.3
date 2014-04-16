@@ -1,96 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755050AbaDPHoe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 03:44:34 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56272 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754893AbaDPHmz (ORCPT
+	id S1755068AbaDPHoi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 03:44:38 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:51407 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754893AbaDPHof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 03:42:55 -0400
-From: Christoph Hellwig <hch@lst.de>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: [PATCH 6/8] blk-mq: add blk_mq_requeue_request
-Date: Wed, 16 Apr 2014 09:44:57 +0200
-Message-Id: <1397634299-7466-7-git-send-email-hch@lst.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1397634299-7466-1-git-send-email-hch@lst.de>
-References: <1397634299-7466-1-git-send-email-hch@lst.de>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 16 Apr 2014 03:44:35 -0400
+Date: Wed, 16 Apr 2014 10:44:10 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Thomas Tanaka <thomas.tanaka@gmail.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        bernat.ada@gmail.com, jg1.han@samsung.com, keescook@chromium.org,
+        peter.p.waskiewicz.jr@intel.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH] staging: dgrp: Fixed coding style
+Message-ID: <20140416074410.GO26890@mwanda>
+References: <1397609680-10321-1-git-send-email-thomas.tanaka@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397609680-10321-1-git-send-email-thomas.tanaka@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows to requeue a request that has been accepted by ->queue_rq
-earlier.  This is needed by the SCSI layer in various error conditions.
 
-The existing internal blk_mq_requeue_request is renamed to
-__blk_mq_requeue_request as it is a lower level building block for this
-funtionality.
+On Tue, Apr 15, 2014 at 05:54:39PM -0700, Thomas Tanaka wrote:
+> Fixed line width > 80
+> 
+> Signed-off-by: Thomas Tanaka <thomas.tanaka@gmail.com>
+> ---
+>  drivers/staging/dgrp/dgrp_sysfs.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/dgrp/dgrp_sysfs.c b/drivers/staging/dgrp/dgrp_sysfs.c
+> index 2f9345f..93803e0c 100644
+> --- a/drivers/staging/dgrp/dgrp_sysfs.c
+> +++ b/drivers/staging/dgrp/dgrp_sysfs.c
+> @@ -108,8 +108,8 @@ int dgrp_create_class_sysfs_files(void)
+>  	ret = sysfs_create_group(&dgrp_class_global_settings_dev->kobj,
+>  		&dgrp_global_settings_attribute_group);
+>  	if (ret) {
+> -		pr_alert("%s: failed to create sysfs global settings device attributes.\n",
+> -			__func__);
+> +		pr_alert("%s: failed to create sysfs global settings device
+> +			 attributes.\n", __func__);
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- block/blk-mq.c         |   18 ++++++++++++++++--
- include/linux/blk-mq.h |    2 ++
- 2 files changed, 18 insertions(+), 2 deletions(-)
+The original was fine.  It doesn't cause a checkpatch.pl warning.  The
+new one is buggy and won't print the correct text.
 
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 7946f0b..99d3795 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -400,7 +400,7 @@ static void blk_mq_start_request(struct request *rq, bool last)
- 		rq->cmd_flags |= REQ_END;
- }
- 
--static void blk_mq_requeue_request(struct request *rq)
-+static void __blk_mq_requeue_request(struct request *rq)
- {
- 	struct request_queue *q = rq->q;
- 
-@@ -413,6 +413,20 @@ static void blk_mq_requeue_request(struct request *rq)
- 		rq->nr_phys_segments--;
- }
- 
-+void blk_mq_requeue_request(struct request *rq)
-+{
-+	struct request_queue *q = rq->q;
-+
-+	__blk_mq_requeue_request(rq);
-+	blk_clear_rq_complete(rq);
-+
-+	trace_block_rq_requeue(q, rq);
-+
-+	BUG_ON(blk_queued_rq(rq));
-+	blk_mq_insert_request(rq, true, true, false);
-+}
-+EXPORT_SYMBOL(blk_mq_requeue_request);
-+
- struct request *blk_mq_tag_to_rq(struct blk_mq_tags *tags, unsigned int tag)
- {
- 	return tags->rqs[tag];
-@@ -600,7 +614,7 @@ static void __blk_mq_run_hw_queue(struct blk_mq_hw_ctx *hctx)
- 			 * time
- 			 */
- 			list_add(&rq->queuelist, &rq_list);
--			blk_mq_requeue_request(rq);
-+			__blk_mq_requeue_request(rq);
- 			break;
- 		default:
- 			pr_err("blk-mq: bad return on queue: %d\n", ret);
-diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
-index 391377e..ab469d5 100644
---- a/include/linux/blk-mq.h
-+++ b/include/linux/blk-mq.h
-@@ -153,6 +153,8 @@ void blk_mq_free_single_hw_queue(struct blk_mq_hw_ctx *, unsigned int);
- void blk_mq_end_io(struct request *rq, int error);
- void __blk_mq_end_io(struct request *rq, int error);
- 
-+void blk_mq_requeue_request(struct request *rq);
-+
- void blk_mq_complete_request(struct request *rq);
- 
- void blk_mq_stop_hw_queue(struct blk_mq_hw_ctx *hctx);
--- 
-1.7.10.4
+regards,
+dan carpenter
+
 
