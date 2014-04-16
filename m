@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977AbaDPKj0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:39:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51786 "EHLO
+	id S1755891AbaDPKmk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:42:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51758 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755791AbaDPKc7 (ORCPT
+	with ESMTP id S1755777AbaDPKcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:32:59 -0400
+	Wed, 16 Apr 2014 06:32:52 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 35/46] isdnloop: Validate NUL-terminated strings from user.
-Date: Wed, 16 Apr 2014 11:31:51 +0100
-Message-Id: <1397644322-13905-36-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 31/46] vhost: validate vhost_get_vq_desc return value
+Date: Wed, 16 Apr 2014 11:31:47 +0100
+Message-Id: <1397644322-13905-32-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
 References: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
@@ -28,37 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?YOSHIFUJI=20Hideaki=20/=20=E5=90=89=E8=97=A4=E8=8B=B1?=
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-commit 77bc6bed7121936bb2e019a8c336075f4c8eef62 upstream.
+commit a39ee449f96a2cd44ce056d8a0a112211a9b1a1f upstream.
 
-Return -EINVAL unless all of user-given strings are correctly
-NUL-terminated.
+vhost fails to validate negative error code
+from vhost_get_vq_desc causing
+a crash: we are using -EFAULT which is 0xfffffff2
+as vector size, which exceeds the allocated size.
 
-Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+The code in question was introduced in commit
+8dd014adfea6f173c1ef6378f7e5e7924866c923
+    vhost-net: mergeable buffers support
+
+CVE-2014-0055
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/isdn/isdnloop/isdnloop.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/vhost/net.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/isdn/isdnloop/isdnloop.c b/drivers/isdn/isdnloop/isdnloop.c
-index 02125e6..e1f8748 100644
---- a/drivers/isdn/isdnloop/isdnloop.c
-+++ b/drivers/isdn/isdnloop/isdnloop.c
-@@ -1070,6 +1070,12 @@ isdnloop_start(isdnloop_card *card, isdnloop_sdef *sdefp)
- 		return -EBUSY;
- 	if (copy_from_user((char *) &sdef, (char *) sdefp, sizeof(sdef)))
- 		return -EFAULT;
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 1284e7a..786b86d 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -510,9 +510,13 @@ static int get_rx_bufs(struct vhost_virtqueue *vq,
+ 			r = -ENOBUFS;
+ 			goto err;
+ 		}
+-		d = vhost_get_vq_desc(vq->dev, vq, vq->iov + seg,
++		r = vhost_get_vq_desc(vq->dev, vq, vq->iov + seg,
+ 				      ARRAY_SIZE(vq->iov) - seg, &out,
+ 				      &in, log, log_num);
++		if (unlikely(r < 0))
++			goto err;
 +
-+	for (i = 0; i < 3; i++) {
-+		if (!memchr(sdef.num[i], 0, sizeof(sdef.num[i])))
-+			return -EINVAL;
-+	}
-+
- 	spin_lock_irqsave(&card->isdnloop_lock, flags);
- 	switch (sdef.ptype) {
- 	case ISDN_PTYPE_EURO:
++		d = r;
+ 		if (d == vq->num) {
+ 			r = 0;
+ 			goto err;
 -- 
 1.9.1
 
