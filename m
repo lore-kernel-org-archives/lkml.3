@@ -1,107 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660AbaDPFr6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 01:47:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39630 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754360AbaDPFr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 01:47:56 -0400
-Date: Wed, 16 Apr 2014 15:47:46 +1000
-From: NeilBrown <neilb@suse.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com, netdev@vger.kernel.org
-Subject: Re: [PATCH 10/19] NET: set PF_FSTRANS while holding sk_lock
-Message-ID: <20140416154746.7dbb4485@notabene.brown>
-In-Reply-To: <1397625226.4222.113.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <20140416033623.10604.69237.stgit@notabene.brown>
-	<20140416040336.10604.96000.stgit@notabene.brown>
-	<1397625226.4222.113.camel@edumazet-glaptop2.roam.corp.google.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/YX/W05=F6X9qrxW7nKLwnOj"; protocol="application/pgp-signature"
+	id S1754664AbaDPFtJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 01:49:09 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:35991 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754360AbaDPFtF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 01:49:05 -0400
+Message-ID: <534E199D.2090504@linux.vnet.ibm.com>
+Date: Wed, 16 Apr 2014 11:18:13 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: ego@linux.vnet.ibm.com, svaidy@linux.vnet.ibm.com,
+        preeti@linux.vnet.ibm.com, linux-next@vger.kernel.org,
+        rafael.j.wysocki@intel.com, Viresh Kumar <viresh.kumar@linaro.org>,
+        cpufreq <cpufreq@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] cpufreq, powernv: Fix build failure on UP
+References: <20140415141111.GA28352@windriver.com>
+In-Reply-To: <20140415141111.GA28352@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041605-6102-0000-0000-0000055B3884
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/YX/W05=F6X9qrxW7nKLwnOj
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 04/15/2014 07:41 PM, Paul Gortmaker wrote:
+> Hi all,
+> 
+> This new driver is causing build fails on linux-next for non-SMP.
+> 
+> http://kisskb.ellerman.id.au/kisskb/buildresult/10911507/
+> 
+> I didn't bisect since there are only two commits in total.  :)
+> 
+> Looks like some header foo where <linux/smp.h> is not getting <asm/smp.h>
+> 
 
-On Tue, 15 Apr 2014 22:13:46 -0700 Eric Dumazet <eric.dumazet@gmail.com>
-wrote:
+Hi Paul,
 
-> On Wed, 2014-04-16 at 14:03 +1000, NeilBrown wrote:
-> > sk_lock can be taken while reclaiming memory (in nfsd for loop-back
-> > NFS mounts, and presumably in nfs), and memory can be allocated while
-> > holding sk_lock, at least via:
-> >=20
-> >  inet_listen -> inet_csk_listen_start ->reqsk_queue_alloc
-> >=20
-> > So to avoid deadlocks, always set PF_FSTRANS while holding sk_lock.
-> >=20
-> > This deadlock was found by lockdep.
->=20
-> Wow, this is adding expensive stuff in fast path, only for nfsd :(
+Thanks a lot for reporting the build failure. Please find the fix
+below.
+ 
+Regards,
+Srivatsa S. Bhat
 
-Yes, this was probably one part that I was least comfortable about.
+---------------------------------------------------------------------------
 
->=20
-> BTW, why should the current->flags should be saved on a socket field,
-> and not a current->save_flags. This really looks a thread property, not
-> a socket one.
->=20
-> Why nfsd could not have PF_FSTRANS in its current->flags ?
+From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH] cpufreq, powernv: Fix build failure on UP
 
-nfsd does have PF_FSTRANS set in current->flags.  But some other processes
-might not.
+Paul Gortmaker reported the following build failure of the powernv cpufreq
+driver on UP configs:
 
-If any process takes sk_lock, allocates memory, and then blocks in reclaim =
-it
-could be waiting for nfsd.  If nfsd waits for that sk_lock, it would cause a
-deadlock.
+drivers/cpufreq/powernv-cpufreq.c:241:2: error: implicit declaration of
+function 'cpu_sibling_mask' [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+make[3]: *** [drivers/cpufreq/powernv-cpufreq.o] Error 1
+make[2]: *** [drivers/cpufreq] Error 2
+make[1]: *** [drivers] Error 2
+make: *** [sub-make] Error 2
 
-Thinking a bit more carefully .... I suspect that any socket that nfsd
-created would only ever be locked by nfsd.  If that is the case then the
-problem can be resolved entirely within nfsd.  We would need to tell lockdep
-that there are two sorts of sk_locks, those which nfsd uses and all the
-rest.  That might get a little messy, but wouldn't impact performance.
+The trouble here is that cpu_sibling_mask is defined only in <asm/smp.h>, and
+<linux/smp.h> includes <asm/smp.h> only in SMP builds.
 
-Is it justified to assume that sockets created by nfsd threads would only
-ever be locked by nfsd threads (and interrupts, which won't be allocating
-memory so don't matter), or might there be locked by other threads - e.g for
-'netstat -a' etc??
+So fix this build failure by explicitly including <asm/smp.h> in the driver,
+so that we get the definition of cpu_sibling_mask even in UP configurations.
 
+Reported-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+---
 
->=20
-> For applications handling millions of sockets, this makes a difference.
->=20
+ drivers/cpufreq/powernv-cpufreq.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Thanks,
-NeilBrown
+diff --git a/drivers/cpufreq/powernv-cpufreq.c b/drivers/cpufreq/powernv-cpufreq.c
+index 9edccc6..ed1c7e5 100644
+--- a/drivers/cpufreq/powernv-cpufreq.c
++++ b/drivers/cpufreq/powernv-cpufreq.c
+@@ -29,6 +29,7 @@
+ 
+ #include <asm/cputhreads.h>
+ #include <asm/reg.h>
++#include <asm/smp.h>
+ 
+ #define POWERNV_MAX_PSTATES	256
+ 
 
-
---Sig_/YX/W05=F6X9qrxW7nKLwnOj
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU04Zgjnsnt1WYoG5AQKvxBAAv9gDOMnc/LfCUMBQxzIaIokErrHkCKxM
-8u1W93ux2PFls2k6qTlSCVSBpO6chk1Avr9SWPyJZvTFYUnh98PiDV1tKVxJCek8
-42kflXGTxHUFXkSBV1ue21mOdn7gw0R3myuMZ8zXD/JFl9sDylwuUbg28hexfWky
-sPEu3OCd9DiKm+2uWSe+wlFDWDHkzknRw6g0Ym5/PfuiOl6SgNcHT4w97+Jp1hkd
-Xs/TQSIv3aRevVoBtFdtQ90vHE2lEakCOShqyH+oH2ryYmaCsAV2nJzOcpYxZTsL
-FTo3Xh+NqDIWUZEsulJtN1vrkOpAIEeJgRcGxwIEauYi/+mGEFF6O+Xo2QK8Dq0c
-/rJrDsNvzJ0EHkaIZACsYXQRHljRPzYGmRCoSnsSnnea/Uqda9sluxPzR7Gsxc0B
-DqyJd00t6fTQHwWGBG/XEvf1htts4s7rFwLysfBOnK5W5Rc3rih6/ue+i4Ebptmu
-tzekBzYicl83hb8KXhpUD4h+PkW1UtUJsbmP5qhMK8wRqzhnsyliil8yxJDY2YTo
-Z+qCD7lsacI2NtAvB0hwNQmXG1rq7oYn0rF7s/1vwl+AQSEaYHELWUm6cb9cE+42
-OhlnV7nle5yy/mPF93G54m+qwRDlFM8xM7PH7t9JoGdFRXDW/QMh7ma9k2HjVBH/
-jxxIu5TYBIw=
-=PGsl
------END PGP SIGNATURE-----
-
---Sig_/YX/W05=F6X9qrxW7nKLwnOj--
