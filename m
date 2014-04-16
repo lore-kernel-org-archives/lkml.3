@@ -1,96 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770AbaDPRpU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 13:45:20 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:47291 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753332AbaDPRpQ (ORCPT
+	id S1754823AbaDPRrG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 13:47:06 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:29265 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752459AbaDPRrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 13:45:16 -0400
+	Wed, 16 Apr 2014 13:47:04 -0400
+Date: Wed, 16 Apr 2014 10:46:52 -0700
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: Amit Sahrawat <amit.sahrawat83@gmail.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namjae Jeon <linkinjeon@gmail.com>
+Subject: Re: Ext4: deadlock occurs when running fsstress and ENOSPC errors
+ are seen.
+Message-ID: <20140416174652.GA8793@birch.djwong.org>
+References: <CADDb1s2RvN_S+abFXCe4ZhZPKZgP_PiocJdpiLzRC_Se5sgVVg@mail.gmail.com>
+ <20140415124743.GD3403@thunk.org>
+ <CADDb1s3HYDvb51Ngrwk82gkpbUWg1bRo7kaUmbGRmb0g_9JKgw@mail.gmail.com>
+ <20140416050729.GD21807@thunk.org>
+ <CADDb1s3CnQJyY4f1xS6a=+ceE3cr0ZmkE1EQZ95fLDBw7DHfNg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140416162621.GA28725@lee--X1>
-References: <1397592876-5741-1-git-send-email-dianders@chromium.org>
-	<1397592876-5741-2-git-send-email-dianders@chromium.org>
-	<20140416095229.GF4754@lee--X1>
-	<CAD=FV=VjmXGjDHTcm=E2eEPtkOa5DxKG70jXj22RbbN1VfeGjw@mail.gmail.com>
-	<20140416162621.GA28725@lee--X1>
-Date: Wed, 16 Apr 2014 10:45:15 -0700
-X-Google-Sender-Auth: uxYrengBg0XKgz6oibuTGWDvsms
-Message-ID: <CAD=FV=Vh=Ej3znMmQDfWyLbhhzZh424Kx8BA=86qcwp+AmMqBw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mfd: tps65090: Allow charger module to be used when
- no irq
-From: Doug Anderson <dianders@chromium.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Anton Vorontsov <anton@enomsg.org>, Olof Johansson <olof@lixom.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        AJAY KUMAR RAMAKRISHNA SHYMALAMMA <ajaykumar.rs@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CADDb1s3CnQJyY4f1xS6a=+ceE3cr0ZmkE1EQZ95fLDBw7DHfNg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lee,
+On Wed, Apr 16, 2014 at 01:21:34PM +0530, Amit Sahrawat wrote:
+> Sorry Ted, if it caused the confusion.
+> 
+> There were actually 2 parts to the problem, the logs in the first mail
+> were from the original situation – where in there were many block
+> groups and error prints also showed that.
+> 
+> EXT4-fs error (device sda1): ext4_mb_generate_buddy:742: group 1493, 0
+> clusters in bitmap, 58339 in gd
+> EXT4-fs error (device sda1): ext4_mb_generate_buddy:742: group 1000, 0
+> clusters in bitmap, 3 in gd
+> EXT4-fs error (device sda1): ext4_mb_generate_buddy:742: group 1425, 0
+> clusters in bitmap, 1 in gd
+> JBD2: Spotted dirty metadata buffer (dev = sda1, blocknr = 0). There's
+> a risk of filesystem corruption in case of system crash.
+> JBD2: Spotted dirty metadata buffer (dev = sda1, blocknr = 0). There's
+> a risk of filesystem corruption in case of system crash.
+> 
+> 1)	Original case – when the disk got corrupted and we only had the
+> logs and the hung task messages. But not the HDD on which issue was
+> observed.
+> 2)	In order to reproduce the problem as was coming through the logs
+> (which highlighted the problem in the bitmap corruption). To minimize
+> the environment and make a proper case, we created a smaller partition
+> size and with only 2 groups. And intentionally corrupted the group 1
+> (our intention was just to replicate the error scenario).
 
-On Wed, Apr 16, 2014 at 9:26 AM, Lee Jones <lee.jones@linaro.org> wrote:
->> >> On the ARM Chromebook tps65090 has two masters: the AP (the main
->> >> processor running linux) and the EC (the embedded controller).  The AP
->> >> is allowed to mess with FETs but the EC is in charge of charge control.
->> >>
->> >> The tps65090 interupt line is routed to both the AP and the EC, which
->> >> can cause quite a headache.  Having two people adjusting masks and
->> >> acking interrupts is a recipe for disaster.
->> >>
->> >> In the shipping kernel we had a hack to have the AP pay attention to
->> >> the IRQ but not to ack it.  It also wasn't supposed to configure the
->> >> IRQ in any way.  That hack allowed us to detect when the device was
->> >> charging without messing with the EC's state.
->> >>
->> >> The current tps65090 infrastructure makes the above difficult, and it
->> >> was a bit of a hack to begin with.  Rather than uglify the driver to
->> >> support it, just extend the driver's existing notion of "no irq" to
->> >> the charger.  This makes the charger code poll every 2 seconds for AC
->> >> detect, which is sufficient.
->> >>
->> >> Signed-off-by: Doug Anderson <dianders@chromium.org>
->> >> ---
->> >>  drivers/mfd/tps65090.c           | 14 ++++++--
->> >>  drivers/power/tps65090-charger.c | 76 +++++++++++++++++++++++++++++++---------
->> >>  2 files changed, 70 insertions(+), 20 deletions(-)
->> >
->> > For the MFD part:
->> >   Acked-by: Lee Jones <lee.jones@linaro.org>
->> >
->> > Anton,
->> >   If you are okay with this patch I'd be happy to create an immutable
->> > branch for you to pull from?
->> >
->> > Doug,
->> >   What is the relationship (dependencies) between this and the other
->> > patches in the set?
->>
->> This patch can be applied irrespective of other others in the series.
->
-> What about the files in the patch? Could you make two separate patches
-> from this one patch and it would still compile okay? I'm _guessing_
-> the answer is yes?
+I'm assuming that the original broken fs simply had a corrupt block bitmap, and
+that the dd thing was just to simulate that corruption in a testing
+environment?
 
-Yes, they'll compile and even boot on their own.  I just tested it.
+> 3)	After corruption we used ‘fsstress’  - we got the similar problem
+> as was coming the original logs. – We shared our analysis after this
+> point for looping in the writepages part the free blocks mismatch.
 
-If I put only the MFD part in, then at boot I see:
-  tps65090-charger tps65090-charger: Unable to get charger irq = -6
-...but otherwise the system functions.
+Hm.  I tried it with 3.15-rc1 and didn't see any hangs.  Corrupt bitmaps shut
+down allocations from the block group and the FS continues, as expected.
 
-If I put only the charger part in, then at boot:
-  tps65090-charger tps65090-charger: Unable to register irq 1 err -22
-  tps65090-charger: probe of tps65090-charger failed with error -22
+> 4)	We came across ‘Darrick’ patches(in which it also mentioned about
+> how to corrupt to reproduce the problem) and applied on our
+> environment. It solved the initial problem about the looping in
+> writepages, but now we got hangs at other places.
 
-...so you need both patches in order to make things function, but they
-can be applied separately.  I'll assume it will make your life easier
-if I split this into two patches so I'll do that.
+There are hundreds of Darrick patches ... to which one are you referring? :)
+(What was the subject line?)
 
--Doug
+> Using ‘tune2fs’ is not a viable solution in our case, we can only
+> provide the solution via. the kernel changes. So, we made the changes
+> as shared earlier.
+
+Would it help if you could set errors=remount-ro in mke2fs?
+
+--D
+> So the question isn't how the file system got corrupted, but that
+> you'd prefer that the system recovers without hanging after this
+> corruption.
+> >> Yes,  our priority is to keep the system running.
+> 
+> Again, Sorry for the confusion. But the intention was just to show the
+> original problem and what we did in order to replicate the problem.
+> 
+> Thanks & Regards,
+> Amit Sahrawat
+> 
+> 
+> On Wed, Apr 16, 2014 at 10:37 AM, Theodore Ts'o <tytso@mit.edu> wrote:
+> > On Wed, Apr 16, 2014 at 10:30:10AM +0530, Amit Sahrawat wrote:
+> >> 4)    Corrupt the block group ‘1’  by writing all ‘1’, we had one file
+> >> with all 1’s, so using ‘dd’ –
+> >> dd if=i_file of=/dev/sdb1 bs=4096 seek=17 count=1
+> >> After this mount the partition – create few random size files and then
+> >> ran ‘fsstress,
+> >
+> > Um, sigh.  You didn't say that you were deliberately corrupting the
+> > file system.  That wasn't in the subject line, or anywhere else in the
+> > original message.
+> >
+> > So the question isn't how the file system got corrupted, but that
+> > you'd prefer that the system recovers without hanging after this
+> > corruption.
+> >
+> > I wish you had *said* that.  It would have saved me a lot of time,
+> > since I was trying to figure out how the system had gotten so
+> > corrupted (not realizing you had deliberately corrupted the file
+> > system).
+> >
+> > So I think if you run "tune2fs -e remount-ro /dev/sdb1" before you
+> > started the fsstress, the file system would have remounted the
+> > filesystem read-only at the first EXT4-fs error message.  This would
+> > avoid the hang that you saw, since the file system would hopefully
+> > "failed fast", before th euser had the opportunity to put data into
+> > the page cache that would be lost when the system discovered there was
+> > no place to put the data.
+> >
+> > Regards,
+> >
+> >                                                 - Ted
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
