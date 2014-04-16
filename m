@@ -1,198 +1,358 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751253AbaDPBrD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 21:47:03 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:40968 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951AbaDPBrA (ORCPT
+	id S1751224AbaDPBtS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 21:49:18 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:38698 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931AbaDPBtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 21:47:00 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s3G1kIPx004869, This message is accepted by code: ctloc85258
-Message-ID: <534DE1D7.3000308@realsil.com.cn>
-Date: Wed, 16 Apr 2014 09:50:15 +0800
-From: micky <micky_ching@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, lkml <linux-kernel@vger.kernel.org>
-CC: Chris Ball <chris@printf.net>, Wei WANG <wei_wang@realsil.com.cn>
-Subject: Re: rtsx_pci_sdmmc lockdep splat
-References: <20140415174934.GD4826@pd.tnic>
-In-Reply-To: <20140415174934.GD4826@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	Tue, 15 Apr 2014 21:49:16 -0400
+Message-ID: <1397612946.13188.88.camel@ThinkPad-T5421.cn.ibm.com>
+Subject: [RFC PATCH v3] memory-hotplug: Update documentation to hide
+ information about SECTIONS and remove end_phys_index
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Wed, 16 Apr 2014 09:49:06 +0800
+In-Reply-To: <534BA6B0.6050500@cn.fujitsu.com>
+References: <1396429018.2913.19.camel@ThinkPad-T5421.cn.ibm.com>
+	 <533E0B0E.9020909@jp.fujitsu.com>
+	 <1396945659.3162.6.camel@ThinkPad-T5421.cn.ibm.com>
+	 <53442021.2060608@intel.com> <53443E8C.4070906@linux.vnet.ibm.com>
+	 <53445245.3020400@intel.com> <534585E8.50302@linux.vnet.ibm.com>
+	 <1397103460.25199.54.camel@ThinkPad-T5421.cn.ibm.com>
+	 <53483A7C.1060807@linux.vnet.ibm.com>
+	 <1397465003.13188.17.camel@ThinkPad-T5421.cn.ibm.com>
+	 <534BA6B0.6050500@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.29.41.103]
+Mime-Version: 1.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041601-4966-0000-0000-000009155563
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Borislav,
+Seems we all agree that information about SECTION, e.g. section size,
+sections per memory block should be kept as kernel internals, and not
+exposed to userspace.
 
-On 04/16/2014 01:49 AM, Borislav Petkov wrote:
-> Hi all,
->
-> I'm seeing the following when I insert an sd card. Kernel is 3.15-rc1+.
->
-> Thanks.
-The patch below may fix this problem.
+This patch updates Documentation/memory-hotplug.txt to refer to memory
+blocks instead of memory sections where appropriate and added a
+paragraph to explain that memory blocks are made of memory sections.
+The documentation update is mostly provided by Nathan.
 
-From: Micky Ching<micky_ching@realsil.com.cn>
+Also, as end_phys_index in code is actually not the end section id, but
+the end memory block id, which should always be the same as phys_index.
+So it is removed here.
 
-To avoid dead lock, we need make sure host->lock is always acquire
-before pcr->lock. But in irq handler, we acquired pcr->lock in rtsx mfd
-driver, and sd_isr_done_transfer() is called during pcr->lock already
-acquired. Since in sd_isr_done_transfer() the only work we do is schdule
-tasklet, the cmd_tasklet and data_tasklet never conflict, so it is safe
-to remove spin_lock() here.
-
-Signed-off-by: Micky Ching<micky_ching@realsil.com.cn>
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
-  drivers/mmc/host/rtsx_pci_sdmmc.c |    4 +---
-  1 file changed, 1 insertion(+), 3 deletions(-)
+v3: memort->memory, pointed out by Yanfei
 
-diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
-index 453e1d4..40695e0 100644
---- a/drivers/mmc/host/rtsx_pci_sdmmc.c
-+++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-@@ -108,12 +108,10 @@ static void sd_isr_done_transfer(struct platform_device *pdev)
-  {
-  	struct realtek_pci_sdmmc *host = platform_get_drvdata(pdev);
-  
--	spin_lock(&host->lock);
-  	if (host->cmd)
-  		tasklet_schedule(&host->cmd_tasklet);
--	if (host->data)
-+	else if (host->data)
-  		tasklet_schedule(&host->data_tasklet);
--	spin_unlock(&host->lock);
-  }
-  
-  static void sd_request_timeout(unsigned long host_addr)
--- 
-1.7.9.5
+ Documentation/memory-hotplug.txt |  125 +++++++++++++++++++-------------------
+ drivers/base/memory.c            |   12 ----
+ 2 files changed, 61 insertions(+), 76 deletions(-)
 
-I have send out this patch, Thanks.
-Best Regards.
-micky.
+diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
+index 58340d5..1aa239f 100644
+--- a/Documentation/memory-hotplug.txt
++++ b/Documentation/memory-hotplug.txt
+@@ -88,16 +88,21 @@ phase by hand.
+ 
+ 1.3. Unit of Memory online/offline operation
+ ------------
+-Memory hotplug uses SPARSEMEM memory model. SPARSEMEM divides the whole memory
+-into chunks of the same size. The chunk is called a "section". The size of
+-a section is architecture dependent. For example, power uses 16MiB, ia64 uses
+-1GiB. The unit of online/offline operation is "one section". (see Section 3.)
++Memory hotplug uses SPARSEMEM memory model which allows memory to be divided
++into chunks of the same size. These chunks are called "sections". The size of
++a memory section is architecture dependent. For example, power uses 16MiB, ia64
++uses 1GiB.
+ 
+-To determine the size of sections, please read this file:
++Memory sections are combined into chunks referred to as "memory blocks". The
++size of a memory block is architecture dependent and represents the logical
++unit upon which memory online/offline operations are to be performed. The
++default size of a memory block is the same as memory section size unless an
++architecture specifies otherwise. (see Section 3.)
++
++To determine the size (in bytes) of a memory block please read this file:
+ 
+ /sys/devices/system/memory/block_size_bytes
+ 
+-This file shows the size of sections in byte.
+ 
+ -----------------------
+ 2. Kernel Configuration
+@@ -123,42 +128,35 @@ config options.
+     (CONFIG_ACPI_CONTAINER).
+     This option can be kernel module too.
+ 
++
+ --------------------------------
+-4 sysfs files for memory hotplug
++3 sysfs files for memory hotplug
+ --------------------------------
+-All sections have their device information in sysfs.  Each section is part of
+-a memory block under /sys/devices/system/memory as
++All memory blocks have their device information in sysfs.  Each memory block
++is described under /sys/devices/system/memory as
+ 
+ /sys/devices/system/memory/memoryXXX
+-(XXX is the section id.)
++(XXX is the memory block id.)
+ 
+-Now, XXX is defined as (start_address_of_section / section_size) of the first
+-section contained in the memory block.  The files 'phys_index' and
+-'end_phys_index' under each directory report the beginning and end section id's
+-for the memory block covered by the sysfs directory.  It is expected that all
++For the memory block covered by the sysfs directory.  It is expected that all
+ memory sections in this range are present and no memory holes exist in the
+ range. Currently there is no way to determine if there is a memory hole, but
+ the existence of one should not affect the hotplug capabilities of the memory
+ block.
+ 
+-For example, assume 1GiB section size. A device for a memory starting at
++For example, assume 1GiB memory block size. A device for a memory starting at
+ 0x100000000 is /sys/device/system/memory/memory4
+ (0x100000000 / 1Gib = 4)
+ This device covers address range [0x100000000 ... 0x140000000)
+ 
+-Under each section, you can see 4 or 5 files, the end_phys_index file being
+-a recent addition and not present on older kernels.
++Under each memory block, you can see 4 files:
+ 
+-/sys/devices/system/memory/memoryXXX/start_phys_index
+-/sys/devices/system/memory/memoryXXX/end_phys_index
++/sys/devices/system/memory/memoryXXX/phys_index
+ /sys/devices/system/memory/memoryXXX/phys_device
+ /sys/devices/system/memory/memoryXXX/state
+ /sys/devices/system/memory/memoryXXX/removable
+ 
+-'phys_index'      : read-only and contains section id of the first section
+-		    in the memory block, same as XXX.
+-'end_phys_index'  : read-only and contains section id of the last section
+-		    in the memory block.
++'phys_index'      : read-only and contains memory block id, same as XXX.
+ 'state'           : read-write
+                     at read:  contains online/offline state of memory.
+                     at write: user can specify "online_kernel",
+@@ -185,6 +183,7 @@ For example:
+ A backlink will also be created:
+ /sys/devices/system/memory/memory9/node0 -> ../../node/node0
+ 
++
+ --------------------------------
+ 4. Physical memory hot-add phase
+ --------------------------------
+@@ -227,11 +226,10 @@ You can tell the physical address of new memory to the kernel by
+ 
+ % echo start_address_of_new_memory > /sys/devices/system/memory/probe
+ 
+-Then, [start_address_of_new_memory, start_address_of_new_memory + section_size)
+-memory range is hot-added. In this case, hotplug script is not called (in
+-current implementation). You'll have to online memory by yourself.
+-Please see "How to online memory" in this text.
+-
++Then, [start_address_of_new_memory, start_address_of_new_memory +
++memory_block_size] memory range is hot-added. In this case, hotplug script is
++not called (in current implementation). You'll have to online memory by
++yourself.  Please see "How to online memory" in this text.
+ 
+ 
+ ------------------------------
+@@ -240,36 +238,36 @@ Please see "How to online memory" in this text.
+ 
+ 5.1. State of memory
+ ------------
+-To see (online/offline) state of memory section, read 'state' file.
++To see (online/offline) state of a memory block, read 'state' file.
+ 
+ % cat /sys/device/system/memory/memoryXXX/state
+ 
+ 
+-If the memory section is online, you'll read "online".
+-If the memory section is offline, you'll read "offline".
++If the memory block is online, you'll read "online".
++If the memory block is offline, you'll read "offline".
+ 
+ 
+ 5.2. How to online memory
+ ------------
+ Even if the memory is hot-added, it is not at ready-to-use state.
+-For using newly added memory, you have to "online" the memory section.
++For using newly added memory, you have to "online" the memory block.
+ 
+-For onlining, you have to write "online" to the section's state file as:
++For onlining, you have to write "online" to the memory block's state file as:
+ 
+ % echo online > /sys/devices/system/memory/memoryXXX/state
+ 
+-This onlining will not change the ZONE type of the target memory section,
+-If the memory section is in ZONE_NORMAL, you can change it to ZONE_MOVABLE:
++This onlining will not change the ZONE type of the target memory block,
++If the memory block is in ZONE_NORMAL, you can change it to ZONE_MOVABLE:
+ 
+ % echo online_movable > /sys/devices/system/memory/memoryXXX/state
+-(NOTE: current limit: this memory section must be adjacent to ZONE_MOVABLE)
++(NOTE: current limit: this memory block must be adjacent to ZONE_MOVABLE)
+ 
+-And if the memory section is in ZONE_MOVABLE, you can change it to ZONE_NORMAL:
++And if the memory block is in ZONE_MOVABLE, you can change it to ZONE_NORMAL:
+ 
+ % echo online_kernel > /sys/devices/system/memory/memoryXXX/state
+-(NOTE: current limit: this memory section must be adjacent to ZONE_NORMAL)
++(NOTE: current limit: this memory block must be adjacent to ZONE_NORMAL)
+ 
+-After this, section memoryXXX's state will be 'online' and the amount of
++After this, memory block XXX's state will be 'online' and the amount of
+ available memory will be increased.
+ 
+ Currently, newly added memory is added as ZONE_NORMAL (for powerpc, ZONE_DMA).
+@@ -284,22 +282,22 @@ This may be changed in future.
+ 6.1 Memory offline and ZONE_MOVABLE
+ ------------
+ Memory offlining is more complicated than memory online. Because memory offline
+-has to make the whole memory section be unused, memory offline can fail if
+-the section includes memory which cannot be freed.
++has to make the whole memory block be unused, memory offline can fail if
++the memory block includes memory which cannot be freed.
+ 
+ In general, memory offline can use 2 techniques.
+ 
+-(1) reclaim and free all memory in the section.
+-(2) migrate all pages in the section.
++(1) reclaim and free all memory in the memory block.
++(2) migrate all pages in the memory block.
+ 
+ In the current implementation, Linux's memory offline uses method (2), freeing
+-all  pages in the section by page migration. But not all pages are
++all  pages in the memory block by page migration. But not all pages are
+ migratable. Under current Linux, migratable pages are anonymous pages and
+-page caches. For offlining a section by migration, the kernel has to guarantee
+-that the section contains only migratable pages.
++page caches. For offlining a memory block by migration, the kernel has to
++guarantee that the memory block contains only migratable pages.
+ 
+-Now, a boot option for making a section which consists of migratable pages is
+-supported. By specifying "kernelcore=" or "movablecore=" boot option, you can
++Now, a boot option for making a memory block which consists of migratable pages
++is supported. By specifying "kernelcore=" or "movablecore=" boot option, you can
+ create ZONE_MOVABLE...a zone which is just used for movable pages.
+ (See also Documentation/kernel-parameters.txt)
+ 
+@@ -315,28 +313,27 @@ creates ZONE_MOVABLE as following.
+   Size of memory for movable pages (for offline) is ZZZZ.
+ 
+ 
+-Note) Unfortunately, there is no information to show which section belongs
++Note: Unfortunately, there is no information to show which memory block belongs
+ to ZONE_MOVABLE. This is TBD.
+ 
+ 
+ 6.2. How to offline memory
+ ------------
+-You can offline a section by using the same sysfs interface that was used in
+-memory onlining.
++You can offline a memory block by using the same sysfs interface that was used
++in memory onlining.
+ 
+ % echo offline > /sys/devices/system/memory/memoryXXX/state
+ 
+-If offline succeeds, the state of the memory section is changed to be "offline".
++If offline succeeds, the state of the memory block is changed to be "offline".
+ If it fails, some error core (like -EBUSY) will be returned by the kernel.
+-Even if a section does not belong to ZONE_MOVABLE, you can try to offline it.
+-If it doesn't contain 'unmovable' memory, you'll get success.
++Even if a memory block does not belong to ZONE_MOVABLE, you can try to offline
++it.  If it doesn't contain 'unmovable' memory, you'll get success.
+ 
+-A section under ZONE_MOVABLE is considered to be able to be offlined easily.
+-But under some busy state, it may return -EBUSY. Even if a memory section
+-cannot be offlined due to -EBUSY, you can retry offlining it and may be able to
+-offline it (or not).
+-(For example, a page is referred to by some kernel internal call and released
+- soon.)
++A memory block under ZONE_MOVABLE is considered to be able to be offlined
++easily.  But under some busy state, it may return -EBUSY. Even if a memory
++block cannot be offlined due to -EBUSY, you can retry offlining it and may be
++able to offline it (or not). (For example, a page is referred to by some kernel
++internal call and released soon.)
+ 
+ Consideration:
+ Memory hotplug's design direction is to make the possibility of memory offlining
+@@ -373,11 +370,11 @@ MEMORY_GOING_OFFLINE
+   Generated to begin the process of offlining memory. Allocations are no
+   longer possible from the memory but some of the memory to be offlined
+   is still in use. The callback can be used to free memory known to a
+-  subsystem from the indicated memory section.
++  subsystem from the indicated memory block.
+ 
+ MEMORY_CANCEL_OFFLINE
+   Generated if MEMORY_GOING_OFFLINE fails. Memory is available again from
+-  the section that we attempted to offline.
++  the memory block that we attempted to offline.
+ 
+ MEMORY_OFFLINE
+   Generated after offlining memory is complete.
+@@ -413,8 +410,8 @@ node if necessary.
+ --------------
+   - allowing memory hot-add to ZONE_MOVABLE. maybe we need some switch like
+     sysctl or new control file.
+-  - showing memory section and physical device relationship.
+-  - showing memory section is under ZONE_MOVABLE or not
++  - showing memory block and physical device relationship.
++  - showing memory block is under ZONE_MOVABLE or not
+   - test and make it better memory offlining.
+   - support HugeTLB page migration and offlining.
+   - memmap removing at memory offline.
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index bece691..89f752d 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -118,16 +118,6 @@ static ssize_t show_mem_start_phys_index(struct device *dev,
+ 	return sprintf(buf, "%08lx\n", phys_index);
+ }
+ 
+-static ssize_t show_mem_end_phys_index(struct device *dev,
+-			struct device_attribute *attr, char *buf)
+-{
+-	struct memory_block *mem = to_memory_block(dev);
+-	unsigned long phys_index;
+-
+-	phys_index = mem->end_section_nr / sections_per_block;
+-	return sprintf(buf, "%08lx\n", phys_index);
+-}
+-
+ /*
+  * Show whether the section of memory is likely to be hot-removable
+  */
+@@ -384,7 +374,6 @@ static ssize_t show_phys_device(struct device *dev,
+ }
+ 
+ static DEVICE_ATTR(phys_index, 0444, show_mem_start_phys_index, NULL);
+-static DEVICE_ATTR(end_phys_index, 0444, show_mem_end_phys_index, NULL);
+ static DEVICE_ATTR(state, 0644, show_mem_state, store_mem_state);
+ static DEVICE_ATTR(phys_device, 0444, show_phys_device, NULL);
+ static DEVICE_ATTR(removable, 0444, show_mem_removable, NULL);
+@@ -529,7 +518,6 @@ struct memory_block *find_memory_block(struct mem_section *section)
+ 
+ static struct attribute *memory_memblk_attrs[] = {
+ 	&dev_attr_phys_index.attr,
+-	&dev_attr_end_phys_index.attr,
+ 	&dev_attr_state.attr,
+ 	&dev_attr_phys_device.attr,
+ 	&dev_attr_removable.attr,
 
-> [  682.675345] rtsx_pci_sdmmc rtsx_pci_sdmmc.0: sdmmc_get_cd: RTSX_BIPR = 0x00010000
-> [  682.679723] mmc0: mmc_rescan_try_freq: trying to init card at 400000 Hz
-> [  682.683778] mmc0: clock 0Hz busmode 2 powermode 1 cs 0 Vdd 21 width 0 timing 0
-> [  682.689135] rtsx_pci_sdmmc rtsx_pci_sdmmc.0: sdmmc_switch_voltage: signal_voltage = 0
-> [  682.701892] mmc0: clock 400000Hz busmode 2 powermode 2 cs 0 Vdd 21 width 0 timing 0
-> [  682.718034] mmc0: starting CMD52 arg 00000c00 flags 00000195
-> [  682.720975] rtsx_pci_sdmmc rtsx_pci_sdmmc.0: sd_send_cmd: SD/MMC CMD 52, arg = 0x00000c00
-> [  682.723749]
-> [  682.726488] ======================================================
-> [  682.729295] [ INFO: possible circular locking dependency detected ]
-> [  682.732138] 3.15.0-rc1+ #3 Not tainted
-> [  682.734989] -------------------------------------------------------
-> [  682.737905] kworker/u4:0/6 is trying to acquire lock:
-> [  682.740853]  (&(&pcr->lock)->rlock){-.-...}, at: [<ffffffffa0004387>] rtsx_pci_add_cmd+0x47/0xb0 [rtsx_pci]
-> [  682.743945]
-> [  682.743945] but task is already holding lock:
-> [  682.749951]  (&(&host->lock)->rlock#3){-.....}, at: [<ffffffffa00bc577>] sdmmc_request+0x57/0x579 [rtsx_pci_sdmmc]
-> [  682.753076]
-> [  682.753076] which lock already depends on the new lock.
-> [  682.753076]
-> [  682.762208]
-> [  682.762208] the existing dependency chain (in reverse order) is:
-> [  682.768191]
-> [  682.768191] -> #1 (&(&host->lock)->rlock#3){-.....}:
-> [  682.774134]        [<ffffffff810bdfd6>] lock_acquire+0x96/0x130
-> [  682.777063]        [<ffffffff8153729b>] _raw_spin_lock+0x3b/0x50
-> [  682.779959]        [<ffffffffa00bb91d>] sd_isr_done_transfer+0x2d/0x80 [rtsx_pci_sdmmc]
-> [  682.782861]        [<ffffffffa0005679>] rtsx_pci_isr+0x119/0x220 [rtsx_pci]
-> [  682.785736]        [<ffffffff810cdea7>] handle_irq_event_percpu+0x47/0x1e0
-> [  682.788584]        [<ffffffff810ce088>] handle_irq_event+0x48/0x70
-> [  682.791387]        [<ffffffff810d0a9f>] handle_edge_irq+0x8f/0x150
-> [  682.794195]        [<ffffffff81004cee>] handle_irq+0x1e/0x30
-> [  682.797026]        [<ffffffff8153a8da>] do_IRQ+0x6a/0x110
-> [  682.799831]        [<ffffffff8153812f>] ret_from_intr+0x0/0x13
-> [  682.802645]        [<ffffffff81099ea8>] __atomic_notifier_call_chain+0x88/0xb0
-> [  682.805465]        [<ffffffff81099ee6>] atomic_notifier_call_chain+0x16/0x20
-> [  682.808246]        [<ffffffff8133af46>] do_con_write.part.18+0x176/0xa10
-> [  682.811028]        [<ffffffff8133b895>] con_write+0x75/0x80
-> [  682.813758]        [<ffffffff81324ac5>] n_tty_write+0x325/0x4d0
-> [  682.816497]        [<ffffffff81321540>] tty_write+0x150/0x2b0
-> [  682.819195]        [<ffffffff8118d571>] do_loop_readv_writev+0x61/0x90
-> [  682.821901]        [<ffffffff8118ef25>] do_readv_writev+0x205/0x210
-> [  682.824583]        [<ffffffff8118efb0>] vfs_writev+0x30/0x60
-> [  682.827226]        [<ffffffff8118f0f2>] SyS_writev+0x52/0xc0
-> [  682.829821]        [<ffffffff81538c92>] system_call_fastpath+0x16/0x1b
-> [  682.832383]
-> [  682.832383] -> #0 (&(&pcr->lock)->rlock){-.-...}:
-> [  682.837324]        [<ffffffff810bd570>] __lock_acquire+0x1690/0x1950
-> [  682.839790]        [<ffffffff810bdfd6>] lock_acquire+0x96/0x130
-> [  682.842229]        [<ffffffff815373f6>] _raw_spin_lock_irqsave+0x46/0x60
-> [  682.844650]        [<ffffffffa0004387>] rtsx_pci_add_cmd+0x47/0xb0 [rtsx_pci]
-> [  682.847029]        [<ffffffffa00bbc0b>] sd_send_cmd+0xcb/0x3c0 [rtsx_pci_sdmmc]
-> [  682.849359]        [<ffffffffa00bc7c0>] sdmmc_request+0x2a0/0x579 [rtsx_pci_sdmmc]
-> [  682.851649]        [<ffffffffa009082f>] mmc_start_request+0x16f/0x280 [mmc_core]
-> [  682.853921]        [<ffffffffa00909ca>] __mmc_start_req+0x6a/0xa0 [mmc_core]
-> [  682.856162]        [<ffffffffa0090f7a>] mmc_wait_for_cmd+0x7a/0xd0 [mmc_core]
-> [  682.858387]        [<ffffffffa009bed0>] mmc_io_rw_direct_host+0x90/0x120 [mmc_core]
-> [  682.860608]        [<ffffffffa009c416>] sdio_reset+0x26/0x70 [mmc_core]
-> [  682.862815]        [<ffffffffa009399d>] mmc_rescan+0x29d/0x350 [mmc_core]
-> [  682.865007]        [<ffffffff8108deba>] process_one_work+0x21a/0x560
-> [  682.867175]        [<ffffffff8108e320>] worker_thread+0x120/0x390
-> [  682.869286]        [<ffffffff81094aac>] kthread+0xfc/0x120
-> [  682.871341]        [<ffffffff81538bec>] ret_from_fork+0x7c/0xb0
-> [  682.873404]
-> [  682.873404] other info that might help us debug this:
-> [  682.873404]
-> [  682.879197]  Possible unsafe locking scenario:
-> [  682.879197]
-> [  682.883048]        CPU0                    CPU1
-> [  682.884972]        ----                    ----
-> [  682.886860]   lock(&(&host->lock)->rlock#3);
-> [  682.888763]                                lock(&(&pcr->lock)->rlock);
-> [  682.890686]                                lock(&(&host->lock)->rlock#3);
-> [  682.892608]   lock(&(&pcr->lock)->rlock);
-> [  682.894492]
-> [  682.894492]  *** DEADLOCK ***
-> [  682.894492]
-> [  682.899913] 4 locks held by kworker/u4:0/6:
-> [  682.901735]  #0:  ("kmmcd"){.+.+..}, at: [<ffffffff8108de45>] process_one_work+0x1a5/0x560
-> [  682.903677]  #1:  ((&(&host->detect)->work)){+.+...}, at: [<ffffffff8108de45>] process_one_work+0x1a5/0x560
-> [  682.905678]  #2:  (&pcr->pcr_mutex){+.+...}, at: [<ffffffffa00bc56f>] sdmmc_request+0x4f/0x579 [rtsx_pci_sdmmc]
-> [  682.907737]  #3:  (&(&host->lock)->rlock#3){-.....}, at: [<ffffffffa00bc577>] sdmmc_request+0x57/0x579 [rtsx_pci_sdmmc]
-> [  682.909851]
-> [  682.909851] stack backtrace:
-> [  682.913909] CPU: 1 PID: 6 Comm: kworker/u4:0 Not tainted 3.15.0-rc1+ #3
-> [  682.915987] Hardware name: LENOVO 30515QG/30515QG, BIOS 8RET30WW (1.12 ) 09/15/2011
-> [  682.918124] Workqueue: kmmcd mmc_rescan [mmc_core]
-> [  682.920264]  ffffffff8202f4f0 ffff880119949940 ffffffff8152f1c5 ffffffff81ff6fd0
-> [  682.922471]  ffff880119949980 ffffffff8152c20e ffff8801199499d0 ffff8801198e59a8
-> [  682.924690]  0000000000000003 ffff8801198e51e0 0000000000000004 ffff8801198e59a8
-> [  682.926923] Call Trace:
-> [  682.929136]  [<ffffffff8152f1c5>] dump_stack+0x4e/0x7a
-> [  682.931384]  [<ffffffff8152c20e>] print_circular_bug+0x203/0x211
-> [  682.933625]  [<ffffffff810bd570>] __lock_acquire+0x1690/0x1950
-> [  682.935869]  [<ffffffff81537591>] ? _raw_spin_unlock_irqrestore+0x41/0x80
-> [  682.938106]  [<ffffffffa0004387>] ? rtsx_pci_add_cmd+0x47/0xb0 [rtsx_pci]
-> [  682.940345]  [<ffffffff810bdfd6>] lock_acquire+0x96/0x130
-> [  682.942585]  [<ffffffffa0004387>] ? rtsx_pci_add_cmd+0x47/0xb0 [rtsx_pci]
-> [  682.944835]  [<ffffffff815373f6>] _raw_spin_lock_irqsave+0x46/0x60
-> [  682.947089]  [<ffffffffa0004387>] ? rtsx_pci_add_cmd+0x47/0xb0 [rtsx_pci]
-> [  682.949350]  [<ffffffffa0004387>] rtsx_pci_add_cmd+0x47/0xb0 [rtsx_pci]
-> [  682.951601]  [<ffffffffa00bbc0b>] sd_send_cmd+0xcb/0x3c0 [rtsx_pci_sdmmc]
-> [  682.953849]  [<ffffffffa00bc7c0>] sdmmc_request+0x2a0/0x579 [rtsx_pci_sdmmc]
-> [  682.956116]  [<ffffffffa009082f>] mmc_start_request+0x16f/0x280 [mmc_core]
-> [  682.958382]  [<ffffffffa00909ca>] __mmc_start_req+0x6a/0xa0 [mmc_core]
-> [  682.960642]  [<ffffffffa0090f7a>] mmc_wait_for_cmd+0x7a/0xd0 [mmc_core]
-> [  682.962906]  [<ffffffffa0090940>] ? mmc_start_request+0x280/0x280 [mmc_core]
-> [  682.965183]  [<ffffffffa009bed0>] mmc_io_rw_direct_host+0x90/0x120 [mmc_core]
-> [  682.967471]  [<ffffffffa009c416>] sdio_reset+0x26/0x70 [mmc_core]
-> [  682.969765]  [<ffffffffa009399d>] mmc_rescan+0x29d/0x350 [mmc_core]
-> [  682.972056]  [<ffffffff8108deba>] process_one_work+0x21a/0x560
-> [  682.974342]  [<ffffffff8108de45>] ? process_one_work+0x1a5/0x560
-> [  682.976634]  [<ffffffff8108e320>] worker_thread+0x120/0x390
-> [  682.978916]  [<ffffffff8108e200>] ? process_one_work+0x560/0x560
-> [  682.981209]  [<ffffffff81094aac>] kthread+0xfc/0x120
-> [  682.983499]  [<ffffffff815375fc>] ? _raw_spin_unlock_irq+0x2c/0x60
-> [  682.985826]  [<ffffffff810949b0>] ? kthread_create_on_node+0x1f0/0x1f0
-> [  682.988182]  [<ffffffff81538bec>] ret_from_fork+0x7c/0xb0
-> [  682.990534]  [<ffffffff810949b0>] ? kthread_create_on_node+0x1f0/0x1f0
-> [  683.033350] rtsx_pci_sdmmc rtsx_pci_sdmmc.0: timeout for request
->
 
