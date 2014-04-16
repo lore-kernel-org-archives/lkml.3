@@ -1,221 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754358AbaDPEZS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 00:25:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38783 "EHLO mx2.suse.de"
+	id S1751991AbaDPEc1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 00:32:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37951 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752534AbaDPESR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 00:18:17 -0400
-From: NeilBrown <neilb@suse.de>
-To: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 16 Apr 2014 14:03:36 +1000
-Subject: [PATCH 04/19] Make effect of PF_FSTRANS to disable __GFP_FS
- universal.
-Cc: xfs@oss.sgi.com
-cc: Ming Lei <ming.lei@canonical.com>
-Message-ID: <20140416040336.10604.58240.stgit@notabene.brown>
-In-Reply-To: <20140416033623.10604.69237.stgit@notabene.brown>
-References: <20140416033623.10604.69237.stgit@notabene.brown>
-User-Agent: StGit/0.16
+	id S1751076AbaDPEcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 00:32:25 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <534E0124.70700@oracle.com>
+References: <1397497450-6440-1-git-send-email-sasha.levin@oracle.com> <1397497450-6440-3-git-send-email-sasha.levin@oracle.com> <534CA38C.80501@hitachi.com> <534D4BF3.3020102@oracle.com> <534DF868.2020901@zytor.com> <534DFD61.4070700@oracle.com> <534DFEDC.8090503@zytor.com> <534E0124.70700@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH 3/4] x86/insn: Extract more information about instructions
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 15 Apr 2014 21:31:29 -0700
+To: Sasha Levin <sasha.levin@oracle.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: vegard.nossum@oracle.com, penberg@kernel.org, jamie.iles@oracle.com,
+        mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@vger.kernel.org
+Message-ID: <16fe17b6-c185-419e-9b7c-3d2a89b883cd@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently both xfs and nfs will handle PF_FSTRANS by disabling
-__GFP_FS.
+I really wonder if it makes sense...
 
-Make this effect global by repurposing memalloc_noio_flags (which
-does the same thing for PF_MEMALLOC_NOIO and __GFP_IO) to generally
-impost the task flags on a gfp_t.
-Due to this repurposing we change the name of memalloc_noio_flags
-to gfp_from_current().
+On April 15, 2014 9:03:48 PM PDT, Sasha Levin <sasha.levin@oracle.com> wrote:
+>On 04/15/2014 11:54 PM, H. Peter Anvin wrote:
+>> On 04/15/2014 08:47 PM, Sasha Levin wrote:
+>>> > 
+>>> > Yes, if kmemcheck for some reason needs to figure out if an
+>instruction
+>>> > is a MOV variant we'll need to list quite a few mnemonics, but
+>that list
+>>> > will be much shorter and more readable than a corresponding list
+>of opcodes.
+>>> > 
+>> You're completely missing my point.  If you are looking at MOV, with
+>> 80%+ probability you're doing something very, very wrong, because you
+>> will be including instructions that do something completely different
+>> from what you thought.
+>> 
+>> This is true for a lot of the x86 instructions.
+>
+>Right, but assuming that the AND example I presented earlier makes
+>sense, I
+>can't create mnemonic entries only for instructions where doing so
+>would
+>"probably" be right.
+>
+>If there are use cases where working with mnemonics is correct, we
+>should
+>be doing that in kmemcheck. If the way kmemcheck deals with mnemonics
+>is
+>incorrect we should go ahead and fix kmemcheck.
+>
+>
+>Thanks,
+>Sasha
 
-As PF_FSTRANS now uniformly removes __GFP_FS we can remove special
-code for this from xfs and nfs.
-
-As we can now expect other code to set PF_FSTRANS, its meaning is more
-general, so the WARN_ON in xfs_vm_writepage() which checks PF_FSTRANS
-is not set is no longer appropriate.  PF_FSTRANS may be set for other
-reasons than an XFS transaction.
-
-As lockdep cares about __GFP_FS, we need to translate PF_FSTRANS to
-__GFP_FS before calling lockdep_alloc_trace() in various places.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
----
- fs/nfs/file.c         |    3 +--
- fs/xfs/kmem.h         |    2 --
- fs/xfs/xfs_aops.c     |    7 -------
- include/linux/sched.h |    5 ++++-
- mm/page_alloc.c       |    3 ++-
- mm/slab.c             |    2 ++
- mm/slob.c             |    2 ++
- mm/slub.c             |    1 +
- mm/vmscan.c           |    4 ++--
- 9 files changed, 14 insertions(+), 15 deletions(-)
-
-diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-index 5bb790a69c71..ed863f52bae7 100644
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -472,8 +472,7 @@ static int nfs_release_page(struct page *page, gfp_t gfp)
- 	/* Only do I/O if gfp is a superset of GFP_KERNEL, and we're not
- 	 * doing this memory reclaim for a fs-related allocation.
- 	 */
--	if (mapping && (gfp & GFP_KERNEL) == GFP_KERNEL &&
--	    !(current->flags & PF_FSTRANS)) {
-+	if (mapping && (gfp & GFP_KERNEL) == GFP_KERNEL) {
- 		int how = FLUSH_SYNC;
- 
- 		/* Don't let kswapd deadlock waiting for OOM RPC calls */
-diff --git a/fs/xfs/kmem.h b/fs/xfs/kmem.h
-index 64db0e53edea..882b86270ebe 100644
---- a/fs/xfs/kmem.h
-+++ b/fs/xfs/kmem.h
-@@ -50,8 +50,6 @@ kmem_flags_convert(xfs_km_flags_t flags)
- 		lflags = GFP_ATOMIC | __GFP_NOWARN;
- 	} else {
- 		lflags = GFP_KERNEL | __GFP_NOWARN;
--		if ((current->flags & PF_FSTRANS) || (flags & KM_NOFS))
--			lflags &= ~__GFP_FS;
- 	}
- 
- 	if (flags & KM_ZERO)
-diff --git a/fs/xfs/xfs_aops.c b/fs/xfs/xfs_aops.c
-index db2cfb067d0b..207a7f86d5d7 100644
---- a/fs/xfs/xfs_aops.c
-+++ b/fs/xfs/xfs_aops.c
-@@ -952,13 +952,6 @@ xfs_vm_writepage(
- 			PF_MEMALLOC))
- 		goto redirty;
- 
--	/*
--	 * Given that we do not allow direct reclaim to call us, we should
--	 * never be called while in a filesystem transaction.
--	 */
--	if (WARN_ON(current->flags & PF_FSTRANS))
--		goto redirty;
--
- 	/* Is this page beyond the end of the file? */
- 	offset = i_size_read(inode);
- 	end_index = offset >> PAGE_CACHE_SHIFT;
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 56fa52a0654c..f3291ed33c27 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1860,10 +1860,13 @@ extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut,
- #define used_math() tsk_used_math(current)
- 
- /* __GFP_IO isn't allowed if PF_MEMALLOC_NOIO is set in current->flags */
--static inline gfp_t memalloc_noio_flags(gfp_t flags)
-+/* __GFP_FS isn't allowed if PF_FSTRANS is set in current->flags */
-+static inline gfp_t gfp_from_current(gfp_t flags)
- {
- 	if (unlikely(current->flags & PF_MEMALLOC_NOIO))
- 		flags &= ~__GFP_IO;
-+	if (unlikely(current->flags & PF_FSTRANS))
-+		flags &= ~__GFP_FS;
- 	return flags;
- }
- 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index ff8b91aa0b87..5e9225df3447 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2718,6 +2718,7 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
- 	struct mem_cgroup *memcg = NULL;
- 
- 	gfp_mask &= gfp_allowed_mask;
-+	gfp_mask = gfp_from_current(gfp_mask);
- 
- 	lockdep_trace_alloc(gfp_mask);
- 
-@@ -2765,7 +2766,7 @@ retry_cpuset:
- 		 * can deadlock because I/O on the device might not
- 		 * complete.
- 		 */
--		gfp_mask = memalloc_noio_flags(gfp_mask);
-+		gfp_mask = gfp_from_current(gfp_mask);
- 		page = __alloc_pages_slowpath(gfp_mask, order,
- 				zonelist, high_zoneidx, nodemask,
- 				preferred_zone, migratetype);
-diff --git a/mm/slab.c b/mm/slab.c
-index b264214c77ea..914d88661f3d 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -3206,6 +3206,7 @@ slab_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid,
- 	int slab_node = numa_mem_id();
- 
- 	flags &= gfp_allowed_mask;
-+	flags = gfp_from_current(flags);
- 
- 	lockdep_trace_alloc(flags);
- 
-@@ -3293,6 +3294,7 @@ slab_alloc(struct kmem_cache *cachep, gfp_t flags, unsigned long caller)
- 	void *objp;
- 
- 	flags &= gfp_allowed_mask;
-+	flags = gfp_from_current(flags);
- 
- 	lockdep_trace_alloc(flags);
- 
-diff --git a/mm/slob.c b/mm/slob.c
-index 4bf8809dfcce..18206f54d227 100644
---- a/mm/slob.c
-+++ b/mm/slob.c
-@@ -431,6 +431,7 @@ __do_kmalloc_node(size_t size, gfp_t gfp, int node, unsigned long caller)
- 	void *ret;
- 
- 	gfp &= gfp_allowed_mask;
-+	flags = gfp_from_current(flags);
- 
- 	lockdep_trace_alloc(gfp);
- 
-@@ -539,6 +540,7 @@ void *slob_alloc_node(struct kmem_cache *c, gfp_t flags, int node)
- 	void *b;
- 
- 	flags &= gfp_allowed_mask;
-+	flags = gfp_from_current(flags);
- 
- 	lockdep_trace_alloc(flags);
- 
-diff --git a/mm/slub.c b/mm/slub.c
-index 25f14ad8f817..ff7c15e977da 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -961,6 +961,7 @@ static inline void kfree_hook(const void *x)
- static inline int slab_pre_alloc_hook(struct kmem_cache *s, gfp_t flags)
- {
- 	flags &= gfp_allowed_mask;
-+	flags = gfp_from_current(flags);
- 	lockdep_trace_alloc(flags);
- 	might_sleep_if(flags & __GFP_WAIT);
- 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 67165f839936..05de3289d031 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2592,7 +2592,7 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- {
- 	unsigned long nr_reclaimed;
- 	struct scan_control sc = {
--		.gfp_mask = (gfp_mask = memalloc_noio_flags(gfp_mask)),
-+		.gfp_mask = (gfp_mask = gfp_from_current(gfp_mask)),
- 		.may_writepage = !laptop_mode,
- 		.nr_to_reclaim = SWAP_CLUSTER_MAX,
- 		.may_unmap = 1,
-@@ -3524,7 +3524,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 		.may_unmap = !!(zone_reclaim_mode & RECLAIM_SWAP),
- 		.may_swap = 1,
- 		.nr_to_reclaim = max(nr_pages, SWAP_CLUSTER_MAX),
--		.gfp_mask = (gfp_mask = memalloc_noio_flags(gfp_mask)),
-+		.gfp_mask = (gfp_mask = gfp_from_current(gfp_mask)),
- 		.order = order,
- 		.priority = ZONE_RECLAIM_PRIORITY,
- 	};
-
-
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
