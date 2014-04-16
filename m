@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753060AbaDPRMh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 13:12:37 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:50526 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496AbaDPRMf (ORCPT
+	id S1754221AbaDPRNp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 13:13:45 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:44337 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751803AbaDPRNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 13:12:35 -0400
-Date: Wed, 16 Apr 2014 10:12:30 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tj@kernel.org,
-        grygorii.strashko@ti.com, peterz@infradead.org
-Subject: Re: How do I increment a per-CPU variable without warning?
-Message-ID: <20140416171230.GA8788@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140415221755.GA27188@linux.vnet.ibm.com>
- <alpine.DEB.2.10.1404161007080.9945@gentwo.org>
- <20140416160621.GX4496@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140416160621.GX4496@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041617-9332-0000-0000-00000087502F
+	Wed, 16 Apr 2014 13:13:44 -0400
+From: Sergei Ianovich <ynvich@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: Sergei Ianovich <ynvich@gmail.com>, Daniel Mack <zonque@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>
+Subject: [PATCH v4 00/21] ARM: support for ICP DAS LP-8x4x (with dts)
+Date: Wed, 16 Apr 2014 21:13:10 +0400
+Message-Id: <1397668411-27162-1-git-send-email-ynvich@gmail.com>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1387309071-22382-1-git-send-email-ynvich@gmail.com>
+References: <1387309071-22382-1-git-send-email-ynvich@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 09:06:21AM -0700, Paul E. McKenney wrote:
-> On Wed, Apr 16, 2014 at 10:08:03AM -0500, Christoph Lameter wrote:
-> > On Tue, 15 Apr 2014, Paul E. McKenney wrote:
-> > 
-> > > Hello, Christoph,
-> > >
-> > > I have a patch that currently uses __this_cpu_inc_return() to increment a
-> > > per-CPU variable, but without preemption disabled.  Of course, given that
-> > > preemption is enabled, it might well end up picking up one CPU's counter,
-> > > adding one to it, then storing the result into some other CPU's counter.
-> > > But this is OK, the test can be probabilistic.  And when I run this
-> > > against v3.14 and earlier, it works fine.
-> > 
-> > We introduced raw_cpu_inc_return to squish these warnings.
-> 
-> Cool, this is a good short-term fix.
+Hi Arnd,
 
-Or at least it is given the following patch.  Was this the intent?
+We had an intensive discussion of the series in the beginning of
+December 2013 [1]. The discussion resulted in 3 versions of the series
+in less than 3 weeks. Then there was a decision to block this series
+until Daniel Mack's DMA-engine-for-PXA series is ready.
 
-							Thanx, Paul
+Unfortunately Daniel neigther agrees to review my trivial temporary
+solution to the DMA-in-device-tree (patch 7 of 21), nor he is active
+in DMA series development. There is no progress for 3 months.
 
-------------------------------------------------------------------------
+As with any big out of tree series, its support is painful. It requires
+extensive merging when doing bisects, on each step.
 
-percpu: Fix raw_cpu_inc_return()
+It would great if the decision to block could be reconsidered, and we could
+move forward.
 
-The definition for raw_cpu_add_return() uses the operation prefix
-"raw_add_return_", but the definitions in the various percpu.h files
-expect "raw_cpu_add_return_".  This commit therefore appropriately
-adjusts the definition of raw_cpu_add_return().
+Best,
 
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Christoph Lameter <cl@linux.com>
+Sergei Ianovich
 
-diff --git a/include/linux/percpu.h b/include/linux/percpu.h
-index e7a0b95ed527..495c6543a8f2 100644
---- a/include/linux/percpu.h
-+++ b/include/linux/percpu.h
-@@ -639,7 +639,7 @@ do {									\
- #  define raw_cpu_add_return_8(pcp, val)	raw_cpu_generic_add_return(pcp, val)
- # endif
- # define raw_cpu_add_return(pcp, val)	\
--	__pcpu_size_call_return2(raw_add_return_, pcp, val)
-+	__pcpu_size_call_return2(raw_cpu_add_return_, pcp, val)
- #endif
- 
- #define raw_cpu_sub_return(pcp, val)	raw_cpu_add_return(pcp, -(typeof(pcp))(val))
-
+1. http://linux-kernel.2935.n7.nabble.com/PATCH-00-11-ARM-support-for-ICP-DAS-LP-8x4x-td761919.html
