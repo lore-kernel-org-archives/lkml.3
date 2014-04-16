@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243AbaDPJLb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 05:11:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42862 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755056AbaDPJLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 05:11:25 -0400
-Date: Wed, 16 Apr 2014 11:11:22 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Glyn Normington <gnormington@gopivotal.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, cgroups@vger.kernel.org
-Subject: Re: Kernel scanning/freeing to relieve cgroup memory pressure
-Message-ID: <20140416091122.GC12866@dhcp22.suse.cz>
-References: <533C0BB4.4070009@gopivotal.com>
- <20140402180019.GL16631@htj.dyndns.org>
- <534B982D.8060106@gopivotal.com>
- <20140414205034.GA6443@cmpxchg.org>
- <534CEFF2.7090207@gopivotal.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <534CEFF2.7090207@gopivotal.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1755191AbaDPJJt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 05:09:49 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58326 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755160AbaDPJJq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 05:09:46 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: broonie@kernel.org
+Cc: lgirdwood@gmail.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rdunlap@infradead.org, sameo@linux.intel.com,
+        lee.jones@linaro.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, ckeepax@opensource.wolfsonmicro.com
+Subject: [PATCH 0/6] Arizona Regulator Updates v6
+Date: Wed, 16 Apr 2014 10:01:36 +0100
+Message-Id: <1397638902-7576-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 15-04-14 09:38:10, Glyn Normington wrote:
-> On 14/04/2014 21:50, Johannes Weiner wrote:
-> >On Mon, Apr 14, 2014 at 09:11:25AM +0100, Glyn Normington wrote:
-> >>Johannes/Michal
-> >>
-> >>What are your thoughts on this matter? Do you see this as a valid
-> >>requirement?
-> >As Tejun said, memory cgroups *do* respond to internal pressure and
-> >enter targetted reclaim before invoking the OOM killer.  So I'm not
-> >exactly sure what you are asking.
-> We are repeatedly seeing a situation where a memory cgroup with a given
-> memory limit results in an application process in the cgroup being killed
-> oom during application initialisation. One theory is that dirty file cache
-> pages are not being written to disk to reduce memory consumption before the
-> oom killer is invoked. Should memory cgroups' response to internal pressure
-> include writing dirty file cache pages to disk?
+Hi,
 
-This depends on the kernel version. OOM with a lot of dirty pages on
-memcg LRUs was a big problem. Now we are waiting for pages under
-writeback during reclaim which should prevent from such spurious OOMs.
-Which kernel versions are we talking about? The fix (or better said
-workaround) I am thinking about is e62e384e9da8 memcg: prevent OOM with
-too many dirty pages.
+This series of patches are small fixes/improvements to the
+Arizona regulators. The main thing added is proper device
+tree bindings for getting the regulator init_data.
 
-I am still not sure I understand your setup and the problem. Could you
-describe your setup (what runs where under what limits), please?
+Changes Since v5:
+  - Use IS_ENABLED rather than ifdef for OF specific code
+  - Tidy up arizona_of_get_named_gpio base on comments by Lee Jones
+
+Thanks,
+Charles
+
+Charles Keepax (6):
+  mfd: arizona: Factor out read of device tree GPIOs
+  regulator: arizona-ldo1: Move setup processing from arizona-core
+  regulator: arizona-ldo1: Add processing of init_data from device tree
+  mfd: arizona: Update DT binding to support LDO1 init_data
+  regulator: arizona-micsupp: Add processing of init_data from device
+    tree
+  mfd: arizona: Update DT binding to support MICVDD init_data
+
+ Documentation/devicetree/bindings/mfd/arizona.txt |   10 ++++
+ drivers/mfd/arizona-core.c                        |   41 +++++++++------
+ drivers/regulator/arizona-ldo1.c                  |   57 +++++++++++++++++++++
+ drivers/regulator/arizona-micsupp.c               |   37 +++++++++++++
+ include/linux/mfd/arizona/core.h                  |    3 +
+ 5 files changed, 131 insertions(+), 17 deletions(-)
+
 -- 
-Michal Hocko
-SUSE Labs
+1.7.2.5
+
