@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903AbaDPJsb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 05:48:31 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:37439 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751007AbaDPJs3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 05:48:29 -0400
-Date: Wed, 16 Apr 2014 18:48:02 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: thomas.pugliese@gmail.com, daeseok.youn@gmail.com,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] uwb: adds missing error handling
-Message-ID: <20140416094802.GA18148@devel>
+	id S1755027AbaDPJs5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 05:48:57 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33996 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754930AbaDPJsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 05:48:54 -0400
+Message-ID: <534E51BF.9050508@ti.com>
+Date: Wed, 16 Apr 2014 12:47:43 +0300
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Brian Norris <computersforpeace@gmail.com>
+CC: <dwmw2@infradead.org>, Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        <galak@codeaurora.org>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <rob@landley.net>, <linux@arm.linux.org.uk>,
+        <grygorii.strashko@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <m-karicheri2@ti.com>,
+        Warner Losh <imp@bsdimp.com>
+Subject: Re: [PATCH v2] mtd: davinci-nand: disable subpage write for keystone-nand
+References: <1395346112-13350-1-git-send-email-ivan.khoronzhuk@ti.com> <532B4C36.8060405@ti.com> <5343F0D6.2010804@ti.com> <20140416070833.GA5512@norris-Latitude-E6410>
+In-Reply-To: <20140416070833.GA5512@norris-Latitude-E6410>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is checking NULL before dereferncing but
-it need to add "return".
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
- drivers/uwb/drp.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+On 04/16/2014 10:08 AM, Brian Norris wrote:
+> On Tue, Apr 08, 2014 at 03:51:34PM +0300, Ivan Khoronzhuk wrote:
+>> On 03/20/2014 10:14 PM, Santosh Shilimkar wrote:
+>>> On Thursday 20 March 2014 04:08 PM, Ivan Khoronzhuk wrote:
+>>>> From: Murali Karicheri <m-karicheri2@ti.com>
+>>>> Sub page write doesn't work because of hw issue in controller found on
+>>>> Keystone SOCs. AEMIF controller is also used on DaVinci SOCs which
+>>>> don't seems to have any issue. So add "ti,keysone-nand" compatible
+>>>> to nand driver in order to set NAND_NO_SUBPAGE_WRITE option.
+>>>>
+>>>> Cc: Brian Norris <computersforpeace@gmail.com>
+>>>> Cc: Warner Losh <imp@bsdimp.com>
+>>>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>>>
+>>>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+>>>> ---
+>>>>
+>>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Brian,
+>> Could you pick up subj patch?
+> Pushed to l2-mtd.git. Is it critical this goes in for 3.15? It's
+> currently queued for -next (3.16).
+>
+> Brian
 
-diff --git a/drivers/uwb/drp.c b/drivers/uwb/drp.c
-index 16ada83..1a2fd97 100644
---- a/drivers/uwb/drp.c
-+++ b/drivers/uwb/drp.c
-@@ -599,8 +599,11 @@ static void uwb_drp_handle_alien_drp(struct uwb_rc *rc, struct uwb_ie_drp *drp_i
- 
- 	/* alloc and initialize new uwb_cnflt_alien */
- 	cnflt = kzalloc(sizeof(struct uwb_cnflt_alien), GFP_KERNEL);
--	if (!cnflt)
-+	if (!cnflt) {
- 		dev_err(dev, "failed to alloc uwb_cnflt_alien struct\n");
-+		return;
-+	}
-+
- 	INIT_LIST_HEAD(&cnflt->rc_node);
- 	init_timer(&cnflt->timer);
- 	cnflt->timer.function = uwb_cnflt_timer;
+This is a critical fix and it should be for 3.15.
+Thanks.
+
 -- 
-1.7.4.4
+Regards,
+Ivan Khoronzhuk
 
