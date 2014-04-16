@@ -1,92 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754499AbaDPFjE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 01:39:04 -0400
-Received: from ozlabs.org ([103.22.144.67]:56478 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754268AbaDPFjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 01:39:03 -0400
-Date: Wed, 16 Apr 2014 15:38:56 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vladimir Davydov <vdavydov@parallels.com>
-Subject: linux-next: build failure after merge of the akpm-current tree
-Message-Id: <20140416153856.222b665abb0a66d2470a7c81@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1754554AbaDPFlV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 01:41:21 -0400
+Received: from smtprelay0036.hostedemail.com ([216.40.44.36]:47306 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751845AbaDPFlT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 01:41:19 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3867:3868:3871:3872:4250:4321:4605:5007:7652:10004:10400:10848:11026:11658:11914:12043:12296:12517:12519:12679:12740:13069:13160:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: badge81_7fa787cc3163f
+X-Filterd-Recvd-Size: 1686
+Message-ID: <1397626875.15177.3.camel@joe-AO722>
+Subject: Re: [PATCH v2] Drivers/PCI: Logging clean-up [1]
+From: Joe Perches <joe@perches.com>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>, Bjorn <bhelgaas@google.com>
+Date: Tue, 15 Apr 2014 22:41:15 -0700
+In-Reply-To: <20140416073736.8ae3ea7cd0f94f0e056fca84@skynet.be>
+References: <20140416073736.8ae3ea7cd0f94f0e056fca84@skynet.be>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__16_Apr_2014_15_38_56_+1000_o8tuMnJEZv_DMKUA"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__16_Apr_2014_15_38_56_+1000_o8tuMnJEZv_DMKUA
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2014-04-16 at 07:37 +0200, Fabian Frederick wrote:
+> -Convert printk(KERN_WARNING|KERN_ERR|KERN_INFO to pr_foo()
+> -Define pr_fmt where it doesn't break existing format.
+[]
+>  (other ones ?)
+[]
+> diff --git a/drivers/pci/hotplug/cpqphp_core.c b/drivers/pci/hotplug/cpqphp_core.c
+[]
+> @@ -830,8 +831,8 @@ static int cpqhpc_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+>  
+>  	err = pci_enable_device(pdev);
+>  	if (err) {
+> -		printk(KERN_ERR MY_NAME ": cannot enable PCI device %s (%d)\n",
+> -			pci_name(pdev), err);
+> +		pr_err("cannot enable PCI device %s (%d)\n", pci_name(pdev),
+> +		       err);
 
-Hi Andrew,
+trivia:
 
-After merging the akpm-current tree, today's linux-next build (arm
-multi_v7_defconfig) failed like this:
+My preference is to keep format and argument
+on a single line where possible and on
+separate lines when not.
 
-ERROR: "kmalloc_order" [drivers/net/wireless/brcm80211/brcmfmac/brcmfmac.ko=
-] undefined!
+		pr_err("cannot enable PCI device %s (%d)\n",
+		       pci_name(pdev), err);
 
-Caused by commit a3ed1ed24850 ("mm: get rid of __GFP_KMEMCG").
 
-I added the following patch:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 16 Apr 2014 15:32:54 +1000
-Subject: [PATCH] mm: get rid of __GFP_KMEMCG fix
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- mm/slab_common.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index cab4c49b3e8c..edd10a8af69e 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -584,6 +584,7 @@ void *kmalloc_order(size_t size, gfp_t flags, unsigned =
-int order)
- 	kmemleak_alloc(ret, size, 1, flags);
- 	return ret;
- }
-+EXPORT_SYMBOL(kmalloc_order);
-=20
- #ifdef CONFIG_TRACING
- void *kmalloc_order_trace(size_t size, gfp_t flags, unsigned int order)
---=20
-1.9.2
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__16_Apr_2014_15_38_56_+1000_o8tuMnJEZv_DMKUA
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTThd0AAoJEMDTa8Ir7ZwVB2IQAIUVQnKOtUZDt36kAfTH3rKO
-vkQCLn+RkpNqf2rtBpf/Igl1ktBGpvvwo7DCHQypoA1dadf5NXI+fGc2KZmjDQti
-oemmLq+zhl4itgJwXZ2L36/ZtNJemDoi5hhQYFghcriEBnf4iTx4ohNHmWxMJzrO
-4UZDYF1CI0w5BuN97LPGN6TlJHkAMpr9fMV06TRGFwWTJ7lwG25bLFX1C8Bdt2LF
-ObMB3A8RWTgp/ELDv/Hgi7RrdaVrH0K+wNGVhVirUS6bZhvw3RS27+KPmJBvKNKe
-z1Z+YWizDaKERU/0Usa9D3a0pSxN6zMYQUIsCbTbZEpm5NSVsshrLmHVT+ijQijQ
-NJP/z+27i7HmsqLZX1BMYCXeyqLFGxxcRo5HpBzOurjM1l0BPRJy55koVpK4q1yw
-AH2B7dwcwXv5aJQOVip7GERr9TxuIcUST9wNDcPm2baFOq3fVaz7sXYr9rlwWoUr
-Lnyt7OA8wDMZUEk8Y2lI7quXpMdJf0saEkfQaZhNWszQebUxPnTYax/YoiCFA8ol
-AEKpzfE1rbrwfX00tUxwecxSFECLsv034tzhBJcW4h8nRwJCAZ0dUdFKynhe6/BQ
-e1SklzCTWfNVwOARgUeidNBqCMP0Y4IfoMNyV23FPgw12GuNJhR1LMYQAqcYo2Hl
-WE3fy10Ta59NIUEI6qhn
-=YB0A
------END PGP SIGNATURE-----
-
---Signature=_Wed__16_Apr_2014_15_38_56_+1000_o8tuMnJEZv_DMKUA--
