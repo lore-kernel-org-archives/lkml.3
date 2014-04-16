@@ -1,92 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839AbaDPCtI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 22:49:08 -0400
-Received: from [119.145.14.64] ([119.145.14.64]:20901 "EHLO
-	szxga01-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076AbaDPCtG (ORCPT
+	id S1753022AbaDPCuS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 22:50:18 -0400
+Received: from 69-178-150-49.static-ip.telepacific.net ([69.178.150.49]:61935
+	"EHLO ImsEx1.ims.dom" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751342AbaDPCuQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 22:49:06 -0400
-Message-ID: <534DEF62.4090900@huawei.com>
-Date: Wed, 16 Apr 2014 10:48:02 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Tue, 15 Apr 2014 22:50:16 -0400
+X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Tue, 15 Apr 2014 22:50:15 EDT
+From: Chris Healy <chealy@imsco-us.com>
+To: Guenter Roeck <linux@roeck-us.net>,
+        Florian Fainelli <f.fainelli@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "cphealy@gmail.com" <cphealy@gmail.com>
+Subject: RE: [PATCH 3/3] net: mdio-gpio: Add support for separate MDI and
+ MDO 	gpio pins
+Thread-Topic: [PATCH 3/3] net: mdio-gpio: Add support for separate MDI and
+ MDO 	gpio pins
+Thread-Index: AQHPWRnp/IN0ufS15k+VKR6BUTsy1psTiaF6
+Date: Wed, 16 Apr 2014 02:45:50 +0000
+Message-ID: <724F6C6CDC8C86478473775085778C4E09E85DFE@ImsEx1.ims.dom>
+References: <1397614602-29694-1-git-send-email-linux@roeck-us.net>,<1397614602-29694-4-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1397614602-29694-4-git-send-email-linux@roeck-us.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [99.73.211.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <john@johnmccutchan.com>,
-        <rlove@rlove.org>, <eparis@parisplace.org>,
-        <gregkh@linuxfoundation.org>, <serge.hallyn@ubuntu.com>,
-        <lennart@poettering.net>, <kay@vrfy.org>
-Subject: Re: [PATCH 3/3] cgroup: implement cgroup.subtree_populated for the
- default hierarchy
-References: <1397511846-2904-1-git-send-email-tj@kernel.org> <1397511846-2904-4-git-send-email-tj@kernel.org>
-In-Reply-To: <1397511846-2904-4-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+This is for a system with fixed assignments of input and output pins
+(various variants of Kontron COMe).
 
-On 2014/4/15 5:44, Tejun Heo wrote:
-> cgroup users often need a way to determine when a cgroup's
-> subhierarchy becomes empty so that it can be cleaned up.  cgroup
-> currently provides release_agent for it; unfortunately, this mechanism
-> is riddled with issues.
-> 
-> * It delivers events by forking and execing a userland binary
->   specified as the release_agent.  This is a long deprecated method of
->   notification delivery.  It's extremely heavy, slow and cumbersome to
->   integrate with larger infrastructure.
-> 
-> * There is single monitoring point at the root.  There's no way to
->   delegate management of subtree.
-> 
-> * The event isn't recursive.  It triggers when a cgroup doesn't have
->   any tasks or child cgroups.  Events for internal nodes trigger only
->   after all children are removed.  This again makes it impossible to
->   delegate management of subtree.
-> 
-> * Events are filtered from the kernel side.  "notify_on_release" file
->   is used to subscribe to or suppress release event.  This is
->   unnecessarily complicated and probably done this way because event
->   delivery itself was expensive.
-> 
-> This patch implements interface file "cgroup.subtree_populated" which
-> can be used to monitor whether the cgroup's subhierarchy has tasks in
-> it or not.  Its value is 0 if there is no task in the cgroup and its
-> descendants; otherwise, 1, and kernfs_notify() notificaiton is
-> triggers when the value changes, which can be monitored through poll
-> and [di]notify.
-> 
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Tested-by: Chris Healy <cphealy@gmail.com>
+---
+ drivers/net/phy/mdio-gpio.c |   34 +++++++++++++++++++++++++++++++---
+ include/linux/mdio-gpio.h   |    2 ++
+ 2 files changed, 33 insertions(+), 3 deletions(-)
 
-For the old notification mechanism, the path of the cgroup that becomes
-empty will be passed to the user specified release agent. Like this:
+diff --git a/drivers/net/phy/mdio-gpio.c b/drivers/net/phy/mdio-gpio.c
+index fac211a..9c4defd 100644
+--- a/drivers/net/phy/mdio-gpio.c
++++ b/drivers/net/phy/mdio-gpio.c
+@@ -32,8 +32,8 @@
 
-# cat /sbin/cpuset_release_agent
-#!/bin/sh
-rmdir /dev/cpuset/$1
+ struct mdio_gpio_info {
+        struct mdiobb_ctrl ctrl;
+-       int mdc, mdio;
+-       int mdc_active_low, mdio_active_low;
++       int mdc, mdio, mdo;
++       int mdc_active_low, mdio_active_low, mdo_active_low;
+ };
 
-How do we achieve this using inotify?
+ static void *mdio_gpio_of_get_data(struct platform_device *pdev)
+@@ -60,6 +60,12 @@ static void *mdio_gpio_of_get_data(struct platform_device *pdev)
+        pdata->mdio = ret;
+        pdata->mdio_active_low = flags & OF_GPIO_ACTIVE_LOW;
 
-- monitor all the cgroups, or
-- monitor all the leaf cgroups, and travel cgrp->parent to delete all
-  empty cgroups.
-- monitor root cgroup only, and travel the whole hierarchy to find
-  empy cgroups when it gets an fs event.
++       ret = of_get_gpio_flags(np, 2, &flags);
++       if (ret > 0) {
++               pdata->mdo = ret;
++               pdata->mdo_active_low = flags & OF_GPIO_ACTIVE_LOW;
++       }
++
+        return pdata;
+ }
 
-Seems none of them is scalible.
+@@ -68,6 +74,16 @@ static void mdio_dir(struct mdiobb_ctrl *ctrl, int dir)
+        struct mdio_gpio_info *bitbang =
+                container_of(ctrl, struct mdio_gpio_info, ctrl);
 
-> This is a lot ligther and simpler and trivially allows delegating
-> management of subhierarchy - subhierarchy monitoring can block further
-> propgation simply by putting itself or another process in the root of
-> the subhierarchy and monitor events that it's interested in from there
-> without interfering with monitoring higher in the tree.
-> 
-> v2: Patch description updated as per Serge.
-> 
++       if (bitbang->mdo) {
++               /* Separate output pin. Always set its value to high
++                * when changing direction. If direction is input,
++                * assume the pin serves as pull-up. If direction is
++                * output, the default value is high.
++                */
++               gpio_set_value(bitbang->mdo, 1 ^ bitbang->mdo_active_low);
++               return;
++       }
++
+        if (dir)
+                gpio_direction_output(bitbang->mdio,
+                                      1 ^ bitbang->mdio_active_low);
+@@ -88,7 +104,10 @@ static void mdio_set(struct mdiobb_ctrl *ctrl, int what)
+        struct mdio_gpio_info *bitbang =
+                container_of(ctrl, struct mdio_gpio_info, ctrl);
 
+-       gpio_set_value(bitbang->mdio, what ^ bitbang->mdio_active_low);
++       if (bitbang->mdo)
++               gpio_set_value(bitbang->mdo, what ^ bitbang->mdo_active_low);
++       else
++               gpio_set_value(bitbang->mdio, what ^ bitbang->mdio_active_low);
+ }
+
+ static void mdc_set(struct mdiobb_ctrl *ctrl, int what)
+@@ -125,6 +144,8 @@ static struct mii_bus *mdio_gpio_bus_init(struct device *dev,
+        bitbang->mdc_active_low = pdata->mdc_active_low;
+        bitbang->mdio = pdata->mdio;
+        bitbang->mdio_active_low = pdata->mdio_active_low;
++       bitbang->mdo = pdata->mdo;
++       bitbang->mdo_active_low = pdata->mdo_active_low;
+
+        new_bus = alloc_mdio_bitbang(&bitbang->ctrl);
+        if (!new_bus)
+@@ -151,6 +172,13 @@ static struct mii_bus *mdio_gpio_bus_init(struct device *dev,
+        if (devm_gpio_request(dev, bitbang->mdio, "mdio"))
+                goto out_free_bus;
+
++       if (bitbang->mdo) {
++               if (devm_gpio_request(dev, bitbang->mdo, "mdo"))
++                       goto out_free_bus;
++               gpio_direction_output(bitbang->mdo, 1);
++               gpio_direction_input(bitbang->mdio);
++       }
++
+        gpio_direction_output(bitbang->mdc, 0);
+
+        dev_set_drvdata(dev, new_bus);
+diff --git a/include/linux/mdio-gpio.h b/include/linux/mdio-gpio.h
+index 57e57fe..66c30a7 100644
+--- a/include/linux/mdio-gpio.h
++++ b/include/linux/mdio-gpio.h
+@@ -17,9 +17,11 @@ struct mdio_gpio_platform_data {
+        /* GPIO numbers for bus pins */
+        unsigned int mdc;
+        unsigned int mdio;
++       unsigned int mdo;
+
+        bool mdc_active_low;
+        bool mdio_active_low;
++       bool mdo_active_low;
+
+        unsigned int phy_mask;
+        int irqs[PHY_MAX_ADDR];
+--
+1.7.9.7
+
+
+________________________________
+
+
+This email and any files transmitted with it are confidential & proprietary to Systems and Software Enterprises, LLC. This information is intended solely for the use of the individual or entity to which it is addressed. Access or transmittal of the information contained in this e-mail, in full or in part, to any other organization or persons is not authorized.
