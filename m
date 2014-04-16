@@ -1,65 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723AbaDPGNv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 02:13:51 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:40427
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754655AbaDPGNq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 02:13:46 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zcb8kz98dI1432Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh26d3h1155h)
-Date: Wed, 16 Apr 2014 14:13:36 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Philipp Zabel <philipp.zabel@gmail.com>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ARM: dts: imx6q-gk802: Enable HDMI
-Message-ID: <20140416061334.GE2523@dragon>
-References: <1397499353-6116-1-git-send-email-philipp.zabel@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1397499353-6116-1-git-send-email-philipp.zabel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1754618AbaDPGRi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 02:17:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39982 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753048AbaDPGRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 02:17:36 -0400
+Date: Wed, 16 Apr 2014 16:17:26 +1000
+From: NeilBrown <neilb@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH 04/19] Make effect of PF_FSTRANS to disable __GFP_FS
+ universal.
+Message-ID: <20140416161726.51b506e2@notabene.brown>
+In-Reply-To: <20140416053756.GC15995@dastard>
+References: <20140416033623.10604.69237.stgit@notabene.brown>
+	<20140416040336.10604.58240.stgit@notabene.brown>
+	<20140416053756.GC15995@dastard>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/Oo0=qxWoYRMUFxVoAOmvLbc"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 08:15:53PM +0200, Philipp Zabel wrote:
-> This patch enables HDMI output on GK802 HDMI dongles.
-> 
-> Signed-off-by: Philipp Zabel <philipp.zabel@gmail.com>
-> ---
->  arch/arm/boot/dts/imx6q-gk802.dts | 5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/imx6q-gk802.dts b/arch/arm/boot/dts/imx6q-gk802.dts
-> index 4a9b4dc..16d3491 100644
-> --- a/arch/arm/boot/dts/imx6q-gk802.dts
-> +++ b/arch/arm/boot/dts/imx6q-gk802.dts
-> @@ -48,6 +48,11 @@
->  	};
->  };
->  
-> +&hdmi {
-> +	status = "okay";
+--Sig_/Oo0=qxWoYRMUFxVoAOmvLbc
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I prefer to put 'status' at the bottom of the property list.
+On Wed, 16 Apr 2014 15:37:56 +1000 Dave Chinner <david@fromorbit.com> wrote:
 
-Shawn
+> On Wed, Apr 16, 2014 at 02:03:36PM +1000, NeilBrown wrote:
+> > Currently both xfs and nfs will handle PF_FSTRANS by disabling
+> > __GFP_FS.
+> >=20
+> > Make this effect global by repurposing memalloc_noio_flags (which
+> > does the same thing for PF_MEMALLOC_NOIO and __GFP_IO) to generally
+> > impost the task flags on a gfp_t.
+> > Due to this repurposing we change the name of memalloc_noio_flags
+> > to gfp_from_current().
+> >=20
+> > As PF_FSTRANS now uniformly removes __GFP_FS we can remove special
+> > code for this from xfs and nfs.
+> >=20
+> > As we can now expect other code to set PF_FSTRANS, its meaning is more
+> > general, so the WARN_ON in xfs_vm_writepage() which checks PF_FSTRANS
+> > is not set is no longer appropriate.  PF_FSTRANS may be set for other
+> > reasons than an XFS transaction.
+>=20
+> So PF_FSTRANS no longer means "filesystem in transaction context".
+> Are you going to rename to match whatever it's meaning is now?
+> I'm not exactly clear on what it means now...
 
-> +	ddc-i2c-bus = <&i2c3>;
-> +};
-> +
->  /* Internal I2C */
->  &i2c2 {
->  	pinctrl-names = "default";
-> -- 
-> 1.9.1
-> 
-> 
-> 
+I did consider renaming it to "PF_MEMALLOC_NOFS" as it is similar to
+"PF_MEMALLOC_NOIO", except that it disables __GFP_FS rather than __GFP_IO.
+Maybe I should go ahead with that.
 
+>=20
+>=20
+> > As lockdep cares about __GFP_FS, we need to translate PF_FSTRANS to
+> > __GFP_FS before calling lockdep_alloc_trace() in various places.
+> >=20
+> > Signed-off-by: NeilBrown <neilb@suse.de>
+> ....
+> > diff --git a/fs/xfs/kmem.h b/fs/xfs/kmem.h
+> > index 64db0e53edea..882b86270ebe 100644
+> > --- a/fs/xfs/kmem.h
+> > +++ b/fs/xfs/kmem.h
+> > @@ -50,8 +50,6 @@ kmem_flags_convert(xfs_km_flags_t flags)
+> >  		lflags =3D GFP_ATOMIC | __GFP_NOWARN;
+> >  	} else {
+> >  		lflags =3D GFP_KERNEL | __GFP_NOWARN;
+> > -		if ((current->flags & PF_FSTRANS) || (flags & KM_NOFS))
+> > -			lflags &=3D ~__GFP_FS;
+> >  	}
+>=20
+> I think KM_NOFS needs to remain here, as it has use outside of
+> transaction contexts that set PF_FSTRANS....
+
+Argh, yes of course.
+I'll have to re-test the other xfs changes now to see if they are really
+needed.
+
+Thanks!
+
+
+>=20
+> >  	if (flags & KM_ZERO)
+> > diff --git a/fs/xfs/xfs_aops.c b/fs/xfs/xfs_aops.c
+> > index db2cfb067d0b..207a7f86d5d7 100644
+> > --- a/fs/xfs/xfs_aops.c
+> > +++ b/fs/xfs/xfs_aops.c
+> > @@ -952,13 +952,6 @@ xfs_vm_writepage(
+> >  			PF_MEMALLOC))
+> >  		goto redirty;
+> > =20
+> > -	/*
+> > -	 * Given that we do not allow direct reclaim to call us, we should
+> > -	 * never be called while in a filesystem transaction.
+> > -	 */
+> > -	if (WARN_ON(current->flags & PF_FSTRANS))
+> > -		goto redirty;
+>=20
+> We still need to ensure this rule isn't broken. If it is, the
+> filesystem will silently deadlock in delayed allocation rather than
+> gracefully handle the problem with a warning....
+
+Hmm... that might be tricky.  The 'new' PF_FSTRANS can definitely be set wh=
+en
+xfs_vm_writepage is called and we really want the write to happen.
+I don't suppose there is any other way to detect if a transaction is
+happening?
+
+Thanks,
+NeilBrown
+
+
+--Sig_/Oo0=qxWoYRMUFxVoAOmvLbc
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBU04gdjnsnt1WYoG5AQJjow//evh86FCU/MZNvwJIfgaA7CJS8ZBO2vac
+JkRsYYSmmSyFY4gWC9gDQfRJD01TaQRR55toAqxbZg8L1HbbL5i4ZBEpJQVYel8Y
+pdI2N75oZ6GCufLuivZ0hw6TGotfcwtGQFXjewpcpBDrx2Dr0+yxhObkKAh8W1ae
+f5dvKrZ0sYAaEGYj+XHzPb6STEYspdmnflzOOzRXLsCWOeM/uKEt9Cv0l12TXvyr
+kBYoY3HBMnKCBsvJPakCGZB+eSyR9PKLL5t846/ZL0Pfwic8OdCU6nBTncGbf2w/
+TCWWLxF2trF2f1aMx9TZef+IulH2KdZm5s1HALZ/edGnto8Wz2wgMGNpoj95rhT1
+3n5Qn7+P+B491bBGNVbbw2ObPl+aB1k5FgDwy++M7wSBUVjqqGaGAjqEXcgQJ9RV
+zBM6mMZyICqnSqy/3h5ACDK9xmCcb/lVXscSMFuGlEIcqiz9ehnmZWWJrsWjvLa7
+gOpO51fbFepKaA6MbhGlyOiOLH3XOpwuGQcsvpxCgT6vRs8C2yRutFbtbtVliaPQ
+I+g/hpkMJEqUvsRu/Dk44ndA3U64gnQuoFzgcYxZoFdCbzq/xP7w5LH7MbNeSSvH
+SvgiEpGCVhHsOfP8Z1pt01kCsnONRkMTQP8KxGDycDLnKAEC1YPvWCFB0Za5acJ6
+YVnpDRofW5g=
+=0rPl
+-----END PGP SIGNATURE-----
+
+--Sig_/Oo0=qxWoYRMUFxVoAOmvLbc--
