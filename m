@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752540AbaDPDUr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 23:20:47 -0400
-Received: from mga02.intel.com ([134.134.136.20]:56945 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751037AbaDPDUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 23:20:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,868,1389772800"; 
-   d="scan'208";a="493905201"
-From: "Chen, Gong" <gong.chen@linux.intel.com>
-To: hpa@zytor.com, tony.luck@intel.com
-Cc: tglx@linutronix.de, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        linux-tip-commits@vger.kernel.org,
-        "Chen, Gong" <gong.chen@linux.intel.com>
-Subject: [PATCH 1/2 v2] x86, MCE: Fix a bug in CMCI handler
-Date: Tue, 15 Apr 2014 22:55:32 -0400
-Message-Id: <1397616933-11239-1-git-send-email-gong.chen@linux.intel.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1397546035-6384-1-git-send-email-gong.chen@linux.intel.com>
-References: <1397546035-6384-1-git-send-email-gong.chen@linux.intel.com>
+	id S1753666AbaDPDU7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 23:20:59 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:57792 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052AbaDPDUu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 23:20:50 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s3G3K3AB006250, This message is accepted by code: ctloc85258
+Message-ID: <534DF6B1.30609@realtek.com>
+Date: Wed, 16 Apr 2014 11:19:13 +0800
+From: Roger <rogerable@realtek.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Oliver Neukum <oneukum@suse.de>, Lee Jones <lee.jones@linaro.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Chris Ball <chris@printf.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <driverdev-devel@linuxdriverproject.org>, <wei_wang@realsil.com.cn>,
+        <micky_ching@realsil.com.cn>
+Subject: Re: [PATCH v7 0/4] Add modules for realtek USB card reader
+References: <1397199203-2235-1-git-send-email-rogerable@realtek.com>	 <1397201514.1589.0.camel@linux-fkkt.site> <20140411102846.GB9801@lee--X1> <1397212602.4632.2.camel@linux-fkkt.site>
+In-Reply-To: <1397212602.4632.2.camel@linux-fkkt.site>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.21.81.189]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This bug is introduced by me in commit 27f6c573e0. I forget
-to execute put_cpu_var operation after get_cpu_var. Fix it
-via this_cpu_write instead of get_cpu_var.
+On 04/11/2014 06:36 PM, Oliver Neukum wrote:
+> On Fri, 2014-04-11 at 11:28 +0100, Lee Jones wrote:
+>>>> From: Roger Tseng <rogerable@realtek.com>
+>>>>
+>>>> This patchset adds modules to support Realtek USB vendor specific class flash
+>>>> card reader: one base module in MFD subsystem and two host modules in both mmc
+>>>> and memstick subsystems. The architecture is similar to rtsx_pci.
+>>>>
+>>>> This work is done primarily to replace the staging driver: staging/rts5139,
+>>>> which doesn't utilize mmc nor memstick subsystems. Once the patchset or its
+>>>> revision is applied, we may need Greg's help to remove the staging one.
+>>>
+>>> Looks good to me.
+>>
+>> Is that an Ack?
+> Acked-by: Oliver <oneukum@suse.de>
+>
+> 	Sorry
+> 		Oliver
+>
+Lee,
 
-v2 -> v1: Separate cleanup from bug fix.
+Would you apply all of these patches?
 
-Signed-off-by: Chen, Gong <gong.chen@linux.intel.com>
-Suggested-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/kernel/cpu/mcheck/mce.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index eeee23f..68317c8 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -598,7 +598,6 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
- {
- 	struct mce m;
- 	int i;
--	unsigned long *v;
- 
- 	this_cpu_inc(mce_poll_count);
- 
-@@ -618,8 +617,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
- 		if (!(m.status & MCI_STATUS_VAL))
- 			continue;
- 
--		v = &get_cpu_var(mce_polled_error);
--		set_bit(0, v);
-+		this_cpu_write(mce_polled_error, 1);
- 		/*
- 		 * Uncorrected or signalled events are handled by the exception
- 		 * handler when it is enabled, so don't process those here.
--- 
-1.9.0
-
+Best regards,
+Roger Tseng
