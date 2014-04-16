@@ -1,145 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202AbaDPCrk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 22:47:40 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:59575 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750864AbaDPCri (ORCPT
+	id S1753388AbaDPCsB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 22:48:01 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:42314 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753259AbaDPCr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 22:47:38 -0400
-Message-ID: <534DEEDD.5030203@huawei.com>
-Date: Wed, 16 Apr 2014 10:45:49 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: Will Deacon <will.deacon@arm.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Wang Nan <wangnan0@huawei.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Li Zefan <lizefan@huawei.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] ARM: mm: support big-endian page tables
-References: <5301B4AF.1040305@huawei.com> <5327F75F.1010406@huawei.com> <20140414104300.GA3530@arm.com> <534BC31A.7060705@arm.com>
-In-Reply-To: <534BC31A.7060705@arm.com>
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 15 Apr 2014 22:47:59 -0400
+Date: Tue, 15 Apr 2014 22:47:55 -0400 (EDT)
+Message-Id: <20140415.224755.163520246125289648.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.155]
-X-CFilter-Loop: Reflected
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 15 Apr 2014 19:47:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/4/14 19:14, Marc Zyngier wrote:
 
-> On 14/04/14 11:43, Will Deacon wrote:
->> (catching up on old email)
->>
->> On Tue, Mar 18, 2014 at 07:35:59AM +0000, Jianguo Wu wrote:
->>> Cloud you please take a look at this?
->>
->> [...]
->>
->>> On 2014/2/17 15:05, Jianguo Wu wrote:
->>>> When enable LPAE and big-endian in a hisilicon board, while specify
->>>> mem=384M mem=512M@7680M, will get bad page state:
->>>>
->>>> Freeing unused kernel memory: 180K (c0466000 - c0493000)
->>>> BUG: Bad page state in process init  pfn:fa442
->>>> page:c7749840 count:0 mapcount:-1 mapping:  (null) index:0x0
->>>> page flags: 0x40000400(reserved)
->>>> Modules linked in:
->>>> CPU: 0 PID: 1 Comm: init Not tainted 3.10.27+ #66
->>>> [<c000f5f0>] (unwind_backtrace+0x0/0x11c) from [<c000cbc4>] (show_stack+0x10/0x14)
->>>> [<c000cbc4>] (show_stack+0x10/0x14) from [<c009e448>] (bad_page+0xd4/0x104)
->>>> [<c009e448>] (bad_page+0xd4/0x104) from [<c009e520>] (free_pages_prepare+0xa8/0x14c)
->>>> [<c009e520>] (free_pages_prepare+0xa8/0x14c) from [<c009f8ec>] (free_hot_cold_page+0x18/0xf0)
->>>> [<c009f8ec>] (free_hot_cold_page+0x18/0xf0) from [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8)
->>>> [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8) from [<c00b6458>] (handle_mm_fault+0xf4/0x120)
->>>> [<c00b6458>] (handle_mm_fault+0xf4/0x120) from [<c0013754>] (do_page_fault+0xfc/0x354)
->>>> [<c0013754>] (do_page_fault+0xfc/0x354) from [<c0008400>] (do_DataAbort+0x2c/0x90)
->>>> [<c0008400>] (do_DataAbort+0x2c/0x90) from [<c0008fb4>] (__dabt_usr+0x34/0x40)
->>
->> [...]
->>
->>>> The bug is happened in cpu_v7_set_pte_ext(ptep, pte):
->>>> when pte is 64-bit, for little-endian, will store low 32-bit in r2,
->>>> high 32-bit in r3; for big-endian, will store low 32-bit in r3,
->>>> high 32-bit in r2, this will cause wrong pfn stored in pte,
->>>> so we should exchange r2 and r3 for big-endian.
->>
+1) Fix BPF filter validation of netlink attribute accesses, from
+   Mathias Kruase.
 
-Hi Marc,
-How about this:
+2) Netfilter conntrack generation seqcount not initialized properly,
+   from Andrey Vagin.
 
-The bug is happened in cpu_v7_set_pte_ext(ptep, pte):
-- It tests the L_PTE_NONE in one word on the other, and possibly clear L_PTE_VALID
-  tst	r3, #1 << (57 - 32)		@ L_PTE_NONE
-  bicne	r2, #L_PTE_VALID
-- Same for L_PTE_DIRTY, respectively setting L_PTE_RDONLY
+3) Fix comparison mask computation on big-endian in nft_cmp_fast(),
+   from Patrick McHardy.
 
-As for LPAE, the pte is 64-bits, and the value of r2/r3 is depending on the endianness,
-for little-endian, will store low 32-bit in r2, high 32-bit in r3,
-for big-endian, will store low 32-bit in r3, high 32-bit in r2, 
-this will cause wrong bit is cleared or set, and get wrong pfn.
-So we should exchange r2 and r3 for big-endian.
+4) Properly limit MTU over ipv6, from Eric Dumazet.
 
-Thanks,
-Jianguo Wu.
+5) Fix seccomp system call argument population on 32-bit,
+   from Daniel Borkmann.
 
->> I believe that Marc (added to CC) has been running LPAE-enabled, big-endian
->> KVM guests without any issues, so it seems unlikely that we're storing the
->> PTEs backwards. Can you check the configuration of SCTLR.EE?
-> 
-> So, for the record:
-> 
-> root@when-the-lie-s-so-big:~# cat /proc/cpuinfo 
-> processor	: 0
-> model name	: ARMv7 Processor rev 4 (v7b)
-> Features	: swp half thumb fastmult vfp edsp thumbee neon vfpv3 tls vfpv4 idiva idivt vfpd32 lpae evtstrm 
-> CPU implementer	: 0x41
-> CPU architecture: 7
-> CPU variant	: 0x0
-> CPU part	: 0xc07
-> CPU revision	: 4
-> 
-> processor	: 1
-> model name	: ARMv7 Processor rev 4 (v7b)
-> Features	: swp half thumb fastmult vfp edsp thumbee neon vfpv3 tls vfpv4 idiva idivt vfpd32 lpae evtstrm 
-> CPU implementer	: 0x41
-> CPU architecture: 7
-> CPU variant	: 0x0
-> CPU part	: 0xc07
-> CPU revision	: 4
-> 
-> Hardware	: Dummy Virtual Machine
-> Revision	: 0000
-> Serial		: 0000000000000000
-> root@when-the-lie-s-so-big:~# uname -a
-> Linux when-the-lie-s-so-big 3.14.0+ #2465 SMP PREEMPT Tue Apr 8 13:05:11 BST 2014 armv7b GNU/Linux
-> 
-> Now, looking at the patch, I think it makes some sense:
-> - Depending on the endianness, we have to test the L_PTE_NONE in one 
-> word on the other, and possibly clear L_PTE_VALID
-> - Same for L_PTE_DIRTY, respectively setting L_PTE_RDONLY
-> 
-> The commit message looks wrong though, as it mention the PTE storage in 
-> memory (which looks completely fine to me, and explain why I was able to
-> boot a guest). As none of my guest RAM is above 4GB IPA, I didn't see 
-> the corruption of bit 32 in the PTE (which should have been bit 0,
-> corresponding to L_PTE_VALID).
-> 
-> So, provided that the commit message is rewritten to match the what it does,
-> I'm fine with that patch.
-> 
-> Thanks,
-> 
-> 	M.
+6) skb_network_protocol() should not use hard-coded ETH_HLEN, instead
+   skb->mac_len needs to be used.  From Vlad Yasevich.
+
+7) We have several cases of using socket based communications to
+   implement a tunnel.  For example, some tunnels are encapsulations
+   over UDP so we use an internal kernel UDP socket to do the
+   transmits.
+
+   These tunnels should behave just like other software devices and
+   pass the packets on down to the next layer.
+
+   Most importantly we want the top-level socket (f.e. TCP) that
+   created the traffic to be charged for the SKB memory.
+
+   However, once you get into the IP output path, we have code that
+   assumed that whatever was attached to skb->sk is an IP socket.
+
+   To keep the top-level socket being charged for the SKB memory,
+   whilst satisfying the needs of the IP output path, we now pass in
+   an explicit 'sk' argument.
+
+   From Eric Dumazet.
+
+8) ping_init_sock() leaks group info, from Xiaoming Wang.
+
+Please pull, thanks a lot.
+
+The following changes since commit 321d03c86732e45f5f33ad0db5b68e2e1364acb9:
+
+  Merge branch 'misc' of git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild (2014-04-12 18:22:27 -0700)
+
+are available in the git repository at:
 
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
 
+for you to fetch changes up to 6f1d7210376727d090e04b8635e6dda4d7eb7b0c:
+
+  cxgb4: use the correct max size for firmware flash (2014-04-15 15:50:02 -0400)
+
+----------------------------------------------------------------
+Alexander Aring (2):
+      at86rf230: remove check if AVDD settled
+      at86rf230: fix __at86rf230_read_subreg function
+
+Alexander Gordeev (1):
+      qlcnic: Fix MSI-X initialization code
+
+Amir Vadai (1):
+      net/mlx4_core: Defer VF initialization till PF is fully initialized
+
+Andrey Vagin (2):
+      netfilter: nf_conntrack: flush net_gre->keymap_list only from gre helper
+      netfilter: nf_conntrack: initialize net.ct.generation
+
+Daniel Borkmann (3):
+      seccomp: fix populating a0-a5 syscall args in 32-bit x86 BPF
+      net: filter: seccomp: fix wrong decoding of BPF_S_ANC_SECCOMP_LD_W
+      Revert "net: sctp: Fix a_rwnd/rwnd management to reflect real state of the receiver's buffer"
+
+Daniel J Blueman (1):
+      bnx2: Don't build unused suspend/resume functions not enabled
+
+David S. Miller (3):
+      Merge branch 'be2net'
+      Merge branch 'qlcnic'
+      Merge git://git.kernel.org/.../pablo/nf
+
+Eric Dumazet (3):
+      ipv6: Limit mtu to 65575 bytes
+      ipv4: add a sock pointer to ip_queue_xmit()
+      ipv4: add a sock pointer to dst->output() path.
+
+Jean Delvare (1):
+      net: cadence: Add architecture dependencies
+
+Jitendra Kalsaria (2):
+      qlcnic: Fix PVID configuration on eSwitch port.
+      qlcnic: Fix QLogic application/driver interface for virtual NIC configuration
+
+Julian Anastasov (1):
+      ipv4: return valid RTA_IIF on ip route get
+
+Kalesh AP (1):
+      be2net: Fix invocation of be_close() after be_clear()
+
+Li, Zhen-Hua (1):
+      driver/net: cosa driver uses udelay incorrectly
+
+Manish Chopra (1):
+      qlcnic: Do not disable SR-IOV when VFs are assigned to VMs
+
+Mathias Krause (1):
+      filter: prevent nla extensions to peek beyond the end of the message
+
+Nicolas Dichtel (1):
+      ip6_gre: don't allow to remove the fb_tunnel_dev
+
+Patrick McHardy (1):
+      netfilter: nf_tables: fix nft_cmp_fast failure on big endian for size < 4
+
+Shahed Shaikh (1):
+      qlcnic: Fix max ring count calculation
+
+Steve Wise (2):
+      cxgb4: Save the correct mac addr for hw-loopback connections in the L2T
+      cxgb4: use the correct max size for firmware flash
+
+Sucheta Chakraborty (2):
+      qlcnic: Fix panic due to uninitialzed delayed_work struct in use.
+      qlcnic: Fix to send INIT_NIC_FUNC as first mailbox.
+
+Thomas Petazzoni (1):
+      Revert "net: mvneta: fix usage as a module on RGMII configurations"
+
+Vasundhara Volam (1):
+      be2net: Fix to reap TX compls till HW doesn't respond for some time
+
+Vlad Yasevich (1):
+      net: Start with correct mac_len in skb_network_protocol
+
+Wang, Xiaoming (1):
+      net: ipv4: current group_info should be put after using.
+
+Wei Yang (1):
+      net/mlx4_core: Preserve pci_dev_data after __mlx4_remove_one()
+
+ drivers/net/ethernet/broadcom/bnx2.c                  |   2 +-
+ drivers/net/ethernet/cadence/Kconfig                  |   6 +-
+ drivers/net/ethernet/chelsio/cxgb4/l2t.c              |   4 +-
+ drivers/net/ethernet/chelsio/cxgb4/t4_hw.c            |   2 +-
+ drivers/net/ethernet/emulex/benet/be.h                |   1 +
+ drivers/net/ethernet/emulex/benet/be_main.c           |  17 +++--
+ drivers/net/ethernet/marvell/mvneta.c                 |  41 ++++++++++---
+ drivers/net/ethernet/mellanox/mlx4/main.c             | 181 +++++++++++++++++++++++++++++++-----------------------
+ drivers/net/ethernet/mellanox/mlx4/mlx4.h             |   1 +
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_init.c |  21 ++++---
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_ctx.c       |   3 +-
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_dcb.c       |   2 -
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c      |  33 +++++-----
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_sriov_pf.c  |  10 +++
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_sysfs.c     |  31 +++++-----
+ drivers/net/ieee802154/at86rf230.c                    |  10 +--
+ drivers/net/vxlan.c                                   |   4 +-
+ drivers/net/wan/cosa.c                                |   4 --
+ include/linux/filter.h                                |   1 -
+ include/linux/netfilter/nf_conntrack_proto_gre.h      |   1 -
+ include/net/dst.h                                     |  14 ++++-
+ include/net/inet6_connection_sock.h                   |   2 +-
+ include/net/inet_connection_sock.h                    |   2 +-
+ include/net/ip.h                                      |  13 ++--
+ include/net/ip6_route.h                               |   5 ++
+ include/net/ip_tunnels.h                              |   2 +-
+ include/net/ipv6.h                                    |   2 +-
+ include/net/netfilter/nf_tables_core.h                |  10 +++
+ include/net/sctp/structs.h                            |  14 ++++-
+ include/net/xfrm.h                                    |   6 +-
+ kernel/seccomp.c                                      |  17 +++--
+ net/core/dev.c                                        |   2 +-
+ net/core/dst.c                                        |  15 +++--
+ net/core/filter.c                                     |   9 ++-
+ net/dccp/output.c                                     |   2 +-
+ net/decnet/dn_route.c                                 |  16 ++++-
+ net/ipv4/ip_output.c                                  |  16 ++---
+ net/ipv4/ip_tunnel.c                                  |   2 +-
+ net/ipv4/ip_tunnel_core.c                             |   4 +-
+ net/ipv4/ping.c                                       |  15 +++--
+ net/ipv4/route.c                                      |   6 +-
+ net/ipv4/tcp_output.c                                 |   2 +-
+ net/ipv4/xfrm4_output.c                               |   2 +-
+ net/ipv6/inet6_connection_sock.c                      |   3 +-
+ net/ipv6/ip6_gre.c                                    |  10 +++
+ net/ipv6/ip6_output.c                                 |   2 +-
+ net/ipv6/route.c                                      |  19 +++---
+ net/ipv6/sit.c                                        |   5 +-
+ net/ipv6/xfrm6_output.c                               |   2 +-
+ net/l2tp/l2tp_core.c                                  |   4 +-
+ net/l2tp/l2tp_ip.c                                    |   2 +-
+ net/netfilter/nf_conntrack_core.c                     |   1 +
+ net/netfilter/nf_conntrack_pptp.c                     |  20 +-----
+ net/netfilter/nf_conntrack_proto_gre.c                |   3 +-
+ net/netfilter/nf_tables_core.c                        |   3 +-
+ net/netfilter/nft_cmp.c                               |   2 +-
+ net/openvswitch/vport-gre.c                           |   2 +-
+ net/sctp/associola.c                                  |  82 ++++++++++++++++++++-----
+ net/sctp/protocol.c                                   |   2 +-
+ net/sctp/sm_statefuns.c                               |   2 +-
+ net/sctp/socket.c                                     |   6 ++
+ net/sctp/ulpevent.c                                   |   8 +--
+ net/xfrm/xfrm_policy.c                                |   2 +-
+ 63 files changed, 454 insertions(+), 279 deletions(-)
