@@ -1,82 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751157AbaDPCoJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 22:44:09 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:52211 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918AbaDPCoH (ORCPT
+	id S1752197AbaDPCpS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 22:45:18 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:43716 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235AbaDPCoY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 22:44:07 -0400
+	Tue, 15 Apr 2014 22:44:24 -0400
 From: Alex Shi <alex.shi@linaro.org>
 To: mingo@redhat.com, peterz@infradead.org, morten.rasmussen@arm.com,
         vincent.guittot@linaro.org, daniel.lezcano@linaro.org, efault@gmx.de
 Cc: wangyun@linux.vnet.ibm.com, linux-kernel@vger.kernel.org, mgorman@suse.de
-Subject: [RESEND PATCH V5 0/8] remove cpu_load idx
-Date: Wed, 16 Apr 2014 10:43:21 +0800
-Message-Id: <1397616209-27275-1-git-send-email-alex.shi@linaro.org>
+Subject: [PATCH V5 3/8] sched: remove source_load and target_load
+Date: Wed, 16 Apr 2014 10:43:24 +0800
+Message-Id: <1397616209-27275-4-git-send-email-alex.shi@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1397616209-27275-1-git-send-email-alex.shi@linaro.org>
+References: <1397616209-27275-1-git-send-email-alex.shi@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the cpu_load decay usage, we mixed the long term, short term load with
-balance bias, randomly pick a big or small value according to balance 
-destination or source. This mix is wrong, the balance bias should be based
-on task moving cost between cpu groups, not on random history or instant load.
-History load maybe diverage a lot from real load, that lead to incorrect bias.
+We have no load_idx any more, so source/target_load always return the
+same value as weighted_cpuload. So we can remove these 2 functions.
 
-like on busy_idx,
-We mix history load decay and bias together. The ridiculous thing is, when 
-all cpu load are continuous stable, long/short term load is same. then we 
-lose the bias meaning, so any minimum imbalance may cause unnecessary task
-moving. To prevent this funny thing happen, we have to reuse the 
-imbalance_pct again in find_busiest_group().  But that clearly causes over
-bias in normal time. If there are some burst load in system, it is more worse.
+Signed-off-by: Alex Shi <alex.shi@linaro.org>
+---
+ kernel/sched/fair.c | 54 +++++------------------------------------------------
+ 1 file changed, 5 insertions(+), 49 deletions(-)
 
-As to idle_idx:
-Though I have some cencern of usage corretion, 
-https://lkml.org/lkml/2014/3/12/247 but since we are working on cpu
-idle migration into scheduler. The problem will be reconsidered. We don't
-need to care it too much now.
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 12a35ea..cad2b6d 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1015,8 +1015,6 @@ bool should_numa_migrate_memory(struct task_struct *p, struct page * page,
+ }
+ 
+ static unsigned long weighted_cpuload(const int cpu);
+-static unsigned long source_load(int cpu);
+-static unsigned long target_load(int cpu);
+ static unsigned long power_of(int cpu);
+ static long effective_load(struct task_group *tg, int cpu, long wl, long wg);
+ 
+@@ -3951,45 +3949,11 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+ }
+ 
+ #ifdef CONFIG_SMP
+-/* Used instead of source_load when we know the type == 0 */
+ static unsigned long weighted_cpuload(const int cpu)
+ {
+ 	return cpu_rq(cpu)->cfs.runnable_load_avg;
+ }
+ 
+-/*
+- * Return a low guess at the load of a migration-source cpu weighted
+- * according to the scheduling class and "nice" value.
+- *
+- * We want to under-estimate the load of migration sources, to
+- * balance conservatively.
+- */
+-static unsigned long source_load(int cpu)
+-{
+-	struct rq *rq = cpu_rq(cpu);
+-	unsigned long total = weighted_cpuload(cpu);
+-
+-	if (!sched_feat(LB_BIAS))
+-		return total;
+-
+-	return min(rq->cpu_load, total);
+-}
+-
+-/*
+- * Return a high guess at the load of a migration-target cpu weighted
+- * according to the scheduling class and "nice" value.
+- */
+-static unsigned long target_load(int cpu)
+-{
+-	struct rq *rq = cpu_rq(cpu);
+-	unsigned long total = weighted_cpuload(cpu);
+-
+-	if (!sched_feat(LB_BIAS))
+-		return total;
+-
+-	return max(rq->cpu_load, total);
+-}
+-
+ static unsigned long power_of(int cpu)
+ {
+ 	return cpu_rq(cpu)->cpu_power;
+@@ -4202,8 +4166,8 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ 
+ 	this_cpu  = smp_processor_id();
+ 	prev_cpu  = task_cpu(p);
+-	load	  = source_load(prev_cpu);
+-	this_load = target_load(this_cpu);
++	load	  = weighted_cpuload(prev_cpu);
++	this_load = weighted_cpuload(this_cpu);
+ 
+ 	/*
+ 	 * If sync wakeup then subtract the (maximum possible)
+@@ -4259,7 +4223,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ 
+ 	if (balanced ||
+ 	    (this_load <= load &&
+-	     this_load + target_load(prev_cpu) <= tl_per_task)) {
++	     this_load + weighted_cpuload(prev_cpu) <= tl_per_task)) {
+ 		/*
+ 		 * This domain has SD_WAKE_AFFINE and
+ 		 * p is cache cold in this domain, and
+@@ -4301,11 +4265,7 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p, int this_cpu)
+ 		avg_load = 0;
+ 
+ 		for_each_cpu(i, sched_group_cpus(group)) {
+-			/* Bias balancing toward cpus of our domain */
+-			if (local_group)
+-				load = source_load(i);
+-			else
+-				load = target_load(i);
++			load = weighted_cpuload(i);
+ 
+ 			avg_load += load;
+ 		}
+@@ -5763,11 +5723,7 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 	for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
+ 		struct rq *rq = cpu_rq(i);
+ 
+-		/* Bias balancing toward cpus of our domain */
+-		if (local_group)
+-			load = target_load(i);
+-		else
+-			load = source_load(i);
++		load = weighted_cpuload(i);
+ 
+ 		sgs->group_load += load;
+ 		sgs->sum_nr_running += rq->nr_running;
+-- 
+1.8.3.2
 
-In fact, the cpu_load decays can be replaced by the sched_avg decay, that 
-also decays load on time. The balance bias part can fullly use fixed bias --
-imbalance_pct, which is already used in newly idle, wake, forkexec balancing
-and numa balancing scenarios.
-
-This patch removed the cpu_load idx decay, since it can be replaced by
-sched_avg feature. and left the imbalance_pct bias untouched.
-
-V5,
-1, remove unify bias patch and biased_load function. Thanks for PeterZ's 
-comments!
-2, remove get_sd_load_idx() in the 1st patch as SrikarD's suggestion.
-3, remove LB_BIAS feature, it is not needed now.
-
-V4,
-1, rebase on latest tip/master
-2, replace target_load by biased_load as Morten's suggestion
-
-V3,
-1, correct the wake_affine bias. Thanks for Morten's reminder!
-2, replace source_load by weighted_cpuload for better function name meaning.
-
-V2,
-1, This version do some tuning on load bias of target load.
-2, Got further to remove the cpu_load in rq.
-3, Revert the patch 'Limit sd->*_idx range on sysctl' since no needs
-
-Any testing/comments are appreciated.
-
-This patch rebase on latest tip/master.
-The git tree for this patchset at:
- git@github.com:alexshi/power-scheduling.git noload
-
-[PATCH V5 1/8] sched: shortcut to remove load_idx
-[PATCH V5 2/8] sched: remove rq->cpu_load[load_idx] array
-[PATCH V5 3/8] sched: remove source_load and target_load
-[PATCH V5 4/8] sched: remove LB_BIAS
-[PATCH V5 5/8] sched: clean up cpu_load update
-[PATCH V5 6/8] sched: rewrite update_cpu_load_nohz
-[PATCH V5 7/8] sched: remove rq->cpu_load and rq->nr_load_updates
-[PATCH V5 8/8] sched: rename update_*_cpu_load
