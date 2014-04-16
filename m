@@ -1,86 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756836AbaDPVzR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 17:55:17 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35469 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756780AbaDPVzM (ORCPT
+	id S1161306AbaDPV60 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 17:58:26 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:53554 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756649AbaDPV6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 17:55:12 -0400
-Date: Wed, 16 Apr 2014 22:54:50 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Anton Vorontsov <anton@enomsg.org>, Olof Johansson <olof@lixom.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        AJAY KUMAR RAMAKRISHNA SHYMALAMMA <ajaykumar.rs@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Simon Glass <sjg@chromium.org>, Michael Spang <spang@chromium.org>,
-        Sean Paul <seanpaul@chromium.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Message-ID: <20140416215450.GF12304@sirena.org.uk>
-References: <1397592876-5741-1-git-send-email-dianders@chromium.org>
- <1397672724-9063-1-git-send-email-dianders@chromium.org>
- <1397672724-9063-6-git-send-email-dianders@chromium.org>
- <20140416205136.GZ12304@sirena.org.uk>
- <CAD=FV=Wf=hdggX-Z1gtiVJdwr7jwjY1owCVZDq_BrWOyj-3m3A@mail.gmail.com>
+	Wed, 16 Apr 2014 17:58:25 -0400
+Date: Wed, 16 Apr 2014 17:58:21 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: gregkh@linuxfoundation.org, m.chehab@samsung.com,
+        rafael.j.wysocki@intel.com, linux@roeck-us.net, toshi.kani@hp.com,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        shuahkhan@gmail.com
+Subject: Re: [RFC PATCH 2/2] drivers/base: add managed token devres interfaces
+Message-ID: <20140416215821.GG26632@htj.dyndns.org>
+References: <cover.1397050852.git.shuah.kh@samsung.com>
+ <5f21c7e53811aba63f86bcf3e3bfdfdd5aeedf59.1397050852.git.shuah.kh@samsung.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MAI/ZU7774XuDDY6"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAD=FV=Wf=hdggX-Z1gtiVJdwr7jwjY1owCVZDq_BrWOyj-3m3A@mail.gmail.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 5/5] regulator: tps65090: Make FETs more reliable by
- adding retries
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <5f21c7e53811aba63f86bcf3e3bfdfdd5aeedf59.1397050852.git.shuah.kh@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
---MAI/ZU7774XuDDY6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Wed, Apr 09, 2014 at 09:21:08AM -0600, Shuah Khan wrote:
+> +#define TOKEN_DEVRES_FREE	0
+> +#define TOKEN_DEVRES_BUSY	1
+> +
+> +struct token_devres {
+> +	int	status;
+> +	char	id[];
+> +};
 
-On Wed, Apr 16, 2014 at 02:34:47PM -0700, Doug Anderson wrote:
-> On Wed, Apr 16, 2014 at 1:51 PM, Mark Brown <broonie@kernel.org> wrote:
+Please just do "bool busy" and drop the constants.
 
-> > Please don't send new patches as replies in the middle of threads, it
-> > makes it confusing trying to work out which versions of things should be
-> > applied.
+> +struct tkn_match {
+> +	int	status;
+> +	const	char *id;
+> +};
+> +
+> +static void __devm_token_lock(struct device *dev, void *data)
+> +{
+> +	struct token_devres *tptr = data;
+> +
+> +	if (tptr && tptr->status == TOKEN_DEVRES_FREE)
+> +		tptr->status = TOKEN_DEVRES_BUSY;
 
-> I'm a little confused about what I did wrong.  Can you give more details?
+How can this function be called with NULL @tptr and what why would you
+need to check tptr->status before assigning to it if the value is
+binary anyway?  And how is this supposed to work as locking if the
+outcome doesn't change depending on the current value?
 
-I'm seeing a reply which looks like it was sent as a followup to Randy's
-comment, although now I look at everything together I think that's due
-to you sending your new thread in reply to the old thread (that can also
-be a problem due to threading either burying the new mail or putting
-things in odd places) and my mailer trying to tie the one mail from your
-first series that I'd not deleted into the thread.
+> +
+> +	return;
 
---MAI/ZU7774XuDDY6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+No need to return from void function.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+> +static int devm_token_match(struct device *dev, void *res, void *data)
+> +{
+> +	struct token_devres *tkn = res;
+> +	struct tkn_match *mptr = data;
+> +	int rc;
+> +
+> +	if (!tkn || !data) {
+> +		WARN_ON(!tkn || !data);
+> +		return 0;
+> +	}
 
-iQIcBAEBAgAGBQJTTvwmAAoJELSic+t+oim9+agP/Rf4h6nG3RtYbK/F6MIcGy2m
-GlEWAYfInW33fe/ugtOgO+jF2ZgafnR3Fj8IvDOg1SSGB1XwFhQdpwzT69x5SNCk
-LdDnj7VbNgqiWcQ+CycC6nqnJgsAeqOjOvULB7yuzDxpFNFZOAhJ0aagrUzBm7Fr
-VmJtNIpfkdu3q9iLO4N/m4CkjNdvecOOWyCq2Z0XuQCL4CPBiKe1BTLkZ4Bdy3PR
-/HUVoUSmBUNUQNxcpGNaDjPFEeL23EP9txlF7O5q5PLF/cZ8GQl5/oxkfSvetynC
-bRPsIs7gKQqQvxYNs8HCrb2T6ldOF0nfwO8fbQF3bUHoI1XNNKFrsKfL1+OaaBLU
-0jb2cbiF/sVF6a4rDEF74fn4o1ShpYAKGgaFpnIs+ceeeSymtGuw3tjn+2RWltpE
-09UHRPmMVHl4YgT+gtV+vVTbb1ACor+9qOetypFVTAK6sJXNYMzW/O2OltiaNq7C
-viIyJLkYirc94XB0S2oXRkIRMiC3HfFv2z8ebRDZOHPxBfXuUCfgOGLxGhCWMidH
-nojdPDdcGNr4A4XNw7E3ctCt8BFiIBY4GgF+BHRaqVDLFE8ZqXBZ/WwzWld+P49L
-JTSNYmGnOJsPMZgtRUC80ct4I0bBo3T7gX9+WE8Vi0qqEnjUBUW7sns9kriOJrLh
-O2Icj/1Xic+b5JqViZYz
-=cXj3
------END PGP SIGNATURE-----
+How would the above be possible?
 
---MAI/ZU7774XuDDY6--
+> +
+> +	/* compare the token data and return 1 if it matches */
+> +	if (strcmp(tkn->id, mptr->id) == 0)
+> +			rc = 1;
+> +	else
+> +		rc = 0;
+> +
+> +	return rc;
+
+	return !strcmp(tkn->id, mptr->id);
+
+> +/* If token is available, lock it for the caller, If not return -EBUSY */
+> +int devm_token_lock(struct device *dev, const char *id)
+> +{
+> +	struct token_devres *tkn_ptr;
+> +	struct tkn_match tkn;
+> +	int rc = 0;
+> +
+> +	if (!id)
+> +		return -EFAULT;
+
+The function isn't supposed to be called with NULL @id, right?  I
+don't really think it'd be necessary to do the above.
+
+> +
+> +	tkn.id = id;
+> +
+> +	tkn_ptr = devres_find(dev, devm_token_release, devm_token_match, &tkn);
+> +	if (tkn_ptr == NULL)
+> +		return -ENODEV;
+
+What guarantees that the lock is not taken by someone else inbetween?
+
+> +
+> +	if (tkn_ptr->status == TOKEN_DEVRES_FREE) {
+> +		devres_update(dev, devm_token_release, devm_token_match,
+> +				&tkn, __devm_token_lock);
+> +		rc = 0;
+> +	} else
+> +		rc = -EBUSY;
+> +
+> +	return rc;
+> +}
+> +EXPORT_SYMBOL_GPL(devm_token_lock);
+> +
+> +/* If token is locked, unlock */
+> +int devm_token_unlock(struct device *dev, const char *id)
+> +{
+> +	struct token_devres *tkn_ptr;
+> +	struct tkn_match tkn;
+> +
+> +	if (!id)
+> +		return -EFAULT;
+> +
+> +	tkn.id = id;
+> +
+> +	tkn_ptr = devres_find(dev, devm_token_release, devm_token_match, &tkn);
+> +	if (tkn_ptr == NULL)
+> +		return -ENODEV;
+> +
+> +	if (tkn_ptr->status == TOKEN_DEVRES_BUSY) {
+> +		devres_update(dev, devm_token_release, devm_token_match,
+> +				&tkn, __devm_token_unlock);
+> +	}
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(devm_token_unlock);
+
+Why is devres_update() even necessary?  You can just embed lock in the
+data part and operate on it, no?
+
+This is among the most poorly written code that I've seen in a long
+time.  I don't know whether the token thing is the right appraoch or
+not but just purely on code quality,
+
+ Nacked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
+
+-- 
+tejun
