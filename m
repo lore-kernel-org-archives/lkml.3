@@ -1,219 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096AbaDPNgM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 09:36:12 -0400
-Received: from mga09.intel.com ([134.134.136.24]:55615 "EHLO mga09.intel.com"
+	id S1161144AbaDPNhq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 09:37:46 -0400
+Received: from 8bytes.org ([85.214.48.195]:33011 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161002AbaDPNgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 09:36:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,872,1389772800"; 
-   d="scan'208,223";a="494145332"
-Message-ID: <534E86AD.6000204@intel.com>
-Date: Wed, 16 Apr 2014 21:33:33 +0800
-From: Lan Tianyu <tianyu.lan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1755512AbaDPNho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 09:37:44 -0400
+Date: Wed, 16 Apr 2014 15:37:40 +0200
+From: "joro@8bytes.org" <joro@8bytes.org>
+To: "Woodhouse, David" <david.woodhouse@intel.com>
+Cc: Davidlohr Bueso <davidlohr@hp.com>, Jiang Liu <jiang.liu@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bhe@redhat.com" <bhe@redhat.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "James.Bottomley@hansenpartnership.com" 
+	<James.Bottomley@hansenpartnership.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "scameron@beardog.cce.hp.com" <scameron@beardog.cce.hp.com>
+Subject: Re: hpsa driver bug crack kernel down!
+Message-ID: <20140416133739.GB3577@8bytes.org>
+References: <1397111557.2608.29.camel@buesod1.americas.hpqcorp.net>
+ <20140410071535.GX13491@8bytes.org>
+ <1397119587.19944.14.camel@shinybook.infradead.org>
+ <1397146781.2608.46.camel@buesod1.americas.hpqcorp.net>
+ <1397207932.19944.58.camel@shinybook.infradead.org>
+ <1397490358.31076.6.camel@buesod1.americas.hpqcorp.net>
+ <534C0AA9.5080909@linux.intel.com>
+ <1397493858.31076.8.camel@buesod1.americas.hpqcorp.net>
+ <1397494069.31076.9.camel@buesod1.americas.hpqcorp.net>
+ <1397495030.19944.198.camel@shinybook.infradead.org>
 MIME-Version: 1.0
-To: wsa@the-dreams.de, rjw@rjwysocki.net, lenb@kernel.org,
-        mika.westerberg@linux.intel.com, awilliam@redhat.com
-CC: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/9] I2C ACPI operation region handler support
-References: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com>
-In-Reply-To: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com>
-Content-Type: multipart/mixed;
- boundary="------------010303090603090706050406"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397495030.19944.198.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Wed Apr 16 15:37:43 2014
+X-DSPAM-Confidence: 0.9991
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 534e87a720865533113978
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010303090603090706050406
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Hey David,
 
-On 04/16/2014 09:24 PM, Lan Tianyu wrote:
-> ACPI 5.0 spec(5.5.2.4.5) defines GenericSerialBus(i2c, spi, uart) operation
-> region. It allows ACPI aml code able to access such kind of devices to
-> implement some ACPI standard method.
->
-> On the Asus T100TA, Bios use GenericSerialBus operation region to access
-> i2c device to get battery info. So battery function depends on the I2C
-> operation region support. Here is the bug link.
-> https://bugzilla.kernel.org/show_bug.cgi?id=69011
+On Mon, Apr 14, 2014 at 05:03:51PM +0000, Woodhouse, David wrote:
+> Jiang, if you can then let me have a copy with a signed-off-by I'll
+> shepherd it upstream along with your other patch which is already in my
+> iommu-2.6.git tree.
 
-Completely fixing battery issue on the Asus T100TA also needs ACPI _DEP
-support. The feature is under developing. Attach a temporary patch
-for test.
+What is the state of these fixes? I plan to send out a pull-request
+before easter and hoped to include these fixes as well.
 
->
-> This patchset is to add I2C ACPI operation region handler support.
->
-> [PATCH 1/9] ACPICA: Executer: Fix buffer allocation issue for
-> [PATCH 2/9] ACPICA: Export acpi_buffer_to_resource symbol
-> [PATCH 3/9] ACPI: Add acpi_bus_attach_private_data() to facilitate to
-> [PATCH 4/9] ACPI/Thermal: Use acpi_bus_attach_private_data() to
-> [PATCH 5/9] I2C: Add smbus quick read/write helper function
-> [PATCH 6/9] I2C: Add smbus word/block process call helper function
-> [PATCH 7/9] I2C/ACPI: Add i2c ACPI operation region support
-> [PATCH 8/9] I2C/ACPI: Move ACPI related code to i2c-acpi.c
-> [PATCH 9/9] I2C/ACPI: Add CONFIG_I2C_ACPI config
->
+Thanks,
+
+	Joerg
 
 
---------------010303090603090706050406
-Content-Type: text/x-patch;
- name="0001-ACPI-temporary-dep-solution-for-battery-support.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-ACPI-temporary-dep-solution-for-battery-support.patch"
-
->From bbadbc67de278123e28dd6f9ee7e88b6ada56ce4 Mon Sep 17 00:00:00 2001
-From: Lan Tianyu <tianyu.lan@intel.com>
-Date: Fri, 21 Mar 2014 16:42:12 +0800
-Subject: [PATCH] ACPI: temporary dep solution for battery support
-
-This is a dep workaround for battery support on Asus T100TA and the formal
-dep solution is under developing. This patch is just for test and will
-not be upstreamed.
----
- drivers/acpi/scan.c    | 64 +++++++++++++++++++++++++++++++++++++++++++++++---
- drivers/i2c/i2c-acpi.c |  1 +
- include/linux/acpi.h   |  1 +
- 3 files changed, 63 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index 7efe546..254afb7 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -36,6 +36,7 @@ bool acpi_force_hot_remove;
- 
- static const char *dummy_hid = "device";
- 
-+static LIST_HEAD(acpi_bus_dep_device_list);
- static LIST_HEAD(acpi_bus_id_list);
- static DEFINE_MUTEX(acpi_scan_lock);
- static LIST_HEAD(acpi_scan_handlers_list);
-@@ -43,6 +44,12 @@ DEFINE_MUTEX(acpi_device_lock);
- LIST_HEAD(acpi_wakeup_device_list);
- static DEFINE_MUTEX(acpi_hp_context_lock);
- 
-+
-+struct acpi_dep_handle {
-+	struct list_head node;
-+	acpi_handle handle;
-+};
-+
- struct acpi_device_bus_id{
- 	char bus_id[15];
- 	unsigned int instance_no;
-@@ -2027,10 +2034,22 @@ static void acpi_scan_init_hotplug(struct acpi_device *adev)
- 	}
- }
- 
-+
-+static int acpi_dep_device_check(acpi_handle handle)
-+{
-+	struct acpi_dep_handle *dep;
-+
-+	list_for_each_entry(dep, &acpi_bus_dep_device_list, node)
-+		if (dep->handle == handle)
-+			return -EEXIST;
-+	return 0;
-+}
-+
- static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
- 				      void *not_used, void **return_value)
- {
- 	struct acpi_device *device = NULL;
-+	struct acpi_dep_handle *dep = NULL;
- 	int type;
- 	unsigned long long sta;
- 	int result;
-@@ -2048,9 +2067,24 @@ static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
- 		return AE_OK;
- 	}
- 
--	acpi_add_single_object(&device, handle, type, sta);
--	if (!device)
--		return AE_CTRL_DEPTH;
-+	if (!acpi_dep_device_check(handle)
-+	   && acpi_has_method(handle, "_BIX")
-+	   && acpi_has_method(handle, "_DEP")) {
-+		dep = kmalloc(sizeof(struct acpi_dep_handle), GFP_KERNEL);
-+		if (!dep)
-+			return AE_CTRL_DEPTH;
-+		dep->handle = handle;
-+		list_add_tail(&dep->node , &acpi_bus_dep_device_list);
-+
-+		acpi_handle_info(dep->handle,
-+				"is added to dep device list.\n");
-+
-+		return AE_OK;
-+	} else {
-+		acpi_add_single_object(&device, handle, type, sta);
-+		if (!device)
-+			return AE_CTRL_DEPTH;
-+	}
- 
- 	acpi_scan_init_hotplug(device);
- 
-@@ -2061,6 +2095,30 @@ static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
- 	return AE_OK;
- }
- 
-+int acpi_walk_dep_device_list(void)
-+{
-+	struct acpi_dep_handle *dep, *tmp;
-+	acpi_status status;
-+	unsigned long long sta;
-+
-+	list_for_each_entry_safe(dep, tmp, &acpi_bus_dep_device_list, node) {
-+		status = acpi_evaluate_integer(dep->handle, "_STA", NULL, &sta);
-+
-+		if (ACPI_FAILURE(status)) {
-+			acpi_handle_warn(dep->handle,
-+				"Status check failed (0x%x)\n", status);
-+		} else if (sta & ACPI_STA_DEVICE_ENABLED) {
-+			acpi_bus_scan(dep->handle);
-+			acpi_handle_info(dep->handle,
-+				"Device is readly\n");
-+			list_del(&dep->node);
-+			kfree(dep);
-+		}
-+	}
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(acpi_walk_dep_device_list);
-+
- static int acpi_scan_attach_handler(struct acpi_device *device)
- {
- 	struct acpi_hardware_id *hwid;
-diff --git a/drivers/i2c/i2c-acpi.c b/drivers/i2c/i2c-acpi.c
-index a0ae867..471490a 100644
---- a/drivers/i2c/i2c-acpi.c
-+++ b/drivers/i2c/i2c-acpi.c
-@@ -349,6 +349,7 @@ int acpi_i2c_install_space_handler(struct i2c_adapter *adapter)
- 		return -ENOMEM;
- 	}
- 
-+	acpi_walk_dep_device_list();
- 	return 0;
- }
- 
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 667204c..66ad0dd 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -115,6 +115,7 @@ int acpi_boot_init (void);
- void acpi_boot_table_init (void);
- int acpi_mps_check (void);
- int acpi_numa_init (void);
-+int acpi_walk_dep_device_list(void);
- 
- int acpi_table_init (void);
- int acpi_table_parse(char *id, acpi_tbl_table_handler handler);
--- 
-1.8.3.1
-
-
---------------010303090603090706050406--
