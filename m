@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959AbaDPKin (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:38:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51788 "EHLO
+	id S1755996AbaDPKj1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:39:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51780 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755806AbaDPKc7 (ORCPT
+	with ESMTP id S1755790AbaDPKc6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:32:59 -0400
+	Wed, 16 Apr 2014 06:32:58 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+Cc: Florian Westphal <fw@strlen.de>, Thomas Graf <tgraf@suug.ch>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 36/46] isdnloop: several buffer overflows
-Date: Wed, 16 Apr 2014 11:31:52 +0100
-Message-Id: <1397644322-13905-37-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 34/46] netlink: don't compare the nul-termination in nla_strcmp
+Date: Wed, 16 Apr 2014 11:31:50 +0100
+Message-Id: <1397644322-13905-35-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
 References: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
@@ -28,98 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Pablo Neira <pablo@netfilter.org>
 
-commit 7563487cbf865284dcd35e9ef5a95380da046737 upstream.
+commit 8b7b932434f5eee495b91a2804f5b64ebb2bc835 upstream.
 
-There are three buffer overflows addressed in this patch.
+nla_strcmp compares the string length plus one, so it's implicitly
+including the nul-termination in the comparison.
 
-1) In isdnloop_fake_err() we add an 'E' to a 60 character string and
-then copy it into a 60 character buffer.  I have made the destination
-buffer 64 characters and I'm changed the sprintf() to a snprintf().
+ int nla_strcmp(const struct nlattr *nla, const char *str)
+ {
+        int len = strlen(str) + 1;
+        ...
+                d = memcmp(nla_data(nla), str, len);
 
-2) In isdnloop_parse_cmd(), p points to a 6 characters into a 60
-character buffer so we have 54 characters.  The ->eazlist[] is 11
-characters long.  I have modified the code to return if the source
-buffer is too long.
+However, if NLA_STRING is used, userspace can send us a string without
+the nul-termination. This is a problem since the string
+comparison will not match as the last byte may be not the
+nul-termination.
 
-3) In isdnloop_command() the cbuf[] array was 60 characters long but the
-max length of the string then can be up to 79 characters.  I made the
-cbuf array 80 characters long and changed the sprintf() to snprintf().
-I also removed the temporary "dial" buffer and changed it to use "p"
-directly.
+Fix this by skipping the comparison of the nul-termination if the
+attribute data is nul-terminated. Suggested by Thomas Graf.
 
-Unfortunately, we pass the "cbuf" string from isdnloop_command() to
-isdnloop_writecmd() which truncates anything over 60 characters to make
-it fit in card->omsg[].  (It can accept values up to 255 characters so
-long as there is a '\n' character every 60 characters).  For now I have
-just fixed the memory corruption bug and left the other problems in this
-driver alone.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Florian Westphal <fw@strlen.de>
+Cc: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/isdn/isdnloop/isdnloop.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ lib/nlattr.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/isdn/isdnloop/isdnloop.c b/drivers/isdn/isdnloop/isdnloop.c
-index e1f8748..5a4da94 100644
---- a/drivers/isdn/isdnloop/isdnloop.c
-+++ b/drivers/isdn/isdnloop/isdnloop.c
-@@ -518,9 +518,9 @@ static isdnloop_stat isdnloop_cmd_table[] =
- static void
- isdnloop_fake_err(isdnloop_card *card)
+diff --git a/lib/nlattr.c b/lib/nlattr.c
+index 18eca78..fc67547 100644
+--- a/lib/nlattr.c
++++ b/lib/nlattr.c
+@@ -303,9 +303,15 @@ int nla_memcmp(const struct nlattr *nla, const void *data,
+  */
+ int nla_strcmp(const struct nlattr *nla, const char *str)
  {
--	char buf[60];
-+	char buf[64];
+-	int len = strlen(str) + 1;
+-	int d = nla_len(nla) - len;
++	int len = strlen(str);
++	char *buf = nla_data(nla);
++	int attrlen = nla_len(nla);
++	int d;
  
--	sprintf(buf, "E%s", card->omsg);
-+	snprintf(buf, sizeof(buf), "E%s", card->omsg);
- 	isdnloop_fake(card, buf, -1);
- 	isdnloop_fake(card, "NAK", -1);
- }
-@@ -903,6 +903,8 @@ isdnloop_parse_cmd(isdnloop_card *card)
- 	case 7:
- 		/* 0x;EAZ */
- 		p += 3;
-+		if (strlen(p) >= sizeof(card->eazlist[0]))
-+			break;
- 		strcpy(card->eazlist[ch - 1], p);
- 		break;
- 	case 8:
-@@ -1133,7 +1135,7 @@ isdnloop_command(isdn_ctrl *c, isdnloop_card *card)
- {
- 	ulong a;
- 	int i;
--	char cbuf[60];
-+	char cbuf[80];
- 	isdn_ctrl cmd;
- 	isdnloop_cdef cdef;
++	if (attrlen > 0 && buf[attrlen - 1] == '\0')
++		attrlen--;
++
++	d = attrlen - len;
+ 	if (d == 0)
+ 		d = memcmp(nla_data(nla), str, len);
  
-@@ -1198,7 +1200,6 @@ isdnloop_command(isdn_ctrl *c, isdnloop_card *card)
- 			break;
- 		if ((c->arg & 255) < ISDNLOOP_BCH) {
- 			char *p;
--			char dial[50];
- 			char dcode[4];
- 
- 			a = c->arg;
-@@ -1210,10 +1211,10 @@ isdnloop_command(isdn_ctrl *c, isdnloop_card *card)
- 			} else
- 				/* Normal Dial */
- 				strcpy(dcode, "CAL");
--			strcpy(dial, p);
--			sprintf(cbuf, "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
--				dcode, dial, c->parm.setup.si1,
--				c->parm.setup.si2, c->parm.setup.eazmsn);
-+			snprintf(cbuf, sizeof(cbuf),
-+				 "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
-+				 dcode, p, c->parm.setup.si1,
-+				 c->parm.setup.si2, c->parm.setup.eazmsn);
- 			i = isdnloop_writecmd(cbuf, strlen(cbuf), 0, card);
- 		}
- 		break;
 -- 
 1.9.1
 
