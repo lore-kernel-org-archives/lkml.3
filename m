@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751496AbaDPQZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 12:25:27 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:39370 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143AbaDPQZX (ORCPT
+	id S1751558AbaDPQ0b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 12:26:31 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:36634 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241AbaDPQ01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 12:25:23 -0400
-Date: Wed, 16 Apr 2014 11:22:19 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Roger Quadros <rogerq@ti.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        <bcousson@baylibre.com>, <tony@atomide.com>, <rob.herring@calxeda.com>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>, <swarren@wwwdotorg.org>,
-        <ijc+devicetree@hellion.org.uk>, <linux@arm.linux.org.uk>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        George Cherian <george.cherian@ti.com>
-Subject: Re: [PATCH 2/2] ARM: dts: omap5: Add dr_mode for dwc3
-Message-ID: <20140416162219.GI28035@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1381402195-29257-1-git-send-email-kishon@ti.com>
- <1381402195-29257-2-git-send-email-kishon@ti.com>
- <52580F34.8030809@ti.com>
- <20140416161619.GH28035@saruman.home>
+	Wed, 16 Apr 2014 12:26:27 -0400
+Date: Wed, 16 Apr 2014 17:26:21 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Anton Vorontsov <anton@enomsg.org>, Olof Johansson <olof@lixom.net>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        AJAY KUMAR RAMAKRISHNA SHYMALAMMA <ajaykumar.rs@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] mfd: tps65090: Allow charger module to be used when
+ no irq
+Message-ID: <20140416162621.GA28725@lee--X1>
+References: <1397592876-5741-1-git-send-email-dianders@chromium.org>
+ <1397592876-5741-2-git-send-email-dianders@chromium.org>
+ <20140416095229.GF4754@lee--X1>
+ <CAD=FV=VjmXGjDHTcm=E2eEPtkOa5DxKG70jXj22RbbN1VfeGjw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rwgQ89ZNnFUwFHTC"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140416161619.GH28035@saruman.home>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAD=FV=VjmXGjDHTcm=E2eEPtkOa5DxKG70jXj22RbbN1VfeGjw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---rwgQ89ZNnFUwFHTC
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> >> On the ARM Chromebook tps65090 has two masters: the AP (the main
+> >> processor running linux) and the EC (the embedded controller).  The AP
+> >> is allowed to mess with FETs but the EC is in charge of charge control.
+> >>
+> >> The tps65090 interupt line is routed to both the AP and the EC, which
+> >> can cause quite a headache.  Having two people adjusting masks and
+> >> acking interrupts is a recipe for disaster.
+> >>
+> >> In the shipping kernel we had a hack to have the AP pay attention to
+> >> the IRQ but not to ack it.  It also wasn't supposed to configure the
+> >> IRQ in any way.  That hack allowed us to detect when the device was
+> >> charging without messing with the EC's state.
+> >>
+> >> The current tps65090 infrastructure makes the above difficult, and it
+> >> was a bit of a hack to begin with.  Rather than uglify the driver to
+> >> support it, just extend the driver's existing notion of "no irq" to
+> >> the charger.  This makes the charger code poll every 2 seconds for AC
+> >> detect, which is sufficient.
+> >>
+> >> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> >> ---
+> >>  drivers/mfd/tps65090.c           | 14 ++++++--
+> >>  drivers/power/tps65090-charger.c | 76 +++++++++++++++++++++++++++++++---------
+> >>  2 files changed, 70 insertions(+), 20 deletions(-)
+> >
+> > For the MFD part:
+> >   Acked-by: Lee Jones <lee.jones@linaro.org>
+> >
+> > Anton,
+> >   If you are okay with this patch I'd be happy to create an immutable
+> > branch for you to pull from?
+> >
+> > Doug,
+> >   What is the relationship (dependencies) between this and the other
+> > patches in the set?
+> 
+> This patch can be applied irrespective of other others in the series.
 
-On Wed, Apr 16, 2014 at 11:16:19AM -0500, Felipe Balbi wrote:
-> On Fri, Oct 11, 2013 at 05:46:12PM +0300, Roger Quadros wrote:
-> > Hi,
-> >=20
-> > On 10/10/2013 01:49 PM, Kishon Vijay Abraham I wrote:
-> > > From: George Cherian <george.cherian@ti.com>
-> > >=20
-> > > Added dr_mode property in dwc3 and set its default mode to device.
-> >=20
-> > If there is a specific reason why this is not set to "otg", we need
-> > to explain it here.
-> >=20
-> > AFAIK the port is meant to be used as OTG port.
->=20
-> we still don't have the workaround for dual role ports, I've been
-> working on it but still need to retest and make sure it's working fine
-> before merging upstream.
+What about the files in the patch? Could you make two separate patches
+from this one patch and it would still compile okay? I'm _guessing_
+the answer is yes?
 
-man, I went back in time. Nevermind :-)
-
---=20
-balbi
-
---rwgQ89ZNnFUwFHTC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTTq47AAoJEIaOsuA1yqRE2WwP/2hnDe666WCj3cTwwkTZSvzU
-FRpXnKJadXGKnkVWxBEFAbDM3U8RbxugAz/YcoI4SXfwdRSMzw/y42jrQ5xeH7pt
-bfcwqUBmwu+7MzQRrW+u4rDZtMjxV88PrT//75IHBge2JKrLf0bD+q2fjxQZPDup
-asZe14KGSgJ+VquXroTRjh3Kbxk5jI2t/Cz7D3wEWu8fmW1mqn4/0g4vuk51XX1L
-uzDz5CuDSqreD4UzThXVya68lK6ZyOci2Cq0tgpB9FxQG1NQns0/wfhOwbhBhurB
-2xlhk7G5zGQMfuqvUjLdD6VmJkOM4hyZqitQtCPNSx32PvhC2PcAUesolvsHb5SZ
-HoRMFFlfKchyUjEftwlLKFTi1214P6I93WZCOGUoRKCjdfnTS7PuhYvk6zZv/AVW
-3CTaRct7qnYHN3nDk2sPOBj0lfX0LleSvnheT2h4hRZWRPPfHRBquM7B7mvgAr0k
-dVIPyuSpAOgPtzIyx2wUHbWcBEXyjXNiF8a9TPbSdLh2NRZ8iOW0Z5d04Ublj7ES
-pMetnUUein5xV05LahaEsu8q7lWW8dqMYXYnYt75DqYQHorHxPskVw0EnKo934Wu
-nkDGizJ1zFtZr4W2GhxL/B5smklHxSTrhaqi31sxxzGtsdvYgiB78zX5nQ5eqghx
-JsIcqGZpxOuY2/5Sc70X
-=yjXP
------END PGP SIGNATURE-----
-
---rwgQ89ZNnFUwFHTC--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
