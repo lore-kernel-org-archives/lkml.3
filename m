@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756481AbaDPTEN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 15:04:13 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52914 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756428AbaDPTEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756430AbaDPTEG (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 16 Apr 2014 15:04:06 -0400
-Date: Wed, 16 Apr 2014 21:04:04 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: "Zhang, Rui" <rui.zhang@intel.com>, "Lu, Aaron" <aaron.lu@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Stephane Eranian <eranian@google.com>,
-        "Yan, Zheng Z" <zheng.z.yan@intel.com>
-Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
-Message-ID: <20140416190404.GA7070@pd.tnic>
-References: <20140224162400.GE16457@pd.tnic>
- <744357E9AAD1214791ACBA4B0B9092630121F201@SHSMSX101.ccr.corp.intel.com>
- <CAErSpo55DjkGQB=7ksow34BpCObnY+o3eNnt0n5oQEh6Lfw1pw@mail.gmail.com>
- <1558044.S1G2VU7srO@vostro.rjw.lan>
- <CAErSpo4pDYMhHo6e-1TN6XDRO0xy0u8H+=oucFnrEK+kbjZvzw@mail.gmail.com>
+Received: from mx1.redhat.com ([209.132.183.28]:27589 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756125AbaDPTEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 15:04:02 -0400
+Date: Wed, 16 Apr 2014 16:03:29 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Nadav Amit <namit@cs.technion.ac.il>
+Cc: gleb@kernel.org, pbonzini@redhat.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: Fix page-tables reserved bits
+Message-ID: <20140416190329.GB8773@amt.cnet>
+References: <1396582264-9864-1-git-send-email-namit@cs.technion.ac.il>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAErSpo4pDYMhHo6e-1TN6XDRO0xy0u8H+=oucFnrEK+kbjZvzw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1396582264-9864-1-git-send-email-namit@cs.technion.ac.il>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 02:48:30PM -0600, Bjorn Helgaas wrote:
-> Right.  Even if we had this long-term solution, we'd still have
-> Stephane's current problem, because the PNP0C02 _CRS is still wrong.
+On Fri, Apr 04, 2014 at 06:31:04AM +0300, Nadav Amit wrote:
+> KVM does not handle the reserved bits of x86 page tables correctly:
+> In PAE, bits 5:8 are reserved in the PDPTE.
+> In IA-32e, bit 8 is not reserved.
 > 
-> We do have a drivers/pnp/quirks.c where we could conceivably adjust
-> the PNP resource if we found the matching PCI device and MCHBAR.  That
-> should solve Stephane's problem even with the current
-> drivers/pnp/system.c.
+> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+> ---
+>  arch/x86/kvm/mmu.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index f5704d9..3993976 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -3538,7 +3538,7 @@ static void reset_rsvds_bits_mask(struct kvm_vcpu *vcpu,
+>  	case PT32E_ROOT_LEVEL:
+>  		context->rsvd_bits_mask[0][2] =
+>  			rsvd_bits(maxphyaddr, 63) |
+> -			rsvd_bits(7, 8) | rsvd_bits(1, 2);	/* PDPTE */
+> +			rsvd_bits(5, 8) | rsvd_bits(1, 2);	/* PDPTE */
+>  		context->rsvd_bits_mask[0][1] = exb_bit_rsvd |
+>  			rsvd_bits(maxphyaddr, 62);	/* PDE */
+>  		context->rsvd_bits_mask[0][0] = exb_bit_rsvd |
+> @@ -3550,9 +3550,9 @@ static void reset_rsvds_bits_mask(struct kvm_vcpu *vcpu,
+>  		break;
+>  	case PT64_ROOT_LEVEL:
+>  		context->rsvd_bits_mask[0][3] = exb_bit_rsvd |
+> -			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 8);
+> +			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 7);
+>  		context->rsvd_bits_mask[0][2] = exb_bit_rsvd |
+> -			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 8);
+> +			rsvd_bits(maxphyaddr, 51) | rsvd_bits(7, 7);
 
-Guys, this still triggers in -rc1. Do we have a fix or something
-testable at least?
+Bit 7 is not reserved either, for the PDPTE (its PageSize bit).
 
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
