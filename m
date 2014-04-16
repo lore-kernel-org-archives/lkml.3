@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161025AbaDPUZJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 16:25:09 -0400
-Received: from mga03.intel.com ([143.182.124.21]:19666 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752460AbaDPUZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 16:25:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,874,1389772800"; 
-   d="scan'208";a="419976991"
-From: "Zhang, Rui" <rui.zhang@intel.com>
-To: Borislav Petkov <bp@alien8.de>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "Lu, Aaron" <aaron.lu@intel.com>, lkml <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Stephane Eranian <eranian@google.com>,
-        "Yan, Zheng Z" <zheng.z.yan@intel.com>
-Subject: RE: Info: mapping multiple BARs. Your kernel is fine.
-Thread-Topic: Info: mapping multiple BARs. Your kernel is fine.
-Thread-Index: AQHPQFbTsRMjm351nUi0BPnn+Nj/O5rowCwAgACNNGCAAGOLAIAARaMA///+KACAKlHEAIAAnJdw
-Date: Wed, 16 Apr 2014 20:24:56 +0000
-Message-ID: <744357E9AAD1214791ACBA4B0B9092630128A097@SHSMSX101.ccr.corp.intel.com>
-References: <20140224162400.GE16457@pd.tnic>
- <744357E9AAD1214791ACBA4B0B9092630121F201@SHSMSX101.ccr.corp.intel.com>
- <CAErSpo55DjkGQB=7ksow34BpCObnY+o3eNnt0n5oQEh6Lfw1pw@mail.gmail.com>
- <1558044.S1G2VU7srO@vostro.rjw.lan>
- <CAErSpo4pDYMhHo6e-1TN6XDRO0xy0u8H+=oucFnrEK+kbjZvzw@mail.gmail.com>
- <20140416190404.GA7070@pd.tnic>
-In-Reply-To: <20140416190404.GA7070@pd.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1161152AbaDPUZz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 16:25:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46041 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161071AbaDPUZv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 16:25:51 -0400
+Date: Wed, 16 Apr 2014 13:25:54 -0700
+From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+To: Thomas Pfaff <tpfaff@pcs.com>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] serial_core: fix uart PORT_UNKNOWN handling
+Message-ID: <20140416202554.GB25148@kroah.com>
+References: <alpine.LNX.2.00.1404091151430.6519@lxtpfaff.pcs.ditec.de>
+ <20140409133909.2073453a@alan.etchedpixels.co.uk>
+ <alpine.LNX.2.00.1404091655140.29879@lxtpfaff.pcs.ditec.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1404091655140.29879@lxtpfaff.pcs.ditec.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3GKPMA6008296
 
+On Wed, Apr 09, 2014 at 05:06:24PM +0200, Thomas Pfaff wrote:
+> 
+> On Wed, 9 Apr 2014, One Thousand Gnomes wrote:
+> 
+> > On Wed, 9 Apr 2014 13:22:14 +0200
+> > Thomas Pfaff <tpfaff@pcs.com> wrote:
+> > 
+> > > 1. uart_change_pm ist called during uart_open and calls the uart pm function
+> > >    without checking for PORT_UNKNOWN.
+> > 
+> > Removing this breaks other parts of the code assume that the port will be
+> > powered up (notably setserial paths). So it makes sense that
+> > uart_change_pm for a "none" port is a no-op but needs logic in the
+> > setserial path to power up a port when we move none->known and power it
+> > down on known->none
+> > 
+> 
+> Then why not move uart_change_pm into uart_port_startup, where it will be called 
+> when needed ?
+> A reworked patch is below.
+> 
+> > > 2. uart_shutdown is called from uart_set_info and does not check it either.
+> > 
+> > I don't see why this one matters. We would have done
+> > 
+> > 	uart_startup
+> > 		uart_port_startup
+> > 			uport->type == PORT_UNKNOWN
+> > 			return 1;
+> > 		ASYNCB_INITIALIZED is not set
+> > 
+> > 	uart_shutdown
+> > 		ASYNCB_INITIALISED is not set
+> > 			Skip call to uart_port_shutdown
+> > 
+> > So that code looks correct to me.
+> 
+> I agree, i have overlooked this.
+> 
+> Signed-off-by: Thomas Pfaff <tpfaff@pcs.com>
 
+Can you resend this in a format that I can apply this in?
 
-> -----Original Message-----
-> From: Borislav Petkov [mailto:bp@alien8.de]
-> Sent: Wednesday, April 16, 2014 12:04 PM
-> To: Bjorn Helgaas; Rafael J. Wysocki
-> Cc: Zhang, Rui; Lu, Aaron; lkml; x86@kernel.org; Linux PCI; ACPI Devel
-> Maling List; Yinghai Lu; H. Peter Anvin; Stephane Eranian; Yan, Zheng Z
-> Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
-> Importance: High
-> 
-> On Thu, Mar 20, 2014 at 02:48:30PM -0600, Bjorn Helgaas wrote:
-> > Right.  Even if we had this long-term solution, we'd still have
-> > Stephane's current problem, because the PNP0C02 _CRS is still wrong.
-> >
-> > We do have a drivers/pnp/quirks.c where we could conceivably adjust
-> > the PNP resource if we found the matching PCI device and MCHBAR.
-> That
-> > should solve Stephane's problem even with the current
-> > drivers/pnp/system.c.
-> 
-> Guys, this still triggers in -rc1. Do we have a fix or something
-> testable at least?
-> 
-Could you please attach the dmesg output after a fresh boot in -rc1?
+thanks,
 
-Thanks,
-rui
-> Thanks.
-> 
-> --
-> Regards/Gruss,
->     Boris.
-> 
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+greg k-h
