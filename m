@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123AbaDPFaL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 01:30:11 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:50697 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751027AbaDPFaJ (ORCPT
+	id S1753809AbaDPFcg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 01:32:36 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:41191 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752459AbaDPFcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 01:30:09 -0400
-Message-ID: <534E1559.8050904@hitachi.com>
-Date: Wed, 16 Apr 2014 14:30:01 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 16 Apr 2014 01:32:35 -0400
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: tj@kernel.org
+Cc: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] workqueue: fix bugs in wq_update_unbound_numa() failure path
+Date: Wed, 16 Apr 2014 14:32:29 +0900
+Message-ID: <58237829.Dxp0IlFuXc@daeseok-laptop.cloud.net>
+User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, vegard.nossum@oracle.com,
-        penberg@kernel.org, jamie.iles@oracle.com, mingo@redhat.com,
-        tglx@linutronix.de, x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@vger.kernel.org
-Subject: Re: Re: [PATCH 3/4] x86/insn: Extract more information about instructions
-References: <1397497450-6440-1-git-send-email-sasha.levin@oracle.com> <1397497450-6440-3-git-send-email-sasha.levin@oracle.com> <534CA38C.80501@hitachi.com> <534D4BF3.3020102@oracle.com> <534DF868.2020901@zytor.com> <534DFD61.4070700@oracle.com> <534DFEDC.8090503@zytor.com> <534E0124.70700@oracle.com>
-In-Reply-To: <534E0124.70700@oracle.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/16 13:03), Sasha Levin wrote:
-> On 04/15/2014 11:54 PM, H. Peter Anvin wrote:
->> On 04/15/2014 08:47 PM, Sasha Levin wrote:
->>>>
->>>> Yes, if kmemcheck for some reason needs to figure out if an instruction
->>>> is a MOV variant we'll need to list quite a few mnemonics, but that list
->>>> will be much shorter and more readable than a corresponding list of opcodes.
->>>>
->> You're completely missing my point.  If you are looking at MOV, with
->> 80%+ probability you're doing something very, very wrong, because you
->> will be including instructions that do something completely different
->> from what you thought.
->>
->> This is true for a lot of the x86 instructions.
-> 
-> Right, but assuming that the AND example I presented earlier makes sense, I
-> can't create mnemonic entries only for instructions where doing so would
-> "probably" be right.
-> 
-> If there are use cases where working with mnemonics is correct, we should
-> be doing that in kmemcheck. If the way kmemcheck deals with mnemonics is
-> incorrect we should go ahead and fix kmemcheck.
 
-In that case, as I said, the mnemonics classifier should be build in
-kmemcheck at this point, since we cannot provide any general mnemonic
-classifier for that purpose. If it becomes enough generic, and accurate,
-it would be better consolidate both, I think.
+wq_update_unbound_numa() failure path has the following two bugs.
+ - alloc_unbound_pwq() is called without holding wq->mutex;
+ however, if the allocation fails, it jumps to out_unlock
+ which tries to unlock wq->mutex.
 
-Thank you,
+ - The function should switch to dfl_pwq on failure
+ but didn't do so after alloc_unbound_pwq() failure.
 
+Fix it by regrabbing wq->mutex and jumping to use_dfl_pwq on
+alloc_unbound_pwq() failure.
+
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+---
+ kernel/workqueue.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 0ee63af..3150b21 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -4100,7 +4100,8 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
+ 	if (!pwq) {
+ 		pr_warning("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
+ 			   wq->name);
+-		goto out_unlock;
++		mutex_lock(&wq->mutex);
++		goto use_dfl_pwq;
+ 	}
+ 
+ 	/*
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+1.7.4.4
 
 
