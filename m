@@ -1,119 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754797AbaDPHWM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 03:22:12 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56564 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754738AbaDPHWL (ORCPT
+	id S1754779AbaDPH0u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 03:26:50 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:41514 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754300AbaDPH0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 03:22:11 -0400
-Date: Wed, 16 Apr 2014 09:22:02 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH 03/19] lockdep: improve scenario messages for RECLAIM_FS
- errors.
-Message-ID: <20140416072202.GM26782@laptop.programming.kicks-ass.net>
-References: <20140416033623.10604.69237.stgit@notabene.brown>
- <20140416040336.10604.19304.stgit@notabene.brown>
+	Wed, 16 Apr 2014 03:26:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140416040336.10604.19304.stgit@notabene.brown>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CAAYSxho=S5TqSU4uOiSuH-yh-O6tQxbKEzCn6ow=PLDBKPiSpQ@mail.gmail.com>
+References: <1397172708-19735-1-git-send-email-tim.kryger@linaro.org>
+	<CAPDyKFrFyBLtL6dVgFy6DkY0gdCjiVpk1OhsfUXD0nhajCetxg@mail.gmail.com>
+	<CAAYSxho=S5TqSU4uOiSuH-yh-O6tQxbKEzCn6ow=PLDBKPiSpQ@mail.gmail.com>
+Date: Wed, 16 Apr 2014 09:20:57 +0200
+Message-ID: <CAPDyKFp+xTbLtMip847wn1XM_ZJNix_TgQ6Psjq4RrB9=CWThw@mail.gmail.com>
+Subject: Re: [PATCH] mmc: sdhci: Set ocr_avail directly based on vmmc
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Chris Ball <chris@printf.net>,
+        Linux MMC Mailing List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 02:03:36PM +1000, NeilBrown wrote:
-> lockdep can check for locking problems involving reclaim using
-> the same infrastructure as used for interrupts.
-> 
-> However a number of the messages still refer to interrupts even
-> if it was actually a reclaim-related problem.
-> 
-> So determine where the problem was caused by reclaim or irq and adjust
-> messages accordingly.
-> 
-> Signed-off-by: NeilBrown <neilb@suse.de>
-> ---
->  kernel/locking/lockdep.c |   43 ++++++++++++++++++++++++++++++++-----------
->  1 file changed, 32 insertions(+), 11 deletions(-)
-> 
-> diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
-> index e05b82e92373..33d2ac7519dc 100644
-> --- a/kernel/locking/lockdep.c
-> +++ b/kernel/locking/lockdep.c
-> @@ -1423,7 +1423,8 @@ static void
->  print_irq_lock_scenario(struct lock_list *safe_entry,
->  			struct lock_list *unsafe_entry,
->  			struct lock_class *prev_class,
-> -			struct lock_class *next_class)
-> +			struct lock_class *next_class,
-> +			int reclaim)
+On 15 April 2014 19:09, Tim Kryger <tim.kryger@linaro.org> wrote:
+> On Fri, Apr 11, 2014 at 1:15 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+>
+>> I have seen some patches around lately touching the code for handling
+>> the regulators (vcc and vccq) in sdhci.
+>
+> Was it this patch you were thinking of or something else?
+>
+> http://www.spinics.net/lists/linux-mmc/msg25640.html
 
-I would rather we just pass enum lock_usage_bit along from the
-callsites.
+Yes, that's one of them. I am not sure I remember correct, but I think
+there were patches for converting to devm_* API as well.
 
->  {
->  	struct lock_class *safe_class = safe_entry->class;
->  	struct lock_class *unsafe_class = unsafe_entry->class;
+>
+>> A few times I have suggested to switch to use the
+>> mmc_regulator_get_supply() API to simplify and consolidate code. Could
+>> you please have a look at that?
+>
+> This function will solve my problem but it also suggests that SDHCI
+> drivers should use the vmmc/vqmmc pointers in the mmc_host struct
+> rather than the ones in the sdhci_host struct.
+>
+> Is this your intent?  Do you want to see the regulator pointers in the
+> sdhci_host struct removed once all drivers are modified to use the
+> mmc_host ones?
 
-> @@ -1487,6 +1495,8 @@ print_bad_irq_dependency(struct task_struct *curr,
->  			 enum lock_usage_bit bit2,
->  			 const char *irqclass)
->  {
-> +	int reclaim = strncmp(irqclass, "RECLAIM", 7) == 0;
-> +
+Correct. That will consolidate code!
 
-irqclass := state_name(bit2), so instead of relying on the unreliable,
-why not use the lock_usage_bit ?
+Then if sdhci has some special needs for regulators, let's first see
+if we can adopt the API to handle it, before we decide to put that
+code in sdhci driver.
 
->  	if (!debug_locks_off_graph_unlock() || debug_locks_silent)
->  		return 0;
->  
-> @@ -1528,7 +1538,7 @@ print_bad_irq_dependency(struct task_struct *curr,
->  
->  	printk("\nother info that might help us debug this:\n\n");
->  	print_irq_lock_scenario(backwards_entry, forwards_entry,
-> -				hlock_class(prev), hlock_class(next));
-> +				hlock_class(prev), hlock_class(next), reclaim);
+Kind regards
+Uffe
 
-So that would become bit2.
-
->  
->  	lockdep_print_held_locks(curr);
->  
-> @@ -2200,7 +2210,7 @@ static void check_chain_key(struct task_struct *curr)
->  }
->  
->  static void
-> -print_usage_bug_scenario(struct held_lock *lock)
-> +print_usage_bug_scenario(struct held_lock *lock, enum lock_usage_bit new_bit)
-
-Like you did here.
-
->  {
->  	struct lock_class *class = hlock_class(lock);
->  
-> @@ -2210,7 +2220,11 @@ print_usage_bug_scenario(struct held_lock *lock)
->  	printk("  lock(");
->  	__print_lock_name(class);
->  	printk(");\n");
-> -	printk("  <Interrupt>\n");
-> +	if (new_bit == LOCK_USED_IN_RECLAIM_FS ||
-> +	    new_bit == LOCK_USED_IN_RECLAIM_FS_READ)
-
-And if we're going to do this all over, we might want a helper for this
-condition.
-
-> +		printk("  <Memory allocation/reclaim>\n");
-> +	else
-> +		printk("  <Interrupt>\n");
->  	printk("    lock(");
->  	__print_lock_name(class);
->  	printk(");\n");
-
-Same for the rest I think..
+>
+> -Tim
