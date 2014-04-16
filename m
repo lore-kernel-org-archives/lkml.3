@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751646AbaDPECw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 00:02:52 -0400
-Received: from ozlabs.org ([103.22.144.67]:56470 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750918AbaDPECt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 00:02:49 -0400
-Date: Wed, 16 Apr 2014 14:02:40 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>
-Subject: linux-next: manual merge of the audit tree with Linus' tree
-Message-Id: <20140416140240.dd99f42196991edcb73a969d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__16_Apr_2014_14_02_40_+1000_RSdjxG+9Sbl3Rk/N"
+	id S1751805AbaDPEEJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 00:04:09 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:41824 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783AbaDPEEH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 00:04:07 -0400
+Message-ID: <534E0124.70700@oracle.com>
+Date: Wed, 16 Apr 2014 00:03:48 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: vegard.nossum@oracle.com, penberg@kernel.org, jamie.iles@oracle.com,
+        mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@vger.kernel.org
+Subject: Re: [PATCH 3/4] x86/insn: Extract more information about instructions
+References: <1397497450-6440-1-git-send-email-sasha.levin@oracle.com> <1397497450-6440-3-git-send-email-sasha.levin@oracle.com> <534CA38C.80501@hitachi.com> <534D4BF3.3020102@oracle.com> <534DF868.2020901@zytor.com> <534DFD61.4070700@oracle.com> <534DFEDC.8090503@zytor.com>
+In-Reply-To: <534DFEDC.8090503@zytor.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__16_Apr_2014_14_02_40_+1000_RSdjxG+9Sbl3Rk/N
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 04/15/2014 11:54 PM, H. Peter Anvin wrote:
+> On 04/15/2014 08:47 PM, Sasha Levin wrote:
+>> > 
+>> > Yes, if kmemcheck for some reason needs to figure out if an instruction
+>> > is a MOV variant we'll need to list quite a few mnemonics, but that list
+>> > will be much shorter and more readable than a corresponding list of opcodes.
+>> > 
+> You're completely missing my point.  If you are looking at MOV, with
+> 80%+ probability you're doing something very, very wrong, because you
+> will be including instructions that do something completely different
+> from what you thought.
+> 
+> This is true for a lot of the x86 instructions.
 
-Hi Eric,
+Right, but assuming that the AND example I presented earlier makes sense, I
+can't create mnemonic entries only for instructions where doing so would
+"probably" be right.
 
-Today's linux-next merge of the audit tree got conflicts in
-arch/mips/include/asm/syscall.h, arch/x86/Kconfig and kernel/audit.c
-between commits from Linus' tree and commit 596b0569084b ("Merge tag
-'v3.14' into mergeing") from the audit tree.
+If there are use cases where working with mnemonics is correct, we should
+be doing that in kmemcheck. If the way kmemcheck deals with mnemonics is
+incorrect we should go ahead and fix kmemcheck.
 
-This happened because you merged Linus' tag v3.14 into your tree.  In
-this case, that merge had conflicts that you resolved differently to the
-way Linus had resolved them when he merged your tree for v3.15-rc1.  I
-fixed it up (by using Linus' version) and can carry the fix as necessary
-(no action is required).
 
-You could have avoided this by doing a fast forward merge of v3.15-rc1
-instead of the v3.14 merge (since everything in your tree before that
-merge was also in Linus' tree by v3.15-rc1).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__16_Apr_2014_14_02_40_+1000_RSdjxG+9Sbl3Rk/N
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTTgDkAAoJEMDTa8Ir7ZwV2bcP/jtWk6ipR0Kh2G2rmeqRd0G9
-g6TGBPqC6XEumCdIZY3Y5RYfwpXPyncvqiHlK/EeMi1Mu3FCo2NH6Z8pZp0U84d9
-0sRbNZn6XGa7S6UGT7YGy2MBqsQuDP7+53Zv+a4rE5Efm3htd89FrB7rHY/mULD/
-GboVzJb8fPligycbrrmWJ1I2KaGcxOdFsB1NafDBGPnWXLTPvP4EmpO9LULzaoqW
-mnb+6mafwhdR2/om3LDjSK9cl+T4BTMNrX9za9yOghXcQQxYomV4gGQrEzWPjGdr
-+zHKPQqBUBEXPrCysZHQDej45t39IdyrzBPz9ovJ0zLeIkOHSPd6tou33vXU2vLB
-YVmVEWua6rObRJk0LV9sggh/7W6XwMJPAUm1f5qSewDcjL32HZmWUtTx5OSFQVUx
-1Npu5MevgjiMK4XvTVwvy29ioKkUQLZ63n8Na+VEEJ3yWi23G1YlOLvH4pv9QwVG
-1tkQ3opNklkIQus++7bGInSe66bW5KxZ1GAyH3JOg5i+oC6BdTNtQ3o5XD/3+y16
-CwpIctx1ilIMQEsZxHzGMXogSXveozOpX+ggSObYTi/D02CtCEWImForp6M36724
-i1IRy7M1il654gYNf7OMbH2gk7VxhuyICKO977RgEr41NrE2R+ayHNYxD2U8Feju
-yj/j3FPtuE8o3h3F2Ajp
-=je24
------END PGP SIGNATURE-----
-
---Signature=_Wed__16_Apr_2014_14_02_40_+1000_RSdjxG+9Sbl3Rk/N--
+Thanks,
+Sasha
