@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913AbaDPRHa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 13:07:30 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35233 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029AbaDPRH0 (ORCPT
+	id S1753060AbaDPRMh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 13:12:37 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:50526 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496AbaDPRMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 13:07:26 -0400
-Date: Wed, 16 Apr 2014 18:06:39 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Chen-Yu Tsai <wens@csie.org>, Hans de Goede <hdegoede@redhat.com>,
-        Carlo Caione <carlo@caione.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Message-ID: <20140416170638.GT12304@sirena.org.uk>
-References: <20140415223849.GJ12304@sirena.org.uk>
- <1397636170-664-1-git-send-email-boris.brezillon@free-electrons.com>
+	Wed, 16 Apr 2014 13:12:35 -0400
+Date: Wed, 16 Apr 2014 10:12:30 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, tj@kernel.org,
+        grygorii.strashko@ti.com, peterz@infradead.org
+Subject: Re: How do I increment a per-CPU variable without warning?
+Message-ID: <20140416171230.GA8788@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140415221755.GA27188@linux.vnet.ibm.com>
+ <alpine.DEB.2.10.1404161007080.9945@gentwo.org>
+ <20140416160621.GX4496@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HL+2C3YiDdBCOf2R"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397636170-664-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regmap: i2c: fallback to SMBus if the adapter does not
- support standard I2C
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140416160621.GX4496@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041617-9332-0000-0000-00000087502F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 16, 2014 at 09:06:21AM -0700, Paul E. McKenney wrote:
+> On Wed, Apr 16, 2014 at 10:08:03AM -0500, Christoph Lameter wrote:
+> > On Tue, 15 Apr 2014, Paul E. McKenney wrote:
+> > 
+> > > Hello, Christoph,
+> > >
+> > > I have a patch that currently uses __this_cpu_inc_return() to increment a
+> > > per-CPU variable, but without preemption disabled.  Of course, given that
+> > > preemption is enabled, it might well end up picking up one CPU's counter,
+> > > adding one to it, then storing the result into some other CPU's counter.
+> > > But this is OK, the test can be probabilistic.  And when I run this
+> > > against v3.14 and earlier, it works fine.
+> > 
+> > We introduced raw_cpu_inc_return to squish these warnings.
+> 
+> Cool, this is a good short-term fix.
 
---HL+2C3YiDdBCOf2R
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Or at least it is given the following patch.  Was this the intent?
 
-On Wed, Apr 16, 2014 at 10:16:10AM +0200, Boris BREZILLON wrote:
+							Thanx, Paul
 
-> +	if (i2c_check_functionality(i2c->adapter, I2C_FUNC_I2C)) {
-> +		return &regmap_i2c;
-> +	} else if (config->val_bits == 16 &&
-> +		   i2c_check_functionality(i2c->adapter,
-> +					   I2C_FUNC_SMBUS_WORD_DATA)) {
-> +                config->reg_read = regmap_smbus_word_reg_read;
-> +                config->reg_write = regmap_smbus_word_reg_write;
-> +		return NULL;
+------------------------------------------------------------------------
 
-This all looks good to me except we shouldn't be modifying the config
-struct (it's supposed to be const).  We should instead add the ability
-for the bus to set these ops - that'll also be useful for things like
-AC'97.
+percpu: Fix raw_cpu_inc_return()
 
---HL+2C3YiDdBCOf2R
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The definition for raw_cpu_add_return() uses the operation prefix
+"raw_add_return_", but the definitions in the various percpu.h files
+expect "raw_cpu_add_return_".  This commit therefore appropriately
+adjusts the definition of raw_cpu_add_return().
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Christoph Lameter <cl@linux.com>
 
-iQIcBAEBAgAGBQJTTribAAoJELSic+t+oim9yDgQAJViSM+NIbZRXB90eCTbZ/8Q
-Dm0fn8vsZRzliPmp/BIBrfhYJPn7817gxiwOpiCO1D1+UJYUTBywrMmXr3RYYufS
-USrkMfz8ME4IUrI2ZJ/61b2Vy3AIl8/EmvW+Uuz/q4a4V+LYZ3j5F1HU0huxYbda
-m6dbAxW3KDMuVp727jYp7UQNQct9/KBUU/+xFDW1+H9wX1Adi/GDugSPVnSMBNfG
-JSdQOJoxbz0VosemoTKoMymkSb8naIucTP21SQSnZaFj5YMMAQo1FF28q+aoXcsL
-RYLX3Win9vkIL+gBKBZdf43JsUX5IWLubYYdPgTax5Y+RtvLHnE9qF0891z4/jXs
-YkRr29VX3Dx/swgfvXEoMFTRZcb7dmcAkQdFpoB5dcztWTLODJ/imQ32ZKDUZUxV
-QJSlG0B2w7cAHaMhjig5+0lvYP3f1KO8Rip9HG2c8wAgoQyCiNWBwrNDgKPq3wCh
-sJqg/+iv+YJSe+E40UdLg/+vaX8PyqZjTm+TFufPAgOHBvXsAKRjPQRT6qbrLA9I
-B/o9/6gE2y7h3j5K1DVMBhJpjASMeLdx1iPc844VF4OWBDF0sj9vZp7BxyElllUS
-CvIngmIBO0CiBi9H+BLlVCC0GfW14JWouiykSdXJk0CSZnmg02RSTJQFwoSfRQMm
-aR6xf/inPyVVhQuEdaiA
-=XB/3
------END PGP SIGNATURE-----
+diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+index e7a0b95ed527..495c6543a8f2 100644
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
+@@ -639,7 +639,7 @@ do {									\
+ #  define raw_cpu_add_return_8(pcp, val)	raw_cpu_generic_add_return(pcp, val)
+ # endif
+ # define raw_cpu_add_return(pcp, val)	\
+-	__pcpu_size_call_return2(raw_add_return_, pcp, val)
++	__pcpu_size_call_return2(raw_cpu_add_return_, pcp, val)
+ #endif
+ 
+ #define raw_cpu_sub_return(pcp, val)	raw_cpu_add_return(pcp, -(typeof(pcp))(val))
 
---HL+2C3YiDdBCOf2R--
