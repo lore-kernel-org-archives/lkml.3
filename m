@@ -1,94 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754573AbaDPGBt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 02:01:49 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:54770 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754205AbaDPGBr (ORCPT
+	id S1754597AbaDPGFG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 02:05:06 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:50616 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752917AbaDPGFC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 02:01:47 -0400
-Message-ID: <534E1C9E.3090802@linux.vnet.ibm.com>
-Date: Wed, 16 Apr 2014 11:31:02 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Wed, 16 Apr 2014 02:05:02 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AsxSAKscTlN5LEcvPGdsb2JhbABagwaDU4UKtgyFXoEkFwMBAQEBODWCJQEBAQMBJxMcIwULCAMYCSUPBSUDBxoTh3QHxj0XFo5MB4MkgRQEmGKKZ4lSgVEr
+Date: Wed, 16 Apr 2014 16:04:59 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: NeilBrown <neilb@suse.de>
+Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 09/19] XFS: ensure xfs_file_*_read cannot deadlock in
+ memory allocation.
+Message-ID: <20140416060459.GE15995@dastard>
+References: <20140416033623.10604.69237.stgit@notabene.brown>
+ <20140416040336.10604.90380.stgit@notabene.brown>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        linux-next list <linux-next@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        cpufreq <cpufreq@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq, powernv: Fix build failure on UP
-References: <20140415141111.GA28352@windriver.com> <534E199D.2090504@linux.vnet.ibm.com> <CAKohponDbPXTzzSvOy=V2vKpJEZYtt7i1ZqQLwcjN_Nhf95+mQ@mail.gmail.com>
-In-Reply-To: <CAKohponDbPXTzzSvOy=V2vKpJEZYtt7i1ZqQLwcjN_Nhf95+mQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041606-8256-0000-0000-00000C9ECFCA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140416040336.10604.90380.stgit@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2014 11:25 AM, Viresh Kumar wrote:
-> On 16 April 2014 11:18, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> Subject: [PATCH] cpufreq, powernv: Fix build failure on UP
->>
->> Paul Gortmaker reported the following build failure of the powernv cpufreq
->> driver on UP configs:
->>
->> drivers/cpufreq/powernv-cpufreq.c:241:2: error: implicit declaration of
->> function 'cpu_sibling_mask' [-Werror=implicit-function-declaration]
->> cc1: some warnings being treated as errors
->> make[3]: *** [drivers/cpufreq/powernv-cpufreq.o] Error 1
->> make[2]: *** [drivers/cpufreq] Error 2
->> make[1]: *** [drivers] Error 2
->> make: *** [sub-make] Error 2
->>
->> The trouble here is that cpu_sibling_mask is defined only in <asm/smp.h>, and
->> <linux/smp.h> includes <asm/smp.h> only in SMP builds.
->>
->> So fix this build failure by explicitly including <asm/smp.h> in the driver,
->> so that we get the definition of cpu_sibling_mask even in UP configurations.
->>
->> Reported-by: Paul Gortmaker <paul.gortmaker@windriver.com>
->> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
->> ---
->>
->>  drivers/cpufreq/powernv-cpufreq.c |    1 +
->>  1 file changed, 1 insertion(+)
->>
->> diff --git a/drivers/cpufreq/powernv-cpufreq.c b/drivers/cpufreq/powernv-cpufreq.c
->> index 9edccc6..ed1c7e5 100644
->> --- a/drivers/cpufreq/powernv-cpufreq.c
->> +++ b/drivers/cpufreq/powernv-cpufreq.c
->> @@ -29,6 +29,7 @@
->>
->>  #include <asm/cputhreads.h>
->>  #include <asm/reg.h>
+On Wed, Apr 16, 2014 at 02:03:36PM +1000, NeilBrown wrote:
+> xfs_file_*_read holds an inode lock while calling a generic 'read'
+> function.  These functions perform read-ahead and are quite likely to
+> allocate memory.
+
+Yes, that's what reading data from disk requires.
+
+> So set PF_FSTRANS to ensure they avoid __GFP_FS and so don't recurse
+> into a filesystem to free memory.
+
+We already have that protection via the
 > 
-> Probably a comment here ?, so that people don't try to remove it in future.
+> This can be a problem with loop-back NFS mounts, if free_pages ends up
+> wating in nfs_release_page(), and nfsd is blocked waiting for the lock
+> that this code holds.
 > 
-
-Sure, that sounds like a good idea.
-
-> /* Required for cpu_sibling_mask() in UP configurations */
+> This was found both by lockdep and as a real deadlock during testing.
 > 
->> +#include <asm/smp.h>
->>
->>  #define POWERNV_MAX_PSTATES    256
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> ---
+>  fs/xfs/xfs_file.c |   12 ++++++++++++
+>  1 file changed, 12 insertions(+)
 > 
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+> index 64b48eade91d..88b33ef64668 100644
+> --- a/fs/xfs/xfs_file.c
+> +++ b/fs/xfs/xfs_file.c
+> @@ -243,6 +243,7 @@ xfs_file_aio_read(
+>  	ssize_t			ret = 0;
+>  	int			ioflags = 0;
+>  	xfs_fsize_t		n;
+> +	unsigned int		pflags;
+>  
+>  	XFS_STATS_INC(xs_read_calls);
+>  
+> @@ -290,6 +291,10 @@ xfs_file_aio_read(
+>  	 * proceeed concurrently without serialisation.
+>  	 */
+>  	xfs_rw_ilock(ip, XFS_IOLOCK_SHARED);
+> +	/* As we hold a lock, we must ensure that any allocation
+> +	 * in generic_file_aio_read avoid __GFP_FS
+> +	 */
+> +	current_set_flags_nested(&pflags, PF_FSTRANS);
 
-Thank you!
+Ugh. No. This is Simply Wrong.
 
-Regards,
-Srivatsa S. Bhat
+We handle the memory allocations in the IO path with
+GFP_NOFS/KM_NOFS where necessary.
 
+We also do this when setting up regular file inodes in
+xfs_setup_inode():
+
+        /*
+         * Ensure all page cache allocations are done from GFP_NOFS context to
+         * prevent direct reclaim recursion back into the filesystem and blowing
+         * stacks or deadlocking.
+         */
+        gfp_mask = mapping_gfp_mask(inode->i_mapping);
+        mapping_set_gfp_mask(inode->i_mapping, (gfp_mask & ~(__GFP_FS)));
+
+Which handles all of the mapping allocations that occur within the
+page cache read/write paths.
+
+Remember, you removed the KM_NOFS code from the XFS allocator that
+caused it to clear __GFP_FS in an earlier patch - the read Io path
+is one of the things you broke by doing that....
+
+If there are places where we don't use GFP_NOFS context allocations
+that we should, then we need to fix them individually....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
