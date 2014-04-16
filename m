@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161339AbaDPOE1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 10:04:27 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55630 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161077AbaDPOEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 10:04:24 -0400
-Message-ID: <534E8DA1.8090101@ti.com>
-Date: Wed, 16 Apr 2014 10:03:13 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1161349AbaDPOIS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 10:08:18 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37551 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1161077AbaDPOIQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 10:08:16 -0400
+Date: Wed, 16 Apr 2014 14:52:17 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
+        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v7 6/7] arm64: ftrace: Add CALLER_ADDRx macros
+Message-ID: <20140416135217.GF1001@arm.com>
+References: <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org>
+ <1394862353-28963-7-git-send-email-takahiro.akashi@linaro.org>
 MIME-Version: 1.0
-To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
-        Brian Norris <computersforpeace@gmail.com>
-CC: <dwmw2@infradead.org>, <galak@codeaurora.org>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <rob@landley.net>,
-        <linux@arm.linux.org.uk>, <grygorii.strashko@ti.com>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>, <m-karicheri2@ti.com>,
-        Warner Losh <imp@bsdimp.com>
-Subject: Re: [PATCH v2] mtd: davinci-nand: disable subpage write for keystone-nand
-References: <1395346112-13350-1-git-send-email-ivan.khoronzhuk@ti.com> <532B4C36.8060405@ti.com> <5343F0D6.2010804@ti.com> <20140416070833.GA5512@norris-Latitude-E6410> <534E51BF.9050508@ti.com>
-In-Reply-To: <534E51BF.9050508@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394862353-28963-7-git-send-email-takahiro.akashi@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 16 April 2014 05:47 AM, Ivan Khoronzhuk wrote:
+On Sat, Mar 15, 2014 at 05:45:52AM +0000, AKASHI Takahiro wrote:
+> CALLER_ADDRx returns caller's address at specified level in call stacks.
+> They are used for several tracers like irqsoff and preemptoff.
+> Strange to say, however, they are refered even without FTRACE.
 > 
-> On 04/16/2014 10:08 AM, Brian Norris wrote:
->> On Tue, Apr 08, 2014 at 03:51:34PM +0300, Ivan Khoronzhuk wrote:
->>> On 03/20/2014 10:14 PM, Santosh Shilimkar wrote:
->>>> On Thursday 20 March 2014 04:08 PM, Ivan Khoronzhuk wrote:
->>>>> From: Murali Karicheri <m-karicheri2@ti.com>
->>>>> Sub page write doesn't work because of hw issue in controller found on
->>>>> Keystone SOCs. AEMIF controller is also used on DaVinci SOCs which
->>>>> don't seems to have any issue. So add "ti,keysone-nand" compatible
->>>>> to nand driver in order to set NAND_NO_SUBPAGE_WRITE option.
->>>>>
->>>>> Cc: Brian Norris <computersforpeace@gmail.com>
->>>>> Cc: Warner Losh <imp@bsdimp.com>
->>>>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>>>>
->>>>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
->>>>> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
->>>>> ---
->>>>>
->>>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->>> Brian,
->>> Could you pick up subj patch?
->> Pushed to l2-mtd.git. Is it critical this goes in for 3.15? It's
->> currently queued for -next (3.16).
->>
->> Brian
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
+> ---
+>  arch/arm64/include/asm/ftrace.h    | 13 ++++++++-
+>  arch/arm64/kernel/Makefile         |  3 ++-
+>  arch/arm64/kernel/return_address.c | 55 ++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 69 insertions(+), 2 deletions(-)
+>  create mode 100644 arch/arm64/kernel/return_address.c
 > 
-> This is a critical fix and it should be for 3.15.
-Yep. The NAND is broken on Keystone without this patch.
-So 3.15 fixes please
+> diff --git a/arch/arm64/include/asm/ftrace.h b/arch/arm64/include/asm/ftrace.h
+> index ed5c448..c44c4b1 100644
+> --- a/arch/arm64/include/asm/ftrace.h
+> +++ b/arch/arm64/include/asm/ftrace.h
+> @@ -18,6 +18,7 @@
+>  
+>  #ifndef __ASSEMBLY__
+>  extern void _mcount(unsigned long);
+> +extern void *return_address(unsigned int);
+>  
+>  struct dyn_arch_ftrace {
+>  	/* No extra data needed for arm64 */
+> @@ -33,6 +34,16 @@ static inline unsigned long ftrace_call_adjust(unsigned long addr)
+>  	 */
+>  	return addr;
+>  }
+> -#endif /* __ASSEMBLY__ */
+> +
+> +#define HAVE_ARCH_CALLER_ADDR
+> +
+> +#define CALLER_ADDR0 ((unsigned long)__builtin_return_address(0))
+> +#define CALLER_ADDR1 ((unsigned long)return_address(1))
+> +#define CALLER_ADDR2 ((unsigned long)return_address(2))
+> +#define CALLER_ADDR3 ((unsigned long)return_address(3))
+> +#define CALLER_ADDR4 ((unsigned long)return_address(4))
+> +#define CALLER_ADDR5 ((unsigned long)return_address(5))
+> +#define CALLER_ADDR6 ((unsigned long)return_address(6))
+> +#endif /* ifndef __ASSEMBLY__ */
 
-Regards,
-Santosh
+Hmm, I thought you were going to take a look at reworking the core code for
+this, as Steve and I suggested?
 
+  http://lists.infradead.org/pipermail/linux-arm-kernel/2014-March/240239.html
+
+Will
