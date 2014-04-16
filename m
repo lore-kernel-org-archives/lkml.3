@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161804AbaDPPkG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 11:40:06 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:65519 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756319AbaDPPkD (ORCPT
+	id S1161826AbaDPPnD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 11:43:03 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:37385 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161615AbaDPPnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 11:40:03 -0400
-From: Seunghun Lee <waydi1@gmail.com>
-To: greg@kroah.com
-Cc: swetland@google.com, joe@perches.com, john.stultz@linaro.org,
-        dan.carpenter@oracle.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Seunghun Lee <waydi1@gmail.com>
-Subject: [PATCH] staging: android: uapi: fix coding style
-Date: Thu, 17 Apr 2014 00:39:44 +0900
-Message-Id: <1397662784-5687-1-git-send-email-waydi1@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 16 Apr 2014 11:43:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140416095229.GF4754@lee--X1>
+References: <1397592876-5741-1-git-send-email-dianders@chromium.org>
+	<1397592876-5741-2-git-send-email-dianders@chromium.org>
+	<20140416095229.GF4754@lee--X1>
+Date: Wed, 16 Apr 2014 08:42:59 -0700
+X-Google-Sender-Auth: 3uq03teCCw1TWhY_CZMsyK4fwB4
+Message-ID: <CAD=FV=VjmXGjDHTcm=E2eEPtkOa5DxKG70jXj22RbbN1VfeGjw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] mfd: tps65090: Allow charger module to be used when
+ no irq
+From: Doug Anderson <dianders@chromium.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Anton Vorontsov <anton@enomsg.org>, Olof Johansson <olof@lixom.net>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        AJAY KUMAR RAMAKRISHNA SHYMALAMMA <ajaykumar.rs@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix checkpatch.pl warning and errors.
+Lee
 
-Signed-off-by: Seunghun Lee <waydi1@gmail.com>
----
- drivers/staging/android/uapi/ion.h |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+On Wed, Apr 16, 2014 at 2:52 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>> On the ARM Chromebook tps65090 has two masters: the AP (the main
+>> processor running linux) and the EC (the embedded controller).  The AP
+>> is allowed to mess with FETs but the EC is in charge of charge control.
+>>
+>> The tps65090 interupt line is routed to both the AP and the EC, which
+>> can cause quite a headache.  Having two people adjusting masks and
+>> acking interrupts is a recipe for disaster.
+>>
+>> In the shipping kernel we had a hack to have the AP pay attention to
+>> the IRQ but not to ack it.  It also wasn't supposed to configure the
+>> IRQ in any way.  That hack allowed us to detect when the device was
+>> charging without messing with the EC's state.
+>>
+>> The current tps65090 infrastructure makes the above difficult, and it
+>> was a bit of a hack to begin with.  Rather than uglify the driver to
+>> support it, just extend the driver's existing notion of "no irq" to
+>> the charger.  This makes the charger code poll every 2 seconds for AC
+>> detect, which is sufficient.
+>>
+>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>> ---
+>>  drivers/mfd/tps65090.c           | 14 ++++++--
+>>  drivers/power/tps65090-charger.c | 76 +++++++++++++++++++++++++++++++---------
+>>  2 files changed, 70 insertions(+), 20 deletions(-)
+>
+> For the MFD part:
+>   Acked-by: Lee Jones <lee.jones@linaro.org>
+>
+> Anton,
+>   If you are okay with this patch I'd be happy to create an immutable
+> branch for you to pull from?
+>
+> Doug,
+>   What is the relationship (dependencies) between this and the other
+> patches in the set?
 
-diff --git a/drivers/staging/android/uapi/ion.h b/drivers/staging/android/uapi/ion.h
-index f09e7c1..6aa4956 100644
---- a/drivers/staging/android/uapi/ion.h
-+++ b/drivers/staging/android/uapi/ion.h
-@@ -27,12 +27,12 @@ typedef int ion_user_handle_t;
-  * @ION_HEAP_TYPE_SYSTEM:	 memory allocated via vmalloc
-  * @ION_HEAP_TYPE_SYSTEM_CONTIG: memory allocated via kmalloc
-  * @ION_HEAP_TYPE_CARVEOUT:	 memory allocated from a prereserved
-- * 				 carveout heap, allocations are physically
-- * 				 contiguous
-+ *				 carveout heap, allocations are physically
-+ *				 contiguous
-  * @ION_HEAP_TYPE_DMA:		 memory allocated via DMA API
-  * @ION_NUM_HEAPS:		 helper for iterating over heaps, a bit mask
-- * 				 is used to identify the heaps, so only 32
-- * 				 total heap types are supported
-+ *				 is used to identify the heaps, so only 32
-+ *				 total heap types are supported
-  */
- enum ion_heap_type {
- 	ION_HEAP_TYPE_SYSTEM,
-@@ -50,7 +50,7 @@ enum ion_heap_type {
- #define ION_HEAP_CARVEOUT_MASK		(1 << ION_HEAP_TYPE_CARVEOUT)
- #define ION_HEAP_TYPE_DMA_MASK		(1 << ION_HEAP_TYPE_DMA)
- 
--#define ION_NUM_HEAP_IDS		sizeof(unsigned int) * 8
-+#define ION_NUM_HEAP_IDS		(sizeof(unsigned int) * 8)
- 
- /**
-  * allocation flags - the lower 16 bits are used by core ion, the upper 16
-@@ -78,7 +78,7 @@ enum ion_heap_type {
-  * @align:		required alignment of the allocation
-  * @heap_id_mask:	mask of heap ids to allocate from
-  * @flags:		flags passed to heap
-- * @handle:		pointer that will be populated with a cookie to use to 
-+ * @handle:		pointer that will be populated with a cookie to use to
-  *			refer to this allocation
-  *
-  * Provided by userspace as an argument to the ioctl
--- 
-1.7.9.5
+This patch can be applied irrespective of other others in the series.
 
+-Doug
