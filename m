@@ -1,96 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664AbaDPFtJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 01:49:09 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:35991 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754360AbaDPFtF (ORCPT
+	id S1754673AbaDPFtu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 01:49:50 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:55500 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754463AbaDPFtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 01:49:05 -0400
-Message-ID: <534E199D.2090504@linux.vnet.ibm.com>
-Date: Wed, 16 Apr 2014 11:18:13 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Wed, 16 Apr 2014 01:49:49 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AstSAGMZTlN5LEcvPGdsb2JhbABZgwaDU4UKtguFXoEkFwMBAQEBODWCJQEBAQQnExwjEAgDGAklDwUlAwcaExuHYMYuFxaOTAeDJIEUAQOYYopniVKBUSs
+Date: Wed, 16 Apr 2014 15:49:42 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: NeilBrown <neilb@suse.de>
+Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 13/19] MM: set PF_FSTRANS while allocating per-cpu memory
+ to avoid deadlock.
+Message-ID: <20140416054942.GD15995@dastard>
+References: <20140416033623.10604.69237.stgit@notabene.brown>
+ <20140416040336.10604.67456.stgit@notabene.brown>
 MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: ego@linux.vnet.ibm.com, svaidy@linux.vnet.ibm.com,
-        preeti@linux.vnet.ibm.com, linux-next@vger.kernel.org,
-        rafael.j.wysocki@intel.com, Viresh Kumar <viresh.kumar@linaro.org>,
-        cpufreq <cpufreq@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] cpufreq, powernv: Fix build failure on UP
-References: <20140415141111.GA28352@windriver.com>
-In-Reply-To: <20140415141111.GA28352@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041605-6102-0000-0000-0000055B3884
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140416040336.10604.67456.stgit@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2014 07:41 PM, Paul Gortmaker wrote:
-> Hi all,
+On Wed, Apr 16, 2014 at 02:03:36PM +1000, NeilBrown wrote:
+> lockdep reports a locking chain
 > 
-> This new driver is causing build fails on linux-next for non-SMP.
+>   sk_lock-AF_INET --> rtnl_mutex --> pcpu_alloc_mutex
 > 
-> http://kisskb.ellerman.id.au/kisskb/buildresult/10911507/
+> As sk_lock may be needed to reclaim memory, allowing that
+> reclaim while pcu_alloc_mutex is held can lead to deadlock.
+> So set PF_FSTRANS while it is help to avoid the FS reclaim.
 > 
-> I didn't bisect since there are only two commits in total.  :)
+> pcpu_alloc_mutex can be taken when rtnl_mutex is held:
 > 
-> Looks like some header foo where <linux/smp.h> is not getting <asm/smp.h>
+>     [<ffffffff8117f979>] pcpu_alloc+0x49/0x960
+>     [<ffffffff8118029b>] __alloc_percpu+0xb/0x10
+>     [<ffffffff8193b9f7>] loopback_dev_init+0x17/0x60
+>     [<ffffffff81aaf30c>] register_netdevice+0xec/0x550
+>     [<ffffffff81aaf785>] register_netdev+0x15/0x30
 > 
+> Signed-off-by: NeilBrown <neilb@suse.de>
 
-Hi Paul,
+This looks like a workaround to avoid passing a gfp mask around to
+describe the context in which the allocation is taking place.
+Whether or not that's the right solution, I can't say, but spreading
+this "we can turn off all reclaim of filesystem objects" mechanism
+all around the kernel doesn't sit well with me...
 
-Thanks a lot for reporting the build failure. Please find the fix
-below.
- 
-Regards,
-Srivatsa S. Bhat
+And, again, PF_FSTRANS looks plainly wrong in this code - it sure
+isn't a fs transaction context we are worried about here...
 
----------------------------------------------------------------------------
 
-From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH] cpufreq, powernv: Fix build failure on UP
-
-Paul Gortmaker reported the following build failure of the powernv cpufreq
-driver on UP configs:
-
-drivers/cpufreq/powernv-cpufreq.c:241:2: error: implicit declaration of
-function 'cpu_sibling_mask' [-Werror=implicit-function-declaration]
-cc1: some warnings being treated as errors
-make[3]: *** [drivers/cpufreq/powernv-cpufreq.o] Error 1
-make[2]: *** [drivers/cpufreq] Error 2
-make[1]: *** [drivers] Error 2
-make: *** [sub-make] Error 2
-
-The trouble here is that cpu_sibling_mask is defined only in <asm/smp.h>, and
-<linux/smp.h> includes <asm/smp.h> only in SMP builds.
-
-So fix this build failure by explicitly including <asm/smp.h> in the driver,
-so that we get the definition of cpu_sibling_mask even in UP configurations.
-
-Reported-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- drivers/cpufreq/powernv-cpufreq.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/cpufreq/powernv-cpufreq.c b/drivers/cpufreq/powernv-cpufreq.c
-index 9edccc6..ed1c7e5 100644
---- a/drivers/cpufreq/powernv-cpufreq.c
-+++ b/drivers/cpufreq/powernv-cpufreq.c
-@@ -29,6 +29,7 @@
- 
- #include <asm/cputhreads.h>
- #include <asm/reg.h>
-+#include <asm/smp.h>
- 
- #define POWERNV_MAX_PSTATES	256
- 
-
+-- 
+Dave Chinner
+david@fromorbit.com
