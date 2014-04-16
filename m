@@ -1,58 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161792AbaDPPXc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 11:23:32 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:58649 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161661AbaDPPX3 (ORCPT
+	id S1161819AbaDPPZw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 11:25:52 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:50363 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161602AbaDPPZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 11:23:29 -0400
-Date: Wed, 16 Apr 2014 11:23:26 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] workqueue: fix possible race condition when rescuer
- VS pwq-release
-Message-ID: <20140416152326.GG1257@htj.dyndns.org>
-References: <1395937212-4103-1-git-send-email-laijs@cn.fujitsu.com>
- <5335661E.7030408@cn.fujitsu.com>
- <20140415164752.GC30990@htj.dyndns.org>
- <534DDBFC.9060803@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <534DDBFC.9060803@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 Apr 2014 11:25:50 -0400
+From: Lin Yongting <linyongting@gmail.com>
+To: gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        harryxiyou@gmail.com, rdunlap@infradead.org
+Cc: linux-kernel@zh-kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linyongting@gmail.com,
+        linyongting@huawei.com
+Subject: =?UTF-8?q?=5BPATCH=5D=20Chinese=3A=20add=20translation=20of=20io=5Fordering=2Etxt?=
+Date: Wed, 16 Apr 2014 23:25:28 +0800
+Message-Id: <1397661928-6223-1-git-send-email-linyongting@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
+This is a Chinese translated version of Documentation/io_ordering.txt
 
-On Wed, Apr 16, 2014 at 09:25:16AM +0800, Lai Jiangshan wrote:
-> 1) Our aim is to protect unbound pwq, not percpu pwq which can't be be protected by get_pwq().
-> 2) get_pwq() will make reviewers confused/surprised, destroy_workqueue() may destroy percpu pwqs
->    with ref > 1. At least we need to add more comments explain this behavior. Origin comments:
-> 		/*
-> 		 * The base ref is never dropped on per-cpu pwqs.  Directly
-> 		 * free the pwqs and wq.
-> 		 */
+Signed-off-by: Lin Yongting <linyongting@gmail.com>
+---
+ Documentation/zh_CN/io_ordering.txt |   67 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 67 insertions(+)
+ create mode 100644 Documentation/zh_CN/io_ordering.txt
 
-You can just comment "pwqs might go away at any time, pin it until
-rescuer is done with it" and that's actually the better way to do it.
-percpu wq's not supporting attribute changes may change in the future.
-What the code path wants is pinning down the pwq no matter where it
-came from.  There's no point in distinguishing unbound and per-cpu
-here.
-
-> 3) get_unbound_pwq() self document.
-
-Not really.  If the name is get_pwq_if_unbound(), maybe.  Functions
-which take args and become noop depending on the argument aren't
-generally good ideas.  There are specific cases that they are suitable
-but this is just gratuituous.
-
-Thanks.
-
+diff --git a/Documentation/zh_CN/io_ordering.txt b/Documentation/zh_CN/io_ordering.txt
+new file mode 100644
+index 0000000..e592daf
+--- /dev/null
++++ b/Documentation/zh_CN/io_ordering.txt
+@@ -0,0 +1,67 @@
++Chinese translated version of Documentation/io_orderings.txt
++
++If you have any comment or update to the content, please contact the
++original document maintainer directly.  However, if you have a problem
++communicating in English you can also ask the Chinese maintainer for
++help.  Contact the Chinese maintainer if this translation is outdated
++or if there is a problem with the translation.
++
++Chinese maintainer: Lin Yongting <linyongting@gmail.com>
++---------------------------------------------------------------------
++Documentation/io_ordering.txt 的中文翻译
++
++如果想评论或更新本文的内容，请直接联系原文档的维护者。如果你使用英文
++交流有困难的话，也可以向中文版维护者求助。如果本翻译更新不及时或者翻
++译存在问题，请联系中文版维护者。
++
++中文版维护者： 林永听 Lin Yongting <linyongting@gmail.com>
++中文版翻译者： 林永听 Lin Yongting <linyongting@gmail.com>
++中文版校译者： 林永听 Lin Yongting <linyongting@gmail.com>
++
++
++以下为正文
++---------------------------------------------------------------------
++
++在某些平台上，所谓的内存映射I/O是弱顺序。在这些平台上，驱动开发者有责任
++保证I/O内存映射地址的写操作按程序图意的顺序达到设备。通常读取一个“安全”
++设备寄存器或桥寄存器，触发IO芯片清刷未处理的写操作到达设备后才处理读操作，
++而达到保证目的。驱动程序通常在spinlock保护的临界区退出之前使用这种技术。
++这也可以保证后面的写操作只在前面的写操作之后到达设备（这非常类似于内存
++屏障操作，mb()，不过仅适用于I/O）。
++
++假设一个设备驱动程的具体例子：
++
++        ...
++CPU A:  spin_lock_irqsave(&dev_lock, flags)
++CPU A:  val = readl(my_status);
++CPU A:  ...
++CPU A:  writel(newval, ring_ptr);
++CPU A:  spin_unlock_irqrestore(&dev_lock, flags)
++        ...
++CPU B:  spin_lock_irqsave(&dev_lock, flags)
++CPU B:  val = readl(my_status);
++CPU B:  ...
++CPU B:  writel(newval2, ring_ptr);
++CPU B:  spin_unlock_irqrestore(&dev_lock, flags)
++        ...
++
++上述例子中，设备可能会先接收到newval2的值，然后接收到newval的值，问题就
++发生了。不过很容易通过下面方法来修复：
++
++        ...
++CPU A:  spin_lock_irqsave(&dev_lock, flags)
++CPU A:  val = readl(my_status);
++CPU A:  ...
++CPU A:  writel(newval, ring_ptr);
++CPU A:  (void)readl(safe_register); /* 配置寄存器？*/
++CPU A:  spin_unlock_irqrestore(&dev_lock, flags)
++        ...
++CPU B:  spin_lock_irqsave(&dev_lock, flags)
++CPU B:  val = readl(my_status);
++CPU B:  ...
++CPU B:  writel(newval2, ring_ptr);
++CPU B:  (void)readl(safe_register); /* 配置寄存器？*/
++CPU B:  spin_unlock_irqrestore(&dev_lock, flags)
++
++在解决方案中，读取safe_register寄存器，触发IO芯片清刷未处理的写操作，
++再处理后面的读操作，防止引发数据不一致问题。
 -- 
-tejun
+1.7.9.5
+
