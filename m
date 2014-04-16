@@ -1,91 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714AbaDPHhP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 03:37:15 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:35813 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404AbaDPHhN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 03:37:13 -0400
-Date: Wed, 16 Apr 2014 09:37:08 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@fb.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [GIT PULL v2] nohz: Move nohz kick out of scheduler IPI
-Message-ID: <20140416073708.GA5636@gmail.com>
-References: <1396541832-459-1-git-send-email-fweisbec@gmail.com>
+	id S1754815AbaDPHiV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 03:38:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12680 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754762AbaDPHiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 03:38:19 -0400
+Date: Wed, 16 Apr 2014 09:38:03 +0200
+From: Veaceslav Falico <vfalico@redhat.com>
+To: "Li, Zhen-Hua" <zhen-hual@hp.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Jiri Pirko <jiri@resnulli.us>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Jerry Chu <hkchu@google.com>, Sathya Perla <sathya.perla@emulex.com>,
+        Subbu Seetharaman <subbu.seetharaman@emulex.com>,
+        Ajit Khaparde <ajit.khaparde@emulex.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] net: Add rtnl_lock for netif_device_attach/detach
+Message-ID: <20140416073803.GB19994@redhat.com>
+References: <1397632082-18453-1-git-send-email-zhen-hual@hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-In-Reply-To: <1396541832-459-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1397632082-18453-1-git-send-email-zhen-hual@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 16, 2014 at 03:08:02PM +0800, Li, Zhen-Hua wrote:
+>From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+>
+>As netif_running is called in netif_device_attach/detach. There should be
+>rtnl_lock/unlock called, to avoid dev stat change during netif_device_attach
+>and detach being called.
+>I checked NIC some drivers,  some of them have netif_device_attach/detach
+>called between rtnl_lock/unlock, while some drivers do not.
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+It can race with any other thread that takes the lock - i.e. suppose you
+have a driver that doesn't take the lock and calls netif_device_attach(),
+while another thread (completely unrelated to the issue) holds rtnl_lock -
+this way the trylock will return false, the thread that took rtnl releases
+it - and you'll see the exact same behaviour as without your patch.
 
-> Ingo, Thomas,
-> 
-> Please pull the timers/nohz-ipi-for-tip-v3 branch that can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> 	timers/nohz-ipi-for-tip-v3
-> 
-> It is based on 7a48837732f87a574ee3e1855927dc250117f565 
-> ("Merge branch 'for-3.15/core' of git://git.kernel.dk/linux-block")
-> due to dependencies on the block tree containing IPI core changes.
-> 
-> This v2 addresses Paul review and add his reviewed-by tags.
-> 
-> I'm trying to get these 2 patches in before the merge window ends
-> otherwise we'll have to do tricky branch split on the next cycle.
-> 
-> ---
-> When a full dynticks CPU runs in single task mode then a new task gets
-> enqueued, we notify it through an IPI such that it restarts its tick.
-> 
-> The IPI used here is the scheduler IPI. There are a few reasons for that:
-> it can be called when interrupts are disabled, it can be called
-> concurrently... These convenient properties altogether aren't yet offered
-> by the IPI subsystem.
-> 
-> Meanwhile, bloating that way the scheduler IPI with scheduler unrelated
-> code is an abuse of this fast path. We certainly don't want to start a
-> big kernel IPI.
-> 
-> So this patchset adds a small helper to the IPI subsystem that allows
-> to queue an IPI from interrupt disabled code while handling concurrent
-> callers as well. Eventually the nohz kick gets converted to this new facility.
-> 
-> Partly inspired by a suggestion from Peter Zijlstra.
-> 
-> * Patch 1/2 brings the IPI infrastructure to support this
-> * Patch 2/2 does the nohz IPI conversion
-> 
-> 
-> Thanks,
-> 	Frederic
-> ---
-> 
-> Frederic Weisbecker (2):
->       smp: Non busy-waiting IPI queue
->       nohz: Move full nohz kick to its own IPI
-> 
-> 
->  include/linux/smp.h      | 11 +++++++++++
->  include/linux/tick.h     |  2 ++
->  kernel/sched/core.c      |  5 +----
->  kernel/sched/sched.h     |  2 +-
->  kernel/smp.c             | 42 ++++++++++++++++++++++++++++++++++++++++++
->  kernel/time/tick-sched.c | 21 +++++++++++++++++++++
->  6 files changed, 78 insertions(+), 5 deletions(-)
+I'm not sure about the issue you're trying to fix here - there might be a
+better approach which I'm not aware of, however with your approach you
+should really either remove the rtnl locking from all drivers that use this
+function (and insert a normal rtnl_lock here) or, vice-versa, add it to all
+drivers and add an ASSERT_RTNL to netif_device_detach/attach.
 
-Pulled into tip:timers/nohz, thanks a lot Frederic!
-
-	Ingo
+>
+>This patch is tring to find a generic way to fix this for all NIC drivers.
+>
+>Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+>---
+> net/core/dev.c |   18 ++++++++++++++++++
+> 1 file changed, 18 insertions(+)
+>
+>diff --git a/net/core/dev.c b/net/core/dev.c
+>index 5b3042e..795bbc5 100644
+>--- a/net/core/dev.c
+>+++ b/net/core/dev.c
+>@@ -2190,10 +2190,19 @@ EXPORT_SYMBOL(__dev_kfree_skb_any);
+>  */
+> void netif_device_detach(struct net_device *dev)
+> {
+>+	/**
+>+	 * As netif_running is called , rtnl_lock and unlock are needed to
+>+	 * avoid __LINK_STATE_START bit changes during this function call.
+>+	 */
+>+	int need_unlock;
+>+
+>+	need_unlock = rtnl_trylock();
+> 	if (test_and_clear_bit(__LINK_STATE_PRESENT, &dev->state) &&
+> 	    netif_running(dev)) {
+> 		netif_tx_stop_all_queues(dev);
+> 	}
+>+	if (need_unlock)
+>+		rtnl_unlock();
+> }
+> EXPORT_SYMBOL(netif_device_detach);
+>
+>@@ -2205,11 +2214,20 @@ EXPORT_SYMBOL(netif_device_detach);
+>  */
+> void netif_device_attach(struct net_device *dev)
+> {
+>+	/**
+>+	 * As netif_running is called , rtnl_lock and unlock are needed to
+>+	 * avoid __LINK_STATE_START bit changes during this function call.
+>+	 */
+>+	int need_unlock;
+>+
+>+	need_unlock = rtnl_trylock();
+> 	if (!test_and_set_bit(__LINK_STATE_PRESENT, &dev->state) &&
+> 	    netif_running(dev)) {
+> 		netif_tx_wake_all_queues(dev);
+> 		__netdev_watchdog_up(dev);
+> 	}
+>+	if (need_unlock)
+>+		rtnl_unlock();
+> }
+> EXPORT_SYMBOL(netif_device_attach);
+>
+>-- 
+>1.7.10.4
+>
