@@ -1,77 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755635AbaDPKfN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:35:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51820 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755849AbaDPKdI (ORCPT
+	id S1755924AbaDPKfv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:35:51 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:45990 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755527AbaDPKfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:33:08 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Dave Kleikamp <dave.kleikamp@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 42/46] sparc64: don't treat 64-bit syscall return codes as 32-bit
-Date: Wed, 16 Apr 2014 11:31:58 +0100
-Message-Id: <1397644322-13905-43-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
-References: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Wed, 16 Apr 2014 06:35:46 -0400
+Date: Wed, 16 Apr 2014 11:35:40 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-media@vger.kernel.org, linux-leds@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        s.nawrocki@samsung.com, a.hajda@samsung.com, kyungmin.park@samsung.com,
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        SangYoung Son <hello.son@smasung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH/RFC v3 3/5] leds: Add support for max77693 mfd flash cell
+Message-ID: <20140416103540.GM4754@lee--X1>
+References: <1397228216-6657-1-git-send-email-j.anaszewski@samsung.com>
+ <1397228216-6657-4-git-send-email-j.anaszewski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1397228216-6657-4-git-send-email-j.anaszewski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.8 -stable review patch.  If anyone has any objections, please let me know.
+> This patch adds led-flash support to Maxim max77693 chipset.
+> A device can be exposed to user space through LED subsystem
+> sysfs interface or through V4L2 subdevice when the support
+> for V4L2 Flash sub-devices is enabled. Device supports up to
+> two leds which can work in flash and torch mode. Leds can
+> be triggered externally or by software.
+> 
+> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Bryan Wu <cooloney@gmail.com>
+> Cc: Richard Purdie <rpurdie@rpsys.net>
+> Cc: SangYoung Son <hello.son@smasung.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/leds/Kconfig         |   10 +
+>  drivers/leds/Makefile        |    1 +
+>  drivers/leds/leds-max77693.c |  794 ++++++++++++++++++++++++++++++++++++++++++
+>  drivers/mfd/max77693.c       |    2 +-
+>  include/linux/mfd/max77693.h |   38 ++
+>  5 files changed, 844 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/leds/leds-max77693.c
 
-------------------
+[...]
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+> diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+> index c5535f0..f061aa8 100644
+> --- a/drivers/mfd/max77693.c
+> +++ b/drivers/mfd/max77693.c
+> @@ -44,7 +44,7 @@
+>  static const struct mfd_cell max77693_devs[] = {
+>  	{ .name = "max77693-pmic", },
+>  	{ .name = "max77693-charger", },
+> -	{ .name = "max77693-flash", },
+> +	{ .name = "max77693-flash", .of_compatible = "maxim,max77693-flash", },
 
-commit 1535bd8adbdedd60a0ee62e28fd5225d66434371 upstream.
+I would prefer for this to be opened up i.e. not on one line.
 
-When checking a system call return code for an error,
-linux_sparc_syscall was sign-extending the lower 32-bit value and
-comparing it to -ERESTART_RESTARTBLOCK. lseek can return valid return
-codes whose lower 32-bits alone would indicate a failure (such as 4G-1).
-Use the whole 64-bit value to check for errors. Only the 32-bit path
-should sign extend the lower 32-bit value.
+>  	{ .name = "max77693-muic", },
+>  	{ .name = "max77693-haptic", },
+>  };
+> diff --git a/include/linux/mfd/max77693.h b/include/linux/mfd/max77693.h
+> index 3f3dc45..f2285b7 100644
+> --- a/include/linux/mfd/max77693.h
+> +++ b/include/linux/mfd/max77693.h
+> @@ -63,6 +63,43 @@ struct max77693_muic_platform_data {
+>  	int path_uart;
+>  };
+>  
+> +/* MAX77693 led flash */
+> +
+> +/* triggers */
+> +enum max77693_led_trigger {
+> +	MAX77693_LED_TRIG_OFF,
+> +	MAX77693_LED_TRIG_FLASH,
+> +	MAX77693_LED_TRIG_TORCH,
+> +	MAX77693_LED_TRIG_EXT,
+> +	MAX77693_LED_TRIG_SOFT,
+> +};
+> +
+> +
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Acked-by: Bob Picco <bob.picco@oracle.com>
-Acked-by: Allen Pais <allen.pais@oracle.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/sparc/kernel/syscalls.S | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Extra '\n' here.
 
-diff --git a/arch/sparc/kernel/syscalls.S b/arch/sparc/kernel/syscalls.S
-index 73ec8a7..c79c687 100644
---- a/arch/sparc/kernel/syscalls.S
-+++ b/arch/sparc/kernel/syscalls.S
-@@ -189,7 +189,8 @@ linux_sparc_syscall32:
- 	 mov	%i0, %l5				! IEU1
- 5:	call	%l7					! CTI	Group brk forced
- 	 srl	%i5, 0, %o5				! IEU1
--	ba,a,pt	%xcc, 3f
-+	ba,pt	%xcc, 3f
-+	 sra	%o0, 0, %o0
- 
- 	/* Linux native system calls enter here... */
- 	.align	32
-@@ -217,7 +218,6 @@ linux_sparc_syscall:
- 3:	stx	%o0, [%sp + PTREGS_OFF + PT_V9_I0]
- ret_sys_call:
- 	ldx	[%sp + PTREGS_OFF + PT_V9_TSTATE], %g3
--	sra	%o0, 0, %o0
- 	mov	%ulo(TSTATE_XCARRY | TSTATE_ICARRY), %g2
- 	sllx	%g2, 32, %g2
- 
+> +/* trigger types */
+> +enum max77693_led_trigger_type {
+> +	MAX77693_LED_TRIG_TYPE_EDGE,
+> +	MAX77693_LED_TRIG_TYPE_LEVEL,
+> +};
+> +
+> +/* boost modes */
+> +enum max77693_led_boost_mode {
+> +	MAX77693_LED_BOOST_NONE,
+> +	MAX77693_LED_BOOST_ADAPTIVE,
+> +	MAX77693_LED_BOOST_FIXED,
+> +};
+> +
+> +struct max77693_led_platform_data {
+> +	u32 iout[4];
+> +	u32 trigger[4];
+> +	u32 trigger_type[2];
+> +	u32 timeout[2];
+> +	u32 boost_mode[2];
+> +	u32 boost_vout;
+> +	u32 low_vsys;
+> +};
+
+Bryan will have to review this.
+
+> +/* MAX77693 */
+> +
+>  struct max77693_platform_data {
+>  	/* regulator data */
+>  	struct max77693_regulator_data *regulators;
+> @@ -70,5 +107,6 @@ struct max77693_platform_data {
+>  
+>  	/* muic data */
+>  	struct max77693_muic_platform_data *muic_data;
+> +	struct max77693_led_platform_data *led_data;
+>  };
+>  #endif	/* __LINUX_MFD_MAX77693_H */
+
 -- 
-1.9.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
