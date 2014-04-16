@@ -1,211 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992AbaDPEvF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 00:51:05 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:44275 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033AbaDPEvA (ORCPT
+	id S1753711AbaDPEz3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 00:55:29 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:42790 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055AbaDPEzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 00:51:00 -0400
-Message-ID: <534E0C2D.1010202@hitachi.com>
-Date: Wed, 16 Apr 2014 13:50:53 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Satoru MORIYA <satoru.moriya.br@hitachi.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Eric Biederman <ebiederm@xmission.com>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Subject: Re: Re: [PATCH] kernel/panic: Add "late_kdump" option for kdump
- in unstable condition
-References: <20140414045158.10846.35462.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140414193153.GC4281@redhat.com> <534C8D64.2070108@hitachi.com> <20140415140853.GA17018@redhat.com> <534DDCC7.2070003@hitachi.com> <20140416023302.GC5035@redhat.com>
-In-Reply-To: <20140416023302.GC5035@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Apr 2014 00:55:25 -0400
+X-AuditID: cbfee690-b7f266d00000287c-f5-534e0d320b67
+Message-id: <534E0D35.4060506@samsung.com>
+Date: Wed, 16 Apr 2014 13:55:17 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Jonathan Cameron <jic23@kernel.org>,
+        naveen krishna <ch.naveen@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, rdunlap@infradead.org,
+        Tomasz Figa <t.figa@samsung.com>, linux-iio@vger.kernel.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCHv2 1/2] iio: adc: exynos_adc: Control special clock of ADC
+ to support Exynos3250 ADC
+References: <1397466426-13870-1-git-send-email-cw00.choi@samsung.com>
+ <1397466426-13870-2-git-send-email-cw00.choi@samsung.com>
+ <CAK9yfHzdPu67JKrww-VFjFvKni7S_y_hvLKKUdeQe-_pxjoBAQ@mail.gmail.com>
+ <534E0AA0.6010207@samsung.com>
+In-reply-to: <534E0AA0.6010207@samsung.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphleLIzCtJLcpLzFFi42JZI2JSqGvE6xdssHGvqMXd54cZLeYfOcdq
+	0f9mIavFuVcrGS0eNK1isuhdcJXNYtPja6wWC9uWsFjMO/KOxeLyrjlsFjPO72OyWHr9IpPF
+	hOlrWSze3pnOYtG69wi7xck/vYwW62e8ZnEQ9Fgzbw2jx+W+XiaPlcu/sHlsXqHlsWlVJ5vH
+	nWt7gLwl9R59W1YxenzeJBfAGcVlk5Kak1mWWqRvl8CV8ej/J6aCXSoVB+fOZm1g3CLdxcjJ
+	ISFgItHa9oIJwhaTuHBvPVsXIxeHkMBSRomrRw4xwxQt+febESIxnVFi0+tHrBDOa0aJtd9X
+	sINU8QpoSbycuhOog4ODRUBV4vfDVJAwG1B4/4sbbCC2qECYxMrpV1ggygUlfky+B2aLgLR2
+	L2cCmcks0MUqcbqhEywhLJAp8f37VqjNLxkluh91gyU4BbQlHu49DmYzC6hLTJq3iBnClpfY
+	vOYtM0iDhMAWDom+ua/AnmMREJD4NvkQC8h1EgKyEpsOQL0mKXFwxQ2WCYxis5AcNQvJ2FlI
+	xi5gZF7FKJpakFxQnJReZKJXnJhbXJqXrpecn7uJEZgCTv97NmEH470D1ocYk4FWTmSWEk3O
+	B6aQvJJ4Q2MzIwtTE1NjI3NLM9KElcR51R4lBQkJpCeWpGanphakFsUXleakFh9iZOLglGpg
+	FO2qKahd/4qhLYObZx1H4axCcUbGR26K87J4WpzEe3/51/5gUPz88cQlm965ZyUVA8sfzGlu
+	2OyU/UTi4ne7hGWHWfc8UZbeueGZy2aOlb/P3uVYbGy24PLhjf07Q3y3ebtsSpvGurfwjfNi
+	lbOTmSKmMT+b8MHvzaED7z14112SP3R3EXtWrRJLcUaioRZzUXEiAGHGvVMXAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIKsWRmVeSWpSXmKPExsVy+t9jQV0jXr9gg3s3uSzuPj/MaDH/yDlW
+	i/43C1ktzr1ayWjxoGkVk0XvgqtsFpseX2O1WNi2hMVi3pF3LBaXd81hs5hxfh+TxdLrF5ks
+	Jkxfy2Lx9s50FovWvUfYLU7+6WW0WD/jNYuDoMeaeWsYPS739TJ5rFz+hc1j8wotj02rOtk8
+	7lzbA+Qtqffo27KK0ePzJrkAzqgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtz
+	JYW8xNxUWyUXnwBdt8wcoF+UFMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYQ1
+	jBmP/n9iKtilUnFw7mzWBsYt0l2MnBwSAiYSS/79ZoSwxSQu3FvP1sXIxSEkMJ1RYtPrR6wQ
+	zmtGibXfV7CDVPEKaEm8nLqTuYuRg4NFQFXi98NUkDAbUHj/ixtsILaoQJjEyulXWCDKBSV+
+	TL4HZouAtHYvZwKZySzQxSpxuqETLCEskCnx/ftWRohlLxkluh91gyU4BbQlHu49DmYzC6hL
+	TJq3iBnClpfYvOYt8wRGgVlIlsxCUjYLSdkCRuZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmb
+	GMEJ5pnUDsaVDRaHGAU4GJV4eGfk+AYLsSaWFVfmHmKU4GBWEuH98gUoxJuSWFmVWpQfX1Sa
+	k1p8iDEZGAQTmaVEk/OByS+vJN7Q2MTMyNLI3NDCyNicNGElcd4DrdaBQgLpiSWp2ampBalF
+	MFuYODilGhin9d60OjS7YeLft8KROd6F7+dfMp0zeZb5Rwthu32tl//d9BJ8vbpDbOFyzuN5
+	1sd+T7M1m3N5q+/F1K06UrMP7bk+MUt5a/ASSTP2w/VS83JWKGs8uL5X4JSyw5kdTq39arGP
+	ekRd8iVknzmsauFkv1nB897S369a7vSTI1yqIvXfN3FsNDJQYinOSDTUYi4qTgQAuwx7rXQD	AAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/16 11:33), Vivek Goyal wrote:
-> On Wed, Apr 16, 2014 at 10:28:39AM +0900, Masami Hiramatsu wrote:
->> (2014/04/15 23:08), Vivek Goyal wrote:
->>> On Tue, Apr 15, 2014 at 10:37:40AM +0900, Masami Hiramatsu wrote:
+Hi Sachin,
+
+On 04/16/2014 01:44 PM, Chanwoo Choi wrote:
+> Hi Sachin,
+> 
+> On 04/16/2014 12:48 PM, Sachin Kamat wrote:
+>> Hi Chanwoo,
+>>
+>> On 14 April 2014 14:37, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+>>> This patch control special clock for ADC in Exynos series's FSYS block.
+>>> If special clock of ADC is registerd on clock list of common clk framework,
+>>> Exynos ADC drvier have to control this clock.
 >>>
->>> [..]
->>>>> Masami,
->>>>>
->>>>> So what's the alternative to kdump which is more reliable? IOW, what
->>>>> action you are planning to take through kmsg_dump() or through
->>>>> panic_notifiers?
->>>>>
->>>>> I have seen that many a times developers have tried to make the case 
->>>>> to save kernel buffers to NVRAM. Does it work well? Has it been proven
->>>>> to be more reliable than kdump?
->>>>
->>>> Yeah, one possible option is the NVRAM, but even with the serial,
->>>> there are other reasons to kick the notifiers, e.g.
->>>>  - dump to ipmi which has a very small amount of non-volatile memory
->>>>  - ftrace_dump() to dump "flight recorder" log to serial
+>>> Exynos3250/Exynos4/Exynos5 has 'adc' clock as following:
+>>> - 'adc' clock: bus clock for ADC
 >>>
->>> So why do we need to run them in crashed kernel? Only argument I seem
->>> to receive that there is no guarantee that kdump kernel will successfully
->>> boot hence we want to run these notifiers.
+>>> Exynos3250 has additional 'sclk_tsadc' clock as following:
+>>> - 'sclk_tsadc' clock: special clock for ADC which provide clock to internal ADC
 >>>
->>> But what's the guarantee that these will run successfully without creating
->>> futher issues? Is there data to prove it.
+>>> Exynos 4210/4212/4412 and Exynos5250/5420 has not included 'sclk_tsadc' clock
+>>> in FSYS_BLK. But, Exynos3250 based on Cortex-A7 has only included 'sclk_tsadc'
+>>> clock in FSYS_BLK.
+>>>
+>>> Cc: Jonathan Cameron <jic23@kernel.org>
+>>> Cc: Kukjin Kim <kgene.kim@samsung.com>
+>>> Cc: Naveen Krishna Chatradhi
+>>> Cc: linux-iio@vger.kernel.org
+>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>> ---
+>>>  drivers/iio/adc/exynos_adc.c | 54 +++++++++++++++++++++++++++++++++-----------
+>>>  1 file changed, 41 insertions(+), 13 deletions(-)
+>>>
+>>> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+>>> index d25b262..3c99243 100644
+>>> --- a/drivers/iio/adc/exynos_adc.c
+>>> +++ b/drivers/iio/adc/exynos_adc.c
+>>> @@ -40,8 +40,9 @@
+>>>  #include <linux/iio/driver.h>
+>>>
+>>>  enum adc_version {
+>>> -       ADC_V1,
+>>> -       ADC_V2
+>>> +       ADC_V1 = 0x1,
+>>> +       ADC_V2 = 0x2,
+>>> +       ADC_V3 = (ADC_V1 | ADC_V2),
 >>
->> I think there is no guarantee, but that's same as kdump is.
->> However, if we can try both, there is higher possibility (more cases)
->> to save some information.
+>> Can't this be simply 0x3? Or is this not really a h/w version?
 > 
-> This is only valid if the entity which is running before kdump has 
-> higher probability of saving some useful information. So do kmsg_dump()
-> and backend drivers provide more reliable way to save kernel logs as
-> compared to kdump? 
-
-IMHO, reliability discussion is meaningless at this point, because
-it depends on the hardware/software configuration. For example,
-someone has setup a server with a serial logger, serial output
-is much more reliable. But it does NOT mean kdump is useless.
-For precise information, we actually need kdump but it will be less
-reliable than serial logger. On the other hand, if we have no
-such external equipments, we'd better try kdump first.
-(Actually, the problem of kdump is here, if we try kdump, it never
- return when it fails in the second kernel boot. Thus we can't fail
- back to the other handlers.)
-
-> [..]
->>> I think big debate here is that we should be able to do most of it
->>> in second kernel. 
+> Even thought ADC_V3 isn't h/w revision, ADC_V3 include all featues of ADC_V2
+> and only one difference of clock(sclk_tsadc) from ADC_V2.
+> I want to describethat ADC_V3 include ADC_V2 feature So, I add as following:
+> 	>> +       ADC_V3 = (ADC_V1 | ADC_V2),
+> 
 >>
->> No, that's another topic what we talk about.
+>>>  };
+>>>
+>>>  /* EXYNOS4412/5250 ADC_V1 registers definitions */
+>>> @@ -88,6 +89,7 @@ struct exynos_adc {
+>>>         void __iomem            *regs;
+>>>         void __iomem            *enable_reg;
+>>>         struct clk              *clk;
+>>> +       struct clk              *sclk;
+>>>         unsigned int            irq;
+>>>         struct regulator        *vdd;
+>>>
+>>> @@ -100,6 +102,7 @@ struct exynos_adc {
+>>>  static const struct of_device_id exynos_adc_match[] = {
+>>>         { .compatible = "samsung,exynos-adc-v1", .data = (void *)ADC_V1 },
+>>>         { .compatible = "samsung,exynos-adc-v2", .data = (void *)ADC_V2 },
+>>> +       { .compatible = "samsung,exynos-adc-v3", .data = (void *)ADC_V3 },
+>>>         {},
+>>>  };
+>>>  MODULE_DEVICE_TABLE(of, exynos_adc_match);
+>>> @@ -128,7 +131,7 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
+>>>         mutex_lock(&indio_dev->mlock);
+>>>
+>>>         /* Select the channel to be used and Trigger conversion */
+>>> -       if (info->version == ADC_V2) {
+>>> +       if (info->version & ADC_V2) {
 >>
->> What I (and others who had argued) consider that in some rare cases,
->> kdump might fail to boot up the second kernel, and only for who worries
->> in those cases, we can give a chance.
-> 
-> And *rare failure cases* don't exist in other mechanisms which are
-> planning to take control before kdump?
+>> So, now this would be applicable for ADC_V3 too, right?
 
-No, definitely not. Thus users must bet the safer way. :)
-As I said, this option doesn't guarantee improving the safeness
-of getting crash information, but just gives another option which
-users want.
+ADC_V3 isn't h/w version. So, I think this code is proper instead of using ADC_V3 direclty.
+I want to use ADC_V3 version on checking clock(sclk_tsadc).
 
-> You are assuming that any entity
-> which runs before kdump is more reliable than kdump. And I don't think
-> anybody has any data to prove that. People are just looking for a hook
-> to execute things before kdump hoping that it will provide them better
-> results.
-
-Yeah, they hope, hope to have a chance to bet the better handler which
-they believe. As you said, there are any data to prove that kdump is
-safer than others too. Why don't we give a hand?
-
->>> If you provide a knob to run these in first kernel, this functionality
->>> will never migrate to second kernel.
 >>
->> No, there are many use-cases which doesn't (and can't) use kdump
->> because of the limitation of resources etc. For those cases, that
->> functionality never migrate (means move) to the second one.
-> 
-> What are those use cases? What resources you are referring too. Are you
-> planning to do a whole lot after kernel has crashed. That will not make
-> much sense.
-
-There are not only the enterprise server users, but also embedded
-device users. Sometimes such small devices are distributed on the
-remote site or somewhere outside. And they have limited resources.
-Kdump is too big to them, but other panic handlers will be useful.
-
->>> And trying to make them safe in
->>> crashed kernel is a losing battle, I think.
 >>
->> Why? the best goal what users expect is both panic-notifiers and kdump
->> runs safely. If one of them fails, that's a bug (except for some rare
->> hardware-related corruption.)
-> 
-> So you think that running panic-notifiers can be made safe? How would
-> we do that?
-
-Step 1. Add the late_kdump option.
-Step 2. "Brave" users start using the option with panic-notifiers.
-Step 3. They hits problems on that and reports bugs.
-Step 4. We fix them.
-
-> What's the special action panicn notifiers are taking which can't be
-> done in second kernel. 
-
-No, ant that is out of focus. What I meant is NOT what action
-we can take IN the second kernel, but what action we can take
-BEFORE the second kernel.
-
->>> So providing this knob does not help with making these notifiers better.
->>> These notifiers can become better only if migrate the functionality
->>> to second kernel (preferrably in user space). There we can extract all
->>> the data from /proc/vmcore and send it whereever you want.
+>>>                 con2 = readl(ADC_V2_CON2(info->regs));
+>>>                 con2 &= ~ADC_V2_CON2_ACH_MASK;
+>>>                 con2 |= ADC_V2_CON2_ACH_SEL(chan->address);
+>>> @@ -165,7 +168,7 @@ static irqreturn_t exynos_adc_isr(int irq, void *dev_id)
+>>>         info->value = readl(ADC_V1_DATX(info->regs)) &
+>>>                                                 ADC_DATX_MASK;
+>>>         /* clear irq */
+>>> -       if (info->version == ADC_V2)
+>>> +       if (info->version & ADC_V2)
+>>>                 writel(1, ADC_V2_INT_ST(info->regs));
+>>>         else
+>>>                 writel(1, ADC_V1_INTCLR(info->regs));
+>>> @@ -226,11 +229,25 @@ static int exynos_adc_remove_devices(struct device *dev, void *c)
+>>>         return 0;
+>>>  }
+>>>
+>>> +static void exynos_adc_enable_clock(struct exynos_adc *info, bool enable)
+>>> +{
+>>> +       if (enable) {
+>>> +               clk_prepare_enable(info->clk);
 >>
->> I see, that is also an important work, but that is done in userspace.
->> In kernel space, we can do something to give them a chance.
+>> This could fail. Is it OK without any checks?
 > 
-> If the goal is to send kernel buffers at some location, then it does
-> not matter whether a kernel driver does it or a user space application
-> extracts buffers and then takes help of driver to send it.
+> OK, I'll check return value.
 
-Yeah, I see. What the first kernel can do, is also able to do in the
-second kernel too. I strongly agreed. However, what I'd like to do
-is to give a chance to execute panic handler before kdump.
+Do you want to check return value always?
+I think again, Some device drivers in mainline would not check
+return value of clock function. If maintainer confirm this modification,
+I'll fix it as your comment.
 
->>> But for that you will have to trust kdump and keep on improving it
->>> constantly so that it works reasonably well.
->>
->> I trust you and kdump :) but I also know that in some rare cases that
->> kdump can't finish booting up, at least currently. So, if you sure
->> kdump is improved to boot up the second in any situation, I'm happy
->> to withdraw from this patch.
-> 
-> Kdump is best effort solution. I don't think anybody can guarantee that
-> it will work in all situations.
-> 
-> And same will be true for different notifiers you are trying to run
-> before kdump. By running those notifiers you can't be sure that they
-> will always work and there are no corner cases.
-
-Sure, but would you sure there is NO case that the panic-notifier can
-run but kdump cannot ?
-
-> So to me, late_kdump will make sense only if you have an alternate
-> mechanism which can more reliably save kernel buffers as compared to
-> kdump. My feeling is that nobody knows how reliable these kmsg_dump(),
-> NVRAM saving hooks are. Proponets of these hooks seem to be believe
-> that it will provide them a safety net in case kdump fails.
-
-My point is not rely on the mechanism, but theoretically there are
-some case that panic-notifier doesn't make worse, but only kdump
-fails. E.g. memory corruption on the second kernel image.
-This is the event that occur probabilistically, not the mechanism.
-
-> Given the fact that people have been asking for this for years, I 
-> think creating a command line parameter to switch to that behavior
-> is probably not a bad idea. Distributions can probably continue to
-> run without specifying "late_kdump" and those specific users who wish
-> to run kmsg_dump() hooks before kdump, can configure their system with
-> "late_kdump" parameter.
-
-Thank you :)
-
-> 
-> Thanks
-> Vivek
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Best Regards,
+Chanwoo Choi
