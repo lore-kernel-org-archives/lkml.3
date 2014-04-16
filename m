@@ -1,90 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704AbaDPESV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 00:18:21 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:58338 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498AbaDPESP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 00:18:15 -0400
-Message-ID: <534E0434.2090403@huawei.com>
-Date: Wed, 16 Apr 2014 12:16:52 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	id S1753036AbaDPESi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 00:18:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38800 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751181AbaDPESd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 00:18:33 -0400
+From: NeilBrown <neilb@suse.de>
+To: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 16 Apr 2014 14:03:36 +1000
+Subject: [PATCH 06/19] nfsd: set PF_FSTRANS for nfsd threads.
+Cc: xfs@oss.sgi.com
+cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Message-ID: <20140416040336.10604.60493.stgit@notabene.brown>
+In-Reply-To: <20140416033623.10604.69237.stgit@notabene.brown>
+References: <20140416033623.10604.69237.stgit@notabene.brown>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Kay Sievers <kay@vrfy.org>
-CC: Tejun Heo <tj@kernel.org>, <containers@lists.linux-foundation.org>,
-        <cgroups@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        <john@johnmccutchan.com>, <rlove@rlove.org>, <eparis@parisplace.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        <serge.hallyn@ubuntu.com>, Lennart Poettering <lennart@poettering.net>
-Subject: Re: [PATCH 3/3] cgroup: implement cgroup.subtree_populated for the
- default hierarchy
-References: <1397511846-2904-1-git-send-email-tj@kernel.org> <1397511846-2904-4-git-send-email-tj@kernel.org> <534DEF62.4090900@huawei.com> <CAPXgP12kvPdX0QExwN2JphDfEW=d+7K2c_Y8DbomGd=YVy=VGQ@mail.gmail.com>
-In-Reply-To: <CAPXgP12kvPdX0QExwN2JphDfEW=d+7K2c_Y8DbomGd=YVy=VGQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/4/16 11:33, Kay Sievers wrote:
-> On Tue, Apr 15, 2014 at 7:48 PM, Li Zefan <lizefan@huawei.com> wrote:
->> On 2014/4/15 5:44, Tejun Heo wrote:
->>> cgroup users often need a way to determine when a cgroup's
->>> subhierarchy becomes empty so that it can be cleaned up.  cgroup
->>> currently provides release_agent for it; unfortunately, this mechanism
->>> is riddled with issues.
->>>
->>> * It delivers events by forking and execing a userland binary
->>>   specified as the release_agent.  This is a long deprecated method of
->>>   notification delivery.  It's extremely heavy, slow and cumbersome to
->>>   integrate with larger infrastructure.
->>>
->>> * There is single monitoring point at the root.  There's no way to
->>>   delegate management of subtree.
->>>
->>> * The event isn't recursive.  It triggers when a cgroup doesn't have
->>>   any tasks or child cgroups.  Events for internal nodes trigger only
->>>   after all children are removed.  This again makes it impossible to
->>>   delegate management of subtree.
->>>
->>> * Events are filtered from the kernel side.  "notify_on_release" file
->>>   is used to subscribe to or suppress release event.  This is
->>>   unnecessarily complicated and probably done this way because event
->>>   delivery itself was expensive.
->>>
->>> This patch implements interface file "cgroup.subtree_populated" which
->>> can be used to monitor whether the cgroup's subhierarchy has tasks in
->>> it or not.  Its value is 0 if there is no task in the cgroup and its
->>> descendants; otherwise, 1, and kernfs_notify() notificaiton is
->>> triggers when the value changes, which can be monitored through poll
->>> and [di]notify.
->>>
->>
->> For the old notification mechanism, the path of the cgroup that becomes
->> empty will be passed to the user specified release agent. Like this:
->>
->> # cat /sbin/cpuset_release_agent
->> #!/bin/sh
->> rmdir /dev/cpuset/$1
->>
->> How do we achieve this using inotify?
->>
->> - monitor all the cgroups, or
->> - monitor all the leaf cgroups, and travel cgrp->parent to delete all
->>   empty cgroups.
->> - monitor root cgroup only, and travel the whole hierarchy to find
->>   empy cgroups when it gets an fs event.
->>
->> Seems none of them is scalible.
-> 
-> The manager would add all cgroups as watches to one inotify file
-> descriptor, it should not be problem to do that.
-> 
+If a localhost mount is present, then it is easy to deadlock NFS by
+nfsd entering direct reclaim and calling nfs_release_page() which
+requires nfsd to perform an fsync() (which it cannot do because it is
+reclaiming memory).
 
-Never use inotify. Thanks for explanation, so I think inotify can scale
-to thounsands of cgroups after I googled a bit.
+By setting PF_FSTRANS we stop the memory allocator from ever
+attempting any FS operation would could deadlock.
+
+We need this flag set for any thread which is handling a request from
+the local host, but we also need to always have it for at least 1 or 2
+threads so that we don't end up with all threads blocked in allocation.
+
+When we set PF_FSTRANS we also tell lockdep that we are handling
+reclaim so that it can detect deadlocks for us.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+---
+ fs/nfsd/nfssvc.c           |   18 ++++++++++++++++++
+ include/linux/sunrpc/svc.h |    1 +
+ net/sunrpc/svc.c           |    6 ++++++
+ 3 files changed, 25 insertions(+)
+
+diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+index 9a4a5f9e7468..6af8bc2daf7d 100644
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -565,6 +565,8 @@ nfsd(void *vrqstp)
+ 	struct svc_xprt *perm_sock = list_entry(rqstp->rq_server->sv_permsocks.next, typeof(struct svc_xprt), xpt_list);
+ 	struct net *net = perm_sock->xpt_net;
+ 	int err;
++	unsigned int pflags = 0;
++	gfp_t reclaim_state = 0;
+ 
+ 	/* Lock module and set up kernel thread */
+ 	mutex_lock(&nfsd_mutex);
+@@ -611,14 +613,30 @@ nfsd(void *vrqstp)
+ 			;
+ 		if (err == -EINTR)
+ 			break;
++		if (rqstp->rq_local && !current_test_flags(PF_FSTRANS)) {
++			current_set_flags_nested(&pflags, PF_FSTRANS);
++			atomic_inc(&rqstp->rq_pool->sp_nr_fstrans);
++			reclaim_state = lockdep_set_current_reclaim_state(GFP_KERNEL);
++		}
+ 		validate_process_creds();
+ 		svc_process(rqstp);
+ 		validate_process_creds();
++		if (current_test_flags(PF_FSTRANS) &&
++		    atomic_dec_if_positive(&rqstp->rq_pool->sp_nr_fstrans) >= 0) {
++			current_restore_flags_nested(&pflags, PF_FSTRANS);
++			lockdep_restore_current_reclaim_state(reclaim_state);
++		}
+ 	}
+ 
+ 	/* Clear signals before calling svc_exit_thread() */
+ 	flush_signals(current);
+ 
++	if (current_test_flags(PF_FSTRANS)) {
++		current_restore_flags_nested(&pflags, PF_FSTRANS);
++		lockdep_restore_current_reclaim_state(reclaim_state);
++		atomic_dec(&rqstp->rq_pool->sp_nr_fstrans);
++	}
++
+ 	mutex_lock(&nfsd_mutex);
+ 	nfsdstats.th_cnt --;
+ 
+diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
+index a0dbbd1e00e9..4b274aba51dd 100644
+--- a/include/linux/sunrpc/svc.h
++++ b/include/linux/sunrpc/svc.h
+@@ -48,6 +48,7 @@ struct svc_pool {
+ 	struct list_head	sp_threads;	/* idle server threads */
+ 	struct list_head	sp_sockets;	/* pending sockets */
+ 	unsigned int		sp_nrthreads;	/* # of threads in pool */
++	atomic_t		sp_nr_fstrans;	/* # threads with PF_FSTRANS */
+ 	struct list_head	sp_all_threads;	/* all server threads */
+ 	struct svc_pool_stats	sp_stats;	/* statistics on pool operation */
+ 	int			sp_task_pending;/* has pending task */
+diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
+index 5de6801cd924..8b13f35b6cbb 100644
+--- a/net/sunrpc/svc.c
++++ b/net/sunrpc/svc.c
+@@ -477,6 +477,12 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
+ 		INIT_LIST_HEAD(&pool->sp_threads);
+ 		INIT_LIST_HEAD(&pool->sp_sockets);
+ 		INIT_LIST_HEAD(&pool->sp_all_threads);
++		/* The number of threads with PF_FSTRANS set
++		 * should never be reduced below 2, except when
++		 * threads exit.  So we use atomic_dec_if_positive()
++		 * on this value.
++		 */
++		atomic_set(&pool->sp_nr_fstrans, -2);
+ 		spin_lock_init(&pool->sp_lock);
+ 	}
+ 
+
 
