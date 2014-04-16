@@ -1,88 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517AbaDPFPo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 01:15:44 -0400
-Received: from mx13.pku.edu.cn ([162.105.129.176]:46461 "EHLO mail.pku.edu.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753091AbaDPFPl convert rfc822-to-8bit (ORCPT
+	id S1754021AbaDPFTT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 01:19:19 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56448 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417AbaDPFTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 01:15:41 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -307.236
-Date: Wed, 16 Apr 2014 13:15:29 +0800 (CST)
-From: =?utf-8?B?566h6Zuq5rab?= <gxt@pku.edu.cn>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, akpm@linux-foundation.org,
-        liuj97@gmail.com, rientjes@google.com, dhowells@redhat.com,
-        mhocko@suse.cz, mgorman@suse.de, linux-kernel@vger.kernel.org
-Message-ID: <1834032058.38902.1397625329658.JavaMail.root@bj-mail03.pku.edu.cn>
-In-Reply-To: <534C899A.2020008@gmail.com>
-Subject: =?utf-8?Q?=E5=9B=9E=E5=A4=8D=EF=BC=9A_[PATCH_v3]_arch:?=
- =?utf-8?Q?unicore32:mm:_add_dev?=
- =?utf-8?Q?mem=5Fis=5Fallowed()_to_support_STRICT=5FDEVMEM?=
+	Wed, 16 Apr 2014 01:19:18 -0400
+Date: Wed, 16 Apr 2014 07:19:09 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: cl@linux.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
+        tj@kernel.org, grygorii.strashko@ti.com
+Subject: Re: How do I increment a per-CPU variable without warning?
+Message-ID: <20140416051909.GJ26782@laptop.programming.kicks-ass.net>
+References: <20140415221755.GA27188@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [162.105.129.97]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140415221755.GA27188@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
+On Tue, Apr 15, 2014 at 03:17:55PM -0700, Paul E. McKenney wrote:
+> Hello, Christoph,
+> 
+> I have a patch that currently uses __this_cpu_inc_return() to increment a
+> per-CPU variable, but without preemption disabled.  Of course, given that
+> preemption is enabled, it might well end up picking up one CPU's counter,
+> adding one to it, then storing the result into some other CPU's counter.
+> But this is OK, the test can be probabilistic.  And when I run this
+> against v3.14 and earlier, it works fine.
+> 
+> But now there is 188a81409ff7 (percpu: add preemption checks to
+> __this_cpu ops), which gives me lots of splats.
+> 
+> My current admittedly crude workaround is as follows:
+> 
+> 	static inline bool rcu_should_resched(void)
+> 	{
+> 		int t;
+> 
+> 	#ifdef CONFIG_DEBUG_PREEMPT
+> 		preempt_disable();
+> 	#endif /* #ifdef CONFIG_DEBUG_PREEMPT */
+> 		t = __this_cpu_read(rcu_cond_resched_count) + 1;
+> 		if (t < RCU_COND_RESCHED_LIM) {
+> 			__this_cpu_write(rcu_cond_resched_count, t);
+> 	#ifdef CONFIG_DEBUG_PREEMPT
+> 			preempt_enable();
+> 	#endif /* #ifdef CONFIG_DEBUG_PREEMPT */
+> 			return false;
+> 		}
+> 	#ifdef CONFIG_DEBUG_PREEMPT
+> 		preempt_enable();
+> 	#endif /* #ifdef CONFIG_DEBUG_PREEMPT */
+> 		return true;
+> 	}
+> 
+> This is arguably better than the original __this_cpu_read() because it
+> avoids overflow, but I thought I should check to see if there was some
+> better way to do this.
 
------ Chen Gang <gang.chen.5i5j@gmail.com> 写道：
-> unicore32 supports STRICT_DEVMEM, so it needs devmem_is_allowed(), like
-> some of other architectures have done (e.g. arm, powerpc, x86 ...).
-> 
-> The related error with allmodconfig:
-> 
->     CC      drivers/char/mem.o
->   drivers/char/mem.c: In function ‘range_is_allowed’:
->   drivers/char/mem.c:69: error: implicit declaration of function ‘devmem_is_allowed’
->   make[2]: *** [drivers/char/mem.o] Error 1
->   make[1]: *** [drivers/char] Error 2
->   make: *** [drivers] Error 2
-> 
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
-> ---
->  arch/unicore32/include/asm/io.h |   23 +++++++++++++++++++++++
->  1 file changed, 23 insertions(+)
-> 
-> diff --git a/arch/unicore32/include/asm/io.h b/arch/unicore32/include/asm/io.h
-> index 39decb6..ae327e4 100644
-> --- a/arch/unicore32/include/asm/io.h
-> +++ b/arch/unicore32/include/asm/io.h
-> @@ -44,5 +44,28 @@ extern void __uc32_iounmap(volatile void __iomem *addr);
->  #define PIO_MASK		(unsigned int)(IO_SPACE_LIMIT)
->  #define PIO_RESERVED		(PIO_OFFSET + PIO_MASK + 1)
->  
-> +#ifdef CONFIG_STRICT_DEVMEM
-> +
-> +#include <linux/ioport.h>
-> +#include <linux/mm.h>
-> +
-> +/*
-> + * devmem_is_allowed() checks to see if /dev/mem access to a certain
-> + * address is valid. The argument is a physical page number.
-> + * We mimic x86 here by disallowing access to system RAM as well as
-> + * device-exclusive MMIO regions. This effectively disable read()/write()
-> + * on /dev/mem.
-> + */
-> +static inline int devmem_is_allowed(unsigned long pfn)
-> +{
-> +	if (iomem_is_exclusive(pfn << PAGE_SHIFT))
-> +		return 0;
-> +	if (!page_is_ram(pfn))
-> +		return 1;
-> +	return 0;
-> +}
-> +
-> +#endif /* CONFIG_STRICT_DEVMEM */
-> +
->  #endif	/* __KERNEL__ */
->  #endif	/* __UNICORE_IO_H__ */
-> -- 
-> 1.7.9.5
-> 
+you could use raw_cpu_{read,write}(). But note that without the
+unconditional preempt_disable() in there your code can read a different
+rcu_cond_resched_count than it writes.
 
+So I think you very much want that preempt_disable().
