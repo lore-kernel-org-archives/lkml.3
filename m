@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105AbaDPRTf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 13:19:35 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:52307 "EHLO
+	id S1755192AbaDPRTx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 13:19:53 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:43422 "EHLO
 	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755064AbaDPRT3 (ORCPT
+	with ESMTP id S1755116AbaDPRTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 13:19:29 -0400
+	Wed, 16 Apr 2014 13:19:44 -0400
 From: Sergei Ianovich <ynvich@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Sergei Ianovich <ynvich@gmail.com>, Rob Herring <robh+dt@kernel.org>,
@@ -17,9 +17,9 @@ Cc: Sergei Ianovich <ynvich@gmail.com>, Rob Herring <robh+dt@kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
         linux-doc@vger.kernel.org (open list:DOCUMENTATION)
-Subject: [PATCH v4 14/21] misc: support for LP-8x4x rotary switch
-Date: Wed, 16 Apr 2014 21:17:19 +0400
-Message-Id: <1397668667-27328-8-git-send-email-ynvich@gmail.com>
+Subject: [PATCH v4 17/21] misc: support for serial slots in LP-8x4x
+Date: Wed, 16 Apr 2014 21:17:22 +0400
+Message-Id: <1397668667-27328-11-git-send-email-ynvich@gmail.com>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1397668667-27328-1-git-send-email-ynvich@gmail.com>
 References: <1397668411-27162-7-git-send-email-ynvich@gmail.com>
@@ -28,167 +28,189 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Serial modules (I-870xxW series) implement DCON protocol which
+allows one-master-many-slaves configuration over RS-485. When
+these modules are installed into the device, they could be
+accessed using the 2nd PXA built-in UART port (/dev/ttyS1).
+However, it seems that addresses are not processed by the modules.
+So the parallel bus needs to select which slot is connected.
+
 Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
 ---
    v3..v4
    * move DTS binding to a different patch (8/21)
 
    v2..v3
-   * new patch
+   * no changes (except number 12/16 -> 17/21)
 
- .../devicetree/bindings/misc/lp8x4x-bus.txt        |  8 ++--
- Documentation/misc-devices/lp8x4x_bus.txt          |  3 ++
- drivers/misc/lp8x4x_bus.c                          | 43 ++++++++++++++++++----
- 3 files changed, 43 insertions(+), 11 deletions(-)
+   v0..v2
+   * use device tree
+   * use devm helpers where possible
+
+ .../devicetree/bindings/misc/lp8x4x-bus.txt        |  2 +
+ Documentation/misc-devices/lp8x4x_bus.txt          | 15 +++++-
+ drivers/misc/lp8x4x_bus.c                          | 63 ++++++++++++++++++++++
+ 3 files changed, 79 insertions(+), 1 deletion(-)
 
 diff --git a/Documentation/devicetree/bindings/misc/lp8x4x-bus.txt b/Documentation/devicetree/bindings/misc/lp8x4x-bus.txt
-index 1c87a29..8a55020 100644
+index b0fb145..24a8c62 100644
 --- a/Documentation/devicetree/bindings/misc/lp8x4x-bus.txt
 +++ b/Documentation/devicetree/bindings/misc/lp8x4x-bus.txt
-@@ -5,12 +5,14 @@ See Documentation/misc-devices/lp8x4x_bus.txt for details.
- Required properties:
- - compatible : should be "icpdas,backplane-lp8x4x"
+@@ -8,6 +8,7 @@ Required properties:
+ - reg: physical base addresses and region lengths of
+        * the rotary switch
+        * the 8bit DIP switch
++       * the serial slot select register
+        * the slot count register
  
--- reg: physical base address of the slot count register and the length
--       of the memory mapped region.
-+- reg: physical base addresses and region lengths of
-+       * the rotary switch
-+       * the slot count register
- 
- Example:
- 
- 	backplane {
+ - eeprom-gpios : should point to active-low write enable GPIO
+@@ -18,6 +19,7 @@ Example:
  		compatible = "icpdas,backplane-lp8x4x";
--		reg = <0x17009046 0x2>;
-+		reg = <0x0 0x2
-+		       0x9046 0x2>;
+ 		reg = <0x0 0x2
+ 		       0x9002 0x2
++		       0x9004 0x2
+ 		       0x9046 0x2>;
+ 		eeprom-gpios = <&gpio 4 0>;
  	};
 diff --git a/Documentation/misc-devices/lp8x4x_bus.txt b/Documentation/misc-devices/lp8x4x_bus.txt
-index f5392b3..bea435b 100644
+index 78ea0a89..7b86797 100644
 --- a/Documentation/misc-devices/lp8x4x_bus.txt
 +++ b/Documentation/misc-devices/lp8x4x_bus.txt
-@@ -26,5 +26,8 @@ SYSFS
+@@ -19,13 +19,26 @@ LP-8x4x is an ARM-based industrial computer with a custom parallel bus to
+ connect expansion modules with digital input/output, analog input/output,
+ serial, CAN and other types of ports.
+ 
+-The bus is implemented by a FPGA.
++The bus is implemented by a FPGA. There are two major groups of expansion
++modules: serial and parallel.
++
++Serial modules (I-870xxW series) implement DCON protocol which allows one-
++master-many-slaves configuration over RS-485. When these modules are installed
++into the device, they could be accessed using the 2nd PXA built-in UART port
++(/dev/ttyS1). However, it seems that addresses are not processed by
++the modules. So the parallel bus needs to select which slot is connected.
+ 
+ SYSFS
+ -----
  
  /sys/bus/icpdas/devices/backplane:
  
-+rotary
-+	RO - shows position of LP-8x4x rotary switch (0-9)
++active_slot
++	RW - connects the select slot for serial communications. If there
++	     is a parallel module in the selected slot, it simply ignores
++	     incoming packets. So it is safe to activate any available
++	     slot.
 +
- slot_count
- 	RO - shows total number of expansion slots on the device
+ dip
+ 	RO - shows status of LP-8x4x 8bit DIP switch
+ 
 diff --git a/drivers/misc/lp8x4x_bus.c b/drivers/misc/lp8x4x_bus.c
-index 7aa55cf..18ca8f8 100644
+index 567fe078..e805640 100644
 --- a/drivers/misc/lp8x4x_bus.c
 +++ b/drivers/misc/lp8x4x_bus.c
-@@ -25,6 +25,7 @@ MODULE_DESCRIPTION("ICP DAS LP-8x4x parallel bus driver");
- struct lp8x4x_master {
- 	unsigned int		slot_count;
- 	void			*count_addr;
-+	void			*rotary_addr;
+@@ -29,6 +29,8 @@ struct lp8x4x_master {
+ 	void			*rotary_addr;
+ 	void			*dip_addr;
+ 	struct gpio_desc        *eeprom_nWE;
++	unsigned int		active_slot;
++	void			*switch_addr;
  	struct device		dev;
  };
  
-@@ -56,8 +57,19 @@ static ssize_t slot_count_show(struct device *dev,
+@@ -47,6 +49,9 @@ static void lp8x4x_master_release(struct device *dev)
+ 	struct lp8x4x_master *m = container_of(dev, struct lp8x4x_master, dev);
+ 	WARN_ON(!dev);
  
- static DEVICE_ATTR_RO(slot_count);
++	/* Disable serial communications */
++	iowrite8(0xff, m->switch_addr);
++
+ 	kfree(m);
+ }
  
-+static ssize_t rotary_show(struct device *dev,
+@@ -114,11 +119,52 @@ static ssize_t dip_show(struct device *dev,
+ 
+ static DEVICE_ATTR_RO(dip);
+ 
++static ssize_t active_slot_show(struct device *dev,
 +		struct device_attribute *attr, char *buf)
 +{
 +	struct lp8x4x_master *m = container_of(dev, struct lp8x4x_master, dev);
 +
-+	return sprintf(buf, "%u\n", (ioread8(m->rotary_addr) ^ 0xf) & 0xf);
++	return sprintf(buf, "%u\n", m->active_slot);
 +}
 +
-+static DEVICE_ATTR_RO(rotary);
++static ssize_t active_slot_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	struct lp8x4x_master *m = container_of(dev, struct lp8x4x_master, dev);
++	unsigned int active_slot = 0;
++	int err;
++
++	if (!buf)
++		return count;
++	if (0 == count)
++		return count;
++
++	err = kstrtouint(buf, 10, &active_slot);
++	if (err != 0 || active_slot > m->slot_count) {
++		dev_err(dev, "slot number is out of range 1..%u\n",
++				m->slot_count);
++		return count;
++	}
++
++	if (!active_slot) {
++		m->active_slot = 0;
++		iowrite8(0xff, m->switch_addr);
++		return count;
++	}
++
++	m->active_slot = active_slot;
++	iowrite8((1 << (m->active_slot - 1)) ^ 0xff, m->switch_addr);
++	return count;
++}
++
++static DEVICE_ATTR_RW(active_slot);
 +
  static struct attribute *master_dev_attrs[] = {
  	&dev_attr_slot_count.attr,
-+	&dev_attr_rotary.attr,
+ 	&dev_attr_rotary.attr,
+ 	&dev_attr_eeprom_write_enable.attr,
+ 	&dev_attr_dip.attr,
++	&dev_attr_active_slot.attr,
  	NULL,
  };
  ATTRIBUTE_GROUPS(master_dev);
-@@ -76,6 +88,7 @@ static int __init lp8x4x_bus_probe(struct platform_device *pdev)
- {
- 	struct lp8x4x_master *m, **p;
- 	struct resource *res;
-+	int r = 0;
- 	int err = 0;
+@@ -181,6 +227,20 @@ static int __init lp8x4x_bus_probe(struct platform_device *pdev)
  
- 	m = kzalloc(sizeof(*m), GFP_KERNEL);
-@@ -89,18 +102,32 @@ static int __init lp8x4x_bus_probe(struct platform_device *pdev)
- 	}
- 	*p = m;
- 
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, r++);
-+	if (!res) {
-+		dev_err(&pdev->dev, "Failed to get rotary address\n");
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, r++);
+ 	if (!res) {
++		dev_err(&pdev->dev, "Failed to get slot switch address\n");
 +		err = -ENODEV;
 +		goto err_free;
 +	}
 +
-+	m->rotary_addr = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(m->rotary_addr)) {
-+		dev_err(&pdev->dev, "Failed to ioremap rotary address\n");
-+		err = PTR_ERR(m->rotary_addr);
++	m->switch_addr = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(m->switch_addr)) {
++		dev_err(&pdev->dev, "Failed to ioremap switch address\n");
++		err = PTR_ERR(m->switch_addr);
 +		goto err_free;
 +	}
 +
 +	res = platform_get_resource(pdev, IORESOURCE_MEM, r++);
- 	if (!res) {
++	if (!res) {
  		dev_err(&pdev->dev, "could not get slot count address\n");
  		err = -ENODEV;
--		goto err2;
-+		goto err_free;
- 	}
- 
- 	m->count_addr = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(m->count_addr)) {
- 		dev_err(&pdev->dev, "Failed to ioremap slot count address\n");
- 		err = PTR_ERR(m->count_addr);
--		goto err2;
-+		goto err_free;
- 	}
- 
- 	m->slot_count = ioread8(m->count_addr);
-@@ -115,7 +142,7 @@ static int __init lp8x4x_bus_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "unexpected slot number(%u)",
- 				m->slot_count);
- 		err = -ENODEV;
--		goto err2;
-+		goto err_free;
- 	};
+ 		goto err_free;
+@@ -223,6 +283,9 @@ static int __init lp8x4x_bus_probe(struct platform_device *pdev)
  
  	dev_info(&pdev->dev, "found bus with up to %u slots\n", m->slot_count);
-@@ -123,7 +150,7 @@ static int __init lp8x4x_bus_probe(struct platform_device *pdev)
+ 
++	/* Disable serial communications until explicitly enabled */
++	iowrite8(0xff, m->switch_addr);
++
  	err = bus_register(&lp8x4x_bus_type);
  	if (err < 0) {
  		dev_err(&pdev->dev, "failed to register bus type\n");
--		goto err2;
-+		goto err_free;
- 	}
- 
- 	m->dev.bus = &lp8x4x_bus_type;
-@@ -135,15 +162,15 @@ static int __init lp8x4x_bus_probe(struct platform_device *pdev)
- 	err = device_register(&m->dev);
- 	if (err < 0) {
- 		dev_err(&pdev->dev, "failed to register backplane device\n");
--		goto err3;
-+		goto err_bus;
- 	}
- 
- 	devres_add(&pdev->dev, p);
- 	return 0;
- 
--err3:
-+err_bus:
- 	bus_unregister(&lp8x4x_bus_type);
--err2:
-+err_free:
- 	devres_free(p);
- err1:
- 	kfree(m);
 -- 
 1.8.4.2
 
