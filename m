@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513AbaDPFVV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 01:21:21 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:57147 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162AbaDPFVT (ORCPT
+	id S1754551AbaDPFVz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 01:21:55 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56457 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754534AbaDPFVx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 01:21:19 -0400
-Message-ID: <1397625673.22465.8.camel@host5.omatika.ru>
-Subject: Re: [PATCH v3 10/21] mtd: support BB SRAM on ICP DAS LP-8x4x
-From: Sergei Ianovich <ynvich@gmail.com>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Robert Jarzmik <robert.jarzmik@free.fr>,
-        Kees Cook <keescook@chromium.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Philip Avinash <avinashphilip@ti.com>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        "open list:MEMORY TECHNOLOGY..." <linux-mtd@lists.infradead.org>
-Date: Wed, 16 Apr 2014 09:21:13 +0400
-In-Reply-To: <20140416050449.GJ3131@norris-Latitude-E6410>
-References: <1386901645-28895-1-git-send-email-ynvich@gmail.com>
-	 <1387309071-22382-1-git-send-email-ynvich@gmail.com>
-	 <1387309071-22382-11-git-send-email-ynvich@gmail.com>
-	 <20140416050449.GJ3131@norris-Latitude-E6410>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Apr 2014 01:21:53 -0400
+Date: Wed, 16 Apr 2014 07:21:48 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Dave Jones <davej@redhat.com>, cl@linux.com, linux-kernel@vger.kernel.org,
+        mingo@kernel.org, tj@kernel.org, grygorii.strashko@ti.com
+Subject: Re: How do I increment a per-CPU variable without warning?
+Message-ID: <20140416052147.GK26782@laptop.programming.kicks-ass.net>
+References: <20140415221755.GA27188@linux.vnet.ibm.com>
+ <20140415222951.GA742@redhat.com>
+ <20140415224725.GS4496@linux.vnet.ibm.com>
+ <20140416035419.GA30105@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140416035419.GA30105@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-15 at 22:04 -0700, Brian Norris wrote:
-> Hi Sergei,
+On Tue, Apr 15, 2014 at 08:54:19PM -0700, Paul E. McKenney wrote:
+> But falling back on the old ways of doing this at least looks a bit
+> nicer:
 > 
-> On Tue, Dec 17, 2013 at 11:37:40PM +0400, Sergei Ianovich wrote:
-> > This provides an MTD device driver for 512kB of battery backed up SRAM
-> > on ICPDAS LP-8X4X programmable automation controllers.
-> > 
-> > SRAM chip is connected via FPGA and is not accessible without a driver,
-> > unlike flash memory which is wired to CPU MMU.
-> > 
-> > This SRAM becomes an excellent persisent storage of volatile process
-> > data like counter values and sensor statuses. Storing those data in
-> > flash or mmc card is not a viable solution.
-> > 
-> > Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
-> > ---
-> >    v2..v3
-> >    * no changes (except number 08/16 -> 10/21)
-> > 
-> >    v0..v2
-> >    * use device tree
-> >    * use devm helpers where possible
+> 	static inline bool rcu_should_resched(void)
+> 	{
+> 		int t;
+> 		int *tp = &per_cpu(rcu_cond_resched_count, raw_smp_processor_id());
 > 
-> What's the status of this series? Is the rest of this platform support
-> going in via other trees yet? I have a few trivial comments, but this
-> driver mostly looks good as-is.
+> 		t = ACCESS_ONCE(*tp) + 1;
+> 		if (t < RCU_COND_RESCHED_LIM) {
 
-(...)
+<here>
 
-> You'll need a (trivial) DT binding doc in
-> Documentation/devicetree/bindings/ to go with this. You might also need
-> to split the arch/arm/boot/dts/ stuff out to a separate patch, so the
-> MTD driver can go in the MTD tree separate from the ARM tree bits.
-
-(...)
-
-> With that, you have my:
+> 			ACCESS_ONCE(*tp) = t;
+> 			return false;
+> 		}
+> 		return true;
+> 	}
 > 
-> 	Reviewed-by: Brian Norris <computersforpeace@gmail.com>
-> 
-> and I can merge this to the MTD tree if/when you'd like.
+> Other thoughts?
 
-Thanks for response, the rest of the series is stuck on a DMA driver
-with no development activity. I'll fix the comments, separate ARM staff
-and refile the patch.
+Still broken, if A starts out on CPU1, gets migrated to CPU0 at <here>,
+then B starts the same on CPU1. It is possible for both CPU0 and CPU1 to
+write a different value into your rcu_cond_resched_count.
+
+You really want to disable preemption around there. The proper old way
+would've been get_cpu_var()/put_cpu_var().
 
