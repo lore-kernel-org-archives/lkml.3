@@ -1,22 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422663AbaDPXM4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 19:12:56 -0400
-Received: from mail-ig0-f201.google.com ([209.85.213.201]:61405 "EHLO
-	mail-ig0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756916AbaDPXMu (ORCPT
+	id S1161601AbaDPXNx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 19:13:53 -0400
+Received: from mail-yh0-f73.google.com ([209.85.213.73]:45019 "EHLO
+	mail-yh0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757029AbaDPXMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 19:12:50 -0400
+	Wed, 16 Apr 2014 19:12:51 -0400
 From: Doug Anderson <dianders@chromium.org>
 To: Anton Vorontsov <anton@enomsg.org>
 Cc: Olof Johansson <olof@lixom.net>, Sachin Kamat <sachin.kamat@linaro.org>,
         ajaykumar.rs@samsung.com, linux-samsung-soc@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/5] charger: tps65090: Allow charger module to be used when no irq
-Date: Wed, 16 Apr 2014 16:12:26 -0700
-Message-Id: <1397689950-1568-3-git-send-email-dianders@chromium.org>
+        Doug Anderson <dianders@chromium.org>, Simon Glass <sjg@chromium.org>,
+        Michael Spang <spang@chromium.org>, Sean Paul <seanpaul@chromium.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3 4/5] regulator: tps65090: Allow setting the overcurrent wait time
+Date: Wed, 16 Apr 2014 16:12:28 -0700
+Message-Id: <1397689950-1568-5-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 1.9.1.423.g4596e3a
 In-Reply-To: <1397689950-1568-1-git-send-email-dianders@chromium.org>
 References: <1397689950-1568-1-git-send-email-dianders@chromium.org>
@@ -24,200 +32,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On the ARM Chromebook tps65090 has two masters: the AP (the main
-processor running linux) and the EC (the embedded controller).  The AP
-is allowed to mess with FETs but the EC is in charge of charge control.
-
-The tps65090 interupt line is routed to both the AP and the EC, which
-can cause quite a headache.  Having two people adjusting masks and
-acking interrupts is a recipe for disaster.
-
-In the shipping kernel we had a hack to have the AP pay attention to
-the IRQ but not to ack it.  It also wasn't supposed to configure the
-IRQ in any way.  That hack allowed us to detect when the device was
-charging without messing with the EC's state.
-
-The current tps65090 infrastructure makes the above difficult, and it
-was a bit of a hack to begin with.  Rather than uglify the driver to
-support it, just extend the driver's existing notion of "no irq" to
-the charger.  This makes the charger code poll every 2 seconds for AC
-detect, which is sufficient.
-
-For proper functioning, requires (mfd: tps65090: Don't tell child
-devices we have an IRQ if we don't).  If we don't have that patch
-we'll simply fail to probe on devices without an interrupt (just like
-we did before this patch).
+The tps65090 regulator allows you to specify how long you want it to
+wait before detecting an overcurrent condition.  Allow specifying that
+through the device tree (or through platform data).
 
 Signed-off-by: Doug Anderson <dianders@chromium.org>
+Signed-off-by: Simon Glass <sjg@chromium.org>
+Signed-off-by: Michael Spang <spang@chromium.org>
+Signed-off-by: Sean Paul <seanpaul@chromium.org>
 ---
-Changes in v3: None
+Changes in v3:
+- Fixed kernel-doc notation for return
+
 Changes in v2:
-- Split noirq (polling mode) changes into MFD and charger
+- Separated the overcurrent and retries changes into two patches.
+- Now set overcurrent at probe time since it doesn't change.
 
- drivers/power/tps65090-charger.c | 76 +++++++++++++++++++++++++++++++---------
- 1 file changed, 59 insertions(+), 17 deletions(-)
+ .../devicetree/bindings/regulator/tps65090.txt     |  4 ++
+ drivers/regulator/tps65090-regulator.c             | 56 ++++++++++++++++++++++
+ include/linux/mfd/tps65090.h                       |  5 ++
+ 3 files changed, 65 insertions(+)
 
-diff --git a/drivers/power/tps65090-charger.c b/drivers/power/tps65090-charger.c
-index 8fc9d6d..cc26c12 100644
---- a/drivers/power/tps65090-charger.c
-+++ b/drivers/power/tps65090-charger.c
-@@ -17,9 +17,11 @@
-  */
- #include <linux/delay.h>
- #include <linux/err.h>
-+#include <linux/freezer.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/kernel.h>
-+#include <linux/kthread.h>
- #include <linux/module.h>
- #include <linux/of_device.h>
- #include <linux/platform_device.h>
-@@ -43,11 +45,15 @@
- #define TPS65090_VACG		BIT(1)
- #define TPS65090_NOITERM	BIT(5)
+diff --git a/Documentation/devicetree/bindings/regulator/tps65090.txt b/Documentation/devicetree/bindings/regulator/tps65090.txt
+index 313a60b..34098023 100644
+--- a/Documentation/devicetree/bindings/regulator/tps65090.txt
++++ b/Documentation/devicetree/bindings/regulator/tps65090.txt
+@@ -21,6 +21,10 @@ Optional properties:
+   number should be provided. If it is externally controlled and no GPIO
+   entry then driver will just configure this rails as external control
+   and will not provide any enable/disable APIs.
++- ti,overcurrent-wait: This is applicable to FET registers, which have a
++  poorly defined "overcurrent wait" field.  If this property is present it
++  should be between 0 - 3.  If this property isn't present we won't touch the
++  "overcurrent wait" field and we'll leave it to the BIOS/EC to deal with.
  
-+#define POLL_INTERVAL		(HZ * 2)	/* Used when no irq */
+ Each regulator is defined using the standard binding for regulators.
+ 
+diff --git a/drivers/regulator/tps65090-regulator.c b/drivers/regulator/tps65090-regulator.c
+index 2e92ef6..ca04e9f 100644
+--- a/drivers/regulator/tps65090-regulator.c
++++ b/drivers/regulator/tps65090-regulator.c
+@@ -28,15 +28,58 @@
+ #include <linux/regulator/of_regulator.h>
+ #include <linux/mfd/tps65090.h>
+ 
++#define CTRL_WT_BIT		2 /* Regulator wait time 0 bit */
 +
- struct tps65090_charger {
- 	struct	device	*dev;
- 	int	ac_online;
- 	int	prev_ac_online;
- 	int	irq;
-+	struct task_struct	*poll_task;
-+	bool			passive_mode;
- 	struct power_supply	ac;
- 	struct tps65090_platform_data *pdata;
++#define MAX_OVERCURRENT_WAIT	3 /* Overcurrent wait must be <= this */
++
++/**
++ * struct tps65090_regulator - Per-regulator data for a tps65090 regulator
++ *
++ * @dev: Pointer to our device.
++ * @desc: The struct regulator_desc for the regulator.
++ * @rdev: The struct regulator_dev for the regulator.
++ * @overcurrent_wait_valid: True if overcurrent_wait is valid.
++ * @overcurrent_wait: For FETs, the value to put in the WTFET bitfield.
++ */
++
+ struct tps65090_regulator {
+ 	struct device		*dev;
+ 	struct regulator_desc	*desc;
+ 	struct regulator_dev	*rdev;
++	bool			overcurrent_wait_valid;
++	int			overcurrent_wait;
  };
-@@ -60,6 +66,9 @@ static int tps65090_low_chrg_current(struct tps65090_charger *charger)
- {
- 	int ret;
  
-+	if (charger->passive_mode)
-+		return 0;
-+
- 	ret = tps65090_write(charger->dev->parent, TPS65090_REG_CG_CTRL5,
- 			TPS65090_NOITERM);
- 	if (ret < 0) {
-@@ -75,6 +84,9 @@ static int tps65090_enable_charging(struct tps65090_charger *charger)
- 	int ret;
- 	uint8_t ctrl0 = 0;
+ static struct regulator_ops tps65090_ext_control_ops = {
+ };
  
-+	if (charger->passive_mode)
-+		return 0;
-+
- 	ret = tps65090_read(charger->dev->parent, TPS65090_REG_CG_CTRL0,
- 			    &ctrl0);
- 	if (ret < 0) {
-@@ -98,6 +110,9 @@ static int tps65090_config_charger(struct tps65090_charger *charger)
- 	uint8_t intrmask = 0;
- 	int ret;
- 
-+	if (charger->passive_mode)
-+		return 0;
-+
- 	if (charger->pdata->enable_low_current_chrg) {
- 		ret = tps65090_low_chrg_current(charger);
- 		if (ret < 0) {
-@@ -175,10 +190,14 @@ static irqreturn_t tps65090_charger_isr(int irq, void *dev_id)
- 	}
- 
- 	/* Clear interrupts. */
--	ret = tps65090_write(charger->dev->parent, TPS65090_REG_INTR_STS, 0x00);
--	if (ret < 0) {
--		dev_err(charger->dev, "%s(): Error in writing reg 0x%x\n",
-+	if (!charger->passive_mode) {
-+		ret = tps65090_write(charger->dev->parent,
-+				     TPS65090_REG_INTR_STS, 0x00);
-+		if (ret < 0) {
-+			dev_err(charger->dev,
-+				"%s(): Error in writing reg 0x%x\n",
- 				__func__, TPS65090_REG_INTR_STS);
-+		}
- 	}
- 
- 	if (charger->prev_ac_online != charger->ac_online)
-@@ -209,6 +228,18 @@ static struct tps65090_platform_data *
- 
- }
- 
-+static int tps65090_charger_poll_task(void *data)
++/**
++ * tps65090_reg_set_overcurrent_wait - Setup overcurrent wait
++ *
++ * This will set the overcurrent wait time based on what's in the regulator
++ * info.
++ *
++ * @ri:		Overall regulator data
++ * @rdev:	Regulator device
++ *
++ * Return: 0 if no error, non-zero if there was an error writing the register.
++ */
++static int tps65090_reg_set_overcurrent_wait(struct tps65090_regulator *ri,
++					     struct regulator_dev *rdev)
 +{
-+	set_freezable();
++	int ret;
 +
-+	while (!kthread_should_stop()) {
-+		schedule_timeout_interruptible(POLL_INTERVAL);
-+		try_to_freeze();
-+		tps65090_charger_isr(-1, data);
++	ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
++				 MAX_OVERCURRENT_WAIT << CTRL_WT_BIT,
++				 ri->overcurrent_wait << CTRL_WT_BIT);
++	if (ret) {
++		dev_err(&rdev->dev, "Error updating overcurrent wait %#x\n",
++			rdev->desc->enable_reg);
 +	}
-+	return 0;
++
++	return ret;
 +}
 +
- static int tps65090_charger_probe(struct platform_device *pdev)
- {
- 	struct tps65090_charger *cdata;
-@@ -255,22 +286,10 @@ static int tps65090_charger_probe(struct platform_device *pdev)
- 	}
+ static struct regulator_ops tps65090_reg_contol_ops = {
+ 	.enable		= regulator_enable_regmap,
+ 	.disable	= regulator_disable_regmap,
+@@ -209,6 +252,11 @@ static struct tps65090_platform_data *tps65090_parse_dt_reg_data(
+ 			rpdata->gpio = of_get_named_gpio(np,
+ 					"dcdc-ext-control-gpios", 0);
  
- 	irq = platform_get_irq(pdev, 0);
--	if (irq <= 0) {
--		dev_warn(&pdev->dev, "Unable to get charger irq = %d\n", irq);
--		ret = irq;
--		goto fail_unregister_supply;
--	}
--
-+	if (irq < 0)
-+		irq = NO_IRQ;
- 	cdata->irq = irq;
- 
--	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
--		tps65090_charger_isr, 0, "tps65090-charger", cdata);
--	if (ret) {
--		dev_err(cdata->dev, "Unable to register irq %d err %d\n", irq,
--			ret);
--		goto fail_unregister_supply;
--	}
--
- 	ret = tps65090_config_charger(cdata);
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "charger config failed, err %d\n", ret);
-@@ -296,6 +315,27 @@ static int tps65090_charger_probe(struct platform_device *pdev)
- 		power_supply_changed(&cdata->ac);
- 	}
- 
-+	if (irq != NO_IRQ) {
-+		ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
-+			tps65090_charger_isr, 0, "tps65090-charger", cdata);
-+		if (ret) {
-+			dev_err(cdata->dev,
-+				"Unable to register irq %d err %d\n", irq,
-+				ret);
-+			goto fail_unregister_supply;
-+		}
-+	} else {
-+		cdata->poll_task = kthread_run(tps65090_charger_poll_task,
-+					      cdata, "ktps65090charger");
-+		cdata->passive_mode = true;
-+		if (IS_ERR(cdata->poll_task)) {
-+			ret = PTR_ERR(cdata->poll_task);
-+			dev_err(cdata->dev,
-+				"Unable to run kthread err %d\n", ret);
-+			goto fail_unregister_supply;
-+		}
-+	}
++		if (of_property_read_u32(tps65090_matches[idx].of_node,
++					 "ti,overcurrent-wait",
++					 &rpdata->overcurrent_wait) == 0)
++			rpdata->overcurrent_wait_valid = true;
 +
- 	return 0;
+ 		tps65090_pdata->reg_pdata[idx] = rpdata;
+ 	}
+ 	return tps65090_pdata;
+@@ -258,6 +306,8 @@ static int tps65090_regulator_probe(struct platform_device *pdev)
+ 		ri = &pmic[num];
+ 		ri->dev = &pdev->dev;
+ 		ri->desc = &tps65090_regulator_desc[num];
++		ri->overcurrent_wait_valid = tps_pdata->overcurrent_wait_valid;
++		ri->overcurrent_wait = tps_pdata->overcurrent_wait;
  
- fail_unregister_supply:
-@@ -308,6 +348,8 @@ static int tps65090_charger_remove(struct platform_device *pdev)
- {
- 	struct tps65090_charger *cdata = platform_get_drvdata(pdev);
+ 		/*
+ 		 * TPS5090 DCDC support the control from external digital input.
+@@ -299,6 +349,12 @@ static int tps65090_regulator_probe(struct platform_device *pdev)
+ 		}
+ 		ri->rdev = rdev;
  
-+	if (cdata->irq == NO_IRQ)
-+		kthread_stop(cdata->poll_task);
- 	power_supply_unregister(&cdata->ac);
++		if (ri->overcurrent_wait_valid) {
++			ret = tps65090_reg_set_overcurrent_wait(ri, rdev);
++			if (ret < 0)
++				return ret;
++		}
++
+ 		/* Enable external control if it is require */
+ 		if (tps_pdata && is_dcdc(num) && tps_pdata->reg_init_data &&
+ 				tps_pdata->enable_ext_control) {
+diff --git a/include/linux/mfd/tps65090.h b/include/linux/mfd/tps65090.h
+index 45f0f9d..0bf2708 100644
+--- a/include/linux/mfd/tps65090.h
++++ b/include/linux/mfd/tps65090.h
+@@ -92,11 +92,16 @@ struct tps65090 {
+  *     DCDC1, DCDC2 and DCDC3.
+  * @gpio: Gpio number if external control is enabled and controlled through
+  *     gpio.
++ * @overcurrent_wait_valid: True if the overcurrent_wait should be applied.
++ * @overcurrent_wait: Value to set as the overcurrent wait time.  This is the
++ *     actual bitfield value, not a time in ms (valid value are 0 - 3).
+  */
+ struct tps65090_regulator_plat_data {
+ 	struct regulator_init_data *reg_init_data;
+ 	bool enable_ext_control;
+ 	int gpio;
++	bool overcurrent_wait_valid;
++	int overcurrent_wait;
+ };
  
- 	return 0;
+ struct tps65090_platform_data {
 -- 
 1.9.1.423.g4596e3a
 
