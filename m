@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892AbaDPDGY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 23:06:24 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:60091 "EHLO
+	id S1753822AbaDPDGV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 23:06:21 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:60120 "EHLO
 	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982AbaDPDF6 (ORCPT
+	with ESMTP id S1752997AbaDPDF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 15 Apr 2014 23:05:58 -0400
 X-Original-SENDERIP: 10.177.220.181
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
         Andi Kleen <andi@firstfloor.org>, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 12/17] perf tools: Add ->sort() member to struct sort_entry
-Date: Wed, 16 Apr 2014 12:05:49 +0900
-Message-Id: <1397617554-26319-13-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 14/17] perf top: Add --fields option to specify output fields
+Date: Wed, 16 Apr 2014 12:05:51 +0900
+Message-Id: <1397617554-26319-15-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1397617554-26319-1-git-send-email-namhyung@kernel.org>
 References: <1397617554-26319-1-git-send-email-namhyung@kernel.org>
@@ -26,124 +26,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, what the sort_entry does is just identifying hist entries
-so that they can be grouped properly.  However, with -F option
-support, it indeed needs to sort entries appropriately to be shown to
-users.  So add ->sort() member to do it.
+The --fields option is to allow user setup output field in any order.
+It can recieve any sort keys and following (hpp) fields:
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
+  overhead, overhead_sys, overhead_us, sample and period
+
+If guest profiling is enabled, overhead_guest_{sys,us} will be
+available too.
+
+More more information, please see previous patch "perf report:
+Add -F option to specify output fields"
+
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/sort.c | 27 ++++++++++++++++++++++-----
- tools/perf/util/sort.h |  1 +
- 2 files changed, 23 insertions(+), 5 deletions(-)
+ tools/perf/Documentation/perf-top.txt | 9 +++++++++
+ tools/perf/builtin-top.c              | 7 +++++++
+ 2 files changed, 16 insertions(+)
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 639dd49f2884..1e7b80e517d5 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -98,6 +98,12 @@ sort__comm_collapse(struct hist_entry *left, struct hist_entry *right)
- 	return comm__str(right->comm) - comm__str(left->comm);
- }
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 64ed79c43639..feac28017419 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -115,6 +115,15 @@ Default is to monitor all CPUS.
+ 	Sort by key(s): pid, comm, dso, symbol, parent, srcline, weight,
+ 	local_weight, abort, in_tx, transaction
  
-+static int64_t
-+sort__comm_sort(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return strcmp(comm__str(right->comm), comm__str(left->comm));
-+}
++--fields=::
++	Specify output field - multiple keys can be specified in CSV format.
++	Following fields are available:
++	overhead, overhead_sys, overhead_us, sample and period.
++	Also it can contain any sort key(s).
 +
- static int hist_entry__comm_snprintf(struct hist_entry *he, char *bf,
- 				     size_t size, unsigned int width)
- {
-@@ -108,6 +114,7 @@ struct sort_entry sort_comm = {
- 	.se_header	= "Command",
- 	.se_cmp		= sort__comm_cmp,
- 	.se_collapse	= sort__comm_collapse,
-+	.se_sort	= sort__comm_sort,
- 	.se_snprintf	= hist_entry__comm_snprintf,
- 	.se_width_idx	= HISTC_COMM,
- };
-@@ -121,7 +128,7 @@ static int64_t _sort__dso_cmp(struct map *map_l, struct map *map_r)
- 	const char *dso_name_l, *dso_name_r;
- 
- 	if (!dso_l || !dso_r)
--		return cmp_null(dso_l, dso_r);
-+		return cmp_null(dso_r, dso_l);
- 
- 	if (verbose) {
- 		dso_name_l = dso_l->long_name;
-@@ -137,7 +144,7 @@ static int64_t _sort__dso_cmp(struct map *map_l, struct map *map_r)
- static int64_t
- sort__dso_cmp(struct hist_entry *left, struct hist_entry *right)
- {
--	return _sort__dso_cmp(left->ms.map, right->ms.map);
-+	return _sort__dso_cmp(right->ms.map, left->ms.map);
- }
- 
- static int _hist_entry__dso_snprintf(struct map *map, char *bf,
-@@ -209,6 +216,15 @@ sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
- 	return _sort__sym_cmp(left->ms.sym, right->ms.sym);
- }
- 
-+static int64_t
-+sort__sym_sort(struct hist_entry *left, struct hist_entry *right)
-+{
-+	if (!left->ms.sym || !right->ms.sym)
-+		return cmp_null(left->ms.sym, right->ms.sym);
++	By default, every sort keys not specified in --field will be appended
++	automatically.
 +
-+	return strcmp(right->ms.sym->name, left->ms.sym->name);
-+}
+ -n::
+ --show-nr-samples::
+ 	Show a column with the number of samples.
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 9309629394dd..7d133dff5e15 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1085,6 +1085,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, weight, local_weight,"
+ 		   " abort, in_tx, transaction"),
++	OPT_STRING(0, "fields", &field_order, "key[,keys...]",
++		   "output field(s): overhead, period, sample plus all of sort keys"),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+ 	OPT_CALLBACK_NOOPT('g', NULL, &top.record_opts,
+@@ -1149,6 +1151,11 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 
+ 	perf_hpp__init();
+ 
++	if (setup_output_field() < 0) {
++		parse_options_usage(top_usage, options, "fields", 0);
++		goto out_delete_evlist;
++	}
 +
- static int _hist_entry__sym_snprintf(struct map *map, struct symbol *sym,
- 				     u64 ip, char level, char *bf, size_t size,
- 				     unsigned int width)
-@@ -255,6 +271,7 @@ static int hist_entry__sym_snprintf(struct hist_entry *he, char *bf,
- struct sort_entry sort_sym = {
- 	.se_header	= "Symbol",
- 	.se_cmp		= sort__sym_cmp,
-+	.se_sort	= sort__sym_sort,
- 	.se_snprintf	= hist_entry__sym_snprintf,
- 	.se_width_idx	= HISTC_SYMBOL,
- };
-@@ -282,7 +299,7 @@ sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
- 					    map__rip_2objdump(map, right->ip));
- 		}
- 	}
--	return strcmp(left->srcline, right->srcline);
-+	return strcmp(right->srcline, left->srcline);
- }
- 
- static int hist_entry__srcline_snprintf(struct hist_entry *he, char *bf,
-@@ -310,7 +327,7 @@ sort__parent_cmp(struct hist_entry *left, struct hist_entry *right)
- 	if (!sym_l || !sym_r)
- 		return cmp_null(sym_l, sym_r);
- 
--	return strcmp(sym_l->name, sym_r->name);
-+	return strcmp(sym_r->name, sym_l->name);
- }
- 
- static int hist_entry__parent_snprintf(struct hist_entry *he, char *bf,
-@@ -1125,7 +1142,7 @@ __sort_dimension__alloc_hpp(struct sort_dimension *sd)
- 
- 	hse->hpp.cmp = sd->entry->se_cmp;
- 	hse->hpp.collapse = sd->entry->se_collapse ? : sd->entry->se_cmp;
--	hse->hpp.sort = hse->hpp.collapse;
-+	hse->hpp.sort = sd->entry->se_sort ? : hse->hpp.collapse;
- 
- 	INIT_LIST_HEAD(&hse->hpp.list);
- 	INIT_LIST_HEAD(&hse->hpp.sort_list);
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 02706c9766d6..cd679a56c81d 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -181,6 +181,7 @@ struct sort_entry {
- 
- 	int64_t (*se_cmp)(struct hist_entry *, struct hist_entry *);
- 	int64_t (*se_collapse)(struct hist_entry *, struct hist_entry *);
-+	int64_t	(*se_sort)(struct hist_entry *, struct hist_entry *);
- 	int	(*se_snprintf)(struct hist_entry *he, char *bf, size_t size,
- 			       unsigned int width);
- 	u8	se_width_idx;
+ 	if (top.use_stdio)
+ 		use_browser = 0;
+ 	else if (top.use_tui)
 -- 
 1.9.2
 
