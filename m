@@ -1,126 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755734AbaDPUK2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 16:10:28 -0400
-Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:40812
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753049AbaDPUK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 16:10:26 -0400
-From: Jane Wan <Jane.Wan@gainspeed.com>
-To: <broonie@kernel.org>, <grant.likely@linaro.org>, <robh+dt@kernel.org>,
-        <Emilian.Medve@Freescale.com>, <b48286@Freescale.com>,
-        <jg1.han@samsung.com>, <sr@denx.de>, <insop.song@gainspeed.com>
-CC: <linux-spi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Jane Wan <Jane.Wan@gainspeed.com>
-Subject: [PATCH] Configure FSL eSPI CSBEF and CSAFT
-Date: Wed, 16 Apr 2014 13:09:39 -0700
-Message-ID: <1397678979-7655-1-git-send-email-Jane.Wan@gainspeed.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755417AbaDPUP5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 16:15:57 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:55956 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751461AbaDPUPy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 16:15:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [157.56.245.69]
-X-ClientProxiedBy: BLUPR07CA048.namprd07.prod.outlook.com (10.141.240.33) To
- BLUPR07MB050.namprd07.prod.outlook.com (10.255.208.150)
-X-Forefront-PRVS: 01834E39B7
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(87286001)(4396001)(77156001)(50226001)(92566001)(87976001)(50466002)(80976001)(81542001)(2201001)(92726001)(19580395003)(81342001)(89996001)(83322001)(19580405001)(48376002)(83072002)(62966002)(88136002)(85852003)(99396002)(77982001)(42186004)(79102001)(47776003)(20776003)(80022001)(46102001)(66066001)(31966008)(93916002)(86362001)(74662001)(36756003)(50986999)(74502001);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR07MB050;H:CH1PRD0210HT003.namprd02.prod.outlook.com;FPR:BEE7FA70.AF264F98.53D29B7F.42EE5221.20333;MLV:sfv;PTR:InfoNoRecords;A:3;MX:1;LANG:en;
-X-OriginatorOrg: gainspeed.com
+In-Reply-To: <5342A3F5.606@topic.nl>
+References: <1395991817-3503-1-git-send-email-mike.looijmans@topic.nl>
+	<10471336.Pb8zVvW3Hp@wuerfel>
+	<53429AD4.7030508@topic.nl>
+	<4902841.krZFXFDZqb@wuerfel>
+	<5342A3F5.606@topic.nl>
+Date: Wed, 16 Apr 2014 13:15:53 -0700
+X-Google-Sender-Auth: X75ru3wynCJKYdLlgvypB-4jizQ
+Message-ID: <CAL1qeaET+cy19EtB_TbtQ40Lb9r9hrO4H5vjG5YmCTpYoOmcog@mail.gmail.com>
+Subject: Re: [PATCH] sdhci: Forward EPROBE_DEFER on vmmc and vqmmc regulators
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Mike Looijmans <mike.looijmans@topic.nl>
+Cc: Arnd Bergmann <arnd@arndb.de>, Ben Dooks <ben.dooks@codethink.co.uk>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cjb@laptop.org, gdjakov@mm-sol.com,
+        "broonie@kernel.org" <broonie@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make FSL eSPI CSnBEF and CSnAFT fields in ESPI_SPMODEn registers
-(n=0,1,2,3) configurable through device tree.
+Hi Mike,
 
-CSnBEF is the chip select setup time.  It's the delay in bits from the
-activation of chip select pin to the first clock for data frame.
+On Mon, Apr 7, 2014 at 6:11 AM, Mike Looijmans <mike.looijmans@topic.nl> wrote:
+> On 04/07/2014 02:51 PM, Arnd Bergmann wrote:
+>>
+>> On Monday 07 April 2014 14:32:20 Mike Looijmans wrote:
+>>>
+>>> On 04/07/2014 02:25 PM, Arnd Bergmann wrote:
+>>>
+>>> Judging from the kernel output, regulator_get_optional returns -ENODEV if
+>>> the
+>>> supply wasn't found.
+>>>
+>>> Maybe the API is confusing (or wrong?) here.
+>>>
+>>> If you change the code as per your suggestion, the SD will not work
+>>> unless you
+>>> explicitly assign supplies. And judging from what I've seen so far, I am
+>>> the
+>>> first to have ever attached a power supply to this controller...
+>>
+>>
+>> It's certainly not very "optional" if it returns an error here.
+>>
+>> You could try to special-case the "-ENODEV" return here, but I think it
+>> would be better to change the regulator interface to be less confusing.
+>>
+>
+> Judging from the code:
+> http://lxr.free-electrons.com/source/drivers/regulator/core.c#L1476
+>
+> The behaviour is supposed to be something like "regulator_get_optional" will
+> return an error if the supply wasn't found, but "regulator_get" will create
+> a dummy supply for you instead of returning an error code.
+>
+> So "regulator_get_optional" means: "I handle my own problems, just gimme the
+> bad news". But "regulator_get" appears to imply: "I will shoot the
+> messenger, so do whatever you can to get me something to say 'enable' to".
+>
+> In this case, the IS_NULL part is wrong indeed, it will never return NULL.
 
-CSnAFT is the chip select hold time.  It's the delay in bits from the
-last clock for data frame to the deactivation of chip select pin.
+Not true.  If !CONFIG_REGULATOR, regulator_get() and co. will return
+NULL.  Normally it is ok to ignore this case, but the sdhci driver
+will call regulator_is_supported_voltage() on vqmmc to determine
+whether 1.8V signalling is supported.  With !CONFIG_REGULATOR,
+regulator_is_supported_voltage() will always return false, causing the
+sdhci driver to disable all UHS modes.  So we still need to handle the
+NULL (!CONFIG_REGULATOR) case.  One possibility is to guard the
+voltage check with #ifdef CONFIG_REGULATOR, as is done later with
+vmmc.
 
-The FSL eSPI driver hardcodes CSnBEF and CSnAFT to 0.  Need to set
-them to a different value for some device.
+BTW, I was working on a similar patch at:
+https://patchwork.kernel.org/patch/3988271/.
 
-Signed-off-by: Jane Wan <Jane.Wan@gainspeed.com>
----
- Documentation/devicetree/bindings/spi/fsl-spi.txt |    6 ++++
- drivers/spi/spi-fsl-espi.c                        |   34 ++++++++++++++++++---
- 2 files changed, 36 insertions(+), 4 deletions(-)
+Thanks,
+Andrew
 
-diff --git a/Documentation/devicetree/bindings/spi/fsl-spi.txt b/Documentation/devicetree/bindings/spi/fsl-spi.txt
-index b032dd7..2c7fd41 100644
---- a/Documentation/devicetree/bindings/spi/fsl-spi.txt
-+++ b/Documentation/devicetree/bindings/spi/fsl-spi.txt
-@@ -42,6 +42,10 @@ Required properties:
- - interrupts : should contain eSPI interrupt, the device has one interrupt.
- - fsl,espi-num-chipselects : the number of the chipselect signals.
- 
-+Optional properties:
-+- fsl,csbef: chip select assertion time in bits before frame starts
-+- fsl,csaft: chip select negation time in bits after frame ends
-+
- Example:
- 	spi@110000 {
- 		#address-cells = <1>;
-@@ -51,4 +55,6 @@ Example:
- 		interrupts = <53 0x2>;
- 		interrupt-parent = <&mpic>;
- 		fsl,espi-num-chipselects = <4>;
-+		fsl,csbef = <1>;
-+		fsl,csaft = <1>;
- 	};
-diff --git a/drivers/spi/spi-fsl-espi.c b/drivers/spi/spi-fsl-espi.c
-index 428dc7a..7ff9463 100644
---- a/drivers/spi/spi-fsl-espi.c
-+++ b/drivers/spi/spi-fsl-espi.c
-@@ -590,8 +590,10 @@ static struct spi_master * fsl_espi_probe(struct device *dev,
- 	struct spi_master *master;
- 	struct mpc8xxx_spi *mpc8xxx_spi;
- 	struct fsl_espi_reg *reg_base;
--	u32 regval;
--	int i, ret = 0;
-+	struct device_node *nc;
-+	const __be32 *prop;
-+	u32 regval, csmode;
-+	int i, len, ret = 0;
- 
- 	master = spi_alloc_master(dev, sizeof(struct mpc8xxx_spi));
- 	if (!master) {
-@@ -638,8 +640,32 @@ static struct spi_master * fsl_espi_probe(struct device *dev,
- 	mpc8xxx_spi_write_reg(&reg_base->event, 0xffffffff);
- 
- 	/* Init eSPI CS mode register */
--	for (i = 0; i < pdata->max_chipselect; i++)
--		mpc8xxx_spi_write_reg(&reg_base->csmode[i], CSMODE_INIT_VAL);
-+	for_each_available_child_of_node(master->dev.of_node, nc) {
-+		/* get chip select */
-+		prop = of_get_property(nc, "reg", &len);
-+		if (!prop || len < sizeof(*prop))
-+			continue;
-+		i = be32_to_cpup(prop);
-+		if (i < 0 || i >= pdata->max_chipselect)
-+			continue;
-+
-+		csmode = CSMODE_INIT_VAL;
-+		/* check if CSBEF is set in device tree */
-+		prop = of_get_property(nc, "fsl,csbef", &len);
-+		if (prop && len >= sizeof(*prop)) {
-+			csmode &= ~(CSMODE_BEF(0xf));
-+			csmode |= CSMODE_BEF(be32_to_cpup(prop));
-+		}
-+		/* check if CSAFT is set in device tree */
-+		prop = of_get_property(nc, "fsl,csaft", &len);
-+		if (prop && len >= sizeof(*prop)) {
-+			csmode &= ~(CSMODE_AFT(0xf));
-+			csmode |= CSMODE_AFT(be32_to_cpup(prop));
-+		}
-+		mpc8xxx_spi_write_reg(&reg_base->csmode[i], csmode);
-+
-+		dev_info(dev, "cs=%d, init_csmode=0x%x\n", i, csmode);
-+	}
- 
- 	/* Enable SPI interface */
- 	regval = pdata->initial_spmode | SPMODE_INIT_VAL | SPMODE_ENABLE;
--- 
-1.7.9.5
-
+>
+> I still think it's unrelated to my patch and should be submitted separately.
+>
+>
+> Mike.
+>
+>
+> Met vriendelijke groet / kind regards,
+>
+> Mike Looijmans
+>
+> TOPIC Embedded Systems
+> Eindhovenseweg 32-C, NL-5683 KH Best
+> Postbus 440, NL-5680 AK Best
+> Telefoon: (+31) (0) 499 33 69 79
+> Telefax:  (+31) (0) 499 33 69 70
+> E-mail: mike.looijmans@topic.nl
+> Website: www.topic.nl
+>
+> Please consider the environment before printing this e-mail
+>
+> Visit us at the Hannover Messe 7 - 11 April 2014 - Hall 002/D10 (Dutch
+> Pavillion)
+> http://www.hannovermesse.de/exhibitor/topic-embedded-products/V229623
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
