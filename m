@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954AbaDPUQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 16:16:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57403 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753931AbaDPUQ1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 16:16:27 -0400
-Message-ID: <534EE512.5090905@infradead.org>
-Date: Wed, 16 Apr 2014 13:16:18 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1756370AbaDPUQj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 16:16:39 -0400
+Received: from fn.samba.org ([216.83.154.106]:44446 "EHLO mail.samba.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751357AbaDPUQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 16:16:36 -0400
+Date: Wed, 16 Apr 2014 13:16:33 -0700
+From: Jeremy Allison <jra@samba.org>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Jeff Layton <jlayton@redhat.com>, libc-alpha <libc-alpha@sourceware.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Carlos O'Donell" <carlos@redhat.com>,
+        Michael Kerrisk-manpages <mtk.manpages@googlemail.com>,
+        samba-technical@lists.samba.org,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
+        Jeremy Allison <jra@google.com>
+Subject: Re: should we change the name/macros of file-private locks?
+Message-ID: <20140416201633.GQ22791@samba2>
+Reply-To: Jeremy Allison <jra@samba.org>
+References: <20140416145746.66b7441c@tlielax.poochiereds.net>
+ <CAKgNAkgqZDcT0jda8XS+4HrJzXjzwehqciHbkNuAVY3fNkH4zQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Daniel Borkmann <dborkman@redhat.com>, Thomas Graf <tgraf@suug.ch>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay@vrfy.org>, Rohit Jnagal <jnagal@google.com>,
-        Brandon Philips <brandon.philips@coreos.com>
-Subject: Re: [PATCH cgroup/for-3.16] cgroup: add documentation about unified
- hierarchy
-References: <20140414220917.GD1863@htj.dyndns.org> <534DB46D.7090207@infradead.org> <20140416135120.GI30990@htj.dyndns.org>
-In-Reply-To: <20140416135120.GI30990@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKgNAkgqZDcT0jda8XS+4HrJzXjzwehqciHbkNuAVY3fNkH4zQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2014 06:51 AM, Tejun Heo wrote:
-> Hello,
+On Wed, Apr 16, 2014 at 10:00:46PM +0200, Michael Kerrisk (man-pages) wrote:
+> [CC += Jeremy Allison]
 > 
-> On Tue, Apr 15, 2014 at 03:36:29PM -0700, Randy Dunlap wrote:
->>> +depending on the specific controller.  IOW, hierarchy may be collapsed
->>
->> please spell out IOW
+> On Wed, Apr 16, 2014 at 8:57 PM, Jeff Layton <jlayton@redhat.com> wrote:
+> > Sorry to spam so many lists, but I think this needs widespread
+> > distribution and consensus.
+> >
+> > File-private locks have been merged into Linux for v3.15, and *now*
+> > people are commenting that the name and macro definitions for the new
+> > file-private locks suck.
+> >
+> > ...and I can't even disagree. They do suck.
+> >
+> > We're going to have to live with these for a long time, so it's
+> > important that we be happy with the names before we're stuck with them.
 > 
-> Updated, but is this really necessary?
-
-It depends on who your audience is.  I probably think that the audience
-is larger than you think it is.
-
->> I would prefer to see CPU instead of cpu (except when it refers to a
->> task or function).
+> So, to add my perspective: The existing byte-range locking system has
+> persisted (despite egregious faults) for well over two decades. One
+> supposes that Jeff's new improved version might be around
+> at least as long. With that in mind, and before setting in stone (and
+> pushing into POSIX) a model of thinking that thousands of programmers
+> will live with for a long time, it's worth thinking about names.
 > 
-> cpu sometimes refer to the cpu controller.  Will use CPU when it's
-> actually referring to the CPU.
+> > Michael Kerrisk suggested several names but I think the only one that
+> > doesn't have other issues is "file-associated locks", which can be
+> > distinguished against "process-associated" locks (aka classic POSIX
+> > locks).
+> 
+> The names I have suggested are:
+> 
+>     file-associated locks
+> 
+> or
+> 
+>    file-handle locks
+> 
+> or (using POSIX terminology)
+> 
+>     file-description locks
 
-OK, thanks.
+Thanks for the CC: Michael, but to be honest
+I don't really care what the name is, I just
+want the functionality. I can change our build
+system to cope with detecting it under any name
+you guys choose :-).
 
+Cheers,
 
--- 
-~Randy
+	Jeremy.
