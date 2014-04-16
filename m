@@ -1,99 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375AbaDPGtx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 02:49:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40294 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753606AbaDPGtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 02:49:50 -0400
-Date: Wed, 16 Apr 2014 16:49:41 +1000
-From: NeilBrown <neilb@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 16/19] VFS: use GFP_NOFS rather than GFP_KERNEL in
- __d_alloc.
-Message-ID: <20140416164941.37587da6@notabene.brown>
-In-Reply-To: <20140416062520.GG15995@dastard>
-References: <20140416033623.10604.69237.stgit@notabene.brown>
-	<20140416040337.10604.61837.stgit@notabene.brown>
-	<20140416062520.GG15995@dastard>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/EPq.7eSTqOBYBZMF/T4NZ0K"; protocol="application/pgp-signature"
+	id S1754594AbaDPGv4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 02:51:56 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:41061 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601AbaDPGvy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 02:51:54 -0400
+Date: Wed, 16 Apr 2014 08:51:48 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Feng Tang <feng.tang@intel.com>
+Cc: Clemens Ladisch <clemens@ladisch.de>, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, linux-kernel@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [PATCH v2] x86: hpet: Don't default CONFIG_HPET_TIMER to be y
+ for X86_64
+Message-ID: <20140416065148.GB1193@gmail.com>
+References: <1395975316-4795-1-git-send-email-feng.tang@intel.com>
+ <20140328071716.GC30107@gmail.com>
+ <20140328073718.GA12762@feng-snb>
+ <53352DE5.2090600@ladisch.de>
+ <20140328081117.GA32308@gmail.com>
+ <20140415074443.GA10911@feng-snb>
+ <20140415090025.GA31244@gmail.com>
+ <20140415095539.GA19271@feng-snb>
+ <20140415104206.GA31656@gmail.com>
+ <20140415141206.GA12076@feng-snb>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140415141206.GA12076@feng-snb>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/EPq.7eSTqOBYBZMF/T4NZ0K
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, 16 Apr 2014 16:25:20 +1000 Dave Chinner <david@fromorbit.com> wrote:
+* Feng Tang <feng.tang@intel.com> wrote:
 
-> On Wed, Apr 16, 2014 at 02:03:37PM +1000, NeilBrown wrote:
-> > __d_alloc can be called with i_mutex held, so it is safer to
-> > use GFP_NOFS.
-> >=20
-> > lockdep reports this can deadlock when loop-back NFS is in use,
-> > as nfsd may be required to write out for reclaim, and nfsd certainly
-> > takes i_mutex.
->=20
-> But not the same i_mutex as is currently held. To me, this seems
-> like a false positive? If you are holding the i_mutex on an inode,
-> then you have a reference to the inode and hence memory reclaim
-> won't ever take the i_mutex on that inode.
->=20
-> FWIW, this sort of false positive was a long stabding problem for
-> XFS - we managed to get rid of most of the false positives like this
-> by ensuring that only the ilock is taken within memory reclaim and
-> memory reclaim can't be entered while we hold the ilock.
->=20
-> You can't do that with the i_mutex, though....
->=20
-> Cheers,
->=20
-> Dave.
+> On Tue, Apr 15, 2014 at 12:42:06PM +0200, Ingo Molnar wrote:
+> > 
+> > * Feng Tang <feng.tang@intel.com> wrote:
+> > 
+> > > On Tue, Apr 15, 2014 at 11:00:25AM +0200, Ingo Molnar wrote:
+> > > > 
+> > > > * Feng Tang <feng.tang@intel.com> wrote:
+> > > > 
+> > > > > Hi Ingo,
+> > > > > 
+> > > > > On Fri, Mar 28, 2014 at 09:11:17AM +0100, Ingo Molnar wrote:
+> > > > > > 
+> > > > > > * Clemens Ladisch <clemens@ladisch.de> wrote:
+> > > > > > 
+> > > > > > > Feng Tang wrote:
+> > > > > > > > On Fri, Mar 28, 2014 at 08:17:16AM +0100, Ingo Molnar wrote:
+> > > > > > > >> * Feng Tang <feng.tang@intel.com> wrote:
+> > > > > > > >>  - or the kernel should have a quirk to reliably disable it. Why
+> > > > > > > >>    should we crash or misbehave if a driver is built into the
+> > > > > > > >>    kernel?
+> > > > > > > >
+> > > > > > > > I thought about this before, HPET doesn't have PCI ID like stuff,
+> > > > > > > 
+> > > > > > > HPET does have the PCI vendor ID in the first register.
+> > > > > > > 
+> > > > > > > > only thing I can think of to identify them may be the CPU family/ID.
+> > > > > > > 
+> > > > > > > The HPET is implemented by some actual chip, and that chip also has lots
+> > > > > > > of PCI devices.  (In the case of a SoC, the CPU ID would work, too).
+> > > > > > 
+> > > > > > Correct. See arch/x86/kernel/hpet.c, which has a large number of HPET 
+> > > > > > quirks keyed off chipset PCI IDs:
+> > > > > > 
+> > > > > >   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ESB2_0,
+> > > > > >                            ich_force_enable_hpet);
+> > > > > >   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH6_0,
+> > > > > >                            ich_force_enable_hpet);
+> > > > > >   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH6_1,
+> > > > > >                            ich_force_enable_hpet);
+> > > > > >   [...]
+> > > > > 
+> > > > > I just gave it another thought, that the HPET on our platform 
+> > > > > currently do have some problem to be used as clocksource/clockevent, 
+> > > > > but it may get fixed in future version (by Silicon or BIOS).
+> > > > > 
+> > > > > If I add quirk to block it now, I may revert this code in future 
+> > > > > when it get fixed, same problem applis for the future generation of 
+> > > > > platform.
+> > > > 
+> > > > If the hardware or BIOS gets fixed then that will be visible in the 
+> > > > revision level of the hardware, right?
+> > > 
+> > > AFAIK, if it is fixed in a new silicon version, we should be able to 
+> > > detect it by the "stepping", but the PCI DEV ID is not likely to 
+> > > change.
+> > > 
+> > > If it is fixed by BIOS or PUNIT FW, then we may go through the 
+> > > DMI info to check the BIOS version, One problem is there is some 
+> > > Baytrail tablet platforms that doesn't provide DMI info as its 
+> > > FW is not UEFI/Legacy BIOS compatible version.
+> > 
+> > So just turn it off for the current hardware, via PCI ID. When you 
+> > get a fix, you can turn it back on again by refining the quirk 
+> > check, for that specific hardware.
+> 
+> got it, thanks!
 
-I'm not sure this is a false positive.
-You can call __d_alloc when creating a file and so are holding i_mutex on t=
-he
-directory.
-nfsd might also want to access that directory.
-
-If there was only 1 nfsd thread, it would need to get i_mutex and do it's
-thing before replying to that request and so before it could handle the
-COMMIT which __d_alloc is waiting for.
-
-Obviously we would normally have multiple nfsd threads but if they were all
-blocked on an i_mutex which itself was blocked on nfs_release_page which was
-waiting for an nfsd thread to handling its COMMIT request, this could be a
-real deadlock.
+Btw., note that such narrow quirk refinings are pretty uncontroversial 
+and have a pretty fast path upstream, once you have the initial quirk 
+in there.
 
 Thanks,
-NeilBrown
 
---Sig_/EPq.7eSTqOBYBZMF/T4NZ0K
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU04oBTnsnt1WYoG5AQIv2A/+JHPHOXvvSEvBvND3/I/bvU7038Xt9P09
-ROQ9m01KrCbUdCBztnzYFBBQRHb+TGX7/oqNbgR5xz5xQp5udSIOGfW50DvPsmRj
-evA2RwwB24XWG4TpZcfAnZXNXNGmjNXYzKcSrrD3Jr1hh54BnYkSmvxk1rjZb77V
-lPAtmazM12wyG3OTAP9iKMeNohqzKmL8ZAF3NXBtA7VvAx3Q/bW5Ouk3NDO9sMjP
-fP9rvVgZqGBGraTBp/j7hAliuwMdR47OvUvtmlj2Yu8BLwWdmK4uLcgCtiASvhox
-IOCQQ/mKw8d0c/vC1kl759kwgXuK87rRQ136xBpcgogBd7g8ER9Z+WmfBHUVndg6
-9HjduCoAju0ruvnfHD3Ky4GcMEPPmbwe7nV7LMY8VkLTDjUBLLnoBROdgsbLL2bj
-at1fyaeJxQ/lRt3FzQ3ep0n4n366FM1kyHs84J3EiRMImrxAedb/wdZmDN7rQi0s
-g4ubAThts0zmUrYsTO+beqxVGNYqmnUdJVWMBX513HBGZ6kZ+sjFIpD2sBkCRIgK
-98bXu9ZEz2ZqAACq42uYdNvEIgPrcog80+yLZJQ7GJaPHsdfOWEMrAJPrO5iaSQH
-vUbfbjwe722ZicSNlEgw5b5ZWMGb9ssZVeP28fJt0i8k5XNBa13+svkK+6ITOoJz
-FZOwEWIhv2A=
-=6+ZP
------END PGP SIGNATURE-----
-
---Sig_/EPq.7eSTqOBYBZMF/T4NZ0K--
+	Ingo
