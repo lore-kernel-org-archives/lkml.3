@@ -1,54 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161631AbaDPOj5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 10:39:57 -0400
-Received: from smtprelay0224.hostedemail.com ([216.40.44.224]:35401 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1161426AbaDPOjz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 10:39:55 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3865:3866:3867:3868:3871:3872:3874:4321:5007:7652:10004:10400:10848:11026:11232:11657:11658:11914:12043:12438:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: wax12_1c08f6837e844
-X-Filterd-Recvd-Size: 1571
-Message-ID: <1397659190.32088.4.camel@joe-AO722>
-Subject: Re: [PATCH] staging : android : uapi : fix coding style
-From: Joe Perches <joe@perches.com>
-To: Seunghun Lee <waydi1@gmail.com>, John Stultz <john.stultz@linaro.org>
-Cc: greg@kroah.com, swetland@google.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 16 Apr 2014 07:39:50 -0700
-In-Reply-To: <1397658459-4357-1-git-send-email-waydi1@gmail.com>
-References: <1397658459-4357-1-git-send-email-waydi1@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1161533AbaDPOmm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 10:42:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14580 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161244AbaDPOmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 10:42:39 -0400
+Date: Wed, 16 Apr 2014 10:42:07 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: NeilBrown <neilb@suse.de>
+Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Ming Lei <ming.lei@canonical.com>, netdev@vger.kernel.org
+Subject: Re: [PATCH/RFC 00/19] Support loop-back NFS mounts
+Message-ID: <20140416104207.75b044e8@tlielax.poochiereds.net>
+In-Reply-To: <20140416033623.10604.69237.stgit@notabene.brown>
+References: <20140416033623.10604.69237.stgit@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(adding John Stultz)
+On Wed, 16 Apr 2014 14:03:35 +1000
+NeilBrown <neilb@suse.de> wrote:
 
-On Wed, 2014-04-16 at 23:27 +0900, Seunghun Lee wrote:
-> This patch fix checkpatch.pl warnings and errors.
-[]
-> diff --git a/drivers/staging/android/uapi/binder.h b/drivers/staging/android/uapi/binder.h
-[]
-> @@ -169,7 +169,7 @@ struct binder_ptr_cookie {
->  struct binder_handle_cookie {
->  	__u32 handle;
->  	binder_uintptr_t cookie;
-> -} __attribute__((packed));
-> +} __packed;
+> Loop-back NFS mounts are when the NFS client and server run on the
+> same host.
+> 
+> The use-case for this is a high availability cluster with shared
+> storage.  The shared filesystem is mounted on any one machine and
+> NFS-mounted on the others.
+> If the nfs server fails, some other node will take over that service,
+> and then it will have a loop-back NFS mount which needs to keep
+> working.
+> 
+> This patch set addresses the "keep working" bit and specifically
+> addresses deadlocks and livelocks.
+> Allowing the fail-over itself to be deadlock free is a separate
+> challenge for another day.
+> 
+> The short description of how this works is:
+> 
+> deadlocks:
+>   - Elevate PF_FSTRANS to apply globally instead of just in NFS and XFS.
+>     PF_FSTRANS disables __GFP_NS in the same way that PF_MEMALLOC_NOIO
+>     disables __GFP_IO.
+>   - Set PF_FSTRANS in nfsd when handling requests related to
+>     memory reclaim, or requests which could block requests related
+>     to memory reclaim.
+>   - Use lockdep to find all consequent deadlocks from some other
+>     thread allocating memory while holding a lock that nfsd might
+>     want.
+>   - Fix those other deadlocks by setting PF_FSTRANS or using GFP_NOFS
+>     as appropriate.
+> 
+> livelocks:
+>   - identify throttling during reclaim and bypass it when
+>     PF_LESS_THROTTLE is set
+>   - only set PF_LESS_THROTTLE for nfsd when handling write requests
+>     from the local host.
+> 
+> The last 12 patches address various deadlocks due to locking chains.
+> 11 were found by lockdep, 2 by testing.  There is a reasonable chance
+> that there are more, I just need to exercise more code while
+> testing....
+> 
+> There is one issue that lockdep reports which I haven't fixed (I've
+> just hacked the code out for my testing).  That issue relates to
+> freeze_super().
+> I may not be interpreting the lockdep reports perfectly, but I think
+> they are basically saying that if I were to freeze a filesystem that
+> was exported to the local host, then we could end up deadlocking.
+> This is to be expected.  The NFS filesystem would need to be frozen
+> first.  I don't know how to tell lockdep that I know that is a problem
+> and I don't want to be warned about it.  Suggestions welcome.
+> Until this is addressed I cannot really ask others to test the code
+> with lockdep enabled.
+> 
+> There are more subsidiary places that I needed to add PF_FSTRANS than
+> I would have liked.  The thought keeps crossing my mind that maybe we
+> can get rid of __GFP_FS and require that memory reclaim never ever
+> block on a filesystem.  Then most of these patches go away.
+> 
+> Now that writeback doesn't happen from reclaim (but from kswapd) much
+> of the calls from reclaim to FS are gone.
+> The ->releasepage call is the only one that I *know* causes me
+> problems so I'd like to just say that that must never block.  I don't
+> really understand the consequences of that though.
+> There are a couple of other places where __GFP_FS is used and I'd need
+> to carefully analyze those.  But if someone just said "no, that is
+> impossible", I could be happy and stick with the current approach....
+> 
+> I've cc:ed Peter Zijlstra and Ingo Molnar only on the lockdep-related
+> patches, Ming Lei only on the PF_MEMALLOC_NOIO related patches,
+> and net-dev only on the network-related patches.
+> There are probably other people I should CC.  Apologies if I missed you.
+> I'll ensure better coverage if the nfs/mm/xfs people are reasonably happy.
+> 
+> Comments, criticisms, etc most welcome.
+> 
+> Thanks,
+> NeilBrown
+> 
 
-If this .h file is meant to be a user-space #include,
-then it should not use the kernel specific __packed
-but keep the __attribute__((packed))
+I've only given this a once-over, but the basic concept seems a bit
+flawed. IIUC, the basic idea is to disallow allocations done in knfsd
+threads context from doing fs-based reclaim.
 
-It does use __u32 though and that's generally
-kernel specific.
+This seems very heavy-handed, and like it could cause problems on a
+busy NFS server. Those sorts of servers are likely to have a lot of
+data in pagecache and thus we generally want to allow them to do do
+writeback when memory is tight.
 
-John?  Does any of these binder uapi files need a
-bit more sorting out?
+It's generally acceptable for knfsd to recurse into local filesystem
+code for writeback. What you want to avoid in this situation is reclaim
+on NFS filesystems that happen to be from knfsd on the same box.
 
+If you really want to fix this, what may make more sense is trying to
+plumb that information down more granularly. Maybe GFP_NONETFS and/or
+PF_NETFSTRANS flags?
+
+> 
+> ---
+> 
+> NeilBrown (19):
+>       Promote current_{set,restore}_flags_nested from xfs to global.
+>       lockdep: lockdep_set_current_reclaim_state should save old value
+>       lockdep: improve scenario messages for RECLAIM_FS errors.
+>       Make effect of PF_FSTRANS to disable __GFP_FS universal.
+>       SUNRPC: track whether a request is coming from a loop-back interface.
+>       nfsd: set PF_FSTRANS for nfsd threads.
+>       nfsd and VM: use PF_LESS_THROTTLE to avoid throttle in shrink_inactive_list.
+>       Set PF_FSTRANS while write_cache_pages calls ->writepage
+>       XFS: ensure xfs_file_*_read cannot deadlock in memory allocation.
+>       NET: set PF_FSTRANS while holding sk_lock
+>       FS: set PF_FSTRANS while holding mmap_sem in exec.c
+>       NET: set PF_FSTRANS while holding rtnl_lock
+>       MM: set PF_FSTRANS while allocating per-cpu memory to avoid deadlock.
+>       driver core: set PF_FSTRANS while holding gdp_mutex
+>       nfsd: set PF_FSTRANS when client_mutex is held.
+>       VFS: use GFP_NOFS rather than GFP_KERNEL in __d_alloc.
+>       VFS: set PF_FSTRANS while namespace_sem is held.
+>       nfsd: set PF_FSTRANS during nfsd4_do_callback_rpc.
+>       XFS: set PF_FSTRANS while ilock is held in xfs_free_eofblocks
+> 
+> 
+>  drivers/base/core.c             |    3 ++
+>  drivers/base/power/runtime.c    |    6 ++---
+>  drivers/block/nbd.c             |    6 ++---
+>  drivers/md/dm-bufio.c           |    6 ++---
+>  drivers/md/dm-ioctl.c           |    6 ++---
+>  drivers/mtd/nand/nandsim.c      |   28 ++++++---------------
+>  drivers/scsi/iscsi_tcp.c        |    6 ++---
+>  drivers/usb/core/hub.c          |    6 ++---
+>  fs/dcache.c                     |    4 ++-
+>  fs/exec.c                       |    6 +++++
+>  fs/fs-writeback.c               |    5 ++--
+>  fs/namespace.c                  |    4 +++
+>  fs/nfs/file.c                   |    3 +-
+>  fs/nfsd/nfs4callback.c          |    5 ++++
+>  fs/nfsd/nfs4state.c             |    3 ++
+>  fs/nfsd/nfssvc.c                |   24 ++++++++++++++----
+>  fs/nfsd/vfs.c                   |    6 +++++
+>  fs/xfs/kmem.h                   |    2 --
+>  fs/xfs/xfs_aops.c               |    7 -----
+>  fs/xfs/xfs_bmap_util.c          |    4 +++
+>  fs/xfs/xfs_file.c               |   12 +++++++++
+>  fs/xfs/xfs_linux.h              |    7 -----
+>  include/linux/lockdep.h         |    8 +++---
+>  include/linux/sched.h           |   32 +++++++++---------------
+>  include/linux/sunrpc/svc.h      |    2 ++
+>  include/linux/sunrpc/svc_xprt.h |    1 +
+>  include/net/sock.h              |    1 +
+>  kernel/locking/lockdep.c        |   51 ++++++++++++++++++++++++++++-----------
+>  kernel/softirq.c                |    6 ++---
+>  mm/migrate.c                    |    9 +++----
+>  mm/page-writeback.c             |    3 ++
+>  mm/page_alloc.c                 |   18 ++++++++------
+>  mm/percpu.c                     |    4 +++
+>  mm/slab.c                       |    2 ++
+>  mm/slob.c                       |    2 ++
+>  mm/slub.c                       |    1 +
+>  mm/vmscan.c                     |   31 +++++++++++++++---------
+>  net/core/dev.c                  |    6 ++---
+>  net/core/rtnetlink.c            |    9 ++++++-
+>  net/core/sock.c                 |    8 ++++--
+>  net/sunrpc/sched.c              |    5 ++--
+>  net/sunrpc/svc.c                |    6 +++++
+>  net/sunrpc/svcsock.c            |   10 ++++++++
+>  net/sunrpc/xprtrdma/transport.c |    5 ++--
+>  net/sunrpc/xprtsock.c           |   17 ++++++++-----
+>  45 files changed, 247 insertions(+), 149 deletions(-)
+> 
+
+
+-- 
+Jeff Layton <jlayton@redhat.com>
