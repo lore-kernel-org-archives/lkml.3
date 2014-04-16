@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756387AbaDPQOH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 12:14:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27825 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754398AbaDPQOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 12:14:03 -0400
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
- cgroup path
-From: Simo Sorce <ssorce@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: David Miller <davem@davemloft.net>, Vivek Goyal <vgoyal@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
-        Network Development <netdev@vger.kernel.org>
-In-Reply-To: <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com>
-References: <CALCETrURHNmLyccRiF_W8o2ozRMR4AaCjUE=_PU8z1+Pq6X2jQ@mail.gmail.com>
-	 <20140416002010.GA5035@redhat.com>
-	 <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com>
-	 <20140416.085743.1614257692560892039.davem@davemloft.net>
-	 <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 16 Apr 2014 12:13:57 -0400
-Message-ID: <1397664837.19767.410.camel@willson.li.ssimo.org>
-Mime-Version: 1.0
+	id S1756384AbaDPQTf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 12:19:35 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44537 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754924AbaDPQTd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 12:19:33 -0400
+Message-ID: <534EAD91.90704@wwwdotorg.org>
+Date: Wed, 16 Apr 2014 10:19:29 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Andrew Bresticker <abrestic@chromium.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
+CC: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] ARM: tegra: fix Venice2 VQMMC regulators
+References: <1397526163-20126-1-git-send-email-abrestic@chromium.org>	<1397526163-20126-5-git-send-email-abrestic@chromium.org> <CAL1qeaGGSs5fpqrKWA4u4+RXRy9Ko2pN=s9QQdbXAfLG3ujR8g@mail.gmail.com>
+In-Reply-To: <CAL1qeaGGSs5fpqrKWA4u4+RXRy9Ko2pN=s9QQdbXAfLG3ujR8g@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-16 at 07:37 -0700, Andy Lutomirski wrote:
-> On Wed, Apr 16, 2014 at 5:57 AM, David Miller <davem@davemloft.net> wrote:
-> >
-> > Please, just stop.
+On 04/15/2014 06:29 PM, Andrew Bresticker wrote:
+>>         sdhci@0,700b0600 {
+>>                 status = "okay";
+>>                 bus-width = <8>;
+>> +               vqmmc-supply = <&vddio_1v8>;
 > 
-> No.
-> 
-> This thread is proposing an ABI.  This means that, if the ABI ends up
-> in Linus's kernel, then it has to be supported forever.  Now is the
-> time to find and fix any issues with it before they become much harder
-> to fix.
+> It turns out this bit isn't needed as the initialization failures are
+> instead due to +3V3_RUN toggling, which Stephen has fixed:
+> http://patchwork.ozlabs.org/patch/339386/
 
-Ok, but so far I haven't seen a single objection from you that has solid
-grounds.
-
-The only one that *may* be reasonable is the "secret" cgroup name one,
-however nobody seem to come up with a reason why it is legitimate to
-allow to keep cgroup names secret.
-
-And if you can come up with such a good reason the SO_NOPASSCGROUP
-option seem the right solution.
-
-> This ABI is especially tricky because programs will use it even if
-> they don't explicitly try to.  So just adding the ABI may break
-> existing assumptions that are relevant to security or correctness.
-
-It's not clear to me what you mean by this, either you explicitly use
-SO_PASSCGROUP or not, it's not like you can involuntarily add a flag ...
-
-Simo.
-
-
+Indeed, if I apply patches 1, 2, and 4 from this series, revert the hunk
+above, apply my Venice2 regulator patch, and finally apply your AS3722
+regulator GPIO patch, then everything works fine for me:-)
