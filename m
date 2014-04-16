@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755932AbaDPKgX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:36:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51815 "EHLO
+	id S1755829AbaDPKdE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:33:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51769 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755834AbaDPKdG (ORCPT
+	with ESMTP id S1755436AbaDPKcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:33:06 -0400
+	Wed, 16 Apr 2014 06:32:55 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+Cc: Paul Durrant <paul.durrant@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 41/46] sparc32: fix build failure for arch_jump_label_transform
-Date: Wed, 16 Apr 2014 11:31:57 +0100
-Message-Id: <1397644322-13905-42-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 32/46] xen-netback: remove pointless clause from if statement
+Date: Wed, 16 Apr 2014 11:31:48 +0100
+Message-Id: <1397644322-13905-33-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
 References: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
@@ -28,47 +30,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
+From: Paul Durrant <Paul.Durrant@citrix.com>
 
-commit 4f6500fff5f7644a03c46728fd7ef0f62fa6940b upstream.
+commit 0576eddf24df716d8570ef8ca11452a9f98eaab2 upstream.
 
-In arch/sparc/Kernel/Makefile, we see:
+This patch removes a test in start_new_rx_buffer() that checks whether
+a copy operation is less than MAX_BUFFER_OFFSET in length, since
+MAX_BUFFER_OFFSET is defined to be PAGE_SIZE and the only caller of
+start_new_rx_buffer() already limits copy operations to PAGE_SIZE or less.
 
-   obj-$(CONFIG_SPARC64)   += jump_label.o
-
-However, the Kconfig selects HAVE_ARCH_JUMP_LABEL unconditionally
-for all SPARC.  This in turn leads to the following failure when
-doing allmodconfig coverage builds:
-
-kernel/built-in.o: In function `__jump_label_update':
-jump_label.c:(.text+0x8560c): undefined reference to `arch_jump_label_transform'
-kernel/built-in.o: In function `arch_jump_label_transform_static':
-(.text+0x85cf4): undefined reference to `arch_jump_label_transform'
-make: *** [vmlinux] Error 1
-
-Change HAVE_ARCH_JUMP_LABEL to be conditional on SPARC64 so that it
-matches the Makefile.
-
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Paul Durrant <paul.durrant@citrix.com>
+Cc: Ian Campbell <ian.campbell@citrix.com>
+Cc: Wei Liu <wei.liu2@citrix.com>
+Cc: Sander Eikelenboom <linux@eikelenboom.it>
+Reported-By: Sander Eikelenboom <linux@eikelenboom.it>
+Tested-By: Sander Eikelenboom <linux@eikelenboom.it>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/sparc/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/xen-netback/netback.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index a00cbd3..d268475 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -25,7 +25,7 @@ config SPARC
- 	select RTC_DRV_M48T59
- 	select HAVE_DMA_ATTRS
- 	select HAVE_DMA_API_DEBUG
--	select HAVE_ARCH_JUMP_LABEL
-+	select HAVE_ARCH_JUMP_LABEL if SPARC64
- 	select HAVE_GENERIC_HARDIRQS
- 	select GENERIC_IRQ_SHOW
- 	select ARCH_WANT_IPC_PARSE_VERSION
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index ac55997..3335983 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -354,8 +354,8 @@ static bool start_new_rx_buffer(int offset, unsigned long size, int head)
+ 	 * into multiple copies tend to give large frags their
+ 	 * own buffers as before.
+ 	 */
+-	if ((offset + size > MAX_BUFFER_OFFSET) &&
+-	    (size <= MAX_BUFFER_OFFSET) && offset && !head)
++	BUG_ON(size > MAX_BUFFER_OFFSET);
++	if ((offset + size > MAX_BUFFER_OFFSET) && offset && !head)
+ 		return true;
+ 
+ 	return false;
 -- 
 1.9.1
 
