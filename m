@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422799AbaDPQWE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 12:22:04 -0400
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:56982 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422778AbaDPQVx (ORCPT
+	id S1422813AbaDPQWo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 12:22:44 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:52800 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756379AbaDPQWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 12:21:53 -0400
-Date: Wed, 16 Apr 2014 12:21:49 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Simo Sorce <ssorce@redhat.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, David Miller <davem@davemloft.net>,
-        Vivek Goyal <vgoyal@redhat.com>, Daniel Walsh <dwalsh@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
-        Network Development <netdev@vger.kernel.org>
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
- cgroup path
-Message-ID: <20140416162149.GI1257@htj.dyndns.org>
-References: <CALCETrURHNmLyccRiF_W8o2ozRMR4AaCjUE=_PU8z1+Pq6X2jQ@mail.gmail.com>
- <20140416002010.GA5035@redhat.com>
- <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com>
- <20140416.085743.1614257692560892039.davem@davemloft.net>
- <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com>
- <1397664837.19767.410.camel@willson.li.ssimo.org>
+	Wed, 16 Apr 2014 12:22:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397664837.19767.410.camel@willson.li.ssimo.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <58237829.Dxp0IlFuXc@daeseok-laptop.cloud.net>
+References: <58237829.Dxp0IlFuXc@daeseok-laptop.cloud.net>
+Date: Thu, 17 Apr 2014 00:22:41 +0800
+X-Google-Sender-Auth: JFlL0dQLFoXb-wRTL3mIVllE_C0
+Message-ID: <CACvQF52acD74ZKZeLL5M-vQKH5E+QH0bTXAS-H18rJYAVk-NuQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] workqueue: fix bugs in wq_update_unbound_numa()
+ failure path
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Acked.
 
-On Wed, Apr 16, 2014 at 12:13:57PM -0400, Simo Sorce wrote:
-> The only one that *may* be reasonable is the "secret" cgroup name one,
-> however nobody seem to come up with a reason why it is legitimate to
-> allow to keep cgroup names secret.
-
-Ugh, please don't play security games with cgroup names.  It is one of
-the identifying properties of a task, like a pid, and will be used in
-other parts of the kernel to match groups of tasks.  If we play
-security peekaboo with cgroup names, it has to be transitive and puts
-burdens on all its future uses.  Unless there are *REALLY* strong
-rationales, which can also justify hiding pids, this isn't happening.
-
-Thanks.
-
--- 
-tejun
+On Wed, Apr 16, 2014 at 1:32 PM, Daeseok Youn <daeseok.youn@gmail.com> wrote:
+>
+> wq_update_unbound_numa() failure path has the following two bugs.
+>  - alloc_unbound_pwq() is called without holding wq->mutex;
+>  however, if the allocation fails, it jumps to out_unlock
+>  which tries to unlock wq->mutex.
+>
+>  - The function should switch to dfl_pwq on failure
+>  but didn't do so after alloc_unbound_pwq() failure.
+>
+> Fix it by regrabbing wq->mutex and jumping to use_dfl_pwq on
+> alloc_unbound_pwq() failure.
+>
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+>  kernel/workqueue.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
+>
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 0ee63af..3150b21 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -4100,7 +4100,8 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
+>         if (!pwq) {
+>                 pr_warning("workqueue: allocation failed while updating NUMA affinity of \"%s\"\n",
+>                            wq->name);
+> -               goto out_unlock;
+> +               mutex_lock(&wq->mutex);
+> +               goto use_dfl_pwq;
+>         }
+>
+>         /*
+> --
+> 1.7.4.4
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
