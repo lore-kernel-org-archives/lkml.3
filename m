@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943AbaDPKnU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:43:20 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51753 "EHLO
+	id S1756061AbaDPKnw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:43:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51742 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755768AbaDPKcv (ORCPT
+	with ESMTP id S1755765AbaDPKcs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:32:51 -0400
+	Wed, 16 Apr 2014 06:32:48 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Oliver Neukum <oneukum@suse.de>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 30/46] vhost: fix total length when packets are too short
-Date: Wed, 16 Apr 2014 11:31:46 +0100
-Message-Id: <1397644322-13905-31-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 28/46] usbnet: include wait queue head in device structure
+Date: Wed, 16 Apr 2014 11:31:44 +0100
+Message-Id: <1397644322-13905-29-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
 References: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
@@ -28,66 +27,147 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit d8316f3991d207fe32881a9ac20241be8fa2bad0 upstream.
+commit 14a0d635d18d0fb552dcc979d6d25106e6541f2e upstream.
 
-When mergeable buffers are disabled, and the
-incoming packet is too large for the rx buffer,
-get_rx_bufs returns success.
+This fixes a race which happens by freeing an object on the stack.
+Quoting Julius:
+> The issue is
+> that it calls usbnet_terminate_urbs() before that, which temporarily
+> installs a waitqueue in dev->wait in order to be able to wait on the
+> tasklet to run and finish up some queues. The waiting itself looks
+> okay, but the access to 'dev->wait' is totally unprotected and can
+> race arbitrarily. I think in this case usbnet_bh() managed to succeed
+> it's dev->wait check just before usbnet_terminate_urbs() sets it back
+> to NULL. The latter then finishes and the waitqueue_t structure on its
+> stack gets overwritten by other functions halfway through the
+> wake_up() call in usbnet_bh().
 
-This was intentional in order for make recvmsg
-truncate the packet and then handle_rx would
-detect err != sock_len and drop it.
+The fix is to just not allocate the data structure on the stack.
+As dev->wait is abused as a flag it also takes a runtime PM change
+to fix this bug.
 
-Unfortunately we pass the original sock_len to
-recvmsg - which means we use parts of iov not fully
-validated.
-
-Fix this up by detecting this overrun and doing packet drop
-immediately.
-
-CVE-2014-0077
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Reported-by: Grant Grundler <grundler@google.com>
+Tested-by: Grant Grundler <grundler@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/vhost/net.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/net/usb/usbnet.c   | 33 +++++++++++++++++++--------------
+ include/linux/usb/usbnet.h |  2 +-
+ 2 files changed, 20 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 969a859..1284e7a 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -537,6 +537,12 @@ static int get_rx_bufs(struct vhost_virtqueue *vq,
- 	*iovcount = seg;
- 	if (unlikely(log))
- 		*log_num = nlogs;
+diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+index f6dce47..3d50e7d 100644
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -727,14 +727,12 @@ EXPORT_SYMBOL_GPL(usbnet_unlink_rx_urbs);
+ // precondition: never called in_interrupt
+ static void usbnet_terminate_urbs(struct usbnet *dev)
+ {
+-	DECLARE_WAIT_QUEUE_HEAD_ONSTACK(unlink_wakeup);
+ 	DECLARE_WAITQUEUE(wait, current);
+ 	int temp;
+ 
+ 	/* ensure there are no more active urbs */
+-	add_wait_queue(&unlink_wakeup, &wait);
++	add_wait_queue(&dev->wait, &wait);
+ 	set_current_state(TASK_UNINTERRUPTIBLE);
+-	dev->wait = &unlink_wakeup;
+ 	temp = unlink_urbs(dev, &dev->txq) +
+ 		unlink_urbs(dev, &dev->rxq);
+ 
+@@ -748,15 +746,14 @@ static void usbnet_terminate_urbs(struct usbnet *dev)
+ 				  "waited for %d urb completions\n", temp);
+ 	}
+ 	set_current_state(TASK_RUNNING);
+-	dev->wait = NULL;
+-	remove_wait_queue(&unlink_wakeup, &wait);
++	remove_wait_queue(&dev->wait, &wait);
+ }
+ 
+ int usbnet_stop (struct net_device *net)
+ {
+ 	struct usbnet		*dev = netdev_priv(net);
+ 	struct driver_info	*info = dev->driver_info;
+-	int			retval;
++	int			retval, pm;
+ 
+ 	clear_bit(EVENT_DEV_OPEN, &dev->flags);
+ 	netif_stop_queue (net);
+@@ -766,6 +763,8 @@ int usbnet_stop (struct net_device *net)
+ 		   net->stats.rx_packets, net->stats.tx_packets,
+ 		   net->stats.rx_errors, net->stats.tx_errors);
+ 
++	/* to not race resume */
++	pm = usb_autopm_get_interface(dev->intf);
+ 	/* allow minidriver to stop correctly (wireless devices to turn off
+ 	 * radio etc) */
+ 	if (info->stop) {
+@@ -792,6 +791,9 @@ int usbnet_stop (struct net_device *net)
+ 	dev->flags = 0;
+ 	del_timer_sync (&dev->delay);
+ 	tasklet_kill (&dev->bh);
++	if (!pm)
++		usb_autopm_put_interface(dev->intf);
 +
-+	/* Detect overrun */
-+	if (unlikely(datalen > 0)) {
-+		r = UIO_MAXIOV + 1;
-+		goto err;
-+	}
- 	return headcount;
- err:
- 	vhost_discard_vq_desc(vq, headcount);
-@@ -592,6 +598,14 @@ static void handle_rx(struct vhost_net *net)
- 		/* On error, stop handling until the next kick. */
- 		if (unlikely(headcount < 0))
- 			break;
-+		/* On overrun, truncate and discard */
-+		if (unlikely(headcount > UIO_MAXIOV)) {
-+			msg.msg_iovlen = 1;
-+			err = sock->ops->recvmsg(NULL, sock, &msg,
-+						 1, MSG_DONTWAIT | MSG_TRUNC);
-+			pr_debug("Discarded rx packet: len %zd\n", sock_len);
-+			continue;
-+		}
- 		/* OK, now we need to know about added descriptors. */
- 		if (!headcount) {
- 			if (unlikely(vhost_enable_notify(&net->dev, vq))) {
+ 	if (info->manage_power &&
+ 	    !test_and_clear_bit(EVENT_NO_RUNTIME_PM, &dev->flags))
+ 		info->manage_power(dev, 0);
+@@ -1360,11 +1362,12 @@ static void usbnet_bh (unsigned long param)
+ 	/* restart RX again after disabling due to high error rate */
+ 	clear_bit(EVENT_RX_KILL, &dev->flags);
+ 
+-	// waiting for all pending urbs to complete?
+-	if (dev->wait) {
+-		if ((dev->txq.qlen + dev->rxq.qlen + dev->done.qlen) == 0) {
+-			wake_up (dev->wait);
+-		}
++	/* waiting for all pending urbs to complete?
++	 * only then can we forgo submitting anew
++	 */
++	if (waitqueue_active(&dev->wait)) {
++		if (dev->txq.qlen + dev->rxq.qlen + dev->done.qlen == 0)
++			wake_up_all(&dev->wait);
+ 
+ 	// or are we maybe short a few urbs?
+ 	} else if (netif_running (dev->net) &&
+@@ -1502,6 +1505,7 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
+ 	dev->driver_name = name;
+ 	dev->msg_enable = netif_msg_init (msg_level, NETIF_MSG_DRV
+ 				| NETIF_MSG_PROBE | NETIF_MSG_LINK);
++	init_waitqueue_head(&dev->wait);
+ 	skb_queue_head_init (&dev->rxq);
+ 	skb_queue_head_init (&dev->txq);
+ 	skb_queue_head_init (&dev->done);
+@@ -1694,9 +1698,10 @@ int usbnet_resume (struct usb_interface *intf)
+ 		spin_unlock_irq(&dev->txq.lock);
+ 
+ 		if (test_bit(EVENT_DEV_OPEN, &dev->flags)) {
+-			/* handle remote wakeup ASAP */
+-			if (!dev->wait &&
+-				netif_device_present(dev->net) &&
++			/* handle remote wakeup ASAP
++			 * we cannot race against stop
++			 */
++			if (netif_device_present(dev->net) &&
+ 				!timer_pending(&dev->delay) &&
+ 				!test_bit(EVENT_RX_HALT, &dev->flags))
+ 					rx_alloc_submit(dev, GFP_NOIO);
+diff --git a/include/linux/usb/usbnet.h b/include/linux/usb/usbnet.h
+index f18d641..123b21b 100644
+--- a/include/linux/usb/usbnet.h
++++ b/include/linux/usb/usbnet.h
+@@ -30,7 +30,7 @@ struct usbnet {
+ 	struct driver_info	*driver_info;
+ 	const char		*driver_name;
+ 	void			*driver_priv;
+-	wait_queue_head_t	*wait;
++	wait_queue_head_t	wait;
+ 	struct mutex		phy_mutex;
+ 	unsigned char		suspend_count;
+ 	unsigned char		pkt_cnt, pkt_err;
 -- 
 1.9.1
 
