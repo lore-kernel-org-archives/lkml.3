@@ -1,90 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254AbaDPJ5U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 05:57:20 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:39553 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753583AbaDPJ5P (ORCPT
+	id S1755286AbaDPJ7A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 05:59:00 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56719 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754823AbaDPJ67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 05:57:15 -0400
+	Wed, 16 Apr 2014 05:58:59 -0400
+Date: Wed, 16 Apr 2014 11:58:37 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: the arch/x86 maintainers <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        ak@linux.intel.com, Steven Rostedt <rostedt@goodmis.org>,
+        Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: CPU: 2 PID: 1857 at arch/x86/kernel/smp.c:124
+Message-ID: <20140416095837.GA11096@twins.programming.kicks-ass.net>
+References: <534E49C8.7050206@nod.at>
+ <20140416092146.GQ11182@twins.programming.kicks-ass.net>
+ <534E4D48.5050002@nod.at>
 MIME-Version: 1.0
-In-Reply-To: <CAAVeFu+rJXH=Uat5_qWPu6OfmDAFxHj2b+n=OSmwtSw4s+fv6w@mail.gmail.com>
-References: <1397544101-18135-1-git-send-email-wens@csie.org>
- <1397544101-18135-2-git-send-email-wens@csie.org> <20140415142024.GD3207@lukather>
- <CAAVeFuLDhTVGDnmYtnxEY8hhn6HE6tU9OB24WDPtmxEHjiRiuQ@mail.gmail.com> <CAAVeFu+rJXH=Uat5_qWPu6OfmDAFxHj2b+n=OSmwtSw4s+fv6w@mail.gmail.com>
-From: Chen-Yu Tsai <wens@csie.org>
-Date: Wed, 16 Apr 2014 17:56:54 +0800
-X-Google-Sender-Auth: hItgCcIXGImRGyimCd2jenleRiY
-Message-ID: <CAGb2v65PF=i3pL58JycJLyp-TjsEeVxO-uDuZ6xrEob5oJLj5g@mail.gmail.com>
-Subject: Re: [PATCH 1/7] gpiolib: gpiolib-of: Implement device tree gpio-names
- based lookup
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-sunxi <linux-sunxi@googlegroups.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <534E4D48.5050002@nod.at>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Apr 16, 2014 at 11:28:40AM +0200, Richard Weinberger wrote:
+> Am 16.04.2014 11:21, schrieb Peter Zijlstra:
+> > On Wed, Apr 16, 2014 at 11:13:44AM +0200, Richard Weinberger wrote:
+> >> Hi!
+> >>
+> >> On a new 8 core server I'm facing the following issue.
+> >> After an oops a warning triggers.
+> > 
+> > I think its fair to ignore everything _after_ an OOPS ;-)
+> 
+> The problem here is that I'm using pstore with the erst backend (ACPI APEI).
+> But it can only store a few KiB. So upon every oops it captures only the bogus
+> warning and the original one is lost.
 
-On Wed, Apr 16, 2014 at 3:06 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
-> On Wed, Apr 16, 2014 at 3:12 PM, Alexandre Courbot <gnurou@gmail.com> wrote:
->> On Tue, Apr 15, 2014 at 11:20 PM, Maxime Ripard
->> <maxime.ripard@free-electrons.com> wrote:
->>> Hi Chen-Yu,
->>>
->>> On Tue, Apr 15, 2014 at 02:41:35PM +0800, Chen-Yu Tsai wrote:
->>>> This patch provides of_get_gpiod_flags_by_name(), which looks up GPIO
->>>> phandles by name only, through gpios/gpio-names, and not by index.
->>>
->>> IIRC, gpios only uses the *-gpios properties, and not gpios/gpio-names
->>> pattern seen on various other things.
->>>
->>> Is it some new property you introduce? If so, please add it to the
->>> documentation.
->>>
->>> Now, I'm not sure that having two distinct representations of GPIOs in
->>> the DT is a good thing. Yes, it's looking odd compared to other
->>> similar bindings, but it's what we have to deal with.
->>
->> Mmmm I *think* I somehow remember a discussion about this topic
->> recently, but I cannot find it. Maybe Chen-yu could point us to the
->> conclusion of this discussion and the rationale for (re)implementing
->> named GPIOs this way?
->
-> Aha, here maybe:
->
-> https://lkml.org/lkml/2014/1/21/164
+Then teach it to stop recording after the first WARN/OOPS.
 
-They're also mentioned in:
-
-https://lkml.org/lkml/2014/2/25/581
-
-> However I don't see a clear conclusion that we should implement that
-> scheme. Not that I am strongly against it, but I'd like to see a
-> practical purpose for it.
-
-Again no clear conclusion on this. I wrote this as it was one possible
-way out of the index-based GPIO stuff.
-
-Hopefully others will chime in and we can decide whether this is what
-we want or not.
-
-
-Cheers
-ChenYu
+You can generates megabytes of crap after an oops, that's a feature
+afaik, think of dump_ftrace_on_oops and the like.
