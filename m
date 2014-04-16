@@ -1,114 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677AbaDPGGb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 02:06:31 -0400
-Received: from ozlabs.org ([103.22.144.67]:41278 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754454AbaDPGG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754638AbaDPGGa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 02:06:30 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:57963 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754205AbaDPGG2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 16 Apr 2014 02:06:28 -0400
-Date: Wed, 16 Apr 2014 16:06:17 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Laura Abbott <lauraa@codeaurora.org>
-Subject: linux-next: build failure after merge of the akpm-current tree
-Message-Id: <20140416160617.bd724cb4061f04409546650b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__16_Apr_2014_16_06_17_+1000_cLnyVbMyJZ4LfquP"
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [PATCH v2] cpufreq, powernv: Fix build failure on UP
+To: paul.gortmaker@windriver.com, rjw@rjwysocki.net
+Cc: viresh.kumar@linaro.org, ego@linux.vnet.ibm.com, svaidy@linux.vnet.ibm.com,
+        preeti@linux.vnet.ibm.com, linux-next@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Date: Wed, 16 Apr 2014 11:35:38 +0530
+Message-ID: <20140416060521.31321.98737.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041606-9574-0000-0000-00000D1837FF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__16_Apr_2014_16_06_17_+1000_cLnyVbMyJZ4LfquP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Paul Gortmaker reported the following build failure of the powernv cpufreq
+driver on UP configs:
 
-Hi Andrew,
+drivers/cpufreq/powernv-cpufreq.c:241:2: error: implicit declaration of
+function 'cpu_sibling_mask' [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+make[3]: *** [drivers/cpufreq/powernv-cpufreq.o] Error 1
+make[2]: *** [drivers/cpufreq] Error 2
+make[1]: *** [drivers] Error 2
+make: *** [sub-make] Error 2
 
-After merging the akpm tree, today's linux-next build (powerpc
-ppc44x_defconfig) failed like this:
+The trouble here is that cpu_sibling_mask is defined only in <asm/smp.h>, and
+<linux/smp.h> includes <asm/smp.h> only in SMP builds.
 
-arch/powerpc/platforms/44x/warp.c: In function 'warp_probe':
-arch/powerpc/platforms/44x/warp.c:52:2: error: 'ISA_DMA_THRESHOLD' undeclar=
-ed (first use in this function)
-arch/powerpc/mm/dma-noncoherent.c: In function '__dma_alloc_coherent':
-arch/powerpc/mm/dma-noncoherent.c:159:13: error: 'ISA_DMA_THRESHOLD' undecl=
-ared (first use in this function)
+So fix this build failure by explicitly including <asm/smp.h> in the driver,
+so that we get the definition of cpu_sibling_mask even in UP configurations.
 
-Probably caused by commit ff35bd54456e ("lib/scatterlist: make
-ARCH_HAS_SG_CHAIN an actual Kconfig") which removed an implicit include
-of <asm/dma.h> with the removal of the arch specific scatterlist.h.
-
-I have added the following patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 16 Apr 2014 16:03:01 +1000
-Subject: [PATCH] lib/scatterlist: make ARCH_HAS_SG_CHAIN an actual Kconfig =
-fix
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Reported-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- arch/powerpc/mm/dma-noncoherent.c | 1 +
- arch/powerpc/platforms/44x/warp.c | 1 +
- 2 files changed, 2 insertions(+)
 
-diff --git a/arch/powerpc/mm/dma-noncoherent.c b/arch/powerpc/mm/dma-noncoh=
-erent.c
-index 7b6c10750179..d85e86aac7fb 100644
---- a/arch/powerpc/mm/dma-noncoherent.c
-+++ b/arch/powerpc/mm/dma-noncoherent.c
-@@ -33,6 +33,7 @@
- #include <linux/export.h>
-=20
- #include <asm/tlbflush.h>
-+#include <asm/dma.h>
-=20
- #include "mmu_decl.h"
-=20
-diff --git a/arch/powerpc/platforms/44x/warp.c b/arch/powerpc/platforms/44x=
-/warp.c
-index 534574a97ec9..3a104284b338 100644
---- a/arch/powerpc/platforms/44x/warp.c
-+++ b/arch/powerpc/platforms/44x/warp.c
-@@ -25,6 +25,7 @@
- #include <asm/time.h>
- #include <asm/uic.h>
- #include <asm/ppc4xx.h>
-+#include <asm/dma.h>
-=20
-=20
- static __initdata struct of_device_id warp_of_bus[] =3D {
---=20
-1.9.2
+ drivers/cpufreq/powernv-cpufreq.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/drivers/cpufreq/powernv-cpufreq.c b/drivers/cpufreq/powernv-cpufreq.c
+index 9edccc6..af49688 100644
+--- a/drivers/cpufreq/powernv-cpufreq.c
++++ b/drivers/cpufreq/powernv-cpufreq.c
+@@ -29,6 +29,7 @@
+ 
+ #include <asm/cputhreads.h>
+ #include <asm/reg.h>
++#include <asm/smp.h> /* Required for cpu_sibling_mask() in UP configs */
+ 
+ #define POWERNV_MAX_PSTATES	256
+ 
 
---Signature=_Wed__16_Apr_2014_16_06_17_+1000_cLnyVbMyJZ4LfquP
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTTh3iAAoJEMDTa8Ir7ZwVY8wP/iKchfiEYPdZHcFkh+rsQdBF
-UAAD0uxGpxEPr3Aoq0PRNYkzsROBW11vCvpn1rJdbIjs7RVATC62NU5Qm2HNojAc
-1SJQjsmC6ntzHVZAMs+TCibrQxuaLC/PQ0l4Aa/5E4mOKaB+M1IQkwSCDSNpDLii
-PcGp9EA5U76gGLaJTMkmuHtOwQcGkO8Dpe3s19OgRbafX/XvvFwJikp9cXldhRaG
-0Jh5o08X/LP8w9ZEXuyjVfZxrr1VO9E4jCppDEc2bW1tCMqYTuG4pgVzLfBStB6I
-SHS7VWbj3eNpCVbgEgWMDAB7WlCGY/hD47nl8RFyJ6tupmt4AY/aWMwOD2PA24aA
-JV3KxWj+d9BoeFVhzJd6VinuZPb9is+LPrWZOtsEZg37UNLfrg3hvE3SciJ5KzX5
-dhgJIl7sWbFsURZUkoGGUcvfnnxa12SuBzfl+ovcAhVkP3MN1FucMlBN5QDCyXSM
-tGb5CASeTua+fzfQ4c9ewCt2FfB2fS4CzuVXqZEnx2d/4JkyzRh3TZwSXRr61SnP
-5F7x85gu2qGbsRbwVBbQLicW2i7Kofg7yJefcQpjBwLDyYIPPMnIuKoYb1CS8bi/
-vdURMBGZzE4MbatmZioG5Ch6Vo05dT19PFPsEzUbfe1zGLOxUMgNwAK9o44NSHfa
-nVMF1/dKO9GHoFTB5mR9
-=VR2e
------END PGP SIGNATURE-----
-
---Signature=_Wed__16_Apr_2014_16_06_17_+1000_cLnyVbMyJZ4LfquP--
