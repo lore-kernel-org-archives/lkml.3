@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754554AbaDPFlV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 01:41:21 -0400
-Received: from smtprelay0036.hostedemail.com ([216.40.44.36]:47306 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751845AbaDPFlT (ORCPT
+	id S1754569AbaDPFnO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 01:43:14 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:39974 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752014AbaDPFnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 01:41:19 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3351:3622:3867:3868:3871:3872:4250:4321:4605:5007:7652:10004:10400:10848:11026:11658:11914:12043:12296:12517:12519:12679:12740:13069:13160:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: badge81_7fa787cc3163f
-X-Filterd-Recvd-Size: 1686
-Message-ID: <1397626875.15177.3.camel@joe-AO722>
-Subject: Re: [PATCH v2] Drivers/PCI: Logging clean-up [1]
-From: Joe Perches <joe@perches.com>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        akpm <akpm@linux-foundation.org>, Bjorn <bhelgaas@google.com>
-Date: Tue, 15 Apr 2014 22:41:15 -0700
-In-Reply-To: <20140416073736.8ae3ea7cd0f94f0e056fca84@skynet.be>
-References: <20140416073736.8ae3ea7cd0f94f0e056fca84@skynet.be>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Apr 2014 01:43:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140415124438.GB2438@localhost.localdomain>
+References: <cover.1397492345.git.viresh.kumar@linaro.org>
+	<b38dda39bf6cd18df5fab86f7c7cc86a6979786f.1397492345.git.viresh.kumar@linaro.org>
+	<20140414232218.GE1877@localhost.localdomain>
+	<CAKohpomKrQydz12mXQnQe8sw3X-OotRqLDCxQFi5goyk6D9-=w@mail.gmail.com>
+	<20140415091323.GK1877@localhost.localdomain>
+	<CAKohpokVAbD=ym9c6UpRjbWnmzMbTwukgMo1_h+VOeRyPXxZKQ@mail.gmail.com>
+	<20140415124438.GB2438@localhost.localdomain>
+Date: Wed, 16 Apr 2014 11:13:10 +0530
+Message-ID: <CAKohponji62SKmbfnELX0pwk3Yy14gDat2sJ-OJctmybqQSCGA@mail.gmail.com>
+Subject: Re: [PATCH 29/38] tick-sched: remove wrapper around __tick_nohz_task_switch()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arvind Chauhan <Arvind.Chauhan@arm.com>,
+        Linaro Networking <linaro-networking@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-16 at 07:37 +0200, Fabian Frederick wrote:
-> -Convert printk(KERN_WARNING|KERN_ERR|KERN_INFO to pr_foo()
-> -Define pr_fmt where it doesn't break existing format.
-[]
->  (other ones ?)
-[]
-> diff --git a/drivers/pci/hotplug/cpqphp_core.c b/drivers/pci/hotplug/cpqphp_core.c
-[]
-> @@ -830,8 +831,8 @@ static int cpqhpc_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
->  
->  	err = pci_enable_device(pdev);
->  	if (err) {
-> -		printk(KERN_ERR MY_NAME ": cannot enable PCI device %s (%d)\n",
-> -			pci_name(pdev), err);
-> +		pr_err("cannot enable PCI device %s (%d)\n", pci_name(pdev),
-> +		       err);
+On 15 April 2014 18:14, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> Sure but check out the static_key_false() in the implementation of tick_nohz_full_enabled().
+> That's where the magic hides.
 
-trivia:
+> No problem, the jump label/static key code is quite tricky. And its use
+> can be easily missed, as in here.
+>
+> Also its unfamous API naming (static_key_true/static_key_true) that is
+> anything but intuitive.
 
-My preference is to keep format and argument
-on a single line where possible and on
-separate lines when not.
+That was tricky enough to be missed on first look :)
 
-		pr_err("cannot enable PCI device %s (%d)\n",
-		       pci_name(pdev), err);
+Okay here is the answer to what you asked earlier:
 
+>> In this case probably we can move !can_stop_full_tick() as well to the wrapper ?
+>
+> Do you mean moving all the code of __tick_nohz_task_switch() to tick_nohz_task_switch()?
+> I much prefer we don't do that. This is going to make can_stop_full_tick() a publicly
+> visible nohz internal. And it may uglify tick.h as well.
 
+I probably asked the wrong question, I meant tick_nohz_tick_stopped()
+instead of !can_stop_full_tick().
+
+Or, can we make the code more efficient by avoiding a branch by doing this:
+
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index 1065a51..12632cc 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -220,7 +220,7 @@ static inline void tick_nohz_full_check(void)
+
+ static inline void tick_nohz_task_switch(void)
+ {
+-       if (tick_nohz_full_enabled())
++       if (tick_nohz_full_enabled() && tick_nohz_tick_stopped())
+                __tick_nohz_task_switch();
+ }
+
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 45037c4..904e09b 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -273,7 +273,7 @@ void __tick_nohz_task_switch(void)
+
+        local_irq_save(flags);
+
+-       if (tick_nohz_tick_stopped() && !can_stop_full_tick())
++       if (!can_stop_full_tick())
+                tick_nohz_full_kick();
+
+        local_irq_restore(flags);
