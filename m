@@ -1,55 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755492AbaDPK1m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:27:42 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:60811 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755360AbaDPK1W (ORCPT
+	id S1755475AbaDPK1j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:27:39 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:12501 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755307AbaDPK1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:27:22 -0400
-Date: Wed, 16 Apr 2014 11:27:16 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v5 6/9] mfd: max14577: Add MAX14577 prefix to IRQ defines
-Message-ID: <20140416102716.GK4754@lee--X1>
-References: <1397467040-30502-1-git-send-email-k.kozlowski@samsung.com>
- <1397467040-30502-7-git-send-email-k.kozlowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1397467040-30502-7-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 16 Apr 2014 06:27:08 -0400
+X-AuditID: cbfee690-b7f266d00000287c-23-534e5af87cae
+From: Sangjung Woo <sangjung.woo@samsung.com>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Sangjung Woo <sangjung.woo@samsung.com>
+Subject: [PATCH 4/8] extcon: max14577: Use devm_extcon_dev_register()
+Date: Wed, 16 Apr 2014 19:26:59 +0900
+Message-id: <1397644023-32516-5-git-send-email-sangjung.woo@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1397644023-32516-1-git-send-email-sangjung.woo@samsung.com>
+References: <1397644023-32516-1-git-send-email-sangjung.woo@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsWyRsSkWPdHlF+wwfydFhbXvzxntbi8aw6b
+	xe3GFWwWC/aUOLB49G1ZxejxeZNcAFMUl01Kak5mWWqRvl0CV8bs85OYCxbzVfxoa2NsYPzN
+	3cXIySEhYCKxZsosJghbTOLCvfVsXYxcHEICSxkl5nQvZoQp2jN9GjNEYhGjxLYv/9ghnDYm
+	ifMb97KAVLEJ6Eo8OXCZGcQWEQiW6Dh5HGwss4CnxNzJXWwgtrCAq8TKnXeB4hwcLAKqEjM6
+	rEHCvAIeEg1fbrOChCUEFCTmTLIBCXMCdW5+9Y0ZJCwEVHLvqxnIVgmB92wSV/+3sYLUsAgI
+	SHybfIgFolVWYtMBZoiTJSUOrrjBMoFReAEjwypG0dSC5ILipPQiE73ixNzi0rx0veT83E2M
+	wCA9/e/ZhB2M9w5YH2JMBho3kVlKNDkfGOR5JfGGxmZGFqYmpsZG5pZmpAkrifOqPUoKEhJI
+	TyxJzU5NLUgtii8qzUktPsTIxMEp1cDY8agyVCD+56Uni1erFnhxldc9sCwyN/umY1bf+XCZ
+	0oGldmucGCYHv5rJ4OivHFJWdj5PrVBS5Yhtcbz+XbE7k9Yu/PE5U+Ebu38XW8ktQbeIe5Xn
+	LGOqXs11tH7U7u9a4DjnS2uG0pYwtnVC/w/csOBg0ldZPimuMPNW2tW4PSLnbITtO5RYijMS
+	DbWYi4oTAUKg2qBoAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t9jAd0fUX7BBoeaDS2uf3nOanF51xw2
+	i9uNK9gsFuwpcWDx6NuyitHj8ya5AKaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0Nd
+	Q0sLcyWFvMTcVFslF58AXbfMHKBFSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM
+	0EDCGsaM2ecnMRcs5qv40dbG2MD4m7uLkZNDQsBEYs/0acwQtpjEhXvr2boYuTiEBBYxSmz7
+	8o8dwmljkji/cS8LSBWbgK7EkwOXwTpEBIIlOk4eZwKxmQU8JeZO7mIDsYUFXCVW7rwLFOfg
+	YBFQlZjRYQ0S5hXwkGj4cpsVJCwhoCAxZ5INSJgTqHPzq2/MIGEhoJJ7X80mMPIuYGRYxSia
+	WpBcUJyUnmukV5yYW1yal66XnJ+7iREcA8+kdzCuarA4xCjAwajEwzszxzdYiDWxrLgy9xCj
+	BAezkghvY6RfsBBvSmJlVWpRfnxRaU5q8SHGZKCTJjJLiSbnA+MzryTe0NjEzMjSyNzQwsjY
+	nDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoYQ7R3az9JF9rlfL1kz6PXS62uCEw3qK3I
+	lmS2Dm8q71h4+al6oMgd1VmfzGabK2z8xfNE2PHnAnv3BXqzjCvVvu34nW7z0/L6zPT7ruuL
+	fPW0ovl2LXzaFBNZHbE/t+XD3amRccUG6Tfs6ran8PI5Pbo0ayrD9KutsXcYl/n/1FvJ33C6
+	3M9HiaU4I9FQi7moOBEAt5qYYsUCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Apr 2014, Krzysztof Kozlowski wrote:
+Use the resource-managed extcon device register function (i.e.
+devm_extcon_dev_register()) instead of extcon_dev_register(). If extcon device
+is attached with this function, that extcon device is automatically unregistered
+on driver detach. That reduces tiresome managing code.
 
-> This patch prepares for adding support for MAX77836 device to existing
-> max14577 driver by adding MAX14577 prefix to defines of interrupts.
-> 
-> This is only a rename-like patch, new code is not added.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  drivers/mfd/max14577.c               | 24 ++++++++++++------------
->  include/linux/mfd/max14577-private.h | 28 ++++++++++++++--------------
->  2 files changed, 26 insertions(+), 26 deletions(-)
+Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
+---
+ drivers/extcon/extcon-max14577.c |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
+diff --git a/drivers/extcon/extcon-max14577.c b/drivers/extcon/extcon-max14577.c
+index 1fef08d..c6166e7 100644
+--- a/drivers/extcon/extcon-max14577.c
++++ b/drivers/extcon/extcon-max14577.c
+@@ -675,7 +675,7 @@ static int max14577_muic_probe(struct platform_device *pdev)
+ 	}
+ 	info->edev->name = DEV_NAME;
+ 	info->edev->supported_cable = max14577_extcon_cable;
+-	ret = extcon_dev_register(info->edev);
++	ret = devm_extcon_dev_register(&pdev->dev, info->edev);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to register extcon device\n");
+ 		return ret;
+@@ -694,7 +694,7 @@ static int max14577_muic_probe(struct platform_device *pdev)
+ 			MAX14577_REG_DEVICEID, &id);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "failed to read revision number\n");
+-		goto err_extcon;
++		return ret;
+ 	}
+ 	dev_info(info->dev, "device ID : 0x%x\n", id);
+ 
+@@ -714,10 +714,6 @@ static int max14577_muic_probe(struct platform_device *pdev)
+ 			delay_jiffies);
+ 
+ 	return ret;
+-
+-err_extcon:
+-	extcon_dev_unregister(info->edev);
+-	return ret;
+ }
+ 
+ static int max14577_muic_remove(struct platform_device *pdev)
+@@ -725,7 +721,6 @@ static int max14577_muic_remove(struct platform_device *pdev)
+ 	struct max14577_muic_info *info = platform_get_drvdata(pdev);
+ 
+ 	cancel_work_sync(&info->irq_work);
+-	extcon_dev_unregister(info->edev);
+ 
+ 	return 0;
+ }
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
