@@ -1,48 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756591AbaDPUEt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 16:04:49 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:59578 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754802AbaDPUEs (ORCPT
+	id S1755004AbaDPUIQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 16:08:16 -0400
+Received: from smtprelay2.synopsys.com ([198.182.60.111]:55717 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751604AbaDPUIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 16:04:48 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20140416205644.396709aa@alan.etchedpixels.co.uk>
-References: <1397668411-27162-7-git-send-email-ynvich@gmail.com> <1397668667-27328-1-git-send-email-ynvich@gmail.com> <1397668667-27328-15-git-send-email-ynvich@gmail.com> <20140416193949.47f4ea68@alan.etchedpixels.co.uk> <9eb6a7ac-e8c0-4c05-8f8a-e047d2614cba@email.android.com> <20140416205644.396709aa@alan.etchedpixels.co.uk>
+	Wed, 16 Apr 2014 16:08:13 -0400
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: sundeep subbaraya <sundeep.lkml@gmail.com>, "balbi@ti.com" <balbi@ti.com>
+CC: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Michal Simek <michals@xilinx.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
+Subject: RE: [PATCH v2 2/2] usb: gadget: Add xilinx axi usb2 device support
+Thread-Topic: [PATCH v2 2/2] usb: gadget: Add xilinx axi usb2 device support
+Thread-Index: AQHPWWCF5z+pPb9Pf0GlHOqwGhCN35sUq20g
+Date: Wed, 16 Apr 2014 20:08:03 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E03046D18F4A6@US01WEMBX2.internal.synopsys.com>
+References: <1396510519-8555-1-git-send-email-sbhatta@xilinx.com>
+	<113d0620-4003-417d-806b-0b79ae692829@VA3EHSMHS023.ehs.local>
+	<20140403145853.GD14162@saruman.home>
+ <CALHRZuoCtEz5-CmU17dUpVS_MjSDdYVLMSvgXq_RwxLj_KJMDA@mail.gmail.com>
+In-Reply-To: <CALHRZuoCtEz5-CmU17dUpVS_MjSDdYVLMSvgXq_RwxLj_KJMDA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.64.241]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v4 21/21] misc: support for I-8024 in LP-8x4x
-From: Sergei Ianovich <ynvich@gmail.com>
-Date: Thu, 17 Apr 2014 00:06:40 +0400
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Randy Dunlap <rdunlap@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-doc@vger.kernel.org
-Message-ID: <f36fdc97-7cc3-49a8-9643-f7096defd829@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3GK8SfL008188
 
-One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> wrote:
->> I've closely examined a dozen or two of drivers, but of them was
->close enough for I-8024 in terms of speed. Its channel takes 0.1 us to
->set up from kernel. Real user space programs can setup all for channels
->in 1 us with interface provided by this patch. That's said I don't have
->data on time that it takes for output to stabilize at the desired
->levels.
->> 
->> I've chosen drivers/misc as a location that looked to provide the
->shortest path for my driver to land. The driver needs support for the
->bus, and here it can be in one driver.
->> 
->> It would be great to have some more detailed input on this issue.
->
->IIO is where we are trying to standardise all the industrial control
->devices. There is stuff in places like misc for historical reasons.
+> From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-owner@vger.kernel.org] On Behalf Of sundeep subbaraya
+> Sent: Wednesday, April 16, 2014 3:39 AM
+> 
+> Hi Felipe,
+> 
+> On Thu, Apr 3, 2014 at 8:28 PM, Felipe Balbi <balbi@ti.com> wrote:
+> 
+> >> +static int start_dma(struct xusb_ep *ep, u32 src, u32 dst, u32 length)
+> >
+> > please prepend this with xudc_, it makes tracing a lot easier.
+> >
+> >> +{
+> >> +     struct xusb_udc *udc;
+> >> +     int rc = 0;
+> >> +     unsigned long timeout;
+> >> +
+> >> +     udc = ep->udc;
+> >> +     /*
+> >> +      * Set the addresses in the DMA source and
+> >> +      * destination registers and then set the length
+> >> +      * into the DMA length register.
+> >> +      */
+> >> +     udc->write_fn(udc->base_address, XUSB_DMA_DSAR_ADDR_OFFSET, src);
+> >> +     udc->write_fn(udc->base_address, XUSB_DMA_DDAR_ADDR_OFFSET, dst);
+> >> +     udc->write_fn(udc->base_address, XUSB_DMA_LENGTH_OFFSET, length);
+> >> +
+> >> +     /*
+> >> +      * Wait till DMA transaction is complete and
+> >> +      * check whether the DMA transaction was
+> >> +      * successful.
+> >> +     */
+> >> +     while ((udc->read_fn(ep->udc->base_address + XUSB_DMA_STATUS_OFFSET) &
+> >> +                     XUSB_DMA_DMASR_BUSY) == XUSB_DMA_DMASR_BUSY) {
+> >> +             timeout = jiffies + 10000;
+> >> +
+> >> +             if (time_after(jiffies, timeout)) {
+> >> +                     rc = -ETIMEDOUT;
+> >> +                     goto clean;
+> >> +             }
+> >> +     }
+> >
+> > don't you get an IRQ for DMA completion ? If you do, you could be using
+> > wait_for_completion()
+> 
+> This function is called in interrupt context when buffer is ready or
+> free. It initiates
+> DMA to transfer data from IP buffer to memory. Hence it waits in busy
+> loop till DMA
+> completes
 
-Great. I'll rewrite the driver using IIO, but the bus issue needs to be settled first.
+If this function is called in interrupt context, then you can't use
+jiffies for your timeout, since jiffies may not get updated while in
+interrupt context.
 
+-- 
+Paul
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
