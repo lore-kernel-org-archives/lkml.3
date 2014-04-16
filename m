@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475AbaDPK1j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:27:39 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:12501 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755307AbaDPK1I (ORCPT
+	id S1755458AbaDPK1g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:27:36 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:10660 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755357AbaDPK1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:27:08 -0400
-X-AuditID: cbfee690-b7f266d00000287c-23-534e5af87cae
+	Wed, 16 Apr 2014 06:27:11 -0400
+X-AuditID: cbfee690-b7f266d00000287c-51-534e5afecdbb
 From: Sangjung Woo <sangjung.woo@samsung.com>
 To: MyungJoo Ham <myungjoo.ham@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>
 Cc: linux-kernel@vger.kernel.org, Sangjung Woo <sangjung.woo@samsung.com>
-Subject: [PATCH 4/8] extcon: max14577: Use devm_extcon_dev_register()
-Date: Wed, 16 Apr 2014 19:26:59 +0900
-Message-id: <1397644023-32516-5-git-send-email-sangjung.woo@samsung.com>
+Subject: [PATCH 8/8] extcon: arizona: Use devm_extcon_dev_register()
+Date: Wed, 16 Apr 2014 19:27:03 +0900
+Message-id: <1397644023-32516-9-git-send-email-sangjung.woo@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1397644023-32516-1-git-send-email-sangjung.woo@samsung.com>
 References: <1397644023-32516-1-git-send-email-sangjung.woo@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsWyRsSkWPdHlF+wwfydFhbXvzxntbi8aw6b
-	xe3GFWwWC/aUOLB49G1ZxejxeZNcAFMUl01Kak5mWWqRvl0CV8bs85OYCxbzVfxoa2NsYPzN
-	3cXIySEhYCKxZsosJghbTOLCvfVsXYxcHEICSxkl5nQvZoQp2jN9GjNEYhGjxLYv/9ghnDYm
-	ifMb97KAVLEJ6Eo8OXCZGcQWEQiW6Dh5HGwss4CnxNzJXWwgtrCAq8TKnXeB4hwcLAKqEjM6
-	rEHCvAIeEg1fbrOChCUEFCTmTLIBCXMCdW5+9Y0ZJCwEVHLvqxnIVgmB92wSV/+3sYLUsAgI
-	SHybfIgFolVWYtMBZoiTJSUOrrjBMoFReAEjwypG0dSC5ILipPQiE73ixNzi0rx0veT83E2M
-	wCA9/e/ZhB2M9w5YH2JMBho3kVlKNDkfGOR5JfGGxmZGFqYmpsZG5pZmpAkrifOqPUoKEhJI
-	TyxJzU5NLUgtii8qzUktPsTIxMEp1cDY8agyVCD+56Uni1erFnhxldc9sCwyN/umY1bf+XCZ
-	0oGldmucGCYHv5rJ4OivHFJWdj5PrVBS5Yhtcbz+XbE7k9Yu/PE5U+Ebu38XW8ktQbeIe5Xn
-	LGOqXs11tH7U7u9a4DjnS2uG0pYwtnVC/w/csOBg0ldZPimuMPNW2tW4PSLnbITtO5RYijMS
-	DbWYi4oTAUKg2qBoAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t9jAd0fUX7BBoeaDS2uf3nOanF51xw2
-	i9uNK9gsFuwpcWDx6NuyitHj8ya5AKaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0Nd
-	Q0sLcyWFvMTcVFslF58AXbfMHKBFSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM
-	0EDCGsaM2ecnMRcs5qv40dbG2MD4m7uLkZNDQsBEYs/0acwQtpjEhXvr2boYuTiEBBYxSmz7
-	8o8dwmljkji/cS8LSBWbgK7EkwOXwTpEBIIlOk4eZwKxmQU8JeZO7mIDsYUFXCVW7rwLFOfg
-	YBFQlZjRYQ0S5hXwkGj4cpsVJCwhoCAxZ5INSJgTqHPzq2/MIGEhoJJ7X80mMPIuYGRYxSia
-	WpBcUJyUnmukV5yYW1yal66XnJ+7iREcA8+kdzCuarA4xCjAwajEwzszxzdYiDWxrLgy9xCj
-	BAezkghvY6RfsBBvSmJlVWpRfnxRaU5q8SHGZKCTJjJLiSbnA+MzryTe0NjEzMjSyNzQwsjY
-	nDRhJXHeg63WgUIC6YklqdmpqQWpRTBbmDg4pRoYQ7R3az9JF9rlfL1kz6PXS62uCEw3qK3I
-	lmS2Dm8q71h4+al6oMgd1VmfzGabK2z8xfNE2PHnAnv3BXqzjCvVvu34nW7z0/L6zPT7ruuL
-	fPW0ovl2LXzaFBNZHbE/t+XD3amRccUG6Tfs6ran8PI5Pbo0ayrD9KutsXcYl/n/1FvJ33C6
-	3M9HiaU4I9FQi7moOBEAt5qYYsUCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsWyRsSkQPdflF+wwcwN7BbXvzxntbi8aw6b
+	xe3GFWwWC/aUOLB49G1ZxejxeZNcAFMUl01Kak5mWWqRvl0CV8b1t7sYC84KVPRcfcrawPiO
+	t4uRk0NCwERiR+c+ZghbTOLCvfVsXYxcHEICSxklOh88YIEpWtn6CCqxiFFi9rJOFginjUli
+	U+cidpAqNgFdiScHLoONEhEIlug4eZwJxGYW8JSYO7kLqJuDQ1jARWLHHx6QMIuAqsT0qS/B
+	SngFPCQ+7F0DViIhoCAxZ5INSJgTqHPzq2/MIGEhoJJ7X81AtkoIvGaT2HNmFSPEGAGJb5MP
+	sUC0ykpsOgD1i6TEwRU3WCYwCi9gZFjFKJpakFxQnJReZKJXnJhbXJqXrpecn7uJERikp/89
+	m7CD8d4B60OMyUDjJjJLiSbnA4M8ryTe0NjMyMLUxNTYyNzSjDRhJXFetUdJQUIC6Yklqdmp
+	qQWpRfFFpTmpxYcYmTg4pRoY2c8UrxXJ1VDUuHJj14yqPf71fR/0b7/cMWPfoTtN+ze41L0p
+	qLy43WOqtfovR/b5LJnrzXIXSkQYNLnd/Xww+Oajd+5emvHvlEUmTdc+8Jx388cbUpeL77tr
+	ex+PeLPSwFs2lPOCTtQLu22HvNvy2mJuZS+/ZVSkuEL/9roo6U8vGr+dlDzhp8RSnJFoqMVc
+	VJwIAA0zadRoAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrEIsWRmVeSWpSXmKPExsVy+t9jAd2/UX7BBi/O2Fhc//Kc1eLyrjls
+	FrcbV7BZLNhT4sDi0bdlFaPH501yAUxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6
+	hpYW5koKeYm5qbZKLj4Bum6ZOUCLlBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZ
+	oIGENYwZ19/uYiw4K1DRc/UpawPjO94uRk4OCQETiZWtj9ggbDGJC/fWA9lcHEICixglZi/r
+	ZIFw2pgkNnUuYgepYhPQlXhy4DIziC0iECzRcfI4E4jNLOApMXdyF1A3B4ewgIvEjj88IGEW
+	AVWJ6VNfgpXwCnhIfNi7BqxEQkBBYs4kG5AwJ1Dn5lffmEHCQkAl976aTWDkXcDIsIpRNLUg
+	uaA4KT3XUK84Mbe4NC9dLzk/dxMjOAaeSe1gXNlgcYhRgINRiYd3Ro5vsBBrYllxZe4hRgkO
+	ZiUR3sZIv2Ah3pTEyqrUovz4otKc1OJDjMlAN01klhJNzgfGZ15JvKGxiZmRpZG5oYWRsTlp
+	wkrivAdarQOFBNITS1KzU1MLUotgtjBxcEo1MEYkqG5fPklHtmaXT41jjJzj0W9Vl09yeH3f
+	9a40bBnjoimVFUtm/jnQ3rtXaZXfNI4XU3gYphb16wassnpj8Wnn93P9M8+Fhxt4/ZhpeFJC
+	SWKhReZsk1bGz/KRB8If8Z5ar2z5yK05/sXEn75dKS6F5zlEPrxb2fu//0yX5MUu/kd72gRL
+	apVYijMSDbWYi4oTAajYvVrFAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -55,47 +55,59 @@ on driver detach. That reduces tiresome managing code.
 
 Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
 ---
- drivers/extcon/extcon-max14577.c |    9 ++-------
- 1 file changed, 2 insertions(+), 7 deletions(-)
+ drivers/extcon/extcon-arizona.c |   13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/extcon/extcon-max14577.c b/drivers/extcon/extcon-max14577.c
-index 1fef08d..c6166e7 100644
---- a/drivers/extcon/extcon-max14577.c
-+++ b/drivers/extcon/extcon-max14577.c
-@@ -675,7 +675,7 @@ static int max14577_muic_probe(struct platform_device *pdev)
+diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+index 98a14f6..40e6c0b 100644
+--- a/drivers/extcon/extcon-arizona.c
++++ b/drivers/extcon/extcon-arizona.c
+@@ -1105,15 +1105,13 @@ static int arizona_extcon_probe(struct platform_device *pdev)
+ 	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
+ 	if (!info) {
+ 		dev_err(&pdev->dev, "Failed to allocate memory\n");
+-		ret = -ENOMEM;
+-		goto err;
++		return -ENOMEM;
  	}
- 	info->edev->name = DEV_NAME;
- 	info->edev->supported_cable = max14577_extcon_cable;
--	ret = extcon_dev_register(info->edev);
-+	ret = devm_extcon_dev_register(&pdev->dev, info->edev);
- 	if (ret) {
- 		dev_err(&pdev->dev, "failed to register extcon device\n");
- 		return ret;
-@@ -694,7 +694,7 @@ static int max14577_muic_probe(struct platform_device *pdev)
- 			MAX14577_REG_DEVICEID, &id);
+ 
+ 	info->micvdd = devm_regulator_get(arizona->dev, "MICVDD");
+ 	if (IS_ERR(info->micvdd)) {
+-		ret = PTR_ERR(info->micvdd);
+ 		dev_err(arizona->dev, "Failed to get MICVDD: %d\n", ret);
+-		goto err;
++		return PTR_ERR(info->micvdd);
+ 	}
+ 
+ 	mutex_init(&info->lock);
+@@ -1155,11 +1153,11 @@ static int arizona_extcon_probe(struct platform_device *pdev)
+ 	info->edev.dev.parent = arizona->dev;
+ 	info->edev.supported_cable = arizona_cable;
+ 
+-	ret = extcon_dev_register(&info->edev);
++	ret = devm_extcon_dev_register(&pdev->dev, &info->edev);
  	if (ret < 0) {
- 		dev_err(&pdev->dev, "failed to read revision number\n");
--		goto err_extcon;
+ 		dev_err(arizona->dev, "extcon_dev_register() failed: %d\n",
+ 			ret);
+-		goto err;
 +		return ret;
  	}
- 	dev_info(info->dev, "device ID : 0x%x\n", id);
  
-@@ -714,10 +714,6 @@ static int max14577_muic_probe(struct platform_device *pdev)
- 			delay_jiffies);
- 
+ 	info->input = devm_input_allocate_device(&pdev->dev);
+@@ -1410,8 +1408,6 @@ err_rise:
+ err_input:
+ err_register:
+ 	pm_runtime_disable(&pdev->dev);
+-	extcon_dev_unregister(&info->edev);
+-err:
  	return ret;
--
--err_extcon:
--	extcon_dev_unregister(info->edev);
--	return ret;
  }
  
- static int max14577_muic_remove(struct platform_device *pdev)
-@@ -725,7 +721,6 @@ static int max14577_muic_remove(struct platform_device *pdev)
- 	struct max14577_muic_info *info = platform_get_drvdata(pdev);
- 
- 	cancel_work_sync(&info->irq_work);
--	extcon_dev_unregister(info->edev);
+@@ -1445,7 +1441,6 @@ static int arizona_extcon_remove(struct platform_device *pdev)
+ 	regmap_update_bits(arizona->regmap, ARIZONA_JACK_DETECT_ANALOGUE,
+ 			   ARIZONA_JD1_ENA, 0);
+ 	arizona_clk32k_disable(arizona);
+-	extcon_dev_unregister(&info->edev);
  
  	return 0;
  }
