@@ -1,117 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752355AbaDPElt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 00:41:49 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47165 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076AbaDPElr (ORCPT
+	id S1753177AbaDPEl7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 00:41:59 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:43544 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488AbaDPElz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 00:41:47 -0400
-Date: Tue, 15 Apr 2014 23:39:23 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Felipe Balbi <balbi@ti.com>, sundeep subbaraya <sundeep.lkml@gmail.com>,
-        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Michal Simek <michals@xilinx.com>,
-        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH RFC] usb: gadget: Add xilinx axi usb2 device support
-Message-ID: <20140416043922.GC15056@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <20140415171830.GB16002@saruman.home>
- <Pine.LNX.4.44L0.1404151345580.1310-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2JFBq9zoW8cOFH7v"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1404151345580.1310-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 16 Apr 2014 00:41:55 -0400
+X-AuditID: cbfee68d-b7fcd6d00000315b-d0-534e0a11c5b4
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'linux-pci'" <linux-pci@vger.kernel.org>,
+        "'Bjorn Helgaas'" <bhelgaas@google.com>
+Cc: linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
+        linux-kernel@vger.kernel.org, "'Liviu Dudau'" <Liviu.Dudau@arm.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+Subject: [RFC PATCH 0/2] Add support for Samsung GH7 PCIe controller
+Date: Wed, 16 Apr 2014 13:41:53 +0900
+Message-id: <000801cf592e$30b7bff0$92273fd0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac9ZLjB5lnZMYwshRiWF5lDNQlfulQ==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t8zQ11BLr9gg98vbCz+TjrGbrGkKcPi
+	8sJLrBa9C66yWbw/9IzZYtPja6wWl3fNYbM4O+84m8WBpe0sDpwea+atYfT4/WsSo8eCTaUe
+	m5fUe9z+95jZo2/LKkaPz5vkAtijuGxSUnMyy1KL9O0SuDJu/H3PUvCAreLU83+MDYx7WLsY
+	OTkkBEwkmnYsYIOwxSQu3FsPZHNxCAksY5S417qCBabo1YRTTBCJ6YwSC//MYYZwfjNK3P21
+	DKyKTUBN4suXw+wgtohAiMTvu7fBRjEL/GGU2HnyHlAHB4ewgItE5zIDEJNFQFVizUIlkHJe
+	AVuJrhcfmSBsQYkfk++BjWQW0JJYv/M4E4QtL7F5zVuwKRIC6hKP/upCbNKTePFjByNEiYjE
+	vhfvGEG2Sgi8ZZfYsGwV2DksAgIS3yYfYoHolZXYdIAZ4i9JiYMrbrBMYBSbhWTzLCSbZyHZ
+	PAvJigWMLKsYRVMLkguKk9KLDPWKE3OLS/PS9ZLzczcxQuK1dwfj7QPWhxiTgdZPZJYSTc4H
+	xnteSbyhsZmRhamJqbGRuaUZacJK4rxJD5OChATSE0tSs1NTC1KL4otKc1KLDzEycXBKNTAG
+	eMwIfl3BkZaZFFr3wzE471BkzKmAT8/niHrudrIRLLK2zNeXFjj28Z10Kr+y+5JzU1lcchdf
+	Xck2v/qcrOC2dynsM3a3Vp6OSNV0CZ57fPqxX5nz9xSmLPituTlpn0NxY2zfHq1LO8OKS8KX
+	ZCbZprjkurhtZNimtebiCdfAd8znNJv6LiqxFGckGmoxFxUnAgDfAZht7QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOKsWRmVeSWpSXmKPExsVy+t9jQV1BLr9gg6btFhZ/Jx1jt1jSlGFx
+	eeElVoveBVfZLN4fesZssenxNVaLy7vmsFmcnXeczeLA0nYWB06PNfPWMHr8/jWJ0WPBplKP
+	zUvqPW7/e8zs0bdlFaPH501yAexRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW
+	5koKeYm5qbZKLj4Bum6ZOUCHKSmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ
+	6xgzbvx9z1LwgK3i1PN/jA2Me1i7GDk5JARMJF5NOMUEYYtJXLi3nq2LkYtDSGA6o8TCP3OY
+	IZzfjBJ3fy1jAaliE1CT+PLlMDuILSIQIvH77m2wDmaBP4wSO0/eA+rg4BAWcJHoXGYAYrII
+	qEqsWagEUs4rYCvR9eIjE4QtKPFj8j2wkcwCWhLrdx5ngrDlJTaveQs2RUJAXeLRX12ITXoS
+	L37sYIQoEZHY9+Id4wRGgVlIJs1CMmkWkkmzkLQsYGRZxSiaWpBcUJyUnmukV5yYW1yal66X
+	nJ+7iRGcDJ5J72Bc1WBxiFGAg1GJh3dmjm+wEGtiWXFl7iFGCQ5mJRHeL1+AQrwpiZVVqUX5
+	8UWlOanFhxiTgf6cyCwlmpwPTFR5JfGGxiZmRpZGZhZGJubmpAkrifMebLUOFBJITyxJzU5N
+	LUgtgtnCxMEp1cA4q9SZdeFcoav2txsi2cNSObSbqvgXctVLldp0i/nx7d/RuJOXyU/JdPKf
+	PY0Nh2atnmTQf1JndZsh+2FThfAaadHg6bPYb3uYRr/f/ONkw/PIhgzO59dDJ05cW/siZ/Ny
+	w1mvN2y0jGHn/f4zTFlrtl+vIH/pl+tr7/yOfvNt59U/L7IsBNyVWIozEg21mIuKEwE7h6jr
+	SgMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---2JFBq9zoW8cOFH7v
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch adds support for Samsung GH7 PCIe host controller.
+Samsung GH7 PCIe controller driver has dependency on the PCI arm64
+arch support. So, the Liviu Dudau's patcheset for creating generic
+host_bridge from device tree [1] and supporting PCI in AArch64 [2]
+are required.
 
-Hi,
+This patch is marked as RFC, so any comment will be welcomed.
+Thank you.
 
-On Tue, Apr 15, 2014 at 01:55:38PM -0400, Alan Stern wrote:
-> On Tue, 15 Apr 2014, Felipe Balbi wrote:
->=20
-> > > 2. Does device need to know OUT transactions before hand so that OUT
-> > > requests are queued for endpoint before packets are received
-> > > from host?
-> >=20
-> > well, no. Gadget driver shouldn't depend on that. That's UDC driver's
-> > responsability to manage that. I mean, if host sends OUT token and
-> > there's nothing in the out queue, then UDC need to start transfer as
-> > soon as gadget driver queues the request. If, on the other hand, gadget
-> > driver queues packet before host has sent OUT token then you have two
-> > choices:
-> >=20
-> > 1) start the transfer - most HW will wait for OUT token
-> > 2) wait for out token
->=20
-> I'm not familiar with the variations in all the different UDC hardware. =
-=20
-> Nevertheless, I wouldn't describe the situation in those terms.
+[1] http://www.spinics.net/lists/linux-pci/msg29786.html
+[2] http://www.spinics.net/lists/linux-pci/msg29793.html
 
-OK, I've oversimplified... what I meant was that even if you start a
-transfer at the UDC level, nothing will happen on the bus until HW sees
-an OUT token. The buffer pointed to by req->buf won't get any writes,
-DMA won't do anything.
+Jingoo Han (2)
+  PCI: designware: Add ARM64 PCI support
+  PCI: exynos: Add PCIe support for Samsung GH7 SoC
 
-On (2) I meant that some HW (e.g. dwc3) will assert the IRQ line once
-they see a token for which they have to transfer descriptors in the
-internal controller's cache.
+---
+ drivers/pci/host/Kconfig           |    2 +-
+ drivers/pci/host/pci-exynos.c      |  135 +++++++++++++++++++++++++++++++++---
+ drivers/pci/host/pcie-designware.c |   32 +++++++++
+ 3 files changed, 158 insertions(+), 11 deletions(-)
 
-> If an OUT transaction occurs and the gadget driver hasn't queued a
-> request, the UDC hardware could store the incoming data in an internal
-> buffer or it could NAK the transaction.  There aren't any other
-> choices.  If there isn't enough space available in an internal buffer,
-> the only possible action is NAK.
+Best regards,
+Jingoo Han
 
-in HS there's also NYET
-
-> Regardless, gadget drivers do not need to queue requests for OUT
-> endpoints before the host starts sending data.  When the request does
-
-they're not required, but they can. It's UDC driver's responsability to
-start consuming the queue at the proper time.
-
-> get queued, the UDC driver will make sure that the transfer takes
-> place.
-
-correct.
-
---=20
-balbi
-
---2JFBq9zoW8cOFH7v
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTTgl6AAoJEIaOsuA1yqREuP8P/iGR8dgxDlZyDWcLF5MFP7il
-UML0YN3vmzN5k7XUcWQ7VP4fORyNoPgzDkXkLzZavOQbTR2wuw5JKgF2xpi6nP4J
-hKoOSjoyvX9IRQOoQHaT+aqD9OlTVNNWFTgpOwqcsCsWLY8YOCkcYXJKrwdYaJXA
-o1GafbCtBexY6g0Aa0CcGFSOfjQiFQIPjGm1z6USz+67w072kdeG9/Dkep6Po7jN
-udEW1b0IZK8HPVBo1IQClSlqnQh/LGU5P4xYKshBV7SqG/OjAKiBNE7zvcNUpU35
-9xjOf0hrD/M3tX3oJCYF657MoPh5NfHN6a4a1gp6XxIk8nPxCQ7lvvCztqiBImBZ
-Ve6UNPP2HY7O/+V8fwLFqnsv67FTWbW7kPMwCS48fYNyB9II+MCD8XwM9B2QRkZi
-1vA9duYOodqiAQ9C2d6Gh3wGGs0iNUYjC9HPzhbQPWWn0/XfobmRUuxqqUwcsV82
-tOS+zmcb874NGPGvaljFe7FtBoDfMetJCklcMzv/fqjTjsgKbVj5J3huh9ytBiEQ
-Nt4yGHJ3Ide9fteYeWf1WvnLkAe/E1f3XQfLgFcro2+mWXuL9t1WnubDwutw3J4r
-wOYlkkvkUDr6sZ1q+Ul/sWWVCraAFx5kBAfM6HnRl74CRpqWUBQmWF6BKeiDyBYC
-3qpB6c4dmcwpXZwn35e8
-=CFFn
------END PGP SIGNATURE-----
-
---2JFBq9zoW8cOFH7v--
