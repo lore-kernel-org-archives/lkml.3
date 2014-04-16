@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513AbaDPESN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 00:18:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38780 "EHLO mx2.suse.de"
+	id S1752387AbaDPESH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 00:18:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38773 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752428AbaDPESK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 00:18:10 -0400
+	id S1751516AbaDPESD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 00:18:03 -0400
 From: NeilBrown <neilb@suse.de>
 To: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Date: Wed, 16 Apr 2014 14:03:36 +1000
-Subject: [PATCH 03/19] lockdep: improve scenario messages for RECLAIM_FS
- errors.
-cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH 02/19] lockdep: lockdep_set_current_reclaim_state should
+ save old value
 Cc: xfs@oss.sgi.com
-Message-ID: <20140416040336.10604.19304.stgit@notabene.brown>
+cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Message-ID: <20140416040336.10604.59714.stgit@notabene.brown>
 In-Reply-To: <20140416033623.10604.69237.stgit@notabene.brown>
 References: <20140416033623.10604.69237.stgit@notabene.brown>
 User-Agent: StGit/0.16
@@ -25,155 +25,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lockdep can check for locking problems involving reclaim using
-the same infrastructure as used for interrupts.
+Currently kswapd sets current->lockdep_reclaim_gfp but the first
+memory allocation call will clear it.  So the setting does no good.
+Thus the lockdep_set_current_reclaim_state call in kswapd() is
+ineffective.
 
-However a number of the messages still refer to interrupts even
-if it was actually a reclaim-related problem.
-
-So determine where the problem was caused by reclaim or irq and adjust
-messages accordingly.
+With this patch we always save the old value and then restore it,
+so lockdep gets to properly check the locks that kswapd takes.
 
 Signed-off-by: NeilBrown <neilb@suse.de>
 ---
- kernel/locking/lockdep.c |   43 ++++++++++++++++++++++++++++++++-----------
- 1 file changed, 32 insertions(+), 11 deletions(-)
+ include/linux/lockdep.h  |    8 ++++----
+ kernel/locking/lockdep.c |    8 +++++---
+ mm/page_alloc.c          |    5 +++--
+ mm/vmscan.c              |   10 ++++++----
+ 4 files changed, 18 insertions(+), 13 deletions(-)
 
-diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
-index e05b82e92373..33d2ac7519dc 100644
---- a/kernel/locking/lockdep.c
-+++ b/kernel/locking/lockdep.c
-@@ -1423,7 +1423,8 @@ static void
- print_irq_lock_scenario(struct lock_list *safe_entry,
- 			struct lock_list *unsafe_entry,
- 			struct lock_class *prev_class,
--			struct lock_class *next_class)
-+			struct lock_class *next_class,
-+			int reclaim)
- {
- 	struct lock_class *safe_class = safe_entry->class;
- 	struct lock_class *unsafe_class = unsafe_entry->class;
-@@ -1455,20 +1456,27 @@ print_irq_lock_scenario(struct lock_list *safe_entry,
- 		printk("\n\n");
- 	}
- 
--	printk(" Possible interrupt unsafe locking scenario:\n\n");
-+	if (reclaim)
-+		printk(" Possible reclaim unsafe locking scenario:\n\n");
-+	else
-+		printk(" Possible interrupt unsafe locking scenario:\n\n");
- 	printk("       CPU0                    CPU1\n");
- 	printk("       ----                    ----\n");
- 	printk("  lock(");
- 	__print_lock_name(unsafe_class);
- 	printk(");\n");
--	printk("                               local_irq_disable();\n");
-+	if (!reclaim)
-+		printk("                               local_irq_disable();\n");
- 	printk("                               lock(");
- 	__print_lock_name(safe_class);
- 	printk(");\n");
- 	printk("                               lock(");
- 	__print_lock_name(middle_class);
- 	printk(");\n");
--	printk("  <Interrupt>\n");
-+	if (reclaim)
-+		printk("  <Memory allocation/reclaim>\n");
-+	else
-+		printk("  <Interrupt>\n");
- 	printk("    lock(");
- 	__print_lock_name(safe_class);
- 	printk(");\n");
-@@ -1487,6 +1495,8 @@ print_bad_irq_dependency(struct task_struct *curr,
- 			 enum lock_usage_bit bit2,
- 			 const char *irqclass)
- {
-+	int reclaim = strncmp(irqclass, "RECLAIM", 7) == 0;
-+
- 	if (!debug_locks_off_graph_unlock() || debug_locks_silent)
- 		return 0;
- 
-@@ -1528,7 +1538,7 @@ print_bad_irq_dependency(struct task_struct *curr,
- 
- 	printk("\nother info that might help us debug this:\n\n");
- 	print_irq_lock_scenario(backwards_entry, forwards_entry,
--				hlock_class(prev), hlock_class(next));
-+				hlock_class(prev), hlock_class(next), reclaim);
- 
- 	lockdep_print_held_locks(curr);
- 
-@@ -2200,7 +2210,7 @@ static void check_chain_key(struct task_struct *curr)
+diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
+index 92b1bfc5da60..18eedd692d16 100644
+--- a/include/linux/lockdep.h
++++ b/include/linux/lockdep.h
+@@ -351,8 +351,8 @@ static inline void lock_set_subclass(struct lockdep_map *lock,
+ 	lock_set_class(lock, lock->name, lock->key, subclass, ip);
  }
  
- static void
--print_usage_bug_scenario(struct held_lock *lock)
-+print_usage_bug_scenario(struct held_lock *lock, enum lock_usage_bit new_bit)
+-extern void lockdep_set_current_reclaim_state(gfp_t gfp_mask);
+-extern void lockdep_clear_current_reclaim_state(void);
++extern gfp_t lockdep_set_current_reclaim_state(gfp_t gfp_mask);
++extern void lockdep_restore_current_reclaim_state(gfp_t old_mask);
+ extern void lockdep_trace_alloc(gfp_t mask);
+ 
+ # define INIT_LOCKDEP				.lockdep_recursion = 0, .lockdep_reclaim_gfp = 0,
+@@ -379,8 +379,8 @@ static inline void lockdep_on(void)
+ # define lock_release(l, n, i)			do { } while (0)
+ # define lock_set_class(l, n, k, s, i)		do { } while (0)
+ # define lock_set_subclass(l, s, i)		do { } while (0)
+-# define lockdep_set_current_reclaim_state(g)	do { } while (0)
+-# define lockdep_clear_current_reclaim_state()	do { } while (0)
++# define lockdep_set_current_reclaim_state(g)	(0)
++# define lockdep_restore_current_reclaim_state(g) do { } while (0)
+ # define lockdep_trace_alloc(g)			do { } while (0)
+ # define lockdep_init()				do { } while (0)
+ # define lockdep_info()				do { } while (0)
+diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
+index eb8a54783fa0..e05b82e92373 100644
+--- a/kernel/locking/lockdep.c
++++ b/kernel/locking/lockdep.c
+@@ -3645,14 +3645,16 @@ int lock_is_held(struct lockdep_map *lock)
+ }
+ EXPORT_SYMBOL_GPL(lock_is_held);
+ 
+-void lockdep_set_current_reclaim_state(gfp_t gfp_mask)
++gfp_t lockdep_set_current_reclaim_state(gfp_t gfp_mask)
  {
- 	struct lock_class *class = hlock_class(lock);
++	gfp_t old = current->lockdep_reclaim_gfp;
+ 	current->lockdep_reclaim_gfp = gfp_mask;
++	return old;
+ }
  
-@@ -2210,7 +2220,11 @@ print_usage_bug_scenario(struct held_lock *lock)
- 	printk("  lock(");
- 	__print_lock_name(class);
- 	printk(");\n");
--	printk("  <Interrupt>\n");
-+	if (new_bit == LOCK_USED_IN_RECLAIM_FS ||
-+	    new_bit == LOCK_USED_IN_RECLAIM_FS_READ)
-+		printk("  <Memory allocation/reclaim>\n");
-+	else
-+		printk("  <Interrupt>\n");
- 	printk("    lock(");
- 	__print_lock_name(class);
- 	printk(");\n");
-@@ -2246,7 +2260,7 @@ print_usage_bug(struct task_struct *curr, struct held_lock *this,
+-void lockdep_clear_current_reclaim_state(void)
++void lockdep_restore_current_reclaim_state(gfp_t gfp_mask)
+ {
+-	current->lockdep_reclaim_gfp = 0;
++	current->lockdep_reclaim_gfp = gfp_mask;
+ }
  
- 	print_irqtrace_events(curr);
- 	printk("\nother info that might help us debug this:\n");
--	print_usage_bug_scenario(this);
-+	print_usage_bug_scenario(this, new_bit);
+ #ifdef CONFIG_LOCK_STAT
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index a3d1f5da2f21..ff8b91aa0b87 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2327,20 +2327,21 @@ __perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
+ 	struct reclaim_state reclaim_state;
+ 	int progress;
+ 	unsigned int pflags;
++	gfp_t old_mask;
  
- 	lockdep_print_held_locks(curr);
+ 	cond_resched();
  
-@@ -2285,13 +2299,17 @@ print_irq_inversion_bug(struct task_struct *curr,
- 	struct lock_list *entry = other;
- 	struct lock_list *middle = NULL;
- 	int depth;
-+	int reclaim = strncmp(irqclass, "RECLAIM", 7) == 0;
+ 	/* We now go into synchronous reclaim */
+ 	cpuset_memory_pressure_bump();
+ 	current_set_flags_nested(&pflags, PF_MEMALLOC);
+-	lockdep_set_current_reclaim_state(gfp_mask);
++	old_mask = lockdep_set_current_reclaim_state(gfp_mask);
+ 	reclaim_state.reclaimed_slab = 0;
+ 	current->reclaim_state = &reclaim_state;
  
- 	if (!debug_locks_off_graph_unlock() || debug_locks_silent)
- 		return 0;
+ 	progress = try_to_free_pages(zonelist, order, gfp_mask, nodemask);
  
- 	printk("\n");
- 	printk("=========================================================\n");
--	printk("[ INFO: possible irq lock inversion dependency detected ]\n");
-+	if (reclaim)
-+		printk("[ INFO: possible memory reclaim lock inversion dependency detected ]\n");
-+	else
-+		printk("[ INFO: possible irq lock inversion dependency detected ]\n");
- 	print_kernel_ident();
- 	printk("---------------------------------------------------------\n");
- 	printk("%s/%d just changed the state of lock:\n",
-@@ -2302,6 +2320,9 @@ print_irq_inversion_bug(struct task_struct *curr,
- 	else
- 		printk("but this lock was taken by another, %s-safe lock in the past:\n", irqclass);
- 	print_lock_name(other->class);
-+	if (reclaim)
-+		printk("\n\nand memory reclaim could create inverse lock ordering between them.\n\n");
-+	else
- 	printk("\n\nand interrupts could create inverse lock ordering between them.\n\n");
+ 	current->reclaim_state = NULL;
+-	lockdep_clear_current_reclaim_state();
++	lockdep_restore_current_reclaim_state(old_mask);
+ 	current_restore_flags_nested(&pflags, PF_MEMALLOC);
  
- 	printk("\nother info that might help us debug this:\n");
-@@ -2319,10 +2340,10 @@ print_irq_inversion_bug(struct task_struct *curr,
- 	} while (entry && entry != root && (depth >= 0));
- 	if (forwards)
- 		print_irq_lock_scenario(root, other,
--			middle ? middle->class : root->class, other->class);
-+			middle ? middle->class : root->class, other->class, reclaim);
- 	else
- 		print_irq_lock_scenario(other, root,
--			middle ? middle->class : other->class, root->class);
-+			middle ? middle->class : other->class, root->class, reclaim);
+ 	cond_resched();
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 94acf53d9abf..67165f839936 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -3344,16 +3344,17 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
+ 	struct task_struct *p = current;
+ 	unsigned long nr_reclaimed;
+ 	unsigned int pflags;
++	gfp_t old_mask;
  
- 	lockdep_print_held_locks(curr);
+ 	current_set_flags_nested(&pflags, PF_MEMALLOC);
+-	lockdep_set_current_reclaim_state(sc.gfp_mask);
++	old_mask = lockdep_set_current_reclaim_state(sc.gfp_mask);
+ 	reclaim_state.reclaimed_slab = 0;
+ 	p->reclaim_state = &reclaim_state;
+ 
+ 	nr_reclaimed = do_try_to_free_pages(zonelist, &sc, &shrink);
+ 
+ 	p->reclaim_state = NULL;
+-	lockdep_clear_current_reclaim_state();
++	lockdep_restore_current_reclaim_state(old_mask);
+ 	current_restore_flags_nested(&pflags, PF_MEMALLOC);
+ 
+ 	return nr_reclaimed;
+@@ -3532,6 +3533,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 	};
+ 	unsigned long nr_slab_pages0, nr_slab_pages1;
+ 	unsigned int pflags;
++	gfp_t old_mask;
+ 
+ 	cond_resched();
+ 	/*
+@@ -3540,7 +3542,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 	 * and RECLAIM_SWAP.
+ 	 */
+ 	current_set_flags_nested(&pflags, PF_MEMALLOC | PF_SWAPWRITE);
+-	lockdep_set_current_reclaim_state(gfp_mask);
++	old_mask = lockdep_set_current_reclaim_state(gfp_mask);
+ 	reclaim_state.reclaimed_slab = 0;
+ 	p->reclaim_state = &reclaim_state;
+ 
+@@ -3590,7 +3592,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 
+ 	p->reclaim_state = NULL;
+ 	current_restore_flags_nested(&pflags, PF_MEMALLOC | PF_SWAPWRITE);
+-	lockdep_clear_current_reclaim_state();
++	lockdep_restore_current_reclaim_state(old_mask);
+ 	return sc.nr_reclaimed >= nr_pages;
+ }
  
 
 
