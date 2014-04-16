@@ -1,150 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134AbaDPIeF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 04:34:05 -0400
-Received: from relay-s04-hub003.domainlocalhost.com ([74.115.207.102]:48334
-	"EHLO relay-S04-HUB003.domainlocalhost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751149AbaDPIeA (ORCPT
+	id S1754142AbaDPIfe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 04:35:34 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:7433 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290AbaDPIfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 04:34:00 -0400
-Content-Type: multipart/mixed;
-	boundary="_000_77BC725C9062764F874D79F51E1F1A8F40C1404AS04MBX0101s04lo_"
-From: Dudley Du <dudl@cypress.com>
-To: "Dmitry Torokhov (dmitry.torokhov@gmail.com)" 
-	<dmitry.torokhov@gmail.com>
-CC: Benson Leung <bleung@google.com>, Daniel Kurtz <djkurtz@google.com>,
-        "David Solda" <dso@cypress.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/6] input: cyapa: integrated with gen5 trackpad supported
- in one driver.
-Thread-Topic: [PATCH 0/6] input: cyapa: integrated with gen5 trackpad
- supported in one driver.
-Thread-Index: Ac9Xtqv/0ttkMiveQfGJfAU5vYDuVQBl7hWA
-Date: Wed, 16 Apr 2014 08:33:57 +0000
-Message-ID: <77BC725C9062764F874D79F51E1F1A8F40C1404A@S04-MBX01-01.s04.local>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: <77BC725C9062764F874D79F51E1F1A8F40C1404A@S04-MBX01-01.s04.local>
-x-originating-ip: [10.30.12.153]
+	Wed, 16 Apr 2014 04:35:31 -0400
+Message-ID: <534E40A4.2050305@hp.com>
+Date: Wed, 16 Apr 2014 16:34:44 +0800
+From: "Li, ZhenHua" <zhen-hual@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: Veaceslav Falico <vfalico@redhat.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <edumazet@google.com>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Jiri Pirko <jiri@resnulli.us>,
+        stephen hemminger <stephen@networkplumber.org>,
+        Jerry Chu <hkchu@google.com>, Sathya Perla <sathya.perla@emulex.com>,
+        Subbu Seetharaman <subbu.seetharaman@emulex.com>,
+        Ajit Khaparde <ajit.khaparde@emulex.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] net: Add rtnl_lock for netif_device_attach/detach
+References: <1397632082-18453-1-git-send-email-zhen-hual@hp.com> <20140416073803.GB19994@redhat.com>
+In-Reply-To: <20140416073803.GB19994@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_000_77BC725C9062764F874D79F51E1F1A8F40C1404AS04MBX0101s04lo_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+The problem I am trying to fix is: when netif_device_attach/detached is 
+called, it get a return value from netif_running, but at this moment, in 
+another thread, the stat of this dev changes. But in 
+netif_device_attach, it does not know stat changed, and this may cause bugs.
 
-This patch set is made based on kernel 3.14.0. It's aimed to re-architectur=
-e the cyapa driver to support the old gen3 trackpad device and new gen5 tra=
-ckpad device in one cyapa driver for easily products support based on custo=
-mers' requirements, and add sysfs functions and interfaces supported that r=
-equired by users and customers.
 
-Beside this patch, it has 6 patches listed as below.
-For these patches each one is patched based on previous one.
+I think you are right, this patch cannot fix race with another thread 
+that takes the lock. But that's what is happening now(with out this 
+patch).  I do not yet find a way to fix it completely.
 
-patch 1/6: change the architecture of cyapa driver to support function poin=
-ters and applying the device proble function in async thread to speed up sy=
-stem boot time.
+And another problem is: we only need a lock for this dev , not full all 
+dev. So how about adding a single lock for each net device?
 
-patch 2/6: add gen5 trackpad devices supported in cyapa driver.
+Regards
+Zhenhua
 
-patch 3/6: add full power mode and runtime power mode supported.
+On 04/16/2014 03:38 PM, Veaceslav Falico wrote:
+> On Wed, Apr 16, 2014 at 03:08:02PM +0800, Li, Zhen-Hua wrote:
+>> From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+>>
+>> As netif_running is called in netif_device_attach/detach. There should be
+>> rtnl_lock/unlock called, to avoid dev stat change during
+>> netif_device_attach
+>> and detach being called.
+>> I checked NIC some drivers,  some of them have netif_device_attach/detach
+>> called between rtnl_lock/unlock, while some drivers do not.
+>
+> It can race with any other thread that takes the lock - i.e. suppose you
+> have a driver that doesn't take the lock and calls netif_device_attach(),
+> while another thread (completely unrelated to the issue) holds rtnl_lock -
+> this way the trylock will return false, the thread that took rtnl releases
+> it - and you'll see the exact same behaviour as without your patch.
+>
+> I'm not sure about the issue you're trying to fix here - there might be a
+> better approach which I'm not aware of, however with your approach you
+> should really either remove the rtnl locking from all drivers that use this
+> function (and insert a normal rtnl_lock here) or, vice-versa, add it to all
+> drivers and add an ASSERT_RTNL to netif_device_detach/attach.
+>
+>>
+>> This patch is tring to find a generic way to fix this for all NIC
+>> drivers.
+>>
+>> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+>> ---
+>> net/core/dev.c |   18 ++++++++++++++++++
+>> 1 file changed, 18 insertions(+)
+>>
+>> diff --git a/net/core/dev.c b/net/core/dev.c
+>> index 5b3042e..795bbc5 100644
+>> --- a/net/core/dev.c
+>> +++ b/net/core/dev.c
+>> @@ -2190,10 +2190,19 @@ EXPORT_SYMBOL(__dev_kfree_skb_any);
+>>  */
+>> void netif_device_detach(struct net_device *dev)
+>> {
+>> +    /**
+>> +     * As netif_running is called , rtnl_lock and unlock are needed to
+>> +     * avoid __LINK_STATE_START bit changes during this function call.
+>> +     */
+>> +    int need_unlock;
+>> +
+>> +    need_unlock = rtnl_trylock();
+>>     if (test_and_clear_bit(__LINK_STATE_PRESENT, &dev->state) &&
+>>         netif_running(dev)) {
+>>         netif_tx_stop_all_queues(dev);
+>>     }
+>> +    if (need_unlock)
+>> +        rtnl_unlock();
+>> }
+>> EXPORT_SYMBOL(netif_device_detach);
+>>
+>> @@ -2205,11 +2214,20 @@ EXPORT_SYMBOL(netif_device_detach);
+>>  */
+>> void netif_device_attach(struct net_device *dev)
+>> {
+>> +    /**
+>> +     * As netif_running is called , rtnl_lock and unlock are needed to
+>> +     * avoid __LINK_STATE_START bit changes during this function call.
+>> +     */
+>> +    int need_unlock;
+>> +
+>> +    need_unlock = rtnl_trylock();
+>>     if (!test_and_set_bit(__LINK_STATE_PRESENT, &dev->state) &&
+>>         netif_running(dev)) {
+>>         netif_tx_wake_all_queues(dev);
+>>         __netdev_watchdog_up(dev);
+>>     }
+>> +    if (need_unlock)
+>> +        rtnl_unlock();
+>> }
+>> EXPORT_SYMBOL(netif_device_attach);
+>>
+>> --
+>> 1.7.10.4
+>>
 
-patch 4/6: enable/disable trackpad device based on LID state.
-
-patch 5/6: add sysfs interfaces supported for gen3 trackpad device.
-
-patch 6/6: add sysfs interfaces supported for gen5 trackpad device.
-This message and any attachments may contain Cypress (or its subsidiaries) =
-confidential information. If it has been received in error, please advise t=
-he sender and immediately delete this message.
-
---_000_77BC725C9062764F874D79F51E1F1A8F40C1404AS04MBX0101s04lo_
-Content-Disposition: attachment; filename="winmail.dat"
-Content-Transfer-Encoding: base64
-Content-Type: application/ms-tnef; name="winmail.dat"
-
-eJ8+ImYSAQaQCAAEAAAAAAABAAEAAQeQBgAIAAAA5AQAAAAAAADoAAEJgAEAIQAAAEQ2NEFDNzMx
-RTVDNEE1NEU5MUM1NEU2QjZDNDFFNzgwAEIHAQ2ABAACAAAAAgACAAEFgAMADgAAAN4HBAAQAAgA
-IQA5AAMAXgEBIIADAA4AAADeBwQAEAAIACEAOQADAF4BAQiABwAYAAAASVBNLk1pY3Jvc29mdCBN
-YWlsLk5vdGUAMQgBBIABAFEAAABbUEFUQ0ggMC82XSBpbnB1dDogY3lhcGE6IGludGVncmF0ZWQg
-d2l0aCBnZW41IHRyYWNrcGFkIHN1cHBvcnRlZCBpbiBvbmUgZHJpdmVyLgAkHAEDkAYAPBAAAE4A
-AAACAX8AAQAAAEIAAAA8NzdCQzcyNUM5MDYyNzY0Rjg3NEQ3OUY1MUUxRjFBOEY0MEMxNDA0QUBT
-MDQtTUJYMDEtMDEuczA0LmxvY2FsPgAAAAsAHw4BAAAAAgEJEAEAAACnAwAAowMAACwGAABMWkZ1
-QHDKVGEACmZiaWQEAABjY8BwZzEyNTIA/gND8HRleHQB9wKkA+MCAARjaArAc2V0MCDvB20CgwBQ
-EU0yCoAGtAKAln0KgAjIOwliMTkOwL8JwxZyCjIWcQKAFWIqCbBzCfAEkGF0BbIOUANgc6JvAYAg
-RXgRwW4YMF0GUnYEkBe2AhByAMB0fQhQbhoxECAFwAWgG2RkmiADUiAQIheyXHYIkOR3awuAZDUd
-UwTwB0ANF3AwCnEX8mJrbWsGcwGQACAgQk1fQuBFR0lOfQr8AfEL8VUSQGgEACAKsHQRwCAdEgEg
-IcEAwAEAIGJhpxIAHGACICBrBJFlAyAAMy4xNC4wLiD4SXQnBCALcAeAHGAYkFogCXAtCsARwGkQ
-IGMmdAhwGeB0aBngY3lyYQqwIGQFEBoxJTJz+HVwcAkRJmMG8BxgGDHmMxzAGHBjawqwHGABAP0d
-YGMZ4ABwHGAYUAfgGDE+NSj/C4AjYSadGuEgZZsjIAMQeSHgA2BkdSYQ5wQgJ7YjF2N1H2ADcASQ
-xHMnJWFxdWkJcAeAOQIwcywp8yLQHGBzeaZzA9AccHVuJhBpAiDvJMEqEQuAG6FmANAHkSe13yUS
-EdAFQDAVHGBiLaAvcEcvwSnzL2cuXGwLgGX7CoE2ZEIHkA3QJlIhxjDQ7SXgIBHQBCA2IeQHkTZg
-lx9gHFE4oWIj4G93Nkb+RgWxJnESADjnLVAiISwC/yHGNLIjJi3AKaEIYAQgLAHDNk0h9DEvNjob
-0BmkfyZyJasZMCavJ7Yx1iHgb68yszJUQgALUHkLgGcmY38plS3BAmAZ4ENnK9EjIHnfMfAmYQlw
-KWEngnAJ4Bxg3yfAMWIQIBywBuBvKBEHcfs+nyISMj/yMTIqjynBM0pvK9FB6knPIhIzSyYx0Gy7
-AyAn4HcbsQRiKfNyMeDfSYJQujNnTp8iEjQ/8gnwewGgHnAvDeFVMirPIxdMfElEIkABkBAgU38i
-EjX/SyYxdDK/HEMFsSi/KcFYL/0iEjZZj1qfW6ZL3zZGIaPvB4FVoBnRMPNuLaAYgAGQfxHAMIMi
-sS2gG+EBkCvRQ3Z5PdEEESgFsSXgLjJipzdRBzAIgXMpG9JmN2H/UdEHQCvBGuQyISRxQcA4Zf86
-EAnwJWEp0CcxTYMEkANg3nIw0AtQLVEp4WQdYDtR3yZyEgAdwBuxMnNtJQEHMP8QIC2RAQAecBAg
-N5RjFTZGAxVCb7AAHwBCAAEAAAAUAAAARAB1AGQAbABlAHkAIABEAHUAAAAfAGUAAQAAACIAAABk
-AHUAZABsAEAAYwB5AHAAcgBlAHMAcwAuAGMAbwBtAAAAAAAfAGQAAQAAAAoAAABTAE0AVABQAAAA
-AAACAUEAAQAAAFgAAAAAAAAAgSsfpL6jEBmdbgDdAQ9UAgAAAIBEAHUAZABsAGUAeQAgAEQAdQAA
-AFMATQBUAFAAAABkAHUAZABsAEAAYwB5AHAAcgBlAHMAcwAuAGMAbwBtAAAAHwACXQEAAAAiAAAA
-ZAB1AGQAbABAAGMAeQBwAHIAZQBzAHMALgBjAG8AbQAAAAAAHwDlXwEAAAAqAAAAcwBpAHAAOgBk
-AHUAZABsAEAAYwB5AHAAcgBlAHMAcwAuAGMAbwBtAAAAAAAfABoMAQAAABQAAABEAHUAZABsAGUA
-eQAgAEQAdQAAAB8AHwwBAAAAIgAAAGQAdQBkAGwAQABjAHkAcAByAGUAcwBzAC4AYwBvAG0AAAAA
-AB8AHgwBAAAACgAAAFMATQBUAFAAAAAAAAIBGQwBAAAAWAAAAAAAAACBKx+kvqMQGZ1uAN0BD1QC
-AAAAgEQAdQBkAGwAZQB5ACAARAB1AAAAUwBNAFQAUAAAAGQAdQBkAGwAQABjAHkAcAByAGUAcwBz
-AC4AYwBvAG0AAAAfAAFdAQAAACIAAABkAHUAZABsAEAAYwB5AHAAcgBlAHMAcwAuAGMAbwBtAAAA
-AAAfAPg/AQAAABQAAABEAHUAZABsAGUAeQAgAEQAdQAAAB8AI0ABAAAAIgAAAGQAdQBkAGwAQABj
-AHkAcAByAGUAcwBzAC4AYwBvAG0AAAAAAB8AIkABAAAACgAAAFMATQBUAFAAAAAAAAIB+T8BAAAA
-WAAAAAAAAACBKx+kvqMQGZ1uAN0BD1QCAAAAgEQAdQBkAGwAZQB5ACAARAB1AAAAUwBNAFQAUAAA
-AGQAdQBkAGwAQABjAHkAcAByAGUAcwBzAC4AYwBvAG0AAAAfAAldAQAAACIAAABkAHUAZABsAEAA
-YwB5AHAAcgBlAHMAcwAuAGMAbwBtAAAAAAAfADFAAQAAAAIAAAAAAAAACwBAOgEAAAAfADBAAQAA
-AAIAAAAAAAAAHwAaAAEAAAASAAAASQBQAE0ALgBOAG8AdABlAAAAAAADAPE/BAgAAAsAQDoBAAAA
-AwD9P6gDAAACAQswAQAAABAAAADWSscx5cSlTpHFTmtsQeeAAwAXAAEAAABAADkAgEibm05ZzwFA
-AAgw87IDnE5ZzwELACkAAAAAAAsAIwAAAAAAHwAAgIYDAgAAAAAAwAAAAAAAAEYBAAAAHgAAAGEA
-YwBjAGUAcAB0AGwAYQBuAGcAdQBhAGcAZQAAAAAAAQAAABoAAAB6AGgALQBDAE4ALAAgAGUAbgAt
-AFUAUwAAAAAACwAAgAggBgAAAAAAwAAAAAAAAEYAAAAABoUAAAAAAAAfADcAAQAAAKIAAABbAFAA
-QQBUAEMASAAgADAALwA2AF0AIABpAG4AcAB1AHQAOgAgAGMAeQBhAHAAYQA6ACAAaQBuAHQAZQBn
-AHIAYQB0AGUAZAAgAHcAaQB0AGgAIABnAGUAbgA1ACAAdAByAGEAYwBrAHAAYQBkACAAcwB1AHAA
-cABvAHIAdABlAGQAIABpAG4AIABvAG4AZQAgAGQAcgBpAHYAZQByAC4AAAAAAB8APQABAAAAAgAA
-AAAAAAADADYAAAAAAAMALgAAAAAAHwBCEAEAAAACAAAAAAAAAAIBcQABAAAAGwAAAAHPV7ar/9Lb
-ZDIr3kHxiXwFOb2A7lUAZe4VgAAfAHAAAQAAAKIAAABbAFAAQQBUAEMASAAgADAALwA2AF0AIABp
-AG4AcAB1AHQAOgAgAGMAeQBhAHAAYQA6ACAAaQBuAHQAZQBnAHIAYQB0AGUAZAAgAHcAaQB0AGgA
-IABnAGUAbgA1ACAAdAByAGEAYwBrAHAAYQBkACAAcwB1AHAAcABvAHIAdABlAGQAIABpAG4AIABv
-AG4AZQAgAGQAcgBpAHYAZQByAC4AAAAAAB8ANRABAAAAhAAAADwANwA3AEIAQwA3ADIANQBDADkA
-MAA2ADIANwA2ADQARgA4ADcANABEADcAOQBGADUAMQBFADEARgAxAEEAOABGADQAMABDADEANAAw
-ADQAQQBAAFMAMAA0AC0ATQBCAFgAMAAxAC0AMAAxAC4AcwAwADQALgBsAG8AYwBhAGwAPgAAAB8A
-ORABAAAAAgAAAAAAAAADAN4/n04AAAsAAIAIIAYAAAAAAMAAAAAAAABGAAAAAAOFAAAAAAAAAwAA
-gAggBgAAAAAAwAAAAAAAAEYAAAAAAYUAAAAAAAADAACAAyAGAAAAAADAAAAAAAAARgAAAAABgQAA
-AAAAAAMAgBD/////BQAAgAMgBgAAAAAAwAAAAAAAAEYAAAAAAoEAAAAAAAAAAAAACwAAgAMgBgAA
-AAAAwAAAAAAAAEYAAAAAHIEAAAAAAABAAAcwO4BOm05ZzwELAAIAAQAAAAMAJgAAAAAACwArAAAA
-AAACARAwAQAAAEYAAAAAAAAAsR+hOTAgUUadtKVw3tCf1AcAd7xyXJBidk+HTXn1Hh8ajwAAAJk8
-GwAAuqc+7svX90Cjdu81/GFZiQAYg/zDKwAAAAAfAPo/AQAAABQAAABEAHUAZABsAGUAeQAgAEQA
-dQAAAAMACVkBAAAAAwAAgAggBgAAAAAAwAAAAAAAAEYAAAAAEIUAAAAAAAAfAACAH6TrM6h6LkK+
-e3nhqY5UswEAAAA4AAAAQwBvAG4AdgBlAHIAcwBhAHQAaQBvAG4ASQBuAGQAZQB4AFQAcgBhAGMA
-awBpAG4AZwBFAHgAAAABAAAA4gAAAEkASQA9ADAAMQBDAEYANQA3AEIANgBBAEIARgBGAEQAMgBE
-AEIANgA0ADMAMgAyAEIARABFADQAMQBGADEAOAA5ADcAQwAwADUAMwA5AEIARAA4ADAARQBFADUA
-NQAwADAANgA1AEUARQAxADUAOAAwADsAUwBCAEMASQBEAD0ANAAxADkAOwBWAGUAcgBzAGkAbwBu
-AD0AVgBlAHIAcwBpAG8AbgAgADEANAAuADMAIAAoAEIAdQBpAGwAZAAgADEANwA0AC4AMAApACwA
-IABTAHQAYQBnAGUAPQBIADQAAAAAAAMAAIADIAYAAAAAAMAAAAAAAABGAAAAABOBAAABAAAAAwAA
-gAMgBgAAAAAAwAAAAAAAAEYAAAAAI4EAAP///38DAACAAyAGAAAAAADAAAAAAAAARgAAAAAQgQAA
-AAAAAAMAAIADIAYAAAAAAMAAAAAAAABGAAAAABGBAAAAAAAACwAAgAMgBgAAAAAAwAAAAAAAAEYA
-AAAAJIEAAAAAAAALAACAAyAGAAAAAADAAAAAAAAARgAAAAAsgQAAAAAAAAMAAIADIAYAAAAAAMAA
-AAAAAABGAAAAACmBAAAAAAAAAwAAgAMgBgAAAAAAwAAAAAAAAEYAAAAAKoEAAAAAAAAfAACAAyAG
-AAAAAADAAAAAAAAARgAAAAAngQAAAQAAAAIAAAAAAAAAAwAAgAMgBgAAAAAAwAAAAAAAAEYAAAAA
-EoEAAAEAAAAfAACAAyAGAAAAAADAAAAAAAAARgAAAAAhgQAAAQAAAAIAAAAAAAAACwAAgAMgBgAA
-AAAAwAAAAAAAAEYAAAAAA4EAAAAAAAALAACAAyAGAAAAAADAAAAAAAAARgAAAAAmgQAAAAAAAAsA
-AIAIIAYAAAAAAMAAAAAAAABGAAAAAA6FAAAAAAAAAwAAgAggBgAAAAAAwAAAAAAAAEYAAAAAGIUA
-AAAAAAALAACACCAGAAAAAADAAAAAAAAARgAAAACChQAAAAAAAAMADTT9PwAAHwAAgIYDAgAAAAAA
-wAAAAAAAAEYBAAAAIAAAAHgALQBtAHMALQBoAGEAcwAtAGEAdAB0AGEAYwBoAAAAAQAAAAIAAAAA
-AAAAHwAAgIYDAgAAAAAAwAAAAAAAAEYBAAAAIgAAAHgALQBvAHIAaQBnAGkAbgBhAHQAaQBuAGcA
-LQBpAHAAAAAAAAEAAAAeAAAAWwAxADAALgAzADAALgAxADIALgAxADUAMwBdAAAAAABc7g==
-
---_000_77BC725C9062764F874D79F51E1F1A8F40C1404AS04MBX0101s04lo_--
