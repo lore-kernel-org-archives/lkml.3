@@ -1,87 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744AbaDPIbg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 04:31:36 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:41933 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006AbaDPIbd (ORCPT
+	id S1752506AbaDPIcf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 04:32:35 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:51269 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524AbaDPIcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 04:31:33 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de
-Cc: linaro-kernel@lists.linaro.org, linaro-networking@linaro.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V1 Resend] hrtimer: call switch_hrtimer_base() after setting new expiry time
-Date: Wed, 16 Apr 2014 14:01:19 +0530
-Message-Id: <8ed33f7e6e58b1a51fa156cf69831a177d724456.1397636308.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	Wed, 16 Apr 2014 04:32:32 -0400
+Message-ID: <534E401D.8030805@gmail.com>
+Date: Wed, 16 Apr 2014 11:32:29 +0300
+From: Kertesz Laszlo <laszlo.kertesz@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:28.0) Gecko/20100101 Firefox/28.0 SeaMonkey/2.25
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>,
+        "Deucher, Alexander" <Alexander.Deucher@amd.com>
+CC: Alex Deucher <alexdeucher@gmail.com>,
+        "Koenig, Christian" <Christian.Koenig@amd.com>,
+        Maling list - DRI developers 
+	<dri-devel@lists.freedesktop.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: 15-rc1: radeon modesetting fails
+References: <20140415070204.GA4806@pd.tnic> <534CFBD7.3070604@amd.com> <20140415120740.GA8306@nazgul.tnic> <CADnq5_PpPa_fbm=1KH__q-W2OuvfoHr2wquimQ8TCq=xwwYq_Q@mail.gmail.com> <534D677C.6080407@gmail.com> <20140415172702.GC4826@pd.tnic> <534D743B.8010705@gmail.com> <20140415180735.GG4826@pd.tnic> <534DA97E.8070505@gmail.com> <A3397C8B8B789E45844E7EC5DEAD89D03ECB1D65@satlexdag05.amd.com> <20140415224850.GA12892@pd.tnic>
+In-Reply-To: <20140415224850.GA12892@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In switch_hrtimer_base() we are calling hrtimer_check_target() which guarantees
-this:
+Borislav Petkov wrote:
+> On Tue, Apr 15, 2014 at 10:32:56PM +0000, Deucher, Alexander wrote:
+>> Turning off modesetting basically disables the driver.
+>
+> Well, in my case, I was using the radeon.modeset=0 variant to rule out
+> issues in x.org. And in my case x.org did start still, albeit with a
+> jacked-up resolution.
+>
+> But in Laszlo's case, x.org gets "puzzled" too.
+>
 
-/*
- * With HIGHRES=y we do not migrate the timer when it is expiring
- * before the next event on the target cpu because we cannot reprogram
- * the target cpu hardware and we would cause it to fire late.
- *
- * Called with cpu_base->lock of target cpu held.
- */
-
-But switch_hrtimer_base() is only called from one place, i.e.
-__hrtimer_start_range_ns() and at that point (where we call
-switch_hrtimer_base()) expiration time is not yet known as we call this routine
-later: hrtimer_set_expires_range_ns().
-
-To fix this, we need to find the updated expiry time before calling
-switch_hrtimer_base().
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
-Hi Thomas,
-
-I have sent this previously as part of: https://lkml.org/lkml/2014/4/4/23
-
-But as you asked to send bugfixes without any dependencies for ticks patches, I
-thought of sending bugfixes separately for timers too. This was the only bugfix
-from that series and other patches don't conflict with it, so I am not resending
-other patches from above series again.
-
-Not adding any stable tags as this is broken from a long long time and don't
-know if you want to fix it for those kernels.
-
- kernel/hrtimer.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index d55092c..c86b95a 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -968,11 +968,8 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 	/* Remove an active timer from the queue: */
- 	ret = remove_hrtimer(timer, base);
- 
--	/* Switch the timer base, if necessary: */
--	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
--
- 	if (mode & HRTIMER_MODE_REL) {
--		tim = ktime_add_safe(tim, new_base->get_time());
-+		tim = ktime_add_safe(tim, base->get_time());
- 		/*
- 		 * CONFIG_TIME_LOW_RES is a temporary way for architectures
- 		 * to signal that they simply return xtime in
-@@ -987,6 +984,9 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 
- 	hrtimer_set_expires_range_ns(timer, tim, delta_ns);
- 
-+	/* Switch the timer base, if necessary: */
-+	new_base = switch_hrtimer_base(timer, base, mode & HRTIMER_MODE_PINNED);
-+
- 	timer_stats_hrtimer_set_start_info(timer);
- 
- 	leftmost = enqueue_hrtimer(timer, new_base);
--- 
-1.7.12.rc2.18.g61b472e
+Maybe your distro's xorg has some generic vga fallback method. I am not aware that mine (Debian Testing) has one.
+BTW I use Debian Testing (xfce) and glamor (compiled from git) so i need a specific xorg.conf.
 
