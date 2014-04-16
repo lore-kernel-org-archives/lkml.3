@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161210AbaDPNj2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 09:39:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52961 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756203AbaDPNj1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 09:39:27 -0400
-Date: Wed, 16 Apr 2014 15:39:21 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        linux-kernel@vger.kernel.org, KVM <kvm@vger.kernel.org>,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Subject: Re: [PULL 1/2] perf/tool: Fix usage of trace events with '-' in
- trace system name.
-Message-ID: <20140416133921.GA13393@krava.brq.redhat.com>
-References: <1397053319-2130-1-git-send-email-borntraeger@de.ibm.com>
- <1397053319-2130-2-git-send-email-borntraeger@de.ibm.com>
- <20140416130008.GA6087@krava.brq.redhat.com>
- <534E8576.3060907@de.ibm.com>
- <534E8623.3000608@de.ibm.com>
+	id S1161161AbaDPNll (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 09:41:41 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36529 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1161094AbaDPNlj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 09:41:39 -0400
+Date: Wed, 16 Apr 2014 14:27:16 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "eparis@redhat.com" <eparis@redhat.com>,
+        "rgb@redhat.com" <rgb@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-audit@redhat.com" <linux-audit@redhat.com>
+Subject: Re: [PATCH v5 2/4] arm64: split syscall_trace() into separate
+ functions for enter/exit
+Message-ID: <20140416132716.GA1001@arm.com>
+References: <1394705491-12343-1-git-send-email-takahiro.akashi@linaro.org>
+ <1394861948-28712-1-git-send-email-takahiro.akashi@linaro.org>
+ <1394861948-28712-3-git-send-email-takahiro.akashi@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <534E8623.3000608@de.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1394861948-28712-3-git-send-email-takahiro.akashi@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 03:31:15PM +0200, Christian Borntraeger wrote:
-> On 16/04/14 15:28, Christian Borntraeger wrote:
-> > On 16/04/14 15:00, Jiri Olsa wrote:
-> >> On Wed, Apr 09, 2014 at 04:21:58PM +0200, Christian Borntraeger wrote:
-> >>> From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-> >>>
-> >>> Trace events potentially can have a '-' in their trace system name,
-> >>> e.g. kvm on s390 defines kvm-s390:* tracepoints.
-> >>> tools/perf could not parse them, because there was no rule for this:
-> >>> $ sudo ./perf top -e "kvm-s390:*"
-> >>> invalid or unsupported event: 'kvm-s390:*'
-> >>>
-> >>> This patch allows '-' to be a part of PE_NAME token, so tracepoints
-> >>> with '-' can be parsed by the event_legacy_tracepoint rule.
-> >>> Without the patch, perf will not accept such tracepoints in the -e
-> >>> option.
-> >>>
-> >>> Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-> >>> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-> >>> ---
-> >>>  tools/perf/util/parse-events.l |    2 +-
-> >>>  1 file changed, 1 insertion(+), 1 deletion(-)
-> >>>
-> >>> diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-> >>> index 3432995..ca20da7 100644
-> >>> --- a/tools/perf/util/parse-events.l
-> >>> +++ b/tools/perf/util/parse-events.l
-> >>> @@ -199,7 +199,7 @@ r{num_raw_hex}		{ return raw(yyscanner); }
-> >>>  {num_hex}		{ return value(yyscanner, 16); }
-> >>>  
-> >>>  {modifier_event}	{ return str(yyscanner, PE_MODIFIER_EVENT); }
-> >>> -{name}			{ return str(yyscanner, PE_NAME); }
-> >>> +{name_minus}			{ return str(yyscanner, PE_NAME); }
-> >>>  "/"			{ BEGIN(config); return '/'; }
-> >>>  -			{ return '-'; }
-> >>>  ,			{ BEGIN(event); return ','; }
-> >>
-> >> this breaks parsing of cache events like:
-> >>
-> >>   $ perf record -e 'L1-dcache-loads' ls
-> >>
-> >> also test 10 (same issue):
-> >>   $ ./perf test 10
-> >>   10: roundtrip evsel->name check                            : FAILED!
-> >>
-> >>
-> >> it might be little tricky to fix, let me know if you
-> >> have any troubles with that, I could look on it
-> > 
-> > Hmm, so do you prefer tackling this problem directly at  event_legacy_tracepoint, e.g.
-> > like in
-> > https://lkml.org/lkml/2014/3/24/364
+Hi Akashi,
+
+On Sat, Mar 15, 2014 at 05:39:06AM +0000, AKASHI Takahiro wrote:
+> As done in arm, this change makes it easy to confirm we invoke syscall
+> related hooks, including syscall tracepoint, audit and seccomp which would
+> be implemented later, in correct order. That is, undoing operations in the
+> opposite order on exit that they were done on entry.
 > 
-> A totally different approach would be to rename the kvm-s390 trace events to kvm_s390.
-> 
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
 
-hopefully that wouldn't be necessary ;-)
+[...]
 
-I checked the other approach and it works.. I'll see if I can find
-some other way, if not I'll take that patch
+> +static void tracehook_report_syscall(struct pt_regs *regs,
+> +				     enum ptrace_syscall_dir dir)
+>  {
+> +	int scrach;
 
-thanks,
-jirka
+s/scrach/scratch/
+
+Although, I'd rather have a variable with a more meaningful name. How about
+regno?
+
+With that,
+
+  Acked-by: Will Deacon <will.deacon@arm.com>
+
+Cheers,
+
+Will
