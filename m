@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158AbaDPMyR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 08:54:17 -0400
-Received: from mga03.intel.com ([143.182.124.21]:57772 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756038AbaDPMyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 08:54:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,872,1389772800"; 
-   d="scan'208";a="514151638"
-Message-ID: <534E7CC7.7050300@intel.com>
-Date: Wed, 16 Apr 2014 14:51:19 +0200
-From: Artur Paszkiewicz <artur.paszkiewicz@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
-CC: Lukasz Dorau <lukasz.dorau@intel.com>,
-        Maciej Patelczyk <maciej.patelczyk@intel.com>,
-        Dave Jiang <dave.jiang@intel.com>, intel-linux-scu@intel.com,
-        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH v2 RESEND 08/23] isci: Use pci_enable_msix_exact() instead
- of pci_enable_msix()
-References: <cover.1397461652.git.agordeev@redhat.com> <8a203f9f8b7844e46676d526188965e877751edb.1397461652.git.agordeev@redhat.com>
-In-Reply-To: <8a203f9f8b7844e46676d526188965e877751edb.1397461652.git.agordeev@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755957AbaDPM4k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 08:56:40 -0400
+Received: from smtprelay0097.hostedemail.com ([216.40.44.97]:50473 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755262AbaDPM4i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 08:56:38 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3871:4250:4321:5007:6119:7652:8957:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12740:13069:13311:13357:13894,0,RBL:none,CacheIP:none,Bayes
+X-HE-Tag: girls45_90e8f2293da5d
+X-Filterd-Recvd-Size: 2703
+Message-ID: <1397652994.30935.5.camel@joe-AO722>
+Subject: Re: [PATCH 1/4] mmc: sdhci: add a driver for Berlin SoCs
+From: Joe Perches <joe@perches.com>
+To: Antoine =?ISO-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+Cc: sebastian.hesselbarth@gmail.com, chris@printf.net, anton@enomsg.org,
+        alexandre.belloni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 16 Apr 2014 05:56:34 -0700
+In-Reply-To: <1397652011-21284-2-git-send-email-antoine.tenart@free-electrons.com>
+References: <1397652011-21284-1-git-send-email-antoine.tenart@free-electrons.com>
+	 <1397652011-21284-2-git-send-email-antoine.tenart@free-electrons.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2014 10:05 AM, Alexander Gordeev wrote:
-> As result of deprecation of MSI-X/MSI enablement functions
-> pci_enable_msix() and pci_enable_msi_block() all drivers
-> using these two interfaces need to be updated to use the
-> new pci_enable_msi_range()  or pci_enable_msi_exact()
-> and pci_enable_msix_range() or pci_enable_msix_exact()
-> interfaces.
-> 
-> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-> Cc: Lukasz Dorau <lukasz.dorau@intel.com>
-> Cc: Maciej Patelczyk <maciej.patelczyk@intel.com>
-> Cc: Dave Jiang <dave.jiang@intel.com>
-> Cc: intel-linux-scu@intel.com
-> Cc: linux-scsi@vger.kernel.org
-> Cc: linux-pci@vger.kernel.org
-> ---
->  drivers/scsi/isci/init.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/scsi/isci/init.c b/drivers/scsi/isci/init.c
-> index 695b34e..4198e45 100644
-> --- a/drivers/scsi/isci/init.c
-> +++ b/drivers/scsi/isci/init.c
-> @@ -356,7 +356,7 @@ static int isci_setup_interrupts(struct pci_dev *pdev)
->  	for (i = 0; i < num_msix; i++)
->  		pci_info->msix_entries[i].entry = i;
->  
-> -	err = pci_enable_msix(pdev, pci_info->msix_entries, num_msix);
-> +	err = pci_enable_msix_exact(pdev, pci_info->msix_entries, num_msix);
->  	if (err)
->  		goto intx;
->  
-> 
+On Wed, 2014-04-16 at 14:40 +0200, Antoine Ténart wrote:
+> Add a Driver to support the SDHCI controller of the Marvell Berlin SoCs.
+> This controller supports 3 sockets.
 
-Looks good.
+trivial notes:
 
-Acked-by: Artur Paszkiewicz <artur.paszkiewicz@intel.com>
+> diff --git a/drivers/mmc/host/sdhci-berlin.c b/drivers/mmc/host/sdhci-berlin.c
+[]
+> +static struct sdhci_ops sdhci_berlin_ops = {
+> +	.get_max_clock = sdhci_pltfm_clk_get_max_clock,
+> +};
+> +
+> +static struct sdhci_pltfm_data sdhci_berlin2_pdata = {
+> +	.quirks	= SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN |
+> +		  SDHCI_QUIRK_BROKEN_ADMA |
+> +		  SDHCI_QUIRK_BROKEN_TIMEOUT_VAL,
+> +	.ops = &sdhci_berlin_ops,
+> +};
+> +
+> +static struct sdhci_pltfm_data sdhci_berlin2q_pdata = {
+> +	.quirks	= SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN |
+> +		  SDHCI_QUIRK_INVERTED_WRITE_PROTECT |
+> +		  SDHCI_QUIRK_BROKEN_TIMEOUT_VAL,
+> +	.ops = &sdhci_berlin_ops,
+> +};
 
-Thanks,
-Artur
+Perhaps const?
+
+> +static int sdhci_berlin_probe(struct platform_device *pdev)
+> +{
+[]
+> +	host = sdhci_pltfm_init(pdev,
+> +				(struct sdhci_pltfm_data *)device->data, 0);
+
+Unnecessary cast?  Maybe:
+
+	host = sdhci_pltfm_init(pdev, device->data, 0);
+
+> +	if (IS_ERR(host))
+> +		return PTR_ERR(host);
+> +
+> +	pltfm_host = sdhci_priv(host);
+> +
+> +	clk = devm_clk_get(dev, NULL);
+> +	if (IS_ERR(clk)) {
+> +		dev_err(dev, "could not get clock: %ld\n", PTR_ERR(clk));
+> +		ret = PTR_ERR(clk);
+
+PTR_ERR is an int.  Does this produce a compile warning?
+Maybe reverse these lines and use ret?
+
+		ret = PTR_ERR(clk);
+		dev_err(dev, count not get clock: %d\n", ret);
+
+
