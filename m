@@ -1,179 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155AbaDPSl5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 14:41:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28248 "EHLO mx1.redhat.com"
+	id S1755826AbaDPSmI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 14:42:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26948 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756070AbaDPSlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 14:41:52 -0400
+	id S1756191AbaDPSmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 14:42:01 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 04/11] perf diff: Add --percentage option
-Date: Wed, 16 Apr 2014 20:41:32 +0200
-Message-Id: <1397673699-25824-5-git-send-email-jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
+        David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 10/11] perf lock: Introduce --list-cmds for use by scripts
+Date: Wed, 16 Apr 2014 20:41:38 +0200
+Message-Id: <1397673699-25824-11-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1397673699-25824-1-git-send-email-jolsa@redhat.com>
 References: <1397673699-25824-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+From: Ramkumar Ramachandra <artagnon@gmail.com>
 
-The --percentage option is for controlling overhead percentage
-displayed.  It can only receive either of "relative" or "absolute" and
-affects -c delta output only.
-
-For more information, please see previous commit same thing done to
-"perf report".
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1397145720-8063-5-git-send-email-namhyung@kernel.org
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/r/1394853474-31019-4-git-send-email-artagnon@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/Documentation/perf-diff.txt | 21 ++++++++++++++++++---
- tools/perf/builtin-diff.c              | 30 ++++++++++++++++++++++--------
- 2 files changed, 40 insertions(+), 11 deletions(-)
+ tools/perf/builtin-lock.c     | 10 ++++++----
+ tools/perf/perf-completion.sh |  2 +-
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
-index fdfceee..fbfa119 100644
---- a/tools/perf/Documentation/perf-diff.txt
-+++ b/tools/perf/Documentation/perf-diff.txt
-@@ -33,17 +33,20 @@ OPTIONS
- -d::
- --dsos=::
- 	Only consider symbols in these dsos. CSV that understands
--	file://filename entries.
-+	file://filename entries.  This option will affect the percentage
-+	of the Baseline/Delta column.  See --percentage for more info.
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index c852c7a..6148afc 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -961,8 +961,10 @@ int cmd_lock(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		"perf lock info [<options>]",
+ 		NULL
+ 	};
+-	const char * const lock_usage[] = {
+-		"perf lock [<options>] {record|report|script|info}",
++	const char *const lock_subcommands[] = { "record", "report", "script",
++						 "info", NULL };
++	const char *lock_usage[] = {
++		NULL,
+ 		NULL
+ 	};
+ 	const char * const report_usage[] = {
+@@ -976,8 +978,8 @@ int cmd_lock(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	for (i = 0; i < LOCKHASH_SIZE; i++)
+ 		INIT_LIST_HEAD(lockhash_table + i);
  
- -C::
- --comms=::
- 	Only consider symbols in these comms. CSV that understands
--	file://filename entries.
-+	file://filename entries.  This option will affect the percentage
-+	of the Baseline/Delta column.  See --percentage for more info.
+-	argc = parse_options(argc, argv, lock_options, lock_usage,
+-			     PARSE_OPT_STOP_AT_NON_OPTION);
++	argc = parse_options_subcommand(argc, argv, lock_options, lock_subcommands,
++					lock_usage, PARSE_OPT_STOP_AT_NON_OPTION);
+ 	if (!argc)
+ 		usage_with_options(lock_usage, lock_options);
  
- -S::
- --symbols=::
- 	Only consider these symbols. CSV that understands
--	file://filename entries.
-+	file://filename entries.  This option will affect the percentage
-+	of the Baseline/Delta column.  See --percentage for more info.
- 
- -s::
- --sort=::
-@@ -89,6 +92,14 @@ OPTIONS
- --order::
-        Specify compute sorting column number.
- 
-+--percentage::
-+	Determine how to display the overhead percentage of filtered entries.
-+	Filters can be applied by --comms, --dsos and/or --symbols options.
-+
-+	"relative" means it's relative to filtered entries only so that the
-+	sum of shown entries will be always 100%.  "absolute" means it retains
-+	the original value before and after the filter is applied.
-+
- COMPARISON
- ----------
- The comparison is governed by the baseline file. The baseline perf.data
-@@ -157,6 +168,10 @@ with:
-   - period_percent being the % of the hist entry period value within
-     single data file
- 
-+  - with filtering by -C, -d and/or -S, period_percent might be changed
-+    relative to how entries are filtered.  Use --percentage=absolute to
-+    prevent such fluctuation.
-+
- ratio
- ~~~~~
- If specified the 'Ratio' column is displayed with value 'r' computed as:
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 204fffe..c903fe1 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -220,7 +220,8 @@ static int setup_compute(const struct option *opt, const char *str,
- 
- static double period_percent(struct hist_entry *he, u64 period)
- {
--	u64 total = he->hists->stats.total_period;
-+	u64 total = hists__total_period(he->hists);
-+
- 	return (period * 100.0) / total;
- }
- 
-@@ -259,11 +260,18 @@ static s64 compute_wdiff(struct hist_entry *he, struct hist_entry *pair)
- static int formula_delta(struct hist_entry *he, struct hist_entry *pair,
- 			 char *buf, size_t size)
- {
-+	u64 he_total = he->hists->stats.total_period;
-+	u64 pair_total = pair->hists->stats.total_period;
-+
-+	if (symbol_conf.filter_relative) {
-+		he_total = he->hists->stats.total_non_filtered_period;
-+		pair_total = pair->hists->stats.total_non_filtered_period;
-+	}
- 	return scnprintf(buf, size,
- 			 "(%" PRIu64 " * 100 / %" PRIu64 ") - "
- 			 "(%" PRIu64 " * 100 / %" PRIu64 ")",
--			  pair->stat.period, pair->hists->stats.total_period,
--			  he->stat.period, he->hists->stats.total_period);
-+			 pair->stat.period, pair_total,
-+			 he->stat.period, he_total);
- }
- 
- static int formula_ratio(struct hist_entry *he, struct hist_entry *pair,
-@@ -327,15 +335,16 @@ static int diff__process_sample_event(struct perf_tool *tool __maybe_unused,
- 		return -1;
- 	}
- 
--	if (al.filtered)
--		return 0;
--
- 	if (hists__add_entry(&evsel->hists, &al, sample->period,
- 			     sample->weight, sample->transaction)) {
- 		pr_warning("problem incrementing symbol period, skipping event\n");
- 		return -1;
- 	}
- 
-+	if (al.filtered == 0) {
-+		evsel->hists.stats.total_non_filtered_period += sample->period;
-+		evsel->hists.nr_non_filtered_entries++;
-+	}
- 	evsel->hists.stats.total_period += sample->period;
- 	return 0;
- }
-@@ -565,7 +574,9 @@ static void hists__compute_resort(struct hists *hists)
- 	next = rb_first(root);
- 
- 	hists->nr_entries = 0;
-+	hists->nr_non_filtered_entries = 0;
- 	hists->stats.total_period = 0;
-+	hists->stats.total_non_filtered_period = 0;
- 	hists__reset_col_len(hists);
- 
- 	while (next != NULL) {
-@@ -732,13 +743,16 @@ static const struct option options[] = {
- 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
- 		    "Look for files with symbols relative to this directory"),
- 	OPT_UINTEGER('o', "order", &sort_compute, "Specify compute sorting."),
-+	OPT_CALLBACK(0, "percentage", NULL, "relative|absolute",
-+		     "How to display percentage of filtered entries", parse_filter_percentage),
- 	OPT_END()
- };
- 
- static double baseline_percent(struct hist_entry *he)
- {
--	struct hists *hists = he->hists;
--	return 100.0 * he->stat.period / hists->stats.total_period;
-+	u64 total = hists__total_period(he->hists);
-+
-+	return 100.0 * he->stat.period / total;
- }
- 
- static int hpp__color_baseline(struct perf_hpp_fmt *fmt,
+diff --git a/tools/perf/perf-completion.sh b/tools/perf/perf-completion.sh
+index f44c04b..ecedab6 100644
+--- a/tools/perf/perf-completion.sh
++++ b/tools/perf/perf-completion.sh
+@@ -122,7 +122,7 @@ __perf_main ()
+ 		evts=$($cmd list --raw-dump)
+ 		__perfcomp_colon "$evts" "$cur"
+ 	# List subcommands for perf commands
+-	elif [[ $prev == @(kvm|kmem|mem) ]]; then
++	elif [[ $prev == @(kvm|kmem|mem|lock) ]]; then
+ 		subcmds=$($cmd $prev --list-cmds)
+ 		__perfcomp_colon "$subcmds" "$cur"
+ 	# List long option names
 -- 
 1.8.3.1
 
