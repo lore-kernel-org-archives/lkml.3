@@ -1,108 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815AbaDPHiV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 03:38:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12680 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754762AbaDPHiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 03:38:19 -0400
-Date: Wed, 16 Apr 2014 09:38:03 +0200
-From: Veaceslav Falico <vfalico@redhat.com>
-To: "Li, Zhen-Hua" <zhen-hual@hp.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Jiri Pirko <jiri@resnulli.us>,
-        stephen hemminger <stephen@networkplumber.org>,
-        Jerry Chu <hkchu@google.com>, Sathya Perla <sathya.perla@emulex.com>,
-        Subbu Seetharaman <subbu.seetharaman@emulex.com>,
-        Ajit Khaparde <ajit.khaparde@emulex.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] net: Add rtnl_lock for netif_device_attach/detach
-Message-ID: <20140416073803.GB19994@redhat.com>
-References: <1397632082-18453-1-git-send-email-zhen-hual@hp.com>
+	id S1754853AbaDPHkd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 03:40:33 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:63693 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754581AbaDPHkb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 03:40:31 -0400
+Date: Wed, 16 Apr 2014 09:40:27 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Wang, Biao" <biao.wang@intel.com>
+Cc: "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhang, Di" <di.zhang@intel.com>
+Subject: Re: [PATCH] x86: apic: disarm apic timer in deadline mode when shut
+ down clockevent
+Message-ID: <20140416074027.GB5636@gmail.com>
+References: <09CB0B4607EB8F4DB7E0BE3B06BFBD0501004D78@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397632082-18453-1-git-send-email-zhen-hual@hp.com>
+In-Reply-To: <09CB0B4607EB8F4DB7E0BE3B06BFBD0501004D78@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 03:08:02PM +0800, Li, Zhen-Hua wrote:
->From: "Li, Zhen-Hua" <zhen-hual@hp.com>
->
->As netif_running is called in netif_device_attach/detach. There should be
->rtnl_lock/unlock called, to avoid dev stat change during netif_device_attach
->and detach being called.
->I checked NIC some drivers,  some of them have netif_device_attach/detach
->called between rtnl_lock/unlock, while some drivers do not.
 
-It can race with any other thread that takes the lock - i.e. suppose you
-have a driver that doesn't take the lock and calls netif_device_attach(),
-while another thread (completely unrelated to the issue) holds rtnl_lock -
-this way the trylock will return false, the thread that took rtnl releases
-it - and you'll see the exact same behaviour as without your patch.
+* Wang, Biao <biao.wang@intel.com> wrote:
 
-I'm not sure about the issue you're trying to fix here - there might be a
-better approach which I'm not aware of, however with your approach you
-should really either remove the rtnl locking from all drivers that use this
-function (and insert a normal rtnl_lock here) or, vice-versa, add it to all
-drivers and add an ASSERT_RTNL to netif_device_detach/attach.
+> For tsc deadline mode, when we shut down clockevent we should disarm
+> local-APIC timer like count-down mode.
+> 
+> Signed-off-by: wang, biao <biao.wang@intel.com>
+> Signed-off-by: Zhang Di <di.zhang@intel.com>
+> ---
+>  arch/x86/kernel/apic/apic.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> index 7f26c9a..85889ba 100644
+> --- a/arch/x86/kernel/apic/apic.c
+> +++ b/arch/x86/kernel/apic/apic.c
+> @@ -512,6 +512,10 @@ static void lapic_timer_setup(enum clock_event_mode mode,
+>  		v |= (APIC_LVT_MASKED | LOCAL_TIMER_VECTOR);
+>  		apic_write(APIC_LVTT, v);
+>  		apic_write(APIC_TMICT, 0);
+> +
+> +		/*disarm timer in deadline mode*/
+> +		if (boot_cpu_has(X86_FEATURE_TSC_DEADLINE_TIMER))
+> +			wrmsrl(MSR_IA32_TSC_DEADLINE, 0);
+>  		break;
 
->
->This patch is tring to find a generic way to fix this for all NIC drivers.
->
->Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
->---
-> net/core/dev.c |   18 ++++++++++++++++++
-> 1 file changed, 18 insertions(+)
->
->diff --git a/net/core/dev.c b/net/core/dev.c
->index 5b3042e..795bbc5 100644
->--- a/net/core/dev.c
->+++ b/net/core/dev.c
->@@ -2190,10 +2190,19 @@ EXPORT_SYMBOL(__dev_kfree_skb_any);
->  */
-> void netif_device_detach(struct net_device *dev)
-> {
->+	/**
->+	 * As netif_running is called , rtnl_lock and unlock are needed to
->+	 * avoid __LINK_STATE_START bit changes during this function call.
->+	 */
->+	int need_unlock;
->+
->+	need_unlock = rtnl_trylock();
-> 	if (test_and_clear_bit(__LINK_STATE_PRESENT, &dev->state) &&
-> 	    netif_running(dev)) {
-> 		netif_tx_stop_all_queues(dev);
-> 	}
->+	if (need_unlock)
->+		rtnl_unlock();
-> }
-> EXPORT_SYMBOL(netif_device_detach);
->
->@@ -2205,11 +2214,20 @@ EXPORT_SYMBOL(netif_device_detach);
->  */
-> void netif_device_attach(struct net_device *dev)
-> {
->+	/**
->+	 * As netif_running is called , rtnl_lock and unlock are needed to
->+	 * avoid __LINK_STATE_START bit changes during this function call.
->+	 */
->+	int need_unlock;
->+
->+	need_unlock = rtnl_trylock();
-> 	if (!test_and_set_bit(__LINK_STATE_PRESENT, &dev->state) &&
-> 	    netif_running(dev)) {
-> 		netif_tx_wake_all_queues(dev);
-> 		__netdev_watchdog_up(dev);
-> 	}
->+	if (need_unlock)
->+		rtnl_unlock();
-> }
-> EXPORT_SYMBOL(netif_device_attach);
->
->-- 
->1.7.10.4
->
+Please fix the changelog to conform to the standard changelog style:
+
+ - first describe the symptoms of the bug - how does a user notice?
+
+ - then describe how the code behaves today and how that is causing the bug
+
+ - and then only describe how it's fixed.
+
+The first item is the most important one - while developers 
+(naturally) tend to concentrate on the least important point,
+the last one.
+
+Thanks,
+
+        Ingo
