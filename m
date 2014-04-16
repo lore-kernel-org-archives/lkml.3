@@ -1,77 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966AbaDPLqw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 07:46:52 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:51247 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755604AbaDPLqu (ORCPT
+	id S1756081AbaDPLrE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 07:47:04 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:49221 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755735AbaDPLqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 07:46:50 -0400
+	Wed, 16 Apr 2014 07:46:54 -0400
 From: Steve Capper <steve.capper@linaro.org>
 To: linux@arm.linux.org.uk, akpm@linux-foundation.org
 Cc: will.deacon@arm.com, catalin.marinas@arm.com, robherring2@gmail.com,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, gerald.schaefer@de.ibm.com,
         Steve Capper <steve.capper@linaro.org>
-Subject: [PATCH V2 0/5] Huge pages for short descriptors on ARM
-Date: Wed, 16 Apr 2014 12:46:38 +0100
-Message-Id: <1397648803-15961-1-git-send-email-steve.capper@linaro.org>
+Subject: [PATCH V2 2/5] arm: mm: Adjust the parameters for __sync_icache_dcache
+Date: Wed, 16 Apr 2014 12:46:40 +0100
+Message-Id: <1397648803-15961-3-git-send-email-steve.capper@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1397648803-15961-1-git-send-email-steve.capper@linaro.org>
+References: <1397648803-15961-1-git-send-email-steve.capper@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-This series brings HugeTLB pages and Transparent Huge Pages (THP) to
-ARM on short descriptors.
+Rather than take a pte_t as an input, break this down to the pfn
+and whether or not the memory is executable.
 
-Russell, Andrew,
-I would like to get this in next (and hopefully 3.16 if no problems
-arise) if that sounds reasonable?
+This allows us to use this function for ptes and pmds.
 
-There's one patch at the beginning of the series for mm:
-  mm: hugetlb: Introduce huge_pte_{page,present,young}
-This has been tested on ARM and s390 and should compile out for other
-architectures.
+Signed-off-by: Steve Capper <steve.capper@linaro.org>
+---
+ arch/arm/include/asm/pgtable.h | 6 +++---
+ arch/arm/mm/flush.c            | 9 ++++-----
+ 2 files changed, 7 insertions(+), 8 deletions(-)
 
-The rest of the series targets arch/arm.
-
-I've bumped the series to V2 as it was rebased (and tested against)
-v3.15-rc1. On ARM the libhugetlbfs test suite, some THP PROT_NONE
-tests and the recursive execve test all passed successfully.
-
-Thanks,
---
-Steve
-
-
-Steve Capper (5):
-  mm: hugetlb: Introduce huge_pte_{page,present,young}
-  arm: mm: Adjust the parameters for __sync_icache_dcache
-  arm: mm: Make mmu_gather aware of huge pages
-  arm: mm: HugeTLB support for non-LPAE systems
-  arm: mm: Add Transparent HugePage support for non-LPAE
-
- arch/arm/Kconfig                      |   4 +-
- arch/arm/include/asm/hugetlb-2level.h | 136 ++++++++++++++++++++++++++++++++++
- arch/arm/include/asm/hugetlb-3level.h |   6 ++
- arch/arm/include/asm/hugetlb.h        |  10 +--
- arch/arm/include/asm/pgtable-2level.h | 129 +++++++++++++++++++++++++++++++-
- arch/arm/include/asm/pgtable-3level.h |   3 +-
- arch/arm/include/asm/pgtable.h        |   9 +--
- arch/arm/include/asm/tlb.h            |  14 +++-
- arch/arm/kernel/head.S                |  10 ++-
- arch/arm/mm/fault.c                   |  13 ----
- arch/arm/mm/flush.c                   |   9 +--
- arch/arm/mm/fsr-2level.c              |   4 +-
- arch/arm/mm/hugetlbpage.c             |   2 +-
- arch/arm/mm/mmu.c                     |  51 +++++++++++++
- arch/s390/include/asm/hugetlb.h       |  15 ++++
- include/asm-generic/hugetlb.h         |  15 ++++
- mm/hugetlb.c                          |  22 +++---
- 17 files changed, 399 insertions(+), 53 deletions(-)
- create mode 100644 arch/arm/include/asm/hugetlb-2level.h
-
+diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+index 5478e5d..3a9c238 100644
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -228,11 +228,11 @@ static inline pte_t *pmd_page_vaddr(pmd_t pmd)
+ 	(pte_valid(pte) && (pte_val(pte) & L_PTE_USER) && pte_young(pte))
+ 
+ #if __LINUX_ARM_ARCH__ < 6
+-static inline void __sync_icache_dcache(pte_t pteval)
++static inline void __sync_icache_dcache(unsigned long pfn, int exec);
+ {
+ }
+ #else
+-extern void __sync_icache_dcache(pte_t pteval);
++extern void __sync_icache_dcache(unsigned long pfn, int exec);
+ #endif
+ 
+ static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
+@@ -241,7 +241,7 @@ static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
+ 	unsigned long ext = 0;
+ 
+ 	if (addr < TASK_SIZE && pte_valid_user(pteval)) {
+-		__sync_icache_dcache(pteval);
++		__sync_icache_dcache(pte_pfn(pteval), pte_exec(pteval));
+ 		ext |= PTE_EXT_NG;
+ 	}
+ 
+diff --git a/arch/arm/mm/flush.c b/arch/arm/mm/flush.c
+index 3387e60..df0d5ca 100644
+--- a/arch/arm/mm/flush.c
++++ b/arch/arm/mm/flush.c
+@@ -232,16 +232,15 @@ static void __flush_dcache_aliases(struct address_space *mapping, struct page *p
+ }
+ 
+ #if __LINUX_ARM_ARCH__ >= 6
+-void __sync_icache_dcache(pte_t pteval)
++void __sync_icache_dcache(unsigned long pfn, int exec)
+ {
+-	unsigned long pfn;
+ 	struct page *page;
+ 	struct address_space *mapping;
+ 
+-	if (cache_is_vipt_nonaliasing() && !pte_exec(pteval))
++	if (cache_is_vipt_nonaliasing() && !exec)
+ 		/* only flush non-aliasing VIPT caches for exec mappings */
+ 		return;
+-	pfn = pte_pfn(pteval);
++
+ 	if (!pfn_valid(pfn))
+ 		return;
+ 
+@@ -254,7 +253,7 @@ void __sync_icache_dcache(pte_t pteval)
+ 	if (!test_and_set_bit(PG_dcache_clean, &page->flags))
+ 		__flush_dcache_page(mapping, page);
+ 
+-	if (pte_exec(pteval))
++	if (exec)
+ 		__flush_icache_all();
+ }
+ #endif
 -- 
 1.8.1.4
 
