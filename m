@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745AbaDPKcn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:32:43 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51693 "EHLO
+	id S1755724AbaDPKck (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:32:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51698 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755646AbaDPKcf (ORCPT
+	with ESMTP id S1755653AbaDPKcg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:32:35 -0400
+	Wed, 16 Apr 2014 06:32:36 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Matthew Leach <matthew.leach@arm.com>,
+Cc: Heiner Kallweit <heiner.kallweit@web.de>,
         "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 19/46] net: socket: error on a negative msg_namelen
-Date: Wed, 16 Apr 2014 11:31:35 +0100
-Message-Id: <1397644322-13905-20-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 20/46] ipv6: Avoid unnecessary temporary addresses being generated
+Date: Wed, 16 Apr 2014 11:31:36 +0100
+Message-Id: <1397644322-13905-21-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
 References: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
@@ -28,38 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matthew Leach <matthew.leach@arm.com>
+From: Heiner Kallweit <heiner.kallweit@web.de>
 
-commit dbb490b96584d4e958533fb637f08b557f505657 upstream.
+commit ecab67015ef6e3f3635551dcc9971cf363cc1cd5 upstream.
 
-When copying in a struct msghdr from the user, if the user has set the
-msg_namelen parameter to a negative value it gets clamped to a valid
-size due to a comparison between signed and unsigned values.
+tmp_prefered_lft is an offset to ifp->tstamp, not now. Therefore
+age needs to be added to the condition.
 
-Ensure the syscall errors when the user passes in a negative value.
+Age calculation in ipv6_create_tempaddr is different from the one
+in addrconf_verify and doesn't consider ADDRCONF_TIMER_FUZZ_MINUS.
+This can cause age in ipv6_create_tempaddr to be less than the one
+in addrconf_verify and therefore unnecessary temporary address to
+be generated.
+Use age calculation as in addrconf_modify to avoid this.
 
-Signed-off-by: Matthew Leach <matthew.leach@arm.com>
+Signed-off-by: Heiner Kallweit <heiner.kallweit@web.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/socket.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ net/ipv6/addrconf.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-diff --git a/net/socket.c b/net/socket.c
-index 03d5324..6bfb9e4 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -1981,6 +1981,10 @@ static int copy_msghdr_from_user(struct msghdr *kmsg,
- {
- 	if (copy_from_user(kmsg, umsg, sizeof(struct msghdr)))
- 		return -EFAULT;
-+
-+	if (kmsg->msg_namelen < 0)
-+		return -EINVAL;
-+
- 	if (kmsg->msg_namelen > sizeof(struct sockaddr_storage))
- 		kmsg->msg_namelen = sizeof(struct sockaddr_storage);
- 	return 0;
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index 0f99f7b..a6ddced 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -1113,8 +1113,11 @@ retry:
+ 	 * Lifetime is greater than REGEN_ADVANCE time units.  In particular,
+ 	 * an implementation must not create a temporary address with a zero
+ 	 * Preferred Lifetime.
++	 * Use age calculation as in addrconf_verify to avoid unnecessary
++	 * temporary addresses being generated.
+ 	 */
+-	if (tmp_prefered_lft <= regen_advance) {
++	age = (now - tmp_tstamp + ADDRCONF_TIMER_FUZZ_MINUS) / HZ;
++	if (tmp_prefered_lft <= regen_advance + age) {
+ 		in6_ifa_put(ifp);
+ 		in6_dev_put(idev);
+ 		ret = -1;
 -- 
 1.9.1
 
