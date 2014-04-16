@@ -1,50 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204AbaDPUYa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 16:24:30 -0400
-Received: from mail-ve0-f174.google.com ([209.85.128.174]:39375 "EHLO
-	mail-ve0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753917AbaDPUY0 (ORCPT
+	id S1756606AbaDPUY5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 16:24:57 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:40169 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756075AbaDPUYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 16:24:26 -0400
+	Wed, 16 Apr 2014 16:24:54 -0400
 MIME-Version: 1.0
-In-Reply-To: <534EAD91.90704@wwwdotorg.org>
-References: <1397526163-20126-1-git-send-email-abrestic@chromium.org>
-	<1397526163-20126-5-git-send-email-abrestic@chromium.org>
-	<CAL1qeaGGSs5fpqrKWA4u4+RXRy9Ko2pN=s9QQdbXAfLG3ujR8g@mail.gmail.com>
-	<534EAD91.90704@wwwdotorg.org>
-Date: Wed, 16 Apr 2014 13:24:25 -0700
-X-Google-Sender-Auth: akJMw8qJ12puDj0SfdoZWzaRzCQ
-Message-ID: <CAL1qeaENYazDf6cuWsFLgJcsAPTU9D4nz1dPr3Jva_++Po_mrw@mail.gmail.com>
-Subject: Re: [PATCH 4/4] ARM: tegra: fix Venice2 VQMMC regulators
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Thierry Reding <thierry.reding@gmail.com>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20140416193918.GM31074@redhat.com>
+References: <20140416.085743.1614257692560892039.davem@davemloft.net>
+ <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com>
+ <1397664837.19767.410.camel@willson.li.ssimo.org> <CALCETrXn7b6UuALpGUVoyQYfR2uzk5tj2ABV=dkvtFNgqM5sxQ@mail.gmail.com>
+ <20140416180642.GG31074@redhat.com> <CALCETrVUw5+vCCONy1VTXpskbY_eZFo2CtbehwV5Mhj4d4+icw@mail.gmail.com>
+ <20140416182530.GB550@redhat.com> <CALCETrUs1js3Br81ZkiQnsuWduzOiqDe3aV0K_z_zw0znSuiag@mail.gmail.com>
+ <20140416190657.GK31074@redhat.com> <CALCETrUv56awd+UoO_f8LLL2FVq-Hc6Bd6iBGMqWjVGpgxgTSg@mail.gmail.com>
+ <20140416193918.GM31074@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 16 Apr 2014 13:24:32 -0700
+Message-ID: <CALCETrU9P+1Az+uuU_zE4uZZ-qmp5M_=YAXvfcK=rzQRbgoG5g@mail.gmail.com>
+Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing cgroup path
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Simo Sorce <ssorce@redhat.com>, David Miller <davem@davemloft.net>,
+        Tejun Heo <tj@kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
+        Network Development <netdev@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 9:19 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 04/15/2014 06:29 PM, Andrew Bresticker wrote:
->>>         sdhci@0,700b0600 {
->>>                 status = "okay";
->>>                 bus-width = <8>;
->>> +               vqmmc-supply = <&vddio_1v8>;
+On Wed, Apr 16, 2014 at 12:39 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Wed, Apr 16, 2014 at 12:13:21PM -0700, Andy Lutomirski wrote:
+>> On Wed, Apr 16, 2014 at 12:06 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>> > On Wed, Apr 16, 2014 at 11:35:13AM -0700, Andy Lutomirski wrote:
+>> >> On Wed, Apr 16, 2014 at 11:25 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>> >> > On Wed, Apr 16, 2014 at 11:13:31AM -0700, Andy Lutomirski wrote:
+>> >> >
+>> >> > [..]
+>> >> >> > Ok, so passing cgroup information is not necessarily a problem as long
+>> >> >> > as it is not used for authentication. So say somebody is just logging
+>> >> >> > all the client request and which cgroup client was in, that should not
+>> >> >> > be a problem.
+>> >> >>
+>> >> >> Do you consider correct attribution of logging messages to be
+>> >> >> important?  If so, then this is a kind of authentication, albeit one
+>> >> >> where the impact of screwing it up is a bit lower.
+>> >> >
+>> >> > So not passing cgroup information makes attribution more correct. Just
+>> >> > logging of information is authentication how? Both kernel and user space
+>> >> > log message into /var/log/messages and kernel messages are prefixed with
+>> >> > "kernel". So this somehow becomes are sort of authentication. I don't
+>> >> > get it.
+>> >>
+>> >> I did a bad job of explaining what I meant.
+>> >>
+>> >> I think that, currently, log lines can be correctly attributed to the
+>> >> kernel or to userspace, but determining where in userspace a log line
+>> >> came from is a bit flaky.  One of the goals of these patches is to
+>> >> make log attribution less flaky.  But if you want log attribution to
+>> >> be completely correct, even in the presence of malicious programs,
+>> >> then I think that the current patches aren't quite there.
+>> >
+>> > Why do you think that current patches are not there yet in the presence of
+>> > malicious program. In your example, one program opened the socket and
+>> > passed it to malicious program. And all the future messages are coming
+>> > from malicious program. As long as receiver checks for SO_PASSCGROUP,
+>> > it covers your example.
 >>
->> It turns out this bit isn't needed as the initialization failures are
->> instead due to +3V3_RUN toggling, which Stephen has fixed:
->> http://patchwork.ozlabs.org/patch/339386/
+>> This is backwards.  The malicious program opens the socket and passes
+>> it to an unwitting non-malicious program.  That non-malicious program
+>> sends messages, and the logging daemon things that the non-malicious
+>> program actually intended for these messages to end up in the system
+>> log.
 >
-> Indeed, if I apply patches 1, 2, and 4 from this series, revert the hunk
-> above, apply my Venice2 regulator patch, and finally apply your AS3722
-> regulator GPIO patch, then everything works fine for me:-)
+> Either way you look at it, I can't see the problem. Even without cgroup
+> info, in your example, a non-malicious programs error message will show
+> up at the receiver (Because malicious program passed that fd as stdout
+> to non-malicious program).
+>
+> Are you complainig about this?
+>
+> Or are you complaing that non-malicious program's cgroup info will show
+> up at the receiver. What's the problem with that. Receiver can use
+> SO_PASSCGROUP and get non-malicious programs cgroup and log it (along
+> with error message). I don't see where is the problem in that.
 
-Great, I'll fix up and resend without patch 3 as it looks like that
-will need some more work.
+I'm not talking about the risk that someone learns someone's cgroup.
+I'm talking about the risk that a malicious program can get a lot
+entry like: "whatever planted text"
+_SYSTEMD_UNIT=non-malicious.service.  That is, they've spoofed a log
+line.
+
+If you don't care about spoofing of log lines, then there's no point
+to having the kernel validate them anyway.
+
+--Andy
