@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340AbaDPRVx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 13:21:53 -0400
-Received: from mail-la0-f54.google.com ([209.85.215.54]:56697 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755126AbaDPRTt (ORCPT
+	id S1755155AbaDPRTs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 13:19:48 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:50659 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755067AbaDPRTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 13:19:49 -0400
+	Wed, 16 Apr 2014 13:19:39 -0400
 From: Sergei Ianovich <ynvich@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: Sergei Ianovich <ynvich@gmail.com>, Rob Herring <robh+dt@kernel.org>,
@@ -17,9 +17,9 @@ Cc: Sergei Ianovich <ynvich@gmail.com>, Rob Herring <robh+dt@kernel.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
         linux-doc@vger.kernel.org (open list:DOCUMENTATION)
-Subject: [PATCH v4 18/21] misc: support for parallel slots in LP-8x4x
-Date: Wed, 16 Apr 2014 21:17:23 +0400
-Message-Id: <1397668667-27328-12-git-send-email-ynvich@gmail.com>
+Subject: [PATCH v4 16/21] misc: support for writing to LP-8x4x EEPROM
+Date: Wed, 16 Apr 2014 21:17:21 +0400
+Message-Id: <1397668667-27328-10-git-send-email-ynvich@gmail.com>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1397668667-27328-1-git-send-email-ynvich@gmail.com>
 References: <1397668411-27162-7-git-send-email-ynvich@gmail.com>
@@ -28,8 +28,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enumerates parallel modules in expansion slots and exposes
-model numbers via sysfs.
+at24c128 write protection is implemented by a separate GPIO line.
+EEPROM driver doesn't provide this option, so we implement it
+in the board-specific device.
 
 Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
 ---
@@ -37,247 +38,135 @@ Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
    * move DTS binding to a different patch (8/21)
 
    v2..v3
-   * no changes (except number 13/16 -> 18/21)
+   * new patch
 
-   v0..v2
-   * use device tree
-   * use devm helpers where possible
-
- .../devicetree/bindings/misc/lp8x4x-bus.txt        |   9 ++
- Documentation/misc-devices/lp8x4x_bus.txt          |   8 ++
- drivers/misc/lp8x4x_bus.c                          | 119 +++++++++++++++++++++
- 3 files changed, 136 insertions(+)
+ .../devicetree/bindings/misc/lp8x4x-bus.txt        |  3 ++
+ Documentation/misc-devices/lp8x4x_bus.txt          |  3 ++
+ drivers/misc/lp8x4x_bus.c                          | 50 ++++++++++++++++++++++
+ 3 files changed, 56 insertions(+)
 
 diff --git a/Documentation/devicetree/bindings/misc/lp8x4x-bus.txt b/Documentation/devicetree/bindings/misc/lp8x4x-bus.txt
-index 24a8c62..75ac3b2 100644
+index 1b1776a..b0fb145 100644
 --- a/Documentation/devicetree/bindings/misc/lp8x4x-bus.txt
 +++ b/Documentation/devicetree/bindings/misc/lp8x4x-bus.txt
-@@ -7,6 +7,7 @@ Required properties:
- 
- - reg: physical base addresses and region lengths of
-        * the rotary switch
-+       * 8 plugable industrial IO slots
+@@ -10,6 +10,8 @@ Required properties:
         * the 8bit DIP switch
-        * the serial slot select register
         * the slot count register
-@@ -18,6 +19,14 @@ Example:
+ 
++- eeprom-gpios : should point to active-low write enable GPIO
++
+ Example:
+ 
  	backplane {
- 		compatible = "icpdas,backplane-lp8x4x";
+@@ -17,4 +19,5 @@ Example:
  		reg = <0x0 0x2
-+		       0x1000 0x10
-+		       0x2000 0x10
-+		       0x3000 0x10
-+		       0x4000 0x10
-+		       0x5000 0x10
-+		       0x6000 0x10
-+		       0x7000 0x10
-+		       0x8000 0x10
  		       0x9002 0x2
- 		       0x9004 0x2
  		       0x9046 0x2>;
++		eeprom-gpios = <&gpio 4 0>;
+ 	};
 diff --git a/Documentation/misc-devices/lp8x4x_bus.txt b/Documentation/misc-devices/lp8x4x_bus.txt
-index 7b86797..09380fd 100644
+index 829781b..78ea0a89 100644
 --- a/Documentation/misc-devices/lp8x4x_bus.txt
 +++ b/Documentation/misc-devices/lp8x4x_bus.txt
-@@ -28,6 +28,9 @@ into the device, they could be accessed using the 2nd PXA built-in UART port
- (/dev/ttyS1). However, it seems that addresses are not processed by
- the modules. So the parallel bus needs to select which slot is connected.
+@@ -29,6 +29,9 @@ SYSFS
+ dip
+ 	RO - shows status of LP-8x4x 8bit DIP switch
  
-+Parallel modules allow much faster communication. There are accessed using
-+IO memory through the FPGA. Their ports are exposed via sysfs.
++eeprom_write_enable
++	RW - controls write access to board's EEPROM (1 - enable)
 +
- SYSFS
- -----
+ rotary
+ 	RO - shows position of LP-8x4x rotary switch (0-9)
  
-@@ -50,3 +53,8 @@ rotary
- 
- slot_count
- 	RO - shows total number of expansion slots on the device
-+
-+/sys/bus/icpdas/devices/slot%02i:
-+
-+model
-+	RO - shows expansion module model number
 diff --git a/drivers/misc/lp8x4x_bus.c b/drivers/misc/lp8x4x_bus.c
-index e805640..59dc767 100644
+index dfbc8c4..567fe078 100644
 --- a/drivers/misc/lp8x4x_bus.c
 +++ b/drivers/misc/lp8x4x_bus.c
-@@ -23,6 +23,13 @@ MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Sergei Ianovich <ynvich@gmail.com>");
- MODULE_DESCRIPTION("ICP DAS LP-8x4x parallel bus driver");
- 
-+struct lp8x4x_slot {
-+	void			*data_addr;
-+	unsigned int		model;
-+	struct device		dev;
-+};
-+
-+#define LP8X4X_MAX_SLOT_COUNT	8
- struct lp8x4x_master {
- 	unsigned int		slot_count;
+@@ -9,6 +9,7 @@
+  *  published by the Free Software Foundation or any later version.
+  */
+ #include <linux/err.h>
++#include <linux/gpio/consumer.h>
+ #include <linux/init.h>
+ #include <linux/io.h>
+ #include <linux/list.h>
+@@ -27,6 +28,7 @@ struct lp8x4x_master {
  	void			*count_addr;
-@@ -31,9 +38,45 @@ struct lp8x4x_master {
- 	struct gpio_desc        *eeprom_nWE;
- 	unsigned int		active_slot;
- 	void			*switch_addr;
-+	struct lp8x4x_slot	slot[LP8X4X_MAX_SLOT_COUNT];
+ 	void			*rotary_addr;
+ 	void			*dip_addr;
++	struct gpio_desc        *eeprom_nWE;
  	struct device		dev;
  };
  
-+static unsigned char lp8x4x_model[256] = {
-+	   0,    0,    0, 0x11,    0, 0x18, 0x13, 0x11,
-+	0x0e, 0x11,    0,    0,    0, 0x5a, 0x5b, 0x5c,
-+	0x3c, 0x44, 0x34, 0x3a, 0x39, 0x36, 0x37, 0x33,
-+	0x35, 0x40, 0x41, 0x42, 0x38, 0x3f, 0x32, 0x45,
-+	0xac, 0x70, 0x8e, 0x8e, 0x1e, 0x72, 0x90, 0x29,
-+	0x4a, 0x22, 0xd3, 0xd2, 0x28, 0x25, 0x2a, 0x29,
-+	0x48, 0x49, 0x5d, 0x1f, 0x20, 0x23, 0x24, 0x4d,
-+	0x3d, 0x3e,    0,    0,    0,    0,    0,    0,
-+	   0, 0x78, 0x72, 0x2b, 0x5e, 0x5e, 0x36, 0xae,
-+	0x30,    0,    0,    0,    0,    0,    0,    0,
-+	   0,    0, 0x5c, 0x5e,    0, 0x5e,    0,    0,
-+	   0, 0x3b,    0,    0,    0,    0,    0,    0,
-+	   0, 0x50, 0x2e,    0, 0x58,    0,    0, 0x43,
-+	   0,    0,    0,    0,    0,    0,    0,    0,
-+	   0, 0x54,    0,    0,    0,    0,    0,    0,
-+	   0,    0,    0,    0,    0,    0,    0,    0,
-+	   0,    0,    0,    0,    0,    0,    0,    0,
-+	   0,    0,    0,    0,    0,    0,    0,    0,
-+	   0,    0,    0,    0,    0,    0,    0,    0,
-+	   0,    0,    0,    0,    0,    0,    0,    0,
-+	   0,    0,    0,    0,    0,    0,    0,    0,
-+	   0,    0,    0,    0,    0,    0,    0,    0,
-+	   0,    0,    0,    0,    0,    0,    0,    0,
-+	   0,    0,    0,    0,    0,    0,    0,    0,
-+	   0,    0,    0,    0,    0,    0,    0,    0,
-+	   0,    0,    0,    0,    0,    0,    0,    0,
-+	   0,    0,    0,    0,    0,    0,    0,    0,
-+	   0,    0,    0,    0,    0,    0,    0,    0,
-+	   0,    0,    0,    0,    0,    0,    0,    0,
-+	   0,    0,    0,    0,    0,    0,    0,    0,
-+	   0,    0,    0,    0,    0,    0,    0,    0,
-+	   0,    0,    0,    0,    0,    0,    0,    0
-+};
-+
- static int lp8x4x_match(struct device *dev, struct device_driver *drv)
- {
- 	return 1;
-@@ -44,6 +87,26 @@ static struct bus_type lp8x4x_bus_type = {
- 	.match		= lp8x4x_match,
- };
+@@ -68,6 +70,40 @@ static ssize_t rotary_show(struct device *dev,
  
-+static void lp8x4x_slot_release(struct device *dev)
-+{
-+}
-+
-+static ssize_t model_show(struct device *dev,
+ static DEVICE_ATTR_RO(rotary);
+ 
++static ssize_t eeprom_write_enable_show(struct device *dev,
 +		struct device_attribute *attr, char *buf)
 +{
-+	struct lp8x4x_slot *s = container_of(dev, struct lp8x4x_slot, dev);
++	struct lp8x4x_master *m = container_of(dev, struct lp8x4x_master, dev);
 +
-+	return sprintf(buf, "%u\n", s->model + 8000);
++	return sprintf(buf, "%u\n", !gpiod_get_value(m->eeprom_nWE));
 +}
 +
-+static DEVICE_ATTR_RO(model);
-+
-+static struct attribute *slot_dev_attrs[] = {
-+	&dev_attr_model.attr,
-+	NULL,
-+};
-+ATTRIBUTE_GROUPS(slot_dev);
-+
- static void lp8x4x_master_release(struct device *dev)
- {
- 	struct lp8x4x_master *m = container_of(dev, struct lp8x4x_master, dev);
-@@ -173,18 +236,50 @@ ATTRIBUTE_GROUPS(master_dev);
- static void devm_lp8x4x_bus_release(struct device *dev, void *res)
- {
- 	struct lp8x4x_master *m = *(struct lp8x4x_master **)res;
-+	struct lp8x4x_slot *s;
-+	int i;
- 
- 	dev_dbg(dev, "releasing devices\n");
-+	for (i = 0; i < LP8X4X_MAX_SLOT_COUNT; i++) {
-+		s = &m->slot[i];
-+		if (s->model)
-+			device_unregister(&s->dev);
-+	}
- 	device_unregister(&m->dev);
- 	bus_unregister(&lp8x4x_bus_type);
- }
- 
-+static void __init lp8x4x_bus_probe_slot(struct lp8x4x_master *m, int i,
-+		unsigned char model)
++static ssize_t eeprom_write_enable_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
 +{
-+	struct lp8x4x_slot *s = &m->slot[i];
++	struct lp8x4x_master *m = container_of(dev, struct lp8x4x_master, dev);
++	unsigned int val = 0;
 +	int err;
 +
-+	dev_info(&m->dev, "found %u in slot %i\n", 8000 + model, i + 1);
++	if (!buf)
++		return count;
 +
-+	s->dev.bus = &lp8x4x_bus_type;
-+	dev_set_name(&s->dev, "slot%02i", i + 1);
-+	s->dev.parent = &m->dev;
-+	s->dev.release = lp8x4x_slot_release;
-+	s->dev.groups = slot_dev_groups;
-+	s->model = model;
++	if (0 == count)
++		return count;
 +
-+	err = device_register(&s->dev);
-+	if (err < 0) {
-+		dev_err(&s->dev, "failed to register device\n");
-+		s->model = 0;
-+		return;
++	err = kstrtouint(buf, 10, &val);
++	if (err != 0) {
++		dev_err(dev, "Bad input %s\n", buf);
++		return count;
 +	}
++
++	gpiod_set_value(m->eeprom_nWE, !val);
++
++	return count;
 +}
 +
- static int __init lp8x4x_bus_probe(struct platform_device *pdev)
++static DEVICE_ATTR_RW(eeprom_write_enable);
++
+ static ssize_t dip_show(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
  {
- 	struct lp8x4x_master *m, **p;
- 	struct resource *res;
- 	int r = 0;
-+	int i;
- 	int err = 0;
-+	unsigned int model;
- 
- 	m = kzalloc(sizeof(*m), GFP_KERNEL);
- 	if (!m)
-@@ -211,6 +306,23 @@ static int __init lp8x4x_bus_probe(struct platform_device *pdev)
+@@ -81,6 +117,7 @@ static DEVICE_ATTR_RO(dip);
+ static struct attribute *master_dev_attrs[] = {
+ 	&dev_attr_slot_count.attr,
+ 	&dev_attr_rotary.attr,
++	&dev_attr_eeprom_write_enable.attr,
+ 	&dev_attr_dip.attr,
+ 	NULL,
+ };
+@@ -156,6 +193,19 @@ static int __init lp8x4x_bus_probe(struct platform_device *pdev)
  		goto err_free;
  	}
  
-+	for (i = 0; i < LP8X4X_MAX_SLOT_COUNT; i++) {
-+		res = platform_get_resource(pdev, IORESOURCE_MEM, r++);
-+		if (!res) {
-+			dev_err(&pdev->dev, "Failed to get slot %i address\n",
-+					i);
-+			err = -ENODEV;
-+			goto err_free;
-+		}
-+
-+		m->slot[i].data_addr = devm_ioremap_resource(&pdev->dev, res);
-+		if (IS_ERR(m->slot[i].data_addr)) {
-+			dev_err(&pdev->dev, "Failed to ioremap slot %i\n", i);
-+			err = PTR_ERR(m->slot[i].data_addr);
-+			goto err_free;
-+		}
++	m->eeprom_nWE = devm_gpiod_get(&pdev->dev, "eeprom");
++	if (IS_ERR(m->eeprom_nWE)) {
++		err = PTR_ERR(m->eeprom_nWE);
++		dev_err(&pdev->dev, "Failed to get eeprom GPIO\n");
++		goto err_free;
 +	}
 +
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, r++);
- 	if (!res) {
- 		dev_err(&pdev->dev, "Failed to get DIP switch address\n");
-@@ -305,6 +417,13 @@ static int __init lp8x4x_bus_probe(struct platform_device *pdev)
- 	}
- 
- 	devres_add(&pdev->dev, p);
-+	for (i = 0; i < LP8X4X_MAX_SLOT_COUNT; i++) {
-+		model = lp8x4x_model[ioread8(m->slot[i].data_addr)];
-+		if (!model)
-+			continue;
-+
-+		lp8x4x_bus_probe_slot(m, i, model);
++	err = gpiod_direction_output(m->eeprom_nWE, 1);
++	if (err < 0) {
++		dev_err(&pdev->dev, "Failed to set eeprom GPIO output\n");
++		goto err_free;
 +	}
- 	return 0;
- 
- err_bus:
++
+ 	m->slot_count = ioread8(m->count_addr);
+ 	switch (m->slot_count) {
+ 	case 1:
 -- 
 1.8.4.2
 
