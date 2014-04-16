@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061AbaDPKnw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:43:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51742 "EHLO
+	id S1755961AbaDPKnv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:43:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51748 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755765AbaDPKcs (ORCPT
+	with ESMTP id S1755767AbaDPKcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:32:48 -0400
+	Wed, 16 Apr 2014 06:32:50 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oliver Neukum <oneukum@suse.de>, "David S. Miller" <davem@davemloft.net>,
+Cc: Patrick McHardy <kaber@trash.net>, Vlad Yasevich <vyasevic@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 28/46] usbnet: include wait queue head in device structure
-Date: Wed, 16 Apr 2014 11:31:44 +0100
-Message-Id: <1397644322-13905-29-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 29/46] vlan: Set hard_header_len according to available acceleration
+Date: Wed, 16 Apr 2014 11:31:45 +0100
+Message-Id: <1397644322-13905-30-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
 References: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
@@ -27,147 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Vlad Yasevich <vyasevic@redhat.com>
 
-commit 14a0d635d18d0fb552dcc979d6d25106e6541f2e upstream.
+commit fc0d48b8fb449ca007b2057328abf736cb516168 upstream.
 
-This fixes a race which happens by freeing an object on the stack.
-Quoting Julius:
-> The issue is
-> that it calls usbnet_terminate_urbs() before that, which temporarily
-> installs a waitqueue in dev->wait in order to be able to wait on the
-> tasklet to run and finish up some queues. The waiting itself looks
-> okay, but the access to 'dev->wait' is totally unprotected and can
-> race arbitrarily. I think in this case usbnet_bh() managed to succeed
-> it's dev->wait check just before usbnet_terminate_urbs() sets it back
-> to NULL. The latter then finishes and the waitqueue_t structure on its
-> stack gets overwritten by other functions halfway through the
-> wake_up() call in usbnet_bh().
+Currently, if the card supports CTAG acceleration we do not
+account for the vlan header even if we are configuring an
+8021AD vlan.  This may not be best since we'll do software
+tagging for 8021AD which will cause data copy on skb head expansion
+Configure the length based on available hw offload capabilities and
+vlan protocol.
 
-The fix is to just not allocate the data structure on the stack.
-As dev->wait is abused as a flag it also takes a runtime PM change
-to fix this bug.
-
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Reported-by: Grant Grundler <grundler@google.com>
-Tested-by: Grant Grundler <grundler@google.com>
+CC: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/usb/usbnet.c   | 33 +++++++++++++++++++--------------
- include/linux/usb/usbnet.h |  2 +-
- 2 files changed, 20 insertions(+), 15 deletions(-)
+ net/8021q/vlan.c     | 4 +++-
+ net/8021q/vlan_dev.c | 3 ++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
-index f6dce47..3d50e7d 100644
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -727,14 +727,12 @@ EXPORT_SYMBOL_GPL(usbnet_unlink_rx_urbs);
- // precondition: never called in_interrupt
- static void usbnet_terminate_urbs(struct usbnet *dev)
+diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
+index 2fb2d88..2c3a3b7 100644
+--- a/net/8021q/vlan.c
++++ b/net/8021q/vlan.c
+@@ -305,9 +305,11 @@ static void vlan_sync_address(struct net_device *dev,
+ static void vlan_transfer_features(struct net_device *dev,
+ 				   struct net_device *vlandev)
  {
--	DECLARE_WAIT_QUEUE_HEAD_ONSTACK(unlink_wakeup);
- 	DECLARE_WAITQUEUE(wait, current);
- 	int temp;
- 
- 	/* ensure there are no more active urbs */
--	add_wait_queue(&unlink_wakeup, &wait);
-+	add_wait_queue(&dev->wait, &wait);
- 	set_current_state(TASK_UNINTERRUPTIBLE);
--	dev->wait = &unlink_wakeup;
- 	temp = unlink_urbs(dev, &dev->txq) +
- 		unlink_urbs(dev, &dev->rxq);
- 
-@@ -748,15 +746,14 @@ static void usbnet_terminate_urbs(struct usbnet *dev)
- 				  "waited for %d urb completions\n", temp);
- 	}
- 	set_current_state(TASK_RUNNING);
--	dev->wait = NULL;
--	remove_wait_queue(&unlink_wakeup, &wait);
-+	remove_wait_queue(&dev->wait, &wait);
- }
- 
- int usbnet_stop (struct net_device *net)
- {
- 	struct usbnet		*dev = netdev_priv(net);
- 	struct driver_info	*info = dev->driver_info;
--	int			retval;
-+	int			retval, pm;
- 
- 	clear_bit(EVENT_DEV_OPEN, &dev->flags);
- 	netif_stop_queue (net);
-@@ -766,6 +763,8 @@ int usbnet_stop (struct net_device *net)
- 		   net->stats.rx_packets, net->stats.tx_packets,
- 		   net->stats.rx_errors, net->stats.tx_errors);
- 
-+	/* to not race resume */
-+	pm = usb_autopm_get_interface(dev->intf);
- 	/* allow minidriver to stop correctly (wireless devices to turn off
- 	 * radio etc) */
- 	if (info->stop) {
-@@ -792,6 +791,9 @@ int usbnet_stop (struct net_device *net)
- 	dev->flags = 0;
- 	del_timer_sync (&dev->delay);
- 	tasklet_kill (&dev->bh);
-+	if (!pm)
-+		usb_autopm_put_interface(dev->intf);
++	struct vlan_dev_priv *vlan = vlan_dev_priv(vlandev);
 +
- 	if (info->manage_power &&
- 	    !test_and_clear_bit(EVENT_NO_RUNTIME_PM, &dev->flags))
- 		info->manage_power(dev, 0);
-@@ -1360,11 +1362,12 @@ static void usbnet_bh (unsigned long param)
- 	/* restart RX again after disabling due to high error rate */
- 	clear_bit(EVENT_RX_KILL, &dev->flags);
+ 	vlandev->gso_max_size = dev->gso_max_size;
  
--	// waiting for all pending urbs to complete?
--	if (dev->wait) {
--		if ((dev->txq.qlen + dev->rxq.qlen + dev->done.qlen) == 0) {
--			wake_up (dev->wait);
--		}
-+	/* waiting for all pending urbs to complete?
-+	 * only then can we forgo submitting anew
-+	 */
-+	if (waitqueue_active(&dev->wait)) {
-+		if (dev->txq.qlen + dev->rxq.qlen + dev->done.qlen == 0)
-+			wake_up_all(&dev->wait);
+-	if (dev->features & NETIF_F_HW_VLAN_CTAG_TX)
++	if (vlan_hw_offload_capable(dev->features, vlan->vlan_proto))
+ 		vlandev->hard_header_len = dev->hard_header_len;
+ 	else
+ 		vlandev->hard_header_len = dev->hard_header_len + VLAN_HLEN;
+diff --git a/net/8021q/vlan_dev.c b/net/8021q/vlan_dev.c
+index 48db858..cf35f38 100644
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -611,7 +611,8 @@ static int vlan_dev_init(struct net_device *dev)
+ #endif
  
- 	// or are we maybe short a few urbs?
- 	} else if (netif_running (dev->net) &&
-@@ -1502,6 +1505,7 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
- 	dev->driver_name = name;
- 	dev->msg_enable = netif_msg_init (msg_level, NETIF_MSG_DRV
- 				| NETIF_MSG_PROBE | NETIF_MSG_LINK);
-+	init_waitqueue_head(&dev->wait);
- 	skb_queue_head_init (&dev->rxq);
- 	skb_queue_head_init (&dev->txq);
- 	skb_queue_head_init (&dev->done);
-@@ -1694,9 +1698,10 @@ int usbnet_resume (struct usb_interface *intf)
- 		spin_unlock_irq(&dev->txq.lock);
- 
- 		if (test_bit(EVENT_DEV_OPEN, &dev->flags)) {
--			/* handle remote wakeup ASAP */
--			if (!dev->wait &&
--				netif_device_present(dev->net) &&
-+			/* handle remote wakeup ASAP
-+			 * we cannot race against stop
-+			 */
-+			if (netif_device_present(dev->net) &&
- 				!timer_pending(&dev->delay) &&
- 				!test_bit(EVENT_RX_HALT, &dev->flags))
- 					rx_alloc_submit(dev, GFP_NOIO);
-diff --git a/include/linux/usb/usbnet.h b/include/linux/usb/usbnet.h
-index f18d641..123b21b 100644
---- a/include/linux/usb/usbnet.h
-+++ b/include/linux/usb/usbnet.h
-@@ -30,7 +30,7 @@ struct usbnet {
- 	struct driver_info	*driver_info;
- 	const char		*driver_name;
- 	void			*driver_priv;
--	wait_queue_head_t	*wait;
-+	wait_queue_head_t	wait;
- 	struct mutex		phy_mutex;
- 	unsigned char		suspend_count;
- 	unsigned char		pkt_cnt, pkt_err;
+ 	dev->needed_headroom = real_dev->needed_headroom;
+-	if (real_dev->features & NETIF_F_HW_VLAN_CTAG_TX) {
++	if (vlan_hw_offload_capable(real_dev->features,
++				    vlan_dev_priv(dev)->vlan_proto)) {
+ 		dev->header_ops      = &vlan_passthru_header_ops;
+ 		dev->hard_header_len = real_dev->hard_header_len;
+ 	} else {
 -- 
 1.9.1
 
