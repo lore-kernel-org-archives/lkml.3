@@ -1,196 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579AbaDPLGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 07:06:13 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:53017 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755376AbaDPLGJ (ORCPT
+	id S1755600AbaDPLIN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 07:08:13 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:39660 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755560AbaDPLIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 07:06:09 -0400
-Date: Wed, 16 Apr 2014 12:06:03 +0100
+	Wed, 16 Apr 2014 07:08:12 -0400
+Date: Wed, 16 Apr 2014 12:08:06 +0100
 From: Lee Jones <lee.jones@linaro.org>
-To: Matt Porter <mporter@linaro.org>
-Cc: Devicetree List <devicetree@vger.kernel.org>,
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
         Samuel Ortiz <sameo@linux.intel.com>,
         Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Tim Kryger <tim.kryger@linaro.org>,
-        Markus Mayer <markus.mayer@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/4] mfd: bcm590xx: add support for second i2c slave
- address space
-Message-ID: <20140416110603.GA19671@lee--X1>
-References: <1397501428-8857-1-git-send-email-mporter@linaro.org>
- <1397501428-8857-3-git-send-email-mporter@linaro.org>
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH v5 0/9] mfd: max14577: Add support for MAX77836
+Message-ID: <20140416110806.GB19671@lee--X1>
+References: <1397467040-30502-1-git-send-email-k.kozlowski@samsung.com>
+ <20140416102846.GL4754@lee--X1>
+ <1397645078.6147.11.camel@AMDC1943>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1397501428-8857-3-git-send-email-mporter@linaro.org>
+In-Reply-To: <1397645078.6147.11.camel@AMDC1943>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Apr 2014, Matt Porter wrote:
+On Wed, 16 Apr 2014, Krzysztof Kozlowski wrote:
 
-> BCM590xx utilizes a second i2c slave address to access additional
-
-s/i2c/I2C
-
-> register space. Add support for the second address space by
-> instantiated a dummy i2c device with the appropriate secondary
-
-s/instantiated/instantiating
-
-> i2c slave address. Expose a second regmap register space so that
-
-s/i2c/I2C
-
-Exposing?
-
-s/regmap/Regmap
-
-> mfd drivers can access this secondary i2c slave address space.
-
-s/mfd/MFD
-
-s/i2c/I2C
-
-> Signed-off-by: Matt Porter <mporter@linaro.org>
-> ---
->  drivers/mfd/bcm590xx.c       | 60 +++++++++++++++++++++++++++++++++-----------
->  include/linux/mfd/bcm590xx.h |  9 ++++---
->  2 files changed, 52 insertions(+), 17 deletions(-)
+> On śro, 2014-04-16 at 11:28 +0100, Lee Jones wrote:
+> > > This is first part of fifth version of patchset adding support for
+> > > MAX77836 device to the max14577 driver.
+> > > 
+> > > I decided to split the patchset into smaller parts. I hope this would
+> > > help in getting necessary review/acks from maintainers.
+> > > 
+> > > The first part introduces changes in max14577 driver and adds support
+> > > for MAX77836 in MFD, extcon and regulator drivers. Most of these
+> > > patches already have required acks from maintainers.
+> > > Full v4 patchset can be found here:
+> > > http://thread.gmane.org/gmane.linux.kernel/1654267
+> > 
+> > So what's the plan for this driver now? What's missing? Do you have
+> > all the Acks you need? If so, I'm happy to apply this patch-set and
+> > supply a pull-request to the other maintainers.
 > 
-> diff --git a/drivers/mfd/bcm590xx.c b/drivers/mfd/bcm590xx.c
-> index e9a33c7..b710ffa 100644
-> --- a/drivers/mfd/bcm590xx.c
-> +++ b/drivers/mfd/bcm590xx.c
-> @@ -28,39 +28,71 @@ static const struct mfd_cell bcm590xx_devs[] = {
->  	},
->  };
->  
-> -static const struct regmap_config bcm590xx_regmap_config = {
-> +static const struct regmap_config bcm590xx_regmap_config_0 = {
+> Next patches (part 2):
+> 1. charger: max14577: Add support for MAX77836 charger
+> 2. power: max17040: Add ID for MAX77836 Fuel Gauge block
+> 3. regulator/mfd: max14577: Export symbols for calculating charger 
+>    current
+> 4. charger: max14577: Configure battery-dependent settings from DTS
+> 5. Documentation: mfd: max14577: Add device tree bindings document
+> 6. regulator: max14577: Implement SUSPEND mode for MAX77836 LDO-s
+> 
+> They are quite independent from each other so I think it would be the
+> best if you could prepare an immutable branch with first part of
+> patches.
 
-Not loving _0 and _1 appendages.
+I'm only concerned with the patches in this set at the moment.
 
-Is one of them {primary|master} and the other {secondary|slave}?
+Do all of the patches in _this_ set have all of the required Acks, or
+are you still waiting on some maintainers?
 
->  	.reg_bits	= 8,
->  	.val_bits	= 8,
-> -	.max_register	= BCM590XX_MAX_REGISTER,
-> +	.max_register	= BCM590XX_MAX_REGISTER_0,
->  	.cache_type	= REGCACHE_RBTREE,
->  };
->  
-> -static int bcm590xx_i2c_probe(struct i2c_client *i2c,
-> +static const struct regmap_config bcm590xx_regmap_config_1 = {
-> +	.reg_bits	= 8,
-> +	.val_bits	= 8,
-> +	.max_register	= BCM590XX_MAX_REGISTER_1,
-> +	.cache_type	= REGCACHE_RBTREE,
-> +};
-> +
-> +static int bcm590xx_i2c_probe(struct i2c_client *addmap0,
-
-Would this be best left as i2c, then naming the other one
-i2c_secondary for instance?
-
-addmap{0,1} doesn't quite sit right with me.
-
-REVISIT: Ah, it's address-map, rather than add map. Okay, not as bad
-as I first thought, but still, is there a better naming convention you
-could use?
-
->  			      const struct i2c_device_id *id)
->  {
->  	struct bcm590xx *bcm590xx;
->  	int ret;
->  
-> -	bcm590xx = devm_kzalloc(&i2c->dev, sizeof(*bcm590xx), GFP_KERNEL);
-> +	bcm590xx = devm_kzalloc(&addmap0->dev, sizeof(*bcm590xx), GFP_KERNEL);
->  	if (!bcm590xx)
->  		return -ENOMEM;
->  
-> -	i2c_set_clientdata(i2c, bcm590xx);
-> -	bcm590xx->dev = &i2c->dev;
-> -	bcm590xx->i2c_client = i2c;
-> +	i2c_set_clientdata(addmap0, bcm590xx);
-> +	bcm590xx->dev = &addmap0->dev;
-> +	bcm590xx->addmap0 = addmap0;
->  
-> -	bcm590xx->regmap = devm_regmap_init_i2c(i2c, &bcm590xx_regmap_config);
-> -	if (IS_ERR(bcm590xx->regmap)) {
-> -		ret = PTR_ERR(bcm590xx->regmap);
-> -		dev_err(&i2c->dev, "regmap initialization failed: %d\n", ret);
-> +	bcm590xx->regmap0 = devm_regmap_init_i2c(addmap0,
-> +						 &bcm590xx_regmap_config_0);
-> +	if (IS_ERR(bcm590xx->regmap0)) {
-> +		ret = PTR_ERR(bcm590xx->regmap0);
-> +		dev_err(&addmap0->dev, "regmap 0 init failed: %d\n", ret);
->  		return ret;
->  	}
->  
-> -	ret = mfd_add_devices(&i2c->dev, -1, bcm590xx_devs,
-> +	/* Second I2C slave address is the base address with A(2) asserted */
-> +	bcm590xx->addmap1 = i2c_new_dummy(addmap0->adapter,
-> +					  addmap0->addr | BIT(2));
-> +	if (IS_ERR_OR_NULL(bcm590xx->addmap1)) {
-> +		dev_err(&addmap0->dev, "failed to add address map 1 device\n");
-> +		return -ENODEV;
-> +	}
-> +	i2c_set_clientdata(bcm590xx->addmap1, bcm590xx);
-> +
-> +	bcm590xx->regmap1 = devm_regmap_init_i2c(bcm590xx->addmap1,
-> +						&bcm590xx_regmap_config_1);
-> +	if (IS_ERR(bcm590xx->regmap1)) {
-> +		ret = PTR_ERR(bcm590xx->regmap1);
-> +		dev_err(&bcm590xx->addmap1->dev,
-> +			"regmap 1 init failed: %d\n", ret);
-> +		goto err;
-> +	}
-> +
-> +	ret = mfd_add_devices(&addmap0->dev, -1, bcm590xx_devs,
->  			      ARRAY_SIZE(bcm590xx_devs), NULL, 0, NULL);
-> -	if (ret < 0)
-> -		dev_err(&i2c->dev, "failed to add sub-devices: %d\n", ret);
-> +	if (ret < 0) {
-> +		dev_err(&addmap0->dev, "failed to add sub-devices: %d\n", ret);
-> +		goto err;
-> +	}
-> +
-> +	return 0;
->  
-> +err:
-> +	i2c_unregister_device(bcm590xx->addmap1);
->  	return ret;
->  }
->  
-> diff --git a/include/linux/mfd/bcm590xx.h b/include/linux/mfd/bcm590xx.h
-> index 434df2d..a2723f2 100644
-> --- a/include/linux/mfd/bcm590xx.h
-> +++ b/include/linux/mfd/bcm590xx.h
-> @@ -19,12 +19,15 @@
->  #include <linux/regmap.h>
->  
->  /* max register address */
-> -#define BCM590XX_MAX_REGISTER	0xe7
-> +#define BCM590XX_MAX_REGISTER_0	0xe7
-> +#define BCM590XX_MAX_REGISTER_1	0xf0
->  
->  struct bcm590xx {
->  	struct device *dev;
-> -	struct i2c_client *i2c_client;
-> -	struct regmap *regmap;
-> +	struct i2c_client *addmap0;
-> +	struct i2c_client *addmap1;
-> +	struct regmap *regmap0;
-> +	struct regmap *regmap1;
->  	unsigned int id;
->  };
->  
+> > > Changes since v4
+> > > ================
+> > > 1. Updated Kconfig entries mentioning MAX77836.
+> > > 2. Removed rename-like patches:
+> > >    [PATCH v4 02/16] mfd: max14577: Rename and add MAX14577 symbols
+> > >    [PATCH v4 03/16] mfd: max14577: Rename state container to maxim_core
+> > > 3. Added new patches (not yet reviewed):
+> > >    [PATCH v5 2/9] mfd: max14577: Add muic prefix to regmap config
+> > >    [PATCH v5 6/9] mfd: max14577: Add MAX14577 prefix to IRQ defines
+> > > 4. Rebased on 3.15-rc1.
+> > > 
+> > > Changes since v3
+> > > ================
+> > > 1. Applied minor fixes (pointed by Lee Jones).
+> > > 2. Added one ACK (Lee Jones) and Review-by (Tomasz Figa).
+> > > 3. Patch 14/charger: Minor change in parsing EOC value from DTS.
+> > > 4. Rebased on next-20140224.
+> > > 
+> > > Changes since v2
+> > > ================
+> > > 1. Added ACK-s.
+> > > 2. Applied minor checkpatch fixes (pointed by Lee Jones).
+> > > 3. Rebased on next-20140217.
+> > > 
+> > > Changes since v1
+> > > ================
+> > > 1. Added ACK-s, reviews and tested-by tags.
+> > > 2. Removed applied patches (they were merged to the linux-next tree).
+> > > 3. Applied comments from review (Lee Jones) to 5/15 (detection of device type)
+> > >    and 8/15 (add max77836 support to max14577).
+> > > 4. Rebased on next tree.
+> > > 5. Added patch 13 and 14 (pointed by Jenny Tc):
+> > >    - regulator/mfd: max14577: Export symbols for calculating charger current
+> > >    - charger: max14577: Configure battery-dependent settings from DTS
+> > > 6. Updated bindings documentation with new charger bindings.
+> > > Previous thread:
+> > >  - [PATCH 00/18] mfd: max14577: Add support for MAX77836
+> > >    http://thread.gmane.org/gmane.linux.kernel/1636654/focus=1636674
+> > > 
+> > > 
+> > > Description
+> > > ===========
+> > > The MAX77836 is almost the same as MAX14577. Basically it is an extended
+> > > version of MAX14577. The chipsets have same MUIC component so the extcon,
+> > > charger and regulators require only little adjustments. More changes were
+> > > needed in the charger (because it uses lower charging current) and regulator
+> > > drivers (because mentioned different charing current and additional
+> > > regulators). The MAX77836 has also PMIC and Fuel Gauge (which is the same
+> > > as MAX17040/17048 Fuel Gauge).
+> > > 
+> > > The MAX77836 uses three I2C slave addresses and has additional interrupts
+> > > (related to PMIC and Fuel Gauge). It has also Interrupt Source register,
+> > > just like MAX77686 and MAX77693.
+> > > 
+> > > 
+> > > Best regards,
+> > > Krzysztof Kozlowski
+> > > 
+> > > 
+> > > Chanwoo Choi (1):
+> > >   extcon: max14577: Change extcon name instead of static name according
+> > >     to device type
+> > > 
+> > > Krzysztof Kozlowski (8):
+> > >   mfd: max14577: Add muic prefix to regmap config
+> > >   mfd: max14577: Add detection of device type
+> > >   extcon: max14577: Add max14577 prefix to muic_irqs
+> > >   extcon: max14577: Choose muic_irqs according to device type
+> > >   mfd: max14577: Add MAX14577 prefix to IRQ defines
+> > >   mfd: max77836: Add MAX77836 support to max14577 driver
+> > >   extcon: max14577: Add support for MAX77836
+> > >   regulator: max14577: Add support for MAX77836 regulators
+> > > 
+> > >  drivers/extcon/Kconfig               |   4 +-
+> > >  drivers/extcon/extcon-max14577.c     | 174 +++++++++++++------
+> > >  drivers/mfd/Kconfig                  |   6 +-
+> > >  drivers/mfd/max14577.c               | 315 ++++++++++++++++++++++++++++++-----
+> > >  drivers/regulator/Kconfig            |   7 +-
+> > >  drivers/regulator/max14577.c         | 277 ++++++++++++++++++++++++++----
+> > >  include/linux/mfd/max14577-private.h | 222 ++++++++++++++++++------
+> > >  include/linux/mfd/max14577.h         |  19 ++-
+> > >  8 files changed, 836 insertions(+), 188 deletions(-)
+> > > 
+> > 
+> 
 
 -- 
 Lee Jones
