@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161152AbaDPUZz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 16:25:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46041 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161071AbaDPUZv (ORCPT
+	id S1756197AbaDPU3X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 16:29:23 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:40607 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754827AbaDPU3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 16:25:51 -0400
-Date: Wed, 16 Apr 2014 13:25:54 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: Thomas Pfaff <tpfaff@pcs.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] serial_core: fix uart PORT_UNKNOWN handling
-Message-ID: <20140416202554.GB25148@kroah.com>
-References: <alpine.LNX.2.00.1404091151430.6519@lxtpfaff.pcs.ditec.de>
- <20140409133909.2073453a@alan.etchedpixels.co.uk>
- <alpine.LNX.2.00.1404091655140.29879@lxtpfaff.pcs.ditec.de>
+	Wed, 16 Apr 2014 16:29:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1404091655140.29879@lxtpfaff.pcs.ditec.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <534EADF0.1020907@wwwdotorg.org>
+References: <1397611505-17917-1-git-send-email-abrestic@chromium.org>
+	<534EADF0.1020907@wwwdotorg.org>
+Date: Wed, 16 Apr 2014 13:29:20 -0700
+X-Google-Sender-Auth: zq71VOn8lHpISW-YlShwLPzh7TM
+Message-ID: <CAL1qeaG4e4gFOBLo1ePfSRLGiSaQW4UY7T1jkBHx9fv=yYCCUA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: as3722: fix handling of GPIO invert bit
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 09, 2014 at 05:06:24PM +0200, Thomas Pfaff wrote:
-> 
-> On Wed, 9 Apr 2014, One Thousand Gnomes wrote:
-> 
-> > On Wed, 9 Apr 2014 13:22:14 +0200
-> > Thomas Pfaff <tpfaff@pcs.com> wrote:
-> > 
-> > > 1. uart_change_pm ist called during uart_open and calls the uart pm function
-> > >    without checking for PORT_UNKNOWN.
-> > 
-> > Removing this breaks other parts of the code assume that the port will be
-> > powered up (notably setserial paths). So it makes sense that
-> > uart_change_pm for a "none" port is a no-op but needs logic in the
-> > setserial path to power up a port when we move none->known and power it
-> > down on known->none
-> > 
-> 
-> Then why not move uart_change_pm into uart_port_startup, where it will be called 
-> when needed ?
-> A reworked patch is below.
-> 
-> > > 2. uart_shutdown is called from uart_set_info and does not check it either.
-> > 
-> > I don't see why this one matters. We would have done
-> > 
-> > 	uart_startup
-> > 		uart_port_startup
-> > 			uport->type == PORT_UNKNOWN
-> > 			return 1;
-> > 		ASYNCB_INITIALIZED is not set
-> > 
-> > 	uart_shutdown
-> > 		ASYNCB_INITIALISED is not set
-> > 			Skip call to uart_port_shutdown
-> > 
-> > So that code looks correct to me.
-> 
-> I agree, i have overlooked this.
-> 
-> Signed-off-by: Thomas Pfaff <tpfaff@pcs.com>
+On Wed, Apr 16, 2014 at 9:21 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 04/15/2014 07:25 PM, Andrew Bresticker wrote:
+>> The AS3722_GPIO_INV bit will always be blindly overwritten by
+>> as3722_pinctrl_gpio_set_direction() and will be ignored when
+>> setting the value of the GPIO in as3722_gpio_set() since the
+>> enable_gpio_invert flag is never set.  This will cause an
+>> initially inverted GPIO to toggle when requested as an output,
+>> which could be problematic if, for example, the GPIO controls
+>> a critical regulator.
+>>
+>> Instead of setting up the enable_gpio_invert flag, uust leave
+>> the invert bit alone and check it before setting the GPIO value.
+>
+> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+> Tested-by: Stephen Warren <swarren@nvidia.com>
+>
+> (not with a 'scope or anything, but an affected system boots in a stable
+> fashion with this applied)
+>
+> Should this be CC: stable?
 
-Can you resend this in a format that I can apply this in?
-
-thanks,
-
-greg k-h
+I think so.  Kernels with venice2 support should probably have this.
+I'll resend and fix the typo in the commit message.
