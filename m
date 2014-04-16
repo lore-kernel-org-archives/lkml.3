@@ -1,231 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388AbaDPCsB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 22:48:01 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:42314 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753259AbaDPCr7 (ORCPT
+	id S1752521AbaDPCsp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 22:48:45 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:44576 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016AbaDPCsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 22:47:59 -0400
-Date: Tue, 15 Apr 2014 22:47:55 -0400 (EDT)
-Message-Id: <20140415.224755.163520246125289648.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 15 Apr 2014 19:47:58 -0700 (PDT)
+	Tue, 15 Apr 2014 22:48:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <534CFFF5.70801@ti.com>
+References: <1397546239-6650-1-git-send-email-realmz6@kernel.org>
+	<534CFFF5.70801@ti.com>
+Date: Wed, 16 Apr 2014 10:48:42 +0800
+Message-ID: <CAMk6uBn9U2BHCW96pQCrUskUFWq5eVGACJNVM7tO84PzLakLyg@mail.gmail.com>
+Subject: Re: [PATCH RESEND] video: bf54x-lq043fb: fix build error
+From: Steven Miao <realmz6@gmail.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Steven Miao <realmz6@kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        bfin <adi-buildroot-devel@lists.sourceforge.net>,
+        "open list:CAN NETWORK DRIVERS <linux-can@vger.kernel.org>, open
+	list:NETWORKING DRIVERS <netdev@vger.kernel.org>, open list" 
+	<linux-kernel@vger.kernel.org>,
+        linux-fbdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Tomi,
 
-1) Fix BPF filter validation of netlink attribute accesses, from
-   Mathias Kruase.
-
-2) Netfilter conntrack generation seqcount not initialized properly,
-   from Andrey Vagin.
-
-3) Fix comparison mask computation on big-endian in nft_cmp_fast(),
-   from Patrick McHardy.
-
-4) Properly limit MTU over ipv6, from Eric Dumazet.
-
-5) Fix seccomp system call argument population on 32-bit,
-   from Daniel Borkmann.
-
-6) skb_network_protocol() should not use hard-coded ETH_HLEN, instead
-   skb->mac_len needs to be used.  From Vlad Yasevich.
-
-7) We have several cases of using socket based communications to
-   implement a tunnel.  For example, some tunnels are encapsulations
-   over UDP so we use an internal kernel UDP socket to do the
-   transmits.
-
-   These tunnels should behave just like other software devices and
-   pass the packets on down to the next layer.
-
-   Most importantly we want the top-level socket (f.e. TCP) that
-   created the traffic to be charged for the SKB memory.
-
-   However, once you get into the IP output path, we have code that
-   assumed that whatever was attached to skb->sk is an IP socket.
-
-   To keep the top-level socket being charged for the SKB memory,
-   whilst satisfying the needs of the IP output path, we now pass in
-   an explicit 'sk' argument.
-
-   From Eric Dumazet.
-
-8) ping_init_sock() leaks group info, from Xiaoming Wang.
-
-Please pull, thanks a lot.
-
-The following changes since commit 321d03c86732e45f5f33ad0db5b68e2e1364acb9:
-
-  Merge branch 'misc' of git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild (2014-04-12 18:22:27 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-for you to fetch changes up to 6f1d7210376727d090e04b8635e6dda4d7eb7b0c:
-
-  cxgb4: use the correct max size for firmware flash (2014-04-15 15:50:02 -0400)
-
-----------------------------------------------------------------
-Alexander Aring (2):
-      at86rf230: remove check if AVDD settled
-      at86rf230: fix __at86rf230_read_subreg function
-
-Alexander Gordeev (1):
-      qlcnic: Fix MSI-X initialization code
-
-Amir Vadai (1):
-      net/mlx4_core: Defer VF initialization till PF is fully initialized
-
-Andrey Vagin (2):
-      netfilter: nf_conntrack: flush net_gre->keymap_list only from gre helper
-      netfilter: nf_conntrack: initialize net.ct.generation
-
-Daniel Borkmann (3):
-      seccomp: fix populating a0-a5 syscall args in 32-bit x86 BPF
-      net: filter: seccomp: fix wrong decoding of BPF_S_ANC_SECCOMP_LD_W
-      Revert "net: sctp: Fix a_rwnd/rwnd management to reflect real state of the receiver's buffer"
-
-Daniel J Blueman (1):
-      bnx2: Don't build unused suspend/resume functions not enabled
-
-David S. Miller (3):
-      Merge branch 'be2net'
-      Merge branch 'qlcnic'
-      Merge git://git.kernel.org/.../pablo/nf
-
-Eric Dumazet (3):
-      ipv6: Limit mtu to 65575 bytes
-      ipv4: add a sock pointer to ip_queue_xmit()
-      ipv4: add a sock pointer to dst->output() path.
-
-Jean Delvare (1):
-      net: cadence: Add architecture dependencies
-
-Jitendra Kalsaria (2):
-      qlcnic: Fix PVID configuration on eSwitch port.
-      qlcnic: Fix QLogic application/driver interface for virtual NIC configuration
-
-Julian Anastasov (1):
-      ipv4: return valid RTA_IIF on ip route get
-
-Kalesh AP (1):
-      be2net: Fix invocation of be_close() after be_clear()
-
-Li, Zhen-Hua (1):
-      driver/net: cosa driver uses udelay incorrectly
-
-Manish Chopra (1):
-      qlcnic: Do not disable SR-IOV when VFs are assigned to VMs
-
-Mathias Krause (1):
-      filter: prevent nla extensions to peek beyond the end of the message
-
-Nicolas Dichtel (1):
-      ip6_gre: don't allow to remove the fb_tunnel_dev
-
-Patrick McHardy (1):
-      netfilter: nf_tables: fix nft_cmp_fast failure on big endian for size < 4
-
-Shahed Shaikh (1):
-      qlcnic: Fix max ring count calculation
-
-Steve Wise (2):
-      cxgb4: Save the correct mac addr for hw-loopback connections in the L2T
-      cxgb4: use the correct max size for firmware flash
-
-Sucheta Chakraborty (2):
-      qlcnic: Fix panic due to uninitialzed delayed_work struct in use.
-      qlcnic: Fix to send INIT_NIC_FUNC as first mailbox.
-
-Thomas Petazzoni (1):
-      Revert "net: mvneta: fix usage as a module on RGMII configurations"
-
-Vasundhara Volam (1):
-      be2net: Fix to reap TX compls till HW doesn't respond for some time
-
-Vlad Yasevich (1):
-      net: Start with correct mac_len in skb_network_protocol
-
-Wang, Xiaoming (1):
-      net: ipv4: current group_info should be put after using.
-
-Wei Yang (1):
-      net/mlx4_core: Preserve pci_dev_data after __mlx4_remove_one()
-
- drivers/net/ethernet/broadcom/bnx2.c                  |   2 +-
- drivers/net/ethernet/cadence/Kconfig                  |   6 +-
- drivers/net/ethernet/chelsio/cxgb4/l2t.c              |   4 +-
- drivers/net/ethernet/chelsio/cxgb4/t4_hw.c            |   2 +-
- drivers/net/ethernet/emulex/benet/be.h                |   1 +
- drivers/net/ethernet/emulex/benet/be_main.c           |  17 +++--
- drivers/net/ethernet/marvell/mvneta.c                 |  41 ++++++++++---
- drivers/net/ethernet/mellanox/mlx4/main.c             | 181 +++++++++++++++++++++++++++++++-----------------------
- drivers/net/ethernet/mellanox/mlx4/mlx4.h             |   1 +
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_83xx_init.c |  21 ++++---
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_ctx.c       |   3 +-
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_dcb.c       |   2 -
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c      |  33 +++++-----
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_sriov_pf.c  |  10 +++
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_sysfs.c     |  31 +++++-----
- drivers/net/ieee802154/at86rf230.c                    |  10 +--
- drivers/net/vxlan.c                                   |   4 +-
- drivers/net/wan/cosa.c                                |   4 --
- include/linux/filter.h                                |   1 -
- include/linux/netfilter/nf_conntrack_proto_gre.h      |   1 -
- include/net/dst.h                                     |  14 ++++-
- include/net/inet6_connection_sock.h                   |   2 +-
- include/net/inet_connection_sock.h                    |   2 +-
- include/net/ip.h                                      |  13 ++--
- include/net/ip6_route.h                               |   5 ++
- include/net/ip_tunnels.h                              |   2 +-
- include/net/ipv6.h                                    |   2 +-
- include/net/netfilter/nf_tables_core.h                |  10 +++
- include/net/sctp/structs.h                            |  14 ++++-
- include/net/xfrm.h                                    |   6 +-
- kernel/seccomp.c                                      |  17 +++--
- net/core/dev.c                                        |   2 +-
- net/core/dst.c                                        |  15 +++--
- net/core/filter.c                                     |   9 ++-
- net/dccp/output.c                                     |   2 +-
- net/decnet/dn_route.c                                 |  16 ++++-
- net/ipv4/ip_output.c                                  |  16 ++---
- net/ipv4/ip_tunnel.c                                  |   2 +-
- net/ipv4/ip_tunnel_core.c                             |   4 +-
- net/ipv4/ping.c                                       |  15 +++--
- net/ipv4/route.c                                      |   6 +-
- net/ipv4/tcp_output.c                                 |   2 +-
- net/ipv4/xfrm4_output.c                               |   2 +-
- net/ipv6/inet6_connection_sock.c                      |   3 +-
- net/ipv6/ip6_gre.c                                    |  10 +++
- net/ipv6/ip6_output.c                                 |   2 +-
- net/ipv6/route.c                                      |  19 +++---
- net/ipv6/sit.c                                        |   5 +-
- net/ipv6/xfrm6_output.c                               |   2 +-
- net/l2tp/l2tp_core.c                                  |   4 +-
- net/l2tp/l2tp_ip.c                                    |   2 +-
- net/netfilter/nf_conntrack_core.c                     |   1 +
- net/netfilter/nf_conntrack_pptp.c                     |  20 +-----
- net/netfilter/nf_conntrack_proto_gre.c                |   3 +-
- net/netfilter/nf_tables_core.c                        |   3 +-
- net/netfilter/nft_cmp.c                               |   2 +-
- net/openvswitch/vport-gre.c                           |   2 +-
- net/sctp/associola.c                                  |  82 ++++++++++++++++++++-----
- net/sctp/protocol.c                                   |   2 +-
- net/sctp/sm_statefuns.c                               |   2 +-
- net/sctp/socket.c                                     |   6 ++
- net/sctp/ulpevent.c                                   |   8 +--
- net/xfrm/xfrm_policy.c                                |   2 +-
- 63 files changed, 454 insertions(+), 279 deletions(-)
+On Tue, Apr 15, 2014 at 5:46 PM, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+> On 15/04/14 10:17, Steven Miao wrote:
+>> From: Steven Miao <realmz6@gmail.com>
+>>
+>> include <linux/gpio.h>, drop <asm/gpio.h>
+>>
+>
+> Thanks, queued for 3.15 fixes.
+>
+> Btw, usually it's good to say in the description what kind of build
+> error happens (i.e. copy paste the error).
+Thanks. I'll add more description next time.
+>
+>  Tomi
+>
+>
+-steven
