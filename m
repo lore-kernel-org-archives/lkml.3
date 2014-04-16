@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756258AbaDPS6a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 14:58:30 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:47401 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756084AbaDPS6Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 14:58:25 -0400
-Date: Wed, 16 Apr 2014 14:58:22 -0400 (EDT)
-Message-Id: <20140416.145822.1317931249717152474.davem@davemloft.net>
-To: aaro.koskinen@iki.fi
-Cc: mroos@linux.ee, sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hughd@google.com
-Subject: Re: sparc64 WARNING: at mm/mmap.c:2757 exit_mmap+0x13c/0x160()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140414184353.GA5630@drone.musicnaut.iki.fi>
-References: <20131022174612.GC24448@blackmetal.musicnaut.iki.fi>
-	<20131022.135442.1072093301788210177.davem@davemloft.net>
-	<20140414184353.GA5630@drone.musicnaut.iki.fi>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 16 Apr 2014 11:58:24 -0700 (PDT)
+	id S1756262AbaDPS7o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 14:59:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50286 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755211AbaDPS7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 14:59:41 -0400
+Date: Wed, 16 Apr 2014 14:59:37 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Simo Sorce <ssorce@redhat.com>, David Miller <davem@davemloft.net>,
+        Tejun Heo <tj@kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
+        Network Development <netdev@vger.kernel.org>
+Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
+ cgroup path
+Message-ID: <20140416185936.GJ31074@redhat.com>
+References: <CALCETrURHNmLyccRiF_W8o2ozRMR4AaCjUE=_PU8z1+Pq6X2jQ@mail.gmail.com>
+ <20140416002010.GA5035@redhat.com>
+ <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com>
+ <20140416.085743.1614257692560892039.davem@davemloft.net>
+ <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com>
+ <1397664837.19767.410.camel@willson.li.ssimo.org>
+ <CALCETrXn7b6UuALpGUVoyQYfR2uzk5tj2ABV=dkvtFNgqM5sxQ@mail.gmail.com>
+ <20140416180642.GG31074@redhat.com>
+ <CALCETrVUw5+vCCONy1VTXpskbY_eZFo2CtbehwV5Mhj4d4+icw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVUw5+vCCONy1VTXpskbY_eZFo2CtbehwV5Mhj4d4+icw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-Date: Mon, 14 Apr 2014 21:43:53 +0300
+On Wed, Apr 16, 2014 at 11:13:31AM -0700, Andy Lutomirski wrote:
+> On Wed, Apr 16, 2014 at 11:06 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Wed, Apr 16, 2014 at 09:31:25AM -0700, Andy Lutomirski wrote:
+> > I am not sure how same issue with happen with cgroups. In the case of
+> > socket example, you are forcing a setuid program to write to standard
+> > output and that setuid program will run in same cgroup as caller and
+> > will have same cgroup as caller. So even if somebody was using cgroup
+> > information for authentication, atleast in this particular case it
+> > will not be a problem. Both unpriviliged and priviliged programs has
+> > same cgroups.
+> >
+> 
+> I'm not sure that there's an actual attackable program.  But I also
+> see no reason to be convinced that there isn't one, and the problem
+> can easily be avoided by requiring programs to explicitly ask to send
+> their cgroup.
 
-> Just for the archives, I got one of these again with 3.14:
+If you can't prove that there is something fundamentally wrong with
+passing cgroup info to receiver, there is no reason to block these
+patches either.
 
-Meelis and Aaro, thanks again for all of your reports.
+We can't fix the problems which we can't see. You are saying that I 
+don't know what kind of problem can happen due to cgroup passing. Still
+that does not mean none of the problems exist. So let us not pass cgroup
+info by default and ask client to opt in.
 
-After pouring over a lot of the data and auditing some code I'm
-suspecting it's a problem with transparent huge pages.
+I don't think this is a very convincing argument.
 
-One thing you two can do to help me further confirm this is to run
-with THP disabled for a while and see if you still get the log
-messages.
+To me, if we can't see anything fundamentally wrong with passing cgroup
+info, we should take these patches in. And once we figure out that there
+is are problematic use cases, then implement SO_NOPASSCGROUP and
+SO_NOPEERCRED  and allow problematic clients to opt out.
 
-Simply, as root:
-
-bash# echo "never" >/sys/kernel/mm/transparent_hugepage/enabled
-
-And then do your gcc bootstraps or whatever else seems to usually
-run when you trigger this problem.
-
-Thanks!
+Thanks
+Vivek
