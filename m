@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756194AbaDPSmB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 14:42:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38636 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756070AbaDPSl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 14:41:57 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ramkumar Ramachandra <artagnon@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 08/11] perf kmem: Introduce --list-cmds for use by scripts
-Date: Wed, 16 Apr 2014 20:41:36 +0200
-Message-Id: <1397673699-25824-9-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1397673699-25824-1-git-send-email-jolsa@redhat.com>
-References: <1397673699-25824-1-git-send-email-jolsa@redhat.com>
+	id S1756315AbaDPSmw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 14:42:52 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:46965 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755642AbaDPSmr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 14:42:47 -0400
+Date: Wed, 16 Apr 2014 19:41:09 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Sergei Ianovich <ynvich@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
+        linux-doc@vger.kernel.org (open list:DOCUMENTATION)
+Subject: Re: [PATCH v4 13/21] misc: support for LP-8x4x custom parallel bus
+Message-ID: <20140416194109.3ef914d2@alan.etchedpixels.co.uk>
+In-Reply-To: <1397668667-27328-7-git-send-email-ynvich@gmail.com>
+References: <1397668411-27162-7-git-send-email-ynvich@gmail.com>
+	<1397668667-27328-1-git-send-email-ynvich@gmail.com>
+	<1397668667-27328-7-git-send-email-ynvich@gmail.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ramkumar Ramachandra <artagnon@gmail.com>
+On Wed, 16 Apr 2014 21:17:18 +0400
+Sergei Ianovich <ynvich@gmail.com> wrote:
 
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
-Acked-by: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Link: http://lkml.kernel.org/r/1394853474-31019-2-git-send-email-artagnon@gmail.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/builtin-kmem.c     | 8 +++++---
- tools/perf/perf-completion.sh | 4 ++--
- 2 files changed, 7 insertions(+), 5 deletions(-)
+> This patch implements probing for the bus and reporting the number
+> of available expansion slots.
 
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index 929462a..bd91de0 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -756,11 +756,13 @@ int cmd_kmem(int argc, const char **argv, const char *prefix __maybe_unused)
- 	OPT_BOOLEAN(0, "raw-ip", &raw_ip, "show raw ip instead of symbol"),
- 	OPT_END()
- 	};
--	const char * const kmem_usage[] = {
--		"perf kmem [<options>] {record|stat}",
-+	const char *const kmem_subcommands[] = { "record", "stat", NULL };
-+	const char *kmem_usage[] = {
-+		NULL,
- 		NULL
- 	};
--	argc = parse_options(argc, argv, kmem_options, kmem_usage, 0);
-+	argc = parse_options_subcommand(argc, argv, kmem_options,
-+					kmem_subcommands, kmem_usage, 0);
- 
- 	if (!argc)
- 		usage_with_options(kmem_usage, kmem_options);
-diff --git a/tools/perf/perf-completion.sh b/tools/perf/perf-completion.sh
-index ae3a576..0ef59dd 100644
---- a/tools/perf/perf-completion.sh
-+++ b/tools/perf/perf-completion.sh
-@@ -121,8 +121,8 @@ __perf_main ()
- 	elif [[ $prev == "-e" && "${words[1]}" == @(record|stat|top) ]]; then
- 		evts=$($cmd list --raw-dump)
- 		__perfcomp_colon "$evts" "$cur"
--	# List subcommands for 'perf kvm'
--	elif [[ $prev == "kvm" ]]; then
-+	# List subcommands for perf commands
-+	elif [[ $prev == @(kvm|kmem) ]]; then
- 		subcmds=$($cmd $prev --list-cmds)
- 		__perfcomp_colon "$subcmds" "$cur"
- 	# List long option names
--- 
-1.8.3.1
+This appears to be a bus not a misc device. I don't think it belongs in
+misc. As you've got devices on this bus (or nailed into the 'bus' driver)
+perhaps this belongs as drivers/platform/lp8x4x or similar with any
+specific drivers split out - or even drivers/lp8x4x if there will be more
+of them and more than one platform using it ?
 
+Alan
