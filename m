@@ -1,159 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161306AbaDPV60 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 17:58:26 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:53554 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756649AbaDPV6Z (ORCPT
+	id S1756831AbaDPWDo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 18:03:44 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:64504 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756596AbaDPWDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 17:58:25 -0400
-Date: Wed, 16 Apr 2014 17:58:21 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: gregkh@linuxfoundation.org, m.chehab@samsung.com,
-        rafael.j.wysocki@intel.com, linux@roeck-us.net, toshi.kani@hp.com,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        shuahkhan@gmail.com
-Subject: Re: [RFC PATCH 2/2] drivers/base: add managed token devres interfaces
-Message-ID: <20140416215821.GG26632@htj.dyndns.org>
-References: <cover.1397050852.git.shuah.kh@samsung.com>
- <5f21c7e53811aba63f86bcf3e3bfdfdd5aeedf59.1397050852.git.shuah.kh@samsung.com>
+	Wed, 16 Apr 2014 18:03:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5f21c7e53811aba63f86bcf3e3bfdfdd5aeedf59.1397050852.git.shuah.kh@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87ppkhaqxz.fsf@intel.com>
+References: <20140414164010.GA1019@falcon>
+	<867g6ryd2e.fsf@hiro.keithp.com>
+	<20140414185602.GA892@falcon>
+	<20140415194303.GH1023@phenom.ffwll.local>
+	<1397591989.2715.18.camel@ideak-mobl>
+	<87ppkhaqxz.fsf@intel.com>
+Date: Wed, 16 Apr 2014 15:03:40 -0700
+Message-ID: <CAKbGBLj98TZGiLQTbhSPg6b74WdFALRu-qo3nxrNENNarMGQow@mail.gmail.com>
+Subject: Re: [Intel-gfx] REGRESSION 3.14 i915 warning & mouse cursor vanishing
+From: Steven Noonan <steven@uplinklabs.net>
+To: Jani Nikula <jani.nikula@linux.intel.com>
+Cc: imre.deak@intel.com, Daniel Vetter <daniel@ffwll.ch>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        Linux Kernel mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Apr 16, 2014 at 2:46 PM, Jani Nikula
+<jani.nikula@linux.intel.com> wrote:
+> On Tue, 15 Apr 2014, Imre Deak <imre.deak@intel.com> wrote:
+>> On Tue, 2014-04-15 at 21:43 +0200, Daniel Vetter wrote:
+>>> On Mon, Apr 14, 2014 at 11:56:03AM -0700, Steven Noonan wrote:
+>>> > On Mon, Apr 14, 2014 at 11:35:05AM -0700, Keith Packard wrote:
+>>> > > Steven Noonan <steven@uplinklabs.net> writes:
+>>> > >
+>>> > > > Was using my machine normally, then my mouse cursor vanished. After switching
+>>> > > > to a VT and back to X11, my cursor came back. But I did notice a nasty trace in
+>>> > > > dmesg (below).
+>>> > >
+>>> > > I don't think the trace below is related to the cursor disappearing.
+>>> >
+>>> > Any idea what the trace is all about then? Seems it has something to do
+>>> > with runtime power management (maybe my aggressive kernel command-line
+>>> > options are triggering it).
+>>>
+>>> Please test without them. Currently runtime pm should be disabled still on
+>>> vlv (since it's incomplete in 3.14). If you've force-enabled that then you
+>>> get to keep all pieces ;-)
+>>>
+>>> In general don't set any i915 options if you're not a developer or someone
+>>> else who _really_ knows what's going on.
+>>
+>> Note that the lspci output and the
+>>
+>> [ 1795.275026] [drm:hsw_unclaimed_reg_clear] *ERROR* Unknown unclaimed
+>> register before writing to 70084
+>>
+>> line suggests HSW and the specs for ThinkPad Yoga suggests the same. But
+>> I don't know how the vlv_* functions can possible end up in those traces
+>> then, perhaps just a coincidence, random data on stack?
+>
+> I'm wondering the same. Perhaps double check your kernel build and
+> modules are all right and matching?
+>
 
-On Wed, Apr 09, 2014 at 09:21:08AM -0600, Shuah Khan wrote:
-> +#define TOKEN_DEVRES_FREE	0
-> +#define TOKEN_DEVRES_BUSY	1
-> +
-> +struct token_devres {
-> +	int	status;
-> +	char	id[];
-> +};
+It was a clean build (built in a clean chroot, no ccache or anything
+fancy), so those stack traces are as "right" as they could be under
+those conditions.
 
-Please just do "bool busy" and drop the constants.
-
-> +struct tkn_match {
-> +	int	status;
-> +	const	char *id;
-> +};
-> +
-> +static void __devm_token_lock(struct device *dev, void *data)
-> +{
-> +	struct token_devres *tptr = data;
-> +
-> +	if (tptr && tptr->status == TOKEN_DEVRES_FREE)
-> +		tptr->status = TOKEN_DEVRES_BUSY;
-
-How can this function be called with NULL @tptr and what why would you
-need to check tptr->status before assigning to it if the value is
-binary anyway?  And how is this supposed to work as locking if the
-outcome doesn't change depending on the current value?
-
-> +
-> +	return;
-
-No need to return from void function.
-
-> +static int devm_token_match(struct device *dev, void *res, void *data)
-> +{
-> +	struct token_devres *tkn = res;
-> +	struct tkn_match *mptr = data;
-> +	int rc;
-> +
-> +	if (!tkn || !data) {
-> +		WARN_ON(!tkn || !data);
-> +		return 0;
-> +	}
-
-How would the above be possible?
-
-> +
-> +	/* compare the token data and return 1 if it matches */
-> +	if (strcmp(tkn->id, mptr->id) == 0)
-> +			rc = 1;
-> +	else
-> +		rc = 0;
-> +
-> +	return rc;
-
-	return !strcmp(tkn->id, mptr->id);
-
-> +/* If token is available, lock it for the caller, If not return -EBUSY */
-> +int devm_token_lock(struct device *dev, const char *id)
-> +{
-> +	struct token_devres *tkn_ptr;
-> +	struct tkn_match tkn;
-> +	int rc = 0;
-> +
-> +	if (!id)
-> +		return -EFAULT;
-
-The function isn't supposed to be called with NULL @id, right?  I
-don't really think it'd be necessary to do the above.
-
-> +
-> +	tkn.id = id;
-> +
-> +	tkn_ptr = devres_find(dev, devm_token_release, devm_token_match, &tkn);
-> +	if (tkn_ptr == NULL)
-> +		return -ENODEV;
-
-What guarantees that the lock is not taken by someone else inbetween?
-
-> +
-> +	if (tkn_ptr->status == TOKEN_DEVRES_FREE) {
-> +		devres_update(dev, devm_token_release, devm_token_match,
-> +				&tkn, __devm_token_lock);
-> +		rc = 0;
-> +	} else
-> +		rc = -EBUSY;
-> +
-> +	return rc;
-> +}
-> +EXPORT_SYMBOL_GPL(devm_token_lock);
-> +
-> +/* If token is locked, unlock */
-> +int devm_token_unlock(struct device *dev, const char *id)
-> +{
-> +	struct token_devres *tkn_ptr;
-> +	struct tkn_match tkn;
-> +
-> +	if (!id)
-> +		return -EFAULT;
-> +
-> +	tkn.id = id;
-> +
-> +	tkn_ptr = devres_find(dev, devm_token_release, devm_token_match, &tkn);
-> +	if (tkn_ptr == NULL)
-> +		return -ENODEV;
-> +
-> +	if (tkn_ptr->status == TOKEN_DEVRES_BUSY) {
-> +		devres_update(dev, devm_token_release, devm_token_match,
-> +				&tkn, __devm_token_unlock);
-> +	}
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(devm_token_unlock);
-
-Why is devres_update() even necessary?  You can just embed lock in the
-data part and operate on it, no?
-
-This is among the most poorly written code that I've seen in a long
-time.  I don't know whether the token thing is the right appraoch or
-not but just purely on code quality,
-
- Nacked-by: Tejun Heo <tj@kernel.org>
-
-Thanks.
-
--- 
-tejun
+The "good" news (or perhaps scary news) is that I've been running
+3.14.1 for the past 36 hours and haven't been able to reproduce either
+problem since then (warnings or ninja mouse cursor). Nothing in the
+changelog for v3.14..v3.14.1 really stands out as a clear fix though.
+The only changes that appear to directly affect my configuration would
+be the futex changes, iwlwifi change, efi change, and ipv6 change.
