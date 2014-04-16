@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755754AbaDPKxD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:53:03 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51668 "EHLO
+	id S1755929AbaDPKxo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:53:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51647 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755658AbaDPKc3 (ORCPT
+	with ESMTP id S1755535AbaDPKcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:32:29 -0400
+	Wed, 16 Apr 2014 06:32:23 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
-        Rainer Weikusat <rweikusat@mobileactivedefense.com>,
+Cc: Florian Westphal <fw@strlen.de>,
+        Jesper Dangaard Brouer <brouer@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
+        Nikolay Aleksandrov <nikolay@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 14/46] net: unix: non blocking recvmsg() should not return -EINTR
-Date: Wed, 16 Apr 2014 11:31:30 +0100
-Message-Id: <1397644322-13905-15-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 10/46] net: fix for a race condition in the inet frag code
+Date: Wed, 16 Apr 2014 11:31:26 +0100
+Message-Id: <1397644322-13905-11-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
 References: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
@@ -29,75 +30,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Nikolay Aleksandrov <nikolay@redhat.com>
 
-commit de1443916791d75fdd26becb116898277bb0273f upstream.
+commit 24b9bf43e93e0edd89072da51cf1fab95fc69dec upstream.
 
-Some applications didn't expect recvmsg() on a non blocking socket
-could return -EINTR. This possibility was added as a side effect
-of commit b3ca9b02b00704 ("net: fix multithreaded signal handling in
-unix recv routines").
+I stumbled upon this very serious bug while hunting for another one,
+it's a very subtle race condition between inet_frag_evictor,
+inet_frag_intern and the IPv4/6 frag_queue and expire functions
+(basically the users of inet_frag_kill/inet_frag_put).
 
-To hit this bug, you need to be a bit unlucky, as the u->readlock
-mutex is usually held for very small periods.
+What happens is that after a fragment has been added to the hash chain
+but before it's been added to the lru_list (inet_frag_lru_add) in
+inet_frag_intern, it may get deleted (either by an expired timer if
+the system load is high or the timer sufficiently low, or by the
+fraq_queue function for different reasons) before it's added to the
+lru_list, then after it gets added it's a matter of time for the
+evictor to get to a piece of memory which has been freed leading to a
+number of different bugs depending on what's left there.
 
-Fixes: b3ca9b02b00704 ("net: fix multithreaded signal handling in unix recv routines")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Rainer Weikusat <rweikusat@mobileactivedefense.com>
+I've been able to trigger this on both IPv4 and IPv6 (which is normal
+as the frag code is the same), but it's been much more difficult to
+trigger on IPv4 due to the protocol differences about how fragments
+are treated.
+
+The setup I used to reproduce this is: 2 machines with 4 x 10G bonded
+in a RR bond, so the same flow can be seen on multiple cards at the
+same time. Then I used multiple instances of ping/ping6 to generate
+fragmented packets and flood the machines with them while running
+other processes to load the attacked machine.
+
+*It is very important to have the _same flow_ coming in on multiple CPUs
+concurrently. Usually the attacked machine would die in less than 30
+minutes, if configured properly to have many evictor calls and timeouts
+it could happen in 10 minutes or so.
+
+An important point to make is that any caller (frag_queue or timer) of
+inet_frag_kill will remove both the timer refcount and the
+original/guarding refcount thus removing everything that's keeping the
+frag from being freed at the next inet_frag_put.  All of this could
+happen before the frag was ever added to the LRU list, then it gets
+added and the evictor uses a freed fragment.
+
+An example for IPv6 would be if a fragment is being added and is at
+the stage of being inserted in the hash after the hash lock is
+released, but before inet_frag_lru_add executes (or is able to obtain
+the lru lock) another overlapping fragment for the same flow arrives
+at a different CPU which finds it in the hash, but since it's
+overlapping it drops it invoking inet_frag_kill and thus removing all
+guarding refcounts, and afterwards freeing it by invoking
+inet_frag_put which removes the last refcount added previously by
+inet_frag_find, then inet_frag_lru_add gets executed by
+inet_frag_intern and we have a freed fragment in the lru_list.
+
+The fix is simple, just move the lru_add under the hash chain locked
+region so when a removing function is called it'll have to wait for
+the fragment to be added to the lru_list, and then it'll remove it (it
+works because the hash chain removal is done before the lru_list one
+and there's no window between the two list adds when the frag can get
+dropped). With this fix applied I couldn't kill the same machine in 24
+hours with the same setup.
+
+Fixes: 3ef0eb0db4bf ("net: frag, move LRU list maintenance outside of
+rwlock")
+
+CC: Florian Westphal <fw@strlen.de>
+CC: Jesper Dangaard Brouer <brouer@redhat.com>
+CC: David S. Miller <davem@davemloft.net>
+
+Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Acked-by: Jesper Dangaard Brouer <brouer@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/unix/af_unix.c | 17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ net/ipv4/inet_fragment.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 2ea3310..c80c107 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -1793,8 +1793,11 @@ static int unix_dgram_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		goto out;
+diff --git a/net/ipv4/inet_fragment.c b/net/ipv4/inet_fragment.c
+index c5313a9..e15fb7b 100644
+--- a/net/ipv4/inet_fragment.c
++++ b/net/ipv4/inet_fragment.c
+@@ -281,9 +281,10 @@ static struct inet_frag_queue *inet_frag_intern(struct netns_frags *nf,
  
- 	err = mutex_lock_interruptible(&u->readlock);
--	if (err) {
--		err = sock_intr_errno(sock_rcvtimeo(sk, noblock));
-+	if (unlikely(err)) {
-+		/* recvmsg() in non blocking mode is supposed to return -EAGAIN
-+		 * sk_rcvtimeo is not honored by mutex_lock_interruptible()
-+		 */
-+		err = noblock ? -EAGAIN : -ERESTARTSYS;
- 		goto out;
- 	}
- 
-@@ -1914,6 +1917,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	struct unix_sock *u = unix_sk(sk);
- 	struct sockaddr_un *sunaddr = msg->msg_name;
- 	int copied = 0;
-+	int noblock = flags & MSG_DONTWAIT;
- 	int check_creds = 0;
- 	int target;
- 	int err = 0;
-@@ -1929,7 +1933,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		goto out;
- 
- 	target = sock_rcvlowat(sk, flags&MSG_WAITALL, size);
--	timeo = sock_rcvtimeo(sk, flags&MSG_DONTWAIT);
-+	timeo = sock_rcvtimeo(sk, noblock);
- 
- 	/* Lock the socket to prevent queue disordering
- 	 * while sleeps in memcpy_tomsg
-@@ -1941,8 +1945,11 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	}
- 
- 	err = mutex_lock_interruptible(&u->readlock);
--	if (err) {
--		err = sock_intr_errno(timeo);
-+	if (unlikely(err)) {
-+		/* recvmsg() in non blocking mode is supposed to return -EAGAIN
-+		 * sk_rcvtimeo is not honored by mutex_lock_interruptible()
-+		 */
-+		err = noblock ? -EAGAIN : -ERESTARTSYS;
- 		goto out;
- 	}
+ 	atomic_inc(&qp->refcnt);
+ 	hlist_add_head(&qp->list, &hb->chain);
++	inet_frag_lru_add(nf, qp);
+ 	spin_unlock(&hb->chain_lock);
+ 	read_unlock(&f->lock);
+-	inet_frag_lru_add(nf, qp);
++
+ 	return qp;
+ }
  
 -- 
 1.9.1
