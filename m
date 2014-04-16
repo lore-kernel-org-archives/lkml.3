@@ -1,280 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756001AbaDPSlk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 14:41:40 -0400
-Received: from mga01.intel.com ([192.55.52.88]:20662 "EHLO mga01.intel.com"
+	id S1756036AbaDPSlt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 14:41:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8150 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755893AbaDPSli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 14:41:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,873,1389772800"; 
-   d="scan'208";a="514340952"
-From: Andi Kleen <andi@firstfloor.org>
-To: jolsa@redhat.com
-Cc: acme@infradead.org, linux-kernel@vger.kernel.org, namhyung@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] perf, tools: Support spark lines in perf stat v3
-Date: Wed, 16 Apr 2014 11:41:18 -0700
-Message-Id: <1397673678-27452-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.5.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1755983AbaDPSlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 14:41:46 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 01/11] perf hists: Add support for showing relative percentage
+Date: Wed, 16 Apr 2014 20:41:29 +0200
+Message-Id: <1397673699-25824-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1397673699-25824-1-git-send-email-jolsa@redhat.com>
+References: <1397673699-25824-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+From: Namhyung Kim <namhyung@kernel.org>
 
-perf stat -rX prints the stddev for multiple measurements.
-Just looking at the stddev for judging the quality of the data
-is a bit dangerous The simplest sanity check is to just look
-at a simple plot. This patchs add a sparkline to the end
-of the measurements to make it simple to judge the data.
+When filtering by thread, dso or symbol on TUI it also update total
+period so that the output shows different result than no filter - the
+percentage changed to relative to filtered entries only.  Sometimes
+this is not desired since users might expect same results with filter.
 
-The sparkline only uses UTF-8, so should be readable
-in all modern tools and terminals.
+So new filtered_* fields to hists->stats to count them separately.
+They'll be controlled/used by user later.
 
-The sparkline is between the minimum and maximum of the data,
-so it's mainly a indicator of variance. To keep the code
-simple and make the output not too wide only the first
-8 values are printed. If more values are there it adds '..'
-
-The code is inspired by Zach Holman's spark shell script.
-
-Example output (view in non-proportial font):
-
- Performance counter stats for 'true' (10 runs):
-
-          0.175672      task-clock (msec)         #    0.555 CPUs utilized            ( +-  1.77% ) █▄▁▁▁▁▁▁..
-                 0      context-switches          #    0.000 K/sec
-                 0      cpu-migrations            #    0.000 K/sec
-               114      page-faults               #    0.647 M/sec                    ( +-  0.14% ) ▁█▁▁████..
-           520,798      cycles                    #    2.965 GHz                      ( +-  1.75% ) █▄▁▁▁▁▁▁..
-           433,525      instructions              #    0.83  insns per cycle          ( +-  0.28% ) ▅▇▅▄▇█▁▆..
-            83,012      branches                  #  472.537 M/sec                    ( +-  0.31% ) ▅▇▆▄▇█▁▆..
-             3,157      branch-misses             #    3.80% of all branches          ( +-  2.55% ) ▇█▃▅▁▃▁▂..
-
-       0.000316660 seconds time elapsed                                          ( +-  1.78% ) █▅▁▁▁▁▁▁..
-
-As you can see even in the most simple run there are quite interesting
-patterns. The time sparkline suggests it would be also useful to have an option
-to throw the first measurement away.
-
-Known issues:
-- Makes the perf stat output wider. Could be adjust by shrinking
-some white space. Not done so far.
-- No output for -A/--per-socket/--per-core with -rX. This code
-is missing the basic noise detection code. Once it's added there
-sparklines could be shown too.
-
-v2: Avoid printing spark lines for normal CSV case (Jiri)
-v3: LONG->ULONG, random changes from
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/1397145720-8063-2-git-send-email-namhyung@kernel.org
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/Makefile.perf  |  1 +
- tools/perf/builtin-stat.c | 12 ++++++++++++
- tools/perf/util/spark.c   | 28 ++++++++++++++++++++++++++++
- tools/perf/util/spark.h   |  3 +++
- tools/perf/util/stat.c    | 35 +++++++++++++++++++++++++++++++++++
- tools/perf/util/stat.h    | 10 ++++++++++
- 6 files changed, 89 insertions(+)
- create mode 100644 tools/perf/util/spark.c
- create mode 100644 tools/perf/util/spark.h
+ tools/perf/builtin-report.c |  6 ++++++
+ tools/perf/builtin-top.c    |  3 +++
+ tools/perf/util/hist.c      | 17 ++++++++++++++---
+ tools/perf/util/hist.h      |  3 +++
+ 4 files changed, 26 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 7257e7e..432d099 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -359,6 +359,7 @@ LIB_OBJS += $(OUTPUT)util/trace-event-scripting.o
- LIB_OBJS += $(OUTPUT)util/trace-event.o
- LIB_OBJS += $(OUTPUT)util/svghelper.o
- LIB_OBJS += $(OUTPUT)util/sort.o
-+LIB_OBJS += $(OUTPUT)util/spark.o
- LIB_OBJS += $(OUTPUT)util/hist.o
- LIB_OBJS += $(OUTPUT)util/probe-event.o
- LIB_OBJS += $(OUTPUT)util/util.o
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 65a151e..cb0f7c5 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -1176,6 +1176,9 @@ static void print_aggr(char *prefix)
- 				if (run != ena)
- 					fprintf(output, "  (%.2f%%)",
- 						100.0 * run / ena);
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index c8f2113..2fca56c9 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -123,6 +123,8 @@ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *
+ 
+ 	evsel->hists.stats.total_period += cost;
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
++	if (!he->filtered)
++		evsel->hists.stats.nr_non_filtered_samples++;
+ 	err = hist_entry__append_callchain(he, sample);
+ out:
+ 	return err;
+@@ -176,6 +178,8 @@ static int report__add_branch_hist_entry(struct report *rep, struct addr_locatio
+ 
+ 			evsel->hists.stats.total_period += 1;
+ 			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
++			if (!he->filtered)
++				evsel->hists.stats.nr_non_filtered_samples++;
+ 		} else
+ 			goto out;
+ 	}
+@@ -209,6 +213,8 @@ static int report__add_hist_entry(struct report *rep, struct perf_evsel *evsel,
+ 		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+ 
+ 	evsel->hists.stats.total_period += sample->period;
++	if (!he->filtered)
++		evsel->hists.stats.nr_non_filtered_samples++;
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+ out:
+ 	return err;
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 65aaa5b..2526901 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -253,6 +253,9 @@ static struct hist_entry *perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+ 		return NULL;
+ 
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
++	if (!he->filtered)
++		evsel->hists.stats.nr_non_filtered_samples++;
 +
-+				fputc(' ', output);
-+				print_stat_spark(output, counter->priv);
- 			}
- 			fputc('\n', output);
- 		}
-@@ -1229,6 +1232,9 @@ static void print_counter_aggr(struct perf_evsel *counter, char *prefix)
+ 	return he;
+ }
+ 
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index f38590d..1ed3e2b 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -674,8 +674,8 @@ void hists__output_resort(struct hists *hists)
+ 	next = rb_first(root);
+ 	hists->entries = RB_ROOT;
+ 
+-	hists->nr_entries = 0;
+-	hists->stats.total_period = 0;
++	hists->nr_entries = hists->nr_non_filtered_entries = 0;
++	hists->stats.total_period = hists->stats.total_non_filtered_period = 0;
+ 	hists__reset_col_len(hists);
+ 
+ 	while (next) {
+@@ -695,11 +695,16 @@ static void hists__remove_entry_filter(struct hists *hists, struct hist_entry *h
  		return;
- 	}
  
-+	fputc(' ', output);
-+	print_stat_spark(output, counter->priv);
-+
- 	if (scaled) {
- 		double avg_enabled, avg_running;
- 
-@@ -1295,6 +1301,9 @@ static void print_counter(struct perf_evsel *counter, char *prefix)
- 			if (run != ena)
- 				fprintf(output, "  (%.2f%%)",
- 					100.0 * run / ena);
-+
-+			fputc(' ', output);
-+			print_stat_spark(output, counter->priv);
- 		}
- 		fputc('\n', output);
- 	}
-@@ -1355,6 +1364,9 @@ static void print_stat(int argc, const char **argv)
- 			fprintf(output, "                                        ");
- 			print_noise_pct(stddev_stats(&walltime_nsecs_stats),
- 					avg_stats(&walltime_nsecs_stats));
-+
-+			fputc(' ', output);
-+			print_stat_spark(output, &walltime_nsecs_stats);
- 		}
- 		fprintf(output, "\n\n");
- 	}
-diff --git a/tools/perf/util/spark.c b/tools/perf/util/spark.c
-new file mode 100644
-index 0000000..ac5b3a5
---- /dev/null
-+++ b/tools/perf/util/spark.c
-@@ -0,0 +1,28 @@
-+#include <stdio.h>
-+#include <limits.h>
-+#include "spark.h"
-+
-+#define NUM_SPARKS 8
-+#define SPARK_SHIFT 8
-+
-+/* Print spark lines on outf for numval values in val. */
-+void print_spark(FILE *outf, unsigned long *val, int numval)
-+{
-+	static const char *ticks[NUM_SPARKS] = {
-+		"▁",  "▂", "▃", "▄", "▅", "▆", "▇", "█"
-+	};
-+	int i;
-+	unsigned long min = ULONG_MAX, max = 0, f;
-+
-+	for (i = 0; i < numval; i++) {
-+		if (val[i] < min)
-+			min = val[i];
-+		if (val[i] > max)
-+			max = val[i];
+ 	++hists->nr_entries;
+-	if (h->ms.unfolded)
++	++hists->nr_non_filtered_entries;
++	if (h->ms.unfolded) {
+ 		hists->nr_entries += h->nr_rows;
++		hists->nr_non_filtered_entries += h->nr_rows;
 +	}
-+	f = ((max - min) << SPARK_SHIFT) / (NUM_SPARKS - 1);
-+	if (f < 1)
-+		f = 1;
-+	for (i = 0; i < numval; i++)
-+		fputs(ticks[((val[i] - min) << SPARK_SHIFT) / f], outf);
-+}
-diff --git a/tools/perf/util/spark.h b/tools/perf/util/spark.h
-new file mode 100644
-index 0000000..f2d5ac5
---- /dev/null
-+++ b/tools/perf/util/spark.h
-@@ -0,0 +1,3 @@
-+#pragma once
-+void print_spark(FILE *outf, unsigned long *val, int numval);
-+
-diff --git a/tools/perf/util/stat.c b/tools/perf/util/stat.c
-index 6506b3d..7d17160 100644
---- a/tools/perf/util/stat.c
-+++ b/tools/perf/util/stat.c
-@@ -1,10 +1,16 @@
- #include <math.h>
-+#include <stdio.h>
+ 	h->row_offset = 0;
+ 	hists->stats.total_period += h->stat.period;
++	hists->stats.total_non_filtered_period += h->stat.period;
+ 	hists->stats.nr_events[PERF_RECORD_SAMPLE] += h->stat.nr_events;
++	hists->stats.nr_non_filtered_samples += h->stat.nr_events;
  
- #include "stat.h"
-+#include "spark.h"
- 
- void update_stats(struct stats *stats, u64 val)
- {
- 	double delta;
-+	int n = stats->n;
-+
-+	if (n < NUM_SPARK_VALS)
-+		stats->svals[n] = val;
- 
- 	stats->n++;
- 	delta = val - stats->mean;
-@@ -61,3 +67,32 @@ double rel_stddev_stats(double stddev, double avg)
- 
- 	return pct;
+ 	hists__calc_col_len(hists, h);
  }
-+
-+static int all_the_same(unsigned long *vals, int len)
-+{
-+	int i;
-+	unsigned long v0 = vals[0];
-+
-+	for (i = 1; i < len; i++)
-+		if (vals[i] != v0)
-+			return 0;
-+	return 1;
-+}
-+
-+void print_stat_spark(FILE *f, struct stats *stat)
-+{
-+	int n = stat->n, len;
-+
-+	if (n <= 1)
-+		return;
-+
-+	len = n;
-+	if (len > NUM_SPARK_VALS)
-+		len = NUM_SPARK_VALS;
-+	if (all_the_same(stat->svals, len))
-+		return;
-+
-+	print_spark(f, stat->svals, len);
-+	if (stat->n > NUM_SPARK_VALS)
-+		fputs("..", f);
-+}
-diff --git a/tools/perf/util/stat.h b/tools/perf/util/stat.h
-index ae8ccd7..1b4dc71 100644
---- a/tools/perf/util/stat.h
-+++ b/tools/perf/util/stat.h
-@@ -1,12 +1,16 @@
- #ifndef __PERF_STATS_H
- #define __PERF_STATS_H
+@@ -722,7 +727,9 @@ void hists__filter_by_dso(struct hists *hists)
+ 	struct rb_node *nd;
  
-+#include <stdio.h>
- #include "types.h"
+ 	hists->nr_entries = hists->stats.total_period = 0;
++	hists->nr_non_filtered_entries = hists->stats.total_non_filtered_period = 0;
+ 	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
++	hists->stats.nr_non_filtered_samples = 0;
+ 	hists__reset_col_len(hists);
  
-+#define NUM_SPARK_VALS 8 /* support spark line on first N items */
-+
- struct stats
- {
- 	double n, mean, M2;
- 	u64 max, min;
-+	unsigned long svals[NUM_SPARK_VALS];
- };
+ 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+@@ -755,7 +762,9 @@ void hists__filter_by_thread(struct hists *hists)
+ 	struct rb_node *nd;
  
- void update_stats(struct stats *stats, u64 val);
-@@ -14,12 +18,18 @@ double avg_stats(struct stats *stats);
- double stddev_stats(struct stats *stats);
- double rel_stddev_stats(double stddev, double avg);
+ 	hists->nr_entries = hists->stats.total_period = 0;
++	hists->nr_non_filtered_entries = hists->stats.total_non_filtered_period = 0;
+ 	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
++	hists->stats.nr_non_filtered_samples = 0;
+ 	hists__reset_col_len(hists);
  
-+void print_stat_spark(FILE *f, struct stats *stat);
-+
- static inline void init_stats(struct stats *stats)
- {
-+	int i;
-+
- 	stats->n    = 0.0;
- 	stats->mean = 0.0;
- 	stats->M2   = 0.0;
- 	stats->min  = (u64) -1;
- 	stats->max  = 0;
-+	for (i = 0; i < NUM_SPARK_VALS; i++)
-+		stats->svals[i] = 0;
- }
- #endif
+ 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+@@ -786,7 +795,9 @@ void hists__filter_by_symbol(struct hists *hists)
+ 	struct rb_node *nd;
+ 
+ 	hists->nr_entries = hists->stats.total_period = 0;
++	hists->nr_non_filtered_entries = hists->stats.total_non_filtered_period = 0;
+ 	hists->stats.nr_events[PERF_RECORD_SAMPLE] = 0;
++	hists->stats.nr_non_filtered_samples = 0;
+ 	hists__reset_col_len(hists);
+ 
+ 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 1f1f513..2135514 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -37,9 +37,11 @@ enum hist_filter {
+  */
+ struct events_stats {
+ 	u64 total_period;
++	u64 total_non_filtered_period;
+ 	u64 total_lost;
+ 	u64 total_invalid_chains;
+ 	u32 nr_events[PERF_RECORD_HEADER_MAX];
++	u32 nr_non_filtered_samples;
+ 	u32 nr_lost_warned;
+ 	u32 nr_unknown_events;
+ 	u32 nr_invalid_chains;
+@@ -83,6 +85,7 @@ struct hists {
+ 	struct rb_root		entries;
+ 	struct rb_root		entries_collapsed;
+ 	u64			nr_entries;
++	u64			nr_non_filtered_entries;
+ 	const struct thread	*thread_filter;
+ 	const struct dso	*dso_filter;
+ 	const char		*uid_filter_str;
 -- 
-1.8.5.3
+1.8.3.1
 
