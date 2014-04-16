@@ -1,103 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248AbaDPJkQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 05:40:16 -0400
-Received: from mail-bl2lp0203.outbound.protection.outlook.com ([207.46.163.203]:9156
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753422AbaDPJkO convert rfc822-to-8bit (ORCPT
+	id S1755298AbaDPJlS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 05:41:18 -0400
+Received: from www.linutronix.de ([62.245.132.108]:36470 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755272AbaDPJlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 05:40:14 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        Jingchang Lu <jingchang.lu@freescale.com>,
-        "Jason.Jin@freescale.com" <Jason.Jin@freescale.com>,
-        "Dongsheng.Wang@freescale.com" <Dongsheng.Wang@freescale.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC][PATCH 1/3] ARM: dts: vf610: Add Freescale FlexTimer
- Module timer node.
-Thread-Topic: [RFC][PATCH 1/3] ARM: dts: vf610: Add Freescale FlexTimer
- Module timer node.
-Thread-Index: AQHPWSBaHNmWFeafwkKQ+QxFukJEhZsT8jYAgAALAOA=
-Date: Wed, 16 Apr 2014 09:39:52 +0000
-Message-ID: <59652f870f1a43cb9bc69401f0e21391@DM2PR03MB509.namprd03.prod.outlook.com>
-References: <1397614787-8300-1-git-send-email-Li.Xiubo@freescale.com>
- <1397614787-8300-2-git-send-email-Li.Xiubo@freescale.com>
- <20140416085953.GC11602@dragon>
-In-Reply-To: <20140416085953.GC11602@dragon>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 01834E39B7
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(164054003)(24454002)(51704005)(81342001)(66066001)(99396002)(76482001)(79102001)(33646001)(99286001)(20776003)(81542001)(54356999)(80022001)(74316001)(74662001)(76176999)(4396001)(76576001)(83322001)(77096999)(85852003)(87936001)(80976001)(83072002)(50986999)(2656002)(74502001)(31966008)(19580405001)(77982001)(46102001)(92566001)(86362001)(19580395003)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB477;H:DM2PR03MB509.namprd03.prod.outlook.com;FPR:EC6DDB76.3BB08E15.B26F6B76.9DE616DE.201D5;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 16 Apr 2014 05:41:06 -0400
+Date: Wed, 16 Apr 2014 11:41:13 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, stable@vger.kernel.org
+Subject: Re: [PATCH 1/3] clocksource: exynos_mct: Fix stall after CPU
+ hotplugging
+In-Reply-To: <1397638263.6147.7.camel@AMDC1943>
+Message-ID: <alpine.DEB.2.02.1404161137100.22697@ionos.tec.linutronix.de>
+References: <1396011962-4467-1-git-send-email-k.kozlowski@samsung.com> <1397554445.29169.21.camel@AMDC1943> <534D25DC.4050400@linaro.org> <1397566023.29169.31.camel@AMDC1943> <alpine.DEB.2.02.1404151711250.22697@ionos.tec.linutronix.de> <1397576515.752.5.camel@AMDC1943>
+ <alpine.DEB.2.02.1404151753090.22697@ionos.tec.linutronix.de> <1397638263.6147.7.camel@AMDC1943>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> Subject: Re: [RFC][PATCH 1/3] ARM: dts: vf610: Add Freescale FlexTimer Module
-> timer node.
+On Wed, 16 Apr 2014, Krzysztof Kozlowski wrote:
+> On wto, 2014-04-15 at 18:20 +0200, Thomas Gleixner wrote:
+> > Here is a complete solution to the problem. We really want the drivers
+> > to be fast and clean and not work around such issues.
+> > 
+> > I'm quite happy that I kept the 'force' argument of set_affinity
+> > callbacks. I knew that I'd need it at some point.
+> > 
+> > So with the flag set we can disable the online mask check and force
+> > the interrupt to the proper cpu.
 > 
-> On Wed, Apr 16, 2014 at 10:19:45AM +0800, Xiubo Li wrote:
-> > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-> > Cc: Shawn Guo <shawn.guo@linaro.org>
-> > Cc: Jingchang Lu <b35083@freescale.com>
-> > ---
-> >  arch/arm/boot/dts/vf610.dtsi | 13 +++++++++++++
-> >  1 file changed, 13 insertions(+)
-> >
-> > diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-> > index 107e2c0..c3a276f 100644
-> > --- a/arch/arm/boot/dts/vf610.dtsi
-> > +++ b/arch/arm/boot/dts/vf610.dtsi
-> > @@ -153,6 +153,19 @@
-> >  				clock-names = "pit";
-> >  			};
-> >
-> > +			ftm0: ftm@40038000 {
-> > +				compatible = "fsl,vf610-ftm-timer";
-> > +				reg = <0x40038000 0x2000>;
-> > +				interrupts = <0 42 IRQ_TYPE_LEVEL_HIGH>;
-> > +				clock-names = "ftm0", "ftm1",
-> > +					"ftm0_counter_en", "ftm1_counter_en";
-> > +				clocks = <&clks VF610_CLK_FTM0>,
-> > +					<&clks VF610_CLK_FTM1>,
-> > +					<&clks VF610_CLK_FTM0_EXT_FIX_EN>,
-> > +					<&clks VF610_CLK_FTM1_EXT_FIX_EN>;
-> > +				status = "disabled";
+> Thanks for the solution.
 > 
-> For such completely internal block which has no pins route out on board,
-> we should probably just not have this "disabled" status line.
->
+> I tested your patch on Exynos 3250 and it is still not sufficient. After
+> hotplugging CPU1 ~10 times the stall happens (set_next_event is called
+> on wrong CPU).
+> 
+> The patch 3/3 ("clocksource: exynos_mct: Fix too early ISR fire up on
+> wrong CPU") is needed as the clockevents_config_and_register should be
+> called a little later.
 
-Yes, I'll fix it.
+Ok. That makes sense.
+ 
+> Do you have rest of patches (2/3 and 3/3) or should I resend them?
+> 
+> And one minor nit in your patch: 'cpu' local variable in
+> exynos4_mct_cpu_notify() is no longer used so it can be removed.
+
+Right.
+
+I'm going to create a proper patch for the interrupt side and stick
+that into irq/urgent. It's trivial enough to go in right away and I'll
+tag it stable as well. You can build your changes on top then.
 
 Thanks,
 
-BRs
-Xiubo
+	tglx
 
- 
-> Shawn
-> 
-> > +			};
-> > +
-> >  			wdog@4003e000 {
-> >  				compatible = "fsl,vf610-wdt", "fsl,imx21-wdt";
-> >  				reg = <0x4003e000 0x1000>;
-> > --
-> > 1.8.4
-> >
-> >
+
+
 
