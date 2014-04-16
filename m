@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422632AbaDPPNt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 11:13:49 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:56864 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756344AbaDPPNs (ORCPT
+	id S1422645AbaDPPRr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 11:17:47 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34536 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161613AbaDPPRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 11:13:48 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: mmarek@suse.cz, akpm@linux-foundation.org,
-        michael.opdenacker@free-electrons.com, prarit@redhat.com,
-        tkhai@yandex.ru, nasa4836@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] scripts/tags.sh: add pattern for DEFINE_HASHTABLE
-Date: Wed, 16 Apr 2014 23:13:34 +0800
-Message-Id: <1397661214-4218-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 1.9.0.GIT
+	Wed, 16 Apr 2014 11:17:46 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: <dbaryshkov@gmail.com>, <dwmw2@infradead.org>
+CC: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH] power: twl4030_charger: clear IRQs after handling them
+Date: Wed, 16 Apr 2014 10:14:59 -0500
+Message-ID: <1397661299-31342-1-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.9.1.286.g5172cb3
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- scripts/tags.sh | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+TRM says we *must* write 1 to each bit we're handling
+in order to clear the IRQ status and bring IRQ line
+low. This patch implements that.
 
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index 7122fea..a5d27db 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -205,7 +205,8 @@ exuberant()
- 	--regex-c='/DECLARE_(TASKLET|WORK|DELAYED_WORK)\((\w*)/\2/v/'	\
- 	--regex-c='/DEFINE_PCI_DEVICE_TABLE\((\w*)/\1/v/'		\
- 	--regex-c='/(^\s)OFFSET\((\w*)/\2/v/'				\
--	--regex-c='/(^\s)DEFINE\((\w*)/\2/v/'
-+	--regex-c='/(^\s)DEFINE\((\w*)/\2/v/'				\
-+	--regex-c='/DEFINE_HASHTABLE\((\w*)/\1/v/'
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+
+Russell, I don't have HW to test, but this should
+solve the problem you saw when not using battery
+with Zoom board. Let me know if it doesn't.
+
+cheers
+
+ drivers/power/twl4030_charger.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/power/twl4030_charger.c b/drivers/power/twl4030_charger.c
+index f141088..b090842 100644
+--- a/drivers/power/twl4030_charger.c
++++ b/drivers/power/twl4030_charger.c
+@@ -301,12 +301,24 @@ static irqreturn_t twl4030_bci_interrupt(int irq, void *arg)
+ 	ret = twl_i2c_read_u8(TWL4030_MODULE_INTERRUPTS, &irqs1,
+ 			      TWL4030_INTERRUPTS_BCIISR1A);
+ 	if (ret < 0)
+-		return IRQ_HANDLED;
++		return IRQ_NONE;
++
++	/* clear IRQs early */
++	ret = twl_i2c_write_u8(TWL4030_MODULE_INTERRUPTS, irqs1,
++			TWL4030_INTERRUPTS_BCIISR1A);
++	if (ret < 0)
++		return IRQ_NONE;
  
- 	all_kconfigs | xargs $1 -a                              \
- 	--langdef=kconfig --language-force=kconfig              \
-@@ -254,7 +255,8 @@ emacs()
- 	--regex='/__TESTCLEARFLAG_FALSE(\([^,)]*\).*/__TestClearPage\1/' \
- 	--regex='/_PE(\([^,)]*\).*/PEVENT_ERRNO__\1/'		\
- 	--regex='/PCI_OP_READ(\([a-z]*[a-z]\).*[1-4])/pci_bus_read_config_\1/' \
--	--regex='/PCI_OP_WRITE(\([a-z]*[a-z]\).*[1-4])/pci_bus_write_config_\1/'
-+	--regex='/PCI_OP_WRITE(\([a-z]*[a-z]\).*[1-4])/pci_bus_write_config_\1/'\
-+	--regex='/DEFINE_HASHTABLE\((\w*)/\1/v/'
+ 	ret = twl_i2c_read_u8(TWL4030_MODULE_INTERRUPTS, &irqs2,
+ 			      TWL4030_INTERRUPTS_BCIISR2A);
+ 	if (ret < 0)
+-		return IRQ_HANDLED;
++		return IRQ_NONE;
++
++	/* clear IRQs early */
++	ret = twl_i2c_write_u8(TWL4030_MODULE_INTERRUPTS, irqs2,
++			      TWL4030_INTERRUPTS_BCIISR2A);
++	if (ret < 0)
++		return IRQ_NONE;
  
- 	all_kconfigs | xargs $1 -a                              \
- 	--regex='/^[ \t]*\(\(menu\)*config\)[ \t]+\([a-zA-Z0-9_]+\)/\3/'
+ 	dev_dbg(bci->dev, "BCI irq %02x %02x\n", irqs2, irqs1);
+ 
 -- 
-1.9.0.GIT
+1.9.1.286.g5172cb3
 
