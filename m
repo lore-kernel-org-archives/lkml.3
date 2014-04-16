@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161371AbaDPNyu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 09:54:50 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37031 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161077AbaDPNyt (ORCPT
+	id S1161288AbaDPN4c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 09:56:32 -0400
+Received: from 20.mo3.mail-out.ovh.net ([178.33.47.94]:59831 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1161077AbaDPN4b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 09:54:49 -0400
-Date: Wed, 16 Apr 2014 14:48:15 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: AKASHI Takahiro <takahiro.akashi@linaro.org>
-Cc: "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "tim.bird@sonymobile.com" <tim.bird@sonymobile.com>,
-        "gkulkarni@caviumnetworks.com" <gkulkarni@caviumnetworks.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "arndb@arndb.de" <arndb@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v7 5/7] arm64: ftrace: Add dynamic ftrace support
-Message-ID: <20140416134815.GE1001@arm.com>
-References: <1394705630-12384-1-git-send-email-takahiro.akashi@linaro.org>
- <1394862353-28963-6-git-send-email-takahiro.akashi@linaro.org>
-MIME-Version: 1.0
+	Wed, 16 Apr 2014 09:56:31 -0400
+X-Greylist: delayed 4644 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Apr 2014 09:56:31 EDT
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394862353-28963-6-git-send-email-takahiro.akashi@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [PATCH] fbdev: fix possible NULL pointer derefernce
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+In-Reply-To: <20140416094034.GA18082@devel>
+Date: Wed, 16 Apr 2014 20:38:51 +0800
+Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        tomi.valkeinen@ti.com, jg1.han@samsung.com,
+        laurent.pinchart@ideasonboard.com, robdclark@gmail.com,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <6A3BE65E-93FD-4E22-A55E-49E54E435558@jcrosoft.com>
+References: <20140416094034.GA18082@devel>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+X-Mailer: Apple Mail (2.1874)
+X-Ovh-Tracer-Id: 8774419450757425933
+X-Ovh-Remote: 193.138.220.93 (93.220.138.193.client.dyn.strong-ba1.blackoakcomputers.com)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejvddrtdduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejvddrtdduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 15, 2014 at 05:45:51AM +0000, AKASHI Takahiro wrote:
-> This patch allows "dynamic ftrace" if CONFIG_DYNAMIC_FTRACE is enabled.
-> Here we can turn on and off tracing dynamically per-function base.
-> 
-> On arm64, this is done by patching single branch instruction to _mcount()
-> inserted by gcc -pg option. The branch is replaced to NOP initially at
-> kernel start up, and later on, NOP to branch to ftrace_caller() when
-> enabled or branch to NOP when disabled.
-> Please note that ftrace_caller() is a counterpart of _mcount() in case of
-> 'static' ftrace.
-> 
-> More details on architecture specific requirements are described in
-> Documentation/trace/ftrace-design.txt.
-> 
-> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
 
-  Acked-by: Will Deacon <will.deacon@arm.com>
+On Apr 16, 2014, at 5:40 PM, Daeseok Youn <daeseok.youn@gmail.com> wrote:
 
-Will
+> 
+> The spec->modedb can be NULL by fb_create_modedb().
+> 
+> And also smatch says:
+> drivers/video/fbdev/core/fbmon.c:975 fb_edid_to_monspecs() error:
+> potential null dereference 'specs->modedb'.
+> (fb_create_modedb returns null)
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+> drivers/video/fbdev/core/fbmon.c |    3 +++
+> 1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/video/fbdev/core/fbmon.c b/drivers/video/fbdev/core/fbmon.c
+> index c204ebe..db274ca 100644
+> --- a/drivers/video/fbdev/core/fbmon.c
+> +++ b/drivers/video/fbdev/core/fbmon.c
+> @@ -966,6 +966,9 @@ void fb_edid_to_monspecs(unsigned char *edid, struct fb_monspecs *specs)
+> 
+> 	specs->modedb = fb_create_modedb(edid, &specs->modedb_len);
+> 
+> +	if (!specs->modedb)
+> +		return;
+> +
+
+we need to return an error and trace it
+
+Best Regards,
+J.
+> 	/*
+> 	 * Workaround for buggy EDIDs that sets that the first
+> 	 * detailed timing is preferred but has not detailed
+> -- 
+> 1.7.4.4
+> 
+
