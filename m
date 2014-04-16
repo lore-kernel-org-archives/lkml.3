@@ -1,35 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161006AbaDPNAJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 09:00:09 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45143 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071AbaDPNAE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 09:00:04 -0400
-Date: Wed, 16 Apr 2014 09:00:02 -0400 (EDT)
-Message-Id: <20140416.090002.2186526865564557549.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: neilb@suse.de, linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com, netdev@vger.kernel.org
-Subject: Re: [PATCH 10/19] NET: set PF_FSTRANS while holding sk_lock
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1397625226.4222.113.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <20140416033623.10604.69237.stgit@notabene.brown>
-	<20140416040336.10604.96000.stgit@notabene.brown>
-	<1397625226.4222.113.camel@edumazet-glaptop2.roam.corp.google.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 16 Apr 2014 06:00:04 -0700 (PDT)
+	id S1756261AbaDPNA7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 09:00:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47796 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755236AbaDPNAx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 09:00:53 -0400
+Date: Wed, 16 Apr 2014 15:00:08 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        linux-kernel@vger.kernel.org, KVM <kvm@vger.kernel.org>,
+        Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+Subject: Re: [PULL 1/2] perf/tool: Fix usage of trace events with '-' in
+ trace system name.
+Message-ID: <20140416130008.GA6087@krava.brq.redhat.com>
+References: <1397053319-2130-1-git-send-email-borntraeger@de.ibm.com>
+ <1397053319-2130-2-git-send-email-borntraeger@de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397053319-2130-2-git-send-email-borntraeger@de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Tue, 15 Apr 2014 22:13:46 -0700
+On Wed, Apr 09, 2014 at 04:21:58PM +0200, Christian Borntraeger wrote:
+> From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+> 
+> Trace events potentially can have a '-' in their trace system name,
+> e.g. kvm on s390 defines kvm-s390:* tracepoints.
+> tools/perf could not parse them, because there was no rule for this:
+> $ sudo ./perf top -e "kvm-s390:*"
+> invalid or unsupported event: 'kvm-s390:*'
+> 
+> This patch allows '-' to be a part of PE_NAME token, so tracepoints
+> with '-' can be parsed by the event_legacy_tracepoint rule.
+> Without the patch, perf will not accept such tracepoints in the -e
+> option.
+> 
+> Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+> ---
+>  tools/perf/util/parse-events.l |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+> index 3432995..ca20da7 100644
+> --- a/tools/perf/util/parse-events.l
+> +++ b/tools/perf/util/parse-events.l
+> @@ -199,7 +199,7 @@ r{num_raw_hex}		{ return raw(yyscanner); }
+>  {num_hex}		{ return value(yyscanner, 16); }
+>  
+>  {modifier_event}	{ return str(yyscanner, PE_MODIFIER_EVENT); }
+> -{name}			{ return str(yyscanner, PE_NAME); }
+> +{name_minus}			{ return str(yyscanner, PE_NAME); }
+>  "/"			{ BEGIN(config); return '/'; }
+>  -			{ return '-'; }
+>  ,			{ BEGIN(event); return ','; }
 
-> For applications handling millions of sockets, this makes a difference.
+this breaks parsing of cache events like:
 
-Indeed, this really is not acceptable.
+  $ perf record -e 'L1-dcache-loads' ls
+
+also test 10 (same issue):
+  $ ./perf test 10
+  10: roundtrip evsel->name check                            : FAILED!
+
+
+it might be little tricky to fix, let me know if you
+have any troubles with that, I could look on it
+
+thanks,
+jirka
