@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161279AbaDPNbH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 09:31:07 -0400
-Received: from 9.mo5.mail-out.ovh.net ([178.32.96.204]:41768 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1161004AbaDPNbE (ORCPT
+	id S1161314AbaDPNcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 09:32:47 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36184 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1161040AbaDPNcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 09:31:04 -0400
-X-Greylist: delayed 8399 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Apr 2014 09:31:04 EDT
-Message-ID: <534E3215.2060306@metascale.org>
-Date: Wed, 16 Apr 2014 16:32:37 +0900
-From: Adrien BAK <adrien.bak@metascale.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 16 Apr 2014 09:32:45 -0400
+Date: Wed, 16 Apr 2014 14:29:31 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>
+Cc: "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "eparis@redhat.com" <eparis@redhat.com>,
+        "rgb@redhat.com" <rgb@redhat.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "arndb@arndb.de" <arndb@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-audit@redhat.com" <linux-audit@redhat.com>
+Subject: Re: [PATCH v5 4/4] arm64: is_compat_task is defined both in
+ asm/compat.h and linux/compat.h
+Message-ID: <20140416132931.GB1001@arm.com>
+References: <1394705491-12343-1-git-send-email-takahiro.akashi@linaro.org>
+ <1394861948-28712-1-git-send-email-takahiro.akashi@linaro.org>
+ <1394861948-28712-5-git-send-email-takahiro.akashi@linaro.org>
 MIME-Version: 1.0
-To: linux-perf-users@vger.kernel.org, a.p.zijlstra@chello.nl, paulus@samba.org,
-        mingo@redhat.com, acme@ghostprotocols.net
-CC: will.deacon@arm.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] Error reporting improvement
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 3640878824319693923
-X-Ovh-Remote: 14.3.166.156 (ae166156.dynamic.ppp.asahi-net.or.jp)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: 0
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejvddrtdduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: 0
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejvddrtdduucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394861948-28712-5-git-send-email-takahiro.akashi@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the current version, when using perf record, if something goes wrong in
-tools/perf/builtin-record.c:375  session = perf_session__new(file, 
-false, NULL);
-The error message:
-"Not enough memory for reading per file header"
-is issued. This error message seems to be outdated and is not very helpful.
-This patch propose to replace this error message by
-"Perf session creation failed"
+On Sat, Mar 15, 2014 at 05:39:08AM +0000, AKASHI Takahiro wrote:
+> Some kernel files may include both linux/compat.h and asm/compat.h directly
+> or indirectly. Since both header files contain is_compat_task() under
+> !CONFIG_COMPAT, compiling them with !CONFIG_COMPAT will eventually fail.
+> Such files include kernel/auditsc.c, kernel/seccomp.c and init/do_mountfs.c
+> (do_mountfs.c may read asm/compat.h via asm/ftrace.h once ftrace is
+> implemented).
+> 
+> So this patch proactively
+> 1) removes is_compat_task() under !CONFIG_COMPAT from asm/compat.h
+> 2) replaces asm/compat.h to linux/compat.h in kernel/*.c,
+>    but asm/compat.h is still necessary in ptrace.c and process.c because
+>    they use is_compat_thread().
+> 
+> Signed-off-by: AKASHI Takahiro <takahiro.akashi@linaro.org>
 
-I believe this issue has been brought to lkml :
-https://lkml.org/lkml/2014/2/24/458
-although this patch only tackle a (small) part of the issue.
+  Acked-by: Will Deacon <will.deacon@arm.com>
 
-Additionnaly, this patch improves error reporting in
-tools/perf/util/data.c open_file_write
-Currently, if the call to open fails, the user is unaware of it.
-This patch logs the error, before returning the error code to the caller.
-
-Signed-off-by: Adrien BAK <adrien.bak@metascale.org>
-
----
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index eb524f9..8ce62ef 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -374,7 +374,7 @@ static int __cmd_record(struct record *rec, int 
-argc, const char **argv)
-
-      session = perf_session__new(file, false, NULL);
-      if (session == NULL) {
--        pr_err("Not enough memory for reading perf file header\n");
-+        pr_err("Perf session creation failed.\n");
-          return -1;
-      }
-
-diff --git a/tools/perf/util/data.c b/tools/perf/util/data.c
-index 1fbcd8b..ff2ced7 100644
---- a/tools/perf/util/data.c
-+++ b/tools/perf/util/data.c
-@@ -86,10 +86,16 @@ static int open_file_read(struct perf_data_file *file)
-
-  static int open_file_write(struct perf_data_file *file)
-  {
-+    int fd;
-      if (check_backup(file))
-          return -1;
-
--    return open(file->path, O_CREAT|O_RDWR|O_TRUNC, S_IRUSR|S_IWUSR);
-+    fd = open(file->path, O_CREAT|O_RDWR|O_TRUNC, S_IRUSR|S_IWUSR);
-+
-+    if (fd < 0)
-+        pr_err("failed to open %s : %s\n", file->path, strerror(errno));
-+
-+    return fd;
-  }
-
-  static int open_file(struct perf_data_file *file)
-
+Will
