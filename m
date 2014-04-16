@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161620AbaDPO7e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 10:59:34 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:48906 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161089AbaDPO7c (ORCPT
+	id S1161627AbaDPPD3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 11:03:29 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:54853 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756319AbaDPPD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 10:59:32 -0400
-Message-ID: <534E9ACA.2090008@oracle.com>
-Date: Wed, 16 Apr 2014 10:59:22 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "linux-mm@kvack.org" <linux-mm@kvack.org>
-CC: Hugh Dickins <hughd@google.com>, Christoph Lameter <cl@gentwo.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: mm: NULL ptr deref in remove_migration_pte
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 16 Apr 2014 11:03:26 -0400
+Date: Wed, 16 Apr 2014 10:03:23 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Luis Henriques <luis.henriques@canonical.com>,
+        Eric Piel <eric.piel@tremplin-utc.net>,
+        Robert Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Ziljstra <peterz@infradead.org>
+Subject: Re: BUG: using __this_cpu_write() in preemptible [00000000] code:
+ systemd-udevd/497
+In-Reply-To: <20140415155453.54d0ca97ca88905594b5100f@linux-foundation.org>
+Message-ID: <alpine.DEB.2.10.1404160958440.9704@gentwo.org>
+References: <87mwfn4gah.fsf@canonical.com> <20140415155453.54d0ca97ca88905594b5100f@linux-foundation.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Tue, 15 Apr 2014, Andrew Morton wrote:
 
-While fuzzing with trinity inside a KVM tools guest running latest -next
-kernel I've stumbled on the following:
+> On Tue, 15 Apr 2014 00:55:50 +0100 Luis Henriques <luis.henriques@canonical.com> wrote:
+>
+> > (Cc'ing both lis3lv02d and ACPI maintainers)
+> >
+> > Since commit 188a81409ff7de1c5aae947a96356ddd8ff4aaa3 ("percpu: add
+> > preemption checks to __this_cpu ops") I've been seeing the following:
+> >
+> > [   10.485588] hp_accel: hardware type HPB64xx found
+> > [   10.485772] BUG: using __this_cpu_write() in preemptible [00000000] code: systemd-udevd/497
+> > [   10.485777] caller is __this_cpu_preempt_check+0x13/0x20
+> > [   10.485781] CPU: 3 PID: 497 Comm: systemd-udevd Tainted: G        W     3.15.0-rc1 #9
+> > [   10.485783] Hardware name: Hewlett-Packard HP EliteBook 8470p/179B, BIOS 68ICF Ver. F.02 04/27/2012
+> > [   10.485785]  ffffffff81a14db5 ffff88022c80b8e0 ffffffff81604ba4 0000000000000003
+> > [   10.485789]  ffff88022c80b908 ffffffff81313431 0000000000000000 0000000000000032
+> > [   10.485793]  00000000000003e8 ffff88022c80b918 ffffffff81313473 ffff88022c80b928
+> > [   10.485796] Call Trace:
+> > [   10.485802]  [<ffffffff81604ba4>] dump_stack+0x4e/0x7a
+> > [   10.485805]  [<ffffffff81313431>] check_preemption_disabled+0xe1/0xf0
+> > [   10.485808]  [<ffffffff81313473>] __this_cpu_preempt_check+0x13/0x20
+> > [   10.485813]  [<ffffffff810e4eb8>] touch_nmi_watchdog+0x28/0x40
+>
+> Presumably touch_softlockup_watchdog() being called with preemption
+> enabled.  Which is a legitimate thing to do and there's no point in
+> disabling preemption just to squish a runtime warning.
+>
+> Christoph, this thing has iirc caught a couple of very minor bugs but
+> it is being quite a pain in the rear.   I'm inclined to revert?
 
-[ 2552.313602] BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
-[ 2552.315878] IP: __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
-[ 2552.315878] PGD 465836067 PUD 465837067 PMD 0
-[ 2552.315878] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 2552.315878] Dumping ftrace buffer:
-[ 2552.315878]    (ftrace buffer empty)
-[ 2552.315878] Modules linked in:
-[ 2552.315878] CPU: 6 PID: 16173 Comm: trinity-c364 Tainted: G        W     3.15.0-rc1-next-20140415-sasha-00020-gaa90d09 #398
-[ 2552.315878] task: ffff88046548b000 ti: ffff88044e532000 task.ti: ffff88044e532000
-[ 2552.320286] RIP: __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
-[ 2552.320286] RSP: 0018:ffff88044e5339c8  EFLAGS: 00010002
-[ 2552.320286] RAX: 0000000000000082 RBX: ffff88046548b000 RCX: 0000000000000000
-[ 2552.320286] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000018
-[ 2552.320286] RBP: ffff88044e533ab8 R08: 0000000000000001 R09: 0000000000000000
-[ 2552.320286] R10: ffff88046548b000 R11: 0000000000000001 R12: 0000000000000000
-[ 2552.320286] R13: 0000000000000018 R14: 0000000000000000 R15: 0000000000000000
-[ 2552.320286] FS:  00007fd286a9a700(0000) GS:ffff88018b000000(0000) knlGS:0000000000000000
-[ 2552.320286] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 2552.320286] CR2: 0000000000000018 CR3: 0000000442c17000 CR4: 00000000000006a0
-[ 2552.320286] DR0: 0000000000695000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 2552.320286] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000600
-[ 2552.320286] Stack:
-[ 2552.320286]  ffff88044e5339e8 ffffffff9f56e761 0000000000000000 ffff880315c13000
-[ 2552.320286]  ffff88044e533a38 ffffffff9c193f0d ffffffff9c193e34 ffff8804654e8000
-[ 2552.320286]  ffff8804654e8000 0000000000000001 ffff88046548b000 0000000000000007
-[ 2552.320286] Call Trace:
-[ 2552.320286] ? _raw_spin_unlock_irq (arch/x86/include/asm/preempt.h:98 include/linux/spinlock_api_smp.h:169 kernel/locking/spinlock.c:199)
-[ 2552.320286] ? finish_task_switch (include/linux/tick.h:206 kernel/sched/core.c:2163)
-[ 2552.320286] ? finish_task_switch (arch/x86/include/asm/current.h:14 kernel/sched/sched.h:993 kernel/sched/core.c:2145)
-[ 2552.320286] ? retint_restore_args (arch/x86/kernel/entry_64.S:1040)
-[ 2552.320286] ? __this_cpu_preempt_check (lib/smp_processor_id.c:63)
-[ 2552.320286] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2557 kernel/locking/lockdep.c:2599)
-[ 2552.320286] lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
-[ 2552.320286] ? remove_migration_pte (mm/migrate.c:137)
-[ 2552.320286] ? retint_restore_args (arch/x86/kernel/entry_64.S:1040)
-[ 2552.320286] _raw_spin_lock (include/linux/spinlock_api_smp.h:143 kernel/locking/spinlock.c:151)
-[ 2552.320286] ? remove_migration_pte (mm/migrate.c:137)
-[ 2552.320286] remove_migration_pte (mm/migrate.c:137)
-[ 2552.320286] rmap_walk (mm/rmap.c:1628 mm/rmap.c:1699)
-[ 2552.320286] remove_migration_ptes (mm/migrate.c:224)
-[ 2552.320286] ? new_page_node (mm/migrate.c:107)
-[ 2552.320286] ? remove_migration_pte (mm/migrate.c:195)
-[ 2552.320286] migrate_pages (mm/migrate.c:922 mm/migrate.c:960 mm/migrate.c:1126)
-[ 2552.320286] ? perf_trace_mm_numa_migrate_ratelimit (mm/migrate.c:1574)
-[ 2552.320286] migrate_misplaced_page (mm/migrate.c:1733)
-[ 2552.320286] __handle_mm_fault (mm/memory.c:3762 mm/memory.c:3812 mm/memory.c:3925)
-[ 2552.320286] ? __const_udelay (arch/x86/lib/delay.c:126)
-[ 2552.320286] ? __rcu_read_unlock (kernel/rcu/update.c:97)
-[ 2552.320286] handle_mm_fault (mm/memory.c:3948)
-[ 2552.320286] __get_user_pages (mm/memory.c:1851)
-[ 2552.320286] ? preempt_count_sub (kernel/sched/core.c:2527)
-[ 2552.320286] __mlock_vma_pages_range (mm/mlock.c:255)
-[ 2552.320286] __mm_populate (mm/mlock.c:711)
-[ 2552.320286] SyS_mlockall (include/linux/mm.h:1799 mm/mlock.c:817 mm/mlock.c:791)
-[ 2552.320286] tracesys (arch/x86/kernel/entry_64.S:749)
-[ 2552.320286] Code: 85 2d 1e 00 00 48 c7 c1 d7 68 6c a0 48 c7 c2 47 11 6c a0 31 c0 be fa 0b 00 00 48 c7 c7 91 68 6c a0 e8 1c 6d f9 ff e9 07 1e 00 00 <49> 81 7d 00 80 31 76 a2 b8 00 00 00 00 44 0f 44 c0 eb 07 0f 1f
-[ 2552.320286] RIP __lock_acquire (kernel/locking/lockdep.c:3070 (discriminator 1))
-[ 2552.320286]  RSP <ffff88044e5339c8>
-[ 2552.320286] CR2: 0000000000000018
+Well this preemption check functionality was strongly desired by Peter
+Zilkstra and Ingo Molnar and made a precondition for more extensive use of
+the this_cpu operations. My patches to various subsystems were rejected
+because these operations were deemed unsafe without those checks.
 
-
-Thanks,
-Sasha
+The simple thing to do in these cases is to use switch from __this_cpu_*
+to raw_cpu ops to squish these warnings.
