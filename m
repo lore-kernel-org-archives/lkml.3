@@ -1,89 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756588AbaDPXzN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 19:55:13 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:10925 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753294AbaDPXzL (ORCPT
+	id S1756937AbaDPX6b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 19:58:31 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:33871 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752083AbaDPX63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 19:55:11 -0400
-X-IronPort-AV: E=Sophos;i="4.97,875,1389715200"; 
-   d="scan'208";a="29365432"
-Message-ID: <534F193F.2070600@cn.fujitsu.com>
-Date: Thu, 17 Apr 2014 07:58:55 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Wed, 16 Apr 2014 19:58:29 -0400
+Date: Thu, 17 Apr 2014 02:58:10 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Yves Deweerdt <yves.deweerdt.linux@gmail.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Serban Constantinescu <serban.constantinescu@arm.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Bojan Prtvar <prtvar.b@gmail.com>, mathieu.maret@gmail.com
+Subject: Re: [PATCH] staging: android: binder.c: avoid sparse checker
+ warning: cast removes address space of expression
+Message-ID: <20140416235810.GU26890@mwanda>
+References: <534EEB29.9020900@gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] workqueue: add __WQ_FREEZING and remove POOL_FREEZING
-References: <20130421012925.GA19097@mtj.dyndns.org> <1395741364-19489-1-git-send-email-laijs@cn.fujitsu.com> <20140416195109.GD22569@htj.dyndns.org>
-In-Reply-To: <20140416195109.GD22569@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <534EEB29.9020900@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2014 03:51 AM, Tejun Heo wrote:
-> Hello,
+On Wed, Apr 16, 2014 at 10:42:17PM +0200, Yves Deweerdt wrote:
 > 
-> On Tue, Mar 25, 2014 at 05:56:04PM +0800, Lai Jiangshan wrote:
->> freezing is nothing related to pools, but POOL_FREEZING adds a connection,
->> and causes freeze_workqueues_begin() and thaw_workqueues() complicated.
->>
->> Since freezing is workqueue instance attribute, so we introduce __WQ_FREEZING
->> to wq->flags instead and remove POOL_FREEZING.
->>
->> we set __WQ_FREEZING only when freezable(to simplify pwq_adjust_max_active()),
->> make freeze_workqueues_begin() and thaw_workqueues() fast skip non-freezable wq.
+> __user should be kept when casting to struct binder_version *
 > 
-> Please wrap the description to 80 columns.
-> 
->> @@ -3730,18 +3726,13 @@ static void pwq_unbound_release_workfn(struct work_struct *work)
->>  static void pwq_adjust_max_active(struct pool_workqueue *pwq)
->>  {
->>  	struct workqueue_struct *wq = pwq->wq;
->> -	bool freezable = wq->flags & WQ_FREEZABLE;
->>  
->> -	/* for @wq->saved_max_active */
->> +	/* for @wq->saved_max_active and @wq->flags */
->>  	lockdep_assert_held(&wq->mutex);
->>  
->> -	/* fast exit for non-freezable wqs */
->> -	if (!freezable && pwq->max_active == wq->saved_max_active)
->> -		return;
->> -
-> 
-> Why are we removing the above?  Can't we still test __WQ_FREEZING as
-> we're holding wq->mutex?  I don't really mind removing the
-> optimization but the patch description at least has to explain what's
-> going on.
-
-This part was in other old patch: https://lkml.org/lkml/2013/4/3/756
-I admit the changelogs(old patch&this) are bad.
-But I still consider it would be better if we split it to two patches:
-(https://lkml.org/lkml/2013/4/3/748 & https://lkml.org/lkml/2013/4/3/756)
-
-There are different aims in the patches.
-
-Any thinks? And sorry for I didn't keep to push the patches at that time.
-Thanks
-Lai
-
-> 
-> ...
->>  	list_for_each_entry(wq, &workqueues, list) {
->> +		if (!(wq->flags & WQ_FREEZABLE))
->> +			continue;
-> 
-> Ah, okay, you're not calling the function at all if WQ_FREEZABLE is
-> not set.  I couldn't really understand what you were trying to say in
-> the patch description.  Can you please try to refine the description
-> more?  It's better to be verbose and clear than short and difficult to
-> understand.
-> 
-> Thanks.
 > 
 
+Mathieu sent this one earlier.
+http://driverdev.linuxdriverproject.org/pipermail/driverdev-devel/2014-April/048614.html
+
+His is perfect, except that he missed the space in the ": {", but it's
+still ok.
+
+regards,
+dan carpenter
+
+> Signed-off-by: Yves Deweerdt <yves.deweerdt.linux@gmail.com>
+> ---
+>  drivers/staging/android/binder.c | 9 +++++++--
+>  1 file changed, 7 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+> index cfe4bc8..0f74e43 100644
+> --- a/drivers/staging/android/binder.c
+> +++ b/drivers/staging/android/binder.c
+> @@ -2683,16 +2683,21 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+>  		binder_free_thread(proc, thread);
+>  		thread = NULL;
+>  		break;
+> -	case BINDER_VERSION:
+> +	case BINDER_VERSION: {
+> +		struct binder_version __user *bv =
+> +			(struct binder_version __user *)ubuf;
+> +
+>  		if (size != sizeof(struct binder_version)) {
+>  			ret = -EINVAL;
+>  			goto err;
+>  		}
+> -		if (put_user(BINDER_CURRENT_PROTOCOL_VERSION, &((struct binder_version *)ubuf)->protocol_version)) {
+> +		if (put_user(BINDER_CURRENT_PROTOCOL_VERSION,
+> +				&(bv->protocol_version))) {
+>  			ret = -EINVAL;
+>  			goto err;
+>  		}
+>  		break;
+> +	}
+>  	default:
+>  		ret = -EINVAL;
+>  		goto err;
+> -- 
+> 1.8.3.2
+> 
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
