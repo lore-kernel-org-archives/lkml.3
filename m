@@ -1,124 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149AbaDPK5i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:57:38 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:36299 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755686AbaDPK5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:57:34 -0400
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-To: <kishon@ti.com>, <santosh.shilimkar@ti.com>
-CC: <balbi@ti.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [PATCH v2] phy: core: make NULL a valid phy reference if !CONFIG_GENERIC_PHY
-Date: Wed, 16 Apr 2014 14:48:21 +0300
-Message-ID: <1397648901-4450-1-git-send-email-grygorii.strashko@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1755460AbaDPLCt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 07:02:49 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:38004 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755274AbaDPLCr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 07:02:47 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f5-b7fc96d000004885-9d-534e6355cad9
+Content-transfer-encoding: 8BIT
+Message-id: <1397646165.6147.16.camel@AMDC1943>
+Subject: Re: [PATCH v5 0/9] mfd: max14577: Add support for MAX77836
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Lee Jones <lee.jones@linaro.org>, MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Wed, 16 Apr 2014 13:02:45 +0200
+In-reply-to: <534E60C6.4080005@samsung.com>
+References: <1397467040-30502-1-git-send-email-k.kozlowski@samsung.com>
+ <20140416102846.GL4754@lee--X1> <1397645078.6147.11.camel@AMDC1943>
+ <534E60C6.4080005@samsung.com>
+X-Mailer: Evolution 3.8.4-0ubuntu1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrALMWRmVeSWpSXmKPExsVy+t/xa7qhyX7BBpNvKVpsnLGe1WLqwyds
+	Fte/PGe1ONv0ht3i/tejjBbfrnQwWVzeNYfNYu2Ru+wWtxtXsFmc7mZ14PLYOesuu8emVZ1s
+	Hneu7WHzmHcy0KNvyypGj8+b5ALYorhsUlJzMstSi/TtErgytpy7xVSwXbjiyu+LzA2MR/i7
+	GDk5JARMJBase8wEYYtJXLi3nq2LkYtDSGApo8S777NZQRK8AoISPybfY+li5OBgFpCXOHIp
+	GyTMLKAuMWneImaI+s+MEs939kDV60t8WLiNDcQWFnCWWHHuK9gCNgFjic3Ll4DFRQQ0JGb+
+	vcII0sws8J5J4tma+2BFLAKqEj8fNIMVcQpoSzxceh/qonWMEntfvIc6VUni3Lo1jBMYBWYh
+	OXAWwoGzkBy4gJF5FaNoamlyQXFSeq6RXnFibnFpXrpecn7uJkZILHzdwbj0mNUhRgEORiUe
+	3hk5vsFCrIllxZW5hxglOJiVRHgbI/2ChXhTEiurUovy44tKc1KLDzEycXBKNTB6n8pVtxEx
+	mGV5K8b1YTf3+80Vs6ym6i75wdOWeS4qhffQwy9rQrMyg9/vm7/6/3/JRQvFNLfUbtHc2Nqy
+	//H9qirfpkNf/ZqelEwxMVYM/LhZoTj14ZK/Ru2L8rcYOaRNsNuS8amPyV59PdPpRwc9/9jJ
+	VrgXqvRsZdbemG9r/noS69enejZKLMUZiYZazEXFiQDQxzoxYwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes a regression on Keystone 2 platforms caused by patch
-57303488cd37da58263e842de134dc65f7c626d5
-"usb: dwc3: adapt dwc3 core to use Generic PHY Framework" which adds
-optional support of generic phy in DWC3 core.
+On śro, 2014-04-16 at 19:51 +0900, Chanwoo Choi wrote:
+> Hi Krzysztof,
+> 
+> On 04/16/2014 07:44 PM, Krzysztof Kozlowski wrote:
+> > On śro, 2014-04-16 at 11:28 +0100, Lee Jones wrote:
+> >>> This is first part of fifth version of patchset adding support for
+> >>> MAX77836 device to the max14577 driver.
+> >>>
+> >>> I decided to split the patchset into smaller parts. I hope this would
+> >>> help in getting necessary review/acks from maintainers.
+> >>>
+> >>> The first part introduces changes in max14577 driver and adds support
+> >>> for MAX77836 in MFD, extcon and regulator drivers. Most of these
+> >>> patches already have required acks from maintainers.
+> >>> Full v4 patchset can be found here:
+> >>> http://thread.gmane.org/gmane.linux.kernel/1654267
+> >>
+> >> So what's the plan for this driver now? What's missing? Do you have
+> >> all the Acks you need? If so, I'm happy to apply this patch-set and
+> >> supply a pull-request to the other maintainers.
+> > 
+> > Next patches (part 2):
+> > 1. charger: max14577: Add support for MAX77836 charger
+> > 2. power: max17040: Add ID for MAX77836 Fuel Gauge block
+> > 3. regulator/mfd: max14577: Export symbols for calculating charger 
+> >    current
+> > 4. charger: max14577: Configure battery-dependent settings from DTS
+> > 5. Documentation: mfd: max14577: Add device tree bindings document
+> > 6. regulator: max14577: Implement SUSPEND mode for MAX77836 LDO-s
+> > 
+> > They are quite independent from each other so I think it would be the
+> > best if you could prepare an immutable branch with first part of
+> > patches.
+> 
+> I have to modify all extcon device drivers for some reason,
+> If your patchset including extcon patch apply other git repository,
+> this patchset may have potential merge conflict.
+> 
+> If you possible, following patchset would divide two patchset for each mfd/extcon
+> to remove potential merge conflict in 3.15 merge window.
+> - [PATCH v5 0/9] mfd: max14577: Add support for MAX77836
 
-On Keystone 2 platforms the USB is not working now because
-CONFIG_GENERIC_PHY isn't set and, as result, Generic PHY APIs stubs
-return -ENOSYS always. The log shows:
- dwc3 2690000.dwc3: failed to initialize core
- dwc3: probe of 2690000.dwc3 failed with error -38
+I think we can resolve this after preparing by Lee the immutable branch
+with this patches. You could pull it so your changes to extcon-max14577
+would be on newest version.
 
-Hence, fix it by making NULL a valid phy reference in Generic PHY
-APIs stubs in the same way as it was done by the patch
-04c2facad8fee66c981a51852806d8923336f362 "drivers: phy: Make NULL
-a valid phy reference".
+It would be difficult to split this part1 patchset into two patchsets
+because the changes in extcon driver depend on changes in headers for
+IRQ-s. Only the patch:
+ - [PATCH v5 8/9] extcon: max14577: Add support for MAX77836
+could be easily taken out and split.
 
-CC: Kishon Vijay Abraham I <kishon@ti.com>
-CC: Felipe Balbi <balbi@ti.com>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
----
+Best regards,
+Krzysztof
 
-This fixes for regression in 3.15-rc1 - USB doesn't work on Keystone 2
 
-Changes in v2:
-- the same check added at stubs
-   phy_pm_runtime_get(struct phy *phy)
-   phy_pm_runtime_get_sync(struct phy *phy)
-   phy_pm_runtime_put(struct phy *phy)
-   phy_pm_runtime_put_sync(struct phy *phy)
-
- include/linux/phy/phy.h |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
-
-diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-index e2f5ca9..2760744 100644
---- a/include/linux/phy/phy.h
-+++ b/include/linux/phy/phy.h
-@@ -174,21 +174,29 @@ void devm_of_phy_provider_unregister(struct device *dev,
- #else
- static inline int phy_pm_runtime_get(struct phy *phy)
- {
-+	if (!phy)
-+		return 0;
- 	return -ENOSYS;
- }
- 
- static inline int phy_pm_runtime_get_sync(struct phy *phy)
- {
-+	if (!phy)
-+		return 0;
- 	return -ENOSYS;
- }
- 
- static inline int phy_pm_runtime_put(struct phy *phy)
- {
-+	if (!phy)
-+		return 0;
- 	return -ENOSYS;
- }
- 
- static inline int phy_pm_runtime_put_sync(struct phy *phy)
- {
-+	if (!phy)
-+		return 0;
- 	return -ENOSYS;
- }
- 
-@@ -204,21 +212,29 @@ static inline void phy_pm_runtime_forbid(struct phy *phy)
- 
- static inline int phy_init(struct phy *phy)
- {
-+	if (!phy)
-+		return 0;
- 	return -ENOSYS;
- }
- 
- static inline int phy_exit(struct phy *phy)
- {
-+	if (!phy)
-+		return 0;
- 	return -ENOSYS;
- }
- 
- static inline int phy_power_on(struct phy *phy)
- {
-+	if (!phy)
-+		return 0;
- 	return -ENOSYS;
- }
- 
- static inline int phy_power_off(struct phy *phy)
- {
-+	if (!phy)
-+		return 0;
- 	return -ENOSYS;
- }
- 
--- 
-1.7.9.5
 
