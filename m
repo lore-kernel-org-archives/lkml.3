@@ -1,113 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113AbaDPSlz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 14:41:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3998 "EHLO mx1.redhat.com"
+	id S1756458AbaDPSpz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 14:45:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40951 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755983AbaDPSlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 14:41:52 -0400
+	id S1756082AbaDPSly (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 14:41:54 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 05/11] perf tools: Add hist.percentage config option
-Date: Wed, 16 Apr 2014 20:41:33 +0200
-Message-Id: <1397673699-25824-6-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1397673699-25824-1-git-send-email-jolsa@redhat.com>
-References: <1397673699-25824-1-git-send-email-jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ramkumar Ramachandra <artagnon@gmail.com>
+Subject: [GIT PULL 00/11] perf/core improvements and fixes
+Date: Wed, 16 Apr 2014 20:41:28 +0200
+Message-Id: <1397673699-25824-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+hi Ingo,
+please consider pulling
 
-Add hist.percentage option for setting default value of the
-symbol_conf.filter_relative.  It affects the output of various perf
-commands (like perf report, top and diff) only if filter(s) applied.
+thanks,
+jirka
 
-An user can write .perfconfig file like below to show absolute
-percentage of filtered entries by default:
 
-  $ cat ~/.perfconfig
-  [hist]
-  percentage = absolute
+The following changes since commit fbdd17ec5ce2e5e4027356fcfde769b88d15702f:
 
-And it can be changed through command line:
+  Merge branch 'perf-core-for-mingo' into perf/urgent (2014-04-14 16:45:39 +0200)
 
-  $ perf report --percentage relative
+are available in the git repository at:
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1397145720-8063-6-git-send-email-namhyung@kernel.org
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
+
+for you to fetch changes up to a83edb2dfc5989fbadc594109c933bae528a2809:
+
+  perf sched: Introduce --list-cmds for use by scripts (2014-04-16 17:16:05 +0200)
+
+----------------------------------------------------------------
+perf/core improvements and fixes:
+
+User visible:
+
+. Add --percentage option to control absolute/relative percentage output (Namhyung Kim)
+
+Developer stuff:
+
+. Add --list-cmds to 'kmem', 'mem', 'lock' and 'sched', for use by completion scripts (Ramkumar Ramachandra)
+
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/builtin-diff.c | 2 ++
- tools/perf/util/config.c  | 4 ++++
- tools/perf/util/hist.c    | 8 ++++++++
- tools/perf/util/hist.h    | 1 +
- 4 files changed, 15 insertions(+)
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index c903fe1..6ef80f2 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -1134,6 +1134,8 @@ static int data_init(int argc, const char **argv)
- 
- int cmd_diff(int argc, const char **argv, const char *prefix __maybe_unused)
- {
-+	perf_config(perf_default_config, NULL);
-+
- 	sort_order = diff__default_sort_order;
- 	argc = parse_options(argc, argv, options, diff_usage, 0);
- 
-diff --git a/tools/perf/util/config.c b/tools/perf/util/config.c
-index 3e0fdd3..24519e1 100644
---- a/tools/perf/util/config.c
-+++ b/tools/perf/util/config.c
-@@ -11,6 +11,7 @@
- #include "util.h"
- #include "cache.h"
- #include "exec_cmd.h"
-+#include "util/hist.h"  /* perf_hist_config */
- 
- #define MAXNAME (256)
- 
-@@ -355,6 +356,9 @@ int perf_default_config(const char *var, const char *value,
- 	if (!prefixcmp(var, "core."))
- 		return perf_default_core_config(var, value);
- 
-+	if (!prefixcmp(var, "hist."))
-+		return perf_hist_config(var, value);
-+
- 	/* Add other config variables here. */
- 	return 0;
- }
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 3c2dd23..5a89247 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -956,3 +956,11 @@ int parse_filter_percentage(const struct option *opt __maybe_unused,
- 
- 	return 0;
- }
-+
-+int perf_hist_config(const char *var, const char *value)
-+{
-+	if (!strcmp(var, "hist.percentage"))
-+		return parse_filter_percentage(NULL, value, 0);
-+
-+	return 0;
-+}
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index a4ec336..5a0343e 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -258,5 +258,6 @@ unsigned int hists__sort_list_width(struct hists *hists);
- struct option;
- int parse_filter_percentage(const struct option *opt __maybe_unused,
- 			    const char *arg, int unset __maybe_unused);
-+int perf_hist_config(const char *var, const char *value);
- 
- #endif	/* __PERF_HIST_H */
--- 
-1.8.3.1
+----------------------------------------------------------------
+Namhyung Kim (7):
+      perf hists: Add support for showing relative percentage
+      perf report: Add --percentage option
+      perf top: Add --percentage option
+      perf diff: Add --percentage option
+      perf tools: Add hist.percentage config option
+      perf ui/tui: Add 'F' hotkey to toggle percentage output
+      perf tools: Show absolute percentage by default
 
+Ramkumar Ramachandra (4):
+      perf kmem: Introduce --list-cmds for use by scripts
+      perf mem: Introduce --list-cmds for use by scripts
+      perf lock: Introduce --list-cmds for use by scripts
+      perf sched: Introduce --list-cmds for use by scripts
+
+ tools/perf/Documentation/perf-diff.txt   | 21 ++++++++++--
+ tools/perf/Documentation/perf-report.txt | 24 +++++++++----
+ tools/perf/Documentation/perf-top.txt    | 18 ++++++++--
+ tools/perf/builtin-diff.c                | 32 ++++++++++++-----
+ tools/perf/builtin-kmem.c                |  8 +++--
+ tools/perf/builtin-lock.c                | 10 +++---
+ tools/perf/builtin-mem.c                 | 15 ++++----
+ tools/perf/builtin-report.c              | 22 ++++++++++--
+ tools/perf/builtin-sched.c               | 10 +++---
+ tools/perf/builtin-top.c                 |  8 +++--
+ tools/perf/perf-completion.sh            |  4 +--
+ tools/perf/ui/browsers/hists.c           | 39 ++++++++++++++++-----
+ tools/perf/ui/gtk/hists.c                | 11 +++---
+ tools/perf/ui/hist.c                     |  8 ++---
+ tools/perf/util/config.c                 |  4 +++
+ tools/perf/util/hist.c                   | 59 +++++++++++++++++++++++++-------
+ tools/perf/util/hist.h                   | 10 ++++++
+ tools/perf/util/symbol.h                 |  3 +-
+ 18 files changed, 230 insertions(+), 76 deletions(-)
