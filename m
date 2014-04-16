@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751501AbaDPAd0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 20:33:26 -0400
-Received: from mail-bn1lp0142.outbound.protection.outlook.com ([207.46.163.142]:46364
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1751019AbaDPAwC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 20:52:02 -0400
+Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:4937
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750885AbaDPAdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 20:33:25 -0400
+	id S1750893AbaDPAwA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 15 Apr 2014 20:52:00 -0400
 From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Subject: RE: [PATCH] clocksource: vf_pit_timer: fix pit_read_sched_clock
 Thread-Topic: [PATCH] clocksource: vf_pit_timer: fix pit_read_sched_clock
-Thread-Index: AQHPWJ5Dmf5uRix0PEiReOUo4THmtZsSnUCAgADIKWA=
-Date: Wed, 16 Apr 2014 00:33:21 +0000
-Message-ID: <a8ceaacf40194e60b85c6c1af17aabe4@DM2PR03MB509.namprd03.prod.outlook.com>
+Thread-Index: AQHPWJ5Dmf5uRix0PEiReOUo4THmtZsSnUCAgACby4CAAC3BgA==
+Date: Wed, 16 Apr 2014 00:51:46 +0000
+Message-ID: <1c0b5bd606d34ecaa0742c9aaa17e7cf@DM2PR03MB509.namprd03.prod.outlook.com>
 References: <1397558929-12123-1-git-send-email-Li.Xiubo@freescale.com>
  <534D27AB.7070109@linaro.org>
-In-Reply-To: <534D27AB.7070109@linaro.org>
+ <alpine.DEB.2.02.1404152352560.22697@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1404152352560.22697@ionos.tec.linutronix.de>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 x-originating-ip: [123.151.195.49]
 x-forefront-prvs: 01834E39B7
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(189002)(199002)(164054003)(92566001)(2201001)(20776003)(81542001)(80976001)(99396002)(85852003)(83072002)(86362001)(2656002)(87936001)(77982001)(99286001)(33646001)(76176999)(46102001)(4396001)(54356999)(81342001)(74662001)(31966008)(76482001)(79102001)(74502001)(50986999)(66066001)(77096999)(83322001)(80022001)(74316001)(76576001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB511;H:DM2PR03MB509.namprd03.prod.outlook.com;FPR:E869F52D.1CF2D4E2.6DF9B5A2.A8FE3233.20117;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(164054003)(199002)(189002)(51704005)(81342001)(33646001)(76176999)(54356999)(4396001)(46102001)(77096999)(80022001)(83322001)(76576001)(74316001)(79102001)(76482001)(31966008)(74662001)(50986999)(66066001)(74502001)(558084003)(81542001)(99396002)(80976001)(92566001)(20776003)(77982001)(87936001)(99286001)(83072002)(85852003)(86362001)(2656002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB511;H:DM2PR03MB509.namprd03.prod.outlook.com;FPR:EF4BA23F.1CC3E5D2.6AE68ABB.58857ED0.20097;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
 X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3G0XYsf031422
 
-
-> > diff --git a/drivers/clocksource/vf_pit_timer.c
-> b/drivers/clocksource/vf_pit_timer.c
-> > index 02821b0..a918bc4 100644
-> > --- a/drivers/clocksource/vf_pit_timer.c
-> > +++ b/drivers/clocksource/vf_pit_timer.c
-> > @@ -54,7 +54,7 @@ static inline void pit_irq_acknowledge(void)
 > >
-> >   static u64 pit_read_sched_clock(void)
-> >   {
-> > -	return __raw_readl(clksrc_base + PITCVAL);
-> > +	return ~__raw_readl(clksrc_base + PITCVAL);
-> >   }
-> >
-> >   static int __init pit_clocksource_init(unsigned long rate)
-> >
+> > thanks for the patch but this has already been fixed [1] and is available in
+> > the timers/urgent branch.
 > 
-> Hi Xiubo,
-> 
-> thanks for the patch but this has already been fixed [1] and is
-> available in the timers/urgent branch.
+> It's in Linus tree already and tagged for stable.
 > 
 
-Good news and I will pull it.
+Yes, I have found it, I was developing this in the old tree...
+:)
 
 Thanks,
 
 BRs
 Xiubo
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
