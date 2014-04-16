@@ -1,103 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754958AbaDPJA5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 05:00:57 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:61800 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754284AbaDPJAy (ORCPT
+	id S1755041AbaDPJD4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 05:03:56 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58210 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822AbaDPJDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 05:00:54 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiRyAPJFTlN5LEcvPGdsb2JhbABZgwaDU4UKoiqTW4VggR4XAwEBAQE4NYIlAQEBBCcTHCMQCAMYCSUPBSUDBxoTh3vHIBcWjkwHhDgEmGWKaYskKw
-Date: Wed, 16 Apr 2014 19:00:51 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 16/19] VFS: use GFP_NOFS rather than GFP_KERNEL in
- __d_alloc.
-Message-ID: <20140416090051.GK15995@dastard>
-References: <20140416033623.10604.69237.stgit@notabene.brown>
- <20140416040337.10604.61837.stgit@notabene.brown>
- <20140416062520.GG15995@dastard>
- <20140416164941.37587da6@notabene.brown>
+	Wed, 16 Apr 2014 05:03:53 -0400
+Message-ID: <534E4775.8010009@ti.com>
+Date: Wed, 16 Apr 2014 12:03:49 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140416164941.37587da6@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fbdev <linux-fbdev@vger.kernel.org>
+Subject: [GIT PULL] fbdev fixes for 3.15
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="iniACn6ADpBHQPdGm7D3FdbwW9oJGGPEu"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 04:49:41PM +1000, NeilBrown wrote:
-> On Wed, 16 Apr 2014 16:25:20 +1000 Dave Chinner <david@fromorbit.com> wrote:
-> 
-> > On Wed, Apr 16, 2014 at 02:03:37PM +1000, NeilBrown wrote:
-> > > __d_alloc can be called with i_mutex held, so it is safer to
-> > > use GFP_NOFS.
-> > > 
-> > > lockdep reports this can deadlock when loop-back NFS is in use,
-> > > as nfsd may be required to write out for reclaim, and nfsd certainly
-> > > takes i_mutex.
-> > 
-> > But not the same i_mutex as is currently held. To me, this seems
-> > like a false positive? If you are holding the i_mutex on an inode,
-> > then you have a reference to the inode and hence memory reclaim
-> > won't ever take the i_mutex on that inode.
-> > 
-> > FWIW, this sort of false positive was a long stabding problem for
-> > XFS - we managed to get rid of most of the false positives like this
-> > by ensuring that only the ilock is taken within memory reclaim and
-> > memory reclaim can't be entered while we hold the ilock.
-> > 
-> > You can't do that with the i_mutex, though....
-> > 
-> > Cheers,
-> > 
-> > Dave.
-> 
-> I'm not sure this is a false positive.
-> You can call __d_alloc when creating a file and so are holding i_mutex on the
-> directory.
-> nfsd might also want to access that directory.
-> 
-> If there was only 1 nfsd thread, it would need to get i_mutex and do it's
-> thing before replying to that request and so before it could handle the
-> COMMIT which __d_alloc is waiting for.
+--iniACn6ADpBHQPdGm7D3FdbwW9oJGGPEu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-That seems wrong - the NFS client in __d_alloc holds a mutex on a
-NFS client directory inode. The NFS server can't access that
-specific mutex - it's on the other side of the "network". The NFS
-server accesses mutexs from local filesystems, so __d_alloc would
-have to be blocked on a local filesystem inode i_mutex for the nfsd
-to get hung up behind it...
+Hi Linus,
 
-However, my confusion comes from the fact that we do GFP_KERNEL
-memory allocation with the i_mutex held all over the place. If the
-problem is:
+Please pull fbdev fixes for 3.15.
 
-	local fs access -> i_mutex
-.....
-	nfsd -> i_mutex (blocked)
-.....
-	local fs access -> kmalloc(GFP_KERNEL)
-			-> direct reclaim
-			-> nfs_release_page
-			-> <send write/commit request to blocked nfsds>
-			   <deadlock>
+The drivers/video/Kconfig change in this pull request will conflict with =
+the
+fbdev reorder series, which is not yet in your tree. If that's an issue, =
+I can
+resend this without the Kconfig change.
 
-then why is it just __d_alloc that needs this fix?  Either this is a
-problem *everywhere* or it's not a problem at all.
+ Tomi
 
-If it's a problem everywhere it means that we simply can't allow
-reclaim from localhost NFS mounts to run from contexts that could
-block an NFSD. i.e. you cannot run NFS client memory reclaim from
-filesystems that are NFS server exported filesystems.....
+The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6=
+c5:
 
-Cheers,
+  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git tags/fbde=
+v-fixes-3.15
+
+for you to fetch changes up to c26ef3eb3c11274bad1b64498d0a134f85755250:
+
+  video: bf54x-lq043fb: fix build error (2014-04-15 12:44:16 +0300)
+
+----------------------------------------------------------------
+fbdev fixes for 3.15:
+
+- fix build errors for bf54x-lq043fb and imxfb
+- fbcon fix for da8xx-fb
+- omapdss fixes for hdmi audio, irq handling and fclk calculation
+
+----------------------------------------------------------------
+Alexander Shiyan (1):
+      video: imxfb: Select LCD_CLASS_DEVICE unconditionally
+
+Jon Ringle (1):
+      video: da8xx-fb: Fix casting of info->pseudo_palette
+
+Jyri Sarha (2):
+      OMAPDSS: Take pixelclock unit change into account in hdmi_compute_a=
+cr()
+      OMAPDSS: Change struct reg_field to dispc_reg_field
+
+Steven Miao (1):
+      video: bf54x-lq043fb: fix build error
+
+Tomi Valkeinen (2):
+      OMAPDSS: fix rounding when calculating fclk rate
+      OMAPDSS: fix shared irq handlers
+
+ drivers/video/Kconfig                 |  2 ++
+ drivers/video/bf54x-lq043fb.c         |  2 +-
+ drivers/video/da8xx-fb.c              | 10 +-----
+ drivers/video/omap2/dss/dispc.c       | 67 +++++++++++++++++++++++++++++=
+------
+ drivers/video/omap2/dss/dsi.c         | 20 +++++++++++
+ drivers/video/omap2/dss/dss.c         |  4 +--
+ drivers/video/omap2/dss/dss.h         |  6 ----
+ drivers/video/omap2/dss/hdmi_common.c |  8 ++---
+ 8 files changed, 87 insertions(+), 32 deletions(-)
+
+
+--iniACn6ADpBHQPdGm7D3FdbwW9oJGGPEu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTTkd1AAoJEPo9qoy8lh71tt0P/17jSYCuTlJbi2EMAskUKGAR
+rbJjNGSH1/d40wC9vIAIy4xb2BbUSAIL0HDdcSy8K+G27gGUWszMAII5yItt074o
+dUEtCdD7AuZxCYA83W65N7d2Yl+vq/7xFHhY47tauAbvzpZQMSy4UI6AGebWiK5G
+StZDd6wSNEGrt4IDawTctr3ZI/4eCLk8j9FgTstkIYCNinkAB33oGOLs1Rya5mx7
+d+0MIOkhdjrFTFSt4XHRRyhDoeDNpX97qDz2dpzSgduHzTRromJA4o2O4SnNwcbh
+0Adxz+Fkpj9Gty/BNghd/XNimqWc3nU70apvJoexriIESaJuk3wqHhxLqYzov2xn
+yzhjoSogB8sP/ymnVZndnI5gLPSw+KSwUlppgG3ap6Hg7foBNqKAObLrNCz+4AHe
+qMR2WU2+wKhFsyQTUz5JrT0DDfyx8yC4oYZAgVoAfRY9FEUYl9am/kaenzcwOmvS
+JwZPHbEPbS7otqZf53E/LRq90EExtPl387Bs7oT8WpX6yp9G/nbmY4m8MZnhE3Qo
+NTeMchiM+t1KdLKvXd4fda8M6M20mQepIWCXz60FVvs0bh89LQP7Jc2vAOJ/NSIo
+H9rQ2+YTIV4QzjAPnfIBG1sq7H1vtxbvwl2hB3bn1hoa7EGOaHmO6bg1jwmjxdM2
+wlviSCX9cW6ryGVH/9dD
+=69In
+-----END PGP SIGNATURE-----
+
+--iniACn6ADpBHQPdGm7D3FdbwW9oJGGPEu--
