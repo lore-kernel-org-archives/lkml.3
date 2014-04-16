@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756680AbaDPVP7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 17:15:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46405 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925AbaDPVP6 (ORCPT
+	id S1161301AbaDPVQK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 17:16:10 -0400
+Received: from www.linutronix.de ([62.245.132.108]:43413 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756689AbaDPVQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 17:15:58 -0400
-Date: Wed, 16 Apr 2014 14:15:56 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/mempool: warn about __GFP_ZERO usage
-Message-Id: <20140416141556.d50eef60d955d724ba1b02de@linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.11.1404141918170.1561@denkbrett>
-References: <alpine.LFD.2.11.1404141918170.1561@denkbrett>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Apr 2014 17:16:03 -0400
+Date: Wed, 16 Apr 2014 23:16:12 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, stable@vger.kernel.org
+Subject: Re: [patch 0/4] genirq/exynos timers: Fix the CPU hotplug wreckage
+ sanely
+In-Reply-To: <1397663995.19782.4.camel@AMDC1943>
+Message-ID: <alpine.DEB.2.02.1404162315270.22697@ionos.tec.linutronix.de>
+References: <20140416142106.537575971@linutronix.de> <1397663995.19782.4.camel@AMDC1943>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-224216975-1397682973=:22697"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 14 Apr 2014 19:23:34 +0200 (CEST) Sebastian Ott <sebott@linux.vnet.ibm.com> wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> Memory obtained via mempool_alloc is not always zeroed even when
-> called with __GFP_ZERO. Add a note and VM_BUG_ON statement to make
-> that clear.
+--8323329-224216975-1397682973=:22697
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Wed, 16 Apr 2014, Krzysztof Kozlowski wrote:
+> On śro, 2014-04-16 at 14:36 +0000, Thomas Gleixner wrote:
+> > @Krzysztof: Can you please retest the series? I've changed the core
+> > implementation versus the first attempt to make it less intrusive.
 > 
-> ..
->
-> @@ -200,6 +201,7 @@ void * mempool_alloc(mempool_t *pool, gf
->  	wait_queue_t wait;
->  	gfp_t gfp_temp;
->  
-> +	VM_BUG_ON(gfp_mask & __GFP_ZERO);
->  	might_sleep_if(gfp_mask & __GFP_WAIT);
->  
->  	gfp_mask |= __GFP_NOMEMALLOC;	/* don't allocate emergency reserves */
+> Works fine. Tested whole patchset on board with Exynos 3250.
 
-hm, BUG is a bit harsh.  How about
-
---- a/mm/mempool.c~mm-mempool-warn-about-__gfp_zero-usage-fix
-+++ a/mm/mempool.c
-@@ -201,7 +201,9 @@ void * mempool_alloc(mempool_t *pool, gf
- 	wait_queue_t wait;
- 	gfp_t gfp_temp;
- 
--	VM_BUG_ON(gfp_mask & __GFP_ZERO);
-+#ifdef CONFIG_DEBUG_VM
-+	WARN_ON_ONCE(gfp_mask & __GFP_ZERO);	/* Where's VM_WARN_ON_ONCE()? */
-+#endif
- 	might_sleep_if(gfp_mask & __GFP_WAIT);
- 
- 	gfp_mask |= __GFP_NOMEMALLOC;	/* don't allocate emergency reserves */
-
-?
+Great! Now I just need to sell it :)
+--8323329-224216975-1397682973=:22697--
