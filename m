@@ -1,99 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756606AbaDPUY5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 16:24:57 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:40169 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756075AbaDPUYy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 16:24:54 -0400
+	id S1161025AbaDPUZJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 16:25:09 -0400
+Received: from mga03.intel.com ([143.182.124.21]:19666 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752460AbaDPUZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 16:25:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,874,1389772800"; 
+   d="scan'208";a="419976991"
+From: "Zhang, Rui" <rui.zhang@intel.com>
+To: Borislav Petkov <bp@alien8.de>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: "Lu, Aaron" <aaron.lu@intel.com>, lkml <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng Z" <zheng.z.yan@intel.com>
+Subject: RE: Info: mapping multiple BARs. Your kernel is fine.
+Thread-Topic: Info: mapping multiple BARs. Your kernel is fine.
+Thread-Index: AQHPQFbTsRMjm351nUi0BPnn+Nj/O5rowCwAgACNNGCAAGOLAIAARaMA///+KACAKlHEAIAAnJdw
+Date: Wed, 16 Apr 2014 20:24:56 +0000
+Message-ID: <744357E9AAD1214791ACBA4B0B9092630128A097@SHSMSX101.ccr.corp.intel.com>
+References: <20140224162400.GE16457@pd.tnic>
+ <744357E9AAD1214791ACBA4B0B9092630121F201@SHSMSX101.ccr.corp.intel.com>
+ <CAErSpo55DjkGQB=7ksow34BpCObnY+o3eNnt0n5oQEh6Lfw1pw@mail.gmail.com>
+ <1558044.S1G2VU7srO@vostro.rjw.lan>
+ <CAErSpo4pDYMhHo6e-1TN6XDRO0xy0u8H+=oucFnrEK+kbjZvzw@mail.gmail.com>
+ <20140416190404.GA7070@pd.tnic>
+In-Reply-To: <20140416190404.GA7070@pd.tnic>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <20140416193918.GM31074@redhat.com>
-References: <20140416.085743.1614257692560892039.davem@davemloft.net>
- <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com>
- <1397664837.19767.410.camel@willson.li.ssimo.org> <CALCETrXn7b6UuALpGUVoyQYfR2uzk5tj2ABV=dkvtFNgqM5sxQ@mail.gmail.com>
- <20140416180642.GG31074@redhat.com> <CALCETrVUw5+vCCONy1VTXpskbY_eZFo2CtbehwV5Mhj4d4+icw@mail.gmail.com>
- <20140416182530.GB550@redhat.com> <CALCETrUs1js3Br81ZkiQnsuWduzOiqDe3aV0K_z_zw0znSuiag@mail.gmail.com>
- <20140416190657.GK31074@redhat.com> <CALCETrUv56awd+UoO_f8LLL2FVq-Hc6Bd6iBGMqWjVGpgxgTSg@mail.gmail.com>
- <20140416193918.GM31074@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 16 Apr 2014 13:24:32 -0700
-Message-ID: <CALCETrU9P+1Az+uuU_zE4uZZ-qmp5M_=YAXvfcK=rzQRbgoG5g@mail.gmail.com>
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing cgroup path
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Simo Sorce <ssorce@redhat.com>, David Miller <davem@davemloft.net>,
-        Tejun Heo <tj@kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3GKPMA6008296
 
-On Wed, Apr 16, 2014 at 12:39 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Wed, Apr 16, 2014 at 12:13:21PM -0700, Andy Lutomirski wrote:
->> On Wed, Apr 16, 2014 at 12:06 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> > On Wed, Apr 16, 2014 at 11:35:13AM -0700, Andy Lutomirski wrote:
->> >> On Wed, Apr 16, 2014 at 11:25 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
->> >> > On Wed, Apr 16, 2014 at 11:13:31AM -0700, Andy Lutomirski wrote:
->> >> >
->> >> > [..]
->> >> >> > Ok, so passing cgroup information is not necessarily a problem as long
->> >> >> > as it is not used for authentication. So say somebody is just logging
->> >> >> > all the client request and which cgroup client was in, that should not
->> >> >> > be a problem.
->> >> >>
->> >> >> Do you consider correct attribution of logging messages to be
->> >> >> important?  If so, then this is a kind of authentication, albeit one
->> >> >> where the impact of screwing it up is a bit lower.
->> >> >
->> >> > So not passing cgroup information makes attribution more correct. Just
->> >> > logging of information is authentication how? Both kernel and user space
->> >> > log message into /var/log/messages and kernel messages are prefixed with
->> >> > "kernel". So this somehow becomes are sort of authentication. I don't
->> >> > get it.
->> >>
->> >> I did a bad job of explaining what I meant.
->> >>
->> >> I think that, currently, log lines can be correctly attributed to the
->> >> kernel or to userspace, but determining where in userspace a log line
->> >> came from is a bit flaky.  One of the goals of these patches is to
->> >> make log attribution less flaky.  But if you want log attribution to
->> >> be completely correct, even in the presence of malicious programs,
->> >> then I think that the current patches aren't quite there.
->> >
->> > Why do you think that current patches are not there yet in the presence of
->> > malicious program. In your example, one program opened the socket and
->> > passed it to malicious program. And all the future messages are coming
->> > from malicious program. As long as receiver checks for SO_PASSCGROUP,
->> > it covers your example.
->>
->> This is backwards.  The malicious program opens the socket and passes
->> it to an unwitting non-malicious program.  That non-malicious program
->> sends messages, and the logging daemon things that the non-malicious
->> program actually intended for these messages to end up in the system
->> log.
->
-> Either way you look at it, I can't see the problem. Even without cgroup
-> info, in your example, a non-malicious programs error message will show
-> up at the receiver (Because malicious program passed that fd as stdout
-> to non-malicious program).
->
-> Are you complainig about this?
->
-> Or are you complaing that non-malicious program's cgroup info will show
-> up at the receiver. What's the problem with that. Receiver can use
-> SO_PASSCGROUP and get non-malicious programs cgroup and log it (along
-> with error message). I don't see where is the problem in that.
 
-I'm not talking about the risk that someone learns someone's cgroup.
-I'm talking about the risk that a malicious program can get a lot
-entry like: "whatever planted text"
-_SYSTEMD_UNIT=non-malicious.service.  That is, they've spoofed a log
-line.
 
-If you don't care about spoofing of log lines, then there's no point
-to having the kernel validate them anyway.
+> -----Original Message-----
+> From: Borislav Petkov [mailto:bp@alien8.de]
+> Sent: Wednesday, April 16, 2014 12:04 PM
+> To: Bjorn Helgaas; Rafael J. Wysocki
+> Cc: Zhang, Rui; Lu, Aaron; lkml; x86@kernel.org; Linux PCI; ACPI Devel
+> Maling List; Yinghai Lu; H. Peter Anvin; Stephane Eranian; Yan, Zheng Z
+> Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+> Importance: High
+> 
+> On Thu, Mar 20, 2014 at 02:48:30PM -0600, Bjorn Helgaas wrote:
+> > Right.  Even if we had this long-term solution, we'd still have
+> > Stephane's current problem, because the PNP0C02 _CRS is still wrong.
+> >
+> > We do have a drivers/pnp/quirks.c where we could conceivably adjust
+> > the PNP resource if we found the matching PCI device and MCHBAR.
+> That
+> > should solve Stephane's problem even with the current
+> > drivers/pnp/system.c.
+> 
+> Guys, this still triggers in -rc1. Do we have a fix or something
+> testable at least?
+> 
+Could you please attach the dmesg output after a fresh boot in -rc1?
 
---Andy
+Thanks,
+rui
+> Thanks.
+> 
+> --
+> Regards/Gruss,
+>     Boris.
+> 
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
