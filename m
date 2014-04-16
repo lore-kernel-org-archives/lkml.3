@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057AbaDPKyI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:54:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51637 "EHLO
+	id S1755602AbaDPKcR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:32:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51600 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755619AbaDPKcU (ORCPT
+	with ESMTP id S1755471AbaDPKcK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:32:20 -0400
+	Wed, 16 Apr 2014 06:32:10 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 08/46] powernow-k6: reorder frequencies
-Date: Wed, 16 Apr 2014 11:31:24 +0100
-Message-Id: <1397644322-13905-9-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 02/46] netfilter: nf_conntrack_dccp: fix skb_header_pointer API usages
+Date: Wed, 16 Apr 2014 11:31:18 +0100
+Message-Id: <1397644322-13905-3-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
 References: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
@@ -28,69 +28,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Daniel Borkmann <dborkman@redhat.com>
 
-commit 22c73795b101597051924556dce019385a1e2fa0 upstream.
+commit b22f5126a24b3b2f15448c3f2a254fc10cbc2b92 upstream.
 
-This patch reorders reported frequencies from the highest to the lowest,
-just like in other frequency drivers.
+Some occurences in the netfilter tree use skb_header_pointer() in
+the following way ...
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+  struct dccp_hdr _dh, *dh;
+  ...
+  skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
+
+... where dh itself is a pointer that is being passed as the copy
+buffer. Instead, we need to use &_dh as the forth argument so that
+we're copying the data into an actual buffer that sits on the stack.
+
+Currently, we probably could overwrite memory on the stack (e.g.
+with a possibly mal-formed DCCP packet), but unintentionally, as
+we only want the buffer to be placed into _dh variable.
+
+Fixes: 2bc780499aa3 ("[NETFILTER]: nf_conntrack: add DCCP protocol support")
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/cpufreq/powernow-k6.c | 17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ net/netfilter/nf_conntrack_proto_dccp.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/cpufreq/powernow-k6.c b/drivers/cpufreq/powernow-k6.c
-index 656c135..396f357 100644
---- a/drivers/cpufreq/powernow-k6.c
-+++ b/drivers/cpufreq/powernow-k6.c
-@@ -37,17 +37,20 @@ MODULE_PARM_DESC(bus_frequency, "Bus frequency in kHz");
+diff --git a/net/netfilter/nf_conntrack_proto_dccp.c b/net/netfilter/nf_conntrack_proto_dccp.c
+index a99b6c3..59359be 100644
+--- a/net/netfilter/nf_conntrack_proto_dccp.c
++++ b/net/netfilter/nf_conntrack_proto_dccp.c
+@@ -428,7 +428,7 @@ static bool dccp_new(struct nf_conn *ct, const struct sk_buff *skb,
+ 	const char *msg;
+ 	u_int8_t state;
  
- /* Clock ratio multiplied by 10 - see table 27 in AMD#23446 */
- static struct cpufreq_frequency_table clock_ratio[] = {
--	{45,  /* 000 -> 4.5x */ 0},
-+	{60,  /* 110 -> 6.0x */ 0},
-+	{55,  /* 011 -> 5.5x */ 0},
- 	{50,  /* 001 -> 5.0x */ 0},
-+	{45,  /* 000 -> 4.5x */ 0},
- 	{40,  /* 010 -> 4.0x */ 0},
--	{55,  /* 011 -> 5.5x */ 0},
--	{20,  /* 100 -> 2.0x */ 0},
--	{30,  /* 101 -> 3.0x */ 0},
--	{60,  /* 110 -> 6.0x */ 0},
- 	{35,  /* 111 -> 3.5x */ 0},
-+	{30,  /* 101 -> 3.0x */ 0},
-+	{20,  /* 100 -> 2.0x */ 0},
- 	{0, CPUFREQ_TABLE_END}
- };
+-	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
++	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
+ 	BUG_ON(dh == NULL);
  
-+static const u8 index_to_register[8] = { 6, 3, 1, 0, 2, 7, 5, 4 };
-+static const u8 register_to_index[8] = { 3, 2, 4, 1, 7, 6, 0, 5 };
-+
- static const struct {
- 	unsigned freq;
- 	unsigned mult;
-@@ -91,7 +94,7 @@ static int powernow_k6_get_cpu_multiplier(void)
+ 	state = dccp_state_table[CT_DCCP_ROLE_CLIENT][dh->dccph_type][CT_DCCP_NONE];
+@@ -486,7 +486,7 @@ static int dccp_packet(struct nf_conn *ct, const struct sk_buff *skb,
+ 	u_int8_t type, old_state, new_state;
+ 	enum ct_dccp_roles role;
  
- 	local_irq_enable();
+-	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
++	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
+ 	BUG_ON(dh == NULL);
+ 	type = dh->dccph_type;
  
--	return clock_ratio[(invalue >> 5)&7].driver_data;
-+	return clock_ratio[register_to_index[(invalue >> 5)&7]].driver_data;
- }
+@@ -577,7 +577,7 @@ static int dccp_error(struct net *net, struct nf_conn *tmpl,
+ 	unsigned int cscov;
+ 	const char *msg;
  
- static void powernow_k6_set_cpu_multiplier(unsigned int best_i)
-@@ -111,7 +114,7 @@ static void powernow_k6_set_cpu_multiplier(unsigned int best_i)
- 	write_cr0(cr0 | X86_CR0_CD);
- 	wbinvd();
- 
--	outvalue = (1<<12) | (1<<10) | (1<<9) | (best_i<<5);
-+	outvalue = (1<<12) | (1<<10) | (1<<9) | (index_to_register[best_i]<<5);
- 
- 	msrval = POWERNOW_IOPORT + 0x1;
- 	wrmsr(MSR_K6_EPMR, msrval, 0); /* enable the PowerNow port */
+-	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &dh);
++	dh = skb_header_pointer(skb, dataoff, sizeof(_dh), &_dh);
+ 	if (dh == NULL) {
+ 		msg = "nf_ct_dccp: short packet ";
+ 		goto out_invalid;
 -- 
 1.9.1
 
