@@ -1,82 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161386AbaDPXHq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 19:07:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46970 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161013AbaDPXHn (ORCPT
+	id S1161430AbaDPXId (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 19:08:33 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:42282 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161134AbaDPXIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 19:07:43 -0400
-Date: Wed, 16 Apr 2014 16:07:42 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Hansen <dave@sr71.net>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        dave.hansen@linux.intel.com, kirill.shutemov@linux.intel.com
-Subject: Re: [PATCH] [v2] mm: pass VM_BUG_ON() reason to dump_page()
-Message-Id: <20140416160742.96794b2e97d43ed615e6b9bd@linux-foundation.org>
-In-Reply-To: <20140411204232.C8CF1A7A@viggo.jf.intel.com>
-References: <20140411204232.C8CF1A7A@viggo.jf.intel.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Apr 2014 19:08:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140416203138.GA17661@google.com>
+References: <20140224162400.GE16457@pd.tnic>
+	<744357E9AAD1214791ACBA4B0B9092630121F201@SHSMSX101.ccr.corp.intel.com>
+	<CAErSpo55DjkGQB=7ksow34BpCObnY+o3eNnt0n5oQEh6Lfw1pw@mail.gmail.com>
+	<1558044.S1G2VU7srO@vostro.rjw.lan>
+	<CAErSpo4pDYMhHo6e-1TN6XDRO0xy0u8H+=oucFnrEK+kbjZvzw@mail.gmail.com>
+	<20140416190404.GA7070@pd.tnic>
+	<20140416203138.GA17661@google.com>
+Date: Wed, 16 Apr 2014 16:08:29 -0700
+Message-ID: <CABPqkBRAYHghJjfcG3aJK4LUEmUmr2w_y8qLodfgALrxX+-Bgw@mail.gmail.com>
+Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+From: Stephane Eranian <eranian@google.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Zhang, Rui" <rui.zhang@intel.com>, "Lu, Aaron" <aaron.lu@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Yan, Zheng Z" <zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 11 Apr 2014 13:42:32 -0700 Dave Hansen <dave@sr71.net> wrote:
-
-> 
-> I recently added a patch to let folks pass a "reason" string
-> dump_page() which gets dumped out along with the page's data.
-> This essentially saves the bug-reader a trip in to the source
-> to figure out why we BUG_ON()'d.
-> 
-> The new VM_BUG_ON_PAGE() passes in NULL for "reason".  It seems
-> like we might as well pass the BUG_ON() condition if we have it.
-> This will bloat kernels a bit with ~160 new strings, but this
-> is all under a debugging option anyway.
-> 
-> 	page:ffffea0008560280 count:1 mapcount:0 mapping:(null) index:0x0
-> 	page flags: 0xbfffc0000000001(locked)
-> 	page dumped because: VM_BUG_ON_PAGE(PageLocked(page))
-> 	------------[ cut here ]------------
-> 	kernel BUG at /home/davehans/linux.git/mm/filemap.c:464!
-> 	invalid opcode: 0000 [#1] SMP
-> 	CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.14.0+ #251
-> 	Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> 	...
+On Wed, Apr 16, 2014 at 1:31 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Wed, Apr 16, 2014 at 09:04:04PM +0200, Borislav Petkov wrote:
+>> On Thu, Mar 20, 2014 at 02:48:30PM -0600, Bjorn Helgaas wrote:
+>> > Right.  Even if we had this long-term solution, we'd still have
+>> > Stephane's current problem, because the PNP0C02 _CRS is still wrong.
+>> >
+>> > We do have a drivers/pnp/quirks.c where we could conceivably adjust
+>> > the PNP resource if we found the matching PCI device and MCHBAR.  That
+>> > should solve Stephane's problem even with the current
+>> > drivers/pnp/system.c.
+>>
+>> Guys, this still triggers in -rc1. Do we have a fix or something
+>> testable at least?
 >
-> ...
+> Hi Boris,
 >
-> --- a/include/linux/mmdebug.h~pass-VM_BUG_ON-reason-to-dump_page	2014-04-11 13:39:26.313125298 -0700
-> +++ b/include/linux/mmdebug.h	2014-04-11 13:40:26.417835916 -0700
-> @@ -9,8 +9,13 @@ extern void dump_page_badflags(struct pa
->  
->  #ifdef CONFIG_DEBUG_VM
->  #define VM_BUG_ON(cond) BUG_ON(cond)
-> -#define VM_BUG_ON_PAGE(cond, page) \
-> -	do { if (unlikely(cond)) { dump_page(page, NULL); BUG(); } } while (0)
-> +#define VM_BUG_ON_PAGE(cond, page)						\
-> +	do {									\
-> +		if (unlikely(cond)) {						\
-> +			dump_page(page, "VM_BUG_ON_PAGE(" __stringify(cond)")");\
-> +			BUG();							\
-> +		}								\
-> +	} while (0)
+> Can you try the patch below?
+>
+>
+>
+> PNP: Work around Haswell BIOS defect in MCH area reporting
+>
+> From: Bjorn Helgaas <bhelgaas@google.com>
+>
+> Work around a Haswell BIOS defect that causes part of the MCH area to be
+> unreported.
+>
+> MCHBAR is not an architected PCI BAR, so MCH space is usually reported as a
+> PNP0C02 resource.  The MCH space was 16KB prior to Haswell, but it is 32KB
+> in Haswell.  Some Haswell BIOSes still report a PNP0C02 resource that is
+> only 16KB, which means the rest of the MCH space is consumed but
+> unreported.
+>
+Why are you saying this is Haswell vs. others. I see the problem on my
+IvyBridge laptop, like Boris.
 
-This seems prudent:
-
---- a/include/linux/mmdebug.h~mm-pass-vm_bug_on-reason-to-dump_page-fix
-+++ a/include/linux/mmdebug.h
-@@ -1,6 +1,8 @@
- #ifndef LINUX_MM_DEBUG_H
- #define LINUX_MM_DEBUG_H 1
- 
-+#include <linux/stringify.h>
-+
- struct page;
- 
- extern void dump_page(struct page *page, const char *reason);
-_
-
+> This can cause resource map sanity check warnings or (theoretically) a
+> device conflict if we assigned the unreported space to another device.
+>
+> The Intel perf event uncore driver tripped over this when it claimed the
+> MCH region:
+>
+>   resource map sanity check conflict: 0xfed10000 0xfed15fff 0xfed10000 0xfed13fff pnp 00:01
+>   Info: mapping multiple BARs. Your kernel is fine.
+>
+> To prevent this, if we find a PNP0C02 resource that covers part of the MCH
+> space, extend it to cover the entire space.
+>
+> Link: http://lkml.kernel.org/r/20140224162400.GE16457@pd.tnic
+> Reported-by: Borislav Petkov <bp@alien8.de>
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> ---
+>  drivers/pnp/quirks.c |   52 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 52 insertions(+)
+>
+> diff --git a/drivers/pnp/quirks.c b/drivers/pnp/quirks.c
+> index 258fef272ea7..023edf592371 100644
+> --- a/drivers/pnp/quirks.c
+> +++ b/drivers/pnp/quirks.c
+> @@ -334,6 +334,57 @@ static void quirk_amd_mmconfig_area(struct pnp_dev *dev)
+>  }
+>  #endif
+>
+> +static void quirk_intel_haswell_mch(struct pnp_dev *dev)
+> +{
+> +       struct pci_dev *host;
+> +       u32 addr_lo, addr_hi;
+> +       struct pci_bus_region region;
+> +       struct resource mch;
+> +       struct pnp_resource *pnp_res;
+> +       struct resource *res;
+> +
+> +       host = pci_get_device(PCI_VENDOR_ID_INTEL, 0x0c00, NULL);
+> +       if (!host)
+> +               return;
+> +
+> +       /*
+> +        * MCHBAR is not an architected PCI BAR, so MCH space is usually
+> +        * reported as a PNP0C02 resource.  The MCH space was 16KB prior to
+> +        * Haswell, but it is 32KB in Haswell.  Some Haswell BIOSes still
+> +        * report a PNP0C02 resource that is only 16KB, which means the
+> +        * rest of the MCH space is consumed but unreported.
+> +        */
+> +
+> +       /*
+> +        * Read MCHBAR for Host Member Mapped Register Range Base
+> +        * https://www-ssl.intel.com/content/www/us/en/processors/core/4th-gen-core-family-desktop-vol-2-datasheet
+> +        * Sec 3.1.12.
+> +        */
+> +       pci_read_config_dword(host, 0x48, &addr_lo);
+> +       region.start = addr_lo & ~0x7fff;
+> +       pci_read_config_dword(host, 0x4c, &addr_hi);
+> +       region.start |= (dma_addr_t) addr_hi << 32;
+> +       region.end = region.start + 32*1024 - 1 ;
+> +       pcibios_bus_to_resource(host->bus, &mch, &region);
+> +
+> +       list_for_each_entry(pnp_res, &dev->resources, list) {
+> +               res = &pnp_res->res;
+> +               if (res->end < mch.start || res->start > mch.end)
+> +                       continue;       /* no overlap */
+> +               if (res->start == mch.start && res->end == mch.end)
+> +                       continue;       /* exact match */
+> +
+> +               dev_info(&dev->dev, FW_BUG
+> +                        "%pR covers only part of Intel Haswell MCH; extending to %pR\n",
+> +                        res, &mch);
+> +               res->start = mch.start;
+> +               res->end = mch.end;
+> +               break;
+> +       }
+> +
+> +       pci_dev_put(host);
+> +}
+> +
+>  /*
+>   *  PnP Quirks
+>   *  Cards or devices that need some tweaking due to incomplete resource info
+> @@ -364,6 +415,7 @@ static struct pnp_fixup pnp_fixups[] = {
+>  #ifdef CONFIG_AMD_NB
+>         {"PNP0c01", quirk_amd_mmconfig_area},
+>  #endif
+> +       {"PNP0c02", quirk_intel_haswell_mch},
+>         {""}
+>  };
+>
