@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929AbaDPKxo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:53:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51647 "EHLO
+	id S1755628AbaDPKcU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:32:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51629 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755535AbaDPKcX (ORCPT
+	with ESMTP id S1755471AbaDPKcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:32:23 -0400
+	Wed, 16 Apr 2014 06:32:18 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Florian Westphal <fw@strlen.de>,
-        Jesper Dangaard Brouer <brouer@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Nikolay Aleksandrov <nikolay@redhat.com>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 10/46] net: fix for a race condition in the inet frag code
-Date: Wed, 16 Apr 2014 11:31:26 +0100
-Message-Id: <1397644322-13905-11-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 07/46] powernow-k6: correctly initialize default parameters
+Date: Wed, 16 Apr 2014 11:31:23 +0100
+Message-Id: <1397644322-13905-8-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
 References: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
@@ -30,97 +28,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nikolay Aleksandrov <nikolay@redhat.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 24b9bf43e93e0edd89072da51cf1fab95fc69dec upstream.
+commit d82b922a4acc1781d368aceac2f9da43b038cab2 upstream.
 
-I stumbled upon this very serious bug while hunting for another one,
-it's a very subtle race condition between inet_frag_evictor,
-inet_frag_intern and the IPv4/6 frag_queue and expire functions
-(basically the users of inet_frag_kill/inet_frag_put).
+The powernow-k6 driver used to read the initial multiplier from the
+powernow register. However, there is a problem with this:
 
-What happens is that after a fragment has been added to the hash chain
-but before it's been added to the lru_list (inet_frag_lru_add) in
-inet_frag_intern, it may get deleted (either by an expired timer if
-the system load is high or the timer sufficiently low, or by the
-fraq_queue function for different reasons) before it's added to the
-lru_list, then after it gets added it's a matter of time for the
-evictor to get to a piece of memory which has been freed leading to a
-number of different bugs depending on what's left there.
+* If there was a frequency transition before, the multiplier read from the
+  register corresponds to the current multiplier.
+* If there was no frequency transition since reset, the field in the
+  register always reads as zero, regardless of the current multiplier that
+  is set using switches on the mainboard and that the CPU is running at.
 
-I've been able to trigger this on both IPv4 and IPv6 (which is normal
-as the frag code is the same), but it's been much more difficult to
-trigger on IPv4 due to the protocol differences about how fragments
-are treated.
+The zero value corresponds to multiplier 4.5, so as a consequence, the
+powernow-k6 driver always assumes multiplier 4.5.
 
-The setup I used to reproduce this is: 2 machines with 4 x 10G bonded
-in a RR bond, so the same flow can be seen on multiple cards at the
-same time. Then I used multiple instances of ping/ping6 to generate
-fragmented packets and flood the machines with them while running
-other processes to load the attacked machine.
+For example, if we have 550MHz CPU with bus frequency 100MHz and
+multiplier 5.5, the powernow-k6 driver thinks that the multiplier is 4.5
+and bus frequency is 122MHz. The powernow-k6 driver then sets the
+multiplier to 4.5, underclocking the CPU to 450MHz, but reports the
+current frequency as 550MHz.
 
-*It is very important to have the _same flow_ coming in on multiple CPUs
-concurrently. Usually the attacked machine would die in less than 30
-minutes, if configured properly to have many evictor calls and timeouts
-it could happen in 10 minutes or so.
+There is no reliable way how to read the initial multiplier. I modified
+the driver so that it contains a table of known frequencies (based on
+parameters of existing CPUs and some common overclocking schemes) and sets
+the multiplier according to the frequency. If the frequency is unknown
+(because of unusual overclocking or underclocking), the user must supply
+the bus speed and maximum multiplier as module parameters.
 
-An important point to make is that any caller (frag_queue or timer) of
-inet_frag_kill will remove both the timer refcount and the
-original/guarding refcount thus removing everything that's keeping the
-frag from being freed at the next inet_frag_put.  All of this could
-happen before the frag was ever added to the LRU list, then it gets
-added and the evictor uses a freed fragment.
+This patch should be backported to all stable kernels. If it doesn't
+apply cleanly, change it, or ask me to change it.
 
-An example for IPv6 would be if a fragment is being added and is at
-the stage of being inserted in the hash after the hash lock is
-released, but before inet_frag_lru_add executes (or is able to obtain
-the lru lock) another overlapping fragment for the same flow arrives
-at a different CPU which finds it in the hash, but since it's
-overlapping it drops it invoking inet_frag_kill and thus removing all
-guarding refcounts, and afterwards freeing it by invoking
-inet_frag_put which removes the last refcount added previously by
-inet_frag_find, then inet_frag_lru_add gets executed by
-inet_frag_intern and we have a freed fragment in the lru_list.
-
-The fix is simple, just move the lru_add under the hash chain locked
-region so when a removing function is called it'll have to wait for
-the fragment to be added to the lru_list, and then it'll remove it (it
-works because the hash chain removal is done before the lru_list one
-and there's no window between the two list adds when the frag can get
-dropped). With this fix applied I couldn't kill the same machine in 24
-hours with the same setup.
-
-Fixes: 3ef0eb0db4bf ("net: frag, move LRU list maintenance outside of
-rwlock")
-
-CC: Florian Westphal <fw@strlen.de>
-CC: Jesper Dangaard Brouer <brouer@redhat.com>
-CC: David S. Miller <davem@davemloft.net>
-
-Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
-Acked-by: Jesper Dangaard Brouer <brouer@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/ipv4/inet_fragment.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/cpufreq/powernow-k6.c | 76 ++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 72 insertions(+), 4 deletions(-)
 
-diff --git a/net/ipv4/inet_fragment.c b/net/ipv4/inet_fragment.c
-index c5313a9..e15fb7b 100644
---- a/net/ipv4/inet_fragment.c
-+++ b/net/ipv4/inet_fragment.c
-@@ -281,9 +281,10 @@ static struct inet_frag_queue *inet_frag_intern(struct netns_frags *nf,
+diff --git a/drivers/cpufreq/powernow-k6.c b/drivers/cpufreq/powernow-k6.c
+index ff3bb8f..656c135 100644
+--- a/drivers/cpufreq/powernow-k6.c
++++ b/drivers/cpufreq/powernow-k6.c
+@@ -26,6 +26,14 @@
+ static unsigned int                     busfreq;   /* FSB, in 10 kHz */
+ static unsigned int                     max_multiplier;
  
- 	atomic_inc(&qp->refcnt);
- 	hlist_add_head(&qp->list, &hb->chain);
-+	inet_frag_lru_add(nf, qp);
- 	spin_unlock(&hb->chain_lock);
- 	read_unlock(&f->lock);
--	inet_frag_lru_add(nf, qp);
++static unsigned int			param_busfreq = 0;
++static unsigned int			param_max_multiplier = 0;
 +
- 	return qp;
++module_param_named(max_multiplier, param_max_multiplier, uint, S_IRUGO);
++MODULE_PARM_DESC(max_multiplier, "Maximum multiplier (allowed values: 20 30 35 40 45 50 55 60)");
++
++module_param_named(bus_frequency, param_busfreq, uint, S_IRUGO);
++MODULE_PARM_DESC(bus_frequency, "Bus frequency in kHz");
+ 
+ /* Clock ratio multiplied by 10 - see table 27 in AMD#23446 */
+ static struct cpufreq_frequency_table clock_ratio[] = {
+@@ -40,6 +48,27 @@ static struct cpufreq_frequency_table clock_ratio[] = {
+ 	{0, CPUFREQ_TABLE_END}
+ };
+ 
++static const struct {
++	unsigned freq;
++	unsigned mult;
++} usual_frequency_table[] = {
++	{ 400000, 40 },	// 100   * 4
++	{ 450000, 45 }, // 100   * 4.5
++	{ 475000, 50 }, //  95   * 5
++	{ 500000, 50 }, // 100   * 5
++	{ 506250, 45 }, // 112.5 * 4.5
++	{ 533500, 55 }, //  97   * 5.5
++	{ 550000, 55 }, // 100   * 5.5
++	{ 562500, 50 }, // 112.5 * 5
++	{ 570000, 60 }, //  95   * 6
++	{ 600000, 60 }, // 100   * 6
++	{ 618750, 55 }, // 112.5 * 5.5
++	{ 660000, 55 }, // 120   * 5.5
++	{ 675000, 60 }, // 112.5 * 6
++	{ 720000, 60 }, // 120   * 6
++};
++
++#define FREQ_RANGE		3000
+ 
+ /**
+  * powernow_k6_get_cpu_multiplier - returns the current FSB multiplier
+@@ -163,18 +192,57 @@ static int powernow_k6_target(struct cpufreq_policy *policy,
+ 	return 0;
  }
  
+-
+ static int powernow_k6_cpu_init(struct cpufreq_policy *policy)
+ {
+ 	unsigned int i, f;
+ 	int result;
++	unsigned khz;
+ 
+ 	if (policy->cpu != 0)
+ 		return -ENODEV;
+ 
+-	/* get frequencies */
+-	max_multiplier = powernow_k6_get_cpu_multiplier();
+-	busfreq = cpu_khz / max_multiplier;
++	max_multiplier = 0;
++	khz = cpu_khz;
++	for (i = 0; i < ARRAY_SIZE(usual_frequency_table); i++) {
++		if (khz >= usual_frequency_table[i].freq - FREQ_RANGE &&
++		    khz <= usual_frequency_table[i].freq + FREQ_RANGE) {
++			khz = usual_frequency_table[i].freq;
++			max_multiplier = usual_frequency_table[i].mult;
++			break;
++		}
++	}
++	if (param_max_multiplier) {
++		for (i = 0; (clock_ratio[i].frequency != CPUFREQ_TABLE_END); i++) {
++			if (clock_ratio[i].driver_data == param_max_multiplier) {
++				max_multiplier = param_max_multiplier;
++				goto have_max_multiplier;
++			}
++		}
++		printk(KERN_ERR "powernow-k6: invalid max_multiplier parameter, valid parameters 20, 30, 35, 40, 45, 50, 55, 60\n");
++		return -EINVAL;
++	}
++
++	if (!max_multiplier) {
++		printk(KERN_WARNING "powernow-k6: unknown frequency %u, cannot determine current multiplier\n", khz);
++		printk(KERN_WARNING "powernow-k6: use module parameters max_multiplier and bus_frequency\n");
++		return -EOPNOTSUPP;
++	}
++
++have_max_multiplier:
++	param_max_multiplier = max_multiplier;
++
++	if (param_busfreq) {
++		if (param_busfreq >= 50000 && param_busfreq <= 150000) {
++			busfreq = param_busfreq / 10;
++			goto have_busfreq;
++		}
++		printk(KERN_ERR "powernow-k6: invalid bus_frequency parameter, allowed range 50000 - 150000 kHz\n");
++		return -EINVAL;
++	}
++
++	busfreq = khz / max_multiplier;
++have_busfreq:
++	param_busfreq = busfreq * 10;
+ 
+ 	/* table init */
+ 	for (i = 0; (clock_ratio[i].frequency != CPUFREQ_TABLE_END); i++) {
 -- 
 1.9.1
 
