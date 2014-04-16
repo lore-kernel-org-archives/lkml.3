@@ -1,61 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223AbaDPJUh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 05:20:37 -0400
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:43922 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755134AbaDPJUb (ORCPT
+	id S1755134AbaDPJWN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 05:22:13 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56667 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129AbaDPJWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 05:20:31 -0400
+	Wed, 16 Apr 2014 05:22:11 -0400
+Date: Wed, 16 Apr 2014 11:21:46 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: the arch/x86 maintainers <x86@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Seiji Aguchi <seiji.aguchi@hds.com>,
+        ak@linux.intel.com, Steven Rostedt <rostedt@goodmis.org>,
+        Borislav Petkov <bp@alien8.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: WARNING: CPU: 2 PID: 1857 at arch/x86/kernel/smp.c:124
+Message-ID: <20140416092146.GQ11182@twins.programming.kicks-ass.net>
+References: <534E49C8.7050206@nod.at>
 MIME-Version: 1.0
-In-Reply-To: <1397581703.8212.5.camel@x220>
-References: <1391971686-9517-1-git-send-email-richard@nod.at>
- <1391971686-9517-10-git-send-email-richard@nod.at> <52F7D480.1050106@hauke-m.de>
- <52F7DF21.70207@nod.at> <CAHNKnsS7Mv4ZhBWZa53go9L9nZimJ7_FG5HFJ9C3kkGMAEz-mA@mail.gmail.com>
- <52F8C373.9060108@rempel-privat.de> <CAHNKnsQF5Hdf3JT91moPraRQzn4kMpdD2NSiJ7b30wQhS1W4MA@mail.gmail.com>
- <CAGVrzcYnECx5Q=i+m6qZn29y4JALDpw5SWoUNP-S6HgPR3_ygQ@mail.gmail.com>
- <CAHNKnsRACSo=DfOyiHxqV3acv_wfZmz4tMnYAW0wo4OCibwdfA@mail.gmail.com>
- <CAHNKnsRQp7WLSJNAXEYPTd=qs1DquOfNgKtHES-Utvcy1=FEgQ@mail.gmail.com>
- <20140213201421.GJ22203@tuxdriver.com> <1397581703.8212.5.camel@x220>
-From: Sergey Ryazanov <ryazanov.s.a@gmail.com>
-Date: Wed, 16 Apr 2014 13:20:10 +0400
-Message-ID: <CAHNKnsQQ42-XnXrubHAy4PF3H2ynbGDdSMP7MvDS_1aRozYF=A@mail.gmail.com>
-Subject: Re: [PATCH 09/28] Remove ATHEROS_AR231X
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Oleksij Rempel <linux@rempel-privat.de>,
-        Richard Weinberger <richard@nod.at>,
-        Jonathan Bither <jonbither@gmail.com>,
-        OpenWrt Development List <openwrt-devel@lists.openwrt.org>,
-        Hauke Mehrtens <hauke@hauke-m.de>, Jiri Slaby <jirislaby@gmail.com>,
-        Nick Kossifidis <mickflemm@gmail.com>,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        ath5k-devel@venema.h4ckr.net, open@hauke-m.de,
-        "list@hauke-m.de:NETWORKING DRIVERS" <list@hauke-m.de>,
-        "list@hauke-m.de:NETWORKING DRIVERS" <netdev@vger.kernel.org>,
-        open list <linux-kernel@vger.kernel.org>,
-        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
-        Florian Fainelli <florian@openwrt.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <534E49C8.7050206@nod.at>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-04-15 21:08 GMT+04:00 Paul Bolle <pebolle@tiscali.nl>:
-> On Thu, 2014-02-13 at 15:14 -0500, John W. Linville wrote:
->> On Wed, Feb 12, 2014 at 02:50:30PM +0400, Sergey Ryazanov wrote:
->> > John, can you delay the merging of this patch for a few months, I will
->> > try to prepare the necessary patches to add AR231x architecture to the
->> > kernel and send them to linux-mips.
->>
->> OK -- looking forward to your patches.
->
-> So am I. Is there any news on this front?
->
+On Wed, Apr 16, 2014 at 11:13:44AM +0200, Richard Weinberger wrote:
+> Hi!
+> 
+> On a new 8 core server I'm facing the following issue.
+> After an oops a warning triggers.
 
-Work still in progress :(
-
--- 
-BR,
-Sergey
+I think its fair to ignore everything _after_ an OOPS ;-)
