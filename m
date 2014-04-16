@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469AbaDPR0x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 13:26:53 -0400
-Received: from mail-qg0-f54.google.com ([209.85.192.54]:52945 "EHLO
-	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754748AbaDPR0s (ORCPT
+	id S1755516AbaDPR1F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 13:27:05 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:57293 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754646AbaDPR06 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 13:26:48 -0400
-Date: Wed, 16 Apr 2014 13:26:44 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Jianyu Zhan <nasa4836@gmail.com>
-Cc: gregkh@linuxfoundation.org, lizefan@huawei.com,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH] kernfs: move the last knowledge of sysfs out from kernfs
-Message-ID: <20140416172644.GM1257@htj.dyndns.org>
-References: <1397669058-31720-1-git-send-email-nasa4836@gmail.com>
+	Wed, 16 Apr 2014 13:26:58 -0400
+Date: Wed, 16 Apr 2014 13:30:06 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [perf] more perf_fuzzer memory corruption
+In-Reply-To: <20140416141514.GS11182@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1404161326380.19325@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1404151729230.17264@vincent-weaver-1.um.maine.edu> <20140416141514.GS11182@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397669058-31720-1-git-send-email-nasa4836@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 01:24:18AM +0800, Jianyu Zhan wrote:
-> On Thu, Apr 17, 2014 at 12:46 AM, Tejun Heo <tj@kernel.org> wrote:
-> > Please put it before @new_sb_created.
-> 
-> Ok.
-> 
-> > Also, why isn't it unsigned long magic?
-> 
-> I just thought there may be more private data in the future, so I made
-> it a void pointer. But now I think this is overskill and meaningless.
-> 
-> Renewed patch here:
-> 
-> There is still one residue of sysfs remaining: the sb_magic
-> SYSFS_MAGIC. However this should be kernfs user specific,
-> so this patch moves it out. Kerrnfs user should specify their
-> magic number while mouting.
-> 
-> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+On Wed, 16 Apr 2014, Peter Zijlstra wrote:
 
-Acked-by: Tejun Heo <tj@kernel.org>
+> Does the below make any difference? I've only ran it through some light
+> testing to make sure it didn't insta-explode on running.
+> 
+> (perf stat make -j64 -s in fact)
 
-Thanks.
+I'm running with your patch now and so far so good.
 
--- 
-tejun
+Unfortunately the problem isn't repeatable, but it usually shows up within 
+an hour or so of fuzzing (although there's possibly a 2nd unrelated bug 
+that also shows up sometimes).
+
+If you want to try running the fuzzer on your machine too just do:
+	git clone https://github.com/deater/perf_event_tests.git
+	cd fuzzer
+	make
+and then try running the "./fast_repro98.sh" script, as that's the forking 
+workload I've been using when tracking this issue.
+
+Vince
