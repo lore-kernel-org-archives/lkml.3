@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730AbaDPGSi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 02:18:38 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:28161 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754524AbaDPGSg (ORCPT
+	id S1754717AbaDPGVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 02:21:15 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:54175 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754448AbaDPGVN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 02:18:36 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AspSADAgTlN5LEcvPGdsb2JhbABagwaDU4UKtgyFXoEkFwMBAQEBODWCJQEBAQQ6HCMQCAMYCSUPBSUDBxoTHoddxkIXFo5MB4MkgRQBA5hiimeLIys
-Date: Wed, 16 Apr 2014 16:18:20 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 19/19] XFS: set PF_FSTRANS while ilock is held in
- xfs_free_eofblocks
-Message-ID: <20140416061819.GF15995@dastard>
-References: <20140416033623.10604.69237.stgit@notabene.brown>
- <20140416040337.10604.7488.stgit@notabene.brown>
+	Wed, 16 Apr 2014 02:21:13 -0400
+Date: Tue, 15 Apr 2014 23:21:08 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: "Gupta, Pekon" <pekon@ti.com>
+Cc: Jingoo Han <jg1.han@samsung.com>,
+        "'Christian Engelmayer'" <cengelma@gmx.at>,
+        "'David Woodhouse'" <dwmw2@infradead.org>,
+        "'Artem Bityutskiy'" <artem.bityutskiy@linux.intel.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mtd: nand: omap: =?utf-8?Q?fix?=
+ =?utf-8?Q?_compile_warning_on_=E2=80=98erased=5Fsector=5Fbitflips?=
+ =?utf-8?B?4oCZ?=
+Message-ID: <20140416062108.GM3131@norris-Latitude-E6410>
+References: <20140415003205.0bb2cf44@spike>
+ <007d01cf5842$435dcba0$ca1962e0$%han@samsung.com>
+ <20980858CB6D3A4BAE95CA194937D5E73EAC301C@DBDE04.ent.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140416040337.10604.7488.stgit@notabene.brown>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20980858CB6D3A4BAE95CA194937D5E73EAC301C@DBDE04.ent.ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 02:03:37PM +1000, NeilBrown wrote:
-> memory allocates can happen while the xfs ilock is held in
-> xfs_free_eofblocks, particularly
-> 
->   [<ffffffff813e6667>] kmem_zone_alloc+0x67/0xc0
->   [<ffffffff813e5945>] xfs_trans_add_item+0x25/0x50
->   [<ffffffff8143d64c>] xfs_trans_ijoin+0x2c/0x60
->   [<ffffffff8142275e>] xfs_itruncate_extents+0xbe/0x400
->   [<ffffffff813c72f4>] xfs_free_eofblocks+0x1c4/0x240
-> 
-> So set PF_FSTRANS to avoid this causing a deadlock.
+On Tue, Apr 15, 2014 at 03:58:56AM +0000, Pekon Gupta wrote:
+> >From: Jingoo Han [mailto:jg1.han@samsung.com]
+> >>On Tuesday, April 15, 2014 7:32 AM, Christian Engelmayer wrote:
+> >>
+> >> Commit 2c9f2365 (mtd: nand: omap: ecc.calculate: merge omap3_calculate_ecc_bch4
+> >> in omap_calculate_ecc_bch) introduced minor compile warning
+> >> "‘erased_sector_bitflips’ defined but not used [-Wunused-function]" when
+> >> compiling without CONFIG_MTD_NAND_OMAP_BCH. Move function
+> >> erased_sector_bitflips() into the same ifdef section as the only caller.
+> >>
+> >> Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
+> >
+> >Reviewed-by: Jingoo Han <jg1.han@samsung.com>
+> >
+> Thanks for the patch..
+> Acked-by: Pekon Gupta <pekon@ti.com>
 
-Another "You broke KM_NOFS" moment. You win a Kit Kat. ;)
+Pushed to l2-mtd.git. Thanks!
 
-xfs_trans_add_item():
-
-	lidp = kmem_zone_zalloc(xfs_log_item_desc_zone, KM_SLEEP | KM_NOFS);
-
-KM_NOFS needs to work, otherwise XFS is just a huge steaming pile of
-memory reclaim deadlocks regardless of whether you are using
-loopback NFS or not.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Brian
