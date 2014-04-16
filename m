@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068AbaDPHoi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 03:44:38 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:51407 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754893AbaDPHof (ORCPT
+	id S1754889AbaDPHmx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 03:42:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56264 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754802AbaDPHmv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 03:44:35 -0400
-Date: Wed, 16 Apr 2014 10:44:10 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Thomas Tanaka <thomas.tanaka@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        bernat.ada@gmail.com, jg1.han@samsung.com, keescook@chromium.org,
-        peter.p.waskiewicz.jr@intel.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] staging: dgrp: Fixed coding style
-Message-ID: <20140416074410.GO26890@mwanda>
-References: <1397609680-10321-1-git-send-email-thomas.tanaka@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397609680-10321-1-git-send-email-thomas.tanaka@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Wed, 16 Apr 2014 03:42:51 -0400
+From: Christoph Hellwig <hch@lst.de>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: [PATCH 2/8] blk-mq: bidi support
+Date: Wed, 16 Apr 2014 09:44:53 +0200
+Message-Id: <1397634299-7466-3-git-send-email-hch@lst.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1397634299-7466-1-git-send-email-hch@lst.de>
+References: <1397634299-7466-1-git-send-email-hch@lst.de>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add two unlinkely branches to make sure the resid is initialized correctly
+for bidi request pairs, and the second request gets properly freed.
 
-On Tue, Apr 15, 2014 at 05:54:39PM -0700, Thomas Tanaka wrote:
-> Fixed line width > 80
-> 
-> Signed-off-by: Thomas Tanaka <thomas.tanaka@gmail.com>
-> ---
->  drivers/staging/dgrp/dgrp_sysfs.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/dgrp/dgrp_sysfs.c b/drivers/staging/dgrp/dgrp_sysfs.c
-> index 2f9345f..93803e0c 100644
-> --- a/drivers/staging/dgrp/dgrp_sysfs.c
-> +++ b/drivers/staging/dgrp/dgrp_sysfs.c
-> @@ -108,8 +108,8 @@ int dgrp_create_class_sysfs_files(void)
->  	ret = sysfs_create_group(&dgrp_class_global_settings_dev->kobj,
->  		&dgrp_global_settings_attribute_group);
->  	if (ret) {
-> -		pr_alert("%s: failed to create sysfs global settings device attributes.\n",
-> -			__func__);
-> +		pr_alert("%s: failed to create sysfs global settings device
-> +			 attributes.\n", __func__);
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+---
+ block/blk-mq.c |    9 +++++++--
+ block/bsg.c    |    2 +-
+ 2 files changed, 8 insertions(+), 3 deletions(-)
 
-The original was fine.  It doesn't cause a checkpatch.pl warning.  The
-new one is buggy and won't print the correct text.
-
-regards,
-dan carpenter
-
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index e921085..afdab13 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -298,10 +298,13 @@ inline void __blk_mq_end_io(struct request *rq, int error)
+ {
+ 	blk_account_io_done(rq);
+ 
+-	if (rq->end_io)
++	if (rq->end_io) {
+ 		rq->end_io(rq, error);
+-	else
++	} else {
++		if (unlikely(blk_bidi_rq(rq)))
++			blk_mq_free_request(rq->next_rq);
+ 		blk_mq_free_request(rq);
++	}
+ }
+ EXPORT_SYMBOL(__blk_mq_end_io);
+ 
+@@ -366,6 +369,8 @@ static void blk_mq_start_request(struct request *rq, bool last)
+ 	trace_block_rq_issue(q, rq);
+ 
+ 	rq->resid_len = blk_rq_bytes(rq);
++	if (unlikely(blk_bidi_rq(rq)))
++		rq->next_rq->resid_len = blk_rq_bytes(rq->next_rq);
+ 
+ 	/*
+ 	 * Just mark start time and set the started bit. Due to memory
+diff --git a/block/bsg.c b/block/bsg.c
+index 420a5a9..2956086 100644
+--- a/block/bsg.c
++++ b/block/bsg.c
+@@ -1008,7 +1008,7 @@ int bsg_register_queue(struct request_queue *q, struct device *parent,
+ 	/*
+ 	 * we need a proper transport to send commands, not a stacked device
+ 	 */
+-	if (!q->request_fn)
++	if (!q->request_fn && !q->mq_ops)
+ 		return 0;
+ 
+ 	bcd = &q->bsg_dev;
+-- 
+1.7.10.4
 
