@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224AbaDPGbd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 02:31:33 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:47901 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752428AbaDPGbb (ORCPT
+	id S1754378AbaDPGbk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 02:31:40 -0400
+Received: from g2t2352.austin.hp.com ([15.217.128.51]:17314 "EHLO
+	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752864AbaDPGbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 02:31:31 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AslSALMiTlN5LEcvPGdsb2JhbABYgwaDU4UKtgyFXoEcFwMBAQEBODWCJQEBAQQ6HCMQCAMYCSUPBSUDBxoTh3vFYRcWjkwHhDgBA5hiimeJUoFRKw
-Date: Wed, 16 Apr 2014 16:31:29 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 09/19] XFS: ensure xfs_file_*_read cannot deadlock in
- memory allocation.
-Message-ID: <20140416063129.GI15995@dastard>
-References: <20140416033623.10604.69237.stgit@notabene.brown>
- <20140416040336.10604.90380.stgit@notabene.brown>
- <20140416060459.GE15995@dastard>
+	Wed, 16 Apr 2014 02:31:36 -0400
+X-Greylist: delayed 103057 seconds by postgrey-1.27 at vger.kernel.org; Wed, 16 Apr 2014 02:31:35 EDT
+Message-ID: <534E2399.5030801@hp.com>
+Date: Wed, 16 Apr 2014 14:30:49 +0800
+From: "Li, ZhenHua" <zhen-hual@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140416060459.GE15995@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Miller <davem@davemloft.net>
+CC: sathya.perla@emulex.com, subbu.seetharaman@emulex.com,
+        ajit.khaparde@emulex.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] driver/net: add missing rtnl lock/unlock for benet
+References: <1397544352-28841-1-git-send-email-zhen-hual@hp.com> <20140415.150950.2105729446204659132.davem@davemloft.net>
+In-Reply-To: <20140415.150950.2105729446204659132.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 04:04:59PM +1000, Dave Chinner wrote:
-> On Wed, Apr 16, 2014 at 02:03:36PM +1000, NeilBrown wrote:
-> > xfs_file_*_read holds an inode lock while calling a generic 'read'
-> > function.  These functions perform read-ahead and are quite likely to
-> > allocate memory.
-> 
-> Yes, that's what reading data from disk requires.
-> 
-> > So set PF_FSTRANS to ensure they avoid __GFP_FS and so don't recurse
-> > into a filesystem to free memory.
-> 
-> We already have that protection via the
+Hi David,
 
-Oops, stray paste. Ignore that comment.
+I think you are right. I checked other NIC drivers, found some of them 
+call rtnl_lock and rtnl_unlock around netif_device_detach and attach 
+functions, while some drivers did not.
 
--Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+I will create a new patch in generic way to fix this.
+
+Regards
+ZhenHua
+On 04/16/2014 03:09 AM, David Miller wrote:
+> From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+> Date: Tue, 15 Apr 2014 14:45:52 +0800
+>
+>> From: "Li, Zhen-Hua" <zhen-hual@hp.com>
+>>
+>> In benet driver, netif_device_detach and netif_device_attach should be
+>> called between rtnl_lock and rtnl_unlock.
+>>
+>> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
+>
+> This absolutely does not look like a driver specific issue, therefore
+> I do not want you to make such locking context adjustments only in
+> your driver.
+>
+> Do it somewhere generic so that every driver gets the fix, not just
+> your driver.
+>
+
