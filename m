@@ -1,95 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161323AbaDPNd3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 09:33:29 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:42171 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161040AbaDPNd0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 09:33:26 -0400
+	id S1161174AbaDPNet (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 09:34:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49075 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161002AbaDPNer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 09:34:47 -0400
+Date: Wed, 16 Apr 2014 15:34:32 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 1/2] perf record: Propagate exit status of a command line
+ workload
+Message-ID: <20140416133432.GA7040@krava.brq.redhat.com>
+References: <CABPqkBQeAqRUW8LLMsHhHBR8gJcE4VPZa++ji8i=RKUCd2jSvQ@mail.gmail.com>
+ <1397608244-15496-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <CAFp+6iGQMS5_YAimBRdV-P2h3LczQEHMq_cXGrOtHJSZqM7UfQ@mail.gmail.com>
-References: <1396967803-28868-1-git-send-email-gautam.vivek@samsung.com>
- <1396967803-28868-6-git-send-email-gautam.vivek@samsung.com>
- <53452B59.8030901@samsung.com> <CAFp+6iGQMS5_YAimBRdV-P2h3LczQEHMq_cXGrOtHJSZqM7UfQ@mail.gmail.com>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Wed, 16 Apr 2014 15:33:04 +0200
-Message-ID: <CACQ1gAgbiQJmpJDebeKSRGKhDjOcmOAdt8L3CmNAO=h5i7yV1A@mail.gmail.com>
-Subject: Re: [PATCH V4 5/5] usb-phy: samsung-usb3: Remove older
- phy-samsung-usb3 driver
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: Tomasz Figa <t.figa@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kamil Debski <k.debski@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, kishon <kishon@ti.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Jingoo Han <jg1.han@samsung.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397608244-15496-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vivek,
+On Wed, Apr 16, 2014 at 09:30:43AM +0900, Namhyung Kim wrote:
 
-2014-04-09 13:34 GMT+02:00 Vivek Gautam <gautam.vivek@samsung.com>:
-> Hi Tomasz,
-> '
->
-> On Wed, Apr 9, 2014 at 4:43 PM, Tomasz Figa <t.figa@samsung.com> wrote:
->> Hi Vivek,
->>
-> Thanks for reviewing the patch series.
->
->>
->> On 08.04.2014 16:36, Vivek Gautam wrote:
->>>
->>> Removing this older USB 3.0 DRD controller PHY driver, since
->>> a new driver based on generic phy framework is now available.
->>>
->>> Also removing the dt node for older driver from Exynos5250
->>> device tree and updating the dt node for DWC3 controller.
->>>
->>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->>> ---
->>>
->>> NOTE: This patch should be merged only when the new USB 3.0
->>> DRD phy controller driver is available in the tree from the
->>> patches:
->>>         phy: Add new Exynos5 USB 3.0 PHY driver; and
->>>         dt: exynos5250: Enable support for generic USB DRD phy
->>>
->>>   arch/arm/boot/dts/exynos5250.dtsi  |   17 +-
->>>   drivers/usb/phy/phy-samsung-usb.h  |   83 ---------
->>>   drivers/usb/phy/phy-samsung-usb3.c |  350
->>> ------------------------------------
->>>   3 files changed, 2 insertions(+), 448 deletions(-)
->>>   delete mode 100644 drivers/usb/phy/phy-samsung-usb3.c
->>>
->>> diff --git a/arch/arm/boot/dts/exynos5250.dtsi
->>> b/arch/arm/boot/dts/exynos5250.dtsi
->>> index 92c6fcd..1cb1e91 100644
->>> --- a/arch/arm/boot/dts/exynos5250.dtsi
->>> +++ b/arch/arm/boot/dts/exynos5250.dtsi
->>
->>
->> IMHO driver and dts changes should be separated into two patches, first
->> updating device tree to use the new driver and second removing the driver.
->
-> Sure will separate the patch into driver and dts change.
->
->>
->> After fixing this issue,
->>
->> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
->>
-I guess you should also remove phy-samsung-usb3.c references in the
-Makefile, Kconfig and exynos_defconfig
+SNIP
 
-Richard.
+>  
+> @@ -356,6 +331,7 @@ static void workload_exec_failed_signal(int signo, siginfo_t *info,
+>  static int __cmd_record(struct record *rec, int argc, const char **argv)
+>  {
+>  	int err;
+> +	int status = 0;
+>  	unsigned long waking = 0;
+>  	const bool forks = argc > 0;
+>  	struct machine *machine;
+> @@ -367,7 +343,6 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+>  
+>  	rec->progname = argv[0];
+>  
+> -	on_exit(record__sig_exit, rec);
+
+so record__sig_exit took care of waiting the child even
+in case the record fails before running the workload
+
+after your change all error cases just delete session
+and go away, ending up with parent dead and go_pipe
+released executing the workload
+
+with attached patch, current perf code:
+
+[jolsa@krava perf]$ ./perf.old record -e cycles -m 10G true
+rounding mmap pages size to 17179869184 bytes (4194304 pages)
+Permission error mapping pages.
+Consider increasing /proc/sys/kernel/perf_event_mlock_kb,
+or try again with a smaller value of -m/--mmap_pages.
+(current value: 4194304)
+true: Terminated
+
+with attached patch, your change:
+
+[jolsa@krava perf]$ ./perf record -e cycles -m 10G true
+rounding mmap pages size to 17179869184 bytes (4194304 pages)
+Permission error mapping pages.
+Consider increasing /proc/sys/kernel/perf_event_mlock_kb,
+or try again with a smaller value of -m/--mmap_pages.
+(current value: 4194304)
+unable to read pipe: No such file or directory
+
+
+I think that after creating the workload, all error paths
+need to release(wait) the child if there's any
+
+thanks,
+jirka
+
+---
+diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
+index 59ef280..185f30a 100644
+--- a/tools/perf/util/evlist.c
++++ b/tools/perf/util/evlist.c
+@@ -1072,7 +1072,7 @@ int perf_evlist__prepare_workload(struct perf_evlist *evlist, struct target *tar
+ 		/*
+ 		 * Wait until the parent tells us to go.
+ 		 */
+-		if (read(go_pipe[0], &bf, 1) == -1)
++		if (read(go_pipe[0], &bf, 1) != 1)
+ 			perror("unable to read pipe");
+ 
+ 		execvp(argv[0], (char **)argv);
