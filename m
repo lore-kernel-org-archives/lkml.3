@@ -1,174 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161722AbaDPPLG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 11:11:06 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:45499 "EHLO extserv.mm-sol.com"
+	id S1161677AbaDPPL3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 11:11:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35531 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161528AbaDPPK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 11:10:59 -0400
-Message-ID: <534E9D80.9050801@mm-sol.com>
-Date: Wed, 16 Apr 2014 18:10:56 +0300
-From: Stanimir Varbanov <svarbanov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	id S1161680AbaDPPLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 11:11:02 -0400
+Date: Wed, 16 Apr 2014 11:10:57 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Tejun Heo <tj@kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lpoetter@redhat.com, Simo Sorce <ssorce@redhat.com>,
+        cgroups@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        kay@redhat.com, Network Development <netdev@vger.kernel.org>
+Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
+ cgroup path
+Message-ID: <20140416151057.GE31074@redhat.com>
+References: <1397596546-10153-1-git-send-email-vgoyal@redhat.com>
+ <1397596546-10153-3-git-send-email-vgoyal@redhat.com>
+ <CALCETrURHNmLyccRiF_W8o2ozRMR4AaCjUE=_PU8z1+Pq6X2jQ@mail.gmail.com>
+ <20140416002010.GA5035@redhat.com>
+ <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com>
+ <20140416101709.GA14131@redhat.com>
+ <CALCETrUTMSpd=NYn9QuO5Y3WY0uBhjNEHO0jCwZu0L59CpeDew@mail.gmail.com>
 MIME-Version: 1.0
-To: Herbert Xu <herbert@gondor.apana.org.au>
-CC: Stanimir Varbanov <svarbanov@mm-sol.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Grant Likely <grant.likely@linaro.org>, linux-arm-msm@vger.kernel.org,
-        Mona Hossain <mhossain@codeaurora.org>,
-        Hariprasad Dhalinarasimha <hnamgund@codeaurora.org>,
-        Zhen Kong <zkong@codeaurora.org>,
-        Niranjana Vishwanathapura <nvishwan@codeaurora.org>,
-        Rohit Vaswani <rvaswani@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org
-Subject: Re: [RFC PATCH v2 0/9] Add Qualcomm crypto driver
-References: <1397479725-20954-1-git-send-email-svarbanov@mm-sol.com>
-In-Reply-To: <1397479725-20954-1-git-send-email-svarbanov@mm-sol.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrUTMSpd=NYn9QuO5Y3WY0uBhjNEHO0jCwZu0L59CpeDew@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Herbert, crypto folks
-
-I would like to know your opinions on the state of this driver. How far
-it is from the others crypto drivers in kernel. If you have some
-comments, criticisms etc. I will be glad to hear them and correct the
-potential issues.
-
-Thanks for your time.
-
-regards,
-Stan
-
-On 04/14/2014 03:48 PM, Stanimir Varbanov wrote:
-> Hi,
+On Wed, Apr 16, 2014 at 07:34:41AM -0700, Andy Lutomirski wrote:
+> On Wed, Apr 16, 2014 at 3:17 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Tue, Apr 15, 2014 at 08:47:54PM -0700, Andy Lutomirski wrote:
+> >> On Apr 15, 2014 5:20 PM, "Vivek Goyal" <vgoyal@redhat.com> wrote:
+> >> >
+> >> > On Tue, Apr 15, 2014 at 02:53:13PM -0700, Andy Lutomirski wrote:
+> >> > > On Tue, Apr 15, 2014 at 2:15 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> >> > > > This patch implements socket option SO_PASSCGROUP along the lines of
+> >> > > > SO_PASSCRED.
+> >> > > >
+> >> > > > If SO_PASSCGROUP is set, then recvmsg() will get a control message
+> >> > > > SCM_CGROUP which will contain the cgroup path of sender. This cgroup
+> >> > > > belongs to first mounted hierarchy in the sytem.
+> >> > > >
+> >> > > > SCM_CGROUP control message can only be received and sender can not send
+> >> > > > a SCM_CGROUP message. Kernel automatically generates one if receiver
+> >> > > > chooses to receive one.
+> >> > > >
+> >> > > > This works both for unix stream and datagram sockets.
+> >> > > >
+> >> > > > cgroup information is passed only if either the sender or receiver has
+> >> > > > SO_PASSCGROUP option set. This means for existing workloads they should
+> >> > > > not see any significant performance impact of this change.
+> >> > >
+> >> > > This is odd.  Shouldn't an SCM_CGROUP cmsg be generated when the
+> >> > > receiver has SO_PASSCGROUP set and the sender passes SCM_CGROUP to
+> >> > > sendmsg?
+> >> >
+> >> > How can receiver trust the cgroup info generated by sender. It needs to
+> >> > be generated by kernel so that receiver can trust it.
+> >> >
+> >> > And if receiver needs to know cgroup of sender, receiver can just set
+> >> > SO_PASSCGROUP on socket and receiver should get one SCM_CGROUP message
+> >> > with each message received.
+> >>
+> >> I think the kernel should validate the data.
+> >>
+> >> Here's an attack against SO_PEERCGROUP: if you create a container with
+> >> a super secret name, then every time you connect to any unix socket,
+> >> you leak the name.
+> >
+> > One should be able to do that already today with SO_PASSCRED option and
+> > then map pid to cgroup. Or if one is using user namespaces then go
+> > through uid mappings and  figure out which container sent message.
 > 
-> Here is the second version of the patch set. This time tagged
-> as an RFC to avoid confusions. The driver is splitted by files
-> and is buildable at the last patch. When the review has finished
-> 1/9 to 7/9 could be squashed in one patch.
-> 
-> Any comments appreciated!
-> 
-> Changes since v1:
-> 
-> core
->  - added MODULE_DEVICE_TABLE
->  - reorganise includes
->  - kernel doc comments
->  - fix probe error path, forgot to destroy workqueue
->  - rework clocks and kill loops for enabling
->  - restructure the interfaces between core part of the driver
->    and crypto type algorithms. Now struct qce_algo_ops has
->    .unregister_algs operation and it is implemented by every
->    algorithm type (unregister_algs was common in v1).
->    Also async_req_queue/done are now part of core structure
->    qce_device
-> 
-> regs-v5
->  - use GENMASK and include bitops.h
-> 
-> dma-sg helpers
->  - do not check !IS_ERR on error path
->  - various fixes as per review comments
->  - reorganise includes
->  - return error on qce_dma_terminate_all
-> 
-> ablkcipher
->  - use queue and done callbacks from struct qce_device
->  - reorganise includes
->  - kernel doc notation
-> 
-> sha-hmac
->  - use queue and done callbacks from struct qce_device
->  - make byte_count __be32
->  - kernel doc notation
->  - make rctx flags member unsigned long
->  - cleanup qce_ahash_update function
->  - make const * input args of qce_import_common
-> 
-> common
->  - rename bits/masks to use _SHIFT suffix
->  - reorganise includes and add qce_get_version function
->  - make rctx flags unsigned long
->  - move blocksize boundary check on function begging and
->    clear BYTECOUNT registers on first processing block
-> 
-> This driver is based on Codeaurora's driver found at [1]
-> 
-> regards,
-> Stan
-> 
-> [1] https://www.codeaurora.org/cgit/quic/la/kernel/msm-3.10/tree/drivers
-> /crypto/msm?h=msm-3.10
-> ------------------------------------------------------------
-> v1.
-> 
-> The following patch set implements support for Qualcomm
-> crypto hardware accelerator driver. It registers itself
-> to the crypto subsystem and adds the following operations
-> for encryption/decription - AES with ECB CBC CTR XTS modes,
-> DES with ECB CBC modes, and 3DES ECB CBC modes.
-> For hashing and MAC it adds support for sha1 sha256,
-> hmac(sha1) hmac(sha256).
-> 
-> The version of the driver is reworked by me and it is based
-> on Codeaurora's qcrypto driver. The proposed version has many
-> coding style fixes, re-factored files, separated by
-> functionality. I wanted to make the driver more readable and
-> easier for review, hope I done well. I'll appreciate any review
-> comments which will help me to make this code clear and ready
-> for mainline kernel.
-> 
-> Stanimir Varbanov (9):
->   crypto: qce: Add core driver implementation
->   crypto: qce: Add register defines
->   crypto: qce: Add dma and sg helpers
->   crypto: qce: Add ablkcipher algorithms
->   crypto: qce: Adds sha and hmac transforms
->   crypto: qce: Adds infrastructure to setup the crypto block
->   crypto: qce: Adds Makefile to build the driver
->   crypto: qce: Build Qualcomm qce driver
->   ARM: DT: qcom: Add Qualcomm crypto driver binding document
-> 
->  .../devicetree/bindings/crypto/qcom-qce.txt        |  25 +
->  drivers/crypto/Kconfig                             |  10 +
->  drivers/crypto/Makefile                            |   1 +
->  drivers/crypto/qce/Makefile                        |   6 +
->  drivers/crypto/qce/ablkcipher.c                    | 403 ++++++++++++++
->  drivers/crypto/qce/cipher.h                        |  67 +++
->  drivers/crypto/qce/common.c                        | 438 +++++++++++++++
->  drivers/crypto/qce/common.h                        | 104 ++++
->  drivers/crypto/qce/core.c                          | 295 ++++++++++
->  drivers/crypto/qce/core.h                          |  73 +++
->  drivers/crypto/qce/dma.c                           | 188 +++++++
->  drivers/crypto/qce/dma.h                           |  58 ++
->  drivers/crypto/qce/regs-v5.h                       | 331 ++++++++++++
->  drivers/crypto/qce/sha.c                           | 591 +++++++++++++++++++++
->  drivers/crypto/qce/sha.h                           |  81 +++
->  15 files changed, 2671 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/crypto/qcom-qce.txt
->  create mode 100644 drivers/crypto/qce/Makefile
->  create mode 100644 drivers/crypto/qce/ablkcipher.c
->  create mode 100644 drivers/crypto/qce/cipher.h
->  create mode 100644 drivers/crypto/qce/common.c
->  create mode 100644 drivers/crypto/qce/common.h
->  create mode 100644 drivers/crypto/qce/core.c
->  create mode 100644 drivers/crypto/qce/core.h
->  create mode 100644 drivers/crypto/qce/dma.c
->  create mode 100644 drivers/crypto/qce/dma.h
->  create mode 100644 drivers/crypto/qce/regs-v5.h
->  create mode 100644 drivers/crypto/qce/sha.c
->  create mode 100644 drivers/crypto/qce/sha.h
+> Not if you've locked down proc, perhaps by using hidepid.
 > 
 
+I think before we dive into smaller details lets take a step back. Core of
+your argument seems to be that exposing cgroup information of sender to
+receiver is a security risk. Hence only sender should decide when to
+send that information and when not to.
 
--- 
-regards,
-Stan
+I find several issues here.
+
+- Why exposing cgroup information of sender is a security risk?
+
+- How would a sender decide when to send SCM_CGROUP info and when not to.
+
+- Additional higher level protocols need to be established now between
+  sender and receiver so that they agree upon that cgroup information need
+  to be sent. This will just make the implementation complicated and 
+  this should be done only if benefits outweigh the cons.  
+
+> >
+> >>
+> >> Here's an attack against SO_PASSCGROUP, as you implemented it: connect
+> >> a socket and get someone else to write(2) to it.  This isn't very
+> >> hard.  Now you've impersonated.
+> >
+> > If you can get another process to write to your socket and impersonate,
+> > then what will stop from that process to also send SCM_CGROUP message
+> > also? So I don't see how SCM_CGROUP from client will solve this problem.
+> >
+> 
+> I can easily get other processed to write to my socket.  Passing that
+> socket as stderr to a setuid program is probably the easiest way.
+> Finding a service that accepts a socket using SCM_RIGHTS and writes to
+> it is another.  It is supposed to be safe to write(2) to an untrusted
+> file descriptor, or, at the very least, it is supposed to be a DoS at
+> worst.  In this case, it's also either an information leak.
+
+Hold on, so what's the problem here.
+
+- First of all, if you opened the connection SO_PEERCGROUP will still give
+  the right information to receiver. Does not matter if later you got some
+  priviliged process to write to that socket descriptor.
+
+- Now if you passed fd to a privliged process as stderr, it is not asking
+  for any services. And if it does, then there is a design issue on that
+  privliged service side. 
+
+I really don't see any issue here.
+
+> 
+> It's true that SO_PASSCRED has the same problem.  I consider that to
+> be a mistake, and I suspect that there are a large number of
+> longstanding security problems caused by it.  Regardless, we shouldn't
+> exacerbate this problem.  There is no legacy code using SCM_CGROUP at
+> all right now, because the option has never been in a released kernel.
+>  So let's get the interface right the first time around.
+> 
+> If I find some time later today, I can try to write a variant of the
+> patch that only sends SCM_CGROUP when the sender requests it.
+
+I don't think implementation is the issue here. You need to provide a
+stronger argument that why passing cgroup information is a security
+risk.
+
+> 
+> On an unrelated note, what happens when there are multiple cgroup hierarchies?
+> 
+
+People are moving away from multiple cgroup hierarchiy model. In future a
+single hiearchy is planned and multiple hierarchy will remain there only
+for backward compatibility.
+
+Passing cgroup of task in every hierarchy becomes too expensive. (4K per
+hierarchy). And its  not clear how many hierarchies are present in the
+system.
+
+So there is not much point in passing cgroup of task in every hierarchy as
+it is slowly being phased out.
+
+
+> > Kernel cgroup verification will also not help in this case as sender
+> > is sending his own cgroup.
+> 
+> Sure it will -- the sender sticks a string into SCM_CGROUP and the
+> kernel checks it.
+
+Kernel will check whether sender is sending right cgroup information or
+not. So in your example, if you passed fd to a privliged process and
+that process sends an SCM_CGROUP message, then kernel will just let
+it go. SCM_CGROUP contains the cgroup of priviliged process and that's
+the right information. 
+
+If a priviliged process is asking for a service on a fd passed by 
+unpriviliged process, that itself is a risk. And that risk will not
+be mitigated by forcing the usage of SCM_CGROUP. 
+
+> 
+> >
+> >>
+> >> I advocate for the following semantics: if sendmsg is passed a
+> >> SCM_CGROUP cmsg, and that cmsg has the right cgroup, and the receiver
+> >> has SO_PASSCGROUP set, then the receiver gets SCM_CGROUP.  If you try
+> >> to lie using SCM_CGROUP, you get -EPERM.  If you set SO_PASSCGROUP,
+> >> but your peer doesn't sent SCM_CREDS, you get nothing.
+> >>
+> >> This is immune to both attacks.  It should be cheaper, too, since
+> >> there's no overhead for people who don't use it.
+> >
+> > I think you seem to be saying that a client's credentials should not be
+> > visible to receiver until and unless client himself wants to reveal
+> > those. IOW, it kind of looks like an anonymous mode of operation where
+> > client connects to a socket but receiver client not want to reveal any of
+> > the information about itself to receiver.
+> >
+> > I am not sure how useful that mode really is. If it is really useful, I
+> > think one could implement another socket option on client side to
+> > deny passing cgroup information to receiver. Say SO_NOPASSCGROUP.
+> 
+> This won't help -- an attacker will simply not set that option, and
+> the program being attacked is certainly not going to set
+> SO_NOPASSCGROUP right before calling write.
+
+This was for the case where you gave example of "super secret container"
+which did not want to reveal its identity to receiver. 
+
+For the case of priviliged process asking for service on an fd passed
+by unpriviliged process, SCM_CGROUP will not help you either. So it is
+a bad idea to begin with.
+
+
+> 
+> >
+> > Before we even get there, I will question that what's so secret about
+> > cgroup information that one would like to hide it from receiver. We don't
+> > hide uid, pid, gid.
+> >
+> 
+> I think we should hide uid, gid, and pid too, but that ship has sailed.
+> 
+> The bigger issue isn't hiding so much as accidental assertions of
+> authority.  If a program accidentally leaks its uid, that's one thing.
+>  If a program, by accidentally leaking its uid, causes another program
+> to think that the sender wants some action to be taken on behalf of
+> its uid, then there's a real security problem.
+> 
+> > Secondly, how would client know when to send SCM_CGROUP to receiver. For
+> > the use case I mentioned that init wants to log cgroup of every message
+> > going into journal. How would client know that every message needs to
+> > have SCM_CGROUP. By automatically getting client information when receiver
+> > needs it, simplifies the things a lot without any client modificaiton.
+> 
+> I think that the client *should* be modified.  What if there's an
+> existing program that runs as a container's root but does not intend
+> to sign off on a message with its cgroup?
+
+That goes back to my previous question. Why revealing cgroup of sender
+is a problem.
+
+And in case we agree that it is a problem SO_NOPASSCGROUP will solve
+that problem.
+
+> 
+> In any event, I still think that the journald case has no need for any
+> kernel changes at all.  From a very cursory inspection, the journal
+> code expects to find a socket in /run/systemd/journal/socket.  It
+> should be enough to stick a different socket into that location in
+> each container.  This will work on all kernels and may even work
+> without modifying any code in the container.
+
+This is a little generic discussion. No containers here. Think of various
+services running in their own cgroups and logging messages into journal.
+
+And that's only one use case.
+
+Thanks
+Vivek
