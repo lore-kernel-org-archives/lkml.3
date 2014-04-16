@@ -1,86 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751149AbaDPA4X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 20:56:23 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:41158 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbaDPA4V (ORCPT
+	id S1751185AbaDPBCb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 21:02:31 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:41931 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918AbaDPBCa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 20:56:21 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Wed, 16 Apr 2014 09:56:47 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Yong-Taek Lee <ytk.lee@samsung.com>,
-        Minchan Kim <minchan@kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.com>
-Subject: Re: [PATCH 1/2] mm/page_alloc: prevent MIGRATE_RESERVE pages from
- being misplaced
-Message-ID: <20140416005647.GC17350@js1304-P5Q-DELUXE>
-References: <533D8015.1000106@suse.cz>
- <1396539618-31362-1-git-send-email-vbabka@suse.cz>
+	Tue, 15 Apr 2014 21:02:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396539618-31362-1-git-send-email-vbabka@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140407174617.GA12379@alberich>
+References: <1396563423-30893-1-git-send-email-robherring2@gmail.com>
+	<1396563423-30893-2-git-send-email-robherring2@gmail.com>
+	<20140407174617.GA12379@alberich>
+Date: Tue, 15 Apr 2014 20:02:29 -0500
+Message-ID: <CAL_JsqL7Of9_NofFd2ym47PNPtYWSMmshe+sJSGTwKmOa5C50Q@mail.gmail.com>
+Subject: Re: [PATCH 01/20] mips: octeon: convert to use unflatten_and_copy_device_tree
+From: Rob Herring <robherring2@gmail.com>
+To: Andreas Herrmann <herrmann.der.user@googlemail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        David Daney <ddaney.cavm@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 03, 2014 at 05:40:17PM +0200, Vlastimil Babka wrote:
-> For the MIGRATE_RESERVE pages, it is important they do not get misplaced
-> on free_list of other migratetype, otherwise the whole MIGRATE_RESERVE
-> pageblock might be changed to other migratetype in try_to_steal_freepages().
-> 
-> Currently, it is however possible for this to happen when MIGRATE_RESERVE
-> page is allocated on pcplist through rmqueue_bulk() as a fallback for other
-> desired migratetype, and then later freed back through free_pcppages_bulk()
-> without being actually used. This happens because free_pcppages_bulk() uses
-> get_freepage_migratetype() to choose the free_list, and rmqueue_bulk() calls
-> set_freepage_migratetype() with the *desired* migratetype and not the page's
-> original MIGRATE_RESERVE migratetype.
-> 
-> This patch fixes the problem by moving the call to set_freepage_migratetype()
-> from rmqueue_bulk() down to __rmqueue_smallest() and __rmqueue_fallback() where
-> the actual page's migratetype (e.g. from which free_list the page is taken
-> from) is used. Note that this migratetype might be different from the
-> pageblock's migratetype due to freepage stealing decisions. This is OK, as page
-> stealing never uses MIGRATE_RESERVE as a fallback, and also takes care to leave
-> all MIGRATE_CMA pages on the correct freelist.
-> 
-> Therefore, as an additional benefit, the call to get_pageblock_migratetype()
-> from rmqueue_bulk() when CMA is enabled, can be removed completely. This relies
-> on the fact that MIGRATE_CMA pageblocks are created only during system init,
-> and the above. The related is_migrate_isolate() check is also unnecessary, as
-> memory isolation has other ways to move pages between freelists, and drain
-> pcp lists containing pages that should be isolated.
-> The buffered_rmqueue() can also benefit from calling get_freepage_migratetype()
-> instead of get_pageblock_migratetype().
-> 
-> A separate patch will add VM_BUG_ON checks for the invariant that for
-> MIGRATE_RESERVE and MIGRATE_CMA pageblocks, freepage_migratetype must equal to
-> pageblock_migratetype so that these pages always go to the correct free_list.
-> 
-> Reported-by: Yong-Taek Lee <ytk.lee@samsung.com>
-> Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Suggested-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> Suggested-by: Mel Gorman <mgorman@suse.de>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+On Mon, Apr 7, 2014 at 12:46 PM, Andreas Herrmann
+<herrmann.der.user@googlemail.com> wrote:
+> On Thu, Apr 03, 2014 at 05:16:44PM -0500, Rob Herring wrote:
+>> From: Rob Herring <robh@kernel.org>
+>>
+>> The octeon FDT code can be simplified by using
+>> unflatten_and_copy_device_tree function. This removes all accesses to
+>> FDT header data by the arch code.
+>
+> Hi Rob,
+>
+> I think (in general) this modification is ok. But I suggest to use
+> following (slightly modified) version.
 
-Looks good to me.
+Having to compile each platform on MIPS sure is annoying. Reminds me
+of ARM a few years ago. We need a good rant from Linus about MIPS. ;)
 
-Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>
+> -       /* Copy the default tree from init memory. */
+> -       initial_boot_params = early_init_dt_alloc_memory_arch(dt_size, 8);
+> -       if (initial_boot_params == NULL)
+> -               panic("Could not allocate initial_boot_params");
+> -       memcpy(initial_boot_params, fdt, dt_size);
+> +       initial_boot_params = (void *)fdt;
+
+Does calling early_init_devtree here work instead. This will add
+parsing memory, initrd and command line. If you don't have those then
+it should be a nop other than setting initial_boot_params. It should
+only matter if your DT has these things and you want/need to ignore
+them. Do this would get things more inline with other arches.
+
+Rob
