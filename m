@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161826AbaDPPnD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 11:43:03 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:37385 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161615AbaDPPnA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 11:43:00 -0400
+	id S1161855AbaDPPrh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 11:47:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56434 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161580AbaDPPrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 11:47:36 -0400
+Message-ID: <534EA601.8040104@redhat.com>
+Date: Wed, 16 Apr 2014 11:47:13 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-In-Reply-To: <20140416095229.GF4754@lee--X1>
-References: <1397592876-5741-1-git-send-email-dianders@chromium.org>
-	<1397592876-5741-2-git-send-email-dianders@chromium.org>
-	<20140416095229.GF4754@lee--X1>
-Date: Wed, 16 Apr 2014 08:42:59 -0700
-X-Google-Sender-Auth: 3uq03teCCw1TWhY_CZMsyK4fwB4
-Message-ID: <CAD=FV=VjmXGjDHTcm=E2eEPtkOa5DxKG70jXj22RbbN1VfeGjw@mail.gmail.com>
-Subject: Re: [PATCH 1/3] mfd: tps65090: Allow charger module to be used when
- no irq
-From: Doug Anderson <dianders@chromium.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Anton Vorontsov <anton@enomsg.org>, Olof Johansson <olof@lixom.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        AJAY KUMAR RAMAKRISHNA SHYMALAMMA <ajaykumar.rs@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Vlastimil Babka <vbabka@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Heesub Shin <heesub.shin@samsung.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Dongjun Shin <d.j.shin@samsung.com>,
+        Sunghwan Yun <sunghwan.yun@samsung.com>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 1/2] mm/compaction: make isolate_freepages start at pageblock
+ boundary
+References: <5342BA34.8050006@suse.cz> <1397553507-15330-1-git-send-email-vbabka@suse.cz>
+In-Reply-To: <1397553507-15330-1-git-send-email-vbabka@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lee
-
-On Wed, Apr 16, 2014 at 2:52 AM, Lee Jones <lee.jones@linaro.org> wrote:
->> On the ARM Chromebook tps65090 has two masters: the AP (the main
->> processor running linux) and the EC (the embedded controller).  The AP
->> is allowed to mess with FETs but the EC is in charge of charge control.
->>
->> The tps65090 interupt line is routed to both the AP and the EC, which
->> can cause quite a headache.  Having two people adjusting masks and
->> acking interrupts is a recipe for disaster.
->>
->> In the shipping kernel we had a hack to have the AP pay attention to
->> the IRQ but not to ack it.  It also wasn't supposed to configure the
->> IRQ in any way.  That hack allowed us to detect when the device was
->> charging without messing with the EC's state.
->>
->> The current tps65090 infrastructure makes the above difficult, and it
->> was a bit of a hack to begin with.  Rather than uglify the driver to
->> support it, just extend the driver's existing notion of "no irq" to
->> the charger.  This makes the charger code poll every 2 seconds for AC
->> detect, which is sufficient.
->>
->> Signed-off-by: Doug Anderson <dianders@chromium.org>
->> ---
->>  drivers/mfd/tps65090.c           | 14 ++++++--
->>  drivers/power/tps65090-charger.c | 76 +++++++++++++++++++++++++++++++---------
->>  2 files changed, 70 insertions(+), 20 deletions(-)
+On 04/15/2014 05:18 AM, Vlastimil Babka wrote:
+> The compaction freepage scanner implementation in isolate_freepages() starts
+> by taking the current cc->free_pfn value as the first pfn. In a for loop, it
+> scans from this first pfn to the end of the pageblock, and then subtracts
+> pageblock_nr_pages from the first pfn to obtain the first pfn for the next
+> for loop iteration.
 >
-> For the MFD part:
->   Acked-by: Lee Jones <lee.jones@linaro.org>
+> This means that when cc->free_pfn starts at offset X rather than being aligned
+> on pageblock boundary, the scanner will start at offset X in all scanned
+> pageblock, ignoring potentially many free pages. Currently this can happen when
+> a) zone's end pfn is not pageblock aligned, or
+> b) through zone->compact_cached_free_pfn with CONFIG_HOLES_IN_ZONE enabled and
+>     a hole spanning the beginning of a pageblock
 >
-> Anton,
->   If you are okay with this patch I'd be happy to create an immutable
-> branch for you to pull from?
+> This patch fixes the problem by aligning the initial pfn in isolate_freepages()
+> to pageblock boundary. This also allows to replace the end-of-pageblock
+> alignment within the for loop with a simple pageblock_nr_pages increment.
 >
-> Doug,
->   What is the relationship (dependencies) between this and the other
-> patches in the set?
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Reported-by: Heesub Shin <heesub.shin@samsung.com>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
 
-This patch can be applied irrespective of other others in the series.
+Acked-by: Rik van Riel <riel@redhat.com>
 
--Doug
