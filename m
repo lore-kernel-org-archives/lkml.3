@@ -1,73 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522AbaDPFUF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 01:20:05 -0400
-Received: from ozlabs.org ([103.22.144.67]:35772 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754411AbaDPFUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 01:20:03 -0400
-Date: Wed, 16 Apr 2014 15:19:56 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>
-Subject: linux-next: build failure after merge of the akpm-current tree
-Message-Id: <20140416151956.b3388ef9c11c6c58b535186f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1754513AbaDPFVV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 01:21:21 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:57147 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753162AbaDPFVT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 01:21:19 -0400
+Message-ID: <1397625673.22465.8.camel@host5.omatika.ru>
+Subject: Re: [PATCH v3 10/21] mtd: support BB SRAM on ICP DAS LP-8x4x
+From: Sergei Ianovich <ynvich@gmail.com>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Kees Cook <keescook@chromium.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Philip Avinash <avinashphilip@ti.com>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
+        "open list:MEMORY TECHNOLOGY..." <linux-mtd@lists.infradead.org>
+Date: Wed, 16 Apr 2014 09:21:13 +0400
+In-Reply-To: <20140416050449.GJ3131@norris-Latitude-E6410>
+References: <1386901645-28895-1-git-send-email-ynvich@gmail.com>
+	 <1387309071-22382-1-git-send-email-ynvich@gmail.com>
+	 <1387309071-22382-11-git-send-email-ynvich@gmail.com>
+	 <20140416050449.GJ3131@norris-Latitude-E6410>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__16_Apr_2014_15_19_56_+1000_d+RjUBV934JWIEmq"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__16_Apr_2014_15_19_56_+1000_d+RjUBV934JWIEmq
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2014-04-15 at 22:04 -0700, Brian Norris wrote:
+> Hi Sergei,
+> 
+> On Tue, Dec 17, 2013 at 11:37:40PM +0400, Sergei Ianovich wrote:
+> > This provides an MTD device driver for 512kB of battery backed up SRAM
+> > on ICPDAS LP-8X4X programmable automation controllers.
+> > 
+> > SRAM chip is connected via FPGA and is not accessible without a driver,
+> > unlike flash memory which is wired to CPU MMU.
+> > 
+> > This SRAM becomes an excellent persisent storage of volatile process
+> > data like counter values and sensor statuses. Storing those data in
+> > flash or mmc card is not a viable solution.
+> > 
+> > Signed-off-by: Sergei Ianovich <ynvich@gmail.com>
+> > ---
+> >    v2..v3
+> >    * no changes (except number 08/16 -> 10/21)
+> > 
+> >    v0..v2
+> >    * use device tree
+> >    * use devm helpers where possible
+> 
+> What's the status of this series? Is the rest of this platform support
+> going in via other trees yet? I have a few trivial comments, but this
+> driver mostly looks good as-is.
 
-Hi Andrew,
+(...)
 
-After merging the akpm-current tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+> You'll need a (trivial) DT binding doc in
+> Documentation/devicetree/bindings/ to go with this. You might also need
+> to split the arch/arm/boot/dts/ stuff out to a separate patch, so the
+> MTD driver can go in the MTD tree separate from the ARM tree bits.
 
-In file included from mm/vmscan.c:50:0:
-include/linux/swapops.h: In function 'is_swap_pte':
-include/linux/swapops.h:57:2: error: implicit declaration of function 'pte_=
-present_nonuma' [-Werror=3Dimplicit-function-declaration]
-  return !pte_none(pte) && !pte_present_nonuma(pte) && !pte_file(pte);
-  ^
+(...)
 
-Caused by commit 851fe3337768 ("x86: define _PAGE_NUMA by reusing
-software bits on the PMD and PTE levels").  This build does not have
-CONFIG_NUMA_BALANCING set.
+> With that, you have my:
+> 
+> 	Reviewed-by: Brian Norris <computersforpeace@gmail.com>
+> 
+> and I can merge this to the MTD tree if/when you'd like.
 
-I have reverted that commit for today.
+Thanks for response, the rest of the series is stuck on a DMA driver
+with no development activity. I'll fix the comments, separate ARM staff
+and refile the patch.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__16_Apr_2014_15_19_56_+1000_d+RjUBV934JWIEmq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTThMAAAoJEMDTa8Ir7ZwVnvoP/i+0jZ8B29183MPtalq8jFie
-hvbY1YyTyVjlWiJIDD+CwwcjyiXWOhXw4fEwOSNrCRcWyjtlidzcyIwHqAmapmPe
-7k0M6xrzZB1+qJQC/heA8jacZxU2PzHemm0nj+rwXNPWnfdCATmR6R2O6kM99kdS
-cjXCYNhR7IKapqSpYDT3qjWN85rVc3c4dm6/H8TDKFlQTyhSXOooetybaNflhEHX
-nXqykprFQgYgPXWB+nzgJH7LRPkNKWAoCD4x9+TPhGILNEW0f6JEvf1FJOU+4Z6W
-uwIr2lQDR8sJotwu2RLX/naBvJFt2qW0AR6U+ah0DYFOLA9oZMiY5Xprg4EpyRgJ
-1FgDlQ+W6psv3113qcZ9L6W6wkNxt/BO3HNEDpCeCaVHzHGKdWWCwm2Isl6nGRQW
-15ojTPFc5N5IUh7oZJLWlP3DM4CDPRgbaEWQev6pwPE52OMKmue3APx6sbjnfaJc
-GcxS9PRO/226GrqnCMqu4l5+WE/QYXO1v1niy0wNUOMLDDj0a1JBwjmfVYo3qh1w
-EzCnLJgxfcxHzKWrDg13qVhNQMPS6E4VeBxEdm4iJA5+DuzZT8X2Dn0zXrcmEAGV
-XDsmRiqRGnrxKy9IIvPjEptBI+rhz7nTEXF3aY9/jecjeajn001zYpwLmPKIaVUL
-xkPfjDhC+fQMCHqyIno6
-=GFDq
------END PGP SIGNATURE-----
-
---Signature=_Wed__16_Apr_2014_15_19_56_+1000_d+RjUBV934JWIEmq--
