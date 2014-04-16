@@ -1,358 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751224AbaDPBtS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 21:49:18 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:38698 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931AbaDPBtQ (ORCPT
+	id S1751161AbaDPBwe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 21:52:34 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:42974 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898AbaDPBwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 21:49:16 -0400
-Message-ID: <1397612946.13188.88.camel@ThinkPad-T5421.cn.ibm.com>
-Subject: [RFC PATCH v3] memory-hotplug: Update documentation to hide
- information about SECTIONS and remove end_phys_index
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Wed, 16 Apr 2014 09:49:06 +0800
-In-Reply-To: <534BA6B0.6050500@cn.fujitsu.com>
-References: <1396429018.2913.19.camel@ThinkPad-T5421.cn.ibm.com>
-	 <533E0B0E.9020909@jp.fujitsu.com>
-	 <1396945659.3162.6.camel@ThinkPad-T5421.cn.ibm.com>
-	 <53442021.2060608@intel.com> <53443E8C.4070906@linux.vnet.ibm.com>
-	 <53445245.3020400@intel.com> <534585E8.50302@linux.vnet.ibm.com>
-	 <1397103460.25199.54.camel@ThinkPad-T5421.cn.ibm.com>
-	 <53483A7C.1060807@linux.vnet.ibm.com>
-	 <1397465003.13188.17.camel@ThinkPad-T5421.cn.ibm.com>
-	 <534BA6B0.6050500@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14041601-4966-0000-0000-000009155563
+	Tue, 15 Apr 2014 21:52:33 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Wed, 16 Apr 2014 10:52:59 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Heesub Shin <heesub.shin@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dongjun Shin <d.j.shin@samsung.com>,
+        Sunghwan Yun <sunghwan.yun@samsung.com>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/2] mm/compaction: make isolate_freepages start at
+ pageblock boundary
+Message-ID: <20140416015259.GA17841@js1304-P5Q-DELUXE>
+References: <5342BA34.8050006@suse.cz>
+ <1397553507-15330-1-git-send-email-vbabka@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397553507-15330-1-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seems we all agree that information about SECTION, e.g. section size,
-sections per memory block should be kept as kernel internals, and not
-exposed to userspace.
+On Tue, Apr 15, 2014 at 11:18:26AM +0200, Vlastimil Babka wrote:
+> The compaction freepage scanner implementation in isolate_freepages() starts
+> by taking the current cc->free_pfn value as the first pfn. In a for loop, it
+> scans from this first pfn to the end of the pageblock, and then subtracts
+> pageblock_nr_pages from the first pfn to obtain the first pfn for the next
+> for loop iteration.
+> 
+> This means that when cc->free_pfn starts at offset X rather than being aligned
+> on pageblock boundary, the scanner will start at offset X in all scanned
+> pageblock, ignoring potentially many free pages. Currently this can happen when
+> a) zone's end pfn is not pageblock aligned, or
+> b) through zone->compact_cached_free_pfn with CONFIG_HOLES_IN_ZONE enabled and
+>    a hole spanning the beginning of a pageblock
+> 
+> This patch fixes the problem by aligning the initial pfn in isolate_freepages()
+> to pageblock boundary. This also allows to replace the end-of-pageblock
+> alignment within the for loop with a simple pageblock_nr_pages increment.
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Reported-by: Heesub Shin <heesub.shin@samsung.com>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> ---
+>  mm/compaction.c | 22 ++++++++++++----------
+>  1 file changed, 12 insertions(+), 10 deletions(-)
 
-This patch updates Documentation/memory-hotplug.txt to refer to memory
-blocks instead of memory sections where appropriate and added a
-paragraph to explain that memory blocks are made of memory sections.
-The documentation update is mostly provided by Nathan.
-
-Also, as end_phys_index in code is actually not the end section id, but
-the end memory block id, which should always be the same as phys_index.
-So it is removed here.
-
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
-v3: memort->memory, pointed out by Yanfei
-
- Documentation/memory-hotplug.txt |  125 +++++++++++++++++++-------------------
- drivers/base/memory.c            |   12 ----
- 2 files changed, 61 insertions(+), 76 deletions(-)
-
-diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
-index 58340d5..1aa239f 100644
---- a/Documentation/memory-hotplug.txt
-+++ b/Documentation/memory-hotplug.txt
-@@ -88,16 +88,21 @@ phase by hand.
- 
- 1.3. Unit of Memory online/offline operation
- ------------
--Memory hotplug uses SPARSEMEM memory model. SPARSEMEM divides the whole memory
--into chunks of the same size. The chunk is called a "section". The size of
--a section is architecture dependent. For example, power uses 16MiB, ia64 uses
--1GiB. The unit of online/offline operation is "one section". (see Section 3.)
-+Memory hotplug uses SPARSEMEM memory model which allows memory to be divided
-+into chunks of the same size. These chunks are called "sections". The size of
-+a memory section is architecture dependent. For example, power uses 16MiB, ia64
-+uses 1GiB.
- 
--To determine the size of sections, please read this file:
-+Memory sections are combined into chunks referred to as "memory blocks". The
-+size of a memory block is architecture dependent and represents the logical
-+unit upon which memory online/offline operations are to be performed. The
-+default size of a memory block is the same as memory section size unless an
-+architecture specifies otherwise. (see Section 3.)
-+
-+To determine the size (in bytes) of a memory block please read this file:
- 
- /sys/devices/system/memory/block_size_bytes
- 
--This file shows the size of sections in byte.
- 
- -----------------------
- 2. Kernel Configuration
-@@ -123,42 +128,35 @@ config options.
-     (CONFIG_ACPI_CONTAINER).
-     This option can be kernel module too.
- 
-+
- --------------------------------
--4 sysfs files for memory hotplug
-+3 sysfs files for memory hotplug
- --------------------------------
--All sections have their device information in sysfs.  Each section is part of
--a memory block under /sys/devices/system/memory as
-+All memory blocks have their device information in sysfs.  Each memory block
-+is described under /sys/devices/system/memory as
- 
- /sys/devices/system/memory/memoryXXX
--(XXX is the section id.)
-+(XXX is the memory block id.)
- 
--Now, XXX is defined as (start_address_of_section / section_size) of the first
--section contained in the memory block.  The files 'phys_index' and
--'end_phys_index' under each directory report the beginning and end section id's
--for the memory block covered by the sysfs directory.  It is expected that all
-+For the memory block covered by the sysfs directory.  It is expected that all
- memory sections in this range are present and no memory holes exist in the
- range. Currently there is no way to determine if there is a memory hole, but
- the existence of one should not affect the hotplug capabilities of the memory
- block.
- 
--For example, assume 1GiB section size. A device for a memory starting at
-+For example, assume 1GiB memory block size. A device for a memory starting at
- 0x100000000 is /sys/device/system/memory/memory4
- (0x100000000 / 1Gib = 4)
- This device covers address range [0x100000000 ... 0x140000000)
- 
--Under each section, you can see 4 or 5 files, the end_phys_index file being
--a recent addition and not present on older kernels.
-+Under each memory block, you can see 4 files:
- 
--/sys/devices/system/memory/memoryXXX/start_phys_index
--/sys/devices/system/memory/memoryXXX/end_phys_index
-+/sys/devices/system/memory/memoryXXX/phys_index
- /sys/devices/system/memory/memoryXXX/phys_device
- /sys/devices/system/memory/memoryXXX/state
- /sys/devices/system/memory/memoryXXX/removable
- 
--'phys_index'      : read-only and contains section id of the first section
--		    in the memory block, same as XXX.
--'end_phys_index'  : read-only and contains section id of the last section
--		    in the memory block.
-+'phys_index'      : read-only and contains memory block id, same as XXX.
- 'state'           : read-write
-                     at read:  contains online/offline state of memory.
-                     at write: user can specify "online_kernel",
-@@ -185,6 +183,7 @@ For example:
- A backlink will also be created:
- /sys/devices/system/memory/memory9/node0 -> ../../node/node0
- 
-+
- --------------------------------
- 4. Physical memory hot-add phase
- --------------------------------
-@@ -227,11 +226,10 @@ You can tell the physical address of new memory to the kernel by
- 
- % echo start_address_of_new_memory > /sys/devices/system/memory/probe
- 
--Then, [start_address_of_new_memory, start_address_of_new_memory + section_size)
--memory range is hot-added. In this case, hotplug script is not called (in
--current implementation). You'll have to online memory by yourself.
--Please see "How to online memory" in this text.
--
-+Then, [start_address_of_new_memory, start_address_of_new_memory +
-+memory_block_size] memory range is hot-added. In this case, hotplug script is
-+not called (in current implementation). You'll have to online memory by
-+yourself.  Please see "How to online memory" in this text.
- 
- 
- ------------------------------
-@@ -240,36 +238,36 @@ Please see "How to online memory" in this text.
- 
- 5.1. State of memory
- ------------
--To see (online/offline) state of memory section, read 'state' file.
-+To see (online/offline) state of a memory block, read 'state' file.
- 
- % cat /sys/device/system/memory/memoryXXX/state
- 
- 
--If the memory section is online, you'll read "online".
--If the memory section is offline, you'll read "offline".
-+If the memory block is online, you'll read "online".
-+If the memory block is offline, you'll read "offline".
- 
- 
- 5.2. How to online memory
- ------------
- Even if the memory is hot-added, it is not at ready-to-use state.
--For using newly added memory, you have to "online" the memory section.
-+For using newly added memory, you have to "online" the memory block.
- 
--For onlining, you have to write "online" to the section's state file as:
-+For onlining, you have to write "online" to the memory block's state file as:
- 
- % echo online > /sys/devices/system/memory/memoryXXX/state
- 
--This onlining will not change the ZONE type of the target memory section,
--If the memory section is in ZONE_NORMAL, you can change it to ZONE_MOVABLE:
-+This onlining will not change the ZONE type of the target memory block,
-+If the memory block is in ZONE_NORMAL, you can change it to ZONE_MOVABLE:
- 
- % echo online_movable > /sys/devices/system/memory/memoryXXX/state
--(NOTE: current limit: this memory section must be adjacent to ZONE_MOVABLE)
-+(NOTE: current limit: this memory block must be adjacent to ZONE_MOVABLE)
- 
--And if the memory section is in ZONE_MOVABLE, you can change it to ZONE_NORMAL:
-+And if the memory block is in ZONE_MOVABLE, you can change it to ZONE_NORMAL:
- 
- % echo online_kernel > /sys/devices/system/memory/memoryXXX/state
--(NOTE: current limit: this memory section must be adjacent to ZONE_NORMAL)
-+(NOTE: current limit: this memory block must be adjacent to ZONE_NORMAL)
- 
--After this, section memoryXXX's state will be 'online' and the amount of
-+After this, memory block XXX's state will be 'online' and the amount of
- available memory will be increased.
- 
- Currently, newly added memory is added as ZONE_NORMAL (for powerpc, ZONE_DMA).
-@@ -284,22 +282,22 @@ This may be changed in future.
- 6.1 Memory offline and ZONE_MOVABLE
- ------------
- Memory offlining is more complicated than memory online. Because memory offline
--has to make the whole memory section be unused, memory offline can fail if
--the section includes memory which cannot be freed.
-+has to make the whole memory block be unused, memory offline can fail if
-+the memory block includes memory which cannot be freed.
- 
- In general, memory offline can use 2 techniques.
- 
--(1) reclaim and free all memory in the section.
--(2) migrate all pages in the section.
-+(1) reclaim and free all memory in the memory block.
-+(2) migrate all pages in the memory block.
- 
- In the current implementation, Linux's memory offline uses method (2), freeing
--all  pages in the section by page migration. But not all pages are
-+all  pages in the memory block by page migration. But not all pages are
- migratable. Under current Linux, migratable pages are anonymous pages and
--page caches. For offlining a section by migration, the kernel has to guarantee
--that the section contains only migratable pages.
-+page caches. For offlining a memory block by migration, the kernel has to
-+guarantee that the memory block contains only migratable pages.
- 
--Now, a boot option for making a section which consists of migratable pages is
--supported. By specifying "kernelcore=" or "movablecore=" boot option, you can
-+Now, a boot option for making a memory block which consists of migratable pages
-+is supported. By specifying "kernelcore=" or "movablecore=" boot option, you can
- create ZONE_MOVABLE...a zone which is just used for movable pages.
- (See also Documentation/kernel-parameters.txt)
- 
-@@ -315,28 +313,27 @@ creates ZONE_MOVABLE as following.
-   Size of memory for movable pages (for offline) is ZZZZ.
- 
- 
--Note) Unfortunately, there is no information to show which section belongs
-+Note: Unfortunately, there is no information to show which memory block belongs
- to ZONE_MOVABLE. This is TBD.
- 
- 
- 6.2. How to offline memory
- ------------
--You can offline a section by using the same sysfs interface that was used in
--memory onlining.
-+You can offline a memory block by using the same sysfs interface that was used
-+in memory onlining.
- 
- % echo offline > /sys/devices/system/memory/memoryXXX/state
- 
--If offline succeeds, the state of the memory section is changed to be "offline".
-+If offline succeeds, the state of the memory block is changed to be "offline".
- If it fails, some error core (like -EBUSY) will be returned by the kernel.
--Even if a section does not belong to ZONE_MOVABLE, you can try to offline it.
--If it doesn't contain 'unmovable' memory, you'll get success.
-+Even if a memory block does not belong to ZONE_MOVABLE, you can try to offline
-+it.  If it doesn't contain 'unmovable' memory, you'll get success.
- 
--A section under ZONE_MOVABLE is considered to be able to be offlined easily.
--But under some busy state, it may return -EBUSY. Even if a memory section
--cannot be offlined due to -EBUSY, you can retry offlining it and may be able to
--offline it (or not).
--(For example, a page is referred to by some kernel internal call and released
-- soon.)
-+A memory block under ZONE_MOVABLE is considered to be able to be offlined
-+easily.  But under some busy state, it may return -EBUSY. Even if a memory
-+block cannot be offlined due to -EBUSY, you can retry offlining it and may be
-+able to offline it (or not). (For example, a page is referred to by some kernel
-+internal call and released soon.)
- 
- Consideration:
- Memory hotplug's design direction is to make the possibility of memory offlining
-@@ -373,11 +370,11 @@ MEMORY_GOING_OFFLINE
-   Generated to begin the process of offlining memory. Allocations are no
-   longer possible from the memory but some of the memory to be offlined
-   is still in use. The callback can be used to free memory known to a
--  subsystem from the indicated memory section.
-+  subsystem from the indicated memory block.
- 
- MEMORY_CANCEL_OFFLINE
-   Generated if MEMORY_GOING_OFFLINE fails. Memory is available again from
--  the section that we attempted to offline.
-+  the memory block that we attempted to offline.
- 
- MEMORY_OFFLINE
-   Generated after offlining memory is complete.
-@@ -413,8 +410,8 @@ node if necessary.
- --------------
-   - allowing memory hot-add to ZONE_MOVABLE. maybe we need some switch like
-     sysctl or new control file.
--  - showing memory section and physical device relationship.
--  - showing memory section is under ZONE_MOVABLE or not
-+  - showing memory block and physical device relationship.
-+  - showing memory block is under ZONE_MOVABLE or not
-   - test and make it better memory offlining.
-   - support HugeTLB page migration and offlining.
-   - memmap removing at memory offline.
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index bece691..89f752d 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -118,16 +118,6 @@ static ssize_t show_mem_start_phys_index(struct device *dev,
- 	return sprintf(buf, "%08lx\n", phys_index);
- }
- 
--static ssize_t show_mem_end_phys_index(struct device *dev,
--			struct device_attribute *attr, char *buf)
--{
--	struct memory_block *mem = to_memory_block(dev);
--	unsigned long phys_index;
--
--	phys_index = mem->end_section_nr / sections_per_block;
--	return sprintf(buf, "%08lx\n", phys_index);
--}
--
- /*
-  * Show whether the section of memory is likely to be hot-removable
-  */
-@@ -384,7 +374,6 @@ static ssize_t show_phys_device(struct device *dev,
- }
- 
- static DEVICE_ATTR(phys_index, 0444, show_mem_start_phys_index, NULL);
--static DEVICE_ATTR(end_phys_index, 0444, show_mem_end_phys_index, NULL);
- static DEVICE_ATTR(state, 0644, show_mem_state, store_mem_state);
- static DEVICE_ATTR(phys_device, 0444, show_phys_device, NULL);
- static DEVICE_ATTR(removable, 0444, show_mem_removable, NULL);
-@@ -529,7 +518,6 @@ struct memory_block *find_memory_block(struct mem_section *section)
- 
- static struct attribute *memory_memblk_attrs[] = {
- 	&dev_attr_phys_index.attr,
--	&dev_attr_end_phys_index.attr,
- 	&dev_attr_state.attr,
- 	&dev_attr_phys_device.attr,
- 	&dev_attr_removable.attr,
-
-
+Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
