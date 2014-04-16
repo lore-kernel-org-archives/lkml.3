@@ -1,100 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878AbaDPFif (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 01:38:35 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:37560 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751413AbaDPFie (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 01:38:34 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: As9SAAkXTlN5LEcvPGdsb2JhbABODIMGg1OFCrYLhV6BJBcDAQEBATg1giUBAQEDAR0KExwjBQsIAxgJJQ8FJQMHGhOHdAfGQhcWjWZmB4MkgRQEmGKKZ4sjKw
-Date: Wed, 16 Apr 2014 15:37:56 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH 04/19] Make effect of PF_FSTRANS to disable __GFP_FS
- universal.
-Message-ID: <20140416053756.GC15995@dastard>
-References: <20140416033623.10604.69237.stgit@notabene.brown>
- <20140416040336.10604.58240.stgit@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140416040336.10604.58240.stgit@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754499AbaDPFjE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 01:39:04 -0400
+Received: from ozlabs.org ([103.22.144.67]:56478 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754268AbaDPFjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 01:39:03 -0400
+Date: Wed, 16 Apr 2014 15:38:56 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vladimir Davydov <vdavydov@parallels.com>
+Subject: linux-next: build failure after merge of the akpm-current tree
+Message-Id: <20140416153856.222b665abb0a66d2470a7c81@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__16_Apr_2014_15_38_56_+1000_o8tuMnJEZv_DMKUA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 02:03:36PM +1000, NeilBrown wrote:
-> Currently both xfs and nfs will handle PF_FSTRANS by disabling
-> __GFP_FS.
-> 
-> Make this effect global by repurposing memalloc_noio_flags (which
-> does the same thing for PF_MEMALLOC_NOIO and __GFP_IO) to generally
-> impost the task flags on a gfp_t.
-> Due to this repurposing we change the name of memalloc_noio_flags
-> to gfp_from_current().
-> 
-> As PF_FSTRANS now uniformly removes __GFP_FS we can remove special
-> code for this from xfs and nfs.
-> 
-> As we can now expect other code to set PF_FSTRANS, its meaning is more
-> general, so the WARN_ON in xfs_vm_writepage() which checks PF_FSTRANS
-> is not set is no longer appropriate.  PF_FSTRANS may be set for other
-> reasons than an XFS transaction.
+--Signature=_Wed__16_Apr_2014_15_38_56_+1000_o8tuMnJEZv_DMKUA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So PF_FSTRANS no longer means "filesystem in transaction context".
-Are you going to rename to match whatever it's meaning is now?
-I'm not exactly clear on what it means now...
+Hi Andrew,
 
+After merging the akpm-current tree, today's linux-next build (arm
+multi_v7_defconfig) failed like this:
 
-> As lockdep cares about __GFP_FS, we need to translate PF_FSTRANS to
-> __GFP_FS before calling lockdep_alloc_trace() in various places.
-> 
-> Signed-off-by: NeilBrown <neilb@suse.de>
-....
-> diff --git a/fs/xfs/kmem.h b/fs/xfs/kmem.h
-> index 64db0e53edea..882b86270ebe 100644
-> --- a/fs/xfs/kmem.h
-> +++ b/fs/xfs/kmem.h
-> @@ -50,8 +50,6 @@ kmem_flags_convert(xfs_km_flags_t flags)
->  		lflags = GFP_ATOMIC | __GFP_NOWARN;
->  	} else {
->  		lflags = GFP_KERNEL | __GFP_NOWARN;
-> -		if ((current->flags & PF_FSTRANS) || (flags & KM_NOFS))
-> -			lflags &= ~__GFP_FS;
->  	}
+ERROR: "kmalloc_order" [drivers/net/wireless/brcm80211/brcmfmac/brcmfmac.ko=
+] undefined!
 
-I think KM_NOFS needs to remain here, as it has use outside of
-transaction contexts that set PF_FSTRANS....
+Caused by commit a3ed1ed24850 ("mm: get rid of __GFP_KMEMCG").
 
->  	if (flags & KM_ZERO)
-> diff --git a/fs/xfs/xfs_aops.c b/fs/xfs/xfs_aops.c
-> index db2cfb067d0b..207a7f86d5d7 100644
-> --- a/fs/xfs/xfs_aops.c
-> +++ b/fs/xfs/xfs_aops.c
-> @@ -952,13 +952,6 @@ xfs_vm_writepage(
->  			PF_MEMALLOC))
->  		goto redirty;
->  
-> -	/*
-> -	 * Given that we do not allow direct reclaim to call us, we should
-> -	 * never be called while in a filesystem transaction.
-> -	 */
-> -	if (WARN_ON(current->flags & PF_FSTRANS))
-> -		goto redirty;
+I added the following patch:
 
-We still need to ensure this rule isn't broken. If it is, the
-filesystem will silently deadlock in delayed allocation rather than
-gracefully handle the problem with a warning....
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 16 Apr 2014 15:32:54 +1000
+Subject: [PATCH] mm: get rid of __GFP_KMEMCG fix
 
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ mm/slab_common.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/mm/slab_common.c b/mm/slab_common.c
+index cab4c49b3e8c..edd10a8af69e 100644
+--- a/mm/slab_common.c
++++ b/mm/slab_common.c
+@@ -584,6 +584,7 @@ void *kmalloc_order(size_t size, gfp_t flags, unsigned =
+int order)
+ 	kmemleak_alloc(ret, size, 1, flags);
+ 	return ret;
+ }
++EXPORT_SYMBOL(kmalloc_order);
+=20
+ #ifdef CONFIG_TRACING
+ void *kmalloc_order_trace(size_t size, gfp_t flags, unsigned int order)
+--=20
+1.9.2
+
+--=20
 Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+--Signature=_Wed__16_Apr_2014_15_38_56_+1000_o8tuMnJEZv_DMKUA
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTThd0AAoJEMDTa8Ir7ZwVB2IQAIUVQnKOtUZDt36kAfTH3rKO
+vkQCLn+RkpNqf2rtBpf/Igl1ktBGpvvwo7DCHQypoA1dadf5NXI+fGc2KZmjDQti
+oemmLq+zhl4itgJwXZ2L36/ZtNJemDoi5hhQYFghcriEBnf4iTx4ohNHmWxMJzrO
+4UZDYF1CI0w5BuN97LPGN6TlJHkAMpr9fMV06TRGFwWTJ7lwG25bLFX1C8Bdt2LF
+ObMB3A8RWTgp/ELDv/Hgi7RrdaVrH0K+wNGVhVirUS6bZhvw3RS27+KPmJBvKNKe
+z1Z+YWizDaKERU/0Usa9D3a0pSxN6zMYQUIsCbTbZEpm5NSVsshrLmHVT+ijQijQ
+NJP/z+27i7HmsqLZX1BMYCXeyqLFGxxcRo5HpBzOurjM1l0BPRJy55koVpK4q1yw
+AH2B7dwcwXv5aJQOVip7GERr9TxuIcUST9wNDcPm2baFOq3fVaz7sXYr9rlwWoUr
+Lnyt7OA8wDMZUEk8Y2lI7quXpMdJf0saEkfQaZhNWszQebUxPnTYax/YoiCFA8ol
+AEKpzfE1rbrwfX00tUxwecxSFECLsv034tzhBJcW4h8nRwJCAZ0dUdFKynhe6/BQ
+e1SklzCTWfNVwOARgUeidNBqCMP0Y4IfoMNyV23FPgw12GuNJhR1LMYQAqcYo2Hl
+WE3fy10Ta59NIUEI6qhn
+=YB0A
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__16_Apr_2014_15_38_56_+1000_o8tuMnJEZv_DMKUA--
