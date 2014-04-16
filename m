@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691AbaDPKce (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:32:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51653 "EHLO
+	id S1756107AbaDPKsT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:48:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:51703 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755646AbaDPKcZ (ORCPT
+	with ESMTP id S1755696AbaDPKch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:32:25 -0400
+	Wed, 16 Apr 2014 06:32:37 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Xin Long <lucien.xin@gmail.com>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 12/46] bridge: multicast: add sanity check for query source addresses
-Date: Wed, 16 Apr 2014 11:31:28 +0100
-Message-Id: <1397644322-13905-13-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 21/46] ipv6: ip6_append_data_mtu do not handle the mtu of the second fragment properly
+Date: Wed, 16 Apr 2014 11:31:37 +0100
+Message-Id: <1397644322-13905-22-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
 References: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,48 +27,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+From: lucien <lucien.xin@gmail.com>
 
-commit 6565b9eeef194afbb3beec80d6dd2447f4091f8c upstream.
+commit e367c2d03dba4c9bcafad24688fadb79dd95b218 upstream.
 
-MLD queries are supposed to have an IPv6 link-local source address
-according to RFC2710, section 4 and RFC3810, section 5.1.14. This patch
-adds a sanity check to ignore such broken MLD queries.
+In ip6_append_data_mtu(), when the xfrm mode is not tunnel(such as
+transport),the ipsec header need to be added in the first fragment, so the mtu
+will decrease to reserve space for it, then the second fragment come, the mtu
+should be turn back, as the commit 0c1833797a5a6ec23ea9261d979aa18078720b74
+said.  however, in the commit a493e60ac4bbe2e977e7129d6d8cbb0dd236be, it use
+*mtu = min(*mtu, ...) to change the mtu, which lead to the new mtu is alway
+equal with the first fragment's. and cannot turn back.
 
-Without this check, such malformed MLD queries can result in a
-denial of service: The queries are ignored by any MLD listener
-therefore they will not respond with an MLD report. However,
-without this patch these malformed MLD queries would enable the
-snooping part in the bridge code, potentially shutting down the
-according ports towards these hosts for multicast traffic as the
-bridge did not learn about these listeners.
+when I test through  ping6 -c1 -s5000 $ip (mtu=1280):
+...frag (0|1232) ESP(spi=0x00002000,seq=0xb), length 1232
+...frag (1232|1216)
+...frag (2448|1216)
+...frag (3664|1216)
+...frag (4880|164)
 
-Reported-by: Jan Stancek <jstancek@redhat.com>
-Signed-off-by: Linus Lüssing <linus.luessing@web.de>
-Reviewed-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+which should be:
+...frag (0|1232) ESP(spi=0x00001000,seq=0x1), length 1232
+...frag (1232|1232)
+...frag (2464|1232)
+...frag (3696|1232)
+...frag (4928|116)
+
+so delete the min() when change back the mtu.
+
+Signed-off-by: Xin Long <lucien.xin@gmail.com>
+Fixes: 75a493e60ac4bb ("ipv6: ip6_append_data_mtu did not care about pmtudisc and frag_size")
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/bridge/br_multicast.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ net/ipv6/ip6_output.c | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
-index b02fb47..29ff042 100644
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -1237,6 +1237,12 @@ static int br_ip6_multicast_query(struct net_bridge *br,
- 	    (port && port->state == BR_STATE_DISABLED))
- 		goto out;
+diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+index 554eb0d..b878dd6 100644
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -1110,21 +1110,19 @@ static void ip6_append_data_mtu(unsigned int *mtu,
+ 				unsigned int fragheaderlen,
+ 				struct sk_buff *skb,
+ 				struct rt6_info *rt,
+-				bool pmtuprobe)
++				unsigned int orig_mtu)
+ {
+ 	if (!(rt->dst.flags & DST_XFRM_TUNNEL)) {
+ 		if (skb == NULL) {
+ 			/* first fragment, reserve header_len */
+-			*mtu = *mtu - rt->dst.header_len;
++			*mtu = orig_mtu - rt->dst.header_len;
  
-+	/* RFC2710+RFC3810 (MLDv1+MLDv2) require link-local source addresses */
-+	if (!(ipv6_addr_type(&ip6h->saddr) & IPV6_ADDR_LINKLOCAL)) {
-+		err = -EINVAL;
-+		goto out;
-+	}
-+
- 	if (skb->len == sizeof(*mld)) {
- 		if (!pskb_may_pull(skb, sizeof(*mld))) {
- 			err = -EINVAL;
+ 		} else {
+ 			/*
+ 			 * this fragment is not first, the headers
+ 			 * space is regarded as data space.
+ 			 */
+-			*mtu = min(*mtu, pmtuprobe ?
+-				   rt->dst.dev->mtu :
+-				   dst_mtu(rt->dst.path));
++			*mtu = orig_mtu;
+ 		}
+ 		*maxfraglen = ((*mtu - fragheaderlen) & ~7)
+ 			      + fragheaderlen - sizeof(struct frag_hdr);
+@@ -1141,7 +1139,7 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
+ 	struct ipv6_pinfo *np = inet6_sk(sk);
+ 	struct inet_cork *cork;
+ 	struct sk_buff *skb, *skb_prev = NULL;
+-	unsigned int maxfraglen, fragheaderlen, mtu;
++	unsigned int maxfraglen, fragheaderlen, mtu, orig_mtu;
+ 	int exthdrlen;
+ 	int dst_exthdrlen;
+ 	int hh_len;
+@@ -1223,6 +1221,7 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
+ 		dst_exthdrlen = 0;
+ 		mtu = cork->fragsize;
+ 	}
++	orig_mtu = mtu;
+ 
+ 	hh_len = LL_RESERVED_SPACE(rt->dst.dev);
+ 
+@@ -1302,8 +1301,7 @@ alloc_new_skb:
+ 			if (skb == NULL || skb_prev == NULL)
+ 				ip6_append_data_mtu(&mtu, &maxfraglen,
+ 						    fragheaderlen, skb, rt,
+-						    np->pmtudisc ==
+-						    IPV6_PMTUDISC_PROBE);
++						    orig_mtu);
+ 
+ 			skb_prev = skb;
+ 
 -- 
 1.9.1
 
