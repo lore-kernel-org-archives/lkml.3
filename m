@@ -1,61 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624AbaDPGMv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 02:12:51 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:59813 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754399AbaDPGMs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 02:12:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140415142024.GD3207@lukather>
-References: <1397544101-18135-1-git-send-email-wens@csie.org>
- <1397544101-18135-2-git-send-email-wens@csie.org> <20140415142024.GD3207@lukather>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Wed, 16 Apr 2014 15:12:26 +0900
-Message-ID: <CAAVeFuLDhTVGDnmYtnxEY8hhn6HE6tU9OB24WDPtmxEHjiRiuQ@mail.gmail.com>
-Subject: Re: [PATCH 1/7] gpiolib: gpiolib-of: Implement device tree gpio-names
- based lookup
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Chen-Yu Tsai <wens@csie.org>, Linus Walleij <linus.walleij@linaro.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-sunxi <linux-sunxi@googlegroups.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1754703AbaDPGNm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 02:13:42 -0400
+Received: from smtp32.i.mail.ru ([94.100.177.92]:56337 "EHLO smtp32.i.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754619AbaDPGNl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 02:13:41 -0400
+From: Alexander Shiyan <shc_work@mail.ru>
+To: linux-kernel@vger.kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Alexander Shiyan <shc_work@mail.ru>
+Subject: [PATCH RESEND] mfd: mc13xxx: Move definitions out of structures
+Date: Wed, 16 Apr 2014 10:13:33 +0400
+Message-Id: <1397628813-17012-1-git-send-email-shc_work@mail.ru>
+X-Mailer: git-send-email 1.8.3.2
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 11:20 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
-> Hi Chen-Yu,
->
-> On Tue, Apr 15, 2014 at 02:41:35PM +0800, Chen-Yu Tsai wrote:
->> This patch provides of_get_gpiod_flags_by_name(), which looks up GPIO
->> phandles by name only, through gpios/gpio-names, and not by index.
->
-> IIRC, gpios only uses the *-gpios properties, and not gpios/gpio-names
-> pattern seen on various other things.
->
-> Is it some new property you introduce? If so, please add it to the
-> documentation.
->
-> Now, I'm not sure that having two distinct representations of GPIOs in
-> the DT is a good thing. Yes, it's looking odd compared to other
-> similar bindings, but it's what we have to deal with.
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+---
+ include/linux/mfd/mc13xxx.h | 22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
 
-Mmmm I *think* I somehow remember a discussion about this topic
-recently, but I cannot find it. Maybe Chen-yu could point us to the
-conclusion of this discussion and the rationale for (re)implementing
-named GPIOs this way?
+diff --git a/include/linux/mfd/mc13xxx.h b/include/linux/mfd/mc13xxx.h
+index a326c85..d63b1d3 100644
+--- a/include/linux/mfd/mc13xxx.h
++++ b/include/linux/mfd/mc13xxx.h
+@@ -117,10 +117,6 @@ struct mc13xxx_led_platform_data {
+ 
+ #define MAX_LED_CONTROL_REGS	6
+ 
+-struct mc13xxx_leds_platform_data {
+-	struct mc13xxx_led_platform_data *led;
+-	int num_leds;
+-
+ /* MC13783 LED Control 0 */
+ #define MC13783_LED_C0_ENABLE		(1 << 0)
+ #define MC13783_LED_C0_TRIODE_MD	(1 << 7)
+@@ -169,10 +165,13 @@ struct mc13xxx_leds_platform_data {
+ /* MC34708 LED Control 0 */
+ #define MC34708_LED_C0_CURRENT_R(x)	(((x) & 0x3) << 9)
+ #define MC34708_LED_C0_CURRENT_G(x)	(((x) & 0x3) << 21)
++
++struct mc13xxx_leds_platform_data {
++	struct mc13xxx_led_platform_data *led;
++	int num_leds;
+ 	u32 led_control[MAX_LED_CONTROL_REGS];
+ };
+ 
+-struct mc13xxx_buttons_platform_data {
+ #define MC13783_BUTTON_DBNC_0MS		0
+ #define MC13783_BUTTON_DBNC_30MS	1
+ #define MC13783_BUTTON_DBNC_150MS	2
+@@ -180,6 +179,8 @@ struct mc13xxx_buttons_platform_data {
+ #define MC13783_BUTTON_ENABLE		(1 << 2)
+ #define MC13783_BUTTON_POL_INVERT	(1 << 3)
+ #define MC13783_BUTTON_RESET_EN		(1 << 4)
++
++struct mc13xxx_buttons_platform_data {
+ 	int b1on_flags;
+ 	unsigned short b1on_key;
+ 	int b2on_flags;
+@@ -188,14 +189,14 @@ struct mc13xxx_buttons_platform_data {
+ 	unsigned short b3on_key;
+ };
+ 
++#define MC13783_TS_ATO_FIRST	false
++#define MC13783_TS_ATO_EACH	true
++
+ struct mc13xxx_ts_platform_data {
+ 	/* Delay between Touchscreen polarization and ADC Conversion.
+ 	 * Given in clock ticks of a 32 kHz clock which gives a granularity of
+ 	 * about 30.5ms */
+ 	u8 ato;
+-
+-#define MC13783_TS_ATO_FIRST false
+-#define MC13783_TS_ATO_EACH  true
+ 	/* Use the ATO delay only for the first conversion or for each one */
+ 	bool atox;
+ };
+@@ -210,11 +211,12 @@ struct mc13xxx_codec_platform_data {
+ 	enum mc13783_ssi_port dac_ssi_port;
+ };
+ 
+-struct mc13xxx_platform_data {
+-#define MC13XXX_USE_TOUCHSCREEN (1 << 0)
++#define MC13XXX_USE_TOUCHSCREEN	(1 << 0)
+ #define MC13XXX_USE_CODEC	(1 << 1)
+ #define MC13XXX_USE_ADC		(1 << 2)
+ #define MC13XXX_USE_RTC		(1 << 3)
++
++struct mc13xxx_platform_data {
+ 	unsigned int flags;
+ 
+ 	struct mc13xxx_regulator_platform_data regulators;
+-- 
+1.8.3.2
+
