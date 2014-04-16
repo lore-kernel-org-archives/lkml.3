@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021AbaDPFTT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 01:19:19 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:56448 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417AbaDPFTS (ORCPT
+	id S1754393AbaDPFTt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 01:19:49 -0400
+Received: from mx14.pku.edu.cn ([162.105.129.177]:41471 "EHLO mail.pku.edu.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750919AbaDPFTr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 01:19:18 -0400
-Date: Wed, 16 Apr 2014 07:19:09 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: cl@linux.com, linux-kernel@vger.kernel.org, mingo@kernel.org,
-        tj@kernel.org, grygorii.strashko@ti.com
-Subject: Re: How do I increment a per-CPU variable without warning?
-Message-ID: <20140416051909.GJ26782@laptop.programming.kicks-ass.net>
-References: <20140415221755.GA27188@linux.vnet.ibm.com>
+	Wed, 16 Apr 2014 01:19:47 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -307.091
+Date: Wed, 16 Apr 2014 13:19:31 +0800 (CST)
+From: =?utf-8?B?566h6Zuq5rab?= <gxt@pku.edu.cn>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org
+Message-ID: <1941336741.38929.1397625571001.JavaMail.root@bj-mail03.pku.edu.cn>
+In-Reply-To: <534C903C.6050904@gmail.com>
+Subject: =?utf-8?Q?=E5=9B=9E=E5=A4=8D=EF=BC=9A_[PATCH]_unicore3?=
+ =?utf-8?Q?2:_include:_asm:_add_?=
+ =?utf-8?Q?missing_')'_for_PAGE=5F*_macros_in_pgtable.h?=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140415221755.GA27188@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [162.105.129.97]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 03:17:55PM -0700, Paul E. McKenney wrote:
-> Hello, Christoph,
-> 
-> I have a patch that currently uses __this_cpu_inc_return() to increment a
-> per-CPU variable, but without preemption disabled.  Of course, given that
-> preemption is enabled, it might well end up picking up one CPU's counter,
-> adding one to it, then storing the result into some other CPU's counter.
-> But this is OK, the test can be probabilistic.  And when I run this
-> against v3.14 and earlier, it works fine.
-> 
-> But now there is 188a81409ff7 (percpu: add preemption checks to
-> __this_cpu ops), which gives me lots of splats.
-> 
-> My current admittedly crude workaround is as follows:
-> 
-> 	static inline bool rcu_should_resched(void)
-> 	{
-> 		int t;
-> 
-> 	#ifdef CONFIG_DEBUG_PREEMPT
-> 		preempt_disable();
-> 	#endif /* #ifdef CONFIG_DEBUG_PREEMPT */
-> 		t = __this_cpu_read(rcu_cond_resched_count) + 1;
-> 		if (t < RCU_COND_RESCHED_LIM) {
-> 			__this_cpu_write(rcu_cond_resched_count, t);
-> 	#ifdef CONFIG_DEBUG_PREEMPT
-> 			preempt_enable();
-> 	#endif /* #ifdef CONFIG_DEBUG_PREEMPT */
-> 			return false;
-> 		}
-> 	#ifdef CONFIG_DEBUG_PREEMPT
-> 		preempt_enable();
-> 	#endif /* #ifdef CONFIG_DEBUG_PREEMPT */
-> 		return true;
-> 	}
-> 
-> This is arguably better than the original __this_cpu_read() because it
-> avoids overflow, but I thought I should check to see if there was some
-> better way to do this.
+This problem has been fixed, but I didn't submit.
+Anyway, I can apply your version.
 
-you could use raw_cpu_{read,write}(). But note that without the
-unconditional preempt_disable() in there your code can read a different
-rcu_cond_resched_count than it writes.
+Acked-by: Xuetao Guan <gxt@mprc.pku.edu.cn>
 
-So I think you very much want that preempt_disable().
+----- Chen Gang <gang.chen.5i5j@gmail.com> 写道：
+> Missing related ')', the related compiling error:
+> 
+>     CC [M]  drivers/gpu/drm/udl/udl_fb.o
+>   drivers/gpu/drm/udl/udl_fb.c: In function ‘udl_fb_mmap’:
+>   drivers/gpu/drm/udl/udl_fb.c:273: error: expected ‘)’ before ‘return’
+>   drivers/gpu/drm/udl/udl_fb.c:281: error: expected expression before ‘}’ token
+>   make[4]: *** [drivers/gpu/drm/udl/udl_fb.o] Error 1
+>   make[3]: *** [drivers/gpu/drm/udl] Error 2
+>   make[2]: *** [drivers/gpu/drm] Error 2
+>   make[1]: *** [drivers/gpu] Error 2
+>   make: *** [drivers] Error 2
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> ---
+>  arch/unicore32/include/asm/pgtable.h |   10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/arch/unicore32/include/asm/pgtable.h b/arch/unicore32/include/asm/pgtable.h
+> index 233c258..ed6f7d0 100644
+> --- a/arch/unicore32/include/asm/pgtable.h
+> +++ b/arch/unicore32/include/asm/pgtable.h
+> @@ -87,16 +87,16 @@ extern pgprot_t pgprot_kernel;
+>  
+>  #define PAGE_NONE		pgprot_user
+>  #define PAGE_SHARED		__pgprot(pgprot_val(pgprot_user | PTE_READ \
+> -								| PTE_WRITE)
+> +								| PTE_WRITE))
+>  #define PAGE_SHARED_EXEC	__pgprot(pgprot_val(pgprot_user | PTE_READ \
+>  								| PTE_WRITE \
+> -								| PTE_EXEC)
+> +								| PTE_EXEC))
+>  #define PAGE_COPY		__pgprot(pgprot_val(pgprot_user | PTE_READ)
+>  #define PAGE_COPY_EXEC		__pgprot(pgprot_val(pgprot_user | PTE_READ \
+> -								| PTE_EXEC)
+> -#define PAGE_READONLY		__pgprot(pgprot_val(pgprot_user | PTE_READ)
+> +								| PTE_EXEC))
+> +#define PAGE_READONLY		__pgprot(pgprot_val(pgprot_user | PTE_READ))
+>  #define PAGE_READONLY_EXEC	__pgprot(pgprot_val(pgprot_user | PTE_READ \
+> -								| PTE_EXEC)
+> +								| PTE_EXEC))
+>  #define PAGE_KERNEL		pgprot_kernel
+>  #define PAGE_KERNEL_EXEC	__pgprot(pgprot_val(pgprot_kernel | PTE_EXEC))
+>  
+> -- 
+> 1.7.9.5
+
