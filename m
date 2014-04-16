@@ -1,201 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161533AbaDPOmm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 10:42:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14580 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161244AbaDPOmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 10:42:39 -0400
-Date: Wed, 16 Apr 2014 10:42:07 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Ming Lei <ming.lei@canonical.com>, netdev@vger.kernel.org
-Subject: Re: [PATCH/RFC 00/19] Support loop-back NFS mounts
-Message-ID: <20140416104207.75b044e8@tlielax.poochiereds.net>
-In-Reply-To: <20140416033623.10604.69237.stgit@notabene.brown>
-References: <20140416033623.10604.69237.stgit@notabene.brown>
+	id S1161577AbaDPOnE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 10:43:04 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:40041 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161377AbaDPOml (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 10:42:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CACQ1gAgbiQJmpJDebeKSRGKhDjOcmOAdt8L3CmNAO=h5i7yV1A@mail.gmail.com>
+References: <1396967803-28868-1-git-send-email-gautam.vivek@samsung.com>
+	<1396967803-28868-6-git-send-email-gautam.vivek@samsung.com>
+	<53452B59.8030901@samsung.com>
+	<CAFp+6iGQMS5_YAimBRdV-P2h3LczQEHMq_cXGrOtHJSZqM7UfQ@mail.gmail.com>
+	<CACQ1gAgbiQJmpJDebeKSRGKhDjOcmOAdt8L3CmNAO=h5i7yV1A@mail.gmail.com>
+Date: Wed, 16 Apr 2014 20:12:39 +0530
+X-Google-Sender-Auth: RpQU2cw0tmadnSsooE7-OF_WLE0
+Message-ID: <CAFp+6iEyyfQprhNO5wt_f53QcXCriL_rvTtJBxsFZ0BON=fiFA@mail.gmail.com>
+Subject: Re: [PATCH V4 5/5] usb-phy: samsung-usb3: Remove older
+ phy-samsung-usb3 driver
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: Tomasz Figa <t.figa@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kamil Debski <k.debski@samsung.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-doc@vger.kernel.org, Greg KH <gregkh@linuxfoundation.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, kishon <kishon@ti.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Jingoo Han <jg1.han@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Apr 2014 14:03:35 +1000
-NeilBrown <neilb@suse.de> wrote:
-
-> Loop-back NFS mounts are when the NFS client and server run on the
-> same host.
-> 
-> The use-case for this is a high availability cluster with shared
-> storage.  The shared filesystem is mounted on any one machine and
-> NFS-mounted on the others.
-> If the nfs server fails, some other node will take over that service,
-> and then it will have a loop-back NFS mount which needs to keep
-> working.
-> 
-> This patch set addresses the "keep working" bit and specifically
-> addresses deadlocks and livelocks.
-> Allowing the fail-over itself to be deadlock free is a separate
-> challenge for another day.
-> 
-> The short description of how this works is:
-> 
-> deadlocks:
->   - Elevate PF_FSTRANS to apply globally instead of just in NFS and XFS.
->     PF_FSTRANS disables __GFP_NS in the same way that PF_MEMALLOC_NOIO
->     disables __GFP_IO.
->   - Set PF_FSTRANS in nfsd when handling requests related to
->     memory reclaim, or requests which could block requests related
->     to memory reclaim.
->   - Use lockdep to find all consequent deadlocks from some other
->     thread allocating memory while holding a lock that nfsd might
->     want.
->   - Fix those other deadlocks by setting PF_FSTRANS or using GFP_NOFS
->     as appropriate.
-> 
-> livelocks:
->   - identify throttling during reclaim and bypass it when
->     PF_LESS_THROTTLE is set
->   - only set PF_LESS_THROTTLE for nfsd when handling write requests
->     from the local host.
-> 
-> The last 12 patches address various deadlocks due to locking chains.
-> 11 were found by lockdep, 2 by testing.  There is a reasonable chance
-> that there are more, I just need to exercise more code while
-> testing....
-> 
-> There is one issue that lockdep reports which I haven't fixed (I've
-> just hacked the code out for my testing).  That issue relates to
-> freeze_super().
-> I may not be interpreting the lockdep reports perfectly, but I think
-> they are basically saying that if I were to freeze a filesystem that
-> was exported to the local host, then we could end up deadlocking.
-> This is to be expected.  The NFS filesystem would need to be frozen
-> first.  I don't know how to tell lockdep that I know that is a problem
-> and I don't want to be warned about it.  Suggestions welcome.
-> Until this is addressed I cannot really ask others to test the code
-> with lockdep enabled.
-> 
-> There are more subsidiary places that I needed to add PF_FSTRANS than
-> I would have liked.  The thought keeps crossing my mind that maybe we
-> can get rid of __GFP_FS and require that memory reclaim never ever
-> block on a filesystem.  Then most of these patches go away.
-> 
-> Now that writeback doesn't happen from reclaim (but from kswapd) much
-> of the calls from reclaim to FS are gone.
-> The ->releasepage call is the only one that I *know* causes me
-> problems so I'd like to just say that that must never block.  I don't
-> really understand the consequences of that though.
-> There are a couple of other places where __GFP_FS is used and I'd need
-> to carefully analyze those.  But if someone just said "no, that is
-> impossible", I could be happy and stick with the current approach....
-> 
-> I've cc:ed Peter Zijlstra and Ingo Molnar only on the lockdep-related
-> patches, Ming Lei only on the PF_MEMALLOC_NOIO related patches,
-> and net-dev only on the network-related patches.
-> There are probably other people I should CC.  Apologies if I missed you.
-> I'll ensure better coverage if the nfs/mm/xfs people are reasonably happy.
-> 
-> Comments, criticisms, etc most welcome.
-> 
-> Thanks,
-> NeilBrown
-> 
-
-I've only given this a once-over, but the basic concept seems a bit
-flawed. IIUC, the basic idea is to disallow allocations done in knfsd
-threads context from doing fs-based reclaim.
-
-This seems very heavy-handed, and like it could cause problems on a
-busy NFS server. Those sorts of servers are likely to have a lot of
-data in pagecache and thus we generally want to allow them to do do
-writeback when memory is tight.
-
-It's generally acceptable for knfsd to recurse into local filesystem
-code for writeback. What you want to avoid in this situation is reclaim
-on NFS filesystems that happen to be from knfsd on the same box.
-
-If you really want to fix this, what may make more sense is trying to
-plumb that information down more granularly. Maybe GFP_NONETFS and/or
-PF_NETFSTRANS flags?
-
-> 
-> ---
-> 
-> NeilBrown (19):
->       Promote current_{set,restore}_flags_nested from xfs to global.
->       lockdep: lockdep_set_current_reclaim_state should save old value
->       lockdep: improve scenario messages for RECLAIM_FS errors.
->       Make effect of PF_FSTRANS to disable __GFP_FS universal.
->       SUNRPC: track whether a request is coming from a loop-back interface.
->       nfsd: set PF_FSTRANS for nfsd threads.
->       nfsd and VM: use PF_LESS_THROTTLE to avoid throttle in shrink_inactive_list.
->       Set PF_FSTRANS while write_cache_pages calls ->writepage
->       XFS: ensure xfs_file_*_read cannot deadlock in memory allocation.
->       NET: set PF_FSTRANS while holding sk_lock
->       FS: set PF_FSTRANS while holding mmap_sem in exec.c
->       NET: set PF_FSTRANS while holding rtnl_lock
->       MM: set PF_FSTRANS while allocating per-cpu memory to avoid deadlock.
->       driver core: set PF_FSTRANS while holding gdp_mutex
->       nfsd: set PF_FSTRANS when client_mutex is held.
->       VFS: use GFP_NOFS rather than GFP_KERNEL in __d_alloc.
->       VFS: set PF_FSTRANS while namespace_sem is held.
->       nfsd: set PF_FSTRANS during nfsd4_do_callback_rpc.
->       XFS: set PF_FSTRANS while ilock is held in xfs_free_eofblocks
-> 
-> 
->  drivers/base/core.c             |    3 ++
->  drivers/base/power/runtime.c    |    6 ++---
->  drivers/block/nbd.c             |    6 ++---
->  drivers/md/dm-bufio.c           |    6 ++---
->  drivers/md/dm-ioctl.c           |    6 ++---
->  drivers/mtd/nand/nandsim.c      |   28 ++++++---------------
->  drivers/scsi/iscsi_tcp.c        |    6 ++---
->  drivers/usb/core/hub.c          |    6 ++---
->  fs/dcache.c                     |    4 ++-
->  fs/exec.c                       |    6 +++++
->  fs/fs-writeback.c               |    5 ++--
->  fs/namespace.c                  |    4 +++
->  fs/nfs/file.c                   |    3 +-
->  fs/nfsd/nfs4callback.c          |    5 ++++
->  fs/nfsd/nfs4state.c             |    3 ++
->  fs/nfsd/nfssvc.c                |   24 ++++++++++++++----
->  fs/nfsd/vfs.c                   |    6 +++++
->  fs/xfs/kmem.h                   |    2 --
->  fs/xfs/xfs_aops.c               |    7 -----
->  fs/xfs/xfs_bmap_util.c          |    4 +++
->  fs/xfs/xfs_file.c               |   12 +++++++++
->  fs/xfs/xfs_linux.h              |    7 -----
->  include/linux/lockdep.h         |    8 +++---
->  include/linux/sched.h           |   32 +++++++++---------------
->  include/linux/sunrpc/svc.h      |    2 ++
->  include/linux/sunrpc/svc_xprt.h |    1 +
->  include/net/sock.h              |    1 +
->  kernel/locking/lockdep.c        |   51 ++++++++++++++++++++++++++++-----------
->  kernel/softirq.c                |    6 ++---
->  mm/migrate.c                    |    9 +++----
->  mm/page-writeback.c             |    3 ++
->  mm/page_alloc.c                 |   18 ++++++++------
->  mm/percpu.c                     |    4 +++
->  mm/slab.c                       |    2 ++
->  mm/slob.c                       |    2 ++
->  mm/slub.c                       |    1 +
->  mm/vmscan.c                     |   31 +++++++++++++++---------
->  net/core/dev.c                  |    6 ++---
->  net/core/rtnetlink.c            |    9 ++++++-
->  net/core/sock.c                 |    8 ++++--
->  net/sunrpc/sched.c              |    5 ++--
->  net/sunrpc/svc.c                |    6 +++++
->  net/sunrpc/svcsock.c            |   10 ++++++++
->  net/sunrpc/xprtrdma/transport.c |    5 ++--
->  net/sunrpc/xprtsock.c           |   17 ++++++++-----
->  45 files changed, 247 insertions(+), 149 deletions(-)
-> 
+Hi Richard,
 
 
--- 
-Jeff Layton <jlayton@redhat.com>
+On Wed, Apr 16, 2014 at 7:03 PM, Richard Genoud
+<richard.genoud@gmail.com> wrote:
+> Hi Vivek,
+>
+> 2014-04-09 13:34 GMT+02:00 Vivek Gautam <gautam.vivek@samsung.com>:
+>> Hi Tomasz,
+>> '
+>>
+>> On Wed, Apr 9, 2014 at 4:43 PM, Tomasz Figa <t.figa@samsung.com> wrote:
+>>> Hi Vivek,
+>>>
+>> Thanks for reviewing the patch series.
+>>
+>>>
+>>> On 08.04.2014 16:36, Vivek Gautam wrote:
+>>>>
+>>>> Removing this older USB 3.0 DRD controller PHY driver, since
+>>>> a new driver based on generic phy framework is now available.
+>>>>
+>>>> Also removing the dt node for older driver from Exynos5250
+>>>> device tree and updating the dt node for DWC3 controller.
+>>>>
+>>>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>>>> ---
+>>>>
+>>>> NOTE: This patch should be merged only when the new USB 3.0
+>>>> DRD phy controller driver is available in the tree from the
+>>>> patches:
+>>>>         phy: Add new Exynos5 USB 3.0 PHY driver; and
+>>>>         dt: exynos5250: Enable support for generic USB DRD phy
+>>>>
+>>>>   arch/arm/boot/dts/exynos5250.dtsi  |   17 +-
+>>>>   drivers/usb/phy/phy-samsung-usb.h  |   83 ---------
+>>>>   drivers/usb/phy/phy-samsung-usb3.c |  350
+>>>> ------------------------------------
+>>>>   3 files changed, 2 insertions(+), 448 deletions(-)
+>>>>   delete mode 100644 drivers/usb/phy/phy-samsung-usb3.c
+>>>>
+>>>> diff --git a/arch/arm/boot/dts/exynos5250.dtsi
+>>>> b/arch/arm/boot/dts/exynos5250.dtsi
+>>>> index 92c6fcd..1cb1e91 100644
+>>>> --- a/arch/arm/boot/dts/exynos5250.dtsi
+>>>> +++ b/arch/arm/boot/dts/exynos5250.dtsi
+>>>
+>>>
+>>> IMHO driver and dts changes should be separated into two patches, first
+>>> updating device tree to use the new driver and second removing the driver.
+>>
+>> Sure will separate the patch into driver and dts change.
+>>
+>>>
+>>> After fixing this issue,
+>>>
+>>> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+>>>
+> I guess you should also remove phy-samsung-usb3.c references in the
+> Makefile, Kconfig and exynos_defconfig
+
+You are correct. In fact i identified this issue once i submitted the patch :-(
+
+I have amended the things in my next series which i will be posting soon.
+
+
+
+Thanks
+Vivek
