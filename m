@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757013AbaDPXya (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 19:54:30 -0400
-Received: from ozlabs.org ([103.22.144.67]:59461 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751503AbaDPXy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 19:54:28 -0400
-Date: Thu, 17 Apr 2014 09:54:19 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the akpm-current tree
-Message-Id: <20140417095419.de828de2cd490711d5e4de7a@canb.auug.org.au>
-In-Reply-To: <20140416192135.GY7292@suse.de>
-References: <20140416151956.b3388ef9c11c6c58b535186f@canb.auug.org.au>
-	<20140416192135.GY7292@suse.de>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__17_Apr_2014_09_54_19_+1000_Wb10tmYVmPyEkMVR"
+	id S1756588AbaDPXzN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 19:55:13 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:10925 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753294AbaDPXzL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 19:55:11 -0400
+X-IronPort-AV: E=Sophos;i="4.97,875,1389715200"; 
+   d="scan'208";a="29365432"
+Message-ID: <534F193F.2070600@cn.fujitsu.com>
+Date: Thu, 17 Apr 2014 07:58:55 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] workqueue: add __WQ_FREEZING and remove POOL_FREEZING
+References: <20130421012925.GA19097@mtj.dyndns.org> <1395741364-19489-1-git-send-email-laijs@cn.fujitsu.com> <20140416195109.GD22569@htj.dyndns.org>
+In-Reply-To: <20140416195109.GD22569@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__17_Apr_2014_09_54_19_+1000_Wb10tmYVmPyEkMVR
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 04/17/2014 03:51 AM, Tejun Heo wrote:
+> Hello,
+> 
+> On Tue, Mar 25, 2014 at 05:56:04PM +0800, Lai Jiangshan wrote:
+>> freezing is nothing related to pools, but POOL_FREEZING adds a connection,
+>> and causes freeze_workqueues_begin() and thaw_workqueues() complicated.
+>>
+>> Since freezing is workqueue instance attribute, so we introduce __WQ_FREEZING
+>> to wq->flags instead and remove POOL_FREEZING.
+>>
+>> we set __WQ_FREEZING only when freezable(to simplify pwq_adjust_max_active()),
+>> make freeze_workqueues_begin() and thaw_workqueues() fast skip non-freezable wq.
+> 
+> Please wrap the description to 80 columns.
+> 
+>> @@ -3730,18 +3726,13 @@ static void pwq_unbound_release_workfn(struct work_struct *work)
+>>  static void pwq_adjust_max_active(struct pool_workqueue *pwq)
+>>  {
+>>  	struct workqueue_struct *wq = pwq->wq;
+>> -	bool freezable = wq->flags & WQ_FREEZABLE;
+>>  
+>> -	/* for @wq->saved_max_active */
+>> +	/* for @wq->saved_max_active and @wq->flags */
+>>  	lockdep_assert_held(&wq->mutex);
+>>  
+>> -	/* fast exit for non-freezable wqs */
+>> -	if (!freezable && pwq->max_active == wq->saved_max_active)
+>> -		return;
+>> -
+> 
+> Why are we removing the above?  Can't we still test __WQ_FREEZING as
+> we're holding wq->mutex?  I don't really mind removing the
+> optimization but the patch description at least has to explain what's
+> going on.
 
-Hi Mel, Andrew,
+This part was in other old patch: https://lkml.org/lkml/2013/4/3/756
+I admit the changelogs(old patch&this) are bad.
+But I still consider it would be better if we split it to two patches:
+(https://lkml.org/lkml/2013/4/3/748 & https://lkml.org/lkml/2013/4/3/756)
 
-On Wed, 16 Apr 2014 20:21:35 +0100 Mel Gorman <mgorman@suse.de> wrote:
->
-> On Wed, Apr 16, 2014 at 03:19:56PM +1000, Stephen Rothwell wrote:
-> >=20
-> > After merging the akpm-current tree, today's linux-next build (powerpc
-> > ppc64_defconfig) failed like this:
-> >=20
-> > In file included from mm/vmscan.c:50:0:
-> > include/linux/swapops.h: In function 'is_swap_pte':
-> > include/linux/swapops.h:57:2: error: implicit declaration of function '=
-pte_present_nonuma' [-Werror=3Dimplicit-function-declaration]
-> >   return !pte_none(pte) && !pte_present_nonuma(pte) && !pte_file(pte);
-> >   ^
-> >=20
-> > Caused by commit 851fe3337768 ("x86: define _PAGE_NUMA by reusing
-> > software bits on the PMD and PTE levels").  This build does not have
-> > CONFIG_NUMA_BALANCING set.
-> >=20
-> > I have reverted that commit for today.
->=20
-> Thanks Stephen. A patch that should address the problem is on its way to
-> Andrew.
+There are different aims in the patches.
 
-I grabbed it out of mmots and added it to linux-next for today (in case a
-new mmotm does not appear in time).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Any thinks? And sorry for I didn't keep to push the patches at that time.
+Thanks
+Lai
 
---Signature=_Thu__17_Apr_2014_09_54_19_+1000_Wb10tmYVmPyEkMVR
-Content-Type: application/pgp-signature
+> 
+> ...
+>>  	list_for_each_entry(wq, &workqueues, list) {
+>> +		if (!(wq->flags & WQ_FREEZABLE))
+>> +			continue;
+> 
+> Ah, okay, you're not calling the function at all if WQ_FREEZABLE is
+> not set.  I couldn't really understand what you were trying to say in
+> the patch description.  Can you please try to refine the description
+> more?  It's better to be verbose and clear than short and difficult to
+> understand.
+> 
+> Thanks.
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTTxgwAAoJEMDTa8Ir7ZwVuZQP/Rd0Kl3z0eS1Im48eAWbUKH5
-fu8vwbiIoMKRVHrb1hjKV4WmlD3EjhqmygxcouNbEc6XMvI7OMZBpJbvkm5TidG3
-nt23CcBqpfgbqtgTkCOXQQ3hJc5fvurmyPOWT/pTEKYjCfrzq0dutyjRx52QECGP
-l5Ggu5sE4rNOe++a+era/sFGUKp3FWQWvaKRVH5Dd1XwzvyECTiwyfhd7dUJHKCY
-3+b8HhTaeRxR/COmhwUZPAMdlZz2oR7aGFCY571lGnfMOE4BsxMDnzLa6JFJ1azR
-62u61WWZ9shgXwCOG8T95GH76O34UNi0oIfBH3Y/9OL2qA5yyyy/CxncWqp9+bfP
-z+J6HwLb85ED5FeIgSxOHmuP0jy4tDEjbhy7JVL+0AeUfU6nn+1iWMYduskVqWev
-FLWgJxujEIGnmdO353jdYTIikSqtuDsTO1Ug79r8ZOesuAsoo4a5L5SM7xHIVehB
-D752NJW54G6yPvddrvXTApFXRe+UiDZGZ4Aka11G955LMtW+dRuteLGfH1E7lbfB
-5fTks19vB9QGpnKLsRCcGoDFdDZ4N8QqbrT9s2XF4f+ecNLijyJvoq77LqlBM8WC
-sj36EArJVTyzdn6HmXrDJFedAxGzcenTkMvc9AzZyrEQ8a6RKR6nSGdXM6VkwYti
-JWd91SnUK3ICJ66wMbZn
-=AC6r
------END PGP SIGNATURE-----
-
---Signature=_Thu__17_Apr_2014_09_54_19_+1000_Wb10tmYVmPyEkMVR--
