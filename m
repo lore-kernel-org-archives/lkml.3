@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756048AbaDPKvN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:51:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:51670 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755660AbaDPKc3 (ORCPT
+	id S1756138AbaDPKvX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:51:23 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:31152 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755359AbaDPKvU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:32:29 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Anton Nayshtut <anton@swortex.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 15/46] ipv6: Fix exthdrs offload registration.
-Date: Wed, 16 Apr 2014 11:31:31 +0100
-Message-Id: <1397644322-13905-16-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
-References: <1397644322-13905-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Wed, 16 Apr 2014 06:51:20 -0400
+X-IronPort-AV: E=Sophos;i="4.97,871,1389715200"; 
+   d="scan'208";a="29339231"
+Message-ID: <534E52B7.7070002@cn.fujitsu.com>
+Date: Wed, 16 Apr 2014 18:51:51 +0900
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: <rostedt@goodmis.org>, <fweisbec@gmail.com>, <mingo@redhat.com>,
+        <acme@ghostprotocols.net>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/8] sched/wait: Use __add_wait_queue{_tail}_exclusive()
+ as possible.
+References: <cover.1397562542.git.yangds.fnst@cn.fujitsu.com> <c232d92d5d70daf9b2c58486dc5a182f95edd951.1397562542.git.yangds.fnst@cn.fujitsu.com> <20140415134949.GU11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140415134949.GU11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.49]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.8 -stable review patch.  If anyone has any objections, please let me know.
+On 04/15/2014 10:49 PM, Peter Zijlstra wrote:
+> On Tue, Apr 15, 2014 at 09:32:52PM +0900, Dongsheng Yang wrote:
+>> From: Dongsheng <yangds.fnst@cn.fujitsu.com>
+>>
+>> There is already a function in include/linux/wait.h to cover the
+>> 'exclusive' usage. So we can use it in sched/wait.c to replace
+>> the opened implementation of it.
+>>
+>> Signed-off-by: Dongsheng <yangds.fnst@cn.fujitsu.com>
+>> ---
+>>   kernel/sched/wait.c | 6 ++----
+>>   1 file changed, 2 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
+>> index 283750e..b04827e 100644
+>> --- a/kernel/sched/wait.c
+>> +++ b/kernel/sched/wait.c
+>> @@ -38,9 +38,8 @@ void add_wait_queue_exclusive(wait_queue_head_t *q, wait_queue_t *wait)
+>>   	unsigned long flags;
+>>   
+>>   	trace_sched_wait(current);
+>> -	wait->flags |= WQ_FLAG_EXCLUSIVE;
+>>   	spin_lock_irqsave(&q->lock, flags);
+>> -	__add_wait_queue_tail(q, wait);
+>> +	__add_wait_queue_tail_exclusive(q, wait);
+>>   	spin_unlock_irqrestore(&q->lock, flags);
+>>   }
+>>   EXPORT_SYMBOL(add_wait_queue_exclusive);
+>> @@ -192,10 +191,9 @@ prepare_to_wait_exclusive(wait_queue_head_t *q, wait_queue_t *wait, int state)
+>>   	unsigned long flags;
+>>   
+>>   	trace_sched_wait(current);
+>> -	wait->flags |= WQ_FLAG_EXCLUSIVE;
+>>   	spin_lock_irqsave(&q->lock, flags);
+>>   	if (list_empty(&wait->task_list))
+>> -		__add_wait_queue_tail(q, wait);
+>> +		__add_wait_queue_tail_exclusive(q, wait);
+>>   	set_current_state(state);
+>>   	spin_unlock_irqrestore(&q->lock, flags);
+> That is not a no-op, if !list_empty() we loose the WQ_flag
 
-------------------
-
-From: Anton Nayshtut <anton@swortex.com>
-
-commit d2d273ffabd315eecefce21a4391d44b6e156b73 upstream.
-
-Without this fix, ipv6_exthdrs_offload_init doesn't register IPPROTO_DSTOPTS
-offload, but returns 0 (as the IPPROTO_ROUTING registration actually succeeds).
-
-This then causes the ipv6_gso_segment to drop IPv6 packets with IPPROTO_DSTOPTS
-header.
-
-The issue detected and the fix verified by running MS HCK Offload LSO test on
-top of QEMU Windows guests, as this test sends IPv6 packets with
-IPPROTO_DSTOPTS.
-
-Signed-off-by: Anton Nayshtut <anton@swortex.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/ipv6/exthdrs_offload.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/net/ipv6/exthdrs_offload.c b/net/ipv6/exthdrs_offload.c
-index cf77f3a..447a7fb 100644
---- a/net/ipv6/exthdrs_offload.c
-+++ b/net/ipv6/exthdrs_offload.c
-@@ -25,11 +25,11 @@ int __init ipv6_exthdrs_offload_init(void)
- 	int ret;
- 
- 	ret = inet6_add_offload(&rthdr_offload, IPPROTO_ROUTING);
--	if (!ret)
-+	if (ret)
- 		goto out;
- 
- 	ret = inet6_add_offload(&dstopt_offload, IPPROTO_DSTOPTS);
--	if (!ret)
-+	if (ret)
- 		goto out_rt;
- 
- out:
--- 
-1.9.1
+Oh, yes, my mistake. Thanx
+> .
+>
 
