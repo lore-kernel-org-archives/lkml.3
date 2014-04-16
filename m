@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853AbaDPHkd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 03:40:33 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:63693 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754581AbaDPHkb (ORCPT
+	id S1754873AbaDPHk4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 03:40:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39369 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754511AbaDPHkx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 03:40:31 -0400
-Date: Wed, 16 Apr 2014 09:40:27 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Wang, Biao" <biao.wang@intel.com>
-Cc: "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Zhang, Di" <di.zhang@intel.com>
-Subject: Re: [PATCH] x86: apic: disarm apic timer in deadline mode when shut
- down clockevent
-Message-ID: <20140416074027.GB5636@gmail.com>
-References: <09CB0B4607EB8F4DB7E0BE3B06BFBD0501004D78@SHSMSX101.ccr.corp.intel.com>
+	Wed, 16 Apr 2014 03:40:53 -0400
+Date: Wed, 16 Apr 2014 00:40:41 -0700
+From: tip-bot for Peter Foley <tipbot@zytor.com>
+Message-ID: <tip-96f4c760d99afae7da28628b30211cd3bf0958d5@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, pefoley2@pefoley.com, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, pefoley2@pefoley.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+In-Reply-To: <1397584693-15902-1-git-send-email-pefoley2@pefoley.com>
+References: <1397584693-15902-1-git-send-email-pefoley2@pefoley.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/build:
+  Supress realmode.bin is up to date message
+Git-Commit-ID: 96f4c760d99afae7da28628b30211cd3bf0958d5
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <09CB0B4607EB8F4DB7E0BE3B06BFBD0501004D78@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  96f4c760d99afae7da28628b30211cd3bf0958d5
+Gitweb:     http://git.kernel.org/tip/96f4c760d99afae7da28628b30211cd3bf0958d5
+Author:     Peter Foley <pefoley2@pefoley.com>
+AuthorDate: Tue, 15 Apr 2014 13:58:13 -0400
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Wed, 16 Apr 2014 08:57:18 +0200
 
-* Wang, Biao <biao.wang@intel.com> wrote:
+x86/build: Supress realmode.bin is up to date message
 
-> For tsc deadline mode, when we shut down clockevent we should disarm
-> local-APIC timer like count-down mode.
-> 
-> Signed-off-by: wang, biao <biao.wang@intel.com>
-> Signed-off-by: Zhang Di <di.zhang@intel.com>
-> ---
->  arch/x86/kernel/apic/apic.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-> index 7f26c9a..85889ba 100644
-> --- a/arch/x86/kernel/apic/apic.c
-> +++ b/arch/x86/kernel/apic/apic.c
-> @@ -512,6 +512,10 @@ static void lapic_timer_setup(enum clock_event_mode mode,
->  		v |= (APIC_LVT_MASKED | LOCAL_TIMER_VECTOR);
->  		apic_write(APIC_LVTT, v);
->  		apic_write(APIC_TMICT, 0);
-> +
-> +		/*disarm timer in deadline mode*/
-> +		if (boot_cpu_has(X86_FEATURE_TSC_DEADLINE_TIMER))
-> +			wrmsrl(MSR_IA32_TSC_DEADLINE, 0);
->  		break;
+Supress this unnecessary message during kernel re-build:
 
-Please fix the changelog to conform to the standard changelog style:
+   make[3]: 'arch/x86/realmode/rm/realmode.bin' is up to date.
 
- - first describe the symptoms of the bug - how does a user notice?
+Signed-off-by: Peter Foley <pefoley2@pefoley.com>
+Link: http://lkml.kernel.org/r/1397584693-15902-1-git-send-email-pefoley2@pefoley.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/realmode/rm/Makefile | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
- - then describe how the code behaves today and how that is causing the bug
-
- - and then only describe how it's fixed.
-
-The first item is the most important one - while developers 
-(naturally) tend to concentrate on the least important point,
-the last one.
-
-Thanks,
-
-        Ingo
+diff --git a/arch/x86/realmode/rm/Makefile b/arch/x86/realmode/rm/Makefile
+index 3497f14..7c0d7be 100644
+--- a/arch/x86/realmode/rm/Makefile
++++ b/arch/x86/realmode/rm/Makefile
+@@ -52,8 +52,9 @@ $(obj)/realmode.elf: $(obj)/realmode.lds $(REALMODE_OBJS) FORCE
+ OBJCOPYFLAGS_realmode.bin := -O binary
+ 
+ targets += realmode.bin
+-$(obj)/realmode.bin: $(obj)/realmode.elf $(obj)/realmode.relocs
++$(obj)/realmode.bin: $(obj)/realmode.elf $(obj)/realmode.relocs FORCE
+ 	$(call if_changed,objcopy)
++	@:
+ 
+ quiet_cmd_relocs = RELOCS  $@
+       cmd_relocs = arch/x86/tools/relocs --realmode $< > $@
