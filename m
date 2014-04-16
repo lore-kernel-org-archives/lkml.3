@@ -1,111 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586AbaDPLtm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 07:49:42 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:49510 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755288AbaDPLti (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 07:49:38 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-c3-534e6e507ee4
-Message-id: <534E6E4E.4020807@samsung.com>
-Date: Wed, 16 Apr 2014 13:49:34 +0200
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: Chanwoo Choi <cw00.choi@samsung.com>, jic23@kernel.org,
-        ch.naveen@samsung.com, kgene.kim@samsung.com
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, sachin.kamat@linaro.org,
-        linux-iio@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCHv3 2/2] iio: devicetree: Add DT binding documentation for
- Exynos3250 ADC
-References: <1397643118-6934-1-git-send-email-cw00.choi@samsung.com>
- <1397643118-6934-3-git-send-email-cw00.choi@samsung.com>
-In-reply-to: <1397643118-6934-3-git-send-email-cw00.choi@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42I5/e/4Nd2APL9gg3WvZS3uPj/MaHH9y3NW
-	i/lHzrFa9L9ZyGpx7tVKRosHTauYLHoXXGWz2PT4GqvFwrYlLBbzjrxjsbi8aw6bxYzz+5gs
-	ll6/yGQxYfpaFou3d6azWLTuPcJucfJPL6ODoMeaeWsYPS739TJ5rFz+hc1j8wotj02rOtk8
-	7lzbA+Qtqffo27KK0ePzJrkAzigum5TUnMyy1CJ9uwSujL2fTrIWrBSp+Hh4LmMD4ymBLkZO
-	DgkBE4m7+2awQdhiEhfurQeyuTiEBJYySiyeuogVwvnMKNGx+y07SBWvgJbEoZe/wGwWAVWJ
-	FYsuM4HYbAJqEp8bHoFN4geqWdN0nQXEFhWIkLjXeJgVoldQ4sfke2BxEYEsidtTjzGC2MwC
-	L5gk1vb5gNjCArES62buA4sLCdRL3Dv2Emw+p4CrxJJ5ELuYBawlVk7aBtUrL7F5zVvmCYyC
-	s5CsmIWkbBaSsgWMzKsYRVNLkwuKk9JzDfWKE3OLS/PS9ZLzczcxQuLwyw7GxcesDjEKcDAq
-	8fA6ZPkGC7EmlhVX5h5ilOBgVhLh7c3yCxbiTUmsrEotyo8vKs1JLT7EyMTBKdXAOFvLLMxI
-	/bKpC5/YgpSS2IlzN/Vf7QmuMVkr9fmo+XnLzWvYzCSlIlTa7mWnrdujF8Hw9Mie9fPWTO7g
-	nXd40ssH0/eekPbp0pdZuvR2tr12+8tpphOMNkfcazqy8gLzE37R8x0Om+5sa2bVfrVBuUTw
-	/pqiyQvNsta7mu75eXGN5s05q8r+eiuxFGckGmoxFxUnAgAnPZHKoQIAAA==
+	id S1755755AbaDPMHR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 08:07:17 -0400
+Received: from mga02.intel.com ([134.134.136.20]:26552 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755202AbaDPMHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 08:07:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,872,1389772800"; 
+   d="scan'208";a="514133826"
+From: Jin Yao <yao.jin@linux.intel.com>
+To: linus.walleij@linaro.org, alan@linux.intel.com, mathias.nyman@intel.com,
+        linux-kernel@vger.kernel.org
+Cc: Jin Yao <yao.jin@linux.intel.com>
+Subject: [PATCH] pinctrl-baytrail: fix for irq descriptor conflict on ASUS T100TA
+Date: Wed, 16 Apr 2014 20:05:59 +0800
+Message-Id: <1397649959-29762-1-git-send-email-yao.jin@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chanwoo,
+A crash is triggered on the ASUS T100TA Baytrail-T because of a irq 
+descriptor conflict. There are two gpio triggered acpi events in this
+device, GPIO 6 and 18. These gpios are translated to irqs by calling
+gpio_to_irq which in turn will call irq_create_mapping(vg->domain, offset).
+irq_create_mapping will take care of allocating the irq descriptor, taking
+the first available number starting from the given value (6 in our case).
+The 0-15 are already reserved by legacy ISA code, so it gets the first
+free irq descriptor which is number 16. The i915 driver also uses irq 16,
+it loads later than gpio and crashes in probe.
 
-On 16.04.2014 12:11, Chanwoo Choi wrote:
-> This patch add DT binding documentation for Exynos3250 ADC IP. Exynos3250 has
-> special clock ('sclk_tsadc') for ADC which provide clock to internal ADC.
->
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Cc: Randy Dunlap <rdunlap@infradead.org>
-> Cc: Kukjin Kim <kgene.kim@samsung.com>
-> Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-> Cc: Tomasz Figa <t.figa@samsung.com>
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->   .../devicetree/bindings/arm/samsung/exynos-adc.txt   | 20 ++++++++++++++++++++
->   1 file changed, 20 insertions(+)
->
-> diff --git a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
-> index 5d49f2b..7532ec3 100644
-> --- a/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
-> +++ b/Documentation/devicetree/bindings/arm/samsung/exynos-adc.txt
-> @@ -14,6 +14,8 @@ Required properties:
->   				for exynos4412/5250 controllers.
->   			Must be "samsung,exynos-adc-v2" for
->   				future controllers.
-> +			Must be "samsung,exynos-adc-v3" for
-> +				for exynos3250 controllers.
+The bug is reported here:
+https://bugzilla.kernel.org/show_bug.cgi?id=68291
 
-I don't think adc-v3 is correct here. It looks like a normal V2 with 
-additional special clock input. Possibly "samsung,exynos3250-adc-v2" or 
-"samsung,exynos-adc-v2-sclk" would be better choices.
+The rootcause we know now is a low level irq issue. It needs a long term
+solution to fix the issue in irq system.
 
->   - reg:			Contains ADC register address range (base address and
->   			length) and the address of the phy enable register.
->   - interrupts: 		Contains the interrupt information for the timer. The
-> @@ -21,7 +23,11 @@ Required properties:
->   			the Samsung device uses.
->   - #io-channel-cells = <1>; As ADC has multiple outputs
->   - clocks		From common clock binding: handle to adc clock.
-> +			From common clock binding: handle to sclk_tsadc clock
-> +			if using Exynos3250.
->   - clock-names		From common clock binding: Shall be "adc".
-> +			From common clock binding: Shall be "sclk_tsadc"
-> +			if using Exynos3250.
->   - vdd-supply		VDD input supply.
->
->   Note: child nodes can be added for auto probing from device tree.
-> @@ -41,6 +47,20 @@ adc: adc@12D10000 {
->   	vdd-supply = <&buck5_reg>;
->   };
->
-> +If Exynos3250 uses ADC,
+This patch changes the Baytrail GPIO driver to avoid the irq descriptor
+conflict. It still uses the irq domain to allocate irq descriptor but start
+from a predefined irq base number (256) to avoid the conflict.
 
-Please keep proper formatting:
+Signed-off-by: Jin Yao <yao.jin@linux.intel.com>
+---
+ drivers/pinctrl/pinctrl-baytrail.c | 37 +++++++++++++++++++++++++++++--------
+ 1 file changed, 29 insertions(+), 8 deletions(-)
 
-Example: Node for ADC of Exynos3250 with additional special clock
+diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
+index 6e8301f..45b2d81 100644
+--- a/drivers/pinctrl/pinctrl-baytrail.c
++++ b/drivers/pinctrl/pinctrl-baytrail.c
+@@ -124,6 +124,18 @@ static struct pinctrl_gpio_range byt_ranges[] = {
+ 	},
+ };
+ 
++/*
++ * Start from an irq base number above x86 ioapic range to work around some
++ * nasty, which is still in 3.14 unresolved irq descriptor conflicts.
++ */
++#define BYT_GPIO_PIN_IRQBASE	256
++
++static int byt_pin_irqbase[] = {
++	BYT_GPIO_PIN_IRQBASE,
++	BYT_GPIO_PIN_IRQBASE + BYT_NGPIO_SCORE,
++	BYT_GPIO_PIN_IRQBASE + BYT_NGPIO_SCORE + BYT_NGPIO_NCORE,
++};
++
+ struct byt_gpio {
+ 	struct gpio_chip		chip;
+ 	struct irq_domain		*domain;
+@@ -131,6 +143,7 @@ struct byt_gpio {
+ 	spinlock_t			lock;
+ 	void __iomem			*reg_base;
+ 	struct pinctrl_gpio_range	*range;
++	int				pin_irqbase;
+ };
+ 
+ #define to_byt_gpio(c)	container_of(c, struct byt_gpio, chip)
+@@ -481,7 +494,7 @@ static int byt_gpio_probe(struct platform_device *pdev)
+ 	struct pinctrl_gpio_range *range;
+ 	acpi_handle handle = ACPI_HANDLE(dev);
+ 	unsigned hwirq;
+-	int ret;
++	int ret, i;
+ 
+ 	if (acpi_bus_get_device(handle, &acpi_dev))
+ 		return -ENODEV;
+@@ -496,6 +509,12 @@ static int byt_gpio_probe(struct platform_device *pdev)
+ 		if (!strcmp(acpi_dev->pnp.unique_id, range->name)) {
+ 			vg->chip.ngpio = range->npins;
+ 			vg->range = range;
++			ret = kstrtol(range->name, 10, &i);
++			if (ret != 0)
++				return ret;
++
++			i--;
++			vg->pin_irqbase = byt_pin_irqbase[i];
+ 			break;
+ 		}
+ 	}
+@@ -527,19 +546,14 @@ static int byt_gpio_probe(struct platform_device *pdev)
+ 	gc->can_sleep = false;
+ 	gc->dev = dev;
+ 
+-	ret = gpiochip_add(gc);
+-	if (ret) {
+-		dev_err(&pdev->dev, "failed adding byt-gpio chip\n");
+-		return ret;
+-	}
+-
+ 	/* set up interrupts  */
+ 	irq_rc = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+ 	if (irq_rc && irq_rc->start) {
+ 		hwirq = irq_rc->start;
+ 		gc->to_irq = byt_gpio_to_irq;
+ 
+-		vg->domain = irq_domain_add_linear(NULL, gc->ngpio,
++		vg->domain = irq_domain_add_simple(NULL, gc->ngpio,
++						   vg->pin_irqbase,
+ 						   &byt_gpio_irq_ops, vg);
+ 		if (!vg->domain)
+ 			return -ENXIO;
+@@ -550,6 +564,12 @@ static int byt_gpio_probe(struct platform_device *pdev)
+ 		irq_set_chained_handler(hwirq, byt_gpio_irq_handler);
+ 	}
+ 
++	ret = gpiochip_add(gc);
++	if (ret) {
++		dev_err(&pdev->dev, "failed adding byt-gpio chip\n");
++		return ret;
++	}
++
+ 	pm_runtime_enable(dev);
+ 
+ 	return 0;
+@@ -572,6 +592,7 @@ static const struct dev_pm_ops byt_gpio_pm_ops = {
+ 
+ static const struct acpi_device_id byt_gpio_acpi_match[] = {
+ 	{ "INT33B2", 0 },
++	{ "INT33FC", 0 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(acpi, byt_gpio_acpi_match);
+-- 
+1.8.3.2
 
-Best regards,
-Tomasz
