@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422693AbaDPQGg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 12:06:36 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:44398 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422635AbaDPQGc (ORCPT
+	id S1422710AbaDPQHB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 12:07:01 -0400
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:60306 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422635AbaDPQG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 12:06:32 -0400
-Message-ID: <1397664384.4222.124.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: [PATCH] softirq: a single rcu_bh_qs() call is enough
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Miller <davem@davemloft.net>
-Cc: netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 16 Apr 2014 09:06:24 -0700
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 16 Apr 2014 12:06:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <201404160847.27300.sfking@fdwdc.com>
+References: <201404141745.44279.sfking@fdwdc.com>
+	<20140416001931.GA17350@js1304-P5Q-DELUXE>
+	<201404160847.27300.sfking@fdwdc.com>
+Date: Wed, 16 Apr 2014 18:06:57 +0200
+X-Google-Sender-Auth: TMCjopFpN5VEB6yrXJ_R9PCNTL0
+Message-ID: <CAMuHMdV2zSWaDbHNv3QQeEgu26PQX9TWn7cHA=4U0YOK0bbExg@mail.gmail.com>
+Subject: Re: [uClinux-dev] v3.15-rc1 slab allocator broken on m68knommu (coldfire)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Steven King <sfking@fdwdc.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        uClinux development list <uclinux-dev@uclinux.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
+Hi Steven,
 
-Calling rcu_bh_qs() after every softirq action is not really needed.
+On Wed, Apr 16, 2014 at 5:47 PM, Steven King <sfking@fdwdc.com> wrote:
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -2572,13 +2572,13 @@ static void *alloc_slabmgmt(struct kmem_cache *cachep,
+>         return freelist;
+>  }
+>
+> -static inline freelist_idx_t get_free_obj(struct page *page, unsigned char idx)
+> +static inline freelist_idx_t get_free_obj(struct page *page, unsigned int idx)
+>  {
+>         return ((freelist_idx_t *)page->freelist)[idx];
+>  }
+>
+>  static inline void set_free_obj(struct page *page,
+> -                                       unsigned char idx, freelist_idx_t val)
+> +                                       unsigned int idx, freelist_idx_t val)
+>  {
+>         ((freelist_idx_t *)(page->freelist))[idx] = val;
+>  }
+>
+>
+> then v3.15-rc1 will boot using the slab allocator.
 
-What RCU needs is at least one rcu_bh_qs() per softirq round to note a
-quiescent state was passed for rcu_bh
+Is "idx" ever larger than 255?
 
-Note for Paul and myself : this could be inlined as a single instruction
-and avoid smp_processor_id()
-(sone this_cpu_write(rcu_bh_data.passed_quiesce, 1))
+Gr{oetje,eeting}s,
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
----
- kernel/softirq.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+                        Geert
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index b50990a5bea0..b9b2d4906848 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -232,7 +232,6 @@ asmlinkage void __do_softirq(void)
- 	bool in_hardirq;
- 	__u32 pending;
- 	int softirq_bit;
--	int cpu;
- 
- 	/*
- 	 * Mask out PF_MEMALLOC s current task context is borrowed for the
-@@ -247,7 +246,6 @@ asmlinkage void __do_softirq(void)
- 	__local_bh_disable_ip(_RET_IP_, SOFTIRQ_OFFSET);
- 	in_hardirq = lockdep_softirq_start();
- 
--	cpu = smp_processor_id();
- restart:
- 	/* Reset the pending bitmask before enabling irqs */
- 	set_softirq_pending(0);
-@@ -276,11 +274,11 @@ restart:
- 			       prev_count, preempt_count());
- 			preempt_count_set(prev_count);
- 		}
--		rcu_bh_qs(cpu);
- 		h++;
- 		pending >>= softirq_bit;
- 	}
- 
-+	rcu_bh_qs(smp_processor_id());
- 	local_irq_disable();
- 
- 	pending = local_softirq_pending();
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
