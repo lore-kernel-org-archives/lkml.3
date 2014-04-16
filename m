@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415AbaDPKNh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 06:13:37 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:36440 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755152AbaDPKNc (ORCPT
+	id S1755430AbaDPKNv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 06:13:51 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34812 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755214AbaDPKNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 06:13:32 -0400
-Date: Wed, 16 Apr 2014 11:12:43 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
-        Russ Dill <Russ.Dill@ti.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Len Brown <len.brown@intel.com>, Nicolas Pitre <nico@linaro.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Laura Abbott <lauraa@codeaurora.org>, Jiang Liu <liuj97@gmail.com>,
-        Sricharan R <r.sricharan@ti.com>,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>
-Subject: Re: [PATCH v7 2/2] ARM hibernation / suspend-to-disk
-Message-ID: <20140416101243.GA6952@n2100.arm.linux.org.uk>
-References: <1394016605-24120-1-git-send-email-sebastian.capella@linaro.org> <1394016605-24120-3-git-send-email-sebastian.capella@linaro.org>
+	Wed, 16 Apr 2014 06:13:45 -0400
+Date: Wed, 16 Apr 2014 11:13:23 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Doug Anderson <dianders@chromium.org>, Anton Vorontsov <anton@enomsg.org>,
+        Olof Johansson <olof@lixom.net>,
+        Sachin Kamat <sachin.kamat@linaro.org>, ajaykumar.rs@samsung.com,
+        linux-samsung-soc@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Message-ID: <20140416101323.GP12304@sirena.org.uk>
+References: <1397592876-5741-1-git-send-email-dianders@chromium.org>
+ <1397592876-5741-3-git-send-email-dianders@chromium.org>
+ <20140416095922.GG4754@lee--X1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/F2XdnRjS8y2HUtp"
 Content-Disposition: inline
-In-Reply-To: <1394016605-24120-3-git-send-email-sebastian.capella@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20140416095922.GG4754@lee--X1>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/3] mfd: tps65090: Stop caching registers
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 02:50:05AM -0800, Sebastian Capella wrote:
-> diff --git a/arch/arm/include/asm/memory.h b/arch/arm/include/asm/memory.h
-> index 8756e4b..d32adbb 100644
-> --- a/arch/arm/include/asm/memory.h
-> +++ b/arch/arm/include/asm/memory.h
-> @@ -291,6 +291,7 @@ static inline void *phys_to_virt(phys_addr_t x)
->   */
->  #define __pa(x)			__virt_to_phys((unsigned long)(x))
->  #define __va(x)			((void *)__phys_to_virt((phys_addr_t)(x)))
-> +#define __pa_symbol(x)		__pa((unsigned long)(x))
->  #define pfn_to_kaddr(pfn)	__va((pfn) << PAGE_SHIFT)
 
-I don't see the appropriate version on the mailing list, so I'll comment
-here instead.  In 8011/1, you added here:
+--/F2XdnRjS8y2HUtp
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-+#define virt_to_pfn(kaddr)      (__pa(kaddr) >> PAGE_SHIFT)
+On Wed, Apr 16, 2014 at 10:59:22AM +0100, Lee Jones wrote:
 
-which conflicts with my solution (which fixes some rather horrid assembly
-code).  You can find my change as e26a9e00afc4 (ARM: Better virt_to_page()
-handling).  I can drop this from your patch, but it would be a good idea
-if you could re-validate against v3.15-rc1.
+> > NOTE: the IRQnMASK and CG_CTRLn registers are the exception and could
+> > be cached.  If we find that we spend a lot of time reading those we
+> > can turn on cache for just those registers.
 
-Thanks.
+> > -static bool is_volatile_reg(struct device *dev, unsigned int reg)
+> > -{
+> > -	if ((reg == TPS65090_INT_STS) || (reg == TPS65090_INT_STS2))
+> > -		return true;
+> > -	else
+> > -		return false;
+> > -}
+> > -
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+> I don't know enough about Regmap internals to know what this actually
+> affects in real terms.
+
+> Mark,
+>   Does this change seem sane to you?
+
+It does what it says, it stops us caching stuff.  It would seem better
+to do what the changelog suggests above and keep caching the registers
+that can be cached - especially the interrupt masks, they should get
+read in the interrupt path and that tends to be a bit latency sensitive.
+
+--/F2XdnRjS8y2HUtp
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTTlfAAAoJELSic+t+oim9XG0P/0GYEXL3COJuPxqh4msPQdvE
+kGpJmlst0l7U6EU3MVJT3VTqCv6ZuXhxiklxyZYI4CckicqcR2/ob6YiMrcUN9km
+FoFclt5EDxWzLAz7GvvxjCNHfllFnju80CSMr9RQD91sWp7Wo5+XyKwRu3t312lk
+N50sFcSmk/arIdp6NvQiMXATFjilq13rlfKtKVisIEj92E4DZTgQ3qePl+9USv8K
+vMIijoBMIMZyN7ieKDynXUuPNKfykhkkxSR3qBGqeG9x+Uq7rl3sq/4SmVNxo8jx
+gLANJ/QXbc7R4lvZcF+xhJiHikl+TQY2A757Kvdmeg/N9YmpvNU2KgLr/ODvqoOk
+lzj6J3Rvxmf60ocipoQtzln6A6R3EQDyFKlWsdxyAalBotXSmwK2YLxf5Ypgl8Ye
+CCSWGk+WSGwUwiYA5e50O8KICbv55C9YLIe35XdSUT91thEFendF7eevRbyP/jmR
+PkS/kcVii4NkLmmk46COre7TO5bxXJYwp1grrfTmuluZXWOPSCSjs2t+33sbM2Bt
+xbX08biXZJaZjLfPUOvDK2lV6ivLhWYqoepzl6G48qsd6UUUNcemsPjHvNov2eEH
+1v9A0bQ3GDkso7NbEPvhhdjxawbx/VN0cPQc127rnY6l6S/ceNPAfCUFxKK9sai+
+aJydW/fwYzo5qXPnTDqG
+=kwAY
+-----END PGP SIGNATURE-----
+
+--/F2XdnRjS8y2HUtp--
