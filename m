@@ -1,83 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871AbaDPMwX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 08:52:23 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:16068 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753240AbaDPMwW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 08:52:22 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 16 Apr 2014 05:47:10 -0700
-From: Peter Chiang <pchiang@nvidia.com>
-To: "ccross@android.com" <ccross@android.com>,
-        "lizefan@huawei.com" <lizefan@huawei.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "oleg@redhat.com" <oleg@redhat.com>, "tj@kernel.org" <tj@kernel.org>,
-        "pavel@ucw.cz" <pavel@ucw.cz>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "guillaume@morinfr.org" <guillaume@morinfr.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 16 Apr 2014 20:52:17 +0800
-Subject: RE: [PATCH] mm : Avoid candidate task is equal to current task
-Thread-Topic: [PATCH] mm : Avoid candidate task is equal to current task
-Thread-Index: Ac9ZIMLavZdg8yEMSayjZQY6ZEC6ywATQPhgAAEj8GA=
-Message-ID: <80341664FB79C2419999599F48F738410227327888@HKMAIL01.nvidia.com>
-References: <1397617379-26895-1-git-send-email-pchiang@nvidia.com>
- <80341664FB79C2419999599F48F738410227327881@HKMAIL01.nvidia.com>
-In-Reply-To: <80341664FB79C2419999599F48F738410227327881@HKMAIL01.nvidia.com>
-Accept-Language: zh-TW, en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-TW, en-US
+	id S1756158AbaDPMyR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 08:54:17 -0400
+Received: from mga03.intel.com ([143.182.124.21]:57772 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756038AbaDPMyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 08:54:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,872,1389772800"; 
+   d="scan'208";a="514151638"
+Message-ID: <534E7CC7.7050300@intel.com>
+Date: Wed, 16 Apr 2014 14:51:19 +0200
+From: Artur Paszkiewicz <artur.paszkiewicz@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
+CC: Lukasz Dorau <lukasz.dorau@intel.com>,
+        Maciej Patelczyk <maciej.patelczyk@intel.com>,
+        Dave Jiang <dave.jiang@intel.com>, intel-linux-scu@intel.com,
+        linux-scsi@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2 RESEND 08/23] isci: Use pci_enable_msix_exact() instead
+ of pci_enable_msix()
+References: <cover.1397461652.git.agordeev@redhat.com> <8a203f9f8b7844e46676d526188965e877751edb.1397461652.git.agordeev@redhat.com>
+In-Reply-To: <8a203f9f8b7844e46676d526188965e877751edb.1397461652.git.agordeev@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Is it possible  before exit_mm() set tsk->mm to NULL, tsk->mm has already been NULL ?
+On 04/14/2014 10:05 AM, Alexander Gordeev wrote:
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range()  or pci_enable_msi_exact()
+> and pci_enable_msix_range() or pci_enable_msix_exact()
+> interfaces.
+> 
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: Lukasz Dorau <lukasz.dorau@intel.com>
+> Cc: Maciej Patelczyk <maciej.patelczyk@intel.com>
+> Cc: Dave Jiang <dave.jiang@intel.com>
+> Cc: intel-linux-scu@intel.com
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> ---
+>  drivers/scsi/isci/init.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/scsi/isci/init.c b/drivers/scsi/isci/init.c
+> index 695b34e..4198e45 100644
+> --- a/drivers/scsi/isci/init.c
+> +++ b/drivers/scsi/isci/init.c
+> @@ -356,7 +356,7 @@ static int isci_setup_interrupts(struct pci_dev *pdev)
+>  	for (i = 0; i < num_msix; i++)
+>  		pci_info->msix_entries[i].entry = i;
+>  
+> -	err = pci_enable_msix(pdev, pci_info->msix_entries, num_msix);
+> +	err = pci_enable_msix_exact(pdev, pci_info->msix_entries, num_msix);
+>  	if (err)
+>  		goto intx;
+>  
+> 
 
------Original Message-----
-From: Peter Chiang 
-Sent: Wednesday, April 16, 2014 8:31 PM
-To: Peter Chiang; ccross@android.com; lizefan@huawei.com; akpm@linux-foundation.org; oleg@redhat.com; tj@kernel.org; pavel@ucw.cz; ebiederm@xmission.com; guillaume@morinfr.org
-Cc: linux-kernel@vger.kernel.org
-Subject: RE: [PATCH] mm : Avoid candidate task is equal to current task
+Looks good.
 
-mm_update_next_owner() call from exit_mm() , and exit_mm()  change tsk->mm to NULL If p==c , It seems to be  impossible that mm == c->mm  (tsk->mm) . Because mm is non-NULL and  c->mm is NULL . 
+Acked-by: Artur Paszkiewicz <artur.paszkiewicz@intel.com>
 
-
------Original Message-----
-From: Peter Chiang [mailto:pchiang@nvidia.com]
-Sent: Wednesday, April 16, 2014 11:03 AM
-To: ccross@android.com; Peter Chiang; lizefan@huawei.com; akpm@linux-foundation.org; oleg@redhat.com; tj@kernel.org; pavel@ucw.cz; ebiederm@xmission.com; guillaume@morinfr.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] mm : Avoid candidate task is equal to current task
-
-From: pchiang <pchiang@nvidia.com>
-
-Fix kernel panic when finding a new owner for the mm and the new owner is equal to current onwer
-
-Signed-off-by: pchiang <pchiang@nvidia.com>
----
- kernel/exit.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/exit.c b/kernel/exit.c index 6ed6a1d..aa98422 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -399,7 +399,7 @@ retry:
- 	 * here often
- 	 */
- 	do_each_thread(g, c) {
--		if (c->mm == mm)
-+		if ((c != p) && (c->mm == mm))
- 			goto assign_new_owner;
- 	} while_each_thread(g, c);
- 
---
-1.8.1.5
-
+Thanks,
+Artur
