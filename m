@@ -1,259 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161238AbaDPN0o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 09:26:44 -0400
+	id S1161253AbaDPN1T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 09:27:19 -0400
 Received: from mga09.intel.com ([134.134.136.24]:52522 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161169AbaDPN0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 09:26:36 -0400
+	id S1161207AbaDPN0k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 09:26:40 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,872,1389772800"; 
-   d="scan'208";a="494141331"
-From: Lan Tianyu <tianyu.lan@intel.com>
-To: wsa@the-dreams.de, rjw@rjwysocki.net, lenb@kernel.org,
-        mika.westerberg@linux.intel.com, awilliam@redhat.com,
-        tianyu.lan@intel.com
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 8/9] I2C/ACPI: Move ACPI related code to i2c-acpi.c
-Date: Wed, 16 Apr 2014 21:24:41 +0800
-Message-Id: <1397654682-7094-9-git-send-email-tianyu.lan@intel.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com>
-References: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com>
+   d="scan'208";a="494141421"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, Alan Cox <alan@linux.intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Kristen Carlson Accardi <kristen.c.accardi@intel.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH v2] ahci: disable DEVSLP for Intel Valleyview
+Date: Tue, 15 Apr 2014 22:27:11 -0700
+Message-Id: <1397626031-4064-1-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clean up ACPI related code in the i2c core.
+On Intel Valleyview SoC, SATA device sleep is not reliable. When
+DEVSLP is attempted on certain SSDs, port_devslp write would fail
+and result in malfunction of AHCI controller. AHCI controller may
+be not shown in PCI enumeration after reset. Complete power source
+removal may be required to recover from this failure. So we blacklist
+this device and override host device reported capabilities such that
+device LPM will only attempt slumber but not DEVSLP.
 
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Acked-by: Dan Williams <dan.j.williams@intel.com>
 ---
- drivers/i2c/i2c-acpi.c | 89 ++++++++++++++++++++++++++++++++++++++++++++++
- drivers/i2c/i2c-core.c | 95 --------------------------------------------------
- include/linux/i2c.h    |  3 ++
- 3 files changed, 92 insertions(+), 95 deletions(-)
+ drivers/ata/ahci.c    | 15 +++++++++++++++
+ drivers/ata/ahci.h    |  1 +
+ drivers/ata/libahci.c |  7 +++++++
+ 3 files changed, 23 insertions(+)
 
-diff --git a/drivers/i2c/i2c-acpi.c b/drivers/i2c/i2c-acpi.c
-index 942abdf..a0ae867 100644
---- a/drivers/i2c/i2c-acpi.c
-+++ b/drivers/i2c/i2c-acpi.c
-@@ -37,6 +37,95 @@ struct gsb_buffer {
- 	};
- } __packed;
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 5a0bf8e..e090d5f 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -1115,6 +1115,17 @@ static bool ahci_broken_online(struct pci_dev *pdev)
+ 	return pdev->bus->number == (val >> 8) && pdev->devfn == (val & 0xff);
+ }
  
-+static int acpi_i2c_add_resource(struct acpi_resource *ares, void *data)
++static bool ahci_broken_devslp(struct pci_dev *pdev)
 +{
-+	struct i2c_board_info *info = data;
++	/* device with broken DEVSLP but still showing SDS capability */
++	static const struct pci_device_id ids[] = {
++		{ PCI_VDEVICE(INTEL, 0x0f23)}, /* Valleyview SoC */
++		{}
++	};
 +
-+	if (ares->type == ACPI_RESOURCE_TYPE_SERIAL_BUS) {
-+		struct acpi_resource_i2c_serialbus *sb;
++	return pci_match_id(ids, pdev);
++}
 +
-+		sb = &ares->data.i2c_serial_bus;
-+		if (sb->type == ACPI_RESOURCE_SERIAL_TYPE_I2C) {
-+			info->addr = sb->slave_address;
-+			if (sb->access_mode == ACPI_I2C_10BIT_MODE)
-+				info->flags |= I2C_CLIENT_TEN;
-+		}
-+	} else if (info->irq < 0) {
-+		struct resource r;
+ #ifdef CONFIG_ATA_ACPI
+ static void ahci_gtf_filter_workaround(struct ata_host *host)
+ {
+@@ -1357,6 +1368,10 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 
+ 	hpriv->mmio = pcim_iomap_table(pdev)[ahci_pci_bar];
+ 
++	/* must set flag prior to save config in order to take effect */
++	if (ahci_broken_devslp(pdev))
++		hpriv->flags |= AHCI_HFLAG_NO_DEVSLP;
 +
-+		if (acpi_dev_resource_interrupt(ares, 0, &r))
-+			info->irq = r.start;
+ 	/* save initial config */
+ 	ahci_pci_save_initial_config(pdev, hpriv);
+ 
+diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+index 0b670c0..630089a 100644
+--- a/drivers/ata/ahci.h
++++ b/drivers/ata/ahci.h
+@@ -235,6 +235,7 @@ enum {
+ 						        port start (wait until
+ 						        error-handling stage) */
+ 	AHCI_HFLAG_MULTI_MSI		= (1 << 16), /* multiple PCI MSIs */
++	AHCI_HFLAG_NO_DEVSLP		= (1 << 17), /* no device sleep */
+ 
+ 	/* ap->flags bits */
+ 
+diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+index 8cd0184..32fd860 100644
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -653,6 +653,13 @@ void ahci_save_initial_config(struct device *dev,
+ 		cap &= ~HOST_CAP_SNTF;
+ 	}
+ 
++	if ((cap2 & HOST_CAP2_SDS) && (hpriv->flags & AHCI_HFLAG_NO_DEVSLP)) {
++		dev_info(dev,
++			 "controller can't do DEVSLP, turning off\n");
++		cap2 &= ~HOST_CAP2_SDS;
++		cap2 &= ~HOST_CAP2_SADM;
 +	}
 +
-+	/* Tell the ACPI core to skip this resource */
-+	return 1;
-+}
-+
-+static acpi_status acpi_i2c_add_device(acpi_handle handle, u32 level,
-+				       void *data, void **return_value)
-+{
-+	struct i2c_adapter *adapter = data;
-+	struct list_head resource_list;
-+	struct i2c_board_info info;
-+	struct acpi_device *adev;
-+	int ret;
-+
-+	if (acpi_bus_get_device(handle, &adev))
-+		return AE_OK;
-+	if (acpi_bus_get_status(adev) || !adev->status.present)
-+		return AE_OK;
-+
-+	memset(&info, 0, sizeof(info));
-+	info.acpi_node.companion = adev;
-+	info.irq = -1;
-+
-+	INIT_LIST_HEAD(&resource_list);
-+	ret = acpi_dev_get_resources(adev, &resource_list,
-+				     acpi_i2c_add_resource, &info);
-+	acpi_dev_free_resource_list(&resource_list);
-+
-+	if (ret < 0 || !info.addr)
-+		return AE_OK;
-+
-+	adev->power.flags.ignore_parent = true;
-+	strlcpy(info.type, dev_name(&adev->dev), sizeof(info.type));
-+	if (!i2c_new_device(adapter, &info)) {
-+		adev->power.flags.ignore_parent = false;
-+		dev_err(&adapter->dev,
-+			"failed to add I2C device %s from ACPI\n",
-+			dev_name(&adev->dev));
-+	}
-+
-+	return AE_OK;
-+}
-+
-+/**
-+ * acpi_i2c_register_devices - enumerate I2C slave devices behind adapter
-+ * @adap: pointer to adapter
-+ *
-+ * Enumerate all I2C slave devices behind this adapter by walking the ACPI
-+ * namespace. When a device is found it will be added to the Linux device
-+ * model and bound to the corresponding ACPI handle.
-+ */
-+void acpi_i2c_register_devices(struct i2c_adapter *adap)
-+{
-+	acpi_handle handle;
-+	acpi_status status;
-+
-+	if (!adap->dev.parent)
-+		return;
-+
-+	handle = ACPI_HANDLE(adap->dev.parent);
-+	if (!handle)
-+		return;
-+
-+	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
-+				     acpi_i2c_add_device, NULL,
-+				     adap, NULL);
-+	if (ACPI_FAILURE(status))
-+		dev_warn(&adap->dev, "failed to enumerate I2C slaves\n");
-+}
-+
- static int acpi_gsb_i2c_read_bytes(struct i2c_client *client,
- 		u8 cmd, u8 *data, u8 data_len)
- {
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index bb9dc56..9ca50c8 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -1092,101 +1092,6 @@ EXPORT_SYMBOL(of_find_i2c_adapter_by_node);
- static void of_i2c_register_devices(struct i2c_adapter *adap) { }
- #endif /* CONFIG_OF */
- 
--/* ACPI support code */
--
--#if IS_ENABLED(CONFIG_ACPI)
--static int acpi_i2c_add_resource(struct acpi_resource *ares, void *data)
--{
--	struct i2c_board_info *info = data;
--
--	if (ares->type == ACPI_RESOURCE_TYPE_SERIAL_BUS) {
--		struct acpi_resource_i2c_serialbus *sb;
--
--		sb = &ares->data.i2c_serial_bus;
--		if (sb->type == ACPI_RESOURCE_SERIAL_TYPE_I2C) {
--			info->addr = sb->slave_address;
--			if (sb->access_mode == ACPI_I2C_10BIT_MODE)
--				info->flags |= I2C_CLIENT_TEN;
--		}
--	} else if (info->irq < 0) {
--		struct resource r;
--
--		if (acpi_dev_resource_interrupt(ares, 0, &r))
--			info->irq = r.start;
--	}
--
--	/* Tell the ACPI core to skip this resource */
--	return 1;
--}
--
--static acpi_status acpi_i2c_add_device(acpi_handle handle, u32 level,
--				       void *data, void **return_value)
--{
--	struct i2c_adapter *adapter = data;
--	struct list_head resource_list;
--	struct i2c_board_info info;
--	struct acpi_device *adev;
--	int ret;
--
--	if (acpi_bus_get_device(handle, &adev))
--		return AE_OK;
--	if (acpi_bus_get_status(adev) || !adev->status.present)
--		return AE_OK;
--
--	memset(&info, 0, sizeof(info));
--	info.acpi_node.companion = adev;
--	info.irq = -1;
--
--	INIT_LIST_HEAD(&resource_list);
--	ret = acpi_dev_get_resources(adev, &resource_list,
--				     acpi_i2c_add_resource, &info);
--	acpi_dev_free_resource_list(&resource_list);
--
--	if (ret < 0 || !info.addr)
--		return AE_OK;
--
--	adev->power.flags.ignore_parent = true;
--	strlcpy(info.type, dev_name(&adev->dev), sizeof(info.type));
--	if (!i2c_new_device(adapter, &info)) {
--		adev->power.flags.ignore_parent = false;
--		dev_err(&adapter->dev,
--			"failed to add I2C device %s from ACPI\n",
--			dev_name(&adev->dev));
--	}
--
--	return AE_OK;
--}
--
--/**
-- * acpi_i2c_register_devices - enumerate I2C slave devices behind adapter
-- * @adap: pointer to adapter
-- *
-- * Enumerate all I2C slave devices behind this adapter by walking the ACPI
-- * namespace. When a device is found it will be added to the Linux device
-- * model and bound to the corresponding ACPI handle.
-- */
--static void acpi_i2c_register_devices(struct i2c_adapter *adap)
--{
--	acpi_handle handle;
--	acpi_status status;
--
--	if (!adap->dev.parent)
--		return;
--
--	handle = ACPI_HANDLE(adap->dev.parent);
--	if (!handle)
--		return;
--
--	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, 1,
--				     acpi_i2c_add_device, NULL,
--				     adap, NULL);
--	if (ACPI_FAILURE(status))
--		dev_warn(&adap->dev, "failed to enumerate I2C slaves\n");
--}
--#else
--static inline void acpi_i2c_register_devices(struct i2c_adapter *adap) {}
--#endif /* CONFIG_ACPI */
--
- static int i2c_do_add_adapter(struct i2c_driver *driver,
- 			      struct i2c_adapter *adap)
- {
-diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-index 681e689..fc1ef42 100644
---- a/include/linux/i2c.h
-+++ b/include/linux/i2c.h
-@@ -586,7 +586,10 @@ static inline struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node
- #ifdef CONFIG_ACPI
- int acpi_i2c_install_space_handler(struct i2c_adapter *adapter);
- void acpi_i2c_remove_space_handler(struct i2c_adapter *adapter);
-+void acpi_i2c_register_devices(struct i2c_adapter *adap);
- #else
-+static inline void acpi_i2c_register_devices(struct i2c_adapter *adap) {};
-+
- static inline void acpi_i2c_remove_space_handler(struct i2c_adapter *adapter)
- { }
- static inline int acpi_i2c_install_space_handler(struct i2c_adapter *adapter)
+ 	if (!(cap & HOST_CAP_FBS) && (hpriv->flags & AHCI_HFLAG_YES_FBS)) {
+ 		dev_info(dev, "controller can do FBS, turning on CAP_FBS\n");
+ 		cap |= HOST_CAP_FBS;
 -- 
-1.8.4.rc0.1.g8f6a3e5.dirty
+1.8.1.2
 
