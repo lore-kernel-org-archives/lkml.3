@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777AbaDPETG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 00:19:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38828 "EHLO mx2.suse.de"
+	id S1753867AbaDPETO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 00:19:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38838 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751554AbaDPETC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 00:19:02 -0400
+	id S1753794AbaDPETI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 00:19:08 -0400
 From: NeilBrown <neilb@suse.de>
 To: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Date: Wed, 16 Apr 2014 14:03:36 +1000
-Subject: [PATCH 10/19] NET: set PF_FSTRANS while holding sk_lock
+Subject: [PATCH 11/19] FS: set PF_FSTRANS while holding mmap_sem in exec.c
 Cc: xfs@oss.sgi.com
-Cc: netdev@vger.kernel.org
-Message-ID: <20140416040336.10604.96000.stgit@notabene.brown>
+Message-ID: <20140416040336.10604.31309.stgit@notabene.brown>
 In-Reply-To: <20140416033623.10604.69237.stgit@notabene.brown>
 References: <20140416033623.10604.69237.stgit@notabene.brown>
 User-Agent: StGit/0.16
@@ -24,53 +23,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sk_lock can be taken while reclaiming memory (in nfsd for loop-back
-NFS mounts, and presumably in nfs), and memory can be allocated while
-holding sk_lock, at least via:
+Because mmap_sem is sometimes(*) taken while holding a sock lock,
+and the sock lock might be needed for reclaim (at least when loop-back
+NFS is active), we must not block on FS reclaim while mmap_sem is
+held.
 
- inet_listen -> inet_csk_listen_start ->reqsk_queue_alloc
+exec.c allocates memory while holding mmap_sem, and so needs
+PF_FSTRANS protection.
 
-So to avoid deadlocks, always set PF_FSTRANS while holding sk_lock.
+* lockdep reports:
+[   57.653355]    [<ffffffff810eb068>] lock_acquire+0xa8/0x1f0
+[   57.653355]    [<ffffffff811835a4>] might_fault+0x84/0xb0
+[   57.653355]    [<ffffffff81aec65d>] do_ip_setsockopt.isra.18+0x93d/0xed0
+[   57.653355]    [<ffffffff81aecc17>] ip_setsockopt+0x27/0x90
+[   57.653355]    [<ffffffff81b15146>] udp_setsockopt+0x16/0x30
+[   57.653355]    [<ffffffff81a913cf>] sock_common_setsockopt+0xf/0x20
+[   57.653355]    [<ffffffff81a9075e>] SyS_setsockopt+0x5e/0xc0
+[   57.653355]    [<ffffffff81c3d062>] system_call_fastpath+0x16/0x1b
 
-This deadlock was found by lockdep.
+to explain why mmap_sem might be taken while sock lock is held.
 
 Signed-off-by: NeilBrown <neilb@suse.de>
 ---
- include/net/sock.h |    1 +
- net/core/sock.c    |    2 ++
- 2 files changed, 3 insertions(+)
+ fs/exec.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index b9586a137cad..27c355637e44 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -324,6 +324,7 @@ struct sock {
- #define sk_v6_rcv_saddr	__sk_common.skc_v6_rcv_saddr
+diff --git a/fs/exec.c b/fs/exec.c
+index 3d78fccdd723..2c70a03ddb2b 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -652,6 +652,7 @@ int setup_arg_pages(struct linux_binprm *bprm,
+ 	unsigned long stack_size;
+ 	unsigned long stack_expand;
+ 	unsigned long rlim_stack;
++	unsigned int pflags;
  
- 	socket_lock_t		sk_lock;
-+	unsigned int		sk_pflags; /* process flags before taking lock */
- 	struct sk_buff_head	sk_receive_queue;
+ #ifdef CONFIG_STACK_GROWSUP
+ 	/* Limit stack size to 1GB */
+@@ -688,6 +689,7 @@ int setup_arg_pages(struct linux_binprm *bprm,
+ 
+ 	down_write(&mm->mmap_sem);
+ 	vm_flags = VM_STACK_FLAGS;
++	current_set_flags_nested(&pflags, PF_FSTRANS);
+ 
  	/*
- 	 * The backlog queue is special, it is always used with
-diff --git a/net/core/sock.c b/net/core/sock.c
-index cf9bd24e4099..8bc677ef072e 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -2341,6 +2341,7 @@ void lock_sock_nested(struct sock *sk, int subclass)
- 	/*
- 	 * The sk_lock has mutex_lock() semantics here:
- 	 */
-+	current_set_flags_nested(&sk->sk_pflags, PF_FSTRANS);
- 	mutex_acquire(&sk->sk_lock.dep_map, subclass, 0, _RET_IP_);
- 	local_bh_enable();
+ 	 * Adjust stack execute permissions; explicitly enable for
+@@ -741,6 +743,7 @@ int setup_arg_pages(struct linux_binprm *bprm,
+ 		ret = -EFAULT;
+ 
+ out_unlock:
++	current_restore_flags_nested(&pflags, PF_FSTRANS);
+ 	up_write(&mm->mmap_sem);
+ 	return ret;
  }
-@@ -2352,6 +2353,7 @@ void release_sock(struct sock *sk)
- 	 * The sk_lock has mutex_unlock() semantics:
- 	 */
- 	mutex_release(&sk->sk_lock.dep_map, 1, _RET_IP_);
-+	current_restore_flags_nested(&sk->sk_pflags, PF_FSTRANS);
+@@ -1369,6 +1372,7 @@ int search_binary_handler(struct linux_binprm *bprm)
+ 	bool need_retry = IS_ENABLED(CONFIG_MODULES);
+ 	struct linux_binfmt *fmt;
+ 	int retval;
++	unsigned int pflags;
  
- 	spin_lock_bh(&sk->sk_lock.slock);
- 	if (sk->sk_backlog.tail)
+ 	/* This allows 4 levels of binfmt rewrites before failing hard. */
+ 	if (bprm->recursion_depth > 5)
+@@ -1381,6 +1385,7 @@ int search_binary_handler(struct linux_binprm *bprm)
+ 	retval = -ENOENT;
+  retry:
+ 	read_lock(&binfmt_lock);
++	current_set_flags_nested(&pflags, PF_FSTRANS);
+ 	list_for_each_entry(fmt, &formats, lh) {
+ 		if (!try_module_get(fmt->module))
+ 			continue;
+@@ -1396,6 +1401,7 @@ int search_binary_handler(struct linux_binprm *bprm)
+ 		read_lock(&binfmt_lock);
+ 		put_binfmt(fmt);
+ 	}
++	current_restore_flags_nested(&pflags, PF_FSTRANS);
+ 	read_unlock(&binfmt_lock);
+ 
+ 	if (need_retry && retval == -ENOEXEC) {
 
 
