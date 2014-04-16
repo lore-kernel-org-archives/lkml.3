@@ -1,114 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753696AbaDPCub (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 15 Apr 2014 22:50:31 -0400
-Received: from 69-178-150-49.static-ip.telepacific.net ([69.178.150.49]:61938
-	"EHLO ImsEx1.ims.dom" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753435AbaDPCuZ convert rfc822-to-8bit (ORCPT
+	id S1751239AbaDPDCq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 15 Apr 2014 23:02:46 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:47302
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750864AbaDPDCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 15 Apr 2014 22:50:25 -0400
-From: Chris Healy <chealy@imsco-us.com>
-To: Guenter Roeck <linux@roeck-us.net>,
-        Florian Fainelli <f.fainelli@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "cphealy@gmail.com" <cphealy@gmail.com>
-Subject: RE: [PATCH 1/3] net: mdio-gpio: Use devm_ functions where possible
-Thread-Topic: [PATCH 1/3] net: mdio-gpio: Use devm_ functions where possible
-Thread-Index: AQHPWRnmnQMOuc4HVEy6zp5aFN820psTis+m
-Date: Wed, 16 Apr 2014 02:50:08 +0000
-Message-ID: <724F6C6CDC8C86478473775085778C4E09E85E3A@ImsEx1.ims.dom>
-References: <1397614602-29694-1-git-send-email-linux@roeck-us.net>,<1397614602-29694-2-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1397614602-29694-2-git-send-email-linux@roeck-us.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [99.73.211.50]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 15 Apr 2014 23:02:44 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzdchz1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh26d3h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <daniel.lezcano@linaro.org>, <tglx@linutronix.de>, <shawn.guo@linaro.org>,
+        <b35083@freescale.com>, <r64188@freescale.com>, <b40534@freescale.com>
+CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [RFC][PATCH 0/3] Add Freescale FlexTimer Module timer.
+Date: Wed, 16 Apr 2014 10:19:44 +0800
+Message-ID: <1397614787-8300-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This simplifies error path and deinit/removal functions.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Tested-by: Chris Healy <cphealy@gmail.com>
----
- drivers/net/phy/mdio-gpio.c |   19 +++++--------------
- 1 file changed, 5 insertions(+), 14 deletions(-)
+Xiubo Li (3):
+  ARM: dts: vf610: Add Freescale FlexTimer Module timer node.
+  ARM: dts: vf610-twr: Enable Freescale FlexTimer Module timer.
+  clocksource: Add Freescale FlexTimer Module (FTM) timer support
 
-diff --git a/drivers/net/phy/mdio-gpio.c b/drivers/net/phy/mdio-gpio.c
-index e701433..e853066 100644
---- a/drivers/net/phy/mdio-gpio.c
-+++ b/drivers/net/phy/mdio-gpio.c
-@@ -110,7 +110,7 @@ static struct mii_bus *mdio_gpio_bus_init(struct device *dev,
-        struct mdio_gpio_info *bitbang;
-        int i;
+ arch/arm/boot/dts/vf610-twr.dts     |   4 +
+ arch/arm/boot/dts/vf610.dtsi        |  13 ++
+ drivers/clocksource/Kconfig         |   5 +
+ drivers/clocksource/Makefile        |   1 +
+ drivers/clocksource/fsl_ftm_timer.c | 238 ++++++++++++++++++++++++++++++++++++
+ 5 files changed, 261 insertions(+)
+ create mode 100644 drivers/clocksource/fsl_ftm_timer.c
 
--       bitbang = kzalloc(sizeof(*bitbang), GFP_KERNEL);
-+       bitbang = devm_kzalloc(dev, sizeof(*bitbang), GFP_KERNEL);
-        if (!bitbang)
-                goto out;
-
-@@ -121,7 +121,7 @@ static struct mii_bus *mdio_gpio_bus_init(struct device *dev,
-
-        new_bus = alloc_mdio_bitbang(&bitbang->ctrl);
-        if (!new_bus)
--               goto out_free_bitbang;
-+               goto out;
-
-        new_bus->name = "GPIO Bitbanged MDIO",
-
-@@ -138,11 +138,11 @@ static struct mii_bus *mdio_gpio_bus_init(struct device *dev,
-
-        snprintf(new_bus->id, MII_BUS_ID_SIZE, "gpio-%x", bus_id);
-
--       if (gpio_request(bitbang->mdc, "mdc"))
-+       if (devm_gpio_request(dev, bitbang->mdc, "mdc"))
-                goto out_free_bus;
-
--       if (gpio_request(bitbang->mdio, "mdio"))
--               goto out_free_mdc;
-+       if (devm_gpio_request(dev, bitbang->mdio, "mdio"))
-+               goto out_free_bus;
-
-        gpio_direction_output(bitbang->mdc, 0);
-
-@@ -150,12 +150,8 @@ static struct mii_bus *mdio_gpio_bus_init(struct device *dev,
-
-        return new_bus;
-
--out_free_mdc:
--       gpio_free(bitbang->mdc);
- out_free_bus:
-        free_mdio_bitbang(new_bus);
--out_free_bitbang:
--       kfree(bitbang);
- out:
-        return NULL;
- }
-@@ -163,13 +159,8 @@ out:
- static void mdio_gpio_bus_deinit(struct device *dev)
- {
-        struct mii_bus *bus = dev_get_drvdata(dev);
--       struct mdio_gpio_info *bitbang = bus->priv;
-
--       dev_set_drvdata(dev, NULL);
--       gpio_free(bitbang->mdio);
--       gpio_free(bitbang->mdc);
-        free_mdio_bitbang(bus);
--       kfree(bitbang);
- }
-
- static void mdio_gpio_bus_destroy(struct device *dev)
---
-1.7.9.7
+-- 
+1.8.4
 
 
-________________________________
-
-
-This email and any files transmitted with it are confidential & proprietary to Systems and Software Enterprises, LLC. This information is intended solely for the use of the individual or entity to which it is addressed. Access or transmittal of the information contained in this e-mail, in full or in part, to any other organization or persons is not authorized.
