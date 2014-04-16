@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772AbaDPQo6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 12:44:58 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:41672 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342AbaDPQo4 (ORCPT
+	id S1752858AbaDPQqP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 12:46:15 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:36587 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751046AbaDPQqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 12:44:56 -0400
-Message-ID: <534EB38F.7050801@kernel.dk>
-Date: Wed, 16 Apr 2014 10:45:03 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 16 Apr 2014 12:46:11 -0400
+Date: Wed, 16 Apr 2014 12:46:07 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Jianyu Zhan <nasa4836@gmail.com>
+Cc: gregkh@linuxfoundation.org, lizefan@huawei.com,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH] kernfs: move the last knowledge of sysfs out from kernfs
+Message-ID: <20140416164607.GJ1257@htj.dyndns.org>
+References: <1397666401-10427-1-git-send-email-nasa4836@gmail.com>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 2/8] blk-mq: bidi support
-References: <1397634299-7466-1-git-send-email-hch@lst.de> <1397634299-7466-3-git-send-email-hch@lst.de> <534EB2BA.7020705@kernel.dk> <20140416164406.GA19850@lst.de>
-In-Reply-To: <20140416164406.GA19850@lst.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397666401-10427-1-git-send-email-nasa4836@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2014 10:44 AM, Christoph Hellwig wrote:
-> On Wed, Apr 16, 2014 at 10:41:30AM -0600, Jens Axboe wrote:
->>> -	if (!q->request_fn)
->>> +	if (!q->request_fn && !q->mq_ops)
->>>  		return 0;
->>>  
->>>  	bcd = &q->bsg_dev;
->>
->> This looks misplaced. But I dropped the one I generated last week, I'll
->> queue it up separately in the drivers branch.
-> 
-> Could be argued that it should be a separate patch, but the check should
-> work fine.
+Hello,
 
-There's nothing wrong with the check, it's identical to one I sent out
-last week. But it's not part of the bidi enable patch, it's a separate
-bug fix for bsg.
+On Thu, Apr 17, 2014 at 12:40:01AM +0800, Jianyu Zhan wrote:
+> @@ -132,6 +132,7 @@ const void *kernfs_super_ns(struct super_block *sb)
+>   * @flags: mount flags specified for the mount
+>   * @root: kernfs_root of the hierarchy being mounted
+>   * @new_sb_created: tell the caller if we allocated a new superblock
+> + * @private: any file system specifc private data
+
+Please put it before @new_sb_created.  Also, why isn't it unsigned
+long magic?
+
+Thanks.
 
 -- 
-Jens Axboe
-
+tejun
