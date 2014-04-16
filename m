@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015AbaDPS6L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 14:58:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15676 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753810AbaDPS6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 14:58:07 -0400
-Date: Wed, 16 Apr 2014 14:57:46 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: libc-alpha <libc-alpha@sourceware.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: "Carlos O'Donell" <carlos@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Michael Kerrisk-manpages <mtk.manpages@googlemail.com>,
-        samba-technical@lists.samba.org,
-        nfs-ganesha-devel@lists.sourceforge.net
-Subject: should we change the name/macros of file-private locks?
-Message-ID: <20140416145746.66b7441c@tlielax.poochiereds.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756258AbaDPS6a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 14:58:30 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47401 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756084AbaDPS6Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 14:58:25 -0400
+Date: Wed, 16 Apr 2014 14:58:22 -0400 (EDT)
+Message-Id: <20140416.145822.1317931249717152474.davem@davemloft.net>
+To: aaro.koskinen@iki.fi
+Cc: mroos@linux.ee, sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hughd@google.com
+Subject: Re: sparc64 WARNING: at mm/mmap.c:2757 exit_mmap+0x13c/0x160()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140414184353.GA5630@drone.musicnaut.iki.fi>
+References: <20131022174612.GC24448@blackmetal.musicnaut.iki.fi>
+	<20131022.135442.1072093301788210177.davem@davemloft.net>
+	<20140414184353.GA5630@drone.musicnaut.iki.fi>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 16 Apr 2014 11:58:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry to spam so many lists, but I think this needs widespread
-distribution and consensus.
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+Date: Mon, 14 Apr 2014 21:43:53 +0300
 
-File-private locks have been merged into Linux for v3.15, and *now*
-people are commenting that the name and macro definitions for the new
-file-private locks suck.
+> Just for the archives, I got one of these again with 3.14:
 
-...and I can't even disagree. They do suck.
+Meelis and Aaro, thanks again for all of your reports.
 
-We're going to have to live with these for a long time, so it's
-important that we be happy with the names before we're stuck with them.
+After pouring over a lot of the data and auditing some code I'm
+suspecting it's a problem with transparent huge pages.
 
-Michael Kerrisk suggested several names but I think the only one that
-doesn't have other issues is "file-associated locks", which can be
-distinguished against "process-associated" locks (aka classic POSIX
-locks).
+One thing you two can do to help me further confirm this is to run
+with THP disabled for a while and see if you still get the log
+messages.
 
-At the same time, he suggested that we rename the command macros since
-the 'P' suffix would no longer be relevant. He suggested something like
-this:
+Simply, as root:
 
-    F_FA_GETLK
-    F_FA_SETLK
-    F_FA_SETLKW
+bash# echo "never" >/sys/kernel/mm/transparent_hugepage/enabled
 
-That would also make them more visually distinguishable from the
-classic F_GETLK/F_SETLK/F_SETLKW commands. I like that change in
-particular, as the original macros names would be easy to typo.
+And then do your gcc bootstraps or whatever else seems to usually
+run when you trigger this problem.
 
-I think we'd also need to rename how these are reported in /proc/locks.
-Currently they have a type label of "FLPVT". I'd suggest that we
-change that to "FASSOC". For v3.15, this is the only part we'd
-absolutely have to change before it ships. The rest I can fix up in
-v3.16.
-
-Does this sound like a reasonable set of changes to make? Does anyone
-else have a better set of names they can suggest? Speak now, or forever
-hold your peace!
-
--- 
-Jeff Layton <jlayton@redhat.com>
+Thanks!
