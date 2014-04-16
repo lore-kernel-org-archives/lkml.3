@@ -1,41 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401AbaDPSki (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 14:40:38 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:46944 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045AbaDPSkg (ORCPT
+	id S1755848AbaDPSlJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 14:41:09 -0400
+Received: from mail-la0-f54.google.com ([209.85.215.54]:36796 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755548AbaDPSlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 14:40:36 -0400
-Date: Wed, 16 Apr 2014 19:39:49 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Sergei Ianovich <ynvich@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Randy Dunlap <rdunlap@infradead.org>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v4 21/21] misc: support for I-8024 in LP-8x4x
-Message-ID: <20140416193949.47f4ea68@alan.etchedpixels.co.uk>
-In-Reply-To: <1397668667-27328-15-git-send-email-ynvich@gmail.com>
-References: <1397668411-27162-7-git-send-email-ynvich@gmail.com>
-	<1397668667-27328-1-git-send-email-ynvich@gmail.com>
-	<1397668667-27328-15-git-send-email-ynvich@gmail.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 16 Apr 2014 14:41:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140416183614.GH31074@redhat.com>
+References: <CALCETrURHNmLyccRiF_W8o2ozRMR4AaCjUE=_PU8z1+Pq6X2jQ@mail.gmail.com>
+ <20140416002010.GA5035@redhat.com> <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com>
+ <20140416.085743.1614257692560892039.davem@davemloft.net> <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com>
+ <1397664837.19767.410.camel@willson.li.ssimo.org> <CALCETrXn7b6UuALpGUVoyQYfR2uzk5tj2ABV=dkvtFNgqM5sxQ@mail.gmail.com>
+ <1397667766.19767.440.camel@willson.li.ssimo.org> <CALCETrU_yKQVZyVug25cxwQFjWJ7Zf20FY-6ht+RJifXtDdDWg@mail.gmail.com>
+ <20140416183614.GH31074@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 16 Apr 2014 11:40:44 -0700
+Message-ID: <CALCETrURhBXQaYYJiHq2svPqB3-K7kmgD2QUTT9LCjry=fukWA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing cgroup path
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Simo Sorce <ssorce@redhat.com>, David Miller <davem@davemloft.net>,
+        Tejun Heo <tj@kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 16 Apr 2014 21:17:26 +0400
-Sergei Ianovich <ynvich@gmail.com> wrote:
+On Wed, Apr 16, 2014 at 11:36 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> On Wed, Apr 16, 2014 at 10:29:08AM -0700, Andy Lutomirski wrote:
+>
+> [..]
+>> >> Admittedly cgroups aren't currently as important as uid, but if this
+>> >> changes, then SO_PASSCGROUP, as currently written, will have *exactly*
+>> >> the same problem.
+>> >
+>> > Which is easy to foil by using SO_PEERCGROUP and find out who originally
+>> > opened the socket, which is why that is also available!
+>>
+>> Then please remove SO_PASSCGROUP.
+>
+> SO_PASSCGROUP is important because SO_PEERCGROUP does not work with unix
+> datagram sockets.
 
-> Status of I-8042 4 analog output channels can be managed via
-> sysfs.
+Right.  I forgot about that.
 
-Surely this is an iio interface and should follow the same API as
-everyone else ?
+>
+> Again going back to logging example, if some clients are logging to unix
+> datagram sockets, SO_PASSCGROUP is the only option to figure out cgroup
+> of client.
 
-Alan
+Hmm.  I think that, in your patch, the cgroup that is sent is the
+cgroup of the caller of write/send/sendmsg.  What if you changed it to
+use the same cgroup that SO_PEERCRED would use?  Would that still
+work?
+
+>>
+>> I still haven't seen any explanation for what's wrong with requiring
+>> senders to ask the kernel to transmit their cgroup.
+>
+> If nothing else, additional complexity and ovhead. Extra pair of messages
+> need to be exchanged to request and then provide the information.
+>
+> How would it work in logging example? Every time logger receives a
+> message, is it supposed to send another message to client to send
+> SCM_CGROUP? That does not sound right.
+
+No -- just have the logger send the cgroup with every message.  Yes,
+it seems silly, but it's probably barely more expensive than with the
+code in your patch.
+
+--Andy
