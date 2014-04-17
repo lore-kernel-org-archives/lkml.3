@@ -1,106 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751465AbaDQPXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 11:23:15 -0400
-Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.180]:35235 "EHLO
-	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910AbaDQPXJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 11:23:09 -0400
-X-RZG-AUTH: :IWkQb0WIdvqIIwNfJfyiKBgoQwjwJ7eL6yL6M6h2IziqwDGkR4xBpp8v2ShxczFATOAgEPFYQrBsc+haPGMYXeo2
-X-RZG-CLASS-ID: mo05
-Message-ID: <534FF071.2080903@samba.org>
-Date: Thu, 17 Apr 2014 17:17:05 +0200
-From: "Stefan (metze) Metzmacher" <metze@samba.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1751259AbaDQP0V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 11:26:21 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:59627 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750910AbaDQP0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 11:26:13 -0400
+Date: Thu, 17 Apr 2014 17:26:11 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "atodorov@redhat.com" <atodorov@redhat.com>,
+        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
+        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
+        "qmewlo@gmail.com" <qmewlo@gmail.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/urgent] x86/mce: Fix CMCI preemption bugs
+Message-ID: <20140417152611.GD4321@pd.tnic>
+References: <tip-ea431643d6c38728195e2c456801c3ef66bb9991@git.kernel.org>
+ <20140417100944.GG11096@twins.programming.kicks-ass.net>
+ <20140417102442.GA8215@pd.tnic>
+ <3908561D78D1C84285E8C5FCA982C28F31E2A1D3@ORSMSX106.amr.corp.intel.com>
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: mtk.manpages@gmail.com, libc-alpha <libc-alpha@sourceware.org>,
-        Michael Kerrisk-manpages <mtk.manpages@googlemail.com>,
-        "Carlos O'Donell" <carlos@redhat.com>, samba-technical@lists.samba.org,
-        lkml <linux-kernel@vger.kernel.org>, Jeremy Allison <jra@google.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>
-Subject: Re: should we change the name/macros of file-private locks?
-References: <20140416145746.66b7441c@tlielax.poochiereds.net>	<CAKgNAkgqZDcT0jda8XS+4HrJzXjzwehqciHbkNuAVY3fNkH4zQ@mail.gmail.com>	<534F0745.70705@samba.org> <20140417075254.28e470ed@tlielax.poochiereds.net>
-In-Reply-To: <20140417075254.28e470ed@tlielax.poochiereds.net>
-X-Enigmail-Version: 1.5.2
-OpenPGP: id=0E53083F
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F31E2A1D3@ORSMSX106.amr.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 17.04.2014 13:52, schrieb Jeff Layton:
-> On Thu, 17 Apr 2014 00:42:13 +0200
-> "Stefan (metze) Metzmacher" <metze@samba.org> wrote:
+On Thu, Apr 17, 2014 at 02:03:34PM +0000, Luck, Tony wrote:
+> > Hohum, __raw_spin_lock_irqsave does preempt_disable(). And
+> > machine_check_poll should be running in irq context so why would the
+> > original issue happen?
+> >
+> >> kernel: [    7.341085] BUG: using __this_cpu_write() in preemptible [00000000] code: modprobe/546
+> >
+> > Unfortunately, I have only one line in a mail CCed to me.
+> >
+> > Color me confused.
 > 
->> Am 16.04.2014 22:00, schrieb Michael Kerrisk (man-pages):
->>> [CC += Jeremy Allison]
->>>
->>> On Wed, Apr 16, 2014 at 8:57 PM, Jeff Layton <jlayton@redhat.com> wrote:
->>>> Sorry to spam so many lists, but I think this needs widespread
->>>> distribution and consensus.
->>>>
->>>> File-private locks have been merged into Linux for v3.15, and *now*
->>>> people are commenting that the name and macro definitions for the new
->>>> file-private locks suck.
->>>>
->>>> ...and I can't even disagree. They do suck.
->>>>
->>>> We're going to have to live with these for a long time, so it's
->>>> important that we be happy with the names before we're stuck with them.
->>>
->>> So, to add my perspective: The existing byte-range locking system has
->>> persisted (despite egregious faults) for well over two decades. One
->>> supposes that Jeff's new improved version might be around
->>> at least as long. With that in mind, and before setting in stone (and
->>> pushing into POSIX) a model of thinking that thousands of programmers
->>> will live with for a long time, it's worth thinking about names.
->>>
->>>> Michael Kerrisk suggested several names but I think the only one that
->>>> doesn't have other issues is "file-associated locks", which can be
->>>> distinguished against "process-associated" locks (aka classic POSIX
->>>> locks).
->>>
->>> The names I have suggested are:
->>>
->>>     file-associated locks
->>>
->>> or
->>>
->>>    file-handle locks
->>>
->>> or (using POSIX terminology)
->>>
->>>     file-description locks
->>
->> I'd use file-handle, file-description or at least something that's
->> not associated to the "file" itself.
->>
->> file-handle-associated or file-description-associated would also work.
->>
-> 
-> Yeah, I understand your point.
-> 
-> I'm not keen on using "file-handle" as file handles have a completely
-> different meaning in the context of something like NFS.
-> 
-> "file-description-associated" is rather a mouthful. You Germans might
-> go for that sort of thing, but it feels awkward to us knuckle-draggers
-> that primarily speak English.
-> 
-> Maybe we should just go with one of Michael's earlier suggestions --
-> "file-description locks" and change the macros to F_FD_*.
-> 
-> In the docs we could take pains to point out that these are
-> file-_description_ locks and not file-_descriptor_ locks, and outline
-> why that is so (which is something I'm trying to make crystal clear in
-> the docs anyway).
-> 
-> Does anyone object to that?
+> Is this just the missing put_cpu() that Chen Gong already sent a patch for?
 
-Sounds good.
+I'm not sure. There's some bug report floating around which contains the
+"BUG" line above but I can't seem to find/get it.
 
-metze
+I'll boot latest Linus tree on my SNB machine to check whether it
+triggers here. Ingo says CONFIG_DEBUG_PREEMPT=y is causing it but this
+is all hearsay stuff from where I'm standing...
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
