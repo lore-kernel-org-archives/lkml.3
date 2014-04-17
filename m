@@ -1,68 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992AbaDQPMm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 11:12:42 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:65284 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668AbaDQPGo (ORCPT
+	id S1752371AbaDQPNJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 11:13:09 -0400
+Received: from g5t1625.atlanta.hp.com ([15.192.137.8]:9714 "EHLO
+	g5t1625.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244AbaDQPEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 11:06:44 -0400
-Date: Thu, 17 Apr 2014 11:06:40 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
-        rafael.j.wysocki@intel.com, toshi.kani@hp.com
-Subject: Re: [RFC PATCH v3] Use kernfs_break_active_protection() for device
- online store callbacks
-Message-ID: <20140417150640.GJ15326@htj.dyndns.org>
-References: <20140410133116.GB25308@htj.dyndns.org>
- <1397189445.3649.14.camel@ThinkPad-T5421>
- <20140411102649.GB26252@mtj.dyndns.org>
- <1397461649.12943.1.camel@ThinkPad-T5421.cn.ibm.com>
- <20140414201315.GD16835@htj.dyndns.org>
- <1397529877.13188.68.camel@ThinkPad-T5421.cn.ibm.com>
- <20140415145017.GK1863@htj.dyndns.org>
- <1397612500.13188.83.camel@ThinkPad-T5421.cn.ibm.com>
- <20140416151749.GE1257@htj.dyndns.org>
- <1397703953.3415.26.camel@ThinkPad-T5421>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397703953.3415.26.camel@ThinkPad-T5421>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 17 Apr 2014 11:04:43 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH v9 02/19] qspinlock, x86: Enable x86-64 to use queue spinlock
+Date: Thu, 17 Apr 2014 11:03:54 -0400
+Message-Id: <1397747051-15401-3-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com>
+References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch makes the necessary changes at the x86 architecture
+specific layer to enable the use of queue spinlock for x86-64. As
+x86-32 machines are typically not multi-socket. The benefit of queue
+spinlock may not be apparent. So queue spinlock is not enabled.
 
-On Thu, Apr 17, 2014 at 11:05:53AM +0800, Li Zhong wrote:
-> It seems to me cpu_add_remove_lock is always taken after
-> device_hotplug_lock.
-> 
-> So if cpu_add_remove_lock has been acquired by device removing process,
-> then it means the other online/offline process couldn't successfully try
-> lock device_hotplug_lock, and will release s_active with a restart
-> syscall error;
-> 
-> if cpu_add_remove_lock has been acquired by online/offline process, then
-> it should already hold device_hotlug_lock, and keeps the device removing
-> process waiting at device_hotplug_lock. So online/offline process could
-> release the lock, and finally release s_active soon. 
+Currently, there is some incompatibilities between the para-virtualized
+spinlock code (which hard-codes the use of ticket spinlock) and the
+queue spinlock. Therefore, the use of queue spinlock is disabled when
+the para-virtualized spinlock is enabled.
 
-I see.  That's kinda nasty tho and lockdep of course doesn't know
-about it and generates spurious warnings.
+The arch/x86/include/asm/qspinlock.h header file includes some x86
+specific optimization which will make the queue spinlock code perform
+better than the generic implementation.
 
-> But after some further thinking, I seem to understand your point.
-> s_active has lock order problem with the other series of hotplug related
-> locks, so it's better to take s_active out of the dependency chain,
-> rather than the first of the other series of locks? like you suggested
-> below.
+Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ arch/x86/Kconfig                      |    1 +
+ arch/x86/include/asm/qspinlock.h      |   29 +++++++++++++++++++++++++++++
+ arch/x86/include/asm/spinlock.h       |    5 +++++
+ arch/x86/include/asm/spinlock_types.h |    4 ++++
+ 4 files changed, 39 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/include/asm/qspinlock.h
 
-Yeah, I think that'd be the right thing to do and we can revert the
-previous convolution.
-
-Thanks.
-
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index f730717..dabeed8 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -29,6 +29,7 @@ config X86
+ 	select ARCH_SUPPORTS_NUMA_BALANCING
+ 	select ARCH_SUPPORTS_INT128 if X86_64
+ 	select ARCH_WANTS_PROT_NUMA_PROT_NONE
++	select ARCH_USE_QUEUE_SPINLOCK
+ 	select HAVE_IDE
+ 	select HAVE_OPROFILE
+ 	select HAVE_PCSPKR_PLATFORM
+diff --git a/arch/x86/include/asm/qspinlock.h b/arch/x86/include/asm/qspinlock.h
+new file mode 100644
+index 0000000..e4a4f5d
+--- /dev/null
++++ b/arch/x86/include/asm/qspinlock.h
+@@ -0,0 +1,29 @@
++#ifndef _ASM_X86_QSPINLOCK_H
++#define _ASM_X86_QSPINLOCK_H
++
++#include <asm-generic/qspinlock_types.h>
++
++#if !defined(CONFIG_X86_OOSTORE) && !defined(CONFIG_X86_PPRO_FENCE)
++
++#define	queue_spin_unlock queue_spin_unlock
++/**
++ * queue_spin_unlock - release a queue spinlock
++ * @lock : Pointer to queue spinlock structure
++ *
++ * No special memory barrier other than a compiler one is needed for the
++ * x86 architecture. A compiler barrier is added at the end to make sure
++ * that the clearing the lock bit is done ASAP without artificial delay
++ * due to compiler optimization.
++ */
++static inline void queue_spin_unlock(struct qspinlock *lock)
++{
++	barrier();
++	ACCESS_ONCE(*(u8 *)lock) = 0;
++	barrier();
++}
++
++#endif /* !CONFIG_X86_OOSTORE && !CONFIG_X86_PPRO_FENCE */
++
++#include <asm-generic/qspinlock.h>
++
++#endif /* _ASM_X86_QSPINLOCK_H */
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index 0f62f54..958d20f 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -42,6 +42,10 @@
+ extern struct static_key paravirt_ticketlocks_enabled;
+ static __always_inline bool static_key_false(struct static_key *key);
+ 
++#ifdef CONFIG_QUEUE_SPINLOCK
++#include <asm/qspinlock.h>
++#else
++
+ #ifdef CONFIG_PARAVIRT_SPINLOCKS
+ 
+ static inline void __ticket_enter_slowpath(arch_spinlock_t *lock)
+@@ -180,6 +184,7 @@ static __always_inline void arch_spin_lock_flags(arch_spinlock_t *lock,
+ {
+ 	arch_spin_lock(lock);
+ }
++#endif /* CONFIG_QUEUE_SPINLOCK */
+ 
+ static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
+ {
+diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
+index 4f1bea1..7960268 100644
+--- a/arch/x86/include/asm/spinlock_types.h
++++ b/arch/x86/include/asm/spinlock_types.h
+@@ -23,6 +23,9 @@ typedef u32 __ticketpair_t;
+ 
+ #define TICKET_SHIFT	(sizeof(__ticket_t) * 8)
+ 
++#ifdef CONFIG_QUEUE_SPINLOCK
++#include <asm-generic/qspinlock_types.h>
++#else
+ typedef struct arch_spinlock {
+ 	union {
+ 		__ticketpair_t head_tail;
+@@ -33,6 +36,7 @@ typedef struct arch_spinlock {
+ } arch_spinlock_t;
+ 
+ #define __ARCH_SPIN_LOCK_UNLOCKED	{ { 0 } }
++#endif /* CONFIG_QUEUE_SPINLOCK */
+ 
+ #include <asm/rwlock.h>
+ 
 -- 
-tejun
+1.7.1
+
