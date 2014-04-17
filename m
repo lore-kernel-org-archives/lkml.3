@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227AbaDQRfq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 13:35:46 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:58198 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910AbaDQRfi (ORCPT
+	id S1752369AbaDQRgJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 13:36:09 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:43972 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274AbaDQRfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 13:35:38 -0400
+	Thu, 17 Apr 2014 13:35:40 -0400
+Message-ID: <5350120C.40607@linux.vnet.ibm.com>
+Date: Thu, 17 Apr 2014 23:10:28 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1397756025.2628.64.camel@willson.li.ssimo.org>
-References: <20140416180642.GG31074@redhat.com> <CALCETrVUw5+vCCONy1VTXpskbY_eZFo2CtbehwV5Mhj4d4+icw@mail.gmail.com>
- <20140416185936.GJ31074@redhat.com> <534FF61B.4010901@redhat.com>
- <1397750674.2628.44.camel@willson.li.ssimo.org> <CALCETrUrj2LtAoXp600BD2ANgE2UUEbTYQrK8hHqDR=qpeFPcg@mail.gmail.com>
- <1397751853.2628.50.camel@willson.li.ssimo.org> <CALCETrWNWvumFg9Qba0GEOjYop4WYe530tCPtakrhnoCrHqhUQ@mail.gmail.com>
- <1397753323.2628.60.camel@willson.li.ssimo.org> <CALCETrXj6kD3E+vsaWmkrSbaQYTu=c-Hsw640jh4O+FbojYk2g@mail.gmail.com>
- <20140417171256.GB25334@redhat.com> <CALCETrVq4HRpfWOAbZAQbyjuraQd=OxnW=WjSoe5JgBzRStiKg@mail.gmail.com>
- <1397756025.2628.64.camel@willson.li.ssimo.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 17 Apr 2014 10:35:17 -0700
-Message-ID: <CALCETrVBJFgKwRKBE2jAG6kiGgkJ+MyQiw2nyz5yj0h68kCk9A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing cgroup path
-To: Simo Sorce <ssorce@redhat.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Daniel J Walsh <dwalsh@redhat.com>,
-        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v9 00/19] qspinlock: a 4-byte queue spinlock with PV support
+References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com> <20140417172246.GA9849@localhost.localdomain>
+In-Reply-To: <20140417172246.GA9849@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041717-2674-0000-0000-00000DD65389
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 10:33 AM, Simo Sorce <ssorce@redhat.com> wrote:
-> On Thu, 2014-04-17 at 10:26 -0700, Andy Lutomirski wrote:
->>
->> Not really.  write(2) can't send SCM_CGROUP.  Callers of sendmsg(2)
->> who supply SCM_CGROUP are explicitly indicating that they want their
->> cgroup associated with that message.  Callers of write(2) and send(2)
->> are simply indicating that they have some bytes that they want to
->> shove into whatever's at the other end of the fd.
+On 04/17/2014 10:53 PM, Konrad Rzeszutek Wilk wrote:
+> On Thu, Apr 17, 2014 at 11:03:52AM -0400, Waiman Long wrote:
+>> v8->v9:
+>>    - Integrate PeterZ's version of the queue spinlock patch with some
+>>      modification:
+>>      http://lkml.kernel.org/r/20140310154236.038181843@infradead.org
+>>    - Break the more complex patches into smaller ones to ease review effort.
+>>    - Fix a racing condition in the PV qspinlock code.
 >
-> But there is no attack vector that passes by tricking setuid binaries to
-> write to pre-opened file descriptors on sendmsg(), and for the other
-> cases (connected socket) journald can always cross check with
-> SO_PEERCGROUP, so why do we care again ?
+> I am not seeing anything mentioning that the overcommit scenario
+> for KVM and Xen had been fixed. Or was the 'racing condition' said
+> issue?
 
-Because the proposed code does not do what I described, at least as
-far I as I can tell.
+Saw changes in patch 18 that fixes for kvm (19 for xen). 'll
+test the series and confirm.
 
---Andy
-
-
-
-
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
