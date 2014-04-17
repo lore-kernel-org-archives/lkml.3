@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418AbaDQKPS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 06:15:18 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:63751 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161254AbaDQKKO (ORCPT
+	id S1755983AbaDQKPQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 06:15:16 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:29895 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751517AbaDQKPG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 06:10:14 -0400
-X-AuditID: cbfee690-b7f266d00000287c-e4-534fa87aeff4
-From: Sangjung Woo <sangjung.woo@samsung.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Sangjung Woo <sangjung.woo@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>
-Subject: [PATCHv2 2/8] extcon: adc-jack: Use devm_extcon_dev_register()
-Date: Thu, 17 Apr 2014 19:09:57 +0900
-Message-id: <1397729403-32045-3-git-send-email-sangjung.woo@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1397729403-32045-1-git-send-email-sangjung.woo@samsung.com>
-References: <1397729403-32045-1-git-send-email-sangjung.woo@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsWyRsSkRLdqhX+wwdPbGhbXvzxntXj9wtDi
-	8q45bBa3G1ewWSzYU2IxY/JLNgc2j74tqxg9Pm+SC2CK4rJJSc3JLEst0rdL4Mr4tO8gS8Fb
-	8Yrn03ayNjBuF+5i5OSQEDCR+N/9gRHCFpO4cG89WxcjF4eQwFJGiSVvl7LDFO1bfxoqMZ1R
-	YuWZCSwQThuTxJ+105hBqtgEdCWeHLgMZosIBEt0nDzOBFLELLCEUeLfyVtsIAlhAXeJw9OO
-	sILYLAKqEtsXbwBbwSvgIXHlyDsgmwNonYLEnEk2IGFOAU+JPVvPgp0nBFSyddkNVpCZEgK/
-	2SQOvl/BCDFHQOLb5EMsEL2yEpsOMENcLSlxcMUNlgmMwgsYGVYxiqYWJBcUJ6UXmegVJ+YW
-	l+al6yXn525iBAbv6X/PJuxgvHfA+hBjMtC4icxSosn5wODPK4k3NDYzsjA1MTU2Mrc0I01Y
-	SZxX7VFSkJBAemJJanZqakFqUXxRaU5q8SFGJg5OqQbGlTohLBsEm7cdSLe/W3bMqKd9VeyS
-	itsCkx70TdbYZjrtVY/Vov3H91zuEt0tYGSj6mPecd4pPTLhiBH3y5uHb5e0r7cwWOxikWFw
-	WX/hfqPj0xszpmxwLT5W1rbUyHju4YStD7xCWEu5f+mt477490WTcs+11VPZz2zjD4hSNvD9
-	dXGW55UtSizFGYmGWsxFxYkAeIqFEHQCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t9jQd2qFf7BBn8bFC2uf3nOavH6haHF
-	5V1z2CxuN65gs1iwp8RixuSXbA5sHn1bVjF6fN4kF8AU1cBok5GamJJapJCal5yfkpmXbqvk
-	HRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0UUmhLDGnFCgUkFhcrKRvh2lCaIibrgVM
-	Y4Sub0gQXI+RARpIWMOY8WnfQZaCt+IVz6ftZG1g3C7cxcjJISFgIrFv/Wk2CFtM4sK99UA2
-	F4eQwHRGiZVnJrBAOG1MEn/WTmMGqWIT0JV4cuAymC0iECzRcfI4E0gRs8ASRol/J2+BjRIW
-	cJc4PO0IK4jNIqAqsX3xBnYQm1fAQ+LKkXdANgfQOgWJOZNsQMKcAp4Se7aeZQSxhYBKti67
-	wTqBkXcBI8MqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjODYeCa9g3FVg8UhRgEORiUeXs7f
-	fsFCrIllxZW5hxglOJiVRHglgJElxJuSWFmVWpQfX1Sak1p8iDEZ6KiJzFKiyfnAuM0riTc0
-	NjEzsjQyN7QwMjYnTVhJnPdgq3WgkEB6YklqdmpqQWoRzBYmDk6pBkbjbcwBe5tUy841ngmb
-	ZTqzkSfst8q38PR6GSaHS/lCVo2FCjOZZohdecw6K1Lwwe8kJY9Afr+ceL0HmzynCE6o0ndc
-	Vz3ho0n6YpkWcX935a4b8edDj0YrO7Ov7iuMmXT0usTHyzNmJp66wqE54XC657LqKI5TudJF
-	hkZbLPQDWEXeKVyJU2Ipzkg01GIuKk4EAHSBW2zRAgAA
+	Thu, 17 Apr 2014 06:15:06 -0400
+X-AuditID: cbfee68e-b7f566d000002344-03-534fa9a88a98
+Message-id: <534FA9AD.7000406@samsung.com>
+Date: Thu, 17 Apr 2014 19:15:09 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>, sw0312.kim@samsung.com,
+        hyunhee.kim@samsung.com, yj44.cho@samsung.com,
+        =?UTF-8?B?67CV7LCs7Zi4?= <chanho61.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        marc.zyngier@arm.com,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>
+Subject: Re: [PATCHv2 5/8] ARM: EXYNOS: Support secondary CPU boot of Exynos3250
+References: <1397527192-21988-1-git-send-email-cw00.choi@samsung.com>
+ <1397527192-21988-6-git-send-email-cw00.choi@samsung.com>
+ <CAHbNUh3m7n1OT9fc715vth=k6BdAvVZoYJjBvo8xT25TPji18w@mail.gmail.com>
+In-reply-to: <CAHbNUh3m7n1OT9fc715vth=k6BdAvVZoYJjBvo8xT25TPji18w@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnleLIzCtJLcpLzFFi42JZI2JSrLtypX+wwfv9jBZ/Jx1jt5i07gCT
+	xeX92hbzj5xjtfj8oYXdonfBVTaLs01v2C02Pb7GanF51xw2ixnn9zFZ3L7Ma/H3zj82i1PX
+	PwOFJr9ks1g/4zWLxbEZSxgt2v/uZbPYu3Myo4OQx5p5axg9Wpp72Dx+/5rE6PF31QtmjzvX
+	9rB5bF5S73HlRBOrR9+WVYwenzfJBXBGcdmkpOZklqUW6dslcGVcuPiDtWAjd8XUK5tYGxiv
+	cXQxcnBICJhItDaZdjFyApliEhfurWfrYuTiEBJYyiixuOkRO0TCROL+ndmMEIlFjBK71r9k
+	hXBeM0rc3reYGaSKV0BLon3lKxYQm0VAVWLBy59g3WxA8f0vbrCB2KICYRIrp19hgagXlPgx
+	+R6YLSKgI/Fg0V4WkKHMAutYJa7/7WEESQgLBEh82X4O6qYTjBJHPmxiArmbUyBYYtJmeZAa
+	ZgF1iUnzFjFD2PISm9e8ZQaplxA4wCHR0DuNCeIiAYlvkw+xQPwsK7HpADPEa5ISB1fcYJnA
+	KDYLyU2zkIydhWTsAkbmVYyiqQXJBcVJ6UVGesWJucWleel6yfm5mxiBieD0v2d9OxhvHrA+
+	xJgMtHIis5Rocj4wkeSVxBsamxlZmJqYGhuZW5qRJqwkzrvoYVKQkEB6YklqdmpqQWpRfFFp
+	TmrxIUYmDk6pBsZKrqXCtmH73vV1d3amsaRGi9S92DXRdinXvQqVLOmzzPNeC3dmTuv+GSaa
+	ccjy3b+8qB8Rdqmn3ykacooXblzibLVz8YqvesfPGXjxB+/q4hQNOtfBWKnsUvpp5bPa14I5
+	L+/fvhnEojZdWfDtUfsLD2P57EQW/XKfenv2MvN5p/QOqzy4/UeJpTgj0VCLuag4EQBxCz6b
+	GgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKKsWRmVeSWpSXmKPExsVy+t9jAd0VK/2DDTb+NLH4O+kYu8WkdQeY
+	LC7v17aYf+Qcq8XnDy3sFr0LrrJZnG16w26x6fE1VovLu+awWcw4v4/J4vZlXou/d/6xWZy6
+	/hkoNPklm8X6Ga9ZLI7NWMJo0f53L5vF3p2TGR2EPNbMW8Po0dLcw+bx+9ckRo+/q14we9y5
+	tofNY/OSeo8rJ5pYPfq2rGL0+LxJLoAzqoHRJiM1MSW1SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ
+	19DSwlxJIS8xN9VWycUnQNctMwfoHyWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1G
+	BmggYQ1jxoWLP1gLNnJXTL2yibWB8RpHFyMnh4SAicT9O7MZIWwxiQv31rN1MXJxCAksYpTY
+	tf4lK4TzmlHi9r7FzCBVvAJaEu0rX7GA2CwCqhILXv5kB7HZgOL7X9xgA7FFBcIkVk6/wgJR
+	LyjxY/I9MFtEQEfiwaK9LCBDmQXWsUpc/9sDtlpYIEDiy/ZzUKtPMEoc+bCJqYuRg4NTIFhi
+	0mZ5kBpmAXWJSfMWMUPY8hKb17xlnsAoMAvJjllIymYhKVvAyLyKUTS1ILmgOCk911CvODG3
+	uDQvXS85P3cTIzjRPJPawbiyweIQowAHoxIP7wR1/2Ah1sSy4srcQ4wSHMxKIrwSK4BCvCmJ
+	lVWpRfnxRaU5qcWHGJOBQTCRWUo0OR+YBPNK4g2NTcyMLI3MDS2MjM1JE1YS5z3Qah0oJJCe
+	WJKanZpakFoEs4WJg1OqgdEiTywwTeFHd0BnogZjcryS67W5MWY7/NJ3fPzx0/nJikK7L98/
+	NwuWSPhV/992JEDvS1WnPk9NO881Pc3zjM2Cu1RTP2q/b6oQ+vnmz+fpxzdwLEraU8m66Ous
+	r6J/lKQ2rcpU8nvW94rzru2dPRZfnzdbPXm+1TzncY7Bz1tRz178NJzEMEOJpTgj0VCLuag4
+	EQByWL+heAMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -50,109 +72,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the resource-managed extcon device register function (i.e.
-devm_extcon_dev_register()) instead of extcon_dev_register(). If extcon device
-is attached with this function, that extcon device is automatically unregistered
-on driver detach. That reduces tiresome managing code.
+Hi Tushar,
 
-Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
----
- drivers/extcon/extcon-adc-jack.c |   30 +++++++++---------------------
- 1 file changed, 9 insertions(+), 21 deletions(-)
+On 04/15/2014 02:09 PM, Tushar Behera wrote:
+> On 15 April 2014 07:29, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+>> This patch fix the offset of CPU boot address and don't operate smc call
+>> of SMC_CMD_CPU1BOOT command for Exynos3250.
+>>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>>  arch/arm/mach-exynos/firmware.c | 7 +++++--
+>>  1 file changed, 5 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
+>> index aa01c42..6205d4f 100644
+>> --- a/arch/arm/mach-exynos/firmware.c
+>> +++ b/arch/arm/mach-exynos/firmware.c
+>> @@ -30,13 +30,16 @@ static int exynos_do_idle(void)
+>>
+>>  static int exynos_cpu_boot(int cpu)
+>>  {
+>> +       if (soc_is_exynos3250()) {
+>> +               return 0;
+>>         /*
+>>          * The second parameter of SMC_CMD_CPU1BOOT command means CPU id.
+>>          * But, Exynos4212 has only one secondary CPU so second parameter
+>>          * isn't used for informing secure firmware about CPU id.
+>>          */
+>> -       if (soc_is_exynos4212())
+>> +       } else if (soc_is_exynos4212()) {
+>>                 cpu = 0;
+>> +       }
+>>
+> 
+> As you already return in case of Exynos3250, you need not change this.
+> First commit hunk without the opening brace should be sufficient.
 
-diff --git a/drivers/extcon/extcon-adc-jack.c b/drivers/extcon/extcon-adc-jack.c
-index e23f1c2..549d820 100644
---- a/drivers/extcon/extcon-adc-jack.c
-+++ b/drivers/extcon/extcon-adc-jack.c
-@@ -105,9 +105,8 @@ static int adc_jack_probe(struct platform_device *pdev)
- 	data->edev.name = pdata->name;
- 
- 	if (!pdata->cable_names) {
--		err = -EINVAL;
- 		dev_err(&pdev->dev, "error: cable_names not defined.\n");
--		goto out;
-+		return -EINVAL;
- 	}
- 
- 	data->edev.dev.parent = &pdev->dev;
-@@ -117,18 +116,16 @@ static int adc_jack_probe(struct platform_device *pdev)
- 	for (i = 0; data->edev.supported_cable[i]; i++)
- 		;
- 	if (i == 0 || i > SUPPORTED_CABLE_MAX) {
--		err = -EINVAL;
- 		dev_err(&pdev->dev, "error: pdata->cable_names size = %d\n",
- 				i - 1);
--		goto out;
-+		return -EINVAL;
- 	}
- 	data->num_cables = i;
- 
- 	if (!pdata->adc_conditions ||
- 			!pdata->adc_conditions[0].state) {
--		err = -EINVAL;
- 		dev_err(&pdev->dev, "error: adc_conditions not defined.\n");
--		goto out;
-+		return -EINVAL;
- 	}
- 	data->adc_conditions = pdata->adc_conditions;
- 
-@@ -138,10 +135,8 @@ static int adc_jack_probe(struct platform_device *pdev)
- 	data->num_conditions = i;
- 
- 	data->chan = iio_channel_get(&pdev->dev, pdata->consumer_channel);
--	if (IS_ERR(data->chan)) {
--		err = PTR_ERR(data->chan);
--		goto out;
--	}
-+	if (IS_ERR(data->chan))
-+		return PTR_ERR(data->chan);
- 
- 	data->handling_delay = msecs_to_jiffies(pdata->handling_delay_ms);
- 
-@@ -149,15 +144,14 @@ static int adc_jack_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, data);
- 
--	err = extcon_dev_register(&data->edev);
-+	err = devm_extcon_dev_register(&pdev->dev, &data->edev);
- 	if (err)
--		goto out;
-+		return err;
- 
- 	data->irq = platform_get_irq(pdev, 0);
- 	if (!data->irq) {
- 		dev_err(&pdev->dev, "platform_get_irq failed\n");
--		err = -ENODEV;
--		goto err_irq;
-+		return -ENODEV;
- 	}
- 
- 	err = request_any_context_irq(data->irq, adc_jack_irq_thread,
-@@ -165,15 +159,10 @@ static int adc_jack_probe(struct platform_device *pdev)
- 
- 	if (err < 0) {
- 		dev_err(&pdev->dev, "error: irq %d\n", data->irq);
--		goto err_irq;
-+		return err;
- 	}
- 
- 	return 0;
--
--err_irq:
--	extcon_dev_unregister(&data->edev);
--out:
--	return err;
- }
- 
- static int adc_jack_remove(struct platform_device *pdev)
-@@ -182,7 +171,6 @@ static int adc_jack_remove(struct platform_device *pdev)
- 
- 	free_irq(data->irq, data);
- 	cancel_work_sync(&data->handler.work);
--	extcon_dev_unregister(&data->edev);
- 
- 	return 0;
- }
--- 
-1.7.9.5
+OK, I'll remove brace.
+
+Best Regards,
+Chanwoo Choi
 
