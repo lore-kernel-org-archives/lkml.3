@@ -1,93 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034AbaDQQaO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 12:30:14 -0400
-Received: from www.meduna.org ([92.240.244.38]:36151 "EHLO meduna.org"
+	id S1752443AbaDQQbk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 12:31:40 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:60702 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751110AbaDQQaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 12:30:09 -0400
-Message-ID: <53500184.4050309@meduna.org>
-Date: Thu, 17 Apr 2014 18:29:56 +0200
-From: Stanislav Meduna <stano@meduna.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1751196AbaDQQbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 12:31:25 -0400
+Date: Thu, 17 Apr 2014 11:28:56 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: <balbi@ti.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Richard Weinberger <richard@nod.at>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <yuxu@marvell.com>
+Subject: Re: [PATCH] usb: phy: mv_u3d: Remove usb phy driver for mv_u3d
+Message-ID: <20140417162855.GB22861@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1397561783.1985.55.camel@x220>
+ <20140415172310.GD16002@saruman.home>
+ <1397585312.8212.13.camel@x220>
+ <20140416043450.GB15056@saruman.home>
+ <1397721028.24336.13.camel@x220>
 MIME-Version: 1.0
-To: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>
-CC: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bigeasy@linutronix.de, Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, triplesquarednine@gmail.com
-Subject: Re: BUG: spinlock trylock failure on UP - reverting timer patches
- helps
-References: <534C3606.7010206@meduna.org> <534C731F.1050406@meduna.org> <534DADF1.6060608@meduna.org>
-In-Reply-To: <534DADF1.6060608@meduna.org>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: stano@meduna.org
-X-Authenticator: dovecot_plain
-X-Spam-Score: -6.9
-X-Spam-Score-Int: -68
-X-Exim-Version: 4.72 (build at 25-Oct-2012 18:35:58)
-X-Date: 2014-04-17 18:30:02
-X-Connected-IP: 95.105.163.217:50492
-X-Message-Linecount: 67
-X-Body-Linecount: 48
-X-Message-Size: 4255
-X-Body-Size: 3368
-X-Received-Count: 1
-X-Recipient-Count: 7
-X-Local-Recipient-Count: 7
-X-Local-Recipient-Defer-Count: 0
-X-Local-Recipient-Fail-Count: 0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="aM3YZ0Iwxop3KEKx"
+Content-Disposition: inline
+In-Reply-To: <1397721028.24336.13.camel@x220>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.04.2014 00:08, Stanislav Meduna wrote:
+--aM3YZ0Iwxop3KEKx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->>> BUG: spinlock trylock failure on UP on CPU#0, ksoftirqd/0/3
-> 
-> I am now getting this quite reproducibly a few seconds into
-> the boot and the path is always similar. Depending on what modules
-> I am loading the source changes, but it is nearly always
-> a schedule_timeout with a following timer interrupt.
+On Thu, Apr 17, 2014 at 09:50:28AM +0200, Paul Bolle wrote:
+> On Tue, 2014-04-15 at 23:34 -0500, Felipe Balbi wrote:
+> > $ make drivers/usb/phy/phy-mv-u3d-usb.o
+> >   CHK     include/config/kernel.release
+> >   CHK     include/generated/uapi/linux/version.h
+> >   CHK     include/generated/utsrelease.h
+> > make[1]: `include/generated/mach-types.h' is up to date.
+> >   CALL    scripts/checksyscalls.sh
+> >   CC      drivers/usb/phy/phy-mv-u3d-usb.o
+>=20
+> (On x86_64 this manual make command triggers the error Greg reported in
+> https://lkml.org/lkml/2014/2/11/693 .)
+>=20
+> > yup, builds just fine. Even if the ARCH support isn't in place, this
+> > driver is *not* breaking anything, it's not preventing anyone from
+> > getting work done and it might be helping Marvell decrease the amount of
+> > changes they keep out of tree.
+> >=20
+> > I don't see any problems this driver in tree as long as there are people
+> > working on it and I see the latest commit was 10 days ago, it wouldn't
+> > be fair to Marvell to delete their driver if they're still finding ways
+> > to make it useful one way or another.
+>=20
+> Wouldn't it then be better if this driver is at least hooked into the
+> build system? Like, say, this:
+>     config MV_U3D_PHY
+>             bool "Marvell USB 3.0 PHY controller Driver"
+>             # XXX should depend on CPU_MMP3 when support for MMP3 lands
+>             depends on ARM && COMPILE_TEST
+>             select USB_PHY
+>             help
+>               Enable this to support Marvell USB 3.0 phy controller for M=
+arvell
+>               SoC.
+>=20
+> (Or perhaps only ARCH_MMP && COMPILE_TEST.) That should give it build
+> coverage by the automated tests people appear to run, while work is done
+> on adding MMP3 support.
 
-Note: the bug goes away reverting the very same patches that are
-helping the Jordan's problms. I did follow
+I guess we should make it depend on BROKEN instead, or we just apply the
+patch below:
 
-http://www.spinics.net/lists/linux-rt-users/msg11639.html
+8<---------------------------------------------------------------------
 
-and no BUG while booting anymore. I'll try to let it run some
-more time.
+=46rom 60e524d7db4ed04624850fcb84a844c609a960e3 Mon Sep 17 00:00:00 2001
+=46rom: Felipe Balbi <balbi@ti.com>
+Date: Thu, 17 Apr 2014 11:24:27 -0500
+Subject: [PATCH] usb: phy: mv-u3d: switch over to writel/readl
 
-> [   11.797460] BUG: spinlock trylock failure on UP on CPU#0, rcu_preempt/11
-> [   11.797522]  lock: boot_tvec_bases+0x0/0x10c0, .magic: dead4ead, .owner: rcu_preempt/11, .owner_cpu: 0
-> [   11.797550] CPU: 0 PID: 11 Comm: rcu_preempt Not tainted 3.12.15-rt25+ #52
-> [   11.797630] [<c00151bc>] (unwind_backtrace+0x0/0xf4) from [<c0012c00>] (show_stack+0x10/0x14)
-> [   11.797691] [<c0012c00>] (show_stack+0x10/0x14) from [<c01b2758>] (do_raw_spin_trylock+0x4c/0x58)
-> [   11.797748] [<c01b2758>] (do_raw_spin_trylock+0x4c/0x58) from [<c02e0194>] (_raw_spin_trylock+0x20/0x98)
-> [   11.797792] [<c02e0194>] (_raw_spin_trylock+0x20/0x98) from [<c02df734>] (rt_spin_trylock+0x14/0xd0)
-> [   11.797851] [<c02df734>] (rt_spin_trylock+0x14/0xd0) from [<c0028e7c>] (run_local_timers+0x24/0x78)
-> [   11.797892] [<c0028e7c>] (run_local_timers+0x24/0x78) from [<c0028f04>] (update_process_times+0x34/0x68)
-> [   11.797940] [<c0028f04>] (update_process_times+0x34/0x68) from [<c0060920>] (tick_sched_timer+0x58/0x22c)
-> [   11.797990] [<c0060920>] (tick_sched_timer+0x58/0x22c) from [<c0040820>] (__run_hrtimer+0x88/0x2b8)
-> [   11.798029] [<c0040820>] (__run_hrtimer+0x88/0x2b8) from [<c0040bb0>] (hrtimer_interrupt+0x104/0x30c)
-> [   11.798076] [<c0040bb0>] (hrtimer_interrupt+0x104/0x30c) from [<c0246c50>] (mxs_timer_interrupt+0x20/0x2c)
-> [   11.798123] [<c0246c50>] (mxs_timer_interrupt+0x20/0x2c) from [<c00534d8>] (handle_irq_event_percpu+0x80/0x2f8)
-> [   11.798161] [<c00534d8>] (handle_irq_event_percpu+0x80/0x2f8) from [<c005378c>] (handle_irq_event+0x3c/0x5c)
-> [   11.798201] [<c005378c>] (handle_irq_event+0x3c/0x5c) from [<c0055f68>] (handle_level_irq+0x8c/0x118)
-> [   11.798239] [<c0055f68>] (handle_level_irq+0x8c/0x118) from [<c0053448>] (generic_handle_irq+0x28/0x30)
-> [   11.798281] [<c0053448>] (generic_handle_irq+0x28/0x30) from [<c00101dc>] (handle_IRQ+0x30/0x84)
-> [   11.798322] [<c00101dc>] (handle_IRQ+0x30/0x84) from [<c0013484>] (__irq_svc+0x44/0x88)
-> [   11.798364] [<c0013484>] (__irq_svc+0x44/0x88) from [<c02deb18>] (rt_spin_lock_slowlock+0x60/0x204)
-> [   11.798402] [<c02deb18>] (rt_spin_lock_slowlock+0x60/0x204) from [<c02df4d0>] (rt_spin_lock+0x28/0x60)
-> [   11.798451] [<c02df4d0>] (rt_spin_lock+0x28/0x60) from [<c0028874>] (lock_timer_base+0x28/0x48)
-> [   11.798494] [<c0028874>] (lock_timer_base+0x28/0x48) from [<c02dcb28>] (schedule_timeout+0x78/0x254)
-> [   11.798531] [<c02dcb28>] (schedule_timeout+0x78/0x254) from [<c00763a4>] (rcu_gp_kthread+0x2d4/0x5f0)
-> [   11.798578] [<c00763a4>] (rcu_gp_kthread+0x2d4/0x5f0) from [<c003cf24>] (kthread+0xa0/0xa8)
-> [   11.798621] [<c003cf24>] (kthread+0xa0/0xa8) from [<c000f3e0>] (ret_from_fork+0x14/0x34)
+by removing the _relaxed suffix, we can build
+this driver in other architectures.
 
-Thanks
--- 
-                                                      Stano
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/usb/phy/phy-mv-u3d-usb.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
+diff --git a/drivers/usb/phy/phy-mv-u3d-usb.c b/drivers/usb/phy/phy-mv-u3d-=
+usb.c
+index d317903..d342175 100644
+--- a/drivers/usb/phy/phy-mv-u3d-usb.c
++++ b/drivers/usb/phy/phy-mv-u3d-usb.c
+@@ -39,8 +39,8 @@ static u32 mv_u3d_phy_read(void __iomem *base, u32 reg)
+ 	addr =3D base;
+ 	data =3D base + 0x4;
+=20
+-	writel_relaxed(reg, addr);
+-	return readl_relaxed(data);
++	writel(reg, addr);
++	return readl(data);
+ }
+=20
+ static void mv_u3d_phy_set(void __iomem *base, u32 reg, u32 value)
+@@ -51,10 +51,10 @@ static void mv_u3d_phy_set(void __iomem *base, u32 reg,=
+ u32 value)
+ 	addr =3D base;
+ 	data =3D base + 0x4;
+=20
+-	writel_relaxed(reg, addr);
+-	tmp =3D readl_relaxed(data);
++	writel(reg, addr);
++	tmp =3D readl(data);
+ 	tmp |=3D value;
+-	writel_relaxed(tmp, data);
++	writel(tmp, data);
+ }
+=20
+ static void mv_u3d_phy_clear(void __iomem *base, u32 reg, u32 value)
+@@ -65,10 +65,10 @@ static void mv_u3d_phy_clear(void __iomem *base, u32 re=
+g, u32 value)
+ 	addr =3D base;
+ 	data =3D base + 0x4;
+=20
+-	writel_relaxed(reg, addr);
+-	tmp =3D readl_relaxed(data);
++	writel(reg, addr);
++	tmp =3D readl(data);
+ 	tmp &=3D ~value;
+-	writel_relaxed(tmp, data);
++	writel(tmp, data);
+ }
+=20
+ static void mv_u3d_phy_write(void __iomem *base, u32 reg, u32 value)
+@@ -78,8 +78,8 @@ static void mv_u3d_phy_write(void __iomem *base, u32 reg,=
+ u32 value)
+ 	addr =3D base;
+ 	data =3D base + 0x4;
+=20
+-	writel_relaxed(reg, addr);
+-	writel_relaxed(value, data);
++	writel(reg, addr);
++	writel(value, data);
+ }
+=20
+ static void mv_u3d_phy_shutdown(struct usb_phy *phy)
+--=20
+1.9.2.459.g68773ac
+
+
+--=20
+balbi
+
+--aM3YZ0Iwxop3KEKx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTUAFHAAoJEIaOsuA1yqREbwYQAK7dg0A87T9VUumuERD9uB08
+5r9fzIuswAS+tu0yYoC+iaUFz1a7m0k+2oTNEOPx1UL+lT0I8z53xkD/q/zc1dZ8
+Sh0pNw+XQn3pH/GWwxOxauqNbTEOgTeb81GSXO7vHOWeB+eHpeeHreOaL8Q/4K2G
+eFw7RlWmEyH2TL3UdnPzjAjiB3iJUyjadaA0iVtdpqOZjplnYHsDAfONNj7s6KWI
+fdIwfPFfo8VSnm4/JF5Y+zA0NBaQL/HHIBkuZH1Ko0ShYbnow8oIDWVwZgCKDfcH
+TqsuUDFzBfPu8YFtIEPpnZI8/dvhvgSa9A0CRaAlBC05x15UWoXNvJlc0oKrurP6
+8w9oMjKEIPYgJT6i1ab04QVe/cLk9VbfMUpLhh9/6f4bT6rWtm+4k482gVs07ylw
+bv0rHP5WNboS8rmLqixEy2i9oHzA1f/5pU8YHPkfnPwydwklM+9O24qVApa98OGX
+Cu5HEYUm4XL0Z2WJKFW+S/GIQCcdMrYFjIpAasweLDbskfhAxe9/cDGQHEYDj4LP
+MAJsr1Iz2//Wl3H8gvMKYkLBqW6IlMIkro57ajDGssu4G0eVsM6WkXXhtZJupDxU
+tPpkwNi/8rUDA5/rLWruBFxmZeSCnW8Fn7yuIV4qQH2LVi1m9BSxdkY+B3FrAuNr
+98hvO/yF4yi3Otvhfyh6
+=JPo/
+-----END PGP SIGNATURE-----
+
+--aM3YZ0Iwxop3KEKx--
