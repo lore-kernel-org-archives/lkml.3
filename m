@@ -1,134 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751177AbaDQUqF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 16:46:05 -0400
-Received: from mout.gmx.net ([212.227.17.20]:54675 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750969AbaDQUpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 16:45:53 -0400
-Date: Thu, 17 Apr 2014 22:45:45 +0200
-From: Helge Deller <deller@gmx.de>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-parisc@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: [RFC,PATCH] mm,parisc: keep track of last mmap'ed address
-Message-ID: <20140417204545.GA4567@ls3530.fritz.box>
+	id S1751265AbaDQUrp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 16:47:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:33988 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179AbaDQUrh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 16:47:37 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Eric Piel <eric.piel@tremplin-utc.net>,
+        Robert Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Peter Ziljstra <peterz@infradead.org>
+Subject: Re: BUG: using __this_cpu_write() in preemptible [00000000] code: systemd-udevd/497
+References: <87mwfn4gah.fsf@canonical.com>
+	<20140415155453.54d0ca97ca88905594b5100f@linux-foundation.org>
+	<alpine.DEB.2.10.1404160958440.9704@gentwo.org>
+Date: Thu, 17 Apr 2014 21:47:28 +0100
+In-Reply-To: <alpine.DEB.2.10.1404160958440.9704@gentwo.org> (Christoph
+	Lameter's message of "Wed, 16 Apr 2014 10:03:23 -0500 (CDT)")
+Message-ID: <8761m7lm3j.fsf@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V03:K0:FaGsc3+wZf/7xxZFDQOZ8WKBCJKtsT/c2/LdbEbH0Six92muBnA
- zSx8u4CCDDy55ekl6sefrDgDEHOa2MSrwsETF3t/mGqJd9WAGz9L9kaPavIBXvSkXzfUS3s
- sKCaCnuu29Mjgh6zUnKEMqq3rwmgV7aOg0FKFzo1WPKrA4V1fDl74nzRTAh9B+8gW2vQrSR
- oDpZL6yAEUs+xcC3VNBVg==
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Would the following patch be acceptable?
-It adds an additional field to struct address_space which will most likely only
-be used by the parisc arch.
+Christoph Lameter <cl@linux.com> writes:
 
-If it's acceptable, I would like to push it through the parisc tree, if not,
-I'm of course open to other ideas too.
+> On Tue, 15 Apr 2014, Andrew Morton wrote:
+>
+>> On Tue, 15 Apr 2014 00:55:50 +0100 Luis Henriques <luis.henriques@canonical.com> wrote:
+>>
+>> > (Cc'ing both lis3lv02d and ACPI maintainers)
+>> >
+>> > Since commit 188a81409ff7de1c5aae947a96356ddd8ff4aaa3 ("percpu: add
+>> > preemption checks to __this_cpu ops") I've been seeing the following:
+>> >
+>> > [   10.485588] hp_accel: hardware type HPB64xx found
+>> > [   10.485772] BUG: using __this_cpu_write() in preemptible [00000000] code: systemd-udevd/497
+>> > [   10.485777] caller is __this_cpu_preempt_check+0x13/0x20
+>> > [   10.485781] CPU: 3 PID: 497 Comm: systemd-udevd Tainted: G        W     3.15.0-rc1 #9
+>> > [   10.485783] Hardware name: Hewlett-Packard HP EliteBook 8470p/179B, BIOS 68ICF Ver. F.02 04/27/2012
+>> > [   10.485785]  ffffffff81a14db5 ffff88022c80b8e0 ffffffff81604ba4 0000000000000003
+>> > [   10.485789]  ffff88022c80b908 ffffffff81313431 0000000000000000 0000000000000032
+>> > [   10.485793]  00000000000003e8 ffff88022c80b918 ffffffff81313473 ffff88022c80b928
+>> > [   10.485796] Call Trace:
+>> > [   10.485802]  [<ffffffff81604ba4>] dump_stack+0x4e/0x7a
+>> > [   10.485805]  [<ffffffff81313431>] check_preemption_disabled+0xe1/0xf0
+>> > [   10.485808]  [<ffffffff81313473>] __this_cpu_preempt_check+0x13/0x20
+>> > [   10.485813]  [<ffffffff810e4eb8>] touch_nmi_watchdog+0x28/0x40
+>>
+>> Presumably touch_softlockup_watchdog() being called with preemption
+>> enabled.  Which is a legitimate thing to do and there's no point in
+>> disabling preemption just to squish a runtime warning.
+>>
+>> Christoph, this thing has iirc caught a couple of very minor bugs but
+>> it is being quite a pain in the rear.   I'm inclined to revert?
+>
+> Well this preemption check functionality was strongly desired by Peter
+> Zilkstra and Ingo Molnar and made a precondition for more extensive use of
+> the this_cpu operations. My patches to various subsystems were rejected
+> because these operations were deemed unsafe without those checks.
+>
+> The simple thing to do in these cases is to use switch from __this_cpu_*
+> to raw_cpu ops to squish these warnings.
 
-Thanks,
-Helge
+FWIW, I just gave the -mm tree patch
+kernel-watchdogc-touch_softlockup_watchdog-use-raw_cpu_write.patch [1]
+a try and it looks like it fixes this issue.
 
-PATCH:
-[RFC,PATCH] mm,parisc: keep track of last mmap'ed address
+[1] http://ozlabs.org/~akpm/mmots/broken-out/kernel-watchdogc-touch_softlockup_watchdog-use-raw_cpu_write.patch
 
-Because of parisc's cache aliasing constraints we need to map shared pages at a
-multiple of 4MB while most other architectures can map files at any multiple of
-PAGE_SIZE. In the past this constraint was ensured by calculating a virtual
-offset into this 4MB region which is based on the physical address of the
-kernel mapping variable (right-shift value of filp->f_mapping by 8 bits).
-Since we only have a 32bit userspace (even when running on a 64bit kernel) this
-often leads to large gaps in the maps of the userspace processes and to out of
-memory situations even if physical memory was still free.  Of course I did
-played with other variants of shifting the f_mapping value to find better
-offsets but this didn't helped either.
-
-This patch chooses a different approach.
-It adds the additional field i_mmap_lastmmap to the address_space struct to
-keep track of the last mapping of a shared file. With this bookkeeping it's
-possible for the parisc memory allocator to 
-a) choose a new mapping offset if the file hasn't been mapped yet, and
-b) take the last-used mapping if it was already mapped by another process.
-
-Overall this approach leads to a more condensed memory usage on parisc because
-the shared files will now be mapped much closer to each other. This is e.g.
-visible with shared libraries which are now not any longer cluttered around
-in the userspace process but close to each other at the top of the userspace
-memory.
-
-Signed-off-by: Helge Deller <deller@gmx.de>
-
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 81048f9..f757a5c 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -416,6 +416,9 @@ struct address_space {
- 	unsigned int		i_mmap_writable;/* count VM_SHARED mappings */
- 	struct rb_root		i_mmap;		/* tree of private and shared mappings */
- 	struct list_head	i_mmap_nonlinear;/*list VM_NONLINEAR mappings */
-+#ifdef CONFIG_MMAP_TRACKING
-+	unsigned long		i_mmap_lastmmap; /* address of last mmap */
-+#endif
- 	struct mutex		i_mmap_mutex;	/* protect tree, count, list */
- 	/* Protected by tree_lock together with the radix tree */
- 	unsigned long		nrpages;	/* number of total pages */
-diff --git a/mm/mmap.c b/mm/mmap.c
-index b1202cf..e2659c3 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -212,8 +212,13 @@ static void __remove_shared_vm_struct(struct vm_area_struct *vma,
- {
- 	if (vma->vm_flags & VM_DENYWRITE)
- 		atomic_inc(&file_inode(file)->i_writecount);
--	if (vma->vm_flags & VM_SHARED)
-+	if (vma->vm_flags & VM_SHARED) {
- 		mapping->i_mmap_writable--;
-+#ifdef CONFIG_MMAP_TRACKING
-+		if (mapping->i_mmap_writable == 0)
-+			mapping->i_mmap_lastmmap = 0;
-+#endif
-+	}
- 
- 	flush_dcache_mmap_lock(mapping);
- 	if (unlikely(vma->vm_flags & VM_NONLINEAR))
-diff --git a/arch/parisc/Kconfig b/arch/parisc/Kconfig
-index bb2a8ec..9518361 100644
---- a/arch/parisc/Kconfig
-+++ b/arch/parisc/Kconfig
-@@ -38,6 +38,9 @@ config PARISC
- config MMU
- 	def_bool y
- 
-+config MMAP_TRACKING
-+	def_bool y
-+
- config STACK_GROWSUP
- 	def_bool y
- 
-diff --git a/arch/parisc/kernel/sys_parisc.c b/arch/parisc/kernel/sys_parisc.c
-index 31ffa9b..7d8cbd1 100644
---- a/arch/parisc/kernel/sys_parisc.c
-+++ b/arch/parisc/kernel/sys_parisc.c
-@@ -36,12 +36,12 @@
- #include <linux/personality.h>
- #include <linux/random.h>
- 
--/* we construct an artificial offset for the mapping based on the physical
-- * address of the kernel mapping variable */
-+/* the address_space struct holds a field i_mmap_lastmmap with the last mapping
-+ * of this file for us */
- #define GET_LAST_MMAP(filp)		\
--	(filp ? ((unsigned long) filp->f_mapping) >> 8 : 0UL)
-+	(filp ? filp->f_mapping->i_mmap_lastmmap : 0UL)
- #define SET_LAST_MMAP(filp, val)	\
--	 { /* nothing */ }
-+	{ if (filp) filp->f_mapping->i_mmap_lastmmap = (val); }
- 
- static int get_offset(unsigned int last_mmap)
- {
+Cheers,
+-- 
+Luís
