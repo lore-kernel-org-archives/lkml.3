@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756993AbaDQAAf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 20:00:35 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34987 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754520AbaDQAAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 20:00:33 -0400
-From: Joel Fernandes <joelf@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: Rajendra Nayak <rnayak@ti.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/9] dmtimer code clean-up first pass
-Date: Wed, 16 Apr 2014 19:00:00 -0500
-Message-ID: <1397692800-7395-1-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1161426AbaDQAA5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 20:00:57 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:57803 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161036AbaDQAAz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 20:00:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <6A3BE65E-93FD-4E22-A55E-49E54E435558@jcrosoft.com>
+References: <20140416094034.GA18082@devel>
+	<6A3BE65E-93FD-4E22-A55E-49E54E435558@jcrosoft.com>
+Date: Thu, 17 Apr 2014 09:00:54 +0900
+Message-ID: <CAHb8M2BdDUJBOsFdDXOKSo2p+=_Gb4Ha92UMa5K6wMyg3KKdmw@mail.gmail.com>
+Subject: Re: [PATCH] fbdev: fix possible NULL pointer derefernce
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: tomi.valkeinen@ti.com, jg1.han@samsung.com,
+        laurent.pinchart@ideasonboard.com, Rob Clark <robdclark@gmail.com>,
+        linux-fbdev@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are some minor cleanups for dmtimer code in preparation for moving it out
-to drivers.
+Hello,
 
-There is OMAP1 specific dmtimer code earlier, that are handled in mach-omap1
-directly now.   Other than this, few functions and code has been refactored to
-reduce redundancy and some minor cleanups.
+2014-04-16 21:38 GMT+09:00 Jean-Christophe PLAGNIOL-VILLARD
+<plagnioj@jcrosoft.com>:
+>
+> On Apr 16, 2014, at 5:40 PM, Daeseok Youn <daeseok.youn@gmail.com> wrote:
+>
+>>
+>> The spec->modedb can be NULL by fb_create_modedb().
+>>
+>> And also smatch says:
+>> drivers/video/fbdev/core/fbmon.c:975 fb_edid_to_monspecs() error:
+>> potential null dereference 'specs->modedb'.
+>> (fb_create_modedb returns null)
+>>
+>> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>> ---
+>> drivers/video/fbdev/core/fbmon.c |    3 +++
+>> 1 files changed, 3 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/video/fbdev/core/fbmon.c b/drivers/video/fbdev/core/fbmon.c
+>> index c204ebe..db274ca 100644
+>> --- a/drivers/video/fbdev/core/fbmon.c
+>> +++ b/drivers/video/fbdev/core/fbmon.c
+>> @@ -966,6 +966,9 @@ void fb_edid_to_monspecs(unsigned char *edid, struct fb_monspecs *specs)
+>>
+>>       specs->modedb = fb_create_modedb(edid, &specs->modedb_len);
+>>
+>> +     if (!specs->modedb)
+>> +             return;
+>> +
+>
+> we need to return an error and trace it
+Yes, you're right. I will change return type from void to int and add
+to handle an error when this function(fb_edid_to_monspecs) is called.
 
-OMAP1 hasn't been tested so I welcome anyone with HW to test this.
+I will send this patch as your comment.
 
-Joel Fernandes (9):
-  ARM: OMAP: dmtimer: Remove setting of clk parent indirectly through
-    platform hook
-  ARM: OMAP: dmtimer: Add comments on OMAP1 clock framework
-  ARM: OMAP: dmtimer: Add note to set parent from DT
-  ARM: OMAP: dmtimer: Add function to check if timer is running
-  ARM: OMAP1: dmtimer: Rewrite modify of IDLECT mask to use new
-    is_running function
-  ARM: OMAP: dmtimer: Add a write_ctrl function to simplify bit setting
-  ARM: OMAP: dmtimer: Have __omap_dm_timer_load_start set ST bit in
-    CTRL instead of caller
-  ARM: OMAP: dmtimer: Add function to check for timer availability
-  ARM: OMAP: dmtimer: Get rid of check for mem resource error
+Thanks for review.
 
- arch/arm/mach-omap1/include/mach/hardware.h |    2 +
- arch/arm/mach-omap1/timer.c                 |   34 ++++-
- arch/arm/mach-omap2/timer.c                 |    6 +-
- arch/arm/plat-omap/dmtimer.c                |  185 +++++++++++++--------------
- arch/arm/plat-omap/include/plat/dmtimer.h   |    4 +-
- include/linux/platform_data/dmtimer-omap.h  |    2 -
- 6 files changed, 129 insertions(+), 104 deletions(-)
-
--- 
-1.7.9.5
-
+Daeseok Youn.
+>
+> Best Regards,
+> J.
+>>       /*
+>>        * Workaround for buggy EDIDs that sets that the first
+>>        * detailed timing is preferred but has not detailed
+>> --
+>> 1.7.4.4
+>>
+>
