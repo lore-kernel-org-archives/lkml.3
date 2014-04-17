@@ -1,104 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451AbaDQQFU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 12:05:20 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:44892 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620AbaDQQEo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 12:04:44 -0400
-Message-ID: <534FFBB3.8050601@linaro.org>
-Date: Thu, 17 Apr 2014 18:05:07 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        rjw@rjwysocki.net, linux-pm@vger.kernel.org, alex.shi@linaro.org,
-        vincent.guittot@linaro.org, morten.rasmussen@arm.com
-Subject: Re: [RFC PATCHC 3/3] sched/fair: use the idle state info to choose
- the idlest cpu
-References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org> <1396009796-31598-4-git-send-email-daniel.lezcano@linaro.org> <alpine.LFD.2.11.1404012208110.1571@knanqh.ubzr> <534FDCDC.6000806@linaro.org> <alpine.LFD.2.11.1404171138470.980@knanqh.ubzr>
-In-Reply-To: <alpine.LFD.2.11.1404171138470.980@knanqh.ubzr>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1752573AbaDQQF3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 12:05:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55227 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751885AbaDQQE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 12:04:59 -0400
+Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
+ cgroup path
+From: Simo Sorce <ssorce@redhat.com>
+To: Daniel J Walsh <dwalsh@redhat.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Andy Lutomirski <luto@amacapital.net>,
+        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
+        Network Development <netdev@vger.kernel.org>
+In-Reply-To: <534FF61B.4010901@redhat.com>
+References: <CALCETrURHNmLyccRiF_W8o2ozRMR4AaCjUE=_PU8z1+Pq6X2jQ@mail.gmail.com>
+	 <20140416002010.GA5035@redhat.com>
+	 <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com>
+	 <20140416.085743.1614257692560892039.davem@davemloft.net>
+	 <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com>
+	 <1397664837.19767.410.camel@willson.li.ssimo.org>
+	 <CALCETrXn7b6UuALpGUVoyQYfR2uzk5tj2ABV=dkvtFNgqM5sxQ@mail.gmail.com>
+	 <20140416180642.GG31074@redhat.com>
+	 <CALCETrVUw5+vCCONy1VTXpskbY_eZFo2CtbehwV5Mhj4d4+icw@mail.gmail.com>
+	 <20140416185936.GJ31074@redhat.com>  <534FF61B.4010901@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Apr 2014 12:04:34 -0400
+Message-ID: <1397750674.2628.44.camel@willson.li.ssimo.org>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2014 05:53 PM, Nicolas Pitre wrote:
-> On Thu, 17 Apr 2014, Daniel Lezcano wrote:
->
->> Ok, refreshed the patchset but before sending it out I would to discuss about
->> the rational of the changes and the policy, and change the patchset
->> consequently.
->>
->> What order to choose if the cpu is idle ?
->>
->> Let's assume all cpus are idle on a dual socket quad core.
->>
->> Also, we can reasonably do the hypothesis if the cluster is in low power mode,
->> the cpus belonging to the same cluster are in the same idle state (putting
->> apart the auto-promote where we don't have control on).
->>
->> If the policy you talk above is 'aggressive power saving', we can follow the
->> rules with decreasing priority:
->>
->> 1. We want to prevent to wakeup the entire cluster
->> 	=> as the cpus are in the same idle state, by choosing a cpu in
->> 	=> shallow
->> state, we should have the guarantee we won't wakeup a cluster (except if no
->> shallowest idle cpu are found).
->
-> This is unclear to me.  Obviously, if an entire cluster is down, that
-> means all the CPUs it contains have been idle for a long time.  And
-> therefore they shouldn't be subject to selection unless there is no
-> other CPUs available.  Is that what you mean?
+On Thu, 2014-04-17 at 08:41 -0700, Daniel J Walsh wrote:
+> On 04/16/2014 11:59 AM, Vivek Goyal wrote:
+> > On Wed, Apr 16, 2014 at 11:13:31AM -0700, Andy Lutomirski wrote:
+> >> On Wed, Apr 16, 2014 at 11:06 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> >>> On Wed, Apr 16, 2014 at 09:31:25AM -0700, Andy Lutomirski wrote:
+> >>> I am not sure how same issue with happen with cgroups. In the case of
+> >>> socket example, you are forcing a setuid program to write to standard
+> >>> output and that setuid program will run in same cgroup as caller and
+> >>> will have same cgroup as caller. So even if somebody was using cgroup
+> >>> information for authentication, atleast in this particular case it
+> >>> will not be a problem. Both unpriviliged and priviliged programs has
+> >>> same cgroups.
+> >>>
+> >> I'm not sure that there's an actual attackable program.  But I also
+> >> see no reason to be convinced that there isn't one, and the problem
+> >> can easily be avoided by requiring programs to explicitly ask to send
+> >> their cgroup.
+> > If you can't prove that there is something fundamentally wrong with
+> > passing cgroup info to receiver, there is no reason to block these
+> > patches either.
+> >
+> > We can't fix the problems which we can't see. You are saying that I 
+> > don't know what kind of problem can happen due to cgroup passing. Still
+> > that does not mean none of the problems exist. So let us not pass cgroup
+> > info by default and ask client to opt in.
+> >
+> > I don't think this is a very convincing argument.
+> >
+> > To me, if we can't see anything fundamentally wrong with passing cgroup
+> > info, we should take these patches in. And once we figure out that there
+> > is are problematic use cases, then implement SO_NOPASSCGROUP and
+> > SO_NOPEERCRED  and allow problematic clients to opt out.
+> >
+> > Thanks
+> > Vivek
+> The two use cases for this patch are:
 
-Yes, this is what I meant. But also what I meant is we can get rid for 
-the moment of the cpu topology and the coupling idle state because if we 
-do this described approach, as the idle state will be the same for the 
-cpus belonging to the same cluster we won't select a cluster down 
-(except if there is no other CPUs available).
+Let me add some caveats to explain what is used, as the 2 cases map to
+the 2 different new options.
 
->> 2. We want to prevent to wakeup a cpu which did not reach the target residency
->> time (will need some work to unify cpuidle idle time and idle task run time)
->> 	=> with the target residency and, as a first step, with the idle
->> 	=> stamp,
->> we can determine if the cpu slept enough
->
-> Agreed. However, right now, the scheduler does not have any
-> consideration for that.  So this should be done as a separate patch.
+> 1 Logging, to make sure the cgroup information gets correctly attributed
+> to the caller. 
 
-Yes, I thought as a very first step we can rely on the idle stamp until 
-we unify the times with a big comment. Or I can first unify the idle 
-times and then take into account the target residency. It is to comply 
-with Rafael's request to have the 'big picture'.
+In here the logging system wants to know *who* logged, if the cgroups of
+the process actually doing the logging changes, that's what the logging
+system wants to know.
+If somehow a setuid binary can change the cgroups, then the logging
+system *wants* to know that these logs are coming from there, because
+they sure are not coming from the original bounded process anymore.
 
->> 3. We want to prevent to wakeup a cpu in deep idle state
->> 	=> by looking for the cpu in shallowest idle state
->
-> Obvious.
->
->> 4. We want to prevent to wakeup a cpu where the exit latency is longer than
->> the expected run time of the task (and the time to migrate the task ?)
->
-> Sure.  That would be a case for using task packing even if the policy is
-> set to performance rather than powersave whereas task packing is
-> normally for powersave.
+This use case wants to use SO_PASSCGROUP as it wants to know who the
+current writer is, not who opened the file descriptor.
 
-Yes, I agree, task packing improves also the performances and it makes 
-really sense to prevent task migration under some circumstances for a 
-better cache efficiency.
 
-Thanks for the comments
+> 2 Potentially reveal different information to the caller based on the
+> cgroup information. 
+> 
+> Imagine you want to set up an apache web server that is going to use
+> sssd for authentication data.  You might want to reveal a limited set of
+> users to the apache service process based on the fact that it is running
+> in the apache.service.slice.  If the apache service does the equivalent
+> of getent passwd I want to give it different information then say sshd
+> did the same calls.
 
-   -- Daniel
+This case is the inverse, we totally want to care only about who
+*opened* the socket for communication, because that's when the kernel
+does access control and tells us who is the *owner* of the information.
+It doesn't matter at all if the owner turns around and passes the socket
+to another process anywhere in the system. If that process does it, it
+means it wants to disclose information to which it already have access
+to and can ship to said process already and independently anyway.
 
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+This use case wants to use SO_PEERCGROUP for that reason.
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+I hope this makes the use cases more clear.
+
+Simo.
 
