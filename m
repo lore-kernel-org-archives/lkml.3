@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846AbaDQNMQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 09:12:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23490 "EHLO mx1.redhat.com"
+	id S1756900AbaDQNMt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 09:12:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11507 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754753AbaDQNMM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 09:12:12 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, linux-ide@vger.kernel.org
-Subject: [PATCH v2 2/2] ahci: Use pci_enable_msi_exact() instead of pci_enable_msi_range()
-Date: Thu, 17 Apr 2014 14:13:50 +0200
-Message-Id: <b29508ba0f127aac11d1fc25ed93c9e281b7700e.1397736364.git.agordeev@redhat.com>
-In-Reply-To: <cover.1397736364.git.agordeev@redhat.com>
-References: <cover.1397736364.git.agordeev@redhat.com>
+	id S1754753AbaDQNMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 09:12:46 -0400
+Date: Thu, 17 Apr 2014 15:12:20 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 3/3] perf top/tui: Update nr_entries properly after
+ filter is applied
+Message-ID: <20140417131220.GB19339@krava.brq.redhat.com>
+References: <1397721206-15393-1-git-send-email-namhyung@kernel.org>
+ <1397721206-15393-4-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397721206-15393-4-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver calls pci_enable_msi_range() function with the
-range of [nvec..nvec] which what pci_enable_msi_exact()
-function is for.
+On Thu, Apr 17, 2014 at 04:53:26PM +0900, Namhyung Kim wrote:
+> The hist_browser__reset() is only called right after a filter is
+> applied so it needs to update browser->nr_entries properly.  We cannot
+> use hists->nr_non_filtered_entries directly since it's possible that
+> such entries are also filtered out by minimum percentage.
+> 
+> In addition when a filter is used for perf top, hist browser's
+> nr_entries field was not updated after applying the filter.  But it
+> needs to be updated as new samples are coming.
+> 
+> Rename ->nr_pcnt_entries and hist_browser__update_pcnt_entries() to
+> ->nr_filtered_entries and hist_browser__update_nr_entries() since it's
+> now used for filtered entries as well.
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-ide@vger.kernel.org
----
- drivers/ata/ahci.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Could you please split out that rename into separate patch?
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 649ac1c..0927d5f 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -1166,7 +1166,7 @@ static inline void ahci_gtf_filter_workaround(struct ata_host *host)
- static int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_ports,
- 				struct ahci_host_priv *hpriv)
- {
--	int nvec;
-+	int rc, nvec;
- 
- 	if (hpriv->flags & AHCI_HFLAG_NO_MSI)
- 		goto intx;
-@@ -1183,10 +1183,10 @@ static int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_ports,
- 	if (nvec < n_ports)
- 		goto single_msi;
- 
--	nvec = pci_enable_msi_range(pdev, nvec, nvec);
--	if (nvec == -ENOSPC)
-+	rc = pci_enable_msi_exact(pdev, nvec);
-+	if (rc == -ENOSPC)
- 		goto single_msi;
--	else if (nvec < 0)
-+	else if (rc < 0)
- 		goto intx;
- 
- 	/*
--- 
-1.7.7.6
-
+thanks,
+jirka
