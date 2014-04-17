@@ -1,134 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756960AbaDQC7Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 22:59:16 -0400
-Received: from mga02.intel.com ([134.134.136.20]:49749 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752227AbaDQC7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 22:59:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,876,1389772800"; 
-   d="scan'208";a="514531808"
-Date: Thu, 17 Apr 2014 10:59:12 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Noonan <steven@uplinklabs.net>, Rik van Riel <riel@redhat.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Linux-X86 <x86@kernel.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Use an alternative to _PAGE_PROTNONE for _PAGE_NUMA
- v4
-Message-ID: <20140417025912.GA7797@localhost>
-References: <1397572876-1610-1-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397572876-1610-1-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756670AbaDQDGE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 23:06:04 -0400
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:40205 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754545AbaDQDGB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 23:06:01 -0400
+Message-ID: <1397703953.3415.26.camel@ThinkPad-T5421>
+Subject: Re: [RFC PATCH v3] Use kernfs_break_active_protection() for device
+ online store callbacks
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
+        rafael.j.wysocki@intel.com, toshi.kani@hp.com
+Date: Thu, 17 Apr 2014 11:05:53 +0800
+In-Reply-To: <20140416151749.GE1257@htj.dyndns.org>
+References: <1397121514.25199.91.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140410133116.GB25308@htj.dyndns.org>
+	 <1397189445.3649.14.camel@ThinkPad-T5421>
+	 <20140411102649.GB26252@mtj.dyndns.org>
+	 <1397461649.12943.1.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140414201315.GD16835@htj.dyndns.org>
+	 <1397529877.13188.68.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140415145017.GK1863@htj.dyndns.org>
+	 <1397612500.13188.83.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140416151749.GE1257@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041703-6892-0000-0000-0000087DFCAF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 03:41:13PM +0100, Mel Gorman wrote:
-> Fengguang Wu found that an earlier version crashed on his
-> tests. This version passed tests running with DEBUG_VM and
-> DEBUG_PAGEALLOC. Fengguang, another test would be appreciated and
-> if it helps this series is the mm-numa-use-high-bit-v4r3 branch in
-> git://git.kernel.org/pub/scm/linux/kernel/git/mel/linux-balancenuma.git
+On Wed, 2014-04-16 at 11:17 -0400, Tejun Heo wrote:
+> Hello,
+> 
+> On Wed, Apr 16, 2014 at 09:41:40AM +0800, Li Zhong wrote:
+> > > If so, that is
+> > > an actually possible deadlock, no?
+> > 
+> > Yes, but it seems to me that it is solved in commit 5e33bc41, which uses
+> > lock_device_hotplug_sysfs() to return a restart syscall error if not
+> > able to try lock the device_hotplug_lock. That also requires the device
+> > removing code path to take the device_hotplug_lock. 
+> 
+> But that patch only takes out device_hotplug_lock out of the
+> dependency graph and does nothing for cpu_add_remove_lock.  It seems
+> to be that there still is a deadlock condition involving s_active and
+> cpu_add_remove_lock.  Am I missing something here?
 
-Hi Mel,
+It seems to me cpu_add_remove_lock is always taken after
+device_hotplug_lock.
 
-We noticed the below changes. The last_state.is_incomplete_run 0=>1 change
-means the test box failed to boot up. Unfortunately we don't have
-serial console output of this testbox, it may be hard to check the
-root cause. Anyway, I'll try to bisect it to make the debug easier.
+So if cpu_add_remove_lock has been acquired by device removing process,
+then it means the other online/offline process couldn't successfully try
+lock device_hotplug_lock, and will release s_active with a restart
+syscall error;
 
-Fengguang
+if cpu_add_remove_lock has been acquired by online/offline process, then
+it should already hold device_hotlug_lock, and keeps the device removing
+process waiting at device_hotplug_lock. So online/offline process could
+release the lock, and finally release s_active soon. 
 
-          v3.14  685561ea2d015cb90c45504ec  
----------------  -------------------------  
-    864.70 ~ 5%     -27.5%     627.28       snb-drag/sysbench/fileio/600s-100%-1HDD-ext4-64G-1024-seqwr-sync
-    178.20 ~104%     -99.9%       0.13       snb-drag/sysbench/fileio/600s-100%-1HDD-xfs-64G-1024-rndwr-sync
-   1042.90 ~22%     -39.8%     627.41       TOTAL fileio.request_latency_max_ms
+But after some further thinking, I seem to understand your point.
+s_active has lock order problem with the other series of hotplug related
+locks, so it's better to take s_active out of the dependency chain,
+rather than the first of the other series of locks? like you suggested
+below.
 
-          v3.14  685561ea2d015cb90c45504ec  
----------------  -------------------------  
-         0           +Inf%          1 ~ 0%  lkp-a04/fake/boot/1
-         0           +Inf%          1 ~ 0%  TOTAL last_state.is_incomplete_run
+> 
+> Now that kernfs has a proper mechanism to deal with it, wouldn't it
+> make more sense to replace 5e33bc41 with prper s_active protection
+> breaking?
 
-          v3.14  685561ea2d015cb90c45504ec  
----------------  -------------------------  
-        10 ~10%   +1560.0%        166       lkp-ws02/micro/dd-write/11HDD-JBOD-cfq-ext4-10dd
-        10 ~10%   +1560.0%        166       TOTAL ftrace.writeback_single_inode.sdg.age
+I'll try this way and send you the code for review.
 
-          v3.14  685561ea2d015cb90c45504ec  
----------------  -------------------------  
-      9662 ~19%  +17955.3%    1744594       lkp-snb01/micro/hackbench/1600%-process-socket
-      4235 ~22%   +6497.6%     279443       lkp-snb01/micro/hackbench/1600%-threads-socket
-      3842 ~ 4%   +1468.7%      60278       lkp-snb01/micro/hackbench/50%-process-pipe
-     17181 ~ 3%    +393.1%      84722       lkp-snb01/micro/hackbench/50%-process-socket
-     34922 ~10%   +6111.0%    2169037       TOTAL cpuidle.POLL.time
+Thanks,
+Zhong
 
-          v3.14  685561ea2d015cb90c45504ec  
----------------  -------------------------  
-        34 ~ 1%     +61.8%         56       lkp-ws02/micro/dd-write/11HDD-JBOD-cfq-ext4-10dd
-        34 ~ 1%     +61.8%         56       TOTAL ftrace.balance_dirty_pages.sdl.period
+> 
+> Thanks.
+> 
 
-          v3.14  685561ea2d015cb90c45504ec  
----------------  -------------------------  
-       312 ~ 0%     -10.4%        280       snb-drag/sysbench/fileio/600s-100%-1HDD-xfs-64G-1024-rndwr-sync
-       312 ~ 0%     -10.4%        280       TOTAL vmstat.memory.buff
-
-          v3.14  685561ea2d015cb90c45504ec  
----------------  -------------------------  
-       350 ~ 3%   +3056.4%      11057       lkp-ws02/micro/dd-write/11HDD-JBOD-cfq-ext4-100dd
-       340 ~ 2%   +1792.2%       6443       lkp-ws02/micro/dd-write/11HDD-JBOD-cfq-ext4-10dd
-       690 ~ 3%   +2433.3%      17500       TOTAL interrupts.125:PCI-MSI-edge.eth1-TxRx-4
-
-          v3.14  685561ea2d015cb90c45504ec  
----------------  -------------------------  
-       310 ~ 1%   +2021.3%       6595       lkp-ws02/micro/dd-write/11HDD-JBOD-cfq-ext4-1dd
-       310 ~ 1%   +2021.3%       6595       TOTAL interrupts.127:PCI-MSI-edge.eth1-TxRx-6
-
-          v3.14  685561ea2d015cb90c45504ec  
----------------  -------------------------  
-       157 ~ 4%    +118.4%        344       lkp-sb03/micro/nepim/300s-100%-udp
-       157 ~ 4%    +118.4%        344       TOTAL interrupts.101:PCI-MSI-edge.eth1-TxRx-1
-
-          v3.14  685561ea2d015cb90c45504ec  
----------------  -------------------------  
-     40.55 ~ 0%     -50.6%      20.02       lkp-a05/fake/boot/1
-     40.55 ~ 0%     -50.6%      20.02       TOTAL boottime.dhcp
-
-          v3.14  685561ea2d015cb90c45504ec  
----------------  -------------------------  
-     60.79 ~ 0%     -47.8%      31.74       lkp-a05/fake/boot/1
-     60.79 ~ 0%     -47.8%      31.74       TOTAL boottime.boot
-
-          v3.14  685561ea2d015cb90c45504ec  
----------------  -------------------------  
-       186 ~ 0%     -46.1%        100       lkp-a05/fake/boot/1
-       186 ~ 0%     -46.1%        100       TOTAL boottime.idle
-
-          v3.14  685561ea2d015cb90c45504ec  
----------------  -------------------------  
-       157 ~ 3%     +84.7%        290       lkp-a05/micro/iperf/300s-tcp
-       157 ~ 3%     +84.7%        290       TOTAL interrupts.50:PCI-MSI-edge.eth0-tx-0
-
-          v3.14  685561ea2d015cb90c45504ec  
----------------  -------------------------  
-    212639 ~ 1%     +48.1%     314887       lkp-sb03/micro/nepim/300s-25%-udp
-    212639 ~ 1%     +48.1%     314887       TOTAL interrupts.LOC
-
-          v3.14  685561ea2d015cb90c45504ec  
----------------  -------------------------  
-       207 ~ 2%     +35.8%        282       lkp-a05/micro/iperf/300s-tcp
-       207 ~ 2%     +35.8%        282       TOTAL interrupts.47:PCI-MSI-edge.eth0-rx-1
 
