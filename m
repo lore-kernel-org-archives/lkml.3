@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751317AbaDQOna (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 10:43:30 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:54240 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750893AbaDQOnT (ORCPT
+	id S1751265AbaDQOpg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 10:45:36 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51362 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750983AbaDQOp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 10:43:19 -0400
-Date: Thu, 17 Apr 2014 10:43:11 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] tracing/uprobes: fix uprobe_cpu_buffer memory leak
-Message-ID: <20140417104311.142458ca@gandalf.local.home>
-In-Reply-To: <1397741484.1731.11.camel@leonhard>
-References: <1397741484.1731.11.camel@leonhard>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Thu, 17 Apr 2014 10:45:27 -0400
+From: Will Deacon <will.deacon@arm.com>
+To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, monstr@monstr.eu, dhowells@redhat.com, broonie@linaro.org,
+        benh@kernel.crashing.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, Will Deacon <will.deacon@arm.com>,
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>
+Subject: [PATCH 05/18] alpha: io: implement relaxed accessor macros for writes
+Date: Thu, 17 Apr 2014 14:44:08 +0100
+Message-Id: <1397742261-15621-6-git-send-email-will.deacon@arm.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1397742261-15621-1-git-send-email-will.deacon@arm.com>
+References: <1397742261-15621-1-git-send-email-will.deacon@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Apr 2014 22:31:24 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
+write{b,w,l,q}_relaxed are implemented by some architectures in order to
+permit memory-mapped I/O writes with weaker barrier semantics than the
+non-relaxed variants.
 
-> Hi Jovi,
-> 
-> (Sorry for replying in another thread.  I don't have an access to the
-> company mail at home.)
-> 
-> On Thu, Apr 17, 2014 at 04:05:19PM +0800, "zhangwei(Jovi)" wrote:
-> > Forgot to free uprobe_cpu_buffer percpu page in uprobe_buffer_disable.
-> 
-> Thanks for fixing this!
-> 
-> Acked-by: Namhyung Kim <namhyung@kernel.org>
+This patch implements these write macros for Alpha, in the same vein as
+the relaxed read macros, which are already implemented.
 
-I'm running this through my tests right now.
+Cc: Richard Henderson <rth@twiddle.net>
+Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+Cc: Matt Turner <mattst88@gmail.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+---
+ arch/alpha/include/asm/io.h | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-Thanks!
-
--- Steve
+diff --git a/arch/alpha/include/asm/io.h b/arch/alpha/include/asm/io.h
+index 5ebab5895edb..f05bdb4b1cb9 100644
+--- a/arch/alpha/include/asm/io.h
++++ b/arch/alpha/include/asm/io.h
+@@ -500,10 +500,14 @@ extern inline void writeq(u64 b, volatile void __iomem *addr)
+ #define outb_p		outb
+ #define outw_p		outw
+ #define outl_p		outl
+-#define readb_relaxed(addr) __raw_readb(addr)
+-#define readw_relaxed(addr) __raw_readw(addr)
+-#define readl_relaxed(addr) __raw_readl(addr)
+-#define readq_relaxed(addr) __raw_readq(addr)
++#define readb_relaxed(addr)	__raw_readb(addr)
++#define readw_relaxed(addr)	__raw_readw(addr)
++#define readl_relaxed(addr)	__raw_readl(addr)
++#define readq_relaxed(addr)	__raw_readq(addr)
++#define writeb_relaxed(b, addr)	__raw_writeb(b, addr)
++#define writew_relaxed(b, addr)	__raw_writew(b, addr)
++#define writel_relaxed(b, addr)	__raw_writel(b, addr)
++#define writeq_relaxed(b, addr)	__raw_writeq(b, addr)
+ 
+ #define mmiowb()
+ 
+-- 
+1.9.1
 
