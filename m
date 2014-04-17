@@ -1,672 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315AbaDQNw7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 09:52:59 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:55172 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764AbaDQNwn (ORCPT
+	id S1755492AbaDQNxO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 09:53:14 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:41717 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755330AbaDQNxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 09:52:43 -0400
-Message-ID: <534FDCA9.4080005@gmail.com>
-Date: Thu, 17 Apr 2014 21:52:41 +0800
-From: zhuyj <zyjzyj2000@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 17 Apr 2014 09:53:09 -0400
+Message-ID: <534FDCDC.6000806@linaro.org>
+Date: Thu, 17 Apr 2014 15:53:32 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        joe@perches.com, julia.lawall@lip6.fr, dingtianhong@huawei.com,
-        linux-kernel@vger.kernel.org, jasowang@redhat.com, mst@redhat.com,
-        Willy Tarreau <w@1wt.eu>,
-        "Yang, Zhangle (Eric)" <Zhangle.Yang@windriver.com>,
-        "Wu, Kuaikuai" <Kuaikuai.Wu@windriver.com>,
-        "Tao, Yue" <Yue.Tao@windriver.com>
-Subject: Re: in kernel 2.6.x, tun/tap nic supports vlan packets
-References: <534F4C1E.1000006@gmail.com>
-In-Reply-To: <534F4C1E.1000006@gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------020500040601000703060900"
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
+        rjw@rjwysocki.net, linux-pm@vger.kernel.org, alex.shi@linaro.org,
+        vincent.guittot@linaro.org, morten.rasmussen@arm.com
+Subject: Re: [RFC PATCHC 3/3] sched/fair: use the idle state info to choose
+ the idlest cpu
+References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org> <1396009796-31598-4-git-send-email-daniel.lezcano@linaro.org> <alpine.LFD.2.11.1404012208110.1571@knanqh.ubzr>
+In-Reply-To: <alpine.LFD.2.11.1404012208110.1571@knanqh.ubzr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020500040601000703060900
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On 04/02/2014 05:05 AM, Nicolas Pitre wrote:
+> On Fri, 28 Mar 2014, Daniel Lezcano wrote:
+>
+>> As we know in which idle state the cpu is, we can investigate the following:
+>>
+>> 1. when did the cpu entered the idle state ? the longer the cpu is idle, the
+>> deeper it is idle
+>> 2. what exit latency is ? the greater the exit latency is, the deeper it is
+>>
+>> With both information, when all cpus are idle, we can choose the idlest cpu.
+>>
+>> When one cpu is not idle, the old check against weighted load applies.
+>>
+>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>
+> There seems to be some problems with the implementation.
+>
+>> @@ -4336,20 +4337,53 @@ static int
+>>   find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+>>   {
+>>   	unsigned long load, min_load = ULONG_MAX;
+>> -	int idlest = -1;
+>> +	unsigned int min_exit_latency = UINT_MAX;
+>> +	u64 idle_stamp, min_idle_stamp = ULONG_MAX;
+>
+> I don't think you really meant to assign an u64 variable with ULONG_MAX.
+> You probably want ULLONG_MAX here.  And probably not in fact (more
+> later).
+>
+>> +
+>> +	struct rq *rq;
+>> +	struct cpuidle_power *power;
+>> +
+>> +	int cpu_idle = -1;
+>> +	int cpu_busy = -1;
+>>   	int i;
+>>
+>>   	/* Traverse only the allowed CPUs */
+>>   	for_each_cpu_and(i, sched_group_cpus(group), tsk_cpus_allowed(p)) {
+>> -		load = weighted_cpuload(i);
+>>
+>> -		if (load < min_load || (load == min_load && i == this_cpu)) {
+>> -			min_load = load;
+>> -			idlest = i;
+>> +		if (idle_cpu(i)) {
+>> +
+>> +			rq = cpu_rq(i);
+>> +			power = rq->power;
+>> +			idle_stamp = rq->idle_stamp;
+>> +
+>> +			/* The cpu is idle since a shorter time */
+>> +			if (idle_stamp < min_idle_stamp) {
+>> +				min_idle_stamp = idle_stamp;
+>> +				cpu_idle = i;
+>> +				continue;
+>
+> Don't you want the highest time stamp in order to select the most
+> recently idled CPU?  Favoring the CPU which has been idle the longest
+> makes little sense.
+>
+>> +			}
+>> +
+>> +			/* The cpu is idle but the exit_latency is shorter */
+>> +			if (power && power->exit_latency < min_exit_latency) {
+>> +				min_exit_latency = power->exit_latency;
+>> +				cpu_idle = i;
+>> +				continue;
+>> +			}
+>
+> I think this is wrong.  This gives priority to CPUs which have been idle
+> for a (longer... although this should have been) shorter period of time
+> over those with a shallower idle state.  I think this should rather be:
+>
+> 	if (power && power->exit_latency < min_exit_latency) {
+> 		min_exit_latency = power->exit_latency;
+> 		latest_idle_stamp = idle_stamp;
+> 	       	cpu_idle = i;
+> 	} else if ((!power || power->exit_latency == min_exit_latency) &&
+> 		   idle_stamp > latest_idle_stamp) {
+> 		latest_idle_stamp = idle_stamp;
+> 		cpu_idle = i;
+> 	}
+>
+> So the CPU with the shallowest idle state is selected in priority, and
+> if many CPUs are in the same state then the time stamp is used to
+> select the most recent one. Whenever
+> a shallower idle state is found then the latest_idle_stamp is reset for
+> that state even if it is further in the past.
+>
+>> +		} else {
+>> +
+>> +			load = weighted_cpuload(i);
+>> +
+>> +			if (load < min_load ||
+>> +			    (load == min_load && i == this_cpu)) {
+>> +				min_load = load;
+>> +				cpu_busy = i;
+>> +				continue;
+>> +			}
+>>   		}
+>
+> I think this is wrong to do an if-else based on idle_cpu() here.  What
+> if a CPU is heavily loaded, but for some reason it happens to be idle at
+> this very moment?  With your patch it could be selected as an idle CPU
+> while it would be discarded as being too busy otherwise.
+>
+> It is important to determine both cpu_busy and cpu_idle for all CPUs.
+>
+> And cpu_busy is a bad name for this.  Something like least_loaded would
+> be more self explanatory.  Same thing for cpu_idle which could be
+> clearer if named shalloest_idle.
+>
+>> -	return idlest;
+>> +	/* Busy cpus are considered less idle than idle cpus ;) */
+>> +	return cpu_busy != -1 ? cpu_busy : cpu_idle;
+>
+> And finally it is a policy decision whether or not we want to return
+> least_loaded over shallowest_idle e.g do we pack tasks on non idle CPUs
+> first or not.  That in itself needs more investigation.  To keep the
+> existing policy unchanged for now the above condition should have its
+> variables swapped.
 
-Although the maintainer will not merge these 2 patches, I still fix the 
-mistakes in these 2 patches. Now the latest patches are in attachment. 
-Maybe these patches can help others.
 
-The latest patches fix mistakes in rx stats.
+Ok, refreshed the patchset but before sending it out I would to discuss 
+about the rational of the changes and the policy, and change the 
+patchset consequently.
 
-Best Regards!
-Zhu Yanjun
-On 04/17/2014 11:35 AM, zhuyj wrote:
-> Hi, all
->
-> In kernel 2.6.x, linux depends on nic vlan hardware acceleration to 
-> insert/extract
-> vlan tag. In this scene, in kernel 2.6.x
->
->                  _____        ________
->     A           |     | B    |        | C
->  vlan packets-->| tap |----->|vlan nic|--->
->                 |_____|      |________|
->
-> We hope vlan packets pass through tap and vlan nic from A to c.
-> But in kernel 2.6.x, linux kernel can not extract vlan tag. It depends
-> on nic vlan hardware acceleration. It is well known that tap nic has no
-> vlan acceleration. So in the above scene, vlan packets can not be 
-> handled by
-> tap nic. These vlan packets will be discarded in B. They can not 
-> arrive at C.
->
-> In kernel 3.x, linux can handle vlan packets. It does not depend on 
-> nic vlan
-> hardware acceleration. So the above scene can work well in kernel 3.x.
->
-> To resolve the above in kernel 2.6.x, we simulated vlan hardware 
-> acceleration in
-> tun/tap driver. Then followed the logic of commit commit 4fba4ca4
-> [vlan: Centralize handling of hardware acceleration] to modify the 
-> vlan packets
-> process in kernel 2.6.x. In the end, the above scene can work well in 
-> patched
-> kernel 2.6.x.
->
-> Please comment on it. Any reply is appreciated.
->
-> Hi, Willy
->
-> These 2 patches are for linux2.6.x. These can work well here. Please 
-> help to merge
-> linux 2.6.32.x. Thanks a lot.
->
-> Best Regards!
-> Zhu Yanjun
->
+What order to choose if the cpu is idle ?
+
+Let's assume all cpus are idle on a dual socket quad core.
+
+Also, we can reasonably do the hypothesis if the cluster is in low power 
+mode, the cpus belonging to the same cluster are in the same idle state 
+(putting apart the auto-promote where we don't have control on).
+
+If the policy you talk above is 'aggressive power saving', we can follow 
+the rules with decreasing priority:
+
+1. We want to prevent to wakeup the entire cluster
+	=> as the cpus are in the same idle state, by choosing a cpu in shallow 
+state, we should have the guarantee we won't wakeup a cluster (except if 
+no shallowest idle cpu are found).
+
+2. We want to prevent to wakeup a cpu which did not reach the target 
+residency time (will need some work to unify cpuidle idle time and idle 
+task run time)
+	=> with the target residency and, as a first step, with the idle stamp, 
+we can determine if the cpu slept enough
+
+3. We want to prevent to wakeup a cpu in deep idle state
+	=> by looking for the cpu in shallowest idle state
+
+4. We want to prevent to wakeup a cpu where the exit latency is longer 
+than the expected run time of the task (and the time to migrate the task ?)
+
+Concerning the policy, I would suggest to create an entry in
+/proc/sys/kernel/sched_power, where a couple of values could be 
+performance - power saving (0 / 1).
+
+Does it make sense ? Any ideas ?
+
+Thanks
+   -- Daniel
 
 
---------------020500040601000703060900
-Content-Type: text/x-patch;
- name="0001-tun-tap-add-the-feature-of-vlan-rx-extraction.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-tun-tap-add-the-feature-of-vlan-rx-extraction.patch"
 
->From 66db0748fc0f932496100789eb319ca5884c0694 Mon Sep 17 00:00:00 2001
-From: root <root@wind-OptiPlex-780.(none)>
-Date: Wed, 16 Apr 2014 18:19:42 +0800
-Subject: [PATCH 1/2] tun/tap: add the feature of vlan rx extraction
 
-Tap is a virtual net device that has no vlan rx untag feature.
-So this virtual device can not send/receive vlan packets in
-kernel 2.6.x. To make this device support vlan send/receive vlan
-packets in kernel 2.6.x, a vlan rx extraction feature is simulated
-in its driver.
-
-Signed-off-by: Zhu Yanjun <Yanjun.Zhu@windriver.com>
----
- drivers/net/tun.c         |  118 ++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/netdevice.h |    1 +
- net/core/dev.c            |   13 +++++
- 3 files changed, 131 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 894ad84..029e6cf 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -69,6 +69,8 @@
- #include <asm/system.h>
- #include <asm/uaccess.h>
- 
-+#include <linux/if_vlan.h>
-+
- /* Uncomment to enable debugging */
- /* #define TUN_DEBUG 1 */
- 
-@@ -426,6 +428,8 @@ static const struct net_device_ops tun_netdev_ops = {
- 	.ndo_change_mtu		= tun_net_change_mtu,
- };
- 
-+static void tap_vlan_rx_register(struct net_device *dev, struct vlan_group *grp);
-+
- static const struct net_device_ops tap_netdev_ops = {
- 	.ndo_uninit		= tun_net_uninit,
- 	.ndo_open		= tun_net_open,
-@@ -435,6 +439,7 @@ static const struct net_device_ops tap_netdev_ops = {
- 	.ndo_set_multicast_list	= tun_net_mclist,
- 	.ndo_set_mac_address	= eth_mac_addr,
- 	.ndo_validate_addr	= eth_validate_addr,
-+	.ndo_vlan_rx_register   = tap_vlan_rx_register,
- };
- 
- /* Initialize net device. */
-@@ -464,6 +469,8 @@ static void tun_net_init(struct net_device *dev)
- 
- 		random_ether_addr(dev->dev_addr);
- 
-+		dev->features |= NETIF_F_HW_VLAN_RX;
-+
- 		dev->tx_queue_len = TUN_READQ_SIZE;  /* We prefer our own queue length */
- 		break;
- 	}
-@@ -530,6 +537,105 @@ static inline struct sk_buff *tun_alloc_skb(struct tun_struct *tun,
- 	return skb;
- }
- 
-+static struct sk_buff *vlan_reorder_header(struct sk_buff *skb)
-+{
-+	if (skb_cow(skb, skb_headroom(skb)) < 0)
-+		return NULL;
-+	memmove(skb->data - ETH_HLEN, skb->data - VLAN_ETH_HLEN, 2 * ETH_ALEN);
-+	skb->mac_header += VLAN_HLEN;
-+	return skb;
-+}
-+
-+static void vlan_set_encap_proto(struct sk_buff *skb, struct vlan_hdr *vhdr)
-+{
-+	__be16 proto;
-+	unsigned char *rawp;
-+
-+	/*
-+ * 	 * Was a VLAN packet, grab the encapsulated protocol, which the layer
-+ * 	 	 * three protocols care about.
-+ * 	 	 	 */
-+
-+	proto = vhdr->h_vlan_encapsulated_proto;
-+	if (ntohs(proto) >= 1536) {
-+		skb->protocol = proto;
-+		return;
-+	}
-+
-+	rawp = skb->data;
-+	if (*(unsigned short *) rawp == 0xFFFF)
-+		/*
-+ * 		 * This is a magic hack to spot IPX packets. Older Novell
-+ * 		 		 * breaks the protocol design and runs IPX over 802.3 without
-+ * 		 		 		 * an 802.2 LLC layer. We look for FFFF which isn't a used
-+ * 		 		 		 		 * 802.2 SSAP/DSAP. This won't work for fault tolerant netware
-+ * 		 		 		 		 		 * but does for the rest.
-+ * 		 		 		 		 		 		 */
-+		skb->protocol = htons(ETH_P_802_3);
-+	else
-+		/*
-+ * 		 * Real 802.2 LLC
-+ * 		 		 */
-+		skb->protocol = htons(ETH_P_802_2);
-+}
-+
-+static void skb_reset_mac_len(struct sk_buff *skb)
-+{
-+	skb->mac_len = skb->network_header - skb->mac_header;
-+}
-+
-+static struct sk_buff *vlan_untag(struct sk_buff *skb)
-+{
-+	struct vlan_hdr *vhdr;
-+	u16 vlan_tci;
-+
-+	if (unlikely(vlan_tx_tag_present(skb))) {
-+		/* vlan_tci is already set-up so leave this for another time */
-+		return skb;
-+	}
-+
-+	skb = skb_share_check(skb, GFP_ATOMIC);
-+	if (unlikely(!skb))
-+		goto err_free;
-+
-+	if (unlikely(!pskb_may_pull(skb, VLAN_HLEN)))
-+		goto err_free;
-+
-+	vhdr = (struct vlan_hdr *) skb->data;
-+	vlan_tci = ntohs(vhdr->h_vlan_TCI);
-+	__vlan_hwaccel_put_tag(skb, vlan_tci);
-+
-+	skb_pull_rcsum(skb, VLAN_HLEN);
-+	vlan_set_encap_proto(skb, vhdr);
-+
-+	skb = vlan_reorder_header(skb);
-+	if (unlikely(!skb))
-+		goto err_free;
-+
-+	skb_reset_network_header(skb);
-+	skb_reset_transport_header(skb);
-+	skb_reset_mac_len(skb);
-+
-+	return skb;
-+
-+err_free:
-+	kfree_skb(skb);
-+	return NULL;
-+}
-+
-+static struct vlan_group *g_vlgrp = NULL;
-+static void tap_vlan_rx_register(struct net_device *dev,
-+		struct vlan_group *grp)
-+{
-+	unsigned long flags;
-+	local_irq_save(flags);
-+
-+	printk(KERN_DEBUG "zhuyj func:%s,line:%d\n", __FUNCTION__, __LINE__);
-+	g_vlgrp = grp;
-+	tun_net_change_mtu(dev, dev->mtu);
-+	local_irq_restore(flags);
-+}
-+
- /* Get packet from user space buffer */
- static __inline__ ssize_t tun_get_user(struct tun_struct *tun,
- 				       const struct iovec *iv, size_t count,
-@@ -655,7 +761,17 @@ static __inline__ ssize_t tun_get_user(struct tun_struct *tun,
- 		skb_shinfo(skb)->gso_segs = 0;
- 	}
- 
--	netif_rx_ni(skb);
-+	if (g_vlgrp && (skb->protocol == cpu_to_be16(ETH_P_8021Q))){
-+		struct vlan_hdr *vhdr;
-+		u16 vlan_tci;
-+		int ret;
-+		vhdr = (struct vlan_hdr *) skb->data;
-+		vlan_tci = ntohs(vhdr->h_vlan_TCI);
-+		skb = vlan_untag(skb);
-+		ret = vlan_netif_rx(skb, g_vlgrp, vlan_tci);
-+	} else {
-+		netif_rx_ni(skb);
-+	}
- 
- 	tun->dev->stats.rx_packets++;
- 	tun->dev->stats.rx_bytes += len;
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 9d7e8f7..04c659b 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1467,6 +1467,7 @@ extern void dev_kfree_skb_any(struct sk_buff *skb);
- #define HAVE_NETIF_RX 1
- extern int		netif_rx(struct sk_buff *skb);
- extern int		netif_rx_ni(struct sk_buff *skb);
-+extern int		vlan_netif_rx(struct sk_buff *skb, struct vlan_group *grp, u16 vlan_tci);
- #define HAVE_NETIF_RECEIVE_SKB 1
- extern int		netif_receive_skb(struct sk_buff *skb);
- extern void		napi_gro_flush(struct napi_struct *napi);
-diff --git a/net/core/dev.c b/net/core/dev.c
-index d775563..a3802ca 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2067,6 +2067,19 @@ int netif_rx_ni(struct sk_buff *skb)
- }
- EXPORT_SYMBOL(netif_rx_ni);
- 
-+int vlan_netif_rx(struct sk_buff *skb, struct vlan_group *grp, u16 vlan_tci)
-+{
-+	int ret;
-+
-+	preempt_disable();
-+	ret = __vlan_hwaccel_rx(skb, grp, vlan_tci, 0);
-+	if (local_softirq_pending())
-+		do_softirq();
-+	preempt_enable();
-+	return ret;
-+}
-+EXPORT_SYMBOL(vlan_netif_rx);
-+
- static void net_tx_action(struct softirq_action *h)
- {
- 	struct softnet_data *sd = &__get_cpu_var(softnet_data);
 -- 
-1.7.9.5
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
---------------020500040601000703060900
-Content-Type: text/x-patch;
- name="0002-vlan-Centralize-handling-of-hardware-acceleration.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0002-vlan-Centralize-handling-of-hardware-acceleration.patch"
-
->From dbc18ad405cc68c4eabdc64f2afcca5c65d1b96a Mon Sep 17 00:00:00 2001
-From: Zhu Yanjun <Yanjun.Zhu@windriver.com>
-Date: Thu, 17 Apr 2014 15:58:02 +0800
-Subject: [PATCH 2/2] vlan: Centralize handling of hardware acceleration
-
-2.6.x kernels require a similar logic change as commit 4fba4ca4
-[vlan: Centralize handling of hardware acceleration] introduces
-for newer kernels.
-
-Since there is something wrong with sending/receiving vlan packets
-of tun/tap of kernel 2.6.x. In kernel(3.0+), sending/receiving
-vlan packets is centralize handling in kernel. But in kernel 2.6.x,
-inserting/extraction vlan tag is still based on nic hardware. Thus,
-tun/tap nic driver can not support vlan packets. It is necessary
-to centralize handling of hardware acceleration and simulate vlan
-rx extraction in tun/tap nic driver to make tun/tap support vlan
-packets sending/receiving in kernel 2.6.x.
-
-Signed-off-by: Zhu Yanjun <Yanjun.Zhu@windriver.com>
----
- include/linux/if_vlan.h   |    4 +-
- include/linux/netdevice.h |    1 -
- net/8021q/vlan.c          |   47 +++++++++++++++++++
- net/8021q/vlan_core.c     |  110 +++++----------------------------------------
- net/core/dev.c            |   45 +++++++------------
- 5 files changed, 74 insertions(+), 133 deletions(-)
-
-diff --git a/include/linux/if_vlan.h b/include/linux/if_vlan.h
-index 7ff9af1..5538dda 100644
---- a/include/linux/if_vlan.h
-+++ b/include/linux/if_vlan.h
-@@ -114,7 +114,7 @@ extern u16 vlan_dev_vlan_id(const struct net_device *dev);
- 
- extern int __vlan_hwaccel_rx(struct sk_buff *skb, struct vlan_group *grp,
- 			     u16 vlan_tci, int polling);
--extern int vlan_hwaccel_do_receive(struct sk_buff *skb);
-+extern bool vlan_hwaccel_do_receive(struct sk_buff **skb);
- extern int vlan_gro_receive(struct napi_struct *napi, struct vlan_group *grp,
- 			    unsigned int vlan_tci, struct sk_buff *skb);
- extern int vlan_gro_frags(struct napi_struct *napi, struct vlan_group *grp,
-@@ -140,7 +140,7 @@ static inline int __vlan_hwaccel_rx(struct sk_buff *skb, struct vlan_group *grp,
- 	return NET_XMIT_SUCCESS;
- }
- 
--static inline int vlan_hwaccel_do_receive(struct sk_buff *skb)
-+static inline bool vlan_hwaccel_do_receive(struct sk_buff **skb)
- {
- 	return 0;
- }
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 04c659b..bdb6b82 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1490,7 +1490,6 @@ static inline void napi_free_frags(struct napi_struct *napi)
- 	napi->skb = NULL;
- }
- 
--extern void		netif_nit_deliver(struct sk_buff *skb);
- extern int		dev_valid_name(const char *name);
- extern int		dev_ioctl(struct net *net, unsigned int cmd, void __user *);
- extern int		dev_ethtool(struct net *net, struct ifreq *);
-diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
-index a29c5ab..64c081b 100644
---- a/net/8021q/vlan.c
-+++ b/net/8021q/vlan.c
-@@ -92,6 +92,52 @@ struct net_device *__find_vlan_dev(struct net_device *real_dev, u16 vlan_id)
- 	return NULL;
- }
- 
-+bool vlan_hwaccel_do_receive(struct sk_buff **skbp)
-+{
-+	struct sk_buff *skb = *skbp;
-+	u16 vlan_id = skb->vlan_tci & VLAN_VID_MASK;
-+	struct net_device *vlan_dev;
-+	struct net_device_stats *stats;
-+
-+	vlan_dev = __find_vlan_dev(skb->dev, vlan_id);
-+	if (!vlan_dev) {
-+		if (vlan_id)
-+			skb->pkt_type = PACKET_OTHERHOST;
-+		return false;
-+	}
-+
-+	skb = *skbp = skb_share_check(skb, GFP_ATOMIC);
-+	if (unlikely(!skb))
-+		return false;
-+
-+	skb->dev = vlan_dev;
-+	skb->priority = vlan_get_ingress_priority(vlan_dev, skb->vlan_tci);
-+	skb->vlan_tci = 0;
-+
-+	stats = &vlan_dev->stats;
-+	stats->rx_packets++;
-+	stats->rx_bytes += skb->len;
-+
-+	switch (skb->pkt_type) {
-+	case PACKET_BROADCAST:
-+		break;
-+	case PACKET_MULTICAST:
-+		stats->multicast++;
-+		break;
-+	case PACKET_OTHERHOST:
-+		/* Our lower layer thinks this is not local, let's make sure.
-+		 * This allows the VLAN to have a different MAC than the
-+		 * underlying device, and still route correctly. */
-+		if (!compare_ether_addr(eth_hdr(skb)->h_dest,
-+					vlan_dev->dev_addr))
-+			skb->pkt_type = PACKET_HOST;
-+			break;
-+	};
-+
-+	return true;
-+}
-+extern bool (*__vlan_do_receive)(struct sk_buff **skbp);
-+
- static void vlan_group_free(struct vlan_group *grp)
- {
- 	int i;
-@@ -744,6 +790,7 @@ static int __init vlan_proto_init(void)
- 
- 	dev_add_pack(&vlan_packet_type);
- 	vlan_ioctl_set(vlan_ioctl_handler);
-+	__vlan_do_receive = vlan_hwaccel_do_receive;
- 	return 0;
- 
- err4:
-diff --git a/net/8021q/vlan_core.c b/net/8021q/vlan_core.c
-index 7f7de1a..c679535 100644
---- a/net/8021q/vlan_core.c
-+++ b/net/8021q/vlan_core.c
-@@ -4,64 +4,6 @@
- #include <linux/netpoll.h>
- #include "vlan.h"
- 
--/* VLAN rx hw acceleration helper.  This acts like netif_{rx,receive_skb}(). */
--int __vlan_hwaccel_rx(struct sk_buff *skb, struct vlan_group *grp,
--		      u16 vlan_tci, int polling)
--{
--	if (netpoll_rx(skb))
--		return NET_RX_DROP;
--
--	if (skb_bond_should_drop(skb))
--		goto drop;
--
--	skb->vlan_tci = vlan_tci;
--	skb->dev = vlan_group_get_device(grp, vlan_tci & VLAN_VID_MASK);
--
--	if (!skb->dev)
--		goto drop;
--
--	return (polling ? netif_receive_skb(skb) : netif_rx(skb));
--
--drop:
--	dev_kfree_skb_any(skb);
--	return NET_RX_DROP;
--}
--EXPORT_SYMBOL(__vlan_hwaccel_rx);
--
--int vlan_hwaccel_do_receive(struct sk_buff *skb)
--{
--	struct net_device *dev = skb->dev;
--	struct net_device_stats *stats;
--
--	skb->dev = vlan_dev_info(dev)->real_dev;
--	netif_nit_deliver(skb);
--
--	skb->dev = dev;
--	skb->priority = vlan_get_ingress_priority(dev, skb->vlan_tci);
--	skb->vlan_tci = 0;
--
--	stats = &dev->stats;
--	stats->rx_packets++;
--	stats->rx_bytes += skb->len;
--
--	switch (skb->pkt_type) {
--	case PACKET_BROADCAST:
--		break;
--	case PACKET_MULTICAST:
--		stats->multicast++;
--		break;
--	case PACKET_OTHERHOST:
--		/* Our lower layer thinks this is not local, let's make sure.
--		 * This allows the VLAN to have a different MAC than the
--		 * underlying device, and still route correctly. */
--		if (!compare_ether_addr(eth_hdr(skb)->h_dest,
--					dev->dev_addr))
--			skb->pkt_type = PACKET_HOST;
--		break;
--	};
--	return 0;
--}
--
- struct net_device *vlan_dev_real_dev(const struct net_device *dev)
- {
- 	return vlan_dev_info(dev)->real_dev;
-@@ -74,59 +16,27 @@ u16 vlan_dev_vlan_id(const struct net_device *dev)
- }
- EXPORT_SYMBOL(vlan_dev_vlan_id);
- 
--static int vlan_gro_common(struct napi_struct *napi, struct vlan_group *grp,
--			   unsigned int vlan_tci, struct sk_buff *skb)
-+/* VLAN rx hw acceleration helper.  This acts like netif_{rx,receive_skb}(). */
-+int __vlan_hwaccel_rx(struct sk_buff *skb, struct vlan_group *grp,
-+			u16 vlan_tci, int polling)
- {
--	struct sk_buff *p;
--
--	if (skb_bond_should_drop(skb))
--		goto drop;
--
--	skb->vlan_tci = vlan_tci;
--	skb->dev = vlan_group_get_device(grp, vlan_tci & VLAN_VID_MASK);
--
--	if (!skb->dev)
--		goto drop;
--
--	for (p = napi->gro_list; p; p = p->next) {
--		NAPI_GRO_CB(p)->same_flow =
--			p->dev == skb->dev && !compare_ether_header(
--				skb_mac_header(p), skb_gro_mac_header(skb));
--		NAPI_GRO_CB(p)->flush = 0;
--	}
--
--	return dev_gro_receive(napi, skb);
--
--drop:
--	return GRO_DROP;
-+	__vlan_hwaccel_put_tag(skb, vlan_tci);
-+	return polling ? netif_receive_skb(skb) : netif_rx(skb); 
- }
-+EXPORT_SYMBOL(__vlan_hwaccel_rx);
- 
- int vlan_gro_receive(struct napi_struct *napi, struct vlan_group *grp,
- 		     unsigned int vlan_tci, struct sk_buff *skb)
- {
--	if (netpoll_rx_on(skb))
--		return vlan_hwaccel_receive_skb(skb, grp, vlan_tci);
--
--	skb_gro_reset_offset(skb);
--
--	return napi_skb_finish(vlan_gro_common(napi, grp, vlan_tci, skb), skb);
-+	__vlan_hwaccel_put_tag(skb, vlan_tci);
-+	return napi_gro_receive(napi, skb);
- }
- EXPORT_SYMBOL(vlan_gro_receive);
- 
- int vlan_gro_frags(struct napi_struct *napi, struct vlan_group *grp,
- 		   unsigned int vlan_tci)
- {
--	struct sk_buff *skb = napi_frags_skb(napi);
--
--	if (!skb)
--		return NET_RX_DROP;
--
--	if (netpoll_rx_on(skb)) {
--		skb->protocol = eth_type_trans(skb, skb->dev);
--		return vlan_hwaccel_receive_skb(skb, grp, vlan_tci);
--	}
--
--	return napi_frags_finish(napi, skb,
--				 vlan_gro_common(napi, grp, vlan_tci, skb));
-+	__vlan_hwaccel_put_tag(napi->skb, vlan_tci);
-+	return napi_gro_frags(napi);
- }
- EXPORT_SYMBOL(vlan_gro_frags);
-diff --git a/net/core/dev.c b/net/core/dev.c
-index a3802ca..c58520a 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2272,33 +2272,8 @@ out:
- }
- #endif
- 
--/*
-- * 	netif_nit_deliver - deliver received packets to network taps
-- * 	@skb: buffer
-- *
-- * 	This function is used to deliver incoming packets to network
-- * 	taps. It should be used when the normal netif_receive_skb path
-- * 	is bypassed, for example because of VLAN acceleration.
-- */
--void netif_nit_deliver(struct sk_buff *skb)
--{
--	struct packet_type *ptype;
--
--	if (list_empty(&ptype_all))
--		return;
--
--	skb_reset_network_header(skb);
--	skb_reset_transport_header(skb);
--	skb->mac_len = skb->network_header - skb->mac_header;
--
--	rcu_read_lock();
--	list_for_each_entry_rcu(ptype, &ptype_all, list) {
--		if (!ptype->dev || ptype->dev == skb->dev)
--			deliver_skb(skb, ptype, skb->dev);
--	}
--	rcu_read_unlock();
--}
--
-+bool (*__vlan_do_receive)(struct sk_buff **skbp) = NULL;
-+EXPORT_SYMBOL(__vlan_do_receive);
- /**
-  *	netif_receive_skb - process receive buffer from network
-  *	@skb: buffer to process
-@@ -2325,9 +2300,6 @@ int netif_receive_skb(struct sk_buff *skb)
- 	if (!skb->tstamp.tv64)
- 		net_timestamp(skb);
- 
--	if (skb->vlan_tci && vlan_hwaccel_do_receive(skb))
--		return NET_RX_SUCCESS;
--
- 	/* if we've gotten here through NAPI, check netpoll */
- 	if (netpoll_receive_skb(skb))
- 		return NET_RX_DROP;
-@@ -2354,6 +2326,8 @@ int netif_receive_skb(struct sk_buff *skb)
- 
- 	rcu_read_lock();
- 
-+another_round:
-+
- #ifdef CONFIG_NET_CLS_ACT
- 	if (skb->tc_verd & TC_NCLS) {
- 		skb->tc_verd = CLR_TC_NCLS(skb->tc_verd);
-@@ -2377,6 +2351,17 @@ int netif_receive_skb(struct sk_buff *skb)
- ncls:
- #endif
- 
-+	if (vlan_tx_tag_present(skb)) {
-+		if (pt_prev) {
-+			ret = deliver_skb(skb, pt_prev, orig_dev);
-+			pt_prev = NULL;
-+		}
-+		if (__vlan_do_receive && __vlan_do_receive(&skb)) {
-+			goto another_round;
-+		} else if (unlikely(!skb))
-+			goto out;
-+	}
-+
- 	skb = handle_bridge(skb, &pt_prev, &ret, orig_dev);
- 	if (!skb)
- 		goto out;
--- 
-1.7.9.5
-
-
---------------020500040601000703060900--
