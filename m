@@ -1,101 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751446AbaDQBAd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 21:00:33 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:65192 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058AbaDQBAb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 21:00:31 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=EUC-KR
-X-AuditID: cbfee68e-b7f566d000002344-22-534f27ab4d01
-Content-transfer-encoding: 8BIT
-Message-id: <534F27B0.4060709@samsung.com>
-Date: Thu, 17 Apr 2014 10:00:32 +0900
-From: Sangjung <sangjung.woo@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-To: sw0312.kim@samsung.com
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/8] extcon: arizona: Use devm_extcon_dev_register()
-References: <1397644023-32516-1-git-send-email-sangjung.woo@samsung.com>
- <1397644023-32516-9-git-send-email-sangjung.woo@samsung.com>
- <534E5F09.8070703@samsung.com>
-In-reply-to: <534E5F09.8070703@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHIsWRmVeSWpSXmKPExsWyRsSkQHe1un+wwZpZEhbXvzxntbi8aw6b
-	xe3GFWwWMya/ZHNg8ejbsorR4/MmuQCmKC6blNSczLLUIn27BK6M2xsPMxac4a44/fQlSwPj
-	Ec4uRk4OCQETib63T9khbDGJC/fWs3UxcnEICSxllFiwci4TTNHahzeYIBKLGCV+LT3BCJLg
-	FRCU+DH5HksXIwcHs4C8xJFL2SBhZgENiamvTzNC1L9mlHj+fB8rSA2vgJbE4aNBIDUsAqoS
-	B/evBJvPJqAp8fn4QTYQW1QgQmLuxM1gtoiAlMT/Q/dZIcYXShy4GgwSFhbwkLj2oJkZYvwK
-	Ron+ln5mkASngLbEzr7HYHdKCKxil5j24RcrxDIBiW+TD4HdKSEgK7HpADPEX5ISB1fcYJnA
-	KDYLyTezEL6ZheSbBYzMqxhFUwuSC4qT0ouM9IoTc4tL89L1kvNzNzEC4+b0v2d9OxhvHrA+
-	xJgMtHEis5Rocj4w7vJK4g2NzYwsTE1MjY3MLc1IE1YS5130MClISCA9sSQ1OzW1ILUovqg0
-	J7X4ECMTB6dUA6OXuHycqYp7rCyv2ZcTBl9/FHyavFL9rLKdxa2GM1tWPuYzFqtvVihg0BTN
-	+din+0VH8Kz3cSbeD588vPbz8Ex3C7GcfGpmQwfrd63tnBe/Tlw6zX3W0rNLMvcnzVpSOcHA
-	gLkzYT2bcPrJIoPd//n+5mcdVQlVmH1kYcHCPSI7rLUEV/QvX6nEUpyRaKjFXFScCABqWnJh
-	sQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t9jAd3V6v7BBrN+C1pc//Kc1eLyrjls
-	FrcbV7BZzJj8ks2BxaNvyypGj8+b5AKYohoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwM
-	dQ0tLcyVFPISc1NtlVx8AnTdMnOANikplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0Jgusx
-	MkADCWsYM25vPMxYcIa74vTTlywNjEc4uxg5OSQETCTWPrzBBGGLSVy4t56ti5GLQ0hgEaPE
-	r6UnGEESvAKCEj8m32PpYuTgYBaQlzhyKRskzCygITH19WlGiPrXjBLPn+9jBanhFdCSOHw0
-	CKSGRUBV4uD+lWDz2QQ0JT4fP8gGYosKREjMnbgZzBYRkJL4f+g+K8T4QokDV4NBwsICHhLX
-	HjQzQ4xfwSjR39LPDJLgFNCW2Nn3mGkCo8AsJNfNQrhuFpLrFjAyr2IUTS1ILihOSs810itO
-	zC0uzUvXS87P3cQIjspn0jsYVzVYHGIU4GBU4uHl/O0XLMSaWFZcmXuIUYKDWUmE113cP1iI
-	NyWxsiq1KD++qDQntfgQYzLQcxOZpUST84EJI68k3tDYxMzI0sjc0MLI2Jw0YSVx3oOt1oFC
-	AumJJanZqakFqUUwW5g4OKUaGCuOJ9hpnFbJNlqux3Xy281z84+f6ZzkEV7xYl6trYZFt+SN
-	muCnFzbftjxX6ei0ZM/15+Jyd0xPnGW7UKr0oVzTdYmLzwzbY2Ivd14qkc/ZyCfywUdzwl43
-	5vi/QlIvzl664/FSlevo57i2XTZagqELqxd39Ozabdv/0qjmcbmxyRlV9tW/3JVYijMSDbWY
-	i4oTAetr1BAOAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752757AbaDQBEC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 21:04:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56787 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750852AbaDQBEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 21:04:00 -0400
+Date: Thu, 17 Apr 2014 11:03:50 +1000
+From: NeilBrown <neilb@suse.de>
+To: NeilBrown <neilb@suse.de>
+Cc: Dave Chinner <david@fromorbit.com>, linux-mm@kvack.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ming Lei <ming.lei@canonical.com>, xfs@oss.sgi.com
+Subject: Re: [PATCH 04/19] Make effect of PF_FSTRANS to disable __GFP_FS
+ universal.
+Message-ID: <20140417110350.0470feba@notabene.brown>
+In-Reply-To: <20140416161726.51b506e2@notabene.brown>
+References: <20140416033623.10604.69237.stgit@notabene.brown>
+	<20140416040336.10604.58240.stgit@notabene.brown>
+	<20140416053756.GC15995@dastard>
+	<20140416161726.51b506e2@notabene.brown>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/adF=M005=1pA2q4e/57yzVC"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To Seung-Woo.
+--Sig_/adF=M005=1pA2q4e/57yzVC
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
+On Wed, 16 Apr 2014 16:17:26 +1000 NeilBrown <neilb@suse.de> wrote:
 
-On 04/16/2014 07:44 PM, Seung-Woo Kim wrote:
-> Hi,
->
-> On 2014³â 04¿ù 16ÀÏ 19:27, Sangjung Woo wrote:
->> Use the resource-managed extcon device register function (i.e.
->> devm_extcon_dev_register()) instead of extcon_dev_register(). If extcon device
->> is attached with this function, that extcon device is automatically unregistered
->> on driver detach. That reduces tiresome managing code.
->>
->> Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
->> ---
->>  drivers/extcon/extcon-arizona.c |   13 ++++---------
->>  1 file changed, 4 insertions(+), 9 deletions(-)
->>
->> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
->> index 98a14f6..40e6c0b 100644
->> --- a/drivers/extcon/extcon-arizona.c
->> +++ b/drivers/extcon/extcon-arizona.c
->> @@ -1105,15 +1105,13 @@ static int arizona_extcon_probe(struct platform_device *pdev)
->>  	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
->>  	if (!info) {
->>  		dev_err(&pdev->dev, "Failed to allocate memory\n");
->> -		ret = -ENOMEM;
->> -		goto err;
->> +		return -ENOMEM;
->>  	}
->>  
->>  	info->micvdd = devm_regulator_get(arizona->dev, "MICVDD");
->>  	if (IS_ERR(info->micvdd)) {
->> -		ret = PTR_ERR(info->micvdd);
->>  		dev_err(arizona->dev, "Failed to get MICVDD: %d\n", ret);
-> Assignment to ret is removed but it is still used here.
+> On Wed, 16 Apr 2014 15:37:56 +1000 Dave Chinner <david@fromorbit.com> wro=
+te:
+>=20
+> > On Wed, Apr 16, 2014 at 02:03:36PM +1000, NeilBrown wrote:
 
-You're right.
-I will fix and send it as second version.
+> > > -	/*
+> > > -	 * Given that we do not allow direct reclaim to call us, we should
+> > > -	 * never be called while in a filesystem transaction.
+> > > -	 */
+> > > -	if (WARN_ON(current->flags & PF_FSTRANS))
+> > > -		goto redirty;
+> >=20
+> > We still need to ensure this rule isn't broken. If it is, the
+> > filesystem will silently deadlock in delayed allocation rather than
+> > gracefully handle the problem with a warning....
+>=20
+> Hmm... that might be tricky.  The 'new' PF_FSTRANS can definitely be set =
+when
+> xfs_vm_writepage is called and we really want the write to happen.
+> I don't suppose there is any other way to detect if a transaction is
+> happening?
 
-Thank you for your comment.
+I've been thinking about this some more....
 
-BRs,
-Sangjung
+That code is in xfs_vm_writepage which is only called as ->writepage.
+xfs never calls that directly so it could only possibly be called during
+reclaim?
+
+We know that doesn't happen, but if it does then PF_MEMALLOC would be set,
+but PF_KSWAPD would not... and you already have a test for that.
+
+How about every time we set PF_FSTRANS, we store the corresponding
+xfs_trans_t in current->journal_info, and clear that field when PF_FSTRANS =
+is
+cleared.  Then xfs_vm_writepage can test for current->journal_info being
+clear.
+That is the field that several other filesystems use to keep track of the
+'current' transaction.
+??
+
+I don't know what xfs_trans_t we would use in xfs_bmapi_allocate_worker, but
+I suspect you do :-)
+
+Thanks,
+NeilBrown
+
+--Sig_/adF=M005=1pA2q4e/57yzVC
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBU08odjnsnt1WYoG5AQKlChAAtwOt5vnmgGZoKPVxl0nE3BD+JkYt5gYE
+xPlrWpCzoazarfKoC66zfad9ldRYo6FjPlvoiKgO+hdQedc3C47rWrmuahe1S4Wl
+0Ernd5J8XmInWsL1pobaEQf8b9XnzZ0Bs4GfEnE0WuABblVF1T6hN8eBVqVev+gK
+uwT0QOmFxsoxaTvlS4Y9sKEJ98+k9zfg4rvYptEUCUkDwz6IoqqbtCzmsA6WhCUu
+p9ZzFa9CCPIvA8zoWFS6mOHgC8YWubWPfpbWg7TT4PnAtq597NhyV1k2LbS7aErR
+r7X3jr9hqpV+nz25Nqe4oNo+VCcDI5PypNr8uUdXpAWdRrexeRXCLyye21TFtKnS
+WY7VLyLFGyZD3G2t1rT23MN0BepEOErZNanTUoMJgxsbbQGoKKbnaJeWiQLzSH6F
+pgfRYuUAgYCnlrYKLxKVOSfjtfQVzBc9BzHRyWD1SdAmnbxxdCq2n9wyMCwx7yf8
+pYqru1nk67lPV8gvNgkpes0G3Ooxf6E0cu74DeUPsTrC16gK1iE/qs2LTmuAmT7f
+M1//LfAwyxLXaZ64ZQNObcG5J3gsqALtT3eiBUsAK2D8D80m5pR1LmSHgXy8qVs5
+I1FN9OvpV6toEw5iAX9bwagB2zzTiJvTS2qHHMeJ2AqQriN5jMrpeud4QasyBxCr
+KjIpmijtXwI=
+=OIdO
+-----END PGP SIGNATURE-----
+
+--Sig_/adF=M005=1pA2q4e/57yzVC--
