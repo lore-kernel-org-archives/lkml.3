@@ -1,143 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069AbaDQUCw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 16:02:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29855 "EHLO mx1.redhat.com"
+	id S1751210AbaDQUEc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 16:04:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45517 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163AbaDQUCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 16:02:44 -0400
-Date: Thu, 17 Apr 2014 22:02:28 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] uprobes: fix the handling of relative jmp/call's
-Message-ID: <20140417200228.GA31097@redhat.com>
+	id S1750736AbaDQUEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 16:04:22 -0400
+Date: Thu, 17 Apr 2014 16:03:52 -0400
+From: Dave Jones <davej@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Zhang, Rui" <rui.zhang@intel.com>, "Lu, Aaron" <aaron.lu@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng Z" <zheng.z.yan@intel.com>, daniel.vetter@ffwll.ch
+Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+Message-ID: <20140417200352.GB18876@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Borislav Petkov <bp@alien8.de>, Bjorn Helgaas <bhelgaas@google.com>,
+	"Rafael J. Wysocki" <rjw@rjwysocki.net>,
+	"Zhang, Rui" <rui.zhang@intel.com>,
+	"Lu, Aaron" <aaron.lu@intel.com>,
+	lkml <linux-kernel@vger.kernel.org>,
+	"x86@kernel.org" <x86@kernel.org>,
+	Linux PCI <linux-pci@vger.kernel.org>,
+	ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+	Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+	Stephane Eranian <eranian@google.com>,
+	"Yan, Zheng Z" <zheng.z.yan@intel.com>, daniel.vetter@ffwll.ch
+References: <1558044.S1G2VU7srO@vostro.rjw.lan>
+ <CAErSpo4pDYMhHo6e-1TN6XDRO0xy0u8H+=oucFnrEK+kbjZvzw@mail.gmail.com>
+ <20140416190404.GA7070@pd.tnic>
+ <20140416203138.GA17661@google.com>
+ <20140416223122.GA2767@redhat.com>
+ <20140416225600.GA23781@google.com>
+ <20140417104533.GB8215@pd.tnic>
+ <20140417182637.GA2098@google.com>
+ <20140417195240.GA18876@redhat.com>
+ <20140417200127.GH4321@pd.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140417200127.GH4321@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo, please pull from
+On Thu, Apr 17, 2014 at 10:01:27PM +0200, Borislav Petkov wrote:
+ > On Thu, Apr 17, 2014 at 03:52:40PM -0400, Dave Jones wrote:
+ > > Just as X starts up, I see this in dmesg..
+ > > 
+ > > [   42.879049] [drm:cpt_serr_int_handler] *ERROR* PCH transcoder A FIFO underrun
+ > 
+ > FWIW, I have that too. It should be something i915-related:
+ > 
+ > [    0.617673] [drm] Memory usable by graphics device = 2048M
+ > [    0.694445] i915 0000:00:02.0: irq 42 for MSI/MSI-X
+ > [    0.694549] [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
+ > [    0.694631] [drm] Driver supports precise vblank timestamp query.
+ > [    0.695313] vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
+ > [    0.788300] [drm] GMBUS [i915 gmbus dpb] timed out, falling back to bit banging on pin 5
+ > [    0.799829] fbcon: inteldrmfb (fb0) is primary device
+ > [    1.176845] [drm:cpt_serr_int_handler] *ERROR* PCH transcoder A FIFO underrun
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/oleg/misc uprobes/core
+Can you send me your .config off-list ?
+I wonder if this is something config specific that's causing me to see
+this, and you not, given we've apparently got similar machines.
 
-
-To remind, we have a serious bug. Any probed jmp/call can kill the
-application, see the changelog in 11/15.
-
-I tried to test this as much as possible, seems to work. I also wrote
-the test-case which explicitly checks every conditional jump with all
-possible bits combinations in eflags:
-
-	#include <asm/processor-flags.h>
-	#include <stdio.h>
-
-	static int nojmp;
-
-	#define __MK_FUNC(opc, name)				\
-		asm (						\
-			".text\n"				\
-			".globl " #name "; " #name ":\n"	\
-			".byte 0x" #opc "\n"			\
-			".byte 0x0a \n"	/* offs to 1f below */	\
-			"movl $1, nojmp(%rip)\n"		\
-			"1: ret\n"				\
-		);						\
-
-	#define MK_FUNC(opc)	__MK_FUNC(opc, probe_func_ ## opc)
-
-	MK_FUNC(70) MK_FUNC(71) MK_FUNC(72) MK_FUNC(73)
-	MK_FUNC(74) MK_FUNC(75) MK_FUNC(76) MK_FUNC(77)
-	MK_FUNC(78) MK_FUNC(79) MK_FUNC(7a) MK_FUNC(7b)
-	MK_FUNC(7c) MK_FUNC(7d) MK_FUNC(7e) MK_FUNC(7f)
-
-
-	#define __CALL(flags, func)	\
-		asm volatile ("pushf; push %0; popf; call " #func "; popf"	\
-				: : "m" (flags) : "memory");
-
-	#define CALL(opc)		\
-	({						\
-		nojmp = 0;				\
-		__CALL(flags, probe_func_ ## opc);	\
-		!nojmp;					\
-	})
-
-	long test_flags(unsigned long flags)
-	{
-		printf("%04lx %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
-			flags,
-			CALL(70), CALL(71), CALL(72), CALL(73),
-			CALL(74), CALL(75), CALL(76), CALL(77),
-			CALL(78), CALL(79), CALL(7a), CALL(7b),
-			CALL(7c), CALL(7d), CALL(7e), CALL(7f));
-
-		return 0;
-	}
-
-	#define XF(xf)		(X86_EFLAGS_ ## xf)
-	#define XF_MASK		(XF(CF) | XF(OF) | XF(PF) | XF(SF) | XF(ZF))
-
-	int main(void)
-	{
-		unsigned int bits;
-		unsigned long __flags, flags;
-
-		asm volatile("pushf; pop %0" : "=rm" (__flags) : : "memory");
-
-		for (bits = 0; bits < (1 << 5); bits++) {
-			flags = __flags & ~XF_MASK;
-
-			#define	CPY_BIT(nr, xf) \
-				if (bits & (1 << nr)) flags |= XF(xf)
-
-			CPY_BIT(0, CF);
-			CPY_BIT(1, OF);
-			CPY_BIT(2, PF);
-			CPY_BIT(3, SF);
-			CPY_BIT(4, ZF);
-
-			test_flags(flags);
-		}
-
-		return 0;
-	}
-
-The output is the same with probe_func_70..probe_func_7f probed.
-
-This series only fixes the problem. I'll send more changes to address
-some of TODO's mentioned in the changelogs later. In particular, we
-need to do something with "callw", see "Note: in 13/15.
-
-Oleg Nesterov (15):
-      uprobes: Kill UPROBE_SKIP_SSTEP and can_skip_sstep()
-      uprobes/x86: Fold prepare_fixups() into arch_uprobe_analyze_insn()
-      uprobes/x86: Kill the "ia32_compat" check in handle_riprel_insn(), remove "mm" arg
-      uprobes/x86: Gather "riprel" functions together
-      uprobes/x86: move the UPROBE_FIX_{RIP,IP,CALL} code at the end of pre/post hooks
-      uprobes/x86: Introduce uprobe_xol_ops and arch_uprobe->ops
-      uprobes/x86: Conditionalize the usage of handle_riprel_insn()
-      uprobes/x86: Send SIGILL if arch_uprobe_post_xol() fails
-      uprobes/x86: Teach arch_uprobe_post_xol() to restart if possible
-      uprobes/x86: Introduce sizeof_long(), cleanup adjust_ret_addr() and arch_uretprobe_hijack_return_addr()
-      uprobes/x86: Emulate unconditional relative jmp's
-      uprobes/x86: Emulate nop's using ops->emulate()
-      uprobes/x86: Emulate relative call's
-      uprobes/x86: Emulate relative conditional "short" jmp's
-      uprobes/x86: Emulate relative conditional "near" jmp's
-
- arch/x86/include/asm/uprobes.h |   16 +-
- arch/x86/kernel/uprobes.c      |  551 +++++++++++++++++++++++++---------------
- kernel/events/uprobes.c        |   31 +--
- 3 files changed, 372 insertions(+), 226 deletions(-)
+	Dave
 
