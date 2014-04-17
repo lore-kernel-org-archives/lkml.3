@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488AbaDQSAd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 14:00:33 -0400
-Received: from mail-pd0-f202.google.com ([209.85.192.202]:61981 "EHLO
-	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342AbaDQSAT (ORCPT
+	id S1752808AbaDQSB1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 14:01:27 -0400
+Received: from mail-yh0-f74.google.com ([209.85.213.74]:39635 "EHLO
+	mail-yh0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751725AbaDQSAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 14:00:19 -0400
-X-Greylist: delayed 84884 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Apr 2014 14:00:19 EDT
+	Thu, 17 Apr 2014 14:00:20 -0400
 From: Doug Anderson <dianders@chromium.org>
 To: Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@nvidia.com>,
         Wolfram Sang <wsa@the-dreams.de>
@@ -16,9 +15,9 @@ Cc: abrestic@chromium.org, dgreid@chromium.org,
         linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
         Doug Anderson <dianders@chromium.org>,
         Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/7] mfd: cros_ec: spi: Increase cros_ec_spi deadline from 5ms to 100ms
-Date: Thu, 17 Apr 2014 10:59:27 -0700
-Message-Id: <1397757570-19750-5-git-send-email-dianders@chromium.org>
+Subject: [PATCH 2/7] mfd: cros_ec: spi: Add mutex to cros_ec_spi
+Date: Thu, 17 Apr 2014 10:59:25 -0700
+Message-Id: <1397757570-19750-3-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 1.9.1.423.g4596e3a
 In-Reply-To: <1397757570-19750-1-git-send-email-dianders@chromium.org>
 References: <1397757570-19750-1-git-send-email-dianders@chromium.org>
@@ -26,50 +25,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're adding i2c tunneling to the list of things that goes over
-cros_ec.  i2c tunneling can be slooooooow, so increase our deadline to
-100ms to account for that.
+The main transfer function for cros_ec_spi can be called by more than
+one client at a time.  Make sure that those clients don't stomp on
+each other by locking the bus for the duration of the transfer
+function.
 
 Signed-off-by: Doug Anderson <dianders@chromium.org>
 ---
- drivers/mfd/cros_ec_spi.c | 24 ++++++++++++++++--------
- 1 file changed, 16 insertions(+), 8 deletions(-)
+ drivers/mfd/cros_ec_spi.c | 26 +++++++++++++++++++++-----
+ 1 file changed, 21 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
-index 4f863c3..0b8d328 100644
+index c185eb6..a2a605d 100644
 --- a/drivers/mfd/cros_ec_spi.c
 +++ b/drivers/mfd/cros_ec_spi.c
-@@ -39,14 +39,22 @@
- #define EC_MSG_PREAMBLE_COUNT		32
+@@ -65,11 +65,13 @@
+  *	if no record
+  * @end_of_msg_delay: used to set the delay_usecs on the spi_transfer that
+  *      is sent when we want to turn off CS at the end of a transaction.
++ * @lock: mutex to ensure only one user of cros_ec_command_spi_xfer at a time
+  */
+ struct cros_ec_spi {
+ 	struct spi_device *spi;
+ 	s64 last_transfer_ns;
+ 	unsigned int end_of_msg_delay;
++	struct mutex lock;
+ };
  
- /*
--  * We must get a response from the EC in 5ms. This is a very long
--  * time, but the flash write command can take 2-3ms. The EC command
--  * processing is currently not very fast (about 500us). We could
--  * look at speeding this up and making the flash write command a
--  * 'slow' command, requiring a GET_STATUS wait loop, like flash
--  * erase.
--  */
--#define EC_MSG_DEADLINE_MS		5
-+ * Allow for a long time for the EC to respond.  We support i2c
-+ * tunneling and support fairly long messages for the tunnel (249
-+ * bytes long at the moment).  If we're talking to a 100 kHz device
-+ * on the other end and need to transfer ~256 bytes, then we need:
-+ *  10 us/bit * ~10 bits/byte * ~256 bytes = ~25ms
-+ *
-+ * We'll wait 4 times that to handle clock stretching and other
-+ * paranoia.
-+ *
-+ * It's pretty unlikely that we'll really see a 249 byte tunnel in
-+ * anything other than testing.  If this was more common we might
-+ * consider having slow commands like this require a GET_STATUS
-+ * wait loop.  The 'flash write' command would be another candidate
-+ * for this, clocking in at 2-3ms.
-+ */
-+#define EC_MSG_DEADLINE_MS		100
+ static void debug_packet(struct device *dev, const char *name, u8 *ptr,
+@@ -208,6 +210,13 @@ static int cros_ec_command_spi_xfer(struct cros_ec_device *ec_dev,
+ 	int ret = 0, final_ret;
+ 	struct timespec ts;
  
- /*
-   * Time between raising the SPI chip select (for the end of a
++	/*
++	 * We have the shared ec_dev buffer plus we do lots of separate spi_sync
++	 * calls, so we need to make sure only one person is using this at a
++	 * time.
++	 */
++	mutex_lock(&ec_spi->lock);
++
+ 	len = cros_ec_prepare_tx(ec_dev, ec_msg);
+ 	dev_dbg(ec_dev->dev, "prepared, len=%d\n", len);
+ 
+@@ -260,7 +269,7 @@ static int cros_ec_command_spi_xfer(struct cros_ec_device *ec_dev,
+ 		ret = final_ret;
+ 	if (ret < 0) {
+ 		dev_err(ec_dev->dev, "spi transfer failed: %d\n", ret);
+-		return ret;
++		goto exit;
+ 	}
+ 
+ 	/* check response error code */
+@@ -269,14 +278,16 @@ static int cros_ec_command_spi_xfer(struct cros_ec_device *ec_dev,
+ 		dev_warn(ec_dev->dev, "command 0x%02x returned an error %d\n",
+ 			 ec_msg->cmd, ptr[0]);
+ 		debug_packet(ec_dev->dev, "in_err", ptr, len);
+-		return -EINVAL;
++		ret = -EINVAL;
++		goto exit;
+ 	}
+ 	len = ptr[1];
+ 	sum = ptr[0] + ptr[1];
+ 	if (len > ec_msg->in_len) {
+ 		dev_err(ec_dev->dev, "packet too long (%d bytes, expected %d)",
+ 			len, ec_msg->in_len);
+-		return -ENOSPC;
++		ret = -ENOSPC;
++		goto exit;
+ 	}
+ 
+ 	/* copy response packet payload and compute checksum */
+@@ -293,10 +304,14 @@ static int cros_ec_command_spi_xfer(struct cros_ec_device *ec_dev,
+ 		dev_err(ec_dev->dev,
+ 			"bad packet checksum, expected %02x, got %02x\n",
+ 			sum, ptr[len + 2]);
+-		return -EBADMSG;
++		ret = -EBADMSG;
++		goto exit;
+ 	}
+ 
+-	return 0;
++	ret = 0;
++exit:
++	mutex_unlock(&ec_spi->lock);
++	return ret;
+ }
+ 
+ static void cros_ec_spi_dt_probe(struct cros_ec_spi *ec_spi, struct device *dev)
+@@ -327,6 +342,7 @@ static int cros_ec_spi_probe(struct spi_device *spi)
+ 	if (ec_spi == NULL)
+ 		return -ENOMEM;
+ 	ec_spi->spi = spi;
++	mutex_init(&ec_spi->lock);
+ 	ec_dev = devm_kzalloc(dev, sizeof(*ec_dev), GFP_KERNEL);
+ 	if (!ec_dev)
+ 		return -ENOMEM;
 -- 
 1.9.1.423.g4596e3a
 
