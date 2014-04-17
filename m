@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751686AbaDQSlh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 14:41:37 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:47998 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104AbaDQSl2 (ORCPT
+	id S1751285AbaDQSwv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 14:52:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59401 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971AbaDQSwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 14:41:28 -0400
-From: Soren Brinkmann <soren.brinkmann@xilinx.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>
-Cc: =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        git@xilinx.com, Stephen Boyd <sboyd@codeaurora.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Felipe Pena <felipensp@gmail.com>
-Subject: [PATCH] clk: zynq: Leave debug clocks in bootup state
-Date: Thu, 17 Apr 2014 11:40:52 -0700
-Message-Id: <1397760052-3310-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Mailer: git-send-email 1.9.2.1.g06c4abd
+	Thu, 17 Apr 2014 14:52:45 -0400
+Date: Thu, 17 Apr 2014 11:52:42 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Luiz Capitulino <lcapitulino@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mtosatti@redhat.com,
+        aarcange@redhat.com, mgorman@suse.de, andi@firstfloor.org,
+        davidlohr@hp.com, rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
+        yinghai@kernel.org, riel@redhat.com, n-horiguchi@ah.jp.nec.com,
+        kirill@shutemov.name
+Subject: Re: [PATCH v3 0/5] hugetlb: add support gigantic page allocation at
+ runtime
+Message-Id: <20140417115242.1081267213b26d10a41d2266@linux-foundation.org>
+In-Reply-To: <20140417111305.485fa956@redhat.com>
+References: <1397152725-20990-1-git-send-email-lcapitulino@redhat.com>
+	<20140417111305.485fa956@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sure debug clocks stay enabled if the bootloader enabled them.
-Otherwise debug HW may crash due to bus-hangs caused by stopped clocks.
+On Thu, 17 Apr 2014 11:13:05 -0400 Luiz Capitulino <lcapitulino@redhat.com> wrote:
 
-Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
----
- drivers/clk/zynq/clkc.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+> On Thu, 10 Apr 2014 13:58:40 -0400
+> Luiz Capitulino <lcapitulino@redhat.com> wrote:
+> 
+> > [Full introduction right after the changelog]
+> > 
+> > Changelog
+> > ---------
+> > 
+> > v3
+> > 
+> > - Dropped unnecessary WARN_ON() call [Kirill]
+> > - Always check if the pfn range lies within a zone [Yasuaki]
+> > - Renamed some function arguments for consistency
+> 
+> Andrew, this series got four ACKs but it seems that you haven't picked
+> it yet. Is there anything missing to be addressed?
 
-diff --git a/drivers/clk/zynq/clkc.c b/drivers/clk/zynq/clkc.c
-index 52c09afdcfb7..246cf1226eaa 100644
---- a/drivers/clk/zynq/clkc.c
-+++ b/drivers/clk/zynq/clkc.c
-@@ -53,6 +53,9 @@ static void __iomem *zynq_clkc_base;
- 
- #define NUM_MIO_PINS	54
- 
-+#define DBG_CLK_CTRL_CLKACT_TRC		BIT(0)
-+#define DBG_CLK_CTRL_CPU_1XCLKACT	BIT(1)
-+
- enum zynq_clk {
- 	armpll, ddrpll, iopll,
- 	cpu_6or4x, cpu_3or2x, cpu_2x, cpu_1x,
-@@ -499,6 +502,15 @@ static void __init zynq_clk_setup(struct device_node *np)
- 			clk_output_name[cpu_1x], 0, SLCR_DBG_CLK_CTRL, 1, 0,
- 			&dbgclk_lock);
- 
-+	/* leave debug clocks in the state the bootloader set them up to */
-+	tmp = clk_readl(SLCR_DBG_CLK_CTRL);
-+	if (tmp & DBG_CLK_CTRL_CLKACT_TRC)
-+		if (clk_prepare_enable(clks[dbg_trc]))
-+			pr_warn("%s: trace clk enable failed\n", __func__);
-+	if (tmp & DBG_CLK_CTRL_CPU_1XCLKACT)
-+		if (clk_prepare_enable(clks[dbg_apb]))
-+			pr_warn("%s: debug APB clk enable failed\n", __func__);
-+
- 	/* One gated clock for all APER clocks. */
- 	clks[dma] = clk_register_gate(NULL, clk_output_name[dma],
- 			clk_output_name[cpu_2x], 0, SLCR_APER_CLK_CTRL, 0, 0,
--- 
-1.9.2.1.g06c4abd
+I don't look at new features until after -rc1.  Then it takes a week or
+more to work through the backlog.  We'll get there.
 
