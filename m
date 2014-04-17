@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945896AbaDQNnq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 09:43:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55788 "EHLO mx1.redhat.com"
+	id S1752007AbaDQNor (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 09:44:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51139 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754536AbaDQNnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 09:43:45 -0400
-Date: Thu, 17 Apr 2014 09:43:38 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Satoru MORIYA <satoru.moriya.br@hitachi.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Takenori Nagano <t-nagano@ah.jp.nec.com>,
-        Eric Biederman <ebiederm@xmission.com>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] kernel/panic: Add "late_kdump" option for kdump in
- unstable condition
-Message-ID: <20140417134338.GB15749@redhat.com>
-References: <20140414045158.10846.35462.stgit@ltc230.yrl.intra.hitachi.co.jp>
- <20140416134830.GA31074@redhat.com>
- <534F3572.2040801@hitachi.com>
+	id S1751116AbaDQNoq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 09:44:46 -0400
+Date: Thu, 17 Apr 2014 15:10:11 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 3/3] perf top/tui: Update nr_entries properly after
+ filter is applied
+Message-ID: <20140417131011.GA19339@krava.brq.redhat.com>
+References: <1397721206-15393-1-git-send-email-namhyung@kernel.org>
+ <1397721206-15393-4-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <534F3572.2040801@hitachi.com>
+In-Reply-To: <1397721206-15393-4-git-send-email-namhyung@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 10:59:14AM +0900, Masami Hiramatsu wrote:
+On Thu, Apr 17, 2014 at 04:53:26PM +0900, Namhyung Kim wrote:
 
-[..]
-> >> @@ -112,9 +113,14 @@ void panic(const char *fmt, ...)
-> >>  	/*
-> >>  	 * If we have crashed and we have a crash kernel loaded let it handle
-> >>  	 * everything else.
-> >> -	 * Do we want to call this before we try to display a message?
-> >> +	 * If we want to call this after we try to display a message, pass
-> >> +	 * the "late_kdump" option to the kernel.
-> >>  	 */
-> >> -	crash_kexec(NULL);
-> >> +	if (!late_kdump)
-> >> +		crash_kexec(NULL);
-> >> +	else
-> >> +		pr_emerg("Warning: late_kdump option is set. Please DO NOT "
-> >> +			"report bugs about kdump failure with this option.\n");
-> > 
-> > I think above message about DO NOT report bugs seems unnecessary. 
-> 
-> OK, so I just notify the option is set as below.
-> "Warning: crash_kexec_post_notifiers is set.\n"
+SNIP
 
-I would say for the time being don't put any extra message. User will
-think what this warning is supposed to mean. We can introduce one if
-we run into many issues.
+> -static void hist_browser__update_pcnt_entries(struct hist_browser *hb)
+> +static void hist_browser__update_nr_entries(struct hist_browser *hb)
+>  {
+>  	u64 nr_entries = 0;
+>  	struct rb_node *nd = rb_first(&hb->hists->entries);
+> @@ -1355,7 +1358,7 @@ static void hist_browser__update_pcnt_entries(struct hist_browser *hb)
+>  			nr_entries++;
+>  	}
+>  
+> -	hb->nr_pcnt_entries = nr_entries;
+> +	hb->nr_filtered_entries = nr_entries;
+>  }
+>  
+>  static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+> @@ -1410,9 +1413,9 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+>  	if (browser == NULL)
+>  		return -1;
+>  
+> -	if (min_pcnt) {
+> +	if (hists__has_filter(hists) || min_pcnt) {
 
-For the time being we can just look at kernel logs and look at command
-line options and see whether crash_kexec_post_notifiers was set or not.
+seems like this could be coupled to browser__has_filter function
 
-Thanks
-Vivek
+jirka
