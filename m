@@ -1,93 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435AbaDQKlm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 06:41:42 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:51564 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752149AbaDQKlj (ORCPT
+	id S1755699AbaDQKoQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 06:44:16 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:64805 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305AbaDQKoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 06:41:39 -0400
+	Thu, 17 Apr 2014 06:44:15 -0400
+Date: Thu, 17 Apr 2014 11:44:09 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Silvio F <silvio.fricke@gmail.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>, spear-devel@list.st.com
+Subject: Re: [PATCH 3/6] mfd: stmpe: prope properly from the device tree
+Message-ID: <20140417104409.GL28725@lee--X1>
+References: <1397659455-13638-1-git-send-email-linus.walleij@linaro.org>
+ <1397659455-13638-4-git-send-email-linus.walleij@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20140416154631.6d0173498c60619d454ae651@linux-foundation.org>
-References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
- <20140331161308.6510381345cb9a1b419d5ec0@linux-foundation.org>
- <1396308332.18499.25.camel@buesod1.americas.hpqcorp.net> <20140331170546.3b3e72f0.akpm@linux-foundation.org>
- <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net> <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
- <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
- <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
- <20140401142947.927642a408d84df27d581e36@linux-foundation.org>
- <CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com>
- <20140401144801.603c288674ab8f417b42a043@linux-foundation.org>
- <1396389751.25314.26.camel@buesod1.americas.hpqcorp.net> <20140401150843.13da3743554ad541629c936d@linux-foundation.org>
- <534AD1EE.3050705@colorfullife.com> <20140416154631.6d0173498c60619d454ae651@linux-foundation.org>
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Thu, 17 Apr 2014 12:41:18 +0200
-X-Google-Sender-Auth: Btiy0tWkJZHI_V3kOPSqISyk4iM
-Message-ID: <CAHO5Pa2zguBEpg-S0Zx26qEStF5ZyvrnbU8-sQZfNJEZRMQPqg@mail.gmail.com>
-Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1397659455-13638-4-git-send-email-linus.walleij@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 12:46 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Sun, 13 Apr 2014 20:05:34 +0200 Manfred Spraul <manfred@colorfullife.com> wrote:
->
->> Hi Andrew,
->>
->> On 04/02/2014 12:08 AM, Andrew Morton wrote:
->> > Well, I'm assuming 64GB==infinity. It *was* infinity in the RHEL5
->> > timeframe, but infinity has since become larger so pickanumber.
->>
->> I think infinity is the right solution:
->> The only common case where infinity is wrong would be Android - and
->> Android disables sysv shm entirely.
->>
->> There are two patches:
->> http://marc.info/?l=linux-kernel&m=139730332306185&q=raw
->> http://marc.info/?l=linux-kernel&m=139727299800644&q=raw
->>
->> Could you apply one of them?
->> I wrote the first one, thus I'm biased which one is better.
->
-> I like your patch because applying it might encourage you to send more
-> kernel patches - I miss the old days ;)
->
-> But I do worry about disrupting existing systems so I like Davidlohr's
-> idea of making the change a no-op for people who are currently
-> explicitly setting shmmax and shmall.
+> The current STMPE I2C probing code does not really match the
+> compatible strings - it matches node names happening to give
+> the right device name. Instead, let's introduce some real
+> compatible matching, more complex, more accurate.
+> 
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/mfd/stmpe-i2c.c | 60 ++++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 59 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/mfd/stmpe-i2c.c b/drivers/mfd/stmpe-i2c.c
+> index 0da02e11d58e..8902a600d978 100644
+> --- a/drivers/mfd/stmpe-i2c.c
+> +++ b/drivers/mfd/stmpe-i2c.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/module.h>
+>  #include <linux/types.h>
+> +#include <linux/of_device.h>
+>  #include "stmpe.h"
+>  
+>  static int i2c_reg_read(struct stmpe *stmpe, u8 reg)
+> @@ -52,15 +53,71 @@ static struct stmpe_client_info i2c_ci = {
+>  	.write_block = i2c_block_write,
+>  };
+>  
+> +#ifdef CONFIG_OF
 
-Agreed. It's hard to imagine situations where people might care
-nowadays, but there's no limits to people's insane inventiveness. Some
-people really might want to set an upper limit.
+Didn't you say that the only platform using this device is DT only? So
+why don't we make the driver depend on OF and get rid of this ugly
+#ifdeffery?
 
-> In an ideal world, system administrators would review this change,
+> +static const struct of_device_id stmpe_of_match[] = {
+> +	{
+> +		.compatible = "st,stmpe610",
+> +		.data = (void *)STMPE610,
+> +	},
+> +	{
+> +		.compatible = "st,stmpe801",
+> +		.data = (void *)STMPE801,
+> +	},
+> +	{
+> +		.compatible = "st,stmpe811",
+> +		.data = (void *)STMPE811,
+> +	},
+> +	{
+> +		.compatible = "st,stmpe1601",
+> +		.data = (void *)STMPE1601,
+> +	},
+> +	{
+> +		.compatible = "st,stmpe1801",
+> +		.data = (void *)STMPE1801,
+> +	},
+> +	{
+> +		.compatible = "st,stmpe2401",
+> +		.data = (void *)STMPE2401,
+> +	},
+> +	{
+> +		.compatible = "st,stmpe2403",
+> +		.data = (void *)STMPE2403,
+> +	},
+> +	{},
+> +};
 
-And in the ideal world, patches such as this would CC
-linux-api@vger.kernel.org, as described in
-Documentation/SubmitChecklist, so that users who care about getting
-advance warning on API changes could be alerted and might even review
-and comment...
+If none of these stray over 80 chars, I think I'd like to see
+of_device_id tables as single line entries (unlike mfd_cell structures
+where there can be more than 2 entries, which I like spread out - I
+know, double standards right?)
 
-> would remove their explicit limit-setting and would retest everything
-> then roll it out.  But in the real world with Davidlohr's patch, they
-> just won't know that we did this and they'll still be manually
-> configuring shmmax/shmall ten years from now.  I almost wonder if we
-> should drop a printk_once("hey, you don't need to do that any more")
-> when shmmax/shmall are altered?
++static const struct of_device_id stmpe_of_match[] = {
++	{ .compatible = "st,stmpe610",  .data = (void *)STMPE610,  },
++	{ .compatible = "st,stmpe801",  .data = (void *)STMPE801,  },
++	{ .compatible = "st,stmpe811",  .data = (void *)STMPE811,  },
++	{ .compatible = "st,stmpe1601", .data = (void *)STMPE1601, },
++	{ .compatible = "st,stmpe1801", .data = (void *)STMPE1801, },
++	{ .compatible = "st,stmpe2401", .data = (void *)STMPE2401, },
++	{ .compatible = "st,stmpe2403", .data = (void *)STMPE2403, },
++	{},
++};
 
-Makes some sense. But then what about the (strange) people who really
-do want to set a limit. Do we just say that they have to live with the
-message?
+> +MODULE_DEVICE_TABLE(of, stmpe_of_match);
+> +
+> +int stmpe_i2c_of_probe(struct i2c_client *i2c)
 
-Cheers,
+Erm, static?
 
-Michael
+> +{
+> +	const struct of_device_id *of_id;
+> +
+> +	of_id = of_match_device(stmpe_of_match, &i2c->dev);
+> +	if (!of_id)
+> +		return -EINVAL;
+> +	return (int)of_id->data;
+> +}
+> +#else
+> +int stmpe_i2c_of_probe(struct i2c_client *i2c)
+> +{
+> +	return -EINVAL;
+> +}
+> +#endif
+> +
+>  static int
+>  stmpe_i2c_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
+>  {
+> +	int partnum;
+> +
+>  	i2c_ci.data = (void *)id;
+>  	i2c_ci.irq = i2c->irq;
+>  	i2c_ci.client = i2c;
+>  	i2c_ci.dev = &i2c->dev;
+>  
+> -	return stmpe_probe(&i2c_ci, id->driver_data);
+
+if (IS_DEFINED(OF)) {
+
+> +	partnum = stmpe_i2c_of_probe(i2c);
+
+Then you can remove the spare stmpe_i2c_of_probe(), or better still
+make the whole driver depend on OF.
+
+> +	if (partnum < 0)
+> +		partnum = id->driver_data;
+
+Should this be able to fail and for us to still carry on?
+
+Or are we then running on an unsupported device?
+
+> +	return stmpe_probe(&i2c_ci, partnum);
+>  }
+>  
+>  static int stmpe_i2c_remove(struct i2c_client *i2c)
+> @@ -89,6 +146,7 @@ static struct i2c_driver stmpe_i2c_driver = {
+>  #ifdef CONFIG_PM
+>  		.pm = &stmpe_dev_pm_ops,
+>  #endif
+> +		.of_match_table = of_match_ptr(stmpe_of_match),
+>  	},
+>  	.probe		= stmpe_i2c_probe,
+>  	.remove		= stmpe_i2c_remove,
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
