@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756827AbaDQNYT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 09:24:19 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:59088 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754399AbaDQNYR (ORCPT
+	id S1161394AbaDQN2P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 09:28:15 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:37346 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756333AbaDQN2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 09:24:17 -0400
-Message-ID: <534FD5FC.6060703@gmail.com>
-Date: Thu, 17 Apr 2014 15:24:12 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-To: =?ISO-8859-1?Q?Antoine_T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-CC: linus.walleij@linaro.org, alexandre.belloni@free-electrons.com,
-        zmxu@marvell.com, jszhang@marvell.com,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 3/5] ARM: berlin: add the pinctrl dependency for
- the Marvell Berlin SoCs
-References: <1397135274-10764-1-git-send-email-antoine.tenart@free-electrons.com> <1397135274-10764-4-git-send-email-antoine.tenart@free-electrons.com> <5347B065.8060001@gmail.com> <20140417131357.GA31034@kwain>
-In-Reply-To: <20140417131357.GA31034@kwain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+	Thu, 17 Apr 2014 09:28:11 -0400
+Date: Thu, 17 Apr 2014 09:28:06 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH v2 0/2] ahci: Tweaks to the driver's PCI function
+Message-ID: <20140417132806.GA15326@htj.dyndns.org>
+References: <cover.1397736364.git.agordeev@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1397736364.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2014 03:13 PM, Antoine Ténart wrote:
-> On Fri, Apr 11, 2014 at 11:05:41AM +0200, Sebastian Hesselbarth wrote:
->> On 04/10/2014 03:07 PM, Antoine Ténart wrote:
->>> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
->>> ---
->>>   arch/arm/mach-berlin/Kconfig | 2 ++
->>>   1 file changed, 2 insertions(+)
->>>
->>> diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
->>> index d3c5f14dc142..291f1cac6c3d 100644
->>> --- a/arch/arm/mach-berlin/Kconfig
->>> +++ b/arch/arm/mach-berlin/Kconfig
->>> @@ -4,6 +4,8 @@ config ARCH_BERLIN
->>>   	select GENERIC_IRQ_CHIP
->>>   	select DW_APB_ICTL
->>>   	select DW_APB_TIMER_OF
->>> +	select PINCTRL
->>> +	select PINCTRL_BERLIN
->>
->> As said in the review of the previous patch, drop PINCTRL here
->> and select it in the PINCTRL_BERLIN Kconfig. Also, you'll need
->> PINCTRL_BERLIN_BG2 and PINCTRL_BERLIN_BG2Q as we don't want to
->> bloat each Berlin kernel with both drivers.
->
-> Regarding PINCTRL, I can't drop it, pin-controller drivers depend on it.
-> drivers/pinctrl/Kconfig begins with:
-> 	if PINCTRL
+On Thu, Apr 17, 2014 at 02:13:48PM +0200, Alexander Gordeev wrote:
+> Changes since v1:
+> 	- ahci_is_mrsm() open-coded inside ahci_init_interrupt()
+> 	- changelog elaborated
+> 
+> Cc: linux-ide@vger.kernel.org
+> 
+> Alexander Gordeev (2):
+>   ahci: Ensure "MSI Revert to Single Message" mode is not enforced
+>   ahci: Use pci_enable_msi_exact() instead of pci_enable_msi_range()
+> 
+>  drivers/ata/ahci.c |   19 ++++++++++++++-----
+>  drivers/ata/ahci.h |    1 +
+>  2 files changed, 15 insertions(+), 5 deletions(-)
 
-Ah, ok. Then select PINCTRL here and the corresponding
-PINCTRL_BERLIN_foo in the individual SoC Kconfig entries.
+Applied to libata/for-3.15-fixes.
 
-Sebastian
+Thanks.
 
+-- 
+tejun
