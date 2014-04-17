@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbaDQTHu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 15:07:50 -0400
-Received: from mout.gmx.net ([212.227.17.20]:49815 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751149AbaDQTHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 15:07:44 -0400
-Date: Thu, 17 Apr 2014 21:07:40 +0200
-From: Helge Deller <deller@gmx.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: [GIT PULL] parisc updates for v3.15
-Message-ID: <20140417190740.GA1254@p100.fritz.box>
+	id S1752239AbaDQTJx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 15:09:53 -0400
+Received: from smtp104.biz.mail.gq1.yahoo.com ([98.137.12.179]:34767 "HELO
+	smtp104.biz.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751019AbaDQTJp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 15:09:45 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: V216CLAVM1lFhQ6WFhnxDWUsG4X.XNAOkLcElD1rT7fZkPS
+ mpflb4lDDuJ_JTnKlvodpGECsIig6NB1_RQwaZmqPnOFY.nAKEhhsG_5v20r
+ qWLcH0fl2L3lOijd4WmYtYwZtBEddkPXklWrxR8C.bhkoeH0W3Sx1xSox3GS
+ d9bKUr2Zwn70udmJwVuUB9ZhciYShUB4oMWX7U.wAeo6lDLF1HPDWT0QfFqt
+ 8IcR1NtraYlYZDi7rukjx1Mwy5C4cOCtB_U5oXPPiDyWs2_m8oq.b522jg3_
+ vJIJ3K7AKPeDur.TJNJ3p3lxjuiapLv17bv9AiPU_MEPzSb8Cumqi4DTY1v6
+ 6W7UrEt9CyBEyloo09V021TKCdo1XDqyLwLgKZhC3q0FFqIJRp9qHUtUFd8E
+ .qPcEItPW5MZCKOid1Pse2wfWBGLN2ptIZ2LSRLcxGPXkjHrxm9K4S8h5TXn
+ P6wq9enVfqGQEnrQjyZuF2UEzc4_iRu_lN2IGRAYJd4tlTqi2tFrldi1lLkj
+ lT5zzMJjinKKHW6tMZEQ-
+X-Yahoo-SMTP: qGLgp.mswBDSnFfWmYVMF5Rmg6NJ
+X-Rocket-Received: from fdwdc.com (sfking@66.235.32.29 with plain [208.71.40.208])
+        by smtp104.biz.mail.gq1.yahoo.com with SMTP; 17 Apr 2014 12:09:44 -0700 PDT
+From: Steven King <sfking@fdwdc.com>
+Organization: fdwdc
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: Re: [uClinux-dev] v3.15-rc1 slab allocator broken on m68knommu (coldfire)
+Date: Thu, 17 Apr 2014 12:09:43 -0700
+User-Agent: KMail/1.9.9
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <201404141745.44279.sfking@fdwdc.com> <201404161044.11416.sfking@fdwdc.com> <20140417014911.GA3284@js1304-P5Q-DELUXE>
+In-Reply-To: <20140417014911.GA3284@js1304-P5Q-DELUXE>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V03:K0:7nPak3CJslESk/ADw/ub7JgSB8/m0ufeHijUgT8b5tjD7IEqRiL
- ytDI5AW7vh27UularJFXJzWsYQh5L+NOvwFMuXHVEN1CofU4eXsg0hzfu86PLcUkEjWIgl2
- s+gnHAvFKxS5Pf4cTNVnRvQB9Ox1cLnHjE2upZ+CwEmfrX5caxprtiH1jbSxUXo4+34V9l9
- gEyHgSm89MrEmUrRchbGw==
+Message-Id: <201404171209.43848.sfking@fdwdc.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wednesday 16 April 2014 6:49:11 pm Joonsoo Kim wrote:
+> On Wed, Apr 16, 2014 at 10:44:11AM -0700, Steven King wrote:
+> > On Wednesday 16 April 2014 9:06:57 am Geert Uytterhoeven wrote:
+> > > Hi Steven,
+> > >
+> > > On Wed, Apr 16, 2014 at 5:47 PM, Steven King <sfking@fdwdc.com> wrote:
+> > > > --- a/mm/slab.c
+> > > > +++ b/mm/slab.c
+> > > > @@ -2572,13 +2572,13 @@ static void *alloc_slabmgmt(struct kmem_cache
+> > > > *cachep, return freelist;
+> > > >  }
+> > > >
+> > > > -static inline freelist_idx_t get_free_obj(struct page *page,
+> > > > unsigned char idx) +static inline freelist_idx_t get_free_obj(struct
+> > > > page *page, unsigned int idx) {
+> > > >         return ((freelist_idx_t *)page->freelist)[idx];
+> > > >  }
+> > > >
+> > > >  static inline void set_free_obj(struct page *page,
+> > > > -                                       unsigned char idx,
+> > > > freelist_idx_t val) +                                       unsigned
+> > > > int idx, freelist_idx_t val) {
+> > > >         ((freelist_idx_t *)(page->freelist))[idx] = val;
+> > > >  }
+> > > >
+> > > >
+> > > > then v3.15-rc1 will boot using the slab allocator.
+> > >
+> > > Is "idx" ever larger than 255?
+> > >
+> > > Gr{oetje,eeting}s,
+> >
+> > Yes.  If I stick
+> >
+> >         if (idx > 255)
+> >                 pr_info("%s %d\n", __func__, idx);
+> >
+> > in get_free_obj and set_free_obj and see values for idx up into the 400s.
+>
+> Hello,
+>
+> Yes, it's my mistake. idx can be larger than 255 if freelist_idx_t is
+> unsigned short. So unsigned char idx isn't appropriate here. Your
+> system's PAGE_SIZE may be 2^13, so freelist_idx_t would be unsigned short
+> and idx will be larger than 255.
+>
+> Your fix looks good to me, so could you send it quickly to Pekka with
+> some description? If you don't have enough time to do it, I can handle it.
+>
+> Really thanks for notifying this issue.
+>
+> Thanks.
 
-please pull the latest parisc architecture fixes from: 
-  git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git parisc-3.15
-
-There are two major changes in this patchset:
-The major fix is that the epoll_pwait() syscall for 32bit userspace was not
-using the compat wrapper on a 64bit kernel.
-Secondly we changed the value of SHMLBA from 4MB to PAGE_SIZE to reflect
-that we can actually mmap to any multiple of PAGE_SIZE. The only thing
-which needs care is that shared mmaps need to be mapped at the same
-offset inside the 4MB cache window.
-
-Thanks,
-Helge
-
-----------------------------------------------------------------
-Christoph Lameter (1):
-      parisc: Replace __get_cpu_var uses for address calculation
-
-Helge Deller (2):
-      parisc: change value of SHMLBA from 0x00400000 to PAGE_SIZE
-      parisc: fix epoll_pwait syscall on compat kernel
-
- arch/parisc/include/asm/shmparam.h |  5 ++---
- arch/parisc/kernel/cache.c         |  3 ++-
- arch/parisc/kernel/sys_parisc.c    | 14 +++++++-------
- arch/parisc/kernel/syscall_table.S |  2 +-
- arch/parisc/lib/memcpy.c           |  2 +-
- arch/parisc/mm/fault.c             |  2 +-
- 6 files changed, 14 insertions(+), 14 deletions(-)
+Why don't you go ahead and do it, you know whats going better than I do.
