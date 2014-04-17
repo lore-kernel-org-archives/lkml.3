@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751241AbaDQXee (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 19:34:34 -0400
-Received: from mailgw12.technion.ac.il ([132.68.225.12]:25281 "EHLO
-	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaDQXea (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 19:34:30 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgAFAAdkUFOERM5e/2dsb2JhbABZgwa9PYc9gSIWdIMlUG+IDsYahhQXjmKEPwSJXKFfgzQ6
-X-IPAS-Result: AgAFAAdkUFOERM5e/2dsb2JhbABZgwa9PYc9gSIWdIMlUG+IDsYahhQXjmKEPwSJXKFfgzQ6
-X-IronPort-AV: E=Sophos;i="4.97,882,1389736800"; 
-   d="scan'208";a="102880990"
-From: Nadav Amit <namit@cs.technion.ac.il>
-To: gleb@kernel.org, pbonzini@redhat.com
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nadav Amit <namit@cs.technion.ac.il>
-Subject: [PATCH 0/5] KVM: x86: Fix KVM behavior that does not follow spec
-Date: Fri, 18 Apr 2014 02:33:06 +0300
-Message-Id: <1397777591-6147-1-git-send-email-namit@cs.technion.ac.il>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751269AbaDQXjW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 19:39:22 -0400
+Received: from mga11.intel.com ([192.55.52.93]:50746 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750852AbaDQXjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 19:39:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,882,1389772800"; 
+   d="scan'208";a="522542628"
+From: Andi Kleen <andi@firstfloor.org>
+To: peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] perf, x86: Don't mark DataLA addresses as store
+Date: Thu, 17 Apr 2014 16:39:16 -0700
+Message-Id: <1397777956-11466-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series of patches fix various scenarios in which KVM behavior does not
-follow x86 specifications.  Each patch actually deals with a separate bug.
-These bugs can cause the guest to get stuck (i.e., make no progress), encounter
-spurious injected exceptions, or cause guest code to misbehave. As a result
-guest OS can potentially fail.
+From: Andi Kleen <ak@linux.intel.com>
 
-Thanks for reviewing the patches.
+Haswell supports reporting the data address for a range
+of events, including UOPS_RETIRED.ALL and some load
+events. Currently these addresses were always marked
+as stores, which is wrong, as they could be loads too.
+Change it to NA instead.
 
-Nadav Amit (5):
-  KVM: x86: Fix wrong/stuck PMU when guest does not use PMI
-  KVM: x86: Fix CR3 reserved bits
-  KVM: x86: IN instruction emulation should ignore REP-prefix
-  KVM: x86: RSI/RDI/RCX are zero-extended when affected by string ops
-  KVM: x86: Processor mode may be determined incorrectly
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- arch/x86/include/asm/kvm_host.h |    6 +-----
- arch/x86/kvm/emulate.c          |   11 ++++++-----
- arch/x86/kvm/pmu.c              |    7 +++++--
- arch/x86/kvm/x86.c              |   27 ++++++---------------------
- 4 files changed, 18 insertions(+), 33 deletions(-)
-
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index ae96cfa..7e9546a 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -113,7 +113,7 @@ static u64 precise_store_data_hsw(u64 status)
+ 	union perf_mem_data_src dse;
+ 
+ 	dse.val = 0;
+-	dse.mem_op = PERF_MEM_OP_STORE;
++	dse.mem_op = PERF_MEM_OP_NA;
+ 	dse.mem_lvl = PERF_MEM_LVL_NA;
+ 	if (status & 1)
+ 		dse.mem_lvl = PERF_MEM_LVL_L1;
 -- 
-1.7.10.4
+1.8.5.3
 
