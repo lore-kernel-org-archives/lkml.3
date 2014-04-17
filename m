@@ -1,60 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161125AbaDQDQL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 23:16:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48328 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757106AbaDQDQK (ORCPT
+	id S1161354AbaDQDRA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 23:17:00 -0400
+Received: from smtprelay0218.hostedemail.com ([216.40.44.218]:54154 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756882AbaDQDQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 23:16:10 -0400
-Date: Wed, 16 Apr 2014 20:16:14 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Mathieu Maret <mathieu.maret@gmail.com>
-Cc: devel@driverdev.osuosl.org, serban.constantinescu@arm.com,
-        linux-kernel@vger.kernel.org, arve@android.com, joe@perches.com,
-        prtvar.b@gmail.com
-Subject: Re: [PATCH RESEND 2/2] staging: binder: Code simplification
-Message-ID: <20140417031614.GB20339@kroah.com>
-References: <1397556186-5465-1-git-send-email-mathieu.maret@gmail.com>
- <1397556186-5465-2-git-send-email-mathieu.maret@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397556186-5465-2-git-send-email-mathieu.maret@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 16 Apr 2014 23:16:58 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::,RULES_HIT:2:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1535:1593:1594:1605:1730:1747:1777:1792:1981:2194:2199:2393:2559:2562:2828:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:4049:4118:4250:4321:5007:6119:6609:7652:8603:10004:10848:11026:11232:11473:11657:11658:11914:12043:12296:12438:12517:12519:12555:12740,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custo
+X-HE-Tag: rail25_598875e464125
+X-Filterd-Recvd-Size: 7696
+Message-ID: <1397704613.14062.13.camel@joe-AO725>
+Subject: Re: [PATCH v3 4/4] drivers: net: Add APM X-Gene SoC ethernet driver
+ support.
+From: Joe Perches <joe@perches.com>
+To: Iyappan Subramanian <isubramanian@apm.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, devicetree@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, jcm@redhat.com, patches@apm.com,
+        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
+Date: Wed, 16 Apr 2014 20:16:53 -0700
+In-Reply-To: <1397702368-4846-5-git-send-email-isubramanian@apm.com>
+References: <1397702368-4846-1-git-send-email-isubramanian@apm.com>
+	 <1397702368-4846-5-git-send-email-isubramanian@apm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 12:03:06PM +0200, Mathieu Maret wrote:
-> Remove duplicate code
-> 
-> Signed-off-by: Mathieu Maret <mathieu.maret@gmail.com>
-> ---
->  drivers/staging/android/binder.c | 7 ++-----
->  1 file changed, 2 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-> index 3dca577..c29c3c7 100644
-> --- a/drivers/staging/android/binder.c
-> +++ b/drivers/staging/android/binder.c
-> @@ -2686,11 +2686,8 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
->  	case BINDER_VERSION:{
->  		struct binder_version __user *ver = ubuf;
->  
-> -		if (size != sizeof(struct binder_version)) {
-> -			ret = -EINVAL;
-> -			goto err;
-> -		}
-> -		if (put_user(BINDER_CURRENT_PROTOCOL_VERSION,
-> +		if (size != sizeof(struct binder_version) ||
-> +		    put_user(BINDER_CURRENT_PROTOCOL_VERSION,
->  			     &ver->protocol_version)) {
->  			ret = -EINVAL;
->  			goto err;
+On Wed, 2014-04-16 at 19:39 -0700, Iyappan Subramanian wrote:
+> This patch adds network driver for APM X-Gene SoC ethernet.
+[]
+> diff --git a/drivers/net/ethernet/apm/xgene/Kconfig b/drivers/net/ethernet/apm/xgene/Kconfig
+[]
+> @@ -0,0 +1,10 @@
+> +config NET_XGENE
+> +	tristate "APM X-Gene SoC Ethernet Driver"
+> +	select PHYLIB
+> +	default y
 
-I agree with Dan, the original code was easier to read.
+default y? 
 
-thanks,
+Shouldn't this need a depends on too?
 
-greg k-h
+> diff --git a/drivers/net/ethernet/apm/xgene/xgene_enet_hw.c b/drivers/net/ethernet/apm/xgene/xgene_enet_hw.c
+
+> +static void xgene_enet_ring_set_type(u32 *ring_cfg, u8 is_bufpool)
+> +{
+
+bool is_bufpool?
+
+> +static void xgene_enet_set_ring_id(struct xgene_enet_desc_ring *ring)
+> +{
+> +	u32 ring_id_val;
+> +	u32 ring_id_buf;
+> +	u8 is_bufpool = IS_FP(ring->id);
+
+bool?
+
+> +
+> +	ring_id_val = ring->id & GENMASK(9, 0);
+> +	ring_id_val |= (1 << 31) & GENMASK(31, 31);
+
+Setting a single bit and masking with the same
+bit looks silly.
+
+> +
+> +	ring_id_buf = (ring->num << 9) & GENMASK(18, 9);
+> +	ring_id_buf |= ((u32) is_bufpool << 20) & GENMASK(20, 20);
+
+And here.
+
+> +	ring_id_buf |= (1U << 21) & GENMASK(21, 21);
+
+This too.
+
+[]
+
+> +static void xgene_enet_rd_mcx_stats(struct xgene_enet_pdata *pdata,
+> +				    u32 rd_addr, u32 *rd_data)
+> +{
+[]
+> +	if (!ret)
+> +		netdev_err(pdata->ndev, "MCX stats read failed, addr: %04x",
+> +			   rd_addr);
+
+Missing newline
+
+> +/* Start Statistics related functions */
+> +static void xgene_gmac_get_rx_stats(struct xgene_enet_pdata *pdata,
+> +				    struct xgene_enet_rx_stats *rx_stat)
+> +{
+> +	xgene_enet_rd_mcx_stats(pdata, RBYT_ADDR, &rx_stat->rx_byte_count);
+> +	xgene_enet_rd_mcx_stats(pdata, RPKT_ADDR, &rx_stat->rx_packet_count);
+> +	xgene_enet_rd_mcx_stats(pdata, RDRP_ADDR, &rx_stat->rx_drop_pkt_count);
+> +	xgene_enet_rd_mcx_stats(pdata, RFCS_ADDR, &rx_stat->rx_fcs_err_count);
+> +	xgene_enet_rd_mcx_stats(pdata, RFLR_ADDR,
+> +				&rx_stat->rx_frm_len_err_pkt_count);
+> +	xgene_enet_rd_mcx_stats(pdata, RALN_ADDR,
+> +				&rx_stat->rx_alignment_err_pkt_count);
+> +	xgene_enet_rd_mcx_stats(pdata, ROVR_ADDR,
+> +				&rx_stat->rx_oversize_pkt_count);
+> +	xgene_enet_rd_mcx_stats(pdata, RUND_ADDR,
+> +				&rx_stat->rx_undersize_pkt_count);
+> +
+> +	rx_stat->rx_byte_count &= RX_BYTE_CNTR_MASK;
+> +	rx_stat->rx_packet_count &= RX_PKT_CNTR_MASK;
+> +	rx_stat->rx_drop_pkt_count &= RX_DROPPED_PKT_CNTR_MASK;
+> +	rx_stat->rx_fcs_err_count &= RX_FCS_ERROR_CNTR_MASK;
+> +	rx_stat->rx_frm_len_err_pkt_count &= RX_LEN_ERR_CNTR_MASK;
+> +	rx_stat->rx_alignment_err_pkt_count &= RX_ALIGN_ERR_CNTR_MASK;
+> +	rx_stat->rx_oversize_pkt_count &= RX_OVRSIZE_PKT_CNTR_MASK;
+> +	rx_stat->rx_undersize_pkt_count &= RX_UNDRSIZE_PKT_CNTR_MASK;
+> +}
+> +
+> +static void xgene_gmac_get_tx_stats(struct xgene_enet_pdata *pdata,
+> +				    struct xgene_enet_tx_stats *tx_stats)
+> +{
+> +	xgene_enet_rd_mcx_stats(pdata, TBYT_ADDR, &tx_stats->tx_byte_count);
+> +	xgene_enet_rd_mcx_stats(pdata, TPKT_ADDR, &tx_stats->tx_pkt_count);
+> +	xgene_enet_rd_mcx_stats(pdata, TDRP_ADDR, &tx_stats->tx_drop_frm_count);
+> +	xgene_enet_rd_mcx_stats(pdata, TFCS_ADDR,
+> +				&tx_stats->tx_fcs_err_frm_count);
+> +	xgene_enet_rd_mcx_stats(pdata, TUND_ADDR,
+> +				&tx_stats->tx_undersize_frm_count);
+> +
+> +	tx_stats->tx_byte_count &= TX_BYTE_CNTR_MASK;
+> +	tx_stats->tx_pkt_count &= TX_PKT_CNTR_MASK;
+> +	tx_stats->tx_drop_frm_count &= TX_DROP_FRAME_CNTR_MASK;
+> +	tx_stats->tx_fcs_err_frm_count &= TX_FCS_ERROR_CNTR_MASK;
+> +	tx_stats->tx_undersize_frm_count &= TX_UNDSIZE_FRAME_CNTR_MASK;
+> +}
+
+Pity about the masks
+
+
+> +#define RX_BYTE_CNTR_MASK		0x7fffffff
+> +#define RX_PKT_CNTR_MASK		0x7fffffff
+> +#define RX_FCS_ERROR_CNTR_MASK		0x0000ffff
+> +#define RX_ALIGN_ERR_CNTR_MASK		0x0000ffff
+> +#define RX_LEN_ERR_CNTR_MASK		0x0000ffff
+> +#define RX_UNDRSIZE_PKT_CNTR_MASK	0x0000ffff
+> +#define RX_OVRSIZE_PKT_CNTR_MASK	0x0000ffff
+> +#define RX_DROPPED_PKT_CNTR_MASK	0x0000ffff
+> +#define TX_BYTE_CNTR_MASK		0x7fffffff
+> +#define TX_PKT_CNTR_MASK		0x7fffffff
+> +#define TX_DROP_FRAME_CNTR_MASK		0x0000ffff
+> +#define TX_FCS_ERROR_CNTR_MASK		0x00000fff
+> +#define TX_UNDSIZE_FRAME_CNTR_MASK	0x00000fff
+
+Any of these going to possibly overrun their
+counter size between polls?
+
+[]
+> +static struct xgene_enet_desc_ring *xgene_enet_create_desc_ring(
+> +			struct net_device *ndev, u32 ring_num,
+> +			enum xgene_enet_ring_cfgsize cfgsize, u32 ring_id)
+> +{
+> +	struct xgene_enet_desc_ring *ring;
+> +	struct xgene_enet_pdata *pdata = netdev_priv(ndev);
+> +	struct device *dev = &pdata->pdev->dev;
+> +	u32 size;
+> +
+> +	ring = devm_kzalloc(dev, sizeof(struct xgene_enet_desc_ring),
+> +			    GFP_KERNEL);
+> +	if (!ring) {
+> +		netdev_err(ndev, "Could not allocate ring\n");
+
+Unnecessary OOM.  alloc errors get a generic OOM and dump_stack()
+
+
+> +static struct net_device_stats *xgene_enet_stats(struct net_device *ndev)
+> +{
+> +	struct xgene_enet_pdata *pdata = netdev_priv(ndev);
+> +	struct net_device_stats *nst = &pdata->nstats;
+> +	struct xgene_enet_detailed_stats detailed_stats;
+> +	struct xgene_enet_rx_stats *rx_stats;
+> +	struct xgene_enet_tx_stats *tx_stats;
+> +	u32 pkt_bytes, crc_bytes = 4;
+> +
+> +	memset(&detailed_stats, 0, sizeof(struct xgene_enet_detailed_stats));
+> +
+> +	rx_stats = &detailed_stats.rx_stats;
+> +	tx_stats = &detailed_stats.tx_stats;
+> +
+> +	local_irq_disable();
+> +	xgene_gmac_get_detailed_stats(pdata, &detailed_stats);
+> +
+> +	pkt_bytes = rx_stats->rx_byte_count;
+> +	pkt_bytes -= rx_stats->rx_packet_count * crc_bytes;
+> +	nst->rx_packets += rx_stats->rx_packet_count;
+> +	nst->rx_bytes += pkt_bytes;
+> +
+> +	pkt_bytes = tx_stats->tx_byte_count;
+> +	pkt_bytes -= tx_stats->tx_pkt_count * crc_bytes;
+> +	nst->tx_packets += tx_stats->tx_pkt_count;
+> +	nst->tx_bytes += pkt_bytes;
+> +
+> +	nst->rx_dropped += rx_stats->rx_drop_pkt_count;
+> +	nst->tx_dropped += tx_stats->tx_drop_frm_count;
+> +
+> +	nst->rx_crc_errors += rx_stats->rx_fcs_err_count;
+> +	nst->rx_length_errors += rx_stats->rx_frm_len_err_pkt_count;
+> +	nst->rx_frame_errors += rx_stats->rx_alignment_err_pkt_count;
+> +	nst->rx_over_errors += rx_stats->rx_oversize_pkt_count;
+> +
+> +	nst->rx_errors += rx_stats->rx_fcs_err_count
+> +	    + rx_stats->rx_frm_len_err_pkt_count
+> +	    + rx_stats->rx_oversize_pkt_count
+> +	    + rx_stats->rx_undersize_pkt_count;
+> +
+> +	nst->tx_errors += tx_stats->tx_fcs_err_frm_count +
+> +	    tx_stats->tx_undersize_frm_count;
+> +
+> +	local_irq_enable();
+> +
+> +	return nst;
+> +}
+
+
