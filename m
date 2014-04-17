@@ -1,235 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751400AbaDQXaG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 19:30:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:34772 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736AbaDQXaD (ORCPT
+	id S1751241AbaDQXee (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 19:34:34 -0400
+Received: from mailgw12.technion.ac.il ([132.68.225.12]:25281 "EHLO
+	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbaDQXea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 19:30:03 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: Roman Pen <r.peniaev@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@fb.com>, Kamal Mostafa <kamal@canonical.com>,
-        kernel-team@lists.ubuntu.com
-Subject: [3.8.y.z extended stable] Patch "blktrace: fix accounting of partially completed requests" has been added to staging queue
-Date: Thu, 17 Apr 2014 16:29:55 -0700
-Message-Id: <1397777395-4820-1-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-X-Extended-Stable: 3.8
+	Thu, 17 Apr 2014 19:34:30 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgAFAAdkUFOERM5e/2dsb2JhbABZgwa9PYc9gSIWdIMlUG+IDsYahhQXjmKEPwSJXKFfgzQ6
+X-IPAS-Result: AgAFAAdkUFOERM5e/2dsb2JhbABZgwa9PYc9gSIWdIMlUG+IDsYahhQXjmKEPwSJXKFfgzQ6
+X-IronPort-AV: E=Sophos;i="4.97,882,1389736800"; 
+   d="scan'208";a="102880990"
+From: Nadav Amit <namit@cs.technion.ac.il>
+To: gleb@kernel.org, pbonzini@redhat.com
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nadav Amit <namit@cs.technion.ac.il>
+Subject: [PATCH 0/5] KVM: x86: Fix KVM behavior that does not follow spec
+Date: Fri, 18 Apr 2014 02:33:06 +0300
+Message-Id: <1397777591-6147-1-git-send-email-namit@cs.technion.ac.il>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a note to let you know that I have just added a patch titled
+This series of patches fix various scenarios in which KVM behavior does not
+follow x86 specifications.  Each patch actually deals with a separate bug.
+These bugs can cause the guest to get stuck (i.e., make no progress), encounter
+spurious injected exceptions, or cause guest code to misbehave. As a result
+guest OS can potentially fail.
 
-    blktrace: fix accounting of partially completed requests
+Thanks for reviewing the patches.
 
-to the linux-3.8.y-queue branch of the 3.8.y.z extended stable tree 
-which can be found at:
+Nadav Amit (5):
+  KVM: x86: Fix wrong/stuck PMU when guest does not use PMI
+  KVM: x86: Fix CR3 reserved bits
+  KVM: x86: IN instruction emulation should ignore REP-prefix
+  KVM: x86: RSI/RDI/RCX are zero-extended when affected by string ops
+  KVM: x86: Processor mode may be determined incorrectly
 
- http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.8.y-queue
+ arch/x86/include/asm/kvm_host.h |    6 +-----
+ arch/x86/kvm/emulate.c          |   11 ++++++-----
+ arch/x86/kvm/pmu.c              |    7 +++++--
+ arch/x86/kvm/x86.c              |   27 ++++++---------------------
+ 4 files changed, 18 insertions(+), 33 deletions(-)
 
-This patch is scheduled to be released in version 3.8.13.22.
-
-If you, or anyone else, feels it should not be added to this tree, please 
-reply to this email.
-
-For more information about the 3.8.y.z tree, see
-https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
-
-Thanks.
--Kamal
-
-------
-
->From b410ead89f23a66d0e3f55028b4c152ceab16a60 Mon Sep 17 00:00:00 2001
-From: Roman Pen <r.peniaev@gmail.com>
-Date: Tue, 4 Mar 2014 23:13:10 +0900
-Subject: blktrace: fix accounting of partially completed requests
-
-commit af5040da01ef980670b3741b3e10733ee3e33566 upstream.
-
-trace_block_rq_complete does not take into account that request can
-be partially completed, so we can get the following incorrect output
-of blkparser:
-
-  C   R 232 + 240 [0]
-  C   R 240 + 232 [0]
-  C   R 248 + 224 [0]
-  C   R 256 + 216 [0]
-
-but should be:
-
-  C   R 232 + 8 [0]
-  C   R 240 + 8 [0]
-  C   R 248 + 8 [0]
-  C   R 256 + 8 [0]
-
-Also, the whole output summary statistics of completed requests and
-final throughput will be incorrect.
-
-This patch takes into account real completion size of the request and
-fixes wrong completion accounting.
-
-Signed-off-by: Roman Pen <r.peniaev@gmail.com>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: linux-kernel@vger.kernel.org
-Signed-off-by: Jens Axboe <axboe@fb.com>
-[ kamal: backport to 3.8 (no blk_mq) ]
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- block/blk-core.c             |  2 +-
- include/trace/events/block.h | 33 ++++++++++++++++++++++++++++++---
- kernel/trace/blktrace.c      | 20 +++++++++++---------
- 3 files changed, 42 insertions(+), 13 deletions(-)
-
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 5176e78..ecf5bf9 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -2267,7 +2267,7 @@ bool blk_update_request(struct request *req, int error, unsigned int nr_bytes)
- 	if (!req->bio)
- 		return false;
-
--	trace_block_rq_complete(req->q, req);
-+	trace_block_rq_complete(req->q, req, nr_bytes);
-
- 	/*
- 	 * For fs requests, rq is just carrier of independent bio's
-diff --git a/include/trace/events/block.h b/include/trace/events/block.h
-index 05c5e61..048e265 100644
---- a/include/trace/events/block.h
-+++ b/include/trace/events/block.h
-@@ -81,6 +81,7 @@ DEFINE_EVENT(block_rq_with_error, block_rq_requeue,
-  * block_rq_complete - block IO operation completed by device driver
-  * @q: queue containing the block operation request
-  * @rq: block operations request
-+ * @nr_bytes: number of completed bytes
-  *
-  * The block_rq_complete tracepoint event indicates that some portion
-  * of operation request has been completed by the device driver.  If
-@@ -88,11 +89,37 @@ DEFINE_EVENT(block_rq_with_error, block_rq_requeue,
-  * do for the request. If @rq->bio is non-NULL then there is
-  * additional work required to complete the request.
-  */
--DEFINE_EVENT(block_rq_with_error, block_rq_complete,
-+TRACE_EVENT(block_rq_complete,
-
--	TP_PROTO(struct request_queue *q, struct request *rq),
-+	TP_PROTO(struct request_queue *q, struct request *rq,
-+		 unsigned int nr_bytes),
-
--	TP_ARGS(q, rq)
-+	TP_ARGS(q, rq, nr_bytes),
-+
-+	TP_STRUCT__entry(
-+		__field(  dev_t,	dev			)
-+		__field(  sector_t,	sector			)
-+		__field(  unsigned int,	nr_sector		)
-+		__field(  int,		errors			)
-+		__array(  char,		rwbs,	RWBS_LEN	)
-+		__dynamic_array( char,	cmd,	blk_cmd_buf_len(rq)	)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->dev	   = rq->rq_disk ? disk_devt(rq->rq_disk) : 0;
-+		__entry->sector    = blk_rq_pos(rq);
-+		__entry->nr_sector = nr_bytes >> 9;
-+		__entry->errors    = rq->errors;
-+
-+		blk_fill_rwbs(__entry->rwbs, rq->cmd_flags, nr_bytes);
-+		blk_dump_cmd(__get_str(cmd), rq);
-+	),
-+
-+	TP_printk("%d,%d %s (%s) %llu + %u [%d]",
-+		  MAJOR(__entry->dev), MINOR(__entry->dev),
-+		  __entry->rwbs, __get_str(cmd),
-+		  (unsigned long long)__entry->sector,
-+		  __entry->nr_sector, __entry->errors)
- );
-
- DECLARE_EVENT_CLASS(block_rq,
-diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-index c0bd030..b0eeda6 100644
---- a/kernel/trace/blktrace.c
-+++ b/kernel/trace/blktrace.c
-@@ -685,6 +685,7 @@ void blk_trace_shutdown(struct request_queue *q)
-  * blk_add_trace_rq - Add a trace for a request oriented action
-  * @q:		queue the io is for
-  * @rq:		the source request
-+ * @nr_bytes:	number of completed bytes
-  * @what:	the action
-  *
-  * Description:
-@@ -692,7 +693,7 @@ void blk_trace_shutdown(struct request_queue *q)
-  *
-  **/
- static void blk_add_trace_rq(struct request_queue *q, struct request *rq,
--			     u32 what)
-+			     unsigned int nr_bytes, u32 what)
- {
- 	struct blk_trace *bt = q->blk_trace;
-
-@@ -701,11 +702,11 @@ static void blk_add_trace_rq(struct request_queue *q, struct request *rq,
-
- 	if (rq->cmd_type == REQ_TYPE_BLOCK_PC) {
- 		what |= BLK_TC_ACT(BLK_TC_PC);
--		__blk_add_trace(bt, 0, blk_rq_bytes(rq), rq->cmd_flags,
-+		__blk_add_trace(bt, 0, nr_bytes, rq->cmd_flags,
- 				what, rq->errors, rq->cmd_len, rq->cmd);
- 	} else  {
- 		what |= BLK_TC_ACT(BLK_TC_FS);
--		__blk_add_trace(bt, blk_rq_pos(rq), blk_rq_bytes(rq),
-+		__blk_add_trace(bt, blk_rq_pos(rq), nr_bytes,
- 				rq->cmd_flags, what, rq->errors, 0, NULL);
- 	}
- }
-@@ -713,33 +714,34 @@ static void blk_add_trace_rq(struct request_queue *q, struct request *rq,
- static void blk_add_trace_rq_abort(void *ignore,
- 				   struct request_queue *q, struct request *rq)
- {
--	blk_add_trace_rq(q, rq, BLK_TA_ABORT);
-+	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_ABORT);
- }
-
- static void blk_add_trace_rq_insert(void *ignore,
- 				    struct request_queue *q, struct request *rq)
- {
--	blk_add_trace_rq(q, rq, BLK_TA_INSERT);
-+	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_INSERT);
- }
-
- static void blk_add_trace_rq_issue(void *ignore,
- 				   struct request_queue *q, struct request *rq)
- {
--	blk_add_trace_rq(q, rq, BLK_TA_ISSUE);
-+	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_ISSUE);
- }
-
- static void blk_add_trace_rq_requeue(void *ignore,
- 				     struct request_queue *q,
- 				     struct request *rq)
- {
--	blk_add_trace_rq(q, rq, BLK_TA_REQUEUE);
-+	blk_add_trace_rq(q, rq, blk_rq_bytes(rq), BLK_TA_REQUEUE);
- }
-
- static void blk_add_trace_rq_complete(void *ignore,
- 				      struct request_queue *q,
--				      struct request *rq)
-+				      struct request *rq,
-+				      unsigned int nr_bytes)
- {
--	blk_add_trace_rq(q, rq, BLK_TA_COMPLETE);
-+	blk_add_trace_rq(q, rq, nr_bytes, BLK_TA_COMPLETE);
- }
-
- /**
---
-1.9.1
+-- 
+1.7.10.4
 
