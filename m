@@ -1,44 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751207AbaDQUSD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 16:18:03 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48551 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736AbaDQURw (ORCPT
+	id S1751341AbaDQUTu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 16:19:50 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:58996 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaDQUTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 16:17:52 -0400
-Date: Thu, 17 Apr 2014 21:16:44 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "x86@kernel.org" <x86@kernel.org>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH 4/8] tty/serial: add generic serial earlycon
-Message-ID: <20140417211644.39353c0d@www.etchedpixels.co.uk>
-In-Reply-To: <CAL_JsqJwKQ_KuWWQNZHrMh8NwwiubB2jR+g-Y2n_dH4kJ5zVow@mail.gmail.com>
-References: <1395436128-11244-1-git-send-email-robherring2@gmail.com>
-	<9368307.RXEGmQia1C@wuerfel>
-	<CAL_JsqJh1R8wxReCvTfE7GecZa0vMaAqnGa0ZoRBMace9qtzvQ@mail.gmail.com>
-	<21117957.8m9iUdR1VN@wuerfel>
-	<CAL_JsqJwKQ_KuWWQNZHrMh8NwwiubB2jR+g-Y2n_dH4kJ5zVow@mail.gmail.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 17 Apr 2014 16:19:44 -0400
+MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <5350042F.4040904@colorfullife.com>
+References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
+ <20140331170546.3b3e72f0.akpm@linux-foundation.org> <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
+ <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
+ <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
+ <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
+ <20140401142947.927642a408d84df27d581e36@linux-foundation.org>
+ <CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com>
+ <20140401144801.603c288674ab8f417b42a043@linux-foundation.org>
+ <1396389751.25314.26.camel@buesod1.americas.hpqcorp.net> <20140401150843.13da3743554ad541629c936d@linux-foundation.org>
+ <534AD1EE.3050705@colorfullife.com> <20140416154631.6d0173498c60619d454ae651@linux-foundation.org>
+ <CAHO5Pa2zguBEpg-S0Zx26qEStF5ZyvrnbU8-sQZfNJEZRMQPqg@mail.gmail.com> <5350042F.4040904@colorfullife.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Thu, 17 Apr 2014 22:19:23 +0200
+Message-ID: <CAKgNAkiL+m35MffVheq90rNS7Tv3nANNZh8GJbh8FHkr3ot_tg@mail.gmail.com>
+Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> At some point it was believed to be needed on the 8250 driver. Perhaps
-> Alan can comment since the commit message tells us nothing:
+On Thu, Apr 17, 2014 at 6:41 PM, Manfred Spraul
+<manfred@colorfullife.com> wrote:
+> On 04/17/2014 12:41 PM, Michael Kerrisk wrote:
+>>
+>> On Thu, Apr 17, 2014 at 12:46 AM, Andrew Morton
+>> <akpm@linux-foundation.org> wrote:
+>>>
+>>> On Sun, 13 Apr 2014 20:05:34 +0200 Manfred Spraul
+>>> <manfred@colorfullife.com> wrote:
+>>>
+>>>> Hi Andrew,
+>>>>
+>>>> On 04/02/2014 12:08 AM, Andrew Morton wrote:
+>>>>>
+>>>>> Well, I'm assuming 64GB==infinity. It *was* infinity in the RHEL5
+>>>>> timeframe, but infinity has since become larger so pickanumber.
+>>>>
+>>>> I think infinity is the right solution:
+>>>> The only common case where infinity is wrong would be Android - and
+>>>> Android disables sysv shm entirely.
+>>>>
+>>>> There are two patches:
+>>>> http://marc.info/?l=linux-kernel&m=139730332306185&q=raw
+>>>> http://marc.info/?l=linux-kernel&m=139727299800644&q=raw
+>>>>
+>>>> Could you apply one of them?
+>>>> I wrote the first one, thus I'm biased which one is better.
+>>>
+>>> I like your patch because applying it might encourage you to send more
+>>> kernel patches - I miss the old days ;)
+>>>
+>>> But I do worry about disrupting existing systems so I like Davidlohr's
+>>> idea of making the change a no-op for people who are currently
+>>> explicitly setting shmmax and shmall.
+>>
+>> Agreed. It's hard to imagine situations where people might care
+>> nowadays, but there's no limits to people's insane inventiveness. Some
+>> people really might want to set an upper limit.
+>
+> I don't understand that: neither patch has any impact after an explicit
+> sysctl that overwrites shmmax.
 
-Don't remember sorry - I guess at the time someone had ioremap on their
-plaform acting as cached. It was a long time ago 8)
+You don't understand it, because I was being dense :-}. I
+misunderstood your patch. I think I was thrown by this line in the
+commit message:
+
+    The patch disables both limits by setting the limits to ULONG_MAX.
+
+Of course, you patch doesn't *disable* the limits, it simply sets the
+defaults to the maximum.
+
+>>> In an ideal world, system administrators would review this change,
+>>
+>> And in the ideal world, patches such as this would CC
+>> linux-api@vger.kernel.org, as described in
+>> Documentation/SubmitChecklist, so that users who care about getting
+>> advance warning on API changes could be alerted and might even review
+>> and comment...
+>
+> Good point.
+> Davidlohr: Your patch has an impact on shmctl(,IPC_INFO,).
+> Could you add that for v3?
+
+Well, actually, BOTH patches change the API, because they both affect
+SHMALL/SHMMAX.
+
+Cheers,
+
+Michael
+
+
+> I'll try to make a v2 (with your update to the uapi header file) tomorrow.
+>
+> --
+>     Manfred
+
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
