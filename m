@@ -1,99 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006AbaDQQFF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 12:05:05 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:42340 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751196AbaDQQEa (ORCPT
+	id S1752451AbaDQQFU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 12:05:20 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:44892 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620AbaDQQEo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 12:04:30 -0400
+	Thu, 17 Apr 2014 12:04:44 -0400
+Message-ID: <534FFBB3.8050601@linaro.org>
+Date: Thu, 17 Apr 2014 18:05:07 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140417152744.GM15326@htj.dyndns.org>
-References: <20140416165052.GK1257@htj.dyndns.org>
-	<1397691258-11639-1-git-send-email-laijs@cn.fujitsu.com>
-	<20140417152744.GM15326@htj.dyndns.org>
-Date: Fri, 18 Apr 2014 00:04:29 +0800
-X-Google-Sender-Auth: jE5R5_KVDUrO0n9z_dAIE67jJFQ
-Message-ID: <CACvQF527RneJwUXf0=C6L0_9ncdS6--iqhdpWAFKqHtd25LOYg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] workqueue: rescuer_thread() processes all pwqs before exit
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
+        rjw@rjwysocki.net, linux-pm@vger.kernel.org, alex.shi@linaro.org,
+        vincent.guittot@linaro.org, morten.rasmussen@arm.com
+Subject: Re: [RFC PATCHC 3/3] sched/fair: use the idle state info to choose
+ the idlest cpu
+References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org> <1396009796-31598-4-git-send-email-daniel.lezcano@linaro.org> <alpine.LFD.2.11.1404012208110.1571@knanqh.ubzr> <534FDCDC.6000806@linaro.org> <alpine.LFD.2.11.1404171138470.980@knanqh.ubzr>
+In-Reply-To: <alpine.LFD.2.11.1404171138470.980@knanqh.ubzr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 11:27 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello,
+On 04/17/2014 05:53 PM, Nicolas Pitre wrote:
+> On Thu, 17 Apr 2014, Daniel Lezcano wrote:
 >
-> On Thu, Apr 17, 2014 at 07:34:08AM +0800, Lai Jiangshan wrote:
->> Before the rescuer is picked to running, the works of the @pwq
->> may be processed by some other workers, and destroy_workqueue()
->> may called at the same time. This may result a nasty situation
->> that rescuer may exit with non-empty mayday list.
+>> Ok, refreshed the patchset but before sending it out I would to discuss about
+>> the rational of the changes and the policy, and change the patchset
+>> consequently.
 >>
->> It is no harm currently, destroy_workqueue() can safely to free
->> them all(workqueue&pwqs) togerther, since the rescuer is stopped.
->> No rescuer nor mayday-timer can access the mayday list.
+>> What order to choose if the cpu is idle ?
 >>
->> But it is nasty and error-prone in future develop. Fix it.
+>> Let's assume all cpus are idle on a dual socket quad core.
 >>
->> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
->> ---
->>  kernel/workqueue.c |   12 ++++++------
->>  1 files changed, 6 insertions(+), 6 deletions(-)
+>> Also, we can reasonably do the hypothesis if the cluster is in low power mode,
+>> the cpus belonging to the same cluster are in the same idle state (putting
+>> apart the auto-promote where we don't have control on).
 >>
->> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
->> index 0ee63af..832125f 100644
->> --- a/kernel/workqueue.c
->> +++ b/kernel/workqueue.c
->> @@ -2409,12 +2409,6 @@ static int rescuer_thread(void *__rescuer)
->>  repeat:
->>       set_current_state(TASK_INTERRUPTIBLE);
+>> If the policy you talk above is 'aggressive power saving', we can follow the
+>> rules with decreasing priority:
 >>
->> -     if (kthread_should_stop()) {
->> -             __set_current_state(TASK_RUNNING);
->> -             rescuer->task->flags &= ~PF_WQ_WORKER;
->> -             return 0;
->> -     }
->> -
->>       /* see whether any pwq is asking for help */
->>       spin_lock_irq(&wq_mayday_lock);
->>
->> @@ -2459,6 +2453,12 @@ repeat:
->>
->>       spin_unlock_irq(&wq_mayday_lock);
->>
->> +     if (kthread_should_stop()) {
->> +             __set_current_state(TASK_RUNNING);
->> +             rescuer->task->flags &= ~PF_WQ_WORKER;
->> +             return 0;
->> +     }
->> +
+>> 1. We want to prevent to wakeup the entire cluster
+>> 	=> as the cpus are in the same idle state, by choosing a cpu in
+>> 	=> shallow
+>> state, we should have the guarantee we won't wakeup a cluster (except if no
+>> shallowest idle cpu are found).
 >
-> I don't think this is reliable.  What if mayday requests take place
-> between wq_mayday_lock and kthread_should_stop() check?  We'll
-> probably need to run through mayday list after checking should_stop.
+> This is unclear to me.  Obviously, if an entire cluster is down, that
+> means all the CPUs it contains have been idle for a long time.  And
+> therefore they shouldn't be subject to selection unless there is no
+> other CPUs available.  Is that what you mean?
 
-It is destroy_workqueue()'s responsibility to avoid this.
-destroy_workqueue() should drain all works and refuse any new work queued
-on the wq before destroy the wq.
+Yes, this is what I meant. But also what I meant is we can get rid for 
+the moment of the cpu topology and the coupling idle state because if we 
+do this described approach, as the idle state will be the same for the 
+cpus belonging to the same cluster we won't select a cluster down 
+(except if there is no other CPUs available).
 
-So since there is no works, there is no new mayday request,
-and there is no mayday request take place between wq_mayday_lock
-and kthread_should_stop() check.
-
-Thanks,
-Lai
-
+>> 2. We want to prevent to wakeup a cpu which did not reach the target residency
+>> time (will need some work to unify cpuidle idle time and idle task run time)
+>> 	=> with the target residency and, as a first step, with the idle
+>> 	=> stamp,
+>> we can determine if the cpu slept enough
 >
-> Thanks.
+> Agreed. However, right now, the scheduler does not have any
+> consideration for that.  So this should be done as a separate patch.
+
+Yes, I thought as a very first step we can rely on the idle stamp until 
+we unify the times with a big comment. Or I can first unify the idle 
+times and then take into account the target residency. It is to comply 
+with Rafael's request to have the 'big picture'.
+
+>> 3. We want to prevent to wakeup a cpu in deep idle state
+>> 	=> by looking for the cpu in shallowest idle state
 >
-> --
-> tejun
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Obvious.
+>
+>> 4. We want to prevent to wakeup a cpu where the exit latency is longer than
+>> the expected run time of the task (and the time to migrate the task ?)
+>
+> Sure.  That would be a case for using task packing even if the policy is
+> set to performance rather than powersave whereas task packing is
+> normally for powersave.
+
+Yes, I agree, task packing improves also the performances and it makes 
+really sense to prevent task migration under some circumstances for a 
+better cache efficiency.
+
+Thanks for the comments
+
+   -- Daniel
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
