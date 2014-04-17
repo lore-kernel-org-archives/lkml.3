@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152AbaDQGMD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 02:12:03 -0400
-Received: from co9ehsobe001.messaging.microsoft.com ([207.46.163.24]:14738
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753128AbaDQGMB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 02:12:01 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz8275dh1de097hz2dh87h2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh26d3h1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Thu, 17 Apr 2014 14:11:38 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        <linux-kernel@vger.kernel.org>, Silvio F <silvio.fricke@gmail.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Viresh Kumar <viresh.linux@gmail.com>,
-        Shiraz Hashim <shiraz.hashim@st.com>, <spear-devel@list.st.com>
-Subject: Re: [PATCH 0/6] mfd/gpio: cleanup of STMPE driver
-Message-ID: <20140417061136.GD11602@dragon>
-References: <1397659455-13638-1-git-send-email-linus.walleij@linaro.org>
+	id S1755220AbaDQG0M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 02:26:12 -0400
+Received: from mail.ovgu.de ([141.44.1.66]:43474 "EHLO mail.ovgu.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753128AbaDQG0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 02:26:10 -0400
+Message-ID: <534F73F6.7050804@st.ovgu.de>
+Date: Thu, 17 Apr 2014 08:25:58 +0200
+From: Matthias Graf <matthias.graf@st.ovgu.de>
+Organization: student.uni-magdeburg.de
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1397659455-13638-1-git-send-email-linus.walleij@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Borislav Petkov <bp@alien8.de>
+CC: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>
+Subject: Re: PROBLEM: Fatal Machine Check >= 3.13.5-101.fc19.x86_64
+References: <532C727F.1080803@st.ovgu.de> <20140321172742.GA2846@pd.tnic> <532C97DF.9010201@st.ovgu.de> <20140321201352.GC1338@pd.tnic> <533069E4.10002@st.ovgu.de> <533C1B47.8080709@st.ovgu.de> <20140416142232.GF16741@pd.tnic>
+In-Reply-To: <20140416142232.GF16741@pd.tnic>
+X-Enigmail-Version: 1.6
+OpenPGP: id=BE42F9BD
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="Qo9TFqWdL9idibOv5RXdVP2na5H97EOOG"
+X-PMX-Spam: Gauge=IIIIIIII, Probability=8%, Report='
+ MULTIPLE_RCPTS 0.1, HTML_00_01 0.05, HTML_00_10 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1600_1699 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, ECARD_WORD 0, RDNS_POOLED 0, RDNS_SUSP 0, RDNS_SUSP_SPECIFIC 0, __ANY_URI 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CT 0, __CTYPE_HAS_BOUNDARY 0, __CTYPE_MULTIPART 0, __FORWARDED_MSG 0, __HAS_FROM 0, __HAS_MSGID 0, __IN_REP_TO 0, __MIME_VERSION 0, __MOZILLA_MSGID 0, __MOZILLA_USER_AGENT 0, __MULTIPLE_RCPTS_CC_X2 0, __RDNS_POOLED_10 0, __SANE_MSGID 0, __STOCK_PHRASE_6 0, __SUBJ_ALPHA_NEGATE 0, __TO_MALFORMED_2 0, __URI_NO_MAILTO 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __USER_AGENT 0'
+X-Spam-Score: Gauge=IIIIIIII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 04:44:09PM +0200, Linus Walleij wrote:
-> This cleans up the STMPE driver a bit:
-> 
-> - Remove all static GPIO and IRQ number assignments as all platforms
->   with this hardware use device tree now.
-> - Add optional regulators.
-> - Add proper device tree probe path using compatible strings.
-> - Block mask fix for STMPE1601.
-> - Switch GPIO portions to use the gpiolib irqchip helpers.
-> 
-> This branch is available here if you want to test it:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-stericsson.git stmpe
-> 
-> It'd be great if someone with the i.MX 53 or 6q platforms using
-> this could test it, the same goes for the SPEAr people.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--Qo9TFqWdL9idibOv5RXdVP2na5H97EOOG
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-None of my i.MX board on hands uses stmpe, so we may need the favor from
-pengutronix folks to test it on imx6q-dmo-edmqmx6 board.
+Ok. I tried:
 
-Shawn
+3.15-rc1 (16. April)
+failed.
 
+Bisecting turned out:
+last working: 3.12.17
+first failing: 3.13
+
+
+Am 16.04.2014 16:22, schrieb Borislav Petkov:
+> On Wed, Apr 02, 2014 at 04:14:31PM +0200, Matthias Graf wrote:
+>> I now tried booting with a different graphics card (on the same
+>> machine), and it resolved the problem. Therefore, it definitely has
+>> something to do with graphics.
+>>
+>> It is a Sapphire ATI Radeon HD 4830 (RV770 chip).
+>=20
+> As Tony said, you might want to try a stock 3.14 kernel with the old GP=
+U
+> which causes the MCEs and see whether if it still triggers. If you stil=
+l
+> want to hunt this down, that is.
+>=20
+
+
+--Qo9TFqWdL9idibOv5RXdVP2na5H97EOOG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQEcBAEBAgAGBQJTT3P2AAoJELO00SK+Qvm9rYQH/irUXdRKB0Wx2diUi2EKe1tQ
+m+bWktBuWk/89aHQEpSf4U7KoaqNFPVSGcQ6XxO/sWVtYmkdrOBlv7XZ835N3I3k
+kn+zD+7hzNipFsXIi1fR+RDHIRPRc7BIJcG+g1j8hbXAqyQ58eqVsJnozv4/Swh2
+kV99FyR6Ryk5Em9hr65cNiOaPyVTT99l0ye3XHyAV2yUh/WuVR0OM0ki3xCz2QwT
+R0OQeYdgu1cjplZblqygzt4gOpWdrMR6k+h5Gc/57bUKP0hob0ybrh0yX+ow7kAE
+u5dA4i9dFDt5tgc5nU/CDE9y0kkZgHwoGCfqp3cnILo61gTKBnTgIKlbkF1aF2E=
+=VHHW
+-----END PGP SIGNATURE-----
+
+--Qo9TFqWdL9idibOv5RXdVP2na5H97EOOG--
