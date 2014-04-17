@@ -1,104 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456AbaDQRnl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 13:43:41 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:50034 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752462AbaDQRnS (ORCPT
+	id S1753593AbaDQRoA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 13:44:00 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:34501 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753489AbaDQRnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 13:43:18 -0400
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: patches@linaro.org, Leif Lindholm <leif.lindholm@linaro.org>,
-        linux-mips@linux-mips.org, devicetree@vger.kernel.org,
-        John Crispin <blogic@openwrt.org>, Mark Rutland <mark.rutland@arm.com>
-Subject: [PATCH 2/3] mips: dts: add device_type="memory" where missing
-Date: Thu, 17 Apr 2014 18:42:00 +0100
-Message-Id: <1397756521-29387-3-git-send-email-leif.lindholm@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1397756521-29387-1-git-send-email-leif.lindholm@linaro.org>
-References: <1397756521-29387-1-git-send-email-leif.lindholm@linaro.org>
+	Thu, 17 Apr 2014 13:43:43 -0400
+Date: Thu, 17 Apr 2014 10:43:34 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org, tj@kernel.org
+Cc: cl@linux.com, mingo@kernel.org, grygorii.strashko@ti.com,
+        peterz@infradead.org
+Subject: [PATCH] percpu: Fix raw_cpu_inc_return()
+Message-ID: <20140417174334.GA20303@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041717-0928-0000-0000-0000013B50CC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A few platforms lack a 'device_type = "memory"' for their memory
-nodes, relying on an old ppc quirk in order to discover its memory.
-Add this, to permit that quirk to be made ppc only.
+This patch fixes a build bug triggered by one of the RCU commits
+queued for 3.16.
 
-Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: linux-mips@linux-mips.org
-Cc: devicetree@vger.kernel.org
-Cc: John Crispin <blogic@openwrt.org>
-Cc: Mark Rutland <mark.rutland@arm.com>
----
- arch/mips/lantiq/dts/easy50712.dts    |    1 +
- arch/mips/ralink/dts/mt7620a_eval.dts |    1 +
- arch/mips/ralink/dts/rt2880_eval.dts  |    1 +
- arch/mips/ralink/dts/rt3052_eval.dts  |    1 +
- arch/mips/ralink/dts/rt3883_eval.dts  |    1 +
- 5 files changed, 5 insertions(+)
+The definition for raw_cpu_add_return() uses the operation prefix
+"raw_add_return_", but the definitions in the various percpu.h files
+expect "raw_cpu_add_return_".  This commit therefore appropriately
+adjusts the definition of raw_cpu_add_return().
 
-diff --git a/arch/mips/lantiq/dts/easy50712.dts b/arch/mips/lantiq/dts/easy50712.dts
-index fac1f5b..143b8a3 100644
---- a/arch/mips/lantiq/dts/easy50712.dts
-+++ b/arch/mips/lantiq/dts/easy50712.dts
-@@ -8,6 +8,7 @@
- 	};
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Acked-by: Christoph Lameter <cl@linux.com>
+
+diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+index e7a0b95ed527..495c6543a8f2 100644
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
+@@ -639,7 +639,7 @@ do {									\
+ #  define raw_cpu_add_return_8(pcp, val)	raw_cpu_generic_add_return(pcp, val)
+ # endif
+ # define raw_cpu_add_return(pcp, val)	\
+-	__pcpu_size_call_return2(raw_add_return_, pcp, val)
++	__pcpu_size_call_return2(raw_cpu_add_return_, pcp, val)
+ #endif
  
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x0 0x2000000>;
- 	};
- 
-diff --git a/arch/mips/ralink/dts/mt7620a_eval.dts b/arch/mips/ralink/dts/mt7620a_eval.dts
-index 35eb874..709f581 100644
---- a/arch/mips/ralink/dts/mt7620a_eval.dts
-+++ b/arch/mips/ralink/dts/mt7620a_eval.dts
-@@ -7,6 +7,7 @@
- 	model = "Ralink MT7620A evaluation board";
- 
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x0 0x2000000>;
- 	};
- 
-diff --git a/arch/mips/ralink/dts/rt2880_eval.dts b/arch/mips/ralink/dts/rt2880_eval.dts
-index 322d700..0a685db 100644
---- a/arch/mips/ralink/dts/rt2880_eval.dts
-+++ b/arch/mips/ralink/dts/rt2880_eval.dts
-@@ -7,6 +7,7 @@
- 	model = "Ralink RT2880 evaluation board";
- 
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x8000000 0x2000000>;
- 	};
- 
-diff --git a/arch/mips/ralink/dts/rt3052_eval.dts b/arch/mips/ralink/dts/rt3052_eval.dts
-index 0ac73ea..ec9e9a0 100644
---- a/arch/mips/ralink/dts/rt3052_eval.dts
-+++ b/arch/mips/ralink/dts/rt3052_eval.dts
-@@ -7,6 +7,7 @@
- 	model = "Ralink RT3052 evaluation board";
- 
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x0 0x2000000>;
- 	};
- 
-diff --git a/arch/mips/ralink/dts/rt3883_eval.dts b/arch/mips/ralink/dts/rt3883_eval.dts
-index 2fa6b33..e8df21a 100644
---- a/arch/mips/ralink/dts/rt3883_eval.dts
-+++ b/arch/mips/ralink/dts/rt3883_eval.dts
-@@ -7,6 +7,7 @@
- 	model = "Ralink RT3883 evaluation board";
- 
- 	memory@0 {
-+		device_type = "memory";
- 		reg = <0x0 0x2000000>;
- 	};
- 
--- 
-1.7.10.4
+ #define raw_cpu_sub_return(pcp, val)	raw_cpu_add_return(pcp, -(typeof(pcp))(val))
 
