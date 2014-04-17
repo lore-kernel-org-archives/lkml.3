@@ -1,92 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161248AbaDQKwV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 06:52:21 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:60828 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754328AbaDQKwU (ORCPT
+	id S1161340AbaDQKyT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 06:54:19 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:47686 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428AbaDQKyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 06:52:20 -0400
-Date: Thu, 17 Apr 2014 11:52:14 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Silvio F <silvio.fricke@gmail.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Viresh Kumar <viresh.linux@gmail.com>,
-        Shiraz Hashim <shiraz.hashim@st.com>, spear-devel@list.st.com
-Subject: Re: [PATCH 4/6] mfd: stmpe: mask off unused blocks properly
-Message-ID: <20140417105214.GN28725@lee--X1>
-References: <1397659455-13638-1-git-send-email-linus.walleij@linaro.org>
- <1397659455-13638-5-git-send-email-linus.walleij@linaro.org>
+	Thu, 17 Apr 2014 06:54:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1397659455-13638-5-git-send-email-linus.walleij@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1397272942.2686.4.camel@buesod1.americas.hpqcorp.net>
+References: <1397272942.2686.4.camel@buesod1.americas.hpqcorp.net>
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Thu, 17 Apr 2014 12:53:52 +0200
+X-Google-Sender-Auth: Dyl1_fCyF71756htykxonOeCPvY
+Message-ID: <CAHO5Pa3BOgJGCm7NvE4xbm3O1WbRLRBS0pgvErPudypP_iiZ3g@mail.gmail.com>
+Subject: Re: [PATCH v2] ipc,shm: disable shmmax and shmall by default
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The STMPE driver would just read/modify/write the system control
-> register on the STMPE1601, meaning it would not properly mask off
-> the PWM block, which remained active if it was on at boot time.
-> This makes sure the blocks are always masked off if they were
-> active on boot, saving some power. Also rename the inconsistenty
-> named STMPE1601 define for the PWM block activation.
-> 
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+On Sat, Apr 12, 2014 at 5:22 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> From: Davidlohr Bueso <davidlohr@hp.com>
+>
+> The default size for shmmax is, and always has been, 32Mb.
+> Today, in the XXI century, it seems that this value is rather small,
+> making users have to increase it via sysctl, which can cause
+> unnecessary work and userspace application workarounds[1].
+>
+> Instead of choosing yet another arbitrary value, larger than 32Mb,
+> this patch disables the use of both shmmax and shmall by default,
+> allowing users to create segments of unlimited sizes. Users and
+> applications that already explicitly set these values through sysctl
+> are left untouched, and thus does not change any of the behavior.
+>
+> So a value of 0 bytes or pages, for shmmax and shmall, respectively,
+> implies unlimited memory, as opposed to disabling sysv shared memory.
+> This is safe as 0 cannot possibly be used previously as SHMMIN is
+> hardcoded to 1 and cannot be modified.
+>
+> This change allows Linux to treat shm just as regular anonymous memory.
+> One important difference between them, though, is handling out-of-memory
+> conditions: as opposed to regular anon memory, the OOM killer will not
+> free the memory as it is shm, allowing users to potentially abuse this.
+> To overcome this situation, the shm_rmid_forced option must be enabled.
+>
+> [1]: http://rhaas.blogspot.com/2012/06/absurd-shared-memory-limits.html
+>
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+Of the two proposed approaches (the other being
+marc.info/?l=linux-kernel&m=139730332306185), this looks preferable to
+me, since it allows strange users to maintain historical behavior
+(i.e., the ability to set a limit) if they really want it, so:
+
+Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
+
+One or two comments below, that you might consider for your v3 patch.
+
 > ---
->  drivers/mfd/stmpe.c | 9 +++++++++
->  drivers/mfd/stmpe.h | 2 +-
->  2 files changed, 10 insertions(+), 1 deletion(-)
+> Changes from v1:
+>  - Respect SHMMIN even when shmmax is 0 (unlimited).
+>    This fixes the shmget02 test that broke in v1. (per Manfred)
+>
+>  - Update changelog regarding OOM description (per Kosaki)
+>
+>  include/linux/shm.h      | 2 +-
+>  include/uapi/linux/shm.h | 8 ++++----
+>  ipc/shm.c                | 6 ++++--
+>  3 files changed, 9 insertions(+), 7 deletions(-)
+>
+> diff --git a/include/linux/shm.h b/include/linux/shm.h
+> index 1e2cd2e..0ca06a3 100644
+> --- a/include/linux/shm.h
+> +++ b/include/linux/shm.h
+> @@ -4,7 +4,7 @@
+>  #include <asm/page.h>
+>  #include <uapi/linux/shm.h>
+>
+> -#define SHMALL (SHMMAX/PAGE_SIZE*(SHMMNI/16)) /* max shm system wide (pages) */
+> +#define SHMALL 0 /* max shm system wide (pages) */
+>  #include <asm/shmparam.h>
+>  struct shmid_kernel /* private to the kernel */
+>  {
+> diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
+> index 78b6941..5f0ef28 100644
+> --- a/include/uapi/linux/shm.h
+> +++ b/include/uapi/linux/shm.h
+> @@ -9,14 +9,14 @@
+>
+>  /*
+>   * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
+> - * be increased by sysctl
+> + * be increased by sysctl. By default, disable SHMMAX and SHMALL with
 
-Patch looks good to me.
+s/increased/modified/
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+> + * 0 bytes, thus allowing processes to have unlimited shared memory.
+>   */
+> -
+> -#define SHMMAX 0x2000000                /* max shared seg size (bytes) */
+> +#define SHMMAX 0                        /* max shared seg size (bytes) */
 
-> diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-> index 692452442ead..065c923cb2a9 100644
-> --- a/drivers/mfd/stmpe.c
-> +++ b/drivers/mfd/stmpe.c
-> @@ -606,9 +606,18 @@ static int stmpe1601_enable(struct stmpe *stmpe, unsigned int blocks,
->  
->  	if (blocks & STMPE_BLOCK_GPIO)
->  		mask |= STMPE1601_SYS_CTRL_ENABLE_GPIO;
-> +	else
-> +		mask &= ~STMPE1601_SYS_CTRL_ENABLE_GPIO;
->  
->  	if (blocks & STMPE_BLOCK_KEYPAD)
->  		mask |= STMPE1601_SYS_CTRL_ENABLE_KPC;
-> +	else
-> +		mask &= ~STMPE1601_SYS_CTRL_ENABLE_KPC;
-> +
-> +	if (blocks & STMPE_BLOCK_PWM)
-> +		mask |= STMPE1601_SYS_CTRL_ENABLE_SPWM;
-> +	else
-> +		mask &= ~STMPE1601_SYS_CTRL_ENABLE_SPWM;
->  
->  	return __stmpe_set_bits(stmpe, STMPE1601_REG_SYS_CTRL, mask,
->  				enable ? mask : 0);
-> diff --git a/drivers/mfd/stmpe.h b/drivers/mfd/stmpe.h
-> index 6639f1b0fef5..9e4d21d37a11 100644
-> --- a/drivers/mfd/stmpe.h
-> +++ b/drivers/mfd/stmpe.h
-> @@ -192,7 +192,7 @@ int stmpe_remove(struct stmpe *stmpe);
->  
->  #define STMPE1601_SYS_CTRL_ENABLE_GPIO		(1 << 3)
->  #define STMPE1601_SYS_CTRL_ENABLE_KPC		(1 << 1)
-> -#define STMPE1601_SYSCON_ENABLE_SPWM		(1 << 0)
-> +#define STMPE1601_SYS_CTRL_ENABLE_SPWM		(1 << 0)
->  
->  /* The 1601/2403 share the same masks */
->  #define STMPE1601_AUTOSLEEP_TIMEOUT_MASK	(0x7)
+I suggest: s/(bytes)/(bytes); 0 means "no limit" */
+
+>  #define SHMMIN 1                        /* min shared seg size (bytes) */
+>  #define SHMMNI 4096                     /* max num of segs system wide */
+>  #ifndef __KERNEL__
+> -#define SHMALL (SHMMAX/getpagesize()*(SHMMNI/16))
+> +#define SHMALL 0
+
+As long as we're here, let's add a meaningful comment to that one:
+
+/* system-wide limit on number of pages of shared memory; 0 means "no limit" */
+
+Cheers,
+
+Michael
+
+
+>  #endif
+>  #define SHMSEG SHMMNI                   /* max shared segs per process */
+>
+> diff --git a/ipc/shm.c b/ipc/shm.c
+> index 7645961..8630561 100644
+> --- a/ipc/shm.c
+> +++ b/ipc/shm.c
+> @@ -490,10 +490,12 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+>         int id;
+>         vm_flags_t acctflag = 0;
+>
+> -       if (size < SHMMIN || size > ns->shm_ctlmax)
+> +       if (size < SHMMIN ||
+> +           (ns->shm_ctlmax && size > ns->shm_ctlmax))
+>                 return -EINVAL;
+>
+> -       if (ns->shm_tot + numpages > ns->shm_ctlall)
+> +       if (ns->shm_ctlall &&
+> +           ns->shm_tot + numpages > ns->shm_ctlall)
+>                 return -ENOSPC;
+>
+>         shp = ipc_rcu_alloc(sizeof(*shp));
+> --
+> 1.8.1.4
+>
+>
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Michael Kerrisk Linux man-pages maintainer;
+http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface", http://blog.man7.org/
