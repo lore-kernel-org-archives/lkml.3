@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475AbaDQSxh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 14:53:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49098 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750971AbaDQSx0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 14:53:26 -0400
-Date: Thu, 17 Apr 2014 20:52:58 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 0/3] perf top/tui: Fixes for percentage filter behavior
-Message-ID: <20140417185258.GJ7422@krava.brq.redhat.com>
-References: <1397721206-15393-1-git-send-email-namhyung@kernel.org>
- <20140417120046.GC7422@krava.brq.redhat.com>
- <1397741900.1731.17.camel@leonhard>
+	id S1751992AbaDQSzk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 14:55:40 -0400
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:15928 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337AbaDQSz3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 14:55:29 -0400
+X-IronPort-AV: E=Sophos;i="4.97,880,1389772800"; 
+   d="scan'208";a="25331368"
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
+CC: Tim Kryger <tim.kryger@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] regulator: core: Return error in get optional stub
+Date: Thu, 17 Apr 2014 11:55:24 -0700
+Message-ID: <1397760924-7423-1-git-send-email-tim.kryger@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1397741900.1731.17.camel@leonhard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 10:38:19PM +0900, Namhyung Kim wrote:
-> Hi Jiri,
-> 
-> 2014-04-17 (목), 14:00 +0200, Jiri Olsa:
-> > On Thu, Apr 17, 2014 at 04:53:23PM +0900, Namhyung Kim wrote:
-> > > Hi,
-> > > 
-> > > This is a small fixes for a bug in perf top I found during some tests.
-> > > It gets segfault if symbol filter found no entries - accessing NULL
-> > > pointer in that case.
-> > 
-> > yep, I hit that yesterday as well, but I ended up just with
-> > the patch below, your changes seems more comprehensive ;-)
-> > going to review..
-> 
-> Well, the end result will be same, but I think it should have 0
-> nr_entries when there's no entry to show.
+Drivers that call regulator_get_optional are tolerant to the absence of
+that regulator.  By modifying the value returned from the stub function
+to match that seen when a regulator isn't present, callers can wrap the
+regulator logic with an IS_ERR based conditional even if they happen to
+call regulator_is_supported_voltage.  This improves efficiency as well
+as eliminates the possibility for a very subtle bug.
 
-also I hit another issue ;-)
+Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+Reviewed-by: Alex Elder <elder@linaro.org>
+---
 
-- running report on data with callchains, and the screen is populated to the middle
-- press 'END' key and the cursor goes to the bottom of the screen (I can tell based
-  on the scrollbar), but there are no entries
+This change was proposed here: https://lkml.org/lkml/2014/4/16/627
 
-I could make the cursor appear by pressing UP arrow, I bisected to:
-  f214833 perf report: Add --percentage option
+ include/linux/regulator/consumer.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-not sure where's the problem
+diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
+index e530681..1a4a8c1 100644
+--- a/include/linux/regulator/consumer.h
++++ b/include/linux/regulator/consumer.h
+@@ -258,14 +258,14 @@ regulator_get_exclusive(struct device *dev, const char *id)
+ static inline struct regulator *__must_check
+ regulator_get_optional(struct device *dev, const char *id)
+ {
+-	return NULL;
++	return ERR_PTR(-ENODEV);
+ }
+ 
+ 
+ static inline struct regulator *__must_check
+ devm_regulator_get_optional(struct device *dev, const char *id)
+ {
+-	return NULL;
++	return ERR_PTR(-ENODEV);
+ }
+ 
+ static inline void regulator_put(struct regulator *regulator)
+-- 
+1.7.9.5
 
-thanks,
-jirka
