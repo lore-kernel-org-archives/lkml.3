@@ -1,112 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760AbaDQCiS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 22:38:18 -0400
-Received: from out5-smtp.messagingengine.com ([66.111.4.29]:49304 "EHLO
-	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756358AbaDQCiQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 22:38:16 -0400
-X-Sasl-enc: tb0qa1SsIlN3GEHDr9tJ1Amu5VeYDRzexWRfOG+gNng8 1397702295
-Date: Wed, 16 Apr 2014 19:38:18 -0700
-From: Greg KH <greg@kroah.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Vince Weaver <vincent.weaver@maine.edu>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: rb tree hrtimer lockup bug (found by perf_fuzzer)
-Message-ID: <20140417023818.GB6448@kroah.com>
-References: <alpine.DEB.2.02.1403231613230.18573@ionos.tec.linutronix.de>
- <alpine.DEB.2.02.1403240017430.18573@ionos.tec.linutronix.de>
- <alpine.DEB.2.10.1403251702110.19541@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.02.1403252220110.4094@ionos.tec.linutronix.de>
- <alpine.DEB.2.10.1403261731390.26530@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.02.1403262248170.31401@ionos.tec.linutronix.de>
- <alpine.DEB.2.10.1403270940250.27563@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.02.1403311201520.14882@ionos.tec.linutronix.de>
- <20140406034750.GA7674@kroah.com>
- <alpine.DEB.2.02.1404170056140.22697@ionos.tec.linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.DEB.2.02.1404170056140.22697@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756813AbaDQCit (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 22:38:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57246 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754390AbaDQCir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 22:38:47 -0400
+Date: Thu, 17 Apr 2014 12:38:37 +1000
+From: NeilBrown <neilb@suse.de>
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xfs@oss.sgi.com, netdev@vger.kernel.org
+Subject: Re: [PATCH 10/19] NET: set PF_FSTRANS while holding sk_lock
+Message-ID: <20140417123837.5987e5e9@notabene.brown>
+In-Reply-To: <20140416.090002.2186526865564557549.davem@davemloft.net>
+References: <20140416033623.10604.69237.stgit@notabene.brown>
+	<20140416040336.10604.96000.stgit@notabene.brown>
+	<1397625226.4222.113.camel@edumazet-glaptop2.roam.corp.google.com>
+	<20140416.090002.2186526865564557549.davem@davemloft.net>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/SSVtvNA+Qn7U/.GV8.0daYz"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 01:00:53AM +0200, Thomas Gleixner wrote:
-> On Sat, 5 Apr 2014, Greg KH wrote:
-> > On Mon, Mar 31, 2014 at 01:18:34PM +0200, Thomas Gleixner wrote:
-> > > On Thu, 27 Mar 2014, Vince Weaver wrote:
-> > > > On Wed, 26 Mar 2014, Thomas Gleixner wrote:
-> > > > > Ok. So we know now what we are looking for.
-> > > > > 
-> > > > > [    1.579996] Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
-> > > > > ÿ[    1.607279] 00:09: ttyS0 at I/O 0x3f8 (irq = 4, base_baud = 115200) is a 16550A
-> > > > > [    1.615032] kobject: 'ttyS1' (ffff88011772ac10): kobject_release, parent           (null) (delayed 250)
-> > > > > [    1.624534] kobject: '(null)' (ffff8801177400f0): kobject_release, parent           (null) (delayed 500)
-> > > > > [    1.654213] 0000:00:16.3: ttyS1 at I/O 0xf0e0 (irq = 19, base_baud = 115200) is a 16550A
-> > > > > 
-> > > > > [    3.294047] Invalid timer base: tmr ffff880117740150 tmr->base           (null) base ffff880118898000
-> > > > > 
-> > > > > 1634110us : obj: ffff880117740130 initialized kobject_delayed_cleanup+0x0/0x90
-> > > > > 
-> > > > > So that happens in the context of the 8250 serial driver.
-> > > > > 
-> > > > > ...
-> > > > > 
-> > > > > Below is a patch which gives us the call path of the unnamed object
-> > > > > which causes the crash.
-> > > > 
-> > > > I've attached the boot log with that patch applied.
-> > > 
-> > > Vince, can you please disable CONFIG_DEBUG_KOBJECT_RELEASE and remove
-> > > all the debug patches to see whether the issue goes away?
-> > > 
-> > > I had a deeper look down that code path and the issue is, that the
-> > > serial core is not compatible with the deferred kobject release.
-> > > 
-> > > The tty_io layer uses a kobject embedded in its internal tty device
-> > > representation and reuses that.
-> > 
-> > It does?  What kobject is that?  I've dug through the code and I can't
-> > find it.  I see where we create a new device in
-> > tty_register_device_attr() which is dynamic and should be torn down when
-> > free_tty_struct() is called eventually.
-> 
-> It's not about the dynamic stuff.
->  
-> > > So it seems that for whatever reason the tty layer releases ttyS1 and
-> > > then initializes it again. So the deferred release will queue the
-> > > object for release while the tty layer happily reinitializes it.
-> > 
-> > That's not good, but I can't find that code path, any hints?
-> 
-> static int tty_cdev_add(struct tty_driver *driver, dev_t dev,
-> 		unsigned int index, unsigned int count)
-> {
-> 	/* init here, since reused cdevs cause crashes */
-> 	cdev_init(&driver->cdevs[index], &tty_fops);
-> 
-> The comment is interesting ...
-> 
-> And cdevs is an array of  struct cdev:
-> 
-> struct cdev {
-> 	struct kobject kobj;
+--Sig_/SSVtvNA+Qn7U/.GV8.0daYz
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Those are not "real" kobjects, and are never registered with the kobject
-core.
+On Wed, 16 Apr 2014 09:00:02 -0400 (EDT) David Miller <davem@davemloft.net>
+wrote:
 
-I really need to go rename those one of these days, and just make them a
-separate object, as they have nothing to do with a "normal" kobject
-other than the reference count and the use of the kobject map stuff.
+> From: Eric Dumazet <eric.dumazet@gmail.com>
+> Date: Tue, 15 Apr 2014 22:13:46 -0700
+>=20
+> > For applications handling millions of sockets, this makes a difference.
+>=20
+> Indeed, this really is not acceptable.
 
-So if this is showing up as a problem, something else is going on here,
-as this should not be an issue at all.
+As you say...
+I've just discovered that I can get rid of the lockdep message (and hence
+presumably the deadlock risk) with a well placed:
 
-thanks,
+		newsock->sk->sk_allocation =3D GFP_NOFS;
 
-greg k-h
+which surprised me as it seemed to be an explicit GFP_KERNEL allocation that
+was mentioned in the lockdep trace.  Obviously these traces require quite
+some sophistication to understand.
+
+So - thanks for the feedback, patch can be ignored.
+
+Thanks,
+NeilBrown
+
+--Sig_/SSVtvNA+Qn7U/.GV8.0daYz
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBU08+rTnsnt1WYoG5AQLRZhAAw2OqHGStjcH4tCI4w3eDMVb87MK1AVtQ
+U3pUF/WbzPSl0yhxDaa3vIg6L2ogkASESK6Oiiu8PZbG3TunCNwq63XXTKvE6EIY
+nABc2yOb9u/cixXtIuMC9E8ydnZa/dEkIyFY9oMXBjuOwb3L/ugKFm0upzBUVokw
+VtyZs8rl9s9IwgvuErpFbDR3ZxEk0VaMdREFwGCpkUD6DjknMTpGdaUelPxe+DEd
+Ffy6B7fjrkdG/8B4vYZKlW2c5on1lLqc+hgY24LrLUpLxHwu4HCuIrAuhzILDex/
+X5hZbQQhj2reLB8rsqJWOjmKn19/y8EbapUwa6BUMkSVHDCf0voCUjkHI8dOYcvM
+TnrmEzJS3Ym/x5rbenUCr2hEOEbZ80UEcMbdbrVm3rhPoMDtSifdtU2LEKro8oCk
+GPoOR3fYSLyxXNGQTlGiG3vSuSAIxF8tznBLnuCPIAPXK8LtXIn3oIOxNsN1J/LK
+TxZJsdA+I9YmV5uIn7cJarNYKdXvhR6x0YPoxUFzQZkngChosN3ZkGOHQeG2moyA
+JewuEtWT5Z1n1as19big3XukdBNnhJ/B11DpyI3TlfhIYN0mROFEAQkvXuOYYO+o
+CqkHfQp765IaTt0WOiVFu9bibhdxWwt1jwfasn1TE9LtvVlwlUlbPVL/8NrMXnOa
+Nkz7UZ1IxWU=
+=WfY/
+-----END PGP SIGNATURE-----
+
+--Sig_/SSVtvNA+Qn7U/.GV8.0daYz--
