@@ -1,53 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697AbaDQA2W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 20:28:22 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:54506 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239AbaDQA2V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 20:28:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140416084236.GA23247@node.dhcp.inet.fi>
-References: <1397598536-25074-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<CAA_GA1ecVD2GuxvPqBhGKdUfMeBJU+m-i5XeSzMmDXy=QncLqA@mail.gmail.com>
-	<20140416084236.GA23247@node.dhcp.inet.fi>
-Date: Thu, 17 Apr 2014 08:28:20 +0800
-Message-ID: <CAA_GA1d1uKtqAxhgzx-pwkymvndmJb4PpMLQZHcetvgf16vBeg@mail.gmail.com>
-Subject: Re: [PATCH] thp: close race between split and zap huge pages
-From: Bob Liu <lliubbo@gmail.com>
+	id S1756700AbaDQAbm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 20:31:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6630 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753827AbaDQAbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 20:31:40 -0400
+Date: Thu, 17 Apr 2014 02:31:28 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
 To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
+Cc: Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michel Lespinasse <walken@google.com>,
-        Sasha Levin <sasha.levin@oracle.com>, Dave Jones <davej@redhat.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Linux-MM <linux-mm@kvack.org>,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Dave Jones <davej@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Vlastimil Babka <vbabka@suse.cz>, Bob Liu <lliubbo@gmail.com>
+Subject: Re: mm: kernel BUG at mm/huge_memory.c:1829!
+Message-ID: <20140417003128.GG10119@redhat.com>
+References: <53440991.9090001@oracle.com>
+ <20140410102527.GA24111@node.dhcp.inet.fi>
+ <20140410134436.GA25933@node.dhcp.inet.fi>
+ <20140410162750.GD2749@redhat.com>
+ <20140414144218.GA26515@node.dhcp.inet.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140414144218.GA26515@node.dhcp.inet.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 4:42 PM, Kirill A. Shutemov
-<kirill@shutemov.name> wrote:
-> On Wed, Apr 16, 2014 at 07:52:29AM +0800, Bob Liu wrote:
->> >         *ptl = pmd_lock(mm, pmd);
->> > -       if (pmd_none(*pmd))
->> > +       if (!pmd_present(*pmd))
->> >                 goto unlock;
->>
->> But I didn't get the idea why pmd_none() was removed?
->
-> !pmd_present(*pmd) is weaker check then pmd_none(*pmd). I mean if
-> pmd_none(*pmd) is true then pmd_present(*pmd) is always false.
+Hi Kirill,
 
-Oh, yes. That's right.
+On Mon, Apr 14, 2014 at 05:42:18PM +0300, Kirill A. Shutemov wrote:
+> I've spent few day trying to understand rmap code. And now I think my
+> patch is wrong.
+> 
+> I actually don't see where walk order requirement comes from. It seems all
+> operations (insert, remove, foreach) on anon_vma is serialized with
+> anon_vma->root->rwsem. Andrea, could you explain this for me?
 
-BTW, it looks like this bug was introduced by the same reason.
-https://lkml.org/lkml/2014/4/16/403
+It's true the locking protects and freezes the view of all anon_vma
+structures associated with the page, but that only guarantees you not
+to miss the vma. Not missing the vma is not enough. You can still miss
+a pte during the rmap_walk if the order is wrong, because the pte/pmds
+are still moving freely under the vmas (absent of the PT lock and the
+mmap_sem).
 
--- 
-Regards,
---Bob
+The problem are all MM operations that copies or move a page mapping
+from a source to destination vma (fork and mremap). They take the
+anon_vma lock, insert the destination vma with the proper anon_vma
+chains and then they _drop_ the anon vma lock, and only later they
+start moving ptes and pmds around (by taking the proper PT locks).
+
+anon_vma -> src_vma -> dst_vma
+
+If the order is like above (guaranteed before the interval tree was
+introduced), if the rmap_walk of split_huge_page and migrate
+encounters the source pte/pmd and split/unmap it before it gets
+copied, then the copy or move will retain the processed state (regular
+pte instead of trans_huge_pmd for split_huge_page or migration pte for
+migrate). If instead the pmd/pte was already copied by the time the
+src_vma is scanned, then it will encounter the copy to process in the
+dst_vma too. The rmap_walk can't miss a pte/pmd if the anon_vma chain
+is walked in insertion order (i.e. older vma first).
+
+anon_vma -> dst_vma -> src_vma
+
+If the anon_vma walk order is reversed vs the insertion order, things
+falls apart because you will scan dst_vma in split_huge_page while it
+still empty, find nothing, then the trans_huge_pmd is moved or copied
+from src_vma to dst_vma by the MM code only holding PT lock and
+mmap_sem for writing (we cannot hold those across the whole duration
+of split_huge_page and migrate). So if the rmap_walk order is not
+right, the rmap_walk can miss the contents of the dst_vma that was
+still empty at the time it was processed.
+
+If the interval tree walk order cannot be fixed without screwing with
+the computation complexity of the structure, a more black and white
+fix could be to add a anon_vma templist to scan in O(N) after the
+interval tree has been scanned, where you add newly inserted vmas.
+The templist shall then be flushed back to the interval tree only
+after the pte/pmd mangling of the MM operation is completed. That
+requires identifying the closure of the critical section for those
+problematic MM operations. The main drawback is actually having to
+take the anon_vma lock twice, the second time for the flush to the
+interval tree.
+
+Looping like in your previous patch would be much simpler if it could
+be made reliable, but it looked like it wouldn't close the bug
+entirely because any concurrent unmap operation could lead to false
+negative hiding the pmd/pte walk miss (by decreasing page->mapcount
+under us).
+
+Comments?
+
+Thanks,
+Andrea
