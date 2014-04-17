@@ -1,136 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751554AbaDQSbg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 14:31:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46438 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750918AbaDQSb3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 14:31:29 -0400
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
- cgroup path
-From: Simo Sorce <ssorce@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Daniel J Walsh <dwalsh@redhat.com>,
-        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
-        Network Development <netdev@vger.kernel.org>
-In-Reply-To: <CALCETrUon7mZzp12th2bZ=cJyTjn8ePwg_VtPWL_bykjnnpKLw@mail.gmail.com>
-References: <20140416180642.GG31074@redhat.com>
-	 <CALCETrVUw5+vCCONy1VTXpskbY_eZFo2CtbehwV5Mhj4d4+icw@mail.gmail.com>
-	 <20140416185936.GJ31074@redhat.com> <534FF61B.4010901@redhat.com>
-	 <1397750674.2628.44.camel@willson.li.ssimo.org>
-	 <CALCETrUrj2LtAoXp600BD2ANgE2UUEbTYQrK8hHqDR=qpeFPcg@mail.gmail.com>
-	 <1397751853.2628.50.camel@willson.li.ssimo.org>
-	 <CALCETrWNWvumFg9Qba0GEOjYop4WYe530tCPtakrhnoCrHqhUQ@mail.gmail.com>
-	 <1397753323.2628.60.camel@willson.li.ssimo.org>
-	 <CALCETrXj6kD3E+vsaWmkrSbaQYTu=c-Hsw640jh4O+FbojYk2g@mail.gmail.com>
-	 <20140417171256.GB25334@redhat.com>
-	 <CALCETrVq4HRpfWOAbZAQbyjuraQd=OxnW=WjSoe5JgBzRStiKg@mail.gmail.com>
-	 <1397757169.2628.75.camel@willson.li.ssimo.org>
-	 <CALCETrUon7mZzp12th2bZ=cJyTjn8ePwg_VtPWL_bykjnnpKLw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Apr 2014 14:31:24 -0400
-Message-ID: <1397759484.2628.93.camel@willson.li.ssimo.org>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752152AbaDQScP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 14:32:15 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:63396 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751845AbaDQScI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 14:32:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAGXu5jKfBz2siheK7mbghsVc_ynW=4Bc31AyHcvQ=Ux-veQe=A@mail.gmail.com>
+References: <1397757904-30665-1-git-send-email-keescook@chromium.org>
+ <CALCETrWRts9i1SDbUTD2F5kv68k0PfJEqE6SB9H+2-we++UYuw@mail.gmail.com> <CAGXu5jKfBz2siheK7mbghsVc_ynW=4Bc31AyHcvQ=Ux-veQe=A@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 17 Apr 2014 11:31:46 -0700
+Message-ID: <CALCETrV3mEJyA0EnFNJocve6=tBj3ojk4xxn1kf8kdejL5M0qA@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] seccomp: add PR_SECCOMP_EXT and SECCOMP_EXT_ACT_TSYNC
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Johansen <john.johansen@canonical.com>,
+        Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-17 at 11:04 -0700, Andy Lutomirski wrote:
-> On Thu, Apr 17, 2014 at 10:52 AM, Simo Sorce <ssorce@redhat.com> wrote:
-> > On Thu, 2014-04-17 at 10:26 -0700, Andy Lutomirski wrote:
-> >> On Thu, Apr 17, 2014 at 10:12 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> >> > On Thu, Apr 17, 2014 at 09:55:08AM -0700, Andy Lutomirski wrote:
-> >> >> On Thu, Apr 17, 2014 at 9:48 AM, Simo Sorce <ssorce@redhat.com> wrote:
-> >> >> > On Thu, 2014-04-17 at 09:37 -0700, Andy Lutomirski wrote:
-> >> >> >> On Thu, Apr 17, 2014 at 9:24 AM, Simo Sorce <ssorce@redhat.com> wrote:
-> >> >> >> > On Thu, 2014-04-17 at 09:11 -0700, Andy Lutomirski wrote:
-> >> >> >> >>
-> >> >> >> >> No.  The logging daemon thinks it wants to know who the writer is, but
-> >> >> >> >> the logging daemon is wrong.  It actually wants to know who composed a
-> >> >> >> >> log message destined to it.  The caller of write(2) may or may not be
-> >> >> >> >> the same entity.
-> >> >> >> >
-> >> >> >> > This works both ways, and doesn't really matter, you are *no* better off
-> >> >> >> > w/o this interface.
-> >> >> >> >
-> >> >> >> >> If this form of SO_PASSCGROUP somehow makes it into a pull request for
-> >> >> >> >> Linus, I will ask him not to pull it and/or to revert it.  I think
-> >> >> >> >> he'll agree that write(2) MUST NOT care who called it.
-> >> >> >> >
-> >> >> >> > And write() does not, there is no access control check being performed
-> >> >> >> > here. This call is the same as getting the pid of the process and
-> >> >> >> > crawling /proc with that information, just more efficient and race-free.
-> >> >> >>
-> >> >> >> Doing it using the pid of writer is wrong.  So is doing it with the
-> >> >> >> cgroup of the writer.  The fact that it's even possible to use the pid
-> >> >> >> of the caller of write(2) is a mistake, but that particular mistake
-> >> >> >> is, unfortunately, well-enshrined in history.
-> >> >> >>
-> >> >> >> >
-> >> >> >> > I repeat, it is *not* access control.
-> >> >> >> >
-> >> >> >>
-> >> >> >> Sure it is.
-> >> >> >>
-> >> >> >> Either correct attribution of logs doesn't matter, in which case it
-> >> >> >> makes little difference how you do it, or it does matter, in which
-> >> >> >> case it should be done right.
-> >> >> >
-> >> >> > Well journald can *also* get  SO_PEERCGROUP and log anomalies if the 2
-> >> >> > differ. That is if the log happens on a connected socket.
-> >> >> >
-> >> >> > If the log happens on a unix datagram* then SO_PEERCGROUP is not
-> >> >> > available because there is no connect(), however write() cannot be used
-> >> >> > either, only sendmsg() AFAIK, so the "setuid" binary attack does not
-> >> >> > apply.
-> >> >> >
-> >> >>
-> >> >> Or you could only send SCM_CGROUP when the writer asks sendmsg to send
-> >> >> it, in which case this whole problem goes away.
-> >> >
-> >> > Sending SCM_CGROUP explicitly is also sending cgroup info at write(2) time
-> >> > and if receiver uses that info for access control, it can be problematic.
-> >> >
-> >>
-> >> Not really.  write(2) can't send SCM_CGROUP.  Callers of sendmsg(2)
-> >> who supply SCM_CGROUP are explicitly indicating that they want their
-> >> cgroup associated with that message.  Callers of write(2) and send(2)
-> >> are simply indicating that they have some bytes that they want to
-> >> shove into whatever's at the other end of the fd.
-> >
-> > So you are telling me that you want to change all code that writes to
-> > stderr to be changed to use sendmsg() instead of write() in order to get
-> > that information ?
-> 
-> No.  I'm telling you that I want whoever writes the logging code to
-> change *the logging code* to use sendmsg.
-> 
+On Thu, Apr 17, 2014 at 11:18 AM, Kees Cook <keescook@chromium.org> wrote:
+> On Thu, Apr 17, 2014 at 11:13 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Thu, Apr 17, 2014 at 11:05 AM, Kees Cook <keescook@chromium.org> wrote:
+>>> This adds the ability for threads to request seccomp filter
+>>> synchronization across their thread group. To support this,
+>>> seccomp locking on writes is introduced, along with refactoring
+>>> of no_new_privs. Races with thread creation are handled via the
+>>> tasklist_list.
+>>>
+>>> I think all the concerns raised during the discussion[1] of the first
+>>> version of this patch have been addressed. However, the races involved
+>>> have tricked me before. :)
+>>>
+>>
+>> Would this be easier to use if there were a single syscall to set a
+>> seccomp filter and sync threads?  That way you wouldn't have to write
+>> your filter such that it gives permission to sync threads.
+>
+> That would be even cleaner, yes. I was hoping to see the new bpf jump
+> tables before expanding into new filter calls, with the hope of doing
+> it all at the same time. However, I guess we could just include a
+> version number in the new call to indicate which filter type it was,
+> and include flags (like "threadgroup sync") in there? I'm trying to
+> imagine what would be the least painful for future-proofing.
 
-> > If you are using datagram sockets then the sender explicitly has to use
-> > sendmsg() already and if a setuid binary can be convinced to send
-> > arbitrary data to an arbitrary datagram sokcet you have bigger problems
-> > in that binary, and said binary will send you whatever cgroup it is in.
-> 
-> Really?
+What's the time frame on the new bpf stuff?  If it'll be ready for
+3.16, it might not matter.
 
-I want to retract my comment in light of the fact you can use connect()
-on a datagram socket and then kernel will "helpfully" then allow you to
-use write() on it, I forgot about this detail.
-
-For the logging q. above I wouldn't see any issue unless the journald
-people were planning on using connect() themselves to pie things like
-stderr over a datagram socket.
-If that were the case, well then ...
-
-OTOH, I still need to understand how you attack a setuid binary to fake
-a cgroup, it's not like uig/gid information that is changed by the
-simple fact of invoking the setuid binary, and this is a brand new
-contract, so it is not unreasonable to put in the security
-considerations that a setuid binary should take extracare to where they
-emit stdout/stderr message should they decide to change their cgroup ...
-
-Simo.
-
+--Andy
