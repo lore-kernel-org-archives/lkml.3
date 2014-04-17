@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbaDQOyg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 10:54:36 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:58984 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357AbaDQOyY (ORCPT
+	id S1751474AbaDQOyq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 10:54:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58036 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751370AbaDQOyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 10:54:24 -0400
+	Thu, 17 Apr 2014 10:54:25 -0400
+Date: Thu, 17 Apr 2014 16:54:18 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Vince Weaver <vincent.weaver@maine.edu>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [perf] more perf_fuzzer memory corruption
+Message-ID: <20140417145418.GM11096@twins.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1404151729230.17264@vincent-weaver-1.um.maine.edu>
+ <20140416141514.GS11182@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1404161326380.19325@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1404161337350.19325@vincent-weaver-1.um.maine.edu>
+ <20140417094815.GA9348@gmail.com>
+ <20140417114533.GJ11096@twins.programming.kicks-ass.net>
+ <20140417142213.GA29338@gmail.com>
+ <alpine.DEB.2.10.1404171037590.22226@vincent-weaver-1.um.maine.edu>
 MIME-Version: 1.0
-In-Reply-To: <1397464212-4454-6-git-send-email-hch@lst.de>
-References: <1397464212-4454-1-git-send-email-hch@lst.de>
-	<1397464212-4454-6-git-send-email-hch@lst.de>
-Date: Thu, 17 Apr 2014 22:54:23 +0800
-Message-ID: <CACVXFVMAq0qw5vXqShmhcTTA5nww_OYaVz-yiEaf3_Q3-nrJfQ@mail.gmail.com>
-Subject: Re: [PATCH 5/7] blk-mq: initialize request on allocation
-From: Ming Lei <tom.leiming@gmail.com>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Jens Axboe <axboe@kernel.dk>, Matias Bjorling <m@bjorling.me>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1404171037590.22226@vincent-weaver-1.um.maine.edu>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 4:30 PM, Christoph Hellwig <hch@lst.de> wrote:
-> If we want to share tag and request allocation between queues we cannot
-> initialize the request at init/free time, but need to initialize it
-> at allocation time as it might get used for different queues over its
-> lifetime.
+On Thu, Apr 17, 2014 at 10:42:47AM -0400, Vince Weaver wrote:
+> On Thu, 17 Apr 2014, Ingo Molnar wrote:
+> 
+> > 
+> > * Peter Zijlstra <peterz@infradead.org> wrote:
+> > 
+> > > On Thu, Apr 17, 2014 at 11:48:15AM +0200, Ingo Molnar wrote:
+> > > > Is there some place where I can pick up the latestest of your fuzzer?
+> > > > 
+> > > > PeterZ has trouble reproducing the corruption locally - I'd like to 
+> > > > run it too, maybe I have hardware that triggers it more readily.
+> > > 
+> > > From a few emails up:
+> > > 
+> > > "If you want to try running the fuzzer on your machine too just do:
+> > >         git clone https://github.com/deater/perf_event_tests.git
+> > >         cd fuzzer
+> > >         make
+> > > and then try running the "./fast_repro98.sh" script, as that's the forking
+> > > workload I've been using when tracking this issue."
+> 
+> I have to admit the slab corruption message is a new development with 
+> 3.15-rc1.
 
-Could you explain the use pattern? Looks you mean there are
-still users of the tag/req even after it is freed, that looks a bit
-weird since the tag/req can still be reallocated in another path
-after it is freed.
+Meh.. my machine keeps locking up with 15-rc1 and your fuzzer. It looks
+to get stuck a finish_task_switch() from a preemption while waiting for
+a perf IPI.
 
->
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-> ---
->  block/blk-mq.c |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
->
-> diff --git a/block/blk-mq.c b/block/blk-mq.c
-> index ef7acc0..1cb7618 100644
-> --- a/block/blk-mq.c
-> +++ b/block/blk-mq.c
-> @@ -82,6 +82,7 @@ static struct request *__blk_mq_alloc_request(struct blk_mq_hw_ctx *hctx,
->         tag = blk_mq_get_tag(hctx->tags, gfp, reserved);
->         if (tag != BLK_MQ_TAG_FAIL) {
->                 rq = hctx->rqs[tag];
-> +               blk_rq_init(hctx->queue, rq);
->                 rq->tag = tag;
->
->                 return rq;
-> @@ -254,9 +255,7 @@ static void __blk_mq_free_request(struct blk_mq_hw_ctx *hctx,
->         const int tag = rq->tag;
->         struct request_queue *q = rq->q;
->
-> -       blk_rq_init(hctx->queue, rq);
->         blk_mq_put_tag(hctx->tags, tag);
-> -
->         blk_mq_queue_exit(q);
->  }
->
-> @@ -1100,7 +1099,6 @@ static int blk_mq_init_rq_map(struct blk_mq_hw_ctx *hctx,
->                 left -= to_do * rq_size;
->                 for (j = 0; j < to_do; j++) {
->                         hctx->rqs[i] = p;
-> -                       blk_rq_init(hctx->queue, hctx->rqs[i]);
->                         if (reg->ops->init_request) {
->                                 error = reg->ops->init_request(driver_data,
->                                                 hctx, hctx->rqs[i], i);
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Which is complete crack because we have preemption disabled over
+issueing and waiting for the IPI :/
 
-
-Thanks,
--- 
-Ming Lei
+I tried reverting some of the IPI related patches, but no joy so far,
+I'm about to go try a git-bisect on this.
