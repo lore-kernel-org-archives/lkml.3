@@ -1,86 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751504AbaDQXoM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 19:44:12 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:49321 "EHLO
+	id S1751430AbaDQXoK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 19:44:10 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:56511 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751257AbaDQXn5 (ORCPT
+	by vger.kernel.org with ESMTP id S1751314AbaDQXn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Apr 2014 19:43:57 -0400
-Message-Id: <20140417234355.658063348@goodmis.org>
+Message-Id: <20140417234355.790231466@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Thu, 17 Apr 2014 19:42:57 -0400
+Date: Thu, 17 Apr 2014 19:42:58 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>
-Subject: [PATCH 1/2] tracing: Do not try to recreated toplevel set_ftrace_* files
+        Andrew Morton <akpm@linux-foundation.org>, <stable@vger.kernel.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Subject: [PATCH 2/2] tracing/uprobes: Fix uprobe_cpu_buffer memory leak
 References: <20140417234256.185058335@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0001-tracing-Do-not-try-to-recreated-toplevel-set_ftrace_.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0002-tracing-uprobes-Fix-uprobe_cpu_buffer-memory-leak.patch
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 
-With the restructing of the function tracer working with instances, the
-"top level" buffer is a bit special, as the function tracing is mapped
-to the same set of filters. This is done by using a "global_ops" descriptor
-and having the "set_ftrace_filter" and "set_ftrace_notrace" map to it.
+Forgot to free uprobe_cpu_buffer percpu page in uprobe_buffer_disable().
 
-When an instance is created, it creates the same files but its for the
-local instance and not the global_ops.
+Link: http://lkml.kernel.org/p/534F8B3F.1090407@huawei.com
 
-The issues is that the local instance creation shares some code with
-the global instance one and we end up trying to create th top level
-"set_ftrace_*" files twice, and on boot up, we get an error like this:
-
- Could not create debugfs 'set_ftrace_filter' entry
- Could not create debugfs 'set_ftrace_notrace' entry
-
-The reason they failed to be created was because they were created
-twice, and the second time gives this error as you can not create the
-same file twice.
-
-Reported-by: Borislav Petkov <bp@alien8.de>
+Cc: stable@vger.kernel.org # v3.14+
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_functions.c | 16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+ kernel/trace/trace_uprobe.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index 5b781d2..ffd5635 100644
---- a/kernel/trace/trace_functions.c
-+++ b/kernel/trace/trace_functions.c
-@@ -58,12 +58,16 @@ int ftrace_create_function_files(struct trace_array *tr,
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 930e514..c082a74 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -732,9 +732,15 @@ static int uprobe_buffer_enable(void)
+ 
+ static void uprobe_buffer_disable(void)
  {
- 	int ret;
- 
--	/* The top level array uses the "global_ops". */
--	if (!(tr->flags & TRACE_ARRAY_FL_GLOBAL)) {
--		ret = allocate_ftrace_ops(tr);
--		if (ret)
--			return ret;
--	}
-+	/*
-+	 * The top level array uses the "global_ops", and the files are
-+	 * created on boot up.
-+	 */
-+	if (tr->flags & TRACE_ARRAY_FL_GLOBAL)
-+		return 0;
++	int cpu;
 +
-+	ret = allocate_ftrace_ops(tr);
-+	if (ret)
-+		return ret;
+ 	BUG_ON(!mutex_is_locked(&event_mutex));
  
- 	ftrace_create_filter_files(tr->ops, parent);
- 
+ 	if (--uprobe_buffer_refcnt == 0) {
++		for_each_possible_cpu(cpu)
++			free_page((unsigned long)per_cpu_ptr(uprobe_cpu_buffer,
++							     cpu)->buf);
++
+ 		free_percpu(uprobe_cpu_buffer);
+ 		uprobe_cpu_buffer = NULL;
+ 	}
 -- 
 1.8.5.3
 
