@@ -1,143 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757045AbaDQAVA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 20:21:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56546 "EHLO mx2.suse.de"
+	id S1756843AbaDQAYP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 20:24:15 -0400
+Received: from dliviu.plus.com ([80.229.23.120]:58469 "EHLO smtp.dudau.co.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753240AbaDQAU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 20:20:58 -0400
-Date: Thu, 17 Apr 2014 10:20:48 +1000
-From: NeilBrown <neilb@suse.de>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Ming Lei <ming.lei@canonical.com>, netdev@vger.kernel.org
-Subject: Re: [PATCH/RFC 00/19] Support loop-back NFS mounts
-Message-ID: <20140417102048.2fc8275c@notabene.brown>
-In-Reply-To: <20140416104207.75b044e8@tlielax.poochiereds.net>
-References: <20140416033623.10604.69237.stgit@notabene.brown>
-	<20140416104207.75b044e8@tlielax.poochiereds.net>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/ZiKmG43mXH3JoeDwPbs7CZV"; protocol="application/pgp-signature"
+	id S1756359AbaDQAYK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 20:24:10 -0400
+From: "Liviu Dudau" <liviu@dudau.co.uk>
+Date: Thu, 17 Apr 2014 01:20:42 +0100
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Rob Herring <robherring2@gmail.com>, Tanmay Inamdar <tinamdar@apm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "patches@apm.com" <patches@apm.com>, "jcm@redhat.com" <jcm@redhat.com>
+Subject: Re: [PATCH v5 2/4] arm64: dts: APM X-Gene PCIe device tree nodes
+Message-ID: <20140417002041.GE4858@bart>
+Mail-Followup-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+	Rob Herring <robherring2@gmail.com>,
+	Tanmay Inamdar <tinamdar@apm.com>,
+	Bjorn Helgaas <bhelgaas@google.com>, Arnd Bergmann <arnd@arndb.de>,
+	Grant Likely <grant.likely@linaro.org>,
+	Rob Herring <robh+dt@kernel.org>,
+	Catalin Marinas <catalin.marinas@arm.com>,
+	Rob Landley <rob@landley.net>, Liviu Dudau <liviu.dudau@arm.com>,
+	"linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	"linux-arm-kernel@lists.infradead.org" <linux-arm-kernel@lists.infradead.org>,
+	"linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"patches@apm.com" <patches@apm.com>,
+	"jcm@redhat.com" <jcm@redhat.com>
+References: <1395270762-6055-1-git-send-email-tinamdar@apm.com>
+ <1395270762-6055-3-git-send-email-tinamdar@apm.com>
+ <CAL_Jsq+XxAtUeNKFi0hH=ehb_fhFvkM0U1Zm_j1LdtQZbvSzfA@mail.gmail.com>
+ <20140416170545.GD4858@bart>
+ <20140416212104.GA3469@obsidianresearch.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140416212104.GA3469@obsidianresearch.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-DSPAM-Result: Innocent
+X-DSPAM-Processed: Thu Apr 17 01:24:08 2014
+X-DSPAM-Confidence: 1.0000
+X-DSPAM-Probability: 0.0023
+X-DSPAM-Signature: 13,534f1f282981448816842
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/ZiKmG43mXH3JoeDwPbs7CZV
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, Apr 16, 2014 at 03:21:04PM -0600, Jason Gunthorpe wrote:
+> On Wed, Apr 16, 2014 at 06:05:45PM +0100, Liviu Dudau wrote:
+> 
+> > I have found out that we cannot pasd the config ranges from the DT into the
+> > pci_host_bridge structure as the PCI framework doesn't have a resource type
+> > for config resources. Leaving the translation between range flags and
+> > resource type as is (filtered through the IORESOURCE_TYPE_BITS) will lead
+> > to a resource type of value zero, which is not recognised by any resource
+> > handling API so bridge configuration and bus scanning will barf.
+> > 
+> > I'm looking for suggestions here, as Jason Gunthorpe suggested that we
+> > should be able to parse config ranges if they conform to the ECAM part
+> > of the PCI standard.
+> 
+> The thinking here is the ranges should be well defined and general, it
+> isn't a dumping ground for driver specific stuff.
+> 
+> No spec says you can put config space into the ranges at all, nobody
+> should be doing that today, obviously some cases were missed during
+> review..
 
-On Wed, 16 Apr 2014 10:42:07 -0400 Jeff Layton <jlayton@redhat.com> wrote:
+ePAPR documents allows that when ss == 00.
 
-> On Wed, 16 Apr 2014 14:03:35 +1000
-> NeilBrown <neilb@suse.de> wrote:
->=20
+> 
+> The comment about ECAM was intended as a general guidance on what
+> config space in ranges could/should be used for.
+> 
+> Right now config space shouldn't propagate out side any driver, so you
+> can probably just filter it in your generic code, and make it very hard
+> and obviously wrong for a driver to parse ranges for config space, so
+> we don't get more usages.
 
-> > Comments, criticisms, etc most welcome.
-> >=20
-> > Thanks,
-> > NeilBrown
-> >=20
->=20
-> I've only given this a once-over, but the basic concept seems a bit
-> flawed. IIUC, the basic idea is to disallow allocations done in knfsd
-> threads context from doing fs-based reclaim.
->=20
-> This seems very heavy-handed, and like it could cause problems on a
-> busy NFS server. Those sorts of servers are likely to have a lot of
-> data in pagecache and thus we generally want to allow them to do do
-> writeback when memory is tight.
->=20
-> It's generally acceptable for knfsd to recurse into local filesystem
-> code for writeback. What you want to avoid in this situation is reclaim
-> on NFS filesystems that happen to be from knfsd on the same box.
->=20
-> If you really want to fix this, what may make more sense is trying to
-> plumb that information down more granularly. Maybe GFP_NONETFS and/or
-> PF_NETFSTRANS flags?
+OK, this goes slightly against your email from 26th March:
 
-Hi Jeff,
- a few clarifications first:
+"When we talked about this earlier on the DT bindings list the
+consensus seemed to be that configuration MMIO ranges should only be
+used if the underlying memory was exactly ECAM, and was not to be used
+for random configuration related register blocks.
 
- 1/ These changes probably won't affect a "busy NFS server" at all.  The
-    PF_FSTRANS flag only get set in nfsd when it sees a request from the lo=
-cal
-    host.  Most busy NFS servers would never see that, and so would never s=
-et
-    PF_FSTRANS.
+The rational being that generic code, upon seeing that ranges entry,
+could just go ahead and assume ECAM mapping."
 
- 2/ Setting PF_FSTRANS does not affect where writeback is done.  Direct
-    reclaim hasn't performed filesystem writeback since 3.2, it is all done
-    by kswapd (I think direct reclaim still writes to swap sometimes).
-    The main effects of setting PF_FSTRANS (as modified by this page set)
-    are:
-      - when reclaim calls ->releasepage  __GFP_FS is not set in the gfp_t =
-arg
-      - various caches like dcache, icache etc are not shrunk from
-        direct reclaim
-    There are other effects, but I'm less clear on exactly what they mean.
-
-A flag specific to network filesystems might make sense, but I don't think =
-it
-would solve all the deadlocks.
-
-A good example is the deadlock with the flush-* threads.
-flush-* will lock a page, and  then call ->writepage.  If ->writepage
-allocates memory it can enter reclaim, call ->releasepage on NFS, and block
-waiting for a COMMIT to complete.
-The COMMIT might already be running, performing fsync on that same file that
-flush-* is flushing.  It locks each page in turn.  When it  gets to the page
-that flush-* has locked, it will deadlock.
-
-xfs_vm_writepage does allocate memory with __GFP_FS set
-   xfs_vm_writepage -> xfs_setfilesize_trans_alloc -> xfs_trans_alloc ->
-   _xfs_trans_allo
-
-and I have had this deadlock happen.  To avoid this we need flush-* to ensu=
-re
-that no memory allocation blocks on NFS.  We could set a PF_NETFSTRANS ther=
-e,
-but as that code really has nothing to do with networks it would seem an odd
-place to put a network-fs-specific flag.
-
-In general, if nfsd is allowed to block on local filesystem, and local
-filesystem is allowed to block on NFS, then a deadlock can happen.
-We would need a clear hierarchy
-
-   __GFP_NETFS > __GFP_FS > __GFP_IO
-
-for it to work.  I'm not sure the extra level really helps a lot and it wou=
-ld
-be a lot of churn.
+What I'm saying is that the only code that will see this ranges entry will
+be the parsing code as if we try to create a resource out of the range
+and add it to the host bridge structure (not driver) we will confuse the
+rest of the pci_host_bridge API. So we cannot do any ECAM accesses (yet?).
 
 
-Thanks,
-NeilBrown
+Best regards,
+Liviu
 
+> 
+> Jason
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
---Sig_/ZiKmG43mXH3JoeDwPbs7CZV
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+-- 
+-------------------
+   .oooO
+   (   )
+    \ (  Oooo.
+     \_) (   )
+          ) /
+         (_/
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+ One small step
+   for me ...
 
-iQIVAwUBU08eYDnsnt1WYoG5AQI3mQ//b09b32kYZg134oqC28wk4GuKXD4068sE
-Vcj1k1jm+zz0nHfY1XbLA2PYmLGeNc1bUSGwtOwVwNvbI1xrae4Da2J6sfQ600nO
-8ozsbNXA32Bwp9h4LySPfpvJFatGmW5Kad/88qFc0a9vxXFFjIlm2hmhCuIopTCt
-PnwHRuTudFWi+Uu2JeqvmNRzcCTt0udNsc7xXlEwk5IXlYj/Qj7WVat40NjQd84E
-We+y6vTsMkHd2G/yoGdBNTQQedOgrAwyiGudq3VHPUpXgbkpnrnU0tikA2dssL10
-XlY37WlZeuqS7NKCAhLJbrJijHI8Js+cUbAhb/zNGW3llCFddYXBjWzWHT07/ISv
-A8+vuItTa0f/PsI8VkXbJ5P1QMmMtkgsbE+UOJ573v3v9Z2CKemZVrUBmCuOX/x7
-iY8eSdU0SsBWTu6OO6TS4BvIu5yvX4PYdt3MvjF1LspLv6ggZ93LUr1+KV0TyUs2
-ugbsf9Mq7vrnDdYR3z4Xb38xnAwz+5OmDgaDHTaA67VMYA2Y5K9IoVxMwTdEwGQ5
-WOy/KviX2JBbOKLmwcQeZgiTaEpr4CRY6rDA6fIqORBysrGqkujiY1e2OkX8sd30
-yo+WHWp7DIeWiJXEUTaRXewa8CgcUY3CXATuj+bsilLTVOhxT28rK5FwtAq6y00N
-Go80SPlCYvY=
-=Ornx
------END PGP SIGNATURE-----
-
---Sig_/ZiKmG43mXH3JoeDwPbs7CZV--
