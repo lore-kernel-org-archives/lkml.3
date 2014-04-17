@@ -1,68 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691AbaDQJ1I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 05:27:08 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:48166 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaDQJ1F (ORCPT
+	id S1754459AbaDQJbp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 05:31:45 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:39948 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbaDQJbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 05:27:05 -0400
-Message-ID: <534F9E0A.8050201@huawei.com>
-Date: Thu, 17 Apr 2014 17:25:30 +0800
-From: Xie XiuQi <xiexiuqi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130307 Thunderbird/17.0.4
+	Thu, 17 Apr 2014 05:31:39 -0400
 MIME-Version: 1.0
-To: Corey Minyard <minyard@acm.org>
-CC: <openipmi-developer@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ipmi: fix seq number of bt msg in debug message
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.17.191]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20140416180228.GK28035@saruman.home>
+References: <1396510519-8555-1-git-send-email-sbhatta@xilinx.com>
+	<113d0620-4003-417d-806b-0b79ae692829@VA3EHSMHS023.ehs.local>
+	<20140403145853.GD14162@saruman.home>
+	<CALHRZuoCtEz5-CmU17dUpVS_MjSDdYVLMSvgXq_RwxLj_KJMDA@mail.gmail.com>
+	<20140416180228.GK28035@saruman.home>
+Date: Thu, 17 Apr 2014 15:01:37 +0530
+Message-ID: <CALHRZuq6=TMryHtbjTw7rYoGwbu2w0BTdxiOA95HYS3_CG6vwQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] usb: gadget: Add xilinx axi usb2 device support
+From: sundeep subbaraya <sundeep.lkml@gmail.com>
+To: balbi@ti.com
+Cc: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michal Simek <michals@xilinx.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The seq number of HOST2BMC message in debug message
-is not the real seq number but the next seq number;
-we could directly just use bt->write_data[2].
+Hi Felipe,
 
-pre:
-[99477.760284] BT: +++++++++++++++++ New command
-[99477.760286] BT: NetFn/LUN CMD [1 data]: 28 10 0c
-[99477.760296] BT: write 5 bytes seq=0x88 04 28 87 10 0c
-                                 ^^^^^^^^       ^^
-[99477.772078] BT: got 8 bytes seq=0x87 07 2c 87 10 00 f8 07 00
-[99477.772091] BT: result 6 bytes: 2c 10 00 f8 07 00
+On Wed, Apr 16, 2014 at 11:32 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Wed, Apr 16, 2014 at 04:09:28PM +0530, sundeep subbaraya wrote:
+>> Hi Felipe,
+>>
+>> On Thu, Apr 3, 2014 at 8:28 PM, Felipe Balbi <balbi@ti.com> wrote:
+>>
+>> >> +static int start_dma(struct xusb_ep *ep, u32 src, u32 dst, u32 length)
+>> >
+>> > please prepend this with xudc_, it makes tracing a lot easier.
+>> >
+>> >> +{
+>> >> +     struct xusb_udc *udc;
+>> >> +     int rc = 0;
+>> >> +     unsigned long timeout;
+>> >> +
+>> >> +     udc = ep->udc;
+>> >> +     /*
+>> >> +      * Set the addresses in the DMA source and
+>> >> +      * destination registers and then set the length
+>> >> +      * into the DMA length register.
+>> >> +      */
+>> >> +     udc->write_fn(udc->base_address, XUSB_DMA_DSAR_ADDR_OFFSET, src);
+>> >> +     udc->write_fn(udc->base_address, XUSB_DMA_DDAR_ADDR_OFFSET, dst);
+>> >> +     udc->write_fn(udc->base_address, XUSB_DMA_LENGTH_OFFSET, length);
+>> >> +
+>> >> +     /*
+>> >> +      * Wait till DMA transaction is complete and
+>> >> +      * check whether the DMA transaction was
+>> >> +      * successful.
+>> >> +     */
+>> >> +     while ((udc->read_fn(ep->udc->base_address + XUSB_DMA_STATUS_OFFSET) &
+>> >> +                     XUSB_DMA_DMASR_BUSY) == XUSB_DMA_DMASR_BUSY) {
+>> >> +             timeout = jiffies + 10000;
+>> >> +
+>> >> +             if (time_after(jiffies, timeout)) {
+>> >> +                     rc = -ETIMEDOUT;
+>> >> +                     goto clean;
+>> >> +             }
+>> >> +     }
+>> >
+>> > don't you get an IRQ for DMA completion ? If you do, you could be using
+>> > wait_for_completion()
+>>
+>> This function is called in interrupt context when buffer is ready or
+>> free. It initiates DMA to transfer data from IP buffer to memory.
+>> Hence it waits in busy loop till DMA completes
+>
+> wait, so you start_dma() before your gadget driver asks you to ?
 
-post:
-[99477.760284] BT: +++++++++++++++++ New command
-[99477.760286] BT: NetFn/LUN CMD [1 data]: 28 10 0c
-[99477.760296] BT: write 5 bytes seq=0x87 04 28 87 10 0c
-                                 ^^^^^^^^       ^^
-[99477.772078] BT: got 8 bytes seq=0x87 07 2c 87 10 00 f8 07 00
-[99477.772091] BT: result 6 bytes: 2c 10 00 f8 07 00
+in ep_queue driver starts dma transfer from/to IP buffer to/from req->buf.
+If transfer is completed then request is not added to ep request queue
+and returns from ep_queue.
+If transfer is not completed (actual < length) then request is added
+to queue and returns from ep_queue.
+when buffer processed interrupt occurs, handler starts dma if there is
+request in queue and calls complete call back (when actual == length)
+Hence answer is Yes for some transfers (start dma called from
+interrupt handler not from ep_queue).
 
-Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
----
- drivers/char/ipmi/ipmi_bt_sm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/char/ipmi/ipmi_bt_sm.c b/drivers/char/ipmi/ipmi_bt_sm.c
-index f5e4cd7..1a2056f 100644
---- a/drivers/char/ipmi/ipmi_bt_sm.c
-+++ b/drivers/char/ipmi/ipmi_bt_sm.c
-@@ -341,7 +341,7 @@ static inline void write_all_bytes(struct si_sm_data *bt)
-
- 	if (bt_debug & BT_DEBUG_MSG) {
- 		printk(KERN_WARNING "BT: write %d bytes seq=0x%02X",
--			bt->write_count, bt->seq);
-+			bt->write_count, bt->write_data[2]);
- 		for (i = 0; i < bt->write_count; i++)
- 			printk(" %02x", bt->write_data[i]);
- 		printk("\n");
--- 
-1.6.0.2
-
-
+Thanks,
+Sundeep.B.S.
+>
+> --
+> balbi
