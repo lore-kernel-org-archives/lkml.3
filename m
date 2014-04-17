@@ -1,80 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813AbaDQCit (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 22:38:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57246 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754390AbaDQCir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 22:38:47 -0400
-Date: Thu, 17 Apr 2014 12:38:37 +1000
-From: NeilBrown <neilb@suse.de>
-To: David Miller <davem@davemloft.net>
-Cc: eric.dumazet@gmail.com, linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com, netdev@vger.kernel.org
-Subject: Re: [PATCH 10/19] NET: set PF_FSTRANS while holding sk_lock
-Message-ID: <20140417123837.5987e5e9@notabene.brown>
-In-Reply-To: <20140416.090002.2186526865564557549.davem@davemloft.net>
-References: <20140416033623.10604.69237.stgit@notabene.brown>
-	<20140416040336.10604.96000.stgit@notabene.brown>
-	<1397625226.4222.113.camel@edumazet-glaptop2.roam.corp.google.com>
-	<20140416.090002.2186526865564557549.davem@davemloft.net>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/SSVtvNA+Qn7U/.GV8.0daYz"; protocol="application/pgp-signature"
+	id S1160997AbaDQCjA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 22:39:00 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:52669 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754603AbaDQCiz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 22:38:55 -0400
+X-AuditID: 85900ec0-d1328b9000001514-bb-534f3ebcdcbd
+Message-ID: <534F3EBC.2030606@hitachi.com>
+Date: Thu, 17 Apr 2014 11:38:52 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Stephen Warren <swarren@nvidia.com>, Alan <gnomes@lxorguk.ukuu.org.uk>,
+        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        linux-serial@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Aaron Sierra <asierra@xes-inc.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: Re: [PATCH V5.1] serial/uart/8250: Add tunable RX interrupt
+ trigger I/F of FIFO buffers
+References: <20140415055216.14660.18270.stgit@yunodevel> <20140415080649.19209.60645.stgit@yunodevel> <534D6EED.8000905@wwwdotorg.org> <534DE62C.3090300@hitachi.com> <534EB803.5030101@wwwdotorg.org>
+In-Reply-To: <534EB803.5030101@wwwdotorg.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/SSVtvNA+Qn7U/.GV8.0daYz
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Stephen,
 
-On Wed, 16 Apr 2014 09:00:02 -0400 (EDT) David Miller <davem@davemloft.net>
-wrote:
+Thank you for your reply.
 
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Tue, 15 Apr 2014 22:13:46 -0700
->=20
-> > For applications handling millions of sockets, this makes a difference.
->=20
-> Indeed, this really is not acceptable.
+(2014/04/17 2:04), Stephen Warren wrote:
+> On 04/15/2014 08:08 PM, Yoshihiro YUNOMAE wrote:
+>>>> diff --git a/drivers/tty/serial/8250/8250_core.c
+>>>> b/drivers/tty/serial/8250/8250_core.c
+>>>
+>>>> @@ -2275,10 +2276,9 @@ serial8250_do_set_termios(struct uart_port
+>>>> *port, struct ktermios *termios,
+>>>
+>>>>        if (up->capabilities & UART_CAP_FIFO && port->fifosize > 1) {
+>>>> -        fcr = uart_config[port->type].fcr;
+>>>> -        if ((baud < 2400 && !up->dma) || fifo_bug) {
+>>>> -            fcr &= ~UART_FCR_TRIGGER_MASK;
+>>>> -            fcr |= UART_FCR_TRIGGER_1;
+>>>> +        /* NOTE: If fifo_bug is not set, a uaser can set RX_trigger. */
+>>>> +        if ((baud < 2400 && !up->dma &&
+>>>> +            (up->fcr == uart_config[port->type].fcr)) ||
+>>>> up->fifo_bug) {
+>>>> +            up->fcr &= ~UART_FCR_TRIGGER_MASK;
+>>>> +            up->fcr |= UART_FCR_TRIGGER_1;
+>>>>            }
+>>>>        }
+>>>
+>>> Does the "(up->fcr == uart_config[port->type].fcr)" term prevent the
+>>> user from changing the trigger level multiple times? Perhaps this is
+>>> intended?
+>>
+>> No, this means that if a user changed FCR value before setting termios,
+>> use the changed value because the user think changed value is always
+>> set. But, I thought this is not straightforward and it cannot help
+>> when the user want to use default FCR value.
+>> Could I add FCR changed flag(user_changed_fcr) in uart_8250_port
+>> structure and check the flag here?
+>> Or shouldn't the driver check the user changing?
+>
+> Oh, I wasn't aware that the user could change FCR directly. To be
+> honest, I'm not sure of the best way to resolve that kind of conflict...
 
-As you say...
-I've just discovered that I can get rid of the lockdep message (and hence
-presumably the deadlock risk) with a well placed:
-
-		newsock->sk->sk_allocation =3D GFP_NOFS;
-
-which surprised me as it seemed to be an explicit GFP_KERNEL allocation that
-was mentioned in the lockdep trace.  Obviously these traces require quite
-some sophistication to understand.
-
-So - thanks for the feedback, patch can be ignored.
+OK. For simplicity, I don't implement the checking.
+Even if FCR is changed here, users can change it any time, so this is
+not so big problem, I think.
 
 Thanks,
-NeilBrown
+Yoshihiro YUNOMAE
 
---Sig_/SSVtvNA+Qn7U/.GV8.0daYz
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIVAwUBU08+rTnsnt1WYoG5AQLRZhAAw2OqHGStjcH4tCI4w3eDMVb87MK1AVtQ
-U3pUF/WbzPSl0yhxDaa3vIg6L2ogkASESK6Oiiu8PZbG3TunCNwq63XXTKvE6EIY
-nABc2yOb9u/cixXtIuMC9E8ydnZa/dEkIyFY9oMXBjuOwb3L/ugKFm0upzBUVokw
-VtyZs8rl9s9IwgvuErpFbDR3ZxEk0VaMdREFwGCpkUD6DjknMTpGdaUelPxe+DEd
-Ffy6B7fjrkdG/8B4vYZKlW2c5on1lLqc+hgY24LrLUpLxHwu4HCuIrAuhzILDex/
-X5hZbQQhj2reLB8rsqJWOjmKn19/y8EbapUwa6BUMkSVHDCf0voCUjkHI8dOYcvM
-TnrmEzJS3Ym/x5rbenUCr2hEOEbZ80UEcMbdbrVm3rhPoMDtSifdtU2LEKro8oCk
-GPoOR3fYSLyxXNGQTlGiG3vSuSAIxF8tznBLnuCPIAPXK8LtXIn3oIOxNsN1J/LK
-TxZJsdA+I9YmV5uIn7cJarNYKdXvhR6x0YPoxUFzQZkngChosN3ZkGOHQeG2moyA
-JewuEtWT5Z1n1as19big3XukdBNnhJ/B11DpyI3TlfhIYN0mROFEAQkvXuOYYO+o
-CqkHfQp765IaTt0WOiVFu9bibhdxWwt1jwfasn1TE9LtvVlwlUlbPVL/8NrMXnOa
-Nkz7UZ1IxWU=
-=WfY/
------END PGP SIGNATURE-----
-
---Sig_/SSVtvNA+Qn7U/.GV8.0daYz--
