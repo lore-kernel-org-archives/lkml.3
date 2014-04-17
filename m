@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495AbaDQQMX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 12:12:23 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:48832 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198AbaDQQMO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 12:12:14 -0400
-Subject: Re: [PATCH v3 0/7] Introducing (yet again) Device Tree Overlays
-Mime-Version: 1.0 (Apple Message framework v1085)
+	id S1752610AbaDQQNI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 12:13:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54325 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751437AbaDQQM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 12:12:57 -0400
+Date: Thu, 17 Apr 2014 12:12:53 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Daniel J Walsh <dwalsh@redhat.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Simo Sorce <ssorce@redhat.com>,
+        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
+        Network Development <netdev@vger.kernel.org>
+Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
+ cgroup path
+Message-ID: <20140417161253.GC15749@redhat.com>
+References: <20140416002010.GA5035@redhat.com>
+ <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com>
+ <20140416.085743.1614257692560892039.davem@davemloft.net>
+ <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com>
+ <1397664837.19767.410.camel@willson.li.ssimo.org>
+ <CALCETrXn7b6UuALpGUVoyQYfR2uzk5tj2ABV=dkvtFNgqM5sxQ@mail.gmail.com>
+ <20140416180642.GG31074@redhat.com>
+ <CALCETrVUw5+vCCONy1VTXpskbY_eZFo2CtbehwV5Mhj4d4+icw@mail.gmail.com>
+ <20140416185936.GJ31074@redhat.com>
+ <534FF61B.4010901@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-In-Reply-To: <CANk1AXTb=ob52AfK2z--HvFkxJnjnfYWuTCch_Gw99OCoS1ABg@mail.gmail.com>
-Date: Thu, 17 Apr 2014 19:12:07 +0300
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <7706B5FF-45EB-4860-BD12-204B341A510D@konsulko.com>
-References: <1395179766-31575-1-git-send-email-pantelis.antoniou@konsulko.com> <CANk1AXTb=ob52AfK2z--HvFkxJnjnfYWuTCch_Gw99OCoS1ABg@mail.gmail.com>
-To: delicious quinoa <delicious.quinoa@gmail.com>
-X-Mailer: Apple Mail (2.1085)
+Content-Disposition: inline
+In-Reply-To: <534FF61B.4010901@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+On Thu, Apr 17, 2014 at 08:41:15AM -0700, Daniel J Walsh wrote:
 
-Ugh, very sorry for the late reply; my mailer filed this somewhere I don't look at very frequently.
-
-On Mar 28, 2014, at 8:27 PM, delicious quinoa wrote:
-
-> On Tue, Mar 18, 2014 at 4:55 PM, Pantelis Antoniou
-> <pantelis.antoniou@konsulko.com> wrote:
->> The following patchset introduces Device Tree overlays, a method
->> of dynamically altering the kernel's live Device Tree, along with
->> a generic interface to use it in a board agnostic manner.
->> 
-
-[snip]
-
-> \
-> I did some debug, haven't figured anything out yet.
+[..]
+> The two use cases for this patch are:
 > 
-> I have been able to successfully add/remove an overlay if it was to a
-> fpga node that was at /fpga and used 'target = <&fpga>;'   Also
-> 'target-path="/fpga";' works fine.
+> 1 Logging, to make sure the cgroup information gets correctly attributed
+> to the caller. 
 > 
+> 2 Potentially reveal different information to the caller based on the
+> cgroup information. 
+> 
+> Imagine you want to set up an apache web server that is going to use
+> sssd for authentication data.  You might want to reveal a limited set of
+> users to the apache service process based on the fact that it is running
+> in the apache.service.slice.  If the apache service does the equivalent
+> of getent passwd I want to give it different information then say sshd
+> did the same calls.
 
-Yes, platform devices are broken; I carry a patch that fixes all of that mess, and I intend to follow up with it.
+Dan,
 
-> Alan Tull
-> aka
-> delicious quinoa
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+So in first case we should be fine with both SO_PEERCGROUP and
+SO_PASSCGROUP. cgroup information is not being used as some sort of
+security attribute and decide who can access what.
 
-Regards
+Second use case looks more like that cgroup information is being used
+as some sort of security attribute to decide who gets to see what
+information.
 
--- Pantelis
+cgroup retrieved from SO_PEERCGROUP and used as an identifier to
+decide who can access what should be safe. This is similar to doing
+security checks at open(2) time.
 
+Andy's contention is that cgroup information received using SO_PASSCGROUP
+is not safe to use for some sort of authorization. And reason being that
+socket file descriptors can be passed around and one can trick an 
+priviliged process to write to that descriptor, making receiver believe
+that priviilged process is asking for some info.
+
+Now there are caveats to it. So far all the examples I have seen are
+the ones where setuid program will run in same cgroup as client. So even
+if we trick setuid program to write to socket fd, cgroup information
+remains same.
+
+I think problem will happen only in advance cases where priviliged
+program is running in some other cgroup and if it accepts file
+descritors and writes to them. I don't know if it is a common practice
+or not.
+
+May be we should just make it very clear that if cgroup information
+is being used for any kind of authorization purposes, then use only
+SO_PEERCGROUP. Limit SO_PASSCGROUP cgroup info for usages like logging.
+
+Thanks
+Vivek
