@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294AbaDQBXR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 21:23:17 -0400
-Received: from smtprelay0110.hostedemail.com ([216.40.44.110]:33849 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750998AbaDQBXI (ORCPT
+	id S1754484AbaDQBYE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 21:24:04 -0400
+Received: from [119.145.14.66] ([119.145.14.66]:41663 "EHLO
+	szxga03-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754301AbaDQBXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 21:23:08 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:599:960:966:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2110:2196:2198:2199:2200:2393:2553:2559:2562:2731:2828:2892:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3874:4321:4385:5007:7652:10004:10394:10400:10848:11232:11658:11914:12517:12519:12740:13069:13161:13229:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: plant16_7272dbf1fa318
-X-Filterd-Recvd-Size: 1673
-Message-ID: <1397697785.4603.6.camel@joe-AO725>
-Subject: Re: [DRIVER CORE] drivers/base/dd.c incorrect pr_debug() parameters
-From: Joe Perches <joe@perches.com>
-To: frowand.list@gmail.com
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Date: Wed, 16 Apr 2014 18:23:05 -0700
-In-Reply-To: <534F2A88.8050408@gmail.com>
-References: <534F1C6E.7010606@gmail.com> <1397695738.4603.2.camel@joe-AO725>
-	 <534F2A88.8050408@gmail.com>
+	Wed, 16 Apr 2014 21:23:51 -0400
+Message-ID: <534F2CFC.9040706@huawei.com>
+Date: Thu, 17 Apr 2014 09:23:08 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <john@johnmccutchan.com>,
+        <rlove@rlove.org>, <eparis@parisplace.org>,
+        <gregkh@linuxfoundation.org>, <serge.hallyn@ubuntu.com>,
+        <lennart@poettering.net>, <kay@vrfy.org>
+Subject: Re: [PATCH v3 3/3] cgroup: implement cgroup.populated for the default
+ hierarchy
+References: <1397511846-2904-1-git-send-email-tj@kernel.org> <1397511846-2904-4-git-send-email-tj@kernel.org> <20140416145047.GC1257@htj.dyndns.org>
+In-Reply-To: <20140416145047.GC1257@htj.dyndns.org>
 Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-16 at 18:12 -0700, Frank Rowand wrote:
-> On 4/16/2014 5:48 PM, Joe Perches wrote:
-> > On Wed, 2014-04-16 at 17:12 -0700, Frank Rowand wrote:
-> >> pr_debug() parameters are reverse order of format string
-> > 
-> > Another way to do this might be to change all the
-> > printks/pr_debugs to dev_<level>
+> cgroup users often need a way to determine when a cgroup's
+> subhierarchy becomes empty so that it can be cleaned up.  cgroup
+> currently provides release_agent for it; unfortunately, this mechanism
+> is riddled with issues.
 > 
-> Yes, but if that is done, one may as well do all of drivers/base/*.c
-> and drivers/base/*/*.c
+> * It delivers events by forking and execing a userland binary
+>   specified as the release_agent.  This is a long deprecated method of
+>   notification delivery.  It's extremely heavy, slow and cumbersome to
+>   integrate with larger infrastructure.
+> 
+> * There is single monitoring point at the root.  There's no way to
+>   delegate management of a subtree.
+> 
+> * The event isn't recursive.  It triggers when a cgroup doesn't have
+>   any tasks or child cgroups.  Events for internal nodes trigger only
+>   after all children are removed.  This again makes it impossible to
+>   delegate management of a subtree.
+> 
+> * Events are filtered from the kernel side.  "notify_on_release" file
+>   is used to subscribe to or suppress release event.  This is
+>   unnecessarily complicated and probably done this way because event
+>   delivery itself was expensive.
+> 
+> This patch implements interface file "cgroup.populated" which can be
+> used to monitor whether the cgroup's subhierarchy has tasks in it or
+> not.  Its value is 0 if there is no task in the cgroup and its
+> descendants; otherwise, 1, and kernfs_notify() notificaiton is
+> triggers when the value changes, which can be monitored through poll
+> and [di]notify.
+> 
+> This is a lot ligther and simpler and trivially allows delegating
+> management of subhierarchy - subhierarchy monitoring can block further
+> propgation simply by putting itself or another process in the root of
+> the subhierarchy and monitor events that it's interested in from there
+> without interfering with monitoring higher in the tree.
+> 
+> v2: Patch description updated as per Serge.
+> 
+> v3: "cgroup.subtree_populated" renamed to "cgroup.populated".  The
+>     subtree_ prefix was a bit confusing because
+>     "cgroup.subtree_control" uses it to denote the tree rooted at the
+>     cgroup sans the cgroup itself while the populated state includes
+>     the cgroup itself.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Acked-by: Serge Hallyn <serge.hallyn@ubuntu.com>
+> Cc: Lennart Poettering <lennart@poettering.net>
 
-Actually, I don't think so, no.
-
-These are the ones that have a struct device attached
-to them.  Many of the others are device free and are
-prefixed differently, like power and devtmpfs and bus.
-
-> I was only trying to fix incorrectly reported information from one
-> pr_debug().  If someone else want to do a big conversion, they are
-> free to.  :-)
-
-Always true...
-
-cheers, Joe
+Acked-by: Li Zefan <lizefan@huawei.com>
 
