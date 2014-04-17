@@ -1,163 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428AbaDQAvQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 20:51:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56712 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751217AbaDQAvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 20:51:15 -0400
-Date: Thu, 17 Apr 2014 10:51:05 +1000
-From: NeilBrown <neilb@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 16/19] VFS: use GFP_NOFS rather than GFP_KERNEL in
- __d_alloc.
-Message-ID: <20140417105105.7772d09d@notabene.brown>
-In-Reply-To: <20140416090051.GK15995@dastard>
-References: <20140416033623.10604.69237.stgit@notabene.brown>
-	<20140416040337.10604.61837.stgit@notabene.brown>
-	<20140416062520.GG15995@dastard>
-	<20140416164941.37587da6@notabene.brown>
-	<20140416090051.GK15995@dastard>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/IOui8nzd.ykBR2y_BhCeNCV"; protocol="application/pgp-signature"
+	id S1751446AbaDQBAd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 21:00:33 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:65192 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751058AbaDQBAb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 21:00:31 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=EUC-KR
+X-AuditID: cbfee68e-b7f566d000002344-22-534f27ab4d01
+Content-transfer-encoding: 8BIT
+Message-id: <534F27B0.4060709@samsung.com>
+Date: Thu, 17 Apr 2014 10:00:32 +0900
+From: Sangjung <sangjung.woo@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
+To: sw0312.kim@samsung.com
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/8] extcon: arizona: Use devm_extcon_dev_register()
+References: <1397644023-32516-1-git-send-email-sangjung.woo@samsung.com>
+ <1397644023-32516-9-git-send-email-sangjung.woo@samsung.com>
+ <534E5F09.8070703@samsung.com>
+In-reply-to: <534E5F09.8070703@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprHIsWRmVeSWpSXmKPExsWyRsSkQHe1un+wwZpZEhbXvzxntbi8aw6b
+	xe3GFWwWMya/ZHNg8ejbsorR4/MmuQCmKC6blNSczLLUIn27BK6M2xsPMxac4a44/fQlSwPj
+	Ec4uRk4OCQETib63T9khbDGJC/fWs3UxcnEICSxllFiwci4TTNHahzeYIBKLGCV+LT3BCJLg
+	FRCU+DH5HksXIwcHs4C8xJFL2SBhZgENiamvTzNC1L9mlHj+fB8rSA2vgJbE4aNBIDUsAqoS
+	B/evBJvPJqAp8fn4QTYQW1QgQmLuxM1gtoiAlMT/Q/dZIcYXShy4GgwSFhbwkLj2oJkZYvwK
+	Ron+ln5mkASngLbEzr7HYHdKCKxil5j24RcrxDIBiW+TD4HdKSEgK7HpADPEX5ISB1fcYJnA
+	KDYLyTezEL6ZheSbBYzMqxhFUwuSC4qT0ouM9IoTc4tL89L1kvNzNzEC4+b0v2d9OxhvHrA+
+	xJgMtHEis5Rocj4w7vJK4g2NzYwsTE1MjY3MLc1IE1YS5130MClISCA9sSQ1OzW1ILUovqg0
+	J7X4ECMTB6dUA6OXuHycqYp7rCyv2ZcTBl9/FHyavFL9rLKdxa2GM1tWPuYzFqtvVihg0BTN
+	+din+0VH8Kz3cSbeD588vPbz8Ex3C7GcfGpmQwfrd63tnBe/Tlw6zX3W0rNLMvcnzVpSOcHA
+	gLkzYT2bcPrJIoPd//n+5mcdVQlVmH1kYcHCPSI7rLUEV/QvX6nEUpyRaKjFXFScCABqWnJh
+	sQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t9jAd3V6v7BBrN+C1pc//Kc1eLyrjls
+	FrcbV7BZzJj8ks2BxaNvyypGj8+b5AKYohoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwM
+	dQ0tLcyVFPISc1NtlVx8AnTdMnOANikplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0Jgusx
+	MkADCWsYM25vPMxYcIa74vTTlywNjEc4uxg5OSQETCTWPrzBBGGLSVy4t56ti5GLQ0hgEaPE
+	r6UnGEESvAKCEj8m32PpYuTgYBaQlzhyKRskzCygITH19WlGiPrXjBLPn+9jBanhFdCSOHw0
+	CKSGRUBV4uD+lWDz2QQ0JT4fP8gGYosKREjMnbgZzBYRkJL4f+g+K8T4QokDV4NBwsICHhLX
+	HjQzQ4xfwSjR39LPDJLgFNCW2Nn3mGkCo8AsJNfNQrhuFpLrFjAyr2IUTS1ILihOSs810itO
+	zC0uzUvXS87P3cQIjspn0jsYVzVYHGIU4GBU4uHl/O0XLMSaWFZcmXuIUYKDWUmE113cP1iI
+	NyWxsiq1KD++qDQntfgQYzLQcxOZpUST84EJI68k3tDYxMzI0sjc0MLI2Jw0YSVx3oOt1oFC
+	AumJJanZqakFqUUwW5g4OKUaGCuOJ9hpnFbJNlqux3Xy281z84+f6ZzkEV7xYl6trYZFt+SN
+	muCnFzbftjxX6ei0ZM/15+Jyd0xPnGW7UKr0oVzTdYmLzwzbY2Ivd14qkc/ZyCfywUdzwl43
+	5vi/QlIvzl664/FSlevo57i2XTZagqELqxd39Ozabdv/0qjmcbmxyRlV9tW/3JVYijMSDbWY
+	i4oTAetr1BAOAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/IOui8nzd.ykBR2y_BhCeNCV
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+To Seung-Woo.
 
-On Wed, 16 Apr 2014 19:00:51 +1000 Dave Chinner <david@fromorbit.com> wrote:
 
-> On Wed, Apr 16, 2014 at 04:49:41PM +1000, NeilBrown wrote:
-> > On Wed, 16 Apr 2014 16:25:20 +1000 Dave Chinner <david@fromorbit.com> w=
-rote:
-> >=20
-> > > On Wed, Apr 16, 2014 at 02:03:37PM +1000, NeilBrown wrote:
-> > > > __d_alloc can be called with i_mutex held, so it is safer to
-> > > > use GFP_NOFS.
-> > > >=20
-> > > > lockdep reports this can deadlock when loop-back NFS is in use,
-> > > > as nfsd may be required to write out for reclaim, and nfsd certainly
-> > > > takes i_mutex.
-> > >=20
-> > > But not the same i_mutex as is currently held. To me, this seems
-> > > like a false positive? If you are holding the i_mutex on an inode,
-> > > then you have a reference to the inode and hence memory reclaim
-> > > won't ever take the i_mutex on that inode.
-> > >=20
-> > > FWIW, this sort of false positive was a long stabding problem for
-> > > XFS - we managed to get rid of most of the false positives like this
-> > > by ensuring that only the ilock is taken within memory reclaim and
-> > > memory reclaim can't be entered while we hold the ilock.
-> > >=20
-> > > You can't do that with the i_mutex, though....
-> > >=20
-> > > Cheers,
-> > >=20
-> > > Dave.
-> >=20
-> > I'm not sure this is a false positive.
-> > You can call __d_alloc when creating a file and so are holding i_mutex =
-on the
-> > directory.
-> > nfsd might also want to access that directory.
-> >=20
-> > If there was only 1 nfsd thread, it would need to get i_mutex and do it=
-'s
-> > thing before replying to that request and so before it could handle the
-> > COMMIT which __d_alloc is waiting for.
->=20
-> That seems wrong - the NFS client in __d_alloc holds a mutex on a
-> NFS client directory inode. The NFS server can't access that
-> specific mutex - it's on the other side of the "network". The NFS
-> server accesses mutexs from local filesystems, so __d_alloc would
-> have to be blocked on a local filesystem inode i_mutex for the nfsd
-> to get hung up behind it...
+On 04/16/2014 07:44 PM, Seung-Woo Kim wrote:
+> Hi,
+>
+> On 2014³â 04¿ù 16ÀÏ 19:27, Sangjung Woo wrote:
+>> Use the resource-managed extcon device register function (i.e.
+>> devm_extcon_dev_register()) instead of extcon_dev_register(). If extcon device
+>> is attached with this function, that extcon device is automatically unregistered
+>> on driver detach. That reduces tiresome managing code.
+>>
+>> Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
+>> ---
+>>  drivers/extcon/extcon-arizona.c |   13 ++++---------
+>>  1 file changed, 4 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
+>> index 98a14f6..40e6c0b 100644
+>> --- a/drivers/extcon/extcon-arizona.c
+>> +++ b/drivers/extcon/extcon-arizona.c
+>> @@ -1105,15 +1105,13 @@ static int arizona_extcon_probe(struct platform_device *pdev)
+>>  	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
+>>  	if (!info) {
+>>  		dev_err(&pdev->dev, "Failed to allocate memory\n");
+>> -		ret = -ENOMEM;
+>> -		goto err;
+>> +		return -ENOMEM;
+>>  	}
+>>  
+>>  	info->micvdd = devm_regulator_get(arizona->dev, "MICVDD");
+>>  	if (IS_ERR(info->micvdd)) {
+>> -		ret = PTR_ERR(info->micvdd);
+>>  		dev_err(arizona->dev, "Failed to get MICVDD: %d\n", ret);
+> Assignment to ret is removed but it is still used here.
 
-I'm not thinking of mutexes on the NFS inodes but the local filesystem inod=
-es
-exactly as you describe below.
+You're right.
+I will fix and send it as second version.
 
->=20
-> However, my confusion comes from the fact that we do GFP_KERNEL
-> memory allocation with the i_mutex held all over the place.
+Thank you for your comment.
 
-Do we?  Should we?  Isn't the whole point of GFP_NOFS to use it when holding
-any filesystem lock?
-
->           If the
-> problem is:
->=20
-> 	local fs access -> i_mutex
-> .....
-> 	nfsd -> i_mutex (blocked)
-> .....
-> 	local fs access -> kmalloc(GFP_KERNEL)
-> 			-> direct reclaim
-> 			-> nfs_release_page
-> 			-> <send write/commit request to blocked nfsds>
-> 			   <deadlock>
->=20
-> then why is it just __d_alloc that needs this fix?  Either this is a
-> problem *everywhere* or it's not a problem at all.
-
-I think it is a problem everywhere that it is a problem :-)
-If you are holding an FS lock, then you should be using GFP_NOFS.
-Currently a given filesystem can get away with sometimes using GFP_KERNEL
-because that particular lock never causes contention during reclaim for that
-particular filesystem.
-
-Adding loop-back NFS into the mix broadens the number of locks which can
-cause a problem as it creates interdependencies between different filesyste=
-ms.
-
->=20
-> If it's a problem everywhere it means that we simply can't allow
-> reclaim from localhost NFS mounts to run from contexts that could
-> block an NFSD. i.e. you cannot run NFS client memory reclaim from
-> filesystems that are NFS server exported filesystems.....
-
-Well.. you cannot allow NFS client memory reclaim *while holding locks in*
-filesystems that are NFS exported.
-
-I think this is most effectively generalised to:
-  you cannot allow FS memory reclaim while holding locks in filesystems whi=
-ch
-  can be NFS exported
-
-which I think is largely the case already - and lockdep can help us find
-those places where we currently do allow FS reclaim while holding an FS loc=
-k.
-
-Thanks,
-NeilBrown
-
---Sig_/IOui8nzd.ykBR2y_BhCeNCV
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU08leTnsnt1WYoG5AQJQzA/8Cvoi/4unSULSSR/yD8Bso7yrf/66DY4Y
-5BknlIQnXLLRnQKRYFbTeMA/Vku/rPyQeWPbX22ealsi2+p7uStAhaqSnAJPPPj/
-e+nfkJilCswjWqbuvcwU3oPHGxOA234vHiueT1uIvGyylFUuXvOtL1vPgtaFjlPs
-KUYjS36XSD17u/UfTEm8jcTyV1z/QdEbu+jhGGB8/wNGqA9mQDar7ykdcUI37iPf
-4YJtGQuzU2NvX+JMVMZtbkRZBn4LPP983oo+2+JSFNDeIDeBlVxOfzErJ1QKLpNq
-CJYC86j+baIkf92M1mpOFEanXgIlvitHofxSCcJ29k0YQDhLZUF0DPrQhdKtSnoK
-kVcF5pnUwLbcu7jHkHT/8Uip1CijkpqSg920ZhYJAnMseLWM+er2gQIUXkXRzWJd
-062RpdhKK5/m0MTbXZJ8crAycFQFLep1vG++jrbYQ0VAQ7TzCF4+iREBxmLiH1sd
-Oh3l4DdIcDqXchSocKyDAiFA+O8CHCKoBPTyA3YKCNBtmmyIouWjylLOeGMiD4AD
-yuCks0tlZdtfvZMaqV43yxEkNUsLybnxf3StilD0zJFkQZtWAq43efcIt2XOeiR/
-R9BUs3QNOao2ockixg+9T1LV1l1G9RNvcSkrF+j6x0/9uINhcfffqrusqBK5V7FW
-4Oc/mEI+igY=
-=2sPU
------END PGP SIGNATURE-----
-
---Sig_/IOui8nzd.ykBR2y_BhCeNCV--
+BRs,
+Sangjung
