@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826AbaDQPsP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 11:48:15 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53757 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751207AbaDQPsI (ORCPT
+	id S1752129AbaDQPt1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 11:49:27 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58122 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006AbaDQPtQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 11:48:08 -0400
-Date: Thu, 17 Apr 2014 16:47:15 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, "monstr@monstr.eu" <monstr@monstr.eu>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 00/18] Cross-architecture definitions of relaxed MMIO
- accessors
-Message-ID: <20140417154714.GD30553@arm.com>
-References: <1397742261-15621-1-git-send-email-will.deacon@arm.com>
- <20140417153638.GA7317@ravnborg.org>
+	Thu, 17 Apr 2014 11:49:16 -0400
+Date: Thu, 17 Apr 2014 17:49:02 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v9 04/19] qspinlock: Extract out the exchange of tail
+ code word
+Message-ID: <20140417154902.GO11096@twins.programming.kicks-ass.net>
+References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com>
+ <1397747051-15401-5-git-send-email-Waiman.Long@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140417153638.GA7317@ravnborg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1397747051-15401-5-git-send-email-Waiman.Long@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sam,
+On Thu, Apr 17, 2014 at 11:03:56AM -0400, Waiman Long wrote:
+> @@ -192,36 +220,25 @@ void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
+>  	node->next = NULL;
+>  
+>  	/*
+> +	 * We touched a (possibly) cold cacheline; attempt the trylock once
+> +	 * more in the hope someone let go while we weren't watching as long
+> +	 * as no one was queuing.
+>  	 */
+> +	if (!(val & _Q_TAIL_MASK) && queue_spin_trylock(lock))
+> +		goto release;
 
-On Thu, Apr 17, 2014 at 04:36:38PM +0100, Sam Ravnborg wrote:
-> On Thu, Apr 17, 2014 at 02:44:03PM +0100, Will Deacon wrote:
-> > Hello,
-> > 
-> > This RFC series attempts to define a portable (i.e. cross-architecture)
-> > definition of the {readX,writeX}_relaxed MMIO accessor functions. These
-> > functions are already in widespread use amongst drivers (mainly those supporting
-> > devices embedded in ARM SoCs), but lack any well-defined semantics and,
-> > subsequently, any portable definitions to allow these drivers to be compiled for
-> > other architectures.
-> 
-> Could this be made in such a way that only architectures that need
-> to provide their own versions actually have to add them?
-> 
-> The current patch-set adds the same dummy defines all over,
-> and will put this burden also on new architectures.
-
-It shouldn't be a burden for new architectures, as they will use
-asm-generic/io.h and get the definitions from there.
-
-Will
+But you just did a potentially very expensive op; @val isn't
+representative anymore!
