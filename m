@@ -1,103 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457AbaDQEXW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 00:23:22 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:55474 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750981AbaDQEXU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 00:23:20 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmV+ADpWT1N5LEcvPGdsb2JhbABRCIMGg1WFCqIqk1uFYIEhFwMBAQEBODWCJQEBAQMBJxMcIwULCAMYCSUPBSUDBxoTG4dZB8o4FxaNdg1JB4Q4BJhllg0rgS0
-Date: Thu, 17 Apr 2014 14:23:13 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: NeilBrown <neilb@suse.de>
-Cc: Jeff Layton <jlayton@redhat.com>, linux-nfs@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, netdev@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com, linux-mm@kvack.org, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH/RFC 00/19] Support loop-back NFS mounts
-Message-ID: <20140417042313.GV15995@dastard>
-References: <20140416033623.10604.69237.stgit@notabene.brown>
- <20140416104207.75b044e8@tlielax.poochiereds.net>
- <20140417102048.2fc8275c@notabene.brown>
- <20140417012739.GU15995@dastard>
- <20140417115018.460345d0@notabene.brown>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140417115018.460345d0@notabene.brown>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751653AbaDQEbs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 00:31:48 -0400
+Received: from ozlabs.org ([103.22.144.67]:39605 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751059AbaDQEbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 00:31:47 -0400
+Date: Thu, 17 Apr 2014 14:31:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jes Sorensen <Jes.Sorensen@redhat.com>
+Subject: linux-next: manual merge of the staging tree with the
+ staging.current tree
+Message-Id: <20140417143137.a66d4f53a928fd454911fa50@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__17_Apr_2014_14_31_37_+1000_fKS2./I1ivEWHRhr"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 11:50:18AM +1000, NeilBrown wrote:
-> On Thu, 17 Apr 2014 11:27:39 +1000 Dave Chinner <david@fromorbit.com> wrote:
-> 
-> > On Thu, Apr 17, 2014 at 10:20:48AM +1000, NeilBrown wrote:
-> > > A good example is the deadlock with the flush-* threads.
-> > > flush-* will lock a page, and  then call ->writepage.  If ->writepage
-> > > allocates memory it can enter reclaim, call ->releasepage on NFS, and block
-> > > waiting for a COMMIT to complete.
-> > > The COMMIT might already be running, performing fsync on that same file that
-> > > flush-* is flushing.  It locks each page in turn.  When it  gets to the page
-> > > that flush-* has locked, it will deadlock.
-> > 
-> > It's nfs_release_page() again....
-> > 
-> > > In general, if nfsd is allowed to block on local filesystem, and local
-> > > filesystem is allowed to block on NFS, then a deadlock can happen.
-> > > We would need a clear hierarchy
-> > > 
-> > >    __GFP_NETFS > __GFP_FS > __GFP_IO
-> > > 
-> > > for it to work.  I'm not sure the extra level really helps a lot and it would
-> > > be a lot of churn.
-> > 
-> > I think you are looking at this the wrong way - it's not the other
-> > filesystems that have to avoid memory reclaim recursion, it's the
-> > NFS client mount that is on loopback that needs to avoid recursion.
-> > 
-> > IMO, the fix should be that the NFS client cannot block on messages sent to the NFSD
-> > on the same host during memory reclaim. That is, nfs_release_page()
-> > cannot send commit messages to the server if the server is on
-> > localhost. Instead, it just tells memory reclaim that it can't
-> > reclaim that page.
-> > 
-> > If nfs_release_page() no longer blocks in memory reclaim, and all
-> > these nfsd-gets-blocked-in-GFP_KERNEL-memory-allocation recursion
-> > problems go away. Do the same for all the other memory reclaim
-> > operations in the NFS client, and you've got a solution that should
-> > work without needing to walk all over the rest of the kernel....
-> 
-> Maybe.
-> It is nfs_release_page() today. I wonder if it could be other things another
-> day.  I want to be sure I have a solution that really makes sense.
+--Signature=_Thu__17_Apr_2014_14_31_37_+1000_fKS2./I1ivEWHRhr
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-There could be other things, but in the absence of those things,
-I don't think that adding another layer to memory reclaim
-dependencies for this niche corner case makes a lot of sense. ;)
+Hi Greg,
 
-> However ... the thing that nfs_release_page is doing it sending a COMMIT to
-> tell the server to flush to stable storage.  It does that so that if the
-> server crashes, then the client can re-send.
-> Of course when it is a loop-back mount the client is the server so the COMMIT
-> is completely pointless.  If the client notices that it is sending a COMMIT
-> to itself, it can simply assume a positive reply.
+Today's linux-next merge of the staging tree got conflicts in
+drivers/staging/rtl8723au/core/rtw_ieee80211.c,
+drivers/staging/rtl8723au/core/rtw_mlme_ext.c,
+drivers/staging/rtl8723au/core/rtw_p2p.c and
+drivers/staging/rtl8723au/core/rtw_wlan_util.c between commit
+f5d197b614d8 ("staging: rtl8723au: Fix buffer overflow in rtw_get_wfd_ie
+()") from the staging.current tree and various commits from the staging
+tree.
 
-Yes, that's very true. You might have to treat ->writepage
-specially, too, if that can block, say, on the number of outstanding
-requests that can be sent to the server.
+I fixed it up (I just use dthe version from the staging tree) and can
+carry the fix as necessary (no action is required).
 
-> You are right, that would make the patch set a lot less intrusive.  I'll give
-> it some serious thought - thanks.
-
-No worries. :)
-
+--=20
 Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+--Signature=_Thu__17_Apr_2014_14_31_37_+1000_fKS2./I1ivEWHRhr
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTT1kxAAoJEMDTa8Ir7ZwVFJYQAJI4cNELecDPYsWJnrTEcw3z
+iUFXbuAMil+l+IB6D5FBvL2RaW5PzVDOsizqqczhZTEPOUaB0icSb+qB/+XYU5dQ
+P+QFuekBHe1zaJ+0BT7luRXH44DhAsFtsnWW7+X5NrP76c0XK+Vesp7Patxzb9pQ
+eiVO0GGlDyiuViG0jhJ4C0jlNkxjsmmEdAfbA3wpzP2jiThMhzB/HSuBoU31rRLR
+ILjO55WypWeocexdQPYpfNYtYFiaQg/UEVKfZ8ZxrUOQRh5DXkY+w0q0/SaWAN7t
+Bw8p1GFnWii4jgl9x+fv4JbTQGMgd05XiEPUU9MtS76D5Eve00cuOjYuqFyu0OcA
+EvIJfa9jmGksOg5WIAqG8sD+lXVoaDfQfEHSpRVec4O6abyfyi/Fmf199B2Pxn8k
+6VVdsSjPPqjU08dZEuXfqA3o9nMnpi/NMOZv9o74ozFm7uWMSAcQLNbooWUcRalE
+pTwHQq9x6OS+9e9UAcslNV5GWd649nSnz3oM9A5Uq81exTEEUDKvSzHjsDTZ5q4N
+FzoHE2EAe1D56jcPjuOy6ZNP2lquN6nO0m7fTps57xZ+Z1J6HV+kml/GdGBmDF4r
+KgeHfIhKuhpziIClEt9yQDq1f9sx1YFjY7bNlVNwfnLe8FXnRKgGuqtsFuIulAg1
+3TSF++qn346gwJjMA3r+
+=2pp9
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__17_Apr_2014_14_31_37_+1000_fKS2./I1ivEWHRhr--
