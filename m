@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839AbaDQKK1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 06:10:27 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:22904 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161105AbaDQKKD (ORCPT
+	id S1756736AbaDQKKV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 06:10:21 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:28855 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161137AbaDQKKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Apr 2014 06:10:03 -0400
-X-AuditID: cbfee68e-b7f566d000002344-b5-534fa87a668b
+X-AuditID: cbfee691-b7efc6d0000039d3-49-534fa87a19ec
 From: Sangjung Woo <sangjung.woo@samsung.com>
 To: MyungJoo Ham <myungjoo.ham@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>
 Cc: linux-kernel@vger.kernel.org, Sangjung Woo <sangjung.woo@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>,
         Seung-Woo Kim <sw0312.kim@samsung.com>
-Subject: [PATCHv3 3/8] extcon: gpio: Use devm_extcon_dev_register()
-Date: Thu, 17 Apr 2014 19:09:58 +0900
-Message-id: <1397729403-32045-4-git-send-email-sangjung.woo@samsung.com>
+Subject: [PATCHv2 4/8] extcon: max14577: Use devm_extcon_dev_register()
+Date: Thu, 17 Apr 2014 19:09:59 +0900
+Message-id: <1397729403-32045-5-git-send-email-sangjung.woo@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1397729403-32045-1-git-send-email-sangjung.woo@samsung.com>
 References: <1397729403-32045-1-git-send-email-sangjung.woo@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsWyRsSkSLdqhX+wwftJBhbXvzxntXj9wtDi
-	8q45bBa3G1ewWSzYU2IxY/JLNgc2j74tqxg9Pm+SC2CK4rJJSc3JLEst0rdL4MrYtnQSY8Er
-	vortjVENjAt5uhg5OSQETCQWrtjKCGGLSVy4t56ti5GLQ0hgKaPE7o8TGGGKlq2ZygJiCwlM
-	Z5SYs6QaoqiNSeLP2mnMIAk2AV2JJwcug9kiAsESHSePM4EUMQssYZT4d/IW0FgODmEBZ4n/
-	KytBalgEVCW6PjSBLeAV8JB41/aHHaREQkBBYs4kG5Awp4CnxJ6tZxkh9npIbF12gxXint9s
-	EpO2JUCMEZD4NvkQC0SrrMSmA8wQJZISB1fcYJnAKLyAkWEVo2hqQXJBcVJ6kZFecWJucWle
-	ul5yfu4mRmDQnv73rG8H480D1ocYk4HGTWSWEk3OBwZ9Xkm8obGZkYWpiamxkbmlGWnCSuK8
-	ix4mBQkJpCeWpGanphakFsUXleakFh9iZOLglGpgnPmqe/vKDHOeD7Zl/Ot1t0rvVI4+XnJQ
-	vuz7o+mMftU2h/7/8N6XF/zF5VDP2UmL8mcv2Wb3bs6+xjMKD//2Pph2+9FW5zMvKprY1p7Y
-	EXlK+7X46+77lnxrj54+Ivk/1mvOs12eB5atY12TmNp8xsY+ULpyem5Jr4j7Y3lL2di2xpAJ
-	G1Ti+5RYijMSDbWYi4oTAaU1cURwAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t9jQd2qFf7BBlOXalhc//Kc1eL1C0OL
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsWyRsSkQLdqhX+wwe1GQ4vrX56zWrx+YWhx
+	edccNovbjSvYLBbsKbGYMfklmwObR9+WVYwenzfJBTBFcdmkpOZklqUW6dslcGUc6p/AVnCf
+	r2Le4ePsDYybeLoYOTkkBEwkeve8ZoKwxSQu3FvP1sXIxSEksJRR4uP7a4wwRXvXdTJCJKYz
+	Smx53MQO4bQxSfxZO40ZpIpNQFfiyYHLYLaIQLBEx8njTCBFzAJLGCX+nbzFBpIQFnCXWL58
+	DdAoDg4WAVWJx4+KQcK8Ah4Sj+bsZwUJSwgoSMyZZAMS5hTwlNiz9SzYEUJAJVuX3WAFGSkh
+	8J9N4s7EnSwgCRYBAYlvkw+xQPTKSmw6wAxxtKTEwRU3WCYwCi9gZFjFKJpakFxQnJReZKpX
+	nJhbXJqXrpecn7uJERi6p/89m7iD8f4B60OMyUDjJjJLiSbnA0M/ryTe0NjMyMLUxNTYyNzS
+	jDRhJXHe9EdJQUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoY105hKlv0tdB4nfrUqdtUH7Rv
+	Czoy5USP+SfV6deNnI5W/nDK3rt9G9N3vc9aokJPml1cVP/XX7dslJ9WstbH7k+iLRe7S1h0
+	lIf1jHqj/d/8lkxbuq1rq9SSj19Ml+rnV50+mXG209GzYF94h2z3Ad2nlfryXteufjA8taQj
+	0Gfz0oPqi7OLlFiKMxINtZiLihMBMpNeS3MCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLIsWRmVeSWpSXmKPExsVy+t9jQd2qFf7BBhcPaVpc//Kc1eL1C0OL
 	y7vmsFncblzBZrFgT4nFjMkv2RzYPPq2rGL0+LxJLoApqoHRJiM1MSW1SCE1Lzk/JTMv3VbJ
 	OzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdoo5JCWWJOKVAoILG4WEnfDtOE0BA3XQuY
-	xghd35AguB4jAzSQsIYxY9vSSYwFr/gqtjcCHbSQp4uRk0NCwERi2ZqpLBC2mMSFe+vZQGwh
-	gemMEnOWVHcxcgHZbUwSf9ZOYwZJsAnoSjw5cBnMFhEIlug4eZwJpIhZYAmjxL+Tt4C6OTiE
-	BZwl/q+sBKlhEVCV6PrQxAhi8wp4SLxr+8MOUiIhoCAxZ5INSJhTwFNiz9azjBB7PSS2LrvB
-	OoGRdwEjwypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4Kh4Jr2DcVWDxSFGAQ5GJR5ezt9+
-	wUKsiWXFlbmHGCU4mJVEeCWAMSXEm5JYWZValB9fVJqTWnyIMRnoqInMUqLJ+cCIzSuJNzQ2
-	MTOyNDI3tDAyNidNWEmc92CrdaCQQHpiSWp2ampBahHMFiYOTqkGxsol3w5qXt4kbsKl47Dg
-	6EE9/1kt5zI+mJ69lW+ZwOqus73xykzdZ7lNmufljh0XDpDyPMlyL+YBb+b/FX/m7cvrvWC4
-	Zk1FovOp+xZlitUNk7pPiaU8qm1bbh63VUdj+vTVnztSpm372TOL7b5u0a9Fl+LZFrP1a/6d
-	13G2U1c/0/KhnPpvVSWW4oxEQy3mouJEANdsLY3OAgAA
+	xghd35AguB4jAzSQsIYx41D/BLaC+3wV8w4fZ29g3MTTxcjJISFgIrF3XScjhC0mceHeerYu
+	Ri4OIYHpjBJbHjexQzhtTBJ/1k5jBqliE9CVeHLgMpgtIhAs0XHyOBNIEbPAEkaJfydvsYEk
+	hAXcJZYvXwM0loODRUBV4vGjYpAwr4CHxKM5+1lBwhICChJzJtmAhDkFPCX2bD0LdoQQUMnW
+	ZTdYJzDyLmBkWMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHBnPpHYwrmywOMQowMGoxMM7
+	Qd0/WIg1say4MvcQowQHs5II75JeoBBvSmJlVWpRfnxRaU5q8SHGZKCbJjJLiSbnA6M2ryTe
+	0NjEzMjSyNzQwsjYnDRhJXHeA63WgUIC6YklqdmpqQWpRTBbmDg4pRoYD4bnb7/OK8jc1ztR
+	r1Y4bUlHpwdbya7HXW+E3//bdOTIymPJuzb3Hctb17ZHf/7aP942/H+iv5zJtzTUqRPujlzV
+	/CCZp/H03Ls7z18V3zl1Xt/CGN7qM2ZnWkSU67JVeeeHFli7rzN0NtmuHxacV6/qGXqg2HYq
+	58r/NbMOL8+dlL1y3m1mJZbijERDLeai4kQAxUHUedACAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,58 +56,49 @@ is attached with this function, that extcon device is automatically unregistered
 on driver detach. That reduces tiresome managing code.
 
 Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/extcon/extcon-gpio.c |   16 ++++------------
- 1 file changed, 4 insertions(+), 12 deletions(-)
+ drivers/extcon/extcon-max14577.c |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
-index 13d5222..43af34c 100644
---- a/drivers/extcon/extcon-gpio.c
-+++ b/drivers/extcon/extcon-gpio.c
-@@ -121,34 +121,27 @@ static int gpio_extcon_probe(struct platform_device *pdev)
- 				msecs_to_jiffies(pdata->debounce);
+diff --git a/drivers/extcon/extcon-max14577.c b/drivers/extcon/extcon-max14577.c
+index 1fef08d..c6166e7 100644
+--- a/drivers/extcon/extcon-max14577.c
++++ b/drivers/extcon/extcon-max14577.c
+@@ -675,7 +675,7 @@ static int max14577_muic_probe(struct platform_device *pdev)
  	}
- 
--	ret = extcon_dev_register(&extcon_data->edev);
-+	ret = devm_extcon_dev_register(&pdev->dev, &extcon_data->edev);
- 	if (ret < 0)
+ 	info->edev->name = DEV_NAME;
+ 	info->edev->supported_cable = max14577_extcon_cable;
+-	ret = extcon_dev_register(info->edev);
++	ret = devm_extcon_dev_register(&pdev->dev, info->edev);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to register extcon device\n");
  		return ret;
- 
- 	INIT_DELAYED_WORK(&extcon_data->work, gpio_extcon_work);
- 
- 	extcon_data->irq = gpio_to_irq(extcon_data->gpio);
--	if (extcon_data->irq < 0) {
--		ret = extcon_data->irq;
--		goto err;
--	}
-+	if (extcon_data->irq < 0)
-+		return extcon_data->irq;
- 
- 	ret = request_any_context_irq(extcon_data->irq, gpio_irq_handler,
- 				      pdata->irq_flags, pdev->name,
- 				      extcon_data);
- 	if (ret < 0)
--		goto err;
+@@ -694,7 +694,7 @@ static int max14577_muic_probe(struct platform_device *pdev)
+ 			MAX14577_REG_DEVICEID, &id);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "failed to read revision number\n");
+-		goto err_extcon;
 +		return ret;
+ 	}
+ 	dev_info(info->dev, "device ID : 0x%x\n", id);
  
- 	platform_set_drvdata(pdev, extcon_data);
- 	/* Perform initial detection */
- 	gpio_extcon_work(&extcon_data->work.work);
+@@ -714,10 +714,6 @@ static int max14577_muic_probe(struct platform_device *pdev)
+ 			delay_jiffies);
  
- 	return 0;
+ 	return ret;
 -
--err:
--	extcon_dev_unregister(&extcon_data->edev);
--
+-err_extcon:
+-	extcon_dev_unregister(info->edev);
 -	return ret;
  }
  
- static int gpio_extcon_remove(struct platform_device *pdev)
-@@ -157,7 +150,6 @@ static int gpio_extcon_remove(struct platform_device *pdev)
+ static int max14577_muic_remove(struct platform_device *pdev)
+@@ -725,7 +721,6 @@ static int max14577_muic_remove(struct platform_device *pdev)
+ 	struct max14577_muic_info *info = platform_get_drvdata(pdev);
  
- 	cancel_delayed_work_sync(&extcon_data->work);
- 	free_irq(extcon_data->irq, extcon_data);
--	extcon_dev_unregister(&extcon_data->edev);
+ 	cancel_work_sync(&info->irq_work);
+-	extcon_dev_unregister(info->edev);
  
  	return 0;
  }
