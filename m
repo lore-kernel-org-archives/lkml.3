@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161425AbaDQDaV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 23:30:21 -0400
-Received: from mailout.micron.com ([137.201.242.129]:22502 "EHLO
+	id S1757157AbaDQDcA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 23:32:00 -0400
+Received: from mailout.micron.com ([137.201.242.129]:26680 "EHLO
 	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754390AbaDQDaT (ORCPT
+	with ESMTP id S1751413AbaDQDb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 23:30:19 -0400
-Message-ID: <534F4AC8.7040104@micron.com>
-Date: Wed, 16 Apr 2014 20:30:16 -0700
+	Wed, 16 Apr 2014 23:31:59 -0400
+Message-ID: <534F4B2D.3060302@micron.com>
+Date: Wed, 16 Apr 2014 20:31:57 -0700
 From: Asai Thambi S P <asamymuthupa@micron.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:28.0) Gecko/20100101 Thunderbird/28.0
 MIME-Version: 1.0
 To: Jens Axboe <axboe@kernel.dk>
 CC: linux-kernel <linux-kernel@vger.kernel.org>,
         Sam Bradshaw <sbradshaw@micron.com>
-Subject: mtip32xx: Remove dfs_parent after pci unregister
+Subject: block: check for dying queue in generic_make_request()
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20636.004
-X-TM-AS-Result: No--4.446300-0.000000-31
+X-TM-AS-Result: No--6.408900-0.000000-31
 X-TM-AS-User-Approved-Sender: Yes
 X-TM-AS-User-Blocked-Sender: No
 X-MT-CheckInternalSenderRule: True
@@ -28,38 +28,34 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-In module exit, dfs_parent and it's subtree were removed before unregistering
-with pci. When debugfs entry for each device is attempted to remove in
-pci_remove() context, they don't exist, as dfs_parent and its children were
-already ripped apart.
+Check for dying queue is in request queue interface, but not for direct use
+of make_request().
 
-Modified to first unregister with pci and then remove dfs_parent.
+When a mounted device is surprise removed, block drivers delete gendisk and
+cleanup request queue. As the reference count is non-zero, these structures
+continue to exist and any further I/O request is passed on to block drivers.
+With respect to the block driver, the device is removed and cleaned up the
+data structures. This check will stop I/O to a non-existent device at the
+block layer.
 
 Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
 ---
- drivers/block/mtip32xx/mtip32xx.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ block/blk-core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index 51628eb..27641bc 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -4939,13 +4939,13 @@ static int __init mtip_init(void)
-  */
- static void __exit mtip_exit(void)
- {
--	debugfs_remove_recursive(dfs_parent);
--
- 	/* Release the allocated major block device number. */
- 	unregister_blkdev(mtip_major, MTIP_DRV_NAME);
+diff --git a/block/blk-core.c b/block/blk-core.c
+index e45b321..cec6bf4 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -1713,7 +1713,7 @@ generic_make_request_checks(struct bio *bio)
+ 		goto end_io;
  
- 	/* Unregister the PCI driver. */
- 	pci_unregister_driver(&mtip_pci_driver);
-+
-+	debugfs_remove_recursive(dfs_parent);
- }
- 
- MODULE_AUTHOR("Micron Technology, Inc");
+ 	q = bdev_get_queue(bio->bi_bdev);
+-	if (unlikely(!q)) {
++	if (unlikely(!q || blk_queue_dying(q))) {
+ 		printk(KERN_ERR
+ 		       "generic_make_request: Trying to access "
+ 			"nonexistent block-device %s (%Lu)\n",
 -- 
 1.7.1
 
