@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757048AbaDQNle (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 09:41:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47780 "EHLO mx1.redhat.com"
+	id S1945896AbaDQNnq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 09:43:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55788 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756553AbaDQNla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 09:41:30 -0400
-Date: Thu, 17 Apr 2014 09:41:23 -0400
+	id S1754536AbaDQNnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 09:43:45 -0400
+Date: Thu, 17 Apr 2014 09:43:38 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Simo Sorce <ssorce@redhat.com>, David Miller <davem@davemloft.net>,
-        Tejun Heo <tj@kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
-        Network Development <netdev@vger.kernel.org>
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
- cgroup path
-Message-ID: <20140417134123.GA15749@redhat.com>
-References: <1397664837.19767.410.camel@willson.li.ssimo.org>
- <CALCETrXn7b6UuALpGUVoyQYfR2uzk5tj2ABV=dkvtFNgqM5sxQ@mail.gmail.com>
- <20140416180642.GG31074@redhat.com>
- <CALCETrVUw5+vCCONy1VTXpskbY_eZFo2CtbehwV5Mhj4d4+icw@mail.gmail.com>
- <20140416182530.GB550@redhat.com>
- <CALCETrUs1js3Br81ZkiQnsuWduzOiqDe3aV0K_z_zw0znSuiag@mail.gmail.com>
- <20140416190657.GK31074@redhat.com>
- <CALCETrUv56awd+UoO_f8LLL2FVq-Hc6Bd6iBGMqWjVGpgxgTSg@mail.gmail.com>
- <20140416193918.GM31074@redhat.com>
- <CALCETrU9P+1Az+uuU_zE4uZZ-qmp5M_=YAXvfcK=rzQRbgoG5g@mail.gmail.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Satoru MORIYA <satoru.moriya.br@hitachi.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Takenori Nagano <t-nagano@ah.jp.nec.com>,
+        Eric Biederman <ebiederm@xmission.com>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] kernel/panic: Add "late_kdump" option for kdump in
+ unstable condition
+Message-ID: <20140417134338.GB15749@redhat.com>
+References: <20140414045158.10846.35462.stgit@ltc230.yrl.intra.hitachi.co.jp>
+ <20140416134830.GA31074@redhat.com>
+ <534F3572.2040801@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrU9P+1Az+uuU_zE4uZZ-qmp5M_=YAXvfcK=rzQRbgoG5g@mail.gmail.com>
+In-Reply-To: <534F3572.2040801@hitachi.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 01:24:32PM -0700, Andy Lutomirski wrote:
+On Thu, Apr 17, 2014 at 10:59:14AM +0900, Masami Hiramatsu wrote:
 
 [..]
-> I'm not talking about the risk that someone learns someone's cgroup.
-> I'm talking about the risk that a malicious program can get a lot
-> entry like: "whatever planted text"
-> _SYSTEMD_UNIT=non-malicious.service.  That is, they've spoofed a log
-> line.
+> >> @@ -112,9 +113,14 @@ void panic(const char *fmt, ...)
+> >>  	/*
+> >>  	 * If we have crashed and we have a crash kernel loaded let it handle
+> >>  	 * everything else.
+> >> -	 * Do we want to call this before we try to display a message?
+> >> +	 * If we want to call this after we try to display a message, pass
+> >> +	 * the "late_kdump" option to the kernel.
+> >>  	 */
+> >> -	crash_kexec(NULL);
+> >> +	if (!late_kdump)
+> >> +		crash_kexec(NULL);
+> >> +	else
+> >> +		pr_emerg("Warning: late_kdump option is set. Please DO NOT "
+> >> +			"report bugs about kdump failure with this option.\n");
+> > 
+> > I think above message about DO NOT report bugs seems unnecessary. 
 > 
-> If you don't care about spoofing of log lines, then there's no point
-> to having the kernel validate them anyway.
+> OK, so I just notify the option is set as below.
+> "Warning: crash_kexec_post_notifiers is set.\n"
 
-What's wrong with this. A message came from a cgroup which maps to
-a unit xyz and it got logged.  I can't see what's wrong here.
+I would say for the time being don't put any extra message. User will
+think what this warning is supposed to mean. We can introduce one if
+we run into many issues.
 
-Anyway that message will get logged with unit information. These patches
-will just make getting unit information race free and more reliable.
+For the time being we can just look at kernel logs and look at command
+line options and see whether crash_kexec_post_notifiers was set or not.
 
-Thansk
+Thanks
 Vivek
