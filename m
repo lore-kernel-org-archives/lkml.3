@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751274AbaDQOxA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 10:53:00 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:28749 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113AbaDQOwy (ORCPT
+	id S1751373AbaDQOyZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 10:54:25 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48193 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893AbaDQOyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 10:52:54 -0400
-Message-ID: <534FEAC5.10808@tilera.com>
-Date: Thu, 17 Apr 2014 10:52:53 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <arnd@arndb.de>, <monstr@monstr.eu>, <dhowells@redhat.com>,
-        <broonie@linaro.org>, <benh@kernel.crashing.org>,
-        <peterz@infradead.org>, <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 15/18] tile: io: implement dummy relaxed accessor macros
- for writes
-References: <1397742261-15621-1-git-send-email-will.deacon@arm.com> <1397742261-15621-16-git-send-email-will.deacon@arm.com>
-In-Reply-To: <1397742261-15621-16-git-send-email-will.deacon@arm.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
+	Thu, 17 Apr 2014 10:54:12 -0400
+Date: Thu, 17 Apr 2014 15:53:24 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Johannes Thumshirn <johannes.thumshirn@men.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Alexander Shiyan <shc_work@mail.ru>,
+        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        Thomas Schnuerer <thomas.schnuerer@men.de>
+Subject: Re: [PATCH v2] tty: serial: Add driver for MEN's 16z135 High Speed
+ UART.
+Message-ID: <20140417155324.6fe03e8c@alan.etchedpixels.co.uk>
+In-Reply-To: <1397742478-2894-1-git-send-email-johannes.thumshirn@men.de>
+References: <1397742478-2894-1-git-send-email-johannes.thumshirn@men.de>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/17/2014 9:44 AM, Will Deacon wrote:
-> write{b,w,l,q}_relaxed are implemented by some architectures in order to
-> permit memory-mapped I/O accesses with weaker barrier semantics than the
-> non-relaxed variants.
->
-> This patch adds dummy macros for the write accessors to tile, in the
-> same vein as the dummy definitions for the relaxed read accessors.
->
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> ---
->  arch/tile/include/asm/io.h | 4 ++++
->  1 file changed, 4 insertions(+)
+On Thu, 17 Apr 2014 15:47:58 +0200
+Johannes Thumshirn <johannes.thumshirn@men.de> wrote:
 
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+> Add driver for MEN's 16z135 High Speed UART.
+> 
+> The 16z135 is a memory mapped UART Core on an MCB FPGA and has 1024 byte
+> deep FIFO buffers for the RX and TX path. It also has configurable FIFO
+> fill level IRQs and data copied to and from the hardware has to be
+> acknowledged.
+> 
+> Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Reviewed-by: Alan Cox <gnomes@lxorguk.ukuu.org.uk>
 
+Alan
