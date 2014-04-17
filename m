@@ -1,40 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308AbaDQSFs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 14:05:48 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:46089 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751272AbaDQSF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754027AbaDQSF5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 14:05:57 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:59486 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753778AbaDQSF2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Apr 2014 14:05:28 -0400
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: John Johansen <john.johansen@canonical.com>,
-        Kees Cook <keescook@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>, Will Drewry <wad@chromium.org>,
-        Julien Tinnes <jln@chromium.org>, linux-doc@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH v2 0/3] seccomp: add PR_SECCOMP_EXT and SECCOMP_EXT_ACT_TSYNC
+MIME-Version: 1.0
+In-Reply-To: <1397756821.2628.69.camel@willson.li.ssimo.org>
+References: <20140416180642.GG31074@redhat.com> <CALCETrVUw5+vCCONy1VTXpskbY_eZFo2CtbehwV5Mhj4d4+icw@mail.gmail.com>
+ <20140416185936.GJ31074@redhat.com> <534FF61B.4010901@redhat.com>
+ <1397750674.2628.44.camel@willson.li.ssimo.org> <CALCETrUrj2LtAoXp600BD2ANgE2UUEbTYQrK8hHqDR=qpeFPcg@mail.gmail.com>
+ <1397751853.2628.50.camel@willson.li.ssimo.org> <CALCETrWNWvumFg9Qba0GEOjYop4WYe530tCPtakrhnoCrHqhUQ@mail.gmail.com>
+ <1397753323.2628.60.camel@willson.li.ssimo.org> <CALCETrXj6kD3E+vsaWmkrSbaQYTu=c-Hsw640jh4O+FbojYk2g@mail.gmail.com>
+ <20140417171256.GB25334@redhat.com> <CALCETrVq4HRpfWOAbZAQbyjuraQd=OxnW=WjSoe5JgBzRStiKg@mail.gmail.com>
+ <1397756025.2628.64.camel@willson.li.ssimo.org> <CALCETrVBJFgKwRKBE2jAG6kiGgkJ+MyQiw2nyz5yj0h68kCk9A@mail.gmail.com>
+ <1397756821.2628.69.camel@willson.li.ssimo.org>
+From: Andy Lutomirski <luto@amacapital.net>
 Date: Thu, 17 Apr 2014 11:05:01 -0700
-Message-Id: <1397757904-30665-1-git-send-email-keescook@chromium.org>
-X-Mailer: git-send-email 1.7.9.5
-X-HELO: www.outflux.net
+Message-ID: <CALCETrUd2yvLhngDE88j2EVdVpZWUorrK_n2=ox7S26KomsN9g@mail.gmail.com>
+Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing cgroup path
+To: Simo Sorce <ssorce@redhat.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Daniel J Walsh <dwalsh@redhat.com>,
+        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the ability for threads to request seccomp filter 
-synchronization across their thread group. To support this, 
-seccomp locking on writes is introduced, along with refactoring
-of no_new_privs. Races with thread creation are handled via the
-tasklist_list. 
+On Thu, Apr 17, 2014 at 10:47 AM, Simo Sorce <ssorce@redhat.com> wrote:
+> On Thu, 2014-04-17 at 10:35 -0700, Andy Lutomirski wrote:
+>> On Thu, Apr 17, 2014 at 10:33 AM, Simo Sorce <ssorce@redhat.com> wrote:
+>> > On Thu, 2014-04-17 at 10:26 -0700, Andy Lutomirski wrote:
+>> >>
+>> >> Not really.  write(2) can't send SCM_CGROUP.  Callers of sendmsg(2)
+>> >> who supply SCM_CGROUP are explicitly indicating that they want their
+>> >> cgroup associated with that message.  Callers of write(2) and send(2)
+>> >> are simply indicating that they have some bytes that they want to
+>> >> shove into whatever's at the other end of the fd.
+>> >
+>> > But there is no attack vector that passes by tricking setuid binaries to
+>> > write to pre-opened file descriptors on sendmsg(), and for the other
+>> > cases (connected socket) journald can always cross check with
+>> > SO_PEERCGROUP, so why do we care again ?
+>>
+>> Because the proposed code does not do what I described, at least as
+>> far I as I can tell.
+>
+> You do realize that we have been speaking in hypothetical for a while
+> now ?
+>
+> Even without doing the SO_PEERCRED, you are not going to fool the log,
+> as it gathers a ton of other info about the process, and cgroup is just
+> one of the infos used to classify the log.
+>
+> There are also credentials, pid, and a lot of other things.
+> Even if a setuid binary could be tricked to send a message with an
+> "impostor" cgroup don't you think you'd see other things out of place ?
+> (wrong uid, wrong pid, etc...).
 
-I think all the concerns raised during the discussion[1] of the first
-version of this patch have been addressed. However, the races involved
-have tricked me before. :)
+Credentials and pid have much the same problem because SCM_CREDENTIALS
+is screwed up.  That's not an excuse to screw up SCM_CGROUP in the
+same way.
 
-Thanks!
-
--Kees
-
-[1] https://lkml.org/lkml/2014/1/13/795
-
+--Andy
