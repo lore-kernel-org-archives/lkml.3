@@ -1,130 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756887AbaDQJ5E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 05:57:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64085 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756825AbaDQJ4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 05:56:52 -0400
-Date: Thu, 17 Apr 2014 11:56:33 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Adrien BAK <adrien.bak@metascale.org>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linux-perf-users@vger.kernel.org" <linux-perf-users@vger.kernel.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "paulus@samba.org" <paulus@samba.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Error reporting improvement
-Message-ID: <20140417095632.GA1382@krava.brq.redhat.com>
-References: <534E3215.2060306@metascale.org>
- <20140416142405.GC2005@arm.com>
+	id S1756933AbaDQJ5T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 05:57:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52864 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623AbaDQJ5P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 05:57:15 -0400
+Date: Thu, 17 Apr 2014 02:57:00 -0700
+From: tip-bot for Ramkumar Ramachandra <tipbot@zytor.com>
+Message-ID: <tip-3bca23543b910a84d3c58a819663e0a4fad72bb6@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, jolsa@redhat.com, dsahern@gmail.com,
+        tglx@linutronix.de, artagnon@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, jolsa@redhat.com, dsahern@gmail.com,
+        tglx@linutronix.de, artagnon@gmail.com
+In-Reply-To: <1394853474-31019-2-git-send-email-artagnon@gmail.com>
+References: <1394853474-31019-2-git-send-email-artagnon@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf kmem:
+  Introduce --list-cmds for use by scripts
+Git-Commit-ID: 3bca23543b910a84d3c58a819663e0a4fad72bb6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140416142405.GC2005@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 03:24:05PM +0100, Will Deacon wrote:
-> Hi Adrien,
-> 
-> On Wed, Apr 16, 2014 at 08:32:37AM +0100, Adrien BAK wrote:
-> > In the current version, when using perf record, if something goes wrong in
-> > tools/perf/builtin-record.c:375  session = perf_session__new(file, 
-> > false, NULL);
-> > The error message:
-> > "Not enough memory for reading per file header"
-> > is issued. This error message seems to be outdated and is not very helpful.
-> > This patch propose to replace this error message by
-> > "Perf session creation failed"
-> > 
-> > I believe this issue has been brought to lkml :
-> > https://lkml.org/lkml/2014/2/24/458
-> > although this patch only tackle a (small) part of the issue.
-> > 
-> > Additionnaly, this patch improves error reporting in
-> > tools/perf/util/data.c open_file_write
-> > Currently, if the call to open fails, the user is unaware of it.
-> > This patch logs the error, before returning the error code to the caller.
-> > 
-> > Signed-off-by: Adrien BAK <adrien.bak@metascale.org>
-> 
-> Whilst this patch (admittedly) only solves part of the problem, I think it
-> makes the error I encountered a lot easier to understand.
-> 
-> Thanks,
-> 
->   Reported-by: Will Deacon <will.deacon@arm.com>
+Commit-ID:  3bca23543b910a84d3c58a819663e0a4fad72bb6
+Gitweb:     http://git.kernel.org/tip/3bca23543b910a84d3c58a819663e0a4fad72bb6
+Author:     Ramkumar Ramachandra <artagnon@gmail.com>
+AuthorDate: Fri, 14 Mar 2014 23:17:51 -0400
+Committer:  Jiri Olsa <jolsa@redhat.com>
+CommitDate: Wed, 16 Apr 2014 17:16:04 +0200
 
-seems ok to me, but the patch is mangled:
+perf kmem: Introduce --list-cmds for use by scripts
 
-[jolsa@krava perf]$ git am /tmp/b
-Applying: Error reporting improvement
-fatal: corrupt patch at line 7
-Patch failed at 0001 Error reporting improvement
-The copy of the patch that failed is found in:
-   /home/jolsa/kernel.org/linux-perf/.git/rebase-apply/patch
-When you have resolved this problem, run "git am --resolved".
-If you prefer to skip this patch, run "git am --skip" instead.
-To restore the original branch and stop patching, run "git am --abort".
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+Acked-by: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Link: http://lkml.kernel.org/r/1394853474-31019-2-git-send-email-artagnon@gmail.com
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/builtin-kmem.c     | 8 +++++---
+ tools/perf/perf-completion.sh | 4 ++--
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-[jolsa@krava perf]$ patch -p3 < /tmp/b1 
-patching file builtin-record.c
-patch: **** malformed patch at line 87: argc, const char **argv)
-
-please check Documentation/email-clients.txt and resend
-
-thanks,
-jirka
-
-> 
-> Will
-> 
-> > 
-> > ---
-> > diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> > index eb524f9..8ce62ef 100644
-> > --- a/tools/perf/builtin-record.c
-> > +++ b/tools/perf/builtin-record.c
-> > @@ -374,7 +374,7 @@ static int __cmd_record(struct record *rec, int 
-> > argc, const char **argv)
-> > 
-> >       session = perf_session__new(file, false, NULL);
-> >       if (session == NULL) {
-> > -        pr_err("Not enough memory for reading perf file header\n");
-> > +        pr_err("Perf session creation failed.\n");
-> >           return -1;
-> >       }
-> > 
-> > diff --git a/tools/perf/util/data.c b/tools/perf/util/data.c
-> > index 1fbcd8b..ff2ced7 100644
-> > --- a/tools/perf/util/data.c
-> > +++ b/tools/perf/util/data.c
-> > @@ -86,10 +86,16 @@ static int open_file_read(struct perf_data_file *file)
-> > 
-> >   static int open_file_write(struct perf_data_file *file)
-> >   {
-> > +    int fd;
-> >       if (check_backup(file))
-> >           return -1;
-> > 
-> > -    return open(file->path, O_CREAT|O_RDWR|O_TRUNC, S_IRUSR|S_IWUSR);
-> > +    fd = open(file->path, O_CREAT|O_RDWR|O_TRUNC, S_IRUSR|S_IWUSR);
-> > +
-> > +    if (fd < 0)
-> > +        pr_err("failed to open %s : %s\n", file->path, strerror(errno));
-> > +
-> > +    return fd;
-> >   }
-> > 
-> >   static int open_file(struct perf_data_file *file)
-> > 
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-perf-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
+index 929462a..bd91de0 100644
+--- a/tools/perf/builtin-kmem.c
++++ b/tools/perf/builtin-kmem.c
+@@ -756,11 +756,13 @@ int cmd_kmem(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "raw-ip", &raw_ip, "show raw ip instead of symbol"),
+ 	OPT_END()
+ 	};
+-	const char * const kmem_usage[] = {
+-		"perf kmem [<options>] {record|stat}",
++	const char *const kmem_subcommands[] = { "record", "stat", NULL };
++	const char *kmem_usage[] = {
++		NULL,
+ 		NULL
+ 	};
+-	argc = parse_options(argc, argv, kmem_options, kmem_usage, 0);
++	argc = parse_options_subcommand(argc, argv, kmem_options,
++					kmem_subcommands, kmem_usage, 0);
+ 
+ 	if (!argc)
+ 		usage_with_options(kmem_usage, kmem_options);
+diff --git a/tools/perf/perf-completion.sh b/tools/perf/perf-completion.sh
+index ae3a576..0ef59dd 100644
+--- a/tools/perf/perf-completion.sh
++++ b/tools/perf/perf-completion.sh
+@@ -121,8 +121,8 @@ __perf_main ()
+ 	elif [[ $prev == "-e" && "${words[1]}" == @(record|stat|top) ]]; then
+ 		evts=$($cmd list --raw-dump)
+ 		__perfcomp_colon "$evts" "$cur"
+-	# List subcommands for 'perf kvm'
+-	elif [[ $prev == "kvm" ]]; then
++	# List subcommands for perf commands
++	elif [[ $prev == @(kvm|kmem) ]]; then
+ 		subcmds=$($cmd $prev --list-cmds)
+ 		__perfcomp_colon "$subcmds" "$cur"
+ 	# List long option names
