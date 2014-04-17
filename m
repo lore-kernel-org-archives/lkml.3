@@ -1,251 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868AbaDQUxb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 16:53:31 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44246 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751751AbaDQUub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 16:50:31 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sricharan R <r.sricharan@ti.com>
-CC: Sekhar Nori <nsekhar@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Nishanth Menon <nm@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH V2 11/19] bus: omap_l3_noc: convert flagmux information into a structure
-Date: Thu, 17 Apr 2014 15:49:27 -0500
-Message-ID: <1397767775-10965-12-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1397767775-10965-1-git-send-email-nm@ti.com>
-References: <1397492726-17203-1-git-send-email-nm@ti.com>
- <1397767775-10965-1-git-send-email-nm@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753946AbaDQUxj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 16:53:39 -0400
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:47359 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179AbaDQUun (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 16:50:43 -0400
+X-AuditID: cbfec37d-b7f616d0000059df-8d-53503ea12bc6
+Message-id: <53503E9F.9050800@samsung.com>
+Date: Thu, 17 Apr 2014 14:50:39 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Tejun Heo <tj@kernel.org>
+Cc: gregkh@linuxfoundation.org, m.chehab@samsung.com,
+        rafael.j.wysocki@intel.com, linux@roeck-us.net, toshi.kani@hp.com,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        shuahkhan@gmail.com
+Subject: Re: [RFC PATCH 2/2] drivers/base: add managed token devres interfaces
+References: <cover.1397050852.git.shuah.kh@samsung.com>
+ <5f21c7e53811aba63f86bcf3e3bfdfdd5aeedf59.1397050852.git.shuah.kh@samsung.com>
+ <20140416215821.GG26632@htj.dyndns.org> <5350331C.7010602@samsung.com>
+ <20140417201034.GT15326@htj.dyndns.org>
+In-reply-to: <20140417201034.GT15326@htj.dyndns.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.3]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsVy+t9hX92FdgHBBkfmmVg0L17PZnF51xw2
+	i54NW1ktniw8w2TxeMVbdouvPx0sfi0/ymix7dZCFgcOj52z7rJ77Nq2k8lj8Z6XTB6bVnWy
+	eeyfu4bdY+f3BnaPz5vkAtijuGxSUnMyy1KL9O0SuDKmf9jHWDCds+LWm+VsDYzb2bsYOTkk
+	BEwkvvRvYIOwxSQu3FsPZHNxCAksY5R48v4nM4TTyySxouEDE4SzgVFi4+WTzCAtvAJaEn2P
+	ZrB2MXJwsAioSpz5FgwSZhNQl/j8egfYBiEBOYmmJavBykUFIiRenZ3IAtEqKPFj8j0wW0RA
+	VuLKtIeMIPOZBU4zSrzbc4MJJCEs4Cfx+dEedojFvxkldu1aCZbgBLr78senjCA2s4C1xMpJ
+	26BseYnNa94yQ2xWlvhz+RQTxG8KEusvHGadwCgyC8nyWUjaZyFpX8DIvIpRrLQ4uaA4KT21
+	wkSvODG3uDQvXS85P3cTIyTSancw3v9qc4hRgINRiYf3wlf/YCHWxLLiytxDjBIczEoivKaq
+	AcFCvCmJlVWpRfnxRaU5qcWHGJk4OKUaGCP5d/BrCWxbKZB226wj+eDy9GaeR3UzfrUyWglM
+	KVo2/e3WQEX2MGHGxIBVAiGu3dGWNfcOJoTumb6UYQf3446PVSULHjQoyDzT/yG+dn+j5A4N
+	jtkmG7OZRBc26fCeOezMcbhsUvT7LU1sXl8MPYxqai79CdHt5jj6Xm/1rWv6PyaeNSq4oMRS
+	nJFoqMVcVJwIAN5eU8uSAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows us to encompass target information and flag mux offset that
-points to the target information into a singular structure. This saves
-us the need to look up two different arrays indexed by module ID for
-information.
+On 04/17/2014 02:10 PM, Tejun Heo wrote:
+> On Thu, Apr 17, 2014 at 02:01:32PM -0600, Shuah Khan wrote:
+>> Operating on the lock should be atomic, which is what devres_update()
+>> is doing. It can be simplified as follows by holding devres_lock
+>> in devm_token_lock().
+>>
+>> spin_lock_irqsave(&dev->devres_lock, flags);
+>> if (tkn_ptr->status == TOKEN_DEVRES_FREE)
+>> 	tkn_ptr->status = TOKEN_DEVRES_BUSY;
+>> spin_unlock_irqrestore(&dev->devres_lock, flags);
+>>
+>> Is this in-line with what you have in mind?
+>
+> How is that different from tkn_ptr->status = TOKEN_DEVRES_BUSY?
+>
 
-This allows us to reduce the static target information allocation to
-just the ones that are documented.
+I see what you are saying. The code path doesn't ensure two threads
+not getting the lock. I have a bug in here that my rc settings aren't
+protected. You probably noticed that the RFC tag on the patch and this
+isn't fully cooked yet.
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
-V2: reordering changes only
-V1: https://patchwork.kernel.org/patch/3984171/
- drivers/bus/omap_l3_noc.c |   16 +++++++----
- drivers/bus/omap_l3_noc.h |   70 +++++++++++++++++++++++++++++----------------
- 2 files changed, 56 insertions(+), 30 deletions(-)
+I started working on driver changes that use this token and I might have
+to add owner for the token as well. I hope to work these details out and
+send a real patch.
 
-diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
-index fd31d37..300e168 100644
---- a/drivers/bus/omap_l3_noc.c
-+++ b/drivers/bus/omap_l3_noc.c
-@@ -60,6 +60,7 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
- 	void __iomem *l3_targ_stderr, *l3_targ_slvofslsb, *l3_targ_mstaddr;
- 	char *target_name, *master_name = "UN IDENTIFIED";
- 	struct l3_target_data *l3_targ_inst;
-+	struct l3_flagmux_data *flag_mux;
- 	struct l3_masters_data *master;
- 
- 	/* Get the Type of interrupt */
-@@ -71,7 +72,8 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
- 		 * to determine the source
- 		 */
- 		base = l3->l3_base[i];
--		err_reg = readl_relaxed(base + l3->l3_flagmux[i] +
-+		flag_mux = l3->l3_flagmux[i];
-+		err_reg = readl_relaxed(base + flag_mux->offset +
- 					L3_FLAGMUX_REGERR0 + (inttype << 3));
- 
- 		/* Get the corresponding error and analyse */
-@@ -82,9 +84,13 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
- 			/* We DONOT expect err_src to go out of bounds */
- 			BUG_ON(err_src > MAX_CLKDM_TARGETS);
- 
--			l3_targ_inst = &l3->l3_targ[i][err_src];
--			target_name = l3_targ_inst->name;
--			l3_targ_base = base + l3_targ_inst->offset;
-+			if (err_src < flag_mux->num_targ_data) {
-+				l3_targ_inst = &flag_mux->l3_targ[err_src];
-+				target_name = l3_targ_inst->name;
-+				l3_targ_base = base + l3_targ_inst->offset;
-+			} else {
-+				target_name = L3_TARGET_NOT_SUPPORTED;
-+			}
- 
- 			/*
- 			 * If we do not know of a register offset to decode
-@@ -104,7 +110,7 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
- 					inttype ? "debug" : "application",
- 					err_src, i, "(unclearable)");
- 
--				mask_reg = base + l3->l3_flagmux[i] +
-+				mask_reg = base + flag_mux->offset +
- 					   L3_FLAGMUX_MASK0 + (inttype << 3);
- 				mask_val = readl(mask_reg);
- 				mask_val &= ~(1 << err_src);
-diff --git a/drivers/bus/omap_l3_noc.h b/drivers/bus/omap_l3_noc.h
-index e60865f..64869fe 100644
---- a/drivers/bus/omap_l3_noc.h
-+++ b/drivers/bus/omap_l3_noc.h
-@@ -17,8 +17,8 @@
- #ifndef __OMAP_L3_NOC_H
- #define __OMAP_L3_NOC_H
- 
--#define OMAP_L3_MODULES			3
- #define MAX_L3_MODULES			3
-+#define MAX_CLKDM_TARGETS		31
- 
- #define CLEAR_STDERR_LOG		(1 << 31)
- #define CUSTOM_ERROR			0x2
-@@ -36,8 +36,6 @@
- 
- #define L3_TARGET_NOT_SUPPORTED		NULL
- 
--#define MAX_CLKDM_TARGETS		31
--
- /**
-  * struct l3_masters_data - L3 Master information
-  * @id:		ID of the L3 Master
-@@ -60,21 +58,32 @@ struct l3_target_data {
- 	char *name;
- };
- 
-+/**
-+ * struct l3_flagmux_data - Flag Mux information
-+ * @offset:	offset from base for flagmux register
-+ * @l3_targ:	array indexed by flagmux index (bit offset) pointing to the
-+ *		target data. unsupported ones are marked with
-+ *		L3_TARGET_NOT_SUPPORTED
-+ * @num_targ_data: number of entries in target data
-+ */
-+struct l3_flagmux_data {
-+	u32 offset;
-+	struct l3_target_data *l3_targ;
-+	u8 num_targ_data;
-+};
-+
- 
- /**
-  * struct omap_l3 - Description of data relevant for L3 bus.
-  * @dev:	device representing the bus (populated runtime)
-  * @l3_base:	base addresses of modules (populated runtime)
-- * @l3_flag_mux: array containing offsets to flag mux per module
-+ * @l3_flag_mux: array containing flag mux data per module
-  *		 offset from corresponding module base indexed per
-  *		 module.
-  * @num_modules: number of clock domains / modules.
-  * @l3_masters:	array pointing to master data containing name and register
-  *		offset for the master.
-  * @num_master: number of masters
-- * @l3_targ:	array indexed by flagmux index (bit offset) pointing to the
-- *		target data. unsupported ones are marked with
-- *		L3_TARGET_NOT_SUPPORTED
-  * @debug_irq:	irq number of the debug interrupt (populated runtime)
-  * @app_irq:	irq number of the application interrupt (populated runtime)
-  */
-@@ -82,25 +91,17 @@ struct omap_l3 {
- 	struct device *dev;
- 
- 	void __iomem *l3_base[MAX_L3_MODULES];
--	u32 *l3_flagmux;
-+	struct l3_flagmux_data **l3_flagmux;
- 	int num_modules;
- 
- 	struct l3_masters_data *l3_masters;
- 	int num_masters;
- 
--	struct l3_target_data **l3_targ;
--
- 	int debug_irq;
- 	int app_irq;
- };
- 
--static u32 omap_l3_flagmux[OMAP_L3_MODULES] = {
--	0x500,
--	0x1000,
--	0X0200
--};
--
--static struct l3_target_data omap_l3_target_data_clk1[MAX_CLKDM_TARGETS] = {
-+static struct l3_target_data omap_l3_target_data_clk1[] = {
- 	{0x100,	"DMM1",},
- 	{0x200,	"DMM2",},
- 	{0x300,	"ABE",},
-@@ -110,7 +111,14 @@ static struct l3_target_data omap_l3_target_data_clk1[MAX_CLKDM_TARGETS] = {
- 	{0x900,	"L4WAKEUP",},
- };
- 
--static struct l3_target_data omap_l3_target_data_clk2[MAX_CLKDM_TARGETS] = {
-+static struct l3_flagmux_data omap_l3_flagmux_clk1 = {
-+	.offset = 0x500,
-+	.l3_targ = omap_l3_target_data_clk1,
-+	.num_targ_data = ARRAY_SIZE(omap_l3_target_data_clk1),
-+};
-+
-+
-+static struct l3_target_data omap_l3_target_data_clk2[] = {
- 	{0x500,	"CORTEXM3",},
- 	{0x300,	"DSS",},
- 	{0x100,	"GPMC",},
-@@ -134,12 +142,25 @@ static struct l3_target_data omap_l3_target_data_clk2[MAX_CLKDM_TARGETS] = {
- 	{0x1700, "LLI",},
- };
- 
--static struct l3_target_data omap_l3_target_data_clk3[MAX_CLKDM_TARGETS] = {
-+static struct l3_flagmux_data omap_l3_flagmux_clk2 = {
-+	.offset = 0x1000,
-+	.l3_targ = omap_l3_target_data_clk2,
-+	.num_targ_data = ARRAY_SIZE(omap_l3_target_data_clk2),
-+};
-+
-+
-+static struct l3_target_data omap_l3_target_data_clk3[] = {
- 	{0x0100, "EMUSS",},
- 	{0x0300, "DEBUG SOURCE",},
- 	{0x0,	"HOST CLK3",},
- };
- 
-+static struct l3_flagmux_data omap_l3_flagmux_clk3 = {
-+	.offset = 0x0200,
-+	.l3_targ = omap_l3_target_data_clk3,
-+	.num_targ_data = ARRAY_SIZE(omap_l3_target_data_clk3),
-+};
-+
- static struct l3_masters_data omap_l3_masters[] = {
- 	{ 0x0 , "MPU"},
- 	{ 0x10, "CS_ADP"},
-@@ -168,18 +189,17 @@ static struct l3_masters_data omap_l3_masters[] = {
- 	{ 0xC8, "USBHOSTFS"}
- };
- 
--static struct l3_target_data *omap_l3_targ[OMAP_L3_MODULES] = {
--	omap_l3_target_data_clk1,
--	omap_l3_target_data_clk2,
--	omap_l3_target_data_clk3,
-+static struct l3_flagmux_data *omap_l3_flagmux[] = {
-+	&omap_l3_flagmux_clk1,
-+	&omap_l3_flagmux_clk2,
-+	&omap_l3_flagmux_clk3,
- };
- 
- static const struct omap_l3 omap_l3_data = {
- 	.l3_flagmux = omap_l3_flagmux,
--	.num_modules = OMAP_L3_MODULES,
-+	.num_modules = ARRAY_SIZE(omap_l3_flagmux),
- 	.l3_masters = omap_l3_masters,
- 	.num_masters = ARRAY_SIZE(omap_l3_masters),
--	.l3_targ = omap_l3_targ,
- };
- 
- #endif	/* __OMAP_L3_NOC_H */
+thanks,
+-- Shuah
+
 -- 
-1.7.9.5
-
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
