@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022AbaDQP5O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 11:57:14 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58188 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752054AbaDQP5F (ORCPT
+	id S1753162AbaDQP5j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 11:57:39 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:29643 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752479AbaDQP5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 11:57:05 -0400
-Date: Thu, 17 Apr 2014 17:56:49 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
-Subject: Re: [PATCH v9 05/19] qspinlock: Optimize for smaller NR_CPUS
-Message-ID: <20140417155649.GR11096@twins.programming.kicks-ass.net>
-References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com>
- <1397747051-15401-6-git-send-email-Waiman.Long@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397747051-15401-6-git-send-email-Waiman.Long@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 17 Apr 2014 11:57:08 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ao0UAJ/4T1Nbsma4/2dsb2JhbABZgwarGJlWAgKBJBd0glMTHCMYahgkE4doAxUBxCINhwKMSYIZhD8BA5cAgW0BimqCE4VQgzM7
+Date: Thu, 17 Apr 2014 17:54:59 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, tytso <tytso@mit.edu>
+Subject: [PATCH 1/1] fs/ubifs/ioctl.c: atomically set inode->i_flags
+Message-Id: <20140417175459.6cbd49e16ce30724b7638607@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 11:03:57AM -0400, Waiman Long wrote:
-> +struct __qspinlock {
-> +	union {
-> +		atomic_t val;
-> +		struct {
-> +#ifdef __LITTLE_ENDIAN
-> +			u16	locked_pending;
-> +			u16	tail;
-> +#else
-> +			u16	tail;
-> +			u16	locked_pending;
-> +#endif
-> +		};
-> +	};
-> +};
-> +
-> +/**
-> + * clear_pending_set_locked - take ownership and clear the pending bit.
-> + * @lock: Pointer to queue spinlock structure
-> + * @val : Current value of the queue spinlock 32-bit word
-> + *
-> + * *,1,0 -> *,0,1
-> + */
-> +static __always_inline void
-> +clear_pending_set_locked(struct qspinlock *lock, u32 val)
-> +{
-> +	struct __qspinlock *l = (void *)lock;
-> +
-> +	ACCESS_ONCE(l->locked_pending) = 1;
+According to commit 5f16f3225b0624
 
-You lost the __constant_le16_to_cpu(_Q_LOCKED_VAL) there. The
-unconditional 1 is wrong. You also have to flip the bytes in
-locked_pending.
+ext4: atomically set inode->i_flags in ext4_set_inode_flags()
+
+Inspired-by: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/ubifs/ioctl.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/fs/ubifs/ioctl.c b/fs/ubifs/ioctl.c
+index 648b143..26f416e 100644
+--- a/fs/ubifs/ioctl.c
++++ b/fs/ubifs/ioctl.c
+@@ -37,16 +37,18 @@
+ void ubifs_set_inode_flags(struct inode *inode)
+ {
+ 	unsigned int flags = ubifs_inode(inode)->flags;
++	unsigned int new_fl = 0;
+ 
+-	inode->i_flags &= ~(S_SYNC | S_APPEND | S_IMMUTABLE | S_DIRSYNC);
+ 	if (flags & UBIFS_SYNC_FL)
+-		inode->i_flags |= S_SYNC;
++		new_fl |= S_SYNC;
+ 	if (flags & UBIFS_APPEND_FL)
+-		inode->i_flags |= S_APPEND;
++		new_fl |= S_APPEND;
+ 	if (flags & UBIFS_IMMUTABLE_FL)
+-		inode->i_flags |= S_IMMUTABLE;
++		new_fl |= S_IMMUTABLE;
+ 	if (flags & UBIFS_DIRSYNC_FL)
+-		inode->i_flags |= S_DIRSYNC;
++		new_fl |= S_DIRSYNC;
++	inode_set_flags(inode, new_fl, S_SYNC | S_APPEND | S_IMMUTABLE |
++			S_DIRSYNC);
+ }
+ 
+ /*
+-- 
+1.8.4.5
+
