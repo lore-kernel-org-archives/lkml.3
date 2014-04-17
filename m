@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161186AbaDQM5I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 08:57:08 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:58997 "EHLO zene.cmpxchg.org"
+	id S1756673AbaDQNCL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 09:02:11 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:40602 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754753AbaDQM5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 08:57:06 -0400
-Date: Thu, 17 Apr 2014 08:56:57 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: remove hierarchy restrictions for
- swappiness and oom_control
-Message-ID: <20140417125657.GA23470@cmpxchg.org>
-References: <1397682798-22906-1-git-send-email-hannes@cmpxchg.org>
- <20140416143425.c2b6f511cf4c6cd7336134b3@linux-foundation.org>
+	id S1754753AbaDQNCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 09:02:09 -0400
+Date: Thu, 17 Apr 2014 15:02:07 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Matthias Graf <matthias.graf@st.ovgu.de>
+Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>
+Subject: Re: PROBLEM: Fatal Machine Check >= 3.13.5-101.fc19.x86_64
+Message-ID: <20140417130207.GB4321@pd.tnic>
+References: <532C727F.1080803@st.ovgu.de>
+ <20140321172742.GA2846@pd.tnic>
+ <532C97DF.9010201@st.ovgu.de>
+ <20140321201352.GC1338@pd.tnic>
+ <533069E4.10002@st.ovgu.de>
+ <533C1B47.8080709@st.ovgu.de>
+ <20140416142232.GF16741@pd.tnic>
+ <534F73F6.7050804@st.ovgu.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140416143425.c2b6f511cf4c6cd7336134b3@linux-foundation.org>
+In-Reply-To: <534F73F6.7050804@st.ovgu.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 02:34:25PM -0700, Andrew Morton wrote:
-> On Wed, 16 Apr 2014 17:13:18 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
+On Thu, Apr 17, 2014 at 08:25:58AM +0200, Matthias Graf wrote:
+> Ok. I tried:
 > 
-> > Per-memcg swappiness and oom killing can currently not be tweaked on a
-> > memcg that is part of a hierarchy, but not the root of that hierarchy.
-> > Users have complained that they can't configure this when they turned
-> > on hierarchy mode.  In fact, with hierarchy mode becoming the default,
-> > this restriction disables the tunables entirely.
-> > 
-> > But there is no good reason for this restriction.  The settings for
-> > swappiness and OOM killing are taken from whatever memcg whose limit
-> > triggered reclaim and OOM invocation, regardless of its position in
-> > the hierarchy tree.
-> > 
-> > Allow setting swappiness on any group.  The knob on the root memcg
-> > already reads the global VM swappiness, make it writable as well.
-> > 
-> > Allow disabling the OOM killer on any non-root memcg.
+> 3.15-rc1 (16. April)
+> failed.
 > 
-> Documentation/cgroups/memory.txt needs updates?
+> Bisecting turned out:
+> last working: 3.12.17
+> first failing: 3.13
 
-Yes, that makes sense, thanks.  How about this?
+Ok, next steps would then be:
 
----
-Subject: [patch] mm: memcontrol: remove hierarchy restrictions for swappiness and oom_control fix
+* test stock 3.12.
+ -> if it works, bisect between 3.12 and 3.13.
+ -> if not, bisect between 3.12 and 3.12.17
 
-Update Documentation/cgroups/memory.txt
+If all works out correctly, the bisection result will give us the patch
+which broke things on your machine and which is still unfixed upstream.
 
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
+Thanks.
 
-diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
-index 2622115276aa..1829c65f8371 100644
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -535,17 +535,15 @@ Note:
- 
- 5.3 swappiness
- 
--Similar to /proc/sys/vm/swappiness, but affecting a hierarchy of groups only.
-+Similar to /proc/sys/vm/swappiness, but only affecting reclaim that is
-+triggered by this cgroup's hard limit.  The tunable in the root cgroup
-+corresponds to the global swappiness setting.
-+
- Please note that unlike the global swappiness, memcg knob set to 0
- really prevents from any swapping even if there is a swap storage
- available. This might lead to memcg OOM killer if there are no file
- pages to reclaim.
- 
--Following cgroups' swappiness can't be changed.
--- root cgroup (uses /proc/sys/vm/swappiness).
--- a cgroup which uses hierarchy and it has other cgroup(s) below it.
--- a cgroup which uses hierarchy and not the root of hierarchy.
--
- 5.4 failcnt
- 
- A memory cgroup provides memory.failcnt and memory.memsw.failcnt files.
-@@ -754,7 +752,6 @@ You can disable the OOM-killer by writing "1" to memory.oom_control file, as:
- 
- 	#echo 1 > memory.oom_control
- 
--This operation is only allowed to the top cgroup of a sub-hierarchy.
- If OOM-killer is disabled, tasks under cgroup will hang/sleep
- in memory cgroup's OOM-waitqueue when they request accountable memory.
- 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
