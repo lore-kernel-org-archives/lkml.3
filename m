@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667AbaDQQoO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 12:44:14 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:43836 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001AbaDQQoA (ORCPT
+	id S1751520AbaDQQsA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 12:48:00 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:50744 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125AbaDQQr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 12:44:00 -0400
+	Thu, 17 Apr 2014 12:47:56 -0400
+Message-ID: <535005BA.1040405@codeaurora.org>
+Date: Thu, 17 Apr 2014 11:47:54 -0500
+From: Timur Tabi <timur@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <534FA35B.6060005@nvidia.com>
-References: <1397611505-17917-1-git-send-email-abrestic@chromium.org>
-	<534FA35B.6060005@nvidia.com>
-Date: Thu, 17 Apr 2014 09:43:59 -0700
-X-Google-Sender-Auth: T_6Ns5y6xO8EjuxZYbD4LbXAHyU
-Message-ID: <CAL1qeaG+MBmBZ3dD6LZwV5mh5A=u+0N7Obt43UwhViaBYpXxpw@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: as3722: fix handling of GPIO invert bit
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Mathias Nyman <mathias.nyman@linux.intel.com>
+CC: Linus <linus.walleij@linaro.org>, Grant Likely <grant.likely@secretlab.ca>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
+References: <1371555182-12418-1-git-send-email-mathias.nyman@linux.intel.com>	<1371555182-12418-2-git-send-email-mathias.nyman@linux.intel.com> <CAOZdJXU2hN+9TE=XN55TZF_W-0hxHZmK5330i6hwrhOERKFetw@mail.gmail.com> <534B93BA.6020406@linux.intel.com> <534BFAAF.3070805@codeaurora.org> <534D0370.50108@linux.intel.com>
+In-Reply-To: <534D0370.50108@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 2:48 AM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
-> Hi Andrew,
->
->
-> On Wednesday 16 April 2014 06:55 AM, Andrew Bresticker wrote:
+On 04/15/2014 05:01 AM, Mathias Nyman wrote:
 >>
->> diff --git a/drivers/pinctrl/pinctrl-as3722.c
->> b/drivers/pinctrl/pinctrl-as3722.c
->> index 92ed4b2..c862f9c0 100644
->> --- a/drivers/pinctrl/pinctrl-as3722.c
->> +++ b/drivers/pinctrl/pinctrl-as3722.c
->> @@ -64,7 +64,6 @@ struct as3722_pin_function {
->>   };
->>     struct as3722_gpio_pin_control {
->> -       bool enable_gpio_invert;
->>         unsigned mode_prop;
->>         int io_function;
->>   };
+>> This device will only be used on an ACPI system, right?  And isn't ACPI
+>> supposed to hide all the pinctrl programming from the OS?  I thought
+>> that was the whole point behind ACPI and the reason why ARM64 isn't
+>> going to use device trees.
+>>
 >
->
-> Instead of removing this flag and  calling read of register on every gpio
-> set, better if we update this flag on probe once and use this for entire
-> life.
+> This was my starting point as well, and the driver was initially
+> submitted as a GPIO driver. But Linus W. suggested pinctrl instead, and
+> as he's the maintainer of both those subsystem I trust his judgment.
 
-Because of regcache, the reads won't result in any additional I2C
-transfers.  I can respin though if you want.
+Do you think, for an ACPI pinctrl driver, that we will need to specify 
+any function groups?  When I look at the ASL that configures GPIOs, I 
+see only lines like this:
 
--Andrew
+GpioIo (Exclusive, PullDefault, , , , "\\GIO0") {0x1D, 0x1E}
 
->
-> So adding the code in probe() as
->
->         for (i = 0; i < ARRAY_SIZE(as3722_pingroups); ++i) {
->                 int gpio_cntr_reg = AS3722_GPIOn_CONTROL_REG(i);
->                 u32 val;
->
->                 ret = as3722_read(as3722, gpio_cntr_reg, &val);
->                 if (!ret)
-> as_pci->gpio_control[i].enable_gpio_invert =
->                                         !!(val & AS3722_GPIO_INV);
->         }
->
->
-> Thanks,
-> Laxman
+This tells me that ACPI will never use any of the names that are 
+defined.  I see that .get_function_name is called on my ACPI system, but 
+I don't see where it is used.
+
+The reason I ask is because I would like to make a "generic" ACPI 
+pinctrl/gpio driver that doesn't specify any pin groups.  So if we use 
+the same pinctrl/gpio hardware on multiple SOCs, the only thing that the 
+driver needs from ACPI is the number of pins.
+
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the
+Code Aurora Forum, hosted by the Linux Foundation.
