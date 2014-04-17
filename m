@@ -1,60 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721AbaDQADv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 20:03:51 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35110 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754496AbaDQADt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 20:03:49 -0400
-From: Joel Fernandes <joelf@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: Rajendra Nayak <rnayak@ti.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Joel Fernandes <joelf@ti.com>
-Subject: [PATCH 2/9] ARM: OMAP: dmtimer: Add comments on OMAP1 clock framework
-Date: Wed, 16 Apr 2014 19:03:12 -0500
-Message-ID: <1397692999-7800-2-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1397692999-7800-1-git-send-email-joelf@ti.com>
-References: <1397692999-7800-1-git-send-email-joelf@ti.com>
+	id S1757137AbaDQAHG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 20:07:06 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:61909 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757060AbaDQAHA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 20:07:00 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Thu, 17 Apr 2014 09:07:45 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Heesub Shin <heesub.shin@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dongjun Shin <d.j.shin@samsung.com>,
+        Sunghwan Yun <sunghwan.yun@samsung.com>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/2] mm/compaction: cleanup isolate_freepages()
+Message-ID: <20140417000745.GF27534@bbox>
+References: <5342BA34.8050006@suse.cz>
+ <1397553507-15330-1-git-send-email-vbabka@suse.cz>
+ <1397553507-15330-2-git-send-email-vbabka@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397553507-15330-2-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OMAP1 doesn't support clock framework, add a comment where needed
-and correct a FIXME.
+Hi Vlastimil,
 
-Signed-off-by: Joel Fernandes <joelf@ti.com>
----
- arch/arm/plat-omap/dmtimer.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Below just nitpicks.
 
-diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
-index ecd3f97..f5a674c 100644
---- a/arch/arm/plat-omap/dmtimer.c
-+++ b/arch/arm/plat-omap/dmtimer.c
-@@ -142,8 +142,7 @@ static int omap_dm_timer_prepare(struct omap_dm_timer *timer)
- 	int rc;
- 
- 	/*
--	 * FIXME: OMAP1 devices do not use the clock framework for dmtimers so
--	 * do not call clk_get() for these devices.
-+	 * Do not call clk_get() for OMAP1 due to no clock framework support.
- 	 */
- 	if (!(timer->capability & OMAP_TIMER_NEEDS_RESET)) {
- 		timer->fclk = clk_get(&timer->pdev->dev, "fck");
-@@ -461,6 +460,7 @@ int omap_dm_timer_stop(struct omap_dm_timer *timer)
- 	if (unlikely(!timer))
- 		return -EINVAL;
- 
-+	/* OMAP1 is not converted to clk framework so avoid clk_get_rate here */
- 	if (!(timer->capability & OMAP_TIMER_NEEDS_RESET))
- 		rate = clk_get_rate(timer->fclk);
- 
+On Tue, Apr 15, 2014 at 11:18:27AM +0200, Vlastimil Babka wrote:
+> isolate_freepages() is currently somewhat hard to follow thanks to many
+> different pfn variables. Especially misleading is the name 'high_pfn' which
+> looks like it is related to the 'low_pfn' variable, but in fact it is not.
+
+Indeed.
+
+> 
+> This patch renames the 'high_pfn' variable to a hopefully less confusing name,
+> and slightly changes its handling without a functional change. A comment made
+> obsolete by recent changes is also updated.
+
+It's clean up patch so if we do fixing, I'd like to do more.
+
+> 
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> ---
+>  mm/compaction.c | 17 ++++++++---------
+>  1 file changed, 8 insertions(+), 9 deletions(-)
+> 
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 627dc2e..169c7b2 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -671,7 +671,7 @@ static void isolate_freepages(struct zone *zone,
+>  				struct compact_control *cc)
+>  {
+>  	struct page *page;
+> -	unsigned long high_pfn, low_pfn, pfn, z_end_pfn;
+> +	unsigned long pfn, low_pfn, next_free_pfn, z_end_pfn;
+
+Could you add comment for each variable?
+
+unsigned long pfn; /* scanning cursor */
+unsigned long low_pfn; /* lowest pfn free scanner is able to scan */
+unsigned long next_free_pfn; /* start pfn for scaning at next truen */
+unsigned long z_end_pfn; /* zone's end pfn */
+
+
+>  	int nr_freepages = cc->nr_freepages;
+>  	struct list_head *freelist = &cc->freepages;
+>  
+> @@ -688,11 +688,10 @@ static void isolate_freepages(struct zone *zone,
+>  	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
+>  
+>  	/*
+> -	 * Take care that if the migration scanner is at the end of the zone
+> -	 * that the free scanner does not accidentally move to the next zone
+> -	 * in the next isolation cycle.
+> +	 * Seed the value for max(next_free_pfn, pfn) updates. If there are
+> +	 * none, the pfn < low_pfn check will kick in.
+
+       "none" what? I'd like to clear more.
+
+>  	 */
+> -	high_pfn = min(low_pfn, pfn);
+> +	next_free_pfn = 0;
+>  
+>  	z_end_pfn = zone_end_pfn(zone);
+>  
+> @@ -754,7 +753,7 @@ static void isolate_freepages(struct zone *zone,
+>  		 */
+>  		if (isolated) {
+>  			cc->finished_update_free = true;
+> -			high_pfn = max(high_pfn, pfn);
+> +			next_free_pfn = max(next_free_pfn, pfn);
+>  		}
+>  	}
+>  
+> @@ -766,9 +765,9 @@ static void isolate_freepages(struct zone *zone,
+>  	 * so that compact_finished() may detect this
+>  	 */
+>  	if (pfn < low_pfn)
+> -		cc->free_pfn = max(pfn, zone->zone_start_pfn);
+> -	else
+> -		cc->free_pfn = high_pfn;
+> +		next_free_pfn = max(pfn, zone->zone_start_pfn);
+
+Why we need max operation?
+IOW, what's the problem if we do (next_free_pfn = pfn)?
+
+> +
+> +	cc->free_pfn = next_free_pfn;
+>  	cc->nr_freepages = nr_freepages;
+>  }
+>  
+> -- 
+> 1.8.4.5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-1.7.9.5
-
+Kind regards,
+Minchan Kim
