@@ -1,109 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054AbaDQEme (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 00:42:34 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:29136 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751478AbaDQEl4 (ORCPT
+	id S1752272AbaDQE4Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 00:56:25 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:7912 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751087AbaDQE4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 00:41:56 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmV+AOhaT1N5LEcvPGdsb2JhbABNDIMGg1WFCqIqk1uFYIEhFwMBAQEBODWCJQEBAQMBHQoTHCMFCwgDGAklDwUlAwcaE4d0B8o2FxaNZmYHhDgEmGWKaYskKw
-Date: Thu, 17 Apr 2014 14:41:52 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH 04/19] Make effect of PF_FSTRANS to disable __GFP_FS
- universal.
-Message-ID: <20140417044152.GW15995@dastard>
-References: <20140416033623.10604.69237.stgit@notabene.brown>
- <20140416040336.10604.58240.stgit@notabene.brown>
- <20140416053756.GC15995@dastard>
- <20140416161726.51b506e2@notabene.brown>
- <20140417110350.0470feba@notabene.brown>
+	Thu, 17 Apr 2014 00:56:23 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zcb8kz98dIe0eah1432Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh26d3h1155h)
+Date: Thu, 17 Apr 2014 12:56:13 +0800
+From: Shawn Guo <shawn.guo@freescale.com>
+To: Philipp Zabel <philipp.zabel@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2] ARM: dts: imx6q-gk802: Enable HDMI
+Message-ID: <20140417045611.GR2523@dragon>
+References: <1397683430-3931-1-git-send-email-philipp.zabel@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20140417110350.0470feba@notabene.brown>
+In-Reply-To: <1397683430-3931-1-git-send-email-philipp.zabel@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 11:03:50AM +1000, NeilBrown wrote:
-> On Wed, 16 Apr 2014 16:17:26 +1000 NeilBrown <neilb@suse.de> wrote:
+On Wed, Apr 16, 2014 at 11:23:50PM +0200, Philipp Zabel wrote:
+> Signed-off-by: Philipp Zabel <philipp.zabel@gmail.com>
+> ---
+> Changes since v1:
+>  - Reordered ddc-i2c-bus and status properties
+> ---
+>  arch/arm/boot/dts/imx6q-gk802.dts | 5 +++++
+>  1 file changed, 5 insertions(+)
+
+Applied.  It should be sent to LAKML than LKML though.
+
+Shawn
+
 > 
-> > On Wed, 16 Apr 2014 15:37:56 +1000 Dave Chinner <david@fromorbit.com> wrote:
-> > 
-> > > On Wed, Apr 16, 2014 at 02:03:36PM +1000, NeilBrown wrote:
+> diff --git a/arch/arm/boot/dts/imx6q-gk802.dts b/arch/arm/boot/dts/imx6q-gk802.dts
+> index 4a9b4dc..0f0c50b 100644
+> --- a/arch/arm/boot/dts/imx6q-gk802.dts
+> +++ b/arch/arm/boot/dts/imx6q-gk802.dts
+> @@ -48,6 +48,11 @@
+>  	};
+>  };
+>  
+> +&hdmi {
+> +	ddc-i2c-bus = <&i2c3>;
+> +	status = "okay";
+> +};
+> +
+>  /* Internal I2C */
+>  &i2c2 {
+>  	pinctrl-names = "default";
+> -- 
+> 1.9.1
 > 
-> > > > -	/*
-> > > > -	 * Given that we do not allow direct reclaim to call us, we should
-> > > > -	 * never be called while in a filesystem transaction.
-> > > > -	 */
-> > > > -	if (WARN_ON(current->flags & PF_FSTRANS))
-> > > > -		goto redirty;
-> > > 
-> > > We still need to ensure this rule isn't broken. If it is, the
-> > > filesystem will silently deadlock in delayed allocation rather than
-> > > gracefully handle the problem with a warning....
-> > 
-> > Hmm... that might be tricky.  The 'new' PF_FSTRANS can definitely be set when
-> > xfs_vm_writepage is called and we really want the write to happen.
-> > I don't suppose there is any other way to detect if a transaction is
-> > happening?
 > 
-> I've been thinking about this some more....
 > 
-> That code is in xfs_vm_writepage which is only called as ->writepage.
-> xfs never calls that directly so it could only possibly be called during
-> reclaim?
 
-    __filemap_fdatawrite_range or __writeback_single_inode
-      do_writepages
-	->writepages
-	  xfs_vm_writepages
-	    write_cache_pages
-	      ->writepage
-	        xfs_vm_writepage
-
-So explicit data flushes or background writeback still end up in
-xfs_vm_writepage.
-
-> We know that doesn't happen, but if it does then PF_MEMALLOC would be set,
-> but PF_KSWAPD would not... and you already have a test for that.
-> 
-> How about every time we set PF_FSTRANS, we store the corresponding
-> xfs_trans_t in current->journal_info, and clear that field when PF_FSTRANS is
-> cleared.  Then xfs_vm_writepage can test for current->journal_info being
-> clear.
-> That is the field that several other filesystems use to keep track of the
-> 'current' transaction.
-
-The difference is that we have an explicit transaction handle in XFS
-which defines the transaction context. i.e. we don't hide
-transactions in thread contexts - the transaction defines the atomic
-context of the modification being made.....
-
-> I don't know what xfs_trans_t we would use in
-> xfs_bmapi_allocate_worker, but I suspect you do :-)
-
-The same one we use now.
-
-But that's exactly my point.  i.e. the transaction handle belongs to
-the operation being executed, not the thread that is currently
-executing it.  We also hand transaction contexts to IO completion,
-do interesting things with log space reservations for operations
-that require multiple commits to complete and so pass state when
-handles are duplicated prior to commit, etc. We still need direct
-manipulation and control of the transaction structure, regardless of
-where it is stored.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
