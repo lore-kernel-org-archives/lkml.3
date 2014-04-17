@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756870AbaDQNb4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 09:31:56 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:42917 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754845AbaDQNbz (ORCPT
+	id S1422726AbaDQNdQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 09:33:16 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:59022 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754399AbaDQNdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 09:31:55 -0400
-Date: Thu, 17 Apr 2014 09:31:51 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Kefeng Wang <wangkefeng.wang@huawei.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, guohanjun@huawei.com,
-        Kefeng Wang <kefeng.wang@linaro.org>
-Subject: Re: [PATCH V2 2/2] ahci: add support for Hisilicon sata
-Message-ID: <20140417133151.GC15326@htj.dyndns.org>
-References: <1397107468-640-1-git-send-email-wangkefeng.wang@huawei.com>
- <1397107468-640-3-git-send-email-wangkefeng.wang@huawei.com>
- <20140416204917.GB26632@htj.dyndns.org>
- <534F8733.1080009@redhat.com>
+	Thu, 17 Apr 2014 09:33:14 -0400
+Message-ID: <534FD817.2090108@acm.org>
+Date: Thu, 17 Apr 2014 08:33:11 -0500
+From: Corey Minyard <minyard@acm.org>
+Reply-To: minyard@acm.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <534F8733.1080009@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Torsten Duwe <duwe@lst.de>
+CC: Jiri Slaby <jslaby@suse.cz>, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org, Tomas Cech <tcech@suse.cz>,
+        openipmi-developer@lists.sourceforge.net,
+        Rocky Craig <rocky.craig@hp.com>
+Subject: Re: [PATCH 1/1] Char: ipmi_bt_sm, fix infinite loop
+References: <1393323294-11423-1-git-send-email-jslaby@suse.cz> <530D1021.1050402@acm.org> <533023F5.40909@suse.cz> <533080AB.9080702@acm.org> <20140417132142.GA7976@lst.de>
+In-Reply-To: <20140417132142.GA7976@lst.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 09:48:03AM +0200, Hans de Goede wrote:
-> > Hmmm.... this should work but looks a bit tedious and it could be
-> > better to have a better mechanism to match devices to their
-> > port_infos.  Hans, can you please comment?  If getting something more
-> > structured is too much work, I can go with this but wanna find out
-> > whether that's the case.
-> 
-> The more structured solution would be v1 of this patch, which I asked
-> Kefan to change since it seemed overkill. But if you prefer that version
-> that is fine with me.
+On 04/17/2014 08:21 AM, Torsten Duwe wrote:
+> On Mon, Mar 24, 2014 at 01:59:55PM -0500, Corey Minyard wrote:
+>> On 03/24/2014 07:24 AM, Jiri Slaby wrote:
+>>> On 02/25/2014 10:50 PM, Corey Minyard wrote:
+>>>> Looks right to me.  Rocky, copying you in case there's an issue with this.
+>>> Hi,
+>>>
+>>> any updates here, I don't see it in the -next tree yet?
+>>>
+>>> Thanks.
+>> I normally don't submit to the -next tree because there is little to
+>> integrate with in the IPMI driver.  Maybe it would be a good idea to
+>> start, though.  If you want to, I can.
+> Yes, please! :)
+> And you may want to send bugfixes towards -stable.
 
-I don't care either way at this point but if this grows to a large
-list, having a matching mechanism will probably be more manageable.
+I will definitely do that.
 
-> Note that as I've already mentioned earlier in the thread this could be
-> made somewhat cleaner by having an host_flags parameter to
-> ahci_platform_init_host().
+Thanks,
 
-Kefeng, can you please update accordingly to Hans' comment and repost?
-
-Thanks.
-
--- 
-tejun
+-corey
