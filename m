@@ -1,54 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745AbaDQBnq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 21:43:46 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:17659 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335AbaDQBno (ORCPT
+	id S1754479AbaDQBso (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 21:48:44 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48261 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107AbaDQBsm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 21:43:44 -0400
-Message-ID: <534F3139.5010104@huawei.com>
-Date: Thu, 17 Apr 2014 09:41:13 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 16 Apr 2014 21:48:42 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Thu, 17 Apr 2014 10:49:11 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Steven King <sfking@fdwdc.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        uClinux development list <uclinux-dev@uclinux.org>
+Subject: Re: [uClinux-dev] v3.15-rc1 slab allocator broken on m68knommu
+ (coldfire)
+Message-ID: <20140417014911.GA3284@js1304-P5Q-DELUXE>
+References: <201404141745.44279.sfking@fdwdc.com>
+ <201404160847.27300.sfking@fdwdc.com>
+ <CAMuHMdV2zSWaDbHNv3QQeEgu26PQX9TWn7cHA=4U0YOK0bbExg@mail.gmail.com>
+ <201404161044.11416.sfking@fdwdc.com>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>
-CC: Tejun Heo <tj@kernel.org>, <cgroups@vger.kernel.org>,
-        <containers@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, Serge Hallyn <serge.hallyn@ubuntu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Aristeu Rozanski <arozansk@redhat.com>,
-        Daniel Borkmann <dborkman@redhat.com>, Thomas Graf <tgraf@suug.ch>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay@vrfy.org>, Rohit Jnagal <jnagal@google.com>,
-        Brandon Philips <brandon.philips@coreos.com>
-Subject: Re: [PATCH cgroup/for-3.16] cgroup: add documentation about unified
- hierarchy
-References: <20140414220917.GD1863@htj.dyndns.org> <534DB46D.7090207@infradead.org> <20140416135120.GI30990@htj.dyndns.org> <534EE512.5090905@infradead.org>
-In-Reply-To: <534EE512.5090905@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201404161044.11416.sfking@fdwdc.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/4/17 4:16, Randy Dunlap wrote:
-> On 04/16/2014 06:51 AM, Tejun Heo wrote:
->> Hello,
->>
->> On Tue, Apr 15, 2014 at 03:36:29PM -0700, Randy Dunlap wrote:
->>>> +depending on the specific controller.  IOW, hierarchy may be collapsed
->>>
->>> please spell out IOW
->>
->> Updated, but is this really necessary?
+On Wed, Apr 16, 2014 at 10:44:11AM -0700, Steven King wrote:
+> On Wednesday 16 April 2014 9:06:57 am Geert Uytterhoeven wrote:
+> > Hi Steven,
+> >
+> > On Wed, Apr 16, 2014 at 5:47 PM, Steven King <sfking@fdwdc.com> wrote:
+> > > --- a/mm/slab.c
+> > > +++ b/mm/slab.c
+> > > @@ -2572,13 +2572,13 @@ static void *alloc_slabmgmt(struct kmem_cache
+> > > *cachep, return freelist;
+> > >  }
+> > >
+> > > -static inline freelist_idx_t get_free_obj(struct page *page, unsigned
+> > > char idx) +static inline freelist_idx_t get_free_obj(struct page *page,
+> > > unsigned int idx) {
+> > >         return ((freelist_idx_t *)page->freelist)[idx];
+> > >  }
+> > >
+> > >  static inline void set_free_obj(struct page *page,
+> > > -                                       unsigned char idx, freelist_idx_t
+> > > val) +                                       unsigned int idx,
+> > > freelist_idx_t val) {
+> > >         ((freelist_idx_t *)(page->freelist))[idx] = val;
+> > >  }
+> > >
+> > >
+> > > then v3.15-rc1 will boot using the slab allocator.
+> >
+> > Is "idx" ever larger than 255?
+> >
+> > Gr{oetje,eeting}s,
 > 
-> It depends on who your audience is.  I probably think that the audience
-> is larger than you think it is.
+> Yes.  If I stick
 > 
+>         if (idx > 255)
+>                 pr_info("%s %d\n", __func__, idx);
+> 
+> in get_free_obj and set_free_obj and see values for idx up into the 400s.
 
-Yeah, I had to google it. :)
+Hello,
 
+Yes, it's my mistake. idx can be larger than 255 if freelist_idx_t is
+unsigned short. So unsigned char idx isn't appropriate here. Your
+system's PAGE_SIZE may be 2^13, so freelist_idx_t would be unsigned short
+and idx will be larger than 255.
+
+Your fix looks good to me, so could you send it quickly to Pekka with
+some description? If you don't have enough time to do it, I can handle it.
+
+Really thanks for notifying this issue.
+
+Thanks.
