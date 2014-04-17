@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474AbaDQAMa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 20:12:30 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:48568 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783AbaDQAM2 (ORCPT
+	id S1756439AbaDQAMp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 20:12:45 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:38559 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755044AbaDQAMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 20:12:28 -0400
-Message-ID: <534F1C6B.5050609@codeaurora.org>
-Date: Wed, 16 Apr 2014 17:12:27 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Wed, 16 Apr 2014 20:12:43 -0400
+Message-ID: <534F1C6E.7010606@gmail.com>
+Date: Wed, 16 Apr 2014 17:12:30 -0700
+From: Frank Rowand <frowand.list@gmail.com>
+Reply-To: frowand.list@gmail.com
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: myungjoo.ham@samsung.com
-CC: =?EUC-KR?B?udqw5rnO?= <kyungmin.park@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] PM / devfreq: Use freq_table for available_frequencies
-References: <1368716.232331397543409452.JavaMail.weblogic@epv6ml06> <534D7D58.4050201@codeaurora.org>
-In-Reply-To: <534D7D58.4050201@codeaurora.org>
-Content-Type: text/plain; charset=EUC-KR
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: [DRIVER CORE] drivers/base/dd.c incorrect pr_debug() parameters
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2014 11:41 AM, Saravana Kannan wrote:
-> Ah, I misunderstood your previous email. I thought you Nack-ed my patch
-> and decided to send your own patch to replace mine. Ok, I'll fix up mine
-> and send it out.
+pr_debug() parameters are reverse order of format string
 
-MyungJoo/Kyungmin,
+Signed-off-by: Frank Rowand <frank.rowand@sonymobile.com>
+---
 
-I sent out an updated patch. Can you please take a look?
+ drivers/base/dd.c |    4 	2 +	2 -	0 !
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Thanks,
-Saravana
-
-
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Index: b/drivers/base/dd.c
+===================================================================
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -187,8 +187,8 @@ static void driver_bound(struct device *
+ 		return;
+ 	}
+ 
+-	pr_debug("driver: '%s': %s: bound to device '%s'\n", dev_name(dev),
+-		 __func__, dev->driver->name);
++	pr_debug("driver: '%s': %s: bound to device '%s'\n", dev->driver->name,
++		 __func__, dev_name(dev));
+ 
+ 	klist_add_tail(&dev->p->knode_driver, &dev->driver->p->klist_devices);
+ 
