@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642AbaDQJwY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 05:52:24 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:63453 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaDQJwV (ORCPT
+	id S1756114AbaDQJxi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 05:53:38 -0400
+Received: from andre.telenet-ops.be ([195.130.132.53]:36923 "EHLO
+	andre.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754764AbaDQJxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 05:52:21 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: gregkh@linuxfoundation.org, tj@kernel.org
-Cc: linux-kernel@vger.kernel.org, nasa4836@gmail.com
-Subject: [PATCH] kernfs: fix a subdir count leak
-Date: Thu, 17 Apr 2014 17:52:10 +0800
-Message-Id: <1397728330-11099-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 1.9.0.GIT
+	Thu, 17 Apr 2014 05:53:34 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Cc: cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH 2/3] cpufreq: ppc: Fix integer overflow in expression
+Date: Thu, 17 Apr 2014 11:53:26 +0200
+Message-Id: <1397728407-13909-2-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1397728407-13909-1-git-send-email-geert+renesas@glider.be>
+References: <1397728407-13909-1-git-send-email-geert+renesas@glider.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently kernfs_link_sibling() increates parent->dir.subdirs before
-adding the node into parent's chidren rb tree.
+On 32-bit, "12 * NSEC_PER_SEC" doesn't fit in "unsigned long"
+(NSEC_PER_SEC is a "long" constant), causing an integer overflow:
 
-Because it is possible that kernfs_link_sibling() couldn't find
-a suitable slot and bail out, this leads to a mismatch between
-elevated subdir count with actual children node numbers.
+drivers/cpufreq/ppc-corenet-cpufreq.c: In function 'corenet_cpufreq_cpu_init':
+drivers/cpufreq/ppc-corenet-cpufreq.c:211:9: warning: integer overflow in expression [-Woverflow]
 
-This patches fix this problem, by moving the subdir accouting
-after the actual addtion happening.
+Force the intermediate to be 64-bit by adding an "ULL" suffix to the
+constant multiplier to fix this.
 
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 ---
- fs/kernfs/dir.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/cpufreq/ppc-corenet-cpufreq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/kernfs/dir.c b/fs/kernfs/dir.c
-index 78f3403..ac127cd 100644
---- a/fs/kernfs/dir.c
-+++ b/fs/kernfs/dir.c
-@@ -232,9 +232,6 @@ static int kernfs_link_sibling(struct kernfs_node *kn)
- 	struct rb_node **node = &kn->parent->dir.children.rb_node;
- 	struct rb_node *parent = NULL;
+diff --git a/drivers/cpufreq/ppc-corenet-cpufreq.c b/drivers/cpufreq/ppc-corenet-cpufreq.c
+index e78f9c806de4..53881d78a931 100644
+--- a/drivers/cpufreq/ppc-corenet-cpufreq.c
++++ b/drivers/cpufreq/ppc-corenet-cpufreq.c
+@@ -208,7 +208,7 @@ static int corenet_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 		per_cpu(cpu_data, i) = data;
  
--	if (kernfs_type(kn) == KERNFS_DIR)
--		kn->parent->dir.subdirs++;
--
- 	while (*node) {
- 		struct kernfs_node *pos;
- 		int result;
-@@ -249,9 +246,15 @@ static int kernfs_link_sibling(struct kernfs_node *kn)
- 		else
- 			return -EEXIST;
- 	}
-+
- 	/* add new node and rebalance the tree */
- 	rb_link_node(&kn->rb, parent, node);
- 	rb_insert_color(&kn->rb, &kn->parent->dir.children);
-+
-+	/* successfully added, account subdir number */
-+	if (kernfs_type(kn) == KERNFS_DIR)
-+		kn->parent->dir.subdirs++;
-+
+ 	policy->cpuinfo.transition_latency =
+-				(12 * NSEC_PER_SEC) / fsl_get_sys_freq();
++				(12ULL * NSEC_PER_SEC) / fsl_get_sys_freq();
+ 	of_node_put(np);
+ 
  	return 0;
- }
- 
 -- 
-1.9.0.GIT
+1.7.9.5
 
