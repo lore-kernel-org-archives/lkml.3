@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161390AbaDQNWB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 09:22:01 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:44970 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754755AbaDQNV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 09:21:59 -0400
-Date: Thu, 17 Apr 2014 15:21:57 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Robert Richter <rric@kernel.org>
-Subject: Re: [PATCH v4 00/16] perf, persistent: Add persistent events
-Message-ID: <20140417132157.GC4321@pd.tnic>
-References: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
- <CAFrcx1=0TddfPS322728w3AsK5SzJ1sq-7VTbE=+Pb-EqcrncQ@mail.gmail.com>
- <20140417125030.GA4321@pd.tnic>
- <CAFrcx1noiierVs1tpkoqQ=L-Si0Xt5yVBvG3jgpi4hXepcabrg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAFrcx1noiierVs1tpkoqQ=L-Si0Xt5yVBvG3jgpi4hXepcabrg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756827AbaDQNYT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 09:24:19 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:59088 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754399AbaDQNYR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 09:24:17 -0400
+Message-ID: <534FD5FC.6060703@gmail.com>
+Date: Thu, 17 Apr 2014 15:24:12 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+To: =?ISO-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+CC: linus.walleij@linaro.org, alexandre.belloni@free-electrons.com,
+        zmxu@marvell.com, jszhang@marvell.com,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND 3/5] ARM: berlin: add the pinctrl dependency for
+ the Marvell Berlin SoCs
+References: <1397135274-10764-1-git-send-email-antoine.tenart@free-electrons.com> <1397135274-10764-4-git-send-email-antoine.tenart@free-electrons.com> <5347B065.8060001@gmail.com> <20140417131357.GA31034@kwain>
+In-Reply-To: <20140417131357.GA31034@kwain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean,
+On 04/17/2014 03:13 PM, Antoine Ténart wrote:
+> On Fri, Apr 11, 2014 at 11:05:41AM +0200, Sebastian Hesselbarth wrote:
+>> On 04/10/2014 03:07 PM, Antoine Ténart wrote:
+>>> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+>>> ---
+>>>   arch/arm/mach-berlin/Kconfig | 2 ++
+>>>   1 file changed, 2 insertions(+)
+>>>
+>>> diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
+>>> index d3c5f14dc142..291f1cac6c3d 100644
+>>> --- a/arch/arm/mach-berlin/Kconfig
+>>> +++ b/arch/arm/mach-berlin/Kconfig
+>>> @@ -4,6 +4,8 @@ config ARCH_BERLIN
+>>>   	select GENERIC_IRQ_CHIP
+>>>   	select DW_APB_ICTL
+>>>   	select DW_APB_TIMER_OF
+>>> +	select PINCTRL
+>>> +	select PINCTRL_BERLIN
+>>
+>> As said in the review of the previous patch, drop PINCTRL here
+>> and select it in the PINCTRL_BERLIN Kconfig. Also, you'll need
+>> PINCTRL_BERLIN_BG2 and PINCTRL_BERLIN_BG2Q as we don't want to
+>> bloat each Berlin kernel with both drivers.
+>
+> Regarding PINCTRL, I can't drop it, pin-controller drivers depend on it.
+> drivers/pinctrl/Kconfig begins with:
+> 	if PINCTRL
 
-On Thu, Apr 17, 2014 at 03:17:01PM +0200, Jean Pihet wrote:
-> Yes indeed!
-> 
-> Ingo,
-> Is the perf support for persistent event needed, or can this series be
-> reviewed as is?
-> 
-> In the meantime I am now working on the perf tool:
-> - add persistent events,
-> - factor out the code and provide a library (libperf) for other tool
-> to use it (e.g. monitoring daemon).
+Ah, ok. Then select PINCTRL here and the corresponding
+PINCTRL_BERLIN_foo in the individual SoC Kconfig entries.
 
-Ok, good. I'm doing a bit too:
+Sebastian
 
-https://lkml.org/lkml/2014/4/13/20
-
-so let's synchronize and get this thing going. I'll add you to my CC
-list on future submissions.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
