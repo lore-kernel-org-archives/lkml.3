@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784AbaDQKHu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 06:07:50 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54923 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756289AbaDQJzM (ORCPT
+	id S1756608AbaDQKJY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 06:09:24 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57830 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454AbaDQKJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 05:55:12 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: perex@perex.cz, iwai@suse.de
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 1/6] sound: lx_core: Remove unused defines
-Date: Thu, 17 Apr 2014 11:51:16 +0200
-Message-Id: <1397728281-26050-1-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 17 Apr 2014 06:09:20 -0400
+Date: Thu, 17 Apr 2014 12:09:06 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Denys Vlasenko <vda.linux@googlemail.com>, stable@vger.kernel.org
+Subject: Re: [PATCH 2/2] nohz: use delayed iowait accounting to avoid race on
+ idle time stats
+Message-ID: <20140417100906.GP13658@twins.programming.kicks-ass.net>
+References: <53465F54.708@jp.fujitsu.com>
+ <534660D2.1080505@jp.fujitsu.com>
+ <20140415101910.GN11096@twins.programming.kicks-ass.net>
+ <534E2422.1040706@jp.fujitsu.com>
+ <20140417100519.GF11096@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140417100519.GF11096@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit f9367f3fbe3c ("ALSA: lx6464es: Remove unused
-function in pci/lx6464es/lx_core.c") removed the
-lx_dsp_es_check_pipeline function that was the only user
-of these defines.
+On Thu, Apr 17, 2014 at 12:05:19PM +0200, Peter Zijlstra wrote:
+> +static inline void iowait_start(struct rq *rq)
+> +{
+> +	raw_spin_lock(&rq->iowait_lock);
+> +	rq->nr_iowait++;
+> +	raw_spin_unlock(&rq->iowait_lock);
+> +	current->in_iowait = 1;
+> +}
+> +
+> +static inline void iowait_stop(struct rq *rq)
+> +{
+> +	current->in_iowait = 0;
+> +	raw_spin_lock(&rq->iowait_lock);
+> +	rq->nr_iowait--;
+> +	if (!rq->nr_iowait && rq != this_rq())
+> +		rq->last_iowait = ktime_get();
+> +	raw_spin_unlock(&rq->iowait_lock);
+> +}
 
-Since they're useless now, simply remove them.
-
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- sound/pci/lx6464es/lx_core.c | 5 -----
- 1 file changed, 5 deletions(-)
-
-diff --git a/sound/pci/lx6464es/lx_core.c b/sound/pci/lx6464es/lx_core.c
-index 2d8e95e9fbe5..6a1d90a308ea 100644
---- a/sound/pci/lx6464es/lx_core.c
-+++ b/sound/pci/lx6464es/lx_core.c
-@@ -429,11 +429,6 @@ int lx_dsp_read_async_events(struct lx6464es *chip, u32 *data)
- 	return ret;
- }
- 
--#define CSES_TIMEOUT        100     /* microseconds */
--#define CSES_CE             0x0001
--#define CSES_BROADCAST      0x0002
--#define CSES_UPDATE_LDSV    0x0004
--
- #define PIPE_INFO_TO_CMD(capture, pipe)					\
- 	((u32)((u32)(pipe) | ((capture) ? ID_IS_CAPTURE : 0L)) << ID_OFFSET)
- 
--- 
-1.9.1
-
+We could actually use lockref here...
