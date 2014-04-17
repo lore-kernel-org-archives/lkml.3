@@ -1,101 +1,280 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161162AbaDQIdK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 04:33:10 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:42267 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161002AbaDQIdF (ORCPT
+	id S1756244AbaDQIdz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 04:33:55 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:40605 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752459AbaDQIRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 04:33:05 -0400
-Date: Thu, 17 Apr 2014 09:32:58 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH 2/2] mfd: sec-core: Update sec_pmic documentation
-Message-ID: <20140417083258.GH28725@lee--X1>
-References: <1397477015-13900-1-git-send-email-k.kozlowski@samsung.com>
- <1397477015-13900-2-git-send-email-k.kozlowski@samsung.com>
+	Thu, 17 Apr 2014 04:17:07 -0400
+Subject: [PATCH -tip v9 03/26] kprobes: Prohibit probing on .entry.text code
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, fche@redhat.com,
+        mingo@redhat.com, Al Viro <viro@zeniv.linux.org.uk>,
+        systemtap@sourceware.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Seiji Aguchi <seiji.aguchi@hds.com>
+Date: Thu, 17 Apr 2014 17:16:58 +0900
+Message-ID: <20140417081658.26341.57354.stgit@ltc230.yrl.intra.hitachi.co.jp>
+In-Reply-To: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp>
+References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1397477015-13900-2-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Update the documentation for sec_pmic state container structure to
-> reflect current code.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  include/linux/mfd/samsung/core.h | 29 +++++++++++++++++------------
->  1 file changed, 17 insertions(+), 12 deletions(-)
-> 
-> diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
-> index 2633083262ea..1923fe026c01 100644
-> --- a/include/linux/mfd/samsung/core.h
-> +++ b/include/linux/mfd/samsung/core.h
-> @@ -24,18 +24,23 @@ enum sec_device_type {
->  };
->  
->  /**
-> - * struct sec_pmic_dev - s5m87xx master device for sub-drivers
-> - * @dev: master device of the chip (can be used to access platform data)
-> - * @pdata: pointer to private data used to pass platform data to child
-> - * @i2c: i2c client private data for regulator
-> - * @iolock: mutex for serializing io access
-> - * @irqlock: mutex for buslock
-> - * @irq_base: base IRQ number for sec-pmic, required for IRQs
-> - * @irq: generic IRQ number for s5m87xx
-> - * @ono: power onoff IRQ number for s5m87xx
-> - * @irq_masks_cur: currently active value
-> - * @irq_masks_cache: cached hardware value
-> - * @type: indicate which s5m87xx "variant" is used
-> + * struct sec_pmic_dev - s2m/s5m master device for sub-drivers
-> + * @dev:		Master device of the chip (can be used to access
-> + *			platform data)
+.entry.text is a code area which is used for interrupt/syscall
+entries, which includes many sensitive code.
+Thus, it is better to prohibit probing on all of such code
+instead of a part of that.
+Since some symbols are already registered on kprobe blacklist,
+this also removes them from the blacklist.
 
-Please remove the part in ()'s.
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ arch/x86/kernel/entry_32.S     |   33 ---------------------------------
+ arch/x86/kernel/entry_64.S     |   20 --------------------
+ arch/x86/kernel/kprobes/core.c |    8 ++++++++
+ include/linux/kprobes.h        |    1 +
+ kernel/kprobes.c               |   13 ++++++++-----
+ 5 files changed, 17 insertions(+), 58 deletions(-)
 
-a) There's no need for it - we know what's in 'struct device' and b)
-if 'struct platform_data' is removed from 'struct device' this comment
-will become incorrect. Easy maintainability and all that ...
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index a2a4f46..0ca5bf1 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -315,10 +315,6 @@ ENTRY(ret_from_kernel_thread)
+ ENDPROC(ret_from_kernel_thread)
+ 
+ /*
+- * Interrupt exit functions should be protected against kprobes
+- */
+-	.pushsection .kprobes.text, "ax"
+-/*
+  * Return to user mode is not as complex as all this looks,
+  * but we want the default path for a system call return to
+  * go as quickly as possible which is why some of this is
+@@ -372,10 +368,6 @@ need_resched:
+ END(resume_kernel)
+ #endif
+ 	CFI_ENDPROC
+-/*
+- * End of kprobes section
+- */
+-	.popsection
+ 
+ /* SYSENTER_RETURN points to after the "sysenter" instruction in
+    the vsyscall page.  See vsyscall-sysentry.S, which defines the symbol.  */
+@@ -495,10 +487,6 @@ sysexit_audit:
+ 	PTGS_TO_GS_EX
+ ENDPROC(ia32_sysenter_target)
+ 
+-/*
+- * syscall stub including irq exit should be protected against kprobes
+- */
+-	.pushsection .kprobes.text, "ax"
+ 	# system call handler stub
+ ENTRY(system_call)
+ 	RING0_INT_FRAME			# can't unwind into user space anyway
+@@ -691,10 +679,6 @@ syscall_badsys:
+ 	jmp resume_userspace
+ END(syscall_badsys)
+ 	CFI_ENDPROC
+-/*
+- * End of kprobes section
+- */
+-	.popsection
+ 
+ .macro FIXUP_ESPFIX_STACK
+ /*
+@@ -781,10 +765,6 @@ common_interrupt:
+ ENDPROC(common_interrupt)
+ 	CFI_ENDPROC
+ 
+-/*
+- *  Irq entries should be protected against kprobes
+- */
+-	.pushsection .kprobes.text, "ax"
+ #define BUILD_INTERRUPT3(name, nr, fn)	\
+ ENTRY(name)				\
+ 	RING0_INT_FRAME;		\
+@@ -961,10 +941,6 @@ ENTRY(spurious_interrupt_bug)
+ 	jmp error_code
+ 	CFI_ENDPROC
+ END(spurious_interrupt_bug)
+-/*
+- * End of kprobes section
+- */
+-	.popsection
+ 
+ #ifdef CONFIG_XEN
+ /* Xen doesn't set %esp to be precisely what the normal sysenter
+@@ -1239,11 +1215,6 @@ return_to_handler:
+ 	jmp *%ecx
+ #endif
+ 
+-/*
+- * Some functions should be protected against kprobes
+- */
+-	.pushsection .kprobes.text, "ax"
+-
+ #ifdef CONFIG_TRACING
+ ENTRY(trace_page_fault)
+ 	RING0_EC_FRAME
+@@ -1453,7 +1424,3 @@ ENTRY(async_page_fault)
+ END(async_page_fault)
+ #endif
+ 
+-/*
+- * End of kprobes section
+- */
+-	.popsection
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 1e96c36..43bb389 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -487,8 +487,6 @@ ENDPROC(native_usergs_sysret64)
+ 	TRACE_IRQS_OFF
+ 	.endm
+ 
+-/* save complete stack frame */
+-	.pushsection .kprobes.text, "ax"
+ ENTRY(save_paranoid)
+ 	XCPT_FRAME 1 RDI+8
+ 	cld
+@@ -517,7 +515,6 @@ ENTRY(save_paranoid)
+ 1:	ret
+ 	CFI_ENDPROC
+ END(save_paranoid)
+-	.popsection
+ 
+ /*
+  * A newly forked process directly context switches into this address.
+@@ -975,10 +972,6 @@ END(interrupt)
+ 	call \func
+ 	.endm
+ 
+-/*
+- * Interrupt entry/exit should be protected against kprobes
+- */
+-	.pushsection .kprobes.text, "ax"
+ 	/*
+ 	 * The interrupt stubs push (~vector+0x80) onto the stack and
+ 	 * then jump to common_interrupt.
+@@ -1113,10 +1106,6 @@ ENTRY(retint_kernel)
+ 
+ 	CFI_ENDPROC
+ END(common_interrupt)
+-/*
+- * End of kprobes section
+- */
+-       .popsection
+ 
+ /*
+  * APIC interrupts.
+@@ -1477,11 +1466,6 @@ apicinterrupt3 HYPERVISOR_CALLBACK_VECTOR \
+ 	hyperv_callback_vector hyperv_vector_handler
+ #endif /* CONFIG_HYPERV */
+ 
+-/*
+- * Some functions should be protected against kprobes
+- */
+-	.pushsection .kprobes.text, "ax"
+-
+ paranoidzeroentry_ist debug do_debug DEBUG_STACK
+ paranoidzeroentry_ist int3 do_int3 DEBUG_STACK
+ paranoiderrorentry stack_segment do_stack_segment
+@@ -1898,7 +1882,3 @@ ENTRY(ignore_sysret)
+ 	CFI_ENDPROC
+ END(ignore_sysret)
+ 
+-/*
+- * End of kprobes section
+- */
+-	.popsection
+diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+index fb6d421..181bdde 100644
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -1065,6 +1065,14 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
+ 	return 0;
+ }
+ 
++bool arch_within_kprobe_blacklist(unsigned long addr)
++{
++	return  (addr >= (unsigned long)__kprobes_text_start &&
++		 addr < (unsigned long)__kprobes_text_end) ||
++		(addr >= (unsigned long)__entry_text_start &&
++		 addr < (unsigned long)__entry_text_end);
++}
++
+ int __init arch_init_kprobes(void)
+ {
+ 	return 0;
+diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+index 925eaf2..cdf9251 100644
+--- a/include/linux/kprobes.h
++++ b/include/linux/kprobes.h
+@@ -265,6 +265,7 @@ extern void arch_disarm_kprobe(struct kprobe *p);
+ extern int arch_init_kprobes(void);
+ extern void show_registers(struct pt_regs *regs);
+ extern void kprobes_inc_nmissed_count(struct kprobe *p);
++extern bool arch_within_kprobe_blacklist(unsigned long addr);
+ 
+ struct kprobe_insn_cache {
+ 	struct mutex mutex;
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index ceeadfc..5b5ac76 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -96,9 +96,6 @@ static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
+ static struct kprobe_blackpoint kprobe_blacklist[] = {
+ 	{"preempt_schedule",},
+ 	{"native_get_debugreg",},
+-	{"irq_entries_start",},
+-	{"common_interrupt",},
+-	{"mcount",},	/* mcount can be called from everywhere */
+ 	{NULL}    /* Terminator */
+ };
+ 
+@@ -1324,12 +1321,18 @@ out:
+ 	return ret;
+ }
+ 
++bool __weak arch_within_kprobe_blacklist(unsigned long addr)
++{
++	/* The __kprobes marked functions and entry code must not be probed */
++	return addr >= (unsigned long)__kprobes_text_start &&
++	       addr < (unsigned long)__kprobes_text_end;
++}
++
+ static int __kprobes in_kprobes_functions(unsigned long addr)
+ {
+ 	struct kprobe_blackpoint *kb;
+ 
+-	if (addr >= (unsigned long)__kprobes_text_start &&
+-	    addr < (unsigned long)__kprobes_text_end)
++	if (arch_within_kprobe_blacklist(addr))
+ 		return -EINVAL;
+ 	/*
+ 	 * If there exists a kprobe_blacklist, verify and
 
-> + * @pdata:		Platform data from DTS or board files
 
-s/from/populated with data from
-
-> + * @regmap_pmic:	Regmap associated with PMIC's I2C address
-> + * @i2c:		I2C client of the main driver
-> + * @device_type:	Type of device, matches enum sec_device_type
-> + * @irq_base:		Base IRQ number for device, required for IRQs
-
-Is there any reason for not using IRQ Domains?
-
-> + * @irq:		Generic IRQ number for device
-> + * @irq_data:		Runtime data structure for IRQ controller
-> + * @ono:		Power onoff IRQ number for s5m87xx
-
-Perhaps consider a better name for this in a future patch.
-
-> + * @wakeup:		Whether or not this is a wakeup device
-> + * @wtsr_smpl:		Whether or not to enable in RTC driver the Watchdog
-> + *			Timer Software Reset (registers set to default value
-> + *			after PWRHOLD falling) and Sudden Momentary Power Loss
-> + *			(PMIC will enter power on sequence after short drop in
-> + *			VBATT voltage).
->   */
->  struct sec_pmic_dev {
->  	struct device *dev;
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
