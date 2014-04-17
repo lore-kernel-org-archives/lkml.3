@@ -1,171 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161340AbaDQKyT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 06:54:19 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:47686 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428AbaDQKyN (ORCPT
+	id S1161276AbaDQKyR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 06:54:17 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:51810 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753942AbaDQKyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Apr 2014 06:54:13 -0400
+Date: Thu, 17 Apr 2014 12:53:03 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Marek Vasut <marex@denx.de>,
+        linux-mtd@lists.infradead.org, Russell King <linux@arm.linux.org.uk>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, Steven Miao <realmz6@gmail.com>,
+        adi-buildroot-devel@lists.sourceforge.net,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH 0/5] defconfigs: add MTD_SPI_NOR (dependency for M25P80)
+Message-ID: <20140417105302.GA32603@ulmo>
+References: <1397719309-2022-1-git-send-email-computersforpeace@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1397272942.2686.4.camel@buesod1.americas.hpqcorp.net>
-References: <1397272942.2686.4.camel@buesod1.americas.hpqcorp.net>
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Thu, 17 Apr 2014 12:53:52 +0200
-X-Google-Sender-Auth: Dyl1_fCyF71756htykxonOeCPvY
-Message-ID: <CAHO5Pa3BOgJGCm7NvE4xbm3O1WbRLRBS0pgvErPudypP_iiZ3g@mail.gmail.com>
-Subject: Re: [PATCH v2] ipc,shm: disable shmmax and shmall by default
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, aswin@hp.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="azLHFNyN32YCQGCU"
+Content-Disposition: inline
+In-Reply-To: <1397719309-2022-1-git-send-email-computersforpeace@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 12, 2014 at 5:22 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> From: Davidlohr Bueso <davidlohr@hp.com>
->
-> The default size for shmmax is, and always has been, 32Mb.
-> Today, in the XXI century, it seems that this value is rather small,
-> making users have to increase it via sysctl, which can cause
-> unnecessary work and userspace application workarounds[1].
->
-> Instead of choosing yet another arbitrary value, larger than 32Mb,
-> this patch disables the use of both shmmax and shmall by default,
-> allowing users to create segments of unlimited sizes. Users and
-> applications that already explicitly set these values through sysctl
-> are left untouched, and thus does not change any of the behavior.
->
-> So a value of 0 bytes or pages, for shmmax and shmall, respectively,
-> implies unlimited memory, as opposed to disabling sysv shared memory.
-> This is safe as 0 cannot possibly be used previously as SHMMIN is
-> hardcoded to 1 and cannot be modified.
->
-> This change allows Linux to treat shm just as regular anonymous memory.
-> One important difference between them, though, is handling out-of-memory
-> conditions: as opposed to regular anon memory, the OOM killer will not
-> free the memory as it is shm, allowing users to potentially abuse this.
-> To overcome this situation, the shm_rmid_forced option must be enabled.
->
-> [1]: http://rhaas.blogspot.com/2012/06/absurd-shared-memory-limits.html
->
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Of the two proposed approaches (the other being
-marc.info/?l=linux-kernel&m=139730332306185), this looks preferable to
-me, since it allows strange users to maintain historical behavior
-(i.e., the ability to set a limit) if they really want it, so:
+--azLHFNyN32YCQGCU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
+On Thu, Apr 17, 2014 at 12:21:44AM -0700, Brian Norris wrote:
+> Hi all,
+>=20
+> We are introducing a new SPI-NOR library/framework for MTD, to support va=
+rious
+> types of SPI-NOR flash controllers which require (or benefit from) intima=
+te
+> knowledge of the flash interface, rather than just the relatively dumb SPI
+> interface. This library borrows much of the m25p80 driver for its abstrac=
+tion
+> and moves this code into a spi-nor module.
 
-One or two comments below, that you might consider for your v3 patch.
+If this is a common library, then the more common approach to solve this
+would be to have each driver that uses it to select MTD_SPI_NOR rather
+than depend on it. That way you can drop this whole series to update the
+default configurations.
 
-> ---
-> Changes from v1:
->  - Respect SHMMIN even when shmmax is 0 (unlimited).
->    This fixes the shmget02 test that broke in v1. (per Manfred)
->
->  - Update changelog regarding OOM description (per Kosaki)
->
->  include/linux/shm.h      | 2 +-
->  include/uapi/linux/shm.h | 8 ++++----
->  ipc/shm.c                | 6 ++++--
->  3 files changed, 9 insertions(+), 7 deletions(-)
->
-> diff --git a/include/linux/shm.h b/include/linux/shm.h
-> index 1e2cd2e..0ca06a3 100644
-> --- a/include/linux/shm.h
-> +++ b/include/linux/shm.h
-> @@ -4,7 +4,7 @@
->  #include <asm/page.h>
->  #include <uapi/linux/shm.h>
->
-> -#define SHMALL (SHMMAX/PAGE_SIZE*(SHMMNI/16)) /* max shm system wide (pages) */
-> +#define SHMALL 0 /* max shm system wide (pages) */
->  #include <asm/shmparam.h>
->  struct shmid_kernel /* private to the kernel */
->  {
-> diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
-> index 78b6941..5f0ef28 100644
-> --- a/include/uapi/linux/shm.h
-> +++ b/include/uapi/linux/shm.h
-> @@ -9,14 +9,14 @@
->
->  /*
->   * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
-> - * be increased by sysctl
-> + * be increased by sysctl. By default, disable SHMMAX and SHMALL with
+Thierry
 
-s/increased/modified/
+--azLHFNyN32YCQGCU
+Content-Type: application/pgp-signature
 
-> + * 0 bytes, thus allowing processes to have unlimited shared memory.
->   */
-> -
-> -#define SHMMAX 0x2000000                /* max shared seg size (bytes) */
-> +#define SHMMAX 0                        /* max shared seg size (bytes) */
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-I suggest: s/(bytes)/(bytes); 0 means "no limit" */
+iQIcBAEBAgAGBQJTT7KNAAoJEN0jrNd/PrOhzhQP/3ocjlUpPSUcBT7myTaYn8dC
+zbZ0Zp5MO34d42OXHqfYC0q6LiCYp4I6xQDn8usqKBxpHd1dBAirD0z7Ofp3nAo5
+JwH+vr8zDZNTZcQd5W/LRI90fa/9qVNytVFNSEbmeNUop74+yhnQb//rq3YCskEZ
+v8rHJpH7uaJUPeVTsvrbmtW/9ZW5+ofFWj2JffogOyC4NY/oOldXl4gsOcP+PuF7
+gFdIn+D+hyEa2ZLjdeYD9lIvmLHczXhda0KPDZO31gDQyHvgMt+goUUgtWlqfHv+
+8cuKJjhHeMhMYtdZByrYRRVuhlafZlLJ2PqmunFCgsd/1P9Ww+k+nZJASw8jFqbd
+nGxDcgXG/4vfiFj0HMZoR/cWh845wYrWXdzaZdmY0bjiHEsz1ip+OVNq5ACq+d+L
+9posY8HH1btDrrcJEsce4DTHTJsAYdeX0oik8DK+gHi5no7sd8Twd2ZjJaZxtwXk
+pH+RZqVa3Wrj68vCXuyTZSFZb/QC/ZttUgW5YhfVcQJcsOC02+LRKOIbu0Em8hMq
+3sdsgTImKHFAEdWm4oNOHlOPN4nk/tMRo3nrCUV4Pb+yaCelIBlKo/9JLK0JfDQJ
+/qPtjG0OAPJYmHmwPcSB57kA/MZlF6RnNI1V8CHWOCQm94NwGirKBropQ/9yLxs7
+lrnTat974tXvX/gLJ7Do
+=Xz6I
+-----END PGP SIGNATURE-----
 
->  #define SHMMIN 1                        /* min shared seg size (bytes) */
->  #define SHMMNI 4096                     /* max num of segs system wide */
->  #ifndef __KERNEL__
-> -#define SHMALL (SHMMAX/getpagesize()*(SHMMNI/16))
-> +#define SHMALL 0
-
-As long as we're here, let's add a meaningful comment to that one:
-
-/* system-wide limit on number of pages of shared memory; 0 means "no limit" */
-
-Cheers,
-
-Michael
-
-
->  #endif
->  #define SHMSEG SHMMNI                   /* max shared segs per process */
->
-> diff --git a/ipc/shm.c b/ipc/shm.c
-> index 7645961..8630561 100644
-> --- a/ipc/shm.c
-> +++ b/ipc/shm.c
-> @@ -490,10 +490,12 @@ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
->         int id;
->         vm_flags_t acctflag = 0;
->
-> -       if (size < SHMMIN || size > ns->shm_ctlmax)
-> +       if (size < SHMMIN ||
-> +           (ns->shm_ctlmax && size > ns->shm_ctlmax))
->                 return -EINVAL;
->
-> -       if (ns->shm_tot + numpages > ns->shm_ctlall)
-> +       if (ns->shm_ctlall &&
-> +           ns->shm_tot + numpages > ns->shm_ctlall)
->                 return -ENOSPC;
->
->         shp = ipc_rcu_alloc(sizeof(*shp));
-> --
-> 1.8.1.4
->
->
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
-
-
--- 
-Michael Kerrisk Linux man-pages maintainer;
-http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface", http://blog.man7.org/
+--azLHFNyN32YCQGCU--
