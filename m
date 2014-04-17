@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751149AbaDQUeX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 16:34:23 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:33418 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750838AbaDQUeQ (ORCPT
+	id S1751194AbaDQUh6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 16:37:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60106 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983AbaDQUhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 16:34:16 -0400
-Date: Thu, 17 Apr 2014 21:34:12 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        tytso@mit.edu
-Subject: Re: linus-next stats (Re: Linux 3.15-rc1 out, merge window closed)
-Message-ID: <20140417203412.GB18016@ZenIV.linux.org.uk>
-References: <CA+55aFykrvKAe29pTUqq8Oc2FKtnFWwU7vxbTQXa7ysZ6xxMXw@mail.gmail.com>
- <20140414180629.198f98cadef124a99439b0b1@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140414180629.198f98cadef124a99439b0b1@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 17 Apr 2014 16:37:47 -0400
+Date: Thu, 17 Apr 2014 13:37:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: xypron.glpk@gmx.de
+Cc: eparis@redhat.com, jack@suse.cz, mtk.manpages@gmail.com,
+        tvrtko.ursulin@onelan.co.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] Avoid having to provide a fake/invalid fd and path
+Message-Id: <20140417133746.080346a8b40708a621997af2@linux-foundation.org>
+In-Reply-To: <1395847805-6714-1-git-send-email-xypron.glpk@gmx.de>
+References: <1395847805-6714-1-git-send-email-xypron.glpk@gmx.de>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 06:06:29PM +1000, Stephen Rothwell wrote:
-> Top ten authors:
-> 
->      61 viro@zeniv.linux.org.uk
+On Wed, 26 Mar 2014 16:30:05 +0100 xypron.glpk@gmx.de wrote:
 
-Guilty as charged.  Hopefully, this cycle it'll be better - I've just opened 
-vfs.git#for-next branch (more iov_iter stuff, for now).  There's a couple
-of trivial conflicts with ceph and cifs trees (I can send you a prefered
-conflict resolution if you want, but it's really as trivial as it gets) and
-one non-trivial in ext4 that I've dealt with by merging a piece of ext4
-branch up to the relevant point.  As long as ext4.git#dev isn't rebased,
-everything should remain fine, when/if it does I'll just redo that merge.
-BTW, ext4 side of that thing is *still* not quite right - playing with
-rlimit allows one to smuggle an unaligned write past that check...
+> From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+> 
+> https://lkml.org/lkml/2011/1/12/112
+> holds a patch by Tvrtko Ursulin
+> 
+>   Avoid having to provide a fake/invalid fd and path when flushing marks
+> 
+>   Currently for a group to flush marks it has set it needs to
+>   provide a fake or invalid (but resolvable) file descriptor
+>   and path when calling fanotify_mark. This patch pulls the
+>   flush handling a bit up so file descriptor and path are
+>   completely ignored when flushing.
+
+The fanotify_mark() manpage should be updated to mention this.  Is that
+a thing you can take care of? 
