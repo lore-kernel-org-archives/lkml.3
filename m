@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161489AbaDQNkD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 09:40:03 -0400
-Received: from mail.data-modul.de ([212.184.205.171]:56977 "HELO
-	mailgw1.data-modul.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754753AbaDQNkB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 09:40:01 -0400
-From: Silvio Fricke <silvio.fricke@gmail.com>
-To: Shawn Guo <shawn.guo@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
-Cc: Silvio Fricke <silvio.fricke@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org, Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Viresh Kumar <viresh.linux@gmail.com>,
-        Shiraz Hashim <shiraz.hashim@st.com>, spear-devel@list.st.com
-Subject: [PATCH] ARM: dts: imx6: edmqmx6: add vcc and vio power supplies to stmpe
-Date: Thu, 17 Apr 2014 15:28:06 +0200
-Message-Id: <a6a34db97a1cdcc21d0a7675d8ee31eb9bced399.1397741024.git.silvio.fricke@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <cover.1397741024.git.silvio.fricke@gmail.com>
-References: <cover.1397741024.git.silvio.fricke@gmail.com>
-In-Reply-To: <cover.1397741024.git.silvio.fricke@gmail.com>
-References: <20140417061136.GD11602@dragon> <cover.1397741024.git.silvio.fricke@gmail.com>
+	id S1757048AbaDQNle (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 09:41:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47780 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756553AbaDQNla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 09:41:30 -0400
+Date: Thu, 17 Apr 2014 09:41:23 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Simo Sorce <ssorce@redhat.com>, David Miller <davem@davemloft.net>,
+        Tejun Heo <tj@kernel.org>, Daniel Walsh <dwalsh@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
+        Network Development <netdev@vger.kernel.org>
+Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
+ cgroup path
+Message-ID: <20140417134123.GA15749@redhat.com>
+References: <1397664837.19767.410.camel@willson.li.ssimo.org>
+ <CALCETrXn7b6UuALpGUVoyQYfR2uzk5tj2ABV=dkvtFNgqM5sxQ@mail.gmail.com>
+ <20140416180642.GG31074@redhat.com>
+ <CALCETrVUw5+vCCONy1VTXpskbY_eZFo2CtbehwV5Mhj4d4+icw@mail.gmail.com>
+ <20140416182530.GB550@redhat.com>
+ <CALCETrUs1js3Br81ZkiQnsuWduzOiqDe3aV0K_z_zw0znSuiag@mail.gmail.com>
+ <20140416190657.GK31074@redhat.com>
+ <CALCETrUv56awd+UoO_f8LLL2FVq-Hc6Bd6iBGMqWjVGpgxgTSg@mail.gmail.com>
+ <20140416193918.GM31074@redhat.com>
+ <CALCETrU9P+1Az+uuU_zE4uZZ-qmp5M_=YAXvfcK=rzQRbgoG5g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrU9P+1Az+uuU_zE4uZZ-qmp5M_=YAXvfcK=rzQRbgoG5g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Silvio Fricke <silvio.fricke@gmail.com>
----
- arch/arm/boot/dts/imx6q-dmo-edmqmx6.dts | 4 ++++
- 1 file changed, 4 insertions(+)
+On Wed, Apr 16, 2014 at 01:24:32PM -0700, Andy Lutomirski wrote:
 
-diff --git a/arch/arm/boot/dts/imx6q-dmo-edmqmx6.dts b/arch/arm/boot/dts/imx6q-dmo-edmqmx6.dts
-index e4ae38f..8fa08aa 100644
---- a/arch/arm/boot/dts/imx6q-dmo-edmqmx6.dts
-+++ b/arch/arm/boot/dts/imx6q-dmo-edmqmx6.dts
-@@ -216,6 +216,8 @@
- 		reg = <0x40>;
- 		interrupts = <30 0>;
- 		interrupt-parent = <&gpio3>;
-+		vcc-supply = <&sw2_reg>;
-+		vio-supply = <&sw2_reg>;
- 
- 		stmpe_gpio1: stmpe_gpio {
- 			#gpio-cells = <2>;
-@@ -228,6 +230,8 @@
- 		reg = <0x44>;
- 		interrupts = <2 0>;
- 		interrupt-parent = <&gpio5>;
-+		vcc-supply = <&sw2_reg>;
-+		vio-supply = <&sw2_reg>;
- 
- 		stmpe_gpio2: stmpe_gpio {
- 			#gpio-cells = <2>;
--- 
-1.9.1
+[..]
+> I'm not talking about the risk that someone learns someone's cgroup.
+> I'm talking about the risk that a malicious program can get a lot
+> entry like: "whatever planted text"
+> _SYSTEMD_UNIT=non-malicious.service.  That is, they've spoofed a log
+> line.
+> 
+> If you don't care about spoofing of log lines, then there's no point
+> to having the kernel validate them anyway.
 
+What's wrong with this. A message came from a cgroup which maps to
+a unit xyz and it got logged.  I can't see what's wrong here.
+
+Anyway that message will get logged with unit information. These patches
+will just make getting unit information race free and more reliable.
+
+Thansk
+Vivek
