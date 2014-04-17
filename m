@@ -1,208 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691AbaDQOMT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 10:12:19 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:54906 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107AbaDQOMQ (ORCPT
+	id S1752521AbaDQOMt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 10:12:49 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:49116 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918AbaDQOMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 10:12:16 -0400
+	Thu, 17 Apr 2014 10:12:18 -0400
 From: Peter Foley <pefoley2@pefoley.com>
 To: linux-kernel@vger.kernel.org
 Cc: rdunlap@infradead.org, linux-doc@vger.kernel.org,
         Peter Foley <pefoley2@pefoley.com>
-Subject: [PATCH 1/4] Documentation: use subdir-y to avoid unnecessary built-in.o files
-Date: Thu, 17 Apr 2014 10:11:47 -0400
-Message-Id: <1397743910-18391-1-git-send-email-pefoley2@pefoley.com>
+Subject: [PATCH 4/4] Documentation: fix misc. warnings
+Date: Thu, 17 Apr 2014 10:11:50 -0400
+Message-Id: <1397743910-18391-4-git-send-email-pefoley2@pefoley.com>
 X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1397743910-18391-1-git-send-email-pefoley2@pefoley.com>
+References: <1397743910-18391-1-git-send-email-pefoley2@pefoley.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the Documentation makefiles from obj-m to subdir-y
-to avoid generating unnecessary built-in.o files since nothing
-in Documentation/ is ever linked in to vmlinux.
+Fix a few warnings that gcc emits during a default build.
 
 Signed-off-by: Peter Foley <pefoley2@pefoley.com>
 ---
- Documentation/Makefile                         | 6 +++---
- Documentation/accounting/Makefile              | 3 ---
- Documentation/auxdisplay/Makefile              | 3 ---
- Documentation/filesystems/Makefile             | 3 ---
- Documentation/ia64/Makefile                    | 3 ---
- Documentation/laptops/Makefile                 | 3 ---
- Documentation/misc-devices/Makefile            | 1 +
- Documentation/misc-devices/mei/Makefile        | 3 ---
- Documentation/networking/Makefile              | 8 +-------
- Documentation/networking/timestamping/Makefile | 3 ---
- Documentation/pcmcia/Makefile                  | 3 ---
- Documentation/spi/Makefile                     | 3 ---
- Documentation/timers/Makefile                  | 3 ---
- Documentation/watchdog/Makefile                | 1 +
- Documentation/watchdog/src/Makefile            | 3 ---
- 15 files changed, 6 insertions(+), 43 deletions(-)
- create mode 100644 Documentation/misc-devices/Makefile
- create mode 100644 Documentation/watchdog/Makefile
+ Documentation/laptops/hpfall.c  | 9 +++++++--
+ Documentation/mic/mpssd/mpssd.c | 4 ++--
+ Documentation/ptp/testptp.c     | 6 +++---
+ 3 files changed, 12 insertions(+), 7 deletions(-)
 
-diff --git a/Documentation/Makefile b/Documentation/Makefile
-index 31d302b..605f84f 100644
---- a/Documentation/Makefile
-+++ b/Documentation/Makefile
-@@ -1,3 +1,3 @@
--obj-m := DocBook/ accounting/ auxdisplay/ connector/ \
--	filesystems/ filesystems/configfs/ ia64/ laptops/ networking/ \
--	pcmcia/ spi/ timers/ watchdog/src/ misc-devices/mei/
-+subdir-y := DocBook accounting auxdisplay connector \
-+	filesystems filesystems ia64 laptops networking \
-+	pcmcia spi timers watchdog misc-devices
-diff --git a/Documentation/accounting/Makefile b/Documentation/accounting/Makefile
-index 31929eb..7e232cb 100644
---- a/Documentation/accounting/Makefile
-+++ b/Documentation/accounting/Makefile
-@@ -1,6 +1,3 @@
--# kbuild trick to avoid linker error. Can be omitted if a module is built.
--obj- := dummy.o
--
- # List of programs to build
- hostprogs-y := getdelays
+diff --git a/Documentation/laptops/hpfall.c b/Documentation/laptops/hpfall.c
+index d4e1380..3e04fc1 100644
+--- a/Documentation/laptops/hpfall.c
++++ b/Documentation/laptops/hpfall.c
+@@ -74,14 +74,16 @@ static void protect(int seconds)
+ static int on_ac(void)
+ {
+ //	/sys/class/power_supply/AC0/online
++	return 0;
+ }
  
-diff --git a/Documentation/auxdisplay/Makefile b/Documentation/auxdisplay/Makefile
-index 51fe233..ada4dac 100644
---- a/Documentation/auxdisplay/Makefile
-+++ b/Documentation/auxdisplay/Makefile
-@@ -1,6 +1,3 @@
--# kbuild trick to avoid linker error. Can be omitted if a module is built.
--obj- := dummy.o
--
- # List of programs to build
- hostprogs-y := cfag12864b-example
+ static int lid_open(void)
+ {
+ //	/proc/acpi/button/lid/LID/state
++	return 0;
+ }
  
-diff --git a/Documentation/filesystems/Makefile b/Documentation/filesystems/Makefile
-index a5dd114..883010c 100644
---- a/Documentation/filesystems/Makefile
-+++ b/Documentation/filesystems/Makefile
-@@ -1,6 +1,3 @@
--# kbuild trick to avoid linker error. Can be omitted if a module is built.
--obj- := dummy.o
--
- # List of programs to build
- hostprogs-y := dnotify_test
+-static void ignore_me(void)
++static void ignore_me(int ignored)
+ {
+ 	protect(0);
+ 	set_led(0);
+@@ -111,7 +113,10 @@ int main(int argc, char **argv)
+ 		return EXIT_FAILURE;
+ 	}
  
-diff --git a/Documentation/ia64/Makefile b/Documentation/ia64/Makefile
-index b75db69..d493163 100644
---- a/Documentation/ia64/Makefile
-+++ b/Documentation/ia64/Makefile
-@@ -1,6 +1,3 @@
--# kbuild trick to avoid linker error. Can be omitted if a module is built.
--obj- := dummy.o
--
- # List of programs to build
- hostprogs-y := aliasing-test
+-	daemon(0, 0);
++	if (daemon(0, 0) < 0) {
++		perror("daemonization failed");
++		return EXIT_FAILURE;
++	}
+ 	param.sched_priority = sched_get_priority_max(SCHED_FIFO);
+ 	sched_setscheduler(0, SCHED_FIFO, &param);
+ 	mlockall(MCL_CURRENT|MCL_FUTURE);
+diff --git a/Documentation/mic/mpssd/mpssd.c b/Documentation/mic/mpssd/mpssd.c
+index 4d17487..24203dd 100644
+--- a/Documentation/mic/mpssd/mpssd.c
++++ b/Documentation/mic/mpssd/mpssd.c
+@@ -1476,9 +1476,9 @@ set_cmdline(struct mic_info *mic)
  
-diff --git a/Documentation/laptops/Makefile b/Documentation/laptops/Makefile
-index 5cb144a..0abe44f 100644
---- a/Documentation/laptops/Makefile
-+++ b/Documentation/laptops/Makefile
-@@ -1,6 +1,3 @@
--# kbuild trick to avoid linker error. Can be omitted if a module is built.
--obj- := dummy.o
--
- # List of programs to build
- hostprogs-y := dslm
+ 	len = snprintf(buffer, PATH_MAX,
+ 		"clocksource=tsc highres=off nohz=off ");
+-	len += snprintf(buffer + len, PATH_MAX,
++	len += snprintf(buffer + len, PATH_MAX - len,
+ 		"cpufreq_on;corec6_off;pc3_off;pc6_off ");
+-	len += snprintf(buffer + len, PATH_MAX,
++	len += snprintf(buffer + len, PATH_MAX - len,
+ 		"ifcfg=static;address,172.31.%d.1;netmask,255.255.255.0",
+ 		mic->id);
  
-diff --git a/Documentation/misc-devices/Makefile b/Documentation/misc-devices/Makefile
-new file mode 100644
-index 0000000..e2b7aa4
---- /dev/null
-+++ b/Documentation/misc-devices/Makefile
-@@ -0,0 +1 @@
-+subdir-y := mei
-diff --git a/Documentation/misc-devices/mei/Makefile b/Documentation/misc-devices/mei/Makefile
-index 00e8c3e..d758047 100644
---- a/Documentation/misc-devices/mei/Makefile
-+++ b/Documentation/misc-devices/mei/Makefile
-@@ -1,6 +1,3 @@
--# kbuild trick to avoid linker error. Can be omitted if a module is built.
--obj- := dummy.o
--
- # List of programs to build
- hostprogs-y := mei-amt-version
- HOSTCFLAGS_mei-amt-version.o += -I$(objtree)/usr/include
-diff --git a/Documentation/networking/Makefile b/Documentation/networking/Makefile
-index 0aa1ac9..4c5d7c4 100644
---- a/Documentation/networking/Makefile
-+++ b/Documentation/networking/Makefile
-@@ -1,7 +1 @@
--# kbuild trick to avoid linker error. Can be omitted if a module is built.
--obj- := dummy.o
--
--# Tell kbuild to always build the programs
--always := $(hostprogs-y)
--
--obj-m := timestamping/
-+subdir-y := timestamping
-diff --git a/Documentation/networking/timestamping/Makefile b/Documentation/networking/timestamping/Makefile
-index d934afc..bbe6f81 100644
---- a/Documentation/networking/timestamping/Makefile
-+++ b/Documentation/networking/timestamping/Makefile
-@@ -1,6 +1,3 @@
--# kbuild trick to avoid linker error. Can be omitted if a module is built.
--obj- := dummy.o
--
- # List of programs to build
- hostprogs-y := timestamping hwtstamp_config
+diff --git a/Documentation/ptp/testptp.c b/Documentation/ptp/testptp.c
+index f1ac2da..913b7ba 100644
+--- a/Documentation/ptp/testptp.c
++++ b/Documentation/ptp/testptp.c
+@@ -497,11 +497,11 @@ int main(int argc, char *argv[])
+ 			interval = t2 - t1;
+ 			offset = (t2 + t1) / 2 - tp;
  
-diff --git a/Documentation/pcmcia/Makefile b/Documentation/pcmcia/Makefile
-index accde87..47a8fa1 100644
---- a/Documentation/pcmcia/Makefile
-+++ b/Documentation/pcmcia/Makefile
-@@ -1,6 +1,3 @@
--# kbuild trick to avoid linker error. Can be omitted if a module is built.
--obj- := dummy.o
--
- # List of programs to build
- hostprogs-y := crc32hash
- 
-diff --git a/Documentation/spi/Makefile b/Documentation/spi/Makefile
-index a5b03c8..efa2558 100644
---- a/Documentation/spi/Makefile
-+++ b/Documentation/spi/Makefile
-@@ -1,6 +1,3 @@
--# kbuild trick to avoid linker error. Can be omitted if a module is built.
--obj- := dummy.o
--
- # List of programs to build
- hostprogs-y := spidev_test spidev_fdx
- 
-diff --git a/Documentation/timers/Makefile b/Documentation/timers/Makefile
-index 73f75f8..6c09ee6 100644
---- a/Documentation/timers/Makefile
-+++ b/Documentation/timers/Makefile
-@@ -1,6 +1,3 @@
--# kbuild trick to avoid linker error. Can be omitted if a module is built.
--obj- := dummy.o
--
- # List of programs to build
- hostprogs-$(CONFIG_X86) := hpet_example
- 
-diff --git a/Documentation/watchdog/Makefile b/Documentation/watchdog/Makefile
-new file mode 100644
-index 0000000..6018f45
---- /dev/null
-+++ b/Documentation/watchdog/Makefile
-@@ -0,0 +1 @@
-+subdir-y := src
-diff --git a/Documentation/watchdog/src/Makefile b/Documentation/watchdog/src/Makefile
-index 40e5f46..4a892c3 100644
---- a/Documentation/watchdog/src/Makefile
-+++ b/Documentation/watchdog/src/Makefile
-@@ -1,6 +1,3 @@
--# kbuild trick to avoid linker error. Can be omitted if a module is built.
--obj- := dummy.o
--
- # List of programs to build
- hostprogs-y := watchdog-simple watchdog-test
- 
+-			printf("system time: %" PRId64 ".%u\n",
++			printf("system time: %lld.%u\n",
+ 				(pct+2*i)->sec, (pct+2*i)->nsec);
+-			printf("phc    time: %" PRId64 ".%u\n",
++			printf("phc    time: %lld.%u\n",
+ 				(pct+2*i+1)->sec, (pct+2*i+1)->nsec);
+-			printf("system time: %" PRId64 ".%u\n",
++			printf("system time: %lld.%u\n",
+ 				(pct+2*i+2)->sec, (pct+2*i+2)->nsec);
+ 			printf("system/phc clock time offset is %" PRId64 " ns\n"
+ 			       "system     clock time delay  is %" PRId64 " ns\n",
 -- 
 1.9.2
 
