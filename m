@@ -1,100 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755255AbaDQFoK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 01:44:10 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:36680 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755023AbaDQFoI (ORCPT
+	id S1755072AbaDQFuI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 01:50:08 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:48530 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352AbaDQFuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 01:44:08 -0400
-Message-ID: <534F6A18.7010900@gmail.com>
-Date: Thu, 17 Apr 2014 07:43:52 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 17 Apr 2014 01:50:05 -0400
+Message-ID: <534F6B8F.9000207@gmail.com>
+Date: Thu, 17 Apr 2014 13:50:07 +0800
+From: zhuyj <zyjzyj2000@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Jim Lieb <jlieb@panasas.com>, nfs-ganesha-devel@lists.sourceforge.net,
-        Jeremy Allison <jra@samba.org>
-CC: mtk.manpages@gmail.com, libc-alpha <libc-alpha@sourceware.org>,
-        Jeff Layton <jlayton@redhat.com>,
-        Michael Kerrisk-manpages <mtk.manpages@googlemail.com>,
-        "Carlos O'Donell" <carlos@redhat.com>, samba-technical@lists.samba.org,
-        lkml <linux-kernel@vger.kernel.org>, Jeremy Allison <jra@google.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-Subject: Re: [Nfs-ganesha-devel] should we change the name/macros of file-private
- locks?
-References: <20140416145746.66b7441c@tlielax.poochiereds.net> <CAKgNAkgqZDcT0jda8XS+4HrJzXjzwehqciHbkNuAVY3fNkH4zQ@mail.gmail.com> <20140416201633.GQ22791@samba2> <2369283.4ufWfMqZox@jlieb-e6410>
-In-Reply-To: <2369283.4ufWfMqZox@jlieb-e6410>
-Content-Type: text/plain; charset=UTF-8
+To: Willy Tarreau <w@1wt.eu>
+CC: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        joe@perches.com, julia.lawall@lip6.fr, dingtianhong@huawei.com,
+        linux-kernel@vger.kernel.org, jasowang@redhat.com, mst@redhat.com,
+        "Yang, Zhangle (Eric)" <Zhangle.Yang@windriver.com>,
+        "Wu, Kuaikuai" <Kuaikuai.Wu@windriver.com>,
+        "Tao, Yue" <Yue.Tao@windriver.com>, zhuyj <zyjzyj2000@gmail.com>
+Subject: Re: in kernel 2.6.x, tun/tap nic supports vlan packets
+References: <534F4C1E.1000006@gmail.com> <20140417050228.GC8243@1wt.eu>
+In-Reply-To: <20140417050228.GC8243@1wt.eu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2014 02:31 AM, Jim Lieb wrote:
-> On Wednesday, April 16, 2014 13:16:33 Jeremy Allison wrote:
->> On Wed, Apr 16, 2014 at 10:00:46PM +0200, Michael Kerrisk (man-pages) wrote:
->>> [CC += Jeremy Allison]
->>>
->>> On Wed, Apr 16, 2014 at 8:57 PM, Jeff Layton <jlayton@redhat.com> wrote:
->>>> Sorry to spam so many lists, but I think this needs widespread
->>>> distribution and consensus.
->>>>
->>>> File-private locks have been merged into Linux for v3.15, and *now*
->>>> people are commenting that the name and macro definitions for the new
->>>> file-private locks suck.
->>>>
->>>> ...and I can't even disagree. They do suck.
->>>>
->>>> We're going to have to live with these for a long time, so it's
->>>> important that we be happy with the names before we're stuck with them.
->>>
->>> So, to add my perspective: The existing byte-range locking system has
->>> persisted (despite egregious faults) for well over two decades. One
->>> supposes that Jeff's new improved version might be around
->>> at least as long. With that in mind, and before setting in stone (and
->>> pushing into POSIX) a model of thinking that thousands of programmers
->>> will live with for a long time, it's worth thinking about names.
->>>
->>>> Michael Kerrisk suggested several names but I think the only one that
->>>> doesn't have other issues is "file-associated locks", which can be
->>>> distinguished against "process-associated" locks (aka classic POSIX
->>>> locks).
->>>
->>> The names I have suggested are:
->>>     file-associated locks
->>>
->>> or
->>>
->>>    file-handle locks
->>>
->>> or (using POSIX terminology)
->>>
->>>     file-description locks
+On 04/17/2014 01:02 PM, Willy Tarreau wrote:
+> Hi Zhu,
+>
+> On Thu, Apr 17, 2014 at 11:35:58AM +0800, zhuyj wrote:
+>> Hi, all
 >>
->> Thanks for the CC: Michael, but to be honest
->> I don't really care what the name is, I just
->> want the functionality. I can change our build
->> system to cope with detecting it under any name
->> you guys choose :-).
+>> In kernel 2.6.x, linux depends on nic vlan hardware acceleration to
+>> insert/extract
+>> vlan tag. In this scene, in kernel 2.6.x
 >>
->> Cheers,
+>>                   _____        ________
+>>      A           |     | B    |        | C
+>>   vlan packets-->| tap |----->|vlan nic|--->
+>>                  |_____|      |________|
 >>
->> 	Jeremy.
-> 
-> I and the rest of the nfs-ganesha community are with Jeremy and samba wrt 
-> names.  We just want locks that work, i.e. Useful Locks ;)
+>> We hope vlan packets pass through tap and vlan nic from A to c.
+>> But in kernel 2.6.x, linux kernel can not extract vlan tag. It depends
+>> on nic vlan hardware acceleration. It is well known that tap nic has no
+>> vlan acceleration. So in the above scene, vlan packets can not be handled by
+>> tap nic. These vlan packets will be discarded in B. They can not arrive
+>> at C.
+> It's not clear to me what you want to achieve. Are you trying to create
+> vlan interfaces on top of a tap interface ? Eg: tap1.12, tap1.23 etc ?
+Hi, Willy
 
-Yes, sure. The functionality is coming in any case, thanks to Jeff.
-The point is: let's make the API as sane as we can. And that's what
-this thread is about, so if you have insights or opinions on good 
-naming, that would be helpful.
+Yes. These 2 patches are trying create vlan interfaces on top of a tap 
+interface.
 
-Thanks,
+Zhu Yanjun
+>
+>> In kernel 3.x, linux can handle vlan packets. It does not depend on nic vlan
+>> hardware acceleration. So the above scene can work well in kernel 3.x.
+>>
+>> To resolve the above in kernel 2.6.x, we simulated vlan hardware
+>> acceleration in
+>> tun/tap driver. Then followed the logic of commit commit 4fba4ca4
+>> [vlan: Centralize handling of hardware acceleration] to modify the vlan
+>> packets
+>> process in kernel 2.6.x. In the end, the above scene can work well in
+>> patched
+>> kernel 2.6.x.
+>>
+>> Please comment on it. Any reply is appreciated.
+>>
+>> Hi, Willy
+>>
+>> These 2 patches are for linux2.6.x. These can work well here. Please
+>> help to merge
+>> linux 2.6.32.x. Thanks a lot.
+> Well, 2.6.32.x is in deep freeze mode and it receives only critical fixes
+> once in a while. While I can appreciate that the patch above might solve
+> the issue you're facing, I'm wondering if there are not any acceptable
+> workarounds for such a deep freeze kernel. You patch is not huge, but it
+> definitely affects a working driver, and I wouldn't like risking to break
+> the tap driver for other users, and I reall don't have the skills to audit
+> it completely to ensure this is not the case. And if it breaks, I'll have
+> to revert it or seek for some help on netdev.
+>
+> So I'd say that I'd rather not merge it unless I get an Acked-by from some
+> netdev people who are willing to help in case of any future regression,
+> which is unlikely but still possible.
+>
+> Just out of curiosity, what is the motivation for ongoing development on
+> top of 2.6.32 ? Are there any important deployments that cannot upgrade
+> for any specific reason ? I'm asking because most 2.6.32.x kernels that
+> are stuffed into embedded boxes very likely come with their own number
+> of in-house patches to add whatever feature is needed in such contexts,
+> so I'm wondering why having this patch in mainline would help in your
+> situation compared to having it into your own patch set only.
+>
+> Thanks,
+> Willy
+>
+>
 
-Michael
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
