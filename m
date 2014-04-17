@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751265AbaDQOpg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 10:45:36 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51362 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750983AbaDQOp1 (ORCPT
+	id S1751355AbaDQOrY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 10:47:24 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58022 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882AbaDQOrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 10:45:27 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, monstr@monstr.eu, dhowells@redhat.com, broonie@linaro.org,
-        benh@kernel.crashing.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, Will Deacon <will.deacon@arm.com>,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>
-Subject: [PATCH 05/18] alpha: io: implement relaxed accessor macros for writes
-Date: Thu, 17 Apr 2014 14:44:08 +0100
-Message-Id: <1397742261-15621-6-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1397742261-15621-1-git-send-email-will.deacon@arm.com>
-References: <1397742261-15621-1-git-send-email-will.deacon@arm.com>
+	Thu, 17 Apr 2014 10:47:21 -0400
+Date: Thu, 17 Apr 2014 16:47:07 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, rjw@rjwysocki.net, linux-pm@vger.kernel.org,
+        alex.shi@linaro.org, vincent.guittot@linaro.org,
+        morten.rasmussen@arm.com
+Subject: Re: [RFC PATCHC 3/3] sched/fair: use the idle state info to choose
+ the idlest cpu
+Message-ID: <20140417144707.GL11096@twins.programming.kicks-ass.net>
+References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org>
+ <1396009796-31598-4-git-send-email-daniel.lezcano@linaro.org>
+ <alpine.LFD.2.11.1404012208110.1571@knanqh.ubzr>
+ <534FDCDC.6000806@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <534FDCDC.6000806@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-write{b,w,l,q}_relaxed are implemented by some architectures in order to
-permit memory-mapped I/O writes with weaker barrier semantics than the
-non-relaxed variants.
+On Thu, Apr 17, 2014 at 03:53:32PM +0200, Daniel Lezcano wrote:
+> Concerning the policy, I would suggest to create an entry in
+> /proc/sys/kernel/sched_power, where a couple of values could be performance
+> - power saving (0 / 1).
 
-This patch implements these write macros for Alpha, in the same vein as
-the relaxed read macros, which are already implemented.
+Ingo wanted a sched_balance_policy file with 3 values:
+  "performance, power, auto"
 
-Cc: Richard Henderson <rth@twiddle.net>
-Cc: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-Cc: Matt Turner <mattst88@gmail.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
- arch/alpha/include/asm/io.h | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/arch/alpha/include/asm/io.h b/arch/alpha/include/asm/io.h
-index 5ebab5895edb..f05bdb4b1cb9 100644
---- a/arch/alpha/include/asm/io.h
-+++ b/arch/alpha/include/asm/io.h
-@@ -500,10 +500,14 @@ extern inline void writeq(u64 b, volatile void __iomem *addr)
- #define outb_p		outb
- #define outw_p		outw
- #define outl_p		outl
--#define readb_relaxed(addr) __raw_readb(addr)
--#define readw_relaxed(addr) __raw_readw(addr)
--#define readl_relaxed(addr) __raw_readl(addr)
--#define readq_relaxed(addr) __raw_readq(addr)
-+#define readb_relaxed(addr)	__raw_readb(addr)
-+#define readw_relaxed(addr)	__raw_readw(addr)
-+#define readl_relaxed(addr)	__raw_readl(addr)
-+#define readq_relaxed(addr)	__raw_readq(addr)
-+#define writeb_relaxed(b, addr)	__raw_writeb(b, addr)
-+#define writew_relaxed(b, addr)	__raw_writew(b, addr)
-+#define writel_relaxed(b, addr)	__raw_writel(b, addr)
-+#define writeq_relaxed(b, addr)	__raw_writeq(b, addr)
- 
- #define mmiowb()
- 
--- 
-1.9.1
-
+Where the auto thing switches between them, initially based off of
+having AC or not.
