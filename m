@@ -1,55 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659AbaDQQ72 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 12:59:28 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:34355 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132AbaDQQ7X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 12:59:23 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: peterz@infradead.org, mingo@redhat.com, linux-kernel@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] sch: Fix warning on make htmldocs caused by missing description
-Date: Fri, 18 Apr 2014 01:59:15 +0900
-Message-Id: <1397753955-2914-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.9.2.468.g3f0c02a
+	id S1751437AbaDQREk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 13:04:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28911 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751159AbaDQREe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 13:04:34 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>, Tejun Heo <tj@kernel.org>,
+        David Milburn <dmilburn@redhat.com>, linux-ide@vger.kernel.org
+Subject: [PATCH 0/1] ahci: Do not receive interrupts sent by dummy ports
+Date: Thu, 17 Apr 2014 18:06:14 +0200
+Message-Id: <cover.1397750166.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When 'flags' argument to sched_{set,get}attr() syscalls were added in
-commit 6d35ab48090b10, no description for 'flags' were added.
-It causes warning on "make htmldocs".
+Tejun, David,
 
-Warning(/kernel/sched/core.c:3645): No description found for parameter 'flags'
-Warning(/kernel/sched/core.c:3789): No description found for parameter 'flags'
+I would expect handle_bad_irq()->print_irq_desc() gets called
+if dummy port interrupt arrived. Could be a spurious interrupt
+complain as well.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- kernel/sched/core.c | 2 ++
- 1 file changed, 2 insertions(+)
+Cc: Tejun Heo <tj@kernel.org>
+Cc: David Milburn <dmilburn@redhat.com>
+Cc: linux-ide@vger.kernel.org
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 268a45e..9fe2190 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3639,6 +3639,7 @@ SYSCALL_DEFINE2(sched_setparam, pid_t, pid, struct sched_param __user *, param)
-  * sys_sched_setattr - same as above, but with extended sched_attr
-  * @pid: the pid in question.
-  * @uattr: structure containing the extended parameters.
-+ * @flags: for future extension.
-  */
- SYSCALL_DEFINE3(sched_setattr, pid_t, pid, struct sched_attr __user *, uattr,
- 			       unsigned int, flags)
-@@ -3783,6 +3784,7 @@ err_size:
-  * @pid: the pid in question.
-  * @uattr: structure containing the extended parameters.
-  * @size: sizeof(attr) for fwd/bwd comp.
-+ * @flags: for future extension.
-  */
- SYSCALL_DEFINE4(sched_getattr, pid_t, pid, struct sched_attr __user *, uattr,
- 		unsigned int, size, unsigned int, flags)
+Alexander Gordeev (1):
+  ahci: Do not receive interrupts sent by dummy ports
+
+ drivers/ata/ahci.c |   16 ++++++++++------
+ 1 files changed, 10 insertions(+), 6 deletions(-)
+
 -- 
-1.9.2.468.g3f0c02a
+1.7.7.6
 
