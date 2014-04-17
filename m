@@ -1,78 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123AbaDQPlY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 11:41:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50217 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396AbaDQPlU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 11:41:20 -0400
-Message-ID: <534FF61B.4010901@redhat.com>
-Date: Thu, 17 Apr 2014 08:41:15 -0700
-From: Daniel J Walsh <dwalsh@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1752289AbaDQPla (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 11:41:30 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:40713 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782AbaDQPlV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 11:41:21 -0400
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>, Andy Lutomirski <luto@amacapital.net>
-CC: Simo Sorce <ssorce@redhat.com>, David Miller <davem@davemloft.net>,
-        Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
-        Network Development <netdev@vger.kernel.org>
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing cgroup
- path
-References: <CALCETrURHNmLyccRiF_W8o2ozRMR4AaCjUE=_PU8z1+Pq6X2jQ@mail.gmail.com> <20140416002010.GA5035@redhat.com> <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com> <20140416.085743.1614257692560892039.davem@davemloft.net> <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com> <1397664837.19767.410.camel@willson.li.ssimo.org> <CALCETrXn7b6UuALpGUVoyQYfR2uzk5tj2ABV=dkvtFNgqM5sxQ@mail.gmail.com> <20140416180642.GG31074@redhat.com> <CALCETrVUw5+vCCONy1VTXpskbY_eZFo2CtbehwV5Mhj4d4+icw@mail.gmail.com> <20140416185936.GJ31074@redhat.com>
-In-Reply-To: <20140416185936.GJ31074@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140417153800.GO15326@htj.dyndns.org>
+References: <1397748555-6647-1-git-send-email-nasa4836@gmail.com> <20140417153800.GO15326@htj.dyndns.org>
+From: Jianyu Zhan <nasa4836@gmail.com>
+Date: Thu, 17 Apr 2014 23:40:40 +0800
+Message-ID: <CAHz2CGXsjYGAfo7rJGQhctUKzTvXSXBfqf+MntRdm8AGr7i5qg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] cgroup: clean up obsolete comment for parse_cgroupfs_options()
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Apr 17, 2014 at 11:38 PM, Tejun Heo <tj@kernel.org> wrote:
+> Also, next
+> time, please put the patches in a series into a thread so that they're
+> easier to track.
 
-On 04/16/2014 11:59 AM, Vivek Goyal wrote:
-> On Wed, Apr 16, 2014 at 11:13:31AM -0700, Andy Lutomirski wrote:
->> On Wed, Apr 16, 2014 at 11:06 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
->>> On Wed, Apr 16, 2014 at 09:31:25AM -0700, Andy Lutomirski wrote:
->>> I am not sure how same issue with happen with cgroups. In the case of
->>> socket example, you are forcing a setuid program to write to standard
->>> output and that setuid program will run in same cgroup as caller and
->>> will have same cgroup as caller. So even if somebody was using cgroup
->>> information for authentication, atleast in this particular case it
->>> will not be a problem. Both unpriviliged and priviliged programs has
->>> same cgroups.
->>>
->> I'm not sure that there's an actual attackable program.  But I also
->> see no reason to be convinced that there isn't one, and the problem
->> can easily be avoided by requiring programs to explicitly ask to send
->> their cgroup.
-> If you can't prove that there is something fundamentally wrong with
-> passing cgroup info to receiver, there is no reason to block these
-> patches either.
->
-> We can't fix the problems which we can't see. You are saying that I 
-> don't know what kind of problem can happen due to cgroup passing. Still
-> that does not mean none of the problems exist. So let us not pass cgroup
-> info by default and ask client to opt in.
->
-> I don't think this is a very convincing argument.
->
-> To me, if we can't see anything fundamentally wrong with passing cgroup
-> info, we should take these patches in. And once we figure out that there
-> is are problematic use cases, then implement SO_NOPASSCGROUP and
-> SO_NOPEERCRED  and allow problematic clients to opt out.
->
-> Thanks
-> Vivek
-The two use cases for this patch are:
+Ok. Thanks.
 
-1 Logging, to make sure the cgroup information gets correctly attributed
-to the caller. 
 
-2 Potentially reveal different information to the caller based on the
-cgroup information. 
-
-Imagine you want to set up an apache web server that is going to use
-sssd for authentication data.  You might want to reveal a limited set of
-users to the apache service process based on the fact that it is running
-in the apache.service.slice.  If the apache service does the equivalent
-of getent passwd I want to give it different information then say sshd
-did the same calls.
+Thanks,
+Jianyu Zhan
