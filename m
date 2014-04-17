@@ -1,70 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653AbaDQEbs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 00:31:48 -0400
-Received: from ozlabs.org ([103.22.144.67]:39605 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751059AbaDQEbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 00:31:47 -0400
-Date: Thu, 17 Apr 2014 14:31:37 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jes Sorensen <Jes.Sorensen@redhat.com>
-Subject: linux-next: manual merge of the staging tree with the
- staging.current tree
-Message-Id: <20140417143137.a66d4f53a928fd454911fa50@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__17_Apr_2014_14_31_37_+1000_fKS2./I1ivEWHRhr"
+	id S1752054AbaDQEme (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 00:42:34 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:29136 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751478AbaDQEl4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 00:41:56 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmV+AOhaT1N5LEcvPGdsb2JhbABNDIMGg1WFCqIqk1uFYIEhFwMBAQEBODWCJQEBAQMBHQoTHCMFCwgDGAklDwUlAwcaE4d0B8o2FxaNZmYHhDgEmGWKaYskKw
+Date: Thu, 17 Apr 2014 14:41:52 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: NeilBrown <neilb@suse.de>
+Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Ming Lei <ming.lei@canonical.com>,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH 04/19] Make effect of PF_FSTRANS to disable __GFP_FS
+ universal.
+Message-ID: <20140417044152.GW15995@dastard>
+References: <20140416033623.10604.69237.stgit@notabene.brown>
+ <20140416040336.10604.58240.stgit@notabene.brown>
+ <20140416053756.GC15995@dastard>
+ <20140416161726.51b506e2@notabene.brown>
+ <20140417110350.0470feba@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140417110350.0470feba@notabene.brown>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__17_Apr_2014_14_31_37_+1000_fKS2./I1ivEWHRhr
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Apr 17, 2014 at 11:03:50AM +1000, NeilBrown wrote:
+> On Wed, 16 Apr 2014 16:17:26 +1000 NeilBrown <neilb@suse.de> wrote:
+> 
+> > On Wed, 16 Apr 2014 15:37:56 +1000 Dave Chinner <david@fromorbit.com> wrote:
+> > 
+> > > On Wed, Apr 16, 2014 at 02:03:36PM +1000, NeilBrown wrote:
+> 
+> > > > -	/*
+> > > > -	 * Given that we do not allow direct reclaim to call us, we should
+> > > > -	 * never be called while in a filesystem transaction.
+> > > > -	 */
+> > > > -	if (WARN_ON(current->flags & PF_FSTRANS))
+> > > > -		goto redirty;
+> > > 
+> > > We still need to ensure this rule isn't broken. If it is, the
+> > > filesystem will silently deadlock in delayed allocation rather than
+> > > gracefully handle the problem with a warning....
+> > 
+> > Hmm... that might be tricky.  The 'new' PF_FSTRANS can definitely be set when
+> > xfs_vm_writepage is called and we really want the write to happen.
+> > I don't suppose there is any other way to detect if a transaction is
+> > happening?
+> 
+> I've been thinking about this some more....
+> 
+> That code is in xfs_vm_writepage which is only called as ->writepage.
+> xfs never calls that directly so it could only possibly be called during
+> reclaim?
 
-Hi Greg,
+    __filemap_fdatawrite_range or __writeback_single_inode
+      do_writepages
+	->writepages
+	  xfs_vm_writepages
+	    write_cache_pages
+	      ->writepage
+	        xfs_vm_writepage
 
-Today's linux-next merge of the staging tree got conflicts in
-drivers/staging/rtl8723au/core/rtw_ieee80211.c,
-drivers/staging/rtl8723au/core/rtw_mlme_ext.c,
-drivers/staging/rtl8723au/core/rtw_p2p.c and
-drivers/staging/rtl8723au/core/rtw_wlan_util.c between commit
-f5d197b614d8 ("staging: rtl8723au: Fix buffer overflow in rtw_get_wfd_ie
-()") from the staging.current tree and various commits from the staging
-tree.
+So explicit data flushes or background writeback still end up in
+xfs_vm_writepage.
 
-I fixed it up (I just use dthe version from the staging tree) and can
-carry the fix as necessary (no action is required).
+> We know that doesn't happen, but if it does then PF_MEMALLOC would be set,
+> but PF_KSWAPD would not... and you already have a test for that.
+> 
+> How about every time we set PF_FSTRANS, we store the corresponding
+> xfs_trans_t in current->journal_info, and clear that field when PF_FSTRANS is
+> cleared.  Then xfs_vm_writepage can test for current->journal_info being
+> clear.
+> That is the field that several other filesystems use to keep track of the
+> 'current' transaction.
 
---=20
+The difference is that we have an explicit transaction handle in XFS
+which defines the transaction context. i.e. we don't hide
+transactions in thread contexts - the transaction defines the atomic
+context of the modification being made.....
+
+> I don't know what xfs_trans_t we would use in
+> xfs_bmapi_allocate_worker, but I suspect you do :-)
+
+The same one we use now.
+
+But that's exactly my point.  i.e. the transaction handle belongs to
+the operation being executed, not the thread that is currently
+executing it.  We also hand transaction contexts to IO completion,
+do interesting things with log space reservations for operations
+that require multiple commits to complete and so pass state when
+handles are duplicated prior to commit, etc. We still need direct
+manipulation and control of the transaction structure, regardless of
+where it is stored.
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Thu__17_Apr_2014_14_31_37_+1000_fKS2./I1ivEWHRhr
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTT1kxAAoJEMDTa8Ir7ZwVFJYQAJI4cNELecDPYsWJnrTEcw3z
-iUFXbuAMil+l+IB6D5FBvL2RaW5PzVDOsizqqczhZTEPOUaB0icSb+qB/+XYU5dQ
-P+QFuekBHe1zaJ+0BT7luRXH44DhAsFtsnWW7+X5NrP76c0XK+Vesp7Patxzb9pQ
-eiVO0GGlDyiuViG0jhJ4C0jlNkxjsmmEdAfbA3wpzP2jiThMhzB/HSuBoU31rRLR
-ILjO55WypWeocexdQPYpfNYtYFiaQg/UEVKfZ8ZxrUOQRh5DXkY+w0q0/SaWAN7t
-Bw8p1GFnWii4jgl9x+fv4JbTQGMgd05XiEPUU9MtS76D5Eve00cuOjYuqFyu0OcA
-EvIJfa9jmGksOg5WIAqG8sD+lXVoaDfQfEHSpRVec4O6abyfyi/Fmf199B2Pxn8k
-6VVdsSjPPqjU08dZEuXfqA3o9nMnpi/NMOZv9o74ozFm7uWMSAcQLNbooWUcRalE
-pTwHQq9x6OS+9e9UAcslNV5GWd649nSnz3oM9A5Uq81exTEEUDKvSzHjsDTZ5q4N
-FzoHE2EAe1D56jcPjuOy6ZNP2lquN6nO0m7fTps57xZ+Z1J6HV+kml/GdGBmDF4r
-KgeHfIhKuhpziIClEt9yQDq1f9sx1YFjY7bNlVNwfnLe8FXnRKgGuqtsFuIulAg1
-3TSF++qn346gwJjMA3r+
-=2pp9
------END PGP SIGNATURE-----
-
---Signature=_Thu__17_Apr_2014_14_31_37_+1000_fKS2./I1ivEWHRhr--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
