@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161442AbaDQKKj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 06:10:39 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:63751 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161171AbaDQKKQ (ORCPT
+	id S1756946AbaDQKK4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 06:10:56 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:54615
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756553AbaDQKKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 06:10:16 -0400
-X-AuditID: cbfee690-b7f266d00000287c-e7-534fa87a1b5c
-From: Sangjung Woo <sangjung.woo@samsung.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Sangjung Woo <sangjung.woo@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>
-Subject: [PATCHv2 6/8] extcon: max8997: Use devm_extcon_dev_register()
-Date: Thu, 17 Apr 2014 19:10:01 +0900
-Message-id: <1397729403-32045-7-git-send-email-sangjung.woo@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1397729403-32045-1-git-send-email-sangjung.woo@samsung.com>
-References: <1397729403-32045-1-git-send-email-sangjung.woo@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrILMWRmVeSWpSXmKPExsWyRsSkWLdqhX+wwYRL5hbXvzxntXj9wtDi
-	8q45bBa3G1ewWSzYU2IxY/JLNgc2j74tqxg9Pm+SC2CK4rJJSc3JLEst0rdL4MpYuncba8E2
-	rooD01tYGxi/cHQxcnJICJhInPu8gBXCFpO4cG89WxcjF4eQwFJGiYPT5rPCFE1+3cMMkZjO
-	KNFw9g6U08Yk8WftNGaQKjYBXYknBy6D2SICwRIdJ48zgRQxCyxhlPh38hYbSEJYwE1i7uKj
-	LCA2i4CqxO49u5lAbF4BD4m9C64ydjFyAK1TkJgzyQYkzCngKbFn61lGEFsIqGTrshusIDMl
-	BP6zSTzasRFqjoDEt8mHWCB6ZSU2HWCGuFpS4uCKGywTGIUXMDKsYhRNLUguKE5KLzLRK07M
-	LS7NS9dLzs/dxAgM3tP/nk3YwXjvgPUhxmSgcROZpUST84HBn1cSb2hsZmRhamJqbGRuaUaa
-	sJI4r9qjpCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjIra9ZznT/xcePDYesmwPdsn2LJV
-	J90tOlPpMvvefdGp94+2pvB3K7ZYKZ6aHjin+666rv+jDy8u/FK4kauju/S3TdPc9wE6u1i0
-	AuUXv2c9Ktze8nv17iv+OsenMb2Rq8gS+72K76ji9RcWR0WWn+8u1/rKvCCntTIwkWvyc835
-	D6oPWs2Q0VBiKc5INNRiLipOBAAJUoORdAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t9jQd2qFf7BBnvfG1hc//Kc1eL1C0OL
-	y7vmsFncblzBZrFgT4nFjMkv2RzYPPq2rGL0+LxJLoApqoHRJiM1MSW1SCE1Lzk/JTMv3VbJ
-	OzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdoo5JCWWJOKVAoILG4WEnfDtOE0BA3XQuY
-	xghd35AguB4jAzSQsIYxY+nebawF27gqDkxvYW1g/MLRxcjJISFgIjH5dQ8zhC0mceHeerYu
-	Ri4OIYHpjBINZ+8wQzhtTBJ/1k4Dq2IT0JV4cuAymC0iECzRcfI4E0gRs8ASRol/J2+xgSSE
-	Bdwk5i4+ygJiswioSuzes5sJxOYV8JDYu+AqYxcjB9A6BYk5k2xAwpwCnhJ7tp5lBLGFgEq2
-	LrvBOoGRdwEjwypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4Nh4JrWDcWWDxSFGAQ5GJR7e
-	Cer+wUKsiWXFlbmHGCU4mJVEeJf0AoV4UxIrq1KL8uOLSnNSiw8xJgMdNZFZSjQ5Hxi3eSXx
-	hsYmZkaWRuaGFkbG5qQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZwsTBKdXAeEmS08rV82jQgzev
-	gi4s16qbtmbGpaOB+hfj66VfOEs/Ppo+07Vm5g47q3hRT5OYf6cKPHxiDP/M8+P61bf0tX32
-	Vq6F8Vu+nfm8KNegeP7b7WJn5I9fV+Wcf7rEr/GW38k3nLfYn/Nvmbt6ZZ78EscAC8/TjpsP
-	XVy6i3uWhqDC40mskv99tJRYijMSDbWYi4oTAfC8ojPRAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 17 Apr 2014 06:10:50 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zze0eahzz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh26d3h1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <daniel.lezcano@linaro.org>, <tglx@linutronix.de>
+CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH] clocksource: fix clocksource_mmio_readX_down
+Date: Thu, 17 Apr 2014 17:27:54 +0800
+Message-ID: <1397726874-6349-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the resource-managed extcon device register function (i.e.
-devm_extcon_dev_register()) instead of extcon_dev_register(). If extcon device
-is attached with this function, that extcon device is automatically unregistered
-on driver detach. That reduces tiresome managing code.
+For some clocksource devices, for example, the registers are 32-bit, while
+the lower 16-bit is used for timer counting(And reading the upper 16-bit
+will return 0).
 
-Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+For example, when the counter value is 0x00001111, and then the
+~readl_relaxed(to_mmio_clksrc(c)->reg) will return the value of 0xFFFFEEEE,
+but it should be 0x0000EEEE.
+
+So just using the c->mask to mask the unused bits.
+
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
- drivers/extcon/extcon-max8997.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/clocksource/mmio.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
-index 223e6b0..804a446 100644
---- a/drivers/extcon/extcon-max8997.c
-+++ b/drivers/extcon/extcon-max8997.c
-@@ -709,7 +709,7 @@ static int max8997_muic_probe(struct platform_device *pdev)
- 	info->edev->name = DEV_NAME;
- 	info->edev->dev.parent = &pdev->dev;
- 	info->edev->supported_cable = max8997_extcon_cable;
--	ret = extcon_dev_register(info->edev);
-+	ret = devm_extcon_dev_register(&pdev->dev, info->edev);
- 	if (ret) {
- 		dev_err(&pdev->dev, "failed to register extcon device\n");
- 		goto err_irq;
-@@ -790,8 +790,6 @@ static int max8997_muic_remove(struct platform_device *pdev)
- 		free_irq(muic_irqs[i].virq, info);
- 	cancel_work_sync(&info->irq_work);
+diff --git a/drivers/clocksource/mmio.c b/drivers/clocksource/mmio.c
+index c0e2512..f17a0d1 100644
+--- a/drivers/clocksource/mmio.c
++++ b/drivers/clocksource/mmio.c
+@@ -27,7 +27,7 @@ cycle_t clocksource_mmio_readl_up(struct clocksource *c)
  
--	extcon_dev_unregister(info->edev);
--
- 	return 0;
+ cycle_t clocksource_mmio_readl_down(struct clocksource *c)
+ {
+-	return ~readl_relaxed(to_mmio_clksrc(c)->reg);
++	return ~readl_relaxed(to_mmio_clksrc(c)->reg) & c->mask;
  }
  
+ cycle_t clocksource_mmio_readw_up(struct clocksource *c)
+@@ -37,7 +37,7 @@ cycle_t clocksource_mmio_readw_up(struct clocksource *c)
+ 
+ cycle_t clocksource_mmio_readw_down(struct clocksource *c)
+ {
+-	return ~(unsigned)readw_relaxed(to_mmio_clksrc(c)->reg);
++	return ~(unsigned)readw_relaxed(to_mmio_clksrc(c)->reg) & c->mask;
+ }
+ 
+ /**
 -- 
-1.7.9.5
+1.8.4
+
 
