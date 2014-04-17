@@ -1,66 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272AbaDQE4Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 00:56:25 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:7912 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751087AbaDQE4X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 00:56:23 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zcb8kz98dIe0eah1432Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh26d3h1155h)
-Date: Thu, 17 Apr 2014 12:56:13 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Philipp Zabel <philipp.zabel@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] ARM: dts: imx6q-gk802: Enable HDMI
-Message-ID: <20140417045611.GR2523@dragon>
-References: <1397683430-3931-1-git-send-email-philipp.zabel@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+	id S1753517AbaDQFD1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 01:03:27 -0400
+Received: from 1wt.eu ([62.212.114.60]:7250 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751857AbaDQFDZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 01:03:25 -0400
+Date: Thu, 17 Apr 2014 07:02:28 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: zhuyj <zyjzyj2000@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        joe@perches.com, julia.lawall@lip6.fr, dingtianhong@huawei.com,
+        linux-kernel@vger.kernel.org, jasowang@redhat.com, mst@redhat.com,
+        "Yang, Zhangle (Eric)" <Zhangle.Yang@windriver.com>,
+        "Wu, Kuaikuai" <Kuaikuai.Wu@windriver.com>,
+        "Tao, Yue" <Yue.Tao@windriver.com>
+Subject: Re: in kernel 2.6.x, tun/tap nic supports vlan packets
+Message-ID: <20140417050228.GC8243@1wt.eu>
+References: <534F4C1E.1000006@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397683430-3931-1-git-send-email-philipp.zabel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <534F4C1E.1000006@gmail.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 11:23:50PM +0200, Philipp Zabel wrote:
-> Signed-off-by: Philipp Zabel <philipp.zabel@gmail.com>
-> ---
-> Changes since v1:
->  - Reordered ddc-i2c-bus and status properties
-> ---
->  arch/arm/boot/dts/imx6q-gk802.dts | 5 +++++
->  1 file changed, 5 insertions(+)
+Hi Zhu,
 
-Applied.  It should be sent to LAKML than LKML though.
+On Thu, Apr 17, 2014 at 11:35:58AM +0800, zhuyj wrote:
+> Hi, all
+> 
+> In kernel 2.6.x, linux depends on nic vlan hardware acceleration to 
+> insert/extract
+> vlan tag. In this scene, in kernel 2.6.x
+> 
+>                  _____        ________
+>     A           |     | B    |        | C
+>  vlan packets-->| tap |----->|vlan nic|--->
+>                 |_____|      |________|
+> 
+> We hope vlan packets pass through tap and vlan nic from A to c.
+> But in kernel 2.6.x, linux kernel can not extract vlan tag. It depends
+> on nic vlan hardware acceleration. It is well known that tap nic has no
+> vlan acceleration. So in the above scene, vlan packets can not be handled by
+> tap nic. These vlan packets will be discarded in B. They can not arrive 
+> at C.
 
-Shawn
+It's not clear to me what you want to achieve. Are you trying to create
+vlan interfaces on top of a tap interface ? Eg: tap1.12, tap1.23 etc ?
 
+> In kernel 3.x, linux can handle vlan packets. It does not depend on nic vlan
+> hardware acceleration. So the above scene can work well in kernel 3.x.
 > 
-> diff --git a/arch/arm/boot/dts/imx6q-gk802.dts b/arch/arm/boot/dts/imx6q-gk802.dts
-> index 4a9b4dc..0f0c50b 100644
-> --- a/arch/arm/boot/dts/imx6q-gk802.dts
-> +++ b/arch/arm/boot/dts/imx6q-gk802.dts
-> @@ -48,6 +48,11 @@
->  	};
->  };
->  
-> +&hdmi {
-> +	ddc-i2c-bus = <&i2c3>;
-> +	status = "okay";
-> +};
-> +
->  /* Internal I2C */
->  &i2c2 {
->  	pinctrl-names = "default";
-> -- 
-> 1.9.1
+> To resolve the above in kernel 2.6.x, we simulated vlan hardware 
+> acceleration in
+> tun/tap driver. Then followed the logic of commit commit 4fba4ca4
+> [vlan: Centralize handling of hardware acceleration] to modify the vlan 
+> packets
+> process in kernel 2.6.x. In the end, the above scene can work well in 
+> patched
+> kernel 2.6.x.
 > 
+> Please comment on it. Any reply is appreciated.
 > 
+> Hi, Willy
 > 
+> These 2 patches are for linux2.6.x. These can work well here. Please 
+> help to merge
+> linux 2.6.32.x. Thanks a lot.
+
+Well, 2.6.32.x is in deep freeze mode and it receives only critical fixes
+once in a while. While I can appreciate that the patch above might solve
+the issue you're facing, I'm wondering if there are not any acceptable
+workarounds for such a deep freeze kernel. You patch is not huge, but it
+definitely affects a working driver, and I wouldn't like risking to break
+the tap driver for other users, and I reall don't have the skills to audit
+it completely to ensure this is not the case. And if it breaks, I'll have
+to revert it or seek for some help on netdev.
+
+So I'd say that I'd rather not merge it unless I get an Acked-by from some
+netdev people who are willing to help in case of any future regression,
+which is unlikely but still possible.
+
+Just out of curiosity, what is the motivation for ongoing development on
+top of 2.6.32 ? Are there any important deployments that cannot upgrade
+for any specific reason ? I'm asking because most 2.6.32.x kernels that
+are stuffed into embedded boxes very likely come with their own number
+of in-house patches to add whatever feature is needed in such contexts,
+so I'm wondering why having this patch in mainline would help in your
+situation compared to having it into your own patch set only.
+
+Thanks,
+Willy
 
