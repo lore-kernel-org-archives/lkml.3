@@ -1,89 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733AbaDQCtX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 22:49:23 -0400
-Received: from ozlabs.org ([103.22.144.67]:46563 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754235AbaDQCtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 22:49:21 -0400
-Date: Thu, 17 Apr 2014 12:49:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kumar Gala <galak@codeaurora.org>, Jean Delvare <jdelvare@suse.de>
-Subject: linux-next: manual merge of the crypto tree with Linus' tree
-Message-Id: <20140417124912.bb29f78d07565de5b5bef8e6@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__17_Apr_2014_12_49_12_+1000_HO51zKt_gUfbFZl6"
+	id S1756849AbaDQCwI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 22:52:08 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:14875 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314AbaDQCwF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 22:52:05 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-7e-534f41d3ec99
+From: Chao Yu <chao2.yu@samsung.com>
+To: ??? <jaegeuk.kim@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [f2fs-dev][PATCH] f2fs: introduce raw_nat_from_node_info() to simplfy
+ codes
+Date: Thu, 17 Apr 2014 10:51:05 +0800
+Message-id: <000a01cf59e8$03a910d0$0afb3270$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac9Z59iafTcHt3IHSMKJV3LLN3oUXQ==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jQd3Ljv7BBpsWCFhc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXFh/S7GgvtCFbvv
+	TmFpYNzC38XIySEhYCLx7PdJdghbTOLCvfVsILaQwHRGiQ9rs7sYuYDsH4wSP+79ZQRJsAmo
+	SCzv+M8EYosIKEpseL8BrJlZIFPiXtMMZhBbWCBM4tCv02A1LAKqEicvLQer4RWwlPj6uJ8V
+	whaU+DH5HgtEr5bE+p3HmSBseYnNa94yQxykILHj7GtGiF16Eo/ufIKqEZfYeOQWywRGgVlI
+	Rs1CMmoWklGzkLQsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREcyM+kdjCubLA4xCjA
+	wajEwztB3T9YiDWxrLgy9xCjBAezkgivuzhQiDclsbIqtSg/vqg0J7X4EKM0B4uSOO+BVutA
+	IYH0xJLU7NTUgtQimCwTB6dUA+PeG48fnTKu+dR/7m65hhNT2lODQ8c+eB30upB5MXx6WKzg
+	bKZMy8anq2auvMJ3vuxLn/TtmS8Mf7YU9sXucP7cJHzC66VZXt2tbxvsfwpOtGGx1C7Iz/oV
+	dljWt754t7lJ65XZD7VWeu6QCznB/VzhxWkj9QzrCKf0fw9L5LXzUz24JNtErZVYijMSDbWY
+	i4oTATaFbvZgAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__17_Apr_2014_12_49_12_+1000_HO51zKt_gUfbFZl6
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch introduce raw_nat_from_node_info() to simplfy some codes, and also
+use exist function node_info_from_raw_nat() to do the same job.
 
-Hi Herbert,
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/node.c |   15 +++------------
+ fs/f2fs/node.h |    8 ++++++++
+ 2 files changed, 11 insertions(+), 12 deletions(-)
 
-Today's linux-next merge of the crypto tree got a conflict in
-drivers/char/hw_random/Kconfig between commit 2257ffbca73c ("hwrng: msm:
-switch Kconfig to ARCH_QCOM depends") from Linus' tree and commits
-020016183453 ("hwrng: Turn HW_RANDOM into a menuconfig") and 2d9cab5194c8
-("hwrng: Fix a few driver dependencies and defaults") from the crypto
-tree.
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index f760793..84f9b7b 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -179,9 +179,7 @@ retry:
+ 			write_unlock(&nm_i->nat_tree_lock);
+ 			goto retry;
+ 		}
+-		nat_set_blkaddr(e, le32_to_cpu(ne->block_addr));
+-		nat_set_ino(e, le32_to_cpu(ne->ino));
+-		nat_set_version(e, ne->version);
++		node_info_from_raw_nat(&e->ni, ne);
+ 	}
+ 	write_unlock(&nm_i->nat_tree_lock);
+ }
+@@ -1755,9 +1753,7 @@ retry:
+ 			write_unlock(&nm_i->nat_tree_lock);
+ 			goto retry;
+ 		}
+-		nat_set_blkaddr(ne, le32_to_cpu(raw_ne.block_addr));
+-		nat_set_ino(ne, le32_to_cpu(raw_ne.ino));
+-		nat_set_version(ne, raw_ne.version);
++		node_info_from_raw_nat(&ne->ni, &raw_ne);
+ 		__set_nat_cache_dirty(nm_i, ne);
+ 		write_unlock(&nm_i->nat_tree_lock);
+ 	}
+@@ -1790,7 +1786,6 @@ void flush_nat_entries(struct f2fs_sb_info *sbi)
+ 		nid_t nid;
+ 		struct f2fs_nat_entry raw_ne;
+ 		int offset = -1;
+-		block_t new_blkaddr;
+ 
+ 		if (nat_get_blkaddr(ne) == NEW_ADDR)
+ 			continue;
+@@ -1826,11 +1821,7 @@ to_nat_page:
+ 		f2fs_bug_on(!nat_blk);
+ 		raw_ne = nat_blk->entries[nid - start_nid];
+ flush_now:
+-		new_blkaddr = nat_get_blkaddr(ne);
+-
+-		raw_ne.ino = cpu_to_le32(nat_get_ino(ne));
+-		raw_ne.block_addr = cpu_to_le32(new_blkaddr);
+-		raw_ne.version = nat_get_version(ne);
++		raw_nat_from_node_info(&raw_ne, &ne->ni);
+ 
+ 		if (offset < 0) {
+ 			nat_blk->entries[nid - start_nid] = raw_ne;
+diff --git a/fs/f2fs/node.h b/fs/f2fs/node.h
+index 5decc1a..41bb65b 100644
+--- a/fs/f2fs/node.h
++++ b/fs/f2fs/node.h
+@@ -75,6 +75,14 @@ static inline void node_info_from_raw_nat(struct node_info *ni,
+ 	ni->version = raw_ne->version;
+ }
+ 
++static inline void raw_nat_from_node_info(struct f2fs_nat_entry *raw_ne,
++						struct node_info *ni)
++{
++	raw_ne->ino = cpu_to_le32(ni->ino);
++	raw_ne->block_addr = cpu_to_le32(ni->blk_addr);
++	raw_ne->version = ni->version;
++}
++
+ enum nid_type {
+ 	FREE_NIDS,	/* indicates the free nid list */
+ 	NAT_ENTRIES	/* indicates the cached nat entry */
+-- 
+1.7.9.5
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/char/hw_random/Kconfig
-index 244759bbd7b7,38cfae686cc4..000000000000
---- a/drivers/char/hw_random/Kconfig
-+++ b/drivers/char/hw_random/Kconfig
-@@@ -342,11 -321,12 +321,12 @@@ config HW_RANDOM_TP
-  	  If unsure, say Y.
- =20
-  config HW_RANDOM_MSM
- -	tristate "Qualcomm MSM Random Number Generator support"
- -	depends on ARCH_MSM
- +	tristate "Qualcomm SoCs Random Number Generator support"
-- 	depends on HW_RANDOM && ARCH_QCOM
-++	depends on ARCH_QCOM
-+ 	default HW_RANDOM
-  	---help---
-  	  This driver provides kernel-side support for the Random Number
- -	  Generator hardware found on Qualcomm MSM SoCs.
- +	  Generator hardware found on Qualcomm SoCs.
- =20
-  	  To compile this driver as a module, choose M here. the
-  	  module will be called msm-rng.
-
---Signature=_Thu__17_Apr_2014_12_49_12_+1000_HO51zKt_gUfbFZl6
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTT0EtAAoJEMDTa8Ir7ZwV3lgP/jBz2AzuUmcdVExx0BFQ41AE
-0q7pmgD3q3ge8G/HAz9kuU4hu0T700rS1Fhd4v9uRsYWcgejshPWGhuFqQSsDjTy
-8//PzGeIQ5RjZYgu0JCcRMqujcHI5NjH3P+g0IaBh2AT87tfsQsRziEYsVPhlRwL
-4qJp+jvfPIpcpFSE/mbgSzHskZADgnDY5gOCvJzxnf4Ffsn3PEYdkXwUsblA4HyH
-wsGYNsl2Y+OsnhxB34tyQHCEhgTI+PERiETAPvM9wT5+2zLgpi23LOp+fxtgVJH2
-zfgTzqn4gMemYUdmYNc08Pu4heJ3jlUUOncUDlmILf5mmN+BwPbjO1s8e+ea1pP/
-Gce+aVFrX+7puTiCyEFWfwVu0nZnJO23G7vQqx+mHrAjeyC7r/I/esOUn8du+W+9
-hZvQv5HdgA7PLysP0xTzjecex+qr3BQLOQF9ECahWh3gvfSSyMrbn8BMQRxxePyB
-nj/7zEkaJDV2YlAmc0X/ZXswxo4c/20oxdfuY7caKrSN8Cgt5WFnptsKgjK3YA5p
-Id394rr1DmmXKnuJTN5v1g0TPLQM37GLrkecsH2U1+GydsZk8IehPqtPkhyckhI/
-gVeXpKvpFC6vzF/dp5eHqYWWyAtufyQycOsxZtW05yj2h/4DIQOke+VmXjyrnMMW
-/PlOcraFXBR8IOBtKgBU
-=0FfR
------END PGP SIGNATURE-----
-
---Signature=_Thu__17_Apr_2014_12_49_12_+1000_HO51zKt_gUfbFZl6--
