@@ -1,54 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064AbaDQPyQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 11:54:16 -0400
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:46191 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751805AbaDQPyK (ORCPT
+	id S1754113AbaDQPy7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 11:54:59 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:38977 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432AbaDQPyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 11:54:10 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApEUAPv3T1Nbsma4/2dsb2JhbABZgwaCTKhMmVYCAoEkF3SCUxMcIxiBAiQTiAAByzGNfmSEPwEDjmiKBQGKaodjgzM7gSw
-Date: Thu, 17 Apr 2014 17:52:11 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] fs/f2fs/node.c: add static to recover_inline_xattr
-Message-Id: <20140417175211.95fb87711f8ebb673860e97e@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 17 Apr 2014 11:54:47 -0400
+Message-ID: <534FF93C.2080405@gmail.com>
+Date: Thu, 17 Apr 2014 21:24:36 +0530
+From: Kumar Gaurav <kumargauravgupta3@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Kumar Gaurav <kumargauravgupta3@gmail.com>, gregkh@linuxfoundation.org,
+        lidza.louina@gmail.com
+CC: driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 35/35] Staging:dgap:dgap_tty.c: Upgraded driver to use
+ Mutex instead of semaphore
+References: <1397749881-21193-1-git-send-email-kumargauravgupta3@gmail.com>
+In-Reply-To: <1397749881-21193-1-git-send-email-kumargauravgupta3@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-recover_inline_xattr is only used in node.c
+Hi All,
 
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/f2fs/node.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index a161e95..3ce4beb 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -1534,7 +1534,7 @@ void recover_node_page(struct f2fs_sb_info *sbi, struct page *page,
- 	clear_node_page_dirty(page);
- }
- 
--void recover_inline_xattr(struct inode *inode, struct page *page)
-+static void recover_inline_xattr(struct inode *inode, struct page *page)
- {
- 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
- 	void *src_addr, *dst_addr;
--- 
-1.8.4.5
+Please ignore this patch. I'm sending with correct Subject Line
+On Thursday 17 April 2014 09:21 PM, Kumar Gaurav wrote:
+> dgap driver uses semaphore for obtaining lock. I upgraded it to use MUTEX.
+>
+> Signed-off-by: Kumar Gaurav <kumargauravgupta3@gmail.com>
+> ---
+>   drivers/staging/dgap/dgap_tty.c |   17 +++++------------
+>   1 file changed, 5 insertions(+), 12 deletions(-)
+>
+> diff --git a/drivers/staging/dgap/dgap_tty.c b/drivers/staging/dgap/dgap_tty.c
+> index 2a7a372..0ca72a2 100755
+> --- a/drivers/staging/dgap/dgap_tty.c
+> +++ b/drivers/staging/dgap/dgap_tty.c
+> @@ -52,7 +52,7 @@
+>   #include <asm/uaccess.h>	/* For copy_from_user/copy_to_user */
+>   #include <asm/io.h>		/* For read[bwl]/write[bwl] */
+>   #include <linux/pci.h>
+> -
+> +#include<linux/mutex.h>
+>   #include "dgap_driver.h"
+>   #include "dgap_tty.h"
+>   #include "dgap_types.h"
+> @@ -61,18 +61,12 @@
+>   #include "dgap_conf.h"
+>   #include "dgap_sysfs.h"
+>   
+> -#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,37)
+> -#define init_MUTEX(sem)         sema_init(sem, 1)
+> -#define DECLARE_MUTEX(name)     \
+> -        struct semaphore name = __SEMAPHORE_INITIALIZER(name, 1)
+> -#endif
+> -
+>   /*
+>    * internal variables
+>    */
+>   static struct board_t	*dgap_BoardsByMajor[256];
+>   static uchar		*dgap_TmpWriteBuf = NULL;
+> -static DECLARE_MUTEX(dgap_TmpWriteSem);
+> +static DEFINE_MUTEX(dgap_TmpWriteSem);
+>   
+>   /*
+>    * Default transparent print information.
+> @@ -2004,12 +1998,11 @@ static int dgap_tty_write(struct tty_struct *tty, const unsigned char *buf, int
+>   		 * the board.
+>   		 */
+>   		/* we're allowed to block if it's from_user */
+> -		if (down_interruptible(&dgap_TmpWriteSem)) {
+> +		if (mutex_lock_interruptible(&dgap_TmpWriteSem))
+>   			return (-EINTR);
+> -		}
+>   
+>   		if (copy_from_user(dgap_TmpWriteBuf, (const uchar __user *) buf, count)) {
+> -			up(&dgap_TmpWriteSem);
+> +			mutex_unlock(&dgap_TmpWriteSem);
+>   			printk("Write: Copy from user failed!\n");
+>   			return -EFAULT;
+>   		}
+> @@ -2093,7 +2086,7 @@ static int dgap_tty_write(struct tty_struct *tty, const unsigned char *buf, int
+>   
+>   	if (from_user) {
+>   		DGAP_UNLOCK(ch->ch_lock, lock_flags);
+> -		up(&dgap_TmpWriteSem);
+> +		mutex_unlock(&dgap_TmpWriteSem);
+>   	}
+>   	else {
+>   		DGAP_UNLOCK(ch->ch_lock, lock_flags);
 
