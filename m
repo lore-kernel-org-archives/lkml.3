@@ -1,122 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414AbaDQLAg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 07:00:36 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:55105 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601AbaDQLAe (ORCPT
+	id S1752474AbaDQLJU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 07:09:20 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:56087 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751335AbaDQLJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 07:00:34 -0400
-Date: Thu, 17 Apr 2014 12:00:28 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Anton Vorontsov <anton@enomsg.org>, Olof Johansson <olof@lixom.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>, ajaykumar.rs@samsung.com,
-        linux-samsung-soc@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 3/5] mfd: tps65090: Stop caching most registers
-Message-ID: <20140417110028.GO28725@lee--X1>
-References: <1397689950-1568-1-git-send-email-dianders@chromium.org>
- <1397689950-1568-4-git-send-email-dianders@chromium.org>
+	Thu, 17 Apr 2014 07:09:16 -0400
+Date: Thu, 17 Apr 2014 13:08:07 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Chew Chiau Ee <chiau.ee.chew@intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alan Cox <alan@linux.intel.com>, linux-pwm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] pwm_lpss: Add support for PCI devices
+Message-ID: <20140417110756.GB32603@ulmo>
+References: <1397672338-3510-1-git-send-email-chiau.ee.chew@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="QTprm0S8XgL7H0Dt"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1397689950-1568-4-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1397672338-3510-1-git-send-email-chiau.ee.chew@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Nearly all of the registers in tps65090 combine control bits and
-> status bits.  Turn off caching of all registers except the select few
-> that can be cached.
-> 
-> In order to avoid adding more duplicate #defines, we also move some
-> register offset definitions to the mfd driver (and resolve
-> inconsistent names).
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+
+--QTprm0S8XgL7H0Dt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, Apr 17, 2014 at 02:18:58AM +0800, Chew Chiau Ee wrote:
+> From: Alan Cox <alan@linux.intel.com>
+>=20
+> Not all systems enumerate the PWM devices via ACPI. They can also be expo=
+sed
+> via the PCI interface.
+>=20
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
 > ---
-> Changes in v3: None
-> Changes in v2:
-> - Leave cache on for the registers that can be cached.
-> - Move register offsets to mfd header file.
-> 
->  drivers/mfd/tps65090.c           | 27 ++++++++++++++-------------
->  drivers/power/tps65090-charger.c | 11 -----------
->  include/linux/mfd/tps65090.h     | 14 ++++++++++++++
->  3 files changed, 28 insertions(+), 24 deletions(-)
-> 
-> diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
-> index c3cddb4..1c3e6e2 100644
-> --- a/drivers/mfd/tps65090.c
-> +++ b/drivers/mfd/tps65090.c
-> @@ -32,14 +32,6 @@
->  #define NUM_INT_REG 2
->  #define TOTAL_NUM_REG 0x18
->  
-> -/* interrupt status registers */
-> -#define TPS65090_INT_STS	0x0
-> -#define TPS65090_INT_STS2	0x1
-> -
-> -/* interrupt mask registers */
-> -#define TPS65090_INT_MSK	0x2
-> -#define TPS65090_INT_MSK2	0x3
-> -
->  #define TPS65090_INT1_MASK_VAC_STATUS_CHANGE		1
->  #define TPS65090_INT1_MASK_VSYS_STATUS_CHANGE		2
->  #define TPS65090_INT1_MASK_BAT_STATUS_CHANGE		3
-> @@ -144,17 +136,26 @@ static struct regmap_irq_chip tps65090_irq_chip = {
->  	.irqs = tps65090_irqs,
->  	.num_irqs = ARRAY_SIZE(tps65090_irqs),
->  	.num_regs = NUM_INT_REG,
-> -	.status_base = TPS65090_INT_STS,
-> -	.mask_base = TPS65090_INT_MSK,
-> +	.status_base = TPS65090_REG_INTR_STS,
-> +	.mask_base = TPS65090_REG_INTR_MASK,
->  	.mask_invert = true,
->  };
->  
->  static bool is_volatile_reg(struct device *dev, unsigned int reg)
->  {
-> -	if ((reg == TPS65090_INT_STS) || (reg == TPS65090_INT_STS2))
-> -		return true;
-> -	else
-> +	/* Nearly all registers have status bits mixed in, except a few */
-> +	switch (reg) {
-> +	case TPS65090_REG_INTR_MASK:
-> +	case TPS65090_REG_INTR_MASK2:
-> +	case TPS65090_REG_CG_CTRL0:
-> +	case TPS65090_REG_CG_CTRL1:
-> +	case TPS65090_REG_CG_CTRL2:
-> +	case TPS65090_REG_CG_CTRL3:
-> +	case TPS65090_REG_CG_CTRL4:
-> +	case TPS65090_REG_CG_CTRL5:
->  		return false;
-> +	}
-> +	return true;
->  }
+>  drivers/pwm/pwm-lpss.c |  159 ++++++++++++++++++++++++++++++++++++++----=
+-----
+>  1 files changed, 128 insertions(+), 31 deletions(-)
+>=20
+> diff --git a/drivers/pwm/pwm-lpss.c b/drivers/pwm/pwm-lpss.c
+> index 449e372..aa8af08 100644
+> --- a/drivers/pwm/pwm-lpss.c
+> +++ b/drivers/pwm/pwm-lpss.c
+> @@ -6,6 +6,7 @@
+>   * Author: Chew Kean Ho <kean.ho.chew@intel.com>
+>   * Author: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+>   * Author: Chew Chiau Ee <chiau.ee.chew@intel.com>
+> + * Author: Alan Cox <alan@linux.intel.com>
+>   *
+>   * This program is free software; you can redistribute it and/or modify
+>   * it under the terms of the GNU General Public License version 2 as
+> @@ -19,6 +20,9 @@
+>  #include <linux/module.h>
+>  #include <linux/pwm.h>
+>  #include <linux/platform_device.h>
+> +#include <linux/pci.h>
+> +
+> +static int pci_drv, plat_drv;	/* So we know which drivers registered */
 
-I'll not force the issue, but if you wanted to do this more succinctly
-you could also do:
+I think that rather than having everything in a single file, perhaps a
+better approach would be to keep pwm-lpss.c as a common module and then
+have separate drivers for ACPI (pwm-lpss-acpi) and PCI (pwm-lpss-pci).
+That way you don't have to keep track of which driver was successfully
+registered.
 
-  case TPS65090_REG_INTR_MASK ... TPS65090_REG_INTR_MASK:
-  case TPS65090_REG_CG_CTRL0  ... TPS65090_REG_CG_CTRL5:
+Would that work?
 
-or
+> +static const struct pwm_lpss_boardinfo byt_info =3D {
 
-  if (reg >= TPS65090_REG_INTR_MASK && reg <= TPS65090_REG_CG_CTRL5)
+What does byt_ stand for?
 
-Ect.
+> -static int pwm_lpss_probe(struct platform_device *pdev)
+> +static struct pwm_lpss_chip *pwm_lpss_probe(struct device *dev,
+> +			struct resource *r, struct pwm_lpss_boardinfo *info)
 
-Otherwise patch looks fine:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+Indentation is odd here. Please align arguments one subsequent lines
+with those of the first.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> -static struct platform_driver pwm_lpss_driver =3D {
+> +static int pwm_lpss_probe_pci(struct pci_dev *pdev,
+> +			      const struct pci_device_id *id)
+> +{
+> +	struct pwm_lpss_boardinfo *info;
+
+I think this should be const to mirror the type of the byt_info
+variable.
+
+> +	struct pwm_lpss_chip *lpwm;
+> +	int err;
+> +
+> +	err =3D pci_enable_device(pdev);
+> +	if (err < 0)
+> +		return err;
+> +
+> +	info =3D  (struct pwm_lpss_boardinfo *)id->driver_data;
+
+There's an extraneous space between '=3D' and '('.
+
+Thierry
+
+--QTprm0S8XgL7H0Dt
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTT7YMAAoJEN0jrNd/PrOhJ9gP/0Z7O/IkxMF74Z2712vr0mZP
+CeuI3AdTXXvReydhP3dnvAUWdKwqqQv3OgctONO7NMmTgsVCkPWUyn5KBI67KJp4
+AXfjOL6a0j9qfBiV7aF8X12HM+r8jipnGees/9s45OqK+QH5IJva9flrabFot+e5
+Lccdeavf0Z9cGQO6Ml2ZutSYZ1YCKnFx7VFBsEUiq58t7YJMEjIoFNIvpftOdHcx
+3lIUIfWR1eGkmowf2BomLMfpzPVwavq9em59maFtBtrgcD0G7LkjyYDDi/1GQIav
+pbf1oXvbQmAMQ1T+/42sH4K91dcyAnOaE0tCwmeCMmSDXmVo/CCNNy2mRWeL7/Hn
+IpsVUSz3qtwpHMaCIsGjuK4uPopA8503cj76xBexSUjFfdtaBSUuC5phSTIKbPEo
+PsbjcPEMGTbqsxmnJ8dBMhQBjOrxDvsz8AV4eb+6cvL3iSb0gADXWSCbOxlgWTkR
++5x6dR0F9pIIYpAMHDzZChVj2dIg4ZUJjJvbFrLsoxvBuWG9SMhJwXlJexk0/M2o
+qJp16+Mc1lvp7KeYqwjCjOn1pTyBSdkqgD49F6kBTYikwiQwWgA6Er2KuPf9307i
+gOkcQdYmaMpgwUUnS6l4dd4V0jg4lsqxavkI9oKgAcn55jrBqJ6UpQGjHbEIMbeZ
+tGesr3+KpwbBabQnGEXh
+=mogR
+-----END PGP SIGNATURE-----
+
+--QTprm0S8XgL7H0Dt--
