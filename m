@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712AbaDQI6c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 04:58:32 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:50563 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022AbaDQI63 (ORCPT
+	id S1754520AbaDQJEE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 05:04:04 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:33199 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030AbaDQJEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 04:58:29 -0400
-Date: Thu, 17 Apr 2014 09:58:24 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: broonie@kernel.org, lgirdwood@gmail.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH 2/6] regulator: arizona-ldo1: Move setup processing from
- arizona-core
-Message-ID: <20140417085824.GI28725@lee--X1>
-References: <1397638902-7576-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <1397638902-7576-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1397638902-7576-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 17 Apr 2014 05:04:01 -0400
+From: chihuanqi <chihuanqi@gmail.com>
+To: forest@alittletooquiet.net, gregkh@linuxfoundation.org,
+        nandu.hgowda@gmail.com, valentina.manea.m@gmail.com,
+        lisa@xenapiadmin.com, himangi774@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        huanqi chi <chihuanqi@gmail.com>
+Subject: [PATCH] vt6656/aes_ccmp.c: Fix a sparse "symbol not declared" warning
+Date: Thu, 17 Apr 2014 17:03:21 +0800
+Message-Id: <1397725401-24923-1-git-send-email-chihuanqi@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It is more idiomatic to process things relating to the regulator in its
-> driver. This patch moves both processing of device tree relating to the
-> regulator and checking if the regulator is external from arizona-core
-> into the regulator driver.
-> 
-> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-> ---
->  drivers/mfd/arizona-core.c       |   12 +++---------
->  drivers/regulator/arizona-ldo1.c |   27 +++++++++++++++++++++++++++
->  2 files changed, 30 insertions(+), 9 deletions(-)
+sparse complains as follows:
+	drivers/staging/vt6656/aes_ccmp.c:221:6: warning: symbol 'AESbGenCCMP'
+was not declared. Should it be static?
+In order to suppress the warning, we include the aes_ccmp.h header file
+which contains an appropriate extern declaration.
 
-For the MFD part:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: huanqi chi <chihuanqi@gmail.com>
+---
+ drivers/staging/vt6656/aes_ccmp.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Mark, do you want me to set up an MFD-Regulator IB for v3.16?
-
+diff --git a/drivers/staging/vt6656/aes_ccmp.c b/drivers/staging/vt6656/aes_ccmp.c
+index e2bfa8d..a9d5168 100644
+--- a/drivers/staging/vt6656/aes_ccmp.c
++++ b/drivers/staging/vt6656/aes_ccmp.c
+@@ -32,6 +32,7 @@
+ 
+ #include "device.h"
+ #include "80211hdr.h"
++#include "aes_ccmp.h"
+ 
+ /*
+  * SBOX Table
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.10.4
+
