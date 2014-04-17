@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161397AbaDQFNp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 01:13:45 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:41875 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129AbaDQFNn (ORCPT
+	id S1754923AbaDQFZK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 01:25:10 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59236 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752589AbaDQFZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 01:13:43 -0400
-Date: Wed, 16 Apr 2014 22:13:38 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Huang Shijie <b32955@freescale.com>
-Cc: linux-mtd@lists.infradead.org, Marek Vasut <marex@denx.de>,
-        Lee Jones <lee.jones@linaro.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mtd: fsl-quadspi: fix __iomem annotations
-Message-ID: <20140417051338.GI5512@norris-Latitude-E6410>
-References: <1397638079-1894-1-git-send-email-computersforpeace@gmail.com>
- <534E4528.6030700@freescale.com>
- <20140416091512.GG5512@norris-Latitude-E6410>
- <534E4BA7.2040901@freescale.com>
+	Thu, 17 Apr 2014 01:25:07 -0400
+Date: Thu, 17 Apr 2014 06:25:00 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
+Subject: Re: linux-next: manual merge of the userns tree with Linus' tree
+Message-ID: <20140417052500.GZ18016@ZenIV.linux.org.uk>
+References: <20140417150657.6d67e750081860b30f99715c@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <534E4BA7.2040901@freescale.com>
+In-Reply-To: <20140417150657.6d67e750081860b30f99715c@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 05:21:43PM +0800, Huang Shijie wrote:
-> 于 2014年04月16日 17:15, Brian Norris 写道:
-> >Pushed to l2-mtd.git/spinor.
-> I think you can rebase patches in the spinor branch to the master
-> branch now.
+On Thu, Apr 17, 2014 at 03:06:57PM +1000, Stephen Rothwell wrote:
+> Hi Eric,
+> 
+> Today's linux-next merge of the userns tree got a conflict in
+> fs/namespace.c between various commits from Linus' tree and various
+> commits from the userns tree.
+> 
+> I fixed it up (hopefully - see below) and can carry the fix as necessary
+> (no action is required).
 
-I merged spinor into master for now, so it will be in -next. I think
-I'll keep the separate branch, in case we need something stable for
-others to pull in.
+Various commits include this:
+commit 38129a13e6e71f666e0468e99fdd932a687b4d7e
+Author: Al Viro <viro@zeniv.linux.org.uk>
+Date:   Thu Mar 20 21:10:51 2014 -0400
 
-> After the rebase, we can add the patch for the *defconfig for the
-> linux-next.
+    switch mnt_hash to hlist
 
-Yeah, I guess we should send patches. I'll try to do that soon.
-
-Brian
+present in v3.14...  It's been there since before the merge window.
