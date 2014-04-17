@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422688AbaDQJ6w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 05:58:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52911 "EHLO
+	id S1757044AbaDQJ7L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 05:59:11 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52919 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755278AbaDQJ6r (ORCPT
+	with ESMTP id S1756742AbaDQJ7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 05:58:47 -0400
-Date: Thu, 17 Apr 2014 02:58:07 -0700
-From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
-Message-ID: <tip-6381c24cd6d5d6373620426ab0a96c80ed953e20@git.kernel.org>
+	Thu, 17 Apr 2014 05:59:03 -0400
+Date: Thu, 17 Apr 2014 02:57:54 -0700
+From: tip-bot for Ingo Molnar <tipbot@zytor.com>
+Message-ID: <tip-ea431643d6c38728195e2c456801c3ef66bb9991@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        andi@firstfloor.org, sandeepa.prabhu@linaro.org, ananth@in.ibm.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, tglx@linutronix.de
+        torvalds@linux-foundation.org, atodorov@redhat.com,
+        peterz@infradead.org, tony.luck@intel.com, bp@alien8.de,
+        gong.chen@linux.intel.com, jwboyer@fedoraproject.org, qmewlo@gmail.com,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        andi@firstfloor.org, sandeepa.prabhu@linaro.org, ananth@in.ibm.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, tglx@linutronix.de
-In-Reply-To: <20140417081644.26341.52351.stgit@ltc230.yrl.intra.hitachi.co.jp>
-References: <20140417081644.26341.52351.stgit@ltc230.yrl.intra.hitachi.co.jp>
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        atodorov@redhat.com, tony.luck@intel.com, gong.chen@linux.intel.com,
+        bp@alien8.de, jwboyer@fedoraproject.org, qmewlo@gmail.com,
+        tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] kprobes/x86: Fix page-fault handling logic
-Git-Commit-ID: 6381c24cd6d5d6373620426ab0a96c80ed953e20
+Subject: [tip:x86/urgent] x86/mce: Fix CMCI preemption bugs
+Git-Commit-ID: ea431643d6c38728195e2c456801c3ef66bb9991
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,92 +35,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6381c24cd6d5d6373620426ab0a96c80ed953e20
-Gitweb:     http://git.kernel.org/tip/6381c24cd6d5d6373620426ab0a96c80ed953e20
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Thu, 17 Apr 2014 17:16:44 +0900
+Commit-ID:  ea431643d6c38728195e2c456801c3ef66bb9991
+Gitweb:     http://git.kernel.org/tip/ea431643d6c38728195e2c456801c3ef66bb9991
+Author:     Ingo Molnar <mingo@kernel.org>
+AuthorDate: Thu, 17 Apr 2014 10:25:53 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 17 Apr 2014 10:57:02 +0200
+CommitDate: Thu, 17 Apr 2014 10:28:42 +0200
 
-kprobes/x86: Fix page-fault handling logic
+x86/mce: Fix CMCI preemption bugs
 
-Current kprobes in-kernel page fault handler doesn't
-expect that its single-stepping can be interrupted by
-an NMI handler which may cause a page fault(e.g. perf
-with callback tracing).
+The following commit:
 
-In that case, the page-fault handled by kprobes and it
-misunderstands the page-fault has been caused by the
-single-stepping code and tries to recover IP address
-to probed address.
+  27f6c573e0f7 ("x86, CMCI: Add proper detection of end of CMCI storms")
 
-But the truth is the page-fault has been caused by the
-NMI handler, and do_page_fault failes to handle real
-page fault because the IP address is modified and
-causes Kernel BUGs like below.
+Added two preemption bugs:
 
- ----
- [ 2264.726905] BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
- [ 2264.727190] IP: [<ffffffff813c46e0>] copy_user_generic_string+0x0/0x40
+ - machine_check_poll() does a get_cpu_var() without a matching
+   put_cpu_var(), which causes preemption imbalance and crashes upon
+   bootup.
 
-To handle this correctly, I fixed the kprobes fault
-handler to ensure the faulted ip address is its own
-single-step buffer instead of checking current kprobe
-state.
+ - it does percpu ops without disabling preemption. Preemption is not
+   disabled due to the mistaken use of a raw spinlock.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: fche@redhat.com
-Cc: systemtap@sourceware.org
-Link: http://lkml.kernel.org/r/20140417081644.26341.52351.stgit@ltc230.yrl.intra.hitachi.co.jp
+To fix these bugs fix the imbalance and change
+cmci_discover_lock to a regular spinlock.
+
+Reported-by: Owen Kibel <qmewlo@gmail.com>
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Cc: Chen, Gong <gong.chen@linux.intel.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Alexander Todorov <atodorov@redhat.com>
+Cc: Borislav Petkov <bp@alien8.de>
+Link: http://lkml.kernel.org/n/tip-jtjptvgigpfkpvtQxpEk1at2@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+--
+ arch/x86/kernel/cpu/mcheck/mce.c       |    4 +---
+ arch/x86/kernel/cpu/mcheck/mce_intel.c |   18 +++++++++---------
+ 2 files changed, 10 insertions(+), 12 deletions(-)
 ---
- arch/x86/kernel/kprobes/core.c | 16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c       |  4 +---
+ arch/x86/kernel/cpu/mcheck/mce_intel.c | 18 +++++++++---------
+ 2 files changed, 10 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
-index 79a3f96..61b17dc 100644
---- a/arch/x86/kernel/kprobes/core.c
-+++ b/arch/x86/kernel/kprobes/core.c
-@@ -897,9 +897,10 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
- 	struct kprobe *cur = kprobe_running();
- 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index eeee23f..68317c8 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -598,7 +598,6 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ {
+ 	struct mce m;
+ 	int i;
+-	unsigned long *v;
  
--	switch (kcb->kprobe_status) {
--	case KPROBE_HIT_SS:
--	case KPROBE_REENTER:
-+	if (unlikely(regs->ip == (unsigned long)cur->ainsn.insn)) {
-+		/* This must happen on single-stepping */
-+		WARN_ON(kcb->kprobe_status != KPROBE_HIT_SS &&
-+			kcb->kprobe_status != KPROBE_REENTER);
+ 	this_cpu_inc(mce_poll_count);
+ 
+@@ -618,8 +617,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ 		if (!(m.status & MCI_STATUS_VAL))
+ 			continue;
+ 
+-		v = &get_cpu_var(mce_polled_error);
+-		set_bit(0, v);
++		this_cpu_write(mce_polled_error, 1);
  		/*
- 		 * We are here because the instruction being single
- 		 * stepped caused a page fault. We reset the current
-@@ -914,9 +915,8 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
- 		else
- 			reset_current_kprobe();
- 		preempt_enable_no_resched();
--		break;
--	case KPROBE_HIT_ACTIVE:
--	case KPROBE_HIT_SSDONE:
-+	} else if (kcb->kprobe_status == KPROBE_HIT_ACTIVE ||
-+		   kcb->kprobe_status == KPROBE_HIT_SSDONE) {
- 		/*
- 		 * We increment the nmissed count for accounting,
- 		 * we can also use npre/npostfault count for accounting
-@@ -945,10 +945,8 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
- 		 * fixup routine could not handle it,
- 		 * Let do_page_fault() fix it.
- 		 */
--		break;
--	default:
--		break;
+ 		 * Uncorrected or signalled events are handled by the exception
+ 		 * handler when it is enabled, so don't process those here.
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+index 3bdb95a..9a316b2 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+@@ -42,7 +42,7 @@ static DEFINE_PER_CPU(mce_banks_t, mce_banks_owned);
+  * cmci_discover_lock protects against parallel discovery attempts
+  * which could race against each other.
+  */
+-static DEFINE_RAW_SPINLOCK(cmci_discover_lock);
++static DEFINE_SPINLOCK(cmci_discover_lock);
+ 
+ #define CMCI_THRESHOLD		1
+ #define CMCI_POLL_INTERVAL	(30 * HZ)
+@@ -144,14 +144,14 @@ static void cmci_storm_disable_banks(void)
+ 	int bank;
+ 	u64 val;
+ 
+-	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
++	spin_lock_irqsave(&cmci_discover_lock, flags);
+ 	owned = __get_cpu_var(mce_banks_owned);
+ 	for_each_set_bit(bank, owned, MAX_NR_BANKS) {
+ 		rdmsrl(MSR_IA32_MCx_CTL2(bank), val);
+ 		val &= ~MCI_CTL2_CMCI_EN;
+ 		wrmsrl(MSR_IA32_MCx_CTL2(bank), val);
  	}
-+
- 	return 0;
+-	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
++	spin_unlock_irqrestore(&cmci_discover_lock, flags);
  }
  
+ static bool cmci_storm_detect(void)
+@@ -211,7 +211,7 @@ static void cmci_discover(int banks)
+ 	int i;
+ 	int bios_wrong_thresh = 0;
+ 
+-	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
++	spin_lock_irqsave(&cmci_discover_lock, flags);
+ 	for (i = 0; i < banks; i++) {
+ 		u64 val;
+ 		int bios_zero_thresh = 0;
+@@ -266,7 +266,7 @@ static void cmci_discover(int banks)
+ 			WARN_ON(!test_bit(i, __get_cpu_var(mce_poll_banks)));
+ 		}
+ 	}
+-	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
++	spin_unlock_irqrestore(&cmci_discover_lock, flags);
+ 	if (mca_cfg.bios_cmci_threshold && bios_wrong_thresh) {
+ 		pr_info_once(
+ 			"bios_cmci_threshold: Some banks do not have valid thresholds set\n");
+@@ -316,10 +316,10 @@ void cmci_clear(void)
+ 
+ 	if (!cmci_supported(&banks))
+ 		return;
+-	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
++	spin_lock_irqsave(&cmci_discover_lock, flags);
+ 	for (i = 0; i < banks; i++)
+ 		__cmci_disable_bank(i);
+-	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
++	spin_unlock_irqrestore(&cmci_discover_lock, flags);
+ }
+ 
+ static void cmci_rediscover_work_func(void *arg)
+@@ -360,9 +360,9 @@ void cmci_disable_bank(int bank)
+ 	if (!cmci_supported(&banks))
+ 		return;
+ 
+-	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
++	spin_lock_irqsave(&cmci_discover_lock, flags);
+ 	__cmci_disable_bank(bank);
+-	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
++	spin_unlock_irqrestore(&cmci_discover_lock, flags);
+ }
+ 
+ static void intel_init_cmci(void)
