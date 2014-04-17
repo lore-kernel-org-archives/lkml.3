@@ -1,109 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751253AbaDQVUj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 17:20:39 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:5241 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983AbaDQVUg (ORCPT
+	id S1751342AbaDQVYK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 17:24:10 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:52240 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751007AbaDQVYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 17:20:36 -0400
-Message-ID: <5350459F.5010903@hp.com>
-Date: Thu, 17 Apr 2014 17:20:31 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	Thu, 17 Apr 2014 17:24:00 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, tytso@mit.edu
+References: <87fvlm860e.fsf_-_@x220.int.ebiederm.org>
+	<20140409232423.GB18016@ZenIV.linux.org.uk>
+	<87lhva5h4k.fsf@x220.int.ebiederm.org>
+	<20140413053956.GM18016@ZenIV.linux.org.uk>
+	<87zjjp3e7w.fsf@x220.int.ebiederm.org>
+	<87ppkl1xb7.fsf@x220.int.ebiederm.org>
+	<20140413215242.GP18016@ZenIV.linux.org.uk>
+	<87y4z8uzqw.fsf_-_@x220.int.ebiederm.org>
+	<87ppkhc4pp.fsf@x220.int.ebiederm.org>
+	<87ha5r3emw.fsf_-_@x220.int.ebiederm.org>
+	<20140417202237.GA18016@ZenIV.linux.org.uk>
+Date: Thu, 17 Apr 2014 14:23:27 -0700
+In-Reply-To: <20140417202237.GA18016@ZenIV.linux.org.uk> (Al Viro's message of
+	"Thu, 17 Apr 2014 21:22:37 +0100")
+Message-ID: <87tx9rwsz4.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
-Subject: Re: [PATCH v9 03/19] qspinlock: Add pending bit
-References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com> <1397747051-15401-4-git-send-email-Waiman.Long@hp.com> <20140417154200.GN11096@twins.programming.kicks-ass.net>
-In-Reply-To: <20140417154200.GN11096@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/FpimoCUbo006MBEIgsCjnsNdy1WtiM1o=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.3723]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+	*  1.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
+	*  1.0 XMSubMetaSx_00 1+ Sexy Words
+	*  1.0 XMSexyCombo_01 Sexy words in both body/subject
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;Al Viro <viro@ZenIV.linux.org.uk>
+X-Spam-Relay-Country: 
+Subject: Re: [GIT PULL] Detaching mounts on unlink for 3.15
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2014 11:42 AM, Peter Zijlstra wrote:
-> On Thu, Apr 17, 2014 at 11:03:55AM -0400, Waiman Long wrote:
->> +/**
->> + * trylock_pending - try to acquire queue spinlock using the pending bit
->> + * @lock : Pointer to queue spinlock structure
->> + * @pval : Pointer to value of the queue spinlock 32-bit word
->> + * Return: 1 if lock acquired, 0 otherwise
->> + */
->> +static inline int trylock_pending(struct qspinlock *lock, u32 *pval)
->> +{
->> +	u32 old, new, val = *pval;
-> I'm not thrilled about you breaking this into a separate function; the
-> compiler will put it right back and now you get to have that ugly
-> pointer stuff.
+Al Viro <viro@ZenIV.linux.org.uk> writes:
+
+> Have you tried to profile something like umount -l on a large mount tree?
+> You variant causes a shitstorm of
+> 	schedule work
+> 	switch to workqueue
+> 	do actual fs shutdown
+> 	wake umount(8) up
+> 	get through wait_for_completion()
+> for every bleeding vfsmount in there.  And no, it's *not* guaranteed to
+> be dominated by fs shutdown time.  Here's the case where it definitely
+> won't be:
+> 	mkdir /tmp/a
+> 	mount --rbind / /tmp/a
+> 	umount -l /tmp/a
 >
-> It also makes the function control flow not match the state diagram
-> anymore.
+> All vfsmounts involved are killed off with no fs shutdown.  And that's
+> *not* a rare case - exit of the last process in namespace is very likely
+> to look that way too.
+>
+> That's far too heavy.
 
-I separate it out primarily to break the pending bit logic away from the 
-core MCS queuing logic to make each of them easier to understand as they 
-are kind of independent. I fully understand that the compiler will put 
-them back together. As I pile on more code, the slowpath function will 
-grow bigger making it harder to comprehend and find out where are the 
-boundary between them.
+The typically system has about 12 mounts and no mount namespaces.
+Making umount of any kind a rare case.
 
-I will take a look at the state diagram to see what adjustment will be 
-needed.
+Al my apologies for not picking your favorite solution and in choosing
+not to audit every call to mntput in the tree this week I have made an
+uncommon case slower.
 
->> +
->> +	/*
->> +	 * trylock || pending
->> +	 *
->> +	 * 0,0,0 ->  0,0,1 ; trylock
->> +	 * 0,0,1 ->  0,1,1 ; pending
->> +	 */
->> +	for (;;) {
->> +		/*
->> +		 * If we observe any contention; queue.
->> +		 */
->> +		if (val&  ~_Q_LOCKED_MASK)
->> +			return 0;
->> +
->> +		new = _Q_LOCKED_VAL;
->> +		if (val == new)
->> +			new |= _Q_PENDING_VAL;
->> +
->> +		old = atomic_cmpxchg(&lock->val, val, new);
->> +		if (old == val)
->> +			break;
->> +
->> +		*pval = val = old;
->> +	}
->> +
->> +	/*
->> +	 * we won the trylock
->> +	 */
->> +	if (new == _Q_LOCKED_VAL)
->> +		return 1;
->> +
->> +	/*
->> +	 * we're pending, wait for the owner to go away.
->> +	 *
->> +	 * *,1,1 ->  *,1,0
->> +	 */
->> +	while ((val = atomic_read(&lock->val))&  _Q_LOCKED_MASK)
->> +		arch_mutex_cpu_relax();
-> That was a cpu_relax().
+These bug fixes are important, the code is correct, and it is
+technically straight forward to remove the wait in mntput in most
+cases.
 
-Yes, but arch_mutex_cpu_relax() is the same as cpu_relax() for x86.
+I am very frustrated that when given lots of opportunities to look at
+and comment on my code it is hard to get you to engage and comment
+unless I send a pull request to Linus.
 
--Longman
+This last objection really looks to be a case of perfection getting in
+the way of the good.
+
+Eric
+
