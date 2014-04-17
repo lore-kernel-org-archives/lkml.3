@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751244AbaDQWgr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 18:36:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53333 "EHLO mx1.redhat.com"
+	id S1751232AbaDQWze (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 18:55:34 -0400
+Received: from www.meduna.org ([92.240.244.38]:39364 "EHLO meduna.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750928AbaDQWgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 18:36:41 -0400
-Date: Thu, 17 Apr 2014 18:36:38 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: "Theodore Ts'o" <tytso@mit.edu>
-cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: an infinite loop in ext4 in 3.14
-In-Reply-To: <20140417211627.GC4979@thunk.org>
-Message-ID: <alpine.LRH.2.02.1404171833190.19030@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1404171510330.22570@file01.intranet.prod.int.rdu2.redhat.com> <20140417211627.GC4979@thunk.org>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1750928AbaDQWz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 18:55:29 -0400
+Message-ID: <53505BD7.9050004@meduna.org>
+Date: Fri, 18 Apr 2014 00:55:19 +0200
+From: Stanislav Meduna <stano@meduna.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        triplesquarednine@gmail.com
+CC: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bigeasy@linutronix.de, Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: BUG: spinlock trylock failure on UP - reverting timer patches
+ helps
+References: <534C3606.7010206@meduna.org> <534C731F.1050406@meduna.org> <534DADF1.6060608@meduna.org> <53500184.4050309@meduna.org>
+In-Reply-To: <53500184.4050309@meduna.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: stano@meduna.org
+X-Authenticator: dovecot_plain
+X-Spam-Score: -6.9
+X-Spam-Score-Int: -68
+X-Exim-Version: 4.72 (build at 25-Oct-2012 18:35:58)
+X-Date: 2014-04-18 00:55:23
+X-Connected-IP: 95.105.163.217:8013
+X-Message-Linecount: 52
+X-Body-Linecount: 33
+X-Message-Size: 1813
+X-Body-Size: 895
+X-Received-Count: 1
+X-Recipient-Count: 7
+X-Local-Recipient-Count: 7
+X-Local-Recipient-Defer-Count: 0
+X-Local-Recipient-Fail-Count: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 17.04.2014 18:29, Stanislav Meduna wrote:
 
-
-On Thu, 17 Apr 2014, Theodore Ts'o wrote:
-
-> On Thu, Apr 17, 2014 at 03:23:13PM -0400, Mikulas Patocka wrote:
-> > 
-> > I hit a bug in ext4 - jbd2 was stuck in an infinite loop when remounting 
-> > the root filesystem read-only during shutdown.
+> Note: the bug goes away reverting the very same patches that are
+> helping the Jordan's problms. I did follow
 > 
-> Is this at all repeatable?
-
-No - it happened just once.
-
-> I suspect what happened is that we're not
-> checking the error return from jbd2_log_do_checkpoint(), and if it ran
-> into an error doing the jbd2_log_do_checkpoint --- for example, if it
-
-There were no I/O errors on the console when the lockup happened.
-
-> wasn't able to write to the journal --- say, because __wait_cp_io()
-> returned -EIO, we might be spinning in the while loop in jbd2_journal_flush:
+> http://www.spinics.net/lists/linux-rt-users/msg11639.html
 > 
-> > while (!err && journal->j_checkpoint_transactions != NULL) {
-> 
-> 
-> (as you suspected).
-> 
-> I can add some error checking, but it would be interesting to know if
-> you can easily reproduce the problem so we can confirm if that's what
-> was really going on.
+> and no BUG while booting anymore. I'll try to let it run some
+> more time.
 
-I can write a script that reboots the machine and run it overnight...
+Erm.. nope
 
-> Regards,
-> 
-> 						- Ted
+# (cat /proc/meminfo ; cat /proc/meminfo) |  grep KernelStack
+KernelStack:        5920 kB
+KernelStack:        5928 kB
 
-Mikulas
+# (cat /proc/meminfo ; cat /proc/meminfo) |  grep KernelStack
+KernelStack:        5952 kB
+KernelStack:        5960 kB
+
+maybe interrupt nesting ad nauseum? How does one debug
+such issues?
+
+It is possible that my previous posting was also caused by this -
+disregard, I'll post again if the problem persists.
+
+Jordan, could you check whether your kernel stack remains
+stable with only the 3 patches reverted?
+
+Thanks
+-- 
+                                     Stano
+
