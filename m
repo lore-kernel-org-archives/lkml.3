@@ -1,41 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113AbaDQUyA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 16:54:00 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44347 "EHLO arroyo.ext.ti.com"
+	id S1754143AbaDQUyg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 16:54:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63976 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753335AbaDQUww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 16:52:52 -0400
-Message-ID: <53503F06.3050707@ti.com>
-Date: Thu, 17 Apr 2014 16:52:22 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751312AbaDQUyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 16:54:25 -0400
+Date: Thu, 17 Apr 2014 16:53:55 -0400
+From: Dave Jones <davej@redhat.com>
+To: Borislav Petkov <bp@alien8.de>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Zhang, Rui" <rui.zhang@intel.com>, "Lu, Aaron" <aaron.lu@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng Z" <zheng.z.yan@intel.com>, daniel.vetter@ffwll.ch
+Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+Message-ID: <20140417205355.GA22191@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Borislav Petkov <bp@alien8.de>, Bjorn Helgaas <bhelgaas@google.com>,
+	"Rafael J. Wysocki" <rjw@rjwysocki.net>,
+	"Zhang, Rui" <rui.zhang@intel.com>,
+	"Lu, Aaron" <aaron.lu@intel.com>,
+	lkml <linux-kernel@vger.kernel.org>,
+	"x86@kernel.org" <x86@kernel.org>,
+	Linux PCI <linux-pci@vger.kernel.org>,
+	ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+	Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+	Stephane Eranian <eranian@google.com>,
+	"Yan, Zheng Z" <zheng.z.yan@intel.com>, daniel.vetter@ffwll.ch
+References: <CAErSpo4pDYMhHo6e-1TN6XDRO0xy0u8H+=oucFnrEK+kbjZvzw@mail.gmail.com>
+ <20140416190404.GA7070@pd.tnic>
+ <20140416203138.GA17661@google.com>
+ <20140416223122.GA2767@redhat.com>
+ <20140416225600.GA23781@google.com>
+ <20140417104533.GB8215@pd.tnic>
+ <20140417182637.GA2098@google.com>
+ <20140417195240.GA18876@redhat.com>
+ <20140417200127.GH4321@pd.tnic>
+ <20140417200352.GB18876@redhat.com>
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Sricharan R <r.sricharan@ti.com>
-CC: Sekhar Nori <nsekhar@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 02/19] bus: omap_l3_noc: rename functions and data
- to omap_l3
-References: <1397492726-17203-1-git-send-email-nm@ti.com> <1397767775-10965-1-git-send-email-nm@ti.com> <1397767775-10965-3-git-send-email-nm@ti.com>
-In-Reply-To: <1397767775-10965-3-git-send-email-nm@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140417200352.GB18876@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 April 2014 04:49 PM, Nishanth Menon wrote:
-> From: Sricharan R <r.sricharan@ti.com>
-> 
-> Since omap_l3_noc driver is now being used for OMAP5 and reusable with
-> DRA7 and AM437x, using omap4 specific naming is misleading.
-> 
-> Signed-off-by: Sricharan R <r.sricharan@ti.com>
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> ---
-> 
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+On Thu, Apr 17, 2014 at 04:03:52PM -0400, Dave Jones wrote:
+ > On Thu, Apr 17, 2014 at 10:01:27PM +0200, Borislav Petkov wrote:
+ >  > On Thu, Apr 17, 2014 at 03:52:40PM -0400, Dave Jones wrote:
+ >  > > Just as X starts up, I see this in dmesg..
+ >  > > 
+ >  > > [   42.879049] [drm:cpt_serr_int_handler] *ERROR* PCH transcoder A FIFO underrun
+ >  > 
+ >  > FWIW, I have that too. It should be something i915-related:
+ >  > 
+ >  > [    0.617673] [drm] Memory usable by graphics device = 2048M
+ >  > [    0.694445] i915 0000:00:02.0: irq 42 for MSI/MSI-X
+ >  > [    0.694549] [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
+ >  > [    0.694631] [drm] Driver supports precise vblank timestamp query.
+ >  > [    0.695313] vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
+ >  > [    0.788300] [drm] GMBUS [i915 gmbus dpb] timed out, falling back to bit banging on pin 5
+ >  > [    0.799829] fbcon: inteldrmfb (fb0) is primary device
+ >  > [    1.176845] [drm:cpt_serr_int_handler] *ERROR* PCH transcoder A FIFO underrun
+ > 
+ > Can you send me your .config off-list ?
+ > I wonder if this is something config specific that's causing me to see
+ > this, and you not, given we've apparently got similar machines.
+
+ok, with your config I get back to a console after the modesetting
+switch, but then it hangs in USB init.
+
+Hrmm.
+
+	Dave
 
