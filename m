@@ -1,120 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751341AbaDQUTu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 16:19:50 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:58996 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbaDQUTo (ORCPT
+	id S1751454AbaDQUUr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 16:20:47 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:58208 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838AbaDQUUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 16:19:44 -0400
+	Thu, 17 Apr 2014 16:20:38 -0400
+Subject: [PATCH] PNP: Work around BIOS defects in Intel MCH area reporting
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Aaron Lu <aaron.lu@intel.com>, linux-pci@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        linux-acpi@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Zheng Z Yan <zheng.z.yan@intel.com>,
+        Dave Jones <davej@redhat.com>, Rui Zhang <rui.zhang@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Date: Thu, 17 Apr 2014 14:20:33 -0600
+Message-ID: <20140417202033.7057.98414.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <5350042F.4040904@colorfullife.com>
-References: <1396235199.2507.2.camel@buesod1.americas.hpqcorp.net>
- <20140331170546.3b3e72f0.akpm@linux-foundation.org> <1396371699.25314.11.camel@buesod1.americas.hpqcorp.net>
- <CAHGf_=qsf6vN5k=-PLraG8Q_uU1pofoBDktjVH1N92o76xPadQ@mail.gmail.com>
- <1396377083.25314.17.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rLLBDr5ptLMvFD-M+TPQSnK3EP=7R+27K8or84rY-KLA@mail.gmail.com>
- <1396386062.25314.24.camel@buesod1.americas.hpqcorp.net> <CAHGf_=rhXrBQSmDBJJ-vPxBbhjJ91Fh2iWe1cf_UQd-tCfpb2w@mail.gmail.com>
- <20140401142947.927642a408d84df27d581e36@linux-foundation.org>
- <CAHGf_=p70rLOYwP2OgtK+2b+41=GwMA9R=rZYBqRr1w_O5UnKA@mail.gmail.com>
- <20140401144801.603c288674ab8f417b42a043@linux-foundation.org>
- <1396389751.25314.26.camel@buesod1.americas.hpqcorp.net> <20140401150843.13da3743554ad541629c936d@linux-foundation.org>
- <534AD1EE.3050705@colorfullife.com> <20140416154631.6d0173498c60619d454ae651@linux-foundation.org>
- <CAHO5Pa2zguBEpg-S0Zx26qEStF5ZyvrnbU8-sQZfNJEZRMQPqg@mail.gmail.com> <5350042F.4040904@colorfullife.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Thu, 17 Apr 2014 22:19:23 +0200
-Message-ID: <CAKgNAkiL+m35MffVheq90rNS7Tv3nANNZh8GJbh8FHkr3ot_tg@mail.gmail.com>
-Subject: Re: [PATCH] ipc,shm: increase default size for shmmax
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, aswin@hp.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 6:41 PM, Manfred Spraul
-<manfred@colorfullife.com> wrote:
-> On 04/17/2014 12:41 PM, Michael Kerrisk wrote:
->>
->> On Thu, Apr 17, 2014 at 12:46 AM, Andrew Morton
->> <akpm@linux-foundation.org> wrote:
->>>
->>> On Sun, 13 Apr 2014 20:05:34 +0200 Manfred Spraul
->>> <manfred@colorfullife.com> wrote:
->>>
->>>> Hi Andrew,
->>>>
->>>> On 04/02/2014 12:08 AM, Andrew Morton wrote:
->>>>>
->>>>> Well, I'm assuming 64GB==infinity. It *was* infinity in the RHEL5
->>>>> timeframe, but infinity has since become larger so pickanumber.
->>>>
->>>> I think infinity is the right solution:
->>>> The only common case where infinity is wrong would be Android - and
->>>> Android disables sysv shm entirely.
->>>>
->>>> There are two patches:
->>>> http://marc.info/?l=linux-kernel&m=139730332306185&q=raw
->>>> http://marc.info/?l=linux-kernel&m=139727299800644&q=raw
->>>>
->>>> Could you apply one of them?
->>>> I wrote the first one, thus I'm biased which one is better.
->>>
->>> I like your patch because applying it might encourage you to send more
->>> kernel patches - I miss the old days ;)
->>>
->>> But I do worry about disrupting existing systems so I like Davidlohr's
->>> idea of making the change a no-op for people who are currently
->>> explicitly setting shmmax and shmall.
->>
->> Agreed. It's hard to imagine situations where people might care
->> nowadays, but there's no limits to people's insane inventiveness. Some
->> people really might want to set an upper limit.
->
-> I don't understand that: neither patch has any impact after an explicit
-> sysctl that overwrites shmmax.
+Work around BIOSes that don't report the entire Intel MCH area.
 
-You don't understand it, because I was being dense :-}. I
-misunderstood your patch. I think I was thrown by this line in the
-commit message:
+MCHBAR is not an architected PCI BAR, so MCH space is usually reported as a
+PNP0C02 resource.  The MCH space was once 16KB, but is 32KB in newer parts.
+Some BIOSes still report a PNP0C02 resource that is only 16KB, which means
+the rest of the MCH space is consumed but unreported.
 
-    The patch disables both limits by setting the limits to ULONG_MAX.
+This can cause resource map sanity check warnings or (theoretically) a
+device conflict if we assigned the unreported space to another device.
 
-Of course, you patch doesn't *disable* the limits, it simply sets the
-defaults to the maximum.
+The Intel perf event uncore driver tripped over this when it claimed the
+MCH region:
 
->>> In an ideal world, system administrators would review this change,
->>
->> And in the ideal world, patches such as this would CC
->> linux-api@vger.kernel.org, as described in
->> Documentation/SubmitChecklist, so that users who care about getting
->> advance warning on API changes could be alerted and might even review
->> and comment...
->
-> Good point.
-> Davidlohr: Your patch has an impact on shmctl(,IPC_INFO,).
-> Could you add that for v3?
+  resource map sanity check conflict: 0xfed10000 0xfed15fff 0xfed10000 0xfed13fff pnp 00:01
+  Info: mapping multiple BARs. Your kernel is fine.
 
-Well, actually, BOTH patches change the API, because they both affect
-SHMALL/SHMMAX.
+To prevent this, if we find a PNP0C02 resource that covers part of the MCH
+space, extend it to cover the entire space.
 
-Cheers,
+Link: http://lkml.kernel.org/r/20140224162400.GE16457@pd.tnic
+Reported-by: Borislav Petkov <bp@alien8.de>
+Tested-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+---
+ drivers/pnp/quirks.c |   74 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 74 insertions(+)
 
-Michael
+diff --git a/drivers/pnp/quirks.c b/drivers/pnp/quirks.c
+index 258fef272ea7..90b8c12c220d 100644
+--- a/drivers/pnp/quirks.c
++++ b/drivers/pnp/quirks.c
+@@ -334,6 +334,79 @@ static void quirk_amd_mmconfig_area(struct pnp_dev *dev)
+ }
+ #endif
+ 
++/* Device IDs of parts that have 32KB MCH space */
++static const unsigned int mch_quirk_devices[] = {
++	0x0154,	/* Ivy Bridge */
++	0x0c00,	/* Haswell */
++};
++
++static struct pci_dev *get_intel_host(void)
++{
++	int i;
++	struct pci_dev *host;
++
++	for (i = 0; i < ARRAY_SIZE(mch_quirk_devices); i++) {
++		host = pci_get_device(PCI_VENDOR_ID_INTEL, mch_quirk_devices[i],
++				      NULL);
++		if (host)
++			return host;
++	}
++	return NULL;
++}
++
++static void quirk_intel_mch(struct pnp_dev *dev)
++{
++	struct pci_dev *host;
++	u32 addr_lo, addr_hi;
++	struct pci_bus_region region;
++	struct resource mch;
++	struct pnp_resource *pnp_res;
++	struct resource *res;
++
++	host = get_intel_host();
++	if (!host)
++		return;
++
++	/*
++	 * MCHBAR is not an architected PCI BAR, so MCH space is usually
++	 * reported as a PNP0C02 resource.  The MCH space was originally
++	 * 16KB, but is 32KB in newer parts.  Some BIOSes still report a
++	 * PNP0C02 resource that is only 16KB, which means the rest of the
++	 * MCH space is consumed but unreported.
++	 */
++
++	/*
++	 * Read MCHBAR for Host Member Mapped Register Range Base
++	 * https://www-ssl.intel.com/content/www/us/en/processors/core/4th-gen-core-family-desktop-vol-2-datasheet
++	 * Sec 3.1.12.
++	 */
++	pci_read_config_dword(host, 0x48, &addr_lo);
++	region.start = addr_lo & ~0x7fff;
++	pci_read_config_dword(host, 0x4c, &addr_hi);
++	region.start |= (dma_addr_t) addr_hi << 32;
++	region.end = region.start + 32*1024 - 1;
++
++	memset(&mch, 0, sizeof(mch));
++	mch.flags = IORESOURCE_MEM;
++	pcibios_bus_to_resource(host->bus, &mch, &region);
++
++	list_for_each_entry(pnp_res, &dev->resources, list) {
++		res = &pnp_res->res;
++		if (res->end < mch.start || res->start > mch.end)
++			continue;	/* no overlap */
++		if (res->start == mch.start && res->end == mch.end)
++			continue;	/* exact match */
++
++		dev_info(&dev->dev, FW_BUG "PNP resource %pR covers only part of %s Intel MCH; extending to %pR\n",
++			 res, pci_name(host), &mch);
++		res->start = mch.start;
++		res->end = mch.end;
++		break;
++	}
++
++	pci_dev_put(host);
++}
++
+ /*
+  *  PnP Quirks
+  *  Cards or devices that need some tweaking due to incomplete resource info
+@@ -364,6 +437,7 @@ static struct pnp_fixup pnp_fixups[] = {
+ #ifdef CONFIG_AMD_NB
+ 	{"PNP0c01", quirk_amd_mmconfig_area},
+ #endif
++	{"PNP0c02", quirk_intel_mch},
+ 	{""}
+ };
+ 
 
-
-> I'll try to make a v2 (with your update to the uapi header file) tomorrow.
->
-> --
->     Manfred
-
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
