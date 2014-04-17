@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221AbaDQSAY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 14:00:24 -0400
-Received: from mail-ie0-f201.google.com ([209.85.223.201]:44330 "EHLO
-	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001AbaDQSAS (ORCPT
+	id S1752488AbaDQSAd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 14:00:33 -0400
+Received: from mail-pd0-f202.google.com ([209.85.192.202]:61981 "EHLO
+	mail-pd0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342AbaDQSAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 14:00:18 -0400
+	Thu, 17 Apr 2014 14:00:19 -0400
+X-Greylist: delayed 84884 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Apr 2014 14:00:19 EDT
 From: Doug Anderson <dianders@chromium.org>
 To: Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@nvidia.com>,
         Wolfram Sang <wsa@the-dreams.de>
 Cc: abrestic@chromium.org, dgreid@chromium.org,
         Olof Johansson <olof@lixom.net>, Simon Glass <sjg@chromium.org>,
         linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
-        David Hendricks <dhendrix@chromium.org>,
         Doug Anderson <dianders@chromium.org>,
         Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/7] mfd: cros_ec: spi: calculate delay between transfers correctly
-Date: Thu, 17 Apr 2014 10:59:24 -0700
-Message-Id: <1397757570-19750-2-git-send-email-dianders@chromium.org>
+Subject: [PATCH 4/7] mfd: cros_ec: spi: Increase cros_ec_spi deadline from 5ms to 100ms
+Date: Thu, 17 Apr 2014 10:59:27 -0700
+Message-Id: <1397757570-19750-5-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 1.9.1.423.g4596e3a
 In-Reply-To: <1397757570-19750-1-git-send-email-dianders@chromium.org>
 References: <1397757570-19750-1-git-send-email-dianders@chromium.org>
@@ -26,35 +26,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Hendricks <dhendrix@chromium.org>
+We're adding i2c tunneling to the list of things that goes over
+cros_ec.  i2c tunneling can be slooooooow, so increase our deadline to
+100ms to account for that.
 
-To avoid spamming the EC we calculate the time between the previous
-transfer and the current transfer and force a delay if the time delta
-is too small.
-
-However, a small miscalculation causes the delay period to be
-far too short. Most noticably this impacts commands with a long
-turnaround time such as EC firmware reads and writes.
-
-Signed-off-by: David Hendricks <dhendrix@chromium.org>
 Signed-off-by: Doug Anderson <dianders@chromium.org>
 ---
- drivers/mfd/cros_ec_spi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mfd/cros_ec_spi.c | 24 ++++++++++++++++--------
+ 1 file changed, 16 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
-index 84af8d7..c185eb6 100644
+index 4f863c3..0b8d328 100644
 --- a/drivers/mfd/cros_ec_spi.c
 +++ b/drivers/mfd/cros_ec_spi.c
-@@ -219,7 +219,7 @@ static int cros_ec_command_spi_xfer(struct cros_ec_device *ec_dev,
- 		ktime_get_ts(&ts);
- 		delay = timespec_to_ns(&ts) - ec_spi->last_transfer_ns;
- 		if (delay < EC_SPI_RECOVERY_TIME_NS)
--			ndelay(delay);
-+			ndelay(EC_SPI_RECOVERY_TIME_NS - delay);
- 	}
+@@ -39,14 +39,22 @@
+ #define EC_MSG_PREAMBLE_COUNT		32
  
- 	/* Transmit phase - send our message */
+ /*
+-  * We must get a response from the EC in 5ms. This is a very long
+-  * time, but the flash write command can take 2-3ms. The EC command
+-  * processing is currently not very fast (about 500us). We could
+-  * look at speeding this up and making the flash write command a
+-  * 'slow' command, requiring a GET_STATUS wait loop, like flash
+-  * erase.
+-  */
+-#define EC_MSG_DEADLINE_MS		5
++ * Allow for a long time for the EC to respond.  We support i2c
++ * tunneling and support fairly long messages for the tunnel (249
++ * bytes long at the moment).  If we're talking to a 100 kHz device
++ * on the other end and need to transfer ~256 bytes, then we need:
++ *  10 us/bit * ~10 bits/byte * ~256 bytes = ~25ms
++ *
++ * We'll wait 4 times that to handle clock stretching and other
++ * paranoia.
++ *
++ * It's pretty unlikely that we'll really see a 249 byte tunnel in
++ * anything other than testing.  If this was more common we might
++ * consider having slow commands like this require a GET_STATUS
++ * wait loop.  The 'flash write' command would be another candidate
++ * for this, clocking in at 2-3ms.
++ */
++#define EC_MSG_DEADLINE_MS		100
+ 
+ /*
+   * Time between raising the SPI chip select (for the end of a
 -- 
 1.9.1.423.g4596e3a
 
