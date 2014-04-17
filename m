@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139AbaDQJKL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 05:10:11 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54645 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751465AbaDQJKG (ORCPT
+	id S1752668AbaDQJR4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 05:17:56 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:65524 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232AbaDQJR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 05:10:06 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v3 1/2] clocksource: sun5i: Add support for reset controller
-Date: Thu, 17 Apr 2014 11:06:45 +0200
-Message-Id: <1397725606-18000-2-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1397725606-18000-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1397725606-18000-1-git-send-email-maxime.ripard@free-electrons.com>
+	Thu, 17 Apr 2014 05:17:28 -0400
+From: "Zhao\, Gang" <gamerh2o@gmail.com>
+To: Michal Marek <michal.marek@matfyz.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kyungsik Lee <kyungsik.lee@lge.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+Subject: Re: [PATCH] .gitignore: ignore Module.symvers in all directories
+References: <415f152dbdb6d675ebca57afd8bfbc785a70cfd1.1397458539.git.gamerh2o@gmail.com>
+	<20140416210826.GA20810@fiji.localdomain>
+Date: Thu, 17 Apr 2014 17:17:16 +0800
+In-Reply-To: <20140416210826.GA20810@fiji.localdomain> (Michal Marek's message
+	of "Wed, 16 Apr 2014 23:08:26 +0200")
+Message-ID: <87eh0wz55v.fsf@gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Allwinner A31 that uses this timer has the timer IP asserted in reset.
-Add an optional reset property to the DT, and deassert the timer from reset if
-it's there.
+On Wed, 2014-04-16 at 23:08:26 +0200, Michal Marek wrote:
+> On Mon, Apr 14, 2014 at 02:56:15PM +0800, Zhao, Gang wrote:
+>> When using `make M=/path/to/driver modules` to build a module, file
+>> Module.symvers will be created in that directory, so it's better to
+>> ignore it in all directories.
+>> 
+>> Slightly reordered, let specific file names behind general ones.
+>> 
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: Kyungsik Lee <kyungsik.lee@lge.com>
+>> Cc: Markus Trippelsdorf <markus@trippelsdorf.de>
+>> Signed-off-by: Zhao, Gang <gamerh2o@gmail.com>
+>
+> Note that the easier way to build a subtree of the kernel source is
+>
+>   make path/to/driver/
+>
+Thanks for pointing out this.
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- .../devicetree/bindings/timer/allwinner,sun5i-a13-hstimer.txt       | 4 ++++
- drivers/clocksource/timer-sun5i.c                                   | 6 ++++++
- 2 files changed, 10 insertions(+)
+> including the trailing /. But the M=... syntax seems so widespread that
+> I have to apply this.
+>
+The M=... syntax is the first I learned to build a module. I think it's
+popular because one can build out of tree drivers by using it(adding
+C=...). As you said, it's better to use `make path/to/driver/` to build
+in-tree drivers.
 
-diff --git a/Documentation/devicetree/bindings/timer/allwinner,sun5i-a13-hstimer.txt b/Documentation/devicetree/bindings/timer/allwinner,sun5i-a13-hstimer.txt
-index 7c26154b8bbb..27cfc7d7ccd7 100644
---- a/Documentation/devicetree/bindings/timer/allwinner,sun5i-a13-hstimer.txt
-+++ b/Documentation/devicetree/bindings/timer/allwinner,sun5i-a13-hstimer.txt
-@@ -9,6 +9,9 @@ Required properties:
- 		one)
- - clocks: phandle to the source clock (usually the AHB clock)
- 
-+Optionnal properties:
-+- resets: phandle to a reset controller asserting the timer
-+
- Example:
- 
- timer@01c60000 {
-@@ -19,4 +22,5 @@ timer@01c60000 {
- 		     <0 53 1>,
- 		     <0 54 1>;
- 	clocks = <&ahb1_gates 19>;
-+	resets = <&ahb1rst 19>;
- };
-diff --git a/drivers/clocksource/timer-sun5i.c b/drivers/clocksource/timer-sun5i.c
-index deebcd6469fc..02268448dc85 100644
---- a/drivers/clocksource/timer-sun5i.c
-+++ b/drivers/clocksource/timer-sun5i.c
-@@ -16,6 +16,7 @@
- #include <linux/interrupt.h>
- #include <linux/irq.h>
- #include <linux/irqreturn.h>
-+#include <linux/reset.h>
- #include <linux/sched_clock.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-@@ -143,6 +144,7 @@ static u64 sun5i_timer_sched_read(void)
- 
- static void __init sun5i_timer_init(struct device_node *node)
- {
-+	struct reset_control *rstc;
- 	unsigned long rate;
- 	struct clk *clk;
- 	int ret, irq;
-@@ -162,6 +164,10 @@ static void __init sun5i_timer_init(struct device_node *node)
- 	clk_prepare_enable(clk);
- 	rate = clk_get_rate(clk);
- 
-+	rstc = of_reset_control_get(node, NULL);
-+	if (!IS_ERR(rstc))
-+		reset_control_deassert(rstc);
-+
- 	writel(~0, timer_base + TIMER_INTVAL_LO_REG(1));
- 	writel(TIMER_CTL_ENABLE | TIMER_CTL_RELOAD,
- 	       timer_base + TIMER_CTL_REG(1));
--- 
-1.9.1
+> BTW: there is really no need to CC the last N people who touched
+> such a trivial file :).
+>
+./scripts/get_maintainer.pl doesn't return the maintainer of this
+file. Maybe you can add this file to MAINTAINERS(telling you are the
+maintainer), but it's really so trivial. :-)
 
+> Michal
