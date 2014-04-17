@@ -1,101 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700AbaDQAbm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 20:31:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6630 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753827AbaDQAbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 20:31:40 -0400
-Date: Thu, 17 Apr 2014 02:31:28 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Vlastimil Babka <vbabka@suse.cz>, Bob Liu <lliubbo@gmail.com>
-Subject: Re: mm: kernel BUG at mm/huge_memory.c:1829!
-Message-ID: <20140417003128.GG10119@redhat.com>
-References: <53440991.9090001@oracle.com>
- <20140410102527.GA24111@node.dhcp.inet.fi>
- <20140410134436.GA25933@node.dhcp.inet.fi>
- <20140410162750.GD2749@redhat.com>
- <20140414144218.GA26515@node.dhcp.inet.fi>
+	id S1757063AbaDQAcO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 20:32:14 -0400
+Received: from static-209-166-131-148.expedient.com ([209.166.131.148]:50526
+	"EHLO natasha.panasas.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1756802AbaDQAcM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 20:32:12 -0400
+From: Jim Lieb <jlieb@panasas.com>
+To: <nfs-ganesha-devel@lists.sourceforge.net>, Jeremy Allison <jra@samba.org>
+CC: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        libc-alpha <libc-alpha@sourceware.org>,
+        Jeff Layton <jlayton@redhat.com>,
+        Michael Kerrisk-manpages <mtk.manpages@googlemail.com>,
+        "Carlos O'Donell" <carlos@redhat.com>,
+        <samba-technical@lists.samba.org>, lkml <linux-kernel@vger.kernel.org>,
+        Jeremy Allison <jra@google.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: Re: [Nfs-ganesha-devel] should we change the name/macros of file-private locks?
+Date: Wed, 16 Apr 2014 17:31:11 -0700
+Message-ID: <2369283.4ufWfMqZox@jlieb-e6410>
+Organization: Panasas Inc.
+User-Agent: KMail/4.11.5 (Linux/3.13.9-100.fc19.x86_64; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20140416201633.GQ22791@samba2>
+References: <20140416145746.66b7441c@tlielax.poochiereds.net> <CAKgNAkgqZDcT0jda8XS+4HrJzXjzwehqciHbkNuAVY3fNkH4zQ@mail.gmail.com> <20140416201633.GQ22791@samba2>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140414144218.GA26515@node.dhcp.inet.fi>
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kirill,
-
-On Mon, Apr 14, 2014 at 05:42:18PM +0300, Kirill A. Shutemov wrote:
-> I've spent few day trying to understand rmap code. And now I think my
-> patch is wrong.
+On Wednesday, April 16, 2014 13:16:33 Jeremy Allison wrote:
+> On Wed, Apr 16, 2014 at 10:00:46PM +0200, Michael Kerrisk (man-pages) wrote:
+> > [CC += Jeremy Allison]
+> > 
+> > On Wed, Apr 16, 2014 at 8:57 PM, Jeff Layton <jlayton@redhat.com> wrote:
+> > > Sorry to spam so many lists, but I think this needs widespread
+> > > distribution and consensus.
+> > > 
+> > > File-private locks have been merged into Linux for v3.15, and *now*
+> > > people are commenting that the name and macro definitions for the new
+> > > file-private locks suck.
+> > > 
+> > > ...and I can't even disagree. They do suck.
+> > > 
+> > > We're going to have to live with these for a long time, so it's
+> > > important that we be happy with the names before we're stuck with them.
+> > 
+> > So, to add my perspective: The existing byte-range locking system has
+> > persisted (despite egregious faults) for well over two decades. One
+> > supposes that Jeff's new improved version might be around
+> > at least as long. With that in mind, and before setting in stone (and
+> > pushing into POSIX) a model of thinking that thousands of programmers
+> > will live with for a long time, it's worth thinking about names.
+> > 
+> > > Michael Kerrisk suggested several names but I think the only one that
+> > > doesn't have other issues is "file-associated locks", which can be
+> > > distinguished against "process-associated" locks (aka classic POSIX
+> > > locks).
+> > 
+> > The names I have suggested are:
+> >     file-associated locks
+> > 
+> > or
+> > 
+> >    file-handle locks
+> > 
+> > or (using POSIX terminology)
+> > 
+> >     file-description locks
 > 
-> I actually don't see where walk order requirement comes from. It seems all
-> operations (insert, remove, foreach) on anon_vma is serialized with
-> anon_vma->root->rwsem. Andrea, could you explain this for me?
+> Thanks for the CC: Michael, but to be honest
+> I don't really care what the name is, I just
+> want the functionality. I can change our build
+> system to cope with detecting it under any name
+> you guys choose :-).
+> 
+> Cheers,
+> 
+> 	Jeremy.
 
-It's true the locking protects and freezes the view of all anon_vma
-structures associated with the page, but that only guarantees you not
-to miss the vma. Not missing the vma is not enough. You can still miss
-a pte during the rmap_walk if the order is wrong, because the pte/pmds
-are still moving freely under the vmas (absent of the PT lock and the
-mmap_sem).
+I and the rest of the nfs-ganesha community are with Jeremy and samba wrt 
+names.  We just want locks that work, i.e. Useful Locks ;)
 
-The problem are all MM operations that copies or move a page mapping
-from a source to destination vma (fork and mremap). They take the
-anon_vma lock, insert the destination vma with the proper anon_vma
-chains and then they _drop_ the anon vma lock, and only later they
-start moving ptes and pmds around (by taking the proper PT locks).
+Jim
+> 
+> ----------------------------------------------------------------------------
+> -- Learn Graph Databases - Download FREE O'Reilly Book
+> "Graph Databases" is the definitive new guide to graph databases and their
+> applications. Written by three acclaimed leaders in the field,
+> this first edition is now available. Download your free book today!
+> http://p.sf.net/sfu/NeoTech
+> _______________________________________________
+> Nfs-ganesha-devel mailing list
+> Nfs-ganesha-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/nfs-ganesha-devel
 
-anon_vma -> src_vma -> dst_vma
+-- 
+Jim Lieb
+Linux Systems Engineer
+Panasas Inc.
 
-If the order is like above (guaranteed before the interval tree was
-introduced), if the rmap_walk of split_huge_page and migrate
-encounters the source pte/pmd and split/unmap it before it gets
-copied, then the copy or move will retain the processed state (regular
-pte instead of trans_huge_pmd for split_huge_page or migration pte for
-migrate). If instead the pmd/pte was already copied by the time the
-src_vma is scanned, then it will encounter the copy to process in the
-dst_vma too. The rmap_walk can't miss a pte/pmd if the anon_vma chain
-is walked in insertion order (i.e. older vma first).
-
-anon_vma -> dst_vma -> src_vma
-
-If the anon_vma walk order is reversed vs the insertion order, things
-falls apart because you will scan dst_vma in split_huge_page while it
-still empty, find nothing, then the trans_huge_pmd is moved or copied
-from src_vma to dst_vma by the MM code only holding PT lock and
-mmap_sem for writing (we cannot hold those across the whole duration
-of split_huge_page and migrate). So if the rmap_walk order is not
-right, the rmap_walk can miss the contents of the dst_vma that was
-still empty at the time it was processed.
-
-If the interval tree walk order cannot be fixed without screwing with
-the computation complexity of the structure, a more black and white
-fix could be to add a anon_vma templist to scan in O(N) after the
-interval tree has been scanned, where you add newly inserted vmas.
-The templist shall then be flushed back to the interval tree only
-after the pte/pmd mangling of the MM operation is completed. That
-requires identifying the closure of the critical section for those
-problematic MM operations. The main drawback is actually having to
-take the anon_vma lock twice, the second time for the flush to the
-interval tree.
-
-Looping like in your previous patch would be much simpler if it could
-be made reliable, but it looked like it wouldn't close the bug
-entirely because any concurrent unmap operation could lead to false
-negative hiding the pmd/pte walk miss (by decreasing page->mapcount
-under us).
-
-Comments?
-
-Thanks,
-Andrea
+"If ease of use was the only requirement, we would all be riding tricycles"
+- Douglas Engelbart 1925–2013
