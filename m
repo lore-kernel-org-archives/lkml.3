@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883AbaDQNhO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 09:37:14 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:40194 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754107AbaDQNhM (ORCPT
+	id S1161328AbaDQNi1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 09:38:27 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:53773 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516AbaDQNi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 09:37:12 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: mmarek@suse.cz, akpm@linux-foundation.org, prarit@redhat.com,
-        michael.opdenacker@free-electrons.com, tkhai@yandex.ru,
-        nasa4836@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts/tags.sh: add regular expression replacement pattern for memcg
-Date: Thu, 17 Apr 2014 21:37:02 +0800
-Message-Id: <1397741822-28836-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 1.9.0.GIT
+	Thu, 17 Apr 2014 09:38:26 -0400
+Subject: Re: [PATCH 0/3] perf top/tui: Fixes for percentage filter behavior
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <20140417120046.GC7422@krava.brq.redhat.com>
+References: <1397721206-15393-1-git-send-email-namhyung@kernel.org>
+	 <20140417120046.GC7422@krava.brq.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Apr 2014 22:38:19 +0900
+Message-ID: <1397741900.1731.17.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Marek.
+Hi Jiri,
 
-> It does not look like new macros are being defined here on a weekly basis...
+2014-04-17 (목), 14:00 +0200, Jiri Olsa:
+> On Thu, Apr 17, 2014 at 04:53:23PM +0900, Namhyung Kim wrote:
+> > Hi,
+> > 
+> > This is a small fixes for a bug in perf top I found during some tests.
+> > It gets segfault if symbol filter found no entries - accessing NULL
+> > pointer in that case.
+> 
+> yep, I hit that yesterday as well, but I ended up just with
+> the patch below, your changes seems more comprehensive ;-)
+> going to review..
 
-  Hmm, I think so. I've removed this comment.
+Well, the end result will be same, but I think it should have 0
+nr_entries when there's no entry to show.
 
-> Please do not interleave the new defines with the <linux/page-flags.h>
-> defines.
+Thanks,
+Namhyung
 
-  Ok.
-
-Here is the renewed patch:
----
-
-
-Currently, no regular expression replacement pattern for PageCgroug*
-defined, which causes quite a few pain while reading code. Just get
-rid of it.
-
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- scripts/tags.sh | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/scripts/tags.sh b/scripts/tags.sh
-index f2c5b00..7d3ebfe 100755
---- a/scripts/tags.sh
-+++ b/scripts/tags.sh
-@@ -187,6 +187,10 @@ exuberant()
- 	--regex-c++='/TESTCLEARFLAG_FALSE\(([^,)]*).*/TestClearPage\1/' \
- 	--regex-c++='/__TESTCLEARFLAG_FALSE\(([^,)]*).*/__TestClearPage\1/' \
- 	--regex-c++='/_PE\(([^,)]*).*/PEVENT_ERRNO__\1/'		\
-+	--regex-c++='/TESTPCGFLAG\(([^,)]*).*/PageCgroup\1/'		\
-+	--regex-c++='/SETPCGFLAG\(([^,)]*).*/SetPageCgroup\1/'		\
-+	--regex-c++='/CLEARPCGFLAG\(([^,)]*).*/ClearPageCgroup\1/'	\
-+	--regex-c++='/TESTCLEARPCGFLAG\(([^,)]*).*/TestClearPageCgroup\1/' \
- 	--regex-c='/PCI_OP_READ\((\w*).*[1-4]\)/pci_bus_read_config_\1/' \
- 	--regex-c='/PCI_OP_WRITE\((\w*).*[1-4]\)/pci_bus_write_config_\1/' \
- 	--regex-c='/DEFINE_(MUTEX|SEMAPHORE|SPINLOCK)\((\w*)/\2/v/'	\
-@@ -244,6 +248,10 @@ emacs()
- 	--regex='/__CLEARPAGEFLAG_NOOP(\([^,)]*\).*/__ClearPage\1/' \
- 	--regex='/TESTCLEARFLAG_FALSE(\([^,)]*\).*/TestClearPage\1/' \
- 	--regex='/__TESTCLEARFLAG_FALSE(\([^,)]*\).*/__TestClearPage\1/' \
-+	--regex='/TESTPCGFLAG\(([^,)]*).*/PageCgroup\1/'	\
-+	--regex='/SETPCGFLAG\(([^,)]*).*/SetPageCgroup\1/'	\
-+	--regex='/CLEARPCGFLAG\(([^,)]*).*/ClearPageCgroup\1/'	\
-+	--regex='/TESTCLEARPCGFLAG\(([^,)]*).*/TestClearPageCgroup\1/' \
- 	--regex='/_PE(\([^,)]*\).*/PEVENT_ERRNO__\1/'		\
- 	--regex='/PCI_OP_READ(\([a-z]*[a-z]\).*[1-4])/pci_bus_read_config_\1/' \
- 	--regex='/PCI_OP_WRITE(\([a-z]*[a-z]\).*[1-4])/pci_bus_write_config_\1/'
--- 
-1.9.0.GIT
 
