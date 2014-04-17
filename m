@@ -1,123 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517AbaDQOOf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 10:14:35 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:64169 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753862AbaDQOOa (ORCPT
+	id S1752506AbaDQORY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 10:17:24 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50424 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751992AbaDQORU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 10:14:30 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: tj@kernel.org, lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nasa4836@gmail.com
-Subject: [PATCH] cgroup: clean up obsolete code and comment
-Date: Thu, 17 Apr 2014 22:14:16 +0800
-Message-Id: <1397744056-31119-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 1.9.0.GIT
+	Thu, 17 Apr 2014 10:17:20 -0400
+Date: Thu, 17 Apr 2014 15:15:41 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "arnd@arndb.de" <arnd@arndb.de>, "monstr@monstr.eu" <monstr@monstr.eu>,
+        "dhowells@redhat.com" <dhowells@redhat.com>,
+        "broonie@linaro.org" <broonie@linaro.org>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 00/18] Cross-architecture definitions of relaxed MMIO
+ accessors
+Message-ID: <20140417141541.GC30553@arm.com>
+References: <1397742261-15621-1-git-send-email-will.deacon@arm.com>
+ <20140417140036.GK11096@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140417140036.GK11096@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch purely makes cleanup.
+Hi Peter,
 
-1. parse_cgroupfs_options() no longer takes refcounts on
-   subsystems to be used, update its comment.
-2. cgroup_pidlist_seq_operations has no more user, remove it.
-3. s/pr_warning/pr_warn/g, suggested by scripts/checkpatch.pl.
+On Thu, Apr 17, 2014 at 03:00:36PM +0100, Peter Zijlstra wrote:
+> On Thu, Apr 17, 2014 at 02:44:03PM +0100, Will Deacon wrote:
+> > In actual fact, the relaxed accessors *are* ordered with respect to LOCK/UNLOCK
+> > operations on ARM[64], but I have added this constraint for the benefit of
+> > PowerPC, which has expensive I/O barriers in the spin_unlock path for the
+> > non-relaxed accessors.
+> > 
+> > A corollary to this is that mmiowb() probably needs rethinking. As it currently
+> > stands, an mmiowb() is required to order MMIO writes to a device from multiple
+> > CPUs, even if that device is protected by a lock. However, this isn't often used
+> > in practice, leading to PowerPC implementing both mmiowb() *and* synchronising
+> > I/O in spin_unlock.
+> > 
+> > I would propose making the non-relaxed I/O accessors ordered with respect to
+> > LOCK/UNLOCK, leaving mmiowb() to be used with the relaxed accessors, if
+> > required, but would welcome thoughts/suggestions on this topic.
+> 
+> So the non-relaxed ops already imply the expensive I/O barrier (mmiowb?)
+> and therefore, PPC can drop it from spin_unlock()?
 
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- kernel/cgroup.c | 31 +++++++++----------------------
- 1 file changed, 9 insertions(+), 22 deletions(-)
+Ben can probably help out here, but if my proposal went ahead (that is,
+only the non-relaxed ops would imply mmiowb()), then it would actually
+be implemented on PPC by having only those accessors call IO_SET_SYNC_FLAG,
+which is checked during unlock (in SYNC_IO).
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 8c314dd..ec5bfb2 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1127,9 +1127,9 @@ static int rebind_subsystems(struct cgroup_root *dst_root,
- 		 * Just warn about it and continue.
- 		 */
- 		if (cgrp_dfl_root_visible) {
--			pr_warning("cgroup: failed to create files (%d) while rebinding 0x%lx to default root\n",
-+			pr_warn("cgroup: failed to create files (%d) while rebinding 0x%lx to default root\n",
- 				   ret, ss_mask);
--			pr_warning("cgroup: you may retry by moving them to a different hierarchy and unbinding\n");
-+			pr_warn("cgroup: you may retry by moving them to a different hierarchy and unbinding\n");
- 		}
- 	}
- 
-@@ -1223,10 +1223,8 @@ struct cgroup_sb_opts {
- };
- 
- /*
-- * Convert a hierarchy specifier into a bitmask of subsystems and
-- * flags. Call with cgroup_mutex held to protect the cgroup_subsys[]
-- * array. This function takes refcounts on subsystems to be used, unless it
-- * returns error, in which case no refcounts are taken.
-+ * Convert a hierarchy specifier into a bitmask of subsystems and flags.
-+ * Call with cgroup_mutex held to protect the cgroup_subsys[] array.
-  */
- static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- {
-@@ -1332,7 +1330,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- 	/* Consistency checks */
- 
- 	if (opts->flags & CGRP_ROOT_SANE_BEHAVIOR) {
--		pr_warning("cgroup: sane_behavior: this is still under development and its behaviors will change, proceed at your own risk\n");
-+		pr_warn("cgroup: sane_behavior: this is still under development and its behaviors will change, proceed at your own risk\n");
- 
- 		if ((opts->flags & (CGRP_ROOT_NOPREFIX | CGRP_ROOT_XATTR)) ||
- 		    opts->cpuset_clone_children || opts->release_agent ||
-@@ -1396,7 +1394,7 @@ static int cgroup_remount(struct kernfs_root *kf_root, int *flags, char *data)
- 		goto out_unlock;
- 
- 	if (opts.subsys_mask != root->subsys_mask || opts.release_agent)
--		pr_warning("cgroup: option changes via remount are deprecated (pid=%d comm=%s)\n",
-+		pr_warn("cgroup: option changes via remount are deprecated (pid=%d comm=%s)\n",
- 			   task_tgid_nr(current), current->comm);
- 
- 	added_mask = opts.subsys_mask & ~root->subsys_mask;
-@@ -1678,7 +1676,7 @@ retry:
- 				ret = -EINVAL;
- 				goto out_unlock;
- 			} else {
--				pr_warning("cgroup: new mount options do not match the existing superblock, will be ignored\n");
-+				pr_warn("cgroup: new mount options do not match the existing superblock, will be ignored\n");
- 			}
- 		}
- 
-@@ -3890,17 +3888,6 @@ static int cgroup_pidlist_show(struct seq_file *s, void *v)
- 	return seq_printf(s, "%d\n", *(int *)v);
- }
- 
--/*
-- * seq_operations functions for iterating on pidlists through seq_file -
-- * independent of whether it's tasks or procs
-- */
--static const struct seq_operations cgroup_pidlist_seq_operations = {
--	.start = cgroup_pidlist_start,
--	.stop = cgroup_pidlist_stop,
--	.next = cgroup_pidlist_next,
--	.show = cgroup_pidlist_show,
--};
--
- static u64 cgroup_read_notify_on_release(struct cgroup_subsys_state *css,
- 					 struct cftype *cft)
- {
-@@ -4189,10 +4176,10 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
- 
- 	if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
- 	    parent->parent) {
--		pr_warning("cgroup: %s (%d) created nested cgroup for controller \"%s\" which has incomplete hierarchy support. Nested cgroups may change behavior in the future.\n",
-+		pr_warn("cgroup: %s (%d) created nested cgroup for controller \"%s\" which has incomplete hierarchy support. Nested cgroups may change behavior in the future.\n",
- 			   current->comm, current->pid, ss->name);
- 		if (!strcmp(ss->name, "memory"))
--			pr_warning("cgroup: \"memory\" requires setting use_hierarchy to 1 on the root.\n");
-+			pr_warn("cgroup: \"memory\" requires setting use_hierarchy to 1 on the root.\n");
- 		ss->warned_broken_hierarchy = true;
- 	}
- 
--- 
-1.9.0.GIT
+> Also, I read mmiowb() as MMIO-write-barrier(), what do we have to
+> order/contain mmio-reads?
 
+My understanding is that this is related to posted stores from different
+CPUs being re-ordered on the bus, so I wouldn't expect reads to suffer
+(although, since this isn't permitted on ARM, I'm guessing here).
+
+Will
