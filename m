@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228AbaDQIra (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 04:47:30 -0400
-Received: from mga02.intel.com ([134.134.136.20]:44368 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751454AbaDQIr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 04:47:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,877,1389772800"; 
-   d="scan'208";a="514651695"
-Message-ID: <534F94F2.7020402@intel.com>
-Date: Thu, 17 Apr 2014 11:46:42 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Vladimir Nikulichev <nvs@tbricks.com>, Jiri Olsa <jolsa@redhat.com>
-CC: Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        "linux-perf-users@vger.kernel.org" <linux-perf-users@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf tools: Adjust symbols in VDSO
-References: <web-7508803@mx2.tbricks.com>
-In-Reply-To: <web-7508803@mx2.tbricks.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755462AbaDQIuQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 04:50:16 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54404 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752856AbaDQIuL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 04:50:11 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Emilio Lopez <emilio@elopez.com.ar>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-sunxi@googlegroups.com, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        zhuzhenhua@allwinnertech.com, andriy.shevchenko@intel.com,
+        Arnd Bergmann <arnd@arndb.de>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH v6 4/8] ARM: sun6i: Protect CPU clock
+Date: Thu, 17 Apr 2014 10:46:15 +0200
+Message-Id: <1397724379-15398-5-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1397724379-15398-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1397724379-15398-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/11/2014 05:25 PM, Vladimir Nikulichev wrote:
-> perf tools: Adjust symbols in VDSO
-> 
-> pert-report doesn't resolve function names in VDSO:
-> 
-> $ perf report --stdio -g flat,0.0,15,callee --sort pid
-> ...
->             8.76%
->                0x7fff6b1fe861
->                __gettimeofday
->                ACE_OS::gettimeofday()
-> ...
-> 
-> In this case symbol values should be adjusted the same way as for executables,
-> relocatable objects and prelinked libraries.
-> 
-> After fix:
-> 
-> $ perf report --stdio -g flat,0.0,15,callee --sort pid
-> ...
->             8.76%
->                __vdso_gettimeofday
->                __gettimeofday
->                ACE_OS::gettimeofday()
-> 
-> Signed-off-by: Vladimir Nikulichev <nvs@tbricks.com>
+Right now, AHB is an indirect child clock of the CPU clock. If that happens to
+change, since the CPU clock has no other consumers declared in Linux, it would
+be shut down, which is not really a good idea.
 
-Annotation still doesn't work. but this is a start, so:
+Prevent this by forcing it enabled.
 
-Reviewed-by: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ arch/arm/mach-sunxi/sun6i.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-
-> 
-> diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-> index 3b7dbf5..6864661 100644
-> --- a/tools/perf/util/symbol-elf.c
-> +++ b/tools/perf/util/symbol-elf.c
-> @@ -6,6 +6,7 @@
-> #include <inttypes.h>
-> 
-> #include "symbol.h"
-> +#include "vdso.h"
-> #include <symbol/kallsyms.h>
-> #include "debug.h"
-> 
-> @@ -618,6 +619,7 @@ int symsrc__init(struct symsrc *ss, struct dso *dso,
-> const char *name,
->         GElf_Shdr shdr;
->         ss->adjust_symbols = (ehdr.e_type == ET_EXEC ||
->                 ehdr.e_type == ET_REL ||
-> +                is_vdso_map(dso->short_name) ||
->                 elf_section_by_name(elf, &ehdr, &shdr,
->                              ".gnu.prelink_undo",
->                              NULL) != NULL);
+diff --git a/arch/arm/mach-sunxi/sun6i.c b/arch/arm/mach-sunxi/sun6i.c
+index c5dc81988ce9..6b3905505fe0 100644
+--- a/arch/arm/mach-sunxi/sun6i.c
++++ b/arch/arm/mach-sunxi/sun6i.c
+@@ -10,6 +10,7 @@
+  * warranty of any kind, whether express or implied.
+  */
+ 
++#include <linux/clk.h>
+ #include <linux/clk-provider.h>
+ #include <linux/clocksource.h>
+ #include <linux/init.h>
+@@ -22,9 +23,17 @@
+ 
+ static void __init sun6i_dt_init(void)
+ {
++	struct clk *clk;
++
+ 	sunxi_setup_restart();
+ 
+ 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
++
++	/* Make sure the clocks we absolutely need are enabled */
++	/* CPU clock */
++	clk = clk_get(NULL, "cpu");
++	if (!IS_ERR(clk))
++		clk_prepare_enable(clk);
+ }
+ 
+ extern void __init sun6i_reset_init(void);
+-- 
+1.9.1
 
