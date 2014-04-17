@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751684AbaDQIQw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 04:16:52 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:33128 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbaDQIQq (ORCPT
+	id S1753775AbaDQIRM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 04:17:12 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:36606 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaDQIQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 04:16:46 -0400
-Subject: [PATCH -tip v9 00/26] kprobes: introduce NOKPROBE_SYMBOL,
- bugfixes and scalbility efforts
+	Thu, 17 Apr 2014 04:16:53 -0400
+Subject: [PATCH -tip v9 01/26] [BUGFIX]kprobes/x86: Fix page-fault handling
+ logic
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
 Cc: Andi Kleen <andi@firstfloor.org>,
@@ -18,8 +18,10 @@ Cc: Andi Kleen <andi@firstfloor.org>,
         Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
         mingo@redhat.com, systemtap@sourceware.org,
         "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 17 Apr 2014 17:16:37 +0900
-Message-ID: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp>
+Date: Thu, 17 Apr 2014 17:16:44 +0900
+Message-ID: <20140417081644.26341.52351.stgit@ltc230.yrl.intra.hitachi.co.jp>
+In-Reply-To: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp>
+References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -28,252 +30,154 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-Here is the version 9 of NOKPROBE_SYMBOL series, including
-bugfixes. This updates some issues pointed in Steven's review
-against v8 (Thank you!)
+Current kprobes in-kernel page fault handler doesn't
+expect that its single-stepping can be interrupted by
+an NMI handler which may cause a page fault(e.g. perf
+with callback tracing).
+In that case, the page-fault handled by kprobes and it
+misunderstands the page-fault has been caused by the
+single-stepping code and tries to recover IP address
+to probed address.
+But the truth is the page-fault has been caused by the
+NMI handler, and do_page_fault failes to handle real
+page fault because the IP address is modified and
+causes Kernel BUGs like below.
 
-Blacklist improvements
-======================
-Currently, kprobes uses __kprobes annotation and internal symbol-
-name based blacklist to prohibit probing on some functions, because
-to probe those functions may cause an infinite recursive loop by
-int3/debug exceptions.
-However, current mechanisms have some problems especially from the
-view point of maintaining code;
- - __kprobes is easy to confuse the function is
-   used by kprobes, despite it just means "no kprobe
-   on it".
- - __kprobes moves functions to different section
-   this will be not good for cache optimization.
- - symbol-name based solution is not good at all,
-   since the symbol name easily be changed, and
-   we cannot notice it.
- - it doesn't support functions in modules at all.
+ ----
+ [ 2264.726905] BUG: unable to handle kernel NULL pointer
+ dereference at 0000000000000020
+[ 2264.727190] IP: [<ffffffff813c46e0>] copy_user_generic_string+0x0/0x40
+[ 2264.727380] PGD cbcd067 PUD cbcc067 PMD 0
+[ 2264.727529] Oops: 0000 [#1] SMP
+[ 2264.727683] Modules linked in: ipt_MASQUERADE bnep bluetooth 6lowpan_iphc iptable_nat nf_nat_ipv4 nf_nat aesni_intel aes_x86_64 ablk_helper cryptd lrw gf128mul glue_helper virtio_balloon snd_hda_intel snd_hda_codec snd_hwdep
+[ 2264.728391] CPU: 1 PID: 25094 Comm: perf Not tainted 3.14.0-rc1.badprobe+ #24
+[ 2264.728592] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[ 2264.728747] task: ffff88003db9c210 ti: ffff88000caac000 task.ti: ffff88000caac000
+[ 2264.728950] RIP: 0010:[<ffffffff813c46e0>]  [<ffffffff813c46e0>] copy_user_generic_string+0x0/0x40
+[ 2264.729163] RSP: 0018:ffff88003fd06bd0  EFLAGS: 00010246
+[ 2264.729291] RAX: 0000000000000000 RBX: ffff88003fd06bf8 RCX: 0000000000000002
+[ 2264.729472] RDX: 0000000000000000 RSI: 0000000000000020 RDI: ffff88003fd06bf8
+[ 2264.729661] RBP: ffff88003fd06bd8 R08: 0000000000000030 R09: 0000000000000000
+[ 2264.729789] R10: 000000000000001e R11: 0000000000000015 R12: ffff88000caadfd8
+[ 2264.729789] R13: ffff88003d76bc00 R14: ffff88003db9c210 R15: 0000000000000020
+[ 2264.729789] FS:  00007f398bbcc780(0000) GS:ffff88003fd00000(0000) knlGS:0000000000000000
+[ 2264.729789] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 2264.729789] CR2: 0000000000000020 CR3: 00000000204f2000 CR4: 00000000000007e0
+[ 2264.729789] Stack:
+[ 2264.729789]  ffffffff813c5fd4 ffff88003fd06c30 ffffffff810183b0 ffff88003d76bc00
+[ 2264.729789]  ffff88003fd06ef8 0000000000000000 0000000000000000 ffff88003d76bc00
+[ 2264.729789]  000000000000000c 0000000000052ce0 ffff88000956f800 ffff88000caadf58
+[ 2264.729789] Call Trace:
+[ 2264.729789]  <NMI>
+[ 2264.729789]  [<ffffffff813c5fd4>] ? copy_from_user_nmi+0x64/0x70
+[ 2264.729789]  [<ffffffff810183b0>] perf_callchain_user+0xc0/0x220
+[ 2264.729789]  [<ffffffff8111cdb4>] perf_callchain+0x1c4/0x210
+[ 2264.729789]  [<ffffffff811193e3>] perf_prepare_sample+0x253/0x320
+[ 2264.729789]  [<ffffffff81119597>] __perf_event_overflow+0xe7/0x230
+[ 2264.729789]  [<ffffffff810177c8>] ? x86_perf_event_set_period+0xe8/0x150
+[ 2264.729789]  [<ffffffff8111a034>] perf_event_overflow+0x14/0x20
+[ 2264.729789]  [<ffffffff8101cf2d>] intel_pmu_handle_irq+0x1cd/0x400
+[ 2264.729789]  [<ffffffff81854c71>] ? ftrace_regs_caller+0x81/0xcd
+[ 2264.729789]  [<ffffffff813c46e0>] ? copy_user_generic_unrolled+0xc0/0xc0
+[ 2264.729789]  [<ffffffff810161bb>] perf_event_nmi_handler+0x2b/0x50
+[ 2264.729789]  [<ffffffff81006ce8>] nmi_handle+0x88/0x180
+[ 2264.729789]  [<ffffffff813c46e0>] ? copy_user_generic_unrolled+0xc0/0xc0
+[ 2264.729789]  [<ffffffff81006fca>] default_do_nmi+0x4a/0x140
+[ 2264.729789]  [<ffffffff81007168>] do_nmi+0xa8/0xe0
+[ 2264.729789]  [<ffffffff81856fe1>] end_repeat_nmi+0x1e/0x2e
+[ 2264.729789]  [<ffffffff813c46e0>] ? copy_user_generic_unrolled+0xc0/0xc0
+[ 2264.729789]  [<ffffffff810376ac>] ? skip_prefixes+0x1c/0x40
+[ 2264.729789]  [<ffffffff813c4c80>] ? bad_get_user+0x17/0x17
+[ 2264.729789]  [<ffffffff81854c71>] ? ftrace_regs_caller+0x81/0xcd
+[ 2264.729789]  [<ffffffff81854c71>] ? ftrace_regs_caller+0x81/0xcd
+[ 2264.729789]  [<ffffffff81854c71>] ? ftrace_regs_caller+0x81/0xcd
+[ 2264.729789]  <<EOE>>
+[ 2264.729789]  <#DB>  [<ffffffff813c46e0>] ? copy_user_generic_unrolled+0xc0/0xc0
+[ 2264.729789]  [<ffffffff813c46e1>] ? copy_user_generic_string+0x1/0x40
+[ 2264.729789]  [<ffffffff810e4321>] ? ftrace_cmp_recs+0x1/0x30
+[ 2264.729789]  [<ffffffff813c4c85>] ? inat_get_opcode_attribute+0x5/0x20
+[ 2264.729789]  [<ffffffff813c4c85>] ? inat_get_opcode_attribute+0x5/0x20
+[ 2264.729789]  [<ffffffff810376ac>] ? skip_prefixes+0x1c/0x40
+[ 2264.729789]  [<ffffffff81038107>] resume_execution+0x37/0x1d0
+[ 2264.729789]  [<ffffffff810382df>] kprobe_debug_handler+0x3f/0xe0
+[ 2264.729789]  [<ffffffff8100305f>] do_debug+0x7f/0x1d0
+[ 2264.729789]  [<ffffffff81856afa>] debug+0x3a/0x50
+[ 2264.729789]  <<EOE>>
+[ 2264.729789]  [<ffffffff811aae38>] ? seq_read+0x88/0x390
+[ 2264.729789]  [<ffffffff81363bc4>] ? security_file_permission+0x84/0xa0
+[ 2264.729789]  [<ffffffff811ed58d>] proc_reg_read+0x3d/0x80
+[ 2264.729789]  [<ffffffff81187c7b>] vfs_read+0x9b/0x160
+[ 2264.729789]  [<ffffffff81188739>] SyS_read+0x49/0xa0
+[ 2264.729789]  [<ffffffff81854f99>] system_call_fastpath+0x16/0x1b
+[ 2264.729789] Code: c9 75 ee 21 d2 74 10 89 d1 8a 06 88 07 48 ff c6 48 ff c7 ff
+ c9 75 f2 31 c0 0f 1f 00 c3 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 <cc> 1f 00
+ 83 fa 08 72 27 89 f9 83 e1 07 74 15 83 e9 08 f7 d9 29
+[ 2264.729789] RIP  [<ffffffff813c46e0>] copy_user_generic_string+0x0/0x40
+[ 2264.729789]  RSP <ffff88003fd06bd0>
+[ 2264.729789] CR2: 0000000000000020
+[ 2264.729789] ---[ end trace 533fc16b4cc45447 ]---
+[ 2264.729789] Kernel panic - not syncing: Fatal exception in interrupt
+[ 2264.729789] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xf
+fffffff80000000-0xffffffff9fffffff)
+ ----
 
-Thus, I decided to introduce new NOKPROBE_SYMBOL macro for building
-an integrated kprobe blacklist.
-
-The new macro stores the address of the given symbols into
-_kprobe_blacklist section, and initialize the blacklist based on the
-address list at boottime.
-This is also applied for modules. When loading a module, kprobes
-finds the blacklist symbols in _kprobe_blacklist section in the
-module automatically.
-This series replaces all __kprobes on x86 and generic code with the
-NOKPROBE_SYMBOL() too.
-
-Although, the new blacklist still support old-style __kprobes by
-decoding .kprobes.text if exist, because it still be used on arch-
-dependent code except for x86.
-
-Scalability effort
-==================
-This series fixes not only the kernel crashable "qualitative" bugs
-but also "quantitative" issue with massive multiple kprobes. Thus
-we can now do a stress test, putting kprobes on all (non-blacklisted)
-kernel functions and enabling all of them.
-To set kprobes on all kernel functions, run the below script.
-  ----
-  #!/bin/sh
-  TRACE_DIR=/sys/kernel/debug/tracing/
-  echo > $TRACE_DIR/kprobe_events
-  grep -iw t /proc/kallsyms | tr -d . | \
-    awk 'BEGIN{i=0};{print("p:"$3"_"i, "0x"$1); i++}' | \
-    while read l; do echo $l >> $TRACE_DIR/kprobe_events ; done
-  ----
-Since it doesn't check the blacklist at all, you'll see many write
-errors, but no problem :).
-
-Note that a kind of performance issue is still in the kprobe-tracer
-if you trace all functions. Since a few ftrace functions are called
-inside the kprobe tracer even if we shut off the tracing (tracing_on
-= 0), enabling kprobe-events on the functions will cause a bad
-performance impact (it is safe, but you'll see the system slowdown
-and no event recorded because it is just ignored).
-To find those functions, you can use the third column of
-(debugfs)/tracing/kprobe_profile as below, which tells you the number
-of miss-hit(ignored) for each events. If you find that some events
-which have small number in 2nd column and large number in 3rd column,
-those may course the slowdown.
-  ----
-  # sort -rnk 3 (debugfs)/tracing/kprobe_profile | head
-  ftrace_cmp_recs_4907                               264950231     33648874543
-  ring_buffer_lock_reserve_5087                              0      4802719935
-  trace_buffer_lock_reserve_5199                             0      4385319303
-  trace_event_buffer_lock_reserve_5200                       0      4379968153
-  ftrace_location_range_4918                          18944015      2407616669
-  bsearch_17098                                       18979815      2407579741
-  ftrace_location_4972                                18927061      2406723128
-  ftrace_int3_handler_1211                            18926980      2406303531
-  poke_int3_handler_199                               18448012      1403516611
-  inat_get_opcode_attribute_16941                            0        12715314
-  ----
-
-I'd recommend you to enable events on such functions after all other
-events enabled. Then its performance impact becomes minimum.
-
-To enable kprobes on all kernel functions, run the below script.
-  ----
-  #!/bin/sh
-  TRACE_DIR=/sys/kernel/debug/tracing
-  echo "Disable tracing to remove tracing overhead"
-  echo 0 > $TRACE_DIR/tracing_on
-
-  BADS="ftrace_cmp_recs ring_buffer_lock_reserve trace_buffer_lock_reserve trace_event_buffer_lock_reserve ftrace_location_range bsearch ftrace_location ftrace_int3_handler poke_int3_handler inat_get_opcode_attribute"
-HIDES=
-  for i in $BADS; do HIDES=$HIDES" --hide=$i*"; done
-
-  SDATE=`date +%s`
-  echo "Enabling trace events: start at $SDATE"
-
-  cd $TRACE_DIR/events/kprobes/
-  for i in `ls $HIDES` ; do echo 1 > $i/enable; done
-  for j in $BADS; do for i in `ls -d $j*`;do echo 1 > $i/enable; done; done
-
-  EDATE=`date +%s`
-  TIME=`expr $EDATE - $SDATE`
-  echo "Elapsed time: $TIME"
-  ---- 
-Note: Perhaps, using systemtap doesn't need to consider above bad
-symbols since it has own logic not to probe itself.
-
-Result
-======
-These were also enabled after all other events are enabled.
-And it took 2254 sec(without any intervals) for enabling 37222 probes.
-And at that point, the perf top showed below result:
-  ----
-  Samples: 10K of event 'cycles', Event count (approx.): 270565996
-  +  16.39%  [kernel]                       [k] native_load_idt
-  +  11.17%  [kernel]                       [k] int3
-  -   7.91%  [kernel]                       [k] 0x00007fffa018e8e0
-   - 0xffffffffa018d8e0
-        59.09% trace_event_buffer_lock_reserve
-           kprobe_trace_func
-           kprobe_dispatcher
-      + 40.45% trace_event_buffer_lock_reserve
-  ----
-0x00007fffa018e8e0 may be the trampoline buffer of an optimized
-probe on trace_event_buffer_lock_reserve. native_load_idt and int3
-are also called from normal kprobes.
-This means, at least my environment, kprobes now passed the
-stress test, and even if we put probes on all available functions
-it just slows down about 50%.
+To handle this correctly, I fixed the kprobes fault
+handler to ensure the faulted ip address is its own
+single-step buffer instead of checking current kprobe
+state.
 
 Changes from v8:
- - Add Steven's Reviewed-by tag to some patches (Thank you!)
- - [1/26] Add WARN_ON() to check kprobe_status
- - [4/26] Fix the documentation and a comment
- - [8/26] Update the patch description
- - [12/26] small style fix 
- - [14/26] Fix line-break style issues
- - [16/26] Fix line-break style issues
+ - add WARN_ON() to check kprobe_status.
 
-Changes from v7:
- - [24/26] Enlarge hash table to 512 instead of 4096.
- - Re-evaluate the performance improvements.
-
-Changes from v6:
- - Updated patches on the latest -tip.
- - [1/26] Add patch: Fix page-fault handling logic on x86 kprobes
- - [2/26] Add patch: Allow to handle reentered kprobe on singlestepping
- - [9/26] Add new patch: Call exception_enter after kprobes handled
- - [12/26] Allow probing fetch functions in trace_uprobe.c.
- - [24/26] Add new patch: Enlarge kprobes hash table size
- - [25/26] Add new patch: Kprobe cache for frequently accessd kprobes
- - [26/26] Add new patch: Skip Ftrace hlist check with ftrace-based kprobe
-
-Changes from v5:
- - [2/22] Introduce nokprobe_inline macro
- - [6/22] Prohibit probing on memset/memcpy
- - [11/22] Allow probing on text_poke/hw_breakpoint
- - [12/22] Use nokprobe_inline macro instead of __always_inline
- - [14/22] Ditto.
- - [21/22] Remove preempt disable/enable from kprobes/x86
- - [22/22] Add emergency int3 recovery code
-
-Thank you,
-
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
+ arch/x86/kernel/kprobes/core.c |   16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
-Masami Hiramatsu (26):
-      [BUGFIX]kprobes/x86: Fix page-fault handling logic
-      kprobes/x86: Allow to handle reentered kprobe on singlestepping
-      kprobes: Prohibit probing on .entry.text code
-      kprobes: Introduce NOKPROBE_SYMBOL() macro for blacklist
-      [BUGFIX] kprobes/x86: Prohibit probing on debug_stack_*
-      [BUGFIX] x86: Prohibit probing on native_set_debugreg/load_idt
-      [BUGFIX] x86: Prohibit probing on thunk functions and restore
-      kprobes/x86: Call exception handlers directly from do_int3/do_debug
-      x86: Call exception_enter after kprobes handled
-      kprobes/x86: Allow probe on some kprobe preparation functions
-      kprobes: Allow probe on some kprobe functions
-      ftrace/*probes: Allow probing on some functions
-      x86: Allow kprobes on text_poke/hw_breakpoint
-      x86: Use NOKPROBE_SYMBOL() instead of __kprobes annotation
-      kprobes: Use NOKPROBE_SYMBOL macro instead of __kprobes
-      ftrace/kprobes: Use NOKPROBE_SYMBOL macro in ftrace
-      notifier: Use NOKPROBE_SYMBOL macro in notifier
-      sched: Use NOKPROBE_SYMBOL macro in sched
-      kprobes: Show blacklist entries via debugfs
-      kprobes: Support blacklist functions in module
-      kprobes: Use NOKPROBE_SYMBOL() in sample modules
-      kprobes/x86: Use kprobe_blacklist for .kprobes.text and .entry.text
-      kprobes/x86: Remove unneeded preempt_disable/enable in interrupt handlers
-      kprobes: Enlarge hash table to 512 entries
-      kprobes: Introduce kprobe cache to reduce cache misshits
-      ftrace: Introduce FTRACE_OPS_FL_SELF_FILTER for ftrace-kprobe
-
-
- Documentation/kprobes.txt                |   24 +
- arch/Kconfig                             |   10 
- arch/x86/include/asm/asm.h               |    7 
- arch/x86/include/asm/kprobes.h           |    2 
- arch/x86/include/asm/traps.h             |    2 
- arch/x86/kernel/alternative.c            |    3 
- arch/x86/kernel/apic/hw_nmi.c            |    3 
- arch/x86/kernel/cpu/common.c             |    4 
- arch/x86/kernel/cpu/perf_event.c         |    3 
- arch/x86/kernel/cpu/perf_event_amd_ibs.c |    3 
- arch/x86/kernel/dumpstack.c              |    9 
- arch/x86/kernel/entry_32.S               |   33 --
- arch/x86/kernel/entry_64.S               |   20 -
- arch/x86/kernel/hw_breakpoint.c          |    5 
- arch/x86/kernel/kprobes/core.c           |  165 ++++----
- arch/x86/kernel/kprobes/ftrace.c         |   19 +
- arch/x86/kernel/kprobes/opt.c            |   32 +-
- arch/x86/kernel/kvm.c                    |    4 
- arch/x86/kernel/nmi.c                    |   18 +
- arch/x86/kernel/paravirt.c               |    6 
- arch/x86/kernel/traps.c                  |   35 +-
- arch/x86/lib/thunk_32.S                  |    3 
- arch/x86/lib/thunk_64.S                  |    3 
- arch/x86/mm/fault.c                      |   29 +
- include/asm-generic/vmlinux.lds.h        |    9 
- include/linux/compiler.h                 |    2 
- include/linux/ftrace.h                   |    3 
- include/linux/kprobes.h                  |   23 +
- include/linux/module.h                   |    5 
- kernel/kprobes.c                         |  607 +++++++++++++++++++++---------
- kernel/module.c                          |    6 
- kernel/notifier.c                        |   22 +
- kernel/sched/core.c                      |    7 
- kernel/trace/ftrace.c                    |    3 
- kernel/trace/trace_event_perf.c          |    5 
- kernel/trace/trace_kprobe.c              |   71 ++--
- kernel/trace/trace_probe.c               |   65 ++-
- kernel/trace/trace_probe.h               |   15 -
- kernel/trace/trace_uprobe.c              |   20 -
- samples/kprobes/jprobe_example.c         |    1 
- samples/kprobes/kprobe_example.c         |    3 
- samples/kprobes/kretprobe_example.c      |    2 
- 42 files changed, 830 insertions(+), 481 deletions(-)
-
---
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+index 79a3f96..137e873 100644
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -897,9 +897,10 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
+ 	struct kprobe *cur = kprobe_running();
+ 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
+ 
+-	switch (kcb->kprobe_status) {
+-	case KPROBE_HIT_SS:
+-	case KPROBE_REENTER:
++	if (unlikely(regs->ip == (unsigned long)cur->ainsn.insn)) {
++		/* This must happen on singlestepping */
++		WARN_ON(kcb->kprobe_status != KPROBE_HIT_SS &&
++			kcb->kprobe_status != KPROBE_REENTER);
+ 		/*
+ 		 * We are here because the instruction being single
+ 		 * stepped caused a page fault. We reset the current
+@@ -914,9 +915,8 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
+ 		else
+ 			reset_current_kprobe();
+ 		preempt_enable_no_resched();
+-		break;
+-	case KPROBE_HIT_ACTIVE:
+-	case KPROBE_HIT_SSDONE:
++	} else if (kcb->kprobe_status == KPROBE_HIT_ACTIVE ||
++		   kcb->kprobe_status == KPROBE_HIT_SSDONE) {
+ 		/*
+ 		 * We increment the nmissed count for accounting,
+ 		 * we can also use npre/npostfault count for accounting
+@@ -945,10 +945,8 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
+ 		 * fixup routine could not handle it,
+ 		 * Let do_page_fault() fix it.
+ 		 */
+-		break;
+-	default:
+-		break;
+ 	}
++
+ 	return 0;
+ }
+ 
 
 
