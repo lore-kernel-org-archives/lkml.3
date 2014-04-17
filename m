@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954AbaDQQHh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 12:07:37 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:61720 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006AbaDQQHa (ORCPT
+	id S1753064AbaDQQIl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 12:08:41 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:43428 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016AbaDQQIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 12:07:30 -0400
+	Thu, 17 Apr 2014 12:08:32 -0400
+Date: Thu, 17 Apr 2014 12:08:28 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] workqueue: rescuer_thread() processes all pwqs
+ before exit
+Message-ID: <20140417160828.GP15326@htj.dyndns.org>
+References: <20140416165052.GK1257@htj.dyndns.org>
+ <1397691258-11639-1-git-send-email-laijs@cn.fujitsu.com>
+ <20140417152744.GM15326@htj.dyndns.org>
+ <CACvQF527RneJwUXf0=C6L0_9ncdS6--iqhdpWAFKqHtd25LOYg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1397742261-15621-11-git-send-email-will.deacon@arm.com>
-References: <1397742261-15621-1-git-send-email-will.deacon@arm.com>
-	<1397742261-15621-11-git-send-email-will.deacon@arm.com>
-Date: Thu, 17 Apr 2014 18:07:28 +0200
-X-Google-Sender-Auth: Ft1ODpA_oRVTm_g3pxSzCmL-xNs
-Message-ID: <CAMuHMdV15kdRincp9EbVhEUDSp4GzP86BLRFV8X_Zbhq+hwX0g@mail.gmail.com>
-Subject: Re: [PATCH 10/18] m68k: io: implement dummy relaxed accessor macros
- for writes
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Michal Simek <monstr@monstr.eu>,
-        David Howells <dhowells@redhat.com>, Mark Brown <broonie@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACvQF527RneJwUXf0=C6L0_9ncdS6--iqhdpWAFKqHtd25LOYg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 3:44 PM, Will Deacon <will.deacon@arm.com> wrote:
-> write{b,w,l}_relaxed are implemented by some architectures in order to
-> permit memory-mapped I/O accesses with weaker barrier semantics than the
-> non-relaxed variants.
->
-> This patch adds dummy macros for the write accessors to m68k, in the
-> same vein as the dummy definitions for the relaxed read accessors.
-> Additionally, the existing relaxed read accessors are moved into
-> asm/io.h, so that they can be used by m68k targets with an MMU.
->
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
+Hello, Lai.
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+On Fri, Apr 18, 2014 at 12:04:29AM +0800, Lai Jiangshan wrote:
+> > I don't think this is reliable.  What if mayday requests take place
+> > between wq_mayday_lock and kthread_should_stop() check?  We'll
+> > probably need to run through mayday list after checking should_stop.
+> 
+> It is destroy_workqueue()'s responsibility to avoid this.
+> destroy_workqueue() should drain all works and refuse any new work queued
+> on the wq before destroy the wq.
+> 
+> So since there is no works, there is no new mayday request,
+> and there is no mayday request take place between wq_mayday_lock
+> and kthread_should_stop() check.
 
-Gr{oetje,eeting}s,
+Hmmm?  Isn't this the same race condition that you tried to remove by
+relocating the test?  It doesn't matter what destroy_workqueue() does,
+the rescuer may get preempted inbetween and anything can happen
+inbetween including someone maydaying and initiation of
+destroy_workqueue().  Your patch doesn't change the situation at all.
+It can still return with non-empty mayday list.
 
-                        Geert
+Thanks.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+tejun
