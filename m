@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695AbaDQTZY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 15:25:24 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:52751 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179AbaDQTZP (ORCPT
+	id S1751412AbaDQTce (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 15:32:34 -0400
+Received: from mail-qa0-f73.google.com ([209.85.216.73]:42804 "EHLO
+	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751110AbaDQTc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 15:25:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140417192330.GE4321@pd.tnic>
-References: <tip-ea431643d6c38728195e2c456801c3ef66bb9991@git.kernel.org>
-	<20140417100944.GG11096@twins.programming.kicks-ass.net>
-	<20140417102442.GA8215@pd.tnic>
-	<3908561D78D1C84285E8C5FCA982C28F31E2A1D3@ORSMSX106.amr.corp.intel.com>
-	<20140417152611.GD4321@pd.tnic>
-	<CA+5PVA7i=RrGUk_7zz1yU5gseWpvr+a=4dfkg=n9cNc53S7nPA@mail.gmail.com>
-	<20140417192330.GE4321@pd.tnic>
-Date: Thu, 17 Apr 2014 12:25:14 -0700
-X-Google-Sender-Auth: C7iweHgzfqJfQwBzIEWZKp7ff64
-Message-ID: <CA+55aFyz62W7CD9=9p9OxKuFs9Rck_p93E_40CqLat1HvDdf0Q@mail.gmail.com>
-Subject: Re: [tip:x86/urgent] x86/mce: Fix CMCI preemption bugs
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>, Owen Kibel <qmewlo@gmail.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "atodorov@redhat.com" <atodorov@redhat.com>,
-        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 17 Apr 2014 15:32:26 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: Bill Richardson <wfrichar@chromium.org>,
+        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] mfd: cros_ec: cleanup: cros_ec.c is GPL licensed, like all the others.
+Date: Thu, 17 Apr 2014 12:32:17 -0700
+Message-Id: <1397763137-20552-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 12:23 PM, Borislav Petkov <bp@alien8.de> wrote:
->
-> But you're saying here, Owen tested it already.
+From: Bill Richardson <wfrichar@chromium.org>
 
-No, Owen tested a simpler patch that just changes the "get_cpu_var()"
-to "__get_cpu_var()" and avoids the preempt increment.
+This module has always been GPL licensed. It was just missing the explicit
+declaration to avoid tainting the kernel.
 
-              Linus
+Signed-off-by: Bill Richardson <wfrichar@chromium.org>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ drivers/mfd/cros_ec.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/mfd/cros_ec.c b/drivers/mfd/cros_ec.c
+index 783fe2e..fae69b1 100644
+--- a/drivers/mfd/cros_ec.c
++++ b/drivers/mfd/cros_ec.c
+@@ -184,3 +184,6 @@ int cros_ec_resume(struct cros_ec_device *ec_dev)
+ EXPORT_SYMBOL(cros_ec_resume);
+ 
+ #endif
++
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("ChromeOS EC core driver");
+-- 
+1.9.1.423.g4596e3a
+
