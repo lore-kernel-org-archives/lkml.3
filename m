@@ -1,130 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754455AbaDQB7X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 21:59:23 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:43572 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107AbaDQB7V (ORCPT
+	id S1755897AbaDQCGw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 22:06:52 -0400
+Received: from exprod5og104.obsmtp.com ([64.18.0.178]:56940 "HELO
+	exprod5og104.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751428AbaDQCGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 21:59:21 -0400
-Message-ID: <534F3572.2040801@hitachi.com>
-Date: Thu, 17 Apr 2014 10:59:14 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Wed, 16 Apr 2014 22:06:49 -0400
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Satoru MORIYA <satoru.moriya.br@hitachi.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Takenori Nagano <t-nagano@ah.jp.nec.com>,
-        Eric Biederman <ebiederm@xmission.com>,
-        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] kernel/panic: Add "late_kdump" option for kdump in unstable
- condition
-References: <20140414045158.10846.35462.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140416134830.GA31074@redhat.com>
-In-Reply-To: <20140416134830.GA31074@redhat.com>
+In-Reply-To: <534BEB20.3080501@codethink.co.uk>
+References: <1397271984-23405-1-git-send-email-isubramanian@apm.com>
+	<1397271984-23405-5-git-send-email-isubramanian@apm.com>
+	<534BEB20.3080501@codethink.co.uk>
+Date: Wed, 16 Apr 2014 19:06:47 -0700
+Message-ID: <CAKh23FmM6L4PeL+GOz=neQac4ZDj+_LmH5=zTLtVZxfUe9HQVw@mail.gmail.com>
+Subject: Re: [PATCH v2 4/4] drivers: net: Add APM X-Gene SoC ethernet driver support.
+From: Iyappan Subramanian <isubramanian@apm.com>
+To: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "jcm@redhat.com" <jcm@redhat.com>, patches <patches@apm.com>,
+        Ravi Patel <rapatel@apm.com>, Keyur Chudgar <kchudgar@apm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for review!
+Hi,
 
-(2014/04/16 22:48), Vivek Goyal wrote:
-> On Mon, Apr 14, 2014 at 01:51:58PM +0900, Masami Hiramatsu wrote:
->> Add a "late_kdump" option to run kdump after running panic
->> notifiers and dump kmsg. This can help rare situations which
->> kdump drops in failure because of unstable crashed kernel
->> or hardware failure (memory corruption on critical data/code),
->> or the 2nd kernel is broken by the 1st kernel (it's a broken
->> behavior, but who can guarantee that the "crashed" kernel
->> works correctly?).
+Please find my response inline.
+
+On Mon, Apr 14, 2014 at 7:05 AM, Ben Dooks <ben.dooks@codethink.co.uk> wrote:
+> On 12/04/14 04:06, Iyappan Subramanian wrote:
 >>
->> Usage: add "late_kdump" to kernel boot option. That's all.
+>> This patch adds network driver for APM X-Gene SoC ethernet.
 >>
->> Note that this actually increases risks of the failure of
->> kdump. This option should be set only if you worry about
->> the rare case of kdump failure rather than increasing the
->> chance of success.
->>
->> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> Cc: Eric Biederman <ebiederm@xmission.com>
->> Cc: Vivek Goyal <vgoyal@redhat.com>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
->> Cc: Satoru MORIYA <satoru.moriya.br@hitachi.com>
->> Cc: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>
->> Cc: Takenori Nagano <t-nagano@ah.jp.nec.com>
->> ---
->>  Documentation/kernel-parameters.txt |    7 +++++++
->>  kernel/panic.c                      |   24 ++++++++++++++++++++++--
->>  2 files changed, 29 insertions(+), 2 deletions(-)
->>
->> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
->> index 03e50b4..1ba58da 100644
->> --- a/Documentation/kernel-parameters.txt
->> +++ b/Documentation/kernel-parameters.txt
->> @@ -2339,6 +2339,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
->>  			timeout < 0: reboot immediately
->>  			Format: <timeout>
->>  
->> +	late_kdump	Run kdump after running panic-notifiers and dumping
->> +			kmsg. This only for the users who doubt kdump always
->> +			succeeds in any situation.
->> +			Note that this also increases risks of kdump failure,
->> +			because some panic notifiers can make the crashed
->> +			kernel more unstable.
+>> Signed-off-by: Iyappan Subramanian <isubramanian@apm.com>
+>> Signed-off-by: Ravi Patel <rapatel@apm.com>
+>
+>
+> [snip]
+>
+>
+>> +{
+>> +       struct xgene_enet_pdata *pdata = netdev_priv(ndev);
+>> +       struct phy_device *phydev;
+>> +       unsigned char phy_id[MII_BUS_ID_SIZE+3];
+>> +       int ret = 0;
 >> +
-> 
-> I am wondering if "crash_kexec_post_notifiers" will be a better name
-> to represent what we are trying to do here.
+>> +       phydev = phy_find_first(pdata->mdio_bus);
+>> +       if (!phydev) {
+>> +               netdev_info(ndev, "no PHY found\n");
+>> +               ret = -1;
+>> +               goto out;
+>> +       }
+>> +
+>> +       /* attach the mac to the phy */
+>> +       snprintf(phy_id, sizeof(phy_id), PHY_ID_FMT, pdata->mdio_bus->id,
+>> +                pdata->phy_addr);
+>> +       phydev = phy_connect(ndev, phy_id,
+>> +                            &xgene_enet_mdio_link_change,
+>> pdata->phy_mode);
+>> +       if (IS_ERR(phydev)) {
+>> +               netdev_err(ndev, "Could not attach to PHY\n");
+>> +               ret = PTR_ERR(phydev);
+>> +               phydev = NULL;
+>> +               goto out;
+>> +       }
+>> +
+>
+>
+> You should be using of_phy_connect or similar so that the
+> necessary PHY<>OF data is properly initialised
+>
 
-OK, I'll rename that.
+I will use of_phy_connect function to connect to PHY.
 
-> 
->>  	parkbd.port=	[HW] Parallel port number the keyboard adapter is
->>  			connected to, default is 0.
->>  			Format: <parport#>
->> diff --git a/kernel/panic.c b/kernel/panic.c
->> index d02fa9f..bba42b5 100644
->> --- a/kernel/panic.c
->> +++ b/kernel/panic.c
->> @@ -32,6 +32,7 @@ static unsigned long tainted_mask;
->>  static int pause_on_oops;
->>  static int pause_on_oops_flag;
->>  static DEFINE_SPINLOCK(pause_on_oops_lock);
->> +static bool late_kdump;
->>  
->>  int panic_timeout = CONFIG_PANIC_TIMEOUT;
->>  EXPORT_SYMBOL_GPL(panic_timeout);
->> @@ -112,9 +113,14 @@ void panic(const char *fmt, ...)
->>  	/*
->>  	 * If we have crashed and we have a crash kernel loaded let it handle
->>  	 * everything else.
->> -	 * Do we want to call this before we try to display a message?
->> +	 * If we want to call this after we try to display a message, pass
->> +	 * the "late_kdump" option to the kernel.
->>  	 */
->> -	crash_kexec(NULL);
->> +	if (!late_kdump)
->> +		crash_kexec(NULL);
->> +	else
->> +		pr_emerg("Warning: late_kdump option is set. Please DO NOT "
->> +			"report bugs about kdump failure with this option.\n");
-> 
-> I think above message about DO NOT report bugs seems unnecessary. 
+>
+>> +       netdev_info(ndev, "phy_id=0x%08x phy_drv=\"%s\"",
+>> +                   phydev->phy_id, phydev->drv->name);
+>> +out:
+>> +       pdata->phy_link = 0;
+>> +       pdata->phy_speed = 0;
+>> +       pdata->phy_dev = phydev;
+>> +
+>> +       return ret;
+>> +}
+>> +
+>
+>
+>
+> [snip]
+>
+>
+>> +struct xgene_enet_desc {
+>> +       u64 m0;
+>> +       u64 m1;
+>> +       u64 m2;
+>> +       u64 m3;
+>> +};
+>> +
+>> +struct xgene_enet_desc16 {
+>> +       u64 m0;
+>> +       u64 m1;
+>> +};
+>> +
+>> +static inline void xgene_enet_cpu_to_le64(struct xgene_enet_desc *desc,
+>> +                                         int count)
+>> +{
+>> +#ifdef CONFIG_CPU_BIG_ENDIAN
+>> +       int i;
+>> +
+>> +       for (i = 0; i < count; i++)
+>> +               ((u64 *)desc)[i] = cpu_to_le64(((u64 *)desc)[i]);
+>> +#endif
+>> +}
+>> +
+>> +static inline void xgene_enet_le64_to_cpu(struct xgene_enet_desc *desc,
+>> +                                         int count)
+>> +{
+>> +#ifdef CONFIG_CPU_BIG_ENDIAN
+>> +       int i;
+>> +
+>> +       for (i = 0; i < count; i++)
+>> +               ((u64 *)desc)[i] = le64_to_cpu(((u64 *)desc)[i]);
+>> +#endif
+>> +}
+>> +
+>> +static inline void xgene_enet_desc16_to_le64(struct xgene_enet_desc
+>> *desc)
+>> +{
+>> +#ifdef CONFIG_CPU_BIG_ENDIAN
+>> +       ((u64 *)desc)[1] = cpu_to_le64(((u64 *)desc)[1]);
+>> +#endif
+>> +}
+>> +
+>> +static inline void xgene_enet_le64_to_desc16(struct xgene_enet_desc
+>> *desc)
+>> +{
+>> +#ifdef CONFIG_CPU_BIG_ENDIAN
+>> +       ((u64 *)desc)[1] = le64_to_cpu(((u64 *)desc)[1]);
+>> +#endif
+>> +}
+>
+>
+> With this do you not risk confusing the hardware by swapping the
+> format of the descriptors?
+>
+> Why not use xxx_to_cpu() and cpu_to_xxx() functions when reading or
+> writing the descriptors? It would also remove a lot of the #ifdef in
+> this code.
 
-OK, so I just notify the option is set as below.
-"Warning: crash_kexec_post_notifiers is set.\n"
+Our hardware expects descriptor in the little endian format.  I will remove the
+#ifdef.
 
-Thank you again!
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+>
+> --
+> Ben Dooks                               http://www.codethink.co.uk/
+> Senior Engineer                         Codethink - Providing Genius
