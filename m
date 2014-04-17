@@ -1,81 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161280AbaDQMql (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 08:46:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59760 "EHLO mx1.redhat.com"
+	id S1756581AbaDQMue (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 08:50:34 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43333 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753164AbaDQMqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 08:46:38 -0400
-Date: Thu, 17 Apr 2014 14:00:46 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 0/3] perf top/tui: Fixes for percentage filter behavior
-Message-ID: <20140417120046.GC7422@krava.brq.redhat.com>
-References: <1397721206-15393-1-git-send-email-namhyung@kernel.org>
+	id S1753164AbaDQMuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 08:50:32 -0400
+Date: Thu, 17 Apr 2014 14:50:30 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Robert Richter <rric@kernel.org>
+Subject: Re: [PATCH v4 00/16] perf, persistent: Add persistent events
+Message-ID: <20140417125030.GA4321@pd.tnic>
+References: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
+ <CAFrcx1=0TddfPS322728w3AsK5SzJ1sq-7VTbE=+Pb-EqcrncQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1397721206-15393-1-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFrcx1=0TddfPS322728w3AsK5SzJ1sq-7VTbE=+Pb-EqcrncQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 04:53:23PM +0900, Namhyung Kim wrote:
+On Thu, Apr 17, 2014 at 02:44:26PM +0200, Jean Pihet wrote:
 > Hi,
 > 
-> This is a small fixes for a bug in perf top I found during some tests.
-> It gets segfault if symbol filter found no entries - accessing NULL
-> pointer in that case.
+> Ping on this series. Are there some opinions or interest in this?
 
-yep, I hit that yesterday as well, but I ended up just with
-the patch below, your changes seems more comprehensive ;-)
-going to review..
+Just checking whether you've read my mail from 2-ish weeks ago:
 
-thanks,
-jirka
+https://lkml.kernel.org/r/20140329094250.GA11987@nazgul.tnic
 
+-- 
+Regards/Gruss,
+    Boris.
 
-> 
-> The patches are also available at perf/percentage-v9 branch on my tree
-> for your convenience.  I'm sorry for causing this bug..
-> 
-> Thanks,
-> Namhyung
-> 
-> 
-> Namhyung Kim (3):
->   perf hists: Add missing updates on nr_non_filtered_entries
->   perf ui/tui: Fix off-by-one in hist_browser__update_nr_entries()
->   perf top/tui: Update nr_entries properly after filter is applied
-> 
->  tools/perf/ui/browsers/hists.c | 34 +++++++++++++++++++---------------
->  tools/perf/util/hist.c         |  8 +++++++-
->  tools/perf/util/hist.h         |  6 ++++++
->  3 files changed, 32 insertions(+), 16 deletions(-)
-> 
-> -- 
-> 1.9.2
-> 
-
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 4d41698..89c3ba0 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -866,6 +866,10 @@ static void ui_browser__hists_seek(struct ui_browser *browser,
- 		return;
- 	}
- 
-+	/* Nowhere to start from. */
-+	if (!nd)
-+		return;
-+
- 	/*
- 	 * Moves not relative to the first visible entry invalidates its
- 	 * row_offset:
+Sent from a fat crate under my desk. Formatting is fine.
+--
