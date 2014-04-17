@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751396AbaDQQ1f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 12:27:35 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:40616 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751110AbaDQQ1Y (ORCPT
+	id S1751885AbaDQQ15 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 12:27:57 -0400
+Received: from infra.glanzmann.de ([88.198.249.254]:34924 "EHLO
+	infra.glanzmann.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751110AbaDQQ1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 12:27:24 -0400
-Date: Thu, 17 Apr 2014 12:27:20 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] workqueue: rescuer_thread() processes all pwqs
- before exit
-Message-ID: <20140417162720.GQ15326@htj.dyndns.org>
-References: <20140416165052.GK1257@htj.dyndns.org>
- <1397691258-11639-1-git-send-email-laijs@cn.fujitsu.com>
- <20140417152744.GM15326@htj.dyndns.org>
- <CACvQF527RneJwUXf0=C6L0_9ncdS6--iqhdpWAFKqHtd25LOYg@mail.gmail.com>
- <20140417160828.GP15326@htj.dyndns.org>
- <CACvQF53DOj0+sn5EQKLA+mCBdtuceO29gBmH2HCqCOXBmRMWAQ@mail.gmail.com>
+	Thu, 17 Apr 2014 12:27:48 -0400
+Date: Thu, 17 Apr 2014 18:27:46 +0200
+From: Thomas Glanzmann <thomas@glanzmann.de>
+To: Jani Nikula <jani.nikula@linux.intel.com>
+Cc: dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+        alexander.deucher@amd.com, christian.koenig@amd.com,
+        daniel.vetter@ffwll.ch, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: REGRESSION: OOPS: Intel Corporation Core Processor Integrated
+ Graphics Controller, Linux HEAD when powering off internal Laptop display on
+ t410s and extending and rotating external screen
+Message-ID: <20140417162746.GA23175@glanzmann.de>
+Mail-Followup-To: Thomas Glanzmann <thomas@glanzmann.de>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+	alexander.deucher@amd.com, christian.koenig@amd.com,
+	daniel.vetter@ffwll.ch, LKML <linux-kernel@vger.kernel.org>
+References: <20140417065811.GA9319@glanzmann.de>
+ <877g6ogie7.fsf@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACvQF53DOj0+sn5EQKLA+mCBdtuceO29gBmH2HCqCOXBmRMWAQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <877g6ogie7.fsf@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 12:21:51AM +0800, Lai Jiangshan wrote:
-> > Hmmm?  Isn't this the same race condition that you tried to remove by
-> > relocating the test?  It doesn't matter what destroy_workqueue() does,
-> > the rescuer may get preempted inbetween and anything can happen
-> > inbetween including someone maydaying and initiation of
-> > destroy_workqueue().  Your patch doesn't change the situation at all.
-> > It can still return with non-empty mayday list.
-> 
-> You are right. We need a additional atomic check.
+Hallo Jani,
 
-I don't think increasing the number of checks will do anything.  We
-just need to keep the test where it is now and exit after doing the
-loop.  ie.
+> Hi Thomas, please bisect, it's likely the quickest way to root cause
+> this. (Google for "git bisect kernel" for a bunch of guides on the
+> topic
+> if you're not familiar with bisect.)
 
-	set TASK_INTRRUPTIBLE
-	test should_stop and cache the result
+I switched my location and no longer have an external monitor with
+display port available, if I do, I'll do the bisect but currently the
+problem does no longer show up without an external monitor attached.
 
-	spin_lock_irq();
-
-	while () {
-		process the list
-	}
-
-	spin_unlock_irq();
-
-	if (was should_stop asserted?)
-		exit;
-
-	schedule();
-
-Should do, no?
-
--- 
-tejun
+Cheers,
+        Thomas
