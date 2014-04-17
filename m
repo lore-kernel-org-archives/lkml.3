@@ -1,103 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161264AbaDQJ4m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 05:56:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51689 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752203AbaDQJ4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 05:56:37 -0400
-Date: Thu, 17 Apr 2014 10:56:30 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20140417095630.GA7292@suse.de>
-References: <20140417170831.53f065b7aa4ff04d30a79469@canb.auug.org.au>
+	id S1756695AbaDQJ4N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 05:56:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52824 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754780AbaDQJ4H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 05:56:07 -0400
+Date: Thu, 17 Apr 2014 02:55:54 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-33db4568e1f41efe6d0e4695483f968fc1135bf3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, namhyung@kernel.org, jolsa@redhat.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, namhyung@kernel.org, jolsa@redhat.com
+In-Reply-To: <1397145720-8063-4-git-send-email-namhyung@kernel.org>
+References: <1397145720-8063-4-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf top: Add --percentage option
+Git-Commit-ID: 33db4568e1f41efe6d0e4695483f968fc1135bf3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140417170831.53f065b7aa4ff04d30a79469@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 05:08:31PM +1000, Stephen Rothwell wrote:
-> Hi Andrew,
-> 
-> After merging the akpm-current tree, today's linux-next build (arm
-> multi_v7_defconfig) failed like this:
-> 
-> In file included from mm/shmem.c:61:0:
-> include/linux/swapops.h: In function 'is_swap_pte':
-> include/linux/swapops.h:57:2: error: implicit declaration of function 'pte_present_nonuma' [-Werror=implicit-function-declaration]
-> 
-> And a couple more similar.
-> 
-> Caused by commit 851fe3337768 ("x86: define _PAGE_NUMA by reusing
-> software bits on the PMD and PTE levels").
-> 
-> I have reverted this commit (and 7cb1c1eb682e "x86: define _PAGE_NUMA by
-> reusing software bits on the PMD and PTE levels -fix") for today and
-> wonder how many other architectures would be broken by this?  Everything
-> else with CONFIG_MMU set?
-> 
+Commit-ID:  33db4568e1f41efe6d0e4695483f968fc1135bf3
+Gitweb:     http://git.kernel.org/tip/33db4568e1f41efe6d0e4695483f968fc1135bf3
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Fri, 7 Feb 2014 12:06:07 +0900
+Committer:  Jiri Olsa <jolsa@redhat.com>
+CommitDate: Wed, 16 Apr 2014 17:16:03 +0200
 
-/me slaps self
+perf top: Add --percentage option
 
-Andrew, can you replace the broken fix with this version please?
+The --percentage option is for controlling overhead percentage
+displayed.  It can only receive either of "relative" or "absolute".
+Move the parser callback function into a common location since it's
+used by multiple commands now.
 
----8<---
-x86: define _PAGE_NUMA by reusing software bits on the PMD and PTE levels -fix
+For more information, please see previous commit same thing done to
+"perf report".
 
-powerpc has NUMA_BALANCING and non-NUMA_BALANCING versions of pte_present
-and I missed that when testing cross-compiling. This patch replaces
-x86-define-_page_numa-by-reusing-software-bits-on-the-pmd-and-pte-levels-fix.patch
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/1397145720-8063-4-git-send-email-namhyung@kernel.org
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- arch/powerpc/include/asm/pgtable.h | 1 +
- arch/x86/include/asm/pgtable.h     | 1 +
- include/asm-generic/pgtable.h      | 4 ++++
- 3 files changed, 6 insertions(+)
+ tools/perf/Documentation/perf-top.txt | 18 +++++++++++++++---
+ tools/perf/builtin-report.c           | 16 +---------------
+ tools/perf/builtin-top.c              |  5 +++--
+ tools/perf/util/hist.c                | 13 +++++++++++++
+ tools/perf/util/hist.h                |  5 +++++
+ 5 files changed, 37 insertions(+), 20 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/pgtable.h b/arch/powerpc/include/asm/pgtable.h
-index cdf6679..d98c1ec 100644
---- a/arch/powerpc/include/asm/pgtable.h
-+++ b/arch/powerpc/include/asm/pgtable.h
-@@ -44,6 +44,7 @@ static inline int pte_present(pte_t pte)
- 	return pte_val(pte) & (_PAGE_PRESENT | _PAGE_NUMA);
- }
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 976b00c..64ed79c 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -123,13 +123,16 @@ Default is to monitor all CPUS.
+ 	Show a column with the sum of periods.
  
-+#define pte_present_nonuma pte_present_nonuma
- static inline int pte_present_nonuma(pte_t pte)
- {
- 	return pte_val(pte) & (_PAGE_PRESENT);
-diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-index 611dd32..d772c9c 100644
---- a/arch/x86/include/asm/pgtable.h
-+++ b/arch/x86/include/asm/pgtable.h
-@@ -452,6 +452,7 @@ static inline int pte_present(pte_t a)
- 			       _PAGE_NUMA);
- }
+ --dsos::
+-	Only consider symbols in these dsos.
++	Only consider symbols in these dsos.  This option will affect the
++	percentage of the overhead column.  See --percentage for more info.
  
-+#define pte_present_nonuma pte_present_nonuma
- static inline int pte_present_nonuma(pte_t a)
- {
- 	return pte_flags(a) & (_PAGE_PRESENT | _PAGE_PROTNONE);
-diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-index d2b92be..8916a76 100644
---- a/include/asm-generic/pgtable.h
-+++ b/include/asm-generic/pgtable.h
-@@ -220,6 +220,10 @@ static inline int pmd_same(pmd_t pmd_a, pmd_t pmd_b)
- # define pte_accessible(mm, pte)	((void)(pte), 1)
- #endif
+ --comms::
+-	Only consider symbols in these comms.
++	Only consider symbols in these comms.  This option will affect the
++	percentage of the overhead column.  See --percentage for more info.
  
-+#ifndef pte_present_nonuma
-+#define pte_present_nonuma(pte) pte_present(pte)
-+#endif
+ --symbols::
+-	Only consider these symbols.
++	Only consider these symbols.  This option will affect the
++	percentage of the overhead column.  See --percentage for more info.
+ 
+ -M::
+ --disassembler-style=:: Set disassembler style for objdump.
+@@ -165,6 +168,15 @@ Default is to monitor all CPUS.
+ 	Do not show entries which have an overhead under that percent.
+ 	(Default: 0).
+ 
++--percentage::
++	Determine how to display the overhead percentage of filtered entries.
++	Filters can be applied by --comms, --dsos and/or --symbols options and
++	Zoom operations on the TUI (thread, dso, etc).
 +
- #ifndef flush_tlb_fix_spurious_fault
- #define flush_tlb_fix_spurious_fault(vma, address) flush_tlb_page(vma, address)
++	"relative" means it's relative to filtered entries only so that the
++	sum of shown entries will be always 100%. "absolute" means it retains
++	the original value before and after the filter is applied.
++
+ INTERACTIVE PROMPTING KEYS
+ --------------------------
+ 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 7ec351b..af8cb7a 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -717,20 +717,6 @@ parse_percent_limit(const struct option *opt, const char *str,
+ 	return 0;
+ }
+ 
+-static int
+-parse_percentage(const struct option *opt __maybe_unused, const char *str,
+-		 int unset __maybe_unused)
+-{
+-	if (!strcmp(str, "relative"))
+-		symbol_conf.filter_relative = true;
+-	else if (!strcmp(str, "absolute"))
+-		symbol_conf.filter_relative = false;
+-	else
+-		return -1;
+-
+-	return 0;
+-}
+-
+ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
+ 	struct perf_session *session;
+@@ -854,7 +840,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_CALLBACK(0, "percent-limit", &report, "percent",
+ 		     "Don't show entries under that percent", parse_percent_limit),
+ 	OPT_CALLBACK(0, "percentage", NULL, "relative|absolute",
+-		     "how to display percentage of filtered entries", parse_percentage),
++		     "how to display percentage of filtered entries", parse_filter_percentage),
+ 	OPT_END()
+ 	};
+ 	struct perf_data_file file = {
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 2526901..37d3046 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -697,8 +697,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
+ 	if (event->header.misc & PERF_RECORD_MISC_EXACT_IP)
+ 		top->exact_samples++;
+ 
+-	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0 ||
+-	    al.filtered)
++	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0)
+ 		return;
+ 
+ 	if (!top->kptr_restrict_warned &&
+@@ -1119,6 +1118,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_STRING('u', "uid", &target->uid_str, "user", "user to profile"),
+ 	OPT_CALLBACK(0, "percent-limit", &top, "percent",
+ 		     "Don't show entries under that percent", parse_percent_limit),
++	OPT_CALLBACK(0, "percentage", NULL, "relative|absolute",
++		     "How to display percentage of filtered entries", parse_filter_percentage),
+ 	OPT_END()
+ 	};
+ 	const char * const top_usage[] = {
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 3ebd89a..3c2dd23 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -943,3 +943,16 @@ u64 hists__total_period(struct hists *hists)
+ 	return symbol_conf.filter_relative ? hists->stats.total_non_filtered_period :
+ 		hists->stats.total_period;
+ }
++
++int parse_filter_percentage(const struct option *opt __maybe_unused,
++			    const char *arg, int unset __maybe_unused)
++{
++	if (!strcmp(arg, "relative"))
++		symbol_conf.filter_relative = true;
++	else if (!strcmp(arg, "absolute"))
++		symbol_conf.filter_relative = false;
++	else
++		return -1;
++
++	return 0;
++}
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index 3191496..a4ec336 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -254,4 +254,9 @@ static inline int script_browse(const char *script_opt __maybe_unused)
  #endif
+ 
+ unsigned int hists__sort_list_width(struct hists *hists);
++
++struct option;
++int parse_filter_percentage(const struct option *opt __maybe_unused,
++			    const char *arg, int unset __maybe_unused);
++
+ #endif	/* __PERF_HIST_H */
