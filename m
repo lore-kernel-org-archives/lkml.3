@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037AbaDQPHx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 11:07:53 -0400
-Received: from g5t1627.atlanta.hp.com ([15.192.137.10]:43471 "EHLO
+	id S1753129AbaDQPIA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 11:08:00 -0400
+Received: from g5t1627.atlanta.hp.com ([15.192.137.10]:43675 "EHLO
 	g5t1627.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915AbaDQPFB (ORCPT
+	with ESMTP id S1751911AbaDQPFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 11:05:01 -0400
+	Thu, 17 Apr 2014 11:05:00 -0400
 From: Waiman Long <Waiman.Long@hp.com>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -24,9 +24,9 @@ Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
         Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
         Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
         Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v9 15/19] pvqspinlock, x86: Add PV data structure & methods
-Date: Thu, 17 Apr 2014 11:04:07 -0400
-Message-Id: <1397747051-15401-16-git-send-email-Waiman.Long@hp.com>
+Subject: [PATCH v9 14/19] pvqspinlock, x86: Rename paravirt_ticketlocks_enabled
+Date: Thu, 17 Apr 2014 11:04:06 -0400
+Message-Id: <1397747051-15401-15-git-send-email-Waiman.Long@hp.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com>
 References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com>
@@ -34,109 +34,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies the para-virtualization (PV) infrastructure code
-of the x86-64 architecture to support the PV queue spinlock. Three
-new virtual methods are added to support PV qspinlock:
-
- 1) kick_cpu - schedule in a virtual CPU
- 2) halt_cpu - schedule out a virtual CPU
- 3) lockstat - update statistical data for debugfs
+This patch renames the paravirt_ticketlocks_enabled static key to a
+more generic paravirt_spinlocks_enabled name.
 
 Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 ---
- arch/x86/include/asm/paravirt.h       |   18 +++++++++++++++++-
- arch/x86/include/asm/paravirt_types.h |   17 +++++++++++++++++
- arch/x86/kernel/paravirt-spinlocks.c  |    6 ++++++
- 3 files changed, 40 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/spinlock.h      |    4 ++--
+ arch/x86/kernel/kvm.c                |    2 +-
+ arch/x86/kernel/paravirt-spinlocks.c |    4 ++--
+ arch/x86/xen/spinlock.c              |    2 +-
+ 4 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index cd6e161..d71e123 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -711,7 +711,23 @@ static inline void __set_fixmap(unsigned /* enum fixed_addresses */ idx,
- }
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index 958d20f..428d0d1 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -39,7 +39,7 @@
+ /* How long a lock should spin before we consider blocking */
+ #define SPIN_THRESHOLD	(1 << 15)
  
- #if defined(CONFIG_SMP) && defined(CONFIG_PARAVIRT_SPINLOCKS)
-+#ifdef CONFIG_QUEUE_SPINLOCK
-+static __always_inline void __queue_kick_cpu(int cpu)
-+{
-+	PVOP_VCALL1(pv_lock_ops.kick_cpu, cpu);
-+}
-+
-+static __always_inline void
-+__queue_halt_cpu(enum pv_lock_stats type, s8 *state, s8 sval)
-+{
-+	PVOP_VCALL3(pv_lock_ops.halt_cpu, type, state, sval);
-+}
+-extern struct static_key paravirt_ticketlocks_enabled;
++extern struct static_key paravirt_spinlocks_enabled;
+ static __always_inline bool static_key_false(struct static_key *key);
  
-+static __always_inline void __queue_lockstat(enum pv_lock_stats type)
-+{
-+	PVOP_VCALL1(pv_lock_ops.lockstat, type);
-+}
-+#else
- static __always_inline void __ticket_lock_spinning(struct arch_spinlock *lock,
- 							__ticket_t ticket)
+ #ifdef CONFIG_QUEUE_SPINLOCK
+@@ -150,7 +150,7 @@ static inline void __ticket_unlock_slowpath(arch_spinlock_t *lock,
+ static __always_inline void arch_spin_unlock(arch_spinlock_t *lock)
  {
-@@ -723,7 +739,7 @@ static __always_inline void __ticket_unlock_kick(struct arch_spinlock *lock,
- {
- 	PVOP_VCALL2(pv_lock_ops.unlock_kick, lock, ticket);
- }
--
-+#endif
- #endif
+ 	if (TICKET_SLOWPATH_FLAG &&
+-	    static_key_false(&paravirt_ticketlocks_enabled)) {
++	    static_key_false(&paravirt_spinlocks_enabled)) {
+ 		arch_spinlock_t prev;
  
- #ifdef CONFIG_X86_32
-diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
-index 7549b8b..549b3a0 100644
---- a/arch/x86/include/asm/paravirt_types.h
-+++ b/arch/x86/include/asm/paravirt_types.h
-@@ -333,9 +333,26 @@ struct arch_spinlock;
- typedef u16 __ticket_t;
- #endif
+ 		prev = *lock;
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index 0331cb3..7ab8ab3 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -817,7 +817,7 @@ static __init int kvm_spinlock_init_jump(void)
+ 	if (!kvm_para_has_feature(KVM_FEATURE_PV_UNHALT))
+ 		return 0;
  
-+#ifdef CONFIG_QUEUE_SPINLOCK
-+enum pv_lock_stats {
-+	PV_HALT_QHEAD,		/* Queue head halting	    */
-+	PV_HALT_QNODE,		/* Other queue node halting */
-+	PV_HALT_ABORT,		/* Halting aborted	    */
-+	PV_WAKE_KICKED,		/* Wakeup by kicking	    */
-+	PV_WAKE_SPURIOUS,	/* Spurious wakeup	    */
-+	PV_KICK_NOHALT		/* Kick but CPU not halted  */
-+};
-+#endif
-+
- struct pv_lock_ops {
-+#ifdef CONFIG_QUEUE_SPINLOCK
-+	void (*kick_cpu)(int cpu);
-+	void (*halt_cpu)(enum pv_lock_stats type, s8 *state, s8 sval);
-+	void (*lockstat)(enum pv_lock_stats type);
-+#else
- 	struct paravirt_callee_save lock_spinning;
- 	void (*unlock_kick)(struct arch_spinlock *lock, __ticket_t ticket);
-+#endif
- };
+-	static_key_slow_inc(&paravirt_ticketlocks_enabled);
++	static_key_slow_inc(&paravirt_spinlocks_enabled);
+ 	printk(KERN_INFO "KVM setup paravirtual spinlock\n");
  
- /* This contains all the paravirt structures: we get a convenient
+ 	return 0;
 diff --git a/arch/x86/kernel/paravirt-spinlocks.c b/arch/x86/kernel/paravirt-spinlocks.c
-index 6d36731..8d15bea 100644
+index 7dfd02d..6d36731 100644
 --- a/arch/x86/kernel/paravirt-spinlocks.c
 +++ b/arch/x86/kernel/paravirt-spinlocks.c
-@@ -11,9 +11,15 @@
- #ifdef CONFIG_PARAVIRT_SPINLOCKS
- struct pv_lock_ops pv_lock_ops = {
- #ifdef CONFIG_SMP
-+#ifdef CONFIG_QUEUE_SPINLOCK
-+	.kick_cpu = paravirt_nop,
-+	.halt_cpu = paravirt_nop,
-+	.lockstat = paravirt_nop,
-+#else
- 	.lock_spinning = __PV_IS_CALLEE_SAVE(paravirt_nop),
- 	.unlock_kick = paravirt_nop,
- #endif
-+#endif
+@@ -17,8 +17,8 @@ struct pv_lock_ops pv_lock_ops = {
  };
  EXPORT_SYMBOL(pv_lock_ops);
  
+-struct static_key paravirt_ticketlocks_enabled = STATIC_KEY_INIT_FALSE;
+-EXPORT_SYMBOL(paravirt_ticketlocks_enabled);
++struct static_key paravirt_spinlocks_enabled = STATIC_KEY_INIT_FALSE;
++EXPORT_SYMBOL(paravirt_spinlocks_enabled);
+ #endif
+ 
+ #ifdef CONFIG_PARAVIRT_UNFAIR_LOCKS
+diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
+index 4d3acc3..7fef179 100644
+--- a/arch/x86/xen/spinlock.c
++++ b/arch/x86/xen/spinlock.c
+@@ -290,7 +290,7 @@ static __init int xen_init_spinlocks_jump(void)
+ 	if (!xen_pvspin)
+ 		return 0;
+ 
+-	static_key_slow_inc(&paravirt_ticketlocks_enabled);
++	static_key_slow_inc(&paravirt_spinlocks_enabled);
+ 	return 0;
+ }
+ early_initcall(xen_init_spinlocks_jump);
 -- 
 1.7.1
 
