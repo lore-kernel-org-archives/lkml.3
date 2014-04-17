@@ -1,51 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751269AbaDQXjW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 19:39:22 -0400
-Received: from mga11.intel.com ([192.55.52.93]:50746 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750852AbaDQXjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 19:39:19 -0400
-X-ExtLoop1: 1
+	id S1751290AbaDQXm6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 19:42:58 -0400
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:22716 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaDQXmy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 19:42:54 -0400
 X-IronPort-AV: E=Sophos;i="4.97,882,1389772800"; 
-   d="scan'208";a="522542628"
-From: Andi Kleen <andi@firstfloor.org>
-To: peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] perf, x86: Don't mark DataLA addresses as store
-Date: Thu, 17 Apr 2014 16:39:16 -0700
-Message-Id: <1397777956-11466-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.5.3
+   d="scan'208";a="24871242"
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
+CC: Tim Kryger <tim.kryger@linaro.org>,
+        Mike Looijmans <mike.looijmans@topic.nl>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        "Linux MMC List" <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mmc: core: Improve support for deferred regulators
+Date: Thu, 17 Apr 2014 16:42:45 -0700
+Message-ID: <1397778165-28693-1-git-send-email-tim.kryger@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+It is important that callers of mmc_regulator_get_supply know if either
+vmmc or vqmmc are present but not yet available.  To support this need,
+modify this function to return zero except when either of the regulator
+get operations fail with -EPROBE_DEFER.  Current callers don't check the
+return value and may continue to use IS_ERR on the vmmc/vqmmc values to
+determine if those regulators are available.  Furthermore, since all of
+these callers are capable of dealing with absent regulators, switch over
+to use the non-optional variety of the regulator get call.
 
-Haswell supports reporting the data address for a range
-of events, including UOPS_RETIRED.ALL and some load
-events. Currently these addresses were always marked
-as stores, which is wrong, as they could be loads too.
-Change it to NA instead.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mmc/core/core.c |   27 +++++++++++++++++----------
+ 1 file changed, 17 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index ae96cfa..7e9546a 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -113,7 +113,7 @@ static u64 precise_store_data_hsw(u64 status)
- 	union perf_mem_data_src dse;
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index acbc3f2..095eef0 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -1313,21 +1313,28 @@ EXPORT_SYMBOL_GPL(mmc_regulator_set_ocr);
+ int mmc_regulator_get_supply(struct mmc_host *mmc)
+ {
+ 	struct device *dev = mmc_dev(mmc);
+-	struct regulator *supply;
+ 	int ret;
  
- 	dse.val = 0;
--	dse.mem_op = PERF_MEM_OP_STORE;
-+	dse.mem_op = PERF_MEM_OP_NA;
- 	dse.mem_lvl = PERF_MEM_LVL_NA;
- 	if (status & 1)
- 		dse.mem_lvl = PERF_MEM_LVL_L1;
+-	supply = devm_regulator_get(dev, "vmmc");
+-	mmc->supply.vmmc = supply;
++	mmc->supply.vmmc = devm_regulator_get_optional(dev, "vmmc");
+ 	mmc->supply.vqmmc = devm_regulator_get_optional(dev, "vqmmc");
+ 
+-	if (IS_ERR(supply))
+-		return PTR_ERR(supply);
++	if (IS_ERR(mmc->supply.vmmc)) {
++		if (PTR_ERR(mmc->supply.vmmc) == -EPROBE_DEFER)
++			return -EPROBE_DEFER;
++		dev_info(dev, "No vmmc regulator found\n");
++	} else {
++		ret = mmc_regulator_get_ocrmask(mmc->supply.vmmc);
++		if (ret > 0)
++			mmc->ocr_avail = ret;
++		else
++			dev_warn(dev, "Failed getting OCR mask: %d\n", ret);
++	}
+ 
+-	ret = mmc_regulator_get_ocrmask(supply);
+-	if (ret > 0)
+-		mmc->ocr_avail = ret;
+-	else
+-		dev_warn(mmc_dev(mmc), "Failed getting OCR mask: %d\n", ret);
++	if (IS_ERR(mmc->supply.vqmmc)) {
++		if (PTR_ERR(mmc->supply.vqmmc) == -EPROBE_DEFER)
++			return -EPROBE_DEFER;
++		dev_info(dev, "No vqmmc regulator found\n");
++	}
+ 
+ 	return 0;
+ }
 -- 
-1.8.5.3
+1.7.9.5
 
