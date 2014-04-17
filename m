@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110AbaDQRzC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 13:55:02 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:55468 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208AbaDQRyv (ORCPT
+	id S1752221AbaDQSAY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 14:00:24 -0400
+Received: from mail-ie0-f201.google.com ([209.85.223.201]:44330 "EHLO
+	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001AbaDQSAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 13:54:51 -0400
-Date: Thu, 17 Apr 2014 10:54:47 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Peter Tyser <ptyser@xes-inc.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Chris Healy <cphealy@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: lpc_ich: Enable GPIO for Panther Point
-Message-ID: <20140417175447.GB18340@roeck-us.net>
-References: <1396712974-13853-1-git-send-email-linux@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396712974-13853-1-git-send-email-linux@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 17 Apr 2014 14:00:18 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@nvidia.com>,
+        Wolfram Sang <wsa@the-dreams.de>
+Cc: abrestic@chromium.org, dgreid@chromium.org,
+        Olof Johansson <olof@lixom.net>, Simon Glass <sjg@chromium.org>,
+        linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        David Hendricks <dhendrix@chromium.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/7] mfd: cros_ec: spi: calculate delay between transfers correctly
+Date: Thu, 17 Apr 2014 10:59:24 -0700
+Message-Id: <1397757570-19750-2-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
+In-Reply-To: <1397757570-19750-1-git-send-email-dianders@chromium.org>
+References: <1397757570-19750-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 05, 2014 at 08:49:34AM -0700, Guenter Roeck wrote:
-> Panther Point PCH GPIO configuration is similar to V5 PCHs.
-> 
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+From: David Hendricks <dhendrix@chromium.org>
 
-I don't recall seeing a reply ... ping ...
+To avoid spamming the EC we calculate the time between the previous
+transfer and the current transfer and force a delay if the time delta
+is too small.
 
-Thanks,
-Guenter
+However, a small miscalculation causes the delay period to be
+far too short. Most noticably this impacts commands with a long
+turnaround time such as EC firmware reads and writes.
 
-> ---
->  drivers/mfd/lpc_ich.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/mfd/lpc_ich.c b/drivers/mfd/lpc_ich.c
-> index 37edf9e..d096cca 100644
-> --- a/drivers/mfd/lpc_ich.c
-> +++ b/drivers/mfd/lpc_ich.c
-> @@ -484,6 +484,7 @@ static struct lpc_ich_info lpc_chipset_info[] = {
->  	[LPC_PPT] = {
->  		.name = "Panther Point",
->  		.iTCO_version = 2,
-> +		.gpio_version = ICH_V5_GPIO,
->  	},
->  	[LPC_LPT] = {
->  		.name = "Lynx Point",
-> -- 
-> 1.7.9.7
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-> 
+Signed-off-by: David Hendricks <dhendrix@chromium.org>
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ drivers/mfd/cros_ec_spi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
+index 84af8d7..c185eb6 100644
+--- a/drivers/mfd/cros_ec_spi.c
++++ b/drivers/mfd/cros_ec_spi.c
+@@ -219,7 +219,7 @@ static int cros_ec_command_spi_xfer(struct cros_ec_device *ec_dev,
+ 		ktime_get_ts(&ts);
+ 		delay = timespec_to_ns(&ts) - ec_spi->last_transfer_ns;
+ 		if (delay < EC_SPI_RECOVERY_TIME_NS)
+-			ndelay(delay);
++			ndelay(EC_SPI_RECOVERY_TIME_NS - delay);
+ 	}
+ 
+ 	/* Transmit phase - send our message */
+-- 
+1.9.1.423.g4596e3a
+
