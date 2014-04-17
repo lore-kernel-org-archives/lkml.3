@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131AbaDQSBk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 14:01:40 -0400
-Received: from mail-qg0-f73.google.com ([209.85.192.73]:51028 "EHLO
-	mail-qg0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623AbaDQSAU (ORCPT
+	id S1753325AbaDQSBq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 14:01:46 -0400
+Received: from mail-vc0-f201.google.com ([209.85.220.201]:37499 "EHLO
+	mail-vc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444AbaDQSAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 14:00:20 -0400
+	Thu, 17 Apr 2014 14:00:19 -0400
 From: Doug Anderson <dianders@chromium.org>
 To: Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@nvidia.com>,
         Wolfram Sang <wsa@the-dreams.de>
@@ -14,17 +14,10 @@ Cc: abrestic@chromium.org, dgreid@chromium.org,
         Olof Johansson <olof@lixom.net>, Simon Glass <sjg@chromium.org>,
         linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
         Doug Anderson <dianders@chromium.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/7] ARM: tegra: Add the EC i2c tunnel to tegra124-venice2
-Date: Thu, 17 Apr 2014 10:59:30 -0700
-Message-Id: <1397757570-19750-8-git-send-email-dianders@chromium.org>
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/7] mfd: cros_ec: spi: Make the cros_ec_spi timeout more reliable
+Date: Thu, 17 Apr 2014 10:59:26 -0700
+Message-Id: <1397757570-19750-4-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 1.9.1.423.g4596e3a
 In-Reply-To: <1397757570-19750-1-git-send-email-dianders@chromium.org>
 References: <1397757570-19750-1-git-send-email-dianders@chromium.org>
@@ -32,59 +25,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the EC i2c tunnel (and devices under it) to the
-tegra124-venice2 device tree.
+The cros_ec_spi transfer had two problems with its timeout code:
+
+1. It looked at the timeout even in the case that it found valid data.
+2. If the cros_ec_spi code got switched out for a while, it's possible
+   it could get a timeout after a single loop.  Let's be paranoid and
+   make sure we do one last transfer after the timeout expires.
 
 Signed-off-by: Doug Anderson <dianders@chromium.org>
 ---
- arch/arm/boot/dts/tegra124-venice2.dts | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ drivers/mfd/cros_ec_spi.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/boot/dts/tegra124-venice2.dts b/arch/arm/boot/dts/tegra124-venice2.dts
-index c17283c..df97d15 100644
---- a/arch/arm/boot/dts/tegra124-venice2.dts
-+++ b/arch/arm/boot/dts/tegra124-venice2.dts
-@@ -8,6 +8,7 @@
- 	compatible = "nvidia,venice2", "nvidia,tegra124";
+diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
+index a2a605d..4f863c3 100644
+--- a/drivers/mfd/cros_ec_spi.c
++++ b/drivers/mfd/cros_ec_spi.c
+@@ -113,7 +113,9 @@ static int cros_ec_spi_receive_response(struct cros_ec_device *ec_dev,
  
- 	aliases {
-+		i2c20 = "/spi@0,7000d400/cros-ec@0/i2c-tunnel";
- 		rtc0 = "/i2c@0,7000d000/pmic@40";
- 		rtc1 = "/rtc@0,7000e000";
- 	};
-@@ -813,6 +814,32 @@
+ 	/* Receive data until we see the header byte */
+ 	deadline = jiffies + msecs_to_jiffies(EC_MSG_DEADLINE_MS);
+-	do {
++	while (true) {
++		unsigned long start_jiffies = jiffies;
++
+ 		memset(&trans, 0, sizeof(trans));
+ 		trans.cs_change = 1;
+ 		trans.rx_buf = ptr = ec_dev->din;
+@@ -134,12 +136,19 @@ static int cros_ec_spi_receive_response(struct cros_ec_device *ec_dev,
+ 				break;
+ 			}
+ 		}
++		if (ptr != end)
++			break;
  
- 			google,cros-ec-spi-msg-delay = <2000>;
+-		if (time_after(jiffies, deadline)) {
++		/*
++		 * Use the time at the start of the loop as a timeout.  This
++		 * gives us one last shot at getting the transfer and is useful
++		 * in case we got context switched out for a while.
++		 */
++		if (time_after(start_jiffies, deadline)) {
+ 			dev_warn(ec_dev->dev, "EC failed to respond in time\n");
+ 			return -ETIMEDOUT;
+ 		}
+-	} while (ptr == end);
++	}
  
-+			i2c-tunnel {
-+				compatible = "google,cros-ec-i2c-tunnel";
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+
-+				google,remote-bus = <0>;
-+
-+				charger: bq24735@9 {
-+					compatible = "ti,bq24735";
-+					reg = <0x9>;
-+					interrupt-parent = <&gpio>;
-+					interrupts = <TEGRA_GPIO(J, 0)
-+							GPIO_ACTIVE_HIGH>;
-+					ti,ac-detect-gpios = <&gpio
-+							TEGRA_GPIO(J, 0)
-+							GPIO_ACTIVE_HIGH>;
-+				};
-+
-+				battery: sbs-battery@b {
-+					compatible = "sbs,sbs-battery";
-+					reg = <0xb>;
-+					sbs,i2c-retry-count = <2>;
-+					sbs,poll-retry-count = <1>;
-+				};
-+			};
-+
- 			cros-ec-keyb {
- 				compatible = "google,cros-ec-keyb";
- 				keypad,num-rows = <8>;
+ 	/*
+ 	 * ptr now points to the header byte. Copy any valid data to the
 -- 
 1.9.1.423.g4596e3a
 
