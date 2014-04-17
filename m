@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751224AbaDQPut (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 11:50:49 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58139 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555AbaDQPuP (ORCPT
+	id S1753121AbaDQPux (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 11:50:53 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42514 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753036AbaDQPut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 11:50:15 -0400
-Date: Thu, 17 Apr 2014 17:50:02 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
-Subject: Re: [PATCH v9 05/19] qspinlock: Optimize for smaller NR_CPUS
-Message-ID: <20140417155002.GP11096@twins.programming.kicks-ass.net>
-References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com>
- <1397747051-15401-6-git-send-email-Waiman.Long@hp.com>
+	Thu, 17 Apr 2014 11:50:49 -0400
+Date: Thu, 17 Apr 2014 11:50:47 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Oliver Neukum <oneukum@suse.de>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: question on read_barrier_depends
+In-Reply-To: <1397747767.6428.4.camel@linux-fkkt.site>
+Message-ID: <Pine.LNX.4.44L0.1404171149001.881-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397747051-15401-6-git-send-email-Waiman.Long@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 11:03:57AM -0400, Waiman Long wrote:
-> +#if !defined(__LITTLE_ENDIAN) && !defined(__BIG_ENDIAN)
-> +#error "Missing either LITTLE_ENDIAN or BIG_ENDIAN definition."
-> +#endif
+On Thu, 17 Apr 2014, Oliver Neukum wrote:
 
-This seems entirely superfluous, I don't think a kernel build will go
-anywhere if either is missing.
+> On Wed, 2014-04-16 at 11:26 -0400, Alan Stern wrote:
+> 
+> > In addition, the following code in kfifo_get() does this:
+> > 
+> > 			*(typeof(__tmp->type))__val = \
+> > 				(__is_kfifo_ptr(__tmp) ? \
+> > 				((typeof(__tmp->type))__kfifo->data) : \
+> > 				(__tmp->buf) \
+> > 				)[__kfifo->out & __tmp->kfifo.mask]; \
+> > 			smp_wmb(); \
+> > 			__kfifo->out++; \
+> > 
+> > It looks like the smp_wmb() should really be smp_mb(), because it 
+> > separates the _read_ for val from the _write_ of kfifo->out.
+> 
+> But where is kfifo->out read at all?
+
+It is read in kfifo_put(), inside the call to kfifo_is_full() -> 
+kfifo_len().
+
+Alan Stern
+
