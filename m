@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751272AbaDQX1R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 19:27:17 -0400
-Received: from mailout1.w2.samsung.com ([211.189.100.11]:52616 "EHLO
-	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736AbaDQX1L (ORCPT
+	id S1751355AbaDQX2Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 19:28:24 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52797 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736AbaDQX2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 19:27:11 -0400
-X-AuditID: cbfec37b-b7f8f6d000007030-d9-5350634dbbe0
-Message-id: <5350634A.2030608@samsung.com>
-Date: Thu, 17 Apr 2014 17:27:06 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-MIME-version: 1.0
-To: Tejun Heo <tj@kernel.org>
-Cc: gregkh@linuxfoundation.org, m.chehab@samsung.com,
-        rafael.j.wysocki@intel.com, linux@roeck-us.net, toshi.kani@hp.com,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        shuahkhan@gmail.com, Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [RFC PATCH 2/2] drivers/base: add managed token devres interfaces
-References: <cover.1397050852.git.shuah.kh@samsung.com>
- <5f21c7e53811aba63f86bcf3e3bfdfdd5aeedf59.1397050852.git.shuah.kh@samsung.com>
- <20140416215821.GG26632@htj.dyndns.org> <5350331C.7010602@samsung.com>
- <20140417201034.GT15326@htj.dyndns.org> <20140417202221.GU15326@htj.dyndns.org>
-In-reply-to: <20140417202221.GU15326@htj.dyndns.org>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.34.3]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42I5/e+wn65vckCwwaGjihbNi9ezWVzeNYfN
-	omfDVlaLJwvPMFk8XvGW3eLrTweLX8uPMlpsu7WQxYHDY+esu+weu7btZPJYvOclk8emVZ1s
-	HvvnrmH32Pm9gd3j8ya5APYoLpuU1JzMstQifbsErozF17+zFcxlrdh6Zz9bA+MEli5GTg4J
-	AROJhpNb2SFsMYkL99azdTFycQgJLGOUmPb7LCuE08sksen9ckYIZwOjxJSHTawgLbwCWhIX
-	d30FG8UioCrx7OhzNhCbTUBd4vPrHWBjhQTkJJqWrGYGsUUFIiRenZ3IAtErKPFj8j0wW0RA
-	VuLKtIdgC5gFPjBKXN/QD5YQFvCT+PxoDzvE5sVMEl9X9IFt4AQ6/GnDVjCbWcBaYuWkbYwQ
-	trzE5jVvmSE2K0v8uXyKCeI5BYn1Fw6zTmAUmYVk+Swk7bOQtC9gZF7FKFZanFxQnJSeWmGk
-	V5yYW1yal66XnJ+7iRESa9U7GO9+tTnEKMDBqMTDe/Grf7AQa2JZcWXuIUYJDmYlEV5T1YBg
-	Id6UxMqq1KL8+KLSnNTiQ4xMHJxSDYx5jWILJ/WcE2aat2DDhlNKGqXTZjI4qgTJ3o+XUPQ5
-	Eab0I7mxWfBt2f662ReXTJn9PkdObCKnOy+rYtYir50tBV1L0yI5xLZ+451vcj/LPY/bLTBe
-	SWR2+e56Z79NC4zjdi/l59+2JobzdQXfKqfWNe/O2k/Zsqm/9qPMwbzMp6d/zbjvH6DEUpyR
-	aKjFXFScCAAnBUgykwIAAA==
+	Thu, 17 Apr 2014 19:28:22 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Fri, 18 Apr 2014 08:29:10 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Yong-Taek Lee <ytk.lee@samsung.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: Re: [PATCH 1/2] mm/page_alloc: prevent MIGRATE_RESERVE pages from
+ being misplaced
+Message-ID: <20140417232910.GB7178@bbox>
+References: <533D8015.1000106@suse.cz>
+ <1396539618-31362-1-git-send-email-vbabka@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396539618-31362-1-git-send-email-vbabka@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2014 02:22 PM, Tejun Heo wrote:
-> On Thu, Apr 17, 2014 at 04:10:34PM -0400, Tejun Heo wrote:
-Please do not implement locking
-> primitive directly if at all avoidable.  Why can't it use a mutex
-> embedded in the data area of a devres entry?  And if you for some
-> reason have to implement it directly, at least add lockdep
-> annotations.
->
+On Thu, Apr 03, 2014 at 05:40:17PM +0200, Vlastimil Babka wrote:
+> For the MIGRATE_RESERVE pages, it is important they do not get misplaced
+> on free_list of other migratetype, otherwise the whole MIGRATE_RESERVE
+> pageblock might be changed to other migratetype in try_to_steal_freepages().
+> 
+> Currently, it is however possible for this to happen when MIGRATE_RESERVE
+> page is allocated on pcplist through rmqueue_bulk() as a fallback for other
+> desired migratetype, and then later freed back through free_pcppages_bulk()
+> without being actually used. This happens because free_pcppages_bulk() uses
+> get_freepage_migratetype() to choose the free_list, and rmqueue_bulk() calls
+> set_freepage_migratetype() with the *desired* migratetype and not the page's
+> original MIGRATE_RESERVE migratetype.
+> 
+> This patch fixes the problem by moving the call to set_freepage_migratetype()
+> from rmqueue_bulk() down to __rmqueue_smallest() and __rmqueue_fallback() where
+> the actual page's migratetype (e.g. from which free_list the page is taken
+> from) is used. Note that this migratetype might be different from the
+> pageblock's migratetype due to freepage stealing decisions. This is OK, as page
+> stealing never uses MIGRATE_RESERVE as a fallback, and also takes care to leave
+> all MIGRATE_CMA pages on the correct freelist.
+> 
+> Therefore, as an additional benefit, the call to get_pageblock_migratetype()
+> from rmqueue_bulk() when CMA is enabled, can be removed completely. This relies
+> on the fact that MIGRATE_CMA pageblocks are created only during system init,
+> and the above. The related is_migrate_isolate() check is also unnecessary, as
+> memory isolation has other ways to move pages between freelists, and drain
+> pcp lists containing pages that should be isolated.
+> The buffered_rmqueue() can also benefit from calling get_freepage_migratetype()
+> instead of get_pageblock_migratetype().
 
-Thanks. This is helpful. Yes it does simplify the code with mutex
-embedded in the devres data area. I am working on a v2 patch with
-that change.
+Nice description.
 
--- Shuah
+> 
+> A separate patch will add VM_BUG_ON checks for the invariant that for
+> MIGRATE_RESERVE and MIGRATE_CMA pageblocks, freepage_migratetype must equal to
+> pageblock_migratetype so that these pages always go to the correct free_list.
+> 
+> Reported-by: Yong-Taek Lee <ytk.lee@samsung.com>
+> Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Suggested-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Suggested-by: Mel Gorman <mgorman@suse.de>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+
+Acked-by: Minchan Kim <minchan@kernel.org>
 
 -- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+Kind regards,
+Minchan Kim
