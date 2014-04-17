@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161203AbaDQHW4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 03:22:56 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:53454 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161070AbaDQHWx (ORCPT
+	id S1161494AbaDQHXA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 03:23:00 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45386 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161070AbaDQHW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 03:22:53 -0400
+	Thu, 17 Apr 2014 03:22:57 -0400
 From: Brian Norris <computersforpeace@gmail.com>
 To: Linux Kernel <linux-kernel@vger.kernel.org>
 Cc: Brian Norris <computersforpeace@gmail.com>, Marek Vasut <marex@denx.de>,
-        <linux-mtd@lists.infradead.org>, Steven Miao <realmz6@gmail.com>,
-        adi-buildroot-devel@lists.sourceforge.net
-Subject: [PATCH 2/5] blackfin: defconfigs: add MTD_SPI_NOR (new dependency for M25P80)
-Date: Thu, 17 Apr 2014 00:21:46 -0700
-Message-Id: <1397719309-2022-3-git-send-email-computersforpeace@gmail.com>
+        <linux-mtd@lists.infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 4/5] powerpc: defconfigs: add MTD_SPI_NOR (new dependency for M25P80)
+Date: Thu, 17 Apr 2014 00:21:48 -0700
+Message-Id: <1397719309-2022-5-git-send-email-computersforpeace@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1397719309-2022-1-git-send-email-computersforpeace@gmail.com>
 References: <1397719309-2022-1-git-send-email-computersforpeace@gmail.com>
@@ -29,163 +30,101 @@ relevant defconfigs.
 At the same time, drop the now-nonexistent CONFIG_MTD_CHAR symbol.
 
 Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Cc: Steven Miao <realmz6@gmail.com>
-Cc: adi-buildroot-devel@lists.sourceforge.net
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: linuxppc-dev@lists.ozlabs.org
 Cc: linux-kernel@vger.kernel.org
 ---
 This change is based on l2-mtd.git/spinor, which is based on 3.15-rc1:
 
   git://git.infradead.org/l2-mtd.git +spinor
 
- arch/blackfin/configs/BF526-EZBRD_defconfig    | 2 +-
- arch/blackfin/configs/BF527-EZKIT-V2_defconfig | 2 +-
- arch/blackfin/configs/BF527-EZKIT_defconfig    | 2 +-
- arch/blackfin/configs/BF548-EZKIT_defconfig    | 2 +-
- arch/blackfin/configs/BF609-EZKIT_defconfig    | 2 +-
- arch/blackfin/configs/BlackStamp_defconfig     | 3 +--
- arch/blackfin/configs/H8606_defconfig          | 3 +--
- 7 files changed, 7 insertions(+), 9 deletions(-)
+ arch/powerpc/configs/corenet32_smp_defconfig | 2 +-
+ arch/powerpc/configs/corenet64_smp_defconfig | 2 +-
+ arch/powerpc/configs/mpc85xx_defconfig       | 2 +-
+ arch/powerpc/configs/mpc85xx_smp_defconfig   | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/blackfin/configs/BF526-EZBRD_defconfig b/arch/blackfin/configs/BF526-EZBRD_defconfig
-index 2f2c6acf210c..530ba7a6d7b0 100644
---- a/arch/blackfin/configs/BF526-EZBRD_defconfig
-+++ b/arch/blackfin/configs/BF526-EZBRD_defconfig
-@@ -53,7 +53,6 @@ CONFIG_IP_PNP=y
- CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
- CONFIG_MTD_CFI=y
- CONFIG_MTD_CFI_INTELEXT=y
-@@ -63,6 +62,7 @@ CONFIG_MTD_COMPLEX_MAPPINGS=y
- CONFIG_MTD_PHYSMAP=y
- CONFIG_MTD_M25P80=y
- CONFIG_MTD_NAND=m
-+CONFIG_MTD_SPI_NOR=y
- CONFIG_BLK_DEV_RAM=y
- CONFIG_SCSI=y
- # CONFIG_SCSI_PROC_FS is not set
-diff --git a/arch/blackfin/configs/BF527-EZKIT-V2_defconfig b/arch/blackfin/configs/BF527-EZKIT-V2_defconfig
-index 91535c38e7f2..a21c79275eae 100644
---- a/arch/blackfin/configs/BF527-EZKIT-V2_defconfig
-+++ b/arch/blackfin/configs/BF527-EZKIT-V2_defconfig
-@@ -58,7 +58,6 @@ CONFIG_BFIN_SIR0=y
- CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_CHAR=m
- CONFIG_MTD_BLOCK=y
- CONFIG_MTD_JEDECPROBE=m
- CONFIG_MTD_RAM=y
-@@ -66,6 +65,7 @@ CONFIG_MTD_ROM=m
- CONFIG_MTD_COMPLEX_MAPPINGS=y
- CONFIG_MTD_M25P80=y
- CONFIG_MTD_NAND=m
-+CONFIG_MTD_SPI_NOR=y
- CONFIG_BLK_DEV_RAM=y
- CONFIG_SCSI=y
- # CONFIG_SCSI_PROC_FS is not set
-diff --git a/arch/blackfin/configs/BF527-EZKIT_defconfig b/arch/blackfin/configs/BF527-EZKIT_defconfig
-index af2738c7441b..5070a860d8c4 100644
---- a/arch/blackfin/configs/BF527-EZKIT_defconfig
-+++ b/arch/blackfin/configs/BF527-EZKIT_defconfig
-@@ -57,7 +57,6 @@ CONFIG_BFIN_SIR0=y
- CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
--CONFIG_MTD_CHAR=m
- CONFIG_MTD_BLOCK=y
- CONFIG_MTD_JEDECPROBE=m
- CONFIG_MTD_RAM=y
-@@ -65,6 +64,7 @@ CONFIG_MTD_ROM=m
- CONFIG_MTD_COMPLEX_MAPPINGS=y
- CONFIG_MTD_M25P80=y
- CONFIG_MTD_NAND=m
-+CONFIG_MTD_SPI_NOR=y
- CONFIG_BLK_DEV_RAM=y
- CONFIG_SCSI=y
- # CONFIG_SCSI_PROC_FS is not set
-diff --git a/arch/blackfin/configs/BF548-EZKIT_defconfig b/arch/blackfin/configs/BF548-EZKIT_defconfig
-index e716fdfd2cf2..efb293057287 100644
---- a/arch/blackfin/configs/BF548-EZKIT_defconfig
-+++ b/arch/blackfin/configs/BF548-EZKIT_defconfig
-@@ -64,7 +64,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- CONFIG_FW_LOADER=m
+diff --git a/arch/powerpc/configs/corenet32_smp_defconfig b/arch/powerpc/configs/corenet32_smp_defconfig
+index bbd794deb6eb..fceaa893d37c 100644
+--- a/arch/powerpc/configs/corenet32_smp_defconfig
++++ b/arch/powerpc/configs/corenet32_smp_defconfig
+@@ -69,7 +69,6 @@ CONFIG_DEVTMPFS=y
+ CONFIG_DEVTMPFS_MOUNT=y
  CONFIG_MTD=y
  CONFIG_MTD_CMDLINE_PARTS=y
 -CONFIG_MTD_CHAR=y
  CONFIG_MTD_BLOCK=y
  CONFIG_MTD_CFI=y
- CONFIG_MTD_CFI_INTELEXT=y
-@@ -75,6 +74,7 @@ CONFIG_MTD_M25P80=y
+ CONFIG_MTD_CFI_AMDSTD=y
+@@ -78,6 +77,7 @@ CONFIG_MTD_M25P80=y
  CONFIG_MTD_NAND=y
- CONFIG_MTD_NAND_BF5XX=y
- # CONFIG_MTD_NAND_BF5XX_HWECC is not set
+ CONFIG_MTD_NAND_FSL_ELBC=y
+ CONFIG_MTD_NAND_FSL_IFC=y
 +CONFIG_MTD_SPI_NOR=y
- CONFIG_BLK_DEV_RAM=y
- # CONFIG_SCSI_PROC_FS is not set
- CONFIG_BLK_DEV_SD=y
-diff --git a/arch/blackfin/configs/BF609-EZKIT_defconfig b/arch/blackfin/configs/BF609-EZKIT_defconfig
-index 4ca39ab6b2bf..a7e9bfd84183 100644
---- a/arch/blackfin/configs/BF609-EZKIT_defconfig
-+++ b/arch/blackfin/configs/BF609-EZKIT_defconfig
-@@ -57,7 +57,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- CONFIG_FW_LOADER=m
- CONFIG_MTD=y
- CONFIG_MTD_CMDLINE_PARTS=y
--CONFIG_MTD_CHAR=y
- CONFIG_MTD_BLOCK=y
- CONFIG_MTD_CFI=y
- CONFIG_MTD_CFI_INTELEXT=y
-@@ -65,6 +64,7 @@ CONFIG_MTD_CFI_STAA=y
- CONFIG_MTD_COMPLEX_MAPPINGS=y
- CONFIG_MTD_PHYSMAP=y
- CONFIG_MTD_M25P80=y
-+CONFIG_MTD_SPI_NOR=y
- CONFIG_MTD_UBI=m
- CONFIG_SCSI=y
- CONFIG_BLK_DEV_SD=y
-diff --git a/arch/blackfin/configs/BlackStamp_defconfig b/arch/blackfin/configs/BlackStamp_defconfig
-index 3853c473b443..f4a9200e1ab1 100644
---- a/arch/blackfin/configs/BlackStamp_defconfig
-+++ b/arch/blackfin/configs/BlackStamp_defconfig
-@@ -45,7 +45,6 @@ CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
- # CONFIG_FW_LOADER is not set
- CONFIG_MTD=y
- CONFIG_MTD_CMDLINE_PARTS=y
--CONFIG_MTD_CHAR=m
- CONFIG_MTD_BLOCK=y
- CONFIG_MTD_CFI=m
- CONFIG_MTD_CFI_AMDSTD=m
-@@ -53,7 +52,7 @@ CONFIG_MTD_RAM=y
- CONFIG_MTD_ROM=m
- CONFIG_MTD_COMPLEX_MAPPINGS=y
- CONFIG_MTD_M25P80=y
--# CONFIG_M25PXX_USE_FAST_READ is not set
-+CONFIG_MTD_SPI_NOR=y
+ CONFIG_PROC_DEVICETREE=y
  CONFIG_BLK_DEV_LOOP=y
- CONFIG_BLK_DEV_NBD=y
  CONFIG_BLK_DEV_RAM=y
-diff --git a/arch/blackfin/configs/H8606_defconfig b/arch/blackfin/configs/H8606_defconfig
-index f754e490bbfd..0ff97d8d047a 100644
---- a/arch/blackfin/configs/H8606_defconfig
-+++ b/arch/blackfin/configs/H8606_defconfig
-@@ -36,13 +36,12 @@ CONFIG_IRTTY_SIR=m
- # CONFIG_WIRELESS is not set
- # CONFIG_FW_LOADER is not set
+diff --git a/arch/powerpc/configs/corenet64_smp_defconfig b/arch/powerpc/configs/corenet64_smp_defconfig
+index 5c7fa19ae4ef..9c8d58a50df2 100644
+--- a/arch/powerpc/configs/corenet64_smp_defconfig
++++ b/arch/powerpc/configs/corenet64_smp_defconfig
+@@ -61,7 +61,6 @@ CONFIG_DEVTMPFS_MOUNT=y
  CONFIG_MTD=y
+ CONFIG_MTD_OF_PARTS=y
+ CONFIG_MTD_CMDLINE_PARTS=y
 -CONFIG_MTD_CHAR=y
+ CONFIG_MTD_BLKDEVS=y
  CONFIG_MTD_BLOCK=y
- CONFIG_MTD_RAM=y
- CONFIG_MTD_ROM=y
- CONFIG_MTD_COMPLEX_MAPPINGS=y
- CONFIG_MTD_M25P80=y
--# CONFIG_M25PXX_USE_FAST_READ is not set
+ CONFIG_FTL=y
+@@ -82,6 +81,7 @@ CONFIG_MTD_NAND=y
+ CONFIG_MTD_NAND_IDS=y
+ CONFIG_MTD_NAND_FSL_ELBC=y
+ CONFIG_MTD_NAND_FSL_IFC=y
 +CONFIG_MTD_SPI_NOR=y
- CONFIG_BLK_DEV_RAM=y
- CONFIG_MISC_DEVICES=y
- CONFIG_EEPROM_AT25=y
+ CONFIG_MTD_UBI=y
+ CONFIG_MTD_UBI_WL_THRESHOLD=4096
+ CONFIG_MTD_UBI_BEB_RESERVE=1
+diff --git a/arch/powerpc/configs/mpc85xx_defconfig b/arch/powerpc/configs/mpc85xx_defconfig
+index 19f0fbe5ba4b..33d9c8aef4eb 100644
+--- a/arch/powerpc/configs/mpc85xx_defconfig
++++ b/arch/powerpc/configs/mpc85xx_defconfig
+@@ -83,7 +83,6 @@ CONFIG_DEVTMPFS_MOUNT=y
+ CONFIG_MTD=y
+ CONFIG_MTD_OF_PARTS=y
+ CONFIG_MTD_CMDLINE_PARTS=y
+-CONFIG_MTD_CHAR=y
+ CONFIG_MTD_BLKDEVS=y
+ CONFIG_MTD_BLOCK=y
+ CONFIG_FTL=y
+@@ -104,6 +103,7 @@ CONFIG_MTD_NAND=y
+ CONFIG_MTD_NAND_IDS=y
+ CONFIG_MTD_NAND_FSL_ELBC=y
+ CONFIG_MTD_NAND_FSL_IFC=y
++CONFIG_MTD_SPI_NOR=y
+ CONFIG_MTD_UBI=y
+ CONFIG_MTD_UBI_WL_THRESHOLD=4096
+ CONFIG_MTD_UBI_BEB_RESERVE=1
+diff --git a/arch/powerpc/configs/mpc85xx_smp_defconfig b/arch/powerpc/configs/mpc85xx_smp_defconfig
+index 062312e1fe1a..25174f9a6615 100644
+--- a/arch/powerpc/configs/mpc85xx_smp_defconfig
++++ b/arch/powerpc/configs/mpc85xx_smp_defconfig
+@@ -86,7 +86,6 @@ CONFIG_DEVTMPFS_MOUNT=y
+ CONFIG_MTD=y
+ CONFIG_MTD_OF_PARTS=y
+ CONFIG_MTD_CMDLINE_PARTS=y
+-CONFIG_MTD_CHAR=y
+ CONFIG_MTD_BLKDEVS=y
+ CONFIG_MTD_BLOCK=y
+ CONFIG_FTL=y
+@@ -107,6 +106,7 @@ CONFIG_MTD_NAND=y
+ CONFIG_MTD_NAND_IDS=y
+ CONFIG_MTD_NAND_FSL_ELBC=y
+ CONFIG_MTD_NAND_FSL_IFC=y
++CONFIG_MTD_SPI_NOR=y
+ CONFIG_MTD_UBI=y
+ CONFIG_MTD_UBI_WL_THRESHOLD=4096
+ CONFIG_MTD_UBI_BEB_RESERVE=1
 -- 
 1.8.3.2
 
