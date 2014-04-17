@@ -1,122 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259AbaDQOSe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 10:18:34 -0400
-Received: from www.meduna.org ([92.240.244.38]:32887 "EHLO meduna.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752387AbaDQOS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 10:18:29 -0400
-Message-ID: <534FE2A8.2030203@meduna.org>
-Date: Thu, 17 Apr 2014 16:18:16 +0200
-From: Stanislav Meduna <stano@meduna.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>, zbr@ioremap.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>
-Subject: Re: w1-gpio: sleeping function called from invalid context
-References: <534E97C8.5090407@meduna.org> <534ED833.6020303@windriver.com>
-In-Reply-To: <534ED833.6020303@windriver.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: stano@meduna.org
-X-Authenticator: dovecot_plain
-X-Spam-Score: -6.9
-X-Spam-Score-Int: -68
-X-Exim-Version: 4.72 (build at 25-Oct-2012 18:35:58)
-X-Date: 2014-04-17 16:18:22
-X-Connected-IP: 95.105.163.217:43604
-X-Message-Linecount: 95
-X-Body-Linecount: 80
-X-Message-Size: 3401
-X-Body-Size: 2679
-X-Received-Count: 1
-X-Recipient-Count: 4
-X-Local-Recipient-Count: 4
-X-Local-Recipient-Defer-Count: 0
-X-Local-Recipient-Fail-Count: 0
+	id S1752757AbaDQONU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 10:13:20 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:34470 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239AbaDQOMR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 10:12:17 -0400
+From: Peter Foley <pefoley2@pefoley.com>
+To: linux-kernel@vger.kernel.org
+Cc: rdunlap@infradead.org, linux-doc@vger.kernel.org,
+        Peter Foley <pefoley2@pefoley.com>
+Subject: [PATCH 3/4] Documentation: make functions static to avoid prototype warnings
+Date: Thu, 17 Apr 2014 10:11:49 -0400
+Message-Id: <1397743910-18391-3-git-send-email-pefoley2@pefoley.com>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1397743910-18391-1-git-send-email-pefoley2@pefoley.com>
+References: <1397743910-18391-1-git-send-email-pefoley2@pefoley.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.04.2014 21:21, Paul Gortmaker wrote:
+Signed-off-by: Peter Foley <pefoley2@pefoley.com>
+---
+ Documentation/arm/SH-Mobile/vrl4.c                    |  6 +++---
+ Documentation/laptops/hpfall.c                        | 16 ++++++++--------
+ Documentation/prctl/disable-tsc-ctxt-sw-stress-test.c | 11 ++++++-----
+ Documentation/prctl/disable-tsc-on-off-stress-test.c  |  7 ++++---
+ Documentation/prctl/disable-tsc-test.c                |  5 +++--
+ 5 files changed, 24 insertions(+), 21 deletions(-)
 
->   static void w1_write_bit(struct w1_master *dev, int bit)
->   {
->         unsigned long flags = 0;
-> 
->         if(w1_disable_irqs) local_irq_save(flags);
-
-Well, it is actually the w1_read_bit that does the writing
-
-static u8 w1_read_bit(struct w1_master *dev)
-{
-	int result;
-	unsigned long flags = 0;
-
-	/* sample timing is critical here */
-	local_irq_save(flags);
-...
-
-The timing is indeed sensitive - just commenting out gets rid
-of the error but also makes the connected device not to appear
-(at least when compiled into the kernel and many things run
-concurrently at boot). Raising the priority of the master thread
-makes it work (but obviously not necessarily 100% reliable,
-the timings needed are comparable to jitter caused by interrupts).
-
-The root of the problem is probably that the w1-gpio does
-tricks with the direction to communicate with the 1-wire bus.
-A normal gpio get/set value does not need to lock anything
-(there are special _cansleep versions for pins beyond controllers
-that can sleep), but manipulating the pin direction does. To me
-it looks the 1-wire is only possible under RT with real
-open drain ports.
-
-Maybe the gpiod_direction_input/output could be split to do the
-stuff without locking - but I understand that this has to be
-carefully designed.
-
-For the record: the following makes things work in my environment:
-
-diff --git a/drivers/w1/w1.c b/drivers/w1/w1.c
-index fa932c2..2223c87 100644
---- a/drivers/w1/w1.c
-+++ b/drivers/w1/w1.c
-@@ -1011,6 +1011,11 @@ int w1_process(void *data)
-         * time can be calculated in jiffies once.
-         */
-        const unsigned long jtime = msecs_to_jiffies(w1_timeout * 1000);
-+       static struct sched_param sp = {
-+               .sched_priority = 55
-+       };
-+
-+       sched_setscheduler(current, SCHED_RR, &sp);
-
-        while (!kthread_should_stop()) {
-                if (dev->search_count) {
-diff --git a/drivers/w1/w1_io.c b/drivers/w1/w1_io.c
-index e10acc2..7065486 100644
---- a/drivers/w1/w1_io.c
-+++ b/drivers/w1/w1_io.c
-@@ -170,14 +170,14 @@ static u8 w1_read_bit(struct w1_master *dev)
-        unsigned long flags = 0;
-
-        /* sample timing is critical here */
--       local_irq_save(flags);
-+       if(w1_disable_irqs) local_irq_save(flags);
-        dev->bus_master->write_bit(dev->bus_master->data, 0);
-        w1_delay(6);
-        dev->bus_master->write_bit(dev->bus_master->data, 1);
-        w1_delay(9);
-
-        result = dev->bus_master->read_bit(dev->bus_master->data);
--       local_irq_restore(flags);
-+       if(w1_disable_irqs) local_irq_restore(flags);
-
-        w1_delay(55);
-
+diff --git a/Documentation/arm/SH-Mobile/vrl4.c b/Documentation/arm/SH-Mobile/vrl4.c
+index e8a1913..4cbbba5 100644
+--- a/Documentation/arm/SH-Mobile/vrl4.c
++++ b/Documentation/arm/SH-Mobile/vrl4.c
+@@ -77,7 +77,7 @@ struct hdr {
+ 
+ #define ROUND_UP(x)	((x + ALIGN - 1) & ~(ALIGN - 1))
+ 
+-ssize_t do_read(int fd, void *buf, size_t count)
++static ssize_t do_read(int fd, void *buf, size_t count)
+ {
+ 	size_t offset = 0;
+ 	ssize_t l;
+@@ -98,7 +98,7 @@ ssize_t do_read(int fd, void *buf, size_t count)
+ 	return offset;
+ }
+ 
+-ssize_t do_write(int fd, const void *buf, size_t count)
++static ssize_t do_write(int fd, const void *buf, size_t count)
+ {
+ 	size_t offset = 0;
+ 	ssize_t l;
+@@ -117,7 +117,7 @@ ssize_t do_write(int fd, const void *buf, size_t count)
+ 	return offset;
+ }
+ 
+-ssize_t write_zero(int fd, size_t len)
++static ssize_t write_zero(int fd, size_t len)
+ {
+ 	size_t i = len;
+ 
+diff --git a/Documentation/laptops/hpfall.c b/Documentation/laptops/hpfall.c
+index b85dbba..d4e1380 100644
+--- a/Documentation/laptops/hpfall.c
++++ b/Documentation/laptops/hpfall.c
+@@ -21,7 +21,7 @@
+ 
+ char unload_heads_path[64];
+ 
+-int set_unload_heads_path(char *device)
++static int set_unload_heads_path(char *device)
+ {
+ 	char devname[64];
+ 
+@@ -33,7 +33,7 @@ int set_unload_heads_path(char *device)
+ 				"/sys/block/%s/device/unload_heads", devname);
+ 	return 0;
+ }
+-int valid_disk(void)
++static int valid_disk(void)
+ {
+ 	int fd = open(unload_heads_path, O_RDONLY);
+ 	if (fd < 0) {
+@@ -45,7 +45,7 @@ int valid_disk(void)
+ 	return 1;
+ }
+ 
+-void write_int(char *path, int i)
++static void write_int(char *path, int i)
+ {
+ 	char buf[1024];
+ 	int fd = open(path, O_RDWR);
+@@ -61,27 +61,27 @@ void write_int(char *path, int i)
+ 	close(fd);
+ }
+ 
+-void set_led(int on)
++static void set_led(int on)
+ {
+ 	write_int("/sys/class/leds/hp::hddprotect/brightness", on);
+ }
+ 
+-void protect(int seconds)
++static void protect(int seconds)
+ {
+ 	write_int(unload_heads_path, seconds*1000);
+ }
+ 
+-int on_ac(void)
++static int on_ac(void)
+ {
+ //	/sys/class/power_supply/AC0/online
+ }
+ 
+-int lid_open(void)
++static int lid_open(void)
+ {
+ //	/proc/acpi/button/lid/LID/state
+ }
+ 
+-void ignore_me(void)
++static void ignore_me(void)
+ {
+ 	protect(0);
+ 	set_led(0);
+diff --git a/Documentation/prctl/disable-tsc-ctxt-sw-stress-test.c b/Documentation/prctl/disable-tsc-ctxt-sw-stress-test.c
+index f8e8e95..81fdd42 100644
+--- a/Documentation/prctl/disable-tsc-ctxt-sw-stress-test.c
++++ b/Documentation/prctl/disable-tsc-ctxt-sw-stress-test.c
+@@ -27,19 +27,20 @@
+ # define PR_TSC_SIGSEGV		2   /* throw a SIGSEGV instead of reading the TSC */
+ #endif
+ 
+-uint64_t rdtsc() {
++static uint64_t rdtsc(void)
++{
+ uint32_t lo, hi;
+ /* We cannot use "=A", since this would use %rax on x86_64 */
+ __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
+ return (uint64_t)hi << 32 | lo;
+ }
+ 
+-void sigsegv_expect(int sig)
++static void sigsegv_expect(int sig)
+ {
+ 	/* */
+ }
+ 
+-void segvtask(void)
++static void segvtask(void)
+ {
+ 	if (prctl(PR_SET_TSC, PR_TSC_SIGSEGV) < 0)
+ 	{
+@@ -54,13 +55,13 @@ void segvtask(void)
+ }
+ 
+ 
+-void sigsegv_fail(int sig)
++static void sigsegv_fail(int sig)
+ {
+ 	fprintf(stderr, "FATAL ERROR, rdtsc() failed while enabled\n");
+ 	exit(0);
+ }
+ 
+-void rdtsctask(void)
++static void rdtsctask(void)
+ {
+ 	if (prctl(PR_SET_TSC, PR_TSC_ENABLE) < 0)
+ 	{
+diff --git a/Documentation/prctl/disable-tsc-on-off-stress-test.c b/Documentation/prctl/disable-tsc-on-off-stress-test.c
+index 1fcd9144..4d83a27 100644
+--- a/Documentation/prctl/disable-tsc-on-off-stress-test.c
++++ b/Documentation/prctl/disable-tsc-on-off-stress-test.c
+@@ -29,7 +29,8 @@
+ 
+ /* snippet from wikipedia :-) */
+ 
+-uint64_t rdtsc() {
++static uint64_t rdtsc(void)
++{
+ uint32_t lo, hi;
+ /* We cannot use "=A", since this would use %rax on x86_64 */
+ __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
+@@ -38,7 +39,7 @@ return (uint64_t)hi << 32 | lo;
+ 
+ int should_segv = 0;
+ 
+-void sigsegv_cb(int sig)
++static void sigsegv_cb(int sig)
+ {
+ 	if (!should_segv)
+ 	{
+@@ -55,7 +56,7 @@ void sigsegv_cb(int sig)
+ 	rdtsc();
+ }
+ 
+-void task(void)
++static void task(void)
+ {
+ 	signal(SIGSEGV, sigsegv_cb);
+ 	alarm(10);
+diff --git a/Documentation/prctl/disable-tsc-test.c b/Documentation/prctl/disable-tsc-test.c
+index 843c81e..2541e65 100644
+--- a/Documentation/prctl/disable-tsc-test.c
++++ b/Documentation/prctl/disable-tsc-test.c
+@@ -29,14 +29,15 @@ const char *tsc_names[] =
+ 	[PR_TSC_SIGSEGV] = "PR_TSC_SIGSEGV",
+ };
+ 
+-uint64_t rdtsc() {
++static uint64_t rdtsc(void)
++{
+ uint32_t lo, hi;
+ /* We cannot use "=A", since this would use %rax on x86_64 */
+ __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
+ return (uint64_t)hi << 32 | lo;
+ }
+ 
+-void sigsegv_cb(int sig)
++static void sigsegv_cb(int sig)
+ {
+ 	int tsc_val = 0;
+ 
 -- 
-                                   Stano
+1.9.2
 
