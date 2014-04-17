@@ -1,81 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143AbaDQUyg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 16:54:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63976 "EHLO mx1.redhat.com"
+	id S1753486AbaDQUxH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 16:53:07 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40730 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751312AbaDQUyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 16:54:25 -0400
-Date: Thu, 17 Apr 2014 16:53:55 -0400
-From: Dave Jones <davej@redhat.com>
-To: Borislav Petkov <bp@alien8.de>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Zhang, Rui" <rui.zhang@intel.com>, "Lu, Aaron" <aaron.lu@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Stephane Eranian <eranian@google.com>,
-        "Yan, Zheng Z" <zheng.z.yan@intel.com>, daniel.vetter@ffwll.ch
-Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
-Message-ID: <20140417205355.GA22191@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Borislav Petkov <bp@alien8.de>, Bjorn Helgaas <bhelgaas@google.com>,
-	"Rafael J. Wysocki" <rjw@rjwysocki.net>,
-	"Zhang, Rui" <rui.zhang@intel.com>,
-	"Lu, Aaron" <aaron.lu@intel.com>,
-	lkml <linux-kernel@vger.kernel.org>,
-	"x86@kernel.org" <x86@kernel.org>,
-	Linux PCI <linux-pci@vger.kernel.org>,
-	ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-	Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-	Stephane Eranian <eranian@google.com>,
-	"Yan, Zheng Z" <zheng.z.yan@intel.com>, daniel.vetter@ffwll.ch
-References: <CAErSpo4pDYMhHo6e-1TN6XDRO0xy0u8H+=oucFnrEK+kbjZvzw@mail.gmail.com>
- <20140416190404.GA7070@pd.tnic>
- <20140416203138.GA17661@google.com>
- <20140416223122.GA2767@redhat.com>
- <20140416225600.GA23781@google.com>
- <20140417104533.GB8215@pd.tnic>
- <20140417182637.GA2098@google.com>
- <20140417195240.GA18876@redhat.com>
- <20140417200127.GH4321@pd.tnic>
- <20140417200352.GB18876@redhat.com>
+	id S1751725AbaDQUua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 16:50:30 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>
+CC: Sekhar Nori <nsekhar@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Nishanth Menon <nm@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH V2 00/19] bus: omap_l3_noc: driver cleanups and support for DRA7/AM4372 
+Date: Thu, 17 Apr 2014 15:49:16 -0500
+Message-ID: <1397767775-10965-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1397492726-17203-1-git-send-email-nm@ti.com>
+References: <1397492726-17203-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140417200352.GB18876@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 04:03:52PM -0400, Dave Jones wrote:
- > On Thu, Apr 17, 2014 at 10:01:27PM +0200, Borislav Petkov wrote:
- >  > On Thu, Apr 17, 2014 at 03:52:40PM -0400, Dave Jones wrote:
- >  > > Just as X starts up, I see this in dmesg..
- >  > > 
- >  > > [   42.879049] [drm:cpt_serr_int_handler] *ERROR* PCH transcoder A FIFO underrun
- >  > 
- >  > FWIW, I have that too. It should be something i915-related:
- >  > 
- >  > [    0.617673] [drm] Memory usable by graphics device = 2048M
- >  > [    0.694445] i915 0000:00:02.0: irq 42 for MSI/MSI-X
- >  > [    0.694549] [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
- >  > [    0.694631] [drm] Driver supports precise vblank timestamp query.
- >  > [    0.695313] vgaarb: device changed decodes: PCI:0000:00:02.0,olddecodes=io+mem,decodes=io+mem:owns=io+mem
- >  > [    0.788300] [drm] GMBUS [i915 gmbus dpb] timed out, falling back to bit banging on pin 5
- >  > [    0.799829] fbcon: inteldrmfb (fb0) is primary device
- >  > [    1.176845] [drm:cpt_serr_int_handler] *ERROR* PCH transcoder A FIFO underrun
- > 
- > Can you send me your .config off-list ?
- > I wonder if this is something config specific that's causing me to see
- > this, and you not, given we've apparently got similar machines.
+The following V2 of the series is based on v3.15-rc1 + peter's patch series:
+	patch #1: https://patchwork.kernel.org/patch/3923141/
+	(drivers: bus: omap_l3: Convert to use devm_kzalloc)
 
-ok, with your config I get back to a console after the modesetting
-switch, but then it hangs in USB init.
+	patch #2: https://patchwork.kernel.org/patch/3923061/
+	(drivers: bus: omap_l3: Convert to use devm_ioremap_resource() )
 
-Hrmm.
+	patch #3: https://patchwork.kernel.org/patch/3923101/
+	(drivers: bus: omap_l3: Convert to use devm_request_irq())
 
-	Dave
+	patch #4: https://patchwork.kernel.org/patch/3923081/
+	(drivers: bus: omap_l3: Remove the platform driver's remove function)
+
+	patch #5: https://patchwork.kernel.org/patch/3923121/
+	(drivers: bus: omap_l3: Change pr_crit() to dev_err() when IRQ request
+	fails)
+
+V1 was originally posted here: http://marc.info/?l=linux-omap&m=139749383932575&w=2
+
+V2 introduces the following changes:
+	- Additional bug fix detected during additional testing (all tests complete now). patch #12
+	- reordering of patches to order logical changes and reduce code churn.
+	- interrupt handler split up and additional information now provided in log to aid debug when error occur
+	- patches are marked where new (12,14,15,16).
+	- DRA7 updated from master document for all DRA7 variants.
+
+This series cleansup omap_l3_noc driver and adds data to support DRA7
+and AM437x SoCs.
+
+Patches(including Peter's) is available here:
+https://github.com/nmenon/linux-2.6-playground/commits/l3noc/driver-fixes-v2
+
+DTS patches (once this series is integrated and related DRA7 memory map fixes are done):
+https://github.com/nmenon/linux-2.6-playground/commits/l3noc/dts-fixes
+	(posted here: http://marc.info/?l=linux-omap&m=139750288003978&w=2)
+		- no change in dts.
+
+Testing branch: everything integrated:
+https://github.com/nmenon/linux-2.6-playground/commits/l3noc/testing-v2
+
+Test logs: (DES enabled to trigger the bug fixed by https://patchwork.kernel.org/patch/3994211/)
+	am43xx-epos: http://slexy.org/raw/s2zPoMnkiM
+	DRA7xx-EVM: http://slexy.org/raw/s20H3aHsNv
+	pandaboard-es: http://slexy.org/raw/s21gREgRKi
+	   sdp4430: http://slexy.org/raw/s20hDTF5Y6
+	OMAP5432uEVM: http://slexy.org/raw/s21dk0Qshx
+
+Afzal Mohammed (1):
+  bus: omap_l3_noc: Add AM4372 interconnect error data
+
+Nishanth Menon (14):
+  bus: omap_l3_noc: Fix copyright information
+  bus: omap_l3_noc: remove iclk from omap_l3 struct
+  bus: omap_l3_noc: populate l3->dev and use it
+  bus: omap_l3_noc: switch over to relaxed variants of readl/writel
+  bus: omap_l3_noc: un-obfuscate l3_targ address computation
+  bus: omap_l3_noc: move L3 master data structure out
+  bus: omap_l3_noc: convert target information into a structure
+  bus: omap_l3_noc: convert flagmux information into a structure
+  bus: omap_l3_noc: fix masterid detection
+  bus: omap_l3_noc: make error reporting and handling common
+  bus: omap_l3_noc: improve readability by using helper for slave event
+    parsing
+  bus: omap_l3_noc: add information about the type of operation
+  bus: omap_l3_noc: Add information about the context of operation
+  bus: omap_l3_noc: introduce concept of submodule
+
+Rajendra Nayak (2):
+  bus: omap_l3_noc: Add support for discountinous flag mux input
+    numbers
+  bus: omap_l3_noc: Add DRA7 interconnect error data
+
+Sricharan R (2):
+  bus: omap_l3_noc: rename functions and data to omap_l3
+  bus: omap_l3_noc: use of_match_data to pick up SoC information
+
+ .../devicetree/bindings/arm/omap/l3-noc.txt        |    2 +
+ drivers/bus/omap_l3_noc.c                          |  317 ++++++++----
+ drivers/bus/omap_l3_noc.h                          |  529 +++++++++++++++-----
+ 3 files changed, 621 insertions(+), 227 deletions(-)
+
+-- 
+1.7.9.5
 
