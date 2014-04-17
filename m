@@ -1,97 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751373AbaDQUsw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 16:48:52 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51538 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179AbaDQUsq (ORCPT
+	id S1751503AbaDQUuP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 16:50:15 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:39192 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986AbaDQUuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 16:48:46 -0400
-Date: Thu, 17 Apr 2014 22:48:53 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [GIT pull] timer fixes for 3.15
-Message-ID: <alpine.DEB.2.02.1404172234580.22697@ionos.tec.linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 17 Apr 2014 16:50:03 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>
+CC: Sekhar Nori <nsekhar@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Nishanth Menon <nm@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH V2 07/19] bus: omap_l3_noc: move L3 master data structure out
+Date: Thu, 17 Apr 2014 15:49:23 -0500
+Message-ID: <1397767775-10965-8-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1397767775-10965-1-git-send-email-nm@ti.com>
+References: <1397492726-17203-1-git-send-email-nm@ti.com>
+ <1397767775-10965-1-git-send-email-nm@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Move the L3 master structure out of the static definition to enable
+reuse for other SoCs.
 
-please pull the latest timers-urgent-for-linus git tree from:
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+V2: no functional change, just reordering
+V1: https://patchwork.kernel.org/patch/3984151/
+ drivers/bus/omap_l3_noc.h |   15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
-
-Viresh unearthed the following three hickups in the timer/timekeeping
-code:
-
-- Negated check for the result of a clock event selection
-
-- A missing early exit in the jiffies update path which causes
-  update_wall_time to be called for nothing causing lock contention
-  and wasted cycles in the timer interrupt
-
-- Checking a variable in the NOHZ code enable code for true which can
-  only be set by that very code after the check succeeds. That results
-  in a rock solid runtime disablement of that feature.
-
-Thanks,
-
-	tglx
-
------------------->
-Viresh Kumar (3):
-      tick-common: Fix wrong check in tick_check_replacement()
-      tick-sched: Don't call update_wall_time() when delta is lesser than tick_period
-      tick-sched: Check tick_nohz_enabled in tick_nohz_switch_to_nohz()
-
-
- kernel/time/tick-common.c |    2 +-
- kernel/time/tick-sched.c  |    5 ++++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index 0156612..0a0608e 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -276,7 +276,7 @@ static bool tick_check_preferred(struct clock_event_device *curdev,
- bool tick_check_replacement(struct clock_event_device *curdev,
- 			    struct clock_event_device *newdev)
- {
--	if (tick_check_percpu(curdev, newdev, smp_processor_id()))
-+	if (!tick_check_percpu(curdev, newdev, smp_processor_id()))
- 		return false;
+diff --git a/drivers/bus/omap_l3_noc.h b/drivers/bus/omap_l3_noc.h
+index 31984cf..059c707 100644
+--- a/drivers/bus/omap_l3_noc.h
++++ b/drivers/bus/omap_l3_noc.h
+@@ -33,6 +33,16 @@
  
- 	return tick_check_preferred(curdev, newdev);
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 9f8af69..6558b7a 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -84,6 +84,9 @@ static void tick_do_update_jiffies64(ktime_t now)
+ #define NUM_OF_L3_MASTERS	(sizeof(l3_masters)/sizeof(l3_masters[0]))
  
- 		/* Keep the tick_next_period variable up to date */
- 		tick_next_period = ktime_add(last_jiffies_update, tick_period);
-+	} else {
-+		write_sequnlock(&jiffies_lock);
-+		return;
- 	}
- 	write_sequnlock(&jiffies_lock);
- 	update_wall_time();
-@@ -967,7 +970,7 @@ static void tick_nohz_switch_to_nohz(void)
- 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
- 	ktime_t next;
++/**
++ * struct l3_masters_data - L3 Master information
++ * @id:		ID of the L3 Master
++ * @name:	master name
++ */
++struct l3_masters_data {
++	u32 id;
++	char *name;
++};
++
+ static u32 l3_flagmux[L3_MODULES] = {
+ 	0x500,
+ 	0x1000,
+@@ -80,10 +90,7 @@ static u32 l3_targ_inst_clk3[] = {
+ 	0x0 /* HOST CLK3 */
+ };
  
--	if (!tick_nohz_active)
-+	if (!tick_nohz_enabled)
- 		return;
- 
- 	local_irq_disable();
+-static struct l3_masters_data {
+-	u32 id;
+-	char name[10];
+-} l3_masters[] = {
++static struct l3_masters_data l3_masters[] = {
+ 	{ 0x0 , "MPU"},
+ 	{ 0x10, "CS_ADP"},
+ 	{ 0x14, "xxx"},
+-- 
+1.7.9.5
+
