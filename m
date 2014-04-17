@@ -1,196 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422640AbaDQKqU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 06:46:20 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:53394 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161175AbaDQKqO (ORCPT
+	id S1754437AbaDQKtc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 06:49:32 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:43223 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241AbaDQKtb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 06:46:14 -0400
-Message-ID: <534FB0F5.3010904@gopivotal.com>
-Date: Thu, 17 Apr 2014 11:46:13 +0100
-From: Glyn Normington <gnormington@gopivotal.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 17 Apr 2014 06:49:31 -0400
+Date: Thu, 17 Apr 2014 11:49:25 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Silvio F <silvio.fricke@gmail.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>, spear-devel@list.st.com
+Subject: Re: [PATCH 1/6] mfd: stmpe: root out static GPIO and IRQ assignments
+Message-ID: <20140417104925.GM28725@lee--X1>
+References: <1397659455-13638-1-git-send-email-linus.walleij@linaro.org>
+ <1397659455-13638-2-git-send-email-linus.walleij@linaro.org>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH v4] control groups: documentation improvements
-References: <20140310140724.GA25290@htj.dyndns.org> <531DC971.6020208@gopivotal.com> <20140310142014.GC25290@htj.dyndns.org> <5321D6FA.4040500@gopivotal.com> <53225C69.3010202@huawei.com> <53230475.5050805@gopivotal.com> <20140314140136.GF12613@htj.dyndns.org> <53230C7E.7060607@gopivotal.com> <533C05D8.8020600@gopivotal.com> <533C0DD9.1050809@gopivotal.com> <20140416210025.GE26632@htj.dyndns.org>
-In-Reply-To: <20140416210025.GE26632@htj.dyndns.org>
-Content-Type: multipart/mixed;
- boundary="------------020106020006070905080502"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1397659455-13638-2-git-send-email-linus.walleij@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020106020006070905080502
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+> The only platform using the STMPE expander now boots from
+> device tree using all-dynamic GPIO and IRQ number assignments, so
+> remove the mechanism to pass this from the device tree entirely.
+> 
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> ---
+>  drivers/gpio/gpio-stmpe.c | 18 +++++-------------
+>  drivers/mfd/stmpe.c       |  3 +--
+>  include/linux/mfd/stmpe.h | 14 --------------
+>  3 files changed, 6 insertions(+), 29 deletions(-)
 
-On 16/04/2014 22:00, Tejun Heo wrote:
-> On Wed, Apr 02, 2014 at 02:17:13PM +0100, Glyn Normington wrote:
->> From: Glyn Normington<gnormington@gopivotal.com>
->>
->> Various clarifications to make the control groups documentation
->> easier to understand, especially for newcomers.
-> Patch doesn't apply.  Can you please re-generate the patch with 'diff
-> -u' and send it as an attachment?
->
-> Thanks.
-From: Glyn Normington<gnormington@gopivotal.com>
+MFD changes look good to me.
 
-Please see the attachment for the patch created using 'diff -u'. I 
-checked it applied ok with:
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-patch -p1 < ~/patchfile
+Do you want me to set up and immutable branch between MFD and GPIO?
 
-at the latest HEAD (6ca2a88).
-
-Related LKML thread:
-
-http://lkml.iu.edu//hypermail/linux/kernel/1402.0/02419.html
-
-Signed-off-by: Glyn Normington<gnormington@gopivotal.com>
-
-
---------------020106020006070905080502
-Content-Type: text/plain; charset=UTF-8; x-mac-type="0"; x-mac-creator="0";
- name="patchfile"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="patchfile"
-
-diff --git a/Documentation/cgroups/cgroups.txt b/Documentation/cgroups/cgroups.txt
-index 821de56..f086b70 100644
---- a/Documentation/cgroups/cgroups.txt
-+++ b/Documentation/cgroups/cgroups.txt
-@@ -24,6 +24,7 @@ CONTENTS:
-   2.1 Basic Usage
-   2.2 Attaching processes
-   2.3 Mounting hierarchies by name
-+  2.4 Mounting hierarchies with no subsystems
- 3. Kernel API
-   3.1 Overview
-   3.2 Synchronization
-@@ -43,24 +44,29 @@ specialized behaviour.
- 
- Definitions:
- 
--A *cgroup* associates a set of tasks with a set of parameters for one
--or more subsystems.
-+A *cgroup* associates a set of tasks with zero or more subsystems.
- 
--A *subsystem* is a module that makes use of the task grouping
--facilities provided by cgroups to treat groups of tasks in
--particular ways. A subsystem is typically a "resource controller" that
-+A *subsystem* is a module that treats the tasks of each cgroup in a
-+particular way. A subsystem is typically a "resource controller" that
- schedules a resource or applies per-cgroup limits, but it may be
--anything that wants to act on a group of processes, e.g. a
--virtualization subsystem.
-+anything that wants to act on a group of tasks, e.g. a virtualization
-+subsystem.
- 
--A *hierarchy* is a set of cgroups arranged in a tree, such that
--every task in the system is in exactly one of the cgroups in the
--hierarchy, and a set of subsystems; each subsystem has system-specific
--state attached to each cgroup in the hierarchy.  Each hierarchy has
--an instance of the cgroup virtual filesystem associated with it.
-+A *hierarchy* is a non-empty set of cgroups arranged in a tree and a
-+set of subsystems such that the cgroups in the hierarchy
-+partition all the tasks in the system (in other words, every task in the
-+system is in exactly one of the cgroups in the hierarchy) and each
-+subsystem attaches its own state to each cgroup in the hierarchy.
- 
--At any one time there may be multiple active hierarchies of task
--cgroups. Each hierarchy is a partition of all tasks in the system.
-+There may be zero or more active hierarchies. Each hierarchy has an
-+instance of the cgroup virtual filesystem associated with it. The tree
-+of cgroups is represented by the directory tree in the cgroup virtual
-+filesystem.
-+
-+The sets of subsystems participating in distinct hierarchies are either
-+identical or disjoint. If the sets are identical, the virtual filesystems
-+associated with the hierarchies have identical content and a change in
-+one is automatically reflected in all the others.
- 
- User-level code may create and destroy cgroups by name in an
- instance of the cgroup virtual file system, specify and query to
-@@ -69,9 +75,9 @@ a cgroup. Those creations and assignments only affect the hierarchy
- associated with that instance of the cgroup file system.
- 
- On their own, the only use for cgroups is for simple job
--tracking. The intention is that other subsystems hook into the generic
-+tracking. The intention is that subsystems hook into the generic
- cgroup support to provide new attributes for cgroups, such as
--accounting/limiting the resources which processes in a cgroup can
-+accounting/limiting the resources which tasks in a cgroup can
- access. For example, cpusets (see Documentation/cgroups/cpusets.txt) allow
- you to associate a set of CPUs and a set of memory nodes with the
- tasks in each cgroup.
-@@ -79,12 +85,12 @@ tasks in each cgroup.
- 1.2 Why are cgroups needed ?
- ----------------------------
- 
--There are multiple efforts to provide process aggregations in the
-+There are multiple efforts to provide task aggregations in the
- Linux kernel, mainly for resource-tracking purposes. Such efforts
- include cpusets, CKRM/ResGroups, UserBeanCounters, and virtual server
- namespaces. These all require the basic notion of a
--grouping/partitioning of processes, with newly forked processes ending
--up in the same group (cgroup) as their parent process.
-+grouping/partitioning of tasks, with newly forked tasks ending
-+up in the same group (cgroup) as their parent task.
- 
- The kernel cgroup patch provides the minimum essential kernel
- mechanisms required to efficiently implement such groups. It has
-@@ -418,11 +424,11 @@ To remove a cgroup, just use rmdir:
- # rmdir my_sub_cs
- 
- This will fail if the cgroup is in use (has cgroups inside, or
--has processes attached, or is held alive by other subsystem-specific
-+has tasks attached, or is held alive by other subsystem-specific
- reference).
- 
--2.2 Attaching processes
-------------------------
-+2.2 Attaching tasks
-+-------------------
- 
- # /bin/echo PID > tasks
- 
-@@ -450,7 +456,7 @@ move it into a new cgroup (possibly the root cgroup) by writing to the
- new cgroup's tasks file.
- 
- Note: Due to some restrictions enforced by some cgroup subsystems, moving
--a process to another cgroup can fail.
-+a task to another cgroup can fail.
- 
- 2.3 Mounting hierarchies by name
- --------------------------------
-@@ -471,6 +477,13 @@ you give a subsystem a name.
- The name of the subsystem appears as part of the hierarchy description
- in /proc/mounts and /proc/<pid>/cgroups.
- 
-+2.4 Mounting hierarchies with no subsystems
-+-------------------------------------------
-+
-+To mount a hierarchy with no associated subsystems, specify a name
-+for the hierarchy and the dummy subsystem name "none".  For example: 
-+
-+# mount -t cgroup -o name=hier0,none hier0 /sys/fs/cgroup/h0 
- 
- 3. Kernel API
- =============
-@@ -658,7 +671,7 @@ A: bash's builtin 'echo' command does not check calls to write() against
-    errors. If you use it in the cgroup file system, you won't be
-    able to tell whether a command succeeded or failed.
- 
--Q: When I attach processes, only the first of the line gets really attached !
-+Q: When I attach tasks, only the first of the line gets really attached !
- A: We can only return one error code per call to write(). So you should also
-    put only ONE PID.
- 
-
---------------020106020006070905080502--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
