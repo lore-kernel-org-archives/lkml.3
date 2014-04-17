@@ -1,118 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849AbaDQCwI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 22:52:08 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:14875 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbaDQCwF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 22:52:05 -0400
-X-AuditID: cbfee61a-b7fb26d00000724f-7e-534f41d3ec99
-From: Chao Yu <chao2.yu@samsung.com>
-To: ??? <jaegeuk.kim@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [f2fs-dev][PATCH] f2fs: introduce raw_nat_from_node_info() to simplfy
- codes
-Date: Thu, 17 Apr 2014 10:51:05 +0800
-Message-id: <000a01cf59e8$03a910d0$0afb3270$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac9Z59iafTcHt3IHSMKJV3LLN3oUXQ==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jQd3Ljv7BBpsWCFhc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXFh/S7GgvtCFbvv
-	TmFpYNzC38XIySEhYCLx7PdJdghbTOLCvfVsILaQwHRGiQ9rs7sYuYDsH4wSP+79ZQRJsAmo
-	SCzv+M8EYosIKEpseL8BrJlZIFPiXtMMZhBbWCBM4tCv02A1LAKqEicvLQer4RWwlPj6uJ8V
-	whaU+DH5HgtEr5bE+p3HmSBseYnNa94yQxykILHj7GtGiF16Eo/ufIKqEZfYeOQWywRGgVlI
-	Rs1CMmoWklGzkLQsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREcyM+kdjCubLA4xCjA
-	wajEwztB3T9YiDWxrLgy9xCjBAezkgivuzhQiDclsbIqtSg/vqg0J7X4EKM0B4uSOO+BVutA
-	IYH0xJLU7NTUgtQimCwTB6dUA+PeG48fnTKu+dR/7m65hhNT2lODQ8c+eB30upB5MXx6WKzg
-	bKZMy8anq2auvMJ3vuxLn/TtmS8Mf7YU9sXucP7cJHzC66VZXt2tbxvsfwpOtGGx1C7Iz/oV
-	dljWt754t7lJ65XZD7VWeu6QCznB/VzhxWkj9QzrCKf0fw9L5LXzUz24JNtErZVYijMSDbWY
-	i4oTATaFbvZgAgAA
+	id S1756713AbaDQC5q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 22:57:46 -0400
+Received: from ozlabs.org ([103.22.144.67]:33085 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754545AbaDQC5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 22:57:45 -0400
+Date: Thu, 17 Apr 2014 12:57:39 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sonic Zhang <sonic.zhang@analog.com>
+Subject: linux-next: manual merge of the crypto tree with Linus' tree
+Message-Id: <20140417125739.30a8730cf42d35dabe2966f9@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__17_Apr_2014_12_57_39_+1000_DrbgTQ6J4DWrCCx7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduce raw_nat_from_node_info() to simplfy some codes, and also
-use exist function node_info_from_raw_nat() to do the same job.
+--Signature=_Thu__17_Apr_2014_12_57_39_+1000_DrbgTQ6J4DWrCCx7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/node.c |   15 +++------------
- fs/f2fs/node.h |    8 ++++++++
- 2 files changed, 11 insertions(+), 12 deletions(-)
+Hi Herbert,
 
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index f760793..84f9b7b 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -179,9 +179,7 @@ retry:
- 			write_unlock(&nm_i->nat_tree_lock);
- 			goto retry;
- 		}
--		nat_set_blkaddr(e, le32_to_cpu(ne->block_addr));
--		nat_set_ino(e, le32_to_cpu(ne->ino));
--		nat_set_version(e, ne->version);
-+		node_info_from_raw_nat(&e->ni, ne);
- 	}
- 	write_unlock(&nm_i->nat_tree_lock);
- }
-@@ -1755,9 +1753,7 @@ retry:
- 			write_unlock(&nm_i->nat_tree_lock);
- 			goto retry;
- 		}
--		nat_set_blkaddr(ne, le32_to_cpu(raw_ne.block_addr));
--		nat_set_ino(ne, le32_to_cpu(raw_ne.ino));
--		nat_set_version(ne, raw_ne.version);
-+		node_info_from_raw_nat(&ne->ni, &raw_ne);
- 		__set_nat_cache_dirty(nm_i, ne);
- 		write_unlock(&nm_i->nat_tree_lock);
- 	}
-@@ -1790,7 +1786,6 @@ void flush_nat_entries(struct f2fs_sb_info *sbi)
- 		nid_t nid;
- 		struct f2fs_nat_entry raw_ne;
- 		int offset = -1;
--		block_t new_blkaddr;
- 
- 		if (nat_get_blkaddr(ne) == NEW_ADDR)
- 			continue;
-@@ -1826,11 +1821,7 @@ to_nat_page:
- 		f2fs_bug_on(!nat_blk);
- 		raw_ne = nat_blk->entries[nid - start_nid];
- flush_now:
--		new_blkaddr = nat_get_blkaddr(ne);
--
--		raw_ne.ino = cpu_to_le32(nat_get_ino(ne));
--		raw_ne.block_addr = cpu_to_le32(new_blkaddr);
--		raw_ne.version = nat_get_version(ne);
-+		raw_nat_from_node_info(&raw_ne, &ne->ni);
- 
- 		if (offset < 0) {
- 			nat_blk->entries[nid - start_nid] = raw_ne;
-diff --git a/fs/f2fs/node.h b/fs/f2fs/node.h
-index 5decc1a..41bb65b 100644
---- a/fs/f2fs/node.h
-+++ b/fs/f2fs/node.h
-@@ -75,6 +75,14 @@ static inline void node_info_from_raw_nat(struct node_info *ni,
- 	ni->version = raw_ne->version;
- }
- 
-+static inline void raw_nat_from_node_info(struct f2fs_nat_entry *raw_ne,
-+						struct node_info *ni)
-+{
-+	raw_ne->ino = cpu_to_le32(ni->ino);
-+	raw_ne->block_addr = cpu_to_le32(ni->blk_addr);
-+	raw_ne->version = ni->version;
-+}
-+
- enum nid_type {
- 	FREE_NIDS,	/* indicates the free nid list */
- 	NAT_ENTRIES	/* indicates the cached nat entry */
--- 
-1.7.9.5
+Today's linux-next merge of the crypto tree got a conflict in
+drivers/crypto/bfin_crc.h between commit 3356c99ea392 ("bfin_crc: Move
+architecture independant crc header file out of the blackfin folder")
+from Linus' tree and commit 52e6e543f2d8 ("crypto: bfin_crc - access crc
+registers by readl and writel functions") from the crypto tree.
 
+I fixed it up (I kept the file under its new name) and can carry the fix
+as necessary (no action is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__17_Apr_2014_12_57_39_+1000_DrbgTQ6J4DWrCCx7
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTT0MnAAoJEMDTa8Ir7ZwVw5IP/0u+s2ZQV10RGKoj0AxUep65
+Ux3PbUo7unWkkwBiYSg7wK44WWxXrfsPykZsaODmw68R6srVwwsp0jLX5GZzgIdG
+3TSLBlO6YvKPPFpdicRTQWa64aaRpqgyLAp0kRje9G3Mnqj/Y7mdAWsrq9R9s1uD
+GoaaKKHA+4I8BAr2TKCM2DXHhlJ+4Ayce4QJ4W/Wi1oc5TM9VL0YhHn81RTWdUtR
+MTmyeu1V2lqWB9iVQOxTyminlZOTz/KGoj4KxkxZsl9fO6Jqd6mDukplyJ305X6G
+GzV9BLLAz6UM0BEh4/Ugt8aMbxSDAwE/q6ghrKgiFHwMzfEyM3yRkob+KhWzPBq+
+bhfOaLejIiNOcd/QK9q4wZRIbLFsfNRIDXFmKfiXSPSJYnIUuZd4T0+YIVB5BsDX
+Vs0vnYOQW8yvbxo2DDd5dAd0DlgEP3SvGIoKgZ+LWsyhy94o+/v8xH8RYBCPWHp6
+hnsND85aD2IGVP3ba/XkxOjwYE5jww+vEhqXNE2CQs9VpDKxID4fN34T6XDqk+SD
+exBwWdWzreFVo/M7XIHM8KUZ2RABtRzwDWtgPkcWVDlufjLsr13Eq8Ku0GnHdm3q
+E3xONujpgCAs3kfWnBS5iXxVRIraQyuXTdzONwMW1+zsx0W4zO5Rs4kJ95H5TOGs
+qu/i5B6MUfxkYF++7C3D
+=zJXk
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__17_Apr_2014_12_57_39_+1000_DrbgTQ6J4DWrCCx7--
