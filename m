@@ -1,118 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271AbaDQBuc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 21:50:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57023 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754750AbaDQBua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 21:50:30 -0400
-Date: Thu, 17 Apr 2014 11:50:18 +1000
-From: NeilBrown <neilb@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jeff Layton <jlayton@redhat.com>, linux-nfs@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, netdev@vger.kernel.org,
-        Ming Lei <ming.lei@canonical.com>, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com, linux-mm@kvack.org, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH/RFC 00/19] Support loop-back NFS mounts
-Message-ID: <20140417115018.460345d0@notabene.brown>
-In-Reply-To: <20140417012739.GU15995@dastard>
-References: <20140416033623.10604.69237.stgit@notabene.brown>
-	<20140416104207.75b044e8@tlielax.poochiereds.net>
-	<20140417102048.2fc8275c@notabene.brown>
-	<20140417012739.GU15995@dastard>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/aR.nJzAOWD3tAtDyjyGs6Ar"; protocol="application/pgp-signature"
+	id S1754455AbaDQB7X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 21:59:23 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:43572 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107AbaDQB7V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 21:59:21 -0400
+Message-ID: <534F3572.2040801@hitachi.com>
+Date: Thu, 17 Apr 2014 10:59:14 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Satoru MORIYA <satoru.moriya.br@hitachi.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Takenori Nagano <t-nagano@ah.jp.nec.com>,
+        Eric Biederman <ebiederm@xmission.com>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] kernel/panic: Add "late_kdump" option for kdump in unstable
+ condition
+References: <20140414045158.10846.35462.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140416134830.GA31074@redhat.com>
+In-Reply-To: <20140416134830.GA31074@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/aR.nJzAOWD3tAtDyjyGs6Ar
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Thank you for review!
 
-On Thu, 17 Apr 2014 11:27:39 +1000 Dave Chinner <david@fromorbit.com> wrote:
+(2014/04/16 22:48), Vivek Goyal wrote:
+> On Mon, Apr 14, 2014 at 01:51:58PM +0900, Masami Hiramatsu wrote:
+>> Add a "late_kdump" option to run kdump after running panic
+>> notifiers and dump kmsg. This can help rare situations which
+>> kdump drops in failure because of unstable crashed kernel
+>> or hardware failure (memory corruption on critical data/code),
+>> or the 2nd kernel is broken by the 1st kernel (it's a broken
+>> behavior, but who can guarantee that the "crashed" kernel
+>> works correctly?).
+>>
+>> Usage: add "late_kdump" to kernel boot option. That's all.
+>>
+>> Note that this actually increases risks of the failure of
+>> kdump. This option should be set only if you worry about
+>> the rare case of kdump failure rather than increasing the
+>> chance of success.
+>>
+>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>> Cc: Eric Biederman <ebiederm@xmission.com>
+>> Cc: Vivek Goyal <vgoyal@redhat.com>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+>> Cc: Satoru MORIYA <satoru.moriya.br@hitachi.com>
+>> Cc: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>
+>> Cc: Takenori Nagano <t-nagano@ah.jp.nec.com>
+>> ---
+>>  Documentation/kernel-parameters.txt |    7 +++++++
+>>  kernel/panic.c                      |   24 ++++++++++++++++++++++--
+>>  2 files changed, 29 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+>> index 03e50b4..1ba58da 100644
+>> --- a/Documentation/kernel-parameters.txt
+>> +++ b/Documentation/kernel-parameters.txt
+>> @@ -2339,6 +2339,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>>  			timeout < 0: reboot immediately
+>>  			Format: <timeout>
+>>  
+>> +	late_kdump	Run kdump after running panic-notifiers and dumping
+>> +			kmsg. This only for the users who doubt kdump always
+>> +			succeeds in any situation.
+>> +			Note that this also increases risks of kdump failure,
+>> +			because some panic notifiers can make the crashed
+>> +			kernel more unstable.
+>> +
+> 
+> I am wondering if "crash_kexec_post_notifiers" will be a better name
+> to represent what we are trying to do here.
 
-> On Thu, Apr 17, 2014 at 10:20:48AM +1000, NeilBrown wrote:
-> > A good example is the deadlock with the flush-* threads.
-> > flush-* will lock a page, and  then call ->writepage.  If ->writepage
-> > allocates memory it can enter reclaim, call ->releasepage on NFS, and b=
-lock
-> > waiting for a COMMIT to complete.
-> > The COMMIT might already be running, performing fsync on that same file=
- that
-> > flush-* is flushing.  It locks each page in turn.  When it  gets to the=
- page
-> > that flush-* has locked, it will deadlock.
->=20
-> It's nfs_release_page() again....
->=20
-> > In general, if nfsd is allowed to block on local filesystem, and local
-> > filesystem is allowed to block on NFS, then a deadlock can happen.
-> > We would need a clear hierarchy
-> >=20
-> >    __GFP_NETFS > __GFP_FS > __GFP_IO
-> >=20
-> > for it to work.  I'm not sure the extra level really helps a lot and it=
- would
-> > be a lot of churn.
->=20
-> I think you are looking at this the wrong way - it's not the other
-> filesystems that have to avoid memory reclaim recursion, it's the
-> NFS client mount that is on loopback that needs to avoid recursion.
->=20
-> IMO, the fix should be that the NFS client cannot block on messages sent =
-to the NFSD
-> on the same host during memory reclaim. That is, nfs_release_page()
-> cannot send commit messages to the server if the server is on
-> localhost. Instead, it just tells memory reclaim that it can't
-> reclaim that page.
->=20
-> If nfs_release_page() no longer blocks in memory reclaim, and all
-> these nfsd-gets-blocked-in-GFP_KERNEL-memory-allocation recursion
-> problems go away. Do the same for all the other memory reclaim
-> operations in the NFS client, and you've got a solution that should
-> work without needing to walk all over the rest of the kernel....
+OK, I'll rename that.
 
-Maybe.
-It is nfs_release_page() today. I wonder if it could be other things another
-day.  I want to be sure I have a solution that really makes sense.
+> 
+>>  	parkbd.port=	[HW] Parallel port number the keyboard adapter is
+>>  			connected to, default is 0.
+>>  			Format: <parport#>
+>> diff --git a/kernel/panic.c b/kernel/panic.c
+>> index d02fa9f..bba42b5 100644
+>> --- a/kernel/panic.c
+>> +++ b/kernel/panic.c
+>> @@ -32,6 +32,7 @@ static unsigned long tainted_mask;
+>>  static int pause_on_oops;
+>>  static int pause_on_oops_flag;
+>>  static DEFINE_SPINLOCK(pause_on_oops_lock);
+>> +static bool late_kdump;
+>>  
+>>  int panic_timeout = CONFIG_PANIC_TIMEOUT;
+>>  EXPORT_SYMBOL_GPL(panic_timeout);
+>> @@ -112,9 +113,14 @@ void panic(const char *fmt, ...)
+>>  	/*
+>>  	 * If we have crashed and we have a crash kernel loaded let it handle
+>>  	 * everything else.
+>> -	 * Do we want to call this before we try to display a message?
+>> +	 * If we want to call this after we try to display a message, pass
+>> +	 * the "late_kdump" option to the kernel.
+>>  	 */
+>> -	crash_kexec(NULL);
+>> +	if (!late_kdump)
+>> +		crash_kexec(NULL);
+>> +	else
+>> +		pr_emerg("Warning: late_kdump option is set. Please DO NOT "
+>> +			"report bugs about kdump failure with this option.\n");
+> 
+> I think above message about DO NOT report bugs seems unnecessary. 
 
-However ... the thing that nfs_release_page is doing it sending a COMMIT to
-tell the server to flush to stable storage.  It does that so that if the
-server crashes, then the client can re-send.
-Of course when it is a loop-back mount the client is the server so the COMM=
-IT
-is completely pointless.  If the client notices that it is sending a COMMIT
-to itself, it can simply assume a positive reply.
+OK, so I just notify the option is set as below.
+"Warning: crash_kexec_post_notifiers is set.\n"
 
-You are right, that would make the patch set a lot less intrusive.  I'll gi=
-ve
-it some serious thought - thanks.
+Thank you again!
 
-NeilBrown
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
---Sig_/aR.nJzAOWD3tAtDyjyGs6Ar
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU08zWjnsnt1WYoG5AQKfQw//WIl8Mf1G0vzy816TBvi7fx3VCp6SUV7s
-jQeCJSD0IPRzCFmxH1ZJFzy3jIK8J3dbT8cSGjxXYegOq+kyyVjbHXOG2msC1riY
-ytOGUQnOS8MHscbcAOR7r61t/1t7FZiSJ51Th7pykepQmbm9QNEna+U0wzna3poK
-NNRDrs1J0eySpLTydegKoyg4w6KP6MLXqlYQm1FigvkreDEZ9mvBW7NrGycwDQF8
-NZgq8+dGCL3MAq+uZ7WMqAoCZwZUrusVZBc3zvXYWepSMFSW1FOmQP971QZ9DgI2
-KzarhdGOSFTbVHLhZafYV0X2k/hATVoIJpXh3Kl2ak0qdnuuUPJ/s64zxvQ3N4wo
-3zBU0/TvcEVs6toQfcT/Zi91rCIvVvl8BOssIosbwknfLyi/JEYtnDJ+MxWBlg1G
-xlaEF1pDaQYEix5Ocg1qyU7oroFv98+pZ4BZeDI7Y/A6gasVvR3NKBOFcadozYuo
-FBTuYO6ZTSVPZ1+ASqykb5hh3GGKO5oM4x7xX0dQRSADk4qo4FLfv6ONKK2OfjQo
-r6FBlpw9OU6su26F4XzDkFLPb3xUDgfY7gMG6vIZYmCS7JGOvTg2rpk6inZxzATb
-40mX+gFDXs5oE9XGaqz2Fl7Lw/BNluPNDEpkmWJX42+7cdClnc2XPSJyvpFx7nLH
-lfrN+yaHFBM=
-=c/XS
------END PGP SIGNATURE-----
-
---Sig_/aR.nJzAOWD3tAtDyjyGs6Ar--
