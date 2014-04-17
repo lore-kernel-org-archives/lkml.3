@@ -1,204 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916AbaDQHAm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 03:00:42 -0400
-Received: from [207.46.163.237] ([207.46.163.237]:52774 "EHLO
-	na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751524AbaDQHAj convert rfc822-to-8bit (ORCPT
+	id S1753030AbaDQHIY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 03:08:24 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:51024 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019AbaDQHIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 03:00:39 -0400
-From: "Dongsheng.Wang@freescale.com" <Dongsheng.Wang@freescale.com>
-To: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Powerpc: e1000e cannot work normally after system resume from
- sleep(standby)
-Thread-Topic: Powerpc: e1000e cannot work normally after system resume from
- sleep(standby)
-Thread-Index: Ac9aCq6x3A3ffTXNSLi6kqi3CPcPvA==
-Date: Thu, 17 Apr 2014 07:00:16 +0000
-Message-ID: <5f7a898d9d6e4b7ea5c781d40c483a88@BN1PR03MB188.namprd03.prod.outlook.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 01842C458A
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(53754006)(81342001)(66066001)(31966008)(4396001)(33646001)(83322001)(76576001)(19580405001)(77982001)(74316001)(79102001)(74662001)(80022001)(19580395003)(46102001)(54356999)(74502001)(50986999)(87936001)(76482001)(81542001)(99396002)(2201001)(92566001)(20776003)(80976001)(85852003)(2656002)(99286001)(83072002)(575784001)(86362001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR03MB185;H:BN1PR03MB188.namprd03.prod.outlook.com;FPR:E71C6A55.98329149.4CE679A7.A20F5DD2.205EB;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 17 Apr 2014 03:08:22 -0400
+Message-ID: <534F7DDC.5060006@ti.com>
+Date: Thu, 17 Apr 2014 10:08:12 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fbdev <linux-fbdev@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [GIT PULL] fbdev fixes for 3.15
+References: <534E4775.8010009@ti.com> <CA+55aFz7Hgjc9wmiriqGT8VXNF-7b0aUKf96r=TCP+1NOTSVeQ@mail.gmail.com>
+In-Reply-To: <CA+55aFz7Hgjc9wmiriqGT8VXNF-7b0aUKf96r=TCP+1NOTSVeQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="HCsVGFT31XBGsUWQnMjisxtsNgphE6JWx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+--HCsVGFT31XBGsUWQnMjisxtsNgphE6JWx
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Now I'm developing Freescale PCIe power management feature. The following is my PCIe
-suspend/resume code.
+On 17/04/14 02:04, Linus Torvalds wrote:
+> On Wed, Apr 16, 2014 at 2:03 AM, Tomi Valkeinen <tomi.valkeinen@ti.com>=
+ wrote:
+>>
+>> The drivers/video/Kconfig change in this pull request will conflict wi=
+th the
+>> fbdev reorder series, which is not yet in your tree. If that's an issu=
+e, I can
+>> resend this without the Kconfig change.
+>=20
+> I was actually hoping/expecting you to just resend the renaming
+> rebased on top of 3.15-rc1. Or maybe you could do it on top of this.
 
-when I test system wake up from sleep(STANDBY), I got below calltrace. Looks like e1000e
-cannot transfer data, maybe watchdog has some issue. Or maybe some of the other causes.
-I think this is not root cause. Because If changed mdelay(10) to 20ms. E1000 will work normal.
-Maybe e1000e need more time to recover? Or ?
+Oh, sorry. I somehow got the impression that you were fine with what I
+had sent, and you'll just merge it after -rc1.
 
-Here are my test results:
-E1000e plug in PCIe slot 1, we need to delay 10ms.
-E1000e plug in PCIe slot 2, we need to delay 20ms.
-E1000e plug in PCIe slot 3, we need to delay 60ms.
+I'll send a rebased version, based on fbdev-fixes-3.15. So pull this one
+first.
 
-Anyone have any idea about this?
-
-
-*Suspend flow*: 
-if (fsl_pcie_check_link(hose))
-		return;
-
-/* Send PME_Turn_Off Message Request */
-setbits32(&pci->pex_pmcr, PEX_PMCR_PTOMR);
-
-/* Wait trun off done */
-/* RC will get this detect quickly */
-for (i = 0; i < 50; i++) {
-	dr = in_be32(&pci->pex_pme_mes_dr);
-	if (dr & ENL23_DETECT_BIT) {
-			out_be32(&pci->pex_pme_mes_dr, dr);
-			break;
-	}
-
-	udelay(1000);
-}
-
-/*
- * "PCI Bus Power Management Interface Specification" define
- * Minimum System Software Guaranteed Delays
- *
- * D0, D1 or D2 --> D3, need delay 10ms.
- * But we need to delay more time when EP plug in p1022 slot2.
- */
-mdelay(10);
+ Tomi
 
 
-*Resume flow*:
-if (fsl_pcie_check_link(hose))
-		return;
 
-/* Send Exit L2 State Message */
-setbits32(&pci->pex_pmcr, PEX_PMCR_EXL2S);
+--HCsVGFT31XBGsUWQnMjisxtsNgphE6JWx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-/* Wait exit done */
-/* RC will get this detect quickly */
-for (i = 0; i < 50; i++) {
-	dr = in_be32(&pci->pex_pme_mes_dr);
-	if (dr & EXL23_DETECT_BIT) {
-			out_be32(&pci->pex_pme_mes_dr, dr);
-			break;
-	}
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
 
-	udelay(1000);
-}
+iQIcBAEBAgAGBQJTT33cAAoJEPo9qoy8lh71/08QAKUBoAtTqZCd3+yTOXw+8iSm
+tdgKcuJHXwJoKY4UqL3F0R9FXLjE6DD6M7iop7zEv7YSByUXnkCcmnyqIemaBJ8P
+cV/c4H4vz6O/DInog9KqQeZpZ0AHN7zIh99rqd1PCnngtDUghmAQwn8AhRR0Ackt
+cVofm+KjQoZMoMwgtcLI/PoPccv0FIaFBfOIXsR5C69Xj+GfNIrHqKz+TGb9tJOd
+WMPvxJ/rl7U3esGO03pHAmAV9KZ768hKeYU9ZaJz0CDhSJdXjSP26PZdBbf3YNCK
+9aBA0RoGnklbZ9RzoZ5lK6rHZuggwwDDx16os7f42zVJ9Gn+vbxCTuCObKJWz+K+
+JNVs+LXzOcHCx7gGW6qxRtI2qTFjFBvav8DlXFvf0T3kZx0Mby2o1LPitBbbayLn
+Jdy+HZoVNJnN1aE7bdjhD+yE6wfdcuytu9TSSbng4qgmUIokJICigTLnnGJ0M5vi
+9xqSUg90Tb8+3XjE5+cZ6VfNy94jqzA6AHSwNp4YGyuXlrErmATivC6khLhCV/p/
+8r7ICJxVOGrK5waCMqH3a3PPFCzg81gjwMsdGOvGOEDuu8TZsbMDrcWxnXcnyWV2
+mR+qHg+baftzdQHt/0UGJgKLcGJJf0EFZKwRlyDYb7vSsxWtGlCET1LJT2vbrjGE
+is/Vohm+zJA5w0I7op8J
+=Ipv+
+-----END PGP SIGNATURE-----
 
-/*
- * "PCI Bus Power Management Interface Specification" define
- * Minimum System Software Guaranteed Delays
- *
- * D3 hot --> D0, need delay 10ms.
- * But we need to delay more time when EP plug in p1022 slot2.
- */
-mdelay(10);
-
-================================================================================
-					CALL TRACE
-================================================================================
-
-[root@p1022 /root]# udhcpc -i eth0
-udhcpc (v1.11.2) started
-IPv6: ADDRCONF(NETDEV_UP): eth0: link is not ready
-Sending discover...
-e1000e: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: Rx/Tx
-IPv6: ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-Sending discover...
-Sending discover...
-NETDEV WATCHDOG: eth0 (e1000e): transmit queue 0 timed out
-------------[ cut here ]------------
-WARNING: at net/sched/sch_generic.c:264
-Modules linked in:
-CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.14.0-173871-g9964256-dirty #42
-task: ee0534e0 ti: ee070000 task.ti: ee070000
-NIP: c036267c LR: c036267c CTR: c028b834
-REGS: ee071d00 TRAP: 0700   Not tainted  (3.14.0-173871-g9964256-dirty)
-MSR: 00029000 <CE,EE,ME>  CR: 42000022  XER: 20000000
-
-GPR00: c036267c ee071db0 ee0534e0 0000003a c16393b0 c16398e8 01079000 c05c03a8
-GPR08: 00000001 00000001 01079000 00000132 00000132 00000000 00000004 c05ed040
-GPR16: 00000001 00000100 00000004 fffef539 00000000 c05c10c0 00000038 ffffffff
-GPR24: 00000000 00000001 ee070000 00000004 c05e0000 c05f0000 ee3c0000 00000000
-NIP [c036267c] dev_watchdog+0x2c8/0x2d8
-LR [c036267c] dev_watchdog+0x2c8/0x2d8
-Call Trace:
-[ee071db0] [c036267c] dev_watchdog+0x2c8/0x2d8 (unreliable)
-[ee071de0] [c004778c] call_timer_fn.isra.24+0x28/0x84
-[ee071e00] [c00479b8] run_timer_softirq+0x1d0/0x248
-[ee071e40] [c004090c] __do_softirq+0x104/0x20c
-[ee071ea0] [c0040cd8] irq_exit+0xa4/0xc8
-[ee071eb0] [c0009ef4] timer_interrupt+0xb8/0xdc
-[ee071ed0] [c000f57c] ret_from_except+0x0/0x18
---- Exception: 901 at arch_cpu_idle+0x24/0x5c
-    LR = arch_cpu_idle+0x24/0x5c
-[ee071f90] [c0089534] rcu_idle_enter+0xa4/0xd0 (unreliable)
-[ee071fa0] [c0076010] cpu_startup_entry+0x120/0x17c
-[ee071fd0] [c0010bbc] start_secondary+0x214/0x224
-[ee071ff0] [c0002154] __secondary_start+0x7c/0xc8
-Instruction dump:
-4e800421 80fe0224 4bffff4c 7fc3f378 4bfe5401 7fc4f378 7c651b78 3c60c055
-7fe6fb78 3863e0f4 4cc63182 480e9a05 <0fe00000> 39200001 993c6f38 4bffffb4
----[ end trace 2d4f2cedfa86e32f ]---
-e1000e 0002:05:00.0: Net device Info
-e1000e: Device Name     state            trans_start      last_rx
-e1000e: eth0            0000000000000003 00000000FFFEF040 0000000000000000
-e1000e 0002:05:00.0: Register Dump
-e1000e:  Register Name   Value
-e1000e: CTRL            58100248
-e1000e: STATUS          00080783
-e1000e: CTRL_EXT        18580000
-e1000e: ICR             00000000
-e1000e: RCTL            04008002
-e1000e: RDLEN           00001000
-e1000e: RDH             0000001d
-e1000e: RDT             000000f0
-e1000e: RDTR            00000020
-e1000e: RXDCTL[0-1]     01040420 01040420
-e1000e: ERT             00000000
-e1000e: RDBAL           2d390000
-e1000e: RDBAH           00000000
-e1000e: RDFH            0000020a
-e1000e: RDFT            0000020a
-e1000e: RDFHS           0000020a
-e1000e: RDFTS           0000020a
-e1000e: RDFPC           00000000
-e1000e: TCTL            3103f0fa
-e1000e: TDBAL           2e158000
-e1000e: TDBAH           00000000
-e1000e: TDLEN           00001000
-e1000e: TDH             00000001
-e1000e: TDT             00000001
-e1000e: TIDV            00000008
-e1000e: TXDCTL[0-1]     0141011f 0141011f
-e1000e: TADV            00000020
-e1000e: TARC[0-1]       04000403 00000403
-e1000e: TDFH            00001000
-e1000e: TDFT            00001012
-e1000e: TDFHS           00001000
-e1000e: TDFTS           00001000
-e1000e: TDFPC           00000000
-e1000e 0002:05:00.0: Tx Ring Summary
-e1000e: Queue [NTU] [NTC] [bi(ntc)->dma  ] leng ntw timestamp
-e1000e:      0     1     0 000000002C809802 005A   0 00000000FFFEF044
-e1000e 0002:05:00.0: Rx Ring Summary
-e1000e: Queue [NTU] [NTC]
-e1000e:      0    FF     0
-e1000e 0002:05:00.0 eth0: Reset adapter unexpectedly
+--HCsVGFT31XBGsUWQnMjisxtsNgphE6JWx--
