@@ -1,60 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751143AbaDQOju (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 10:39:50 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:56857 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971AbaDQOjk (ORCPT
+	id S1751208AbaDQOks (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 10:40:48 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:52616 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107AbaDQOkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 10:39:40 -0400
-Date: Thu, 17 Apr 2014 10:42:47 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Ingo Molnar <mingo@kernel.org>
-cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [perf] more perf_fuzzer memory corruption
-In-Reply-To: <20140417142213.GA29338@gmail.com>
-Message-ID: <alpine.DEB.2.10.1404171037590.22226@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1404151729230.17264@vincent-weaver-1.um.maine.edu> <20140416141514.GS11182@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404161326380.19325@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1404161337350.19325@vincent-weaver-1.um.maine.edu>
- <20140417094815.GA9348@gmail.com> <20140417114533.GJ11096@twins.programming.kicks-ass.net> <20140417142213.GA29338@gmail.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Thu, 17 Apr 2014 10:40:45 -0400
+X-Originating-IP: 50.43.32.211
+Date: Thu, 17 Apr 2014 07:40:30 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
+        mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH -tip v9 17/26] notifier: Use NOKPROBE_SYMBOL macro in
+ notifier
+Message-ID: <20140417144030.GA23089@leaf>
+References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp>
+ <20140417081835.26341.56128.stgit@ltc230.yrl.intra.hitachi.co.jp>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140417081835.26341.56128.stgit@ltc230.yrl.intra.hitachi.co.jp>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Apr 2014, Ingo Molnar wrote:
-
+On Thu, Apr 17, 2014 at 05:18:35PM +0900, Masami Hiramatsu wrote:
+> Use NOKPROBE_SYMBOL macro to protect functions from
+> kprobes instead of __kprobes annotation in notifier.
 > 
-> * Peter Zijlstra <peterz@infradead.org> wrote:
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Josh Triplett <josh@joshtriplett.org>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+
+>  kernel/notifier.c |   22 +++++++++++++---------
+>  1 file changed, 13 insertions(+), 9 deletions(-)
 > 
-> > On Thu, Apr 17, 2014 at 11:48:15AM +0200, Ingo Molnar wrote:
-> > > Is there some place where I can pick up the latestest of your fuzzer?
-> > > 
-> > > PeterZ has trouble reproducing the corruption locally - I'd like to 
-> > > run it too, maybe I have hardware that triggers it more readily.
-> > 
-> > From a few emails up:
-> > 
-> > "If you want to try running the fuzzer on your machine too just do:
-> >         git clone https://github.com/deater/perf_event_tests.git
-> >         cd fuzzer
-> >         make
-> > and then try running the "./fast_repro98.sh" script, as that's the forking
-> > workload I've been using when tracking this issue."
-
-I have to admit the slab corruption message is a new development with 
-3.15-rc1.
-
-I've been trying to track a possibly-the-same (but harder to debug)
-memory corruption issue for a while now.
-
-I can trigger this type of error easily on both a core2 and haswell 
-machine.
-
-I have a few more test machines I can run, and just got some extra 
-serial cables so maybe I can hook up a few more serial consoles and do 
-some additional testing.
-
-Vince
+> diff --git a/kernel/notifier.c b/kernel/notifier.c
+> index db4c8b0..4803da6 100644
+> --- a/kernel/notifier.c
+> +++ b/kernel/notifier.c
+> @@ -71,9 +71,9 @@ static int notifier_chain_unregister(struct notifier_block **nl,
+>   *	@returns:	notifier_call_chain returns the value returned by the
+>   *			last notifier function called.
+>   */
+> -static int __kprobes notifier_call_chain(struct notifier_block **nl,
+> -					unsigned long val, void *v,
+> -					int nr_to_call,	int *nr_calls)
+> +static int notifier_call_chain(struct notifier_block **nl,
+> +			       unsigned long val, void *v,
+> +			       int nr_to_call, int *nr_calls)
+>  {
+>  	int ret = NOTIFY_DONE;
+>  	struct notifier_block *nb, *next_nb;
+> @@ -102,6 +102,7 @@ static int __kprobes notifier_call_chain(struct notifier_block **nl,
+>  	}
+>  	return ret;
+>  }
+> +NOKPROBE_SYMBOL(notifier_call_chain);
+>  
+>  /*
+>   *	Atomic notifier chain routines.  Registration and unregistration
+> @@ -172,9 +173,9 @@ EXPORT_SYMBOL_GPL(atomic_notifier_chain_unregister);
+>   *	Otherwise the return value is the return value
+>   *	of the last notifier function called.
+>   */
+> -int __kprobes __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+> -					unsigned long val, void *v,
+> -					int nr_to_call, int *nr_calls)
+> +int __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+> +				 unsigned long val, void *v,
+> +				 int nr_to_call, int *nr_calls)
+>  {
+>  	int ret;
+>  
+> @@ -184,13 +185,15 @@ int __kprobes __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(__atomic_notifier_call_chain);
+> +NOKPROBE_SYMBOL(__atomic_notifier_call_chain);
+>  
+> -int __kprobes atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+> -		unsigned long val, void *v)
+> +int atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+> +			       unsigned long val, void *v)
+>  {
+>  	return __atomic_notifier_call_chain(nh, val, v, -1, NULL);
+>  }
+>  EXPORT_SYMBOL_GPL(atomic_notifier_call_chain);
+> +NOKPROBE_SYMBOL(atomic_notifier_call_chain);
+>  
+>  /*
+>   *	Blocking notifier chain routines.  All access to the chain is
+> @@ -527,7 +530,7 @@ EXPORT_SYMBOL_GPL(srcu_init_notifier_head);
+>  
+>  static ATOMIC_NOTIFIER_HEAD(die_chain);
+>  
+> -int notrace __kprobes notify_die(enum die_val val, const char *str,
+> +int notrace notify_die(enum die_val val, const char *str,
+>  	       struct pt_regs *regs, long err, int trap, int sig)
+>  {
+>  	struct die_args args = {
+> @@ -540,6 +543,7 @@ int notrace __kprobes notify_die(enum die_val val, const char *str,
+>  	};
+>  	return atomic_notifier_call_chain(&die_chain, val, &args);
+>  }
+> +NOKPROBE_SYMBOL(notify_die);
+>  
+>  int register_die_notifier(struct notifier_block *nb)
+>  {
+> 
+> 
