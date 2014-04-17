@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757072AbaDQADx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 20:03:53 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:35111 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754520AbaDQADu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 20:03:50 -0400
-From: Joel Fernandes <joelf@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: Rajendra Nayak <rnayak@ti.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Joel Fernandes <joelf@ti.com>
-Subject: [PATCH 1/9] ARM: OMAP: dmtimer: Remove setting of clk parent indirectly through platform hook
-Date: Wed, 16 Apr 2014 19:03:11 -0500
-Message-ID: <1397692999-7800-1-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1161551AbaDQAEl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 20:04:41 -0400
+Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:37515
+	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757110AbaDQAEh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 20:04:37 -0400
+From: Hartley Sweeten <HartleyS@visionengravers.com>
+To: Chase Southwood <chase.southwood@yahoo.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/2 v3] staging: comedi: addi_apci_1564: fixup and
+ absorb apci1564_reset()
+Thread-Topic: [PATCH 2/2 v3] staging: comedi: addi_apci_1564: fixup and
+ absorb apci1564_reset()
+Thread-Index: AQHPWcx5E3JVTEoAsUqndpNUltkYo5sU5PwwgAB6xAD//4tccA==
+Date: Thu, 17 Apr 2014 00:04:36 +0000
+Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825E051E5@P3PWEX4MB008.ex4.secureserver.net>
+References: <1397691269-24940-1-git-send-email-chase.southwood@yahoo.com>
+ <DC148C5AA1CEBA4E87973D432B1C2D8825E05116@P3PWEX4MB008.ex4.secureserver.net>
+ <1397692382.80906.YahooMailNeo@web164005.mail.gq1.yahoo.com>
+In-Reply-To: <1397692382.80906.YahooMailNeo@web164005.mail.gq1.yahoo.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [184.183.19.121]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a platform specific hook just for OMAP1 to set its clk parent.  Remove
-this hook and have OMAP1 set its parent in omap1_dm_timer_init.  If OMAP1 is
-ever migrated to clock framework, the correct way to do this would be through
-clk_set_parent like other platforms.
+On Wednesday, April 16, 2014 4:53 PM, Chase Southwood wrote:
+>>On Wednesday, April 16, 2014 6:36 PM, Hartley Sweeten <HartleyS@visionengravers.com> wrote:
+>>>On Wednesday, April 16, 2014 4:34 PM, Chase Southwood wrote:
+>>>Move apci1564_reset() from hwdrv_apci1564.c to addi_apci_1564.c.  The
+>>>function was very messy and failed to reset a couple registers, these
+>>>issues were fixed on the move.>
+>>
+>>The commit message needs updated. You are no longer moving the function.
+>>
+>
+> Erm...in the PATCH v3 I just sent, it has been moved as described here, so at least for
+> what is happening now, this changelog is accurate.  Would you like me to no longer move
+> the function for the time being?
 
-Signed-off-by: Joel Fernandes <joelf@ti.com>
----
- arch/arm/mach-omap1/timer.c                |    8 +++++++-
- arch/arm/plat-omap/dmtimer.c               |    8 +++-----
- include/linux/platform_data/dmtimer-omap.h |    2 --
- 3 files changed, 10 insertions(+), 8 deletions(-)
+Ah, missed that you moved it before the struct addi_board definition.
 
-diff --git a/arch/arm/mach-omap1/timer.c b/arch/arm/mach-omap1/timer.c
-index bde7a35..4b9c604 100644
---- a/arch/arm/mach-omap1/timer.c
-+++ b/arch/arm/mach-omap1/timer.c
-@@ -140,7 +140,13 @@ static int __init omap1_dm_timer_init(void)
- 			goto err_free_pdata;
- 		}
- 
--		pdata->set_timer_src = omap1_dm_timer_set_src;
-+		/*
-+		 * Since OMAP1 doesn't support clock framework, set timer clock
-+		 * source to 32KHz here instead of expecting it to be set by
-+		 * dmtimer code.
-+		 */
-+		omap1_dm_timer_set_src(pdev, 0x01);
-+
- 		pdata->timer_capability = OMAP_TIMER_ALWON |
- 				OMAP_TIMER_NEEDS_RESET | OMAP_TIMER_HAS_DSP_IRQ;
- 
-diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
-index 869254c..ecd3f97 100644
---- a/arch/arm/plat-omap/dmtimer.c
-+++ b/arch/arm/plat-omap/dmtimer.c
-@@ -494,12 +494,10 @@ int omap_dm_timer_set_source(struct omap_dm_timer *timer, int source)
- 		return -EINVAL;
- 
- 	/*
--	 * FIXME: Used for OMAP1 devices only because they do not currently
--	 * use the clock framework to set the parent clock. To be removed
--	 * once OMAP1 migrated to using clock framework for dmtimers
-+	 * For OMAP1, timer source is already set during omap1_dm_timer_init.
- 	 */
--	if (pdata && pdata->set_timer_src)
--		return pdata->set_timer_src(timer->pdev, source);
-+	if (timer->capability & OMAP_TIMER_NEEDS_RESET)
-+		return 0;
- 
- 	if (IS_ERR(timer->fclk))
- 		return -EINVAL;
-diff --git a/include/linux/platform_data/dmtimer-omap.h b/include/linux/platform_data/dmtimer-omap.h
-index a19b78d..9f42b06 100644
---- a/include/linux/platform_data/dmtimer-omap.h
-+++ b/include/linux/platform_data/dmtimer-omap.h
-@@ -21,8 +21,6 @@
- #define __PLATFORM_DATA_DMTIMER_OMAP_H__
- 
- struct dmtimer_platform_data {
--	/* set_timer_src - Only used for OMAP1 devices */
--	int (*set_timer_src)(struct platform_device *pdev, int source);
- 	u32 timer_capability;
- 	u32 timer_errata;
- 	int (*get_context_loss_count)(struct device *);
--- 
-1.7.9.5
+Hmmm... I think it would be cleaner if you moved the function after separating
+this driver from the addi_common.c file. Then the moved functions can be put
+into the driver in "cleaner" locations and avoid any forward declaration junk.
+
+The brute force way to do this is just copy the contents of addi_common.c to
+the driver and remove the #include. Then you can move the functions from
+the hwrdv_apci1564.c file to the driver, and remove them from the boardinfo,
+as needed.
+
+Once you get the addi_common.c stuff localized you should fine that much
+of it is just NOP code for this driver. Those pieces then just need to be ripped
+out.
+
+Have fun...
+
+Hartley
 
