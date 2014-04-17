@@ -1,107 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751429AbaDQTxS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 15:53:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62730 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751072AbaDQTxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 15:53:10 -0400
-Date: Thu, 17 Apr 2014 15:52:40 -0400
-From: Dave Jones <davej@redhat.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Borislav Petkov <bp@alien8.de>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Zhang, Rui" <rui.zhang@intel.com>, "Lu, Aaron" <aaron.lu@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Stephane Eranian <eranian@google.com>,
-        "Yan, Zheng Z" <zheng.z.yan@intel.com>, daniel.vetter@ffwll.ch
-Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
-Message-ID: <20140417195240.GA18876@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Bjorn Helgaas <bhelgaas@google.com>, Borislav Petkov <bp@alien8.de>,
-	"Rafael J. Wysocki" <rjw@rjwysocki.net>,
-	"Zhang, Rui" <rui.zhang@intel.com>,
-	"Lu, Aaron" <aaron.lu@intel.com>,
-	lkml <linux-kernel@vger.kernel.org>,
-	"x86@kernel.org" <x86@kernel.org>,
-	Linux PCI <linux-pci@vger.kernel.org>,
-	ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-	Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-	Stephane Eranian <eranian@google.com>,
-	"Yan, Zheng Z" <zheng.z.yan@intel.com>, daniel.vetter@ffwll.ch
-References: <744357E9AAD1214791ACBA4B0B9092630121F201@SHSMSX101.ccr.corp.intel.com>
- <CAErSpo55DjkGQB=7ksow34BpCObnY+o3eNnt0n5oQEh6Lfw1pw@mail.gmail.com>
- <1558044.S1G2VU7srO@vostro.rjw.lan>
- <CAErSpo4pDYMhHo6e-1TN6XDRO0xy0u8H+=oucFnrEK+kbjZvzw@mail.gmail.com>
- <20140416190404.GA7070@pd.tnic>
- <20140416203138.GA17661@google.com>
- <20140416223122.GA2767@redhat.com>
- <20140416225600.GA23781@google.com>
- <20140417104533.GB8215@pd.tnic>
- <20140417182637.GA2098@google.com>
+	id S1751154AbaDQT67 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 15:58:59 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:16880
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750736AbaDQT6u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 15:58:50 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: 9
+X-BigFish: VPS9(z551bizzz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzdch5ck70kz1de098h8275bh1de097hz2fh95h839hc61hd24hf0ah119dh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h226dh24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h268bh26d3h906i2673i1155h)
+From: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
+To: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <michal.simek@xilinx.com>,
+        <grant.likely@linaro.org>, <gregkh@linuxfoundation.org>,
+        <jason@lakedaemon.net>, <ezequiel.garcia@free-electrons.com>,
+        <arnd@arndb.de>, <dwmw2@infradead.org>, <computersforpeace@gmail.com>,
+        <artem.bityutskiy@linux.intel.com>, <pekon@ti.com>,
+        <jussi.kivilinna@iki.fi>, <acourbot@nvidia.com>,
+        <ivan.khoronzhuk@ti.com>, <joern@logfs.org>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>,
+        <kpc528@gmail.com>, <kalluripunnaiahchoudary@gmail.com>,
+        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
+Subject: [PATCH RFC v2 4/4] mtd: nand: Add a devicetree binding for onfi timing parameters
+Date: Fri, 18 Apr 2014 01:28:40 +0530
+X-Mailer: git-send-email 1.7.4
+In-Reply-To: <1397764720-29846-1-git-send-email-punnaia@xilinx.com>
+References: <1397764720-29846-1-git-send-email-punnaia@xilinx.com>
+X-RCIS-Action: ALLOW
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140417182637.GA2098@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+Message-ID: <3ce233c6-0549-41bb-a417-3f66cc707cfa@CH1EHSMHS043.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 12:26:37PM -0600, Bjorn Helgaas wrote:
- > Thanks a lot for testing this out and debugging my issues.
- > 
- > Here's a new version that looks for both device IDs I know about.
+Added binding information for onfi timing parameters as per the
+onfi 1.0 specification. So, nand controllers that have support for
+configuring any of these timing parameters can use this binding
+information.
 
-I can confirm this patch does fix the backtrace.
-I disabled lockdep, and now I can get to X each boot, but I still see
-a black screen rather than a console between modesetting becoming active, and X starting.
+Signed-off-by: Punnaiah Choudary Kalluri <punnaia@xilinx.com>
+---
+ Documentation/devicetree/bindings/mtd/nand.txt |   46 ++++++++++++++++++++++++
+ 1 files changed, 46 insertions(+), 0 deletions(-)
 
-(The lockdep thing turned out to be a known XFS false positive, but for
- some reason it actually caused X to lock up)
+diff --git a/Documentation/devicetree/bindings/mtd/nand.txt b/Documentation/devicetree/bindings/mtd/nand.txt
+index b53f92e..4901091 100644
+--- a/Documentation/devicetree/bindings/mtd/nand.txt
++++ b/Documentation/devicetree/bindings/mtd/nand.txt
+@@ -19,3 +19,49 @@ errors per {size} bytes".
+ The interpretation of these parameters is implementation-defined, so not all
+ implementations must support all possible combinations. However, implementations
+ are encouraged to further specify the value(s) they support.
++
++Timing parameters:
++  Based on onfi specification 1.0, following are defined parameters.Each
++controller should add supported parameters to IP node.
++All the timing parameters are in nano second time units.
++
++- nand-tADL-ns   : ALE to data loading time
++- nand-tALH-ns   : ALE hold time
++- nand-tALS-ns   : ALE setup time
++- nand-tAR-ns    : ALE to RE# delay
++- nand-tBERS-ns  : Block erase time
++- nand-tCEA-ns   : CE# access time
++- nand-tCCS-ns   : Change column setup time
++- nand-tCH-ns    : CE# hold time
++- nand-tCHZ-ns   : CE# high to output hi-Z
++- nand-tCLH-ns   : CLE hold time
++- nand-tCLR-ns   : CLE to RE# delay
++- nand-tCLS-ns   : CLE setup time
++- nand-tCOH-ns   : CE# high to output hold
++- nand-tCS-ns    : CE# setup time
++- nand-tDH-ns    : Data hold time
++- nand-tDS-ns    : Data setup time
++- nand-tFEAT-ns  : Busy time for Set Features and Get Features
++- nand-tIEBSY-ns : Busy time for interleaved erase operation
++- nand-tIPBSY-ns : Busy time for interleaved program operation
++- nand-tIR-ns    : Output hi-Z to RE# low
++- nand-tPCBSY-ns : Program cache busy time
++- nand-tPROG-ns  : Page program time
++- nand-tR-ns     : Page read time
++- nand-tRC-ns    : RE# cycle time
++- nand-tRCBSY-ns : Read cache busy time
++- nand-tREA-ns   : RE# access time
++- nand-tREH-ns   : RE# high hold time
++- nand-tRHOH-ns  : RE# high to output hold
++- nand-tRHW-ns   : RE# high to WE# low
++- nand-tRHZ-ns   : RE# high to output hi-z
++- nand-tRLOH-ns  : RE# low to output hold
++- nand-tRP-ns    : RE# pulse width
++- nand-tRR-ns    : Ready to RE# low
++- nand-tRST-ns   : Device reset time
++- nand-tWB-ns    : WE# high to R/B# low
++- nand-tWC-ns    : WE# cycle time
++- nand-tWH-ns    : WE# high hold time
++- nand-tWHR-ns   : WE# high to RE# low
++- nand-tWP-ns    : WE# pulse width
++- nand-tWW-ns    : WP# transition to WE# low
+-- 
+1.7.4
 
- > I'm still nervous about the modeset problem Dave is seeing.  Since the
- > original patch wouldn't find an 8086:0c00 device on Dave's system, it
- > should have done nothing.  But since it caused a modesetting problem,
- > there's something else doing on that I don't understand.
-
-I don't know if it's relevant, but this laptop (and I suspect many other
-thinkpads which seem affected) have dual gfx, both show up on the bus,
-even if though the nvidia isn't in use..
-
-00:02.0 VGA compatible controller: Intel Corporation 3rd Gen Core processor Graphics Controller (rev 09) (prog-if 00 [VGA controller])
-        Subsystem: Lenovo Device 2200
-        Flags: bus master, fast devsel, latency 0, IRQ 44
-        Memory at f1000000 (64-bit, non-prefetchable) [size=4M]
-        Memory at e0000000 (64-bit, prefetchable) [size=256M]
-        I/O ports at 6000 [size=64]
-        Expansion ROM at <unassigned> [disabled]
-        Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
-        Capabilities: [d0] Power Management version 2
-        Capabilities: [a4] PCI Advanced Features
-        Kernel driver in use: i915
-
-01:00.0 3D controller: NVIDIA Corporation GF117M [GeForce 610M/710M/820M / GT 620M/625M/630M/720M] (rev a1)
-        Subsystem: Lenovo NVS 5200M
-        Flags: bus master, fast devsel, latency 0, IRQ 11
-        Memory at f0000000 (32-bit, non-prefetchable) [size=16M]
-        Memory at c0000000 (64-bit, prefetchable) [size=256M]
-        Memory at d0000000 (64-bit, prefetchable) [size=32M]
-        I/O ports at 5000 [size=128]
-        Expansion ROM at <ignored> [disabled]
-        Capabilities: [60] Power Management version 3
-        Capabilities: [68] MSI: Enable- Count=1/1 Maskable- 64bit+
-        Capabilities: [78] Express Endpoint, MSI 00
-        Capabilities: [b4] Vendor Specific Information: Len=14 <?>
-        Capabilities: [100] Virtual Channel
-        Capabilities: [128] Power Budgeting <?>
-        Capabilities: [600] Vendor Specific Information: ID=0001 Rev=1 Len=024 <?>
-
-Just as X starts up, I see this in dmesg..
-
-[   42.879049] [drm:cpt_serr_int_handler] *ERROR* PCH transcoder A FIFO underrun
-
-	Dave
 
