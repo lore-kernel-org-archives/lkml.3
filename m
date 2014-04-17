@@ -1,96 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475AbaDQRcA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 13:32:00 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:24734 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971AbaDQRbz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 13:31:55 -0400
-Message-ID: <53500FF8.8010804@oracle.com>
-Date: Thu, 17 Apr 2014 13:31:36 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: vegard.nossum@oracle.com, penberg@kernel.org, jamie.iles@oracle.com,
-        mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] x86/insn: Extract more information about instructions
-References: <1397497450-6440-1-git-send-email-sasha.levin@oracle.com> <1397497450-6440-3-git-send-email-sasha.levin@oracle.com> <534CA38C.80501@hitachi.com> <534D4BF3.3020102@oracle.com> <534DF868.2020901@zytor.com> <534DFD61.4070700@oracle.com> <534DFEDC.8090503@zytor.com> <534E0124.70700@oracle.com> <534E1559.8050904@hitachi.com> <534FF135.40404@oracle.com> <534FF31E.1000104@zytor.com>
-In-Reply-To: <534FF31E.1000104@zytor.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+	id S1751691AbaDQReB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 13:34:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62467 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750982AbaDQRdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 13:33:51 -0400
+Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
+ cgroup path
+From: Simo Sorce <ssorce@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Daniel J Walsh <dwalsh@redhat.com>,
+        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
+        Network Development <netdev@vger.kernel.org>
+In-Reply-To: <CALCETrVq4HRpfWOAbZAQbyjuraQd=OxnW=WjSoe5JgBzRStiKg@mail.gmail.com>
+References: <20140416180642.GG31074@redhat.com>
+	 <CALCETrVUw5+vCCONy1VTXpskbY_eZFo2CtbehwV5Mhj4d4+icw@mail.gmail.com>
+	 <20140416185936.GJ31074@redhat.com> <534FF61B.4010901@redhat.com>
+	 <1397750674.2628.44.camel@willson.li.ssimo.org>
+	 <CALCETrUrj2LtAoXp600BD2ANgE2UUEbTYQrK8hHqDR=qpeFPcg@mail.gmail.com>
+	 <1397751853.2628.50.camel@willson.li.ssimo.org>
+	 <CALCETrWNWvumFg9Qba0GEOjYop4WYe530tCPtakrhnoCrHqhUQ@mail.gmail.com>
+	 <1397753323.2628.60.camel@willson.li.ssimo.org>
+	 <CALCETrXj6kD3E+vsaWmkrSbaQYTu=c-Hsw640jh4O+FbojYk2g@mail.gmail.com>
+	 <20140417171256.GB25334@redhat.com>
+	 <CALCETrVq4HRpfWOAbZAQbyjuraQd=OxnW=WjSoe5JgBzRStiKg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 17 Apr 2014 13:33:45 -0400
+Message-ID: <1397756025.2628.64.camel@willson.li.ssimo.org>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2014 11:28 AM, H. Peter Anvin wrote:
-> On 04/17/2014 08:20 AM, Sasha Levin wrote:
->>
->> It's not like the instruction decoder is a generic piece of code right now anyways,
->> it only serves mostly [k,u]probes and was built around the their requirements, and
->> now everybody are surprised that kmemcheck has different requirements than kprobes.
->>
+On Thu, 2014-04-17 at 10:26 -0700, Andy Lutomirski wrote:
+> On Thu, Apr 17, 2014 at 10:12 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Thu, Apr 17, 2014 at 09:55:08AM -0700, Andy Lutomirski wrote:
+> >> On Thu, Apr 17, 2014 at 9:48 AM, Simo Sorce <ssorce@redhat.com> wrote:
+> >> > On Thu, 2014-04-17 at 09:37 -0700, Andy Lutomirski wrote:
+> >> >> On Thu, Apr 17, 2014 at 9:24 AM, Simo Sorce <ssorce@redhat.com> wrote:
+> >> >> > On Thu, 2014-04-17 at 09:11 -0700, Andy Lutomirski wrote:
+> >> >> >>
+> >> >> >> No.  The logging daemon thinks it wants to know who the writer is, but
+> >> >> >> the logging daemon is wrong.  It actually wants to know who composed a
+> >> >> >> log message destined to it.  The caller of write(2) may or may not be
+> >> >> >> the same entity.
+> >> >> >
+> >> >> > This works both ways, and doesn't really matter, you are *no* better off
+> >> >> > w/o this interface.
+> >> >> >
+> >> >> >> If this form of SO_PASSCGROUP somehow makes it into a pull request for
+> >> >> >> Linus, I will ask him not to pull it and/or to revert it.  I think
+> >> >> >> he'll agree that write(2) MUST NOT care who called it.
+> >> >> >
+> >> >> > And write() does not, there is no access control check being performed
+> >> >> > here. This call is the same as getting the pid of the process and
+> >> >> > crawling /proc with that information, just more efficient and race-free.
+> >> >>
+> >> >> Doing it using the pid of writer is wrong.  So is doing it with the
+> >> >> cgroup of the writer.  The fact that it's even possible to use the pid
+> >> >> of the caller of write(2) is a mistake, but that particular mistake
+> >> >> is, unfortunately, well-enshrined in history.
+> >> >>
+> >> >> >
+> >> >> > I repeat, it is *not* access control.
+> >> >> >
+> >> >>
+> >> >> Sure it is.
+> >> >>
+> >> >> Either correct attribution of logs doesn't matter, in which case it
+> >> >> makes little difference how you do it, or it does matter, in which
+> >> >> case it should be done right.
+> >> >
+> >> > Well journald can *also* get  SO_PEERCGROUP and log anomalies if the 2
+> >> > differ. That is if the log happens on a connected socket.
+> >> >
+> >> > If the log happens on a unix datagram* then SO_PEERCGROUP is not
+> >> > available because there is no connect(), however write() cannot be used
+> >> > either, only sendmsg() AFAIK, so the "setuid" binary attack does not
+> >> > apply.
+> >> >
+> >>
+> >> Or you could only send SCM_CGROUP when the writer asks sendmsg to send
+> >> it, in which case this whole problem goes away.
+> >
+> > Sending SCM_CGROUP explicitly is also sending cgroup info at write(2) time
+> > and if receiver uses that info for access control, it can be problematic.
+> >
 > 
-> What *ARE* kmemcheck's requirements?  That's the real issue, I believe.
+> Not really.  write(2) can't send SCM_CGROUP.  Callers of sendmsg(2)
+> who supply SCM_CGROUP are explicitly indicating that they want their
+> cgroup associated with that message.  Callers of write(2) and send(2)
+> are simply indicating that they have some bytes that they want to
+> shove into whatever's at the other end of the fd.
 
-As far as kmemcheck is concerned, it needs to decode instructions so that
-it could learn whether an instruction will access memory, and if it does -
-the size of memory an instruction attempts to access.
+But there is no attack vector that passes by tricking setuid binaries to
+write to pre-opened file descriptors on sendmsg(), and for the other
+cases (connected socket) journald can always cross check with
+SO_PEERCGROUP, so why do we care again ?
 
-Note that right now kmemcheck implements a dumb instruction decoder (see
-arch/x86/mm/kmemcheck/opcode.c) which works for most cases, but breaks on
-more than few. The first patch in this series adds a few cases where that
-decoder will fail.
-
-This is the main purpose of the patch series. We want to switch kmemcheck
-to use the generic instruction decoder to avoid bugs found in the dumbed
-down instruction decoder used by kmemcheck.
-
-On top of that, there are several features which need to know more about
-instructions:
-
-1. kmemcheck wants to know if a given instruction may act on only part of
-the memory it addresses, or all of it. This solves the problem of partially
-initialized bitfields where uninitialized bits are never accessed.
-
-For the above, kmemcheck needs to recognize whether an instruction is AND,
-OR or XOR.
-
-2. There are two sets of instructions, MOVS and CMPS which work a bit
-differently than the rest. They take two memory addresses but will
-generate only one page fault on access, which will make kmemcheck miss
-a memory access.
-
-kmemcheck needs to know if an instruction is a MOVS or CMPS to deal with
-that corner case properly.
-
-> I also have seen several attempts at using the generic instruction
-> decoder which has resulted in more complexity, not less, because of
-> excess generality, so it is not an obvious thing.
-
-Let's split this patchset into two:
-
-We have one part which moves kmemcheck to the generic instruction decoder
-and adds memory access size to the instruction decoder. There seems to be
-no objection to that part beyond technical issues regarding how we store
-the new size value.
-
-The other part is adding mnemonics to the instruction decoder. If my
-explanation above makes sense, and kmemcheck does need to know about AND,
-OR, XOR, MOVS and CMPS then let me know how to proceed about changing
-the instruction decoder to add that functionality.
-
-If I'm wrong about needing to know about those mnemonics, I'd be happy
-to fix that issue in kmemcheck, but for that I need to know why I'm
-wrong.
-
-
-Thanks,
-Sasha
+Simo.
 
 
