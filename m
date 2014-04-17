@@ -1,280 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756244AbaDQIdz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 04:33:55 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:40605 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459AbaDQIRH (ORCPT
+	id S1756358AbaDQIe4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 04:34:56 -0400
+Received: from mail-bn1lp0140.outbound.protection.outlook.com ([207.46.163.140]:44467
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751113AbaDQIew convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 04:17:07 -0400
-Subject: [PATCH -tip v9 03/26] kprobes: Prohibit probing on .entry.text code
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, fche@redhat.com,
-        mingo@redhat.com, Al Viro <viro@zeniv.linux.org.uk>,
-        systemtap@sourceware.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
-Date: Thu, 17 Apr 2014 17:16:58 +0900
-Message-ID: <20140417081658.26341.57354.stgit@ltc230.yrl.intra.hitachi.co.jp>
-In-Reply-To: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp>
-References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp>
-User-Agent: StGit/0.17-dirty
+	Thu, 17 Apr 2014 04:34:52 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Shawn Guo <Shawn.Guo@freescale.com>
+CC: Shawn Guo <shawn.guo@linaro.org>,
+        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        Jingchang Lu <jingchang.lu@freescale.com>,
+        "Jason.Jin@freescale.com" <Jason.Jin@freescale.com>,
+        "Dongsheng.Wang@freescale.com" <Dongsheng.Wang@freescale.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC][PATCH 1/3] ARM: dts: vf610: Add Freescale FlexTimer
+ Module timer node.
+Thread-Topic: [RFC][PATCH 1/3] ARM: dts: vf610: Add Freescale FlexTimer
+ Module timer node.
+Thread-Index: AQHPWSBaHNmWFeafwkKQ+QxFukJEhZsT8jYAgAF5iLCAAA5fAIAAArsg
+Date: Thu, 17 Apr 2014 08:34:48 +0000
+Message-ID: <4d7a62616f2a4b21af2d20b45deef0b6@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1397614787-8300-1-git-send-email-Li.Xiubo@freescale.com>
+ <1397614787-8300-2-git-send-email-Li.Xiubo@freescale.com>
+ <20140416085953.GC11602@dragon>
+ <6934b6e7d11f4eb6a8ec74542820d718@BY2PR03MB505.namprd03.prod.outlook.com>
+ <20140417082228.GA22160@dragon>
+In-Reply-To: <20140417082228.GA22160@dragon>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 01842C458A
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(24454002)(51704005)(46102001)(4396001)(76576001)(74502001)(99396002)(99286001)(74662001)(87936001)(31966008)(76176999)(50986999)(54356999)(2656002)(77096999)(81542001)(85852003)(76482001)(77982001)(81342001)(79102001)(83072002)(86362001)(92566001)(19580405001)(83322001)(19580395003)(33646001)(66066001)(80022001)(74316001)(20776003)(80976001)(21314002)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB377;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:EC44D05E.BFA25AC1.B2FF557B.44D6E1DE.202CE;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-.entry.text is a code area which is used for interrupt/syscall
-entries, which includes many sensitive code.
-Thus, it is better to prohibit probing on all of such code
-instead of a part of that.
-Since some symbols are already registered on kprobe blacklist,
-this also removes them from the blacklist.
+> Subject: Re: [RFC][PATCH 1/3] ARM: dts: vf610: Add Freescale FlexTimer Module
+> timer node.
+> 
+> On Thu, Apr 17, 2014 at 07:49:31AM +0000, Li.Xiubo@freescale.com wrote:
+> > > > +			ftm0: ftm@40038000 {
+> > > > +				compatible = "fsl,vf610-ftm-timer";
+> > > > +				reg = <0x40038000 0x2000>;
+> > > > +				interrupts = <0 42 IRQ_TYPE_LEVEL_HIGH>;
+> > > > +				clock-names = "ftm0", "ftm1",
+> > > > +					"ftm0_counter_en", "ftm1_counter_en";
+> > > > +				clocks = <&clks VF610_CLK_FTM0>,
+> > > > +					<&clks VF610_CLK_FTM1>,
+> > > > +					<&clks VF610_CLK_FTM0_EXT_FIX_EN>,
+> > > > +					<&clks VF610_CLK_FTM1_EXT_FIX_EN>;
+> > > > +				status = "disabled";
+> > >
+> > > For such completely internal block which has no pins route out on board,
+> > > we should probably just not have this "disabled" status line.
+> > >
+> >
+> > Well, from IEEE 1275, there defined a standard 'status' property indicating
+> > The operational status of one device. The 'status' property has four
+> possible
+> > values: 'okay/ok', 'disabled', 'fail' and 'fail-xxx'.
+> >
+> > If it is absent, that means the status of the device is unknown or okay.
+> 
+> Yes, missing 'disabled' status equals to a 'okay' status from Linux
+> implementation.  Then, the device is always available in device tree,
+> and Linux Kconfig option will control whether the driver for the device
+> is enabled.
+> 
+> >
+> > If discard the status line here in vf610.dtsi, this device will be enabled
+> > as default though 'no pins route out' on the board, and actually there has
+> > pins route out on the board, as timer devices here we just not use it, but
+> > as PWM devices the pins will be used.
+> >
+> > How about let the node disabled in vf610.dtsi, and then enable it in vf610-
+> twr.dts
+> > if it will be used in TWR board... ?
+> 
+> Okay.  If there is some use cases that have board level configuration
+> like pin out, I'm fine with your existing code.
+> 
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
----
- arch/x86/kernel/entry_32.S     |   33 ---------------------------------
- arch/x86/kernel/entry_64.S     |   20 --------------------
- arch/x86/kernel/kprobes/core.c |    8 ++++++++
- include/linux/kprobes.h        |    1 +
- kernel/kprobes.c               |   13 ++++++++-----
- 5 files changed, 17 insertions(+), 58 deletions(-)
+@Shawn,
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index a2a4f46..0ca5bf1 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -315,10 +315,6 @@ ENTRY(ret_from_kernel_thread)
- ENDPROC(ret_from_kernel_thread)
- 
- /*
-- * Interrupt exit functions should be protected against kprobes
-- */
--	.pushsection .kprobes.text, "ax"
--/*
-  * Return to user mode is not as complex as all this looks,
-  * but we want the default path for a system call return to
-  * go as quickly as possible which is why some of this is
-@@ -372,10 +368,6 @@ need_resched:
- END(resume_kernel)
- #endif
- 	CFI_ENDPROC
--/*
-- * End of kprobes section
-- */
--	.popsection
- 
- /* SYSENTER_RETURN points to after the "sysenter" instruction in
-    the vsyscall page.  See vsyscall-sysentry.S, which defines the symbol.  */
-@@ -495,10 +487,6 @@ sysexit_audit:
- 	PTGS_TO_GS_EX
- ENDPROC(ia32_sysenter_target)
- 
--/*
-- * syscall stub including irq exit should be protected against kprobes
-- */
--	.pushsection .kprobes.text, "ax"
- 	# system call handler stub
- ENTRY(system_call)
- 	RING0_INT_FRAME			# can't unwind into user space anyway
-@@ -691,10 +679,6 @@ syscall_badsys:
- 	jmp resume_userspace
- END(syscall_badsys)
- 	CFI_ENDPROC
--/*
-- * End of kprobes section
-- */
--	.popsection
- 
- .macro FIXUP_ESPFIX_STACK
- /*
-@@ -781,10 +765,6 @@ common_interrupt:
- ENDPROC(common_interrupt)
- 	CFI_ENDPROC
- 
--/*
-- *  Irq entries should be protected against kprobes
-- */
--	.pushsection .kprobes.text, "ax"
- #define BUILD_INTERRUPT3(name, nr, fn)	\
- ENTRY(name)				\
- 	RING0_INT_FRAME;		\
-@@ -961,10 +941,6 @@ ENTRY(spurious_interrupt_bug)
- 	jmp error_code
- 	CFI_ENDPROC
- END(spurious_interrupt_bug)
--/*
-- * End of kprobes section
-- */
--	.popsection
- 
- #ifdef CONFIG_XEN
- /* Xen doesn't set %esp to be precisely what the normal sysenter
-@@ -1239,11 +1215,6 @@ return_to_handler:
- 	jmp *%ecx
- #endif
- 
--/*
-- * Some functions should be protected against kprobes
-- */
--	.pushsection .kprobes.text, "ax"
--
- #ifdef CONFIG_TRACING
- ENTRY(trace_page_fault)
- 	RING0_EC_FRAME
-@@ -1453,7 +1424,3 @@ ENTRY(async_page_fault)
- END(async_page_fault)
- #endif
- 
--/*
-- * End of kprobes section
-- */
--	.popsection
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 1e96c36..43bb389 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -487,8 +487,6 @@ ENDPROC(native_usergs_sysret64)
- 	TRACE_IRQS_OFF
- 	.endm
- 
--/* save complete stack frame */
--	.pushsection .kprobes.text, "ax"
- ENTRY(save_paranoid)
- 	XCPT_FRAME 1 RDI+8
- 	cld
-@@ -517,7 +515,6 @@ ENTRY(save_paranoid)
- 1:	ret
- 	CFI_ENDPROC
- END(save_paranoid)
--	.popsection
- 
- /*
-  * A newly forked process directly context switches into this address.
-@@ -975,10 +972,6 @@ END(interrupt)
- 	call \func
- 	.endm
- 
--/*
-- * Interrupt entry/exit should be protected against kprobes
-- */
--	.pushsection .kprobes.text, "ax"
- 	/*
- 	 * The interrupt stubs push (~vector+0x80) onto the stack and
- 	 * then jump to common_interrupt.
-@@ -1113,10 +1106,6 @@ ENTRY(retint_kernel)
- 
- 	CFI_ENDPROC
- END(common_interrupt)
--/*
-- * End of kprobes section
-- */
--       .popsection
- 
- /*
-  * APIC interrupts.
-@@ -1477,11 +1466,6 @@ apicinterrupt3 HYPERVISOR_CALLBACK_VECTOR \
- 	hyperv_callback_vector hyperv_vector_handler
- #endif /* CONFIG_HYPERV */
- 
--/*
-- * Some functions should be protected against kprobes
-- */
--	.pushsection .kprobes.text, "ax"
--
- paranoidzeroentry_ist debug do_debug DEBUG_STACK
- paranoidzeroentry_ist int3 do_int3 DEBUG_STACK
- paranoiderrorentry stack_segment do_stack_segment
-@@ -1898,7 +1882,3 @@ ENTRY(ignore_sysret)
- 	CFI_ENDPROC
- END(ignore_sysret)
- 
--/*
-- * End of kprobes section
-- */
--	.popsection
-diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
-index fb6d421..181bdde 100644
---- a/arch/x86/kernel/kprobes/core.c
-+++ b/arch/x86/kernel/kprobes/core.c
-@@ -1065,6 +1065,14 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
- 	return 0;
- }
- 
-+bool arch_within_kprobe_blacklist(unsigned long addr)
-+{
-+	return  (addr >= (unsigned long)__kprobes_text_start &&
-+		 addr < (unsigned long)__kprobes_text_end) ||
-+		(addr >= (unsigned long)__entry_text_start &&
-+		 addr < (unsigned long)__entry_text_end);
-+}
-+
- int __init arch_init_kprobes(void)
- {
- 	return 0;
-diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-index 925eaf2..cdf9251 100644
---- a/include/linux/kprobes.h
-+++ b/include/linux/kprobes.h
-@@ -265,6 +265,7 @@ extern void arch_disarm_kprobe(struct kprobe *p);
- extern int arch_init_kprobes(void);
- extern void show_registers(struct pt_regs *regs);
- extern void kprobes_inc_nmissed_count(struct kprobe *p);
-+extern bool arch_within_kprobe_blacklist(unsigned long addr);
- 
- struct kprobe_insn_cache {
- 	struct mutex mutex;
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index ceeadfc..5b5ac76 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -96,9 +96,6 @@ static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
- static struct kprobe_blackpoint kprobe_blacklist[] = {
- 	{"preempt_schedule",},
- 	{"native_get_debugreg",},
--	{"irq_entries_start",},
--	{"common_interrupt",},
--	{"mcount",},	/* mcount can be called from everywhere */
- 	{NULL}    /* Terminator */
- };
- 
-@@ -1324,12 +1321,18 @@ out:
- 	return ret;
- }
- 
-+bool __weak arch_within_kprobe_blacklist(unsigned long addr)
-+{
-+	/* The __kprobes marked functions and entry code must not be probed */
-+	return addr >= (unsigned long)__kprobes_text_start &&
-+	       addr < (unsigned long)__kprobes_text_end;
-+}
-+
- static int __kprobes in_kprobes_functions(unsigned long addr)
- {
- 	struct kprobe_blackpoint *kb;
- 
--	if (addr >= (unsigned long)__kprobes_text_start &&
--	    addr < (unsigned long)__kprobes_text_end)
-+	if (arch_within_kprobe_blacklist(addr))
- 		return -EINVAL;
- 	/*
- 	 * If there exists a kprobe_blacklist, verify and
+I'll send the v2 patch series of this.
 
+Thanks very much for your comments.
+
+BRs
+Xiubo
+
+
+
+> Shawn
 
