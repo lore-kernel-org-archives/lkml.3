@@ -1,123 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756987AbaDQNNV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 09:13:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13878 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756333AbaDQNMJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 09:12:09 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>, linux-ide@vger.kernel.org
-Subject: [PATCH v2 1/2] ahci: Ensure "MSI Revert to Single Message" mode is not enforced
-Date: Thu, 17 Apr 2014 14:13:49 +0200
-Message-Id: <478405194e01e8b7f98942b8673af3b1a157aadf.1397736364.git.agordeev@redhat.com>
-In-Reply-To: <cover.1397736364.git.agordeev@redhat.com>
-References: <cover.1397736364.git.agordeev@redhat.com>
+	id S1945901AbaDQNOD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 09:14:03 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55643 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932081AbaDQNOB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 09:14:01 -0400
+Date: Thu, 17 Apr 2014 15:13:57 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: linus.walleij@linaro.org, alexandre.belloni@free-electrons.com,
+        zmxu@marvell.com, jszhang@marvell.com,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND 3/5] ARM: berlin: add the pinctrl dependency for
+ the Marvell Berlin SoCs
+Message-ID: <20140417131357.GA31034@kwain>
+References: <1397135274-10764-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1397135274-10764-4-git-send-email-antoine.tenart@free-electrons.com>
+ <5347B065.8060001@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5347B065.8060001@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AHCI specification allows hardware to choose to revert to
-single MSI mode when fewer messages are allocated than requested.
-Yet, at least ICH10 chipset reverts to single MSI mode even when
-enough messages are allocated in some cases (see below).
+Sebastian,
 
-This update forces the driver do not rely on initialization of
-multiple MSIs mode alone and always check if "MSI Revert to
-Single Message" (MRSM) mode was enforced by the controller and
-fallback to the single MSI mode in case it did.
+On Fri, Apr 11, 2014 at 11:05:41AM +0200, Sebastian Hesselbarth wrote:
+> On 04/10/2014 03:07 PM, Antoine Ténart wrote:
+> >Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> >---
+> >  arch/arm/mach-berlin/Kconfig | 2 ++
+> >  1 file changed, 2 insertions(+)
+> >
+> >diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
+> >index d3c5f14dc142..291f1cac6c3d 100644
+> >--- a/arch/arm/mach-berlin/Kconfig
+> >+++ b/arch/arm/mach-berlin/Kconfig
+> >@@ -4,6 +4,8 @@ config ARCH_BERLIN
+> >  	select GENERIC_IRQ_CHIP
+> >  	select DW_APB_ICTL
+> >  	select DW_APB_TIMER_OF
+> >+	select PINCTRL
+> >+	select PINCTRL_BERLIN
+> 
+> As said in the review of the previous patch, drop PINCTRL here
+> and select it in the PINCTRL_BERLIN Kconfig. Also, you'll need
+> PINCTRL_BERLIN_BG2 and PINCTRL_BERLIN_BG2Q as we don't want to
+> bloat each Berlin kernel with both drivers.
 
-That prevents a situation when the driver configured multiple
-per-port IRQ handlers, but the controller sends all port's
-interrupts to a single IRQ, which could easily screw up the
-interrupt handling and lead to delays and possibly crashes.
+Regarding PINCTRL, I can't drop it, pin-controller drivers depend on it.
+drivers/pinctrl/Kconfig begins with:
+	if PINCTRL
 
-The fix was tested on a 6-port controller that successfully
-reverted to the single MSI mode:
+Antoine
 
-00:1f.2 SATA controller: Intel Corporation 82801JI (ICH10 Family) SATA
-AHCI Controller (prog-if 01 [AHCI 1.0])
-	Subsystem: Super Micro Computer Inc Device 10a7
-	Flags: bus master, 66MHz, medium devsel, latency 0, IRQ 101
-	I/O ports at f110 [size=8]
-	I/O ports at f100 [size=4]
-	I/O ports at f0f0 [size=8]
-	I/O ports at f0e0 [size=4]
-	I/O ports at f020 [size=32]
-	Memory at fbf00000 (32-bit, non-prefetchable) [size=2K]
-	Capabilities: [80] MSI: Enable+ Count=1/16 Maskable- 64bit-
-	Capabilities: [70] Power Management version 3
-	Capabilities: [a8] SATA HBA v1.0
-	Capabilities: [b0] PCI Advanced Features
-	Kernel driver in use: ahci
-
-With 6 ports just 8 MSI vectors should be enough, but the adapter
-enforces the MRSM mode when less than 16 vectors are written to
-the Multiple Messages Enable PCI register. I instigated MRSM mode
-with the patch below:
-
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 1e493e6..14799f2 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -1171,7 +1171,7 @@ static int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_ports,
- 	if (hpriv->flags & AHCI_HFLAG_NO_MSI)
- 		goto intx;
-
--	nvec = pci_msi_vec_count(pdev);
-+	nvec = 8;
- 	if (nvec < 0)
- 		goto intx;
-
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: linux-ide@vger.kernel.org
----
- drivers/ata/ahci.c |   11 ++++++++++-
- drivers/ata/ahci.h |    1 +
- 2 files changed, 11 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 5a0bf8e..649ac1c 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -1164,7 +1164,7 @@ static inline void ahci_gtf_filter_workaround(struct ata_host *host)
- #endif
- 
- static int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_ports,
--			 struct ahci_host_priv *hpriv)
-+				struct ahci_host_priv *hpriv)
- {
- 	int nvec;
- 
-@@ -1189,6 +1189,15 @@ static int ahci_init_interrupts(struct pci_dev *pdev, unsigned int n_ports,
- 	else if (nvec < 0)
- 		goto intx;
- 
-+	/*
-+	 * Fallback to single MSI mode if the controller enforced MRSM mode
-+	 */
-+	if (readl(hpriv->mmio + HOST_CTL) & HOST_MRSM) {
-+		pci_disable_msi(pdev);
-+		printk(KERN_INFO "ahci: MRSM is on, fallback to single MSI\n");
-+		goto single_msi;
-+	}
-+
- 	return nvec;
- 
- single_msi:
-diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-index 51af275..b5eb886 100644
---- a/drivers/ata/ahci.h
-+++ b/drivers/ata/ahci.h
-@@ -94,6 +94,7 @@ enum {
- 	/* HOST_CTL bits */
- 	HOST_RESET		= (1 << 0),  /* reset controller; self-clear */
- 	HOST_IRQ_EN		= (1 << 1),  /* global IRQ enable */
-+	HOST_MRSM		= (1 << 2),  /* MSI Revert to Single Message */
- 	HOST_AHCI_EN		= (1 << 31), /* AHCI enabled */
- 
- 	/* HOST_CAP bits */
 -- 
-1.7.7.6
-
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
