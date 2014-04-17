@@ -1,158 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751504AbaDQPD6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 11:03:58 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55608 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751210AbaDQPD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 11:03:28 -0400
-Date: Thu, 17 Apr 2014 10:01:10 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: sundeep subbaraya <sundeep.lkml@gmail.com>
-CC: <balbi@ti.com>,
-        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michal Simek <michals@xilinx.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
-Subject: Re: [PATCH v2 2/2] usb: gadget: Add xilinx axi usb2 device support
-Message-ID: <20140417150110.GB20889@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1396510519-8555-1-git-send-email-sbhatta@xilinx.com>
- <113d0620-4003-417d-806b-0b79ae692829@VA3EHSMHS023.ehs.local>
- <20140403145853.GD14162@saruman.home>
- <CALHRZuoCtEz5-CmU17dUpVS_MjSDdYVLMSvgXq_RwxLj_KJMDA@mail.gmail.com>
- <20140416180228.GK28035@saruman.home>
- <CALHRZuq6=TMryHtbjTw7rYoGwbu2w0BTdxiOA95HYS3_CG6vwQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8GpibOaaTibBMecb"
-Content-Disposition: inline
-In-Reply-To: <CALHRZuq6=TMryHtbjTw7rYoGwbu2w0BTdxiOA95HYS3_CG6vwQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751897AbaDQPE6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 11:04:58 -0400
+Received: from g6t1526.atlanta.hp.com ([15.193.200.69]:23421 "EHLO
+	g6t1526.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751196AbaDQPEm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 11:04:42 -0400
+From: Waiman Long <Waiman.Long@hp.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
+        Waiman Long <Waiman.Long@hp.com>
+Subject: [PATCH v9 00/19] qspinlock: a 4-byte queue spinlock with PV support
+Date: Thu, 17 Apr 2014 11:03:52 -0400
+Message-Id: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---8GpibOaaTibBMecb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+v8->v9:
+  - Integrate PeterZ's version of the queue spinlock patch with some
+    modification:
+    http://lkml.kernel.org/r/20140310154236.038181843@infradead.org
+  - Break the more complex patches into smaller ones to ease review effort.
+  - Fix a racing condition in the PV qspinlock code.
 
-On Thu, Apr 17, 2014 at 03:01:37PM +0530, sundeep subbaraya wrote:
-> Hi Felipe,
->=20
-> On Wed, Apr 16, 2014 at 11:32 PM, Felipe Balbi <balbi@ti.com> wrote:
-> > Hi,
-> >
-> > On Wed, Apr 16, 2014 at 04:09:28PM +0530, sundeep subbaraya wrote:
-> >> Hi Felipe,
-> >>
-> >> On Thu, Apr 3, 2014 at 8:28 PM, Felipe Balbi <balbi@ti.com> wrote:
-> >>
-> >> >> +static int start_dma(struct xusb_ep *ep, u32 src, u32 dst, u32 len=
-gth)
-> >> >
-> >> > please prepend this with xudc_, it makes tracing a lot easier.
-> >> >
-> >> >> +{
-> >> >> +     struct xusb_udc *udc;
-> >> >> +     int rc =3D 0;
-> >> >> +     unsigned long timeout;
-> >> >> +
-> >> >> +     udc =3D ep->udc;
-> >> >> +     /*
-> >> >> +      * Set the addresses in the DMA source and
-> >> >> +      * destination registers and then set the length
-> >> >> +      * into the DMA length register.
-> >> >> +      */
-> >> >> +     udc->write_fn(udc->base_address, XUSB_DMA_DSAR_ADDR_OFFSET, s=
-rc);
-> >> >> +     udc->write_fn(udc->base_address, XUSB_DMA_DDAR_ADDR_OFFSET, d=
-st);
-> >> >> +     udc->write_fn(udc->base_address, XUSB_DMA_LENGTH_OFFSET, leng=
-th);
-> >> >> +
-> >> >> +     /*
-> >> >> +      * Wait till DMA transaction is complete and
-> >> >> +      * check whether the DMA transaction was
-> >> >> +      * successful.
-> >> >> +     */
-> >> >> +     while ((udc->read_fn(ep->udc->base_address + XUSB_DMA_STATUS_=
-OFFSET) &
-> >> >> +                     XUSB_DMA_DMASR_BUSY) =3D=3D XUSB_DMA_DMASR_BU=
-SY) {
-> >> >> +             timeout =3D jiffies + 10000;
-> >> >> +
-> >> >> +             if (time_after(jiffies, timeout)) {
-> >> >> +                     rc =3D -ETIMEDOUT;
-> >> >> +                     goto clean;
-> >> >> +             }
-> >> >> +     }
-> >> >
-> >> > don't you get an IRQ for DMA completion ? If you do, you could be us=
-ing
-> >> > wait_for_completion()
-> >>
-> >> This function is called in interrupt context when buffer is ready or
-> >> free. It initiates DMA to transfer data from IP buffer to memory.
-> >> Hence it waits in busy loop till DMA completes
-> >
-> > wait, so you start_dma() before your gadget driver asks you to ?
->=20
-> in ep_queue driver starts dma transfer from/to IP buffer to/from req->buf.
-> If transfer is completed then request is not added to ep request queue
-> and returns from ep_queue.
-> If transfer is not completed (actual < length) then request is added
-> to queue and returns from ep_queue.
+v7->v8:
+  - Remove one unneeded atomic operation from the slowpath, thus
+    improving performance.
+  - Simplify some of the codes and add more comments.
+  - Test for X86_FEATURE_HYPERVISOR CPU feature bit to enable/disable
+    unfair lock.
+  - Reduce unfair lock slowpath lock stealing frequency depending
+    on its distance from the queue head.
+  - Add performance data for IvyBridge-EX CPU.
 
-This is wrong. Why wouldn't you give gadget driver the chance to decide
-if it needs to queue the request again or not ?
+v6->v7:
+  - Remove an atomic operation from the 2-task contending code
+  - Shorten the names of some macros
+  - Make the queue waiter to attempt to steal lock when unfair lock is
+    enabled.
+  - Remove lock holder kick from the PV code and fix a race condition
+  - Run the unfair lock & PV code on overcommitted KVM guests to collect
+    performance data.
 
-> when buffer processed interrupt occurs, handler starts dma if there is
-> request in queue and calls complete call back (when actual =3D=3D length)
-> Hence answer is Yes for some transfers (start dma called from
-> interrupt handler not from ep_queue).
+v5->v6:
+ - Change the optimized 2-task contending code to make it fairer at the
+   expense of a bit of performance.
+ - Add a patch to support unfair queue spinlock for Xen.
+ - Modify the PV qspinlock code to follow what was done in the PV
+   ticketlock.
+ - Add performance data for the unfair lock as well as the PV
+   support code.
 
-this also seems wrong(-ish).
+v4->v5:
+ - Move the optimized 2-task contending code to the generic file to
+   enable more architectures to use it without code duplication.
+ - Address some of the style-related comments by PeterZ.
+ - Allow the use of unfair queue spinlock in a real para-virtualized
+   execution environment.
+ - Add para-virtualization support to the qspinlock code by ensuring
+   that the lock holder and queue head stay alive as much as possible.
 
-1) as Paul pointed out, you can't rely on jiffies if you're calling this
-with IRQs disabled.
+v3->v4:
+ - Remove debugging code and fix a configuration error
+ - Simplify the qspinlock structure and streamline the code to make it
+   perform a bit better
+ - Add an x86 version of asm/qspinlock.h for holding x86 specific
+   optimization.
+ - Add an optimized x86 code path for 2 contending tasks to improve
+   low contention performance.
 
-2) you don't really need to wait until DMA finishes its transaction
-before returning from start_dma(), just use the DMA completion IRQ,
+v2->v3:
+ - Simplify the code by using numerous mode only without an unfair option.
+ - Use the latest smp_load_acquire()/smp_store_release() barriers.
+ - Move the queue spinlock code to kernel/locking.
+ - Make the use of queue spinlock the default for x86-64 without user
+   configuration.
+ - Additional performance tuning.
 
-3) I don't see anywhere any sanitizing of arguments, can your DMA really
-handle any alignment/unaligned addresses or should you make sure you're
-getting good arguments?
+v1->v2:
+ - Add some more comments to document what the code does.
+ - Add a numerous CPU mode to support >= 16K CPUs
+ - Add a configuration option to allow lock stealing which can further
+   improve performance in many cases.
+ - Enable wakeup of queue head CPU at unlock time for non-numerous
+   CPU mode.
 
-You need to work on this a little bit, I guess.
+This patch set has 3 different sections:
+ 1) Patches 1-7: Introduces a queue-based spinlock implementation that
+    can replace the default ticket spinlock without increasing the
+    size of the spinlock data structure. As a result, critical kernel
+    data structures that embed spinlock won't increase in size and
+    break data alignments.
+ 2) Patches 8-13: Enables the use of unfair queue spinlock in a
+    virtual guest. This can resolve some of the locking related
+    performance issues due to the fact that the next CPU to get the
+    lock may have been scheduled out for a period of time.
+ 3) Patches 14-19: Enable qspinlock para-virtualization support
+    by halting the waiting CPUs after spinning for a certain amount of
+    time. The unlock code will detect the a sleeping waiter and wake it
+    up. This is essentially the same logic as the PV ticketlock code.
 
---=20
-balbi
+The queue spinlock has slightly better performance than the ticket
+spinlock in uncontended case. Its performance can be much better
+with moderate to heavy contention.  This patch has the potential of
+improving the performance of all the workloads that have moderate to
+heavy spinlock contention.
 
---8GpibOaaTibBMecb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The queue spinlock is especially suitable for NUMA machines with at
+least 2 sockets, though noticeable performance benefit probably won't
+show up in machines with less than 4 sockets.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+The purpose of this patch set is not to solve any particular spinlock
+contention problems. Those need to be solved by refactoring the code
+to make more efficient use of the lock or finer granularity ones. The
+main purpose is to make the lock contention problems more tolerable
+until someone can spend the time and effort to fix them.
 
-iQIcBAEBAgAGBQJTT+y2AAoJEIaOsuA1yqRE5eIP/RxrSDqj4f1ki8KLcDaf4urD
-9+sTXmxg4WfFjZry+LuoTHn9Aar5KyEjUv53/jO/Lreww1iAN7QrdzidzegwTenl
-M6JS6UEnw5hUyotIKMuU20p43CBdFsd+AC/sQz0UNQbJY8hQ2MCo+kUJLbF50PdP
-llhVzPwbej7JJ/GtR9XkbH0EoNDh6lWw95YX/q2tqXcW2evZ1e6TGBn7T1TJOexZ
-xBjjkPOQgqgNhF30ISMJ5UOn47P2qRhPgYKjCEY5JihZz9WLFneMtoUWug/FFlqR
-rdcLQ2glHi1YMrCtsVlgUUeMygdiUvDnXi+x6V/d7UzTFcCH+KpdEvsuzQShfSSM
-L690ch2KXnRq3y/EFH35IkK039woNc3IB5hfZtb4SlEwsvOGbgQBqTVxsIyqvjZa
-0/PEr7F72R7xIB1YmtFvsCcmAwZ3OcnhmbBb9V4oSbwF2ww6TCaGKr/zNajFDrm8
-Mqgiwjfzk1UIxJYJvwIO+RwTelut8osoxmej/SOdjSfC7wAWPMnUOIKsGfrcK07J
-xZSgM2TOk3fga65mYqjFy3IBoorbmBasOjNih5gyhyD5HikC+iey6ILhxk1EIgkL
-Kr0eqT33nefdo9vWGQcXlI80AAMEvT5m6o3W4qrdrwXqBavb/V/qNeGiPtycfO0W
-BS1BzkbNM8o+61GtRIN4
-=nqwc
------END PGP SIGNATURE-----
+Waiman Long (19):
+  qspinlock: A simple generic 4-byte queue spinlock
+  qspinlock, x86: Enable x86-64 to use queue spinlock
+  qspinlock: Add pending bit
+  qspinlock: Extract out the exchange of tail code word
+  qspinlock: Optimize for smaller NR_CPUS
+  qspinlock: prolong the stay in the pending bit path
+  qspinlock: Use a simple write to grab the lock, if applicable
+  qspinlock: Make a new qnode structure to support virtualization
+  qspinlock: Prepare for unfair lock support
+  qspinlock, x86: Allow unfair spinlock in a virtual guest
+  qspinlock: Split the MCS queuing code into a separate slowerpath
+  unfair qspinlock: Variable frequency lock stealing mechanism
+  unfair qspinlock: Enable lock stealing in lock waiters
+  pvqspinlock, x86: Rename paravirt_ticketlocks_enabled
+  pvqspinlock, x86: Add PV data structure & methods
+  pvqspinlock: Enable coexistence with the unfair lock
+  pvqspinlock: Add qspinlock para-virtualization support
+  pvqspinlock, x86: Enable PV qspinlock PV for KVM
+  pvqspinlock, x86: Enable PV qspinlock for XEN
 
---8GpibOaaTibBMecb--
+ arch/x86/Kconfig                      |   12 +
+ arch/x86/include/asm/paravirt.h       |   18 +-
+ arch/x86/include/asm/paravirt_types.h |   17 +
+ arch/x86/include/asm/pvqspinlock.h    |  306 +++++++++++
+ arch/x86/include/asm/qspinlock.h      |  141 +++++
+ arch/x86/include/asm/spinlock.h       |    9 +-
+ arch/x86/include/asm/spinlock_types.h |    4 +
+ arch/x86/kernel/Makefile              |    1 +
+ arch/x86/kernel/kvm.c                 |  137 +++++-
+ arch/x86/kernel/paravirt-spinlocks.c  |   36 ++-
+ arch/x86/xen/spinlock.c               |  148 +++++-
+ include/asm-generic/qspinlock.h       |  118 +++++
+ include/asm-generic/qspinlock_types.h |   82 +++
+ kernel/Kconfig.locks                  |    7 +
+ kernel/locking/Makefile               |    1 +
+ kernel/locking/mcs_spinlock.h         |    1 +
+ kernel/locking/qspinlock.c            |  918 +++++++++++++++++++++++++++++++++
+ 17 files changed, 1944 insertions(+), 12 deletions(-)
+ create mode 100644 arch/x86/include/asm/pvqspinlock.h
+ create mode 100644 arch/x86/include/asm/qspinlock.h
+ create mode 100644 include/asm-generic/qspinlock.h
+ create mode 100644 include/asm-generic/qspinlock_types.h
+ create mode 100644 kernel/locking/qspinlock.c
+
