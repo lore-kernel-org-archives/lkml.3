@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159AbaDQIVO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 04:21:14 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:41238 "EHLO
+	id S1161153AbaDQIWG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 04:22:06 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:41171 "EHLO
 	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755877AbaDQITZ (ORCPT
+	with ESMTP id S1755771AbaDQITL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 04:19:25 -0400
-Subject: [PATCH -tip v9 23/26] kprobes/x86: Remove unneeded
- preempt_disable/enable in interrupt handlers
+	Thu, 17 Apr 2014 04:19:11 -0400
+Subject: [PATCH -tip v9 21/26] kprobes: Use NOKPROBE_SYMBOL() in sample
+ modules
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
 Cc: Andi Kleen <andi@firstfloor.org>,
@@ -18,8 +18,8 @@ Cc: Andi Kleen <andi@firstfloor.org>,
         Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
         mingo@redhat.com, systemtap@sourceware.org,
         "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 17 Apr 2014 17:19:17 +0900
-Message-ID: <20140417081917.26341.53653.stgit@ltc230.yrl.intra.hitachi.co.jp>
+Date: Thu, 17 Apr 2014 17:19:03 +0900
+Message-ID: <20140417081903.26341.57590.stgit@ltc230.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp>
 References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.17-dirty
@@ -30,112 +30,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the int3 itself disables the local_irq and kprobes
-keeps it disabled while the single step has done, the
-kernel preemption never happen while processing a kprobe.
-This means that we don't need to disable/enable preemption.
-Also, this changes kprobe_int3_handler to use goto-out style.
+Use NOKPROBE_SYMBOL() to protect handlers from kprobes
+in sample modules.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
+Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 ---
- arch/x86/kernel/kprobes/core.c |   24 +++++++-----------------
- 1 file changed, 7 insertions(+), 17 deletions(-)
+ samples/kprobes/jprobe_example.c    |    1 +
+ samples/kprobes/kprobe_example.c    |    3 +++
+ samples/kprobes/kretprobe_example.c |    2 ++
+ 3 files changed, 6 insertions(+)
 
-diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
-index 2fb3d3e..3a922b7 100644
---- a/arch/x86/kernel/kprobes/core.c
-+++ b/arch/x86/kernel/kprobes/core.c
-@@ -506,7 +506,6 @@ static void setup_singlestep(struct kprobe *p, struct pt_regs *regs,
- 		 * stepping.
- 		 */
- 		regs->ip = (unsigned long)p->ainsn.insn;
--		preempt_enable_no_resched();
- 		return;
- 	}
- #endif
-@@ -575,13 +574,6 @@ int kprobe_int3_handler(struct pt_regs *regs)
- 	struct kprobe_ctlblk *kcb;
- 
- 	addr = (kprobe_opcode_t *)(regs->ip - sizeof(kprobe_opcode_t));
--	/*
--	 * We don't want to be preempted for the entire
--	 * duration of kprobe processing. We conditionally
--	 * re-enable preemption at the end of this function,
--	 * and also in reenter_kprobe() and setup_singlestep().
--	 */
--	preempt_disable();
- 
- 	kcb = get_kprobe_ctlblk();
- 	p = get_kprobe(addr);
-@@ -589,7 +581,7 @@ int kprobe_int3_handler(struct pt_regs *regs)
- 	if (p) {
- 		if (kprobe_running()) {
- 			if (reenter_kprobe(p, regs, kcb))
--				return 1;
-+				goto handled;
- 		} else {
- 			set_current_kprobe(p, regs, kcb);
- 			kcb->kprobe_status = KPROBE_HIT_ACTIVE;
-@@ -604,7 +596,7 @@ int kprobe_int3_handler(struct pt_regs *regs)
- 			 */
- 			if (!p->pre_handler || !p->pre_handler(p, regs))
- 				setup_singlestep(p, regs, kcb, 0);
--			return 1;
-+			goto handled;
- 		}
- 	} else if (*addr != BREAKPOINT_INSTRUCTION) {
- 		/*
-@@ -617,19 +609,20 @@ int kprobe_int3_handler(struct pt_regs *regs)
- 		 * the original instruction.
- 		 */
- 		regs->ip = (unsigned long)addr;
--		preempt_enable_no_resched();
--		return 1;
-+		goto handled;
- 	} else if (kprobe_running()) {
- 		p = __this_cpu_read(current_kprobe);
- 		if (p->break_handler && p->break_handler(p, regs)) {
- 			if (!skip_singlestep(p, regs, kcb))
- 				setup_singlestep(p, regs, kcb, 0);
--			return 1;
-+			goto handled;
- 		}
- 	} /* else: not a kprobe fault; let the kernel handle it */
- 
--	preempt_enable_no_resched();
+diff --git a/samples/kprobes/jprobe_example.c b/samples/kprobes/jprobe_example.c
+index b754135..40114ac 100644
+--- a/samples/kprobes/jprobe_example.c
++++ b/samples/kprobes/jprobe_example.c
+@@ -35,6 +35,7 @@ static long jdo_fork(unsigned long clone_flags, unsigned long stack_start,
+ 	jprobe_return();
  	return 0;
-+
-+handled:
-+	return 1;
  }
- NOKPROBE_SYMBOL(kprobe_int3_handler);
++NOKPROBE_SYMBOL(jdo_fork);
  
-@@ -894,7 +887,6 @@ int kprobe_debug_handler(struct pt_regs *regs)
- 	}
- 	reset_current_kprobe();
- out:
--	preempt_enable_no_resched();
- 
- 	/*
- 	 * if somebody else is singlestepping across a probe point, flags
-@@ -930,7 +922,6 @@ int kprobe_fault_handler(struct pt_regs *regs, int trapnr)
- 			restore_previous_kprobe(kcb);
- 		else
- 			reset_current_kprobe();
--		preempt_enable_no_resched();
- 	} else if (kcb->kprobe_status == KPROBE_HIT_ACTIVE ||
- 		   kcb->kprobe_status == KPROBE_HIT_SSDONE) {
- 		/*
-@@ -1061,7 +1052,6 @@ int longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
- 		memcpy((kprobe_opcode_t *)(kcb->jprobe_saved_sp),
- 		       kcb->jprobes_stack,
- 		       MIN_STACK_SIZE(kcb->jprobe_saved_sp));
--		preempt_enable_no_resched();
- 		return 1;
- 	}
+ static struct jprobe my_jprobe = {
+ 	.entry			= jdo_fork,
+diff --git a/samples/kprobes/kprobe_example.c b/samples/kprobes/kprobe_example.c
+index 366db1a..462d90f 100644
+--- a/samples/kprobes/kprobe_example.c
++++ b/samples/kprobes/kprobe_example.c
+@@ -46,6 +46,7 @@ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
+ 	/* A dump_stack() here will give a stack backtrace */
  	return 0;
+ }
++NOKPROBE_SYMBOL(handler_pre);
+ 
+ /* kprobe post_handler: called after the probed instruction is executed */
+ static void handler_post(struct kprobe *p, struct pt_regs *regs,
+@@ -68,6 +69,7 @@ static void handler_post(struct kprobe *p, struct pt_regs *regs,
+ 		p->addr, regs->ex1);
+ #endif
+ }
++NOKPROBE_SYMBOL(handler_post);
+ 
+ /*
+  * fault_handler: this is called if an exception is generated for any
+@@ -81,6 +83,7 @@ static int handler_fault(struct kprobe *p, struct pt_regs *regs, int trapnr)
+ 	/* Return 0 because we don't handle the fault. */
+ 	return 0;
+ }
++NOKPROBE_SYMBOL(handler_fault);
+ 
+ static int __init kprobe_init(void)
+ {
+diff --git a/samples/kprobes/kretprobe_example.c b/samples/kprobes/kretprobe_example.c
+index 1041b67..d932c52 100644
+--- a/samples/kprobes/kretprobe_example.c
++++ b/samples/kprobes/kretprobe_example.c
+@@ -47,6 +47,7 @@ static int entry_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+ 	data->entry_stamp = ktime_get();
+ 	return 0;
+ }
++NOKPROBE_SYMBOL(entry_handler);
+ 
+ /*
+  * Return-probe handler: Log the return value and duration. Duration may turn
+@@ -66,6 +67,7 @@ static int ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
+ 			func_name, retval, (long long)delta);
+ 	return 0;
+ }
++NOKPROBE_SYMBOL(ret_handler);
+ 
+ static struct kretprobe my_kretprobe = {
+ 	.handler		= ret_handler,
 
 
