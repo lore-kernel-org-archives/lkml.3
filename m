@@ -1,77 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757113AbaDQDYj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 23:24:39 -0400
-Received: from ozlabs.org ([103.22.144.67]:46750 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754708AbaDQDYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 23:24:38 -0400
-Date: Thu, 17 Apr 2014 13:24:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fbdev <linux-fbdev@vger.kernel.org>
-Subject: Re: [GIT PULL] fbdev fixes for 3.15
-Message-Id: <20140417132431.9df427a03764b8c9ae60f0cd@canb.auug.org.au>
-In-Reply-To: <CA+55aFz7Hgjc9wmiriqGT8VXNF-7b0aUKf96r=TCP+1NOTSVeQ@mail.gmail.com>
-References: <534E4775.8010009@ti.com>
-	<CA+55aFz7Hgjc9wmiriqGT8VXNF-7b0aUKf96r=TCP+1NOTSVeQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__17_Apr_2014_13_24_31_+1000_Zqvi3X5.oW9xi/wN"
+	id S1161242AbaDQD2J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 23:28:09 -0400
+Received: from mailout.micron.com ([137.201.242.129]:19497 "EHLO
+	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756259AbaDQD2H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 23:28:07 -0400
+Message-ID: <534F4A3A.5050805@micron.com>
+Date: Wed, 16 Apr 2014 20:27:54 -0700
+From: Asai Thambi S P <asamymuthupa@micron.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:28.0) Gecko/20100101 Thunderbird/28.0
+MIME-Version: 1.0
+To: Jens Axboe <axboe@kernel.dk>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Sam Bradshaw <sbradshaw@micron.com>, Selvan Mani <smani@micron.com>
+Subject: mtip32xx: Increase timeout for STANDBY IMMEDIATE command
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-20636.003
+X-TM-AS-Result: No--8.194300-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
+X-MT-CheckInternalSenderRule: True
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__17_Apr_2014_13_24_31_+1000_Zqvi3X5.oW9xi/wN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, 16 Apr 2014 16:04:39 -0700 Linus Torvalds <torvalds@linux-foundatio=
-n.org> wrote:
->
-> On Wed, Apr 16, 2014 at 2:03 AM, Tomi Valkeinen <tomi.valkeinen@ti.com> w=
-rote:
-> >
-> > The drivers/video/Kconfig change in this pull request will conflict wit=
-h the
-> > fbdev reorder series, which is not yet in your tree. If that's an issue=
-, I can
-> > resend this without the Kconfig change.
->=20
-> I was actually hoping/expecting you to just resend the renaming
-> rebased on top of 3.15-rc1. Or maybe you could do it on top of this.
+Increased timeout for STANDBY IMMEDIATE command to 2 minutes.
 
-Yeah, I was kind of hoping that this movement of files would be done with
-sooner rather than later ...
+Signed-off-by: Selvan Mani <smani@micron.com>
+Signed-off-by: Asai Thambi S P <asamymuthupa@micron.com>
+---
+ drivers/block/mtip32xx/mtip32xx.c |   66 +++++++++++++++++++-----------------
+ 1 files changed, 35 insertions(+), 31 deletions(-)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index 59c5abe..51628eb 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -1529,6 +1529,37 @@ static inline void ata_swap_string(u16 *buf, unsigned int len)
+ 		be16_to_cpus(&buf[i]);
+ }
+ 
++static void mtip_set_timeout(struct driver_data *dd,
++					struct host_to_dev_fis *fis,
++					unsigned int *timeout, u8 erasemode)
++{
++	switch (fis->command) {
++	case ATA_CMD_DOWNLOAD_MICRO:
++		*timeout = 120000; /* 2 minutes */
++		break;
++	case ATA_CMD_SEC_ERASE_UNIT:
++	case 0xFC:
++		if (erasemode)
++			*timeout = ((*(dd->port->identify + 90) * 2) * 60000);
++		else
++			*timeout = ((*(dd->port->identify + 89) * 2) * 60000);
++		break;
++	case ATA_CMD_STANDBYNOW1:
++		*timeout = 120000;  /* 2 minutes */
++		break;
++	case 0xF7:
++	case 0xFA:
++		*timeout = 60000;  /* 60 seconds */
++		break;
++	case ATA_CMD_SMART:
++		*timeout = 15000;  /* 15 seconds */
++		break;
++	default:
++		*timeout = MTIP_IOCTL_COMMAND_TIMEOUT_MS;
++		break;
++	}
++}
++
+ /*
+  * Request the device identity information.
+  *
+@@ -1644,6 +1675,7 @@ static int mtip_standby_immediate(struct mtip_port *port)
+ 	int rv;
+ 	struct host_to_dev_fis	fis;
+ 	unsigned long start;
++	unsigned int timeout;
+ 
+ 	/* Build the FIS. */
+ 	memset(&fis, 0, sizeof(struct host_to_dev_fis));
+@@ -1651,6 +1683,8 @@ static int mtip_standby_immediate(struct mtip_port *port)
+ 	fis.opts	= 1 << 7;
+ 	fis.command	= ATA_CMD_STANDBYNOW1;
+ 
++	mtip_set_timeout(port->dd, &fis, &timeout, 0);
++
+ 	start = jiffies;
+ 	rv = mtip_exec_internal_command(port,
+ 					&fis,
+@@ -1659,7 +1693,7 @@ static int mtip_standby_immediate(struct mtip_port *port)
+ 					0,
+ 					0,
+ 					GFP_ATOMIC,
+-					15000);
++					timeout);
+ 	dbg_printk(MTIP_DRV_NAME "Time taken to complete standby cmd: %d ms\n",
+ 			jiffies_to_msecs(jiffies - start));
+ 	if (rv)
+@@ -2202,36 +2236,6 @@ static unsigned int implicit_sector(unsigned char command,
+ 	}
+ 	return rv;
+ }
+-static void mtip_set_timeout(struct driver_data *dd,
+-					struct host_to_dev_fis *fis,
+-					unsigned int *timeout, u8 erasemode)
+-{
+-	switch (fis->command) {
+-	case ATA_CMD_DOWNLOAD_MICRO:
+-		*timeout = 120000; /* 2 minutes */
+-		break;
+-	case ATA_CMD_SEC_ERASE_UNIT:
+-	case 0xFC:
+-		if (erasemode)
+-			*timeout = ((*(dd->port->identify + 90) * 2) * 60000);
+-		else
+-			*timeout = ((*(dd->port->identify + 89) * 2) * 60000);
+-		break;
+-	case ATA_CMD_STANDBYNOW1:
+-		*timeout = 120000;  /* 2 minutes */
+-		break;
+-	case 0xF7:
+-	case 0xFA:
+-		*timeout = 60000;  /* 60 seconds */
+-		break;
+-	case ATA_CMD_SMART:
+-		*timeout = 15000;  /* 15 seconds */
+-		break;
+-	default:
+-		*timeout = MTIP_IOCTL_COMMAND_TIMEOUT_MS;
+-		break;
+-	}
+-}
+ 
+ /*
+  * Executes a taskfile
+-- 
+1.7.1
 
---Signature=_Thu__17_Apr_2014_13_24_31_+1000_Zqvi3X5.oW9xi/wN
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTT0l0AAoJEMDTa8Ir7ZwVP9UP/2VrdEaRf8sFG53wvKk26jwa
-EpUGoUlbCmS/d2zOWonrZwhS5wNLG6Fu3mysq3cH0TJo6U05hdW61cSVQck7VrCX
-mCKTntkjOAKm/WNfTKIKpaaBnn70uQQQtxmXczCokGlCilwF9dqW3JhyC5NDjPrx
-63mReFaXqzoCBHCj4TjC2y/M3QGZ/X5GiGYeR/phFrc8zRA3WfQUH/KL+0CaGlcQ
-H1elDdUtqEi35/jgUX5gRoetKprb3CW7mZdch2JNlq3z3ZRhLnlv6JvgZyMOXHHy
-driALBlFOUSv/R9f3Y6IzZW8vYiBzMYuEuIKegiIvMww9kt5nfzd5WNtSPx30jpE
-xuvt0hE/U4TfUOZqUoDBpMRyGI2R/8F9a7/idxZUdG5rXX4w1qjatfxg6By4kLDf
-d0DjP5MIQELmecrm8S9DuN6se3fLqaabboVC5YpCcyLwkNZWXh/LfwLxeC71wAFa
-yx3BZS6ktS/Wx/9JisZpcZqiHWmuzVdZ7rxw4AZlGvM2Mw4vRQfowb1L5ST8kSpl
-y40w/Ty3KNIjGSY3TPFuP3ky5ueZbKsHHem/2oVyu91pA9ZOE9SFAXP+Aua7cNu9
-MKH7PfjZFkg5X9+yAPzZ6Dr2GqbTP1KMHIqfHtwNxuWsAalEQyoqQOf8YMgE3BjS
-52faVk0Lo0pi/8JAIst4
-=82a+
------END PGP SIGNATURE-----
-
---Signature=_Thu__17_Apr_2014_13_24_31_+1000_Zqvi3X5.oW9xi/wN--
