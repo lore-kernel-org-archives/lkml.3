@@ -1,37 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054AbaDQSQH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 14:16:07 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:57978 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102AbaDQSPx (ORCPT
+	id S1751930AbaDQSTD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 14:19:03 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:57935 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971AbaDQSS6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 14:15:53 -0400
-Date: Thu, 17 Apr 2014 14:17:52 -0400 (EDT)
-Message-Id: <20140417.141752.953673813169713717.davem@davemloft.net>
-To: haiyangz@microsoft.com
-Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org
-Subject: Re: [PATCH net-next,v4] hyperv: Add support for virtual Receive
- Side Scaling (vRSS)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4d82d2d3960447cfade67174b03ec877@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-References: <1396898623-31667-1-git-send-email-haiyangz@microsoft.com>
-	<20140407.144258.2113005286706932770.davem@davemloft.net>
-	<4d82d2d3960447cfade67174b03ec877@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 17 Apr 2014 11:15:53 -0700 (PDT)
+	Thu, 17 Apr 2014 14:18:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrWRts9i1SDbUTD2F5kv68k0PfJEqE6SB9H+2-we++UYuw@mail.gmail.com>
+References: <1397757904-30665-1-git-send-email-keescook@chromium.org>
+	<CALCETrWRts9i1SDbUTD2F5kv68k0PfJEqE6SB9H+2-we++UYuw@mail.gmail.com>
+Date: Thu, 17 Apr 2014 11:18:57 -0700
+X-Google-Sender-Auth: 99C3piRcUJjJoxJS9Tfn14CX2NE
+Message-ID: <CAGXu5jKfBz2siheK7mbghsVc_ynW=4Bc31AyHcvQ=Ux-veQe=A@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] seccomp: add PR_SECCOMP_EXT and SECCOMP_EXT_ACT_TSYNC
+From: Kees Cook <keescook@chromium.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Johansen <john.johansen@canonical.com>,
+        Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Haiyang Zhang <haiyangz@microsoft.com>
-Date: Thu, 17 Apr 2014 17:25:31 +0000
+On Thu, Apr 17, 2014 at 11:13 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Thu, Apr 17, 2014 at 11:05 AM, Kees Cook <keescook@chromium.org> wrote:
+>> This adds the ability for threads to request seccomp filter
+>> synchronization across their thread group. To support this,
+>> seccomp locking on writes is introduced, along with refactoring
+>> of no_new_privs. Races with thread creation are handled via the
+>> tasklist_list.
+>>
+>> I think all the concerns raised during the discussion[1] of the first
+>> version of this patch have been addressed. However, the races involved
+>> have tricked me before. :)
+>>
+>
+> Would this be easier to use if there were a single syscall to set a
+> seccomp filter and sync threads?  That way you wouldn't have to write
+> your filter such that it gives permission to sync threads.
 
-> Is the net-next tree open now? 
+That would be even cleaner, yes. I was hoping to see the new bpf jump
+tables before expanding into new filter calls, with the hope of doing
+it all at the same time. However, I guess we could just include a
+version number in the new call to indicate which filter type it was,
+and include flags (like "threadgroup sync") in there? I'm trying to
+imagine what would be the least painful for future-proofing.
 
-No, it is not.
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
