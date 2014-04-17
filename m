@@ -1,650 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161546AbaDQDf6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 23:35:58 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:65294 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756358AbaDQDfz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 23:35:55 -0400
-Message-ID: <534F4C1E.1000006@gmail.com>
-Date: Thu, 17 Apr 2014 11:35:58 +0800
-From: zhuyj <zyjzyj2000@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1757124AbaDQDjI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 23:39:08 -0400
+Received: from mga03.intel.com ([143.182.124.21]:5877 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754390AbaDQDjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 23:39:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,876,1389772800"; 
+   d="scan'208";a="514544100"
+Date: Thu, 17 Apr 2014 11:39:03 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Daniel Borkmann <dborkman@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: [net/sctp] 362d52040c7: +99.0% netperf.Throughput_Mbps
+Message-ID: <20140417033903.GC8702@localhost>
 MIME-Version: 1.0
-To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        joe@perches.com, julia.lawall@lip6.fr, dingtianhong@huawei.com,
-        linux-kernel@vger.kernel.org, jasowang@redhat.com, mst@redhat.com,
-        Willy Tarreau <w@1wt.eu>,
-        "Yang, Zhangle (Eric)" <Zhangle.Yang@windriver.com>,
-        "Wu, Kuaikuai" <Kuaikuai.Wu@windriver.com>,
-        "Tao, Yue" <Yue.Tao@windriver.com>, zhuyj <zyjzyj2000@gmail.com>
-Subject: in kernel 2.6.x, tun/tap nic supports vlan packets
-Content-Type: multipart/mixed;
- boundary="------------050007040902000302070508"
+Content-Type: multipart/mixed; boundary="NMuMz9nt05w80d4+"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------050007040902000302070508
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 
-Hi, all
+--NMuMz9nt05w80d4+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-In kernel 2.6.x, linux depends on nic vlan hardware acceleration to 
-insert/extract
-vlan tag. In this scene, in kernel 2.6.x
+Hi Daniel,
 
-                  _____        ________
-     A           |     | B    |        | C
-  vlan packets-->| tap |----->|vlan nic|--->
-                 |_____|      |________|
+We noticed the same improvements in netperf SCTP_STREAM test case
+as described in your patch changelog.
 
-We hope vlan packets pass through tap and vlan nic from A to c.
-But in kernel 2.6.x, linux kernel can not extract vlan tag. It depends
-on nic vlan hardware acceleration. It is well known that tap nic has no
-vlan acceleration. So in the above scene, vlan packets can not be handled by
-tap nic. These vlan packets will be discarded in B. They can not arrive 
-at C.
+commit 362d52040c71f6e8d8158be48c812d7729cb8df1 ("Revert "net: sctp: Fix a_rwnd/rwnd management to reflect real state of the receiver's buffer"")
 
-In kernel 3.x, linux can handle vlan packets. It does not depend on nic vlan
-hardware acceleration. So the above scene can work well in kernel 3.x.
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+      2.14 ~ 0%     +98.9%       4.25 ~ 0%  kbuildx/micro/netperf/300s-200%-SCTP_STREAM
+      2.14 ~ 0%     +99.1%       4.25 ~ 0%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+      2.14 ~ 0%     +99.0%       4.25 ~ 0%  lkp-t410/micro/netperf/300s-200%-SCTP_STREAM
+      6.41 ~ 0%     +99.0%      12.76 ~ 0%  TOTAL netperf.Throughput_Mbps
 
-To resolve the above in kernel 2.6.x, we simulated vlan hardware 
-acceleration in
-tun/tap driver. Then followed the logic of commit commit 4fba4ca4
-[vlan: Centralize handling of hardware acceleration] to modify the vlan 
-packets
-process in kernel 2.6.x. In the end, the above scene can work well in 
-patched
-kernel 2.6.x.
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+      2.67 ~26%    -100.0%       0.00 ~ 0%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+      0.92 ~27%    -100.0%       0.00 ~ 0%  lkp-t410/micro/netperf/300s-200%-SCTP_STREAM
+      3.59 ~26%    -100.0%       0.00 ~ 0%  TOTAL perf-profile.cpu-cycles.copy_user_generic_string.skb_copy_datagram_iovec.skb_copy_datagram_iovec.sctp_recvmsg.sock_common_recvmsg
 
-Please comment on it. Any reply is appreciated.
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+      8.75 ~32%     -80.4%       1.72 ~21%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+      8.75 ~32%     -80.4%       1.72 ~21%  TOTAL perf-profile.cpu-cycles.sctp_packet_transmit.sctp_outq_flush.sctp_outq_uncork.sctp_cmd_interpreter.sctp_do_sm
 
-Hi, Willy
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+      0.00           +Inf%       1.22 ~22%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+      0.00           +Inf%       1.43 ~22%  lkp-t410/micro/netperf/300s-200%-SCTP_STREAM
+      0.00           +Inf%       2.65 ~22%  TOTAL perf-profile.cpu-cycles.sctp_packet_transmit.sctp_packet_transmit_chunk.sctp_outq_flush.sctp_outq_uncork.sctp_cmd_interpreter
 
-These 2 patches are for linux2.6.x. These can work well here. Please 
-help to merge
-linux 2.6.32.x. Thanks a lot.
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+      6.26 ~13%    +306.9%      25.46 ~26%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+      6.26 ~13%    +306.9%      25.46 ~26%  TOTAL perf-profile.cpu-cycles._raw_spin_lock_irqsave.clockevents_notify.intel_idle.cpuidle_enter_state.cpuidle_enter
 
-Best Regards!
-Zhu Yanjun
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+       966 ~45%     -44.6%        535 ~29%  lkp-t410/micro/netperf/300s-200%-SCTP_STREAM
+       966 ~45%     -44.6%        535 ~29%  TOTAL cpuidle.C1-NHM.time
 
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+      0.45 ~33%    +165.0%       1.20 ~14%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+      0.48 ~37%    +235.3%       1.62 ~12%  lkp-t410/micro/netperf/300s-200%-SCTP_STREAM
+      0.93 ~35%    +201.3%       2.81 ~13%  TOTAL perf-profile.cpu-cycles.skb_copy_bits.skb_copy.sctp_make_reassembled_event.sctp_ulpq_tail_data.sctp_cmd_interpreter
 
---------------050007040902000302070508
-Content-Type: text/x-patch;
- name="0001-tun-tap-add-the-feature-of-vlan-rx-extraction.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-tun-tap-add-the-feature-of-vlan-rx-extraction.patch"
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+      0.80 ~32%     -56.1%       0.35 ~38%  lkp-t410/micro/netperf/300s-200%-SCTP_STREAM
+      0.80 ~32%     -56.1%       0.35 ~38%  TOTAL perf-profile.cpu-cycles.menu_select.cpuidle_select.cpu_startup_entry.start_secondary
 
->From 66db0748fc0f932496100789eb319ca5884c0694 Mon Sep 17 00:00:00 2001
-From: Zhu Yanjun <Yanjun.Zhu@windriver.com>
-Date: Wed, 16 Apr 2014 18:19:42 +0800
-Subject: [PATCH 1/2] tun/tap: add the feature of vlan rx extraction
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+      5.08 ~26%     -58.3%       2.12 ~21%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+      1.34 ~27%    +112.1%       2.85 ~ 9%  lkp-t410/micro/netperf/300s-200%-SCTP_STREAM
+      6.43 ~26%     -22.7%       4.97 ~14%  TOTAL perf-profile.cpu-cycles.copy_user_generic_string.skb_copy_datagram_iovec.sctp_recvmsg.sock_common_recvmsg.sock_recvmsg
 
-Tap is a virtual net device that has no vlan rx untag feature.
-So this virtual device can not send/receive vlan packets in
-kernel 2.6.x. To make this device support vlan send/receive vlan
-packets in kernel 2.6.x, a vlan rx extraction feature is simulated
-in its driver.
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+      0.72 ~41%     +69.4%       1.22 ~25%  lkp-t410/micro/netperf/300s-200%-SCTP_STREAM
+      0.72 ~41%     +69.4%       1.22 ~25%  TOTAL perf-profile.cpu-cycles.unmap_single_vma.unmap_vmas.exit_mmap.mmput.do_exit
 
-Signed-off-by: Zhu Yanjun <Yanjun.Zhu@windriver.com>
----
- drivers/net/tun.c         |  118 ++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/netdevice.h |    1 +
- net/core/dev.c            |   13 +++++
- 3 files changed, 131 insertions(+), 1 deletion(-)
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    916917 ~ 0%     +79.9%    1649300 ~ 0%  kbuildx/micro/netperf/300s-200%-SCTP_STREAM
+  12832444 ~ 1%    +115.7%   27683375 ~ 0%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+  13749362 ~ 0%    +113.3%   29332676 ~ 0%  TOTAL proc-vmstat.pgalloc_normal
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index 894ad84..029e6cf 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -69,6 +69,8 @@
- #include <asm/system.h>
- #include <asm/uaccess.h>
- 
-+#include <linux/if_vlan.h>
-+
- /* Uncomment to enable debugging */
- /* #define TUN_DEBUG 1 */
- 
-@@ -426,6 +428,8 @@ static const struct net_device_ops tun_netdev_ops = {
- 	.ndo_change_mtu		= tun_net_change_mtu,
- };
- 
-+static void tap_vlan_rx_register(struct net_device *dev, struct vlan_group *grp);
-+
- static const struct net_device_ops tap_netdev_ops = {
- 	.ndo_uninit		= tun_net_uninit,
- 	.ndo_open		= tun_net_open,
-@@ -435,6 +439,7 @@ static const struct net_device_ops tap_netdev_ops = {
- 	.ndo_set_multicast_list	= tun_net_mclist,
- 	.ndo_set_mac_address	= eth_mac_addr,
- 	.ndo_validate_addr	= eth_validate_addr,
-+	.ndo_vlan_rx_register   = tap_vlan_rx_register,
- };
- 
- /* Initialize net device. */
-@@ -464,6 +469,8 @@ static void tun_net_init(struct net_device *dev)
- 
- 		random_ether_addr(dev->dev_addr);
- 
-+		dev->features |= NETIF_F_HW_VLAN_RX;
-+
- 		dev->tx_queue_len = TUN_READQ_SIZE;  /* We prefer our own queue length */
- 		break;
- 	}
-@@ -530,6 +537,105 @@ static inline struct sk_buff *tun_alloc_skb(struct tun_struct *tun,
- 	return skb;
- }
- 
-+static struct sk_buff *vlan_reorder_header(struct sk_buff *skb)
-+{
-+	if (skb_cow(skb, skb_headroom(skb)) < 0)
-+		return NULL;
-+	memmove(skb->data - ETH_HLEN, skb->data - VLAN_ETH_HLEN, 2 * ETH_ALEN);
-+	skb->mac_header += VLAN_HLEN;
-+	return skb;
-+}
-+
-+static void vlan_set_encap_proto(struct sk_buff *skb, struct vlan_hdr *vhdr)
-+{
-+	__be16 proto;
-+	unsigned char *rawp;
-+
-+	/*
-+ * 	 * Was a VLAN packet, grab the encapsulated protocol, which the layer
-+ * 	 	 * three protocols care about.
-+ * 	 	 	 */
-+
-+	proto = vhdr->h_vlan_encapsulated_proto;
-+	if (ntohs(proto) >= 1536) {
-+		skb->protocol = proto;
-+		return;
-+	}
-+
-+	rawp = skb->data;
-+	if (*(unsigned short *) rawp == 0xFFFF)
-+		/*
-+ * 		 * This is a magic hack to spot IPX packets. Older Novell
-+ * 		 		 * breaks the protocol design and runs IPX over 802.3 without
-+ * 		 		 		 * an 802.2 LLC layer. We look for FFFF which isn't a used
-+ * 		 		 		 		 * 802.2 SSAP/DSAP. This won't work for fault tolerant netware
-+ * 		 		 		 		 		 * but does for the rest.
-+ * 		 		 		 		 		 		 */
-+		skb->protocol = htons(ETH_P_802_3);
-+	else
-+		/*
-+ * 		 * Real 802.2 LLC
-+ * 		 		 */
-+		skb->protocol = htons(ETH_P_802_2);
-+}
-+
-+static void skb_reset_mac_len(struct sk_buff *skb)
-+{
-+	skb->mac_len = skb->network_header - skb->mac_header;
-+}
-+
-+static struct sk_buff *vlan_untag(struct sk_buff *skb)
-+{
-+	struct vlan_hdr *vhdr;
-+	u16 vlan_tci;
-+
-+	if (unlikely(vlan_tx_tag_present(skb))) {
-+		/* vlan_tci is already set-up so leave this for another time */
-+		return skb;
-+	}
-+
-+	skb = skb_share_check(skb, GFP_ATOMIC);
-+	if (unlikely(!skb))
-+		goto err_free;
-+
-+	if (unlikely(!pskb_may_pull(skb, VLAN_HLEN)))
-+		goto err_free;
-+
-+	vhdr = (struct vlan_hdr *) skb->data;
-+	vlan_tci = ntohs(vhdr->h_vlan_TCI);
-+	__vlan_hwaccel_put_tag(skb, vlan_tci);
-+
-+	skb_pull_rcsum(skb, VLAN_HLEN);
-+	vlan_set_encap_proto(skb, vhdr);
-+
-+	skb = vlan_reorder_header(skb);
-+	if (unlikely(!skb))
-+		goto err_free;
-+
-+	skb_reset_network_header(skb);
-+	skb_reset_transport_header(skb);
-+	skb_reset_mac_len(skb);
-+
-+	return skb;
-+
-+err_free:
-+	kfree_skb(skb);
-+	return NULL;
-+}
-+
-+static struct vlan_group *g_vlgrp = NULL;
-+static void tap_vlan_rx_register(struct net_device *dev,
-+		struct vlan_group *grp)
-+{
-+	unsigned long flags;
-+	local_irq_save(flags);
-+
-+	printk(KERN_DEBUG "zhuyj func:%s,line:%d\n", __FUNCTION__, __LINE__);
-+	g_vlgrp = grp;
-+	tun_net_change_mtu(dev, dev->mtu);
-+	local_irq_restore(flags);
-+}
-+
- /* Get packet from user space buffer */
- static __inline__ ssize_t tun_get_user(struct tun_struct *tun,
- 				       const struct iovec *iv, size_t count,
-@@ -655,7 +761,17 @@ static __inline__ ssize_t tun_get_user(struct tun_struct *tun,
- 		skb_shinfo(skb)->gso_segs = 0;
- 	}
- 
--	netif_rx_ni(skb);
-+	if (g_vlgrp && (skb->protocol == cpu_to_be16(ETH_P_8021Q))){
-+		struct vlan_hdr *vhdr;
-+		u16 vlan_tci;
-+		int ret;
-+		vhdr = (struct vlan_hdr *) skb->data;
-+		vlan_tci = ntohs(vhdr->h_vlan_TCI);
-+		skb = vlan_untag(skb);
-+		ret = vlan_netif_rx(skb, g_vlgrp, vlan_tci);
-+	} else {
-+		netif_rx_ni(skb);
-+	}
- 
- 	tun->dev->stats.rx_packets++;
- 	tun->dev->stats.rx_bytes += len;
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 9d7e8f7..04c659b 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1467,6 +1467,7 @@ extern void dev_kfree_skb_any(struct sk_buff *skb);
- #define HAVE_NETIF_RX 1
- extern int		netif_rx(struct sk_buff *skb);
- extern int		netif_rx_ni(struct sk_buff *skb);
-+extern int		vlan_netif_rx(struct sk_buff *skb, struct vlan_group *grp, u16 vlan_tci);
- #define HAVE_NETIF_RECEIVE_SKB 1
- extern int		netif_receive_skb(struct sk_buff *skb);
- extern void		napi_gro_flush(struct napi_struct *napi);
-diff --git a/net/core/dev.c b/net/core/dev.c
-index d775563..a3802ca 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2067,6 +2067,19 @@ int netif_rx_ni(struct sk_buff *skb)
- }
- EXPORT_SYMBOL(netif_rx_ni);
- 
-+int vlan_netif_rx(struct sk_buff *skb, struct vlan_group *grp, u16 vlan_tci)
-+{
-+	int ret;
-+
-+	preempt_disable();
-+	ret = __vlan_hwaccel_rx(skb, grp, vlan_tci, 0);
-+	if (local_softirq_pending())
-+		do_softirq();
-+	preempt_enable();
-+	return ret;
-+}
-+EXPORT_SYMBOL(vlan_netif_rx);
-+
- static void net_tx_action(struct softirq_action *h)
- {
- 	struct softnet_data *sd = &__get_cpu_var(softnet_data);
--- 
-1.7.9.5
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+   1175423 ~ 0%     +79.7%    2111948 ~ 0%  kbuildx/micro/netperf/300s-200%-SCTP_STREAM
+  12997556 ~ 0%    +115.4%   27996526 ~ 0%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+   1181153 ~ 0%     +79.3%    2118015 ~ 0%  lkp-t410/micro/netperf/300s-200%-SCTP_STREAM
+  15354133 ~ 0%    +109.9%   32226491 ~ 0%  TOTAL proc-vmstat.pgfree
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    257597 ~ 0%     +79.3%     461743 ~ 0%  kbuildx/micro/netperf/300s-200%-SCTP_STREAM
+   1179621 ~ 0%     +79.4%    2116528 ~ 0%  lkp-t410/micro/netperf/300s-200%-SCTP_STREAM
+   1437218 ~ 0%     +79.4%    2578271 ~ 0%  TOTAL proc-vmstat.pgalloc_dma32
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    138767 ~ 3%    +102.3%     280793 ~ 0%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+     12422 ~ 1%     +46.0%      18142 ~ 2%  lkp-t410/micro/netperf/300s-200%-SCTP_STREAM
+    151189 ~ 3%     +97.7%     298935 ~ 0%  TOTAL softirqs.NET_RX
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+      2.37 ~18%     +78.7%       4.23 ~14%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+      2.37 ~18%     +78.7%       4.23 ~14%  TOTAL perf-profile.cpu-cycles._raw_spin_lock_irqsave.tick_broadcast_oneshot_control.clockevents_notify.intel_idle.cpuidle_enter_state
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    386789 ~27%     +43.0%     553161 ~ 6%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+    386789 ~27%     +43.0%     553161 ~ 6%  TOTAL numa-numastat.node0.local_node
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    388443 ~28%     +42.8%     554814 ~ 6%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+    388443 ~28%     +42.8%     554814 ~ 6%  TOTAL numa-numastat.node0.numa_hit
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+     14.18 ~24%     -32.9%       9.52 ~16%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+      3.43 ~26%     +54.6%       5.30 ~20%  lkp-t410/micro/netperf/300s-200%-SCTP_STREAM
+     17.60 ~24%     -15.8%      14.82 ~17%  TOTAL perf-profile.cpu-cycles.copy_user_generic_string.sctp_user_addto_chunk.sctp_datamsg_from_user.sctp_sendmsg.inet_sendmsg
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    393446 ~24%     +40.0%     550772 ~ 3%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+    393446 ~24%     +40.0%     550772 ~ 3%  TOTAL numa-numastat.node2.local_node
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    397581 ~23%     +39.6%     554907 ~ 3%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+    397581 ~23%     +39.6%     554907 ~ 3%  TOTAL numa-numastat.node2.numa_hit
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+      0.79 ~ 4%     +42.7%       1.13 ~ 3%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+      0.79 ~ 4%     +42.7%       1.13 ~ 3%  TOTAL turbostat.%c1
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    357508 ~ 9%     +42.9%     510964 ~ 8%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+    357508 ~ 9%     +42.9%     510964 ~ 8%  TOTAL numa-numastat.node1.numa_hit
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    355027 ~ 9%     +43.0%     507656 ~ 7%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+    355027 ~ 9%     +43.0%     507656 ~ 7%  TOTAL numa-numastat.node1.local_node
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    298703 ~12%     +27.8%     381632 ~ 4%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+    298703 ~12%     +27.8%     381632 ~ 4%  TOTAL numa-vmstat.node2.numa_local
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+   1513199 ~ 0%     +39.1%    2105308 ~ 0%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+   1513199 ~ 0%     +39.1%    2105308 ~ 0%  TOTAL proc-vmstat.numa_local
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+   1525603 ~ 0%     +38.8%    2117713 ~ 0%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+   1525603 ~ 0%     +38.8%    2117713 ~ 0%  TOTAL proc-vmstat.numa_hit
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    320874 ~14%     +24.8%     400369 ~ 4%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+    320874 ~14%     +24.8%     400369 ~ 4%  TOTAL numa-vmstat.node0.numa_local
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    323017 ~ 1%     +32.8%     428933 ~ 1%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+    323017 ~ 1%     +32.8%     428933 ~ 1%  TOTAL cpuidle.C3-NHM.usage
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    386570 ~ 9%     +21.4%     469471 ~ 3%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+    386570 ~ 9%     +21.4%     469471 ~ 3%  TOTAL numa-vmstat.node2.numa_hit
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    380244 ~12%     +20.9%     459829 ~ 3%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+    380244 ~12%     +20.9%     459829 ~ 3%  TOTAL numa-vmstat.node0.numa_hit
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    352316 ~ 4%     +19.9%     422485 ~ 5%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+    352316 ~ 4%     +19.9%     422485 ~ 5%  TOTAL numa-vmstat.node1.numa_local
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    380978 ~ 4%     +18.6%     451706 ~ 5%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+    380978 ~ 4%     +18.6%     451706 ~ 5%  TOTAL numa-vmstat.node1.numa_hit
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    119700 ~ 2%     +18.6%     141993 ~ 1%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+    119700 ~ 2%     +18.6%     141993 ~ 1%  TOTAL softirqs.SCHED
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+     45876 ~ 4%      -7.9%      42242 ~ 7%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+     45876 ~ 4%      -7.9%      42242 ~ 7%  TOTAL numa-meminfo.node0.AnonPages
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+     11467 ~ 4%      -7.9%      10559 ~ 7%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+     11467 ~ 4%      -7.9%      10559 ~ 7%  TOTAL numa-vmstat.node0.nr_anon_pages
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    184229 ~ 1%     +14.4%     210833 ~ 0%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+    184229 ~ 1%     +14.4%     210833 ~ 0%  TOTAL softirqs.TIMER
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+       347 ~ 5%    +140.0%        834 ~10%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+       347 ~ 5%    +140.0%        834 ~10%  TOTAL interrupts.98:PCI-MSI-edge.eth0-TxRx-0
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+      9125 ~ 4%     +59.8%      14585 ~13%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+      9125 ~ 4%     +59.8%      14585 ~13%  TOTAL interrupts.RES
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+       338 ~ 6%     +15.8%        392 ~ 4%  kbuildx/micro/netperf/300s-200%-SCTP_STREAM
+      1830 ~ 0%     +71.2%       3135 ~ 0%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+       352 ~ 0%     +20.5%        425 ~ 1%  lkp-t410/micro/netperf/300s-200%-SCTP_STREAM
+      2522 ~ 1%     +56.7%       3952 ~ 1%  TOTAL vmstat.system.cs
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+    171971 ~ 3%     +29.8%     223248 ~ 1%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+    171971 ~ 3%     +29.8%     223248 ~ 1%  TOTAL interrupts.LOC
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+       839 ~ 3%     +24.4%       1044 ~ 1%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+       839 ~ 3%     +24.4%       1044 ~ 1%  TOTAL vmstat.system.in
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+      8197 ~11%     +32.2%      10835 ~ 7%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+      1043 ~ 0%     +15.2%       1202 ~ 3%  lkp-t410/micro/netperf/300s-200%-SCTP_STREAM
+      9241 ~ 9%     +30.3%      12037 ~ 7%  TOTAL interrupts.PMI
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+      8197 ~11%     +32.2%      10835 ~ 7%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+      1043 ~ 0%     +15.2%       1202 ~ 3%  lkp-t410/micro/netperf/300s-200%-SCTP_STREAM
+      9241 ~ 9%     +30.3%      12037 ~ 7%  TOTAL interrupts.NMI
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+      0.73 ~ 4%     +20.5%       0.88 ~ 6%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+      0.94 ~ 0%     +14.4%       1.08 ~ 1%  lkp-t410/micro/netperf/300s-200%-SCTP_STREAM
+      1.67 ~ 2%     +17.1%       1.96 ~ 3%  TOTAL turbostat.%c0
+
+bfae23249955819  362d52040c71f6e8d8158be48  
+---------------  -------------------------  
+     17709 ~ 2%      -4.1%      16985 ~ 1%  lkp-nex04/micro/netperf/300s-200%-SCTP_STREAM
+     17709 ~ 2%      -4.1%      16985 ~ 1%  TOTAL interrupts.IWI
 
 
---------------050007040902000302070508
-Content-Type: text/x-patch;
- name="0002-vlan-Centralize-handling-of-hardware-acceleration.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0002-vlan-Centralize-handling-of-hardware-acceleration.patch"
-
->From 86fff983b7f36750301aab537dfd4e5744d929e7 Mon Sep 17 00:00:00 2001
-From: Zhu Yanjun <Yanjun.Zhu@windriver.com>
-Date: Wed, 16 Apr 2014 18:57:23 +0800
-Subject: [PATCH 2/2] vlan: Centralize handling of hardware acceleration
-
-2.6.x kernels require a similar logic change as commit 4fba4ca4
-[vlan: Centralize handling of hardware acceleration] introduces
-for newer kernels.
-
-Since there is something wrong with sending/receiving vlan packets
-of tun/tap of kernel 2.6.x. In kernel(3.0+), sending/receiving
-vlan packets is centralize handling in kernel. But in kernel 2.6.x,
-inserting/extraction vlan tag is still based on nic hardware. Thus,
-tun/tap nic driver can not support vlan packets. It is necessary
-to centralize handling of hardware acceleration and simulate vlan
-rx extraction in tun/tap nic driver to make tun/tap support vlan
-packets sending/receiving in kernel 2.6.x.
-
-Signed-off-by: Zhu Yanjun <Yanjun.Zhu@windriver.com>
----
- include/linux/if_vlan.h   |    4 +-
- include/linux/netdevice.h |    1 -
- net/8021q/vlan.c          |   49 ++++++++++++++++++++
- net/8021q/vlan_core.c     |  110 +++++----------------------------------------
- net/core/dev.c            |   42 +++++++----------
- 5 files changed, 76 insertions(+), 130 deletions(-)
-
-diff --git a/include/linux/if_vlan.h b/include/linux/if_vlan.h
-index 7ff9af1..5538dda 100644
---- a/include/linux/if_vlan.h
-+++ b/include/linux/if_vlan.h
-@@ -114,7 +114,7 @@ extern u16 vlan_dev_vlan_id(const struct net_device *dev);
- 
- extern int __vlan_hwaccel_rx(struct sk_buff *skb, struct vlan_group *grp,
- 			     u16 vlan_tci, int polling);
--extern int vlan_hwaccel_do_receive(struct sk_buff *skb);
-+extern bool vlan_hwaccel_do_receive(struct sk_buff **skb);
- extern int vlan_gro_receive(struct napi_struct *napi, struct vlan_group *grp,
- 			    unsigned int vlan_tci, struct sk_buff *skb);
- extern int vlan_gro_frags(struct napi_struct *napi, struct vlan_group *grp,
-@@ -140,7 +140,7 @@ static inline int __vlan_hwaccel_rx(struct sk_buff *skb, struct vlan_group *grp,
- 	return NET_XMIT_SUCCESS;
- }
- 
--static inline int vlan_hwaccel_do_receive(struct sk_buff *skb)
-+static inline bool vlan_hwaccel_do_receive(struct sk_buff **skb)
- {
- 	return 0;
- }
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 04c659b..bdb6b82 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1490,7 +1490,6 @@ static inline void napi_free_frags(struct napi_struct *napi)
- 	napi->skb = NULL;
- }
- 
--extern void		netif_nit_deliver(struct sk_buff *skb);
- extern int		dev_valid_name(const char *name);
- extern int		dev_ioctl(struct net *net, unsigned int cmd, void __user *);
- extern int		dev_ethtool(struct net *net, struct ifreq *);
-diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
-index a29c5ab..385c6e4 100644
---- a/net/8021q/vlan.c
-+++ b/net/8021q/vlan.c
-@@ -92,6 +92,54 @@ struct net_device *__find_vlan_dev(struct net_device *real_dev, u16 vlan_id)
- 	return NULL;
- }
- 
-+bool vlan_hwaccel_do_receive(struct sk_buff **skbp)
-+{
-+	struct sk_buff *skb = *skbp;
-+	u16 vlan_id = skb->vlan_tci & VLAN_VID_MASK;
-+	struct net_device *vlan_dev;
-+	struct vlan_rx_stats *rx_stats;
-+
-+	vlan_dev = __find_vlan_dev(skb->dev, vlan_id);
-+	if (!vlan_dev) {
-+		if (vlan_id)
-+			skb->pkt_type = PACKET_OTHERHOST;
-+		return false;
-+	}
-+
-+	skb = *skbp = skb_share_check(skb, GFP_ATOMIC);
-+	if (unlikely(!skb))
-+		return false;
-+
-+	skb->dev = vlan_dev;
-+	skb->priority = vlan_get_ingress_priority(vlan_dev, skb->vlan_tci);
-+	skb->vlan_tci = 0;
-+
-+	rx_stats = per_cpu_ptr(vlan_dev_info(vlan_dev)->vlan_rx_stats,
-+				smp_processor_id());
-+
-+	rx_stats->rx_packets++;
-+	rx_stats->rx_bytes += skb->len;
-+
-+	switch (skb->pkt_type) {
-+	case PACKET_BROADCAST:
-+		break;
-+	case PACKET_MULTICAST:
-+		rx_stats->multicast++;
-+		break;
-+	case PACKET_OTHERHOST:
-+		/* Our lower layer thinks this is not local, let's make sure.
-+		 * This allows the VLAN to have a different MAC than the
-+		 * underlying device, and still route correctly. */
-+		if (!compare_ether_addr(eth_hdr(skb)->h_dest,
-+					vlan_dev->dev_addr))
-+			skb->pkt_type = PACKET_HOST;
-+			break;
-+	};
-+
-+	return true;
-+}
-+extern bool (*__vlan_do_receive)(struct sk_buff **skbp);
-+
- static void vlan_group_free(struct vlan_group *grp)
- {
- 	int i;
-@@ -744,6 +792,7 @@ static int __init vlan_proto_init(void)
- 
- 	dev_add_pack(&vlan_packet_type);
- 	vlan_ioctl_set(vlan_ioctl_handler);
-+	__vlan_do_receive = vlan_hwaccel_do_receive;
- 	return 0;
- 
- err4:
-diff --git a/net/8021q/vlan_core.c b/net/8021q/vlan_core.c
-index 7f7de1a..c679535 100644
---- a/net/8021q/vlan_core.c
-+++ b/net/8021q/vlan_core.c
-@@ -4,64 +4,6 @@
- #include <linux/netpoll.h>
- #include "vlan.h"
- 
--/* VLAN rx hw acceleration helper.  This acts like netif_{rx,receive_skb}(). */
--int __vlan_hwaccel_rx(struct sk_buff *skb, struct vlan_group *grp,
--		      u16 vlan_tci, int polling)
--{
--	if (netpoll_rx(skb))
--		return NET_RX_DROP;
--
--	if (skb_bond_should_drop(skb))
--		goto drop;
--
--	skb->vlan_tci = vlan_tci;
--	skb->dev = vlan_group_get_device(grp, vlan_tci & VLAN_VID_MASK);
--
--	if (!skb->dev)
--		goto drop;
--
--	return (polling ? netif_receive_skb(skb) : netif_rx(skb));
--
--drop:
--	dev_kfree_skb_any(skb);
--	return NET_RX_DROP;
--}
--EXPORT_SYMBOL(__vlan_hwaccel_rx);
--
--int vlan_hwaccel_do_receive(struct sk_buff *skb)
--{
--	struct net_device *dev = skb->dev;
--	struct net_device_stats *stats;
--
--	skb->dev = vlan_dev_info(dev)->real_dev;
--	netif_nit_deliver(skb);
--
--	skb->dev = dev;
--	skb->priority = vlan_get_ingress_priority(dev, skb->vlan_tci);
--	skb->vlan_tci = 0;
--
--	stats = &dev->stats;
--	stats->rx_packets++;
--	stats->rx_bytes += skb->len;
--
--	switch (skb->pkt_type) {
--	case PACKET_BROADCAST:
--		break;
--	case PACKET_MULTICAST:
--		stats->multicast++;
--		break;
--	case PACKET_OTHERHOST:
--		/* Our lower layer thinks this is not local, let's make sure.
--		 * This allows the VLAN to have a different MAC than the
--		 * underlying device, and still route correctly. */
--		if (!compare_ether_addr(eth_hdr(skb)->h_dest,
--					dev->dev_addr))
--			skb->pkt_type = PACKET_HOST;
--		break;
--	};
--	return 0;
--}
--
- struct net_device *vlan_dev_real_dev(const struct net_device *dev)
- {
- 	return vlan_dev_info(dev)->real_dev;
-@@ -74,59 +16,27 @@ u16 vlan_dev_vlan_id(const struct net_device *dev)
- }
- EXPORT_SYMBOL(vlan_dev_vlan_id);
- 
--static int vlan_gro_common(struct napi_struct *napi, struct vlan_group *grp,
--			   unsigned int vlan_tci, struct sk_buff *skb)
-+/* VLAN rx hw acceleration helper.  This acts like netif_{rx,receive_skb}(). */
-+int __vlan_hwaccel_rx(struct sk_buff *skb, struct vlan_group *grp,
-+			u16 vlan_tci, int polling)
- {
--	struct sk_buff *p;
--
--	if (skb_bond_should_drop(skb))
--		goto drop;
--
--	skb->vlan_tci = vlan_tci;
--	skb->dev = vlan_group_get_device(grp, vlan_tci & VLAN_VID_MASK);
--
--	if (!skb->dev)
--		goto drop;
--
--	for (p = napi->gro_list; p; p = p->next) {
--		NAPI_GRO_CB(p)->same_flow =
--			p->dev == skb->dev && !compare_ether_header(
--				skb_mac_header(p), skb_gro_mac_header(skb));
--		NAPI_GRO_CB(p)->flush = 0;
--	}
--
--	return dev_gro_receive(napi, skb);
--
--drop:
--	return GRO_DROP;
-+	__vlan_hwaccel_put_tag(skb, vlan_tci);
-+	return polling ? netif_receive_skb(skb) : netif_rx(skb); 
- }
-+EXPORT_SYMBOL(__vlan_hwaccel_rx);
- 
- int vlan_gro_receive(struct napi_struct *napi, struct vlan_group *grp,
- 		     unsigned int vlan_tci, struct sk_buff *skb)
- {
--	if (netpoll_rx_on(skb))
--		return vlan_hwaccel_receive_skb(skb, grp, vlan_tci);
--
--	skb_gro_reset_offset(skb);
--
--	return napi_skb_finish(vlan_gro_common(napi, grp, vlan_tci, skb), skb);
-+	__vlan_hwaccel_put_tag(skb, vlan_tci);
-+	return napi_gro_receive(napi, skb);
- }
- EXPORT_SYMBOL(vlan_gro_receive);
- 
- int vlan_gro_frags(struct napi_struct *napi, struct vlan_group *grp,
- 		   unsigned int vlan_tci)
- {
--	struct sk_buff *skb = napi_frags_skb(napi);
--
--	if (!skb)
--		return NET_RX_DROP;
--
--	if (netpoll_rx_on(skb)) {
--		skb->protocol = eth_type_trans(skb, skb->dev);
--		return vlan_hwaccel_receive_skb(skb, grp, vlan_tci);
--	}
--
--	return napi_frags_finish(napi, skb,
--				 vlan_gro_common(napi, grp, vlan_tci, skb));
-+	__vlan_hwaccel_put_tag(napi->skb, vlan_tci);
-+	return napi_gro_frags(napi);
- }
- EXPORT_SYMBOL(vlan_gro_frags);
-diff --git a/net/core/dev.c b/net/core/dev.c
-index a3802ca..b69487e 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2272,33 +2272,8 @@ out:
- }
- #endif
- 
--/*
-- * 	netif_nit_deliver - deliver received packets to network taps
-- * 	@skb: buffer
-- *
-- * 	This function is used to deliver incoming packets to network
-- * 	taps. It should be used when the normal netif_receive_skb path
-- * 	is bypassed, for example because of VLAN acceleration.
-- */
--void netif_nit_deliver(struct sk_buff *skb)
--{
--	struct packet_type *ptype;
--
--	if (list_empty(&ptype_all))
--		return;
--
--	skb_reset_network_header(skb);
--	skb_reset_transport_header(skb);
--	skb->mac_len = skb->network_header - skb->mac_header;
--
--	rcu_read_lock();
--	list_for_each_entry_rcu(ptype, &ptype_all, list) {
--		if (!ptype->dev || ptype->dev == skb->dev)
--			deliver_skb(skb, ptype, skb->dev);
--	}
--	rcu_read_unlock();
--}
--
-+bool (*__vlan_do_receive)(struct sk_buff **skbp) = NULL;
-+EXPORT_SYMBOL(__vlan_do_receive);
- /**
-  *	netif_receive_skb - process receive buffer from network
-  *	@skb: buffer to process
-@@ -2354,6 +2329,8 @@ int netif_receive_skb(struct sk_buff *skb)
- 
- 	rcu_read_lock();
- 
-+another_round:
-+
- #ifdef CONFIG_NET_CLS_ACT
- 	if (skb->tc_verd & TC_NCLS) {
- 		skb->tc_verd = CLR_TC_NCLS(skb->tc_verd);
-@@ -2377,6 +2354,17 @@ int netif_receive_skb(struct sk_buff *skb)
- ncls:
- #endif
- 
-+	if (vlan_tx_tag_present(skb)) {
-+		if (pt_prev) {
-+			ret = deliver_skb(skb, pt_prev, orig_dev);
-+			pt_prev = NULL;
-+		}
-+		if (__vlan_do_receive && __vlan_do_receive(&skb)) {
-+			goto another_round;
-+		} else if (unlikely(!skb))
-+			goto out;
-+	}
-+
- 	skb = handle_bridge(skb, &pt_prev, &ret, orig_dev);
- 	if (!skb)
- 		goto out;
--- 
-1.7.9.5
+Legend:
+	~XX%    - stddev percent
+	[+-]XX% - change percent
 
 
---------------050007040902000302070508--
+                              netperf.Throughput_Mbps
+
+   4.5 ++-------------------------------------------------------------------+
+       O  O O  O O  O O  O O  O  O O  O O  O O  O O  O  O O  O O  O O  O    |
+       |                                                                    |
+     4 ++                                                                   |
+       |                                                                    |
+       |                                                                    |
+   3.5 ++                                                                   |
+       |                                                                    |
+     3 ++                                                                   |
+       |                                                                    |
+       |                                                                    |
+   2.5 ++                                                                   |
+       |                                                                    |
+       *..*.*..*.*..*.*..*.*..*..*.*..*.*..*.*..*.*..*..*.*..*.*..*.*..*.*..*
+     2 ++-------------------------------------------------------------------+
+
+
+	[*] bisect-good sample
+	[O] bisect-bad  sample
+
+Thanks,
+Fengguang
+
+--NMuMz9nt05w80d4+
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename=reproduce
+
+netserver
+netperf -t SCTP_STREAM -c -C -l 300
+netperf -t SCTP_STREAM -c -C -l 300
+netperf -t SCTP_STREAM -c -C -l 300
+netperf -t SCTP_STREAM -c -C -l 300
+netperf -t SCTP_STREAM -c -C -l 300
+netperf -t SCTP_STREAM -c -C -l 300
+netperf -t SCTP_STREAM -c -C -l 300
+netperf -t SCTP_STREAM -c -C -l 300
+
+--NMuMz9nt05w80d4+--
