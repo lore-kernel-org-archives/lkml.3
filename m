@@ -1,84 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479AbaDQBso (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 21:48:44 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48261 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107AbaDQBsm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 21:48:42 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Thu, 17 Apr 2014 10:49:11 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Steven King <sfking@fdwdc.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        uClinux development list <uclinux-dev@uclinux.org>
-Subject: Re: [uClinux-dev] v3.15-rc1 slab allocator broken on m68knommu
- (coldfire)
-Message-ID: <20140417014911.GA3284@js1304-P5Q-DELUXE>
-References: <201404141745.44279.sfking@fdwdc.com>
- <201404160847.27300.sfking@fdwdc.com>
- <CAMuHMdV2zSWaDbHNv3QQeEgu26PQX9TWn7cHA=4U0YOK0bbExg@mail.gmail.com>
- <201404161044.11416.sfking@fdwdc.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201404161044.11416.sfking@fdwdc.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756271AbaDQBuc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 21:50:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57023 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754750AbaDQBua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 21:50:30 -0400
+Date: Thu, 17 Apr 2014 11:50:18 +1000
+From: NeilBrown <neilb@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jeff Layton <jlayton@redhat.com>, linux-nfs@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, netdev@vger.kernel.org,
+        Ming Lei <ming.lei@canonical.com>, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com, linux-mm@kvack.org, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH/RFC 00/19] Support loop-back NFS mounts
+Message-ID: <20140417115018.460345d0@notabene.brown>
+In-Reply-To: <20140417012739.GU15995@dastard>
+References: <20140416033623.10604.69237.stgit@notabene.brown>
+	<20140416104207.75b044e8@tlielax.poochiereds.net>
+	<20140417102048.2fc8275c@notabene.brown>
+	<20140417012739.GU15995@dastard>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/aR.nJzAOWD3tAtDyjyGs6Ar"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 10:44:11AM -0700, Steven King wrote:
-> On Wednesday 16 April 2014 9:06:57 am Geert Uytterhoeven wrote:
-> > Hi Steven,
-> >
-> > On Wed, Apr 16, 2014 at 5:47 PM, Steven King <sfking@fdwdc.com> wrote:
-> > > --- a/mm/slab.c
-> > > +++ b/mm/slab.c
-> > > @@ -2572,13 +2572,13 @@ static void *alloc_slabmgmt(struct kmem_cache
-> > > *cachep, return freelist;
-> > >  }
-> > >
-> > > -static inline freelist_idx_t get_free_obj(struct page *page, unsigned
-> > > char idx) +static inline freelist_idx_t get_free_obj(struct page *page,
-> > > unsigned int idx) {
-> > >         return ((freelist_idx_t *)page->freelist)[idx];
-> > >  }
-> > >
-> > >  static inline void set_free_obj(struct page *page,
-> > > -                                       unsigned char idx, freelist_idx_t
-> > > val) +                                       unsigned int idx,
-> > > freelist_idx_t val) {
-> > >         ((freelist_idx_t *)(page->freelist))[idx] = val;
-> > >  }
-> > >
-> > >
-> > > then v3.15-rc1 will boot using the slab allocator.
-> >
-> > Is "idx" ever larger than 255?
-> >
-> > Gr{oetje,eeting}s,
-> 
-> Yes.  If I stick
-> 
->         if (idx > 255)
->                 pr_info("%s %d\n", __func__, idx);
-> 
-> in get_free_obj and set_free_obj and see values for idx up into the 400s.
+--Sig_/aR.nJzAOWD3tAtDyjyGs6Ar
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Hello,
+On Thu, 17 Apr 2014 11:27:39 +1000 Dave Chinner <david@fromorbit.com> wrote:
 
-Yes, it's my mistake. idx can be larger than 255 if freelist_idx_t is
-unsigned short. So unsigned char idx isn't appropriate here. Your
-system's PAGE_SIZE may be 2^13, so freelist_idx_t would be unsigned short
-and idx will be larger than 255.
+> On Thu, Apr 17, 2014 at 10:20:48AM +1000, NeilBrown wrote:
+> > A good example is the deadlock with the flush-* threads.
+> > flush-* will lock a page, and  then call ->writepage.  If ->writepage
+> > allocates memory it can enter reclaim, call ->releasepage on NFS, and b=
+lock
+> > waiting for a COMMIT to complete.
+> > The COMMIT might already be running, performing fsync on that same file=
+ that
+> > flush-* is flushing.  It locks each page in turn.  When it  gets to the=
+ page
+> > that flush-* has locked, it will deadlock.
+>=20
+> It's nfs_release_page() again....
+>=20
+> > In general, if nfsd is allowed to block on local filesystem, and local
+> > filesystem is allowed to block on NFS, then a deadlock can happen.
+> > We would need a clear hierarchy
+> >=20
+> >    __GFP_NETFS > __GFP_FS > __GFP_IO
+> >=20
+> > for it to work.  I'm not sure the extra level really helps a lot and it=
+ would
+> > be a lot of churn.
+>=20
+> I think you are looking at this the wrong way - it's not the other
+> filesystems that have to avoid memory reclaim recursion, it's the
+> NFS client mount that is on loopback that needs to avoid recursion.
+>=20
+> IMO, the fix should be that the NFS client cannot block on messages sent =
+to the NFSD
+> on the same host during memory reclaim. That is, nfs_release_page()
+> cannot send commit messages to the server if the server is on
+> localhost. Instead, it just tells memory reclaim that it can't
+> reclaim that page.
+>=20
+> If nfs_release_page() no longer blocks in memory reclaim, and all
+> these nfsd-gets-blocked-in-GFP_KERNEL-memory-allocation recursion
+> problems go away. Do the same for all the other memory reclaim
+> operations in the NFS client, and you've got a solution that should
+> work without needing to walk all over the rest of the kernel....
 
-Your fix looks good to me, so could you send it quickly to Pekka with
-some description? If you don't have enough time to do it, I can handle it.
+Maybe.
+It is nfs_release_page() today. I wonder if it could be other things another
+day.  I want to be sure I have a solution that really makes sense.
 
-Really thanks for notifying this issue.
+However ... the thing that nfs_release_page is doing it sending a COMMIT to
+tell the server to flush to stable storage.  It does that so that if the
+server crashes, then the client can re-send.
+Of course when it is a loop-back mount the client is the server so the COMM=
+IT
+is completely pointless.  If the client notices that it is sending a COMMIT
+to itself, it can simply assume a positive reply.
 
-Thanks.
+You are right, that would make the patch set a lot less intrusive.  I'll gi=
+ve
+it some serious thought - thanks.
+
+NeilBrown
+
+--Sig_/aR.nJzAOWD3tAtDyjyGs6Ar
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBU08zWjnsnt1WYoG5AQKfQw//WIl8Mf1G0vzy816TBvi7fx3VCp6SUV7s
+jQeCJSD0IPRzCFmxH1ZJFzy3jIK8J3dbT8cSGjxXYegOq+kyyVjbHXOG2msC1riY
+ytOGUQnOS8MHscbcAOR7r61t/1t7FZiSJ51Th7pykepQmbm9QNEna+U0wzna3poK
+NNRDrs1J0eySpLTydegKoyg4w6KP6MLXqlYQm1FigvkreDEZ9mvBW7NrGycwDQF8
+NZgq8+dGCL3MAq+uZ7WMqAoCZwZUrusVZBc3zvXYWepSMFSW1FOmQP971QZ9DgI2
+KzarhdGOSFTbVHLhZafYV0X2k/hATVoIJpXh3Kl2ak0qdnuuUPJ/s64zxvQ3N4wo
+3zBU0/TvcEVs6toQfcT/Zi91rCIvVvl8BOssIosbwknfLyi/JEYtnDJ+MxWBlg1G
+xlaEF1pDaQYEix5Ocg1qyU7oroFv98+pZ4BZeDI7Y/A6gasVvR3NKBOFcadozYuo
+FBTuYO6ZTSVPZ1+ASqykb5hh3GGKO5oM4x7xX0dQRSADk4qo4FLfv6ONKK2OfjQo
+r6FBlpw9OU6su26F4XzDkFLPb3xUDgfY7gMG6vIZYmCS7JGOvTg2rpk6inZxzATb
+40mX+gFDXs5oE9XGaqz2Fl7Lw/BNluPNDEpkmWJX42+7cdClnc2XPSJyvpFx7nLH
+lfrN+yaHFBM=
+=c/XS
+-----END PGP SIGNATURE-----
+
+--Sig_/aR.nJzAOWD3tAtDyjyGs6Ar--
