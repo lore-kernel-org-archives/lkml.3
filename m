@@ -1,97 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205AbaDQICb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 04:02:31 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:48746 "EHLO
+	id S1753647AbaDQIEi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 04:04:38 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:49357 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751659AbaDQICZ convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751143AbaDQIEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 04:02:25 -0400
-X-AuditID: cbfee61a-b7fb26d00000724f-5b-534f8a8f9572
-From: Chao Yu <chao2.yu@samsung.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <000c01cf5a06$46b1ba30$d4152e90$@samsung.com>
- <1397719003.7727.24.camel@kjgkr>
-In-reply-to: <1397719003.7727.24.camel@kjgkr>
-Subject: RE: [f2fs-dev] [PATCH] f2fs: fix wrong number of max_nid when init
-Date: Thu, 17 Apr 2014 16:01:20 +0800
-Message-id: <000001cf5a13$5d8d6620$18a83260$@samsung.com>
+	Thu, 17 Apr 2014 04:04:31 -0400
+X-AuditID: cbfee68d-b7fcd6d00000315b-2e-534f8b0d1d2d
+Message-id: <534F8B11.8090808@samsung.com>
+Date: Thu, 17 Apr 2014 17:04:33 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
 MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQG0grNzbJuH4NjWUfUifVzHm9WULgJF5GkHmzjsrrA=
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t9jAd3+Lv9gg/8vjCyu7/rLZHFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgyjg6dSZbwV++iqPN
-	3A2M37m7GDk4JARMJC73SHcxcgKZYhIX7q1n62Lk4hASWMQo8a2zhxXC+cEo8f/8GlaQKjYB
-	FYnlHf+ZQGwRAWmJWZ/msYDYzAKZEveaZjCD2EICMRK9ryeAxTkFdCXav34H6xUW8JaY8+YO
-	WC+LgKrEjq9v2EFsXgFLidbuV4wQtqDEj8n3oGaqS0yat4gZwtaWePLuAivEpQoSO86+ZoS4
-	wUri7f8v7BA14hIbj9ximcAoNAvJqFlIRs1CMmoWkpYFjCyrGEVTC5ILipPScw31ihNzi0vz
-	0vWS83M3MYLD/pnUDsaVDRaHGAU4GJV4eCeo+wcLsSaWFVfmHmKU4GBWEuGNrgUK8aYkVlal
-	FuXHF5XmpBYfYpTmYFES5z3Qah0oJJCeWJKanZpakFoEk2Xi4JRqYJxldUZnV9+/5Fv3Tq3r
-	iOQ+8nibYccN+aJOw3W71L2CHgp5F0lM0j2ruvX4mcs8ixvfyuTFrhSIcrlxb+ZM0fkaMxTc
-	GC4XhUga/K1TM/JPD9eL+7huzcESiXkyEQk9h8VidURN3yUyZE3ljHP4LV3/bdZFG80Tf7U2
-	3j4RsLu78OtDnzjzBiWW4oxEQy3mouJEAEf/L/J3AgAA
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, ben-linux@fluff.org,
+        kgene.kim@samsung.com, thomas.abraham@linaro.org,
+        kyungmin.park@samsung.com, sw0312.kim@samsung.com,
+        hyunhee.kim@samsung.com, yj44.cho@samsung.com,
+        chanho61.park@samsung.com, arnd@arndb.de, olof@lixom.net,
+        marc.zyngier@arm.com, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Subject: Re: [PATCHv2 5/8] ARM: EXYNOS: Support secondary CPU boot of Exynos3250
+References: <1397527192-21988-1-git-send-email-cw00.choi@samsung.com>
+ <1397527192-21988-6-git-send-email-cw00.choi@samsung.com>
+ <534E9374.6010807@samsung.com>
+In-reply-to: <534E9374.6010807@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmleLIzCtJLcpLzFFi42JZI2JSpMvX7R9ssOsts8XfScfYLSatO8Bk
+	cXm/tsX8I+dYLT5/aGG36F1wlc3ibNMbdotNj6+xWlzeNYfNYsb5fUwWty/zWvy984/N4tT1
+	z0ChyS/ZLNbPeM1icWzGEkaLvTsnMzoIeqyZt4bRo6W5h83j969JjB5/V71g9rhzbQ+bx+Yl
+	9R5XTjSxevRtWcXo8XmTXABnFJdNSmpOZllqkb5dAlfG3OaFjAUrOSuWrdzL1MB4hr2LkZND
+	QsBEYu2yNkYIW0ziwr31bF2MXBxCAksZJf4v6WWDKdrzcDU7RGIRo8T9VZ2sEM5rRol/t3Yz
+	g1TxCmhJXF27AWwUi4CqxMEX88BsNqD4/hc3wCaJCoRJrJx+hQWiXlDix+R7YLaIgIrE5VPT
+	GUGGMgssYJY42rUHLCEsECDxZfs5sGaw1YvvOoHYnALaEgefbQD7gVlAR2J/6zQ2CFteYvOa
+	t8wggyQE1nJI7FgygxXiIgGJb5MPAQ3lAErISmw6wAzxmqTEwRU3WCYwis1CctMsJGNnIRm7
+	gJF5FaNoakFyQXFSepGhXnFibnFpXrpecn7uJkZgAjj971nvDsbbB6wPMSYDrZzILCWanA9M
+	IHkl8YbGZkYWpiamxkbmlmakCSuJ8yY9TAoSEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwCjg
+	UxU1+dTyeemLjseFrHnx4Ej4yQshFXMW8txZqxw7ca772WCFwydsd5ntKN6WajfHIHUDl3fr
+	TT/GGO7M3nPnbXN389lKcf63+qtjXJJzVXnmujNqMtcXPvJ7wT5vTWJQ9Z9+5XfPb+Rbis7+
+	XSpgnHHpYP6Bz66pejf5sw/M0apJPeMyKVSJpTgj0VCLuag4EQBJjNn1FgMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAKsWRmVeSWpSXmKPExsVy+t9jAV3ebv9ggxMd5hZ/Jx1jt5i07gCT
+	xeX92hbzj5xjtfj8oYXdonfBVTaLs01v2C02Pb7GanF51xw2ixnn9zFZ3L7Ma/H3zj82i1PX
+	PwOFJr9ks1g/4zWLxbEZSxgt9u6czOgg6LFm3hpGj5bmHjaP378mMXr8XfWC2ePOtT1sHpuX
+	1HtcOdHE6tG3ZRWjx+dNcgGcUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZK
+	CnmJuam2Si4+AbpumTlArygplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCWsY
+	M+Y2L2QsWMlZsWzlXqYGxjPsXYycHBICJhJ7Hq6GssUkLtxbz9bFyMUhJLCIUeL+qk5WCOc1
+	o8S/W7uZQap4BbQkrq7dwAhiswioShx8MQ/MZgOK739xgw3EFhUIk1g5/QoLRL2gxI/J98Bs
+	EQEVicunpjOCDGUWWMAscbRrD1hCWCBA4sv2c2DNYKsX33UCsTkFtCUOPtsAdh6zgI7E/tZp
+	bBC2vMTmNW+ZJzAKzEKyYxaSsllIyhYwMq9iFE0tSC4oTkrPNdIrTswtLs1L10vOz93ECE4v
+	z6R3MK5qsDjEKMDBqMTDy/nbL1iINbGsuDL3EKMEB7OSCG90rX+wEG9KYmVValF+fFFpTmrx
+	IcZkYBBMZJYSTc4Hpr68knhDYxMzI0sjc0MLI2Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh
+	4uCUamDcGtJRsPwUZ/dEyQWlX+2WiHpvljrH5C3Kn3fXTqnP32JfzOYY412XvT50MTz13Kgd
+	yNzbUZewTOUaV35c1ZnAnw9Nw/vFt1evD1rwRfnLJm+ji+2ddU48k996uc5KzG59MvG409bJ
+	nCau88Vm7Xq2+7yniOjFm1sX/C/61sIQcKTjb+PqC0lKLMUZiYZazEXFiQBWN7v/cwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Tomasz,
 
-> -----Original Message-----
-> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
-> Sent: Thursday, April 17, 2014 3:17 PM
-> To: Chao Yu
-> Cc: linux-f2fs-devel@lists.sourceforge.net; linux-fsdevel@vger.kernel.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [f2fs-dev] [PATCH] f2fs: fix wrong number of max_nid when init
+On 04/16/2014 11:28 PM, Tomasz Figa wrote:
+> Hi Chanwoo,
 > 
-> Hi,
+> On 15.04.2014 03:59, Chanwoo Choi wrote:
+>> This patch fix the offset of CPU boot address and don't operate smc call
+>> of SMC_CMD_CPU1BOOT command for Exynos3250.
+>>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>>   arch/arm/mach-exynos/firmware.c | 7 +++++--
+>>   1 file changed, 5 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
+>> index aa01c42..6205d4f 100644
+>> --- a/arch/arm/mach-exynos/firmware.c
+>> +++ b/arch/arm/mach-exynos/firmware.c
+>> @@ -30,13 +30,16 @@ static int exynos_do_idle(void)
+>>
+>>   static int exynos_cpu_boot(int cpu)
+>>   {
+>> +    if (soc_is_exynos3250()) {
+>> +        return 0;
 > 
-> 2014-04-17 (목), 14:27 +0800, Chao Yu:
-> > Since max_nid value was minus three in previous commit:
-> > 'b63da15e8b475245026bdf2096853683f189706b', Our last three nids could not be
-> > used ever, but 0/node nid/meta nid is still occupied.
-> > And also our ra_meta_pages() could not readahead the last block of NAT.
-> 
-> What is the root problem in there?
+> This is strange. How the firmware knows when to boot the CPU then, if CPU1BOOT command is not called?
 
-The last one is the root problem, I will submit another patch to fix it.
+As I knew, Exynos3250 doesn't need smc for secondary boot
+because WFE in secure mode for Exynos3250 is removed.
+So, Exynos3250 doesn't need to send IPI_WAKEUP after call_firmware_op(cpu_boot, ...).
 
-> IIRC, the max_nid should not be turned back since that can cause an
-> infinite loop during build_free_nids() under a test using whole the
-> nids.
-
-Got it, thanks for your explanation.
-
-Regards.
-
-> 
-> > Let's fix the wrong calculation of this value, and left the reserved nids there.
-> >
-> > Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-> > ---
-> >  fs/f2fs/node.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-> > index 84f9b7b..3f0bb50 100644
-> > --- a/fs/f2fs/node.c
-> > +++ b/fs/f2fs/node.c
-> > @@ -1860,7 +1860,7 @@ static int init_node_manager(struct f2fs_sb_info *sbi)
-> >  	nat_blocks = nat_segs << le32_to_cpu(sb_raw->log_blocks_per_seg);
-> >
-> >  	/* not used nids: 0, node, meta, (and root counted as valid node) */
-> > -	nm_i->max_nid = NAT_ENTRY_PER_BLOCK * nat_blocks - 3;
-> > +	nm_i->max_nid = NAT_ENTRY_PER_BLOCK * nat_blocks;
-> >  	nm_i->fcnt = 0;
-> >  	nm_i->nat_cnt = 0;
-> >  	nm_i->ram_thresh = DEF_RAM_THRESHOLD;
-> 
-> --
-> Jaegeuk Kim
-> Samsung
+Best Regards,
+Chanwoo Choi
 
