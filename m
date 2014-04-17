@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161328AbaDQNi1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 09:38:27 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:53773 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516AbaDQNi0 (ORCPT
+	id S1161434AbaDQNjB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 09:39:01 -0400
+Received: from mail.data-modul.de ([212.184.205.171]:56944 "HELO
+	mailgw1.data-modul.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751516AbaDQNi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 09:38:26 -0400
-Subject: Re: [PATCH 0/3] perf top/tui: Fixes for percentage filter behavior
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <20140417120046.GC7422@krava.brq.redhat.com>
-References: <1397721206-15393-1-git-send-email-namhyung@kernel.org>
-	 <20140417120046.GC7422@krava.brq.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 17 Apr 2014 22:38:19 +0900
-Message-ID: <1397741900.1731.17.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 17 Apr 2014 09:38:59 -0400
+X-Greylist: delayed 621 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Apr 2014 09:38:58 EDT
+From: Silvio Fricke <silvio.fricke@gmail.com>
+To: Shawn Guo <shawn.guo@linaro.org>, Linus Walleij <linus.walleij@linaro.org>
+Cc: Silvio Fricke <silvio.fricke@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org, Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>, spear-devel@list.st.com
+Subject: Re: [PATCH 0/6] mfd/gpio: cleanup of STMPE driver
+Date: Thu, 17 Apr 2014 15:28:05 +0200
+Message-Id: <cover.1397741024.git.silvio.fricke@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <20140417061136.GD11602@dragon>
+References: <20140417061136.GD11602@dragon>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+Hi,
 
-2014-04-17 (목), 14:00 +0200, Jiri Olsa:
-> On Thu, Apr 17, 2014 at 04:53:23PM +0900, Namhyung Kim wrote:
-> > Hi,
-> > 
-> > This is a small fixes for a bug in perf top I found during some tests.
-> > It gets segfault if symbol filter found no entries - accessing NULL
-> > pointer in that case.
-> 
-> yep, I hit that yesterday as well, but I ended up just with
-> the patch below, your changes seems more comprehensive ;-)
-> going to review..
+I have tested this patches with my data-modul imx6q board.
+So the patches get a:
 
-Well, the end result will be same, but I think it should have 0
-nr_entries when there's no entry to show.
+Tested-by: Silvio Fricke <silvio.fricke@gmail.com>
 
-Thanks,
-Namhyung
 
+Shawn, can you add this patch to your tree if you pull Linus patches?
+
+Thx and Cheers,
+Silvio
+
+Silvio Fricke (1):
+  ARM: dts: imx6: edmqmx6: add vcc and vio power supplies to stmpe
+
+ arch/arm/boot/dts/imx6q-dmo-edmqmx6.dts | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+-- 
+1.9.1
 
