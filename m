@@ -1,141 +1,949 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161098AbaDQJnO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 05:43:14 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:32385 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754463AbaDQJnK (ORCPT
+	id S1754505AbaDQJp2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 05:45:28 -0400
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.139]:5274 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751185AbaDQJpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 05:43:10 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Jianguo Wu <wujianguo@huawei.com>
-Cc: "linux\@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Li Zefan <lizefan@huawei.com>, Wang Nan <wangnan0@huawei.com>,
-        "linux-arm-kernel\@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mm\@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] ARM: mm: support big-endian page tables
-In-Reply-To: <534F9F79.9050503@huawei.com> (Jianguo Wu's message of "Thu, 17
-	Apr 2014 10:31:37 +0100")
-Organization: ARM Ltd
-References: <534F9F79.9050503@huawei.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-Date: Thu, 17 Apr 2014 10:43:01 +0100
-Message-ID: <87ob00wau2.fsf@approximate.cambridge.arm.com>
+	Thu, 17 Apr 2014 05:45:19 -0400
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-15.tower-178.messagelabs.com!1397727912!26299531!2
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.1; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Thu, 17 Apr 2014 11:45:15 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        "Thomas Schnuerer" <thomas.schnuerer@men.de>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>
+Subject: [PATCH] tty: serial: Add driver for MEN's 16z135 High Speed UART.
+Date: Thu, 17 Apr 2014 11:44:54 +0200
+Message-ID: <1397727894-10123-1-git-send-email-johannes.thumshirn@men.de>
+X-Mailer: git-send-email 1.9.2
 MIME-Version: 1.0
 Content-Type: text/plain
+X-Originating-IP: [192.1.1.31]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17 2014 at 10:31:37 am BST, Jianguo Wu <wujianguo@huawei.com> wrote:
-> When enable LPAE and big-endian in a hisilicon board, while specify
-> mem=384M mem=512M@7680M, will get bad page state:
->
-> Freeing unused kernel memory: 180K (c0466000 - c0493000)
-> BUG: Bad page state in process init  pfn:fa442
-> page:c7749840 count:0 mapcount:-1 mapping:  (null) index:0x0
-> page flags: 0x40000400(reserved)
-> Modules linked in:
-> CPU: 0 PID: 1 Comm: init Not tainted 3.10.27+ #66
-> [<c000f5f0>] (unwind_backtrace+0x0/0x11c) from [<c000cbc4>] (show_stack+0x10/0x14)
-> [<c000cbc4>] (show_stack+0x10/0x14) from [<c009e448>] (bad_page+0xd4/0x104)
-> [<c009e448>] (bad_page+0xd4/0x104) from [<c009e520>] (free_pages_prepare+0xa8/0x14c)
-> [<c009e520>] (free_pages_prepare+0xa8/0x14c) from [<c009f8ec>] (free_hot_cold_page+0x18/0xf0)
-> [<c009f8ec>] (free_hot_cold_page+0x18/0xf0) from [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8)
-> [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8) from [<c00b6458>] (handle_mm_fault+0xf4/0x120)
-> [<c00b6458>] (handle_mm_fault+0xf4/0x120) from [<c0013754>] (do_page_fault+0xfc/0x354)
-> [<c0013754>] (do_page_fault+0xfc/0x354) from [<c0008400>] (do_DataAbort+0x2c/0x90)
-> [<c0008400>] (do_DataAbort+0x2c/0x90) from [<c0008fb4>] (__dabt_usr+0x34/0x40)
->
-> The bad pfn:fa442 is not system memory(mem=384M mem=512M@7680M), after debugging,
-> I find in page fault handler, will get wrong pfn from pte just after set pte,
-> as follow:
-> do_anonymous_page()
-> {
-> 	...
-> 	set_pte_at(mm, address, page_table, entry);
-> 	
-> 	//debug code
-> 	pfn = pte_pfn(entry);
-> 	pr_info("pfn:0x%lx, pte:0x%llx\n", pfn, pte_val(entry));
->
-> 	//read out the pte just set
-> 	new_pte = pte_offset_map(pmd, address);
-> 	new_pfn = pte_pfn(*new_pte);
-> 	pr_info("new pfn:0x%lx, new pte:0x%llx\n", pfn, pte_val(entry));
-> 	...
-> }
->
-> pfn:   0x1fa4f5,     pte:0xc00001fa4f575f
-> new_pfn:0xfa4f5, new_pte:0xc00000fa4f5f5f	//new pfn/pte is wrong.
->
-> The bug is happened in cpu_v7_set_pte_ext(ptep, pte):
-> An LPAE PTE is a 64bit quantity, passed to cpu_v7_set_pte_ext in the r2 and r3 registers.
-> On an LE kernel, r2 contains the LSB of the PTE, and r3 the MSB.
-> On a BE kernel, the assignment is reversed.
->
-> Unfortunately, the current code always assumes the LE case,
-> leading to corruption of the PTE when clearing/setting bits.
->
-> This patch fixes this issue much like it has been done already in the
-> cpu_v7_switch_mm case.
->
-> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-> Cc: stable@vger.kernel.org
+Add driver for MEN's 16z135 High Speed UART.
 
-Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+The 16z135 is a memory mapped UART Core on an MCB FPGA and has 1024 byte
+deep FIFO buffers for the RX and TX path. It also has configurable FIFO
+fill level IRQs and data copied to and from the hardware has to be
+acknowledged.
 
-> ---
-> -v2: Refactoring code suggested by Ben Dooks.
-> -v3: Rewrite commit message suggested by Marc Zyngier.
-> ---
->  arch/arm/mm/proc-v7-3level.S |   18 +++++++++++++-----
->  1 files changed, 13 insertions(+), 5 deletions(-)
->
-> diff --git a/arch/arm/mm/proc-v7-3level.S b/arch/arm/mm/proc-v7-3level.S
-> index 01a719e..22e3ad6 100644
-> --- a/arch/arm/mm/proc-v7-3level.S
-> +++ b/arch/arm/mm/proc-v7-3level.S
-> @@ -64,6 +64,14 @@ ENTRY(cpu_v7_switch_mm)
->  	mov	pc, lr
->  ENDPROC(cpu_v7_switch_mm)
->  
-> +#ifdef __ARMEB__
-> +#define rl r3
-> +#define rh r2
-> +#else
-> +#define rl r2
-> +#define rh r3
-> +#endif
-> +
->  /*
->   * cpu_v7_set_pte_ext(ptep, pte)
->   *
-> @@ -73,13 +81,13 @@ ENDPROC(cpu_v7_switch_mm)
->   */
->  ENTRY(cpu_v7_set_pte_ext)
->  #ifdef CONFIG_MMU
-> -	tst	r2, #L_PTE_VALID
-> +	tst	rl, #L_PTE_VALID
->  	beq	1f
-> -	tst	r3, #1 << (57 - 32)		@ L_PTE_NONE
-> -	bicne	r2, #L_PTE_VALID
-> +	tst	rh, #1 << (57 - 32)		@ L_PTE_NONE
-> +	bicne	rl, #L_PTE_VALID
->  	bne	1f
-> -	tst	r3, #1 << (55 - 32)		@ L_PTE_DIRTY
-> -	orreq	r2, #L_PTE_RDONLY
-> +	tst	rh, #1 << (55 - 32)		@ L_PTE_DIRTY
-> +	orreq	rl, #L_PTE_RDONLY
->  1:	strd	r2, r3, [r0]
->  	ALT_SMP(W(nop))
->  	ALT_UP (mcr	p15, 0, r0, c7, c10, 1)		@ flush_pte
+Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
+---
+ drivers/tty/serial/Kconfig         |  10 +
+ drivers/tty/serial/Makefile        |   1 +
+ drivers/tty/serial/men_z135_uart.c | 848 +++++++++++++++++++++++++++++++++++++
+ include/uapi/linux/serial_core.h   |   3 +
+ 4 files changed, 862 insertions(+)
+ create mode 100644 drivers/tty/serial/men_z135_uart.c
 
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 2e6d8dd..4cd81e2 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -1507,6 +1507,16 @@ config SERIAL_ST_ASC_CONSOLE
+ 	depends on SERIAL_ST_ASC=y
+ 	select SERIAL_CORE_CONSOLE
+ 
++config SERIAL_MEN_Z135
++	tristate "MEN 16z135 Support"
++	depends on MCB
++	help
++	  Say yes here to enable support for the MEN 16z135 High Speed UART IP-Core
++	  on a MCB carrier.
++
++	  This driver can also be build as a module. If so, the module will be called
++	  men_z135_uart.ko
++
+ endmenu
+ 
+ endif # TTY
+diff --git a/drivers/tty/serial/Makefile b/drivers/tty/serial/Makefile
+index 3680854..5f2a3f4 100644
+--- a/drivers/tty/serial/Makefile
++++ b/drivers/tty/serial/Makefile
+@@ -87,3 +87,4 @@ obj-$(CONFIG_SERIAL_EFM32_UART) += efm32-uart.o
+ obj-$(CONFIG_SERIAL_ARC)	+= arc_uart.o
+ obj-$(CONFIG_SERIAL_RP2)	+= rp2.o
+ obj-$(CONFIG_SERIAL_FSL_LPUART)	+= fsl_lpuart.o
++obj-$(CONFIG_SERIAL_MEN_Z135)	+= men_z135_uart.o
+diff --git a/drivers/tty/serial/men_z135_uart.c b/drivers/tty/serial/men_z135_uart.c
+new file mode 100644
+index 0000000..4ca245a
+--- /dev/null
++++ b/drivers/tty/serial/men_z135_uart.c
+@@ -0,0 +1,848 @@
++/*
++ * MEN 16z135 High Speed UART
++ *
++ * Copyright (C) 2014 MEN Mikroelektronik GmbH (www.men.de)
++ * Author: Johannes Thumshirn <johannes.thumshirn@men.de>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; version 2 of the License.
++ */
++#define pr_fmt(fmt) KBUILD_MODNAME ":" fmt
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/interrupt.h>
++#include <linux/serial_core.h>
++#include <linux/ioport.h>
++#include <linux/io.h>
++#include <linux/tty_flip.h>
++#include <linux/bitops.h>
++#include <linux/mcb.h>
++
++#define MEN_Z135_MAX_PORTS		12
++#define MEN_Z135_BASECLK		29491200
++#define MEN_Z135_FIFO_SIZE		1024
++#define MEN_Z135_NUM_MSI_VECTORS	2
++#define MEN_Z135_FIFO_WATERMARK		1020
++
++#define MEN_Z135_STAT_REG		0x0
++#define MEN_Z135_RX_RAM			0x4
++#define MEN_Z135_TX_RAM			0x400
++#define MEN_Z135_RX_CTRL		0x800
++#define MEN_Z135_TX_CTRL		0x804
++#define MEN_Z135_CONF_REG		0x808
++#define MEN_Z135_UART_FREQ		0x80c
++#define MEN_Z135_BAUD_REG		0x810
++#define MENZ135_TIMEOUT			0x814
++
++#define MEN_Z135_MEM_SIZE		0x818
++
++#define IS_IRQ(x) ((x) & 1)
++#define IRQ_ID(x) (((x) >> 1) & 7)
++
++#define MEN_Z135_IER_RXCIEN BIT(0)		/* TX Space IRQ */
++#define MEN_Z135_IER_TXCIEN BIT(1)		/* RX Space IRQ */
++#define MEN_Z135_IER_RLSIEN BIT(2)		/* Receiver Line Status IRQ */
++#define MEN_Z135_IER_MSIEN  BIT(3)		/* Modem Status IRQ */
++#define MEN_Z135_ALL_IRQS (MEN_Z135_IER_RXCIEN		\
++				| MEN_Z135_IER_RLSIEN	\
++				| MEN_Z135_IER_MSIEN	\
++				| MEN_Z135_IER_TXCIEN)
++
++#define MEN_Z135_MCR_DTR	BIT(24)
++#define MEN_Z135_MCR_RTS	BIT(25)
++#define MEN_Z135_MCR_OUT1	BIT(26)
++#define MEN_Z135_MCR_OUT2	BIT(27)
++#define MEN_Z135_MCR_LOOP	BIT(28)
++#define MEN_Z135_MCR_RCFC	BIT(29)
++
++#define MEN_Z135_MSR_DCTS	BIT(0)
++#define MEN_Z135_MSR_DDSR	BIT(1)
++#define MEN_Z135_MSR_DRI	BIT(2)
++#define MEN_Z135_MSR_DDCD	BIT(3)
++#define MEN_Z135_MSR_CTS	BIT(4)
++#define MEN_Z135_MSR_DSR	BIT(5)
++#define MEN_Z135_MSR_RI		BIT(6)
++#define MEN_Z135_MSR_DCD	BIT(7)
++
++#define MEN_Z135_LCR_SHIFT 8	/* LCR shift mask */
++
++#define MEN_Z135_WL5 0		/* CS5 */
++#define MEN_Z135_WL6 1		/* CS6 */
++#define MEN_Z135_WL7 2		/* CS7 */
++#define MEN_Z135_WL8 3		/* CS8 */
++
++#define MEN_Z135_STB_SHIFT 2	/* Stopbits */
++#define MEN_Z135_NSTB1 0
++#define MEN_Z135_NSTB2 1
++
++#define MEN_Z135_PEN_SHIFT 3	/* Parity enable */
++#define MEN_Z135_PAR_DIS 0
++#define MEN_Z135_PAR_ENA 1
++
++#define MEN_Z135_PTY_SHIFT 4	/* Parity type */
++#define MEN_Z135_PTY_ODD 0
++#define MEN_Z135_PTY_EVN 1
++
++#define MEN_Z135_LSR_DR BIT(0)
++#define MEN_Z135_LSR_OE BIT(1)
++#define MEN_Z135_LSR_PE BIT(2)
++#define MEN_Z135_LSR_FE BIT(3)
++#define MEN_Z135_LSR_BI BIT(4)
++#define MEN_Z135_LSR_THEP BIT(5)
++#define MEN_Z135_LSR_TEXP BIT(6)
++#define MEN_Z135_LSR_RXFIFOERR BIT(7)
++
++#define MEN_Z135_IRQ_ID_MST 0
++#define MEN_Z135_IRQ_ID_TSA 1
++#define MEN_Z135_IRQ_ID_RDA 2
++#define MEN_Z135_IRQ_ID_RLS 3
++#define MEN_Z135_IRQ_ID_CTI 6
++
++#define LCR(x) (((x) >> MEN_Z135_LCR_SHIFT) & 0xff)
++
++#define BYTES_TO_ALIGN(x) ((x) & 0x3)
++
++static int line;
++
++static int txlvl = 5;
++module_param(txlvl, int, S_IRUGO);
++MODULE_PARM_DESC(txlvl, "TX IRQ trigger level 0-7, default 5 (128 byte)");
++
++static int rxlvl = 6;
++module_param(rxlvl, int, S_IRUGO);
++MODULE_PARM_DESC(rxlvl, "RX IRQ trigger level 0-7, default 6 (256 byte)");
++
++static int align;
++module_param(align, int, S_IRUGO);
++MODULE_PARM_DESC(align, "Keep hardware FIFO write pointer aligned, default 0");
++
++struct men_z135_port {
++	struct uart_port port;
++	struct mcb_device *mdev;
++	unsigned char *rxbuf;
++	u32 stat_reg;
++};
++#define to_men_z135(port) container_of((port), struct men_z135_port, port)
++
++/**
++ * men_z135_reg_set() - Set value in register
++ * @uart: The UART port
++ * @addr: Register address
++ * @val: value to set
++ */
++static inline void men_z135_reg_set(struct men_z135_port *uart,
++				u32 addr, u32 val)
++{
++	struct uart_port *port = &uart->port;
++	u32 reg;
++
++	reg = ioread32(port->membase + addr);
++	reg |= val;
++	iowrite32(reg, port->membase + addr);
++}
++
++/**
++ * men_z135_reg_clr() - Unset value in register
++ * @uart: The UART port
++ * @addr: Register address
++ * @val: value to clear
++ */
++static inline void men_z135_reg_clr(struct men_z135_port *uart,
++				u32 addr, u32 val)
++{
++	struct uart_port *port = &uart->port;
++	u32 reg;
++
++	reg = ioread32(port->membase + addr);
++	reg &= ~val;
++	iowrite32(reg, port->membase + addr);
++}
++
++/**
++ * men_z135_handle_modem_status() - Handle change of modem status
++ * @port: The UART port
++ *
++ * Handle change of modem status register. This is done by reading the "delta"
++ * versions of DCD (Data Carrier Detect) and CTS (Clear To Send).
++ */
++static void men_z135_handle_modem_status(struct men_z135_port *uart)
++{
++	if (uart->stat_reg & MEN_Z135_MSR_DDCD)
++		uart_handle_dcd_change(&uart->port,
++				uart->stat_reg & ~MEN_Z135_MSR_DCD);
++	if (uart->stat_reg & MEN_Z135_MSR_DCTS)
++		uart_handle_cts_change(&uart->port,
++				uart->stat_reg & ~MEN_Z135_MSR_CTS);
++}
++
++static void men_z135_handle_lsr(struct men_z135_port *uart)
++{
++	struct uart_port *port = &uart->port;
++	u8 lsr;
++
++	lsr = (uart->stat_reg >> 16) & 0xff;
++
++	if (lsr & MEN_Z135_LSR_OE)
++		port->icount.overrun++;
++	if (lsr & MEN_Z135_LSR_PE)
++		port->icount.parity++;
++	if (lsr & MEN_Z135_LSR_FE)
++		port->icount.frame++;
++	if (lsr & MEN_Z135_LSR_BI) {
++		port->icount.brk++;
++		uart_handle_break(port);
++	}
++}
++
++/**
++ * get_rx_fifo_content() - Get the number of bytes in RX FIFO
++ * @uart: The UART port
++ *
++ * Read RXC register from hardware and return current FIFO fill size.
++ */
++static u16 get_rx_fifo_content(struct men_z135_port *uart)
++{
++	struct uart_port *port = &uart->port;
++	u32 stat_reg;
++	u16 rxc;
++	u8 rxc_lo;
++	u8 rxc_hi;
++
++	stat_reg = ioread32(port->membase + MEN_Z135_STAT_REG);
++	rxc_lo = stat_reg >> 24;
++	rxc_hi = (stat_reg & 0xC0) >> 6;
++
++	rxc = rxc_lo | (rxc_hi << 8);
++
++	return rxc;
++}
++
++/**
++ * men_z135_handle_rx() - RX tasklet routine
++ * @arg: Pointer to struct men_z135_port
++ *
++ * Copy from RX FIFO and acknowledge number of bytes copied.
++ */
++static void men_z135_handle_rx(struct men_z135_port *uart)
++{
++	struct uart_port *port = &uart->port;
++	struct tty_port *tport = &port->state->port;
++	int copied;
++	u16 size;
++	int room;
++
++	size = get_rx_fifo_content(uart);
++
++	if (size == 0)
++		return;
++
++	/* Avoid accidently accessing TX FIFO instead of RX FIFO. Last
++	 * longword in RX FIFO cannot be read.(0x004-0x3FF)
++	 */
++	if (size > MEN_Z135_FIFO_WATERMARK)
++		size = MEN_Z135_FIFO_WATERMARK;
++
++	room = tty_buffer_request_room(tport, size);
++	if (room != size)
++		pr_err("Not enough room in flip buffer, truncating to %d\n",
++			room);
++
++	if (room == 0)
++		return;
++
++	memcpy_fromio(uart->rxbuf, port->membase + MEN_Z135_RX_RAM, room);
++	/* Be sure to first copy all data and then acknowledge it */
++	mb();
++	iowrite32(room, port->membase + 0x800);
++
++	copied = tty_insert_flip_string(tport, uart->rxbuf, room);
++	if (copied != room)
++		pr_err("Only copied %d instead of %d bytes\n", copied, room);
++
++	port->icount.rx += copied;
++
++	tty_flip_buffer_push(tport);
++
++}
++
++/**
++ * men_z135_handle_tx() - TX tasklet routine
++ * @arg: Pointer to struct men_z135_port
++ *
++ */
++static void men_z135_handle_tx(struct men_z135_port *uart)
++{
++	struct uart_port *port = &uart->port;
++	struct circ_buf *xmit = &port->state->xmit;
++	u32 txc;
++	u32 wptr;
++	int qlen;
++	int n;
++	int txfree;
++	int head;
++	int tail;
++	int s;
++
++	if (uart_circ_empty(xmit))
++		goto out;
++
++	if (uart_tx_stopped(port))
++		goto out;
++
++	if (port->x_char)
++		goto out;
++
++	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
++		uart_write_wakeup(port);
++
++	/* calculate bytes to copy */
++	qlen = uart_circ_chars_pending(xmit);
++	if (qlen <= 0)
++		goto out;
++
++	wptr = ioread32(port->membase + MEN_Z135_TX_CTRL);
++	txc = (wptr >> 16) & 0x3ff;
++	wptr &= 0x3ff;
++
++	if (txc > MEN_Z135_FIFO_WATERMARK)
++		txc = MEN_Z135_FIFO_WATERMARK;
++
++	txfree = MEN_Z135_FIFO_WATERMARK - txc;
++	if (txfree <= 0) {
++		pr_err("Not enough room in TX FIFO have %d, need %d\n",
++			txfree, qlen);
++		goto irq_en;
++	}
++
++	/* if we're not aligned, it's better to copy only 1 or 2 bytes and
++	 * then the rest.
++	 */
++	if (align && qlen >= 3 && BYTES_TO_ALIGN(wptr))
++		n = 4 - BYTES_TO_ALIGN(wptr);
++	else if (qlen > txfree)
++		n = txfree;
++	else
++		n = qlen;
++
++	if (n <= 0)
++		goto irq_en;
++
++	head = xmit->head & (UART_XMIT_SIZE - 1);
++	tail = xmit->tail & (UART_XMIT_SIZE - 1);
++
++	s = ((head >= tail) ? head : UART_XMIT_SIZE) - tail;
++	n = min(n, s);
++
++	memcpy_toio(port->membase + MEN_Z135_TX_RAM, &xmit->buf[xmit->tail], n);
++	xmit->tail = (xmit->tail + n) & (UART_XMIT_SIZE - 1);
++	mmiowb();
++
++	iowrite32(n & 0x3ff, port->membase + MEN_Z135_TX_CTRL);
++
++	port->icount.tx += n;
++
++irq_en:
++	if (!uart_circ_empty(xmit))
++		men_z135_reg_set(uart, MEN_Z135_CONF_REG, MEN_Z135_IER_TXCIEN);
++	else
++		men_z135_reg_clr(uart, MEN_Z135_CONF_REG, MEN_Z135_IER_TXCIEN);
++
++out:
++	return;
++
++}
++
++/**
++ * men_z135_intr() - Handle legacy IRQs
++ * @irq: The IRQ number
++ * @data: Pointer to UART port
++ *
++ * Check IIR register to see which tasklet to start.
++ */
++static irqreturn_t men_z135_intr(int irq, void *data)
++{
++	struct men_z135_port *uart = (struct men_z135_port *)data;
++	struct uart_port *port = &uart->port;
++	int irq_id;
++
++	uart->stat_reg = ioread32(port->membase + MEN_Z135_STAT_REG);
++	/* IRQ pending is low active */
++	if (IS_IRQ(uart->stat_reg))
++		return IRQ_NONE;
++
++	irq_id = IRQ_ID(uart->stat_reg);
++	switch (irq_id) {
++	case MEN_Z135_IRQ_ID_MST:
++		men_z135_handle_modem_status(uart);
++		break;
++	case MEN_Z135_IRQ_ID_TSA:
++		men_z135_handle_tx(uart);
++		break;
++	case MEN_Z135_IRQ_ID_CTI:
++		dev_dbg(&uart->mdev->dev, "Character Timeout Indication\n");
++		/* Fallthrough */
++	case MEN_Z135_IRQ_ID_RDA:
++		/* Reading data clears RX IRQ */
++		men_z135_handle_rx(uart);
++		break;
++	case MEN_Z135_IRQ_ID_RLS:
++		men_z135_handle_lsr(uart);
++		break;
++	default:
++		dev_warn(&uart->mdev->dev, "Unknown IRQ id %d\n", irq_id);
++		return IRQ_NONE;
++	}
++
++	return IRQ_HANDLED;
++}
++
++/**
++ * men_z135_request_irq() - Request IRQ for 16z135 core
++ * @uart: z135 private uart port structure
++ *
++ * Request an IRQ for 16z135 to use. First try using MSI, if it fails
++ * fall back to using legacy interrupts.
++ */
++static int men_z135_request_irq(struct men_z135_port *uart)
++{
++	struct device *dev = &uart->mdev->dev;
++	struct uart_port *port = &uart->port;
++	int err = 0;
++
++	err = request_irq(port->irq, men_z135_intr, IRQF_SHARED,
++			"men_z135_intr", uart);
++	if (err)
++		dev_err(dev, "Error %d getting interrupt\n", err);
++
++	return err;
++}
++
++/**
++ * men_z135_tx_empty() - Handle tx_empty call
++ * @port: The UART port
++ *
++ * This function tests whether the TX FIFO and shifter for the port
++ * described by @port is empty.
++ */
++static unsigned int men_z135_tx_empty(struct uart_port *port)
++{
++	u32 wptr;
++	u16 txc;
++
++	wptr = ioread32(port->membase + MEN_Z135_TX_CTRL);
++	txc = (wptr >> 16) & 0x3ff;
++
++	if (txc == 0)
++		return TIOCSER_TEMT;
++	else
++		return 0;
++}
++
++/**
++ * men_z135_set_mctrl() - Set modem control lines
++ * @port: The UART port
++ * @mctrl: The modem control lines
++ *
++ * This function sets the modem control lines for a port described by @port
++ * to the state described by @mctrl
++ */
++static void men_z135_set_mctrl(struct uart_port *port, unsigned int mctrl)
++{
++	struct men_z135_port *uart = to_men_z135(port);
++	u32 conf_reg = 0;
++
++	if (mctrl & TIOCM_RTS)
++		conf_reg |= MEN_Z135_MCR_RTS;
++	if (mctrl & TIOCM_DTR)
++		conf_reg |= MEN_Z135_MCR_DTR;
++	if (mctrl & TIOCM_OUT1)
++		conf_reg |= MEN_Z135_MCR_OUT1;
++	if (mctrl & TIOCM_OUT2)
++		conf_reg |= MEN_Z135_MCR_OUT2;
++	if (mctrl & TIOCM_LOOP)
++		conf_reg |= MEN_Z135_MCR_LOOP;
++
++	men_z135_reg_set(uart, MEN_Z135_CONF_REG, conf_reg);
++}
++
++/**
++ * men_z135_get_mctrl() - Get modem control lines
++ * @port: The UART port
++ *
++ * Retruns the current state of modem control inputs.
++ */
++static unsigned int men_z135_get_mctrl(struct uart_port *port)
++{
++	unsigned int mctrl = 0;
++	u32 stat_reg;
++	u8 msr;
++
++	stat_reg = ioread32(port->membase + MEN_Z135_STAT_REG);
++
++	msr = ~((stat_reg >> 8) & 0xff);
++
++	if (msr & MEN_Z135_MSR_CTS)
++		mctrl |= TIOCM_CTS;
++	if (msr & MEN_Z135_MSR_DSR)
++		mctrl |= TIOCM_DSR;
++	if (msr & MEN_Z135_MSR_RI)
++		mctrl |= TIOCM_RI;
++	if (msr & MEN_Z135_MSR_DCD)
++		mctrl |= TIOCM_CAR;
++
++	return mctrl;
++}
++
++/**
++ * men_z135_stop_tx() - Stop transmitting characters
++ * @port: The UART port
++ *
++ * Stop transmitting characters. This might be due to CTS line becomming
++ * inactive or the tty layer indicating we want to stop transmission due to
++ * an XOFF character.
++ */
++static void men_z135_stop_tx(struct uart_port *port)
++{
++	struct men_z135_port *uart = to_men_z135(port);
++
++	men_z135_reg_clr(uart, MEN_Z135_CONF_REG, MEN_Z135_IER_TXCIEN);
++}
++
++/**
++ * men_z135_start_tx() - Start transmitting characters
++ * @port: The UART port
++ *
++ * Start transmitting character. This actually doesn't transmit anything, but
++ * fires off the TX tasklet.
++ */
++static void men_z135_start_tx(struct uart_port *port)
++{
++	struct men_z135_port *uart = to_men_z135(port);
++
++	men_z135_handle_tx(uart);
++}
++
++/**
++ * men_z135_stop_rx() - Stop receiving characters
++ * @port: The UART port
++ *
++ * Stop receiving characters; the prot is in the process of being closed.
++ */
++static void men_z135_stop_rx(struct uart_port *port)
++{
++	struct men_z135_port *uart = to_men_z135(port);
++
++	men_z135_reg_clr(uart, MEN_Z135_CONF_REG, MEN_Z135_IER_RXCIEN);
++}
++
++/**
++ * men_z135_enable_ms() - Enable Modem Status
++ * port:
++ *
++ * Enable Modem Status IRQ.
++ */
++static void men_z135_enable_ms(struct uart_port *port)
++{
++	struct men_z135_port *uart = to_men_z135(port);
++
++	men_z135_reg_set(uart, MEN_Z135_CONF_REG, MEN_Z135_IER_MSIEN);
++}
++
++static int men_z135_startup(struct uart_port *port)
++{
++	struct men_z135_port *uart = to_men_z135(port);
++	int err;
++	u32 conf_reg = 0;
++
++	err = men_z135_request_irq(uart);
++	if (err)
++		return -ENODEV;
++
++	conf_reg = ioread32(port->membase + MEN_Z135_CONF_REG);
++
++	conf_reg |= MEN_Z135_ALL_IRQS;
++	conf_reg &= ~(0xff << 16);
++	conf_reg |= (txlvl << 16);
++	conf_reg |= (rxlvl << 20);
++
++	iowrite32(conf_reg, port->membase + MEN_Z135_CONF_REG);
++
++	return 0;
++}
++
++static void men_z135_shutdown(struct uart_port *port)
++{
++	struct men_z135_port *uart = to_men_z135(port);
++	u32 conf_reg = 0;
++
++	conf_reg |= MEN_Z135_ALL_IRQS;
++
++	men_z135_reg_clr(uart, MEN_Z135_CONF_REG, conf_reg);
++
++	free_irq(uart->port.irq, uart);
++}
++
++static void men_z135_set_termios(struct uart_port *port,
++				struct ktermios *termios,
++				struct ktermios *old)
++{
++	unsigned int baud;
++	u32 conf_reg;
++	u32 bd_reg;
++	u32 uart_freq;
++	u8 lcr;
++
++	conf_reg = ioread32(port->membase + MEN_Z135_CONF_REG);
++	lcr = LCR(conf_reg);
++
++	/* byte size */
++	switch (termios->c_cflag & CSIZE) {
++	case CS5:
++		lcr |= MEN_Z135_WL5;
++		break;
++	case CS6:
++		lcr |= MEN_Z135_WL6;
++		break;
++	case CS7:
++		lcr |= MEN_Z135_WL7;
++		break;
++	case CS8:
++		lcr |= MEN_Z135_WL8;
++		break;
++	}
++
++	/* stop bits */
++	if (termios->c_cflag & CSTOPB)
++		lcr |= MEN_Z135_NSTB2 << MEN_Z135_STB_SHIFT;
++
++	/* parity */
++	if (termios->c_cflag & PARENB) {
++		lcr |= MEN_Z135_PAR_ENA << MEN_Z135_PEN_SHIFT;
++
++		if (termios->c_cflag & PARODD)
++			lcr |= MEN_Z135_PTY_ODD << MEN_Z135_PTY_SHIFT;
++		else
++			lcr |= MEN_Z135_PTY_EVN << MEN_Z135_PTY_SHIFT;
++	} else
++		lcr |= MEN_Z135_PAR_DIS << MEN_Z135_PEN_SHIFT;
++
++	conf_reg |= lcr << MEN_Z135_LCR_SHIFT;
++	iowrite32(conf_reg, port->membase + MEN_Z135_CONF_REG);
++
++	uart_freq = ioread32(port->membase + MEN_Z135_UART_FREQ);
++	if (uart_freq == 0)
++		uart_freq = MEN_Z135_BASECLK;
++
++	baud = uart_get_baud_rate(port, termios, old, 0, uart_freq / 16);
++
++	spin_lock(&port->lock);
++	if (tty_termios_baud_rate(termios))
++		tty_termios_encode_baud_rate(termios, baud, baud);
++
++	bd_reg = uart_freq / (4 * baud);
++	iowrite32(bd_reg, port->membase + MEN_Z135_BAUD_REG);
++
++	uart_update_timeout(port, termios->c_cflag, baud);
++	spin_unlock(&port->lock);
++}
++
++static const char *men_z135_type(struct uart_port *port)
++{
++	return KBUILD_MODNAME;
++}
++
++static void men_z135_release_port(struct uart_port *port)
++{
++	iounmap(port->membase);
++	port->membase = NULL;
++
++	release_mem_region(port->mapbase, MEN_Z135_MEM_SIZE);
++}
++
++static int men_z135_request_port(struct uart_port *port)
++{
++	int size = MEN_Z135_MEM_SIZE;
++
++	if (!request_mem_region(port->mapbase, size, "men_z135_port"))
++		return -EBUSY;
++
++	port->membase = ioremap(port->mapbase, MEN_Z135_MEM_SIZE);
++	if (port->membase == NULL) {
++		release_mem_region(port->mapbase, MEN_Z135_MEM_SIZE);
++		return -ENOMEM;
++	}
++
++	return 0;
++}
++
++static void men_z135_config_port(struct uart_port *port, int type)
++{
++	port->type = PORT_MEN_Z135;
++	men_z135_request_port(port);
++}
++
++static int men_z135_verify_port(struct uart_port *port,
++				struct serial_struct *serinfo)
++{
++	return -EINVAL;
++}
++
++static struct uart_ops men_z135_ops = {
++	.tx_empty = men_z135_tx_empty,
++	.set_mctrl = men_z135_set_mctrl,
++	.get_mctrl = men_z135_get_mctrl,
++	.stop_tx = men_z135_stop_tx,
++	.start_tx = men_z135_start_tx,
++	.stop_rx = men_z135_stop_rx,
++	.enable_ms = men_z135_enable_ms,
++	.startup = men_z135_startup,
++	.shutdown = men_z135_shutdown,
++	.set_termios = men_z135_set_termios,
++	.type = men_z135_type,
++	.release_port = men_z135_release_port,
++	.request_port = men_z135_request_port,
++	.config_port = men_z135_config_port,
++	.verify_port = men_z135_verify_port,
++};
++
++static struct uart_driver men_z135_driver = {
++	.owner = THIS_MODULE,
++	.driver_name = KBUILD_MODNAME,
++	.dev_name = "ttyHSU",
++	.major = 0,
++	.minor = 0,
++	.nr = MEN_Z135_MAX_PORTS,
++};
++
++/**
++ * men_z135_probe() - Probe a z135 instance
++ * @mdev: The MCB device
++ * @id: The MCB device ID
++ *
++ * men_z135_probe does the basic setup of hardware resources and registers the
++ * new uart port to the tty layer.
++ */
++static int men_z135_probe(struct mcb_device *mdev,
++			const struct mcb_device_id *id)
++{
++	struct men_z135_port *uart;
++	struct resource *mem;
++	struct device *dev;
++	int err;
++
++	dev = &mdev->dev;
++
++	uart = devm_kzalloc(dev, sizeof(struct men_z135_port), GFP_KERNEL);
++	if (!uart)
++		return -ENOMEM;
++
++	uart->rxbuf = (unsigned char *)__get_free_page(GFP_KERNEL);
++	if (!uart->rxbuf)
++		return -ENOMEM;
++
++	mem = &mdev->mem;
++
++	mcb_set_drvdata(mdev, uart);
++
++	uart->port.uartclk = MEN_Z135_BASECLK * 16;
++	uart->port.fifosize = MEN_Z135_FIFO_SIZE;
++	uart->port.iotype = UPIO_MEM;
++	uart->port.ops = &men_z135_ops;
++	uart->port.irq = mcb_get_irq(mdev);
++	uart->port.iotype = UPIO_MEM;
++	uart->port.flags = UPF_BOOT_AUTOCONF | UPF_IOREMAP;
++	uart->port.line = line++;
++	uart->port.dev = dev;
++	uart->port.type = PORT_MEN_Z135;
++	uart->port.mapbase = mem->start;
++	uart->port.membase = NULL;
++	uart->mdev = mdev;
++
++	spin_lock_init(&uart->port.lock);
++
++	err = uart_add_one_port(&men_z135_driver, &uart->port);
++	if (err)
++		goto err;
++
++	return 0;
++
++err:
++	free_page((unsigned long) uart->rxbuf);
++	dev_err(dev, "Failed to add UART: %d\n", err);
++
++	return err;
++}
++
++/**
++ * men_z135_remove() - Remove a z135 instance from the system
++ *
++ * @mdev: The MCB device
++ */
++static void men_z135_remove(struct mcb_device *mdev)
++{
++	struct men_z135_port *uart = mcb_get_drvdata(mdev);
++
++	uart_remove_one_port(&men_z135_driver, &uart->port);
++	free_page((unsigned long) uart->rxbuf);
++}
++
++static const struct mcb_device_id men_z135_ids[] = {
++	{ .device = 0x87 },
++};
++MODULE_DEVICE_TABLE(mcb, men_z135_ids);
++
++static struct mcb_driver mcb_driver = {
++	.driver = {
++		.name = "z135-uart",
++		.owner = THIS_MODULE,
++	},
++	.probe = men_z135_probe,
++	.remove = men_z135_remove,
++	.id_table = men_z135_ids,
++};
++
++/**
++ * men_z135_init() - Driver Registration Routine
++ *
++ * men_z135_init is the first routine called when the driver is loaded. All it
++ * does is register with the legacy MEN Chameleon subsystem.
++ */
++static int __init men_z135_init(void)
++{
++	int err;
++
++	err = uart_register_driver(&men_z135_driver);
++	if (err) {
++		pr_err("Failed to register UART: %d\n", err);
++		return err;
++	}
++
++	err = mcb_register_driver(&mcb_driver);
++	if  (err) {
++		pr_err("Failed to register MCB driver: %d\n", err);
++		uart_unregister_driver(&men_z135_driver);
++		return err;
++	}
++
++	return 0;
++}
++module_init(men_z135_init);
++
++/**
++ * men_z135_exit() - Driver Exit Routine
++ *
++ * men_z135_exit is called just before the driver is removed from memory.
++ */
++static void __exit men_z135_exit(void)
++{
++	mcb_unregister_driver(&mcb_driver);
++	uart_unregister_driver(&men_z135_driver);
++}
++module_exit(men_z135_exit);
++
++MODULE_AUTHOR("Johannes Thumshirn <johannes.thumshirn@men.de>");
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("MEN 16z135 High Speed UART");
++MODULE_ALIAS("mcb:16z135");
+diff --git a/include/uapi/linux/serial_core.h b/include/uapi/linux/serial_core.h
+index b47dba2..e1a7b66 100644
+--- a/include/uapi/linux/serial_core.h
++++ b/include/uapi/linux/serial_core.h
+@@ -238,4 +238,7 @@
+ /* Tilera TILE-Gx UART */
+ #define PORT_TILEGX	106
+ 
++/* MEN 16z135 UART */
++#define PORT_MEN_Z135	107
++
+ #endif /* _UAPILINUX_SERIAL_CORE_H */
 -- 
-Jazz is not dead. It just smells funny.
+1.9.2
+
