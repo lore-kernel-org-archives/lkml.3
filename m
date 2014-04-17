@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860AbaDQITM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 04:19:12 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:33616 "EHLO
+	id S1755998AbaDQIT0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 04:19:26 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:33667 "EHLO
 	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754077AbaDQITG (ORCPT
+	with ESMTP id S1754077AbaDQITS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 04:19:06 -0400
-Subject: [PATCH -tip v9 20/26] kprobes: Support blacklist functions in module
+	Thu, 17 Apr 2014 04:19:18 -0400
+Subject: [PATCH -tip v9 22/26] kprobes/x86: Use kprobe_blacklist for
+ .kprobes.text and .entry.text
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Andi Kleen <andi@firstfloor.org>,
+Cc: Andi Kleen <andi@firstfloor.org>,
         Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
-        mingo@redhat.com, Rob Landley <rob@landley.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>, systemtap@sourceware.org
-Date: Thu, 17 Apr 2014 17:18:56 +0900
-Message-ID: <20140417081856.26341.53535.stgit@ltc230.yrl.intra.hitachi.co.jp>
+        Steven Rostedt <rostedt@goodmis.org>,
+        "David S. Miller" <davem@davemloft.net>, fche@redhat.com,
+        mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 17 Apr 2014 17:19:10 +0900
+Message-ID: <20140417081910.26341.58385.stgit@ltc230.yrl.intra.hitachi.co.jp>
 In-Reply-To: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp>
 References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp>
 User-Agent: StGit/0.17-dirty
@@ -30,243 +33,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To blacklist the functions in a module (e.g. user-defined
-kprobe handler and the functions invoked from it), expand
-blacklist support for modules.
-With this change, users can use NOKPROBE_SYMBOL() macro in
-their own modules.
+Use kprobe_blackpoint for blacklisting .entry.text and .kprobees.text
+instead of arch_within_kprobe_blacklist. This also makes them visible
+via (debugfs)/kprobes/blacklist.
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Rob Landley <rob@landley.net>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- Documentation/kprobes.txt |    8 ++++++
- include/linux/module.h    |    5 ++++
- kernel/kprobes.c          |   63 ++++++++++++++++++++++++++++++++++++++-------
- kernel/module.c           |    6 ++++
- 4 files changed, 72 insertions(+), 10 deletions(-)
+ arch/x86/kernel/kprobes/core.c |   11 +------
+ include/linux/kprobes.h        |    1 +
+ kernel/kprobes.c               |   64 ++++++++++++++++++++++++++++------------
+ 3 files changed, 48 insertions(+), 28 deletions(-)
 
-diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
-index 4bbeca8..2845956 100644
---- a/Documentation/kprobes.txt
-+++ b/Documentation/kprobes.txt
-@@ -512,6 +512,14 @@ int enable_jprobe(struct jprobe *jp);
- Enables *probe which has been disabled by disable_*probe(). You must specify
- the probe which has been registered.
+diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+index 1a92130..2fb3d3e 100644
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -1068,17 +1068,10 @@ int longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
+ }
+ NOKPROBE_SYMBOL(longjmp_break_handler);
  
-+4.9 NOKPROBE_SYMBOL()
-+
-+#include <linux/kprobes.h>
-+NOKPROBE_SYMBOL(FUNCTION);
-+
-+Protects given FUNCTION from other kprobes. This is useful for handler
-+functions and functions called from the handlers.
-+
- 5. Kprobes Features and Limitations
- 
- Kprobes allows multiple probes at the same address.  Currently,
-diff --git a/include/linux/module.h b/include/linux/module.h
-index f520a76..2fdb673 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -16,6 +16,7 @@
- #include <linux/kobject.h>
- #include <linux/moduleparam.h>
- #include <linux/jump_label.h>
-+#include <linux/kprobes.h>
- #include <linux/export.h>
- 
- #include <linux/percpu.h>
-@@ -357,6 +358,10 @@ struct module {
- 	unsigned int num_ftrace_callsites;
- 	unsigned long *ftrace_callsites;
- #endif
-+#ifdef CONFIG_KPROBES
-+	unsigned int num_kprobe_blacklist;
-+	unsigned long  *kprobe_blacklist;
-+#endif
- 
- #ifdef CONFIG_MODULE_UNLOAD
- 	/* What modules depend on me? */
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 3214289..8319048 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -88,6 +88,7 @@ static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
- 
- /* Blacklist -- list of struct kprobe_blacklist_entry */
- static LIST_HEAD(kprobe_blacklist);
-+static DEFINE_MUTEX(kprobe_blacklist_mutex);
- 
- #ifdef __ARCH_WANT_KPROBES_INSN_SLOT
- /*
-@@ -1331,22 +1332,27 @@ bool __weak arch_within_kprobe_blacklist(unsigned long addr)
- 	       addr < (unsigned long)__kprobes_text_end;
+-bool arch_within_kprobe_blacklist(unsigned long addr)
+-{
+-	return  (addr >= (unsigned long)__kprobes_text_start &&
+-		 addr < (unsigned long)__kprobes_text_end) ||
+-		(addr >= (unsigned long)__entry_text_start &&
+-		 addr < (unsigned long)__entry_text_end);
+-}
+-
+ int __init arch_init_kprobes(void)
+ {
+-	return 0;
++	return kprobe_blacklist_add_range((unsigned long)__entry_text_start,
++					  (unsigned long) __entry_text_end);
  }
  
--static bool within_kprobe_blacklist(unsigned long addr)
-+static struct kprobe_blacklist_entry *find_blacklist_entry(unsigned long addr)
+ int arch_trampoline_kprobe(struct kprobe *p)
+diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
+index e059507..e81bced 100644
+--- a/include/linux/kprobes.h
++++ b/include/linux/kprobes.h
+@@ -266,6 +266,7 @@ extern int arch_init_kprobes(void);
+ extern void show_registers(struct pt_regs *regs);
+ extern void kprobes_inc_nmissed_count(struct kprobe *p);
+ extern bool arch_within_kprobe_blacklist(unsigned long addr);
++extern int kprobe_blacklist_add_range(unsigned long start, unsigned long end);
+ 
+ struct kprobe_insn_cache {
+ 	struct mutex mutex;
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 8319048..abdede5 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1325,13 +1325,6 @@ out:
+ 	return ret;
+ }
+ 
+-bool __weak arch_within_kprobe_blacklist(unsigned long addr)
+-{
+-	/* The __kprobes marked functions and entry code must not be probed */
+-	return addr >= (unsigned long)__kprobes_text_start &&
+-	       addr < (unsigned long)__kprobes_text_end;
+-}
+-
+ static struct kprobe_blacklist_entry *find_blacklist_entry(unsigned long addr)
  {
  	struct kprobe_blacklist_entry *ent;
+@@ -1346,8 +1339,6 @@ static struct kprobe_blacklist_entry *find_blacklist_entry(unsigned long addr)
  
-+	list_for_each_entry(ent, &kprobe_blacklist, list) {
-+		if (addr >= ent->start_addr && addr < ent->end_addr)
-+			return ent;
-+	}
-+
-+	return NULL;
-+}
-+
-+static bool within_kprobe_blacklist(unsigned long addr)
-+{
- 	if (arch_within_kprobe_blacklist(addr))
- 		return true;
+ static bool within_kprobe_blacklist(unsigned long addr)
+ {
+-	if (arch_within_kprobe_blacklist(addr))
+-		return true;
  	/*
  	 * If there exists a kprobe_blacklist, verify and
  	 * fail any probe registration in the prohibited area
- 	 */
--	list_for_each_entry(ent, &kprobe_blacklist, list) {
--		if (addr >= ent->start_addr && addr < ent->end_addr)
--			return true;
--	}
--
--	return false;
-+	return !!find_blacklist_entry(addr);
+@@ -2032,6 +2023,40 @@ void dump_kprobe(struct kprobe *kp)
  }
+ NOKPROBE_SYMBOL(dump_kprobe);
  
- /*
-@@ -1432,6 +1438,7 @@ static int check_kprobe_address_safe(struct kprobe *p,
- #endif
- 	}
- 
-+	mutex_lock(&kprobe_blacklist_mutex);
- 	jump_label_lock();
- 	preempt_disable();
- 
-@@ -1469,6 +1476,7 @@ static int check_kprobe_address_safe(struct kprobe *p,
- out:
- 	preempt_enable();
- 	jump_label_unlock();
-+	mutex_unlock(&kprobe_blacklist_mutex);
- 
- 	return ret;
- }
-@@ -2032,13 +2040,13 @@ NOKPROBE_SYMBOL(dump_kprobe);
-  * since a kprobe need not necessarily be at the beginning
-  * of a function.
-  */
--static int __init populate_kprobe_blacklist(unsigned long *start,
--					     unsigned long *end)
-+static int populate_kprobe_blacklist(unsigned long *start, unsigned long *end)
- {
- 	unsigned long *iter;
- 	struct kprobe_blacklist_entry *ent;
- 	unsigned long offset = 0, size = 0;
- 
-+	mutex_lock(&kprobe_blacklist_mutex);
- 	for (iter = start; iter < end; iter++) {
- 		if (!kallsyms_lookup_size_offset(*iter, &size, &offset)) {
- 			pr_err("Failed to find blacklist %p\n", (void *)*iter);
-@@ -2053,9 +2061,28 @@ static int __init populate_kprobe_blacklist(unsigned long *start,
- 		INIT_LIST_HEAD(&ent->list);
- 		list_add_tail(&ent->list, &kprobe_blacklist);
- 	}
-+	mutex_unlock(&kprobe_blacklist_mutex);
-+
- 	return 0;
- }
- 
-+/* Shrink the blacklist */
-+static void shrink_kprobe_blacklist(unsigned long *start, unsigned long *end)
++static int __kprobe_blacklist_add(unsigned long start, unsigned long end)
 +{
 +	struct kprobe_blacklist_entry *ent;
-+	unsigned long *iter;
++
++	ent = kmalloc(sizeof(*ent), GFP_KERNEL);
++	if (!ent)
++		return -ENOMEM;
++
++	ent->start_addr = start;
++	ent->end_addr = end;
++	INIT_LIST_HEAD(&ent->list);
++	list_add_tail(&ent->list, &kprobe_blacklist);
++	return 0;
++}
++
++int kprobe_blacklist_add_range(unsigned long start, unsigned long end)
++{
++	unsigned long offset = 0, size = 0;
++	int err = 0;
 +
 +	mutex_lock(&kprobe_blacklist_mutex);
-+	for (iter = start; iter < end; iter++) {
-+		ent = find_blacklist_entry(*iter);
-+		if (!ent)
-+			continue;
-+		list_del(&ent->list);
-+		kfree(ent);
++	while (!err && start < end) {
++		if (!kallsyms_lookup_size_offset(start, &size, &offset) ||
++		    size == 0) {
++			err = -ENOENT;
++			break;
++		}
++		err = __kprobe_blacklist_add(start, start + size);
++		start += size;
 +	}
 +	mutex_unlock(&kprobe_blacklist_mutex);
++	return err;
 +}
 +
- /* Module notifier call back, checking kprobes on the module */
- static int kprobes_module_callback(struct notifier_block *nb,
- 				   unsigned long val, void *data)
-@@ -2066,6 +2093,16 @@ static int kprobes_module_callback(struct notifier_block *nb,
- 	unsigned int i;
- 	int checkcore = (val == MODULE_STATE_GOING);
- 
-+	/* Add/remove module blacklist */
-+	if (val == MODULE_STATE_COMING)
-+		populate_kprobe_blacklist(mod->kprobe_blacklist,
-+					  mod->kprobe_blacklist +
-+					  mod->num_kprobe_blacklist);
-+	else if (val == MODULE_STATE_GOING)
-+		shrink_kprobe_blacklist(mod->kprobe_blacklist,
-+					mod->kprobe_blacklist +
-+					mod->num_kprobe_blacklist);
-+
- 	if (val != MODULE_STATE_GOING && val != MODULE_STATE_LIVE)
- 		return NOTIFY_DONE;
- 
-@@ -2252,6 +2289,7 @@ static const struct file_operations debugfs_kprobes_operations = {
- /* kprobes/blacklist -- shows which functions can not be probed */
- static void *kprobe_blacklist_seq_start(struct seq_file *m, loff_t *pos)
+ /*
+  * Lookup and populate the kprobe_blacklist.
+  *
+@@ -2043,8 +2068,8 @@ NOKPROBE_SYMBOL(dump_kprobe);
+ static int populate_kprobe_blacklist(unsigned long *start, unsigned long *end)
  {
-+	mutex_lock(&kprobe_blacklist_mutex);
- 	return seq_list_start(&kprobe_blacklist, *pos);
- }
+ 	unsigned long *iter;
+-	struct kprobe_blacklist_entry *ent;
+ 	unsigned long offset = 0, size = 0;
++	int ret;
  
-@@ -2260,6 +2298,11 @@ static void *kprobe_blacklist_seq_next(struct seq_file *m, void *v, loff_t *pos)
- 	return seq_list_next(v, &kprobe_blacklist, pos);
- }
+ 	mutex_lock(&kprobe_blacklist_mutex);
+ 	for (iter = start; iter < end; iter++) {
+@@ -2052,14 +2077,7 @@ static int populate_kprobe_blacklist(unsigned long *start, unsigned long *end)
+ 			pr_err("Failed to find blacklist %p\n", (void *)*iter);
+ 			continue;
+ 		}
+-
+-		ent = kmalloc(sizeof(*ent), GFP_KERNEL);
+-		if (!ent)
+-			return -ENOMEM;
+-		ent->start_addr = *iter;
+-		ent->end_addr = *iter + size;
+-		INIT_LIST_HEAD(&ent->list);
+-		list_add_tail(&ent->list, &kprobe_blacklist);
++		ret = __kprobe_blacklist_add(*iter, *iter + size);
+ 	}
+ 	mutex_unlock(&kprobe_blacklist_mutex);
  
-+static void kprobe_blacklist_seq_stop(struct seq_file *m, void *v)
-+{
-+	mutex_unlock(&kprobe_blacklist_mutex);
-+}
+@@ -2154,7 +2172,15 @@ static int __init init_kprobes(void)
+ 
+ 	err = populate_kprobe_blacklist(__start_kprobe_blacklist,
+ 					__stop_kprobe_blacklist);
+-	if (err) {
 +
- static int kprobe_blacklist_seq_show(struct seq_file *m, void *v)
- {
- 	struct kprobe_blacklist_entry *ent =
-@@ -2273,7 +2316,7 @@ static int kprobe_blacklist_seq_show(struct seq_file *m, void *v)
- static const struct seq_operations kprobe_blacklist_seq_ops = {
- 	.start = kprobe_blacklist_seq_start,
- 	.next  = kprobe_blacklist_seq_next,
--	.stop  = kprobe_seq_stop,	/* Reuse void function */
-+	.stop  = kprobe_blacklist_seq_stop,
- 	.show  = kprobe_blacklist_seq_show,
- };
- 
-diff --git a/kernel/module.c b/kernel/module.c
-index 1186940..895c635 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -58,6 +58,7 @@
- #include <linux/percpu.h>
- #include <linux/kmemleak.h>
- #include <linux/jump_label.h>
-+#include <linux/kprobes.h>
- #include <linux/pfn.h>
- #include <linux/bsearch.h>
- #include <linux/fips.h>
-@@ -2772,6 +2773,11 @@ static int find_module_sections(struct module *mod, struct load_info *info)
- 					     sizeof(*mod->ftrace_callsites),
- 					     &mod->num_ftrace_callsites);
- #endif
-+#ifdef CONFIG_KPROBES
-+	mod->kprobe_blacklist = section_objs(info, "_kprobe_blacklist",
-+					     sizeof(*mod->kprobe_blacklist),
-+					     &mod->num_kprobe_blacklist);
-+#endif
- 
- 	mod->extable = section_objs(info, "__ex_table",
- 				    sizeof(*mod->extable), &mod->num_exentries);
++	if (err >= 0 && __kprobes_text_start != __kprobes_text_end) {
++		/* The __kprobes marked functions must not be probed */
++		err = kprobe_blacklist_add_range(
++					(unsigned long)__kprobes_text_start,
++					(unsigned long)__kprobes_text_end);
++	}
++
++	if (err < 0) {
+ 		pr_err("kprobes: failed to populate blacklist: %d\n", err);
+ 		pr_err("Please take care of using kprobes.\n");
+ 	}
 
 
