@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161551AbaDQAEl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 20:04:41 -0400
-Received: from p3plex2out04.prod.phx3.secureserver.net ([184.168.131.18]:37515
-	"EHLO p3plex2out04.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757110AbaDQAEh convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 20:04:37 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Chase Southwood <chase.southwood@yahoo.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/2 v3] staging: comedi: addi_apci_1564: fixup and
- absorb apci1564_reset()
-Thread-Topic: [PATCH 2/2 v3] staging: comedi: addi_apci_1564: fixup and
- absorb apci1564_reset()
-Thread-Index: AQHPWcx5E3JVTEoAsUqndpNUltkYo5sU5PwwgAB6xAD//4tccA==
-Date: Thu, 17 Apr 2014 00:04:36 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825E051E5@P3PWEX4MB008.ex4.secureserver.net>
-References: <1397691269-24940-1-git-send-email-chase.southwood@yahoo.com>
- <DC148C5AA1CEBA4E87973D432B1C2D8825E05116@P3PWEX4MB008.ex4.secureserver.net>
- <1397692382.80906.YahooMailNeo@web164005.mail.gq1.yahoo.com>
-In-Reply-To: <1397692382.80906.YahooMailNeo@web164005.mail.gq1.yahoo.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1422744AbaDQAFE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 20:05:04 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45220 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757055AbaDQADw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 20:03:52 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+CC: Rajendra Nayak <rnayak@ti.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Joel Fernandes <joelf@ti.com>
+Subject: [PATCH 9/9] ARM: OMAP: dmtimer: Get rid of check for mem resource error
+Date: Wed, 16 Apr 2014 19:03:19 -0500
+Message-ID: <1397692999-7800-9-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1397692999-7800-1-git-send-email-joelf@ti.com>
+References: <1397692999-7800-1-git-send-email-joelf@ti.com>
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 16, 2014 4:53 PM, Chase Southwood wrote:
->>On Wednesday, April 16, 2014 6:36 PM, Hartley Sweeten <HartleyS@visionengravers.com> wrote:
->>>On Wednesday, April 16, 2014 4:34 PM, Chase Southwood wrote:
->>>Move apci1564_reset() from hwdrv_apci1564.c to addi_apci_1564.c.  The
->>>function was very messy and failed to reset a couple registers, these
->>>issues were fixed on the move.>
->>
->>The commit message needs updated. You are no longer moving the function.
->>
->
-> Erm...in the PATCH v3 I just sent, it has been moved as described here, so at least for
-> what is happening now, this changelog is accurate.  Would you like me to no longer move
-> the function for the time being?
+The subsequent devm_ioremap_resource will catch it and print an error, let it
+be checked there.
 
-Ah, missed that you moved it before the struct addi_board definition.
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
+ arch/arm/plat-omap/dmtimer.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
-Hmmm... I think it would be cleaner if you moved the function after separating
-this driver from the addi_common.c file. Then the moved functions can be put
-into the driver in "cleaner" locations and avoid any forward declaration junk.
-
-The brute force way to do this is just copy the contents of addi_common.c to
-the driver and remove the #include. Then you can move the functions from
-the hwrdv_apci1564.c file to the driver, and remove them from the boardinfo,
-as needed.
-
-Once you get the addi_common.c stuff localized you should fine that much
-of it is just NOP code for this driver. Those pieces then just need to be ripped
-out.
-
-Have fun...
-
-Hartley
+diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
+index 7e806f9..1fd30fa 100644
+--- a/arch/arm/plat-omap/dmtimer.c
++++ b/arch/arm/plat-omap/dmtimer.c
+@@ -810,10 +810,6 @@ static int omap_dm_timer_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (unlikely(!mem)) {
+-		dev_err(dev, "%s: no memory resource.\n", __func__);
+-		return -ENODEV;
+-	}
+ 
+ 	timer = devm_kzalloc(dev, sizeof(struct omap_dm_timer), GFP_KERNEL);
+ 	if (!timer) {
+-- 
+1.7.9.5
 
