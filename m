@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756456AbaDQCI4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 22:08:56 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:5795 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752241AbaDQCIy (ORCPT
+	id S1755289AbaDQCeD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 22:34:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48162 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314AbaDQCeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 22:08:54 -0400
-Message-ID: <534F36CE.2000409@huawei.com>
-Date: Thu, 17 Apr 2014 10:05:02 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Wed, 16 Apr 2014 22:34:01 -0400
+Date: Wed, 16 Apr 2014 19:34:04 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Frank Rowand <frowand.list@gmail.com>
+Cc: Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [DRIVER CORE] drivers/base/dd.c incorrect pr_debug() parameters
+Message-ID: <20140417023404.GA6290@kroah.com>
+References: <534F1C6E.7010606@gmail.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@redhat.com>
-CC: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Juri Lelli <juri.lelli@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] sched/deadline: Fix memory leak
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <534F1C6E.7010606@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Free cpudl->free_cpus allocated in cpudl_init().
+On Wed, Apr 16, 2014 at 05:12:30PM -0700, Frank Rowand wrote:
+> pr_debug() parameters are reverse order of format string
+> 
+> Signed-off-by: Frank Rowand <frank.rowand@sonymobile.com>
+> ---
+> 
+>  drivers/base/dd.c |    4 	2 +	2 -	0 !
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> Index: b/drivers/base/dd.c
+> ===================================================================
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Cc: <stable@vger.kernel.org> # 3.14
----
- kernel/sched/cpudeadline.c | 4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+What is this, cvs?  :)
 
-diff --git a/kernel/sched/cpudeadline.c b/kernel/sched/cpudeadline.c
-index 5b9bb42..ab001b5 100644
---- a/kernel/sched/cpudeadline.c
-+++ b/kernel/sched/cpudeadline.c
-@@ -210,7 +210,5 @@ int cpudl_init(struct cpudl *cp)
-  */
- void cpudl_cleanup(struct cpudl *cp)
- {
--	/*
--	 * nothing to do for the moment
--	 */
-+	free_cpumask_var(cp->free_cpus);
- }
--- 
-1.8.0.2
+> --- a/drivers/base/dd.c
+> +++ b/drivers/base/dd.c
+> @@ -187,8 +187,8 @@ static void driver_bound(struct device *
+>  		return;
+>  	}
+>  
+> -	pr_debug("driver: '%s': %s: bound to device '%s'\n", dev_name(dev),
+> -		 __func__, dev->driver->name);
+> +	pr_debug("driver: '%s': %s: bound to device '%s'\n", dev->driver->name,
+> +		 __func__, dev_name(dev));
 
+Thanks, I'll queue this up.
+
+greg k-h
