@@ -1,51 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaDQPvs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 11:51:48 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:58158 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753338AbaDQPvb (ORCPT
+	id S1753697AbaDQPwc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 11:52:32 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:63618 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753575AbaDQPwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 11:51:31 -0400
-Date: Thu, 17 Apr 2014 17:51:15 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Waiman Long <Waiman.Long@hp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
-Subject: Re: [PATCH v9 05/19] qspinlock: Optimize for smaller NR_CPUS
-Message-ID: <20140417155115.GQ11096@twins.programming.kicks-ass.net>
-References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com>
- <1397747051-15401-6-git-send-email-Waiman.Long@hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397747051-15401-6-git-send-email-Waiman.Long@hp.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 17 Apr 2014 11:52:18 -0400
+From: Kumar Gaurav <kumargauravgupta3@gmail.com>
+To: gregkh@linuxfoundation.org, lidza.louina@gmail.com
+Cc: driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Kumar Gaurav <kumargauravgupta3@gmail.com>
+Subject: [PATCH 35/35] Staging:dgap:dgap_tty.c: Upgraded driver to use Mutex instead of semaphore
+Date: Thu, 17 Apr 2014 21:21:21 +0530
+Message-Id: <1397749881-21193-1-git-send-email-kumargauravgupta3@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 11:03:57AM -0400, Waiman Long wrote:
-> @@ -48,6 +53,9 @@
->   * We can further change the first spinner to spin on a bit in the lock word
->   * instead of its node; whereby avoiding the need to carry a node from lock to
->   * unlock, and preserving API.
-> + *
-> + * N.B. The current implementation only supports architectures that allow
-> + *      atomic operations on smaller 8-bit and 16-bit data types.
->   */
+dgap driver uses semaphore for obtaining lock. I upgraded it to use MUTEX.
 
-Only for the _Q_PENDING_BITS == 8 case, the other case should still be
-fine.
+Signed-off-by: Kumar Gaurav <kumargauravgupta3@gmail.com>
+---
+ drivers/staging/dgap/dgap_tty.c |   17 +++++------------
+ 1 file changed, 5 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/staging/dgap/dgap_tty.c b/drivers/staging/dgap/dgap_tty.c
+index 2a7a372..0ca72a2 100755
+--- a/drivers/staging/dgap/dgap_tty.c
++++ b/drivers/staging/dgap/dgap_tty.c
+@@ -52,7 +52,7 @@
+ #include <asm/uaccess.h>	/* For copy_from_user/copy_to_user */
+ #include <asm/io.h>		/* For read[bwl]/write[bwl] */
+ #include <linux/pci.h>
+-
++#include<linux/mutex.h>
+ #include "dgap_driver.h"
+ #include "dgap_tty.h"
+ #include "dgap_types.h"
+@@ -61,18 +61,12 @@
+ #include "dgap_conf.h"
+ #include "dgap_sysfs.h"
+ 
+-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,37)
+-#define init_MUTEX(sem)         sema_init(sem, 1)
+-#define DECLARE_MUTEX(name)     \
+-        struct semaphore name = __SEMAPHORE_INITIALIZER(name, 1)
+-#endif
+-
+ /*
+  * internal variables
+  */
+ static struct board_t	*dgap_BoardsByMajor[256];
+ static uchar		*dgap_TmpWriteBuf = NULL;
+-static DECLARE_MUTEX(dgap_TmpWriteSem);
++static DEFINE_MUTEX(dgap_TmpWriteSem);
+ 
+ /*
+  * Default transparent print information.
+@@ -2004,12 +1998,11 @@ static int dgap_tty_write(struct tty_struct *tty, const unsigned char *buf, int
+ 		 * the board.
+ 		 */
+ 		/* we're allowed to block if it's from_user */
+-		if (down_interruptible(&dgap_TmpWriteSem)) {
++		if (mutex_lock_interruptible(&dgap_TmpWriteSem))
+ 			return (-EINTR);
+-		}
+ 
+ 		if (copy_from_user(dgap_TmpWriteBuf, (const uchar __user *) buf, count)) {
+-			up(&dgap_TmpWriteSem);
++			mutex_unlock(&dgap_TmpWriteSem);
+ 			printk("Write: Copy from user failed!\n");
+ 			return -EFAULT;
+ 		}
+@@ -2093,7 +2086,7 @@ static int dgap_tty_write(struct tty_struct *tty, const unsigned char *buf, int
+ 
+ 	if (from_user) {
+ 		DGAP_UNLOCK(ch->ch_lock, lock_flags);
+-		up(&dgap_TmpWriteSem);
++		mutex_unlock(&dgap_TmpWriteSem);
+ 	} 
+ 	else {
+ 		DGAP_UNLOCK(ch->ch_lock, lock_flags);
+-- 
+1.7.9.5
+
