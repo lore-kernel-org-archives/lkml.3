@@ -1,55 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753064AbaDQQIl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 12:08:41 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:43428 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751016AbaDQQIc (ORCPT
+	id S1752038AbaDQQLp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 12:11:45 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:39346 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970AbaDQQLc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 12:08:32 -0400
-Date: Thu, 17 Apr 2014 12:08:28 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] workqueue: rescuer_thread() processes all pwqs
- before exit
-Message-ID: <20140417160828.GP15326@htj.dyndns.org>
-References: <20140416165052.GK1257@htj.dyndns.org>
- <1397691258-11639-1-git-send-email-laijs@cn.fujitsu.com>
- <20140417152744.GM15326@htj.dyndns.org>
- <CACvQF527RneJwUXf0=C6L0_9ncdS6--iqhdpWAFKqHtd25LOYg@mail.gmail.com>
+	Thu, 17 Apr 2014 12:11:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACvQF527RneJwUXf0=C6L0_9ncdS6--iqhdpWAFKqHtd25LOYg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1397750674.2628.44.camel@willson.li.ssimo.org>
+References: <CALCETrURHNmLyccRiF_W8o2ozRMR4AaCjUE=_PU8z1+Pq6X2jQ@mail.gmail.com>
+ <20140416002010.GA5035@redhat.com> <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com>
+ <20140416.085743.1614257692560892039.davem@davemloft.net> <CALCETrVv8SPM5xjOVGy7qO2aq3FKtG2uG57J49nO7Wy0-gg0Ew@mail.gmail.com>
+ <1397664837.19767.410.camel@willson.li.ssimo.org> <CALCETrXn7b6UuALpGUVoyQYfR2uzk5tj2ABV=dkvtFNgqM5sxQ@mail.gmail.com>
+ <20140416180642.GG31074@redhat.com> <CALCETrVUw5+vCCONy1VTXpskbY_eZFo2CtbehwV5Mhj4d4+icw@mail.gmail.com>
+ <20140416185936.GJ31074@redhat.com> <534FF61B.4010901@redhat.com> <1397750674.2628.44.camel@willson.li.ssimo.org>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 17 Apr 2014 09:11:11 -0700
+Message-ID: <CALCETrUrj2LtAoXp600BD2ANgE2UUEbTYQrK8hHqDR=qpeFPcg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing cgroup path
+To: Simo Sorce <ssorce@redhat.com>
+Cc: Daniel J Walsh <dwalsh@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
+On Thu, Apr 17, 2014 at 9:04 AM, Simo Sorce <ssorce@redhat.com> wrote:
+> On Thu, 2014-04-17 at 08:41 -0700, Daniel J Walsh wrote:
+>> On 04/16/2014 11:59 AM, Vivek Goyal wrote:
+>> > On Wed, Apr 16, 2014 at 11:13:31AM -0700, Andy Lutomirski wrote:
+>> >> On Wed, Apr 16, 2014 at 11:06 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+>> >>> On Wed, Apr 16, 2014 at 09:31:25AM -0700, Andy Lutomirski wrote:
+>> >>> I am not sure how same issue with happen with cgroups. In the case of
+>> >>> socket example, you are forcing a setuid program to write to standard
+>> >>> output and that setuid program will run in same cgroup as caller and
+>> >>> will have same cgroup as caller. So even if somebody was using cgroup
+>> >>> information for authentication, atleast in this particular case it
+>> >>> will not be a problem. Both unpriviliged and priviliged programs has
+>> >>> same cgroups.
+>> >>>
+>> >> I'm not sure that there's an actual attackable program.  But I also
+>> >> see no reason to be convinced that there isn't one, and the problem
+>> >> can easily be avoided by requiring programs to explicitly ask to send
+>> >> their cgroup.
+>> > If you can't prove that there is something fundamentally wrong with
+>> > passing cgroup info to receiver, there is no reason to block these
+>> > patches either.
+>> >
+>> > We can't fix the problems which we can't see. You are saying that I
+>> > don't know what kind of problem can happen due to cgroup passing. Still
+>> > that does not mean none of the problems exist. So let us not pass cgroup
+>> > info by default and ask client to opt in.
+>> >
+>> > I don't think this is a very convincing argument.
+>> >
+>> > To me, if we can't see anything fundamentally wrong with passing cgroup
+>> > info, we should take these patches in. And once we figure out that there
+>> > is are problematic use cases, then implement SO_NOPASSCGROUP and
+>> > SO_NOPEERCRED  and allow problematic clients to opt out.
+>> >
+>> > Thanks
+>> > Vivek
+>> The two use cases for this patch are:
+>
+> Let me add some caveats to explain what is used, as the 2 cases map to
+> the 2 different new options.
+>
+>> 1 Logging, to make sure the cgroup information gets correctly attributed
+>> to the caller.
+>
+> In here the logging system wants to know *who* logged, if the cgroups of
+> the process actually doing the logging changes, that's what the logging
+> system wants to know.
+> If somehow a setuid binary can change the cgroups, then the logging
+> system *wants* to know that these logs are coming from there, because
+> they sure are not coming from the original bounded process anymore.
+>
+> This use case wants to use SO_PASSCGROUP as it wants to know who the
+> current writer is, not who opened the file descriptor.
 
-On Fri, Apr 18, 2014 at 12:04:29AM +0800, Lai Jiangshan wrote:
-> > I don't think this is reliable.  What if mayday requests take place
-> > between wq_mayday_lock and kthread_should_stop() check?  We'll
-> > probably need to run through mayday list after checking should_stop.
-> 
-> It is destroy_workqueue()'s responsibility to avoid this.
-> destroy_workqueue() should drain all works and refuse any new work queued
-> on the wq before destroy the wq.
-> 
-> So since there is no works, there is no new mayday request,
-> and there is no mayday request take place between wq_mayday_lock
-> and kthread_should_stop() check.
+No.  The logging daemon thinks it wants to know who the writer is, but
+the logging daemon is wrong.  It actually wants to know who composed a
+log message destined to it.  The caller of write(2) may or may not be
+the same entity.
 
-Hmmm?  Isn't this the same race condition that you tried to remove by
-relocating the test?  It doesn't matter what destroy_workqueue() does,
-the rescuer may get preempted inbetween and anything can happen
-inbetween including someone maydaying and initiation of
-destroy_workqueue().  Your patch doesn't change the situation at all.
-It can still return with non-empty mayday list.
+If this form of SO_PASSCGROUP somehow makes it into a pull request for
+Linus, I will ask him not to pull it and/or to revert it.  I think
+he'll agree that write(2) MUST NOT care who called it.  Yes, I don't
+see how this is exploitable on my machine, but it's a mistake for the
+same reason that the netlink crap in CVE-2014-0181 is a mistake.
 
-Thanks.
+FWIW, there are a handful of people who think about security and
+occasionally answer things on lkml.  Some of them will tell you once
+that a patch is a problem, and then they'll watch you ignore it, and
+then they'll pwn you later on.  This has happened to me.  I'm not one
+of those people, though, but it's generally good policy to pay
+attention when people tell you that your proposed API *cannot* be used
+safely.
 
--- 
-tejun
+--Andy
