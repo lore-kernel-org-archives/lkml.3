@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573AbaDQPdk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 11:33:40 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:49535 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076AbaDQPd3 (ORCPT
+	id S1751580AbaDQPgv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 11:36:51 -0400
+Received: from asavdk3.altibox.net ([109.247.116.14]:41002 "EHLO
+	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224AbaDQPgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 11:33:29 -0400
-Message-ID: <534FF43A.109@oracle.com>
-Date: Thu, 17 Apr 2014 11:33:14 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 17 Apr 2014 11:36:45 -0400
+Date: Thu, 17 Apr 2014 17:36:38 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        monstr@monstr.eu, dhowells@redhat.com, broonie@linaro.org,
+        benh@kernel.crashing.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH 00/18] Cross-architecture definitions of relaxed MMIO
+ accessors
+Message-ID: <20140417153638.GA7317@ravnborg.org>
+References: <1397742261-15621-1-git-send-email-will.deacon@arm.com>
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: vegard.nossum@oracle.com, penberg@kernel.org, jamie.iles@oracle.com,
-        hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@vger.kernel.org
-Subject: Re: [PATCH 3/4] x86/insn: Extract more information about instructions
-References: <1397497450-6440-1-git-send-email-sasha.levin@oracle.com> <1397497450-6440-3-git-send-email-sasha.levin@oracle.com> <534CA38C.80501@hitachi.com> <534D4BF3.3020102@oracle.com> <534E18B1.4020802@hitachi.com>
-In-Reply-To: <534E18B1.4020802@hitachi.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397742261-15621-1-git-send-email-will.deacon@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/16/2014 01:44 AM, Masami Hiramatsu wrote:
-> Same thing can be done in awk part and insn.c, and we can encode it by
+On Thu, Apr 17, 2014 at 02:44:03PM +0100, Will Deacon wrote:
+> Hello,
 > 
-> #define INAT_MAKE_MEMSZ(size) (size << INAT_MEMSZ_OFFS)
-> 
-> And decode it by
-> 
-> insn->memsz_bytes = 1 << ((attr & INAT_MEMSZ_MASK) >> INAT_MEMSZ_OFFS)
-> 
-> Thus, we only need 3 bits to represent 1, 2, 4, 8, 16 and 32. :)
+> This RFC series attempts to define a portable (i.e. cross-architecture)
+> definition of the {readX,writeX}_relaxed MMIO accessor functions. These
+> functions are already in widespread use amongst drivers (mainly those supporting
+> devices embedded in ARM SoCs), but lack any well-defined semantics and,
+> subsequently, any portable definitions to allow these drivers to be compiled for
+> other architectures.
 
-We'll need 4 so that we could do 64 too :)
+Could this be made in such a way that only architectures that need
+to provide their own versions actually have to add them?
 
-btw, why aren't we using regular bitfields? this manual encoding
-thingie seems to be a bit confusing (try figuring out how many
-bits are left...).
+The current patch-set adds the same dummy defines all over,
+and will put this burden also on new architectures.
 
-
-Thanks,
-Sasha
+	Sam
