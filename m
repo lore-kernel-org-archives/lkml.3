@@ -1,99 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143AbaDQQyc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 12:54:32 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:32907 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751110AbaDQQyW (ORCPT
+	id S1752589AbaDQQyr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 12:54:47 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58279 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614AbaDQQyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 12:54:22 -0400
+	Thu, 17 Apr 2014 12:54:31 -0400
+Date: Thu, 17 Apr 2014 18:54:08 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v9 07/19] qspinlock: Use a simple write to grab the lock,
+ if applicable
+Message-ID: <20140417165408.GU11096@twins.programming.kicks-ass.net>
+References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com>
+ <1397747051-15401-8-git-send-email-Waiman.Long@hp.com>
 MIME-Version: 1.0
-In-Reply-To: <20140417152611.GD4321@pd.tnic>
-References: <tip-ea431643d6c38728195e2c456801c3ef66bb9991@git.kernel.org>
-	<20140417100944.GG11096@twins.programming.kicks-ass.net>
-	<20140417102442.GA8215@pd.tnic>
-	<3908561D78D1C84285E8C5FCA982C28F31E2A1D3@ORSMSX106.amr.corp.intel.com>
-	<20140417152611.GD4321@pd.tnic>
-Date: Thu, 17 Apr 2014 12:54:21 -0400
-X-Google-Sender-Auth: cs5tnq62v5iJhQ1c9KQxejBpOE8
-Message-ID: <CA+5PVA7i=RrGUk_7zz1yU5gseWpvr+a=4dfkg=n9cNc53S7nPA@mail.gmail.com>
-Subject: Re: [tip:x86/urgent] x86/mce: Fix CMCI preemption bugs
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Luck, Tony" <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "atodorov@redhat.com" <atodorov@redhat.com>,
-        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
-        "qmewlo@gmail.com" <qmewlo@gmail.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397747051-15401-8-git-send-email-Waiman.Long@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 11:26 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Thu, Apr 17, 2014 at 02:03:34PM +0000, Luck, Tony wrote:
->> > Hohum, __raw_spin_lock_irqsave does preempt_disable(). And
->> > machine_check_poll should be running in irq context so why would the
->> > original issue happen?
->> >
->> >> kernel: [    7.341085] BUG: using __this_cpu_write() in preemptible [00000000] code: modprobe/546
->> >
->> > Unfortunately, I have only one line in a mail CCed to me.
->> >
->> > Color me confused.
->>
->> Is this just the missing put_cpu() that Chen Gong already sent a patch for?
->
-> I'm not sure. There's some bug report floating around which contains the
-> "BUG" line above but I can't seem to find/get it.
->
-> I'll boot latest Linus tree on my SNB machine to check whether it
-> triggers here. Ingo says CONFIG_DEBUG_PREEMPT=y is causing it but this
-> is all hearsay stuff from where I'm standing...
+On Thu, Apr 17, 2014 at 11:03:59AM -0400, Waiman Long wrote:
+>  kernel/locking/qspinlock.c |   61 +++++++++++++++++++++++++++++++------------
+>  1 files changed, 44 insertions(+), 17 deletions(-)
+> 
+> diff --git a/kernel/locking/qspinlock.c b/kernel/locking/qspinlock.c
+> index 497da24..80fe9ee 100644
+> --- a/kernel/locking/qspinlock.c
+> +++ b/kernel/locking/qspinlock.c
+> @@ -98,23 +98,29 @@ static inline struct mcs_spinlock *decode_tail(u32 tail)
+>   * can allow better optimization of the lock acquisition for the pending
+>   * bit holder.
+>   */
+> -#if _Q_PENDING_BITS == 8
+> -
+>  struct __qspinlock {
+>  	union {
+>  		atomic_t val;
+> -		struct {
+>  #ifdef __LITTLE_ENDIAN
+> +		u8	 locked;
+> +		struct {
+>  			u16	locked_pending;
+>  			u16	tail;
+> +		};
+>  #else
+> +		struct {
+>  			u16	tail;
+>  			u16	locked_pending;
+> -#endif
+>  		};
+> +		struct {
+> +			u8	reserved[3];
+> +			u8	locked;
+> +		};
+> +#endif
 
-For some context.
+Ah, yes, that's probably nicer than what I made of it..
 
-A user (Owen) reported seeing the following backtrace with 3.15-rc1+:
+>  	};
+>  };
+>  
+> +#if _Q_PENDING_BITS == 8
+>  /**
+>   * clear_pending_set_locked - take ownership and clear the pending bit.
+>   * @lock: Pointer to queue spinlock structure
+> @@ -204,6 +210,22 @@ xchg_tail(struct qspinlock *lock, u32 tail, u32 *pval)
+>  #endif /* _Q_PENDING_BITS == 8 */
+>  
+>  /**
+> + * get_qlock - Set the lock bit and own the lock
+> + * @lock: Pointer to queue spinlock structure
+> + *
+> + * This routine should only be called when the caller is the only one
+> + * entitled to acquire the lock.
+> + */
+> +static __always_inline void get_qlock(struct qspinlock *lock)
 
-kernel: [  120.253539] Hardware name: Hewlett-Packard HP ENVY 15
-Notebook PC/1962, BIOS F.24 08/27/2013
-kernel: [  120.253540]  ffff88025f2146c0 ffffffff81c01e40
-ffffffff8171dc1d ffffffff81d11aa0
-kernel: [  120.253543]  ffffffff81c01e50 ffffffff81719a39
-ffffffff81c01eb0 ffffffff8172151b
-kernel: [  120.253545]  ffffffff81c18480 ffffffff81c01fd8
-00000000000146c0 00000000000146c0
-kernel: [  120.253548] Call Trace:
-kernel: [  120.253555]  [<ffffffff8171dc1d>] dump_stack+0x4d/0x6f
-kernel: [  120.253558]  [<ffffffff81719a39>] __schedule_bug+0x4c/0x5a
-kernel: [  120.253560]  [<ffffffff8172151b>] __schedule+0x6eb/0x7a0
-kernel: [  120.253563]  [<ffffffff81721b91>] schedule_preempt_disabled+0x31/0x80
-kernel: [  120.253566]  [<ffffffff810af8f3>] cpu_startup_entry+0x173/0x490
-kernel: [  120.253570]  [<ffffffff8170e3e4>] rest_init+0x84/0x90
-kernel: [  120.253574]  [<ffffffff81d34f83>] start_kernel+0x450/0x45b
-kernel: [  120.253576]  [<ffffffff81d3493c>] ? repair_env_string+0x5c/0x5c
-kernel: [  120.253578]  [<ffffffff81d34120>] ? early_idt_handlers+0x120/0x120
-kernel: [  120.253581]  [<ffffffff81d345ee>] x86_64_start_reservations+0x2a/0x2c
-kernel: [  120.253583]  [<ffffffff81d3472e>] x86_64_start_kernel+0x13e/0x14d
+Don't like that function name though; what was wrong with set_locked(),
+which is more or less what I called it.
 
-For whatever reason, his report didn't hit lkml, but it did hit Linus'
-inbox.  Linus took a look around, googled some, and came across a
-report that Alexander filed 2 days ago against Fedora rawhide with a
-similar backtrace:
+> +{
+> +	struct __qspinlock *l = (void *)lock;
+> +
+> +	barrier();
+> +	ACCESS_ONCE(l->locked) = _Q_LOCKED_VAL;
+> +	barrier();
+> +}
 
-https://bugzilla.redhat.com/show_bug.cgi?id=1087810
+> @@ -378,15 +403,19 @@ void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
+>  	 *
+>  	 * n,0,0 -> 0,0,1 : lock, uncontended
+>  	 * *,0,0 -> *,0,1 : lock, contended
+> +	 *
+> +	 * If the queue head is the only one in the queue (lock value == tail),
+> +	 * clear the tail code and grab the lock. Otherwise, we only need
+> +	 * to grab the lock.
+>  	 */
+>  	for (;;) {
+> -		new = _Q_LOCKED_VAL;
+> -		if (val != tail)
+> -			new |= val;
+> -
+> -		old = atomic_cmpxchg(&lock->val, val, new);
+> -		if (old == val)
+> +		if (val != tail) {
+> +			get_qlock(lock);
+>  			break;
+> +		}
 
-Linus CC'd me and Alexander on his reply to Owen, Ingo, Peter, etc.
-Ingo was aware of Chen Gong's patch, but when Owen tested it it
-produced the BUG line above.  So Ingo came up with a slightly
-different fix to hopefully resolve that as well.  We haven't heard
-from Owen whether Ingo's patch resolves everything yet.
+Ah, good one. I hadn't done that.
 
-I think (hope) that is the full backstory.  Ingo or Peter could correct me.
+> +		old = atomic_cmpxchg(&lock->val, val, _Q_LOCKED_VAL);
+> +		if (old == val)
+> +			goto release;	/* No contention */
+>  
+>  		val = old;
+>  	}
 
-josh
+I did have a patch that played tricks with ->next, but I seem to have
+forgotten the details, and I tossed the patch because it didn't show any
+difference on the benchmark.
