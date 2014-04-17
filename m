@@ -1,178 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755699AbaDQKoQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 06:44:16 -0400
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:64805 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305AbaDQKoP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 06:44:15 -0400
-Date: Thu, 17 Apr 2014 11:44:09 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Silvio F <silvio.fricke@gmail.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Viresh Kumar <viresh.linux@gmail.com>,
-        Shiraz Hashim <shiraz.hashim@st.com>, spear-devel@list.st.com
-Subject: Re: [PATCH 3/6] mfd: stmpe: prope properly from the device tree
-Message-ID: <20140417104409.GL28725@lee--X1>
-References: <1397659455-13638-1-git-send-email-linus.walleij@linaro.org>
- <1397659455-13638-4-git-send-email-linus.walleij@linaro.org>
+	id S1756289AbaDQKpk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 06:45:40 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33301 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751241AbaDQKph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 06:45:37 -0400
+Date: Thu, 17 Apr 2014 12:45:33 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Dave Jones <davej@redhat.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Zhang, Rui" <rui.zhang@intel.com>, "Lu, Aaron" <aaron.lu@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng Z" <zheng.z.yan@intel.com>
+Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+Message-ID: <20140417104533.GB8215@pd.tnic>
+References: <20140224162400.GE16457@pd.tnic>
+ <744357E9AAD1214791ACBA4B0B9092630121F201@SHSMSX101.ccr.corp.intel.com>
+ <CAErSpo55DjkGQB=7ksow34BpCObnY+o3eNnt0n5oQEh6Lfw1pw@mail.gmail.com>
+ <1558044.S1G2VU7srO@vostro.rjw.lan>
+ <CAErSpo4pDYMhHo6e-1TN6XDRO0xy0u8H+=oucFnrEK+kbjZvzw@mail.gmail.com>
+ <20140416190404.GA7070@pd.tnic>
+ <20140416203138.GA17661@google.com>
+ <20140416223122.GA2767@redhat.com>
+ <20140416225600.GA23781@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1397659455-13638-4-git-send-email-linus.walleij@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140416225600.GA23781@google.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The current STMPE I2C probing code does not really match the
-> compatible strings - it matches node names happening to give
-> the right device name. Instead, let's introduce some real
-> compatible matching, more complex, more accurate.
+Hi Bjorn,
+
+thanks for the patch, a couple of notes below:
+
+On Wed, Apr 16, 2014 at 04:56:00PM -0600, Bjorn Helgaas wrote:
+> PNP: Work around Haswell BIOS defect in MCH area reporting
 > 
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> From: Bjorn Helgaas <bhelgaas@google.com>
+> 
+> Work around a Haswell BIOS defect that causes part of the MCH area to be
+> unreported.
+
+Yep, what Stephane said, this is not HSW only.
+
+> MCHBAR is not an architected PCI BAR, so MCH space is usually reported as a
+> PNP0C02 resource.  The MCH space was 16KB prior to Haswell, but it is 32KB
+> in Haswell.  Some Haswell BIOSes still report a PNP0C02 resource that is
+> only 16KB, which means the rest of the MCH space is consumed but
+> unreported.
+> 
+> This can cause resource map sanity check warnings or (theoretically) a
+> device conflict if we assigned the unreported space to another device.
+> 
+> The Intel perf event uncore driver tripped over this when it claimed the
+> MCH region:
+> 
+>   resource map sanity check conflict: 0xfed10000 0xfed15fff 0xfed10000 0xfed13fff pnp 00:01
+>   Info: mapping multiple BARs. Your kernel is fine.
+> 
+> To prevent this, if we find a PNP0C02 resource that covers part of the MCH
+> space, extend it to cover the entire space.
+> 
+> Link: http://lkml.kernel.org/r/20140224162400.GE16457@pd.tnic
+> Reported-by: Borislav Petkov <bp@alien8.de>
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 > ---
->  drivers/mfd/stmpe-i2c.c | 60 ++++++++++++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 59 insertions(+), 1 deletion(-)
+>  drivers/pnp/quirks.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 55 insertions(+)
 > 
-> diff --git a/drivers/mfd/stmpe-i2c.c b/drivers/mfd/stmpe-i2c.c
-> index 0da02e11d58e..8902a600d978 100644
-> --- a/drivers/mfd/stmpe-i2c.c
-> +++ b/drivers/mfd/stmpe-i2c.c
-> @@ -14,6 +14,7 @@
->  #include <linux/kernel.h>
->  #include <linux/module.h>
->  #include <linux/types.h>
-> +#include <linux/of_device.h>
->  #include "stmpe.h"
->  
->  static int i2c_reg_read(struct stmpe *stmpe, u8 reg)
-> @@ -52,15 +53,71 @@ static struct stmpe_client_info i2c_ci = {
->  	.write_block = i2c_block_write,
->  };
->  
-> +#ifdef CONFIG_OF
-
-Didn't you say that the only platform using this device is DT only? So
-why don't we make the driver depend on OF and get rid of this ugly
-#ifdeffery?
-
-> +static const struct of_device_id stmpe_of_match[] = {
-> +	{
-> +		.compatible = "st,stmpe610",
-> +		.data = (void *)STMPE610,
-> +	},
-> +	{
-> +		.compatible = "st,stmpe801",
-> +		.data = (void *)STMPE801,
-> +	},
-> +	{
-> +		.compatible = "st,stmpe811",
-> +		.data = (void *)STMPE811,
-> +	},
-> +	{
-> +		.compatible = "st,stmpe1601",
-> +		.data = (void *)STMPE1601,
-> +	},
-> +	{
-> +		.compatible = "st,stmpe1801",
-> +		.data = (void *)STMPE1801,
-> +	},
-> +	{
-> +		.compatible = "st,stmpe2401",
-> +		.data = (void *)STMPE2401,
-> +	},
-> +	{
-> +		.compatible = "st,stmpe2403",
-> +		.data = (void *)STMPE2403,
-> +	},
-> +	{},
-> +};
-
-If none of these stray over 80 chars, I think I'd like to see
-of_device_id tables as single line entries (unlike mfd_cell structures
-where there can be more than 2 entries, which I like spread out - I
-know, double standards right?)
-
-+static const struct of_device_id stmpe_of_match[] = {
-+	{ .compatible = "st,stmpe610",  .data = (void *)STMPE610,  },
-+	{ .compatible = "st,stmpe801",  .data = (void *)STMPE801,  },
-+	{ .compatible = "st,stmpe811",  .data = (void *)STMPE811,  },
-+	{ .compatible = "st,stmpe1601", .data = (void *)STMPE1601, },
-+	{ .compatible = "st,stmpe1801", .data = (void *)STMPE1801, },
-+	{ .compatible = "st,stmpe2401", .data = (void *)STMPE2401, },
-+	{ .compatible = "st,stmpe2403", .data = (void *)STMPE2403, },
-+	{},
-+};
-
-> +MODULE_DEVICE_TABLE(of, stmpe_of_match);
-> +
-> +int stmpe_i2c_of_probe(struct i2c_client *i2c)
-
-Erm, static?
-
-> +{
-> +	const struct of_device_id *of_id;
-> +
-> +	of_id = of_match_device(stmpe_of_match, &i2c->dev);
-> +	if (!of_id)
-> +		return -EINVAL;
-> +	return (int)of_id->data;
-> +}
-> +#else
-> +int stmpe_i2c_of_probe(struct i2c_client *i2c)
-> +{
-> +	return -EINVAL;
-> +}
-> +#endif
-> +
->  static int
->  stmpe_i2c_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
->  {
-> +	int partnum;
-> +
->  	i2c_ci.data = (void *)id;
->  	i2c_ci.irq = i2c->irq;
->  	i2c_ci.client = i2c;
->  	i2c_ci.dev = &i2c->dev;
->  
-> -	return stmpe_probe(&i2c_ci, id->driver_data);
-
-if (IS_DEFINED(OF)) {
-
-> +	partnum = stmpe_i2c_of_probe(i2c);
-
-Then you can remove the spare stmpe_i2c_of_probe(), or better still
-make the whole driver depend on OF.
-
-> +	if (partnum < 0)
-> +		partnum = id->driver_data;
-
-Should this be able to fail and for us to still carry on?
-
-Or are we then running on an unsupported device?
-
-> +	return stmpe_probe(&i2c_ci, partnum);
+> diff --git a/drivers/pnp/quirks.c b/drivers/pnp/quirks.c
+> index 258fef272ea7..8402088d4145 100644
+> --- a/drivers/pnp/quirks.c
+> +++ b/drivers/pnp/quirks.c
+> @@ -334,6 +334,60 @@ static void quirk_amd_mmconfig_area(struct pnp_dev *dev)
 >  }
->  
->  static int stmpe_i2c_remove(struct i2c_client *i2c)
-> @@ -89,6 +146,7 @@ static struct i2c_driver stmpe_i2c_driver = {
->  #ifdef CONFIG_PM
->  		.pm = &stmpe_dev_pm_ops,
 >  #endif
-> +		.of_match_table = of_match_ptr(stmpe_of_match),
->  	},
->  	.probe		= stmpe_i2c_probe,
->  	.remove		= stmpe_i2c_remove,
+>  
+> +static void quirk_intel_haswell_mch(struct pnp_dev *dev)
+> +{
+> +	struct pci_dev *host;
+> +	u32 addr_lo, addr_hi;
+> +	struct pci_bus_region region;
+> +	struct resource mch;
+> +	struct pnp_resource *pnp_res;
+> +	struct resource *res;
+> +
+> +	host = pci_get_device(PCI_VENDOR_ID_INTEL, 0x0c00, NULL);
+
+And because it is not HSW only, this PCI device ID doesn't match on my
+IVB system. On mine the hostbridge is
+
+00:00.0 Host bridge: Intel Corporation 3rd Gen Core processor DRAM Controller (rev 09)
+        Subsystem: Lenovo Device 21fa
+        Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+        Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort+ >SERR- <PERR- INTx-
+        Latency: 0
+        Capabilities: <access denied>
+        Kernel driver in use: ivb_uncore
+00: 86 80 54 01 06 00 90 20 09 00 00 06 00 00 00 00
+10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+20: 00 00 00 00 00 00 00 00 00 00 00 00 aa 17 fa 21
+30: 00 00 00 00 e0 00 00 00 00 00 00 00 00 00 00 00
+
+and from looking at Dave's, it is the same one, so PCI device ID is
+0x154.
+
+With that changed to
+
+	host = pci_get_device(PCI_VENDOR_ID_INTEL, 0x0154, NULL);
+
+and a bit of debugging code, it says now:
+
+[    0.235739] quirk_intel_haswell_mch: entry
+[    0.235800] quirk_intel_haswell_mch: got host: 0x0
+[    0.235860] quirk_intel_haswell_mch: mch: [mem 0xfed10000-0xfed17fff]
+[    0.235930] quirk_intel_haswell_mch: res: [mem 0xfed10000-0xfed13fff]
+[    0.235990] pnp 00:01: [Firmware Bug]: [mem 0xfed10000-0xfed13fff] covers only part of Intel Haswell MCH; extending to [mem 0xfed10000-0xfed17fff]
+
+So you probably want to have a list of hostbridge pci ids in the quirk
+or so.
+
+Thanks.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
