@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755326AbaDQIuN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 04:50:13 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54364 "EHLO
+	id S1755182AbaDQIwd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 04:52:33 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:54394 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750852AbaDQIuG (ORCPT
+	with ESMTP id S1754764AbaDQIuN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 04:50:06 -0400
+	Thu, 17 Apr 2014 04:50:13 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: Emilio Lopez <emilio@elopez.com.ar>,
         Dan Williams <dan.j.williams@intel.com>,
@@ -19,9 +19,9 @@ Cc: Mike Turquette <mturquette@linaro.org>,
         zhuzhenhua@allwinnertech.com, andriy.shevchenko@intel.com,
         Arnd Bergmann <arnd@arndb.de>,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH v6 1/8] clk: sunxi: Remove calls to clk_put
-Date: Thu, 17 Apr 2014 10:46:12 +0200
-Message-Id: <1397724379-15398-2-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH v6 6/8] ARM: sun6i: Sort the NMI node by physical address
+Date: Thu, 17 Apr 2014 10:46:17 +0200
+Message-Id: <1397724379-15398-7-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397724379-15398-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1397724379-15398-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -29,40 +29,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Callers of clk_put must disable the clock first. This also means that as long
-as the clock is enabled the driver should hold a reference to that clock.
-Hence, the call to clk_put here are bogus and should be removed.
+The DT are supposed to be ordered by physical address. Move the NMI node where
+it belongs.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Acked-by: Mike Turquette <mturquette@linaro.org>
 ---
- drivers/clk/sunxi/clk-sunxi.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ arch/arm/boot/dts/sun6i-a31.dtsi | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
-index bd7dc733c1ca..b1fde0f89bc1 100644
---- a/drivers/clk/sunxi/clk-sunxi.c
-+++ b/drivers/clk/sunxi/clk-sunxi.c
-@@ -1297,17 +1297,13 @@ static void __init sunxi_clock_protect(void)
+diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
+index bc46814d2ff0..5ebf963464b9 100644
+--- a/arch/arm/boot/dts/sun6i-a31.dtsi
++++ b/arch/arm/boot/dts/sun6i-a31.dtsi
+@@ -237,14 +237,6 @@
+ 		#size-cells = <1>;
+ 		ranges;
  
- 	/* memory bus clock - sun5i+ */
- 	clk = clk_get(NULL, "mbus");
--	if (!IS_ERR(clk)) {
-+	if (!IS_ERR(clk))
- 		clk_prepare_enable(clk);
--		clk_put(clk);
--	}
+-		nmi_intc: interrupt-controller@01f00c0c {
+-			compatible = "allwinner,sun6i-a31-sc-nmi";
+-			interrupt-controller;
+-			#interrupt-cells = <2>;
+-			reg = <0x01f00c0c 0x38>;
+-			interrupts = <0 32 4>;
+-		};
+-
+ 		pio: pinctrl@01c20800 {
+ 			compatible = "allwinner,sun6i-a31-pinctrl";
+ 			reg = <0x01c20800 0x400>;
+@@ -479,6 +471,14 @@
+ 			interrupts = <1 9 0xf04>;
+ 		};
  
- 	/* DDR clock - sun4i+ */
- 	clk = clk_get(NULL, "pll5_ddr");
--	if (!IS_ERR(clk)) {
-+	if (!IS_ERR(clk))
- 		clk_prepare_enable(clk);
--		clk_put(clk);
--	}
- }
- 
- static void __init sunxi_init_clocks(void)
++		nmi_intc: interrupt-controller@01f00c0c {
++			compatible = "allwinner,sun6i-a31-sc-nmi";
++			interrupt-controller;
++			#interrupt-cells = <2>;
++			reg = <0x01f00c0c 0x38>;
++			interrupts = <0 32 4>;
++		};
++
+ 		prcm@01f01400 {
+ 			compatible = "allwinner,sun6i-a31-prcm";
+ 			reg = <0x01f01400 0x200>;
 -- 
 1.9.1
 
