@@ -1,77 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084AbaDQLog (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 07:44:36 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:44422 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751418AbaDQLof (ORCPT
+	id S1161050AbaDQLpm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 07:45:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57882 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754933AbaDQLpk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 07:44:35 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Will Deacon <will.deacon@arm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Kay Sievers <kay@vrfy.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [RFC PATCH 2/2] printk: report dropping of messages from logbuf
-Date: Thu, 17 Apr 2014 12:36:10 +0100
-Message-Id: <1397734570-12748-2-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1397734570-12748-1-git-send-email-will.deacon@arm.com>
-References: <1397734570-12748-1-git-send-email-will.deacon@arm.com>
+	Thu, 17 Apr 2014 07:45:40 -0400
+Date: Thu, 17 Apr 2014 13:45:33 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [perf] more perf_fuzzer memory corruption
+Message-ID: <20140417114533.GJ11096@twins.programming.kicks-ass.net>
+References: <alpine.DEB.2.10.1404151729230.17264@vincent-weaver-1.um.maine.edu>
+ <20140416141514.GS11182@twins.programming.kicks-ass.net>
+ <alpine.DEB.2.10.1404161326380.19325@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.10.1404161337350.19325@vincent-weaver-1.um.maine.edu>
+ <20140417094815.GA9348@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140417094815.GA9348@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the log ring buffer becomes full, we silently overwrite old messages
-with new data. console_unlock will detect this case and fast-forward the
-console_* pointers to skip over the corrupted data, but nothing will be
-reported to the user.
+On Thu, Apr 17, 2014 at 11:48:15AM +0200, Ingo Molnar wrote:
+> Is there some place where I can pick up the latestest of your fuzzer?
+> 
+> PeterZ has trouble reproducing the corruption locally - I'd like to 
+> run it too, maybe I have hardware that triggers it more readily.
 
-This patch hijacks the first valid log message after detecting that we
-dropped messages and prefixes it with a note detailing how many messages
-were dropped. For long (~1000 char) messages, this will result in some
-truncation of the real message, but given that we're dropping things
-anyway, that doesn't seem to be the end of the world.
+>From a few emails up:
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kay Sievers <kay@vrfy.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
- kernel/printk/printk.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 721a7d8fb853..e9e83d627ff0 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -2046,10 +2046,15 @@ again_noirq:
- 		}
- 
- 		if (console_seq < log_first_seq) {
-+			len = sprintf(text, "** %u printk messages dropped ** ",
-+				      (unsigned)(log_first_seq - console_seq));
-+
- 			/* messages are gone, move to first one */
- 			console_seq = log_first_seq;
- 			console_idx = log_first_idx;
- 			console_prev = 0;
-+		} else {
-+			len = 0;
- 		}
- skip:
- 		if (console_seq == log_next_seq)
-@@ -2074,8 +2079,8 @@ skip:
- 		}
- 
- 		level = msg->level;
--		len = msg_print_text(msg, console_prev, false,
--				     text, sizeof(text));
-+		len += msg_print_text(msg, console_prev, false,
-+				      text + len, sizeof(text) - len);
- 		console_idx = log_next(console_idx);
- 		console_seq++;
- 		console_prev = msg->flags;
--- 
-1.9.1
+"If you want to try running the fuzzer on your machine too just do:
+        git clone https://github.com/deater/perf_event_tests.git
+        cd fuzzer
+        make
+and then try running the "./fast_repro98.sh" script, as that's the forking
+workload I've been using when tracking this issue."
 
