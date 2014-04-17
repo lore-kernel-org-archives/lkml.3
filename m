@@ -1,95 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169AbaDQGsh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 02:48:37 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:15313 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750986AbaDQGse convert rfc822-to-8bit (ORCPT
+	id S1753557AbaDQGu6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 02:50:58 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:41935 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751088AbaDQGu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 02:48:34 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 16 Apr 2014 23:43:20 -0700
-From: Peter Chiang <pchiang@nvidia.com>
-To: Oleg Nesterov <oleg@redhat.com>
-CC: "ccross@android.com" <ccross@android.com>,
-        "lizefan@huawei.com" <lizefan@huawei.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "tj@kernel.org" <tj@kernel.org>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "guillaume@morinfr.org" <guillaume@morinfr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 17 Apr 2014 14:48:29 +0800
-Subject: RE: [PATCH] mm : Avoid candidate task is equal to current task
-Thread-Topic: [PATCH] mm : Avoid candidate task is equal to current task
-Thread-Index: Ac9Ze/eNAFm+pbzaSSCiwRzHznO62AAjI25A
-Message-ID: <80341664FB79C2419999599F48F7384102273279C3@HKMAIL01.nvidia.com>
-References: <1397617379-26895-1-git-send-email-pchiang@nvidia.com>
- <80341664FB79C2419999599F48F738410227327881@HKMAIL01.nvidia.com>
- <80341664FB79C2419999599F48F738410227327888@HKMAIL01.nvidia.com>
- <20140416135741.GA9407@redhat.com>
-In-Reply-To: <20140416135741.GA9407@redhat.com>
-Accept-Language: zh-TW, en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-TW, en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 17 Apr 2014 02:50:56 -0400
+Message-ID: <1397717444.4034.15.camel@ThinkPad-T5421>
+Subject: [RFC PATCH v4] Use kernfs_break_active_protection() for device
+ online store callbacks
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
+        rafael.j.wysocki@intel.com, toshi.kani@hp.com
+Date: Thu, 17 Apr 2014 14:50:44 +0800
+In-Reply-To: <20140416151749.GE1257@htj.dyndns.org>
+References: <1397121514.25199.91.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140410133116.GB25308@htj.dyndns.org>
+	 <1397189445.3649.14.camel@ThinkPad-T5421>
+	 <20140411102649.GB26252@mtj.dyndns.org>
+	 <1397461649.12943.1.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140414201315.GD16835@htj.dyndns.org>
+	 <1397529877.13188.68.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140415145017.GK1863@htj.dyndns.org>
+	 <1397612500.13188.83.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140416151749.GE1257@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14041706-4966-0000-0000-000009197BA0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You are right !!  It is not a right solution .
+This patch tries to solve the device hot remove locking issues in a
+different way from commit 5e33bc41, as kernfs already has a mechanism 
+to break active protection. 
 
-It is a speculation where the panic was.
+The problem here is the order of s_active, and series of hotplug related
+lock. 
 
-[38261.652100] Call trace: 
-[38261.654616] [<ffffffc000aa6fe0>] mm_update_next_owner+0x190/0x238 
-[38261.660766] [<ffffffc000aa728c>] do_exit+0x204/0x924 
-[38261.665790] [<ffffffc000aa7a1c>] do_group_exit+0x40/0xcc 
-[38261.671169] [<ffffffc000ab59cc>] get_signal_to_deliver+0x218/0x57c 
-[38261.677409] [<ffffffc000a87e6c>] do_signal+0x534/0x550 
-[38261.682608] [<ffffffc000a88070>] do_notify_resume+0x20/0x58
+This patch takes s_active out of the lock dependency graph, so it won't
+dead lock with any hotplug realted locks.
 
------Original Message-----
-From: Oleg Nesterov [mailto:oleg@redhat.com] 
-Sent: Wednesday, April 16, 2014 9:58 PM
-To: Peter Chiang
-Cc: ccross@android.com; lizefan@huawei.com; akpm@linux-foundation.org; tj@kernel.org; pavel@ucw.cz; ebiederm@xmission.com; guillaume@morinfr.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm : Avoid candidate task is equal to current task
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+---
+ drivers/base/core.c   | 37 ++++++++++++++++++++++++++++++++++---
+ drivers/base/memory.c | 18 +++++++++++++++---
+ 2 files changed, 49 insertions(+), 6 deletions(-)
 
-On 04/16, Peter Chiang wrote:
->
-> mm_update_next_owner() call from exit_mm() , and exit_mm()  change 
-> tsk->mm to NULL If p==c , It seems to be  impossible that mm == c->mm  (tsk->mm) .
-> Because mm is non-NULL and  c->mm is NULL .
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 0dd6528..1b96cb9 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -439,17 +439,48 @@ static ssize_t online_store(struct device *dev, struct device_attribute *attr,
+ {
+ 	bool val;
+ 	int ret;
++	struct kernfs_node *kn;
+ 
+ 	ret = strtobool(buf, &val);
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	ret = lock_device_hotplug_sysfs();
+-	if (ret)
+-		return ret;
++	kn = kernfs_find_and_get(dev->kobj.sd, attr->attr.name);
++	if (WARN_ON_ONCE(!kn))
++		return -ENODEV;
++
++	/*
++	 * Break active protection here to avoid deadlocks with device
++	 * removing process, which tries to remove sysfs entries including this
++	 * "online" attribute while holding some hotplug related locks.
++	 *
++	 * @dev needs to be protected here, or it could go away any time after
++	 * dropping active protection. But it is still unreasonable/unsafe to
++	 * online/offline a device after it being removed. Fortunately, there
++	 * are some checks in online/offline knobs. Like cpu, it checks cpu
++	 * present/online mask before doing the real work.
++	 */
++
++	get_device(dev);
++	kernfs_break_active_protection(kn);
++
++	lock_device_hotplug();
++
++	/*
++	 * If we assume device_hotplug_lock must be acquired before removing
++	 * device, we may try to find a way to check whether the device has
++	 * been removed here, so we don't call device_{on|off}line against
++	 * removed device.
++	 */
+ 
+ 	ret = val ? device_online(dev) : device_offline(dev);
+ 	unlock_device_hotplug();
++
++	kernfs_unbreak_active_protection(kn);
++	put_device(dev);
++
++	kernfs_put(kn);
++
+ 	return ret < 0 ? ret : count;
+ }
+ static DEVICE_ATTR_RW(online);
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index bece691..0d2f3a5 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -320,10 +320,17 @@ store_mem_state(struct device *dev,
+ {
+ 	struct memory_block *mem = to_memory_block(dev);
+ 	int ret, online_type;
++	struct kernfs_node *kn;
+ 
+-	ret = lock_device_hotplug_sysfs();
+-	if (ret)
+-		return ret;
++	kn = kernfs_find_and_get(dev->kobj.sd, attr->attr.name);
++	if (WARN_ON_ONCE(!kn))
++		return -ENODEV;
++
++	/* refer to comments in online_store() for more information */
++	get_device(dev);
++	kernfs_break_active_protection(kn);
++
++	lock_device_hotplug();
+ 
+ 	if (!strncmp(buf, "online_kernel", min_t(int, count, 13)))
+ 		online_type = ONLINE_KERNEL;
+@@ -362,6 +369,11 @@ store_mem_state(struct device *dev,
+ err:
+ 	unlock_device_hotplug();
+ 
++	kernfs_unbreak_active_protection(kn);
++	put_device(dev);
++
++	kernfs_put(kn);
++
+ 	if (ret)
+ 		return ret;
+ 	return count;
 
-Confused, please see below.
-
-> Fix kernel panic when finding a new owner for the mm and the new owner 
-> is equal to current onwer
-
-Did you actually observe the panic ?
-
-> diff --git a/kernel/exit.c b/kernel/exit.c index 6ed6a1d..aa98422 
-> 100644
-> --- a/kernel/exit.c
-> +++ b/kernel/exit.c
-> @@ -399,7 +399,7 @@ retry:
->  	 * here often
->  	 */
->  	do_each_thread(g, c) {
-> -		if (c->mm == mm)
-> +		if ((c != p) && (c->mm == mm))
->  			goto assign_new_owner;
->  	} while_each_thread(g, c);
-
-p == current. This is always called with p->mm == NULL and mm != NULL.
-
-So, if c->mm == mm then at least c->mm != NULL, and this means that c == p is not possible?
-
-And it seems that this is exactly what you meant above. So why do you think we need this change?
-
-Oleg.
 
