@@ -1,94 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751329AbaDQWDS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 18:03:18 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47423 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983AbaDQWDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 18:03:15 -0400
-Date: Thu, 17 Apr 2014 17:00:36 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Nishanth Menon <nm@ti.com>
-CC: Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sricharan R <r.sricharan@ti.com>, Sekhar Nori <nsekhar@ti.com>,
-        Rajendra Nayak <rnayak@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2 06/19] bus: omap_l3_noc: un-obfuscate l3_targ address
- computation
-Message-ID: <20140417220036.GE8504@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1397492726-17203-1-git-send-email-nm@ti.com>
- <1397767775-10965-1-git-send-email-nm@ti.com>
- <1397767775-10965-7-git-send-email-nm@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RpqchZ26BWispMcB"
-Content-Disposition: inline
-In-Reply-To: <1397767775-10965-7-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751425AbaDQWEX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 18:04:23 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:46701 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983AbaDQWEU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 18:04:20 -0400
+From: Andy Gross <agross@codeaurora.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
+        Andy Gross <agross@codeaurora.org>
+Subject: [PATCH] dmaengine: qcom_bam_dma: Add descriptor flag APIs
+Date: Thu, 17 Apr 2014 17:04:02 -0500
+Message-Id: <1397772242-4048-1-git-send-email-agross@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---RpqchZ26BWispMcB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch adds APIs that allow for BAM hardware flags to be set per
+descriptor.  Each one of the new flags informs the attached peripheral of a
+special behavior that is required.
 
-Hi,
+The EOT flag requests that the peripheral assert an end of transaction interrupt
+when that descriptor is complete.  It also results in special signaling protocol
+that is used between the attached peripheral and the core using the DMA
+controller.
 
-On Thu, Apr 17, 2014 at 03:49:22PM -0500, Nishanth Menon wrote:
-> just simplify derefencing that is equivalent.
->=20
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> ---
-> V2: just ordering change
-> V1: https://patchwork.kernel.org/patch/3984201/
->  drivers/bus/omap_l3_noc.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
-> index c8facb0..f7d3bf4 100644
-> --- a/drivers/bus/omap_l3_noc.c
-> +++ b/drivers/bus/omap_l3_noc.c
-> @@ -76,7 +76,7 @@ static irqreturn_t l3_interrupt_handler(int irq, void *=
-_l3)
->  			err_src =3D __ffs(err_reg);
-> =20
->  			/* Read the stderrlog_main_source from clk domain */
-> -			l3_targ_base =3D base + *(l3_targ[i] + err_src);
-> +			l3_targ_base =3D base + l3_targ[i][err_src];
+The NWD flag requests that the peripheral wait until the data has been fully
+processed before signaling an interrupt.
 
-hmmm, wasn't it so that pointer arithmetic was slightly faster than
-array indexing ? In that case would it be best to:
+The CMD flag informs the peripheral that the descriptor payload contains
+command descriptors and not data descriptors.
 
-l3_targ_base =3D base + *(l3_targ + i + err_src);
+Signed-off-by: Andy Gross <agross@codeaurora.org>
+---
+ drivers/dma/qcom_bam_dma.c       |   48 ++++++++++++++++++++++++++++++++++++--
+ include/linux/dma/qcom_bam_dma.h |   23 ++++++++++++++++++
+ 2 files changed, 69 insertions(+), 2 deletions(-)
+ create mode 100644 include/linux/dma/qcom_bam_dma.h
 
---=20
-balbi
+diff --git a/drivers/dma/qcom_bam_dma.c b/drivers/dma/qcom_bam_dma.c
+index 02f7fef..f6c8ef1 100644
+--- a/drivers/dma/qcom_bam_dma.c
++++ b/drivers/dma/qcom_bam_dma.c
+@@ -61,12 +61,18 @@ struct bam_desc_hw {
+ #define DESC_FLAG_INT BIT(15)
+ #define DESC_FLAG_EOT BIT(14)
+ #define DESC_FLAG_EOB BIT(13)
++#define DESC_FLAG_NWD BIT(12)
++#define DESC_FLAG_CMD BIT(11)
+ 
+ struct bam_async_desc {
+ 	struct virt_dma_desc vd;
+ 
+ 	u32 num_desc;
+ 	u32 xfer_len;
++
++	/* transaction flags, EOT|EOB|NWD|CMD */
++	u16 flags;
++
+ 	struct bam_desc_hw *curr_desc;
+ 
+ 	enum dma_transfer_direction dir;
+@@ -800,6 +806,34 @@ static void bam_apply_new_config(struct bam_chan *bchan,
+ 	bchan->reconfigure = 0;
+ }
+ 
++void qcom_bam_set_desc_eot(struct dma_async_tx_descriptor *txd)
++{
++	struct bam_async_desc *async_desc = container_of(txd,
++			struct bam_async_desc, vd.tx);
++
++	async_desc->flags |= DESC_FLAG_EOT;
++}
++EXPORT_SYMBOL(qcom_bam_set_desc_eot);
++
++void qcom_bam_set_desc_cmd(struct dma_async_tx_descriptor *txd)
++{
++	struct bam_async_desc *async_desc = container_of(txd,
++			struct bam_async_desc, vd.tx);
++
++	async_desc->flags |= DESC_FLAG_CMD;
++}
++EXPORT_SYMBOL(qcom_bam_set_desc_cmd);
++
++void qcom_bam_set_desc_nwd(struct dma_async_tx_descriptor *txd)
++{
++	struct bam_async_desc *async_desc = container_of(txd,
++			struct bam_async_desc, vd.tx);
++
++	async_desc->flags |= DESC_FLAG_NWD;
++}
++EXPORT_SYMBOL(qcom_bam_set_desc_nwd);
++
++
+ /**
+  * bam_start_dma - start next transaction
+  * @bchan - bam dma channel
+@@ -812,6 +846,7 @@ static void bam_start_dma(struct bam_chan *bchan)
+ 	struct bam_desc_hw *desc;
+ 	struct bam_desc_hw *fifo = PTR_ALIGN(bchan->fifo_virt,
+ 					sizeof(struct bam_desc_hw));
++	int i;
+ 
+ 	lockdep_assert_held(&bchan->vc.lock);
+ 
+@@ -838,8 +873,17 @@ static void bam_start_dma(struct bam_chan *bchan)
+ 	else
+ 		async_desc->xfer_len = async_desc->num_desc;
+ 
+-	/* set INT on last descriptor */
+-	desc[async_desc->xfer_len - 1].flags |= DESC_FLAG_INT;
++	/* set command descriptor flag, if applicable */
++	if (async_desc->flags & DESC_FLAG_CMD)
++		for (i = 0; i < async_desc->xfer_len; i++)
++			desc[i].flags |= DESC_FLAG_CMD;
++
++	/* set EOT or INT based on flag settings and if final transaction */
++	if (async_desc->flags & DESC_FLAG_EOT &&
++		async_desc->num_desc == async_desc->xfer_len)
++		desc[async_desc->xfer_len - 1].flags |= DESC_FLAG_EOT;
++	else
++		desc[async_desc->xfer_len - 1].flags |= DESC_FLAG_INT;
+ 
+ 	if (bchan->tail + async_desc->xfer_len > MAX_DESCRIPTORS) {
+ 		u32 partial = MAX_DESCRIPTORS - bchan->tail;
+diff --git a/include/linux/dma/qcom_bam_dma.h b/include/linux/dma/qcom_bam_dma.h
+new file mode 100644
+index 0000000..65a371eb
+--- /dev/null
++++ b/include/linux/dma/qcom_bam_dma.h
+@@ -0,0 +1,23 @@
++#ifndef _QCOM_BAM_DMA_H_
++#define _QCOM_BAM_DMA_H_
++/*
++ * Copyright (c) 2014, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/dmaengine.h>
++
++void qcom_bam_set_desc_cmd(struct dma_async_tx_descriptor *);
++void qcom_bam_set_desc_eot(struct dma_async_tx_descriptor *);
++void qcom_bam_set_desc_nwd(struct dma_async_tx_descriptor *);
++
++#endif
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
---RpqchZ26BWispMcB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTUE8EAAoJEIaOsuA1yqREbHEP/R8V2DkmOU3FRI+fJMwB1BYz
-m01hQMSEme3ACAvGDvdQco08BXviyYohmf7cTMoChrdz70km2OX///2knSuHsjMp
-Bo1oexhpB7vYRYabvVId29v9LVT+hdKoMbliysN8J5sBbg6CbNPBx3oJtnv/M0od
-1hHVjDk59nYM8IwyTnLtHtgnCkrNnMrHAk7RpUdQkjMYyksJ77tPaJ9gUnATOXOb
-v/E43AX3B4SlQmBlfooMG/Bhz5CGE6xp14rIXJjc+X3ma8wdNvXVeI1zqaGiy2Dc
-K2qmde7bc5+0fAWq7GPBa0wfcJLr9KVEaGnUQddAKH5sD2dpRpX7gMwj4snn6mTJ
-f2AjJrp3XO7ClOHlh7+eYmhbaQNl1NHt5k5l7447lrGufVbNUKq00TOEjBz7sZK2
-paFBPUSsLDKCZ5ZAsPzelH3r3EtFQKlbtupP5i6bVcRqaoosGDnX72dIQvtq/afy
-28PVjYE+RgJJXmuSUHdPKPON4dUEKlDTROHIGVysJr9G5rmS7Li+d0oju2f9zxIO
-7bMWrPqRKMyQhfafAHdpkknRjC1TR3I6X62YWgP2ULYvNChg7iHq4HcWjz3pgo2e
-1ixWbjV1gWbmZRZQRANlJ0WpCOr47bImtl5z+/2MAXEgOsVMY5/Z1N/1zktke7xQ
-8/jZy/zNaGmLw6xpSGjD
-=+vZe
------END PGP SIGNATURE-----
-
---RpqchZ26BWispMcB--
