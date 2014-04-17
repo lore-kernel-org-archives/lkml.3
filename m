@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208AbaDQLci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 07:32:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43096 "EHLO mx1.redhat.com"
+	id S1755352AbaDQLfJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 07:35:09 -0400
+Received: from plane.gmane.org ([80.91.229.3]:42655 "EHLO plane.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751209AbaDQLcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 07:32:36 -0400
-Date: Thu, 17 Apr 2014 13:32:21 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        KVM <kvm@vger.kernel.org>, linux-s390 <linux-s390@vger.kernel.org>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>, linux-kernel@vger.kernel.org,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Subject: Re: [PATCH] perf/tool: Fix usage of trace events with '-' in trace
- system name.
-Message-ID: <20140417113221.GA7422@krava.brq.redhat.com>
-References: <1395694140-43447-1-git-send-email-borntraeger@de.ibm.com>
- <53315741.9010508@redhat.com>
-MIME-Version: 1.0
+	id S1750986AbaDQLfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 07:35:07 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: shrikant <shrikant.khandare@tudip.com>
+Subject: USB 2.0 device is not working in USB 3.0 ports
+Date: Thu, 17 Apr 2014 11:29:34 +0000 (UTC)
+Message-ID: <loom.20140417T132728-844@post.gmane.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53315741.9010508@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 182.70.21.244 (Mozilla/5.0 (X11; Linux i686) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/34.0.1847.116 Safari/537.36)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 11:15:29AM +0100, Paolo Bonzini wrote:
-> Il 24/03/2014 21:49, Christian Borntraeger ha scritto:
-> > event_legacy_tracepoint:
-> >+PE_NAME '-' PE_NAME ':' PE_NAME
-> >+{
-> >+	struct parse_events_evlist *data = _data;
-> >+	struct list_head *list;
-> >+	char sys_name[strlen($1) + strlen($3) + 2];
-> >+	sprintf(&sys_name, "%s-%s", $1, $3);
-> >+
-> >+	ALLOC_LIST(list);
-> >+	ABORT_ON(parse_events_add_tracepoint(list, &data->idx, &sys_name, $5));
-> >+	$$ = list;
-> >+}
-> 
-> Why isn't '-' part of PE_NAME?
+I have a Ubuntu 12.04 system. To that system I have one USB 3.0 port. In this 
+port I am trying use my USB 2.0 device. But every time when I plugged that 
+USB 2.0 device into that USB 3.0 port,system gets hanged though I tired to 
+shutdown but it won't allow me.
 
-hi Paolo ;-)
+But same type of device I used for USB 2.0 it works fine.
 
-because it screws cache events parsing.. we need some code factoring
-in this part
+So I have a question as " How can allow USB 3.0 port to use USB 2.0 device or 
+did is there any way for converting USB 3.0 port to USB 2.0 port like drivers 
+or something".
 
-Acked-by: Jiri Olsa <jolsa@redhat.com>
+Here is my lsub command output
 
-it'd be nice to add test to tests/parse-events.c, probably s390 specific,
-because the parsing code touches the tracepoint format file
+Bus 001 Device 002: ID 8087:0024 Intel Corp. Integrated Rate Matching Hub
+Bus 002 Device 002: ID 8087:0024 Intel Corp. Integrated Rate Matching Hub
+Bus 003 Device 002: ID 046d:0823 Logitech, Inc. 
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 003 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 004 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+Bus 002 Device 003: ID 05e3:0608 Genesys Logic, Inc. USB-2.0 4-Port HUB
+Bus 002 Device 009: ID 046d:0823 Logitech, Inc. 
+Bus 002 Device 008: ID 5555:1110 Epiphan Systems Inc. VGA2USB
+Bus 002 Device 006: ID 0d8c:0008 C-Media Electronics, Inc. 
+Bus 002 Device 007: ID 0a12:0001 Cambridge Silicon Radio, Ltd Bluetooth 
+Dongle (HCI mode)
 
-thanks,
-jirka
+and for dmesg command output you can refer this http://pastebin.com/ZvM0kGk2
+Suggestions can also appreciating. Thanks in advance.
+
