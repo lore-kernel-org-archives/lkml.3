@@ -1,159 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754116AbaDQSGS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 14:06:18 -0400
-Received: from smtprelay0074.hostedemail.com ([216.40.44.74]:41221 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753778AbaDQSF7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 14:05:59 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:2:41:69:355:379:541:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1535:1593:1594:1606:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2693:2828:2898:3138:3139:3140:3141:3142:3355:3865:3866:3867:3868:3870:3871:3872:3873:4117:4321:4605:5007:6119:6755:7652:7903:10004:10848:11026:11232:11473:11658:11914:12043:12219:12296:12438:12517:12519:12555:12683:12740:13149:13161:13229:13230:13868,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: talk28_8b43961b04c5e
-X-Filterd-Recvd-Size: 6451
-Message-ID: <1397757955.3104.11.camel@joe-AO725>
-Subject: [PATCH] cgroup: Use more current logging style
-From: Joe Perches <joe@perches.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jianyu Zhan <nasa4836@gmail.com>, lizefan@huawei.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 17 Apr 2014 11:05:55 -0700
-In-Reply-To: <20140417153800.GO15326@htj.dyndns.org>
-References: <1397748555-6647-1-git-send-email-nasa4836@gmail.com>
-	 <20140417153800.GO15326@htj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754169AbaDQSHB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 14:07:01 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:58542 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753877AbaDQSFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 14:05:33 -0400
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: John Johansen <john.johansen@canonical.com>,
+        Kees Cook <keescook@chromium.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>, Will Drewry <wad@chromium.org>,
+        Julien Tinnes <jln@chromium.org>, linux-doc@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: [PATCH v2 1/3] seccomp: introduce writer locking
+Date: Thu, 17 Apr 2014 11:05:02 -0700
+Message-Id: <1397757904-30665-2-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1397757904-30665-1-git-send-email-keescook@chromium.org>
+References: <1397757904-30665-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use pr_fmt and remove embedded prefixes.
-Realign modified multi-line statements to open parenthesis.
-Convert embedded function name to "%s: ", __func__
+Normally, task_struck.seccomp.filter is only ever read or modified by
+the task that owns it (current). This property aids in fast access
+during system call filtering as read access is lockless.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+Updating the pointer from another task, however, opens up race
+conditions. To allow cross-task filter pointer updates, writes to the
+seccomp fields are now protected via a spinlock.  Read access remains
+lockless because pointer updates themselves are atomic.  However, writes
+(or cloning) often entail additional checking (like maximum instruction
+counts) which require locking to perform safely.
+
+In the case of cloning threads, the child is invisible to the system
+until it enters the task list. To make sure a child can't be cloned
+from a thread and left in a prior state, seccomp duplication is moved
+under the tasklist_lock. Then parent and child are certain have the same
+seccomp state when they exit the lock.
+
+Based on patches by Will Drewry.
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
+ include/linux/init_task.h |    8 ++++++++
+ include/linux/sched.h     |   18 ++++++++++++++++++
+ include/linux/seccomp.h   |    6 ++++--
+ kernel/fork.c             |   33 ++++++++++++++++++++++++++++++++-
+ kernel/seccomp.c          |   13 ++++++++-----
+ 5 files changed, 70 insertions(+), 8 deletions(-)
 
-On Thu, 2014-04-17 at 11:38 -0400, Tejun Heo wrote:
-> Rolled 1-3 to the pending patchset.
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 6df7f9fe0d01..e2370ec3102b 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -154,6 +154,13 @@ extern struct task_group root_task_group;
+ # define INIT_VTIME(tsk)
+ #endif
  
-Perhaps something like this on top of the modified patches
-after being applied to -next.
-
-There was 1 trivial patch conflict on the Jianyu's patch 3/3
-
- kernel/cgroup.c | 32 +++++++++++++++++---------------
- 1 file changed, 17 insertions(+), 15 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 21a656e..5e6f193 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -26,6 +26,8 @@
-  *  distribution for more details.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++#ifdef CONFIG_SECCOMP
++# define INIT_SECCOMP(tsk)						\
++	.seccomp.lock	= __SPIN_LOCK_UNLOCKED(tsk.seccomp.lock),
++#else
++# define INIT_SECCOMP(tsk)
++#endif
 +
- #include <linux/cgroup.h>
- #include <linux/cred.h>
- #include <linux/ctype.h>
-@@ -1017,9 +1019,9 @@ static int rebind_subsystems(struct cgroup_root *dst_root,
- 		 * Just warn about it and continue.
- 		 */
- 		if (cgrp_dfl_root_visible) {
--			pr_warn("cgroup: failed to create files (%d) while rebinding 0x%lx to default root\n",
--				   ret, ss_mask);
--			pr_warn("cgroup: you may retry by moving them to a different hierarchy and unbinding\n");
-+			pr_warn("failed to create files (%d) while rebinding 0x%lx to default root\n",
-+				ret, ss_mask);
-+			pr_warn("you may retry by moving them to a different hierarchy and unbinding\n");
- 		}
+ #define INIT_TASK_COMM "swapper"
+ 
+ #ifdef CONFIG_RT_MUTEXES
+@@ -234,6 +241,7 @@ extern struct task_group root_task_group;
+ 	INIT_CPUSET_SEQ(tsk)						\
+ 	INIT_RT_MUTEXES(tsk)						\
+ 	INIT_VTIME(tsk)							\
++	INIT_SECCOMP(tsk)						\
+ }
+ 
+ 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 25f54c79f757..50a21e527eb2 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2480,6 +2480,24 @@ static inline void task_unlock(struct task_struct *p)
+ 	spin_unlock(&p->alloc_lock);
+ }
+ 
++#ifdef CONFIG_SECCOMP
++/*
++ * Protects changes to ->seccomp
++ */
++static inline void seccomp_lock(struct task_struct *p)
++{
++	spin_lock(&p->seccomp.lock);
++}
++
++static inline void seccomp_unlock(struct task_struct *p)
++{
++	spin_unlock(&p->seccomp.lock);
++}
++#else
++static inline void seccomp_lock(struct task_struct *p) { }
++static inline void seccomp_unlock(struct task_struct *p) { }
++#endif
++
+ extern struct sighand_struct *__lock_task_sighand(struct task_struct *tsk,
+ 							unsigned long *flags);
+ 
+diff --git a/include/linux/seccomp.h b/include/linux/seccomp.h
+index 4054b0994071..c47be00e8ffb 100644
+--- a/include/linux/seccomp.h
++++ b/include/linux/seccomp.h
+@@ -14,14 +14,16 @@ struct seccomp_filter;
+  *
+  * @mode:  indicates one of the valid values above for controlled
+  *         system calls available to a process.
+- * @filter: The metadata and ruleset for determining what system calls
+- *          are allowed for a task.
++ * @lock:  held when making changes to avoid thread races.
++ * @filter: must always point to a valid seccomp-filter or NULL as it is
++ *          accessed without locking during system call entry.
+  *
+  *          @filter must only be accessed from the context of current as there
+  *          is no locking.
+  */
+ struct seccomp {
+ 	int mode;
++	spinlock_t lock;
+ 	struct seccomp_filter *filter;
+ };
+ 
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 54a8d26f612f..b33f886fe3a1 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -315,6 +315,15 @@ static struct task_struct *dup_task_struct(struct task_struct *orig)
+ 		goto free_ti;
+ 
+ 	tsk->stack = ti;
++#ifdef CONFIG_SECCOMP
++	/*
++	 * We must handle setting up seccomp filters once we're under
++	 * the tasklist_lock in case orig has changed between now and
++	 * then. Until then, filter must be NULL to avoid messing up
++	 * the usage counts on the error path calling free_task.
++	 */
++	tsk->seccomp.filter = NULL;
++#endif
+ 
+ 	setup_thread_stack(tsk, orig);
+ 	clear_user_return_notifier(tsk);
+@@ -1081,6 +1090,23 @@ static int copy_signal(unsigned long clone_flags, struct task_struct *tsk)
+ 	return 0;
+ }
+ 
++static void copy_seccomp(struct task_struct *p)
++{
++#ifdef CONFIG_SECCOMP
++	/* Child lock not needed since it is not yet in tasklist. */
++	seccomp_lock(current);
++
++	get_seccomp_filter(current);
++	p->seccomp = current->seccomp;
++	spin_lock_init(&p->seccomp.lock);
++
++	if (p->seccomp.mode != SECCOMP_MODE_DISABLED)
++		set_tsk_thread_flag(p, TIF_SECCOMP);
++
++	seccomp_unlock(current);
++#endif
++}
++
+ SYSCALL_DEFINE1(set_tid_address, int __user *, tidptr)
+ {
+ 	current->clear_child_tid = tidptr;
+@@ -1196,7 +1222,6 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 		goto fork_out;
+ 
+ 	ftrace_graph_init_task(p);
+-	get_seccomp_filter(p);
+ 
+ 	rt_mutex_init_task(p);
+ 
+@@ -1425,6 +1450,12 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	 */
+ 	write_lock_irq(&tasklist_lock);
+ 
++	/*
++	 * Copy seccomp details explicitly here, in case they were changed
++	 * before holding tasklist_lock.
++	 */
++	copy_seccomp(p);
++
+ 	/* CLONE_PARENT re-uses the old parent */
+ 	if (clone_flags & (CLONE_PARENT|CLONE_THREAD)) {
+ 		p->real_parent = current->real_parent;
+diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+index 590c37925084..6d61a0b5080c 100644
+--- a/kernel/seccomp.c
++++ b/kernel/seccomp.c
+@@ -174,12 +174,12 @@ static int seccomp_check_filter(struct sock_filter *filter, unsigned int flen)
+  */
+ static u32 seccomp_run_filters(int syscall)
+ {
+-	struct seccomp_filter *f;
++	struct seccomp_filter *f = ACCESS_ONCE(current->seccomp.filter);
+ 	struct seccomp_data sd;
+ 	u32 ret = SECCOMP_RET_ALLOW;
+ 
+ 	/* Ensure unexpected behavior doesn't result in failing open. */
+-	if (WARN_ON(current->seccomp.filter == NULL))
++	if (WARN_ON(f == NULL))
+ 		return SECCOMP_RET_KILL;
+ 
+ 	populate_seccomp_data(&sd);
+@@ -188,7 +188,7 @@ static u32 seccomp_run_filters(int syscall)
+ 	 * All filters in the list are evaluated and the lowest BPF return
+ 	 * value always takes priority (ignoring the DATA).
+ 	 */
+-	for (f = current->seccomp.filter; f; f = f->prev) {
++	for (; f; f = ACCESS_ONCE(f->prev)) {
+ 		u32 cur_ret = sk_run_filter_int_seccomp(&sd, f->insnsi);
+ 		if ((cur_ret & SECCOMP_RET_ACTION) < (ret & SECCOMP_RET_ACTION))
+ 			ret = cur_ret;
+@@ -313,7 +313,7 @@ out:
+ /* get_seccomp_filter - increments the reference count of the filter on @tsk */
+ void get_seccomp_filter(struct task_struct *tsk)
+ {
+-	struct seccomp_filter *orig = tsk->seccomp.filter;
++	struct seccomp_filter *orig = ACCESS_ONCE(tsk->seccomp.filter);
+ 	if (!orig)
+ 		return;
+ 	/* Reference count is bounded by the number of total processes. */
+@@ -327,7 +327,7 @@ void put_seccomp_filter(struct task_struct *tsk)
+ 	/* Clean up single-reference branches iteratively. */
+ 	while (orig && atomic_dec_and_test(&orig->usage)) {
+ 		struct seccomp_filter *freeme = orig;
+-		orig = orig->prev;
++		orig = ACCESS_ONCE(orig->prev);
+ 		kfree(freeme);
  	}
+ }
+@@ -480,6 +480,8 @@ long prctl_set_seccomp(unsigned long seccomp_mode, char __user *filter)
+ {
+ 	long ret = -EINVAL;
  
-@@ -1210,12 +1212,12 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- 	/* Consistency checks */
- 
- 	if (opts->flags & CGRP_ROOT_SANE_BEHAVIOR) {
--		pr_warn("cgroup: sane_behavior: this is still under development and its behaviors will change, proceed at your own risk\n");
-+		pr_warn("sane_behavior: this is still under development and its behaviors will change, proceed at your own risk\n");
- 
- 		if ((opts->flags & (CGRP_ROOT_NOPREFIX | CGRP_ROOT_XATTR)) ||
- 		    opts->cpuset_clone_children || opts->release_agent ||
- 		    opts->name) {
--			pr_err("cgroup: sane_behavior: noprefix, xattr, clone_children, release_agent and name are not allowed\n");
-+			pr_err("sane_behavior: noprefix, xattr, clone_children, release_agent and name are not allowed\n");
- 			return -EINVAL;
- 		}
- 	} else {
-@@ -1261,7 +1263,7 @@ static int cgroup_remount(struct kernfs_root *kf_root, int *flags, char *data)
- 	unsigned long added_mask, removed_mask;
- 
- 	if (root->flags & CGRP_ROOT_SANE_BEHAVIOR) {
--		pr_err("cgroup: sane_behavior: remount is not allowed\n");
-+		pr_err("sane_behavior: remount is not allowed\n");
- 		return -EINVAL;
- 	}
- 
-@@ -1274,7 +1276,7 @@ static int cgroup_remount(struct kernfs_root *kf_root, int *flags, char *data)
- 		goto out_unlock;
- 
- 	if (opts.subsys_mask != root->cgrp.subsys_mask || opts.release_agent)
--		pr_warn("cgroup: option changes via remount are deprecated (pid=%d comm=%s)\n",
-+		pr_warn("option changes via remount are deprecated (pid=%d comm=%s)\n",
- 			task_tgid_nr(current), current->comm);
- 
- 	added_mask = opts.subsys_mask & ~root->cgrp.subsys_mask;
-@@ -1283,7 +1285,7 @@ static int cgroup_remount(struct kernfs_root *kf_root, int *flags, char *data)
- 	/* Don't allow flags or name to change at remount */
- 	if (((opts.flags ^ root->flags) & CGRP_ROOT_OPTION_MASK) ||
- 	    (opts.name && strcmp(opts.name, root->name))) {
--		pr_err("cgroup: option or name mismatch, new: 0x%lx \"%s\", old: 0x%lx \"%s\"\n",
-+		pr_err("option or name mismatch, new: 0x%lx \"%s\", old: 0x%lx \"%s\"\n",
- 		       opts.flags & CGRP_ROOT_OPTION_MASK, opts.name ?: "",
- 		       root->flags & CGRP_ROOT_OPTION_MASK, root->name);
- 		ret = -EINVAL;
-@@ -1544,11 +1546,11 @@ retry:
- 
- 		if ((root->flags ^ opts.flags) & CGRP_ROOT_OPTION_MASK) {
- 			if ((root->flags | opts.flags) & CGRP_ROOT_SANE_BEHAVIOR) {
--				pr_err("cgroup: sane_behavior: new mount options should match the existing superblock\n");
-+				pr_err("sane_behavior: new mount options should match the existing superblock\n");
- 				ret = -EINVAL;
- 				goto out_unlock;
- 			} else {
--				pr_warn("cgroup: new mount options do not match the existing superblock, will be ignored\n");
-+				pr_warn("new mount options do not match the existing superblock, will be ignored\n");
- 			}
- 		}
- 
-@@ -2415,8 +2417,8 @@ static int cgroup_addrm_files(struct cgroup *cgrp, struct cftype cfts[],
- 		if (is_add) {
- 			ret = cgroup_add_file(cgrp, cft);
- 			if (ret) {
--				pr_warn("cgroup_addrm_files: failed to add %s, err=%d\n",
--					cft->name, ret);
-+				pr_warn("%s: failed to add %s, err=%d\n",
-+					__func__, cft->name, ret);
- 				return ret;
- 			}
- 		} else {
-@@ -3666,10 +3668,10 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
- 
- 	if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
- 	    parent->parent) {
--		pr_warn("cgroup: %s (%d) created nested cgroup for controller \"%s\" which has incomplete hierarchy support. Nested cgroups may change behavior in the future.\n",
--			   current->comm, current->pid, ss->name);
-+		pr_warn("%s (%d) created nested cgroup for controller \"%s\" which has incomplete hierarchy support. Nested cgroups may change behavior in the future.\n",
-+			current->comm, current->pid, ss->name);
- 		if (!strcmp(ss->name, "memory"))
--			pr_warn("cgroup: \"memory\" requires setting use_hierarchy to 1 on the root.\n");
-+			pr_warn("\"memory\" requires setting use_hierarchy to 1 on the root\n");
- 		ss->warned_broken_hierarchy = true;
- 	}
- 
-
++	seccomp_lock(current);
++
+ 	if (current->seccomp.mode &&
+ 	    current->seccomp.mode != seccomp_mode)
+ 		goto out;
+@@ -505,5 +507,6 @@ long prctl_set_seccomp(unsigned long seccomp_mode, char __user *filter)
+ 	current->seccomp.mode = seccomp_mode;
+ 	set_thread_flag(TIF_SECCOMP);
+ out:
++	seccomp_unlock(current);
+ 	return ret;
+ }
+-- 
+1.7.9.5
 
