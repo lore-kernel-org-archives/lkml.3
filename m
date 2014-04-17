@@ -1,66 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756713AbaDQC5q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 16 Apr 2014 22:57:46 -0400
-Received: from ozlabs.org ([103.22.144.67]:33085 "EHLO ozlabs.org"
+	id S1756960AbaDQC7Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 16 Apr 2014 22:59:16 -0400
+Received: from mga02.intel.com ([134.134.136.20]:49749 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754545AbaDQC5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 16 Apr 2014 22:57:45 -0400
-Date: Thu, 17 Apr 2014 12:57:39 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sonic Zhang <sonic.zhang@analog.com>
-Subject: linux-next: manual merge of the crypto tree with Linus' tree
-Message-Id: <20140417125739.30a8730cf42d35dabe2966f9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__17_Apr_2014_12_57_39_+1000_DrbgTQ6J4DWrCCx7"
+	id S1752227AbaDQC7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 16 Apr 2014 22:59:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,876,1389772800"; 
+   d="scan'208";a="514531808"
+Date: Thu, 17 Apr 2014 10:59:12 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Anvin <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Noonan <steven@uplinklabs.net>, Rik van Riel <riel@redhat.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>, Linux-X86 <x86@kernel.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Use an alternative to _PAGE_PROTNONE for _PAGE_NUMA
+ v4
+Message-ID: <20140417025912.GA7797@localhost>
+References: <1397572876-1610-1-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397572876-1610-1-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__17_Apr_2014_12_57_39_+1000_DrbgTQ6J4DWrCCx7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Apr 15, 2014 at 03:41:13PM +0100, Mel Gorman wrote:
+> Fengguang Wu found that an earlier version crashed on his
+> tests. This version passed tests running with DEBUG_VM and
+> DEBUG_PAGEALLOC. Fengguang, another test would be appreciated and
+> if it helps this series is the mm-numa-use-high-bit-v4r3 branch in
+> git://git.kernel.org/pub/scm/linux/kernel/git/mel/linux-balancenuma.git
 
-Hi Herbert,
+Hi Mel,
 
-Today's linux-next merge of the crypto tree got a conflict in
-drivers/crypto/bfin_crc.h between commit 3356c99ea392 ("bfin_crc: Move
-architecture independant crc header file out of the blackfin folder")
-from Linus' tree and commit 52e6e543f2d8 ("crypto: bfin_crc - access crc
-registers by readl and writel functions") from the crypto tree.
+We noticed the below changes. The last_state.is_incomplete_run 0=>1 change
+means the test box failed to boot up. Unfortunately we don't have
+serial console output of this testbox, it may be hard to check the
+root cause. Anyway, I'll try to bisect it to make the debug easier.
 
-I fixed it up (I kept the file under its new name) and can carry the fix
-as necessary (no action is required).
+Fengguang
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+          v3.14  685561ea2d015cb90c45504ec  
+---------------  -------------------------  
+    864.70 ~ 5%     -27.5%     627.28       snb-drag/sysbench/fileio/600s-100%-1HDD-ext4-64G-1024-seqwr-sync
+    178.20 ~104%     -99.9%       0.13       snb-drag/sysbench/fileio/600s-100%-1HDD-xfs-64G-1024-rndwr-sync
+   1042.90 ~22%     -39.8%     627.41       TOTAL fileio.request_latency_max_ms
 
---Signature=_Thu__17_Apr_2014_12_57_39_+1000_DrbgTQ6J4DWrCCx7
-Content-Type: application/pgp-signature
+          v3.14  685561ea2d015cb90c45504ec  
+---------------  -------------------------  
+         0           +Inf%          1 ~ 0%  lkp-a04/fake/boot/1
+         0           +Inf%          1 ~ 0%  TOTAL last_state.is_incomplete_run
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+          v3.14  685561ea2d015cb90c45504ec  
+---------------  -------------------------  
+        10 ~10%   +1560.0%        166       lkp-ws02/micro/dd-write/11HDD-JBOD-cfq-ext4-10dd
+        10 ~10%   +1560.0%        166       TOTAL ftrace.writeback_single_inode.sdg.age
 
-iQIcBAEBCAAGBQJTT0MnAAoJEMDTa8Ir7ZwVw5IP/0u+s2ZQV10RGKoj0AxUep65
-Ux3PbUo7unWkkwBiYSg7wK44WWxXrfsPykZsaODmw68R6srVwwsp0jLX5GZzgIdG
-3TSLBlO6YvKPPFpdicRTQWa64aaRpqgyLAp0kRje9G3Mnqj/Y7mdAWsrq9R9s1uD
-GoaaKKHA+4I8BAr2TKCM2DXHhlJ+4Ayce4QJ4W/Wi1oc5TM9VL0YhHn81RTWdUtR
-MTmyeu1V2lqWB9iVQOxTyminlZOTz/KGoj4KxkxZsl9fO6Jqd6mDukplyJ305X6G
-GzV9BLLAz6UM0BEh4/Ugt8aMbxSDAwE/q6ghrKgiFHwMzfEyM3yRkob+KhWzPBq+
-bhfOaLejIiNOcd/QK9q4wZRIbLFsfNRIDXFmKfiXSPSJYnIUuZd4T0+YIVB5BsDX
-Vs0vnYOQW8yvbxo2DDd5dAd0DlgEP3SvGIoKgZ+LWsyhy94o+/v8xH8RYBCPWHp6
-hnsND85aD2IGVP3ba/XkxOjwYE5jww+vEhqXNE2CQs9VpDKxID4fN34T6XDqk+SD
-exBwWdWzreFVo/M7XIHM8KUZ2RABtRzwDWtgPkcWVDlufjLsr13Eq8Ku0GnHdm3q
-E3xONujpgCAs3kfWnBS5iXxVRIraQyuXTdzONwMW1+zsx0W4zO5Rs4kJ95H5TOGs
-qu/i5B6MUfxkYF++7C3D
-=zJXk
------END PGP SIGNATURE-----
+          v3.14  685561ea2d015cb90c45504ec  
+---------------  -------------------------  
+      9662 ~19%  +17955.3%    1744594       lkp-snb01/micro/hackbench/1600%-process-socket
+      4235 ~22%   +6497.6%     279443       lkp-snb01/micro/hackbench/1600%-threads-socket
+      3842 ~ 4%   +1468.7%      60278       lkp-snb01/micro/hackbench/50%-process-pipe
+     17181 ~ 3%    +393.1%      84722       lkp-snb01/micro/hackbench/50%-process-socket
+     34922 ~10%   +6111.0%    2169037       TOTAL cpuidle.POLL.time
 
---Signature=_Thu__17_Apr_2014_12_57_39_+1000_DrbgTQ6J4DWrCCx7--
+          v3.14  685561ea2d015cb90c45504ec  
+---------------  -------------------------  
+        34 ~ 1%     +61.8%         56       lkp-ws02/micro/dd-write/11HDD-JBOD-cfq-ext4-10dd
+        34 ~ 1%     +61.8%         56       TOTAL ftrace.balance_dirty_pages.sdl.period
+
+          v3.14  685561ea2d015cb90c45504ec  
+---------------  -------------------------  
+       312 ~ 0%     -10.4%        280       snb-drag/sysbench/fileio/600s-100%-1HDD-xfs-64G-1024-rndwr-sync
+       312 ~ 0%     -10.4%        280       TOTAL vmstat.memory.buff
+
+          v3.14  685561ea2d015cb90c45504ec  
+---------------  -------------------------  
+       350 ~ 3%   +3056.4%      11057       lkp-ws02/micro/dd-write/11HDD-JBOD-cfq-ext4-100dd
+       340 ~ 2%   +1792.2%       6443       lkp-ws02/micro/dd-write/11HDD-JBOD-cfq-ext4-10dd
+       690 ~ 3%   +2433.3%      17500       TOTAL interrupts.125:PCI-MSI-edge.eth1-TxRx-4
+
+          v3.14  685561ea2d015cb90c45504ec  
+---------------  -------------------------  
+       310 ~ 1%   +2021.3%       6595       lkp-ws02/micro/dd-write/11HDD-JBOD-cfq-ext4-1dd
+       310 ~ 1%   +2021.3%       6595       TOTAL interrupts.127:PCI-MSI-edge.eth1-TxRx-6
+
+          v3.14  685561ea2d015cb90c45504ec  
+---------------  -------------------------  
+       157 ~ 4%    +118.4%        344       lkp-sb03/micro/nepim/300s-100%-udp
+       157 ~ 4%    +118.4%        344       TOTAL interrupts.101:PCI-MSI-edge.eth1-TxRx-1
+
+          v3.14  685561ea2d015cb90c45504ec  
+---------------  -------------------------  
+     40.55 ~ 0%     -50.6%      20.02       lkp-a05/fake/boot/1
+     40.55 ~ 0%     -50.6%      20.02       TOTAL boottime.dhcp
+
+          v3.14  685561ea2d015cb90c45504ec  
+---------------  -------------------------  
+     60.79 ~ 0%     -47.8%      31.74       lkp-a05/fake/boot/1
+     60.79 ~ 0%     -47.8%      31.74       TOTAL boottime.boot
+
+          v3.14  685561ea2d015cb90c45504ec  
+---------------  -------------------------  
+       186 ~ 0%     -46.1%        100       lkp-a05/fake/boot/1
+       186 ~ 0%     -46.1%        100       TOTAL boottime.idle
+
+          v3.14  685561ea2d015cb90c45504ec  
+---------------  -------------------------  
+       157 ~ 3%     +84.7%        290       lkp-a05/micro/iperf/300s-tcp
+       157 ~ 3%     +84.7%        290       TOTAL interrupts.50:PCI-MSI-edge.eth0-tx-0
+
+          v3.14  685561ea2d015cb90c45504ec  
+---------------  -------------------------  
+    212639 ~ 1%     +48.1%     314887       lkp-sb03/micro/nepim/300s-25%-udp
+    212639 ~ 1%     +48.1%     314887       TOTAL interrupts.LOC
+
+          v3.14  685561ea2d015cb90c45504ec  
+---------------  -------------------------  
+       207 ~ 2%     +35.8%        282       lkp-a05/micro/iperf/300s-tcp
+       207 ~ 2%     +35.8%        282       TOTAL interrupts.47:PCI-MSI-edge.eth0-rx-1
+
