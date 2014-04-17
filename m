@@ -1,138 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756289AbaDQKpk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 06:45:40 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33301 "EHLO mail.skyhub.de"
+	id S1161105AbaDQKqD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 06:46:03 -0400
+Received: from svenfoo.org ([82.94.215.22]:53783 "EHLO mail.zonque.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751241AbaDQKph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 06:45:37 -0400
-Date: Thu, 17 Apr 2014 12:45:33 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Dave Jones <davej@redhat.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "Zhang, Rui" <rui.zhang@intel.com>, "Lu, Aaron" <aaron.lu@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Stephane Eranian <eranian@google.com>,
-        "Yan, Zheng Z" <zheng.z.yan@intel.com>
-Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
-Message-ID: <20140417104533.GB8215@pd.tnic>
-References: <20140224162400.GE16457@pd.tnic>
- <744357E9AAD1214791ACBA4B0B9092630121F201@SHSMSX101.ccr.corp.intel.com>
- <CAErSpo55DjkGQB=7ksow34BpCObnY+o3eNnt0n5oQEh6Lfw1pw@mail.gmail.com>
- <1558044.S1G2VU7srO@vostro.rjw.lan>
- <CAErSpo4pDYMhHo6e-1TN6XDRO0xy0u8H+=oucFnrEK+kbjZvzw@mail.gmail.com>
- <20140416190404.GA7070@pd.tnic>
- <20140416203138.GA17661@google.com>
- <20140416223122.GA2767@redhat.com>
- <20140416225600.GA23781@google.com>
+	id S1755212AbaDQKp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 06:45:59 -0400
+X-Greylist: delayed 435 seconds by postgrey-1.27 at vger.kernel.org; Thu, 17 Apr 2014 06:45:58 EDT
+Message-ID: <534FAF30.1000101@zonque.org>
+Date: Thu, 17 Apr 2014 12:38:40 +0200
+From: Daniel Mack <daniel@zonque.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140416225600.GA23781@google.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Sergei Ianovich <ynvich@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+CC: Arnd Bergmann <arnd@arndb.de>, Haojian Zhuang <haojian.zhuang@gmail.com>,
+        "laurent.pinchart" <laurent.pinchart@ideasonboard.com>,
+        kernel@pengutronix.de
+Subject: Re: [PATCH v4 00/21] ARM: support for ICP DAS LP-8x4x (with dts)
+References: <1387309071-22382-1-git-send-email-ynvich@gmail.com> <1397668411-27162-1-git-send-email-ynvich@gmail.com> <534EC04F.9010408@gmail.com> <610ed273-1e54-4d44-b523-cbe0d042cf48@email.android.com>
+In-Reply-To: <610ed273-1e54-4d44-b523-cbe0d042cf48@email.android.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
-
-thanks for the patch, a couple of notes below:
-
-On Wed, Apr 16, 2014 at 04:56:00PM -0600, Bjorn Helgaas wrote:
-> PNP: Work around Haswell BIOS defect in MCH area reporting
+On 04/16/2014 10:59 PM, Sergei Ianovich wrote:
+>> Well, IIRC, I asked you to look into the MMC performance
+>> regressions that you reported and see what we can do about them. I
+>> currently don't have hardware to reproduce this, so I can't do it
+>> myself.
 > 
-> From: Bjorn Helgaas <bhelgaas@google.com>
+> I hate to point fingers, but you promissed to refresh the code on
+> several occasions. It is from 3.8 tree at the moment. The regression
+> may be introduced by an error in my merging of your patches. I
+> published the one I tested in one piece with the results.
+
+Ok, well. I didn't see this as a potential reason, sorry. Point taken.
+
+I spent some hours on this topic again now, and rebased and tested my
+tree to 3.15-rc1. Pushed it here:
+
+  https://github.com/zonque/linux/tree/pxa-dma-3.15
+
+There's some overlap to the patches you sent, which I'll comment on
+directly soon.
+
+I'm booting my board with pxa[23]xx.dtsi taken from my tree.
+
+Please, if you find some time, test this tree and see if you still see
+the performance regression.
+
+>> My impression is that the transisiton will only be painless if the 
+>> mmp_pdma driver provides comparable performance to the existing 
+>> implementation. I also still think that adding hacks to the drivers
+>> to manually parse the dma properties (as in #8) brings us further
+>> away from a proper solution, not closer
 > 
-> Work around a Haswell BIOS defect that causes part of the MCH area to be
-> unreported.
+> No doubt about that. But the regression is not the only problem.
+> Driver for video capture requires an extensive rewrite as well.
 
-Yep, what Stephane said, this is not HSW only.
+Jup, I totally see your point. I was hoping for more support from
+someone with access to hardware to work on this, and possibly add the
+missing bits to the DMA framework to make the hot-linking possible. This
+didn't happen, which is unfortunate, so we in fact might need to
+recondider on how to move forward here.
 
-> MCHBAR is not an architected PCI BAR, so MCH space is usually reported as a
-> PNP0C02 resource.  The MCH space was 16KB prior to Haswell, but it is 32KB
-> in Haswell.  Some Haswell BIOSes still report a PNP0C02 resource that is
-> only 16KB, which means the rest of the MCH space is consumed but
-> unreported.
-> 
-> This can cause resource map sanity check warnings or (theoretically) a
-> device conflict if we assigned the unreported space to another device.
-> 
-> The Intel perf event uncore driver tripped over this when it claimed the
-> MCH region:
-> 
->   resource map sanity check conflict: 0xfed10000 0xfed15fff 0xfed10000 0xfed13fff pnp 00:01
->   Info: mapping multiple BARs. Your kernel is fine.
-> 
-> To prevent this, if we find a PNP0C02 resource that covers part of the MCH
-> space, extend it to cover the entire space.
-> 
-> Link: http://lkml.kernel.org/r/20140224162400.GE16457@pd.tnic
-> Reported-by: Borislav Petkov <bp@alien8.de>
-> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> ---
->  drivers/pnp/quirks.c |   55 ++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 55 insertions(+)
-> 
-> diff --git a/drivers/pnp/quirks.c b/drivers/pnp/quirks.c
-> index 258fef272ea7..8402088d4145 100644
-> --- a/drivers/pnp/quirks.c
-> +++ b/drivers/pnp/quirks.c
-> @@ -334,6 +334,60 @@ static void quirk_amd_mmconfig_area(struct pnp_dev *dev)
->  }
->  #endif
->  
-> +static void quirk_intel_haswell_mch(struct pnp_dev *dev)
-> +{
-> +	struct pci_dev *host;
-> +	u32 addr_lo, addr_hi;
-> +	struct pci_bus_region region;
-> +	struct resource mch;
-> +	struct pnp_resource *pnp_res;
-> +	struct resource *res;
-> +
-> +	host = pci_get_device(PCI_VENDOR_ID_INTEL, 0x0c00, NULL);
+> The
+> result is that a working pxa DT device is kept out of the tree and
+> there is no supported DT devices in tree. So no proper examples for
+> new devices and no drive-by improvements. All of this prevents rather
+> than facilitates eventual DT migration of tha PXA platform.
 
-And because it is not HSW only, this PCI device ID doesn't match on my
-IVB system. On mine the hostbridge is
+Ok, so how about this:
 
-00:00.0 Host bridge: Intel Corporation 3rd Gen Core processor DRAM Controller (rev 09)
-        Subsystem: Lenovo Device 21fa
-        Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-        Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort+ >SERR- <PERR- INTx-
-        Latency: 0
-        Capabilities: <access denied>
-        Kernel driver in use: ivb_uncore
-00: 86 80 54 01 06 00 90 20 09 00 00 06 00 00 00 00
-10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-20: 00 00 00 00 00 00 00 00 00 00 00 00 aa 17 fa 21
-30: 00 00 00 00 e0 00 00 00 00 00 00 00 00 00 00 00
+1. We keep the old API around, along with compat wrappers for existing
+drivers until someone finally finds time to at least test the patches
+that I can only compile-test myself.
 
-and from looking at Dave's, it is the same one, so PCI device ID is
-0x154.
+2. For platforms that don't need those exotic drivers for devices that
+nobody seems to be interested in, use DT and the pxa-mmp-dma driver, and
+make sure it performs as well as the old implementation.
 
-With that changed to
+3. Do not add hacks for DT-compatability of existing drivers to make
+them work with the old DMA implementation (like your patch #7).
 
-	host = pci_get_device(PCI_VENDOR_ID_INTEL, 0x0154, NULL);
+4. For new drivers, don't add any compat code for the old DMA
+implementation but soley rely on the new DMA framework.
 
-and a bit of debugging code, it says now:
 
-[    0.235739] quirk_intel_haswell_mch: entry
-[    0.235800] quirk_intel_haswell_mch: got host: 0x0
-[    0.235860] quirk_intel_haswell_mch: mch: [mem 0xfed10000-0xfed17fff]
-[    0.235930] quirk_intel_haswell_mch: res: [mem 0xfed10000-0xfed13fff]
-[    0.235990] pnp 00:01: [Firmware Bug]: [mem 0xfed10000-0xfed13fff] covers only part of Intel Haswell MCH; extending to [mem 0xfed10000-0xfed17fff]
 
-So you probably want to have a list of hostbridge pci ids in the quirk
-or so.
+Does this sound suitable for you?
 
-Thanks.
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks,
+Daniel
