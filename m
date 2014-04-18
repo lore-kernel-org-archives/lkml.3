@@ -1,55 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489AbaDRVOm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 17:14:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16358 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197AbaDRVOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 17:14:38 -0400
-Message-ID: <535195AC.1070702@redhat.com>
-Date: Fri, 18 Apr 2014 17:14:20 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754731AbaDRVPS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 17:15:18 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:53793 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645AbaDRVPK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 17:15:10 -0400
 MIME-Version: 1.0
-To: Jianyu Zhan <nasa4836@gmail.com>, akpm@linux-foundation.org,
-        minchan@kernel.org, hannes@cmpxchg.org, shli@kernel.org,
-        bob.liu@oracle.com, sjenning@linux.vnet.ibm.com,
-        iamjoonsoo.kim@lge.com, aquini@redhat.com, mgorman@suse.de,
-        aarcange@redhat.com, khalid.aziz@oracle.com
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm/swap: cleanup *lru_cache_add* functions
-References: <1397835565-6411-1-git-send-email-nasa4836@gmail.com>
-In-Reply-To: <1397835565-6411-1-git-send-email-nasa4836@gmail.com>
+In-Reply-To: <CAPnjgZ034FrVVphJCmX5jZE8LeWOEBjsH7M=2C_meM0fMss1NA@mail.gmail.com>
+References: <1397757570-19750-1-git-send-email-dianders@chromium.org>
+	<1397757570-19750-3-git-send-email-dianders@chromium.org>
+	<CAPnjgZ034FrVVphJCmX5jZE8LeWOEBjsH7M=2C_meM0fMss1NA@mail.gmail.com>
+Date: Fri, 18 Apr 2014 14:15:09 -0700
+X-Google-Sender-Auth: yNKkrOSIYjXREpHX_HMey--iRIU
+Message-ID: <CAD=FV=XhtW9ZORJLh396FZ=eE+szrTZN94KpoZj-9HVg7TaVRA@mail.gmail.com>
+Subject: Re: [PATCH 2/7] mfd: cros_ec: spi: Add mutex to cros_ec_spi
+From: Doug Anderson <dianders@chromium.org>
+To: Simon Glass <sjg@chromium.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@nvidia.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Olof Johansson <olof@lixom.net>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        lk <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2014 11:39 AM, Jianyu Zhan wrote:
-> Hi, Christoph Hellwig,
-> 
->> There are no modular users of lru_cache_add, so please don't needlessly
->> export it.
-> 
-> yep, I re-checked and found there is no module user of neither 
-> lru_cache_add() nor lru_cache_add_anon(), so don't export it.
-> 
-> Here is the renewed patch:
-> ---
-> 
-> In mm/swap.c, __lru_cache_add() is exported, but actually there are
-> no users outside this file. However, lru_cache_add() is supposed to
-> be used by vfs, or whatever others, but it is not exported.
-> 
-> This patch unexports __lru_cache_add(), and makes it static.
-> It also exports lru_cache_add_file(), as it is use by cifs, which
-> be loaded as module.
-> 
-> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+Simon,
 
-Acked-by: Rik van Riel <riel@redhat.com>
+On Fri, Apr 18, 2014 at 10:28 AM, Simon Glass <sjg@chromium.org> wrote:
+> Hi Doug,
+>
+> On 17 April 2014 11:59, Doug Anderson <dianders@chromium.org> wrote:
+>> The main transfer function for cros_ec_spi can be called by more than
+>> one client at a time.  Make sure that those clients don't stomp on
+>> each other by locking the bus for the duration of the transfer
+>> function.
+>
+> Is there no lock at the cros_ec layer?
 
+Not with what's upstream.
 
--- 
-All rights reversed
+Locally in the Chromium OS tree:
+
+* You can see that Bill removed the dev_lock at
+<https://chromium-review.googlesource.com/#/c/57051/> since it wasn't
+used.
+
+* Andrew moved to a common locking scheme later in
+<https://chromium-review.googlesource.com/#/c/170747/> (thus adding
+roughly the same lock back and using it), but in order to do that
+we've got a dozen pathces in between, some of which are big
+reorganizations.  This includes at least:
+
+6820b91 CHROMIUM: cros_ec: Tweak struct cros_ec_device for clarity
+5e8e562 CHROMIUM: Use struct cros_ec_command to communicate with the EC
+9e7db82 CHROMIUM: cleanup: remove unused fields from struct cros_ec_device
+866e62d CHROMIUM: cleanup: Remove EC wrapper functions.
+8a372b2 cros_ec: move locking into cros_ec_cmd_xfer
+981c4aa cros_ec: stop calling ->cmd_xfer() directly
+
+I think we should take in some of those other changes but I'd rather
+get correctness in first (since people are wanting to use this driver
+in upstream kernel) and get cleanups posted after this lands.  I was
+also trying not to spam the list with a 20-patch series...
+
+-Doug
