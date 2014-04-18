@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839AbaDRKdD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 06:33:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55218 "EHLO mx1.redhat.com"
+	id S1752340AbaDRKcO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 06:32:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2610 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752372AbaDRKcR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 06:32:17 -0400
+	id S1751394AbaDRKcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 06:32:10 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 4/5] perf kmem: Utilize the new generic cpunode_map
-Date: Fri, 18 Apr 2014 12:31:58 +0200
-Message-Id: <1397817119-15195-5-git-send-email-jolsa@redhat.com>
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 2/5] perf tools: Allow ability to map cpus to nodes easily
+Date: Fri, 18 Apr 2014 12:31:56 +0200
+Message-Id: <1397817119-15195-3-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1397817119-15195-1-git-send-email-jolsa@redhat.com>
 References: <1397817119-15195-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,135 +21,234 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Don Zickus <dzickus@redhat.com>
 
-Use the previous patch implementation of cpunode_map for builtin-kmem.c
-Should not be any functional difference.
+This patch figures out the max number of cpus and nodes that are on the
+system and creates a map of cpu to node.  This allows us to provide a cpu
+and quickly get the node associated with it.
+
+It was mostly copied from builtin-kmem.c and tweaked slightly to use less memory
+(use possible cpus instead of max).  It also calculates the max number of nodes.
+
+V6: use original kernel_max reference
+V5: use sysfs_mountpoint and filename__read_str
+V4: fix typos, rename get_max_num
+V3: simplify function names
 
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 Reviewed-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Link: http://lkml.kernel.org/r/1396896924-129847-4-git-send-email-dzickus@redhat.com
+Link: http://lkml.kernel.org/r/1396896924-129847-2-git-send-email-dzickus@redhat.com
+[ removing out label code in init_cpunode_map ]
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/builtin-kmem.c | 78 ++---------------------------------------------
- 1 file changed, 3 insertions(+), 75 deletions(-)
+ tools/perf/util/cpumap.c | 147 +++++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/cpumap.h |  35 +++++++++++
+ 2 files changed, 182 insertions(+)
 
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index bd91de0..f91fa437 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -14,6 +14,7 @@
- #include "util/parse-options.h"
- #include "util/trace-event.h"
- #include "util/data.h"
-+#include "util/cpumap.h"
- 
- #include "util/debug.h"
- 
-@@ -31,9 +32,6 @@ static int			caller_lines = -1;
- 
- static bool			raw_ip;
- 
--static int			*cpunode_map;
--static int			max_cpu_num;
--
- struct alloc_stat {
- 	u64	call_site;
- 	u64	ptr;
-@@ -55,76 +53,6 @@ static struct rb_root root_caller_sorted;
- static unsigned long total_requested, total_allocated;
- static unsigned long nr_allocs, nr_cross_allocs;
- 
--#define PATH_SYS_NODE	"/sys/devices/system/node"
--
--static int init_cpunode_map(void)
--{
--	FILE *fp;
--	int i, err = -1;
--
--	fp = fopen("/sys/devices/system/cpu/kernel_max", "r");
--	if (!fp) {
--		max_cpu_num = 4096;
--		return 0;
--	}
--
--	if (fscanf(fp, "%d", &max_cpu_num) < 1) {
--		pr_err("Failed to read 'kernel_max' from sysfs");
--		goto out_close;
--	}
--
--	max_cpu_num++;
--
--	cpunode_map = calloc(max_cpu_num, sizeof(int));
--	if (!cpunode_map) {
--		pr_err("%s: calloc failed\n", __func__);
--		goto out_close;
--	}
--
--	for (i = 0; i < max_cpu_num; i++)
--		cpunode_map[i] = -1;
--
--	err = 0;
--out_close:
--	fclose(fp);
--	return err;
--}
--
--static int setup_cpunode_map(void)
--{
--	struct dirent *dent1, *dent2;
--	DIR *dir1, *dir2;
--	unsigned int cpu, mem;
--	char buf[PATH_MAX];
--
--	if (init_cpunode_map())
--		return -1;
--
--	dir1 = opendir(PATH_SYS_NODE);
--	if (!dir1)
--		return 0;
--
--	while ((dent1 = readdir(dir1)) != NULL) {
--		if (dent1->d_type != DT_DIR ||
--		    sscanf(dent1->d_name, "node%u", &mem) < 1)
--			continue;
--
--		snprintf(buf, PATH_MAX, "%s/%s", PATH_SYS_NODE, dent1->d_name);
--		dir2 = opendir(buf);
--		if (!dir2)
--			continue;
--		while ((dent2 = readdir(dir2)) != NULL) {
--			if (dent2->d_type != DT_LNK ||
--			    sscanf(dent2->d_name, "cpu%u", &cpu) < 1)
--				continue;
--			cpunode_map[cpu] = mem;
--		}
--		closedir(dir2);
--	}
--	closedir(dir1);
--	return 0;
--}
--
- static int insert_alloc_stat(unsigned long call_site, unsigned long ptr,
- 			     int bytes_req, int bytes_alloc, int cpu)
+diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
+index 7fe4994..0a27732 100644
+--- a/tools/perf/util/cpumap.c
++++ b/tools/perf/util/cpumap.c
+@@ -317,3 +317,150 @@ int cpu_map__build_core_map(struct cpu_map *cpus, struct cpu_map **corep)
  {
-@@ -235,7 +163,7 @@ static int perf_evsel__process_alloc_node_event(struct perf_evsel *evsel,
- 	int ret = perf_evsel__process_alloc_event(evsel, sample);
+ 	return cpu_map__build_map(cpus, corep, cpu_map__get_core);
+ }
++
++/* setup simple routines to easily access node numbers given a cpu number */
++static int get_max_num(char *path, int *max)
++{
++	size_t num;
++	char *buf;
++	int err = 0;
++
++	if (filename__read_str(path, &buf, &num))
++		return -1;
++
++	buf[num] = '\0';
++
++	/* start on the right, to find highest node num */
++	while (--num) {
++		if ((buf[num] == ',') || (buf[num] == '-')) {
++			num++;
++			break;
++		}
++	}
++	if (sscanf(&buf[num], "%d", max) < 1) {
++		err = -1;
++		goto out;
++	}
++
++	/* convert from 0-based to 1-based */
++	(*max)++;
++
++out:
++	free(buf);
++	return err;
++}
++
++/* Determine highest possible cpu in the system for sparse allocation */
++static void set_max_cpu_num(void)
++{
++	const char *mnt;
++	char path[PATH_MAX];
++	int ret = -1;
++
++	/* set up default */
++	max_cpu_num = 4096;
++
++	mnt = sysfs__mountpoint();
++	if (!mnt)
++		goto out;
++
++	/* get the highest possible cpu number for a sparse allocation */
++	snprintf(path, PATH_MAX, "%s/devices/system/cpu/kernel_max", mnt);
++
++	ret = get_max_num(path, &max_cpu_num);
++
++out:
++	if (ret)
++		pr_err("Failed to read max cpus, using default of %d\n",
++			max_cpu_num);
++	return;
++}
++
++/* Determine highest possible node in the system for sparse allocation */
++static void set_max_node_num(void)
++{
++	const char *mnt;
++	char path[PATH_MAX];
++	int ret = -1;
++
++	/* set up default */
++	max_node_num = 8;
++
++	mnt = sysfs__mountpoint();
++	if (!mnt)
++		goto out;
++
++	/* get the highest possible cpu number for a sparse allocation */
++	snprintf(path, PATH_MAX, "%s/devices/system/node/possible", mnt);
++
++	ret = get_max_num(path, &max_node_num);
++
++out:
++	if (ret)
++		pr_err("Failed to read max nodes, using default of %d\n",
++			max_node_num);
++	return;
++}
++
++static int init_cpunode_map(void)
++{
++	int i;
++
++	set_max_cpu_num();
++	set_max_node_num();
++
++	cpunode_map = calloc(max_cpu_num, sizeof(int));
++	if (!cpunode_map) {
++		pr_err("%s: calloc failed\n", __func__);
++		return -1;
++	}
++
++	for (i = 0; i < max_cpu_num; i++)
++		cpunode_map[i] = -1;
++
++	return 0;
++}
++
++int cpu__setup_cpunode_map(void)
++{
++	struct dirent *dent1, *dent2;
++	DIR *dir1, *dir2;
++	unsigned int cpu, mem;
++	char buf[PATH_MAX];
++	char path[PATH_MAX];
++	const char *mnt;
++
++	/* initialize globals */
++	if (init_cpunode_map())
++		return -1;
++
++	mnt = sysfs__mountpoint();
++	if (!mnt)
++		return 0;
++
++	snprintf(path, PATH_MAX, "%s/devices/system/node", mnt);
++	dir1 = opendir(path);
++	if (!dir1)
++		return 0;
++
++	/* walk tree and setup map */
++	while ((dent1 = readdir(dir1)) != NULL) {
++		if (dent1->d_type != DT_DIR ||
++		    sscanf(dent1->d_name, "node%u", &mem) < 1)
++			continue;
++
++		snprintf(buf, PATH_MAX, "%s/%s", path, dent1->d_name);
++		dir2 = opendir(buf);
++		if (!dir2)
++			continue;
++		while ((dent2 = readdir(dir2)) != NULL) {
++			if (dent2->d_type != DT_LNK ||
++			    sscanf(dent2->d_name, "cpu%u", &cpu) < 1)
++				continue;
++			cpunode_map[cpu] = mem;
++		}
++		closedir(dir2);
++	}
++	closedir(dir1);
++	return 0;
++}
+diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+index b123bb9..61a6548 100644
+--- a/tools/perf/util/cpumap.h
++++ b/tools/perf/util/cpumap.h
+@@ -4,6 +4,9 @@
+ #include <stdio.h>
+ #include <stdbool.h>
  
- 	if (!ret) {
--		int node1 = cpunode_map[sample->cpu],
-+		int node1 = cpu__get_node(sample->cpu),
- 		    node2 = perf_evsel__intval(evsel, sample, "node");
++#include "perf.h"
++#include "util/debug.h"
++
+ struct cpu_map {
+ 	int nr;
+ 	int map[];
+@@ -46,4 +49,36 @@ static inline bool cpu_map__empty(const struct cpu_map *map)
+ 	return map ? map->map[0] == -1 : true;
+ }
  
- 		if (node1 != node2)
-@@ -772,7 +700,7 @@ int cmd_kmem(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (!strncmp(argv[0], "rec", 3)) {
- 		return __cmd_record(argc, argv);
- 	} else if (!strcmp(argv[0], "stat")) {
--		if (setup_cpunode_map())
-+		if (cpu__setup_cpunode_map())
- 			return -1;
- 
- 		if (list_empty(&caller_sort))
++int max_cpu_num;
++int max_node_num;
++int *cpunode_map;
++
++int cpu__setup_cpunode_map(void);
++
++static inline int cpu__max_node(void)
++{
++	if (unlikely(!max_node_num))
++		pr_debug("cpu_map not initialized\n");
++
++	return max_node_num;
++}
++
++static inline int cpu__max_cpu(void)
++{
++	if (unlikely(!max_cpu_num))
++		pr_debug("cpu_map not initialized\n");
++
++	return max_cpu_num;
++}
++
++static inline int cpu__get_node(int cpu)
++{
++	if (unlikely(cpunode_map == NULL)) {
++		pr_debug("cpu_map not initialized\n");
++		return -1;
++	}
++
++	return cpunode_map[cpu];
++}
++
+ #endif /* __PERF_CPUMAP_H */
 -- 
 1.8.3.1
 
