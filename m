@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692AbaDRNMj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 09:12:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39126 "EHLO
+	id S1754719AbaDRNMo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 09:12:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39129 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753702AbaDRNMd (ORCPT
+	with ESMTP id S1754525AbaDRNMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 09:12:33 -0400
-Date: Fri, 18 Apr 2014 06:12:02 -0700
+	Fri, 18 Apr 2014 09:12:34 -0400
+Date: Fri, 18 Apr 2014 06:11:38 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-2z962by2ppzcd984ybw2mwdw@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com, hpa@zytor.com,
-        mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        peterz@infradead.org, tglx@linutronix.de
+Message-ID: <tip-kme5dz5hcobpnufnnkh1ech2@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        will.deacon@arm.com, torvalds@linux-foundation.org,
+        schwidefsky@de.ibm.com, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, gang.chen@asianux.com,
+        heiko.carstens@de.ibm.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, will.deacon@arm.com,
+        peterz@infradead.org, schwidefsky@de.ibm.com,
+        paulmck@linux.vnet.ibm.com, gang.chen@asianux.com,
+        heiko.carstens@de.ibm.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/core] arch,sh: Convert smp_mb__*()
-Git-Commit-ID: 603228bcb8da90f8f8a5cdd8de74178f6c3e7e13
+Subject: [tip:locking/core] arch,s390: Convert smp_mb__*()
+Git-Commit-ID: 0e530747c69f1e191f101a925bb4051894e5c7b0
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,74 +35,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  603228bcb8da90f8f8a5cdd8de74178f6c3e7e13
-Gitweb:     http://git.kernel.org/tip/603228bcb8da90f8f8a5cdd8de74178f6c3e7e13
+Commit-ID:  0e530747c69f1e191f101a925bb4051894e5c7b0
+Gitweb:     http://git.kernel.org/tip/0e530747c69f1e191f101a925bb4051894e5c7b0
 Author:     Peter Zijlstra <peterz@infradead.org>
 AuthorDate: Thu, 13 Mar 2014 19:00:35 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 18 Apr 2014 14:20:44 +0200
+CommitDate: Fri, 18 Apr 2014 14:20:42 +0200
 
-arch,sh: Convert smp_mb__*()
+arch,s390: Convert smp_mb__*()
 
-SH can use the asm-generic/barrier.h implementation since that uses
+As per the existing implementation; implement the new one using
 smp_mb().
+
+AFAICT the s390 compare-and-swap does imply a barrier, however there
+are some immediate ops that seem to be singly-copy atomic and do not
+imply a barrier. One such is the "ni" op (which would be
+and-immediate) which is used for the constant clear_bit
+implementation. Therefore s390 needs full barriers for the
+{before,after} atomic ops.
 
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/n/tip-2z962by2ppzcd984ybw2mwdw@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-kme5dz5hcobpnufnnkh1ech2@git.kernel.org
+Cc: Chen Gang <gang.chen@asianux.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: linux390@de.ibm.com
 Cc: linux-kernel@vger.kernel.org
-Cc: linux-sh@vger.kernel.org
+Cc: linux-s390@vger.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/sh/include/asm/atomic.h | 6 +-----
- arch/sh/include/asm/bitops.h | 7 +------
- 2 files changed, 2 insertions(+), 11 deletions(-)
+ arch/s390/include/asm/atomic.h  | 5 -----
+ arch/s390/include/asm/barrier.h | 5 +++--
+ 2 files changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/arch/sh/include/asm/atomic.h b/arch/sh/include/asm/atomic.h
-index f4c1c20..f57b8a6 100644
---- a/arch/sh/include/asm/atomic.h
-+++ b/arch/sh/include/asm/atomic.h
-@@ -10,6 +10,7 @@
- #include <linux/compiler.h>
- #include <linux/types.h>
- #include <asm/cmpxchg.h>
-+#include <asm/barrier.h>
- 
- #define ATOMIC_INIT(i)	{ (i) }
- 
-@@ -62,9 +63,4 @@ static inline int __atomic_add_unless(atomic_t *v, int a, int u)
- 	return c;
- }
+diff --git a/arch/s390/include/asm/atomic.h b/arch/s390/include/asm/atomic.h
+index 1d47061..fa934fe 100644
+--- a/arch/s390/include/asm/atomic.h
++++ b/arch/s390/include/asm/atomic.h
+@@ -412,9 +412,4 @@ static inline long long atomic64_dec_if_positive(atomic64_t *v)
+ #define atomic64_dec_and_test(_v)	(atomic64_sub_return(1, _v) == 0)
+ #define atomic64_inc_not_zero(v)	atomic64_add_unless((v), 1, 0)
  
 -#define smp_mb__before_atomic_dec()	smp_mb()
 -#define smp_mb__after_atomic_dec()	smp_mb()
 -#define smp_mb__before_atomic_inc()	smp_mb()
 -#define smp_mb__after_atomic_inc()	smp_mb()
 -
- #endif /* __ASM_SH_ATOMIC_H */
-diff --git a/arch/sh/include/asm/bitops.h b/arch/sh/include/asm/bitops.h
-index ea8706d..fc8e652 100644
---- a/arch/sh/include/asm/bitops.h
-+++ b/arch/sh/include/asm/bitops.h
-@@ -9,6 +9,7 @@
- 
- /* For __swab32 */
- #include <asm/byteorder.h>
-+#include <asm/barrier.h>
- 
- #ifdef CONFIG_GUSA_RB
- #include <asm/bitops-grb.h>
-@@ -22,12 +23,6 @@
- #include <asm-generic/bitops/non-atomic.h>
- #endif
- 
--/*
-- * clear_bit() doesn't provide any barrier for the compiler.
-- */
+ #endif /* __ARCH_S390_ATOMIC__  */
+diff --git a/arch/s390/include/asm/barrier.h b/arch/s390/include/asm/barrier.h
+index 578680f..19ff956 100644
+--- a/arch/s390/include/asm/barrier.h
++++ b/arch/s390/include/asm/barrier.h
+@@ -27,8 +27,9 @@
+ #define smp_rmb()			rmb()
+ #define smp_wmb()			wmb()
+ #define smp_read_barrier_depends()	read_barrier_depends()
 -#define smp_mb__before_clear_bit()	smp_mb()
 -#define smp_mb__after_clear_bit()	smp_mb()
--
- #ifdef CONFIG_SUPERH32
- static inline unsigned long ffz(unsigned long word)
- {
++
++#define smp_mb__before_atomic()		smp_mb()
++#define smp_mb__after_atomic()		smp_mb()
+ 
+ #define set_mb(var, value)		do { var = value; mb(); } while (0)
+ 
