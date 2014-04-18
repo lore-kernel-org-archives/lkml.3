@@ -1,121 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506AbaDROBN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 10:01:13 -0400
-Received: from lekensteyn.nl ([178.21.112.251]:45628 "EHLO lekensteyn.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751307AbaDROBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 10:01:11 -0400
-From: Peter Wu <peter@lekensteyn.nl>
-To: driverdev-devel@linuxdriverproject.org
-Cc: micky_ching@realsil.com.cn, chris@printf.net, sameo@linux.intel.com,
-        ulf.hansson@linaro.org, gregkh@linuxfoundation.org,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        wei_wang@realsil.com.cn, rogerable@realtek.com,
-        devel@linuxdriverproject.org, dan.carpenter@oracle.com
-Subject: Re: [PATCH] mmc: rtsx: fix possible circular locking dependency
-Date: Fri, 18 Apr 2014 16:00:53 +0200
-Message-ID: <29134783.v67ScDLFcC@al>
-User-Agent: KMail/4.12.4 (Linux/3.14.0-rc7-custom-00033-g8878439; KDE/4.12.4; x86_64; ; )
-In-Reply-To: <1397612325-4968-1-git-send-email-micky_ching@realsil.com.cn>
-References: <1397612325-4968-1-git-send-email-micky_ching@realsil.com.cn>
+	id S1752315AbaDROEM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 10:04:12 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:50496 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429AbaDROEK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 10:04:10 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20140417150110.GB20889@saruman.home>
+References: <1396510519-8555-1-git-send-email-sbhatta@xilinx.com>
+	<113d0620-4003-417d-806b-0b79ae692829@VA3EHSMHS023.ehs.local>
+	<20140403145853.GD14162@saruman.home>
+	<CALHRZuoCtEz5-CmU17dUpVS_MjSDdYVLMSvgXq_RwxLj_KJMDA@mail.gmail.com>
+	<20140416180228.GK28035@saruman.home>
+	<CALHRZuq6=TMryHtbjTw7rYoGwbu2w0BTdxiOA95HYS3_CG6vwQ@mail.gmail.com>
+	<20140417150110.GB20889@saruman.home>
+Date: Fri, 18 Apr 2014 19:34:08 +0530
+Message-ID: <CALHRZuqetzEANE=F4mit5sPG_Q-X8Vxsd9-N4k-MKW4_uzDFwg@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] usb: gadget: Add xilinx axi usb2 device support
+From: sundeep subbaraya <sundeep.lkml@gmail.com>
+To: "balbi@ti.com" <balbi@ti.com>
+Cc: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michal Simek <michals@xilinx.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi Felipe,
 
-On Wednesday 16 April 2014 09:38:44 micky_ching@realsil.com.cn wrote:
-> From: Micky Ching <micky_ching@realsil.com.cn>
-> 
-> To avoid dead lock, we need make sure host->lock is always acquire
-> before pcr->lock. But in irq handler, we acquired pcr->lock in rtsx mfd
-> driver, and sd_isr_done_transfer() is called during pcr->lock already
-> acquired. Since in sd_isr_done_transfer() the only work we do is schdule
-> tasklet, the cmd_tasklet and data_tasklet never conflict, so it is safe
-> to remove spin_lock() here.
-> 
-> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
-> ---
->  drivers/mmc/host/rtsx_pci_sdmmc.c |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
+On Thu, Apr 17, 2014 at 8:31 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Thu, Apr 17, 2014 at 03:01:37PM +0530, sundeep subbaraya wrote:
+>> Hi Felipe,
+>>
+>> On Wed, Apr 16, 2014 at 11:32 PM, Felipe Balbi <balbi@ti.com> wrote:
+>> > Hi,
+>> >
+>> > On Wed, Apr 16, 2014 at 04:09:28PM +0530, sundeep subbaraya wrote:
+>> >> Hi Felipe,
+>> >>
+>> >> On Thu, Apr 3, 2014 at 8:28 PM, Felipe Balbi <balbi@ti.com> wrote:
+>> >>
+>> >> >> +static int start_dma(struct xusb_ep *ep, u32 src, u32 dst, u32 length)
+>> >> >
+>> >> > please prepend this with xudc_, it makes tracing a lot easier.
+>> >> >
+>> >> >> +{
+>> >> >> +     struct xusb_udc *udc;
+>> >> >> +     int rc = 0;
+>> >> >> +     unsigned long timeout;
+>> >> >> +
+>> >> >> +     udc = ep->udc;
+>> >> >> +     /*
+>> >> >> +      * Set the addresses in the DMA source and
+>> >> >> +      * destination registers and then set the length
+>> >> >> +      * into the DMA length register.
+>> >> >> +      */
+>> >> >> +     udc->write_fn(udc->base_address, XUSB_DMA_DSAR_ADDR_OFFSET, src);
+>> >> >> +     udc->write_fn(udc->base_address, XUSB_DMA_DDAR_ADDR_OFFSET, dst);
+>> >> >> +     udc->write_fn(udc->base_address, XUSB_DMA_LENGTH_OFFSET, length);
+>> >> >> +
+>> >> >> +     /*
+>> >> >> +      * Wait till DMA transaction is complete and
+>> >> >> +      * check whether the DMA transaction was
+>> >> >> +      * successful.
+>> >> >> +     */
+>> >> >> +     while ((udc->read_fn(ep->udc->base_address + XUSB_DMA_STATUS_OFFSET) &
+>> >> >> +                     XUSB_DMA_DMASR_BUSY) == XUSB_DMA_DMASR_BUSY) {
+>> >> >> +             timeout = jiffies + 10000;
+>> >> >> +
+>> >> >> +             if (time_after(jiffies, timeout)) {
+>> >> >> +                     rc = -ETIMEDOUT;
+>> >> >> +                     goto clean;
+>> >> >> +             }
+>> >> >> +     }
+>> >> >
+>> >> > don't you get an IRQ for DMA completion ? If you do, you could be using
+>> >> > wait_for_completion()
+>> >>
+>> >> This function is called in interrupt context when buffer is ready or
+>> >> free. It initiates DMA to transfer data from IP buffer to memory.
+>> >> Hence it waits in busy loop till DMA completes
+>> >
+>> > wait, so you start_dma() before your gadget driver asks you to ?
+>>
+>> in ep_queue driver starts dma transfer from/to IP buffer to/from req->buf.
+>> If transfer is completed then request is not added to ep request queue
+>> and returns from ep_queue.
+>> If transfer is not completed (actual < length) then request is added
+>> to queue and returns from ep_queue.
+>
+> This is wrong. Why wouldn't you give gadget driver the chance to decide
+> if it needs to queue the request again or not ?
 
-This patch came from https://lkml.kernel.org/r/534DE1D7.3000308@realsil.com.cn
-("Re: rtsx_pci_sdmmc lockdep splat").
+When does gadget driver decides to queue the same request again?
+if -EBUSY is returned from ep_queue or req.status != 0 in completion
+routine?
 
-With v3.15-rc1-49-g10ec34f, I have a hung machine when inserting a SD card.
-lockdep was not enabled for the kernel, I have not bisected yet.
-This patch on top of that kernel version does not help (tested by
-rmmod rtsx_pci_sdmmc and insmod the patched one).
+there are cases where ping-pong buffers both are busy. currently this driver
+adds request to queue only when buffers are busy. In normal cases request is
+processed without adding to queue.
 
-Console (as typed over from a picture, sorry for any typos):
-WARNING: CPU: 1 PID: 0 at kernel/locking/mutex.c:698
-DEBUG_LOCKS_WARN_ON(in_interrupt())
-Modules linked in: ...
-CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.15-rc1-custom-000049-g10ec34f #5
-Hardware name: Shuttle Inc. XS36V/XS36V, BIOS 1.11 12/18/2012
-Call trace:
-<IRQ> dump_stack
-warn_slowpath_common
-warn_slowpath_fmt
-__mutex_unlock_slowpath
-mutex_unlock
-sd_finish_request [rtsx_pci_sdmmc]
-tasklet_action
-__do_softirq
-irq_exit
-smp_apic_timer_interrupt
-apic_timer_interrupt
-<EOI> ? cpuidle_enter_state
-cpuidle_enter
-cpu_startup_entry
-start_secondary
----[end trace ...]---
-(60 seconds later:)
-INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 1, t=18004 jiffies, g=3264, c=3263, q=2)
-INFO: Stall ended before state dump start
+do i need to have another local queue for requests waiting since
+buffers are busy?
+Or dequeue the request ?
 
-I also managed to get this trace about 106 seconds later when switching TTY:
-INFO: task kworker/... blocked for more than 120 seconds
-Workqueue: kmmcd mm_rescan [mmc_core]
-Call trace:
-? update_rq_clock.part80
-? internal_add_timer
-schedule
-schedule_preempt
-__mutex_lock_slowpath
-mutex_lock
-sdmmc_request [rtsx_pci_sdmmc]
-mmc_start_request [mmc_core]
-__mmc_start_req [mmc_core]
-mmc_wait_for_cmd [mmc_core]
-? mmc_release_host [mmc_core]
-mmc_io_rw_direct_host [mmc_core]
+>
+>> when buffer processed interrupt occurs, handler starts dma if there is
+>> request in queue and calls complete call back (when actual == length)
+>> Hence answer is Yes for some transfers (start dma called from
+>> interrupt handler not from ep_queue).
+>
+> this also seems wrong(-ish).
+>
+> 1) as Paul pointed out, you can't rely on jiffies if you're calling this
+> with IRQs disabled.
+>
+> 2) you don't really need to wait until DMA finishes its transaction
+> before returning from start_dma(), just use the DMA completion IRQ,
+>
+> 3) I don't see anywhere any sanitizing of arguments, can your DMA really
+> handle any alignment/unaligned addresses or should you make sure you're
+> getting good arguments?
+>
+> You need to work on this a little bit, I guess.
 
-I'll try to get a lockdep kernel and text logs later, but perhaps you already
-know the issue?
+Yes am working on this and will be using seperate ep_ops for ep0  like
+drivers/usb/dwc3/gadget.c since ep0 has no dma and ping-pong buffers
 
-Peter
+Thanks,
+Sundeep.B.S.
 
-> diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c
-> b/drivers/mmc/host/rtsx_pci_sdmmc.c index 453e1d4..40695e0 100644
-> --- a/drivers/mmc/host/rtsx_pci_sdmmc.c
-> +++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-> @@ -108,12 +108,10 @@ static void sd_isr_done_transfer(struct
-> platform_device *pdev) {
->  	struct realtek_pci_sdmmc *host = platform_get_drvdata(pdev);
-> 
-> -	spin_lock(&host->lock);
->  	if (host->cmd)
->  		tasklet_schedule(&host->cmd_tasklet);
-> -	if (host->data)
-> +	else if (host->data)
->  		tasklet_schedule(&host->data_tasklet);
-> -	spin_unlock(&host->lock);
->  }
-> 
->  static void sd_request_timeout(unsigned long host_addr)
-
+>
+> --
+> balbi
