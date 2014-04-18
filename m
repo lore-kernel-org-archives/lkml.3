@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298AbaDRBQc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 21:16:32 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:42279 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224AbaDRBPa (ORCPT
+	id S1752370AbaDRBQf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 21:16:35 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:61231 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751356AbaDRBPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 17 Apr 2014 21:15:30 -0400
-X-AuditID: cbfee68d-b7fcd6d00000315b-d6-53507cb075fa
+X-AuditID: cbfee691-b7efc6d0000039d3-54-53507cafcf6b
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux@arm.linux.org.uk, ben-linux@fluff.org, kgene.kim@samsung.com,
@@ -19,40 +19,39 @@ Cc: linux@arm.linux.org.uk, ben-linux@fluff.org, kgene.kim@samsung.com,
         tushar.behera@linaro.org, sachin.kamat@linaro.org,
         linux-samsung-soc@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Subject: [PATCHv3 4/7] ARM: EXYNOS: Enter a15 lowpower mode for Exynos3250
- based on Cortex-a7
-Date: Fri, 18 Apr 2014 10:15:25 +0900
-Message-id: <1397783728-6193-5-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv3 2/7] ARM: EXYNOS: Support secondary CPU boot of Exynos4212
+Date: Fri, 18 Apr 2014 10:15:23 +0900
+Message-id: <1397783728-6193-3-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1397783728-6193-1-git-send-email-cw00.choi@samsung.com>
 References: <1397783728-6193-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsWyRsSkSHdDTUCwwcMX5hZ/Jx1jt5i07gCT
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsWyRsSkWHd9TUCwwb/ZGhZ/Jx1jt5i07gCT
 	xeX92hbXvzxntZh/5ByrxecPLewWvQuuslmcbXrDbrHp8TVWi8u75rBZzDi/j8ni9mVei793
 	/rFZnLr+mc3i5J9eRosnhz+yWsyY/JLNYv2M1ywWx2YsYbRo/7uXzWLvzsmMDqIea+atYfRo
 	ae5h8/j9axKjx99VL5g9ds66y+5x59oeNo/NS+o9rpxoYvXo27KK0ePzJrkArigum5TUnMyy
-	1CJ9uwSujF+/r7AXvOCueLZJoYHxDGcXIyeHhICJxJFbD5ggbDGJC/fWs3UxcnEICSxllNhy
-	rZEdpujX1eXMEIlFjBLHTl5ghHCamCT6jyxmA6liE9CS2P/iBpgtIqAgsbn3GStIEbPAL2aJ
-	n8+bwUYJC8RL7Dz0E6yIRUBV4t6Bl2A2r4CLxPazn6DukJP4sOcRWD2ngKvE+cdHWEBsIaCa
-	h9+ns4AMlRBYyiFxd/ZZZohBAhLfJh8CSnAAJWQlNh1ghpgjKXFwxQ2WCYzCCxgZVjGKphYk
-	FxQnpRcZ6hUn5haX5qXrJefnbmIERujpf896dzDePmB9iDEZaNxEZinR5HxghOeVxBsamxlZ
-	mJqYGhuZW5qRJqwkzpv0MClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA2Pd+hnmgulFSxZf
-	cb21yet5bvBfn7K5pSunS+lvUMmbG3er5Ku5VFyRuQWn9ZLNee36DbWZZiWaz1mrvq2PLtC+
-	PmGN1IubSX1Z68pK3Y3nnql6surbgxuf59y4+PjsIw8nZaaomVscq7jYF71jDq+e5sjyN3pe
-	Ww5b8btXn3bd0ttWG/Jk7zQlluKMREMt5qLiRABdnoBt5gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAKsWRmVeSWpSXmKPExsVy+t9jAd0NNQHBBr8v6Vn8nXSM3WLSugNM
+	1CJ9uwSujMamhYwFa7krHnRMYm5gXMjZxcjJISFgInHoyFdmCFtM4sK99WxdjFwcQgJLGSUu
+	9F5igSl6/aSdBSKxiFHiyOXVUE4Tk8S5o3OYQKrYBLQk9r+4wQZiiwgoSGzufcYKUsQs8ItZ
+	4ufzZnaQhLCAj0Tf89NA3RwcLAKqEj3/9UHCvAIuEq23r0KdISfxYc8jsHJOAVeJ84+PgF0h
+	BFTz8Pt0sMUSAis5JHqaT4IVsQgISHybfAhspoSArMSmA1BzJCUOrrjBMoFReAEjwypG0dSC
+	5ILipPQiU73ixNzi0rx0veT83E2MwAg9/e/ZxB2M9w9YH2JMBho3kVlKNDkfGOF5JfGGxmZG
+	FqYmpsZG5pZmpAkrifOmP0oKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cBoHCY+PS7w/byb
+	K34Kf/zrbKCZkpvNO2PlrXUnTa5MWfvWft9D+X61bf8XLTF+86lOMrZ/NW/6kS0qNq9jo30l
+	o1e/Ttzi4fR7jt2GQKFWJs4fW0Q3zLl6uf3wBR6N5dsTjkvPDv8WkRPaflP0xAeuSJ97Mevb
+	zmfPffb/uJjKkg9TmFa+zb5dq8RSnJFoqMVcVJwIAFNqCGTmAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAKsWRmVeSWpSXmKPExsVy+t9jAd31NQHBBkefyVj8nXSM3WLSugNM
 	Fpf3a1tc//Kc1WL+kXOsFp8/tLBb9C64ymZxtukNu8Wmx9dYLS7vmsNmMeP8PiaL25d5Lf7e
 	+cdmcer6ZzaLk396GS2eHP7IajFj8ks2i/UzXrNYHJuxhNGi/e9eNou9OyczOoh6rJm3htGj
 	pbmHzeP3r0mMHn9XvWD22DnrLrvHnWt72Dw2L6n3uHKiidWjb8sqRo/Pm+QCuKIaGG0yUhNT
 	UosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgH5UUihLzCkFCgUk
-	Fhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMGb8+n2FveAFd8WzTQoNjGc4uxg5OSQETCR+
-	XV3ODGGLSVy4t56ti5GLQ0hgEaPEsZMXGCGcJiaJ/iOL2UCq2AS0JPa/uAFmiwgoSGzufcYK
-	UsQs8ItZ4ufzZnaQhLBAvMTOQz/BilgEVCXuHXgJZvMKuEhsP/uJCWKdnMSHPY/A6jkFXCXO
-	Pz7CAmILAdU8/D6dZQIj7wJGhlWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwfH/THoH46oG
-	i0OMAhyMSjy8F776BwuxJpYVV+YeYpTgYFYS4VUuDQgW4k1JrKxKLcqPLyrNSS0+xJgMdNVE
-	ZinR5HxgasoriTc0NjEzsjQyN7QwMjYnTVhJnPdgq3WgkEB6YklqdmpqQWoRzBYmDk6pBsbe
-	cofmEpWMyT12XHeEQvMm75j7sX/RNl1bk7d+Sd5tthFHHG7EuCV/qdqw4ZBc38Xle36+ftVj
-	YqDhdP1P+Lf/SyStA7d/MT3DoWx3o3qTneCOVZxrxWdxJd+94Pz21rSgNyH7LRbnHjt2eOK9
-	r9zdyh6+DVVT5kpYWt9Zeso+6wLzouyJ67OUWIozEg21mIuKEwEUh051QwMAAA==
+	Fhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMGY0Ni1kLFjLXfGgYxJzA+NCzi5GTg4JAROJ
+	10/aWSBsMYkL99azdTFycQgJLGKUOHJ5NQuE08Qkce7oHCaQKjYBLYn9L26wgdgiAgoSm3uf
+	sYIUMQv8Ypb4+byZHSQhLOAj0ff8NFA3BweLgKpEz399kDCvgItE6+2rzBDb5CQ+7HkEVs4p
+	4Cpx/vERsCuEgGoefp/OMoGRdwEjwypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4Ph/Jr2D
+	cVWDxSFGAQ5GJR7eC1/9g4VYE8uKK3MPMUpwMCuJ8CqXBgQL8aYkVlalFuXHF5XmpBYfYkwG
+	Omois5Rocj4wNeWVxBsam5gZWRqZG1oYGZuTJqwkznuw1TpQSCA9sSQ1OzW1ILUIZgsTB6dU
+	A6Owp6jsuzb78w/CxOL4Hadvf7q2iCc1/vKBpVY7eP5LX3re/nO+itVFptn9S1yEHK7y7Thg
+	J9Dx7/6UifohwT3HTLgOtt8NSK9PdOdXeWiwMvlO8eb3Pm5RT9fPmjNNm02n6t7J2beuZTpc
+	LNry/mPD/1nHk9SrfryyWHO9pWJz/u2VRx+6xjAosRRnJBpqMRcVJwIAjlHLr0MDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -60,50 +59,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch decide proper lowpower mode of either a15 or a9 according to own ID
-from Main ID register.
+From: Kyungmin Park <kyungmin.park@samsung.com>
 
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Marc Zynigier <marc.zyngier@arm.com>
+This patch fix the offset of CPU boot address and change parameter of smc call
+of SMC_CMD_CPU1BOOT command for Exynos4212.
+
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/arm/mach-exynos/hotplug.c | 19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+ arch/arm/mach-exynos/firmware.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
-index 5eead53..acf3119 100644
---- a/arch/arm/mach-exynos/hotplug.c
-+++ b/arch/arm/mach-exynos/hotplug.c
-@@ -135,16 +135,21 @@ void __ref exynos_cpu_die(unsigned int cpu)
- 	int primary_part = 0;
+diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
+index 932129e..aa01c42 100644
+--- a/arch/arm/mach-exynos/firmware.c
++++ b/arch/arm/mach-exynos/firmware.c
+@@ -18,6 +18,8 @@
  
- 	/*
--	 * we're ready for shutdown now, so do it.
--	 * Exynos4 is A9 based while Exynos5 is A15; check the CPU part
--	 * number by reading the Main ID register and then perform the
--	 * appropriate sequence for entering low power.
-+	 * Prepare the CPU for shutting down. The required sequence of
-+	 * operations depends on core type. CPUID part number can be used to
-+	 * determine the right way.
- 	 */
--	asm("mrc p15, 0, %0, c0, c0, 0" : "=r"(primary_part) : : "cc");
--	if ((primary_part & 0xfff0) == 0xc0f0)
-+	primary_part = read_cpuid_part_number();
+ #include <mach/map.h>
+ 
++#include <plat/cpu.h>
 +
-+	switch (primary_part) {
-+	case ARM_CPU_PART_CORTEX_A7:
-+	case ARM_CPU_PART_CORTEX_A15:
- 		cpu_enter_lowpower_a15();
--	else
-+		break;
-+	default:
- 		cpu_enter_lowpower_a9();
-+		break;
-+	}
+ #include "smc.h"
  
- 	platform_do_lowpower(cpu, &spurious);
+ static int exynos_do_idle(void)
+@@ -28,13 +30,24 @@ static int exynos_do_idle(void)
  
+ static int exynos_cpu_boot(int cpu)
+ {
++	/*
++	 * The second parameter of SMC_CMD_CPU1BOOT command means CPU id.
++	 * But, Exynos4212 has only one secondary CPU so second parameter
++	 * isn't used for informing secure firmware about CPU id.
++	 */
++	if (soc_is_exynos4212())
++		cpu = 0;
++
+ 	exynos_smc(SMC_CMD_CPU1BOOT, cpu, 0, 0);
+ 	return 0;
+ }
+ 
+ static int exynos_set_cpu_boot_addr(int cpu, unsigned long boot_addr)
+ {
+-	void __iomem *boot_reg = S5P_VA_SYSRAM_NS + 0x1c + 4*cpu;
++	void __iomem *boot_reg = S5P_VA_SYSRAM_NS + 0x1c;
++
++	if (!soc_is_exynos4212())
++		boot_reg += 4*cpu;
+ 
+ 	__raw_writel(boot_addr, boot_reg);
+ 	return 0;
 -- 
 1.8.0
 
