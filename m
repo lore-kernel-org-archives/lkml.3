@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753716AbaDRRug (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 13:50:36 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:63461 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352AbaDRRue (ORCPT
+	id S1754358AbaDRRvK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 13:51:10 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:56767 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754212AbaDRRvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 13:50:34 -0400
-From: =?UTF-8?q?Manuel=20Sch=C3=B6nlaub?= <manuel.schoenlaub@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Manuel=20Sch=C3=B6nlaub?= <manuel.schoenlaub@gmail.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>
-Subject: [PATCH] [media] az6027: Added the PID for a new revision of the Elgato EyeTV Sat DVB-S Tuner.
-Date: Fri, 18 Apr 2014 19:43:35 +0200
-Message-Id: <1397843015-15848-1-git-send-email-manuel.schoenlaub@gmail.com>
-X-Mailer: git-send-email 1.9.2
+	Fri, 18 Apr 2014 13:51:08 -0400
+Message-ID: <53516608.8090409@colorfullife.com>
+Date: Fri, 18 Apr 2014 19:51:04 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: mtk.manpages@gmail.com
+CC: Davidlohr Bueso <davidlohr@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Linux API <linux-api@vger.kernel.org>
+Subject: Re: [PATCH v3] ipc,shm: disable shmmax and shmall by default
+References: <1397784345.2556.26.camel@buesod1.americas.hpqcorp.net> <5350EFAA.2030607@colorfullife.com> <CAKgNAkhY94Y5Nut9+Jj1gcnio81CEmE5sQL_gH_zFnHD-yNx2Q@mail.gmail.com>
+In-Reply-To: <CAKgNAkhY94Y5Nut9+Jj1gcnio81CEmE5sQL_gH_zFnHD-yNx2Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is another clone of AZ6027. This patch adds the relevant PID.
+On 04/18/2014 05:36 PM, Michael Kerrisk (man-pages) wrote:
+> On Fri, Apr 18, 2014 at 11:26 AM, Manfred Spraul
+> <manfred@colorfullife.com> wrote:
+>> Obviously my patch has the opposite problem: 64-bit wrap-arounds.
+> I know you alluded to a case in another thread, but I couldn't quite
+> work out from the mail you referred to whether this was really the
+> problem. (And I assume those folks were forced to fix their set-up
+> scripts anyway.) So, it's not clear to me whether this is a real
+> problem. (And your patch does not worsen things from the current
+> situation, right?)
+a) When I wrote the comment it was just an idea.
+But now I think wrap-around could be an issue, e.g. 
+find_vma_intersection(,addr,addr+ULONG_MAX) always returns false, even 
+if there are vmas inbetween.
 
-Signed-off-by: Manuel Schönlaub <manuel.schoenlaub@gmail.com>
----
- drivers/media/dvb-core/dvb-usb-ids.h | 1 +
- drivers/media/usb/dvb-usb/az6027.c   | 7 ++++++-
- 2 files changed, 7 insertions(+), 1 deletion(-)
+b) If we make ULONG_MAX the default, then it should work.
 
-diff --git a/drivers/media/dvb-core/dvb-usb-ids.h b/drivers/media/dvb-core/dvb-usb-ids.h
-index 1bdc0e7..a2530fe 100644
---- a/drivers/media/dvb-core/dvb-usb-ids.h
-+++ b/drivers/media/dvb-core/dvb-usb-ids.h
-@@ -356,6 +356,7 @@
- #define USB_PID_ELGATO_EYETV_DTT_2			0x003f
- #define USB_PID_ELGATO_EYETV_DTT_Dlx			0x0020
- #define USB_PID_ELGATO_EYETV_SAT			0x002a
-+#define USB_PID_ELGATO_EYETV_SAT_V2			0x0025
- #define USB_PID_DVB_T_USB_STICK_HIGH_SPEED_COLD		0x5000
- #define USB_PID_DVB_T_USB_STICK_HIGH_SPEED_WARM		0x5001
- #define USB_PID_FRIIO_WHITE				0x0001
-diff --git a/drivers/media/usb/dvb-usb/az6027.c b/drivers/media/usb/dvb-usb/az6027.c
-index c11138e..0df52ab 100644
---- a/drivers/media/usb/dvb-usb/az6027.c
-+++ b/drivers/media/usb/dvb-usb/az6027.c
-@@ -1088,6 +1088,7 @@ static struct usb_device_id az6027_usb_table[] = {
- 	{ USB_DEVICE(USB_VID_TECHNISAT, USB_PID_TECHNISAT_USB2_HDCI_V1) },
- 	{ USB_DEVICE(USB_VID_TECHNISAT, USB_PID_TECHNISAT_USB2_HDCI_V2) },
- 	{ USB_DEVICE(USB_VID_ELGATO, USB_PID_ELGATO_EYETV_SAT) },
-+	{ USB_DEVICE(USB_VID_ELGATO, USB_PID_ELGATO_EYETV_SAT_V2) },
- 	{ },
- };
- 
-@@ -1136,7 +1137,7 @@ static struct dvb_usb_device_properties az6027_properties = {
- 
- 	.i2c_algo         = &az6027_i2c_algo,
- 
--	.num_device_descs = 6,
-+	.num_device_descs = 7,
- 	.devices = {
- 		{
- 			.name = "AZUREWAVE DVB-S/S2 USB2.0 (AZ6027)",
-@@ -1162,6 +1163,10 @@ static struct dvb_usb_device_properties az6027_properties = {
- 			.name = "Elgato EyeTV Sat",
- 			.cold_ids = { &az6027_usb_table[5], NULL },
- 			.warm_ids = { NULL },
-+		}, {
-+			.name = "Elgato EyeTV Sat",
-+			.cold_ids = { &az6027_usb_table[6], NULL },
-+			.warm_ids = { NULL },
- 		},
- 		{ NULL },
- 	}
--- 
-1.9.2
-
+--
+     Manfred
