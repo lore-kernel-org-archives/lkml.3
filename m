@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298AbaDRPma (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 11:42:30 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:36309 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751782AbaDRPmY (ORCPT
+	id S1753001AbaDRPry (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 11:47:54 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:61538 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307AbaDRPrw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 11:42:24 -0400
-Date: Fri, 18 Apr 2014 09:42:20 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lucas Stach <l.stach@pengutronix.de>, Mohit Kumar <mohit.kumar@st.com>,
-        Mike Qiu <qiudayu@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [GIT PULL] PCI updates for v3.15
-Message-ID: <20140418154220.GA20053@google.com>
+	Fri, 18 Apr 2014 11:47:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5350257A.30107@web.de>
+References: <1397749778-14485-1-git-send-email-tom.leiming@gmail.com>
+	<1397749778-14485-4-git-send-email-tom.leiming@gmail.com>
+	<5350257A.30107@web.de>
+Date: Fri, 18 Apr 2014 23:47:51 +0800
+Message-ID: <CACVXFVMFuiHpM-bVjyutP7fH621Gt0bo2+HLwRbk_aGsiZ+1Vw@mail.gmail.com>
+Subject: Re: [PATCH next 3/4] blk-mq: user (1 << order) to implement order_to_size()
+From: Ming Lei <tom.leiming@gmail.com>
+To: =?UTF-8?B?SsO2cmctVm9sa2VyIFBlZXR6?= <jvpeetz@web.de>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Apr 18, 2014 at 3:03 AM, Jörg-Volker Peetz <jvpeetz@web.de> wrote:
+> Ming Lei wrote, on 04/17/2014 17:49:
+>> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+>> ---
+>>  block/blk-mq.c |    7 +------
+>>  1 file changed, 1 insertion(+), 6 deletions(-)
+>>
+>> diff --git a/block/blk-mq.c b/block/blk-mq.c
+>> index baff2d0..1eff3d9 100644
+>> --- a/block/blk-mq.c
+>> +++ b/block/blk-mq.c
+>> @@ -1130,12 +1130,7 @@ static void blk_mq_free_rq_map(struct blk_mq_tag_set *set,
+>>
+>>  static size_t order_to_size(unsigned int order)
+>>  {
+>> -     size_t ret = PAGE_SIZE;
+>> -
+>> -     while (order--)
+>> -             ret *= 2;
+>> -
+>> -     return ret;
+>> +     return (1 << order) * PAGE_SIZE;
+>
+> Shouldn't this be
+>
+>         return ((size_t)1 << order) * PAGE_SIZE;
+>
+> ?
 
-These are fixes for a powerpc NULL pointer dereference, an OF
-interrupt mapping issue on some of the new host bridges, and a DesignWare
-iATU issue.
-
-Bjorn
+IMO, it isn't necessary since compiler will cast type
+of 1 and the expression to size_t automatically.
 
 
-The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
-
-  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci-v3.15-fixes-1
-
-for you to fetch changes up to f5d3352b2751f8de7e06e23a04ac0b4c474075e9:
-
-  PCI: tegra: Use new OF interrupt mapping when possible (2014-04-16 10:24:32 -0600)
-
-----------------------------------------------------------------
-PCI updates for v3.15:
-
-  Host bridge drivers
-    - Fix OF interrupt mapping for DesignWare, R-Car, Tegra (Lucas Stach)
-    - Fix DesignWare iATU programming (Mohit Kumar)
-
-  Miscellaneous
-    - Fix powerpc NULL dereference from list_for_each_entry() update (Mike Qiu)
-
-----------------------------------------------------------------
-Lucas Stach (3):
-      PCI: designware: Use new OF interrupt mapping when possible
-      PCI: rcar: Use new OF interrupt mapping when possible
-      PCI: tegra: Use new OF interrupt mapping when possible
-
-Mike Qiu (1):
-      powerpc/PCI: Fix NULL dereference in sys_pciconfig_iobase() list traversal
-
-Mohit Kumar (2):
-      PCI: designware: Fix comment for setting number of lanes
-      PCI: designware: Fix iATU programming for cfg1, io and mem viewport
-
- arch/powerpc/kernel/pci_64.c       | 10 ++++++----
- drivers/pci/host/pci-rcar-gen2.c   |  8 +++++++-
- drivers/pci/host/pci-tegra.c       |  7 ++++++-
- drivers/pci/host/pcie-designware.c | 20 +++++++++++++-------
- 4 files changed, 32 insertions(+), 13 deletions(-)
+Thanks,
+-- 
+Ming Lei
