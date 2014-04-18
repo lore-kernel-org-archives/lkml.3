@@ -1,498 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751613AbaDRM1v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 08:27:51 -0400
-Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:1330
+	id S1752191AbaDRM20 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 08:28:26 -0400
+Received: from mail-bn1blp0188.outbound.protection.outlook.com ([207.46.163.188]:53783
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751034AbaDRM1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 08:27:46 -0400
+	id S1751782AbaDRM17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 08:27:59 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH 09/28] nios2: Page table management
-Date: Fri, 18 Apr 2014 20:26:53 +0800
-Message-ID: <1397824031-4892-7-git-send-email-lftan@altera.com>
+Subject: [PATCH 12/28] nios2: TLB handling
+Date: Fri, 18 Apr 2014 20:26:56 +0800
+Message-ID: <1397824031-4892-10-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1397824031-4892-1-git-send-email-lftan@altera.com>
 References: <1397824031-4892-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(22564002)(189002)(199002)(4396001)(50226001)(575784001)(76482001)(93916002)(46102001)(42186004)(44976005)(62966002)(83322001)(19580405001)(19580395003)(81542001)(80976001)(81342001)(97736001)(36756003)(86362001)(50986999)(77156001)(77982001)(48376002)(84676001)(99396002)(80022001)(6806004)(76176999)(2009001)(47776003)(20776003)(85852003)(87936001)(89996001)(83072002)(2201001)(92566001)(92726001)(50466002)(88136002)(87286001)(74502001)(74662001)(16796002)(31966008);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB046;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:E257F474.EED69D55.7CCA3196.4A14BB41.2083E;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(199002)(189002)(22564002)(76176999)(99396002)(6806004)(50986999)(80022001)(87286001)(93916002)(88136002)(86362001)(575784001)(50466002)(19580405001)(62966002)(2201001)(92566001)(92726001)(77982001)(2009001)(47776003)(20776003)(80976001)(44976005)(48376002)(83322001)(19580395003)(84676001)(81542001)(97736001)(76482001)(81342001)(77156001)(83072002)(85852003)(42186004)(36756003)(4396001)(87936001)(89996001)(50226001)(46102001)(16796002)(74502001)(31966008)(74662001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB029;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:ECDFF956.EE1A5F81.60F7694A.B17B052.20637;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-OriginatorOrg: altera.onmicrosoft.com
 X-Forefront-PRVS: 018577E36E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for page table management.
+This patch adds the TLB maintenance functions.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/pgalloc.h      |  86 ++++++++++
- arch/nios2/include/asm/pgtable-bits.h |  35 ++++
- arch/nios2/include/asm/pgtable.h      | 304 ++++++++++++++++++++++++++++++++++
- arch/nios2/mm/pgtable.c               |  73 ++++++++
- 4 files changed, 498 insertions(+)
- create mode 100644 arch/nios2/include/asm/pgalloc.h
- create mode 100644 arch/nios2/include/asm/pgtable-bits.h
- create mode 100644 arch/nios2/include/asm/pgtable.h
- create mode 100644 arch/nios2/mm/pgtable.c
+ arch/nios2/include/asm/tlb.h      |  34 +++++
+ arch/nios2/include/asm/tlbflush.h |  46 +++++++
+ arch/nios2/mm/tlb.c               | 274 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 354 insertions(+)
+ create mode 100644 arch/nios2/include/asm/tlb.h
+ create mode 100644 arch/nios2/include/asm/tlbflush.h
+ create mode 100644 arch/nios2/mm/tlb.c
 
-diff --git a/arch/nios2/include/asm/pgalloc.h b/arch/nios2/include/asm/pgalloc.h
+diff --git a/arch/nios2/include/asm/tlb.h b/arch/nios2/include/asm/tlb.h
 new file mode 100644
-index 0000000..6e2985e0a7b90284641d41a839b34df22d8864fd
+index 0000000..d3bc648e08b5dad86e5e9c449e655fe291381c91
 --- /dev/null
-+++ b/arch/nios2/include/asm/pgalloc.h
-@@ -0,0 +1,86 @@
++++ b/arch/nios2/include/asm/tlb.h
+@@ -0,0 +1,34 @@
 +/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009 Wind River Systems Inc
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
 + *
-+ * Copyright (C) 1994 - 2001, 2003 by Ralf Baechle
-+ * Copyright (C) 1999, 2000, 2001 Silicon Graphics, Inc.
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License. See the file "COPYING" in the main directory of this archive
++ * for more details.
 + */
 +
-+#ifndef _ASM_NIOS2_PGALLOC_H
-+#define _ASM_NIOS2_PGALLOC_H
++#ifndef _ASM_NIOS2_TLB_H
++#define _ASM_NIOS2_TLB_H
 +
-+#include <linux/mm.h>
++#define tlb_flush(tlb)	flush_tlb_mm((tlb)->mm)
 +
-+static inline void pmd_populate_kernel(struct mm_struct *mm, pmd_t *pmd,
-+	pte_t *pte)
-+{
-+	set_pmd(pmd, __pmd((unsigned long)pte));
-+}
-+
-+static inline void pmd_populate(struct mm_struct *mm, pmd_t *pmd,
-+	pgtable_t pte)
-+{
-+	set_pmd(pmd, __pmd((unsigned long)page_address(pte)));
-+}
-+#define pmd_pgtable(pmd) pmd_page(pmd)
++extern void set_mmu_pid(unsigned long pid);
 +
 +/*
-+ * Initialize a new pmd table with invalid pointers.
++ * NiosII doesn't need any special per-pte or per-vma handling, except
++ * we need to flush cache for the area to be unmapped.
 + */
-+extern void pmd_init(unsigned long page, unsigned long pagetable);
-+
-+extern pgd_t *pgd_alloc(struct mm_struct *mm);
-+
-+static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
-+{
-+	free_pages((unsigned long)pgd, PGD_ORDER);
-+}
-+
-+static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm,
-+	unsigned long address)
-+{
-+	pte_t *pte;
-+
-+	pte = (pte_t *) __get_free_pages(GFP_KERNEL|__GFP_REPEAT|__GFP_ZERO,
-+					PTE_ORDER);
-+
-+	return pte;
-+}
-+
-+static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
-+	unsigned long address)
-+{
-+	struct page *pte;
-+
-+	pte = alloc_pages(GFP_KERNEL | __GFP_REPEAT, PTE_ORDER);
-+	if (pte) {
-+		if (!pgtable_page_ctor(pte)) {
-+			__free_page(pte);
-+			return NULL;
-+		}
-+		clear_highpage(pte);
-+	}
-+	return pte;
-+}
-+
-+static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
-+{
-+	free_pages((unsigned long)pte, PTE_ORDER);
-+}
-+
-+static inline void pte_free(struct mm_struct *mm, struct page *pte)
-+{
-+	pgtable_page_dtor(pte);
-+	__free_pages(pte, PTE_ORDER);
-+}
-+
-+#define __pte_free_tlb(tlb, pte, addr)				\
++#define tlb_start_vma(tlb, vma)					\
 +	do {							\
-+		pgtable_page_dtor(pte);				\
-+		tlb_remove_page((tlb), (pte));			\
-+	} while (0)
++		if (!tlb->fullmm)				\
++			flush_cache_range(vma, vma->vm_start, vma->vm_end); \
++	}  while (0)
 +
-+#define check_pgt_cache()	do { } while (0)
++#define tlb_end_vma(tlb, vma)	do { } while (0)
++#define __tlb_remove_tlb_entry(tlb, ptep, address)	do { } while (0)
 +
-+#endif /* _ASM_NIOS2_PGALLOC_H */
-diff --git a/arch/nios2/include/asm/pgtable-bits.h b/arch/nios2/include/asm/pgtable-bits.h
++#include <linux/pagemap.h>
++#include <asm-generic/tlb.h>
++
++#endif /* _ASM_NIOS2_TLB_H */
+diff --git a/arch/nios2/include/asm/tlbflush.h b/arch/nios2/include/asm/tlbflush.h
 new file mode 100644
-index 0000000..ce9e7069aa969e54021b2fbbf4b019e2333d24eb
+index 0000000..e19652fca1c6826404f4abca6581ce7f42b8ed03
 --- /dev/null
-+++ b/arch/nios2/include/asm/pgtable-bits.h
-@@ -0,0 +1,35 @@
++++ b/arch/nios2/include/asm/tlbflush.h
+@@ -0,0 +1,46 @@
 +/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009 Wind River Systems Inc
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
 + *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
 + */
 +
-+#ifndef _ASM_NIOS2_PGTABLE_BITS_H
-+#define _ASM_NIOS2_PGTABLE_BITS_H
-+
-+/*
-+ * These are actual hardware defined protection bits in the tlbacc register
-+ * which looks like this:
-+ *
-+ * 31 30 ... 26 25 24 23 22 21 20 19 18 ...  1  0
-+ * ignored........  C  R  W  X  G PFN............
-+ */
-+#define _PAGE_GLOBAL	(1<<20)
-+#define _PAGE_EXEC	(1<<21)
-+#define _PAGE_WRITE	(1<<22)
-+#define _PAGE_READ	(1<<23)
-+#define _PAGE_CACHED	(1<<24)	/* C: data access cacheable */
-+
-+/*
-+ * Software defined bits. They are ignored by the hardware and always read back
-+ * as zero, but can be written as non-zero.
-+ */
-+#define _PAGE_PRESENT	(1<<25)	/* PTE contains a translation */
-+#define _PAGE_ACCESSED	(1<<26)	/* page referenced */
-+#define _PAGE_DIRTY	(1<<27)	/* dirty page */
-+#define _PAGE_FILE	(1<<28)	/* PTE used for file mapping or swap */
-+
-+#endif /* _ASM_NIOS2_PGTABLE_BITS_H */
-diff --git a/arch/nios2/include/asm/pgtable.h b/arch/nios2/include/asm/pgtable.h
-new file mode 100644
-index 0000000..9aedd3408350d5fe8f24bfc7fa4f05f275381a86
---- /dev/null
-+++ b/arch/nios2/include/asm/pgtable.h
-@@ -0,0 +1,304 @@
-+/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009 Wind River Systems Inc
-+ *
-+ * Based on asm/pgtable-32.h from mips which is:
-+ *
-+ * Copyright (C) 1994, 95, 96, 97, 98, 99, 2000, 2003 Ralf Baechle
-+ * Copyright (C) 1999, 2000, 2001 Silicon Graphics, Inc.
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#ifndef _ASM_NIOS2_PGTABLE_H
-+#define _ASM_NIOS2_PGTABLE_H
-+
-+#include <linux/io.h>
-+#include <linux/bug.h>
-+#include <asm/page.h>
-+#include <asm/cacheflush.h>
-+#include <asm/tlbflush.h>
-+
-+#include <asm/pgtable-bits.h>
-+#include <asm-generic/pgtable-nopmd.h>
-+
-+#define FIRST_USER_ADDRESS	0
-+
-+#define VMALLOC_START		CONFIG_KERNEL_MMU_REGION_BASE
-+#define VMALLOC_END		(CONFIG_KERNEL_REGION_BASE - 1)
++#ifndef _ASM_NIOS2_TLBFLUSH_H
++#define _ASM_NIOS2_TLBFLUSH_H
 +
 +struct mm_struct;
 +
-+/* Helper macro */
-+#define MKP(x, w, r) __pgprot(_PAGE_PRESENT | _PAGE_CACHED |		\
-+				((x) ? _PAGE_EXEC : 0) |		\
-+				((r) ? _PAGE_READ : 0) |		\
-+				((w) ? _PAGE_WRITE : 0))
 +/*
-+ * These are the macros that generic kernel code needs
-+ * (to populate protection_map[])
++ * TLB flushing:
++ *
++ *  - flush_tlb_all() flushes all processes TLB entries
++ *  - flush_tlb_mm(mm) flushes the specified mm context TLB entries
++ *  - flush_tlb_page(vma, vmaddr) flushes one page
++ *  - flush_tlb_range(vma, start, end) flushes a range of pages
++ *  - flush_tlb_kernel_range(start, end) flushes a range of kernel pages
 + */
++extern void flush_tlb_all(void);
++extern void flush_tlb_mm(struct mm_struct *mm);
++extern void flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
++			    unsigned long end);
++extern void flush_tlb_kernel_range(unsigned long start, unsigned long end);
++extern void flush_tlb_one(unsigned long vaddr);
 +
-+/* Remove W bit on private pages for COW support */
-+#define __P000	MKP(0, 0, 0)
-+#define __P001	MKP(0, 0, 1)
-+#define __P010	MKP(0, 0, 0)	/* COW */
-+#define __P011	MKP(0, 0, 1)	/* COW */
-+#define __P100	MKP(1, 0, 0)
-+#define __P101	MKP(1, 0, 1)
-+#define __P110	MKP(1, 0, 0)	/* COW */
-+#define __P111	MKP(1, 0, 1)	/* COW */
-+
-+/* Shared pages can have exact HW mapping */
-+#define __S000	MKP(0, 0, 0)
-+#define __S001	MKP(0, 0, 1)
-+#define __S010	MKP(0, 1, 0)
-+#define __S011	MKP(0, 1, 1)
-+#define __S100	MKP(1, 0, 0)
-+#define __S101	MKP(1, 0, 1)
-+#define __S110	MKP(1, 1, 0)
-+#define __S111	MKP(1, 1, 1)
-+
-+/* Used all over the kernel */
-+#define PAGE_KERNEL __pgprot(_PAGE_PRESENT | _PAGE_CACHED | _PAGE_READ | \
-+			     _PAGE_WRITE | _PAGE_EXEC | _PAGE_GLOBAL)
-+
-+#define PAGE_COPY MKP(0, 0, 1)
-+
-+#define PGD_ORDER	0
-+#define PTE_ORDER	0
-+
-+#define PTRS_PER_PGD	((PAGE_SIZE << PGD_ORDER) / sizeof(pgd_t))
-+#define PTRS_PER_PTE	((PAGE_SIZE << PTE_ORDER) / sizeof(pte_t))
-+
-+#define USER_PTRS_PER_PGD	(CONFIG_KERNEL_MMU_REGION_BASE / PGDIR_SIZE)
-+
-+#define PGDIR_SHIFT	22
-+#define PGDIR_SIZE	(1UL << PGDIR_SHIFT)
-+#define PGDIR_MASK	(~(PGDIR_SIZE-1))
-+
-+/*
-+ * ZERO_PAGE is a global shared page that is always zero: used
-+ * for zero-mapped memory areas etc..
-+ */
-+extern unsigned long empty_zero_page[PAGE_SIZE / sizeof(unsigned long)];
-+#define ZERO_PAGE(vaddr)	(virt_to_page(empty_zero_page))
-+
-+extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
-+extern pte_t invalid_pte_table[PAGE_SIZE/sizeof(pte_t)];
-+
-+/*
-+ * (pmds are folded into puds so this doesn't get actually called,
-+ * but the define is needed for a generic inline function.)
-+ */
-+static inline void set_pmd(pmd_t *pmdptr, pmd_t pmdval)
++static inline void flush_tlb_page(struct vm_area_struct *vma,
++				unsigned long addr)
 +{
-+	pmdptr->pud.pgd.pgd = pmdval.pud.pgd.pgd;
-+}
-+
-+/* to find an entry in a page-table-directory */
-+#define pgd_index(addr)		(((addr) >> PGDIR_SHIFT) & (PTRS_PER_PGD - 1))
-+#define pgd_offset(mm, addr)	((mm)->pgd + pgd_index(addr))
-+
-+static inline int pte_write(pte_t pte)		\
-+	{ return pte_val(pte) & _PAGE_WRITE; }
-+static inline int pte_dirty(pte_t pte)		\
-+	{ return pte_val(pte) & _PAGE_DIRTY; }
-+static inline int pte_young(pte_t pte)		\
-+	{ return pte_val(pte) & _PAGE_ACCESSED; }
-+static inline int pte_file(pte_t pte)		\
-+	{ return pte_val(pte) & _PAGE_FILE; }
-+static inline int pte_special(pte_t pte)	{ return 0; }
-+
-+#define pgprot_noncached pgprot_noncached
-+
-+static inline pgprot_t pgprot_noncached(pgprot_t _prot)
-+{
-+	unsigned long prot = pgprot_val(_prot);
-+
-+	prot &= ~_PAGE_CACHED;
-+
-+	return __pgprot(prot);
-+}
-+
-+static inline int pte_none(pte_t pte)
-+{
-+	return !(pte_val(pte) & ~(_PAGE_GLOBAL|0xf));
-+}
-+
-+static inline int pte_present(pte_t pte)	\
-+	{ return pte_val(pte) & _PAGE_PRESENT; }
-+
-+/*
-+ * The following only work if pte_present() is true.
-+ * Undefined behaviour if not..
-+ */
-+static inline pte_t pte_wrprotect(pte_t pte)
-+{
-+	pte_val(pte) &= ~_PAGE_WRITE;
-+	return pte;
-+}
-+
-+static inline pte_t pte_mkclean(pte_t pte)
-+{
-+	pte_val(pte) &= ~_PAGE_DIRTY;
-+	return pte;
-+}
-+
-+static inline pte_t pte_mkold(pte_t pte)
-+{
-+	pte_val(pte) &= ~_PAGE_ACCESSED;
-+	return pte;
-+}
-+
-+static inline pte_t pte_mkwrite(pte_t pte)
-+{
-+	pte_val(pte) |= _PAGE_WRITE;
-+	return pte;
-+}
-+
-+static inline pte_t pte_mkdirty(pte_t pte)
-+{
-+	pte_val(pte) |= _PAGE_DIRTY;
-+	return pte;
-+}
-+
-+static inline pte_t pte_mkspecial(pte_t pte)	{ return pte; }
-+
-+static inline pte_t pte_mkyoung(pte_t pte)
-+{
-+	pte_val(pte) |= _PAGE_ACCESSED;
-+	return pte;
-+}
-+
-+static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
-+{
-+	const unsigned long mask = _PAGE_READ | _PAGE_WRITE | _PAGE_EXEC;
-+	pte_val(pte) = (pte_val(pte) & ~mask) | (pgprot_val(newprot) & mask);
-+	return pte;
-+}
-+
-+static inline int pmd_present(pmd_t pmd)
-+{
-+	return (pmd_val(pmd) != (unsigned long) invalid_pte_table)
-+			&& (pmd_val(pmd) != 0UL);
-+}
-+
-+static inline void pmd_clear(pmd_t *pmdp)
-+{
-+	pmd_val(*pmdp) = (unsigned long) invalid_pte_table;
-+}
-+
-+#define pte_pfn(pte)		(pte_val(pte) & 0xfffff)
-+#define pfn_pte(pfn, prot)	(__pte(pfn | pgprot_val(prot)))
-+#define pte_page(pte)		(pfn_to_page(pte_pfn(pte)))
-+
-+/*
-+ * Store a linux PTE into the linux page table.
-+ */
-+static inline void set_pte(pte_t *ptep, pte_t pteval)
-+{
-+	*ptep = pteval;
-+}
-+
-+static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
-+			      pte_t *ptep, pte_t pteval)
-+{
-+	unsigned long paddr = page_to_virt(pte_page(pteval));
-+	flush_dcache_range(paddr, paddr + PAGE_SIZE);
-+	set_pte(ptep, pteval);
-+}
-+
-+static inline int pmd_none(pmd_t pmd)
-+{
-+	return (pmd_val(pmd) ==
-+		(unsigned long) invalid_pte_table) || (pmd_val(pmd) == 0UL);
-+}
-+
-+#define pmd_bad(pmd)	(pmd_val(pmd) & ~PAGE_MASK)
-+
-+static inline void pte_clear(struct mm_struct *mm,
-+				unsigned long addr, pte_t *ptep)
-+{
-+	pte_t null;
-+
-+	pte_val(null) = (addr >> PAGE_SHIFT) & 0xf;
-+
-+	set_pte_at(mm, addr, ptep, null);
 +	flush_tlb_one(addr);
 +}
 +
-+/*
-+ * Conversion functions: convert a page and protection to a page entry,
-+ * and a page entry and page directory to the page they refer to.
-+ */
-+#define mk_pte(page, prot)	(pfn_pte(page_to_pfn(page), prot))
-+
-+#define pte_unmap(pte)	do { } while (0)
-+
-+/*
-+ * Conversion functions: convert a page and protection to a page entry,
-+ * and a page entry and page directory to the page they refer to.
-+ */
-+#define pmd_phys(pmd)		virt_to_phys((void *)pmd_val(pmd))
-+#define pmd_page(pmd)		(pfn_to_page(pmd_phys(pmd) >> PAGE_SHIFT))
-+#define pmd_page_vaddr(pmd)	pmd_val(pmd)
-+
-+#define pte_offset_map(dir, addr)			\
-+	((pte_t *) page_address(pmd_page(*dir)) +	\
-+	 (((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1)))
-+
-+/* to find an entry in a kernel page-table-directory */
-+#define pgd_offset_k(addr)	pgd_offset(&init_mm, addr)
-+
-+/* Get the address to the PTE for a vaddr in specfic directory */
-+#define pte_offset_kernel(dir, addr)			\
-+	((pte_t *) pmd_page_vaddr(*(dir)) +		\
-+	 (((addr) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1)))
-+
-+#define pte_ERROR(e) \
-+	pr_err("%s:%d: bad pte %08lx.\n", \
-+		__FILE__, __LINE__, pte_val(e))
-+#define pgd_ERROR(e) \
-+	pr_err("%s:%d: bad pgd %08lx.\n", \
-+		__FILE__, __LINE__, pgd_val(e))
-+
-+/*
-+ * Encode and decode a swap entry (must be !pte_none(pte) && !pte_present(pte)
-+ * && !pte_file(pte)):
-+ *
-+ * 31 30 29 28 27 26 25 24 23 22 21 20 19 18 ...  1  0
-+ *  0  0  0  0 type.  0  0  0  0  0  0 offset.........
-+ *
-+ * This gives us up to 2**2 = 4 swap files and 2**20 * 4K = 4G per swap file.
-+ *
-+ * Note that the offset field is always non-zero, thus !pte_none(pte) is always
-+ * true.
-+ */
-+#define __swp_type(swp)		(((swp).val >> 26) & 0x3)
-+#define __swp_offset(swp)	((swp).val & 0xfffff)
-+#define __swp_entry(type, off)	((swp_entry_t) { (((type) & 0x3) << 26) \
-+						 | ((off) & 0xfffff) })
-+#define __swp_entry_to_pte(swp)	((pte_t) { (swp).val })
-+#define __pte_to_swp_entry(pte)	((swp_entry_t) { pte_val(pte) })
-+
-+/* Encode and decode a nonlinear file mapping entry */
-+#define PTE_FILE_MAX_BITS	25
-+#define pte_to_pgoff(pte)	(pte_val(pte) & 0x1ffffff)
-+#define pgoff_to_pte(off)	__pte(((off) & 0x1ffffff) | _PAGE_FILE)
-+
-+#define kern_addr_valid(addr)		(1)
-+
-+#include <asm-generic/pgtable.h>
-+
-+#define pgtable_cache_init()		do { } while (0)
-+
-+extern void __init paging_init(void);
-+extern void __init mmu_init(void);
-+
-+extern void update_mmu_cache(struct vm_area_struct *vma,
-+			     unsigned long address, pte_t *pte);
-+
-+#endif /* _ASM_NIOS2_PGTABLE_H */
-diff --git a/arch/nios2/mm/pgtable.c b/arch/nios2/mm/pgtable.c
++#endif /* _ASM_NIOS2_TLBFLUSH_H */
+diff --git a/arch/nios2/mm/tlb.c b/arch/nios2/mm/tlb.c
 new file mode 100644
-index 0000000..21e865f1079aba32ed8964b82ff1979c473b119a
+index 0000000..80f0d6e4
 --- /dev/null
-+++ b/arch/nios2/mm/pgtable.c
-@@ -0,0 +1,73 @@
++++ b/arch/nios2/mm/tlb.c
+@@ -0,0 +1,274 @@
 +/*
-+ * Copyright (C) 2009 Wind River Systems Inc
++ * Nios2 TLB handling
++ *
++ * Copyright (C) 2009, Wind River Systems Inc
 + *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
 + *
 + * This file is subject to the terms and conditions of the GNU General Public
@@ -500,69 +149,268 @@ index 0000000..21e865f1079aba32ed8964b82ff1979c473b119a
 + * for more details.
 + */
 +
-+#include <linux/mm.h>
++#include <linux/init.h>
 +#include <linux/sched.h>
++#include <linux/mm.h>
++#include <linux/pagemap.h>
 +
++#include <asm/tlb.h>
++#include <asm/mmu_context.h>
 +#include <asm/pgtable.h>
 +#include <asm/cpuinfo.h>
 +
-+/* pteaddr:
-+ *   ptbase | vpn* | zero
-+ *   31-22  | 21-2 | 1-0
-+ *
-+ *   *vpn is preserved on double fault
-+ *
-+ * tlbacc:
-+ *   IG   |*flags| pfn
-+ *   31-25|24-20 | 19-0
-+ *
-+ *   *crwxg
-+ *
-+ * tlbmisc:
-+ *   resv  |way   |rd | we|pid |dbl|bad|perm|d
-+ *   31-24 |23-20 |19 | 20|17-4|3  |2  |1   |0
-+ *
++#define TLB_INDEX_MASK		\
++	((((1UL << (cpuinfo.tlb_ptr_sz - cpuinfo.tlb_num_ways_log2))) - 1) \
++		<< PAGE_SHIFT)
++
++/* Used as illegal PHYS_ADDR for TLB mappings
 + */
++#define MAX_PHYS_ADDR 0
++
++static void get_misc_and_pid(unsigned long *misc, unsigned long *pid)
++{
++	*misc  = RDCTL(CTL_TLBMISC);
++	*misc &= (TLBMISC_PID | TLBMISC_WAY);
++	*pid  = *misc & TLBMISC_PID;
++}
 +
 +/*
-+ * Initialize a new pgd / pmd table with invalid pointers.
++ * All entries common to a mm share an asid.  To effectively flush these
++ * entries, we just bump the asid.
 + */
-+static void pgd_init(pgd_t *pgd)
++void flush_tlb_mm(struct mm_struct *mm)
 +{
-+	unsigned long *p = (unsigned long *) pgd;
++	if (current->mm == mm)
++		flush_tlb_all();
++	else
++		memset(&mm->context, 0, sizeof(mm_context_t));
++}
++
++/*
++ * This one is only used for pages with the global bit set so we don't care
++ * much about the ASID.
++ */
++void flush_tlb_one_pid(unsigned long addr, unsigned long mmu_pid)
++{
++	unsigned int way;
++	unsigned long org_misc, pid_misc;
++
++	pr_debug("Flush tlb-entry for vaddr=%#lx\n", addr);
++
++	/* remember pid/way until we return. */
++	get_misc_and_pid(&org_misc, &pid_misc);
++
++	WRCTL(CTL_PTEADDR, (addr >> PAGE_SHIFT) << 2);
++
++	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
++		unsigned long pteaddr;
++		unsigned long tlbmisc;
++		unsigned long pid;
++
++		tlbmisc = pid_misc | TLBMISC_RD | (way << TLBMISC_WAY_SHIFT);
++		WRCTL(CTL_TLBMISC, tlbmisc);
++		pteaddr = RDCTL(CTL_PTEADDR);
++		tlbmisc = RDCTL(CTL_TLBMISC);
++		pid = (tlbmisc >> TLBMISC_PID_SHIFT) & TLBMISC_PID_MASK;
++		if (((((pteaddr >> 2) & 0xfffff)) == (addr >> PAGE_SHIFT)) &&
++				pid == mmu_pid) {
++			unsigned long vaddr = CONFIG_IO_REGION_BASE +
++				((PAGE_SIZE * cpuinfo.tlb_num_lines) * way) +
++				(addr & TLB_INDEX_MASK);
++			pr_debug("Flush entry by writing %#lx way=%dl pid=%ld\n",
++				vaddr, way, (pid_misc >> TLBMISC_PID_SHIFT));
++
++			WRCTL(CTL_PTEADDR, (vaddr >> 12) << 2);
++			tlbmisc = pid_misc | TLBMISC_WE |
++				(way << TLBMISC_WAY_SHIFT);
++			WRCTL(CTL_TLBMISC, tlbmisc);
++			WRCTL(CTL_TLBACC, (MAX_PHYS_ADDR >> PAGE_SHIFT));
++		}
++	}
++
++	WRCTL(CTL_TLBMISC, org_misc);
++}
++
++void flush_tlb_range(struct vm_area_struct *vma, unsigned long start,
++			unsigned long end)
++{
++	unsigned long mmu_pid = get_pid_from_context(&vma->vm_mm->context);
++
++	while (start < end) {
++		flush_tlb_one_pid(start, mmu_pid);
++		start += PAGE_SIZE;
++	}
++}
++
++void flush_tlb_kernel_range(unsigned long start, unsigned long end)
++{
++	while (start < end) {
++		flush_tlb_one(start);
++		start += PAGE_SIZE;
++	}
++}
++
++/*
++ * This one is only used for pages with the global bit set so we don't care
++ * much about the ASID.
++ */
++void flush_tlb_one(unsigned long addr)
++{
++	unsigned int way;
++	unsigned long org_misc, pid_misc;
++
++	pr_debug("Flush tlb-entry for vaddr=%#lx\n", addr);
++
++	/* remember pid/way until we return. */
++	get_misc_and_pid(&org_misc, &pid_misc);
++
++	WRCTL(CTL_PTEADDR, (addr >> PAGE_SHIFT) << 2);
++
++	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
++		unsigned long pteaddr;
++		unsigned long tlbmisc;
++
++		tlbmisc = pid_misc | TLBMISC_RD | (way << TLBMISC_WAY_SHIFT);
++		WRCTL(CTL_TLBMISC, tlbmisc);
++		pteaddr = RDCTL(CTL_PTEADDR);
++		tlbmisc = RDCTL(CTL_TLBMISC);
++
++		if ((((pteaddr >> 2) & 0xfffff)) == (addr >> PAGE_SHIFT)) {
++			unsigned long vaddr = CONFIG_IO_REGION_BASE +
++				((PAGE_SIZE * cpuinfo.tlb_num_lines) * way) +
++				(addr & TLB_INDEX_MASK);
++
++			pr_debug("Flush entry by writing %#lx way=%dl pid=%ld\n",
++				vaddr, way, (pid_misc >> TLBMISC_PID_SHIFT));
++
++			tlbmisc = pid_misc | TLBMISC_WE |
++				(way << TLBMISC_WAY_SHIFT);
++			WRCTL(CTL_PTEADDR, (vaddr >> 12) << 2);
++			WRCTL(CTL_TLBMISC, tlbmisc);
++			WRCTL(CTL_TLBACC, (MAX_PHYS_ADDR >> PAGE_SHIFT));
++		}
++	}
++
++	WRCTL(CTL_TLBMISC, org_misc);
++}
++
++void dump_tlb_line(unsigned long line)
++{
++	unsigned int way;
++	unsigned long org_misc;
++
++	pr_debug("dump tlb-entries for line=%#lx (addr %08lx)\n", line,
++		line << (PAGE_SHIFT + cpuinfo.tlb_num_ways_log2));
++
++	/* remember pid/way until we return */
++	org_misc = (RDCTL(CTL_TLBMISC) & (TLBMISC_PID | TLBMISC_WAY));
++
++	WRCTL(CTL_PTEADDR, line << 2);
++
++	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
++		unsigned long pteaddr;
++		unsigned long tlbmisc;
++		unsigned long tlbacc;
++
++		WRCTL(CTL_TLBMISC, TLBMISC_RD | (way << TLBMISC_WAY_SHIFT));
++		pteaddr = RDCTL(CTL_PTEADDR);
++		tlbmisc = RDCTL(CTL_TLBMISC);
++		tlbacc = RDCTL(CTL_TLBACC);
++
++		if ((tlbacc << PAGE_SHIFT) != (MAX_PHYS_ADDR & PAGE_MASK)) {
++			pr_debug("-- way:%02x vpn:0x%08lx phys:0x%08lx pid:0x%02lx flags:%c%c%c%c%c\n",
++				way,
++				(pteaddr << (PAGE_SHIFT-2)),
++				(tlbacc << PAGE_SHIFT),
++				((tlbmisc >> TLBMISC_PID_SHIFT) &
++				TLBMISC_PID_MASK),
++				(tlbacc & _PAGE_READ ? 'r' : '-'),
++				(tlbacc & _PAGE_WRITE ? 'w' : '-'),
++				(tlbacc & _PAGE_EXEC ? 'x' : '-'),
++				(tlbacc & _PAGE_GLOBAL ? 'g' : '-'),
++				(tlbacc & _PAGE_CACHED ? 'c' : '-'));
++		}
++	}
++
++	WRCTL(CTL_TLBMISC, org_misc);
++}
++
++void dump_tlb(void)
++{
++	unsigned int i;
++	for (i = 0; i < cpuinfo.tlb_num_lines; i++)
++		dump_tlb_line(i);
++}
++
++void flush_tlb_pid(unsigned long pid)
++{
++	unsigned int line;
++	unsigned int way;
++	unsigned long org_misc, pid_misc;
++
++	/* remember pid/way until we return */
++	get_misc_and_pid(&org_misc, &pid_misc);
++
++	for (line = 0; line < cpuinfo.tlb_num_lines; line++) {
++		WRCTL(CTL_PTEADDR, line << 2);
++
++		for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
++			unsigned long pteaddr;
++			unsigned long tlbmisc;
++			unsigned long tlbacc;
++
++			tlbmisc = pid_misc | TLBMISC_RD |
++				(way << TLBMISC_WAY_SHIFT);
++			WRCTL(CTL_TLBMISC, tlbmisc);
++			pteaddr = RDCTL(CTL_PTEADDR);
++			tlbmisc = RDCTL(CTL_TLBMISC);
++			tlbacc = RDCTL(CTL_TLBACC);
++
++			if (((tlbmisc>>TLBMISC_PID_SHIFT) & TLBMISC_PID_MASK)
++				== pid) {
++				tlbmisc = pid_misc | TLBMISC_WE |
++					(way << TLBMISC_WAY_SHIFT);
++				WRCTL(CTL_TLBMISC, tlbmisc);
++				WRCTL(CTL_TLBACC,
++					(MAX_PHYS_ADDR >> PAGE_SHIFT));
++			}
++		}
++
++		WRCTL(CTL_TLBMISC, org_misc);
++	}
++}
++
++void flush_tlb_all(void)
++{
 +	int i;
++	unsigned long vaddr = CONFIG_IO_REGION_BASE;
++	unsigned int way;
++	unsigned long org_misc, pid_misc, tlbmisc;
 +
-+	for (i = 0; i < USER_PTRS_PER_PGD; i += 8) {
-+		p[i + 0] = (unsigned long) invalid_pte_table;
-+		p[i + 1] = (unsigned long) invalid_pte_table;
-+		p[i + 2] = (unsigned long) invalid_pte_table;
-+		p[i + 3] = (unsigned long) invalid_pte_table;
-+		p[i + 4] = (unsigned long) invalid_pte_table;
-+		p[i + 5] = (unsigned long) invalid_pte_table;
-+		p[i + 6] = (unsigned long) invalid_pte_table;
-+		p[i + 7] = (unsigned long) invalid_pte_table;
-+	}
-+}
++	/* remember pid/way until we return */
++	get_misc_and_pid(&org_misc, &pid_misc);
++	pid_misc |= TLBMISC_WE;
 +
-+pgd_t *pgd_alloc(struct mm_struct *mm)
-+{
-+	pgd_t *ret, *init;
-+	ret = (pgd_t *) __get_free_pages(GFP_KERNEL, PGD_ORDER);
-+	if (ret) {
-+		init = pgd_offset(&init_mm, 0UL);
-+		pgd_init(ret);
-+		memcpy(ret + USER_PTRS_PER_PGD, init + USER_PTRS_PER_PGD,
-+		       (PTRS_PER_PGD - USER_PTRS_PER_PGD) * sizeof(pgd_t));
++	/* Map each TLB entry to physcal address 0 with no-access and a
++	   bad ptbase */
++	for (way = 0; way < cpuinfo.tlb_num_ways; way++) {
++		tlbmisc = pid_misc | (way << TLBMISC_WAY_SHIFT);
++		for (i = 0; i < cpuinfo.tlb_num_lines; i++) {
++			WRCTL(CTL_PTEADDR, ((vaddr) >> PAGE_SHIFT) << 2);
++			WRCTL(CTL_TLBMISC, tlbmisc);
++			WRCTL(CTL_TLBACC, (MAX_PHYS_ADDR >> PAGE_SHIFT));
++			vaddr += 1UL << 12;
++		}
 +	}
 +
-+	return ret;
++	/* restore pid/way */
++	WRCTL(CTL_TLBMISC, org_misc);
 +}
 +
-+void __init pagetable_init(void)
++void set_mmu_pid(unsigned long pid)
 +{
-+	/* Initialize the entire pgd.  */
-+	pgd_init(swapper_pg_dir);
-+	pgd_init(swapper_pg_dir + USER_PTRS_PER_PGD);
++	WRCTL(CTL_TLBMISC, (RDCTL(CTL_TLBMISC) & TLBMISC_WAY) |
++		((pid & TLBMISC_PID_MASK) << TLBMISC_PID_SHIFT));
 +}
 -- 
 1.8.3.2
