@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751237AbaDREtW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 00:49:22 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35146 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830AbaDREtU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 00:49:20 -0400
-Date: Fri, 18 Apr 2014 05:49:04 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mmarek@suse.cz, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH] Kbuild, lto: Avoid reported warning with strtoul
-Message-ID: <20140418044904.GM18016@ZenIV.linux.org.uk>
-References: <1397795756-23283-1-git-send-email-andi@firstfloor.org>
+	id S1751682AbaDREuk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 00:50:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34729 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751467AbaDREuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 00:50:35 -0400
+Message-ID: <5350AEF4.9060905@zytor.com>
+Date: Thu, 17 Apr 2014 21:49:56 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397795756-23283-1-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marek Vasut <marex@denx.de>, Jianyu Zhan <nasa4836@gmail.com>
+CC: herbert@gondor.apana.org.au, davem@davemloft.net, tglx@linutronix.de,
+        mingo@redhat.com, x86@kernel.org, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] crypto: sha{256,512}_ssse3 - remove asmlinkage from static
+ functions
+References: <1397665190-12491-1-git-send-email-nasa4836@gmail.com> <201404171728.41994.marex@denx.de>
+In-Reply-To: <201404171728.41994.marex@denx.de>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 06:35:56AM +0200, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On 04/17/2014 08:28 AM, Marek Vasut wrote:
+> On Wednesday, April 16, 2014 at 06:19:50 PM, Jianyu Zhan wrote:
+>> Commit 128ea04a9885("lto: Make asmlinkage __visible") restricts
+>> asmlinkage to externally_visible, this causes compilation warnings:
+>>
+>>     arch/x86/crypto/sha256_ssse3_glue.c:56:1:
+>>     warning: ‘externally_visible’ attribute have effect only on public
+>> objects [-Wattributes]
+>>
+>>     static asmlinkage void (*sha256_transform_asm)(const char *, u32 *,
+>> u64); ^
+>>
+>>     arch/x86/crypto/sha512_ssse3_glue.c:55:1:
+>>     warning: ‘externally_visible’ attribute have effect only on public
+>> objects [-Wattributes] static asmlinkage void
+>> (*sha512_transform_asm)(const char *, u64 *, ^
+>>
+>> Drop asmlinkage here to avoid such warnings.
+>>
+>> Also see Commit 8783dd3a37a5853689e1("irqchip: Remove asmlinkage from
+>> static functions")
+>>
+>> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
 > 
-> Apparently someone's C library declares strtoul with warn_unused_result.
-> Cast to void to avoid the warning. Error handling is not useful here.
+> Makes sense, please add my humble
+> 
+> Reviewed-by: Marek Vasut <marex@denx.de>
+> 
 
-Umm...  Since we don't give a fsck for the value, isn't that simply
-	
-	char *p = strchr(s, '.');
-	if (p) {
-		size_t m = strspn(p + 1, "0123456789");
-		if (m > 0 && (p[m + 1] == '.' || p[m + 1] == '\0'))
-			*p = '\0';
-	}
+It doesn't make sense, sorry.  The right thing to drop here is not
+"asmlinkage", it is "static": this is an external declaration.
+
+	-hpa
+
+
