@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548AbaDRUFr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 16:05:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42213 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752263AbaDRUFp (ORCPT
+	id S1754587AbaDRUJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 16:09:56 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:60212 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197AbaDRUJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 16:05:45 -0400
-Date: Fri, 18 Apr 2014 13:05:43 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Robert Haas <robertmhaas@gmail.com>, Josh Berkus <josh@agliodbs.com>,
-        Andres Freund <andres@2ndquadrant.com>,
-        Christoph Lameter <cl@linux.com>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [PATCH 0/2] Disable zone_reclaim_mode by default v2
-Message-Id: <20140418130543.8619064c0e5d26cd914c4c3c@linux-foundation.org>
-In-Reply-To: <1396945380-18592-1-git-send-email-mgorman@suse.de>
-References: <1396945380-18592-1-git-send-email-mgorman@suse.de>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Apr 2014 16:09:48 -0400
+Date: Fri, 18 Apr 2014 21:13:13 +0100
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH 0/3] of: dts: enable memory@0 quirk for PPC32 only
+Message-ID: <20140418201313.GG5904@bivouac.eciton.net>
+References: <1397756521-29387-1-git-send-email-leif.lindholm@linaro.org>
+ <CAL_JsqL8B2ZY7ACXKX3J8VN5ukjKWuycgfDZpp4kYzBxg6BLmQ@mail.gmail.com>
+ <20140418124821.GE5904@bivouac.eciton.net>
+ <CAL_JsqKdFyhHfkcC1E9QuKjQTrXwoELYG+CFTpgf2-jqDvxGmA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL_JsqKdFyhHfkcC1E9QuKjQTrXwoELYG+CFTpgf2-jqDvxGmA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  8 Apr 2014 09:22:58 +0100 Mel Gorman <mgorman@suse.de> wrote:
-
-> Changelog since v1
->  o topology comment updates
+On Fri, Apr 18, 2014 at 10:37:58AM -0500, Rob Herring wrote:
+> >> But why do you need this?
+> >
+> > Apart from the current code permitting recreating a 15+ year old
+> > firmware bug into completely new platform ports?
 > 
-> When it was introduced, zone_reclaim_mode made sense as NUMA distances
-> punished and workloads were generally partitioned to fit into a NUMA
-> node. NUMA machines are now common but few of the workloads are NUMA-aware
-> and it's routine to see major performance due to zone_reclaim_mode being
-> enabled but relatively few can identify the problem.
+> I would prefer to see a "WARN_ON(!IS_ENABLED(CONFIG_PPC32));" added here.
+
+In addition to, or instead of, the QUIRK ifdef?
+
+> Really, I would like to see quirks like this fixed up out of line from
+> the normal flow somewhat like how PCI quirks are handled. So in this
+> example, we would just add the missing property to the dtb for the
+> broken platform before doing the memory scan. That does then require
+> libfdt which is something I'm working on.
+
+Getting rid of all this handling from generic code would clearly be
+preferable. Is that code going in in the near future, or could we add
+the quirk as a stopgap?
+
+> > Because the UEFI stub for arm/arm64 needs to delete all of the "memory"
+> > nodes from the DT. And it would be nice to at least not have to compile
+> > the "and also delete anything called memory@0" into the arm64 image. Or
+> > any image not including support for affected platforms.
 > 
-> Those that require zone_reclaim_mode are likely to be able to detect when
-> it needs to be enabled and tune appropriately so lets have a sensible
-> default for the bulk of users.
-> 
+> I don't see why you would handle that in the EFI stub. Given our lack
+> of validation, I can see there is a chance this happens but I think it
+> is pretty small. Given we only have a ARM board, I'd say we are doing
+> surprisingly well.
 
-This patchset conflicts with  
+I'm not too bothered personally, but Mark Rutland handed me a patch to
+improve the memory node handling in the stub, and he seemed to really
+want this there. You guys can fight it out :)
 
-commit 70ef57e6c22c3323dce179b7d0d433c479266612
-Author:     Michal Hocko <mhocko@suse.cz>
-AuthorDate: Mon Apr 7 15:37:01 2014 -0700
-Commit:     Linus Torvalds <torvalds@linux-foundation.org>
-CommitDate: Mon Apr 7 16:35:50 2014 -0700
+What would be the effect of the UEFI code adding all its memblocks,
+minus the reserved areas, and then the DT code doing a memblock_add
+of all RAM (including reserved areas)? Would memblock_reserve()s on
+the protected regions suffice to prevent crazy stuff from happening?
 
-    mm: exclude memoryless nodes from zone_reclaim
-
-It was pretty simple to resolve, but please check that I didn't miss
-anything.
+/
+    Leif
